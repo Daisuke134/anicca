@@ -1,37 +1,59 @@
 # TASKLIST — ★唯一の SSOT★（順序は Dais が決めた。勝手に入れ替えるな）
 
-最終更新: 2026-07-13 17:20 JST / branch `feature/clip-rewards`
+最終更新: 2026-07-13 18:40 JST / branch `feature/clip-rewards`
+TaskList（会話内）と本ファイルと spec は **同じ ID・同じ順序**。3つが一致しない時は本ファイルが正。
 
 > **このファイルが正本。** 会話は揮発する。ここに書いていないタスクは存在しない。
 > earn/colony 側の T13/T15/T5-T12（`34-TODO-ORDERED.md`）は **Anicca 自身の仕事であって、私(claude-p)のタスクではない**。混ぜない。
 
 ## ★ 唯一の真実 = NET PROFIT ★
-成果 = loop が自分で redeem して、渡された額より wallet が増えた時のみ。
-activity / build / 建玉 / test-green は成果ではない。**現在の実現 net profit = ¥0**（gig: applied 113 / won 2 / paid 0）。
+成果 = loop が自分で稼いで、渡された額より残高が増えた時のみ。
+activity / applied / posted / built / test-green は成果ではない。**現在の実現 net profit = ¥0**（gig: applied 113 / won 2 / paid 0）。
+
+## 順序の原則（Dais 決定）
+1. **共有基盤(L0)を先に**（disk / session / learn-from-winners）。ここが死ぬと全ループが死ぬ。
+2. **稼ぐループを1本ずつ**: gig → clip → video → life manager。金に近い順。
+3. 1本が **1アカウント $1k MRR 安定** → アカウント/サイトを増やして scale。
+4. 全ループは4層（BASE / self-heal / self-improve / reality-gate）を持つ。spec §2 が正本。
 
 ---
 
-## 順序（この番号順にしかやらない）
+## 順序（この番号順にしかやらない。ID は会話の TaskList と一致）
 
 | # | タスク | 状態 |
 |---|---|---|
-| **1** | 床の実測（before → after） | ✅ DONE 2026-07-13 |
-| **2** | floor-guard を正しい測定器に作り直す | ✅ DONE 2026-07-13 |
-| **3** | **Q1: 4ループが本当に成果物を書いているかを実データで確定** | ★次★ |
-| **4** | **Q3: スケールの現実解を調査 → PoC を1本実際に動かす** | pending |
-| 5 | growth engine X-1: MoneyPrinterTurbo を実導入（spec §2。他ツールに差し替えるな） | pending |
-| 6 | growth engine G0-1: 台本A（日本語・spec §5）で動画1本を生成 | pending |
-| 7 | growth engine G0-2: Telegram(8547730585) へ送付 → Dais の品質OK（唯一の human gate） | pending |
-| 8 | growth engine G0-3: IG 実投稿 → ★ログアウト状態で公開URLを実見★ | pending |
-| 9 | growth engine G1: loop 化（launchd 朝夜2本・常駐禁止） | pending |
-| 10 | metrics_fetch.py（instagrapi + daily-driver sessionid）で実 plays を funnel jsonl へ | pending |
-| 11 | 毎実行 Telegram 報告 + reality gate を loop 内に埋め込む | pending |
-| 12 | growth engine を3日連続で自走させる | pending |
-| 13 | firecrawl → crawl4ai 一本化の後始末（残った FIRECRAWL 参照を `crwl` に置換） | pending |
-| 14 | TODO 正本の衝突を解消（このファイルを正本にし、他は「→参照」1行にする） | 進行中（本ファイルがその第一歩） |
-| 15 | article cron の修復（全 enabled:false + 実在しないパス。gateway cron CLI 経由で直す） | pending |
+| — | 床の実測（before → after） | ✅ DONE |
+| — | floor-guard を正しい測定器に作り直す | ✅ DONE |
+| — | Q1: 4ループが本当に稼いでいるか実データで確定 | ✅ DONE（4本とも ¥0。詳細下記） |
+| **17 / L0-1** | **disk: 予防運転を恒久化（free≥20GB 維持）** | ✅ DONE（commit 07e142e + bfac510） |
+| **18 / L0-2** | **session: 永続化を全ブラウザループ共通で解決（人間の再ログインを消す）** | ★調査中★ |
+| **19 / L0-3** | **learn-from-winners: 成功者を実際に見て学ぶ層を全ループに埋める** | pending |
+| **20 / GIG-1** | earn-gig を skill 化（10KB の1行プロンプトを分解） | pending |
+| **21 / GIG-2** | プロフィールを実編集して Dais に見せる（デモ） | pending |
+| **22 / GIG-3** | paid=0 を殺す（納品→検収→出金→着金） | pending |
+| **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す | pending |
+| **24 / VIDEO-1** | video: warmup の hardcode を外し self-improve + scout 移植 | pending |
+| **25 / LM-1** | life manager loop（X-1）を 1k MRR まで | pending |
+| **26 / Q3** | 100〜1000ループの現実解 + PoC 1本 | pending |
+| **27 / OSS** | profitable-claude 公開 + dashboard 収益透明化 | pending |
 
-Q2（各ブラウザ使用ループの ASCII 図）は 2026-07-13 に提出済み → `~/anicca/skills/browser/SKILL.md` の構成そのもの。
+Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skills/browser/SKILL.md`。
+
+### Q1 の結末（4ループの実働、実データ 2026-07-13）
+| loop | tmux/launchd | 実際にやっていること | 稼ぎ |
+|---|---|---|---|
+| gig | ALIVE | 応募は回る（task-request 87件）。今日 ENOSPC で一度死んだ | won 2 / **paid 0 / ¥0** |
+| clip | ALIVE | 投稿が3連続失敗（post_url=null）。週次 -250 | ¥0 |
+| video | ALIVE | warmup を抜けられない（実視聴2件<3。hardcode） | $0 |
+| reddit | Dais が停止 | — | — |
+tmux 3本(anicca-2/3/4)は**ループではない**（放置された対話セッション）。本物のループは launchd。
+
+### 各ループの3層監査（実コード確認済み。「各 earn skill=3層」は誇張だった）
+| loop | BASE | self-heal | self-improve(外部学習) |
+|---|---|---|---|
+| gig | LLM | ✅ 286回発火 | ✅ 実在（ただし firecrawl 依存で死んでいた→crwl に交換済み。プロフィール未対象→追加済み） |
+| clip | LLM | ✅ 250回発火 | ❌ 無い（記録だけ） |
+| video | ❌ hardcode | ✅ 59回発火 | ❌ 無い |
 
 ---
 

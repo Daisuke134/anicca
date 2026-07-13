@@ -232,9 +232,49 @@ TO-BE:
 
 ---
 
+---
+
+## 9. 実装タスク（★TaskList / TASKLIST.md と同じ ID・同じ順序★）
+
+| # | タスク | 層 | 状態 |
+|---|---|---|---|
+| 17 / L0-1 | disk 予防運転（free≥20GB 維持。.cloak Cache / Desktop / Downloads / Archive / 未使用VM も刈る） | L0 | ✅ DONE |
+| 18 / L0-2 | session 永続化を全ブラウザループ共通で（vault restore→keep-alive→TOTP。人間の再ログインを消す） | L0 | 調査中 |
+| 19 / L0-3 | learn-from-winners（成功者の実物をブラウザで見て components 仮説に変換する scout.py を全ループ共通に） | L3 | pending |
+| 20 / GIG-1 | earn-gig を skill 化（1行プロンプト → scripts + sites/coconala.yaml。judgment は model に残す） | — | pending |
+| 21 / GIG-2 | プロフィール実編集デモ（アイコン/自己紹介1000字/キャッチコピー/ポートフォリオ。before→after を実見） | L3 | pending |
+| 22 / GIG-3 | paid=0 を殺す（deliver.py 納品→検収→評価依頼 / payout.py 出金→着金。funnel に banked 追加） | L4 | pending |
+| 23 / CLIP-1 | clip に self-improve + scout 移植、投稿失敗(post_url=null)を直す、reality gate | L3/L4 | pending |
+| 24 / VIDEO-1 | video の warmup hardcode を外す（日数で抜ける）、self-improve + scout 移植 | L1/L3 | pending |
+| 25 / LM-1 | life manager loop を 1k MRR まで（web アプリを作り→売り→改善。MPT は動画部品） | 全層 | pending |
+| 26 / Q3 | 100〜1000ループの scale 調査 + PoC 1本（§7） | — | pending |
+| 27 / OSS | profitable-claude 公開 + dashboard 収益透明化 | — | pending |
+
+### learn-from-winners（L0-3）の設計 — 全ループ共通の scout
+```
+記事の一般論（crwl で読む）＝ 浅いジュース
+成功者の実物（ブラウザで見る）＝ ★深いジュース★  ← Dais: 「the most juice is on the actual shit」
+
+共通 scripts/scout.py:
+  入力: 対象URL集合（そのループの「勝っている人」）
+  処理: crwl で取れる物は crwl / 要ログインはブラウザで開いてスクショ + 要素抽出
+  出力: components.json の仮説（source=誰の何を見たか付き）→ improve が1つ選んで A/B
+
+  gig   → 売れている出品者の profile画像 / 自己紹介 / 出品タイトル / 3プラン価格 / サムネ
+  clip  → バズっている clipper のサムネ / 冒頭3秒 / caption / 投稿時間 / プロフィール
+  video → 伸びている動画の hook / 尺 / テロップ / 投稿頻度
+  webapp→ 売れているアプリの screenshot / onboarding / 課金 / SNS運用
+  ios   → 上位アプリの screenshot / ASO / レビュー返信
+
+  ★judgment は model。selector・URL は sites/*.yaml。何を真似るかは焼かない★
+```
+
+---
+
 ## 関連
-- 実装順の正本 → `docs/loop-engineering/TASKLIST.md`
+- 実装順の正本 → `docs/loop-engineering/TASKLIST.md`（本 spec §9 と同一 ID）
 - ココナラの型（外部学習の教師データ）→ `docs/earn/gig-coconala-playbook.md`
+- セッション永続化の調査 → `docs/earn/session-persistence-playbook.md`
 - ブラウザ基盤 → `~/anicca/skills/browser/SKILL.md`
 - web 取得 → `docs/reference/crawl4ai-web-scraping.md`（`crwl <url> -o markdown`）
 - コロニー全体 → `docs/superpowers/specs/2026-07-03-anicca-colony-architecture-design.md`
