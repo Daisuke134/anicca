@@ -161,6 +161,26 @@ Agent402.tools/api/leaderboard = 全 x402 seller の Base USDC settled volume �
 既存の車輪(reuse): @furlpay/gateway(monetize) / Agent402(index+router+leaderboard+/sell live) / CDP Bazaar
 → 作るべき skill = 「sell-on-x402」= この recipe を束ねる(どの AI も niche 選び→product→paywall→list→earn)。
 ```
+
+**★外部発見の機構(確定)★**
+```
+Agent402 は CDP Bazaar を hourly 自動 crawl → seller は手動登録不要。★Bazaar に居れば★
+  /api/find・/api/route(Smart Order Router が agents を誘導)・/api/leaderboard に自動で出る。
+∴ 外部 buyer への唯一の入口 = ★CDP Bazaar に resource を register(discoverable 登録)★。
+  ⚠ settle だけでは載らない疑い(我々は self-pay 済だが Bazaar offset 0 に不在)。
+     x402-express の route config に discoverable フラグ / CDP discovery API への register が要る=実装ポイント。
+  → 載れば Agent402 が拾い agents が /find で発見して払う。
+
+★sell-on-x402 skill の完全レシピ(build 対象。全部 proven, 車輪は既存)★:
+  1 niche 選ぶ: /api/leaderboard の高 buyer 帯(enrichment/utility/macro/financial) を実測して決める
+  2 simple product: 無料データ→LLM 構造化(research-product.mjs を specific 化)。deterministic 推奨
+  3 paywall: @furlpay/gateway or x402-express + CDP facilitator(payTo=自 wallet)
+  4 ★register: CDP Bazaar に discoverable 登録★(← 外部発見の鍵。settle と別。要実装)
+  5 earn: Agent402 /find→外部 agent が払う  6 track: /api/leaderboard で自 payTo の売上を検証
+  per-instance: payTo=$W なので claude-p も Franklin も自分の wallet で同じ recipe。
+残ゴール(mission): ①俺が外部で稼ぐ ②claude-p loop が外部で稼ぐ(daily) ③Franklin も。
+  = every AI が 0-1 で financial independence。build phase は fresh session 推奨(この session は巨大)。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
