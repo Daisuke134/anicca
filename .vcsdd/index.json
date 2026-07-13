@@ -252,9 +252,16 @@
       "createdAt": "2026-07-12T11:28:24.723Z",
       "mode": "lean",
       "language": "typescript",
-      "currentPhase": "2a",
-      "updatedAt": "2026-07-12T12:00:26.310Z"
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-12T11:35:09.297Z"
+    },
+    "reality-gate": {
+      "status": "active",
+      "createdAt": "2026-07-12T16:37:31.212Z",
+      "mode": "lean",
+      "currentPhase": "1c",
+      "updatedAt": "2026-07-12T17:02:24.864Z"
     }
   },
-  "activeFeature": "config-delivery-verification"
+  "activeFeature": "reality-gate"
 }
