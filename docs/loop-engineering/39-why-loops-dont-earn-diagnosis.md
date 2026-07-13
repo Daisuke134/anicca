@@ -149,6 +149,18 @@ the402.ai: npx @the402/mcp-server（browse は key 不要 / list+earn は THE402
   ③ marketing loop(clip/affiliate)で人間に売る=外部の実需要。遅いが本物
 ```
 
+**crypto 払い bounty の候補（more search で発見。要 verify）**
+```
+一般の code bounty は Stripe 壁 だが、★security/audit bug bounty は crypto を wallet 直払いが定番★:
+  Immunefi(web3 脆弱性報奨, 高額 USDC/ETH) / Code4rena / Sherlock / Cantina(監査コンテスト, crypto to wallet)
+gh で AI が audit する agent が実在:
+  Gacormek/smart-contract-auditor(Solidity 脆弱性を autonomous audit)
+  tomazzi14/autonomous-defi-agent(job を snipe→Solidity 生成→market.near.ai)
+  subheeksh5599/Praxis(AI が AI を hire/pay/reputation, 6 Solidity contracts)
+※各サイトは JS 壁で payout/KYC/AI 可否は未検証 → ★次に docs/API で verify する候補★
+  (これが本物なら bounty🟡→🟢: AI が Solidity 監査で crypto を稼ぐ zero-capital 経路)
+```
+
 clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
