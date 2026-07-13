@@ -103,6 +103,18 @@ embed は run.sh の x402 分岐が既に per-instance で正しい:
   (3) real revenue = 外部 buyer(colony 外)。self-pay は INV-7 で非計上
 → 次(bounty)へ進む前 or 並行で: loop 再起動 + 次 wake で「脳が x402_sell を選び seller が上がる」を実ログ確認。
 ```
+
+**★外部稼ぎの実数（2026-07-14 実測。self/internal=Ponzi なので除外）★**
+```
+automaton 除外(停止・不使用)。external:true + 実 tx のみ集計:
+  claude-p  $0.0074 (hl-trade 益)   Franklin $0.0200 (gig, tx 0x436143c1, 07-07)   Franklin2 $0
+  外部 合計 ≈ $0.027  ← 「知らない外部が払った」の全て。ほぼゼロ。大半は1週間前の gig1件。
+self-pay(x402-serve 71行 + tx 0xd7a82586)= 非計上 ✓
+結論: x402 mechanism は証明済だが ★外部売上ゼロ★。self-pay を稼ぎと数えたら Ponzi(Dais 指摘、正しい)。
+本物の証明 = 我々の管理外 AI が x402 endpoint を発見して払う(from ∉ 我々の wallet):
+  ① x402 Bazaar に list(CDP が catalog) ② awesome-x402 PR + x402scan index ③ 外部 inflow を検証
+  ※run.sh の現広告先=colony forum(=まだ我々)→真の外部でない。ここを直す必要。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
