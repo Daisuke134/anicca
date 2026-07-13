@@ -1,0 +1,9 @@
+{
+  "findingId": "FIND-004",
+  "severity": "minor",
+  "dimension": "correctness",
+  "category": "test_coverage",
+  "location": "runtime/loop/config-drift.mjs:305-337 (readRuntimeEnvOfLabel)",
+  "description": "`readRuntimeEnvOfLabel` is exported and documented in verification-architecture.md:28-31 as the effectful primitive that resolves a launchd label to its live PID via `launchctl list` and reads that PID's own env via `ps -p`. It is never actually called by `runConfigDriftDetector` -- the composed detector instead derives `xpcServiceName` directly from the SAME `ps -Awwe` enumeration line already captured for REQ-010 discovery (config-drift.mjs:399-410), never invoking `launchctl` at all. Grepped the entire repo: `readRuntimeEnvOfLabel` has zero call sites anywhere outside its own definition. It is also never imported or exercised by config-drift.test.mjs or config-drift-detector.test.mjs. This is dead, untested code that duplicates (via a different, more expensive mechanism: N `launchctl list` + N `ps -p` calls vs. one `ps -Awwe` scan) a job the composed detector already does a different way -- exactly the 'ruthless deletion of unused code' the repo's own coding-style.md mandates, and a maintenance hazard (if one of the two mechanisms is updated for a future edge case and the other silently is not, they will quietly diverge with nothing to catch it since one path is completely untested).",
+  "requiredFix": "Delete `readRuntimeEnvOfLabel` (per coding-style.md's unused-code policy), or if it is intentionally kept as an alternative/future primitive, wire it into an actual call site and add a test for it; do not leave an untested, unused effectful primitive in the module."
+}

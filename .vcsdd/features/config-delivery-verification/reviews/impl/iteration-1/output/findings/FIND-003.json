@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "resolveExpectedValue (config-drift.mjs:86-90) does `const config = declaredConfig || {}`, and detectBrainDrift (config-drift.mjs:201-208) passes its `declaredConfig` argument straight through to resolveExpectedValue without ever checking classifyObservability on the DECLARED side. This means a null `declaredConfig` — the exact value readPlistDeclaredEnv() (config-drift.mjs:263-270) returns when the plist itself cannot be read (missing file, plutil error) — is indistinguishable from '{}' (a plist that was read successfully but simply omits the ANICCA_BRAIN key). Both collapse to 'falls back to codeDefault, treated as a normal comparison', never to the REQ-004 fail-closed FAIL path. The common-pathology framing in behavioral-spec.md ('宣言...と実行時の実態が乖離しても、それを検知する仕組みがどこにも存在しない') and REQ-004's general fail-closed principle both require that an unreadable input never be silently normalized into a 'no drift found' style default — but as written, an unreadable DECLARED side is silently normalized rather than reported unobservable. No test in config-drift.test.mjs exercises `declaredConfig === null` (only PROP-009 tests observedEnvOrNull === null); this asymmetry has zero test coverage in either direction.",
+  "evidence": {
+    "filePath": "runtime/loop/config-drift.mjs",
+    "lineRange": "86-90, 201-208",
+    "snippet": "export function resolveExpectedValue(declaredConfig, key, codeDefault) {\n  const config = declaredConfig || {};\n  ...\n}"
+  },
+  "requiredFix": "Have detectBrainDrift check classifyObservability(declaredConfig) the same way it already checks classifyObservability(observedEnvOrNull), and return the same {reason: 'unobservable'} FAIL shape when the declared side could not be read at all (distinct from 'read fine, key just absent'). Add a test fixture for declaredConfig=null.",
+  "routeToPhase": "2b"
+}

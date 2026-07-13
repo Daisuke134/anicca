@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "correctness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "In brain.mjs's thinkClaudeP (lines 168-172), the timeout handler's inner grace-period timer is never captured in a variable: `setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);`. Only the OUTER timer (`timer`) is cleared in the `exit`/`error` handlers. In the real-world case where a hung child actually honors SIGTERM and exits within the 2000ms grace period (a case distinct from both existing test fixtures — claude-fake-fast.sh exits immediately with no timeout ever firing, and claude-fake-hang-ignore-term.sh explicitly `trap '' TERM` so it can ONLY die via SIGKILL), the inner setTimeout is left dangling and fires ~2s later calling `proc.kill('SIGKILL')` on an already-exited PID. This is masked by the surrounding try/catch (no crash), but it is an unmanaged timer handle representing exactly the kind of 'timer clear leak' this review was asked to check for, and the SIGTERM-honored-then-exits-cleanly path is not covered by any test in think-claude-p-timeout.test.mjs.",
+  "evidence": {
+    "filePath": "runtime/loop/brain.mjs",
+    "lineRange": "168-172",
+    "snippet": "const timer = setTimeout(() => {\n  timedOut = true;\n  try { proc.kill('SIGTERM'); } catch {}\n  setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);\n}, timeoutMs);"
+  },
+  "requiredFix": "Store the inner grace-period timer in a variable (e.g. `killTimer`) and clear it in the `exit` handler alongside the outer `timer`. Add a third fixture/test: a child that honors SIGTERM and exits cleanly within the 2000ms grace period, asserting the inner timer does not fire (e.g. via a spy on child_process or by asserting no further kill signal is attempted after exit).",
+  "routeToPhase": "2b"
+}

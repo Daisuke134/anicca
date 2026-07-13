@@ -1,0 +1,101 @@
+{
+  "reviewType": "implementation",
+  "feature": "config-delivery-verification",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "timestamp": "2026-07-12T00:00:00Z",
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "correctness": "FAIL",
+    "security": "PASS"
+  },
+  "priorFindingsStatus": [
+    {
+      "id": "iteration-1 FIND-001 (no composed/runnable detector)",
+      "status": "FIXED",
+      "verification": "runConfigDriftDetector() now exists (config-drift.mjs:380-437) and genuinely composes REQ-010 discovery -> REQ-001/002 comparison -> REQ-004 fail-closed reporting into one callable function, plus a CLI entrypoint (config-drift.mjs:445-456) that writes ONLY JSON to stdout and exits non-zero on FAIL/NO_TARGETS. Confirmed via config-drift-detector.test.mjs (9 end-to-end tests against fixture-injected deps, never touching real ps/plutil/launchctl/filesystem) and the lead's own reported live run against the real fleet (exit 1, single JSON line, real brainDrift+registryDrift detected, a 4th real instance com.anicca.daemon auto-discovered with no code change). HOWEVER: iteration-1 FIND-001 also explicitly required `queryLivePositions` and REQ-008's real-restart fresh evidence -- that half of FIND-001 is NOT fixed; see FIND-001 (this iteration) below."
+    },
+    {
+      "id": "iteration-1 FIND-002 (--dangerously-skip-permissions undocumented/untested addition)",
+      "status": "NOT RE-RAISED (lead-verified pre-existing, per lead's instruction)",
+      "verification": "Lead confirmed via `git show 2c401b9a -- runtime/loop/brain.mjs` that this flag predates this diff (landed in commit e3f2f13d). Per the lead's instruction this is not re-raised as its own finding. Independently confirmed a regression test now pins the flag's presence: think-claude-p-timeout.test.mjs:112-119 spawns an argv-capture fixture and asserts `--dangerously-skip-permissions` is present in the real argv thinkClaudeP passes to spawn() -- this is a genuine behavioral assertion (captures real argv via a shell fixture, base64-round-tripped), not a tautology."
+    },
+    {
+      "id": "iteration-1 FIND-003 (fail-closed hole: null declaredConfig vs {} not distinguished)",
+      "status": "FIXED",
+      "verification": "detectBrainDrift (config-drift.mjs:231-241) now checks `classifyObservability(declaredConfig)` FIRST, before ever resolving a value, and returns an explicit `reason: 'unobservable'` FAIL when declaredConfig is null/undefined -- distinct from declaredConfig={} (plist read successfully, key merely absent), which correctly still resolves via codeDefault. Verified by tracing the function line-by-line and cross-checking against config-drift.test.mjs:119-136 (3 tests: null-declaredConfig -> unobservable FAIL; {}-declaredConfig -> codeDefault PASS path preserved; undefined-declaredConfig -> unobservable FAIL takes priority even when the codeDefault comparison would have 'matched') and the composed-detector-level test config-drift-detector.test.mjs:151-164 (unreadable plist -> FAIL/unobservable end-to-end, not silent PASS). NOTE: while THIS specific hole is closed, the fix that also makes an OBSERVED-but-key-absent env resolve to codeDefault introduces a DIFFERENT, still-open false-negative gap -- see FIND-003 (this iteration) below."
+    },
+    {
+      "id": "iteration-1 FIND-004 (dangling SIGKILL grace-period timer)",
+      "status": "FIXED",
+      "verification": "runClaudePWithTimeout (brain.mjs:132-169) now captures the inner 2000ms grace timer in a `graceTimer` variable and explicitly clears it in BOTH the `error` and `exit` handlers (brain.mjs:154-155, 160-161). Verified by tracing the code directly and by think-claude-p-timeout.test.mjs:128-159, which monkey-patches the REAL global setTimeout/clearTimeout (not a dependency-injection seam -- it intercepts Node's actual timer calls reached through the real code path) to prove exactly one 2000ms timer is created on the SIGTERM-honored-then-exits-cleanly path and that it IS cleared -- this is a genuine regression test for the exact bug, not tautological."
+    },
+    {
+      "id": "iteration-1 FIND-005 (runClaudePWithTimeout not separated per verification-architecture.md)",
+      "status": "FIXED",
+      "verification": "runClaudePWithTimeout is now a standalone exported function (brain.mjs:132-169) used by thinkClaudeP, matching verification-architecture.md's Purity Boundary Map naming. Verified independently callable and tested in isolation: think-claude-p-timeout.test.mjs:98-106 calls it directly (not through thinkClaudeP) against a fast fixture and asserts on its own {stdout, code} return shape."
+    }
+  ],
+  "findings": [
+    "FIND-001",
+    "FIND-002",
+    "FIND-003",
+    "FIND-004",
+    "FIND-005"
+  ],
+  "findingsSummary": [
+    {
+      "findingId": "FIND-001",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "headline": "REQ-008 (queryLivePositions + real restart + fresh evidence) is entirely unimplemented -- the real Bug 1 this feature exists to fix is still live in production, only detected, not corrected."
+    },
+    {
+      "findingId": "FIND-002",
+      "severity": "blocking",
+      "dimension": "correctness",
+      "headline": "runConfigDriftDetector silently drops a target from registryDrift entirely (no unobservable FAIL, no anything) when its ANICCA_HOME token is missing -- a direct, untested violation of REQ-010's own 'never silently exclude from targets' edge case and REQ-004 fail-closed (config-drift.mjs:413-417)."
+    },
+    {
+      "findingId": "FIND-003",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "headline": "The iteration-2 fix that makes an OBSERVED-but-key-absent env fall back to codeDefault (to stop spurious Franklin/com.anicca.daemon false positives) opens a real false-negative: it cannot see an ANICCA_BRAIN override sourced from $ANICCA_HOME/.env (a real, already-supported config.mjs precedence layer that never reaches ps's OS-level env), so a real drift through that channel would be silently reported as PASS."
+    },
+    {
+      "findingId": "FIND-004",
+      "severity": "minor",
+      "dimension": "correctness",
+      "headline": "readRuntimeEnvOfLabel is dead, untested, unused code -- documented in verification-architecture.md but never called by the actual composed detector."
+    },
+    {
+      "findingId": "FIND-005",
+      "severity": "minor",
+      "dimension": "correctness",
+      "headline": "detectRegistryStatusDrift (the 'pure core' per REQ-006) does not itself fail-closed on a null canonicalRegistry -- only the composed wrapper guards this externally; untested at the pure-function boundary."
+    }
+  ],
+  "evidenceReviewed": [
+    "runtime/loop/config-drift.mjs (all 457 lines) read in full this session -- traced every fail-closed path (ps failure->[]->NO_TARGETS non-zero exit; plist unreadable->null->unobservable FAIL; registry copy unreadable->null->unobservable FAIL; canonical registry unreadable->every copy mapped to unobservable FAIL) and confirmed each against config-drift.test.mjs / config-drift-detector.test.mjs assertions",
+    "runtime/loop/brain.mjs (all 279 lines) read in full -- confirmed FIND-004/FIND-005 (iteration-1) fixes directly in code, confirmed think()'s default `config.ANICCA_BRAIN || 'proxy'` matches config-drift.mjs's hardcoded codeDefaultBrain='proxy' assumption for the OS-env-only case",
+    "runtime/loop/config.mjs (all 160 lines) read in full -- discovered loadConfig's processEnv > dotenv > DEFAULTS precedence, which is the basis for FIND-003 (this iteration)'s false-negative finding",
+    "runtime/loop/index.mjs:60-90 read -- confirmed dotenvText is read from $ANICCA_HOME/.env and merged into `config` without ever being written back to process.env, confirming FIND-003's premise that ps cannot see .env-sourced overrides",
+    "runtime/loop/__tests__/config-drift.test.mjs (all 411 lines) and config-drift-detector.test.mjs (all 192 lines) read in full -- confirmed real (non-tautological) assertions for every REQ-001/002/003/004/005/010 fixture case; confirmed NO test exists for a composed-detector fixture with a missing ANICCA_HOME token (FIND-002) or a direct detectRegistryStatusDrift(null, copies) call (FIND-005)",
+    "runtime/loop/__tests__/think-claude-p-timeout.test.mjs (all 159 lines) read in full -- confirmed PROP-015/016/017 tests, the FIND-002(iter1)-regression-guard test, and the FIND-004(iter1) grace-timer test all exercise real fixture-process behavior (checked fixtures/claude-fake-sigterm-then-exit.sh and claude-fake-argv-capture.sh directly, both genuinely spawn real bash processes with real signal handling, not mocks)",
+    "runtime/loop/package.json read -- confirmed all 3 new test files are wired into both `test` and `test:unit` npm scripts",
+    "grep across runtime/loop/config-drift.mjs for severity|danger|critical|franklin|agent-economy|instance ===|label === and for kickstart|bootout|bootstrap|kill(|SIGKILL|SIGTERM|writeFile -- zero matches for either set (REQ-005/REQ-007/PROP-011/PROP-013/PROP-008/PROP-020 satisfied structurally)",
+    "grep across the whole anicca repo for queryLivePositions -- zero matches outside spec docs and iteration-1 review artifacts (confirms FIND-001, this iteration)",
+    "grep across the whole anicca repo for readRuntimeEnvOfLabel -- only its own definition in config-drift.mjs; zero call sites anywhere (confirms FIND-004, this iteration)",
+    "Glob of .vcsdd/features/config-delivery-verification/evidence/** -- zero files (confirms no REQ-008 fresh evidence recorded, part of FIND-001)",
+    "grep for ANICCA_BRAIN in ~/.anicca-founder/.env (no matches) and ~/.anicca/** (only source-code mentions, no live .env override) -- confirms FIND-003 (this iteration) is a real, reachable, currently-latent gap, not an active false negative in today's fleet",
+    "Traced the secret-non-leak path end-to-end: parseAllowedEnvFromCommandLine only ever copies allow-listed keys into its return object (config-drift.mjs:152-167); every effectful reader (readPlistDeclaredEnv, readRuntimeEnvOfLabel, listRunningIndexLoopProcesses, readRegistryFile) swallows its own errors into null/[] rather than ever surfacing a raw ps/plist/registry string in a thrown error's .message; the only stdout write in the whole file (config-drift.mjs:449) serializes only the structured {targets, brainDrift, registryDrift} report, whose values are restricted to allow-listed brainKey values and registry .status strings -- no secret-bearing key is ever a candidate for inclusion; confirmed the CLI's error path (config-drift.mjs:452-454) writes to stderr only, never stdout"
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-001","REQ-002","REQ-003","REQ-004","REQ-005","REQ-006","REQ-007","REQ-008","REQ-009","REQ-010"],
+    "duplicateFindings": []
+  },
+  "environmentNote": "This adversary sub-agent's toolset in this session was Read/Write/Edit/Grep/Glob only (no Bash/execute tool available) -- all findings above are derived from full-file static reads and line-by-line code tracing, cross-checked against the actual test assertions in the 3 target test files, not from re-running the test suite myself. A PostToolUse hook fired after this session's Write calls reporting 'a tool failure' at the fablize-gate level; investigated with the tools available (Glob/Read of .fablize/goals.json and .fablize/ledger.jsonl in ~/anicca-project) and found only a stale, unrelated 2026-07-11 ledger entry for a different task ('agent-economy earn+verifier') -- nothing in this feature's own repo (~/anicca) or review scope. This could not be further diagnosed without a Bash tool and is documented here rather than silently ignored, per this session's own instructions."
+}
