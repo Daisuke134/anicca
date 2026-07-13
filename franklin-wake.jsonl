@@ -5840,3 +5840,11 @@
 {"ts":1783903833,"wake_id":"00MRIIA71JB0514824D886410E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783903978,"wake_id":"00MRIIDB3Z9373579BD3484D22","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1783903978,"wake_id":"00MRIIDB3Z9373579BD3484D22","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904109,"wake_id":"00MRIIG4MA74A16E7CE03D4F1F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904243,"wake_id":"00MRIIJ027E0E256A5921F4495","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal shows only a weak bearish verdict (33% confidence) on SOL and the edge does not clear ~0.4%+ round-trip fees on a $23 bankroll, so hold USDC.\n[sol-trade] sol-evolve -> {   \"promot"}
+{"ts":1783904243,"wake_id":"00MRIIJ027E0E256A5921F4495","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904396,"wake_id":"00MRIIM9QT8A5B1CB4F56845A8","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904540,"wake_id":"00MRIIPD6A7499EEAA5848404B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904689,"wake_id":"00MRIISK15B07FF2B63F9D4975","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904824,"wake_id":"00MRIIVG0U81D605907BD343E9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783904958,"wake_id":"00MRIIYB0D8FD4E6A363E54405","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
