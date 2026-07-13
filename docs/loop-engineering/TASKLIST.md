@@ -28,6 +28,7 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | **17 / L0-1** | **disk: 予防運転を恒久化（free≥20GB 維持）** | ✅ DONE（commit 07e142e + bfac510） |
 | **18 / L0-2** | **session: 永続化を全ブラウザループ共通で解決（人間の再ログインを消す）** | ✅ DONE（commit c2e9c1b2）※sticky proxy は scale #26 で |
 | **19 / L0-3** | **learn-from-winners: scout.py（成功者の実物を見る道具）を全ループ共通に** | ✅ DONE（scout.py 実測済 + gig 配線 + SKILL.md。clip/video は各タスクで配線） |
+| **19.5** | **gig の respawn 地獄を止める（reality-verify が logged-out で誤 FALSE→respawn を一日中）** | ✅ DONE（verifier 判定前に L0-2 restore+keepalive。logged-out なら verdict=None で defer。commit pushed 2026-07-13） |
 | **20 / GIG-1** | earn-gig を skill 化（10KB の1行プロンプトを分解） | pending |
 | **21 / GIG-2** | プロフィールを実編集して Dais に見せる（デモ） | pending |
 | **22 / GIG-3** | paid=0 を殺す（納品→検収→出金→着金） | pending |

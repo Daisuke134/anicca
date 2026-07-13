@@ -34,6 +34,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | INV-7 | web 取得は **crawl4ai (`crwl <url> -o markdown`)**。firecrawl は credit 枯渇。WebSearch/WebFetch は禁止 |
 | INV-8 | ブラウザは共有基盤を通す（`ensure_browser` → `cdp_context_lease acquire` → 作業 → `release`）。**例外なし（gig も）** |
 | INV-9 | 1サイトで勝ったら**同じ骨格で横展開**できる形にする（サイト固有の selector を skill に焼かない。勝ち筋の「型」を model に渡す） |
+| INV-10 | **reality-gate / verifier は判定の前に必ず session restore（L0-2 の梯子）を通す。** ログアウトのまま「確認できない」を FALSE にしてループを罰しない。復旧できなければ verdict=None（defer）。※2026-07-13、gig が logged-out verifier の誤 FALSE で一日中 respawn していた実インシデントから |
 
 ---
 
