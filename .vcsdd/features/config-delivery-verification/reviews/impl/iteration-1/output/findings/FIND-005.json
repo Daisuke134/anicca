@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "verification-architecture.md:37-40 names `runClaudePWithTimeout(args, timeoutMs) -> Promise` as a distinct Effectful Shell primitive that the REQ-009 two-stage kill pattern should be ported into. The actual implementation inlines all spawn/timer/kill logic directly inside `thinkClaudeP` (brain.mjs:144-202) rather than factoring it into a separately named, independently testable function as the architecture doc specifies. This is not a REQ violation (no REQ mandates the function name), but it is a documented design decision in the feature's own verification architecture that was not followed, reducing the purity-boundary/testability parity the doc describes.",
+  "evidence": {
+    "filePath": "runtime/loop/brain.mjs",
+    "lineRange": "144-202",
+    "snippet": "export async function thinkClaudeP(ctx, config) { ... return new Promise((resolve, reject) => { const proc = spawn(...); const timer = setTimeout(...); ... }); }"
+  },
+  "requiredFix": "Optional: extract the spawn+timeout+two-stage-kill logic into a standalone `runClaudePWithTimeout(args, timeoutMs)` function as verification-architecture.md describes, with `thinkClaudeP` calling it after building the prompt/env. Not required for functional correctness.",
+  "routeToPhase": "2b"
+}

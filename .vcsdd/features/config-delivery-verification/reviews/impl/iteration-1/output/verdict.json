@@ -1,0 +1,80 @@
+{
+  "reviewType": "implementation",
+  "feature": "config-delivery-verification",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "timestamp": "2026-07-12T00:00:00Z",
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "correctness": "FAIL",
+    "security": "FAIL"
+  },
+  "findings": [
+    {
+      "findingId": "FIND-001",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "location": "runtime/loop/config-drift.mjs:1-317",
+      "description": "No composed/runnable 'config-drift detector' exists anywhere in the repo — only the pure diff functions and thin I/O adapters. Nothing wires REQ-010's process discovery into REQ-001/REQ-002's comparisons with REQ-004's fail-closed reporting as a single callable check, contradicting every EARS statement's 'WHEN config-drift detector が実行される'. REQ-008's required `queryLivePositions` primitive is unimplemented, and none of REQ-008's real-restart fresh evidence (PROP-014/021/022) exists anywhere under .vcsdd/features/config-delivery-verification/.",
+      "requiredFix": "Build a top-level orchestrator (analogous to healthcheck-runtime-loop.sh's `check`) that composes discovery + comparison + fail-closed reporting into one runnable detector; implement queryLivePositions; perform and record the real REQ-008 restart with fresh evidence."
+    },
+    {
+      "findingId": "FIND-002",
+      "severity": "blocking",
+      "dimension": "security",
+      "category": "security_surface",
+      "location": "runtime/loop/brain.mjs:149-163",
+      "description": "`--dangerously-skip-permissions` was added to the `claude -p` child spawn in the same diff, an undocumented, untested, unspecified security-relevant behavior change that directly contradicts this feature's own No-regression NFR ('REQ-009 は thinkClaudeP にタイムアウトを追加するだけであり、それ以外の分岐・フォールバック挙動は不変とする').",
+      "requiredFix": "Revert from this diff and land separately with its own spec+test+review, or add an explicit REQ documenting and testing it, with the No-regression NFR scoped to exclude it explicitly."
+    },
+    {
+      "findingId": "FIND-003",
+      "severity": "major",
+      "dimension": "correctness",
+      "category": "requirement_mismatch",
+      "location": "runtime/loop/config-drift.mjs:86-90,201-208",
+      "description": "resolveExpectedValue/detectBrainDrift conflate a null (unreadable) declaredConfig with an empty-but-successfully-read one; both fall back to codeDefault instead of the unreadable side ever producing a REQ-004 fail-closed FAIL. Untested in either direction.",
+      "requiredFix": "Apply classifyObservability to declaredConfig too, and return an unobservable FAIL when the declared side could not be read at all."
+    },
+    {
+      "findingId": "FIND-004",
+      "severity": "major",
+      "dimension": "correctness",
+      "category": "test_coverage",
+      "location": "runtime/loop/brain.mjs:168-172",
+      "description": "The inner SIGKILL grace-period timer in thinkClaudeP is never captured/cleared, so a child that honors SIGTERM and exits cleanly within the grace period leaves a dangling timer that later fires kill() on an already-dead PID. This path (SIGTERM honored, clean exit before grace period) is not covered by either test fixture.",
+      "requiredFix": "Store and clear the inner grace-period timer on exit/error; add a third fixture/test for the SIGTERM-honored-then-exits-cleanly case."
+    },
+    {
+      "findingId": "FIND-005",
+      "severity": "minor",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "location": "runtime/loop/brain.mjs:144-202",
+      "description": "verification-architecture.md names a separate `runClaudePWithTimeout` effectful-shell function; the implementation inlines this logic directly in thinkClaudeP instead, deviating from the documented purity-boundary map without a REQ violation.",
+      "requiredFix": "Optional: extract into a standalone, independently testable function to match the documented architecture."
+    }
+  ],
+  "evidenceReviewed": [
+    "specs/behavioral-spec.md (REQ-001 through REQ-010, NFRs) — read in full",
+    "specs/verification-architecture.md (Purity Boundary Map, Proof Obligations table, Verification Strategy) — read in full",
+    "runtime/loop/config-drift.mjs (all 317 lines) — read in full; confirmed no kill/bootout/bootstrap/writeFile/SIGKILL/SIGTERM literals present (REQ-005/PROP-011 satisfied); confirmed no instance-name branching (grep for franklin|agent-economy|pm-earner|blockrun|anicca-founder|instance ===|label === returned zero matches) satisfying REQ-003/REQ-007; confirmed no severity/danger/critical classification tokens present satisfying REQ-007",
+    "runtime/loop/brain.mjs (all 254 lines) — read in full, including the two-stage SIGTERM->2000ms->SIGKILL timeout implementation added for REQ-009 and the resolveClaudePTimeoutMs default/override/clamp logic",
+    "runtime/loop/__tests__/config-drift.test.mjs (all 369 lines) — read in full; tests assert real behavioral outcomes (diff contents, fail-closed reasons, secret non-leakage), not implementation-detail tautologies",
+    "runtime/loop/__tests__/think-claude-p-timeout.test.mjs (all 91 lines) — read in full",
+    "runtime/loop/__tests__/fixtures/claude-fake-fast.sh and claude-fake-hang-ignore-term.sh — read in full; confirmed the hang fixture genuinely traps SIGTERM, forcing the two-stage kill path to reach SIGKILL for the test to pass (not a tautological mock)",
+    "runtime/loop/package.json — confirmed both new test files are wired into the `test`/`test:unit` npm scripts",
+    "grep across the whole repo for readPlistDeclaredEnv|readRuntimeEnvOfLabel|listRunningIndexLoopProcesses|detectBrainDrift|detectRegistryStatusDrift — only config-drift.mjs and its own test import these names; no orchestrator/CLI/cron wiring exists anywhere (FIND-001)",
+    "grep across the whole repo for queryLivePositions|runClaudePWithTimeout — zero matches anywhere (FIND-001)",
+    "Glob of .vcsdd/features/config-delivery-verification/** — confirmed no evidence/ directory or fresh-evidence log exists for REQ-008/PROP-014/021/022",
+    "grep across the repo for '--dangerously-skip-permissions' — confirmed the flag is an established pattern in many other skills/self loops, but is newly added to brain.mjs in this diff with no corresponding REQ, test, or spec entry (FIND-002)"
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-001","REQ-002","REQ-003","REQ-004","REQ-005","REQ-006","REQ-007","REQ-008","REQ-009","REQ-010"],
+    "duplicateFindings": []
+  }
+}

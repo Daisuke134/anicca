@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "Context section (behavioral-spec.md:31-33) cites 'runtime/loop/config.mjs:20-24' for the Franklin-correctness quote. I read config.mjs directly: the verbatim quoted text ('Paid frontier was draining the treasury on the funded tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)') actually spans config.mjs lines 21-24, not 20-24 — line 20 ('// ALL tiers use the $0 free model so Anicca NEVER burns compute on routine wakes (cost-free thesis:') is the preceding sentence in the same comment block and is not part of the quoted span. This is a one-line citation-boundary error, not a hallucination (the quoted content is byte-for-byte accurate and correctly attributed to this file).",
+  "evidence": {
+    "filePath": "runtime/loop/config.mjs",
+    "lineRange": "20-24 (cited) vs 21-24 (actual verbatim span)",
+    "snippet": "line 20: '// ALL tiers use the $0 free model so Anicca NEVER burns compute on routine wakes (cost-free thesis:'  |  line 21 begins the actually-quoted sentence: '// free model + prepared skills = pure profit. Paid frontier was draining the treasury on the funded'"
+  },
+  "requiredFix": "Change the citation to config.mjs:21-24 (or 20-24 only if line 20 is meant to be included as surrounding context, in which case say so explicitly). Not blocking — does not affect any REQ's implementability.",
+  "routeToPhase": null
+}

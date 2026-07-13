@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "NFR-Security (behavioral-spec.md:406-422) correctly closes the FIND-001-from-iteration-1 gap by stating a concrete rule ('detector が読み取ってよいのは...だけ') and giving PROP-018 as a fixture-based acceptance test. However, the architecture that is supposed to enforce this (verification-architecture.md:28-31, the Effectful Shell's `readRuntimeEnvOfLabel(launchdLabel) -> {pid, env} | null`) is specified to return the FULL parsed env object (every KEY=VALUE token from the raw ps output, which necessarily includes ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, ANICCA_WALLET_ADDRESS, etc. per brain.mjs:109-115's own list of secrets that legitimately exist in this process's env). No pure function in the Purity Boundary Map (verification-architecture.md:5-23) is named as an immediate 'project this env object down to only the REQ-001-approved key(s) before it leaves the effectful shell' step. The MUST-not-log/return-secrets rule is therefore enforced only by (a) implementer discipline and (b) a single happy-path fixture test (PROP-018) that checks one specific injected secret string is absent from the FINAL output/log channels — it does not test an error path (e.g., a catch-block or debug log inside the effectful shell that might dump the full `{pid, env}` object for troubleshooting) ever touching the raw env before the pure core narrows it down. This is the same class of risk (secret leakage from process env) that was blocking in iteration-1's FIND-001, now narrowed but not architecturally closed off.",
+  "evidence": {
+    "filePath": "verification-architecture.md",
+    "lineRange": "28-31 (readRuntimeEnvOfLabel signature) vs behavioral-spec.md:406-422 (NFR-Security) and runtime/loop/brain.mjs:109-115 (concrete secrets known to exist in this process's env)",
+    "snippet": "readRuntimeEnvOfLabel(launchdLabel) -> {pid, env} | null — `launchctl list` でラベルから PID を解決し、`ps -Awwe -o pid,command -p <pid>` の出力から `KEY=VALUE` トークン列をパースする。"
+  },
+  "requiredFix": "Add an explicit pure function (e.g. `projectAllowedKeys(env, allowedKeys) -> {key: value}`) to the Purity Boundary Map that the Effectful Shell must call immediately after parsing the raw ps output and before the value is passed to any comparison, logging, or error-handling code path — so the narrowing is a structural guarantee (testable in isolation, e.g. via PROP-002-style mutation/purity tests) rather than an implementer-discipline promise checked by one end-to-end fixture. Add a second PROP entry specifically for an error-path scenario (e.g., `readRuntimeEnvOfLabel` throws/logs on a malformed ps line) to confirm secrets still don't leak via that path.",
+  "routeToPhase": "2b"
+}

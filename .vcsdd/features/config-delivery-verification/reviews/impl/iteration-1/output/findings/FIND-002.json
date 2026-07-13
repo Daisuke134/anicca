@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "blocking",
+  "description": "brain.mjs:158 adds a new CLI flag, `--dangerously-skip-permissions`, to the `claude -p` child process spawned by `thinkClaudeP` for the human-funded claude-p brain path. This is a security-relevant behavioral change (the child now runs with all interactive permission gating disabled) that is not described anywhere in behavioral-spec.md or verification-architecture.md — REQ-009 is scoped exclusively to adding a wall-clock timeout ('二段階...で終了させ...明示的なタイムアウトエラーを返す'). behavioral-spec.md's own No-Functional-Requirements section explicitly promises the opposite: '**No regression**: この feature は既存の runtime/loop/index.mjs / brain.mjs の正常系の挙動...を変更しない。REQ-009 は thinkClaudeP にタイムアウトを追加するだけであり、それ以外の分岐・フォールバック挙動は不変とする' (behavioral-spec.md:423-426). Adding a permission-skip flag to the child invocation is exactly the kind of 'それ以外の...挙動' this NFR forbids touching, yet it was added in the same diff with no REQ-ID, no dedicated test (think-claude-p-timeout.test.mjs only asserts timeout/kill behavior via CLAUDE_BIN fixtures, never asserts which flags are passed to the real `claude` binary), and no adversary review of its own security implications.",
+  "evidence": {
+    "filePath": "runtime/loop/brain.mjs",
+    "lineRange": "149-163",
+    "snippet": "const proc = spawn(claudeBin, [\n  '-p', prompt,\n  '--output-format', 'json',\n  '--model', model,\n  '--dangerously-skip-permissions',\n], { env: childEnv, cwd: os.tmpdir(), stdio: ['ignore', 'pipe', 'pipe'] });"
+  },
+  "requiredFix": "Either (a) revert this flag from this feature's diff and land it as its own spec'd, tested, separately-reviewed change, or (b) add an explicit REQ to behavioral-spec.md documenting and justifying `--dangerously-skip-permissions` for the claude-p brain path, with a dedicated test asserting the flag is present and an explicit statement that the No-regression NFR does not apply to it.",
+  "routeToPhase": "2b"
+}

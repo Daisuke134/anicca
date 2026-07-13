@@ -1,0 +1,65 @@
+{
+  "reviewType": "spec",
+  "feature": "config-delivery-verification",
+  "iteration": 2,
+  "timestamp": "2026-07-12T00:00:00Z",
+  "overallVerdict": "PASS",
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "verification_readiness": "PASS"
+  },
+  "priorFindingsStatus": [
+    {
+      "id": "FIND-001 (iteration-1, blocking, NFR-Security masking non-closed-set)",
+      "status": "FIXED",
+      "verification": "NFR-Security (behavioral-spec.md:406-422) no longer depends on scrubPrivateKeys equivalence. Replaced with a closed rule: detector never retains/logs/outputs the raw ps command-line string, and may only read the specific keys each REQ names for comparison (REQ-001: ANICCA_BRAIN only; REQ-002: <slot>.status only). Verified env-filter.mjs:15 (`const PRIVATE_KEY_REGEX = /(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/;`) and brain.mjs:109-115 (ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN are deliberately allow-listed through to the claude -p child, matching the spec's own acknowledgement that these are NOT covered by scrubPrivateKeys and that this is correct existing behavior, not a bug to fix). PROP-018 gives a concrete, testable acceptance criterion (a synthetic ANTHROPIC_API_KEY=sk-test-secret-value fixture must not appear in any output channel). This closes the previously-open, non-falsifiable '秘密鍵らしきキー等' language."
+    },
+    {
+      "id": "FIND-002 (iteration-1, blocking, timeout stage contradiction)",
+      "status": "FIXED",
+      "verification": "Read index.mjs:1037-1041 directly: `const timer = setTimeout(() => { timedOut = true; try { proc.kill('SIGTERM'); } catch {} setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000); }, timeoutMs);` — exactly matches the two-stage SIGTERM-then-2000ms-then-SIGKILL sequence now stated identically in Context (behavioral-spec.md:90-105), REQ-009's EARS text (308-314), REQ-009 Edge Cases (348-349), REQ-009 Acceptance Criteria (353-356), and PROP-016 (verification-architecture.md:70). The Context section explicitly and honestly retracts the prior single-SIGKILL claim ('前版の記述は誤りだったため訂正する', line 102-105). No remaining contradiction between Context, REQ-009 and PROP-016."
+    },
+    {
+      "id": "FIND-003 (iteration-1, blocking, undefined clamp + wrong cfgNum attribution)",
+      "status": "FIXED",
+      "verification": "REQ-009 (316-334) now states a concrete clamp rule: ceiling = the resolved SLEEP_BASE_S value itself (not the borrowed 21600 from mainloop-timeout-lib.sh), with an explicit rationale (a THINK call must not outrun the next wake interval, and SLEEP_BASE_S literally IS that interval). Cross-checked this semantic claim independently: grepped SLEEP_BASE_S usage in index.mjs (lines 601, 692, 733: `const sleepS = cfgNum(config.SLEEP_BASE_S, 120);` used as the actual inter-wake sleep duration) — confirms SLEEP_BASE_S genuinely is the wake-to-wake interval, so clamping to it is coherent, not arbitrary. cfgNum is now correctly cited at index.mjs:1128 (`function cfgNum(val, fallback) { return val != null ? Number(val) : fallback; }`, verified verbatim) with an explicit note that this feature's own validation/clamp logic is added on top of, not inherited from, cfgNum's no-op pass-through. PROP-017 explicitly requires the clamp-ceiling test case to use a variable SLEEP_BASE_S rather than a hardcoded 21600."
+    },
+    {
+      "id": "FIND-004 (iteration-1, blocking, hallucinated brain.mjs:5-6 citation)",
+      "status": "FIXED",
+      "verification": "The Context section (behavioral-spec.md:28-29) now explicitly states the prior brain.mjs:5-6 citation was hallucinated ('前版が引用した brain.mjs:5-6 は各値の動作を説明するコメントに過ぎず、「どちらが正しいか」には一言も触れていない — 幻覚引用だったため削除する') and replaces the Franklin-correctness justification with a verbatim quote from config.mjs's DEFAULTS comment. Verified the quoted text against config.mjs directly: the quoted passage ('Paid frontier was draining the treasury on the funded tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)') is byte-for-byte present in config.mjs. The cited line range (20-24) is off by one line versus the actual verbatim span (21-24) — see FIND-002 below (new, minor) — but the quoted content itself is accurate and correctly attributed, unlike the prior hallucination."
+    },
+    {
+      "id": "FIND-005 (iteration-1, major, no discovery mechanism specified)",
+      "status": "FIXED",
+      "verification": "New REQ-010 specifies the discovery mechanism concretely: enumerate live `runtime/loop/index.mjs` processes via `ps -Awwe -o pid,command`, then read ANICCA_HOME (for REQ-002 registry copy path) and XPC_SERVICE_NAME (for REQ-001 plist path) from each process's own runtime env — no static instance-name list. I independently stress-tested this formula against the spec's own Bug-2 fixture data (the three observed runtime registry copies) rather than taking it at face value: confirmed via grep that Franklin-lineage instances set ANICCA_HOME literally to `$HOME/.blockrun` (index.mjs:232-242, `looksLikeFranklinHome`/`checkAlwaysActIdentity`), which explains why `~/.franklin2-home/.blockrun/skills/registry.json` is consistent with the `$ANICCA_HOME/skills/registry.json` formula (ANICCA_HOME for that instance is `~/.franklin2-home/.blockrun`, not `~/.franklin2-home`) — i.e., the formula holds and my initial suspicion of a mismatch (Franklin2's ANICCA_HOME vs registry path nesting) was refuted by further evidence, not confirmed. REQ-010's zero-target and missing-env-var edge cases route to explicit 'no targets' / `unobservable` FAIL states rather than silent omission (REQ-004 fail-closed), addressing the original concern that a hardcoded 3-path list would silently miss a 4th instance."
+    },
+    {
+      "id": "FIND-006 (iteration-1, minor, cfgNum misattributed to config.mjs)",
+      "status": "FIXED",
+      "verification": "All current cfgNum references (REQ-009 line 322-323, Context line 90-92) correctly cite index.mjs:1128, and explicitly distinguish cfgNum's semantics from config.mjs's coerce()."
+    },
+    {
+      "id": "FIND-007 (iteration-1, minor, REQ-008 missing restart precondition)",
+      "status": "FIXED",
+      "verification": "REQ-008 (219-306) now has an extensive, concrete precondition section: (1) in-flight-wake safety, citing index.mjs:324-334's SIGTERM handler verbatim (verified: `process.on('SIGTERM', async () => { ... if (currentChildKiller) { try { currentChildKiller(); } catch {} await new Promise(r => setTimeout(r, 5000)); } ... kind: 'shutdown' ... appendLedgerLine ... process.exit(0); });` matches the spec's description exactly, including the 5s grace and the shutdown ledger record), and (2) open-position safety, citing catalog-gate.mjs:101 (`hasOpenRiskPositionOfYield`, ledger-scan based, verified) and catalog-gate.mjs:128 (`hasOpenRiskPositionOfHlTrade`, live queryFn-based, verified) with a concrete pre/post query-and-compare acceptance criterion (PROP-021, PROP-022)."
+    }
+  ],
+  "findings": [
+    "FIND-001",
+    "FIND-002"
+  ],
+  "evidenceReviewed": [
+    "Read behavioral-spec.md and verification-architecture.md in full (current iteration-2 versions)",
+    "Read runtime/loop/config.mjs in full — confirmed DEFAULTS comment quoted in Context matches verbatim (off-by-one line-range citation noted as new minor finding)",
+    "Read runtime/loop/index.mjs:1000-1130 — confirmed SKILL_TIMEOUT_S two-stage kill pattern at 1037-1041 exactly matches spec's quoted code block; confirmed cfgNum defined at 1128 exactly as quoted",
+    "Read runtime/loop/index.mjs:300-349 — confirmed SIGTERM handler (324-334): currentChildKiller invoked, 5s grace, kind:'shutdown' ledger record, process.exit(0) — matches REQ-008's citation exactly",
+    "Read runtime/loop/env-filter.mjs in full — confirmed PRIVATE_KEY_REGEX at line 15 matches the spec's quoted regex exactly, and confirmed the spec's revised NFR-Security no longer relies on this function's coverage claim",
+    "Read runtime/loop/brain.mjs in full — confirmed think()/thinkClaudeP fallback structure (lines 31-44) matches REQ-009 Edge Case's brain.mjs:34-44 citation; confirmed lines 109-115 (childEnv construction, ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN allow-listed) matches NFR-Security's brain.mjs:110-115 citation; confirmed thinkClaudeP's spawn() call has no timeout (only proc.on('exit')), consistent with REQ-009's Edge Case claim about the current gap",
+    "Read runtime/loop/catalog-gate.mjs:85-138 — confirmed hasOpenRiskPositionOfYield (101) is ledger-array-based (no live I/O) and hasOpenRiskPositionOfHlTrade (128) is a lazy live queryFn call with fail-open-on-error semantics, exactly as REQ-008 describes",
+    "Grepped SLEEP_BASE_S usage across index.mjs (lines 601, 692, 733) — independently confirmed SLEEP_BASE_S is the actual inter-wake sleep interval, validating REQ-009's clamp rationale ('next scheduled wake interval') rather than accepting the spec's framing at face value",
+    "Grepped ANICCA_HOME usage in index.mjs (lines 75-77, 232-242) — independently confirmed Franklin-lineage instances set ANICCA_HOME = $HOME/.blockrun (looksLikeFranklinHome), which reconciles the observed ~/.franklin2-home/.blockrun/skills/registry.json runtime-copy path with REQ-010's $ANICCA_HOME/skills/registry.json discovery formula (this was checked specifically to try to falsify REQ-010's formula against the spec's own Bug-2 fixture data; the formula survived the check)",
+    "Grepped behavioral-spec.md and verification-architecture.md for hedge/vagueness tokens (任意/推奨/適切に/必要に応じて/望ましい/should) — the only match is a self-referential mention explicitly banning '適切に' (line 316), not an actual instance of vague language",
+    "Note: this review environment has no shell-execution tool, so the live claim that XPC_SERVICE_NAME is actually present in a real launchd-managed process's runtime env (relied on by REQ-010's plist-mapping half) could not be independently re-executed this session either — same limitation iteration-1 recorded. This is not scored as blocking because REQ-010/REQ-004 already route a missing XPC_SERVICE_NAME to an explicit unobservable FAIL rather than a silent mis-mapping, so an incorrect assumption here fails safe rather than fails silent."
+  ]
+}
