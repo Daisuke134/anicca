@@ -6630,3 +6630,10 @@
 {"ts":1783980369,"wake_id":"00MRJRUN120CE6F70E86D9446D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783980533,"wake_id":"00MRJRY52L318D7209A99B43E5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783980723,"wake_id":"00MRJS27UU3C29F74806E44562","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783980895,"wake_id":"00MRJS5WV0BCF93C0C39AA4ECF","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1783980895,"wake_id":"00MRJS5WV0BCF93C0C39AA4ECF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783981104,"wake_id":"00MRJSAEBF75BA98C4FF6A4B6B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783981267,"wake_id":"00MRJSDW0NFBCA5785F5524F0F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783981435,"wake_id":"00MRJSHH6O56B65AB89C2248F0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783981593,"wake_id":"00MRJSKVK5F0DAAC1375F94054","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783981748,"wake_id":"00MRJSO78Z0EFF262D95FB4892","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
