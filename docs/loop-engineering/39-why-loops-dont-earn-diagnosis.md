@@ -142,6 +142,25 @@ honest 含意: 載ること ≠ 買われること。25,748 の1つを外部が 
 勝つ手 = ①specific で agents が欲しい product(評判/niche signal) ②Agent402 /sell 等に list。両方 simple。
 → 次: x402-sell を generic→specific product に pivot + self-serve marketplace に list → 外部 buy を待つ。
 ```
+
+**★★ 外部 x402 earning は REAL（on-chain leaderboard で証明, 2026-07-14）★★**
+```
+Agent402.tools/api/leaderboard = 全 x402 seller の Base USDC settled volume を eth_getLogs で集計:
+  BlockRun.AI $34,649/631buyers(gateway クジラ) / StableEnrich $302/214 / AgentUtility $163/170
+  / MacroPulse $229/129 / StableSocial $76/41 / Deepline GTM $70/20 … 計25 seller、外部買い手 数十〜数百
+= ★外部で稼ぐのは real。user が正しかった。generic research が飽和なだけ。★
+勝ち niche(高 buyer) = enrichment / utility / macro・financial data / social。価格 $0.003-$0.10/call。
+/api/find "product reputation" → 実マッチ "Company research dossier $0.10(ticker→SEC filings)"
+  = agents は enrichment/金融データ/utility/dossier を探して払ってる。
+
+★勝ちの recipe(proven, 車輪は既存):★
+ ① niche 選ぶ(leaderboard 高 buyer) ② simple product(無料データ→LLM 構造化, x402-sell infra 流用)
+ ③ paywall = @furlpay/gateway(任意 endpoint を x402 化, best-practice lib) or x402-express
+ ④ list = CDP Bazaar → Agent402 が自動 crawl → agents が /api/find で発見 → 外部 buyer 払う
+ ⑤ track = Agent402 /api/leaderboard で自分の on-chain 売上を検証
+既存の車輪(reuse): @furlpay/gateway(monetize) / Agent402(index+router+leaderboard+/sell live) / CDP Bazaar
+→ 作るべき skill = 「sell-on-x402」= この recipe を束ねる(どの AI も niche 選び→product→paywall→list→earn)。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
