@@ -207,6 +207,23 @@ sell-on-x402 skill の build spec = niche選定(leaderboard)→product生成→s
   →CDP facilitator 経由 self-settle で Bazaar 掲載 trigger→Agent402 が拾う→外部 buy→30日 self-ping→値付け自己改善。
   judgment は model(regex 禁止, building-agents 準拠)。per-instance payTo=$W で claude-p/Franklin 共通。
 ```
+
+**★真因特定+修正: なぜ discoverable:true でも Bazaar に載らなかったか（2026-07-14, subagent 引用付き）★**
+```
+真因 = ★resource URL が http:// に自動生成されてた★。serve.mjs が config.resource を渡さない
+  → x402-express が req.protocol から生成。tailscale funnel は TLS 終端して local に平文 HTTP 転送
+  → Express は req.protocol=http と誤認 → resource=http://<funnel>/research
+  → CDP Bazaar crawler は resource URL を probe するが http:// は funnel(443専用)に届かない
+  → settle 成功しても crawl 失敗 = 二度と index されない。(既知同型: coinbase/agentkit#877 = localhost URL)
+Bazaar 掲載の3ゲート(docs.cdp.coinbase.com/x402/quickstart-for-sellers):
+  ①config.discoverable:true ②crawler の empty probe に 402 を返す ③paymentPayload.resource が
+   到達可能な URL と一致し settle が通る。①は有ったが③が http:// で壊れてた。
+FIX(commit 済): serve.mjs の config に resource:`${X402_PUBLIC_URL}/research`(明示 https)を追加。
+  boot に X402_PUBLIC_URL=https://aniccanomac-mini-1.tail7a0ba4.ts.net。
+検証: 402 の resource が https:// に / public funnel /research=402 / re-settle tx 0x7222a348 success。
+  → 3ゲート全部満たした。indexing は実測 ~54分(x402#1982 の Strale 実例)。掲載後 Agent402 が crawl→外部発見。
+残: (a) ~54分後に Bazaar 掲載を確認 (b) 外部 buyer 待ち(demand は制御外だが、cheap $0.003+Smart Order Router が有利)。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
