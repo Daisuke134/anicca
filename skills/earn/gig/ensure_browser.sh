@@ -30,7 +30,10 @@ fi
 
 mkdir -p "$(dirname "$LOG")"
 echo "$(date '+%F %T') ensure_browser: :9222 dead -> relaunching" >> "$LOG"
+# Cap the caches. An uncapped profile grew to 1.0GB, of which 97% was Default/Cache and Code Cache;
+# five such profiles filled the disk while the cookies that actually matter are a few hundred KB.
 nohup "$BIN" --remote-debugging-port=9222 --user-data-dir="$PROFILE" \
+  --disk-cache-size=104857600 --media-cache-size=52428800 --disable-gpu-shader-disk-cache \
   --no-first-run --no-default-browser-check >> "$LOG" 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
