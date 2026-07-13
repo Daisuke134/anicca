@@ -26,7 +26,7 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | — | floor-guard を正しい測定器に作り直す | ✅ DONE |
 | — | Q1: 4ループが本当に稼いでいるか実データで確定 | ✅ DONE（4本とも ¥0。詳細下記） |
 | **17 / L0-1** | **disk: 予防運転を恒久化（free≥20GB 維持）** | ✅ DONE（commit 07e142e + bfac510） |
-| **18 / L0-2** | **session: 永続化を全ブラウザループ共通で解決（人間の再ログインを消す）** | ★調査中★ |
+| **18 / L0-2** | **session: 永続化を全ブラウザループ共通で解決（人間の再ログインを消す）** | ✅ DONE（commit c2e9c1b2）※sticky proxy は scale #26 で |
 | **19 / L0-3** | **learn-from-winners: 成功者を実際に見て学ぶ層を全ループに埋める** | pending |
 | **20 / GIG-1** | earn-gig を skill 化（10KB の1行プロンプトを分解） | pending |
 | **21 / GIG-2** | プロフィールを実編集して Dais に見せる（デモ） | pending |
