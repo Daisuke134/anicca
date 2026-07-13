@@ -15,7 +15,8 @@
   ①台本生成: 痛みシーン日替わり×core固定。外部検索で「今バズってるフック形式」を採取して混ぜる
   ②動画/スライドショー生成(MoneyPrinterTurbo等)
   ③投稿(IG。専用ブラウザprofile/port、clip方式=9223/9224パターン)
-  ④metrics収集(24-48h後): views/likes/saves/profile visits/link clicks/follows
+  ④metrics収集(24-48h後): ★per-post の views(plays) + engagement(likes/comments) のみ★(Dais 2026-07-13)
+     手段=instagrapi + daily-driver(:9222)から抜いた sessionid。ブラウザ目視は廃止。正本=docs/loop-engineering/38-social-metrics-verified.md
   ⑤funnel jsonl記録 → Telegram日報(投稿URL+数字+次の実験)
   ⑥self-improve: 勝ち台本の要素分解(フック型/シーン/長さ/時刻)→次の台本を1変異だけ実験
   ⑦reality-verifier(埋込・report-blind): logged-outで「本当に公開されてるか」→FAILでself-fix
@@ -23,6 +24,20 @@
 ```
 - 変異は1回1変数(実験として成立させる)。判断は全てLLM(regex/if-else判定禁止=CLAUDE.md agents規約)
 - アカウント自作: 既存skill `ig-account-create`(E2E実証済) + `ig-account-warmer`(7日warmup) をG2で統合
+
+### ④ metrics 取得方式(2026-07-13 実測で確定。詳細+実出力=`docs/loop-engineering/38-social-metrics-verified.md`)
+```
+CDP :9222 → Network.getAllCookies (★suppress_origin=True 必須。素だと403★) → instagram.com の sessionid
+  → instagrapi Client().login_by_sessionid(sessionid) → media_info(post_id)
+  → {plays, likes, comments, taken_at} を funnel jsonl へ append
+  → sessionid 死亡時は★数字を捏造せず CANNOT_VERIFY として報告★(沈黙は違反)
+  → :9222 は cdp_lock.sh の mkdir 排他を取ってから触る(daily-driver タブ規約: 複製/close 禁止)
+```
+**実証**: 我々のリール `DanlbElPLGr` で `plays=13` を実取得。無認証読みは値が抑制され `0` を返す(=偽ゼロ、funnelに載せると嘘になる)。
+**却下した選択肢**: Instagram Graph API(公式) = professional垢+Meta app必須・我々は `is_business:False`・views/engagement しか要らないので申請コストの理由なし ／ Postiz セルフホスト(AGPL,無料は本当) = IG analytics が**アカウント単位**で per-post ですらなく中身は Graph API ラッパ・常駐DB増に見合わない ／ instaloader 無認証 = IG が 403 で遮断。
+**他媒体(G5時に同じ手順で実測する)**: TikTok=davidteather/TikTok-Api / YouTube=Data API v3 / X=free tier は read 実質不可。いずれも未検証。
+**先行者調査**: `gh search` 4角度 → 真面目に回っている OSS の自己改善マーケループは**存在しない**(全部0〜7★)。再利用できるのは部品のみ(Postiz=投稿/instagrapi=読取/MoneyPrinterTurbo=動画/viral-hook-creator=フック)。ループ本体は我々が組む。
+**残酷なベースライン(実測)**: LMマーケ投稿 `DarB2Qikt3d` は本当に likes=0/plays=0。「投稿している」≠「見られている」。
 
 ## 3. 段階(V0 → G-phases)
 | G | 内容 | done |
@@ -87,7 +102,8 @@ core message「見なくていいカレンダー」+CTAは不変。日替わり�
 | G0-1 | builder(Sonnet) が MoneyPrinterTurbo 導入 → 台本A で動画1本生成 | 動画ファイル |
 | G0-2 | 動画を Telegram 送付 → Dais 品質OK（★唯一残る human gate★。台本gateは取得済で撤廃） | OK 受領 |
 | G0-3 | IG 実投稿 → **ログアウト状態で公開URLを実見**(URL+スクショ) | 実URL |
-| G1-1 | loop化: launchd 朝夜2本(単発起動・常駐禁止)。台本→動画→投稿→metrics→funnel jsonl→self-improve 1変異 | launchctl list 実出力 |
+| G1-1 | loop化: launchd 朝夜2本(単発起動・常駐禁止)。台本→動画→投稿 を配線 | launchctl list 実出力 |
+| G1-1b | **`metrics_fetch.py`**: 上記④の確定方式(instagrapi+sessionid)で per-post の plays/likes/comments を取得し funnel jsonl へ append。判断はLLM、fetch は決定的bookkeepingのみ | jsonl に実 plays |
 | G1-2 | **毎実行ごとに Telegram 報告**(実投稿URL+funnel数字+その日の1変異+reality verdict+¥。失敗した実行も「失敗」と報告=沈黙は違反) | messageId 実記録 |
 | G1-3 | V0 の reality gate を loop 内に埋込(毎パス fresh spawn・FAIL→self-fix→再verify・自壊タイマー2h) | verdict jsonl 日次 |
 | G1-4 | 3日連続稼働 | 3日分の Telegram + verdict |
