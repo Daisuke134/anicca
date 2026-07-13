@@ -224,6 +224,14 @@ FIX(commit 済): serve.mjs の config に resource:`${X402_PUBLIC_URL}/research`
   → 3ゲート全部満たした。indexing は実測 ~54分(x402#1982 の Strale 実例)。掲載後 Agent402 が crawl→外部発見。
 残: (a) ~54分後に Bazaar 掲載を確認 (b) 外部 buyer 待ち(demand は制御外だが、cheap $0.003+Smart Order Router が有利)。
 ```
+**★掲載確認済（2026-07-14, own-eyes）★**
+```
+fix 後 ~6-12分で CDP Bazaar に掲載: offset 25000, resource=https://…tail7a0ba4…/research,
+  payTo=0x810F6D61…, price=3000($0.003), description 付き。★外部発見パイプライン開通★。
+Agent402 /api/find はまだ(hourly crawl 待ち、~1hr で拾う)→ その後 Smart Order Router が price 順で優遇。
+残るは外部 buyer(from ∉ 我々 wallet)の実 USDC 着金のみ = demand 待ち(background monitor で検出中)。
+= 「x402 で外部から稼ぐ」の技術ブロッカーは全て除去・検証済。self-pay 禁止・外部 inflow のみ計上。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
