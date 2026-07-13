@@ -77,6 +77,30 @@ plugin/skill/memory の変更は **system prompt が起動時に組まれるた�
 
 ---
 
+## ★実データによる大訂正（2026-07-13、claude-crusts で実セッション測定）★
+`npx claude-crusts@latest analyze/waste/optimize` を今セッション(765msg)に実行した実データが、
+上の**推定を複数否定**した。claude-p はまた実測せず断定していた（ecc・skills・MEMORY で計4回）。
+
+| claude-p が断定 | claude-crusts の実測 |
+|---|---|
+| 「skill説明が53k tok/ターン」 | 実際の context 内訳 = **Tools 56.8%(37,242) / Conversation 39.9%(26,141) / System 3.3%(2,133) / State-Memory 0.0%** |
+| 「MEMORY.md が6.5k tok/ターン」 | **State/Memory = 0 tokens**（この1M Opusモデルには載っていない） |
+| 「CLAUDE.md が7.2k tok」 | **実測 1,993 tok**（削減可能は -493 のみ） |
+| 「床が最大の問題」 | **cache read 94.8%** が真の負荷。内訳の主犯は Tool schema(42 loaded/13 used=9,055tok) と **会話に貼った生出力(26k)** |
+
+**確定した真犯人（実測）**:
+1. **Tool schema 42個中29個未使用**（作業に要る組込ツール中心なので大半は削れない）
+2. **会話 39.9% = claude-p が貼った生出力**（病気B。「1分で1%」の本体。1M窓の1%=10k tok）
+3. モデルが **Opus 4.8(1M)** に切替済（`/model`）＝ Fable より高単価
+
+**実際に効く処置（claude-crusts が指したもの）**:
+- 死んだ MCP `x402scan`/`stitch` を settings から削除（schema節約0だが dead config 一掃）→ ✅実施
+- CLAUDE.md 1,993→<1,500 tok（-493、参照系を CLAUDE.local.md へ）→ 実施中
+- **最大の効き = claude-p が生出力を貼らない規律**（探索は subagent／貼らない／60%で handover）。ツールでなく規律
+- ~~cjk-token-reducer~~ = **却下**（翻訳が非可逆＋日本語プロンプトをGoogleに外部送信＋床に効かない。README実読で判明）
+- skills統合/退避(X-2e-1/2) は害はないが、**skill数はclaude-crustsの内訳では主犯でなかった**（優先順位を実データで決めるべきだった）
+
 ## 効果の確定方法（盛らない）
-上の削減は**全て推定**。**確定値は新セッションの `/context` before/after でしか出ない**。
+上の推定の多くは claude-crusts で否定された。**確定値は claude-crusts analyze の実測 or 新セッションの `/context`**。
 処置ごとに measure → 効いてなければ戻す（memory `feedback_no_flipflop_run_before_concluding`）。
+**教訓: 診断は最初に claude-crusts を回すべきだった。claude-p は推測で優先順位を決め、実データが毎回否定した。**
