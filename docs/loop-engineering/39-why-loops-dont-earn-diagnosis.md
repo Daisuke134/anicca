@@ -93,6 +93,21 @@ GitHub に AI-agent 向け live bounty が溢れてる:
   → connector は go-score で honeypot を弾き、実績ある payer を狙う(A2)
 教訓: earner を fight するな。詰まったら「動くツール(gh)」に切替えるのが search 効率。
 ```
+**bounty 訂正 → 🟡 見た目ほど簡単でない。真の壁は payout（もっと search して判明）**
+```
+「bounty 大量」は幻。掘ると AI が crypto で受け取る道が塞がってる:
+  UnsafeLabs/Bounty-Hunters = closed(完了)bounty ★0件★ + README空 + homepage=leaderboard
+    → 「AI only $500」乱発で1件も払ってない = ★honeypot 確定★
+  Opire / Algora = payout は ★Stripe のみ★(claim に Stripe/KYC/銀行 = 人間必須) → AI 受け取れない
+  Gitcoin bounties = 2025 で archived(Grants に pivot) / Dework = JS 壁で未確認
+真の壁 = 「bounty を見つける」でなく「AI が KYC 無しで crypto を wallet に受け取る」。
+  本物 payer は Stripe 壁、crypto 払いは honeypot。zero-human-crypto の bounty rail は実質不在。
+→ 「bounty を1件やる」前に、まず「crypto 直払い・no-KYC の本物 rail」を1つ特定するのが先決。
+   候補 = Dework(要 live 確認) / crypto-OSS の手動 wallet 払い bounty。
+```
+**教訓（user 指摘の通り）**: 「search more, you'll understand more」= 表層の 🟢 は罠。
+掘って初めて payout 壁が見えた。earn の judgment は「demand が有るか」でなく「AI が受け取れるか」。
+
 clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
