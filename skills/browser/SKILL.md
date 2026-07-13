@@ -31,16 +31,39 @@ run whatever file-only work the pass can still do, and report the failure honest
 | Piece | Problem it solves |
 |---|---|
 | `ensure_browser.sh` | Chromium is dead → the loop is blind. Relaunches it with capped caches and restores the logins. Idempotent: prints `ALIVE` when it is already up. |
-| `scripts/session_vault.py` | A hard kill takes the newest cookies with it → re-login → 2FA → **a human**, which breaks autonomy. Snapshots every cookie to `~/.cloak/vault/daily-driver/auth-state.json` (launchd `ai.anicca.session-vault`, every 30 min) and pushes it back in when the browser returns. |
+| `scripts/session_vault.py` | A hard kill takes the newest cookies with it → re-login → 2FA → **a human**, which breaks autonomy. Snapshots every cookie **and localStorage** (some SPAs keep the session token there) to `~/.cloak/vault/daily-driver/auth-state.json` (launchd `ai.anicca.session-vault`, every 30 min) and pushes it back in when the browser returns. Also does `keepalive` (extend the server-side session + detect logout) and `totp` (generate a 2FA code so re-login needs no human). |
 | `scripts/cdp_tab_gc.py` | Each task opens a tab and nothing closes it. Fifteen-plus live tabs starved memory (load average past 21) and killed Chromium. Keeps one working tab, closes the rest. |
 
 ```bash
-python3 ~/anicca/skills/browser/scripts/session_vault.py dump      # snapshot the current logins
+python3 ~/anicca/skills/browser/scripts/session_vault.py dump      # snapshot logins (cookies + localStorage)
 python3 ~/anicca/skills/browser/scripts/session_vault.py restore   # push them back into the browser
 python3 ~/anicca/skills/browser/scripts/session_vault.py status    # how many cookies, which origins, how old
+python3 ~/anicca/skills/browser/scripts/session_vault.py keepalive https://coconala.com/mypage/dashboard  # warm + detect logout
+python3 ~/anicca/skills/browser/scripts/session_vault.py totp @coconala   # fresh 2FA code from stored secret
 ```
 
-Run `dump` right after any fresh human login, so that login is banked forever.
+Run `dump` right after any fresh login, so that login is banked forever.
+
+## Staying logged in with ZERO human — the re-login ladder every loop follows
+
+"Logged out" must never reach a human (a Telegram asking Dais to log in does not scale to hundreds of
+accounts). When a page redirects to `/login`, the loop climbs this ladder itself, in order, and only
+records a report — it never waits for a person:
+
+```
+1. session_vault.py restore            # push the banked cookies + localStorage back
+2. session_vault.py keepalive <authed-url>   # still logged out?
+3. still out → self-login with the account's OWN credentials:
+     email + password (from env)  →  if 2FA asked: session_vault.py totp @<service>
+   ★ Every earn account is created with an AI-owned email + app-based 2FA (TOTP secret stored in
+     ~/.cloak/vault/daily-driver/totp-secrets.json, chmod 600). NEVER Dais's Google/passkey account —
+     passkey and SMS-2FA cannot be finished by a machine. ★
+4. only if all of the above fail: append a one-line report and run the file-only path. Do NOT block on a human.
+```
+
+The profile itself (`--user-data-dir`, never deleted, caches capped) is what keeps you logged in 99%
+of the time; the ladder is for the rare server-side expiry. To cut expiry frequency: keep the profile,
+keep a stable fingerprint, and (at scale) pin a sticky proxy per account.
 
 ## Rules for browser loops
 
