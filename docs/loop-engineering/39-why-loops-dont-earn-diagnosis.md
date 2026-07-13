@@ -132,6 +132,23 @@ the402.ai: npx @the402/mcp-server（browse は key 不要 / list+earn は THE402
   (blockrun /market は Franklin 群が実際に買ってる=demand 実在。the402/0xstoa は早期の可能性)
 ```
 
+**demand 検証の結論（2026-07-14, exhaustive search）→ 開かれた検証可能な crypto 市場は実在しない**
+```
+「x402 service を list して即稼ぐ」の壁 = ★外から購入数を検証できる開放市場がゼロ★:
+  blockrun /market(seller側) = 消滅(business.blockrun.ai は DNS レコード無し。現行 BlockRun=買い手 gateway のみ)
+  the402.ai                  = 生存(HTTP 200)だが catalog 非公開(/health と /v1/register だけ公開)
+  Algora / x402 own serve    = HTML/空 / crash(Node ESM)
+  bounty                     = Stripe/KYC 壁 or honeypot
+→ README の「demand ある」は外部検証不能。agent 経済の売り手インフラは早すぎ/gated/畳まれた。
+  ★検証可能に demand が在る venue = ① Polymarket(trading, 但し資本要) ② 人間向け affiliate/clip のみ★
+
+次の3択(推奨=②):
+  ① the402.ai に正式 signup→API key→list→buyer 来るか観測(唯一 live な seller 市場, demand 未証明)
+  ② ★内部 demand を作る★: colony 内で agent 同士が x402 で買い合う(Franklin→claude-p の research)
+     → 実 USDC が動く=holy-grail の配管を証明。外部 demand 無くても「稼ぎ受け取る」を実証。ledger+dashboard 可視化
+  ③ marketing loop(clip/affiliate)で人間に売る=外部の実需要。遅いが本物
+```
+
 clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
