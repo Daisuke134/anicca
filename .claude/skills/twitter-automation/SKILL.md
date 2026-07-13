@@ -3,6 +3,7 @@ name: twitter-automation
 description: "Automate Twitter/X tasks via Rube MCP (Composio): posts, search, users, bookmarks, lists, media. Always search tools first for current schemas."
 requires:
   mcp: [rube]
+disable-model-invocation: true
 ---
 
 # Twitter/X Automation via Rube MCP

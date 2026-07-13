@@ -1,6 +1,7 @@
 ---
 name: persona
 description: Defines the Anicca target persona — a 25-35 year old with 6-7 years of failed habit-building attempts, zero self-trust, and hidden desire to change. Use when writing copy, designing UI, creating nudge content, or making UX decisions for Anicca.
+disable-model-invocation: true
 ---
 
 # Anicca Target Persona

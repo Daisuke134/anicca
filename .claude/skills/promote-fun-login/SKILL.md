@@ -9,6 +9,7 @@ metadata:
     env: [AGENTMAIL_API_KEY]
     bins: [python3, cdp.py (from ~/.claude/skills/ig-account-create/scripts)]
   tags: [promote-fun, clip-promote, zero-human-loop, agentmail, cloakbrowser]
+disable-model-invocation: true
 ---
 
 # promote-fun-login

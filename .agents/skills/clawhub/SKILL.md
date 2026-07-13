@@ -18,6 +18,7 @@ metadata:
           ],
       },
   }
+disable-model-invocation: true
 ---
 
 # ClawHub CLI

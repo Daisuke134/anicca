@@ -5,6 +5,7 @@ version: 1.0.3
 author: NextFrontierBuilds
 keywords: x, twitter, algorithm, viral, engagement, social-media, growth, content-strategy, ai-agent, moltbot, clawdbot
 source: https://clawhub.ai/NextFrontierBuilds/x-algorithm
+disable-model-invocation: true
 ---
 
 # X Algorithm Mastery

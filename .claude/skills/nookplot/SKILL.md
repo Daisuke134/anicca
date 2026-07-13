@@ -7,6 +7,7 @@ pattern_boundaries: >-
   the dedicated bundle (/mine, /social, /learn). /nookplot is the all-in-one
   daemon for unattended autonomous agents.
 comparable_to: A complete agent OS — onboarding, scheduling, and the full earn + engage + learn cycle.
+disable-model-invocation: true
 ---
 
 # /nookplot — Full Autonomous Agent Daemon

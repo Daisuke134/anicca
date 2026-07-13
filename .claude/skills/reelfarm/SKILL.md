@@ -1,6 +1,7 @@
 ---
 name: reelfarm
 description: Create TikTok slideshows, manage automations, and publish content using the ReelFarm API. Use when the user mentions ReelFarm, TikTok slideshows, slideshow automations, TikTok publishing, content scheduling, or creating social media content.
+disable-model-invocation: true
 ---
 
 # ReelFarm

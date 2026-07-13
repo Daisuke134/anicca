@@ -4,6 +4,7 @@ description: Remove AI writing patterns from prose. Use when drafting, editing, 
 metadata:
   trigger: Writing prose, editing drafts, reviewing content for AI patterns
   author: Hardik Pandya (https://hvpandya.com)
+disable-model-invocation: true
 ---
 
 # Stop Slop

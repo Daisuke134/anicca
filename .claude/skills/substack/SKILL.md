@@ -1,6 +1,7 @@
 ---
 name: substack
 description: Substackの記事・短文（Notes）・チャットスレッドの操作をひとまとめにしたスキル。ユーザーが「Substackに記事書いて」「Substackに投稿」「Notesに流して」「Substackチャット返信して」「Substackの下書き見せて」など、Substackに対する任意の操作を頼んだときに使う。`substack-mcp` MCPサーバーが提供するツールを呼び出す。企画〜サムネ生成〜公開までの一気通貫パイプラインが必要な場合は `substack-article` を使う。
+disable-model-invocation: true
 ---
 
 # substack — Substack 操作スキル

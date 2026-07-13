@@ -2,6 +2,7 @@
 name: competitive-analysis
 description: Deep competitive analysis for iOS/macOS apps including feature comparison, pricing analysis, strengths/weaknesses, market positioning, and differentiation opportunities. Use when user asks for competitive analysis, competitor research, feature comparison, market positioning, or wants to understand competition in detail.
 allowed-tools: Bash(product-agent:*), Read, WebSearch, WebFetch
+disable-model-invocation: true
 ---
 
 # Competitive Analysis Skill

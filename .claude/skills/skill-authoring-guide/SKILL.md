@@ -1,6 +1,7 @@
 ---
 name: skill-authoring-guide
 description: Defines how to create and manage Claude Code skills with proper frontmatter, description format, invocation settings, and the 3-layer defense system. Use when creating new skills, writing SKILL.md files, or auditing skill frontmatter.
+disable-model-invocation: true
 ---
 
 # Skill Authoring Rules

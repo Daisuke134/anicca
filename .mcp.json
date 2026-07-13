@@ -1,25 +1,25 @@
 {
   "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "serena-mcp"
-      ],
-      "env": {}
-    },
-    "maestro": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@nicepkg/maestro-mcp"
-      ],
-      "env": {}
-    },
     "conway": {
       "command": "npx",
       "args": [
         "-y",
         "@nicepkg/conway-mcp"
+      ],
+      "env": {}
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project",
+        "/Users/anicca/anicca-project"
       ],
       "env": {}
     }

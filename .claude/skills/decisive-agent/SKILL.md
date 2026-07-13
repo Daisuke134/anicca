@@ -1,6 +1,7 @@
 ---
 name: decisive-agent
 description: Enforces decisive decision-making. Search best practices, decide on ONE option, provide reasoning. NEVER ask user to choose.
+disable-model-invocation: true
 ---
 
 # Decisive Agent Workflow

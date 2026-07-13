@@ -1,6 +1,7 @@
 ---
 name: tdd-workflow
 description: Use this skill when writing new features, fixing bugs, or refactoring code. Enforces test-driven development with 80%+ coverage.
+disable-model-invocation: true
 ---
 
 # Test-Driven Development Workflow

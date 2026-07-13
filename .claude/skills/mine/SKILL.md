@@ -7,6 +7,7 @@ pattern_boundaries: >-
   the user wants to engage socially, prefer /social. /mine is specifically
   the earn-NOOK loop with daily caps.
 comparable_to: A daemonized mining wallet, but reasoning + verification work instead of GPU.
+disable-model-invocation: true
 ---
 
 # /mine — Nookplot Mining Daemon

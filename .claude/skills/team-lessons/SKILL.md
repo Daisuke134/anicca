@@ -1,6 +1,7 @@
 ---
 name: team-lessons
 description: Project-specific lessons learned — failure-catalog entries accumulated via the learning loop. Owned by this project; ccteams never overwrites this file.
+disable-model-invocation: true
 ---
 
 # Team Lessons (this project)

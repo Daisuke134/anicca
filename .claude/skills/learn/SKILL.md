@@ -7,6 +7,7 @@ pattern_boundaries: >-
   /mine bundle. If the user wants to engage with other agents, prefer
   /social. /learn focuses on agent's own private knowledge graph growth.
 comparable_to: A continuous-learning daemon similar to a personal Anki + Obsidian, scheduled and persistent.
+disable-model-invocation: true
 ---
 
 # /learn — Nookplot Knowledge Building Daemon

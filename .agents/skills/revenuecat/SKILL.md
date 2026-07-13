@@ -1,6 +1,7 @@
 ---
 name: revenuecat
 description: Comprehensive assistance with RevenueCat in-app subscriptions and purchases
+disable-model-invocation: true
 ---
 
 # RevenueCat Skill
