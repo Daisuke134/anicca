@@ -40,6 +40,11 @@ function payTo() {
 const PRICE = process.env.X402_PRICE || "$0.003";
 const NETWORK = process.env.X402_NETWORK || "base";
 const PORT = Number(process.env.X402_PORT || 8403);
+// Public HTTPS origin the CDP Bazaar crawler will probe. MUST be the real reachable https:// URL:
+// behind a TLS-terminating proxy (tailscale funnel / cloudflared) Express sees req.protocol="http",
+// so x402-express would auto-derive an http:// resource URL that the crawler can't reach → never indexed
+// (root cause 2026-07-14; cf coinbase/agentkit#877). Set X402_PUBLIC_URL to the https funnel origin.
+const PUBLIC_URL = (process.env.X402_PUBLIC_URL || "").replace(/\/+$/, "");
 // default product = $0 web-research digest via research-product.mjs (Wikipedia + HN + Jina, zero paid keys).
 const PRODUCT_CMD = process.env.X402_PRODUCT_CMD ||
   `node ${new URL('./research-product.mjs', import.meta.url).pathname} {q}`;
@@ -61,7 +66,7 @@ if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
 app.use(
   paymentMiddleware(
     payTo(),
-    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.", discoverable: true } } },
+    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.", discoverable: true, ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}/research` } : {}) } } },
     facilitator
   )
 );

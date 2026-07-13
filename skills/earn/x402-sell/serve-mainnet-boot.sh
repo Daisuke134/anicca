@@ -9,6 +9,9 @@ DIR=/Users/operator/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account) — never echoed
 set -a; . /Users/operator/.openclaw/.env 2>/dev/null || true; set +a
 export X402_PAYTO="0x810f6d61f7606deee2657d3083e150a222bc29c5"
+# public HTTPS origin the CDP Bazaar crawler probes — must be the real reachable https:// (funnel origin),
+# else x402-express derives an http:// resource URL the crawler can't reach and never indexes us.
+export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net}"
 export X402_NETWORK="base"
 export X402_PRICE="\$0.003"
 export X402_PORT="8411"
