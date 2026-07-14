@@ -7297,3 +7297,13 @@
 {"ts":1784045297,"wake_id":"00MRKUI9LA6F2AE6F5FBFE4C38","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784045430,"wake_id":"00MRKUL4HF58E112C68ADE49F9","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
 {"ts":1784045430,"wake_id":"00MRKUL4HF58E112C68ADE49F9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784045657,"wake_id":"00MRKUPZA04914D1240D294351","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784045823,"wake_id":"00MRKUTJ5S46BD8C79AFEF4A1B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784045986,"wake_id":"00MRKUX18Y1097351ECE414C74","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784046163,"wake_id":"00MRKV0TQO1ABFB7576866441E","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046231,"wake_id":"00MRKV2A8HA6F05F77FA14420F","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046297,"wake_id":"00MRKV3PJME902792CBF7C47C6","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046364,"wake_id":"00MRKV54QP1FF206D314CB41B5","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046430,"wake_id":"00MRKV6JYH511F256A2FEC480D","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046497,"wake_id":"00MRKV7Z6YC932DE06AA3D471A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (no clear bull/bear conviction) and the expected edge doesn’t clear the ~0.4%+ round-trip cost; hold USDC ($16.28).\n[sol-trade] sol-evolve -> {   \"promoted\": fa"}
+{"ts":1784046497,"wake_id":"00MRKV7Z6YC932DE06AA3D471A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
