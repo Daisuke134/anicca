@@ -53,7 +53,10 @@ if [ -z "$SIGNKEY" ]; then
 fi
 export "$PKVAR=$SIGNKEY"   # children (execute-swap.py/hl.py/execute-yield.mjs...) read the key via $PKVAR -- give them THIS instance's
 wallet_addr() {
-  SIGNKEY="$SIGNKEY" python3 -c "import os; from eth_account import Account; print(Account.from_key(os.environ['SIGNKEY']).address)" 2>/dev/null || echo ""
+  # node+viem, NOT python/eth_account: under launchd's clean PATH python3 has no eth_account on
+  # sys.path, so this silently returned '' and a free Franklin's x402 wake HALTed with wallet=''
+  # despite a resolvable key (x402-zero-to-one 2026-07-14). node+viem is always present (seller dep).
+  node "$HERE/lib/resolve-identity.mjs" evm-address 2>/dev/null || echo ""
 }
 W="$(wallet_addr)"
 WLOW="$(echo "$W" | tr 'A-F' 'a-f')"
@@ -272,16 +275,45 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
   # PRODUCT server couldn't bind there, so /research 404'd (system bug found 2026-06-22). Use 8404.
   XPORT="${X402_PORT:-8404}"
   if ! curl -sf "http://127.0.0.1:$XPORT/research?q=ping" >/dev/null 2>&1; then
-    # Facilitator creds (CDP) make the spawned seller settle on Base mainnet AND surface in the
-    # Bazaar discovery catalog — without them it silently falls back to the x402.org testnet
-    # facilitator and can never be found or paid for real (x402-zero-to-one 2026-07-14). Same
-    # sourcing pattern as x402-sell/serve-mainnet-boot.sh; payTo stays THIS instance's $W.
-    # X402_PUBLIC_URL (per-instance https origin) rides in from the instance env untouched.
-    # OPENCLAW_ENV_FILE override: instances that fake $HOME (franklin2's .franklin2-home) point
-    # this at the real creds file; default stays generic for normal installs.
-    set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
-    X402_PAYTO="$W" X402_PORT="$XPORT" nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 &
-    sleep 2
+    # The seller must OUTLIVE this wake: a plain `nohup ... &` child dies with the wake's process
+    # group (run-skill.mjs execFile kills the group on timeout/next-wake), which is why sellers
+    # never persisted (observed live 2026-07-14: booted during the wake, DOWN minutes later).
+    # On macOS, register a per-instance launchd KeepAlive service (same pattern as
+    # serve-mainnet-boot.sh) — survives wake boundaries AND loop restarts, zero human. Elsewhere
+    # (cloud Linux), fall back to setsid detach. Facilitator creds are sourced by seller-boot.sh
+    # (CDP → Base mainnet settle + Bazaar discovery; without them = invisible testnet fallback).
+    if command -v launchctl >/dev/null 2>&1; then
+      SLABEL="ai.anicca.x402-seller-$XPORT"
+      SPLIST="$HOME/Library/LaunchAgents/$SLABEL.plist"
+      mkdir -p "$HOME/Library/LaunchAgents"
+      cat > "$SPLIST" <<SELLERPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$SLABEL</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string>
+    <string>$HERE/x402-sell/seller-boot.sh</string>
+  </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>X402_PAYTO</key><string>$W</string>
+    <key>X402_PORT</key><string>$XPORT</string>
+    <key>X402_PUBLIC_URL</key><string>${X402_PUBLIC_URL:-}</string>
+    <key>OPENCLAW_ENV_FILE</key><string>${OPENCLAW_ENV_FILE:-}</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/x402-seller-$XPORT.out.log</string>
+  <key>StandardErrorPath</key><string>/tmp/x402-seller-$XPORT.err.log</string>
+</dict></plist>
+SELLERPLIST
+      launchctl bootstrap "gui/$(id -u)" "$SPLIST" 2>/dev/null \
+        || launchctl kickstart "gui/$(id -u)/$SLABEL" 2>/dev/null || true
+    else
+      set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
+      X402_PAYTO="$W" X402_PORT="$XPORT" setsid nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 < /dev/null &
+    fi
+    sleep 3
   fi
   UP=$(curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1 && echo up || echo down)
   echo "[earn] x402 server: $UP (payTo=$W port=$XPORT)"
