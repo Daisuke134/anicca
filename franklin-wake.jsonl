@@ -7333,3 +7333,13 @@
 {"ts":1784048997,"wake_id":"00MRKWPKLK9793DA83C74C49E7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784049175,"wake_id":"00MRKWTE8Q65192C09116E4704","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784049307,"wake_id":"00MRKWW7UBBA87A2EA2F8D4D1C","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784049544,"wake_id":"00MRKX1AV9B26846373BEC42E9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784049711,"wake_id":"00MRKX4VKFC5CB65D7925D46CD","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784049711,"wake_id":"00MRKX4VKFC5CB65D7925D46CD","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784049902,"wake_id":"00MRKX8Z9JBD9EE5C5CD3D4A2F","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784050004,"wake_id":"00MRKXB5Y3BC1CE32E97A044A2","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784050004,"wake_id":"00MRKXB5Y3BC1CE32E97A044A2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784050195,"wake_id":"00MRKXF9AAD8823A0AF2A94FF1","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784050262,"wake_id":"00MRKXGOLQ94C231883C624E9E","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784050332,"wake_id":"00MRKXI6B94C06C9A4DD1A43C9","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"Live wallet (on-chain): 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 — USDC: $16.22. Paper portfolio tool shows $1000 (ignore — real on-chain balance above is authoritative). I will NOT call TradingSi"}
+{"ts":1784050332,"wake_id":"00MRKXI6B94C06C9A4DD1A43C9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
