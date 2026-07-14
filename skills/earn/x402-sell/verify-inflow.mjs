@@ -10,6 +10,9 @@ const OUR_WALLETS = new Set([
   PAY_TO,
   "0xb9dd3b67921b354c656523d6851537988f31dd56", // automaton (anicca-a3cdd4 spend wallet)
   "0x904b50d2e214da947d83d6a2d32c4e3ffc17eb74", // claude-p
+  "0x810f6d61f7606deee2657d3083e150a222bc29c5", // founder seller payTo
+  "0x3eccad24794ca298d25378e9902a251322ea8749", // franklin (per-instance EVM)
+  "0xe7747fd899d8987821bb4cb3d6adf22565f87ce9", // franklin2 (per-instance EVM)
 ].map((a) => a.toLowerCase()));
 const RPC = process.env.X402_RPC_URL || "https://mainnet.base.org";
 const HOURS = Number(process.argv[2] || 48);
