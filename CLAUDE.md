@@ -14,7 +14,7 @@ BP = 答え。オリジナルは書かない。判断には最低1つの引用�
 |---|---|---|---|---|---|
 | **anicca-a3cdd4** | automaton + ClawRouter | ★SELF-funded★ | `0xB9dd3B67921B354c656523d6851537988F31DD56`(Base) | 汎用 | `com.anicca.daemon`(body `~/.anicca`) |
 | **Franklin** | Franklin-Trading | ★SELF-funded★ | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`(Sol) | SOL trade | `ai.anicca.franklin-sol` |
-| **claude-p(私)** | Claude → PM earner | human-funded(Anthropic) | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`(Polygon pUSD) | PM trade | `ai.anicca.pm-earner` |
+| **claude-p** | sonnet PM-earner loop | human-funded(Anthropic) | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`(Polygon pUSD) | PM trade | `ai.anicca.pm-earner` |
 
 - self-funded on Earth = 2、human-funded = 1（私）。openclaw + hermes は削除済み。
 - earn = トレード3エンジンのみ（PM / SOL / HL）。x402・gig は却下。各 earn skill = BASE戦略 + self-improve + self-heal の3層。
