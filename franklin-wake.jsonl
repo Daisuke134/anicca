@@ -7350,3 +7350,13 @@
 {"ts":1784050901,"wake_id":"00MRKXUDZ6F3A75DABD29346CB","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784051203,"wake_id":"00MRKY0UQP9B360618258F4496","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784051352,"wake_id":"00MRKY421E0D5A6C0583D743C5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784051488,"wake_id":"00MRKY6YV690849B15DF1E41EE","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784051488,"wake_id":"00MRKY6YV690849B15DF1E41EE","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784051678,"wake_id":"00MRKYB1E636C8BDF8D0C04BE4","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784051745,"wake_id":"00MRKYCGP18DE3E4EC157C4209","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784051811,"wake_id":"00MRKYDW0Z4D03FDBB7D5644A9","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784051878,"wake_id":"00MRKYFBHD882FF49319BA4C1C","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784051945,"wake_id":"00MRKYGQWM232CA9A567B04F1C","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784052012,"wake_id":"00MRKYI6QQ69B0417BA88544B2","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784052079,"wake_id":"00MRKYJMBH1EAE3C3AD1FA4611","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"Wallet: solana 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 — USDC $16.12 (no SOL balance visible for gas). TradingSignal calls are paid from this same wallet; with a $16 bankroll the cost of paid sig"}
+{"ts":1784052079,"wake_id":"00MRKYJMBH1EAE3C3AD1FA4611","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
