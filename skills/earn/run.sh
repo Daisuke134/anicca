@@ -265,6 +265,12 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
   # PRODUCT server couldn't bind there, so /research 404'd (system bug found 2026-06-22). Use 8404.
   XPORT="${X402_PORT:-8404}"
   if ! curl -sf "http://127.0.0.1:$XPORT/research?q=ping" >/dev/null 2>&1; then
+    # Facilitator creds (CDP) make the spawned seller settle on Base mainnet AND surface in the
+    # Bazaar discovery catalog — without them it silently falls back to the x402.org testnet
+    # facilitator and can never be found or paid for real (x402-zero-to-one 2026-07-14). Same
+    # sourcing pattern as x402-sell/serve-mainnet-boot.sh; payTo stays THIS instance's $W.
+    # X402_PUBLIC_URL (per-instance https origin) rides in from the instance env untouched.
+    set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
     X402_PAYTO="$W" X402_PORT="$XPORT" nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 &
     sleep 2
   fi
