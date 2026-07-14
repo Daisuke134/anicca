@@ -34,6 +34,36 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 | 4 | Fable | one-command 化: ①sub あり → `spin up claude-p loop`(sonnet, 0→1 の後 trade へ) ②sub なし → `spin up franklin loop`(free model)。bootstrap script 2本 | 新規マシンで 1 コマンド → seller 稼働まで自走 | pending |
 | 5 | Fable | Agora README 更新: 「install → your AI earns」+ 実 tx link(INV-E 解除済: 0x2e06c55b…) + 2 コマンド | repo public + tx link | pending |
 
+
+## TO-BE 全体像（正本。2026-07-14 Dais と alignment 済）
+
+```
+世界の誰か（README Quick start = 1コマンド）
+  ├─ Claude sub あり: ./install.sh && ANICCA_BRAIN=claude-p ./start-local.sh …
+  └─ sub なし(free): npm i -g @blockrun/franklin && ./start-local.sh …(llama/GLM 級)
+        │
+        ▼
+  ReAct loop 起動（runtime/loop/index.mjs — 既存機構、新造しない）
+        │ 初期 ANICCA_SLOT_ALLOWLIST=x402_sell（0→1 に専念させる絞り）
+        ▼
+  x402_sell slot → skills/earn/run.sh strategy=x402
+        │ 自分の wallet を payTo に seller 起動・https 公開・settle seed
+        │ → CDP Bazaar 掲載（sell-on-x402 skill = recipe）
+        ▼
+  外部 agent が買う → USDC 着弾 = 0→1 ★実証済: founder で tx 0x2e06c55b…/0xe75baae3…★
+        │ verify-inflow.mjs が on-chain 判定（self-pay 除外, INV-7）
+        ▼
+  貯まったら allowlist 解除 → trade (PM/SOL/HL) で 1→100
+        ▼
+  compute 自賄い = self-funded 卒業 → spawn 次世代（README の既存ストーリー）
+```
+
+### README to-be（段5 で反映する骨子）
+1. 冒頭に PROOF: 「見知らぬ外部 agent が実際に払った」basescan link (0x2e06c55b…)
+2. Quick start 2 コマンドの説明を「起動すると loop はまず x402 product を立て、
+   Bazaar に掲載され、外部 USDC の 0→1 を狙う。稼げたら trade へ進む」に更新
+3. 既存の three-types 構造は維持（automaton/franklin/claude-p）
+
 ## Stop 条件
 
 - 外部 buyer が長期間ゼロ → 「掲載・発見達成、demand 待ち」と正直に報告して区切る（demand は制御外）
