@@ -7396,3 +7396,10 @@
 {"ts":1784056995,"wake_id":"00MRL1H07LDDAACEC975644B6D","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784057063,"wake_id":"00MRL1IG2Z4A48D0FD39174839","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
 {"ts":1784057063,"wake_id":"00MRL1IG2Z4A48D0FD39174839","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784057258,"wake_id":"00MRL1MN107A3D3BD8756045BA","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784057325,"wake_id":"00MRL1O2PB4B9FD4CE4E964B10","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784057392,"wake_id":"00MRL1PHZ0302F6D8D272F43A2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784057554,"wake_id":"00MRL1SZ6J35F43E2E476A48EF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784057685,"wake_id":"00MRL1VSNU10FD63509BF84D2B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784057847,"wake_id":"00MRL1Z9L385B8C427732541A0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784058045,"wake_id":"00MRL23I2G5911EE13AAB444F8","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
