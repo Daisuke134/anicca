@@ -27,6 +27,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadEvmKey } from "../lib/resolve-identity.mjs";
+import { compoundInterest, calcEval, flattenJson, dnsLookup, whois, stockQuote } from "./primitives.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -63,10 +64,23 @@ if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
   const { createFacilitatorConfig } = await import("@coinbase/x402");
   facilitator = createFacilitatorConfig(process.env.CDP_API_KEY_ID, process.env.CDP_API_KEY_SECRET);
 }
+// per-route config: discoverable + explicit https resource (Bazaar crawler probes it; see PUBLIC_URL note).
+const cfg = (path, description) =>
+  ({ description, discoverable: true, ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}${path}` } : {}) });
+
 app.use(
   paymentMiddleware(
     payTo(),
-    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.", discoverable: true, ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}/research` } : {}) } } },
+    {
+      "GET /research": { price: PRICE, network: NETWORK, config: cfg("/research", "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.") },
+      // deterministic compute primitives — pure CPU or free data, no LLM in the serving path.
+      "GET /compound-interest": { price: "$0.001", network: NETWORK, config: cfg("/compound-interest", "Compound interest calculator. GET /compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12 → final amount + interest earned. Deterministic JSON, instant.") },
+      "GET /calc": { price: "$0.001", network: NETWORK, config: cfg("/calc", "Arithmetic expression evaluator (+ - * / % ^ and parentheses). GET /calc?expr=(2%2B3)*4 → {result}. Deterministic JSON, instant, no code execution.") },
+      "GET /json-flatten": { price: "$0.001", network: NETWORK, config: cfg("/json-flatten", "Flatten nested JSON to dot-notation key/value pairs. GET /json-flatten?json=<url-encoded JSON> → flat object. Deterministic, instant.") },
+      "GET /dns-lookup": { price: "$0.001", network: NETWORK, config: cfg("/dns-lookup", "DNS lookup. GET /dns-lookup?domain=example.com&type=A|AAAA|MX|TXT|NS|CNAME|SOA → records as JSON. Live authoritative data, instant.") },
+      "GET /whois": { price: "$0.002", network: NETWORK, config: cfg("/whois", "WHOIS lookup with IANA referral follow. GET /whois?domain=example.com → registrar whois text as JSON. Live registry data.") },
+      "GET /stock-quote": { price: "$0.003", network: NETWORK, config: cfg("/stock-quote", "Real-time stock quote (price, currency, previous close, exchange). GET /stock-quote?symbol=AAPL → JSON. Free-source market data.") },
+    },
     facilitator
   )
 );
@@ -82,10 +96,32 @@ app.get("/research", (req, res) => {
   });
 });
 
+// primitive handlers: payment middleware above already gated them; here is pure compute.
+const answer = (res, fn) =>
+  Promise.resolve().then(fn).then((out) => res.json(out))
+    .catch((e) => res.status(422).json({ error: String(e && e.message || e).slice(0, 200) }));
+
+app.get("/compound-interest", (req, res) => answer(res, () => compoundInterest(req.query)));
+app.get("/calc", (req, res) => answer(res, () => calcEval(String(req.query.expr || ""))));
+app.get("/json-flatten", (req, res) => answer(res, () => flattenJson(JSON.parse(String(req.query.json || "")))));
+app.get("/dns-lookup", (req, res) => answer(res, () => dnsLookup(String(req.query.domain || ""), String(req.query.type || "A"))));
+app.get("/whois", (req, res) => answer(res, () => whois(String(req.query.domain || ""))));
+app.get("/stock-quote", (req, res) => answer(res, () => stockQuote(String(req.query.symbol || ""))));
+
 // free: tells a buyer what's for sale + the price (so demand can find it).
 app.get("/", (_req, res) =>
-  res.json({ product: "web research (Twitter/Reddit/YouTube/GitHub)", price: PRICE,
-             pay: "GET /research?q=... (x402: pay " + PRICE + " USDC on " + NETWORK + ")", payTo: payTo() }));
+  res.json({
+    products: [
+      { path: "/research?q=<topic>", price: PRICE, what: "web research digest" },
+      { path: "/compound-interest?principal=&rate=&years=&compoundsPerYear=", price: "$0.001", what: "compound interest calc" },
+      { path: "/calc?expr=<arithmetic>", price: "$0.001", what: "expression evaluator" },
+      { path: "/json-flatten?json=<url-encoded JSON>", price: "$0.001", what: "flatten nested JSON" },
+      { path: "/dns-lookup?domain=&type=", price: "$0.001", what: "DNS records" },
+      { path: "/whois?domain=", price: "$0.002", what: "WHOIS lookup" },
+      { path: "/stock-quote?symbol=", price: "$0.003", what: "stock quote" },
+    ],
+    pay: "x402 — pay per request in USDC on " + NETWORK, payTo: payTo(),
+  }));
 
 app.listen(PORT, () =>
   console.log(JSON.stringify({ x402_seller: "up", port: PORT, price: PRICE, network: NETWORK, payTo: payTo() })));
