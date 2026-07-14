@@ -78,5 +78,17 @@ $/post が黒字の {niche×format×hook×offer} combo を1アカで実証 → L
 - **入金先 = Dais の銀行口座（fiat）**（Dais 決定 2026-07-14）。Digistore24 は 銀行送金/PayPal（crypto 不可）。crypto wallet が要る時だけ Binance/Coinbase affiliate。
 - GitHub の awesome-affiliate list は commission% 無しで質低い → 使わない。agent は Digistore marketplace(確認後)or 直接 SaaS shortlist から pick。
 
+## affiliate account/link アーキテクチャ（2026-07-14、gig と同型）
+```
+ 1 Digistore24 account（★共有 creds、gig の共有KYCアカと同じ★）
+   ├ 無制限 offer 宣伝可 → offer 毎に promolink 1本（1account=多link）
+   ├ 各 link は無制限 SNS アカで再利用（同niche=同link+各自 sid / 別niche=別offer）
+   └ 全売上が 1 account に集約 → Dais 銀行(fiat) or AI wallet(crypto affiliate 時)
+```
+- **account 共有 = YES**（colony 全 loop が creds 共有、gig と同じ）。scale = アカ数でなく offer/channel 数を増やす。
+- **hedge = self-create**: shared が ban/制限 or niche 分離時、loop が自分で新アカ作る（finder skill が account-create 保持）。
+- **hardcode 禁止**: affiliate-finder = skill(tool)、model が offer/network/account 判断。
+- agora(crypto)側: finder を Binance/Coinbase affiliate 用 refine（crypto→AI wallet、財務独立 INV-11）。
+
 ## 出典
 partnerstack.com / clickbank.com/how-clickbank-works / digistore24.com/en/affiliate / dub.co/docs / github: dubinc/dub, YOURLS, gitroomhq/postiz-app, inovector/mixpost / docs.postiz.com/providers/{instagram,tiktok,youtube}.md / mixpost.app/pricing / zernio.com(getlate.dev) / ayrshare.com/pricing / geelark.com/pricing / aimultiple.com/antidetect-browsers / r/TikTokMarketing
