@@ -82,7 +82,14 @@ distribute_ubi() {
 # invisible to every real-wallet-scoped check forever. earn-guard.mjs's CLI itself now
 # fail-closed HALTs on an empty wallet (exit 1), so calling it unconditionally is correct: a
 # broken identity is exactly when we must NOT proceed, never a reason to bypass the gate.
-if ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
+# x402 exemption (x402-zero-to-one 2026-07-14): strategy=x402 deploys ZERO capital — it only keeps
+# the paid HTTP shop open, USDC can only flow IN. Blocking it on a cumulative-net breach is a
+# deadlock: a broke instance's only risk-free way back to positive is exactly this slot (observed
+# live: founder wake HALTed at cumulativeNet=-0.009 while holding a Bazaar-listed shop). Identity
+# stays fail-closed — the SIGNKEY gate above already HALTed if this instance has no resolvable key.
+if [ "${EARN_STRATEGY:-}" = "x402" ] && [ -n "$WLOW" ]; then
+  echo "[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open."
+elif ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
   echo "[earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='$WLOW') — HALT (fail-closed), skipping wake."
   exit 0
 fi
