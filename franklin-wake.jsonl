@@ -7466,3 +7466,10 @@
 {"ts":1784065526,"wake_id":"00MRL6JUKQ0D1F73BA797B4603","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784065708,"wake_id":"00MRL6NQSB9E6995FA67A14F11","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
 {"ts":1784065708,"wake_id":"00MRL6NQSB9E6995FA67A14F11","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784065960,"wake_id":"00MRL6T5L56A505C81B1874646","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784066124,"wake_id":"00MRL6WO4VBB3E6FD665054CEF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784066284,"wake_id":"00MRL703OM19ACF81BF4D64EA1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784066461,"wake_id":"00MRL73VWZD4CDFD40FB4E4B68","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784066587,"wake_id":"00MRL76KXKDF3A6E0D42BE495F","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"WAIT: TradingSignal for SOL is neutral (no clear bull/bear), so the expected edge doesn't overcome ~0.4%+ round-trip fees — hold USDC ($15.96).\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"base"}
+{"ts":1784066587,"wake_id":"00MRL76KXKDF3A6E0D42BE495F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784066801,"wake_id":"00MRL7B5YD0C26AB1411084203","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
