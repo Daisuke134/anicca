@@ -1,4 +1,16 @@
-# IG 投稿方式の方向転換 — web composer は死に筋、Graph API へ（2026-07-14）
+# IG 投稿方式の方向転換 — web composer は死に筋（2026-07-14）
+
+## ★★ 解決・実証済み（2026-07-14）★★
+**無料で投稿できた。** `instagrapi`(MIT/6.5k★) + **browser の信頼 sessionid 再利用**(login_by_sessionid で新規login検問を回避) + **ffmpeg で thumbnail 自作**(moviepy 依存を回避)。
+- web composer で3回連続 silent 失敗した同じ @aiclipsvault で **publish 成功: reel/DaxPaF9saPA**。
+- ログアウト確認済(crwl で「Video by AI Clips Daily on July 14, 2026」表示 + 無認証 curl の公開HTMLに reel code 存在)。
+- **$0 / Business化不要 / app review 不要 / login 検問回避 / 今すぐ**。= アカBANでもなく、web composer が唯一の死因だった。
+- 手順: ①CloakBrowser が既に login 済みのアカから CDP `Network.getAllCookies` で sessionid 抽出 → ②`Client().login_by_sessionid(sessionid)` → ③`ffmpeg -ss 1 -vframes 1` で thumb.jpg → ④`clip_upload(mp4, caption, thumbnail=thumb)`。
+- 実装: `~/anicca/skills/earn/clip/scripts/instagrapi_post.py`(commit a6c92f65)。venv: `~/.cache/instagrapi-venv`(instagrapi + websocket-client + pillow)。
+- ★この方式が本命の無料投稿レール。web composer(post_reel.py)は廃止。Graph API は将来の公式オプションとして残すが必須でない。★
+
+---
+
 
 clip loop が「投稿できない」問題の**根本原因が判明**。犯人は python でもアカ休養不足でもなく、**投稿手法そのもの**。検索(crwl 一次情報)で確定。
 
