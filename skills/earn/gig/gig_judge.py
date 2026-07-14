@@ -179,6 +179,26 @@ our actual submitted "提案額" and "納品予定日" for that requestId. When 
 claim, read OUR OWN 納品予定日/提案額 from that applied-offers list (or that offer's own edit page),
 NOT the client's request-page 納品希望日/募集期限 — do not treat a mismatch against the client's own
 field as a contradiction of our claim.
+
+CLOSED/DELETED REQUEST WARNING for "applied" claims (real incident: realityverify-1784022302-54772,
+requestId 5152391/buyer "seaby" — verified applied at the time per gh#1035, then wrongly judged false
+~24h later; LIVE-CONFIRMED during the fix for this incident): once a client deletes or closes their
+own coconala.com/requests/<id> 公開依頼 posting, that individual request page permanently 404s
+("ご指定のページが見つかりませんでした") for EVERYONE, including us — this happens on Coconala's own
+timeline, entirely outside our control, and by itself is NEVER evidence that our application never
+happened. Do NOT fail an applied claim just because the client's own request/<id> detail page 404s.
+The load-bearing ground truth for "did we apply" is exclusively
+https://coconala.com/mypage/job_matching/applied/offers (応募・スカウト管理, tab "募集への応募（単
+発）") — CONFIRMED LIVE: our own row for that requestId stays in this list even after the client
+deletes their posting, but its title text is REPLACED with the literal string "投稿は削除されました"
+(post has been deleted) instead of the original job title — searching for the ORIGINAL title text
+will wrongly find nothing. To verify an applied claim, match the row by BUYER NAME (not title) and
+read our own 提案額/納品予定日 columns on that row; a row showing "投稿は削除されました" under the
+correct buyer name with our own submitted price/date still visible COUNTS AS the claim being true,
+not false. Also check any status tabs/pagination on that page before concluding an entry is absent.
+Only set verdict false for an applied claim if, after checking every tab/page of our OWN
+applied-offers list by buyer name, the entry is genuinely nowhere to be found — note in your
+reasoning which tabs/pages and buyer names you actually checked.
 </ground_truth>
 
 <claims_to_verify>
