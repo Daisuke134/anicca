@@ -33,6 +33,7 @@ echo "[cook] candidates:"; printf '%s\n' "$RESULTS" | sed 's/^/  - /'
 # record a narrate line so the wake is logged + the candidates ride into the next wake's context.
 CANDJSON=$(printf '%s' "$RESULTS" | python3 -c "import sys,json;print(json.dumps([l for l in sys.stdin.read().split('\n') if l.strip()]))")
 JSON=$(python3 -c "import json;print(json.dumps({'source':'cook','task':'explore: ${QUERY//\'/}','candidates':$CANDJSON,'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
-node "$HERE/../earn/lib/record.mjs" "$JSON" "$LEDGER" 2>/dev/null || echo "$JSON" >> "$LEDGER"
+env -u GOOGLE_LOGIN_PASSWORD -u GOOGLE_LOGIN_EMAIL -u COMPOSIO_API_KEY -u COMPOSIO_AUTH_TOKEN \
+  node "$HERE/../earn/lib/record.mjs" "$JSON" "$LEDGER" 2>/dev/null || echo "$JSON" >> "$LEDGER"
 echo "[cook] recorded explore wake (candidates surfaced for the model to try next)."
 exit 0
