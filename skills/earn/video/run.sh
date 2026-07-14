@@ -141,6 +141,16 @@ print('1' if ok else '0')" 2>/dev/null)
       timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/dev/null 2>&1 || true
       set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"post_attempt_date\": \"$TODAY\"}"; DID="[DRY] would post reel"
     else
+      # ★ FIND (2026-07-15): the (ctx, tid) pair in $CREDS is an ISOLATED incognito browserContext on the
+      #   daily-driver, created once at account-creation time — it's memory-only and vanishes on any
+      #   daily-driver restart, after which post_reel.py's CDP handshake fails with "No such target id"
+      #   and this whole stage aborted silently forever (verify-only "unauthoritative" every wake). Refresh
+      #   it first: idempotent/fast when the stored tid is still live+logged-in, only recreates+relogs in
+      #   when the context is actually gone. On failure (OTP/captcha not solved this attempt) keeps the old
+      #   TID so the pre-existing "unauthoritative → abort, retry next wake" safety below still applies. ★
+      EPC_BUD=$(( TIMEOUT / 6 )); [ "$EPC_BUD" -lt 30 ] && EPC_BUD=30
+      EPC_OUT=$(timeout "$EPC_BUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/ensure_post_context.py" --port 9222 --creds "$CREDS" 2>/tmp/ev_postctx.log | tail -1)
+      if [ -n "$EPC_OUT" ] && ! printf '%s' "$EPC_OUT" | grep -q ERROR; then TID="$EPC_OUT"; fi
       # ★ FIND-502 fix: ONE verify-only call serves BOTH (a) reconcile — if a prior attempt TODAY was timeout-killed
       #   AFTER シェア (post_attempt_date==today, last_post_date unset) and a reel appeared that wasn't in pre_reels,
       #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt. ★
