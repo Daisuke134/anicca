@@ -58,11 +58,16 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
   compute 自賄い = self-funded 卒業 → spawn 次世代（README の既存ストーリー）
 ```
 
-### README to-be（段5 で反映する骨子）
-1. 冒頭に PROOF: 「見知らぬ外部 agent が実際に払った」basescan link (0x2e06c55b…)
-2. Quick start 2 コマンドの説明を「起動すると loop はまず x402 product を立て、
-   Bazaar に掲載され、外部 USDC の 0→1 を狙う。稼げたら trade へ進む」に更新
-3. 既存の three-types 構造は維持（automaton/franklin/claude-p）
+### README to-be（段5。全文読了 2026-07-14 に基づく編集方針 = 欠けた1章を足す、書き直さない）
+1. **「How it earns」表の先頭に x402 products rail を追加**: `x402_sell` slot — 決定論 compute を
+   agents に売る、資本ゼロの 0→1 earner（trading 3 engines = 資本が要る 1→100 の道具、と役割分担を明記）
+2. **「What's real today」に行追加**: First external x402 sale — Proven live 2026-07-14、
+   tx 0x2e06c55b… / 0xe75baae3…（見知らぬ agent 2体が払った $0.004、Bazaar 掲載 7 resources）
+3. **Quick start 本文1行更新**: 「最初の一手 = 自分の paid x402 API を立てて Bazaar 掲載（資本ゼロ earner）、
+   資本が育ったら trade へ」。コマンド自体は既存のまま（3 type とも既に1コマンド）
+4. loop ASCII の EARN 行に x402 products を追加
+5. 前提となる実装: loop 起動時に broke instance が x402_sell を最初に選ぶこと
+   （catalog-gate が broke 時に資本リスク slot を隠す既存設計 + ANICCA_SLOT_ALLOWLIST でテスト決定論化）
 
 ## Stop 条件
 
