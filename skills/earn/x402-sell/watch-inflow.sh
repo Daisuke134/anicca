@@ -4,8 +4,11 @@
 # flag file + macOS notification so any session (or Dais) sees the zero-to-one moment.
 set -o pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
-LOG="$HOME/.openclaw/.logs/x402-inflow.jsonl"
-FLAG="$HOME/.openclaw/.logs/x402-first-external.json"
+# Parameterizable per instance: X402_PAYTO selects the watched wallet (verify-inflow.mjs reads it),
+# X402_WATCH_TAG separates log/flag files (default = founder watch).
+TAG="${X402_WATCH_TAG:-}"
+LOG="$HOME/.openclaw/.logs/x402-inflow${TAG:+-$TAG}.jsonl"
+FLAG="$HOME/.openclaw/.logs/x402-first-external${TAG:+-$TAG}.json"
 mkdir -p "$(dirname "$LOG")"
 
 OUT="$(cd "$DIR" && /usr/bin/env node verify-inflow.mjs 2 2>/dev/null)"
