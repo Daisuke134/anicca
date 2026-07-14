@@ -12,7 +12,11 @@
 # Disk hygiene (HARD 0.26): all heavy intermediates go in a /tmp workdir, removed at the end;
 # only the final verified mp4 + caption land in ~/clips/queue.
 set -uo pipefail
-SKILLS="$HOME/.claude/skills/earn-clip-rewards/scripts"
+# FIX-2 (2026-07-14): the encode scripts (pipeline/burn_captions/verify_clip/export_camofox_cookies)
+# used to live in ~/.claude/skills/earn-clip-rewards/scripts, which was moved to skills.disabled-2026-07-13
+# during floor-reduction → producer broke (no new clips since 07-11). Now they live HERE, next to
+# producer.sh in the canonical earner repo (~/anicca), so the path can never be broken by a skill disable.
+SKILLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts"
 ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator"
 PY="$ENGINE/.venv/bin/python"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
