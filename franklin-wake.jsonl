@@ -7360,3 +7360,11 @@
 {"ts":1784052012,"wake_id":"00MRKYI6QQ69B0417BA88544B2","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784052079,"wake_id":"00MRKYJMBH1EAE3C3AD1FA4611","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"Wallet: solana 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 — USDC $16.12 (no SOL balance visible for gas). TradingSignal calls are paid from this same wallet; with a $16 bankroll the cost of paid sig"}
 {"ts":1784052079,"wake_id":"00MRKYJMBH1EAE3C3AD1FA4611","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784052239,"wake_id":"00MRKYN2F8A1E65BA932354CAB","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784052306,"wake_id":"00MRKYOI0JD086FB6C650942B2","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784052373,"wake_id":"00MRKYPX9C006EB34369DB4C72","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784052373,"wake_id":"00MRKYPX9C006EB34369DB4C72","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784052502,"wake_id":"00MRKYSP7BC57CD44FAC314F1C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784052716,"wake_id":"00MRKYXA4T252C326276EA4609","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784052931,"wake_id":"00MRKZ1VSS63DD8B0117934B94","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784053093,"wake_id":"00MRKZ5D4U4E54A16CD49F4F7B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
