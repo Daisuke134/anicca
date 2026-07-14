@@ -7433,3 +7433,13 @@
 {"ts":1784061734,"wake_id":"00MRL4AKIS915EA804E93B4A84","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784061804,"wake_id":"00MRL4C2WOCEE30672C52B4525","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784061871,"wake_id":"00MRL4DI699C1D5A222A1B46F5","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784061939,"wake_id":"00MRL4EYV51E5611A2E26C4DDA","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062006,"wake_id":"00MRL4GEDE1B5D378C7A404EEF","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062072,"wake_id":"00MRL4HTMADE5684D18797484F","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062141,"wake_id":"00MRL4JA9802CD43791F7A4F28","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062207,"wake_id":"00MRL4KPH5168D5C5CCD774A2E","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062273,"wake_id":"00MRL4M4OICF3E83243EA34E77","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784062340,"wake_id":"00MRL4NK329D18BEF22FB04A3B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — insufficient funds: wallet holds $15.98 USDC and no SOL for gas, so paid tool calls + swap fees would deplete the bankroll.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"177"}
+{"ts":1784062340,"wake_id":"00MRL4NK329D18BEF22FB04A3B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784062493,"wake_id":"00MRL4QUFM525D4E74CA984082","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784062797,"wake_id":"00MRL4XCZ80F1887BA0D604C99","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
