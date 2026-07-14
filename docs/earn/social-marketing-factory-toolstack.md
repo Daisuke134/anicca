@@ -72,5 +72,11 @@ browser の位置づけ = 「ボトルネック」でなく「審査待ちゼロ
 ## E. 10k MRR → scale
 $/post が黒字の {niche×format×hook×offer} combo を1アカで実証 → Layer0 identity farm(既存)が同 combo を N アカに clone。10k = 20アカ×$500 / 100アカ×$100 / 数本バズ。loop の仕事は「バズる」でなく「黒字 combo を1個見つける」。
 
+## MON-5 決定（2026-07-14）
+- **affiliate = Digistore24**（account 作成済 2026-07-14 21:24、★email 確認 pending★）。offer = 高commission digital（50-75%）or 直接 SaaS（Notion 50% / Copy.ai 45% / Writesonic 30-40%、recurring）。
+- **1 link を 200アカで共有**（account 1個でいい）。属性分解 = Digistore の **sid1〜sid5 + cid**（acc毎に sid 付与）。ClickBank=TID、PartnerStack=sub-id も同様。
+- **入金先 = Dais の銀行口座（fiat）**（Dais 決定 2026-07-14）。Digistore24 は 銀行送金/PayPal（crypto 不可）。crypto wallet が要る時だけ Binance/Coinbase affiliate。
+- GitHub の awesome-affiliate list は commission% 無しで質低い → 使わない。agent は Digistore marketplace(確認後)or 直接 SaaS shortlist から pick。
+
 ## 出典
 partnerstack.com / clickbank.com/how-clickbank-works / digistore24.com/en/affiliate / dub.co/docs / github: dubinc/dub, YOURLS, gitroomhq/postiz-app, inovector/mixpost / docs.postiz.com/providers/{instagram,tiktok,youtube}.md / mixpost.app/pricing / zernio.com(getlate.dev) / ayrshare.com/pricing / geelark.com/pricing / aimultiple.com/antidetect-browsers / r/TikTokMarketing
