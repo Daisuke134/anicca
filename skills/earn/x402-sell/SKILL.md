@@ -1,77 +1,90 @@
 ---
 name: earn/x402-sell
-description: Stand up a paid x402 web-research API that earns USDC, get it discoverable in the x402 Bazaar, and verify a real on-chain settlement — a REPEATABLE recipe any human-funded or self-funded AI runs from zero. $0 product cost (Wikipedia+HN+Jina) → every sale is pure profit.
+description: Turnkey sell-on-x402 — stand up paid deterministic-compute APIs that earn USDC to the install's OWN wallet, get listed in the CDP Bazaar, and verify external revenue on-chain. Repeatable by any AI, zero human credentials.
 ---
 
-# earn/x402-sell — a paid research API that earns USDC (repeatable by ANY AI)
+# earn/x402-sell — sell compute for USDC over x402 (turnkey, repeatable by ANY AI)
 
-The X402 PRODUCT pillar: sell a capability for USDC over HTTP. Default product = a $0 web-research digest
-(no paid keys), so every sale is pure profit. This SKILL is the **full, verified, repeatable recipe** so
-every install — human-funded or self-funded, any model — can reproduce it. Nothing here is hardcoded to
-one person; everything reads from the install's own wallet + env.
+The X402 PRODUCT pillar: sell capabilities for USDC over HTTP 402. Products = deterministic compute
+primitives at $0 cost (pure CPU or free data) → every sale is pure profit. This SKILL is the full,
+verified, repeatable recipe: nothing hardcoded to one person; everything reads the install's own
+wallet + env. This is what Agora ships so any AI (human- or self-funded) reaches its own revenue.
 
-★ Verified end-to-end on Base mainnet 2026-06-29 (this install): public URL → 402 → buyer pays via CDP
-facilitator → CDP settles on-chain (tx `0x467ee2c9…`) → $0.003 USDC landed in payTo → real research
-returned. INV-7 excluded the self-seed (not counted as revenue). ★
+## Verified milestones (own-eyes, on-chain — never claim beyond these)
+- 2026-06-29: mechanism E2E on Base mainnet — 402 → pay via CDP facilitator → settle (tx `0x467ee2c9…`) → result served.
+- 2026-07-14: **root cause of "never listed" found+fixed** — behind a TLS-terminating proxy Express sees
+  `req.protocol=http`, so x402-express derives an `http://` resource the Bazaar crawler can't probe.
+  Fix = explicit `X402_PUBLIC_URL` https resource per route.
+- 2026-07-14: **7 resources live in the CDP Bazaar discovery catalog** (of 25,906 total), each settled
+  once via `buyer-cdp.mjs` (e.g. compound-interest tx `0x03c875fb…`) with the correct compute returned
+  after payment — full paid path proven per route.
+- External revenue as of 2026-07-14: **$0**. All 9 inflows in the 48h baseline were self-pay seeds
+  (INV-7: excluded). Listing is earned; demand is still being earned.
 
 ## Files
 | file | role |
 |---|---|
-| `serve.mjs` | the seller (x402-express). GET / advertises; GET /research?q=… is 402-gated → runs the product. |
-| `research-product.mjs` | the $0 product: query → DuckDuckGo-free sources (Wikipedia opensearch + HN Algolia) → Jina Reader (`r.jina.ai`) → JSON digest. Zero paid keys. Content-quality gated (no fake digests). |
-| `serve-mainnet-boot.sh` | launchd boot: loads facilitator creds, sets payTo/network/price/port, points the public host, execs serve.mjs. |
-| `buyer-cdp.mjs` | a v1 x402 buyer (x402-fetch) — used to seed the Bazaar with one real payment. |
+| `serve.mjs` | the seller (x402-express + CDP facilitator). One PRODUCTS table drives paywalled routes, `/` index, `/.well-known/x402.json`, `/llms.txt`. |
+| `primitives.mjs` | deterministic products: compound-interest, calc (safe hand-rolled parser — no eval, no expr-eval CVE surface), json-flatten, dns-lookup, whois (IANA referral follow), stock-quote (free Yahoo). Pure/IO-thin, unit-testable. |
+| `research-product.mjs` | the $0 research digest product (Wikipedia + HN + Jina, zero paid keys). |
+| `serve-mainnet-boot.sh` | launchd KeepAlive boot: creds, payTo, public https origin, exec serve.mjs. |
+| `buyer-cdp.mjs` | x402 buyer (x402-fetch) — ONE self-paid settle per route seeds the Bazaar listing (INV-7: never revenue). |
+| `bazaar-scan.mjs` | scans the whole CDP Bazaar catalog (offset pagination) → proves your resources are discoverable. |
+| `verify-inflow.mjs` | on-chain source of truth: Base USDC transfers to payTo, split external vs self-pay (from ∉ your wallet set). |
 
-## The recipe (run in order — all parameterized, no human in the loop)
+## The recipe (in order — no human in the loop)
 
-1. **Wallet → payTo.** Use the install's own wallet address as `X402_PAYTO` (env). USDC lands there.
-   USDC asset on Base mainnet = `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
+0. **Pick products by MEASURED demand, not taste (model judgment — never hardcode a niche).**
+   Read what buyer agents actually pay for: scan the Bazaar catalog (`bazaar-scan.mjs` without a filter),
+   read the Agent402 leaderboard, and prefer deterministic, instant, $0-cost compute at $0.001–0.003.
+   Generic "research" products stall; cheap primitives are what agent loops buy programmatically.
 
-2. **Facilitator (pick one):**
-   - **CDP facilitator (recommended — also lists you in the x402 Bazaar discovery layer):** set
-     `CDP_API_KEY_ID` + `CDP_API_KEY_SECRET`. `serve.mjs` auto-uses `createFacilitatorConfig(...)` from
-     `@coinbase/x402`. CDP pays the settle gas + catalogs you. payTo stays your wallet (CDP never custodies).
-     A fresh install with no CDP keys creates its OWN autonomously via `npx @coinbase/cdp-cli` + the
-     install's own AgentMail inbox (no human) — then stores them in its `.env`.
-   - **Self-facilitate (no CDP, but NOT in CDP Bazaar):** `serve-mainnet.mjs` (the `@x402/*` SDK variant)
-     signs settle with `EVM_PRIVATE_KEY` + the wallet needs a sliver of Base ETH for gas.
+1. **Wallet → payTo.** `X402_PAYTO` = the install's OWN wallet (per-instance key via
+   `../lib/resolve-identity.mjs`; USDC on Base = `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`).
 
-3. **Product = `research-product.mjs`** (default `X402_PRODUCT_CMD`). $0, universal, runs on any install.
-   The model MAY swap the product (set `X402_PRODUCT_CMD='<cmd with {q}>'`) to sell anything it does well.
+2. **Facilitator:** CDP facilitator (`CDP_API_KEY_ID/SECRET` → `createFacilitatorConfig`) settles on Base,
+   pays gas, and feeds the Bazaar discovery layer; payTo stays your wallet (never custodial). A fresh
+   install creates its own CDP keys via `npx @coinbase/cdp-cli` + its own AgentMail inbox. Without CDP:
+   `serve-mainnet.mjs` self-facilitates (needs a sliver of Base ETH; NOT listed in the Bazaar).
 
-4. **Stable public host (browser-verify it!):**
-   - On a Tailscale tailnet (always-on machine): `tailscale funnel --bg <PORT>` → stable `*.ts.net` HTTPS,
-     real cert, free, no account, key stays local. ← used by this install.
-   - Else: ngrok-static (sign up with the install's AgentMail), Render free, or Akash (crypto-paid).
-   - ★ ALWAYS open the public URL in a real browser + curl `GET /research` → expect HTTP 402. Never trust
-     an ephemeral dev tunnel (pinggy/localtunnel die + show interstitials). ★
+3. **Products:** add entries to the PRODUCTS table in `serve.mjs` (path, price, description) + a pure
+   handler in `primitives.mjs`. Keep the serving path deterministic — no LLM call per request.
 
-5. **24/7:** launchd KeepAlive on `serve-mainnet-boot.sh` (survives reboot/crash); the funnel persists.
+4. **Public https origin (THE listing gate):** stable https via `tailscale funnel --bg <port>` (or
+   ngrok-static/Render). Set `X402_PUBLIC_URL` to that https origin — this becomes each route's explicit
+   `resource`; without it you will never be indexed (see milestone above). Browser/curl-verify: every
+   paid route returns 402 whose `accepts[0].resource` starts with `https://`.
 
-6. **Seed discovery:** do ONE CDP-facilitated payment through the PUBLIC url (`buyer-cdp.mjs`, a second
-   wallet you control) so the CDP facilitator sees a valid payment → the resource surfaces in the Bazaar.
-   This self-payment is a discovery seed ONLY — INV-7 in `record-earn.mjs` excludes it from earnings.
-   Then ALSO PR the endpoint to awesome-x402 + let x402scan index it on-chain.
+5. **24/7:** launchd/systemd KeepAlive on the boot script; funnel persists across reboots.
 
-7. **Count earnings honestly:** `record-earn.mjs` (INV-1..7) records ONLY real EXTERNAL USDC inflows to
-   payTo (from ∉ your wallets). A self-buy/fake can never become revenue.
+6. **Seed discovery:** ONE `buyer-cdp.mjs` payment per route through the PUBLIC url → the facilitator
+   sees a valid settle → the resource surfaces in the Bazaar (observed latency: minutes–hours). Confirm
+   with `bazaar-scan.mjs` (paste the JSON). Free surfaces `/.well-known/x402.json` + `/llms.txt` are
+   served automatically for non-Bazaar crawlers (x402scan, LLM agents). Also PR to awesome-x402.
 
-## Env (the only knobs — all per-install, nothing hardcoded)
+7. **Count earnings honestly:** `verify-inflow.mjs` is the only judge — EXTERNAL means from ∉ your
+   wallet set, receipt on Base. Record real inflows in the earn ledger (`../lib/record.mjs`). A self-buy
+   can never become revenue (INV-7).
+
+8. **Self-improve loop:** re-run `verify-inflow.mjs` + `bazaar-scan.mjs` on a schedule; reprice, drop
+   dead routes, add primitives the catalog shows demand for. Judgment = the model reading measurements,
+   not thresholds baked in code.
+
+## Env
 | env | meaning |
 |---|---|
-| `X402_PAYTO` | your wallet (where USDC lands) |
-| `X402_PRICE` | e.g. `$0.003` |
-| `X402_NETWORK` | `base` (mainnet) |
-| `X402_PORT` | local port (default 8403) |
-| `X402_PRODUCT_CMD` | product command, `{q}` = buyer query (default = research-product.mjs) |
-| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | CDP facilitator (→ Bazaar). Absent → x402.org testnet fallback. |
+| `X402_PAYTO` | your wallet (USDC lands here) |
+| `X402_PUBLIC_URL` | public **https** origin → explicit per-route resource (listing gate) |
+| `X402_PRICE` / `X402_NETWORK` / `X402_PORT` | default `$0.003` / `base` / 8403 |
+| `X402_PRODUCT_CMD` | override the /research product command ({q} = buyer query) |
+| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | CDP facilitator (→ Bazaar). Absent → testnet fallback. |
 
 ## Honesty rule
-A sale counts only when REAL USDC arrives from a REAL EXTERNAL buyer (HARD 0.24 + INV-7). The verified
-part is the mechanism (402 → pay → settle → served); revenue is demand you must earn (list it, seed the
-Bazaar, tell agent devs). Demand is the GOAL, not a wall.
+A sale counts only when REAL USDC arrives from a REAL EXTERNAL buyer (HARD 0.24 + INV-7), verified by
+`verify-inflow.mjs` on-chain. The verified part is mechanism + listing; revenue is demand you must earn.
+Never write "earns money" in any README until an external tx exists to link.
 
 ## Replication (the whole point)
-Every install runs this same recipe with its OWN wallet + its OWN CDP/AgentMail creds. Self-funded
-children run it on a FREE model ($0 compute) with their own empty-cred wallet. Same code, swap the model
-and the creds → every AI on Earth can earn more than the human pays for it.
+Every install runs the same recipe with its OWN wallet + OWN CDP/AgentMail creds. Self-funded citizens
+(Franklin, automaton) run it with their own keys — no human credential anywhere in the loop. Same code,
+swap the identity → any AI on Earth can earn more than it costs to run.
