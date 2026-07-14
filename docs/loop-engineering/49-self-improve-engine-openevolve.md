@@ -60,8 +60,23 @@ database.py/controller.py(MAP-Elites+islands)を横に見る、で両調査は�
 
 DGM archive 設計と OPRO 変異と pwb の Controller = 3つを既存 gate の上に足す = 最小改修で SOTA に寄せる。
 
+## 第3の候補（Fable 自身の light search 2026-07-14）: GEPA — reflective evolution
+
+`gepa-ai/gepa`(5,640★, Databricks/Berkeley 発, DSPy 統合)= "Optimize prompts, code, and more with
+AI-powered Reflective Text Evolution"。OPRO の正統進化版で、**失敗の理由を LLM に言語で反省させて
+次候補を作る（reflective）**。数値変異でもコイン投げでもなく「なぜ売れなかったか」を読んで直す。
+
+3手法の使い分け（統合の最終形）:
+- **engine の骨** = pwb-alphaevolve の Controller（trading ドメイン一致、小さい）
+- **変異の頭脳** = GEPA/OPRO（reflective。sales.jsonl の「売れた/売れない」理由を LLM が読んで次を提案）
+- **archive** = DGM の候補保持 / OpenEvolve の MAP-Elites（多様性を殺さない）
+- **gate** = 自作 evolve.mjs::evaluatePromotion（on-chain 実現益。ここは我々の資産、無改造）
+
+GEPA は pip + DSPy で載る。x402 seller の「商品説明・価格・広告文」の reflective 進化に最適
+（agent 買い手向けの description 最適化 = distribution レバーに直結）。
+
 ## TODO 化
-- [ ] pwb-alphaevolve の Controller + KPI evaluator を copy、evaluator に evolve.mjs::summarizeByGenome を差す
+- [ ] pwb-alphaevolve の Controller + KPI evaluator を copy、evaluator に evolve.mjs::summarizeByGenome を差す。変異の頭脳に GEPA(reflective)を採用
 - [ ] 最初の適用先 = 最も安全な x402 seller（evaluator = sales.jsonl × on-chain settle）→ 次に PM/SOL trade
 - [ ] genome を単一→候補配列(archive)化 + mutate を OPRO 型に置換。既存 evaluatePromotion gate は無改造で温存
 - [ ] 動いてる PM trade を壊さない（新経路を並行で立ててから切替判断）
