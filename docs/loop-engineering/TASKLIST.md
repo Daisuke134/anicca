@@ -66,7 +66,7 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 ### 7サブタスク（TaskList #1-8 と一致）
 | ID | 一手 |
 |---|---|
-| CLIP-FIX-1 | poster: 29MB stall を実ブラウザで切り分け（公式API化 or 圧縮）。verify の stale-read false-neg も潰す 【診断確定 2026-07-14】|
+| CLIP-FIX-1 | ✅ DONE 2026-07-14 — 診断: poster/file 無罪、真因=account 投稿制限。出荷: cadence gate(<=1投稿/20h) を run.sh に(commit 54e4f133)。★運用: aiclipsvault は数日休養で自然解除待ち(コードで解けない)★ |
 
 ### CLIP-FIX-1 実装ログ（2026-07-14、俺が直接実測）
 - @aiclipsvault(port 9223, login済)に queue clip を実投稿 → `outcome=failed, post_url=null`。profile 独立確認で新 reel 出ず = **H1 確定（本当に publish されてない、「シェア中」spinner が真に hang。screenshot 6-sharing.png で spinner 実見）**。verify の false-neg(H2)ではない。
@@ -76,7 +76,7 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 - ❌ **size 仮説も falsified**: 2.6MB/15s/1080×1920（旧成功サイズ相当）を投稿 → **やはり failed/新reel出ず**。3ファイル(28MB/faststart/2.6MB)が全て `シェア中` で同一 hang = **コンテンツ非依存**。→ ファイルは犯人でない。
 - **最有力仮説（未確定）= aiclipsvault の投稿制限**（作成2週間・warming中・status "investigating"・最後の成功~10日前・以降全滅）。web「シェア中」永久spinner は action-block/soft-ban の既知症状。account_status ページは 404（診断にならず）。
 - 進行中: 既知原因を検索 subagent で確認中。fix 方針は結果次第（コード修正 or warm延長/休養/別アカ/mobile経路）。★poster のコードは壊れてない可能性が高い（flow は share まで正常到達、IG 側が publish を silently drop）★
-| CLIP-FIX-2 | 品質 floor 1080×1920（FIX-1 とファイルサイズのジレンマを一体で解く）|
+| CLIP-FIX-2 | 【実装中 2026-07-14】queue は既に 1080×1920（200×200 は過去の低解像度 source）。真の穴 = **producer が2重に壊れてた**: ①$SKILLS が 07-13 skill demote でパス切れ ②$ENGINE(OSS clone AI-Youtube-Shorts-Generator + venv)消失 = ★07-11以降 clip 生成ゼロの真因★。fix: scripts を ~/anicca canonical へ移動 + producer 再ポイント(commit 97efc624)、engine は self_heal_engine が re-clone。burn_captions に -movflags +faststart 追加。E2E: producer フル実走で検証中 |
 | CLIP-LOOP-3 | gig Reflexion + darkzOGx analytics loop を移植（MEASURE→REFLECT を金で閉じる）|
 | CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
 | CLIP-MON-5 | ★affiliate-finder ノード新設★ + per-post trackable link + ClipAffiliates 即金 |
