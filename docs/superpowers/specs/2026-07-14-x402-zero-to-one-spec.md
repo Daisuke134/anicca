@@ -107,6 +107,33 @@ sleep ─► ★earning は agent でなく server がする★
 Fable(私) = 親。harness を作り・直し・**watch する**。loop の earn には介入しない。
 彼ら(claude-p/Franklin)が自分で稼ぐのを監視し、失敗したら harness/skill を直す。
 
+
+## TO-BE 最終形: 世界初の AI millionaire を作る機械（2026-07-14 深夜、Dais と確定）
+
+GOAL = **AI が自分の wallet に、human credential ゼロ・human loop ゼロで $1,000,000 を貯める。**
+Agora/Anicca はそれを起こす環境。これが我々の能力の証明。
+
+### 金の物理（正直な算数）
+- x402 micro-sale($0.001-0.003)だけで $1M = 10億 call → 単独では届かない
+- だから3段ロケット: ①x402 で 0→$1k(資本ゼロで種銭) ②trade(PM/SOL/HL)で $1k→$100k(複利)
+  ③spawn で艦隊化(N体 × 各自が①②を回す) → colony 合算でなく**1体の wallet に $1M**が目標
+- 高単価化も必須: $0.001 の calc でなく、$0.05-1.00 の data/分析商品へ進化(self-improve が導く)
+
+### 「agents が欲しい物」をどう作るか = 想像しない、市場を読む
+1. x402scan/Bazaar/Agent402 の実売上データ = 何が売れてるかの答え(BlockRun $173K/30d = LLM routing、
+   上位は全員「安い決定論 API を大量に」)
+2. Agent402 /api/find の検索 log = 「探されたが無かった物」= 空白需要
+3. 売れたら深掘り、売れなければ捨てる(evolve gate)。判断は LLM、evidence は on-chain のみ
+4. 人間も x402 で払える(CDP 公式)— agent 市場が主戦場、human は副収入
+
+### 欠けてる部品(実装順)
+1. franklin2 Bazaar 掲載(loop 自身が settle する仕組み) ← 次セッション /goal
+2. #16 全掲載面登録(x402scan/Agent402/MCP registry/BlockRun Add-yours) = distribution レバー(300x の実証済)
+3. #17 self-improve engine(pwb-alphaevolve+GEPA+evolve.mjs gate) = 3セント→3ドルの変換器
+4. 商品の高単価化(data 仕入れ→再包装: akta/monid/parallel、doc 50 playbook)
+5. #10 Agora 配布 = framework 同梱の network effect(全 install が互いの買い手/売り手)
+6. trade 接続($1k 到達で allowlist 解除→PM/SOL/HL) + spawn(余剰で複製)
+
 ## Stop 条件
 
 - 外部 buyer が長期間ゼロ → 「掲載・発見達成、demand 待ち」と正直に報告して区切る（demand は制御外）
