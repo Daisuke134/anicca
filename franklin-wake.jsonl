@@ -7307,3 +7307,10 @@
 {"ts":1784046430,"wake_id":"00MRKV6JYH511F256A2FEC480D","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784046497,"wake_id":"00MRKV7Z6YC932DE06AA3D471A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (no clear bull/bear conviction) and the expected edge doesn’t clear the ~0.4%+ round-trip cost; hold USDC ($16.28).\n[sol-trade] sol-evolve -> {   \"promoted\": fa"}
 {"ts":1784046497,"wake_id":"00MRKV7Z6YC932DE06AA3D471A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784046652,"wake_id":"00MRKVBB624365D61AAE4D4A8B","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046719,"wake_id":"00MRKVCR0E9E7E7B7380C64CF4","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784046786,"wake_id":"00MRKVE6HJ12CA511747A444F1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784046964,"wake_id":"00MRKVI02RA9213AD2882D4F3C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784047165,"wake_id":"00MRKVMB0J64E7898E6A244518","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1784047300,"wake_id":"00MRKVP6ZR1F11269891584002","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784047433,"wake_id":"00MRKVS1X9B42CA5AB491E4E14","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
