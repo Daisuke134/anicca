@@ -16,6 +16,14 @@ marketing loop の crypto 収益レール。AI が KYC/人間なしで自 wallet
 | ✗ Binance CEX | 最大50% | Spot wallet(KYC済 Binance 口座)| ★登録時 KYC必須★ |
 | ✗ Coinbase | 50%(初3ヶ月のみ) | ★fiat払い(PayPal/銀行、Impact経由)★ | KYC口座前提 |
 
+## ★GMX 実機構 verified（公式 docs crwl 2026-07-14）★
+- 参加 = referral code を作る（A-Z/0-9/_、20字まで、case-sensitive）→ **on-chain tx で登録（Arbitrum が leader chain、LayerZero で follower に伝播）**。
+- code 登録後、Referrals ページから referral link を copy → **どの platform でも共有**。
+- 紹介先が link を開く→code が browser に保存→初回注文時に contract に書込→以降その trader は手数料割引 + ★自分に報酬（自 wallet へ）★。
+- KYC/exchange account 不要。AI が Arbitrum wallet + 少額 gas を持てば完結。
+- 高volume trader は GMX 管理の protocol code に graduate しうる（affiliate 報酬 0% になる、$50M+ volume）= 上限リスクだが通常無視可。
+→ **verified: agora crypto rail = GMX で確定。次の実装 = wallet で code 登録 tx（gas 確認後）。**
+
 ## agora 用の設計
 - **crypto rail = GMX Referral**（wallet 接続で agent が自律参加、報酬が自 wallet に）。
 - affiliate-finder skill(#15) の crypto モードはこれを使う。次: GMX docs(docs.gmx.io/docs/referrals)を crwl し、紹介コード生成の on-chain tx 手順 + ToS の bot/agent 禁止条項を実測確認。
