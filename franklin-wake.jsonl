@@ -6694,3 +6694,12 @@
 {"ts":1783988217,"wake_id":"00MRJWIU42A5AE93FC7FE64C21","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — insufficient SOL for gas (wallet: 18.94 USDC, 0 SOL); cannot execute swaps.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"177c0bc4fb22\",   \"evaluations\": {},   \"summary\": {}"}
 {"ts":1783988217,"wake_id":"00MRJWIU42A5AE93FC7FE64C21","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783988372,"wake_id":"00MRJWM5WNF3C2977B6C4249A0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783988533,"wake_id":"00MRJWPMKE109F5A57EF2A48C6","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783988533,"wake_id":"00MRJWPMKE109F5A57EF2A48C6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783988662,"wake_id":"00MRJWSE3P0CD3FDF4D55247D0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783988794,"wake_id":"00MRJWV7SYBBF32EFC11064343","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783988939,"wake_id":"00MRJWYBPE42B4B7F9DED74549","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783989089,"wake_id":"00MRJX1J2NB1D8A9C99B2541AF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783989233,"wake_id":"00MRJX4M2875E5728AF6D84EBB","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783989233,"wake_id":"00MRJX4M2875E5728AF6D84EBB","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783989363,"wake_id":"00MRJX7ER858ACE715008743B6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
