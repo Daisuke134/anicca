@@ -206,25 +206,38 @@ AS-IS の詰まり:  applied 113 ──► replied 42 ──► won 2 ──► 
 
 ## 6. ライン2: affiliate loop（clip / video）— TO-BE
 
-```
-AS-IS:
-  clip  : 投稿が3連続失敗（outcome=failed / reached=shared-unconfirmed / post_url=null）。週次 -250
-          self-improve = ★無い★（lessons.jsonl は失敗を記録するだけ。web 検索の指示 0件）
-  video : warmup を抜けられない（"only 2 real views (<3) — day NOT advanced"）
-          閾値 3 が run.sh に ★hardcode★ → INV-4 違反。self-improve = ★無い★
+### ★2026-07-14 更新: 投稿できない問題の真因4つ、全て解決/診断済★
+1. **producer 2重故障（FIX-2 済）**: $SKILLS パス切れ(07-13 skill demote) + $ENGINE(OSS clone)消失 = ★07-11以降 clip 生成ゼロの真因★。→ scripts を ~/anicca canonical へ移動+再ポイント、engine は self-heal で re-clone。新clip 1080×1920/faststart/gate通過を実証。
+2. **品質(ブレ)は producer で既に解決**: 200×200 は過去の低解像度 source。現 producer は 1080p source→1080×1920。実フレームで sharp 確認済。
+3. **poster hang の真因（FIX-1/POST-11）= ★desktop web composer 自動投稿が構造的デッドエンド★**（非自動化ユーザーですら stuck、新規アカ+自動ブラウザ=IG silent reject）。python バグでもアカBANでもない。
+4. **★解決（実証済 2026-07-14）= instagrapi + browser の信頼 sessionid 再利用 + ffmpeg thumbnail★**。web composer で3回失敗した @aiclipsvault で publish 成功（reel/DaxPaF9saPA、logged-out確認）。**$0/Business不要/審査不要/検問回避**。→ 詳細 `docs/earn/ig-posting-method-graph-api-pivot.md`。cadence gate(≤1投稿/20h、FIX-1)で再ブロック防止。
 
+```
 TO-BE:
+  ┌─ POST（本命・無料・実証済）───────────────────────────────────────┐
+  │ instagrapi_post.py: CloakBrowser の login済セッションから sessionid  │
+  │ 抽出 → login_by_sessionid → ffmpeg thumb → clip_upload。            │
+  │ ★web composer(post_reel.py)は廃止★。Graph API は将来オプション。    │
+  └───────────────────────────────────────────────────────────────────┘
   ┌─ L1 BASE ─────────────────────────────────────────────────────────┐
-  │ warmup は「実視聴 N 件」ではなく ★日数で抜ける★（3日 → 4日目に投稿） │
+  │ warmup は日数で抜ける（2週間+推奨）。cadence gate = ≤1投稿/20h       │
   │ 進むか止まるかは model が状態を見て決める（hardcode 禁止）          │
   └───────────────────────────────────────────────────────────────────┘
-  ┌─ L3 SELF-IMPROVE（gig の experiments パターンをそのまま移植）───────┐
-  │ crwl で「バズる clip の型 / サムネ / 冒頭3秒 / 投稿時間 / ハッシュタグ」│
-  │ → components.json（thumbnail / hook / caption / posting_time / niche）│
-  │ → 実測（plays / retention / 報酬）→ keep / revert                    │
+  ┌─ AFF-FIND（MON-5、未実装）────────────────────────────────────────┐
+  │ browser で Digistore24/ClickBank を niche×高commission で採点→選定   │
+  │ → Dub.co で trackable link → bio。勝ち offer を全同niche アカに copy │
+  └───────────────────────────────────────────────────────────────────┘
+  ┌─ L3 SELF-IMPROVE（gig の Reflexion をそのまま移植、LOOP-3）─────────┐
+  │ crwl で「バズる clip の型 / サムネ / 冒頭3秒 / 投稿時間 / タグ」     │
+  │ → playbook.json → 実測（views / retention / ★$/post via Dub.co★）    │
+  │ → reflection.jsonl → keep / revert。★目的関数 = $/post（views でない）★│
   └───────────────────────────────────────────────────────────────────┘
   ┌─ L4 REALITY GATE ─────────────────────────────────────────────────┐
   │ post_url が返り、★ログアウト状態で公開ページが見える★まで成功と呼ばない │
+  └───────────────────────────────────────────────────────────────────┘
+  ┌─ REPORT（OBS-6）+ DECOUPLE（12）─────────────────────────────────┐
+  │ 毎pass Telegram(reel link付) / 全アカ dashboard。                    │
+  │ 外部依存(~/.openclaw/~/.cloak/~/.claude)を repo 内 data dir に集約   │
   └───────────────────────────────────────────────────────────────────┘
 ```
 
