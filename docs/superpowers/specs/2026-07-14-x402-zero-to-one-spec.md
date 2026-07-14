@@ -19,14 +19,14 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 - /.well-known/x402.json + /llms.txt 公開
 - sell-on-x402 turnkey recipe = `~/anicca/skills/earn/x402-sell/SKILL.md`（commit 695c11e0）
 - awesome-x402 掲載 PR: https://github.com/xpaysh/awesome-x402/pull/838
-- external revenue = $0（inflow 9件は全部 self-pay seed。盛らない）
+- ★2026-07-14 09:05Z 更新: external revenue = $0.004 USDC (外部 buyer 2件、on-chain 検証済)。zero-to-one 達成★
 
 ## TODO 表（順序の正本）
 
 | 段 | owner | やること | done 判定 | 状態 |
 |---|---|---|---|---|
 | 0 | Fable(今) | ★恒久 disk fix★ — disk-full で session brick を二度と起こさない自動機構（調査→実装→launchd 常駐） | 閾値割れで自動 prune + 通知が実機で動く | ★done 2026-07-14★ (3層: autoprune/janitor/alerter, FORCE 実測 26→34GB, 正本 ~/.openclaw/skills/mac-health/README.md) |
-| 1 | Fable(今) | 経済圏 0→1: 外部 buyer 1件（seller payTo=0x810f 稼働中） | verify-inflow で EXTERNAL≥1 | 監視中(30分毎) |
+| 1 | Fable(今) | 経済圏 0→1: 外部 buyer 1件（seller payTo=0x810f 稼働中） | verify-inflow で EXTERNAL≥1 | ★done 2026-07-14★ EXTERNAL=2, $0.004 USDC (tx 0x2e06c55b… from 0x74610bd8…, tx 0xe75baae3… from 0x36a9b00e…, 両方 receipt 0x1) |
 | 1b | Fable(今) | demand 面の追加: x402scan 掲載確認・Agent402 index・PR#838 follow | 各面で発見可能を実測 | pending |
 | 2 | claude-p loop | agent-economy loop 化: payTo=0x904B の seller 複製 + self-improve loop（verify-inflow→死に route 削除→需要 primitive 追加→再掲載）を sonnet loop で常駐 | claude-p wallet に EXTERNAL≥1、loop が無人で1週間回る | pending |
 | 3 | Franklin | Franklin の 0→1: per-instance EVM key → 自分 payTo の seller → settle seed → 掲載 → 外部着弾。★self-funded + human credential ゼロの証明★ | Franklin wallet に EXTERNAL≥1 | pending |
