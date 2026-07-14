@@ -37,6 +37,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | INV-9 | 1サイトで勝ったら**同じ骨格で横展開**できる形にする（サイト固有の selector を skill に焼かない。勝ち筋の「型」を model に渡す） |
 | INV-10 | **reality-gate / verifier は判定の前に必ず session restore（L0-2 の梯子）を通す。** ログアウトのまま「確認できない」を FALSE にしてループを罰しない。復旧できなければ verdict=None（defer）。※2026-07-13、gig が logged-out verifier の誤 FALSE で一日中 respawn していた実インシデントから |
 | INV-11 | **各 AI は自分の稼ぎを自分で保持する（financial independence）。** claude-p の earn を Dais に上納しない。稼いだ crypto は稼いだ AI 自身の wallet に留まり、自分の compute 代・spend・子 spawn に使う。目的は「AI の経済的自立」であって human への送金ではない。※human-funded の trading（§4 ライン5, Dais 個人の金）だけは別枠 |
+| INV-12 | **★LOOP がやる、俺(orchestrator)じゃない★。** 稼ぐ実作業（account 作成・warm・affiliate 発見・bio 設定・投稿・測定・自己改善）は全て LOOP(cron が叩く bounded agent)が自律で行う。orchestrator の役割は「recipe を1回作って動くのを確認 → skill 化 → 以後 loop が repeat」であって、毎回 loop の代わりに command を打つ/prompt するのではない。**orchestrator が手で1回やるのは「skill 化の為の manual-first」だけ。恒常運用で orchestrator が介入したら設計が間違い（loop が自走できていない証拠）。** everything in the harness. |
 
 ---
 

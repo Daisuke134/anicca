@@ -83,6 +83,18 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 | CLIP-OBS-6 | Telegram 報告 + 全アカ dashboard（views/engagement/$）|
 | CLIP-SCALE-7 | 勝ち combo を N アカに clone、多platform 展開 |
 
+### ★2026-07-14 session 到達点（clip loop 完成度）★
+✅ FIX-1(poster診断: web composer死筋) / FIX-2(producer復旧+品質1080²) / POST-11(instagrapi 無料投稿, reel/DaxPaF9saPA 実証) / OBS-6(Telegram+link, TELEGRAM_SENT=true) / LOOP-3(Reflexion harness clip_pass.sh + cold-start bible + affiliate money bible 埋込) / MON-5 offer取得(★Digistore Q-Money 50% 実promolink https://www.digistore24.com/redir/569951/keiodaisukeaiclips1f031/ , offer.json joined:true★)
+⬜ **closed まで残り5手（全部 loop がやる、INV-12）**:
+  1. bio-set step — loop が browser で bio に link+sid（instagrapi account_edit は login_required で不可→browser）
+  2. LOOP-4 — clip_pass.sh を単一 launchd cron に配線 + aiclipsvault status=ready（旧 clip-producer/clip-proactive 廃止）
+  3. MEASURE→$ — sid別 EPC を Digistore dashboard から読み REFLECT に渡す（10k の駆動輪）
+  4. skillify #15 — account作+affiliate-finder を skill 化（新アカ自己bootstrap、shared-first/finder-hedge）
+  5. shared offer config — 再発見せず共有offer即使う
+- 正本 docs: spec §6 / docs/earn/{social-marketing-factory-toolstack,ig-posting-method-graph-api-pivot,ig-posting-restriction-and-warmup-policy,crypto-affiliate-feasibility}.md / docs/loop-engineering/{47-cold-start-bible,49-affiliate-money-playbook,48-master-loop-map}.md
+- GMX(agora crypto rail)setup 実測 → docs/earn/gmx-referral-setup.md（本 session 末に orchestrator が verify）
+- 実装ファイル: ~/anicca/skills/earn/clip/{clip_pass.sh, run.sh, producer.sh, scripts/instagrapi_post.py}
+
 ### Q1 の結末（4ループの実働、実データ 2026-07-13）
 | loop | tmux/launchd | 実際にやっていること | 稼ぎ |
 |---|---|---|---|
