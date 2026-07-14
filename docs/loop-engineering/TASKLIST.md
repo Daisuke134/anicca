@@ -66,7 +66,13 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 ### 7サブタスク（TaskList #1-8 と一致）
 | ID | 一手 |
 |---|---|
-| CLIP-FIX-1 | poster: 29MB stall を実ブラウザで切り分け（公式API化 or 圧縮）。verify の stale-read false-neg も潰す |
+| CLIP-FIX-1 | poster: 29MB stall を実ブラウザで切り分け（公式API化 or 圧縮）。verify の stale-read false-neg も潰す 【診断確定 2026-07-14】|
+
+### CLIP-FIX-1 実装ログ（2026-07-14、俺が直接実測）
+- @aiclipsvault(port 9223, login済)に queue clip を実投稿 → `outcome=failed, post_url=null`。profile 独立確認で新 reel 出ず = **H1 確定（本当に publish されてない、「シェア中」spinner が真に hang。screenshot 6-sharing.png で spinner 実見）**。verify の false-neg(H2)ではない。
+- **★真因 = mp4 の moov atom がファイル末尾（faststart 無し）★**。ffprobe: h264 High/yuv420p/level40/aac = IG 互換。だが moov@末尾 → IG web uploader は 28MB を全DLするまで処理開始できず hang。**小ファイル時代(2MB)は全DLが速く成功 → bitrate fix で28MB化して露呈**、と辻褄一致。
+- **fix = `ffmpeg -c copy -movflags +faststart`（再エンコード不要、moov を先頭へ移動、品質不変）**。恒久化 = ①producer の最終エンコードに追加 ②既存 queue 7本を remux。
+- 検証中: faststart 版を実投稿 → publish 確認（この行、投稿完了後に結果追記）。
 | CLIP-FIX-2 | 品質 floor 1080×1920（FIX-1 とファイルサイズのジレンマを一体で解く）|
 | CLIP-LOOP-3 | gig Reflexion + darkzOGx analytics loop を移植（MEASURE→REFLECT を金で閉じる）|
 | CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
