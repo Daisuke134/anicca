@@ -36,7 +36,7 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | **21.7 / GIG-10K** | 10k MRR 自走の実挙動検証: ①monitor 勝者の全コンポ差分 ②table-stakes 一気埋め（既存6出品を勝者へ改善+新規追加）③playbook.json 生成 ④段階1 初レビュー | ⬜ runbook に指示は焼込済（PULL/TABLE-STAKES/FULL-MENU/BAKE/ITERATE-EXISTING）。★実挙動を1フルパスで検証要★ |
 | **21.5** | 学びを焼き込んで一般化（勝者パターンを playbook.json に蓄積→3勝者共通で core 戦略に昇格→戦略からコンポーネント修正） | ✅ DONE（BAKE THE LEARNING を runbook に。commit pushed） |
 | **22 / GIG-3** | paid=0（納品→検収→出金→着金） | ✅ DONE（仕組みは runbook B1/EARNED CHECK に既存。振込申請は実収益が出て初めて可能＝earnings 待ち。Dais 確認） |
-| **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す（→ 下記「CLIP LOOP 最新理解」に7サブタスク展開） | pending |
+| **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す（→ 下記「CLIP LOOP 最新理解」に展開） | 🔧 進行中: FIX-1✅ FIX-2✅ POST-11✅(instagrapi 投稿 実証+配線)。残 LOOP-3/MON-5/OBS-6/DECOUPLE-12 |
 | **24 / VIDEO-1** | video: warmup の hardcode を外し self-improve + scout 移植 | pending |
 | **25 / LM-1** | life manager loop（X-1）を 1k MRR まで | pending |
 | **26 / Q3** | scale: steel-browser を Docker で cloud に立て、gig/clip 1本を回す PoC + ToS 公式確認 + 経済表（調査済 → doc 45） | pending |
