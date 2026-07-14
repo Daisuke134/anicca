@@ -7505,3 +7505,12 @@
 {"ts":1784070588,"wake_id":"00MRL9KCK0E393844DE6E14DFA","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784070588,"wake_id":"00MRL9KCK0E393844DE6E14DFA","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784070720,"wake_id":"00MRL9N5TH947AFC5EF1464208","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784070880,"wake_id":"00MRL9QLIV735B152606DC4AD2","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784070946,"wake_id":"00MRL9S0TABE602618401A432D","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784071015,"wake_id":"00MRL9THFPFA9592BF83E448B4","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784071015,"wake_id":"00MRL9THFPFA9592BF83E448B4","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784071148,"wake_id":"00MRL9WCBCD4A73DE24EBE4071","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784071214,"wake_id":"00MRL9XRIN3AEAADBF9E4E4588","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784071286,"wake_id":"00MRL9ZAUIC7876654D7BE435E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784071442,"wake_id":"00MRLA2N2R2656E6893C484864","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784071620,"wake_id":"00MRLA6GIEA12A31FBFE3B408D","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
