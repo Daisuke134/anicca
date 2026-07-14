@@ -36,6 +36,38 @@ def extract_json_obj(text: str) -> dict:
     return json.loads(m.group(0))
 
 
+def trajectory_all_login_wall(pass_id: str, min_ts: int, trajectory_root: str = "~/gig/trajectory") -> bool:
+    """Deterministic (no-LLM) auth-wall detector, read from the SAME trajectory.jsonl the evidence
+    gate already trusts. Root cause of a real incident (realityverify-1784072705-57357 and 2 earlier
+    occurrences): a fresh judge that hits a login redirect on EVERY ground-truth URL sometimes fails
+    to emit its required JSON verdict at all (gets stuck narrating instead of following the strict
+    schema) — extract_json_obj then raises and the except-branch JudgementResult defaults
+    reached_captcha=False, so gig_reality_verify.sh misclassifies a pure session/auth-wall event as
+    kind=claim_mismatch (bypassing the existing auth_wall cooldown gate, gh#1015) and spawns a full
+    self-fix as if there were a real code bug. This function independently re-derives reached_captcha
+    from ground truth the judge's prose never gets a vote on: every single navigated row for this
+    pass_id landed on a Coconala /login (or /signin) page. Returns False (never claims an auth wall)
+    if there are zero rows to look at — an empty trajectory is evidence of nothing."""
+    p = os.path.join(os.path.expanduser(trajectory_root), pass_id, "trajectory.jsonl")
+    if not os.path.exists(p):
+        return False
+    rows = []
+    for line in open(p, encoding="utf-8"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except Exception:
+            continue
+    if not rows:
+        return False
+    return all(
+        "/login" in str(row.get("url", "")) or "/signin" in str(row.get("url", ""))
+        for row in rows
+    )
+
+
 def count_evidence_rows(pass_id: str, min_ts: int, trajectory_root: str = "~/gig/trajectory") -> int:
     """Count trajectory rows for `pass_id` with ts >= min_ts (i.e. captured DURING this run, not a
     stale leftover from a previous run reusing the same pass_id). Never counts another pass_id's rows
@@ -76,6 +108,22 @@ def build_gated_row(
         jr = gig_judge.JudgementResult.from_dict(d)
     except Exception as e:  # noqa: BLE001 — never crash the caller on bad judge output
         jr = gig_judge.JudgementResult(verdict=False, failure_reason=f"unparseable_judge_output: {e}")
+
+    # Independent, no-LLM auth-wall backstop: if the judge's own reached_captcha came back False (the
+    # unparseable-fallback default, or a judge that forgot to set it) but ground truth shows EVERY
+    # navigated URL this pass redirected to /login, correct it here rather than let downstream
+    # (gig_reality_verify.sh's kind=auth_wall vs claim_mismatch routing) trust a value we know is
+    # wrong — this is what feeds the auth_wall cooldown gate (gh#1015) instead of a bogus self-fix spawn.
+    if not jr.reached_captcha and trajectory_all_login_wall(pass_id, min_ts, trajectory_root):
+        jr = gig_judge.JudgementResult(
+            verdict=False,
+            reasoning=jr.reasoning,
+            failure_reason="auth_wall_detected_from_trajectory: every ground-truth URL this pass "
+                            "redirected to /login (deterministic check, independent of the judge's "
+                            f"own report: {jr.failure_reason or 'judge did not report reached_captcha'})",
+            impossible_task=jr.impossible_task,
+            reached_captcha=True,
+        )
 
     evidence_count = count_evidence_rows(pass_id, min_ts, trajectory_root)
     gated = gig_judge.gate_verdict(jr, evidence_count, required_count)
