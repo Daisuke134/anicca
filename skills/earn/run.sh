@@ -61,8 +61,10 @@ wallet_addr() {
 W="$(wallet_addr)"
 WLOW="$(echo "$W" | tr 'A-F' 'a-f')"
 
-record_line() { # $1 = json
-  node "$HERE/lib/record.mjs" "$1" "$LEDGER"
+record_line() { # $1 = json — defense-in-depth: strip PII env even if parent unset loop missed it
+  env -u GOOGLE_LOGIN_PASSWORD -u GOOGLE_LOGIN_EMAIL \
+      -u COMPOSIO_API_KEY -u COMPOSIO_AUTH_TOKEN \
+      node "$HERE/lib/record.mjs" "$1" "$LEDGER"
 }
 
 # distribute_ubi: after a PROFITABLE external wake, send a share of THIS wake's net to AI+human
