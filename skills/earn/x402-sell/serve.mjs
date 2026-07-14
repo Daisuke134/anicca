@@ -111,6 +111,30 @@ app.get("/llms.txt", (_req, res) =>
 
 app.use(paymentMiddleware(payTo(), routes, facilitator));
 
+// sales log — any request that clears the paywall above IS a settled sale; record WHICH product
+// sold (on-chain shows only amounts, so without this a $0.001 sale is unattributable to a route).
+// One JSONL line per sale: {ts, route, price, payer}. payer = best-effort decode of the buyer's
+// X-PAYMENT authorization (absent → null, never blocks the sale).
+import { appendFileSync, mkdirSync } from "node:fs";
+import { join, dirname as pdirname } from "node:path";
+const SALES_LOG = process.env.X402_SALES_LOG ||
+  join(pdirname(new URL(import.meta.url).pathname), "state", `sales-${payTo().toLowerCase()}.jsonl`);
+try { mkdirSync(pdirname(SALES_LOG), { recursive: true }); } catch { /* best-effort */ }
+app.use((req, res, next) => {
+  const product = PRODUCTS.find((p) => p.path === req.path);
+  if (product) {
+    let payer = null;
+    try {
+      const xp = JSON.parse(Buffer.from(req.header("x-payment") || "", "base64").toString("utf8"));
+      payer = xp?.payload?.authorization?.from || null;
+    } catch { /* header absent/opaque — sale still logged */ }
+    try {
+      appendFileSync(SALES_LOG, JSON.stringify({ ts: new Date().toISOString(), route: req.path, price: product.price, payer }) + "\n");
+    } catch { /* logging must never break serving */ }
+  }
+  next();
+});
+
 // the paid endpoint: runs the product command with the buyer's query, returns the result.
 app.get("/research", (req, res) => {
   const q = String(req.query.q || "").slice(0, 500);
