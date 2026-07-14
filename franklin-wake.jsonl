@@ -7409,3 +7409,10 @@
 {"ts":1784058712,"wake_id":"00MRL2HT0468C5E877023F447C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784058870,"wake_id":"00MRL2L6T726F72CBED0B046FF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784059038,"wake_id":"00MRL2OSIGF53D67951109484B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784059188,"wake_id":"00MRL2S0AX9DBB91A892C148CA","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784059367,"wake_id":"00MRL2VU2B57048F1214EA4DAC","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784059562,"wake_id":"00MRL300CU0D96B2D036874BAB","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784059728,"wake_id":"00MRL33KJW6DE239DF6ABF4252","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal shows only a weak bearish (33% confidence) on SOL so the edge doesn’t clear the ~0.4%+ round-trip cost on my $16.07 bankroll; hold USDC and only trade if the signal strengthens en"}
+{"ts":1784059728,"wake_id":"00MRL33KJW6DE239DF6ABF4252","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784059884,"wake_id":"00MRL36WUT4C4E4EF07E1D4D83","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784060078,"wake_id":"00MRL3B2O1CEE0B339C0864729","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
