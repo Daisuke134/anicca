@@ -118,10 +118,17 @@ fi
 ID=$(printf '%s' "$URL" | sed 's#.*v=##; s#[^A-Za-z0-9_-]##g' | head -c 16)
 DEST="$QUEUE/${ID}_EN.mp4"
 cp "$WORK/EN.mp4" "$DEST"
+# MON-5: if an affiliate/product offer is set, add a "link in bio" CTA (IG only makes the BIO link
+# clickable, never caption links). The bio link itself is set on the account by the AFF-FIND step.
+CTA="Follow for daily money + AI clips."
+if [ -s "$HOME/clips/offer.json" ]; then
+  OFFER=$(python3 -c "import json;d=json.load(open('$HOME/clips/offer.json'));print(d.get('offer_name','') if d.get('joined') else '')" 2>/dev/null)
+  [ -n "$OFFER" ] && CTA="👉 ${OFFER} — link in bio. Follow for daily money + AI."
+fi
 cat > "$QUEUE/${ID}_EN.txt" <<CAP
 ${HOOK:-Money & AI clip} 💰
 
-Follow for daily money + AI clips.
+${CTA}
 
 #money #investing #ai #wealth #finance #aiclips
 CAP
