@@ -69,6 +69,44 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 5. 前提となる実装: loop 起動時に broke instance が x402_sell を最初に選ぶこと
    （catalog-gate が broke 時に資本リスク slot を隠す既存設計 + ANICCA_SLOT_ALLOWLIST でテスト決定論化）
 
+
+## 「知能が要らない」仕組み（x402 skill × loop の全 ASCII。正本）
+
+```
+wake(timer 600s) ─► menu = {x402_sell, report, cook}   ← ANICCA_SLOT_ALLOWLIST
+      │   dumb brain でも実質1択(earn は x402_sell だけ)
+      ▼
+x402_sell ─► skills/earn/run.sh strategy=x402  ★ここから判断ゼロの決定論★
+      │  1. seller 生存確認(curl :PORT)。死んでたら起動(payTo=自分の wallet)
+      │  2. 公開 https 確認、colony forum へ広告
+      │  3. narrate を ledger に記録
+      ▼
+sleep ─► ★earning は agent でなく server がする★
+      │   buyer bot が Bazaar で発見 → 402 → 支払 → compute 返却 → USDC 着弾
+      │   24/7、agent の知能と無関係に売れる
+      ▼
+次 wake ─► verify-inflow(on-chain, self-pay 除外) → external>0 なら revenue 記録
+           賢い model の余地 = 価格調整/route 追加(最適化層。必須でない)
+```
+
+原理: **判断を要する部分を全部 deterministic infrastructure に落とし、loop の仕事を
+「店を開け続ける」に縮約した**。だから GLM 級 free model でも 0→1 できる（はず — 段3で実測）。
+
+## skill-test harness（1 skill × 1 loop × on-chain eval。次の skill も同型でテスト）
+
+```
+テスト対象 skill を1つ選ぶ → ANICCA_SLOT_ALLOWLIST=<skill> で loop の menu を絞る
+→ N wakes 走らせる(親=Fable は watch のみ、loop に介入しない)
+→ eval = 実 on-chain 収入(self-pay 除外) + wake log の行動 trace
+→ PASS = external revenue > 0 / FAIL 分析 = trace から skill の穴を特定 → skill 修正 → 再走
+テスト順: x402_sell(now) → bounty → affiliate(clip, video)
+※ 業界 best practice の検索結果を反映して精緻化する(調査中 2026-07-14)
+```
+
+## 役割固定（Dais 2026-07-14）
+Fable(私) = 親。harness を作り・直し・**watch する**。loop の earn には介入しない。
+彼ら(claude-p/Franklin)が自分で稼ぐのを監視し、失敗したら harness/skill を直す。
+
 ## Stop 条件
 
 - 外部 buyer が長期間ゼロ → 「掲載・発見達成、demand 待ち」と正直に報告して区切る（demand は制御外）
