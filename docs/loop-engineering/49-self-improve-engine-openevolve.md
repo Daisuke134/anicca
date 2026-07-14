@@ -75,6 +75,16 @@ AI-powered Reflective Text Evolution"。OPRO の正統進化版で、**失敗の
 GEPA は pip + DSPy で載る。x402 seller の「商品説明・価格・広告文」の reflective 進化に最適
 （agent 買い手向けの description 最適化 = distribution レバーに直結）。
 
+## 実機検証（2026-07-15、記事執筆のため実際に動かした）
+
+`pip install openevolve`(venv, v0.3.1) → `evolve_function(bubble_sort, test_cases=[...], iterations=8, model=gpt-4o-mini)`。
+2回実行、両方 exit 0。実測値: 8 iteration・約48-52秒・OpenAI API呼び出し8回(全部200 OK)・`combined_score` は
+1.0(元コードのまま正しい)⇄0.0(`Function 'bubble_sort' not found`)⇄0.4(`swap` 未定義)の間で振動し、
+最終的にベストな個体(score=1.0)を保持して終了。ライブラリ自体の粗: 終了時に`request_shutdown`の
+`AttributeError`(multiprocessing のシグナルハンドラの既知の粗、結果には影響しない)。config APIは
+README記載の`model=`引数が実際には効かず(`run_evolution() got an unexpected keyword argument 'model'`)、
+`Config().llm.models = [LLMModelConfig(...)]`が正しい経路(README quick-startはやや古い)。
+
 ## TODO 化
 - [ ] pwb-alphaevolve の Controller + KPI evaluator を copy、evaluator に evolve.mjs::summarizeByGenome を差す。変異の頭脳に GEPA(reflective)を採用
 - [ ] 最初の適用先 = 最も安全な x402 seller（evaluator = sales.jsonl × on-chain settle）→ 次に PM/SOL trade
