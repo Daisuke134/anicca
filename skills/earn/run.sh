@@ -270,7 +270,9 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
     # facilitator and can never be found or paid for real (x402-zero-to-one 2026-07-14). Same
     # sourcing pattern as x402-sell/serve-mainnet-boot.sh; payTo stays THIS instance's $W.
     # X402_PUBLIC_URL (per-instance https origin) rides in from the instance env untouched.
-    set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+    # OPENCLAW_ENV_FILE override: instances that fake $HOME (franklin2's .franklin2-home) point
+    # this at the real creds file; default stays generic for normal installs.
+    set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
     X402_PAYTO="$W" X402_PORT="$XPORT" nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 &
     sleep 2
   fi
