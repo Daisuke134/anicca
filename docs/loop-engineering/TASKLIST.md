@@ -72,7 +72,10 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 - @aiclipsvault(port 9223, login済)に queue clip を実投稿 → `outcome=failed, post_url=null`。profile 独立確認で新 reel 出ず = **H1 確定（本当に publish されてない、「シェア中」spinner が真に hang。screenshot 6-sharing.png で spinner 実見）**。verify の false-neg(H2)ではない。
 - **★真因 = mp4 の moov atom がファイル末尾（faststart 無し）★**。ffprobe: h264 High/yuv420p/level40/aac = IG 互換。だが moov@末尾 → IG web uploader は 28MB を全DLするまで処理開始できず hang。**小ファイル時代(2MB)は全DLが速く成功 → bitrate fix で28MB化して露呈**、と辻褄一致。
 - **fix = `ffmpeg -c copy -movflags +faststart`（再エンコード不要、moov を先頭へ移動、品質不変）**。恒久化 = ①producer の最終エンコードに追加 ②既存 queue 7本を remux。
-- 検証中: faststart 版を実投稿 → publish 確認（この行、投稿完了後に結果追記）。
+- ❌ **faststart 仮説は falsified**: `+faststart` remux 版(moov 先頭)を実投稿 → やはり failed/新reel出ず。moov 位置は真因でなかった（検証してよかった、断定せず）。
+- ❌ **size 仮説も falsified**: 2.6MB/15s/1080×1920（旧成功サイズ相当）を投稿 → **やはり failed/新reel出ず**。3ファイル(28MB/faststart/2.6MB)が全て `シェア中` で同一 hang = **コンテンツ非依存**。→ ファイルは犯人でない。
+- **最有力仮説（未確定）= aiclipsvault の投稿制限**（作成2週間・warming中・status "investigating"・最後の成功~10日前・以降全滅）。web「シェア中」永久spinner は action-block/soft-ban の既知症状。account_status ページは 404（診断にならず）。
+- 進行中: 既知原因を検索 subagent で確認中。fix 方針は結果次第（コード修正 or warm延長/休養/別アカ/mobile経路）。★poster のコードは壊れてない可能性が高い（flow は share まで正常到達、IG 側が publish を silently drop）★
 | CLIP-FIX-2 | 品質 floor 1080×1920（FIX-1 とファイルサイズのジレンマを一体で解く）|
 | CLIP-LOOP-3 | gig Reflexion + darkzOGx analytics loop を移植（MEASURE→REFLECT を金で閉じる）|
 | CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
