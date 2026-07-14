@@ -42,6 +42,26 @@ OpenEvolve(pip) を engine に据える:
 
 次段階(温存): Darwin Gödel Machine = engine 自体を自己書換する層。
 
+## 第2調査（別 subagent、trading ドメイン一致重視）— 結論は整合、統合案が具体化
+
+`paperswithbacktest/pwb-alphaevolve`(124★, 10ファイル程度)= AlphaEvolve を **backtrader 戦略×KPI gate** に応用。
+ドメインが我々(trade × on-chain P&L gate)と1:1一致。Controller の parent選択(elite/exploit/explore)
+と KPI evaluator パターンを copy。小さく copy+tweak しやすい。汎用 archive が要るとき OpenEvolve(6706★)の
+database.py/controller.py(MAP-Elites+islands)を横に見る、で両調査は同じ結論。
+
+**既存 evolve.mjs を捨てず evaluator として温存する統合案（実読ベース）**:
+1. 評価器 = 現行 `evolve.mjs::summarizeByGenome`（on-chain 実現益 gate、無改造でそのまま使う）
+2. archive 化 = `genome-override.json` を単一 genome → **候補配列**にし、DGM の score_child_prop
+   (score × 1/(1+children)) で親選択（今は「baseline vs 1 mutant」の単一系統 = 最大の弱点）
+3. 変異 = `mutate()` の random walk を、履歴(genome_id, realized_usdc)を meta-prompt に埋めて
+   **LLM に次の値を選ばせる**(OPRO 型)に置換。clamp 範囲は既存 MUTATION_SPEC のまま
+4. code 自己改変 = pick.py / PRODUCTS 表への LLM patch を、**同一の evaluatePromotion バー
+   (絶対 net-positive + baseline 超え)** を課した別 promotion 経路として追加（既存 gate を壊さない）
+
+DGM archive 設計と OPRO 変異と pwb の Controller = 3つを既存 gate の上に足す = 最小改修で SOTA に寄せる。
+
 ## TODO 化
-- [ ] OpenEvolve を pip 導入 → x402 seller 用 evaluator(sales.jsonl × on-chain settle) を書く（最初の適用先 = 最も安全な x402、次に trade）
-- [ ] 自作 evolve/genome は当面 PM trade で温存（動いてる物を壊さない）、OpenEvolve が回り出したら統合判断
+- [ ] pwb-alphaevolve の Controller + KPI evaluator を copy、evaluator に evolve.mjs::summarizeByGenome を差す
+- [ ] 最初の適用先 = 最も安全な x402 seller（evaluator = sales.jsonl × on-chain settle）→ 次に PM/SOL trade
+- [ ] genome を単一→候補配列(archive)化 + mutate を OPRO 型に置換。既存 evaluatePromotion gate は無改造で温存
+- [ ] 動いてる PM trade を壊さない（新経路を並行で立ててから切替判断）
