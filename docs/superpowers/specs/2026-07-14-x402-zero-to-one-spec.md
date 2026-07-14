@@ -10,6 +10,7 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 - INV-B: 各 route は 402 + https resource + discoverable=true + 決定論 serving path（LLM 無し）
 - INV-C: 掲載検証は CDP Bazaar catalog の実 JSON（`bazaar-scan.mjs`）
 - INV-D: main session(Fable) は loop で走らない。loop は claude-p / Franklin / automaton のもの
+- INV-F: instance の earn は「既存 ReAct loop + skills/registry.json の slot」機構に乗せる。loop の外に別系統の earner を作らない（手作り seller は loop が operate する資産として引き渡す）
 - INV-E: README 等に「earns money」と書けるのは external tx link が貼れてから
 
 ## 到達済（2026-07-14、own-eyes）
@@ -28,9 +29,10 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 | 0 | Fable(今) | ★恒久 disk fix★ — disk-full で session brick を二度と起こさない自動機構（調査→実装→launchd 常駐） | 閾値割れで自動 prune + 通知が実機で動く | ★done 2026-07-14★ (3層: autoprune/janitor/alerter, FORCE 実測 26→34GB, 正本 ~/.openclaw/skills/mac-health/README.md) |
 | 1 | Fable(今) | 経済圏 0→1: 外部 buyer 1件（seller payTo=0x810f 稼働中） | verify-inflow で EXTERNAL≥1 | ★done 2026-07-14★ EXTERNAL=2, $0.004 USDC (tx 0x2e06c55b… from 0x74610bd8…, tx 0xe75baae3… from 0x36a9b00e…, 両方 receipt 0x1) |
 | 1b | Fable(今) | demand 面の追加: x402scan 掲載確認・Agent402 index・PR#838 follow | 各面で発見可能を実測 | pending |
-| 2 | claude-p loop | agent-economy loop 化: payTo=0x904B の seller 複製 + self-improve loop（verify-inflow→死に route 削除→需要 primitive 追加→再掲載）を sonnet loop で常駐 | claude-p wallet に EXTERNAL≥1、loop が無人で1週間回る | pending |
-| 3 | Franklin | Franklin の 0→1: per-instance EVM key → 自分 payTo の seller → settle seed → 掲載 → 外部着弾。★self-funded + human credential ゼロの証明★ | Franklin wallet に EXTERNAL≥1 | pending |
-| 4 | Fable | Agora 配布: README「install → your AI earns」+ 実 tx link | repo public + tx link | pending(INV-E 待ち) |
+| 2 | claude-p loop | ★既存 loop 機構に乗せる★: (a) loop に slot-allowlist 機構を追加(env で menu を x402_sell だけに制限) (b) claude-p instance の loop を sonnet brain + allowlist=x402_sell で常駐(seller :8412/:8443 は subagent 遺物を引き取り済・稼働中) | claude-p wallet 0x904B に EXTERNAL≥1、loop 無人稼働 | in_progress |
+| 3 | Franklin | 稼働中 franklin-loop(free model llama-4-maverick, ClawRouter)の menu を allowlist=x402_sell に制限 → 自分 wallet の seller を loop 自身が run.sh strategy=x402 で運用 → 外部着弾。★free model + self-funded の証明★ | Franklin wallet に EXTERNAL≥1 | pending |
+| 4 | Fable | one-command 化: ①sub あり → `spin up claude-p loop`(sonnet, 0→1 の後 trade へ) ②sub なし → `spin up franklin loop`(free model)。bootstrap script 2本 | 新規マシンで 1 コマンド → seller 稼働まで自走 | pending |
+| 5 | Fable | Agora README 更新: 「install → your AI earns」+ 実 tx link(INV-E 解除済: 0x2e06c55b…) + 2 コマンド | repo public + tx link | pending |
 
 ## Stop 条件
 
