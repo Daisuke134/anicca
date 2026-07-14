@@ -107,8 +107,9 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '  - yield        : ONE-TIME. Park idle USDC in the best-APY vault (Beefy→Fluid). It is a BANK DEPOSIT',
     '                   — set and forget. Call it ONLY when you actually have idle liquid cash; do NOT',
     '                   re-yield every wake. Once parked, move on.',
-    '  - x402_sell    : RECURRING. Run + advertise your paid product (sell research for USDC) — needs buyers,',
-    '                   so your job is to CREATE DEMAND (advertise, find buyers). Earns with $0 capital.',
+    '  - x402_sell    : RECURRING, $0 capital. Starts/advertises your FIXED shop — 7 preset paid routes',
+    '                   (research/compound-interest/calc/json-flatten/dns-lookup/whois/stock-quote), prices',
+    '                   set in code. Call with {} — NOTHING to invent. Your whole job = bring DEMAND.',
     '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
     '                   see a setup; pass {action:"close",coin} to realise a winner or cut a loser.',
     '  - token_launch : launch/grow your $ANICCA token → trading-fee income ({launch:true,name,symbol}).',
@@ -136,9 +137,9 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '  All of these are equally available every wake — try them; do not default to one. Advice, not rules:',
     '- HL_TRADE: trading is a primary way to grow the balance. When you see a setup, OPEN a small perp with a',
     '  stop and a take-profit; manage it and CLOSE winners to realise PnL. Size small relative to your wallet.',
-    '- X402_SELL: sell a paid product for USDC. It needs buyers, so advertise where agents look (the colony',
-    '  forum, x402 directories) and offer something genuinely useful + differentiated (niche data, a curated',
-    '  answer) rather than a generic web-search. Iterate the offer if no one buys.',
+    '- X402_SELL: your shop menu is FIXED in code — never invent a product or price (any sell/price args',
+    '  are silently ignored). 100% of the job is DEMAND: advertise where agents look (colony forum, x402',
+    '  directories). No sales = a demand problem, not a product problem.',
     '- TOKEN_LAUNCH: launching/growing a token earns trading-fee income; pair a launch with a plan to drive',
     '  volume (announce it, give people a reason to trade) so the fees actually flow.',
     '- YIELD: the highest-APY vault is auto-picked (Beefy ~6% → Fluid ~5%). It is a parking spot for idle cash,',
@@ -187,7 +188,7 @@ export function getToolDefinitions(slots, opts = {}) {
           'yield, cook, self/issue-dev, AND any earn/<sub> slot — gig, clip, affiliate, video, audit) — ' +
           'each is a first-class earn/action. Use `args` to pass YOUR decision (HARD RULE #0: the skill is the tool, YOU ' +
           'decide): hl_trade → {"coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6} to open ' +
-          'or {"action":"close","coin":"ETH"} to realise; x402_sell → {"sell":"...","price":"$1"}; ' +
+          'or {"action":"close","coin":"ETH"} to realise; x402_sell → {} (products+prices are FIXED in code; sell/price args are ignored — do NOT invent a product); ' +
           'token_launch → {"launch":true,"name":"...","symbol":"..."}; yield → {} (auto best vault); ' +
           'cook → {"query":"..."}. The skill reads these via $ANICCA_ARGS.',
         parameters: {
@@ -265,7 +266,7 @@ export function buildUserMessage(ctx) {
     avoid,
     `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal earn/action option):`,
     `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.`,
-    `  - x402_sell — run + advertise your paid product to get buyers: {sell:"<what>",price:"$X"}.`,
+    `  - x402_sell — start/advertise your FIXED-menu shop (nothing to invent, args ignored): {}.`,
     `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.`,
     `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.`,
     `  - cook — explore a NEW earner: {query:"..."}.`,

@@ -359,6 +359,21 @@ process.on('SIGTERM', async () => {
 
 // ── Wake loop ─────────────────────────────────────────────────────────────────
 
+// Periodic skills sync (child-proof-audit 2026-07-14): the daemon's boot-time repo→body rsync never
+// re-runs inside this long-lived process, so parent skill fixes reached a healthy child only on
+// crash (observed live: a guard fix + a skill shim stayed unapplied for hours). A 10-minute unref'd
+// interval OUTSIDE the wake path caps fix-propagation at ~10min with zero wake latency — two
+// in-wake placements (awaited and fire-and-forget) both measurably flaked the timing-sensitive
+// integration tests, so the sync must never touch runOneWake. unref(): never holds the process open.
+setInterval(() => {
+  try {
+    const repoRoot = process.env.ANICCA_REPO ||
+      path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+    execFile('/bin/bash', [path.join(repoRoot, 'runtime', 'self-update-skills.sh')],
+      { timeout: 60_000 }, () => { /* best-effort */ });
+  } catch { /* missing script — keep current skills */ }
+}, 10 * 60 * 1000).unref();
+
 process.stderr.write(`[loop] Starting Anicca loop. ANICCA_HOME=${ANICCA_HOME}\n`);
 
 while (!shuttingDown) {

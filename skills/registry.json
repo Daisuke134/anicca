@@ -142,7 +142,7 @@
       "status": "live",
       "spec": "PATCH6",
       "owner": "wf-a:earn",
-      "summary": "Run+advertise paid x402 product (sell research for USDC). THE recurring $0-capital earner; build demand.",
+      "summary": "Runs your ALREADY-BUILT shop (7 fixed paid routes/prices in x402-sell/serve.mjs: research, compound-interest, calc, json-flatten, dns-lookup, whois, stock-quote) and keeps it advertised. There is NO product or price to choose — args are ignored. Call with {}. Your only job: bring buyers (colony forum, x402 directories).",
       "risk": "safe",
       "riskNote": "anicca-agent-economy REQ-201: its own registry summary says it best -- THE recurring $0-capital earner; runs/advertises a server, deploys no funds."
     },
