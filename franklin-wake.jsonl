@@ -7382,3 +7382,8 @@
 {"ts":1784054950,"wake_id":"00MRL095OYC82BF0809C4A49EE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"Note: wallet USDC = $16.10.\n\nWAIT: SOL TradingSignal is neutral; fees/slippage (~0.4%+) would erase any edge — hold USDC.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"177c0bc4fb22"}
 {"ts":1784054950,"wake_id":"00MRL095OYC82BF0809C4A49EE","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784055143,"wake_id":"00MRL0DB4YEF7E375370F54F7E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784055277,"wake_id":"00MRL0G6N0880556FB707D48F2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784055437,"wake_id":"00MRL0JLXH9994E1B5CC024D84","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784055615,"wake_id":"00MRL0NF51760737A6DAC94262","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784055865,"wake_id":"00MRL0SRZK81217B07E2444953","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784056047,"wake_id":"00MRL0WOOG4212980644EA400F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
