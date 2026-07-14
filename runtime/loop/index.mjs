@@ -155,7 +155,16 @@ let registryForAlwaysAct = null;
   // Absent in production; defaults to the real repo-relative path.
   const registryPath = process.env.ALWAYS_ACT_REGISTRY_PATH_OVERRIDE || path.join(repoRoot, 'skills', 'registry.json');
   try {
-    const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
+    let registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
+    // ANICCA_SLOT_ALLOWLIST (x402-zero-to-one 2026-07-14): restrict the menu to an explicit slot
+    // set for focused earn tests. One choke point — both activeSkillSlots below and
+    // assembleAlwaysActMenu (per wake) read this same object. alwaysAvailable slots survive.
+    {
+      const { applySlotAllowlist } = await import('./slot-allowlist.mjs');
+      const res = applySlotAllowlist(registry, process.env.ANICCA_SLOT_ALLOWLIST);
+      registry = res.registry;
+      if (res.applied) process.stderr.write(`[loop] slot allowlist active: ${res.applied.join(', ')}\n`);
+    }
     registryForAlwaysAct = registry;
     activeSkillSlots = liveSlotNames(registry);
     for (const name of activeSkillSlots) {
