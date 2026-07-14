@@ -7085,3 +7085,12 @@
 {"ts":1784024917,"wake_id":"00MRKIDGJZ94EC15955BC247CC","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784024917,"wake_id":"00MRKIDGJZ94EC15955BC247CC","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784025050,"wake_id":"00MRKIGAZEBE55319131D94F39","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1784025219,"wake_id":"00MRKIJX6VEDA33AAB9B7E452F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784025414,"wake_id":"00MRKIO43TA0A087E22CDA4720","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784025548,"wake_id":"00MRKIQYYJ9E68D307AF2949FF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784025686,"wake_id":"00MRKITXU50F2CA184128341D4","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784025820,"wake_id":"00MRKIWT41769F5A26A4404937","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784025954,"wake_id":"00MRKIZO91353A0C9D8B4F426A","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784026032,"wake_id":"00MRKJ1CWHCDC767F956E24D1A","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784026099,"wake_id":"00MRKJ2S7Q27BAE92156954BBD","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784026099,"wake_id":"00MRKJ2S7Q27BAE92156954BBD","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
