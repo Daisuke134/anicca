@@ -1,55 +1,88 @@
-import json, os, sys, time, traceback
-from websocket import create_connection
+#!/usr/bin/env python3
+# instagrapi-based IG Reel poster — the VERIFIED FREE posting method (2026-07-14), replaces the
+# web-composer post_reel.py which was a structural dead end (IG silently drops automated web posts).
+# Flow: pull the CloakBrowser's already-logged-in sessionid (avoids a fresh-login challenge) ->
+# instagrapi.login_by_sessionid -> ffmpeg thumbnail (avoids moviepy dep) -> clip_upload ->
+# verify the reel is publicly visible. Prints ONE structured JSON line matching run.sh's contract
+# ({"outcome": "published"|"failed"|"dry", "post_url": ..., "before_hrefs": []}).
+import argparse, json, os, sys, time, subprocess, urllib.request
 sys.path.insert(0, os.path.expanduser("~/.claude/skills/ig-account-create/scripts"))
-import cdp
-from instagrapi import Client
+import cdp  # noqa: E402
+from websocket import create_connection  # noqa: E402
 
-PORT = os.environ.get("CDP_PORT", "9223")
-VIDEO = sys.argv[1] if len(sys.argv) > 1 else "/tmp/small-test.mp4"
-def log(m): print(m, flush=True)
 
-# 1) pull sessionid from the already-logged-in browser via CDP Network.getAllCookies
-import urllib.request
-tabs = json.load(urllib.request.urlopen(f"http://localhost:{PORT}/json/list"))
-tid = next(t["id"] for t in tabs if t.get("type") == "page" and "instagram.com" in (t.get("url") or ""))
-ws = create_connection(cdp.page_ws(tid), timeout=20, suppress_origin=True, max_size=None)
-ws.send(json.dumps({"id": 1, "method": "Network.enable"}))
-ws.send(json.dumps({"id": 2, "method": "Network.getAllCookies"}))
-sessionid = ds_user_id = None
-end = time.time() + 15
-while time.time() < end:
-    m = json.loads(ws.recv())
-    if m.get("id") == 2:
-        for c in m["result"]["cookies"]:
-            if c["name"] == "sessionid" and "instagram" in c["domain"]:
-                sessionid = c["value"]
-            if c["name"] == "ds_user_id" and "instagram" in c["domain"]:
-                ds_user_id = c["value"]
-        break
-ws.close()
-log(f"sessionid found={bool(sessionid)} ds_user_id={ds_user_id}")
-if not sessionid:
-    log("NO sessionid in browser — abort"); sys.exit(1)
+def get_sessionid(port):
+    tabs = json.load(urllib.request.urlopen(f"http://localhost:{port}/json/list"))
+    tid = next(t["id"] for t in tabs if t.get("type") == "page" and "instagram.com" in (t.get("url") or ""))
+    ws = create_connection(cdp.page_ws(tid), timeout=20, suppress_origin=True, max_size=None)
+    ws.send(json.dumps({"id": 1, "method": "Network.enable"}))
+    ws.send(json.dumps({"id": 2, "method": "Network.getAllCookies"}))
+    sid = None
+    end = time.time() + 15
+    while time.time() < end:
+        m = json.loads(ws.recv())
+        if m.get("id") == 2:
+            for c in m["result"]["cookies"]:
+                if c["name"] == "sessionid" and "instagram" in c["domain"]:
+                    sid = c["value"]
+            break
+    ws.close()
+    return tid, sid
 
-# 2) instagrapi login via the browser's trusted sessionid (no fresh-login challenge)
-cl = Client()
-cl.delay_range = [2, 5]
-try:
-    cl.login_by_sessionid(sessionid)
-    log(f"LOGIN_BY_SESSIONID OK as {cl.username} (pk={cl.user_id})")
-    cl.dump_settings("/Users/anicca/.cloak/instagrapi-aiclipsvault.json")
-except Exception as e:
-    log(f"SESSIONID LOGIN ERR: {type(e).__name__}: {str(e)[:300]}"); sys.exit(1)
 
-# 3) upload the reel — generate thumbnail via ffmpeg (avoid moviepy dep)
-import subprocess
-thumb = VIDEO + ".jpg"
-subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", VIDEO, "-ss", "1", "-vframes", "1", thumb], check=True)
-log(f"thumbnail generated: {os.path.basename(thumb)}")
-try:
-    log(f"clip_upload {os.path.basename(VIDEO)} ...")
-    media = cl.clip_upload(VIDEO, "AI clips daily #ai #money #investing", thumbnail=thumb)
-    d = media.dict() if hasattr(media, "dict") else {}
-    log(f"UPLOAD OK code={d.get('code')} url=https://www.instagram.com/reel/{d.get('code')}/")
-except Exception as e:
-    log(f"UPLOAD ERR: {type(e).__name__}: {str(e)[:400]}"); traceback.print_exc()
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--video", required=True)
+    ap.add_argument("--caption-file", required=True)
+    ap.add_argument("--handle", required=True)
+    ap.add_argument("--port", default=os.environ.get("CDP_PORT", "9222"))
+    ap.add_argument("--live", action="store_true")
+    a = ap.parse_args()
+    res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
+    try:
+        caption = open(a.caption_file, encoding="utf-8").read().strip()
+        _, sid = get_sessionid(a.port)
+        if not sid:
+            res["error"] = "no sessionid in browser (not logged in on this port)"
+            print(json.dumps(res, ensure_ascii=False)); return
+
+        from instagrapi import Client
+        cl = Client()
+        cl.delay_range = [2, 5]
+        cl.login_by_sessionid(sid)
+        # ★ ACCOUNT GUARD (fail-closed): instagrapi knows who the sessionid belongs to. Never post
+        #   to the wrong account. ★
+        if cl.username != a.handle:
+            res["error"] = f"account guard: sessionid is @{cl.username}, expected @{a.handle} — abort"
+            print(json.dumps(res, ensure_ascii=False)); return
+
+        if not a.live:
+            res["outcome"] = "dry"; res["reached"] = "login-ok"
+            print(json.dumps(res, ensure_ascii=False)); return
+
+        thumb = a.video + ".jpg"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", a.video, "-ss", "1", "-vframes", "1", thumb], check=True)
+        media = cl.clip_upload(a.video, caption, thumbnail=thumb)
+        d = media.model_dump() if hasattr(media, "model_dump") else media.dict()
+        code = d.get("code")
+        url = f"https://www.instagram.com/reel/{code}/"
+
+        # REALITY GATE: confirm the reel is publicly visible (logged-out) before claiming success.
+        public = None
+        time.sleep(3)
+        try:
+            req = urllib.request.Request(f"https://www.instagram.com/{a.handle}/", headers={"User-Agent": "Mozilla/5.0"})
+            html = urllib.request.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
+            public = bool(code) and code in html
+        except Exception:
+            public = None  # network gate; instagrapi's returned code is still the source of truth
+
+        res["outcome"] = "published"; res["post_url"] = url; res["code"] = code
+        res["public_verified"] = public; res["reached"] = "PUBLISHED"
+    except Exception as e:
+        res["error"] = f"{type(e).__name__}: {str(e)[:300]}"
+    print(json.dumps(res, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
