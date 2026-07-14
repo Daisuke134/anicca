@@ -64,26 +64,52 @@ if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
   const { createFacilitatorConfig } = await import("@coinbase/x402");
   facilitator = createFacilitatorConfig(process.env.CDP_API_KEY_ID, process.env.CDP_API_KEY_SECRET);
 }
-// per-route config: discoverable + explicit https resource (Bazaar crawler probes it; see PUBLIC_URL note).
-const cfg = (path, description) =>
-  ({ description, discoverable: true, ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}${path}` } : {}) });
+// single product table — drives the payment middleware, "/" index, /.well-known/x402.json and /llms.txt.
+const PRODUCTS = [
+  { path: "/research", price: PRICE, example: "/research?q=<topic>", what: "web research digest",
+    description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost." },
+  // deterministic compute primitives — pure CPU or free data, no LLM in the serving path.
+  { path: "/compound-interest", price: "$0.001", example: "/compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12", what: "compound interest calc",
+    description: "Compound interest calculator. GET /compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12 → final amount + interest earned. Deterministic JSON, instant." },
+  { path: "/calc", price: "$0.001", example: "/calc?expr=(2%2B3)*4", what: "expression evaluator",
+    description: "Arithmetic expression evaluator (+ - * / % ^ and parentheses). GET /calc?expr=(2%2B3)*4 → {result}. Deterministic JSON, instant, no code execution." },
+  { path: "/json-flatten", price: "$0.001", example: "/json-flatten?json=<url-encoded JSON>", what: "flatten nested JSON",
+    description: "Flatten nested JSON to dot-notation key/value pairs. GET /json-flatten?json=<url-encoded JSON> → flat object. Deterministic, instant." },
+  { path: "/dns-lookup", price: "$0.001", example: "/dns-lookup?domain=example.com&type=A", what: "DNS records",
+    description: "DNS lookup. GET /dns-lookup?domain=example.com&type=A|AAAA|MX|TXT|NS|CNAME|SOA → records as JSON. Live authoritative data, instant." },
+  { path: "/whois", price: "$0.002", example: "/whois?domain=example.com", what: "WHOIS lookup",
+    description: "WHOIS lookup with IANA referral follow. GET /whois?domain=example.com → registrar whois text as JSON. Live registry data." },
+  { path: "/stock-quote", price: "$0.003", example: "/stock-quote?symbol=AAPL", what: "stock quote",
+    description: "Real-time stock quote (price, currency, previous close, exchange). GET /stock-quote?symbol=AAPL → JSON. Free-source market data." },
+];
 
-app.use(
-  paymentMiddleware(
-    payTo(),
-    {
-      "GET /research": { price: PRICE, network: NETWORK, config: cfg("/research", "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.") },
-      // deterministic compute primitives — pure CPU or free data, no LLM in the serving path.
-      "GET /compound-interest": { price: "$0.001", network: NETWORK, config: cfg("/compound-interest", "Compound interest calculator. GET /compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12 → final amount + interest earned. Deterministic JSON, instant.") },
-      "GET /calc": { price: "$0.001", network: NETWORK, config: cfg("/calc", "Arithmetic expression evaluator (+ - * / % ^ and parentheses). GET /calc?expr=(2%2B3)*4 → {result}. Deterministic JSON, instant, no code execution.") },
-      "GET /json-flatten": { price: "$0.001", network: NETWORK, config: cfg("/json-flatten", "Flatten nested JSON to dot-notation key/value pairs. GET /json-flatten?json=<url-encoded JSON> → flat object. Deterministic, instant.") },
-      "GET /dns-lookup": { price: "$0.001", network: NETWORK, config: cfg("/dns-lookup", "DNS lookup. GET /dns-lookup?domain=example.com&type=A|AAAA|MX|TXT|NS|CNAME|SOA → records as JSON. Live authoritative data, instant.") },
-      "GET /whois": { price: "$0.002", network: NETWORK, config: cfg("/whois", "WHOIS lookup with IANA referral follow. GET /whois?domain=example.com → registrar whois text as JSON. Live registry data.") },
-      "GET /stock-quote": { price: "$0.003", network: NETWORK, config: cfg("/stock-quote", "Real-time stock quote (price, currency, previous close, exchange). GET /stock-quote?symbol=AAPL → JSON. Free-source market data.") },
-    },
-    facilitator
-  )
-);
+// per-route config: discoverable + explicit https resource (Bazaar crawler probes it; see PUBLIC_URL note).
+const routes = Object.fromEntries(PRODUCTS.map((p) => [
+  `GET ${p.path}`,
+  { price: p.price, network: NETWORK,
+    config: { description: p.description, discoverable: true, ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}${p.path}` } : {}) } },
+]));
+
+// free discovery surfaces (mounted BEFORE the payment middleware so they are never paywalled):
+// .well-known/x402.json manifest + llms.txt — how buyer agents and their crawlers find what's for sale.
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+app.get("/.well-known/x402.json", (_req, res) =>
+  res.json({
+    x402Version: 1,
+    resources: PRODUCTS.map((p) => ({
+      resource: PUBLIC_URL ? `${PUBLIC_URL}${p.path}` : p.path, method: "GET", price: p.price,
+      network: NETWORK, payTo: payTo(), asset: USDC_BASE, description: p.description,
+    })),
+  }));
+app.get("/llms.txt", (_req, res) =>
+  res.type("text/plain").send([
+    "# x402 paid API — pay-per-request in USDC on Base (HTTP 402 flow, no account, no API key)",
+    `# payTo: ${payTo()}  |  manifest: ${PUBLIC_URL || ""}/.well-known/x402.json`,
+    "",
+    ...PRODUCTS.map((p) => `GET ${PUBLIC_URL || ""}${p.example}  (${p.price}) — ${p.description}`),
+  ].join("\n")));
+
+app.use(paymentMiddleware(payTo(), routes, facilitator));
 
 // the paid endpoint: runs the product command with the buyer's query, returns the result.
 app.get("/research", (req, res) => {
@@ -111,15 +137,8 @@ app.get("/stock-quote", (req, res) => answer(res, () => stockQuote(String(req.qu
 // free: tells a buyer what's for sale + the price (so demand can find it).
 app.get("/", (_req, res) =>
   res.json({
-    products: [
-      { path: "/research?q=<topic>", price: PRICE, what: "web research digest" },
-      { path: "/compound-interest?principal=&rate=&years=&compoundsPerYear=", price: "$0.001", what: "compound interest calc" },
-      { path: "/calc?expr=<arithmetic>", price: "$0.001", what: "expression evaluator" },
-      { path: "/json-flatten?json=<url-encoded JSON>", price: "$0.001", what: "flatten nested JSON" },
-      { path: "/dns-lookup?domain=&type=", price: "$0.001", what: "DNS records" },
-      { path: "/whois?domain=", price: "$0.002", what: "WHOIS lookup" },
-      { path: "/stock-quote?symbol=", price: "$0.003", what: "stock quote" },
-    ],
+    products: PRODUCTS.map((p) => ({ path: p.example, price: p.price, what: p.what })),
+    manifest: "/.well-known/x402.json", llms: "/llms.txt",
     pay: "x402 — pay per request in USDC on " + NETWORK, payTo: payTo(),
   }));
 
