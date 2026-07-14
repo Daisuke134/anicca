@@ -23,7 +23,13 @@ POSTED="$CLIP_POSTED"
 ACCTS="$CLIP_ACCTS"
 LEDGER="$CLIP_LEDGER"
 PENDING_VERIFY="$CLIP_PENDING_VERIFY"    # REQ-006: unverified-outcome clips land here, never queue/posted
-POSTER="${CLIP_POSTER_OVERRIDE:-$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py}"  # test hook (PROP-005), unset in production
+POSTER="${CLIP_POSTER_OVERRIDE:-$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py}"  # LEGACY web-composer poster (dead end), kept only as test hook / fallback
+# ★POST-11 (2026-07-14): the VERIFIED FREE posting path — instagrapi + browser sessionid + ffmpeg
+# thumbnail. The web composer (post_reel.py) silently drops automated posts (IG detection); instagrapi
+# via the mobile private API reliably publishes. See docs/earn/ig-posting-method-graph-api-pivot.md.★
+INSTA_POSTER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/instagrapi_post.py"
+INSTA_VENV="$HOME_DIR/.cache/instagrapi-venv"
+INSTA_PY="$INSTA_VENV/bin/python"
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3
 mkdir -p "$QUEUE" "$POSTED" "$PENDING_VERIFY" "$(dirname "$LEDGER")"
@@ -153,8 +159,14 @@ TMPCAP="$(mktemp "${TMPDIR:-/tmp}/clip-cap-XXXXXX")"
 trap 'rm -f "$TMPCAP"' EXIT
 printf '%s\n%s\n' "$(cat "$CAP")" "$TOKEN" > "$TMPCAP"
 
-# post the clip (poster has its own fail-closed account-guard too)
-RES="$(CDP_PORT="$PORT" "$PY" "$POSTER" --video "$CLIP" --caption-file "$TMPCAP" --handle "$HANDLE" --tid "$TID" --live 2>/dev/null | tail -1)"
+# post the clip via instagrapi (POST-11). Self-heal the venv if missing (disk-cleaner may prune it).
+if [ ! -x "$INSTA_PY" ]; then
+  /opt/homebrew/bin/python3 -m venv "$INSTA_VENV" >/tmp/clip-insta-venv.log 2>&1
+  "$INSTA_PY" -m pip install --quiet instagrapi websocket-client pillow >/tmp/clip-insta-pip.log 2>&1 \
+    || emit "instagrapi venv self-heal FAILED (see /tmp/clip-insta-pip.log)"
+fi
+# instagrapi poster has its own fail-closed account-guard (cl.username == handle) + logged-out reality gate.
+RES="$(CDP_PORT="$PORT" "$INSTA_PY" "$INSTA_POSTER" --video "$CLIP" --caption-file "$TMPCAP" --handle "$HANDLE" --port "$PORT" --live 2>/dev/null | tail -1)"
 # NOTE (2 real bugs caught while writing PROP-005's test, both fixed here): (1) json.dumps' DEFAULT
 # separators include a space after each comma (e.g. `["a", "b"]`), which corrupts whitespace-based
 # field-splitting. (2) bash `read`'s default whitespace IFS COLLAPSES consecutive separators, so an
