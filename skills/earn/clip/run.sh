@@ -30,6 +30,9 @@ POSTER="${CLIP_POSTER_OVERRIDE:-$HOME_DIR/.claude/skills/ig-reels-poster/scripts
 INSTA_POSTER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/instagrapi_post.py"
 INSTA_VENV="$HOME_DIR/.cache/instagrapi-venv"
 INSTA_PY="$INSTA_VENV/bin/python"
+# OBS-6: Telegram report (reel link so Dais can tap→watch→screenshot). Best-effort, never blocks posting.
+TG_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_shared/send-telegram.sh"
+tg() { [ -f "$TG_SCRIPT" ] && bash "$TG_SCRIPT" "$1" >/dev/null 2>&1 || true; }
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3
 mkdir -p "$QUEUE" "$POSTED" "$PENDING_VERIFY" "$(dirname "$LEDGER")"
@@ -192,6 +195,7 @@ line={"slot":"earn/clip","source":"ig-clip","task":f"posted reel to @{handle}: {
 with open(ledger,"a") as f: f.write(json.dumps(line,ensure_ascii=False)+"\n")
 PYL
     date +%s > "$POSTED/.last-post-${HANDLE}" 2>/dev/null || true  # FIX-1 cadence stamp
+    tg "$(printf '🎬 clip @%s ✅ posted\n🔗 %s\n🎞 %s (1080x1920)\n❤️ instagrapi / cadence 1日1本' "$HANDLE" "$URL" "$(basename "$CLIP")")"
     emit "posted @${HANDLE}: ${URL}"; exit 0
     ;;
   unverified)
@@ -217,6 +221,7 @@ PYL
     emit "post to @${HANDLE} unverified — moved to pending-verify for self-heal"; exit 0
     ;;
   *)
+    tg "$(printf '⚠️ clip @%s 投稿失敗\n%s\nself-heal 予定' "$HANDLE" "$(printf '%s' "$RES" | head -c 300)")"
     emit "post attempt failed (res=${RES})"; exit 0
     ;;
 esac
