@@ -125,6 +125,22 @@ if [ -z "${CLIP}" ]; then
   emit "nothing new to post (queue empty; self-heal already ran this wake)"; exit 0
 fi
 
+# ★FIX-1 (2026-07-14) POSTING-CADENCE GATE★ — a fresh/young account that burst-posts via
+# automation gets ACTION-BLOCKED by IG. Observed on @aiclipsvault: 3 content-varied clips
+# (28MB / 28MB+faststart / 2.6MB-15s) ALL hung at "シェア中" = IG silently drops the publish
+# after over-posting (~12 reels then dead). Root cause = burst cadence + CDP detection + thin
+# warm-up, NOT the poster code or the file. Enforce <=1 post per CADENCE window per account.
+# Self-heal already ran above; this gates ONLY the new post. See
+# docs/earn/ig-posting-restriction-and-warmup-policy.md.
+CADENCE_H="${CLIP_CADENCE_HOURS:-20}"
+LASTPOST="$POSTED/.last-post-${HANDLE}"
+if [ -f "$LASTPOST" ]; then
+  AGE=$(( $(date +%s) - $(cat "$LASTPOST" 2>/dev/null || echo 0) ))
+  if [ "$AGE" -lt $(( CADENCE_H * 3600 )) ]; then
+    emit "cadence: @${HANDLE} last posted ${AGE}s ago (<${CADENCE_H}h) — holding to avoid action-block"; exit 0
+  fi
+fi
+
 # REQ-010: FRESH RANDOM per-attempt tracking token (NOT clip_id-derived — producer.sh's clip_id can
 # legitimately repeat across separate attempts, e.g. a same-day channel repeat or a manual retry).
 TOKEN="#c$("$PY" -c 'import secrets; print(secrets.token_hex(5))')"
@@ -163,6 +179,7 @@ line={"slot":"earn/clip","source":"ig-clip","task":f"posted reel to @{handle}: {
       "status":"posted","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":wake or None,"post_url":url}
 with open(ledger,"a") as f: f.write(json.dumps(line,ensure_ascii=False)+"\n")
 PYL
+    date +%s > "$POSTED/.last-post-${HANDLE}" 2>/dev/null || true  # FIX-1 cadence stamp
     emit "posted @${HANDLE}: ${URL}"; exit 0
     ;;
   unverified)
