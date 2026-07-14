@@ -17,9 +17,11 @@ HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
 N_ACCT=0
 [ -f "$ACCTS" ] && N_ACCT="$(python3 -c "import json;d=json.load(open('$ACCTS'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
 [ "$N_ACCT" -ge 1 ] 2>/dev/null || add_heal "NO-REDDIT-ACCOUNT → operate an existing disclosed builder account, or create one honestly (normal signup; if a CAPTCHA blocks it, that ONE step is a human=compute relay — do NOT auto-bypass anti-bot controls); meanwhile use self-promo-welcome subs' scheduled threads"
-# HEAL: CloakBrowser daily-driver reachable?
+# HEAL: camofox reachable? (Reddit is hard-blocked on the shared CDP :9222 daily-driver — this
+# account lives ONLY on camofox :9377, see ~/.cloak/reddit-accounts.json; checking :9222 here would
+# heal the wrong browser and misdirect the next pass.)
 if [ "${RD_TEST:-}" != "1" ]; then
-  curl -s --max-time 5 -o /dev/null http://127.0.0.1:9222/json/version 2>/dev/null || add_heal "CLOAKBROWSER-DOWN(:9222) → start the daily-driver"
+  curl -s --max-time 5 -o /dev/null http://127.0.0.1:9377/health 2>/dev/null || add_heal "CAMOFOX-DOWN(:9377) → bash ~/.openclaw/skills/camofox-browser/scripts/start.sh"
 fi
 # READ: karma + posts + signups (all from real markers)
 KARMA="$(python3 -c "import json;d=json.load(open('$ACCTS'));a=(d if isinstance(d,list) else d.get('accounts',[]));print(sum(int(x.get('comment_karma',0)) for x in a))" 2>/dev/null||echo 0)"
@@ -41,7 +43,7 @@ TMP="$STATE_MD.tmp.$$"
   echo "# Reddit demand-gen loop — STATE (feeds life-manager-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
   echo "goal: drive REAL LM signups via transparent builder participation. A post/signup counts ONLY if logged with a real URL."
   echo "last_wake_utc: $(date -u +%FT%TZ)"
-  echo "heal_first: ${HEAL:-account present ✓, CloakBrowser ✓}"
+  echo "heal_first: ${HEAL:-account present ✓, camofox ✓}"
   echo "reddit_accounts: $N_ACCT"
   echo "comment_karma_total: $KARMA"
   echo "prev_comment_karma_total: $PREV"
