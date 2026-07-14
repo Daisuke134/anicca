@@ -7324,3 +7324,12 @@
 {"ts":1784048241,"wake_id":"00MRKW9CWX2BA4106010104051","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1784048307,"wake_id":"00MRKWAS7J49EC7CF8B39540A0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784048511,"wake_id":"00MRKWF5MH8DE4462777DD4628","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048605,"wake_id":"00MRKWH675ED055757B5E84212","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048677,"wake_id":"00MRKWIPD0C811CBA5A7A94BDF","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048743,"wake_id":"00MRKWK4OEFEDDEDF2D2A94B26","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048809,"wake_id":"00MRKWLJSTE7FBB0ED26164EB1","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784048809,"wake_id":"00MRKWLJSTE7FBB0ED26164EB1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784048997,"wake_id":"00MRKWPKLK9793DA83C74C49E7","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784048997,"wake_id":"00MRKWPKLK9793DA83C74C49E7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784049175,"wake_id":"00MRKWTE8Q65192C09116E4704","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784049307,"wake_id":"00MRKWW7UBBA87A2EA2F8D4D1C","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
