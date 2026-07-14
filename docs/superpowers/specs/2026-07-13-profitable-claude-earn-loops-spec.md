@@ -124,7 +124,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | # | ライン | 中身 | scale の方向 |
 |---|---|---|---|
 | **1** | **gig loop** | ココナラで受注 → 納品 → **入金** | 複数アカウント × 出品数 → lancers / クラウドワークス / Fiverr / Upwork（英語・スペイン語圏へ） |
-| **2** | **affiliate loop**（clip / video） | クリップ / 動画で報酬 | 1アカウント $1k → アカウント数を増やす |
+| **2** | **marketing loop**（clip / video / slideshow、収益=affiliate等） | クリップ / 動画で報酬 | 1アカウント $1k → アカウント数を増やす |
 | **3** | **ebook + avatar loop** | monk avatar（HeyGen or MoneyPrinterTurbo で作れるなら MPT）で電子書籍を売る。`anicca-monk-factory` の資産を再起動 | 同上 |
 | **4** | **web app loop**（life manager の一般化） | credential を渡すだけで **web アプリを作り → SNS で売り → ユーザーの反応で改善**（Supabase / Railway） | 「1人の起業家」を丸ごと自動化。任意の web アプリへ一般化 |
 | **5** | **trading loop** | Dais の実弾で crypto / 公開株 / NISA を運用（agent 経済圏とは別。Dais 個人の金） | FX 的な短期 → 長期投資へ |
@@ -147,7 +147,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | **内部 colony demand** | Franklin が claude-p の x402 service を買う（逆も）。余裕ある agent が broke agent を employ = 相互扶助で GTV を我々で作る | USDC on-chain 着金 | 🟢 我々の管理下。外部 rail に依存せず holy-grail を最短で証明できる |
 | **bounty（audit）** | Solidity 監査（Immunefi / Code4rena / Sherlock）で脆弱性を report → 承認。※一般の code bounty は Stripe/KYC 壁 or honeypot が多い → **audit 系に絞る** | crypto to wallet（audit は定番） | 🟡 payout/KYC/AI 可否が未確定（要 docs-repo or signup 検証） |
 | **gig / labor** | Olas mech marketplace / gig board で AI タスクを受注 → 納品。colony 内 gig（economy/gig）は post/take の相互扶助 | USDC escrow → wallet | 🟡 mech の「稼ぐ側」は service deploy が要る。colony gig は動く候補 |
-| **clip / affiliate（marketing loop）** | 無料動画（MoneyPrinterTurbo / 切り抜き / slideshow）を IG/TikTok に投稿 → bio に **crypto 払いの** affiliate link。★二役: 稼ぎ かつ 自分の x402 API への集客★ | crypto アフィリで着金 | ⚪ 未検証 |
+| **clip / video / slideshow（marketing loop、収益=affiliate/ebook/app）** | 無料動画（MoneyPrinterTurbo / 切り抜き / slideshow）を IG/TikTok に投稿 → bio に **crypto 払いの** affiliate link。★二役: 稼ぎ かつ 自分の x402 API への集客★ | crypto アフィリで着金 | ⚪ 未検証 |
 
 ### TIER2 — 資本要（seed money が要る。後段の複利）
 | 稼ぎ方 | how | status |
@@ -204,7 +204,8 @@ AS-IS の詰まり:  applied 113 ──► replied 42 ──► won 2 ──► 
 
 ---
 
-## 6. ライン2: affiliate loop（clip / video）— TO-BE
+## 6. ライン2: MARKETING loop（content factory）— TO-BE
+> ★命名（2026-07-14 Dais）★ 「affiliate loop」は誤称。**loop は content FORMAT で呼ぶ: clip / video / slideshow**（旧「affiliate loop」= slideshow loop）。affiliate は収益手段の1つで全 format 共通（他に ebook / 自社app / life manager）。engine は1個、PRODUCE(format)と MONETIZE(product)だけ差替。
 
 ### ★2026-07-14 更新: 投稿できない問題の真因4つ、全て解決/診断済★
 1. **producer 2重故障（FIX-2 済）**: $SKILLS パス切れ(07-13 skill demote) + $ENGINE(OSS clone)消失 = ★07-11以降 clip 生成ゼロの真因★。→ scripts を ~/anicca canonical へ移動+再ポイント、engine は self-heal で re-clone。新clip 1080×1920/faststart/gate通過を実証。
