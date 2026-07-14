@@ -76,7 +76,7 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 - ❌ **size 仮説も falsified**: 2.6MB/15s/1080×1920（旧成功サイズ相当）を投稿 → **やはり failed/新reel出ず**。3ファイル(28MB/faststart/2.6MB)が全て `シェア中` で同一 hang = **コンテンツ非依存**。→ ファイルは犯人でない。
 - **最有力仮説（未確定）= aiclipsvault の投稿制限**（作成2週間・warming中・status "investigating"・最後の成功~10日前・以降全滅）。web「シェア中」永久spinner は action-block/soft-ban の既知症状。account_status ページは 404（診断にならず）。
 - 進行中: 既知原因を検索 subagent で確認中。fix 方針は結果次第（コード修正 or warm延長/休養/別アカ/mobile経路）。★poster のコードは壊れてない可能性が高い（flow は share まで正常到達、IG 側が publish を silently drop）★
-| CLIP-FIX-2 | 【実装中 2026-07-14】queue は既に 1080×1920（200×200 は過去の低解像度 source）。真の穴 = **producer が2重に壊れてた**: ①$SKILLS が 07-13 skill demote でパス切れ ②$ENGINE(OSS clone AI-Youtube-Shorts-Generator + venv)消失 = ★07-11以降 clip 生成ゼロの真因★。fix: scripts を ~/anicca canonical へ移動 + producer 再ポイント(commit 97efc624)、engine は self_heal_engine が re-clone。burn_captions に -movflags +faststart 追加。E2E: producer フル実走で検証中 |
+| CLIP-FIX-2 | ✅ DONE 2026-07-14 — 真の穴=producer 2重故障(パス切れ+engine消失=07-11以降 clip 生成ゼロ)。fix: scripts を ~/anicca へ移動+再ポイント(97efc624)、engine self-heal、burn_captions に faststart。★E2E 実証: producer フル実走→新clip `_g4l7YkDQwA_EN.mp4` 生成、1080×1920/3.79Mbps/60s/gate通過/faststart=YES。queue 8本全て faststart 化★。残: 60s は長い(Reels 短尺化は LEARN/self-improve で) |
 | CLIP-LOOP-3 | gig Reflexion + darkzOGx analytics loop を移植（MEASURE→REFLECT を金で閉じる）|
 | CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
 | CLIP-MON-5 | ★affiliate-finder ノード新設★ + per-post trackable link + ClipAffiliates 即金 |
