@@ -7314,3 +7314,13 @@
 {"ts":1784047165,"wake_id":"00MRKVMB0J64E7898E6A244518","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
 {"ts":1784047300,"wake_id":"00MRKVP6ZR1F11269891584002","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784047433,"wake_id":"00MRKVS1X9B42CA5AB491E4E14","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784047672,"wake_id":"00MRKVX64D9F2C56A2B82746D9","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784047738,"wake_id":"00MRKVYLEID457AA1354D84E67","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784047738,"wake_id":"00MRKVYLEID457AA1354D84E67","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784047945,"wake_id":"00MRKW30P0947C3A2772B04F41","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048011,"wake_id":"00MRKW4G3A4C42C90F1F4748D4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (0% confidence), so the expected edge doesn't clear the ~0.4% swap fees/slippage and my $16.25 USDC bankroll doesn't justify trading.\n[sol-trade] sol-evolve -> "}
+{"ts":1784048011,"wake_id":"00MRKW4G3A4C42C90F1F4748D4","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784048174,"wake_id":"00MRKW7XDKA13F3C9017FE491F","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048241,"wake_id":"00MRKW9CWX2BA4106010104051","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1784048307,"wake_id":"00MRKWAS7J49EC7CF8B39540A0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784048511,"wake_id":"00MRKWF5MH8DE4462777DD4628","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
