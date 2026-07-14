@@ -203,6 +203,12 @@ export async function thinkClaudeP(ctx, config) {
     '',
     'where <slot> is EXACTLY one of:',
     slotList || '  (no slots available this wake)',
+    // Canonical few-shot for the one slot weak models kept mis-calling (invented products, observed
+    // live 2026-07-14): the only correct x402_sell call is the empty-args call.
+    ...(menuSlots.includes('x402_sell')
+      ? ['', 'PERFECT x402_sell call (copy this shape exactly — products/prices are FIXED in code, do NOT invent one):',
+         '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"x402_sell\\"}"}}]}']
+      : []),
     ...(canSleep
       ? ['', 'Or, to do nothing this wake:', '{"tool_calls":[{"function":{"name":"sleep","arguments":"{}"}}]}']
       : []),
