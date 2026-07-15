@@ -190,6 +190,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] #15(task) **DONE 2026-07-16 06:14**: Google OAuth(keiodaisuke@gmail.com)で zenn ログイン確立、5本の下書き実在を dashboard screenshot で確認（team-lead も own-eyes 検収）。GitHub 連携同期は正常（rename 後「5分前に同期」）。ledger 記録済み。★発見: zenn アカウントに未把握の記事40本以上（cronジョブ/Claude Code/OpenClaude 系）— 別パイプラインの遺物か要 Dais 確認、未接触★（旧記述: zenn.dev のログインが daily-driver に存在しない（実測: cookie は _ga のみ、dashboard はログイン画面）★。deploy は GitHub 連携のサーバ側同期だが、**下書きの実在は dashboard でしか確認できない** → Google OAuth でログイン確立 + 5本の下書き実在 screenshot 確認 + session vault bank。note-paid-builder 割当済み、**browser 作業は daily pass 完了後**（CDP :9222 lockdir 衝突防止）。
 - [~] #13(task) kroki 縦長図の padding 補正: freever-gen-builder が非破壊実験完了（fig1 276x606 → 520x606 canvas、728px ストレッチ後の実表示 848px < 900、拡大なしでボケなし。PIL 12.2.0 はシステム python3 に実在確認、import 失敗時 FATAL で依存明示）。実装は pass 完了後に _shared/embed-mermaid-substack.py へ。
 
+### 今朝の再発火 run の結果（2026-07-16 06:52 rc=0、新 gate 初通し）
+- topic = AP2（Google Agent Payments Protocol）。SDK 実 clone + pytest 29件 + 支出上限 $30通過/$80拒否/署名改ざん拒否を実測。研究 MD = docs/loop-engineering/52-ap2-mandate-spend-cap-verified.md
+- staged 5/7（zenn / substack-ja / note / **x-ja / x-en** — X 復活、vault re-login 有効）。全て draft。
+- ★fail 2/7（devto / substack-en）= EN deslop-gate が12ラウンド収束せず。真因 = judge が checklist に無い難癖を毎ラウンド発明。**較正済み commit bb6520de**: violation は「checklist ルール引用 + 該当文 quote」必須、平叙な事実文は slop でない、FAIL = 見出し煽り or ルール引用3件以上。再測: slop fixture FAIL / 指摘が全部実ルール引用に。★
+- ★穴の発見: **X 経路は run.sh を通らないので 6a-6d gate を素通り**（x-en が staged なのに devto は blocked、が証拠）→ task #16。★
+- ★一般法則: 収束しない reviewer は「指摘が有限集合（ルール引用+quote）である」ことを強制して初めて収束する。自由記述の難癖は無限に湧く。★
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
