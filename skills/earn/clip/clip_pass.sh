@@ -19,9 +19,14 @@ log(){ echo "$(date '+%F %T') clip_pass: $*" >&2; }
 # = write no transcript (the disk-brick source). env -u ANTHROPIC_API_KEY = subscription login.
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
+  # stdout is captured per-step (claude CLI prints errors to STDOUT, not stderr — observed
+  # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
+  local out="$HOME/.openclaw/logs/clip-step-last.out"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >/dev/null 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
-  log "STEP $1 done (rc=$?)"
+    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+  local rc=$?
+  [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
+  log "STEP $1 done (rc=$rc)"
 }
 
 # ── deterministic prelude: single-instance lock (mkdir = atomic on macOS) + disk guard ──
