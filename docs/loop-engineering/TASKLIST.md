@@ -46,14 +46,25 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 
 ---
 
-## CLIP LOOP — 最新理解（2026-07-14、実コード確認済み）
+## CLIP LOOP — ★LIVE TRUTH（毎回ここだけ読めば現状が分かる。built と scheduled を混同しない）★
 
-### 現状（自分の目で確認）
-- **最終投稿 2026-07-11 21:47。約3日ゼロ。** launchd `ai.anicca.clip-*` plist 全部 `.disabled-2026-07-12-t04`＝停止中。
-- **停止の真因（コード確定）**: `post_reel.py` の bitrate fix で mp4 が ~2MB→**~29MB** に肥大 → IG ブラウザ投稿の `シェア中` spinner が **stall** → publish 確認 5/5 失敗（L206 コメントに実観測記録）。queue に 27-29MB の未投稿7本。
-- **品質バグ**（連鎖の元）: 小ファイル時代は投稿できたが IG が **200×200 に潰した**（below_floor）。＝「品質↑=大ファイル=投稿stall」のジレンマ。
-- **収益 $0**。bio に affiliate/product link 無し。self-improve ループ（metrics→reflect→次投稿）が clip には無い（記録のみ）。
-- 別レール `clip-promote`=ClipAffiliates(promote.fun) per-view 即金、phase idle、$0。
+> 更新: 2026-07-15 JST。**launchctl / ファイルシステムで実測して更新すること。記憶や古いログ（openclaw 等）で書かない。**
+> **openclaw では何も走っていない。clip は claude-p 系 = launchd + sonnet sub-call で回す設計。openclaw ログは見るな。**
+
+### ✅ BUILT（部品は完成・実証済み）
+- **instagrapi 無料投稿** = 動く。`run.sh`(POST-11) が `scripts/instagrapi_post.py` を呼ぶ。session `~/.cloak/instagrapi-aiclipsvault.json`(authorization_data 有効)。browser 経路(`post_reel.py`)は IG が silently drop するため**廃棄**。
+- **loop harness** `clip_pass.sh` = Reflexion 全鎖 LEARN→AFF-FIND→PRODUCE→POST→MEASURE→REFLECT。各 LLM step = `--model sonnet --no-session-persistence` の bounded sub-call。
+- **affiliate** = Digistore Q-Money 50%/$88、`~/clips/offer.json` joined:true、sid1=account 帰属スキーム有り。
+
+### ❌ NOT SCHEDULED（唯一の穴 = これが理由で自律稼働していない）
+- **clip_pass.sh はどの launchd にも載っていない。** 実測(2026-07-15 launchctl): `ai.anicca.clip-*` / `claude-p-mainloop` / `pm-earner` / `com.anicca.daemon` = **全部 `.disabled-2026-07-12`**。
+- 稼働中の earn launchd = gig / sol-trade / x402 / self-improve-evolve / ceo-runner / agent-economy-loop のみ。**clip は無い。**
+- ∴ **clip は今、自律で毎日投稿していない。** 最後の投稿 2026-07-14 は**手動テスト**。`clip-metrics.jsonl`=空(MEASURE 未走)、bio に link 無し。
+- 別レール `clip-promote`=ClipAffiliates per-view、phase idle、$0。
+- **収益 = ¥0**（Digistore dashboard に実 sale が載った時だけ「稼いだ」）。
+
+### → TO-BE（closed の定義）
+sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→instagrapi投稿→測定→自己改善。俺が何もしない状態で `.last-post` が翌日も自動で進み grid に reel が増え続ける = closed。
 
 ### OSS 探索の結論（gh 一次情報で裏取り）
 丸ごと1 repo は **公に存在しない**。最も近い = **darkzOGx/youtube-automation-agent（★1586）** = 生成→投稿→分析→自己改善が本物のコード（`analytics-optimization-agent.js`→`content-strategy-agent.js` の historicalPerformance フィードバック）。ただし **YouTube 単独 / acc作成・warm・マネタイズ無し**。うちは acc/warm/マネタイズ層を既に持つ（業界より先行）。→ **丸ごと採用でなく、darkzOGx の metrics→自己改善ループの設計だけ copy**。
@@ -63,37 +74,28 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 - **1 loop = 1 acc**（fanout）。全アカ共有 loop 禁止（1 ban で連鎖死・直列で遅い）。1 acc = 1 isolated CloakBrowser profile+port + 1 Reflexion state。scale = 同 engine を profile 変えて N 個。
 - **10k MRR の鍵 = 金の帰属 + affiliate-finder**。views でなく **$/post** を最適化。per-post trackable link → affiliate dashboard 読取 → 収益を投稿毎に帰属 → Reflexion が金で最適化。勝ち combo（niche×format×hook×offer）を1アカで実証→N アカに clone。
 
-### 7サブタスク（TaskList #1-8 と一致）
-| ID | 一手 |
-|---|---|
-| CLIP-FIX-1 | ✅ DONE 2026-07-14 — 診断: poster/file 無罪、真因=account 投稿制限。出荷: cadence gate(<=1投稿/20h) を run.sh に(commit 54e4f133)。★運用: aiclipsvault は数日休養で自然解除待ち(コードで解けない)★ |
+### ✅ DONE（部品・実証済み。詳細ログは git 履歴へ）
+- FIX-1/FIX-2: poster 診断(browser 経路=死筋、instagrapi へ pivot) + producer 復旧(1080×1920/faststart)。
+- POST-11: instagrapi 無料投稿 実装+実証、run.sh に配線。
+- LOOP-3: `clip_pass.sh` = Reflexion 統合ループ（producer+post+measure+reflect を1本に）作成。
+- OBS-6(部分): Telegram 報告 配線済。
+- MON-5(部分): offer 取得 = Digistore Q-Money 50%/$88、`~/clips/offer.json` joined:true、sid1 帰属スキーム。
 
-### CLIP-FIX-1 実装ログ（2026-07-14、俺が直接実測）
-- @aiclipsvault(port 9223, login済)に queue clip を実投稿 → `outcome=failed, post_url=null`。profile 独立確認で新 reel 出ず = **H1 確定（本当に publish されてない、「シェア中」spinner が真に hang。screenshot 6-sharing.png で spinner 実見）**。verify の false-neg(H2)ではない。
-- **★真因 = mp4 の moov atom がファイル末尾（faststart 無し）★**。ffprobe: h264 High/yuv420p/level40/aac = IG 互換。だが moov@末尾 → IG web uploader は 28MB を全DLするまで処理開始できず hang。**小ファイル時代(2MB)は全DLが速く成功 → bitrate fix で28MB化して露呈**、と辻褄一致。
-- **fix = `ffmpeg -c copy -movflags +faststart`（再エンコード不要、moov を先頭へ移動、品質不変）**。恒久化 = ①producer の最終エンコードに追加 ②既存 queue 7本を remux。
-- ❌ **faststart 仮説は falsified**: `+faststart` remux 版(moov 先頭)を実投稿 → やはり failed/新reel出ず。moov 位置は真因でなかった（検証してよかった、断定せず）。
-- ❌ **size 仮説も falsified**: 2.6MB/15s/1080×1920（旧成功サイズ相当）を投稿 → **やはり failed/新reel出ず**。3ファイル(28MB/faststart/2.6MB)が全て `シェア中` で同一 hang = **コンテンツ非依存**。→ ファイルは犯人でない。
-- **最有力仮説（未確定）= aiclipsvault の投稿制限**（作成2週間・warming中・status "investigating"・最後の成功~10日前・以降全滅）。web「シェア中」永久spinner は action-block/soft-ban の既知症状。account_status ページは 404（診断にならず）。
-- 進行中: 既知原因を検索 subagent で確認中。fix 方針は結果次第（コード修正 or warm延長/休養/別アカ/mobile経路）。★poster のコードは壊れてない可能性が高い（flow は share まで正常到達、IG 側が publish を silently drop）★
-| CLIP-FIX-2 | ✅ DONE 2026-07-14 — 真の穴=producer 2重故障(パス切れ+engine消失=07-11以降 clip 生成ゼロ)。fix: scripts を ~/anicca へ移動+再ポイント(97efc624)、engine self-heal、burn_captions に faststart。★E2E 実証: producer フル実走→新clip `_g4l7YkDQwA_EN.mp4` 生成、1080×1920/3.79Mbps/60s/gate通過/faststart=YES。queue 8本全て faststart 化★。残: 60s は長い(Reels 短尺化は LEARN/self-improve で) |
-| CLIP-LOOP-3 | ✅ DONE 2026-07-14 — clip_pass.sh(Reflexion harness) 作成。chain=LEARN→PRODUCE(producer)→POST(run.sh instagrapi+telegram)→MEASURE→REFLECT。各LLM step=bounded claude sub-call --no-session-persistence。REFLECT 単体実走で reflection.jsonl に honest next-lever 書込 実証(commit a292316f)。★full-pass E2E は LOOP-4 で cron 配線後★。$/post 最適化は MON-5(Dub.co)後に MEASURE へ配線 |
-| CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
-| CLIP-MON-5 | ★affiliate-finder ノード新設★ + per-post trackable link + ClipAffiliates 即金 |
-| CLIP-OBS-6 | Telegram 報告 + 全アカ dashboard（views/engagement/$）|
-| CLIP-SCALE-7 | 勝ち combo を N アカに clone、多platform 展開 |
+### ⬜ 残り TODO（★これが唯一の SSOT。TaskList tool と同一 ID・同順★）
+**方針: enable する前に「全部揃ってる」を1回のフルパスで実証 → 統合ループを plist 化して自走 → 金の帰属 → ×N。**
 
-### ★2026-07-14 session 到達点（clip loop 完成度）★
-✅ FIX-1(poster診断: web composer死筋) / FIX-2(producer復旧+品質1080²) / POST-11(instagrapi 無料投稿, reel/DaxPaF9saPA 実証) / OBS-6(Telegram+link, TELEGRAM_SENT=true) / LOOP-3(Reflexion harness clip_pass.sh + cold-start bible + affiliate money bible 埋込) / MON-5 offer取得(★Digistore Q-Money 50% 実promolink https://www.digistore24.com/redir/569951/keiodaisukeaiclips1f031/ , offer.json joined:true★)
-⬜ **closed まで残り5手（全部 loop がやる、INV-12）**:
-  1. bio-set step — loop が browser で bio に link+sid（instagrapi account_edit は login_required で不可→browser）
-  2. LOOP-4 — clip_pass.sh を単一 launchd cron に配線 + aiclipsvault status=ready（旧 clip-producer/clip-proactive 廃止）
-  3. MEASURE→$ — sid別 EPC を Digistore dashboard から読み REFLECT に渡す（10k の駆動輪）
-  4. skillify #15 — account作+affiliate-finder を skill 化（新アカ自己bootstrap、shared-first/finder-hedge）
-  5. shared offer config — 再発見せず共有offer即使う
+| # | ID | 一手 | done の検証 |
+|---|---|---|---|
+| 1 | CLIP-E2E-VERIFY | `clip_pass.sh` を1回**手動フルパス実走**（LEARN→AFF-FIND→PRODUCE→POST→MEASURE→REFLECT が全部緑）。enable 前に end-to-end が揃ってる証明 | 実 reel URL が出る + `clip-metrics.jsonl`/`reflection.jsonl` に行が増える |
+| 2 | CLIP-LOOP-4 | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を作り load。旧分離 plist（clip-producer/clip-core/clip-proactive）は廃止。1 acc=1 loop | `launchctl list \| grep clip-loop` が PID + **翌日 `.last-post` が俺の介入なしで進む** |
+| 3 | CLIP-MONEY | bio-set（loop が browser で bio に `link?sid1=<handle>`）+ MEASURE→$（Digistore EPC を sid 別に読み REFLECT へ）。=10k の駆動輪 | bio に link 実見 + `clip-metrics.jsonl` に $ 行 |
+| 4 | CLIP-SCALE-7 | ×N fanout: plist を profile+port だけ変えて量産。1アカ実証→N アカ clone。affiliate-finder + account作を skill 化(#15) | 複数 clip-loop が並列 PID、各々自走投稿 |
+
+- **唯一の成果指標 = Digistore dashboard に実 sale。今 ¥0。** loop が回る≠稼いだ。
+- ★INV-12: 全部 loop(sonnet) がやる。orchestrator は plist/skill 化だけ。恒常運用で run.sh を叩かない。★
 - 正本 docs: spec §6 / docs/earn/{social-marketing-factory-toolstack,ig-posting-method-graph-api-pivot,ig-posting-restriction-and-warmup-policy,crypto-affiliate-feasibility}.md / docs/loop-engineering/{47-cold-start-bible,49-affiliate-money-playbook,48-master-loop-map}.md
-- GMX(agora crypto rail)setup 実測 → docs/earn/gmx-referral-setup.md（本 session 末に orchestrator が verify）
-- 実装ファイル: ~/anicca/skills/earn/clip/{clip_pass.sh, run.sh, producer.sh, scripts/instagrapi_post.py}
+- 実装ファイル: ~/anicca/skills/earn/clip/{clip_pass.sh, run.sh, producer.sh, scripts/instagrapi_post.py} / launchd/（旧 plist、要差し替え）
+- GMX(agora crypto rail) → docs/earn/gmx-referral-setup.md（別 goal、session 末に verify）
 
 ### Q1 の結末（4ループの実働、実データ 2026-07-13）
 | loop | tmux/launchd | 実際にやっていること | 稼ぎ |
