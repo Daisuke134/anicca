@@ -274,6 +274,22 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        ④ 同カテゴリの実売価格から価格を決める
        ★一般法則: **事実を返すチェック（hasCircle）を、事実について語る記事より優先する。API 1発が「note で稼ぐ方法」ブログ100本より正確。**★
 
+- [x] #38 **idempotency 実証 + eyecatch 生存を実測（team-lead が実 note.com で撃った。「未検証」項目の解消）** 2026-07-16
+       ★実出力★
+       ```
+       1回目(台帳空): DRAFT key=nbcb93e6fc711 reused=false ...     ← create が正解（台帳が実装前の draft を知らない）
+       台帳: {".../2026-07-12-how-to-build-the-agent-economy-jp.md": {"key":"nbcb93e6fc711","num":"170251627",...}}
+       resolve → {"action":"update","article_id":"nbcb93e6fc711","key_format_ok":true,"reason":"ledger"}
+       2回目:        DRAFT key=nbcb93e6fc711 reused=true stage2_embedded=3/3   ← ★同じ key。draft は増えない★
+       ```
+       → **「1つの draft を磨き続ける」形が実証された**（Dais の要求）。
+       ★**eyecatch は update_article で消えない**（旧「未検証」を解消）: eyecatch 設定 → 本文 update → `verify-draft.py` で `IMAGES_TOTAL=4`(mermaid 3 + eyecatch 1) `IMAGES_BROKEN=0` `VERDICT=PASS`。`update_article` の payload は name/body/body_length/hashtags のみで eyecatch を触らないため。→ **eyecatch と本文更新の順番に制約は無い。**★
+       tags も同様に維持される（payload に hashtags が載るため毎回渡せば良い）。
+- [x] #36 **タグは「壊れていた」のではなく「ゼロだった」**（team-lead の誤診を訂正）。エディタに見えた `#自分 #人間 #財布 #価値 #実際` は**note の自動提案**（全て同一 class `sc-35e5f35-2 cFEPnm`、削除ボタン無し）で、適用済みタグではない。決定的証拠: `--tags` を渡していなかったので `NOTE_TAGS=""` → `TAGS=[]` = **1つも付いていなかった**。結論は同じ（タグ0 = 検索流入0 = 売れない）。
+       ★タグは実測で選ぶ（note hashtag API `GET /api/v2/hashtags/{tag}` が件数を返す）★:
+       `#AI` 794,103 / `#生成AI` 416,162 / `#Claude` 99,592 / `#プログラミング` 97,560 / `#AI副業` 68,226 / `#暗号資産` 48,735 / `#AIエージェント` 43,821 / `#ClaudeCode` 38,875
+       → 採用 = `AIエージェント,Claude,暗号資産,生成AI,AI副業`（主題+読者層+中身+流入+買う層）。**巨大タグ(#AI 79万件)は埋もれるので避ける。**
+
 ### PART G — セキュリティ（2026-07-15 発見）
 - [ ] #31 **note の email/password が `publish-note.sh` に平文ハードコード**（冒頭コメント + 変数デフォルトの2箇所）。`~/.openclaw`(private) に commit 済み。→ env 化 + パスワード rotate が要る。Dais 判断待ち（既存状態なので今夜の作業は止めない）。他の publish script(zenn/devto/substack/x) にも同種が無いか要 grep。
 
