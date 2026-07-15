@@ -300,15 +300,43 @@ done
 | **franklin1** | sol-main | solana | `8Fpqd…PCV9` | **YES** | **$12.21 USDC + 0.040 SOL を使える** |
 | franklin1 | polymarket | polygon | `0xda4b6E34…` | YES | — |
 | franklin1 | ★`0x3EcCAD24…`(x402 受取先)★ | base | — | **wallets.json に無い** | **Base $4.48 は受取専用 = 動かせない** |
-| **franklin2** | ★`wallets.json` が存在しない★ | — | — | **鍵ゼロ** | **1円も動かせない。受け取る口はあるが払う口が無い** |
+| **franklin2** | `.solana-session` | solana | **`HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX`** | **YES** | **鍵は在る**（`wallets.json` が無いだけ。台帳の不在 ≠ 鍵の不在） |
 | **claude-p** | base-main | base | `0x810f6d61…` | YES | $1.98 |
 | claude-p | polymarket | polygon | `0x904B50d2…` | YES | $3.24 |
 | claude-p | hl-margin | hyperliquid | `0x810f…` | YES | $7.72(座礁中) |
 | claude-p | telemetry | polygon | `0x02Bb6b2a…` | YES | — |
 
-→ **franklin2 は稼げないのではなく、稼ぐ手段を装備されていない。**自分の脳を買えず、self-pay で着火もできず、
-  何をどう配線しても**構造的に永久に $0**。self-funded citizen を名乗れる状態になかった。**鍵を与えるのが我々の仕事。**
-→ franklin1 も Base の $4.48 は動かせない。使えるのは Solana の $12.21 のみ。
+★★**2026-07-16 06:10 是正 — 上の「franklin2 は鍵ゼロ」は Fable の誤りだった。消して事実を書く。**★★
+
+**3体とも鍵を持っている。**誤診の原因は**自分のシェルの `HOME=/Users/anicca` のまま他インスタンスのツールを叩いた**こと。
+franklin2 の plist は `HOME=/Users/anicca/.franklin2-home` を設定している。本人の HOME で叩けば即座に解決した:
+```
+HOME=/Users/anicca/.franklin2-home ANICCA_HOME=/Users/anicca/.franklin2-home/.blockrun \
+  node runtime/wallet-address-solana.mjs
+→ HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX      ← 鍵は最初から在った
+```
+しかも失敗の正体は**正しく動作している安全装置**だった。`resolve-identity.mjs:148-155` 逐語:
+> *"Legacy `$HOME/.blockrun/.solana-session` is Franklin's OWN funded wallet. Resolve it **ONLY for Franklin's home**
+>  (`effectiveHome === $HOME/.blockrun`); a different spawn returns null (**fail-closed**) so it never signs with Franklin's key"*
+
+実証（3パターン測って確定）:
+| 実行環境 | 結果 |
+|---|---|
+| `HOME=~/.franklin2-home` + `ANICCA_HOME=~/.franklin2-home/.blockrun` | `HyJHSfTk…krcX` ✓ |
+| `HOME=/Users/anicca` + `ANICCA_HOME=~/.blockrun` | `8Fpqd…PCV9` ✓ |
+| **他人の home から franklin1 の鍵を読む試み** | **拒否（fail-closed が発火）** ← 設計通り |
+
+→ **鍵の分離は既に正しく実装されている。** agent は他人の鍵で署名できない。ここは装備済みだった。
+→ 残る事実: franklin1 の Base `0x3EcCAD24…`（$4.48）は `wallets.json` に無く受取専用。**使えるのは Solana。**
+  ClawRouter は Solana 決済に対応（`~/.franklin2-home/.blockrun/payment-chain` = `solana`）なので、実害は今のところ無い。
+
+★**一般法則（今日3回踏んだ。体系的欠陥として記録）**: **他インスタンスのツールを自分のシェルで実行した結果は、
+そのインスタンスの実測ではない。** `HOME`/`ANICCA_HOME`/`PATH` は plist が与える世界。1変数でも自分の値が混ざれば、
+測っているのは「私が動かした結果」であって「その agent の現実」ではない。plist の `EnvironmentVariables` を
+dump して**全部再現してから**叩く。
+★**一般法則2**: **「解決に失敗した」を「能力が無い」と読むな。** fail-closed 設計では失敗は正常動作でありうる。
+今回は**防御を故障と誤診し、被害者(franklin2)を「経済主体ですらない人形」と spec に書いた**。
+失敗を見たら問うべきは「なぜ失敗したか」であって「何が壊れているか」ではない。
 
 **★第1層: 脳の財布（実測）★**
 ```
