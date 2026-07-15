@@ -200,6 +200,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] #16 X 経路の gate 素通り **DONE** commit `677024b5`（builder 実装、team-lead がコード実読で検収）: publish-to-x.sh の publish に language-purity + deslop + eval を browser 操作の前に配線（FAIL = exit 6、prep 未到達を実出力で確認）。seo-gate は除外（--title/--meta 非供給 + SEO は note/zenn/devto の要求）。lang 判定 = --lang > CJK 文字数 > slug 末尾(brittle、最終手段)。gates-ok stamp を run.sh と共有 = 同一記事の二重審査なし。
 - [x] #13 kroki 縦長 padding **DONE** commit `891118e0`: pad_to_fit() で upload 前に横 padding（min_w = ceil(h*728/850)、拡大なし）。実測 276x606 → 520x606 → Substack 728px 表示で **848px**（<900 達成）。Pillow は import 失敗時 FATAL で依存明示。
 
+- [x] ★**#41 Phase 1 DONE**★ commit `3264daa`(profitable-claude/main) + `1e688535`(openclaw、zenn slugify 修理)。**team-lead が独立検収**:
+       - `bash -n` OK / diff = **純追加33行**（削除0）/ **PROMPT の MD5 を自分で再現**: 変更前(unset)=`18260b13d300d240353e0fd3e8850a0c` == 変更後(unset) → **既定は byte 完全同一 = draft-only 温存が証明済み**。AUTOPUBLISH=1 では別 prompt(`a50d2ae2…`)。
+       - plist は未注入（grep 0）= 初回 arm は team-lead の手動判断のまま。
+       - 契約の中身も実読して確認: STEP13 note `--arm` に「this is the ONLY command in this entire loop that actually clicks the publish button」/ STEP15 X sentinel は「its own just-staged draft only -- never on a draft from a different pass」/ STEP18 reality-gate 必須「On FAIL, fix the root cause yourself... if you genuinely cannot fix it, take that ONE platform back to non-public」/ STEP19 ledger は**追記のみ**（draft 行を上書きしない）+「Never fabricate a URL or a verdict you did not personally observe」/ STEP20 Telegram に live URL + verdict + 価格/タグ。dev.to は draft-only 継続。
+       ★副産物の実バグ修理（builder が STEP16 実装中に発見）: `post-zenn.py` の `slugify()` が日本語を通すホワイトリストだった = **#46 の silent skip の真の発生源**。修理済み（日本語のみのタイトルは `anicca-day` fallback へ = 常に deploy 可能な slug）。さらに印字 URL が `daisuke134`（GitHub identity）→ `anicca`（実 Zenn アカウント）に修正 = **毎日の own-eyes verify が参照していた URL 自体が誤っていた**。★
+       **残 = plist に ARTICLE_AUTOPUBLISH=1 を注入（team-lead が明日の run 前に手動）→ 初回無人公開 run を観察。**
+
 ### #14 実装設計（seo-gate を article-earn funnel に合わせる。team-lead 起草 2026-07-16、実コード読解済み）
 現物の要求（`seo-gate.sh`、行番号は実測）: L43 meta 120-156字 / L47 **H2 3-7本** / L50 内部リンク（aniccaai.com|github.com/Daisuke134/anicca|x.com/aniccaxxx）≥1 / L58 **aniccaai.com アンカー必須** / L62 **App Store deeplink（?pt=/?ct=/?utm_source=）必須**。
 これは iOS アプリ送客時代の遺物。今の funnel は「無料版 → note 有料版」。実害の実測: 本物の agent-economy 記事は H2 11本で永久に通らない、AP2 記事も meta 長で落ちた。
