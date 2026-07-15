@@ -89,6 +89,15 @@ SELF_FIX="$HOME/anicca/skills/self/self-fix.sh"
 # (the judge DID reach the real screen and the claim genuinely did not hold) is unthrottled, unchanged.
 AUTH_WALL_COOLDOWN_MARKER="$G/.auth-wall-selfheal-cooldown"
 AUTH_WALL_COOLDOWN_SECS=21600  # 6h: re-alert periodically without spawning a fresh agent every hour
+# TIMEOUT COOLDOWN (2026-07-15 self-fix, incident realityverify-1784123104-80599): same shape as the
+# auth_wall cooldown above. kind=timeout means the fresh judge spawn itself never finished investigating
+# within the cap (gig_reality_verify.sh's own `timeout` killed it) -- there was no claim/reality mismatch
+# to diagnose, the verifier just ran out of time on a legitimately heavy round (many distinct entities/
+# talkrooms to check). The 2026-07-15 fix already addresses the root cause (entity dedup + raised cap),
+# but a hung/overloaded round could still recur before that fix is fully proven out; without this
+# cooldown a recurring timeout would respawn a full self-fix.sh Sonnet agent every single hour forever.
+TIMEOUT_COOLDOWN_MARKER="$G/.timeout-selfheal-cooldown"
+TIMEOUT_COOLDOWN_SECS=21600  # 6h: same window as auth_wall
 if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
   KIND="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('kind','claim_mismatch'))" 2>/dev/null || echo 'claim_mismatch')"
   REASON="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('reason','') or json.load(open('$SELFHEAL_REQ')).get('failure_reason',''))" 2>/dev/null || echo '')"
@@ -102,6 +111,15 @@ if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
       echo "$(date '+%F %T') auditor: auth_wall selfheal within cooldown (${cooldown_age}s<${AUTH_WALL_COOLDOWN_SECS}s) -- skip self-fix.sh spawn (already diagnosed)" >> "$G/.self-fix.err.log"
     else
       date +%s > "$AUTH_WALL_COOLDOWN_MARKER"
+    fi
+  elif [ "$KIND" = "timeout" ]; then
+    cooldown_age=999999
+    [ -f "$TIMEOUT_COOLDOWN_MARKER" ] && cooldown_age=$(( $(date +%s) - $(cat "$TIMEOUT_COOLDOWN_MARKER" 2>/dev/null || echo 0) ))
+    if [ "$cooldown_age" -lt "$TIMEOUT_COOLDOWN_SECS" ]; then
+      SKIP_SELFHEAL=1
+      echo "$(date '+%F %T') auditor: timeout selfheal within cooldown (${cooldown_age}s<${TIMEOUT_COOLDOWN_SECS}s) -- skip self-fix.sh spawn (already diagnosed)" >> "$G/.self-fix.err.log"
+    else
+      date +%s > "$TIMEOUT_COOLDOWN_MARKER"
     fi
   fi
   if [ "$SKIP_SELFHEAL" = "0" ]; then
