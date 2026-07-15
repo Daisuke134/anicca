@@ -151,7 +151,15 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
 - [ ] #14 T2 note login Vue reactivity bug 修理
 - [ ] #15 T3 X session 再取得
-- [ ] #16 T4 VISUALS ★訂正: "作る"必要なし、既に実装済。gap=日次loopへの配線★
+- [x] #16 T4 VISUALS **DONE 2026-07-15**（commit `fbd362a9` @ anicca-dais main-internal, push済）
+       配線した実物: `publish-note.sh` = stage1-render(表→PNG, manifest生成) → manifest title を --title と同期 → create_draft(manifest body) → stage2-publish(kroki mermaid→PNG, upload_body_image, update_article=draft_saveのみ)。
+       run.sh 契約は不変（stdout=`DRAFT (unpublished) key=...` 1行のみ、診断は全て stderr）。DRAFT-ONLY 温存（publish_article は import ごと不在）。
+       WORK dir = `~/.cloak/note-work/note-stage-daily/$$-<ts>`（/tmp 不使用、手動Automatonの共有dirと分離）。
+       ★副産物の実バグ修正: `set -euo pipefail` 下の `VAR=$(cmd); EC=$?` は cmd 失敗時に即死し FATAL 分岐へ到達しない。3箇所を `if VAR=$(cmd); then EC=0; else EC=$?; fi` へ。実測再現: `bash -c 'set -euo pipefail; OUT=$(false); EC=$?; echo reached'` は reached を出さず exit 1。★
+       検証済(ネットワーク副作用なし): bash -n / py_compile OK、既存回帰 `note-publish/test-de-automaton.py`(INV-1〜5, draft-onlyリーク検査) PASS、引数欠落で `FATAL: --markdown-file --title required` exit 1、stage1 単体実行で `tables=1 mermaids=1` + body に `@@TBL1@@`/`@@FIG1@@` 生成を実測。
+       ★未検証 = 実 note.com への実 draft 作成（ネットワーク）。#3 E2E で初めて通す。★
+       残った既知の穴: stage1 失敗時は WARN のみで生MDにフォールバックし exit 0（= 画像無し draft が静かに成功扱い。silent degradation）。reality-gate(#20)で拾うべき。
+       旧記述（履歴）: ★訂正: "作る"必要なし、既に実装済。gap=日次loopへの配線★
        既存(実装済): `note-stage2-publish.py`=kroki.io で mermaid→PNG(L27-29)+S3画像upload(upload_body_image)+eyecatch / `note-stage1-render.py`=表→PNG(L21-46)。draft-only 保証コメント有。
        ★真の gap: 日次loop の note 経路 `run.sh→publish-note.sh→create_draft(生MD)` が stage1/stage2 を通さず生markdownを投げてる → note で ```mermaid が崩れ画像無し = 「悪いdraft」の真因。★
        → 作業 = publish-note.sh(生MD経路)を stage1-render→stage2-publish(画像経路)に差し替える配線のみ。
@@ -162,6 +170,15 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 
 ### PART C — verifier
 - [ ] #20 V1 L4 reality-gate(session restore→ログアウト実見→naturalWidth>0→draft確認、公開ならFAIL)
+       ★2026-07-15 発見: reality-gate は「人間を loop から外す許可証」。これが無い限り DRAFT-ONLY 契約(下記 #26)は正しい安全弁であり、外してはならない。順序 = reality-gate 実装 → 契約書換 → 自動公開。★
+
+### PART F — no-human-loop への障壁（2026-07-15 実測で判明、pc-repo 調査）
+- [ ] #26 **DRAFT-ONLY 契約が設計として埋まっている**。`~/profitable-claude/skills/human-funded/article/article-daily.sh` = 「DRAFT ONLY、絶対に自動公開しない。published フラグ常に false 固定。X の `go`(実公開) 呼び出しは明示禁止。公開は必ず Dais が手動」。
+       `skills/human-funded/README.md` に昇格ルート有: 「installer の既存クレデンシャル/OAuth/KYC/1-tap 確認が要る skill だけここに置く。human-in-loop 不要になれば親 `skills/` へ昇格」。
+       → article は reality-gate(#20) 完成時に親 skills/ へ昇格させ、契約を自動公開へ書き換えるのが設計者の意図。今は触るな。
+- [ ] #27 **個人識別子のハードコード = 他人が install できない**。実測: `article-daily.sh` に Telegram target ID 直書き、`bounty-cli.sh`/`bounty/run.sh`/`connector-cli.sh`/`human-funded/README.md` に GitHub identity `Daisuke134` 直書き。
+       同 README に「installer 固有クレデンシャルを OSS コードに焼き込むな、env var で外出しする」という Anti-pattern 規定があるのに違反している状態。→ env 化が汎用化の前提。
+- [ ] #28 **収益源が repo に未配線**。`~/profitable-claude/README.md` の Loop 表 = bounty(Algora/GitHub) / affiliate(Amazon JP) / gig(Coconala→MUFG) のみ。note/Substack/dev.to の content royalty は `human-funded/README.md` の「Initial intent」に将来候補として書かれているだけで実配線ゼロ。#23(換金) と対。
 
 ### PART D — loop 自走
 - [ ] #21 L-a L3 self-improve(日次ダイジェスト→crwl成功記事→component A/B→funnel実測→keep/revert→playbook.json)
