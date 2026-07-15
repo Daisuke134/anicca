@@ -84,14 +84,16 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 ### ⬜ 残り TODO（★唯一の SSOT。1行 = 1 atomic 動作。TaskList tool と同一 ID・同順。終わった瞬間ここを update★）
 **順序でしかやらない。1つ緑になったら即この表を update してから次へ。**
 
-| 順 | ID | 1つの動作（atomic） | done の検証（実観測） | なぜこの順 |
+★focus = aiclipsvault 1アカのみ。金を生むまで scale(×N)しない。★
+
+| 順 | ID | 1つの動作（atomic） | done の検証（実観測） | 状態 |
 |---|---|---|---|---|
-| 1 | CLIP-BIO | loop が browser で bio に `<offer_link>?sid1=aiclipsvault` を**1回書く**（instagrapi は login_required で不可→browser） | logged-out で profile を開き bio の link を実見 | ★先に profile を money-ready に。link 無しで投稿=金ゼロ★ |
-| 2 | CLIP-E2E | `clip_pass.sh` を**1回だけ手動実走**し、@aiclipsvault に**実 reel が1本 publish される**まで見る | logged-out で reel URL が HTTP 200 | bio 済の状態で1本が本当に通るか実証 |
-| 3 | CLIP-PLIST | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を**1個作って load**。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | 壊れてない事を実証してから自動化 |
-| 4 | CLIP-SELFRUN | **俺が何もしない状態で翌日 `.last-post` が自動で進む**のを1回確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 | 自走を目で確認して初めて closed |
-| 5 | CLIP-MEASURE | Digistore dashboard から sid 別 EPC を読み `clip_pass.sh` の REFLECT に渡す配線を**1本入れる** | `clip-metrics.jsonl` に $ 行が載る | 自走後、$/post で最適化する駆動輪 |
-| 6 | CLIP-FANOUT | plist を profile+port だけ変えて**2個目のアカに複製**（1 acc=1 loop）。以後 skill 化(#15)で自己 bootstrap | 2本目の clip-loop が並列 PID + 自走投稿 | 1アカで金が回る recipe を実証してから×N |
+| 1 | READY | `~/.cloak/clip-accounts.json` の aiclipsvault を `status:"ready"` に（07-14 instagrapi 投稿成功=投稿できる。run.sh の skip を解除） | ファイルに `aiclipsvault "status":"ready"` | ✅ DONE 2026-07-15（JSON 妥当・grep 確認） |
+| 2 | ENABLE | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を1個作って load。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | ⬜ 次 |
+| 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか | logged-out で reel URL が HTTP 200（出なければ P3 soft-ban へ） | ⬜ |
+| 4 | CLIP-BIO | clip_pass.sh に「website(external_url)欄に `<offer_link>?sid1=aiclipsvault` を入れる」judgment-driven step を足す（IG は website だけ clickable=金の入口、bio 本文 URL は不可）。idempotent | logged-out で profile に link 実見 | ⬜ |
+| 5 | SELFRUN | 俺が何もしない状態で翌日 `.last-post` が自動で進むのを確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 | ⬜ |
+| 6 | MEASURE-$ | Digistore dashboard から sid 別 EPC を読み REFLECT に渡す配線を1本入れる | `clip-metrics.jsonl` に $ 行が載る | ⬜ |
 
 - **唯一の成果指標 = Digistore dashboard に実 sale。今 ¥0。** loop が回る≠稼いだ。
 - ★INV-12: 全部 loop(sonnet) がやる。orchestrator は plist/skill 化だけ。恒常運用で run.sh を叩かない。★
