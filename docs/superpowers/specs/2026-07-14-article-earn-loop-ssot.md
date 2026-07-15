@@ -151,7 +151,12 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
 - [ ] #14 T2 note login Vue reactivity bug 修理
 - [ ] #15 T3 X session 再取得
-- [ ] #16 T4 VISUALS(Mermaid/表→PNG/eyecatch) を run.sh に組込み
+- [ ] #16 T4 VISUALS ★訂正: "作る"必要なし、既に実装済。gap=日次loopへの配線★
+       既存(実装済): `note-stage2-publish.py`=kroki.io で mermaid→PNG(L27-29)+S3画像upload(upload_body_image)+eyecatch / `note-stage1-render.py`=表→PNG(L21-46)。draft-only 保証コメント有。
+       ★真の gap: 日次loop の note 経路 `run.sh→publish-note.sh→create_draft(生MD)` が stage1/stage2 を通さず生markdownを投げてる → note で ```mermaid が崩れ画像無し = 「悪いdraft」の真因。★
+       → 作業 = publish-note.sh(生MD経路)を stage1-render→stage2-publish(画像経路)に差し替える配線のみ。
+       research copy: ①igapyon「正本MD書き換えない/生成PNGはgit外の使い捨て」を不変条件化 ②drillan `LoginError`分類を stale-cookie 診断に。捨てる: session作り直し(我々のdaily-driver cookie抽出が堅い)/publish(bool)フラグ。
+       我々の note publisher は OSS最強クラス(drillan/note-mcp を vendor、S3 upload、draft-safe = review中最強)。
 - [ ] #17 T5 de-slop ゲート(stop-ai-slop-jp/stop-slop)配線（今 language+seo のみ）
 - [ ] #18 T6 eval「賢い読者/Daisが払うか」/50 + fact 配線（fresh adversary）
 
