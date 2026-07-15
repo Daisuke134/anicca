@@ -170,7 +170,12 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        ★一般法則: 「best-effort で WARN + exit 0」は、その run が degraded だったことを機械可読な形で残して初めて成立する。残さないなら成功の偽装。★
        **R1修理 = commit `64071733`**（stdout の1行に `stage1_ok=/stage2_ok=` トークン追記 → run.sh:97-98 が grep → meta.json(155-157) + account-history snippet(139)）。MINOR1/2 も修理済（302/308行の set -e ガード、247-254行 mkstemp+os.replace）。回帰スイート PASS を team-lead が自分で実行して確認。
 
-- [ ] #30 ★**画像が黙って消える実バグ**（adversary R2 が発見、team-lead が実コードで確認、2026-07-15、修理中）★
+- [x] #30 ★**画像が黙って消える実バグ**（adversary R2 が発見、team-lead が実コードで確認）→ **DONE 2026-07-15 commit `794e6529`**★
+       修理の実物（team-lead が自分で grep + 回帰実行して確認）: 空文字消去を廃止し `note-stage2-publish.py:41` で `[画像の埋め込みに失敗しました: {label}]` の**可視プレースホルダ**に置換（人間が draft を見て気づける）。`L70` で `EMBED_SUMMARY embedded=N/M failed=...` を stdout に、1件でも失敗なら `L72 sys.exit(1)`。★`L68 update_article` が `L72 sys.exit(1)` より前 = draft は失敗時も必ず保存される（部分的でも中身のある draft を残す）★。
+       設計が正しい理由: **exit code の意味を「プロセスが生きてるか」→「全画像が入ったか」に変えた**ので、publish-note.sh 側の `STAGE2_RC -ne 0 → stage2_ok=false` は無変更のまま正しくなる（真因を直せば下流が自動で直る）。
+       追加: `stage2_embedded=N/M` を publish-note.sh の stdout トークン → run.sh → meta.json に配線。**reality-gate(#20) が「何枚中何枚入ったか」を直接読める。**
+       回帰スイートに新不変条件 `partial-embed-failure` を追加、`A3_FAIL_UPLOAD` env で失敗注入（ネットワーク不要）。team-lead が自分で実行し `PASS -- all static + behavioral invariants hold (stage1 + stage2 leak-checked, partial-override + multi-infographic + partial-embed-failure)` を確認。
+       旧記述（履歴・バグの現物）:
        `note-stage2-publish.py:42,49,54`:
        `except Exception as e: print(f"tbl{i} FAIL ..."); nb=nb.replace(f"@@TBL{i}@@","")`
        - 画像 upload 失敗時、マーカーを**空文字に置換して消す** = 痕跡が残らない（生 `@@TBL1@@` が残る方がまだマシ。壊れたと分かるから）
@@ -191,6 +196,9 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 ### PART C — verifier
 - [ ] #20 V1 L4 reality-gate(session restore→ログアウト実見→naturalWidth>0→draft確認、公開ならFAIL)
        ★2026-07-15 発見: reality-gate は「人間を loop から外す許可証」。これが無い限り DRAFT-ONLY 契約(下記 #26)は正しい安全弁であり、外してはならない。順序 = reality-gate 実装 → 契約書換 → 自動公開。★
+
+### PART G — セキュリティ（2026-07-15 発見）
+- [ ] #31 **note の email/password が `publish-note.sh` に平文ハードコード**（冒頭コメント + 変数デフォルトの2箇所）。`~/.openclaw`(private) に commit 済み。→ env 化 + パスワード rotate が要る。Dais 判断待ち（既存状態なので今夜の作業は止めない）。他の publish script(zenn/devto/substack/x) にも同種が無いか要 grep。
 
 ### PART F — no-human-loop への障壁（2026-07-15 実測で判明、pc-repo 調査）
 - [ ] #26 **DRAFT-ONLY 契約が設計として埋まっている**。`~/profitable-claude/skills/human-funded/article/article-daily.sh` = 「DRAFT ONLY、絶対に自動公開しない。published フラグ常に false 固定。X の `go`(実公開) 呼び出しは明示禁止。公開は必ず Dais が手動」。
