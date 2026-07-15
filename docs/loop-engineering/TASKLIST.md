@@ -51,6 +51,27 @@ Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skil
 > 更新: 2026-07-15 JST。**launchctl / ファイルシステムで実測して更新すること。記憶や古いログ（openclaw 等）で書かない。**
 > **openclaw では何も走っていない。clip は claude-p 系 = launchd + sonnet sub-call で回す設計。openclaw ログは見るな。**
 
+### 📍 WHERE IS THE CLIP LOOP（二度と迷わない為の場所の正本）
+```
+起動器 (launchd, 6h毎, RunAtLoad):
+  ~/Library/LaunchAgents/ai.anicca.clip-loop-aiclipsvault.plist   ← これ1個だけが clip を回す
+        │ ProgramArguments: /bin/bash <下記 clip_pass.sh>
+        ▼
+統合ループ本体:
+  ~/anicca/skills/earn/clip/
+    ├─ clip_pass.sh        ★ENTRY = 1 pass の全部 (LEARN→AFF-FIND→PRODUCE→POST→MEASURE→REFLECT)★
+    ├─ producer.sh         PRODUCE node: clip 生成 (clip_pass.sh:44 が呼ぶ。単体 cron は廃止)
+    │    └─ scripts/{pipeline.py, burn_captions.py, verify_clip.sh, export_camofox_cookies.py}
+    ├─ run.sh              POST node: instagrapi で投稿 (clip_pass.sh:48 が呼ぶ)
+    │    └─ scripts/instagrapi_post.py   ★実 poster (browser sessionid → instagrapi.clip_upload)★
+    ├─ self_heal.py + reel_verify.py     投稿の verify/自己修復
+    └─ _instance_paths.sh  STATE パス解決
+state (~/clips/):   offer.json / reflection.jsonl / playbook.json / clip-metrics.jsonl / queue/ / posted/
+account/browser:    ~/.cloak/clip-accounts.json (handle↔port) / ~/.cloak/profiles/clip-en (9223, cookie=login永続)
+外部依存(触るな):   ~/.claude/skills/ig-account-create/scripts/cdp.py / ig-reels-poster/scripts/post_reel.py
+```
+**★一つの loop が全部やる (merge)★**: 旧 = producer/post/healthcheck が別々の launchd cron（断片）。新 = `clip_pass.sh` 1本が producer.sh を step として内部で呼ぶ（producer は「off」でなく loop の中に移動）。将来ここに account作成→warmup→affiliate-find→bio まで全部入れて「1 loop = 起業家1人」にする。
+
 ### ✅ BUILT（部品は完成・実証済み）
 - **instagrapi 無料投稿** = 動く。`run.sh`(POST-11) が `scripts/instagrapi_post.py` を呼ぶ。session `~/.cloak/instagrapi-aiclipsvault.json`(authorization_data 有効)。browser 経路(`post_reel.py`)は IG が silently drop するため**廃棄**。
 - **loop harness** `clip_pass.sh` = Reflexion 全鎖 LEARN→AFF-FIND→PRODUCE→POST→MEASURE→REFLECT。各 LLM step = `--model sonnet --no-session-persistence` の bounded sub-call。
@@ -91,7 +112,7 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 | 1 | READY | `~/.cloak/clip-accounts.json` の aiclipsvault を `status:"ready"` に（07-14 instagrapi 投稿成功=投稿できる。run.sh の skip を解除） | ファイルに `aiclipsvault "status":"ready"` | ✅ DONE 2026-07-15（JSON 妥当・grep 確認） |
 | 2 | ENABLE | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を1個作って load。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | ✅ DONE 2026-07-15（PID 登録・err.log に STEP LEARN start = 自走開始） |
 | 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか + Telegram 発火 | logged-out で reel URL が HTTP 200 + Telegram に reel link | 🔧 初回 pass 実走したが **publish せず**（下記 3a が真因） |
-| **3a** | **BROWSER-HEAL** | ★2026-07-15 実測: blocker は2層★ **①9223 の CloakBrowser CDP が不健全** = `/json/list` が返すタブ(新規含む)に websocket attach すると 500「No such target id」→ poster/login-check/MEASURE/probe が全部これで死ぬ(誰も browser を drive 不可)。**②IG recaptcha タブ**(`auth_platform/recaptcha`)も同居。fix = clip-en profile を ensure_browser で heal/restart → CDP 復活 → その後 ②が本物か残骸か判定 → 必要なら CapSolver で突破(memory: capsolver_turnstile_bypass) | `instagrapi_post.py --（dry, no --live）` が `outcome:dry, reached:login-ok` を返す(CDP 500 でなく) | ⬜ **今ここ** |
+| **3a** | **RE-LOGIN** | ★2026-07-15 hard evidence で真因確定 = **aiclipsvault は LOGGED OUT**★ browser-level `Target.attachToTarget(flatten)`+`Network.getCookies` で instagram.com の cookie = 7個(mid/ig_did/datr/csrftoken 等 **logged-out baseline のみ、sessionid も ds_user_id も無し**)。IG の challenge が session を消した。∴ POST も bio も MEASURE も全部これで死ぬ。**副次の確定事項**: ①CDP の正しい drive = browser-level Target flatten(検証済、動く)。per-page `/devtools/page/<id>` attach が「No such target id」の anti-pattern だった ②instagrapi 生 password login = `BadPassword`(IG が fingerprint/IP 拒否) → **再ログインは CloakBrowser の中でやるしかない**(信頼 fingerprint)。creds = `~/.cloak/ig-aiclipsvault.json`(username/pw/email、2FA無)。challenge(recaptcha/email OTP)は CapSolver+gog gmail で突破 | CloakBrowser の instagram.com cookie に `sessionid`+`ds_user_id` が現れる | ⬜ **今ここ = browser 内再ログイン** |
 | — | (LEARN timeout) | LEARN step が毎 pass 15分 timeout(rc=124)。scout が重すぎ pass を食う。後で LEARN を軽量化 | LEARN done rc=0 | ⬜ 後回し |
 | 4 | CLIP-BIO | clip_pass.sh に「website(external_url)欄に `<offer_link>?sid1=aiclipsvault` を入れる」judgment-driven step を足す（IG は website だけ clickable=金の入口、bio 本文 URL は不可）。idempotent | logged-out で profile に link 実見 | ⬜ |
 | 5 | SELFRUN | 俺が何もしない状態で翌日 `.last-post` が自動で進むのを確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 | ⬜ |
