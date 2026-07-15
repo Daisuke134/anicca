@@ -219,6 +219,10 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 
 - [x] #14 seo-gate 更新 **DONE** commit `7e7ec391`（team-lead 検収: apps.apple/ANICCAAI_ANCHOR は grep 0 = 消滅、H2 3-12、--is-paid-body 実在、note/substack 許可、meta FATAL 文言を実出力で確認）。★builder の追加判断が正しい: 本物の記事は出典を裸 URL で書くので `[text](url)` 必須のままでは実記事が通らない → 裸 URL も許容に変更。★
 
+- [x] ★**#46 zenn silent skip は仮説でなく実害だった（実ログで確定 2026-07-16）**★: builder が zenn dashboard の deploy log を実読 → **今朝の pass が生成した `2026-07-16-aiに財布を…ap2….md` が「デプロイ中断」でエラー**（日本語ファイル名）。= 4日間の記事も同じく届いていなかったことの直接証拠。rename(`c93d374`)で **1分後に「デプロイ成功」へ切替を own-eyes 確認**。現在 zenn に正しい下書き6本。slugify 修理(`1e688535`)は明日の pass から効く（今日の分は生成済みだったので手動 rename が必要だった）。
+       ★一般法則（強化）: 「push 成功」も「pipeline が緑」も、相手プラットフォームの deploy ログを見るまでは受理の証拠にならない。silent skip は**加害側のダッシュボードにしか痕跡が無い**。★
+- [x] vault bank 完了（`session_vault.py dump` → cookies 277 / domains 50、zenn の `_zenn_session`/`remember_user_token` 込み）。
+
 ### #21/#24 self-improve L3 実装設計（team-lead 起草 2026-07-16。loop の最後のピース = 複利）
 **原則: 数字を焼くな、測り方を焼け。** L3 = 「公開した記事の実績を測り、次の記事の作り方を自分で変える」。
 1. **measure（新規 `scripts/_shared/measure-funnel.py`）**: articles.jsonl の live 行を読み、各 platform の実 API で当日と累計を測る:
