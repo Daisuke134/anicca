@@ -81,15 +81,17 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 - OBS-6(部分): Telegram 報告 配線済。
 - MON-5(部分): offer 取得 = Digistore Q-Money 50%/$88、`~/clips/offer.json` joined:true、sid1 帰属スキーム。
 
-### ⬜ 残り TODO（★これが唯一の SSOT。TaskList tool と同一 ID・同順★）
-**方針: enable する前に「全部揃ってる」を1回のフルパスで実証 → 統合ループを plist 化して自走 → 金の帰属 → ×N。**
+### ⬜ 残り TODO（★唯一の SSOT。1行 = 1 atomic 動作。TaskList tool と同一 ID・同順。終わった瞬間ここを update★）
+**順序でしかやらない。1つ緑になったら即この表を update してから次へ。**
 
-| # | ID | 一手 | done の検証 |
+| 順 | ID | 1つの動作（atomic） | done の検証（実観測） |
 |---|---|---|---|
-| 1 | CLIP-E2E-VERIFY | `clip_pass.sh` を1回**手動フルパス実走**（LEARN→AFF-FIND→PRODUCE→POST→MEASURE→REFLECT が全部緑）。enable 前に end-to-end が揃ってる証明 | 実 reel URL が出る + `clip-metrics.jsonl`/`reflection.jsonl` に行が増える |
-| 2 | CLIP-LOOP-4 | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を作り load。旧分離 plist（clip-producer/clip-core/clip-proactive）は廃止。1 acc=1 loop | `launchctl list \| grep clip-loop` が PID + **翌日 `.last-post` が俺の介入なしで進む** |
-| 3 | CLIP-MONEY | bio-set（loop が browser で bio に `link?sid1=<handle>`）+ MEASURE→$（Digistore EPC を sid 別に読み REFLECT へ）。=10k の駆動輪 | bio に link 実見 + `clip-metrics.jsonl` に $ 行 |
-| 4 | CLIP-SCALE-7 | ×N fanout: plist を profile+port だけ変えて量産。1アカ実証→N アカ clone。affiliate-finder + account作を skill 化(#15) | 複数 clip-loop が並列 PID、各々自走投稿 |
+| 1 | CLIP-E2E | `clip_pass.sh` を**1回だけ手動実走**し、@aiclipsvault に**実 reel が1本 publish される**まで見る | logged-out で reel URL が HTTP 200 |
+| 2 | CLIP-PLIST | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を**1個作って load**。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す |
+| 3 | CLIP-SELFRUN | **俺が何もしない状態で翌日 `.last-post` が自動で進む**のを1回確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 |
+| 4 | CLIP-BIO | loop が browser で bio に `<offer_link>?sid1=aiclipsvault` を**1回書く**（instagrapi は login_required で不可→browser） | logged-out で profile を開き bio の link を実見 |
+| 5 | CLIP-MEASURE | Digistore dashboard から sid 別 EPC を読み `clip_pass.sh` の REFLECT に渡す配線を**1本入れる** | `clip-metrics.jsonl` に $ 行が載る |
+| 6 | CLIP-FANOUT | plist を profile+port だけ変えて**2個目のアカに複製**（1 acc=1 loop）。以後 skill 化(#15)で自己 bootstrap | 2本目の clip-loop が並列 PID + 自走投稿 |
 
 - **唯一の成果指標 = Digistore dashboard に実 sale。今 ¥0。** loop が回る≠稼いだ。
 - ★INV-12: 全部 loop(sonnet) がやる。orchestrator は plist/skill 化だけ。恒常運用で run.sh を叩かない。★
