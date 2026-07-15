@@ -80,39 +80,30 @@
 | tiktok companion | 未実装（publish matrixに名前だけ）|
 | 換金ノード | note のみ実装・一度もON していない・¥0。cross-platform orchestrator無し |
 
-## 5. TODO（granular・これが正本。上から順に消す）
+## 5. TODO（granular・LOOP-FIRST。ONLY working on = article loop）
 
-### A. 既に書いた agent-economy 記事を JP+EN で ship する（即・独立）
-- [ ] A1  JP ship版を確定（`jp-k16.md`=47/50 を採用、原本は捨てる）
-- [ ] A2  JP Mermaid 図3枚を PNG レンダリング（note は Mermaid 非対応）
-- [ ] A3  JP 表を PNG レンダリング（note は表 非対応、`note-render-tables.py`）
-- [ ] A4  JP eyecatch/cover 画像を生成（GPT-image）
-- [ ] A5  note に draft投稿 → screenshot verify → meta.json（買切+定期購読の両対応）
-- [ ] A6  Zenn に draft投稿（frontmatter、1記事/24h rate 注意）→ verify
-- [ ] A7  Substack-ja に draft投稿 → verify
-- [ ] A8  X Articles JP に draft投稿（clipboard paste が前draft破壊に注意）→ verify
-- [ ] A9  tiktok 画像 JP 生成
-- [ ] A10 EN Mermaid 図3枚を PNG レンダリング
-- [ ] A11 EN cover 画像を生成
-- [ ] A12 dev.to に draft投稿（`published:false` 固定）→ verify（naturalWidth>0）
-- [ ] A13 Substack-en に draft投稿 → verify
-- [ ] A14 X Articles EN に draft投稿 → verify
-- [ ] A15 tiktok 画像 EN 生成
-- [ ] A16 全 draft の URL を meta.json に記録。公開ボタンは Dais 手動のみ
+方針: **記事を手で出さない。** loop を動く状態にする → loop に agent-economy 記事(JP+EN)を出させる → 動くのを見る → cron で自走。記事の ship は STEP2(loop のテスト出力)であって手作業ではない。全体が「動く」ことが最優先。
 
-### B. loop 化（skill を良く+無人化+換金+自走）
-- [ ] B1  k16 の7ルールを playbook WRITE-JP に移植（悪い例→良い例1行、bloat無し）
-- [ ] B2  ECC+Karpathy 型を playbook WRITE-EN に移植
-- [ ] B3  de-slop→eval /50「Daisが自腹で払うか」→fact の3ゲートを run.sh/gate群に正式配線
-- [ ] B4  ③RUN→受領書 と ⑤VISUALS(mermaid→PNG, cover生成) を run.sh に組込み
-- [ ] B5  記事ごと手書き publish script を廃止→パラメータ化（無人化の鍵）
-- [ ] B6  note login の Vue reactivity bug 修理
-- [ ] B7  X session 再取得
-- [ ] B8  ⑦に換金ノード追加: note 有料/メンバーシップ ON + Substack 有料tier ON
-- [ ] B9  Capafy に WRITE エンジン単体を出品（publish部を剥がす、即金ライン）
-- [ ] B10 LEARN: CVR/売上分析 + ベスプラ常時検索 + 成功記事copy → PLAYBOOK 自動書戻し
-- [ ] B11 全platform横断の売上 ledger（誰がいくら払ったか）
-- [ ] B12 cron/launchd(`ai.anicca.article-daily`) 再有効化 = 俺抜きで自走開始
+### STEP 1 — loop を「任意の1記事を端から端まで draft できる」状態にする
+- [ ] L1 記事ごと手書き publish script を廃止→パラメータ化（`--markdown-file` で任意記事を流せる）★無人化の鍵
+- [ ] L2 run.sh に ⑤VISUALS 組込み: Mermaid→PNG / 表→PNG(note用) / cover 生成
+- [ ] L3 run.sh に de-slop→eval「Daisが払うか」→fact の3ゲート配線（今は language+seo のみ）
+- [ ] L4 note login の Vue reactivity bug 修理
+- [ ] L5 X session 再取得
+- [ ] L6 k16の7ルール→playbook WRITE-JP / ECC+Karpathy→WRITE-EN 移植（今後 loop が書く記事の質）
+
+### STEP 2 — TEST: loop に agent-economy 記事を出させ、動作を見る（= ship はここ）
+- [ ] L7  jp-k16.md を loop に投入 → まず zenn/dev.to(mermaid native) から draft+verify、動くのを見る
+- [ ] L8  → note(PNG必須)/Substack-ja/X-ja も draft+verify
+- [ ] L9  en.md を loop に投入 → dev.to/Substack-en/X-en draft+verify
+- [ ] L10 全 draft URL を meta.json 記録 + screenshot で Dais 確認（公開ボタンは押さない）
+
+### STEP 3 — 換金ノード + 自走
+- [ ] L11 ⑦に note有料/メンバーシップ ON + Substack有料tier ON（¥0→初売上）
+- [ ] L12 LEARN: CVR分析+ベスプラ検索+成功記事copy→PLAYBOOK自動書戻し
+- [ ] L13 Capafy に WRITE エンジン出品（publish部剥がす、即金）
+- [ ] L14 全platform横断の売上 ledger
+- [ ] L15 cron/launchd(`ai.anicca.article-daily`) 再有効化 = 俺抜きで自走開始
 
 ## 6. 関連ファイル
 
