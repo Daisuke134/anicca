@@ -228,8 +228,65 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T3** | Bazaar 掲載条件を公式 spec で確定 | 仕様の逐語引用 | ★DONE 2026-07-16★ 結論=**settle 1回が必須**（"verify alone is not enough"）。鶏と卵は実在。全文 → spec の「掲載条件の確定」節 |
 | **T4a** | ★次★ franklin2 で self-pay を1回通す → Bazaar 掲載を実証 — `buyer-cdp.mjs` で :10000 経由の settle を1回。INV-7 で収益に数えない（着火専用）。**壊すものゼロ**（:10000 は到達可能、売上 $0） | `bazaar-scan.mjs` が 0xe7747F の resource を返す（実 JSON を貼る）。載らなければ原因を掴む | ★次★ |
 | **T2b** | ★INV-INDEP 違反の解消 = **tsnet に決定**★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel 3枠、店は4軒。2026-07-16 実測で 443/8443/10000 とも 200 = 満席、franklin1 は `X402_PUBLIC_URL` すら持てない）。**案C(各自の Tailscale ノード) を採用** — tsnet は「1ノード=3枠」なので枠問題が構造的に消える。案A/B(Cloudflare/クラウド)は却下: card 必須 or 移植コスト、hosting 11候補を全て実測で潰した(→ `docs/reference/2026-07-16-independent-hosting-for-each-ai.md`)。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | ★次★ 手順は T2b-1/T2b-2 |
-| **T2b-1** | TS_AUTHKEY を取る — **OAuth client を自作しない**。公式 `tailscale.com/cmd/get-authkey` を使う(2026-07-16 実在確認済)。①Tailscale admin で `auth_keys` scope + tag 付き OAuth client を作る（**AI 自身の email で。Dais の Google を使わない**）②`TS_API_CLIENT_ID`/`TS_API_CLIENT_SECRET` を env に ③`go run tailscale.com/cmd/get-authkey -tags tag:anicca-seller` で key 生成。**tag 必須**(公式: "All auth keys created from an OAuth client must use tags") | `get-authkey` が stdout に `tskey-auth-…` を返す | ★次★ |
-| **T2b-2** | tsnet-probe を実機で通す — 4ノード(claude-p/franklin1/franklin2 + 予備)が各自の FQDN で Funnel を上げる。同時に未確定3件を潰す: ①tailnet 台数上限 ②Funnel 帯域実数 ③tsnet に Funnel を許す ACL の要否 | 4ノードそれぞれの `https://<node>.ts.net/` が curl 200。franklin1 が**自分の** `X402_PUBLIC_URL` を持つ | T2b-1 後 |
+| **T2b-1** | TS_AUTHKEY を取る | 鍵が file にあり fingerprint で照合できる | ★DONE 2026-07-16★ 下記 |
+| **T2b-2** | tsbridge を通す — 3ノード(claude-p/franklin1/franklin2)が各自の FQDN で Funnel を上げる。同時に未確定を潰す: ①tailnet 台数上限 ②Funnel 帯域実数（**公式は数値を書いていない**。"non-configurable bandwidth limits" とだけ → 実測するしかない） | 3ノードそれぞれの `https://<node>.tail7a0ba4.ts.net/` が curl 200。franklin1 が**自分の** `X402_PUBLIC_URL` を持つ | ★次★ |
+
+### ★T2b-1 DONE — 鍵は取れた。ただし経路を変えた（2026-07-16）★
+
+`~/.tsbridge/authkey`（61 bytes、mode `600`、id `kXpbFDuNCM11CNTRL`、reusable、期限 Oct 14 2026）。
+
+**当初計画(OAuth client → get-authkey)は破棄した。理由は3つ、全て実測**:
+
+| # | 実測 | 出典 |
+|---|---|---|
+| 1 | **公式自身が近道を指定している** — *"To use it, generate an auth key from the Tailscale admin panel and run the demo with the key: `TS_AUTHKEY=<yourkey> go run tsnet-funnel.go`"* | `tsnet/example/tsnet-funnel/tsnet-funnel.go` |
+| 2 | **`get-authkey` は不要だった** — 採用した tsbridge が OAuth を**内製**しており、`auth_key` と `oauth_client_id/secret` の**どちらでも**食える。恒久化は config の差し替えだけ | tsbridge `docs/configuration-reference.md` |
+| 3 | OAuth/tag/ACL は**恒久化の仕事**であって**検証の仕事ではない**。tsnet が席問題を本当に解くか未確認の段階で恒久化の配管から始めるのは順序が逆（Dais 裁定「shed で行け」） | — |
+
+**同時に実測できたこと**:
+
+| 問い | 実測 |
+|---|---|
+| Funnel は無料枠で使えるか | **YES**。公式 KB 1223 逐語: *"Tailscale Funnel is available for all plans"*。admin 実機でも plan = **Free** を確認 |
+| auth key の最長寿命 | **90日**（admin ダイアログ: "Must be between 1 and 90 days"） |
+| ★node key も失効する★ | admin の Tags トグル逐語: *"Devices authenticated by this key will be automatically tagged. **This will also disable node key expiry for the device.**"* → **tag の無いノードは node key がいずれ失効し、再認証 = human loop が数ヶ月後に蘇る**。恒久 human ゼロには **auth key 失効(90日)** と **node key 失効** の**2つ**を殺す必要がある。前者は tsbridge の OAuth、後者は tag |
+
+★**事故と是正（記録）**: 最初の鍵を「取れたか確認」するつもりで eval の返り値に載せ、**transcript に平文で漏らした**。是正: クリーンな鍵を DOM→file 直結で再発行（一度も表示せず）→ fingerprint で照合 → 漏洩鍵 `kpj5iWGcnZ11CNTRL` を revoke → **リロードして** 一覧から消滅を実測 → ローカルコピーを rm。
+一般法則 → [[feedback_capture_secrets_dom_to_file_never_through_stdout]]。「ローカル transcript だから安全」は誤り — handover skill は引き継ぎノートを**メール送信**し、token-optimizer は checkpoint を**ディスクに書く**。実際に外へ出る経路がある。
+
+### ★採用 repo: `jtdowney/tsbridge`（300★）— 単独で丸ごと採用、混ぜない★
+
+*"A lightweight proxy manager built on Tailscale's tsnet library that enables **multiple HTTPS services on a Tailnet**"* = 我々の形そのもの。
+
+| 確認項目 | 実測 |
+|---|---|
+| Funnel(公開)をやるか | **YES**。`internal/tsnet/interfaces.go`: `ListenFunnel(network, addr string) (net.Listener, error)`。`THREAT_MODEL.md`: *"Funnel mode exposes services to the public internet"* |
+| service ごとに FQDN | `docs/configuration-reference.md`: `name = "api"` → *"becomes api.<tailnet>.ts.net"* |
+| 認証 | `auth_key` / `oauth_client_id+secret` の両対応。`default_tags`(OAuth 時必須) |
+
+**却下した候補**: `almeidapaulopt/tsdproxy`(1649★) = Docker label 駆動だが我々の seller は launchd の node プロセス → **star は多いが形が違う**。`nfielder/ts-infi-authkey`(0★) = 不要（tsbridge が内製）。
+
+**採る形**（seller のコードは1行も触らない。前段に置くだけ）:
+```toml
+[tailscale]
+auth_key_env = "TS_AUTHKEY"          # 恒久化時は oauth_client_id_env/oauth_client_secret_env + default_tags へ
+state_dir    = "/Users/anicca/.tsbridge"
+
+[[services]]
+name = "franklin1"                   # → franklin1.tail7a0ba4.ts.net:443（自分の席）
+backend_addr = "localhost:8414"
+funnel_enabled = true                # 既定 false。公開に必須
+
+[[services]]
+name = "franklin2"
+backend_addr = "localhost:8413"
+funnel_enabled = true
+
+[[services]]
+name = "claude-p"
+backend_addr = "localhost:8412"
+funnel_enabled = true
+```
 | **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
 | **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2b 後 |
