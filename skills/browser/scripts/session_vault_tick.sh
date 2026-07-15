@@ -26,6 +26,41 @@ python3 "$V" keepalive \
 # risks a concurrent-session signature_revoked (see TASKLIST 3a). So the whole clip block
 # (dump + keepalive both open CDP tabs) is skipped, not just keepalive, whenever a pass is
 # running — dump()'s localStorage snapshot also opens an instagram.com tab.
+# If a clip browser is down, relaunch it against its existing (already-logged-in) profile dir
+# before giving up on it — this is what plugs the "SKIP (browser not up)" hole: a dead browser
+# used to just get skipped forever, so its session never got warmed and eventually rotted.
+# Never touches creds/login: this only spawns Chromium pointed at the profile's own
+# user-data-dir, which restores whatever cookies are already saved on disk.
+relaunch_clip_browser(){ # $1=profile $2=port
+  local profile="$1" port="$2"
+  local chromium
+  chromium="$(ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium 2>/dev/null | tail -1)"
+  if [ -z "$chromium" ]; then
+    log "clip/$profile:$port: relaunch SKIP (no Chromium binary found under ~/.cloakbrowser)"
+    return 1
+  fi
+  log "clip/$profile:$port: relaunching ($chromium)"
+  nohup "$chromium" --remote-debugging-port="$port" \
+    --user-data-dir="$HOME/.cloak/profiles/$profile" \
+    --no-first-run --no-default-browser-check \
+    --disable-features=CalculateNativeWinOcclusion \
+    --disable-backgrounding-occluded-windows \
+    --autoplay-policy=no-user-gesture-required \
+    about:blank >/dev/null 2>&1 &
+  disown
+  local waited=0
+  while [ "$waited" -lt 15 ]; do
+    if curl -s -m 2 "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+      log "clip/$profile:$port: relaunch OK (up after ${waited}s)"
+      return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  log "clip/$profile:$port: relaunch FAILED (still down after 15s)"
+  return 1
+}
+
 if pgrep -f "clip_pass\.sh" >/dev/null 2>&1; then
   log "clip accounts: SKIP all (clip_pass.sh is running — avoid concurrent-session IG signature_revoked, TASKLIST 3a)"
 elif [ ! -f "$ACCOUNTS" ]; then
@@ -35,8 +70,11 @@ else
   while IFS=$'\t' read -r handle profile port; do
     [ -z "$port" ] && continue
     if ! curl -s -m 3 "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
-      log "clip/$handle ($profile:$port): SKIP (browser not up)"
-      continue
+      log "clip/$handle ($profile:$port): browser not up, attempting relaunch"
+      if ! relaunch_clip_browser "$profile" "$port"; then
+        log "clip/$handle ($profile:$port): SKIP (browser not up, relaunch failed)"
+        continue
+      fi
     fi
     log "clip/$handle ($profile:$port): dump"
     SESSION_VAULT_PORT="$port" SESSION_VAULT_DIR="$HOME/.cloak/vault/$profile" python3 "$V" dump || true
