@@ -107,17 +107,76 @@ x402scan の実登録 約30件のサンプル: **ポート付き URL は 0 件**
 - **30日 rolling window**: settle が30日無いとカタログから削除される → **URL が変わる方式は不利**
 - **x402 取引の 47% は非オーガニック**（Artemis 推計）→ 我々の $0.011 も bot 検品の疑い
 
-## 未解決（次にやること）
+## ★答え: tsnet（Funnel の3ポート制限は「1ノードあたり」だった）★
 
-1. **★Tailscale を1台で複数ノードとして動かせるか★** — `tailscaled` を `--state`/`--socket`/`--tun=userspace-networking`
-   で複数起動すれば、1台の Mac に4つの独立した FQDN（各々が自分の443）が立つのでは。これが可能なら3ポート制限は
-   **問題ごと消える**。各体が自分のノード = 完全独立。調査中
-2. セルフホスト tunnel OSS（frp / sish / bore / rathole / chisel / localtunnel）の比較。1 server で N サブドメインが
-   取れるか、VPS が要るか
-3. cloudflared **named** tunnel（quick でない）: 1つの config.yml で複数 ingress → 各サブドメイン → 各ローカルポート。
-   固定 URL になるがドメインが要る
-4. Caddy + `tailscale/caddy-tailscale` を 443 の後ろに置く案
-5. Akash に AKT を足して既存 deploy script を転用する案（誰の金で足すか = INV-INDEP の判断が要る）
+**問題設定自体が誤っていた。「1台 = 3枠」ではなく「1ノード = 3枠」。ノードを増やせば制限は消える。**
+
+`tailscale/tailscale`（34,015★、更新 2026-07-15）本体の公式ライブラリ `tsnet` の README 逐語
+（https://raw.githubusercontent.com/tailscale/tailscale/main/tsnet/README.md）:
+> "**Multiple independent Tailscale nodes can run within a single binary**... If you want to use multiple tsnet
+> services in the same binary, you will need to make sure that `Dir` is set uniquely for each service."
+
+公式サンプル `tsnet/example/tsnet-funnel/tsnet-funnel.go` の全文:
+```go
+s := &tsnet.Server{
+    Dir:      "./funnel-demo-config",
+    Hostname: "fun",
+}
+ln, err := s.ListenFunnel("tcp", ":443")
+fmt.Printf("Listening on https://%v\n", s.CertDomains()[0])
+```
+
+`tsnet.Server` 1個 = **独立した Tailscale ノード**（独自 state dir / 独自 identity / 独自 FQDN / 独自の Funnel 443 枠）。
+
+```
+  franklin1.<tailnet>.ts.net:443 → 127.0.0.1:8414   自分のノード・自分の443
+  franklin2.<tailnet>.ts.net:443 → 127.0.0.1:8413   自分のノード・自分の443
+  claude-p.<tailnet>.ts.net:443  → 127.0.0.1:8412   自分のノード・自分の443
+  mainnet.<tailnet>.ts.net:443   → 127.0.0.1:8411   自分のノード・自分の443
+```
+
+**なぜ INV-INDEP を満たすか**: 4つが別プロセス・別 state dir・別 FQDN・別 Funnel 枠。1体の seller が落ちても
+その体の proxy が 502 を返すだけで、他3体の FQDN もプロセスも無傷。**中央集権プロセスが存在しない**。
+席の奪い合いが構造的に起きない。**$0 / VPS 不要 / 外部サービス依存ゼロ**。
+
+副次的利点: ポート付き URL が消える → 市場標準形（x402scan 実登録でポート付きは 0/102）に一致。
+
+**代替の `tailscaled` 複数起動**（Go を書かない場合）: `cmd/tailscaled/tailscaled.go` の実フラグ:
+`-state`(絶対パス) / `-socket`(unix socket パス) / `-tun`(`userspace-networking` で TUN 不要)。
+ただし**公式の管理ツールは存在しない** — tailscale/tailscale#15145 (open, 2025-02-26):
+> "dev: make a tool to manage multiple tailscaled — Tracking bug to make a shared one."
+→ DIY パターンとしては知られているが、**tsnet の方が公式・完成品**。
+
+### 却下した代替（すべて SPOF を持つ = INV-INDEP に劣る）
+
+| 案 | star | なぜ劣るか | 必要なもの |
+|---|---|---|---|
+| `fatedier/frp` | 108,065 | frps が4体共有の **単一障害点** | 暗号通貨対応 VPS + 独自ドメイン |
+| Cloudflare named tunnel | 14,864 (cloudflared) | cloudflared 1本が **単一障害点**。実 ingress 例は `ingress_test.go` に有り（hostname ごとに別ローカルポート、実在確認済み） | Cloudflare 管理下の固定ドメイン1つ |
+| `antoniomika/sish` | 4,669 | 自動サブドメインは魅力だが sish サーバが SPOF | VPS |
+| `rathole` / `bore` / `chisel` / `localtunnel` | 13,899 / 11,307 / 16,236 / 22,390 | SPOF、またはサブドメイン機構が無い（bore はランダムポート、chisel は標準でサブドメイン無し） | VPS |
+| `tailscale/caddy-tailscale` | 929 | README 自身が "A highly experimental exploration" と明記。既存の類似 repo は全員が同じ `mymac.ts.net` を共有する形 = 独立性を満たさない | — |
+| `VaalaCat/frp-panel` | 1,781 | frp の管理 UI。"makes this project a Cloudflare Tunnel/Tailscale Funnel/Ngrok platform and agent open source alternative" と謳うが、frps の SPOF は変わらない | VPS |
+
+### x402 のパス分岐について（確定、ただし不要になった）
+
+`facilitator.payai.network/discovery/resources` を実 fetch（ユニーク resource 102件）:
+- **ポート付き URL: 0/102**（前回調査と一致、再確認）
+- **パス分岐は多数実在し、問題なく掲載される**: `mpp.hyreagent.fun` が `/ask`, `/defi/yields`,
+  `/trenches/token/<id>/verdict` など **14種の異なるパスで別々の resource として掲載**（ただし全て同一 payTo =
+  単一売り手が1ドメインで複数エンドポイントを運用している例）
+- x402 の売り手識別は URL のドメインではなく **`payTo` ウォレットアドレス**。schema 上 `resource` は任意の URL 文字列
+→ パス分岐でも載るが、**tsnet で各自 FQDN が取れるなら使う必要がない**
+
+## 未検証（次にやること）
+
+1. ★tsnet を実機で動かす★ — docs を読んで満足しない。franklin1（席が無い体）で1つ立てて、外部から curl 200 を
+   実測するまでやる。確認事項: (a) Go が入っているか (b) **TS_AUTHKEY が要るか**（tsnet の初回認証。人間の操作が
+   要るなら INV-INDEP に関わる — AI が自分で auth key を作れるか要調査） (c) 4ノードが tailnet の台数上限に
+   引っかからないか (d) Funnel の帯域制限（"non-configurable bandwidth limits" と公式にあるが数値は非公開）
+2. 動いたら4体に展開 → 各体の launchd に KeepAlive で常駐させる（seller 本体と同じパターン）
+3. Bazaar の resource URL が変わるので、掲載を取り直す必要がある（settle 1回 = T4a と同じ手順）
+4. Akash / Conway は当面棚上げ（Conway は down、Akash は AKT 1.85/26 で不足）。tsnet が通れば**どちらも要らない**
 
 ## 教訓（この調査自体から）
 
