@@ -258,7 +258,12 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        価格 ¥1,000 の根拠: like=165「「AIを雇う」という設計」= 我々と同じ**解説系**の実売価格。¥3,480 が売れるのは「2ヶ月目に月10万円」= 読者が同額を稼げる約束があるから。我々の記事は解説でありその約束をしていないので同額は取れない。
        無料部分 = **約2,500文字**（実測の型: punimaru_dev 2,529字 / shiro_life0 2,467字。2人ともここで切っている）。両者とも `is_limited=false, is_trial=false` = 素の買い切り。
        **メンバーシップは記事65本を超えてから**（実測の下限）。1日1本の loop なら約2ヶ月後。順番が逆だと空箱を売ることになる。
-- [ ] #35 **買い切り公開スクリプトが存在しない**（`grep -rl is_paid` → SKILL.md の文章のみ、コード0行）。既存 `note-publish/publish.py` は無料+メンバーシップ+試し読み専用。→ `publish-paid.py` を作る。
+- [x] #35 ★**公開 DONE（2026-07-16 04:13 JST、team-lead が note API `GET /api/v3/notes/nbcb93e6fc711` で実測確認）**★
+       `status=published, price=1000, is_limited=false, publish_at=2026-07-16T04:13:28+09:00`
+       URL = `https://note.com/anicca123/n/nbcb93e6fc711`（アカウント anicca123 / Dice、note_count=6, follower=4）
+       = **初の有料記事が本番公開された。買い切り¥1,000、有料ライン2,598字（#40）。あとは売れるか。**
+       残り（旧#35の未了分）: `publish-paid.py` を汎用化して loop に配線（今回は手動運転で通した）。
+- [ ] #35-old **買い切り公開スクリプトが存在しない**（`grep -rl is_paid` → SKILL.md の文章のみ、コード0行）。既存 `note-publish/publish.py` は無料+メンバーシップ+試し読み専用。→ `publish-paid.py` を作る。
        実測した note の公開設定 UI（team-lead がブラウザで実取得。推測禁止）:
        - 記事タイプ = `input[name="is_paid"]` value=`free`|`paid`（ラジオ。`(r.closest('label')||r).click()` で反応）
        - 「有料」選択で出現 = 価格欄 `input[type=text][placeholder="300"]`（**既定で 500 が入っているので上書き必須**）、返金申請 checkbox、`input[name="sale_setting"]` value=`none`|`time_sale`|`twitter_retweet`|`prior_sale`
