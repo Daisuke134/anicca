@@ -158,8 +158,16 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        ★副産物の実バグ修正: `set -euo pipefail` 下の `VAR=$(cmd); EC=$?` は cmd 失敗時に即死し FATAL 分岐へ到達しない。3箇所を `if VAR=$(cmd); then EC=0; else EC=$?; fi` へ。実測再現: `bash -c 'set -euo pipefail; OUT=$(false); EC=$?; echo reached'` は reached を出さず exit 1。★
        検証済(ネットワーク副作用なし): bash -n / py_compile OK、既存回帰 `note-publish/test-de-automaton.py`(INV-1〜5, draft-onlyリーク検査) PASS、引数欠落で `FATAL: --markdown-file --title required` exit 1、stage1 単体実行で `tables=1 mermaids=1` + body に `@@TBL1@@`/`@@FIG1@@` 生成を実測。
        ★未検証 = 実 note.com への実 draft 作成（ネットワーク）。#3 E2E で初めて通す。★
-       残った既知の穴: stage1 失敗時は WARN のみで生MDにフォールバックし exit 0（= 画像無し draft が静かに成功扱い。silent degradation）。reality-gate(#20)で拾うべき。
        旧記述（履歴）: ★訂正: "作る"必要なし、既に実装済。gap=日次loopへの配線★
+       **adversary verdict 2026-07-15 = FAIL**（CRITICAL 0 / MAJOR 1 / MINOR 2）→ #29 で修理中。
+       ★破れなかった不変条件（実測済、二度と疑うな）: DRAFT-ONLY は型レベルで保証されている。note-mcp の `create_draft`/`update_article` は共に `POST /v1/text_notes/draft_save?is_temp_saved=true` のみ(articles.py:292-293)。`ArticleInput`(models.py:100-113) に status/publish フィールドが存在しない = env/引数で公開に化ける道が無い。`publish_article`(articles.py:815) は note_mcp/server.py の MCP tool ハンドラ専用でこの経路に未配線。★
+       run.sh 契約も diff 実測で不変を確認（唯一の非 stderr 行 = publish-note.sh:317）。WORK dir の per-run 一意性も確認、手動パイプラインの共有 dir と衝突なし。
+
+- [ ] #29 **#16 の adversary 指摘の修理**（2026-07-15、fresh builder 実行中）
+       - **MAJOR: silent degradation が構造化された成功シグナルに露出しない**（publish-note.sh:178-195, 307-314 / run.sh:124-138）。stage1/stage2 失敗時 WARN は stderr のみ + exit 0。run.sh の `ah_record ... "draft"`(124) と META_FILE の jq 構造(129-138) に stage1_ok/stage2_ok が無い → **「画像付き draft が出来た run」と「stage1 が壊れて生MDにフォールバックし mermaid が崩れた draft が出来た run」が meta.json / account-history 上で区別不能**。#16 が直した問題が再発しても誰も気づけない。→ 経路情報を meta.json に露出（stdout 契約は壊さない）。
+       - MINOR1: `DRAFT_NUM` 抽出(292)だけ bare な `VAR=$(cmd|grep)` で set -e 防御パターン外。grep 非マッチで FATAL 文言なしに即死 → run.sh 側に「empty URL」という誤解を招くエラーが出る。現状は note-mcp の型契約(`Article.id` 必須 str)が守っているので実害なし。DRAFT_KEY 抽出(286, pre-existing)も同型。
+       - MINOR2: cookie キャッシュ `~/.cloak/note-work/note-cookies.json` が temp+rename なしの直接書き込み。手動パイプラインと同時稼働で読み手が JSONDecodeError。→ os.replace で atomic 化。
+       ★一般法則: 「best-effort で WARN + exit 0」は、その run が degraded だったことを機械可読な形で残して初めて成立する。残さないなら成功の偽装。★
        既存(実装済): `note-stage2-publish.py`=kroki.io で mermaid→PNG(L27-29)+S3画像upload(upload_body_image)+eyecatch / `note-stage1-render.py`=表→PNG(L21-46)。draft-only 保証コメント有。
        ★真の gap: 日次loop の note 経路 `run.sh→publish-note.sh→create_draft(生MD)` が stage1/stage2 を通さず生markdownを投げてる → note で ```mermaid が崩れ画像無し = 「悪いdraft」の真因。★
        → 作業 = publish-note.sh(生MD経路)を stage1-render→stage2-publish(画像経路)に差し替える配線のみ。
