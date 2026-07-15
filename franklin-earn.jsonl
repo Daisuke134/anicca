@@ -1297,3 +1297,5 @@
 {"ts":1784124629,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRM5Q59W560A8827C15E45B9"}
 {"ts":1784128057,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRM7RT6626C79277EC454F3E"}
 {"ts":1784128549,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRM826NWD3BD60F7BFF64870"}
+{"ts":1784130107,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRM8ZJ0M09DFCB5CFFC34208"}
+{"ts":1784130372,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRM95IP55730DB8CD2AA45A0"}
