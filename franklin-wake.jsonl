@@ -8299,3 +8299,9 @@
 {"ts":1784154747,"wake_id":"00MRMNO5XXF76CB3BB73F94654","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784154898,"wake_id":"00MRMNREFU61930A3BDEEE42E0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784155075,"wake_id":"00MRMNV76B846FCE85958944C6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784155209,"wake_id":"00MRMNY21X2B80D13A4FA1447C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784155371,"wake_id":"00MRMO1J188AA2BE6ACE0346FE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784155589,"wake_id":"00MRMO67DF600BE57024474F6B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784155748,"wake_id":"00MRMO9LSY2F9FA438F74244B4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — On-chain USDC $12.16 and TradingSignal for SOL is neutral (0% confidence; RSI/MACD neutral); trading costs (~0.4%+ round-trip) would erase any edge.\n[sol-trade] sol-evolve -> {   \"promoted\": fa"}
+{"ts":1784155748,"wake_id":"00MRMO9LSY2F9FA438F74244B4","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784155926,"wake_id":"00MRMODFF8E6A3507D4E7F4D27","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
