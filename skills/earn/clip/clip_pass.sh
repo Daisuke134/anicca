@@ -57,6 +57,19 @@ bash "$C/producer.sh" >/dev/null 2>&1 || log "producer rc=$?"
 log "POST: run.sh EARN_MODE=execute"
 EARN_MODE=execute bash "$C/run.sh" >/dev/null 2>&1 || log "run.sh rc=$?"
 
+# ── BIO (deterministic: IG only makes the profile "website" field clickable — the sole money
+# entry point for this loop. Points aiclipsvault's external_url at offer.json's affiliate_link
+# (?sid1=aiclipsvault for per-account attribution). TIER-1 ONLY: never triggers a login, silently
+# no-ops when the saved instagrapi session is missing/invalid — self-heals once run.sh's POST
+# step (login_resilient) refreshes that session, no code change needed. See bio_step.py.) ──
+INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
+if [ -x "$INSTA_PY" ]; then
+  log "BIO: bio_step.py aiclipsvault"
+  "$INSTA_PY" "$C/scripts/bio_step.py" --handle aiclipsvault 2>>"$HOME/.openclaw/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
+else
+  log "BIO: skip — instagrapi venv not present at $INSTA_PY"
+fi
+
 # ── MEASURE (Evaluator: read real view counts of recent reels) ──
 step "MEASURE" "STEP MEASURE: resolve @aiclipsvault's CloakBrowser CDP port from $HOME/.cloak/clip-accounts.json, open instagram.com/aiclipsvault/ in it, and read the view + like counts of the 3 most recent reels. Append ONE compact json line per reel to $STATE/clip-metrics.jsonl: {ts:<integer epoch>, reel_url, views:<int>, likes:<int>}. Ground ONLY on the real numbers shown on the page; if logged out, restore the session first; never guess."
 
