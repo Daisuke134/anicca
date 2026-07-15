@@ -230,7 +230,44 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T2b** | ★INV-INDEP 違反の解消 = **tsnet に決定**★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel 3枠、店は4軒。2026-07-16 実測で 443/8443/10000 とも 200 = 満席、franklin1 は `X402_PUBLIC_URL` すら持てない）。**案C(各自の Tailscale ノード) を採用** — tsnet は「1ノード=3枠」なので枠問題が構造的に消える。案A/B(Cloudflare/クラウド)は却下: card 必須 or 移植コスト、hosting 11候補を全て実測で潰した(→ `docs/reference/2026-07-16-independent-hosting-for-each-ai.md`)。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | ★次★ 手順は T2b-1/T2b-2 |
 | **T2b-1** | TS_AUTHKEY を取る | 鍵が file にあり fingerprint で照合できる | ★DONE 2026-07-16★ 下記 |
 | **T2b-2** | tsbridge を通す — 3ノードが各自の FQDN で Funnel を上げる | 外部から実 HTTP が返る。franklin1 が**自分の**公開 URL を持つ | ★DONE 2026-07-16 05:15★ 下記 |
-| **T2b-3** | ★次★ tsbridge を永続化 + 各 loop に自分の URL を配る — ①tsbridge を launchd 化（今は `nohup` の裸プロセス。再起動で消える）②franklin1/franklin2/claude-p の plist に**自分の** `X402_PUBLIC_URL` を設定 ③手書き boot script 4本を退役（INV-F）④旧 :10000 依存を切る | 各 loop が自分の FQDN で Bazaar に載り、franklin1 の売上が $0 でなくなる | ★次★ |
+| **T2b-3** | tsbridge を launchd 化 | 殺しても蘇り、外部から届く | ★DONE 2026-07-16 05:26★ 下記 |
+| **T2b-4** | ★次★ 各 loop に**自分の** `X402_PUBLIC_URL` を配る — franklin1 の plist には**そもそも無い**(=Bazaar に広告できない真因)、franklin2 は共有の :10000 を指している。手書き boot script 4本を退役(INV-F)。稼ぎ頭 :8411 は最後 | franklin1 が自分の URL で Bazaar に載り、`verify-inflow.mjs` の inflow が $0 でなくなる | ★次★ |
+
+### ★T2b-3 DONE — 席が永続化した（2026-07-16 05:26）★
+
+`~/Library/LaunchAgents/ai.anicca.tsbridge.plist`（`RunAtLoad` + `KeepAlive` + `ThrottleInterval=30`。
+tsnet はノード登録に数秒かかるので再起動を煽らない）。log = `~/.tsbridge/logs/tsbridge.{out,err}.log`。
+
+**自己申告でなく実測で確認した2点**:
+
+| 検証 | 実測 |
+|---|---|
+| launchd 移行後も**外部**から届くか | `r.jina.ai`(tailnet 外の第三者)経由で `https://franklin1.tail7a0ba4.ts.net/` の全文取得。**payTo `0x3EcCAD24…` = franklin1 自身**。商品7点 + `/.well-known/x402.json` + `llms.txt` を公開配信中 |
+| KeepAlive は本物か | `kill -9 52686` → 35秒後 → **pid 53290 で自力蘇生**。launchctl の `0` を信じず、実際に殺して確かめた |
+
+★副産物: franklin1 の店は**既に商品7点を公開している**（research $0.003 / whois $0.002 / stock-quote $0.003 / calc・DNS・JSON-flatten・compound-interest 各 $0.001）。`/.well-known/x402.json` も**実装済み**（T8 で「実装する」としていたが既に在る。T8 の記述は要修正）。franklin1 に足りないのは店でも商品でもなく、**Bazaar への広告(=`X402_PUBLIC_URL`)だけ**。
+
+### ★金の帰属（2026-07-16 実測。混線ゼロ）★
+
+boot script 逐語: franklin1 = *"franklin1's **OWN** payTo (receiving-only, no key needed here)"* /
+franklin2 = *"franklin2's **OWN** payTo"* / :8412 = *"**claude-p's own wallet**"* / :8411 = *"payTo = **founder 0x810f**"*。
+→ **:8411 と :8412 は両方 claude-p のもの。claude-p は店を2軒持っている。** agent 3体に seller 4本ある理由がこれ。
+
+| agent | wallet | 48h 外部売上 | 件数 | 自己支払(seed) |
+|---|---|---|---|---|
+| franklin1 | `0x3EcCAD24…` | **$0** | 0 | 0 |
+| franklin2 | `0xe7747Fd8…` | **$0** | 0 | 0 |
+| claude-p 店① | `0x810f6d61…` | $0.011 | 9 | 9件 / $0.016 |
+| claude-p 店② | `0x904B50d2…` | $0.006 | 6 | 7件 / $0.012 |
+
+★**席を奪っていたのは claude-p だった**: `:443`(店①) + `:8443`(店②) で3枠中2枠を占有 → franklin2 が `:10000` → **franklin1 は席ゼロ**。
+franklin1 の $0 は能力でも設定ミスでもなく、**兄が2軒出店していたから**。これが INV-INDEP 違反の実体。
+→ tsbridge がこれを**裁定なしで**解いた。Personal 無料枠は *"Unlimited user devices"* なので、**誰も何も諦めなくていい**（claude-p は2軒維持のまま、Franklin 兄弟も自分の席を持てる）。
+
+★**まだ経済ではない（実測が2つそう言っている）**:
+1. **自己支払 > 外部売上**。0x810f = 外部 $0.011 vs self-pay $0.016 / 0x904B = 外部 $0.006 vs self-pay $0.012。着火用の自演の方が金額が大きい
+2. **同じ bot が両方の店を舐めている**。`0xaf5bb59a58a3a05da3d7308d53de36836bc085ae` が 0x810f と 0x904B の**両方**に、`0x670fa140…` は 0x810f に2回。
+   STATUS の「8個の EOA が $0.001 ずつ単発」「BlockRun 自己申告で 47% は non-organic」と整合 → **需要ではなく巡回 bot**。T9(高単価化)が本丸である裏付け
 
 ### ★T2b-2 DONE — franklin1 が初めて自分の公開 URL を持った（2026-07-16 05:15 実測）★
 

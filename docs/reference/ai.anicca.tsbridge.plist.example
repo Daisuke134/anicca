@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  tsbridge: one Tailscale node per Anicca instance, so no instance has to wait for a seat.
+
+  Funnel listens only on 443/8443/10000. claude-p ran two shops and took two of those three,
+  franklin2 took the third, and franklin1 was left with no public URL at all -- which is the
+  entire reason it held $4.48 and sold nothing. tsnet's port limit is per-node, not per-machine,
+  so each instance gets its own node and the shortage stops existing. See docs/STATUS.md (T2b).
+
+  Config: ~/.tsbridge/tsbridge.toml   Auth key: ~/.tsbridge/authkey (mode 600, expires 2026-10-14)
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.anicca.tsbridge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/anicca/go/bin/tsbridge</string>
+        <string>-config</string>
+        <string>/Users/anicca/.tsbridge/tsbridge.toml</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- tsnet needs a few seconds per node to register; do not thrash on restart. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/anicca/.tsbridge</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/anicca/.tsbridge/logs/tsbridge.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/anicca/.tsbridge/logs/tsbridge.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/anicca</string>
+    </dict>
+</dict>
+</plist>
