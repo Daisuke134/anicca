@@ -1,10 +1,10 @@
-# Article-Earn Loop — 研究/設計メモ（2026-07-14）
+# Article-Earn Loop — 作業 SPEC（唯一の正本 / 随時更新）
 
-> ⚠️ **これは SoT ではない**（2026-07-15 訂正）。本物の SoT = ①`docs/articles/2026-07-12-agent-economy-REVIEW-STATUS.md` ②handover `2026-07-14_0629.md` の Goal A ③`docs/superpowers/specs/2026-07-13-profitable-claude-earn-loops-spec.md`。本ファイルは skill選定/収益化 research の参照メモとして残す。
+> ★このタスク(article-earn loop)の SPEC はこの1ファイルだけ。**新規ファイルを作らない。** 理解が進む度・進捗する度にここを更新（future self と他 agent が status 再検索でトークンを溶かさない為）。
+> 関連: 記事ブロック承認状態=`docs/articles/2026-07-12-agent-economy-REVIEW-STATUS.md` / 親spec=`docs/superpowers/specs/2026-07-13-profitable-claude-earn-loops-spec.md`。
+> 進捗の二重トラック: このファイル §5 ＋ TaskList tool(#9-25)。
 
-**Goal**: 人間らしい（AI slop ゼロの）日本語+英語の記事を書き、全platformへ publish し、writing で **10k MRR** を no-human-in-the-loop で稼ぐ loop を作る。
-
-このファイルが article-earn loop の唯一の正本（SSOT）。進捗はここと TaskList tool の二重トラック。
+**Goal**: 人間らしい（AI slop ゼロの）日本語+英語の記事を書き、全platformへ publish し、writing で **10k MRR** を no-human-in-the-loop で稼ぐ loop を作る。土台 skill = `~/.openclaw/skills/ai-entity-article-writer`（実測 ~90% 完成。執筆playbook+全publisher+収益化コード[note membership/paywall]+verifier部分+self-improve部分が既に在る）。
 
 ---
 
@@ -82,30 +82,42 @@
 | tiktok companion | 未実装（publish matrixに名前だけ）|
 | 換金ノード | note のみ実装・一度もON していない・¥0。cross-platform orchestrator無し |
 
-## 5. TODO（granular・LOOP-FIRST。ONLY working on = article loop）
+## 5. TODO（TaskList #9-25 と同期。順序 B→C→D→E→A。★随時 status 更新★）
 
-方針: **記事を手で出さない。** loop を動く状態にする → loop に agent-economy 記事(JP+EN)を出させる → 動くのを見る → cron で自走。記事の ship は STEP2(loop のテスト出力)であって手作業ではない。全体が「動く」ことが最優先。
+方針: skill を「動く」に直す(B) → verifier(C) → loop 自走(D) → 換金(E) → その loop で agent-economy 記事を publish(A=テスト出力)。記事を手で出さない。TikTok は全体が回ってから追加（Dais 2026-07-15）。
 
-### STEP 1 — loop を「任意の1記事を端から端まで draft できる」状態にする
-- [ ] L1 記事ごと手書き publish script を廃止→パラメータ化（`--markdown-file` で任意記事を流せる）★無人化の鍵
-- [ ] L2 run.sh に ⑤VISUALS 組込み: Mermaid→PNG / 表→PNG(note用) / cover 生成
-- [ ] L3 run.sh に de-slop→eval「Daisが払うか」→fact の3ゲート配線（今は language+seo のみ）
-- [ ] L4 note login の Vue reactivity bug 修理
-- [ ] L5 X session 再取得
-- [ ] L6 k16の7ルール→playbook WRITE-JP / ECC+Karpathy→WRITE-EN 移植（今後 loop が書く記事の質）
+### ★理解ログ（実測 2026-07-15、二度と再検索しない為）
+- **T1 の実体判明**: 4 publisher(note/zenn/devto/substack)は既に `--markdown-file --title --meta` を取る = **zenn/devto/substack は既に generic**。hardcode の大半は 2026-07-12 に修正済（script コメントが証言）。
+- **#13 の残り = note のみ**: `scripts/note-publish/publish-to-note.sh:49` が新規note記事の draft 自動作成 未実装（既存noteId未指定だと Automaton note 166686292 に落ちるので拒否）。**note新規draft作成が唯一の残作業、かつ #14 note-login修理と結合**（login壊れてると live検証不能）。
+- **収益化は「無い」のではなく「未ON」**: `note-publish/publish-membership.py`・`set-membership.py`・`set-preview-line.py` 実装済。SKILL.md §331-341 に戦略(membership ¥500/月=MRRエンジン、ChatGPT研究所 copy)も在る。#23 は「ON にする」作業。
+- **self-improve は日次ダイジェスト止まり**（`self-improve.sh`=cron event+reflection+SEO rank集約）。#21 は L3(外部学習の閉ループ)へ格上げ。
+- skill は ~/.openclaw(trunk=main-internal)。編集は即 commit。
 
-### STEP 2 — TEST: loop に agent-economy 記事を出させ、動作を見る（= ship はここ）
-- [ ] L7  jp-k16.md を loop に投入 → まず zenn/dev.to(mermaid native) から draft+verify、動くのを見る
-- [ ] L8  → note(PNG必須)/Substack-ja/X-ja も draft+verify
-- [ ] L9  en.md を loop に投入 → dev.to/Substack-en/X-en draft+verify
-- [ ] L10 全 draft URL を meta.json 記録 + screenshot で Dais 確認（公開ボタンは押さない）
+### PART B — skill を動くに
+- [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
+- [ ] #14 T2 note login Vue reactivity bug 修理
+- [ ] #15 T3 X session 再取得
+- [ ] #16 T4 VISUALS(Mermaid/表→PNG/eyecatch) を run.sh に組込み
+- [ ] #17 T5 de-slop ゲート(stop-ai-slop-jp/stop-slop)配線（今 language+seo のみ）
+- [ ] #18 T6 eval「賢い読者/Daisが払うか」/50 + fact 配線（fresh adversary）
 
-### STEP 3 — 換金ノード + 自走
-- [ ] L11 ⑦に note有料/メンバーシップ ON + Substack有料tier ON（¥0→初売上）
-- [ ] L12 LEARN: CVR分析+ベスプラ検索+成功記事copy→PLAYBOOK自動書戻し
-- [ ] L13 Capafy に WRITE エンジン出品（publish部剥がす、即金）
-- [ ] L14 全platform横断の売上 ledger
-- [ ] L15 cron/launchd(`ai.anicca.article-daily`) 再有効化 = 俺抜きで自走開始
+### PART C — verifier
+- [ ] #20 V1 L4 reality-gate(session restore→ログアウト実見→naturalWidth>0→draft確認、公開ならFAIL)
+
+### PART D — loop 自走
+- [ ] #21 L-a L3 self-improve(日次ダイジェスト→crwl成功記事→component A/B→funnel実測→keep/revert→playbook.json)
+- [ ] #22 L-b L2 self-heal(5分毎) + L0 共有基盤(disk-guard/ensure_browser/cdp lease/session_vault)
+- [ ] #25 C-cron daily cron/launchd(`ai.anicca.article-daily`) 再有効化 = 自走（今DISABLED）
+
+### PART E — 換金（コードは在る、ONにする）
+- [ ] #23 M1 note membership/paywall 実ON + Substack有料tier（¥0→初売上）
+- [ ] #24 M2 売上ledger +(後段)product drop/founding tier/Capafy出品
+
+### PART A — その loop で記事を publish（テスト出力）
+- [x] #9  [6]-出典 Dais承認（2026-07-15 承認済）
+- [ ] #10 REVIEW-STATUS を REVIEWED化
+- [ ] #11 JP publish note→zenn→substack-ja→x +verify（tiktok除外）
+- [ ] #12 EN publish devto→x +verify（tiktok除外）
 
 ## 6. 関連ファイル
 
