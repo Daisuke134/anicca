@@ -7566,3 +7566,12 @@
 {"ts":1784077320,"wake_id":"00MRLDKMN0D6E665FA07F847F7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784077458,"wake_id":"00MRLDNKXQ862805FC8AE14A00","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784077601,"wake_id":"00MRLDQNG0702E5F7CA354438D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784077741,"wake_id":"00MRLDTNWP347F33C1E6AD4B36","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784077875,"wake_id":"00MRLDWIRA645438E25AF84475","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784078010,"wake_id":"00MRLDZFFZB1D3DC004B704AC2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784078158,"wake_id":"00MRLE2LK1D4D015152BEA4714","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal is neutral (no clear bull/bear conviction) and with $15.71 bankroll the ~0.4%+ round-trip fees/slippage eliminate any edge, so hold USDC.\n[sol-trade] sol-evolve -> {   \"promoted\":"}
+{"ts":1784078158,"wake_id":"00MRLE2LK1D4D015152BEA4714","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784078310,"wake_id":"00MRLE5UWD75005DBB39CC472F","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (0% confidence) and fees/slippage (~0.4%+) would unduly erode this small $15.68 bankroll; will only trade when TradingSignal gives a clear bullish or bearish ve"}
+{"ts":1784078310,"wake_id":"00MRLE5UWD75005DBB39CC472F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784078475,"wake_id":"00MRLE9E3H6A4E2CE1061F4A8D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784078610,"wake_id":"00MRLECA1E9A0B45826F5041B6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
