@@ -7533,3 +7533,10 @@
 {"ts":1784073457,"wake_id":"00MRLB9TQR0383CF4489734A9C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784073602,"wake_id":"00MRLBCY0O90C4EE8F13194FEC","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT: TradingSignal for SOL is neutral (no clear bull/bear conviction) and a Jupiter round-trip (~0.4%+ fees/slippage) would likely erase any edge.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \""}
 {"ts":1784073602,"wake_id":"00MRLBCY0O90C4EE8F13194FEC","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784073755,"wake_id":"00MRLBG86GDBC3016C8BEE4292","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784073886,"wake_id":"00MRLBJ1BY72DC917456884C52","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074025,"wake_id":"00MRLBM04B434DF46EC1394F80","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074163,"wake_id":"00MRLBOYSR583D59F0442749AB","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074298,"wake_id":"00MRLBRV3CA95DC2C59D2644E2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074435,"wake_id":"00MRLBUSMC1FD50B77A0314DE8","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074571,"wake_id":"00MRLBXPAB073B5002D1304DF2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
