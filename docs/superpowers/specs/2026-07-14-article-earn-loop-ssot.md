@@ -184,8 +184,24 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] zenn 無料版 draft ステージ **DONE**（zenn-articles repo commit `f287e404`、published:false、正規 slug。公開 flip は Dais/team-lead 検収後）
 - [ ] ★#46 **zenn の silent skip 発見（2026-07-16、builder が公式 doc で発見・team-lead が ls で確認）**: slug 規約 = a-z0-9/ハイフン/アンダースコア 12-50字。**daily loop の既存4記事（07-12〜15）は全部日本語ファイル名 = Zenn が「不正なファイル名…スキップ」して4日間デプロイされてなかった可能性大。** loop の検証（匿名404）は「非公開draft」と「未デプロイ」を区別できない = 検証の穴。→ rename + dashboard own-eyes 確認を builder に指示済み。
        ★一般法則: 「push 成功」は「相手プラットフォームが受理した」を意味しない。deploy 先が黙って捨てる規約違反は、deploy 先のダッシュボード/API でしか見えない。★
-- [x] 今朝 06:00 run は OAuth 失敗で死亡（rc=1、5秒。team-lead の gate テスト claude 並走との refresh 競合疑い）→ 認証復旧確認後、**新 gate 込みで手動再発火**（実行中）。
+- [x] 今朝 06:00 run は OAuth 失敗で死亡（rc=1、5秒。team-lead の gate テスト claude 並走との refresh 競合疑い）→ 認証復旧確認後、**新 gate 込みで 06:06:40 手動再発火**（実行中）。
 - [ ] #14(task) seo-gate が app 送客時代の遺物要求（aniccaai.com anchor + App Store deeplink 必須、H2≤7）を保持 = note funnel と不整合。要更新。
+- [x] zenn slug rename **DONE**（zenn-articles commit `2087edc0`: 4本を a-z0-9 slug へ git mv、published:false 不変）+ SKILL.md に slug 規約焼き込み（`a30a3846`）。
+- [ ] #15(task) ★**zenn.dev のログインが daily-driver に存在しない**（実測: cookie は _ga のみ、dashboard はログイン画面）★。deploy は GitHub 連携のサーバ側同期だが、**下書きの実在は dashboard でしか確認できない** → Google OAuth でログイン確立 + 5本の下書き実在 screenshot 確認 + session vault bank。note-paid-builder 割当済み、**browser 作業は daily pass 完了後**（CDP :9222 lockdir 衝突防止）。
+- [~] #13(task) kroki 縦長図の padding 補正: freever-gen-builder が非破壊実験完了（fig1 276x606 → 520x606 canvas、728px ストレッチ後の実表示 848px < 900、拡大なしでボケなし。PIL 12.2.0 はシステム python3 に実在確認、import 失敗時 FATAL で依存明示）。実装は pass 完了後に _shared/embed-mermaid-substack.py へ。
+
+### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
+- 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
+- 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
+
+### 現在地スナップショット（2026-07-16 06:10 JST。次の agent はここから）
+| 主体 | 状態 |
+|---|---|
+| daily pass | 実行中（06:06:40 開始、新 gate 初通し、CDP 占有中）。watcher が完了を通知 |
+| note-paid-builder | #15 待機中（pass 完了後に zenn Google ログイン） |
+| freever-gen-builder | #13 待機中（pass 完了後に padding 実装） |
+| 次の大物 | pass green 確認 → **#41 DRAFT-ONLY 解除**（article-daily.sh の契約書き換え + human-funded から昇格）→ 明日 06:00 が初の完全無人公開 run |
+| 残 task | #10(#41) / #11(EN 展開) / #12(self-improve+self-heal+secrets) / #13 / #14(seo-gate) / #15(zenn login) |
 - [x] #37 price-check.py **DONE** commit `3b75f3c2`（team-lead 自作・live 実測: 有料5件、メンバーシップ最小記事数 floor=295、我々6本 → buy_once 提案。判断は agent、script は測るだけ）
        ★気づき: `anicca123` の hasCircle が **true** になっている（メンバーシップ未作成のはずなのに）。要確認 — Dais が何か作ったか、hasCircle の意味が違うか。★
 - [x] #20 reality-gate.sh **DONE** commit `d2179217`（team-lead 自作。note=API状態+有料設定readback+匿名閲覧+画像生存 / x=x_fullverify 委譲 / ssr=substack等の \uXXXX decode 込み content+画像生存。live 3実物で E2E: note PASS、価格違い negative FAIL 発火、ssr PASS+negative 発火、x PASS。px 検査は既存 per-platform verifier の持ち場）
