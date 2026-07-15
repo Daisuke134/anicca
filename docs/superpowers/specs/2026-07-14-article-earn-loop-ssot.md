@@ -367,7 +367,10 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 ### PART A — その loop で記事を publish（テスト出力）
 - [x] #9  [6]-出典 Dais承認（2026-07-15 承認済）
 - [ ] #10 REVIEW-STATUS を REVIEWED化
-- [~] #11 JP publish: **note=有料公開DONE(#35)、X=無料版draftステージDONE(2026-07-16)**。残=zenn/substack-ja + X draft の公開ボタン
+- [~] #11 JP publish: **note=有料公開DONE(#35)、X=無料版 LIVE 公開DONE(2026-07-16 04:42 JST)**。残=zenn/substack-ja
+       ★X 公開の実物: `https://x.com/diceai0/status/2077478932589547795`（guarded go flow で publish、`PUBLISH confirmed: True`。
+       live verify: body images 4 / tallest 571px / TALL>650 なし。team-lead が fv7.png で「4:42 AM · Jul 16, 2026」タイムスタンプ+CTA+note URL を own-eyes 実見）★
+       funnel 稼働開始: X 無料版(live) → CTA → note 有料版 ¥1,000。誘導の brand 妥当性 = PART K #42 で research 済み・Dais 承認済み。
        X 無料版 draft（team-lead が fv_top.png/fv7.png を own-eyes 確認済み）:
        - DRAFT_URL = `https://x.com/compose/articles/edit/2077476121541799937`（未公開、Draft バッジ実見）
        - 中身 = note と同一の無料境界（「…誰も担保していません。」で切断、有料側の混入なし）+ 末尾 CTA H2 + note 有料版 URL
