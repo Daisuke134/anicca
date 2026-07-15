@@ -303,6 +303,15 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
       ★一般法則（12ラウンド事件の法則の完成形）: **judge を収束させるのは「ルールを引用しろ」ではなく「blocking にできる指摘の型を、誰が見ても同じものを指せるものだけに限定する」こと。** 主観的な良し悪しは advice として出させ、決して止めさせない。**止める権限は客観に、意見は助言に。**★
       ★運用の証明: builder が3回とも「無理に書き換えず violation をそのまま報告」したから、**記事を1文字も壊さずに gate の欠陥3つ（scope / footer / 非決定性）を潰せた**。gate に従って記事を直していたら、published 済みで承認済みの記事が毎回劣化していた。★
 
+- [x] ★**#49 eval-gate が我々の house style と矛盾していた（2026-07-16、commit `02f82b29`）**★
+      症状: X-en が **score=36（閾値35以上なのに）FAIL** — fact_flags 4件、理由「数字にインライン出典が無く、末尾 Sources 一括では per-claim mapping が無い」。
+      真因: **`SKILL.md` rule 26 =「出典は本文末尾の1ブロックに全部。本文中インライン禁止」が我々の確立済み書式**（pipeline 全体・原本記事も全部この型）。eval gate はそれを知らず、我々の正式フォーマットそのものを欠陥と判定していた。
+      修理: gate に house citation style を教えた —「末尾 Sources 節が該当プロジェクト/データセットを覆っていれば sourced」「first-hand receipt も sourced」「**per-claim インライン紐付けが無いことは fact_flag ではない**」「**Sources 節が丸ごと無いのに外部数字を出していたらそれは本物の fact_flag**」。
+      実測: Sources 入り = **2回とも PASS（score 39/38、fact_flags 0）** / Sources を削った版 = **FAIL（30、fact_flags 6）** = 緩めすぎ検査 PASS。
+      ★一般法則: **fresh judge は「その publication の書式」を知らない。** 知らないまま judge させると、**自分たちの正式フォーマットを毎回欠陥として弾く**。judge に渡すのは記事とルールだけでなく、**その記事が従っている書式の宣言**も要る。★
+      ★今日の gate 欠陥は計4つ（#48 scope / #48 footer / #48 非決定性 / #49 house style）。全部 **builder が「書き換えず violation をそのまま報告」したから発見できた**。gate に従って記事を直していたら、published 済み・Dais 承認済みの記事が4回劣化していた。★
+      未修理（次版で直す価値あり、記事は通す）: 無料版 summary bullet に em dash `--` が2箇所（gate は PASS を出した = blocking 3件未満）。
+
 ### ★gate と記事のどちらを曲げるか（裁定基準。2026-07-16 X-en の実例で確立）
 gate が FAIL を出した時、**記事を直すのが正しい場合と、gate を直すのが正しい場合がある**。実例（X-en の de-slop 4件）:
 | 指摘 | 裁定 | 理由 |
