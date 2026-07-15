@@ -199,6 +199,27 @@ not false. Also check any status tabs/pagination on that page before concluding 
 Only set verdict false for an applied claim if, after checking every tab/page of our OWN
 applied-offers list by buyer name, the entry is genuinely nowhere to be found — note in your
 reasoning which tabs/pages and buyer names you actually checked.
+
+STATUS-BASED GROUND-TRUTH ROUTING for applied.jsonl claims (real false-positive incident,
+realityverify-1784094300-58538, requestId "5130931_jibieaian": a genuine talkroom reply on an
+ALREADY-PURCHASED contract was wrongly judged false because job_matching/applied/offers was
+searched — that page has no entry for it, since the contract came from a private/scout deal, not a
+public 応募, so no application row for it has ever existed there). applied.jsonl is used for TWO
+different lifecycle stages and each claim's own "status" field tells you which one you are looking
+at:
+  - status=="applied": a genuine "we submitted a new 応募/提案 to a public job posting" claim. Ground
+    truth = https://coconala.com/mypage/job_matching/applied/offers, exactly as described above.
+  - status is anything else (e.g. "replied", "delivered_pending", "no_new_client_reply",
+    "attempted_not_confirmed_sent"): this is a post-purchase talkroom nurture/follow-up claim about a
+    contract that is ALREADY CONTRACTED, not a new application — its requestId field may be a
+    compound/derived label (e.g. "<number>_<buyername>") that was never a real application-list
+    entry, so job_matching/applied/offers is the WRONG page to search and finding nothing there is
+    NOT evidence the claim is false. For these, find the matching contract in
+    https://coconala.com/mypage/received_orders/open by BUYER NAME (cross-check price/delivery date
+    if given), open its real トークルーム, and verify the claimed message/action against what is
+    actually rendered there. Only set verdict false for a non-"applied"-status claim if the buyer's
+    contract cannot be found in received_orders/open at all, or the opened talkroom does not actually
+    contain the claimed content.
 </ground_truth>
 
 <claims_to_verify>
