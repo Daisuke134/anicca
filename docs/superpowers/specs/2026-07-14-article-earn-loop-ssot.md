@@ -279,6 +279,18 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] **commit 混線の自己申告（team-lead の過失、2026-07-16）**: `1a60e68` は message が STEP 1.5 のことしか書いていないが、diff には builder の auth-retry も入っている。原因 = **builder が同じファイルを編集中に team-lead が `git add <file>` でファイル丸ごと stage し、自分の変更しか書いていない message で commit した**。中身は両方正しく検証済み。訂正の history note = `4b57396`。
        ★一般法則: **共有ファイルで `git add <path>` は「今の中身全部」を stage する。他の agent が同じファイルを触っている間は、commit 前に `git diff --cached` を読んで、自分が書いていない変更が混ざっていないか確認する。**★
 
+### ★gate と記事のどちらを曲げるか（裁定基準。2026-07-16 X-en の実例で確立）
+gate が FAIL を出した時、**記事を直すのが正しい場合と、gate を直すのが正しい場合がある**。実例（X-en の de-slop 4件）:
+| 指摘 | 裁定 | 理由 |
+|---|---|---|
+| em dash `--` の使用 | **記事を直す** | 本物の違反。我々のルールそのもの |
+| "One problem surfaces here."（弱い rhetorical setup） | **記事を直す** | 本物。何が問題かを直接書けば済む |
+| "Transaction count can be staged. Money settled cannot."（quotable だから消せ） | ★**gate を直す**★ | **記事の核心**で 1,450万件 vs 8.9万ドルという**実測に裏打ちされている**。quotable ルールは「稼いでいない疑似箴言」を狙うもの。→ gate に「earned な発見は quotable ではない」を明記（`0224b7aa`） |
+| 無料版フッター（meta-joiner だから消せ） | ★**gate を直す**★ | #43 で設計・Dais 承認済みの**意図的な構造**。→ gate に「footer は判定対象外」を明記（`0224b7aa`） |
+**基準**: ①その文は**実測・観測に裏打ちされているか**（yes なら守る）②それは**設計として意図的に置いたものか**（yes なら gate の scope を直す）③どちらでもなければ記事を直す。
+★一般法則: **gate が「我々が意図して置いたもの」を弾いたら、それは gate の scope バグ。記事を曲げて gate に従うと、gate が守るはずだった価値を gate 自身が削る。** ただし gate を緩めた後は必ず**元の slop fixture がまだ FAIL することを実測**して、緩めすぎていないことを示す（今回も5件で FAIL を確認済み）。★
+★運用: builder は **gate に迷ったら書き換えず violation をそのまま報告する**（今回 note-paid-builder がそうした）。無理に通そうとして記事を壊すのが最悪。裁定は team-lead の仕事。★
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
