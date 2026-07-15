@@ -179,6 +179,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
        ★発見1: `~/Developer/substack-mcp/.venv` が消失していて既存 substack pipeline は全滅していた（uv sync で再建、認証 config は生存）★
        ★発見2: run.sh はこれまで mermaid を未変換のまま Substack に送っていた = mermaid 入り記事は全部壊れて staged されていた（今回修正）★
        ★follow-up バグ: kroki flowchart TD は縦長(276x606)で、Substack が 728px 幅にストレッチ → 縦伸び。verify-preview.py の vision gate が止める設計だが根本修正は別タスク★
+       (A) refactor **DONE** commit `dacdeac2`: 認証を SUBSTACK_SESSION_COOKIE 直 curl 化（venv 依存除去、stdlib のみ）+ 公開後 GET 自己検証追加。E2E 再実測: image nodes=3 / mermaid 残存 0 / テスト draft 削除まで。
+- [x] #17/#18 run.sh 配線 **DONE** commit `c2079cd1`（md5 キャッシュ付き = 記事1本につき審査1回。配線実証: 昨日の loop 記事が 6c で FAIL して dispatch 前に停止）
+- [x] zenn 無料版 draft ステージ **DONE**（zenn-articles repo commit `f287e404`、published:false、正規 slug。公開 flip は Dais/team-lead 検収後）
+- [ ] ★#46 **zenn の silent skip 発見（2026-07-16、builder が公式 doc で発見・team-lead が ls で確認）**: slug 規約 = a-z0-9/ハイフン/アンダースコア 12-50字。**daily loop の既存4記事（07-12〜15）は全部日本語ファイル名 = Zenn が「不正なファイル名…スキップ」して4日間デプロイされてなかった可能性大。** loop の検証（匿名404）は「非公開draft」と「未デプロイ」を区別できない = 検証の穴。→ rename + dashboard own-eyes 確認を builder に指示済み。
+       ★一般法則: 「push 成功」は「相手プラットフォームが受理した」を意味しない。deploy 先が黙って捨てる規約違反は、deploy 先のダッシュボード/API でしか見えない。★
+- [x] 今朝 06:00 run は OAuth 失敗で死亡（rc=1、5秒。team-lead の gate テスト claude 並走との refresh 競合疑い）→ 認証復旧確認後、**新 gate 込みで手動再発火**（実行中）。
+- [ ] #14(task) seo-gate が app 送客時代の遺物要求（aniccaai.com anchor + App Store deeplink 必須、H2≤7）を保持 = note funnel と不整合。要更新。
 - [x] #37 price-check.py **DONE** commit `3b75f3c2`（team-lead 自作・live 実測: 有料5件、メンバーシップ最小記事数 floor=295、我々6本 → buy_once 提案。判断は agent、script は測るだけ）
        ★気づき: `anicca123` の hasCircle が **true** になっている（メンバーシップ未作成のはずなのに）。要確認 — Dais が何か作ったか、hasCircle の意味が違うか。★
 - [x] #20 reality-gate.sh **DONE** commit `d2179217`（team-lead 自作。note=API状態+有料設定readback+匿名閲覧+画像生存 / x=x_fullverify 委譲 / ssr=substack等の \uXXXX decode 込み content+画像生存。live 3実物で E2E: note PASS、価格違い negative FAIL 発火、ssr PASS+negative 発火、x PASS。px 検査は既存 per-platform verifier の持ち場）
