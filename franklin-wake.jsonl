@@ -7594,3 +7594,11 @@
 {"ts":1784080214,"wake_id":"00MRLFAO5UCFC19F6051654149","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784080366,"wake_id":"00MRLFDWU04A90A3340C8441F5","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"Wallet snapshot: USDC $15.55 (no SOL detected to pay transaction fees).\n\nNote for next session: top up a small amount of SOL (≈0.001–0.01 SOL) so the bot can execute swaps; once funded, run TradingSig"}
 {"ts":1784080366,"wake_id":"00MRLFDWU04A90A3340C8441F5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784080516,"wake_id":"00MRLFH4NUB2C55F40B9A84073","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784080818,"wake_id":"00MRLFNLIC4154D414B03B4C72","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784080949,"wake_id":"00MRLFQEWL04365DF51B5A4BB6","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784080949,"wake_id":"00MRLFQEWL04365DF51B5A4BB6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784081084,"wake_id":"00MRLFTBA7954F59F777E64E60","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784081215,"wake_id":"00MRLFW3ZP5810C31F59DB40CD","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (no clear bull/bear conviction); expected round‑trip fees/slippage (~0.4%+) erase any edge so do not trade; note for next session: re-check only if SOL moves >2"}
+{"ts":1784081215,"wake_id":"00MRLFW3ZP5810C31F59DB40CD","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784081368,"wake_id":"00MRLFZECX5F74245C137A42FC","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
