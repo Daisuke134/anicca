@@ -197,6 +197,25 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 - [ ] #20 V1 L4 reality-gate(session restore→ログアウト実見→naturalWidth>0→draft確認、公開ならFAIL)
        ★2026-07-15 発見: reality-gate は「人間を loop から外す許可証」。これが無い限り DRAFT-ONLY 契約(下記 #26)は正しい安全弁であり、外してはならない。順序 = reality-gate 実装 → 契約書換 → 自動公開。★
 
+### PART H — 実 E2E で発覚（2026-07-15、team-lead が実 note.com に draft を作って踏んだ）
+- [ ] #32 ★**stage2 が update_article に numeric ID を渡していて必ず落ちる**（= 日次 loop の note 経路は配線しても画像が入らない真の理由）★
+       実出力（証拠、捏造でなく実 tool_result）:
+       ```
+       stage1 render OK — tables=0 | mermaids=3
+       embedding tables/mermaid as images (draft NUM=170244382)
+       fig1 / fig2 / fig3                      ← mermaid 3枚の PNG 化と upload_body_image は成功している
+       Traceback ... note-stage2-publish.py:68 in main
+         await update_article(sess, NUM, ArticleInput(...))
+       note_mcp.models.NoteAPIError: Numeric article ID '170244382' is not supported.
+         Please use the article key format (e.g., 'n1234567890ab').
+       DRAFT (unpublished) key=n3ecfe7a55890 stage1_ok=true stage2_ok=false stage2_embedded=
+       ```
+       → 画像 upload は成功、本文への埋め込み(update_article)で死ぬ。draft は残るが mermaid 生・画像ゼロ = #16 が直そうとした状態そのもの。
+       → 修理方針: `upload_body_image` は numeric ID を要求（NUM で成功している）、`update_article` は key を要求。**stage2 は NUM と KEY の両方が要る**可能性。note-mcp の実シグネチャで確定させること。既存の手動パイプライン `scripts/note-publish/`(成功実績あり) が何を渡しているかに合わせる（推測禁止）。
+       → `stage2_embedded=` が空なのは EMBED_SUMMARY 出力前に例外死したため。update_article 失敗時も呼び出し元に伝わるべきか要設計。
+       ★**この失敗は #16/#30 の修理が無ければ「成功」と記録されていた。ゲートが仕事をした証拠。** stage2_ok=false が立ち WARN が出た。★
+       ★一般法則: **配線を直しても、その先の API 契約が合っているとは限らない。ローカル検証（py_compile/回帰/fixture）は「呼び出しの形」しか検証しない。実 API の ID 形式のような契約違反は、実ネットワークに出るまで絶対に分からない。だから E2E は省略不可。**★
+
 ### PART G — セキュリティ（2026-07-15 発見）
 - [ ] #31 **note の email/password が `publish-note.sh` に平文ハードコード**（冒頭コメント + 変数デフォルトの2箇所）。`~/.openclaw`(private) に commit 済み。→ env 化 + パスワード rotate が要る。Dais 判断待ち（既存状態なので今夜の作業は止めない）。他の publish script(zenn/devto/substack/x) にも同種が無いか要 grep。
 
