@@ -8305,3 +8305,13 @@
 {"ts":1784155748,"wake_id":"00MRMO9LSY2F9FA438F74244B4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — On-chain USDC $12.16 and TradingSignal for SOL is neutral (0% confidence; RSI/MACD neutral); trading costs (~0.4%+ round-trip) would erase any edge.\n[sol-trade] sol-evolve -> {   \"promoted\": fa"}
 {"ts":1784155748,"wake_id":"00MRMO9LSY2F9FA438F74244B4","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784155926,"wake_id":"00MRMODFF8E6A3507D4E7F4D27","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784156229,"wake_id":"00MRMOJXPL64513165B6464E3B","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784156229,"wake_id":"00MRMOJXPL64513165B6464E3B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784156410,"wake_id":"00MRMONSUL6673A06853584F8A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784156566,"wake_id":"00MRMOR59L7BC02DB2BBC04008","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784156632,"wake_id":"00MRMOSKE2CF4C637805B24CEA","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784156698,"wake_id":"00MRMOTZE2DA03502BB7EC4F0F","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784156764,"wake_id":"00MRMOVEAS895F3507C11C4922","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784156831,"wake_id":"00MRMOWTGKE313674303F14DA8","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784156990,"wake_id":"00MRMP08P8EA813BA67CF144DE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"Wallet checked: USDC = $12.12 (no SOL reported → likely 0 SOL available for gas). I will not call TradingSignal to avoid paying tool fees on a very small bankroll.\n\nNote for next session: acquire a sm"}
+{"ts":1784156990,"wake_id":"00MRMP08P8EA813BA67CF144DE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
