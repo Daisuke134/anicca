@@ -8178,3 +8178,10 @@
 {"ts":1784139491,"wake_id":"00MRMEL6IVFB37FF8434C94B0B","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
 {"ts":1784139619,"wake_id":"00MRMENWXB1D325785D2794F2E","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1784139745,"wake_id":"00MRMEQM9E59F5ED01CC604534","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784139874,"wake_id":"00MRMETDIXC4066B42406741A9","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784140003,"wake_id":"00MRMEW5C452EC1A3BDD9E4AA5","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784140130,"wake_id":"00MRMEYV0G4579D8A9694D41C4","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784140256,"wake_id":"00MRMF1KRM5BC5DE8A69D84382","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/polymarket-trade","profitable":false,"exit_code":0,"result":"no redeemable conditions found for [REDACTED] — nothing to do deposit wallet: [REDACTED] | pUSD: 0.001713 scanned 60 markets. no risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784140440,"wake_id":"00MRMF5IJC7DC4DD4157D745EA","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784140589,"wake_id":"00MRMF8PF9DD9A7692D9344FF4","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1784140747,"wake_id":"00MRMFC3133F6CBE8A81F747DE","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
