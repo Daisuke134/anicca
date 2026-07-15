@@ -33,8 +33,9 @@ import sys
 import time
 import urllib.request
 
-CDP = "http://127.0.0.1:9222"
-VAULT_DIR = os.path.expanduser("~/.cloak/vault/daily-driver")
+CDP_PORT = os.environ.get("SESSION_VAULT_PORT", "9222")
+CDP = f"http://127.0.0.1:{CDP_PORT}"
+VAULT_DIR = os.path.expanduser(os.environ.get("SESSION_VAULT_DIR", "~/.cloak/vault/daily-driver"))
 VAULT = os.path.join(VAULT_DIR, "auth-state.json")
 TOTP_SECRETS = os.path.join(VAULT_DIR, "totp-secrets.json")  # {"@coconala": "BASE32SECRET", ...}, chmod 600
 KEEP_BACKUPS = 8
