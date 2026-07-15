@@ -116,7 +116,7 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
       ★教訓: 生Playwright+高速決め打ちで X anti-bot(電話認証壁)を踏んだ → **browser作業は必ず daily-driver skill(`~/anicca/skills/browser/`)経由・agentic で**（CLAUDE.md の掟）。
       ★★FOREVER-SESSION（実測 robust、二度と調べ直さない）: ①launchd `ai.anicca.session-vault` 30分毎 dump(vault に rotating backup) ②dump に空snapshotガード(`session_vault.py:123`「never overwrite good vault with empty」) ③`ensure_browser.sh` が relaunch 時 restore ④`~/.cloak`(vault+profile)は `disk-autoprune.sh:9` の**保護store**で disk満杯でも消えない。→ **Chromium死/disk圧迫でも profile+credential 残存、開けば既ログイン、手動login不要。**★★
       再login ladder（skill）: `session_vault.py restore` → `keepalive <authed-url>` → x.json creds で self-login。
-- [ ] M-PUB 溜まってる draft(x402/ERC-8004/トークン病/OpenEvolve)を実際に publish する。**publish=Dais手動が設計。「毎日 draft は出るが誰も公開しない」が ¥0 の真因** → Dais が定期公開する運用にするか、承認済みだけ安全に自動公開する path を足すか【要判断】
+- [—] M-PUB draft の publish は **保留（Dais 2026-07-15: まだやらない）**。→ 換金(M-MON)も公開が前提なので当面後回し。今は loop の"品質と堅牢"(TIER1)を上げる方に注力。
 - [ ] M-MON #23 換金ON: note membership(¥500/月)+ how-to部の paywall / Substack有料tier（コード実在、ONだけ）
 → この3つで **初¥**。以降は下の TIER で 10k MRR へ複利。
 
