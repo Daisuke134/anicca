@@ -20,7 +20,7 @@ log(){ echo "$(date '+%F %T') clip_pass: $*" >&2; }
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >/dev/null 2>&1
+    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >/dev/null 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   log "STEP $1 done (rc=$?)"
 }
 

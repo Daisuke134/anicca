@@ -64,6 +64,16 @@ def login_resilient(cl, handle, port, res):
     except Exception:
         pass
     try:
+        # ★ TIER3 COOLDOWN GUARD (TASKLIST 3a): repeated password logins are a STOP signal to IG —
+        # each attempt deepens distrust and triggers session revocation / reCAPTCHA Enterprise.
+        # Observed 2026-07-16: two tier3 logins within minutes both "succeeded" then got revoked
+        # mid-use (LoginRequired during clip_upload). At most ONE password attempt per 24h. ★
+        stamp = C(f"~/.cloak/.last-pwlogin-{handle}")
+        last = os.path.getmtime(stamp) if os.path.exists(stamp) else 0
+        if time.time() - last < 24 * 3600:
+            res["error"] = "tier3 password login on 24h cooldown — refusing to hammer IG login (3a)"
+            return False
+        open(stamp, "w").write(str(int(time.time())))  # stamp BEFORE the attempt: failures count too
         creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
         cl.login(creds["username"], creds["pw"])
         cl.dump_settings(settings)
