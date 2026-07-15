@@ -263,6 +263,15 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
        ★pre-push hook の弱点発見: `git show --name-only` の出力に**コミットメッセージ本文も含まれる**ため、メッセージ中の「.env」という文字列だけで secrets 混入と誤検知する。★
        残（正しく残した）: bounty/run.sh と README の `Daisuke134/anicca#997` は**過去 issue 番号の引用** = 履歴的 citation。env 化すると逆に不正確になるので残す判断は正しい。
 
+### #22 self-heal L2 実装設計（freever 起草 → team-lead が裁定・訂正して確定 2026-07-16）
+★builder の調査で確定した事実（team-lead も grep で確認）: **`article-daily.sh` は `~/anicca/skills/browser/ensure_browser.sh` を一度も呼んでいない**（grep 0）。lockdir は CDP の**排他**はするが、**CDP が死んでいた場合の復旧は誰もしていない** = L0 の唯一の本物の穴。ensure_browser.sh は既に「Chromium 再起動 + session_vault restore + cdp lease gc → ALIVE/RECOVERED/FAILED」を返す完成品なので、**呼ぶだけ**（車輪の再発明なし）。★
+**採用する設計（3点。builder 案をほぼ採用、1点訂正）**:
+1. **即時 alert**: `article-daily.sh` の `RC=$?` 直後に `RC != 0` なら `_shared/scripts/telegram-notify.sh` で即報告。今朝の「OAuth 失敗 rc=1 を誰も知らないまま丸一日 pass が飛ぶ」を直接潰す。5分ポーラーより速く安い。
+2. **pass 冒頭で `ensure_browser.sh` を呼ぶ**（★team-lead 訂正: これは healthcheck 側でなく **pass 側**の仕事。5分毎に browser を触ると daily-driver を使う他の作業と競合する。pass は既に lockdir を持っているので、その中で1回だけ復旧を試すのが正しい★）。FAILED なら pass は browser 依存の platform を skip して正直に報告（記事執筆と note API は続行可能）。
+3. **5分ポーラー `ai.anicca.article-healthcheck`**（`StartInterval=300`、`com.anicca.emergency-disk-guard` と同型）は **1つの仕事だけ**: 「06:00 を過ぎたのに run 行が無い」または「run はあるが90分経っても done が無い」を検知して Telegram alert。= **「pass が完了しない」クラスの一般化された検知**（今日の 07:08 三連発のような異常も5分以内に見える）。
+**作らないもの（builder の判断を採用）**: Substack/X/zenn セッション用の専用 healthcheck。理由 = これらは「検知」の問題でなく「人間の再ログインが要る」問題。pass の STEP6-9 が既に毎朝1回検知・報告しており、288回/日の再チェックは資源の無駄。
+★一般法則: **監視は「検知したら誰かが直せる」ものにだけ付ける。直せない事実を高頻度で再確認するのは監視でなく不安。**★
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
