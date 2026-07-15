@@ -138,9 +138,11 @@ home に配り、launchd KeepAlive が再試行して立った。伝播は 5.5�
 ★未解明（要監視）: 7/16 01:40 に repo ルート `node_modules/x402-express/dist` を消したのは誰か。
 disk-autoprune.sh は `/private/tmp/claude-*` しか消さず(実測)、disk も 24% で余裕 → 犯人ではない。
 x402-sell はローカル宣言で自立したので当面無害だが、他の skill が同じ寄生をしていれば同じ事故が起きる。
-| **T3** | Franklin が Bazaar に載らない理由を確定 — `x402-foundation/x402` の `specs/extensions/bazaar.md` を読み、「settle 実績が要るのか / 402 の bazaar extension だけで載るのか」を仕様で確定 | 仕様の逐語引用 + 我々の 402 レスポンスとの差分 | T1 と並行可 |
-| **T4** | T3 の答えに応じて掲載機構を実装 — settle 必須なら loop 自身が self-pay seed（INV-7 で収益除外）。extension だけで良いなら 402 レスポンスに bazaar info を足す | `bazaar-scan.mjs` が 0x3EcC / 0xe7747F の resource を返す（実 JSON） | T3 後 |
-| **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2 後 |
+| **T3** | Bazaar 掲載条件を公式 spec で確定 | 仕様の逐語引用 | ★DONE 2026-07-16★ 結論=**settle 1回が必須**（"verify alone is not enough"）。鶏と卵は実在。全文 → spec の「掲載条件の確定」節 |
+| **T4a** | ★次★ franklin2 で self-pay を1回通す → Bazaar 掲載を実証 — `buyer-cdp.mjs` で :10000 経由の settle を1回。INV-7 で収益に数えない（着火専用）。**壊すものゼロ**（:10000 は到達可能、売上 $0） | `bazaar-scan.mjs` が 0xe7747F の resource を返す（実 JSON を貼る）。載らなければ原因を掴む | ★次★ |
+| **T2b** | ★INV-INDEP 違反の解消★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel は 443/8443/10000 の3枠のみ、店は4軒）。各 instance が**自分の**公開 URL を自分で取得する形にする。案A=各自の Cloudflare account + named tunnel + subdomain（AI 自身が account を作る）／案B=各自がクラウドに自分でデプロイ(Railway/Workers、市場標準形)／案C=各自の Tailscale ノード。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | T4a 後。★「独立の境界」の判断が要る（実家に住むのは可 / 席の奪い合いは不可）★ |
+| **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
+| **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2b 後 |
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
 | **T7** | 学習の共有 — `promote.py:30` が「進化した戦略を repo baseline に git commit」する経路は既にある。T6 が直れば「賢い個体の学びが repo 経由で全員に配られる」が成立する。実測で確認 | 1 instance の学習が他 instance の次 wake に反映されることを実測 | T6 後 |
 | **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | T4 後 |

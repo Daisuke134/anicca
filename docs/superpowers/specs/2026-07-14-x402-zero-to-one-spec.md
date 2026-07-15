@@ -4,6 +4,31 @@
 定義: **0→1 = 外部 buyer（from ∉ 我々の全 wallet 集合）の USDC が対象 instance の wallet に on-chain 着弾**。
 self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anicca/skills/earn/x402-sell/verify-inflow.mjs` のみ。
 
+## ★INV-INDEP: 各 instance は独立した創業者である（2026-07-16 Dais と確定。最上位の不変条件）★
+
+**各 AI = 一人の創業者。自分の wallet、自分の商品、自分の店、自分の生死を持つ。
+他の instance がいなくても稼げる。「お前がいないと生きられない」関係を作った時点で設計が失敗している。**
+
+人間と同じ: 自分の口座を持ち、自分で稼ぎ、自分の bill を自分で払う。その上でチームを組み、助け合う。
+**自立が先、扶助は後。** 順序を逆にしない。
+
+| MUST | 禁止 |
+|---|---|
+| 1 instance = 1 wallet = 1 店 = 1 公開 URL | 複数 instance を1プロセス/1 URL に相乗りさせる |
+| ある instance の生死が自分の中で完結する | 兄弟の都合(席・枠・プロセス)で稼げなくなる構造 |
+| 稼げたら自分のホスティング代を自分で払う(巣立ち) | 親(Dais)の資源への恒久的な寄生を前提にする |
+| 余剰を持つ個体が新入りを seed する(選択としての扶助) | 扶助を前提に設計する(=依存) |
+
+**成長段階**: ①実家期(Dais の Mac に住む。家賃は親持ち。**ただし席の取り合いは禁止** — 実家にいることは
+依存ではないが、兄が席を占有して弟が店を開けないのは依存) → ②自立期(稼いだ金で自分のホスティングを買い
+実家を出る) → ③相互扶助期(余剰で他を助ける。助けるのは選択であって依存ではない)。
+
+**却下された設計（2026-07-16、記録として残す）**: 「4つの seller を1プロセスに統合し、x402 公式の
+`dynamic-pay-to.ts` パターン(`payTo: ctx => addressLookup[...]`)で payTo を出し分ける」。
+公式パターン自体は実在するが、あれが解いているのは**同一主体が複数の財布に振り分ける**問題であり、
+**別主体が同居する**問題ではない。形が似ているだけで中身が逆。統合すれば、1つ落ちれば全員停止し、
+誰の店か分からなくなり、OSS で配る時「他人のプロセスに相乗りしろ」になる。INV-INDEP 違反。
+
 ## 不変条件（MUST）
 
 - INV-A: revenue と呼べるのは external inflow のみ。colony wallet 集合 = 0x810f / 0xB9dd / 0x904B（+Franklin EVM 追加時に更新）
@@ -94,6 +119,36 @@ Sonnet subagent の誤報2件（Fable が自分で見て否定 — 重要な主�
 - 「payTo 0x904B は誤設定」→ 誤り。意図的で、実際に $0.006 稼いでいる
 
 TODO の正本 = `docs/STATUS.md` の T1〜T10 表 + TaskList（二重トラック）。
+
+## ★掲載条件の確定（2026-07-16、一次ソースの逐語引用。ここは推測禁止・再調査不要）★
+
+**CDP Bazaar に載る必要十分条件 = Bazaar 拡張の宣言 + その resource で settle が最低1回成功すること。**
+出典 `https://docs.cdp.coinbase.com/x402/bazaar`:
+> "discovery indexing runs after **settle** completes; **verify alone is not enough**"
+> "**There is no separate registration step.** The CDP Facilitator catalogs your service the first time
+> it **settles** a payment for that endpoint. … ensure at least one successful settlement has completed
+> through the CDP Facilitator with `paymentPayload.resource` set."
+
+リファレンス実装も一致（`e2e/facilitators/typescript/index.ts`）: `bazaarCatalog.add()` は `onAfterVerify`
+の中でのみ呼ばれる = 実際の支払い試行が要る。**「402 に書けば載る」は誤り。鶏と卵は実在する。**
+→ 断ち切る手段 = 自分で1回 settle（self-pay。INV-7 で収益には数えない。着火専用）。
+
+**他に確定した制約**:
+- **30日 rolling window**: "resources with no settlements for 30 days are removed from both the catalog
+  and search results" → 一度載っても settle が途絶えると消える。継続的な取引が要る
+- **反映遅延**: カタログ 最大10分 / ランキング 6時間ごと再計算
+- **v1 は deprecated**: 我々の `x402-express@1.2.0` は v1 discovery(`outputSchema.input.discoverable`)のみ
+  実装（実コード確認済）。公式現行は `@x402/express@2.18.0` + `extensions.bazaar` + `declareDiscoveryExtension()`。
+  移行差分: パッケージ名変更 / route config が `accepts` 配列 / network が CAIP-2(`base-sepolia`→`eip155:84532`)
+- **Tailscale Funnel は 443/8443/10000 の3ポートのみ**（公式明記: "Funnel can only listen on ports 443,
+  8443, and 10000." https://tailscale.com/kb/1223/funnel）。**4体目に席が無い = INV-INDEP 違反の物理原因**
+- **市場の標準形**: x402scan 実登録 約30件のうち**ポート付き URL は 0 件**。独自ドメイン 78.8% /
+  クラウドサブドメイン 21.2%（Railway, Cloudflare Workers 実例あり）。全員が 1主体 = 1つの独立した URL
+- **★x402 取引の 47% は非オーガニック★**: BlockRun 自身のレポート(Artemis 推計)
+  > "Artemis estimates that 47% of x402 transactions to date are non-organic—primarily teams gaming leaderboards"
+  → 我々の $0.011(8個の EOA が $0.001 ずつ単発)も bot の検品の可能性が高い。**これは需要ではない**。
+  高単価化(段9)が本番という判断を補強する
+- **撤回**: 「BlockRun $173K/30d」は一次ソースを特定できず。実データは x402scan で Volume $5.5K/24h。この数字は使わない
 
 ## 「知能が要らない」仕組み（x402 skill × loop の全 ASCII。正本）
 
