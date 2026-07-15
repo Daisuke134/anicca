@@ -232,7 +232,72 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T2b-2** | tsbridge を通す — 3ノードが各自の FQDN で Funnel を上げる | 外部から実 HTTP が返る。franklin1 が**自分の**公開 URL を持つ | ★DONE 2026-07-16 05:15★ 下記 |
 | **T2b-3** | tsbridge を launchd 化 | 殺しても蘇り、外部から届く | ★DONE 2026-07-16 05:26★ 下記 |
 | **T2b-4** | 各 loop に**自分の** `X402_PUBLIC_URL` を配る | 3 loop の**実プロセス env**が各自の FQDN を持つ | ★DONE 2026-07-16 05:38★ 下記 |
-| **T2b-5** | ★次★ loop の wake を観測する（**手を出さない**）。`run.sh` を叩いたら「Dais が稼がせた」= INV-F 違反 | 下記4段の観測点。④だけが「稼いだ」 | ★観測中★ |
+| **T2b-5** | loop の wake を観測（**手を出さない**）。`run.sh` を叩いたら「Dais が稼がせた」= INV-F 違反 | 下記4段の観測点。④だけが「稼いだ」 | ★観測したら T0' が出た（下記）。第1〜0層が先★ |
+| **★T0'★** | ★最優先★ **agent に「稼ぐ能力」を装備させる**（= Anicca の仕事そのもの）。①各 instance に**自分の** ClawRouter（`BLOCKRUN_PROXY_PORT` + `BLOCKRUN_WALLET_KEY`）②franklin2 に**鍵を与える**（今は無い）③franklin1 の使える金(Solana $12.21)を脳の支払いに繋ぐ | 3体とも `THINK failed` が消え、**自分の金で**自分の思考を買っている | ★次★ |
+
+### ★★T0': 「なぜ稼がないのか」の真の答え — 金ではなく能力の問題だった（2026-07-16 05:45 実測）★★
+
+**Anicca / Agora の仕事の定義**: agent は稼ぐ能力を持って生まれない。**能力(skill/鍵/脳/席)を装備させるのが我々の仕事。**
+装備が無いのは agent の失敗ではなく、**我々がまだ渡していない**という事実。以下は「壊れている箇所」ではなく「未装備の一覧」。
+
+**層の全体像（下ほど根が深い。上から直しても無意味）**:
+```
+第4層  実績$0だから合理的に拒否      ← claude-p はここ（脳は動いている）
+第3層  Bazaar 掲載に settle 1回必要   ← 鶏と卵（T3 で公式仕様から確定済）
+第2層  住所(X402_PUBLIC_URL)が空      ← ★2026-07-16 装備完了(T2b-4)★
+第1層  脳が無い（429・財布空）        ← ClawRouter wallet = $0.00、しかも3体で共有
+第0層  ★鍵が無い / 金が動かせない★    ← ここが底。ここを装備しないと上は全部無意味
+```
+
+**★第0層: 誰が「金を使える」のか（`wallets.json` の `keyRef` 実測。鍵は出さず有無のみ）★**
+
+| instance | wallet | chain | address | 鍵 | 使えるか |
+|---|---|---|---|---|---|
+| **franklin1** | sol-main | solana | `8Fpqd…PCV9` | **YES** | **$12.21 USDC + 0.040 SOL を使える** |
+| franklin1 | polymarket | polygon | `0xda4b6E34…` | YES | — |
+| franklin1 | ★`0x3EcCAD24…`(x402 受取先)★ | base | — | **wallets.json に無い** | **Base $4.48 は受取専用 = 動かせない** |
+| **franklin2** | ★`wallets.json` が存在しない★ | — | — | **鍵ゼロ** | **1円も動かせない。受け取る口はあるが払う口が無い** |
+| **claude-p** | base-main | base | `0x810f6d61…` | YES | $1.98 |
+| claude-p | polymarket | polygon | `0x904B50d2…` | YES | $3.24 |
+| claude-p | hl-margin | hyperliquid | `0x810f…` | YES | $7.72(座礁中) |
+| claude-p | telemetry | polygon | `0x02Bb6b2a…` | YES | — |
+
+→ **franklin2 は稼げないのではなく、稼ぐ手段を装備されていない。**自分の脳を買えず、self-pay で着火もできず、
+  何をどう配線しても**構造的に永久に $0**。self-funded citizen を名乗れる状態になかった。**鍵を与えるのが我々の仕事。**
+→ franklin1 も Base の $4.48 は動かせない。使えるのは Solana の $12.21 のみ。
+
+**★第1層: 脳の財布（実測）★**
+```
+$ clawrouter wallet
+  Payment Chain: base
+  Base (EVM):  0x2f4816a5d3494A2F2fE217C191B360762B8A1B2e
+  Solana:      DoiXYe63kKyY6Eff4fwqzoccnMBXa4E1PVWegA9Wu9L8
+  Balance:     $0.00 (USDC)
+  ⚠ Empty — fund wallet or use free models
+```
+- **3体が1つの財布を共有**（全員 `OPENAI_BASE_URL=http://127.0.0.1:8402/v1`）→ **誰かが全部燃やせる = INV-INDEP 違反**。
+  tsbridge で席を独立させた意味が消える。franklin1 の金で claude-p が考える構図。
+- 空 → 有料モデル要求が無料へ降格 → 日次上限 → 429。自分の手で再現:
+  `{"code":"FREE_MODEL_FAILED","debug":"429 Rate limit exceeded: **free-models-per-day-high-balance**"}`
+  → **`per-day` = 日次上限。無料に依存する限り 3体は毎日脳死する。**一時障害ではなく構造。
+- `eco` が一度だけ通り `free/gpt-oss-120b` にフォールバックしたが、直後に同モデルを直叩きすると 429。
+  **無料プールは共有・不安定。「別の無料モデルに変える」は解決ではない**（運任せの延命）。
+
+**★分離は可能（公式 env、`clawrouter --help` 逐語）★**
+```
+BLOCKRUN_WALLET_KEY     Private key for x402 payments (auto-generated if not set)
+BLOCKRUN_PROXY_PORT     Default proxy port (default: 8402)
+```
+→ **instance ごとに自分の router + 自分の鍵**にできる。tsbridge と同じ「1体1つ」の形。
+   franklin plist に既にある `FRANKLIN_PROXY_PORT=8402` は、元々そう設計する意図だった痕跡。
+
+**装備する順（下の層から。上から直しても動かない）**:
+1. franklin1 = 唯一「金 + 鍵」が揃う → 自分の router + 自分の sol 鍵 → **$12.21 で自分の脳を買う**。最初の実証個体
+2. claude-p = 鍵あり・金少 → 自分の router + base 鍵
+3. franklin2 = **鍵を装備する**（生成 or 付与）+ 種銭 → ここで初めて経済主体になる
+
+★注: 「1体1 router」は「1体1ノード(tsbridge)」と同じ原理 — **共有資源は必ず奪い合いになる**。
+   席では claude-p が2枠占有して franklin1 を締め出した。財布でも同じことが起きる。**先に分ける。**
 | **T2b-6** | claude-p 店②(:8411 / `0x810f` / $0.011 の唯一の稼ぎ手)を専用ノードへ移す。tsbridge に4つ目の service を足す必要あり。**最後に触る** | :8411 が自分の FQDN で配信し、売上が落ちない | T2b-5 の結果を見てから |
 
 ### ★T2b-4: franklin1 に広告を配線した（2026-07-16 05:31）。真因の全貌が出た★
