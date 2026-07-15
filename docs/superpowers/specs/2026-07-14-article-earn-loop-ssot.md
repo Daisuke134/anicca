@@ -342,7 +342,19 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        ④ Substack EN は外部誘導でなく **native paywall**（platform 内 preview→subscribe が規範、HCR 型）
        ⑤ X 告知のタイムライン投稿はリンクを reply に置く（link penalty は投稿側に効く）
        → note 有料版の切り方は現状維持（Dais 判断: 切り位置は良い）。直すのは無料側の「終わらせ方」だけ。
-       → TODO: X live 記事の末尾を「この続き：」H2 から「まとめ+フッター」型へ編集し直す。
+       → [x] DONE 2026-07-16 05:04 JST: Dais が旧記事を非公開化 → team-lead が md を「まとめ4 bullets+フッター」型に書換え
+         → 旧draft削除 → 再ステージ → own-eyes 検証 → 再公開。**新 LIVE URL = `https://x.com/diceai0/status/2077484575299862907`**
+         （旧 URL `…2077478932589547795` は死んでいる。live verify: 画像4 / tallest 571px / PASS、fv7.png でまとめ+フッター+タイムスタンプ実見）
+         無料版 md の正本 = `~/.cloak/note-work/2026-07-12-agent-economy-jp-x-free.md`（この型を zenn/substack-ja にも使う）
+- [ ] #44 ★**X publish 経路の実バグ発見（2026-07-16 再ステージで踏んだ）: X_COVER 未設定だと本文の最初の図が cover に食われて黙って消える**★
+       実測: `publish-to-x.sh` は automaton 記事以外 X_COVER を設定しない（prep-x-md.py:61）→ cover 無し md では
+       `parse_markdown.py:342` が **images[0] を cover に採用** → fig1 が本文から消えた（figs:3 なのに composer images:2）。
+       エラーも WARN も出ない = #30 と同じ「画像が黙って消える」クラスの X 版。今回は verify の画像数チェックと own-eyes で捕捉。
+       workaround（今回使用）: `X_COVER=~/.cloak/note-work/eyecatch/agent-economy-eyecatch.png` を明示 export。
+       恒久修理 TODO: publish-to-x.sh が X_COVER 未設定かつ md 先頭が画像でない場合、prep 後の figs 数と parse 後の
+       content_images 数を突合して不一致なら FATAL（または eyecatch 必須化）。
+       ★一般法則: 「最初の画像 = cover」のような**暗黙の consume 規則**は、入力の形が想定と1つズレるだけで正当なデータを黙って食う。
+       consume する側と生成する側の数を突合するゲートが無い限り、この欠落は誰にも見えない。★
 
 ### PART J — DRAFT-ONLY をやめて直接公開する（Dais 決定 2026-07-16）
 - [ ] #41 ★**Dais の決定: loop は draft ではなく直接公開する**★
