@@ -172,7 +172,12 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] #43 無料版 generator **DONE** commit `18a7014e`（builder 実装、team-lead が独立検収: `--after-chars 3578` で手動正解と **diff byte 一致**を自分で再現、FATAL ガード発火も実測）
        実物: `scripts/_shared/make-free-version.py` + SKILL.md に7行の節。判断（summary bullets/paid-contents/切断位置）は agent が渡し、script は機械組立+ガード（teaser H2 / 全角ダッシュ / bullets 3-5 / 必須引数）。
        ★発見（builder 実測、二度と混同するな）: 手動正解の X 切断点は本文 **約3,578字** = note の有料ライン 2,500字 と**別物**。X 版の切断は「検証という核心を明かす直前」という編集判断であって、note の paywall 位置の機械コピーではない。→ **切断位置は記事ごとに agent が `--after-chars` で決める**（#18 eval の「無料側が引きの強い事実で終わるか」判定と接続）。default 2500 は目安にすぎない。★
-- [~] #35/#36 note 買い切り公開 script 汎用化 + タグ実測（builder 実行中）
+- [~] #35/#36 note 買い切り公開 script 汎用化 + タグ実測（builder 実行中。WIP snapshot = `997c1452`）
+- [x] #37 price-check.py **DONE** commit `3b75f3c2`（team-lead 自作・live 実測: 有料5件、メンバーシップ最小記事数 floor=295、我々6本 → buy_once 提案。判断は agent、script は測るだけ）
+       ★気づき: `anicca123` の hasCircle が **true** になっている（メンバーシップ未作成のはずなのに）。要確認 — Dais が何か作ったか、hasCircle の意味が違うか。★
+- [x] #20 reality-gate.sh **DONE** commit `d2179217`（team-lead 自作。note=API状態+有料設定readback+匿名閲覧+画像生存 / x=x_fullverify 委譲 / ssr=substack等の \uXXXX decode 込み content+画像生存。live 3実物で E2E: note PASS、価格違い negative FAIL 発火、ssr PASS+negative 発火、x PASS。px 検査は既存 per-platform verifier の持ち場）
+- [x] #17/#18 deslop-gate.sh + eval-gate.sh **DONE** commit `e3fdf9e6`（team-lead 自作。fresh sonnet が judge、checklist/rubric は焼かず skill 参照。実測: slop fixture → FAIL(違反6件、全角ダッシュ捕捉)、★本物の agent-economy 記事 → deslop FAIL(命題型H2等5件)・eval **34/50 FAIL** + fact_flags 3件（ACP取り分・Olas数値・自社実績が本文中で出典に紐付いてない）★ = gate は身内にも容赦ない、これが仕様。loop は PASS まで書き直しを強制される）
+       ★未配線: run.sh への組み込みは今朝 06:00 の run 完了後（実行中の script を書き換えない）。★
 
 ### PART B — skill を動くに
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
