@@ -1038,7 +1038,7 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   // Import spawn to get the child PID for SIGTERM forwarding
   const { spawn } = await import('node:child_process');
   const { access } = await import('node:fs/promises');
-  const { scrubPrivateKeys: scrub, redactPrivateKeyPatterns: redact } = await import('./env-filter.mjs');
+  const { scrubPrivateKeys: scrub, scrubUserPIIEnv: scrubPII, redactPrivateKeyPatterns: redact } = await import('./env-filter.mjs');
 
   // Resolve skill path
   let skillPath;
@@ -1058,7 +1058,7 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   catch { return { output: `${slot} skill not found`, exitCode: null, timedOut: false, notFound: true }; }
 
   const timeoutMs = cfgNum(config.SKILL_TIMEOUT_S, 120) * 1000;
-  const childEnv = buildSkillEnv(slot, wakeId, config, scrub, args);
+  const childEnv = buildSkillEnv(slot, wakeId, config, scrub, scrubPII, args);
 
   return new Promise((resolve) => {
     let output = '';
@@ -1102,8 +1102,8 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   });
 }
 
-function buildSkillEnv(slot, wakeId, config, scrub, args) {
-  const base = scrub(process.env);
+function buildSkillEnv(slot, wakeId, config, scrub, scrubPII, args) {
+  const base = scrubPII(scrub(process.env));
   // O4: pass the model's decision to EVERY skill as $ANICCA_ARGS (JSON). HARD RULE #0 = the skill is
   // the tool, the MODEL decides the strategy/params; the skill reads its decision here. Optional —
   // skills keep a safe default when args is absent.
