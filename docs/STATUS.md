@@ -231,7 +231,9 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T2b-1** | TS_AUTHKEY を取る | 鍵が file にあり fingerprint で照合できる | ★DONE 2026-07-16★ 下記 |
 | **T2b-2** | tsbridge を通す — 3ノードが各自の FQDN で Funnel を上げる | 外部から実 HTTP が返る。franklin1 が**自分の**公開 URL を持つ | ★DONE 2026-07-16 05:15★ 下記 |
 | **T2b-3** | tsbridge を launchd 化 | 殺しても蘇り、外部から届く | ★DONE 2026-07-16 05:26★ 下記 |
-| **T2b-4** | 各 loop に**自分の** `X402_PUBLIC_URL` を配る。franklin1 = 配線済(05:31)。残り: franklin2(共有 :10000 を自分の FQDN へ) → claude-p(:8412) → 稼ぎ頭 :8411 は専用ノードを足してから最後 | franklin1 が自分の URL で Bazaar に載り、inflow が $0 でなくなる | ★franklin1 配線済・loop の wake 待ち★ |
+| **T2b-4** | 各 loop に**自分の** `X402_PUBLIC_URL` を配る | 3 loop の**実プロセス env**が各自の FQDN を持つ | ★DONE 2026-07-16 05:38★ 下記 |
+| **T2b-5** | ★次★ loop の wake を観測する（**手を出さない**）。`run.sh` を叩いたら「Dais が稼がせた」= INV-F 違反 | 下記4段の観測点。④だけが「稼いだ」 | ★観測中★ |
+| **T2b-6** | claude-p 店②(:8411 / `0x810f` / $0.011 の唯一の稼ぎ手)を専用ノードへ移す。tsbridge に4つ目の service を足す必要あり。**最後に触る** | :8411 が自分の FQDN で配信し、売上が落ちない | T2b-5 の結果を見てから |
 
 ### ★T2b-4: franklin1 に広告を配線した（2026-07-16 05:31）。真因の全貌が出た★
 
@@ -276,10 +278,37 @@ ai.anicca.x402-seller-8414.plist（loop が生成した実物）:
 | `run.sh:303` | `<key>X402_PUBLIC_URL</key><string>${X402_PUBLIC_URL:-}</string>` → loop の env から seller plist へ書く。**`:-` の既定が空だったので空が書かれていた**。loop plist に値が入った今、次の wake で実 URL が書かれる |
 | `env-filter.mjs:19` | `/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/` = **denylist のみ**。`X402_*` は元から素通り。→ 「ALLOW set に X402_PUBLIC_URL を追加した」という前セッションの記述が**虚偽だった**ことの再確認（追加は不要だった） |
 
+**★T2b-4 DONE — 3体とも自分の住所を持った（2026-07-16 05:38）★**
+
+`ps eww` でプロセスの**実 env** から確認（plist を読み返して満足しない）:
+
+| pid | ANICCA_HOME | port | X402_PUBLIC_URL |
+|---|---|---|---|
+| 59045 | `.blockrun` (franklin1) | 8414 | `https://franklin1.tail7a0ba4.ts.net` ← **新規**（元は無し = $0 の真因） |
+| 68389 | `.franklin2-home/.blockrun` (franklin2) | 8413 | `https://franklin2.tail7a0ba4.ts.net` ← 元は共有 `:10000` |
+| 70525 | `.anicca-founder` (claude-p) | 8412 | `https://claude-p.tail7a0ba4.ts.net` ← **新規** |
+
+稼ぎ頭は無傷: reload 後も `:8411`(pid 628) と `:8412`(pid 577) は LISTEN 継続。
+
+★**観測の失敗を1つ記録**: 最初 `ANICCA_INSTANCE` で loop を列挙し、claude-p が出てこないので「死んだか」と疑った。
+実際は **claude-p の plist に `ANICCA_INSTANCE` が無い**だけで、loop は pid 631 で生きていた。**壊れていたのは観測の方**。
+`ANICCA_HOME` は全 instance が持つので、これを軸にすれば漏れない（identity の軸 = HOME、という T0 の結論と同じ）。
+一般法則: **列挙のキーに「全個体が持つとは限らない属性」を使うと、存在するものを不在と報告する。**
+
 **次にやること = 何もしない。loop の wake を待って観測する。**
 `run.sh` を手で叩かない（叩けば「Dais が稼がせた」になり INV-F 違反 → [[feedback_watch_loops_never_do_their_work]]）。
-観測点: ①seller plist の `X402_PUBLIC_URL` が実 URL に変わる ②manifest の `resource` が絶対 URL になる
-③`bazaar-scan.mjs` が `0x3EcC` を返す ④`verify-inflow.mjs` の inflow が $0 でなくなる。
+
+観測点（全て loop 側が動かすもの。①→④の順に進む）:
+```
+① seller plist(x402-seller-8414) の X402_PUBLIC_URL が空 → 実 URL に変わる
+     run.sh:303 が loop の env から書き直す。10分毎の wake で発火
+② manifest の resource が "/research" → "https://franklin1.tail7a0ba4.ts.net/research"
+③ bazaar-scan.mjs が 0x3EcC の resource を返す
+     ★ここで詰まる公算大★ T3 で公式仕様から確定済み = 掲載には settle が1回必要
+     ("verify alone is not enough")。franklin1 の loop が self-pay を1回通す必要がある
+     (INV-7 で収益に数えない、着火専用) = T4a。公開 URL がやっと在るので今アンブロック
+④ verify-inflow.mjs の inflow が $0 でなくなる ← ★ここだけが「稼いだ」★
+```
 
 ### ★T2b-3 DONE — 席が永続化した（2026-07-16 05:26）★
 
