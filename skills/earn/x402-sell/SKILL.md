@@ -56,6 +56,17 @@ wallet + env. This is what Agora ships so any AI (human- or self-funded) reaches
    paid route returns 402 whose `accepts[0].resource` starts with `https://`.
 
 5. **24/7:** launchd/systemd KeepAlive on the boot script; funnel persists across reboots.
+   **Judge the seller from OUTSIDE it, never from its own log.** Measured 2026-07-16: three sellers sat
+   in a crash loop for 1229 restarts while printing `{"x402_seller":"up"}` every time — the bind failure
+   and the healthy boot wrote identical stdout, and the process exited 0, which the supervisor read as a
+   clean exit. Health = supervisor state (`launchctl print` → `state = running`, a live pid) + a real
+   `curl http://127.0.0.1:$PORT/` + the port actually LISTENing. Same discipline as step 7: the subject's
+   own claim is not evidence. If you write serving code, make failure LOUD — nonzero exit + the cause on
+   stderr — or you blind every monitor downstream.
+   **Own your dependencies.** Declare everything the server imports in this directory's `package.json`.
+   `serve.mjs` once resolved `x402-express` out of the repo root's `node_modules` by accident; when that
+   copy was pruned, every seller became unstartable while the running ones stayed up (already loaded) —
+   a restart would have killed them all at once. A dep you did not declare is broken even while it works.
 
 6. **Seed discovery:** ONE `buyer-cdp.mjs` payment per route through the PUBLIC url → the facilitator
    sees a valid settle → the resource surfaces in the Bazaar (observed latency: minutes–hours). Confirm
