@@ -111,6 +111,14 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 
 方針（2026-07-15 実態反映）: **loop は既に毎日 draft を 5platform に生産できてる。金の blocker は3つだけ = ①X再login ②draft を publish ③換金ON。** 他(VISUALS/gate/self-improve)は品質・堅牢・scale の改善であって初¥の blocker ではない。TikTok は後。
 
+### ★BUILD方法（決定 2026-07-15、Anthropic 裏取り済）= manual-first-then-skillify
+- **Option A 採用**（手で1本 GREAT draft にする→gap を skill に焼く→loop 再現→ログで二次研磨）。Option B(盲目で skill 先直し)は非推奨。
+- 出典: Anthropic「Agent Skills」= "discover what context Claude actually needs, instead of trying to anticipate it upfront" / "Start with evaluation" / skill-creator の draft→run→human eval→rewrite ループ。実例: gpgkd906/auth9(human review→AI iterate, 20周で収束)。
+- **VISUALS ツール（#16、deterministic script として skill に焼く。prose に書かない）**:
+  - Mermaid→PNG: `mmdc`(mermaid-cli、md内の```mermaid を一括置換) or mermaid.ink(hosted、Chromium不要)
+  - 表→PNG: `node-html-to-image`(puppeteer) or `vercel/satori`
+  - eyecatch: satori/node-html-to-image でブランド枠+文字、hero art は image-gen(`mcp blockrun_image`)。★文字は raster model でなく satori で（text崩れ防止）★
+
 ### ★TIER 0 — 初¥への最短路（これだけが金の直接 blocker）
 - [x] M-X   #15 X re-login ✅DONE(2026-07-15): Dais 手動login → `session_vault.py dump` で vault に bank(285 cookies, x.com banked=True)。creds = `~/.openclaw/identity/social-accounts/x.json`(email kodaisuke@keio.jp + password len15)。
       ★教訓: 生Playwright+高速決め打ちで X anti-bot(電話認証壁)を踏んだ → **browser作業は必ず daily-driver skill(`~/anicca/skills/browser/`)経由・agentic で**（CLAUDE.md の掟）。
