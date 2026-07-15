@@ -187,7 +187,7 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [x] 今朝 06:00 run は OAuth 失敗で死亡（rc=1、5秒。team-lead の gate テスト claude 並走との refresh 競合疑い）→ 認証復旧確認後、**新 gate 込みで 06:06:40 手動再発火**（実行中）。
 - [ ] #14(task) seo-gate が app 送客時代の遺物要求（aniccaai.com anchor + App Store deeplink 必須、H2≤7）を保持 = note funnel と不整合。要更新。
 - [x] zenn slug rename **DONE**（zenn-articles commit `2087edc0`: 4本を a-z0-9 slug へ git mv、published:false 不変）+ SKILL.md に slug 規約焼き込み（`a30a3846`）。
-- [ ] #15(task) ★**zenn.dev のログインが daily-driver に存在しない**（実測: cookie は _ga のみ、dashboard はログイン画面）★。deploy は GitHub 連携のサーバ側同期だが、**下書きの実在は dashboard でしか確認できない** → Google OAuth でログイン確立 + 5本の下書き実在 screenshot 確認 + session vault bank。note-paid-builder 割当済み、**browser 作業は daily pass 完了後**（CDP :9222 lockdir 衝突防止）。
+- [x] #15(task) **DONE 2026-07-16 06:14**: Google OAuth(keiodaisuke@gmail.com)で zenn ログイン確立、5本の下書き実在を dashboard screenshot で確認（team-lead も own-eyes 検収）。GitHub 連携同期は正常（rename 後「5分前に同期」）。ledger 記録済み。★発見: zenn アカウントに未把握の記事40本以上（cronジョブ/Claude Code/OpenClaude 系）— 別パイプラインの遺物か要 Dais 確認、未接触★（旧記述: zenn.dev のログインが daily-driver に存在しない（実測: cookie は _ga のみ、dashboard はログイン画面）★。deploy は GitHub 連携のサーバ側同期だが、**下書きの実在は dashboard でしか確認できない** → Google OAuth でログイン確立 + 5本の下書き実在 screenshot 確認 + session vault bank。note-paid-builder 割当済み、**browser 作業は daily pass 完了後**（CDP :9222 lockdir 衝突防止）。
 - [~] #13(task) kroki 縦長図の padding 補正: freever-gen-builder が非破壊実験完了（fig1 276x606 → 520x606 canvas、728px ストレッチ後の実表示 848px < 900、拡大なしでボケなし。PIL 12.2.0 はシステム python3 に実在確認、import 失敗時 FATAL で依存明示）。実装は pass 完了後に _shared/embed-mermaid-substack.py へ。
 
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
