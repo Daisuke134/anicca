@@ -167,6 +167,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 | P6 | cron実挙動 | plist loaded だが no-op/disabled の可能性。実際に何をするか要確認 | #25 |
 | P7 | X auth | script有、session有効性 未確認 | #15 |
 
+### PART L — loop 自動化の実装（2026-07-16、MASTER 順序の執行記録）
+- [x] #44 X_COVER 2重ゲート **DONE** commit `3c796b21`（team-lead 実装、negative test 実測: 無 X_COVER → FATAL exit 4）
+- [x] #43 無料版 generator **DONE** commit `18a7014e`（builder 実装、team-lead が独立検収: `--after-chars 3578` で手動正解と **diff byte 一致**を自分で再現、FATAL ガード発火も実測）
+       実物: `scripts/_shared/make-free-version.py` + SKILL.md に7行の節。判断（summary bullets/paid-contents/切断位置）は agent が渡し、script は機械組立+ガード（teaser H2 / 全角ダッシュ / bullets 3-5 / 必須引数）。
+       ★発見（builder 実測、二度と混同するな）: 手動正解の X 切断点は本文 **約3,578字** = note の有料ライン 2,500字 と**別物**。X 版の切断は「検証という核心を明かす直前」という編集判断であって、note の paywall 位置の機械コピーではない。→ **切断位置は記事ごとに agent が `--after-chars` で決める**（#18 eval の「無料側が引きの強い事実で終わるか」判定と接続）。default 2500 は目安にすぎない。★
+- [~] #35/#36 note 買い切り公開 script 汎用化 + タグ実測（builder 実行中）
+
 ### PART B — skill を動くに
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
 - [ ] #14 T2 note login Vue reactivity bug 修理
