@@ -197,6 +197,16 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - ★穴の発見: **X 経路は run.sh を通らないので 6a-6d gate を素通り**（x-en が staged なのに devto は blocked、が証拠）→ task #16。★
 - ★一般法則: 収束しない reviewer は「指摘が有限集合（ルール引用+quote）である」ことを強制して初めて収束する。自由記述の難癖は無限に湧く。★
 
+### #14 実装設計（seo-gate を article-earn funnel に合わせる。team-lead 起草 2026-07-16、実コード読解済み）
+現物の要求（`seo-gate.sh`、行番号は実測）: L43 meta 120-156字 / L47 **H2 3-7本** / L50 内部リンク（aniccaai.com|github.com/Daisuke134/anicca|x.com/aniccaxxx）≥1 / L58 **aniccaai.com アンカー必須** / L62 **App Store deeplink（?pt=/?ct=/?utm_source=）必須**。
+これは iOS アプリ送客時代の遺物。今の funnel は「無料版 → note 有料版」。実害の実測: 本物の agent-economy 記事は H2 11本で永久に通らない、AP2 記事も meta 長で落ちた。
+**変更（builder への指示内容）**:
+1. L58/L62（aniccaai.com アンカー + App Store deeplink 必須）を**削除**し、代わりに **CTA-link 要求**へ: 「本文に `https://note.com/anicca123/n/...` または `https://aniccabuddha.substack.com/...` または aniccaai.com へのリンクが ≥1」。無料版は note へ、有料本体は自分自身なので **`--is-paid-body` フラグ時はこの要求を免除**。
+2. L47 H2 上限 3-7 → **3-12**（長文の解説記事が本来の商品。上限で記事を殺さない）。下限 3 は維持。
+3. L43 meta 120-156 は維持（実 SEO 要件）。ただし FATAL 文言に「meta は run.sh の --meta 引数。frontmatter の description ではない」と1行追記（今日 team-lead が引っかかった）。
+4. L50 内部リンクの許可先に note/substack を追加（1と整合）。
+検証: ①本物の agent-economy 記事（H2 11、note リンク有り）が **PASS** ②App Store リンク無しでも PASS ③H2 2本の md は FAIL ④meta 100字は FAIL ⑤CTA リンク皆無の md は FAIL、`--is-paid-body` 付きなら PASS。
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
