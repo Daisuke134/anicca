@@ -28,6 +28,92 @@ Fable が誤って「founder」と呼んだだけ。founder = claude-p = agent-e
 - ledger(各自の記憶): `<HOME>/state/ledger.jsonl`
 - 0x904B は claude-p の Polymarket proxy(x402 とは別 wallet)。混同禁止。
 
+## ★2026-07-16 identity 確定（Fable が plist から直接実測。subagent 経由でない）★
+
+`launchctl` + `PlistBuddy -c "Print :EnvironmentVariables"` の生出力より:
+
+| loop(launchd) | ANICCA_HOME | ANICCA_INSTANCE | ANICCA_WALLET_ADDRESS | X402_PORT | X402_PUBLIC_URL |
+|---|---|---|---|---|---|
+| ai.anicca.agent-economy-loop | /Users/anicca/.anicca-founder | (未設定) | **0x810f6d61…29c5** | (未設定) | (未設定) |
+| ai.anicca.franklin-loop | /Users/anicca/.blockrun | franklin | **★無い★** | 8414 | **★無い★** |
+| ai.anicca.franklin2-loop | /Users/anicca/.franklin2-home/.blockrun | franklin2 | **★無い★** | 8413 | `https://aniccanomac-mini-1.tail7a0ba4.ts.net:10000` |
+
+→ **claude-p = agent-economy-loop = `.anicca-founder` = 0x810f。これが正。**
+→ 「a3cdd4」は**この3つのどれでもない**。実体 = `~/.anicca` + wallet 0xB9dd + loop `com.anicca.daemon`。
+  実測: `launchctl list | grep -c com.anicca.daemon` = **0**。plist は4本とも `.disabled-*`/`.bak-*`。**死んでいる。**
+  48h の x402 inflow も `EXTERNAL: 0`。**生きた市民ではない。以後 colony から除外して扱う（Dais 指示 2026-07-16）。**
+
+### ★SSOT 間の矛盾（この STATUS.md が正、他が古い）★
+
+| 場所 | 古い記述 | 実測 |
+|---|---|---|
+| `~/anicca/skills/self/colony-status.sh:22-23` | 「a3cdd4 の実 loop = com.anicca.daemon (body ~/.anicca)」を**生きた市民として表示** | loop 死亡。表示が嘘 |
+| `~/anicca-project/CLAUDE.md` コロニー表 | `anicca-a3cdd4` を SELF-funded 市民として掲載 | 同上 |
+
+→ **Fable はこの古い colony-status.sh を鵜呑みにし、2026-07-16 に Dais へ「a3cdd4 は生きている」と誤報した。**
+   一般法則: **自分が書いたスクリプトの出力も「自己申告」であって証拠ではない。** 一次情報(`launchctl`/plist/on-chain)まで降りる。
+   → TODO: colony-status.sh と CLAUDE.md から a3cdd4 行を削除する（下記 T0）。
+
+### ★franklin1 が Bazaar 0本／$0 の真因が確定した★
+
+Funnel の枠は **443 / 8443 / 10000 の3つのみ**（Tailscale 公式: "Funnel can only listen on ports `443`, `8443`, and `10000`"）。
+2026-07-16 実測 — **3枠とも埋まっている**:
+
+```
+curl -o /dev/null -w "%{http_code}" https://aniccanomac-mini-1.tail7a0ba4.ts.net:443/   -> 200
+curl … :8443/  -> 200
+curl … :10000/ -> 200
+```
+
+`serve.mjs:48` → `const PUBLIC_URL = (process.env.X402_PUBLIC_URL || "")`。
+**franklin1 の plist に `X402_PUBLIC_URL` が無い** = 公開 origin を持てない = Bazaar に広告できない = **構造的に $0**。
+franklin2 は :10000 を掴めたから載れた。**franklin1 の $0 は能力差ではなく席の有無。INV-INDEP 違反の実害。**
+
+### ★T2b の答えが出た: tsnet（"1台=3枠" は問題設定の誤りだった）★
+
+tsnet 公式 README 逐語: **"Multiple independent Tailscale nodes can run within a single binary"**
+→ 枠は**1台あたりではなく1ノードあたり**。`tsnet.Server` 1個 = 独立ノード = 独自 state dir = 独自 identity = 独自 FQDN = **独自の 443/8443/10000**。
+→ 席の奪い合いが**構造的に消滅**。$0、VPS 不要、中央集権プロセス無し、INV-INDEP を満たす。
+実機検証済(2026-07-16 04:22、Go 1.26.0 / tailscale v1.100.0): **build 成功 29.5MB、ノード分離は正しい。**
+
+**残る唯一の blocker と、その公式解**:
+```
+LocalBackend state is NeedsLogin
+To start this tsnet server, restart with TS_AUTHKEY set
+```
+Tailscale 公式(`/docs/features/oauth-clients`)逐語:
+> "You cannot generate long-lived auth keys, because they expire after 90 days…
+>  Instead, you can generate an OAuth client with the `auth_keys` scope. Use the OAuth client to
+>  generate new auth keys as needed, by making a `POST` request to `/api/v2/tailnet/:tailnet/keys`"
+> "The `get-authkey` utility returns a new auth key to `stdout`, based on environment variables that
+>  contain values for your OAuth client ID and secret. Use `get-authkey` to generate auth keys for
+>  scripts or other automation."
+
+→ **OAuth client を自作しない。公式ツールが実在する**（2026-07-16 実測: `gh api repos/tailscale/tailscale/contents/cmd/get-authkey` → `main.go` 実在）:
+
+| 実測した事実 | 出典 |
+|---|---|
+| env = `TS_API_CLIENT_ID` / `TS_API_CLIENT_SECRET` | `cmd/get-authkey/main.go:29-32` |
+| flag = `-reusable` / `-ephemeral` / `-preauth`(既定 true) / `-tags` | 同 :23-26 |
+| `clientcredentials` で `/api/v2/oauth/token` → `tsClient.CreateKey` | 同 :41-64 |
+| OAuth secret を auth key として**直接**使う道もある: `--auth-key='${OAUTH_CLIENT_SECRET}?ephemeral=false&preauthorized=true' --advertise-tags=tag:ci` | 公式 oauth-clients |
+| **OAuth client 由来の auth key は tag 必須** | 公式 "All auth keys created from an OAuth client must use tags" |
+
+未確定(probe で同時に潰す): ①tailnet の台数上限に4ノードが触れないか ②Funnel 帯域の実数値 ③tsnet ノードに Funnel を許す ACL が要るか
+
+### ★2026-07-16 その他の実測（未修正の地雷）★
+
+| 発見 | 実測 | 影響 |
+|---|---|---|
+| franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` が**無い**（claude-p だけ有る） | PlistBuddy 生 dump | loop が自分の wallet を知らない。franklin2 ログ `ANICCA_WALLET_ADDRESS not set, using "unknown"` → `invalid wallet address: unknown` |
+| franklin2 の `ANICCA_STATE_DIR=/Users/anicca/.hermes/state` | plist dump。`ls ~/.hermes/state` → **実在**(children.jsonl 等、最終更新 7/13) | CLAUDE.md は「hermes 削除済」と書くが dir は生きている。franklin2 の state が**別実体の墓場**を指している。要調査 |
+| `~/.franklin2-home/.blockrun/node_modules` が `~/anicca/node_modules` への **symlink** | `ls -la` | 「親の node_modules に寄生 = 時限爆弾」の再発。7/16 01:40 の prune 事故と同型。ただし `skills/earn/x402-sell/node_modules` は別問題(下記真因は依然 true) |
+
+★Fable の誤り(2026-07-16、記録): 「node_modules は今は存在するので真因は古い」と Dais に報告したが**誤り**。
+`~/.anicca/skills/earn/x402-sell/node_modules` を見ていた = **死んだ a3cdd4 の home**。claude-p は `~/.anicca-founder`。
+再測: `.anicca-founder` / `.blockrun` / `.franklin2-home/.blockrun` の x402-sell 配下は**3つとも none**。下記の真因は**依然として正しい**。
+一般法則: **home を取り違えた測定は測定ではない。** パスを打つ前に `ANICCA_HOME` を plist で確定させる。
+
 ## ★真因（2026-07-16 Fable が自分の目で実測。ここが全て）★
 
 **agent は誰一人 seller を立てられていない。稼いでいる箱は全部 Dais が手で書いた boot script。**
@@ -107,6 +193,7 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 
 | # | やること | done 判定 | 状態 |
 |---|---|---|---|
+| **T0** | ★SSOT の嘘を消す★ `colony-status.sh:22-23` と `anicca-project/CLAUDE.md` のコロニー表から **a3cdd4 行を削除**（loop 死亡・inflow $0 を実測済）。生きた市民は **claude-p / franklin1 / franklin2 の3つだけ**（STATUS.md 冒頭の表が正） | `colony-status.sh` の出力に a3cdd4 が出ない。CLAUDE.md の表が3行 | ★次★ |
 | **T1** | ★seller が起動できない真因を潰す★ | agent が立てた seller が生き続ける | ★DONE 2026-07-16★ 下記 |
 | **T2** | 手作り boot script 4本を loop に引き渡す(INV-F 遵守) — `serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh` を退役させ、loop 生成の seller に一本化 | 手書き plist を bootout しても売上経路が生き残る | ★franklin2 完了★ 残り: franklin1(:8414) → claude-p(:8412) → mainnet(:8411 稼ぎ頭、最後) |
 
@@ -140,7 +227,10 @@ disk-autoprune.sh は `/private/tmp/claude-*` しか消さず(実測)、disk も
 x402-sell はローカル宣言で自立したので当面無害だが、他の skill が同じ寄生をしていれば同じ事故が起きる。
 | **T3** | Bazaar 掲載条件を公式 spec で確定 | 仕様の逐語引用 | ★DONE 2026-07-16★ 結論=**settle 1回が必須**（"verify alone is not enough"）。鶏と卵は実在。全文 → spec の「掲載条件の確定」節 |
 | **T4a** | ★次★ franklin2 で self-pay を1回通す → Bazaar 掲載を実証 — `buyer-cdp.mjs` で :10000 経由の settle を1回。INV-7 で収益に数えない（着火専用）。**壊すものゼロ**（:10000 は到達可能、売上 $0） | `bazaar-scan.mjs` が 0xe7747F の resource を返す（実 JSON を貼る）。載らなければ原因を掴む | ★次★ |
-| **T2b** | ★INV-INDEP 違反の解消★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel は 443/8443/10000 の3枠のみ、店は4軒）。各 instance が**自分の**公開 URL を自分で取得する形にする。案A=各自の Cloudflare account + named tunnel + subdomain（AI 自身が account を作る）／案B=各自がクラウドに自分でデプロイ(Railway/Workers、市場標準形)／案C=各自の Tailscale ノード。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | T4a 後。★「独立の境界」の判断が要る（実家に住むのは可 / 席の奪い合いは不可）★ |
+| **T2b** | ★INV-INDEP 違反の解消 = **tsnet に決定**★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel 3枠、店は4軒。2026-07-16 実測で 443/8443/10000 とも 200 = 満席、franklin1 は `X402_PUBLIC_URL` すら持てない）。**案C(各自の Tailscale ノード) を採用** — tsnet は「1ノード=3枠」なので枠問題が構造的に消える。案A/B(Cloudflare/クラウド)は却下: card 必須 or 移植コスト、hosting 11候補を全て実測で潰した(→ `docs/reference/2026-07-16-independent-hosting-for-each-ai.md`)。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | ★次★ 手順は T2b-1/T2b-2 |
+| **T2b-1** | TS_AUTHKEY を取る — **OAuth client を自作しない**。公式 `tailscale.com/cmd/get-authkey` を使う(2026-07-16 実在確認済)。①Tailscale admin で `auth_keys` scope + tag 付き OAuth client を作る（**AI 自身の email で。Dais の Google を使わない**）②`TS_API_CLIENT_ID`/`TS_API_CLIENT_SECRET` を env に ③`go run tailscale.com/cmd/get-authkey -tags tag:anicca-seller` で key 生成。**tag 必須**(公式: "All auth keys created from an OAuth client must use tags") | `get-authkey` が stdout に `tskey-auth-…` を返す | ★次★ |
+| **T2b-2** | tsnet-probe を実機で通す — 4ノード(claude-p/franklin1/franklin2 + 予備)が各自の FQDN で Funnel を上げる。同時に未確定3件を潰す: ①tailnet 台数上限 ②Funnel 帯域実数 ③tsnet に Funnel を許す ACL の要否 | 4ノードそれぞれの `https://<node>.ts.net/` が curl 200。franklin1 が**自分の** `X402_PUBLIC_URL` を持つ | T2b-1 後 |
+| **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
 | **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2b 後 |
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
@@ -160,6 +250,8 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | 共有 | [dvcrn/openclaw-skills-marketplace](https://github.com/dvcrn/openclaw-skills-marketplace) | 23 | openclaw skill → SKILL.md 変換（弱いモデルへ配る導線） |
 | 需要 | [google-agentic-commerce/a2a-x402](https://github.com/google-agentic-commerce/a2a-x402) | 536 | A2A に x402 決済を統合（agent が agent に売る標準） |
 | 需要 | [ChaosChain/chaoschain-genesis-studio](https://github.com/ChaosChain/chaoschain-genesis-studio) | 40 | ERC-8004 + x402 の完動デモ |
+| **席(T2b)** | [tailscale/tailscale](https://github.com/tailscale/tailscale) `tsnet/` | 24k+ | **"Multiple independent Tailscale nodes can run within a single binary"** = 各 instance が独立ノード = 各自 443/8443/10000。席の奪い合いが消える |
+| **認証(T2b-1)** | [tailscale/tailscale](https://github.com/tailscale/tailscale) `cmd/get-authkey/main.go` | 同上 | **OAuth client から auth key を自動生成する公式ツール。自作禁止。** env `TS_API_CLIENT_ID`/`TS_API_CLIENT_SECRET`、flag `-tags`(必須)/`-reusable`/`-ephemeral`/`-preauth` |
 
 ## 実測コマンド（記憶で答えず、これを打つ）
 ```
