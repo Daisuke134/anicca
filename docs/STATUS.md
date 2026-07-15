@@ -222,9 +222,53 @@ home に配り、launchd KeepAlive が再試行して立った。伝播は 5.5�
 ★死因2の教訓（一般法則）: **「up」と自己申告するログを監視の根拠にしてはいけない。** exit code と実 curl だけが信号。
 「稼いでいる」の判定を on-chain 実測に限る原則と同型 — 主体の自己申告は証拠にならない。
 
-★未解明（要監視）: 7/16 01:40 に repo ルート `node_modules/x402-express/dist` を消したのは誰か。
-disk-autoprune.sh は `/private/tmp/claude-*` しか消さず(実測)、disk も 24% で余裕 → 犯人ではない。
-x402-sell はローカル宣言で自立したので当面無害だが、他の skill が同じ寄生をしていれば同じ事故が起きる。
+★★2026-07-16 05:55 解決 — 犯人は `~/scripts/disk-cleaner.sh`。しかも被害は1件ではなく153件だった★★
+
+`disk-autoprune.sh` を無罪と判定したのは正しかったが、**容疑者を1体しか調べていなかった**。真犯人:
+
+```bash
+# 旧 disk-cleaner.sh:179-183（com.anicca.disk-cleaner が定期実行）
+for root in "$HOME/anicca-project" "$HOME/anicca" "$HOME/.openclaw" ...; do
+  find "$root" -type d \( -name node_modules -o ... -o -name dist -o ... \) -mtime +7 -prune \
+  | while read -r d; do is_protected "$d" && continue; rm -rf "$d"; done
+done
+```
+
+**機序（find の評価順序の罠）**:
+```
+-prune は「先行条件が全て真」の時しか実行されない
+   ① node_modules 自体は npm install で mtime が新鮮 → -mtime +7 に外れる
+   ② よって -prune が発火しない → find が node_modules の★中へ降りる★
+   ③ 中の各パッケージの dist/ は npm publish 時の古い mtime → 必ず +7 に該当
+   ④ rm -rf される
+   ⑤ パッケージのディレクトリは残り、dist/ だけが消える ← 観測症状と完全一致
+```
+`is_protected` も無力だった: **全パターンが `*.js` 等のファイル拡張子向け**で、`dist` という**ディレクトリ名**にはどれも一致しない。
+
+**被害の実測（推測せず全数を数えた）**:
+| | |
+|---|---|
+| `package.json` が `dist/` を参照するのに `dist/` が無いパッケージ | **153個** |
+| 内訳 | `@solana/*`(web3.js, codecs-numbers…) / `@coinbase/wallet-sdk` / `@ethereumjs/*` / `@base-org/account` / `@metamask/*` / `x402-express` … = **crypto スタックが丸ごと壊死** |
+| 直接の症状 | 全 seller の `ERR_MODULE_NOT_FOUND`、`wallet-address-solana.mjs` の死 → **agent が自分の wallet アドレスすら取得できない** |
+
+**修正（`~/scripts/disk-cleaner.sh`、commit `0763d48`）**: `node_modules` を**最優先で prune** して依存の中へ降りない構造に変更 + ループ内で `*/node_modules/*` を弾く二重防御。
+検証: 修正前 = `~/anicca/node_modules` 内から**4件**を削除候補に拾う / 修正後 = **0件**。`bash -n` OK。
+
+**復旧**: `npm install` は「90 packages added」と自己申告したが**dist は戻らなかった**（パッケージのディレクトリが在るので npm が再展開しない）。
+→ `npm ci` で lock から625パッケージを再構築。**実測: 破損 153 → 0**。
+→ 本番検証: `ANICCA_HOME=~/.blockrun node runtime/wallet-address-solana.mjs` → **`8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`**（$12.21 を持つ franklin1 自身の財布）が解決。**franklin1 は自分の金を使える。**
+
+★一般法則: **`find` の `-prune` は「先行条件が全て真」の時しか発火しない。** 年齢条件を prune より前に置くと、
+「新しいディレクトリの中の古いファイル」を掃除機が食う。**除外は年齢より先に評価させる。**
+★一般法則2: **無罪判定を1体で打ち切るな。** 「disk-autoprune は犯人でない」は真だったが、
+**同じ役割の job が他に2つ居た**（`com.anicca.disk-cleaner` / `com.anicca.emergency-disk-guard`）。
+容疑者リストは `launchctl list` から機械的に全部作る。
+★一般法則3: **`npm install` の「added N packages」は復旧の証拠にならない。** 実ファイルの存在を数える。
+
+★残る未解決: franklin2 の `.solana-session`(88 bytes) は存在するのに
+`wallet-address-solana.mjs` が `no Solana secret resolved for this instance` を返す。
+→ **franklin2 は鍵ファイルを持つが解決できない**（「鍵ゼロ」という当初の断定は誤り。台帳=wallets.json が無いだけ）。要調査。
 | **T3** | Bazaar 掲載条件を公式 spec で確定 | 仕様の逐語引用 | ★DONE 2026-07-16★ 結論=**settle 1回が必須**（"verify alone is not enough"）。鶏と卵は実在。全文 → spec の「掲載条件の確定」節 |
 | **T4a** | ★次★ franklin2 で self-pay を1回通す → Bazaar 掲載を実証 — `buyer-cdp.mjs` で :10000 経由の settle を1回。INV-7 で収益に数えない（着火専用）。**壊すものゼロ**（:10000 は到達可能、売上 $0） | `bazaar-scan.mjs` が 0xe7747F の resource を返す（実 JSON を貼る）。載らなければ原因を掴む | ★次★ |
 | **T2b** | ★INV-INDEP 違反の解消 = **tsnet に決定**★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel 3枠、店は4軒。2026-07-16 実測で 443/8443/10000 とも 200 = 満席、franklin1 は `X402_PUBLIC_URL` すら持てない）。**案C(各自の Tailscale ノード) を採用** — tsnet は「1ノード=3枠」なので枠問題が構造的に消える。案A/B(Cloudflare/クラウド)は却下: card 必須 or 移植コスト、hosting 11候補を全て実測で潰した(→ `docs/reference/2026-07-16-independent-hosting-for-each-ai.md`)。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | ★次★ 手順は T2b-1/T2b-2 |
