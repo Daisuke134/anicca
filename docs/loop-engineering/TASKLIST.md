@@ -89,8 +89,8 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 | 順 | ID | 1つの動作（atomic） | done の検証（実観測） | 状態 |
 |---|---|---|---|---|
 | 1 | READY | `~/.cloak/clip-accounts.json` の aiclipsvault を `status:"ready"` に（07-14 instagrapi 投稿成功=投稿できる。run.sh の skip を解除） | ファイルに `aiclipsvault "status":"ready"` | ✅ DONE 2026-07-15（JSON 妥当・grep 確認） |
-| 2 | ENABLE | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を1個作って load。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | ⬜ 次 |
-| 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか | logged-out で reel URL が HTTP 200（出なければ P3 soft-ban へ） | ⬜ |
+| 2 | ENABLE | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を1個作って load。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | ✅ DONE 2026-07-15（PID 登録・err.log に STEP LEARN start = 自走開始） |
+| 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか + Telegram 発火 | logged-out で reel URL が HTTP 200 + Telegram に reel link（出なければ P3 soft-ban へ） | 🔧 進行中（初回 pass が LEARN→…→POST を実行中） |
 | 4 | CLIP-BIO | clip_pass.sh に「website(external_url)欄に `<offer_link>?sid1=aiclipsvault` を入れる」judgment-driven step を足す（IG は website だけ clickable=金の入口、bio 本文 URL は不可）。idempotent | logged-out で profile に link 実見 | ⬜ |
 | 5 | SELFRUN | 俺が何もしない状態で翌日 `.last-post` が自動で進むのを確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 | ⬜ |
 | 6 | MEASURE-$ | Digistore dashboard から sid 別 EPC を読み REFLECT に渡す配線を1本入れる | `clip-metrics.jsonl` に $ 行が載る | ⬜ |
