@@ -159,6 +159,16 @@ Then read the ACTUAL rendered DOM/text on each page (not the claim text) to see 
 For any claim-specific page beyond the 3 ground-truth URLs (e.g. an individual /services/<id> or
 /requests/<id> detail page needed to check one specific claim), you may navigate freely as needed, but
 you MUST still call the nav helper above at least once per ground-truth URL listed below.
+
+NAVIGATE DIRECTLY, do not detour through a listing page first (real incident, realityverify-
+1784123104-80599: the judge burned its full time budget re-visiting https://coconala.com/message?
+fromMyPage=true before EACH individual DM, doubling real page loads for zero extra signal, and the
+round timed out before finishing). A talkroom/DM URL is fully addressable on its own — go straight to
+it:
+  - https://coconala.com/mypage/direct_message/<id>
+  - the トークルーム URL for a given talk id (e.g. from a talkroom/<id> reference in the claim)
+You do not need to open the inbox/list page first to "find" it. Likewise, do not re-visit a
+ground-truth URL a second time once you have already read it this round — one read is enough evidence.
 </task>
 
 <ground_truth>

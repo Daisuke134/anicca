@@ -30,13 +30,19 @@ CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TRAJECTORY_ROOT="$G/trajectory"
 N="${1:-5}"
-TIMEOUT_SECS=900   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case).
+TIMEOUT_SECS=1200   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case).
 # Raised 600->900 (2026-07-15, same incident as the --json-schema fix above): the heaviest
 # legitimate rounds (10 claims across 4 ground-truth URLs + several talkroom cross-checks) were
 # already observed taking up to ~462s under the OLD plain-text judge (realityverify-1784094300-58538,
 # spawn-to-recorded elapsed 462s) — close to the 600s cap even before schema enforcement. A live test
 # of the --json-schema judge on an equally heavy round (realityverify-1784109596-81027) ran the full
 # 600s and was killed by `timeout` with zero output, showing 600s no longer has enough headroom.
+# Raised 900->1200 (2026-07-15, incident realityverify-1784123104-80599): even after the entity-dedup
+# fix above cuts redundant navigations, a round with several talkroom-status claims can legitimately
+# need ~12-15 real sequential page loads (each ~15-70s, occasionally spiking much higher on real network
+# jitter — this incident had one single 181s gap between two ordinary nav calls) plus the 4 mandatory
+# ground-truth URLs. auditor.sh runs this hourly (StartCalendarInterval Minute=45), so 1200s (20min)
+# still leaves a 40min safety margin before the next scheduled run — there is no cadence conflict.
 
 mkdir -p "$G" "$(dirname "$SELFHEAL")"
 echo "$(date '+%F %T') gig_reality_verify: starting (N=$N)" >&2
@@ -84,6 +90,21 @@ claims = (
     + tail_rows("applied.jsonl", "applied")
     + tail_rows("earnings.jsonl", "earnings")
 )
+
+# ENTITY DEDUP (2026-07-15 self-fix, incident realityverify-1784123104-80599 timeout): the gig core
+# often self-corrects the SAME entity twice within one N-row tail window (e.g. edits service 4244506's
+# title, then a later pass verifies/re-fixes that same title) -- both rows are genuine claims in time,
+# but reality-verification only needs to check that entity's CURRENT real-page state ONCE; sending both
+# to the judge doubles a real Coconala navigation for zero extra signal. Root-caused from this incident's
+# trajectory: 5 shuppin rows collapsed to only 3 distinct service_ids (4244910, 4313386x2, 4244506x2),
+# and the judge still burned its full 900s timeout navigating 20 real pages without finishing. Keep only
+# the LATEST row per (kind, entity_id) -- deterministic bookkeeping on the same structural id fields
+# already used above (requestId/service_id), no judgment about claim content involved.
+deduped = {}
+for c in claims:
+    key = (c.get("kind"), c.get("requestId") or c.get("service_id") or "")
+    deduped[key] = c  # later occurrence in claims (== later in file) overwrites -> keeps latest
+claims = list(deduped.values())
 print(json.dumps(claims, ensure_ascii=False))
 PYEOF
 )
@@ -231,7 +252,7 @@ if [ "$JUDGE_RC" -eq 124 ]; then
   echo "$(date '+%F %T') gig_reality_verify: fresh judge TIMED OUT after ${TIMEOUT_SECS}s" >&2
   ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'timeout','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
   echo "$ROW" >> "$AUDIT_REALITY"
-  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_timeout','failure_reason':'fresh judge spawn timed out','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
+  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_timeout','kind':'timeout','failure_reason':'fresh judge spawn timed out','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
   echo "$ROW"
   exit 0
 fi
