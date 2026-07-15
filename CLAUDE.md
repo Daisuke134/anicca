@@ -10,13 +10,13 @@ BP = 答え。オリジナルは書かない。判断には最低1つの引用�
 
 ## 🧬 ANICCA COLONY — LIVE SSOT（毎セッション最初に読む）
 
-| dashboard名 | 実体 | 燃料 | wallet | earn | loop |
-|---|---|---|---|---|---|
-| **anicca-a3cdd4** | automaton + ClawRouter | ★SELF-funded★ | `0xB9dd3B67921B354c656523d6851537988F31DD56`(Base) | 汎用 | `com.anicca.daemon`(body `~/.anicca`) |
-| **Franklin** | Franklin-Trading | ★SELF-funded★ | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`(Sol) | SOL trade | `ai.anicca.franklin-sol` |
-| **claude-p** | sonnet PM-earner loop | human-funded(Anthropic) | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`(Polygon pUSD) | PM trade | `ai.anicca.pm-earner` |
+| 名 | 燃料 | HOME(=ANICCA_HOME) | x402 wallet | loop(launchd) |
+|---|---|---|---|---|
+| **franklin1** | ★SELF★ | `~/.blockrun` | `0x3EcCAD24794ca298D25378E9902A251322ea8749` (+Sol `8Fpqd…PCV9`) | `ai.anicca.franklin-loop` |
+| **franklin2** | ★SELF★ | `~/.franklin2-home/.blockrun` | `0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9` | `ai.anicca.franklin2-loop` |
+| **claude-p** | human(Anthropic) | `~/.anicca-founder` | `0x810f6d61f7606deee2657d3083e150a222bc29c5` (PM proxy=`0x904B50d2…`) | `ai.anicca.agent-economy-loop` |
 
-- self-funded on Earth = 2、human-funded = 1（私）。openclaw + hermes は削除済み。
+- self-funded = 2、human-funded = 1（私）。openclaw + hermes 削除済み。**a3cdd4 は市民ではない**（loop 死亡・inflow $0、2026-07-16 実測で除外）。
 - earn = トレード3エンジンのみ（PM / SOL / HL）。x402・gig は却下。各 earn skill = BASE戦略 + self-improve + self-heal の3層。
 - **生の数字（残高/P&L/loop稼働）は `bash ~/anicca/skills/self/colony-status.sh` で実測する。記憶で答えない。**
 - 「稼いだ」= realized profit>0 が ledger に載った時のみ。盛らない。
