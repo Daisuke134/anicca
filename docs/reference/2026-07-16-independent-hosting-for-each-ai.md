@@ -168,12 +168,49 @@ fmt.Printf("Listening on https://%v\n", s.CertDomains()[0])
 - x402 の売り手識別は URL のドメインではなく **`payTo` ウォレットアドレス**。schema 上 `resource` は任意の URL 文字列
 → パス分岐でも載るが、**tsnet で各自 FQDN が取れるなら使う必要がない**
 
-## 未検証（次にやること）
+## ★実機検証の結果（2026-07-16 04:22、実測。docs を読んだだけで進めなかった）★
 
-1. ★tsnet を実機で動かす★ — docs を読んで満足しない。franklin1（席が無い体）で1つ立てて、外部から curl 200 を
-   実測するまでやる。確認事項: (a) Go が入っているか (b) **TS_AUTHKEY が要るか**（tsnet の初回認証。人間の操作が
-   要るなら INV-INDEP に関わる — AI が自分で auth key を作れるか要調査） (c) 4ノードが tailnet の台数上限に
-   引っかからないか (d) Funnel の帯域制限（"non-configurable bandwidth limits" と公式にあるが数値は非公開）
+**ビルドは通る。ノードは独立する。ただし TS_AUTHKEY が必須。ノードは自動では生えない。**
+
+環境: Go 1.26.0 darwin/arm64 / tailscale v1.100.0 / バイナリ 29.5MB（`go get tailscale.com/tsnet` → `go build` 成功）。
+検証コード: `tsnet.Server{Dir, Hostname}` → `ListenFunnel("tcp", ":443")` → `httputil.NewSingleHostReverseProxy` で
+`127.0.0.1:<port>` へ流すだけの薄い proxy（scratchpad の `tsnet-probe/main.go`）。
+
+TS_AUTHKEY 無しで起動した実出力:
+```
+tsnet running state path .../state-probe/tailscaled.state
+tsnet starting with hostname "anicca-tsnet-probe", varRoot ".../state-probe"
+LocalBackend state is NeedsLogin; running StartLoginInteractive...
+To start this tsnet server, restart with TS_AUTHKEY set, or go to: https://login.tailscale.com/a/ec812a5015d61
+```
+→ state dir も Hostname も分離される（= 独立ノードの設計は正しい）が、**認証が通らないと Funnel は上がらない**。
+「docs に書いてあるから動く」で進めていたら、また詰んでいた（[[feedback_self_reported_status_is_not_evidence]] と同型）。
+
+### auth key の入手経路（公式逐語 + 実測）
+
+- 実測: `.env` に TAILSCALE/TS_ 系のキーは**無い**（あるのは ELEVENLABS 等のみ）
+- 実測: 現 tailnet = `keiodaisuke@gmail.com` / MagicDNS suffix `tail7a0ba4.ts.net` = **Dais のもの**
+- 公式（https://tailscale.com/kb/1085/auth-keys）:
+  > "consider using an **OAuth client**. You can use an OAuth client and the Tailscale API to
+  > **programmatically create auth keys**."
+  > "**Reusable**, for multiple uses. They can be used to connect multiple devices."
+  > "An auth key automatically expires after... between 1 and 90 days... you need to generate a new key."
+
+→ **「完全に人間ゼロ」ではないが「一度 OAuth client を作れば、以後は API で auth key を無限に自動生成」**できる。
+90日失効の問題も自動化で消える。OAuth client の作成自体は AI がブラウザでできる（CloakBrowser + AI own email）。
+
+### 残る判断: tailnet は誰のものか（INV-INDEP の境界）
+
+| 案 | 形 | 評価 |
+|---|---|---|
+| **案1** Dais の tailnet に4体がノードを持つ | 実家の中に各自の部屋と各自の玄関(FQDN) | $0・即日・席の奪い合いが構造的に消える。tailnet 自体は親のもの = **成長段階①（実家期）の解**として妥当。最終形ではない |
+| 案2 各 AI が自分の Tailscale アカウントを作る | 各自が自分の tailnet | より深い独立。4アカウント分の管理と無料枠の確認が要る |
+| 案3 稼いでからクラウドへ | Akash / Conway | **今は選べない**（Conway down / AKT 1.85-26 不足）。②自立期の解 |
+
+**未確認**: (a) 4ノードが tailnet の台数上限に触れないか (b) Funnel の帯域制限（公式に "non-configurable
+bandwidth limits" とあるが数値非公開） (c) tsnet ノードに Funnel を許可する ACL 設定が要るか
+
+## 未検証（次にやること）
 2. 動いたら4体に展開 → 各体の launchd に KeepAlive で常駐させる（seller 本体と同じパターン）
 3. Bazaar の resource URL が変わるので、掲載を取り直す必要がある（settle 1回 = T4a と同じ手順）
 4. Akash / Conway は当面棚上げ（Conway は down、Akash は AKT 1.85/26 で不足）。tsnet が通れば**どちらも要らない**
