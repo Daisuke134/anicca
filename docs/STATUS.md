@@ -407,6 +407,49 @@ daemon banner も `exec loop (model tiers from config; **funded=nvidia/llama-4-m
 一般法則2: **`|| true` はエラーを飲む。**「8個 Set した」つもりが1個しか効かず、**残存数を数えて初めて気づいた**。
 一括変更は必ず**変更後の残存数を数えて**検証する。
 
+### ★2026-07-16 06:10 検証結果 — 脳は生き返った。だが x402_sell は1度も実行されていない★
+
+**franklin1 の ledger（loop 自身が書いた記録。私の観測ではない）**:
+```json
+// BEFORE: {"kind":"wake_error", "error":"proxy_down", "model":"free/glm-4.7"}
+// AFTER:
+{"ts":1784149656,"wake_id":"00MRMKN1QNA051D268E74F4CE6","kind":"router_no_realized_action",
+ "sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+```
+- `exec loop … funded=nvidia/llama-4-maverick` 以降、**`THINK failed` / `WARNING: ANICCA_WALLET_ADDRESS not set` / `Balance fetch failed` が全て消滅**
+- 約200秒ごとに wake し、ledger を自分で書き、`ledger-franklin` ブランチへ自力 push（`57aa712..660dece`）
+- → **第0層(身元) と 第1層(脳) は実測で突破。**
+
+**★だが未達。想定が外れた★**
+
+| 観測点 | 実測 |
+|---|---|
+| `ai.anicca.x402-seller-8414.plist` の `X402_PUBLIC_URL` | **まだ空** |
+| `/.well-known/x402.json` の `resource` | **`/research`（相対のまま）** |
+| ledger の `slot` | **`null`** |
+
+`harness-failures.jsonl` 逐語:
+> `always-act router: REQ-505/506/511/513 retry/reroute budget exhausted with no realized earn-ledger line this wake`
+
+→ **`ALWAYS_ACT_ENABLED=1` の router は行動を試みているが、`slot: null` = x402_sell を1度も実行していない。**
+   実行されないので `run.sh:303` が走らず、seller plist が書き換わらず、住所が seller に届かない。
+   `live skills` には `x402_sell` が**含まれている**（`report, self/spawn, …, x402_sell, earn/…`）。**在るのに選ばれない。**
+
+★**「脳を生き返らせれば x402_sell を選ぶ」という Fable の想定は外れた。** 考えるようにはなったが、選ばない。
+  次の真因は **router がなぜ x402_sell を選ばないか**。ここが現在の最前線。
+★ harness の誠実さは確認できた: REQ-508 のコメント逐語 —
+  *"the exhausted-bound terminal case — truthfully recorded (**never a fabricated `profitable` or success value**, `slot: null`)"*。
+  **稼いでいないのに profitable を捏造しない設計。**この harness は信用してよい。
+
+**現在地（層ごと）**:
+```
+第0層 身元      ✓ 突破（wallet 解決、tier=broke 解除）
+第1層 脳        ✓ 突破（nvidia/llama-4-maverick。proxy_down 消滅、200秒毎に思考）
+第2層 住所      △ loop の env には在る / ★seller には届いていない★（x402_sell 未実行のため）
+第3層 Bazaar    未到達（settle 1回の鶏と卵）
+第4層 実績$0    未到達
+```
+
 **装備する順（下の層から。上から直しても動かない）**:
 1. franklin1 = 唯一「金 + 鍵」が揃う → 自分の router + 自分の sol 鍵 → **$12.21 で自分の脳を買う**。最初の実証個体
 2. claude-p = 鍵あり・金少 → 自分の router + base 鍵
