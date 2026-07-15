@@ -17,12 +17,25 @@ log(){ echo "$(date '+%F %T') clip_pass: $*" >&2; }
 
 # focused sub-call: run ONE step as its own bounded agent. --no-session-persistence + SKIP_PROMPT_HISTORY
 # = write no transcript (the disk-brick source). env -u ANTHROPIC_API_KEY = subscription login.
+# Auth: launchd cannot refresh the subscription OAuth token (keychain is only unlocked in an
+# interactive session — observed 2026-07-16: every step died rc=1 "OAuth session expired and could
+# not be refreshed"). Route sub-calls through the local CLIProxyAPI (:8317) instead, whose creds
+# are plain files (~/.cli-proxy-api/) and refresh headlessly. Falls back to subscription auth if
+# the key file is missing. Verified in a clean env (env -i ... RC=0) 2026-07-16.
+CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
+STEP_MODEL="sonnet"
+if [ -n "$CLIPROXY_KEY" ]; then
+  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
+  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+  STEP_MODEL="claude-sonnet-5"   # proxy needs the explicit model id, not the "sonnet" alias
+fi
+
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   # stdout is captured per-step (claude CLI prints errors to STDOUT, not stderr — observed
   # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
   local out="$HOME/.openclaw/logs/clip-step-last.out"
-  CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
+  CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model "$STEP_MODEL" --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
     -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
