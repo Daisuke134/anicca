@@ -8277,3 +8277,10 @@
 {"ts":1784151980,"wake_id":"00MRMM0USRB4BDBC1779BD4DD9","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784152157,"wake_id":"00MRMM4N233F579FD2E4534EF2","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784152223,"wake_id":"00MRMM62KT91743D8713964B43","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784152355,"wake_id":"00MRMM8WIH6546BC572DDC4AAE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"WAIT — conserve funds: wallet shows only USDC $12.18 and no confirmed SOL for gas, so I’ll skip the paid TradingSignal and not trade because the edge won’t plausibly clear Jupiter’s ~0.4%+ round‑trip "}
+{"ts":1784152355,"wake_id":"00MRMM8WIH6546BC572DDC4AAE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784152528,"wake_id":"00MRMMCLTV7E3101EB92AA43A0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784152695,"wake_id":"00MRMMG6PGE089B1DA1E3B4B2D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784152853,"wake_id":"00MRMMJK8T2EABDE6EA7F44022","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784152923,"wake_id":"00MRMML2QR2B53C35C4EFD489F","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784153129,"wake_id":"00MRMMPH7Y1D9A7BFDBC544AC4","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
