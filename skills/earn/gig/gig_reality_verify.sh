@@ -30,7 +30,13 @@ CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TRAJECTORY_ROOT="$G/trajectory"
 N="${1:-5}"
-TIMEOUT_SECS=600   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case)
+TIMEOUT_SECS=900   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case).
+# Raised 600->900 (2026-07-15, same incident as the --json-schema fix above): the heaviest
+# legitimate rounds (10 claims across 4 ground-truth URLs + several talkroom cross-checks) were
+# already observed taking up to ~462s under the OLD plain-text judge (realityverify-1784094300-58538,
+# spawn-to-recorded elapsed 462s) — close to the 600s cap even before schema enforcement. A live test
+# of the --json-schema judge on an equally heavy round (realityverify-1784109596-81027) ran the full
+# 600s and was killed by `timeout` with zero output, showing 600s no longer has enough headroom.
 
 mkdir -p "$G" "$(dirname "$SELFHEAL")"
 echo "$(date '+%F %T') gig_reality_verify: starting (N=$N)" >&2
@@ -194,11 +200,32 @@ fi
 # prompts — this is a non-interactive, autonomous fresh spawn (adversary-daily.sh `claude -p` idiom,
 # adapted). The judge is instructed (gig_judge prompt) to use the DETERMINISTIC nav helper with
 # PASS_ID for every ground-truth URL — enforced independently by step 5's evidence gate, not trusted.
+#
+# --json-schema (2026-07-15 fix, incident realityverify-1784108700-56675): previously ran with plain
+# --output-format text and gig_reality_gate.py regex-scraped the final JSON object out of free text.
+# On a heavy round (10 claims, 4 ground-truth URLs, long report-skeptical instructions) the judge
+# sometimes finished its investigation but never emitted the final JSON block at all (pure prose
+# response, zero "{"/"}" anywhere) — gig_reality_gate.py then raised "no JSON object found in judge
+# output" and the round was recorded verdict=false/kind=claim_mismatch even though the trajectory
+# showed all 4 URLs were navigated successfully while logged in (real evidence existed; nothing was
+# actually wrong with the gig core's claims, the judge itself just failed to follow the
+# response-format instruction under load). This is the same class of bug the trajectory_all_login_wall
+# backstop in gig_reality_gate.py already patched for the auth-wall case, but that backstop only fires
+# when every navigated URL was a /login redirect — a non-auth-wall unparseable response fell through
+# it. --json-schema makes the CLI itself enforce structured output on the judge's FINAL answer
+# (verified live: interim Bash/browser tool calls still run normally, only the concluding response is
+# schema-shaped) — this removes the failure mode at the source instead of catching it after the fact.
+JUDGE_SCHEMA='{"type":"object","properties":{"reasoning":{"type":"string"},"verdict":{"type":"boolean"},"failure_reason":{"type":"string"},"impossible_task":{"type":"boolean"},"reached_captcha":{"type":"boolean"}},"required":["verdict"]}'
 echo "$(date '+%F %T') gig_reality_verify: spawning fresh claude -p judge (timeout ${TIMEOUT_SECS}s)" >&2
 JUDGE_RAW=$(env -u ANTHROPIC_API_KEY timeout "$TIMEOUT_SECS" \
-  "$CLAUDE" -p "$PROMPT" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" --output-format text \
+  "$CLAUDE" -p "$PROMPT" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
+  --json-schema "$JUDGE_SCHEMA" --output-format text \
   2>>"$G/.reality-verify.err.log")
 JUDGE_RC=$?
+# always persist the raw judge response for post-mortem — previously nothing was kept when parsing
+# failed, which is why this incident had to be root-caused blind (no raw text survived).
+mkdir -p "$TRAJECTORY_ROOT/$PASS_ID"
+printf '%s' "$JUDGE_RAW" > "$TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt" 2>/dev/null || true
 
 if [ "$JUDGE_RC" -eq 124 ]; then
   echo "$(date '+%F %T') gig_reality_verify: fresh judge TIMED OUT after ${TIMEOUT_SECS}s" >&2
