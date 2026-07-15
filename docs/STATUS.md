@@ -757,6 +757,53 @@ funnel_enabled = true
   ①上流が有料/要キー(Exa, 画像生成, 市場データ) ②インフラが要る(multi-chain RPC) ③**行為**そのもの(実際に賭ける・実際に送る)。
   **計算・整形・変換は全て「買い手が自分で出来る」= 売り物にならない。**
 
+### ★★市場の実データで法則が確定した（2026-07-16 06:45、CDP Bazaar 公式 discovery API を直接走査）★★
+
+`api.cdp.coinbase.com/platform/v2/x402/discovery/resources` を 3,000件走査（カタログ総数 **25,671**、値付き 2,972件）:
+
+| 統計 | 価格 |
+|---|---|
+| min | $0.000001 |
+| **p25** | **$0.005** ← ★我々の $0.001〜$0.003 はこれより**下**★ |
+| median | **$0.01**（我々の10倍） |
+| p75 | $0.03 |
+| p90 | **$0.10**（我々の100倍） |
+| p99 | $1.50 |
+| max | **$1000** |
+
+→ **我々は市場の最底辺（p25 未満）でノイズを売っていた。**
+
+**高額 top12（= 買い手が実際に金を払う価値を認めた物）**:
+```
+$1000.000  api.bitrefill.com/x402/invoice/pay        ← ギフトカードを買う★行為★
+$1000.000  api.jamton.network/v1/purchases/…         ← ★購入★
+$ 350.000  mudko.com/api/x402/purchase               ← ★購入★
+$ 190.000  mudko.com/api/x402/bazaar-keepalive       ← ★サービス★
+$  99.000  mudko.com/api/x402/bazaar-listing         ← ★Bazaar 掲載を商品にして売っている★
+$  25.162  blockmachine.io/user-management-api/x402/api-keys  ← ★API キーを売っている★
+$  20.600  palmyr.ai/cards/buy                       ← ★カードを買う行為★
+$  19.860  www.buywith402.com/products/:id/purchase  ← ★購入★
+$  10.000  researcher.now/v1/x402/runs               ← ★実行★
+$   5.000  laso.finance/get-card                     ← ★カード取得★
+$   5.000  mudko.com/api/x402/audit                  ← ★監査サービス★
+$   5.000  api.402.coffee/test/suite                 ← ★テスト実行★
+```
+
+★★**上位12件に「データを返すだけ」の商品は1つも無い。全部が ①行為（買う/実行する/監査する/取得する） か ②アクセス（API キー/カード/掲載枠）。**★★
+→ 憶測ではなく**市場が実際にそう値付けしている**。我々の calc/DNS/JSON整形 は「データを返すだけ」かつ「買い手が自分で出来る」の**二重に売れない**。
+
+★皮肉として記録: **`mudko.com/api/x402/bazaar-listing` が $99 で「Bazaar 掲載」を売っている。**
+  我々が「掲載されない」と半日悩んだものを、他者は商品化して99ドルで売っている。
+  **問題だと思っていたものが、他人にとっては商品だった。**
+★`blockmachine.io` は **$25 で API キーを売っている** = 「買い手が自分では手に入らない物」の教科書的実例。
+
+**再現コマンド**（記憶で答えない）:
+```bash
+# 価格分布と高額 top を測る。NEEDLE 無しで市場全体を見る
+node ~/anicca/skills/earn/x402-sell/bazaar-scan.mjs <needle>   # 我々の掲載を探す
+# 市場全体の分布は discovery API を直接: limit=100&offset=N でページング、accepts[0].amount は 1e-6 USDC
+```
+
 ## ★★★2026-07-16 06:30 — 最大の発見: Franklin は入っていて、一度も起動されていない★★★
 
 Dais 指示「repo を読め」で `blockrunai/franklin`(624★) の実コードを読んだ結果:
