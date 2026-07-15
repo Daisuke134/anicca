@@ -17,3 +17,16 @@ EDITOR PROTOCOL: **REVIEWED = 承認済み = 絶対に触らない**（byte-for-
 | [9] | 最後に | 未 |
 | 補足 | 📌補足 ×2 | 未 |
 | 出典 | 出典 | 未 |
+
+---
+
+## セッションログ 2026-07-15（up-to-date 化・二度と hallucinate しない為の記録）
+
+- **本物の SoT はこの3つだけ**: ①このファイル（記事ブロック状態）②handover `.claude/handovers/2026-07-14_0629.md` の Goal A ③`docs/superpowers/specs/2026-07-13-profitable-claude-earn-loops-spec.md`。これ以外を「SoT」と呼ばない。
+- 今セッションで作った `docs/superpowers/specs/2026-07-14-article-earn-loop-ssot.md` は **SoT ではない** = skill選定/収益化の research メモ扱い（参照可、正本ではない）。
+- **skill 実験（別ファイル、原本は git clean で無傷）**:
+  - `...-jp-k16.md` = k16shikano skill で全文書き直し（比較用）。★REVIEWED ブロック(タイトル/[0]-[5])も改変している = EDITOR PROTOCOL 上、凍結ブロックへのマージ禁止★
+  - `...-en.md` = ECC+Karpathy+stop-slop の EN 版（EN publish 候補）
+  - 採用するなら **未ブロック([6]-出典)のみ**、かつ Dais 承認後。凍結ブロックは原本のまま。
+- **ブロック状態は上表のまま変化なし**: [6][7][8][9]+補足×2+出典 は依然 **未承認**（今セッションで承認は取っていない）。
+- **次アクション = [6]-出典の Dais 最終承認 → REVIEWED 化 → JP/EN draft publish（Goal A）。** loop 化/skill移植は Goal A 完了後の別アーク。

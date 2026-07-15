@@ -1,4 +1,6 @@
-# Article-Earn Loop — SSOT（2026-07-14）
+# Article-Earn Loop — 研究/設計メモ（2026-07-14）
+
+> ⚠️ **これは SoT ではない**（2026-07-15 訂正）。本物の SoT = ①`docs/articles/2026-07-12-agent-economy-REVIEW-STATUS.md` ②handover `2026-07-14_0629.md` の Goal A ③`docs/superpowers/specs/2026-07-13-profitable-claude-earn-loops-spec.md`。本ファイルは skill選定/収益化 research の参照メモとして残す。
 
 **Goal**: 人間らしい（AI slop ゼロの）日本語+英語の記事を書き、全platformへ publish し、writing で **10k MRR** を no-human-in-the-loop で稼ぐ loop を作る。
 
