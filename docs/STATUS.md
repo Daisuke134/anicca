@@ -335,6 +335,50 @@ BLOCKRUN_PROXY_PORT     Default proxy port (default: 8402)
 → **instance ごとに自分の router + 自分の鍵**にできる。tsbridge と同じ「1体1つ」の形。
    franklin plist に既にある `FRANKLIN_PROXY_PORT=8402` は、元々そう設計する意図だった痕跡。
 
+### ★★2026-07-16 06:00 — 「脳が無い」の答えは README の1行だった（車輪の再発明をしていた）★★
+
+Dais の指摘「struggling してるなら repo を探せ」で `gh search` → **既に使っている物が答えだった**。
+
+| repo | ★ | 位置づけ |
+|---|---|---|
+| **`BlockRunAI/ClawRouter`** | **6658** | *"The agent-native LLM router. 41+ models, <1ms routing, **USDC payments on Base & Solana via x402**. **Wallet signature IS authentication** (no API keys), no accounts, no credit cards"* ← **我々が既に使っている。使い方を間違えていただけ** |
+| **`xpaysh/awesome-x402`** | 261 | x402 の総 index（SDK / facilitator / MCP 統合 / tutorial）。**最初に読むべきだった** |
+| `google-agentic-commerce/a2a-x402` | 538 | A2A に x402 決済（agent が agent に売る標準） |
+| `qntx/x402-openai-python` | 260 | *"Drop-in OpenAI client with transparent x402 payment support"* |
+
+**★README 逐語が全てを解いた★**:
+> **"Starts at $0 — 8 NVIDIA models are free forever"**
+> **"No wallet? 8 models work free out of the box. Install, run, and pin `nvidia/gpt-oss-120b` (or any of the 8) — no crypto, no signup, no balance required."**
+
+**無料枠は2種類あった。混同していた**:
+
+| | 上限 | 実測(2026-07-16 06:00、同一 router・同一瞬間) |
+|---|---|---|
+| `free/*`（我々が使っていた） | **日次上限あり** | `free/glm-4.7` → **429 `free-models-per-day-high-balance`** |
+| `nvidia/*`（8モデル） | **free forever・上限なし** | `nvidia/llama-4-maverick` → **200。content=`'BRAIN_ALIVE'`（指示に正確に追従）**<br>`nvidia/gpt-oss-120b` → 200 |
+
+→ **モデル名を1つ変えるだけだった。**「無料枠が枯れたから有料化が必要」という診断は**誤り**。ClawRouter に金を入れる必要も、
+  per-agent router を組む必要も、この層では無い（それは品質を上げたい時の話であって、脳を生かす話ではない）。
+→ しかも franklin の plist には**元から `FRANKLIN_FREE_MODEL=nvidia/llama-4-maverick` が在った**。誰かが知っていたが、
+  主脳の `ANICCA_MODEL` は `free/glm-4.7` のままだった。**装備は在ったのに配線されていなかった。**
+
+**適用（2026-07-16 06:02）**: franklin1/franklin2 の model 系 **9変数すべて** を `nvidia/llama-4-maverick` へ。
+`plutil -lint` OK。reload 後の実 env で確認:
+```
+29721  .blockrun                  model=nvidia/llama-4-maverick  wallet=0x3EcCAD24…8749
+29907  .franklin2-home/.blockrun  model=nvidia/llama-4-maverick  wallet=0xe7747Fd8…7ce9
+70525  .anicca-founder            model=<default>                wallet=0x810f6d61…29c5
+```
+daemon banner も `exec loop (model tiers from config; **funded=nvidia/llama-4-maverick**)` に変わった。
+★claude-p が model 変数を1つも持たない(=既定)ことが、**claude-p だけ THINK が通っていた**理由と整合する。
+
+★**事故（記録）**: 一括置換を `for v in $VARS` で書き、**zsh は unquoted 変数を単語分割しない**ため
+`$v` に全変数名が入り、PlistBuddy が `FRANKLIN_EVALUATOR_MODEL` に**変数名の羅列を値として書き込んだ**（plist 破損）。
+`.bak-model-*` から配列 `VARS=(...)` で書き直して修復・実測確認済。
+一般法則: **shell は zsh。`for x in $STR` は分割しない。リストは必ず配列 `arr=(...)` + `"${arr[@]}"` で回す。**
+一般法則2: **`|| true` はエラーを飲む。**「8個 Set した」つもりが1個しか効かず、**残存数を数えて初めて気づいた**。
+一括変更は必ず**変更後の残存数を数えて**検証する。
+
 **装備する順（下の層から。上から直しても動かない）**:
 1. franklin1 = 唯一「金 + 鍵」が揃う → 自分の router + 自分の sol 鍵 → **$12.21 で自分の脳を買う**。最初の実証個体
 2. claude-p = 鍵あり・金少 → 自分の router + base 鍵
