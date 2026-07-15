@@ -90,7 +90,9 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 |---|---|---|---|---|
 | 1 | READY | `~/.cloak/clip-accounts.json` の aiclipsvault を `status:"ready"` に（07-14 instagrapi 投稿成功=投稿できる。run.sh の skip を解除） | ファイルに `aiclipsvault "status":"ready"` | ✅ DONE 2026-07-15（JSON 妥当・grep 確認） |
 | 2 | ENABLE | 統合ループ plist `ai.anicca.clip-loop-aiclipsvault`（`clip_pass.sh`, 6h毎, RunAtLoad, ENABLED）を1個作って load。旧分離 plist(clip-producer/clip-core/clip-proactive)を廃止 | `launchctl list \| grep clip-loop` が PID を返す | ✅ DONE 2026-07-15（PID 登録・err.log に STEP LEARN start = 自走開始） |
-| 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか + Telegram 発火 | logged-out で reel URL が HTTP 200 + Telegram に reel link（出なければ P3 soft-ban へ） | 🔧 進行中（初回 pass が LEARN→…→POST を実行中） |
+| 3 | WATCH-POST | enable 後 loop が回す最初の pass を watch。実 reel が1本 grid に出るか + Telegram 発火 | logged-out で reel URL が HTTP 200 + Telegram に reel link | 🔧 初回 pass 実走したが **publish せず**（下記 3a が真因） |
+| **3a** | **CLEAR-CHALLENGE** | ★2026-07-15 実測で判明した真の blocker★ aiclipsvault の IG session が **reCAPTCHA/checkpoint challenge** で無効化（9223 browser が `instagram.com/auth_platform/recaptcha/` に居る、保存 instagrapi session=`login_required`）。CapSolver 等で challenge 突破 → session 復活（memory: capsolver_turnstile_bypass, 4tier fallback） | 保存 session で instagrapi `account_info` が通る（login_required が消える） | ⬜ **今ここ（browser 空き次第）** |
+| — | (LEARN timeout) | LEARN step が毎 pass 15分 timeout(rc=124)。scout が重すぎ pass を食う。後で LEARN を軽量化 | LEARN done rc=0 | ⬜ 後回し |
 | 4 | CLIP-BIO | clip_pass.sh に「website(external_url)欄に `<offer_link>?sid1=aiclipsvault` を入れる」judgment-driven step を足す（IG は website だけ clickable=金の入口、bio 本文 URL は不可）。idempotent | logged-out で profile に link 実見 | ⬜ |
 | 5 | SELFRUN | 俺が何もしない状態で翌日 `.last-post` が自動で進むのを確認（自走の証明） | 翌日 `.last-post-aiclipsvault` の epoch が介入なしで更新 | ⬜ |
 | 6 | MEASURE-$ | Digistore dashboard から sid 別 EPC を読み REFLECT に渡す配線を1本入れる | `clip-metrics.jsonl` に $ 行が載る | ⬜ |
@@ -98,7 +100,14 @@ sonnet が1人で(opus/fable/人間 抜き) **launchd で毎日**: 生成→inst
 - **唯一の成果指標 = Digistore dashboard に実 sale。今 ¥0。** loop が回る≠稼いだ。
 - ★INV-12: 全部 loop(sonnet) がやる。orchestrator は plist/skill 化だけ。恒常運用で run.sh を叩かない。★
 - 正本 docs: spec §6 / docs/earn/{social-marketing-factory-toolstack,ig-posting-method-graph-api-pivot,ig-posting-restriction-and-warmup-policy,crypto-affiliate-feasibility}.md / docs/loop-engineering/{47-cold-start-bible,49-affiliate-money-playbook,48-master-loop-map}.md
-- 実装ファイル: ~/anicca/skills/earn/clip/{clip_pass.sh, run.sh, producer.sh, scripts/instagrapi_post.py} / launchd/（旧 plist、要差し替え）
+- 実装ファイル(LIVE): ~/anicca/skills/earn/clip/{clip_pass.sh, run.sh, producer.sh, scripts/{instagrapi_post.py, pipeline.py, burn_captions.py, verify_clip.sh, export_camofox_cookies.py}, self_heal.py, reel_verify.py, _instance_paths.sh}
+- ★REFACTOR 対象（survey 2026-07-15、DEAD safe-to-remove。loop 実行中は触らない、pass 完了後に）★:
+  - `launchd/{ai.anicca.clip-producer.plist, ai.anicca.clip-core-healthcheck.plist}`（旧分離 plist、統合 plist が supersede）
+  - `clip-cli.sh` + `clip-healthcheck.sh` + `tests/test_clip_cli_self_provision_prompt.sh`（旧 tmux/gateway-cron アーキ、まとめて）
+  - `monitor.sh` + `count_posts.py` + `tests/test_count_posts.py` + `tests/fixtures/ledger-2026-07-03-snapshot.jsonl` + `__pycache__/`（monitor 連鎖、まとめて。monitor は手動観測用＝要確認）
+  - `verify_posted_quality.py`（live caller ゼロ）
+  - run.sh:26 の `$POSTER` 変数（dead code。instagrapi_post.py が唯一の poster）
+  - ★触るな★: 外部 `~/.claude/skills/ig-reels-poster/scripts/post_reel.py`（self_heal が --verify-only で使用）と `ig-account-create/scripts/cdp.py`
 - GMX(agora crypto rail) → docs/earn/gmx-referral-setup.md（別 goal、session 末に verify）
 
 ### Q1 の結末（4ループの実働、実データ 2026-07-13）
