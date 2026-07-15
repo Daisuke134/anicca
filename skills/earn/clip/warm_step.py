@@ -1,43 +1,63 @@
 #!/usr/bin/env python3
-"""warm_step.py — deterministic WARM step for clip_pass.sh (bookkeeping only, no LLM judgment;
-per building-agents: this is pure counting/subprocess-dispatch, not a place for model judgment).
+"""warm_step.py — deterministic WARM step for clip_pass.sh (bookkeeping + subprocess dispatch
+only, no LLM judgment; per building-agents this is mechanical, not a place for model judgment).
 
-For every account with status=="warming" in clip-accounts.json:
-  1. Record started_warming (once) — backfilled from the account's real
-     ~/.cloak/ig-warmup-<handle>.json log if one already exists, else today. Never invented.
-  2. If the account's CDP browser is reachable on its port, run ig-account-warmer's warm.py
-     once (warm.py itself is idempotent — it no-ops if already warmed today). If the browser
-     is down, DO NOT attempt to warm (no browser = no session) — log a WARN and skip.
-  3. Promote warming -> ready when BOTH: >=3 days elapsed since started_warming AND
-     >=3 successful warm.py log entries exist. Dais 2026-07-15 instruction sets this 3-day
-     floor; ig-account-warmer's SKILL.md recommends 7 days as the safer default — the 3-day
-     floor is used here per explicit instruction, and the tradeoff is recorded in the note.
-     Promotion is based on ACCUMULATED history, not on whether warm.py ran THIS pass — an
-     account that already cleared the bar promotes even on a pass where its browser is down.
+Per pass, picks the SINGLE OLDEST warming account (earliest started_warming -- backfilled from
+its own ~/.cloak/ig-warmup-<handle>.json log history the first time it's seen) and, serially:
+  1. Ensures that ONE account's isolated CloakBrowser is up + logged in via
+     ig-account-warmer's ensure_warmup_browser.py (idempotent launcher: starts the browser on
+     the account's OWN port/profile if it's down, logs in with ~/.cloak/ig-<handle>.json creds,
+     no-ops if already up+logged in). Needs creds + a profile dir -- WARNs and skips the whole
+     account this pass if either is missing (never guesses a profile/port).
+  2. Runs warm.py once (CDP_PORT=<port>) if the browser ended up reachable -- warm.py itself is
+     idempotent (no-ops if already warmed today).
+  3. Reads the account's warmup state back and decides:
+       - a ban signal anywhere in the log/aborts history -> status: investigating + WARN (never
+         auto-promote a banned account).
+       - day >= 3 (the LAST successful run's own recorded "day", not a recomputed calendar
+         guess) and not banned -> status: ready. Dais 2026-07-15 sets this 3-day floor;
+         ig-account-warmer's SKILL.md recommends 7 days as the safer default -- the 3-day floor
+         is used here per explicit instruction (can be extended later), and the tradeoff is
+         recorded in the promotion note every time.
+Only ONE account is touched per pass (deliberately serial -- keeps resource use minimal and
+each promotion decision individually auditable) and only accounts with status=="warming" are
+ever touched -- a live "ready" posting account's browser (e.g. the daily-driver-adjacent
+aiclipsvault instance) is never started/stopped/touched by this script.
 
-Safety: backs up clip-accounts.json before any mutation, edits ONLY the touched account
-objects in place (never drops/reorders/duplicates other entries), and verifies the row
-count is unchanged both in-memory and after re-reading the written file before keeping it
-(state-cleanup rule: never drop rows, backup -> in-place -> verify count).
+Safety: clip-accounts.json edits are backup -> in-place (edit only the touched account object,
+never drop/reorder/duplicate rows) -> row-count-verified before AND after the write.
 
 Usage: warm_step.py [path-to-clip-accounts.json]   (defaults to ~/.cloak/clip-accounts.json)
 """
 import sys, os, json, subprocess, shutil, datetime, time, urllib.request
 
+ENSURE_PY = os.path.expanduser("~/.claude/skills/ig-account-warmer/scripts/ensure_warmup_browser.py")
 WARM_PY = os.path.expanduser("~/.claude/skills/ig-account-warmer/scripts/warm.py")
 PY = "/opt/homebrew/bin/python3"
-PROMOTE_DAYS = 3
-PROMOTE_RUNS = 3
+PROMOTE_DAY = 3
 
 
-def warmup_log(handle):
+def load_warmup_state(handle):
     p = os.path.expanduser(f"~/.cloak/ig-warmup-{handle}.json")
     try:
-        d = json.load(open(p))
-        dates = sorted(r.get("date") for r in d.get("log", []) if r.get("date"))
-        return len(dates), dates
+        return json.load(open(p))
     except Exception:
-        return 0, []
+        return {"handle": handle, "log": []}
+
+
+def state_summary(st):
+    """day = the last successful run's own recorded day (honest: what was actually reached,
+    not a recomputed calendar guess). banned = any log/abort entry ever showed a ban signal."""
+    log = st.get("log", [])
+    aborts = st.get("aborts", [])
+    day = log[-1].get("day", 0) if log else 0
+    banned = any(
+        e.get("ban") is True or e.get("ban_signal")
+        or (isinstance(e.get("ABORT"), str) and "ban" in e["ABORT"].lower())
+        for e in (log + aborts)
+    )
+    dates = sorted(r.get("date") for r in log if r.get("date"))
+    return day, banned, (dates[0] if dates else None)
 
 
 def browser_up(port, timeout=4):
@@ -55,6 +75,42 @@ def append_warmlog(handle, entry):
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def pick_target(accts):
+    """The single oldest warming account this pass. started_warming is backfilled (once) from
+    the account's own log history when missing, then the earliest started_warming wins; a tie
+    falls back to list order (deterministic, no randomness)."""
+    warming = [a for a in accts if a.get("status") == "warming"]
+    changed = False
+    for a in warming:
+        if not a.get("started_warming"):
+            _, _, first_date = state_summary(load_warmup_state(a.get("handle")))
+            a["started_warming"] = first_date or datetime.date.today().isoformat()
+            changed = True
+            print(f"WARM {a.get('handle')}: recorded started_warming={a['started_warming']}")
+    warming.sort(key=lambda a: a["started_warming"])
+    return (warming[0] if warming else None), changed
+
+
+def _write(accts_path, accts, n_before):
+    n_after = len(accts)
+    if n_after != n_before:
+        print(f"WARM: ABORT -- in-memory row count changed {n_before}->{n_after}, not writing")
+        return 1
+    bak = accts_path + f".bak-{int(time.time())}"
+    shutil.copyfile(accts_path, bak)
+    tmp = accts_path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(accts, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, accts_path)
+    written = json.load(open(accts_path))
+    if len(written) != n_before:
+        print(f"WARM: POST-WRITE row count mismatch ({len(written)} != {n_before}) -- restoring backup")
+        shutil.copyfile(bak, accts_path)
+        return 1
+    print(f"WARM: wrote {accts_path} ({len(written)} rows, backup={bak})")
+    return 0
+
+
 def main():
     accts_path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/.cloak/clip-accounts.json")
     try:
@@ -63,80 +119,81 @@ def main():
         print(f"WARM: cannot read {accts_path}: {e}")
         return 1
     n_before = len(accts)
-    today = datetime.date.today()
-    changed = False
 
-    for a in accts:
-        if a.get("status") != "warming":
-            continue
-        handle = a.get("handle")
-        port = a.get("port")
+    target, changed = pick_target(accts)
+    if not target:
+        print("WARM: no warming accounts this pass")
+        return _write(accts_path, accts, n_before) if changed else 0
 
-        if not a.get("started_warming"):
-            _, dates = warmup_log(handle)
-            started = dates[0] if dates else today.isoformat()
-            a["started_warming"] = started
-            changed = True
-            print(f"WARM {handle}: recorded started_warming={started}")
-        started = datetime.date.fromisoformat(a["started_warming"])
+    handle, port, profile = target["handle"], target.get("port"), target.get("profile")
+    print(f"WARM: target this pass = {handle} (started_warming={target.get('started_warming')})")
 
-        if browser_up(port):
+    if not browser_up(port):
+        creds = os.path.expanduser(f"~/.cloak/ig-{handle}.json")
+        if not os.path.exists(creds) or not profile:
+            append_warmlog(handle, {"action": "skip_no_creds_or_profile", "port": port})
+            print(f"WARM {handle}: WARN browser down on :{port} and no creds/profile to launch it -- skip")
+        else:
+            profdir = os.path.expanduser(f"~/.cloak/profiles/{profile}")
             try:
                 r = subprocess.run(
-                    [PY, WARM_PY, handle],
-                    env={**os.environ, "CDP_PORT": str(port)},
-                    capture_output=True, text=True, timeout=600,
+                    [PY, ENSURE_PY, "--handle", handle, "--port", str(port), "--profile", profdir, "--creds", creds],
+                    capture_output=True, text=True, timeout=300,
                 )
                 out = (r.stdout or "").strip()
-                append_warmlog(handle, {"action": "warm_run", "rc": r.returncode, "out": out[:500]})
-                print(f"WARM {handle}: warm.py rc={r.returncode} out={out[:200]}")
+                append_warmlog(handle, {"action": "ensure_browser", "rc": r.returncode, "out": out[:300]})
+                print(f"WARM {handle}: ensure_warmup_browser rc={r.returncode} out={out[:200]!r}")
             except Exception as e:
-                append_warmlog(handle, {"action": "warm_run_error", "error": repr(e)[:200]})
-                print(f"WARM {handle}: warm.py FAILED {e!r}")
-        else:
-            append_warmlog(handle, {"action": "skip_browser_down", "port": port})
-            print(f"WARM {handle}: WARN browser down on :{port} -- skip warm.py this pass")
+                append_warmlog(handle, {"action": "ensure_browser_error", "error": repr(e)[:200]})
+                print(f"WARM {handle}: ensure_warmup_browser FAILED {e!r}")
 
-        days_elapsed = (today - started).days
-        run_count, _ = warmup_log(handle)
-        if days_elapsed >= PROMOTE_DAYS and run_count >= PROMOTE_RUNS:
+    if browser_up(port):
+        try:
+            r = subprocess.run(
+                [PY, WARM_PY, handle],
+                env={**os.environ, "CDP_PORT": str(port)},
+                capture_output=True, text=True, timeout=600,
+            )
+            out = (r.stdout or "").strip()
+            append_warmlog(handle, {"action": "warm_run", "rc": r.returncode, "out": out[:500]})
+            print(f"WARM {handle}: warm.py rc={r.returncode} out={out[:300]}")
+        except Exception as e:
+            append_warmlog(handle, {"action": "warm_run_error", "error": repr(e)[:200]})
+            print(f"WARM {handle}: warm.py FAILED {e!r}")
+    else:
+        append_warmlog(handle, {"action": "skip_browser_still_down", "port": port})
+        print(f"WARM {handle}: WARN browser still down on :{port} after launch attempt -- warm.py not run")
+
+    day, banned, _ = state_summary(load_warmup_state(handle))
+    for a in accts:
+        if a.get("handle") != handle:
+            continue
+        if banned:
+            a["status"] = "investigating"
+            a["note"] = (
+                f"{datetime.date.today().isoformat()} warm_step.py: WARN ban signal detected in "
+                f"warmup log -- moved warming->investigating (day={day})."
+            )
+            changed = True
+            print(f"WARM {handle}: BAN SIGNAL -- moved to investigating")
+            append_warmlog(handle, {"action": "ban_detected", "day": day})
+        elif day >= PROMOTE_DAY:
             prior_note = (a.get("note") or "")[:300]
             a["status"] = "ready"
             a["note"] = (
-                f"{today.isoformat()} warm_step.py: PROMOTED warming->ready "
-                f"({days_elapsed}d since started_warming={a['started_warming']}, "
-                f"{run_count} warm.py log entries >= {PROMOTE_DAYS}d/{PROMOTE_RUNS}run floor "
-                f"per Dais 2026-07-15 instruction; ig-account-warmer SKILL.md recommends 7d "
-                f"but Dais's 3-day floor takes precedence here). prior note: {prior_note}"
+                f"{datetime.date.today().isoformat()} warm_step.py: PROMOTED warming->ready "
+                f"(day={day} >= {PROMOTE_DAY}d floor per Dais 2026-07-15 instruction; "
+                f"ig-account-warmer SKILL.md recommends 7d but Dais's 3-day floor takes "
+                f"precedence -- can extend later). prior note: {prior_note}"
             )
             changed = True
-            print(f"WARM {handle}: PROMOTED to ready ({days_elapsed}d, {run_count} runs)")
-            append_warmlog(handle, {"action": "promoted", "days_elapsed": days_elapsed, "run_count": run_count})
+            print(f"WARM {handle}: PROMOTED to ready (day={day})")
+            append_warmlog(handle, {"action": "promoted", "day": day})
+        else:
+            print(f"WARM {handle}: not yet promotable (day={day} < {PROMOTE_DAY})")
+        break
 
-    if not changed:
-        print("WARM: no changes this pass")
-        return 0
-
-    n_after = len(accts)
-    if n_after != n_before:
-        print(f"WARM: ABORT -- in-memory row count changed {n_before}->{n_after}, not writing")
-        return 1
-
-    bak = accts_path + f".bak-{int(time.time())}"
-    shutil.copyfile(accts_path, bak)
-    tmp = accts_path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(accts, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, accts_path)
-
-    # verify by re-reading the file we just wrote
-    written = json.load(open(accts_path))
-    if len(written) != n_before:
-        print(f"WARM: POST-WRITE row count mismatch ({len(written)} != {n_before}) -- restoring backup")
-        shutil.copyfile(bak, accts_path)
-        return 1
-    print(f"WARM: wrote {accts_path} ({len(written)} rows, backup={bak})")
-    return 0
+    return _write(accts_path, accts, n_before) if changed else (print("WARM: no changes this pass") or 0)
 
 
 if __name__ == "__main__":
