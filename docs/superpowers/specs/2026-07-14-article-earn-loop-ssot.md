@@ -217,6 +217,22 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 4. L50 内部リンクの許可先に note/substack を追加（1と整合）。
 検証: ①本物の agent-economy 記事（H2 11、note リンク有り）が **PASS** ②App Store リンク無しでも PASS ③H2 2本の md は FAIL ④meta 100字は FAIL ⑤CTA リンク皆無の md は FAIL、`--is-paid-body` 付きなら PASS。
 
+- [x] #14 seo-gate 更新 **DONE** commit `7e7ec391`（team-lead 検収: apps.apple/ANICCAAI_ANCHOR は grep 0 = 消滅、H2 3-12、--is-paid-body 実在、note/substack 許可、meta FATAL 文言を実出力で確認）。★builder の追加判断が正しい: 本物の記事は出典を裸 URL で書くので `[text](url)` 必須のままでは実記事が通らない → 裸 URL も許容に変更。★
+
+### #21/#24 self-improve L3 実装設計（team-lead 起草 2026-07-16。loop の最後のピース = 複利）
+**原則: 数字を焼くな、測り方を焼け。** L3 = 「公開した記事の実績を測り、次の記事の作り方を自分で変える」。
+1. **measure（新規 `scripts/_shared/measure-funnel.py`）**: articles.jsonl の live 行を読み、各 platform の実 API で当日と累計を測る:
+   - note: `GET /api/v3/notes/{key}` → `like_count` / `price` / `is_limited`。売上は creator dashboard API（要ログイン、無ければ**測れないと正直に出力**、捏造しない）
+   - X: 記事 URL の view/like（x_fullverify の DOM 読みを流用、または API が無ければ browser 実測）
+   - Substack: `GET /api/v1/drafts/{id}` or post stats（取れなければ N/A）
+   - zenn: `GET zenn.dev/api/articles?username=anicca` → liked_count / page views（公開記事のみ）
+   出力 = `state/funnel.jsonl` に1行/日/記事（測れなかった項目は null + reason。★N/A と 0 を混同しない★）
+2. **learn（`self-improve.sh` を L3 化）**: funnel.jsonl が **7日分たまってから**、fresh judge に「上位/下位の記事の差は何か」を実データだけで答えさせ、`state/playbook.json` に **仮説1つ + 次に試す変更1つ**を書く（例: 「how-to 型の見出しが like を集めた → 次は topic pick を how-to 寄りに」）。
+3. **apply（run.sh / article-daily.sh の prompt）**: pass は執筆前に playbook.json を読み、**採用した仮説と、その結果どう書き方を変えたかを1行 ledger に残す**（適用の追跡ができないと A/B が成立しない）。
+4. **keep/revert**: 次の7日で当該指標が改善しなければ playbook のその項目を revert（`state/playbook.json` に `status: testing|kept|reverted` と `measured_delta`）。
+★ゲート: **売上が測れるまで like/view を代理指標にする。ただし playbook には「これは代理指標である」と明記する**（代理指標の最適化は本物の目的を殺しうる）。★
+検証: ①measure-funnel.py を今の live 3本（note nbcb93e6fc711 / X 2077484575299862907 / substack p/167）で実行し、実数値が出ることを実出力で示す ②取れない指標が null + reason になることを示す ③funnel.jsonl が7日未満なら learn が「データ不足」で no-op することを示す ④playbook.json の schema を1例で示す。
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
