@@ -8170,3 +8170,11 @@
 {"ts":1784138478,"wake_id":"00MRMDZGKW6B8B1BB072284F7F","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
 {"ts":1784138604,"wake_id":"00MRME263DE1FFD78F0CCC4FDB","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
 {"ts":1784138731,"wake_id":"00MRME4VZ1AF6654C497D7468C","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784138860,"wake_id":"00MRME7MY57C2EBDB1DA584739","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1784138985,"wake_id":"00MRMEABVXAB5BADBC57744EF7","kind":"skill_missing","sleep_s":120,"model":"free/glm-4.7","slot":"FranklinToken","result":"FranklinToken skill not found"}
+{"ts":1784139112,"wake_id":"00MRMED1XH7F4FBFFEB4644D7D","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784139239,"wake_id":"00MRMEFRKKFEBFCD9A40B54EAD","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784139365,"wake_id":"00MRMEIGPL8A5E4E1EB85C4D96","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"token_launch","profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] token deposit/launch (FranklinAid/FAID): { \"ok\": false, \"error\": \"HTTP Error 403: Forbidden\", \"status\": 403 } recorded"}
+{"ts":1784139491,"wake_id":"00MRMEL6IVFB37FF8434C94B0B","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784139619,"wake_id":"00MRMENWXB1D325785D2794F2E","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1784139745,"wake_id":"00MRMEQM9E59F5ED01CC604534","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
