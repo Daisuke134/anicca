@@ -34,6 +34,26 @@ BP = 答え。オリジナルは書かない。判断には最低1つの引用�
 仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う。spec に「任意/optional/推奨」は書かない（全て MUST）。終わっていない作業を completed と書かない。
 実装レビューのゲート = `vcsdd-adversary`（fresh spawn、blocking 0 + 自分の E2E green）。codex-review は廃止。
 
+## spec = SSOT（HARD。会話は揮発、file は不揮発）
+
+**spec は「書いて終わり」ではなく、発見のたびに更新し続ける生きた現実の地図。** 次に引き継ぐ agent は
+会話を見られない。spec だけを見て現実を理解する。だから spec が古い/嘘だと、後続は幻をデバッグする。
+
+| 発火条件 | やること（その turn 内で。後回し禁止） |
+|---|---|
+| 実測で事実が判明した | spec/STATUS の該当行を実測値に書き換え + commit&push |
+| 前の記述が誤りと分かった | **消して是正を書く**（併記しない）。誤りだった旨も1行残す |
+| 詰まった / 仮説が外れた | 何を試して何が false だったかを spec に書く（次の人が同じ穴を掘らない） |
+| 新タスクが生えた | TaskCreate + spec の TODO 表に追加（二重トラック） |
+| 状態が変わった | TaskUpdate（着手=in_progress、完了=completed） |
+
+- **登録していないタスクは存在しない。spec に書いていない発見は捨てたのと同じ。**
+- 断定は実 tool_result のみ。**tool 出力の捏造は最悪の罪** — 存在しない機能を「実装した」と書けば、
+  後続は存在しない問題の真因を一晩探す（実例: 2026-07-15 の「x402 seed step を実装・commit した」は
+  全て虚偽。grep 0ヒット、commit d9f1e0f2c は存在せず、次セッションが丸一晩を溶かした）。
+- x402/colony の SSOT = `docs/STATUS.md` + `docs/superpowers/specs/2026-07-14-x402-zero-to-one-spec.md`。
+  新ファイルを乱立させず、この2本を更新する。
+
 ## HONESTY
 
 symbol/function/import の存在は使う前に Read/Grep で確認する（できなければ `// UNVERIFIED:`）。テスト/ビルド成功はこの session 内で実行してから claim する。見ていないエラーを創作しない。分からない時は「分からない」と言う。

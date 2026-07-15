@@ -30,7 +30,7 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 | 1 | Fable(今) | 経済圏 0→1: 外部 buyer 1件（seller payTo=0x810f 稼働中） | verify-inflow で EXTERNAL≥1 | ★done 2026-07-14★ EXTERNAL=2, $0.004 USDC (tx 0x2e06c55b… from 0x74610bd8…, tx 0xe75baae3… from 0x36a9b00e…, 両方 receipt 0x1) |
 | 1b | Fable(今) | demand 面の追加: x402scan 掲載確認・Agent402 index・PR#838 follow | 各面で発見可能を実測 | pending |
 | 2 | claude-p loop | 実装済 2026-07-14: (a) `ANICCA_SLOT_ALLOWLIST` を loop に実装(commit 092ee1d7, unit 5/5, 回帰ゼロ, 既知baseline=wire-seam 1件は変更前から) (b) ★agent-economy-loop が claude-p 本体だった★(ANICCA_BRAIN=claude-p, home=.anicca-founder) — plist に allowlist=x402_sell + X402_PORT=8412 を注入して再起動、実ログ「slot allowlist active: x402_sell / live skills: report, cook, x402_sell」確認 (c) claude-p seller は sonnet subagent が skill 通りに完遂(:8412/:8443, payTo=0x904B, Bazaar 掲載 7/7 実JSON確認 = ★sonnet 再現性の証明★) (d) inflow watch per-instance 化(5c0cb8b5)。備考: telemetry 署名鍵(資金ゼロ)を露出事故により rotate 済 | claude-p wallet 0x904B に EXTERNAL≥1(watch 常駐中)、loop 無人稼働 | ★infra 完了・child-proof 済★ 11:49Z wake 実測: guard exempt「shop stays open」+ args={} (商品発明消滅、audit fix 4270e059 実証) |
-| 3 | Franklin | 配線済 2026-07-14: ★franklin2 = free/glm-4.7 が実験台★ (a) run.sh x402 strategy が facilitator creds を読む harness 修正(2025396a + OPENCLAW_ENV_FILE override) (b) funnel :10000→8413 (c) franklin2 plist に allowlist=x402_sell + X402_PORT/PUBLIC_URL 注入・再起動、実ログ「slot allowlist active」確認 (d) identity 実測: franklin=0x3EcCAD…8749 / franklin2=0xe7747F…7ce9(per-instance EVM、fail-closed gate 稼働) (e) verify-inflow の colony 集合を6 wallet に完備 (f) franklin2 inflow watch 常駐。残り: loop 自身の初 wake で seller 起動(監視中)→ Bazaar seed settle(親が recipe 手順6として1回)→ 掲載確認 → 外部着弾 | franklin2 wallet 0xe7747F… に EXTERNAL≥1 | ★配線完了・wake 待ち★ |
+| 3 | Franklin | ★2026-07-16 是正: 下の「真因」を読め。この行の「seller 起動」前提は崩れている★ 配線済 2026-07-14: ★franklin2 = free/glm-4.7 が実験台★ (a) run.sh x402 strategy が facilitator creds を読む harness 修正(2025396a + OPENCLAW_ENV_FILE override) (b) funnel :10000→8413 (c) franklin2 plist に allowlist=x402_sell + X402_PORT/PUBLIC_URL 注入・再起動、実ログ「slot allowlist active」確認 (d) identity 実測: franklin=0x3EcCAD…8749 / franklin2=0xe7747F…7ce9(per-instance EVM、fail-closed gate 稼働) (e) verify-inflow の colony 集合を6 wallet に完備 (f) franklin2 inflow watch 常駐。残り: loop 自身の初 wake で seller 起動(監視中)→ Bazaar seed settle(親が recipe 手順6として1回)→ 掲載確認 → 外部着弾 | franklin2 wallet 0xe7747F… に EXTERNAL≥1 | ★配線完了・wake 待ち★ |
 | 4 | Fable | one-command 化: ①sub あり → `spin up claude-p loop`(sonnet, 0→1 の後 trade へ) ②sub なし → `spin up franklin loop`(free model)。bootstrap script 2本 | 新規マシンで 1 コマンド → seller 稼働まで自走 | pending |
 | 5 | Fable | Agora README 更新: 「install → your AI earns」+ 実 tx link(INV-E 解除済: 0x2e06c55b…) + 2 コマンド | repo public + tx link | pending |
 
@@ -69,6 +69,31 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 5. 前提となる実装: loop 起動時に broke instance が x402_sell を最初に選ぶこと
    （catalog-gate が broke 時に資本リスク slot を隠す既存設計 + ANICCA_SLOT_ALLOWLIST でテスト決定論化）
 
+
+## ★真因 2026-07-16（Fable が自分の目で実測。全ての前提を訂正する）★
+
+**agent は誰一人 seller を立てられていない。稼いでいる箱は全て Dais 手書きの boot script = INV-F 違反。**
+
+- run.sh 生成の seller plist → `seller-boot.sh` の `DIR=$(dirname $0)` が ANICCA_HOME 配下を指す
+  → そこに node_modules が無い → `ERR_MODULE_NOT_FOUND: '@coinbase/x402'` で即死
+- 実測: `ai.anicca.x402-seller-8412/8413/8414` は全て `last exit code=1`, `runs=213/168/213` のクラッシュループ
+- node_modules は `~/anicca/skills/earn/x402-sell` にのみ存在（3つの home 配下には無い）
+- UP に見える seller 4本は全て `serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh`
+  （`DIR=/Users/anicca/anicca/skills/earn/x402-sell` を直接 exec するので動く）
+- → 段2の「(c) claude-p seller は sonnet subagent が skill 通りに完遂 = sonnet 再現性の証明」は**誤り**。
+  完遂したのは Dais の手書き script であり、loop ではない
+- → 「$0.011 は claude-p が稼いだ」も**誤り**。稼ぎの因果に LLM は1度も入っていない
+
+Bazaar 実測: `oursCount=14` = 0x810f が7本 + 0x904B が7本。franklin1/2 は **0本**。
+条件はほぼ同じ（同じ serve.mjs / 同じ CDP creds / funnel 済 / 非標準ポート :8443 でも載る）。
+差は「settle 実績の有無」だけに見える → 仮説: **Bazaar は settle した resource だけをカタログ化する**（鶏と卵）。
+対抗仮説: 公式 spec は「402 の extensions.bazaar で広告すればクロールされる」と言う。**未確定。断定しない**（→ TaskList T3）。
+
+Sonnet subagent の誤報2件（Fable が自分で見て否定 — 重要な主張は必ず自分で再検証しろ）:
+- 「CDP creds が franklin に無い」→ 誤り。`serve-franklin2-boot.sh` は同じ `. ~/.openclaw/.env` を読む
+- 「payTo 0x904B は誤設定」→ 誤り。意図的で、実際に $0.006 稼いでいる
+
+TODO の正本 = `docs/STATUS.md` の T1〜T10 表 + TaskList（二重トラック）。
 
 ## 「知能が要らない」仕組み（x402 skill × loop の全 ASCII。正本）
 
@@ -133,6 +158,17 @@ Agora/Anicca はそれを起こす環境。これが我々の能力の証明。
 4. 商品の高単価化(data 仕入れ→再包装: akta/monid/parallel、doc 50 playbook)
 5. #10 Agora 配布 = framework 同梱の network effect(全 install が互いの買い手/売り手)
 6. trade 接続($1k 到達で allowlist 解除→PM/SOL/HL) + spawn(余剰で複製)
+
+
+## ★名前の正本（2026-07-15 是正・混乱の元を断つ）★
+稼働 loop は3つだけ（automaton 閉鎖済）。「founder」は Fable 造語=claude-p の別名(home .anicca-founder 由来)。Franklin ではない。
+| 正式名 | home | x402 wallet | brain | x402 稼ぎ(24h実測) |
+|---|---|---|---|---|
+| claude-p | .anicca-founder | 0x810f | Claude sub | ★$0.007/7件★ |
+| franklin1 | .blockrun | 0x3EcC | BlockRun | $0(SOL trade 側、x402 未参加) |
+| franklin2 | .franklin2-home | 0xe7747F | free/glm-4.7 | $0(seller 稼働も Bazaar 未掲載) |
+0x904B は claude-p の Polymarket proxy 別 wallet(x402 wallet ではない)。:8404/:8412(0x904B)=Fable 手動残骸=掃除対象。
+正本 memory: reference_three_loops_canonical_names。
 
 ## Stop 条件
 
