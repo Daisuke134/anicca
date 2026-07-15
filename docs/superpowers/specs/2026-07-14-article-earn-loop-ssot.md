@@ -257,6 +257,12 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - ★**発見: daily-driver が Substack からログアウトしていた**（症状が紛らわしい: 既存 draft は開けるのに**新規 draft だけ** `ERR_TOO_MANY_REDIRECTS`）。builder が `/publish/posts` がログイン画面を出すことで真因特定 → **email magic-link で復旧**（Google OAuth は Substack では禁止 = memory 記録済み手順）、`handle=anicca2, id=336441894` を API で確認。★
   ★一般法則: セッション切れは「ログイン画面が出る」とは限らない。**リダイレクトループ・特定操作だけの失敗**として現れることがある。認証を疑う前に諦めるな。★
 
+- [x] **#31/#27 secrets/識別子 env 化 DONE** commit `a0aeda21`(openclaw) + `efdef2a`(profitable-claude)。team-lead 検収（値は出力せず存在数のみ確認）: publish-note.sh の平文 creds **grep 0 = 消滅**、bounty-cli.sh の `Daisuke134` 3件は全部 env 化の正しい実装（`GITHUB_IDENTITY="${GITHUB_IDENTITY:-Daisuke134}"` + `${STARTUP//Daisuke134/$GITHUB_IDENTITY}` 置換 + 元リテラル）。
+       ★builder の手法が正しい: 巨大 single-quote プロンプトのリテラルを直接編集せず、「デフォルト = 現状のリテラル」の env を足して**構築後に文字列置換** → override 無しで既存と完全一致（挙動不変を実測）、override 有りで新値に置換。★
+       ★**新発見（別タスク化）: `connector-cli.sh` に Dais の実名・電話・メールが平文**（spec は「GitHub identity」としか書いてなかった = spec が現実より粗かった。team-lead も PII の実在を grep で確認、値は見ていない）。builder は「この loop の本質が Dais 本人のイベント登録なので env 化の設計自体に判断が要る」と正しく判断して**手を付けず報告**した。★
+       ★pre-push hook の弱点発見: `git show --name-only` の出力に**コミットメッセージ本文も含まれる**ため、メッセージ中の「.env」という文字列だけで secrets 混入と誤検知する。★
+       残（正しく残した）: bounty/run.sh と README の `Daisuke134/anicca#997` は**過去 issue 番号の引用** = 履歴的 citation。env 化すると逆に不正確になるので残す判断は正しい。
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
