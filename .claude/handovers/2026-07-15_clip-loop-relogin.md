@@ -25,6 +25,24 @@ branch `feature/clip-rewards`。SSOT = `docs/loop-engineering/TASKLIST.md`（cli
 5. **loop に per-account browser self-heal を追加**（今 `ensure_browser.sh` は :9222 daily-driver のみ。9223+ 各アカにも同じ health→kill→relaunch(same --user-data-dir)→connectOverCDP を）。
 6. loop を1 pass 走らせ → 実 reel が grid に出る + Telegram 発火を確認（順3 WATCH-POST 完了）→ 順4 BIO / 順5 SELFRUN / 順6 MEASURE-$。
 
+## ★追記 2026-07-15 後半: なぜ昨日◯今日✗ = keepalive の穴（真の恒久 fix）★
+- 昨日の方法 = instagrapi + browser sessionid（commit `a6c92f65` "VERIFIED FREE POSTING"、session file 07-14 19:08 作成）。**session が fresh だから通った。**
+- **session が死んだ理由 = per-account keepalive が無い。** `session_vault_tick.sh`(launchd `ai.anicca.session-vault`, 30分毎)は `session_vault.py dump` + `keepalive https://www.instagram.com/` を **daily-driver(:9222)上でしか回さない**（VAULT_DIR も daily-driver 固定）。**clip-en(:9223)の aiclipsvault は誰も warm しない → ~24h で expire。** これが根本。
+- **★恒久 fix（最優先の harness 仕事）= session_vault を per-account 化★**: profile/port を引数化し、clip-en 等でも dump+keepalive+restore を 30分毎に回す。once ログインすれば二度と死なない。scale = 各アカ 1 profile + keepalive（daily-driver に全部詰める hack はスケールしない）。
+
+## ★login の機構（今日 判明、そのまま使え）★
+- **Playwright `connect_over_cdp("http://127.0.0.1:<port>")` は CloakBrowser で動く**（生 CDP per-page attach「No such target id」を回避）。venv `~/.cache/instagrapi-venv` に playwright 導入済み。
+- **IG login form の selector（この variant）= `input[name="email"]`(username欄) / `input[name="pass"]` / submit は非表示 → `page.press('input[name="pass"]','Enter')`**。`input[name="username"]` ではない。
+- creds 入力→Enter で **login は通る**が、直後 `instagram.com/auth_platform/recaptcha/` = **reCAPTCHA Enterprise challenge**（これが唯一の壁）。
+- daily-driver(:9222)は @anicca.affirms2 で既ログイン（占有）。aiclipsvault の add-account UI flow は Playwright だと brittle で 2分 hang。
+- CapSolver 使用可: `~/.openclaw/.env::CAPSOLVER_API_KEY`。reCAPTCHA Enterprise = task `ReCaptchaV2EnterpriseTaskProxyLess`（websiteURL=IG recaptcha page, websiteKey=Meta sitekey `6LeyIlkaAAAAAE-Ej…`要 live 確認）。パターン → memory `reference_capsolver_turnstile_bypass.md`（ただし Turnstile 用、Enterprise inject は IG auth flow へ token 差し込み+callback が要る）。
+
+## 次の最小手順（fresh session でやる）
+1. **恒久 keepalive を先に配線**（live session 無しでも書ける harness）: `session_vault.py` を per-account 対応にし、clip-en を tick に追加。
+2. **1回だけ再ログイン**: clip-en(:9223)で Playwright login(email/pass→Enter)→ recaptcha を CapSolver で解いて inject → sessionid 出現 → dump。※ or daily-driver add-account を robust に（camofox 経由 CAPTCHA solve が reference の定石だが account fingerprint は clip-en）。
+3. **poster を flatten 化**: `instagrapi_post.py` の `get_sessionid` を browser-level `Target.attachToTarget(flatten)` に（per-page attach をやめる）。
+4. loop 1 pass → 実 reel + Telegram 確認（順3 完了）→ 順4-6。
+
 ## 鉄則（変えるな）
 - ★LOOP がやる、orchestrator は harness を作るだけ（INV-12）。恒常運用で run.sh を叩くな★
 - 1アカ（aiclipsvault）だけに集中。金が出るまで scale しない。
