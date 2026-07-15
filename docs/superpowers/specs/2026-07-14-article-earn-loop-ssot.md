@@ -267,19 +267,28 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
 
-### 現在地スナップショット（2026-07-16 06:10 JST。次の agent はここから）
-| 主体 | 状態 |
-|---|---|
-| daily pass | 実行中（06:06:40 開始、新 gate 初通し、CDP 占有中）。watcher が完了を通知 |
-| note-paid-builder | #15 待機中（pass 完了後に zenn Google ログイン） |
-| freever-gen-builder | #13 待機中（pass 完了後に padding 実装） |
-| 次の大物 | pass green 確認 → **#41 DRAFT-ONLY 解除**（article-daily.sh の契約書き換え + human-funded から昇格）→ 明日 06:00 が初の完全無人公開 run |
-| 残 task | #10(#41) / #11(EN 展開) / #12(self-improve+self-heal+secrets) / #13 / #14(seo-gate) / #15(zenn login) |
-- [x] #37 price-check.py **DONE** commit `3b75f3c2`（team-lead 自作・live 実測: 有料5件、メンバーシップ最小記事数 floor=295、我々6本 → buy_once 提案。判断は agent、script は測るだけ）
-       ★気づき: `anicca123` の hasCircle が **true** になっている（メンバーシップ未作成のはずなのに）。要確認 — Dais が何か作ったか、hasCircle の意味が違うか。★
-- [x] #20 reality-gate.sh **DONE** commit `d2179217`（team-lead 自作。note=API状態+有料設定readback+匿名閲覧+画像生存 / x=x_fullverify 委譲 / ssr=substack等の \uXXXX decode 込み content+画像生存。live 3実物で E2E: note PASS、価格違い negative FAIL 発火、ssr PASS+negative 発火、x PASS。px 検査は既存 per-platform verifier の持ち場）
-- [x] #17/#18 deslop-gate.sh + eval-gate.sh **DONE** commit `e3fdf9e6`（team-lead 自作。fresh sonnet が judge、checklist/rubric は焼かず skill 参照。実測: slop fixture → FAIL(違反6件、全角ダッシュ捕捉)、★本物の agent-economy 記事 → deslop FAIL(命題型H2等5件)・eval **34/50 FAIL** + fact_flags 3件（ACP取り分・Olas数値・自社実績が本文中で出典に紐付いてない）★ = gate は身内にも容赦ない、これが仕様。loop は PASS まで書き直しを強制される）
-       ★未配線: run.sh への組み込みは今朝 06:00 の run 完了後（実行中の script を書き換えない）。★
+### 現在地スナップショット（2026-07-16 07:35 JST。次の agent はここから）
+**loop の全部品が実在し、全部 E2E 検証済み。残る操作は plist への arm 1行だけ。**
+| stage | 実物 | 状態 |
+|---|---|---|
+| ①TOPIC / ②RESEARCH / ③WRITE | article-daily.sh の PROMPT（launchd 06:00） | 8日連続 rc=0 で稼働中 |
+| ①.5 PLAYBOOK | STEP 1.5（commit `1a60e68`）+ `state/playbook-applications.jsonl` | 配線済み。playbook.json は funnel 7日で生成 |
+| ④PRICE | `_shared/price-check.py`（`3b75f3c2`） | live 実測済み |
+| ⑤FREE-GEN | `_shared/make-free-version.py`（`18a7014e`） | 手動正解と byte 一致 |
+| ⑥GATES | language-purity + seo(`7e7ec391`) + deslop(`bb6520de` 較正済) + eval、run.sh(`c2079cd1`) と X 経路(`677024b5`) 両方に配線 | 実記事を実際に止める所まで実証 |
+| PUBLISH note 有料 | `publish-paid.py --arm`（`b84674a6`） | ガード停止 E2E 済。--arm 実行は未（初回は明日） |
+| PUBLISH X | `publish-to-x.sh`（`3c796b21` cover gate + `677024b5` gates） | live 公開実績あり |
+| PUBLISH zenn | `post-zenn.py`（`1e688535` slug 修理） | 下書き6本が dashboard に実在 |
+| PUBLISH substack | `_shared/publish-substack-mermaid.sh`（`dacdeac2` + `891118e0` padding） | JA live 実績 / EN native paywall draft |
+| REALITY-GATE | `reality-gate.sh`（`d2179217`） | note/x/ssr の3経路を live で PASS/FAIL 実証 |
+| LEARN | `_shared/measure-funnel.py` + self-improve.sh L3（`0a5c612b`） | live 実数値取得済（note like=2 / X views=307） |
+| 契約 | article-daily.sh の `ARTICLE_AUTOPUBLISH`（`3264daa`） | **未 arm**（既定 = draft-only、prompt MD5 が変更前と byte 同一で証明済み） |
+
+**次の1手 = `~/Library/LaunchAgents/ai.anicca.article-daily.plist` に EnvironmentVariables で `ARTICLE_AUTOPUBLISH=1` を入れて launchctl reload → 翌 06:00 の初回無人公開 run を観察。** Dais 承認待ち（2026-07-16 07:35 時点）。
+
+**Dais 判断待ち（2件）**: ①arm してよいか ②`connector-cli.sh` の PII（task #20）— この connector loop は現役か（死んでいるなら削除、生きているなら PII を env へ出す設計が要る）。③zenn アカウントの未把握記事40本以上（cronジョブ/Claude Code/OpenClaude 系）を消してよいか。
+
+**残タスク**: self-heal L2（設計を freever に起草させ中 → team-lead が spec 化 → 実装委譲）/ #20 PII / self-improve.sh の keep-revert 実装（day7 median 定義済み、データが7日たまってから）/ X-en draft（note-paid-builder 実行中）/ Phase 2 = human-funded から親 skills/ への昇格（#31 完了後なので着手可能だが、契約と場所を同時に動かさない原則で arm 後に）。
 
 ### PART B — skill を動くに
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
