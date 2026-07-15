@@ -80,13 +80,39 @@
 | tiktok companion | 未実装（publish matrixに名前だけ）|
 | 換金ノード | note のみ実装・一度もON していない・¥0。cross-platform orchestrator無し |
 
-## 5. フェーズ別 TODO（TaskList tool と同期）
+## 5. TODO（granular・これが正本。上から順に消す）
 
-- PHASE 0 整合: k16比較をDaisが見て移植GO判定 / research読んで金戦略確定 / 本SSOT承認=設計凍結
-- PHASE 1 SKILL: k16の7ルールをWRITE工程へ移植 / EN工程にECC+Karpathy型追加 / G1G2G3ゲート正式配線 / マネタイズ戦略をskill本文に明記
-- PHASE 2 PUBLISH: 記事ごと手書きscript廃止→パラメータ化 / note login修理 / X session再取得 / social-blog-skills参考にnote+Substack+X orchestrator / JP5+EN3 全draft+screenshot GATE通過
-- PHASE 3 MONETIZE: note有料/メンバーシップON（¥0→初売上）/ Substack有料tier有効化 / product drop の器 / 高額founding tier / 横断売上ledger
-- PHASE 4 LOOP: daily cron再有効化（draft生成のみ）/ eval→PLAYBOOK自動書戻し / 売上CVR計測をLEARNへ接続
+### A. 既に書いた agent-economy 記事を JP+EN で ship する（即・独立）
+- [ ] A1  JP ship版を確定（`jp-k16.md`=47/50 を採用、原本は捨てる）
+- [ ] A2  JP Mermaid 図3枚を PNG レンダリング（note は Mermaid 非対応）
+- [ ] A3  JP 表を PNG レンダリング（note は表 非対応、`note-render-tables.py`）
+- [ ] A4  JP eyecatch/cover 画像を生成（GPT-image）
+- [ ] A5  note に draft投稿 → screenshot verify → meta.json（買切+定期購読の両対応）
+- [ ] A6  Zenn に draft投稿（frontmatter、1記事/24h rate 注意）→ verify
+- [ ] A7  Substack-ja に draft投稿 → verify
+- [ ] A8  X Articles JP に draft投稿（clipboard paste が前draft破壊に注意）→ verify
+- [ ] A9  tiktok 画像 JP 生成
+- [ ] A10 EN Mermaid 図3枚を PNG レンダリング
+- [ ] A11 EN cover 画像を生成
+- [ ] A12 dev.to に draft投稿（`published:false` 固定）→ verify（naturalWidth>0）
+- [ ] A13 Substack-en に draft投稿 → verify
+- [ ] A14 X Articles EN に draft投稿 → verify
+- [ ] A15 tiktok 画像 EN 生成
+- [ ] A16 全 draft の URL を meta.json に記録。公開ボタンは Dais 手動のみ
+
+### B. loop 化（skill を良く+無人化+換金+自走）
+- [ ] B1  k16 の7ルールを playbook WRITE-JP に移植（悪い例→良い例1行、bloat無し）
+- [ ] B2  ECC+Karpathy 型を playbook WRITE-EN に移植
+- [ ] B3  de-slop→eval /50「Daisが自腹で払うか」→fact の3ゲートを run.sh/gate群に正式配線
+- [ ] B4  ③RUN→受領書 と ⑤VISUALS(mermaid→PNG, cover生成) を run.sh に組込み
+- [ ] B5  記事ごと手書き publish script を廃止→パラメータ化（無人化の鍵）
+- [ ] B6  note login の Vue reactivity bug 修理
+- [ ] B7  X session 再取得
+- [ ] B8  ⑦に換金ノード追加: note 有料/メンバーシップ ON + Substack 有料tier ON
+- [ ] B9  Capafy に WRITE エンジン単体を出品（publish部を剥がす、即金ライン）
+- [ ] B10 LEARN: CVR/売上分析 + ベスプラ常時検索 + 成功記事copy → PLAYBOOK 自動書戻し
+- [ ] B11 全platform横断の売上 ledger（誰がいくら払ったか）
+- [ ] B12 cron/launchd(`ai.anicca.article-daily`) 再有効化 = 俺抜きで自走開始
 
 ## 6. 関連ファイル
 
