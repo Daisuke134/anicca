@@ -237,6 +237,14 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 ★ゲート: **売上が測れるまで like/view を代理指標にする。ただし playbook には「これは代理指標である」と明記する**（代理指標の最適化は本物の目的を殺しうる）。★
 検証: ①measure-funnel.py を今の live 3本（note nbcb93e6fc711 / X 2077484575299862907 / substack p/167）で実行し、実数値が出ることを実出力で示す ②取れない指標が null + reason になることを示す ③funnel.jsonl が7日未満なら learn が「データ不足」で no-op することを示す ④playbook.json の schema を1例で示す。
 
+- [x] ★**#21/#24 self-improve L3 DONE**★ commit `0a5c612b`（builder 実装、team-lead 独立検収: measure-funnel.py を自分で実行し **note like=2/price=1000/published、X likes=1 views=307（builder の測定時 299 → 増加中 = キャッシュでない本物の live 値）** を実出力で確認）。
+       実物: `_shared/measure-funnel.py`（測れない項目は null + reason。note 売上 API は候補4つ全部 404 → **捏造せず null+理由**）+ `self-improve.sh` に L3 節（7日未満は `insufficient funnel data (1/7 days) — no-op`）。
+       ★builder が踏んだ「Credit balance is too low」は**一時的**（team-lead が直後に `claude -p` で CREDIT_OK を実測）。playbook.json の実例は次回 learn 実行時に生成される。★
+       副産物: #29 と同型の `set -e` + 裸 `VAR=$(claude -p …)` で全体が落ちるバグを発見・修正。
+       ★注意: articles.jsonl は全行 published:false なので live 行が無く、builder が `state/live-articles.json`(gitignore) を手動 manifest として新設。**#41 arm 後は pass の STEP19 が live 行を書くので、manifest は不要になる → その時に measure-funnel を articles.jsonl 直読みへ戻すこと**（二重管理を残さない）。★
+- [ ] **measured_delta の定義（team-lead 設計判断 2026-07-16、builder の質問への回答）**: 比較は「記事単位」でなく「**公開後7日目の値**」で揃える（公開日が違う記事を同じ日に比較すると露出期間の差を測ってしまう）。
+      `measured_delta = median(仮説適用後の記事群の day7 指標) - median(適用前の直近同数の記事群の day7 指標)`。指標は platform ごとに1つ（note=like_count、X=views、zenn=liked_count）。**day7 が揃うまで status=testing のまま**（早期の keep/revert 判定を禁止）。サンプルが各群3本未満なら判定不能として `measured_delta=null, status=testing` を維持する。
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
