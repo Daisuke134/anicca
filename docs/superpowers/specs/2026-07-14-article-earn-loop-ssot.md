@@ -423,6 +423,20 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
        ★一般法則: 「最初の画像 = cover」のような**暗黙の consume 規則**は、入力の形が想定と1つズレるだけで正当なデータを黙って食う。
        consume する側と生成する側の数を突合するゲートが無い限り、この欠落は誰にも見えない。★
 
+### PART J2 — #41 実装設計（team-lead 起草 2026-07-16。pass green 確認後に builder へ委譲）
+前提ゲート（全部 DONE 済み）: de-slop/eval 配線(`c2079cd1`) + reality-gate(`d2179217`) + 各 platform の guarded publisher。
+**Phase 1 = 契約の書き換え（場所は動かさない）**:
+1. `article-daily.sh` に env kill-switch `ARTICLE_AUTOPUBLISH`（既定 0/absent = 従来 draft-only。plist で 1 を注入して初めて自動公開）。rollback = plist 1行。
+2. prompt 内の契約文を書き換え: AUTOPUBLISH=1 のとき、pass は各記事について
+   a. run.sh publish（6a-6d gate、PASS 必須）
+   b. JP: note 有料 = `publish-paid.py --arm`（価格は price-check.py の実測 + agent 判断、タグは tag-counts.py 実測5個）
+   c. 無料版 = make-free-version.py（切断位置は agent が編集判断で --after-chars 指定）→ X(`enable-publish`+`X_MODE=go go`) / zenn(published:true) / substack(`--mode go`, send:false)
+   d. **公開直後に必ず reality-gate.sh <platform> を実行。FAIL → 自分で直して再公開。直せない → 該当 platform だけ非公開/draft に戻して正直に報告**
+   e. Telegram 日報に live URL + reality-gate verdict + 販売設定 readback を含める
+3. X の sentinel/二重ガードは「pass 自身が自分の記事に対して使うことを Dais 決定 #41 が許可した」と契約に明記（他人の記事・過去記事への go は引き続き禁止）。
+**Phase 2（後日）**: human-funded/ から親 skills/ への物理昇格。MOVE 前に plist ProgramArguments + 全 skill/cron を grep（memory 掟）。Phase 1 と分離する — 契約と場所を同時に動かさない。
+検証（builder の DONE 条件）: ①bash -n ②AUTOPUBLISH 未設定で従来挙動が byte 同一（契約文以外の diff なし、draft-only 温存）③=1 の分岐が prompt に入ることを grep ④plist は**まだ書き換えない**（初回の有効化は team-lead が翌朝の run 前に手動で行い、初回 run を観察する）。
+
 ### PART J — DRAFT-ONLY をやめて直接公開する（Dais 決定 2026-07-16）
 - [ ] #41 ★**Dais の決定: loop は draft ではなく直接公開する**★
        理由（Dais 原文の要旨）: 「全部の記事を自分で見てチェックすることはできないし、やりたくない。公開済みのものを後から直す方がいい」
