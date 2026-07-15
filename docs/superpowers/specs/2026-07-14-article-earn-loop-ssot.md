@@ -326,12 +326,23 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        | 90%+ 無料で配り paywall=「信頼税」。無料で価値を配りきる限り brand は上がる | growthinreverse.com（HCR $1M+/月、R5）|
        | note 有料販売で brand を築いてから自前ドメインへ卒業した実例 | chatgpt_lab → chatgpt-lab.com（PART I 実測）|
        | X の link penalty は**タイムライン投稿本文**の話。X Article 内の CTA リンクに減点証拠なし。skill の Article 構造テンプレも最終段=CTA が標準 | .claude/skills/x-algorithm/SKILL.md:73-76,150（ClawHub x-algorithm）|
-       **brand を守る4条件（loop に焼く規則。ただし P0 symlink 判断まで skill 本体は編集禁止なのでここが正本）**:
-       ① 無料部分は単体で完結した価値（出し惜しみの「続きが気になる切り方」だけで売らない — 我々は 2,598字+図3枚で満たす）
-       ② CTA は末尾に1個だけ、静かに（本文中に散りばめない）
-       ③ 煽り語ゼロ（「必見」「衝撃」FOMO hook は副業 slop の型 = brand killer。x-algorithm skill の Hook Patterns[Insecurity/FOMO/RIP] は**使わない**）
-       ④ X で記事を告知するタイムライン投稿を打つ時は、リンクを本文でなく reply に置く（link penalty は投稿側に効く）
-       → Dais 承認 2026-07-16「誘導が brand に悪くないなら X draft も publish してよい」= 条件成立、公開実行。
+       ★**是正 2026-07-16（Dais の直感が正しかった。上の #42 の初回結論は reference class が偏っていた）**: 初回検索のソース
+       （mayu_brain / anotaro 等）は「noteの売り方を売る」インフォ商材エコシステム自身 = circular evidence。tech 系読者に
+       「続きは有料noteで」は情報商材に pattern-match し、「嘘を見抜け」が主題の我々の記事と正面衝突する。★
+- [x] #43 **無料 platform 記事の終わらせ方 = 「完結+フッター告知」型（是正後の正本。#42 の4条件を置換）** 2026-07-16 検索済み
+       | 原則 | 出典 |
+       |---|---|
+       | 無料 = teaches（それ単体で完結した学び）／有料 = solves（templates, workflows, code, data insights = 別の仕事をする別の成果物）。"Free posts as trailers... that deliver" | newsletterlab.substack.com/p/how-to-grow-on-substack-free-vs-paid |
+       | 宣伝は「記事末尾の固定メッセージ程度が望ましい」。誇張タイトル=信頼毀損。生成AI乱造を避けよ | zenn.dev/guideline（公式）|
+       | 90%+ 無料で配る。paywall は信頼が貯まってから効く | growthinreverse.com（R5）|
+       **無料版記事の型（X/zenn/substack-ja 共通、loop に焼く）**:
+       ① 自然な結論で終わらせ、**「まとめ」節（3-5 bullets）を足して単体完結**させる（cliffhanger で切らない）
+       ② その下に区切り線 + **フッター2-3行**: 「この記事は無料版です。完全版（note ¥1,000）には◯◯（有料側の中身を正確に名指し: "AIが稼いだ"の9割の正体 / 我々の到達点と実ログ）が入っています」— 価格明示、煽りゼロ、H2 の予告見出しにしない
+       ③ 「この続き：」型の teaser H2 は**禁止**（今回 X で使った型。商材 pattern-match の直接原因）
+       ④ Substack EN は外部誘導でなく **native paywall**（platform 内 preview→subscribe が規範、HCR 型）
+       ⑤ X 告知のタイムライン投稿はリンクを reply に置く（link penalty は投稿側に効く）
+       → note 有料版の切り方は現状維持（Dais 判断: 切り位置は良い）。直すのは無料側の「終わらせ方」だけ。
+       → TODO: X live 記事の末尾を「この続き：」H2 から「まとめ+フッター」型へ編集し直す。
 
 ### PART J — DRAFT-ONLY をやめて直接公開する（Dais 決定 2026-07-16）
 - [ ] #41 ★**Dais の決定: loop は draft ではなく直接公開する**★
