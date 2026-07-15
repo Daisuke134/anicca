@@ -272,6 +272,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 **作らないもの（builder の判断を採用）**: Substack/X/zenn セッション用の専用 healthcheck。理由 = これらは「検知」の問題でなく「人間の再ログインが要る」問題。pass の STEP6-9 が既に毎朝1回検知・報告しており、288回/日の再チェックは資源の無駄。
 ★一般法則: **監視は「検知したら誰かが直せる」ものにだけ付ける。直せない事実を高頻度で再確認するのは監視でなく不安。**★
 
+- [x] ★**今朝の OAuth 死の真因 = upstream の既知バグ（builder が `gh search issues` で特定、2026-07-16）**★: `anthropics/claude-code#76905`（2日前 filed）と完全一致 — **macOS Keychain の単一 credential(`Claude Code-credentials`) を複数の claude session が共有し、single-use refresh token の race に負けた側が invalid_grant → ログアウト状態**に落ちる。issue の環境説明（常時稼働 Mac mini + 1日18本の headless `claude -p` + 長時間 interactive session + Keychain item 1個）が我々の環境と一致。
+       裏付け: 今朝 06:00 時点で `~/.claude/.credentials.json` の accessToken.expiresAt はまだ数時間先 = **時間切れではない**。6分後の手動 retry が素通りで成功 = 一過性の race。**team-lead の「並走 claude が原因」仮説は当たっていたが、正確には「同時刻の別 launchd ジョブ」ではなく「常時稼働の interactive session 群との credential 共有競合」**（launchd の 06:00 起動は本ジョブのみと実測）。
+       対処（commit `1a60e68` に同梱、後述の混線あり）: `run_claude_pass()` 化 + **その回のログ差分だけを byte offset で切り出して** auth 失敗シグネチャを grep → 一致 かつ rc≠0 の時だけ 30秒待って**1回だけ retry**、それでも駄目なら Telegram FATAL 通知。**auth 以外の失敗には一切触らない**（retry も notify もしない）。4パターンの mock harness で検証済み（success / auth_fail_once=自己修復 / auth_fail_always=通知 / other_fail=不干渉）。
+       ★一般法則: **自分のコードを疑う前に upstream の issue を検索する。** 「今日から急に落ちるようになった」は自分の変更のせいとは限らない。★
+- [x] **commit 混線の自己申告（team-lead の過失、2026-07-16）**: `1a60e68` は message が STEP 1.5 のことしか書いていないが、diff には builder の auth-retry も入っている。原因 = **builder が同じファイルを編集中に team-lead が `git add <file>` でファイル丸ごと stage し、自分の変更しか書いていない message で commit した**。中身は両方正しく検証済み。訂正の history note = `4b57396`。
+       ★一般法則: **共有ファイルで `git add <path>` は「今の中身全部」を stage する。他の agent が同じファイルを触っている間は、commit 前に `git diff --cached` を読んで、自分が書いていない変更が混ざっていないか確認する。**★
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
