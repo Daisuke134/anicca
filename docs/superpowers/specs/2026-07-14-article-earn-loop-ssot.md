@@ -112,7 +112,8 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 方針（2026-07-15 実態反映）: **loop は既に毎日 draft を 5platform に生産できてる。金の blocker は3つだけ = ①X再login ②draft を publish ③換金ON。** 他(VISUALS/gate/self-improve)は品質・堅牢・scale の改善であって初¥の blocker ではない。TikTok は後。
 
 ### ★TIER 0 — 初¥への最短路（これだけが金の直接 blocker）
-- [ ] M-X   #15 X daily-driver re-login（唯一の壊れた publisher。Dais 手動 or session復旧）
+- [ ] M-X   #15 X daily-driver re-login（唯一の壊れた publisher）
+      実態(2026-07-15実測): daily-driver Chrome(:9222)生存だが X profile ログアウト。x-publish は browser(`contexts[0]`)経由=X Articles編集に browser 必須(API不可)。.env に X API creds(OAuth)有るが Articles には使えない。`.cloak/vault/daily-driver/auth-state*.json` に session snapshot 有るがログ曰く復元失敗。browser再login = X password(.env に無し、identity ledger `identity_anicca_login_accounts.md` 要確認)+2FA。daily-driver は今 coconala(gig)使用中で競合注意。→【要判断: 自律login(ledgerにpassword有れば tier-a-bypass で OTP)か Dais手動か】
 - [ ] M-PUB 溜まってる draft(x402/ERC-8004/トークン病/OpenEvolve)を実際に publish する。**publish=Dais手動が設計。「毎日 draft は出るが誰も公開しない」が ¥0 の真因** → Dais が定期公開する運用にするか、承認済みだけ安全に自動公開する path を足すか【要判断】
 - [ ] M-MON #23 換金ON: note membership(¥500/月)+ how-to部の paywall / Substack有料tier（コード実在、ONだけ）
 → この3つで **初¥**。以降は下の TIER で 10k MRR へ複利。
