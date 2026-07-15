@@ -47,7 +47,7 @@ Fable が誤って「founder」と呼んだだけ。founder = claude-p = agent-e
 |---|---|---|
 | A | franklin1/2 に公開URL・x402設定を配線 | 済(3loop bootstrap済) |
 | B | loop自身がBazaar掲載をseedする機構(run.sh) | 済(push 778a14bd) |
-| **C** | 3loopの次wakeでseedが実際通るか監視 | ★真因発見: env-scrub が X402_PUBLIC_URL を子に渡してなかった → seed step が空URLで発火せず。1行修正(d9f1e0f2c)、3loop再起動済。次wakeでseed走るか監視中 |
+| **C** | 3loopの次wakeでseedが実際通るか監視 | ★2回目の真因: env-scrub が X402_PUBLIC_URL を allowlist に含まず子に渡さない → seed step 空URLで不発。修正 commit d9f1e0f2c(ALLOW set に X402_PUBLIC_URL 追加)、3loop再起動済。**だが再起動後もまだ seed log 0/flag 0**。franklin2 は x402_sell 実行中(21:34/36)で seller UP(:8413 payTo 0xe7747F)だが seed step が依然発火せず。次デバッグ点=run.sh の seed 条件(UP=up かつ X402_PUBLIC_URL有かつ未seed)のどれが false か、実 wake の run.sh stdout で確認。cwd reset で grep が飛ぶので出力はファイル経由で読む |
 | D | seed通れば→franklin1/2もBazaar掲載→外部着金 | C次第 |
 | E | seed失敗(self-pay不可)なら→x402scan直接登録に切替 | 準備要 |
 | F | #16 掲載面を増やす(x402scan/Agent402/MCP)=distribution | pending |
