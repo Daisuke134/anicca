@@ -8,7 +8,27 @@
 
 ---
 
-## 0. 前提となった research（一次ソース）
+## 0. ★配置マップ（flip-flop 防止・2026-07-15 実測。場所で迷ったら必ず先にここを読む）
+
+loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を何度も言い直した）の根本原因。
+
+| 役割 | 正確な path | 備考 |
+|---|---|---|
+| scheduler | `~/Library/LaunchAgents/ai.anicca.article-daily.plist` | launchd。**毎日 06:00**。loaded=YES, LastExitStatus=0 |
+| loop 実体 | `~/profitable-claude/skills/human-funded/article/article-daily.sh` (88行) | plist が呼ぶ。bounded `claude -p` を1回走らせる（run.sh を直接ではない） |
+| skill(執筆+publisher) | `~/.openclaw/skills/ai-entity-article-writer/` （`.claude/skills/ai-entity-article-writer` は**ここへの symlink**） | claude -p pass が使う道具。run.sh / publish-*.sh |
+| state | `~/profitable-claude/skills/human-funded/article/state/` | lockdir 等 |
+| ★活動ログ(本物) | `~/.openclaw/logs/article-daily.log` | ★`.out`/`.err` は launchd capture で空。実ログは `.log`★ |
+
+**loop の型**: launchd（唯一の scheduler）→ article-daily.sh → mkdir lockdir（daily-driver browser :9222 の競合防止）→ `claude -p` bounded pass が 執筆→publish→`openclaw message send`(telegram)報告。self-register scheduler は使わない。timeout も掛けない（capafy/life-manager が rc=124 で途中死した教訓）。
+
+**定義的状態(2026-07-15 実測)**: plist loaded=YES / 毎日06:00 / LastExitStatus=0。**但し `.out` 最終更新=7/13 06:00** ＝ 7/14・7/15 は fire してない可能性。実際に記事を出したかは `article-daily.log` を見るまで **UNVERIFIED**（log 読みは未実施）。
+
+**flip-flop の再発防止（HARD）**: 俺は (a)`~/.openclaw` の run.sh だけ見て「これが loop」と誤認、(b) 空の `.out` を見て「動いてない」と誤認、(c) SKILL.md:121 の古いメモ「old crons DISABLED」を鵜呑み。→ **今後は必ず: ①plist の ProgramArguments が指す実体 ②その script 内の `$LOG` 変数が指すログ、を見る。断片で断定しない。**
+
+---
+
+## 1. 前提となった research（一次ソース）
 
 | # | 発見 | 出典 |
 |---|---|---|
