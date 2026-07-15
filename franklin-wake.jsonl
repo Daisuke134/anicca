@@ -8209,3 +8209,10 @@
 {"ts":1784143371,"wake_id":"00MRMGWBXS79E731650CB8412D","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
 {"ts":1784143517,"wake_id":"00MRMGZGE6EF25920FA9594A8F","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"hl_trade","profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] hl reconcile -> {\"status\": \"ok\", \"recorded\": 0} [earn] hl balance $0.0 < trade $5 → attempting self-fund (relay Base→H"}
 {"ts":1784143646,"wake_id":"00MRMH27WI08F0DC58FA9F477C","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784143780,"wake_id":"00MRMH53WLA97AF1720FDA47C8","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784143910,"wake_id":"00MRMH7VUY3C6629A2D513478A","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784144070,"wake_id":"00MRMHBB53A45085292F684C59","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784144198,"wake_id":"00MRMHE1X17CC1D2F3B80041A9","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784144358,"wake_id":"00MRMHHHN9D70691B7E85444CA","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784144502,"wake_id":"00MRMHKKSP87E00E4D85B7459A","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784144643,"wake_id":"00MRMHNLJ1448A4ED58EDF4E25","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
