@@ -47,7 +47,7 @@ Fable が誤って「founder」と呼んだだけ。founder = claude-p = agent-e
 |---|---|---|
 | A | franklin1/2 に公開URL・x402設定を配線 | 済(3loop bootstrap済) |
 | B | loop自身がBazaar掲載をseedする機構(run.sh) | 済(push 778a14bd) |
-| **C** | **3loopの次wakeでseedが実際通るか監視** | **今ここ。待ち** |
+| **C** | 3loopの次wakeでseedが実際通るか監視 | ★真因発見: env-scrub が X402_PUBLIC_URL を子に渡してなかった → seed step が空URLで発火せず。1行修正(d9f1e0f2c)、3loop再起動済。次wakeでseed走るか監視中 |
 | D | seed通れば→franklin1/2もBazaar掲載→外部着金 | C次第 |
 | E | seed失敗(self-pay不可)なら→x402scan直接登録に切替 | 準備要 |
 | F | #16 掲載面を増やす(x402scan/Agent402/MCP)=distribution | pending |
