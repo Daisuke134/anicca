@@ -162,8 +162,18 @@ export function resolveSolanaSecret({ home, env } = {}) {
 // substitution — this module itself never logs the key (R5 + env-filter discipline).
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const which = process.argv[2];
-  if (which !== 'evm' && which !== 'solana') {
-    process.stderr.write('usage: resolve-identity.mjs <evm|solana>\n');
+  if (which === 'evm-address') {
+    // Derive the EVM address via viem — NOT python/eth_account. run.sh's old python one-liner
+    // silently returned '' under launchd's clean PATH (no eth_account on sys.path), so a free
+    // Franklin's x402 wake HALTed with wallet='' even though its key resolved fine (x402-zero-to-one
+    // 2026-07-14). node+viem is already a hard dep of the seller, so it's always present.
+    const key = resolveEvmPrivateKey({});
+    if (key) {
+      const { privateKeyToAccount } = await import('viem/accounts');
+      process.stdout.write(privateKeyToAccount(key).address + '\n');
+    }
+  } else if (which !== 'evm' && which !== 'solana') {
+    process.stderr.write('usage: resolve-identity.mjs <evm|evm-address|solana>\n');
     process.exitCode = 2;
   } else {
     const resolved = which === 'evm' ? resolveEvmPrivateKey({}) : resolveSolanaSecret({});
