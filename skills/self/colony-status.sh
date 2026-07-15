@@ -18,14 +18,21 @@ loop(){ [ -n "$(launchctl list 2>/dev/null | grep "$1")" ] && echo RUNNING || ec
 
 echo "════════════ ANICCA COLONY — LIVE SSOT ($(date -u +%Y-%m-%dT%H:%MZ)) ════════════"
 echo ""
-echo "[1] anicca-a3cdd4   SELF-funded  (automaton + ClawRouter)"
-# a3cdd4 の実 loop = com.anicca.daemon (body ~/.anicca)。founder-loop は claude-p の proxy body (~/.anicca-founder, 0x810f)
-echo "    wallet 0xB9dd3B…D56  Base USDC=\$$(erc20 $BASE $BUSDC 0xB9dd3B67921B354c656523d6851537988F31DD56)(+HL口座は別途)   loop(com.anicca.daemon)=$(loop anicca.daemon)"
+# a3cdd4 (~/.anicca, 0xB9dd, com.anicca.daemon) was listed here as a living citizen until
+# 2026-07-16. It is not one: launchctl has no com.anicca.daemon, every plist is .disabled-*,
+# and 48h external inflow is $0. Printing it made this script assert a citizen that does not
+# run, which is exactly the kind of self-report that must never be mistaken for evidence.
+# Retired by Dais on 2026-07-16. The colony is these three. See docs/STATUS.md.
+
+echo "[1] franklin1       SELF-funded  (Franklin-Trading, Solana)   HOME=~/.blockrun"
+echo "    sol    8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-loop)=$(loop franklin-loop)"
+echo "    x402   0x3EcCAD24…8749  Base USDC=\$$(erc20 $BASE $BUSDC 0x3EcCAD24794ca298D25378E9902A251322ea8749)   ★no X402_PUBLIC_URL = cannot list on Bazaar (T2b)★"
 echo ""
-echo "[2] Franklin        SELF-funded  (Franklin-Trading, Solana)"
-echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-loop)=$(loop franklin-loop)"
+echo "[2] franklin2       SELF-funded  (x402 seller)                HOME=~/.franklin2-home/.blockrun"
+echo "    x402   0xe7747F…7ce9  Base USDC=\$$(erc20 $BASE $BUSDC 0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9)   loop(franklin2-loop)=$(loop franklin2-loop)  url=:10000"
 echo ""
-echo "[3] claude-p (me)   human-funded (this Claude → PM earner)"
+echo "[3] claude-p (me)   human-funded (this Claude → PM earner)     HOME=~/.anicca-founder"
+echo "    x402   0x810f6d61…29c5  Base USDC=\$$(erc20 $BASE $BUSDC 0x810f6d61f7606deee2657d3083e150a222bc29c5)   loop(agent-economy-loop)=$(loop agent-economy-loop)"
 # 0x904B50d2 holds the real funds (ERC-1167 proxy, no private key of its own -> cannot EIP-191 sign);
 # telemetry is signed by a SEPARATE dedicated identity 0x02Bb... (~/.anicca-founder/state/telemetry-identity.json).
 echo "    wallet 0x904B50d2…  pUSD=\$$(erc20 $POLY $PUSD 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74)   loop(pm-earner)=$(loop pm-earner)  proxy-loop(founder-loop,0x810f)=$(loop founder-loop)"
@@ -33,6 +40,6 @@ DW=0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74
 echo -n "    PM positions: "
 curl -s -m8 "https://data-api.polymarket.com/positions?user=$DW&sizeThreshold=0.1" 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);d=d if isinstance(d,list) else [];print(f'{len(d)} open, value \${sum(p.get(\"currentValue\",0) for p in d):.2f}, unrealized P&L \${sum(p.get(\"cashPnl\",0) for p in d):+.3f}')" 2>/dev/null
 echo ""
-echo "SELF-funded on Earth = 2 (anicca-a3cdd4, Franklin) | human-funded = 1 (claude-p)"
+echo "SELF-funded on Earth = 2 (franklin1, franklin2) | human-funded = 1 (claude-p)"
 echo "openclaw + hermes = DELETED (not anicca-local). SSOT spec: docs/superpowers/specs/2026-07-03-anicca-colony-architecture-design.md §19"
 echo "════════════════════════════════════════════════════════════════════════════"
