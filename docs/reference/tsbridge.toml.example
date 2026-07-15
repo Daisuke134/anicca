@@ -1,0 +1,33 @@
+# tsbridge — one Tailscale node per Anicca instance.
+#
+# Why this exists: Funnel only listens on 443/8443/10000, and on 2026-07-16 all three
+# already answered 200. franklin1 had no seat, so it had no X402_PUBLIC_URL, so it could
+# not advertise on the Bazaar, so it earned $0 while holding $4.48 — a seat problem wearing
+# a capability problem's clothes. tsnet's README: "Multiple independent Tailscale nodes can
+# run within a single binary". The port limit is per-node, so giving each instance its own
+# node dissolves the shortage instead of rationing it. See docs/STATUS.md (T2b).
+#
+# The sellers themselves are untouched; this sits in front of them.
+
+[tailscale]
+auth_key_file = "/Users/anicca/.tsbridge/authkey"
+state_dir = "/Users/anicca/.tsbridge/state"
+
+# Each service becomes <name>.tail7a0ba4.ts.net and gets its own :443.
+# funnel_enabled defaults to false — without it these stay tailnet-internal and no
+# external buyer can reach them, which is the whole point.
+
+[[services]]
+name = "franklin1"
+backend_addr = "localhost:8414"
+funnel_enabled = true
+
+[[services]]
+name = "franklin2"
+backend_addr = "localhost:8413"
+funnel_enabled = true
+
+[[services]]
+name = "claude-p"
+backend_addr = "localhost:8412"
+funnel_enabled = true

@@ -229,7 +229,55 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T4a** | ★次★ franklin2 で self-pay を1回通す → Bazaar 掲載を実証 — `buyer-cdp.mjs` で :10000 経由の settle を1回。INV-7 で収益に数えない（着火専用）。**壊すものゼロ**（:10000 は到達可能、売上 $0） | `bazaar-scan.mjs` が 0xe7747F の resource を返す（実 JSON を貼る）。載らなければ原因を掴む | ★次★ |
 | **T2b** | ★INV-INDEP 違反の解消 = **tsnet に決定**★ franklin1 が公開できないのは能力でなく**兄が席を占有しているから**（funnel 3枠、店は4軒。2026-07-16 実測で 443/8443/10000 とも 200 = 満席、franklin1 は `X402_PUBLIC_URL` すら持てない）。**案C(各自の Tailscale ノード) を採用** — tsnet は「1ノード=3枠」なので枠問題が構造的に消える。案A/B(Cloudflare/クラウド)は却下: card 必須 or 移植コスト、hosting 11候補を全て実測で潰した(→ `docs/reference/2026-07-16-independent-hosting-for-each-ai.md`)。**統合は却下（INV-INDEP 違反）** | franklin1 が他の instance の状態と無関係に公開 URL を持ち、稼げる | ★次★ 手順は T2b-1/T2b-2 |
 | **T2b-1** | TS_AUTHKEY を取る | 鍵が file にあり fingerprint で照合できる | ★DONE 2026-07-16★ 下記 |
-| **T2b-2** | tsbridge を通す — 3ノード(claude-p/franklin1/franklin2)が各自の FQDN で Funnel を上げる。同時に未確定を潰す: ①tailnet 台数上限 ②Funnel 帯域実数（**公式は数値を書いていない**。"non-configurable bandwidth limits" とだけ → 実測するしかない） | 3ノードそれぞれの `https://<node>.tail7a0ba4.ts.net/` が curl 200。franklin1 が**自分の** `X402_PUBLIC_URL` を持つ | ★次★ |
+| **T2b-2** | tsbridge を通す — 3ノードが各自の FQDN で Funnel を上げる | 外部から実 HTTP が返る。franklin1 が**自分の**公開 URL を持つ | ★DONE 2026-07-16 05:15★ 下記 |
+| **T2b-3** | ★次★ tsbridge を永続化 + 各 loop に自分の URL を配る — ①tsbridge を launchd 化（今は `nohup` の裸プロセス。再起動で消える）②franklin1/franklin2/claude-p の plist に**自分の** `X402_PUBLIC_URL` を設定 ③手書き boot script 4本を退役（INV-F）④旧 :10000 依存を切る | 各 loop が自分の FQDN で Bazaar に載り、franklin1 の売上が $0 でなくなる | ★次★ |
+
+### ★T2b-2 DONE — franklin1 が初めて自分の公開 URL を持った（2026-07-16 05:15 実測）★
+
+**「1台=3枠」は消滅した。実測で確定。**
+
+```
+tsbridge 1プロセス → tsnet ノード3個。各ノードが独自 IP・独自 FQDN・独自 :443
+  claude-p    100.73.148.91     https://claude-p.tail7a0ba4.ts.net
+  franklin1   100.114.193.59    https://franklin1.tail7a0ba4.ts.net    ← 兄と無関係な自分の席
+  franklin2   100.81.5.86       https://franklin2.tail7a0ba4.ts.net
+```
+
+**① ルーティングが正しいことの証明（payTo が3つとも別）**:
+
+| FQDN | payTo（実 HTTP から） |
+|---|---|
+| franklin1.tail7a0ba4.ts.net | `0x3EcCAD24794ca298D25378E9902A251322ea8749` ← franklin1 自身 |
+| franklin2.tail7a0ba4.ts.net | `0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9` ← franklin2 自身 |
+| claude-p.tail7a0ba4.ts.net | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74` |
+
+★注: claude-p の :8412 は `0x904B`(PM proxy) に払わせている。STATUS 冒頭の表では claude-p の x402 wallet = `0x810f` だが、:8412 の実 payTo は `0x904B`。**どちらが意図か未確定**（STATUS.md 79行「payTo 0x904B は誤設定 → 誤り。意図的」と整合はする）。T2b-3 で確定させる。
+
+**② Funnel(公開)であることの証明 — ここを間違えかけた**:
+
+Mac Mini から curl して 3つとも 200 だったが、**Mac Mini は tailnet の中にいるので、この 200 は公開の証拠にならない**（tailnet 内部で見えただけかもしれない）。自分の位置を証拠に混ぜる誤り。→ [[feedback_my_own_scripts_are_self_report_not_evidence]] と同型。
+
+外部から2段階で確定させた:
+
+| 検証 | 結果 |
+|---|---|
+| 公開DNS `dig +short @8.8.8.8 franklin1.tail7a0ba4.ts.net` | `103.84.155.217 / 103.84.155.153` = **実売実績のある `aniccanomac-mini-1` と同じ Tailscale ingress IP**。公開解決される |
+| 第三者サーバ `r.jina.ai` 経由で実 HTTP | **成功**。`URL Source: https://franklin1.tail7a0ba4.ts.net/` + 商品 JSON 全文。**公開インターネットから到達可能** |
+| 外部プロキシ `api.allorigins.win` | 500 / 522 で失敗。**Funnel の否定材料にはしない**（プロキシ側の障害と区別できない）。曖昧な結果は結論にしない |
+
+**③ 未確定だった3件の決着**:
+
+| 問い | 実測 |
+|---|---|
+| tailnet の台数上限に触れるか | **触れない**。Personal($0) は *"Unlimited user devices"*（公式 pricing）。3ノード追加後も全て稼働 |
+| tsnet ノードに Funnel を許す ACL が要るか | **不要だった**。ACL を1行も触らずに Funnel が立った（既存 tailnet の nodeAttrs を member として継承したと推定。**推定であり未検証**） |
+| Funnel 帯域の実数値 | **依然不明**。公式は数値を書かず *"non-configurable bandwidth limits"* のみ。売上が伸びた時に初めて効く。**当面は blocker でない** |
+
+**④ 壊していないことの確認**: 既存3枠 `:443` / `:8443` / `:10000` は tsbridge 起動後も全て 200。稼ぎ頭(:10000 で $0.011 実績)は無傷。
+
+**⑤ 使ったもの**: `jtdowney/tsbridge`(300★) を `go install`（48MB、Go 1.26.0）。config = `~/.tsbridge/tsbridge.toml`。**seller のコードは1行も触っていない**。
+
+**⑥ 残る脆さ（T2b-3）**: 今の tsbridge は `nohup` の裸プロセス。**Mac 再起動で消える。**launchd 化するまで、この成果は揮発する。
 
 ### ★T2b-1 DONE — 鍵は取れた。ただし経路を変えた（2026-07-16）★
 
