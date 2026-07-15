@@ -351,7 +351,13 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 ### PART A — その loop で記事を publish（テスト出力）
 - [x] #9  [6]-出典 Dais承認（2026-07-15 承認済）
 - [ ] #10 REVIEW-STATUS を REVIEWED化
-- [ ] #11 JP publish note→zenn→substack-ja→x +verify（tiktok除外）
+- [~] #11 JP publish: **note=有料公開DONE(#35)、X=無料版draftステージDONE(2026-07-16)**。残=zenn/substack-ja + X draft の公開ボタン
+       X 無料版 draft（team-lead が fv_top.png/fv7.png を own-eyes 確認済み）:
+       - DRAFT_URL = `https://x.com/compose/articles/edit/2077476121541799937`（未公開、Draft バッジ実見）
+       - 中身 = note と同一の無料境界（「…誰も担保していません。」で切断、有料側の混入なし）+ 末尾 CTA H2 + note 有料版 URL
+       - verify PASS: body images 3 / tallest 506px / TALL>650 なし。カバー(eyecatch) 正常、著者 Dice @diceai0
+       - 無料版 md = `~/.cloak/note-work/2026-07-12-agent-economy-jp-x-free.md`（X 無料版の型として再利用可）
+       ★funnel の型が確定: 無料版 = 有料ラインまで + CTA（有料側見出し1-2個を予告 + 買い切り価格 + URL）。loop に焼く際はこれを copy。★
 - [ ] #12 EN publish devto→x +verify（tiktok除外）
 
 ## 6. 関連ファイル
