@@ -245,6 +245,10 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - [ ] **measured_delta の定義（team-lead 設計判断 2026-07-16、builder の質問への回答）**: 比較は「記事単位」でなく「**公開後7日目の値**」で揃える（公開日が違う記事を同じ日に比較すると露出期間の差を測ってしまう）。
       `measured_delta = median(仮説適用後の記事群の day7 指標) - median(適用前の直近同数の記事群の day7 指標)`。指標は platform ごとに1つ（note=like_count、X=views、zenn=liked_count）。**day7 が揃うまで status=testing のまま**（早期の keep/revert 判定を禁止）。サンプルが各群3本未満なら判定不能として `measured_delta=null, status=testing` を維持する。
 
+- [x] **07:08:29 の「3連続 run・done 無し」の犯人 = team-lead 自身**（実害ゼロ、2026-07-16 特定）。#41 検収で PROMPT の MD5 を独立再現する際、`src.split('env -u ANTHROPIC_API_KEY')[0]` で **claude 呼び出しの手前までを 3回 bash 実行**した（old/new-unset/new-autopub）。その切り出し範囲に `echo "=== article-daily run ..." >>"$LOG"`（claude 呼び出しより前の行）が含まれていたため、ログに run 行だけが3つ出て done が無い、という痕跡になった。lockdir も trap で解放済み、state 更新なし、今日の pass は 06:52 に正常完了しており**失われていない**。
+       ★一般法則: **script の一部を切り出して「変数だけ取り出す」実行は、その範囲の副作用を全部実行する。** 純粋に見える前半にもログ書き込み・ロック取得・mkdir が潜む。変数抽出は `bash -c 'source <(sed -n "…p" file); echo "$VAR"'` のような範囲限定でなく、**副作用行を明示的に除去してから**行うか、そもそも script 側が `--print-prompt` のような検査用 subcommand を持つべき。★
+       → builder(freever) がこの異常を自力で発見・報告したのは good。「自分が原因かもしれない」と併記した誠実さも正しい。
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
