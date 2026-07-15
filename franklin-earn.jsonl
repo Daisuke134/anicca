@@ -1304,3 +1304,6 @@
 {"ts":1784132417,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMAD2W6F5C258EE1FA6405C"}
 {"ts":1784133790,"source":"cook","task":"explore: solana low-capital DeFi earning strategies high ROI","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMB6V97A0A1EC04A3F64087"}
 {"ts":1784134434,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"gig","task":"observe: eligible=post open=0 balance=$4.4778","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMBKLX61DFB5065A0D64E75"}
+{"ts":1784135127,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"hl-trade","task":"hl-open","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMBZFTY0520F972252344B4"}
+{"ts":1784135255,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"hl-trade","task":"hl-cooldown — holding flat (2min since last trade, min 60)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMC285UF759CB0369A74BA2"}
+{"ts":1784135884,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield-defi","task":"deploy ","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRMCFQU974F466F194F84CB7"}
