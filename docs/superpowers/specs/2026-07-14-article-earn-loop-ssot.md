@@ -86,12 +86,24 @@
 
 方針: skill を「動く」に直す(B) → verifier(C) → loop 自走(D) → 換金(E) → その loop で agent-economy 記事を publish(A=テスト出力)。記事を手で出さない。TikTok は全体が回ってから追加（Dais 2026-07-15）。
 
-### ★理解ログ（実測 2026-07-15、二度と再検索しない為）
-- **T1 の実体判明**: 4 publisher(note/zenn/devto/substack)は既に `--markdown-file --title --meta` を取る = **zenn/devto/substack は既に generic**。hardcode の大半は 2026-07-12 に修正済（script コメントが証言）。
-- **#13 の残り = note のみ**: `scripts/note-publish/publish-to-note.sh:49` が新規note記事の draft 自動作成 未実装（既存noteId未指定だと Automaton note 166686292 に落ちるので拒否）。**note新規draft作成が唯一の残作業、かつ #14 note-login修理と結合**（login壊れてると live検証不能）。
-- **収益化は「無い」のではなく「未ON」**: `note-publish/publish-membership.py`・`set-membership.py`・`set-preview-line.py` 実装済。SKILL.md §331-341 に戦略(membership ¥500/月=MRRエンジン、ChatGPT研究所 copy)も在る。#23 は「ON にする」作業。
-- **self-improve は日次ダイジェスト止まり**（`self-improve.sh`=cron event+reflection+SEO rank集約）。#21 は L3(外部学習の閉ループ)へ格上げ。
-- skill は ~/.openclaw(trunk=main-internal)。編集は即 commit。
+### ★問題インベントリ（実測 2026-07-15。実装前に全部潰す。過去の思い込みを実測で訂正済）
+
+**訂正された思い込み（実測で潰した）**:
+- ❌「note login 壊れてる(Vue bug)」→ 実測: note-mcp venv=OK / camofox daemon :9377=生存 / .env=有。**依存は健全**。publish-note.sh は 2026-07-12/15 に keychain/clone-path/camofox-profile を多数fix済、`create_draft(session,article)` も generic(line204)。→ **note publish は動く見込み（要: 実draft 1回で実証）**
+- ❌「cron 未load」→ 実測: `ai.anicca.article-daily` plist は launchctl に **loaded 済**(status 0)。※但し daily-run.sh は NOTE_TOPIC 無しで no-op + SKILL.md「old crons DISABLED」→ 実挙動 要確認
+- ❌「#13 = note新規draft作成が未実装」→ run.sh が呼ぶ `publish-note.sh:204` は create_draft で generic に新draft作る。line49で拒否してたのは別script(note-publish/publish-to-note.sh、未使用系)。→ **publisher は4つとも generic = #13 実質DONE、要実証のみ**
+
+**★P0 SSOT場所（Dais判断が要る、実装の前提）**: `.claude/skills/ai-entity-article-writer` は **openclaw への symlink**（`→ ~/.openclaw/skills/...`）。git は symlink 1個だけtrack、実体は ~/.openclaw(anicca-dais private)。Dais「SSOT=.claude/skills、openclaw編集するな」→ symlink を実コピー化して anicca-project に取り込む移行が必要。**この判断が済むまで skill 本体を編集しない。**
+
+| # | 残問題 | 実態 | タスク |
+|---|---|---|---|
+| P1 | publisher 実証 | 4つ generic だが 実draft 1回の実証が未（Dais が subagent test を kill、自分でやる） | #13 |
+| P2 | VISUALS未配線 | run.sh/publish-note.sh が mermaid/表→PNG を自動化してない。note は mermaid/表 非対応で崩れる | #16 |
+| P3 | gate不足 | run.sh gate=language-purity+seo のみ。de-slop/eval「払う価値」/fact 未配線 | #17/#18 |
+| P4 | self-improve弱 | `self-improve.sh`=日次ダイジェスト(cron event+reflection+SEO)。L3(crwl→component A/B→funnel実測→keep/revert)でない | #21 |
+| P5 | 換金未ON | publish-membership.py等 実装済だが一度もON してない=¥0。SKILL.md §331-341に戦略(membership ¥500/月, ChatGPT研究所 copy)有 | #23 |
+| P6 | cron実挙動 | plist loaded だが no-op/disabled の可能性。実際に何をするか要確認 | #25 |
+| P7 | X auth | script有、session有効性 未確認 | #15 |
 
 ### PART B — skill を動くに
 - [~] #13 T1 パラメータ化 — zenn/devto/substack=**DONE**、★残=note新規draft自動作成（#14と結合）★
