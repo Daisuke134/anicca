@@ -111,6 +111,26 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 
 方針（2026-07-15 実態反映）: **loop は既に毎日 draft を 5platform に生産できてる。金の blocker は3つだけ = ①X再login ②draft を publish ③換金ON。** 他(VISUALS/gate/self-improve)は品質・堅牢・scale の改善であって初¥の blocker ではない。TikTok は後。
 
+### ★MASTER 順序（2026-07-16 確定。ゴール = self-improving・JP+EN・全platform・直接公開・brand-safe で稼ぐ loop）
+funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack無料、全部 live）。残り = この型を loop に焼く。
+
+| 順 | やること | 対応# | なぜこの位置 |
+|---|---|---|---|
+| 0 | ★Dais 判断: skill SSOT symlink 問題（P0）★ | P0 | **skill 本体編集の全 TODO のブロッカー。これが決まらないと 1 以降が全部進まない** |
+| 1 | X_COVER bug 恒久修理（figs↔content_images 突合ゲート） | #44 | 毎日踏む публиш経路の実バグ。小さく先に潰す |
+| 2 | 無料版 generator（有料ライン切断+まとめ+フッター自動生成）を run.sh に配線 | #43 | 実証済みの型の自動化 = loop の核 |
+| 3 | note 買い切り公開の script 化（publish-paid.py 汎用化）+ タグ実測選定の配線 | #35残/#36 | 換金ノードの自動化 |
+| 4 | Substack 画像 pipeline script 化（S3 upload+md差替え+publish API） | #45(新) | 今日手動でやった手順の固定化 |
+| 5 | 価格戦略の毎回実測（検索API→hasCircle→価格決定） | #37 | publish 前フックとして 3 に接続 |
+| 6 | de-slop / eval / fact ゲート配線 | #17/#18 | 直接公開の前提その1（slop を出す前に止める） |
+| 7 | reality-gate L4（公開後 self-verify→self-fix。拡大ボケ/560px/embed数/公開状態） | #20/#33 | 直接公開の前提その2（壊れたら機械が直す） |
+| 8 | DRAFT-ONLY 契約解除 = 完全無人公開（6,7 green が条件） | #41/#26 | Dais 決定済み。順序だけ厳守 |
+| 9 | EN 展開（devto/substack-en native paywall/X-en、同じ型） | #12/#43④ | 型が安定してから言語を増やす |
+| 10 | zenn 無料版（まとめ+フッター型、guideline 適合） | #11残 | 同上 |
+| 11 | self-improve L3（funnel 実測→playbook 書き戻し）+ 売上 ledger | #21/#24 | 稼ぎ始めてから計測で複利 |
+| 12 | self-heal L2 + cron 実挙動確認 | #22/#25/P6 | 無人運転の堅牢化 |
+| 13 | secrets env 化+rotate / 個人識別子 env 化 | #31/#27 | security と OSS 化の前提（並行可） |
+
 ### ★BUILD方法（決定 2026-07-15、Anthropic 裏取り済）= manual-first-then-skillify
 - **Option A 採用**（手で1本 GREAT draft にする→gap を skill に焼く→loop 再現→ログで二次研磨）。Option B(盲目で skill 先直し)は非推奨。
 - 出典: Anthropic「Agent Skills」= "discover what context Claude actually needs, instead of trying to anticipate it upfront" / "Start with evaluation" / skill-creator の draft→run→human eval→rewrite ループ。実例: gpgkd906/auth9(human review→AI iterate, 20周で収束)。
@@ -346,6 +366,12 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
          → 旧draft削除 → 再ステージ → own-eyes 検証 → 再公開。**新 LIVE URL = `https://x.com/diceai0/status/2077484575299862907`**
          （旧 URL `…2077478932589547795` は死んでいる。live verify: 画像4 / tallest 571px / PASS、fv7.png でまとめ+フッター+タイムスタンプ実見）
          無料版 md の正本 = `~/.cloak/note-work/2026-07-12-agent-economy-jp-x-free.md`（この型を zenn/substack-ja にも使う）
+       ★Substack-ja も同型で公開 DONE（2026-07-16 05:13 JST、Dais 指示）: **`https://aniccabuddha.substack.com/p/167`**
+         手順（#45 で script 化する）: mermaid→PNG を Substack image API(`POST /api/v1/image`, data URI)で S3 upload →
+         md の図を S3 URL に差替え → publish-substack.sh で draft → `POST /api/v1/drafts/{id}/publish {"send":false}`（メール爆撃なし・web のみ）。
+         SSR 検証実測: 見出し/まとめ/フッター/note URL/画像5(substack-post-media) 全部 live に存在。
+         発見: draft_body に markdown を投げると Substack が ProseMirror doc に自動変換する（見出し/リンク/画像 OK）。
+         但し ```mermaid はコードのまま残るので事前 PNG 化が必須（今日は手動、要自動化）。
 - [ ] #44 ★**X publish 経路の実バグ発見（2026-07-16 再ステージで踏んだ）: X_COVER 未設定だと本文の最初の図が cover に食われて黙って消える**★
        実測: `publish-to-x.sh` は automaton 記事以外 X_COVER を設定しない（prep-x-md.py:61）→ cover 無し md では
        `parse_markdown.py:342` が **images[0] を cover に採用** → fig1 が本文から消えた（figs:3 なのに composer images:2）。
