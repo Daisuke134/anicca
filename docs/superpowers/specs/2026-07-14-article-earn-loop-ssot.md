@@ -293,6 +293,16 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
       ★**07:28 の2行も俺だった** — STEP 1.5 の検証で `source <(sed -n "46,200p" article-daily.sh)` を叩いた = **同じ過ちを1時間で2回、しかもそれを避けるための検証の中で**。★
       ★一般法則（確定版）: **変数を調べたいなら、ファイルを「テキストとして parse」しろ。script のどの一部も実行するな。** `bash -c '<前半>'`、`source <(sed -n ...)`、`split()` して eval — 全部同じ罠。実行はログを書き、ロックを取り、cron を起こす。★
 
+- [x] ★**#48 de-slop gate の非決定性を根治（2026-07-16、commit `4a8601c0`）**★
+      症状: **同じ本文・同じ gate で毎回違う箇所を FAIL**（1回目=em dash/quotable/footer、2回目=「Deciding, first.」等の別の既存文）。直すと別の難癖が出る = 12ラウンド事件と同じクラスで、較正(`bb6520de`)では止まらなかった。
+      真因: 「checklist ルールを引用しろ」と縛っても、**ルール自体に「formulaic structure を壊せ」のような主観項目がある限り、judge は何にでも紐付けられる**。有限集合の強制が不十分だった。
+      修理 = **blocking と advisory の分離**:
+      - blocking（FAIL させるのはこれだけ）= **B1 煽り語 / B2 em dash / B3 filler 開閉句 / B4 裏付けの無い箴言 / B5 出典も受領書も無い事実主張** = 全部 **word-level で誰でも同じものを指せる**
+      - advisory（報告するが止めない）= リズム・文長・断片・formulaic structure・rhetorical setup・meta-joiner = 主観。**「Deciding, first. Paying, second.」は著者の意図した文体であって slop ではない**と明記
+      実測: slop fixture = **7件 blocking で FAIL**（緩めすぎ検査 PASS）／本物の EN 記事 = **3回連続 PASS**（blocking 0-2、指摘は advice へ）= **安定を実測で確認**。
+      ★一般法則（12ラウンド事件の法則の完成形）: **judge を収束させるのは「ルールを引用しろ」ではなく「blocking にできる指摘の型を、誰が見ても同じものを指せるものだけに限定する」こと。** 主観的な良し悪しは advice として出させ、決して止めさせない。**止める権限は客観に、意見は助言に。**★
+      ★運用の証明: builder が3回とも「無理に書き換えず violation をそのまま報告」したから、**記事を1文字も壊さずに gate の欠陥3つ（scope / footer / 非決定性）を潰せた**。gate に従って記事を直していたら、published 済みで承認済みの記事が毎回劣化していた。★
+
 ### ★gate と記事のどちらを曲げるか（裁定基準。2026-07-16 X-en の実例で確立）
 gate が FAIL を出した時、**記事を直すのが正しい場合と、gate を直すのが正しい場合がある**。実例（X-en の de-slop 4件）:
 | 指摘 | 裁定 | 理由 |
