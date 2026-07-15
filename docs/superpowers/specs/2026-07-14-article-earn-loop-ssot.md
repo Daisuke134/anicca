@@ -317,6 +317,22 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        有料側の先頭が [5]「AIが稼いだ」の9割の正体 = 一番読みたい見出し。**2,500字で機械的に切った結果、たまたま最適位置になった**（記事の構成が良いため）。
        ★loop への含意: 切る位置を「文字数」だけで決めると、記事によっては最悪の位置で切れる。将来は「無料側の最後が引きの強い事実で終わるか」を判定させる（#18 eval の仕事）。今は 2,500字 + 段落境界で妥当。★
 
+### PART K — 「無料→有料への誘導は brand を毀損するか」research（2026-07-16、Dais の問いに team-lead が自分で検索して回答）
+- [x] #42 **結論: 誘導そのものは brand を毀損しない。毀損するのは「煽り+中身スカスカ」。誘導は JP/EN 両界の標準 playbook。**
+       | 証拠 | 出典 |
+       |---|---|
+       | 「無料部分が売上の9割を決める」= 無料部分の質で売る、が JP note 界の定石。X 宣伝+無料→有料が標準動線 | brain-market.com mayu_brain / note.com/anotaro/n/n7a7229826fcd（2026-07-11「フォロワー2桁で有料noteを売れるようになった無料部分の型12個」）|
+       | フォロワー177・記事3本で ¥3,480 買い切り like=928 = 誘導動線は小アカでも機能（我々の実測 PART I）| note API 実測 punimaru_dev |
+       | 90%+ 無料で配り paywall=「信頼税」。無料で価値を配りきる限り brand は上がる | growthinreverse.com（HCR $1M+/月、R5）|
+       | note 有料販売で brand を築いてから自前ドメインへ卒業した実例 | chatgpt_lab → chatgpt-lab.com（PART I 実測）|
+       | X の link penalty は**タイムライン投稿本文**の話。X Article 内の CTA リンクに減点証拠なし。skill の Article 構造テンプレも最終段=CTA が標準 | .claude/skills/x-algorithm/SKILL.md:73-76,150（ClawHub x-algorithm）|
+       **brand を守る4条件（loop に焼く規則。ただし P0 symlink 判断まで skill 本体は編集禁止なのでここが正本）**:
+       ① 無料部分は単体で完結した価値（出し惜しみの「続きが気になる切り方」だけで売らない — 我々は 2,598字+図3枚で満たす）
+       ② CTA は末尾に1個だけ、静かに（本文中に散りばめない）
+       ③ 煽り語ゼロ（「必見」「衝撃」FOMO hook は副業 slop の型 = brand killer。x-algorithm skill の Hook Patterns[Insecurity/FOMO/RIP] は**使わない**）
+       ④ X で記事を告知するタイムライン投稿を打つ時は、リンクを本文でなく reply に置く（link penalty は投稿側に効く）
+       → Dais 承認 2026-07-16「誘導が brand に悪くないなら X draft も publish してよい」= 条件成立、公開実行。
+
 ### PART J — DRAFT-ONLY をやめて直接公開する（Dais 決定 2026-07-16）
 - [ ] #41 ★**Dais の決定: loop は draft ではなく直接公開する**★
        理由（Dais 原文の要旨）: 「全部の記事を自分で見てチェックすることはできないし、やりたくない。公開済みのものを後から直す方がいい」
