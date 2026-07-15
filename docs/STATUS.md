@@ -679,8 +679,43 @@ funnel_enabled = true
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
 | **T7** | 学習の共有 — `promote.py:30` が「進化した戦略を repo baseline に git commit」する経路は既にある。T6 が直れば「賢い個体の学びが repo 経由で全員に配られる」が成立する。実測で確認 | 1 instance の学習が他 instance の次 wake に反映されることを実測 | T6 後 |
 | **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | T4 後 |
-| **T9** | 商品の高単価化 — $0.001 の calc を bot が舐めるだけでは $1M に永遠に届かない。「agent が欲しがる物」を作る。**ここで初めて知能が要る** | 単価 $0.05+ の商品が外部に売れる | T8 後 |
+| **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る | 単価 $0.05+ の商品が**外部の**agent に売れる | ★T2b-5 と並ぶ最前線★ |
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
+
+## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
+
+**比較対象 = `BlockRunAI/blockrun-mcp`（475★、実際に売れている x402 seller）**
+
+| | 売っている物 | なぜ買われる |
+|---|---|---|
+| **blockrun-mcp** | 55+ LLM / image・video 生成 / prediction-market データ / live web・X search / **40+ chain の on-chain クエリ** / **★Polymarket に実際に賭ける行為★** | **買い手が自分では出来ない**。API キーが要る・インフラが要る・**行為**である |
+| **我々の franklin/claude-p** | calc `$0.001` / JSON flatten `$0.001` / DNS lookup `$0.001` / 複利計算 `$0.001` / whois `$0.002` / research digest `$0.003` / stock quote `$0.003` | **買われない。買い手が自分で出来るから。** agent は電卓に $0.001 を払わない |
+
+価格の実測（blockrun-mcp README 逐語）: *"**$5 covers** ~5,000 market queries · ~500 Exa searches · ~250 image generations · ~10 Seedance 1.5-pro clips"*
+→ market query ≈ $0.001 / Exa search ≈ $0.01 / image ≈ $0.02 / video ≈ $0.50。**$0.001 の階層は「上流が有料の物」に使う価格であって、電卓の価格ではない。**
+
+★**結論: 実需がゼロなのではない。実需が生まれ得ない商品を並べていた。**
+  → `$0.011` が「同じ bot(`0xaf5bb59a…`) が両店を舐めただけ」「BlockRun 自己申告で 47% non-organic」なのは**当然の帰結**。
+  → **claude-p が「利用可能スロットは全て実績$0の死亡アクション」と判定して sleep を選んだのは、商品を正しく評価していた。**
+    agent はバグっていない。**我々が売れない物を持たせた。**
+★**Dais 原則（2026-07-16）: 内部循環は ponzi。** 自分の店に自分で払う self-pay で「稼いだ」と数えるのは詐欺。
+  → **T4a(self-pay で Bazaar 着火)は問題を解かない。** 着火して掲載されても、売る物が無ければ $0 のまま。
+    着火は「掲載」という技術的前提を満たすだけで、**需要は1円も生まれない**。順序として T9 が先。
+★**売れる物の条件（blockrun-mcp から抽出した法則）**: **買い手が自分では実行できないこと**を売る。
+  ①上流が有料/要キー(Exa, 画像生成, 市場データ) ②インフラが要る(multi-chain RPC) ③**行為**そのもの(実際に賭ける・実際に送る)。
+  **計算・整形・変換は全て「買い手が自分で出来る」= 売り物にならない。**
+
+## 読むべき正本（Dais 提供、2026-07-16）
+
+| repo | ★ | 何を学ぶか |
+|---|---|---|
+| [blockrunai/franklin](https://github.com/blockrunai/franklin) | 624 | **我々の franklin の実体**。TypeScript/Apache-2.0。*"Franklin lets you give your AI a budget and walk away"* = **買う側の agent**。ClawRouter を内蔵。`PHILOSOPHY.md` / `CONTEXT.md` / `AGENTS.md` が設計の正本 |
+| [BlockRunAI/blockrun-mcp](https://github.com/BlockRunAI/blockrun-mcp) | 475 | **売る側の実例**。何が売れるかの正解が全部ここに在る |
+| [Daisuke134/blockrun-cli](https://github.com/Daisuke134/blockrun-cli) | 1 | Dais 作。blockrun-mcp の全 tool を CLI 化。`PARITY.md` / `VERIFICATION.md` |
+| [BlockRunAI/ClawRouter](https://github.com/BlockRunAI/ClawRouter) | 6658 | 脳。**Franklin に内蔵済**。8 NVIDIA モデルが free forever |
+
+★**Franklin の哲学（逐語）**: *"The wallet isn't a feature. The wallet is the mechanism that makes every other promise of autonomous AI actually hold."*
+  *"We are about what the AI does when nobody is watching — and the thing that makes it safe to look away is the budget."*
 
 ## 使える既存解（車輪の再発明禁止。2026-07-16 gh search 実測）
 
