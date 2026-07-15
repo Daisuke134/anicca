@@ -166,5 +166,13 @@ app.get("/", (_req, res) =>
     pay: "x402 — pay per request in USDC on " + NETWORK, payTo: payTo(),
   }));
 
-app.listen(PORT, () =>
+const server = app.listen(PORT, () =>
   console.log(JSON.stringify({ x402_seller: "up", port: PORT, price: PRICE, network: NETWORK, payTo: payTo() })));
+
+// Without this, losing the port race printed "up" and exited 0 — so run.sh's UP check, the ledger
+// narrate, and launchd's exit code all read a dead seller as a healthy one, and KeepAlive respawned
+// it 364 times without ever flagging a fault. A seller that cannot bind must say so and exit nonzero.
+server.on("error", (err) => {
+  console.error(JSON.stringify({ x402_seller: "failed", port: PORT, error: err.code || String(err) }));
+  process.exit(1);
+});
