@@ -249,6 +249,14 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
        ★一般法則: **script の一部を切り出して「変数だけ取り出す」実行は、その範囲の副作用を全部実行する。** 純粋に見える前半にもログ書き込み・ロック取得・mkdir が潜む。変数抽出は `bash -c 'source <(sed -n "…p" file); echo "$VAR"'` のような範囲限定でなく、**副作用行を明示的に除去してから**行うか、そもそも script 側が `--print-prompt` のような検査用 subcommand を持つべき。★
        → builder(freever) がこの異常を自力で発見・報告したのは good。「自分が原因かもしれない」と併記した誠実さも正しい。
 
+### PART M — EN 展開（#12、2026-07-16）
+- [x] **Substack EN = native paywall で draft 作成**（`{type:"paywall"}` ノードを89ノード中42番目に挿入、audience=only_paid、有料境界は JP note 版と同じ内容位置「Most "AI Made Money" Headlines Are Token Stories」）。EDIT_URL=`/publish/post/207215338`、公開後 slug=`building-the-agent-economy-who-is-doing-it`。**未公開**（team-lead が匿名 curl で 302 実測）。verify-preview PASS（画像3、最大849px = #13 の padding が効いている）。
+- [x] **dev.to EN draft**: `https://dev.to/anicca_301094325e/building-the-agent-economy-...-1608766`。図は `~/anicca`(OSS repo) に PNG commit → GitHub raw URL 埋め込み。**未公開**（team-lead が匿名 curl で 404 実測、API でも published=False）。
+- [x] zenn = 追加不要（既に「まとめ+フッター」型 = guideline 適合。builder の判断を team-lead が承認）
+- [~] X-en = 実行中（X_COVER 必須・JP eyecatch 流用禁止・go 禁止で委譲）
+- ★**発見: daily-driver が Substack からログアウトしていた**（症状が紛らわしい: 既存 draft は開けるのに**新規 draft だけ** `ERR_TOO_MANY_REDIRECTS`）。builder が `/publish/posts` がログイン画面を出すことで真因特定 → **email magic-link で復旧**（Google OAuth は Substack では禁止 = memory 記録済み手順）、`handle=anicca2, id=336441894` を API で確認。★
+  ★一般法則: セッション切れは「ログイン画面が出る」とは限らない。**リダイレクトループ・特定操作だけの失敗**として現れることがある。認証を疑う前に諦めるな。★
+
 ### ★運転モデル（Dais 確認 2026-07-16）: team-lead = thinker/spec-writer/verifier、builders = executor★
 - 新しい機能・変更はまず**この spec に書く**（superpowers の brainstorming→spec→plan 流儀）→ builder に明確な手順+検証条件で委譲 → team-lead が**実出力で独立検収**（自己申告は証拠でない）→ spec に実測結果を書き戻して commit+push。
 - 会話は揮発。**spec に書いてない発見は捨てたのと同じ。** 各 turn で spec 更新 + push を怠らない。
