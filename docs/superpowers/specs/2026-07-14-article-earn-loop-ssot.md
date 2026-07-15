@@ -197,6 +197,9 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - ★穴の発見: **X 経路は run.sh を通らないので 6a-6d gate を素通り**（x-en が staged なのに devto は blocked、が証拠）→ task #16。★
 - ★一般法則: 収束しない reviewer は「指摘が有限集合（ルール引用+quote）である」ことを強制して初めて収束する。自由記述の難癖は無限に湧く。★
 
+- [x] #16 X 経路の gate 素通り **DONE** commit `677024b5`（builder 実装、team-lead がコード実読で検収）: publish-to-x.sh の publish に language-purity + deslop + eval を browser 操作の前に配線（FAIL = exit 6、prep 未到達を実出力で確認）。seo-gate は除外（--title/--meta 非供給 + SEO は note/zenn/devto の要求）。lang 判定 = --lang > CJK 文字数 > slug 末尾(brittle、最終手段)。gates-ok stamp を run.sh と共有 = 同一記事の二重審査なし。
+- [x] #13 kroki 縦長 padding **DONE** commit `891118e0`: pad_to_fit() で upload 前に横 padding（min_w = ceil(h*728/850)、拡大なし）。実測 276x606 → 520x606 → Substack 728px 表示で **848px**（<900 達成）。Pillow は import 失敗時 FATAL で依存明示。
+
 ### #14 実装設計（seo-gate を article-earn funnel に合わせる。team-lead 起草 2026-07-16、実コード読解済み）
 現物の要求（`seo-gate.sh`、行番号は実測）: L43 meta 120-156字 / L47 **H2 3-7本** / L50 内部リンク（aniccaai.com|github.com/Daisuke134/anicca|x.com/aniccaxxx）≥1 / L58 **aniccaai.com アンカー必須** / L62 **App Store deeplink（?pt=/?ct=/?utm_source=）必須**。
 これは iOS アプリ送客時代の遺物。今の funnel は「無料版 → note 有料版」。実害の実測: 本物の agent-economy 記事は H2 11本で永久に通らない、AP2 記事も meta 長で落ちた。
