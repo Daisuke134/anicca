@@ -155,7 +155,7 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
 - ❌「cron 未load」→ 実測: `ai.anicca.article-daily` plist は launchctl に **loaded 済**(status 0)。※但し daily-run.sh は NOTE_TOPIC 無しで no-op + SKILL.md「old crons DISABLED」→ 実挙動 要確認
 - ❌「#13 = note新規draft作成が未実装」→ run.sh が呼ぶ `publish-note.sh:204` は create_draft で generic に新draft作る。line49で拒否してたのは別script(note-publish/publish-to-note.sh、未使用系)。→ **publisher は4つとも generic = #13 実質DONE、要実証のみ**
 
-**★P0 SSOT場所（Dais判断が要る、実装の前提）**: `.claude/skills/ai-entity-article-writer` は **openclaw への symlink**（`→ ~/.openclaw/skills/...`）。git は symlink 1個だけtrack、実体は ~/.openclaw(anicca-dais private)。Dais「SSOT=.claude/skills、openclaw編集するな」→ symlink を実コピー化して anicca-project に取り込む移行が必要。**この判断が済むまで skill 本体を編集しない。**
+**P0 SSOT場所 — 裁定済み 2026-07-16（Dais「one by one で進めろ」を受け team-lead が裁定）**: **実体は当面 `~/.openclaw`（anicca-dais private）のまま、symlink 維持。skill 編集ブロック解除。** 理由: skill 内に note 平文 creds（#31 未修理）が有り、anicca-project は **public repo（anicca-products）** に push される — 今実コピー化すると secrets が公開される。実コピー移行は #31/#27（secrets/識別子 env 化）完了後に再訪。旧記述「Dais 判断まで編集禁止」はこの裁定で置換。
 
 | # | 残問題 | 実態 | タスク |
 |---|---|---|---|
