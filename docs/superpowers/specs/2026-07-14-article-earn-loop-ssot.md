@@ -109,7 +109,13 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 
 ## 5. TODO（TaskList #9-25 と同期。順序 B→C→D→E→A。★随時 status 更新★）
 
-方針: skill を「動く」に直す(B) → verifier(C) → loop 自走(D) → 換金(E) → その loop で agent-economy 記事を publish(A=テスト出力)。記事を手で出さない。TikTok は全体が回ってから追加（Dais 2026-07-15）。
+方針（2026-07-15 実態反映）: **loop は既に毎日 draft を 5platform に生産できてる。金の blocker は3つだけ = ①X再login ②draft を publish ③換金ON。** 他(VISUALS/gate/self-improve)は品質・堅牢・scale の改善であって初¥の blocker ではない。TikTok は後。
+
+### ★TIER 0 — 初¥への最短路（これだけが金の直接 blocker）
+- [ ] M-X   #15 X daily-driver re-login（唯一の壊れた publisher。Dais 手動 or session復旧）
+- [ ] M-PUB 溜まってる draft(x402/ERC-8004/トークン病/OpenEvolve)を実際に publish する。**publish=Dais手動が設計。「毎日 draft は出るが誰も公開しない」が ¥0 の真因** → Dais が定期公開する運用にするか、承認済みだけ安全に自動公開する path を足すか【要判断】
+- [ ] M-MON #23 換金ON: note membership(¥500/月)+ how-to部の paywall / Substack有料tier（コード実在、ONだけ）
+→ この3つで **初¥**。以降は下の TIER で 10k MRR へ複利。
 
 ### ★問題インベントリ（実測 2026-07-15。実装前に全部潰す。過去の思い込みを実測で訂正済）
 
