@@ -22,7 +22,12 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 
 **loop の型**: launchd（唯一の scheduler）→ article-daily.sh → mkdir lockdir（daily-driver browser :9222 の競合防止）→ `claude -p` bounded pass が 執筆→publish→`openclaw message send`(telegram)報告。self-register scheduler は使わない。timeout も掛けない（capafy/life-manager が rc=124 で途中死した教訓）。
 
-**定義的状態(2026-07-15 実測)**: plist loaded=YES / 毎日06:00 / LastExitStatus=0。**但し `.out` 最終更新=7/13 06:00** ＝ 7/14・7/15 は fire してない可能性。実際に記事を出したかは `article-daily.log` を見るまで **UNVERIFIED**（log 読みは未実施）。
+**定義的状態(2026-07-15、`article-daily.log` で確定)**: ★**loop は壊れてない。毎日 fire して記事を作ってる。**★ 07-12/13/14/15 全て rc=0、今日07-15 06:27 完了。**毎日 JP+EN 記事を執筆 → 5プラットフォーム(zenn/devto/substack-ja/substack-en/note)に draft ステージング → own-eyes 検証 → Telegram報告**（07-14/15 は 5/5 成功、07-13 は note timeout で 4/5）。
+- **唯一の恒常故障 = X(Twitter)**: daily-driver session ログアウト、cookie復元も失敗 → **Dais 手動 re-login 要**。
+- note は disk逼迫日だけ camofox timeout（07-14/15 は成功）。
+- ★**全 draft は公開されてない（設計通り、公開=Dais手動）→ だから「どこにも投稿されてない」ように見える。¥0 の真因 = ①draft が誰にも publish されない ②換金未ON。loop の"生産"は正常。**★
+- staged 済で未publish の記事: x402(07-12) / ERC-8004(07-13) / トークン病(07-14) / OpenEvolve(07-15)。
+- 途中で pass 自身が実バグを毎日修正して main-internal に push してる（freshness-gate no-op, publish-note fallback, devto timezone 等）= self-heal は部分的に効いてる。
 
 **flip-flop の再発防止（HARD）**: 俺は (a)`~/.openclaw` の run.sh だけ見て「これが loop」と誤認、(b) 空の `.out` を見て「動いてない」と誤認、(c) SKILL.md:121 の古いメモ「old crons DISABLED」を鵜呑み。→ **今後は必ず: ①plist の ProgramArguments が指す実体 ②その script 内の `$LOG` 変数が指すログ、を見る。断片で断定しない。**
 
