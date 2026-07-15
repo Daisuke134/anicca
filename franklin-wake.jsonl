@@ -7540,3 +7540,13 @@
 {"ts":1784074298,"wake_id":"00MRLBRV3CA95DC2C59D2644E2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784074435,"wake_id":"00MRLBUSMC1FD50B77A0314DE8","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784074571,"wake_id":"00MRLBXPAB073B5002D1304DF2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074713,"wake_id":"00MRLC0RDO720037B4E4044CE9","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is neutral (no conviction), so the expected edge doesn't clear the ~0.4%+ round-trip cost; holding USDC $15.74 — re-check only if SOL signal flips to clear bull/bear or pr"}
+{"ts":1784074713,"wake_id":"00MRLC0RDO720037B4E4044CE9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784074874,"wake_id":"00MRLC47J6C80B2CBFCD274357","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784074874,"wake_id":"00MRLC47J6C80B2CBFCD274357","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784075010,"wake_id":"00MRLC748KCE20A7672CC64497","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784075147,"wake_id":"00MRLCA22E6A59F1EB308D412E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784075281,"wake_id":"00MRLCCXF5F3249DC3BFE24F4F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784075414,"wake_id":"00MRLCFS8C69FD6BD6D9594726","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 59 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784075414,"wake_id":"00MRLCFS8C69FD6BD6D9594726","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784075600,"wake_id":"00MRLCJRA9AC7599196C4C4D0B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
