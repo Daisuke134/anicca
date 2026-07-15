@@ -231,7 +231,55 @@ x402-sell はローカル宣言で自立したので当面無害だが、他の 
 | **T2b-1** | TS_AUTHKEY を取る | 鍵が file にあり fingerprint で照合できる | ★DONE 2026-07-16★ 下記 |
 | **T2b-2** | tsbridge を通す — 3ノードが各自の FQDN で Funnel を上げる | 外部から実 HTTP が返る。franklin1 が**自分の**公開 URL を持つ | ★DONE 2026-07-16 05:15★ 下記 |
 | **T2b-3** | tsbridge を launchd 化 | 殺しても蘇り、外部から届く | ★DONE 2026-07-16 05:26★ 下記 |
-| **T2b-4** | ★次★ 各 loop に**自分の** `X402_PUBLIC_URL` を配る — franklin1 の plist には**そもそも無い**(=Bazaar に広告できない真因)、franklin2 は共有の :10000 を指している。手書き boot script 4本を退役(INV-F)。稼ぎ頭 :8411 は最後 | franklin1 が自分の URL で Bazaar に載り、`verify-inflow.mjs` の inflow が $0 でなくなる | ★次★ |
+| **T2b-4** | 各 loop に**自分の** `X402_PUBLIC_URL` を配る。franklin1 = 配線済(05:31)。残り: franklin2(共有 :10000 を自分の FQDN へ) → claude-p(:8412) → 稼ぎ頭 :8411 は専用ノードを足してから最後 | franklin1 が自分の URL で Bazaar に載り、inflow が $0 でなくなる | ★franklin1 配線済・loop の wake 待ち★ |
+
+### ★T2b-4: franklin1 に広告を配線した（2026-07-16 05:31）。真因の全貌が出た★
+
+```
+ai.anicca.franklin-loop.plist に追加:
+  X402_PUBLIC_URL = https://franklin1.tail7a0ba4.ts.net
+```
+検証: `plutil -lint` OK。reload 後、**プロセスの実 env**を `ps eww` で確認 — pid 59045 が
+`X402_PUBLIC_URL=https://franklin1.tail7a0ba4.ts.net` を実際に保持（plist を読んだだけで満足しない）。
+
+**★INV-F は既に満たされていた（朗報。STATUS の従来認識を訂正）★**
+
+`launchctl list` 実測:
+```
+3052   1  ai.anicca.x402-seller-8414   ← franklin1 の loop 自身が立てた seller。稼働中
+94909  1  ai.anicca.x402-seller-8413   ← franklin2 の loop 自身が立てた seller。稼働中
+-      1  ai.anicca.x402-seller-8412   ← claude-p のみ未起動
+```
+T1 の修正(依存を持つ copy を exec / bind 失敗で exit 1 / ローカル宣言)が効いており、
+**franklin1 と franklin2 は既に「自分で店を立てる」に成功している**。手書き boot script に依存していない。
+
+**★$0 の真因は「空の PUBLIC_URL」だった — 実物★**
+
+```
+ai.anicca.x402-seller-8414.plist（loop が生成した実物）:
+  X402_PAYTO      = 0x3EcCAD24794ca298D25378E9902A251322ea8749
+  X402_PUBLIC_URL =                ← ★空文字★
+  X402_PORT       = 8414
+```
+結果、manifest が**相対パス**を吐いていた:
+```json
+{"x402Version":1,"resources":[{"resource":"/research", "price":"$0.003", ...}]}
+                                          ↑ 相対。買い手はどこへ払えばいいか分からない
+```
+`serve.mjs:47` 逐語: *"(root cause 2026-07-14; cf coinbase/agentkit#877). **Set X402_PUBLIC_URL to the https funnel origin.**"*
+→ **Bazaar は絶対 URL を要求する。** franklin1 は店も商品7点も manifest も持っていたが、**住所が空欄のチラシ**を配っていた。
+
+**★伝播経路は健全（実コードで確認）★**
+
+| 経路 | 実測 |
+|---|---|
+| `run.sh:303` | `<key>X402_PUBLIC_URL</key><string>${X402_PUBLIC_URL:-}</string>` → loop の env から seller plist へ書く。**`:-` の既定が空だったので空が書かれていた**。loop plist に値が入った今、次の wake で実 URL が書かれる |
+| `env-filter.mjs:19` | `/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/` = **denylist のみ**。`X402_*` は元から素通り。→ 「ALLOW set に X402_PUBLIC_URL を追加した」という前セッションの記述が**虚偽だった**ことの再確認（追加は不要だった） |
+
+**次にやること = 何もしない。loop の wake を待って観測する。**
+`run.sh` を手で叩かない（叩けば「Dais が稼がせた」になり INV-F 違反 → [[feedback_watch_loops_never_do_their_work]]）。
+観測点: ①seller plist の `X402_PUBLIC_URL` が実 URL に変わる ②manifest の `resource` が絶対 URL になる
+③`bazaar-scan.mjs` が `0x3EcC` を返す ④`verify-inflow.mjs` の inflow が $0 でなくなる。
 
 ### ★T2b-3 DONE — 席が永続化した（2026-07-16 05:26）★
 
