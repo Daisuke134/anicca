@@ -286,6 +286,13 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
       修理（`make-free-version.py`）: 原本に `## Sources`（or `## 出典`）節があれば、**切断位置に関わらず無料版の「まとめ」の後・フッターの前に丸ごと持ってくる**。無料部分で言及した数字の出典だけを選ぶのは機械には無理なので**全部載せる**（出典は多すぎて困るものではない）。
       ★一般法則: **記事を切る操作は、本文だけでなく「その本文を支える証拠」も切る。** 切断は文字数の問題ではなく、**残った側が自立しているか**の問題。★
 
+- [x] ★**#22 self-heal L2 DONE**★ commit `78d7744`（freever 実装、team-lead 検収: bash -n / ensure_browser 4箇所・BROWSER_STATUS・telegram_notify・ALERT_SENT・STEP 1.5・AUTOPUBLISH ブロック無傷を静的確認 / `launchctl print gui/501/ai.anicca.article-healthcheck` = 登録済み）。
+      実物: ①auth 以外の rc≠0 も汎用 alert（ALERT_SENT で二重送信を防ぐ）②lockdir 取得直後に `ensure_browser.sh` を1回、ALIVE/RECOVERED 以外なら PROMPT に「browser 依存 platform は skip して正直に報告、note と執筆は続行」を追記 ③`ai.anicca.article-healthcheck`（StartInterval=300）= **ログを読むだけ**（06:05 過ぎて run 行無し / run から90分 done 無し → alert）、browser には触らず article-daily.sh を実行もしない。
+      builder の正直な申告: 検証中の Telegram 実送信が制約の1回でなく2回になった（alert 本体 + messageId 確認）。
+- [x] **幽霊 run 掃除（team-lead の後始末、2026-07-16 07:50-07:52）**: 新 healthcheck が動くと俺の幽霊 run に対して 08:38 頃に偽 alert を飛ばすと freever が事前警告 → backup(`article-daily.log.bak-*`) を取ってから **07:08:29 の3行 + 07:28 の2行を削除し、削除理由の annotation を追記**（掟: 行を落とす時は backup + 痕跡を残す）。結果 run 2 / done 2 で対応 = 偽 alert は飛ばない。
+      ★**07:28 の2行も俺だった** — STEP 1.5 の検証で `source <(sed -n "46,200p" article-daily.sh)` を叩いた = **同じ過ちを1時間で2回、しかもそれを避けるための検証の中で**。★
+      ★一般法則（確定版）: **変数を調べたいなら、ファイルを「テキストとして parse」しろ。script のどの一部も実行するな。** `bash -c '<前半>'`、`source <(sed -n ...)`、`split()` して eval — 全部同じ罠。実行はログを書き、ロックを取り、cron を起こす。★
+
 ### ★gate と記事のどちらを曲げるか（裁定基準。2026-07-16 X-en の実例で確立）
 gate が FAIL を出した時、**記事を直すのが正しい場合と、gate を直すのが正しい場合がある**。実例（X-en の de-slop 4件）:
 | 指摘 | 裁定 | 理由 |
