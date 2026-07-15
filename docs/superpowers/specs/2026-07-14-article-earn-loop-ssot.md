@@ -198,7 +198,15 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        ★2026-07-15 発見: reality-gate は「人間を loop から外す許可証」。これが無い限り DRAFT-ONLY 契約(下記 #26)は正しい安全弁であり、外してはならない。順序 = reality-gate 実装 → 契約書換 → 自動公開。★
 
 ### PART H — 実 E2E で発覚（2026-07-15、team-lead が実 note.com に draft を作って踏んだ）
-- [ ] #32 ★**stage2 が update_article に numeric ID を渡していて必ず落ちる**（= 日次 loop の note 経路は配線しても画像が入らない真の理由）★
+- [x] #32 ★**stage2 が update_article に numeric ID を渡していて必ず落ちる**（= 日次 loop の note 経路は配線しても画像が入らない真の理由）★ → **修理 commit `84c6c94f`**（E2E 再実行で検証中）
+       **真因（builder が note-mcp 実コードで確定。team-lead の推測は誤りだったので訂正して記録する）**:
+       - `update_article` は numeric/key 両方を受理する。だが本文に**単独行の埋め込み対象URL**（YouTube/Twitter/note.com/GitHub/Zenn/Qiita 等。判定 = `note_mcp/utils/markdown_to_html.py:220-241 has_embed_url`）が含まれると、key 取得のため `get_article_via_api(session, numeric_id)` を **numeric のまま**呼ぶ（`articles.py:619`）。ところがその関数自身が numeric を明示 reject する（`articles.py:674-684`）。→ **numeric ID しか持たない状態で「埋め込み対象URLを含む本文」を保存することは note-mcp 内部で構造的に不可能。** KEY を渡せば `_is_article_key_format` が真になりこの壊れた経路を丸ごと迂回する（`articles.py:390-402, 610-624`）。
+       - ★team-lead の推測「upload_body_image は numeric を要求する」は**誤り**。`images.py:234-342` 全文確認の結果、**`note_id` 引数は関数本体で一度も参照されていない**。fig1-3 が NUM で成功したのは引数が無視されているから。★
+       - 既存の手動パイプライン `note-publish/publish-to-note.sh:44` に `export NOTE_KEY="$KEY"` という**未完成の配線の痕跡**があった（stage2 側は NOTE_KEY を読んでいなかった＝繋がっていない）。今回それを完成させた。
+       修理: stage2 が `ARTICLE_ID = KEY or NUM` を update_article に渡す（upload_body_image は NUM のまま = 無視されるので無害）。update_article 失敗時も `EMBED_SUMMARY embedded=0/total failed=update_article:<err>` を必ず出してから exit 1（旧: 例外で無言死し stdout が空 → `stage2_embedded=` が空になるバグも同時修理）。設計判断: 本文保存が失敗した以上「保存された本文に何枚入ったか」は **0 が正しい**。
+       回帰: negative test 4件追加。**`git stash` で修理を戻すと6件 FAIL（実バグ再現）、戻すと PASS** = テストが空虚でないことを実証済み。
+       未修理（別task化。触らない判断）: `rebuild-note-body.py`（手動 Automaton パイプライン）も NUM のみ渡す同じ古いパターン。Automaton 記事の本文に単独行の埋め込み対象URLが無い限り顕在化しないので trigger するまで触らない。
+       ★一般法則: **「動いている」と「引数が使われている」は別。API が引数を受け取ることは、その引数を使うことを意味しない。実コードを読むまで、どの引数が効いているかは分からない。**★
        実出力（証拠、捏造でなく実 tool_result）:
        ```
        stage1 render OK — tables=0 | mermaids=3
