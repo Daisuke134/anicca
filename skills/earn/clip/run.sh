@@ -38,6 +38,7 @@ PY=/opt/homebrew/bin/python3
 mkdir -p "$QUEUE" "$POSTED" "$PENDING_VERIFY" "$(dirname "$LEDGER")"
 
 emit() { printf '{"slot":"earn/clip","did":%s,"earned_usdc":0,"cost_usdc":0}\n' "$(printf '%s' "$1" | "$PY" -c 'import json,sys;print(json.dumps(sys.stdin.read()))')"; }
+note() { echo "$(date '+%F %T') run.sh: $*" >&2; }
 
 # next queued clip (oldest first) that has a caption sidecar
 CLIP=""; CAP=""
@@ -81,9 +82,19 @@ if [ "$EARN_MODE" != "execute" ]; then
   emit "discover: would post $(basename "${CLIP:-<none-queued>}") to @${HANDLE} (port ${PORT})"; exit 0
 fi
 
-# --- execute: confirm the account's isolated browser is UP and logged in (no human) ---
+# --- execute: prefer a CONFIRMED browser login; fall back to instagrapi's own settings-based
+# login when the browser is down or not confirmed logged in. POST-11's instagrapi_post.py has
+# ITS OWN fail-closed account-guard in login_resilient() (tier1: instagrapi-<handle>.json
+# settings, verified against cl.username==handle before ever posting; tier2: browser sessionid,
+# also verified; tier3: password) — so gating posting on THIS script's separate DOM-based
+# browser check is redundant once instagrapi-<handle>.json settings exist, and it wrongly
+# skipped a genuinely postable account whenever the browser session happened to be down/logged
+# out (2026-07-15/16: warming accounts stuck skipping despite instagrapi being postable).
+# A browser is still REQUIRED (no fallback) when no instagrapi settings file exists yet.
 # Test hooks (PROP-005), both unset in production: skip the real CDP liveness/login checks so
 # run.sh's 3-way OUTCOME routing can be tested against a stubbed POSTER without a real browser.
+INSTA_SETTINGS="$HOME_DIR/.cloak/instagrapi-${HANDLE}.json"
+BROWSER_READY=0
 if [ -n "${CLIP_TEST_TID_OVERRIDE:-}" ]; then
   TID="$CLIP_TEST_TID_OVERRIDE"
 else
@@ -96,14 +107,17 @@ print((ps[0] if ps else (next((t for t in d if t.get("type")=="page"), {}))).get
 ')"
 fi
 if [ -z "$TID" ]; then
-  emit "account @${HANDLE} browser not up on :${PORT} (warmer/creator must keep it logged in)"; exit 0
-fi
-
-# verify logged in as HANDLE (fail-closed: do not post if we cannot confirm)
-if [ -n "${CLIP_TEST_ACTIVE_OVERRIDE:-}" ]; then
-  ACTIVE="$CLIP_TEST_ACTIVE_OVERRIDE"
+  if [ -f "$INSTA_SETTINGS" ]; then
+    note "account @${HANDLE} browser not up on :${PORT} -- proceeding via instagrapi settings-only path (${INSTA_SETTINGS}), skipping browser-dependent self-heal"
+  else
+    emit "account @${HANDLE} browser not up on :${PORT} (warmer/creator must keep it logged in) and no instagrapi settings to fall back on"; exit 0
+  fi
 else
-  ACTIVE="$(CDP_PORT="$PORT" "$PY" -c "
+  # verify logged in as HANDLE (fail-closed: do not trust the browser as a login source unless confirmed)
+  if [ -n "${CLIP_TEST_ACTIVE_OVERRIDE:-}" ]; then
+    ACTIVE="$CLIP_TEST_ACTIVE_OVERRIDE"
+  else
+    ACTIVE="$(CDP_PORT="$PORT" "$PY" -c "
 import sys,os; sys.path.insert(0,'$CDP_DIR'); import cdp
 tid='$TID'
 try:
@@ -112,17 +126,27 @@ try:
 except Exception as e:
     print('')
 " 2>/dev/null | sed 's/のプロフィール写真//')"
-fi
-if [ "$ACTIVE" != "$HANDLE" ]; then
-  emit "account @${HANDLE} not logged in on :${PORT} (active='${ACTIVE}') — skipping, no wrong-account post"; exit 0
+  fi
+  if [ "$ACTIVE" != "$HANDLE" ]; then
+    if [ -f "$INSTA_SETTINGS" ]; then
+      note "account @${HANDLE} browser on :${PORT} not confirmed logged in (active='${ACTIVE}') -- proceeding via instagrapi settings-only path (${INSTA_SETTINGS}), skipping browser-dependent self-heal"
+    else
+      emit "account @${HANDLE} not logged in on :${PORT} (active='${ACTIVE}') — skipping, no wrong-account post"; exit 0
+    fi
+  else
+    BROWSER_READY=1
+  fi
 fi
 
 # REQ-008: self-heal runs ONCE per wake, BEFORE new-content posting, using the SAME resolved
 # HANDLE/TID this wake already confirmed logged-in. Runs regardless of whether a new clip is
 # queued (independent of the QUEUE-empty check below) but never blocks the posting pipeline
 # below regardless of its own outcome (best-effort; failure here must not prevent a new post).
+# Requires BROWSER_READY (a confirmed browser session -- self-heal reads the browser DOM to
+# verify pending posts); skipped on the instagrapi-settings-only fallback path above, where
+# there is no confirmed browser session for it to read.
 SELF_HEAL="${CLIP_SELF_HEAL_OVERRIDE:-$(dirname "${BASH_SOURCE[0]}")/self_heal.py}"  # test hook (PROP-009), unset in production
-if [ -f "$SELF_HEAL" ]; then
+if [ "$BROWSER_READY" = "1" ] && [ -f "$SELF_HEAL" ]; then
   # FIXED after Phase 3 FIND-103: pass the paths run.sh ALREADY resolved via _instance_paths.sh
   # above, instead of self_heal.py re-deriving ANICCA_INSTANCE suffixing independently in Python
   # (a duplicate/drifting-logic risk with zero enforcement mechanism to keep the two in sync).

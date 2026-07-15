@@ -11,6 +11,8 @@ C="$HOME/anicca/skills/earn/clip"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
+source "$C/_instance_paths.sh"   # resolves CLIP_ACCTS (respects ANICCA_INSTANCE, same as run.sh)
+PY="/opt/homebrew/bin/python3"
 log(){ echo "$(date '+%F %T') clip_pass: $*" >&2; }
 
 # focused sub-call: run ONE step as its own bounded agent. --no-session-persistence + SKIP_PROMPT_HISTORY
@@ -38,6 +40,14 @@ step "LEARN" "STEP LEARN (cold-start bible = docs/loop-engineering/47-cold-start
 if [ ! -s "$STATE/offer.json" ]; then
   step "AFF-FIND" "STEP AFF-FIND (MON-5): pick the affiliate/product this @aiclipsvault (niche AI/money/wealth) will promote, so we can monetize. Prefer, in order: (1) our OWN products (100%% margin, no signup) — the Anicca app or life manager, if a public link exists; (2) an INSTANT-signup high-commission affiliate: Digistore24 (2-min signup, no interview) or ClickBank, browse the marketplace, pick ONE offer that (a) matches AI/money/wealth, (b) has high commission (recurring SaaS 20-40%%/mo or 50-75%% RevShare digital), (c) is globally available. Use the AI's own email keiodaisuke+aiclips1@gmail.com for any signup (auto-read OTP via 'gog gmail'). Get the real affiliate LINK. Write ~/clips/offer.json = {network, offer_name, affiliate_link, commission, niche, joined:<true|false>, note}. If signup is blocked (captcha/verification you cannot pass this pass), still record the chosen offer + what is needed with joined:false. Be honest; do not invent a link."
 fi
+
+# ── WARM (deterministic bookkeeping, not an LLM step: fresh accounts (status=="warming" in
+# clip-accounts.json) need passive warmup before they may post. Runs ig-account-warmer's
+# warm.py once per warming account (skips + WARNs if that account's browser is down) and
+# promotes warming->ready once the account clears Dais's 3-day/3-run floor. See
+# warm_step.py for the full policy citation.) ──
+log "WARM: warm_step.py"
+"$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
 # ── PRODUCE (deterministic: producer.sh makes a captioned 1080x1920 clip into the queue) ──
 log "PRODUCE: producer.sh"
