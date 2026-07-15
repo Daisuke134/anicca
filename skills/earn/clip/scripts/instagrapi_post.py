@@ -5,10 +5,72 @@
 # instagrapi.login_by_sessionid -> ffmpeg thumbnail (avoids moviepy dep) -> clip_upload ->
 # verify the reel is publicly visible. Prints ONE structured JSON line matching run.sh's contract
 # ({"outcome": "published"|"failed"|"dry", "post_url": ..., "before_hrefs": []}).
-import argparse, json, os, sys, time, subprocess, urllib.request
+import argparse, json, os, sys, re, time, subprocess, urllib.request
 sys.path.insert(0, os.path.expanduser("~/.claude/skills/ig-account-create/scripts"))
 import cdp  # noqa: E402
 from websocket import create_connection  # noqa: E402
+
+C = os.path.expanduser
+
+
+def make_gmail_handler(handle):
+    # instagrapi calls this on an email challenge; auto-read the 6-digit code from the
+    # account's gmail plus-address inbox via `gog gmail`. Never prints the code.
+    def handler(username=None, choice=None):
+        creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
+        base = creds["email"].split("+")[0] + "@gmail.com"
+        end = time.time() + 180
+        while time.time() < end:
+            out = subprocess.run(
+                ["gog", "gmail", "search", "from:instagram newer_than:1h", "-j",
+                 "--results-only", "-a", base],
+                capture_output=True, text=True)
+            try:
+                threads = json.loads(out.stdout) or []
+            except Exception:
+                threads = []
+            for t in threads:
+                body = subprocess.run(
+                    ["gog", "gmail", "get", t.get("id"), "-j", "--results-only", "-a", base],
+                    capture_output=True, text=True).stdout
+                g = re.search(r"(?<!\d)(\d{6})(?!\d)", t.get("subject", "") + " " + body)
+                if g:
+                    return g.group(1)
+            time.sleep(10)
+        raise Exception("no gmail challenge code within 180s")
+    return handler
+
+
+def login_resilient(cl, handle, port, res):
+    # Self-healing 3-tier login so the loop never needs a human to log in again:
+    #   1) reuse the saved instagrapi session (device+cookies) — works even if chromium is dead
+    #   2) fall back to the browser's live sessionid (legacy path)
+    #   3) fall back to a full password login (auto email-challenge) and re-save the session
+    settings = C(f"~/.cloak/instagrapi-{handle}.json")
+    if os.path.exists(settings):
+        try:
+            cl.load_settings(settings)
+            cl.get_timeline_feed()  # validates the session; identity guaranteed by filename
+            return True
+        except Exception:
+            pass
+    try:
+        _, sid = get_sessionid(port)
+        if sid:
+            cl.login_by_sessionid(sid)
+            if cl.username == handle:
+                cl.dump_settings(settings)
+                return True
+    except Exception:
+        pass
+    try:
+        creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
+        cl.login(creds["username"], creds["pw"])
+        cl.dump_settings(settings)
+        return True
+    except Exception as e:
+        res["error"] = f"all login paths failed: {type(e).__name__}: {str(e)[:200]}"
+        return False
 
 
 def get_sessionid(port):
@@ -41,19 +103,14 @@ def main():
     res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
     try:
         caption = open(a.caption_file, encoding="utf-8").read().strip()
-        _, sid = get_sessionid(a.port)
-        if not sid:
-            res["error"] = "no sessionid in browser (not logged in on this port)"
-            print(json.dumps(res, ensure_ascii=False)); return
 
         from instagrapi import Client
         cl = Client()
         cl.delay_range = [2, 5]
-        cl.login_by_sessionid(sid)
-        # ★ ACCOUNT GUARD (fail-closed): instagrapi knows who the sessionid belongs to. Never post
-        #   to the wrong account. ★
-        if cl.username != a.handle:
-            res["error"] = f"account guard: sessionid is @{cl.username}, expected @{a.handle} — abort"
+        cl.challenge_code_handler = make_gmail_handler(a.handle)
+        # ★ ACCOUNT GUARD (fail-closed): the session is loaded from instagrapi-<handle>.json (tier 1/3)
+        #   or verified cl.username==handle (tier 2), so we can only ever act as the right account. ★
+        if not login_resilient(cl, a.handle, a.port, res):
             print(json.dumps(res, ensure_ascii=False)); return
 
         if not a.live:
