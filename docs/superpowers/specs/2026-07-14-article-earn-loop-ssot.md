@@ -168,6 +168,18 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
        - MINOR1: `DRAFT_NUM` 抽出(292)だけ bare な `VAR=$(cmd|grep)` で set -e 防御パターン外。grep 非マッチで FATAL 文言なしに即死 → run.sh 側に「empty URL」という誤解を招くエラーが出る。現状は note-mcp の型契約(`Article.id` 必須 str)が守っているので実害なし。DRAFT_KEY 抽出(286, pre-existing)も同型。
        - MINOR2: cookie キャッシュ `~/.cloak/note-work/note-cookies.json` が temp+rename なしの直接書き込み。手動パイプラインと同時稼働で読み手が JSONDecodeError。→ os.replace で atomic 化。
        ★一般法則: 「best-effort で WARN + exit 0」は、その run が degraded だったことを機械可読な形で残して初めて成立する。残さないなら成功の偽装。★
+       **R1修理 = commit `64071733`**（stdout の1行に `stage1_ok=/stage2_ok=` トークン追記 → run.sh:97-98 が grep → meta.json(155-157) + account-history snippet(139)）。MINOR1/2 も修理済（302/308行の set -e ガード、247-254行 mkstemp+os.replace）。回帰スイート PASS を team-lead が自分で実行して確認。
+
+- [ ] #30 ★**画像が黙って消える実バグ**（adversary R2 が発見、team-lead が実コードで確認、2026-07-15、修理中）★
+       `note-stage2-publish.py:42,49,54`:
+       `except Exception as e: print(f"tbl{i} FAIL ..."); nb=nb.replace(f"@@TBL{i}@@","")`
+       - 画像 upload 失敗時、マーカーを**空文字に置換して消す** = 痕跡が残らない（生 `@@TBL1@@` が残る方がまだマシ。壊れたと分かるから）
+       - re-raise も sys.exit も無い → `update_article`(L55) が成功すれば **exit 0**
+       - `publish-note.sh:322-335` は exit code だけで STAGE2_OK を決める → `stage2_ok=true` が meta.json に載る
+       - **結果: N枚中1枚が黙って消えた記事が「成功」として記録される。loop は毎日これをやっている可能性がある。**
+       → 目的: `stage2_ok=true` が「要求された画像が全て実際に埋め込まれた」を意味するようにする。draft 自体は残す（部分的でも中身のある draft を残す方が良い）が、成功とは報告しない。
+       ★一般法則（#16 の法則の強化版）: **exit code は「プロセスが死ななかったか」しか語らない。「仕事が出来たか」は別に測って別に報告しないと、成功の偽装になる。** per-item の try/except は、失敗カウントを集約して終了ステータスに反映して初めて正当。★
+       ★これは reality-gate(#20) が毎日検出すべき失敗クラスの実例 = #20 の仕様の一次資料。★
        既存(実装済): `note-stage2-publish.py`=kroki.io で mermaid→PNG(L27-29)+S3画像upload(upload_body_image)+eyecatch / `note-stage1-render.py`=表→PNG(L21-46)。draft-only 保証コメント有。
        ★真の gap: 日次loop の note 経路 `run.sh→publish-note.sh→create_draft(生MD)` が stage1/stage2 を通さず生markdownを投げてる → note で ```mermaid が崩れ画像無し = 「悪いdraft」の真因。★
        → 作業 = publish-note.sh(生MD経路)を stage1-render→stage2-publish(画像経路)に差し替える配線のみ。
