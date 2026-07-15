@@ -312,6 +312,15 @@ funnel 型は記事1本で手動実証済み（note有料 + X無料 + Substack�
       ★今日の gate 欠陥は計4つ（#48 scope / #48 footer / #48 非決定性 / #49 house style）。全部 **builder が「書き換えず violation をそのまま報告」したから発見できた**。gate に従って記事を直していたら、published 済み・Dais 承認済みの記事が4回劣化していた。★
       未修理（次版で直す価値あり、記事は通す）: 無料版 summary bullet に em dash `--` が2箇所（gate は PASS を出した = blocking 3件未満）。
 
+- [x] ★**#50 gate の最終形: 機械で判定できるものは機械が判定する（2026-07-16、commit `dca4ce7a`）**★
+      2つの残穴を X-en の実物で発見（**builder が「PASS だけど em dash が残ってる」と報告してくれたから**）:
+      ① **em dash がフッターに残ったまま PASS していた** = team-lead の設計ミス。「blocking 3件未満は PASS」の閾値が、**1個でもアウトの house rule（em dash ゼロ）を握り潰した**。閾値は「程度問題のルール」には合うが「binary なルール」には合わない。
+      ② **同一 md で 1回目 FAIL / 2回目 PASS** = 非決定性が残っていた。**「retry すれば通る gate」は gate ではない**（#48 の blocking/advisory 分離でも消えなかった）。
+      修理 = **deterministic pre-check**: LLM を呼ぶ前に regex で確定検査（em dash / 煽り語 / filler 句。コードフェンス・URL・箇条書き記号は除外）→ ヒットしたら**その場で FAIL、model は呼ばない**。model には**判断が要るものだけ**（B4 裏付けの無い箴言 / B5 出典なき主張）を残す。
+      実測: X-en md = **em dash 3件で FAIL**（builder の報告どおり実在）／slop fixture = 3種検知で FAIL／clean fixture = 通過して judge へ PASS。
+      ★一般法則（今日の gate 4連戦の結論）: **regex で決まることを model に決めさせるな。** model は毎回違う答えを出すが regex は出さない。gate の設計は「判断が要る部分を最小化し、残りを機械に固定する」こと。**判断の余地 = 非決定性の入口。**★
+      ★運用法則: **gate が PASS を出しても、気になったものは報告する。** builder のこの1行が、閾値が house rule を握り潰していた穴を暴いた。PASS は「問題なし」の証明ではない。★
+
 ### ★gate と記事のどちらを曲げるか（裁定基準。2026-07-16 X-en の実例で確立）
 gate が FAIL を出した時、**記事を直すのが正しい場合と、gate を直すのが正しい場合がある**。実例（X-en の de-slop 4件）:
 | 指摘 | 裁定 | 理由 |
