@@ -8148,3 +8148,11 @@
 {"ts":1784135626,"wake_id":"00MRMCABSQAEEF8BEB3C7A4A18","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1784135752,"wake_id":"00MRMCD1H7E672D6F957D84071","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
 {"ts":1784135879,"wake_id":"00MRMCFQU974F466F194F84CB7","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: [earn] yield result: recorded net=0 tx=- status=- [earn] yield -> NARRATE "}
+{"ts":1784136007,"wake_id":"00MRMCII4DA5A44B8795124689","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784136133,"wake_id":"00MRMCL7HPC8436144788246A9","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"token_launch","profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] token deposit/launch (FranklinToken/FRK): { \"ok\": false, \"error\": \"HTTP Error 403: Forbidden\", \"status\": 403 } recorde"}
+{"ts":1784136260,"wake_id":"00MRMCNX0S675E55D3BB804A80","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784136387,"wake_id":"00MRMCQN09B003B5DB363E401E","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"x402_sell","profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784136518,"wake_id":"00MRMCTGB17907157681D74F7D","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784136647,"wake_id":"00MRMCW7DWA49A19E04CBA4F64","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}
+{"ts":1784136772,"wake_id":"00MRMCYWHV2EF9C4698141458F","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1784136898,"wake_id":"00MRMD1LHO6A3D5F1413B44DFD","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana low-fee arbitrage opportunities or high-yield liquid staking strategies [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded exp"}
