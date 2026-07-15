@@ -107,8 +107,37 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 
 | # | やること | done 判定 | 状態 |
 |---|---|---|---|
-| **T1** | ★seller が起動できない真因を潰す★ — `seller-boot.sh` / run.sh の plist が ANICCA_HOME 配下の serve.mjs を exec している。repo 実体(`$ANICCA_REPO/skills/earn/x402-sell`)を指すか、home に node_modules を用意する | 3つの `ai.anicca.x402-seller-84xx` が `state=running`, `last exit code`≠1。**agent が立てた seller が生き続ける** | ★次★ |
-| **T2** | 手作り boot script 4本を loop に引き渡す(INV-F 遵守) — T1 後、`serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh` を退役させ、loop 生成の seller に一本化 | 手書き plist を bootout しても売上経路が生き残る | T1 後 |
+| **T1** | ★seller が起動できない真因を潰す★ | agent が立てた seller が生き続ける | ★DONE 2026-07-16★ 下記 |
+| **T2** | 手作り boot script 4本を loop に引き渡す(INV-F 遵守) — `serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh` を退役させ、loop 生成の seller に一本化 | 手書き plist を bootout しても売上経路が生き残る | ★franklin2 完了★ 残り: franklin1(:8414) → claude-p(:8412) → mainnet(:8411 稼ぎ頭、最後) |
+
+### ★T1 DONE — 史上初、agent が自分で seller を立てた（2026-07-16 03:09 実測）★
+
+```
+state = running
+pid = 94909        PPID=1 (launchd KeepAlive 直下 = loop の seller)
+node 94909  TCP *:8413 (LISTEN)
+payTo: 0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9   ← franklin2 自身の wallet
+外部到達: https://aniccanomac-mini-1.tail7a0ba4.ts.net:10000/ → 同 payTo
+手書き ai.anicca.x402-franklin2 → 退役済 (launchctl list に無い)
+```
+
+**私(Fable)は kickstart していない。** repo を直して push しただけ。loop 自身の `self-update-skills.sh`(10分間隔)が
+home に配り、launchd KeepAlive が再試行して立った。伝播は 5.5分 で実測。
+
+死因は1つではなく **3つ重なっていた**:
+
+| # | 死因 | 実測 | 修正 |
+|---|---|---|---|
+| 1 | `seller-boot.sh` が ANICCA_HOME 配下の serve.mjs を exec。`self-update-skills.sh:15` が `--exclude='node_modules'` で依存を配らない（node_modules=635M、home 3つで 1.9GB = disk 死。exclude は正しい判断） | `ERR_MODULE_NOT_FOUND '@coinbase/x402'`、runs=213/168/213 全て exit 1 | 依存を持つ copy を exec する（commit e051bfe9、test 4件） |
+| 2 | `app.listen` に error ハンドラが無く、bind 失敗時も `{"x402_seller":"up"}` を印字して **exit 0**。launchd は「正常終了」と読み、KeepAlive が364回無言で再起動。**失敗が成功として記録されていた** | 空きポート→"up"+生存 / 占有ポート→"up"+即死。stdout が同一 | error を stderr に出して exit 1（commit cd460272、test 2件） |
+| 3 | `serve.mjs:58` が `await import("x402-express")` するのに package.json が宣言せず、**repo ルートの node_modules に寄生**していた。7/16 01:40 に何かがその dist/ を prune → 全 seller が起動不能に | 00:41 は起動成功 → 03:07 は同じコマンドが `ERR_MODULE_NOT_FOUND .../anicca/node_modules/x402-express/dist/esm/index.mjs` | ローカルに宣言（commit 90a1c4c7） |
+
+★死因2の教訓（一般法則）: **「up」と自己申告するログを監視の根拠にしてはいけない。** exit code と実 curl だけが信号。
+「稼いでいる」の判定を on-chain 実測に限る原則と同型 — 主体の自己申告は証拠にならない。
+
+★未解明（要監視）: 7/16 01:40 に repo ルート `node_modules/x402-express/dist` を消したのは誰か。
+disk-autoprune.sh は `/private/tmp/claude-*` しか消さず(実測)、disk も 24% で余裕 → 犯人ではない。
+x402-sell はローカル宣言で自立したので当面無害だが、他の skill が同じ寄生をしていれば同じ事故が起きる。
 | **T3** | Franklin が Bazaar に載らない理由を確定 — `x402-foundation/x402` の `specs/extensions/bazaar.md` を読み、「settle 実績が要るのか / 402 の bazaar extension だけで載るのか」を仕様で確定 | 仕様の逐語引用 + 我々の 402 レスポンスとの差分 | T1 と並行可 |
 | **T4** | T3 の答えに応じて掲載機構を実装 — settle 必須なら loop 自身が self-pay seed（INV-7 で収益除外）。extension だけで良いなら 402 レスポンスに bazaar info を足す | `bazaar-scan.mjs` が 0x3EcC / 0xe7747F の resource を返す（実 JSON） | T3 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2 後 |
