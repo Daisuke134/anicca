@@ -8342,3 +8342,12 @@
 {"ts":1784160697,"wake_id":"00MRMR7P1E3E049D9AE24E4C71","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784160830,"wake_id":"00MRMRAJNY14EA1C7FC2A847EC","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784160898,"wake_id":"00MRMRBZYLAC084C72058E4C88","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784160966,"wake_id":"00MRMRDGEE30E5EA1941824E5A","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784161058,"wake_id":"00MRMRFFHN9B9D31C852F04BC1","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784161125,"wake_id":"00MRMRGUUC8529460D8C7C4BB8","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784161125,"wake_id":"00MRMRGUUC8529460D8C7C4BB8","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784161256,"wake_id":"00MRMRJO9PF73FEE974BB24C5D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784161388,"wake_id":"00MRMRMIEYEA8FBD0672B04858","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784161523,"wake_id":"00MRMRPELB2594F8ABCF204364","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784161707,"wake_id":"00MRMRTCGVF2D17FFCAD894491","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784161863,"wake_id":"00MRMRWO94219D4110A4684C46","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
