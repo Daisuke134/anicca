@@ -8727,3 +8727,12 @@
 {"ts":1784205891,"wake_id":"00MRNI4CYF8252E0E8FDD64BD8","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT: SOL shows a weak bearish signal (confidence 33%) and with swap fees/slippage (~0.4%+) plus a tiny bankroll ($11.32 USDC, no SOL for gas) there’s no edge — hold USDC; note for next session: only "}
 {"ts":1784205891,"wake_id":"00MRNI4CYF8252E0E8FDD64BD8","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784206068,"wake_id":"00MRNI855V9B733104B57A4253","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784206199,"wake_id":"00MRNIAYA18916465D59E74F0C","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784206199,"wake_id":"00MRNIAYA18916465D59E74F0C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784206328,"wake_id":"00MRNIDQ4PE322C1EB03AC4073","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784206328,"wake_id":"00MRNIDQ4PE322C1EB03AC4073","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784206456,"wake_id":"00MRNIGGKF22ECA2D7F924437B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784206587,"wake_id":"00MRNIJA5WEE9514D1D34C4277","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784206587,"wake_id":"00MRNIJA5WEE9514D1D34C4277","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784206719,"wake_id":"00MRNIM3LJ3CE7EC5E3052470D","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
+{"ts":1784207021,"wake_id":"00MRNISKBMFB806E701CF94137","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
