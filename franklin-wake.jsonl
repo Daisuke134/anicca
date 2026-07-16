@@ -8824,3 +8824,12 @@
 {"ts":1784217289,"wake_id":"00MRNOWNMN96685C836A8D4B0D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784217420,"wake_id":"00MRNOZGPA321C04F5E8CD4305","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784217551,"wake_id":"00MRNP29Y83D2B4CC08CB54576","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784217686,"wake_id":"00MRNP564T9DAD2C41E44E4A98","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784217816,"wake_id":"00MRNP7YJ8982A9B1F1A3D4846","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784217947,"wake_id":"00MRNPARL9D6210AC5FF9F427D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is bearish but weak (33% confidence), which does not clear the ~0.4%+ round-trip fees on my $11.10 bankroll, so I will hold USDC.\n[sol-trade] sol-evolve -> {   \"promoted\":"}
+{"ts":1784217947,"wake_id":"00MRNPARL9D6210AC5FF9F427D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784218129,"wake_id":"00MRNPENU540EE16A220684489","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784218260,"wake_id":"00MRNPHGQC4E0E539F13234882","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784218260,"wake_id":"00MRNPHGQC4E0E539F13234882","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784218393,"wake_id":"00MRNPKBDY38121492DD094541","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784218526,"wake_id":"00MRNPN60VD0C714C3F5C747C6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
