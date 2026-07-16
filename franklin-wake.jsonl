@@ -8917,3 +8917,12 @@
 {"ts":1784228877,"wake_id":"00MRNVT0PODE22043C4071466C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784229009,"wake_id":"00MRNVVUMAE55930B3A3CF44AA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784229139,"wake_id":"00MRNVYMNT135BB65B9B11473F","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229320,"wake_id":"00MRNW2IXTE5F1503EBAD2404E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229451,"wake_id":"00MRNW5BTI81041394AE5A4D1F","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784229451,"wake_id":"00MRNW5BTI81041394AE5A4D1F","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229581,"wake_id":"00MRNW84EE57755313DF3F4A1E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229714,"wake_id":"00MRNWAYN8A98C6D4C238A4B4C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229845,"wake_id":"00MRNWDRS656B28EDF2BC44225","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784229975,"wake_id":"00MRNWGJZ836272040C6FD4A06","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — wallet holds only $10.96 USDC and no SOL for gas, too small to justify paying for a TradingSignal call or the ~0.4%+ round-trip fees, so preserve funds and wait.\n[sol-trade] sol-evolve -> {   \""}
+{"ts":1784229975,"wake_id":"00MRNWGJZ836272040C6FD4A06","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784230142,"wake_id":"00MRNWK4O620D83640BD804AB5","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
