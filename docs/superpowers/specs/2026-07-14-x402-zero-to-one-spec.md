@@ -240,6 +240,18 @@ Agora/Anicca はそれを起こす環境。これが我々の能力の証明。
 
 前提順序: FIX-2(blocklist) → FIX-3(settle後記録) → T9-1。U9(wash trading 検証)は T9-1 の大型化前に必須。
 
+### 進捗(2026-07-17実測)
+
+- **done(a) 達成**: franklin1店(:8414→ts.net:10001)・claude-p店(:8412→ts.net:8443)に実装・本番反映、402実測済
+  (`maxAmountRequired` 3000=$0.003)。実装=Binance premiumIndex+Bybit v5 tickers+Hyperliquid `metaAndAssetCtxs`
+  並列取得、8h換算正規化、年率bps乖離top20、60s cache、1取引所落ちはdegrade・全滅時のみ503。テスト19/19。
+  files: `skills/earn/x402-sell/funding-rates.mjs`(新規)+`serve.mjs`+`__tests__/funding-rates.test.mjs`。
+  commit `8f6d0f7c`(anicca repo main)。
+- **done(b) 未達**: settle まで通る実購入。FIX-3 でゲートは実装済み(commit `e5904325`)、実購入は未発生。
+- **done(c) 未達**: 14日以内の反復購入者。観測開始日 = 2026-07-17。
+- U9(wash trading 検証)完了(2026-07-17): 鯨bot `0x1cb8d1456efc633da6eeaa038033edcbcdc0bdff` は本物の自律買い手と確定
+  (wash trading 棄却)。詳細は `docs/STATUS.md` の「U9確定」節。
+
 ## Stop 条件
 
 - 外部 buyer が長期間ゼロ → 「掲載・発見達成、demand 待ち」と正直に報告して区切る（demand は制御外）
