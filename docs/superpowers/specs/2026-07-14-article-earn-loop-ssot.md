@@ -703,6 +703,10 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 - **既定 ON = KYC 不要 loop のみ**（article loop が筆頭。gig 以外はほぼ全部該当見込み）。
 - 現行の keiodaisuke ベースのアカウント群は「Dais インスタンスの値」であり、OSS 版では .env のデフォルトではなく bootstrap ステップの成果物になる。
 
+### 7.56 repo 構造決定（2026-07-17 Dais）: `human-funded/` 階層は廃止、フラット `skills/<name>/`
+
+`human-funded` は colony 内部分類の漏れで OSS の readable naming 違反。新構造 = `profitable-claude/skills/{article-writer, gig-work, connector, life-manager, …}`（Claude Code の skill 規約と 1:1、install.sh が ~/.claude/skills/ へ symlink 登録）。#70f のパス書き換えと同時に実施。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
