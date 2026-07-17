@@ -707,6 +707,18 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 
 `human-funded` は colony 内部分類の漏れで OSS の readable naming 違反。新構造 = `profitable-claude/skills/{article-writer, gig-work, connector, life-manager, …}`（Claude Code の skill 規約と 1:1、install.sh が ~/.claude/skills/ へ symlink 登録）。#70f のパス書き換えと同時に実施。
 
+### 7.57 本日の教訓（2026-07-17、恒久ルール化済みのもの）
+
+- **sandbox は「実行場所」でなく「全書き込み先」に張る**（#70e で本番 plist 5本を誤上書き→即復旧。memory 化済み）。復旧検証は on-disk + launchd 実メモリ（launchctl print argv）まで。
+- **port ≠ copy**: 移植先に独自進化した配線済み実装が既にある場合、それを対象に改修する（#65impl で digest が commit 前に自己発見。eyecatch/#69 と同じ「配線されない孤児を作らない」原則の適用）。
+- commit メッセージにバッククォート禁止は zsh でも再発（2回目）。`git commit -F <file>` を既定にする。
+- 稼働中の live pass は kill しない。構造変更（mv/rename）は pass 完走後（#70f で実践）。
+
+### 7.58 アイデア backlog（#71）
+
+- **X 投稿の API 経路**: x.ai CLI（grok 課金）+ xmcp で browser 非依存の X 投稿。★draft-only 厳守★（過去の直接投稿事故の教訓）。ブラウザ経路が安定してる間は優先度低。
+- **loop の一般化**: article loop → 「writing 収益化」全般（短文/長文/newsletter/連載→書籍）。topics/ queue とゲート群は形式非依存なので、platform adapter を足すだけで横展開できる構造になっている。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
