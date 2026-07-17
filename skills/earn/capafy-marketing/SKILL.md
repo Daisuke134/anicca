@@ -42,10 +42,26 @@ python3 scripts/x_post.py --url "<url>" --tweet "<...>" --live
 - Guardrails: rejects a native tweet that contains a link or exceeds 280 chars.
 - Output: one clean JSON line on stdout `{ok, mode, listing_url, tagged_url, post_id, release_url}`.
 - Ledger: appends to `~/.openclaw/state/capafy-marketing-x-ledger.jsonl` (atomic).
-- Verified 2026-07-18: draft post accepted by Postiz (2-tweet thread), ledger row written, draft deleted after check.
+### ★ BLOCKER — Postiz strips all URLs (verified live 2026-07-18, 5 tests) ★
+The root native tweet publishes correctly, but **Postiz removes every URL from tweet content**,
+so the self-reply link never reaches X. Verified across text+url reply / url-only reply /
+single-tweet-body url / shortLink true AND false / SPA url (capafy.ai) AND known-good url
+(github.com) — the Postiz `content` field comes back with the URL deleted every time, and the
+live tweet on X has no link. This is a Postiz-rail limitation, NOT a code bug and NOT X
+account link-stripping (the URL is gone before it reaches X).
 
-**Wiring (B8, not yet done):** a daily production cron calls this with `--live` on a B1-selected
-listing. Do NOT wire `--live` to a cron until the copy pipeline (B1/B2) feeds real per-listing tweets.
+Also corrected: the Postiz integration named アニッチャ (`cmm6d7m5..`) posts to **@diceai0**,
+NOT @aniccaxxx as `~/.openclaw/skills/x-poster/SKILL.md` claims.
+
+**Fix path (needs a rail decision by lead):**
+1. Browser-direct — drive X compose on CloakBrowser :9222 to post root + reply-with-link
+   (same pattern as `ig-reels-poster`). Most reliable, bypasses Postiz. Needs @diceai0 (or a
+   chosen X account) logged into :9222.
+2. X API v2 (OAuth) — post + reply via api.x.com with the account's tokens.
+3. Interim degraded — native posts via Postiz + the Capafy link only in the X Profile Website
+   (research MD says the profile link is a permanent secondary channel).
+
+**Do NOT wire `--live` to a cron** until the rail is switched — it would post link-less tweets.
 
 ## Dependencies / open items
 - Capafy listing URL resolution + rotation = B1 (selector). Capafy user token `CAPAFY_ACCESS_TOKEN`
