@@ -708,6 +708,7 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | #59 | #47 無料版 Sources 落ち修理（既存 TODO の再掲、レーン A 開始前に必須） | [ ] |
 | #60 | ~~Substack Stripe 確認~~ ✅完了（2026-07-17 実測: ON 済みだった）。残タスク変形 → daily-driver の Substack session 復活済み、X-publish 同様に session 失効の healthcheck 対象へ追加検討 | [x] |
 | #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
+| #62 | ✅**完了（2026-07-17）**: keychain OAuth 死の全 loop 横展開調査 + 修理。実死亡中だった capafy-loop / life-manager（07-16/17 連続 rc=1）+ 時限爆弾8箇所（gig_reality_verify / promote_gate_run.py / connector_fill_gaps / run-*-agent.sh×5 / self-improve.sh）に clip_pass.sh の実証済み CLIProxyAPI fallback（AUTH_TOKEN 方式）を適用。commits: anicca `eabbaa33` / profitable-claude `c5c2e25` / anicca-dais `4545b1c9`。AUTH_TOKEN + `sonnet` alias が proxy で rc=0 を返すことは事前実測済み（clip の「alias 不可」コメントは現 proxy では再現せず）。非稼働の claude-p-mainloop / adversary-daily / heartbeat は未パッチ（再稼働時に同ブロック適用のこと） | [x] |
 
 ## 6. 関連ファイル
 
