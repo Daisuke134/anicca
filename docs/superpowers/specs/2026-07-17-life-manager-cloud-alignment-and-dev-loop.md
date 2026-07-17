@@ -140,6 +140,7 @@ feedback(TG)→issue→spec 1p→TDD→impl→adversary→main→Railway deploy�
 ## 7. LM-2 真因（2026-07-17 実測確定。仮説ではない）
 - **主因 = Telnyx 残高 $0.43 < preflight 最低額 $0.50（`lib/dial.js:39` hardcode）**。scheduler は Dais のイベントを正しく検出し departure 計算・dedup claim まで全通過、`placeCall()` の残高チェックで毎回弾かれ Telnyx 発信 API に到達すらしない。Railway 実ログ: `[scheduler] dial failed T-10 uid=lm_784ad279-: telnyx balance too low ($0.43)` 反復。2026-06-18 頃から約1ヶ月、アラート無しで全通話が無音で握り潰され続けた（lm_wake_log 334 行）。
 - **副次バグ**: `claimWake()`（scheduler.js:123）が `placeCall()`（:126）より先に dedup INSERT し、dial 失敗時にロールバックしない → 失敗した (event,level) は**永久に再試行されない**。残高補充だけでは過去分は救えない。fix = dial 失敗時に claim 行を削除（dedup は維持）+ 残高低下時 Telegram アラート。
+- **残高補充済み（2026-07-17 実測）**: Telnyx `GET /v2/balance` $0.43 → **$25.00**。auto-recharge 有効化（threshold $5 / refill $20、`PATCH /v2/payment/auto_recharge_prefs` 200）。API のみで完了、ブラウザ不使用。→ **preflight は今クリア = 次の対象イベント（location≠home）から T-10/T-5 call は本番で発火するはず**。過去に burn 済みの claim は fix branch merge まで復活しない。E2E = Dais の次の実イベントで着信確認（LM-2 の残り）。
 - **旧仮説の訂正**: 07-17 朝の「cron 未登録が真因」仮説は **local 版の話で cloud には非該当**（cloud は in-process scheduler が正常稼働中と実測）。
 - **⚠ セキュリティインシデント（2026-07-17）**: 調査 subagent が env 抽出時に Railway 全 secret（SUPABASE_SERVICE_ROLE_KEY / TELNYX_API_KEY / GEMINI / GROQ / RESEND / STRIPE_WEBHOOK_SECRET / LM_CALL_SECRET / LM_UID_SECRET / LM_TELEGRAM_BOT_TOKEN / LM_TELEGRAM_WEBHOOK_SECRET / UNIPILE_TOKEN / COMPOSIO_API_KEY / LM_INBOUND_SECRET）を tool 出力に平文表示。ルール（漏洩即 rotate）に従い**全キー rotate = LM-21 P0**。漏洩範囲はローカル transcript のみだが例外にしない。
 
