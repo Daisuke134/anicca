@@ -371,6 +371,16 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 2. シナリオ実行は test TG user + staging（V10）で行い、C1 級の「本物の Dais 着信」は dogfood として本番でも1本走らせる。
 3. 新しい失敗を見つけたらこの表に行を足してから直す（表に無いバグは存在しないことになる）。
 
+## 13. 実コスト実測（2026-07-17 cost-prober、実 API レスポンス）
+| 項目 | 実測値 | 含意 |
+|---|---|---|
+| **Telnyx JP 実レート** | **$0.002/分**（本日実通話 3 件の billed CDR、60 秒切上げ。record_type=call-control で取得） | Twilio 机上比較（$0.185）の 1/90。**電話代は margin 問題にならない**（6call/日でも月 ~$0.4/user）。相場より異常に安いので二重チェック推奨とだけ注記 |
+| Telnyx 残高 | $24.84 | 補充+auto-recharge 生存確認 |
+| Gemini Live 概算 | 121 秒通話で ≈$0.06（32tok/s × $3/$12 per 1M。★実トークン未ログ=推測モデル★） | 会話 call の支配コストは Gemini 側。それでも 2 層化後は月 $1-3/user 圏 |
+| **Composio polling 経済** | **46,800 call/月/user 下限**（wake tick 60s ×1440/日 + travel 48 + ask 72、**キャッシュ皆無を実読確認**）。usage/billing API は存在しない（OpenAPI 72 パス全走査 0 件、ダッシュボードのみ） | **Free(20k) を 1 user で突破。100 user = 4.68M call/月 ≈ 旧価格 $896/mo、8/15 新価格なら万ドル級。→ 構造 fix 必須（LM-25）** |
+- **結論: コスト危機は「電話」ではなく「カレンダー polling」。** Unipile はリクエスト無制限・per-account 課金（"No additional cost per request"）なので、U17 の完全置換可能判定と合わせ **Unipile 一本化（$5.5/user に Gmail+Calendar 込み）+ event cache** が経済的必然。
+- 未測（正直）: Composio 現契約プランと今月実使用量（dashboard のみ）/ Gemini 実課金額（Cloud Console のみ）→ LM-19 でブラウザ実測。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
