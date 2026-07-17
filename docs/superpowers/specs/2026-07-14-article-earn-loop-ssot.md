@@ -733,6 +733,11 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 ①看板埋没（スクープが70%地点、均等重量の調査報告化）②受領証不可視（「読んだ」のに現物断片ゼロ）③visual 貧血（自明 mermaid 1枚 = 枚数 gate の最低通過）④曖昧量化（「過半数」— JSON があるのに数えてない、タイトル5%断定 vs 本文hedge）⑤¥1,000 の値打ち設計なし（5,167字、有料部の売り不明示）。
 一般化 → #72 content-rule pack: 看板1/3ルール / claim-to-artifact 比率 / visual 情報量判定 / 曖昧量化語検出+タイトル整合 / 厚み-価格 floor。Dais 合意後に SKILL.md + eval/deslop gate へ焼く。**render-verify（見た目）と content-rule（中身）が揃って初めて babysit 終了**。
 
+**追記（2026-07-17、実ブラウザ実見で発見・修理・builder-authfix）: Substack ja/en 両 draft に frontmatter+H1 二重表示混入（公開ブロック級）**。同じレーンAの2 draft（post/207386219 ja・post/207386225 en）を実ブラウザで開いて確認したところ、note と同型のバグが Substack 経路にも存在した: 他 platform 向け frontmatter（ja=zenn 由来の `title:`/`emoji:`/`topics:`/`published:`、en=devto 由来の `title`/`description`/`tags`/`published`）が横罫線の直後に太字の地の文として本文冒頭に露出し、その直後にタイトルが H1 で二重表示されていた。note 側は commit `b81548f` で `note-stage1-render.py` に frontmatter strip を追加済みだったが、Substack 側の `publish-substack.sh`（`BODY_MD="$(cat "$MD_FILE")"` で md を無加工のまま `draft_body` に流し込んでいた）には同じ fix が入っていなかった。
+- **恒久修理**: `publish-substack.sh` に note 側と同一正規表現（`re.sub(r'^---\n.*?\n---\n', '', md, count=1, flags=re.S)` でfrontmatter除去 + `re.sub(r'^#\s+.+$', '', md, count=1, flags=re.M)` でH1除去）を追加。この1箇所が mermaid embed 経路・直接経路の両方が必ず通る唯一の合流点。negative test（frontmatter+H1 fixture → 混入ゼロ・本文/##見出しは保持）+ positive test（frontmatter/H1なしfixture → byte-identical、over-strip無し）を `tests/art/test_substack_frontmatter_strip.sh` として追加、8/8 green。テストは実装から正規表現を直接 sed 抽出して使う方式（手書き二重実装によるドリフトを防止）。
+- **既に staged 済みの2 draft自体の修理**: Substack の `draft_body` は生 markdown ではなく server-side の ProseMirror JSON（`GET /api/v1/drafts/{id}` で実測確認、python-substack の `api.py` リファレンスで `PUT /api/v1/drafts/{id}` の存在を確認）と判明。両 draft とも `content[0]=horizontal_rule` `content[1]=frontmatter見出し(H2)` `content[2]=重複タイトル(H1)` という同一構造だったため、この3ノードを除去した JSON を `PUT` で書き戻した。修理前の完全な JSON バックアップを取得済み。修理後に改めて `GET` して混入テキストが0件であることを確認し、さらに CDP 経由で実際の Substack エディタ画面を own-eyes screenshot で確認（ja/en 両方とも frontmatter/重複タイトルが消え「保存済み」draft のまま、公開ボタンは押していない）。
+- commit: profitable-claude(main) `59d4eac`
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
