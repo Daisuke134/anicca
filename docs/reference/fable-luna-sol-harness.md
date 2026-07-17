@@ -83,6 +83,21 @@ solx "git diff HEAD~1 を読んで blocking bug を列挙。最後に PASS/FAIL 
 5. **`--model gpt-5.6-luna-xhigh` のような effort suffix はハング**（3分 timeout）。effort は `--effort xhigh`（one-shot）か agent frontmatter `effort: xhigh`（[docs](https://code.claude.com/docs/en/sub-agents): "effort — Overrides the session effort level. Options: low, medium, high, xhigh, max"）で渡す。
 6. 帰結: **subagent に異種モデルを同時に混ぜる経路は存在しない**。生存経路 = `CLAUDE_CODE_SUBAGENT_MODEL`（全 subagent 一律）のみ。だから Sol review は subagent でなく one-shot（fresh context なのでレビュー品質的にもむしろ正解）。
 
+## 実タスク通し証跡（2026-07-17、wordfreq ミニ spec で全ループ実走）
+
+| 段 | 実測 |
+|---|---|
+| Fable 采配（headless claudexmix 構成） | spec を読み luna-executor に brief を出した |
+| Luna 実装 | wordfreq.py + test_wordfreq.py 作成、modelUsage=`gpt-5.6-luna` |
+| テスト | `uvx pytest` で **4 passed** を自分の目で確認、commit `7bb5dab` |
+| Sol review（adversary 型 one-shot） | verdict.json を実書き込み、`{"verdict":"PASS","findings":[]}`、modelUsage=`gpt-5.6-sol` |
+
+## VCSDD への配線（2026-07-17）
+
+- **executor（vcsdd-builder）**: 編集不要。claudexmix の `CLAUDE_CODE_SUBAGENT_MODEL=gpt-5.6-luna` が subagent を強制 Luna 化（env は frontmatter より強い、という同じ物理で保証）。direct セッションでは従来どおり sonnet。
+- **adversary**: subagent のままだと同じ env で Luna に潰されるため、plugin の command 3 ファイル（`vcsdd-adversary.md` / `vcsdd-spec-review.md` / `vcsdd-contract-review.md`、場所 = `~/.claude/plugins/marketplaces/vcsdd-claude-code/commands/`）に routing を追記: **proxy セッション（`$ANTHROPIC_BASE_URL` に 8317）なら Sol xhigh one-shot（Bash 経由の別プロセス = 完全ゼロ文脈で fresh context 要件はむしろ強化）、direct セッションなら従来の agent spawn**。上の表の Sol review 行が one-shot 型の実走証跡。
+- 注意: この plugin は外部 clone（sc30gsw/vcsdd-claude-code）。marketplace 更新で上書きされたらこの節を見て再適用する。
+
 ## 別ルート（今日は未検証、後日）
 
 - **Route A（公式 plugin）**: `claude plugin marketplace add openai/codex-plugin-cc` → `claude plugin install codex@openai-codex`（両方実行・インストール済み）。`/codex:review` / `/codex:adversarial-review` / `/codex:rescue` が生える。動作未検証。
