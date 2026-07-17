@@ -190,9 +190,22 @@ def _invoke_adversary(prompt: str, repo_root: str) -> dict:
         "--add-dir",
         repo_root,
     ]
+    # Auth: launchd cannot refresh the subscription OAuth token headlessly (keychain locked;
+    # this class of loop was observed dying rc=1 "OAuth session expired and could not be
+    # refreshed" 2026-07-16/17). Route through the local CLIProxyAPI (:8317) whose creds are
+    # plain files and refresh headlessly; fall back to subscription auth if the key file is absent.
+    env = os.environ.copy()
+    cliproxy_key_path = os.path.expanduser("~/.cli-proxy-api-key")
+    if os.path.exists(cliproxy_key_path):
+        with open(cliproxy_key_path, "r", encoding="utf-8") as f:
+            cliproxy_key = f.read().strip()
+        if cliproxy_key:
+            env["ANTHROPIC_BASE_URL"] = "http://127.0.0.1:8317"
+            env["ANTHROPIC_AUTH_TOKEN"] = cliproxy_key
+
     try:
         result = subprocess.run(
-            cmd, cwd=repo_root, input=prompt, capture_output=True, text=True, timeout=ADVERSARY_TIMEOUT_S
+            cmd, cwd=repo_root, input=prompt, capture_output=True, text=True, timeout=ADVERSARY_TIMEOUT_S, env=env
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": f"adversary process timed out after {ADVERSARY_TIMEOUT_S}s"}

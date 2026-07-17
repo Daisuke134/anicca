@@ -216,7 +216,9 @@ fi
 
 # ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
 # env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
-# idiom), not pay-per-token API billing. --dangerously-skip-permissions + --add-dir "$HOME": the
+# idiom) when available, falling back to the local CLIProxyAPI (see CLIPROXY_KEY below) since
+# launchd cannot refresh the subscription OAuth token headlessly (keychain locked; observed killing
+# this verifier 2026-07-16/17). --dangerously-skip-permissions + --add-dir "$HOME": the
 # judge must freely drive CDP :9222 (browser) and call cdp_nav_snapshot.py under $HOME without
 # prompts — this is a non-interactive, autonomous fresh spawn (adversary-daily.sh `claude -p` idiom,
 # adapted). The judge is instructed (gig_judge prompt) to use the DETERMINISTIC nav helper with
@@ -237,6 +239,16 @@ fi
 # (verified live: interim Bash/browser tool calls still run normally, only the concluding response is
 # schema-shaped) — this removes the failure mode at the source instead of catching it after the fact.
 JUDGE_SCHEMA='{"type":"object","properties":{"reasoning":{"type":"string"},"verdict":{"type":"boolean"},"failure_reason":{"type":"string"},"impossible_task":{"type":"boolean"},"reached_captcha":{"type":"boolean"}},"required":["verdict"]}'
+
+# Auth: launchd cannot refresh the subscription OAuth token headlessly (keychain locked;
+# killed this loop on 2026-07-16/17). Route through the local CLIProxyAPI (:8317) whose creds
+# are plain files and refresh headlessly; fall back to subscription auth if the key file is absent.
+CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
+if [ -n "$CLIPROXY_KEY" ]; then
+  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
+  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+fi
+
 echo "$(date '+%F %T') gig_reality_verify: spawning fresh claude -p judge (timeout ${TIMEOUT_SECS}s)" >&2
 JUDGE_RAW=$(env -u ANTHROPIC_API_KEY timeout "$TIMEOUT_SECS" \
   "$CLAUDE" -p "$PROMPT" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
