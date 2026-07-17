@@ -141,3 +141,29 @@
 - **TDD**: negative test を先に書く（例: sessionid 無し settings で get_timeline_feed が LoginRequired を返すこと、直後に vault 注入で green になること）。
 - **VDD**: fresh-context adversary が仕様一致を判定 + Fable が実ブラウザ/実 API で E2E。両 PASS まで fix→再検証。
 - 分業: **Fable = planner + verifier + critical execution（reCAPTCHA/login/on-chain）**。**Sonnet = search + 定型 impl + adversary**。
+
+## v4 — 真犯人は reCAPTCHA ではなく IG の anti-bot soft-block（実測 2026-07-17 12:xx JST）
+
+### やったこと（Fable 直接 execution）
+- 無料 OSS solver 採用: `sarperavci/GoogleRecaptchaBypass`（audio 方式・キー不要・DrissionPage で :9223 の clip-en に attach）。venv に vendor 済み（scratchpad/solver/）。
+- Meta の reCAPTCHA は instagram の referer_frame 配下にネストされた標準 reCAPTCHA Enterprise（anchor=checkbox / bframe=challenge）と判明。DrissionPage で明示的に frame 階層を降りる版を書き、**harness は端から端まで動作**（checkbox arm → audio 切替 → mp3 DL → 文字起こし → 入力 → verify）。
+- login form は `<input type=submit>` の plain form（name=email/pass）。JS submit で reCAPTCHA チェックポイントに到達させることに成功。
+
+### 判明した本当の壁（investigation）
+- **reCAPTCHA audio が難化フレーズを返す**: transcript が毎回 "and then the validator at" 等の濁ったフレーズ（数字列でない）。Google が bot 疑いの低 trust クライアントに hard audio を出し、recognize_google が聞き取れない。→ audio 突破が成立しない。
+- **さらに login 自体が拒否**: 突破を試みた後 login ページに「入力されたログイン情報は正しくありません（Find your account and log in）」。= IG が credential を拒否。
+- **pw は正しい（重要な反証）**: tier3 API login はつい最近 instagrapi で成功していた（`instagrapi_post.py:83-90` の実測コメント「two tier3 logins both succeeded then got revoked」）。同じ pw ファイルで API は通る。→ browser login の「incorrect」は真に間違いではなく **IG の anti-automation soft-block（deflection）**。Google の hard audio と符合（IP/デバイス/挙動が flagged）。
+
+### 却下した仮説
+- 「pw が古い/間違い」→ 却下。tier3 API が同 pw で最近成功しているため。
+- 「reCAPTCHA だけが壁」→ 却下。reCAPTCHA を越えても login が「incorrect」で弾かれる。壁は2枚（Google hard audio + IG soft-block）で、根は同じ = **このIP/セッションが flagged**。
+
+### 結論と次の分岐（Dais 判断待ち）
+連続の自動 login 試行は @aiclipsvault の hard-lock を招くので**一旦停止**。真の対処は「flagged 状態の解除」= 検索で得た公式知見「Rotating IP is the most reliable way」（sarperavci issue #20）。選択肢:
+- **A. IP ローテーション**（Tailscale exit node / 住宅系 proxy）で clean IP から1回だけ login → sessionid 取得 → 以後 keepalive(#8 修正済) で延命。Google hard audio も clean IP なら緩む可能性。
+- **B. cool-down**（数時間〜1日 放置）してから A。flagged スコアは時間で減衰する。
+- **C. instagrapi tier3 を clean IP から実行**（browser UI を経由せず API login）。最近成功実績あり。revoke されたのも datacenter IP が bot 臭かった可能性 → clean IP で改善余地。
+- solver harness 自体は完成・再利用可（clean IP で audio が数字列に戻れば通る）。
+
+### harness の保存先
+`scratchpad/solver/`（RecaptchaSolver.py vendor + solve_loop.py + login_solve.py）。clean IP 確保後に本採用したら `~/anicca/skills/earn/clip/scripts/` へ移して commit する。
