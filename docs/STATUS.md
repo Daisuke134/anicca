@@ -1078,6 +1078,8 @@ funnel_enabled = true
 | **PROD-1** | 商品数拡大(第1弾) — `/funding-rate-arb` を追加、既存 funding-rates 出力を取引所ペア全部で pairwise 比較(年率bps差降順+long/short方向)、新API不要・LLM不要 | 402(v2)+v2 buyer実購入(on-chain tx)+well-known掲載を実測 | ★第1弾DONE(2026-07-17夜)★ franklin2で402実測+v2 buyer 200(tx `0x9d524b92`)+well-known 9商品を確認(commit `89fd67a3`)。arb計算spot-check一致。残=金融計算機等の横展開で30+商品へ |
 | **RECOVER-1** | AUDIT-1で判明した座礁資金$20.37のうち自動回収可能分を流動化 — HL残高$7.72をArbitrumへwithdraw、Polymarket YES/NO重複ポジションをmerge | 座礁資金が流動USDCとしてwalletに着金しon-chainで確認できる | ★DONE(2026-07-17夜)★ ①HL withdraw $7.72→Arbitrum着金$8.22(HL accountValue $7.72→0で座礁解消) ②PM merge YES13/NO5→YES8/NO0=5ペア=$5回収。計~$12.7回収。claude-p自身の鍵でhumanゼロ、各tx on-chain検証。★続DONE(2026-07-17夜、次セッション)★ ③Arbitrum $8.21→Base ブリッジ完了(relay.link、fee $0.02=0.26%、approve `0x0b9b17db…`/deposit `0xe8eddd73…`、Base着金$10.13/Arb残$0.01をon-chain実測。script=`~/.anicca-founder/skills/earn/funding/bridge-arb-to-base.mjs`、fund-hl.mjsのcopy+tweak、鍵はwallet.json file読みでstdout非経由) ④残YES8株(Fed no-change 7月、cur 0.9565、解決07-29)は**売却せず満期hold→redeem.pyで$8.00回収が正**(place_order.pyはBUY専用で売却は新code=money-safety案件、+$0.35/12日の期待値でholdが合理的)。07-29後にredeem実行 |
 
+| **OBS-1** | x402scan 掲載(07-17登録)を外部買い手がprobeするか14日観測(〜07-31)。観測面=sales-log/attempts-log/on-chain inbound | 外部payer(自colony 4wallet以外)からの実購入がon-chainで1件以上確認される | ★観測網完備 2026-07-17夜★ inflow-watch launchd を3体分に拡張: 既存 claude-p(0x904B…)/franklin2(0xe7747F…)に**franklin1(0x3EcCAD24…)を新設**(`ai.anicca.x402-inflow-watch-franklin1.plist`、30分毎、初回実行 external:0 を実測)。external>0 で flag file + macOS 通知が上がる。以後は待ち |
+
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
 **比較対象 = `BlockRunAI/blockrun-mcp`（475★、実際に売れている x402 seller）**
