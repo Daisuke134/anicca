@@ -26,6 +26,17 @@ function needsLocation(e) {
   return !((e.location || "").trim());
 }
 
+async function markUserAnswer(uid, eventId, fetchImpl) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !uid || !eventId) return;
+  const f = fetchImpl || fetch;
+  await f(`${url}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}&event_id=eq.${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ answered_at: new Date().toISOString(), resolved_from: "user_answer" }),
+  }).catch(() => {});
+}
+
 // Returns { filled, event, location }. deps (lookupUser/calendar/match/remember) are injectable so the
 // patch→remember wiring (REQ-46) has an executable test (FIND-001/004); real defaults in production.
 async function resolveTelegramReply(chatId, text, deps = {}) {
@@ -53,10 +64,11 @@ async function resolveTelegramReply(chatId, text, deps = {}) {
   const ev = pending.find((e) => e.id === match.eventId);
   if (!ev) return out;
   await cal.patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
+  await (deps.markAnswered || markUserAnswer)(user.uid, ev.id);
   // PC-1 (C3 REQ-46): remember so a future same-summary event autofills without re-asking.
   const ok = await remember(user.uid, placeKey(ev.summary), match.location, process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!ok) console.error(`[tg-reply] rememberPlace FAILED uid=${user.uid.slice(0, 12)} — will re-ask (FIND-003)`);
   return { filled: true, event: ev.summary || "your event", location: match.location };
 }
 
-module.exports = { resolveTelegramReply, userByChatId };
+module.exports = { resolveTelegramReply, userByChatId, markUserAnswer };
