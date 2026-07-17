@@ -1,0 +1,11 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "verification_readiness": "FAIL"
+  },
+  "overall": "FAIL",
+  "findingsCount": 4,
+  "summary": "EARS 要件は設計 spec の P1〜P8/SAFE 系を漏れなく忠実に写像しており、disk 上の現状確認（heredoc 文言、行数、ファイル存在、settings.json の実 hooks 構造、CLAUDE.md の現行テーブル、adversary-daily.sh の実装、P7 対象8ファイルの実在）も spec の記述と一致していた（spec_fidelity PASS）。ただし verification_readiness は FAIL: PROP-P7a/P7b は「PushNotification という文字列がファイル内に存在し文言が妥当」しか確認せず、その行が実際に spawn される prompt 変数の中にあるかを検証しない（adversary-daily.sh は参照先の adversary-daily-prompt.tmpl が実在せず echo フォールバック文字列が実質の prompt になっている、という具体的な脆弱箇所を確認済み、FIND-001 blocking）。また PROP-P4 は ssot-guard 削除時に同じ matcher-group 配列を共有する disk-guard entry の残存を検証しないため誤実装が検出をすり抜けうる（FIND-002 major）。"
+}

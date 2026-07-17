@@ -1,0 +1,7 @@
+{
+  "findingId": "FIND-004",
+  "severity": "minor",
+  "dimension": "spec_fidelity",
+  "description": "The source design spec (docs/superpowers/specs/2026-07-07-fable5-config-slimdown-design.md) is internally inconsistent about the P7 file count: the scope-boundary table (§'スコープ境界') lists exactly 7 files under P7 (self-fix.sh, capafy-loop-cli.sh, reddit-loop-cli.sh, life-manager-loop-cli.sh, clip-promote-cli.sh, video-cli.sh, clip-cli.sh), while the P7 section's own prose text lists 8 files, adding `_shared/adversary-daily.sh`. The behavioral spec's REQ-P7a resolved this ambiguity by following the 8-file prose version (matching PROP-P7a's `grep -l ... | wc -l == 8` check), which is a reasonable and verifiable choice, but it is an interpretive resolution of a contradiction in the upstream design doc rather than a lossless mapping, and the design doc itself was not corrected to remove the discrepancy.",
+  "suggestedFix": "Fix the design spec's P7 scope-boundary table row to list all 8 files (including `_shared/adversary-daily.sh`) so the table and prose agree; no change needed to the behavioral spec itself since it already reflects the correct (8-file) intent."
+}

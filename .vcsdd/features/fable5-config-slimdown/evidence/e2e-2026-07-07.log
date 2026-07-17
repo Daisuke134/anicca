@@ -1,0 +1,20 @@
+# E2E evidence (tier-2) — 2026-07-07, run by team-lead (main session)
+
+## E2E-1: fresh `claude -p --model sonnet` session, cwd=~/anicca-project
+Asked child to search its own injected context for 8 marker strings. Results (verbatim):
+  (1) "You have superpowers"                 NO   <- P8 confirmed removed
+  (2) "Never without explicit user request"  NO   <- P1 contradiction confirmed removed
+  (3) "Thinking Patterns"                    NO   <- P2b confirmed removed
+  (4) "LOOPエンジニアリング検証プロトコル"      NO   <- P2a confirmed removed
+  (5) "DEV DISCIPLINE"                       YES  <- positive control (untouched project hook) intact
+  (6) "SSOT GUARD"                           YES  <- SessionStart injection kept per REQ-P4
+  (7) "Git essentials"                       YES  <- plugin still active w/ corrected text per REQ-P1
+  (8) "Session Architecture"                 NO exact match; child reports lowercase "Session architecture" present = minimal replacement live
+
+## E2E-2: PushNotification from spawned `claude -p --model sonnet` child (PROP-P7c)
+Child successfully loaded PushNotification via ToolSearch and invoked it. Tool response (verbatim):
+  "Not sent — this terminal is active, so your output here already reaches the user; a separate notification would be redundant."
+Interpretation (honest): wiring PROVEN (tool exists + callable + no permission block in headless spawned sessions).
+Actual delivery NOT observed in this run because the harness suppresses pushes while the user's terminal is active — by design.
+In the real loop scenario (loops fire while Dais is away), suppression does not apply.
+NOT claiming delivery; claiming availability + callability + designed suppression path.

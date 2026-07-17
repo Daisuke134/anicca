@@ -35,9 +35,9 @@ const { inngest } = require("./inngest/client.js");
 const { functions: inngestFunctions } = require("./inngest/functions.js");
 const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctions });
 const { placeCall, startRecording } = require("./lib/dial.js");
-const { parseUpdate, sendMessage } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
-const { handleInboundReply, parseInboundRecipient } = require("./lib/ask.js");
+const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
@@ -240,6 +240,15 @@ const server = http.createServer((req, res) => {
         const update = JSON.parse((await readBody(req)) || "{}");
         const u = parseUpdate(update);
         if (u && LM_TG_TOKEN) {
+          if (u.kind === "callback") {
+            await answerCallbackQuery(LM_TG_TOKEN, u.callbackQueryId, "Received");
+            await routeCallbackData(u.data, { ask: (data) => handleAskCallback(data, {
+                chatId: u.chatId, telegramToken: LM_TG_TOKEN,
+                supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
+              }) });
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
           const opts = { token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY };
           if (u.isStart) {

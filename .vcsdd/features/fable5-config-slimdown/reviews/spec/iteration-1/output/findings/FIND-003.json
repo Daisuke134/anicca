@@ -1,0 +1,7 @@
+{
+  "findingId": "FIND-003",
+  "severity": "minor",
+  "dimension": "verification_readiness",
+  "description": "REQ-P3a's acceptance criteria says \"3ファイル × 3ディレクトリ × 3パス形式 = 27通りの grep 結果が記録されている\" but neither the behavioral spec nor PROP-P3a in the verification architecture specifies a concrete artifact path or format where this 27-combination record is expected to live, so this specific acceptance-criterion clause (as opposed to the PASS/FAIL zero-hit logic itself, which is well-specified) cannot currently be checked by a deterministic shell assertion.",
+  "suggestedFix": "Specify a concrete log path/format for the MOVE REF-CHECK guard's output (e.g. `.vcsdd/features/fable5-config-slimdown/reviews/move-ref-check.log` with one line per of the 27 grep invocations) so `tests/verify.sh` can assert the log exists and contains 27 recorded lines, in addition to the existing zero-hit assertion."
+}

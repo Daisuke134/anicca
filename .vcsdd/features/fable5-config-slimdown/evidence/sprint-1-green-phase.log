@@ -1,0 +1,25 @@
+[PASS] PROP-P1: git-context-lite.sh: no contradiction blocks, CLAUDE.md ref present, secrets guidance kept, bash -n OK
+[PASS] PROP-P2a: loop-engineering.md deleted + backup exists
+[PASS] PROP-P2b-shell: session-architecture.md <=20 lines, banned strings absent, backup exists
+[SKIP] PROP-P2b-judgment: tier-2: manual — fresh-context adversary confirms 4-point substance in session-architecture.md
+[PASS] PROP-P3a: move-ref-check.log exists with >=27 recorded grep runs (27 = 3 files x 3 dirs x 3 path forms)
+[PASS] PROP-SAFE-4: alias of PROP-P3a (MOVE REF-CHECK gate), same evidence, not re-implemented
+[PASS] PROP-P3b: rule files that passed MOVE REF-CHECK moved rules/->references/; files with a real reference correctly left in place; CLAUDE.md references updated; context7.md untouched
+[PASS] PROP-P4: settings.json UserPromptSubmit ssot-guard removed via pre/post snapshot-diff, SessionStart unchanged, valid JSON
+[PASS] PROP-P5a: adversary-daily.sh invokes claude with --model opus
+[PASS] PROP-P5b: CLAUDE.md model-division table contains 'refusal' fallback wording (tier-0 half only; tier-2 semantic-correctness half is adversary-only, not scored here)
+[PASS] PROP-P6a: worktree .claude/settings.json effortLevel == high, valid JSON
+[PASS] PROP-P6b: live checkout .claude/settings.json effortLevel == high, committed and pushed to origin/feature/clip-rewards
+[PASS] PROP-P6c: CLAUDE.md model-division main row states high (xhigh temporary-only)
+[PASS] PROP-P7a: 8 loop-CLI files: PushNotification append line structurally inside runtime prompt value (assign-span byte-identical to HEAD, launch-line content matches known-good pre-P7a text, line numbers re-derived at implementation time per FIND-006/FIND-007)
+[SKIP] PROP-P7b: tier-2: manual — fresh-context adversary confirms wording fidelity of the 8 append lines + position double-check
+[SKIP] PROP-P7c: tier-2: manual E2E — main agent spawns claude -p --model sonnet and captures a real PushNotification tool_result (task #6)
+[PASS] PROP-P8: superpowers hooks.json: SessionStart using-superpowers entry removed, valid JSON, other hooks unchanged vs backup
+[PASS] PROP-SAFE-1: 6 pre-edit backups exist under /Users/anicca/.claude/backups/fable5-slimdown-2026-07-07, timestamped before their edit
+[PASS] PROP-SAFE-2: settings.json (x2) + hooks.json all valid JSON (this invariant holds before AND after implementation, so a pre-implementation PASS here is expected, not a weak-assertion signal)
+[PASS] PROP-SAFE-3: cozempic hooks / enabledPlugins / includeGitInstructions unchanged (backup vs live), context7.md md5 matches 2026-07-07 baseline
+---
+TOTAL: 17 PASS / 0 FAIL (3 SKIP, tier-2, not counted)
+EXIT_CODE=0
+target-feature-tests: PASS
+regression-baseline: PASS

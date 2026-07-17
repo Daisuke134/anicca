@@ -15,7 +15,7 @@
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
-const { getCalendar } = require("./transport/index.js");
+const { getCalendar, getMail } = require("./transport/index.js");
 const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
@@ -39,6 +39,72 @@ async function geminiJson(prompt, geminiKey) {
     generationConfig: { responseMimeType: "application/json", temperature: 0 },
   }, geminiKey);
   try { return JSON.parse(j?.candidates?.[0]?.content?.parts?.[0]?.text || "{}"); } catch { return {}; }
+}
+
+function responseText(j) {
+  return (j?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").filter(Boolean).join("\n");
+}
+
+function responseFunctionArgs(j, name) {
+  const parts = j?.candidates?.[0]?.content?.parts || [];
+  const call = parts.map((p) => p.functionCall).find((f) => f && f.name === name);
+  return (call && call.args) || {};
+}
+
+async function agentSearchCandidate(event, deps = {}) {
+  const raw = deps.geminiRaw || geminiRaw;
+  const empty = { found: false, candidate: "", source: "" };
+  if (!deps.geminiKey && !deps.geminiRaw) return empty;
+  let snippets = [];
+  const mail = deps.mail || getMail({
+    accountId: deps.gmailAccountId, token: deps.unipileToken, dsn: deps.unipileDsn,
+  });
+  if (mail && typeof mail.searchInbox === "function" && (!mail.ready || mail.ready())) {
+    snippets = await mail.searchInbox(String(event.summary || "")).catch(() => []);
+  }
+  const compactMail = snippets.slice(0, 5).map((m) => ({
+    subject: m.subject || "", body: String(m.body || m.text || m.snippet || "").slice(0, 1000),
+  }));
+  const grounded = await raw({
+    contents: [{ role: "user", parts: [{ text:
+      `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\nGmail snippets: ${JSON.stringify(compactMail)}` }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { temperature: 0 },
+  }, deps.geminiKey);
+  const groundedText = responseText(grounded);
+  if (!groundedText) return empty;
+  const extracted = await raw({
+    contents: [{ role: "user", parts: [{ text:
+      `Extract a venue candidate from the research below. Call submit_candidate. found must be false unless evidence is reliable. source is gmail only when a Gmail snippet supports it; otherwise web_search.\n\n${groundedText}` }] }],
+    tools: [{ functionDeclarations: [{
+      name: "submit_candidate",
+      description: "Submit the venue candidate supported by the research.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          found: { type: "BOOLEAN" }, candidate: { type: "STRING" },
+          source: { type: "STRING", enum: ["gmail", "web_search"] },
+        },
+        required: ["found", "candidate", "source"],
+      },
+    }] }],
+    toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["submit_candidate"] } },
+    generationConfig: { temperature: 0 },
+  }, deps.geminiKey);
+  const args = responseFunctionArgs(extracted, "submit_candidate");
+  const candidate = String(args.candidate || "").trim();
+  const source = args.source === "gmail" ? "gmail" : "web_search";
+  return args.found && candidate ? { found: true, candidate, source } : empty;
+}
+
+function closedAskMessage(event, candidate, replyToken) {
+  return {
+    text: `📍 “${event.summary || "your event"}” は ${candidate} で開催ですか？`,
+    extra: { reply_markup: { inline_keyboard: [[
+      { text: "はい", callback_data: `ask:yes:${event.id}:${replyToken}` },
+      { text: "いいえ", callback_data: `ask:no:${event.id}:${replyToken}` },
+    ]] } },
+  };
 }
 
 // TOOL: Google Places Text Search. The AGENT calls this itself — possibly several times with different
@@ -75,6 +141,7 @@ const RESOLVE_TOOLS = [{
           online: { type: "BOOLEAN", description: "true if this event has NO physical place to travel to — it is online / remote / a phone or video call (e.g. title contains オンライン, 電話, リモート, remote, online, Zoom, Meet, Teams, ビデオ通話, 通話). Then there is NO location to fill and the user must NOT be asked." },
           confident: { type: "BOOLEAN", description: "true ONLY when online=false and you found the real physical venue; false if it is a person/vague activity and the user must be asked." },
           location: { type: "STRING", description: "The exact formatted_address from a places_search result. Empty unless confident=true." },
+          source: { type: "STRING", enum: ["location_field", "description", "web_search"], description: "Where the physical venue was resolved from." },
         },
         required: ["online", "confident"],
       },
@@ -126,6 +193,7 @@ Canonical examples (match the SPIRIT, reason like these — do not keyword-match
 
 Event title: ${JSON.stringify(event.summary || "")}
 Event location field (may be a room name, a URL, or empty): ${JSON.stringify(event.location || "")}
+Event description: ${JSON.stringify(event.description || "")}
 Start: ${JSON.stringify((event.start || {}).dateTime || "")}
 User's home address: ${JSON.stringify(home || "")}` }],
   }];
@@ -140,7 +208,10 @@ User's home address: ${JSON.stringify(home || "")}` }],
       if (c.name === "submit_answer") {
         const a = c.args || {};
         if (a.online) return { kind: "online" };
-        if (a.confident && a.location && String(a.location).trim()) return { kind: "filled", location: String(a.location).trim() };
+        if (a.confident && a.location && String(a.location).trim()) {
+          const resolvedFrom = ["location_field", "description", "web_search"].includes(a.source) ? a.source : "web_search";
+          return { kind: "filled", location: String(a.location).trim(), resolvedFrom };
+        }
         return { kind: "ask" };
       }
       if (c.name === "places_search") {
@@ -197,10 +268,12 @@ async function askedSet(uid, supaUrl, supaKey) {
 // ATOMIC claim of an ask (C-H1) — mirrors claimWake. INSERT relies on lm_ask_log UNIQUE(uid,event_id):
 // 201 = first claimer (proceed to send); 409 = already asked (skip). Race-safe; no SELECT-then-POST window.
 // If supa is unconfigured, return true (don't block) — matches the pre-ledger best-effort behaviour.
-async function claimAsk(uid, eventId, supaUrl, supaKey, replyToken) {
+async function claimAsk(uid, eventId, supaUrl, supaKey, replyToken, metadata = {}) {
   if (!supaUrl || !supaKey) return true;
   const row = { uid, event_id: eventId };
   if (replyToken) row.reply_token = replyToken; // ties the email reply (reply+<token>@) back to this event
+  if (metadata.candidate) row.candidate_location = metadata.candidate;
+  if (metadata.resolvedFrom) row.resolved_from = metadata.resolvedFrom;
   const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log`, {
     method: "POST",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
@@ -214,6 +287,18 @@ async function unclaimAsk(uid, eventId, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}&event_id=eq.${encodeURIComponent(eventId)}`, {
     method: "DELETE",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, Prefer: "return=minimal" },
+  }).catch(() => {});
+}
+
+async function recordResolution(uid, eventId, source, supaUrl, supaKey) {
+  if (!uid || !eventId || !source || !supaUrl || !supaKey) return;
+  await fetch(`${supaUrl}/rest/v1/lm_ask_log?on_conflict=uid,event_id`, {
+    method: "POST",
+    headers: {
+      apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({ uid, event_id: eventId, resolved_from: source }),
   }).catch(() => {});
 }
 
@@ -251,6 +336,7 @@ async function askTick(uid, opts) {
     }
     if (res.kind === "filled") {
       await patchEvent(uid, event.id, { location: res.location }, composioKey);
+      await recordResolution(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
       autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
     }
@@ -262,12 +348,19 @@ async function askTick(uid, opts) {
     // aniccaai.com). The reply lands on /inbound-email, which looks the token up in lm_ask_log and patches
     // this event. We NEVER read the user's Gmail. CLAIM (with the token) before sending so two ticks can't
     // double-ask; release the claim if the send fails so a later tick retries.
+    const candidate = await agentSearchCandidate(event, {
+      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
+      gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
+    });
     const replyToken = newReplyToken();
-    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken))) continue; // 409 = already asked
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken,
+      candidate.found ? { candidate: candidate.candidate, resolvedFrom: candidate.source } : {}))) continue;
     let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
-      const r = await tgSend(opts.telegramToken, opts.telegramChatId,
-        `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
+      const msg = candidate.found
+        ? closedAskMessage(event, candidate.candidate, replyToken)
+        : { text: `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.` };
+      const r = await tgSend(opts.telegramToken, opts.telegramChatId, msg.text, msg.extra);
       sent = !!(r && r.ok);
     } else if (userEmail && resendKey) {
       const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
@@ -305,10 +398,52 @@ async function consumeAskToken(token, supaUrl, supaKey, fetchImpl) {
   const r = await f(`${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(token)}&answered_at=is.null&select=uid,event_id`, {
     method: "PATCH",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
-    body: JSON.stringify({ answered_at: new Date().toISOString() }),
+    body: JSON.stringify({ answered_at: new Date().toISOString(), resolved_from: "user_answer" }),
   }).catch(() => null);
   const rows = r ? await r.json().catch(() => []) : [];
   return (Array.isArray(rows) && rows[0]) || null;
+}
+
+async function lookupAskCandidate(replyToken, eventId, supaUrl, supaKey, fetchImpl) {
+  if (!replyToken || !eventId || !supaUrl || !supaKey) return null;
+  const f = fetchImpl || fetch;
+  const url = `${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(replyToken)}` +
+    `&event_id=eq.${encodeURIComponent(eventId)}&answered_at=is.null&select=uid,event_id,candidate_location`;
+  const r = await f(url, {
+    method: "PATCH",
+    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ answered_at: new Date().toISOString() }),
+  }).catch(() => null);
+  const rows = r ? await r.json().catch(() => []) : [];
+  const row = Array.isArray(rows) && rows[0];
+  return row && row.candidate_location
+    ? { uid: row.uid, eventId: row.event_id, candidate: row.candidate_location }
+    : null;
+}
+
+async function handleAskCallback(data, opts = {}) {
+  const match = String(data || "").match(/^ask:(yes|no):([^:]+):([^:]+)$/);
+  if (!match) return { ok: false, ignored: true };
+  const [, choice, eventId, replyToken] = match;
+  if (choice === "no") {
+    const text = `📍 Where is “${opts.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`;
+    const send = opts.sendMessage || tgSend;
+    if (opts.telegramToken && opts.chatId) await send(opts.telegramToken, opts.chatId, text);
+    return { ok: true, fallback: true, eventId };
+  }
+  const lookup = opts.lookupCandidate || ((token, id) => lookupAskCandidate(
+    token, id, opts.supaUrl, opts.supaKey, opts.fetchImpl));
+  const hit = await lookup(replyToken, eventId);
+  if (!hit || !hit.candidate) return { ok: false, reason: "candidate not found" };
+  const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey));
+  await patch(hit.uid, hit.eventId || eventId, hit.candidate);
+  if (hit.summary) {
+    const remember = opts.remember || ((uid, summary, location) => rememberPlace(
+      uid, placeKey(summary), location, opts.supaUrl, opts.supaKey));
+    await remember(hit.uid, hit.summary, hit.candidate);
+  }
+  console.log(`[ask] callback yes uid=${String(hit.uid).slice(0, 12)} event=${eventId}`);
+  return { ok: true, eventId, location: hit.candidate };
 }
 
 // Handle one inbound email reply. IDEMPOTENT: we atomically consume the token FIRST — only the first
@@ -340,4 +475,8 @@ async function handleInboundReply(token, replyText, opts = {}) {
   return { ok: true, uid, eventId, location: m.location };
 }
 
-module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk, handleInboundReply, parseInboundRecipient, consumeAskToken };
+module.exports = {
+  askTick, recallOrResolve, agentResolveLocation, agentSearchCandidate, closedAskMessage,
+  agentMatchReply, claimAsk, unclaimAsk, recordResolution, handleAskCallback, lookupAskCandidate,
+  handleInboundReply, parseInboundRecipient, consumeAskToken,
+};
