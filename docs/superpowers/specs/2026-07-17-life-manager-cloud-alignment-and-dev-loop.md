@@ -266,6 +266,79 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 | V13 | Reddit shadowban appeal 結果（07-11 から応答なし） | 週次で確認 |
 | V14 | Stripe 課金フロー実 E2E（subs=0、本物の他人の決済を一度も観測していない） | S1 初売上 = 最初の実検証 |
 
+## 12. E2E テストシナリオカタログ（QA 正本。全部 no-mock 実機、FAIL→fix→再走を PASS まで）
+実行原則: 実 gcal イベント + 実 TG + 実着信 + Supabase 実 row で判定。mock/dry が payload に出たらやり直し。各シナリオ = 「仕込み → 期待 → 証拠の場所」。
+
+### E-CALL（LM-2/LM-23/LM-5）
+| # | シナリオ | 期待 | 証拠 |
+|---|---|---|---|
+| C1 | location≠home の実イベント（+25min）作成 | T-10 firm + T-5 harsh が実着信 | lm_wake_log 2行 + 実際に鳴る |
+| C2 | location 無しイベント | call 発火しない（wake-filter で除外） | lm_wake_log 0行 |
+| C3 | location=home のイベント | 発火しない（travel-only 既定） | 同上 |
+| C4 | 終日イベント | 発火しない | 同上 |
+| C5 | 電話に出ない | 再 dial はしない（level 毎1回）、T-0「出た？」は出ない（answered 無し） | answered_at null |
+| C6 | T-5 に出た → T-0 | TG「出た？」[出た/まだ] が来る | callback row |
+| C7 | 「まだ」タップ or 10min 無応答 | 遅刻連絡フロー（sendLateNotice） | notified_late_at + 実メール |
+| C8 | イベントが call 前に削除/移動 | 旧時刻で鳴らない、新時刻で鳴る | lm_wake_log の event_key |
+| C9 | Telnyx 残高を意図的に $0.50 未満（staging）| dial fail → claim 解放 → 残高回復後の次 tick で再試行 + 低残高 TG アラート1通（6h throttle） | staging ログ |
+| C10 | 深夜イベント（tz 跨ぎ/JST 前提崩し） | 正しい JST 時刻に発火 | called_at のタイムスタンプ |
+| C11 | back-to-back 2連イベント | 各イベントに独立して T-10/T-5（計4 call）or 設計上の抑制が仕様通り | lm_wake_log 4行 |
+| C12 | paid=false / calendar 未接続 user | 一切発火しない | 0行 |
+
+### E-ASK（LM-3: search-before-ask）
+| # | シナリオ | 期待 | 証拠 |
+|---|---|---|---|
+| A1 | 「MUIT 集会」等、web で場所が特定できる曖昧タイトル | 質問無しで解決 or closed 質問「XXで開催ですか？[はい/いいえ]」 | resolved_from=web_search |
+| A2 | Gmail に確認メールがあるイベント（Luma 登録等） | Gmail から解決、質問ゼロ | resolved_from=gmail |
+| A3 | 完全に解決不能（造語タイトル・情報ゼロ） | open 質問は許容される最後の1形態のみ（自由記述 fallback）、頻度 ≤0.2/物理イベント | lm_ask_log 集計 |
+| A4 | closed 質問に「いいえ」 | 自由記述で聞き直し → 回答が location に書き戻る | gcal event 更新 |
+| A5 | 同名イベント複数会場（例: スタバ） | home/work/履歴から最寄り推定して closed 質問 | 候補の妥当性 |
+| A6 | 英語イベント | 言語追従 | 質問文言語 |
+| A7 | 同一イベントに2度質問しない | dedup | lm_ask_log 1行のみ |
+
+### E-TRAVEL（LM-4）
+| # | シナリオ | 期待 |
+|---|---|---|
+| T1 | 物理イベント → 🚆ブロック自動挿入、ratio≥0.8 | lm_travel_log + gcal 実表示 |
+| T2 | イベント移動 → 旧 travel ブロック更新/削除（orphan 残さない） | gcal 実確認 |
+| T3 | 90min 以内 back-to-back → origin=前イベント場所 | route の origin |
+| T4 | 徒歩圏 vs 電車圏で mode 妥当 | route 内容 |
+| T5 | Directions API 障害 → 質問でなく skip+ログ（無限質問しない） | ログ |
+
+### E-ONBOARD（LM-6）
+| # | シナリオ | 期待 |
+|---|---|---|
+| O1 | 新規 user /start → 完了まで blocking 質問 ≤1 + connector 接続のみ | 実 TG 通し |
+| O2 | Gmail「スキップ」→ 後から接続可能 | gmail_skipped=true でも全機能（Gmail 依存以外）動く |
+| O3 | OAuth 途中離脱 → 再 /start で続きから | stage 復元 |
+| O4 | 決済失敗/離脱 → paid=false のまま、課金前に機能開始しない | Stripe test |
+| O5 | context graph: 接続後 24h で home/work/かかりつけ ≥5 fields 推論 | lm_user_places |
+
+### E-HEALTH（LM-11）/ E-CONNECTOR（LM-8/9/10）
+| # | シナリオ | 期待 |
+|---|---|---|
+| H1 | Gmail に歯科履歴あり → 6ヶ月経過で AI が実電話予約 → gcal + 事後 TG | 通話録音 + gcal |
+| H2 | 店が電話に出ない/満枠 → 再試行 or 代替提案、無限 call しない | call ledger |
+| H3 | 履歴ゼロ → 近所の店を提案（勝手に契約はしない） | TG 提案 |
+| H4 | 休眠課金（脱毛等）を Gmail から発掘 → 予約提案 | 発掘根拠の引用 |
+| N1 | ideal 合致イベント発見→登録→gcal、本業時間と二重予約しない | applications ledger |
+| N2 | outreach: opt-in OFF の user では draft 止まり、送信ゼロ | outreach ledger 0 send |
+| N3 | 応募フォームで CAPTCHA/ログイン壁 → 諦めず tier 順試行、無理なら理由付き報告 | 試行ログ |
+
+### E-OPS（常時）
+| # | シナリオ | 期待 |
+|---|---|---|
+| P1 | Railway 再起動が tick 中に発生 → 二重 call しない（claim atomic） | lm_wake_log unique |
+| P2 | 偽 TG webhook（secret 不一致）→ 401 | curl 実測 |
+| P3 | 偽 ws ctx（署名改竄）→ 拒否 | curl 実測 |
+| P4 | Supabase 一時障害 → クラッシュせず次 tick 回復 | ログ |
+| P5 | staging deploy → smoke E2E green の時だけ main PR | CI exit code |
+
+### 回し方（LM-1 dev loop に焼く）
+1. 各 fix の PR 前に該当グループを実機で全走 → FAIL したら fix → 再走、**PASS まで merge しない**。
+2. シナリオ実行は test TG user + staging（V10）で行い、C1 級の「本物の Dais 着信」は dogfood として本番でも1本走らせる。
+3. 新しい失敗を見つけたらこの表に行を足してから直す（表に無いバグは存在しないことになる）。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
