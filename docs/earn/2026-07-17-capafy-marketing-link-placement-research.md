@@ -92,6 +92,22 @@
 - 確定した欠如: active marketing cron 無し / Mau runner 不存在 / video healthcheck service 無し
 - scheduling 追補: gateway 稼働中（PID603、314 jobs、store `~/.openclaw/cron/jobs.json`）。既存 X marketing job `anicca-x-marketing-daily-info`（08:20 JST）は **disabled**（`jobs.json:1350-1375`、skill = `~/.openclaw/skills/anicca-x-marketing-skill/SKILL.md`）。video state は warmup_day7 で last_post_date 無し、直近 audit 全て failed/skipped（`~/.cloak/earn-video-money_blueprintdaily.json`）
 
+## 3c-0. 訂正（capafy-probe 最終報告、Capafy live API 実測）
+
+**§3b の「売上 $0」は誤りだった。** Capafy server API が正:
+- `GET /agent/sales/trend`: orders=1、gross $9.99、netRevenue $9.99、newBuyers=1（2026-06-23）
+- `GET /agent/agent/6839055303/stats`: Academic Humanizer — sales=1、seller revenue **$8.00**
+- `GET /agent/developer/payout-info`: balancePayout=$8.00、totalPayout=$0（未出金）
+- local ledger 3本は capafy_rows=0、daily log は誤って $0 報告（`capafy-loop-daily.log:46-78`）→ **server↔local reconcile 欠落バグ**
+
+**rejected 5件も現況が違う**: live remote-status で 4件は status=1/auditStatus=2（manual review 中 = 再提出済み）、真 rejected は YouTube 1件のみで、それも旧 title の orphan（新 agent 7686597754 が online）。self-fix 実績 `.self-fix-capafy-loop.result` = SUCCESS 07-17 11:12（Decision+Meeting 再提出、orphan logic 修正）。
+
+**publisher_openai_official の正体**: packager が staging 時に生成する管理名（`vendor/capafy-publisher/packaging/configure/runtimes/openclaw/url_proxy.py:39,78-100`）。source contract 上この名前は OpenAI official 用で、OpenRouter は別名 `publisher_openrouter_official`（`official_providers.py:61-74,163-170`）。実 runtime config は `~/.openclaw/workspace-cap/.openclaw/openclaw.json` の `openrouter_claude`（baseUrl=openrouter.ai、key prefix sk-o、len 73）。**Capafy メールの「名前は openai official なのに endpoint は openrouter」という指摘は packager の provider 名選択の不整合そのもの** — 修理対象。
+
+**通知は両方生きている**: AgentMail SENT 200（07-17 12:47 JST、`loop-report.log:759`）+ Telegram も daily prompt の `openclaw message send` で送信済み（message id 2394、12:47:56）。Dais 未受信は受信側（bot/chat 設定）の問題の可能性 — 送信側の断絶ではない。
+
+**運用の地雷**: healthcheck plist は disabled だが `verify-loops-audit.sh:75-80`（6h 毎）が published.jsonl stale>=30h を見て self-fix を反復 spawn（複数 spawn/hung kill 痕跡あり）。
+
 ## 3c. Capafy reject（billing error）真因調査 — 2026-07-17 実測
 
 Capafy support メールの主張: 全 agent が `FailoverError: publisher_openai_official ... billing error（OpenRouter key 残高不足）` で smoke test fail、5件 reject。
