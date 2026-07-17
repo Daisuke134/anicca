@@ -12,25 +12,25 @@ ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 echo "=== capafy-x-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 
-# ── DETERMINISTIC CADENCE GATE: 1 X thread/day. If a platform=x entry already exists for
-#    today (Asia/Tokyo), no-op and exit (never double-post the shared @aniccaen account). ──
-TODAY="$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
-if [ -f "$ROT" ] && /opt/homebrew/bin/python3 - "$ROT" "$TODAY" <<'PY'
-import json,sys,datetime
-rot,today=sys.argv[1],sys.argv[2]
+# ── DETERMINISTIC CADENCE GATE (clip pattern): no-op if the last X thread was < 20h ago.
+#    A rolling 20h window (not a calendar day) prevents a 23:00 + next-06:00 double-post on the
+#    SHARED @aniccaen account. Reads the most recent platform=x ts from the rotation ledger. ──
+if [ -f "$ROT" ] && /opt/homebrew/bin/python3 - "$ROT" <<'PY'
+import json,sys,time
+rot=sys.argv[1]
+last=0
 for line in open(rot):
     line=line.strip()
     if not line: continue
     try: r=json.loads(line)
     except: continue
     if r.get("platform")=="x" and r.get("ts"):
-        d=datetime.datetime.fromtimestamp(r["ts"],datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d")
-        if d==today:
-            sys.exit(0)   # already posted today -> gate closes
-sys.exit(1)
+        last=max(last,int(r["ts"]))
+# gate CLOSES (exit 0) when the last X post was less than 20h (72000s) ago
+sys.exit(0 if last and (time.time()-last) < 72000 else 1)
 PY
 then
-  echo "cadence gate: already posted an X thread today ($TODAY) — no-op." >>"$LOG"
+  echo "cadence gate: last X thread < 20h ago — no-op (prevents @aniccaen double-post)." >>"$LOG"
   touch "$HOME/.openclaw/state/.capafy-x-marketing-last-pass" 2>/dev/null || true
   exit 0
 fi
