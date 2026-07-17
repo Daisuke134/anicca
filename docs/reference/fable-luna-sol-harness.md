@@ -124,6 +124,11 @@ solx "git diff HEAD~1 を読んで blocking bug を列挙。最後に PASS/FAIL 
 | 向く仕事 | 対話的・小〜中タスク | plan が固まった中〜大タスク、放置したい時 |
 | review | Sol one-shot | Fable が要件突き合わせ（+必要なら Sol one-shot 追加可） |
 
+## OSS 化（2026-07-17、両方 live を curl 200 + README 配信で確認済み）
+
+- flow A → https://github.com/Daisuke134/claude-trio （README 日英 + zshrc + luna-executor agent）
+- flow B → https://github.com/Daisuke134/codex-autopilot （README 日英 + flowb skill 汎用版 + PLAN テンプレ）
+
 ## 残り未検証（後日）
 
 - **Route A（公式 plugin）**: `codex@openai-codex` インストール済み。`/codex:review` / `/codex:adversarial-review` / `/codex:rescue` の動作未検証。
