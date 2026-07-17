@@ -186,6 +186,30 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 - 検証 = 自分で実 browser/実 API E2E（adversary/vcsdd subagent は Dais が明示した時のみ）。
 - 1 fix = 1 browser 検証 = 1 TG/call 実測、を積む。lm2-fixer の先行 branch `fix/lm-call-dial-burn`（commit f82010e65、push 済み・未 merge・worktree `.worktrees/lm-call-fix` 保持）: releaseWake（dial 失敗時に claim 解放、travel.js の unclaimTravel と同型）+ 低残高 TG アラート（新 env `LM_ADMIN_TELEGRAM_CHAT_ID` 要設定、6h throttle）。npm test 全 18 suite 173 tests pass 実測。superpowers 実行時にこの branch を素材として review/採用判断する（merge は superpowers の verification 後のみ）。
 
+## 9. 全疑問・不確実性リスト（2026-07-17。A=Dais 決定待ち / B=実測すれば解ける / C=リスク監視）
+| # | 種 | 問題 | 俺の意見（BP 根拠） |
+|---|---|---|---|
+| Q1 | A | repo 収斂（LM-20）: code の恒久住所 | life-manager repo 1 codebase、env 切替。monorepo 分割は drift 実証済み |
+| Q2 | A | Gmail scope を onboarding 必須にするか（今は calendar のみ、v1 で意図的省略） | **必須にする**。health/休眠発掘/context graph/予約 OTP 全部 Gmail 依存。Gcal+Gmail = product の燃料 |
+| Q3 | A | dev loop の auto-merge→本番 auto-deploy を許すか | staging(Railway environments)→smoke E2E→prod promote の2段。canary = Dais 自身。直 prod は課金ユーザーに事故る |
+| Q4 | A | user feedback→GitHub issue、repo は public。PII が issue に載る | issue は要約+匿名化のみ、生 feedback は private store。個人情報を public repo に書かない |
+| Q5 | A | call 2層化（T-10/T-5=固定TTS、会話=wakeのみ） | 賛成前提で LM-19 実測後確定 |
+| Q6 | A | trial 設計（今 $20 即課金のみ） | 7日 trial or 初回 call 無料。S1 で決定、今は不要 |
+| Q7 | B | Railway の deploy trigger（git auto-deploy? 手動?）未確認 | merge 前に必ず実測して spec に書く |
+| Q8 | B | Telnyx+Gemini Live の per-min 実コスト（LM-19） | 実 call 数本で請求実測 |
+| Q9 | B | Composio の per-user 課金 at scale | pricing 実測。高ければ自前 Google OAuth app へ（審査週単位なので Composio で時間を買うのは正しい） |
+| Q10 | B | issue#6（feedback→issue）実装済み主張の検証（LM-14） | 使う前に実測。tool 出力捏造の前科がある領域 |
+| Q11 | B | lm-video/marketing cron のリンク先が現 funnel か | 1回実測 |
+| Q12 | C | 遅刻検知（LM-5）の位置情報源が cloud に無い（local は locate.js） | v1 = TG live location 要求 or call で「出た?」確認。motion gate は後 |
+| Q13 | C | 予約系（歯科/散髪）の日本の実態 = HotPepper/EPARK/電話 | v1 = Steel で HotPepper/EPARK web 予約。電話予約は Telnyx outbound AI voice で後日（武器は既にある） |
+| Q14 | C | 他人として行動する法務/ToS（メール送信・応募・予約） | 外向き action は per-user opt-in gate（connector の blockedActions パターン）+ onboarding で明示同意 |
+| Q15 | C | Google OAuth 審査（Gmail sensitive scope、自前化する時 CASA） | Composio 経由の間は回避。自前化は S3 以降の課題 |
+| Q16 | C | ask.js に web 検索 tool が無い（MUIT の根本） | Railway 上は Gemini grounded search か Programmable Search API を足す（crwl はローカル専用） |
+| Q17 | C | dev loop の実行場所 = Mac mini（launchd）は LOCAL vs CLOUD 軸に逆行 | v1 Mac mini（存在する武器）、黒字後 cloud VM へ。GHA 追加は禁止ルールなので使わない |
+| Q18 | C | 1M user 時の単一プロセス scheduler / Supabase | 1k user までは今の設計で持つ。早すぎる最適化はしない |
+| Q19 | B | LM-21 rotate の実行タイミング | superpowers 実装開始の直前に ops として一括実行 |
+| Q20 | C | E2E 用 TG が Dais 実アカウント依存 | 専用 test user アカウントを作って CI 化（dogfood と分離） |
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
