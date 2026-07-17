@@ -978,8 +978,16 @@ async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
 async function writeWakeErrorAndSleep({ wakeId, ts, err }) {
   process.stderr.write(`[loop] THINK failed: ${err.message}\n`);
   const sleepS = cfgNum(config.SLEEP_ERROR_S, 60);
+  // CLAUDE-P-1 (2026-07-17): this was hardcoded to the literal string 'proxy_down' for EVERY
+  // wake_error regardless of brain or actual cause -- confirmed live: claude-p (brain=claude-p, no
+  // proxy involved) logged 797 straight ledger lines reading error:"proxy_down" while the real cause
+  // (visible only in daemon.err.log / appendHarnessFailure's rawDetail below) was `claude_exit_1`, an
+  // expired Claude subscription OAuth session. That false label sent the first diagnosis pass looking
+  // at the wrong subsystem. Surface the real err.message (already redacted below for harness-failure)
+  // so the ledger's own wake_error line is truthful, not just the separate harness-failure detail.
   const record = formatRecord({
-    ts, wake_id: wakeId, kind: 'wake_error', sleep_s: sleepS, error: 'proxy_down', model: currentTier.model,
+    ts, wake_id: wakeId, kind: 'wake_error', sleep_s: sleepS,
+    error: redactPrivateKeyPatterns(err.message || 'unknown').slice(0, 200), model: currentTier.model,
   });
   await safeAppend(LEDGER_PATH, record);
   // R6: err.message is NOT already redacted anywhere upstream (raw HTTP-response body/subprocess-
