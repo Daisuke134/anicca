@@ -13,7 +13,7 @@ done = "Devpost に Life Manager の提出が完了し、確認画面を実測�
 4. README に (a) Codex がどこで workflow を加速したか (b) GPT-5.6 と Codex の使い方 (c) 既存 vs 新規の区別、を明記。
 5. 審査員が無料でテストできること（審査期間末 8/5 PT まで）。
 6. デモ動画 <3分・public YouTube・音声で Codex+GPT-5.6 の使い方を説明。
-7. $100 無料クレジット申請は **7/18 04:00 JST まで**（https://forms.gle/Ncu6iGkaHq1SwUmEA）。
+7. ~~$100 無料クレジット申請~~ → **実測 2026-07-17: フォームは配布終了で closed**（"we've given out all available credits"）。クレジットは取得不可。実装は ChatGPT Plus の Codex 枠で行い、超過 API 利用のみ自腹。
 
 ## 役割分担（fable-luna-sol-harness との関係）
 
@@ -28,12 +28,19 @@ done = "Devpost に Life Manager の提出が完了し、確認画面を実測�
 
 | # | タスク | 期限 | 状態 |
 |---|---|---|---|
-| 1 | Devpost 登録 + $100 クレジット申請 | 7/18 04:00 JST | in_progress |
+| 1 | Devpost 登録 + $100 クレジット申請 | 7/18 04:00 JST | done（登録 DONE 実測。クレジットは配布終了=取得不可） |
 | 2 | feature 選定（SSOT spec + apps/life-call 読了後に決定） | 7/18 | pending |
 | 3 | Codex CLI で実装 + Railway デプロイ | 7/20 | pending |
 | 4 | README + 審査員テストアクセス | 7/20 | pending |
 | 5 | デモ動画 <3分 + YouTube 公開 | 7/21 | pending |
 | 6 | Devpost 提出 | 7/22 09:00 JST | pending |
+
+## 実測記録（2026-07-17 夜）
+
+- Devpost 登録 DONE: keiodaisuke@gmail.com（Devpost native email+password。Google OAuth は passkey 2FA 壁で不可＝既知事象）。確認バナー "Thanks for registering!" 実測。
+- $100 クレジット form: closed（配布終了）。取得不可、リトライ無意味。
+- 副産物: OpenAI Platform 新規 org 作成済み — org name "Aniccaai" / org-5cTQRUbzJCnZXb1xn0MfRiux / contact@aniccaai.com。product 内 GPT-5.6 API 呼び出しはこの org を使える。
+- Codex 実装は ChatGPT Plus の Codex 枠（ログイン済み）で行う。
 
 ## 未決事項
 
