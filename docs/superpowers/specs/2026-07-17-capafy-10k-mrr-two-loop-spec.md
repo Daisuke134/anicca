@@ -46,7 +46,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | # | タスク | done 条件 |
 |---|---|---|
 | A1 | ~~provider 名不整合を修理 + CP2 で key 入れ直し + resubmit~~ → **2026-07-18 是正**: provider 名は cosmetic、stale key 無し、真因は残高薄のみ。4 agents は under_review で editable でなく CP2 不可（review-lock、`"The current version is not editable"`）。orphan 2485008254 は後継 7686597754 online で abandon。**実装したのは fail-closed の `key_health_gate.sh`（prepare/finish に配線）** = 残高不足の口座へ publish しない。実効修理（残高補充）は A2。 | 【done 条件は Capafy の人手 review 待ちで A1 単独では到達不能】gate が green + 4 agents が balance 補充後の review を通過 or 再 reject 時に fresh-key resubmit |
-| A2 | OpenRouter 残高補充（$10-25）＋ publish 前 key-health gate（`/credits` 実測 + sonnet-4.6 live probe 1発）を `publish_prepare.sh` に追加 | gate FAIL 時は publish 中断 + AgentMail 報告 |
+| A2 | OpenRouter 残高補充（$10-25）。gate は実装済み（A1 で `key_health_gate.sh` を prepare/finish に配線、閾値 $2 fail-closed）。**2026-07-18 実測: 代替 rail の sk-ant 鍵（CAPAFY_HOST_ANTHROPIC_KEY）も "credit balance too low" で死亡 — 06-24 spec の auto-refill 記述は現在 FALSE。実効修理 = 入金のみ。** rail 候補: (a) Dais が OpenRouter へ card 補充 $10-25【stop point、Dais 判断】 (b) Capafy 未出金 $8.00 を payout → crypto → OpenRouter（Dais 資金ゼロだが payout rail 未検証） | gate green（remaining >= $2）+ 4 agents が review 通過 |
 | A3 | max-turns 枯渇対策: 1 pass = 1 agent に制限（貪欲 retry 禁止）。60 turns 超過時は state 保存して次 pass 継続 | 3日連続で BLOCKED rc=1 ゼロ |
 | A4 | **sales reconcile バグ修理**: `GET /agent/sales/trend` + `payout-info` を daily で読み local earn-ledger に書く（現状 capafy_rows=0 で $9.99 を見落としていた）。「稼いだ」判定は server ledger 実測のみ | ledger に 06-23 の $9.99 行が入る + daily 報告が server 値と一致 |
 | A5 | self-improve: Capafy ranking/カテゴリ実売データを daily 取得 → 次に作る skill を上位カテゴリから選ぶ selector | selector の判断ログが state に残る |
