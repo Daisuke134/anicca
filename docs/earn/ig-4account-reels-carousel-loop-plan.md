@@ -713,3 +713,8 @@ clean residential IP(87.19.19.64 Telecom Italia、in-browser で exit 検証)上
 - CAPTCHA = facebook.com/captcha/tfbimage の歪み文字(Arkose/Turnstile でない)。**CapSolver ImageToText は誤読(377048 を "37-8=?" と 0.91 で誤答)** → 手読み/vision or digit-OCR が要る。入力欄は `<textarea>`(input でない、querySelectorAll('input') 空)。
 - phone wall の後は skip 無し = paid real-SIM OTP(5sim/SMS-Activate、reputable。無料 throwaway は IG が範囲 blacklist)が必須。
 → **account 作成コスト = proxy($7/1GB) + SMS($0.1-0.5/番号) per account**。fleet 経済に反映。次: paid real-SIM で phone wall 突破 → 垢 live → login-once(proxy) → warmup → 投稿。aiclips_daily_hq2 は phone 画面で待機(status=blocked_phone_wall、:9233 tid 6B50…)。
+
+## v32 — 5sim PVA 突破中 + /loop 監視（2026-07-17）
+- clip-account-create subagent が phone wall を 5sim(paid real-SIM)で突破中。5sim-account.json 作成済(signup 完了)、crypto funding + IT 番号取得の段階。突破後 aiclips_daily_hq2 を live→登録→login-once(proxy)→初投稿。
+- account 作成の実フロー(全 gate)= proxy(clean residential) → email signup(Gmail plus, trusted typing) → email OTP(gog gmail, SPAM) → 画像CAPTCHA(手読み/vision、CapSolver 不可、textarea) → ★phone(paid real-SIM OTP)★ → live。1垢コスト = proxy$7/1GB + SMS$0.2。
+- 並列 agent(動画/carousel/capafy/PC移設)の /goal は Dais Gmail に送付済。main session が clip engine を駆動、/loop で全 agent + 垢状態を定期監視。
