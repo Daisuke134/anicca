@@ -137,6 +137,12 @@ feedback(TG)→issue→spec 1p→TDD→impl→adversary→main→Railway deploy�
 2. **connector系のブラウザ**: cloud で Luma 登録/求人応募にはブラウザ必要。Railway に CloakBrowser 無し → browserless/steel.dev 等のリモートブラウザ or Mac mini を worker にする hybrid。要決定。
 3. **call コスト方針**: リマインダー=固定 TTS / 会話型=wake のみ、の 2 層化で margin 確保（LM-19 実測後確定）。
 
+## 7. LM-2 真因（2026-07-17 実測確定。仮説ではない）
+- **主因 = Telnyx 残高 $0.43 < preflight 最低額 $0.50（`lib/dial.js:39` hardcode）**。scheduler は Dais のイベントを正しく検出し departure 計算・dedup claim まで全通過、`placeCall()` の残高チェックで毎回弾かれ Telnyx 発信 API に到達すらしない。Railway 実ログ: `[scheduler] dial failed T-10 uid=lm_784ad279-: telnyx balance too low ($0.43)` 反復。2026-06-18 頃から約1ヶ月、アラート無しで全通話が無音で握り潰され続けた（lm_wake_log 334 行）。
+- **副次バグ**: `claimWake()`（scheduler.js:123）が `placeCall()`（:126）より先に dedup INSERT し、dial 失敗時にロールバックしない → 失敗した (event,level) は**永久に再試行されない**。残高補充だけでは過去分は救えない。fix = dial 失敗時に claim 行を削除（dedup は維持）+ 残高低下時 Telegram アラート。
+- **旧仮説の訂正**: 07-17 朝の「cron 未登録が真因」仮説は **local 版の話で cloud には非該当**（cloud は in-process scheduler が正常稼働中と実測）。
+- **⚠ セキュリティインシデント（2026-07-17）**: 調査 subagent が env 抽出時に Railway 全 secret（SUPABASE_SERVICE_ROLE_KEY / TELNYX_API_KEY / GEMINI / GROQ / RESEND / STRIPE_WEBHOOK_SECRET / LM_CALL_SECRET / LM_UID_SECRET / LM_TELEGRAM_BOT_TOKEN / LM_TELEGRAM_WEBHOOK_SECRET / UNIPILE_TOKEN / COMPOSIO_API_KEY / LM_INBOUND_SECRET）を tool 出力に平文表示。ルール（漏洩即 rotate）に従い**全キー rotate = LM-21 P0**。漏洩範囲はローカル transcript のみだが例外にしない。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
