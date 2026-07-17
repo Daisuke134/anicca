@@ -606,3 +606,10 @@ fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1�
 
 ### #23 の実装単位（observe→fix→observe）
 (a) session_owner フラグ + session_vault 除外（churn 解消）(b) instagrapi ベース warmup ノード（browser 不使用）(c) warm_step.py 昇格バグ guard (d) @world_hq2 を warming に載せて instagrapi read で warmup 開始 → 観測。各々 verify。
+
+## v23 — 真因の核心: golden session を殺すな、relogin=bloks（実測 2026-07-17）
+- 実測: churn 修正後、@aiclips_world_hq2(fresh 垢)の instagrapi device session は既に死んでおり(LoginRequired)、clean relogin を試すと **ChallengeRequired(bloks native checkpoint)** = aiclipsvault と全く同じ。
+- ★真因の核心★: signup 直後の最初の login(=golden session)は通る。だがその session が一度死ぬと、password relogin で必ず bloks が出て垢が semi-poison 化する。= **「最初の session を永遠に生かし、relogin をゼロにする」ことが全て。死なせた瞬間に relogin→bloks で詰む。**
+- 我々の失敗の連鎖: churn(browser+device 並行)で golden session を殺す → relogin を試す → bloks → 垢が semi-poison。aiclipsvault も world_hq2 も同じ経路で焼けた。
+- 含意: (1)垢作成は churn 修正が入った状態でやり、golden session を最初から死なせない (2)keepalive は「死なせない」ための最優先機能(get_timeline_feed read、relogin 封印) (3)一度でも死んだら relogin でなく**新垢に置換**(self-heal、relogin で bloks を招くより早い)。
+- 進行中: 成功してる長期運用 IG bot の**実コードを読む**深い検索(session を月単位で生かす実装、relogin 回避、churn 対策、device/proxy 一貫性)。結果を v24 に反映。
