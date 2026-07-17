@@ -622,3 +622,19 @@ fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1�
 4. gold standard login: full cookie→set_settings()で/login 0回。copy=ig.py L556-708。
 5. client rotation≠relogin: TCP接続だけ2-4hローテ、loginしない。copy=human_mimic.py L192-206。
 bloks=avoid一択。食らったら垢死、蘇生せず新垢置換(self-heal)。#12/#4=login_resilientを上記に置換。
+
+## v25 — MEASURE/REFLECT/BIO/telegram/dashboard の現状と欠落（deep read 2026-07-17）
+### 動いてる
+- MEASURE(views/likes): clip_pass.sh の LLM+CDP sub-call が直近3リールを目視→clip-metrics.jsonl。$ は measure_dollar.py あるが未呼出+Digistore key 未設定=死。
+- REFLECT: imitate/optimize phase を reflection.jsonl に。LEARN=★良い例学習 実装済★(競合5アカ outlier scout→playbook.json、hook/thumbnail/retention 等7カテゴリ+source URL、tier core/candidate)。現 phase=imitate。
+- BIO: offer.json の affiliate_link を profile external_url に sid1 付きで(冪等、TIER1限定)。
+- Telegram: `~/anicca/skills/_shared/send-telegram.sh`(chat_id 8547730585)。clip run.sh が POST後 reel link を送信。
+- copy元: producer.sh=github SamurAIGPT/AI-Youtube-Shorts-Generator を clone。clip_pass.sh=Reflexion論文パターン(gig_pass から)。clip-cli=Sutando パターン。
+### 欠落（Dais の狙い = metrics通知 + dashboard + metrics/例で self-improve）
+1. metrics→Telegram 未配線: reel link だけ送られ、views/likes/revenue_usd は送られない。
+2. 全アカ横断 realtime dashboard 不在: ~/anicca-rtdash は別物(anicca iOS repo)。colony-status.sh/telemetry-collect.sh は3AI wallet集計で clip IG metrics 対象外。clip 単体は monitor.sh(CLI)のみ、UI無し。
+3. measure_dollar.py が clip_pass.sh から未呼出(docstring自身が未配線と明記)+Digistore key 未設定。
+4. evaluator.py/weekly_compare.py(自己スコア週次比較)が weekly_report.py CLI にあるが cron 未配線。
+5. metrics pipeline が静かに壊れる履歴(reflection.jsonl に「pipeline broken」複数)、自動 self-heal 無し。
+### 次 = /superpowers:brainstorm で設計（SDD→TDD→VDD）。対象:
+metrics(views/likes/$)→Telegram 定期通知 + 全アカ(clip/gig/trade)横断 realtime dashboard(1画面) + measure_dollar/$ 配線 + self-score週次自動 + pipeline self-heal + 良い例学習の強化。既存(send-telegram.sh/playbook.json/monitor.sh)を土台に。
