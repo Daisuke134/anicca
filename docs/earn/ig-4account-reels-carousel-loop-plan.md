@@ -583,3 +583,9 @@ fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1�
 1. 24h cooldown が明けたら（目安 2026-07-18 15:xx JST 以降）`instagrapi_post.py --handle aiclips_world_hq2 --port 9225 --live` を**1回だけ**再試行。成功したら直後に `bio_step.py --handle aiclips_world_hq2` で Digistore link を設定。
 2. それでも同じ session churn が起きるなら、根本原因は「新規垢そのものの信頼スコア」と確定 → 既存の frozen 垢（`aiclips_world_hq3` 相当、warm_step.py の 3日 warmup 実績あり）に準じて **数日 warmup してから live post** する設計に倒す（ig-account-warmer skill を先に回す）。
 3. secret を扱うあらゆる cdp.py `insert`/`eval` 呼び出しは、今後 native-setter JS（値を返さない・lengthのみ）に統一する（このファイルの上の教訓を general skill 側にも反映すること = `ig-account-create/SKILL.md` の Gotchas に1行足す価値あり、未実施）。
+
+## v21 — 原則: 全ノード配線して1個ずつ観測(observe→fix→observe) 2026-07-17
+- post 状況: 動いてない。@aiclips_world_hq2 は作成/login 成功したが投稿失敗(session churn + warmup不足)、24h cooldown(~07-18 15時)。
+- Dais 原則: warm_step.py も loop の中身。provision→warmup→post→measure→reflect の**全ノードが実際に配線されて動くか、1個ずつ観測して直す**。「システムを作る→loop が job→我々は観測→壊れてたら直す→また観測」。
+- 次の一手 = warmup ノードを配線して動かす: (1)warm_step.py がどう発火するか/warmup→ready 遷移の条件を map (2)@aiclips_world_hq2(status=provisioned_pending_live_post)を warmup 対象にする (3)session churn(browser web session と instagrapi device session が新垢で互いを無効化)を直す=posting/warmup 中は片方の session に統一 (4)warmup 1パス実行して観測。
+- 各ノードを個別に verify: provision✅ / warmup(要配線) / post(churn+warmup待ち) / measure(#3) / bio(#2) / reflect。
