@@ -15,7 +15,7 @@
 // wallet.json, net worth read from many separate on-chain addresses).
 const FIXED_IDENTITIES = {
   "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502": "claude-p", // EVM: looked up lowercased (signing-only identity, not the funded proxy)
-  "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9": "Franklin", // Solana: base58, case-sensitive, verbatim
+  "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T": "Franklin", // Solana: base58, case-sensitive, verbatim (rotated 2026-07-17, old 8Fpqd... key leaked)
   // FIX-1 (2026-07-17): franklin2's own Solana wallet (~/.franklin2-home/.blockrun/.solana-session),
   // derived the same way telemetry-post-franklin.mjs derives it (last 32 bytes of the 64-byte secret
   // key, base58-encoded). Without this entry expectedHost() fell through to the EVM-only auto-derive

@@ -12,7 +12,7 @@ test("claude-p's dedicated signing identity (any case) resolves to host 'claude-
 });
 
 test("Franklin's Solana address resolves to host 'Franklin' — exact case only (base58 is case-sensitive)", () => {
-  const addr = "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9";
+  const addr = "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T";
   assert.strictEqual(expectedHost(addr), "Franklin");
   // flipping case must NOT match — base58 is a different address if lowercased/uppercased, and
   // FIXED_IDENTITIES lookup must never .toLowerCase() a Solana id (would corrupt/misroute it).
