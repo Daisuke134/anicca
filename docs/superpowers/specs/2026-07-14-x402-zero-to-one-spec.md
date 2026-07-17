@@ -242,12 +242,30 @@ Agora/Anicca はそれを起こす環境。これが我々の能力の証明。
 
 ### 進捗(2026-07-17実測)
 
-- **done(a) 達成**: franklin1店(:8414→ts.net:10001)・claude-p店(:8412→ts.net:8443)に実装・本番反映、402実測済
-  (`maxAmountRequired` 3000=$0.003)。実装=Binance premiumIndex+Bybit v5 tickers+Hyperliquid `metaAndAssetCtxs`
-  並列取得、8h換算正規化、年率bps乖離top20、60s cache、1取引所落ちはdegrade・全滅時のみ503。テスト19/19。
-  files: `skills/earn/x402-sell/funding-rates.mjs`(新規)+`serve.mjs`+`__tests__/funding-rates.test.mjs`。
-  commit `8f6d0f7c`(anicca repo main)。
-- **done(b) 未達**: settle まで通る実購入。FIX-3 でゲートは実装済み(commit `e5904325`)、実購入は未発生。
+- **done(a) 一部誤り、訂正**: 402 は franklin1店(:8414→ts.net:10001)・claude-p店(:8412→ts.net:8443)ともに
+  実測済(`maxAmountRequired` 3000=$0.003)だが、**franklin1 の Bazaar 掲載は未達**（前回「達成」は誤記。
+  `bazaar-scan.mjs tail7a0ba4` を全25,481件走査した実測で `payTo=0x3EcCAD24…` 該当0件）。根本原因は既知の
+  §147-148「Tailscale Funnel は 443/8443/10000 の3ポートのみ、4体目に席が無い」そのもの — franklin1 の
+  `X402_PUBLIC_URL` はポート10001（`serve-franklin1-boot.sh`）で、Funnel 非対応ポートのため CDP crawler が
+  到達できず、settle しても discovery indexing が走らない（`api.cdp.coinbase.com/.../discovery/resources`
+  クロールの前提である外部到達性が無い）。実装=Binance premiumIndex+Bybit v5 tickers+Hyperliquid
+  `metaAndAssetCtxs` 並列取得、8h換算正規化、年率bps乖離top20、60s cache、1取引所落ちはdegrade・全滅時のみ
+  503。テスト19/19。files: `skills/earn/x402-sell/funding-rates.mjs`(新規)+`serve.mjs`+
+  `__tests__/funding-rates.test.mjs`。commit `8f6d0f7c`(anicca repo main)。
+  **未解決TODO**: franklin1(or いずれか1店)を443/8443/10000のいずれかへpathベースで同居させるか、
+  ts.net以外の独自https origin(Cloudflare Tunnel等、市場標準=x402scan実測でポート付きURL0件)へ移行しない
+  限り、franklin1は永久にBazaar未掲載。
+- **done(b) 達成(2026-07-17)**: T4a着火実証。buyer=claude-p(0x810F6D61F7606dEEE2657d3083E150a222Bc29C5,
+  Base USDC残高$1.98)→seller=franklin1の`/funding-rates`へ`buyer-cdp.mjs`(既存スクリプト、無改造)で実購入。
+  ローカル`http://127.0.0.1:8414/funding-rates`直叩き(公開ts.net:10001が上記理由で外部到達不可のため。
+  x402-fetchはresourceフィールドと接続先URLの一致を検証しない=同一serve.mjsコードパスなので等価な実証)。
+  tx `0x5567e9e76358722292237d4f08151eeec7a1970efe59684868c14bfe8be05e44`(BTC銘柄クエリでの2件目は
+  `0xa998f641abe76d7414eaca25222b5b047637ada4571b91ed77712ea585041e83`)。両方 Base mainnet
+  `eth_getTransactionReceipt`で`status:0x1`、USDC contract`0x8335…02913`のTransferログ
+  (topic`0xddf252ad…`, from=0x810f6d61…, to=0x3eccad24…, value=0x0bb8=3000=$0.003)を直接確認。
+  `state/sales-0x3eccad24794ca298d25378e9902a251322ea8749.jsonl`に`settled:true,payer=0x810F6D61…`の行が
+  2件追加(21→23行)、`attempts-0x3eccad24….jsonl`は生成されず(settle成功のためattempts行き無し=FIX-3の
+  意図通り)。INV-7: buyer/sellerともに自分の wallet のため self-pay、売上には数えない(着火実証専用)。
 - **done(c) 未達**: 14日以内の反復購入者。観測開始日 = 2026-07-17。
 - U9(wash trading 検証)完了(2026-07-17): 鯨bot `0x1cb8d1456efc633da6eeaa038033edcbcdc0bdff` は本物の自律買い手と確定
   (wash trading 棄却)。詳細は `docs/STATUS.md` の「U9確定」節。

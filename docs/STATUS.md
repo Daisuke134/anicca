@@ -135,14 +135,30 @@ EOA bot)、19時間で9,917回=平均7秒に1回★。Top5 で98.9%。
 
 ### ★T9-1 出荷(2026-07-17)★: done(a)達成、(b)(c)は未達で観測開始
 
-**done(a) 達成**: `GET /funding-rates` を franklin1店(:8414→ts.net:10001)と claude-p店(:8412→ts.net:8443)に実装・
-本番反映。402実測済(`maxAmountRequired` 3000 = $0.003)。実装 = Binance premiumIndex + Bybit v5 tickers +
-Hyperliquid `metaAndAssetCtxs` を並列取得、8h換算で正規化(HL=1h→×8、公式docs裏取り)、年率bps乖離top20、60s cache、
-1取引所落ちは degrade 返却・全滅時のみ503、LLM/有料API/keyゼロ = INV-UNIT-ECON 準拠。テスト19/19(新規10件含む)。
+**done(a) 訂正(2026-07-17夜、前記は誤り)**: 402 は franklin1店(:8414→ts.net:10001)・claude-p店(:8412→ts.net:8443)
+とも実測済(`maxAmountRequired` 3000 = $0.003)だが、**franklin1 の Bazaar 掲載は未達**。`bazaar-scan.mjs
+tail7a0ba4` を全25,481件走査した実測で `payTo=0x3EcCAD24…`(franklin1)該当0件。原因 = 既知の「Tailscale
+Funnel は443/8443/10000の3ポートのみ、4体目に席が無い」(本ファイル/spec の該当節)そのもの — franklin1 の
+`X402_PUBLIC_URL` はFunnel非対応ポート10001で外部到達不可、settleしてもCDP discovery crawlerが届かない。
+実装自体 = Binance premiumIndex + Bybit v5 tickers + Hyperliquid `metaAndAssetCtxs` を並列取得、8h換算で
+正規化(HL=1h→×8、公式docs裏取り)、年率bps乖離top20、60s cache、1取引所落ちは degrade 返却・全滅時のみ503、
+LLM/有料API/keyゼロ = INV-UNIT-ECON 準拠。テスト19/19(新規10件含む)。
 files: `skills/earn/x402-sell/funding-rates.mjs`(新規) + `serve.mjs` + `__tests__/funding-rates.test.mjs`。
-commit `8f6d0f7c`(anicca repo main)。
+commit `8f6d0f7c`(anicca repo main)。未解決TODO: いずれか1店を443/8443/10000のいずれかへpathベース同居
+させるか、独自https origin(市場標準=x402scanでポート付きURL実測0件)へ移行しない限りfranklin1は永久に未掲載。
 
-**done(b) 未達**: settle まで通る実購入(FIX-3 でゲートは実装済み、実購入待ち。T4a self-pay 着火が次)。
+**done(b) 達成(2026-07-17)**: T4a着火実証としてbuyer=claude-p(0x810F6D61…, Base USDC $1.98)→
+seller=franklin1 `/funding-rates` へ実購入。既存`buyer-cdp.mjs`を無改造使用(ANICCA_HOME=~/.anicca-founder で
+claude-p鍵を解決)。公開ts.net:10001が上記理由で外部到達不可のため`http://127.0.0.1:8414/funding-rates`を
+直叩き(x402-fetchはresourceフィールドと接続先URLの一致を検証しない実装のため、同一serve.mjsコードパスを
+通る等価な実証)。tx `0x5567e9e76358722292237d4f08151eeec7a1970efe59684868c14bfe8be05e44`(+BTC銘柄指定の2件目
+`0xa998f641abe76d7414eaca25222b5b047637ada4571b91ed77712ea585041e83`)。両方 Base mainnet
+`eth_getTransactionReceipt`で`status:0x1`、USDCコントラクト`0x8335…02913`のTransferログ
+(from=0x810f6d61…, to=0x3eccad24…, value=0x0bb8=3000=$0.003)を直接確認。
+`state/sales-0x3eccad24794ca298d25378e9902a251322ea8749.jsonl`に`settled:true,payer=0x810F6D61…`の行が2件
+追加(21→23行)、`attempts-0x3eccad24….jsonl`は生成されず(settle成功のためattempts行き無し=FIX-3の意図通り)。
+INV-7: 自分の2 walletの自己決済のため売上には数えない(着火・FIX-3実証専用)。
+T4aの当初対象(本ファイル該当行=franklin2:10000)は未着手のまま残る — 今回はfranklin1向けの直接指示で実行。
 **done(c) 未達**: 14日以内の反復購入者(観測開始 2026-07-17)。
 
 **同日の他の完了(2026-07-17)**:
@@ -859,7 +875,7 @@ backend_addr = "localhost:8412"
 funnel_enabled = true
 ```
 | **FIX-1** | ★層2★ franklin2 の x402 配信修理 — telemetry poster.log で 4193/4194回(99.98%)が `400 host_wallet_mismatch`。★根本原因確定(07-17)★ = `apps/landing/netlify/functions/_lib/fixed-identities.js` の `FIXED_IDENTITIES` に franklin2 未登録、EVM前提フォールバックがSolana base58と不一致。x402決済には無影響(コード独立、telemetryのみ) | 名簿に franklin2 の Solana pubkey を追加・デプロイ後、poster.log の host_wallet_mismatch が消える | ★DONE 2026-07-17★ PR `anicca-products#292` deploy成功。poster が400→202 に変化を実測(03:05:59Z) |
-| **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件のみ。★根本原因確定(07-17)★ = serve.mjs L123-136 のsales-log書き込みが `next()`(verify成功)直後・`settle`(on-chain着金)前。21件は「署名検証21件・着金0件」。裏付け: claude-p の同一コードで payer実在9件=on-chain完全一致、payer:null=一致0件、franklin1の21件は全payer:null。未確定=settle失敗自体の理由(stderrログ消失で未特定) | sales-log を settle成功(`X-PAYMENT-RESPONSE`)後へ移動 + stderr保全、sales-logとon-chainが一致する | ★DONE 2026-07-17★ settleゲート実装(commit `e5904325`)。franklin1旧21件は全て`settled:false`印付け、claude-p27件中12件・proxy15件中2件も対象 |
+| **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件のみ。★根本原因確定(07-17)★ = serve.mjs L123-136 のsales-log書き込みが `next()`(verify成功)直後・`settle`(on-chain着金)前。21件は「署名検証21件・着金0件」。裏付け: claude-p の同一コードで payer実在9件=on-chain完全一致、payer:null=一致0件、franklin1の21件は全payer:null。未確定=settle失敗自体の理由(stderrログ消失で未特定) | sales-log を settle成功(`X-PAYMENT-RESPONSE`)後へ移動 + stderr保全、sales-logとon-chainが一致する | ★DONE 2026-07-17★ settleゲート実装(commit `e5904325`)。franklin1旧21件は全て`settled:false`印付け、claude-p27件中12件・proxy15件中2件も対象。**実settleで検証済(07-17夜)**: T9-1 done(b)節参照 — franklin1へ実購入2件、両方on-chain確認+sales-logに`settled:true`で記帳、attempts-logへの誤記録なし |
 | **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
 | **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | ★実害確認 2026-07-17★ 8412/8414の重複plist(loop生成+手書き)がポート競合し`EADDRINUSE`を実際に目撃。重複jobは停止済だがplist自体は未削除、T2b 後に完全掃除 |
