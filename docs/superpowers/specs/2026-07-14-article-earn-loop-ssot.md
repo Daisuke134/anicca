@@ -719,6 +719,12 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 - **X 投稿の API 経路**: x.ai CLI（grok 課金）+ xmcp で browser 非依存の X 投稿。★draft-only 厳守★（過去の直接投稿事故の教訓）。ブラウザ経路が安定してる間は優先度低。
 - **loop の一般化**: article loop → 「writing 収益化」全般（短文/長文/newsletter/連載→書籍）。topics/ queue とゲート群は形式非依存なので、platform adapter を足すだけで横展開できる構造になっている。
 
+### 7.59 初レーンA 記事（2026-07-17 ハンコで5%）の編集精読 — 内容側の欠陥5クラスと loop 化（合意待ち #72）
+
+E2E は全 green だったが、**中身**を編集者として精読した結果、text gate が測っていない欠陥クラスが5つ:
+①看板埋没（スクープが70%地点、均等重量の調査報告化）②受領証不可視（「読んだ」のに現物断片ゼロ）③visual 貧血（自明 mermaid 1枚 = 枚数 gate の最低通過）④曖昧量化（「過半数」— JSON があるのに数えてない、タイトル5%断定 vs 本文hedge）⑤¥1,000 の値打ち設計なし（5,167字、有料部の売り不明示）。
+一般化 → #72 content-rule pack: 看板1/3ルール / claim-to-artifact 比率 / visual 情報量判定 / 曖昧量化語検出+タイトル整合 / 厚み-価格 floor。Dais 合意後に SKILL.md + eval/deslop gate へ焼く。**render-verify（見た目）と content-rule（中身）が揃って初めて babysit 終了**。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
