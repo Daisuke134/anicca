@@ -727,3 +727,11 @@ ig-creator-repo-hunt(gh+crwl)の結論: proxy+email+CAPTCHA+SMS を全部無人�
 - ★scam 警告: selsabil-webdev/Automation-Studio-Instagram-Toolkit = 悪性(難読化 JS リダイレクト+偽コミット bot)。踏むな。★
 - 却下: CoderNamaste/Instagram_Web_Gen(captcha/phone 0ヒット、自前と同じ制約)、zile42O/instagram-generator(2023 死亡、sms-activate 連携の参考のみ)。
 戦略: (今)browser 経由で aiclips_daily_hq2 を 5sim で live 化→初投稿。(scale)instagrapi signup()+5sim callback+CapSolver glue を skillify。実装小(番号購入API→poll→callback)。
+
+## v34 — reboot 後の現況実測 + 引き継ぎ（2026-07-18 08:2x JST、新 session）
+- **clip を駆動している session は現存しない**（実測: 稼働 claude プロセスは capafy-marketing / gig / coconala / networking のみ）。5sim 突破 subagent は 07-17 の Mac reboot（22:1x、WindowServer 死亡→全 LaunchAgent 消失→reboot）で死亡。
+- 5sim: account 作成済（~/.cloak/5sim-account.json）。invoice-2（BSC USDC $1.1、11:43Z 発行、期限60分）は**入金未確認のまま失効濃厚** → 残高実測からやり直し。
+- daily_hq2: status=blocked_phone_wall のまま。:9233 の phone 画面 browser session は reboot で消失 → proxy browser 再起動 + 再 login からやり直し。
+- launchd: ai.anicca.clip-loop-aiclipsvault + ai.anicca.session-vault は load 済（status 0）。ただし ready 垢ゼロなので投稿は起きない。
+- **security 事故（新規）**: 2026-07-18 08:2x、新 session が 5sim-account.json の pw を redact filter 漏れ（'pw' key 未カバー）で stdout に echo。→ 5sim pw rotate 必須（task #7）。
+- TaskList 登録済（#1-#7）: 5sim funding → phone wall 突破 → 登録+login-once(proxy) → warmup(3日 floor) → 初投稿+公開確認 → #25 lifecycle 自動配線 → security 残務（5sim rotate + AgentMail 旧key）。
