@@ -110,6 +110,14 @@ Capafy support メールの主張: 全 agent が `FailoverError: publisher_opena
 2. 次点: 残 $1.59 は薄く、将来枯渇は時間の問題（真因ではないが補充推奨）。
 - 対処: 各 agent version の Packages & Keys で key を現行値に入れ直し → Test Run green を確認 → resubmit。加えて OpenRouter へ $10-25 補充。skill の self-heal に「publish 前に OpenRouter /credits 実測 + live probe 1発」ゲートを追加する。
 
+## 3d. Capafy loop の実行構造・通知・self-fix（実測）
+
+- skill 実体 = `~/.openclaw/skills/capafy-autopublish/`（scripts: `daily_loop.sh` / `publish_one.sh` / `drive_checkpoint1-3.py` / `reconcile_ledger.py` / `inventory_status.py` 等）。launchd `ai.anicca.capafy-loop-daily` 08:10。
+- **daily_loop.log 実測（07-17）**: 19:45 run = rejected 4件 reconcile → Contract Red Flags retry 着手 → `Error: Reached max turns (60)` で BLOCKED rc=1。20:10 run = rejected 1件のみ残（4件は unlisted へ）、verdict=DRAINED publishable_count=0 で HEALTHY-IDLE。**online=21 / 売上 $0**。
+- retry が進まない直接原因 = CP1 を駆動する headless agent の max-turns 枯渇（AgentMail 報告と一致）。billing 真因は §3c（hosted 側 stale key 仮説）。
+- **通知**: capafy loop の報告は `~/.anicca-founder/skills/report/loop-report.sh` → **AgentMail POST**（fail-closed no-op）。**telegram 送信コードは capafy/report 系に存在しない** — Dais が「telegram に来ない」のは断絶ではなく、そもそも capafy は AgentMail のみ（telegram 通知は clip loop 側の機能）。AgentMail 便は 07-17 12:47 に着信済み = 経路は生きている。
+- self-fix = `~/.anicca-founder/skills/self/self-fix.sh`（escalation 先。tmux session が expired login で死んでいたのを 07-17 に respawn 済みと報告あり）。
+
 ## 4. 未確認（次の実測対象）
 - IG first comment vs bio の CTR 実測比較（未確認のまま。bio 採用の根拠は「comment がクリック不可」という仕様事実）
 - TikTok 新アカは 1,000 followers 未満で Website 欄が使えない → Business Account 登録で回避できるかは account 作成時に実測
