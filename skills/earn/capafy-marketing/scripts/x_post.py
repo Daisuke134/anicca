@@ -15,6 +15,16 @@ is published to the live @aniccaxxx feed, so the full pipeline is proven WITHOUT
 brand post. `--live` switches to type:"now" (production cron only).
 
 Emits a single clean JSON object on stdout (loop-child contract).
+
+★ KNOWN BLOCKER (verified live 2026-07-18, 5 tests on @diceai0) ★
+The Postiz public-API rail STRIPS ALL URLs from tweet content — verified across:
+text+url reply, url-only reply, single-tweet-body url, and shortLink true AND false,
+with both an un-previewable SPA url (capafy.ai) and a known-good url (github.com).
+The root native tweet publishes fine, but the self-reply link NEVER reaches X.
+=> This poster CANNOT deliver the required self-reply link via Postiz today.
+   Do NOT wire it to a live cron until the rail is switched to browser-direct
+   (drive X compose on CloakBrowser :9222, like ig-reels-poster) or the X API v2.
+   The code below is correct; the Postiz rail is the blocker.
 """
 import argparse, datetime, json, os, sys, time, urllib.request, urllib.error
 
