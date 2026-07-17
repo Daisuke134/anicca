@@ -773,10 +773,23 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 2. **タイトルは platform 別に生成**: note = 英固有名詞≤1・フック1個・本文が証明したことだけ約束 / zenn・devto = 技術語可。機械 gate: note 版タイトルの未翻訳英固有名詞カウント。
 3. **arm 条件成立方式**: 明朝 06:00 の完全体 pass（品質6層 + render-verify）が green なら team-lead が即日 `ARTICLE_AUTOPUBLISH=1` を注入（Dais の「full 検証後に direct 切替」発言 2026-07-17 が根拠）。X 未復旧なら X 抜きで arm、X は復旧次第合流。
 
+### 7.61 forever-session（#75 完了 2026-07-17）+ session 死亡の一斉発見
+
+**#75 完了（commit anicca `7f37dc9f`）**: forever-session の基盤（session_vault.py の cookie 全量 dump + 自動 restore + 30分 tick）は既に装備済みだったが**未配線**が真因 — keepalive の監視 URL が coconala/instagram のみで **x.com も zenn.dev も見張っていなかった**。死んでもログに書くだけで通知も飛ばない設計。これが「今日 X が誰にも気づかれず死んだ」直接原因。
+修理: ①keepalive 監視に `x.com/home` + `zenn.dev/dashboard` 追加（30分毎 touch → ct0 再発行受信で ct0 ローテ失効を恒久防止）②死亡即 `telegram_notify()` アラート新設（実送信 msg 2413）③zenn の login 判定バグ修理（`/enter` リダイレクト見逃しを検知）。実測: tick フル実行で x.com=live / zenn=dead を正しく判定、ALERT 発火。
+**一般法則**: 「装備済み ≠ 配線済み」の再演。keepalive は「ログインが要る全ドメインを監視リストに入れて初めて機能」。リスト外のドメインの session は静かに腐る。
+**副次発見（実測）**: zenn.dev + instagram.com の session も現在死亡中。zenn = #76（publish は git push なので記事公開は無事、影響は render-verify のみ）、instagram = #63。X の SMS-only 復旧の壁は未解決（将来の session 死亡で再発 → 復旧手段を AI 読取可能チャネルに変える恒久策は別途 Dais 判断）。
+
+### 7.62 #72-8 原則修正（2026-07-17 Dais）: 記事は手で直さない、loop に regenerate させる
+
+「ハンコで5%」記事の欠陥（だ調・タイトル英語過多・看板埋没等）を**手で書き直すのは禁止**（この記事専用のハードコード = 反 skill 原則）。正しい手順 = 8則を SKILL.md + gate に**一般形**で焼く → virtuals-acp カードを done/ から queue/ に戻す → article-daily を kickstart → **loop が新ゲートを読みながら記事を自分で書き直す**。#72 完了条件 = ①8則が一般形で gate 化 ②loop を回すと新ゲートで記事が改善（だ調→ですます・英語減・看板前倒しが loop の判断で起きる）③fresh vcsdd-adversary が spec §7.59/7.60 一致を確認。これが「教えたルールで loop が自分で直せる」の E2E 証明。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
 |---|---|---|
+| #75 | ✅**完了**: forever-session keepalive に x.com/zenn.dev 追加 + 死亡 telegram アラート + zenn login 判定バグ修理（commit `7f37dc9f`） | [x] |
+| #76 | zenn.dev session 復旧（死亡検知済み。publish は git push で無事、render-verify のみ影響） | [ ] |
 | #53 | ✅**完了（2026-07-17）**: regex pre-check 強化: 「この記事」見出し（P1）・自己言及「自分（アニッチャ）」型（P2）・visual≥1 カウント（P3, mermaid/img/table）を deslop-gate.sh の deterministic pre-check に追加。実違反 fixture（zenn-20260717-agentskills-ja.md：P1/P2/P3 全て検出）+ 正常系/見出しバリエーション/閉じブロック許可表現の false-positive なしを実測。commit: anicca-dais `ab177174` | [x] |
 | #54 | ✅**完了（2026-07-17）**: `topics/{queue,in-progress,done}/` 機構実装（カード frontmatter: lane/voice/sources/angle）+ 初期カード3枚（virtuals-acp.md / olas-mech-marketplace.md / humanizer-shootout.md、DEEP-QUESTIONS.md から質問リスト転記）+ article-daily.sh STEP 1 差し替え（queue先取り+mv claim、空ならlane B fallback）+ STEP 7（done/へmv、ledgerにlane記録）。bash -n通過、PROMPT変数のsingle-quoted heredocが意図通り展開されることを実測。commit: profitable-claude `0f2b939` | [x] |
 | #55 | ✅**完了（2026-07-17）**: `make-diary-digest.sh`（transcript+git log → 教訓抽出 → redaction gate → card）+ 23:30 launchd + redaction negative test。実装場所 `~/profitable-claude/skills/human-funded/article/topics/make-diary-digest.sh`。収集=deterministic bash（4 repo の当日 git log + 当日更新 docs/loop-engineering・.claude/handovers + `~/.claude/projects/*/*.jsonl` の当日 user turn を1500行cap）、抽出=claude -p（article-daily.sh run_claude_pass と同じ CLIProxyAPI ヘッドレス認証フォールバック）、書込前に必須 redaction gate（sk-/xox/Bearer/BEGIN/AKIA/password/api_key/電話番号パターン）。`--test-redaction` で negative(fake `sk-`鍵→FAIL実測) + positive(クリーン文→PASS実測) 両方確認。`--collect-only` で収集単体を実測（今日: commits=31, docs=0, transcript_lines=1500）。フル実行1回を実測: `topics/queue/2026-07-17-devlog.md` を実データ（token melting 根本原因・healthcheck 自己申告問題等）から生成、redaction gate 通過。同名カード再実行で idempotent SKIP を実測。launchd `ai.anicca.article-diary-digest`（23:30）を bootstrap 済み、`launchctl list \| grep diary` で登録実測。plist は `~/Library/LaunchAgents/`（gitignore対象外の個人環境）、repo には `topics/ai.anicca.article-diary-digest.plist.example` を同梱。commit: profitable-claude `f60052d` | [x] |
