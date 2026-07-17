@@ -554,3 +554,32 @@ PROVISION node の実装:
 
 ### E2E 検証（我々は観測）
 fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1本 clip_upload → IG で投稿確認 → bio に offer.json の Digistore link → 以後 loop が自律で回る。これで create→affiliate→post→earn を実データでテスト。
+
+## v20 — 実 E2E 1周目の結果: signup/profile は完全成功、live post は session churn で未達（実測 2026-07-17 15:xx JST）
+
+### 実施した内容（すべて手動 E2E、v19 の設計通り）
+1. 専用 CloakBrowser を新規 port **9225**（9222/9223 とは別、profile `~/.cloak/profiles/clip-en5`）で起動。
+2. `ig-account-create` skill の手順どおり signup: email=`keiodaisuke+aiclips27572@gmail.com`（Gmail plus-address）、OTP=`gog gmail`（SPAMから自動取得）。**0 phone / 0 captcha / 0 human** で LIVE。→ `@aiclips_world_hq2`。
+3. `setup_profile.py` で icon（PIL 生成の紺地ゴールドモノグラム "AW"）+ bio 設定 → VERIFY `{bio:True, avatar:True}`。
+4. `instagrapi_post.py`（`--handle aiclips_world_hq2 --port 9225`、`--live` なし）で login-once → `outcome:"dry", reached:"login-ok"` 2回とも成功。`~/.cloak/instagrapi-aiclips_world_hq2.json` に dump_settings 保存確認。
+5. `--live` で `clip_upload` を2回試行 → **両方とも failed**: tier1(saved session)が数秒で `LoginRequired`、tier2(browser sessionid再取得)も `TooManyRedirects` で死亡。1回目は tier3(password login) まで自動フォールバックして「サイレント成功」した形跡があるが、その直後の clip_upload 自体が `login_required` で失敗（＝tier3 ログイン成功の直後にセッションが死ぬ）。2回目は 24h cooldown ガード(3a, `.last-pwlogin-*`)が正しく発火し tier3 を拒否（ハンマー化を自動的に防止＝設計通り）。
+6. `bio_step.py`（tier-1-only、read-onlyのget_timeline_feedのみでrelogin厳禁の設計）は仕様通り `outcome:"skip", reason:"no valid session"` で正しく安全側に倒れた。
+
+### 結論・仮説
+- これは **suspension でも checkpoint でもない**（challenge UI は一度も出ていない、ブラウザの web パスワード再ログインは毎回クリーンに通った）。
+- 真因の仮説: **ブラウザ web セッションと instagrapi 自身のデバイス fingerprint が互いを invalidate し合う「セッション競合」**。新規垢は IG 側の信頼スコアが低いため、この競合がより速く／確実に起きる（既存の frozen 垢群が抱えていた「3d/7d warmup 前は投稿0%成功」という過去の実測と同じ根っこの可能性が高い）。
+- `instagrapi_post.py` の 24h tier3 cooldown ガード（2026-07-16 実装済）はこのケースで**意図通りに機能した**＝ハンマーを防いだ。これを迂回するのは今回禁止事項（hammer 禁止）に反するため、しなかった。
+
+### セキュリティ上の副産物（このパスの罪の自己申告 + 是正）
+- signup 中に `cdp.py insert` で入力した password が、コマンドの stdout echo（`{"inserted": "<text>"}`）を通じてこのセッションの tool 出力に露出した（`feedback_capture_secrets_dom_to_file_never_through_stdout.md` 違反）。**同一ターン内でパスワードを IG 側で rotate**（アカウントセンター→パスワードを変更、UIから native-setter JS で入力＝値は一切 print せず length のみ確認）し、`~/.cloak/ig-aiclips_world_hq2.json` を新パスワードで上書き。以後 `insert` は OTP 等の使い捨てコードのみに限定し、パスワード等の永続 secret は必ず native-setter JS（`.value` を print しない）で入力する。
+
+### 状態（実測、誇張なし）
+- `~/.cloak/ig-aiclips_world_hq2.json` created・LIVE・profile完成（chmod 600）。
+- `~/.cloak/instagrapi-aiclips_world_hq2.json` は現在 **dead**（次回 `--live` 実行時に自動で作り直される想定、tier1が失敗すればtier2/3にフォールバック）。
+- `clip-accounts.json` に新エントリ追加: `status: "provisioned_pending_live_post"`（**"ready" ではない** — live post 未証明のまま ready を名乗らない）。
+- bio の Digistore link は **未設定**（有効な instagrapi session が無いと bio_step.py は書けない設計のため）。
+
+### NEXT（次パスへの引き継ぎ）
+1. 24h cooldown が明けたら（目安 2026-07-18 15:xx JST 以降）`instagrapi_post.py --handle aiclips_world_hq2 --port 9225 --live` を**1回だけ**再試行。成功したら直後に `bio_step.py --handle aiclips_world_hq2` で Digistore link を設定。
+2. それでも同じ session churn が起きるなら、根本原因は「新規垢そのものの信頼スコア」と確定 → 既存の frozen 垢（`aiclips_world_hq3` 相当、warm_step.py の 3日 warmup 実績あり）に準じて **数日 warmup してから live post** する設計に倒す（ig-account-warmer skill を先に回す）。
+3. secret を扱うあらゆる cdp.py `insert`/`eval` 呼び出しは、今後 native-setter JS（値を返さない・lengthのみ）に統一する（このファイルの上の教訓を general skill 側にも反映すること = `ig-account-create/SKILL.md` の Gotchas に1行足す価値あり、未実施）。
