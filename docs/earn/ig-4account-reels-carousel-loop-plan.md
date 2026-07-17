@@ -691,3 +691,11 @@ team-lead側の独立したscale research(`docs/earn/ig-account-scale-best-pract
 - clean IP 決定: Dais 認可「crypto 優先→ダメなら $7 カード、cred 全部渡済」。proxy-acquire が residential proxy 購入中($15 hard cap、ASN で datacenter でない事を検証、cred は ~/.cloak/proxy-clip-1.json 600perm 直結)。取得後: CloakBrowser + instagrapi に per-account 配線 → 1垢を専用IP固定 → warmup(#10) → queue の reel 18本から投稿(#2)。
 - ★クラウド = 無料 no-IP は嘘★(scale 研究 doc `ig-scaling-architecture-and-economics.md` commit b2e389a25)。cloud VM は datacenter ASN で IG 即拒否。compute の場所と IG egress IP は別レイヤー。cloud を使うなら residential/mobile proxy を前段に置き cloud IP を IG に触れさせない構成のみ可。1:1:1(account:proxy:profile)が数百まで、それ以上は mobile proxy farm + device farm。100垢≈$200-500/月、1000垢≈$1.5-3k/月、free at scale は神話。
 - ★並列化: エンジンは2半分★ = (1)DISTRIBUTION(垢/投稿側、今 proxy で blocked)と (2)CONTENT(動画/slideshow 生成、IP 問題と無関係=並列可)。CONTENT は proxy を待たず作れる(queue に reel 18本既存)。carousel 生成・他 content type・PC 移設・dashboard/registry は proxy と独立に並列進行できる。
+
+## v29 — clean IP インフラ完成 + signup 実証（2026-07-17 実行、team-lead 自身が実行）
+★共有 IP 焼けの blocker を解決した★:
+1. **proxy 購入済・検証済**: IPRoyal residential sticky(geo.iproyal.com:12321、exit 87.19.19.64 = Telecom Italia ADSL = 本物 residential、datacenter でない事を whois で自分で確認)。$7.42 crypto(franklin1 self-funded Solana wallet、on-chain tx 3Q3bps… 確定、Dais のカード不使用)。creds=~/.cloak/proxy-clip-1.json(600perm)。
+2. **instagrapi proxy 配線済(commit)**: `account_proxy_url`/`apply_proxy` が clip-accounts.json の `proxy` field から set_proxy、全 IG 通信を residential IP に通す。cred は echo しない。51 tests green。
+3. **proxy browser launcher(commit)**: `launch_proxy_browser.py` が CloakBrowser を residential proxy 経由で起動(port 9233、profile clip-proxy-1)。exit IP を in-browser で 87.19.19.64 と検証済。新垢を clean IP 上で作れる。
+4. **signup 実証(commit `ig_signup_proxy.py`)**: :9233(clean IP)で emailsignup を end-to-end 駆動成功 — cookie modal dismiss → 全 text field を TRUSTED typing(insert_text)で記入(native-setter は React state に commit されず re-render で消える=重要 gotcha) → DOB combobox(clickxy) → 送信 → OTP 画面到達 → IG が code 送信、まで全部動く。
+★未完(タイミング問題のみ)★: 最初の pass で DOB/form 格闘に 30分かかり **OTP(547082)が失効**(IG code は~30分で expire)、resend が新 code を生成せず。=垢はまだ live でない。**残り = clean な FAST な signup pass 1回**(cookie→fill→DOB→submit→OTP を数分で。gotcha は全部 ig_signup_proxy.py に encode 済)。次に垢 live → clip-accounts.json に proxy 割当 → instagrapi login-once(proxy 経由) → warmup → queue の reel 投稿。
