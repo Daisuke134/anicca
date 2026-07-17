@@ -9,14 +9,15 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | task | 状態 |
 |---|---|
 | A1 provider/key 修理 + resubmit | 診断完了・gate 実装済み / **真因 = OpenRouter 残高薄（$1.59）、stale key でも provider 名でもない**。4 agents は under_review で editable でない（触れない）、orphan は後継 online で abandon → 実効修理は A2 の残高補充。CP2 作業は 0件（全 review-lock）。2026-07-18 実測 |
-| B0 IG account 復旧 | in_progress（A1 の browser 作業完了後に開始 — CloakBrowser :9222 は共有 resource、同時駆動禁止） |
+| B0 IG account 復旧 | **account 確保 DONE（2026-07-18）**: 新規 @useclaudeskills 作成（既存6 account は全て clip niche 用で frozen/poisoned のため流用不可）。profile 完成・main :9222 login 済み・warmup day-1 実行済み・日次 warmup launchd 稼働。残: 7日 warmup 完了 → browser test 投稿 1件公開確認（B0 の done 到達）。詳細は §3 B0 行 |
 | 他 11件 | pending（TaskList 参照） |
 
 ## 0. 現実（2026-07-17 実測）
 
 | 事実 | 出典 |
 |---|---|
-| online listings 21 / **実売上 $9.99 gross（1件、06-23）、seller 取り分 $8.00 未出金** — local ledger は $0 のまま = reconcile 欠落バグ | Capafy live API（研究 MD §3c-0） |
+| online listings 21 / **実売上 $9.99 gross（1件、06-23）、seller 取り分 $8.00 未出金（realized payout=$0）** | Capafy live API（研究 MD §3c-0） |
+| ~~reconcile 欠落バグ（local ledger $0）~~ → **A4 で修理済み（2026-07-18）**: `capafy-earn-ledger.jsonl` に 06-23 $9.99 行 + payout snapshot、loop.sh が STATE に pending $8.00 を surface。実装は ~/anicca（実稼働 copy）commit f10f9ddc | 本 spec A4 |
 | bottleneck = discoverability（21 listings で 3ヶ月 1件 = 露出不足） | `capafy-loop/state/STATE.md:5-10` + sales/trend |
 | rejected の現況: 4件は再提出済み manual review 中、真 rejected は orphan 1件のみ（self-fix が 07-17 に自走修理済み） | 研究 MD §3c-0 |
 | billing error 真因【2026-07-18 確定】= **OpenRouter 残高薄（remaining $1.59）**のみ。stale key 説は FALSE（旧 key==新 key、同一 `sk-or-v1-5598...7b26`）。provider 名 `publisher_openai_official` は cosmetic（vendor_id=79=OpenRouter で routing 正常、live probe 200）。→ 実効修理は残高補充（A2）。gate `key_health_gate.sh` 実装済み | 研究 MD §3c 訂正節 + lessons.md |
@@ -48,7 +49,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | A1 | ~~provider 名不整合を修理 + CP2 で key 入れ直し + resubmit~~ → **2026-07-18 是正**: provider 名は cosmetic、stale key 無し、真因は残高薄のみ。4 agents は under_review で editable でなく CP2 不可（review-lock、`"The current version is not editable"`）。orphan 2485008254 は後継 7686597754 online で abandon。**実装したのは fail-closed の `key_health_gate.sh`（prepare/finish に配線）** = 残高不足の口座へ publish しない。実効修理（残高補充）は A2。 | 【done 条件は Capafy の人手 review 待ちで A1 単独では到達不能】gate が green + 4 agents が balance 補充後の review を通過 or 再 reject 時に fresh-key resubmit |
 | A2 | OpenRouter 残高補充（$10-25）。gate は実装済み（A1 で `key_health_gate.sh` を prepare/finish に配線、閾値 $2 fail-closed）。**2026-07-18 実測: 代替 rail の sk-ant 鍵（CAPAFY_HOST_ANTHROPIC_KEY）も "credit balance too low" で死亡 — 06-24 spec の auto-refill 記述は現在 FALSE。実効修理 = 入金のみ。** rail 候補: (a) Dais が OpenRouter へ card 補充 $10-25【stop point、Dais 判断】 (b) ~~Capafy payout → crypto~~ **2026-07-18 実測で棄却**: payout method は `wire_transfer` のみ（api-docs 00_overview.md:343、crypto rail 無し・銀行設定は結局 Dais 口座・遅い）→ **即効修理は (a) 一択** | gate green（remaining >= $2）+ 4 agents が review 通過 |
 | A3 | max-turns 枯渇対策: 1 pass = 1 agent に制限（貪欲 retry 禁止）。60 turns 超過時は state 保存して次 pass 継続 | 3日連続で BLOCKED rc=1 ゼロ |
-| A4 | **sales reconcile バグ修理**: `GET /agent/sales/trend` + `payout-info` を daily で読み local earn-ledger に書く（現状 capafy_rows=0 で $9.99 を見落としていた）。「稼いだ」判定は server ledger 実測のみ | ledger に 06-23 の $9.99 行が入る + daily 報告が server 値と一致 |
+| A4 | **DONE（2026-07-18 実測 green）**: `capafy_earn_reconcile.py` を新設し `GET /agent/sales/trend` + `/agent/developer/payout-info` を専用 ledger `state/capafy-earn-ledger.jsonl` に mirror（idempotent/atomic/backup）。**on-chain realized reader（ledger_reader.py、tx/sig 必須）は汚染しない** — capafy は bank 収益で on-chain 痕跡が無く、tx 捏造は罪。clip の専用 ledger と同パターン。loop.sh が毎 wake で reconcile を回し STATE.md に `capafy_seller_balance_pending_usd`/`realized_payout`/`lifetime_gross` を追加、旧「monthly payout=$0」報告が隠していた実売上を surface。**実際に走るのは ~/anicca 版**（daily loop STEP1 が `~/anicca/.../loop.sh` を指す。~/.anicca-founder は非稼働）→ ~/anicca に実装・commit f10f9ddc。 | ✅ 06-23 の $9.99 行が ledger に存在（実測 PASS）/ STATE.md が server 値一致（gross $9.99・seller balance $8.00 pending・realized $0）/ test-loop.sh 7-0 GREEN / on-chain ledger capafy 0行 |
 | A5 | self-improve: Capafy ranking/カテゴリ実売データを daily 取得 → 次に作る skill を上位カテゴリから選ぶ selector | selector の判断ログが state に残る |
 | A6 | verify-loops-audit の self-fix 反復 spawn 抑止（result marker 確認 + backoff） | self-fix log に多重 spawn 痕跡が出ない |
 | A7 | 通知: 送信は AgentMail+Telegram とも成功済み（07-17 12:47）→ Dais 側受信設定を点検し、受信確認できる 1 経路を SSOT にする | Dais が実受信を確認 |
