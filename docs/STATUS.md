@@ -209,6 +209,56 @@ news_search.py(firecrawl)は franklin1 側 env に鍵が無く未使用。
 
 3体とも launchd loop は生存（franklin-loop PID600 / franklin2-loop PID594 / agent-economy-loop PID645）。
 
+## ★2026-07-17 gig loop 停止の真因と蘇生（GIG-1 完了）★
+
+停止期間: 07-15 21:23〜07-17 13:56の40時間、pass完走ゼロ。真因 = Claude CLI subscription OAuthのheadless失効
+（keychainロック、upstream `claude-code` issue #76905）。healthcheckの90分毎再起動は正常動作していたが、
+毎回「Login expired」で即死していた。
+
+棄却仮説(証拠つき): Coconalaセッション切れ(最終passで健全確認)／案件枯れ(B2未到達)／CDP :9222不通(生存確認)。
+
+修理: `gig_reality_verify.sh` L244-249で実証済みのCLIProxyAPI(:8317) fallbackを`gig-cli.sh`のcore起動部に移植。
+
+蘇生実証: 07-17 13:56に全ステップ(LEARN→B0→PROFILE→B1→B2→FUNNEL)完走(`pass-report.jsonl` ts=1784264202)。
+ただし新規応募0件(`applied.jsonl` 138行のまま)。生涯実績 applied 138 / won 2 / paid 0 は不変 —
+直ったのは「稼ぎに行く能力」であって売上ではない。steady宣言は連続完走を見てから。
+
+付随事故の記録: 同日、監査がgigをHUMAN-DEPと判定→除去agentが移設commit `4da27941`とplist停止まで実行→
+Dais指示で即revert(`a0bff196`)・plist復元済み。gigは「human-funded ¥ loop」として意図的設計
+（`NO_HUMAN.md`: KYCはsetup factでありruntime stepではない）。
+
+今後: gigはprofitable-claude repoへ集約移設予定(GIG-2、別CCセッション担当)。live配線図はTaskList #22に記録済み。
+
+## ★2026-07-17 HL(hl_trade)停止の真相確定 — Dais の記憶と整合★
+
+franklin2: 意図的停止のconfig証跡あり — plistに `ANICCA_SLOT_ALLOWLIST=x402_sell`(mtime 07-16 06:00 JST、
+最終HL wakeの49分後)。レジストリ段階のハード除外。monitoringの「franklin2にsol/PM未配線」の正体もこれ
+（未配線ではなく意図的allowlist）。
+
+franklin1: agent自身の自己判断 — earn-ledgerにhl-trade 181件全てnet_usdc=0 → self-evalがDEADフラグ →
+prompt.mjs経由の警告注入 → モデルが自主的に選ばなくなった(07-16 05:34以降、loopは稼働しつつhl_tradeだけ0回)。
+ハードコードでなくjudgment。self-eval→DEAD→自主忌避のループが実戦で機能した初の実証例。
+
+gig停止(OAuth)とは独立の偶然の同夜。carve-out(残高閾値)は非発火(棄却)。
+
+方針: 停止維持(alpha無し)。HL marginの座礁$7.72はAUDIT-1で回収照合。
+
+## ★2026-07-17 AUTH-1 完了 — machine-wide OAuth死の全域駆除★
+
+死亡発見・蘇生: anicca-reddit-loop / anicca-selffix-gig-loop / anicca-selffix-reddit-loop の3体
+(capture-paneで蘇生確認済み)。anicca-2/anicca-3は起動元特定できず未対応(手動対応要)。
+
+パッチ: 同一の最小diff(`~/.cli-proxy-api-key` → `ANTHROPIC_BASE_URL=:8317`)を9 scriptに適用。
+~/anicca commit `306e0f73`(clip-promote-cli/clip-cli/gig-cli/video-cli/capafy-loop-cli/
+life-manager-loop-cli/reddit-loop-cli/self-fix.sh)、~/.openclaw commit `80e9f011`
+(anicca-earn-gig/gig-cli.shの乖離複製)。
+
+hook error(`node cjs loader:1458`)の真因: Claude Code v2.1.210の既知バグ(空stdoutのPreToolUseフック)。
+`~/.claude/hooks/track-search.sh`を常にallow JSONを返すよう修理(machine-local、repo外)。修理後も1回
+間欠再発を実測 = CLI側の残バグ、non-blocking確認済み、根治はupstream待ち。
+
+残タスク: profitable-claude repoに未パッチ3 script(ceo-run.sh等、現在未起動のため緊急性低)。
+
 ## loop は3つだけ（automaton は閉鎖済み）
 
 「founder」という loop は**存在しない**。claude-p の HOME フォルダ名が `.anicca-founder` なので
@@ -887,6 +937,10 @@ funnel_enabled = true
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
 | **OSS-1** | ★T9の後★ Linux/cloud 常駐の完成品が無い。`install.sh` L148-160 は Darwin なら launchctl load で自動常駐するが、Linux は「systemd で自分で」と案内するのみでトップレベルの systemd unit が repo に無い。skills配下の言及数 launchd 68ファイル vs systemd 3ファイル = 実質macOS専用（~/anicca の実ファイル実測、2026-07-17） | Linux上でも同等の自動常駐がrepo付属のunitで動く | T9 後 |
 | **OSS-2** | ★T9の後★ 「1体目をゼロから立てる」bootstrap scriptが無い。`skills/self/spawn` は既に稼いでいる親が子を産むロジック(gate: 残高≥$20 && 14日以内未出産 && 子<1)であって、第三者の1体目はREADME手順を人間が手で実行するのが実態。franklin2も同様（`git log --all` にfranklin2のcommit 0件=別ANICCA_HOMEで人が手順を再実行しただけ、自動複製scriptは存在しない）。x402実売にはCDP_API_KEY_ID/SECRETの外部取得が必要だがREADME Quick startに手順が無い。README自身が"What's real today"(L119)でcloud self-spawn/自律redeem/UBI payoutをIn progressと明記済み | 第三者が人手ゼロで1体目をbootstrapできるscriptがrepoにある | T9 後 |
+| **GIG-1** | gig loop 蘇生 — Claude CLI subscription OAuthのheadless失効(keychainロック、upstream `claude-code` issue #76905)で40時間(07-15 21:23〜07-17 13:56)pass完走ゼロだった真因を特定、`gig_reality_verify.sh`実証済みのCLIProxyAPI(:8317) fallbackを`gig-cli.sh`のcore起動部に移植 | 全ステップ(LEARN→B0→PROFILE→B1→B2→FUNNEL)が完走する | ★DONE 2026-07-17 13:56★ 完走実証(`pass-report.jsonl` ts=1784264202)。新規応募0件、生涯実績applied 138/won 2/paid 0は不変。売上効果は未検証、steady宣言は連続完走を見てから |
+| **GIG-2** | gigをprofitable-claude repoへ集約移設(現状 ~/anicca と ~/.openclaw に乖離複製が存在) | gigの実体がprofitable-claude 1箇所に統合され、二重管理が消える | 別CCセッション担当。live配線図はTaskList #22に記録済み |
+| **AUTH-1** | machine-wide Claude CLI OAuth死の駆除 — 同一headless失効パターンで停止していた全loopを洗い出し、同一パッチ(`~/.cli-proxy-api-key`→`ANTHROPIC_BASE_URL=:8317`)を適用 | 死亡していた全loopが蘇生し、同パッチが該当script全てに適用される | ★DONE 2026-07-17★ anicca-reddit-loop/anicca-selffix-gig-loop/anicca-selffix-reddit-loopの3体蘇生確認済み。9 scriptにパッチ適用(commit `306e0f73`・`80e9f011`)。anicca-2/anicca-3は起動元未特定で未対応(手動要) |
+| **AUTH-2** | profitable-claude repo内の未パッチ3 script(ceo-run.sh等)にAUTH-1パッチを適用 | 3 scriptとも`ANTHROPIC_BASE_URL` fallbackを持つ | open(現在未起動のため緊急性低) |
 
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
