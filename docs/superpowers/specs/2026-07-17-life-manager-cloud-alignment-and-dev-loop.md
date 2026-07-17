@@ -210,6 +210,44 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 | Q19 | B | LM-21 rotate の実行タイミング | superpowers 実装開始の直前に ops として一括実行 |
 | Q20 | C | E2E 用 TG が Dais 実アカウント依存 | 専用 test user アカウントを作って CI 化（dogfood と分離） |
 
+## 10. Q1–Q20 解決（2026-07-17 実測+外部BP。§9 の問いに対する確定回答）
+
+### 10a. 決定（A 系）
+| Q | 決定 | 根拠 |
+|---|---|---|
+| Q1 | life-manager repo へ収斂（LM-20、P0 fix 後） | drift 実証済み |
+| Q2 | **Gmail = Unipile（Composio ではない）**。onboarding に optional gmail stage 追加（skippable） | codebase 自身が証拠: `apps/landing/netlify/functions/unipile-connect.js:3-6`「Composio managed Google app は restricted gmail scope 未認証で consent が HARD-BLOCK（実ブラウザ実証）」。Unipile 経路は配線済み（unipile-connect→unipile-notify→`lm_users.gmail_account_id`→`lib/transport/mail-unipile.js`） |
+| Q3+Q7 | **main push = 本番自動 deploy（実測: repo=anicca-products, branch=main, root=apps/life-call, watchPaths=apps/life-call/**, NIXPACKS）**。staging 環境は既存だが life-call 未配線 → LM-18 = 「staging に life-call を配線」（dev branch 追跡、secrets は staging 専用値=テスト bot/Telnyx、本番使い回し禁止）。flow: feature→PR→dev(staging auto)→smoke E2E exit 0→PR dev→main(prod auto)。main 直 push 運用は止めて PR 経由へ | railway status --json 実測 + docs.railway.com/environments |
+| Q4 | issue = 匿名化要約のみ、生 feedback は private store | PII を public repo に置かない |
+| Q5 | call 2層確定: T-10/T-5/リマインダー = 固定 TTS **$0.002–0.006/回**、会話型（wake/例外）= Gemini Live **≈$0.029/min（Gemini 側のみ、audio 32tok/s、in $3/M out $12/M）** = 10倍差 | ai.google.dev/gemini-api/docs/pricing + telnyx.com/pricing/voice-api（TTS $0.000003/char〜） |
+| Q6 | trial は S1 で決定（保留） | 今は配布ゼロが真因 |
+| Q14 | 外向き action（送信/応募/予約）= per-user opt-in gate + onboarding 明示同意 | connector blockedActions パターン |
+| Q17 | dev loop v1 = Mac mini launchd、黒字後 cloud VM | GHA 追加禁止ルール |
+| Q18 | 1k user までは現行単一プロセスで持つ | 早すぎる最適化禁止 |
+| Q19 | LM-21 rotate = superpowers 実装開始の直前に一括 ops | — |
+| Q20 | E2E 用専用 test TG user を作成（dogfood と分離） | — |
+
+### 10b. 実測結果（B 系）
+| Q | 実測 |
+|---|---|
+| Q8 | 会話型 1min ≈ $0.03–0.04（Telnyx JP 正確単価は動的ウィジェットで未取得 → 実 call 請求で実測 = LM-19 残）。固定 TTS 30s ≈ $0.002–0.006 |
+| Q9 | **Composio 8/15 改定: 超過 $0.249/1k → $4/1k（16倍）**、Pro $29/mo=5万call。今や Composio 依存は calendar のみ（Gmail=Unipile）。scale 対応: calendar scope は sensitive（審査 10 営業日、CASA 不要）なので自前 OAuth 化が現実的な逃げ道。Gmail は Unipile 継続で restricted 審査+CASA（6週+費用非公開）を回避 | composio.dev/updated-pricing, support.google.com/cloud/answer/13463817 |
+| Q10 | issue#6 = **IMPLEMENTED-NEVER-RAN**。feedback-to-issue.py 実在・tests 12/12 real pass（ただし gh は mock）。`state/issues.jsonl` 0 行 = 本番実行ゼロ。しかも daily.sh の scope lock で明示 OFF（2026-07-11）。issues #1-11 は別経路（agent の直 gh issue create）で作られた。→ LM-1 が本配線する |
+| Q11 | funnel リンクは現行で正しい（landing→t.me/LifeManagerBotbot?start=lp、IG 投稿 cta=aniccaai.com/life-manager 実確認）。**穴 = TikTok lm-video: caption にリンクゼロ + bio link 管理なし = クリック経路ゼロ**（LM-22 新設）。Reddit は 07-11 から shadowban 中 |
+| Q13 | **HotPepper Beauty / EPARK歯科 に予約 API 無し（実測: Recruit Web Service はグルメのみ、epark.jp/webservice 404）**。gh 上に実予約自動化例なし。→ **日本の予約 = 電話が本命 = Telnyx outbound + AI voice で店に電話する**（LM-11 の設計確定。武器は既存） |
+
+### 10c. Patch sketches（LM-3/LM-5/LM-6 用。file:line 実読済み、UNVERIFIED 明記）
+**共通前提（LM-23 新設）**: codebase に callback_query 対応が皆無（`lib/telegram.js:29-38` parseUpdate は message のみ、setWebhook も allowed_updates=["message"]）。Q16 の [はい/いいえ] と Q12 の [出た/まだ] の両方が依存。
+```js
+// lib/telegram.js — setWebhook に allowed_updates: ["message","callback_query"]、
+// answerCallbackQuery 追加、parseUpdate が {kind:"callback", data, callbackQueryId} を返す分岐追加。
+// server.js:241 の /telegram handler に if (u.kind==="callback") 分岐（prefix ask:/leave: で route）
+```
+**Q2 Gmail stage（LM-6 の一部）**: `lib/telegram-onboard.js:12-18` computeStage に `if (!row.gmail_account_id && !row.gmail_skipped) return "gmail"`（skippable、"スキップ" text で `gmail_skipped=true`）。migration: `ALTER TABLE lm_users ADD COLUMN IF NOT EXISTS gmail_skipped boolean NOT NULL DEFAULT false;`。`mail-unipile.js` に searchInbox(query) 追加（UNVERIFIED: Unipile 検索 param 名 q/search、docs 確認要）。
+**Q16 search-before-ask（LM-3）**: `lib/ask.js:257-277` の ask 分岐で、送信前に `agentSearchCandidate(event)` — Gemini に google_search grounding tool + submit_candidate functionDecl（UNVERIFIED: grounding tool key 名、現 docs 確認要）+ Gmail searchInbox 結果を context 投入。候補あり → closed question「“{event}” は {candidate} で開催ですか？」+ inline [はい/いいえ]（callback_data `ask:yes/no:{event.id}:{replyToken}`）。metric: `ALTER TABLE lm_ask_log ADD COLUMN IF NOT EXISTS resolved_from text;`（location_field|description|gmail|web_search|user_answer）。
+**Q12 leave-check（LM-5 v1、GPS 無し）**: ①`scheduler.js:81-92` buildStreamUrl の署名 ctx に uid+eventKey を追加（call site :125）②`server.js:152-169` ctxFromReq で検証 ③`server.js:438-444` Telnyx start frame で `lm_wake_log.answered_at` を PATCH ④scheduler の WAKE_LEVELS ループ後に T-0 分岐: T-5 が answered なら TG「出た？」[出た/まだ]（claimWake を `{uid}|{startIso}|leave` の擬似 level で再利用）⑤`leave:no` or 10min 無応答 → `lib/notify.js:36` sendLateNotice 直呼び（classifyLate 不要と実読確認）。migration: `ALTER TABLE lm_wake_log ADD COLUMN IF NOT EXISTS answered_at timestamptz, ADD COLUMN IF NOT EXISTS notified_late_at timestamptz;`（注: lm_wake_log の CREATE TABLE は migrations に無い=Supabase 直作成、IF NOT EXISTS で安全）。
+**実装前に潰す UNVERIFIED 3 点**: Gemini grounding tool の key 名 / Unipile 検索 param / lm_wake_log 原型 schema。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
