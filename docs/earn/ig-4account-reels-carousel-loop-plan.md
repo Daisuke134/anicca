@@ -167,3 +167,36 @@
 
 ### harness の保存先
 `scratchpad/solver/`（RecaptchaSolver.py vendor + solve_loop.py + login_solve.py）。clean IP 確保後に本採用したら `~/anicca/skills/earn/clip/scripts/` へ移して commit する。
+
+## v5 — 正しい instagrapi 運用 + 真犯人の確定（実測 2026-07-17 13:xx JST。SSOT）
+
+### 3仮説の検証（investigation）
+- **H1 datacenter IP → 棄却**: egress IP = `AS17676 SoftBank Corp.`（三重県、consumer 住宅 ISP）。datacenter ではない。**proxy 購入は不要**（公式が否定するのは datacenter IP。我々は既に住宅系）。issue #2001 も「residential proxy でも直らない場合あり」= proxy は主因でない裏付け。
+- **H2 device 再生成（re-fingerprint）→ 部分棄却**: `instagrapi_post.py` は tier1 で load_settings 済み（uuids 保持）→ tier3 relogin も基本 device 保持。ただし cooldown guard 追加(b0a80b65, 07-16)より前は tier3 が頻発、settings 破損時に fresh uuids の余地あり。寄与はするが主犯でない。
+- **H3 relogin ハンマリング → 最有力（確定）**: コード自身のコメント（instagrapi_post.py:85）「two tier3 logins within minutes both succeeded then got revoked」。07-14〜16 に password login を短期連打 = instagrapi 公式が名指しする最悪アンチパターン「logging in with username/password on every run」。これがアカウントを flagged に焼いた。今日の reCAPTCHA hard audio / browser "incorrect" deflection はその reputation の結果。
+
+### instagrapi の正しい運用（公式 best-practices より、これが正本）
+出典: subzeroid/instagrapi `docs/usage-guide/best-practices.md`「Use Sessions」+ instagrapi.com/guides（2026-04-30）。核心: *"If you call .login() from scratch on every run, Instagram sees repeated fresh logins. That is much more suspicious than reusing a stable device session."*
+
+正しい順序:
+1. `set_proxy()` は login 前（ただし我々は住宅IPなので当面 proxy 無しで可）
+2. `set_settings(load)` を login より前（device uuids 固定）
+3. `login()` は「cookie 検証」であって毎回新規ではない（settings あれば cookie 再利用、切れた時だけ本 login に fallback）
+4. keepalive = 書き込みでなく `get_timeline_feed()` の軽い authenticated read
+5. LoginRequired 時のみ: `old=get_settings(); set_settings({}); set_uuids(old["uuids"]); login()`（device は変えない）
+6. challenge(email code) は `challenge_code_handler` で自動解決（我々は make_gmail_handler 配線済 = instagrapi_post.py:136）
+7. 成功後 `dump_settings()` で書き戻す
+
+### ★重要: 今の flagged 状態は instagrapi でも自動救済不可
+公式 `challenge_resolver.md`: Bloks redirect / reCAPTCHA checkpoint は「trusted device での手動確認が要る、instagrapi は ChallengeRequired を raise する」。email code challenge は**新規 clean login 時のみ**有効。
+→ 復旧手順 = clean restart: **cooldown で flag 減衰**（数時間〜1日）→ device uuids は保持したまま 1回だけ instagrapi login（email challenge 自動解決）→ 成功したら以後 load_settings のみ、二度と password login しない。住宅IPなので proxy 不要。
+
+### コード修正 TODO（login-once を強制する）
+- tier3 の relogin を「24h cooldown」からさらに厳格化: tier1 が生きてる限り絶対 relogin しない + backoff 指数化。
+- keepalive を「browser で instagram.com 開く」→「instagrapi settings で get_timeline_feed」に変更（session-vault はブラウザを温めてたが loop の実 auth は instagrapi settings。対象ズレ = #9 vault-first で統一）。
+- relogin 時に明示的 `set_uuids(old_uuids)` を追加（device 保持を保証）。
+- （将来）`set_proxy` を settings 由来で受ける口だけ用意（今は住宅IPで不要、oサブアカ増殖時に有用）。
+
+### 更新した分岐（proxy 不要が判明）
+- #11 を「clean IP 手配」→「**cooldown + clean instagrapi restart**」に読み替え。proxy 購入は保留（住宅IP で足りる）。
+- 次の実行: (1) 今日はこれ以上 login を叩かない（flag 減衰待ち）(2) その間に login_resilient を上記に hardening（コードは書ける、E2E は cooldown 明け）(3) cooldown 明けに1回 clean login。
