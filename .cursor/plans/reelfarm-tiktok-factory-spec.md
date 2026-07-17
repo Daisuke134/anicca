@@ -49,7 +49,7 @@ ANTHROPIC_API_KEY=sk-ant-...  # Claude API key
 | 項目 | 値 |
 |------|-----|
 | API Base | `https://reel.farm/api/v1` |
-| API Key | `rf_DgLHPO6BylVQ8wS_oqMnhrAgLqee3cuvbnQl1S_wTL8` |
+| API Key | `[REDACTED-USE-REELFARM_API_KEY-ENV]` |
 | プラン | Max Plan（150 automations、無制限生成） |
 | スキル | `~/.openclaw/skills/reelfarm/SKILL.md` |
 | Cron LOOP A | `0 4 * * *` JST（毎日 04:00）— **現在 enabled: false** |
