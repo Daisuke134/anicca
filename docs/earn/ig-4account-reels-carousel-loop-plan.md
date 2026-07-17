@@ -383,3 +383,28 @@ v7 は「1回 clean login が取れる」前提で instagrapi 継続とした。
 ### 追加タスク
 - #18 Graph API one-time setup を Dais に依頼（スマホ手順）+ token 受領 → POST を Graph API 化
 - #19 gig loop の現状監査（二重存在 anicca vs profitable-claude、どちらが launchd 対象か、実際に earn しているか）+ 壊れているなら fix
+
+## v11 — Graph API token 経路 確定（公式 docs 実測 2026-07-17）
+
+出典 = developers.facebook.com 公式（crwl 実取得）。旧 doc `docs/earn/ig-posting-method-graph-api-pivot.md` line35/40「Business必須・app review必須」は**誤り、最新公式で覆る**（→ 後で是正）。
+
+### 確定事項
+- **経路 = Instagram Login**（Facebook Login でなく）→ **FB Page 不要**。host=`graph.instagram.com`、permission=`instagram_business_basic`+`instagram_business_content_publish`。
+- **Creator アカで可**（Business 化不要）。`/me?fields=account_type`=Media_Creator でOK。
+- **App Review 不要**（自分の垢のみ・Standard Access。自垢を App に tester 追加して使う）。
+- **token 取得 = App Dashboard 直接生成**が最小: (1)Meta dev account (2)App作成 type=Business (3)Instagram 製品追加 (4)自IGを tester 追加(IG authorize popup) (5)「トークン生成」click→**60日 long-lived token が dashboard に直表示** → DOM から読む。全ステップ CloakBrowser で automation 可。
+- **auto-refresh**: `GET graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=…`、50日毎 cron で無期限無人。
+- **video_url**: 公開 URL の mp4 必須（resumable local upload は FB Login 限定=使えない）。CLOUDFLARE_TUNNEL で公開URL化。Reels: MP4/H264, 3s〜15min, ≤300MB, 9:16。
+
+### 唯一の摩擦 = Meta developer account（= Facebook ログイン）
+ローカルに FB session 無し（daily-driver/dd-preview に facebook cookie 0、実測）。→ Dais の既存 FB account があるか、AI 用に新規作成（新規は電話/CAPTCHA=tier-a-bypass 領域）かを決める必要。これが #13 の実質ブロッカー。
+
+### #13 の実行ステップ（no-human-loop、Fable が drive）
+1. Meta dev account の FB ログインを確保（既存 or 新規作成）
+2. CloakBrowser で developers.facebook.com → App作成(Business) → Instagram 製品追加
+3. 自IG(aiclipsvault)を tester 追加 → IG authorize（垢 un-flag 済なので通る見込み）
+4. 「トークン生成」→ 60日 token を DOM から取得 → secure 保存
+5. instagrapi_post.py の POST を Graph API `/media`(REELS,video_url)→`/media_publish` に差替（別 poster 新設、instagrapi は fallback 保持）
+6. producer 出力 mp4 を CLOUDFLARE_TUNNEL で公開URL化して video_url に
+7. 50日毎 refresh_access_token cron 設置
+done = Graph API で reel 1本を公式投稿 + IG 確認 + refresh cron 稼働。
