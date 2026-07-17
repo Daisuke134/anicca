@@ -249,7 +249,10 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 **UNVERIFIED 3 点 → 2 点解決（07-17 Opus 裏取り済み）**:
 1. ✅ Gemini grounding key = **`google_search`**（snake_case、REST v1beta generateContent。`googleSearch` は JS SDK 表記、`google_search_retrieval` は 1.5 世代の廃止名）。functionDeclarations 併用は公式 tool-combination ページ実在が一次証拠（制約文言は実装時に同ページ確認）。出典: ai.google.dev/gemini-api/docs/generate-content/google-search
 2. ✅ Unipile 検索 param = **`search`**（件名+本文 free-text。Microsoft/IMAP では from/to/before 等との併用が invalid_request になる制約あり）。出典: developer.unipile.com/reference/mailscontroller_listmails
-3. ⏳ lm_wake_log 原型 schema = live-fire 実測中。
+3. ✅ schema 実測（07-17 Supabase REST）: lm_wake_log = **(id, uid, event_key, called_at)** 337行 / lm_ask_log = (id, uid, event_id, asked_at, reply_token, answered_at) 149行 / lm_travel_log = (uid, event_key, leg, created_at) 82行。→ LM-5 の answered_at/notified_late_at migration は必須確定。
+**V8 解決**: `git log 49135e3a..origin/main -- apps/life-call` = 0件 → prod は最新コード稼働中。
+**V9 解決**: travel ratio ベースライン ≈ **88%（物理 8 件中 7 件に travel block、過去14日 59 行）** — 既に目標 0.8 超え。LM-4 の主задача = 計測の仕組み化と維持。
+**V1 傍証（07-17 Railway 実ログ）**: 残高補充後、実イベント「KAG AI WEEK」で T-5 call が実成立: `carrier connected → Gemini Live opened → recording started → carrier closed in=6016 out=716 gotAudio=true`。$0.43 時代の dial failed 連発と対照。最終確定は Dais の着信証言 + テストイベント（20:10 渋谷）の T-10/T-5 観測。
 **Unipile 料金確定（ページ埋込 JS `pricesUSD` 実測）**: 最低 $55/mo（10 acct 込み）→ 11-50 $5.50 → 51-200 $5.00 → 201-1k $4.50 → 1k-5k $4.00 → 5k+ $3.50 /acct/mo。無料枠なし（7日 trial のみ）。**⚠ margin 直撃: $20/mo サブの 17.5〜27.5% が Gmail 接続代**。手当て: ①Gmail stage は skippable 設計（済）②Gmail 必要機能を上位 tier（$49-99 Autopilot）に寄せて原価を tier 側で吸収 ③scale 後は自前 Gmail OAuth（restricted+CASA 6週）で $/user を潰す。出典: unipile.com/pricing-api
 
 ## 11. 未検証レジスタ（2026-07-17 時点で「まだ実測していない」もの。検証されるタスクを明記）
