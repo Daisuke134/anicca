@@ -654,3 +654,6 @@ metrics(views/likes/$)→Telegram 定期通知 + 全アカ(clip/gig/trade)横断
 ### 状態
 - @aiclips_daily_hq: status=poisoned_manual_backup（自動降格済み、settings fileは一度も保存されず=golden sessionは一度も確立していない）。
 - 今回のtask #2は「fresh垢での投稿1本」を達成できずクローズ。次回このtask を再開する際は、まずこのv26の含意（IP/device疲弊説）を検証してから再度account creationに入ること。
+
+### 決着（2026-07-17 team-lead確認）
+team-lead側の独立したscale research(`docs/earn/ig-account-scale-best-practices.md`)も同じ結論(同一IPからの短時間複数垢作成が最大の死因、per-account bugではない)に到達済み。task #2は「IP評判が焼けたためblocked、クリーンな別residential/mobileプロキシIPが必要」として正式クローズ。無料datacenterプロキシはIGがブロックするため不可、別エージェントが安価な実用プロキシを選定中。**プロキシIPが配線されるまで、このマシン/IPからのIGアカウント新規作成・既存アカウントへのログイン試行は一切禁止**。
