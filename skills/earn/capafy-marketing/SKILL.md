@@ -119,6 +119,22 @@ NOT @aniccaxxx as `~/.openclaw/skills/x-poster/SKILL.md` claims.
 
 **Do NOT wire `--live` to a cron** until the rail is switched — it would post link-less tweets.
 
+## B6 metrics + reflect / B7 attribution (X-line learning line)
+
+- **B6 `scripts/x_metrics.py`** — reads views/replies/reposts/likes/bookmarks off each posted
+  thread's PUBLIC tweet (browser-direct, :9222) into `capafy-marketing-metrics.jsonl` (time-series).
+  Verified 2026-07-18: captured views=3, replies=1 on the first live thread.
+- **B6 reflect** — SKELETON in the daily prompt (STEP6): no-op until 7+ distinct threads, then the
+  agent leans next copy toward above-median-views winners (clip REFLECT / above-avg gate). Fires
+  naturally once data accrues.
+- **B7 `scripts/x_attribution.py`** — 7-day date-window candidate join of posts × Capafy sales into
+  `capafy-attribution.jsonl`. ★HONEST LIMIT: Capafy sales/trend is per-day aggregate (no per-listing
+  granularity) → this is a CANDIDATE signal, never proof a post drove a sale. UTM (utm_medium=x_reply)
+  is embedded so the join tightens once Capafy exposes per-listing/UTM data. Verified: empty join (0
+  candidates) while sales ~0 = correct.
+- Both run **deterministically in the daily bash caller every day** (before the cadence gate), so the
+  time-series fills even on no-post days.
+
 ## Dependencies / open items
 - Capafy listing URL resolution + rotation = B1 (selector). Capafy user token `CAPAFY_ACCESS_TOKEN`
   was expired (401, 2026-07-18) — B1/A-side must refresh it before the selector can query listings.
