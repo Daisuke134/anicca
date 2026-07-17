@@ -114,3 +114,10 @@ three-key-type auth model (`docs.composio.dev/reference/authenticating-to-compos
 - Whether Composio's OAuth "auth configs" truly survive a project API key rotation — inferred from their docs describing them as architecturally separate systems, not an explicit "rotation is safe" statement.
 - **The single largest unconfirmed risk in this whole runbook**: whether the `/lm` front-end (not in this backend-only scan — it's presumably a separate static page or app under `apps/landing`, not scanned here) persists `uid`+`sig` client-side indefinitely, or re-mints a fresh `sig` on each visit. This determines whether `LM_UID_SECRET` rotation is a non-event or breaks every existing user's saved link. **Recommend checking the actual `/lm` frontend source before executing this rotation**, or accept the worst case and warn users in advance via Telegram broadcast.
 - Whether `STRIPE_WEBHOOK_SECRET` truly holds the same or different values across the Railway life-call deploy and the Netlify landing deploy — grep only proves the same *variable name* is read in 3 files across 2 services; it cannot prove or disprove whether they're configured with the same *value* in each platform's env store. Needs a live check of both Railway's and Netlify's dashboards, and Stripe's webhook endpoint list, which I did not have access to in this read-only research pass.
+
+## PRE-CHECK 結果（2026-07-17 実測、rotate-precheck。本文の該当箇所より優先）
+1. **LM_UID_SECRET = rotate-safe**: /lm は Supabase セッション生存中ページロード毎に sig を自動再発行（LmClient.tsx:137-161 → lm-onboard.js:95-113）。TG deep link は uid/sig を運ばない。失効ユーザーは /lm 再訪 or 再ログイン1クリックで復帰。事前通知不要。
+2. **Stripe webhook secret は共有ではなく独立 5 本**（実測 9 endpoints 中スコープ内 5）: Railway life-call 1 + Netlify 4（webhook/alarm/retreat-build/fashion/connect、各別 env 名）。Dashboard で endpoint 毎に Roll → 対応する片側のみに set。旧 runbook の「共有」記述は誤り。
+3. **GROQ_API_KEY は rotate でなく delete**（Railway に存在・コード使用ゼロ）+ Groq dashboard で revoke。
+4. **Netlify 側の更新 = `netlify env:set KEY <val> --context production`（Netlify env が正本、GHA secrets はデプロイ認証 2 個のみ）**。反映確実化に prod 再デプロイ。
+実行順序（決定）: wave1 の prod E2E（電話で声が聞こえる）を先に確定させてから rotate 実行（rotate 自体の smoke で再検証されるため二度手間なし）。
