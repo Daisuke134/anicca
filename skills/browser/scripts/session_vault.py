@@ -118,12 +118,50 @@ async def _localstorage(op, data=None):
     return out
 
 
+# task #75 (2026-07-17, spec docs/loop-engineering/56): X rotates ct0 (its CSRF cookie)
+# alongside auth_token, and a dump taken mid-rotation or from a half-dead tab can capture
+# auth_token WITHOUT a valid ct0 (or neither). Overwriting a previously-healthy vault with that
+# half-dead snapshot is worse than not dumping at all -- the next restore() would push a
+# guaranteed-broken pair. So each site in SITE_HEALTH_REQUIRED must have ALL of its listed
+# cookie names present in the same dump, or that site's cookies are spliced back in from the
+# PRIOR vault (if it had a healthy set) instead of being overwritten. Other sites are unaffected.
+SITE_HEALTH_REQUIRED = {"x.com": ("auth_token", "ct0")}
+
+
+def _guard_degraded_site_cookies(new_cookies):
+    """Return new_cookies with any SITE_HEALTH_REQUIRED site's cookies replaced by the prior
+    vault's cookies for that site, if the new dump is missing a required cookie name for it and
+    the prior vault had a complete set. Never invents cookies; only preserves a known-good set."""
+    if not os.path.exists(VAULT):
+        return new_cookies, []
+    try:
+        prior = json.load(open(VAULT)).get("cookies", [])
+    except Exception:
+        return new_cookies, []
+
+    degraded_sites = []
+    result = list(new_cookies)
+    for site, required in SITE_HEALTH_REQUIRED.items():
+        new_site_names = {c["name"] for c in new_cookies if site in c.get("domain", "")}
+        if all(r in new_site_names for r in required):
+            continue  # healthy in the new dump, nothing to do
+        prior_site_cookies = [c for c in prior if site in c.get("domain", "")]
+        prior_site_names = {c["name"] for c in prior_site_cookies}
+        if not all(r in prior_site_names for r in required):
+            continue  # prior vault wasn't healthy either -- nothing good to preserve
+        degraded_sites.append(site)
+        result = [c for c in result if site not in c.get("domain", "")] + prior_site_cookies
+    return result, degraded_sites
+
+
 def dump():
     res = asyncio.run(_call("Storage.getCookies"))
     cookies = res.get("cookies", [])
     if not cookies:
         # never overwrite a good vault with an empty snapshot from a half-dead browser
         return {"ok": False, "reason": "browser returned zero cookies; vault left untouched"}
+
+    cookies, degraded_sites = _guard_degraded_site_cookies(cookies)
 
     try:
         local_storage = asyncio.run(_localstorage("read"))
@@ -145,8 +183,11 @@ def dump():
     os.chmod(VAULT, 0o600)  # cookies + tokens are credentials
 
     domains = sorted({c.get("domain", "") for c in cookies})
-    return {"ok": True, "cookies": len(cookies), "domains": len(domains),
-            "localStorage_origins": len(local_storage), "vault": VAULT}
+    result = {"ok": True, "cookies": len(cookies), "domains": len(domains),
+              "localStorage_origins": len(local_storage), "vault": VAULT}
+    if degraded_sites:
+        result["degraded_sites_preserved_from_prior_vault"] = degraded_sites
+    return result
 
 
 def restore():
@@ -273,6 +314,121 @@ def keepalive(urls):
     return {"ok": not any_out, "logged_out": any_out, "pages": res}
 
 
+# task #75 (2026-07-17): password re-login self-heal for X specifically. A keepalive-detected
+# logged_out=true on x.com should not just sit there until a human notices -- but X actively
+# monitors login() frequency and can flag/kill an account for repeated automated login attempts
+# (same warning twscrape/twikit document), so this must fire AT MOST ONCE per incident, never on
+# every 30-min tick. RELOGIN_COOLDOWN_SEC (6h) plus a marker file written BEFORE the attempt
+# (not after) enforces "try once, then wait" even across overlapping/retried tick invocations.
+RELOGIN_COOLDOWN_SEC = 6 * 3600
+X_RELOGIN_MARKER = os.path.join(VAULT_DIR, ".x-relogin-attempted")
+X_LOGIN_USERNAME = os.environ.get("X_LOGIN_USERNAME", "aniccaen")
+
+
+async def _relogin_x():
+    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+        mid = [0]
+
+        async def call(method, params=None, sess=None):
+            mid[0] += 1
+            i = mid[0]
+            m = {"id": i, "method": method, "params": params or {}}
+            if sess:
+                m["sessionId"] = sess
+            await ws.send(json.dumps(m))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("id") == i:
+                    if "error" in msg:
+                        raise RuntimeError(msg["error"])
+                    return msg.get("result", {})
+
+        async def page_text(sess):
+            r = await call("Runtime.evaluate",
+                            {"expression": "document.body ? document.body.innerText : ''",
+                             "returnByValue": True}, sess=sess)
+            return r.get("result", {}).get("value", "") or ""
+
+        async def current_url(sess):
+            r = await call("Runtime.evaluate",
+                            {"expression": "location.href", "returnByValue": True}, sess=sess)
+            return r.get("result", {}).get("value", "") or ""
+
+        t = await call("Target.createTarget", {"url": "https://x.com/login"})
+        tid = t["targetId"]
+        sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+        try:
+            await asyncio.sleep(4)
+
+            async def type_and_enter(x, y, text):
+                await call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1}, sess=sess)
+                await call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1}, sess=sess)
+                await asyncio.sleep(0.3)
+                await call("Input.insertText", {"text": text}, sess=sess)
+                await asyncio.sleep(0.3)
+                await call("Input.dispatchKeyEvent", {"type": "keyDown", "windowsVirtualKeyCode": 13, "key": "Enter"}, sess=sess)
+                await call("Input.dispatchKeyEvent", {"type": "keyUp", "windowsVirtualKeyCode": 13, "key": "Enter"}, sess=sess)
+
+            # username field, same coordinates verified working live 2026-07-17 (task #74)
+            await type_and_enter(954, 593, X_LOGIN_USERNAME)
+            await asyncio.sleep(3)
+
+            txt = await page_text(sess)
+            if "phone number" in txt.lower() or "電話番号" in txt:
+                return {"ok": False, "stopped": True,
+                        "reason": "phone number requested after username -- AI cannot read SMS to a personal phone, this needs Dais, per task #75 scope"}
+
+            password = os.environ.get("TWITTER_PASSWORD", "")
+            if not password:
+                return {"ok": False, "reason": "TWITTER_PASSWORD not set in environment -- cannot re-login"}
+
+            # password field, same coordinates verified working live 2026-07-17 (task #74)
+            await type_and_enter(954, 350, password)
+            await asyncio.sleep(4)
+
+            txt = await page_text(sess)
+            if "phone number" in txt.lower() or "電話番号" in txt:
+                return {"ok": False, "stopped": True,
+                        "reason": "phone number verification requested after password -- needs Dais, per task #75 scope"}
+            if "something went wrong" in txt.lower():
+                return {"ok": False, "reason": "X returned a generic error (anti-automation block or transient failure) after submitting credentials"}
+
+            url = await current_url(sess)
+            if "/i/jf/onboarding" in url or "/login" in url:
+                return {"ok": False, "reason": f"login did not complete -- still on {url}"}
+
+            return {"ok": True, "final_url": url}
+        finally:
+            await call("Target.closeTarget", {"targetId": tid})
+
+
+def relogin_x():
+    now = time.time()
+    if os.path.exists(X_RELOGIN_MARKER):
+        try:
+            last = float(open(X_RELOGIN_MARKER).read().strip())
+        except Exception:
+            last = 0
+        age = now - last
+        if age < RELOGIN_COOLDOWN_SEC:
+            return {"ok": False, "skipped": True,
+                    "reason": f"relogin attempted {round(age/60)}min ago, cooldown is {RELOGIN_COOLDOWN_SEC//3600}h -- skip to avoid X flagging repeated login() attempts"}
+
+    os.makedirs(VAULT_DIR, exist_ok=True)
+    with open(X_RELOGIN_MARKER, "w") as f:
+        f.write(str(now))  # write BEFORE attempting so a crash mid-attempt still enforces cooldown
+
+    try:
+        result = asyncio.run(_relogin_x())
+    except Exception as e:
+        return {"ok": False, "reason": f"{type(e).__name__}: {e}"}
+
+    if result.get("ok"):
+        dump_result = dump()
+        result["dump"] = dump_result
+    return result
+
+
 def totp(key):
     """Generate a fresh 6-digit code. key is a base32 secret, or @service to look it up in the vault."""
     try:
@@ -302,7 +458,7 @@ if __name__ == "__main__":
         elif cmd == "totp":
             out = totp(rest[0]) if rest else {"ok": False, "reason": "usage: totp <secret|@service>"}
         else:
-            out = {"dump": dump, "restore": restore, "status": status}[cmd]()
+            out = {"dump": dump, "restore": restore, "status": status, "relogin_x": relogin_x}[cmd]()
     except KeyError:
         out = {"ok": False, "reason": f"unknown command {cmd}"}
     except Exception as e:
