@@ -13,7 +13,7 @@ BP = 答え。オリジナルは書かない。判断には最低1つの引用�
 
 | 名 | 燃料 | HOME(=ANICCA_HOME) | x402 wallet | loop(launchd) |
 |---|---|---|---|---|
-| **franklin1** | ★SELF★ | `~/.blockrun` | `0x3EcCAD24794ca298D25378E9902A251322ea8749` (+Sol `8Fpqd…PCV9`) | `ai.anicca.franklin-loop` |
+| **franklin1** | ★SELF★ | `~/.blockrun` | `0x3EcCAD24794ca298D25378E9902A251322ea8749` (+Sol `F5SY…hZ5T`、07-17 rotate) | `ai.anicca.franklin-loop` |
 | **franklin2** | ★SELF★ | `~/.franklin2-home/.blockrun` | `0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9` | `ai.anicca.franklin2-loop` |
 | **claude-p** | human(Anthropic) | `~/.anicca-founder` | `0x810f6d61f7606deee2657d3083e150a222bc29c5` (PM proxy=`0x904B50d2…`) | `ai.anicca.agent-economy-loop` |
 
