@@ -213,3 +213,11 @@ mobile-apps/*/credentials.json
 mobile-apps/**/certs/
 **/credentials.json
 anicca_youtube_qr.png
+
+# installed agent skills (tooling, not repo content)
+.agents/skills/
+
+# maestro test screenshot outputs (run artifacts)
+aniccaios/*.png
+aniccaios/fastlane/report.xml
+aniccaios/fastlane/build/

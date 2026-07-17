@@ -1,0 +1,15 @@
+{
+  "id": "FIND-308",
+  "dimension": "impl_correctness",
+  "category": "security_surface",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "57",
+  "issue": "The currently-shipped Node service authenticates every /ws upgrade with an HMAC-signed context (scheduler.js:signCtx / server.js:ctxFromReq, sha256 over summary|dateTime|location|urgency|lang|name, keyed by LM_CALL_SECRET, verified with crypto.timingSafeEqual) specifically so 'a stranger' cannot drain the LLM/voice budget or inject a fake prompt via the /ws endpoint (server.js:146-149 comment). C1's ARCHITECTURE PIVOT moves the /ws handling into a NEW Python Pipecat service (per OQ7 option (a)) or a co-located Python process (option (b)), but neither C1 nor any other part of the spec states whether this HMAC authentication is reimplemented in Python, whether LM_CALL_SECRET is shared to the new service, or what happens to a connection with a missing/invalid signature under Pipecat. Silently dropping an existing, load-bearing security control across a newly-introduced service/language boundary -- without even naming it as a requirement to carry over -- is a real regression risk, not a hypothetical one: it is the exact mechanism currently preventing budget-drain and prompt-injection on this endpoint.",
+  "evidence": {
+    "file": "apps/life-call/scheduler.js",
+    "lines": "19-25 (signCtx), 89-90 (sig computed and appended to the /ws query)",
+    "corroborating": "apps/life-call/server.js:146-175 (ctxFromReq: HMAC recomputed + crypto.timingSafeEqual comparison; comment explicitly states purpose = 'not a stranger draining the Gemini budget' + 'prompt context wasn't tampered in transit')"
+  },
+  "fix": "Add an explicit C1 requirement: the Pipecat service (wherever it runs) MUST verify the same (or an equivalent) signed-context scheme before accepting a Telnyx media stream / opening the pipeline, using a secret provisioned to it the same way LM_CALL_SECRET is provisioned today. State this as a MUST, not an implicit carryover."
+}

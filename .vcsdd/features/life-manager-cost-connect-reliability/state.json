@@ -1,0 +1,40 @@
+{
+  "featureName": "life-manager-cost-connect-reliability",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-life-manager-cost-connect-reliability-1783085021986",
+    "beads": []
+  },
+  "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T14:57:00.764Z",
+      "reviewedBy": "adversary"
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T14:34:22.838Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-03T14:34:22.838Z"
+    },
+    "1c-C1": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T17:05:38.270Z",
+      "reviewedBy": "adversary"
+    },
+    "1c-C1-pipecat": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T18:22:54.531Z",
+      "reviewedBy": "adversary"
+    }
+  },
+  "sprintCount": 0,
+  "createdAt": "2026-07-03T13:23:41.985Z",
+  "updatedAt": "2026-07-03T18:22:54.531Z"
+}

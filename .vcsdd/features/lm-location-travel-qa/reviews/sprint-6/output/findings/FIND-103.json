@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "Residual of FIND-006. When the paid-user list is empty (users=[]) AND loops are off, the sweeper still issues step.sendEvent('fan', []) with an empty events array (functions.js:59-62 wake; 74-77 travel; 89-92 ask). The empty-list test (inngest.test.js:223-239) uses a fakeStep stub and only asserts 'no non-empty fan-outs' — it never exercises step.sendEvent('') against the REAL inngest SDK, so whether the SDK treats an empty batch as a harmless no-op or throws is untested. A real-SDK or guarded path (skip sendEvent when users.length===0) would close this. Low severity because an empty fan-out is benign in practice, but it is an unverified edge against the actual dependency.",
+  "evidence": {
+    "filePath": "apps/life-call/inngest/functions.js",
+    "lineRange": "56-63",
+    "snippet": "return async ({ step }) => {\n  if (inProcessLoopsOn(getEnv())) return;\n  const users = await step.run(\"list\", listUsers);\n  await step.sendEvent(\n    \"fan\",\n    users.map((u) => ({ name: \"lm/wake.user\", data: { uid: u.uid } }))\n  );\n};"
+  },
+  "routeToPhase": "2b"
+}

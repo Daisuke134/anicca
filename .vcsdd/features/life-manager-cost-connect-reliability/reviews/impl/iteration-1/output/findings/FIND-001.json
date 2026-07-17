@@ -1,0 +1,11 @@
+{
+  "id": "FIND-001",
+  "dimension": "edge_cases",
+  "category": "test_coverage",
+  "severity": "major",
+  "file": "apps/life-call/lib/transit.test.js",
+  "line": "40-46",
+  "issue": "JP_BBOX exact boundary values are never tested. isJapanGeo() in transit.js:15-26 defines JP_BBOX={latMin:24,latMax:46,lonMin:122,lonMax:146} with inclusive >=/<= comparisons, but the test suite only exercises interior points (Tokyo 35.681, Sapporo 43.06, Naha 26.21) and clearly-outside points (NYC, London). No test asserts isJapanGeo(24,122)===true, isJapanGeo(46,146)===true, or the just-outside neighbors (23.999.../146.0001...)===false. Since chooseRouter (transit.js:29-33) determines whether a real call goes to the free JP transit API or billed Google Routes, a silent off-by-one regression (e.g. someone changes <= to < during a refactor) at exactly these boundaries would go completely undetected and would silently route boundary-region users (e.g. southern Okinawa, northern Hokkaido) to the wrong/costly provider.",
+  "evidence": "transit.js:15 `const JP_BBOX = { latMin: 24, latMax: 46, lonMin: 122, lonMax: 146 };` uses >= / <= at lines 21-24; transit.test.js:40-46 tests only non-boundary lat/lon values.",
+  "fix": "Add explicit boundary tests: isJapanGeo(24,122)===true, isJapanGeo(46,146)===true, isJapanGeo(23.999,130)===false, isJapanGeo(46.001,130)===false, isJapanGeo(35,121.999)===false, isJapanGeo(35,146.001)===false."
+}

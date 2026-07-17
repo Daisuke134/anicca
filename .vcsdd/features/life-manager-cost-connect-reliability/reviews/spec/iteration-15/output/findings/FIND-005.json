@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "C1's own EDGE/ERROR clause commits to a specific, testable reconnect behavior that has zero coverage anywhere in §4. Behavioral-spec.md:66 states: 'Gemini socket error/close mid-call → log; if it drops before any audio, attempt ONE reconnect, else end the call cleanly (never dial silence, never fall back to the deleted clip).' None of §4 RED items (a)-(f) (behavioral-spec.md:110) mention this: there is no unit test for 'drops before any audio → reconnect once', no test for 'drops after audio has played → do not reconnect, end cleanly', and no test asserting the call never silently falls back to the deleted `playWakeClip`. A builder could ship C1 with this reconnect logic entirely unimplemented (or implemented incorrectly, e.g. reconnecting unconditionally or never reconnecting) and every listed §4 RED/GREEN check would still go green — the only place this edge case could ever be caught is the subjective, human-run 'Dais hears + converses + interrupts' E2E call, which does not exercise a mid-call socket drop at all.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "66, 109-111",
+    "snippet": "EDGE/ERROR (FIND-005): ... Gemini socket error/close mid-call → log; if it drops before any audio, attempt ONE reconnect, else end the call cleanly ... [no corresponding item in §4 RED (a)-(f)]"
+  },
+  "routeToPhase": "2b"
+}

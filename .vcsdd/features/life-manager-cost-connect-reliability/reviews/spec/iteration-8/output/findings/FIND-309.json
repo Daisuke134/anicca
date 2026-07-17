@@ -1,0 +1,15 @@
+{
+  "id": "FIND-309",
+  "dimension": "impl_correctness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "file": "apps/life-call/nixpacks.toml",
+  "line": "1-16",
+  "issue": "The current Railway build config (nixpacks.toml) is a Node build that pip-installs edge-tts + ffmpeg specifically for the (now-superseded) hand-rolled cascade ('C1... needs the edge-tts CLI... on PATH so the DEFAULT wake call is a one-way clip'). C1's SUPERSEDES bullet (behavioral-spec.md:59) names the .cjs files to delete but says nothing about this build file, and the spec has no build/deploy plan at all for whichever OQ7 option is chosen (new nixpacks/Dockerfile for a second Python service, or an in-process Python+Node supervisor added to this single Railway service's existing 'node server.js' startCommand per railway.toml:5). Buildable-on-Railway is asserted by the review brief's framing but not actually specified.",
+  "evidence": {
+    "file": "apps/life-call/nixpacks.toml",
+    "lines": "1-16 (edge-tts pip install + ffmpeg, tied to the superseded cascade)",
+    "corroborating": "apps/life-call/railway.toml:5 'startCommand = \"node server.js\"' -- single-process today, no supervisor for a co-located Python process is described anywhere"
+  },
+  "fix": "State the concrete build/deploy artifact for C1's chosen OQ7 option: either a new Railway service + its own nixpacks/Dockerfile (Python, pipecat-ai extras), or a revised nixpacks.toml + railway.toml startCommand describing how Node and the Pipecat process co-exist in one service (e.g. a Procfile-style supervisor)."
+}

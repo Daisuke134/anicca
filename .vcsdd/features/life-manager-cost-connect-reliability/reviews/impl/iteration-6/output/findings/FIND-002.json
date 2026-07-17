@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "Spec §4 (Verification architecture, RED item e) explicitly mandates a 'Gemini-drop test' — 'simulate the gemini ws emitting error/close before any audio → assert exactly ONE reconnect attempt, then (on a second failure) a clean carrier close (no throw, no silence loop, no clip fallback)'. No such test exists anywhere in the repo. The entire reconnect state machine (openGeminiLive, onGeminiEnd, geminiReconnects, gotAudio, liveWsOpened) lives ONLY inside server.js's `wss.on('connection', ...)` closure (server.js:356-455) and is NOT exported (module.exports at server.js:473 only exposes inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX — confirmed by grep; no file requires any reconnect-related symbol from server.js). Confirmed via Glob/Grep across apps/life-call: the only test file touching C1 is lib/call-bridge.test.js, which tests ONLY the pure routeGeminiMessage('interrupted') branch — it does not simulate a socket drop, does not touch server.js's connection handler, and has no assertion about reconnect count or call termination. This is the exact edge case (a Gemini socket dropping before any audio arrives) that FIND-001 shows is actually broken — the missing test is precisely why the bug in FIND-001 was not caught. `node --test` (per package.json's test script) therefore provides ZERO regression protection for C1's core reliability invariant.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "383-428,472-473",
+    "snippet": "module.exports = { inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };"
+  },
+  "routeToPhase": "2b"
+}

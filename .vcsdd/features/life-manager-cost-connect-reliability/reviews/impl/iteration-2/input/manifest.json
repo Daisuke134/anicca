@@ -1,0 +1,14 @@
+{
+  "reviewType": "impl",
+  "feature": "life-manager-cost-connect-reliability",
+  "mode": "lean",
+  "artifactsToReview": [
+    "apps/life-call/lib/transit.js", "apps/life-call/lib/transit.test.js",
+    "apps/life-call/lib/route-cache.js", "apps/life-call/lib/route-cache.test.js",
+    "apps/life-call/lib/voice-cheap.js", "apps/life-call/lib/voice-cheap.test.js",
+    "apps/life-call/lib/user-selector.js", "apps/life-call/lib/user-selector.test.js", "apps/life-call/scheduler.js",
+    "apps/life-call/lib/money-path.js", "apps/life-call/lib/money-path.test.js"
+  ],
+  "spec": "specs/behavioral-spec.md",
+  "reviewDimensions": ["spec_fidelity","edge_cases","impl_correctness","structural_integrity","verification_readiness"]
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "The sweeper fan-out ships the FULL user row as Inngest event data. inngest/functions.js:35 `users.map((u) => ({ name: \"lm/wake.user\", data: u }))` sends every column selected by supaUsers (scheduler.js:43): uid, name, phone, paid, calendar_provider, home_address, gmail_account_id, telegram_chat_id, call_language, wake_policy. phone, name, home_address, gmail_account_id, and telegram_chat_id are PII. These events are transmitted to and RETAINED in Inngest Cloud event history (durable event log), creating an off-platform PII store outside Supabase with its own retention/access controls. The per-user fns only need `uid` (then re-fetch via Supabase) or a minimal {uid,phone,name,call_language} subset. Shipping the whole row is an unnecessary PII egress + payload-size cost on every fan-out (N users x 3 sweepers x 1-20 ticks).",
+  "evidence": {
+    "filePath": "apps/life-call/inngest/functions.js",
+    "lineRange": "33-36",
+    "snippet": "await step.sendEvent(\"fan\", users.map((u) => ({ name: \"lm/wake.user\", data: u })));"
+  },
+  "routeToPhase": "2b"
+}

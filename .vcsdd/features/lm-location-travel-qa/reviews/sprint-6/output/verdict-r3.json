@@ -1,0 +1,60 @@
+{
+  "sprintNumber": 6,
+  "feature": "lm-location-travel-qa",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-24T13:30:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "round": 3,
+    "scope": "HARD-2 Inngest durable scheduler — convergence re-review of the TWO round-2 FAIL dimensions (spec_fidelity/FIND-101, structural_integrity/FIND-102) + non-blocking FIND-103. Round-2 already PASSED edge_case_coverage, implementation_correctness, verification_readiness and confirmed FIND-002/003/004/005 GENUINELY FIXED — those four dimensions are carried forward and re-confirmed by spot-read, not re-litigated.",
+    "note": "Disk-only fresh-context review. Authoritative spec = .vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md (worktree root). Code = apps/life-call/inngest/functions.js + scheduler.js + server.js. Route for REQ-34 is inline in server.js (no separate api/inngest file). Builder's cited npm test=78 pass (19+8+8+9+34) + node --check clean accepted as cited, not independently re-run here.",
+    "roundTwoFindings": {
+      "FIND-101_spec_gap_scheduling_layer": "FIXED",
+      "FIND-102_date_now_inside_step": "FIXED",
+      "FIND-103_empty_list_fanout": "FIXED"
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md", "description": "FIND-101 FIXED: spec now contains '## F. Scheduling layer (HARD-2 — Inngest durable scheduler)' at line 67. REQ-31 (lines 68-70): durable cron SWEEPER per pass, FAN-OUT one event per user carrying ONLY { uid }, per-user fn re-fetches by uid. REQ-32 (71-72): Inngest concurrency key=event.data.uid so same-user jobs serialize. REQ-33 (73-76): SINGLE-WRITER — sweepers no-op (no fan-out) unless LIFE_RUN_LOOPS='false', C-H1 atomic claims (lm_wake_log/lm_travel_log/lm_ask_log) as additional idempotency. REQ-34 (77-78): /api/inngest fail-closed 503 in prod without INNGEST_SIGNING_KEY; dev (INNGEST_DEV=1) serves keyless."},
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "REQ-31 ACCURATE: makeSweep*Handler list users (58,74,90) then sendEvent map (u)=>({name:'lm/wake.user',data:{uid:u.uid}}) (60-63,76-79,92-95) — only {uid}. Per-user handlers re-fetch via getUserByUid (112,128,141). REQ-32 ACCURATE: wakeUser/travelUser/askUser createFunction carry concurrency:{key:'event.data.uid',limit:1} (161,178,195). REQ-33 ACCURATE: inProcessLoopsOn(env) (37-40) → sweepers early-return BEFORE step.run/sendEvent when loops ON (57,73,89); only LIFE_RUN_LOOPS='false' fans out."},
+        {"type": "file", "location": "apps/life-call/server.js", "description": "REQ-34 ACCURATE: inngestServeAllowed(env) (50-54) — dev(INNGEST_DEV=='1')→true else requires INNGEST_SIGNING_KEY; route returns 503 JSON (224-228) before inngestHandler (229) when not allowed."},
+        {"type": "file", "location": "apps/life-call/scheduler.js", "description": "REQ-33 claim ledgers REAL: claimWake (55) writes lm_wake_log; lm_travel_log/lm_ask_log referenced via lib/travel.js + lib/ask.js (grep-confirmed across server.js/scheduler.js/migrations/2026-06-24-ch1-atomic-dedup.sql). listPaidUsers=supaUsers alias (260-261); getUserByUid (267-278) re-fetches full row (uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language[,wake_policy]) with same paid/phone/composio_gcal filter (271)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "FIND-102 FIXED: makeWakeUserHandler captures the timestamp in its OWN memoized step — 'const nowMs = await step.run(\"now\", () => Date.now());' (line 116) — BEFORE the side-effecting 'wake' step.run (line 117 'await step.run(\"wake\", () => wakeOnce(u, nowMs))'). Date.now() is NO LONGER called inside the 'wake' step. On Inngest retry the 'now' step is memoized so the wake replay reuses the ORIGINAL handler time — no Date.now() drift inside the side-effecting step."},
+        {"type": "file", "location": "apps/life-call/test/inngest.test.js", "description": "Memoized-time behavior is asserted at 245-268: wake-user handler invokes wakeUserOnce with a nowMs captured between before/after Date.now() (264-267). Handler-factory pattern remains clean; engines>=20 matches inngest@4.11.0 (carried from r2)."}
+      ]
+    }
+  ],
+  "carriedForwardDimensions": [
+    {"name": "edge_case_coverage", "verdict": "PASS", "note": "Re-confirmed: per-user handlers guard uid (110,125,138) + null-user (113,129,142) no-op; sweepers guard empty list (59,75,91); covered by tests inngest.test.js 99-159, 223-239, 304-348."},
+    {"name": "implementation_correctness", "verdict": "PASS", "note": "Carried from r2: FIND-003 single-writer, FIND-004 PII {uid}-only fan-out, FIND-005 fail-closed 503 all re-spot-read and intact (functions.js 57/60/73/76/89/92, server.js 50-54/223-229)."},
+    {"name": "verification_readiness", "verdict": "PASS", "note": "Carried from r2: purity boundary intact — inProcessLoopsOn (functions.js 37-40) + inngestServeAllowed (server.js 50-54) are pure env readers exported for tests; Inngest path dormant in standalone so not a 3rd concurrent writer."}
+  ],
+  "find103Status": {
+    "id": "FIND-103",
+    "severity": "minor-nonblocking",
+    "status": "FIXED",
+    "evidence": "All three sweeper handlers now guard 'if (!users || !users.length) return;' BEFORE step.sendEvent — functions.js:59 (sweep-wake), functions.js:75 (sweep-travel), functions.js:91 (sweep-ask). An empty user list therefore never fans out an empty batch."
+  },
+  "residualNonBlockingObservations": [
+    {"id": "OBS-201", "severity": "cosmetic", "summary": "apps/life-call/test/inngest.test.js:234-236 — the empty-list test comment is now STALE: it claims 'The implementation calls sendEvent with [] when users=[]; that is 1 call with 0 events', which is no longer true after the FIND-103 guard (functions.js:59 returns BEFORE sendEvent). The assertion itself (237-238: zero non-empty fan-outs) still passes correctly against the guarded code — so this is a misleading comment, not a logic defect. Non-blocking; recommend deleting/updating the comment to assert calls.sendEvent.length===0 for clarity."}
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

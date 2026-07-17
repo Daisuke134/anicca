@@ -1,0 +1,14 @@
+{
+  "id": "FIND-003",
+  "dimension": "impl_correctness",
+  "category": "spec_gap",
+  "severity": "blocker",
+  "title": "C1 never names the file that should host the restored Gemini Live /ws bridge, and an orphaned second implementation already exists",
+  "issue": "specs/behavioral-spec.md:60-61 (C1 IN SCOPE, step 1) says to delete the cascade and 'Restore the Gemini Live /ws bridge as the sole call path' but does not name which module implements that restored bridge. apps/life-call/lib/call-bridge.cjs already exists as a full, self-described 'REAL Twilio Media Streams <-> Gemini Live (Charon) ws bridge' (call-bridge.cjs:2) built on call-logic.js's pure functions (geminiLiveWsUrl, buildGeminiSetup, buildCallPrompt, etc., call-bridge.cjs:20-34), but it is a STANDALONE script with its own --port/--health CLI (call-bridge.cjs:11-13) and its own http server — it is NOT required by server.js (grep across apps/life-call/server.js for 'call-bridge' = 0 hits) and is NOT the Railway/npm entrypoint (railway.toml:5 startCommand='node server.js'; package.json:6-8 main/start='server.js'). server.js additionally hosts endpoints call-bridge.cjs does not (per its own docstring, only --health/--port modes): /telegram, /test-call, inbound-reply webhook, outbound dial trigger. C1 gives no instruction on how to reconcile these two Gemini-Live-capable files with the single production entrypoint — whether to inline Gemini wiring into server.js's existing /ws handler skeleton (porting call-bridge.cjs's routing logic in), delegate server.js's /ws handler to call-bridge.cjs's exported pure routers, or repoint the Railway startCommand at call-bridge.cjs (which would drop server.js's other endpoints unless those are also ported).",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "60-61",
+    "corroborating": "apps/life-call/lib/call-bridge.cjs:1-34 (standalone, unrequired-by-server.js Gemini bridge); apps/life-call/server.js (no 'call-bridge' reference, grep-confirmed); apps/life-call/railway.toml:5; apps/life-call/package.json:6-8 (entrypoint = server.js only)"
+  },
+  "fix": "Name the exact target explicitly in C1, e.g.: 'server.js's /ws handler MUST require and delegate to call-bridge.cjs's exported routeTwilioMessage/routeGeminiMessage functions (or equivalent), preserving server.js's other endpoints (/telegram, /test-call, inbound-reply)' — or state the alternative chosen approach with the same specificity, so an implementer cannot silently duplicate or drop functionality."
+}

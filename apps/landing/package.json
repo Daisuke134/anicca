@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/gen-dashboard-snapshot.mjs",
     "build": "next build",
     "start": "next start",
     "export": "next export",
@@ -13,18 +14,24 @@
     "test:telemetry": "node --test netlify/functions/_lib/__tests__/*.test.js"
   },
   "dependencies": {
+    "@crossmint/client-sdk-react-ui": "^4.2.11",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "@worldcoin/idkit-core": "^4.1.8",
+    "bs58": "^5.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "2.1.1",
     "ethers": "^6.16.0",
     "framer-motion": "11.0.0",
     "lucide-react": "0.454.0",
     "next": "14.2.5",
+    "qrcode.react": "^4.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "stripe": "^22.2.0",
     "tailwind-merge": "^2.4.0",
+    "tweetnacl": "^1.0.3",
     "ws": "^8.21.0"
   },
   "devDependencies": {

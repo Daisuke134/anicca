@@ -1,0 +1,14 @@
+{
+  "id": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "title": "C4's MIGRATION section describes a bug that is already fixed on disk by lib/user-selector.js",
+  "issue": "specs/behavioral-spec.md:85 (C4 MIGRATION) states: 'BOTH selector sites hardcode calendar_provider=eq.composio_gcal — scheduler.js:42 (batch scan) AND getUserByUid scheduler.js:280 ... BOTH must widen to in.(composio_gcal,pipedream_gcal), else a Pipedream user is picked in the batch but re-excluded on refetch.' This is factually wrong on disk: scheduler.js:43 and scheduler.js:281 both build their query string via calendarProviderFilter() (imported at scheduler.js:12 from ./lib/user-selector.js), not a hardcoded string. apps/life-call/lib/user-selector.js:1-14 already implements calendarProviderFilter() → 'calendar_provider=in.(composio_gcal,pipedream_gcal)', and its own header comment says verbatim: 'C4 (VCSDD life-manager-cost-connect-reliability)... the old code hardcoded eq.composio_gcal at two sites... Both scheduler sites now share this one filter.' The spec's own governance line (specs/behavioral-spec.md:8: 'Any fact below that differs on main at impl time MUST be re-verified against main first') was not honored for this carried-over contract during the iteration-3 rewrite.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "85",
+    "corroborating": "apps/life-call/scheduler.js:12,43,281 (calls calendarProviderFilter(), not a hardcoded string); apps/life-call/lib/user-selector.js:1-14 (already implements the exact widened filter, self-documented as the C4 fix)"
+  },
+  "fix": "Update C4's MIGRATION bullet to state the fix is DONE (cite user-selector.js + calendarProviderFilter as the delivered SSOT) rather than describing it as still-pending hardcoded duplication; keep only the residual concern (if any) — e.g. whether any OTHER caller still queries lm_users without calendarProviderFilter()."
+}

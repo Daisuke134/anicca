@@ -1,0 +1,11 @@
+{
+  "id": "FIND-004",
+  "dimension": "edge_cases",
+  "category": "test_coverage",
+  "severity": "major",
+  "file": "apps/life-call/lib/money-path.js",
+  "line": "36-53",
+  "issue": "RollbackController.onResult only dedupes the Telegram `notify` flag across repeated failures after an incident opens (line 46: `notify = !this.incidentOpen`); it does NOT dedupe the `rollback` flag. On the 2nd consecutive fail it returns rollback:true, and on every SUBSEQENT consecutive fail (3rd, 4th, ...) while lastGoodPasses stays true it ALSO returns rollback:true again (line 48-50 runs unconditionally on every debounced failure, independent of incidentOpen). The test suite never drives a 3-fail-or-more sequence, so this repeated-rollback behavior is completely unverified. If the caller (GHA cron, per file header) acts on rollback:true by calling the real Netlify restore API every cycle, this produces a real external side effect fired repeatedly (every 15 min) for as long as the site stays broken post-rollback, which is untested and unspecified by C5/C6.",
+  "evidence": "money-path.js:42-50 `this.consecutiveFail += 1; if (this.consecutiveFail < this.debounce) {...} const notify = !this.incidentOpen; ... if (lastGoodPasses) { return { rollback: true, escalate: false, notify }; }`; money-path.test.js's mixed-sequence tests (lines 46-64) never go past 2 consecutive fails.",
+  "fix": "Add a test that fires 3+ consecutive fails with lastGoodPasses:true and assert/define the intended `rollback` value on the 3rd+ fail (either re-dedupe rollback like notify, or explicitly document+test that repeated rollback signals are intended retry semantics)."
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "description": "C1's delete-list ('DELETE the one-way clip default + the dead cascade: remove playWakeClip/synthWakeClip/buildWakeLine/planVoice(one-way) usage from server.js, and delete apps/life-call/lib/{compositional-voice,compositional-live,voice-turn,voice-synth}.cjs + their *.test.js') would delete the files that IMPLEMENT THE ENTIRE CURRENT /ws HANDLER. server.js:27-28 imports createConversation (compositional-voice.cjs), groqStt/groqLlmStream/ttsToMuLawFrames (compositional-live.cjs); these are called at server.js:401-416 to build the sole active conversation object for every call. Following C1's step 1+2 literally — 'call openGeminiLive() instead of playWakeClip()' (a function that doesn't exist) then delete these four files — leaves server.js `require()`ing files that no longer exist, which throws at process boot (MODULE_NOT_FOUND), taking down /health, /telegram, /test-call, /inbound-email, /api/inngest, and /api/stripe/webhook along with /ws, directly violating C1's own INVARIANT ('/health /telegram /test-call /inbound-email still respond; no silent-call regression'). C1 characterizes this as 'a small surgical edit in server.js, NOT a new service' but it is actually an unspecified full rewrite of the /ws handler (open a new WebSocket to Gemini, wait for setupComplete, wire HMAC-derived ctx into geminiSetupForEvent, route audio via routeGeminiMessage/buildTelnyxMediaFrame, handle reconnect) with no target code shape given anywhere in the spec.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "27-28, 412-416",
+    "snippet": "const { createConversation } = require(\"./lib/compositional-voice.cjs\");\nconst { groqStt, groqLlmStream, ttsToMuLawFrames } = require(\"./lib/compositional-live.cjs\");\n...\nconst convo = createConversation({\n  event, urgency, lang, groqKey: GROQ_KEY,\n  stt, llm, tts, send, sendClear,\n  vadOpts: { threshold: 500, silenceMs: 700, frameMs: 20 },\n});"
+  },
+  "routeToPhase": "2b"
+}

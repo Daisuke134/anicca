@@ -12,13 +12,19 @@ const assert = require("node:assert");
 
 const {
   needsLocationAsk,
+  needsDurationAsk,
+  detectAskKind,
   detectMissingLocations,
+  detectMissingInfo,
   buildQuestionBody,
   buildQuestionSubject,
   parseLocationFromReply,
+  parseDurationFromReply,
   buildLocationPatch,
+  buildResolvePatch,
   buildAskPendingPatch,
   ASK_PREFIX,
+  DURATION_RE,
   AGENTMAIL_PENDING_PROP,
   AGENTMAIL_QUESTION_ID_PROP,
 } = require("../ask-logic");
@@ -250,4 +256,122 @@ test("buildAskPendingPatch: preserves existing extendedProperties", () => {
 test("buildAskPendingPatch: works when event has no extendedProperties", () => {
   const patch = buildAskPendingPatch("msg-1", {});
   assert.strictEqual(patch.extendedProperties.private[AGENTMAIL_PENDING_PROP], "true");
+});
+
+// ── needsDurationAsk ───────────────────────────────────────────────────────────
+
+test("needsDurationAsk: true when end == start (zero-length timed event)", () => {
+  const ev = makeTimedEvent("ev1", "歯科検診", {
+    end: { dateTime: "2026-06-17T10:00:00+09:00" },
+  });
+  assert.strictEqual(needsDurationAsk(ev), true);
+});
+
+test("needsDurationAsk: true when end.dateTime is absent", () => {
+  const ev = { id: "ev1", summary: "x", start: { dateTime: "2026-06-17T10:00:00+09:00" } };
+  assert.strictEqual(needsDurationAsk(ev), true);
+});
+
+test("needsDurationAsk: false when end > start (has duration)", () => {
+  const ev = makeTimedEvent("ev1", "歯科検診"); // 10:00–11:00
+  assert.strictEqual(needsDurationAsk(ev), false);
+});
+
+test("needsDurationAsk: false for all-day, [Travel], [Ask], pending", () => {
+  assert.strictEqual(needsDurationAsk({ start: { date: "2026-06-17" } }), false);
+  assert.strictEqual(needsDurationAsk(makeTimedEvent("e", "[Travel] x", { end: { dateTime: "2026-06-17T10:00:00+09:00" } })), false);
+  assert.strictEqual(needsDurationAsk(makeTimedEvent("e", "[Ask] x", { end: { dateTime: "2026-06-17T10:00:00+09:00" } })), false);
+  assert.strictEqual(
+    needsDurationAsk(makeTimedEvent("e", "Meeting", { end: { dateTime: "2026-06-17T10:00:00+09:00" }, extendedProperties: { private: { anicca_ask_pending: "true" } } })),
+    false
+  );
+});
+
+// ── detectAskKind / detectMissingInfo ──────────────────────────────────────────
+
+test("detectAskKind: reports both location and duration missing", () => {
+  const ev = makeTimedEvent("e", "Meeting", { end: { dateTime: "2026-06-17T10:00:00+09:00" } });
+  assert.deepStrictEqual(detectAskKind(ev), { location: true, duration: true });
+});
+
+test("detectMissingInfo: returns events missing EITHER location OR duration", () => {
+  const events = [
+    makeTimedEvent("ev1", "歯科検診"), // no loc, has dur → location only
+    makeTimedEvent("ev2", "Lunch", { location: "渋谷", end: { dateTime: "2026-06-17T10:00:00+09:00" } }), // has loc, no dur → duration only
+    makeTimedEvent("ev3", "Done", { location: "X" }), // has both → not included
+  ];
+  const result = detectMissingInfo(events);
+  assert.strictEqual(result.length, 2);
+  assert.ok(result.some((r) => r.event.id === "ev1" && r.kind.location));
+  assert.ok(result.some((r) => r.event.id === "ev2" && r.kind.duration));
+});
+
+test("detectMissingInfo: empty for non-array", () => {
+  assert.deepStrictEqual(detectMissingInfo(null), []);
+});
+
+// ── parseDurationFromReply ──────────────────────────────────────────────────────
+
+test("parseDurationFromReply: parses 所要 90分", () => {
+  assert.strictEqual(parseDurationFromReply("所要 90分"), 90);
+});
+
+test("parseDurationFromReply: parses full-width digits 所要 ６０分", () => {
+  assert.strictEqual(parseDurationFromReply("所要 ６０分"), 60);
+});
+
+test("parseDurationFromReply: parses 'duration: 45 min'", () => {
+  assert.strictEqual(parseDurationFromReply("duration: 45 min"), 45);
+});
+
+test("parseDurationFromReply: parses a bare N分 line", () => {
+  assert.strictEqual(parseDurationFromReply("渋谷ヒカリエ\n30分\n"), 30);
+});
+
+test("parseDurationFromReply: returns null when absent / out of range", () => {
+  assert.strictEqual(parseDurationFromReply("渋谷ヒカリエ 8F"), null);
+  assert.strictEqual(parseDurationFromReply(""), null);
+  assert.strictEqual(parseDurationFromReply(null), null);
+  assert.strictEqual(parseDurationFromReply("所要 9999分"), null); // > 1440
+});
+
+// ── DURATION_RE guard ───────────────────────────────────────────────────────────
+
+test("DURATION_RE: matches 所要 60分 (duration-only guard)", () => {
+  assert.strictEqual(DURATION_RE.test("所要 60分"), true);
+  assert.strictEqual(DURATION_RE.test("渋谷ヒカリエ"), false);
+});
+
+// ── buildLocationPatch: omits location when empty ──────────────────────────────
+
+test("buildLocationPatch: omits location key when passed empty string", () => {
+  const patch = buildLocationPatch("", {});
+  assert.strictEqual("location" in patch, false);
+});
+
+// ── buildResolvePatch ───────────────────────────────────────────────────────────
+
+test("buildResolvePatch: sets end = start + N min and carries timeZone", () => {
+  const ev = {
+    id: "e",
+    start: { dateTime: "2026-06-17T10:00:00+09:00", timeZone: "Asia/Tokyo" },
+  };
+  const patch = buildResolvePatch({ location: "渋谷", durationMinutes: 90 }, ev);
+  assert.strictEqual(patch.location, "渋谷");
+  assert.strictEqual(patch.end.dateTime, "2026-06-17T02:30:00.000Z"); // 10:00 JST=01:00Z +90m
+  assert.strictEqual(patch.end.timeZone, "Asia/Tokyo");
+});
+
+test("buildResolvePatch: duration-only → no location key, end set", () => {
+  const ev = { id: "e", start: { dateTime: "2026-06-17T09:00:00+09:00" } };
+  const patch = buildResolvePatch({ location: null, durationMinutes: 60 }, ev);
+  assert.strictEqual("location" in patch, false);
+  assert.ok(patch.end.dateTime);
+});
+
+test("buildResolvePatch: location-only → no end key", () => {
+  const ev = { id: "e", start: { dateTime: "2026-06-17T09:00:00+09:00" } };
+  const patch = buildResolvePatch({ location: "渋谷", durationMinutes: null }, ev);
+  assert.strictEqual(patch.location, "渋谷");
+  assert.strictEqual("end" in patch, false);
 });

@@ -24,6 +24,7 @@ const {
   buildGeminiAudioInput,
   buildGeminiTurn,
   parseGeminiAudio,
+  parseGeminiTranscripts,
   buildTwilioMediaFrame,
   buildTelnyxMediaFrame,
   parseTelnyxStart,
@@ -78,6 +79,10 @@ function routeTelnyxMessage(msg, state, geminiSend) {
     return "start";
   }
   if (event === "media" && msg.media && msg.media.payload) {
+    // Only feed the caller's (inbound) audio to Gemini. In both_tracks the outbound track is
+    // Charon's own playback; forwarding it back creates an echo/feedback loop.
+    const track = msg.media.track;
+    if (track && track !== "inbound") return "media-skip";
     const pcm16b64 = twilioMuLawToGeminiPcm16(msg.media.payload);
     geminiSend(buildGeminiAudioInput(pcm16b64));
     state.inFrames = (state.inFrames || 0) + 1;
@@ -225,6 +230,10 @@ function startServer({ port, event, provider }) {
         // Kick Charon to speak the opening line immediately.
         geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
       }
+      // Surface both-side transcripts so call quality (did Charon answer the user?) is auditable.
+      const t = parseGeminiTranscripts(msg);
+      if (t.input) console.error(`[transcript] USER: ${t.input}`);
+      if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
       if (r.frames) console.log(`[bridge] EVENT gemini_audio frames=${state.outFrames}`);
     });
     gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));

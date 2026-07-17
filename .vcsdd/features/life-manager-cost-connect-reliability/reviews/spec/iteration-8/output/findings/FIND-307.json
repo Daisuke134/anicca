@@ -1,0 +1,14 @@
+{
+  "id": "FIND-307",
+  "dimension": "impl_correctness",
+  "category": "spec_gap",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "57",
+  "issue": "OQ7 (the Node/Python service-split decision) is presented as a live, unresolved either/or: 'Deployment DECISION (OQ7): ... either (a) a NEW Python service (Railway)... or (b) co-located'. It is labeled 'OQ7' as if it belongs alongside OQ1-OQ6, but Section 5 ('Open questions -- RESOLVED in-spec (F7)') enumerates OQ1 through OQ6 only -- OQ7 is never listed there, never closed, and no decision is made in C1 itself. This directly violates this project's own written spec rule (CLAUDE.md 0.7: 'スペックに「任意」「optional」「推奨」禁止。全て MUST') and this feature's own established pattern (every other OQ in this spec is explicitly RESOLVED with a stated reason). This is also the single highest-impact architectural decision in the whole pivot: it determines whether this becomes a second Railway service (new deploy pipeline, new env vars, new health checks, cross-service secret sharing) or an in-process supervisor pattern inside the existing Node service (which currently has no multi-process supervisor, see FIND-309) -- an implementer cannot start building C1 without this being decided.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "57 (OQ7 stated as an open either/or) vs 108-114 (Section 5 lists only OQ1-OQ6 as RESOLVED)"
+  },
+  "fix": "Resolve OQ7 explicitly, following this project's own decision precedent (e.g. per HARD RULE #-3, cite a BP for Pipecat-behind-a-single-service vs. Pipecat-as-a-dedicated-service and pick one), add it to Section 5's RESOLVED list, and specify the concrete mechanics (new Railway service name/nixpacks config, or a supervisor process spec) for the chosen option."
+}

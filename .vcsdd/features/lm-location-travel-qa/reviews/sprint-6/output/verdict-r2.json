@@ -1,0 +1,80 @@
+{
+  "sprintNumber": 6,
+  "feature": "lm-location-travel-qa",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-24T12:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "round": 2,
+    "scope": "HARD-2 Inngest durable scheduler — re-review after 7 round-1 findings",
+    "note": "No manifest.json at reviews/sprint-6/input/. Authoritative spec read = .vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md (worktree root, NOT under apps/life-call). Inngest API/exports verified against installed node_modules/inngest@4.11.0: ./node export present (package.json:197), engines.node>=20 (package.json:435), readonly opts on InngestFunction (components/InngestFunction.d.ts:23). Builder's no-mock E2E (npm test=78 pass; dev sync 6 fns; wake-user run Completed; prod POST /api/inngest=503; dev=200) accepted as cited but not independently re-run here.",
+    "roundOneFindings": {
+      "FIND-003_single_writer_critical": "FIXED",
+      "FIND-004_pii_fanout": "FIXED",
+      "FIND-005_fail_closed_prod_auth": "FIXED",
+      "FIND-002_test_coverage": "FIXED",
+      "FIND-001_spec_gap": "NOT FIXED",
+      "FIND-007_engines_and_step_granularity": "PARTIALLY FIXED (engines bumped to >=20; whole-body single step.run + Date.now()-in-step NOT addressed)",
+      "FIND-006_empty_list_and_missing_uid": "PARTIALLY FIXED (missing-uid no-op covered; empty-array step.sendEvent still issued + untested against real SDK)"
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-101"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md", "description": "Spec still ENDS at REQ-30 (line 65). grep for REQ-31/REQ-32/REQ-33/REQ-34 = no matches; grep for Inngest|fan-out|sweep|LIFE_RUN_LOOPS|durable in the spec = no matches. The scheduling layer remains entirely unspecified — FIND-001 NOT remediated."},
+        {"type": "file", "location": "apps/life-call/scheduler.js", "description": "Per-user extraction remains faithful: wakeUserOnce (98-133)/travelUserOnce (156-168)/askUserOnce (201-224); tick/travelTick/askTickAll still loop+call them (135-141,170-178,226-235) so the in-process path is intact."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/test/inngest.test.js", "description": "Round-1 gaps closed with real assertions: inngest/node-not-express import check (59-69); sweeper no-op when loops ON (99-134); fan-out when LIFE_RUN_LOOPS=false (136-159); empty user list -> 0 non-empty fan-outs (223-239); unknown-uid getUserByUid->null no-op for wake/travel/ask (304-351); missing-uid in event.data no-op (353-367)."},
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "Per-user handlers guard uid (108,121,134) and null user (110,123,136) -> no-op, no throw, matching the tests."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "FIND-003 single-writer FIXED: inProcessLoopsOn(env) (37-40) returns true unless flag is 'false'/'0'/'off'; all THREE sweepers early-return BEFORE step.run/step.sendEvent when loops are ON (57,72,87). In standalone (LIFE_RUN_LOOPS unset) the sweepers do nothing -> no coexistence, no double-write, no double-LLM-spend. Only LIFE_RUN_LOOPS=false fans out. Both branches asserted (test 99-134 vs 136-159)."},
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "FIND-004 PII FIXED: sweepers fan out ONLY { uid: u.uid } (61,75,90). Per-user handlers re-fetch full row via getUserByUid (109,122,135). deepStrictEqual {uid} asserted (test 163-219)."},
+        {"type": "file", "location": "apps/life-call/scheduler.js", "description": "getUserByUid (267-278) queries lm_users by uid with service-role key, same column set as supaUsers (270 = uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language[,wake_policy]) + same paid/phone/composio_gcal filter (271), returns row or null (277). wakeUserOnce therefore still receives phone/home_address/wake_policy/call_language."},
+        {"type": "file", "location": "apps/life-call/server.js", "description": "FIND-005 fail-closed FIXED: inngestServeAllowed(env) (50-54) dev(INNGEST_DEV=='1')->true else requires INNGEST_SIGNING_KEY; route returns 503 JSON (224-228) before inngestHandler when not allowed. Builder E2E cited prod POST /api/inngest=503, dev=200."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-102"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "Handler-factory pattern is clean; engines mismatch (FIND-007 part c) FIXED (package.json:16 node>=20 == inngest@4.11.0 node_modules/inngest/package.json:435). BUT FIND-007 parts (a) whole-body single step.run and (b) Date.now() inside step.run remain unchanged at functions.js:109-111 -> partial remediation."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/maybe-start-loops.js", "description": "Purity boundary intact: maybeStartLoops (14-24) is a pure (env,starters)->{started,reason}. inProcessLoopsOn (functions.js:37-40) and inngestServeAllowed (server.js:50-54) are pure env readers exported for tests."},
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "Single-writer now safe-by-construction: with FIND-003 fixed the Inngest path is dormant in standalone and only the LIFE_RUN_LOOPS=false daemon fans out, so it is not a 3rd concurrent writer. FIND-005 fail-closed closes the prod-auth boundary the round-1 verdict flagged."}
+      ]
+    }
+  ],
+  "newDefects": [
+    {"id": "FIND-102", "severity": "minor", "summary": "functions.js:109-111 — per-user body still wrapped in a single whole-body step.run with Date.now() called INSIDE step.run; on Inngest retry the whole multi-side-effect body replays and the timestamp changes (idempotency rests solely on C-H1 atomic claims, not Inngest step memoization). FIND-007 (a)+(b) unaddressed."},
+    {"id": "FIND-103", "severity": "minor", "summary": "functions.js:59-62 (and 74-77, 89-92) — when users=[] (loops off) the sweeper still calls step.sendEvent('fan', []). Test 223-239 uses a fakeStep and only asserts 'no non-empty fan-outs'; the empty-array call is never exercised against the real inngest SDK, so an SDK-level empty-batch error/no-op remains untested. FIND-006 empty-batch residual."}
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

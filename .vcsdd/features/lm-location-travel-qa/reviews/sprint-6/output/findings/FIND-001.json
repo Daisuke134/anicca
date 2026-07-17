@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "HARD-2 (the Inngest scheduling layer: durable cron sweep -> per-user fan-out -> per-user concurrency) has NO corresponding requirement in the authoritative spec. specs/behavioral-spec.md covers location/travel QA (REQ-01..REQ-30); the closest scheduling-adjacent requirements are REQ-21 ('fill ALL must-travel events each run'), REQ-29 ('escalate calls at T-15/10/5'), and REQ-27 (determinism) — none of which specify durable cron, fan-out semantics, per-user concurrency isolation, at-least-once retry behavior, or the in-process/Inngest coexistence contract. The entire new behavior set (6 functions, cron schedules `* * * * *` / `*/30` / `*/20`, concurrency key per uid, event fan-out) is implemented and tested but unspecified. A reviewer cannot grade fan-out/concurrency correctness against any REQ.",
+  "evidence": {
+    "filePath": ".vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md",
+    "lineRange": "1-66",
+    "snippet": "SUT: ... scheduler.js (travelTick 30min, askTickAll 20min). The MODEL judges via prompt+tools — no requirement covers durable cron / Inngest fan-out / per-user concurrency."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "anicca-life-call",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Life Manager cloud wake-call service: persistent Gemini-Charon bridge + T-15min scheduler (Railway)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js && node --test skill-life-manager/openclaw/crons.test.js && node --test lib/maybe-start-loops.test.js && node --test lib/ch1-atomic-dedup.test.js && node --test test/inngest.test.js && node --test lib/billing.test.js && node --test test/tenant-isolation.test.js && node --test lib/places-memory.test.js && node --test test/wake-levels.test.js && node --test test/phase-c-wiring.test.js && node --test test/testcall-ratelimit.test.js && node --test lib/reply-token.test.js && node --test lib/transit.test.js && node --test lib/route-cache.test.js && node --test lib/call-bridge.test.js && node --test lib/user-selector.test.js && node --test lib/money-path.test.js && node --test lib/travel-transit-wire.test.js"
+  },
+  "dependencies": {
+    "inngest": "^4.11.0",
+    "stripe": "^22.2.3",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "C1's PIPELINE bullet (behavioral-spec.md:57) instructs: 'extend the EXISTING Node bridge `lib/call-bridge.cjs` -- NOT Pipecat/Python, avoids two runtimes'. Reading apps/life-call/lib/call-bridge.cjs on disk shows its network-serving code (`startServer()`, the `wss.on('connection', ...)` handler that unconditionally opens a Gemini Live socket at line 206, and the whole `if (require.main === module)` block, lines 147-277) is DEAD CODE in production -- it only runs when the file is executed directly (`node call-bridge.cjs`), which nothing in package.json's `start`/`test` scripts does. The ACTUAL deployed entrypoint is server.js (package.json:8 `\"start\": \"node server.js\"`; nixpacks.toml builds/runs this), and server.js imports only call-bridge.cjs's pure exported routing functions (routeTelnyxMessage/routeGeminiMessage/geminiSetupForEvent/buildTelnyxMediaFrame at server.js:18-23) -- the actual Telnyx-socket connection handler, VAD hookup point, and escalation logic all live inline in server.js (roughly lines 350-450), a file C1's PIPELINE bullet never names as the integration site. An implementer told to 'extend lib/call-bridge.cjs' could plausibly build the new VAD/Groq-STT/Groq-LLM/edge-tts loop into call-bridge.cjs's unused `startServer`, which would never run against a real Telnyx call, while server.js's live connection handler (still containing playWakeClip/openGeminiLive/voice-cheap.js wiring per FIND-101) stays untouched.",
+  "evidence": [
+    {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:166-277", "description": "startServer()/wss.on('connection',...) unconditionally opens Gemini Live (line 206: `const gemini = new WebSocket(geminiLiveWsUrl(apiKey));`) with no cheap path at all; only runs under `if (require.main === module)` (line 269), i.e. only when this file is the direct entrypoint."},
+    {"type": "file", "location": "apps/life-call/server.js:17-23", "snippet": "const {\n  routeTelnyxMessage,\n  routeGeminiMessage,\n  geminiSetupForEvent,\n  buildTelnyxMediaFrame,\n} = require(\"./lib/call-bridge.cjs\");"},
+    {"type": "file", "location": "apps/life-call/package.json:8", "snippet": "\"start\": \"node server.js\""},
+    {"type": "spec", "location": "behavioral-spec.md:57", "description": "'extend the EXISTING Node bridge lib/call-bridge.cjs' names the wrong integration surface for the new STT/LLM/TTS loop without also naming server.js's inline connection handler as the actual place callers' audio is currently wired."}
+  ],
+  "routeToPhase": "1a"
+}

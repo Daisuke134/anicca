@@ -30,6 +30,20 @@ jobs:
       - name: Build
         working-directory: apps/landing
         run: npm run build
+        env:
+          # NEXT_PUBLIC_* are inlined at BUILD time (this build runs in the GHA runner, then deploys
+          # with --no-build). Netlify env is NOT used here, so the client-side vars MUST be injected
+          # from GHA secrets or the Supabase client (login) is unconfigured. Public by design.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_STRIPE_LM_URL: ${{ secrets.NEXT_PUBLIC_STRIPE_LM_URL }}
+          NEXT_PUBLIC_STRIPE_LINK_30: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_30 }}
+          NEXT_PUBLIC_STRIPE_LINK_5: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_5 }}
+          NEXT_PUBLIC_CROSSMINT_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_CROSSMINT_CLIENT_KEY }}
+          # #36 World ID 4.0 personhood gate — public app_id + rp_id + env, inlined at build time
+          NEXT_PUBLIC_WORLDCOIN_APP_ID: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_APP_ID }}
+          NEXT_PUBLIC_WORLDCOIN_RP_ID: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_RP_ID }}
+          NEXT_PUBLIC_WORLDCOIN_ENV: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_ENV }}
 
       # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
       # with direct netlify-cli call (= validated via manual deploy locally)
@@ -51,4 +65,52 @@ jobs:
             netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --functions=netlify/functions --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
           else
             netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --functions=netlify/functions --no-build --message "Deploy from GHA preview - $GHA_SHA"
+          fi
+
+      # C5/C6 (VCSDD life-manager-cost-connect-reliability): post-deploy money-path smoke + auto-rollback.
+      # On main, after publishing prod, assert the live site is up AND the /lm bundle's Stripe link still
+      # equals the known-good $20/mo registry link. On FAIL, restore the previous good deploy and fail the
+      # job — this is the permanent guard against the 2026-07-03 ¥700k-wrong-link + site-404-outage class.
+      - name: Post-deploy money-path smoke + rollback (prod only)
+        if: github.ref == 'refs/heads/main'
+        working-directory: apps/landing
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          set -uo pipefail
+          # 2026-07-05: 3 consecutive deploys hit a transient ECONNRESET on the FIRST smoke attempt
+          # (ubuntu-latest runner <-> aniccaai.com, ~20-45s post-deploy) while the site was reachable
+          # and fast from every other vantage point at the same moment — a runner/CDN-edge propagation
+          # race, not an app bug. Retry the same (unchanged) smoke script up to 3x with backoff before
+          # falling through to rollback, so a one-off network blip can't nuke a verified-good deploy.
+          SMOKE_OK=1
+          for attempt in 1 2 3; do
+            sleep 20
+            if node scripts/money-path-smoke.mjs "https://aniccaai.com"; then
+              SMOKE_OK=0
+              break
+            fi
+            echo "money-path smoke attempt $attempt/3 failed, retrying..."
+          done
+          if [ "$SMOKE_OK" = "0" ]; then
+            echo "money-path smoke PASS"
+          else
+            echo "money-path smoke FAILED after 3 attempts — restoring the previous good deploy"
+            PREV=$(curl -s "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys?per_page=10" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s).filter(x=>x.state==='ready'&&x.published_at);process.stdout.write((a[1]||{}).id||'')}catch{process.stdout.write('')}})")
+            if [ -n "$PREV" ]; then
+              curl -s -X POST "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys/$PREV/restore" -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" >/dev/null
+              echo "restored previous deploy $PREV — re-verifying (flap guard)"
+              sleep 20
+              if node scripts/money-path-smoke.mjs "https://aniccaai.com"; then
+                echo "flap-guard: rollback target is healthy"
+              else
+                echo "FLAP GUARD: the restored deploy $PREV ALSO fails the smoke — escalate, do not trust the rollback"
+              fi
+            else
+              echo "no previous good deploy found to roll back to — escalate"
+            fi
+            exit 1
           fi

@@ -1,6 +1,5 @@
 import SwiftUI
 import RevenueCat
-import StoreKit
 
 /// Variant B paywall — CRO optimized design for RevenueCat Experiments A/B
 /// Offering swap is handled server-side by RevenueCat; this view always renders the `current` offering.
@@ -17,15 +16,20 @@ struct PaywallVariantBView: View {
     @State private var hasShownRetention = false
     @State private var showRetention = false
     @State private var showReloadAfterTimeout = false
-    @State private var storefrontCountry = ""
 
     private var offering: Offering? { appState.cachedOffering }
     private var packages: [Package] { offering?.availablePackages ?? [] }
     private var yearlyPackage: Package? { packages.first { $0.packageType == .annual } }
     private var monthlyPackage: Package? { packages.first { $0.packageType == .monthly } }
-    // 2026-06-23 Dais: 買い切りは日本(JPストア)のみ表示する実験。US等では nil。
+    // 2026-07-03 Dais: 買い切り(lifetime)は日本語話者にのみ表示する。
+    // 旧実装は StoreKit の storefront 国(JPN)で判定していたが、
+    // storefront は async 取得で初期値が空 → レースで非表示になるバグがあった。
+    // 端末の優先言語で判定し (UserProfile / QuoteProvider と同一パターン)、非同期依存を撤廃する。
+    private var isJapanese: Bool {
+        (Locale.preferredLanguages.first ?? "en").lowercased().hasPrefix("ja")
+    }
     private var lifetimePackage: Package? {
-        guard storefrontCountry == "JPN" else { return nil }
+        guard isJapanese else { return nil }
         return packages.first { $0.packageType == .lifetime }
     }
 
@@ -92,9 +96,6 @@ struct PaywallVariantBView: View {
             if selectedPackage == nil {
                 selectedPackage = yearlyPackage ?? monthlyPackage
             }
-        }
-        .task {
-            storefrontCountry = await Storefront.current?.countryCode ?? ""
         }
         .sheet(isPresented: $showRetention) {
             RetentionOfferSheet { customerInfo in

@@ -51,4 +51,15 @@ async function markDestroyed(sub_id, { url, key, f = fetch }) {
   if (!r.ok) throw new Error(`supabase ${r.status} ${await r.text()}`);
 }
 
-module.exports = { isEventSeen, markEventSeen, upsertOwner, getOwnerBySub, markDestroyed };
+// Mark an owner self-funded: its instance earns enough, the subscription is cancelled, but the
+// droplet KEEPS RUNNING (the destroy-on-deleted webhook checks this status and skips destroy).
+async function markSelfFunded(sub_id, { url, key, f = fetch }) {
+  const r = await f(`${url}/rest/v1/owners?sub_id=eq.${encodeURIComponent(sub_id)}`, {
+    method: "PATCH",
+    headers: { ...headers(key), Prefer: "return=minimal" },
+    body: JSON.stringify({ status: "self_funded", updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) throw new Error(`supabase ${r.status} ${await r.text()}`);
+}
+
+module.exports = { isEventSeen, markEventSeen, upsertOwner, getOwnerBySub, markDestroyed, markSelfFunded };

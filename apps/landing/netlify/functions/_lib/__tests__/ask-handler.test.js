@@ -105,26 +105,53 @@ test("handler (question) returns 500 when no Google auth credentials", async () 
   assert.ok(res.body.includes("auth_error") || res.body.includes("missing"));
 });
 
-// ── Test 3: 500 when AgentMail env vars missing ───────────────────────────────
+// ── Test 3: action=question is GCal-read-only — does NOT send mail or patch ─────
+// gog can't run on Netlify, so question no longer needs AgentMail env vars and
+// must NOT call AgentMail or PATCH GCal. It returns the events to ask (toAsk).
 
-test("handler (question) returns 500 when AGENTMAIL env vars missing", async () => {
+test("handler (question) is GCal-read-only: no AgentMail, no PATCH, returns toAsk", async () => {
   process.env.GOOGLE_CALENDAR_TOKEN = "tok-test";
   delete process.env.AGENTMAIL_API_KEY;
   delete process.env.AGENTMAIL_INBOX_ID;
 
+  const events = [makeEvent("ev-abc", "Team Meeting")]; // no location → needs ask
+
+  let agentMailCalled = false;
+  let gcalPatchCalled = false;
+
+  globalThis.fetch = async (url, opts) => {
+    if (url.includes("calendar/v3") && (!opts || opts.method !== "PATCH")) {
+      return { ok: true, json: async () => ({ items: events }) };
+    }
+    if (url.includes("calendar/v3") && opts?.method === "PATCH") {
+      gcalPatchCalled = true;
+      return { ok: true, json: async () => ({}) };
+    }
+    if (url.includes("agentmail.to")) {
+      agentMailCalled = true;
+      return { ok: true, json: async () => ({ id: "x" }) };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
   const { handler } = require(HANDLER_PATH);
   const res = await handler(buildEvent("POST", "question"));
-  assert.strictEqual(res.statusCode, 500);
-  assert.ok(res.body.includes("AGENTMAIL"));
+  assert.strictEqual(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.ok(body.ok);
+  assert.strictEqual(body.checked, 1);
+  assert.strictEqual(body.toAsk.length, 1);
+  assert.strictEqual(body.toAsk[0].eventId, "ev-abc");
+  assert.ok(body.toAsk[0].subject.startsWith("[Ask]"));
+  assert.ok(body.toAsk[0].body.includes("ev-abc"));
+  assert.strictEqual(agentMailCalled, false, "question must NOT call AgentMail");
+  assert.strictEqual(gcalPatchCalled, false, "question must NOT PATCH (mark-asked does that)");
 });
 
-// ── Test 4: action=question, no events needing ask → 200, asked=[] ─────────────
+// ── Test 4: action=question, no events needing ask → 200, toAsk=[] ─────────────
 
-test("handler (question) returns 200 with asked=[] when all events have locations", async () => {
+test("handler (question) returns 200 with toAsk=[] when all events resolved", async () => {
   process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  process.env.AGENTMAIL_INBOX_ID = "inbox-id";
-  process.env.DAIS_EMAIL = "test@example.com";
 
   const events = [
     makeEvent("ev1", "歯科検診", { location: "信濃町駅" }),
@@ -143,68 +170,72 @@ test("handler (question) returns 200 with asked=[] when all events have location
   assert.strictEqual(res.statusCode, 200);
   const body = JSON.parse(res.body);
   assert.ok(body.ok);
-  assert.deepStrictEqual(body.asked, []);
+  assert.deepStrictEqual(body.toAsk, []);
   assert.strictEqual(body.checked, 2);
 });
 
-// ── Test 5: action=question, event missing location → email sent + gcal patched ──
+// ── Test 5: action=mark-asked → GETs event then PATCHes pending flag ───────────
 
-test("handler (question) sends email and patches GCal for event missing location", async () => {
+test("handler (mark-asked) fetches event and PATCHes the pending flag", async () => {
   process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  process.env.AGENTMAIL_INBOX_ID = "inbox-123";
-  process.env.DAIS_EMAIL = "dais@example.com";
 
-  const events = [makeEvent("ev-abc", "Team Meeting")]; // no location
-
-  let agentMailCalled = false;
-  let agentMailBody = null;
+  const existingEvent = makeEvent("ev-abc", "Team Meeting");
+  let gcalGetCalled = false;
   let gcalPatchCalled = false;
   let gcalPatchBody = null;
 
   globalThis.fetch = async (url, opts) => {
-    if (url.includes("calendar/v3") && (!opts || opts.method !== "PATCH")) {
-      return { ok: true, json: async () => ({ items: events }) };
+    if (url.includes("calendar/v3") && url.includes("ev-abc") && (!opts || opts.method === undefined)) {
+      gcalGetCalled = true;
+      return { ok: true, json: async () => existingEvent };
     }
     if (url.includes("calendar/v3") && opts?.method === "PATCH") {
       gcalPatchCalled = true;
       gcalPatchBody = JSON.parse(opts.body);
       return { ok: true, json: async () => ({ id: "ev-abc", ...gcalPatchBody }) };
     }
-    if (url.includes("agentmail.to")) {
-      agentMailCalled = true;
-      agentMailBody = JSON.parse(opts.body);
-      return { ok: true, json: async () => ({ id: "msg-sent-001" }) };
-    }
     throw new Error(`unexpected fetch: ${url}`);
   };
 
   const { handler } = require(HANDLER_PATH);
-  const res = await handler(buildEvent("POST", "question"));
+  const res = await handler({
+    httpMethod: "POST",
+    queryStringParameters: { action: "mark-asked" },
+    body: JSON.stringify({ eventId: "ev-abc", messageId: "msg-sent-001" }),
+  });
 
   assert.strictEqual(res.statusCode, 200);
   const body = JSON.parse(res.body);
   assert.ok(body.ok);
-  assert.strictEqual(body.asked.length, 1);
-  assert.strictEqual(body.asked[0].eventId, "ev-abc");
-  assert.strictEqual(body.asked[0].messageId, "msg-sent-001");
-
-  // AgentMail was called with correct recipient
-  // to is now an array of strings (AgentMail v0 /messages/send format)
-  assert.ok(agentMailCalled, "AgentMail send must be called");
-  const toField = agentMailBody.to;
-  const toEmail = Array.isArray(toField) ? toField[0] : toField;
-  assert.strictEqual(toEmail, "dais@example.com");
-  assert.ok(agentMailBody.subject.startsWith("[Ask]"), "subject must start with [Ask]");
-  assert.ok(agentMailBody.text.includes("ev-abc"), "body must include event ID");
-
-  // GCal was patched with pending flag
-  assert.ok(gcalPatchCalled, "GCal patch must be called");
+  assert.strictEqual(body.eventId, "ev-abc");
+  assert.ok(gcalGetCalled, "mark-asked must GET the event");
+  assert.ok(gcalPatchCalled, "mark-asked must PATCH the event");
   assert.strictEqual(
     gcalPatchBody.extendedProperties?.private?.anicca_ask_pending,
     "true",
     "pending flag must be set"
   );
+  assert.strictEqual(
+    gcalPatchBody.extendedProperties?.private?.anicca_ask_question_id,
+    "msg-sent-001"
+  );
+});
+
+// ── Test 5b: action=mark-asked without eventId → 400 ──────────────────────────
+
+test("handler (mark-asked) returns 400 when eventId missing", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+  globalThis.fetch = async () => {
+    throw new Error("should not fetch");
+  };
+  const { handler } = require(HANDLER_PATH);
+  const res = await handler({
+    httpMethod: "POST",
+    queryStringParameters: { action: "mark-asked" },
+    body: JSON.stringify({ messageId: "m" }),
+  });
+  assert.strictEqual(res.statusCode, 400);
+  assert.ok(res.body.includes("missing_event_id"));
 });
 
 // ── Test 6: action=reply, valid reply → gcal patched with location ─────────────
@@ -287,16 +318,89 @@ test("handler (reply) returns 422 when no location can be parsed from reply", as
   const replyBody = "> quoted only\n> nothing else\nEvent ID: ev-xyz";
   const res = await handler(buildReplyEvent(replyBody));
   assert.strictEqual(res.statusCode, 422);
-  assert.ok(res.body.includes("no_location_found"));
+  assert.ok(res.body.includes("no_location_or_duration_in_reply"));
+});
+
+// ── Test 8b: action=reply with duration → patches end.dateTime = start + N ─────
+
+test("handler (reply) patches GCal duration (end) from 所要 N分 reply", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+
+  // Event with end==start (duration unknown)
+  const existingEvent = {
+    id: "ev-dur",
+    summary: "歯科検診",
+    start: { dateTime: "2026-06-17T10:00:00+09:00", timeZone: "Asia/Tokyo" },
+    end: { dateTime: "2026-06-17T10:00:00+09:00" },
+    extendedProperties: { private: { anicca_ask_pending: "true" } },
+  };
+
+  let patchedBody = null;
+  globalThis.fetch = async (url, opts) => {
+    if (url.includes("calendar/v3") && url.includes("ev-dur") && (!opts || opts.method === undefined)) {
+      return { ok: true, json: async () => existingEvent };
+    }
+    if (url.includes("calendar/v3") && opts?.method === "PATCH") {
+      patchedBody = JSON.parse(opts.body);
+      return { ok: true, json: async () => ({ ...existingEvent }) };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const replyBody = "渋谷ヒカリエ 8F\n所要 90分\n---\nEvent ID: ev-dur";
+  const { handler } = require(HANDLER_PATH);
+  const res = await handler(buildReplyEvent(replyBody));
+
+  assert.strictEqual(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.strictEqual(body.location, "渋谷ヒカリエ 8F");
+  assert.strictEqual(body.durationMinutes, 90);
+  assert.strictEqual(patchedBody.location, "渋谷ヒカリエ 8F");
+  // 10:00+09:00 + 90m = 01:30Z + 90m? compute: 10:00 JST = 01:00Z; +90m = 02:30Z
+  assert.strictEqual(patchedBody.end.dateTime, "2026-06-17T02:30:00.000Z");
+  assert.strictEqual(patchedBody.end.timeZone, "Asia/Tokyo");
+});
+
+// ── Test 8c: duration-only reply must NOT write a bogus location ───────────────
+
+test("handler (reply) duration-only reply sets end but not location", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+
+  const existingEvent = {
+    id: "ev-donly",
+    summary: "会議",
+    start: { dateTime: "2026-06-17T09:00:00+09:00" },
+    end: { dateTime: "2026-06-17T09:00:00+09:00" },
+    extendedProperties: { private: { anicca_ask_pending: "true" } },
+  };
+
+  let patchedBody = null;
+  globalThis.fetch = async (url, opts) => {
+    if (url.includes("calendar/v3") && url.includes("ev-donly") && (!opts || opts.method === undefined)) {
+      return { ok: true, json: async () => existingEvent };
+    }
+    if (url.includes("calendar/v3") && opts?.method === "PATCH") {
+      patchedBody = JSON.parse(opts.body);
+      return { ok: true, json: async () => ({ ...existingEvent }) };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const replyBody = "所要 60分\n---\nEvent ID: ev-donly";
+  const { handler } = require(HANDLER_PATH);
+  const res = await handler(buildReplyEvent(replyBody));
+
+  assert.strictEqual(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.strictEqual(body.durationMinutes, 60);
+  assert.strictEqual("location" in patchedBody, false, "must NOT write a bogus location");
+  assert.ok(patchedBody.end?.dateTime, "end must be set");
 });
 
 // ── Test 9: action defaults to question when not specified ────────────────────
 
 test("handler defaults to action=question when no action param in query or body", async () => {
   process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  process.env.AGENTMAIL_INBOX_ID = "inbox-id";
-  process.env.DAIS_EMAIL = "dais@example.com";
 
   globalThis.fetch = async (url) => {
     if (url.includes("calendar/v3")) {
@@ -313,15 +417,13 @@ test("handler defaults to action=question when no action param in query or body"
   assert.strictEqual(res.statusCode, 200);
   const body = JSON.parse(res.body);
   assert.ok(body.ok);
-  assert.deepStrictEqual(body.asked, []);
+  assert.deepStrictEqual(body.toAsk, []);
 });
 
 // ── Test 10: action=question via body JSON ────────────────────────────────────
 
 test("handler reads action=question from JSON body when not in querystring", async () => {
   process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  process.env.AGENTMAIL_INBOX_ID = "inbox-id";
 
   globalThis.fetch = async (url) => {
     if (url.includes("calendar/v3")) {
@@ -338,47 +440,6 @@ test("handler reads action=question from JSON body when not in querystring", asy
   });
 
   assert.strictEqual(res.statusCode, 200);
-});
-
-// ── Test 11: OAuth2 refresh token path works in question flow ─────────────────
-
-// ── Test NEW-A: LIFE_ASK_INBOX_ID takes priority over AGENTMAIL_INBOX_ID ──────
-
-test("handler (question) uses LIFE_ASK_INBOX_ID when set (avoids genesis 429)", async () => {
-  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  // Dedicated B-ask inbox — should be used in preference to genesis inbox
-  process.env.LIFE_ASK_INBOX_ID = "anicca-life-ask@agentmail.to";
-  process.env.AGENTMAIL_INBOX_ID = "anicca-genesis@agentmail.to"; // genesis (flooded)
-  process.env.DAIS_EMAIL = "dais@example.com";
-
-  const events = [{ id: "ev-x", summary: "Team Meeting", start: { dateTime: "2026-06-17T10:00:00+09:00" }, end: { dateTime: "2026-06-17T11:00:00+09:00" } }];
-
-  let usedInboxId = null;
-
-  globalThis.fetch = async (url, opts) => {
-    if (url.includes("calendar/v3") && (!opts || opts.method !== "PATCH")) {
-      return { ok: true, json: async () => ({ items: events }) };
-    }
-    if (url.includes("calendar/v3") && opts?.method === "PATCH") {
-      return { ok: true, json: async () => ({}) };
-    }
-    if (url.includes("agentmail.to")) {
-      // Extract inboxId from the URL: /v0/inboxes/{inboxId}/messages/send
-      const match = url.match(/\/inboxes\/([^/]+)\/messages\/send/);
-      usedInboxId = match ? decodeURIComponent(match[1]) : null;
-      return { ok: true, json: async () => ({ id: "msg-001" }) };
-    }
-    throw new Error(`unexpected fetch: ${url}`);
-  };
-
-  const { handler } = require(HANDLER_PATH);
-  const res = await handler(buildEvent("POST", "question"));
-
-  assert.strictEqual(res.statusCode, 200);
-  // Must have used the dedicated B-ask inbox, not the flooded genesis inbox
-  assert.strictEqual(usedInboxId, "anicca-life-ask@agentmail.to",
-    "question handler must use LIFE_ASK_INBOX_ID, not AGENTMAIL_INBOX_ID");
 });
 
 // ── Test NEW-B: reply handler returns 200 no-op for non-[Ask] messages ─────────
@@ -440,8 +501,6 @@ test("handler (question) uses OAuth2 refresh token when GOOGLE_CALENDAR_TOKEN ab
   process.env.GOOGLE_REFRESH_TOKEN = "rtoken-xyz";
   process.env.GOOGLE_CLIENT_ID = "client-id";
   process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-  process.env.AGENTMAIL_API_KEY = "am-key";
-  process.env.AGENTMAIL_INBOX_ID = "inbox-id";
 
   let tokenRefreshCalled = false;
 

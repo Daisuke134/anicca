@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "The sweeper tests never assert the empty-user-list edge case. makeSweep*Handler with zero users should still step.run('list') and step.sendEvent with an EMPTY array (or skip sendEvent). inngest/functions.js:33-36 will call step.sendEvent('fan', []) on zero users — sending an empty events array to Inngest is a potential no-op or error depending on the SDK; no test covers it. Likewise no test covers a user row MISSING `uid` (the concurrency key 'event.data.uid' silently becomes undefined -> all such events share one concurrency bucket / unkeyed). Tests only use stub users that always have uid.",
+  "evidence": {
+    "filePath": "apps/life-call/inngest/functions.js",
+    "lineRange": "30-38",
+    "snippet": "const users = await step.run(\"list\", listUsers); await step.sendEvent(\"fan\", users.map((u) => ({ name: \"lm/wake.user\", data: u })));"
+  },
+  "routeToPhase": "2b"
+}

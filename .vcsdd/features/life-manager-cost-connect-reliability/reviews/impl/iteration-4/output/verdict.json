@@ -1,0 +1,107 @@
+{
+  "reviewType": "impl-wiring",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 4,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/route-cache.js:1-38, apps/life-call/lib/travel.js:10,153-199", "description": "FIND-002 confirmed RESOLVED by direct Read: makeRouteCache is imported and wired into directionsMinutes via cache.getOrCompute(\"_shared\", srcGeo, dstGeo, timeBucket(departAtMs), compute), and travel-transit-wire.test.js's 'repeated ticks... call the provider ONCE' test exercises this exact path. scheduler.js:15,115-116 passes directionsMinutes as wake-filter.js's resolveDeparture's directionsFn, so the live 60s scheduler tick benefits from the same cache — confirmed a REAL production caller, not just a test."},
+        {"type": "file", "location": "apps/life-call/lib/money-path.js:1-70, apps/landing/scripts/money-path-smoke.mjs:1-37", "description": "FIND-006 confirmed RESOLVED: grep for require(.*money-path shows real production importers (money-path-smoke.mjs, money-path-monitor.mjs) in addition to money-path.test.js; grep for require(.*route-cache shows travel.js as a real production importer in addition to its tests. No dead-but-tested modules remain."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-103"],
+      "evidence": []
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-101"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:389-406,408-428,444,447", "description": "Synth-failure fallback verified safe: playWakeClip's catch calls openGeminiLive() (never leaves the call silent); openGeminiLive is idempotent via `if (gemini) return;` and is called from exactly two sites (DTMF interaction, synth-failure catch) with JS's single-threaded event loop precluding a double-open race — hand-traced, matches iteration-3's already-PASSED finding on this exact code path (unchanged in this iteration)."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/money-path.js, apps/life-call/lib/route-cache.js", "description": "FIND-006 resolved: both modules now have real, non-test production importers (grep confirmed) — no drift between tested-but-dead logic and weaker hand-rolled reimplementations. No new duplication introduced by this iteration's changes; nixpacks.toml/voice-synth.cjs/transit.js/travel.js/money-path-monitor.mjs are each focused, single-responsibility files consistent with the pre-existing module boundaries."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-102", "FIND-103"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/nixpacks.toml:1-7", "description": "FIND-001 config-level fix verified plausible: [phases.setup] nixPkgs=[\"...\", \"ffmpeg\", \"python313Packages.edge-tts\"] follows the documented nixpacks.toml pattern (\"...\" preserves auto-detected packages) and both listed nix packages are real. This cannot be proven against the live Railway host from disk alone — flagged as a REQUIRED POST-MERGE VERIFICATION (re-run the real-call E2E against the deployed Railway URL), not a blocker, per the synth-failure fallback already being proven safe (never-silent) independent of whether ffmpeg/edge-tts are actually present."}
+      ]
+    }
+  },
+  "priorFindings": {
+    "FIND-001": {
+      "status": "partially",
+      "note": "nixpacks.toml config is syntactically correct and adds the right packages; synth-failure fallback (server.js:401-405) is proven safe (escalates to Live, never silent) independent of whether the config actually works on Railway. No blocker remains on disk, but PROD PROOF (re-run the real-call E2E against the deployed Railway URL, confirm live_ws_opened=0) is still outstanding and required before this can be called fully closed."
+    },
+    "FIND-002": {
+      "status": "resolved",
+      "note": "route-cache.js wired into travel.js's directionsMinutes via cache.getOrCompute; scheduler.js → wake-filter.js's resolveDeparture → directionsMinutes is a confirmed real production call path; travel-transit-wire.test.js proves 1-call-per-(geo,bucket) across repeated ticks."
+    },
+    "FIND-003": {
+      "status": "partially",
+      "note": "netlify-deploy.yml's post-restore reverification (real flap guard) is correctly implemented. The standalone 15-min monitor (money-path-monitor.mjs) exists and reuses RollbackController/assertMoneyPath, but its OWN flap-guard input (lastGoodPasses) is derived from deploy-existence, not deploy-health (FIND-102), and its state-file read is unguarded against corruption (FIND-103) — the continuous-monitoring half of C6/Goal-5 is not yet trustworthy."
+    },
+    "FIND-004": {
+      "status": "partially",
+      "note": "parseTransitPlan now adds walk time into durationSecs (no longer silently drops it), but the added formula double-counts egressWalkSecs — proven from the fixture's own numbers and baked into transit.test.js's assertion (FIND-101). The direction of the resulting error is conservative (over-, not under-, estimate) so it does not violate the never-late invariant, but the claim 'FIXED + verified' in execution-notes.md is not accurate as written."
+    },
+    "FIND-005": {
+      "status": "resolved",
+      "note": "Accepted deviation, as documented by the builder: geocodeAddress memoizes on the module-level _geoMemo Map (travel.js:155,161), so repeated 60s ticks do not re-hit the Geocoding API for the same address. In-process (not DB-persisted) is a reasonable tradeoff for the stated cost goal; this is a judgment call, not a correctness defect."
+    },
+    "FIND-006": {
+      "status": "resolved",
+      "note": "grep-confirmed real production importers for both previously-dead modules: money-path.js ← money-path-smoke.mjs + money-path-monitor.mjs; route-cache.js ← travel.js."
+    }
+  },
+  "findings": [
+    {
+      "id": "FIND-101",
+      "dimension": "implementation_correctness",
+      "severity": "major",
+      "file": "apps/life-call/lib/transit.js",
+      "line": "42-48",
+      "issue": "parseTransitPlan double-counts egressWalkSecs: best.durationSecs from the transit.ls8h.com API already includes the egress walk (proven from the committed fixture's own numbers: journey.arrivalSecs - leg.arrivalSecs == egressWalkSecs in every journey), but the FIND-004 fix adds accessWalkSecs+egressWalkSecs on top of it, over-counting egress by one full egressWalkSecs. transit.test.js:29 now asserts the incorrect value (1219) as correct, so the test enforces the bug.",
+      "fix": "durationSecs should be best.durationSecs + accessWalkSecs only (no re-add of egressWalkSecs); update the fixture-derived test expectation to 1090."
+    },
+    {
+      "id": "FIND-102",
+      "dimension": "verification_readiness",
+      "severity": "major",
+      "file": "apps/landing/scripts/money-path-monitor.mjs",
+      "line": "35-42,53",
+      "issue": "The 15-min monitor's flap-guard input (lastGoodPasses) is Boolean(prev.id) — 'a prior deploy exists' — not an actual assertMoneyPath check on that deploy's content, unlike netlify-deploy.yml's real post-restore reverification. Two consecutive bad deploys would cause the monitor to roll back into another bad deploy without escalating, defeating RollbackController's own documented flap-guard invariant.",
+      "fix": "Fetch and assertMoneyPath the candidate rollback target's actual content before setting lastGoodPasses, mirroring netlify-deploy.yml's approach."
+    },
+    {
+      "id": "FIND-103",
+      "dimension": "edge_case_coverage",
+      "severity": "major",
+      "file": "apps/landing/scripts/money-path-monitor.mjs",
+      "line": "20-21",
+      "issue": "JSON.parse(readFileSync(STATE)) has no try/catch. A corrupted/partial .monitor-state.json (crash mid-write, no lockfile against concurrent runs) permanently crashes every future run of the ONE continuous safety net this feature adds, with zero test coverage for money-path-monitor.mjs's own integration logic.",
+      "fix": "Wrap the state read in try/catch, fall back to fresh RollbackController defaults on parse failure, and add a test for the corrupted-state case."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "blockerCount": 0,
+    "majorCount": 3,
+    "allCriteriaEvaluated": true,
+    "priorFindingsResolved": 3,
+    "priorFindingsPartial": 3,
+    "priorFindingsOpen": 0
+  }
+}

@@ -1,3 +1,7 @@
+{"timestamp":"2026-07-03T14:34:22.840Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T14:57:00.765Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T17:05:38.272Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c-C1","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T18:22:54.532Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c-C1-pipecat","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-07-07T10:26:19.531Z","event":"feature_created","featureName":"fable5-config-slimdown","mode":"lean"}
 {"timestamp":"2026-07-07T10:32:59.749Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-07T10:32:59.750Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"1a","to":"1b","iteration":1,"phase":"1b"}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "The review manifest/task requires verifying spec disk-facts against CANONICAL origin/main via 'git show origin/main:<path>'. The adversary's actual toolset for this review (Read/Write/Edit/Grep/Glob) contains NO shell/Bash tool, so origin/main content cannot be read directly. Compounding this: the repository's current top-level checkout (.git/HEAD -> refs/heads/feature/clip-rewards) does not contain apps/life-call or apps/landing AT ALL (Glob 'apps/*' from the repo root returns no results) -- an unrelated branch is checked out at the root. None of the three available worktrees (.claude/worktrees/lipsync-monk = branch feature/lipsync-monk, .claude/worktrees/agent-a6417f77d0f47a1cc = branch feature/hard2-inngest, .claude/worktrees/agent-a0389b9e243c82be2 = branch feature/web-i18n; confirmed via .git/worktrees/<name>/HEAD) are checked out to origin/main (refs/remotes/origin/main = e74bb3d7a3289d58c94866c626885c84988a5e81 per .git/packed-refs) either. As a direct consequence, the spec's 'canonical on origin/main, re-verified 2026-07-03' disk-fact claims (§2, §0b) could only be cross-checked against divergent, non-canonical worktrees -- and those worktrees actively CONTRADICT each other and the spec's own attributions on two separate load-bearing facts (see FIND-001 Gmail-read mechanism, FIND-002 WAKE_LEVELS). A spec review gate that pins its own trustworthiness to 'verified on origin/main' must be checkable against origin/main by the reviewer running the review; right now neither the reviewer's tool grant nor the repository's checked-out state make that possible, so the 're-verified' claims in this spec cannot be confirmed as true and must be treated as unverified pending either (a) the review manifest granting shell/git access, or (b) the spec citing a concretely reachable, single, pinned commit SHA with the actual file content quoted or attached as reviewable evidence (as evidence/fixtures/*.json already correctly does for the transit API).",
+  "evidence": {
+    "filePath": ".git/packed-refs",
+    "lineRange": "407",
+    "snippet": "e74bb3d7a3289d58c94866c626885c84988a5e81 refs/remotes/origin/main"
+  },
+  "specCitation": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "8, 25"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "The §4 RED plan for C1 inherits both FIND-001 and FIND-003's blind spots, so the automated gate cannot catch either regression before the manual E2E call. (a) RED item (c) (behavioral-spec.md:110) asserts the barge-in unit test must 'ASSERT it yields a Telnyx {\"event\":\"clear\"} carrierSend + stops the outbound loop' — but per FIND-003, there is no 'outbound loop' state to assert on in the post-flip architecture, so this half of the RED assertion is either untestable as literally written or will be quietly dropped/weakened by whoever implements it, with no spec-level signal that happened. (b) RED item (d) (behavioral-spec.md:110) enumerates the exact grep list of files that must be GONE: 'voice-cheap.js, voice-cheap.test.js, voice-synth.cjs, compositional-{voice,live}.cjs, voice-turn.cjs' — this list is copy-identical to C1 step 3's (incomplete, per FIND-001) delete-list, so it also omits `voice-synth.test.js`. A tree that still contains the orphaned, now-broken `voice-synth.test.js` (which will throw `Cannot find module` once voice-synth.cjs is deleted) would PASS RED item (d) as literally written, exactly the kind of 'test that would pass even if a critical edge case were unhandled' this review is required to hunt for.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "110",
+    "snippet": "(c) ... ASSERT it yields a Telnyx {\"event\":\"clear\"} carrierSend + stops the outbound loop ...; (d) grep proves the deleted files voice-cheap.js,voice-cheap.test.js,voice-synth.cjs,compositional-{voice,live}.cjs,voice-turn.cjs are GONE and nothing requires them"
+  },
+  "routeToPhase": "2b"
+}

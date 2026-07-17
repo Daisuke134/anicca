@@ -1,0 +1,11 @@
+{
+  "id": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "apps/life-call/lib/travel.js",
+  "line": "148-187",
+  "issue": "`directionsMinutes` (travel.js:174) unconditionally issues a Google Geocoding API call for BOTH `src` and `dst` (via `geocode(src, mapsKey)` + `geocode(dst, mapsKey)`, line 180) on every route computation — including for non-JP users, who will fall through to the Google Routes/Transit path anyway and gain nothing from having been geocoded first. The spec (C2, behavioral-spec.md:64) explicitly designed this as 'home_address geocoded ONCE (Google Geocoding) and cached as `home_geo` on `lm_users`' — a persistent, per-user DB column — but the actual wiring instead uses a bare in-process `Map` (`_geoMemo`, travel.js:150) that is wiped on every Railway restart/redeploy and re-geocodes every event location (not just home) fresh in every new process lifetime, not the one-time-per-user design the spec describes.",
+  "evidence": "apps/life-call/lib/travel.js:150 `const _geoMemo = new Map();` (module-level, in-process only, not Supabase-backed). apps/life-call/lib/travel.js:174-180: the geocode calls happen BEFORE the `chooseRouter` JP/non-JP decision, for every src/dst pair on every call. grep confirms no `home_geo` column read/write exists anywhere in the repo (`grep -rn home_geo` outside the spec/verdict docs returns zero code hits).",
+  "fix": "Persist geocode results to a DB-backed cache (or add `home_geo` to `lm_users` as the spec describes) so the memoization survives process restarts, and skip the geocode call entirely for the Google-fallback branch when `src`/`dst` are not going to be JP-bbox-tested (or restructure so the JP-bbox check only geocodes when needed)."
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "server.js's `wss.on('connection', ...)` handler (server.js:356-455, ~100 lines) mixes network I/O (raw WebSocket wiring) with a non-trivial STATE MACHINE (openGeminiLive/onGeminiEnd reconnect logic with mutable geminiReconnects/gotAudio/liveWsOpened counters) inline in a single closure, with no seam for unit testing. This is inconsistent with the project's OWN established pattern in this exact feature: routeTelnyxMessage/routeGeminiMessage were deliberately extracted to lib/call-bridge.cjs specifically so they could be exercised by fake-socket unit tests (call-bridge.cjs:36 comment: 'Pure routing core (testable with a fake socket)'). The reconnect decision logic (whether to retry vs. give up, given gotAudio + geminiReconnects + carrier state) is exactly the kind of pure decision that could have been extracted as a testable function (e.g. `decideReconnect({gotAudio, reconnects, carrierOpen}) -> 'retry'|'give-up'`) the same way routeGeminiMessage was. Leaving it inline is precisely why FIND-001 (a real bug) and FIND-002 (zero test coverage of that bug) exist — untestable code hid a broken invariant. Per project coding-style.md ('MANY SMALL FILES > FEW LARGE FILES... Extract utilities from large components'), this is a structural violation, not merely a style nit.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "356-455",
+    "snippet": "wss.on(\"connection\", (carrierWs, req) => { ... let gemini = null; let liveWsOpened = 0; let gotAudio = false; let geminiReconnects = 0; ... function openGeminiLive() { ... const onGeminiEnd = (reason) => { ... }; ... } ... });"
+  },
+  "routeToPhase": "2b"
+}

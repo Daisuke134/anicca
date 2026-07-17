@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "OLD FIND-002 (scheduler.js selector) and OLD FIND-006 (route cache store) ARE genuinely resolved in SUBSTANCE — `calendarProviderFilter()` is confirmed called at both selector sites, and the route cache is confirmed an in-process `Map()` with a 10-min TTL, not a Supabase table. But the spec's own exact line citations drifted from actual disk by a small amount: §2 cites `scheduler.js:42,280` (actual call sites are `scheduler.js:43` and `scheduler.js:281`); C3 cites `travel.js:16` for `makeRouteCache(...)` (actual line is `travel.js:14`). Given this spec's central premise (C1) turned out to cite entirely fabricated line numbers for symbols that never existed (FIND-001), even these 'close but off-by-one/two' citations reduce confidence that the citation-verification step (spec line 8's own rule: 're-verify against main before carrying a fact forward') was actually performed with a fresh read rather than copied from an earlier draft.",
+  "evidence": {
+    "filePath": "apps/life-call/scheduler.js",
+    "lineRange": "43, 281",
+    "snippet": "const base = `${url}/rest/v1/lm_users?phone=not.is.null&paid=is.true&${calendarProviderFilter()}`;"
+  },
+  "routeToPhase": "2b"
+}

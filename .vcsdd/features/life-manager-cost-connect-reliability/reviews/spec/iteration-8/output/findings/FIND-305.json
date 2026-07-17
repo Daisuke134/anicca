@@ -1,0 +1,14 @@
+{
+  "id": "FIND-305",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "56",
+  "issue": "C1's entire rationale for adopting Pipecat is turn-taking quality: 'turn-taking = Silero VAD (local, <1ms/30ms chunk) + Smart Turn v3... this is the FREE piece that makes it a conversation, not walkie-talkie'. But Smart Turn v3's Japanese-language end-of-turn support is never confirmed anywhere in the spec or in the cited research evidence. evidence/pipecat-decision-2026-07-04.md explicitly confirms Kokoro is 'Japanese-confirmed' (line 11) but makes NO equivalent claim for Smart Turn v3 -- it is only described as 'local, $0' / 'bundled ONNX'. This product is JP-cost-driven (the entire Reality Check / Goal 2 / C2 sections exist because of a JP user base and JP Google-cost problem), and C1 supports call_language in {ja, en}. If Smart Turn v3's turn-detection model is English-only or degrades on Japanese speech patterns/prosody, the JP call path reverts to exactly the 'walkie-talkie' failure mode the pivot exists to solve -- for the higher-priority language of the two.",
+  "evidence": {
+    "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/pipecat-decision-2026-07-04.md",
+    "lines": "8-13, 20 (lists Silero VAD + Smart Turn v3 as the turn-taking answer, JA-confirms only Kokoro TTS, never Smart Turn)"
+  },
+  "fix": "Add an explicit line to C1 (or a new OQ, resolved in-spec per the project's own no-open-questions rule) stating Smart Turn v3's actual JA support status, with a citation (github.com/pipecat-ai/smart-turn model card / training-language docs). If JA is unsupported or unverified, name the fallback turn-taking behavior for JA calls (e.g. Silero VAD silence-timeout only) so the spec does not silently assume conversation-quality parity across languages it explicitly supports."
+}

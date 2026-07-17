@@ -1,0 +1,66 @@
+{
+  "reviewType": "impl",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 2,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "evidence": [
+        "apps/life-call/lib/transit.js:15-33 isJapanGeo/chooseRouter still implement C2's deterministic-bbox decision unmodified since iteration-1 PASS; no regression introduced by the added tests.",
+        "apps/life-call/lib/money-path.js:12-35 now implements a STRICTER form of C5's content-assertion requirement: assertMoneyPath FAILs on ANY additional distinct buy.stripe.com link in the bundle, not just a first-match mismatch, directly closing the ¥700k-class attack vector C5 exists to prevent.",
+        "apps/life-call/scheduler.js:43,281 verified by direct Read (not just the test) — calendarProviderFilter() is interpolated inside the template literal at BOTH sites, count=2, matching C4's dual-site migration requirement exactly."
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "PASS",
+      "evidence": [
+        "transit.test.js:54-61 (FIND-001): isJapanGeo(24,122)=true, isJapanGeo(46,146)=true, and the four just-outside neighbors=false — manually verified against JP_BBOX={24,46,122,146} inclusive >=/<= in transit.js:21-24; all assertions are mathematically correct.",
+        "route-cache.test.js:59-65 (FIND-002): q()=Math.round(n*1e4)/1e4 traced by hand — 35.680001 rounds to the same 35.68 as 35.68000 (collision, correctly asserted equal), 35.6802 rounds to a distinct 35.6802 (correctly asserted not-equal).",
+        "voice-cheap.test.js:51-56 (FIND-005): buildWakeLine JA harsh push-string is '今すぐ出てください。' vs firm 'そろそろ出発しましょう。' per voice-cheap.js:32 — test's /今すぐ/ match and notEqual assertion are correct against the actual implementation.",
+        "money-path.test.js:66-72 (FIND-003): assertMoneyPath now iterates ALL distinct links via extractAllStripeLinks (money-path.js:16-18, Set-deduped, order-preserving) and FAILs when any link != registry.stripe_lm_url is present — traced by hand for chunk 'GOOD first, BAD second' → rogue=[BAD] → ok:false, matches test exactly. This closes the finding for either link position (good-first or bad-first), not just the tested order.",
+        "money-path.test.js:74-83 (FIND-004): RollbackController.rollbackFired traced by hand across fail,fail(rollback:true),fail(rollback:false),fail(rollback:false),recover,fail,fail(rollback:true) — matches every asserted value; rollbackFired is correctly reset to false alongside incidentOpen on a pass (money-path.js:49-50)."
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "PASS",
+      "evidence": [
+        "money-path.js STRIPE_RE now carries the 'g' flag and is invoked only via String.prototype.match() (never .exec()/.test()) — verified via repo-wide grep that no caller relies on regex.lastIndex statefulness, so the global flag introduces no cross-call bug.",
+        "transit.test.js:63-70 (FIND-006): hand-traced parseTransitPlan's reduce over a fixture where journeys[0].arrivalSecs(900) > journeys[1].arrivalSecs(700) — reduce correctly returns journeys[1] (durationSecs 500), genuinely proving earliest-arrival selection rather than journeys[0] indexing.",
+        "route-cache.js and voice-cheap.js and user-selector.js source is UNCHANGED from the already-PASS iteration-1 implementation_correctness verdict; only their test files gained assertions, so no new logic-correctness risk was introduced there."
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "evidence": [
+        "user-selector.test.js:25-34 (FIND-007) now asserts an EXACT occurrence count of 2 for /\\$\\{calendarProviderFilter\\(\\)\\}/g against scheduler.js; verified by direct grep of scheduler.js:43 and scheduler.js:281 — exactly 2 interpolation sites exist, matching the test's hard-coded expectation.",
+        "money-path.js's new extractAllStripeLinks/assertMoneyPath/RollbackController.rollbackFired additions are small, single-purpose, and colocated with the pre-existing pure logic; no duplication introduced, header comment updated to describe the dedup+debounce+flap-guard+rollback-once contract precisely."
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "evidence": [
+        "money-path.js remains 100% pure after the iteration-2 changes — read in full; no fetch/HTTP/Netlify/Telegram calls were added alongside extractAllStripeLinks/RollbackController.rollbackFired, purity boundary intact per the module header comment.",
+        "All new assertions (FIND-001,002,003,004,005,006,007) are expressed as directly-assertable pure-function/state-machine outputs (no network, no timers beyond the injected `now()`), consistent with the spec's stated verification architecture (§4 RED: node --test, real fixtures, no network in RED)."
+      ]
+    }
+  },
+  "priorFindings": {
+    "FIND-001": { "status": "resolved", "evidence": "apps/life-call/lib/transit.test.js:54-61 — exact-boundary + just-outside assertions added and hand-verified correct against transit.js:15-26." },
+    "FIND-002": { "status": "resolved", "evidence": "apps/life-call/lib/route-cache.test.js:59-65 — rounding-collision (same-key) and rounding-separation (different-key) assertions added and hand-verified correct against route-cache.js:16-20." },
+    "FIND-003": { "status": "resolved", "evidence": "apps/life-call/lib/money-path.js:12-35 rewritten to extractAllStripeLinks + reject ANY extra distinct link (not just first-match); apps/life-call/lib/money-path.test.js:66-72 exercises the exact ¥700k-class rogue-second-link scenario and hand-verified to FAIL correctly." },
+    "FIND-004": { "status": "resolved", "evidence": "apps/life-call/lib/money-path.js:38-66 adds this.rollbackFired (one-restore-per-incident, reset on recovery); apps/life-call/lib/money-path.test.js:74-83 drives a 4-consecutive-fail-then-recover sequence and hand-verified to match every asserted rollback value." },
+    "FIND-005": { "status": "resolved", "evidence": "apps/life-call/lib/voice-cheap.test.js:51-56 — JA harsh-vs-firm test added mirroring the existing EN test, hand-verified against voice-cheap.js:32's actual JA urgency strings." },
+    "FIND-006": { "status": "resolved", "evidence": "apps/life-call/lib/transit.test.js:63-70 — non-monotonic inline fixture where journeys[0] is NOT the earliest arrival, hand-verified the reduce() genuinely picks journeys[1]." },
+    "FIND-007": { "status": "resolved", "evidence": "apps/life-call/lib/user-selector.test.js:25-34 tightened from an at-least-once regex test to an exact-count(2) assertion; apps/life-call/scheduler.js:43,281 grepped directly and confirmed exactly 2 interpolation sites." },
+    "FIND-008": { "status": "open", "evidence": "Repo-wide grep confirms transit.js/route-cache.js/voice-cheap.js/money-path.js are still required only by their own *.test.js files (zero production callers); apps/life-call/migrations/ still has no lm_route_cache migration and apps/landing/monitors/registry.json still does not exist. Per review guidance this is a known follow-up for the E2E/wiring phase and is NOT scored as a unit-layer blocker in this iteration." }
+  },
+  "findings": [],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "priorFindingsResolved": 7,
+    "priorFindingsOpen": 1,
+    "openFindingIsBlocking": false
+  }
+}
