@@ -4,13 +4,19 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 調査正本: `docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`（全実測 file path 付き）
 **先行 spec（車輪。必読）**: `~/.openclaw/docs/superpowers/specs/2026-06-24-capafy-factory-automation-10k-100k-mrr.md` — 10k の算数（$10k ≈ 15-20 listings × ~$600 gross、blended ARPU $11/mo、純率 ~70%）、factory モード A（launchd+claude -p で勝者 clone 日次）、CP2 LLM hosting レシピ、leak/secret/E2E gate が確定済み。本 spec は「A: 修理」「B: marketing 新設」をそれに足す差分。
 注意: 06-25 の確定レシピは「sk-ant 鍵 + openai-completions」で OpenRouter 不採用だったが、現 runtime は `CAPAFY_HOST_OPENROUTER_KEY`（本日 live probe 200 OK）で動いている — 実装時はどちらかに統一し spec の 0.97 節を是正すること（併存は事故のもと）。
-状態: **IN PROGRESS（2026-07-17 着手）**。TaskList 登録済み 13件（A1/B0 = in_progress）。実装は vcsdd（Fable plan / subagent impl / Sol review。※この session の subagent env は gpt-5.6-sol 固定と実測済み）。
+状態: **IN PROGRESS（2026-07-17 着手、2026-07-18 大幅前進）**。実装は vcsdd（Fable plan / subagent impl / Sol review）。
 進捗はこの表を正とする:
 | task | 状態 |
 |---|---|
-| A1 provider/key 修理 + resubmit | 診断完了・gate 実装済み / **真因 = OpenRouter 残高薄（$1.59）、stale key でも provider 名でもない**。4 agents は under_review で editable でない（触れない）、orphan は後継 online で abandon → 実効修理は A2 の残高補充。CP2 作業は 0件（全 review-lock）。2026-07-18 実測 |
-| B0 IG account 復旧 | **account 確保 DONE（2026-07-18）**: 新規 @useclaudeskills 作成（既存6 account は全て clip niche 用で frozen/poisoned のため流用不可）。profile 完成・main :9222 login 済み・warmup day-1 実行済み・日次 warmup launchd 稼働。残: 7日 warmup 完了 → browser test 投稿 1件公開確認（B0 の done 到達）。詳細は §3 B0 行 |
-| 他 11件 | pending（TaskList 参照） |
+| A1 provider/key 修理 | 診断完了・key-health gate 実装済み。真因 = OpenRouter 残高薄のみ。4 agents は review-lock で編集不能、実効修理は A2 の入金。 |
+| A2 入金 | **⏳ Dais 判断待ち**。俺が card 補充を試行 → OpenRouter への Google login が **2FA phone-tap（Dais 個人スマホ）で停止** = no-human-loop で越えられない一点。sk-ant 代替 rail も残高ゼロ実測。**推奨 = 買い手が付くまで後回し（$1.59 でも smoke test 以外は稼働、live probe 200 実測）**。急ぐなら Dais が 2FA 承認1回 or web で $10-25 チャージ |
+| A3/A4/A6 | DONE（max-turns bounded / sales reconcile / self-fix backoff）。7日連続 audit は 07-21 以降に観測 |
+| A5 売れ筋 selector | in_progress（a1-executor、public scrape 方式） |
+| B0 IG account | DONE（@useclaudeskills、warmup day-1、日次 warmup launchd）。test 投稿は warmup 明け 07-25 |
+| B1-B4 IG marketing | **dry 完了（2026-07-18）**: selector→copy→faceless動画→ig-reels-poster browser-direct、全 dry green。実物動画（YouTube Script Writer 紹介、1080x1920/36.7s）を **Dais telegram msg 2518 に送付済み**。live は 07-25 |
+| B5/B8/B6/B7 X 線 | **凍結（Dais revoke @aniccaen 2026-07-18）**。コード資産は保持、投稿先は AI 専用 account のみ（Dais 3 handle は poster が hard refuse）。X 再開は #18（AI 専用 X account 新設）が前提、IG go-live 後に判断 |
+| B8 IG launchd | script ready、warmup 明け 07-25 に load |
+| 残（A7/OSS/#18） | pending |
 
 ## 0. 現実（2026-07-17 実測）
 
