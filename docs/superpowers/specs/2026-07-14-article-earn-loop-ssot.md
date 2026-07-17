@@ -690,10 +690,10 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | 優先 | 何 | 対応 |
 |---|---|---|
 | 1 | article-daily.sh の Telegram chat id デフォルト値4箇所 + プロンプト内 `~/.openclaw/...` パス30箇所超 | デフォルト値削除・必須 env 化（`TELEGRAM_TARGET_ID`）、パスは `OPENCLAW_HOME` ベース env に一本化 |
-| 2 | note user_id 直書き5箇所（publish-note.sh:260 ほか、env fallback 無し） | `NOTE_USER_ID` |
-| 3 | run.sh:40-43 の devto/substack/note/zenn 自アカウント直書き（唯一 env 無し箇所） | `DEVTO_ACCOUNT_HANDLE` / `SUBSTACK_PUBLICATION` / `NOTE_URLNAME` / `ZENN_ACCOUNT` |
-| 4 | 他 repo 絶対パス依存（`~/anicca-project` spec 参照、`~/anicca` git 操作、`~/.cloak` profile、note-mcp src） | `ANICCA_PROJECT_DIR` 等のベース env + vendor（7.2） |
-| 5 | `state/*.jsonl` `*.meta.json`（実行ログに実 URL/アカウント） | OSS repo では gitignore（ホワイトリスト方式なら自動で落ちる） |
+| 2 | ✅**完了（2026-07-17、#58a）**: note user_id 直書き（Session構築の全4ファイル: publish-note.sh:260 / note-stage2-publish.py:50 / note-publish/rebuild-note-body.py:64 / note-publish-draft.py:40）を `os.environ.get("NOTE_USER_ID","14651590")` / `os.environ.get("NOTE_URLNAME","anicca123")` へ env fallback化（未設定時は既存値と byte-identical、bash -n/python3 compile通過を実測）。commit: anicca-dais `d57dfd2c`（main-internal） |
+| 3 | ✅**完了（2026-07-17、#58a）**: run.sh:39-43 の devto/substack/note/zenn 自アカウント直書きを `${ZENN_ACCOUNT:-anicca-daisuke}` / `${DEVTO_ACCOUNT_HANDLE:-anicca_301094325e}` / `${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}` / `${NOTE_URLNAME:-anicca123}` へ env fallback化（env未設定→既定値、env設定→override、を実測確認。aniccaai-blogチャンネルは5大platformループ対象外のためスコープ外のまま）。commit: anicca-dais `d57dfd2c`（同上、run.sh part） |
+| 4 | 他 repo 絶対パス依存（`~/anicca-project` spec 参照、`~/anicca` git 操作、`~/.cloak` profile、note-mcp src） | `ANICCA_PROJECT_DIR` 等のベース env + vendor（7.2）。**未着手**（#58 の残作業、authfix 担当） |
+| 5 | ✅**完了（2026-07-17、#58a）**: `.gitignore` を blacklist から「default全無視(`*`) + `!`ホワイトリスト」方式（trailofbits/jarrodwatts、gh実測で確認した実際の公開repoから copy+tweak）へ書き換え。既存トラック済みファイルは無影響（gitignoreは追跡解除しない、`git status`前後差分ゼロを実測）、許可ディレクトリ配下の新規ファイルは`git add`可能（実測）、ルート直下の新規ファイル/`state/`ネスト/`.env`/`settings.local.json`は正しく除外（`git check-ignore`実測）。加えて`.claude/settings.json`にtrailofbits型`permissions.deny`（ssh鍵/クラウド認証情報/npmrc/keychain/walletアプリデータ/PEM等）を新設。commit: profitable-claude `c10cbfc` |
 
 ### 7.55 zero-config bootstrap 原則（2026-07-17 Dais 決定 — profitable-claude OSS の根本仕様）
 
@@ -708,11 +708,11 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | # | やること | 状態 |
 |---|---|---|
 | #53 | ✅**完了（2026-07-17）**: regex pre-check 強化: 「この記事」見出し（P1）・自己言及「自分（アニッチャ）」型（P2）・visual≥1 カウント（P3, mermaid/img/table）を deslop-gate.sh の deterministic pre-check に追加。実違反 fixture（zenn-20260717-agentskills-ja.md：P1/P2/P3 全て検出）+ 正常系/見出しバリエーション/閉じブロック許可表現の false-positive なしを実測。commit: anicca-dais `ab177174` | [x] |
-| #54 | `topics/` 機構実装（queue/in-progress/done + mv claim + STEP 1 配線）+ 初期カード3枚投入 | [ ] |
+| #54 | ✅**完了（2026-07-17）**: `topics/{queue,in-progress,done}/` 機構実装（カード frontmatter: lane/voice/sources/angle）+ 初期カード3枚（virtuals-acp.md / olas-mech-marketplace.md / humanizer-shootout.md、DEEP-QUESTIONS.md から質問リスト転記）+ article-daily.sh STEP 1 差し替え（queue先取り+mv claim、空ならlane B fallback）+ STEP 7（done/へmv、ledgerにlane記録）。bash -n通過、PROMPT変数のsingle-quoted heredocが意図通り展開されることを実測。commit: profitable-claude `0f2b939` | [x] |
 | #55 | ✅**完了（2026-07-17）**: `make-diary-digest.sh`（transcript+git log → 教訓抽出 → redaction gate → card）+ 23:30 launchd + redaction negative test。実装場所 `~/profitable-claude/skills/human-funded/article/topics/make-diary-digest.sh`。収集=deterministic bash（4 repo の当日 git log + 当日更新 docs/loop-engineering・.claude/handovers + `~/.claude/projects/*/*.jsonl` の当日 user turn を1500行cap）、抽出=claude -p（article-daily.sh run_claude_pass と同じ CLIProxyAPI ヘッドレス認証フォールバック）、書込前に必須 redaction gate（sk-/xox/Bearer/BEGIN/AKIA/password/api_key/電話番号パターン）。`--test-redaction` で negative(fake `sk-`鍵→FAIL実測) + positive(クリーン文→PASS実測) 両方確認。`--collect-only` で収集単体を実測（今日: commits=31, docs=0, transcript_lines=1500）。フル実行1回を実測: `topics/queue/2026-07-17-devlog.md` を実データ（token melting 根本原因・healthcheck 自己申告問題等）から生成、redaction gate 通過。同名カード再実行で idempotent SKIP を実測。launchd `ai.anicca.article-diary-digest`（23:30）を bootstrap 済み、`launchctl list \| grep diary` で登録実測。plist は `~/Library/LaunchAgents/`（gitignore対象外の個人環境）、repo には `topics/ai.anicca.article-diary-digest.plist.example` を同梱。commit: profitable-claude `f60052d` | [x] |
 | #56 | レーン A 用 récit テンプレ（Dais 名義一人称、Rule 41/65 のレーン分岐）を SKILL.md に追記 | [ ] |
 | #57 | k16 gist を japanese-tech-writing として vendor + deslop checklist の文書種別分岐 | [ ] |
-| #58 | OSS 自己完結化: stop-slop 系 vendor、7.5 の env 化 1-5、ホワイトリスト .gitignore、deny rule 同梱 | [ ] |
+| #58 | OSS 自己完結化: stop-slop 系 vendor、7.5 の env 化 1-5、ホワイトリスト .gitignore、deny rule 同梱。**#58a（非衝突分: 7.5 の env化項目2/3/5 + ホワイトリスト.gitignore + deny rule）は完了、詳細は §7.5 該当行**。残り（stop-slop系vendor、7.5項目1のarticle-daily.sh Telegram/OPENCLAW_HOME化、項目4のANICCA_PROJECT_DIR化）は authfix 担当で継続中 | [~] |
 | #59 | ✅**完了（2026-07-17）**: #47 無料版 Sources 落ち修理。詳細は §4「#47 無料版が Sources ブロックを落とす」行を参照。commit: anicca-dais `2092337b`（main-internal）。AUTOPUBLISH arm（ARTICLE_AUTOPUBLISH=1 の plist 注入）は既存決定通り数日の gate green 観測後に Dais の go 一言で実施——本コミットではまだ実施していない | [x] |
 | #60 | ~~Substack Stripe 確認~~ ✅完了（2026-07-17 実測: ON 済みだった）。残タスク変形 → daily-driver の Substack session 復活済み、X-publish 同様に session 失効の healthcheck 対象へ追加検討 | [x] |
 | #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
