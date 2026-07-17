@@ -117,6 +117,13 @@ feedback(TG)→issue→spec 1p→TDD→impl→adversary→main→Railway deploy�
 - gated web onboarding（/lm?tg=…）もブラウザ E2E 可。
 - E2E = 実 side-effect（TG 実受信・実 call 着信・gcal 実書込）を自分の目で確認するまで done と言わない。
 
+## 4c. Dais align 回答（2026-07-17 追記）
+- **feedback source = 全ユーザー**（Dais は one of them）。dev loop は Telegram intake 経由の全 user feedback を issue 化して食う。iteration speed = god speed。
+- **vision 正本 = `docs/loop-engineering/46-life-manager-northstar-and-personal-loops.md`**（北極星: 財務/身体/精神 autopilot、local=OSS 無料 / cloud=subscription で**中身は同じコード**、profitable-claude の earn loops は最終的に Life Manager へ統合、FUTURE-MSG=メール triage 実返信、FUTURE-AFFIRM=mem0 型記憶で super-tailored affirmation）。
+- **進め方**: 今日まず人力で全部一周 fix（プロセスを知らずに自動化はできない）→ そのプロセスを dev loop skill に焼いて無人化。
+- **Mac mini worker 案は棄却**（スケールしない）。browser 基盤は cloud。`docs/loop-engineering/45-scale-hosting-and-session.md` が既に結論: 脳（agent プロセス）と手（browser）を分離、手 = **steel-browser（7.3k★, session/proxy/anti-detect/lifecycle が agent 向け）第一候補、browserless（13.5k★, 枯れた concurrency/lifecycle）が成熟度対抗、Browserbase = マネージド従量（Contexts で profile 永続）**。2026-07-17 に pricing 込み再調査中（結果は本 spec に追記）。
+- **repo 収斂の提案**（Dais 判断待ち→ LM-20）: `apps/life-call` を `Daisuke134/life-manager` へ移し、**1 codebase = local(OSS, gog)/cloud(Railway, Composio) を `LIFE_TRANSPORT` env で切替**（#74 設計の完成形）。anicca-products は landing のみ残す。今日の P0 fix は現行 prod 経路（anicca-products/main）でやり、migration は fix 後。
+
 ## 5. Align 未決 3 点（Dais 判断待ち）
 1. **issue 置き場**: 11 issues は Daisuke134/life-manager に立っているが実装先は anicca-products/apps/life-call。dev loop の issue SSOT をどちらに寄せるか（提案: anicca-products へ transfer、life-manager repo は OSS local 版として凍結）。
 2. **connector系のブラウザ**: cloud で Luma 登録/求人応募にはブラウザ必要。Railway に CloakBrowser 無し → browserless/steel.dev 等のリモートブラウザ or Mac mini を worker にする hybrid。要決定。

@@ -70,6 +70,8 @@ Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行。自�
 | `~/.openclaw/` | anicca-dais (private) | gateway/cron/skills/state（cron 正本、trunk=main-internal） |
 | `~/anicca/` | anicca (public OSS) | OSS フレームワーク |
 
+**Life Manager**: cloud 本番 = `anicca-products` **origin/main** `apps/life-call/`（Railway。dev/feature branch には無い）。local 版 = `~/Projects/life-manager`（Daisuke134/life-manager、収斂予定）。SSOT spec → `docs/superpowers/specs/2026-07-17-life-manager-cloud-alignment-and-dev-loop.md`、vision → `docs/loop-engineering/46-life-manager-northstar-and-personal-loops.md`
+
 GitHub Actions の新規追加は禁止（`netlify-deploy.yml` の1個のみ）。定期実行は `~/.openclaw` の gateway cron が正本。
 詳細（folder tree / architecture 図 / write 制限）→ `CLAUDE.local.md`。
 
