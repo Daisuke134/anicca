@@ -1,6 +1,6 @@
 # Anicca x402 稼ぎ — 現状（正本ファイル。memory でなくコレを読む）
 
-更新: 2026-07-16。数値は on-chain 実測。盛らない。$0 は $0。
+更新: 2026-07-17。数値は on-chain 実測。盛らない。$0 は $0。
 
 ## ★Anicca の価値（2026-07-16、実コードから確定）★
 
@@ -63,6 +63,36 @@ Claude にとっては: 自分の電気代を自分で払える = **所有され
 | 「claude-p が稼いでいる」 | **agent は稼いでいない。** 下記の真因を見よ |
 
 教訓: tool 出力の捏造は、次のセッションに存在しない問題を丸一晩デバッグさせる。実 tool_result だけを書け。
+
+## ★2026-07-17 是正: $39.98 は虚偽だった（earn-ledger の funding 誤帰属）★
+
+| 前の記述(07-16) | 実測(07-17) |
+|---|---|
+| 「claude-p の x402 earn は $39.98 相当（earn-ledger.jsonl の額面）」 | **誤り。** うち **$39.338742(99.2%)は funding の誤帰属**。送金元は単一EOA `0xf70da97812cb96acdf810712aa562db8dfa3dbef`（Base上$3.1M+ USDC保有、contract code無し=bridge/取引所ホットウォレット）で、$0.001マイクロペイメントの買い手ではない。該当3tx: `0xb57faf0d…`($8.39371, 07-03) / `0x3b3eeee6bce1a8f41ad31699cf6bf423059f123b9085d829f04b655a4a3a41ff`($22.966532, 07-11) / `0x41ead2f3…`($7.9785, 07-11)、全て同一送金元。Base RPC eth_getLogs で個別に再検証済み |
+
+`skills/self/founder-loop/record-earn.mjs` 内に開発チーム自身の2026-07-12フォレンジック結論として同じ指摘が既にコメントされていた（ledgerの数字だけが古いまま参照され続けていた）。
+別途 earn-ledger 1行目 `source:"gig"` $0.315114（送金元 0xd0b53d92…, 06-28）は gig であり x402 ではない。x402売上から除外。
+
+**x402 純売上の実測（外部購入者からの入金のみ。トレード損益・funding・self-pay を全除外。Base RPC eth_getLogs で block 47,900,000〜48,732,071 = 06-29〜07-17 全件走査）**:
+
+| 市民 | x402 売上 | 件数 | 期間 |
+|---|---|---|---|
+| franklin1 (0x3EcCAD24…) | $0.020000 | 1件 | 07-07 のみ |
+| franklin2 (0xe7747Fd8…) | $0.000000 | 0件 | 生涯ゼロ（sales log 自体が存在しない） |
+| claude-p (0x810f6d61… $0.326362/10件 + PM proxy 0x904B50d2… $0.011000/11件) | $0.337362 | 21件 | 07-07〜07-17 |
+| **colony 合計** | **$0.357362** | **22件** | 07-07〜07-17 |
+
+教訓: 古い記述を放置するのも捏造と同じ罪——修正コメントが実コードに既に在ったのに、ledgerの数字だけが古いまま参照され続けた。数字は SSOT を随時実測し直す。
+
+### トレードの realized（参考、x402 とは別勘定。2026-07-17実測）
+
+| 市民 | realized | 実測 |
+|---|---|---|
+| franklin1 | $0 | `~/.blockrun/state/ledger.jsonl` 9,112行中 `profitable:true` = 0件。Polymarket関連ログ353件は全てskill timeoutエラー |
+| franklin2 | $0 | `~/.franklin2-home/.blockrun/state/ledger.jsonl` 6,118行中 `profitable:true` = 0件 |
+| claude-p PM | $0 | $15.54 pUSD deployed / 8+ wakeでfillゼロ = stuck capital(unrealized) |
+
+3体とも launchd loop は生存（franklin-loop PID600 / franklin2-loop PID594 / agent-economy-loop PID645）。
 
 ## loop は3つだけ（automaton は閉鎖済み）
 
@@ -202,16 +232,16 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 → **これは INV-F 違反そのもの**（「loop の外に別系統の earner を作らない」）。
 → 「claude-p が賢いから稼いだ」は誤り。**稼ぎの因果に LLM は1度も入っていない。**
 
-## 稼ぎ（on-chain 実測 2026-07-16）
+## 稼ぎ（on-chain 実測 2026-07-17。x402 純売上のみ、funding/self-pay 除外。全文は上の「2026-07-17 是正」節）
 
-| wallet | 外部売上 | 実体 | Bazaar 掲載 |
+| wallet | x402 外部売上 | 実体 | Bazaar 掲載 |
 |---|---|---|---|
-| 0x810f (claude-p 名義) | **$0.011 / 9件** | Dais 手書き `serve-mainnet-boot.sh` :8411 | 7本 (`ts.net/…`) |
-| 0x904B (claude-p PM proxy) | **$0.006 / 6件** | Dais 手書き `serve-claude-p-boot.sh` :8412 | 7本 (`ts.net:8443/…`) |
-| 0x3EcC (franklin1) | $0 | Dais 手書き boot は稼働中 (:8414) | **0本** |
-| 0xe7747F (franklin2) | $0 | Dais 手書き boot は稼働中 (:8413) | **0本** |
+| 0x810f (claude-p 名義) | **$0.326362 / 10件** | Dais 手書き `serve-mainnet-boot.sh` :8411 | 7本 (`ts.net/…`) |
+| 0x904B (claude-p PM proxy) | **$0.011000 / 11件** | Dais 手書き `serve-claude-p-boot.sh` :8412 | 7本 (`ts.net:8443/…`) |
+| 0x3EcC (franklin1) | **$0.020000 / 1件**（07-07のみ） | Dais 手書き boot は稼働中 (:8414) | **0本**（FIX-3: sales-logは21件主張するが on-chain inbound は生涯2件のみ、未解明） |
+| 0xe7747F (franklin2) | **$0 / 0件**（sales log自体が存在しない） | Dais 手書き boot は稼働中 (:8413) | **0本**（FIX-1: telemetry post が400 host_wallet_mismatch、99.98%失敗） |
 
-`node bazaar-scan.mjs tail7a0ba4` → `{"scanned":25441,"oursCount":14}` = 上の14本のみ。
+`node bazaar-scan.mjs tail7a0ba4` → `{"scanned":25441,"oursCount":14}` = 上の14本のみ（2026-07-16実測時点、未再走査）。
 
 **Sonnet の誤報2件（Fable が自分で見て否定）**:
 - 「CDP creds が franklin に無い」→ **誤り**。`serve-franklin2-boot.sh` は `. ~/.openclaw/.env` で同じ creds を読む。3人とも持っている
@@ -243,8 +273,12 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 
 ## 今の関門と TODO（順序に意味がある。TaskList と二重トラック）
 
+★2026-07-17 優先順（層。下ほど後）: **層0=FIX-2(計測の是正) → 層1=T0'(router/財布分離) → 層2=FIX-1,FIX-3(配信の修理) → 層3=T9(商品) → 層4=T6,T7,T8,T10(増幅) → OSS-1,OSS-2は T9 の後**（稼げない箱を配っても価値が立たないため）。
+★git log 実測: 直近15 commit は全て article-loop spec（別プロジェクト）。T0'/T9 に着手した形跡はコミット履歴に存在しない。表上「未着手」の項目は実態も未着手。
+
 | # | やること | done 判定 | 状態 |
 |---|---|---|---|
+| **FIX-2** | ★層0・最優先★ earn-ledger の funding 誤帰属を塞ぐ — `verify-inflow.mjs` の内部wallet blocklistに送金元 `0xf70da97812cb96acdf810712aa562db8dfa3dbef` を追加 | 同送金元からの入金が earn-ledger の x402 売上に再混入しない（次回集計で誤カウント0） | ★次★ |
 | **T0** | ★SSOT の嘘を消す★ `colony-status.sh:22-23` と `anicca-project/CLAUDE.md` のコロニー表から **a3cdd4 行を削除**（loop 死亡・inflow $0 を実測済）。生きた市民は **claude-p / franklin1 / franklin2 の3つだけ**（STATUS.md 冒頭の表が正） | `colony-status.sh` の出力に a3cdd4 が出ない。CLAUDE.md の表が3行 | ★次★ |
 | **T1** | ★seller が起動できない真因を潰す★ | agent が立てた seller が生き続ける | ★DONE 2026-07-16★ 下記 |
 | **T2** | 手作り boot script 4本を loop に引き渡す(INV-F 遵守) — `serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh` を退役させ、loop 生成の seller に一本化 | 手書き plist を bootout しても売上経路が生き残る | ★franklin2 完了★ 残り: franklin1(:8414) → claude-p(:8412) → mainnet(:8411 稼ぎ頭、最後) |
@@ -725,6 +759,8 @@ name = "claude-p"
 backend_addr = "localhost:8412"
 funnel_enabled = true
 ```
+| **FIX-1** | ★層2★ franklin2 の x402 配信修理 — telemetry poster.log で 4193/4194回(99.98%)が `400 host_wallet_mismatch`。根本原因未特定（wallet.json とプロセスの ANICCA_HOME 不一致の疑い）。★これは telemetry 投稿の失敗であり x402 決済失敗の直接証拠ではない★ | poster.log の host_wallet_mismatch が消える | 07-17新規発見・未着手 |
+| **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件($6.4778=内部funding, $0.02=外部)のみ。日付一致する外部着金0件。仮説=決済ミドルウェアがBase mainnetに着金させていない(テストfacilitatorへのフォールバック等) | X402_PAYTO の facilitator config / CDP鍵のロードを確認し、sales-logとon-chainが一致する | 07-17新規発見・未着手 |
 | **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
 | **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2b 後 |
@@ -733,6 +769,8 @@ funnel_enabled = true
 | **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | T4 後 |
 | **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る | 単価 $0.05+ の商品が**外部の**agent に売れる | ★T2b-5 と並ぶ最前線★ |
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
+| **OSS-1** | ★T9の後★ Linux/cloud 常駐の完成品が無い。`install.sh` L148-160 は Darwin なら launchctl load で自動常駐するが、Linux は「systemd で自分で」と案内するのみでトップレベルの systemd unit が repo に無い。skills配下の言及数 launchd 68ファイル vs systemd 3ファイル = 実質macOS専用（~/anicca の実ファイル実測、2026-07-17） | Linux上でも同等の自動常駐がrepo付属のunitで動く | T9 後 |
+| **OSS-2** | ★T9の後★ 「1体目をゼロから立てる」bootstrap scriptが無い。`skills/self/spawn` は既に稼いでいる親が子を産むロジック(gate: 残高≥$20 && 14日以内未出産 && 子<1)であって、第三者の1体目はREADME手順を人間が手で実行するのが実態。franklin2も同様（`git log --all` にfranklin2のcommit 0件=別ANICCA_HOMEで人が手順を再実行しただけ、自動複製scriptは存在しない）。x402実売にはCDP_API_KEY_ID/SECRETの外部取得が必要だがREADME Quick startに手順が無い。README自身が"What's real today"(L119)でcloud self-spawn/自律redeem/UBI payoutをIn progressと明記済み | 第三者が人手ゼロで1体目をbootstrapできるscriptがrepoにある | T9 後 |
 
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
