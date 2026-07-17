@@ -23,7 +23,9 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SCRIPT="$(cat "$SCRIPT_FILE")"
 ID="money-$(date +%Y%m%d-%H%M%S)"
 # b-roll search query = simple keyword PARSE of the script (deterministic, not judgment)
-QUERY="$(printf '%s' "$SCRIPT" | tr 'A-Z' 'a-z' | grep -oE 'money|saving|invest|budget|debt|credit|retire|tax|income|wealth|stock|bank' | head -1)"; [ -n "$QUERY" ] || QUERY="money"
+# BROLL_QUERY env lets a non-finance caller (e.g. the Capafy IG loop) pick topic-appropriate
+# b-roll instead of the finance default — the running agent sets it per the listing's category.
+QUERY="${BROLL_QUERY:-$(printf '%s' "$SCRIPT" | tr 'A-Z' 'a-z' | grep -oE 'money|saving|invest|budget|debt|credit|retire|tax|income|wealth|stock|bank' | head -1)}"; [ -n "$QUERY" ] || QUERY="money"
 echo "id=$ID query=$QUERY chars=${#SCRIPT}"
 printf '%s\n' "$SCRIPT" > "$OUT/$ID.script.txt"
 
