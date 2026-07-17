@@ -121,10 +121,16 @@ Capafy support メールの主張: 全 agent が `FailoverError: publisher_opena
 | usage_daily | $0.000192（=ほぼ使われていない） |
 | live 呼び出し | `anthropic/claude-sonnet-4.6` に実 request → **200 OK、"ok" 返答**（billing error 再現せず） |
 
-**結論（仮説順位）**:
-1. **最有力: Capafy hosted 側の agent version が古い（rotate 前の）key を保持**。Capafy メール自身の選択肢 2「You replaced the API key, but the current Agent version may still be using the old key」に一致。現行 .env key は生きているのに hosted テストが fail する説明がつく。usage_daily ≈ $0 も「Capafy からの呼び出しが現行 key に到達していない」ことと整合。
-2. 次点: 残 $1.59 は薄く、将来枯渇は時間の問題（真因ではないが補充推奨）。
-- 対処: 各 agent version の Packages & Keys で key を現行値に入れ直し → Test Run green を確認 → resubmit。加えて OpenRouter へ $10-25 補充。skill の self-heal に「publish 前に OpenRouter /credits 実測 + live probe 1発」ゲートを追加する。
+**結論（当初の仮説順位 — 2026-07-18 に実測で是正済み。下記「訂正」参照）**:
+1. ~~最有力: Capafy hosted 側の agent version が古い（rotate 前の）key を保持~~ → **FALSE（是正済み）**
+2. 次点: 残 $1.59 は薄い → **これが真因だった**
+
+### 訂正（2026-07-18、A1 executor 実測）— stale key 仮説は誤りだった
+- `~/.openclaw/.env.bak-20260717-rotate` の旧 key と現 `.env` の新 key を実測比較 = **完全同一**（両方 `sk-or-v1-5598...7b26`、len 73）。OpenRouter host key は 1本のみで rotate されていない（07-17 rotate は別 key 群）。よって **hosted key = local key = 現行 key**、stale key は存在しない。
+- provider 名 `publisher_openai_official` も cosmetic（`url_proxy.py:84` の default skeleton）。hosted config は `vendor_id=79 / vendor_name=OpenRouter / model=anthropic/claude-sonnet-4.6 / api_format=openai-responses` が正しく、live probe 200 OK = 機能経路は正常。名前は機能的原因ではない。
+- **真因 = OpenRouter 残高が薄い（remaining $1.59）**。billing error は auth(401) ではなく balance(402)。「残高不足」は文字通り残高。
+- **対処（是正版）**: (1) OpenRouter へ $10-25 補充（= A2、唯一の実効修理）。(2) 4 agents は現在 `under_review` で version が **editable でない**（`publish-refresh-url` が "The current version is not editable"）→ CP2 入れ直し/Test Run/resubmit は不可、review queue リセットを避け触らない。(3) orphan 2485008254 は後継 7686597754 が online のため abandon。
+- **再発防止**: `scripts/key_health_gate.sh`（/credits remaining>=閾値 かつ sonnet-4.6 live probe 200 の両方で fail-closed）を新設し `publish_prepare.sh`/`publish_finish.sh` に配線済み。実測 green。詳細 → `~/.openclaw/skills/capafy-autopublish/state/lessons.md`。
 
 ## 3d. Capafy loop の実行構造・通知・self-fix（実測）
 

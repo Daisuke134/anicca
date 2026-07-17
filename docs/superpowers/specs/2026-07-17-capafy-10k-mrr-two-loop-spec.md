@@ -8,7 +8,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 進捗はこの表を正とする:
 | task | 状態 |
 |---|---|
-| A1 provider/key 修理 + resubmit | in_progress |
+| A1 provider/key 修理 + resubmit | 診断完了・gate 実装済み / **真因 = OpenRouter 残高薄（$1.59）、stale key でも provider 名でもない**。4 agents は under_review で editable でない（触れない）、orphan は後継 online で abandon → 実効修理は A2 の残高補充。CP2 作業は 0件（全 review-lock）。2026-07-18 実測 |
 | B0 IG account 復旧 | in_progress（A1 の browser 作業完了後に開始 — CloakBrowser :9222 は共有 resource、同時駆動禁止） |
 | 他 11件 | pending（TaskList 参照） |
 
@@ -19,7 +19,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | online listings 21 / **実売上 $9.99 gross（1件、06-23）、seller 取り分 $8.00 未出金** — local ledger は $0 のまま = reconcile 欠落バグ | Capafy live API（研究 MD §3c-0） |
 | bottleneck = discoverability（21 listings で 3ヶ月 1件 = 露出不足） | `capafy-loop/state/STATE.md:5-10` + sales/trend |
 | rejected の現況: 4件は再提出済み manual review 中、真 rejected は orphan 1件のみ（self-fix が 07-17 に自走修理済み） | 研究 MD §3c-0 |
-| billing error: 現行 OpenRouter key は live probe 200 OK（残 $1.59）。真因候補 = hosted stale key + packager が provider 名 `publisher_openai_official`（OpenAI 用の名前）に openrouter endpoint を焼く不整合（正名 `publisher_openrouter_official`、`official_providers.py:163-170`） | 研究 MD §3c/§3c-0 |
+| billing error 真因【2026-07-18 確定】= **OpenRouter 残高薄（remaining $1.59）**のみ。stale key 説は FALSE（旧 key==新 key、同一 `sk-or-v1-5598...7b26`）。provider 名 `publisher_openai_official` は cosmetic（vendor_id=79=OpenRouter で routing 正常、live probe 200）。→ 実効修理は残高補充（A2）。gate `key_health_gate.sh` 実装済み | 研究 MD §3c 訂正節 + lessons.md |
 | retry 停止の直接原因 = headless CP1 driver の max-turns(60) 枯渇 | `daily_loop.log` 07-17 19:45 |
 | 通知は AgentMail + Telegram 両方送信成功（07-17 12:47）。Dais 未受信は受信側設定の疑い | 研究 MD §3c-0 |
 | verify-loops-audit（6h）が self-fix を反復 spawn する地雷 | 研究 MD §3c-0 |
@@ -45,7 +45,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 
 | # | タスク | done 条件 |
 |---|---|---|
-| A1 | packager の provider 名不整合を修理: openrouter endpoint には `publisher_openrouter_official`（`official_providers.py:163-170`）を使う。staging 済み agent version の key/provider を CP2 driver で入れ直し、Test Run green 確認後 resubmit | Capafy remote-status で manual-review 4件 + orphan 1件が online |
+| A1 | ~~provider 名不整合を修理 + CP2 で key 入れ直し + resubmit~~ → **2026-07-18 是正**: provider 名は cosmetic、stale key 無し、真因は残高薄のみ。4 agents は under_review で editable でなく CP2 不可（review-lock、`"The current version is not editable"`）。orphan 2485008254 は後継 7686597754 online で abandon。**実装したのは fail-closed の `key_health_gate.sh`（prepare/finish に配線）** = 残高不足の口座へ publish しない。実効修理（残高補充）は A2。 | 【done 条件は Capafy の人手 review 待ちで A1 単独では到達不能】gate が green + 4 agents が balance 補充後の review を通過 or 再 reject 時に fresh-key resubmit |
 | A2 | OpenRouter 残高補充（$10-25）＋ publish 前 key-health gate（`/credits` 実測 + sonnet-4.6 live probe 1発）を `publish_prepare.sh` に追加 | gate FAIL 時は publish 中断 + AgentMail 報告 |
 | A3 | max-turns 枯渇対策: 1 pass = 1 agent に制限（貪欲 retry 禁止）。60 turns 超過時は state 保存して次 pass 継続 | 3日連続で BLOCKED rc=1 ゼロ |
 | A4 | **sales reconcile バグ修理**: `GET /agent/sales/trend` + `payout-info` を daily で読み local earn-ledger に書く（現状 capafy_rows=0 で $9.99 を見落としていた）。「稼いだ」判定は server ledger 実測のみ | ledger に 06-23 の $9.99 行が入る + daily 報告が server 値と一致 |
