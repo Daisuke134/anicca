@@ -103,8 +103,8 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 |---|---|
 | gate/pass の claude -p 認証死 | ✅**解消（2026-07-17）**: keychain OAuth は headless で失効する（expiresAt:0, claude-code#76905）。CLIProxyAPI :8317（daisukenarita53 の Max OAuth 保持）経由に配線。`~/.cli-proxy-api-key` 存在時のみ有効、無ければ従来 fallback。E2E 実証: 07-17 ja draft に deslop-gate が実 PASS を返した。commits: anicca-dais `22d0f13b` / profitable-claude `4084ce2` |
 | AUTOPUBLISH 未arm | **唯一の無人公開ブロッカー**。plist へ `ARTICLE_AUTOPUBLISH=1` 注入は Dais 保留（2026-07-15 判断）のまま |
-| visual≥1 gate 不在 | 07-17 記事は ja/en とも mermaid=0 img=0 table=0 で素通り（実測）。枚数カウントは regex で決まる事項 → deterministic pre-check に追加する（→ §7 TODO） |
-| 自己言及・「この記事」が regex pre-check 未登録 | SKILL.md Rule 41/65/42/52 で禁止済みだが deslop の blocking(B1-B5) 対象外のため、gate が生きてても素通りする（07-17 に「自分（アニッチャ）は…」が PASS、実測）。→ pre-check 昇格（→ §7 TODO） |
+| visual≥1 gate 不在 | ✅**解消（2026-07-17、#53）**: deslop-gate.sh の DETERMINISTIC PRE-CHECK に P3（mermaid/img/table 合計カウント、生 $MD を走査）を追加。07-17 記事の実 fixture（mermaid=0 img=0 table=0）で FAIL を実測、正常系 fixture（visual あり）では素通りを実測 |
+| 自己言及・「この記事」が regex pre-check 未登録 | ✅**解消（2026-07-17、#53）**: deslop-gate.sh に P1（見出し「この記事」）+ P2（自己言及「自分（アニッチャ）」型 apposition）を追加。実違反 fixture（`state/zenn-20260717-agentskills-ja.md` の「## 最初に：この記事は何か」「自分（アニッチャ）は日々…」）で FAIL を実測。閉じ [8] ブロックの許可済み表現「アニッチャ というAI」は誤検知なしを実測 |
 | #47 無料版が Sources ブロックを落とす | 方針決定済み・未実装 |
 | 換金ノード | note 買い切りは実装済み（¥1,000 実売1本）。note membership は未ON（設計判断: 記事65本まで作らない）。**Substack は換金 ON 済みだった（2026-07-17 実ブラウザ実測で旧記述「未ON」を是正）**: @anicca2 に email magic-code で自動再ログイン成功（人間ゼロ）、Stripe 接続済み・有料購読有効・$8/月・$80/年・創設メンバー $240、draft 43件実在。→ #23 の Substack 側は完了、note membership 側のみ将来 TODO |
 | tiktok companion | 未実装（publish matrix に名前だけ）|
@@ -699,7 +699,7 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 
 | # | やること | 状態 |
 |---|---|---|
-| #53 | regex pre-check 強化: 「この記事」見出し・自己言及（自分（アニッチャ）等）・visual≥1 カウントを deterministic pre-check に追加 | [ ] |
+| #53 | ✅**完了（2026-07-17）**: regex pre-check 強化: 「この記事」見出し（P1）・自己言及「自分（アニッチャ）」型（P2）・visual≥1 カウント（P3, mermaid/img/table）を deslop-gate.sh の deterministic pre-check に追加。実違反 fixture（zenn-20260717-agentskills-ja.md：P1/P2/P3 全て検出）+ 正常系/見出しバリエーション/閉じブロック許可表現の false-positive なしを実測。commit: anicca-dais `ab177174` | [x] |
 | #54 | `topics/` 機構実装（queue/in-progress/done + mv claim + STEP 1 配線）+ 初期カード3枚投入 | [ ] |
 | #55 | `make-diary-digest.sh`（transcript+git log → 教訓抽出 → redaction gate → card）+ 23:30 launchd + redaction negative test | [ ] |
 | #56 | レーン A 用 récit テンプレ（Dais 名義一人称、Rule 41/65 のレーン分岐）を SKILL.md に追記 | [ ] |
