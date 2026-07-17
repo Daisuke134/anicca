@@ -490,3 +490,10 @@ identity layer for AI agents: 実 email + **実 phone(SMS/voice)** + iMessage + 
 - ★ただし Meta の認証コードが **Dais のスマホ Messages 自体にも届いていない**（転送以前に Meta SMS が未着）。= 先に送った2回は不達。resend で配信を再試行する必要。
 - 状態: ブラウザ :9228(profile meta-dev) は日本番号入力済・コード待ちで保持。次の一手 = :9228 で resend → chat.db(転送ONで着信するはず) から6桁自動読取 → 入力 → dev登録完了 → App作成→IG tester→60d token。
 - 未着が続くなら仮説: (a)Meta の対日本SMS遅延 (b)番号入力の国コード/形式ズレ (c)Meta が短時間の再送を抑制 → 数分空けて resend、それでも来なければ別番号(SMSPool/Inkbox$10)へ。
+
+## v17 — Meta SMS が Mac Mini に未着で block（2026-07-17）
+- resend(14:55)しても Meta の6桁が この Mac Mini の chat.db に一件も来ない（全着信ゼロ、転送 ON にしたはずだが実測ゼロ）。
+- Meta UI は同一番号への再送を disabled でブロック（別番号でのみ再有効化）。フェイク番号送信はせず実番号に戻して停止（不可逆なし）。
+- 切り分け（Dais 依存）: (A)iPhone 本体に Meta コードが届いてるか? YES→転送先に Mac mini が入ってないだけ（設定>メッセージ>テキストメッセージ転送で Mac mini をチェック）or コードを直接読んで貼る。NO→Meta が対象番号に配信してない→別番号(SMSPool ~$1-2 / Inkbox $10)=money 判断。
+- ブラウザ :9228(tab E3973A99...) Verify 画面保持。番号 or コードが得られ次第、App作成→IG tester→60d token→POST を Graph API 化。
+- ★セッション超長・token 大量消費・security事故1件 → handover 推奨。全状態は spec v1-v17 + task #1-21 に永続化済み、新セッションが :9228 と file から resume 可。
