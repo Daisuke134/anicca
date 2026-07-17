@@ -25,7 +25,7 @@ echo ""
 # Retired by Dais on 2026-07-16. The colony is these three. See docs/STATUS.md.
 
 echo "[1] franklin1       SELF-funded  (Franklin-Trading, Solana)   HOME=~/.blockrun"
-echo "    sol    8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-loop)=$(loop franklin-loop)"
+echo "    sol    F5SY…hZ5T   SOL=$(sol F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T)  USDC=\$$(solusdc F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T)   loop(franklin-loop)=$(loop franklin-loop)"
 echo "    x402   0x3EcCAD24…8749  Base USDC=\$$(erc20 $BASE $BUSDC 0x3EcCAD24794ca298D25378E9902A251322ea8749)   ★no X402_PUBLIC_URL = cannot list on Bazaar (T2b)★"
 echo ""
 echo "[2] franklin2       SELF-funded  (x402 seller)                HOME=~/.franklin2-home/.blockrun"
