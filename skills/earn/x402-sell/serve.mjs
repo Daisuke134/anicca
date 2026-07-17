@@ -111,27 +111,36 @@ app.get("/llms.txt", (_req, res) =>
 
 app.use(paymentMiddleware(payTo(), routes, facilitator));
 
-// sales log — any request that clears the paywall above IS a settled sale; record WHICH product
-// sold (on-chain shows only amounts, so without this a $0.001 sale is unattributable to a route).
-// One JSONL line per sale: {ts, route, price, payer}. payer = best-effort decode of the buyer's
-// X-PAYMENT authorization (absent → null, never blocks the sale).
+// sales log — INV-SETTLE: a request is only a SALE once settle() succeeds on-chain, never on
+// verify alone. x402-express (node_modules/x402-express dist/cjs/index.js) buffers res.write/end
+// after next() and only flushes them once `settled=true`; on settle SUCCESS it does
+// res.setHeader("X-PAYMENT-RESPONSE", ...) immediately before that flush, on settle FAILURE/absence
+// (statusCode>=400 short-circuit, or settle() throwing/returning success:false) it flushes a plain
+// 402 with NO such header. So the X-PAYMENT-RESPONSE header, read at the res 'finish' event (after
+// the real response left the process), is the only correct settle signal. The prior code logged on
+// next() — i.e. right after verify() passed, BEFORE settle() ever ran — which recorded verify-only
+// (often never-settled) requests as sales: root cause of franklin1's 21 payer:null false-positive
+// "sales" (2026-07-17 root-cause session). Requests that clear verify but never settle still carry a
+// real demand signal, so they go to attempts-<wallet>.jsonl instead of being silently dropped.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname as pdirname } from "node:path";
-const SALES_LOG = process.env.X402_SALES_LOG ||
-  join(pdirname(new URL(import.meta.url).pathname), "state", `sales-${payTo().toLowerCase()}.jsonl`);
-try { mkdirSync(pdirname(SALES_LOG), { recursive: true }); } catch { /* best-effort */ }
+const STATE_DIR = join(pdirname(new URL(import.meta.url).pathname), "state");
+const SALES_LOG = process.env.X402_SALES_LOG || join(STATE_DIR, `sales-${payTo().toLowerCase()}.jsonl`);
+const ATTEMPTS_LOG = process.env.X402_ATTEMPTS_LOG || join(STATE_DIR, `attempts-${payTo().toLowerCase()}.jsonl`);
+try { mkdirSync(STATE_DIR, { recursive: true }); } catch { /* best-effort */ }
 app.use((req, res, next) => {
   const product = PRODUCTS.find((p) => p.path === req.path);
-  if (product) {
-    let payer = null;
-    try {
-      const xp = JSON.parse(Buffer.from(req.header("x-payment") || "", "base64").toString("utf8"));
-      payer = xp?.payload?.authorization?.from || null;
-    } catch { /* header absent/opaque — sale still logged */ }
-    try {
-      appendFileSync(SALES_LOG, JSON.stringify({ ts: new Date().toISOString(), route: req.path, price: product.price, payer }) + "\n");
-    } catch { /* logging must never break serving */ }
-  }
+  if (!product) return next();
+  let payer = null;
+  try {
+    const xp = JSON.parse(Buffer.from(req.header("x-payment") || "", "base64").toString("utf8"));
+    payer = xp?.payload?.authorization?.from || null;
+  } catch { /* header absent/opaque — payer stays null, never blocks logging */ }
+  res.on("finish", () => {
+    const settled = !!res.getHeader("X-PAYMENT-RESPONSE");
+    const line = JSON.stringify({ ts: new Date().toISOString(), route: req.path, price: product.price, payer, settled }) + "\n";
+    try { appendFileSync(settled ? SALES_LOG : ATTEMPTS_LOG, line); } catch { /* logging must never break serving */ }
+  });
   next();
 });
 
