@@ -738,6 +738,11 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 - **既に staged 済みの2 draft自体の修理**: Substack の `draft_body` は生 markdown ではなく server-side の ProseMirror JSON（`GET /api/v1/drafts/{id}` で実測確認、python-substack の `api.py` リファレンスで `PUT /api/v1/drafts/{id}` の存在を確認）と判明。両 draft とも `content[0]=horizontal_rule` `content[1]=frontmatter見出し(H2)` `content[2]=重複タイトル(H1)` という同一構造だったため、この3ノードを除去した JSON を `PUT` で書き戻した。修理前の完全な JSON バックアップを取得済み。修理後に改めて `GET` して混入テキストが0件であることを確認し、さらに CDP 経由で実際の Substack エディタ画面を own-eyes screenshot で確認（ja/en 両方とも frontmatter/重複タイトルが消え「保存済み」draft のまま、公開ボタンは押していない）。
 - commit: profitable-claude(main) `59d4eac`
 
+**追記（2026-07-17、team-lead緊急指示3件、builder-authfix）: gate系の恒久化3点セット**。
+1. **gate fail-closed化**: deslop-gate.sh/eval-gate.sh の非ゼロ終了（通常のFAIL判定と、判定不能なFATAL/rc=2クラッシュの両方）を区別せずBLOCKING扱いする明示指示を article-daily.sh STEP 4.5 として新設。今日の checklist-path FATAL のような gate 自体のクラッシュを「その platform だけ今日ダメだった」と誤解して通過させないための安全策。commit: profitable-claude(main) `221327b`
+2. **gate判定の永続ログ化**: deslop-gate.sh/eval-gate.sh の全ての最終判定（mechanical FAIL・checklist-missing FATAL・no-json FATAL・LLM judgeのPASS/FAIL）を `~/.openclaw/logs/article-gates.log` へ append-only で記録（ts+script+mdファイル+lang+verdict）。eyecatchログ（commit `ad4c993`）と同じ恒久化パターン。tests/art/test_gate_verdict_log.sh で5/5実測（今日のchecklist-missing実インシデントを再現するケース込み）。commit: profitable-claude(main) `dae1f37`
+3. **k16 のja全体適用**: ja記事は従来 stop-ai-slop-jp（--doc-type note既定）とjapanese-tech-writing/k16（--doc-type tech）のどちらか一方しか判定されなかったが、Dais決定で両方を lane/doc-type 問わず必須化。連結prompt化は非収束リスクで既に却下済み（§7.4の12ラウンド非収束事故）のため、独立した2回のfresh judge呼び出し（G1a=note、G1b=tech）とし、両方blocking。run.sh と x-publish/publish-to-x.sh の両呼び出し箇所に配線。tests/art/test_ja_dual_checklist_gate.sh で12/12実測（構造検証、run.shの副作用回避のためこのディレクトリ既存の grep 方式を踏襲）+ 実LLM呼び出しでG1a/G1bが独立した別々のverdict/adviceを返すことを実測確認。commit: profitable-claude(main) `e20d495`
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
