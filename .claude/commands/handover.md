@@ -25,10 +25,9 @@ description: セッション引き継ぎノートを生成し、/goal プロン�
 - 「捨てた選択肢と理由」は特に重要（同じ議論を繰り返さない為）。
 
 ### ★次セッションの /goal コマンド（必須・これが本体）★
-Dais がそのまま貼れば **human-in-the-loop 無しで残作業を E2E 完遂**できる `/goal` を生成して載せる。
-- **★残作業が複数ドメインにまたがるなら `/goal` を複数出す★**（例: 記事の続き + コードの続き）。
-  1つのドメインだけ `/goal` を書いて他を「次にやること」の表に置き去りにしない
-  ＝ goal の無い残作業は次セッションで確実に落ちる。**残作業の数だけ goal がある**のが正しい状態
+Dais がそのまま貼れば **human-in-the-loop 無しで次の最優先を E2E 完遂**できる `/goal` を生成して載せる。
+- **★`/goal` は必ず1つだけ★**（goal-setter の掟 = "one durable objective"）。複数 goal を1回に渡すと executor が散って**どれも完遂できない**。残作業が複数ドメインにまたがっても、**最優先の1ドメインだけ** `/goal` にする。他は下の「次にやること」表に置く（表は goal ではなく次セッションが順に拾う索引。落ちない）。
+- 最優先の選び方: 「今これが終われば一番前に進む」1つ。迷ったら Dais に「次の1 goal はどれか」だけ聞く。
 - `goal-setter:goal-setter` skill の流儀（`~/.claude/skills/goal-prompt-builder/` の golden template）で書く。
 - **5節をこの順で**: `Objective` / `Scope` / `Constraints` / `Done when` / `Stop if`。
 - `Done when` は **machine-checkable な検証コマンド + evidence 条件**で書く（自己申告 done 禁止・実 side-effect / 実ブラウザ / on-chain / message_id で照合）。
