@@ -58,6 +58,28 @@ class TestTier1NeverRelogins(unittest.TestCase):
             cl.login.assert_not_called()
             cl.load_settings.assert_called_once_with(settings_path)
 
+    def test_tier1_success_dumps_refreshed_settings(self):
+        # gold standard (alsk1992 ig.py L556-708): a successful tier1 read must persist any
+        # server-rotated cookies back to disk, so the golden session stays fresh between runs.
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_path = os.path.join(tmp, "instagrapi-h.json")
+            with open(settings_path, "w") as f:
+                json.dump({"uuids": {}}, f)
+            accounts_path = _write_accounts(tmp, "h")
+
+            cl = mock.MagicMock()
+            cl.load_settings = mock.MagicMock()
+            cl.get_timeline_feed = mock.MagicMock(return_value={})  # tier1 verifies clean
+            cl.dump_settings = mock.MagicMock()
+            cl.login = mock.MagicMock()  # password login — must NEVER be called
+
+            res = {"handle": "h", "outcome": "failed"}
+            ok = ip.login_resilient(cl, "h", 9222, res, settings_path=settings_path, accounts_path=accounts_path)
+
+            self.assertTrue(ok)
+            cl.login.assert_not_called()
+            cl.dump_settings.assert_called_once_with(settings_path)
+
     def test_dead_session_with_existing_settings_refuses_password_relogin(self):
         # v23 core finding: a saved session that died is NOT a green light for password login —
         # that relogin is exactly what trips bloks. login_resilient must refuse, not relogin.

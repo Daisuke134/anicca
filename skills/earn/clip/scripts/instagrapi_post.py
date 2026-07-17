@@ -172,6 +172,7 @@ def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=Non
         try:
             cl.load_settings(settings)
             cl.get_timeline_feed()  # validates the session; identity guaranteed by filename
+            cl.dump_settings(settings)  # persist server-rotated cookies (gold standard, alsk1992 ig.py L556-708)
             return True
         except Exception as e:
             reason = logout_reason(cl)
