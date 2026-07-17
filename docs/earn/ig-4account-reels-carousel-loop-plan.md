@@ -589,3 +589,20 @@ fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1�
 - Dais 原則: warm_step.py も loop の中身。provision→warmup→post→measure→reflect の**全ノードが実際に配線されて動くか、1個ずつ観測して直す**。「システムを作る→loop が job→我々は観測→壊れてたら直す→また観測」。
 - 次の一手 = warmup ノードを配線して動かす: (1)warm_step.py がどう発火するか/warmup→ready 遷移の条件を map (2)@aiclips_world_hq2(status=provisioned_pending_live_post)を warmup 対象にする (3)session churn(browser web session と instagrapi device session が新垢で互いを無効化)を直す=posting/warmup 中は片方の session に統一 (4)warmup 1パス実行して観測。
 - 各ノードを個別に verify: provision✅ / warmup(要配線) / post(churn+warmup待ち) / measure(#3) / bio(#2) / reflect。
+
+## v22 — session churn 真因確定 + 修正設計（explore 実測 2026-07-17）
+
+### 真因（3つの構造的穴）
+1. **session churn**: 同一 IG 垢に「instagrapi mobile device session(投稿)」と「browser web session(session_vault_tick.sh が30分毎に warm + warm.py が生成)」の**2認証系統が並行して生きる**。新垢は信頼スコアが低く IG が「不審な同時 session」と判定→数秒で両方 invalidate。frozen 世代(world_hq/hub_hq)は3日 warmup で ready になったが、production 投稿の成功ログは**皆無**（真に post 可能だったか未検証のまま freeze）。
+2. **孤児 status**: @aiclips_world_hq2 = `provisioned_pending_live_post`。warm_step.py は `status=="warming"` のみ、run.sh は `"ready"` のみ拾う → どちらのループにも入らず一度も warmup されない。
+3. **昇格バグ**: warm_step.py の warming→ready 昇格は `log[-1].day>=3` だけ見て `aborts`(login失敗)を無視 → world_hq が login 失敗直後に day3 で誤 promote された実測。
+
+### 修正設計（1垢=1 session system に統一）
+- **統一方針**: signup(browser)完了後は、その垢を **instagrapi device session だけ**で運用。browser は signup 後に閉じ、session_vault_tick.sh / warm.py の browser-warm 対象から外す。warmup も instagrapi の read(get_timeline_feed/get_reels_tray/たまに like)で行い、browser を張らない → 2系統の並行が消え churn 解消。
+  - 実装: clip-accounts.json に `session_owner:"instagrapi"` フラグ。session_vault_tick.sh の jq フィルタ(`select(.status=="ready" or .status=="warming")`)に「session_owner!=instagrapi」除外を追加。
+- **孤児 status 修正**: `provisioned_pending_live_post` を warmup 対象にする。ただし browser warmup でなく instagrapi warmup に載せる（上記統一に合わせる）。status 遷移: provisioned → warming(instagrapi read で数日) → ready。
+- **昇格バグ修正**: warm_step.py の昇格判定に「最新 aborts が最新 log より新しければ昇格しない」ガードを足す。
+- **cooldown 注意**: tier3 24h cooldown(~07-18 15時)明けまで instagrapi password relogin 不可。それまでは settings(既存 device session)で read を試す。
+
+### #23 の実装単位（observe→fix→observe）
+(a) session_owner フラグ + session_vault 除外（churn 解消）(b) instagrapi ベース warmup ノード（browser 不使用）(c) warm_step.py 昇格バグ guard (d) @world_hq2 を warming に載せて instagrapi read で warmup 開始 → 観測。各々 verify。
