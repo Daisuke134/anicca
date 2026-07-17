@@ -9531,3 +9531,10 @@
 {"ts":1784303233,"wake_id":"00MRP42QEL9239618BB6EB4670","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784303377,"wake_id":"00MRP45TIJ7C715FAA0E144B57","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784303507,"wake_id":"00MRP48M3J42A5F7E83ABA4D8B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784303641,"wake_id":"00MRP4BGV851282BE4A00C4F48","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784303819,"wake_id":"00MRP4FAQO4D1BC6B0A893494A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784303992,"wake_id":"00MRP4IZY9CD29CF97DB7B4EBE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784304205,"wake_id":"00MRP4NKLE90E228C8D3E749B9","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784304359,"wake_id":"00MRP4QV4793E40DB175A94AC3","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304425,"wake_id":"00MRP4SA2Z27DD1C56893E47A6","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304491,"wake_id":"00MRP4TP06FB7040E4453443CA","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
