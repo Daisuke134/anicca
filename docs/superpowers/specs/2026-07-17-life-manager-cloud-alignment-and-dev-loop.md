@@ -121,7 +121,15 @@ feedback(TG)→issue→spec 1p→TDD→impl→adversary→main→Railway deploy�
 - **feedback source = 全ユーザー**（Dais は one of them）。dev loop は Telegram intake 経由の全 user feedback を issue 化して食う。iteration speed = god speed。
 - **vision 正本 = `docs/loop-engineering/46-life-manager-northstar-and-personal-loops.md`**（北極星: 財務/身体/精神 autopilot、local=OSS 無料 / cloud=subscription で**中身は同じコード**、profitable-claude の earn loops は最終的に Life Manager へ統合、FUTURE-MSG=メール triage 実返信、FUTURE-AFFIRM=mem0 型記憶で super-tailored affirmation）。
 - **進め方**: 今日まず人力で全部一周 fix（プロセスを知らずに自動化はできない）→ そのプロセスを dev loop skill に焼いて無人化。
-- **Mac mini worker 案は棄却**（スケールしない）。browser 基盤は cloud。`docs/loop-engineering/45-scale-hosting-and-session.md` が既に結論: 脳（agent プロセス）と手（browser）を分離、手 = **steel-browser（7.3k★, session/proxy/anti-detect/lifecycle が agent 向け）第一候補、browserless（13.5k★, 枯れた concurrency/lifecycle）が成熟度対抗、Browserbase = マネージド従量（Contexts で profile 永続）**。2026-07-17 に pricing 込み再調査中（結果は本 spec に追記）。
+- **Mac mini worker 案は棄却**（スケールしない）。browser 基盤は cloud。`docs/loop-engineering/45-scale-hosting-and-session.md` が既に結論: 脳（agent プロセス）と手（browser）を分離、手 = **steel-browser（7.3k★, session/proxy/anti-detect/lifecycle が agent 向け）第一候補、browserless（13.5k★, 枯れた concurrency/lifecycle）が成熟度対抗、Browserbase = マネージド従量（Contexts で profile 永続）**。→ 2026-07-17 pricing 込み再調査完了、結論 = **Steel 一本**（下 §4d）。
+
+## 4d. Browser 基盤の結論（2026-07-17 実測、引用付き）
+**勝者 = Steel（steel-dev/steel-browser、7,345★、Apache-2.0）を丸ごと採用。混ぜない。**
+- 決め手: ①OSS + **Railway 公式 self-host ガイドあり**（docs.steel.dev/overview/self-hosting/railway） ②cloud（steel.dev）と self-host が**同一 API**（`steel-sdk` npm、Playwright `.launch()`→`.connect(wss://)` 1 行差し替え）= MVP→scale を env 切替で書き直しゼロ ③Profiles API で user 毎 cookie/localStorage 永続（creds 永続の要件） ④従量が透明: Launch $0.10/hr（$30 無料 credit）/ Scale $250/mo+$0.08/hr（docs.steel.dev/overview/pricinglimits）。
+- 段階コスト（2 session/user/日 × 5min = 5 browser-hr/user/月）: **MVP(1-10 users)=$0**（無料 credit 圏内）/ Growth(10k users, 50k hr)≈$4-5k/mo / Scale(1M)=self-host クラスタ+Enterprise バーストのハイブリッド、compute 床 ≈$100k/mo。
+- 対抗比較: Browserbase Developer $20/mo 100hr込（成熟 Agent API、Stagehand 23.5k★だがコア非公開）/ browser-use Stealth $0.02/hr（最安の生ブラウザ、マネージド機能なし）/ Browserless 13.5k★（license=NOASSERTION、商用要確認）/ Anchor（認証特化 OmniConnect、最高価格）/ Lightpanda（AGPL copyleft + 描画なし=予約サイト不向き）/ Kernel（unikernel snapshot は魅力、料金非公開）。
+- ⚠ 1M 規模では browser-hr 代より **residential proxy 帯域が支配的コスト**。対策 = サイト毎エスカレーション（datacenter/no-proxy で開始→ブロック実測したサイトのみ residential+stealth）。Growth 段階で pilot 実測してから Scale 精密試算。
+- 統合: 1 job = 1 session = 1 context（user 間共有禁止）、session_id を job レコードに保存、user パスワードは暗号化保存→context へ直接注入（stdout/キーストローク中継禁止）、vendor concurrency 上限 = worker pool の back-pressure。
 - **repo 収斂の提案**（Dais 判断待ち→ LM-20）: `apps/life-call` を `Daisuke134/life-manager` へ移し、**1 codebase = local(OSS, gog)/cloud(Railway, Composio) を `LIFE_TRANSPORT` env で切替**（#74 設計の完成形）。anicca-products は landing のみ残す。今日の P0 fix は現行 prod 経路（anicca-products/main）でやり、migration は fix 後。
 
 ## 5. Align 未決 3 点（Dais 判断待ち）
