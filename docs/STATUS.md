@@ -273,10 +273,15 @@ x402-sell の payTo(Base `0x3EcCAD24…`)は別チェーン別鍵のため今回
 
 ### B. 各市民のTHINKモデル(実測)
 
-franklin1/franklin2 の THINK = `nvidia/llama-4-maverick`(無料、`ANICCA_BRAIN`=proxy経由)。
-franklin1のみ**skill実行**は`openai/gpt-5-mini`(有料、自分のx402で$2.16/日)。
-claude-p の THINK = `free/glm-4.7`(残高枯渇によるfreeフォールバック)。
-→ 3体とも「判断」自体は無料モデルで行っている。
+**★2026-07-17夜 是正: 「skill実行全般が有料」は不正確だった。実際は sol-trade skill 単独が原因(コード+cost_log+ledger実測)★**
+
+- THINK(メインloop判断) = **free固定**。franklin1のplistが `ANICCA_FREE_MODEL`/`ANICCA_LEAN_MODEL`/`ANICCA_FUNDED_MODEL` の3ティア全部を `nvidia/llama-4-maverick`(無料)に名指し。`tier.mjs:29-31` はenvを最優先するため、コードのデフォルト`'auto'`(残高があれば有料起動)はfranklin1では一度も通らない。cost_log.jsonlで `nvidia/llama-4-maverick` と `free/glm-4.7` は課金0件。ledgerの `kind:wake` 2138件のmodelは `free/glm-4.7`(1254件)と`nvidia/llama-4-maverick`(884件)のみ、`gpt-5-mini`はTHINKに一切出現しない。
+- clawrouterはauto機能(有料指定→残高不足で`pickFreeModel`フォールバック、`cli.js:83366-83396`)を持つが、franklin1のTHINKはfreeを名指しするため`isFreeModel=true`で残高チェック自体が発火しない = 実質free固定。autoは使われていない。
+- ★有料burnは`sol-trade` skillただ1つ★: `sol-trade/run.sh:17`の`SOL_TRADE_MODEL`デフォルト=`openai/gpt-5-mini`。franklin-trading CLIがclawrouterを経由せずx402で直接支払う別系統。franklin1 wallet `8Fpqd…`のcost_log: `gpt-5-mini` 生涯2089件$20.97、直近24h 169件$1.86/日(前回「$2.16/日」はオーダー一致で正)。
+- `hl-trade`は独自の有料モデル呼び出し無し(メインTHINKのtool呼び出しとして無料処理)。`polymarket-trade`は`:8402`共有router経由でfree寄り。
+- franklin2は`gpt-5-mini`を焼いていない: `sol-trade/run.sh:38`のidentity guardで`~/.blockrun`非所有→即skip。有料burnはfranklin1固有。
+- claude-pのTHINK = `free/glm-4.7`(残高枯渇によるfreeフォールバック)。
+- ★経済的含意★: franklin1の赤字$1.86/日 = 100% `sol-trade`の`gpt-5-mini`課金。そして`sol-trade`はrealized $0(稼がないトレードエンジンに毎日課金) = HLを止めたのと同じ構図。黒字化は「売上を上げる」より先に「このburnを潰す」方が速い可能性がある。→ 下記TODO表 SOL-1。
 
 ### C. x402市場は実需極薄(重要な市場理解) — MKT-1
 
@@ -1023,6 +1028,7 @@ funnel_enabled = true
 | **MKT-1** | ★最優先(市場理解)★ x402実需検証 — 競合`agentservices.to`の生涯売上$0.169/12件がfacilitatorテストwalletのみ=実需ゼロと判明。唯一の実需=ottoai鯨bot1体。T8(掲載面拡大)で鯨への発見導線を最優先化 | 鯨bot(または新規の非テストpayer)からの実購入をon-chainで確認 | 未着手、詳細は上の「C. x402市場は実需極薄」節 |
 | **DOC-1** | README書き直し — 新定義(every AIが0から経済的独立、human loopなし)。草案完成 | Dais/adversaryレビューを経て本README差し替え | 草案完・レビュー待ち。`docs/drafts/2026-07-17-anicca-readme-draft.md`(commit `9b6e856`) |
 | **DOC-2** | docsサイト構築 — `blume`(Astro静的、AI-ready)採用判定済み | `npx blume init`でdocsサイトが立ち上がりデプロイされる | ADOPT判定のみ完了、構築未着手。評価MD `docs/reference/2026-07-17-blume-docs-tool-evaluation.md` |
+| **SOL-1** | franklin1の有料burnは`sol-trade` skill単独(`sol-trade/run.sh:17`の`SOL_TRADE_MODEL=openai/gpt-5-mini`、franklin-trading CLIがclawrouter非経由でx402直接支払い)。直近24h $1.86/日課金・realized $0 = 稼がずに焼くだけ。burnを止める/安いモデルへ切替/凍結のいずれかを判断・実行する | `sol-trade`のcost_log課金が$0になるか、realized profit>0がledgerに載るかのいずれかが実測できる | 未着手、詳細は上の「B. 各市民のTHINKモデル」節 |
 
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
