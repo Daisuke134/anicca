@@ -657,3 +657,32 @@ metrics(views/likes/$)→Telegram 定期通知 + 全アカ(clip/gig/trade)横断
 
 ### 決着（2026-07-17 team-lead確認）
 team-lead側の独立したscale research(`docs/earn/ig-account-scale-best-practices.md`)も同じ結論(同一IPからの短時間複数垢作成が最大の死因、per-account bugではない)に到達済み。task #2は「IP評判が焼けたためblocked、クリーンな別residential/mobileプロキシIPが必要」として正式クローズ。無料datacenterプロキシはIGがブロックするため不可、別エージェントが安価な実用プロキシを選定中。**プロキシIPが配線されるまで、このマシン/IPからのIGアカウント新規作成・既存アカウントへのログイン試行は一切禁止**。
+
+## v27 — 統合診断 + roadmap（team-lead、2026-07-17 セッション末）
+
+### 確定した真因（3研究 + live 実験で三重に裏付け）
+投稿ゼロ（07-14以来）の真因は「session 実装のバグ」ではなく、優先順に:
+1. **共有 IP（全垢 + Dais 個人が1 residential IP）** = 最大の死因。同日3垢連続作成で daily-driver IP が burned。churn 修正フル適用の daily_hq でさえ初回 login で即 bloks（v26）。instagrapi 公式「one account per stable proxy/IP」「BadPassword = clean で stable な network identity が要る」。
+2. **warmup 無しの day-1 投稿** = 「1ヶ月未満の垢は強く flag、fresh 垢の automation は challenge を招く」。
+3. **relogin/churn** = **#12 で解決済**（golden session 再利用・relogin 廃止・device uuid 固定、公式「session 永続で challenge の 9/10 が消える」）。
+
+### 完了（このセッション）
+- **#12 login-once hardening = 完了・LIVE**（main merge+push、51 passed）: keepalive 2段（probe が bloks を握り潰さず propagate）、--keepalive mode、tier1 cookie 永続、session_vault_tick が instagrapi-owned 垢を keepalive。
+- **#24 cdp.py pw stdout 漏洩 = 修正済**（insert が char count のみ返す、test green）。
+- research 2本 MD 化 push: `ig-account-scale-best-practices.md`（proxy/PVA/warmup/Graph/registry）+ `profitable-claude-clip-loop-migration-plan.md`。
+
+### cold の2種（重要な区別）
+- **inactivity で cold**（session 切れ、未 challenge）→ 再ログイン/warmup で復活可。
+- **bloks/challenge で cold（poisoned）**→ 復活不可、突破ツール無し（gh 0件）、新垢置換のみ。我々の3垢は全部これ。
+
+### roadmap（優先順、投稿再開への唯一の道）
+1. **clean な別 proxy IP**（#9）= 唯一の残り blocker。無料 datacenter（proxifly 等）は IG block で不可、悪化する。調査中: 携帯テザリング+機内モード toggle の**無料 mobile IP**（CGNAT で ban 不可、IG 最高信頼）が free unlock かを実検証中。ダメなら最安 paid mobile/residential。★proxy 購入は金がかかるので額を Dais に確認★
+2. **warmup フェーズ**（#10）= 新垢は Warming→数日 read-heavy→Ready→post。day-1 投稿を廃止。ig-account-warmer skill 活用。
+3. **1垢を clean IP で durable poster 化**（#2、#9 待ち）→ queue の reel 18本から投稿→IG 実在確認。
+4. **account registry を実 schema 拡張**（instafarm/GainLike 由来: status/warmup_day/proxy_id/device_id/health/last_post…）→ 100s 垢 fleet dashboard（#7）。
+5. **#25 lifecycle 自動配線** = ready 垢なし→自動で(warmup 経由の)新垢→post を loop 自身に。
+6. **profitable-claude 単一 repo 化**（#8）= clip loop を PC repo に copy+path 直し（既に正しい launchd 形、`ig-account-scale-best-practices.md` の manifest 参照）。openclaw 削除。
+
+### 掟（このセッションで確定）
+- proxy IP 配線まで、このマシン/IP からの IG 垢新規作成・login 試行は一切禁止（Dais 個人 IG IP 保護）。
+- vcsdd/adversary subagent は使わない（Dais が単語を言った時のみ、global CLAUDE.md に焼済）。検証は自分で実テスト。
