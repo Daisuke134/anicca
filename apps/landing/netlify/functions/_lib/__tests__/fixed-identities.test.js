@@ -19,13 +19,21 @@ test("Franklin's Solana address resolves to host 'Franklin' — exact case only 
   assert.notStrictEqual(expectedHost(addr.toLowerCase()), "Franklin");
 });
 
+test("franklin2's Solana address resolves to host 'Franklin2' — exact case only (base58 is case-sensitive)", () => {
+  // FIX-1 (2026-07-17): franklin2's own wallet, derived from ~/.franklin2-home/.blockrun/.solana-session
+  // the same way telemetry-post-franklin.mjs derives it (last 32 bytes of the secret key, base58).
+  const addr = "HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX";
+  assert.strictEqual(expectedHost(addr), "Franklin2");
+  assert.notStrictEqual(expectedHost(addr.toLowerCase()), "Franklin2");
+});
+
 test("an unregistered EVM address falls back to the auto-derived anicca-<hex> scheme", () => {
   const addr = "0x000000000000000000000000000000DEADBEEF".toLowerCase();
   assert.strictEqual(expectedHost(addr), "anicca-" + addr.slice(2, 8));
 });
 
-test("FIXED_IDENTITIES contains no private keys — only the two known public addresses", () => {
+test("FIXED_IDENTITIES contains no private keys — only the three known public addresses", () => {
   const keys = Object.keys(FIXED_IDENTITIES);
-  assert.strictEqual(keys.length, 2);
+  assert.strictEqual(keys.length, 3);
   for (const k of keys) assert.ok(/^0x[a-fA-F0-9]{40}$/.test(k) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(k));
 });
