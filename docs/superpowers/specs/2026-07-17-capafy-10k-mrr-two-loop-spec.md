@@ -39,7 +39,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 
 | # | タスク | done 条件 |
 |---|---|---|
-| A1 | packager の provider 名不整合を修理: openrouter endpoint には `publisher_openrouter_official`（`official_providers.py:163-170`）を使う。staging 済み agent version の key/provider を CP2 driver で入れ直し、Test Run green 確認後 resubmit | Capafy remote-status で manual-review 4件 + orphan 1件が online |
+| A1 | packager の provider 名不整合を修理: openrouter endpoint には `publisher_openrouter_official`（`official_providers.py:162-171`）を使う。不整合の中核 = `url_proxy.py:84`（providers 空で `publisher_openai_official` skeleton を無条件焼き込み）。reject→re-key（CP2 driver）→Test Run green→resubmit→lesson 追記の loop 機構を新設（state/lessons.jsonl + lint 参照）。**orphan 2485008254 は resubmit しない**（07-17 21時実測: 代替 7686597754 が status=4 online。resubmit=重複 listing）— superseded として published.jsonl に記録 | ①packager negative test green（openrouter config で openai_official 名が出ない）②4 manual-review（3947077924/4866150011/8416888650/4014388606、07-17 21時 全て status=1 audit=2）が online ③orphan superseded 記録 ④lessons 機構が実 reject で発火 |
 | A2 | OpenRouter 残高補充（$10-25）＋ publish 前 key-health gate（`/credits` 実測 + sonnet-4.6 live probe 1発）を `publish_prepare.sh` に追加 | gate FAIL 時は publish 中断 + AgentMail 報告 |
 | A3 | max-turns 枯渇対策: 1 pass = 1 agent に制限（貪欲 retry 禁止）。60 turns 超過時は state 保存して次 pass 継続 | 3日連続で BLOCKED rc=1 ゼロ |
 | A4 | **sales reconcile バグ修理**: `GET /agent/sales/trend` + `payout-info` を daily で読み local earn-ledger に書く（現状 capafy_rows=0 で $9.99 を見落としていた）。「稼いだ」判定は server ledger 実測のみ | ledger に 06-23 の $9.99 行が入る + daily 報告が server 値と一致 |
