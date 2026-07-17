@@ -259,6 +259,53 @@ hook error(`node cjs loader:1458`)の真因: Claude Code v2.1.210の既知バグ
 
 残タスク: profitable-claude repoに未パッチ3 script(ceo-run.sh等、現在未起動のため緊急性低)。
 
+## ★2026-07-17 午後: 市場理解・インフラ・ドキュメント★
+
+### A. ROTATE-1 完了(セキュリティ) — franklin1 Solana秘密鍵をローテート
+
+franklin1 のSolana秘密鍵がT0'探針中にsubagent stdoutへ漏洩 → 掟通りrotate実行。
+旧 `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`(現在0残高) →
+新 `F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T`。
+資金全額移動: 0.039875 SOL + 10.386698 USDC、on-chain finalized 実測済。
+全参照更新: anicca commit `0f53d0f7` / 本番netlify PR#293→`d4144964` deploy成功 /
+SSOT+memory commit `4e59e341b`。`~/.claude/CLAUDE.md` の固定費テーブルも新アドレスへ修正済み。
+x402-sell の payTo(Base `0x3EcCAD24…`)は別チェーン別鍵のため今回のrotateと無関係。
+
+### B. 各市民のTHINKモデル(実測)
+
+franklin1/franklin2 の THINK = `nvidia/llama-4-maverick`(無料、`ANICCA_BRAIN`=proxy経由)。
+franklin1のみ**skill実行**は`openai/gpt-5-mini`(有料、自分のx402で$2.16/日)。
+claude-p の THINK = `free/glm-4.7`(残高枯渇によるfreeフォールバック)。
+→ 3体とも「判断」自体は無料モデルで行っている。
+
+### C. x402市場は実需極薄(重要な市場理解) — MKT-1
+
+競合 `agentservices.to`(x402で50 API、indicators/yields $0.02/call)のon-chain生涯売上を実測:
+**$0.169 / 12件**、payer 3体全てnonce 0-1 = facilitatorテストwallet = **実需ゼロ**。
+BlockRun Franklin issue #100(競合の売り込み)は自作自演、10日無反応。
+我々のfunding-rates $0.003 は競合の$0.02を6.7倍下回り価格競争力あり。
+★x402 Bazaar全体で唯一の明確な実需 = ottoaiの鯨bot1体($698 funded、上記U9確定節と同一個体)★。
+**結論**: 「良い商品を安く出せば売れる」はまだ市場未証明。T8(掲載面拡大)で薄い市場の唯一の実需(鯨)に
+発見される導線を最優先化すべき。競合価格$0.02は次商品(indicators/yields/whale)の価格上限アンカーとして使う。
+研究MD: `docs/research/2026-07-17-agentservices-competitor-analysis.md`。
+
+### D. クラウドホスティング — OSS-1 追記(`docs/reference/2026-07-16-independent-hosting-for-each-ai.md` の「Akash一択」を是正)
+
+crypto払い・KYC不要の実測比較で複数案が確定。**同spec の「Akash一択」の結論を以下へ是正**:
+最有力 = FluxCloud(公式コピー from $0.99/mo、Flux API + Gitデプロイ)。
+実務フォールバック = BitLaunch(BTC/LTC/ETH決済、フルREST APIでAIが自分でtx作成、DigitalOcean裏側)。
+Akashも可(SDL記述、GPU $0.01/hr〜)。
+Hetzner = crypto払い不可と判明(fiat決済履歴が必須でAI単独契約不可。過去に見た事例は人間がクレカ契約し
+裏でcrypto→fiat変換していただけ)。Fluence = Alpha枠+AML要件で除外。
+全案とも前払い残高制(切れたら48hで削除)、crypto系VPSのIPはbot判定で弾かれやすい点に注意。
+
+### E. ドキュメント方針 — DOC-1/DOC-2
+
+README を新定義(every AIが0から経済的独立、human loopなし)で書き直す草案を作成:
+`docs/drafts/2026-07-17-anicca-readme-draft.md`(commit `9b6e856`)。名前は`anicca`維持、レビュー待ち。
+docsサイトツールの評価: `blume`(haydenbleasel/blume、`npx blume init`、Astro静的、AI-ready標準)を**ADOPT判定**。
+評価MD: `docs/reference/2026-07-17-blume-docs-tool-evaluation.md`。
+
 ## loop は3つだけ（automaton は閉鎖済み）
 
 「founder」という loop は**存在しない**。claude-p の HOME フォルダ名が `.anicca-founder` なので
@@ -963,15 +1010,19 @@ funnel_enabled = true
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
 | **T7** | 学習の共有 — `promote.py:30` が「進化した戦略を repo baseline に git commit」する経路は既にある。T6 が直れば「賢い個体の学びが repo 経由で全員に配られる」が成立する。実測で確認 | 1 instance の学習が他 instance の次 wake に反映されることを実測 | T6 後 |
 | **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | T4 後 |
-| **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る。★商品確定(07-17)★ 第1弾=funding-rates(取引所間乖離%、Binance/Bybit/HL無料public APIから純算術、限界原価≈$0)。根拠=franklin1自身が hl_trade で209 wake perp売買中なのに funding rate 未取得(自分の実需の穴)+ottoai(鯨bot)が同商品を$0.001で実売中。crypto-news/kol-sentimentはLLM要約コスト$0.0106/callが単価$0.001を超え逆ザヤにつき凍結 | T9-1(funding-rates)の done 定義は spec 参照。単価 $0.05+ の商品が**外部の**agent に売れる | ★T9-1 done(a)達成 2026-07-17★ `/funding-rates` を franklin1店(:8414)・claude-p店(:8412)に実装、402実測済(commit `8f6d0f7c`)。done(b)(c)は未達、下記 T9-1 参照 |
+| **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る。★商品確定(07-17)★ 第1弾=funding-rates(取引所間乖離%、Binance/Bybit/HL無料public APIから純算術、限界原価≈$0)。根拠=franklin1自身が hl_trade で209 wake perp売買中なのに funding rate 未取得(自分の実需の穴)+ottoai(鯨bot)が同商品を$0.001で実売中。crypto-news/kol-sentimentはLLM要約コスト$0.0106/callが単価$0.001を超え逆ザヤにつき凍結 | T9-1(funding-rates)の done 定義は spec 参照。単価 $0.05+ の商品が**外部の**agent に売れる | ★T9-1 done(a)(b)達成 2026-07-17★ `/funding-rates` を franklin1店(:8414)・claude-p店(:8412)に実装、402実測済(commit `8f6d0f7c`)。done(b)=claude-p→franklin1への実購入2件をon-chain確認済み(INV-7でself-pay扱い、収益には数えない)。done(c)(14日以内の反復購入者)は未達・観測中、下記 T9-1 参照 |
 | **U9** | ottoai 宛の鯨bot(93.5%集中)が本物のトレードagentの反復需要かottoai自身のwash tradingか | bot(`0x1cb8d145…0bdff`)の資金源1hop遡りで判定 | ★DONE 2026-07-17★ 本物の自律買い手(EIP-3009 gasless、13+relayer構成、ottoaiとの資金循環なし=wash棄却)。我々の4walletは未probe。詳細は上の「U9確定」節 |
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
-| **OSS-1** | ★T9の後★ Linux/cloud 常駐の完成品が無い。`install.sh` L148-160 は Darwin なら launchctl load で自動常駐するが、Linux は「systemd で自分で」と案内するのみでトップレベルの systemd unit が repo に無い。skills配下の言及数 launchd 68ファイル vs systemd 3ファイル = 実質macOS専用（~/anicca の実ファイル実測、2026-07-17） | Linux上でも同等の自動常駐がrepo付属のunitで動く | T9 後 |
+| **OSS-1** | ★T9の後★ Linux/cloud 常駐の完成品が無い。`install.sh` L148-160 は Darwin なら launchctl load で自動常駐するが、Linux は「systemd で自分で」と案内するのみでトップレベルの systemd unit が repo に無い。skills配下の言及数 launchd 68ファイル vs systemd 3ファイル = 実質macOS専用（~/anicca の実ファイル実測、2026-07-17） | Linux上でも同等の自動常駐がrepo付属のunitで動く | T9 後。ホスティング候補は2026-07-17実測で更新: 最有力FluxCloud、フォールバックBitLaunch、Akashも可(Hetzner/Fluenceは除外)。詳細は上の「D. クラウドホスティング」節 |
 | **OSS-2** | ★T9の後★ 「1体目をゼロから立てる」bootstrap scriptが無い。`skills/self/spawn` は既に稼いでいる親が子を産むロジック(gate: 残高≥$20 && 14日以内未出産 && 子<1)であって、第三者の1体目はREADME手順を人間が手で実行するのが実態。franklin2も同様（`git log --all` にfranklin2のcommit 0件=別ANICCA_HOMEで人が手順を再実行しただけ、自動複製scriptは存在しない）。x402実売にはCDP_API_KEY_ID/SECRETの外部取得が必要だがREADME Quick startに手順が無い。README自身が"What's real today"(L119)でcloud self-spawn/自律redeem/UBI payoutをIn progressと明記済み | 第三者が人手ゼロで1体目をbootstrapできるscriptがrepoにある | T9 後 |
 | **GIG-1** | gig loop 蘇生 — Claude CLI subscription OAuthのheadless失効(keychainロック、upstream `claude-code` issue #76905)で40時間(07-15 21:23〜07-17 13:56)pass完走ゼロだった真因を特定、`gig_reality_verify.sh`実証済みのCLIProxyAPI(:8317) fallbackを`gig-cli.sh`のcore起動部に移植 | 全ステップ(LEARN→B0→PROFILE→B1→B2→FUNNEL)が完走する | ★DONE 2026-07-17 13:56★ 完走実証(`pass-report.jsonl` ts=1784264202)。新規応募0件、生涯実績applied 138/won 2/paid 0は不変。売上効果は未検証、steady宣言は連続完走を見てから |
 | **GIG-2** | gigをprofitable-claude repoへ集約移設(現状 ~/anicca と ~/.openclaw に乖離複製が存在) | gigの実体がprofitable-claude 1箇所に統合され、二重管理が消える | 別CCセッション担当。live配線図はTaskList #22に記録済み |
 | **AUTH-1** | machine-wide Claude CLI OAuth死の駆除 — 同一headless失効パターンで停止していた全loopを洗い出し、同一パッチ(`~/.cli-proxy-api-key`→`ANTHROPIC_BASE_URL=:8317`)を適用 | 死亡していた全loopが蘇生し、同パッチが該当script全てに適用される | ★DONE 2026-07-17★ anicca-reddit-loop/anicca-selffix-gig-loop/anicca-selffix-reddit-loopの3体蘇生確認済み。9 scriptにパッチ適用(commit `306e0f73`・`80e9f011`)。anicca-2/anicca-3は起動元未特定で未対応(手動要) |
 | **AUTH-2** | profitable-claude repo内の未パッチ3 script(ceo-run.sh等)にAUTH-1パッチを適用 | 3 scriptとも`ANTHROPIC_BASE_URL` fallbackを持つ | open(現在未起動のため緊急性低) |
+| **ROTATE-1** | franklin1のSolana秘密鍵漏洩(subagent stdout経由)をrotate。旧`8Fpqd…PCV9`→新`F5SYU…hZ5T`、資金全額移動、全参照(anicca/netlify/SSOT/memory/CLAUDE.md)更新 | 旧鍵残高0、新鍵に全資金、grep で旧アドレスの現役参照0件 | ★DONE 2026-07-17★ commit `0f53d0f7`(anicca)・netlify PR#293→`d4144964`・SSOT+memory `4e59e341b` |
+| **MKT-1** | ★最優先(市場理解)★ x402実需検証 — 競合`agentservices.to`の生涯売上$0.169/12件がfacilitatorテストwalletのみ=実需ゼロと判明。唯一の実需=ottoai鯨bot1体。T8(掲載面拡大)で鯨への発見導線を最優先化 | 鯨bot(または新規の非テストpayer)からの実購入をon-chainで確認 | 未着手、詳細は上の「C. x402市場は実需極薄」節 |
+| **DOC-1** | README書き直し — 新定義(every AIが0から経済的独立、human loopなし)。草案完成 | Dais/adversaryレビューを経て本README差し替え | 草案完・レビュー待ち。`docs/drafts/2026-07-17-anicca-readme-draft.md`(commit `9b6e856`) |
+| **DOC-2** | docsサイト構築 — `blume`(Astro静的、AI-ready)採用判定済み | `npx blume init`でdocsサイトが立ち上がりデプロイされる | ADOPT判定のみ完了、構築未着手。評価MD `docs/reference/2026-07-17-blume-docs-tool-evaluation.md` |
 
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
