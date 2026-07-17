@@ -9209,3 +9209,11 @@
 {"ts":1784262252,"wake_id":"00MROFODB746A36146F21A4D98","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784262385,"wake_id":"00MROFR7XGE0C3726707DB4FCA","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784262385,"wake_id":"00MROFR7XGE0C3726707DB4FCA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784262517,"wake_id":"00MROFU1GE2678A2CF9B5A4BFA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784262648,"wake_id":"00MROFWUED1862B94B8D804BE7","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784262779,"wake_id":"00MROFZNU2896EDEAD8360498D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784262910,"wake_id":"00MROG2H305BE2FE57CC1A429B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784263042,"wake_id":"00MROG5AWQC61C8F40FCFF4E5A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784263173,"wake_id":"00MROG83O9DDA3048A614545D6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784263303,"wake_id":"00MROGAW7ABF120684F7C54D99","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"WAIT: TradingSignal for SOL is bearish but low conviction (33%), edge doesn't clear fees/slippage (~0.4%+); with only $10.43 USDC trading isn't justified — stay in USDC and keep some SOL for gas; note"}
+{"ts":1784263303,"wake_id":"00MROGAW7ABF120684F7C54D99","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
