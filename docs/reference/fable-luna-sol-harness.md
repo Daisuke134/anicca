@@ -98,8 +98,32 @@ solx "git diff HEAD~1 を読んで blocking bug を列挙。最後に PASS/FAIL 
 - **adversary**: subagent のままだと同じ env で Luna に潰されるため、plugin の command 3 ファイル（`vcsdd-adversary.md` / `vcsdd-spec-review.md` / `vcsdd-contract-review.md`、場所 = `~/.claude/plugins/marketplaces/vcsdd-claude-code/commands/`）に routing を追記: **proxy セッション（`$ANTHROPIC_BASE_URL` に 8317）なら Sol xhigh one-shot（Bash 経由の別プロセス = 完全ゼロ文脈で fresh context 要件はむしろ強化）、direct セッションなら従来の agent spawn**。上の表の Sol review 行が one-shot 型の実走証跡。
 - 注意: この plugin は外部 clone（sc30gsw/vcsdd-claude-code）。marketplace 更新で上書きされたらこの節を見て再適用する。
 
-## 別ルート（今日は未検証、後日）
+## Flow B: Codex(Sol) 自走 + agmsg 相談線（2026-07-17 フル E2E 証明済み）
 
-- **Route A（公式 plugin）**: `claude plugin marketplace add openai/codex-plugin-cc` → `claude plugin install codex@openai-codex`（両方実行・インストール済み）。`/codex:review` / `/codex:adversarial-review` / `/codex:rescue` が生える。動作未検証。
-- **agmsg（fujibee/agmsg v1.1.8）**: `npx agmsg` でインストール済み（`~/.agents/skills/agmsg/`）。Codex CLI で自走する Sol が plan 元の Fable に相談する Cross-agent messaging。E2E 未検証。
-- Codex CLI 0.143.0 は ChatGPT ログイン済み（`codex login status` = "Logged in using ChatGPT"）。
+発動 gate = Dais が `/flowb` を打った時のみ（skill = `~/.claude/skills/flowb/SKILL.md`、`disable-model-invocation: true`）。既定は常に flow A。
+
+通し証跡（wordfreq `--min-len` 拡張で実走）:
+1. Fable が PLAN.md を file 化（相談必須ステップ入り）
+2. `codex exec -m gpt-5.6-sol --sandbox workspace-write < /dev/null` を background 起動
+3. Sol が実装前に agmsg で質問（「--min-len と --top の適用順は?」）→ Monitor（5秒ポーリング）で検知した Fable が send.sh で即答
+4. Sol が回答どおり実装（filter→top）、`DONE: 6 passed` を agmsg 報告
+5. Fable が独立検証: 自分の `uvx pytest` で 6 passed、機能確認 `--min-len 3 --top 2` も仕様どおり
+
+ハマりどころ（実測）:
+- **codex exec は `< /dev/null` 必須** — stdin 開放のままだと `Reading additional input from stdin...` で永久ハング（タイムアウト連発の真因）
+- codex sandbox は PyPI DNS 遮断 → テスト指示は `python3 -m pytest`
+- codex の成功自己申告は信用しない（agmsg 送信成功の捏造を1回実測）— DB と実テストで裏取り
+- agmsg v1.1.8 導入 = `npx agmsg`、config.toml に writable_roots 自動追加
+
+## flow A vs flow B 使い分け
+
+| | flow A（claudexmix そのまま） | flow B（/flowb） |
+|---|---|---|
+| executor | Luna（subagent、会話内） | Sol（別プロセス自走） |
+| Fable の役割 | 采配 + 逐次確認 | plan 渡して相談待ち（手離れ良） |
+| 向く仕事 | 対話的・小〜中タスク | plan が固まった中〜大タスク、放置したい時 |
+| review | Sol one-shot | Fable が要件突き合わせ（+必要なら Sol one-shot 追加可） |
+
+## 残り未検証（後日）
+
+- **Route A（公式 plugin）**: `codex@openai-codex` インストール済み。`/codex:review` / `/codex:adversarial-review` / `/codex:rescue` の動作未検証。
