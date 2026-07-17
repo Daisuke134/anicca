@@ -381,6 +381,13 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 - **結論: コスト危機は「電話」ではなく「カレンダー polling」。** Unipile はリクエスト無制限・per-account 課金（"No additional cost per request"）なので、U17 の完全置換可能判定と合わせ **Unipile 一本化（$5.5/user に Gmail+Calendar 込み）+ event cache** が経済的必然。
 - 未測（正直）: Composio 現契約プランと今月実使用量（dashboard のみ）/ Gemini 実課金額（Cloud Console のみ）→ LM-19 でブラウザ実測。
 
+## 5c. 進捗スナップショット（2026-07-18 08:40 実測）
+- **wave1 = 本番稼働中**: `a76252b76`（LM-24 target_legs self / LM-2 claim release / LM-23 TG callback / LM-3 search-before-ask、182 tests pass）→ PR296 dev → PR297 main → Railway deploy `c85cbea7a` **SUCCESS**（07-17 21:56 JST、`railway deployment list` 実測）→ `/health` 200 `build:gemini-default-v2`（curl 実測）。
+- **昨夜の goal loop は 22:10 のマシン reboot で死亡**（22:08 handover commit が最後。23時〜2時の commit/transcript 活動 = ゼロ、実測）。codex(Sol) wave1 セッションは 21:47 に正常終了済み。
+- **未検証のまま残る done 条件**: wave1 の E2E 全部（実着信で声・TG inline 往復・A1/A2）+ wave1 migration 2本の Supabase 適用確認。
+- 残タスク 12 件を TaskList #1〜#12 に再登録（reboot で消えたため）。順序: E2E close(#1-3) → rotate(#4) → staging(#5) → LM-5/6(#6-7) → Unipile 化(#8) → ledger(#9) → 収斂(#10) → bio(#11) → dev loop D0(#12)。
+- `scripts/lm-staging-smoke.sh` が dev worktree に未 commit で存在（LM-18 の途中成果物）。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
