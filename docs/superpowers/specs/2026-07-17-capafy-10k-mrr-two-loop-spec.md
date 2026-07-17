@@ -1,7 +1,9 @@
 # Capafy 10k MRR — two-loop spec（2026-07-17）
 
-goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/銀行入金で実測確認"`
+goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/銀行入金で実測確認"`（/goal 正本 = `2026-07-17-capafy-goal.md`）
 調査正本: `docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`（全実測 file path 付き）
+**先行 spec（車輪。必読）**: `~/.openclaw/docs/superpowers/specs/2026-06-24-capafy-factory-automation-10k-100k-mrr.md` — 10k の算数（$10k ≈ 15-20 listings × ~$600 gross、blended ARPU $11/mo、純率 ~70%）、factory モード A（launchd+claude -p で勝者 clone 日次）、CP2 LLM hosting レシピ、leak/secret/E2E gate が確定済み。本 spec は「A: 修理」「B: marketing 新設」をそれに足す差分。
+注意: 06-25 の確定レシピは「sk-ant 鍵 + openai-completions」で OpenRouter 不採用だったが、現 runtime は `CAPAFY_HOST_OPENROUTER_KEY`（本日 live probe 200 OK）で動いている — 実装時はどちらかに統一し spec の 0.97 節を是正すること（併存は事故のもと）。
 状態: **PLANNED — 実装未着手**。実装は vcsdd（Fable plan / Luna impl / Sol review）。
 
 ## 0. 現実（2026-07-17 実測）
