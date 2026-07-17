@@ -74,8 +74,34 @@
 | STEP 1〜5 | 全て未実装（album_upload grep 0ヒット、--kind フラグ無し、measure_dollar.py は存在するが loop から未呼出、keepalive 無し） |
 | 誤り是正 | 「4アカ loop が回っている」は誤り。回っているのは単一アカ Reels loop で、それも 07-14 から投稿停止中 |
 
-### fix 優先順（blocking 順）
-1. session 復旧: aiclipsvault の CloakBrowser sessionid を instagrapi settings に再注入（loop の self-heal 3-tier が3日突破できていない＝手当必要）
-2. metrics pipeline 復旧（0バイトの真因特定）
-3. world_hq / hub_hq の instagrapi settings 生成（browser session からの export）
-4. その後に STEP1〜5（carousel / 4アカ direct / keepalive / $配線）
+### fix 優先順 → 廃止。§「TODO 正本 2026-07-17」が上書き（旧3「world_hq/hub_hq settings 生成」は one-loop-one-acc 決定で不要になった。旧 STEP1-3 の carousel/4アカ化も defer）
+
+## 再実測 2026-07-17 10:55 JST — 「解決したはず」は誤り、未解決
+
+| 事実 | 証拠 |
+|---|---|
+| session 復旧していない | 今日 08:35 パスも `{"outcome": "skip", "reason": "no valid session"}`、bio_step 直近6回連続 `LoginRequired: login_required` |
+| 最終確定投稿は 07-14 19:33 のまま | `.last-post-aiclipsvault` = epoch 1784025225、posted/ に 07-14 以降の新規ファイルなし |
+| 真因（コードに実測記録あり） | `instagrapi_post.py:83-90`「tier3 password login は数分以内に2回 "成功" → どちらも clip_upload 中に IG が revoke」。24h クールダウン (b0a80b65) は緩和策で根本修正ではない。**password login は焼け石。fix は tier1 = CloakBrowser 実ブラウザ session からの sessionid 再 export** |
+| 4アカに増えた経緯 | aiclipsvault の投稿/検証不調期（07-11 web composer 死亡、07-12 studio_hq を診断用に投入、07-13 world/hub warming 開始）に代替として順次増えた（clip-accounts.json note で確認） |
+| affiliate link は実在・未反映 | `~/clips/offer.json`: Q-Money + E-Mail Funnel、50% (~$88 net/sale)、`digistore24.com/redir/569951/keiodaisukeaiclips1f031/`、joined=true。**bio には一度も載っていない**（bio_step が LoginRequired で毎パス skip）。API key 不要設計（redir リンクのみ） |
+| 収益 | ledger 全行 earn_usdc=0 |
+
+## 方針決定（Dais 2026-07-17 — 上の STEP1-5 プランを上書き。これが正本）
+
+1. **one loop = one acc**。clip loop = aiclipsvault 専任。他3アカ（studio/world/hub）は freeze（削除しない、増殖用に温存）。
+2. **loop 増殖の唯一のゲート = validated $**。realized sale ≥1 を Digistore 画面 + ledger で確認できた loop だけが、token コストを自弁できるとみなして複製解禁（1 acc = 1 loop で spawn）。
+3. **carousel/slideshow は今やらない**。順番: main marketing engine（共通 core）→ clip loop で実証 → video loop → affiliate loop（slideshow loop に改名）。
+4. engine core（LEARN→PRODUCE→POST→MEASURE→REFLECT）は全 channel 共有。channel 差分 = PRODUCE format / POST upload 関数 / MONETIZE ASP だけ plug-in。
+
+## TODO 正本 2026-07-17（TaskList tool に同 ID で登録済み）
+
+| # | タスク | blockedBy | 状態 |
+|---|---|---|---|
+| 1 | aiclipsvault session 根本復旧（tier1 sessionid 再注入経路の修理。password login は IG が revoke するので捨てる） | - | pending |
+| 2 | Digistore link を bio に反映、実ブラウザで表示確認（offer.json 実在、bio_step 実装済み、session だけがブロッカー） | 1 | pending |
+| 3 | metrics pipeline 復旧（clip-metrics.jsonl 0バイト since 07-14、REFLECT 盲目） | - | pending |
+| 4 | keepalive 実装（authenticated read 定期実行で session 延命。無いとまた3日で死ぬ） | 1 | pending |
+| 5 | one-loop-one-acc codify（他3アカ freeze、loop の aiclipsvault 専任明示） | - | pending |
+| 6 | $ validation gate 定義（sale 1件を自分の目で確認 → loop 増殖解禁） | 2 | pending |
+| 7 | shared marketing engine 抽出（channel-agnostic core spec 化。clip→video→slideshow） | 6 | pending |
