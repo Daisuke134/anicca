@@ -105,3 +105,39 @@
 | 5 | one-loop-one-acc codify（他3アカ freeze、loop の aiclipsvault 専任明示） | - | pending |
 | 6 | $ validation gate 定義（sale 1件を自分の目で確認 → loop 増殖解禁） | 2 | pending |
 | 7 | shared marketing engine 抽出（channel-agnostic core spec 化。clip→video→slideshow） | 6 | pending |
+
+## v3 — session-vault 発見 & 真の壁の特定（Dais + 実測 2026-07-17 11:10 JST。これが最新 SSOT）
+
+### 実測で判明した現実（前セッションが知らずに tier3 pw login に走った真因）
+- **session-vault は実在・稼働中**: `ai.anicca.session-vault`（launchd, 30分毎）→ `~/anicca/skills/browser/scripts/session_vault_tick.sh` + `session_vault.py`。daily-driver(:9222) と 4 clip アカ(clip-en〜en4)のブラウザを起動維持し、cookie を `~/.cloak/vault/<profile>/auth-state.json` に bank する。
+- **その keepalive の "logged_out" 信号は嘘（false-positive バグ）**: `session_vault.py:210` の判定は「final URL が /login にリダイレクトするか」だけ。sessionid を一度も見ない（grep sessionid = 0）。IG は ds_user_id だけ残った半ログインを /login に飛ばさない（homepage にモーダル重ねるだけ）ので、sessionid が死んでいても永遠に `logged_out:false` を返し続ける。→ 失効を検知できない。
+- **sessionid はどこにも生きていない（全部実測 2026-07-17）**: clip-en/en2/en3/en4 の profile Cookies SQLite = sessionid 0件。vault/clip-en/auth-state.json（10:56 最新 dump）= sessionid 0件。`instagrapi-aiclipsvault.json` の authorization_data には saved sessionid が有るが tier1 の get_timeline_feed → LoginRequired = **IG がサーバ側で 07-14 に revoke 済み**。vault はサーバ側で殺された session を蘇生できない。
+- **アーキ的ギャップ**: clip loop の tier2 は vault を読まず自前で CDP getAllCookies している。session の SSOT が二重化（vault と loop の直読み）。ただし今日は vault も空なので、vault 直読みに直しても今すぐは救えない。
+
+### 真の壁は1個
+**reCAPTCHA Enterprise を通してブラウザ UI 経由で fresh sessionid を1個発行させる。** credential は IG に受理される（ds_user_id 付与まで到達）が、reCAPTCHA チェックボックスで停止。ここを越えれば sessionid が発行され、vault が bank し始め、以後 keepalive で延命できる。
+
+### アーキテクチャ改訂（session の SSOT を一本化）
+1. session の唯一の正本 = `~/.cloak/vault/<profile>/auth-state.json`。
+2. clip loop の login は「vault の sessionid を instagrapi settings に注入」を tier1 にする（自前 CDP getAllCookies は tier2 に降格）。
+3. keepalive の logged_out 判定を **sessionid 実在チェック**に変える（URL リダイレクトだけ見るのをやめる）。sessionid が消えたら即 alert/re-login をトリガー。これが無いと今回の「3日気づかず」を繰り返す。
+4. fresh login（reCAPTCHA 突破）は Fable が CDP で直接実行する critical execution。search と定型 impl は Sonnet。
+
+### 改訂 TODO（TaskList tool と同 ID 同期。SDD→TDD→VDD で回す）
+| # | タスク | 実行者 | blockedBy |
+|---|---|---|---|
+| 1 | fresh login: reCAPTCHA 突破 → 生 sessionid 発行 → vault + instagrapi settings に着床、get_timeline_feed green を目視 | **Fable 直接**（critical exec） | - |
+| 8 | keepalive の logged_out 判定を sessionid ベースに修正（false-positive バグ） | Sonnet impl / Fable verify | - |
+| 9 | clip loop login を vault-first に配線（sessionid SSOT 一本化。tier1=vault 読み、CDP 直読みは tier2 降格） | Sonnet impl / Fable verify | 1 |
+| 2 | Digistore link を bio に反映、実ブラウザで表示確認 | Sonnet / Fable verify | 1 |
+| 3 | metrics pipeline 復旧（clip-metrics.jsonl 0バイト） | Sonnet / Fable verify | - |
+| 4 | keepalive warming 強化（authenticated read で server-side session を温める） | Sonnet / Fable verify | 8 |
+| 5 | one-loop-one-acc codify（他3アカ freeze） | Sonnet / Fable verify | - |
+| 6 | $ validation gate 定義（realized sale ≥1 → loop 増殖解禁） | Fable | 2 |
+| 7 | shared marketing engine 抽出（channel core spec、clip→video→slideshow） | Fable plan | 6 |
+
+### 開発規律（全タスク共通）
+- **SDD**: 各タスク着手前に spec（この doc の該当行＝不変条件）を確定。散文 spec の adversary は1ラウンドのみ。
+- **TDD**: negative test を先に書く（例: sessionid 無し settings で get_timeline_feed が LoginRequired を返すこと、直後に vault 注入で green になること）。
+- **VDD**: fresh-context adversary が仕様一致を判定 + Fable が実ブラウザ/実 API で E2E。両 PASS まで fix→再検証。
+- 分業: **Fable = planner + verifier + critical execution（reCAPTCHA/login/on-chain）**。**Sonnet = search + 定型 impl + adversary**。
