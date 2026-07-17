@@ -17,6 +17,27 @@ echo "=== capafy-x-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/x_metrics.py >>"$LOG" 2>&1 || echo "x_metrics failed (non-fatal)" >>"$LOG"
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/x_attribution.py >>"$LOG" 2>&1 || echo "x_attribution failed (non-fatal)" >>"$LOG"
 
+# ── HARD SAFETY GATE: never post from a Dais-PERSONAL X account. The loop may only post from
+#    an AI-OWNED, AI-created account (like IG @useclaudeskills). @aniccaen / @diceai0 are Dais's
+#    personal accounts — Dais revoked a Capafy post to @aniccaen on 2026-07-18. If the account
+#    logged in on :9222 is one of those (or no AI-owned X account is configured), REFUSE to post. ──
+AI_X_HANDLE="${CAPAFY_X_AI_HANDLE:-}"   # set this to the AI-owned X handle once it exists
+ACTIVE_X="$(/opt/homebrew/bin/python3 ~/.agents/skills/ig-account-create/scripts/cdp.py new 'https://x.com/home' 2>/dev/null | tr -d '"' | { read t; sleep 5; /opt/homebrew/bin/python3 ~/.agents/skills/ig-account-create/scripts/cdp.py eval "$t" - <<'JS' 2>/dev/null
+(()=>{const h=(document.body.innerText.match(/@[a-zA-Z0-9_]+/g)||[]);return (h.find(x=>/aniccaen|diceai0|aniccaxxx/i.test(x))||h[0]||'?');})()
+JS
+} | tr -d '"' )"
+case "$ACTIVE_X" in
+  *aniccaen*|*diceai0*|*aniccaxxx*)
+    echo "SAFETY GATE: :9222 active X = $ACTIVE_X is a DAIS-PERSONAL account — REFUSING to post (loop needs an AI-owned X account, like @useclaudeskills for IG). No-op." >>"$LOG"
+    touch "$HOME/.openclaw/state/.capafy-x-marketing-last-pass" 2>/dev/null || true
+    exit 0 ;;
+esac
+if [ -z "$AI_X_HANDLE" ]; then
+  echo "SAFETY GATE: no AI-owned X handle configured (CAPAFY_X_AI_HANDLE unset). Metrics ran above; skipping post. No-op." >>"$LOG"
+  touch "$HOME/.openclaw/state/.capafy-x-marketing-last-pass" 2>/dev/null || true
+  exit 0
+fi
+
 # ── DETERMINISTIC CADENCE GATE (clip pattern): no-op if the last X thread was < 20h ago.
 #    A rolling 20h window (not a calendar day) prevents a 23:00 + next-06:00 double-post on the
 #    SHARED @aniccaen account. Reads the most recent platform=x ts from the rotation ledger. ──
@@ -40,9 +61,9 @@ then
   exit 0
 fi
 
-PROMPT='You are the Anicca Capafy X-marketing loop (headless, self-improving; goal = drive Capafy skill subscribers, revenue → Dais bank; human NOT in this loop). This pass was triggered by a real launchd daily schedule (ai.anicca.capafy-x-marketing-daily) — do NOT self-register any cron. You post ONE promo thread today to X account @aniccaen (phase 1; it is already logged in on the CloakBrowser daily-driver :9222). The bash caller already enforced the 1-thread/day gate, so you WILL post this pass unless a real blocker appears.
+PROMPT='You are the Anicca Capafy X-marketing loop (headless, self-improving; goal = drive Capafy skill subscribers, revenue → Dais bank; human NOT in this loop). This pass was triggered by a real launchd daily schedule (ai.anicca.capafy-x-marketing-daily) — do NOT self-register any cron. You post ONE promo thread today to the AI-OWNED X account whose handle the bash caller passed as $AI_X_HANDLE (it is logged in on the CloakBrowser daily-driver :9222). ★NEVER post to a Dais-personal account (@aniccaen / @diceai0 / @aniccaxxx) — the bash caller already hard-refuses those; if you somehow see one of them as the active account, STOP and report, do not post.★ The bash caller already enforced the 1-thread/day + safety gates, so you WILL post this pass unless a real blocker appears.
 
-CADENCE CHECK (do first, agent judgment): open https://x.com/aniccaen via ~/.agents/skills/ig-account-create/scripts/cdp.py (new tab, read-only) and look at the most recent post time. article-daily posts at 06:00 JST; you run at 15:00 JST. If — and only if — @aniccaen posted something within the LAST ~2 HOURS, DEFER this pass (report a no-op and finish cleanly; do not post on top of a just-published article). Otherwise proceed.
+CADENCE CHECK (do first, agent judgment): open https://x.com/$AI_X_HANDLE via ~/.agents/skills/ig-account-create/scripts/cdp.py (new tab, read-only) and look at the most recent post time. If it posted something within the LAST ~2 HOURS, DEFER this pass (report a no-op and finish cleanly; do not post on top of a just-published article). Otherwise proceed.
 
 STEP1 SELECT (deterministic tool): run  python3 ~/anicca/skills/earn/capafy-marketing/scripts/select_listing.py  — it returns ONE online Capafy listing {agent_id,name,desc,url} with rotation/dedup. Use exactly that listing.
 
