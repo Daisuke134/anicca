@@ -105,7 +105,7 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 | AUTOPUBLISH 未arm | **唯一の無人公開ブロッカー**。plist へ `ARTICLE_AUTOPUBLISH=1` 注入は Dais 保留（2026-07-15 判断）のまま |
 | visual≥1 gate 不在 | ✅**解消（2026-07-17、#53）**: deslop-gate.sh の DETERMINISTIC PRE-CHECK に P3（mermaid/img/table 合計カウント、生 $MD を走査）を追加。07-17 記事の実 fixture（mermaid=0 img=0 table=0）で FAIL を実測、正常系 fixture（visual あり）では素通りを実測 |
 | 自己言及・「この記事」が regex pre-check 未登録 | ✅**解消（2026-07-17、#53）**: deslop-gate.sh に P1（見出し「この記事」）+ P2（自己言及「自分（アニッチャ）」型 apposition）を追加。実違反 fixture（`state/zenn-20260717-agentskills-ja.md` の「## 最初に：この記事は何か」「自分（アニッチャ）は日々…」）で FAIL を実測。閉じ [8] ブロックの許可済み表現「アニッチャ というAI」は誤検知なしを実測 |
-| #47 無料版が Sources ブロックを落とす | 方針決定済み・未実装 |
+| #47 無料版が Sources ブロックを落とす | ✅**解消（2026-07-17、#59）**: make-free-version.py に `extract_sources_section()` を追加。原本の「## Sources」/「## 出典」節（H2/H3どちらも実測で存在）を、切断位置に関わらず「まとめ」の後・フッターの前へ丸ごと（フィルタなし）持ってくる。git stash による before/after negative test で修理前は Sources 欠落・修理後は保持を実測、実ドラフト2本（07-16 ja.md=H3「### 出典」、07-17 en.md=H2「## Sources」）でも保持を実測、Sources無し記事のno-op・重複防止（cutが既にSourcesを含む場合）も実測。commit: anicca-dais `2092337b`（main-internal） |
 | 換金ノード | note 買い切りは実装済み（¥1,000 実売1本）。note membership は未ON（設計判断: 記事65本まで作らない）。**Substack は換金 ON 済みだった（2026-07-17 実ブラウザ実測で旧記述「未ON」を是正）**: @anicca2 に email magic-code で自動再ログイン成功（人間ゼロ）、Stripe 接続済み・有料購読有効・$8/月・$80/年・創設メンバー $240、draft 43件実在。→ #23 の Substack 側は完了、note membership 側のみ将来 TODO |
 | tiktok companion | 未実装（publish matrix に名前だけ）|
 
@@ -713,7 +713,7 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | #56 | レーン A 用 récit テンプレ（Dais 名義一人称、Rule 41/65 のレーン分岐）を SKILL.md に追記 | [ ] |
 | #57 | k16 gist を japanese-tech-writing として vendor + deslop checklist の文書種別分岐 | [ ] |
 | #58 | OSS 自己完結化: stop-slop 系 vendor、7.5 の env 化 1-5、ホワイトリスト .gitignore、deny rule 同梱 | [ ] |
-| #59 | #47 無料版 Sources 落ち修理（既存 TODO の再掲、レーン A 開始前に必須） | [ ] |
+| #59 | ✅**完了（2026-07-17）**: #47 無料版 Sources 落ち修理。詳細は §4「#47 無料版が Sources ブロックを落とす」行を参照。commit: anicca-dais `2092337b`（main-internal）。AUTOPUBLISH arm（ARTICLE_AUTOPUBLISH=1 の plist 注入）は既存決定通り数日の gate green 観測後に Dais の go 一言で実施——本コミットではまだ実施していない | [x] |
 | #60 | ~~Substack Stripe 確認~~ ✅完了（2026-07-17 実測: ON 済みだった）。残タスク変形 → daily-driver の Substack session 復活済み、X-publish 同様に session 失効の healthcheck 対象へ追加検討 | [x] |
 | #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
 | #63 | ✅**完了（2026-07-17）**: note アイキャッチの必須工程化。article-daily.sh に新設 STEP 5.5（STEP 5 note dispatch 直後）を追加: X 用に既に選んだ $X_COVER 画像を `~/.cloak/note-work/thumb.png` へ複製 → `NOTE_KEY=<key> python3 set-eyecatch-draft.py` 実行 → スクリプト自身の `EYECATCH_IN_EDITOR:` DOM readback（own-eyes、HTTP 200 だけでは不可）で確認してから成功扱い。set-eyecatch-draft.py は独立 headless context（CDP :9222 不使用）で共有ロックと非競合、thumb.png/note-cookies.json の前提は既存パイプラインで満たされることを確認済みのためスクリプト側修正なし。commit: profitable-claude `dfdfea0` | [x] |
