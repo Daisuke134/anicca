@@ -444,3 +444,27 @@ openclaw = `~/.openclaw`（github Daisuke134/anicca-dais private、trunk main-in
 3. **larry/reelclaw/honne**: openclaw gateway 依存を外す（jobs.json cron → launchd or profitable-claude cron へ）。最難関、最後。
 4. **logs**: 全 plist の Std*Path を profitable-claude/state/logs へ。
 5. 各段階で copy→新検証→実 earn/E2E green→旧削除。openclaw 参照 0 を grep で確認して初めて openclaw 削除。
+
+## v13 — Inkbox を AI identity 層に採用（2026-07-17、Dais 提案）
+
+### #19 の結果と新方針
+#19: AI-owned FB account は作成成功("Alex Vaulton", ~/.cloak/fb-aiclips.json)。だが Meta developer 登録が**電話認証で停止** — Twilio 番号が VOIP 判定で無言 reject。token 未取得。ブラウザは :9228(profile meta-dev)で Verify 画面のまま起動継続中。
+※ security: subagent の grep が `AGENTMAIL_API_KEY` 値を transcript に漏洩 → **rotate 必須**（下記 #21）。
+
+### Inkbox（inkbox.ai）採用理由
+identity layer for AI agents: 実 email + **実 phone(SMS/voice)** + iMessage + **Vault(2FA/TOTP/creds保管)**。agent-signup API で account/key 不要から self-register 可（human_email に6桁コード、Dais が1回承認）。
+- 今の壁を解く: Meta 電話認証を Inkbox 実番号で突破（Twilio VOIP 失敗の代替）。
+- scaling: TT/IG/YT/X 各アカの email+phone を 1 persistent identity で供給。
+- secret: Vault で creds 保管 → 平文 .env(今回漏洩)を卒業。plugins: claude-code-plugin あり。
+- 出典: inkbox.ai/llms.txt, /docs/get-started/agent-signup.md（crwl 実取得 2026-07-17）。
+
+### 新しい #19 実行（Inkbox 経由）
+1. Inkbox agent-signup（`POST inkbox.ai/api/v1/agent-signup/` human_email=Dais, harness=claude-code）→ api_key + email + phone 取得（Dais が6桁コード承認1回）。
+2. その Inkbox 番号で Meta dev の Verify を突破（:9228 の Verify 画面から resume。番号入れ替え）。
+3. 以降 v11 手順: App作成→IG tester→token生成→refresh cron。
+4. ※ Inkbox 番号も VOIP 判定される可能性は残る → 弾かれたら Meta の card 認証 or 別番号。要実測。
+
+### 追加/更新タスク
+- #19 更新: Inkbox 経由で phone 確保 → Meta dev verify 突破 → token
+- #20 Inkbox を AI identity 基盤として採用（agent-signup + vault + phone）。TT/IG/YT/X scaling の共通土台。
+- #21 ★security★ 漏洩した AGENTMAIL_API_KEY を rotate（agentmail.to）+ 使用箇所(clip/video/clip-promote CLI 等)を新keyへ。将来は Inkbox vault へ移行。
