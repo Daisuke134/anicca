@@ -248,6 +248,24 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 **Q12 leave-check（LM-5 v1、GPS 無し）**: ①`scheduler.js:81-92` buildStreamUrl の署名 ctx に uid+eventKey を追加（call site :125）②`server.js:152-169` ctxFromReq で検証 ③`server.js:438-444` Telnyx start frame で `lm_wake_log.answered_at` を PATCH ④scheduler の WAKE_LEVELS ループ後に T-0 分岐: T-5 が answered なら TG「出た？」[出た/まだ]（claimWake を `{uid}|{startIso}|leave` の擬似 level で再利用）⑤`leave:no` or 10min 無応答 → `lib/notify.js:36` sendLateNotice 直呼び（classifyLate 不要と実読確認）。migration: `ALTER TABLE lm_wake_log ADD COLUMN IF NOT EXISTS answered_at timestamptz, ADD COLUMN IF NOT EXISTS notified_late_at timestamptz;`（注: lm_wake_log の CREATE TABLE は migrations に無い=Supabase 直作成、IF NOT EXISTS で安全）。
 **実装前に潰す UNVERIFIED 3 点**: Gemini grounding tool の key 名 / Unipile 検索 param / lm_wake_log 原型 schema。
 
+## 11. 未検証レジスタ（2026-07-17 時点で「まだ実測していない」もの。検証されるタスクを明記）
+| # | 未検証 | いつ検証 |
+|---|---|---|
+| V1 | 残高復旧後、実イベントで本当に電話が鳴るか（post-fix の実着信を1度も観測していない） | LM-2 done 判定 = Dais の次の外出 or テストイベント |
+| V2 | Telnyx JP 携帯向け実単価（動的ウィジェットで未取得） | LM-19 実 call 請求 |
+| V3 | Gemini Live 実コスト/call（試算 $0.029/min は公表単価からの計算のみ） | LM-19 |
+| V4 | Gemini grounding tool の key 名 / Unipile 検索 param / lm_wake_log 原型 schema（3点、patch 実装の前提） | LM-3/LM-5 実装冒頭 |
+| V5 | **Unipile の pricing**（Gmail の生命線になったのに料金未調査） | LM-6 着手前に調査 |
+| V6 | Composio 現契約プランと現在の月間 call 数（8/15 値上げの影響額が計算できない） | LM-19 と同時に実測 |
+| V7 | Steel は研究採用のみ、実 PoC ゼロ（session 作成/profile 永続/JP サイト anti-bot 実挙動） | LM-8 着手前に 1 PoC |
+| V8 | prod が最新 main を走っているか（最終 deploy 実測 = 07-04 commit 49135e3a。以降 apps/life-call に commit が無いだけか要確認） | LM-21 rotate 時に確認 |
+| V9 | travel_blocks_ratio の現在値ベースライン（0.8 目標に対し今いくつか未計測） | LM-4 冒頭 |
+| V10 | staging 用 test TG bot / test Telnyx 番号 / test user 一式が未作成 | LM-18 |
+| V11 | mem0 採用（affirmation 記憶層）は文献根拠のみ、hands-on ゼロ | LM-12 着手前 |
+| V12 | local locate.js の motion gate 実装詳細（v1 は GPS 無し設計にしたので port は v2） | LM-5 v2 |
+| V13 | Reddit shadowban appeal 結果（07-11 から応答なし） | 週次で確認 |
+| V14 | Stripe 課金フロー実 E2E（subs=0、本物の他人の決済を一度も観測していない） | S1 初売上 = 最初の実検証 |
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
