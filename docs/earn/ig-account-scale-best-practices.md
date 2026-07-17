@@ -62,3 +62,37 @@ Proxy: id, endpoint, type(mobile/residential/isp), assigned_to(account), reputat
 3. **account registry を上記 schema に拡張** → fleet dashboard（#7）。
 4. #12 golden session（✓済）は維持。
 5. 1〜3 が入って初めて「fresh 垢が確実に投稿でき、100s に scale する」。それまでは fresh 垢を量産しても poisoned を繰り返すだけ。
+
+## Proxy verdict (free vs cheap, tested 2026-07-17)
+
+**proxifly/free-proxy-list: USELESS for IG.** リポジトリ（`gh repo view proxifly/free-proxy-list`、6.2k★）は「every 5 min から web 上の公開 proxy を再スキャンして生死判定するだけの aggregator」（README: *"Every 5 minutes, Proxifly fetches fresh proxies—including HTTP, HTTPS, SOCKS4, and SOCKS5 proxies—from around the web."*）。実体を確認:
+- **type = 全て datacenter/hosting、residential/mobile はゼロ**。サンプル3件の whois: `84.17.47.150`→`CDN77_AMS_DC1`（CDN77 のオランダDC）、`206.123.156.223`→`Secure Internet LLC`（米ホスティング業者）、`129.151.160.199`→`Oracle Corporation`（Oracle Cloud）。公開 proxy list は「誰かの datacenter サーバーに立てたプロキシソフトを世界中がスキャンして拾ってる」ものであり、residential/mobile が混ざる構造ではない。
+- **anonymity 内訳（http protocol、605件中の JSON）**: `elite` 411件・`transparent` 194件・`anonymous` 0件。elite でも匿名性の話であって IP種別（DC/residential）とは無関係 — 411件全部が依然 datacenter。
+- **live smoke test（`curl --proxy` / `curl --socks5-hostname`、8〜10s timeout、20サンプル = https 10件 + socks5 10件）**: **20件中 20件が実アクション不可**。https 10件 → httpbin.org/ip への到達 = `http_code=000`（接続拒否/即死）× 9、`400`（プロキシは繋がるが動かない）× 1。socks5 10件 → `000`×8、`503`×2。「5分ごとに検証済み」と README が謳っていても、fetch した瞬間には大半が死んでいる（無料 public proxy の宿命 = 世界中からの過負荷・即 IP 変更）。生きていた3件のうち1件を i.instagram.com / instagram.com へ直接叩いても `000`・`405`・`200`が混在し、200 が返った1件も IG のホームページを返しただけで、ログイン等アクションを試したわけではない（今回は口座を焼かないため未実施）。
+- **結論: USELESS（理論でなく実測）**。type = datacenter確定 + 接続すら20/20中18件で失敗。仮に接続できても instagrapi 公式ガイドが明言する通り datacenter レンジは「pre-flagged、ログイン前から `challenge_required`」（下記引用）。
+
+**datacenter proxy が IG で即死する一次ソース**（instagrapi 公式 `instagrapi.com/guides/instagrapi-proxy-setup/`、2026-04-30 更新）:
+> "The two categories collapse to one rule: **datacenter IPs do not work for production Instagram automation, period.** A first login from a datacenter range typically hits `challenge_required` within seconds, sometimes before the password handshake completes."
+
+同ガイドの価格軸（データ点として引用）:
+> "Datacenter proxies sell for cents per GB; residential proxies sell for several dollars per GB; mobile proxies for tens of dollars per GB. The 10–100× spread is what you pay for IPs that are not pre-flagged."
+
+`proxy_address_is_blocked` の一次ソース（`instagrapi.com/guides/errors/proxy-address-is-blocked/`）はさらに強い: datacenter は**range 単位で永久 pre-listing**（"The ban is not earned through misuse; it is the default state for those ranges."）— つまり無料 proxy を差しても account 側の問題ではなく IP レンジそのものが即拒否される。
+
+### cheapest VIABLE paid path（実際に crwl した価格）
+| Provider | Type | 最小購入 | 実質 $/GB |
+|---|---|---|---|
+| IPRoyal（`iproyal.com/pricing/residential-proxies/`） | Residential | **1GB = $7 一括**（月額commitなし、pay-as-you-go） | $7.00 → 10GBで$5.25 |
+| IPRoyal（`iproyal.com/pricing/mobile-proxies/`） | Mobile (4G/5G, Vodafone/Three UK) | 24h test = $10.11/日、または30日 unlimited $130/月 | 50GBで$5.60/GB |
+| SOAX（`soax.com/pricing`） | Residential/Mobile | Builder plan $200/月〜（100GB分） | $3.00/GB tier1（小規模には不向き＝月額commit前提） |
+
+→ **IG 1垢だけなら IPRoyal residential の $7（1GB、買い切り、月額commitなし）が現実的な最安の入口。** 1アカウントの warmup+軽い投稿の月間トラフィックは数百MB〜1GB程度に収まる想定で、$7で足りる規模。mobile（$10台/GB〜）は信頼度がさらに高いが今は過剰投資。
+
+### 1:1 は今 mandatory か
+instagrapi 公式 FAQ（同ガイド）: *"Can I share one proxy across multiple accounts? Possible but risky. Instagram correlates accounts that share IPs and patterns; one bad apple can trigger holds on the others. Best practice: one residential IP per account, kept stable."* — 公式は「小規模なら共有可」という例外を明言してはいない。ただし**今は垢が1個なので 1:1 か否かは意味を持たない設問**（1垢=1proxyは自動的に満たされる）。本当に効くのは 1:1 そのものより「**residential/mobile であること」＋「同じIPをsession間で固定し続けること**」（同ガイド: *"Pin one IP per session and leave it alone... rotating per request is itself a fingerprint signal."*）。1:1 の厳格な必要性は数十〜数百垢にスケールした時（1IPに複数の"問題垢"が乗ると共倒れするリスク）に効いてくる話であり、今の1垢フェーズでは「datacenter を避けて安定した residential 1本を割り当てる」ことがすべて。
+
+### 我々の CloakBrowser 共有IPは既に「焼けてる」可能性が高い（analysis、引用ではなく内部履歴からの推論）
+このIPで直近 5+ 垢作成 + 複数回の failed login（aiclipsvault の bloks→BadPassword、aiclips_daily_hq の作成直後 poisoned、world_hq2 golden session 死亡）を積み上げている。`proxy_address_is_blocked` ガイドの「3の蓄積型」（*"an exit that started clean gradually accumulates listing weight over weeks... repeated rate-limit hits, accounts later flagged... login attempts that triggered checkpoints all stamp small amounts of risk"*）に完全に一致するパターン。**新しい clean な residential IP 1本が、次に作る垢を生かす一番の unlock である可能性が高い**（断定ではなく、良く一致する内部パターンからの推論）。
+
+### Bottom line
+**free proxy（proxifly等）は使うな — type が datacenter確定 + 実測20/20中18件が接続すら失敗、残りも実アクション未検証。** 今すぐ実行すべき最安の具体策 = **IPRoyal residential を 1GB=$7 で1本買い、CloakBrowser のプロキシ設定にそのIPを刺し、次に作る新規IG垢をそのIP専用に固定する**（他垢と共有しない、rotateしない）。これで「共有IPが焼けている」変数を1個消してから、warmup（day-1投稿の廃止）を重ねるのが次点。
