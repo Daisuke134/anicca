@@ -281,6 +281,20 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 | V13 | Reddit shadowban appeal 結果（07-11 から応答なし） | 週次で確認 |
 | V14 | Stripe 課金フロー実 E2E（subs=0、本物の他人の決済を一度も観測していない） | S1 初売上 = 最初の実検証 |
 
+### §11 更新（2026-07-17 夜）: V1✅(鳴った/無言=LM-24へ) V4✅ V5✅ V8✅ V9✅。残存+新規:
+| # | 未検証 | いつ |
+|---|---|---|
+| V2/V3 | Telnyx JP 実単価 / Gemini Live 実コスト | LM-19 |
+| V6 | Composio 現契約プラン + 月間 call 実数 | LM-19 |
+| V7 | Steel 実 PoC ゼロ | LM-8 前 |
+| V10 | staging 用 test bot/番号/user 未作成 | LM-18 |
+| V11/V12/V13/V14 | mem0 hands-on / locate.js 詳細 / Reddit appeal / Stripe 実決済 | 各タスク時 |
+| **U15** | **LM-24 真因（無言 call）**: bridge 診断ログ待ち。codec/ws close code/Gemini 応答生成のどれか未特定 | 診断報告→superpowers fix |
+| U16 | Gemini google_search + functionDeclarations 併用の制約文言（tool-combination ページ本文未読） | LM-3 実装冒頭に 1 crwl |
+| U17 | **Unipile は Gmail+Calendar を 1 アカウント扱い → Composio calendar を Unipile に統合すれば二重払い解消できる可能性**（$5.5 に calendar 込みなら Composio 解約可）。Unipile calendar API の機能十分性未検証 | LM-6 設計時に検証 |
+| U18 | LM-21 rotate の実行 runbook リスク: 13 キー原子的更新・TG webhook secret 再登録・rotate 中の数分ダウン許容度 | LM-21 冒頭で runbook 化 |
+| U19 | dev loop D0 の launchd headless auth（CLIProxyAPI fallback は connector で実証済みだが新 instance では未走行） | LM-1 初回パス |
+
 ## 12. E2E テストシナリオカタログ（QA 正本。全部 no-mock 実機、FAIL→fix→再走を PASS まで）
 実行原則: 実 gcal イベント + 実 TG + 実着信 + Supabase 実 row で判定。mock/dry が payload に出たらやり直し。各シナリオ = 「仕込み → 期待 → 証拠の場所」。
 
