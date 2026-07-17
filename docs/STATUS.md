@@ -325,6 +325,36 @@ README を新定義(every AIが0から経済的独立、human loopなし)で書�
 docsサイトツールの評価: `blume`(haydenbleasel/blume、`npx blume init`、Astro静的、AI-ready標準)を**ADOPT判定**。
 評価MD: `docs/reference/2026-07-17-blume-docs-tool-evaluation.md`。
 
+## ★2026-07-17 夜: 発見面拡大 + 資金回収★
+
+### 1. T3'(v2移行) = franklin1/franklin2 完了、claude-p 保留
+
+franklin1/franklin2 とも `serve-v2.mjs` で v2化(`x402Version:2`、`eip155:8453`)。v2 buyer で settle→sales 実証(tx on-chain確認)。稼ぎ頭 claude-p は v1 のまま無傷(v1 buyer 損失リスク確認まで保留)。
+★v1 buyer は v2 seller に払えない(確定)★: v2の`extractPayment()`が`payment-signature`ヘッダのみ読み`x-payment`(v1)を無視。`unpaidResponseBody`(v1形式body)を足しても閉じない。完全対応はカスタムmiddleware(money-safety案件)。ただし実売ほぼ0なのでv1損失の実害は小。commit `ef929635`/`3c7b3455`。
+
+### 2. XSCAN-1 = x402scan 登録成功(発見面2個目)
+
+franklin1(`server/b9b53de8…`)/franklin2(`server/af9283bc…`)をx402scan.comに登録、各8商品v2タグ、公開ページ実在(自分でcrwl確認)。v1拒否("migrate to v2")消滅。SIWX署名必須、公式`wrapFetchWithSIWx`のバグを低レベル自前実装で回避(`register-x402scan.mjs`, commit `4809f89f`)。agent402.tools=franklin1(443)登録成功、franklin2(:10000非標準)は拒否。
+★発見面が Bazaar 1個 → x402scan で2個に。生涯$0.357 の主因「発見されてない」に初めて手が届いた★。`/all`一覧は24h取引量が要るので活動待ち。
+
+### 3. PROD-1第1弾 = funding-rate-arb 追加(9商品目)
+
+`/funding-rate-arb` を `serve-v2.mjs` に追加(commit `89fd67a3`)。既存 funding-rates 出力を取引所ペア全部で pairwise 比較(年率bps差降順+long/short方向)、新API不要・LLM不要。franklin2 で 402(v2)+v2 buyer 200(tx `0x9d524b92`)+well-known 9商品を実測。arb計算 spot-check一致。残=計算機横展開で30+へ。
+
+### 4. RECOVER-1 = 座礁資金~$12.7 を流動化
+
+AUDIT-1で判明した回収可能$20.37 のうち自動回収$12.7を実行。①HL withdraw $7.72→Arbitrum着金$8.22(HL accountValue $7.72→0で座礁解消) ②PM merge YES13/NO5→YES8/NO0=5ペア=$5回収。計~$12.7 が塩漬け→流動USDC(Arbitrum/Polygon)。残=Base へのブリッジ+残YES8株($7.65)売却は後続。claude-p 自身の鍵で human ゼロ、各tx on-chain検証。
+
+### 5. Grok CLI 認証 + X自動化の足場(XAUTO-1)
+
+Grok CLI 0.2.102 を @aniccaen で device-auth 認証(俺がCloakBrowser CDP駆動+実クリックでOAuth完走、human ゼロ)。`grok -p` でX read/search 稼働(実証)。post/reply は grok不可→ブラウザ駆動 or Postiz。
+Cloudflare Sandbox はホスティング不向き判定(揮発disk/短命)。Akash/Flux(from $0.99/mo)最有力。
+
+### 6. 3体ライブ状態(実測)
+
+全loop RUNNING(1-2分毎wake)。franklin1 Base $4.48+Sol$2.22、franklin2 $0.04、claude-p Base$1.95+PM$12.65+回収した Arbitrum/Polygon分。
+★稼いだ external x402 = 生涯~$0.36 のまま、今日の新規external=$0。今日は「稼げる状態を作った日」(発見面+商品+レール+資金回収)であって稼いだ日ではない。盛らない★。
+
 ## loop は3つだけ（automaton は閉鎖済み）
 
 「founder」という loop は**存在しない**。claude-p の HOME フォルダ名が `.anicca-founder` なので
@@ -1024,11 +1054,11 @@ funnel_enabled = true
 | **FIX-1** | ★層2★ franklin2 の x402 配信修理 — telemetry poster.log で 4193/4194回(99.98%)が `400 host_wallet_mismatch`。★根本原因確定(07-17)★ = `apps/landing/netlify/functions/_lib/fixed-identities.js` の `FIXED_IDENTITIES` に franklin2 未登録、EVM前提フォールバックがSolana base58と不一致。x402決済には無影響(コード独立、telemetryのみ) | 名簿に franklin2 の Solana pubkey を追加・デプロイ後、poster.log の host_wallet_mismatch が消える | ★DONE 2026-07-17★ PR `anicca-products#292` deploy成功。poster が400→202 に変化を実測(03:05:59Z) |
 | **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件のみ。★根本原因確定(07-17)★ = serve.mjs L123-136 のsales-log書き込みが `next()`(verify成功)直後・`settle`(on-chain着金)前。21件は「署名検証21件・着金0件」。裏付け: claude-p の同一コードで payer実在9件=on-chain完全一致、payer:null=一致0件、franklin1の21件は全payer:null。未確定=settle失敗自体の理由(stderrログ消失で未特定) | sales-log を settle成功(`X-PAYMENT-RESPONSE`)後へ移動 + stderr保全、sales-logとon-chainが一致する | ★DONE 2026-07-17★ settleゲート実装(commit `e5904325`)。franklin1旧21件は全て`settled:false`印付け、claude-p27件中12件・proxy15件中2件も対象。**実settleで検証済(07-17夜)**: T9-1 done(b)節参照 — franklin1へ実購入2件、両方on-chain確認+sales-logに`settled:true`で記帳、attempts-logへの誤記録なし |
 | **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
-| **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
+| **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | ★T3'-5 DONE(2026-07-17夜、franklin1/franklin2)★ `serve-v2.mjs`でv2化(`x402Version:2`、`eip155:8453`)、v2 buyerでsettle→sales実証(tx on-chain確認)。commit `ef929635`/`3c7b3455`。★claude-p(稼ぎ頭)は保留★ — v1 buyerはv2 sellerに払えないと確定(`extractPayment()`が`payment-signature`ヘッダのみ読み`x-payment`(v1)を無視、閉じるにはカスタムmiddlewareが要るmoney-safety案件)。詳細は上の「2026-07-17夜: 発見面拡大+資金回収」節1 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | ★実害確認 2026-07-17★ 8412/8414の重複plist(loop生成+手書き)がポート競合し`EADDRINUSE`を実際に目撃。重複jobは停止済だがplist自体は未削除、T2b 後に完全掃除 |
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
 | **T7** | 学習の共有 — `promote.py:30` が「進化した戦略を repo baseline に git commit」する経路は既にある。T6 が直れば「賢い個体の学びが repo 経由で全員に配られる」が成立する。実測で確認 | 1 instance の学習が他 instance の次 wake に反映されることを実測 | T6 後 |
-| **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | ★XSCAN-1 部分DONE(2026-07-17)★ x402scan登録=green(franklin1/franklin2とも`registered:8/8`、SIWX署名POST実測、公開serverページで8商品v2表示確認 → `docs/research/2026-07-17-x402scan-registration-siwx.md`)。agent402.tools=franklin1のみ登録成功(franklin2は`:10000`非標準ポートで拒否、要443化)。agentic.market=Bazaar連動で別registration不要(FAQ確認、Bazaar拡張自体は別タスク未完了)。claude-p(稼ぎ頭)はv2未移行のため本タスク対象外、残作業として残る |
+| **T8 / XSCAN-1** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | ★XSCAN-1 DONE(2026-07-17夜)★ franklin1(`server/b9b53de8…`)/franklin2(`server/af9283bc…`)ともx402scan登録green(各9商品v2タグ、公開serverページ実在を自分でcrwl確認、v1拒否("migrate to v2")消滅)。SIWX署名必須、公式`wrapFetchWithSIWx`のバグを低レベル自前実装で回避(`register-x402scan.mjs`, commit `4809f89f`、研究MD `docs/research/2026-07-17-x402scan-registration-siwx.md`)。agent402.tools=franklin1(443)登録成功、franklin2(:10000非標準)は拒否のまま。発見面がBazaar 1個→x402scanで2個に拡大。`/all`一覧は24h取引量が要るので活動待ち。claude-p(稼ぎ頭)はv2未移行のため本タスク対象外、残作業として残る |
 | **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る。★商品確定(07-17)★ 第1弾=funding-rates(取引所間乖離%、Binance/Bybit/HL無料public APIから純算術、限界原価≈$0)。根拠=franklin1自身が hl_trade で209 wake perp売買中なのに funding rate 未取得(自分の実需の穴)+ottoai(鯨bot)が同商品を$0.001で実売中。crypto-news/kol-sentimentはLLM要約コスト$0.0106/callが単価$0.001を超え逆ザヤにつき凍結 | T9-1(funding-rates)の done 定義は spec 参照。単価 $0.05+ の商品が**外部の**agent に売れる | ★T9-1 done(a)(b)達成 2026-07-17★ `/funding-rates` を franklin1店(:8414)・claude-p店(:8412)に実装、402実測済(commit `8f6d0f7c`)。done(b)=claude-p→franklin1への実購入2件をon-chain確認済み(INV-7でself-pay扱い、収益には数えない)。done(c)(14日以内の反復購入者)は未達・観測中、下記 T9-1 参照 |
 | **U9** | ottoai 宛の鯨bot(93.5%集中)が本物のトレードagentの反復需要かottoai自身のwash tradingか | bot(`0x1cb8d145…0bdff`)の資金源1hop遡りで判定 | ★DONE 2026-07-17★ 本物の自律買い手(EIP-3009 gasless、13+relayer構成、ottoaiとの資金循環なし=wash棄却)。我々の4walletは未probe。詳細は上の「U9確定」節 |
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
@@ -1045,6 +1075,8 @@ funnel_enabled = true
 | **DOC-2** | docsサイト構築 — `blume`(Astro静的、AI-ready)採用判定済み | `npx blume init`でdocsサイトが立ち上がりデプロイされる | ADOPT判定のみ完了、構築未着手。評価MD `docs/reference/2026-07-17-blume-docs-tool-evaluation.md` |
 | **SOL-1** | franklin1の有料burnは`sol-trade` skill単独(`sol-trade/run.sh:17`の`SOL_TRADE_MODEL=openai/gpt-5-mini`、franklin-trading CLIがclawrouter非経由でx402直接支払い)。直近24h $1.86/日課金・realized $0 = 稼がずに焼くだけ。burnを止める/安いモデルへ切替/凍結のいずれかを判断・実行する | `sol-trade`のcost_log課金が$0になるか、realized profit>0がledgerに載るかのいずれかが実測できる | ★DONE 2026-07-17夜★ 判断=凍結(KILL)。実測: 850ライブパスでswap実行0回・realized $0(生涯)、trace(`sol-trade.trace.jsonl`1035行)にSignature抽出0件、earn-ledgerに`source:sol-trade`行0件=「下手」でなく「1度も取引してない」のに`gpt-5-mini`へ生涯$20.97/直近$1.86日を焼いていた。無料モデル代替は既に失敗済み(2026-07-04 `SOL_TRADE_MODEL=nvidia/deepseek-v4-flash`試すもcommit`ba9a54bf`「returned empty」で撤回)。self-evalがDEAD判定できなかった理由=earn-ledgerの行しか見ないがsol-tradeは swap確定時しか書かない設計→850 WAITパスが1行も残らず観測範囲外(HLは毎wake net=0を書くので181件で発動できたのと対照的)。`~/.blockrun/skills/earn/sol-trade/KILL`と`~/anicca/skills/earn/sol-trade/KILL`をtouch(run.sh:21-24のkill-switchで次パスからskip、コード変更ゼロ、rm で可逆)。anicca commit `0980eb44`(push済、origin/main と 0 ahead/0 behind 確認済)。franklin1 THINK を auto に戻す案は却下・現状free固定を維持: 2026-06-21 PREMIUM EXPERIMENTで実測済み(gpt-5.4切替→探索だけで30分$0.68/hr燃焼→realized $0→即revert、`config.mjs:36`に"Do NOT use 'auto'(routes to PAID, drains wallet)"のコメントで実測記録あり)。franklin1残高$4.48の小資本で同じ道を繰り返すだけ、freeでTHINK品質は足りている(全ツール正常動作、実測)。plist/config.mjsは変更しない。副産物としてSOL-2を新規登録(sol-tradeが850パスで0 swapの真因は未確定、凍結中で優先度低) |
 | **SOL-2** | `sol-trade`が850ライブパスでswap実行0回だった真因(franklin-tradingが発注しない/常時WAIT/シグナル出せず)が未確定。SOL-1で凍結(KILL)済みのため緊急性は無いが、凍結解除の前提として要調査 | franklin-tradingのWAIT連発の根本原因(シグナル生成/発注ロジックのどこで止まっているか)が特定される | pending・低優先。黒字化の主戦場はx402(MKT-1)のためSOL-1凍結中は着手不要 |
+| **PROD-1** | 商品数拡大(第1弾) — `/funding-rate-arb` を追加、既存 funding-rates 出力を取引所ペア全部で pairwise 比較(年率bps差降順+long/short方向)、新API不要・LLM不要 | 402(v2)+v2 buyer実購入(on-chain tx)+well-known掲載を実測 | ★第1弾DONE(2026-07-17夜)★ franklin2で402実測+v2 buyer 200(tx `0x9d524b92`)+well-known 9商品を確認(commit `89fd67a3`)。arb計算spot-check一致。残=金融計算機等の横展開で30+商品へ |
+| **RECOVER-1** | AUDIT-1で判明した座礁資金$20.37のうち自動回収可能分を流動化 — HL残高$7.72をArbitrumへwithdraw、Polymarket YES/NO重複ポジションをmerge | 座礁資金が流動USDCとしてwalletに着金しon-chainで確認できる | ★DONE(2026-07-17夜)★ ①HL withdraw $7.72→Arbitrum着金$8.22(HL accountValue $7.72→0で座礁解消) ②PM merge YES13/NO5→YES8/NO0=5ペア=$5回収。計~$12.7回収。claude-p自身の鍵でhumanゼロ、各tx on-chain検証。残=Baseへのブリッジ+残YES8株($7.65)売却は後続 |
 
 ## ★★T9 の真因: 商品が構造的に売れない（2026-07-16 06:20、Dais 指示で実コードを読んで判明）★★
 
