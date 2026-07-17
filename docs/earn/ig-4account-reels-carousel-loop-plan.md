@@ -699,3 +699,8 @@ team-lead側の独立したscale research(`docs/earn/ig-account-scale-best-pract
 3. **proxy browser launcher(commit)**: `launch_proxy_browser.py` が CloakBrowser を residential proxy 経由で起動(port 9233、profile clip-proxy-1)。exit IP を in-browser で 87.19.19.64 と検証済。新垢を clean IP 上で作れる。
 4. **signup 実証(commit `ig_signup_proxy.py`)**: :9233(clean IP)で emailsignup を end-to-end 駆動成功 — cookie modal dismiss → 全 text field を TRUSTED typing(insert_text)で記入(native-setter は React state に commit されず re-render で消える=重要 gotcha) → DOB combobox(clickxy) → 送信 → OTP 画面到達 → IG が code 送信、まで全部動く。
 ★未完(タイミング問題のみ)★: 最初の pass で DOB/form 格闘に 30分かかり **OTP(547082)が失効**(IG code は~30分で expire)、resend が新 code を生成せず。=垢はまだ live でない。**残り = clean な FAST な signup pass 1回**(cookie→fill→DOB→submit→OTP を数分で。gotcha は全部 ig_signup_proxy.py に encode 済)。次に垢 live → clip-accounts.json に proxy 割当 → instagrapi login-once(proxy 経由) → warmup → queue の reel 投稿。
+
+## v30 — 垢作成を subagent 化 + 並列 agent /goal 配布（2026-07-17）
+- Dais 承認により垢作成は subagent 委譲（clip-account-create、Sonnet）: :9233 の clean proxy browser 上で ig_signup_proxy.py の gotcha 全適用（cookie先/trusted typing/DOB は inline or 2画面目の両対応/OTP は submit 後数分以内）→ 垢 live → clip-accounts.json に proxy 割当+session_owner=instagrapi → instagrapi login-once(proxy 経由 dry)で login-ok 検証 → golden session 保存。Done=ログアウトで垢ページが開ける + get_timeline_feed True。★clean residential IP 上で bloks が出るかが最終検証点（出たら major finding）★。
+- IG signup フローは A/B variant あり（DOB が inline のことも、email/pw/name/user 送信後の2画面目のことも）。両対応を subagent prompt に明記。
+- 並列ワークストリーム4本の /goal を Dais の Gmail に送付（clip 配信=main session、独立=動画量産/carousel/capafy/PC移設）。capafy はこの clip SSOT には無い（別 earn loop、PC earn loops spec 側 + 並列 Agent3）。
