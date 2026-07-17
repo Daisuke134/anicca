@@ -42,7 +42,21 @@ done = "Devpost に Life Manager の提出が完了し、確認画面を実測�
 - 副産物: OpenAI Platform 新規 org 作成済み — org name "Aniccaai" / org-5cTQRUbzJCnZXb1xn0MfRiux / contact@aniccaai.com。product 内 GPT-5.6 API 呼び出しはこの org を使える。
 - Codex 実装は ChatGPT Plus の Codex 枠（ログイン済み）で行う。
 
+## feature 決定（2026-07-17 scout 実読調査に基づく）
+
+現状実測: app の LLM は **Gemini のみ**（ask.js/notify.js=gemini-2.5-flash、通話=gemini-2.5-flash-native-audio、OpenAI 呼び出しゼロ）。GPT-5.6 統合は完全新規 = hackathon の「新規拡張」として最適な証跡になる。
+
+**採用（Codex で実装する core）:**
+1. **search-before-ask（issue #11 直撃）**: 場所曖昧イベントを GPT-5.6 の検索+推論で先に解決し、質問を closed [はい/いいえ] 化。触る = `lib/ask.js:257-277` + 新規 `lib/gpt-resolve.js`。impact story = 実在ユーザーの実在課題（審査基準③）。
+2. **Morning Briefing 通話オープナー**: T-10/T-5 電話の冒頭を GPT-5.6 生成の「今日の見通し」に差替え。触る = 新規 `lib/gpt-brief.js` + `scheduler.js` / `lib/call-logic.js`。デモ映え最強（電話が GPT-5.6 の声の台本で始まる）。
+3. （時間余れば）Nightly Digest: GPT-5.6 が一日総括を TG 送信。
+
+却下: #4 カレンダー衛生（gcal 書込リスク）/#5 Health 提案（Gmail scope、2日で無理）。
+
+**前提作業（hackathon 以前に直さないとデモ自体が死ぬ）:**
+- Telnyx 残高は 07-17 に $25 補充済みだが、実発信の再確認（SSOT spec の V1）が未実施。
+- `.worktrees/lm-call-fix`（fix/lm-call-dial-burn、f82010e65、dial 失敗時 dedup rollback 修正）が未 merge。npm test 173/173 は spec 主張のみ＝このセッション未検証 → merge 前に再実行必須。
+
 ## 未決事項
 
-- feature 内容は Task #2 で決定（条件: phone で使える / 3分デモ映え / GPT-5.6 を product 内でも呼ぶと審査基準①に効く）。
-- 審査員テストアクセスの形（demo account か free tier か）は feature 決定後に確定。
+- 審査員テストアクセスの形（demo account / demo 動画中心 + test-call endpoint）は実装後に確定。Stripe $20/mo 課金が入口にあるため、審査員用に無料 demo 経路が必要（要件: "Testing access must be free of charge"）。
