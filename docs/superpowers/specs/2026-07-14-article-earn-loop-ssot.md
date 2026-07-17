@@ -752,6 +752,12 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 - **STEP 0（existence-guarded、STEP 1より前に新設）**: `~/.openclaw/state/.self-fix-article-writer.result`（article-self-fix.sh自身が書き込む実ファイル）が存在すれば読む。FAILなら前回解決できなかった不具合のクラスに今日のpassでも注意を払う（passを止める理由にはしない）。SUCCESS/RUNNINGはアクション不要。
 - 検証: bash -n（フルファイル）+ PROMPT分離レンダリング抽出でSTEP 0..10のヘッダ順序が正しく維持されていることを実測確認（STEP 4.5/6.5含む）。tests/art/test_render_verify_self_fix_wiring.sh 12/12実測（構造検証、article-daily.shのPROMPTが実本番エージェント指示のため、このディレクトリ既存の慣習を踏襲）。`tests/run-all.sh` 119/120（残1件は既存debtのtest_vendor_dirs_referenced.sh、無関係）。
 - commit: profitable-claude(main) `cb02fdd`
+
+**追記（2026-07-17、team-lead指摘によるフォローアップ2点、builder-authfix）**:
+1. **render-verify-draft.sh へのgates-log追加**: deslop-gate.sh/eval-gate.sh（#52）と同じ`article-gates.log`永続化パターンをrender-verify-draft.shにも追加（screenshot_failed FATAL・no-json-from-judge FATAL・vision judgeのPASS/FAILの3終了点）。tests/art/test_gate_verdict_log.sh を6/6へ拡張（screenshot-failedパスをCDP_PORT不到達で再現、実ブラウザ不要）。
+2. **実note draftでの実走検証**: 今日の実draft（`https://editor.note.com/notes/n5787e092451f/edit/`）に対しrender-verify-draft.shを実際に走らせ、`{"verdict":"PASS","problems":[],"advisory":[]}`を実測。生成されたfull-page screenshot（1905x8646px）をown-eyesで確認（アイキャッチ画像・見出し・実際に描画されたmermaid図・出典ブロックが正しく表示、frontmatter混入や壊れた画像なし）。`article-gates.log`が実際に1行増えたことも実測確認（`script=render-verify-draft.sh platform=note ... verdict=PASS`）。
+- `tests/run-all.sh` 119/120（変わらず）。
+- commit: profitable-claude(main) `2b5e058`
 - **全体テスト状態（今回の一連の対応の最終形）**: `tests/run-all.sh` 118/119。残1件は`test_vendor_dirs_referenced.sh`（life-manager-cli.shのSTARTUPプロンプトにベンダーツール名の言及が欠けているコンテンツギャップ、round1以前からの既存debt、今回の一連の変更とは無関係）。
 
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
