@@ -686,3 +686,8 @@ team-lead側の独立したscale research(`docs/earn/ig-account-scale-best-pract
 ### 掟（このセッションで確定）
 - proxy IP 配線まで、このマシン/IP からの IG 垢新規作成・login 試行は一切禁止（Dais 個人 IG IP 保護）。
 - vcsdd/adversary subagent は使わない（Dais が単語を言った時のみ、global CLAUDE.md に焼済）。検証は自分で実テスト。
+
+## v28 — proxy 発注中 + 並列化戦略（2026-07-17）
+- clean IP 決定: Dais 認可「crypto 優先→ダメなら $7 カード、cred 全部渡済」。proxy-acquire が residential proxy 購入中($15 hard cap、ASN で datacenter でない事を検証、cred は ~/.cloak/proxy-clip-1.json 600perm 直結)。取得後: CloakBrowser + instagrapi に per-account 配線 → 1垢を専用IP固定 → warmup(#10) → queue の reel 18本から投稿(#2)。
+- ★クラウド = 無料 no-IP は嘘★(scale 研究 doc `ig-scaling-architecture-and-economics.md` commit b2e389a25)。cloud VM は datacenter ASN で IG 即拒否。compute の場所と IG egress IP は別レイヤー。cloud を使うなら residential/mobile proxy を前段に置き cloud IP を IG に触れさせない構成のみ可。1:1:1(account:proxy:profile)が数百まで、それ以上は mobile proxy farm + device farm。100垢≈$200-500/月、1000垢≈$1.5-3k/月、free at scale は神話。
+- ★並列化: エンジンは2半分★ = (1)DISTRIBUTION(垢/投稿側、今 proxy で blocked)と (2)CONTENT(動画/slideshow 生成、IP 問題と無関係=並列可)。CONTENT は proxy を待たず作れる(queue に reel 18本既存)。carousel 生成・他 content type・PC 移設・dashboard/registry は proxy と独立に並列進行できる。
