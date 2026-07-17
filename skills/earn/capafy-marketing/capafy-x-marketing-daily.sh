@@ -12,6 +12,11 @@ ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 echo "=== capafy-x-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 
+# ── B6/B7 run EVERY day (deterministic, no agent judgment) so the time-series fills even on
+#    cadence no-op days — metrics of already-posted threads keep growing, attribution keeps joining. ──
+/opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/x_metrics.py >>"$LOG" 2>&1 || echo "x_metrics failed (non-fatal)" >>"$LOG"
+/opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/x_attribution.py >>"$LOG" 2>&1 || echo "x_attribution failed (non-fatal)" >>"$LOG"
+
 # ── DETERMINISTIC CADENCE GATE (clip pattern): no-op if the last X thread was < 20h ago.
 #    A rolling 20h window (not a calendar day) prevents a 23:00 + next-06:00 double-post on the
 #    SHARED @aniccaen account. Reads the most recent platform=x ts from the rotation ledger. ──
@@ -48,6 +53,8 @@ STEP3 POST (deterministic tool):  python3 ~/anicca/skills/earn/capafy-marketing/
 STEP4 VERIFY (logged-out, MANDATORY — a claim is not proof): from the reply_url open the tweet, grab its t.co link, and  curl -s -o /dev/null -w "%{url_effective} %{http_code}" -L "<t.co>"  with NO auth — confirm it resolves to a capafy.ai URL carrying utm_medium=x_reply and HTTP 200. If it does not resolve to capafy with the UTM, report FAILURE (the link did not land).
 
 STEP5 REPORT (MANDATORY, success or failure): openclaw message send --channel telegram --target 0000000000 --message "<one-screen honest report: listing name, root_url, reply_url, the logged-out resolved capafy url + http code, and online-listing count>" --json  — confirm it returns a real message id; also run  bash ~/anicca/skills/report/loop-report.sh capafy-x-marketing "<what you posted + verified link>" <success|failure|no-op> 0 "<reply_url or none>"  if that script exists. Never inflate: there is no revenue number here yet, only reach.
+
+STEP6 REFLECT (weekly learning line — the bash caller already refreshed capafy-marketing-metrics.jsonl + capafy-attribution.jsonl before you ran; SKELETON until data accrues): count distinct root_url in ~/.openclaw/state/capafy-marketing-metrics.jsonl. If FEWER than 7 distinct threads, this is a NO-OP — just note "reflect: insufficient data (<7 posts)" and move on. If 7+, compute the median views; for the threads whose latest views are >= the median, read their copy from the x-ledger and extract 1-2 concrete winning patterns (hook style / structure / the specific angle) and let them shape the copy you write in STEP2 next time (this is the clip REFLECT / above-average gate pattern; do not overfit to 1-2 samples). Never invent a pattern from thin data.
 
 FINALLY always touch ~/.openclaw/state/.capafy-x-marketing-last-pass to prove the pass completed. A deferred cadence pass or a caught error is a clean finish, never a hang.'
 
