@@ -143,6 +143,48 @@ feedback(TG)→issue→spec 1p→TDD→impl→adversary→main→Railway deploy�
 - **旧仮説の訂正**: 07-17 朝の「cron 未登録が真因」仮説は **local 版の話で cloud には非該当**（cloud は in-process scheduler が正常稼働中と実測）。
 - **⚠ セキュリティインシデント（2026-07-17）**: 調査 subagent が env 抽出時に Railway 全 secret（SUPABASE_SERVICE_ROLE_KEY / TELNYX_API_KEY / GEMINI / GROQ / RESEND / STRIPE_WEBHOOK_SECRET / LM_CALL_SECRET / LM_UID_SECRET / LM_TELEGRAM_BOT_TOKEN / LM_TELEGRAM_WEBHOOK_SECRET / UNIPILE_TOKEN / COMPOSIO_API_KEY / LM_INBOUND_SECRET）を tool 出力に平文表示。ルール（漏洩即 rotate）に従い**全キー rotate = LM-21 P0**。漏洩範囲はローカル transcript のみだが例外にしない。
 
+## 8. TO-BE（2026-07-17 align 確定。実装は superpowers workflow で 1 件ずつ、都度 browser E2E）
+
+### 8a. TO-BE folder tree（repo 収斂後 = Daisuke134/life-manager が product SSOT）
+```
+life-manager/
+├ apps/
+│ ├ web/                # landing + onboarding（現 apps/landing の LM 部分を移設）
+│ └ core/               # 現 apps/life-call。Railway 常駐
+│   ├ server.js         # webhooks: telegram / stripe / call ws bridge
+│   ├ scheduler.js      # 60s tick
+│   ├ engines/
+│   │ ├ time/           # travel blocks · wake/leave/sleep calls · 自動遅刻検知(locate port)
+│   │ ├ place/          # search-before-ask resolver（open question 禁止）
+│   │ ├ connector/      # events(Luma/connpass) · outreach(gated) · apply(jobs/accelerators)
+│   │ ├ health/         # 歯科6mo · 散髪6-8wk · 休眠課金サービス発掘
+│   │ ├ mind/           # affirmation(mem0 記憶) · 夜 digest
+│   │ ├ policy/         # elite-defaults 23 rules
+│   │ └ ledger/         # api-cost · user-outcomes
+│   ├ context/          # per-user context graph（ideal/home/work/regulars、Gcal+Gmail 推論）
+│   ├ browser/          # steel-sdk（1 user task = 1 session = 1 profile）
+│   ├ lib/              # telegram / billing / dial / transport(composio|gog)
+│   └ migrations/
+├ docs/                 # E2E-SPEC + specs
+└ .github/
+dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user feedback→issue→fix→deploy→E2E→TG 報告）
+```
+
+### 8b. 10k MRR への道（$20/mo 基準）
+| 段階 | payers | MRR | 何で到達 |
+|---|---|---|---|
+| S0 今 | 0 | $0 | P0/P1 fix + Dais dogfood が毎日 green（電話鳴る/travel入る/質問≤closed）= 売れる状態 |
+| S1 | 10 | $200 | 既存配布 loop 起動済み（lm-video TikTok/IG cron 3本 + marketing loop IG/Reddit 日次）→ landing→TG 転換を実測・改善。build-in-public |
+| S2 | 100 | $2k | onboarding 摩擦ゼロ（#1）、outcome 実感（週次「今週 AI がやったこと」）で churn 抑制、紹介導線 |
+| S3 | **500** | **$10k** | 500×$20。必要流入試算: TG 転換 20%・訪問→TG 3% → 累計 ~8万訪問 = content loop の物量で到達可能圏 |
+| S4 | — | $10M | ①Autopilot tier $49-99（connector/apply/health 全部入り）で ARPU↑ ②profitable-claude 統合 =「AI があなたの金を稼ぐ」（earn 額の % 課金）③EN 展開。500k 相当 subs or blended ARPU $50×200k |
+- 前提: churn は outcome で殺す（電話が鳴った/予約された/応募された、が毎週見える）。$0 の真因は配布ゼロ（07-03 実測: wrong-link + zero distribution）でありプロダクト欠陥ではない。
+
+### 8c. 実行方式（Dais 決定 2026-07-17）
+- **実装は superpowers workflow**（brainstorming→writing-plans→worktree→subagent-driven→verification）で 1 issue ずつ。
+- 検証 = 自分で実 browser/実 API E2E（adversary/vcsdd subagent は Dais が明示した時のみ）。
+- 1 fix = 1 browser 検証 = 1 TG/call 実測、を積む。lm2-fixer の先行 branch `fix/lm-call-dial-burn` は参考物として保持（merge しない）。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
