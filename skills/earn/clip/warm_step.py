@@ -60,6 +60,26 @@ def state_summary(st):
     return day, banned, (dates[0] if dates else None)
 
 
+def recent_abort_after_last_log(st):
+    """True if the most recent aborts entry (a login failure) is dated AFTER the most
+    recent log entry (a successful day). Guards against promoting off a stale
+    log[-1].day when the account has actually failed to log in since that success --
+    the real bug: state_summary()'s day/banned alone missed this because a plain
+    'not logged in' abort never sets a ban signal. Compares by 'date' (fallback to
+    'day' if a date is missing on either side)."""
+    log = st.get("log", [])
+    aborts = st.get("aborts", [])
+    if not aborts:
+        return False
+    if not log:
+        return True  # only failures ever recorded, nothing successful to promote on
+    last_log, last_abort = log[-1], aborts[-1]
+    log_date, abort_date = last_log.get("date"), last_abort.get("date")
+    if log_date and abort_date:
+        return abort_date > log_date
+    return last_abort.get("day", 0) > last_log.get("day", 0)
+
+
 def browser_up(port, timeout=4):
     try:
         with urllib.request.urlopen(f"http://localhost:{port}/json/list", timeout=timeout) as r:
@@ -164,7 +184,9 @@ def main():
         append_warmlog(handle, {"action": "skip_browser_still_down", "port": port})
         print(f"WARM {handle}: WARN browser still down on :{port} after launch attempt -- warm.py not run")
 
-    day, banned, _ = state_summary(load_warmup_state(handle))
+    warmup_state = load_warmup_state(handle)
+    day, banned, _ = state_summary(warmup_state)
+    recent_failure = recent_abort_after_last_log(warmup_state)
     for a in accts:
         if a.get("handle") != handle:
             continue
@@ -177,6 +199,10 @@ def main():
             changed = True
             print(f"WARM {handle}: BAN SIGNAL -- moved to investigating")
             append_warmlog(handle, {"action": "ban_detected", "day": day})
+        elif recent_failure:
+            print(f"WARM {handle}: HELD (day={day} >= {PROMOTE_DAY} but a login abort was "
+                  f"recorded after the last successful log day -- not promoting)")
+            append_warmlog(handle, {"action": "held_recent_abort", "day": day})
         elif day >= PROMOTE_DAY:
             prior_note = (a.get("note") or "")[:300]
             a["status"] = "ready"
