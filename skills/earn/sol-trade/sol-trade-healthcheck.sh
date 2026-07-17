@@ -53,6 +53,15 @@ try:
 except Exception:
     print("unknown")
 ' 2>/dev/null)"
+  # reason=="kill-switch" is run.sh's own explicit, operator-authored freeze (a literal KILL file
+  # dropped next to run.sh, checked at run.sh's own top -- see its "OWN Solana wallet ... = kill-
+  # switch" comment). That is NOT a bug to diagnose: it is the loop being off on purpose. Escalating
+  # it to self-fix every ESCALATE_EVERY_HRS wastes a full self-fix agent spawn re-discovering an
+  # intentional freeze forever (SOL-1, 2026-07-17: frozen after 850 passes / 0 swaps / $0 realized).
+  if [ "$REASON" = "kill-switch" ]; then
+    echo "$(date '+%F %T') FROZEN (intentional KILL file present, reason=kill-switch) -- not a bug, no escalation" >> "$LOG"
+    exit 0
+  fi
   now=$(date +%s)
   MK="$STATE_DIR/.sol-trade-earning-health-escalated"
   age_hrs=99999

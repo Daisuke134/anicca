@@ -112,6 +112,14 @@ except Exception:
     [ -z "$REASON" ] && REASON="unspecified"
     SAFE_ID="$(printf '%s' "$ID" | python3 "$SELF_DIR/earning-health.py" sanitize-reason 80)"
     [ -z "$SAFE_ID" ] && SAFE_ID="unspecified-slot"
+    # reason=="kill-switch" is that slot's own operator-authored freeze (a literal KILL file the
+    # slot's run.sh checks at its own top), not a bug -- see sol-trade-healthcheck.sh's identical
+    # guard and SOL-1 (2026-07-17: sol-trade frozen after 850 passes / 0 swaps / $0 realized).
+    # Escalating an intentional freeze every ESC_HRS wastes a full self-fix agent spawn forever.
+    if [ "$RAW_REASON" = "kill-switch" ]; then
+      echo "$(date '+%F %T') $ID FROZEN (intentional KILL file present, reason=kill-switch) -- not a bug, no escalation" >> "$LOG"
+      continue
+    fi
     now=$(date +%s)
     # REQ-AS-003: a per-SLOT marker filename (never one shared marker) so N slots never collide.
     SLOTKEY="$(printf '%s' "$ID" | tr -c 'A-Za-z0-9' '_')"
