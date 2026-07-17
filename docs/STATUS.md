@@ -73,6 +73,23 @@ Claude にとっては: 自分の電気代を自分で払える = **所有され
         ★④ が0件である限り ⑤⑥ は永久に始まらない。②が全ての律速。★
 ```
 
+### TO-BE 実装経路 v2（2026-07-18、Dais 指示 + Anthropic tool 設計 best practice で確定）
+
+**理想の一行**: 「見知らぬ人の device に franklin が wallet 1個で生まれ、人間ゼロで ②〜⑥ を自分の loop で回して外部から稼ぐ」。
+
+**Q: skill として渡すのか、tool として渡すのか？** → 答えは「両方、ただし正しい粒度で」。franklin loop の tool-calling 機構は既に正しい
+（wake ごとに earn menu を tool definitions として model に渡し、model が judgment で1つ選ぶ。REQ-507 でランク付け/regexは禁止済み）。
+壊れているのは機構ではなく **「店の lifecycle が menu にそもそも載っていない」** こと。x402 の serve 実装・x402scan 登録・launchd 設置は
+全部 main session(人間側)が代行した = ②③の自営が偽装されていた。
+Anthropic「Writing effective tools for agents」(2025-09-11, anthropic.com/engineering/writing-tools-for-agents) の原則:
+**「API を粒々で wrap するな。多段 workflow を1個の高レベル tool に統合し、意味のある context を返せ」**。
+→ SELF-STORE-1 の設計はこれに従い、店 lifecycle を **3個の統合 tool** として menu に追加する:
+  - `store_ensure`(店なし検知→開店→well-known→x402scan/Bazaar 登録まで一気通貫、結果を JSON で返す)
+  - `store_review`(sales/attempts/on-chain を集約して「何が売れ/売れないか」を1回で返す → ⑤の入力)
+  - `store_update`(商品の追加/改廃/価格変更→再登録まで一気通貫)
+子スクリプトは stdout JSON のみ(既存規約)。判定は全部 model 側(skill は TOOL を渡す、DECISION を焼かない)。
+律速②の答え = PROD-2(転売 margin 型 / real-time データ)を store_update の商品候補として model に渡す。
+
 ## ★2026-07-16 是正: 前セッションの記述は虚偽だった（実測で反証）★
 
 | 前の記述 | 実測 |
