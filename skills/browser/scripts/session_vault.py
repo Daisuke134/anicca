@@ -178,9 +178,36 @@ def status():
             "logged_in_origins": interesting}
 
 
+def _has_instagram_sessionid(cookies):
+    """True if any cookie is a live instagram.com sessionid. Used because IG lets a half-dead
+    session (ds_user_id survives, sessionid expired) sit on the feed WITHOUT ever redirecting to
+    /login — so URL-redirect detection alone false-negatives logged_out on Instagram."""
+    return any(
+        c.get("name") == "sessionid" and "instagram.com" in c.get("domain", "")
+        for c in cookies
+    )
+
+
+def _logged_out_for(url, final, cookies):
+    """Decide logged_out for one keepalive page.
+
+    - URL redirected to /login /signin etc -> logged_out (works for coconala and most sites).
+    - instagram.com specifically -> ALSO require a live sessionid cookie, since IG does not
+      redirect a half-dead session to /login. OR'd with the redirect check per spec: either
+      signal alone is enough to declare logged_out on instagram.com.
+    - non-instagram domains: sessionid is instagram-specific, so only the redirect check applies.
+    """
+    redirected = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
+    if "instagram.com" in url.lower() and not _has_instagram_sessionid(cookies):
+        return True
+    return redirected
+
+
 async def _keepalive(urls):
     """Open each url in its own tab, wait for it to settle, and see where it ended up.
-    A redirect to a /login or /signin URL means the server dropped the session."""
+    A redirect to a /login or /signin URL means the server dropped the session. For
+    instagram.com pages, also check the live sessionid cookie (see _logged_out_for) —
+    IG does not always redirect a half-dead session to /login."""
     results = []
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         mid = [0]
@@ -207,7 +234,11 @@ async def _keepalive(urls):
             hist = await call("Page.getNavigationHistory", sess=sess)
             entries = hist.get("entries", [])
             final = entries[hist.get("currentIndex", len(entries) - 1)]["url"] if entries else url
-            logged_out = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
+            cookies = []
+            if "instagram.com" in url.lower():
+                cookies_res = await call("Storage.getCookies", {})
+                cookies = cookies_res.get("cookies", [])
+            logged_out = _logged_out_for(url, final, cookies)
             results.append({"url": url, "final": final, "logged_out": logged_out})
             await call("Target.closeTarget", {"targetId": tid})
     return results
