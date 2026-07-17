@@ -31,4 +31,4 @@ export X402_PRICE="\$0.003"
 export X402_PORT="8414"
 PIDS="$(lsof -ti tcp:8414 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>/dev/null || true
 sleep 1
-exec /usr/bin/env node "$DIR/serve.mjs"
+exec /usr/bin/env node "$DIR/serve-v2.mjs"
