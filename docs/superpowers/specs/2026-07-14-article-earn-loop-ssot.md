@@ -97,15 +97,17 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 - 入口: k16の7ルールをWRITE工程に入れる = そもそも slop を生まない
 - 出口: G1 de-slop（偏愛語・全角ダッシュ・主体の不在・命題型H2・リズム均一・両論併記）→ G2 eval（/50、35未満書直し）→ G3 fact（出典無し断定/幻覚）→ 人間目視（機械が拾えぬ「意味の取りにくさ」）
 
-## 4. 現状の壊れ（PUBLISH 無人化のブロッカー）
+## 4. 現状の壊れ（PUBLISH 無人化のブロッカー。2026-07-17 実測で全面書き換え — 旧表は X/note login を「壊れ」としていたが解消済みだったため是正）
 
-| 項目 | 状態 |
+| 項目 | 状態（2026-07-17 実測） |
 |---|---|
-| 記事ごと publish script 手書き | ★唯一の無人loopブロッカー。パラメータ化必要 |
-| note login | Vue reactivity bug で自動login不可 |
-| X セッション | 有効creds無し、再取得必要 |
-| tiktok companion | 未実装（publish matrixに名前だけ）|
-| 換金ノード | note のみ実装・一度もON していない・¥0。cross-platform orchestrator無し |
+| gate/pass の claude -p 認証死 | ✅**解消（2026-07-17）**: keychain OAuth は headless で失効する（expiresAt:0, claude-code#76905）。CLIProxyAPI :8317（daisukenarita53 の Max OAuth 保持）経由に配線。`~/.cli-proxy-api-key` 存在時のみ有効、無ければ従来 fallback。E2E 実証: 07-17 ja draft に deslop-gate が実 PASS を返した。commits: anicca-dais `22d0f13b` / profitable-claude `4084ce2` |
+| AUTOPUBLISH 未arm | **唯一の無人公開ブロッカー**。plist へ `ARTICLE_AUTOPUBLISH=1` 注入は Dais 保留（2026-07-15 判断）のまま |
+| visual≥1 gate 不在 | 07-17 記事は ja/en とも mermaid=0 img=0 table=0 で素通り（実測）。枚数カウントは regex で決まる事項 → deterministic pre-check に追加する（→ §7 TODO） |
+| 自己言及・「この記事」が regex pre-check 未登録 | SKILL.md Rule 41/65/42/52 で禁止済みだが deslop の blocking(B1-B5) 対象外のため、gate が生きてても素通りする（07-17 に「自分（アニッチャ）は…」が PASS、実測）。→ pre-check 昇格（→ §7 TODO） |
+| #47 無料版が Sources ブロックを落とす | 方針決定済み・未実装 |
+| 換金ノード | note 買い切りは実装済み（¥1,000 実売1本）。membership / Substack 有料 tier 未ON。Substack の Stripe 接続状態は**未確認**（daily-driver の Substack session が logout 状態で settings 画面に入れず、2026-07-17 実測） |
+| tiktok companion | 未実装（publish matrix に名前だけ）|
 
 ## 5. TODO（TaskList #9-25 と同期。順序 B→C→D→E→A。★随時 status 更新★）
 
@@ -639,6 +641,73 @@ gate が FAIL を出した時、**記事を直すのが正しい場合と、gate
        - 無料版 md = `~/.cloak/note-work/2026-07-12-agent-economy-jp-x-free.md`（X 無料版の型として再利用可）
        ★funnel の型が確定: 無料版 = 有料ラインまで + CTA（有料側見出し1-2個を予告 + 買い切り価格 + URL）。loop に焼く際はこれを copy。★
 - [ ] #12 EN publish devto→x +verify（tiktok除外）
+
+## 7. 2026-07-17 決定 — 1 loop 2レーン化・OSS 方針・不確実性の解消（Dais 同席セッション）
+
+### 7.1 決定: 新 loop は作らない。TOPIC PICK を優先順位制にして 2 レーン化
+
+| レーン | ネタ元 | 声 |
+|---|---|---|
+| **A: 人間 raw ネタ** | `topics/queue/` のカード（Dais の raw 研究 + 毎晩の dev-digest + `topics/inbox.md` の思いつき行） | Dais 名義の一人称体験記（récit 型、Rule 27 拡張）。**AI と名乗らない**。SKILL.md Rule 41/65（一人称日記禁止）はレーン B 専用に降格し、レーン A では体験記テンプレを使う |
+| **B: AI 自力探索** | 現行のまま（AP2 型 = 新物を実際に動かして受領証） | 現行の匿名解説者 |
+
+- queue にカードあり → レーン A。無し → レーン B。dedup は機械式: pass 開始時に `mv queue/→in-progress/`（claim）、全 platform staged で `mv → done/`。done/ のカード名 = 再選択禁止リスト（regex 照合）。published が queue を掃除し損ねる事故は構造的に起きない。
+- 最初の queue カード3枚: ①Virtuals ACP ②Olas Mech Marketplace（両方 `docs/articles/2026-07-12-agent-marketplace-DEEP-QUESTIONS.md` から切り出し）③humanizer-skill shootout（同一原文を stop-slop / stop-ai-slop-jp / k16 gist に通して比較。7.4 の照合結果が下調べ）。
+- **dev-digest**: handover 依存は却下（書かれない日がある）。原料 = その日の session transcript（`~/.claude/projects/*/`、全セッション自動記録）+ 全 repo の当日 git log。23:30 launchd。抽出は「報告」ではなく**教訓抽出**（症状→誤った本能→正しい手→一般法則）。★redaction gate 必須（transcript は秘密を含む。fake secret を混ぜて FAIL する negative test 付きで実装）★。教訓ゼロの日はカード無し = レーン B が走る。
+- funnel.jsonl にレーン A/B タグを付け、self-improve L3 がレーン別に効果測定 → 売れるレーンに配分が寄る。
+
+### 7.2 決定: OSS の形 = 「Claude setup 丸ごと + 毎日稼ぐ loop」(profitable-claude)
+
+GH 実測調査（2026-07-17、gh search）: `.claude` 公開 repo の上位は trailofbits/claude-code-config(★2045)、jarrodwatts/claude-code-config(★1059)、PaulRBerg/dot-claude 等、全部**静的テンプレ配布**。「skills + launchd/cron 自動 loop」まで OSS してる例は**ゼロ**。money 系 Claude setup も検索 0 件。→ profitable-claude は空きニッチ。
+- .gitignore は定番の「default 全無視 → `!` ホワイトリスト」方式（jarrodwatts/PaulRBerg 型）。除外定番: `settings.local.json` / `.env*` / `*.log` / state 生成物。
+- trailofbits 方式の settings.json deny rule（`~/.ssh` 等への Read/Edit 拒否）も同梱する。
+- **自己完結化**: skill 本体を profitable-claude に置き、`.claude/skills` は symlink。stop-ai-slop-jp / stop-slop の checklist は attribution 付きで vendor（現状 deslop-gate.sh が `~/anicca-project/...` をハードコード = 他人の環境で gate 即死、実測）。
+
+### 7.3 不確実性の解消結果（U1-U9、全部実測）
+
+| U | 結果 |
+|---|---|
+| U1 gate 認証死 | ✅**解消**（§4 参照。proxy 配線、E2E PASS 実証、push 済み） |
+| U2 レーンA の声 | ✅設計決定（7.1。Dais 拒否権あり） |
+| U3 Substack Stripe | ⏳未確認: daily-driver の Substack session が logout。**要 Dais の Substack 再ログイン**（or loop 側 session の所在特定）。確認まで換金 ON 不可 |
+| U4 firecrawl | ✅**生存**（`firecrawl scrape` 実測成功 2026-07-17。「credit 切れで既定から外す」は scrape には当てはまらない — 旧記述を是正） |
+| U5 redaction | 設計に組み込み（7.1。negative test 必須） |
+| U6 k16 吸収度 | ✅照合完了（7.4） |
+| U7 X session | vault forever-session で概ね解消、healthcheck 監視継続 |
+| U8 秘密識別子 | ✅スキャン完了（7.5） |
+| U9 書籍 | `topics/done/` + 公開 URL 対応表が章立て台帳。記事10本到達時に言語/出口を決める（非ブロッカー） |
+| （是正） | `connector-cli.sh` の PII 課題は **connector loop（`~/profitable-claude/skills/human-funded/connector/`）の持ち物**で article loop とは無関係。本 spec の旧記述（#27 に含めていた文脈）から切り離す |
+
+### 7.4 k16 gist（japanese-tech-writing）照合結果 — 2026-07-17 実測
+
+- gist = 10節78ブレット。吸収済みは**わずか ~16/78**（ダッシュ・中黒、命題型H2、劇的断片化など）。**62項目が未吸収**（段落と論証の構成・全12項目、論証の厳密さ 10項目、冗長の排除ほぼ全部、読者への誠実さ全3項目、LLM 禁止語彙の技術書系リスト等）。
+- **矛盾2点**: ①二人称 — gist「あなたと呼ぶな」vs stop-ai-slop-jp #5「あなたはで書け」→ 文書種別（技術解説 vs note 体験記）で分岐が必要 ②述語強度 — gist X13「確定根拠は強く言い切れ」vs slop-jp #3「中間温度を混ぜろ」→ 対象が違うが機械適用すると衝突。
+- 対応: gist を `japanese-tech-writing` として attribution 付き vendor、deslop-gate の checklist をレーン/文書種別で選択制に。shootout 記事の下調べを兼ねる。
+
+### 7.5 U8 秘密識別子スキャン結果（OSS 前の必須作業リスト）
+
+API key/token/password の直書き = **0 件**（全部 env 参照済み、健全）。残作業:
+| 優先 | 何 | 対応 |
+|---|---|---|
+| 1 | article-daily.sh の Telegram chat id デフォルト値4箇所 + プロンプト内 `~/.openclaw/...` パス30箇所超 | デフォルト値削除・必須 env 化（`TELEGRAM_TARGET_ID`）、パスは `OPENCLAW_HOME` ベース env に一本化 |
+| 2 | note user_id 直書き5箇所（publish-note.sh:260 ほか、env fallback 無し） | `NOTE_USER_ID` |
+| 3 | run.sh:40-43 の devto/substack/note/zenn 自アカウント直書き（唯一 env 無し箇所） | `DEVTO_ACCOUNT_HANDLE` / `SUBSTACK_PUBLICATION` / `NOTE_URLNAME` / `ZENN_ACCOUNT` |
+| 4 | 他 repo 絶対パス依存（`~/anicca-project` spec 参照、`~/anicca` git 操作、`~/.cloak` profile、note-mcp src） | `ANICCA_PROJECT_DIR` 等のベース env + vendor（7.2） |
+| 5 | `state/*.jsonl` `*.meta.json`（実行ログに実 URL/アカウント） | OSS repo では gitignore（ホワイトリスト方式なら自動で落ちる） |
+
+### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
+
+| # | やること | 状態 |
+|---|---|---|
+| #53 | regex pre-check 強化: 「この記事」見出し・自己言及（自分（アニッチャ）等）・visual≥1 カウントを deterministic pre-check に追加 | [ ] |
+| #54 | `topics/` 機構実装（queue/in-progress/done + mv claim + STEP 1 配線）+ 初期カード3枚投入 | [ ] |
+| #55 | `make-diary-digest.sh`（transcript+git log → 教訓抽出 → redaction gate → card）+ 23:30 launchd + redaction negative test | [ ] |
+| #56 | レーン A 用 récit テンプレ（Dais 名義一人称、Rule 41/65 のレーン分岐）を SKILL.md に追記 | [ ] |
+| #57 | k16 gist を japanese-tech-writing として vendor + deslop checklist の文書種別分岐 | [ ] |
+| #58 | OSS 自己完結化: stop-slop 系 vendor、7.5 の env 化 1-5、ホワイトリスト .gitignore、deny rule 同梱 | [ ] |
+| #59 | #47 無料版 Sources 落ち修理（既存 TODO の再掲、レーン A 開始前に必須） | [ ] |
+| #60 | Substack Stripe 状態確認（Dais 再ログイン後）→ #23 換金 ON | [ ] blocked: Dais |
+| #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
 
 ## 6. 関連ファイル
 
