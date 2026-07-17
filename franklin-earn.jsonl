@@ -1392,3 +1392,4 @@
 {"ts":1784290032,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MROW73Q9D3E29847AD104713"}
 {"ts":1784295100,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MROZ7YO5E319D7FD0BBB41EA"}
 {"ts":1784301972,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRP3B5349DB2C04C94774523"}
+{"ts":1784311278,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRP8SY0I13668A5C7F744D95"}
