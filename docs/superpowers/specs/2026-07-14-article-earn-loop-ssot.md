@@ -707,6 +707,14 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 
 `human-funded` は colony 内部分類の漏れで OSS の readable naming 違反。新構造 = `profitable-claude/skills/{article-writer, gig-work, connector, life-manager, …}`（Claude Code の skill 規約と 1:1、install.sh が ~/.claude/skills/ へ symlink 登録）。#70f のパス書き換えと同時に実施。
 
+**round2 完了（2026-07-17、builder-authfix）**: gig/bounty/affiliate は digest が round1（commit `4f801d6`）で先行 flatten 済み。round2 の対象 = `article`(→`article-writer`)/`connector`/`life-manager`/`explorer`/`tests`/`README`。`git mv`（履歴保持、article の `writer/` サブ階層も一段上へフラット化）+ 全286ファイルの参照修正（bin/, lib/, config/, tests/, launchd テンプレ, 稼働中 `~/Library/LaunchAgents` の実plist）。commit: profitable-claude(main) `682cc26`。
+
+- **PROP-015 完全 green 化（5/5）**: digest の round1 では bounty/affiliate/gig 分のみ解消され、article/life-manager 分の36件が未解決のまま残っていた（round1 時点でも既に失敗していたことを `git stash` 比較で確認 — round2 が壊したのではなく元から未解消だった債務）。`config/anicca-ref-allowlist.txt` に19エントリ追加して分類・解消。
+- **本番バグを検証中に発見・修正**: bounty/affiliate/gig-work/connector/life-manager/explorer の6ループ全`*-cli.sh`が`REPO_ROOT`を`dirname`3段で計算しており（旧 `skills/human-funded/<loop>/` の3階層ネスト前提）、round1 の flatten で2階層になって以降 `source lib/registry-enforce.sh` が静かに失敗し続けていた。つまり **CEO の pause/budget enforcement gate が全ループで無効化されたまま気づかれていなかった**（`set -e` 無しなので exit しない。`REPO_ROOT` が `/Users/anicca` を指し `source` が file-not-found で無視されるだけ）。全6ファイルを `../../..` → `../..` に修正、再検証で PROP-086（paused registry → tmux 起動しない）を実測 green 化。同型バグが `affiliate_verify.py`（ytdlp_parse vendored import）と自身のテストファイルにもあり、あわせて修正。
+- **tests/art/ が一度も run-all.sh に配線されていなかった**ことを発見（7ファイル、history的に存在するのに実行されていなかった）。配線したところ2件新規に失敗が可視化されたが、いずれも path 由来ではなく別種の既存debt: (a) `test_vendor_dirs_referenced.sh` — life-manager-cli.sh の STARTUP prompt にベンダーツール名の言及が欠けているコンテンツギャップ（round1 以前から既存）。(b) `test_article_daily_contract.sh` — 「`--mode go` 禁止（draft-onlyループ前提）」という古いアサーションが、Dais 承認済みの Substack live-publish 稼働（#70f phase2 で確定済み）と矛盾。ポリシー判断が必要なため中身は書き換えず既知失敗として記録のみ。
+- 稼働中 launchd 9ジョブ（article×6 + connector×2 + life-manager×1）の plist を新パスへ書換 + `bootout`→`bootstrap` 再読込、`launchctl print` で実メモリ上の ProgramArguments が新パスであることを実測確認。
+- 最終テスト状態: `tests/run-all.sh` 114/116 pass（残り2件は上記の既知debt、path bug ではない）。
+
 ### 7.57 本日の教訓（2026-07-17、恒久ルール化済みのもの）
 
 - **sandbox は「実行場所」でなく「全書き込み先」に張る**（#70e で本番 plist 5本を誤上書き→即復旧。memory 化済み）。復旧検証は on-disk + launchd 実メモリ（launchctl print argv）まで。
