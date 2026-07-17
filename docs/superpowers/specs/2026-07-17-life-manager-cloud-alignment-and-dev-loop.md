@@ -289,7 +289,7 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 |---|---|---|
 | V2/V3 | Telnyx JP 実単価 / Gemini Live 実コスト | LM-19 |
 | V6 | Composio 現契約プラン + 月間 call 実数 | LM-19 |
-| V7 | Steel 実 PoC ゼロ | LM-8 前 |
+| V7 | ✅ **Steel PoC = GO（07-17 実測）**: カード不要 signup（keiodaisuke+steel@gmail.com、Clerk magic link）→ API key（`~/.cloak/steel-api-key.txt`、DOM→file 直結で取得）→ session 201（5.4s）→ Playwright CDP 接続 2.5s → luma.com/tokyo title 取得 → **Profiles cookie 永続を free tier で実証**（別 session で cookie 生存確認）→ 3 session 129 秒 = $0.004。Hobby plan $10/月枠。未検証残: $30 wallet と $10 枠の関係 / CAPTCHA・stealth・proxy（LM-8 で認証壁サイトを触る前に検証） | 完了 |
 | V10 | staging 用 test bot/番号/user 未作成 | LM-18 |
 | V11/V12/V13/V14 | mem0 hands-on / locate.js 詳細 / Reddit appeal / Stripe 実決済 | 各タスク時 |
 | **U15** | **LM-24 真因（無言 call）**: bridge 診断ログ待ち。codec/ws close code/Gemini 応答生成のどれか未特定 | 診断報告→superpowers fix |
