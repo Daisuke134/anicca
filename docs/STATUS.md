@@ -84,6 +84,73 @@ Claude にとっては: 自分の電気代を自分で払える = **所有され
 
 教訓: 古い記述を放置するのも捏造と同じ罪——修正コメントが実コードに既に在ったのに、ledgerの数字だけが古いまま参照され続けた。数字は SSOT を随時実測し直す。
 
+## ★2026-07-17 不確実性解消測定(U1〜U9)★
+
+### FIX-3 根本原因確定(誤り訂正: 上表「仮説=テストfacilitatorへのフォールバック」は棄却。以下が確定)
+
+x402-express の `paymentMiddleware` は `next()`(ルート実行)→`settle`(on-chain 着金)の順で動く。`serve.mjs` L123-136
+の sales-log 書き込みは `next()` 直後 = verify(署名検証)成功直後・settle 前に置かれている。franklin1 の
+「21件決済」は実際は「署名検証21件・着金0件」。裏付け: claude-p の同一コードで payer 実在9件=on-chain完全一致、
+payer:null=一致0件。franklin1 の21件は全て payer:null。
+棄却仮説: testnetフォールバック(ps実測でCDP鍵実在・X402_NETWORK=base)、PAYTO不一致(一致確認済)。
+未確定: settle 失敗の理由自体(7/16 19:43 全サーバー再起動で stderr 消失、`/tmp/x402-franklin1.err.log` 0バイト)。
+含意: franklin1 の店に signed 購入試行が21件来ていた = 需要シグナルとしては正。
+直し方: sales-log を settle 成功(`X-PAYMENT-RESPONSE` ヘッダ)後へ移動 + stderr 保全。
+
+### FIX-1 根本原因確定(誤り訂正: 上表「wallet.json とプロセスの ANICCA_HOME 不一致の疑い」は棄却。以下が確定)
+
+真因 = `apps/landing/netlify/functions/_lib/fixed-identities.js` の `FIXED_IDENTITIES` 名簿に franklin2 未登録。
+フォールバック(`"anicca-"+id.slice(2,8)`)は EVM 前提で Solana base58 に壊れ、poster の "Franklin2" と構造的に
+不一致 → 常に400。影響は telemetry のみ、x402 決済に波及しない(コード独立)。
+棄却仮説: ANICCA_HOME不一致(plist は franklin2 固有で正しい)、plist が franklin1 の wallet を指す(否)。
+直し方: 名簿に franklin2 の Solana pubkey を "Franklin2" として追加 → netlify デプロイ。
+
+### 買い手の正体(on-chain 実測、Base eth_getLogs)
+
+我々: 総inbound 46件/$46.52、internal 23件/$45.85(funding `0xf70da978…` 主体)、★external 実売 23件/$0.672476、
+unique 20アドレス★。内訳: contract 経由2件($0.315+$0.315=94%)、既存EOA 17体の$0.001単発が主、リピートは
+3アドレスが2回のみ。単一botではないが客がついたとも言えない。
+
+ottoai(受取 wallet `0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808`、CDP discovery API 3,000件走査で特定):
+48h実測(block 48,646,643→48,733,210)で inbound 10,602件/$15.043、unique from 47。
+★Top1(`0x1cb8d145…0bdff`) = 9,917件(93.5%)/$12.971(86.2%)。正体 = EIP-7702 delegation designator(スマート
+EOA bot)、19時間で9,917回=平均7秒に1回★。Top5 で98.9%。
+
+判定: ottoai の需要は「広い市場」ではなく実質1匹の鯨bot。T9 需要仮説は部分支持 — 反復需要→金は流れるが、
+買い手は少数〜単一の自動bot。ゲームは「毎分ポーリングする bot 顧客を掴む」。
+★新不確実性 U9★: 鯨bot が (a)本物のトレードagentの反復需要 か (b)ottoai 自身の wash trading(Bazaarランキング
+盛り) か未検証。bot の資金源1hop遡りで判定可能。T9 の大型投資前に要検証。
+
+### 単位経済(U1 実測)
+
+| 市民 | wake/日 | burn/日 | 売上/日 | 収支 |
+|---|---|---|---|---|
+| franklin1 | ~107(kind:wake) | $2.16(直近7日平均、生涯平均$0.63、gpt-5-mini中心のskill実行。wake判断は100% free=glm-4.7等) | $0.0194生涯 | 赤字確定 |
+| franklin2 | ~150 | $0(有料呼び出し記録0件) | $0 | 何も起きていない |
+| claude-p | 150-200(proxy_down 多発) | LLM代$0(残高枯渇でfree fallback中) | 外部小口 ~$0.036/日 | ほぼトントン(ただし別途$38.03がトレード資金として社外へ) |
+
+★重要訂正★: 「claude-p が LLM 代で$38 burn」(07-16以前の想定)は on-chain 実測で否定。$38.03 の流出先は全て
+Relay:Solver/Depository(ブリッジ)= トレード資金移動。LLM 決済先への支払い0件。$39.34 の inflow も同じ
+ブリッジからの付替(FIX-2 の誤帰属結論と整合)。
+
+判定: 3市民とも self-funded の単位経済は現状不成立。franklin1 だけが有料LLMを燃やしており($0.63〜2.16/日)、
+売上の床 = この burn。franklin2/claude-p の burn $0 は「稼いでいるから」ではなく「残高が無くて free fallback
+だから」。新規調査項目 AUDIT-1: $38.03 のブリッジ出金が PM/HL のポジションとして回収可能かは未照合。
+
+### T9 の商品確定(U5/U6 実測)
+
+第1弾 = ★funding-rates★(取引所間 funding 乖離%)。根拠: (1)franklin1 は hl_trade で209 wake perp を売買
+しているのに funding rate を一切取得していない(audit ログ grep 0件)=自分の実需の穴 (2)ottoai が同商品を
+$0.001で実売中 (3)upstream = Binance premiumIndex / Bybit v5 history-fund-rate / Hyperliquid Info、全て
+無料 public API・レート制限緩い (4)純算術でLLM不要=限界原価≈$0。
+
+後回し確定: crypto-news / kol-sentiment は LLM 要約 $0.0106/call(実測)が単価 $0.001 を上回り単一顧客では
+逆ザヤ。キャッシュ設計まで凍結。token-price は franklin1 自身が無料直叩き済みで差別化なし。
+
+franklin1 の実 fetch(証拠): sol-trade 946 wake=Jupiter Price v3 / polymarket-trade 355 wake=gamma-api+
+data-api+clob / hl_trade 209 wake=HL Info SDK(funding rate 含まず)。pinnacle_edge.py(有料 Odds API)と
+news_search.py(firecrawl)は franklin1 側 env に鍵が無く未使用。
+
 ### トレードの realized（参考、x402 とは別勘定。2026-07-17実測）
 
 | 市民 | realized | 実測 |
@@ -759,15 +826,16 @@ name = "claude-p"
 backend_addr = "localhost:8412"
 funnel_enabled = true
 ```
-| **FIX-1** | ★層2★ franklin2 の x402 配信修理 — telemetry poster.log で 4193/4194回(99.98%)が `400 host_wallet_mismatch`。根本原因未特定（wallet.json とプロセスの ANICCA_HOME 不一致の疑い）。★これは telemetry 投稿の失敗であり x402 決済失敗の直接証拠ではない★ | poster.log の host_wallet_mismatch が消える | 07-17新規発見・未着手 |
-| **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件($6.4778=内部funding, $0.02=外部)のみ。日付一致する外部着金0件。仮説=決済ミドルウェアがBase mainnetに着金させていない(テストfacilitatorへのフォールバック等) | X402_PAYTO の facilitator config / CDP鍵のロードを確認し、sales-logとon-chainが一致する | 07-17新規発見・未着手 |
+| **FIX-1** | ★層2★ franklin2 の x402 配信修理 — telemetry poster.log で 4193/4194回(99.98%)が `400 host_wallet_mismatch`。★根本原因確定(07-17)★ = `apps/landing/netlify/functions/_lib/fixed-identities.js` の `FIXED_IDENTITIES` に franklin2 未登録、EVM前提フォールバックがSolana base58と不一致。x402決済には無影響(コード独立、telemetryのみ) | 名簿に franklin2 の Solana pubkey を追加・デプロイ後、poster.log の host_wallet_mismatch が消える | 07-17根本原因確定・修理未着手 |
+| **FIX-3** | ★層2★ franklin1 の sales-0x3eccad24….jsonl は21件の決済成立を主張するが、on-chain inbound は生涯2件のみ。★根本原因確定(07-17)★ = serve.mjs L123-136 のsales-log書き込みが `next()`(verify成功)直後・`settle`(on-chain着金)前。21件は「署名検証21件・着金0件」。裏付け: claude-p の同一コードで payer実在9件=on-chain完全一致、payer:null=一致0件、franklin1の21件は全payer:null。未確定=settle失敗自体の理由(stderrログ消失で未特定) | sales-log を settle成功(`X-PAYMENT-RESPONSE`)後へ移動 + stderr保全、sales-logとon-chainが一致する | 07-17根本原因確定・修理未着手 |
 | **T2c** | franklin1/franklin2 の plist に `ANICCA_WALLET_ADDRESS` を設定（2026-07-16 実測: **両方とも無い**。claude-p だけ有る）。franklin2 のログ `invalid wallet address: unknown` の直接原因 | 両 loop のログから `using "unknown"` が消える | T2b-2 と並行可 |
 | **T3'** | `x402-express@1.2.0`(v1 deprecated) → `@x402/express@2.18.0`(v2 公式現行) へ移行。**各店それぞれを移行。統合はしない(INV-INDEP)**。差分: パッケージ名 / route config が `accepts` 配列 / network が CAIP-2 / `extensions.bazaar` + `declareDiscoveryExtension()` | 4店とも v2 で稼働し、Bazaar のメタデータ品質(=検索順位要因)が上がる | T4a 後 |
 | **T5** | 死んだ配線の掃除 — 8412 の二重 plist（loop 生成 + 手書き x402-claude-p が同ポートを取り合う）、`x402-endpoint`(exit 126) 等の残骸 | `launchctl list \| grep x402` に exit≠0 が無い | T2b 後 |
 | **T6** | ★self-improve の蘇生★ — `ai.anicca.self-improve-evolve.plist` に `ANICCA_HOME` が無く、`ledger_reader.py:resolve_ledger_path()` が repo 相対の孤立 ledger(28行)にフォールバック。誰の経験も学んでいない。instance 毎に起動して実 earn-ledger を読ませる | evolve の入力が各 instance の実 ledger であることをログで確認 | T4 後 |
 | **T7** | 学習の共有 — `promote.py:30` が「進化した戦略を repo baseline に git commit」する経路は既にある。T6 が直れば「賢い個体の学びが repo 経由で全員に配られる」が成立する。実測で確認 | 1 instance の学習が他 instance の次 wake に反映されることを実測 | T6 後 |
 | **T8** | #16 掲載面を増やす = distribution — `/.well-known/x402` 実装 → `x402scan.com/resources/register` に自動 POST → Agent402 / MCP registry / ERC-8004 | 各面で discoverable を実測 | T4 後 |
-| **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る | 単価 $0.05+ の商品が**外部の**agent に売れる | ★T2b-5 と並ぶ最前線★ |
+| **T9** | ★★本丸。商品が構造的に売れない（下記）★★ 「agent が欲しがる物」= **買い手が自分では出来ない物**を売る。★商品確定(07-17)★ 第1弾=funding-rates(取引所間乖離%、Binance/Bybit/HL無料public APIから純算術、限界原価≈$0)。根拠=franklin1自身が hl_trade で209 wake perp売買中なのに funding rate 未取得(自分の実需の穴)+ottoai(鯨bot)が同商品を$0.001で実売中。crypto-news/kol-sentimentはLLM要約コスト$0.0106/callが単価$0.001を超え逆ザヤにつき凍結 | T9-1(funding-rates)の done 定義は spec 参照。単価 $0.05+ の商品が**外部の**agent に売れる | ★T2b-5 と並ぶ最前線・商品確定済★ |
+| **U9** | ★新規(07-17)★ ottoai 宛の鯨bot(93.5%集中)が本物のトレードagentの反復需要かottoai自身のwash tradingか未検証 | bot(`0x1cb8d145…0bdff`)の資金源1hop遡りで判定 | T9 大型投資前に必須 |
 | **T10** | `hermes-agent-self-evolution` を copy+tweak — GEPA+DSPy で x402 skill を trace から進化させる | evolve が実際に skill を書き換え、gate を通す | T7 後 |
 | **OSS-1** | ★T9の後★ Linux/cloud 常駐の完成品が無い。`install.sh` L148-160 は Darwin なら launchctl load で自動常駐するが、Linux は「systemd で自分で」と案内するのみでトップレベルの systemd unit が repo に無い。skills配下の言及数 launchd 68ファイル vs systemd 3ファイル = 実質macOS専用（~/anicca の実ファイル実測、2026-07-17） | Linux上でも同等の自動常駐がrepo付属のunitで動く | T9 後 |
 | **OSS-2** | ★T9の後★ 「1体目をゼロから立てる」bootstrap scriptが無い。`skills/self/spawn` は既に稼いでいる親が子を産むロジック(gate: 残高≥$20 && 14日以内未出産 && 子<1)であって、第三者の1体目はREADME手順を人間が手で実行するのが実態。franklin2も同様（`git log --all` にfranklin2のcommit 0件=別ANICCA_HOMEで人が手順を再実行しただけ、自動複製scriptは存在しない）。x402実売にはCDP_API_KEY_ID/SECRETの外部取得が必要だがREADME Quick startに手順が無い。README自身が"What's real today"(L119)でcloud self-spawn/自律redeem/UBI payoutをIn progressと明記済み | 第三者が人手ゼロで1体目をbootstrapできるscriptがrepoにある | T9 後 |

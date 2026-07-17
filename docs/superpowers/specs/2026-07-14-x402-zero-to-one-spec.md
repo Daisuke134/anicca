@@ -37,6 +37,10 @@ self-pay / colony 内循環は 0→1 ではない（INV-7）。判定は `~/anic
 - INV-D: main session(Fable) は loop で走らない。loop は claude-p / Franklin / automaton のもの
 - INV-F: instance の earn は「既存 ReAct loop + skills/registry.json の slot」機構に乗せる。loop の外に別系統の earner を作らない（手作り seller は loop が operate する資産として引き渡す）
 - INV-E: README 等に「earns money」と書けるのは external tx link が貼れてから
+- INV-SETTLE(07-17): 売上記録は settle 成功(`X-PAYMENT-RESPONSE`)後にのみ書く。`payer:null` の売上行は存在してはならない
+- INV-BLOCKLIST(07-17): 内部 wallet + Relay ブリッジ(`0xf70da97812cb96acdf810712aa562db8dfa3dbef` 等)からの入金は earn として記録してはならない(verify-inflow/record-earn の blocklist で強制)
+- INV-UNIT-ECON(07-17): x402 商品の配信は決定的 code のみ(リクエスト毎の LLM 呼び出し禁止)。upstream は無料 public API。限界原価≈$0 を維持する
+- INV-REPEAT(07-17): 商品は「変化し続けるデータ」のみ(静的計算の新規出品禁止)。done の証明は「同一 from からの反復購入」で測る
 
 ## 到達済（2026-07-14、own-eyes）
 
@@ -224,6 +228,17 @@ Agora/Anicca はそれを起こす環境。これが我々の能力の証明。
 | franklin2 | .franklin2-home | 0xe7747F | free/glm-4.7 | $0(seller 稼働も Bazaar 未掲載) |
 0x904B は claude-p の Polymarket proxy 別 wallet(x402 wallet ではない)。:8404/:8412(0x904B)=Fable 手動残骸=掃除対象。
 正本 memory: reference_three_loops_canonical_names。
+
+## T9-1(funding-rates)の done 定義(2026-07-17、商品確定済。全文は docs/STATUS.md の該当節)
+
+商品 = 取引所間 funding rate 乖離%(Binance premiumIndex / Bybit v5 history-fund-rate / Hyperliquid Info、
+全て無料 public API・純算術・LLM不要・限界原価≈$0)。
+
+- (a) `/funding-rates` が franklin1 の店で live + Bazaar 掲載(CDP discovery に載る)
+- (b) FIX-3 修理後、実購入1件が settle まで通り on-chain 着金と ledger が一致
+- (c) 14日以内に外部の反復購入者(同一 from から2回以上)が1体以上
+
+前提順序: FIX-2(blocklist) → FIX-3(settle後記録) → T9-1。U9(wash trading 検証)は T9-1 の大型化前に必須。
 
 ## Stop 条件
 
