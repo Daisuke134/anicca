@@ -28,6 +28,7 @@ import { homedir } from "node:os";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadEvmKey } from "../lib/resolve-identity.mjs";
 import { compoundInterest, calcEval, flattenJson, dnsLookup, whois, stockQuote } from "./primitives.mjs";
+import { getFundingRatesCached, buildFundingRatesResponse } from "./funding-rates.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -81,6 +82,8 @@ const PRODUCTS = [
     description: "WHOIS lookup with IANA referral follow. GET /whois?domain=example.com → registrar whois text as JSON. Live registry data." },
   { path: "/stock-quote", price: "$0.003", example: "/stock-quote?symbol=AAPL", what: "stock quote",
     description: "Real-time stock quote (price, currency, previous close, exchange). GET /stock-quote?symbol=AAPL → JSON. Free-source market data." },
+  { path: "/funding-rates", price: "$0.003", example: "/funding-rates?symbol=BTC", what: "cross-exchange perp funding rates",
+    description: "Perp funding rates across Binance/Bybit/Hyperliquid, normalized to 8h-equivalent, plus cross-exchange divergence (annualized bps, top20 arbitrage signal). GET /funding-rates or /funding-rates?symbol=BTC → JSON. Free-source, 60s cache." },
 ];
 
 // per-route config: discoverable + explicit https resource (Bazaar crawler probes it; see PUBLIC_URL note).
@@ -166,6 +169,15 @@ app.get("/json-flatten", (req, res) => answer(res, () => flattenJson(JSON.parse(
 app.get("/dns-lookup", (req, res) => answer(res, () => dnsLookup(String(req.query.domain || ""), String(req.query.type || "A"))));
 app.get("/whois", (req, res) => answer(res, () => whois(String(req.query.domain || ""))));
 app.get("/stock-quote", (req, res) => answer(res, () => stockQuote(String(req.query.symbol || ""))));
+
+// funding-rates: unlike the other primitives, "failure" has two distinct meanings — a single
+// exchange dying should DEGRADE (still serve the other exchanges, 200 + degraded:true), only ALL
+// THREE dying is a real outage (503). getFundingRatesCached() throws only in that all-dead case.
+app.get("/funding-rates", (req, res) => {
+  getFundingRatesCached()
+    .then(({ rows, errors }) => res.json(buildFundingRatesResponse(rows, { symbol: req.query.symbol, errors })))
+    .catch((e) => res.status(503).json({ error: "all upstream exchanges unavailable", detail: String(e && e.message || e).slice(0, 300) }));
+});
 
 // free: tells a buyer what's for sale + the price (so demand can find it).
 app.get("/", (_req, res) =>
