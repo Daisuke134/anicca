@@ -181,6 +181,14 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 | S4 | — | $10M | ①Autopilot tier $49-99（connector/apply/health 全部入り）で ARPU↑ ②profitable-claude 統合 =「AI があなたの金を稼ぐ」（earn 額の % 課金）③EN 展開。500k 相当 subs or blended ARPU $50×200k |
 - 前提: churn は outcome で殺す（電話が鳴った/予約された/応募された、が毎週見える）。$0 の真因は配布ゼロ（07-03 実測: wrong-link + zero distribution）でありプロダクト欠陥ではない。
 
+### 8c-2. dev loop は段階導入（Dais 決定 2026-07-17 追記。「completely turn on」はスコープ外）
+| Phase | loop に許すこと | 禁止 | 昇格条件 |
+|---|---|---|---|
+| **D0（開始点）** | feedback/issue 読解 → spec 1p + patch を feature branch に push → **PR 作成まで**。TG に PR URL 報告 | merge / deploy / migration 適用 | — |
+| D1 | dev(staging) への merge + smoke E2E 実行 | prod promote | D0 で PR 品質が安定（人間 merge が連続で無修正） |
+| D2 | prod auto promote（議論自体を D1 実績後に再開。**今はスコープ外**） | — | staging green 連続 10 PR 無事故の実測 |
+全 phase 共通 guardrails: `directives.json` blockedActions（secret/billing/破壊的 migration/force push 禁止）、path allowlist = `apps/life-call/**` のみ、1 pass = 1 issue、Telegram 必須報告。connector loop の実証済み I-confirm/blockedActions パターンを流用。
+
 ### 8c. 実行方式（Dais 決定 2026-07-17）
 - **実装は superpowers workflow**（brainstorming→writing-plans→worktree→subagent-driven→verification）で 1 issue ずつ。
 - 検証 = 自分で実 browser/実 API E2E（adversary/vcsdd subagent は Dais が明示した時のみ）。
