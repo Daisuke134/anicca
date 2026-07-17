@@ -531,3 +531,26 @@ login once → dump_settings → load_settings のみ → keepalive=get_timeline
 - #6 $ validation gate（sale≥1）。
 - #13/#19 Graph API + Meta dev token → fallback に格下げ（App Anicca 利用は将来）。
 - aiclipsvault → 手動投稿の予備に温存（自動 loop からは外す。poisoned）。
+
+## v19 — #22 設計確定（proven skill 活用、電話は無関係、email訂正）2026-07-17
+
+### 訂正（v18 の誤り是正）
+- v18「email=AgentMail/Inkbox」は**誤り**。AgentMail 等 disposable email は IG の fraud filter で自動 suspend される（実例 @aiclipper.daily 2026-06-28）。→ **fresh 垢の email は Gmail 実アドレスの plus-address（keiodaisuke+<tag>@gmail.com）のみ使う**。OTP は gog で自動読取。
+- 電話認証は IG signup には出ない（実測0回）。詰まったのは Meta dev/Graph API 専用フロー。fresh 垢作成に電話は不要。
+
+### PROVISION node 設計（proven 資産を再利用、車輪の再発明なし）
+再利用する既存コード:
+- `~/.claude/skills/ig-account-create/`（SKILL.md + scripts/cdp.py + cdp_incognito.py + setup_profile.py）= IG signup 自動化、E2E 実証済（0 phone/captcha/human）。email=Gmail plus-address、OTP=gog。出力 `~/.cloak/ig-<handle>.json`。
+- `~/anicca/skills/earn/clip/scripts/instagrapi_post.py` の `make_gmail_handler`(L16-41、signup の email challenge に転用)・`login_resilient`(L56〜、login-once のお手本)。
+- `self_heal.py`（死んだ垢の再構築パターン）。
+- instagrapi `signup_caa_email`(mixins/signup.py:461) は未検証 → **ブラウザ CDP の ig-account-create（実証済）を優先**、instagrapi signup は使わない。
+
+PROVISION node の実装:
+1. `ready_account=none` を検知したら（run.sh に実コード分岐を足す。今は clip-cli.sh の自然文指示だけ＝不足）
+2. ig-account-create skill を呼んで fresh 垢を作る（Gmail plus-address、CDP、gog OTP、電話なし）→ `~/.cloak/ig-<handle>.json` + clip-accounts.json に handle/port 追記
+3. その垢で instagrapi login-once（make_gmail_handler で email challenge 自動）→ dump_settings
+4. 以後 login-once 規律（load_settings のみ / keepalive=get_timeline_feed / relogin封印 / sessionid実在で死判定 v8）
+5. 垢が死んだら self_heal が①に戻して新垢を自作
+
+### E2E 検証（我々は観測）
+fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1本 clip_upload → IG で投稿確認 → bio に offer.json の Digistore link → 以後 loop が自律で回る。これで create→affiliate→post→earn を実データでテスト。
