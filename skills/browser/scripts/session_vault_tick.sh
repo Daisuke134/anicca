@@ -11,14 +11,41 @@ set -uo pipefail
 V="$HOME/anicca/skills/browser/scripts/session_vault.py"
 ACCOUNTS="$HOME/.cloak/clip-accounts.json"
 log(){ echo "$(date '+%F %T') session_vault_tick: $*" >&2; }
+. "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || true
 
 # ── daily-driver (:9222) — unchanged behavior ──
 log "daily-driver: dump"
 python3 "$V" dump || true
 log "daily-driver: keepalive"
-python3 "$V" keepalive \
+# x.com + zenn.dev added task #75 (2026-07-17): the article-writer loop's X session died
+# silently for hours on 2026-07-17 because nothing warmed/watched it here -- only
+# coconala+instagram were on this list. Checking zenn.dev/dashboard in the same pass found ITS
+# session was ALSO already dead (a second, previously unnoticed incident) -- both platforms are
+# publish targets for this same loop. x.com/home relies on the "Something went wrong"
+# content-check fix; zenn.dev/dashboard relies on the /enter-route redirect fix (both in
+# session_vault.py, same task).
+KA_OUT="$(python3 "$V" keepalive \
   "https://coconala.com/mypage/dashboard" \
-  "https://www.instagram.com/" || true
+  "https://www.instagram.com/" \
+  "https://x.com/home" \
+  "https://zenn.dev/dashboard" || true)"
+echo "$KA_OUT"
+# alert immediately on any logged_out platform instead of only being discovered hours later by
+# the next real business pass (exactly what happened with X today) -- never block/exit on this,
+# a notify failure must not break the tick.
+DEAD="$(printf '%s' "$KA_OUT" | python3 -c "
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+dead = [p['url'] for p in d.get('pages', []) if p.get('logged_out')]
+print(','.join(dead))
+" 2>/dev/null || true)"
+if [ -n "$DEAD" ]; then
+  log "ALERT: session dead for: $DEAD"
+  telegram_notify "session_vault keepalive: session DEAD for: $DEAD (daily-driver :9222). Will keep retrying every 30min; if a real pass needs it, it will self-heal or report failed per its own STEP 8." || true
+fi
 
 # ── per-account clip browsers (clip-en, clip-en2, clip-en3, ...) ──
 # Guard: clip_pass.sh drives these same Chrome profiles concurrently (posting via instagrapi,
