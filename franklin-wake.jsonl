@@ -9071,3 +9071,11 @@
 {"ts":1784245928,"wake_id":"00MRO5YH5ZFA9C5554BC3E45B8","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784246095,"wake_id":"00MRO62203A2014908972642C0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784246226,"wake_id":"00MRO64VEW87976B6BB13D4744","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784246358,"wake_id":"00MRO67P402B20C83B16CD4BC2","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784246358,"wake_id":"00MRO67P402B20C83B16CD4BC2","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784246548,"wake_id":"00MRO6BS5A568ACAE159474F3C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784246685,"wake_id":"00MRO6EPPAF6A3AB808BBA4995","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784246816,"wake_id":"00MRO6HIRV512DC26F7EF1409A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784246947,"wake_id":"00MRO6KBG17D89FBB802E049A0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784247077,"wake_id":"00MRO6N3U847811B8B6B0246A0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784247207,"wake_id":"00MRO6PW5Q48FB1D4DD51A4A86","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
