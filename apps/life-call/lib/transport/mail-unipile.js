@@ -29,6 +29,16 @@ function makeUnipileMail({ accountId, token, dsn } = {}) {
         return j.items || [];
       } catch { return []; }
     },
+    // Free-text subject/body search used only as optional context for search-before-ask.
+    async searchInbox(query, { limit = 10 } = {}) {
+      if (!accountId || !token || !dsn || !query) return [];
+      try {
+        const qs = new URLSearchParams({ account_id: accountId, limit: String(limit), search: query });
+        const r = await fetch(`${base}/api/v1/emails?${qs}`, { headers });
+        const j = await r.json().catch(() => ({}));
+        return j.items || [];
+      } catch { return []; }
+    },
   };
 }
 

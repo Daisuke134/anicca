@@ -279,6 +279,9 @@ async function askUserOnce(u) {
       composioKey, userEmail: u.email, resendKey,
       supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
       telegramChatId: u.telegram_chat_id, telegramToken,
+      gmailAccountId: u.gmail_account_id,
+      unipileToken: process.env.UNIPILE_TOKEN,
+      unipileDsn: process.env.UNIPILE_DSN,
     });
     if (r.autofilled || r.asked || r.resolved)
       console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved} via=${u.telegram_chat_id ? "tg" : "email"}`);
