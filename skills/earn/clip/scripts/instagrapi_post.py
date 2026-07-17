@@ -237,6 +237,39 @@ def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=Non
         return False
 
 
+def keepalive_main(handle, settings_path=None, accounts_path=None, client_factory=None):
+    # v24 point 2, wired: two-stage read-only probe on the golden session, fired by
+    # session_vault_tick.sh every 30 min so the session never rots between posts.
+    # NEVER logs in — a dead session is self-heal's job (replace the account), not ours.
+    # On success, persist refreshed cookies back to disk (gold standard: alsk1992 ig.py L556-708).
+    res = {"handle": handle, "mode": "keepalive", "alive": False}
+    settings = settings_path or C(f"~/.cloak/instagrapi-{handle}.json")
+    if not os.path.exists(settings):
+        res["error"] = "no saved session — keepalive only applies to accounts with a golden session"
+        return res
+    if client_factory is None:
+        from instagrapi import Client
+        client_factory = Client
+    cl = client_factory()
+    cl.delay_range = [2, 5]
+    try:
+        cl.load_settings(settings)
+    except Exception as e:
+        res["error"] = f"load_settings failed: {type(e).__name__}"
+        return res
+    try:
+        res["feed_ok"] = keepalive(cl)
+        res["ping_ok"] = gentle_ping(cl) if res["feed_ok"] else False
+        res["alive"] = bool(res["feed_ok"] and res["ping_ok"])
+        if res["alive"]:
+            cl.dump_settings(settings)
+    except ChallengeRequired:
+        mark_poisoned(handle, "keepalive ChallengeRequired (bloks) — replace, never relogin", accounts_path)
+        res["poisoned"] = True
+        res["error"] = "account poisoned (bloks ChallengeRequired) during keepalive"
+    return res
+
+
 def get_sessionid(port):
     tabs = json.load(urllib.request.urlopen(f"http://localhost:{port}/json/list"))
     tid = next(t["id"] for t in tabs if t.get("type") == "page" and "instagram.com" in (t.get("url") or ""))
@@ -258,12 +291,18 @@ def get_sessionid(port):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", required=True)
-    ap.add_argument("--caption-file", required=True)
+    ap.add_argument("--video")
+    ap.add_argument("--caption-file")
     ap.add_argument("--handle", required=True)
     ap.add_argument("--port", default=os.environ.get("CDP_PORT", "9222"))
     ap.add_argument("--live", action="store_true")
+    ap.add_argument("--keepalive", action="store_true",
+                     help="read-only golden-session probe; no post, never logs in")
     a = ap.parse_args()
+    if a.keepalive:
+        print(json.dumps(keepalive_main(a.handle), ensure_ascii=False)); return
+    if not a.video or not a.caption_file:
+        ap.error("--video and --caption-file are required unless --keepalive")
     res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
     try:
         caption = open(a.caption_file, encoding="utf-8").read().strip()
