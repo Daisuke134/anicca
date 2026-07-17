@@ -760,6 +760,12 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 - commit: profitable-claude(main) `2b5e058`
 - **全体テスト状態（今回の一連の対応の最終形）**: `tests/run-all.sh` 118/119。残1件は`test_vendor_dirs_referenced.sh`（life-manager-cli.shのSTARTUPプロンプトにベンダーツール名の言及が欠けているコンテンツギャップ、round1以前からの既存debt、今回の一連の変更とは無関係）。
 
+### 7.60 決定（2026-07-17 夜、Dais「聞かずに決めろ」に基づき team-lead 裁定）
+
+1. **レーンA 文体 = だ・である**（実記事で機能実証済み・k16 とも整合）。Rule 6 の ですます はレーンB 専用に scope 限定。文末形態の deterministic 判定を pre-check に追加（レーン別）。
+2. **タイトルは platform 別に生成**: note = 英固有名詞≤1・フック1個・本文が証明したことだけ約束 / zenn・devto = 技術語可。機械 gate: note 版タイトルの未翻訳英固有名詞カウント。
+3. **arm 条件成立方式**: 明朝 06:00 の完全体 pass（品質6層 + render-verify）が green なら team-lead が即日 `ARTICLE_AUTOPUBLISH=1` を注入（Dais の「full 検証後に direct 切替」発言 2026-07-17 が根拠）。X 未復旧なら X 抜きで arm、X は復旧次第合流。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
