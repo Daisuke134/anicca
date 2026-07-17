@@ -695,6 +695,14 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | 4 | 他 repo 絶対パス依存（`~/anicca-project` spec 参照、`~/anicca` git 操作、`~/.cloak` profile、note-mcp src） | `ANICCA_PROJECT_DIR` 等のベース env + vendor（7.2） |
 | 5 | `state/*.jsonl` `*.meta.json`（実行ログに実 URL/アカウント） | OSS repo では gitignore（ホワイトリスト方式なら自動で落ちる） |
 
+### 7.55 zero-config bootstrap 原則（2026-07-17 Dais 決定 — profitable-claude OSS の根本仕様）
+
+**人間が渡すのは payout 先（銀行 or crypto wallet）だけ。** publishing アカウント（note/zenn/substack/devto/X…）は loop が自分で作る:
+- loop 自身の email（gmail plus-address or agentmail）で signup。前例 = ig-account-create（2026-06-29 E2E 実証、email-only・電話なし・CAPTCHA なし）。earn アカウントは AI 自身の email を使う（Dais の Google を使わない、既存 memory 規律と同一）。
+- **KYC が要る loop（coconala 系 gig work 等）は既定 OFF**。README に「KYC を済ませれば有効化できる」とだけ書く。人間がやらなければその loop は起動しない = 稼げないだけで壊れない。
+- **既定 ON = KYC 不要 loop のみ**（article loop が筆頭。gig 以外はほぼ全部該当見込み）。
+- 現行の keiodaisuke ベースのアカウント群は「Dais インスタンスの値」であり、OSS 版では .env のデフォルトではなく bootstrap ステップの成果物になる。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
@@ -708,6 +716,9 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | #59 | #47 無料版 Sources 落ち修理（既存 TODO の再掲、レーン A 開始前に必須） | [ ] |
 | #60 | ~~Substack Stripe 確認~~ ✅完了（2026-07-17 実測: ON 済みだった）。残タスク変形 → daily-driver の Substack session 復活済み、X-publish 同様に session 失効の healthcheck 対象へ追加検討 | [x] |
 | #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
+| #63 | **note アイキャッチの必須工程化**: `set-eyecatch-draft.py` は存在するが article-daily.sh の STEP に 0 回登場（2026-07-17 grep 実測）= 毎日の draft はアイキャッチ無し。note staging STEP に必須手順として追加し、reality-gate/検証で「eyecatch 設定済み」を readback 確認する | [ ] |
+| #64 | **self-signup bootstrap**（7.55 の実装）: loop が自分の email で note/zenn/devto/substack/X アカウントを自作する bootstrap スクリプト群。ig-account-create の runbook を横展開。OSS 初回起動フローに組み込む | [ ] |
+| #65 | **gig work loop の OSS 収載判断**: 実体は `~/anicca/skills/earn/gig/`（launchd 5 job 稼働中）で profitable-claude 外。KYC 必須（coconala）なので 7.55 により既定 OFF の opt-in loop として port するか、v1 では article のみにするか | [ ] |
 | #62 | ✅**完了（2026-07-17）**: keychain OAuth 死の全 loop 横展開調査 + 修理。実死亡中だった capafy-loop / life-manager（07-16/17 連続 rc=1）+ 時限爆弾8箇所（gig_reality_verify / promote_gate_run.py / connector_fill_gaps / run-*-agent.sh×5 / self-improve.sh）に clip_pass.sh の実証済み CLIProxyAPI fallback（AUTH_TOKEN 方式）を適用。commits: anicca `eabbaa33` / profitable-claude `c5c2e25` / anicca-dais `4545b1c9`。AUTH_TOKEN + `sonnet` alias が proxy で rc=0 を返すことは事前実測済み（clip の「alias 不可」コメントは現 proxy では再現せず）。非稼働の claude-p-mainloop / adversary-daily / heartbeat は未パッチ（再稼働時に同ブロック適用のこと） | [x] |
 
 ## 6. 関連ファイル
