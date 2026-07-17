@@ -1,0 +1,59 @@
+{
+  "sprintNumber": 1,
+  "feature": "life-manager-cost-connect-reliability",
+  "reviewContext": { "reviewType": "impl", "iteration": 1 },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "apps/life-call/lib/transit.js:15-33", "description": "JP_BBOX + isJapanGeo + chooseRouter implement C2's deterministic-bbox decision + mixed-endpoint→google fallback exactly as specced." },
+        { "type": "file", "location": "apps/life-call/lib/route-cache.js:8-35", "description": "10-min bucket + uid-scoped cacheKey + TTL-gated getOrCompute implement C3's (uid,from,to,bucket) ≤1-call invariant and moved-event-recomputes semantics; NOT lm_travel_log, matches C3's explicit schema fields (from_geo,to_geo,time_bucket,provider,duration_secs)." },
+        { "type": "file", "location": "apps/life-call/lib/voice-cheap.js:12-23", "description": "planVoice defaults opensLiveWs:false and TTS_ORDER=[edge-tts,kokoro,piper,live] with a null-guard implement C1's cost invariant + fallback + no-silent-call rule." },
+        { "type": "file", "location": "apps/life-call/lib/user-selector.js:7-14 + scheduler.js:43,281", "description": "calendarProviderFilter() is verified (by direct Read, not just the test) to be called at BOTH scheduler.js:43 (supaUsers) and scheduler.js:281 (getUserByUid), inside template literals producing a valid PostgREST `in.()` filter fragment — the exact F4 defect (one site fixed, one left hardcoded) is NOT present." },
+        { "type": "file", "location": "apps/life-call/lib/money-path.js:12-54", "description": "extractStripeLink + assertMoneyPath do a content assertion (not just 200), and RollbackController implements debounce>=2, flap-guard-via-lastGoodPasses, and one-notify-per-incident exactly as C5/C6 state." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "apps/life-call/lib/route-cache.js:29", "description": "TTL comparison `t - hit.computedAt < ttlMs` is the correct direction (fresh when elapsed < ttl); verified against route-cache.test.js's TTL-expiry test (t += 11min against a 10min ttl → recomputes)." },
+        { "type": "file", "location": "apps/life-call/lib/transit.js:41", "description": "reduce() correctly finds min-arrivalSecs journey (accumulator replaced only when b.arrivalSecs < a.arrivalSecs); manually traced against the committed fixture's 4 journeys (arrivalSecs 84309/84609/84849/88616) → picks 84309/durationSecs=1029, matching the test's asserted value." },
+        { "type": "file", "location": "apps/life-call/scheduler.js:43,281", "description": "Both PostgREST URL template literals correctly interpolate `${calendarProviderFilter()}` inside a backtick string, producing `...&calendar_provider=in.(composio_gcal,pipedream_gcal)`, valid PostgREST `in.()` syntax; no template-literal escaping bug." },
+        { "type": "file", "location": "apps/life-call/lib/money-path.js:36-53", "description": "RollbackController.onResult's debounce/flap-guard/dedup branches were manually traced against 4 sequences (fail-fail, fail-pass-fail, fail-fail-with-bad-lastGood, fail-fail-fail-fail-recover-fail-fail) and match the money-path.test.js assertions for all sequences the tests actually exercise (see FIND-004 for the untested 3rd-fail extension, which is a coverage gap, not a demonstrated logic error)." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": ["FIND-008"],
+      "evidence": [
+        { "type": "file", "location": "apps/life-call/lib/voice-cheap.js + planVoice", "description": "The Goal-1 invariant ('default path never opens Live ws') is expressed as a pure, directly-assertable value (opensLiveWs:false) rather than requiring a live GCP billing check — matches the spec's stated verification architecture ('in-process assertion... not GCP billing')." },
+        { "type": "file", "location": "apps/life-call/lib/money-path.js header comment + money-path.test.js", "description": "Pure/impure split is clean: HTTP fetch, Netlify restore, and Telegram send are explicitly left to the (not-yet-written) caller, keeping this module unit-testable and formally reason-about-able, consistent with C5/C6's stated architecture." }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 8,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["C1", "C2", "C3", "C4", "C5", "C6"],
+    "duplicateFindings": []
+  }
+}

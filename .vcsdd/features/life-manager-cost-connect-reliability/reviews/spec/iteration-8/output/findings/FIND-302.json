@@ -1,0 +1,14 @@
+{
+  "id": "FIND-302",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "65",
+  "issue": "C1's 'TTS STREAMING + LATENCY (FIND-003)' bullet directly contradicts C1's own 'STACK' bullet 9 lines above it. STACK (line 56) says: TTS = Kokoro (pipecat-ai[kokoro], self-hosted, $0, TRUE streaming, Japanese-confirmed -- replaces edge-tts...). But the LATENCY bullet (line 65) says: 'TTS is `python3 -m edge_tts` invoked per SENTENCE as the LLM streams... per-call `mkdtemp`' and instructs removing an 'unused msedge-tts Node dep' -- this is leftover content from the PRE-PIVOT (pre-Pipecat) version of C1 that describes the OLD hand-rolled edge-tts CLI mechanism, not Kokoro. An implementer reading C1 top-to-bottom cannot tell whether the canonical TTS is Kokoro (STACK) or a per-sentence edge_tts CLI subprocess with mkdtemp (LATENCY) -- these are mutually exclusive implementations (different language runtime characteristics: Kokoro is a Python in-process/streaming model per pipecat-ai[kokoro]; edge_tts CLI is a subprocess invoked from Node).",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "56 (STACK: TTS = Kokoro, replaces edge-tts) vs 65 (LATENCY: TTS is python3 -m edge_tts per-sentence, mkdtemp)"
+  },
+  "fix": "Rewrite the LATENCY bullet to describe Kokoro's actual streaming/latency characteristics (e.g. pipecat-ai[kokoro]'s TRUE streaming vs. a per-sentence synth-then-send approach) and delete the edge_tts CLI / mkdtemp / msedge-tts-Node-dep content, which no longer applies once TTS moves into the Python Pipecat process."
+}

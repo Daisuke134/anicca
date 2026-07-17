@@ -1,0 +1,11 @@
+{
+  "id": "FIND-002",
+  "dimension": "edge_cases",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "62",
+  "issue": "The EDGE/ERROR bullet gives TTS a 2-tier free/cheap fallback (edge-tts -> Kokoro/piper) and LLM a 2-tier free/cheap fallback (Groq -> DeepSeek/Gemini-Flash text), but STT (Groq Whisper Large-v3-Turbo) has NO fallback provider named at all. Groq Whisper free tier is capped at 20 RPM / 2K RPD (per the STACK bullet itself, behavioral-spec.md:56) -- the tightest quota of the three legs -- yet it is the one leg with zero documented degradation path. Under a Groq STT 429/outage, the spec's only remaining option is the 'documented emergency fallback' to Gemini Live (INVARIANT, line 61), meaning STT is the single most likely path to silently defeat Goal-1's live_ws_opened=0 invariant for real calls, and the spec does not even flag this asymmetry for the implementer to reason about.",
+  "evidence": "behavioral-spec.md:56 (STT RPM/RPD numbers, the tightest of the three legs) vs behavioral-spec.md:62 ('edge-tts->Kokoro/piper; Groq->DeepSeek/Gemini-Flash text' -- STT is absent from this fallback-ordering sentence).",
+  "fix": "Name a concrete STT fallback tier (e.g. Groq Whisper -> local whisper.cpp/faster-whisper CPU inference -> Gemini-Flash audio-understanding text-out, or another free/cheap ASR) mirroring the 2-tier pattern already given to TTS and LLM, OR explicitly state that STT failure is the ONE leg allowed to go straight to the documented Live emergency fallback and justify why (e.g. STT quality is too safety-critical to degrade). Either is acceptable; leaving it unstated is not."
+}

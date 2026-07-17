@@ -1,0 +1,11 @@
+{
+  "id": "FIND-003",
+  "dimension": "edge_cases",
+  "category": "security_surface",
+  "severity": "major",
+  "file": "apps/life-call/lib/money-path.js",
+  "line": "12-17",
+  "issue": "extractStripeLink uses `String(chunk||\"\").match(STRIPE_RE)` (non-global match), which returns only the FIRST buy.stripe.com/<slug> substring found anywhere in the bundle. If the built /lm JS chunk ever contains more than one buy.stripe.com link (e.g. a leftover/dead reference from a shared component, an old link kept as a comment/fallback string, or a decoy/marketing string elsewhere in the same bundle), assertMoneyPath (money-path.js:20-26) will silently check the WRONG link and can produce a false PASS while the actually-wired button points to a different (possibly wrong/expired) link, or a false FAIL that triggers an unnecessary rollback. This is exactly the failure class C5 exists to prevent (the ¥700k-wrong-link incident) and is untested.",
+  "evidence": "money-path.js:14-17 `function extractStripeLink(chunk){ const m = String(chunk||\"\").match(STRIPE_RE); return m ? m[0] : null; }`; money-path.test.js:19-23 only tests a chunk containing a SINGLE stripe link.",
+  "fix": "Add a test where the chunk contains TWO different buy.stripe.com links (e.g. one decoy earlier in the string, the real wired one later) and define/assert the intended disambiguation (e.g. require exactly one match, or match near a known anchor like the button's onClick handler) rather than silently taking match[0]."
+}

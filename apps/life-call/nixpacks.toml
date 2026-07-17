@@ -1,0 +1,5 @@
+# Railway NIXPACKS build for life-call. Voice = Gemini Live native-audio (Charon) bridged directly
+# over the Node `/ws` WebSocket — no local TTS/audio-transcode toolchain needed, so no extra nixPkgs.
+# "..." preserves nixpacks' auto-detected Node packages.
+[phases.setup]
+nixPkgs = ["..."]

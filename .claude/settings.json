@@ -3,7 +3,7 @@
   "language": "japanese",
   "plansDirectory": ".cursor/plans",
   "enableAllProjectMcpServers": true,
-  "model": "claude-opus-4-7",
+  "model": "opus[1m]",
   "maxTurns": 100,
   "contextCompression": true,
   "permissions": {

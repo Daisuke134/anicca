@@ -1,0 +1,14 @@
+{
+  "id": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "title": "§4 RED check (c) 'call-logic.js unchanged' does not prove Gemini Live is actually wired",
+  "issue": "specs/behavioral-spec.md:106 states the C1 RED check is: '(a) apps/life-call still boots + the /ws handler routes to the Gemini Live bridge (not to a now-deleted createConversation); (b) grep proves compositional-*.cjs/voice-turn.cjs/voice-synth.cjs are GONE and nothing imports them; (c) the Gemini Live path is intact (call-logic.js unchanged).' Check (c) is not a valid wiring proof: call-logic.js is ALREADY unchanged/dormant TODAY (its exported Gemini functions have zero callers in server.js, per FIND-001's grep evidence) — so 'call-logic.js unchanged' is true both BEFORE any cleanup work and AFTER a correct fix, and equally true if the cleanup is done incorrectly (files deleted, but /ws left unwired to anything, i.e. calls silently drop). Check (a)'s phrase 'routes to the Gemini Live bridge' is also unspecific about WHICH module (see FIND-003) so a grep-only RED check could pass against an incomplete/wrong wiring target.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "106",
+    "corroborating": "apps/life-call/server.js (zero calls to geminiLiveWsUrl/buildGeminiSetup today, confirming call-logic.js being 'unchanged' proves nothing about wiring)"
+  },
+  "fix": "Replace check (c) with a positive wiring assertion, e.g.: 'server.js's /ws handler (or its delegate) actually calls geminiLiveWsUrl()/buildGeminiSetup() from call-logic.js — proven by an integration test that opens a fake WebSocket.Server client, upgrades /ws, and asserts a real outbound wss:// connection attempt to generativelanguage.googleapis.com is made (mocked transport), not merely that the source file's bytes are unchanged.'"
+}

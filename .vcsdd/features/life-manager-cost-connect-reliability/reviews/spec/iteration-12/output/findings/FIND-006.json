@@ -1,0 +1,14 @@
+{
+  "id": "FIND-006",
+  "dimension": "impl_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "title": "C3's own contract text ('in production the store is Supabase lm_route_cache') is contradicted by the actual wired production caller, which uses a volatile in-memory Map",
+  "issue": "specs/behavioral-spec.md:77-80 (C3) states the route cache is 'a NEW store' backed by Supabase lm_route_cache (table+migration), and route-cache.js:3-4 itself says 'In production the store is Supabase lm_route_cache ... here it is injected so the logic is pure + unit-testable.' But the actual production caller, apps/life-call/lib/travel.js:14, instantiates the cache as makeRouteCache({ store: new Map(), ttlMs: 10*60_000 }) — a plain in-process JS Map, not a Supabase-backed store. grep confirms lm_route_cache only appears in the migration file, route-cache.test.js, transit.js, and route-cache.js's own comment — never in the actual runtime wiring (travel.js). This means: (1) the cache resets to empty on every Railway restart/redeploy, causing a cost spike (full re-quote of every in-flight event) right after each deploy, contradicting §1's framing of the Maps cost problem as 'already fixed' by C2+C3; (2) if the scheduler and Inngest per-user functions ever run as separate processes/dynos, each holds its own empty cache, and the Goal-3 invariant ('provider route calls ≤1 per (uid, event, coarse-time-bucket)') would not hold across them; (3) the migrated lm_route_cache table exists but is dead weight, unused by the wired code.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "77-80",
+    "corroborating": "apps/life-call/lib/route-cache.js:3-4 (claims production=Supabase); apps/life-call/lib/travel.js:14 (actual wiring = new Map(), no Supabase); apps/life-call/migrations/2026-07-04-lm-route-cache.sql (table exists, unused by travel.js)"
+  },
+  "fix": "Either wire travel.js's _routeCache store to the actual lm_route_cache Supabase table (matching route-cache.js's own claim) or correct C3 + route-cache.js's comment to state the true architecture (in-process Map, TTL survives only within one long-lived process) and add an explicit note in Goal-3's verification plan about what happens across restarts/dynos."
+}

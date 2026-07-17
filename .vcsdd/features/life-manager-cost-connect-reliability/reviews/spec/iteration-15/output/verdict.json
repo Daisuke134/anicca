@@ -1,0 +1,58 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "Round-4 verification: is round-3's (iteration-14) FIND-001..005 (import-source misattribution, false 'voice-cheap.js already gone' claim, missing barge-in wiring, RED plan gaps) genuinely resolved against behavioral-spec.md (iteration 3, round 4) AND the actual apps/life-call source on this worktree, fresh context, disk only.",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 15,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:24-28", "description": "geminiLiveWsUrl/buildGeminiTurn/parseGeminiTranscripts import verified to come from ./lib/call-logic.js exactly as spec:27/58 now cite (round-3 FIND-001 RESOLVED)."},
+        {"type": "file", "location": "apps/life-call/server.js:29,391,430,444", "description": "voice-cheap.js verified LIVE (required + used at all 4 cited lines exactly); spec's C1 step 3 now correctly lists it for deletion instead of claiming 'already gone' (round-3 FIND-002 RESOLVED)."},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:109-124", "description": "routeGeminiMessage confirmed to handle ONLY setupComplete + audio, zero interrupted/clear handling anywhere in apps/life-call (grep = 0 hits) — matches spec's own 'currently ABSENT' framing in C1 step 2 exactly (round-3 FIND-003's underlying disk-fact claim now stated accurately, not falsely claimed as pre-existing)."},
+        {"type": "file", "location": "specs/behavioral-spec.md:43,61", "description": "Goal-1 and C1 step 2 now correctly scope barge-in as NEWLY WIRED work rather than 'existing routeGeminiMessage behavior' — the false claim from round-3 FIND-003 is gone."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": []
+    }
+  ],
+  "priorFindingsResolution": {
+    "FIND-001 (round-3, import misattribution)": "RESOLVED — spec:27,58 now correctly cite call-logic.js for geminiLiveWsUrl/buildGeminiTurn/parseGeminiTranscripts, matching server.js:24-28 exactly.",
+    "FIND-002 (round-3, 'voice-cheap.js already gone')": "RESOLVED in the narrow sense the finding was raised, but the SAME defect class recurred one file over — voice-synth.test.js (voice-synth.cjs's own companion test) is now the orphaned file the delete-list misses. See FIND-001 (this iteration).",
+    "FIND-003 (round-3, barge-in absent/mis-scoped)": "PARTIALLY RESOLVED — the spec now honestly states barge-in is NEWLY WIRED (not pre-existing) and cites the correct 0-hit grep evidence, but the wiring instruction itself ('stop the local outbound frame loop') describes a mechanism that will not exist in the flipped-default code path. See FIND-003 (this iteration).",
+    "FIND-004 (round-3, §4 RED omits barge-in test)": "RESOLVED in structure (a RED-before/GREEN-after barge-in unit test is now specified at §4 item c) but the test's own assertion ('stops the outbound loop') inherits FIND-003's unresolved ambiguity. See FIND-004 (this iteration).",
+    "FIND-005 (round-3, RED item (c) file-list blind spot re: voice-cheap.js)": "RESOLVED for voice-cheap.js specifically, but the identical blind-spot mechanism now applies to voice-synth.test.js. See FIND-001/FIND-004 (this iteration)."
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "FIND-405",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "36-118",
+  "issue": "Cross-referencing FIND-401/402/403: the document is STILL not internally coherent, after a reconciliation pass whose entire purpose was to fix exactly this failure mode (iteration-8's FIND-310: 'the rewrite was applied only to C1's top bullets... leaving downstream sections stale'). Iteration-8's specific edge-tts staleness (Goal 1, LATENCY bullet's TTS mechanism, OQ1, OQ6, §4 RED plan) IS now fixed. But the SAME class of defect regenerated at new locations: C1 vs §5 disagree on whether OQ7 is decided (FIND-401), C1's LATENCY bullet vs OQ8 disagree on whether the Kokoro footprint is verified (FIND-402), and C1's STACK bullet vs OQ1 disagree on whether Smart Turn v3's JA support is asserted (FIND-403). This indicates the reconciliation process is still fixing findings as isolated point-patches (matching each iter-8 finding's specific citation) rather than doing a genuine full top-to-bottom coherence pass across C1 and every section that references the same subsystem (Goal 1, §4, §5) before resubmission -- the identical process gap FIND-310 named.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "57 vs 114 (OQ7), 65 vs 115 (OQ8/Kokoro footprint), 56 vs 109 (Smart Turn JA)"
+  },
+  "fix": "Before the next resubmission, do a single pass that reads C1 (§3bis) top-to-bottom alongside Goal 1, §4, and §5 side-by-side and reconciles every cross-reference in both directions (not just the direction each individual FIND happened to point at) so that no bullet in C1 and no corresponding OQ/Goal/RED-item disagree on status or content."
+}

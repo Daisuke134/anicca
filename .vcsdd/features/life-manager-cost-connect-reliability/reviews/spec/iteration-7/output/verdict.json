@@ -1,0 +1,87 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "C1 (§3bis) compositional two-way voice redesign + Goal 1 (§3) + OQ1/OQ6 + C1 RED test list (§4) — re-review after iteration-6 fixes to FIND-101..104",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 7,
+  "priorFindings": {
+    "FIND-101": {
+      "status": "RESOLVED",
+      "note": "C1 (behavioral-spec.md:59, 'REPLACES the one-way design (FIND-101)') now explicitly names and instructs deletion of lib/voice-cheap.js (planVoice/opensLiveWs), lib/voice-cheap.test.js, AND the server.js:29 import, keeps voice-synth.cjs (TTS stage), and says npm test (package.json) is updated accordingly. Confirmed on disk: apps/life-call/lib/voice-cheap.js and lib/voice-cheap.test.js both still exist pre-impl (expected — this is Phase 1a, deletion happens in Phase 2/3), server.js:29 still imports planVoice from voice-cheap.js (current pre-redesign state, consistent with the spec's own description of what must change), and package.json:9's canonical test script still runs lib/voice-cheap.test.js (also current pre-redesign state). The spec's instruction is unambiguous and directly actionable by an implementer."
+    },
+    "FIND-102": {
+      "status": "RESOLVED",
+      "note": "C1's INTERRUPTION bullet (behavioral-spec.md:60) now states Telnyx DOES support {\"event\":\"clear\"} and cites ~/.claude/rules/building-voice-agents.md:42,50. Read that file directly: line 42 verbatim = 'Interruption: `{\"event\":\"clear\"}` stops playback + clears queue -> wire to Gemini `interrupted:true`.' This exactly matches the spec's claim — the prior contradiction (spec previously claimed Telnyx has NO clear event) is gone. Barge-in mechanism is now: on VAD speech-start, send Telnyx {\"event\":\"clear\"} + stop the outbound send loop + drop the local playback buffer — internally consistent and matches the cited source."
+    },
+    "FIND-103": {
+      "status": "RESOLVED",
+      "note": "C1's INTEGRATION SITE bullet (behavioral-spec.md:57) now names apps/life-call/server.js's inline wss.on(\"connection\", ...) handler (~lines 380-449) as the integration site, and explicitly says call-bridge.cjs's startServer()/line-206 Live-open is DEAD (never invoked by npm start). Confirmed on disk: server.js:358 has `wss.on(\"connection\", (carrierWs, req) => {` with the escalation/DTMF logic (openGeminiLive def at 409, plan.mode check at 430/444, DTMF trigger at 447) squarely inside the cited ~380-449 range; call-bridge.cjs:166 `function startServer(...)`, line 206 `new WebSocket(geminiLiveWsUrl(apiKey))` (exact line match to the spec's own citation), guarded by `if (require.main === module)` at line 269; package.json:8 `\"start\": \"node server.js\"` confirms call-bridge.cjs is never the entrypoint. No fabricated symbols — routeTelnyxMessage/buildTelnyxMediaFrame (call-bridge.cjs:139-145 module.exports) and muLawBufToPcm16/resamplePcm16/pcm16BufToMuLaw (call-logic.js:89,102,120) all verified to exist exactly as named."
+    },
+    "FIND-104": {
+      "status": "RESOLVED",
+      "note": "(a) DTMF in-loop: behavioral-spec.md:66 now states a keypress no longer opens Gemini Live (old server.js:447 trigger deleted) and 'DTMF is logged and otherwise ignored (or reserved as an explicit end-call signal) — never an escalation to paid Live.' This is a bounded, testable invariant (live_ws_opened stays 0 regardless of DTMF) even though the exact caller-facing DTMF semantic is left as one of two builder-selectable options — acceptable at lean-mode Phase 1a since both options satisfy the same measurable invariant and the §4 RED list already names 'C1 live_ws_opened=0 on the normal path (incl. DTMF no longer opens Live)'. (b) Groq 429/timeout: behavioral-spec.md:65 FALLBACKS bullet now explicitly lists 'Groq 429 rate-limit (free-tier 20/30 RPM under load), and timeout' alongside absent/unauthorized as fail-closed triggers, all routing to the same local-fallback path and never re-opening Live."
+    }
+  },
+  "iteration5FindingsReconfirmed": {
+    "FIND-002": "RESOLVED, still intact — STT fallback chain named (behavioral-spec.md:65: Groq Whisper -> faster-whisper (local) -> Deepgram), matches iteration-6 verdict's prior confirmation.",
+    "FIND-003": "RESOLVED, still intact — TTS streaming mechanism (per-sentence edge-tts CLI + mkdtemp) explicitly named, 500-800ms budget reframed as a 'MEASURED impl target, not a guarantee' (behavioral-spec.md:67), and the unused msedge-tts dep is called out with a stated reason (returned 0 bytes / no RAW-PCM in testing) plus an explicit removal instruction.",
+    "FIND-004": "RESOLVED, still intact — OQ6 (behavioral-spec.md:115) names GROQ_API_KEY, its provisioning path, and fail-closed behavior mirroring OQ5's treatment of the Gemini key.",
+    "FIND-005": "RESOLVED, still intact — OQ1 (behavioral-spec.md:111) rewritten to describe the compositional design with the opening line synthesized per-sentence during the LLM stream, consistent with C1's IN bullet; no more dead reference to a pre-dial static-clip strategy.",
+    "FIND-007": "RESOLVED, still intact — §4 RED list (behavioral-spec.md:107) enumerates 6 distinct C1 unit areas (VAD endpointing, sentence-splitter, barge-in state machine, Groq request builders, fail-closed, live_ws_opened=0 incl. DTMF), matching the granularity given to C2/C5."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:139-145", "description": "module.exports names routeTwilioMessage, routeTelnyxMessage, routeGeminiMessage, geminiSetupForEvent, buildTelnyxMediaFrame — all functions C1 claims are reusable pure primitives are confirmed to actually exist under those exact names."},
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:89,102,120", "description": "muLawBufToPcm16, pcm16BufToMuLaw, resamplePcm16 confirmed present under those exact names, matching C1's claim that these are reusable primitives."},
+        {"type": "spec", "location": "behavioral-spec.md:57,59,60,65,66", "description": "C1's FIND-101/102/103/104 corrections are each internally consistent with the rest of C1 (INVARIANT, FALLBACKS, DTMF bullets no longer contradict the INTEGRATION SITE/INTERRUPTION bullets)."}
+      ]
+    },
+    {
+      "name": "edge_cases",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "spec", "location": "behavioral-spec.md:65", "description": "FALLBACKS bullet now enumerates STT/LLM/TTS 2-tier fallback chains AND explicitly covers absent/unauthorized key, 429 rate-limit, and timeout as fail-closed triggers, all routed to local fallbacks, never re-opening Live — the never-a-silent-call invariant is preserved across the newly-named failure modes."},
+        {"type": "spec", "location": "behavioral-spec.md:66", "description": "DTMF handled in-loop, bounded to never escalate to Live — closes the caller-interaction escalation path that was the root cause named in FIND-001 (iteration-2)."}
+      ]
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:358,409,430,444,447", "description": "Current pre-redesign code confirmed to match exactly what C1 describes as needing replacement (wss.on connection handler containing planVoice/openGeminiLive/DTMF-escalation) — C1's technical description of the CURRENT state being replaced is accurate, not fabricated."},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:166,206,269", "description": "startServer() at line 166, new WebSocket(geminiLiveWsUrl(...)) at line 206 (exact line match to spec citation), require.main===module guard at line 269 — confirms the dead-code claim precisely."},
+        {"type": "file", "location": "/Users/anicca/.claude/rules/building-voice-agents.md:42", "description": "Telnyx {event:\"clear\"} citation verified verbatim against the source file the spec itself cites."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "spec", "location": "behavioral-spec.md:57", "description": "Single, unambiguous integration site named (server.js inline handler) with the dead call-bridge.cjs startServer() path explicitly disclaimed — no longer leaves an implementer a choice between two divergent extension points."},
+        {"type": "spec", "location": "behavioral-spec.md:59", "description": "voice-cheap.js/voice-cheap.test.js/server.js:29 import all named for deletion with voice-synth.cjs explicitly kept — no orphaned or contradictory module left unaddressed."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "spec", "location": "behavioral-spec.md:107", "description": "§4 RED list names 6 distinct C1 unit-test areas including 'C1 live_ws_opened=0 on the normal path (incl. DTMF no longer opens Live)', giving the new DTMF-in-loop invariant a concrete, named test; §4 is explicitly framed as a Phase-1b 'seed' (not an exhaustive final enumeration), so the absence of a separately-named Groq-429-specific test line is not a Phase-1a blocker — the fail-closed prose (behavioral-spec.md:65) already commits to 429/timeout coverage under the existing 'C1 fail-closed' test area, which the implementer is expected to extend per RED-then-GREEN practice."},
+        {"type": "spec", "location": "behavioral-spec.md:40", "description": "Goal 1's proof condition (real answered call + caller follow-up answered + live_ws_opened=0 in the app log) remains concretely provable by a real call + log grep."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "FIND-301",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "40",
+  "issue": "Goal 1 (the actual provable GLVS finish line for VOICE) still reads: 'a real answered call is a two-way CONVERSATION produced by the free compositional stack (Groq Whisper STT + Groq Llama LLM + edge-tts TTS)'. This is the PRE-PIVOT design. C1's own STACK bullet (behavioral-spec.md:56) explicitly says TTS = Kokoro, 'replaces edge-tts, which is an unofficial reverse-engineered per-sentence endpoint', and the whole C1 rewrite is titled 'FREE PIPECAT compositional TWO-WAY CONVERSATIONAL agent'. Goal 1 names none of Pipecat, Silero VAD, Smart Turn v3, or Kokoro -- the exact components C1 says are the reason for the pivot ('the FREE piece that makes it a conversation, not walkie-talkie'). The document's own 'done' condition for the headline goal does not describe the architecture the contract claims to deliver.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "40 (Goal 1) vs 54-66 (C1 STACK/INTEGRATION/BARGE-IN bullets)",
+    "corroborating": "evidence/pipecat-decision-2026-07-04.md:8-13 names Pipecat + Silero VAD + Smart Turn v3 + Kokoro as the adopted stack; Goal 1 mentions none of it."
+  },
+  "fix": "Rewrite Goal 1's parenthetical to name the actual adopted stack (Pipecat pipeline: Silero VAD + Smart Turn v3 turn-taking, Groq Whisper STT, Groq Llama LLM, Kokoro TTS) and drop 'edge-tts' from the proof condition, or the goal is unprovable against the contract that is supposed to satisfy it."
+}

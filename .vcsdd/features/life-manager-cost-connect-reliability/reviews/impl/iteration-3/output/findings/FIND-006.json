@@ -1,0 +1,11 @@
+{
+  "id": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "apps/life-call/lib/money-path.js",
+  "line": "1-70",
+  "issue": "Two fully-built, unit-tested pure modules that PASSED iteration-2 impl review (`lib/money-path.js`'s RollbackController/assertMoneyPath, and `lib/route-cache.js`'s makeRouteCache/cacheKey/timeBucket) have zero production callers anywhere in the repo. This is dead code sitting alongside a SEPARATE, hand-rolled, weaker reimplementation of the same responsibility inline in `.github/workflows/netlify-deploy.yml` and `apps/landing/scripts/money-path-smoke.mjs` (see FIND-003), and a route-caching responsibility that is simply not implemented at all in production (see FIND-002). This dual-implementation pattern is a structural-integrity risk independent of the specific behavioral gaps: the tested module and the shipped behavior can silently drift (already have), and a future maintainer reading money-path.js's passing tests would reasonably (and wrongly) believe the debounce/flap-guard/telegram-dedup logic is live in production.",
+  "evidence": "repo-wide grep for 'require(.*money-path|RollbackController|assertMoneyPath' outside node_modules: only money-path.js + money-path.test.js. repo-wide grep for 'require(.*route-cache': only route-cache.js + route-cache.test.js. Both confirmed as of this review (2026-07-04).",
+  "fix": "Wire the tested modules into their intended callers (see FIND-002 and FIND-003 fixes) or delete them and their tests if the simpler inline implementations are the intentional final design — do not ship tested-but-uncalled logic as if it were the production behavior."
+}

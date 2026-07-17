@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "There is NO fail-closed handling for production Inngest auth. server.js:207-208 only MENTIONS INNGEST_SIGNING_KEY and INNGEST_DEV in a comment; neither is read or enforced anywhere in code (grep finds zero non-comment references). inngestServe({client,functions}) at server.js:34 relies entirely on the SDK silently reading process.env.INNGEST_SIGNING_KEY / INNGEST_EVENT_KEY. If those env vars are absent in Railway prod, the endpoint can fall back to an unauthenticated/dev posture — yet EVERY other secret-gated endpoint in this file fails CLOSED (the /telegram webhook rejects when LM_TELEGRAM_WEBHOOK_SECRET is unset, server.js:163; the /ws bridge rejects unsigned upgrades, server.js:228-232). The Inngest mount breaks that fail-closed convention: no startup assertion, no 'refuse to serve in prod without a signing key' guard. This is unverifiable as secure from disk and is an open security boundary for a publicly-mounted endpoint that triggers real outbound calls.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "206-213",
+    "snippet": "// In prod, INNGEST_SIGNING_KEY authenticates incoming requests.  (comment only — no code reads or asserts INNGEST_SIGNING_KEY)\n  if (path === \"/api/inngest\") { return inngestHandler(req, res); }"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,52 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "C1 (§3bis) compositional two-way voice redesign + Goal 1 (§3)",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 5,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:89-166,267-333", "description": "Confirmed on disk: muLawBufToPcm16, pcm16BufToMuLaw, resamplePcm16, twilioMuLawToGeminiPcm16 (8k mu-law -> 16k PCM, directly reusable for STT input per C1's own '8k->16k upsample before STT' bullet), buildTelnyxMediaFrame, parseTelnyxStart, telnyxDialBody, telnyxStreamingStartBody are all real, exported functions -- C1's claim that call-logic.js's mu-law/PCM16/resample/Telnyx-frame primitives are reusable is TRUE, not fabricated."},
+        {"type": "file", "location": "apps/life-call/server.js:40", "description": "Confirmed Goal 1's 'live_ws_opened=0' counter mechanism already exists as a working pattern in the CURRENT (old-design) server.js -- extending it for the new design is plausible."}
+      ]
+    },
+    {
+      "name": "edge_cases",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:120-140", "description": "resamplePcm16 (linear interpolation, mono LE int16) is generic and correctly reusable for both the 8k->16k STT-input path and any TTS-output resample the new design needs -- no correctness defect in the reused primitives themselves."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": [
+        {"type": "spec", "location": "behavioral-spec.md:40", "description": "Goal 1's proof condition itself ('caller asks a follow-up and gets a spoken answer, AND live_ws_opened=0 in the app log, for that call') IS concretely provable by a single real answered call + log grep -- this part of verification readiness is sound and requires no fix."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

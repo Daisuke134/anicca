@@ -207,6 +207,9 @@ platform :ios do
 
   desc "Build, archive, and export IPA for App Store"
   lane :build do
+    # 署名 identity は System.keychain に常駐 (2026-07-04 incident: この Mac の
+    # headless session は system security domain のため user keychain が見えない。
+    # 復旧手順 = ~/.anicca-signing/*.p12 を sudo security import -k /Library/Keychains/System.keychain)
     archive_path = File.expand_path("./build/aniccaios.xcarchive")
     export_path = File.expand_path("./build/export")
 
@@ -215,7 +218,8 @@ platform :ios do
       scheme: SCHEME,
       skip_package_ipa: true,
       archive_path: archive_path,
-      clean: true
+      clean: true,
+      xcargs: "-allowProvisioningUpdates -authenticationKeyPath #{API_KEY_PATH} -authenticationKeyID #{API_KEY_ID} -authenticationKeyIssuerID #{API_ISSUER_ID}"
     )
 
     # Step 2: Export with xcodebuild (method: app-store + signingStyle: automatic)
@@ -247,7 +251,7 @@ platform :ios do
     end
 
     FileUtils.rm_rf(export_path)
-    sh("xcodebuild -exportArchive -archivePath '#{archive_path}' -exportOptionsPlist '#{export_plist}' -exportPath '#{export_path}' -allowProvisioningUpdates")
+    sh("xcodebuild -exportArchive -archivePath '#{archive_path}' -exportOptionsPlist '#{export_plist}' -exportPath '#{export_path}' -allowProvisioningUpdates -authenticationKeyPath #{API_KEY_PATH} -authenticationKeyID #{API_KEY_ID} -authenticationKeyIssuerID #{API_ISSUER_ID}")
 
     ipa = Dir.glob("#{export_path}/*.ipa").first
     UI.user_error!("❌ No IPA found in #{export_path}") unless ipa

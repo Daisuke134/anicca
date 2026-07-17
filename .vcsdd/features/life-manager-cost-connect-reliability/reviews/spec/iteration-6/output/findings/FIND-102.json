@@ -1,0 +1,12 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "edge_cases",
+  "category": "spec_gap",
+  "severity": "blocker",
+  "description": "C1's barge-in resolution (behavioral-spec.md:58, marked 'FIND-006 resolved') asserts: 'Telnyx bidirectional RTP has NO `clear` websocket event (verified against developers.telnyx.com/docs/voice/programmable-voice/media-streaming -- only `media`/`start`/`stop`).' This citation is contradicted by the project's OWN pre-existing, dated, sourced reference notes on the identical URL: /Users/anicca/.claude/rules/building-voice-agents.md:30-42 (section 'Telnyx Media Streaming', 'Source: developers.telnyx.com/docs/voice/programmable-voice/media-streaming', researched 2026-06-23) states verbatim at line 42: 'Interruption: `{\"event\":\"clear\"}` stops playback + clears queue -> wire to Gemini `interrupted:true`.' Two directly conflicting factual claims about the same third-party API, from the same cited source, exist in this project's disk state; C1 does not acknowledge or reconcile the prior (opposite) finding. Per the HONESTY RULES governing this codebase ('Invented error message / API response ... 見ていない なら そう 言う'), a 'verified against <url>' citation that contradicts an already-recorded, dated verification of the exact same page is evidence of an unverified/incorrect claim, not a resolved one. This is architecturally load-bearing: if Telnyx DOES support a client-sendable `clear` event, the spec's chosen mechanism ('WE own the outbound frame-send loop ... STOP our outbound ... send loop + drop our local playback buffer', with no `clear` sent) may leave audio queued in a Telnyx-side buffer during barge-in, producing audible echo/talk-over instead of a clean interrupt -- the opposite of the invariant C1 claims to guarantee.",
+  "evidence": [
+    {"type": "file", "location": "/Users/anicca/anicca-project/.worktrees/lm-cost-connect/.vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md:58", "snippet": "Telnyx bidirectional RTP has NO `clear` websocket event (verified against developers.telnyx.com/docs/voice/programmable-voice/media-streaming -- only `media`/`start`/`stop`)."},
+    {"type": "file", "location": "/Users/anicca/.claude/rules/building-voice-agents.md:30-42", "snippet": "## Telnyx Media Streaming -- sending audio BACK to the caller (our stack)\nSource: developers.telnyx.com/docs/voice/programmable-voice/media-streaming\n...\n- Interruption: `{\"event\":\"clear\"}` stops playback + clears queue -> wire to Gemini `interrupted:true`."}
+  ],
+  "routeToPhase": "1a"
+}

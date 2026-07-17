@@ -1,0 +1,11 @@
+{
+  "id": "FIND-103",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "file": "apps/landing/scripts/money-path-monitor.mjs",
+  "line": "20-21",
+  "issue": "`if (existsSync(STATE)) Object.assign(rc, JSON.parse(readFileSync(STATE, \"utf8\")));` has no try/catch around JSON.parse. A partially-written state file (process killed mid-writeFileSync, disk full, concurrent-run collision — all plausible for a cron-triggered 15-min script with no lockfile) leaves .monitor-state.json corrupted. Every subsequent run will then throw uncaught on JSON.parse before liveOk()/rollback/Telegram-alert logic ever executes, permanently disabling the ONE continuous-monitoring safety net this feature adds for the exact ¥700k-wrong-link outage class the spec targets (Goal-5/C6) — with no self-healing path and no test covering this case. money-path-monitor.mjs has zero test file of its own (only the pure money-path.js class is unit-tested), so this edge case is provably untested.",
+  "evidence": "apps/landing/scripts/money-path-monitor.mjs:20-21 (no try/catch); Glob for apps/landing/scripts/*.test.* returns no files (money-path-monitor.mjs is untested). apps/life-call/lib/money-path.test.js only exercises RollbackController in isolation with in-memory state, never the STATE-file read/parse path.",
+  "fix": "Wrap the STATE read in try/catch; on parse failure, log + treat as fresh state (rc defaults) rather than crashing, and optionally quarantine/rename the corrupt file so an operator can inspect it. Add a test exercising a corrupted-state-file run."
+}

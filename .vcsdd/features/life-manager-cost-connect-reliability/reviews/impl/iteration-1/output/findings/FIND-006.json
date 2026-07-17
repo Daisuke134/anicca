@@ -1,0 +1,11 @@
+{
+  "id": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "major",
+  "file": "apps/life-call/lib/transit.test.js",
+  "line": "24-33",
+  "issue": "The 'best journey' test cannot distinguish the spec'd algorithm (transit.js:41 `journeys.reduce((a,b)=>(b.arrivalSecs<a.arrivalSecs?b:a))`, i.e. earliest ARRIVAL) from a naive 'pick journeys[0]' implementation, because in the committed fixture (transit-plan-tokyo-shinjuku.json) the journeys happen to be sorted such that the earliest-departure journey is ALSO the earliest-arrival journey (journey[0]: dep 83280/arr 84309 vs journey[1]: dep 83640/arr 84609 vs journey[2]: dep 83880/arr 84849 -- monotonic in both fields). A regression that swapped the reduce() for `journeys[0]` (losing the 'earliest arrival, not first-in-array' guarantee the code comment at transit.js:40 explicitly calls out) would produce byte-identical output (durationSecs=1029) and this test would still pass.",
+  "evidence": "transit.js:40-41 `// Best = earliest arrival ... const best = journeys.reduce((a, b) => (b.arrivalSecs < a.arrivalSecs ? b : a));`; transit.test.js:24-33 asserts durationSecs===1029 which is true for BOTH 'earliest arrival' and 'first element' selection given the fixture's monotonic ordering.",
+  "fix": "Add a fixture/inline plan where the earliest-arrival journey is NOT journeys[0] (e.g. journeys=[{arrivalSecs:99999,durationSecs:500},{arrivalSecs:50000,durationSecs:9000}]) and assert parseTransitPlan picks the 2nd one (durationSecs:9000), proving the selection is genuinely arrival-based, not index-based."
+}

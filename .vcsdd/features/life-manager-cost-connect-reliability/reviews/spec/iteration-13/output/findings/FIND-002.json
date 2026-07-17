@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "description": "OQ6 states GROQ_API_KEY is 'Now UNUSED on the live path (voice = Gemini Live)'. This is directly falsifiable and false: GROQ_API_KEY gates the ENTIRE /ws connection on the live path today. server.js:358-361 closes any carrier WebSocket that connects when GROQ_KEY is unset, before any auth or call logic runs: 'if (!GROQ_KEY) { console.error(\"[bridge] GROQ_API_KEY missing — cannot run compositional voice (no Live fallback); closing\"); ... }'. GROQ_KEY is also the credential passed into stt()/llm() at server.js:401-409 for every live call. This is the same root fabrication as FIND-001 (spec believes Gemini Live is the live path when it is Groq compositional voice) surfacing in a second, independently checkable location.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "358-361",
+    "snippet": "if (!GROQ_KEY) {\n  console.error(\"[bridge] GROQ_API_KEY missing — cannot run compositional voice (no Live fallback); closing\");\n  try { carrierWs.close(); } catch {}\n  return;\n}"
+  },
+  "routeToPhase": "2b"
+}

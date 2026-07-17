@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "C4 GMAIL SCOPE (spec line 77, resolving iteration-2 FIND-001/FIND-002) asserts as a 'verified fact' that Gmail-READ for location replies 'stays on the existing provider (Unipile, lm_users.gmail_provider)' for EMAIL users, and that Telegram-first users get location-reply reads via Telegram only. This is contradicted by the CURRENT ask.js on disk in at least one checked-out tree: .claude/worktrees/lipsync-monk/apps/life-call/lib/ask.js:1-9 states verbatim 'ASK: ... else an email from OUR domain (Resend, From hello@aniccaai.com, Reply-To reply+<token>@reply.aniccaai.com). We NEVER read or send from the user's Gmail. READ: replies arrive on webhooks (Telegram -> /telegram, email -> /inbound-email). Gemini reads the reply text ... no inbox polling, no regex.' ask.js:280-281 explicitly says 'Replies (email + Telegram) both arrive via webhooks now ... Neither polls an inbox, so there is no read step here.' A second worktree (.claude/worktrees/agent-a6417f77d0f47a1cc, branch feature/hard2-inngest) has the OLD ask.js that DOES read Gmail via Unipile ('we email the user (via Unipile, from their own Gmail)... READ: Gemini reads inbound replies'). The two available disk sources directly contradict each other on the exact mechanism the spec claims to have 're-verified' for FIND-001/FIND-002, and I have no tool access to origin/main (see FIND-004) to adjudicate which is canonical. Either way, the spec's specific factual claim ('Gmail-READ... stays on the existing provider... for Telegram-first users the location-reply READ arrives via Telegram, not Gmail') does not match the Resend-inbound-webhook mechanism visible in lipsync-monk, so at minimum the spec's disk-fact citation is stale or wrong for that code path, and the FIND-001/FIND-002 resolution cannot be trusted as stated.",
+  "evidence": {
+    "filePath": ".claude/worktrees/lipsync-monk/apps/life-call/lib/ask.js",
+    "lineRange": "1-9, 260-283",
+    "snippet": "ASK: ... else an email from OUR domain (Resend...). We NEVER read or send from the user's Gmail. READ: replies arrive on webhooks (Telegram -> /telegram, email -> /inbound-email)... no inbox polling, no regex."
+  },
+  "contradictingEvidence": {
+    "filePath": ".claude/worktrees/agent-a6417f77d0f47a1cc/apps/life-call/lib/ask.js",
+    "lineRange": "1-9",
+    "snippet": "ASK: ... we email the user (via Unipile, from their own Gmail). READ: Gemini reads inbound replies + the list of pending events ..."
+  },
+  "specCitation": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "77"
+  },
+  "routeToPhase": "1a"
+}

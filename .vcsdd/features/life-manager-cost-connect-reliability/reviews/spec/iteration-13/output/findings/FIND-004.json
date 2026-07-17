@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "C1's 'IN' clause claims the wake call opens with '... route/leave-time ... — Gemini Live opens immediately with the wake guidance (route INCLUDED via geminiSetupForEvent)'. This is checkable against the real function signature and is false: `geminiSetupForEvent(event, urgency, lang, name, model)` (apps/life-call/lib/call-bridge.cjs:131-137) calls `buildCallPrompt(event, urgency, lang, name)` (apps/life-call/lib/call-logic.js:378), whose signature accepts only `(event, urgency, lang, name)` — no route, duration, or leave-time parameter exists anywhere in this call chain. No code path threads route data into a Gemini prompt today (nor, per FIND-001, is Gemini even on the live path to begin with). The spec asserts a capability that does not exist in either candidate implementation.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/call-logic.js",
+    "lineRange": "378",
+    "snippet": "function buildCallPrompt(event, urgency, lang, name) {"
+  },
+  "routeToPhase": "2b"
+}

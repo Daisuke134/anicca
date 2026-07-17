@@ -4,8 +4,9 @@ import RevenueCatUI
 import UserNotifications
 import StoreKit
 
-/// v7 onboarding: 11 steps + 2-step HARD paywall.
-/// Paywall presented via .fullScreenCover + .interactiveDismissDisabled. No × button, no swipe-dismiss, no NavigationStack wrap.
+/// v7 onboarding: 11 steps + 2-step SOFT paywall.
+/// Paywall presented via .fullScreenCover + .interactiveDismissDisabled (スワイプ離脱は防止)。
+/// 右上の × (paywall-close-button) タップでのみ課金せずメイン画面へ遷移する。
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
     @State private var step: OnboardingStep = .welcome
@@ -47,6 +48,9 @@ struct OnboardingFlowView: View {
             PaywallFlowContainer(
                 onPurchaseSuccess: { customerInfo in
                     handlePaywallSuccess(customerInfo: customerInfo)
+                },
+                onDismiss: {
+                    handlePaywallDismissedAsFree()
                 }
             )
             .interactiveDismissDisabled(true)
@@ -105,6 +109,13 @@ struct OnboardingFlowView: View {
     private func handlePaywallSuccess(customerInfo: CustomerInfo) {
         didPurchaseOnPaywall = true
         appState.updateSubscriptionInfo(from: customerInfo)
+        appState.markOnboardingComplete()
+        showPaywall = false
+    }
+
+    /// ソフトペイウォール: 右上 × で課金せずメイン画面へ。
+    private func handlePaywallDismissedAsFree() {
+        AnalyticsManager.shared.track(.onboardingPaywallDismissedFree)
         appState.markOnboardingComplete()
         showPaywall = false
     }

@@ -1,1 +1,3 @@
-Anicca is now Daily Affirmations — same gentle nudges, now framed as the kind, AI-powered self-care + manifestation companion they always were. Cleaner copy, clearer purpose.
+- You can now close the paywall and try Anicca for free
+- Added a one-time Lifetime purchase option (Japan)
+- Stability improvements

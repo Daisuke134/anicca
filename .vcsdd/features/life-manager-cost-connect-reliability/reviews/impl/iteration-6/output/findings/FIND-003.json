@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Spec §4 RED item (c) requires TWO assertions for barge-in: (1) routeGeminiMessage returns {kind:'interrupted'} — covered by lib/call-bridge.test.js:12-21; AND (2) 'in a server-handler test' that a `{\"event\":\"clear\"}` object is carrierSent. Only (1) exists. The actual wiring that matters for the real call — server.js's gemini `message` handler doing `if (r.kind === \"interrupted\") carrierSend({ event: \"clear\" });` (server.js:408) — is never exercised by any test. Grep across apps/life-call for the literal string `carrierSend` / `{event:\"clear\"}` in *.test.js files returns zero hits (only server.js and lib/call-bridge.cjs/.test.js reference 'interrupted' at all, and call-bridge.test.js never touches carrierSend). If a future edit changes server.js's `if (r.kind === \"interrupted\") carrierSend(...)` line (e.g. typo'd event name, wrong socket, or an accidentally-removed condition), no test would fail — the barge-in feature could silently regress to talking over the caller (the exact bug Goal 1 is trying to fix) with 100% green CI.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "406-408",
+    "snippet": "// Barge-in: the caller spoke over Charon (Gemini server-VAD). Flush Telnyx's queued playback so\n// the caller is heard immediately instead of talked over.\nif (r.kind === \"interrupted\") carrierSend({ event: \"clear\" });"
+  },
+  "routeToPhase": "2b"
+}

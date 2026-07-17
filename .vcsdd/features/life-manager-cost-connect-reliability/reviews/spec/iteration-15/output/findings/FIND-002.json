@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "The Railway build config that exists SOLELY to support the one-way clip path is never scheduled for cleanup, and its own comment will become a self-contradicting lie the moment C1 ships. `apps/life-call/nixpacks.toml:1-7` adds `ffmpeg` and `python313Packages.edge-tts` to the Nix build image with the explicit comment 'C1 ... needs the edge-tts CLI ... + ffmpeg ... so the DEFAULT wake call is a one-way clip with NO Gemini Live socket ... Without these, synthWakeClip throws and every call silently escalates to Gemini Live — defeating the whole feature'. After C1 flips the default to Gemini Live and deletes `synthWakeClip`/`voice-synth.cjs` (per C1 step 3), this Nix dependency becomes 100% dead weight (larger Railway image, slower build, zero runtime benefit) and the comment becomes a factually false description of code that no longer exists. C1 step 3's delete-list (behavioral-spec.md:62) and §4 RED (behavioral-spec.md:109-111) never mention `nixpacks.toml` at all — there is no RED/GREEN check that would catch this leftover infra coupling, so it silently survives the C1 flip.",
+  "evidence": {
+    "filePath": "apps/life-call/nixpacks.toml",
+    "lineRange": "1-7",
+    "snippet": "# C1 ... needs the edge-tts CLI (free MS-cloud TTS) + ffmpeg (mp3→μ-law 8k) on the PATH so the DEFAULT wake call is a one-way clip with NO Gemini Live socket ($0 native-audio). Without these, synthWakeClip throws..."
+  },
+  "routeToPhase": "2b"
+}

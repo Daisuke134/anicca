@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-101",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "FIND-001 was NOT remediated. The fix was claimed to append REQ-31..REQ-34 (the scheduling layer) to behavioral-spec.md, but the spec still ENDS at REQ-30. A grep for REQ-31/REQ-32/REQ-33/REQ-34 returns no matches; a grep for Inngest|fan-out|sweep|LIFE_RUN_LOOPS|durable|scheduling layer in the spec returns no matches. The entire HARD-2 behavior set (6 Inngest functions, cron schedules `* * * * *` / `*/30` / `*/20`, per-uid concurrency, { uid } fan-out, the LIFE_RUN_LOOPS single-writer coexistence contract, prod fail-closed serve guard) remains implemented and tested but UNSPECIFIED. No requirement exists to grade fan-out / single-writer / concurrency / fail-closed correctness against, so the 4-D convergence cannot close on the spec axis.",
+  "evidence": {
+    "filePath": ".vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md",
+    "lineRange": "61-66",
+    "snippet": "## E. Voice call (boundary)\n- REQ-28 ...\n- REQ-29 ...\n- REQ-30 The outbound Charon audio SHALL be audible to the caller (not silent).\n[EOF — no REQ-31..REQ-34, no scheduling-layer section]"
+  },
+  "routeToPhase": "2b"
+}
