@@ -797,6 +797,14 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 **②実行中（2026-07-17、builder-authfix）**: `virtuals-acp.md`をdone/からqueue/へ`git mv`（commit `604a9eb`）し、`launchctl kickstart -p gui/$(id -u)/ai.anicca.article-daily`でloopを起動。新設STEP 0/STEP 4.5/STEP 6.5を含む全ゲートスタックがPROMPTに含まれていることを`ps aux`で実測確認。完了まで観測継続中——結果は次回spec更新で追記。
 **注記**: kickstart前に、team-leadのtask説明更新に気づく前の状態で、noteのlive draft（n5787e092451f）本文をだ・である→ですますへ段落単位でDOM操作により書き換える作業を実際に行っていた。ページ再読み込みで検証したところ、この編集はnote.comのバックエンドへ一切保存されておらず（元のだ調テキストのまま5105文字で完全一致）、実質的な変更は発生していないことを確認済み。破棄すべき手編集draftは存在しない。
 
+### 7.63 zenn = git-push publish の確認 + regeneration 進行（2026-07-17 夕〜夜）
+
+- **#76 完了**: zenn は `git push` to Daisuke134/zenn-articles（`~/.openclaw/workspace/zenn-articles`、SKILL.md:491）で公開。**browser session 不要**。#75 で zenn.dev を keepalive に足したのは誤り → 除去（commit anicca `1cc12c20`、監視は coconala/instagram/x.com のみ）。render-verify の zenn 分岐を git ベースに全面書換（zenn-articles repo に .md が push 済みか + frontmatter + mermaid + table 空行ルールを検証、CDP screenshot 不使用。実測 PASS/FAIL 3パターン。commit profitable-claude `aa31bb0`）。SKILL.md に「zenn render-verify は git ベース」1行追記。**教訓: platform を触る前に base skill(SKILL.md) の該当節を読む**（zenn=git push が明記されてたのに browser 復旧に迷走した）。
+- **zenn 実績**: `2026-07-17-5virtualssolidity.md` 含む過去記事が全て git push 済み（published:false=下書き）。zenn は最初から動いていた publish 経路。
+- **regeneration 進行中（#72-8）**: 8則ゲート全実装後 kickstart したが、**キュー順序バグ**で virtuals でなく devlog カードを掴んだ（9枚が digest の一括生成で同一 mtime → 「OLDEST」が tie → ls アルファベット順に依存）。対応: devlog pass 完走（新ゲートの実証にはなる）→ virtuals 以外8枚を `topics/_hold/` へ退避 → virtuals だけ残して再 kickstart → 確実に regenerate → 8枚戻す。→ 根本 fix = #65（frontmatter に created/priority で決定的順序、mtime 依存廃止）。
+- **未解決の Dais-action**: X の SMS-only 復旧（session 死亡再発時）/ zenn の Google 2FA 物理デバイス login（一度きり、影響は render-verify のみ）/ instagram session 死亡（#63、clip loop 側）。いずれも技術的自律突破は不可、恒久解は復旧手段を AI 読取可能チャネルへ変更。
+- **gates.log 2度目の汚染 → 構造ガード予定**: 手動検証で ARTICLE_GATES_LOG 付け忘れ再発（2回目）。仕組みで防ぐ = gate scripts に `[ -t 1 ] || $ARTICLE_GATES_TEST → .test.log` 退避（手動=TTY、launchd 本番=非TTY で自動分離）。regeneration 後に実装。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
