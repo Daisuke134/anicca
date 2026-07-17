@@ -290,3 +290,68 @@ anicca/                       AI→crypto→AI自身（agent economy、self-fund
 SESSION 層（login-once/load_settings毎回/relogin封印/keepalive=get_timeline_feed/死判定=sessionid実在#8）が全ノードの土台。
 CORE: ①LEARN ②AFF-FIND ③PRODUCE(format) ④POST(投稿関数) ⑤BIO ⑥MEASURE(収益) ⑦REFLECT→①。
 channel 差分は3点のみ: PRODUCE format / POST 投稿関数 / MONETIZE 収益先。clip で実証 → video → slide → life_manager → capafy → openclaw loop 移設。
+
+## v9 — 2 repo の完全 to-be folder tree（self-contained OSS）+ gig 移行（2026-07-17）
+
+### 独立の原則
+profitable-claude は **anicca repo にも ~/.openclaw にも依存しない**。共有 engine は「sibling フォルダ import」でなく **published package `anicca-loop-engine`（PyPI, MIT）** として両 repo が install する（or vendor/ に copy）。runtime state・cron・secrets も repo 内に閉じる。
+
+### profitable-claude/（AI→fiat+crypto→人間の口座。OSS 単体で動く）
+```
+profitable-claude/
+├─ pyproject.toml            deps: anicca-loop-engine（package、repo path 依存なし）
+├─ README.md  LICENSE(MIT)
+├─ engine/                   ← ここは薄い。核は package。repo 固有の拡張のみ
+├─ channels/                ← 稼ぐ手段（各 self-improve loop）
+│  ├─ clip/    produce(reels) post(instagrapi.clip_upload) monetize(digistore)  offer.json accounts.json
+│  ├─ gig/     ★openclaw から移設★ produce(提案) deliver(納品) monetize(human bank)
+│  ├─ video/   produce(長尺) post monetize(affiliate/ad)
+│  ├─ slide/   produce(carousel) post(album_upload) monetize(affiliate)
+│  ├─ life_manager/  web app(自社配信) monetize(Stripe→人間)
+│  └─ capafy/  製品+marketing
+├─ rails/                   ← 出口（全て人間の受取先）
+│  ├─ fiat/    stripe.py  bank_payout.py
+│  └─ crypto/  blockrun_client.py（vendored、~/.openclaw 参照なし） x402.py → 人間 wallet
+├─ session/                 ← IG 等の login-once/keepalive（fragile層を隔離）
+│  ├─ store.py  keepalive.py  identity.py  challenge_gmail.py
+├─ accounts/  clip-accounts.json 等（frozen 予備軍含む）
+├─ state/     ledger.jsonl metrics.jsonl（不揮発、repo 内）
+├─ secrets/   .env.example（実 secret は repo 外の secure store 参照、値は commit しない）
+├─ cron/      launchd/*.plist と schedule 定義（openclaw gateway 非依存）
+└─ tests/     各 channel の negative test + E2E
+```
+
+### anicca/（AI→crypto→AI自身。OSS framework。self-funded）
+```
+anicca/
+├─ pyproject.toml            deps: anicca-loop-engine（同じ package）
+├─ engine/                   ← ここが engine package の開発元 or 別 repo anicca-loop-engine
+│  ├─ nodes/  learn produce post measure reflect
+│  ├─ loop.py  GLVS
+│  └─ session/  login-once 抽象（channel 非依存）
+├─ earn/                     ← AI 自身のための稼ぎ
+│  ├─ trade/  pm/ sol/ hl/   （PM/SOL/HL 3エンジン）
+│  └─ content/  将来 clip 等（稼ぎは AI wallet へ）
+├─ rails/crypto/  x402 wallet（franklin1/2）
+├─ blockrun/   x402 生命線（food/shelter）
+├─ citizens/   franklin1 franklin2（HOME/wallet/loop 定義）
+├─ state/  cron/  tests/
+```
+
+### 共有 engine の所在（依存を断つ設計）
+- 案A（推奨）: engine を独立 repo/PyPI package `anicca-loop-engine` に切り出す。anicca も profitable-claude も `pip install anicca-loop-engine`。互いの repo path を import しない = OSS 単体で動く。
+- 案B: 各 repo の `vendor/engine/` に copy（package 未整備の初期）。
+
+### gig loop の移行（動かしたまま移す = strangler-fig）
+現状: gig skill は ~/anicca 配下（human-bank 専用なのに）+ cron は ~/.openclaw gateway。これを profitable-claude/channels/gig へ移す。**移行中も loop を止めない**:
+1. gig skill を profitable-claude/channels/gig に copy（元は消さない）。
+2. profitable-claude 側に新 cron を設置、旧 openclaw cron は残したまま**新を dry で検証**。
+3. 新 loop が実際に gig を1件回して human bank へ payout する E2E を確認（vcsdd-adversary + 自分の目）。
+4. 新が green を確認してから旧 openclaw cron を disable → 削除、元 skill 削除。
+5. 二重稼働は最小時間に留める（共有 resource の待機規律）。
+
+### 登録タスク
+- #14 engine を anicca-loop-engine package に切り出し（両 repo が path 依存でなく package 依存に）
+- #15 profitable-claude repo を作成し folder tree を敷く（channels/rails/session/state/cron）
+- #16 gig loop を strangler-fig で profitable-claude/channels/gig へ移行（動かしたまま）
+- #17 openclaw の全 earn skill/cron を profitable-claude へ移設し openclaw 依存を断つ
