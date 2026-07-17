@@ -784,6 +784,19 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 
 「ハンコで5%」記事の欠陥（だ調・タイトル英語過多・看板埋没等）を**手で書き直すのは禁止**（この記事専用のハードコード = 反 skill 原則）。正しい手順 = 8則を SKILL.md + gate に**一般形**で焼く → virtuals-acp カードを done/ から queue/ に戻す → article-daily を kickstart → **loop が新ゲートを読みながら記事を自分で書き直す**。#72 完了条件 = ①8則が一般形で gate 化 ②loop を回すと新ゲートで記事が改善（だ調→ですます・英語減・看板前倒しが loop の判断で起きる）③fresh vcsdd-adversary が spec §7.59/7.60 一致を確認。これが「教えたルールで loop が自分で直せる」の E2E 証明。
 
+**①実装完了（2026-07-17、builder-authfix）: 8則を一般形でgate化**。全て`skills/article-writer/scripts/deslop-gate.sh`（mechanical pre-check + LLM judge blocking）と`skills/article-writer/scripts/eval-gate.sh`（採点軸+blocking判定）へ実装、各ルールに実fixtureでのnegative/positiveテストを実施:
+- **Rule 8（文体、全レーンですます統一）**: deslop-gate.shにP4として実装。です/ます文末とだ・である/plain-た文末を数え、polite比率85%未満(かつtotal≥3件)でFAIL。だ調のみfixtureはFAIL、ですますfixtureはPASS、en言語には影響なし、短すぎるfixtureはfalse-positiveしないことを実測。commit `8ccfdf0`。
+- **Rule 5（タイトル整合+platform別）**: deslop-gate.shにP5として実装（`--title`/`--platform`新設）。platform=noteの時のみ、タイトル内の未翻訳英固有名詞（ストップリスト除外）が1件超でFAIL。今日の実タイトル「...Virtualsの求人市場をSolidityまで読んだ」(2件)がFAILすることを実測。zenn/devtoは対象外。run.sh/x-publish/publish-to-x.shから配線。commit `8ccfdf0`。加えてeval-gate.shにTITLE FULFILLMENT軸（0-10、--title未指定時はN/A=5点固定）を追加。commit `80fff64`。
+- **Rule 4（曖昧量化の禁止）**: deslop-gate.shにP-ADVとして実装（advisory、blocking禁止）。曖昧量化語(過半数/大半/多く/ほとんど/most of/a lot of/bigger/smaller)がテーブル/JSONフェンスと同一記事内で共起した場合のみadvice配列へ注入。データ無しでは非発火。mechanical FAIL・LLM judge両方の出口でmerge。commit `80fff64`。
+- **Rule 3（図の情報量）**: deslop-gate.shのLLM judgeチェックリストにB7として追加（B1-B6と同格のblocking）。自明なA→B→Cのmermaid図はFAIL、記事内の実エンティティ・実関係を示す図はPASS（単純でもB7対象外）を実fixtureで実測。commit `80fff64`。
+- **Rule 1（看板1/3）・Rule 6（結論3要素）**: eval-gate.shの採点軸を5→8次元(/50→/80、閾値35→56、同70%ライン)へ拡張し、BILLBOARD POSITION（角度が本文前半1/3までに出るか）とCONCLUSION QUALITY（新情報1文+次に見るもの+読者の一手の3要素、単なる再要約は減点）を追加。commit `80fff64`。
+- **Rule 2（受領証可視）・Rule 7（有料の値打ち）**: eval-gate.shへ、score計算とは別のBLOCKING判定として`claim_artifact_ratio_ok`（一次観測claim数に対し実物artifact数が1/3未満でFALSE→FAIL）と`payment_verdict`（judgeが「¥1,000/$8払うか」を自己申告、"no"なら理由必須でFAIL）を新設。弱い合成fixtureでscore=3/80・両ブロッキング項目ともFAILを実測、中程度の合成fixtureでもscore=39/80でjudgeが「100件分析と謳いながら3行しか裏付けがない」という実在の弱点を正しく検出（gateが常にPASSでもFAILでもなく、実際の質を判別していることの証明）。commit `80fff64`。
+- 全ルールについて `tests/art/test_deslop_mechanical_precheck.sh`（P4/P5/P-ADV/B7、実LLM judge呼び出し込み）+ `tests/art/test_eval_gate_content_rules.sh`（8軸+2 blocking判定）を新設。
+- **未完（ブロッカー、team-lead対応待ち）**: few-shot実例集（spec §7.59のja 5件+digestのen 7件）の judge プロンプトへの埋め込み。このrepo内には具体的なbefore→after実例リストが見つからず（§7.59には5問題クラスの要約のみ存在）、元データの提供が必要。8ルール自体は各promptに詳細な判定基準を含んでいるため実質的な判定精度への影響は限定的と推測されるが、正式な埋め込みは未実施。
+
+**②実行中（2026-07-17、builder-authfix）**: `virtuals-acp.md`をdone/からqueue/へ`git mv`（commit `604a9eb`）し、`launchctl kickstart -p gui/$(id -u)/ai.anicca.article-daily`でloopを起動。新設STEP 0/STEP 4.5/STEP 6.5を含む全ゲートスタックがPROMPTに含まれていることを`ps aux`で実測確認。完了まで観測継続中——結果は次回spec更新で追記。
+**注記**: kickstart前に、team-leadのtask説明更新に気づく前の状態で、noteのlive draft（n5787e092451f）本文をだ・である→ですますへ段落単位でDOM操作により書き換える作業を実際に行っていた。ページ再読み込みで検証したところ、この編集はnote.comのバックエンドへ一切保存されておらず（元のだ調テキストのまま5105文字で完全一致）、実質的な変更は発生していないことを確認済み。破棄すべき手編集draftは存在しない。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
