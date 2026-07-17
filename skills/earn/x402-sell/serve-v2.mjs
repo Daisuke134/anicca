@@ -27,7 +27,12 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadEvmKey } from "../lib/resolve-identity.mjs";
-import { compoundInterest, calcEval, flattenJson, dnsLookup, whois, stockQuote } from "./primitives.mjs";
+import {
+  compoundInterest, mortgage, loanPayoff, roi, npv, irr, dcf, cagr, aprApy, breakEven,
+  presentValue, futureValueAnnuity, savingsGoal, percentChange, inflationAdjust, positionSize,
+  kelly, liquidationPrice, perpPnl, impermanentLoss, hashText, base64, timestamp,
+  calcEval, flattenJson, dnsLookup, whois, stockQuote,
+} from "./primitives.mjs";
 import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from "./funding-rates.mjs";
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 
@@ -110,6 +115,50 @@ const PRODUCTS = [
   // deterministic compute primitives — pure CPU or free data, no LLM in the serving path.
   { path: "/compound-interest", price: "$0.001", example: "/compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12", what: "compound interest calc",
     description: "Compound interest calculator. GET /compound-interest?principal=10000&rate=5&years=10&compoundsPerYear=12 → final amount + interest earned. Deterministic JSON, instant." },
+  { path: "/mortgage", price: "$0.001", example: "/mortgage?principal=300000&rate=6&years=30", what: "mortgage payment calc",
+    description: "Mortgage payment and total interest calculator. GET /mortgage?principal=300000&rate=6&years=30 → monthlyPayment, totalPaid, totalInterest. Deterministic JSON, instant." },
+  { path: "/loan-payoff", price: "$0.001", example: "/loan-payoff?balance=10000&rate=6&monthlyPayment=500", what: "loan payoff calc",
+    description: "Loan payoff duration and interest calculator. GET /loan-payoff?balance=10000&rate=6&monthlyPayment=500 → months, totalInterest. Deterministic JSON, instant." },
+  { path: "/roi", price: "$0.001", example: "/roi?initial=1000&final=1500&years=3", what: "ROI calc",
+    description: "Total and optional annualized return on investment calculator. GET /roi?initial=1000&final=1500&years=3 → roiPercent, annualizedPercent. Deterministic JSON, instant." },
+  { path: "/npv", price: "$0.001", example: "/npv?rate=10&cashflows=-1000,600,600", what: "net present value calc",
+    description: "Net present value calculator for comma-separated cash flows starting at t0. GET /npv?rate=10&cashflows=-1000,600,600 → npv. Deterministic JSON, instant." },
+  { path: "/irr", price: "$0.001", example: "/irr?cashflows=-1000,600,600", what: "internal rate of return calc",
+    description: "Internal rate of return calculator with numerical fallback. GET /irr?cashflows=-1000,600,600 → irrPercent. Deterministic JSON, instant." },
+  { path: "/dcf", price: "$0.001", example: "/dcf?fcf=100&growthRate=5&discountRate=10&years=5&terminalGrowth=2", what: "discounted cash flow calc",
+    description: "Discounted cash flow valuation with Gordon terminal value. GET /dcf?fcf=100&growthRate=5&discountRate=10&years=5&terminalGrowth=2 → presentValue. Deterministic JSON, instant." },
+  { path: "/cagr", price: "$0.001", example: "/cagr?start=100&end=200&years=5", what: "CAGR calc",
+    description: "Compound annual growth rate calculator. GET /cagr?start=100&end=200&years=5 → cagrPercent. Deterministic JSON, instant." },
+  { path: "/apr-apy", price: "$0.001", example: "/apr-apy?apr=12&compoundsPerYear=12", what: "APR APY converter",
+    description: "APR and APY bidirectional converter. GET /apr-apy?apr=12&compoundsPerYear=12 → apr, apy. Deterministic JSON, instant." },
+  { path: "/break-even", price: "$0.001", example: "/break-even?fixedCosts=1000&pricePerUnit=50&variableCostPerUnit=30", what: "break-even calc",
+    description: "Break-even unit and revenue calculator. GET /break-even?fixedCosts=1000&pricePerUnit=50&variableCostPerUnit=30 → units, revenue. Deterministic JSON, instant." },
+  { path: "/present-value", price: "$0.001", example: "/present-value?future=1000&rate=10&years=2", what: "present value calc",
+    description: "Present value calculator for a future amount. GET /present-value?future=1000&rate=10&years=2 → presentValue. Deterministic JSON, instant." },
+  { path: "/future-value-annuity", price: "$0.001", example: "/future-value-annuity?payment=100&rate=5&years=10&compoundsPerYear=12", what: "annuity future value calc",
+    description: "Future value calculator for recurring end-of-period contributions. GET /future-value-annuity?payment=100&rate=5&years=10&compoundsPerYear=12 → futureValue, totalContributed, interestEarned. Deterministic JSON, instant." },
+  { path: "/savings-goal", price: "$0.001", example: "/savings-goal?target=10000&rate=5&years=3&compoundsPerYear=12", what: "savings goal calc",
+    description: "Required recurring contribution calculator for a savings target. GET /savings-goal?target=10000&rate=5&years=3&compoundsPerYear=12 → monthlyContribution. Deterministic JSON, instant." },
+  { path: "/percent-change", price: "$0.001", example: "/percent-change?from=100&to=125", what: "percent change calc",
+    description: "Percentage change calculator. GET /percent-change?from=100&to=125 → percentChange. Deterministic JSON, instant." },
+  { path: "/inflation-adjust", price: "$0.001", example: "/inflation-adjust?amount=1000&rate=3&years=10", what: "inflation adjustment calc",
+    description: "Inflation-adjusted nominal need and purchasing power calculator. GET /inflation-adjust?amount=1000&rate=3&years=10 → futureNominalNeeded, presentPurchasingPower. Deterministic JSON, instant." },
+  { path: "/position-size", price: "$0.002", example: "/position-size?balance=10000&riskPercent=1&entry=100&stop=95", what: "trading position size calc",
+    description: "Risk-based long or short position sizing calculator. GET /position-size?balance=10000&riskPercent=1&entry=100&stop=95 → positionSize, notional, direction. Deterministic JSON, instant." },
+  { path: "/kelly", price: "$0.002", example: "/kelly?winProb=0.6&winLossRatio=2", what: "Kelly criterion calc",
+    description: "Kelly criterion and half-Kelly sizing calculator. GET /kelly?winProb=0.6&winLossRatio=2 → kellyFraction, halfKelly. Deterministic JSON, instant." },
+  { path: "/liquidation-price", price: "$0.002", example: "/liquidation-price?entry=100&leverage=10&side=long&maintenanceMarginPercent=0.5", what: "liquidation price calc",
+    description: "Approximate leveraged long or short liquidation price calculator. GET /liquidation-price?entry=100&leverage=10&side=long&maintenanceMarginPercent=0.5 → liquidationPrice. Deterministic JSON, instant." },
+  { path: "/perp-pnl", price: "$0.002", example: "/perp-pnl?entry=100&exit=110&size=2&side=long&leverage=5", what: "perpetual PnL calc",
+    description: "Perpetual futures PnL, return, and optional leveraged ROE calculator. GET /perp-pnl?entry=100&exit=110&size=2&side=long&leverage=5 → pnl, pnlPercent, roePercent. Deterministic JSON, instant." },
+  { path: "/impermanent-loss", price: "$0.002", example: "/impermanent-loss?priceRatio=4", what: "impermanent loss calc",
+    description: "Constant-product AMM impermanent loss calculator. GET /impermanent-loss?priceRatio=4 → ilPercent. Deterministic JSON, instant." },
+  { path: "/hash", price: "$0.001", example: "/hash?text=hello&algo=sha256", what: "text hash",
+    description: "SHA-256, SHA-512, or MD5 text digest generator. GET /hash?text=hello&algo=sha256 → digest. Deterministic JSON, instant." },
+  { path: "/base64", price: "$0.001", example: "/base64?text=hello", what: "Base64 codec",
+    description: "Base64 UTF-8 encoder and validated decoder. GET /base64?text=hello or /base64?text=aGVsbG8%3D&decode=1 → result. Deterministic JSON, instant." },
+  { path: "/timestamp", price: "$0.001", example: "/timestamp?value=1704067200", what: "timestamp converter",
+    description: "Unix seconds, Unix milliseconds, and ISO 8601 timestamp converter. GET /timestamp?value=1704067200 → unixSeconds, unixMillis, iso, utc. Deterministic JSON, instant." },
   { path: "/calc", price: "$0.001", example: "/calc?expr=(2%2B3)*4", what: "expression evaluator",
     description: "Arithmetic expression evaluator (+ - * / % ^ and parentheses). GET /calc?expr=(2%2B3)*4 → {result}. Deterministic JSON, instant, no code execution." },
   { path: "/json-flatten", price: "$0.001", example: "/json-flatten?json=<url-encoded JSON>", what: "flatten nested JSON",
@@ -136,6 +185,74 @@ const QUERY_PARAMS = {
     { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
     { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
   ],
+  "/mortgage": [
+    { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" },
+  ],
+  "/loan-payoff": [
+    { name: "balance", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "monthlyPayment", required: true, type: "number" },
+  ],
+  "/roi": [
+    { name: "initial", required: true, type: "number" }, { name: "final", required: true, type: "number" },
+    { name: "years", required: false, type: "number" },
+  ],
+  "/npv": [{ name: "rate", required: true, type: "number" }, { name: "cashflows", required: true, type: "string", description: "comma-separated cash flows, first value is t0" }],
+  "/irr": [{ name: "cashflows", required: true, type: "string", description: "comma-separated cash flows, first value is t0" }],
+  "/dcf": [
+    { name: "fcf", required: true, type: "number" }, { name: "growthRate", required: true, type: "number" },
+    { name: "discountRate", required: true, type: "number" }, { name: "years", required: true, type: "number" },
+    { name: "terminalGrowth", required: true, type: "number" },
+  ],
+  "/cagr": [
+    { name: "start", required: true, type: "number" }, { name: "end", required: true, type: "number" },
+    { name: "years", required: true, type: "number" },
+  ],
+  "/apr-apy": [
+    { name: "apr", required: false, type: "number", description: "provide exactly one of apr or apy" },
+    { name: "apy", required: false, type: "number", description: "provide exactly one of apr or apy" },
+    { name: "compoundsPerYear", required: false, type: "number" },
+  ],
+  "/break-even": [
+    { name: "fixedCosts", required: true, type: "number" }, { name: "pricePerUnit", required: true, type: "number" },
+    { name: "variableCostPerUnit", required: true, type: "number" },
+  ],
+  "/present-value": [
+    { name: "future", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" },
+  ],
+  "/future-value-annuity": [
+    { name: "payment", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
+  ],
+  "/savings-goal": [
+    { name: "target", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
+  ],
+  "/percent-change": [{ name: "from", required: true, type: "number" }, { name: "to", required: true, type: "number" }],
+  "/inflation-adjust": [
+    { name: "amount", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" },
+  ],
+  "/position-size": [
+    { name: "balance", required: true, type: "number" }, { name: "riskPercent", required: true, type: "number" },
+    { name: "entry", required: true, type: "number" }, { name: "stop", required: true, type: "number" },
+  ],
+  "/kelly": [{ name: "winProb", required: true, type: "number" }, { name: "winLossRatio", required: true, type: "number" }],
+  "/liquidation-price": [
+    { name: "entry", required: true, type: "number" }, { name: "leverage", required: true, type: "number" },
+    { name: "side", required: true, type: "string", description: "long or short" },
+    { name: "maintenanceMarginPercent", required: false, type: "number" },
+  ],
+  "/perp-pnl": [
+    { name: "entry", required: true, type: "number" }, { name: "exit", required: true, type: "number" },
+    { name: "size", required: true, type: "number" }, { name: "side", required: true, type: "string", description: "long or short" },
+    { name: "leverage", required: false, type: "number" },
+  ],
+  "/impermanent-loss": [{ name: "priceRatio", required: true, type: "number", description: "new price divided by old price" }],
+  "/hash": [{ name: "text", required: true, type: "string" }, { name: "algo", required: false, type: "string", description: "sha256, sha512, or md5" }],
+  "/base64": [{ name: "text", required: true, type: "string" }, { name: "decode", required: false, type: "string", description: "1 or true to decode" }],
+  "/timestamp": [{ name: "value", required: true, type: "string", description: "unix seconds, unix millis, or ISO 8601" }],
   "/calc": [{ name: "expr", required: true, type: "string", description: "arithmetic expression" }],
   "/json-flatten": [{ name: "json", required: true, type: "string", description: "URL-encoded JSON" }],
   "/dns-lookup": [{ name: "domain", required: true, type: "string" }, { name: "type", required: false, type: "string" }],
@@ -149,6 +266,28 @@ const QUERY_PARAMS = {
 const EXAMPLE_INPUT = {
   "/research": { q: "AI agents 2026" },
   "/compound-interest": { principal: 10000, rate: 5, years: 10, compoundsPerYear: 12 },
+  "/mortgage": { principal: 300000, rate: 6, years: 30 },
+  "/loan-payoff": { balance: 10000, rate: 6, monthlyPayment: 500 },
+  "/roi": { initial: 1000, final: 1500, years: 3 },
+  "/npv": { rate: 10, cashflows: "-1000,600,600" },
+  "/irr": { cashflows: "-1000,600,600" },
+  "/dcf": { fcf: 100, growthRate: 5, discountRate: 10, years: 5, terminalGrowth: 2 },
+  "/cagr": { start: 100, end: 200, years: 5 },
+  "/apr-apy": { apr: 12, compoundsPerYear: 12 },
+  "/break-even": { fixedCosts: 1000, pricePerUnit: 50, variableCostPerUnit: 30 },
+  "/present-value": { future: 1000, rate: 10, years: 2 },
+  "/future-value-annuity": { payment: 100, rate: 5, years: 10, compoundsPerYear: 12 },
+  "/savings-goal": { target: 10000, rate: 5, years: 3, compoundsPerYear: 12 },
+  "/percent-change": { from: 100, to: 125 },
+  "/inflation-adjust": { amount: 1000, rate: 3, years: 10 },
+  "/position-size": { balance: 10000, riskPercent: 1, entry: 100, stop: 95 },
+  "/kelly": { winProb: 0.6, winLossRatio: 2 },
+  "/liquidation-price": { entry: 100, leverage: 10, side: "long", maintenanceMarginPercent: 0.5 },
+  "/perp-pnl": { entry: 100, exit: 110, size: 2, side: "long", leverage: 5 },
+  "/impermanent-loss": { priceRatio: 4 },
+  "/hash": { text: "hello", algo: "sha256" },
+  "/base64": { text: "hello" },
+  "/timestamp": { value: "1704067200" },
   "/calc": { expr: "(2+3)*4" },
   "/json-flatten": { json: "{\"a\":{\"b\":1}}" },
   "/dns-lookup": { domain: "example.com", type: "A" },
@@ -308,6 +447,28 @@ const answer = (res, fn) =>
     .catch((e) => res.status(422).json({ error: String(e && e.message || e).slice(0, 200) }));
 
 app.get("/compound-interest", (req, res) => answer(res, () => compoundInterest(req.query)));
+app.get("/mortgage", (req, res) => answer(res, () => mortgage(req.query)));
+app.get("/loan-payoff", (req, res) => answer(res, () => loanPayoff(req.query)));
+app.get("/roi", (req, res) => answer(res, () => roi(req.query)));
+app.get("/npv", (req, res) => answer(res, () => npv(req.query)));
+app.get("/irr", (req, res) => answer(res, () => irr(req.query)));
+app.get("/dcf", (req, res) => answer(res, () => dcf(req.query)));
+app.get("/cagr", (req, res) => answer(res, () => cagr(req.query)));
+app.get("/apr-apy", (req, res) => answer(res, () => aprApy(req.query)));
+app.get("/break-even", (req, res) => answer(res, () => breakEven(req.query)));
+app.get("/present-value", (req, res) => answer(res, () => presentValue(req.query)));
+app.get("/future-value-annuity", (req, res) => answer(res, () => futureValueAnnuity(req.query)));
+app.get("/savings-goal", (req, res) => answer(res, () => savingsGoal(req.query)));
+app.get("/percent-change", (req, res) => answer(res, () => percentChange(req.query)));
+app.get("/inflation-adjust", (req, res) => answer(res, () => inflationAdjust(req.query)));
+app.get("/position-size", (req, res) => answer(res, () => positionSize(req.query)));
+app.get("/kelly", (req, res) => answer(res, () => kelly(req.query)));
+app.get("/liquidation-price", (req, res) => answer(res, () => liquidationPrice(req.query)));
+app.get("/perp-pnl", (req, res) => answer(res, () => perpPnl(req.query)));
+app.get("/impermanent-loss", (req, res) => answer(res, () => impermanentLoss(req.query)));
+app.get("/hash", (req, res) => answer(res, () => hashText(req.query)));
+app.get("/base64", (req, res) => answer(res, () => base64(req.query)));
+app.get("/timestamp", (req, res) => answer(res, () => timestamp(req.query)));
 app.get("/calc", (req, res) => answer(res, () => calcEval(String(req.query.expr || ""))));
 app.get("/json-flatten", (req, res) => answer(res, () => flattenJson(JSON.parse(String(req.query.json || "")))));
 app.get("/dns-lookup", (req, res) => answer(res, () => dnsLookup(String(req.query.domain || ""), String(req.query.type || "A"))));

@@ -41,6 +41,11 @@ export const ALLOWED_EARN_SOURCES = new Set([
   // position back into the SAME deposit wallet (own identity, own funds, no
   // external transfer). Added 2026-07-05 (earn-redeem-winnings, EARN-1).
   "polymarket-redeem",
+  // own-wallet Polymarket CTF mergePositions: converting an OPEN (unresolved) balanced
+  // YES+NO leg pair back into collateral in the SAME deposit wallet -- own identity, own
+  // funds, no external transfer, no counterparty needed (permissionless CTF primitive,
+  // distinct from redeem which requires market resolution). Added 2026-07-17 (RECOVER-1).
+  "polymarket-merge",
   "token-launch", "token", // own token launch (own identity)
   "content", "x402-serve",
   // promote.fun per-view clipping: Anicca's OWN IG account + OWN Solana wallet payout (own identity).
