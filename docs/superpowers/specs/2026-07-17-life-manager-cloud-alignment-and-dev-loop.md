@@ -183,7 +183,7 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 ### 8c. 実行方式（Dais 決定 2026-07-17）
 - **実装は superpowers workflow**（brainstorming→writing-plans→worktree→subagent-driven→verification）で 1 issue ずつ。
 - 検証 = 自分で実 browser/実 API E2E（adversary/vcsdd subagent は Dais が明示した時のみ）。
-- 1 fix = 1 browser 検証 = 1 TG/call 実測、を積む。lm2-fixer の先行 branch `fix/lm-call-dial-burn` は参考物として保持（merge しない）。
+- 1 fix = 1 browser 検証 = 1 TG/call 実測、を積む。lm2-fixer の先行 branch `fix/lm-call-dial-burn`（commit f82010e65、push 済み・未 merge・worktree `.worktrees/lm-call-fix` 保持）: releaseWake（dial 失敗時に claim 解放、travel.js の unclaimTravel と同型）+ 低残高 TG アラート（新 env `LM_ADMIN_TELEGRAM_CHAT_ID` 要設定、6h throttle）。npm test 全 18 suite 173 tests pass 実測。superpowers 実行時にこの branch を素材として review/採用判断する（merge は superpowers の verification 後のみ）。
 
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
