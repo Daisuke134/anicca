@@ -47,6 +47,27 @@ if [ -n "$DEAD" ]; then
   telegram_notify "session_vault keepalive: session DEAD for: $DEAD (daily-driver :9222). Will keep retrying every 30min; if a real pass needs it, it will self-heal or report failed per its own STEP 8." || true
 fi
 
+# password re-login self-heal for X specifically (task #75): X does not offer a passwordless
+# recovery path this loop can drive, but it DOES offer a normal username+password login that
+# needs no human -- as long as it is never retried more than once per incident (X flags/kills
+# accounts for repeated automated login(), same warning documented in twscrape/twikit). relogin_x
+# itself enforces a 6h cooldown marker, so calling it unconditionally here on every tick is safe:
+# it silently no-ops (skipped:true) unless x.com is actually dead AND the cooldown has expired.
+if printf '%s' "$DEAD" | grep -q "x.com"; then
+  set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
+  log "x.com dead -> attempting relogin_x (rate-limited to 1/6h)"
+  RELOGIN_OUT="$(python3 "$V" relogin_x || true)"
+  echo "$RELOGIN_OUT"
+  RELOGIN_STOPPED="$(printf '%s' "$RELOGIN_OUT" | python3 -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+print('1' if d.get('stopped') else '')" 2>/dev/null || true)"
+  if [ -n "$RELOGIN_STOPPED" ]; then
+    log "ALERT: relogin_x stopped itself -- needs Dais (phone verification requested)"
+    telegram_notify "X relogin self-heal STOPPED: phone/SMS verification was requested, which this AI cannot complete (SMS goes to Dais's personal phone). Needs Dais to log in manually once. See $RELOGIN_OUT" || true
+  fi
+fi
+
 # ── per-account clip browsers (clip-en, clip-en2, clip-en3, ...) ──
 # Guard: clip_pass.sh drives these same Chrome profiles concurrently (posting via instagrapi,
 # some CDP use). Opening extra tabs on the same IG-authenticated profile while a pass is live
