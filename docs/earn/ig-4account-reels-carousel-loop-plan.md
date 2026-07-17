@@ -58,3 +58,24 @@
 - login flow = CloakBrowser session + API。relogin/password 不使用。
 - 1アカ1 niche・1 identity。初 sale が出るまで format 横展開しても投稿数を無闇に増やさない。
 - 全 format 共通エンジン（LEARN→PRODUCE→POST→MEASURE→REFLECT）。差し替えは PRODUCE ノード（clip/carousel）と MONETIZE ノード（Digistore/Amazon）のみ。
+
+## 実測スナップショット 2026-07-17 10:30 JST（fix 前の現状。次セッションはここから）
+
+| 項目 | 実測値 |
+|---|---|
+| loop プロセス | 稼働中。launchd `ai.anicca.clip-loop-aiclipsvault`（6h 間隔、last exit 0、2026-07-17 08:39 pass complete） |
+| 実投稿 | **2026-07-14 19:33 が最終確定投稿**。以降 3日間、毎パス `LoginRequired` で POST/BIO skip |
+| 直接原因 | instagrapi session 失効（`bio_step: session invalid (LoginRequired)` が毎パス、`~/.cloak/instagrapi-aiclipsvault.json` は更新されるが auth 通らず） |
+| queue | 未投稿 mp4 17本滞留（PRODUCE は生きている）。pending-verify 2本が 07-13 から放置 |
+| metrics | `~/clips/clip-metrics.jsonl` = 0 バイト（07-14 20:21 以降）。LEARN が4パス連続で「pipeline broken」と自己申告 |
+| 収益 | ledger 全112行 earn_usdc=0。Digistore key も unset＝$計測配線ゼロ |
+| アカウント | 実ログイン済み（instagrapi settings 保持）= aiclipsvault のみ。world_hq/hub_hq は status=ready だが settings ファイル無し。studio_hq=investigating（5/5 publish 未確認） |
+| run.sh アカ選択 | 配列順 first-ready で break＝常に aiclipsvault 固定。ローテーションなし |
+| STEP 1〜5 | 全て未実装（album_upload grep 0ヒット、--kind フラグ無し、measure_dollar.py は存在するが loop から未呼出、keepalive 無し） |
+| 誤り是正 | 「4アカ loop が回っている」は誤り。回っているのは単一アカ Reels loop で、それも 07-14 から投稿停止中 |
+
+### fix 優先順（blocking 順）
+1. session 復旧: aiclipsvault の CloakBrowser sessionid を instagrapi settings に再注入（loop の self-heal 3-tier が3日突破できていない＝手当必要）
+2. metrics pipeline 復旧（0バイトの真因特定）
+3. world_hq / hub_hq の instagrapi settings 生成（browser session からの export）
+4. その後に STEP1〜5（carousel / 4アカ direct / keepalive / $配線）
