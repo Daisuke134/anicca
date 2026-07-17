@@ -257,3 +257,36 @@ POST ノードが「instagrapi clip_upload」→「Graph API publish」になる
 ### 競合 Claude の整理（実測補足）
 - `kankatsugai` = 架空、存在しない。
 - `aiclipper.daily`(ig-myclaude.json) = メモに「別Claude」とあるが実際に clipping している別実体は無い。clipping は @aiclipsvault の loop 1本のみ。競合なし。clip は aiclipsvault 専任で正しい。
+
+## v8 — アーキ決定: 2 repo 分離 + 共有 engine + PC 両レール（2026-07-17）
+
+### 4つの根本問題
+- P1 session 死 → login-once 規律 + keepalive read（#12/#4）
+- P2 skill 散在（anicca と openclaw 二分裂）→ anicca / profitable-claude の2 repo に分離
+- P3 engine 未抽出 → channel-agnostic core 1個に（#7）
+- P4 session 正本二重（vault と instagrapi settings）→ 一本化（#9）
+
+### あるべき folder tree
+```
+profitable-claude/            AI→fiat/crypto→人間の口座（OSS単体、外部依存なし）
+├─ engine/                    ★P3 全チャネル共有 core（1個）★
+│  ├─ nodes/  learn produce post measure reflect
+│  ├─ session/  store.py(login-once/dump-load) keepalive.py(read/relogin封印) identity.py(uuids固定/gmail challenge)  ★P1/P4★
+│  └─ loop.py  GLVS
+├─ channels/  clip(reels/clip_upload/digistore) video slide(carousel/album_upload) life_manager(webapp/Stripe) capafy
+├─ rails/     fiat(stripe/bank) crypto(blockrun/x402)  ★P2 出口★
+├─ accounts/ state/ cron/     (openclaw から移設)
+anicca/                       AI→crypto→AI自身（agent economy、self-funded）
+├─ engine/(共有) earn/(trade) rails/crypto/(x402) blockrun/
+```
+分類基準 = 稼ぎが誰の口座に入るか1本: AIの wallet→anicca / 人間の口座→profitable-claude。
+
+### profitable-claude は fiat + crypto 両レール（出口は全て人間）
+- fiat: clip→affiliate→Digistore→人間 bank、gig/製品/Stripe→人間 bank。
+- crypto: anicca/blockrun の稼ぎ方を borrow、trade(DeFi)/x402→人間の crypto wallet。
+- anicca は「どんな AI も crypto で稼げる」土台を提供 → PC はそれで crypto でも稼げる（稼ぎ口増）。違いは出口が人間である点のみ。Claude は tradfi+defi 両方で no-human-loop、全額を人間へ。
+
+### engine core（6ノード + session 層）
+SESSION 層（login-once/load_settings毎回/relogin封印/keepalive=get_timeline_feed/死判定=sessionid実在#8）が全ノードの土台。
+CORE: ①LEARN ②AFF-FIND ③PRODUCE(format) ④POST(投稿関数) ⑤BIO ⑥MEASURE(収益) ⑦REFLECT→①。
+channel 差分は3点のみ: PRODUCE format / POST 投稿関数 / MONETIZE 収益先。clip で実証 → video → slide → life_manager → capafy → openclaw loop 移設。
