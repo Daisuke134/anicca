@@ -355,3 +355,31 @@ anicca/
 - #15 profitable-claude repo を作成し folder tree を敷く（channels/rails/session/state/cron）
 - #16 gig loop を strangler-fig で profitable-claude/channels/gig へ移行（動かしたまま）
 - #17 openclaw の全 earn skill/cron を profitable-claude へ移設し openclaw 依存を断つ
+
+## v10 — 実証: 自動 login は壁。決定を Graph API primary に更新（2026-07-17）
+
+### この session で試して全部 false だったこと（証拠）
+- instagrapi password login（pw 修正後）→ `ChallengeRequired`（bloks native checkpoint、instagrapi が構造的に解決不可）。スマホ承認しても消えず。
+- instagrapi settings の saved sessionid → `LoginRequired`（revoke 済、生きてない）。
+- CloakBrowser web login（pw 修正 + 垢 un-flag 後）→ login ページに留まり sessionid 出ず。
+- → **Mac からの自動 login は password 経路も browser 経路も壁**。垢はスマホ(trusted device)では入れるが、自動化 login は IG が弾く。
+
+### 決定の更新（v7 の instagrapi-primary を修正）
+v7 は「1回 clean login が取れる」前提で instagrapi 継続とした。本 session でその前提が**実証的に false**。よって:
+- **PRIMARY = Graph API**。理由: one-time setup（Business 変換 + FB Page + token）は **Dais の trusted スマホ**でできる（= 現に効く手段）。自動 login（= 効かないと実証された手段）を要求しない。以後 token 投稿で login 永久不要。
+- **FALLBACK = instagrapi**。もし将来 browser web session を安定取得できたら login_by_sessionid で投稿可（clip_upload は proven）。password login は使わない（bloks 壁）。
+- = 「効く手段(trusted phone)に賭け、効かない手段(自動login)を捨てる」判断。flip-flop でなく証拠での更新。
+
+### Graph API の one-time setup（Dais がスマホ/web で、自動化なし）
+1. IG アプリ: aiclipsvault を プロアカウント(Business/Creator) に変換
+2. Facebook Page 作成 + 連携
+3. developers.facebook.com で app 作成 → 自分の IG を role 追加(Standard Access=審査不要)
+4. 60日 long-lived token 発行 → Dais が token を安全に渡す（gmail 経由等）
+その後 Fable が: POST を `/media`(REELS,video_url)→`/media_publish` に差替、動画を CLOUDFLARE_TUNNEL で公開URL化、token refresh cron 設置。
+
+### profitable-claude は既存 repo（greenfield tree を実態へ修正）
+`~/profitable-claude`（github Daisuke134/profitable-claude）が既に在る: bin/ config/ launchd/ ledgers/ lib/ skills/human-funded/gig/ state/ tests/。gig は **anicca(skills/{economy,earn,self-improve}/gig) と profitable-claude(skills/human-funded/gig) に二重**存在 = P2。前回 anicca→profitable-claude 移動時に gig loop が停止した（要 fix）。to-be tree は greenfield でなくこの実 repo をベースに再構成する（v9 tree は方向性、実装は実 repo 準拠）。
+
+### 追加タスク
+- #18 Graph API one-time setup を Dais に依頼（スマホ手順）+ token 受領 → POST を Graph API 化
+- #19 gig loop の現状監査（二重存在 anicca vs profitable-claude、どちらが launchd 対象か、実際に earn しているか）+ 壊れているなら fix
