@@ -743,6 +743,11 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 2. **gate判定の永続ログ化**: deslop-gate.sh/eval-gate.sh の全ての最終判定（mechanical FAIL・checklist-missing FATAL・no-json FATAL・LLM judgeのPASS/FAIL）を `~/.openclaw/logs/article-gates.log` へ append-only で記録（ts+script+mdファイル+lang+verdict）。eyecatchログ（commit `ad4c993`）と同じ恒久化パターン。tests/art/test_gate_verdict_log.sh で5/5実測（今日のchecklist-missing実インシデントを再現するケース込み）。commit: profitable-claude(main) `dae1f37`
 3. **k16 のja全体適用**: ja記事は従来 stop-ai-slop-jp（--doc-type note既定）とjapanese-tech-writing/k16（--doc-type tech）のどちらか一方しか判定されなかったが、Dais決定で両方を lane/doc-type 問わず必須化。連結prompt化は非収束リスクで既に却下済み（§7.4の12ラウンド非収束事故）のため、独立した2回のfresh judge呼び出し（G1a=note、G1b=tech）とし、両方blocking。run.sh と x-publish/publish-to-x.sh の両呼び出し箇所に配線。tests/art/test_ja_dual_checklist_gate.sh で12/12実測（構造検証、run.shの副作用回避のためこのディレクトリ既存の grep 方式を踏襲）+ 実LLM呼び出しでG1a/G1bが独立した別々のverdict/adviceを返すことを実測確認。commit: profitable-claude(main) `e20d495`
 
+**追記（2026-07-17、team-lead裁定2件、builder-authfix対応）**:
+1. **test_article_daily_contract.sh の --mode go アサーション是正**: 「--mode go 文字列の完全禁止」という判定は誤りだった（Dais決定#41がAUTOPUBLISH=1ガード内でのSubstack live publishを既に承認済み）。正しい契約 = 「ガードの存在が政策」であり文字列の不在ではない。アサーションを`if [ "$AUTOPUBLISH" = "1" ]; then ... fi`ブロックを除去してから`--mode go`の非存在をチェックする方式に修正。commit: profitable-claude(main) `ea925cd`
+2. **config/loop-registry.json の article エントリ**: `status: "external"`のまま維持（team-lead裁定: article-daily.sh自身が「launchd is the ONLY scheduler」と定めており、`live`化するとbin/start-all.shとlaunchdの二重スケジューラ衝突を招く）。`skill_dir`（実パス反映、schema上は情報用途のみ）と`notes`（explorer既存の慣習に倣い、外部stubのまま維持する理由を明記）を追加。`runtime`は`schema_checks.py`のPROP-005が文字列`"external-anicca"`を厳密ピン留めしているため、より正確な文字列への変更を一度試みたが schema テストを壊すことが判明し、`external-anicca`のまま維持（説明は`notes`側に集約）。両方とも `tests/ceo/test_registry_schema.py`(29/29)・`test_registry_last_observed_at.py`(6/6)・`test_start_all_and_status.sh`(5/5)で実測確認。commit: profitable-claude(main) `ea925cd`
+- **全体テスト状態（今回の一連の対応の最終形）**: `tests/run-all.sh` 118/119。残1件は`test_vendor_dirs_referenced.sh`（life-manager-cli.shのSTARTUPプロンプトにベンダーツール名の言及が欠けているコンテンツギャップ、round1以前からの既存debt、今回の一連の変更とは無関係）。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
