@@ -79,7 +79,7 @@
 
 | loop | コード | OS 稼働 | self-improve |
 |---|---|---|---|
-| clip (aiclipsvault) | 完動: LEARN→AFF-FIND→producer→post→bio→MEASURE→REFLECT（`clip_pass.sh:53-95`） | **稼働中だが実投稿停滞**（launchd 6h、runs=4 exit=0。cadence stamp 07-14、ledger 最終更新 07-12 = 直近 pass は新規投稿を生んでいない） | あり（3x own avg gate、imitate/optimize） |
+| clip (aiclipsvault) | 完動: LEARN→AFF-FIND→producer→post→bio→MEASURE→REFLECT（`clip_pass.sh:53-95`） | **稼働中だが実投稿停止**（launchd 6h、runs=4 exit=0。**停止真因 = `~/.cloak/clip-accounts.json:3-58` 全 account 非-ready、aiclipsvault は `poisoned_manual_backup`** — scheduler は回るが投稿できない。cadence stamp 07-14、ledger 07-12） | あり（3x own avg gate、imitate/optimize） |
 | video (earn/video) | 完成（`decide.py:23-46`、`run.sh:55-265`、metrics 実読 `metrics.py:50-81`） | **supervisor 無し**（tmux/healthcheck 現存せず） | あり（metrics summary を Agent が読み script 改善） |
 | faceless-money-factory | 生成のみ。**投稿ブランチは echo のみで未実装**（`run-daily.sh:51-52`） | draft email のみ | topic 重複回避のみ、views feedback 無し |
 | affiliate slideshow | scripts のみ、orchestration/launchd 無し | 無し | 'amplify winners' は prose のみ未実装 |

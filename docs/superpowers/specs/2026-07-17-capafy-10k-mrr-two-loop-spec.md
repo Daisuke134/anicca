@@ -57,6 +57,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | B6 | metrics + 週次 reflect（views/clicks→勝ちフォーマット模倣） | `selfimprove.py` / `metrics.py` + `marketing-self-improve/run.sh` の advisory を自動 action 化 |
 | B7 | conversion attribution: UTM（instagram_bio / x_reply）↔ agent_id ↔ Capafy subscriber join | 新規 |
 | B8 | launchd job `ai.anicca.capafy-marketing-daily`（Loop A と別 job） | plist 新規、instance 分離は `_instance_paths.sh` 方式 |
+| B0 | **前提修理: IG account 復旧**。`~/.cloak/clip-accounts.json:3-58` は全 account 非-ready（aiclipsvault=`poisoned_manual_backup`）= 既存 clip loop も投稿不能。Capafy marketing 用 account を ready にする（既存復旧 or `ig-account-create`+warmer で新規、warmup 7日） | ready account >= 1 が clip-accounts.json に実在 + テスト投稿 1件公開確認 |
 | B9 | アカウント戦略: **phase 1 = 1 account**（"sharing claude skills you can use" 統一テーマ）で 14日運用。skill 別多 account 化は phase 1 の CTR 実測後に判断（IG 新規 account 量産は ban リスク、warmup 7日/acc が必要 — `decide.py:33-46`） | phase 1 の posts が ledger に 14件 |
 
 ## 4. OSS 化（profitable-claude）
@@ -80,7 +81,8 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | 2 | A2 残高補充 + key-health gate | vcsdd |
 | 3 | A4 sales reconcile バグ修理（$9.99 見落とし再発防止） | vcsdd |
 | 4 | A3 max-turns 対策 + A6 self-fix 反復抑止 | vcsdd |
-| 5 | B1-B4 IG marketing 最小 loop | vcsdd |
+| 5 | B0 IG account 復旧（clip loop 停止の真因でもある。warmup 7日 = 最長 lead time なので早期着手） | vcsdd |
+| 5b | B1-B4 IG marketing 最小 loop | vcsdd |
 | 6 | B5 X poster | vcsdd |
 | 7 | B6-B7 self-improve + attribution | vcsdd |
 | 8 | A5 売れ筋 selector | vcsdd |
