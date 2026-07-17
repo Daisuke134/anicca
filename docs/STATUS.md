@@ -280,7 +280,7 @@ x402-sell の payTo(Base `0x3EcCAD24…`)は別チェーン別鍵のため今回
 - ★有料burnは`sol-trade` skillただ1つ★: `sol-trade/run.sh:17`の`SOL_TRADE_MODEL`デフォルト=`openai/gpt-5-mini`。franklin-trading CLIがclawrouterを経由せずx402で直接支払う別系統。franklin1 wallet `8Fpqd…`のcost_log: `gpt-5-mini` 生涯2089件$20.97、直近24h 169件$1.86/日(前回「$2.16/日」はオーダー一致で正)。
 - `hl-trade`は独自の有料モデル呼び出し無し(メインTHINKのtool呼び出しとして無料処理)。`polymarket-trade`は`:8402`共有router経由でfree寄り。
 - franklin2は`gpt-5-mini`を焼いていない: `sol-trade/run.sh:38`のidentity guardで`~/.blockrun`非所有→即skip。有料burnはfranklin1固有。
-- claude-pのTHINK = `free/glm-4.7`(残高枯渇によるfreeフォールバック)。
+- ★claude-pのTHINK = `free/glm-4.7`は誤診断だった(是正 2026-07-17夜)★: 実体は`claude-sonnet-4-6`(Anthropicサブスク、`config.mjs`の`ANICCA_BRAIN_MODEL`デフォルト)。ledgerに出る`free/glm-4.7`は`index.mjs:315`の`currentTier.model`という未使用お飾り変数の表示バグ(`thinkClaudeP()`はこの変数を一切参照しない)。人間資金なので推論コストは$0固定でSonnetを使う設計であり、franklin1/2の自己資金free固定とは対照的。実際に07-17 01:14以降起きていたのはClaude subscription OAuthのheadless失効(keychainロック)で797件連続`wake_error`(`claude_exit_1`、stderr空)が続いていたこと。`AUTH-1`(commit `306e0f73`)が`*-cli.sh`8本のみパッチし、claude-pの唯一のTHINK経路である`runtime/loop/brain.mjs`の`thinkClaudeP()`を漏らしていたのが真因。`CLAUDE-P-1`でgig-cli.sh実証済みのCLIProxyAPI(:8317)fallbackを`thinkClaudeP()`にも移植して修理(anicca commit `91d45919`)。再起動後の実測: ledgerが`wake_error`(`error:"proxy_down"`は`index.mjs`側の別の表示バグ、同commitで是正済み)→`kind:"wake",slot:"report",exit_code:0`に復帰、`daemon.err.log`に`[brain] claude-p said:`成功ログが出力(`claude_exit_1`/OAuthエラー消滅を確認)。詳細・TODOは下記`CLAUDE-P-1`行参照。
 - ★経済的含意★: franklin1の赤字$1.86/日 = 100% `sol-trade`の`gpt-5-mini`課金。そして`sol-trade`はrealized $0(稼がないトレードエンジンに毎日課金) = HLを止めたのと同じ構図。黒字化は「売上を上げる」より先に「このburnを潰す」方が速い可能性がある。→ 下記TODO表 SOL-1。
 
 ### C. x402市場は実需極薄(重要な市場理解) — MKT-1
@@ -318,7 +318,7 @@ Fable が誤って「founder」と呼んだだけ。founder = claude-p = agent-e
 
 | 呼び名 | loop 名(launchd) | HOME フォルダ | x402 wallet | brain |
 |---|---|---|---|---|
-| **claude-p** | ai.anicca.agent-economy-loop | /Users/anicca/.anicca-founder | 0x810f6d61…29c5 | Claude sub |
+| **claude-p** | ai.anicca.agent-economy-loop | /Users/anicca/.anicca-founder | 0x810f6d61…29c5 | Claude sub(`claude-sonnet-4-6`)+ CLAUDE-P-1 CLIProxyAPI fallback |
 | **franklin1** | ai.anicca.franklin-loop | /Users/anicca/.blockrun | 0x3EcCAD24…8749 | free/glm-4.7 |
 | **franklin2** | ai.anicca.franklin2-loop | /Users/anicca/.franklin2-home/.blockrun | 0xe7747Fd8…7ce9 | free/glm-4.7 |
 
@@ -1024,6 +1024,7 @@ funnel_enabled = true
 | **GIG-2** | gigをprofitable-claude repoへ集約移設(現状 ~/anicca と ~/.openclaw に乖離複製が存在) | gigの実体がprofitable-claude 1箇所に統合され、二重管理が消える | 別CCセッション担当。live配線図はTaskList #22に記録済み |
 | **AUTH-1** | machine-wide Claude CLI OAuth死の駆除 — 同一headless失効パターンで停止していた全loopを洗い出し、同一パッチ(`~/.cli-proxy-api-key`→`ANTHROPIC_BASE_URL=:8317`)を適用 | 死亡していた全loopが蘇生し、同パッチが該当script全てに適用される | ★DONE 2026-07-17★ anicca-reddit-loop/anicca-selffix-gig-loop/anicca-selffix-reddit-loopの3体蘇生確認済み。9 scriptにパッチ適用(commit `306e0f73`・`80e9f011`)。anicca-2/anicca-3は起動元未特定で未対応(手動要) |
 | **AUTH-2** | profitable-claude repo内の未パッチ3 script(ceo-run.sh等)にAUTH-1パッチを適用 | 3 scriptとも`ANTHROPIC_BASE_URL` fallbackを持つ | open(現在未起動のため緊急性低) |
+| **CLAUDE-P-1** | 稼ぎ頭claude-pのTHINKがClaude subscription OAuthのheadless失効で07-17 01:14〜797件連続`wake_error`(`claude_exit_1`)。`AUTH-1`が`*-cli.sh`8本のみパッチし唯一のTHINK経路`runtime/loop/brain.mjs`の`thinkClaudeP()`を漏らしていた。gig-cli.sh実証済みのCLIProxyAPI(:8317)fallbackを`thinkClaudeP()`のchildEnvに移植、副次で`index.mjs`の`error:'proxy_down'`ハードコード(実因を隠す表示バグ)も実`err.message`に是正 | 再起動後の新規ledger行が`kind:"wake"`(wake_errorでない)で戻り、`daemon.err.log`に`THINK failed`が出ない | ★DONE 2026-07-17夜★ anicca commit `91d45919`(brain.mjs+index.mjs)、`launchctl kickstart -k`で再起動、**実測**: ledger `{"kind":"wake","slot":"report","exit_code":0}`(wake_id `00MROKBX4ZA43C5EC07C604595`)、`daemon.err.log`に`[brain] claude-p said:`成功ログ、以後`THINK failed`再発なし。model表示の`free/glm-4.7`お飾りバグ(`index.mjs:315`複数箇所)は未修正(リスク>効果でスコープ外、上の「B.」節に診断コメントのみ残す) |
 | **ROTATE-1** | franklin1のSolana秘密鍵漏洩(subagent stdout経由)をrotate。旧`8Fpqd…PCV9`→新`F5SYU…hZ5T`、資金全額移動、全参照(anicca/netlify/SSOT/memory/CLAUDE.md)更新 | 旧鍵残高0、新鍵に全資金、grep で旧アドレスの現役参照0件 | ★DONE 2026-07-17★ commit `0f53d0f7`(anicca)・netlify PR#293→`d4144964`・SSOT+memory `4e59e341b` |
 | **MKT-1** | ★最優先(市場理解)★ x402実需検証 — 競合`agentservices.to`の生涯売上$0.169/12件がfacilitatorテストwalletのみ=実需ゼロと判明。唯一の実需=ottoai鯨bot1体。T8(掲載面拡大)で鯨への発見導線を最優先化 | 鯨bot(または新規の非テストpayer)からの実購入をon-chainで確認 | 未着手、詳細は上の「C. x402市場は実需極薄」節 |
 | **DOC-1** | README書き直し — 新定義(every AIが0から経済的独立、human loopなし)。草案完成 | Dais/adversaryレビューを経て本README差し替え | 草案完・レビュー待ち。`docs/drafts/2026-07-17-anicca-readme-draft.md`(commit `9b6e856`) |
