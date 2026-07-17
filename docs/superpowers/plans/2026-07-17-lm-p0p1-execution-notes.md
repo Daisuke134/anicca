@@ -10,7 +10,7 @@ goal: docs/superpowers/specs/2026-07-17-life-manager-p0p1-goal.md（gmail 送信
 | LM-23 callback_query | in_progress（codex wave1） | — |
 | LM-3 search-before-ask | in_progress（codex wave1） | — |
 | LM-21 rotate | pre-check 開始 | runbook あり |
-| LM-18 staging | pending | — |
+| LM-18 staging | part1 **done**: PR #295 merge 済み、`git ls-tree origin/dev apps/life-call` 実在確認。conflict は .vcsdd/history.jsonl のみ（両保持で解消）。part2 = Railway staging 配線（dashboard、agent 実行中）。staging 方針: **LIFE_RUN_LOOPS=false**（staging から実ユーザーへ二重 call させない）、smoke = /health 200 + boot | ls-tree 出力 |
 | LM-5 出た？v1 | pending（LM-23 後） | — |
 | LM-6 onboarding+Gmail | pending | — |
 | LM-25 Unipile 化+cache | pending | 置換可能性は検証済 |
