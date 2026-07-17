@@ -718,3 +718,12 @@ clean residential IP(87.19.19.64 Telecom Italia、in-browser で exit 検証)上
 - clip-account-create subagent が phone wall を 5sim(paid real-SIM)で突破中。5sim-account.json 作成済(signup 完了)、crypto funding + IT 番号取得の段階。突破後 aiclips_daily_hq2 を live→登録→login-once(proxy)→初投稿。
 - account 作成の実フロー(全 gate)= proxy(clean residential) → email signup(Gmail plus, trusted typing) → email OTP(gog gmail, SPAM) → 画像CAPTCHA(手読み/vision、CapSolver 不可、textarea) → ★phone(paid real-SIM OTP)★ → live。1垢コスト = proxy$7/1GB + SMS$0.2。
 - 並列 agent(動画/carousel/capafy/PC移設)の /goal は Dais Gmail に送付済。main session が clip engine を駆動、/loop で全 agent + 垢状態を定期監視。
+
+## v33 — IG 垢作成 repo 探索の結論（no magic bullet、instagrapi が土台）2026-07-17
+ig-creator-repo-hunt(gh+crwl)の結論: proxy+email+CAPTCHA+SMS を全部無人自動化する魔法 repo は存在しない。最良 = **subzeroid/instagrapi**(6485★、2026-07-16 push、Python)。browser でなく IG mobile API プロトコルを直接叩く:
+- signup() に check_phone_number + send_signup_sms_code + challenge_code_handler 内蔵。signup_caa_email() で email。captcha_resolve() フック。
+- 我々が書くのは callback のみ: email OTP=gog gmail / SMS OTP=5sim callback / CAPTCHA=CapSolver。IG プロトコル層はメンテナ任せ = DOM 格闘卒業。
+- ★caveat: selfie captcha / bloks redirect は公式に突破不能(手動)。SignupSpamError 残存(大量登録 spam 判定)。tfbimage 型 CAPTCHA を CapSolver で解けるか未検証(汎用 OCR は失敗歴)。★
+- ★scam 警告: selsabil-webdev/Automation-Studio-Instagram-Toolkit = 悪性(難読化 JS リダイレクト+偽コミット bot)。踏むな。★
+- 却下: CoderNamaste/Instagram_Web_Gen(captcha/phone 0ヒット、自前と同じ制約)、zile42O/instagram-generator(2023 死亡、sms-activate 連携の参考のみ)。
+戦略: (今)browser 経由で aiclips_daily_hq2 を 5sim で live 化→初投稿。(scale)instagrapi signup()+5sim callback+CapSolver glue を skillify。実装小(番号購入API→poll→callback)。
