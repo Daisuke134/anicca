@@ -112,6 +112,45 @@ app.get("/llms.txt", (_req, res) =>
     ...PRODUCTS.map((p) => `GET ${PUBLIC_URL || ""}${p.example}  (${p.price}) — ${p.description}`),
   ].join("\n")));
 
+// GET-with-query param schemas per route, for the OpenAPI discovery doc below (x402scan requires
+// an input schema per operation or the route is "non-invocable" and skipped from registration —
+// see x402scan.com/discovery/spec). Query params only (no request body: all our routes are GET).
+const QUERY_PARAMS = {
+  "/research": [{ name: "q", required: true, type: "string", description: "topic to research" }],
+  "/compound-interest": [
+    { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
+  ],
+  "/calc": [{ name: "expr", required: true, type: "string", description: "arithmetic expression" }],
+  "/json-flatten": [{ name: "json", required: true, type: "string", description: "URL-encoded JSON" }],
+  "/dns-lookup": [{ name: "domain", required: true, type: "string" }, { name: "type", required: false, type: "string" }],
+  "/whois": [{ name: "domain", required: true, type: "string" }],
+  "/stock-quote": [{ name: "symbol", required: true, type: "string" }],
+  "/funding-rates": [{ name: "symbol", required: false, type: "string" }],
+};
+// Discovery spec (x402scan.com/discovery/spec): canonical machine-readable contract for buyer
+// agents; also required to pass SIWX-gated registration (POST /api/x402/registry/register-origin).
+app.get("/openapi.json", (_req, res) =>
+  res.json({
+    openapi: "3.1.0",
+    info: {
+      title: "Anicca x402 seller", version: "1",
+      "x-guidance": "Deterministic pay-per-call primitives + web research, priced in USDC on Base via x402. GET each path with its query params; a 402 challenge carries the payment requirements, pay it, retry with X-PAYMENT.",
+    },
+    paths: Object.fromEntries(PRODUCTS.map((p) => [p.path, {
+      get: {
+        operationId: p.path.slice(1).replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
+        summary: p.what, description: p.description,
+        parameters: (QUERY_PARAMS[p.path] || []).map((q) => ({
+          name: q.name, in: "query", required: q.required, description: q.description,
+          schema: { type: q.type },
+        })),
+        "x-payment-info": { price: { mode: "fixed", currency: "USD", amount: p.price.replace("$", "") }, protocols: [{ x402: {} }] },
+        responses: { 200: { description: "OK" }, 402: { description: "Payment Required" } },
+      },
+    }])),
+  }));
+
 app.use(paymentMiddleware(payTo(), routes, facilitator));
 
 // sales log — INV-SETTLE: a request is only a SALE once settle() succeeds on-chain, never on
