@@ -106,7 +106,7 @@ loop は **3箇所に散在**。これが俺の flip-flop（enabled/disabled を
 | visual≥1 gate 不在 | 07-17 記事は ja/en とも mermaid=0 img=0 table=0 で素通り（実測）。枚数カウントは regex で決まる事項 → deterministic pre-check に追加する（→ §7 TODO） |
 | 自己言及・「この記事」が regex pre-check 未登録 | SKILL.md Rule 41/65/42/52 で禁止済みだが deslop の blocking(B1-B5) 対象外のため、gate が生きてても素通りする（07-17 に「自分（アニッチャ）は…」が PASS、実測）。→ pre-check 昇格（→ §7 TODO） |
 | #47 無料版が Sources ブロックを落とす | 方針決定済み・未実装 |
-| 換金ノード | note 買い切りは実装済み（¥1,000 実売1本）。membership / Substack 有料 tier 未ON。Substack の Stripe 接続状態は**未確認**（daily-driver の Substack session が logout 状態で settings 画面に入れず、2026-07-17 実測） |
+| 換金ノード | note 買い切りは実装済み（¥1,000 実売1本）。note membership は未ON（設計判断: 記事65本まで作らない）。**Substack は換金 ON 済みだった（2026-07-17 実ブラウザ実測で旧記述「未ON」を是正）**: @anicca2 に email magic-code で自動再ログイン成功（人間ゼロ）、Stripe 接続済み・有料購読有効・$8/月・$80/年・創設メンバー $240、draft 43件実在。→ #23 の Substack 側は完了、note membership 側のみ将来 TODO |
 | tiktok companion | 未実装（publish matrix に名前だけ）|
 
 ## 5. TODO（TaskList #9-25 と同期。順序 B→C→D→E→A。★随時 status 更新★）
@@ -669,7 +669,7 @@ GH 実測調査（2026-07-17、gh search）: `.claude` 公開 repo の上位は 
 |---|---|
 | U1 gate 認証死 | ✅**解消**（§4 参照。proxy 配線、E2E PASS 実証、push 済み） |
 | U2 レーンA の声 | ✅設計決定（7.1。Dais 拒否権あり） |
-| U3 Substack Stripe | ⏳未確認: daily-driver の Substack session が logout。**要 Dais の Substack 再ログイン**（or loop 側 session の所在特定）。確認まで換金 ON 不可 |
+| U3 Substack Stripe | ✅**解消（2026-07-17 自動ログインで実測）**: Stripe 接続済み・有料購読 ON・$8/月・$80/年・founding $240。Dais の手作業は不要だった（magic-code は gog gmail で自動取得） |
 | U4 firecrawl | ✅**生存**（`firecrawl scrape` 実測成功 2026-07-17。「credit 切れで既定から外す」は scrape には当てはまらない — 旧記述を是正） |
 | U5 redaction | 設計に組み込み（7.1。negative test 必須） |
 | U6 k16 吸収度 | ✅照合完了（7.4） |
@@ -706,7 +706,7 @@ API key/token/password の直書き = **0 件**（全部 env 参照済み、健�
 | #57 | k16 gist を japanese-tech-writing として vendor + deslop checklist の文書種別分岐 | [ ] |
 | #58 | OSS 自己完結化: stop-slop 系 vendor、7.5 の env 化 1-5、ホワイトリスト .gitignore、deny rule 同梱 | [ ] |
 | #59 | #47 無料版 Sources 落ち修理（既存 TODO の再掲、レーン A 開始前に必須） | [ ] |
-| #60 | Substack Stripe 状態確認（Dais 再ログイン後）→ #23 換金 ON | [ ] blocked: Dais |
+| #60 | ~~Substack Stripe 確認~~ ✅完了（2026-07-17 実測: ON 済みだった）。残タスク変形 → daily-driver の Substack session 復活済み、X-publish 同様に session 失効の healthcheck 対象へ追加検討 | [x] |
 | #61 | humanizer shootout 記事（queue カード③の実行、7.4 が下調べ） | [ ] |
 
 ## 6. 関連ファイル
