@@ -12,17 +12,23 @@
 # guard saw that stray process as "already up" and never booted franklin1's own seller, so a
 # franklin1 x402_sell wake silently reported success while never actually exposing franklin1's OWN
 # payTo. A dedicated port + dedicated KeepAlive job removes the collision permanently.
+#
+# WHY the URL changed again (T2b-6, 2026-07-17): Tailscale Funnel only listens on 443/8443/10000
+# (official), so ":10001" below was never externally reachable — it just silently no-op'd
+# `tailscale funnel --https=10001`, and this process kept advertising a dead URL forever. tsbridge
+# (docs/STATUS.md T2b-2/T2b-3, launchd ai.anicca.tsbridge) now gives franklin1 its own tsnet node
+# with its own :443 at https://franklin1.tail7a0ba4.ts.net, reverse-proxying to this same :8414 —
+# so the fix is just pointing this seller's advertised URL at that node instead of running a second,
+# broken tunnel of its own.
 set -u
 DIR=/Users/anicca/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as the other boot scripts) — never echoed
 set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
 export X402_PAYTO="0x3EcCAD24794ca298D25378E9902A251322ea8749"
-export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:10001}"
+export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://franklin1.tail7a0ba4.ts.net}"
 export X402_NETWORK="base"
 export X402_PRICE="\$0.003"
 export X402_PORT="8414"
 PIDS="$(lsof -ti tcp:8414 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>/dev/null || true
 sleep 1
-# ensure the Tailscale Funnel https port points at :8414 (idempotent; persists across reboots)
-/opt/homebrew/bin/tailscale funnel --bg --https=10001 8414 >/dev/null 2>&1 || true
 exec /usr/bin/env node "$DIR/serve.mjs"
