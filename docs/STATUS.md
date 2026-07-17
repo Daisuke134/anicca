@@ -548,7 +548,7 @@ done
 
 | instance | wallet | chain | address | 鍵 | 使えるか |
 |---|---|---|---|---|---|
-| **franklin1** | sol-main | solana | `8Fpqd…PCV9` | **YES** | **$12.21 USDC + 0.040 SOL を使える** |
+| **franklin1** | sol-main | solana | `F5SY…hZ5T`（2026-07-17 rotate。旧`8Fpqd…PCV9`は鍵漏洩のため rotate、資金は全額 on-chain 移動済み、旧鍵は revoke） | **YES** | **10.386698 USDC + 0.039875 SOL を使える** |
 | franklin1 | polymarket | polygon | `0xda4b6E34…` | YES | — |
 | franklin1 | ★`0x3EcCAD24…`(x402 受取先)★ | base | — | **wallets.json に無い** | **Base $4.48 は受取専用 = 動かせない** |
 | **franklin2** | `.solana-session` | solana | **`HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX`** | **YES** | **鍵は在る**（`wallets.json` が無いだけ。台帳の不在 ≠ 鍵の不在） |

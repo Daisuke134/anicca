@@ -18,7 +18,7 @@ The loop (`~/anicca/runtime/loop`) runs on the founder body `~/.anicca-founder`.
 ### 🤖 SELF-FUNDED AI — Franklin (BlockRunAI/Franklin-Trading), Solana
 | Wallet | Address | Key source | Role |
 |---|---|---|---|
-| **Franklin (self-funded)** | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` | `~/.blockrun/` (franklin-trading CLI) | self-funded trader: pays its OWN x402 model calls + trades from THIS wallet |
+| **Franklin (self-funded)** | `F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T` (rotated 2026-07-17 — old `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` leaked, all funds moved on-chain, now revoked) | `~/.blockrun/.solana-session` (franklin-trading CLI) | self-funded trader: pays its OWN x402 model calls + trades from THIS wallet |
 
 ## Live balances (snapshot 2026-07-04 ~07:40 JST)
 
