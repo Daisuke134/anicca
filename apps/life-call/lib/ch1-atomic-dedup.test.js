@@ -1,9 +1,18 @@
-// C-H1 (HARD-1): atomic claim helpers for ask + travel dedup (race-safe like wake).
+// C-H1 (HARD-1): atomic claim helpers for ask + travel + wake dedup (race-safe).
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
 const { claimAsk, unclaimAsk } = require("./ask.js");
 const { claimTravel, unclaimTravel } = require("./travel.js");
+process.env.LM_CALL_SECRET = process.env.LM_CALL_SECRET || "unit_secret"; // scheduler.js require-time no-op guard
+// claimWake/releaseWake read SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY from process.env directly
+// (unlike claimTravel/claimAsk, which take supaUrl/supaKey as explicit args) — must be set for the
+// SUPA() guard in scheduler.js to proceed past its "not configured → no-op" early return.
+process.env.SUPABASE_URL = process.env.SUPABASE_URL || "http://s";
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "k";
+const {
+  claimWake, releaseWake, isLowBalanceError, shouldAlertLowBalance, maybeAlertLowBalance, LOW_BALANCE_ALERT_COOLDOWN_MS,
+} = require("../scheduler.js");
 
 // Stub global.fetch to return a sequence of HTTP statuses, recording each call.
 function stubFetch(statuses) {
@@ -146,4 +155,108 @@ test("[INTEGRATION] re-running fillTravel does NOT double-create — 2nd run's c
   const blocks2 = cal2._created.filter((b) => /\[Travel\]/.test(b.summary || ""));
   assert.strictEqual(blocks2.length, 0, "2nd run: claims 409 → no double-create");
   s.restore();
+});
+
+// ── issue#10: releaseWake — a dial failure must not permanently burn the (uid,event,level) slot ──
+test("claimWake: 201 → true (fresh), 409 → false (already called); POSTs lm_wake_log", async () => {
+  let s = stubFetch([201]);
+  assert.strictEqual(await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10"), true);
+  assert.match(s.calls[0].url, /lm_wake_log/);
+  assert.strictEqual(s.calls[0].method, "POST");
+  s.restore();
+  s = stubFetch([409]);
+  assert.strictEqual(await claimWake("u1", "u1|2026-07-17T09:00:00+09:00|10"), false);
+  s.restore();
+});
+
+test("releaseWake DELETEs the exact (uid,event_key) row (mirrors unclaimTravel)", async () => {
+  const s = stubFetch([200]);
+  await releaseWake("u1", "u1|2026-07-17T09:00:00+09:00|10");
+  assert.strictEqual(s.calls[0].method, "DELETE");
+  assert.match(s.calls[0].url, /lm_wake_log\?uid=eq\.u1&event_key=eq\.u1%7C2026-07-17T09%3A00%3A00%2B09%3A00%7C10/);
+  s.restore();
+});
+
+test("[INTEGRATION] claim→dial-fail→release→re-claim: a failed dial is retryable on the next tick", async () => {
+  const eventKey = "u1|2026-07-17T09:00:00+09:00|10";
+  // 1st tick: claim succeeds (201) — simulates claimWake before a placeCall that then fails.
+  let s = stubFetch([201]);
+  assert.strictEqual(await claimWake("u1", eventKey), true, "1st claim succeeds");
+  s.restore();
+  // dial failed → release the claim (as wakeUserOnce now does on !res.ok).
+  s = stubFetch([200]);
+  await releaseWake("u1", eventKey);
+  assert.strictEqual(s.calls[0].method, "DELETE", "release issues a DELETE");
+  s.restore();
+  // 2nd tick (after balance topped up): claim succeeds again because the row was released — this is
+  // the exact bug this fix closes (without releaseWake, this 2nd claim would 409 forever).
+  s = stubFetch([201]);
+  assert.strictEqual(await claimWake("u1", eventKey), true, "released claim can be re-claimed next tick");
+  s.restore();
+});
+
+// ── issue#10: low-balance admin Telegram alert, throttled to 1/6h ────────────────────────────────
+test("isLowBalanceError matches the exact dial.js message, ignores unrelated dial errors", () => {
+  assert.strictEqual(isLowBalanceError("telnyx balance too low ($0.43)"), true);
+  assert.strictEqual(isLowBalanceError("telnyx env missing (API/CONN/FROM)"), false);
+  assert.strictEqual(isLowBalanceError("no call_control_id"), false);
+  assert.strictEqual(isLowBalanceError(""), false);
+});
+
+test("shouldAlertLowBalance: fires once, then throttled for LOW_BALANCE_ALERT_COOLDOWN_MS", () => {
+  const msg = "telnyx balance too low ($0.43)";
+  const lastAlert = 10_000; // an arbitrary prior alert time (NOT 0 — 0 is the "never alerted" sentinel
+  // in scheduler.js's lastLowBalanceAlertMs; testing the boundary against a real prior alert timestamp
+  // isolates the throttle-window math from that sentinel).
+  assert.strictEqual(
+    shouldAlertLowBalance(msg, lastAlert + 1000, lastAlert), false, "1s after the last alert — inside the 6h cooldown"
+  );
+  assert.strictEqual(
+    shouldAlertLowBalance(msg, lastAlert + LOW_BALANCE_ALERT_COOLDOWN_MS - 1, lastAlert), false, "1ms before cooldown elapses"
+  );
+  assert.strictEqual(
+    shouldAlertLowBalance(msg, lastAlert + LOW_BALANCE_ALERT_COOLDOWN_MS, lastAlert), true, "exactly at cooldown boundary fires again"
+  );
+  assert.strictEqual(
+    shouldAlertLowBalance(msg, lastAlert + LOW_BALANCE_ALERT_COOLDOWN_MS, lastAlert) &&
+    !shouldAlertLowBalance("no call_control_id", lastAlert + LOW_BALANCE_ALERT_COOLDOWN_MS, lastAlert),
+    true, "non-balance error never alerts even past the cooldown"
+  );
+  // The real "never alerted yet" case: module state starts lastLowBalanceAlertMs=0, and Date.now()
+  // in production is always astronomically larger than LOW_BALANCE_ALERT_COOLDOWN_MS past 0.
+  assert.strictEqual(
+    shouldAlertLowBalance(msg, LOW_BALANCE_ALERT_COOLDOWN_MS + 1, 0), true, "first-ever alert (sentinel lastAlert=0) fires once enough time has passed"
+  );
+});
+
+// NOTE: lastLowBalanceAlertMs is module-level state in scheduler.js (in-memory throttle, single
+// process — by design, see maybeAlertLowBalance). It persists ACROSS tests in this file, so each
+// test below uses a `nowMs` far (>>6h) from any previous test's `nowMs` to guarantee it lands on the
+// intended branch regardless of run order, rather than accidentally passing because of the throttle.
+test("maybeAlertLowBalance: no LM_ADMIN_TELEGRAM_CHAT_ID configured → logs, does not throw, does not fetch", async () => {
+  const origToken = process.env.LM_TELEGRAM_BOT_TOKEN, origChat = process.env.LM_ADMIN_TELEGRAM_CHAT_ID;
+  delete process.env.LM_TELEGRAM_BOT_TOKEN; delete process.env.LM_ADMIN_TELEGRAM_CHAT_ID;
+  const s = stubFetch([200]);
+  await assert.doesNotReject(maybeAlertLowBalance("telnyx balance too low ($0.10)", 1000 * 3600 * 1000));
+  assert.strictEqual(s.calls.length, 0, "no admin chat configured → never calls the Telegram API");
+  s.restore();
+  if (origToken !== undefined) process.env.LM_TELEGRAM_BOT_TOKEN = origToken;
+  if (origChat !== undefined) process.env.LM_ADMIN_TELEGRAM_CHAT_ID = origChat;
+});
+
+test("maybeAlertLowBalance: with admin chat configured, sends via the Telegram Bot API and respects the throttle", async () => {
+  const origToken = process.env.LM_TELEGRAM_BOT_TOKEN, origChat = process.env.LM_ADMIN_TELEGRAM_CHAT_ID;
+  process.env.LM_TELEGRAM_BOT_TOKEN = "test_token";
+  process.env.LM_ADMIN_TELEGRAM_CHAT_ID = "12345";
+  const s = stubFetch([200, 200]);
+  const t0 = 2000 * 3600 * 1000; // far past the previous test's nowMs → guaranteed to fire
+  await maybeAlertLowBalance("telnyx balance too low ($0.10)", t0);
+  assert.strictEqual(s.calls.length, 1, "first low-balance failure sends an alert");
+  assert.match(s.calls[0].url, /api\.telegram\.org\/bottest_token\/sendMessage/);
+  assert.ok(s.calls[0].body.includes('"chat_id":"12345"'));
+  await maybeAlertLowBalance("telnyx balance too low ($0.05)", t0 + 1000); // 1s later — still throttled
+  assert.strictEqual(s.calls.length, 1, "a second failure inside the 6h window does not send another alert");
+  s.restore();
+  if (origToken !== undefined) process.env.LM_TELEGRAM_BOT_TOKEN = origToken; else delete process.env.LM_TELEGRAM_BOT_TOKEN;
+  if (origChat !== undefined) process.env.LM_ADMIN_TELEGRAM_CHAT_ID = origChat; else delete process.env.LM_ADMIN_TELEGRAM_CHAT_ID;
 });

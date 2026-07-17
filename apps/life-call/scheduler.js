@@ -15,6 +15,7 @@ const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
+const { sendMessage } = require("./lib/telegram.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -62,6 +63,48 @@ async function claimWake(uid, eventKey) {
     body: JSON.stringify({ uid, event_key: eventKey }),
   });
   return r.status === 201; // 201 = inserted (first time); 409 = duplicate (already called)
+}
+
+// Release a claim when placeCall failed, so a LATER tick retries while the event is still in its
+// window (claim→dial→unclaim-on-failure — mirrors unclaimTravel in lib/travel.js). Without this, a
+// dial failure (e.g. Telnyx balance too low) permanently burns the (uid,event,level) slot: the row
+// stays in lm_wake_log forever and claimWake 409s on every future tick even after the fix lands.
+async function releaseWake(uid, eventKey) {
+  const { url, key } = SUPA();
+  if (!url || !key) return;
+  await fetch(`${url}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}`, {
+    method: "DELETE",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: "return=minimal" },
+  }).catch(() => {});
+}
+
+// Low-balance alert (issue#10 root cause: pre-event calls silently never fire when the Telnyx
+// balance drops below the $0.50 preflight in lib/dial.js). Ping the admin's Telegram so the balance
+// gets topped up instead of the gap going unnoticed. isLowBalanceError/shouldAlertLowBalance are pure
+// (matches the testCallAllowed(uid, nowMs) pattern in server.js) so the throttle is unit-testable
+// without stubbing fetch/Date. Best-effort like dunningNotify in server.js — NEVER throws.
+const LOW_BALANCE_ALERT_COOLDOWN_MS = 6 * 60 * 60 * 1000; // at most 1 alert per 6h
+let lastLowBalanceAlertMs = 0;
+
+function isLowBalanceError(errorMsg) {
+  return /balance too low/i.test(String(errorMsg || ""));
+}
+
+function shouldAlertLowBalance(errorMsg, nowMs, lastAlertMs) {
+  return isLowBalanceError(errorMsg) && nowMs - lastAlertMs >= LOW_BALANCE_ALERT_COOLDOWN_MS;
+}
+
+async function maybeAlertLowBalance(errorMsg, nowMs = Date.now()) {
+  if (!shouldAlertLowBalance(errorMsg, nowMs, lastLowBalanceAlertMs)) return;
+  lastLowBalanceAlertMs = nowMs;
+  const token = process.env.LM_TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.LM_ADMIN_TELEGRAM_CHAT_ID;
+  if (!token || !chatId) {
+    console.error(`[scheduler] LOW BALANCE (no LM_ADMIN_TELEGRAM_CHAT_ID configured): ${errorMsg}`);
+    return;
+  }
+  await sendMessage(token, chatId, `⚠️ Telnyx balance too low — Life Manager wake calls are NOT firing.\n${errorMsg}`)
+    .catch((e) => console.error("[scheduler] low-balance alert send failed", e && e.message));
 }
 
 // Pick the call language from the user's phone number: +81 (Japan) → Japanese, everyone else → English
@@ -123,11 +166,20 @@ async function wakeUserOnce(u, nowMs) {
       const fresh = await claimWake(u.uid, eventKey);
       if (!fresh) continue; // already called for this (event, level)
       const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u), u.name);
-      const res = await placeCall({ to: u.phone, streamUrl });
+      let res;
+      try {
+        res = await placeCall({ to: u.phone, streamUrl });
+      } catch (e) {
+        res = { ok: false, error: String((e && e.message) || e) };
+      }
       if (res.ok) {
         console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
       } else {
         console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
+        // Don't burn the retry: release the claim so the next 60s tick tries again while the event
+        // is still in its window (the claim-before-dial order stays intact as the dedup guard).
+        await releaseWake(u.uid, eventKey);
+        await maybeAlertLowBalance(res.error);
       }
     }
   }
@@ -302,4 +354,8 @@ module.exports = {
   getUserByUid,
   // utilities used by server.js and tests
   isHelperBlock, buildStreamUrl, langForPhone, langForUser,
+  // wake claim ledger (C-H1 dedup) — claim before dial, release on dial failure so a retry can fire
+  claimWake, releaseWake,
+  // low-balance admin alert (issue#10): pure decision fns + the side-effecting sender
+  isLowBalanceError, shouldAlertLowBalance, maybeAlertLowBalance, LOW_BALANCE_ALERT_COOLDOWN_MS,
 };
