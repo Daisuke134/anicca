@@ -188,17 +188,25 @@ def _has_instagram_sessionid(cookies):
     )
 
 
-def _logged_out_for(url, final, cookies):
+def _logged_out_for(url, final, cookies, page_text=""):
     """Decide logged_out for one keepalive page.
 
     - URL redirected to /login /signin etc -> logged_out (works for coconala and most sites).
     - instagram.com specifically -> ALSO require a live sessionid cookie, since IG does not
       redirect a half-dead session to /login. OR'd with the redirect check per spec: either
       signal alone is enough to declare logged_out on instagram.com.
-    - non-instagram domains: sessionid is instagram-specific, so only the redirect check applies.
+    - x.com specifically -> ALSO check the rendered page text for "Something went wrong", the
+      generic error X's client renders when a stale/invalidated auth_token cookie is present —
+      it does NOT redirect to /login (a hard-crashed React tree just sits on the current URL),
+      so URL-redirect detection alone false-negatives here exactly like the Instagram case
+      (real incident 2026-07-17: keepalive reported logged_out=false while a live screenshot
+      showed "Something went wrong" on x.com/home -- this cost a full manual re-diagnosis).
+    - non-instagram/non-x domains: only the redirect check applies.
     """
     redirected = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
     if "instagram.com" in url.lower() and not _has_instagram_sessionid(cookies):
+        return True
+    if "x.com" in url.lower() and "something went wrong" in (page_text or "").lower():
         return True
     return redirected
 
@@ -206,8 +214,9 @@ def _logged_out_for(url, final, cookies):
 async def _keepalive(urls):
     """Open each url in its own tab, wait for it to settle, and see where it ended up.
     A redirect to a /login or /signin URL means the server dropped the session. For
-    instagram.com pages, also check the live sessionid cookie (see _logged_out_for) —
-    IG does not always redirect a half-dead session to /login."""
+    instagram.com pages, also check the live sessionid cookie; for x.com pages, also read the
+    rendered page text for a "Something went wrong" crash state (see _logged_out_for) — neither
+    site reliably redirects a half-dead session to /login."""
     results = []
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         mid = [0]
@@ -238,7 +247,13 @@ async def _keepalive(urls):
             if "instagram.com" in url.lower():
                 cookies_res = await call("Storage.getCookies", {})
                 cookies = cookies_res.get("cookies", [])
-            logged_out = _logged_out_for(url, final, cookies)
+            page_text = ""
+            if "x.com" in url.lower():
+                r = await call("Runtime.evaluate",
+                               {"expression": "document.body ? document.body.innerText : ''",
+                                "returnByValue": True}, sess=sess)
+                page_text = r.get("result", {}).get("value", "") or ""
+            logged_out = _logged_out_for(url, final, cookies, page_text)
             results.append({"url": url, "final": final, "logged_out": logged_out})
             await call("Target.closeTarget", {"targetId": tid})
     return results
