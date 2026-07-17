@@ -746,6 +746,12 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 **追記（2026-07-17、team-lead裁定2件、builder-authfix対応）**:
 1. **test_article_daily_contract.sh の --mode go アサーション是正**: 「--mode go 文字列の完全禁止」という判定は誤りだった（Dais決定#41がAUTOPUBLISH=1ガード内でのSubstack live publishを既に承認済み）。正しい契約 = 「ガードの存在が政策」であり文字列の不在ではない。アサーションを`if [ "$AUTOPUBLISH" = "1" ]; then ... fi`ブロックを除去してから`--mode go`の非存在をチェックする方式に修正。commit: profitable-claude(main) `ea925cd`
 2. **config/loop-registry.json の article エントリ**: `status: "external"`のまま維持（team-lead裁定: article-daily.sh自身が「launchd is the ONLY scheduler」と定めており、`live`化するとbin/start-all.shとlaunchdの二重スケジューラ衝突を招く）。`skill_dir`（実パス反映、schema上は情報用途のみ）と`notes`（explorer既存の慣習に倣い、外部stubのまま維持する理由を明記）を追加。`runtime`は`schema_checks.py`のPROP-005が文字列`"external-anicca"`を厳密ピン留めしているため、より正確な文字列への変更を一度試みたが schema テストを壊すことが判明し、`external-anicca`のまま維持（説明は`notes`側に集約）。両方とも `tests/ceo/test_registry_schema.py`(29/29)・`test_registry_last_observed_at.py`(6/6)・`test_start_all_and_status.sh`(5/5)で実測確認。commit: profitable-claude(main) `ea925cd`
+
+**追記（2026-07-17、⑤最終項目、builder-authfix）: render-verify STEP 6.5 + self-fix STEP 0 配線完了**。render-verify-draft.sh（下書き編集画面のfull-page screenshot→フレッシュvision judge）とarticle-self-fix.sh（自律Sonnet devをspawnして根本原因を直させる）は commit `1eac5cf` で部品として完成・双方向検証済みだったが、article-daily.sh自身のpassからは一度も呼ばれていなかった（＝実配線が本タスクの中身）。
+- **STEP 6.5（STEP 6とSTEP 7の間に新設）**: editor URLを持つ各platform（note/zenn/substack-ja/substack-en/devto、Xは対象外）についてSTEP 5のdraft URLに対しrender-verify-draft.shを実行。verdict:FAILはblocking（STEP 4.5と同じ規律 — スクリプトクラッシュも「今日はこのplatformだけダメだった」扱いにしない）。FAILなら下書き内容または根本のスクリプトバグを自分で直して再実行、最大3回試行。それでもFAILならarticle-self-fix.shを非blockingでspawnし、そのplatformはSTEP 8で正直にfailed報告して次のplatformへ進む（1つのplatformで全passを止めない、STEP 8の既存哲学を維持）。
+- **STEP 0（existence-guarded、STEP 1より前に新設）**: `~/.openclaw/state/.self-fix-article-writer.result`（article-self-fix.sh自身が書き込む実ファイル）が存在すれば読む。FAILなら前回解決できなかった不具合のクラスに今日のpassでも注意を払う（passを止める理由にはしない）。SUCCESS/RUNNINGはアクション不要。
+- 検証: bash -n（フルファイル）+ PROMPT分離レンダリング抽出でSTEP 0..10のヘッダ順序が正しく維持されていることを実測確認（STEP 4.5/6.5含む）。tests/art/test_render_verify_self_fix_wiring.sh 12/12実測（構造検証、article-daily.shのPROMPTが実本番エージェント指示のため、このディレクトリ既存の慣習を踏襲）。`tests/run-all.sh` 119/120（残1件は既存debtのtest_vendor_dirs_referenced.sh、無関係）。
+- commit: profitable-claude(main) `cb02fdd`
 - **全体テスト状態（今回の一連の対応の最終形）**: `tests/run-all.sh` 118/119。残1件は`test_vendor_dirs_referenced.sh`（life-manager-cli.shのSTARTUPプロンプトにベンダーツール名の言及が欠けているコンテンツギャップ、round1以前からの既存debt、今回の一連の変更とは無関係）。
 
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
