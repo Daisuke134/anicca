@@ -17,18 +17,20 @@ log(){ echo "$(date '+%F %T') session_vault_tick: $*" >&2; }
 log "daily-driver: dump"
 python3 "$V" dump || true
 log "daily-driver: keepalive"
-# x.com + zenn.dev added task #75 (2026-07-17): the article-writer loop's X session died
-# silently for hours on 2026-07-17 because nothing warmed/watched it here -- only
-# coconala+instagram were on this list. Checking zenn.dev/dashboard in the same pass found ITS
-# session was ALSO already dead (a second, previously unnoticed incident) -- both platforms are
-# publish targets for this same loop. x.com/home relies on the "Something went wrong"
-# content-check fix; zenn.dev/dashboard relies on the /enter-route redirect fix (both in
-# session_vault.py, same task).
+# x.com added task #75 (2026-07-17): the article-writer loop's X session died silently for
+# hours because nothing warmed/watched it here -- only coconala+instagram were on this list.
+# x.com/home relies on the "Something went wrong" content-check fix in session_vault.py.
+#
+# zenn.dev was ALSO added here during task #75, then REMOVED again in task #76 (same day):
+# Zenn publish never uses a browser session at all -- it is a plain `git push` to
+# Daisuke134/zenn-articles (SKILL.md "ZENN ONE-SHOT PUBLISH", 2026-06-24), so there is no
+# real session to warm or watch, and keepalive's "logged_out" check was reporting a permanent
+# false alarm (zenn.dev/dashboard needs a login that this loop never uses or needs). Read the
+# base skill's publish mechanism BEFORE adding a platform to this list.
 KA_OUT="$(python3 "$V" keepalive \
   "https://coconala.com/mypage/dashboard" \
   "https://www.instagram.com/" \
-  "https://x.com/home" \
-  "https://zenn.dev/dashboard" || true)"
+  "https://x.com/home" || true)"
 echo "$KA_OUT"
 # alert immediately on any logged_out platform instead of only being discovered hours later by
 # the next real business pass (exactly what happened with X today) -- never block/exit on this,
