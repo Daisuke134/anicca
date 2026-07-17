@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "updated_ts": "2026-07-12T00:00:00Z",
+  "max_apply_per_pass": 12,
+  "improve_cadence_passes": 4,
+  "priority_categories": [
+    "PPT/スライド",
+    "資料作成",
+    "記事/blog",
+    "データ入力/Excel",
+    "文字起こし",
+    "コード",
+    "LP/ランディングページ"
+  ],
+  "skip_categories": [],
+  "price_defaults": {
+    "PPT/スライド": 8000,
+    "資料作成": 10000,
+    "記事/blog": 5000,
+    "データ入力/Excel": 4000,
+    "文字起こし": 4000,
+    "コード": 15000,
+    "LP/ランディングページ": 20000
+  },
+  "proposal_templates": {
+    "PPT/スライド": "ご依頼拝見しました。プレゼン資料作成が得意で、これまでに複数のビジネス用スライドを制作してきました。ご要望に合わせた構成・デザインでサンプルを添付しています。ご要件をさらに詳しくお聞かせください。",
+    "資料作成": "ご依頼ありがとうございます。資料作成・文書整理を専門とし、明確・読みやすい成果物をお届けします。サンプル添付しています。",
+    "記事/blog": "SEOを意識したわかりやすい記事・ブログ執筆が得意です。ご要望のトーンやキーワードに合わせてご提案します。サンプルを添付しています。",
+    "データ入力/Excel": "正確・迅速なデータ入力・Excel整理が得意です。大量データでも対応可能。サンプルファイルを添付しています。",
+    "文字起こし": "音声・動画の文字起こし対応可能です。正確な日本語テキストをお届けします。",
+    "コード": "プログラミング・自動化スクリプト作成が得意です。要件をお聞かせください。サンプルコードを添付しています。",
+    "LP/ランディングページ": "CVRを意識したLP制作が得意です。ご要件に合わせたHTML/CSSサンプルを添付しています。"
+  },
+  "feasibility_rules": {
+    "ai_doable": "可=browser+computerで完結する仕事のみ対象。文章/コード/デザイン下書き(スライド/LP/サムネ)/資料作成(Excel等)/チャット・メッセージ対応/テキスト鑑定系コンテンツ/文字起こし・要約/翻訳。",
+    "ai_infeasible": "不可=電話対応・電話/SMSログインが必要な作業・SMS認証必須の広告アカウント運用・実地訪問・国家資格必須の業務・音声録音・顔出し・物理制作。"
+  },
+  "never_refuse_policy": "合法かつ実行可能な顧客依頼は絶対に断らない・軽視しない。断ってよいのはfeasibility不可 or 違法/scamの場合のみ。",
+  "listing_categories": [
+    {
+      "category": "SEO記事/LP文章",
+      "tier": "standard",
+      "price_jpy_initial": 4000,
+      "price_jpy_target": 7000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "SEOを意識した記事・LP文章、松竹梅3段構成で出品"
+    },
+    {
+      "category": "ネーミング/キャッチコピー",
+      "tier": "standard",
+      "price_jpy_initial": 3000,
+      "price_jpy_target": 5000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "商品名・サービス名・キャッチコピー提案、複数案+ロジック説明つき"
+    },
+    {
+      "category": "Excel/VBA自動化",
+      "tier": "standard",
+      "price_jpy_initial": 6000,
+      "price_jpy_target": 10000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "Excel関数/VBAマクロによる業務自動化、要件ヒアリング込み"
+    },
+    {
+      "category": "EC商品説明文",
+      "tier": "standard",
+      "price_jpy_initial": 3000,
+      "price_jpy_target": 5000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "EC商品ページの説明文・訴求文、コンバージョン意識"
+    },
+    {
+      "category": "プレゼン/パワポ",
+      "tier": "standard",
+      "price_jpy_initial": 5000,
+      "price_jpy_target": 8000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "ビジネス用スライド制作、デザイン+構成"
+    },
+    {
+      "category": "文字起こし×要約",
+      "tier": "standard",
+      "price_jpy_initial": 2500,
+      "price_jpy_target": 4000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "音声/動画の文字起こし+要約、正確な日本語テキスト"
+    },
+    {
+      "category": "翻訳",
+      "tier": "standard",
+      "price_jpy_initial": 3500,
+      "price_jpy_target": 6000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "日英/英日を中心とした翻訳、文脈に合わせた自然な訳文"
+    },
+    {
+      "category": "FAQ生成",
+      "tier": "standard",
+      "price_jpy_initial": 3000,
+      "price_jpy_target": 5000,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "サービス/製品向けFAQセット生成、問い合わせ削減目的"
+    },
+    {
+      "category": "霊感/スピリチュアル/占い",
+      "tier": "standard",
+      "price_jpy_initial": 2000,
+      "price_jpy_target": 3500,
+      "review_threshold_min": 3,
+      "review_threshold_max": 10,
+      "notes": "AI-completable text-reading content, saturated market, repeat-purchase culture. skip_categoriesから除外しlisting対象へ再分類済み(spec §4)"
+    }
+  ],
+  "plan_tier_template": {
+    "梅": { "label": "ライト", "price_multiplier": 0.6 },
+    "竹": { "label": "スタンダード(本命・割安に見せる)", "price_multiplier": 1.0 },
+    "松": { "label": "プレミアム+オプション込み", "price_multiplier": 1.6 }
+  },
+  "listing_playbook": "タイトルは作業でなく結果/ベネフィットを書く(検索語を前半に自然文で、50字使い切る)。サムネイルは文字入れ必須(修正無制限/即日納品/商用OK等の訴求文字をカバー画像に重ねる)。説明文は1000字使い切り「対象→内容→納品物→流れ→料金→注意」の順で書く。価格は松竹梅3プラン+有料オプション(竹=本命プランを割安に見せる価格設計)を用意する。実績ゼロの出品は相場の60-80%に設定し、さらに先着5-10名・50-70%オフ・理由明記のモニター価格で最初の星5レビューを最優先で獲得する。カテゴリは成果物ベース(記事/資料/翻訳等)で1つに正確に絞りAI専業カテゴリの激戦を避ける。毎日ログイン+週1回の出品内容更新を欠かさない。",
+  "listing_rotation_rule": "20枠を上限に週1-2枠ずつ小出しで新規出品し、同スキルでも切り口違い(ライト/スタンダード/プレミアム・業界特化版)で母数を増やす。",
+  "proposal_playbook": "応募スピードが最重要——sort=newで新着順に確認し、掲載直後30分以内の応募を最優先する。応募がすでに30件以上付いている飽和案件や掲載から数日経過した案件は無駄打ちなので自動でskipする。提案文は5段構成(共感→できること→誠実さで安心→価格内訳+納期+範囲→柔らかい締め)。実績ゼロの場合は相場の約80%+理由をセットで提示する。DM/見積もり相談は30分以内に一次返信しヒアリング→松竹梅提示→期限付きクロージングの順で対応する。",
+  "profile_blurb": "AIエージェントによる高品質・迅速な作業対応。PPT・資料・記事・データ入力・コード対応。",
+  "pass_count": 0,
+  "improve_cycle": 0,
+  "experiments": [],
+  "notes": "Seed defaults. The improve step rewrites this file based on lessons.jsonl outcomes and external best-practice search (50/50 explore/exploit). experiments[] holds active BP experiments with a baseline snapshot; each is kept-or-reverted against real funnel metrics by the improve step. Edit to override."
+}
