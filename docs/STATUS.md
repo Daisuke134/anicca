@@ -2,6 +2,13 @@
 
 更新: 2026-07-17。数値は on-chain 実測。盛らない。$0 は $0。
 
+## ★★INV-EXT（HARD 不変条件、Dais 2026-07-18）: 内部循環は稼ぎではない — 禁止★★
+
+1. **「稼いだ」= 外部（colony 外の財布）からの入金のみ。** self-pay(colony 4 wallet + マシン既定 identity `0xB9dd3B67…`)は何件 settle しても収益 $0 として扱う。ledger・報告・READMEの数字に混ぜたら虚偽。
+2. self-pay が許されるのは**技術検証のみ**（402→settle→on-chain の配管確認）。検証 self-pay は sales-log 上で self と機械判別できねばならない（self 名簿 = `verify-inflow.mjs` が正本）。
+3. **goal の判定は external のみで行う。** 2026-07-18 時点の正直な現在地: franklin1 external **$0**、franklin2 external **$0**、claude-p 店① $0.326 + 店② $0.004。**「franklin がゼロから稼ぐ」goal は未達。**（07-17 の「稼げる状態を作った」は配管の話であり、稼ぎは発生していない）
+4. **店の開設・商品追加・x402scan 登録・監視は franklin 自身の loop がやる**（main session がやったら self-sufficiency 違反 = 今日までの状態。これも未達成分）。
+
 ## ★★2026-07-17夜 市場調査 = MKT-1 の結論を訂正★★
 
 外部リサーチ3本(X/web=53a0b9ad9・gh repos=49d66f8a5・経済分析=1a8065fb5)で「市場は薄い」を**部分訂正**。
@@ -1080,6 +1087,8 @@ funnel_enabled = true
 
 | **XAUTO-1** | 進捗のX自動投稿 | — | ★DROP(2026-07-18 Dais指示「X投稿は不要」)★ Grok CLI認証(@aniccaen)は資産として残る |
 | **BOUNTY-1** | ★次の主戦線★ ゼロ→イチ earn rail #2 = **bounty**。Dais 方針(07-18): 資本不要でゼロから稼げる rail を揃える(トレードは資本前提=ゼロ→イチに不適)。rail#1=x402-sell(仕組みは実証済: 402→settle→on-chain の全経路実測)。調査対象: Algora/Replit bounties/Gitcoin/gitpay 等、AI が自律参加可能か(account/KYC/human gate)を実測 → 研究MD → skill化(5-GATE 検証エンジン必須) → franklin 配備 | AI(franklin/claude-p)が bounty を1件受注→成果物提出→報酬受領を on-chain/実振込で確認 | 未着手(2026-07-18 登録)。DOC-1(README)の次 |
+| **SELF-STORE-1** | ★INV-EXT-4 の実装★ 店の全 lifecycle を franklin loop 自身に移管 — 現状は main session(俺)が serve 実装/x402scan 登録/launchd 設置を代行した = self-sufficiency 違反。x402-sell skill に「店が無ければ開く→well-known 生成→x402scan/Bazaar 登録→sales/attempts を見て商品を改廃→自分で再登録」の全手順を loop の action slot として配線し、新 instance が人手ゼロで店を持てる状態にする(OSS-2 の bootstrap と地続き) | 素の新 instance(店なし)が自 loop だけで「live 店 + x402scan 掲載」に到達したことを、main session が一切手を触れずに実測 | 未着手(2026-07-18 登録、Dais 指示) |
+| **PROD-2** | ★売れる商品への転換★ x402scan 30日実測(2026-07-18): 売上上位は LLM gateway(BlockRun $173K/JarvisClaw $559)・音声インフラ(dTelecom $19.3K)・**有料API転売**(StableEnrich $1.73K: Exa/Firecrawl 等を x402 で再販)・Xデータ(twit.sh $629)。電卓系は圏外 = PROD-1 の31商品は掲載価値のみで需要なし。franklin の次の商品は「買い手が自分でできない物」: 候補(a)**x402 転売 margin 型**(franklin が外部 x402 API を仕入れ→markup 再販、StableEnrich 型、資本≈float のみ) (b)free ソース集約の real-time 市場データ拡張(funding-rates 系の深掘り) | 外部 payer からの購入が on-chain で発生する(INV-EXT 準拠) | 未着手(2026-07-18 登録)。BOUNTY-1 と並ぶ「external 稼ぎ」の2本柱 |
 | **PM-REDEEM** | claude-p の PM YES8株(Fed no-change 7月、cur 0.9565)を**07-29解決後**に redeem.py で$8.00回収→Baseへ | redeem tx on-chain確認+Base着金 | 待機中(解決日2026-07-29)。売却でなくholdが決定済(RECOVER-1行参照) |
 | **OBS-1** | x402scan 掲載(07-17登録)を外部買い手がprobeするか14日観測(〜07-31)。観測面=sales-log/attempts-log/on-chain inbound | 外部payer(自colony 4wallet以外)からの実購入がon-chainで1件以上確認される | ★観測網完備 2026-07-17夜★ inflow-watch launchd を3体分に拡張: 既存 claude-p(0x904B…)/franklin2(0xe7747F…)に**franklin1(0x3EcCAD24…)を新設**(`ai.anicca.x402-inflow-watch-franklin1.plist`、30分毎、初回実行 external:0 を実測)。external>0 で flag file + macOS 通知が上がる。以後は待ち。★偽陽性対策(07-18)★: マシン既定 identity `0xB9dd3B67…`(resolve-identity fallback、self-probe の payer)を self 名簿に追加(anicca `6110dd3`) — franklin2 sales の9件はこの address = **self であって external ではない**(franklin1/franklin2 の real external は依然 $0) |
 
