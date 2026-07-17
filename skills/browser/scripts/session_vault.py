@@ -201,12 +201,18 @@ def _logged_out_for(url, final, cookies, page_text=""):
       so URL-redirect detection alone false-negatives here exactly like the Instagram case
       (real incident 2026-07-17: keepalive reported logged_out=false while a live screenshot
       showed "Something went wrong" on x.com/home -- this cost a full manual re-diagnosis).
-    - non-instagram/non-x domains: only the redirect check applies.
+    - zenn.dev specifically -> its login route is /enter (not /login), a real incident
+      (2026-07-17, task #75): keepalive on https://zenn.dev/dashboard reported logged_out=false
+      while the actual final URL was https://zenn.dev/enter?redirect_to=%2Fdashboard, a genuine
+      dead Google-OAuth session that the generic /login-only check missed entirely.
+    - non-instagram/non-x/non-zenn domains: only the generic redirect check applies.
     """
     redirected = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
     if "instagram.com" in url.lower() and not _has_instagram_sessionid(cookies):
         return True
     if "x.com" in url.lower() and "something went wrong" in (page_text or "").lower():
+        return True
+    if "zenn.dev" in url.lower() and "/enter" in final.lower():
         return True
     return redirected
 
