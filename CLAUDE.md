@@ -7,6 +7,7 @@
 
 BP = 答え。オリジナルは書かない。判断には最低1つの引用（ソース名+URL+核心の一文）。引用のない判断は削除する。
 **研究したら即 MD 化（HARD）**: 検索・研究したらその turn 内で `docs/` の MD に書き出して commit+push する。chat だけに残すのは研究を捨てるのと同じ。handover/article prompt にはその MD の full path を含める。
+**記事ネタは queue へ（HARD）**: Dais が「これ記事になる/raw material」と言ったら、その turn 内で article loop の `topics/queue/` にカードを書いて commit+push（場所は `ls -d ~/profitable-claude/skills/*/topics/queue ~/profitable-claude/skills/*/article*/topics/queue 2>/dev/null` で解決、frontmatter は既存カードに倣う: lane/voice/sources/angle）。散らばせたネタは存在しないのと同じ。
 
 ## 🧬 ANICCA COLONY — LIVE SSOT（毎セッション最初に読む）
 
