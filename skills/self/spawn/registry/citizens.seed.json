@@ -2,7 +2,7 @@
   {
     "id": "Franklin",
     "wallet": { "solana": true },
-    "walletAddress": { "solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9" },
+    "walletAddress": { "solana": "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T" },
     "fuel": { "provider": "x402" },
     "humanDependencies": [],
     "homeDir": "/Users/anicca/.blockrun",
