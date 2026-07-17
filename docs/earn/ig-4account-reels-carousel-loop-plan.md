@@ -236,3 +236,24 @@ Graph API 化には (a) aiclipsvault を Business/Creator に変換 (b) FB Page 
 
 ### engine への影響（横展開が更に堅くなる）
 POST ノードが「instagrapi clip_upload」→「Graph API publish」になる = fragile session 層が消え、どの IG Business アカでも同じ公式経路で投稿できる。video/slide/carousel も同じ Graph API（media_type 切替）。profitable-claude repo に OSS 化する際、壊れやすい session ハックを持ち込まずに済む。
+
+## v7 — 決定: instagrapi 継続（Graph API は fallback に降格）2026-07-17 Dais
+
+### なぜ instagrapi を継続するか（v6 の Graph API 一択を修正）
+- instagrapi は投稿を実証済み（過去110本、最終 07-14 19:33）。壊れたのは投稿能力でなく session（relogin 自滅 + flag）。投稿方式を捨てる理由は無い。
+- Dais が実機アプリで aiclipsvault にログイン(trusted device)する → checkpoint が human 確認で解除・flag 減衰 → その後 Mac から instagrapi login 1回は email challenge のみ（reCAPTCHA でなく。gmail で自動解決）→ dump_settings → login-once 規律で永続。
+- = Business 変換/FB Page/動画公開URL 不要。今すぐ動く。早すぎる作り込みをしない。
+
+### 決定（正本）
+- **PRIMARY = instagrapi 継続**: phone unflag → 1回 clean login → login-once 規律（#12）+ keepalive read（#4）+ session 正本統一（#9）。
+- **FALLBACK = Graph API（#13）**: instagrapi が規律を守っても死に続けた場合のみ、$ 出てから構造解として移行。今はやらない。
+
+### 実行順（phone login 前提）
+1. Dais が実機 IG アプリで @aiclipsvault にログイン（credential は keiodaisuke@gmail.com へ送付済、2026-07-17）。checkpoint 解除。
+2. その状態で Mac から instagrapi login を1回（tier3 cooldown stamp を一時解除して実行）。email challenge は make_gmail_handler で自動解決。成功したら dump_settings。
+3. #12 login-once hardening を適用（relogin 封印 / set_uuids 保持 / keepalive=get_timeline_feed）。
+4. loop 再開 → 投稿確認 → bio に Digistore link（#2）→ metrics 復活（#3）。
+
+### 競合 Claude の整理（実測補足）
+- `kankatsugai` = 架空、存在しない。
+- `aiclipper.daily`(ig-myclaude.json) = メモに「別Claude」とあるが実際に clipping している別実体は無い。clipping は @aiclipsvault の loop 1本のみ。競合なし。clip は aiclipsvault 専任で正しい。
