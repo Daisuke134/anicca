@@ -132,4 +132,16 @@ else
     SESSION_VAULT_PORT="$port" SESSION_VAULT_DIR="$HOME/.cloak/vault/$profile" python3 "$V" keepalive \
       "https://www.instagram.com/" || true
   done
+
+  # ── instagrapi-owned accounts (session_owner=instagrapi) ──
+  # These are EXCLUDED from browser warming above (a parallel web session is the churn vector,
+  # v22) — instead their golden instagrapi session gets a read-only two-stage keepalive probe
+  # (v24 #12: get_timeline_feed + launcher/sync ping, never logs in, poisons on bloks).
+  IG_POST="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+  jq -r '.[] | select((.session_owner // "") == "instagrapi" and (.status=="ready" or .status=="warming" or .status=="provisioned_pending_live_post")) | .handle' "$ACCOUNTS" |
+  while IFS= read -r handle; do
+    [ -z "$handle" ] && continue
+    log "clip/$handle (instagrapi): golden-session keepalive"
+    python3 "$IG_POST" --keepalive --handle "$handle" >&2 || true
+  done
 fi
