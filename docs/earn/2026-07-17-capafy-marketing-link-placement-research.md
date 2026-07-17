@@ -42,7 +42,40 @@
 - 転用可能: launchd orchestration / creative 生成 / verification gate / account-safe poster / evidence ledger / 週次 self-improve。
 - 差替え: YouTube source・字幕・ClipAffiliates 部分 → Capafy listing の紹介 creative + CTA + marketplace conversion 計測。
 
-## 3. 未確認（次の実測対象）
+## 3. 部品在庫の詳細実測（clip-probe 第2報、file path 付き）
+
+### そのまま使える
+| 部品 | 場所 |
+|---|---|
+| ナレーション+b-roll から 1080x1920 動画組立 | `~/anicca/skills/faceless-money-factory/scripts/assemble.sh:13-47`、caption burn `scripts/burn-captions.sh:10-59` |
+| 投稿前品質 gate（9:16/audio/8-90s/nonblack/2.5Mbps） | `~/anicca/skills/earn/clip/scripts/verify_clip.sh:8-15,25-80` |
+| IG Reel upload + 公開確認 poster | `~/anicca/skills/earn/clip/scripts/instagrapi_post.py:330-380`、3分岐+ledger `run.sh:161-175,189-249` |
+| views/likes/comments 計測 + self-improve summary | `~/anicca/skills/earn/video/selfimprove.py:78-125`、metric reader `metrics.py:50-81` |
+| atomic state + backup restore | `~/anicca/skills/earn/video/state_io.py:20-54` |
+| Capafy public URL（agent_id で構成、redirect 実証） | `docs/superpowers/evidence/L2-capafy.md:17`、online(status=4) ledger 例 `capafy-autopublish/state/published.jsonl:14-20` |
+
+### 薄い adapter で使える
+- closed marketing loop 骨格（LEARN→AFF-FIND→PRODUCE→POST→BIO→MEASURE→REFLECT）: `~/anicca/skills/earn/clip/clip_pass.sh:53-95`（account/niche が @aiclipsvault 固定 → Capafy 設定 adapter 要）
+- content adapter: faceless factory は finance 固定 topic（`faceless-money-factory/SKILL.md:13-24`、`scripts/run-daily.sh:24-38`）→「online Capafy listing 1件選択 → hook/problem/demo/CTA 生成」に差替え
+- instance 分離は ANICCA_INSTANCE で既に可能: `~/anicca/skills/earn/clip/_instance_paths.sh:10-21`
+- daily gate state-machine: `~/anicca/skills/earn/video/decide.py:33-46`
+- scheduling 実例: clip loop 6h 間隔 `ai.anicca.clip-loop-aiclipsvault.plist:7-22`、capafy daily 08:10 `ai.anicca.capafy-loop-daily.plist:4-9` → marketing 用は別 launchd job
+
+### 新規必須
+1. **comment poster**（既存 IG poster に comment API 呼出ゼロ: `instagrapi_post.py:362-380`）— media_comment、dedup、retry/ledger
+2. comment link は clickable 保証不能。repo 内証拠は caption について「BIO だけ clickable」（`earn/clip/producer.sh:121-126`）で comment は未検証だが、外部ソース（inro.social、§1）が「captions and comments show as plain text」を裏取り → bio 主導線に切替
+3. Capafy promotion selector: remote status=4 確認 + agent_id rotation/dedup（published.jsonl は mixed status: `capafy-autopublish/state/published.jsonl:1-27`）
+4. post→comment を 1 transaction で管理する state/ledger（reconcile）
+5. Capafy conversion attribution（post_url↔agent_id↔revenue join。既存 selfimprove に無し: `selfimprove.py:103-125`）
+6. IG 以外の platform poster は新規
+
+### 実稼働観測（2026-07-17）
+- `ai.anicca.clip-loop-aiclipsvault` = loaded、6h、last exit 0、07-17 も full pass ログあり（`~/.openclaw/logs/clip-loop-aiclipsvault.err.log:89-127`）。ただし run.sh stdout 破棄設計のためログ単独では投稿成功を証明しない
+- 実投稿 ledger に published Reel URL 多数: `~/.openclaw/state/clip-earn-ledger.jsonl:6-112`
+- `ai.anicca.capafy-loop-daily` = loaded、08:10、runs=2 exit 0。実ログ `~/.openclaw/skills/capafy-autopublish/state/daily_loop.log`（mtime 07-17 20:10）
+- **Capafy 売上 = 0。bottleneck = discoverability/quality**: `~/anicca/skills/self/capafy-loop/state/STATE.md:5-10`
+
+## 4. 未確認（次の実測対象）
 - IG first comment vs bio の CTR 実測比較（未確認のまま。bio 採用の根拠は「comment がクリック不可」という仕様事実）
 - TikTok 新アカは 1,000 followers 未満で Website 欄が使えない → Business Account 登録で回避できるかは account 作成時に実測
 - Capafy 側のアフィリエイト/紹介 URL パラメータ仕様
