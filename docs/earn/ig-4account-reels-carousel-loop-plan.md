@@ -200,3 +200,39 @@
 ### 更新した分岐（proxy 不要が判明）
 - #11 を「clean IP 手配」→「**cooldown + clean instagrapi restart**」に読み替え。proxy 購入は保留（住宅IP で足りる）。
 - 次の実行: (1) 今日はこれ以上 login を叩かない（flag 減衰待ち）(2) その間に login_resilient を上記に hardening（コードは書ける、E2E は cooldown 明け）(3) cooldown 明けに1回 clean login。
+
+## v6 — 根本解 = 公式 Instagram Graph API へ移行（一次原理。SSOT・2026-07-17）
+
+### なぜこれが根本解か（private API の構造的限界）
+okgram README の技術説明: IG は session を「sessionid 単体」でなく **sessionid + device + X-MID + IG-U-RUR(地域ルーティング) + egress IP/geo + TLS(JA3/JA4) fingerprint の内部整合性**で判定する。relogin のたびにこの整合性が壊れ takeover 判定 → login_required/challenge。= private API(instagrapi) は session 死・reCAPTCHA を**構造的に排除できない**。我々の relogin 地獄はこの構造の必然。
+→ 公式 Graph API は別ドメイン `graph.instagram.com` の正規 OAuth。この fingerprint 層を一切通らない = **reCAPTCHA も checkpoint も session 死も存在しない**。
+
+### Graph API の要点（一次資料 developers.facebook.com）
+- Reels 投稿: `POST /<IG_ID>/media`(media_type=REELS, video_url, caption) → `POST /<IG_ID>/media_publish`。
+- rate limit: 100 投稿/24h（我々の 1-2本/日 に十分）。
+- long-lived token: 60日有効、`GET graph.instagram.com/refresh_access_token` で更新 → **cron 自動 refresh で完全無人**。
+- ★App Review 不要★: 自分の IG アカを Meta app の「役割(role)」に加えれば Standard Access が自動承認 = Business認証も審査も無しで即日投稿可（access-levels doc の一般規定からの推論、App ダッシュボードで要実機確認）。
+- video_url は公開 URL 必須 → 我々は既に `CLOUDFLARE_TUNNEL_URL` を持つ（動画を tunnel 経由で公開 URL 化できる）。
+
+### 唯一の関門 = 「1回だけアカウントに入る」
+Graph API 化には (a) aiclipsvault を Business/Creator に変換 (b) FB Page 連携 (c) Meta app 作成 + token 発行 が要る。(a)(b) は IG にログインした状態が要る。今 automation login は flagged で reCAPTCHA 壁。**最もクリーンな1回入場 = 実機スマホの IG アプリ（trusted device、reCAPTCHA 出ない）**。それが無ければ cooldown 後の1回 clean login。
+→ 一度入って Business 化 + token 発行したら、**以後 private-API login は永久に不要**。壊れる層が消える。
+
+### 移行手順（one-time）
+1. 実機 or cooldown 後の1回ログインで aiclipsvault に入る
+2. プロアカウント(Business/Creator)に変換
+3. Facebook Page を作成・連携
+4. developers.facebook.com で Business type app 作成 → 自分の IG アカを role に追加（Standard Access）
+5. 60日 long-lived token 発行
+6. clip loop の POST を instagrapi clip_upload → Graph API `/media`→`/media_publish` に差し替え
+7. 動画を CLOUDFLARE_TUNNEL_URL 経由で公開 URL 化して video_url に渡す
+8. token 自動 refresh cron 設置（60日前に叩く）→ 完全無人 24/7
+
+### 「今すぐ復旧」の現実（実測補足）
+- 他アカに逃げる道は無い（全 clip アカ session 死、実測済 v6前段）。
+- session 抽出も源が無い（daily-driver に IG login 無し、実測済）。
+- instagrapi-aiclipsvault.json の sessionid は revoke 済（tier1 get_timeline_feed=LoginRequired、生きてない。ファイルに文字列がある≠生きてる）。
+→ 結局「1回入場」が要る。それを Graph API 化と兼ねる（同じ1回入場で Business 変換 + token 発行まで済ませる）のが最短。
+
+### engine への影響（横展開が更に堅くなる）
+POST ノードが「instagrapi clip_upload」→「Graph API publish」になる = fragile session 層が消え、どの IG Business アカでも同じ公式経路で投稿できる。video/slide/carousel も同じ Graph API（media_type 切替）。profitable-claude repo に OSS 化する際、壊れやすい session ハックを持ち込まずに済む。
