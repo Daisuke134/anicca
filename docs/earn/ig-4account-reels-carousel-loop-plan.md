@@ -613,3 +613,12 @@ fresh 垢作成 → instagrapi get_timeline_feed green → queue の reel を1�
 - 我々の失敗の連鎖: churn(browser+device 並行)で golden session を殺す → relogin を試す → bloks → 垢が semi-poison。aiclipsvault も world_hq2 も同じ経路で焼けた。
 - 含意: (1)垢作成は churn 修正が入った状態でやり、golden session を最初から死なせない (2)keepalive は「死なせない」ための最優先機能(get_timeline_feed read、relogin 封印) (3)一度でも死んだら relogin でなく**新垢に置換**(self-heal、relogin で bloks を招くより早い)。
 - 進行中: 成功してる長期運用 IG bot の**実コードを読む**深い検索(session を月単位で生かす実装、relogin 回避、churn 対策、device/proxy 一貫性)。結果を v24 に反映。
+
+## v24 — 成功IG botの実コードから学んだ session 永続実装（copy元付き 2026-07-17）
+出典=実コード読解: alsk1992/instagram-ai-agent(plugins/ig.py,device.py,human_mimic.py)+subzeroid/instagrapi(mixins/auth.py,challenge.py)。
+1. 強制relogin無効化: session_refresh_days=0。relogin は LoginRequired 時のみ1回まで(2度目BadPasswordで7日freeze)。copy=ig.py L297-318 + auth.py L779-786。
+2. keepalive2段: get_timeline_feed 定期probe + gentle_ping(launcher/sync 直叩き)。copy=ig.py L1142-1250。
+3. device UUIDs永久固定(rotateでchallenge)。copy=device.py。
+4. gold standard login: full cookie→set_settings()で/login 0回。copy=ig.py L556-708。
+5. client rotation≠relogin: TCP接続だけ2-4hローテ、loginしない。copy=human_mimic.py L192-206。
+bloks=avoid一択。食らったら垢死、蘇生せず新垢置換(self-heal)。#12/#4=login_resilientを上記に置換。
