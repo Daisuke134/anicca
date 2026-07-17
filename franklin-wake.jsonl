@@ -9302,3 +9302,13 @@
 {"ts":1784272765,"wake_id":"00MROLXPAJ9EA08A157D4E4A2F","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784272765,"wake_id":"00MROLXPAJ9EA08A157D4E4A2F","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784272897,"wake_id":"00MROM0J1Y21B3E0B3059B4B56","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784273053,"wake_id":"00MROM3UZPBC5FC14B3E954DBD","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273185,"wake_id":"00MROM6P25E78E41F64D2D40C1","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273315,"wake_id":"00MROM9HD9F6852E2EC0D64431","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784273315,"wake_id":"00MROM9HD9F6852E2EC0D64431","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273446,"wake_id":"00MROMCAOLA8DB3D50E9CF4651","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784273446,"wake_id":"00MROMCAOLA8DB3D50E9CF4651","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273576,"wake_id":"00MROMF2MCA5B3DB45FB4E47B1","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784273576,"wake_id":"00MROMF2MCA5B3DB45FB4E47B1","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273719,"wake_id":"00MROMI55GA085A952D0634B4B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784273851,"wake_id":"00MROMKZ6783919839848048BB","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
