@@ -638,3 +638,19 @@ bloks=avoid一択。食らったら垢死、蘇生せず新垢置換(self-heal)�
 5. metrics pipeline が静かに壊れる履歴(reflection.jsonl に「pipeline broken」複数)、自動 self-heal 無し。
 ### 次 = /superpowers:brainstorm で設計（SDD→TDD→VDD）。対象:
 metrics(views/likes/$)→Telegram 定期通知 + 全アカ(clip/gig/trade)横断 realtime dashboard(1画面) + measure_dollar/$ 配線 + self-score週次自動 + pipeline self-heal + 良い例学習の強化。既存(send-telegram.sh/playbook.json/monitor.sh)を土台に。
+
+## v26 — churn修正済みの新垢でも初回ログインでbloks（真因の再考、実測 2026-07-17 18時台）
+
+### 実測
+- #12(login_resilient置換, commit e1f487f9まで)マージ後、task #2として @aiclips_world_hq2 の golden session tier1(--keepalive) を試すも死亡(feed_ok:false)確認 → 戦略(B)に従いfresh垢を**churn修正が完全に効いた状態で**新規作成。
+- 新垢 **@aiclips_daily_hq** をig-account-createで作成: 0電話/0captcha、Gmail plus-addr、OTP gog gmail経由、profile(icon+bio)設定済み(setup_profile.py verify bio=True avatar=True)。★v22の修正を全て適用★: signup直後にbrowser tab/context即クローズ、clip-accounts.jsonにsession_owner:instagrapiを**作成と同時に**設定(browser-warmを一度も経由させていない)。
+- それでも **instagrapi login-once(tier3、初回ログイン)が即 bloks ChallengeRequired**。code側のmark_poisoned()が自動発火し、clip-accounts.jsonのstatusを`poisoned_manual_backup`に自動降格(poisoned_reason: "tier3 login ChallengeRequired: challenge_required")。tier3 24hクールダウンは正しく機能(2回目の診断実行は正しくrefuseされ、IGへの二重打鍵にはなっていない)。
+
+### 含意（v23の核心仮説の一部否定）
+- v23は「signup直後の最初のloginは必ず通る、死んだ後のrelogin だけがblocksを誘発する」としていたが、**今回は真に最初のloginそのものがblocksになった**。churn(browser+instagrapi並行session)が原因という説明では説明できない — churnを完全に断っても初回で死んだため。
+- 同日中に同一マシン/同一residential IPから **3垢連続作成**(aiclipsvault[経緯は別]、world_hq2、daily_hq)。IGの自動化対策は「session挙動」だけでなく「同一IP/デバイスフィンガープリントから短時間に複数アカウントが作られている」こと自体を検知しているのが濃厚な仮説 — 短時間の複数account creationがIP/device reputationを枯渇させ、後続アカウントのlogin自体を即challengeに落とす。
+- 対応: (1)このマシン/IPからの新規IG垢作成を**当面停止**(4垢目を今すぐ作ってもほぼ同じ結果になる可能性が高く、かつresidential IPの評判をさらに悪化させてDaisの日常的なIG利用にも影響しうる) (2)代替: 数日〜1週間空けて1垢ずつ作る/別の residential IP(別ネットワーク)を検討 (3)aiclipsvaultの手動投稿バックアップ運用を当面の主経路として維持。
+
+### 状態
+- @aiclips_daily_hq: status=poisoned_manual_backup（自動降格済み、settings fileは一度も保存されず=golden sessionは一度も確立していない）。
+- 今回のtask #2は「fresh垢での投稿1本」を達成できずクローズ。次回このtask を再開する際は、まずこのv26の含意（IP/device疲弊説）を検証してから再度account creationに入ること。
