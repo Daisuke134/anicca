@@ -794,8 +794,25 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 - 全ルールについて `tests/art/test_deslop_mechanical_precheck.sh`（P4/P5/P-ADV/B7、実LLM judge呼び出し込み）+ `tests/art/test_eval_gate_content_rules.sh`（8軸+2 blocking判定）を新設。
 - **未完（ブロッカー、team-lead対応待ち）**: few-shot実例集（spec §7.59のja 5件+digestのen 7件）の judge プロンプトへの埋め込み。このrepo内には具体的なbefore→after実例リストが見つからず（§7.59には5問題クラスの要約のみ存在）、元データの提供が必要。8ルール自体は各promptに詳細な判定基準を含んでいるため実質的な判定精度への影響は限定的と推測されるが、正式な埋め込みは未実施。
 
-**②実行中（2026-07-17、builder-authfix）**: `virtuals-acp.md`をdone/からqueue/へ`git mv`（commit `604a9eb`）し、`launchctl kickstart -p gui/$(id -u)/ai.anicca.article-daily`でloopを起動。新設STEP 0/STEP 4.5/STEP 6.5を含む全ゲートスタックがPROMPTに含まれていることを`ps aux`で実測確認。完了まで観測継続中——結果は次回spec更新で追記。
+**②完了（2026-07-17 19:43、builder-authfix）: loop regenerationで実際に改善したことを実測**。
+
+**キュー順序バグの発覚と対処**: 1回目のkickstart（17:52:38）はvirtuals-acpではなく`2026-07-17-devlog.md`（digestカード）を掴んだ——queue内の9枚が同一mtime(15:53:19)でtieし、STEP1の「OLDEST」判定が実質lsアルファベット順に依存していたため（数字始まりのdevlogが先着）。devlog passは手を出さず完走させ（rc=0 18:46:27、新ゲートの実証にはなった: ですます27/だ0、タイトル英語ゼロ、team-lead確認済み）、その後`topics/queue/`からvirtuals-acp.md以外の8枚を`topics/_hold/`へ`git mv`退避（commit `330a068`）してvirtuals-acpだけが残る状態を作り、`launchctl kickstart -p gui/$(id -u)/ai.anicca.article-daily`で再起動（18:49:06）。根本fixは別タスク化（#65 taskId、frontmatterのcreated/priorityで決定的順序化）。
+
+**virtuals-acp regeneration実測結果（PID 5470、rc=0 19:43:15）**:
+- **旧タイトル**（14:31 pass、8則gate実装前）: 「ハンコで5%、元手ゼロで稼げるVirtualsの求人市場をSolidityまで読んだ」— 英固有名詞2件（Virtuals/Solidity）
+- **新タイトル**（regeneration後）: 「バーチャルズの求人市場を覗いたら、承認はハンコ一つで済んでいた」— **英固有名詞0件**（Virtuals→バーチャルズにカタカナ化、loopの自発的判断）。Rule 5 (P5) を余裕でPASS
+- **だ調→ですます実測**（`2026-07-17-virtuals-hanko-ja.md`をregexでカウント）: `polite(です/ます系)=50`、`plain_da(だ/である系)=0`、`plain_ta(裸のた。)=0`。完全にですます統一——loop自身が新ゲートを読んで書いた結果
+- **看板前倒し実測**: 「最初にまとめます」ブロック（記事冒頭、hamburger templateの前半1/3内）の2番目の箇条書きに「ハンコを押した人（評価者）には、承認するだけで報酬の5%が自動で入ります」という核心の発見が既に露出——看板埋没は解消
+- **RED→GREEN実証（deslop-gate.log実測）**: `19:09:55 verdict=FAIL:mechanical` → 自己修正 → `19:11:07 verdict=PASS`（同一ファイル`2026-07-17-virtuals-hanko-ja.md`）。gateが実際に一度落として、loopがそれを読んで直し、再PASSした実ログ
+- **全gate実行ログ**（`~/.openclaw/logs/article-gates.log`、18:49以降抜粋）: deslop-gate ja/zenn-ja/en/devto-en 全てPASS、eval-gate ja/en/zenn-ja/devto-en 全てPASS
+- **render-verify-draft.sh**: zenn PASS、substack-ja PASS、substack-en PASS、**devto FAIL**（原因: dev.to daily-driverブラウザにログインセッションが無くrender-verify自体が実行不可——コンテンツ違反ではなくinfra欠如。self-fix.shが18:44から非blocking dispatch継続中、`self-fix-article-writer.log`で確認）
+- **ledger/カード**: `articles.jsonl`に lane:"A" 7行（zenn/devto/substack-ja/substack-en/note成功、X ja/en失敗）を実測確認、`virtuals-acp.md`は`topics/done/`へ実際にmv済み、Telegram報告messageId=2459送信済み
+- **X 2件失敗**: `no_x_premium_subscription`（@aniccaenがX Premium未契約、Articles機能自体がPremium gate。コード起因でなくアカウントレベル、recurring課金の自動購入はno-human-loopのスコープ外につき見送り、正直に記録）
+- 退避した8枚は`_hold/`から`queue/`へ復元予定（次アクション）
+
 **注記**: kickstart前に、team-leadのtask説明更新に気づく前の状態で、noteのlive draft（n5787e092451f）本文をだ・である→ですますへ段落単位でDOM操作により書き換える作業を実際に行っていた。ページ再読み込みで検証したところ、この編集はnote.comのバックエンドへ一切保存されておらず（元のだ調テキストのまま5105文字で完全一致）、実質的な変更は発生していないことを確認済み。破棄すべき手編集draftは存在しない。
+
+**③未着手**: fresh vcsdd-adversaryによるspec §7.59/7.60一致確認はteam-lead担当（本人発言）。global CLAUDE.md改訂により「adversary/vcsddはDaisが明示的に単語を言った時だけ」ルールが追加されたため、builder-authfix側からの自発spawnはしない。
 
 ### 7.63 zenn = git-push publish の確認 + regeneration 進行（2026-07-17 夕〜夜）
 
