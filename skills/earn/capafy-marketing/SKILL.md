@@ -43,7 +43,36 @@ decision = model). `x_post.py` is the validator/assembler: it rejects a native t
 or over 280 chars, so a bad draft fails closed. Verified 2026-07-18: selector → agent-written
 258-char native tweet → `x_post.py --draft` passed validation and created a Postiz draft (deleted after).
 
-## B5 — X poster (`scripts/x_post.py`)
+## B5 — X poster: use `scripts/x_post_browser.py` (browser-direct = the WORKING rail)
+
+★ **`x_post_browser.py` is the rail to use.** `x_post.py` (Postiz) is kept only for reference —
+Postiz strips every URL, so the reply link never reaches X (see the Postiz block below). ★
+
+Browser-direct drives the CloakBrowser daily-driver (:9222) to post as the logged-in X account
+(**phase 1 = @aniccaen**; @diceai0 was rejected 2026-07-18 — its browser login hits an X phone
+-verification wall, and no-human-loop forbids relaying Dais's phone). Flow: compose/post →
+insert root (no link) → addButton → insert reply (`Try the skill here: <UTM url>`) → Post all
+→ read back the two /status/ URLs.
+
+```bash
+set -a; . ~/.openclaw/.env; set +a
+# DRY (fills the thread, does NOT post — proves the flow):
+python3 scripts/x_post_browser.py --url "<listing url>" --tweet "<native, no link>" --reply "Try the skill here:"
+# LIVE (posts the thread as @aniccaen):
+python3 scripts/x_post_browser.py --url "<url>" --tweet "<...>" --live
+```
+
+**VERIFIED live 2026-07-18**: posted a real thread as @aniccaen (root = Lead Magnet Generator native
+tweet, no link / reply = `t.co` link). Logged-out (no auth) the reply's t.co resolved to
+`capafy.ai/agent/…/8875030146?utm_source=x&utm_medium=x_reply&utm_campaign=capafy_marketing`, HTTP 200.
+root=status/2078252761314115657, reply=status/2078252762740195344.
+
+**@aniccaen cadence rules** (it is shared with article-daily/x-publish): 1 Capafy thread/day max; do
+NOT post near an existing article post (space by hours); each post is time-stamped in
+`~/.openclaw/state/capafy-marketing-rotation.jsonl`. Do NOT overwrite the profile Website (already set);
+the reply URL is the primary CTA.
+
+## B5 (deprecated for X) — Postiz poster (`scripts/x_post.py`)
 
 Posts a listing to X via **Postiz** (integration `POSTIZ_X_INTEGRATION_ID`, account アニッチャ)
 as a 2-tweet self-thread:
