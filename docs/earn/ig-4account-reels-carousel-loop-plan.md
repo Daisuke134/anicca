@@ -468,3 +468,15 @@ identity layer for AI agents: 実 email + **実 phone(SMS/voice)** + iMessage + 
 - #19 更新: Inkbox 経由で phone 確保 → Meta dev verify 突破 → token
 - #20 Inkbox を AI identity 基盤として採用（agent-signup + vault + phone）。TT/IG/YT/X scaling の共通土台。
 - #21 ★security★ 漏洩した AGENTMAIL_API_KEY を rotate（agentmail.to）+ 使用箇所(clip/video/clip-promote CLI 等)を新keyへ。将来は Inkbox vault へ移行。
+
+## v14 — Inkbox identity 成立、但し phone は有料（2026-07-17）
+
+- Inkbox agent-signup 成功: `~/.cloak/inkbox.json`、handle=aiclips-agent-11a830、gmail 6桁コードを gog 自動読取で verify(agent_claimed)。identity/email は無料で使える。
+- **phone は有料**: Free=3 identity・phone 無し、$10/月 Hobbyist から実 10DLC 番号1つ。= 番号取得にカード登録必須 → subagent 停止（金=Dais判断、停止点①）。
+- 電話番号の選択肢（全て金 or 実番号）:
+  - Inkbox $10/月 = 実10DLC番号、TT/IG/YT/X 全展開の scaling 基盤（推奨・戦略投資だが recurring）
+  - SMSPool = 実mobile、小額 Stripe deposit（one-time、tier-a-bypass Pattern1）
+  - Dais 実番号 = 無料・chat.db で code 自動読取。但し 1番号=1Meta垢（Dais個人Metaで使用済なら不可）
+  - Twilio(既存) = VOIP で Meta reject 済（不可）
+- Meta ブラウザ :9228(profile meta-dev) は Verify 画面のまま保持 → 番号さえ用意できれば即 resume → App→token。
+- 決定待ち = どの番号経路にするか（Dais の money/personal-phone 判断）。
