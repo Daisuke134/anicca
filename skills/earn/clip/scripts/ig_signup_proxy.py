@@ -51,7 +51,8 @@ def trusted_fill(tid, which, value):
 def set_dob_field(tid, combo_label, option_text):
     # open the combobox, then scroll+click the option (trusted). Retry a few times.
     for attempt in range(4):
-        r = ev(tid, f"""(()=>{{const c=[...document.querySelectorAll('[role=combobox]')].find(e=>(e.getAttribute('title')||'').includes({json.dumps(combo_label)})&&e.offsetParent!==null);if(!c)return'{{}}';const r=c.getBoundingClientRect();return JSON.stringify({{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}});}})()""")
+        # DOB comboboxes are matched by aria-label ("年を選択") OR title (IG varies) — check both.
+        r = ev(tid, f"""(()=>{{const lbl={json.dumps(combo_label)};const c=[...document.querySelectorAll('[role=combobox]')].find(e=>((e.getAttribute('aria-label')||'')+(e.getAttribute('title')||'')).includes(lbl)&&e.offsetParent!==null);if(!c)return'{{}}';const r=c.getBoundingClientRect();return JSON.stringify({{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}});}})()""")
         try:
             d = json.loads(r.strip().strip('"').replace('\\', ''))
         except Exception:
