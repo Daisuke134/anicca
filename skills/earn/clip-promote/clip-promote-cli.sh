@@ -37,6 +37,16 @@ fi
 
 STARTUP="${STARTUP} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
 
+# Auth: launchd/tmux cannot refresh the subscription OAuth token headlessly (keychain locked) —
+# same fallback already proven live by gig-cli.sh / gig_reality_verify.sh — route through the
+# local CLIProxyAPI (:8317) whose creds are plain files and refresh headlessly; fall back to
+# subscription auth if the key file is absent.
+CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
+if [ -n "$CLIPROXY_KEY" ]; then
+  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
+  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+fi
+
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
   "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.clip-promote-core-last-start"   # seeds the grace-window marker for healthcheck's stale-pass detection
