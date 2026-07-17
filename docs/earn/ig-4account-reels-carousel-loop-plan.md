@@ -484,3 +484,9 @@ identity layer for AI agents: 実 email + **実 phone(SMS/voice)** + iMessage + 
 ## v15 — AGENTMAIL rotate 部分完了 + Meta verify 継続（2026-07-17）
 - AGENTMAIL_API_KEY rotate: 新key発行+`~/.openclaw/.env`配線済(新key auth/me=200実測、ハードコード無し)。漏洩は本体キーのみ(他6 org別キーは無関係)。★旧(漏洩)key は API DELETE が全パターン403で失効不可、旧key=まだ200生存。dashboard所有アカ不明。封じ込め=漏洩先ローカルtranscriptのみ(外部push無し)。残=AgentMailサポート手動失効依頼 or dashboard所有特定。
 - Meta verify(Dais番号): subagent 継続中、token未取得、chat.dbにMeta SMS未着(番号入力〜送信の途中 or 詰まり)。:9228 保持。
+
+## v16 — Text Message Forwarding ON、Meta SMS 未着（2026-07-17）
+- Dais が iPhone の Text Message Forwarding を ON（Mac Mini + MacBook Pro 両方に共有）。番号 = Dais 実番号（正値は memory `user_phone_number.md`、public repo には書かない）。
+- ★ただし Meta の認証コードが **Dais のスマホ Messages 自体にも届いていない**（転送以前に Meta SMS が未着）。= 先に送った2回は不達。resend で配信を再試行する必要。
+- 状態: ブラウザ :9228(profile meta-dev) は日本番号入力済・コード待ちで保持。次の一手 = :9228 で resend → chat.db(転送ONで着信するはず) から6桁自動読取 → 入力 → dev登録完了 → App作成→IG tester→60d token。
+- 未着が続くなら仮説: (a)Meta の対日本SMS遅延 (b)番号入力の国コード/形式ズレ (c)Meta が短時間の再送を抑制 → 数分空けて resend、それでも来なければ別番号(SMSPool/Inkbox$10)へ。
