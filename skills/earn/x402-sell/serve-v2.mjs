@@ -62,6 +62,23 @@ const app = express();
 const { paymentMiddleware, x402ResourceServer } = await import("@x402/express");
 const { HTTPFacilitatorClient } = await import("@x402/core/server");
 const { ExactEvmScheme } = await import("@x402/evm/exact/server");
+// v1 back-compat body (Task 4.5.A) + Bazaar discovery extension (Task 4.5.B). Verified real APIs this
+// session (node_modules .d.ts + runtime probe, no guessing):
+//   - RouteConfig.unpaidResponseBody?: (context) => {contentType, body} — @x402/core
+//     dist/cjs/x402Client-CdmxbRFj.d.ts:751. Defaults to {} when absent (root cause of the v1-buyer
+//     TypeError documented in docs/research/2026-07-17-x402-v1-v2-compat.md).
+//   - processPriceToAtomicAmount(price, network) from the legacy "x402" package (already a transitive
+//     dep of x402-express/x402-fetch; now declared directly in package.json per no-parasitic-deps rule)
+//     — the exact helper x402-express@1.2.0 itself uses (node_modules/x402-express/dist/cjs/index.js)
+//     to build the v1 PaymentRequirementsV1[] shape.
+//   - declareDiscoveryExtension({method,input,inputSchema,output}) from "@x402/extensions/bazaar"
+//     returns {bazaar:{info,schema}} for RouteConfig.extensions. paymentMiddleware auto-detects it via
+//     checkIfBazaarNeeded(routes) and registers bazaarResourceServerExtension itself
+//     (node_modules/@x402/express/dist/cjs/index.js:166) — no manual resourceServer wiring needed.
+const { processPriceToAtomicAmount } = await import("x402/shared");
+const { declareDiscoveryExtension } = await import("@x402/extensions/bazaar");
+// v1 legacy network id is a plain string ("base"/"base-sepolia"), unlike v2's CAIP-2 NETWORK above.
+const NETWORK_V1 = process.env.X402_NETWORK || "base";
 import { isSettled, decodePayer } from "./lib/settle-gate.mjs";
 // CDP facilitator (when CDP keys present) → settles on Base mainnet AND lists the endpoint in the x402
 // Bazaar discovery layer (how buyer agents FIND us). Falls back to the x402.org testnet facilitator when
@@ -75,7 +92,16 @@ if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
   facilitatorClient = new HTTPFacilitatorClient({ url: "https://x402.org/facilitator" });
 }
 // v2 resource server: facilitator client + one scheme registered per network (exact-payment EVM here).
-const resourceServer = new x402ResourceServer(facilitatorClient).register(NETWORK, new ExactEvmScheme());
+// ALSO register the same ExactEvmScheme under the plain v1 network id (NETWORK_V1, e.g. "base"): the
+// unpaidResponseBody shim above gets a v1 client to construct+send a real X-PAYMENT header, but its
+// payload carries `network:"base"` (v1 shape) — x402ResourceServer only matches an incoming payment to
+// a scheme by exact network-string lookup (x402ResourceServer.hasRegisteredScheme), so without this
+// second registration a v1 payment payload never matches "eip155:8453" and silently falls back to the
+// unpaid 402 path again (verified live 2026-07-17: correct v1 body + correctly signed X-PAYMENT header
+// still got re-served the unpaid challenge until this alias was added).
+const resourceServer = new x402ResourceServer(facilitatorClient)
+  .register(NETWORK, new ExactEvmScheme())
+  .register(NETWORK_V1, new ExactEvmScheme());
 // single product table — drives the payment middleware, "/" index, /.well-known/x402.json and /llms.txt.
 const PRODUCTS = [
   { path: "/research", price: PRICE, example: "/research?q=<topic>", what: "web research digest",
@@ -97,18 +123,90 @@ const PRODUCTS = [
     description: "Perp funding rates across Binance/Bybit/Hyperliquid, normalized to 8h-equivalent, plus cross-exchange divergence (annualized bps, top20 arbitrage signal). GET /funding-rates or /funding-rates?symbol=BTC → JSON. Free-source, 60s cache." },
 ];
 
+// GET-with-query param schemas per route (moved above routes: also feeds the v1 compat body's
+// outputSchema.input and the Bazaar declareDiscoveryExtension() call below). x402scan requires an
+// input schema per operation or the route is "non-invocable" and skipped from registration — see
+// x402scan.com/discovery/spec. Query params only (no request body: all our routes are GET).
+const QUERY_PARAMS = {
+  "/research": [{ name: "q", required: true, type: "string", description: "topic to research" }],
+  "/compound-interest": [
+    { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
+    { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
+  ],
+  "/calc": [{ name: "expr", required: true, type: "string", description: "arithmetic expression" }],
+  "/json-flatten": [{ name: "json", required: true, type: "string", description: "URL-encoded JSON" }],
+  "/dns-lookup": [{ name: "domain", required: true, type: "string" }, { name: "type", required: false, type: "string" }],
+  "/whois": [{ name: "domain", required: true, type: "string" }],
+  "/stock-quote": [{ name: "symbol", required: true, type: "string" }],
+  "/funding-rates": [{ name: "symbol", required: false, type: "string" }],
+};
+// concrete example input values per route (Bazaar discovery extension "input" field — a worked
+// example, distinct from inputSchema's type constraints), mirrors PRODUCTS[].example.
+const EXAMPLE_INPUT = {
+  "/research": { q: "AI agents 2026" },
+  "/compound-interest": { principal: 10000, rate: 5, years: 10, compoundsPerYear: 12 },
+  "/calc": { expr: "(2+3)*4" },
+  "/json-flatten": { json: "{\"a\":{\"b\":1}}" },
+  "/dns-lookup": { domain: "example.com", type: "A" },
+  "/whois": { domain: "example.com" },
+  "/stock-quote": { symbol: "AAPL" },
+  "/funding-rates": { symbol: "BTC" },
+};
+
 // per-route config: v2 RouteConfig.accepts[] (scheme/price/network/payTo/extra), replaces v1's flat
-// {price,network,config}. discoverable + explicit https resource (Bazaar crawler probes it; see
-// PUBLIC_URL note) — TODO(Task4): confirm discoverable is still how v2 lists in Bazaar, else switch to
-// @x402/extensions declareDiscoveryExtension.
+// {price,network,config}.
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+// Task 4.5.A — v1 back-compat 402 body. v1 clients (x402-fetch@1, buyer-cdp.mjs) parse `accepts` out
+// of the JSON body; v2's default unpaidResponseBody is {} (see comment above the imports), so without
+// this a v1 buyer TypeErrors on `.map` of undefined and never pays. Mirrors the exact
+// PaymentRequirementsV1 shape x402-express@1.2.0 itself builds (node_modules/x402-express/dist/cjs/
+// index.js, the EVM branch) so v1 clients parse it identically.
+function v1AcceptsFor(p) {
+  const atomic = processPriceToAtomicAmount(p.price, NETWORK_V1);
+  if ("error" in atomic) throw new Error(`v1 compat body: ${atomic.error} (route ${p.path})`);
+  return [{
+    scheme: "exact",
+    network: NETWORK_V1,
+    maxAmountRequired: atomic.maxAmountRequired,
+    resource: PUBLIC_URL ? `${PUBLIC_URL}${p.path}` : p.path,
+    description: p.description,
+    mimeType: "application/json",
+    payTo: payTo(),
+    maxTimeoutSeconds: 60,
+    asset: atomic.asset.address,
+    outputSchema: { input: { type: "http", method: "GET", discoverable: true } },
+    extra: atomic.asset.eip712,
+  }];
+}
+
+// Task 4.5.B — Bazaar discovery extension. Replaces the plain `discoverable:true` flag (measured
+// 1/8 products actually indexed by x402scan with that flag — docs/research/2026-07-17-x402-v1-v2-
+// compat.md §"本番 seller の v1/v2 分布"). declareDiscoveryExtension() returns {bazaar:{info,schema}}
+// for RouteConfig.extensions; paymentMiddleware auto-registers bazaarResourceServerExtension via
+// checkIfBazaarNeeded() (see import comment above) — nothing else to wire.
 const routes = Object.fromEntries(PRODUCTS.map((p) => [
   `GET ${p.path}`,
   {
     accepts: [{ scheme: "exact", price: p.price, network: NETWORK, payTo: payTo(), extra: { asset: USDC_BASE } }],
     description: p.description,
     mimeType: "application/json",
-    ...(PUBLIC_URL ? { resource: `${PUBLIC_URL}${p.path}`, discoverable: true } : {}),
+    unpaidResponseBody: () => ({
+      contentType: "application/json",
+      body: { x402Version: 1, error: "X-PAYMENT header is required", accepts: v1AcceptsFor(p) },
+    }),
+    ...(PUBLIC_URL ? {
+      resource: `${PUBLIC_URL}${p.path}`,
+      extensions: declareDiscoveryExtension({
+        method: "GET",
+        input: EXAMPLE_INPUT[p.path] || {},
+        inputSchema: {
+          properties: Object.fromEntries((QUERY_PARAMS[p.path] || []).map((q) => [q.name, { type: q.type, description: q.description }])),
+          required: (QUERY_PARAMS[p.path] || []).filter((q) => q.required).map((q) => q.name),
+        },
+        output: { example: {} },
+      }),
+    } : {}),
   },
 ]));
 
@@ -130,22 +228,7 @@ app.get("/llms.txt", (_req, res) =>
     ...PRODUCTS.map((p) => `GET ${PUBLIC_URL || ""}${p.example}  (${p.price}) — ${p.description}`),
   ].join("\n")));
 
-// GET-with-query param schemas per route, for the OpenAPI discovery doc below (x402scan requires
-// an input schema per operation or the route is "non-invocable" and skipped from registration —
-// see x402scan.com/discovery/spec). Query params only (no request body: all our routes are GET).
-const QUERY_PARAMS = {
-  "/research": [{ name: "q", required: true, type: "string", description: "topic to research" }],
-  "/compound-interest": [
-    { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
-    { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
-  ],
-  "/calc": [{ name: "expr", required: true, type: "string", description: "arithmetic expression" }],
-  "/json-flatten": [{ name: "json", required: true, type: "string", description: "URL-encoded JSON" }],
-  "/dns-lookup": [{ name: "domain", required: true, type: "string" }, { name: "type", required: false, type: "string" }],
-  "/whois": [{ name: "domain", required: true, type: "string" }],
-  "/stock-quote": [{ name: "symbol", required: true, type: "string" }],
-  "/funding-rates": [{ name: "symbol", required: false, type: "string" }],
-};
+// (QUERY_PARAMS now defined earlier, above `routes`, so the v1 compat body + Bazaar extension can use it too)
 // Discovery spec (x402scan.com/discovery/spec): canonical machine-readable contract for buyer
 // agents; also required to pass SIWX-gated registration (POST /api/x402/registry/register-origin).
 app.get("/openapi.json", (_req, res) =>
