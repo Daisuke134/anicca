@@ -9438,3 +9438,11 @@
 {"ts":1784288978,"wake_id":"00MROVL7D30DFCF6CFF93B4FDB","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784289108,"wake_id":"00MROVNZHT54D9BF8BD6E04EF6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784289273,"wake_id":"00MROVRIFH859F6D6C1BE54678","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784289456,"wake_id":"00MROVVFW5C8EF71E64D704985","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784289666,"wake_id":"00MROVZY6OF76A2862FFE74FA5","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784289833,"wake_id":"00MROW3IT980E90F524AE44B78","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784289833,"wake_id":"00MROW3IT980E90F524AE44B78","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784290000,"wake_id":"00MROW73Q9D3E29847AD104713","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414) recorded net=0 tx=- status=- [earn] x402 narrate -> NARRATE "}
+{"ts":1784290156,"wake_id":"00MROWAFXX019538EA6DC44E53","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784290227,"wake_id":"00MROWBZ7SF3AF9907BA104BF2","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784290297,"wake_id":"00MROWDGWX1C9F7FB2E2524A33","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
