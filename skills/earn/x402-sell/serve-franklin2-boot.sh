@@ -26,4 +26,4 @@ PIDS="$(lsof -ti tcp:8413 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>
 sleep 1
 # ensure the Tailscale Funnel https port points at :8413 (idempotent; persists across reboots)
 /opt/homebrew/bin/tailscale funnel --bg --https=10000 8413 >/dev/null 2>&1 || true
-exec /usr/bin/env node "$DIR/serve.mjs"
+exec /usr/bin/env node "$DIR/serve-v2.mjs"
