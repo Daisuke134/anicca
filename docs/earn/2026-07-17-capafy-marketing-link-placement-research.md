@@ -75,6 +75,23 @@
 - `ai.anicca.capafy-loop-daily` = loaded、08:10、runs=2 exit 0。実ログ `~/.openclaw/skills/capafy-autopublish/state/daily_loop.log`（mtime 07-17 20:10）
 - **Capafy 売上 = 0。bottleneck = discoverability/quality**: `~/anicca/skills/self/capafy-loop/state/STATE.md:5-10`
 
+## 3b. loop 稼働実態の全数調査（clip-probe 第3報）
+
+| loop | コード | OS 稼働 | self-improve |
+|---|---|---|---|
+| clip (aiclipsvault) | 完動: LEARN→AFF-FIND→producer→post→bio→MEASURE→REFLECT（`clip_pass.sh:53-95`） | **稼働中だが実投稿停滞**（launchd 6h、runs=4 exit=0。cadence stamp 07-14、ledger 最終更新 07-12 = 直近 pass は新規投稿を生んでいない） | あり（3x own avg gate、imitate/optimize） |
+| video (earn/video) | 完成（`decide.py:23-46`、`run.sh:55-265`、metrics 実読 `metrics.py:50-81`） | **supervisor 無し**（tmux/healthcheck 現存せず） | あり（metrics summary を Agent が読み script 改善） |
+| faceless-money-factory | 生成のみ。**投稿ブランチは echo のみで未実装**（`run-daily.sh:51-52`） | draft email のみ | topic 重複回避のみ、views feedback 無し |
+| affiliate slideshow | scripts のみ、orchestration/launchd 無し | 無し | 'amplify winners' は prose のみ未実装 |
+| mau-tiktok | poster は YouTube-only（`post-to-postiz.js:252-266`）。SKILL の 3 platform/12post 記述は乖離 | cron enabled=false + 参照 script 不存在 | 空 |
+| marketing-self-improve | record→measure→growth matrix→advisory JSON（`earn/marketing-self-improve/run.sh:12-74`… 実装あり） | cron 未登録 | advisory のみ、自動 action 無し |
+| capafy daily | `ai.anicca.capafy-loop-daily.plist` 08:10 | **稼働中**（runs=2 exit=0） | 売上$0、discoverability bottleneck |
+
+- credential 参照パス（値は不可侵）: `~/.cloak/ig-<handle>.json`、`~/.cloak/instagrapi-<handle>.json`、`~/.cloak/clip-accounts*.json`、`~/.openclaw/.env`、profile `~/.cloak/profiles/clip-en`
+- **⚠ 要対処: `~/.openclaw/skills/reelfarm/SKILL.md:554-559,609-614` に hardcoded key 存在。rotate + file から除去が必要（別タスク）**
+- 確定した欠如: active marketing cron 無し / Mau runner 不存在 / video healthcheck service 無し
+- scheduling 追補: gateway 稼働中（PID603、314 jobs、store `~/.openclaw/cron/jobs.json`）。既存 X marketing job `anicca-x-marketing-daily-info`（08:20 JST）は **disabled**（`jobs.json:1350-1375`、skill = `~/.openclaw/skills/anicca-x-marketing-skill/SKILL.md`）。video state は warmup_day7 で last_post_date 無し、直近 audit 全て failed/skipped（`~/.cloak/earn-video-money_blueprintdaily.json`）
+
 ## 4. 未確認（次の実測対象）
 - IG first comment vs bio の CTR 実測比較（未確認のまま。bio 採用の根拠は「comment がクリック不可」という仕様事実）
 - TikTok 新アカは 1,000 followers 未満で Website 欄が使えない → Business Account 登録で回避できるかは account 作成時に実測
