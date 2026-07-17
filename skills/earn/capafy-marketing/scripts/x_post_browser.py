@@ -65,9 +65,14 @@ def main():
     ap.add_argument("--url", required=True)
     ap.add_argument("--tweet", required=True, help="native root tweet, no link, <=280")
     ap.add_argument("--reply", default="Try the skill here:")
-    ap.add_argument("--handle", default="aniccaen", help="the logged-in X handle (for URL readback)")
+    ap.add_argument("--handle", required=True, help="the AI-OWNED logged-in X handle (for URL readback). NEVER a Dais-personal account.")
     ap.add_argument("--live", action="store_true", help="click Post. default = dry (fill only, discard)")
     args = ap.parse_args()
+
+    # HARD REFUSAL: never post from a Dais-personal account (revoked 2026-07-18).
+    if args.handle.lstrip("@").lower() in ("aniccaen", "diceai0", "aniccaxxx"):
+        print(json.dumps({"ok": False, "error": f"@{args.handle} is a Dais-personal account — refusing (loop posts only from AI-owned accounts)"}))
+        return 2
 
     native = args.tweet.strip()
     if "http://" in native or "https://" in native:
