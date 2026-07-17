@@ -62,7 +62,7 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | B2 | content adapter: listing → hook/problem/demo/CTA script | `faceless-money-factory/SKILL.md:10-31` の topic 部差替え |
 | B3 | 動画組立 + caption + 品質 gate | `assemble.sh` / `burn-captions.sh` / `verify_clip.sh` そのまま |
 | B4 | IG poster（bio に Capafy URL 固定。comment に URL 置かない） | `instagrapi_post.py` + `run.sh` 3分岐 ledger |
-| B5 | X poster（native post + 最初の self-reply に listing URL） | 新規（`anicca-x-marketing-skill` disabled job を土台に再設計可） |
+| B5 | X poster（native post + 最初の self-reply に listing URL）→ **BUILT + draft-verified 2026-07-18**。`~/anicca/skills/earn/capafy-marketing/scripts/x_post.py`（commit 5cf00927）。Postiz thread の `value[0]`=native(リンク無し)/`value[1]`=self-reply(UTM付 Capafy URL)。deterministic TOOL（LLM 非呼出、copy は入力）。draft で E2E 検証済み（Postiz が2-tweet thread 受理・ledger 記録・test draft 削除）。残: (1)本番 cron 配線=B8 (2)per-listing copy=B1 (3)実 live publish の最終確認は B1 copy + go-live 判断後 | 新規（Postiz `@aニッチャ` integration を土台。anicca-x-marketing-skill の Postiz 契約を流用） |
 | B6 | metrics + 週次 reflect（views/clicks→勝ちフォーマット模倣） | `selfimprove.py` / `metrics.py` + `marketing-self-improve/run.sh` の advisory を自動 action 化 |
 | B7 | conversion attribution: UTM（instagram_bio / x_reply）↔ agent_id ↔ Capafy subscriber join | 新規 |
 | B8 | launchd job `ai.anicca.capafy-marketing-daily`（Loop A と別 job） | plist 新規、instance 分離は `_instance_paths.sh` 方式 |
