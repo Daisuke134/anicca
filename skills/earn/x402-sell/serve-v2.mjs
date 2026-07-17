@@ -28,7 +28,8 @@ import { homedir } from "node:os";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadEvmKey } from "../lib/resolve-identity.mjs";
 import { compoundInterest, calcEval, flattenJson, dnsLookup, whois, stockQuote } from "./primitives.mjs";
-import { getFundingRatesCached, buildFundingRatesResponse } from "./funding-rates.mjs";
+import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from "./funding-rates.mjs";
+import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -121,6 +122,8 @@ const PRODUCTS = [
     description: "Real-time stock quote (price, currency, previous close, exchange). GET /stock-quote?symbol=AAPL → JSON. Free-source market data." },
   { path: "/funding-rates", price: "$0.003", example: "/funding-rates?symbol=BTC", what: "cross-exchange perp funding rates",
     description: "Perp funding rates across Binance/Bybit/Hyperliquid, normalized to 8h-equivalent, plus cross-exchange divergence (annualized bps, top20 arbitrage signal). GET /funding-rates or /funding-rates?symbol=BTC → JSON. Free-source, 60s cache." },
+  { path: "/funding-rate-arb", price: "$0.003", example: "/funding-rate-arb?symbol=BTC", what: "pairwise funding-rate arbitrage signal",
+    description: "Every distinct Binance/Bybit/Hyperliquid exchange-pair funding-rate spread per symbol (not just the single highest-vs-lowest pair), sorted by annualized bps divergence descending, with short(high-funding venue)/long(low-funding venue) direction per pair. GET /funding-rate-arb (top20 across all symbols) or /funding-rate-arb?symbol=BTC (all pairs for that symbol) → JSON. Pure arithmetic on the same cached data as /funding-rates, $0 marginal cost, 60s cache." },
 ];
 
 // GET-with-query param schemas per route (moved above routes: also feeds the v1 compat body's
@@ -139,6 +142,7 @@ const QUERY_PARAMS = {
   "/whois": [{ name: "domain", required: true, type: "string" }],
   "/stock-quote": [{ name: "symbol", required: true, type: "string" }],
   "/funding-rates": [{ name: "symbol", required: false, type: "string" }],
+  "/funding-rate-arb": [{ name: "symbol", required: false, type: "string", description: "base asset, e.g. BTC — filters to all exchange pairs for that symbol; omit for top20 across all symbols" }],
 };
 // concrete example input values per route (Bazaar discovery extension "input" field — a worked
 // example, distinct from inputSchema's type constraints), mirrors PRODUCTS[].example.
@@ -151,6 +155,7 @@ const EXAMPLE_INPUT = {
   "/whois": { domain: "example.com" },
   "/stock-quote": { symbol: "AAPL" },
   "/funding-rates": { symbol: "BTC" },
+  "/funding-rate-arb": { symbol: "BTC" },
 };
 
 // per-route config: v2 RouteConfig.accepts[] (scheme/price/network/payTo/extra), replaces v1's flat
@@ -315,6 +320,14 @@ app.get("/stock-quote", (req, res) => answer(res, () => stockQuote(String(req.qu
 app.get("/funding-rates", (req, res) => {
   getFundingRatesCached()
     .then(({ rows, errors }) => res.json(buildFundingRatesResponse(rows, { symbol: req.query.symbol, errors })))
+    .catch((e) => res.status(503).json({ error: "all upstream exchanges unavailable", detail: String(e && e.message || e).slice(0, 300) }));
+});
+
+// funding-rate-arb: same degrade-not-fail contract as /funding-rates (shares the same cache — no
+// extra upstream load), pure pairwise arithmetic on top.
+app.get("/funding-rate-arb", (req, res) => {
+  getFundingRatesCached()
+    .then(({ rows, errors }) => res.json(buildFundingRateArbResponse(rows, annualizedBps, { symbol: req.query.symbol, errors })))
     .catch((e) => res.status(503).json({ error: "all upstream exchanges unavailable", detail: String(e && e.message || e).slice(0, 300) }));
 });
 
