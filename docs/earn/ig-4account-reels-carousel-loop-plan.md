@@ -480,3 +480,7 @@ identity layer for AI agents: 実 email + **実 phone(SMS/voice)** + iMessage + 
   - Twilio(既存) = VOIP で Meta reject 済（不可）
 - Meta ブラウザ :9228(profile meta-dev) は Verify 画面のまま保持 → 番号さえ用意できれば即 resume → App→token。
 - 決定待ち = どの番号経路にするか（Dais の money/personal-phone 判断）。
+
+## v15 — AGENTMAIL rotate 部分完了 + Meta verify 継続（2026-07-17）
+- AGENTMAIL_API_KEY rotate: 新key発行+`~/.openclaw/.env`配線済(新key auth/me=200実測、ハードコード無し)。漏洩は本体キーのみ(他6 org別キーは無関係)。★旧(漏洩)key は API DELETE が全パターン403で失効不可、旧key=まだ200生存。dashboard所有アカ不明。封じ込め=漏洩先ローカルtranscriptのみ(外部push無し)。残=AgentMailサポート手動失効依頼 or dashboard所有特定。
+- Meta verify(Dais番号): subagent 継続中、token未取得、chat.dbにMeta SMS未着(番号入力〜送信の途中 or 詰まり)。:9228 保持。
