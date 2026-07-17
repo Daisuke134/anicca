@@ -18,7 +18,7 @@ goal: docs/superpowers/specs/2026-07-17-life-manager-p0p1-goal.md（gmail 送信
 | LM-7 ledger | pending | — |
 | LM-19 margin 表 | pending | Telnyx $0.002/min 実測済 |
 | LM-20 repo 収斂 | pending | — |
-| LM-22 TikTok bio | pending | — |
+| LM-22 TikTok bio | **caption CTA done**（post-daily.sh、openclaw `4e41c4a6` push 済み）。bio link = blocked: @anicca.comedy が daily-driver 未ログイン + ログイン試行中に Chromium クラッシュ（load avg 瞬間 122、システム枯渇）。再試行手順あり（handle+共通pw+gog OTP）。**教訓: fleet 同時実行を絞る。CDP :9222 は 21:41 時点で死亡（curl 000 実測）— 再起動は後続 agent で** | screenshots ×3 in scratchpad |
 | LM-1 dev loop D0 | pending | — |
 
 ## 走行中
