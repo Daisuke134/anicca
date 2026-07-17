@@ -66,7 +66,7 @@ if pgrep -f "clip_pass\.sh" >/dev/null 2>&1; then
 elif [ ! -f "$ACCOUNTS" ]; then
   log "clip accounts: SKIP (no $ACCOUNTS)"
 else
-  jq -r '.[] | select(.status=="ready" or .status=="warming") | "\(.handle)\t\(.profile)\t\(.port)"' "$ACCOUNTS" |
+  jq -r '.[] | select((.status=="ready" or .status=="warming") and ((.session_owner // "") != "instagrapi")) | "\(.handle)\t\(.profile)\t\(.port)"' "$ACCOUNTS" |
   while IFS=$'\t' read -r handle profile port; do
     [ -z "$port" ] && continue
     if ! curl -s -m 3 "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
