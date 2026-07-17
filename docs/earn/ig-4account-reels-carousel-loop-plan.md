@@ -408,3 +408,39 @@ v7 は「1回 clean login が取れる」前提で instagrapi 継続とした。
 6. producer 出力 mp4 を CLOUDFLARE_TUNNEL で公開URL化して video_url に
 7. 50日毎 refresh_access_token cron 設置
 done = Graph API で reel 1本を公式投稿 + IG 確認 + refresh cron 稼働。
+
+## v12 — openclaw earn 資産の監査 + 移設マップ（実測 2026-07-17）
+
+openclaw = `~/.openclaw`（github Daisuke134/anicca-dais private、trunk main-internal）。skills 約400、cron jobs.json 222 job。
+
+### earn 資産の生死（実測）
+| 資産 | loop | 生死 | profitable-claude に既存? |
+|---|---|---|---|
+| bounty | GitHub bug bounty 自動応募 | 生（07-15に$50 PR merge実績。ただし$700で stuck-loop バグ） | あり(human-funded/bounty) |
+| gig | gig 探索・応募 | 実体は **~/anicca/skills/earn/gig（OSS側）が正本**。openclaw の anicca-earn-gig は**未参照の死んだ重複**。profitable-claude/human-funded/gig は E2E テスト行のみ（本番証拠なし=前回移動で壊れた実体） | あり(但し非稼働) |
+| larry/reelclaw/honne | TikTok/IG スライド・リール factory | 生（本日まで連続生成）。ただし realized $ は未確認 | なし |
+| capafy | 製品+marketing | capafy-loop-daily enabled、実体 ~/anicca/skills/self/capafy-loop | 一部alias |
+| stripe-revenue-listener/poller | 決済検知 | 生 | なし |
+| vibe-trading / monk-factory / cfo-earner-* | - | 空箱 or 休眠 or disabled | なし |
+
+### 依存マップ（openclaw を消すと壊れる箇所 = 実測）
+- ~/anicca → ~/.openclaw 依存（**これを断てば自立可**）:
+  - `earn/run.sh:27,46,315` = `~/.openclaw/.env`（共有 secrets 源）
+  - `earn/gig/gig_reality_verify.sh:27` = `~/.openclaw/state/.gig-core-selfheal-request.json`
+  - `earn/clip/run.sh:196` = `~/.openclaw/logs/clip-insta-poster.err.log`
+  - `anicca-life-manager/SKILL.md` = `~/.openclaw/identity/profile.json` 等を正本明記
+  - ほぼ全 launchd plist の Std*Path = `~/.openclaw/logs/*.log`
+- profitable-claude → ~/.openclaw 依存 = **コードには無し**（README/.env.example の doc 言及のみ）。
+- openclaw → profitable-claude 参照 = **grep 0件**。
+- **最大の壁**: larry/reelclaw/honne は openclaw gateway（Node dist/index.js + jobs.json cron）に強結合。gig/clip/capafy/bounty は ~/anicca に実体があり openclaw 依存は .env + logs パスのみ = env の向き先変更で自立可。
+
+### 移設仕分け
+- 移設: gig(env切替で自立)/bounty($700バグ修正込)/larry・reelclaw・honne(gateway 脱却が要る)/stripe-listener/.env の実キー
+- 破棄: openclaw の anicca-earn-gig(死んだ重複)/vibe-trading(空箱)/disabled一括/jobs.json.bak 40個/profitable-claude の e2e-bid 行
+
+### 移設の順序（strangler-fig、止めずに）
+1. **secrets**: profitable-claude/secrets に .env 相当を用意（値を持っていく）→ ~/anicca の run.sh 系の `~/.openclaw/.env` 参照を新パスへ。
+2. **gig**: ~/anicca/skills/earn/gig を正本として profitable-claude/channels/gig に移し、openclaw の死んだ重複を削除。前回停止の真因（env/log パス依存）を env 切替で解消。launchd を新パスへ、旧を検証後 disable。
+3. **larry/reelclaw/honne**: openclaw gateway 依存を外す（jobs.json cron → launchd or profitable-claude cron へ）。最難関、最後。
+4. **logs**: 全 plist の Std*Path を profitable-claude/state/logs へ。
+5. 各段階で copy→新検証→実 earn/E2E green→旧削除。openclaw 参照 0 を grep で確認して初めて openclaw 削除。
