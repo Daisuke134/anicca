@@ -12,6 +12,7 @@
 import https from 'node:https';
 import http from 'node:http';
 import os from 'node:os';
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { buildSystemPrompt, buildUserMessage, getToolDefinitions } from './prompt.mjs';
 // spec 25 O1: expose each live skill as a pickable tool (enum on run_skill.slot).
@@ -240,6 +241,20 @@ export async function thinkClaudeP(ctx, config) {
     ...(scrubbed.CLAUDE_CODE_OAUTH_TOKEN ? { CLAUDE_CODE_OAUTH_TOKEN: scrubbed.CLAUDE_CODE_OAUTH_TOKEN } : {}),
   };
 
+  // CLAUDE-P-1 (2026-07-17): launchd cannot refresh the Claude subscription OAuth token headlessly
+  // (keychain locked) -- measured live: claude-p's THINK died `claude_exit_1` (empty stderr = OAuth
+  // session expired) 797x straight from 2026-07-17 01:14. AUTH-1 (306e0f73) already worked around the
+  // identical failure for every earn-loop `*-cli.sh` launcher (see gig-cli.sh:47-55) by routing through
+  // the local CLIProxyAPI, whose creds are plain files and refresh headlessly, but never touched this
+  // spawn site. Same fix, same source of truth. This is NOT the "no fallback to a free model" ban this
+  // file documents above (thinkClaudeP is only reached when ANICCA_BRAIN=claude-p) -- CLIProxyAPI still
+  // serves the real Sonnet model claude-p is entitled to; only the dead auth transport is swapped out.
+  const cliProxyKey = readCliProxyKey(process.env.HOME);
+  if (cliProxyKey) {
+    childEnv.ANTHROPIC_BASE_URL = 'http://127.0.0.1:8317';
+    childEnv.ANTHROPIC_AUTH_TOKEN = cliProxyKey;
+  }
+
   const { stdout, stderr, code } = await runClaudePWithTimeout(claudeBin, [
     '-p', prompt,
     '--output-format', 'json',
@@ -276,6 +291,24 @@ export async function thinkClaudeP(ctx, config) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * CLAUDE-P-1: reads the CLIProxyAPI key file (same file gig-cli.sh reads at $HOME/.cli-proxy-api-key)
+ * if present. Never logs the key contents. Returns null (never throws) when the file is absent or
+ * unreadable, so the caller silently keeps the subscription-OAuth path when no proxy key exists.
+ *
+ * @param {string|undefined} home
+ * @returns {string|null}
+ */
+export function readCliProxyKey(home) {
+  if (!home) return null;
+  try {
+    const key = fs.readFileSync(`${home}/.cli-proxy-api-key`, 'utf8').trim();
+    return key || null;
+  } catch {
+    return null;
+  }
+}
 
 function httpPost(url, body) {
   return new Promise((resolve, reject) => {
