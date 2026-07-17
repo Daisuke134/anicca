@@ -16,6 +16,33 @@ is web-researched: **IG/TikTok comment URLs are not clickable and link-in-body i
 down-ranked on X → bio-led on IG, and on X the link goes in the FIRST self-reply, never
 the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`)
 
+## Pipeline (X line): B1 select → B2 copy (agent) → B5 post
+
+```
+select_listing.py         # B1: pick an online listing (rotation/dedup), emit {agent_id,name,desc,url}
+   → agent writes copy    # B2: the running LLM writes the native tweet + reply CTA from name+desc
+   → x_post.py            # B5: validate (no-link native, <=280) + post the 2-tweet self-thread
+```
+
+## B1 — promotion selector (`scripts/select_listing.py`)
+
+Deterministic TOOL, no LLM. Reads seller `GET /agent/agents` (no buyer token; 200-verified,
+21 online / 26 total), keeps `agentStatus=="online"`, and picks the listing promoted
+least-recently (rotation + dedup) via `~/.openclaw/state/capafy-marketing-rotation.jsonl`.
+Emits `{ok, agent_id, name, desc, sales, rating, url, online_pool}`. URL = `https://capafy.ai/agent/<id>`.
+Verified 2026-07-18: 3 consecutive runs picked 3 different online listings (rotation works).
+
+## B2 — per-listing copy (agent judgment, NOT a hardcoded template)
+
+The running agent reads the selected listing's `name`+`desc` and **writes** the X copy itself:
+- native tweet: value-first, <=280 chars, **no link** (X down-ranks link-in-body)
+- reply CTA: a short line; `x_post.py` appends the UTM-tagged listing URL
+
+There is deliberately NO copy-generation script — copy is the model's judgment (skill = TOOL,
+decision = model). `x_post.py` is the validator/assembler: it rejects a native tweet with a link
+or over 280 chars, so a bad draft fails closed. Verified 2026-07-18: selector → agent-written
+258-char native tweet → `x_post.py --draft` passed validation and created a Postiz draft (deleted after).
+
 ## B5 — X poster (`scripts/x_post.py`)
 
 Posts a listing to X via **Postiz** (integration `POSTIZ_X_INTEGRATION_ID`, account アニッチャ)
