@@ -65,6 +65,24 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
 fi
 
+# FIND-035 (A6, 2026-07-18): RESULT-MARKER BACKOFF. The has-session guard above only prevents a
+# CONCURRENT second fixer — it does NOT stop the every-6h auditor from re-spawning a FRESH full-power
+# Sonnet each cycle when the underlying condition PERSISTS but is NOT a code bug: e.g. published.jsonl
+# is legitimately stale >30h because inventory is drained (nothing to publish), or a prior fixer
+# already concluded this is a genuine external blocker. Without backoff this burned one Sonnet every
+# 6h forever for a non-bug (the "verify-loops-audit reflex-spawns self-fix" landmine, capafy 2026-07).
+# If the PRIOR fixer for THIS loop already CONCLUDED (RESULT no longer 'RUNNING') within BACKOFF_MIN,
+# skip — the condition was addressed (SUCCESS) or is a known standing blocker (FAIL); retry only after
+# the backoff so a real regression is still eventually re-attempted. Test seam: SELF_FIX_BACKOFF_MIN.
+BACKOFF_MIN="${SELF_FIX_BACKOFF_MIN:-1200}"   # 20h → at most ~1 fixer/day/loop instead of 4
+if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && [ -f "$RESULT" ] && ! grep -q '^RUNNING' "$RESULT" 2>/dev/null; then
+  res_age_min=$(( ( $(date +%s) - $(stat -f %m "$RESULT" 2>/dev/null||echo 0) ) / 60 ))
+  if [ "$res_age_min" -ge 0 ] && [ "$res_age_min" -lt "$BACKOFF_MIN" ]; then
+    echo "$(date '+%F %T') self-fix[$LOOP] prior fixer concluded ${res_age_min}min ago (<${BACKOFF_MIN} backoff) → skip re-spawn [$(head -c 70 "$RESULT" | tr -d '\n')]" >> "$LOG"
+    echo "self-fix[$LOOP] backoff — prior result ${res_age_min}min ago (<${BACKOFF_MIN}min)"; exit 0
+  fi
+fi
+
 # FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full disk stops swap from growing, which
 # surfaces as fork() failures for every fresh spawn — including this fixer's own tmux/claude spawn below.
 # Without this, self-fix keeps respawning fixers that die before they can even diagnose anything (observed:
