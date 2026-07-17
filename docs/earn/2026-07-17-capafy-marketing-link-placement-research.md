@@ -92,6 +92,24 @@
 - 確定した欠如: active marketing cron 無し / Mau runner 不存在 / video healthcheck service 無し
 - scheduling 追補: gateway 稼働中（PID603、314 jobs、store `~/.openclaw/cron/jobs.json`）。既存 X marketing job `anicca-x-marketing-daily-info`（08:20 JST）は **disabled**（`jobs.json:1350-1375`、skill = `~/.openclaw/skills/anicca-x-marketing-skill/SKILL.md`）。video state は warmup_day7 で last_post_date 無し、直近 audit 全て failed/skipped（`~/.cloak/earn-video-money_blueprintdaily.json`）
 
+## 3c. Capafy reject（billing error）真因調査 — 2026-07-17 実測
+
+Capafy support メールの主張: 全 agent が `FailoverError: publisher_openai_official ... billing error（OpenRouter key 残高不足）` で smoke test fail、5件 reject。
+
+自分で実測した結果（この session の実 curl）:
+| 項目 | 実測値 |
+|---|---|
+| key 供給源 | `CAPAFY_HOST_OPENROUTER_KEY`（`~/.openclaw/.env`。CP2 script `drive_checkpoint2.py:27-37` が Capafy UI に入力） |
+| key prefix/len | `sk-or`…/73 chars（label `sk-or-v1-559...b26`） |
+| OpenRouter credits | **total_credits $5.00 / total_usage $3.41 → 残 ~$1.59** |
+| usage_daily | $0.000192（=ほぼ使われていない） |
+| live 呼び出し | `anthropic/claude-sonnet-4.6` に実 request → **200 OK、"ok" 返答**（billing error 再現せず） |
+
+**結論（仮説順位）**:
+1. **最有力: Capafy hosted 側の agent version が古い（rotate 前の）key を保持**。Capafy メール自身の選択肢 2「You replaced the API key, but the current Agent version may still be using the old key」に一致。現行 .env key は生きているのに hosted テストが fail する説明がつく。usage_daily ≈ $0 も「Capafy からの呼び出しが現行 key に到達していない」ことと整合。
+2. 次点: 残 $1.59 は薄く、将来枯渇は時間の問題（真因ではないが補充推奨）。
+- 対処: 各 agent version の Packages & Keys で key を現行値に入れ直し → Test Run green を確認 → resubmit。加えて OpenRouter へ $10-25 補充。skill の self-heal に「publish 前に OpenRouter /credits 実測 + live probe 1発」ゲートを追加する。
+
 ## 4. 未確認（次の実測対象）
 - IG first comment vs bio の CTR 実測比較（未確認のまま。bio 採用の根拠は「comment がクリック不可」という仕様事実）
 - TikTok 新アカは 1,000 followers 未満で Website 欄が使えない → Business Account 登録で回避できるかは account 作成時に実測
