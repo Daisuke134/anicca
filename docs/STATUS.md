@@ -799,6 +799,37 @@ tsnet はノード登録に数秒かかるので再起動を煽らない）。lo
 
 ★副産物: franklin1 の店は**既に商品7点を公開している**（research $0.003 / whois $0.002 / stock-quote $0.003 / calc・DNS・JSON-flatten・compound-interest 各 $0.001）。`/.well-known/x402.json` も**実装済み**（T8 で「実装する」としていたが既に在る。T8 の記述は要修正）。franklin1 に足りないのは店でも商品でもなく、**Bazaar への広告(=`X402_PUBLIC_URL`)だけ**。
 
+### ★2026-07-17 是正 — T2b-4「DONE」は不完全だった。実際に:8414を握っていたのは別プロセス★
+
+**T2b-4 は loop が生成した `ai.anicca.x402-seller-8414` plist の env だけを直して「DONE」と書いたが、
+そのプロセスは1度も port を取れていなかった。** 実測(`lsof -iTCP:8414` → pid → `ps eww`):
+実際に :8414 を LISTEN していたのは Dais 手書きの `ai.anicca.x402-franklin1` launchd job
+（`serve-franklin1-boot.sh` 経由、`ANICCA_HOME=/Users/anicca/.openclaw`）で、こちらは
+`X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:10001}"` という
+**Funnel非対応ポート(:10001)への旧フォールバックのまま**だった。ローダー2本(`x402-seller-8414` と
+`x402-franklin1`)が同じ :8414 を取り合い、後者が先に bind して勝ち、前者は `spawn scheduled` のまま
+死に続けていた（bind失敗→exit 1、`launchctl print` で確認）。
+→ **一般法則: plist の env を直しても、実際にそのポートを握っているプロセスが別 launchd job なら無意味。
+「直した」の前に `lsof` でポートの実所有者を確認する。**
+
+**修正**: `skills/earn/x402-sell/serve-franklin1-boot.sh` のフォールバックを
+`https://franklin1.tail7a0ba4.ts.net`（tsbridge の tsnet ノード。T2b-2/T2b-3 で既に外部到達確認済み）に変更、
+無効化されていた旧 `tailscale funnel --https=10001` 行を削除（tsbridge が既にこの役割を担うため二重管理は不要）。
+`launchctl kickstart -k gui/501/ai.anicca.x402-franklin1` のみ再起動（他の x402 job のpidは無変化を確認）。
+
+**検証（全て実測、2026-07-17）**:
+| 項目 | 結果 |
+|---|---|
+| `/.well-known/x402.json` の resource | `https://franklin1.tail7a0ba4.ts.net/...`（絶対URL、7商品全て） |
+| `curl https://franklin1.tail7a0ba4.ts.net/funding-rates` | `402`、`resource` が新URLと一致 |
+| **外部到達の証明**（tailnet外の第三者 `r.jina.ai` 経由） | `HTTP 402 Payment Required` を新URLで確認（tailnet内からの自己満足ではない） |
+| 既存3枠 (443/8443/10000) | 直前と同じ pid（97401/92907/92901 系列）、`curl` で200継続。**無傷** |
+| claude-p (`0x810F6D61…`) から新URL `/research` へ self-pay $0.003 | tx `0x3889c185ccb02d67adcfd08ac3643d832a8548688246c98bbdb5a257f7faccd1`、`settled:true` が
+`state/sales-0x3eccad24794ca298d25378e9902a251322ea8749.jsonl` に記録 |
+
+commit: `99765387`（anicca repo, main）。Bazaar 掲載反映は次の `bazaar-scan.mjs` 実行で確認予定（settle 1回はT3の条件を満たした、掲載まで通常30-60分）。
+★注: STATUS.md 表の **T2b-6** はこれとは別タスク（claude-p の:8411をtsbridgeに載せる、未着手）。混同注意。今回の是正は T2b-4 の欠陥修正。
+
 ### ★金の帰属（2026-07-16 実測。混線ゼロ）★
 
 boot script 逐語: franklin1 = *"franklin1's **OWN** payTo (receiving-only, no key needed here)"* /
