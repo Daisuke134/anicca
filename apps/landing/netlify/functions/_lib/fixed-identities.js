@@ -16,10 +16,17 @@
 const FIXED_IDENTITIES = {
   "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502": "claude-p", // EVM: looked up lowercased (signing-only identity, not the funded proxy)
   "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9": "Franklin", // Solana: base58, case-sensitive, verbatim
+  // FIX-1 (2026-07-17): franklin2's own Solana wallet (~/.franklin2-home/.blockrun/.solana-session),
+  // derived the same way telemetry-post-franklin.mjs derives it (last 32 bytes of the 64-byte secret
+  // key, base58-encoded). Without this entry expectedHost() fell through to the EVM-only auto-derive
+  // fallback ("anicca-" + id.slice(2,8)), which mangles a base58 id and never equals the poster's
+  // host:"Franklin2" — every post 400'd as host_wallet_mismatch (poster.log: 4193/4194 non-202).
+  "HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX": "Franklin2", // Solana: base58, case-sensitive, verbatim
 };
 
 // The canonical host an id is allowed to claim: a pinned fixed name, else the auto-derived
-// "anicca-<first 6 hex>" (EVM only — no auto-derived Solana instance exists yet).
+// "anicca-<first 6 hex>" (EVM only — no auto-derived Solana instance exists yet; the fallback is
+// still wrong for any *unregistered* Solana id — out of scope for FIX-1, tracked here only).
 function expectedHost(id) {
   return FIXED_IDENTITIES[id] || FIXED_IDENTITIES[String(id).toLowerCase()] || ("anicca-" + String(id).slice(2, 8).toLowerCase());
 }
