@@ -238,6 +238,42 @@ def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=Non
         return False
 
 
+def account_proxy_url(handle, accounts_path=None):
+    # Return this account's assigned residential/mobile proxy URL (or None for direct IP).
+    # The clip-accounts.json entry carries proxy:"~/.cloak/proxy-clip-1.json". A clean, STABLE
+    # per-account exit IP is the #1 anti-ban lever — a shared/datacenter IP is the documented #1
+    # cause of bloks ChallengeRequired / BadPassword (docs/earn/ig-account-scale-best-practices.md).
+    accounts_path = accounts_path or C("~/.cloak/clip-accounts.json")
+    ppath = None
+    try:
+        for a in json.load(open(accounts_path)):
+            if a.get("handle") == handle:
+                ppath = a.get("proxy"); break
+    except Exception:
+        return None
+    if not ppath:
+        return None
+    try:
+        d = json.load(open(C(ppath)))
+        return f"http://{d['username']}:{d['password']}@{d['host']}:{d['port']}"
+    except Exception:
+        return None
+
+
+def apply_proxy(cl, handle, res=None, accounts_path=None):
+    # Route ALL instagrapi traffic for this account through its assigned residential/mobile proxy so
+    # IG always sees ONE consistent, non-datacenter exit IP. Never echoes the proxy URL/creds.
+    url = account_proxy_url(handle, accounts_path)
+    if url:
+        cl.set_proxy(url)
+        if res is not None:
+            res["proxy"] = "residential (assigned)"
+        return True
+    if res is not None:
+        res["proxy"] = "none (direct IP)"
+    return False
+
+
 def keepalive_main(handle, settings_path=None, accounts_path=None, client_factory=None):
     # v24 point 2, wired: two-stage read-only probe on the golden session, fired by
     # session_vault_tick.sh every 30 min so the session never rots between posts.
@@ -253,6 +289,7 @@ def keepalive_main(handle, settings_path=None, accounts_path=None, client_factor
         client_factory = Client
     cl = client_factory()
     cl.delay_range = [2, 5]
+    apply_proxy(cl, handle, res, accounts_path)
     try:
         cl.load_settings(settings)
     except Exception as e:
@@ -311,6 +348,7 @@ def main():
         from instagrapi import Client
         cl = Client()
         cl.delay_range = [2, 5]
+        apply_proxy(cl, a.handle, res)
         cl.challenge_code_handler = make_gmail_handler(a.handle)
         # ★ ACCOUNT GUARD (fail-closed): the session is loaded from instagrapi-<handle>.json (tier 1/3)
         #   or verified cl.username==handle (tier 2), so we can only ever act as the right account. ★
