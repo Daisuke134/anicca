@@ -66,7 +66,10 @@ STEP5 BIO (only once, and only when MODE=--live): ensure the ACCOUNT BIO / profi
 
 STEP6 VERIFY + LEDGER: on --live, confirm the Reel is publicly visible and record its URL in ~/.openclaw/state/capafy-marketing-ig-ledger.jsonl (platform=ig) + the post time in the rotation ledger (platform=ig). On DRY, record that the flow reached the share step cleanly.
 
-STEP7 REPORT: openclaw message send --channel telegram --target 8547730585 --message "<honest one-screen: listing, mode dry/live, reel url or dry-reached, online count>" --json.
+STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual output, not a summary). Send to telegram chat 8547730585 via openclaw message send:
+  (a) the VIDEO itself as media:  openclaw message send --channel telegram --target 8547730585 --media <the mp4 path> --force-document --message "<caption below>" --json  (--force-document keeps it uncompressed; if the video attach fails, fall back to sending a thumbnail/first-frame png + the message).
+  (b) the message body MUST contain: the promoted listing name + agent_id, the mode (DRY or LIVE), the Reel public URL (or "DRY — not posted" on a dry pass), and the FULL caption text verbatim (the exact caption you wrote for the Reel).
+  On a DRY pass you STILL send this once (video + full caption + which listing) so Dais can review the creative before go-live — you just do NOT publish to IG. Confirm the send returned a real message id; also AgentMail via loop-report if that path exists.
 
 FINALLY touch ~/.openclaw/state/.capafy-ig-marketing-last-pass. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
 
