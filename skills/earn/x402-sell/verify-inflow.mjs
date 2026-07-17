@@ -18,6 +18,7 @@ const OUR_WALLETS = new Set([
   "0x810f6d61f7606deee2657d3083e150a222bc29c5", // founder seller payTo
   "0x3eccad24794ca298d25378e9902a251322ea8749", // franklin (per-instance EVM)
   "0xe7747fd899d8987821bb4cb3d6adf22565f87ce9", // franklin2 (per-instance EVM)
+  "0xb9dd3b67921b354c656523d6851537988f31dd56", // machine legacy/default identity (resolve-identity fallback) — self-probes pay from this; measured 2026-07-18, 9 franklin2 sales rows misread as external until added
   // Funding routed THROUGH us, never earned. Traced 2026-07-12 (record-earn.mjs:40-49): it is the
   // source of both largest "earn" rows ever recorded ($22.97 tx 0x3b3eeee6…, $7.98 tx 0x41ead2f3…)
   // and of franklin1's $6.4778 — a plain EOA (no contract code) holding >$3.1M USDC on Base, far too
