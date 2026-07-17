@@ -122,12 +122,16 @@ def keepalive(cl):
     # Read-only session-alive probe (v24 point 2). Never writes, never relogins. Returns False
     # ONLY on a confirmed LoginRequired (the session is actually dead); any other exception is
     # treated as an inconclusive/transient blip, not proof of death, so it must NOT trigger a
-    # relogin attempt elsewhere in the pipeline.
+    # relogin attempt elsewhere in the pipeline. A bloks ChallengeRequired is neither of those —
+    # it means the account is poisoned, so it must propagate to the caller (keepalive_main),
+    # never be swallowed as "alive" (v24 #12).
     try:
         cl.get_timeline_feed()
         return True
     except LoginRequired:
         return False
+    except ChallengeRequired:
+        raise
     except Exception:
         return True
 
@@ -144,6 +148,8 @@ def gentle_ping(cl):
         return True
     except LoginRequired:
         return False
+    except ChallengeRequired:
+        raise
     except AttributeError:
         return keepalive(cl)
     except Exception:

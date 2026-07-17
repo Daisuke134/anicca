@@ -172,6 +172,24 @@ class TestKeepalive(unittest.TestCase):
         cl.sync_launcher = mock.MagicMock(return_value={})
         self.assertTrue(ip.gentle_ping(cl))
 
+    def test_keepalive_reraises_challenge_required(self):
+        # bloks poison signal during a probe must propagate, not read as "alive" (v24 #12).
+        cl = mock.MagicMock()
+        cl.get_timeline_feed = mock.MagicMock(side_effect=ChallengeRequired())
+        with self.assertRaises(ChallengeRequired):
+            ip.keepalive(cl)
+
+    def test_gentle_ping_reraises_challenge_required(self):
+        cl = mock.MagicMock()
+        cl.sync_launcher = mock.MagicMock(side_effect=ChallengeRequired())
+        with self.assertRaises(ChallengeRequired):
+            ip.gentle_ping(cl)
+
+    def test_keepalive_transient_error_still_true(self):
+        cl = mock.MagicMock()
+        cl.get_timeline_feed = mock.MagicMock(side_effect=RuntimeError("transient network blip"))
+        self.assertTrue(ip.keepalive(cl))
+
 
 if __name__ == "__main__":
     unittest.main()
