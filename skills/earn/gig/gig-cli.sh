@@ -43,6 +43,17 @@ PROMPT_FILE="$HOME/gig/.startup-prompt.txt"
 mkdir -p "$HOME/gig"
 printf '%s' "$STARTUP" > "$PROMPT_FILE"
 unset ANTHROPIC_API_KEY   # 2026-07-13 fix: a custom key in this launcher's env makes `claude` block on an interactive "use this API key?" prompt with no human to answer it, hanging the core forever
+
+# Auth: launchd cannot refresh the subscription OAuth token headlessly (keychain locked; this is
+# why the core sat spinning "Not logged in" since 2026-07-15 21:23). Same fallback already proven
+# live hourly by gig_reality_verify.sh — route through the local CLIProxyAPI (:8317) whose creds
+# are plain files and refresh headlessly; fall back to subscription auth if the key file is absent.
+CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
+if [ -n "$CLIPROXY_KEY" ]; then
+  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
+  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+fi
+
 tmux -S "$SOCK" new-session -d -s "$SESSION" -c "$HOME" \
   "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/gig" && touch "$HOME/gig/.last-start"   # FIND-R2-001: seed start marker only (.last-pass = real completed pass only, never startup)

@@ -16,6 +16,17 @@ PROMPT_FILE="$HOME/.cache/anicca-loops/reddit-startup.txt"
 mkdir -p "$(dirname "$PROMPT_FILE")"
 printf %s "$STARTUP" > "$PROMPT_FILE"
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+
+# Auth: launchd/tmux cannot refresh the subscription OAuth token headlessly (keychain locked) —
+# same fallback already proven live by gig-cli.sh / gig_reality_verify.sh — route through the
+# local CLIProxyAPI (:8317) whose creds are plain files and refresh headlessly; fall back to
+# subscription auth if the key file is absent.
+CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
+if [ -n "$CLIPROXY_KEY" ]; then
+  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
+  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
+fi
+
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
   "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.reddit-loop-last-start"; sleep 2
