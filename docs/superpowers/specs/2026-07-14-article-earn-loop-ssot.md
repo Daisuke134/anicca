@@ -823,6 +823,16 @@ E2E は全 green だったが、**中身**を編集者として精読した結�
 - **gates.log 2度目の汚染 → 構造ガード予定**: 手動検証で ARTICLE_GATES_LOG 付け忘れ再発（2回目）。仕組みで防ぐ = gate scripts に `[ -t 1 ] || $ARTICLE_GATES_TEST → .test.log` 退避（手動=TTY、launchd 本番=非TTY で自動分離）。regeneration 後に実装。
 - **#65 完了（2026-07-17、builder-authfix）: topics/queue 決定的順序化**。新設`scripts/select-next-topic.sh`が`created:`frontmatter ASC→`priority:`(int、省略可)ASC→filename ASCの順で決定的に次カードを選ぶ（mtimeやls順は一切見ない）。STEP1の「take the OLDEST one」という曖昧なprose指示を、このスクリプト呼び出しに置換。既存8枚（virtuals-acpは既にdone/へmv済みのため対象外）に実git first-commitタイムスタンプから逆算した`created:`をbackfill、`make-diary-digest.sh`は今後書くカードに`created:`を自動付与するよう修正、SKILL.mdにフィールド仕様を追記。実測: 合成fixtureで5ケース（異なるcreated優先/priorityタイブレーク/同created+priority無しでfilenameタイブレーク=実インシデントの厳密再現/created欠如時のmtime fallback+警告/空queue）+ 実production queueの8枚全てに`created:`が付いていることを確認するcase6、計7/7 PASS（`tests/art/test_select_next_topic_order.sh`）。実productionのqueue（8枚、うち2枚が同created値でタイ）に対して実行し`humanizer-shootout.md`が正しく選ばれることも実測。commit: profitable-claude `605d2a2`。
 
+### 7.64 #77 タイトル jargon ゲート（2026-07-17 夜、builder-authfix実装→team-lead commit代行）
+
+**発端**: #72-8 regeneration の実証で、work file（`state/2026-07-17-virtuals-hanko-ja.md`）はタイトル英固有名詞0件・バーチャルズ化されていたが、**実際に zenn へ staged された git ファイル**（`~/.openclaw/workspace/zenn-articles/articles/2026-07-17-virtualssolidity.md`）のタイトルは「Virtualsの求人市場を覗いたら、承認はSolidityのハンコ一つで済んでいた」のまま jargon 2語（Virtuals/Solidity）が残っていた——team-lead が実 staged 出力を実測して発見（work file を測って「英語0件」と報告した私の測定は誤り、教訓: **検証は必ず実 staged 出力で行う、中間 work file ではない**）。原因は P5（`--platform note` 限定の英固有名詞≤1カウント）が zenn/devto を意図的に免除していたため、note 版はジャーゴン0でも zenn 版タイトルには何の歯止めも無かったこと。
+
+**実装（deslop-gate.sh に B8 として新設、全platform適用）**: 正本 = plainlanguage.gov（GSA公式）のプレインランゲージ・タイトル指針。LLM judge に2条件をOR判定させる: (a) タイトル中の「一般読者に通じない固有名詞・専門語」（英語もカタカナも対象、Virtuals/バーチャルズ/Solidity等）が2つ以上、(b) 2つ未満でも知識ゼロの読者がタイトルだけで①何の話か②なぜ驚きかを判別できない。同じ初出略語ストップリスト(AI/IT/API等)はjargon扱いしない。SKILL.mdに置換ルール+few-shot実例を追記（Virtualsの…Solidityの…→AIが仕事を受発注し合う市場を…検収係は中身を見ずに5%…、固有名詞を機能/カテゴリ名に置換する方針、翻訳/カタカナ化では不十分と明記）。
+
+**実測**: 今日の実タイトルを`--platform zenn`で通すと`FAIL、rule: B8`（platform=zennでもP5の抜け穴なしに捕まる）、置換後タイトルはPASS。en版も同ロジックで実測（jargonタイトルFAIL/置換後PASS）。既存`tests/art/test_deslop_mechanical_precheck.sh`の regression 13/13 PASS（B8追加による既存P4/P5/Rule4/B7への影響なし）、新設`tests/art/test_deslop_title_jargon_b8.sh`（ja/en各negative+positive+title省略時skip、計5ケース、実LLM judge呼び出し）6/6 PASS。commit: profitable-claude `be3b664`（team-lead代行push）。
+
+**regeneration 再実行（team-lead主導）**: virtuals-acp を再度 queue/ へ戻し、他10枚（builder-digest 追加分含む）を`topics/_hold/`へ隔離、`launchctl kickstart`（pid 35092、21:29開始）で virtuals-acp が確実に拾われる状態を作成。完走後、**実 staged zenn git ファイルのタイトル**で Virtuals/Solidity/バーチャルズ が消えているかを実測予定（work file 計測はしない、前回の測定ミスの是正）。
+
 ### 7.6 新 TODO（#53 から採番。§5 MASTER 順序の後続）
 
 | # | やること | 状態 |
