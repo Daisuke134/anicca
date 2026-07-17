@@ -104,3 +104,16 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | 9 | B8-B9 launchd + account 戦略実測 | vcsdd |
 | 10 | A7 通知受信 SSOT（Dais 確認要） | 随時 |
 | 11 | §4 OSS 移設 | 14日安定後 |
+
+## 7. goal-monitor（自走監査 + 自動 go-live）— 親の介入ゼロの実装（2026-07-18 DONE）
+
+launchd `ai.anicca.capafy-goal-monitor`（daily 09:00 JST）= `~/anicca/skills/earn/capafy-marketing/capafy-goal-monitor.sh`（commit ac22729e）。**deterministic（LLM 不使用）・read+append のみ（本番 state 非破壊）**。goal の時間依存判定を人手で追うのをやめ、loop 自身が毎日監査して Dais に telegram 報告する。
+
+| goal | 監査内容 | 実測（2026-07-18 手動検証） |
+|---|---|---|
+| (a) | daily_loop.log の BLOCKED rc=1 連続ゼロ日数（7日で PASS marker） | streak 1/7（07-17 に BLOCKED あり→building） |
+| (b) | capafy-earn-ledger の最新 sales + reconcile 鮮度（>48h で STALE=乖離リスク） | orders=1 gross=$9.99（07-19既知）reconcile 0.6h fresh |
+| (c) | **@useclaudeskills warmup day>=7 で IG marketing launchd を idempotent 自動 load**（実 warmup-ledger の day で判定、日付ハードコード禁止・二重 load 禁止） | warmup 1/7 → go-live=**not_yet**（07-25前に暴発しない厳密 gate が正しく作動） |
+| (d) | 非破壊 health（launchctl loaded / plist 存在 / key-health gate exit）。本番 process の kill test はしない | capafy-loop=loaded / warmup=loaded / key-gate OK |
+
+daily telegram 報告（8547730585、secrets 無し）で Dais が毎日1目で状況把握（実測 msg 2523）。state=`~/.openclaw/state/capafy-goal-monitor.json`（history 60日）。これで 07-21/07-25/+7日 の判定が自走 = 真の no-human-loop。
