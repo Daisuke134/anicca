@@ -9538,3 +9538,13 @@
 {"ts":1784304359,"wake_id":"00MRP4QV4793E40DB175A94AC3","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784304425,"wake_id":"00MRP4SA2Z27DD1C56893E47A6","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784304491,"wake_id":"00MRP4TP06FB7040E4453443CA","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304559,"wake_id":"00MRP4V5GOD40252F5608C4108","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304625,"wake_id":"00MRP4WKRQ3A3EE4260D7E4178","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784304625,"wake_id":"00MRP4WKRQ3A3EE4260D7E4178","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304754,"wake_id":"00MRP4ZBN8C67A36C4EA7144A6","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304820,"wake_id":"00MRP50QV4CA299E309B7A4BBE","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304886,"wake_id":"00MRP525TV55035F2851AD4899","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784304953,"wake_id":"00MRP53L9XF21A82EFAE5F4D94","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784305019,"wake_id":"00MRP550CV87D200B4C8744795","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784305092,"wake_id":"00MRP56KM2143A8E0067114DEE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784305267,"wake_id":"00MRP5AC5H5F34159452034263","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
