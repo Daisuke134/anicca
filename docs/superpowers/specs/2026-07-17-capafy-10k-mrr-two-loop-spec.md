@@ -4,7 +4,16 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 調査正本: `docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`（全実測 file path 付き）
 **先行 spec（車輪。必読）**: `~/.openclaw/docs/superpowers/specs/2026-06-24-capafy-factory-automation-10k-100k-mrr.md` — 10k の算数（$10k ≈ 15-20 listings × ~$600 gross、blended ARPU $11/mo、純率 ~70%）、factory モード A（launchd+claude -p で勝者 clone 日次）、CP2 LLM hosting レシピ、leak/secret/E2E gate が確定済み。本 spec は「A: 修理」「B: marketing 新設」をそれに足す差分。
 注意: 06-25 の確定レシピは「sk-ant 鍵 + openai-completions」で OpenRouter 不採用だったが、現 runtime は `CAPAFY_HOST_OPENROUTER_KEY`（本日 live probe 200 OK）で動いている — 実装時はどちらかに統一し spec の 0.97 節を是正すること（併存は事故のもと）。
-状態: **PLANNED — 実装未着手**。実装は vcsdd（Fable plan / Luna impl / Sol review）。
+状態: **A1 実装済み・review 中断（07-17 22時）**。実装は vcsdd（Fable plan / 直 session=Sonnet impl / Sol review）。
+
+## 0-A. 進捗 + インシデント（2026-07-17 22:10、次 session はここから）
+
+- **A1 code 完了**: worktree `~/.openclaw/.worktrees/capafy-a1-provider-fix` branch `feature/capafy-a1-provider-fix` commit `721541dc`（未 push・未 merge）。真因は spec 想定より深い: `runtimes/openclaw/official_providers.py:13-16` の family filter が openrouter 未認識（url_proxy.py:84 修理だけでは skeleton が黙って捨てられる）+ materialize が OPENROUTER_API_KEY しか見ず実鍵 CAPAFY_HOST_OPENROUTER_KEY を拾わない。修理内容: fallback_env 追加 / family filter に openrouter / skeleton 選択関数新設 / lint_listing.py に --config・--lessons-file / lesson_append.py / handle_rejected.sh（re-key→Test Run→resubmit→lesson、fail-closed）。tests 15 passed + handle_rejected 11 passed + leak_scan clean。既知 baseline: test_aid_guard.sh rc=127（publish_chain.sh 不在、main でも同じ）。**残: Sol review（中断）→ merge → live 反映**。
+- **orphan 2485008254 = superseded 済み**（published.jsonl 28行目に append 済み。代替 7686597754 が status=4 online を 07-17 21時実測）。resubmit するな（重複 listing になる）。
+- **manual review 4件**（3947077924/4866150011/8416888650/4014388606、status=1 audit=2）: Capafy 側審査待ち。reject で戻ったら handle_rejected.sh 経路。
+- **B0 day-1 完了**: `aiclips_world_hq2` login 成功（challenge なし）+ warm.py day1 green（reels 6 再生実証）。`~/.cloak/clip-accounts.json` = `warming_day1`。**warmup daily の launchd job は未設置**（次 session: 毎日 warm.py + 7日後 promote）。
+- **★インシデント: 07-17 21時台に load 60-99/swap 枯渇で CloakBrowser 全滅 + WindowServer 死亡 → gui/501 domain 消失、全 ~75 LaunchAgent（colony 含む）unload・プロセス全滅を実測**。daily-driver は暫定 headless :9222 で稼働（Dais の約40 tab 喪失、Sessions データは disk 残存）。cliproxyapi も死亡→手動 nohup 復旧済み。**復旧 = sudo reboot（auto-login=anicca + kcpassword 実在確認済み）を 22:1x に実行**。却下した代替: gui domain bootstrap（domain 消失）/ user domain bootstrap（I/O error 5）/ loginwindow 再起動（auto-login は boot 時のみ）。reboot 後は launchd 全量自動復元のはず — 次 session は `launchctl list | grep ai.anicca` で確認せよ。
+- OpenRouter 残高 $1.59 実測（A2 で補充。経路は OpenRouter dashboard の既存 payment method を実測して使う）。
 
 ## 0. 現実（2026-07-17 実測）
 
