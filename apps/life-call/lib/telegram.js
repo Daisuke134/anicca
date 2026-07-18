@@ -54,6 +54,7 @@ function parseUpdate(update) {
 async function routeCallbackData(data, handlers = {}, log = console.log) {
   const prefix = String(data || "").split(":", 1)[0];
   if (prefix === "ask" && typeof handlers.ask === "function") return handlers.ask(data);
+  if (prefix === "late" && typeof handlers.late === "function") return handlers.late(data);
   log(`[telegram] ignoring unknown callback prefix: ${String(data || "").slice(0, 40)}`);
   return { ignored: true };
 }

@@ -53,6 +53,8 @@ test("LM-23: callback router dispatches ask:* and ignores unknown prefixes", asy
   const routed = [], logs = [];
   assert.equal(await routeCallbackData("ask:yes:e:r", { ask: async (data) => { routed.push(data); return "ok"; } }), "ok");
   assert.deepEqual(routed, ["ask:yes:e:r"]);
+  assert.equal(await routeCallbackData("late:still:t", { late: async (data) => { routed.push(data); return "late"; } }), "late");
+  assert.deepEqual(routed, ["ask:yes:e:r", "late:still:t"]);
   assert.deepEqual(await routeCallbackData("leave:no:e", {}, (line) => logs.push(line)), { ignored: true });
   assert.match(logs[0], /unknown callback prefix/);
 });
