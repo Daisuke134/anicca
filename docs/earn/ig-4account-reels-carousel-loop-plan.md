@@ -900,3 +900,11 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - 案A: Capafy の browser-session model へ収斂(session_owner=browser、垢を persistent browser に log-in 維持、tier2 で投稿、password login しない)。同 pass 内で PROVISION→POST するなら session が生きてる間に投稿可能。
 - 案B: warmup を復活(fresh 垢を数日 read-only で温めてから投稿)。day-0 自動 action が壁なら必須。
 - 4/4 失敗なので kickstart 連打は止める(token浪費)。方針決めてから実装。
+
+## v47 — ★決定的: instagrapi は day-0 fresh 垢を login 方法に関係なく拒否。warmup 必須★（2026-07-19、5/5）
+- browser-sessionid 版(login_by_sessionid)でも provision_failed。login_by_sessionid 1回目 True → get_timeline_feed() で LoginRequired。2回目 login_by_sessionid 自体 403、gql fallback TooManyRedirects。
+- **5/5 の fresh 垢**が instagrapi private API で拒否(password login も browser sessionid も)。垢は IG 上 LIVE(signup/bio/icon 成功、0-phone/0-captcha)。**真因 = 垢の年齢そのものが gate**。aiclipsvault が instagrapi で投稿できたのは古い垢だった為。
+- catch-22: browser posting(web composer)= IG silent-drop / instagrapi = day-0 fresh 垢を拒否。**両方 day-0 は不可 → warmup で垢を熟成させるしかない(#8 の答え = warmup 必須確定)**。
+- 訂正: day-0 投稿は自動化では技術的に不可能。垢を数日 warmup で熟成 → instagrapi が受理 → 投稿、が唯一の道。
+- 対処: PROVISION が作った live 垢を provision_failed でなく **warming** に(捨てず育てる)。aiwealth.pulse を warming_day0 に。WARM step を clip_daily に戻し、age floor 後 ready 昇格 → 投稿。
+- honesty は完璧に稼働(5/5 を正直に記録、偽投稿ゼロ)。
