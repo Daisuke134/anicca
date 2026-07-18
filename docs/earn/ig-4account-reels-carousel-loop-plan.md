@@ -804,3 +804,16 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 - run.sh は既に status==ready を動的解決(aiclipsvault 非ハードコード)なので、provision が ready 垢を1個作れば POST が自動で回る。
 - 副次: clip_pass.sh の BIO/MEASURE の @aiclipsvault ハードコードを現行 active handle に動的化(POST は run.sh が動的なので影響小、後続)。
 - worktree + lean 実装。launchd が実行、fable は watch。
+
+## v39 — PROVISION は動いたが session が生まれつき死んでた。durable session 確立に修正（2026-07-18 実測）
+### 前進（実証）
+- v38 の PROVISION step が実働: loop が usable=0 を検知 → 自宅IP :9222 incognito で **@aiclips_money_hq を 0-phone/0-captcha/0-proxy で自力作成**（golden session ファイル実在を Fable が独立確認）。**3日間の「垢無し→諦め」を解消**。#2 完了。
+### だが投稿できず（churn 問題の再来、真因確定）
+- money_hq の session を Fable が read-only probe → **feed_ok=false（生まれつき死亡）**。未投稿。
+- 真因: PROVISION が session を **browser-sessionid から pull して保存**（tier2）→ incognito context を閉じた瞬間 sessionid 失効。さらに session_owner=instagrapi にしたので poster の tier2 は禁止、死んだ settings ファイルが存在するので tier3(password) の fresh 例外も塞がる（instagrapi_post.py:207-212 の relogin 拒否）＝生まれつき詰み。加えて tier3 は provision 中に1回焼いて 24h cooldown。
+- 対比: **Capafy @useclaudeskills は session_owner=browser（持続ブラウザ + tier2 live sessionid）で生存**。ephemeral でなく持続。
+### 修正（commit 済み、main push）
+- PROVISION の session 確立を「browser-sessionid 保存」→「**instagrapi password login-once（fresh 垢の正当な初回ログイン、browser 非依存の device session）→ get_timeline_feed で生存を検証してから status=ready**」に変更。feed 検証 NG なら status=provision_failed（run.sh が死んだ垢に投稿しない）。login_by_sessionid 禁止。
+- money_hq は write-off（status=provision_failed_dead_session、tier3 cooldown 中）。detection usable=0 に戻したので次 pass で修正版 PROVISION が新垢を作り直す。
+### 次
+- 現 pass 完了待ち → kickstart → 修正版 PROVISION が durable session 付き新垢作成 → run.sh が instagrapi 投稿 → 公開URL 実測（#5+#8）。
