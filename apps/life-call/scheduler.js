@@ -18,6 +18,7 @@ const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
 const { sendLateNotice } = require("./lib/notify.js");
 const { langForPhone } = require("./lib/call-language.js");
+const { recordDailyComposioPoll } = require("./lib/ledger.js");
 const {
   processWakeRows, deliverLateNotice, listWakeRows,
   claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
@@ -180,6 +181,9 @@ async function wakeUserOnce(u, nowMs) {
   catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   let events;
   try {
+    // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
+    // in Supabase on every tick; no in-memory counter is used, so restarts preserve aggregation.
+    await recordDailyComposioPoll(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
     events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
@@ -349,7 +353,15 @@ async function onboardTick() {
   const base = process.env.PUBLIC_BASE || "https://aniccaai.com";
   const { url: supaUrl, key: supaKey } = SUPA();
   if (!token || !supaUrl) return;
-  const sent = await onboardNudgeAll({ token, base, supaUrl, supaKey });
+  const sent = await onboardNudgeAll({
+    token, base, supaUrl, supaKey,
+    composioKey: process.env.COMPOSIO_API_KEY,
+    geminiKey: process.env.GEMINI_API_KEY,
+    uidSecret: process.env.LM_UID_SECRET,
+    gmailBase: process.env.LIFE_CALL_PUBLIC_BASE || process.env.PUBLIC_WSS || base,
+    gmailConfigured: Boolean(process.env.LM_UID_SECRET && process.env.UNIPILE_DSN &&
+      process.env.UNIPILE_TOKEN && process.env.UNIPILE_NOTIFY_SECRET),
+  });
   if (sent) console.log(`[onboard] nudged ${sent} Telegram user(s) to their next step`);
 }
 function startOnboardLoop() {

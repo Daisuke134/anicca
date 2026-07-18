@@ -40,13 +40,18 @@ const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = req
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
-const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
+const {
+  sendStage, rowByChatId, setStage, saveField, handleOnboardingText, handleGmailCallback,
+  applyTelegramProfileName, backfillIfCalendarCompleted,
+} = require("./lib/telegram-onboard.js");
+const { signedGmailConnectUrl, createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const {
   handleLateCallback, listWakeRows, markAnswered, claimNotified,
   eventSummaryFor, deliverLateNotice, pendingT0Keys,
 } = require("./lib/late-notice.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
+const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
@@ -56,6 +61,10 @@ const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+const GMAIL_ROUTE_BASE = process.env.LIFE_CALL_PUBLIC_BASE || process.env.PUBLIC_WSS || PUBLIC_BASE;
+const GMAIL_ONBOARD_CONFIGURED = Boolean(
+  process.env.LM_UID_SECRET && process.env.UNIPILE_DSN && process.env.UNIPILE_TOKEN && process.env.UNIPILE_NOTIFY_SECRET,
+);
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -187,7 +196,25 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm5-ja-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm6-ledger-v1" }));
+    return;
+  }
+  // GET /gmail-connect — signed Telegram deep link into the existing real Unipile hosted-auth flow.
+  // A provider/config failure is an explicit error; this route never claims Gmail was connected.
+  if (path === "/gmail-connect") {
+    if (req.method !== "GET") { res.writeHead(405); res.end("method"); return; }
+    (async () => {
+      const q = new URL(req.url, "http://x").searchParams;
+      const uid = q.get("uid") || "";
+      if (!verifyUid(uid, q.get("sig") || "")) { res.writeHead(403); res.end("bad uid signature"); return; }
+      const redirect = await createHostedGmailLink(uid, {
+        dsn: process.env.UNIPILE_DSN, token: process.env.UNIPILE_TOKEN,
+        notifySecret: process.env.UNIPILE_NOTIFY_SECRET,
+        publicBase: PUBLIC_BASE,
+      });
+      if (!redirect) { res.writeHead(503); res.end("Gmail connection is temporarily unavailable"); return; }
+      res.writeHead(302, { Location: redirect }); res.end();
+    })().catch((error) => { console.error("[gmail-onboard]", error.message); res.writeHead(503); res.end("Gmail connection is temporarily unavailable"); });
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
@@ -252,7 +279,13 @@ const server = http.createServer((req, res) => {
             await routeCallbackData(u.data, { ask: (data) => handleAskCallback(data, {
                 chatId: u.chatId, telegramToken: LM_TG_TOKEN,
                 supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
-              }), late: async (data) => {
+              }), gmail: async (data) => {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                return handleGmailCallback(data, row, {
+                  token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+              }, late: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 if (!row) return { ok: false, reason: "unlinked_chat" };
                 const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
@@ -277,10 +310,19 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
-          const opts = { token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY };
+          const gmailConnectUrl = row && GMAIL_ONBOARD_CONFIGURED
+            ? signedGmailConnectUrl(row.uid, GMAIL_ROUTE_BASE, LM_UID_SECRET) : "";
+          const opts = {
+            token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
+            composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY,
+          };
           if (u.isStart) {
-            // Guided onboarding: send the user's CURRENT step (asks for name first if brand-new).
-            const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
+            // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
+            const profile = { first_name: u.firstName, last_name: u.lastName };
+            const effective = applyTelegramProfileName(row, profile);
+            if (row && !row.name && effective.name) await saveField(row.uid, { name: effective.name }, SUPA_URL, SUPA_KEY);
+            await backfillIfCalendarCompleted(row, opts);
+            const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
             // Any Telegram message inside a T-0 response window counts as a response and suppresses
@@ -427,6 +469,7 @@ wss.on("connection", (carrierWs, req) => {
   // measurable Goal-1 invariant (now ≥1 on EVERY answered call, the inverse of the old escalation-only
   // invariant).
   let gemini = null;
+  let callStartedAtMs = null;
   let liveWsOpened = 0;
   let gotAudio = false;       // has Gemini emitted any audio yet on this call?
   let geminiReconnects = 0;   // one-retry guard for a pre-audio socket drop
@@ -442,6 +485,8 @@ wss.on("connection", (carrierWs, req) => {
     liveWsOpened++;
     console.log(`[bridge] opening Gemini Live live_ws_opened=${liveWsOpened}`);
     gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
+    const geminiStartedAtMs = Date.now();
+    let geminiCostRecorded = false;
     gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
     gemini.on("message", (data) => {
       let msg;
@@ -472,7 +517,18 @@ wss.on("connection", (carrierWs, req) => {
       log: (reason) => console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`),
     });
     gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
-    gemini.on("close", () => onGeminiEnd("closed"));
+    gemini.on("close", () => {
+      if (!geminiCostRecorded) {
+        geminiCostRecorded = true;
+        const quantity = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
+        // Duration proxy from spec §13's measured ~$0.023/min. Google bills Live API by actual
+        // token usage, not wall time (https://ai.google.dev/gemini-api/docs/live-api/best-practices#pricing-billing),
+        // but this bridge does not receive billable token totals, so the ledger stores this explicit estimate.
+        recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
+          estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+      }
+      onGeminiEnd("closed");
+    });
   }
 
   carrierWs.on("message", (data) => {
@@ -480,6 +536,7 @@ wss.on("connection", (carrierWs, req) => {
     try { msg = JSON.parse(data.toString()); } catch { return; }
     const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "start") {
+      if (callStartedAtMs == null) callStartedAtMs = Date.now();
       // Telnyx emits media `start` only after the call is active; dial.js already uses this same signal
       // for record_start because an unanswered/ringing call rejects that action. It is therefore the
       // existing answered approximation for the exact wake row carried in the signed stream context.
@@ -503,6 +560,11 @@ wss.on("connection", (carrierWs, req) => {
   carrierWs.on("close", () => {
     release();
     console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live_ws_opened=${liveWsOpened} live=${liveCalls}`);
+    if (callStartedAtMs != null) {
+      const quantity = Math.max(0, (Date.now() - callStartedAtMs) / 1000);
+      recordCost({ uid: wakeUid || null, kind: "telnyx_call", quantity, unit: "seconds",
+        estUsd: quantity / 60 * 0.002, meta: { stream_id: state.streamSid || null } });
+    }
     if (gemini) { try { gemini.close(); } catch {} }
   });
   carrierWs.on("error", release);
@@ -512,7 +574,7 @@ wss.on("connection", (carrierWs, req) => {
 // This allows test files to import inngestServeAllowed without starting the HTTP server.
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[life-call] listening ${PORT} ws=/ws build=lm5-ja-v1`);
+    console.log(`[life-call] listening ${PORT} ws=/ws build=lm6-ledger-v1`);
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.

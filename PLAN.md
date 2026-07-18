@@ -55,3 +55,31 @@ done 条件（goal 正本）: 「AI が日本語で発話」。
 5. 変更は apps/life-call/** のみ。commit するな。完了は agmsg で DONE 報告（変更ファイル + npm test 末尾）。
 
 原因特定: `langForPhone(+81) → buildStreamUrl(lang=ja) → server.js /ws ctx(lang=ja) → Gemini systemInstruction` は保持されていたが、setup 完了後の開始 turn が常に英語の `Begin the call now with your opening line.` だったため、初回発話を英語へ誘導していた。
+
+---
+
+# PLAN 追記2 — LM-6: 最小質問 onboarding + context graph（branch feature/lm6-onboarding）
+
+現状（実読済み）: lib/telegram-onboard.js = stage machine（name → calendar → phone → pay → done、free-text 2問 = name/phone）。lib/places-memory.js 既存。Gmail stage は TG flow に無い（web の email loop は v1.5 表記）。
+
+## 不変条件（MUST）
+1. **blocking 質問 ≤1**: name は TG プロフィール（update の from.first_name/last_name）から自動取得し typed 質問から外す。typed 質問は phone の 1 個だけ。calendar/pay はタップのみ。
+2. **Gmail stage（skippable）**: pay と done の間に「Gmail 接続 [接続する][スキップ]」を追加。スキップ = DB に gmail_skipped=true（additive migration 可）を記録し、Gmail 非依存機能は全部動く。接続パスは既存コード（transport/mail-unipile.js / web /lm onboarding）を実読し、既存の実接続手段があればそれに配線、無ければ /lm ページへの deep link を送る（偽の「接続しました」を絶対に出さない）。
+3. **context graph**: calendar 接続完了時に直近 60 日のイベントから **≥5 fields** を推論して places-memory（既存 storage 流儀に従う）へ書く: home エリア / work 場所 / 頻出会場 top2 / 典型的な朝の開始時刻など。推論は既存の Gemini 呼び出しヘルパを使う（regex ハードコード禁止）。呼べない環境ではスキップしてログ（クラッシュ禁止）。
+4. O3 維持: 途中離脱 → 再 /start で同じ stage から再開（既存挙動を壊さない）。
+5. テスト: stage 遷移と name 自動取得を pure function で node --test。既存テスト全 green。ネットワーク/DB 実接続なし。
+6. 変更は apps/life-call/** のみ。migration は ADD COLUMN IF NOT EXISTS のみ。commit するな。
+7. 完了報告 agmsg: DONE + 変更ファイル + npm test 末尾 20 行。設計で迷ったら送信して待つのではなく、両案のうち「既存コードの流儀に近い方」を選んで PLAN 末尾に選択理由 1 行を記録して進め。
+
+---
+
+# PLAN 追記3 — LM-7: api-cost / outcome ledger（branch feature/lm6-onboarding に積む）
+
+spec §3 LM-7 + §13。目的: 「このユーザーにいくら掛かってるか」を実 row で永続化。
+
+## 不変条件（MUST）
+1. migration `2026-07-18-lm-api-cost.sql`: `CREATE TABLE IF NOT EXISTS lm_api_cost (id bigint generated always as identity primary key, ts timestamptz default now(), uid text, kind text, quantity numeric, unit text, est_usd numeric, meta jsonb)`。additive のみ（既存 table への破壊的変更禁止）。
+2. lib/ledger.js: `recordCost({uid,kind,quantity,unit,estUsd,meta})` — Supabase REST insert、失敗してもクラッシュせずログのみ。
+3. 記録ポイント（最低3つ）: ①call 終了時（bridge close: kind=telnyx_call、quantity=秒、est_usd=quantity/60*0.002 — spec §13 実測値）②Gemini セッション終了時（kind=gemini_live、quantity=秒、est_usd=概算式をコメントに根拠付きで）③scheduler tick の calendar polling（kind=composio_poll、tick ごとでなく 1 日 1 row に集約: 判定は DB の当日 row 有無、in-memory カウンタ禁止）。
+4. `businessSummary(daysBack)` pure function: rows → {calls, call_minutes, est_cost_usd, per_uid breakdown} json。node --test でテスト（I/O 注入）。
+5. 既存テスト全 green、変更は apps/life-call/** のみ、commit 禁止、完了は agmsg DONE 報告。

@@ -476,6 +476,7 @@ async function handleInboundReply(token, replyText, opts = {}) {
 }
 
 module.exports = {
+  geminiJson,
   askTick, recallOrResolve, agentResolveLocation, agentSearchCandidate, closedAskMessage,
   agentMatchReply, claimAsk, unclaimAsk, recordResolution, handleAskCallback, lookupAskCandidate,
   handleInboundReply, parseInboundRecipient, consumeAskToken,
