@@ -16,6 +16,11 @@ const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
+const { sendLateNotice } = require("./lib/notify.js");
+const {
+  processWakeRows, deliverLateNotice, listWakeRows,
+  claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
+} = require("./lib/late-notice.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -129,9 +134,44 @@ function buildStreamUrl(ev, urgency, lang, name) {
   const urg = urgency || "gentle";
   const lg = lang === "ja" ? "ja" : "en";
   const nm = String(name || "").replace(/[\r\n]/g, " ").slice(0, 60); // address the user by name on the call
-  const sig = signCtx([summary, dateTime, location, urg, lg, nm]); // authenticates the bridge upgrade (lang + name)
-  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, name: nm, sig });
+  const wakeUid = String(ev.wakeUid || "");
+  const wakeEventKey = String(ev.wakeEventKey || "");
+  const sig = signCtx([summary, dateTime, location, urg, lg, nm, wakeUid, wakeEventKey]);
+  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, name: nm, wakeUid, wakeEventKey, sig });
   return `${base}/ws?${qs.toString()}`;
+}
+
+// LM-5 runs inside the durable 60s wake tick. All eligibility comes from lm_wake_log rows, so a
+// Railway restart loses no timer/state. Side effects are injected by processWakeRows for unit tests.
+async function lateNoticeUserOnce(u, nowMs, deps = {}) {
+  const now = nowMs !== undefined ? nowMs : Date.now();
+  const { url: supaUrl, key: supaKey } = SUPA();
+  if (!u || !u.uid || !supaUrl || !supaKey) return;
+  const dbOpts = { supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl };
+  const rows = deps.rows || await (deps.listWakeRows || listWakeRows)(u.uid, dbOpts);
+  const summaryFor = deps.summaryFor || ((uid, startIso) => eventSummaryFor(uid, startIso, {
+    composioKey: process.env.COMPOSIO_API_KEY, calendar: deps.calendar,
+  }));
+  const deliver = deps.deliver || ((input) => deliverLateNotice({
+    ...input, token: process.env.LM_TELEGRAM_BOT_TOKEN,
+  }, {
+    claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
+    sendLateNotice: deps.sendLateNotice || sendLateNotice,
+    sendMessage: deps.sendMessage || sendMessage,
+  }));
+  await processWakeRows({
+    user: u, rows, nowMs: now, secret: process.env.LM_CALL_SECRET || "",
+    noticeOpts: {
+      composioKey: process.env.COMPOSIO_API_KEY, geminiKey: process.env.GEMINI_API_KEY,
+      resendKey: process.env.RESEND_API_KEY, userEmail: u.email, userName: u.name,
+    },
+  }, {
+    claimPrompt: deps.claimPrompt || ((uid, eventKey) => claimPrompt(uid, eventKey, dbOpts)),
+    releasePrompt: deps.releasePrompt || ((uid, eventKey) => releasePrompt(uid, eventKey, dbOpts)),
+    summaryFor,
+    sendQuestion: deps.sendQuestion || ((chatId, question) => sendMessage(process.env.LM_TELEGRAM_BOT_TOKEN, chatId, question.text, question.extra)),
+    deliver,
+  });
 }
 
 // ── Per-user single-invocation functions (extracted for Inngest fan-out) ─────
@@ -141,6 +181,8 @@ function buildStreamUrl(ev, urgency, lang, name) {
 
 async function wakeUserOnce(u, nowMs) {
   const now = nowMs !== undefined ? nowMs : Date.now();
+  try { await lateNoticeUserOnce(u, now); }
+  catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   let events;
   try {
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
@@ -165,7 +207,7 @@ async function wakeUserOnce(u, nowMs) {
       const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
       const fresh = await claimWake(u.uid, eventKey);
       if (!fresh) continue; // already called for this (event, level)
-      const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u), u.name);
+      const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
       let res;
       try {
         res = await placeCall({ to: u.phone, streamUrl });
@@ -347,6 +389,7 @@ module.exports = {
   tick, travelTick, askTickAll, onboardTick,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
+  lateNoticeUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,
   // wake escalation levels (Dais: T-10 firm + T-5 harsh only) — exported so a revert is test-caught

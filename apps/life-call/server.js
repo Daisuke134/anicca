@@ -41,6 +41,10 @@ const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require
 const { isReplyToken } = require("./lib/reply-token.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
+const {
+  handleLateCallback, listWakeRows, markAnswered, claimNotified,
+  eventSummaryFor, deliverLateNotice, pendingT0Keys,
+} = require("./lib/late-notice.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -164,15 +168,17 @@ function ctxFromReq(req) {
   let lang = q.get("lang");
   if (lang !== "ja" && lang !== "en") lang = "en"; // call language follows the user (JP→ja, else en)
   const name = (q.get("name") || "").slice(0, 60); // who to address on the call (already sanitized when signed)
+  const wakeUid = (q.get("wakeUid") || "").slice(0, 100);
+  const wakeEventKey = (q.get("wakeEventKey") || "").slice(0, 300);
   const sig = q.get("sig") || "";
 
   const secret = process.env.LM_CALL_SECRET || "";
-  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name].join("\n")).digest("base64url");
+  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name, wakeUid, wakeEventKey].join("\n")).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (!secret || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
-  return { event: { summary, start: { dateTime }, location }, urgency, lang, name };
+  return { event: { summary, start: { dateTime }, location }, urgency, lang, name, wakeUid, wakeEventKey };
 }
 
 const server = http.createServer((req, res) => {
@@ -245,7 +251,27 @@ const server = http.createServer((req, res) => {
             await routeCallbackData(u.data, { ask: (data) => handleAskCallback(data, {
                 chatId: u.chatId, telegramToken: LM_TG_TOKEN,
                 supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
-              }) });
+              }), late: async (data) => {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                if (!row) return { ok: false, reason: "unlinked_chat" };
+                const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
+                const rows = await listWakeRows(row.uid, dbOpts);
+                return handleLateCallback({
+                  uid: row.uid, chatId: u.chatId, data, rows,
+                  secret: process.env.LM_CALL_SECRET || "", telegramToken: LM_TG_TOKEN,
+                  noticeOpts: {
+                    composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
+                    userEmail: row.email, userName: row.name,
+                  },
+                }, {
+                  markAnswered: (uid, eventKey) => markAnswered(uid, eventKey, dbOpts),
+                  summaryFor: (uid, startIso) => eventSummaryFor(uid, startIso, { composioKey: COMPOSIO_KEY }),
+                  deliver: (input) => deliverLateNotice(input, {
+                    claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
+                    sendLateNotice, sendMessage,
+                  }),
+                });
+              } });
             res.writeHead(200); res.end("ok");
             return;
           }
@@ -256,6 +282,14 @@ const server = http.createServer((req, res) => {
             const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
+            // Any Telegram message inside a T-0 response window counts as a response and suppresses
+            // the DB-driven 10-minute fallback. Each row update is conditional on answered_at NULL.
+            if (row) {
+              const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
+              const wakeRows = await listWakeRows(row.uid, dbOpts);
+              for (const eventKey of pendingT0Keys(wakeRows, Date.now()))
+                await markAnswered(row.uid, eventKey, dbOpts);
+            }
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);
             if (result === "done") {
@@ -383,7 +417,7 @@ wss.on("connection", (carrierWs, req) => {
     return;
   }
   liveCalls++;
-  const { event, urgency, lang, name } = ctx;
+  const { event, urgency, lang, name, wakeUid, wakeEventKey } = ctx;
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
@@ -445,6 +479,12 @@ wss.on("connection", (carrierWs, req) => {
     try { msg = JSON.parse(data.toString()); } catch { return; }
     const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "start") {
+      // Telnyx emits media `start` only after the call is active; dial.js already uses this same signal
+      // for record_start because an unanswered/ringing call rejects that action. It is therefore the
+      // existing answered approximation for the exact wake row carried in the signed stream context.
+      if (wakeUid && wakeEventKey) markAnswered(wakeUid, wakeEventKey, {
+        supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+      }).catch((e) => console.error(`[bridge] answered_at update failed: ${e && e.message}`));
       if (state.callControlId && !state.recordStarted) {
         state.recordStarted = true;
         startRecording(state.callControlId).then((r) => {
