@@ -40,4 +40,4 @@ Netlify CLI が別 directory の既存 link `anicca-invoice-gen-1781219208` を�
 | generator + index.html | completed (21 online cards, idempotent MD5) |
 | Netlify deploy | completed (`https://capafy-skills-daily.netlify.app`, HTTP 200, 21 links) |
 | daily regen + bio target | completed (pre-cadence regen + explicit Netlify site ID + STEP5 landing URL) |
-| browser/curl verify + commit/push | in_progress |
+| browser/curl verify + commit/push | completed (main `8d0ca522`, production HTTP 200, 21 links, CTA HTTP 200) |
