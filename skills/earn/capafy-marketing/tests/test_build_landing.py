@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_landing.py"
+DAILY_SCRIPT = Path(__file__).resolve().parents[1] / "capafy-ig-marketing-daily.sh"
 SPEC = importlib.util.spec_from_file_location("build_landing", SCRIPT)
 build_landing = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build_landing)
@@ -100,6 +101,29 @@ class BuildLandingTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "no online listings"):
                     build_landing.build(output)
             self.assertFalse(output.exists())
+
+    def test_daily_loop_refreshes_landing_before_cadence_and_uses_it_for_bio(self):
+        script = DAILY_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'LANDING_URL="https://capafy-skills-daily.netlify.app"', script
+        )
+        self.assertIn(
+            'LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"', script
+        )
+        self.assertIn('build_landing.py" >>"$LOG"', script)
+        self.assertIn('netlify deploy --prod --dir', script)
+        self.assertIn('--site "$LANDING_SITE_ID"', script)
+        self.assertLess(script.index("build_landing.py"), script.index("# ── CADENCE GATE"))
+        self.assertIn(
+            'STEP5 BIO: set the profile Website to the all-skills landing URL '\
+            '\'"$LANDING_URL"\' ONLY when commercial_ok=yes AND MODE=--live.',
+            script,
+        )
+        self.assertIn(
+            "Never use an individual Capafy listing URL for the profile Website.",
+            script,
+        )
 
 
 if __name__ == "__main__":
