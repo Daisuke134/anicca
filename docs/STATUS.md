@@ -18,10 +18,27 @@ x402 ゼロ→イチの唯一の道（順序固定）:
        funding-rates/funding-rate-arb/research のみ。電卓27個はコード保持(X402_CATALOG=full
        で復元)だが catalog/paywall/routing から除去+404 gate。両 franklin で well-known=4本・
        /calc→404・core→402 実測。x402scan 再登録 registered:4/deprecated:28。commit 済
-  X3  発見される         = 買い手 agent が実際に店に来る導線（今は12ページ目に埋没）
-  X4  外部1ドルを確認     = verify-inflow が EXTERNAL≥1 を返すまで「稼いだ」と言わない
+  X3  発見される         = 買い手 agent が実際に店に来る導線（Bazaar 自動掲載が主、補助のみ残）
+  X4  外部1ドルを確認     = verify-inflow が EXTERNAL≥1 を返すまで「稼いだ」と言わない【最優先ゲート】
+  X2-LOOP 売れ筋コピー自動化（flowa: Fable計画/Sol実装/Fable検証）
+       ✅ slice1 観測 = scout-market.mjs（CDP Bazaar 実測: search39/data41/calc5 = 判断裏付け）
+       ⬜ slice2 模倣 / ⬜ slice3 MAB配分 / ⬜ slice4 週次loop配線+GEPA
+  REFACTOR 重複掃除（characterization test→Strangler、X1後）
 ```
 検査器は監査済（self-pay / protocol-return / 自 probe を全部はじく）。次に $0 が動いたら100%本物。
+
+### 進捗サマリ（2026-07-18 時点）
+| # | タスク | 状態 | 検証 |
+|---|---|---|---|
+| X1 | 転売を動かす（鍵配線） | ✅ DONE | on-chain: franklin1→Exa $0.007 送金 + margin 残 |
+| X2 | 4商品に集中 | ✅ DONE | 実店: well-known=4/calc→404/core→402、x402scan registered:4 |
+| X2-LOOP s1 | 市場観測 scout | ✅ DONE | ライブ500件集計、9/9テスト |
+| X2-LOOP s2-4 | 模倣/MAB/配線 | ⬜ 実装待ち | — |
+| X3 | 掲載補助 | ⬜ 主は Bazaar 自動、残薄 | — |
+| X4 | 外部1ドル | ⬜ **$0のまま**・最優先ゲート | inflow-watch 監視中 |
+| REFACTOR | 重複掃除 | ⬜ X1後 | — |
+
+**実装済み= X1/X2/scout（土台+観測）。外部収益は依然 $0。本物の稼ぎは X4 まで来ていない。**
 
 ## ★★共有 vs 独立（設計の背骨、Dais 2026-07-18）★★
 
