@@ -34,6 +34,13 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 **critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
 
+**★2026-07-19 RAIL 最終確定（広域探索 + huntr 実測）= huntr MFV★**: Dais 指示で全 bounty 宇宙を探索。結論:
+- コード bounty(PR型)は Algora+Opire に集約・**全て飽和で $0**（先着レース）。Polar/Gitpay/IssueHunt/直接GitHub label は廃止/停止/spam。
+- fiat security bounty は **finding=AI 可（XBOW が HackerOne 全米1位を自律達成、実証済み）だが payout identity が唯一の人手**（全 fiat rail が初回 KYC。完全 human-zero fiat 着金 rail は存在せず、crypto なら Immunefi のみ）。
+- **勝てる rail = huntr（実測 live 検証済み）**: `huntr.com/bounties` に **Model File Formats 56標的・各 $1,500・常時開**（OpenVINO/MessagePack/Flax/JAX/TensorRT/CoreML/Caffe 等、提出=`huntr.com/bounties/disclose/models?target=<t>` web フォーム）。タスク=ML ライブラリの model-file パーサに novel な ACE/scanner-bypass 脆弱性+PoC。**automation-native**（規約が検出/再現コード作成を報酬対象と明記）、**先着飽和なし**（novel vuln=payout）、AI slop 排斥の逆風なし、Stripe で fiat 銀行(日本OK, KYC 初回一回=Dais の payout shell)。
+- **rail 構成確定**: primary=**huntr MFV/OSV**（AI-native security, fiat）/ secondary=**Opire**（Algora 型コードの追加畑, fiat）/ scale=**Immunefi**（crypto wallet 直, 高額, human-zero payout だが最難関）。Algora は飽和で降格。
+- honest caveat: huntr MFV も「ProtectAI scanner を bypass する novel exploit」が要り非自明。win-rate は未実証（要 E2E 検証）。だが探索した全 rail で **AI-native × fiat × 非飽和** を満たす唯一。
+
 **★2026-07-18 最重要の経験的事実（loop を実走させて確定）★**: unblock 後 core はフル pass を完走 = **discover 63件 → gate survivor 0/63 → claim0/PR0/earn0**。真因を実測: 63件の大半は spam/test repo/token 払いのゴミ（gate が正しく除外）、本物のコード bounty は `sorosave-protocol/frontend` の ~8件だが**全て競合 PR 4件+で飽和**（例: issue#6「transaction history」= 未assign・OPEN だが algora コメントに競合が "attempt, PR incoming" 済み・参照 open PR=4件、gate の「既 open PR→skip」が正しく reject）。他(drizzle/zio/prisma)は高難度 big-repo。**結論: 現 Algora 在庫に「我々が勝てる案件」はゼロ。daily-batch 方式は構造的に常に 5番目以降の PR=EV≈0**（研究の「flat-38」を自 loop で実証）。loop 自身も lessons.jsonl に「5回連続 empty pass」と記録。→ Algora で稼ぐには **(A) 新規 bounty を real-time で監視し最初の1-3 PR に入る first-mover 方式に作り替える（R4 を batch→realtime に再定義、Sol）** か **(B) 飽和しない merit ベースの audit(Code4rena/Immunefi, crypto payout) に pivot**。Dais 判断。
 
 **2026-07-18 R2 実測（Fable が手で復活・観測）**: plist 2枚 .disabled 解除+load、`bounty-cli.sh` で core 起動＝ALIVE。だが **headless core は自律で回らないと判明**: (a) `~/anicca-project` から手動起動すると claude が同 cwd の直近 warmup/clip セッションを resume して bounty と無関係な内容を実行、(b) 中立 cwd から起動すると `.claude/active-team.md` の external-imports 承認プロンプト「1.Yes/2.No」でハング。俺が tmux に Enter を送って初めて pass が走り始めた（"Beaming… ↓1.2k tokens"）。**weekly limit 73% 消費(Jul 24 reset)** も判明＝常時 Sonnet コアはこれを食う。→ R6 を Sol に。現 pass の結果は Monitor で観測中。
