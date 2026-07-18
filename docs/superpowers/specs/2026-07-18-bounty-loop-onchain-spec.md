@@ -34,6 +34,15 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 **critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
 
+**★2026-07-19 prove-2 実証（novel finding を引けるか）= NEGATIVE。全 rail 検証完了★**: 金脈3つを実環境(modelscan0.8.8/keras3.15/gguf/safetensors 実導入)で attempt、全て袋小路（捏造でなく実験で棄却）:
+- `.gguf`/`.safetensors` = 純データリーダー、exec 経路が存在しない（modelscan 盲点だが exploit 対象が無い）。
+- `.keras 非Lambda` = 3.15 allowlist で厳格ロック、io-no ら CVE ハンターが CVE-2025-1550/9905/9906/8747 等で総攻撃中・全 patched。
+- pickle パーサ差分 = 完全飽和（差分アイデアが全て既存 open issue #330/331/338/348/311/354…）。
+- **loop viability=低**: modelscan×既知ローダ面はプロ CVE ハンターが realtime 総攻撃中、盲目 fuzzing=既報再発見。
+- **唯一残る edge（高分散）**: ①**fresh release 先着**（keras/transformers 新版を数日以内に io-no より先に叩く時間差）②未探索ニッチローダ ③**gguf `chat_template` Jinja2 SSTI in llama-cpp-python**（sandbox 無し実装、inference 時・別 bounty クラス、未探索寄り）。
+
+**═══ 全 rail 検証の最終結論（2026-07-19）═══**: **自律 AI が「技術的に仕事できる×勝てる（非飽和/novel）×payout 通る」を同時に満たす bounty rail は、網羅探索の結果 存在しない。** どこも saturation(先着/CVE swarm) か empty か KYC gate。AI は仕事はできる（PoC 生成・コード修正は実証済）が、プロの field に対し「勝つ/novel を引く」で届かない。→ bounty で自律 $10k/月 は現行市場では非現実。残る選択肢: (A) 高分散の first-responder 型 security R&D loop（fresh/niche に先着、当たれば $1,500、外れ続けるリスク）、(B) audit+crypto(最難関)、(C) bounty を諦め Anicca 既存 rail(x402/clip/trade) に注力。Dais の戦略判断。
+
 **★2026-07-19 prove-1 実証（huntr MFV を手で attempt、win-rate 実測）★**: 隔離環境で実施。valid finding = 「load 時 RCE + ProtectAI modelscan/guardian 未検知(bypass)」の2点セット。高価値 $1,500 形式 = `.safetensors`/`.gguf`/`.keras`/`.joblib`。結果:
 - **✓ AI は動く PoC を自律生成できた（実証）**: joblib の圧縮(zlib/gzip/bz2/lzma)で modelscan(0.8.8) を bypass（"No issues found"）しつつ `joblib.load()` で実 RCE（marker に実 `id` 出力を4形式で観測）。真因=`modelscan picklescanner.py _list_globals` が生バイトに `pickletools.genops`、`model.py get_stream` が復号しない（repo に zlib/gzip/bz2/lzma 復号処理なし）。環境構築→PoC 生成→scanner/load 実測まで完走。
 - **✗ novelty が唯一のボトルネック**: この joblib 筋は既知（modelscan PR#345/#356・issue#193・既存報告）で duplicate 却下濃厚。Keras 非Lambda bypass は成立するが RCE が keras3.15 allowlist で遮断(CVE-2025-1550 patch 済)。表面的既知筋は金にならない。
