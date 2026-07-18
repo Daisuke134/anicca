@@ -275,9 +275,15 @@ commit `4b3d752c` ~/anicca）。実証: fix後パスが 08:55 に service 431310
 draftから新規公開、公開ページHTTP 200確認。同日 4244556 に要相談フラグ+ヒアリング欄追加も成立（公開ページ反映確認）。
 
 第2バグ: 「Killed mid B1」の増幅要因 = gig_pass.sh EXIT trapが共有lease "gig" を無条件disposeし、
-turn中断が他コンテキスト巻き添えteardownに化ける → per-pass lease (gig-$$) 化 + 自lease限定release +
+中断が他コンテキスト巻き添えteardownに化ける → per-pass lease (gig-$$) 化 + 自lease限定release +
 gc配線で解消（commit `1c34963d`）。release A後もBのcontext生存をCDP実測でPASS。トリガーは調査の結果
 既に1系統（in-tmux hourly cron :27）で削除対象なし。「sub-hourly二重完了」に見えたのは1パス2レポート行（別writer）。
+
+kill真因の確定（当初の「二重トリガーcron overlap」仮説は誤り、consolidated transcript実測で是正）:
+gig-core agentが gig_pass.sh を **background Bash timeout:600000ms(=Claude Code上限10分)** で起動しており、
+パス実体（各ステップ内部timeout 900s）が10分を超えると harness の background Bash timeout がステップ途中で
+kill していた。外部cron/healthcheck/OOMは全て無罪。耐久修正案（未実装・移設specに折込予定）= gig-cli.sh の
+STARTUP で gig_pass.sh を tracked Bash の子でなく detached（setsid nohup … & disown）起動にする。
 
 Telegramの30分毎「session dead」通知は 07-17 20:04〜08:19 のCoconala/IGログアウト検知が発生源
 （`session_vault_tick.sh:49`）。08:49・09:20のkeepaliveで Coconala/IG/X 全て logged_out:false、通知停止。
