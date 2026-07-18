@@ -340,6 +340,22 @@ PC commit `1d361de`、anicca commit `fc651ef7`（① C1）。本番（① tmux `
 - **既知ベースライン**: 掃除後の `tmux -S <temp> ls` が socket 不在で非ゼロ exit（"error connecting ..."）＝
   temp socket 除去成功のシグナル。副作用ゼロ、fablize gate 用に記録。
 
+## 8-1,2 結果記録（2026-07-18）: step1-2 実装済み、品質レビュー Not Approved → fix 中
+
+実装 = ① `fc651ef7`（C1 7200s）/ ② `1d361de`（C1/I2/I3）/ spec `d89728e32`（dry 4点 green 記録）。
+spec 準拠レビュー ✅。品質レビュー **Not Approved**、以下が #10 cutover の blocking 前提:
+- **C-1（Critical）**: `GIG_KYC_CONFIRMED=1` が live 環境のどこにも未設定（~/.openclaw/.env・plist・zshrc 全 grep 0）
+  なのに ② gig-cli.sh:39 のコメントは「live Dais instance が設定済み」と虚偽。このまま切替えると②の全起動
+  経路が KYC gate で exit 0 = gig loop 無音恒久停止。fix = コメント是正 + ② gig-cli.sh が ~/.openclaw/.env を
+  source する配線 + .env に GIG_KYC_CONFIRMED=1 追記
+- **I-1**: ② の snapshot test `tests/ceo/test_prompt_integrity_snapshot.sh` が 14/17 RED — step0 rsync が
+  ②の snapshot 準拠版 gig-cli.sh（effective-cron/gig.txt 読み + COCONALA_HANDLE 等の STARTUP パラメータ化）を
+  ①旧版で上書きした結果。I3 再折込が KYC/registry だけで不完全。fix = snapshot 版の機能を detached 起動と
+  合成して再折込、test 17/17 green まで
+- **I-2**: KYC gate の onboarding メッセージが読まれない3変数を指示（I-1 の再折込で解消）
+- M-1（非 blocking、将来堅牢化として台帳記録）: lock mtime は mkdir 時のみ。120min 超 pass は依然誤 reap。
+  heartbeat 方式（各 step で touch $LOCKD）が真の解。M-2: registry fail-open は set -e 非依存が前提（bounty と同形）。
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
