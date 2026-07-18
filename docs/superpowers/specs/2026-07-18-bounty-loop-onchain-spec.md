@@ -34,6 +34,12 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 **critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
 
+**★2026-07-19 prove-1 実証（huntr MFV を手で attempt、win-rate 実測）★**: 隔離環境で実施。valid finding = 「load 時 RCE + ProtectAI modelscan/guardian 未検知(bypass)」の2点セット。高価値 $1,500 形式 = `.safetensors`/`.gguf`/`.keras`/`.joblib`。結果:
+- **✓ AI は動く PoC を自律生成できた（実証）**: joblib の圧縮(zlib/gzip/bz2/lzma)で modelscan(0.8.8) を bypass（"No issues found"）しつつ `joblib.load()` で実 RCE（marker に実 `id` 出力を4形式で観測）。真因=`modelscan picklescanner.py _list_globals` が生バイトに `pickletools.genops`、`model.py get_stream` が復号しない（repo に zlib/gzip/bz2/lzma 復号処理なし）。環境構築→PoC 生成→scanner/load 実測まで完走。
+- **✗ novelty が唯一のボトルネック**: この joblib 筋は既知（modelscan PR#345/#356・issue#193・既存報告）で duplicate 却下濃厚。Keras 非Lambda bypass は成立するが RCE が keras3.15 allowlist で遮断(CVE-2025-1550 patch 済)。表面的既知筋は金にならない。
+- **win-rate 判定**: PoC 生成力=十分。壁は saturation でも payout でもなく **novelty**。金脈=**①modelscan 非対象の高価値形式(`.gguf`/`.safetensors`)の load 時 exec ②非Lambda keras/h5 の新規 code-exec ③パーサ差分(圧縮/ネスト/連結)の未報告バリエーション** — 継続 deep-fuzz 前提。単発 EV 低〜中、継続 fuzzing loop で中。
+- **→ R4 loop 設計**: 「modelscan の盲点を継続 deep-fuzz し、**novelty-gate（modelscan issues/PRs・CVE・huntr hacktivity・gh search で既知筋を除外）を通った未報告 vuln のみ**に投資 → 動く PoC をローカル実証 → huntr disclose(HF repo + protectai-bot gated access + report) を下書き」。既知筋掃討はやらない（prove-1 の #1 失敗＝duplicate）。成果物 scratchpad/mfv/（repo 未commit）。
+
 **★2026-07-19 R1 の壁が消えた（huntr 規約実測）★**: 提出=`huntr.com/bounties/disclose` の web フォーム、**account 登録のみで submit 可能**。Stripe KYC は「**初回 payout 発生時に初めてメールで要求**」（"For the first month that you are due a payment, you will receive an email requesting you to create a Stripe Connect account"）。→ **account 作成+vuln 提出は human-zero で今可能。Dais の KYC は「勝った後」に一回だけ＝前段のブロッカーではない**。critical path から R1 が外れ、gate は prove-1（AI が vuln を出せるか）のみに。OSV は maintainer 検証、MFV は admin 検証。
 
 **★2026-07-19 RAIL 最終確定（広域探索 + huntr 実測）= huntr MFV★**: Dais 指示で全 bounty 宇宙を探索。結論:
