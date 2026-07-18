@@ -863,3 +863,8 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - 既存 = `cdp_context_lease.py`: 各 loop が :9222 内に named 隔離 context を lease(Target.createBrowserContext)、cookie/tab 非共有。gig が使用中(gig-85088、gig_pass.sh:36-41)。cdp lock で直列化。
 - clip PROVISION の hang 真因(v40)= 生の :9222 + ad-hoc cdp_incognito を使い、Capafy の 25 tab が見えて混乱。**既存 lease を使えば隔離+直列化されて解決**。新ブラウザ instance は不要。
 - 修正(#10 改)= gig と同じ lease pattern を PROVISION に適用(Sol 実装/Fable 検証)。
+
+## v43 — #10 実装完了(lease協調)+ 検証kickstart（2026-07-18）
+- Sol 実装/Fable 検証: clip_pass.sh に CLIP_LEASE 定義 + cdp_context_lease.py acquire(pass頭) + EXIT trap で release + PROVISION prompt に「leased 隔離 context を drive、生:9222 でない」override 指示。bash -n OK、durable-session/1500 timeout 無傷。gig と同じ lease pattern。main push。
+- 狙い: :9222 が Capafy で25 tab congested でも、clip provision は自分の隔離 context だけ見る→混乱/hang しない。
+- kickstart で検証。PROVISION が lease context で新垢作成→password login→feed 検証→ready なら run.sh が投稿。
