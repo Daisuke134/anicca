@@ -1,0 +1,11 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+live-generator: PASS (21 online skills)
+idempotence: PASS (011a3615ea20d91532cffdb137f116dc)
+--- raw passing output ---
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+{"ok": true, "online_skills": 21, "output": "/Users/operator/anicca/.worktrees/capafy-skills-landing/skills/earn/capafy-marketing/site/index.html"}
