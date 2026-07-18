@@ -345,6 +345,15 @@ skills.lock 方式（source_repo/source_commit/sha256）で受ける。逆方向
   （Fable diff 実測）、skills.lock に per-file sha256 + source_commit(6d12756) 記録、配線変更ゼロ、
   anicca 側無傷（status 0行）。VENDORED.md に再 vendor 手順。review は機械的 byte 同一性検証のため省略
   （意思決定として記録）。launcher の vendored 版への切替は各 loop 移設時
+- **P3 = video 完了 / clip は copy 完了・切替保留**（2026-07-19）: video COPY `bf0c3fd`（休眠のまま）。
+  clip+clip-promote COPY `2f8ff6b`（self-ref retarget + freeze gate 5de5b4db 伝播 + hf plist staged、
+  検証 sh_fails=0）。**clip 切替保留の理由（実測）**: 並行セッションが clip を再構築中 — 旧
+  clip-loop-aiclipsvault.plist は .disabled-v44 化され、現 live は ai.anicca.clip-loop（clip_daily.sh、
+  StartInterval 86400、実行中 PID 実測）。切替前提3つ: v44 完了確認 / hf plist を clip_daily 駆動へ
+  retarget / PC copy 再同期。二重駆動禁止（gig の教訓）
+- **clip freeze gate（インシデント対応、anicca `5de5b4db`）**: pass45 診断スクリプトが FROZEN の
+  @aiclips_studio_hq へ実投稿していた事件の恒久 fix。共用 poster instagrapi_post.py の chokepoint で
+  status=frozen の handle への投稿を全経路拒否（実測: frozen=refused / 通常=通過）
 - 体制 = /flowa: Fable plan+verify / Sol xhigh execute / Sol fresh review
 
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
