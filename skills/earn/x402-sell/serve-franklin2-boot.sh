@@ -17,6 +17,9 @@ set -u
 DIR=/Users/anicca/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as the other two boot scripts) — never echoed
 set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
+# force franklin2's identity (see serve-franklin1-boot.sh: .openclaw/.env injects the wrong home+key)
+export ANICCA_HOME="$HOME/.franklin2-home/.blockrun"
+unset BLOCKRUN_WALLET_KEY
 export X402_PAYTO="0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9"
 export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:10000}"
 export X402_NETWORK="base"
