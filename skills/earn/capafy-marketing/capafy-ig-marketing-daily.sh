@@ -14,12 +14,17 @@ CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 LOG="$HOME/.openclaw/logs/capafy-ig-marketing-daily.log"
 ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
 WARMUP_STATE="$HOME/.cloak/ig-warmup-useclaudeskills.json"
+LANDING_URL="https://capafy-skills-daily.netlify.app"
+LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"
 IG_HANDLE="useclaudeskills"   # AI-OWNED account only (never a Dais-personal handle)
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 
 # ── IG metrics/attribution run EVERY day (deterministic; IG variants, utm_source=instagram_bio) ──
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py >>"$LOG" 2>&1 || echo "ig_metrics failed (non-fatal)" >>"$LOG"
+
+# ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
+/opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && netlify deploy --prod --dir "$HOME/anicca/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
 
 # ── WARMUP GATE: decide DRY vs LIVE. LIVE from the first completed warmup day. ──
 WARM_DAY="$(/opt/homebrew/bin/python3 - "$WARMUP_STATE" <<'PY' 2>/dev/null
@@ -69,7 +74,7 @@ STEP3 VIDEO (B3, faceless engine): write YOUR 30-45s voiceover script about THIS
 
 STEP4 POST (B4, instagrapi — the ONLY poster, proven working reel/Da7VQY8MIOK 2026-07-18):  CDP_PORT=9222 ~/.cache/instagrapi-venv/bin/python ~/anicca/skills/earn/clip/scripts/instagrapi_post.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port 9222 --live  . It pulls the CloakBrowser'"'"'s logged-in sessionid (tier2, session_owner=browser) so no fresh-login challenge, uploads via the private API, and prints JSON with outcome=published + post_url (the reel URL). Only run this when MODE=--live; if MODE=DRY do NOT post (instagrapi has no dry). If it returns ChallengeRequired, the account is poisoned — STOP and report, never retry-login. Capture post_url.
 
-STEP5 BIO: add the Capafy listing URL (utm_source=instagram_bio) to the profile bio/Website ONLY when commercial_ok=yes AND MODE=--live. While commercial_ok=no, DO NOT touch the bio (non-commercial phase — we are only measuring reach). Never in DRY.
+STEP5 BIO: set the profile Website to the all-skills landing URL '"$LANDING_URL"' ONLY when commercial_ok=yes AND MODE=--live. Never use an individual Capafy listing URL for the profile Website. While commercial_ok=no, DO NOT touch the bio (non-commercial phase — we are only measuring reach). Never in DRY.
 
 STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible, record its URL in ~/.openclaw/state/capafy-marketing-ig-ledger.jsonl (platform=ig, reel_url=...) + post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch ~/.openclaw/state/.capafy-ig-reach-healthy  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
 

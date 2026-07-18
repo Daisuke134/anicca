@@ -1,0 +1,26 @@
+plugins = []
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/Users/operator/anicca/.worktrees/capafy-skills-landing/skills/earn/capafy-marketing/site"
+publishOrigin = "default"
+base = "/Users/operator/anicca/.worktrees/capafy-skills-landing/skills/earn/capafy-marketing/site"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]

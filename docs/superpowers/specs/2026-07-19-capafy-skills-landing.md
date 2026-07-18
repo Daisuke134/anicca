@@ -29,11 +29,15 @@ Instagram bio の1本のクリック可能 URL から、公開中の全 Capafy s
 | V5 | shell | `bash -n capafy-ig-marketing-daily.sh`、diff で regen/redeploy と STEP5 target を確認 |
 | V6 | git | commit hash が remote branch に存在 |
 
+## Observed deploy incident
+
+Netlify CLI が別 directory の既存 link `anicca-invoice-gen-1781219208` を継承し、最初の production deploy 1回を誤siteへ送った。専用siteは `--account-slug daisuke134 --disable-linking` で作成し、以後 `--site 41c8e52e-b163-442a-84ff-fd866269bf6c` を必須化した。誤siteは元 deploy 0件だったため、404-only production deploy で観測可能な元状態（root HTTP 404）へ復旧し、curl で404を確認した。
+
 ## TODO
 
 | Task | 状態 |
 |---|---|
 | generator + index.html | completed (21 online cards, idempotent MD5) |
-| Netlify deploy | in_progress |
-| daily regen + bio target | pending |
-| browser/curl verify + commit/push | pending |
+| Netlify deploy | completed (`https://capafy-skills-daily.netlify.app`, HTTP 200, 21 links) |
+| daily regen + bio target | completed (pre-cadence regen + explicit Netlify site ID + STEP5 landing URL) |
+| browser/curl verify + commit/push | in_progress |
