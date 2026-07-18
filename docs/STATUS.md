@@ -32,13 +32,13 @@ x402 ゼロ→イチの唯一の道（順序固定）:
 |---|---|---|---|
 | X1 | 転売を動かす（鍵配線） | ✅ DONE | on-chain: franklin1→Exa $0.007 送金 + margin 残 |
 | X2 | 4商品に集中 | ✅ DONE | 実店: well-known=4/calc→404/core→402、x402scan registered:4 |
-| X2-LOOP s1 | 市場観測 scout | ✅ DONE | ライブ500件集計、9/9テスト |
-| X2-LOOP s2-4 | 模倣/MAB/配線 | ⬜ 実装待ち | — |
+| X2-LOOP | 自己改善ループ全4 slice | ✅ DONE | scout→gaps→bandit→improve、franklin1 で {action:improve} 実行、114/114テスト |
 | X3 | 掲載補助 | ⬜ 主は Bazaar 自動、残薄 | — |
 | X4 | 外部1ドル | ⬜ **$0のまま**・最優先ゲート | inflow-watch 監視中 |
 | REFACTOR | 重複掃除 | ⬜ X1後 | — |
 
-**実装済み= X1/X2/scout（土台+観測）。外部収益は依然 $0。本物の稼ぎは X4 まで来ていない。**
+**実装済み= X1/X2/X2-LOOP全4slice（店+集中+自己改善ループ）。外部収益は依然 $0。本物の稼ぎは X4 まで来ていない。**
+**残るは REFACTOR（掃除）と X4（外部1件・強制不可・待ち）のみ。店は「稼げる状態」に到達、あとは発見されるのを待つ+磨く。**
 
 ## ★★共有 vs 独立（設計の背骨、Dais 2026-07-18）★★
 
