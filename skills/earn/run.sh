@@ -268,23 +268,70 @@ except Exception: print(0)" 2>/dev/null || echo 0)
   OUT=$(record_line "$JSON"); echo "[earn] hl recorded -> $OUT"; exit 0
 fi
 
-# --- strategy=x402: ensure the x402 PRODUCT server is up so buyers can pay USDC (passive earner) ----
-# x402-sell/serve.mjs is a persistent HTTP server (402 Payment Required → USDC to our wallet). A wake
-# "uses" this tool by ensuring the server is running; real revenue then arrives as buyers hit it (needs
-# a public URL + demand = the model's job to create). Records NARRATE (the act of keeping the shop open).
+# --- strategy=x402: the x402 PRODUCT server + its whole listing lifecycle (passive earner) --------
+# x402-sell/serve-v2.mjs is a persistent HTTP server (402 Payment Required → USDC to our wallet).
+# ANICCA_ARGS.action dispatches this ONE loop-menu slot to 3 sub-behaviors (SELF-STORE-1,
+# 2026-07-18 — deliberately NOT 3 separate registry slots, menu-size discipline):
+#   ensure (default) — open/keep-alive the shop, then idempotently (re)list it on x402scan.
+#   review           — aggregate sales/attempts logs: what sold, was any buyer external, or is
+#                       this a demand problem? Read-only, no side effects.
+#   update           — force a re-listing after the model edited the product catalog.
+# "store is up" = the instance's OWN port answers /.well-known/x402.json, NO MATTER which launchd
+# label owns it (loop-made sellers historically port-fought the hand-made per-instance ones —
+# never spawn a second seller when the port is already alive).
 if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
-  # :8403 is held by the OLD spec-09 echo endpoint (ai.anicca.x402-endpoint launchd) — the research
-  # PRODUCT server couldn't bind there, so /research 404'd (system bug found 2026-06-22). Use 8404.
-  XPORT="${X402_PORT:-8404}"
-  if ! curl -sf "http://127.0.0.1:$XPORT/research?q=ping" >/dev/null 2>&1; then
+  X402DIR="$HERE/x402-sell"
+  ACTION=$(printf '%s' "$AARGS" | python3 -c "import json,sys
+try: d=json.load(sys.stdin) or {}
+except Exception: d={}
+print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
+
+  # This instance's own port + hand-made per-instance launchd label, resolved from ANICCA_HOME
+  # (serve-franklin1-boot.sh=8414, serve-franklin2-boot.sh=8413, serve-claude-p-boot.sh=8412).
+  # X402_PORT always wins when the caller sets it explicitly.
+  case "${ANICCA_HOME:-}" in
+    *".blockrun") X402_INSTANCE="franklin1"; X402_DEFAULT_PORT=8414 ;;
+    *".franklin2-home"*) X402_INSTANCE="franklin2"; X402_DEFAULT_PORT=8413 ;;
+    *".anicca-founder") X402_INSTANCE="claude-p"; X402_DEFAULT_PORT=8412 ;;
+    # :8403 is held by the OLD spec-09 echo endpoint (ai.anicca.x402-endpoint launchd); unresolved
+    # instances fall back to 8404 (system bug found 2026-06-22).
+    *) X402_INSTANCE=""; X402_DEFAULT_PORT=8404 ;;
+  esac
+  XPORT="${X402_PORT:-$X402_DEFAULT_PORT}"
+
+  if [ "$ACTION" = "review" ]; then
+    RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-review.mjs" 2>/dev/null)
+    echo "[earn] x402 review: $RES"
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-review','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 review: ${RES:-{}}" "$WAKE" 2>/dev/null)
+    OUT=$(record_line "$JSON"); echo "[earn] x402 review recorded -> $OUT"
+    exit 0
+  fi
+
+  if [ "$ACTION" = "update" ]; then
+    RES=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" node "$X402DIR/store-update.mjs" 2>/dev/null)
+    echo "[earn] x402 update: $RES"
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-update','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 update: ${RES:-{}}" "$WAKE" 2>/dev/null)
+    OUT=$(record_line "$JSON"); echo "[earn] x402 update recorded -> $OUT"
+    exit 0
+  fi
+
+  # ACTION=ensure (default, also legacy empty-args callers): open/keep-alive the shop, then register.
+  if ! curl -sf "http://127.0.0.1:$XPORT/.well-known/x402.json" >/dev/null 2>&1; then
     # The seller must OUTLIVE this wake: a plain `nohup ... &` child dies with the wake's process
     # group (run-skill.mjs execFile kills the group on timeout/next-wake), which is why sellers
     # never persisted (observed live 2026-07-14: booted during the wake, DOWN minutes later).
-    # On macOS, register a per-instance launchd KeepAlive service (same pattern as
-    # serve-mainnet-boot.sh) — survives wake boundaries AND loop restarts, zero human. Elsewhere
-    # (cloud Linux), fall back to setsid detach. Facilitator creds are sourced by seller-boot.sh
-    # (CDP → Base mainnet settle + Bazaar discovery; without them = invisible testnet fallback).
-    if command -v launchctl >/dev/null 2>&1; then
+    X402_PLIST="$HOME/Library/LaunchAgents/ai.anicca.x402-$X402_INSTANCE.plist"
+    if [ -n "$X402_INSTANCE" ] && [ -f "$X402_PLIST" ]; then
+      # A hand-made per-instance KeepAlive job already owns this port — kickstart IT rather than
+      # spawning a second, competing seller (the exact port-fight this rule exists to prevent).
+      echo "[earn] x402 port $XPORT down — kickstarting existing job ai.anicca.x402-$X402_INSTANCE"
+      launchctl kickstart -k "gui/$(id -u)/ai.anicca.x402-$X402_INSTANCE" 2>/dev/null || true
+      sleep 3
+    elif command -v launchctl >/dev/null 2>&1; then
+      # No hand-made job for this instance/port yet: register a loop-owned launchd KeepAlive
+      # service (same pattern as serve-mainnet-boot.sh) — survives wake boundaries AND loop
+      # restarts, zero human. seller-boot-v2.sh execs serve-v2.mjs (v2 protocol, matches every
+      # hand-made boot script). Elsewhere (cloud Linux), fall back to setsid detach.
       SLABEL="ai.anicca.x402-seller-$XPORT"
       SPLIST="$HOME/Library/LaunchAgents/$SLABEL.plist"
       mkdir -p "$HOME/Library/LaunchAgents"
@@ -295,7 +342,7 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
   <key>Label</key><string>$SLABEL</string>
   <key>ProgramArguments</key><array>
     <string>/bin/bash</string>
-    <string>$HERE/x402-sell/seller-boot.sh</string>
+    <string>$HERE/x402-sell/seller-boot-v2.sh</string>
   </array>
   <key>EnvironmentVariables</key><dict>
     <key>X402_PAYTO</key><string>$W</string>
@@ -310,21 +357,21 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
 </dict></plist>
 SELLERPLIST
       launchctl bootstrap "gui/$(id -u)" "$SPLIST" 2>/dev/null \
-        || launchctl kickstart "gui/$(id -u)/$SLABEL" 2>/dev/null || true
+        || launchctl kickstart -k "gui/$(id -u)/$SLABEL" 2>/dev/null || true
     else
       set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
-      X402_PAYTO="$W" X402_PORT="$XPORT" setsid nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 < /dev/null &
+      X402_PAYTO="$W" X402_PORT="$XPORT" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" setsid nohup node "$X402DIR/serve-v2.mjs" >/dev/null 2>&1 < /dev/null &
     fi
     sleep 3
   fi
-  UP=$(curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1 && echo up || echo down)
-  echo "[earn] x402 server: $UP (payTo=$W port=$XPORT)"
+  UP=$(curl -sf "http://127.0.0.1:$XPORT/.well-known/x402.json" >/dev/null 2>&1 && echo up || echo down)
+  echo "[earn] x402 server: $UP (payTo=$W port=$XPORT instance=${X402_INSTANCE:-unknown})"
 
-  # FIND BUYERS: a shop with no address earns nothing. Ensure a PUBLIC url (cloudflared) and ADVERTISE
-  # it to the colony forum so other agents can discover + pay the endpoint. The model drives demand;
-  # this is the mechanism. URL persists in a state file; we only re-advertise when the URL changes.
+  # FIND BUYERS pt.1: no explicit X402_PUBLIC_URL yet (e.g. no tsnet/funnel for this instance) —
+  # fall back to a cloudflared tunnel so the store is still discoverable. URL persists in a state
+  # file; we only re-tunnel when it's missing.
   STATEDIR="$HOME/.anicca/skills/earn/state"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
-  if [ "$UP" = "up" ] && command -v cloudflared >/dev/null 2>&1; then
+  if [ "$UP" = "up" ] && [ -z "${X402_PUBLIC_URL:-}" ] && command -v cloudflared >/dev/null 2>&1; then
     if ! pgrep -f "cloudflared.*localhost:$XPORT" >/dev/null 2>&1; then
       nohup cloudflared tunnel --no-autoupdate --url "http://localhost:$XPORT" >"$STATEDIR/x402-tunnel.log" 2>&1 &
       sleep 8
@@ -333,17 +380,37 @@ SELLERPLIST
     PREV=$(cat "$URLFILE" 2>/dev/null || echo "")
     if [ -n "$PUB" ] && [ "$PUB" != "$PREV" ]; then
       printf '%s' "$PUB" > "$URLFILE"
+      X402_PUBLIC_URL="$PUB"
       # advertise to the colony forum (anicca finding its own buyers) — best-effort, never bricks.
       ADTITLE="x402 service: web-research brief for \$0.02 USDC"
       ADBODY="Anicca is selling a live web-research brief over x402. Pay \$0.02 USDC (Base) to GET ${PUB}/research?q=YOUR_QUERY and receive a markdown brief. payTo ${W}. Agents welcome."
       gh issue create -R "${ANICCA_FORUM_REPO:-Daisuke134/anicca}" -t "$ADTITLE" -b "$ADBODY" >/dev/null 2>&1 || true
       echo "[earn] x402 advertised public endpoint: $PUB"
+    elif [ -n "$PUB" ]; then
+      X402_PUBLIC_URL="$PUB"
     fi
-    [ -n "$PUB" ] && echo "[earn] x402 public: $PUB/research"
   fi
+
+  # FIND BUYERS pt.2: idempotently (re)list the store on x402scan (SIWX-registered origin). Only
+  # actually re-signs when the catalog changed or the last registration is stale (store-ensure-
+  # register.mjs's own decision) — a wake never re-registers an unchanged, freshly-listed shop.
+  REG="{}"
+  if [ -n "${X402_PUBLIC_URL:-}" ]; then
+    REG=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="$X402_PUBLIC_URL" node "$X402DIR/store-ensure-register.mjs" 2>/dev/null)
+    echo "[earn] x402 register: $REG"
+  fi
+
   X402_TASK="x402 server $UP"
-  [ -n "${PUB:-}" ] && X402_TASK="$X402_TASK public+advertised"
-  JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-serve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "$X402_TASK" "$WAKE" 2>/dev/null)
+  [ -n "${X402_PUBLIC_URL:-}" ] && X402_TASK="$X402_TASK public=$X402_PUBLIC_URL"
+  JSON=$(python3 -c "
+import json,sys
+reg={}
+try: reg=json.loads(sys.argv[4])
+except Exception: pass
+out={'wallet':sys.argv[1],'source':'x402-serve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}
+out.update({k:v for k,v in reg.items() if k in ('registered','productCount','reregistered','reason')})
+print(json.dumps(out))
+" "${WLOW:-unknown}" "$X402_TASK" "$WAKE" "$REG" 2>/dev/null)
   OUT=$(record_line "$JSON"); echo "[earn] x402 narrate -> $OUT"; exit 0
 fi
 

@@ -1,7 +1,8 @@
-// node:test — verify-inflow's internal-wallet set must not under-count what it excludes.
+// node:test — the SELF_WALLETS list (shared by verify-inflow.mjs and store-review.mjs) must not
+// under-count what it excludes.
 //
 // WHY (2026-07-16): verify-inflow is the ONLY judge of "did we earn" (SKILL.md step 7), but its
-// OUR_WALLETS set was missing addresses that a SIBLING judge had already identified as internal.
+// wallet set was missing addresses that a SIBLING judge had already identified as internal.
 // founder-loop/record-earn.mjs:40-49 records the 2026-07-12 forensic finding: 0xf70da978… is the
 // source of both of the two largest "earn" rows ever recorded ($22.97 + $7.98), is a plain EOA
 // holding >$3.1M USDC on Base, and is therefore funding routed THROUGH us, not revenue. That judge
@@ -10,11 +11,14 @@
 //
 // The rule being pinned: an address that ANY judge in the colony has classified as internal must be
 // internal in EVERY judge. Revenue is the number we are least allowed to overstate.
+//
+// SELF-STORE-1 (2026-07-18): the list moved out of verify-inflow.mjs into lib/self-wallets.mjs so
+// store-review.mjs can share it too — this test now reads the shared module directly.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const SRC = readFileSync(new URL("../verify-inflow.mjs", import.meta.url), "utf8");
+const SRC = readFileSync(new URL("../lib/self-wallets.mjs", import.meta.url), "utf8");
 const SIBLING = readFileSync(
   new URL("../../../self/founder-loop/record-earn.mjs", import.meta.url), "utf8",
 );
@@ -34,7 +38,7 @@ function addressesIn(src, marker) {
 }
 
 test("every address the sibling judge calls internal is internal here too", () => {
-  const ours = addressesIn(SRC, "OUR_WALLETS");
+  const ours = addressesIn(SRC, "SELF_WALLETS");
   const shared = addressesIn(SIBLING, "const SHARED");
 
   const missing = [...shared].filter((a) => !ours.has(a));
@@ -47,7 +51,7 @@ test("every address the sibling judge calls internal is internal here too", () =
 test("the funding address found on 2026-07-12 can never be counted as revenue", () => {
   // Pinned explicitly: this one address accounts for every large "earn" row we have ever recorded.
   // If a future edit drops it, that silently restores a ~$37 phantom revenue claim across the colony.
-  const ours = addressesIn(SRC, "OUR_WALLETS");
+  const ours = addressesIn(SRC, "SELF_WALLETS");
   assert.ok(
     ours.has("0xf70da97812cb96acdf810712aa562db8dfa3dbef"),
     "0xf70da978… is funding routed through us (EOA holding >$3.1M), not a micro-payment buyer",
