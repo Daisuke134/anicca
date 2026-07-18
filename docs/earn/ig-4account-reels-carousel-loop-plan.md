@@ -735,3 +735,28 @@ ig-creator-repo-hunt(gh+crwl)の結論: proxy+email+CAPTCHA+SMS を全部無人�
 - launchd: ai.anicca.clip-loop-aiclipsvault + ai.anicca.session-vault は load 済（status 0）。ただし ready 垢ゼロなので投稿は起きない。
 - **security 事故（新規）**: 2026-07-18 08:2x、新 session が 5sim-account.json の pw を redact filter 漏れ（'pw' key 未カバー）で stdout に echo。→ 5sim pw rotate 必須（task #7）。
 - TaskList 登録済（#1-#7）: 5sim funding → phone wall 突破 → 登録+login-once(proxy) → warmup(3日 floor) → 初投稿+公開確認 → #25 lifecycle 自動配線 → security 残務（5sim rotate + AgentMail 旧key）。
+
+## v35 — ★大転換: proxy が phone wall の犯人。自宅IP(proxyナシ)が正解★（2026-07-18 実測確定）
+Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHAナシ**で垢作成に成功していた事実から差分を実測（subagent、証拠 file:line 付き）。結論:
+
+### 決定的差分 = egress IP だけ（他は同一フロー）
+| | @useclaudeskills（成功・0-phone） | @aiclips_daily_hq2（失敗・phone wall） |
+|---|---|---|
+| IP | :9222 daily-driver、**proxy ナシ**、SoftBank JP 自宅 residential、既存 IG login 済みで信頼履歴あり | :9233、IPRoyal Italian proxy 87.19.19.64（当日購入・IG履歴ゼロの冷たいIP） |
+| 摩擦 | 0-captcha / 0-phone → 即 live | OTP → **CAPTCHA 出現** → 突破直後 **phone wall（既定 IT+39 = proxy geo 一致）** |
+| ツール | ig-account-create（cdp_incognito :9222） | ig_signup_proxy.py | 
+| email/DOB/フロー | 同一（keiodaisuke+tag@gmail、同 emailsignup、同 DOB） | 同一 |
+
+### 真因の訂正（v26-v27 を上書き）
+- v26-27 は「自宅 IP が**焼けた**（同日多数作成で評判枯渇）」としたが誤り。**自宅 IP は逆に「枯れている＝信頼が溜まっている」から通る**。同日に自宅IP経路で world_hq2/daily_hq も phone なしで通過。
+- 犯人は **fresh購入の冷たい proxy IP**。IG履歴ゼロ + geo mismatch を IG が読んで CAPTCHA→phone を要求。$7 proxy は「IP問題を解く道具」ではなく「phone wall を自ら招いた自傷」だった。
+- ★含意: **primary path から proxy と 5sim を外す**。垢作成は Capafy と同じ「自宅 :9222 incognito・proxy ナシ」でやれば phone 不要。proxy/mobile IP は「1 IP で多数垢を持てなくなる scale フェーズ」でだけ要る。
+
+### 未確定（正直に）
+- **投稿の生存は別問題で未実証**。useclaudeskills は warming 中でまだ1本も投稿していない（作成は proven、post は未）。過去 clip 垢が死んだのは instagrapi(API device login)経路で、Capafy は **browser session** 経路 = より人間的で生存率が高い仮説はあるが未証明。
+- IG のリスクスコアは非公開。IP起因は最有力の状況証拠（段階摩擦 + geo一致）であり100%証明ではない。
+
+### 掟の更新
+- **垢作成 = 自宅 :9222 incognito、proxy ナシ、Capafy と同一手順のコピー**。proxy を噛ませない。
+- proxy/5sim は当面 **凍結**（scale で1IP飽和したら復活検討）。franklin1 の $7 proxy と 5sim 残高は sunk、追加入金しない。
+- 投稿経路は **browser-direct を第一候補**に格上げ（instagrapi は fallback）。useclaudeskills の初投稿が本番の実証点。
