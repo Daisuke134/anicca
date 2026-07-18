@@ -1,22 +1,30 @@
-# SPEC: bounty loop — on-chain rail, human-zero, crypto payout
+# SPEC: bounty loop — 稼ぐが先、crypto は後
 
-status: ACTIVE / 作成 2026-07-18 / 主体 Fable（親=harness を作り検証）/ 実行主体 claude-p loop（自分の wallet に稼ぐ）
-研究の土台 → `2026-07-18-bounty-loop-research-and-design.md`。実装 worktree = `~/profitable-claude/.worktrees/bounty-onchain`（branch `feature/bounty-onchain-rail`）。
+status: ACTIVE / 作成 2026-07-18 / 主体 Fable（plan+verify）/ executor Sol（/flowa）/ 実行主体 claude-p loop
+研究の土台 → `2026-07-18-bounty-loop-research-and-design.md`。
 spec は SSOT。発見のたび本文を実測値に書き換える。
+
+## ★2026-07-18 PIVOT（Dais 指示。上位が旧記述を上書き）★
+
+**crypto-only 制約を外す。まず bank 口座（Dais の口座）に振り込まれる bounty で今すぐ稼ぐ。crypto payout は後回しの最適化。**
+- 理由: 全 crypto rail を実測 → poidh(accept 8.6%・現地写真)・gib.work(live dev 在庫1件)・Superteam(人間 claim) は income にならないと確定。gig 型で唯一 real 在庫 × PR-merit accept × real money を持つのは **Algora（Stripe→bank 払い）**。crypto 制約を外せば復活する。
+- **human-zero の適用範囲**: loop の日次動作（discover→コード→PR→submit→track）は human-zero。payout endpoint は **Dais の一回限りの bank/Stripe**（gig-work の Coconala→Dais MUFG と同じモデル。「唯一の人要素=一回限りの口座」）。crypto wallet 直払いは後続 phase。
+- 既存資産: **`profitable-claude/skills/bounty/` は元々 Algora 用**（PR→merge→track→Stripe payout、`GITHUB_IDENTITY=Daisuke134` default）。2026-07-12 に `.disabled` 化されただけ → **復活させて回す**のが最短。
+- on-chain 作業（poidh read lib・native-verify、実 tx で着金検出を実証済み）は **crypto payout phase 用に棚上げ**（worktree `feature/bounty-onchain-rail`, commit b971d51 保持）。破棄しない。
 
 ---
 
 ## GOAL（検証可能な done）
 
-**claude-p の loop が、人間ゼロ（Dais も Fable も loop の中に居ない）で、on-chain bounty を1件成立させ、claude-p 自身の crypto wallet に外部からの着金を発生させ、それを ledger に記録する。**
+**claude-p の loop が、人間ゼロの日次動作で Algora（等）の real bounty に応募→コード→PR を出し、merge され、報酬が Dais の bank/Stripe に着金する。それをループが繰り返し earn ledger に記録する。**
 
 done（AND、全て実測で確認）:
-1. claude-p が poidh の open bounty に `createClaim` tx を human-zero で送信、tx が `status=0x1` で on-chain 確定。
-2. その claim が accept され、`withdraw()`/`withdrawTo()` で claude-p wallet に **native ETH の外部流入** が発生（Basescan で自分の目で確認）。
-3. その着金が `record.mjs` 経由で earn ledger に `external:true, profitable:true` として1行載る。
-4. 上記1-3が **launchd loop の自走**（`launchctl kickstart` 発火→loop が自分で discover→claim→track→settle）で起きる。Fable の手動 tx 実行は Phase 0 の mechanism 実証のみで、done は loop 主体。
+1. claude-p loop が live bounty を discover→gate（scam/競合フィルタ）→attempt で **実 PR を提出**（GitHub 上に PR URL が存在）。
+2. その PR が対象 repo に **merge** される（`gh pr view` で MERGED 確認）。
+3. その bounty の **報酬が実際に着金**（Algora/Stripe の payout 記録 or 口座入金を自分の目で確認）。「submit した」「merge された」では done にしない — **金が着いた時のみ**。
+4. 上記が **launchd loop の自走**で起き、繰り返しループする（1件で止まらない）。
 
-**盛らない**: accept は funder 側の意思で起きるため 2 は他者依存。done を「submit した」で報告しない。着金 tx を自分で見るまで未達。
+**盛らない**: merge も accept も他者依存。着金を確認するまで earn 計上しない（tool 出力の捏造は最悪の罪）。
 
 ---
 
@@ -38,16 +46,17 @@ done（AND、全て実測で確認）:
 
 ## RAIL 決定
 
-**2026-07-18 改訂（Sol review=STOP-AND-REVISIT-RAIL + Fable 実測を受けて）**: poidh を primary income rail から**降格**。理由=(a) accept 率 ~8.6%（Base 1,785 claims 中 accepted ≤153）で墓場、(b) proof が "genuine/original" 現地写真・実 SNS 投稿要求で AI 画像生成では勝てない、(c) 71 open 中 AI 勝機 ~10件・大半 $3〜40。→ poidh は「mechanism 実証済み + 零細/AI制作系 micro-bounty の単発 backup」に留め、primary は merit ベース(コード accept)の rail に pivot。
+**2026-07-18 PIVOT（Dais: crypto 制約を外し bank 払いを許可）で rail 再確定。** crypto を外すと「real 在庫 × PR-merit accept × real money」を持つ **Algora（Stripe→bank）が primary に復活**。既存 harness がそのまま使える。
 
 | rail | 採否 | 理由 |
 |---|---|---|
-| **Immunefi + Code4rena/Sherlock/CodeHawks（security audit）** | ★primary（確定路線） | **唯一 3条件を満たす rail**: (a) payout=USDC/ETH を wallet 直・no-KYC・pseudonymous、(b) **accept=merit（valid 脆弱性の判定）＝funder 気まぐれでない**、(c) 実弾規模が桁違い（Code4rena live: K2 \$135k / Jupiter Lend \$107k / Rujira \$40k、Immunefi \$1k〜\$10M）。Immunefi=always-on（いつでも提出）、Code4rena=contest 窓。唯一のゲート=**AI が valid finding を出せる実力**（＝最難関スキル、高分散） |
-| gib.work (Solana) | 却下 | payout 技術は human-zero 適合(wallet-native/USDC/no-KYC)だが **live dev 在庫 実質1件**・板はソーシャル雑務・accept=funder 裁量。scale income にならない |
-| **poidh (Base)** | 降格＝mechanism 実証+単発 zero-to-one | on-chain 配管(`createClaim`/`Withdrawal`)は再利用。accept 8.6% で income rail 不可。#107 AI trailer / #263 ship-a-build の単発 zero-to-one にのみ使う |
-| Algora / Superteam | 却下 | 着金で Stripe/KYC/人間 claim 必須 = human-zero 不成立 |
+| **Algora（GitHub bounty, Stripe→bank）** | ★primary（今すぐ稼ぐ） | real なコード bounty 在庫・accept=PR merge の merit・payout=Stripe で Dais の bank へ。**既存 harness `profitable-claude/skills/bounty/` がまさにこれ用**（`GITHUB_IDENTITY=Daisuke134`）。難点=agent 飽和（8-10 PR/bounty）→ 既存の scam-filter/競合スコア/「merge する repo を狙う」で対処 |
+| IssueHunt / その他 fiat bounty 板 | secondary（在庫補完） | GitHub issue bounty、PayPal/bank 払い。Algora 在庫が薄い時の補完。recon で実態確認 |
+| Immunefi + Code4rena/Sherlock（audit） | scale phase | USDC を wallet 直・merit・実弾 $1k〜$10M。crypto payout phase と同時に。ゲート=valid finding 実力（高分散） |
+| poidh (Base) | 棚上げ＝crypto phase の mechanism | on-chain 配管・native-verify は実証済、crypto 直払い phase で再利用。income rail 不可(accept 8.6%) |
+| gib.work / Superteam | 却下 | gib=live dev 在庫1件・funder 裁量、Superteam=人間 claim。income にならない |
 
-**rail 収束（全 rail 実測後の結論）**: gig 型 bounty 板は全て payout(KYC) か accept(気まぐれ/在庫枯渇) で死ぬ。**human-zero + crypto + merit accept + 実弾規模を同時に満たすのは security audit（Immunefi/Code4rena 型）のみ。** ＝この loop の正体は「自律 AI セキュリティ研究者」。ゲート=valid finding を出す実力（最難関・高分散）。**この commit は Dais 判断待ち（scope 転換）。**
+**crypto payout は後続 phase**（Algora で稼ぐ実績ができてから、audit(Immunefi/Code4rena) で crypto wallet 直払いに拡張）。今は bank-first。
 
 ---
 
