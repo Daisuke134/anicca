@@ -24,6 +24,12 @@ set -u
 DIR=/Users/operator/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as the other boot scripts) — never echoed
 set -a; . /Users/operator/.openclaw/.env 2>/dev/null || true; set +a
+# .openclaw/.env injects ANICCA_HOME=~/.openclaw + BLOCKRUN_WALLET_KEY=0xB9dd (machine-legacy), which
+# made the resale route pay the upstream (Exa) from 0xB9dd instead of franklin1 (measured 2026-07-18:
+# franklin1 got the sale, 0xB9dd paid Exa — wrong wallet). This store IS franklin1: force its identity
+# so resolve-identity() derives franklin1's own key (0x3EcCAD24) for upstream payments + float guard.
+export ANICCA_HOME="$HOME/.blockrun"
+unset BLOCKRUN_WALLET_KEY
 export X402_PAYTO="0x3EcCAD24794ca298D25378E9902A251322ea8749"
 export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://franklin1.tail7a0ba4.ts.net}"
 export X402_NETWORK="base"
