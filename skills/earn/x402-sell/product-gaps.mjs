@@ -12,10 +12,11 @@ function formatUsd(value) {
   return value.toFixed(6).replace(/\.?0+$/, '');
 }
 
-export function computeGaps(scout, ourCategories, now) {
+export function computeGaps(scout, ourCategories, now, opts = {}) {
   if (!(ourCategories instanceof Set)) throw new TypeError('ourCategories must be a Set');
   const timestamp = Number(now);
   if (!Number.isFinite(timestamp)) throw new TypeError('now must be a finite Unix timestamp');
+  const { minMarketCount = 3 } = opts;
 
   const opportunities = (Array.isArray(scout?.byCategory) ? scout.byCategory : [])
     .filter((item) => item && !EXCLUDED_CATEGORIES.has(item.category))
@@ -23,7 +24,7 @@ export function computeGaps(scout, ourCategories, now) {
       const category = String(item.category ?? '');
       const marketCount = Number(item.count);
       const medianPriceUsd = Number(item.medianPriceUsd);
-      if (!category || !Number.isFinite(marketCount) || marketCount < 0
+      if (!category || !Number.isFinite(marketCount) || marketCount < minMarketCount
         || !Number.isFinite(medianPriceUsd) || medianPriceUsd < 0) {
         return null;
       }
