@@ -26,7 +26,7 @@ export function resolvePayTo(env = process.env) {
   return null;
 }
 
-function readJsonl(path) {
+export function readJsonl(path) {
   let raw;
   try { raw = readFileSync(path, "utf8"); } catch { return []; }
   return raw.split("\n").filter(Boolean).map((line) => {
@@ -34,12 +34,8 @@ function readJsonl(path) {
   }).filter(Boolean);
 }
 
-export function review(env = process.env, now = Date.now()) {
-  const payTo = resolvePayTo(env);
-  if (!payTo) {
-    return { error: "no payTo resolvable (no X402_PAYTO, no per-instance key)" };
-  }
-  const lower = payTo.toLowerCase();
+export function resolveStateDir(payTo, env = process.env) {
+  const lower = String(payTo || "").toLowerCase();
   // The serve daemon writes state/ next to ITS OWN serve-v2.mjs. On colony instances the skill
   // copy under ANICCA_HOME is synced from the repo checkout while the seller runs FROM the repo
   // checkout — so this script's own state/ can be empty while the real logs sit in the checkout
@@ -50,7 +46,16 @@ export function review(env = process.env, now = Date.now()) {
     join(HERE, "state"),
     env.HOME ? join(env.HOME, "anicca", "skills", "earn", "x402-sell", "state") : null,
   ].filter(Boolean);
-  const stateDir = candidates.find((d) => existsSync(join(d, `sales-${lower}.jsonl`))) || candidates[0];
+  return candidates.find((d) => existsSync(join(d, `sales-${lower}.jsonl`))) || candidates[0];
+}
+
+export function review(env = process.env, now = Date.now()) {
+  const payTo = resolvePayTo(env);
+  if (!payTo) {
+    return { error: "no payTo resolvable (no X402_PAYTO, no per-instance key)" };
+  }
+  const lower = payTo.toLowerCase();
+  const stateDir = resolveStateDir(payTo, env);
   const sales = readJsonl(join(stateDir, `sales-${lower}.jsonl`));
   const attempts = readJsonl(join(stateDir, `attempts-${lower}.jsonl`));
   return aggregateStore(sales, attempts, new Set(SELF_WALLETS), now);

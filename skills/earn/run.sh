@@ -270,11 +270,12 @@ fi
 
 # --- strategy=x402: the x402 PRODUCT server + its whole listing lifecycle (passive earner) --------
 # x402-sell/serve-v2.mjs is a persistent HTTP server (402 Payment Required → USDC to our wallet).
-# ANICCA_ARGS.action dispatches this ONE loop-menu slot to 3 sub-behaviors (SELF-STORE-1,
-# 2026-07-18 — deliberately NOT 3 separate registry slots, menu-size discipline):
+# ANICCA_ARGS.action dispatches this ONE loop-menu slot to 4 sub-behaviors (SELF-STORE-1,
+# 2026-07-18 — deliberately NOT 4 separate registry slots, menu-size discipline):
 #   ensure (default) — open/keep-alive the shop, then idempotently (re)list it on x402scan.
 #   review           — aggregate sales/attempts logs: what sold, was any buyer external, or is
 #                       this a demand problem? Read-only, no side effects.
+#   improve          — combine market gaps + per-route sales bandit into one recommendation.
 #   update           — force a re-listing after the model edited the product catalog.
 # "store is up" = the instance's OWN port answers /.well-known/x402.json, NO MATTER which launchd
 # label owns it (loop-made sellers historically port-fought the hand-made per-instance ones —
@@ -304,6 +305,14 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
     echo "[earn] x402 review: $RES"
     JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-review','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 review: ${RES:-{}}" "$WAKE" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] x402 review recorded -> $OUT"
+    exit 0
+  fi
+
+  if [ "$ACTION" = "improve" ]; then
+    RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
+    echo "[earn] x402 improve: $RES"
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-improve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 improve: ${RES:-{}}" "$WAKE" 2>/dev/null)
+    OUT=$(record_line "$JSON"); echo "[earn] x402 improve recorded -> $OUT"
     exit 0
   fi
 
