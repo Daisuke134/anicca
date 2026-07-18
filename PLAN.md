@@ -83,3 +83,19 @@ spec §3 LM-7 + §13。目的: 「このユーザーにいくら掛かってる�
 3. 記録ポイント（最低3つ）: ①call 終了時（bridge close: kind=telnyx_call、quantity=秒、est_usd=quantity/60*0.002 — spec §13 実測値）②Gemini セッション終了時（kind=gemini_live、quantity=秒、est_usd=概算式をコメントに根拠付きで）③scheduler tick の calendar polling（kind=composio_poll、tick ごとでなく 1 日 1 row に集約: 判定は DB の当日 row 有無、in-memory カウンタ禁止）。
 4. `businessSummary(daysBack)` pure function: rows → {calls, call_minutes, est_cost_usd, per_uid breakdown} json。node --test でテスト（I/O 注入）。
 5. 既存テスト全 green、変更は apps/life-call/** のみ、commit 禁止、完了は agmsg DONE 報告。
+
+---
+
+# PLAN 追記4 — LM-25(part A): calendar event cache（branch feature/lm25-event-cache）
+
+背景（spec §13 実測）: wake tick は 60s ごと。全 life-logic（events.js/ask.js/context-graph.js/late-notice.js/notify.js）が `getCalendar().listEventsRaw()` を叩く = Composio polling 46,800 call/月/user、キャッシュ皆無。これがコスト危機の本丸。
+このタスクは **Composio のまま polling 回数を落とす cache 層**だけ（Unipile 置換=U17 検証は別タスク、ここでは触らない）。
+
+## 不変条件（MUST）
+1. 新 `lib/calendar-cache.js`: `makeCachedCalendar(inner, opts)` が inner（getCalendar の戻り）をラップし、`listEventsRaw(uid, {timeMin,timeMax,maxResults})` の結果を **TTL 付き in-memory cache** でメモ化する。cache key = `uid|timeMin丸め|timeMax丸め`（timeMin/timeMax は分単位に丸めて近接 tick を同一キーに寄せる）。TTL 既定 = 5分（env `LM_CAL_CACHE_TTL_MS` で上書き可）。
+2. `createEvent`/`patchEvent` は inner にそのまま委譲し、**その uid の cache 全エントリを invalidate**（書込後に古い読みを返さない）。
+3. cache は純粋なラッパ（inner の挙動を変えない）。inner が [] を返したら [] を返す。now は opts.now 注入可（テスト用）。TTL 切れは再 fetch。
+4. transport/index.js の `getCalendar()` が既定でこの cache でラップした calendar を返すよう配線（env `LM_CAL_CACHE=off` で無効化して素の inner を返す退避口を用意）。既存の getCalendar 利用側は無改修で cache が効くこと。
+5. Railway 再起動で cache が消えても**正しさは不変**（次 tick で再 fetch されるだけ）。プロセス跨ぎ永続は不要（コメントでそう明記）。
+6. テスト `lib/calendar-cache.test.js`（node --test）: ①同一 window 2連続 read で inner 呼び出し 1回 ②TTL 経過後は再 fetch ③createEvent 後は同 uid の次 read が inner を再度呼ぶ（invalidate）④uid 違いは別キー。inner は call カウンタ付き fake を注入。
+7. 既存テスト全 green、変更は apps/life-call/** のみ、migration 無し、commit 禁止、完了は agmsg DONE 報告。
