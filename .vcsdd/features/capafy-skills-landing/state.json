@@ -2,7 +2,7 @@
   "featureName": "capafy-skills-landing",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "2b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -35,6 +35,13 @@
       "timestamp": "2026-07-18T15:13:53.167Z",
       "reason": "RED evidence: new feature test fails on missing generator; baseline passes",
       "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-18T15:15:55.095Z",
+      "reason": "GREEN tests, live generator, and idempotence pass",
+      "sprint": 1
     }
   ],
   "iterations": {
@@ -42,7 +49,8 @@
     "1b": 1,
     "1c": 1,
     "2a": 1,
-    "2b": 1
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -62,5 +70,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-18T15:09:00.982Z",
-  "updatedAt": "2026-07-18T15:13:53.169Z"
+  "updatedAt": "2026-07-18T15:15:55.096Z"
 }

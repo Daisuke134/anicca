@@ -33,7 +33,7 @@ Instagram bio の1本のクリック可能 URL から、公開中の全 Capafy s
 
 | Task | 状態 |
 |---|---|
-| generator + index.html | in_progress |
-| Netlify deploy | pending |
+| generator + index.html | completed (21 online cards, idempotent MD5) |
+| Netlify deploy | in_progress |
 | daily regen + bio target | pending |
 | browser/curl verify + commit/push | pending |
