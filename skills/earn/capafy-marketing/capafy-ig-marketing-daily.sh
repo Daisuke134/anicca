@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # capafy-ig-marketing-daily.sh — B1-B4 IG line — DETERMINISTIC daily trigger for the Capafy
 # Instagram marketing loop. Mirrors capafy-x-marketing-daily.sh but for IG Reels via
-# ig-reels-poster (browser-direct, @useclaudeskills — an AI-OWNED account, NOT a Dais-personal one).
+# instagrapi (private API, @useclaudeskills — an AI-OWNED account, NOT a Dais-personal one).
 # launchd -> this script -> headless `claude -p`: selector -> copy -> faceless video (B3) ->
-# ig-reels-poster (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
+# instagrapi post (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
 #
 # ★ LIVE is HARD-GATED on warmup being complete (ig-account-warmer day>=7). @useclaudeskills is
 #   warming (day-1 was 2026-07-18; commercial Reel + bio Capafy link only AFTER ~2026-07-25).
@@ -34,7 +34,7 @@ PY
 # NON-COMMERCIAL (no bio link, pure-info caption) so we can MEASURE reach — the only real shadowban
 # test — before adding a commercial link. COMMERCIAL_OK only after reach is confirmed healthy (a
 # marker the reach-check step writes). Until day>=3 it stays DRY.
-MODE_FLAG=""   # empty = dry (post_reel.py default). --live from day>=3.
+MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=3.
 COMMERCIAL_MARKER="$HOME/.openclaw/state/.capafy-ig-reach-healthy"
 if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
 COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
@@ -68,7 +68,7 @@ STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption
 
 STEP3 VIDEO (B3, faceless engine): write YOUR 30-45s voiceover script about THIS listing (hook + what it kills + what it does + "link in bio" CTA; topic = the skill, not generic finance) to a file, then build ONE 9:16 mp4 with:  BROLL_QUERY="<a b-roll query that matches the listing category>" bash ~/.claude/skills/faceless-money-factory/scripts/run-daily.sh <your-script-file> en  . ★Set BROLL_QUERY to topic-appropriate stock footage, NOT the finance default (e.g. YouTube Script Writer -> "video editing laptop creator", Lead Magnet Generator -> "marketing office laptop", a coding skill -> "programmer typing code"). Without BROLL_QUERY the engine falls back to finance "money" b-roll, which mismatches a Capafy skill.★ Gate: only proceed if the mp4 exists and is 1080x1920 9:16.
 
-STEP4 POST (B4, tool = instagrapi, the WORKING path): ★Do NOT use post_reel.py / ig-reels-poster — that web composer is a dead end: IG detects the automated web-composer post and SILENTLY DROPS it (the "シェア中" spinner hangs, nothing publishes — this is what blocked posting for months). Use clip'"'"'s proven instagrapi poster instead★:  CDP_PORT=9222 ~/.cache/instagrapi-venv/bin/python ~/anicca/skills/earn/clip/scripts/instagrapi_post.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port 9222 --live  . It pulls the CloakBrowser'"'"'s logged-in sessionid (tier2, session_owner=browser) so no fresh-login challenge, uploads via the private API, and prints JSON with outcome=published + post_url (the reel URL). Only run this when MODE=--live; if MODE=DRY do NOT post (instagrapi has no dry). If it returns ChallengeRequired, the account is poisoned — STOP and report, never retry-login. Capture post_url.
+STEP4 POST (B4, instagrapi — the ONLY poster, proven working reel/Da7VQY8MIOK 2026-07-18):  CDP_PORT=9222 ~/.cache/instagrapi-venv/bin/python ~/anicca/skills/earn/clip/scripts/instagrapi_post.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port 9222 --live  . It pulls the CloakBrowser'"'"'s logged-in sessionid (tier2, session_owner=browser) so no fresh-login challenge, uploads via the private API, and prints JSON with outcome=published + post_url (the reel URL). Only run this when MODE=--live; if MODE=DRY do NOT post (instagrapi has no dry). If it returns ChallengeRequired, the account is poisoned — STOP and report, never retry-login. Capture post_url.
 
 STEP5 BIO: add the Capafy listing URL (utm_source=instagram_bio) to the profile bio/Website ONLY when commercial_ok=yes AND MODE=--live. While commercial_ok=no, DO NOT touch the bio (non-commercial phase — we are only measuring reach). Never in DRY.
 
