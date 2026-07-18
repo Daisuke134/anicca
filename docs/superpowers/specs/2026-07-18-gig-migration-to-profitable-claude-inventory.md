@@ -364,6 +364,18 @@ interpolation 復活 + cron ハードコードを state/effective-cron/gig.txt �
 funnel 機構の存在を grep 実測してから採取）。test_prompt_integrity_snapshot **17/17** +
 test_registry_enforce_core **12/12**（回帰なし）。quality re-review 待ち。
 
+## 8-3 結果記録（2026-07-18 20:2x JST）: 原子切替 DONE（cutover 完了、gig は PC が本番）
+
+実行 = Sol one-shot（/flowa 体制: Fable plan+verify / Sol execute）。パス走行中を避け lock 解放後に実施。
+- bootout 旧5 Label → 全滅を launchctl 実測 / 旧 plist 5本は `~/Library/LaunchAgents.disabled-gig-migration-20260718/`
+  へ退避（rollback = 戻して bootstrap）/ hf-gig 4本 bootstrap（**proactive は意図的に作らず** — restart map は
+  2026-07-06 から空で no-op だった、step3_recipe.py:218 実測）
+- tmux 張り替え → 新 core ALIVE、新 STARTUP（identifier interpolation + effective-cron 読み + detached driver）
+  で始動し、即座に新パスが ②の gig_pass.sh で実走開始（lock 実測）。旧 core は最終パス全 step 完走で退役
+- Sol の「ABORT」出力は最終検証 grep の基準誤り（新 STARTUP 先頭300字に repo パスが無いのは設計通り。
+  切替シーケンス自体は完遂していた）— one-shot の自己申告を Fable が実測で上書きした実例
+- 残検証は §8-4,5,6（#11）: 300s healthcheck 維持・次毎時パス完走・tombstone
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
