@@ -21,7 +21,8 @@
 | auth | Daisuke Narita / Daisuke134’s team |
 | dedicated site ID | `41c8e52e-b163-442a-84ff-fd866269bf6c` |
 | production URL | `https://capafy-skills-daily.netlify.app` |
-| redeploy ID | `6a5b9adaefb7a9c5200a38dc` |
+| final main redeploy ID | `6a5b9d368df1ec9a0a463fb1` |
+| merged main commit | `8d0ca522` |
 | curl | HTTP 200; 21 `capafy.ai/agent` links; title present |
 
 Netlify CLI inherited an unrelated linked project on the first create attempt and sent one deploy to `anicca-invoice-gen-1781219208`. That project had zero previous deploys. `deleteSiteDeploy` returned 405 and rollback had no prior deploy. Recovery used a 404-only production deploy; root now returns HTTP 404. Dedicated site creation then used `--account-slug daisuke134 --disable-linking`; every landing deploy now pins `--site 41c8e52e-b163-442a-84ff-fd866269bf6c`.
