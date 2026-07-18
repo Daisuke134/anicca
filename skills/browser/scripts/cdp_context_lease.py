@@ -70,14 +70,14 @@ def _save(d):
     os.replace(tmp, LEASES)
 
 
-def acquire(task, url="about:blank"):
+def acquire(task, url="about:blank", no_seed=False):
     leases = _leases()
     held = leases.get(task)
     if held:  # a task holds at most one context; reuse it rather than piling up
         return {"ok": True, "reused": True, **held}
 
     cookies = []
-    if os.path.exists(VAULT):
+    if not no_seed and os.path.exists(VAULT):
         cookies = json.load(open(VAULT)).get("cookies", [])
 
     (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     arg = sys.argv[2] if len(sys.argv) > 2 else None
     try:
         if cmd == "acquire":
-            out = acquire(arg or "unnamed")
+            out = acquire(arg or "unnamed", no_seed="--no-seed" in sys.argv)
         elif cmd == "release":
             out = release(arg or "unnamed")
         elif cmd == "gc":

@@ -51,7 +51,7 @@ mkdir "$LOCKD" 2>/dev/null || { log "another clip pass holds the lock — exit";
 trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$C/../../browser/scripts/cdp_context_lease.py" release "$CLIP_LEASE" >/dev/null 2>&1' EXIT
 FREE=$(df -g / | tail -1 | awk '{print $4}')
 [ "${FREE:-99}" -lt 5 ] && { log "disk <5GB free — abort to protect the session"; exit 0; }
-python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" >/dev/null 2>&1 || true
+python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" --no-seed >/dev/null 2>&1 || true
 
 # ── PROVISION (1-loop-1-acc, replace-on-cold, NO HUMAN). v38 root-cause fix: the live loop had
 # NO account-creation step, so once its only account went cold (poisoned) it just gave up every
