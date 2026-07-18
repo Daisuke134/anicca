@@ -381,3 +381,9 @@
 {"timestamp":"2026-07-18T15:12:23.461Z","event":"sprint_started","featureName":"capafy-skills-landing","sprintNumber":1,"phase":"2a"}
 {"timestamp":"2026-07-18T15:13:53.171Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"2a","to":"2b","iteration":1,"phase":"2b"}
 {"timestamp":"2026-07-18T15:15:55.099Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-07-18T15:29:38.483Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-07-18T15:29:38.484Z","event":"gate_recorded","featureName":"capafy-skills-landing","phase":"3","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-07-18T15:29:38.485Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-07-18T15:31:52.566Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-07-18T15:33:10.011Z","event":"gate_recorded","featureName":"capafy-skills-landing","phase":"6","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-07-18T15:33:25.695Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"6","to":"complete","iteration":1,"phase":"complete"}
