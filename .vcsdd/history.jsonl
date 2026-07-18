@@ -372,3 +372,6 @@
 {"timestamp":"2026-07-12T16:45:24.885Z","event":"phase_transition","featureName":"reality-gate","from":"1a","to":"1b","iteration":1,"phase":"1b"}
 {"timestamp":"2026-07-12T17:02:24.867Z","event":"phase_transition","featureName":"reality-gate","from":"1b","to":"1c","iteration":1,"phase":"1c"}
 {"timestamp":"2026-07-12T19:07:35.137Z","event":"gate_recorded","featureName":"reality-gate","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-18T15:09:01.006Z","event":"feature_created","featureName":"capafy-skills-landing","mode":"lean","language":"python"}
+{"timestamp":"2026-07-18T15:11:02.208Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-18T15:11:02.210Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"1a","to":"1b","iteration":1,"phase":"1b"}
