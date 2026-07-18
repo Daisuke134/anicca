@@ -817,3 +817,12 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 - money_hq は write-off（status=provision_failed_dead_session、tier3 cooldown 中）。detection usable=0 に戻したので次 pass で修正版 PROVISION が新垢を作り直す。
 ### 次
 - 現 pass 完了待ち → kickstart → 修正版 PROVISION が durable session 付き新垢作成 → run.sh が instagrapi 投稿 → 公開URL 実測（#5+#8）。
+
+## v40 — provision hang の真因 = :9222 共有ブラウザの congestion（Capafy 並行作業）2026-07-18
+- timeout 延長(900→1500s)+bg-ceiling 解除しても PROVISION が hang（新垢ゼロで rc=124）。
+- 真因: **:9222 に instagram tab 25個、大半が useclaudeskills + facebook login_sync = Capafy marketing の並行作業**。単一 daily-driver :9222 で2つの垢作成フロー(clip provision + Capafy)を同時に回すと clip の cdp_incognito signup が詰まる。
+- money_hq が 19:43 に14分で成功したのは Capafy がまだ活発でなかった為。20:33〜は Capafy フル稼働 → hang。=Dais が警告した「衝突」の実体（コード衝突でなく共有ブラウザ資源の取り合い）。
+- 対処: **手動 kickstart を止める**。clip loop は launchd で6h毎に自動実行される。:9222 が空いた時(Capafy が engine コード作業に戻る/深夜)の scheduled pass が provision すれば通る。横から叩き続けない(衝突+token浪費+hang)。
+- 恒久策候補: clip 専用の別 CloakBrowser インスタンス(別 profile/port、同 home IP)を provision 用に立てれば Capafy と資源分離できる(scale で必要)。今は scheduled 実行に委ねる。
+- deploy 済みの修正(全て正しい、hang は資源競合のみ): PROVISION step 追加(v38) / durable session=password login+feed検証(v39) / 1500s timeout+bg-ceiling解除(Sol実装)。
+- money_hq: live 垢だが session-dead + tier3 cooldown(明日19:53まで)。write-off。
