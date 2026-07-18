@@ -354,6 +354,12 @@ skills.lock 方式（source_repo/source_commit/sha256）で受ける。逆方向
 - **clip freeze gate（インシデント対応、anicca `5de5b4db`）**: pass45 診断スクリプトが FROZEN の
   @aiclips_studio_hq へ実投稿していた事件の恒久 fix。共用 poster instagrapi_post.py の chokepoint で
   status=frozen の handle への投稿を全経路拒否（実測: frozen=refused / 通常=通過）
+- **P6 前半 = reddit 移設完了**（2026-07-19 01:2x）: COPY→切替→tombstone まで一気通貫。PC `e2a3f59`
+  （copy + self-ref retarget 0 hit + hf plist 2本）、切替実測（hf-reddit-loop-{daily,healthcheck} のみ
+  launchctl に存在、旧2本退避）、anicca tombstone `efbe5969`。依存残置 = ~/.cloak / ~/.camofox /
+  anicca self-fix / report / ~/.openclaw（MOVE だが依存刈りは後続）。初回 daily 発火 = 今日 08:35 要確認
+- **保留中の切替2件（並行セッション衝突回避）**: clip（v44 再構築中）と article cron 廃止（spec 47 作業中）。
+  capafy も並行の気配あり要確認。x402(#17) は最難関で最後、OSS hygiene(#13) は移設完了後
 - 体制 = /flowa: Fable plan+verify / Sol xhigh execute / Sol fresh review
 
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
