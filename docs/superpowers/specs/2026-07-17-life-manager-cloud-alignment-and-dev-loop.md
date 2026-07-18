@@ -401,6 +401,21 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 - LM-26 真因: lang=ja は ws ctx まで届いていたが、setup 後の開始 turn が英語ハードコード（"Begin the call now…"）だった。
 - 残 E2E（C7 イベント 23:00 仕込み済み、attendee=keiodaisuke+lmtest@gmail.com）: 日本語 call（LM-26 close）/ T-0「出た？」ボタン（LM-23 #2 close）/「まだ」→実メール（LM-5 #6 close）。
 
+### §5c-4 進捗（2026-07-18 22:40）— flowb で wave2 を4本 prod 投入
+Fable=plan/verify、Sol(codex gpt-5.6)=executor の flowb で、各タスク PLAN.md → Sol 実装 → Fable が npm test 独立再実行 + logic レビュー → commit → staging(path-as-root) green → dev→main → prod deploy 実測、を1本ずつ回した。
+
+| タスク | branch/PR | prod deploy | build | E2E |
+|---|---|---|---|---|
+| LM-5 遅刻検知 + LM-26 日本語 | PR301→302 | ad85171b SUCCESS | lm5-ja-v1 | C7b 待ち |
+| LM-6 onboarding + LM-7 ledger | PR303→304 | 75c4b1bc SUCCESS | lm6-ledger-v1 | 実TG/実row 待ち |
+| LM-25(A) calendar cache | PR305→306 | 3a7a8128 QUEUED | lm25-cache-v1 | prod後に polling減を実測 |
+
+- 適用済み migration（Supabase Management API + SELECT 検証）: late-notice / gmail-skipped / api-cost。
+- **LM-25 は2分割**: (A) event cache=Composio polling を TTL 5分でメモ化（46,800 call/月 の削減、prod 投入済み）／ (B) Unipile calendar 置換=U17 検証前提の外部調査、後続。
+- **staging deploy runbook（重要・再掘り防止）**: life-call-staging は CLI service で rootDirectory=apps/life-call かつ watchPatterns が snapshot 差分で CLI up を skip させる → ①GraphQL `serviceInstanceUpdate` で watchPatterns=[] に一度変更済み ②`railway up --path-as-root <repo_root> -e staging -s life-call-staging`（archive root を repo root にしないと apps/life-call が展開されず railpack が "directory does not exist" で FAILED）。
+- **残 E2E（Dais 依存1点のみ）**: C7b call（23:45 イベント、T-10≈23:01/T-5≈23:06）で①日本語発話 ②T-5 に出る→23:11 TG「出た？」③「まだ」タップ→+lmtest 宛遅刻メール。これで #2/#6/#13 close。onboarding(#7) は実 /start 通し、ledger(#9) は実 call 後の lm_api_cost row で close。
+- **未実行（C7b 検証後の順）**: #4 rotate(13キー、prod 数分ダウン伴うので call 検証後)／#8b Unipile calendar／#10 repo 収斂／#11 TikTok bio(ブラウザ)／#12 dev loop D0。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
