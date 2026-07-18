@@ -42,12 +42,12 @@ done（AND、全て実測で確認）:
 
 | rail | 採否 | 理由 |
 |---|---|---|
-| **gib.work (Solana)** | ★primary 候補（検証中） | コード/OSS bounty・USDC を wallet 直・no-KYC・既存 solana-verify 適合・franklin1 に SOL gas。accept が merit(PR merge)なら poidh の funder気まぐれ問題を回避。難点=**app API 未文書化**（実地 reverse-engineer 中） |
-| Immunefi / Code4rena / Sherlock | scale 候補 | USDC 高額($1k〜$10M)・匿名/緩 KYC・wallet 受取・merit=valid finding。難点=security 専門性ゲート高 |
-| **poidh (Base)** | 降格＝mechanism 実証+backup | on-chain 配管(`createClaim`/`Withdrawal`)は再利用。income rail としては accept 8.6% で不採用。#107 AI trailer / #263 ship-a-build の単発 zero-to-one にのみ使う |
+| **Immunefi + Code4rena/Sherlock/CodeHawks（security audit）** | ★primary（確定路線） | **唯一 3条件を満たす rail**: (a) payout=USDC/ETH を wallet 直・no-KYC・pseudonymous、(b) **accept=merit（valid 脆弱性の判定）＝funder 気まぐれでない**、(c) 実弾規模が桁違い（Code4rena live: K2 \$135k / Jupiter Lend \$107k / Rujira \$40k、Immunefi \$1k〜\$10M）。Immunefi=always-on（いつでも提出）、Code4rena=contest 窓。唯一のゲート=**AI が valid finding を出せる実力**（＝最難関スキル、高分散） |
+| gib.work (Solana) | 却下 | payout 技術は human-zero 適合(wallet-native/USDC/no-KYC)だが **live dev 在庫 実質1件**・板はソーシャル雑務・accept=funder 裁量。scale income にならない |
+| **poidh (Base)** | 降格＝mechanism 実証+単発 zero-to-one | on-chain 配管(`createClaim`/`Withdrawal`)は再利用。accept 8.6% で income rail 不可。#107 AI trailer / #263 ship-a-build の単発 zero-to-one にのみ使う |
 | Algora / Superteam | 却下 | 着金で Stripe/KYC/人間 claim 必須 = human-zero 不成立 |
 
-rail 最終確定 = gib.work 検証結果で決める。human-zero 不可なら audit contest を primary、poidh を単発 zero-to-one に。
+**rail 収束（全 rail 実測後の結論）**: gig 型 bounty 板は全て payout(KYC) か accept(気まぐれ/在庫枯渇) で死ぬ。**human-zero + crypto + merit accept + 実弾規模を同時に満たすのは security audit（Immunefi/Code4rena 型）のみ。** ＝この loop の正体は「自律 AI セキュリティ研究者」。ゲート=valid finding を出す実力（最難関・高分散）。**この commit は Dais 判断待ち（scope 転換）。**
 
 ---
 
@@ -111,6 +111,8 @@ E2E green = T1-T9 全通過 + done 1-4 の on-chain 着金を Fable が Basescan
 - 2026-07-18 [Phase0 read side 完了, commit b971d51 未push]: poidh Base **LIVE = 307件中 71 open**（実測）。ABI 実名確定: `bountyCounter()`（`bountyCount` は revert）/ `getClaimsByBountyId(uint256,uint256)` 2引数 / `bounties(id)` / `pendingWithdrawals(address)` / `createClaim(bountyId,name,uri,description)`。**罠**: `getBounties(offset)` は paginate せず同じ10件を返す → `bounties(id)` を Multicall3 で個別 scan（307 calls ~280ms）。RPC: llamarpc down、`base.publicnode.com`/`base.meowrpc.com`/`1rpc.io/base` が生存。
 - 2026-07-18: **native-verify N2 実装済・T5 green**。手法 = balance-delta before/after block + self-pay 時の gas 足し戻し（`debug_traceTransaction` は Base 公開 RPC 全滅 -32601、Basescan V2 は API key 不在）。実 tx `0xba7792…78b4` で `ethInflowForTx`=0.1297 ETH を検出。19 テスト green。
 - 2026-07-18: **blockrun_image ツールは grep で発見できず** → proof-gen N3 の画像生成 API は未確定（要 MCP 確認）。
+- 2026-07-18 [gib.work 実地検証]: **③使えない**。payout=wallet-native/USDC/no-KYC で human-zero 適合だが、`api.gib.work/explore` total=426 中 **isOpen=true 4件・dev は1件のみ**（板の実態は Social Media 213/Misc 87）。accept=funder 裁量（PR merge 自動払いでない）。認証=Solana wallet 署名（OAuth/email 不要）。→ scale income rail にならず却下。primary を audit contest に確定。
+- 2026-07-18 [rail 収束]: 全 rail 実測で確定 = human-zero+crypto+merit+実弾を同時に満たすのは **security audit（Immunefi always-on + Code4rena/Sherlock/CodeHawks contest）のみ**。loop の正体=自律 AI セキュリティ研究者。ゲート=valid finding 実力。scope 転換につき Dais 判断待ち。
 - 2026-07-18 [Sol review verdict = **STOP-AND-REVISIT-RAIL**]: 7 blocking。#1 poidh 攻略前提破綻（proof=現地/original、AI 画像不可、sentinel は発注者側）#2 accept 8.6%・open の 55/71 が30日超で墓場・収益性ゲート不在 #3 Phase0 が rail を証明しない #4 record.mjs が caller 提供値を盲信＝done 捏造可 #5 balance-delta は偽陰陽性→event log を bigint wei で #6 gas 自己復旧デッドロック #7 鍵 broadcast 前防御。→ INV-8〜11 に昇格・rail 降格・Phase0 再定義で反映済。
 - 2026-07-18 [71 open 全 dump・カテゴリ精査, Fable 実測]: AI が human-zero で勝てるのは **~10件のみ**（残りは現実世界/特定人物 proog）。AI 勝機案件: #263 "ship a real build"(0.0138ETH,claims2,純コード) / #107 "Farcaster Movie Trailer, Use AI"(0.0125ETH,claims3) / #237系 "tweet about \$Space proof=tweet URL"(claims0 多数, 0.001ETH) / #304 poem(claims9飽和) / #283 one question(claims1) / #301 NFT mint / #250 token split。→ **判定: poidh は mechanism 実証には最適だが income rail としては薄い**（大半 \$3〜40、accept は funder 依存）。zero-to-one の初ドルは取れる。scale($10k/月)は gib.work(コード/USDC)+audit へ pivot 必須。前提依存: tweet系は X/Farcaster account が要る（claude-p は未保有→要確認）。
 
