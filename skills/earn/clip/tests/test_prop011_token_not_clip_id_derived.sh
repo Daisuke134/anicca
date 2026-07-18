@@ -38,7 +38,7 @@ run_one_attempt() {
   rm -f "$CLIP_QUEUE"/*.mp4 "$CLIP_QUEUE"/*.txt "$CLIP_POSTED"/*.mp4 "$CLIP_POSTED"/*.txt 2>/dev/null
   echo "fake mp4 bytes" > "$CLIP_QUEUE/testclip.mp4"
   printf '%s' "$ORIG_CAP_CONTENT" > "$CLIP_QUEUE/testclip.txt"
-  EARN_MODE=execute CLIP_POSTER_OVERRIDE="$POSTER_STUB" CLIP_SELF_HEAL_OVERRIDE="/bin/true" \
+  EARN_MODE=execute CLIP_CADENCE_HOURS=0 CLIP_POSTER_OVERRIDE="$POSTER_STUB" CLIP_SELF_HEAL_OVERRIDE="/bin/true" \
     CLIP_TEST_TID_OVERRIDE="fake-tid" CLIP_TEST_ACTIVE_OVERRIDE="testhandle" \
     bash "$DIR/run.sh" 2>&1
 }
@@ -93,7 +93,7 @@ test_tmpcap_cleanup_for_outcome() {
   rm -f "$CLIP_QUEUE"/*.mp4 "$CLIP_QUEUE"/*.txt 2>/dev/null
   echo "fake mp4 bytes" > "$CLIP_QUEUE/testclip.mp4"
   printf '%s' "$ORIG_CAP_CONTENT" > "$CLIP_QUEUE/testclip.txt"
-  EARN_MODE=execute CLIP_POSTER_OVERRIDE="$stub" CLIP_SELF_HEAL_OVERRIDE="/bin/true" \
+  EARN_MODE=execute CLIP_CADENCE_HOURS=0 CLIP_POSTER_OVERRIDE="$stub" CLIP_SELF_HEAL_OVERRIDE="/bin/true" \
     CLIP_TEST_TID_OVERRIDE="fake-tid" CLIP_TEST_ACTIVE_OVERRIDE="testhandle" \
     bash "$DIR/run.sh" >/dev/null 2>&1
   after="$(ls "${TMPDIR:-/tmp}"/clip-cap-* 2>/dev/null | wc -l | tr -d ' ')"
