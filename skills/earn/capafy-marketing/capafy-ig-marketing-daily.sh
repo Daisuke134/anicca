@@ -4,10 +4,10 @@
 # instagrapi (private API, @useclaudeskills — an AI-OWNED account, NOT a Dais-personal one).
 # launchd -> this script -> headless `claude -p`: selector -> copy -> faceless video (B3) ->
 # instagrapi post (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
+# LaunchAgent: ai.anicca.capafy-ig-marketing-daily at 16:00 local; stdout/stderr use LOG below.
 #
-# ★ LIVE is HARD-GATED on warmup being complete (ig-account-warmer day>=7). @useclaudeskills is
-#   warming (day-1 was 2026-07-18; commercial Reel + bio Capafy link only AFTER ~2026-07-25).
-#   Until then this runs the pipeline in DRY only (proves the flow, publishes nothing). ★
+# ★ LIVE starts from the first completed warmup day. Initial posts stay NON-COMMERCIAL: no bio
+#   link and no commercial CTA until the reach-health marker exists. Warmup continues in parallel. ★
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
@@ -21,7 +21,7 @@ echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # ── IG metrics/attribution run EVERY day (deterministic; IG variants, utm_source=instagram_bio) ──
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py >>"$LOG" 2>&1 || echo "ig_metrics failed (non-fatal)" >>"$LOG"
 
-# ── WARMUP GATE: decide DRY vs LIVE. LIVE only when ig-account-warmer has reached day>=7. ──
+# ── WARMUP GATE: decide DRY vs LIVE. LIVE from the first completed warmup day. ──
 WARM_DAY="$(/opt/homebrew/bin/python3 - "$WARMUP_STATE" <<'PY' 2>/dev/null
 import json,sys,os
 p=sys.argv[1]
@@ -30,13 +30,12 @@ try:
 except Exception: print(0)
 PY
 )"
-# Dais decision 2026-07-18: EARLY test post at day>=3 (not full 7d). The first live posts are
-# NON-COMMERCIAL (no bio link, pure-info caption) so we can MEASURE reach — the only real shadowban
-# test — before adding a commercial link. COMMERCIAL_OK only after reach is confirmed healthy (a
-# marker the reach-check step writes). Until day>=3 it stays DRY.
-MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=3.
+# Post from day 1 while warmup continues. First live posts remain NON-COMMERCIAL (no bio link,
+# pure-info caption) to measure reach before adding a commercial link. COMMERCIAL_OK only after
+# the reach-check step writes the healthy marker. Before day 1 the pipeline remains DRY.
+MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=1.
 COMMERCIAL_MARKER="$HOME/.openclaw/state/.capafy-ig-reach-healthy"
-if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
+if [ "${WARM_DAY:-0}" -ge 1 ]; then MODE_FLAG="--live"; fi
 COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
 echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
 
