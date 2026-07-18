@@ -421,6 +421,12 @@ Fable=plan/verify、Sol(codex gpt-5.6)=executor の flowb で、各タスク PLA
 - **T-0「出た？」設計制約（実装 shouldSendT0: `Date.parse(startIso) <= nowMs`）**: T-0 プロンプトは event start 到達後に送られる。C7b は start=23:45 なので「出た？」ボタンは 23:45 に自動発火 → Dais【まだ】タップで遅刻メール（#2/#6 の残り実往復はこの自動発火で閉じる）。テスト用に「今すぐ T-0」を出すには start≈now+15min かつ location=home 徒歩圏（travel 小）のイベントが要る（travel 大だと departure が過去化して T-10/T-5 が発火しない）。
 - LM-26（日本語）は T-5 録音（answered=録音あり）を whisper で検証予定。
 
+### §5c-6 訂正（2026-07-18 22:58）— 録音実測で新バグ2件、LM-26 は未達だった
+C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whisper 実測）で判明。**先の「LM-26 close 見込み」は誤り、取り消す。**
+- **LM-26 未達（まだ英語）**: 録音冒頭「Hi Daisuke, this is your life manager. Your next event is …C7B at 2345」= 英語のまま。真因 = Sol の `openingTurnForLang(lang)` は正しいが、`lang` の源泉 server.js:242 は `u.call_language`（Dais は +81 なのに **"en" が明示設定**されていた、DB 実測）。→ ①call_language を "ja" に修正済み（即効、次 call で日本語のはず）②コード fix 残 = `lang` 決定に `langForPhone(phone)` フォールバック（call_language 未設定の +81 は ja）。
+- **LM-27 新バグ（voicemail を answered 誤判定）**: 録音冒頭「この通話は留守番電話に転送されました。発信先は現在電話に出ることができません」= **Dais は出ていない**。なのに lm_wake_log の answered_at が入った（前 §5c-5 の「answered 実証」は voicemail 誤判定だった）。真因 = server.js:543 が record_start 成功=answered と近似、voicemail でも record_start は成功。→ Telnyx AMD / call.answered webhook で人間 pickup と voicemail を区別する fix が必要（TaskList #14）。
+- 教訓: DB の answered_at だけ見て「出た」と判定したのが誤り。実 side-effect（録音の中身）を whisper で聞くまで close しない、を厳守。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
