@@ -34,6 +34,8 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 **critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
 
+**★2026-07-18 最重要の経験的事実（loop を実走させて確定）★**: unblock 後 core はフル pass を完走 = **discover 63件 → gate survivor 0/63 → claim0/PR0/earn0**。真因を実測: 63件の大半は spam/test repo/token 払いのゴミ（gate が正しく除外）、本物のコード bounty は `sorosave-protocol/frontend` の ~8件だが**全て競合 PR 4件+で飽和**（例: issue#6「transaction history」= 未assign・OPEN だが algora コメントに競合が "attempt, PR incoming" 済み・参照 open PR=4件、gate の「既 open PR→skip」が正しく reject）。他(drizzle/zio/prisma)は高難度 big-repo。**結論: 現 Algora 在庫に「我々が勝てる案件」はゼロ。daily-batch 方式は構造的に常に 5番目以降の PR=EV≈0**（研究の「flat-38」を自 loop で実証）。loop 自身も lessons.jsonl に「5回連続 empty pass」と記録。→ Algora で稼ぐには **(A) 新規 bounty を real-time で監視し最初の1-3 PR に入る first-mover 方式に作り替える（R4 を batch→realtime に再定義、Sol）** か **(B) 飽和しない merit ベースの audit(Code4rena/Immunefi, crypto payout) に pivot**。Dais 判断。
+
 **2026-07-18 R2 実測（Fable が手で復活・観測）**: plist 2枚 .disabled 解除+load、`bounty-cli.sh` で core 起動＝ALIVE。だが **headless core は自律で回らないと判明**: (a) `~/anicca-project` から手動起動すると claude が同 cwd の直近 warmup/clip セッションを resume して bounty と無関係な内容を実行、(b) 中立 cwd から起動すると `.claude/active-team.md` の external-imports 承認プロンプト「1.Yes/2.No」でハング。俺が tmux に Enter を送って初めて pass が走り始めた（"Beaming… ↓1.2k tokens"）。**weekly limit 73% 消費(Jul 24 reset)** も判明＝常時 Sonnet コアはこれを食う。→ R6 を Sol に。現 pass の結果は Monitor で観測中。
 
 ---
