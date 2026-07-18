@@ -379,3 +379,4 @@
 {"timestamp":"2026-07-18T15:12:23.451Z","event":"gate_recorded","featureName":"capafy-skills-landing","phase":"1c","verdict":"PASS","reviewedBy":"verifier"}
 {"timestamp":"2026-07-18T15:12:23.461Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"1c","to":"2a","iteration":1,"phase":"2a"}
 {"timestamp":"2026-07-18T15:12:23.461Z","event":"sprint_started","featureName":"capafy-skills-landing","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-18T15:13:53.171Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"2a","to":"2b","iteration":1,"phase":"2b"}
