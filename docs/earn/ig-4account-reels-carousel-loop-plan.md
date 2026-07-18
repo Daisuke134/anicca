@@ -886,3 +886,17 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - 古い `ai.anicca.clip-loop-aiclipsvault` = bootout + plist を .disabled-v44 に rename(復活しない)。
 - 保証: telegram に飛ぶ URL = poster が logged-out で公開確認した実 reel のみ。死んだ aiclipsvault ハードコードも LLM hallucination も経路から消えた。
 - 検証中: 走行中の loop が fresh 垢作成→実投稿→実URL telegram するか。Fable が logged-out curl で URL 独立確認する。
+
+## v46 — ★真の壁: day-0 instagrapi password login が bloks(4/4)。Capafy の browser-session が正★（2026-07-19）
+### honesty は完全稼働(嘘ゼロ)
+- 新 clip_daily.sh + honesty gate: 4/4 の fresh 垢を全て status=provision_failed と正直記録。偽 ready 垢ゼロ、偽 telegram ゼロ、偽投稿ゼロ。捏造源(LLM MEASURE/REFLECT)は物理排除済み。
+### 2段の真因を実測で剥がした
+1. lease が vault の **suspended useclaudeskills cookie** を seed → signup が /accounts/suspended/ redirect。→ **--no-seed 修正で解消**(垢作成は成功するようになった)。
+2. だが次に **instagrapi の day-0 password login-once が bloks/ChallengeRequired**。4/4 の fresh 垢が同じ壁。browser-churn 修正と無関係 = **「fresh 垢への即時 API password login」自体が引き金**。
+### 核心の誤り(v39 を訂正)
+- v39 で「durable session = instagrapi password login-once」に倒したのが誤り。**day-0 の API password login は bloks を招く**。Capafy の @useclaudeskills は password login でなく **session_owner=browser + browser session(tier2 live sessionid)** で回す ← これが正。私は経路を間違えていた。
+- ★重要: vault に suspended useclaudeskills cookie があった = **Capafy の browser-model 垢も suspend された**。つまり day-0 自動投稿は browser でも instagrapi でも壁 → **warmup が本当に必要**な可能性(skip した #8 の答えが「skip 不可」寄り)。
+### 次(要判断 or 実装)
+- 案A: Capafy の browser-session model へ収斂(session_owner=browser、垢を persistent browser に log-in 維持、tier2 で投稿、password login しない)。同 pass 内で PROVISION→POST するなら session が生きてる間に投稿可能。
+- 案B: warmup を復活(fresh 垢を数日 read-only で温めてから投稿)。day-0 自動 action が壁なら必須。
+- 4/4 失敗なので kickstart 連打は止める(token浪費)。方針決めてから実装。
