@@ -339,6 +339,14 @@ skills.lock 方式（source_repo/source_commit/sha256）で受ける。逆方向
 行い anicca へ再 vendor）。franklin の literal $HOME/anicca 参照が生きている間は anicca 側 COPY を消さない
 （Task #20 完了が削除の前提条件）。
 
+### 実行進捗（2026-07-19 更新）
+- **P1 gig 移設 = 完了**（step0-6、姉妹 spec §8-0〜8-7 に全記録。本番 = PC、初パス46分完走 + shuppin 2件）
+- **P2 browser vendor = 完了**（PC commit `e43d821`）: 7ファイルを skills/_shared/browser/ へ byte 同一 copy
+  （Fable diff 実測）、skills.lock に per-file sha256 + source_commit(6d12756) 記録、配線変更ゼロ、
+  anicca 側無傷（status 0行）。VENDORED.md に再 vendor 手順。review は機械的 byte 同一性検証のため省略
+  （意思決定として記録）。launcher の vendored 版への切替は各 loop 移設時
+- 体制 = /flowa: Fable plan+verify / Sol xhigh execute / Sol fresh review
+
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
 gig(0)=#8-11 → 共有基盤 vendor(1)=#15 → video(2)+clip系(3)=#16 → reddit(4)+capafy(5)=#19 →
 article 依存刈り+cron 8本廃止(6)=#18 → x402/economy(7)=#17 → 台帳整合(9)=#12 → OSS hygiene=#13 →
