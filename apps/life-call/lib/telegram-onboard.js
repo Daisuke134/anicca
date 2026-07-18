@@ -1,65 +1,78 @@
-// lib/telegram-onboard.js — interactive Telegram onboarding: the bot guides the user one step at a
-// time and acknowledges each, driven purely by their lm_users row state.
+// lib/telegram-onboard.js — LM-6 minimal-question Telegram onboarding.
 "use strict";
 
 const { sendMessage, onboardLink } = require("./telegram.js");
+const { signedGmailConnectUrl } = require("./gmail-onboard.js");
+const { backfillCalendarContext } = require("./context-graph.js");
 
-// PURE: the onboarding stage is a function of the row. Same ORDER as the web app
-// (name → calendar → gmail → phone → pay → done). On Telegram, name + phone are collected NATIVELY in
-// chat (no web needed); calendar/pay need the web (OAuth/Stripe). A null row starts at "name".
-// v1 (Dais 2026-06-25): Telegram is the ask/reply channel, so TG users do NOT connect Gmail — the gmail
-// stage is dropped. Flow = name → calendar → phone → pay → done. (Web onboarding's email loop is v1.5.)
+// PURE: calendar/pay are taps, phone is the only typed question, and Gmail is skippable after pay.
 function computeStage(row) {
-  if (!row || !row.name) return "name";
-  if (row.calendar_provider !== "composio_gcal") return "calendar";
+  if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   if (!row.phone) return "phone";
   if (row.paid !== true) return "pay";
+  if (!row.gmail_account_id && row.gmail_skipped !== true) return "gmail";
   return "done";
 }
 
-// Native (typed-in-chat) stages vs web-link stages.
-const NATIVE_STAGES = new Set(["name", "phone"]);
-const isNativeStage = (stage) => NATIVE_STAGES.has(stage);
-
-// Normalize a typed phone to E.164-ish; return null if it can't be a valid number.
-function normalizePhone(text) {
-  let s = String(text || "").replace(/[^\d+]/g, "");
-  if (!s.startsWith("+")) s = "+" + s.replace(/^0+/, "");
-  return /^\+[1-9]\d{7,14}$/.test(s) ? s : null;
+function telegramProfileName(from) {
+  if (!from) return "";
+  return [from.first_name, from.last_name].map((part) => String(part || "").trim()).filter(Boolean).join(" ").slice(0, 120);
 }
 
-// PURE: the message for a stage. Native stages (name/phone) are questions with no button — the user
-// just types. Web stages carry a button to /lm?tg=<chat_id>.
-function stageMessage(stage, chatId, base) {
-  const link = onboardLink(chatId, base); // /lm?tg=<chat_id> — page resumes at the right step
-  const btn = (text) => ({ reply_markup: { inline_keyboard: [[{ text, url: link }]] } });
+function applyTelegramProfileName(row, from) {
+  const current = row ? { ...row } : {};
+  if (!current.name) {
+    const name = telegramProfileName(from);
+    if (name) current.name = name;
+  }
+  return current;
+}
+
+const NATIVE_STAGES = new Set(["phone"]);
+const isNativeStage = (stage) => NATIVE_STAGES.has(stage);
+
+function normalizePhone(text) {
+  let value = String(text || "").replace(/[^\d+]/g, "");
+  if (!value.startsWith("+")) value = "+" + value.replace(/^0+/, "");
+  return /^\+[1-9]\d{7,14}$/.test(value) ? value : null;
+}
+
+function stageMessage(stage, chatId, base, gmailConnectUrl, profileName) {
+  let link = onboardLink(chatId, base);
+  if (profileName) link += `&name=${encodeURIComponent(profileName)}`;
+  const urlButton = (text, url = link) => ({ reply_markup: { inline_keyboard: [[{ text, url }]] } });
   switch (stage) {
-    case "name":
-      return { text: "👋 <b>Welcome to Life Manager!</b>\n\nFirst — what's your name? Just type it here.", extra: undefined };
     case "calendar":
-      return { text: "Next — connect your Google Calendar (10 sec). Tap below: it opens your browser for a quick Google sign-in, then just come back to this chat — I'll pick up automatically.", extra: btn("📅 Connect Calendar") };
+      return { text: "👋 <b>Welcome to Life Manager!</b>\n\nConnect your Google Calendar (10 sec). Tap below, sign in, then come back here.", extra: urlButton("📅 Connect Calendar") };
     case "phone":
       return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code>+818012345678</code> — I'll call you before events.", extra: undefined };
     case "pay":
-      return { text: "✅ <b>Phone saved!</b>\n\nLast step — subscribe ($20/mo) and I'll take it from here.", extra: btn("⭐ Subscribe & finish") };
+      return { text: "✅ <b>Phone saved!</b>\n\nSubscribe ($20/mo) and I'll take it from here.", extra: urlButton("⭐ Subscribe") };
+    case "gmail": {
+      const connectUrl = gmailConnectUrl || `${link}&gmail=connect`;
+      return {
+        text: "Optional: connect Gmail so I can use relevant email context. You can skip this and every Gmail-independent feature will still work.",
+        extra: { reply_markup: { inline_keyboard: [[
+          { text: "✉️ Connect Gmail", url: connectUrl }, { text: "Skip", callback_data: "gmail:skip" },
+        ]] } },
+      };
+    }
     case "done":
       return { text: "🎉 <b>You're all set!</b>\n\nI'll now manage your schedule — I call you before you must leave, fill in travel time, and only ask when I genuinely can't find a location. Talk soon.", extra: undefined };
     default:
-      return { text: "Tap below to continue setting up Life Manager.", extra: btn("Open Life Manager") };
+      return { text: "Tap below to continue setting up Life Manager.", extra: urlButton("Open Life Manager") };
   }
 }
 
-// Send the current stage's message to a chat (used by /start and the on-message guidance path).
-async function sendStage(token, chatId, row, base) {
-  const stage = computeStage(row);
-  const m = stageMessage(stage, chatId, base);
-  await sendMessage(token, chatId, m.text, m.extra);
+async function sendStage(token, chatId, row, base, opts = {}) {
+  const effective = applyTelegramProfileName(row, opts.profile || null);
+  const stage = computeStage(effective);
+  const message = stageMessage(stage, chatId, base, opts.gmailConnectUrl, effective.name);
+  await (opts.sendMessage || sendMessage)(token, chatId, message.text, message.extra);
   return stage;
 }
 
-// ── Supabase helpers ────────────────────────────────────────────────────────────
-const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,email,phone,paid";
-// Persist a single onboarding field (name/phone) typed in chat.
+const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid";
 async function saveField(uid, patch, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
     method: "PATCH",
@@ -68,16 +81,16 @@ async function saveField(uid, patch, supaUrl, supaKey) {
   }).catch(() => {});
 }
 async function rowByChatId(chatId, supaUrl, supaKey) {
-  const r = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=eq.${encodeURIComponent(chatId)}&select=${SEL}&limit=1`,
+  const response = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=eq.${encodeURIComponent(chatId)}&select=${SEL}&limit=1`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });
-  const d = await r.json().catch(() => []);
-  return Array.isArray(d) && d[0] ? d[0] : null;
+  const data = await response.json().catch(() => []);
+  return Array.isArray(data) && data[0] ? data[0] : null;
 }
 async function linkedRows(supaUrl, supaKey) {
-  const r = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=not.is.null&select=${SEL}`,
+  const response = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=not.is.null&select=${SEL}`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });
-  const d = await r.json().catch(() => []);
-  return Array.isArray(d) ? d : [];
+  const data = await response.json().catch(() => []);
+  return Array.isArray(data) ? data : [];
 }
 async function setStage(uid, stage, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
@@ -87,64 +100,75 @@ async function setStage(uid, stage, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-// Handle a free-text message during onboarding. Native stages (name/phone) capture the typed value;
-// web stages re-nudge; "done" tells the caller to treat the text as a location reply instead.
-// Returns one of: "name" | "phone" | "bad-phone" | "guidance" | "done".
-async function handleOnboardingText(chatId, text, row, { token, base, supaUrl, supaKey }) {
+async function backfillIfCalendarCompleted(row, opts = {}) {
+  if (!row || row.tg_onboard_stage !== "calendar" || computeStage(row) === "calendar") return false;
+  const backfill = opts.backfillCalendarContext || backfillCalendarContext;
+  await backfill(row.uid, {
+    composioKey: opts.composioKey, geminiKey: opts.geminiKey,
+    supaUrl: opts.supaUrl, supaKey: opts.supaKey,
+  });
+  return true;
+}
+
+async function handleOnboardingText(chatId, text, row, opts) {
   const stage = computeStage(row);
-  if (stage === "name") {
-    const name = String(text || "").trim().slice(0, 80);
-    if (!name) { await sendMessage(token, chatId, "Please type your name 🙂"); return "name"; }
-    if (row) {
-      await saveField(row.uid, { name }, supaUrl, supaKey);
-      const next = computeStage({ ...row, name });
-      await sendMessage(token, chatId, `Nice to meet you, <b>${name}</b>! 🎉`);
-      const m = stageMessage(next, chatId, base);
-      await sendMessage(token, chatId, m.text, m.extra);
-      await setStage(row.uid, next, supaUrl, supaKey);
-    } else {
-      // Not linked yet — carry the name in the connect link so the web saves it when binding.
-      const root = (base || "https://aniccaai.com").replace(/\/$/, "");
-      const link = `${root}/lm?tg=${encodeURIComponent(chatId)}&name=${encodeURIComponent(name)}`;
-      await sendMessage(token, chatId, `Nice to meet you, <b>${name}</b>! 🎉\n\nNext — connect your Google Calendar (10 sec). Tap below: it opens your browser for a quick Google sign-in, then come back here.`,
-        { reply_markup: { inline_keyboard: [[{ text: "📅 Connect Calendar", url: link }]] } });
-    }
-    return "name";
-  }
+  await backfillIfCalendarCompleted(row, opts);
   if (stage === "phone") {
     const phone = normalizePhone(text);
     if (!phone) {
-      await sendMessage(token, chatId, "That doesn't look like a phone number. Please type it with the country code, e.g. <code>+818012345678</code>.");
+      await sendMessage(opts.token, chatId, "That doesn't look like a phone number. Please type it with the country code, e.g. <code>+818012345678</code>.");
       return "bad-phone";
     }
-    await saveField(row.uid, { phone }, supaUrl, supaKey);
+    await saveField(row.uid, { phone }, opts.supaUrl, opts.supaKey);
     const next = computeStage({ ...row, phone });
-    const m = stageMessage(next, chatId, base);
-    await sendMessage(token, chatId, m.text, m.extra);
-    await setStage(row.uid, next, supaUrl, supaKey);
+    const message = stageMessage(next, chatId, opts.base);
+    await sendMessage(opts.token, chatId, message.text, message.extra);
+    await setStage(row.uid, next, opts.supaUrl, opts.supaKey);
     return "phone";
   }
-  if (stage === "done") return "done"; // caller routes the text to the location-reply path
-  // calendar / gmail / pay → just re-show the current step (tap the button).
-  await sendStage(token, chatId, row, base);
-  if (row) await setStage(row.uid, stage, supaUrl, supaKey);
+  if (stage === "done") return "done";
+  await sendStage(opts.token, chatId, row, opts.base, opts);
+  if (row) await setStage(row.uid, stage, opts.supaUrl, opts.supaKey);
   return "guidance";
 }
 
-// Proactive nudge: for every linked user, if their computed stage changed since we last announced it,
-// send the new stage's message and persist it. Idempotent — a stage is announced once. Returns count.
-async function onboardNudgeAll({ token, base, supaUrl, supaKey }) {
-  if (!token || !supaUrl || !supaKey) return 0;
-  const rows = await linkedRows(supaUrl, supaKey);
+async function handleGmailCallback(data, row, opts = {}) {
+  if (data !== "gmail:skip") return { ok: false, ignored: true };
+  if (!row || !row.uid) return { ok: false, reason: "unlinked_chat" };
+  const save = opts.saveField || saveField;
+  const persistStage = opts.setStage || setStage;
+  const send = opts.sendMessage || sendMessage;
+  await save(row.uid, { gmail_skipped: true }, opts.supaUrl, opts.supaKey);
+  const stage = computeStage({ ...row, gmail_skipped: true });
+  const message = stageMessage(stage, opts.chatId || row.telegram_chat_id, opts.base);
+  await send(opts.token, opts.chatId || row.telegram_chat_id, message.text, message.extra);
+  await persistStage(row.uid, stage, opts.supaUrl, opts.supaKey);
+  return { ok: true, stage };
+}
+
+async function onboardNudgeAll(opts) {
+  if (!opts.token || !opts.supaUrl || !opts.supaKey) return 0;
+  const list = opts.linkedRows || linkedRows;
+  const announce = opts.sendStage || sendStage;
+  const persistStage = opts.setStage || setStage;
+  const backfill = opts.backfillCalendarContext || backfillCalendarContext;
+  const rows = await list(opts.supaUrl, opts.supaKey);
   let sent = 0;
   for (const row of rows) {
     const stage = computeStage(row);
-    if (stage === row.tg_onboard_stage) continue; // already announced this stage
-    await sendStage(token, row.telegram_chat_id, row, base);
-    await setStage(row.uid, stage, supaUrl, supaKey);
+    if (stage === row.tg_onboard_stage) continue;
+    await backfillIfCalendarCompleted(row, { ...opts, backfillCalendarContext: backfill });
+    const gmailConnectUrl = opts.gmailConfigured === false
+      ? "" : signedGmailConnectUrl(row.uid, opts.gmailBase, opts.uidSecret);
+    await announce(opts.token, row.telegram_chat_id, row, opts.base, { gmailConnectUrl });
+    await persistStage(row.uid, stage, opts.supaUrl, opts.supaKey);
     sent++;
   }
   return sent;
 }
 
-module.exports = { computeStage, stageMessage, sendStage, isNativeStage, normalizePhone, handleOnboardingText, rowByChatId, linkedRows, setStage, saveField, onboardNudgeAll };
+module.exports = {
+  computeStage, telegramProfileName, applyTelegramProfileName, stageMessage, sendStage, isNativeStage,
+  normalizePhone, handleOnboardingText, handleGmailCallback, rowByChatId, linkedRows, setStage,
+  saveField, backfillIfCalendarCompleted, onboardNudgeAll,
+};

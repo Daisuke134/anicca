@@ -41,20 +41,23 @@ test("LM-23: webhook subscribes to messages and callbacks; callbacks are answere
 });
 
 test("LM-23: parseUpdate preserves message fields and parses callback_query", () => {
-  assert.deepEqual(parseUpdate({ message: { chat: { id: 7 }, from: { id: 8 }, text: " /start x " } }), {
+  assert.deepEqual(parseUpdate({ message: { chat: { id: 7 }, from: { id: 8, first_name: "Dais", last_name: "Tanaka" }, text: " /start x " } }), {
     kind: "message", chatId: "7", userId: "8", text: "/start x", isStart: true,
+    firstName: "Dais", lastName: "Tanaka",
   });
   assert.deepEqual(parseUpdate({ callback_query: { id: "cb", from: { id: 8 }, data: "ask:yes:e1:r1", message: { chat: { id: 7 } } } }), {
     kind: "callback", chatId: "7", userId: "8", data: "ask:yes:e1:r1", callbackQueryId: "cb",
   });
 });
 
-test("LM-23: callback router dispatches ask:* and ignores unknown prefixes", async () => {
+test("LM-23/LM-6: callback router dispatches ask/late/gmail and ignores unknown prefixes", async () => {
   const routed = [], logs = [];
   assert.equal(await routeCallbackData("ask:yes:e:r", { ask: async (data) => { routed.push(data); return "ok"; } }), "ok");
   assert.deepEqual(routed, ["ask:yes:e:r"]);
   assert.equal(await routeCallbackData("late:still:t", { late: async (data) => { routed.push(data); return "late"; } }), "late");
   assert.deepEqual(routed, ["ask:yes:e:r", "late:still:t"]);
+  assert.equal(await routeCallbackData("gmail:skip", { gmail: async (data) => { routed.push(data); return "gmail"; } }), "gmail");
+  assert.deepEqual(routed, ["ask:yes:e:r", "late:still:t", "gmail:skip"]);
   assert.deepEqual(await routeCallbackData("leave:no:e", {}, (line) => logs.push(line)), { ignored: true });
   assert.match(logs[0], /unknown callback prefix/);
 });
