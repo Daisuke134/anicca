@@ -246,6 +246,8 @@ gig 専用のコード（skill）と plist の指す先だけ。移設先は `~/
    <(cd ~/profitable-claude/skills/gig-work && find . -type f|sort)` を完全取得し、① LIVE を正として
    ②へ **rsync（①→②で上書き, ただし②固有の archive/artifacts/新 tests は温存判断）**。名前違い
    (`gig_funnel.py` vs `funnel.py`) は①を正に統一。SKILL.md 不要。→ ここは private repo なので commit。
+
+   **DONE 2026-07-18** — PC commits: `d5d5e24`(rsync sync + gig-cli STARTUP を detached 起動化), `6eb8d22`(gig self-ref path rewrite → gig-work、earn/gig grep=0 launchd除く). exit proof E1-E4 全 green（① vs ② diff = ②固有温存物のみ・①only=0／全 .sh bash -n green／全 .py py_compile green／gig-cli に run_in_background・timeout600000 の旧起動形式 0、detached nohup×2）. ★実測訂正: `funnel.py`(②82行) と `gig_funnel.py`(①167行) は SequenceMatcher 類似度 **0.038 = 完全な別実装**（改名ではない。②の funnel.py+funnel_report.py+4テストは独立サブシステム）。よって「①名へ git mv 改名」は不成立 → rename せず**両方温存**し、runtime は①の gig_funnel.py に統一（gig_pass.sh が呼ぶ）。②の funnel サブシステムを①へ統合するか破棄するかは step1-2(#9)で lead 判断。detached 起動は macOS に setsid が無いため `nohup … >/dev/null 2>&1 </dev/null & disown` で実装。
 1. **移設先で browser 参照が解決するか検証**: ②の `run.sh` から `../../_shared` = `~/profitable-claude/skills/_shared`
    に `lib.proactive_observe` があるか確認。無ければ①の `_shared` を②へ copy（clip/video と共有なら別途整理）。
    `~/anicca/skills/browser/...` の絶対パス参照はそのまま解決するので触らない。
@@ -300,6 +302,20 @@ browser/`_shared`/`~/gig` を先に動かすと gig 以外(clip/video/session-va
   移設手順 (0) の「①→②同期」時点で②側の gig-cli.sh に折り込む。関連 TaskList: #7 gig_pass detached 起動化。
 
 ---
+
+## 8-0 結果記録（2026-07-18）: step0 DONE + 2段レビュー完了
+
+commit `d5d5e24`（profitable-claude）。spec 準拠レビュー ✅（E1-E5 全 PASS、①無変更実証）、品質レビュー
+**Approved（step0 範囲）**。レビューが出した cutover 前提条件（#9/#10 で必ず消化。放置=重複応募事故）:
+- **C1（Critical）**: gig_pass.sh:27 の stale lock 回収閾値 1800s < 最悪 pass 90分。detached 化で長時間 pass が
+  生存するようになった結果、次の hourly tick が生存 pass の lock を回収し2パス同時運転 → 実マーケットに重複応募。
+  修正 = 閾値 7200s 化（①を直して②へ再同期）
+- **I1**: ②の gig_pass.sh:11,13（G=/RB= が①を指す）、gig-healthcheck.sh:31（①の gig-cli を restart）、
+  gig_judge.py:152 の retarget が cutover 必須（放置すると #10 切替後に旧 STARTUP が無言復活）
+- **I2**: ②launchd/ に①由来 plist 2本が混入し hf-gig-* と二重 → archive/ へ
+- **I3**: sync が②固有ゲート2点を消した — GIG_KYC_CONFIRMED gate（§7.55）と registry_enforce_or_exit gig
+  （REQ-CEO-009）。②へ再折込必須（OSS hygiene と CEO 制御の生命線）
+- **M2**: STARTUP 内 `& disown .` のピリオド隣接 → スペース挿入
 
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
