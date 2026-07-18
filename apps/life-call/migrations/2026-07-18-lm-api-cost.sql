@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS lm_api_cost (id bigint generated always as identity primary key, ts timestamptz default now(), uid text, kind text, quantity numeric, unit text, est_usd numeric, meta jsonb);

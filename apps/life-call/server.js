@@ -51,6 +51,7 @@ const {
   eventSummaryFor, deliverLateNotice, pendingT0Keys,
 } = require("./lib/late-notice.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
+const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
@@ -468,6 +469,7 @@ wss.on("connection", (carrierWs, req) => {
   // measurable Goal-1 invariant (now ≥1 on EVERY answered call, the inverse of the old escalation-only
   // invariant).
   let gemini = null;
+  let callStartedAtMs = null;
   let liveWsOpened = 0;
   let gotAudio = false;       // has Gemini emitted any audio yet on this call?
   let geminiReconnects = 0;   // one-retry guard for a pre-audio socket drop
@@ -483,6 +485,8 @@ wss.on("connection", (carrierWs, req) => {
     liveWsOpened++;
     console.log(`[bridge] opening Gemini Live live_ws_opened=${liveWsOpened}`);
     gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
+    const geminiStartedAtMs = Date.now();
+    let geminiCostRecorded = false;
     gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
     gemini.on("message", (data) => {
       let msg;
@@ -513,7 +517,18 @@ wss.on("connection", (carrierWs, req) => {
       log: (reason) => console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`),
     });
     gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
-    gemini.on("close", () => onGeminiEnd("closed"));
+    gemini.on("close", () => {
+      if (!geminiCostRecorded) {
+        geminiCostRecorded = true;
+        const quantity = Math.max(0, (Date.now() - geminiStartedAtMs) / 1000);
+        // Duration proxy from spec §13's measured ~$0.023/min. Google bills Live API by actual
+        // token usage, not wall time (https://ai.google.dev/gemini-api/docs/live-api/best-practices#pricing-billing),
+        // but this bridge does not receive billable token totals, so the ledger stores this explicit estimate.
+        recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
+          estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+      }
+      onGeminiEnd("closed");
+    });
   }
 
   carrierWs.on("message", (data) => {
@@ -521,6 +536,7 @@ wss.on("connection", (carrierWs, req) => {
     try { msg = JSON.parse(data.toString()); } catch { return; }
     const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "start") {
+      if (callStartedAtMs == null) callStartedAtMs = Date.now();
       // Telnyx emits media `start` only after the call is active; dial.js already uses this same signal
       // for record_start because an unanswered/ringing call rejects that action. It is therefore the
       // existing answered approximation for the exact wake row carried in the signed stream context.
@@ -544,6 +560,11 @@ wss.on("connection", (carrierWs, req) => {
   carrierWs.on("close", () => {
     release();
     console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live_ws_opened=${liveWsOpened} live=${liveCalls}`);
+    if (callStartedAtMs != null) {
+      const quantity = Math.max(0, (Date.now() - callStartedAtMs) / 1000);
+      recordCost({ uid: wakeUid || null, kind: "telnyx_call", quantity, unit: "seconds",
+        estUsd: quantity / 60 * 0.002, meta: { stream_id: state.streamSid || null } });
+    }
     if (gemini) { try { gemini.close(); } catch {} }
   });
   carrierWs.on("error", release);

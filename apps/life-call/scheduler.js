@@ -18,6 +18,7 @@ const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
 const { sendLateNotice } = require("./lib/notify.js");
 const { langForPhone } = require("./lib/call-language.js");
+const { recordDailyComposioPoll } = require("./lib/ledger.js");
 const {
   processWakeRows, deliverLateNotice, listWakeRows,
   claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
@@ -180,6 +181,9 @@ async function wakeUserOnce(u, nowMs) {
   catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   let events;
   try {
+    // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
+    // in Supabase on every tick; no in-memory counter is used, so restarts preserve aggregation.
+    await recordDailyComposioPoll(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
     events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
