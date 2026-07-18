@@ -301,6 +301,17 @@ browser/`_shared`/`~/gig` を先に動かすと gig 以外(clip/video/session-va
 
 ---
 
+## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
+
+裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
+「graduate to anicca」は破棄（README にもその記述は元々無い、実測済み）。**
+よって §6 の「browser 基盤は anicca に残して path 参照」は**中間形**に格下げ。最終形 = browser 6 script + _shared
+必要分を PC の skills/_shared へ **vendor(copy) + skills.lock 記録**（PC に既存の vendor manifest 方式に乗せる）。
+move は不可: franklin1/2 (self-funded) の launcher が runtime で literal `$HOME/anicca/skills/browser/...` を
+直接呼んでいる（両 HOME grep 実測）。anicca 側 tombstone の前提条件 = franklin launcher の自コピー参照化 +
+plist_render.py の anicca_home 前提解消（別トラック）。全 loop の依存地図 =
+`2026-07-18-pc-repo-singularization-inventory.md`（作成中）が正本。
+
 ## 9. OSS 公開時の私密データ保存規約（TO-BE、2026-07-18 追記）
 
 原則: **repo = code のみ。私密データは全て data home `~/.profitable-claude/` に置き、repo には path 契約
