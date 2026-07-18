@@ -377,6 +377,21 @@ def main():
         print(json.dumps(keepalive_main(a.handle), ensure_ascii=False)); return
     if a.verify_only:
         print(json.dumps(verify_only_main(a.handle, a.port), ensure_ascii=False)); return
+    # ★ FREEZE GATE (fail-closed for posting; Dais 2026-07-17 "1 loop = 1 acc" ruling): a handle whose
+    #   clip-accounts.json status starts with "frozen" must never be POSTED to from ANY path -- the
+    #   production run.sh chain and one-off diagnostic scripts alike (pass45's post_reel_diag.py posted
+    #   a real reel to frozen @aiclips_studio_hq precisely because no chokepoint enforced the freeze).
+    #   Read-only modes (--keepalive/--verify-only) return above and stay allowed ("Data kept, NOT deleted").
+    try:
+        _accts = json.load(open(os.path.expanduser("~/.cloak/clip-accounts.json")))
+        _frozen_status = next((x.get("status") for x in _accts if x.get("handle") == a.handle), None)
+    except Exception:
+        _frozen_status = None  # no ledger -> no freeze info; never invent a block for unlisted handles
+    if _frozen_status and str(_frozen_status).startswith("frozen"):
+        print(json.dumps({"handle": a.handle, "outcome": "refused_frozen_account", "post_url": None,
+                          "note": "clip-accounts.json status=%s; posting on this handle is disabled by the freeze policy" % _frozen_status},
+                         ensure_ascii=False))
+        return
     if not a.video or not a.caption_file:
         ap.error("--video and --caption-file are required unless --keepalive/--verify-only")
     res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
