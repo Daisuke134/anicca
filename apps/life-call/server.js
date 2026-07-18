@@ -36,6 +36,8 @@ const { inngest } = require("./inngest/client.js");
 const { functions: inngestFunctions } = require("./inngest/functions.js");
 const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctions });
 const { placeCall, startRecording } = require("./lib/dial.js");
+const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
+const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
@@ -196,7 +198,48 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm26-lang-fix-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm27-voicemail-v1" }));
+    return;
+  }
+  // Telnyx Call Control webhook. Standard AMD produces call.machine.detection.ended with
+  // data.payload.result=human|machine|not_sure. Only an authenticated, explicit human result may
+  // mark the correlated wake row answered; call.answered and media start are not human proof.
+  if (path === "/telnyx-events") {
+    if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
+    if (!process.env.TELNYX_PUBLIC_KEY) { res.writeHead(503); res.end("telnyx public key not configured"); return; }
+    (async () => {
+      const rawBody = await readRawBody(req);
+      const verified = verifyTelnyxSignature({
+        rawBody,
+        signature: req.headers["telnyx-signature-ed25519"],
+        timestamp: req.headers["telnyx-timestamp"],
+        publicKey: process.env.TELNYX_PUBLIC_KEY,
+      });
+      if (!verified) { res.writeHead(403); res.end("invalid signature"); return; }
+
+      let event;
+      try { event = JSON.parse(rawBody.toString("utf8")); }
+      catch { res.writeHead(400); res.end("invalid json"); return; }
+      const data = event && event.data;
+      const payload = data && data.payload;
+      if (!data || data.event_type !== "call.machine.detection.ended" || !payload) {
+        res.writeHead(200); res.end("ignored"); return;
+      }
+      if (!shouldMarkAnswered({ amdEnabled: true, signal: "amd", result: payload.result })) {
+        console.log(`[telnyx-events] AMD result=${payload.result || "missing"}; answered_at unchanged`);
+        res.writeHead(200); res.end("ignored"); return;
+      }
+      const wake = decodeWakeClientState(payload.client_state);
+      if (!wake) { res.writeHead(200); res.end("no wake context"); return; }
+      const marked = await markAnswered(wake.wakeUid, wake.wakeEventKey, {
+        supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+      });
+      console.log(`[telnyx-events] AMD human wake=${wake.wakeUid.slice(0, 12)} marked=${marked}`);
+      res.writeHead(200); res.end(marked ? "answered" : "unchanged");
+    })().catch((error) => {
+      console.error("[telnyx-events] error", error && error.message);
+      if (!res.headersSent) { res.writeHead(500); res.end("error"); }
+    });
     return;
   }
   // GET /gmail-connect — signed Telegram deep link into the existing real Unipile hosted-auth flow.
@@ -537,10 +580,12 @@ wss.on("connection", (carrierWs, req) => {
     const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "start") {
       if (callStartedAtMs == null) callStartedAtMs = Date.now();
-      // Telnyx emits media `start` only after the call is active; dial.js already uses this same signal
-      // for record_start because an unanswered/ringing call rejects that action. It is therefore the
-      // existing answered approximation for the exact wake row carried in the signed stream context.
-      if (wakeUid && wakeEventKey) markAnswered(wakeUid, wakeEventKey, {
+      // Recording still begins on media start. answered_at does not: with AMD enabled, only the
+      // signed call.machine.detection.ended human webhook may mark it. LM_AMD=off preserves the old
+      // media-start approximation as an explicit operational fallback.
+      if (wakeUid && wakeEventKey && shouldMarkAnswered({
+        amdEnabled: amdEnabled(process.env), signal: "media-start",
+      })) markAnswered(wakeUid, wakeEventKey, {
         supaUrl: SUPA_URL, supaKey: SUPA_KEY,
       }).catch((e) => console.error(`[bridge] answered_at update failed: ${e && e.message}`));
       if (state.callControlId && !state.recordStarted) {
@@ -574,7 +619,7 @@ wss.on("connection", (carrierWs, req) => {
 // This allows test files to import inngestServeAllowed without starting the HTTP server.
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[life-call] listening ${PORT} ws=/ws build=lm26-lang-fix-v1`);
+    console.log(`[life-call] listening ${PORT} ws=/ws build=lm27-voicemail-v1`);
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.

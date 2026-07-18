@@ -99,3 +99,25 @@ spec §3 LM-7 + §13。目的: 「このユーザーにいくら掛かってる�
 5. Railway 再起動で cache が消えても**正しさは不変**（次 tick で再 fetch されるだけ）。プロセス跨ぎ永続は不要（コメントでそう明記）。
 6. テスト `lib/calendar-cache.test.js`（node --test）: ①同一 window 2連続 read で inner 呼び出し 1回 ②TTL 経過後は再 fetch ③createEvent 後は同 uid の次 read が inner を再度呼ぶ（invalidate）④uid 違いは別キー。inner は call カウンタ付き fake を注入。
 7. 既存テスト全 green、変更は apps/life-call/** のみ、migration 無し、commit 禁止、完了は agmsg DONE 報告。
+
+---
+
+# PLAN 追記6 — LM-27: voicemail を answered 誤判定するバグ fix（branch feature/lm27-voicemail）
+
+実測（録音 c7b-t5-134646.mp3 whisper + DB）: Dais 未応答→voicemail 転送なのに lm_wake_log.answered_at が入った。真因 = server.js の Telnyx media `start` frame（=record_start 可能状態）を「answered 近似」として markAnswered している。voicemail 転送でも media start は来るので誤判定。影響 = 出ていない人に T-0「出た？」→遅刻フロー誤発火。
+
+## まず調査（実装前、context は Sol 側で消費）
+1. Telnyx Answering Machine Detection (AMD) の正しい使い方を context7/crwl で確認（`answering_machine_detection` を dial の command に付ける／結果は `call.machine.detection.ended` or `call.answered` の `answering_machine_detection_result` webhook で human/machine が返る）。出典 URL を PLAN 末尾に1行。
+2. life-call の現状: Telnyx call-control webhook を受ける HTTP エンドポイントが**無い**（media stream の /ws だけ）。dial.js が call を発信、server.js の media `start` を answered 近似に使用。
+
+## 不変条件（MUST）
+1. dial.js の発信 command に AMD を有効化（`answering_machine_detection: "detect"` 等、調査で確定した正しいパラメータ）。Telnyx connection の webhook 設定が要るなら、その設定手順を PLAN 末尾に明記（コードで完結しない部分は「要 ops」と書く）。
+2. server.js に Telnyx call-control webhook 受け口 `POST /telnyx-events`（署名検証 or 共有secret でガード）を新設。`call.machine.detection.ended`（or 相当）で **machine 判定なら該当 wake の answered_at を入れない／既に入っていたらクリアしない方針は避け、そもそも markAnswered を human 確定後にのみ行う**よう配線を変える。
+3. **answered 判定の源泉を「media start」から「AMD で human 確定」へ移す**。human 確定シグナルが来るまで markAnswered しない。AMD が使えない/無効時の退避 = 現状の media-start 近似（env flag `LM_AMD=off` で旧挙動）。既存の「鳴らす・録音する」挙動は壊さない（録音は今まで通り media start で開始してよい。変えるのは answered_at の記録タイミングだけ）。
+4. pure function で判定ロジックを切り出し node --test（`lib/answered.test.js`: machine→answered記録しない、human→記録、AMD無効→media-start近似）。
+5. 既存テスト全 green、migration 無し（answered_at 列は既存）、変更は apps/life-call/** のみ、commit 禁止。
+6. 完了は agmsg で DONE 報告（send.sh lm sol-codex fable-main）+ 変更ファイル + npm test 末尾20行 + 「webhook 設定に要る ops 手順」。
+
+調査出典: Telnyx [Answering Machine Detection](https://developers.telnyx.com/docs/voice/programmable-voice/answering-machine-detection) / 核心の引用: 「`detect` — Only detect if answering machine or human. — `call.machine.detection.ended`」「The `data.payload.result` … `human` / `machine` / `not_sure`」; Telnyx [Receiving Webhooks](https://developers.telnyx.com/development/api-fundamentals/webhooks/receiving-webhooks) / 核心の引用: 「The signature … is the combination of the timestamp … the pipe `|` character and the JSON payload.」
+
+要 ops（LM-27）: Telnyx Mission Control Portal の Keys & Credentials → Public Key を Railway life-call の `TELNYX_PUBLIC_KEY` に設定して再デプロイし、`POST https://<life-call-host>/telnyx-events` が外部到達可能であることを確認する。call ごとに dial command の `webhook_url` をコード設定するため、Telnyx connection 側の webhook URL 追加設定は不要。退避時のみ Railway に `LM_AMD=off` を設定すると media-start 近似へ戻る（通常は未設定/on）。
