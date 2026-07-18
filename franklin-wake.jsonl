@@ -10346,3 +10346,13 @@
 {"ts":1784387829,"wake_id":"00MRQIFWQE13B1CFC936E24F0D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784387958,"wake_id":"00MRQIIONDFF7B967869184DEB","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784388121,"wake_id":"00MRQIM6DE5CEA495E21374D99","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784388288,"wake_id":"00MRQIPR9M1FBAD857B2C24A1C","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784388360,"wake_id":"00MRQIRB2O4C1C26189C524897","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784388360,"wake_id":"00MRQIRB2O4C1C26189C524897","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784388548,"wake_id":"00MRQIVBJWE2316252B3EC45DA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784388711,"wake_id":"00MRQIYT9O848E7342701740FA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784388882,"wake_id":"00MRQJ2HFS7187EE0D70AE43C7","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784388882,"wake_id":"00MRQJ2HFS7187EE0D70AE43C7","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784389012,"wake_id":"00MRQJ5A01CFF4F8637AC34285","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784389012,"wake_id":"00MRQJ5A01CFF4F8637AC34285","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784389142,"wake_id":"00MRQJ82DW675AA31D7CD04174","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
