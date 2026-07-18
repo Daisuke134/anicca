@@ -2,7 +2,7 @@
   "featureName": "capafy-skills-landing",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1c",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -21,20 +21,38 @@
       "to": "1c",
       "timestamp": "2026-07-18T15:12:10.420Z",
       "reason": "spec review artifacts written"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-18T15:12:23.457Z",
+      "reason": "spec review PASS; begin RED tests",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
     "1b": 1,
-    "1c": 1
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-capafy-skills-landing-1784387340996",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-18T15:12:23.444Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "reviewer": "sol-main-self-review",
+        "blockingFindings": 0
+      }
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-18T15:09:00.982Z",
-  "updatedAt": "2026-07-18T15:12:10.423Z"
+  "updatedAt": "2026-07-18T15:12:23.457Z"
 }
