@@ -853,3 +853,13 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 
 ### 次の一手 = #10（資源分離）
 :9222 congestion が唯一の実 blocker。clip 専用ブラウザで分離すれば provision が通り #5→#8 が連鎖で解ける。Sol に実装させ Fable が検証。
+
+## v42 — 新ブラウザ不要。既存 lease 機構を使う + Capafy 分担確定（2026-07-18）
+### Capafy との分担（衝突回避、実測で確定）
+- Capafy が **SHARED-1 完了**(commit 84021d92): post_reel.py 物理削除 + clip 参照を instagrapi_post.py に付替え + --verify-only 追加 + test 差替え。→ 俺の旧 #3 は完了(Capafy)。main で俺の clip 変更(PROVISION/session/timeout)と衝突なく共存。
+- **俺は instagrapi_post.py を触っていない**(clip_pass.sh の PROVISION step + timeout のみ)。Capafy の SHARED-2(instagrapi_post.py 引数化)と非衝突。FIX-26(CLIP_POSTER_OVERRIDE 未配線バグ)は Capafy が直す=彼の lane、俺は触らない。
+- boundary: SHARED(instagrapi_post/warmer/reach/reflect/ledger/telegram)= Capafy が構造改修、俺は「投稿の中身を渡す側」。UNIQUE(account/content/selector/bio)= 各自。
+### 新ブラウザは作らない（Dais 指摘: 隔離は既存機構で解決済み）
+- 既存 = `cdp_context_lease.py`: 各 loop が :9222 内に named 隔離 context を lease(Target.createBrowserContext)、cookie/tab 非共有。gig が使用中(gig-85088、gig_pass.sh:36-41)。cdp lock で直列化。
+- clip PROVISION の hang 真因(v40)= 生の :9222 + ad-hoc cdp_incognito を使い、Capafy の 25 tab が見えて混乱。**既存 lease を使えば隔離+直列化されて解決**。新ブラウザ instance は不要。
+- 修正(#10 改)= gig と同じ lease pattern を PROVISION に適用(Sol 実装/Fable 検証)。
