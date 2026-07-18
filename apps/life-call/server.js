@@ -187,7 +187,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "gemini-default-v2" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm5-ja-v1" }));
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
@@ -512,7 +512,7 @@ wss.on("connection", (carrierWs, req) => {
 // This allows test files to import inngestServeAllowed without starting the HTTP server.
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`[life-call] listening ${PORT} ws=/ws build=agentic-ask-worldwide-v2`);
+    console.log(`[life-call] listening ${PORT} ws=/ws build=lm5-ja-v1`);
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
