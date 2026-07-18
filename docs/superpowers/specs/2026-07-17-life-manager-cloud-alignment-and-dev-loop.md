@@ -432,6 +432,26 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 - **以後 flowa**: Fable=plan + 最終実測のみ（context 節約）、Sol(codex)=実装、別 Sol(fresh codex)=review。実装レビューまで Sol に委譲、Fable は npm test 独立再実行 + 実 side-effect（録音/DB/curl）だけ担う。
 - 次の実装順（1本ずつ flowa）: **#14 LM-27(voicemail→answered 誤判定 fix、Telnyx AMD/webhook)** → #4 rotate → #8b Unipile calendar → #10 repo 収斂 → #11 TikTok bio → #12 dev loop D0。
 
+### §5c-8 進捗マトリクス（2026-07-18 23:15、goal done 12条件 vs 現況）
+凡例: ✅=実証close / 🟡=コード prod だが E2E 未実証 / 🔧=fix実装中 / ⬜=未着手
+| # | goal done条件 | 状態 | 証拠/残り |
+|---|---|---|---|
+| 1 | T-10/T-5 着信 + AI 日本語発話 | 🟡 | 着信+双方向会話=✅録音実証。**日本語=fix prod投入済み未実証**（LM-26、明日短経路 call で）|
+| 2 | TG inline ボタン往復 | 🟡 | LM-5 に T-0送信 実装+prod。実往復は start到達時（C7b は23:45自動 or 短経路）|
+| 3 | 場所曖昧→search or closed質問 | 🟡 | wave1 search-before-ask prod。A1「MUIT集会」仕込み済、resolved_from 記録 未確認 |
+| 4 | 13 secret rotate | ⬜ | 未着手（GEMINI/TELNYX 漏洩済み優先、prod数分ダウン窓要）|
+| 5 | staging 配線 + smoke | ✅ | life-call-staging + smoke exit0、runbook 化 |
+| 6 | 「出た？」→「まだ」→遅刻メール | 🟡🔧 | LM-5 コード prod。answered が **LM-27で汚染** → #14 fix後に実証 |
+| 7 | onboarding 質問≤1 + graph≥5 | 🟡 | LM-6 prod。実 /start 通し 未実証 |
+| 8 | calendar Unipile化 + cache + ratio | 🟡+⬜ | (A)event cache prod ✅ / (B)Unipile置換=⬜ / travel ratio 88%計測済 |
+| 9 | cost/outcome ledger + margin | 🟡 | LM-7 prod。実 call 後の lm_api_cost row 未確認、margin表 未追記 |
+| 10 | repo 収斂（life-manager repo）| ⬜ | 未着手 |
+| 11 | TikTok bio + caption CTA | 🟡 | caption=✅。bio link=⬜（CloakBrowser）|
+| 12 | dev loop D0 無人1pass | ⬜ | 未着手 |
+| +新 | LM-27 voicemail→answered fix | 🔧 | Sol 実装中（Telnyx AMD + webhook 署名検証）|
+
+**集計**: 実証close=1/12（#5）。コード prod 投入済み=7領域（LM-24/2, LM-5, LM-6, LM-7, LM-25A, LM-26fix, LM-3）だが E2E 未証多数。未着手=4（#4,#8b,#10,#12）+ bio。核心（電話が鳴り会話が成立）は✅、残りは「実証」と「未着手5本」。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
