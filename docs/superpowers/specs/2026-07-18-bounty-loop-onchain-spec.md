@@ -100,9 +100,13 @@ E2E green = T1-T9 全通過 + done 1-4 の on-chain 着金を Fable が Basescan
 - 2026-07-18: `identity-guard.mjs ALLOWED_EARN_SOURCES` に poidh/bounty 無し → C6 必須。
 - 2026-07-18: `skills/bounty/` に SKILL.md は存在しない。self-improve/heal は evaluator.py + healthcheck + lessons.jsonl の3要素で実装済。
 - 2026-07-18: poidh 成果物は**画像 proof**（コード PR ではない）。AI 自己生成は blockrun_image で可能。gib.work がコード bounty 寄りだが API 未文書化。
+- 2026-07-18 [Phase0 read side 完了, commit b971d51 未push]: poidh Base **LIVE = 307件中 71 open**（実測）。ABI 実名確定: `bountyCounter()`（`bountyCount` は revert）/ `getClaimsByBountyId(uint256,uint256)` 2引数 / `bounties(id)` / `pendingWithdrawals(address)` / `createClaim(bountyId,name,uri,description)`。**罠**: `getBounties(offset)` は paginate せず同じ10件を返す → `bounties(id)` を Multicall3 で個別 scan（307 calls ~280ms）。RPC: llamarpc down、`base.publicnode.com`/`base.meowrpc.com`/`1rpc.io/base` が生存。
+- 2026-07-18: **native-verify N2 実装済・T5 green**。手法 = balance-delta before/after block + self-pay 時の gas 足し戻し（`debug_traceTransaction` は Base 公開 RPC 全滅 -32601、Basescan V2 は API key 不在）。実 tx `0xba7792…78b4` で `ethInflowForTx`=0.1297 ETH を検出。19 テスト green。
+- 2026-07-18: **blockrun_image ツールは grep で発見できず** → proof-gen N3 の画像生成 API は未確定（要 MCP 確認）。
 
 ## OPEN RISK / honest gap
 
+- ★2026-07-18 最大リスク: poidh の open bounty の多くが**現実世界/社会的 proof 型**（"Interview a Politician", "Be A Freedom Fighter", "tattoos"）で、自律 AI が勝てない。71 open のうち **AI が human-zero で勝てる digital/creative 系（meme/art/generative）が何件あるか未精査**。ここが薄いと poidh は income rail として死ぬ（mechanism は実証できても金にならない）。→ Sol review + カテゴリ精査で判定。薄ければ rail を gib.work/audit に前倒し。
 - poidh accept は funder 依存 = 着金タイミングを loop が制御できない。→ 「submit 完了」を earn と誤報告しない。多数の open bounty に低コストで claim し accept 率を稼ぐ設計にする。
 - poidh 小額 = $10k/月には遠い。zero-to-one 用。volume は Phase 3 の audit/gig.work。
 - gib.work API 未文書化 = Phase 2 で reverse-engineer 別タスク。
