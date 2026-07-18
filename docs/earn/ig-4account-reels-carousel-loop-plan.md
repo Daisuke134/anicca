@@ -783,3 +783,9 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 ### DAY-0 掟（重要）
 - day-0 に bio へ商用リンクを入れると suspension（@aiclipper.daily が実際に死亡）。**link は数投稿してから**。day-0 は投稿だけ、bio link は後。
 - burst 厳禁（~12本/日で死ぬ）。**1日1本**。死因は warmup 不足でなく web-composer検知 + burst。instagrapi + 1日1本でほぼ解決。
+
+## v37 — IP は問題でない。同一自宅IPで作成する（新IP/新browser不要）2026-07-18
+- Dais 指摘で確定: Capafy は @useclaudeskills を**新IPを使わず同じ自宅 :9222 residential IP**で電話ナシ作成した。=IP は投稿/作成のボトルネックでない。
+- 俺の「同一IPで複数垢=burn」懸念は v26 誤診の残滓（v35 で否定済: burn の犯人は冷たい proxy IP であって自宅IP の volume でない）。撤回する。
+- Capafy は現在 engine コード改修中（shared-marketing-engine VCSDD、垢作成はしていない）→ 自宅IPは空き。**新ブラウザ・新IPを立てず、:9222 自宅IP で Capafy と同一手順で clip 垢を作成→投稿する**。
+- action: ig-account-create(:9222, proxyナシ, 0-phone) → clip 垢 live → instagrapi login-once → queue reel 1本投稿 → 公開URL確認。manual-first で clip E2E を実証（その後 loop に skillify、恒久運用は launchd）。
