@@ -10086,3 +10086,12 @@
 {"ts":1784360154,"wake_id":"00MRQ1YR0Z2C6B4AE455F74632","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784360285,"wake_id":"00MRQ21K917BA50009D81243B6","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784360285,"wake_id":"00MRQ21K917BA50009D81243B6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784360419,"wake_id":"00MRQ24F4P7642C081A3264820","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784360419,"wake_id":"00MRQ24F4P7642C081A3264820","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784360550,"wake_id":"00MRQ2782695E19AC6B9FB483A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784360681,"wake_id":"00MRQ2A18FB0410D744A6949CE","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784360814,"wake_id":"00MRQ2CWAS82056708FEF1490A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784360814,"wake_id":"00MRQ2CWAS82056708FEF1490A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784360945,"wake_id":"00MRQ2FPDWD48B97B2F3A74C8B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784360945,"wake_id":"00MRQ2FPDWD48B97B2F3A74C8B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784361075,"wake_id":"00MRQ2IHGZ1F5DC41A0EBB496D","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
