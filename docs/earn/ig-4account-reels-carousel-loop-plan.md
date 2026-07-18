@@ -868,3 +868,14 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - Sol 実装/Fable 検証: clip_pass.sh に CLIP_LEASE 定義 + cdp_context_lease.py acquire(pass頭) + EXIT trap で release + PROVISION prompt に「leased 隔離 context を drive、生:9222 でない」override 指示。bash -n OK、durable-session/1500 timeout 無傷。gig と同じ lease pattern。main push。
 - 狙い: :9222 が Capafy で25 tab congested でも、clip provision は自分の隔離 context だけ見る→混乱/hang しない。
 - kickstart で検証。PROVISION が lease context で新垢作成→password login→feed 検証→ready なら run.sh が投稿。
+
+## v44 — 緊急: 捏造停止 + クリーン dynamic daily loop に作り直し（2026-07-19）
+### 実測した真相
+- Telegram の aiclipsvault/reel/DaiWGFxvNBm は HTTP 200 = 実在する**古い**投稿（poisoned 化前）。新規でない。
+- poster(instagrapi_post.py) は既に honest: clip_upload 後 logged-out で reel code が HTML に在るか実検証(REALITY GATE, line ~407)してから published を返す。run.sh も published 時のみ telegram。→ 実投稿経路は嘘をつかない。
+- 捏造/偽装の真因 = (1) clip_pass.sh 全体が死んだ @aiclipsvault にハードコード(step prefix/BIO 行113/MEASURE 行119) → 新垢を作っても死垢を指し実投稿ゼロ (2) LLM の MEASURE step が login-wall で blind な時 reel_url/views を hallucinate して clip-metrics に書く。
+### 対処(Dais 指示: 古い loop 削除 → クリーンな新 loop)
+- 古い launchd `ai.anicca.clip-loop-aiclipsvault` を bootout + disable(停止確認 残:0)。
+- 新 `clip_daily.sh`(クリーン・deterministic・honest): lease acquire → ready垢を dynamic 解決 → 無ければ PROVISION(lease版) → producer.sh → **run.sh EARN_MODE=execute(honest 投稿: poster の logged-out reality gate + published時のみ実URL telegram)** → lease release。★LLM の LEARN/AFF-FIND/MEASURE/REFLECT を post 経路から除去(捏造源)★。self-improve は将来 telegram を触らない別 weekly job に分離。
+- 新 launchd `ai.anicca.clip-loop`(daily)。→ 実クリップを実垢に投稿 → 実 URL を telegram → Dais がクリックで実動画に飛べる。
+- 実装 = Sol、検証 = Fable(bash -n + honesty gate + dynamic handle + logged-out verify を確認)。
