@@ -4,19 +4,28 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 調査正本: `docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`（全実測 file path 付き）
 **先行 spec（車輪。必読）**: `~/.openclaw/docs/superpowers/specs/2026-06-24-capafy-factory-automation-10k-100k-mrr.md` — 10k の算数（$10k ≈ 15-20 listings × ~$600 gross、blended ARPU $11/mo、純率 ~70%）、factory モード A（launchd+claude -p で勝者 clone 日次）、CP2 LLM hosting レシピ、leak/secret/E2E gate が確定済み。本 spec は「A: 修理」「B: marketing 新設」をそれに足す差分。
 注意: 06-25 の確定レシピは「sk-ant 鍵 + openai-completions」で OpenRouter 不採用だったが、現 runtime は `CAPAFY_HOST_OPENROUTER_KEY`（本日 live probe 200 OK）で動いている — 実装時はどちらかに統一し spec の 0.97 節を是正すること（併存は事故のもと）。
-状態: **IN PROGRESS（2026-07-17 着手、2026-07-18 大幅前進）**。実装は vcsdd（Fable plan / subagent impl / Sol review）。
-進捗はこの表を正とする:
+状態: **IN PROGRESS（2026-07-17 着手、2026-07-18 方針転換）**。実装は vcsdd（Fable plan / subagent impl / Sol review）。
+
+## ★ Dais 方針転換（2026-07-18 夕）★
+1. **warmup 廃止 → 即投稿**。理由: account を悪くする真犯人は warmup でなく day-0 商用投稿。下手な bot warmup はむしろ shadowban を招く疑い（web best-practice を調査中、warmup-research）。
+2. **最優先 = loop が実際に IG 投稿できることを1回実証**（今まで一度も実投稿してない、全部 dry）。day1 で loop 起点の実 Reel を1本 → logged-out 公開確認 → telegram。「投稿できない loop は無意味」。この検証は**毎日やる意味ではなく feasibility の証明**。
+3. **X 線は完全に廃止**（X account 新設タスク #18 削除）。marketing は IG 一本。
+4. **bio link が導線**（IG comment はクリック不可）。ただし初回非商用投稿が生存確認できてから bio link 追加（day-0 商用リンク = suspension）。
+5. day3 floor は skip 可（warmup 廃止と整合）。待ち時間ゼロ、今日投稿。
+
+進捗表:
 | task | 状態 |
 |---|---|
-| A1 provider/key 修理 | 診断完了・key-health gate 実装済み。真因 = OpenRouter 残高薄のみ。4 agents は review-lock で編集不能、実効修理は A2 の入金。 |
-| A2 入金 | **⏳ Dais 判断待ち**。俺が card 補充を試行 → OpenRouter への Google login が **2FA phone-tap（Dais 個人スマホ）で停止** = no-human-loop で越えられない一点。sk-ant 代替 rail も残高ゼロ実測。**推奨 = 買い手が付くまで後回し（$1.59 でも smoke test 以外は稼働、live probe 200 実測）**。急ぐなら Dais が 2FA 承認1回 or web で $10-25 チャージ |
-| A3/A4/A6 | DONE（max-turns bounded / sales reconcile / self-fix backoff）。7日連続 audit は 07-21 以降に観測 |
-| A5 売れ筋 selector | in_progress（a1-executor、public scrape 方式） |
-| B0 IG account | DONE（@useclaudeskills、warmup day-1、日次 warmup launchd）。test 投稿は warmup 明け 07-25 |
-| B1-B4 IG marketing | **dry 完了（2026-07-18）**: selector→copy→faceless動画→ig-reels-poster browser-direct、全 dry green。実物動画（YouTube Script Writer 紹介、1080x1920/36.7s）を **Dais telegram msg 2518 に送付済み**。live は 07-25 |
-| B5/B8/B6/B7 X 線 | **凍結（Dais revoke @aniccaen 2026-07-18）**。コード資産は保持、投稿先は AI 専用 account のみ（Dais 3 handle は poster が hard refuse）。X 再開は #18（AI 専用 X account 新設）が前提、IG go-live 後に判断 |
-| B8 IG launchd | script ready、warmup 明け 07-25 に load |
-| 残（A7/OSS/#18） | pending |
+| **B0-verify（最優先・新）** | **loop 起点で @useclaudeskills に実 Reel 1本 live 投稿 → logged-out 公開確認 → telegram。未実証（全部 dry だった）。b0 実行中** |
+| A1 provider/key | 診断完了・key-health gate 実装。OpenRouter **$21.59 補充済み**（gate 通過）。rejected 4件は Capafy review 待ち |
+| A2 入金 | **DONE**（$21.59 実測、Dais 入金済み） |
+| A3/A4/A6 | DONE（max-turns bounded / sales reconcile / self-fix backoff。7日 audit は 07-21+ 自動観測） |
+| A5 売れ筋 selector | in_progress（a1-executor、public scrape） |
+| B0 IG account | DONE（@useclaudeskills 実在、telegram msg 2524 proof） |
+| B1-B4 IG marketing | dry 完了。実投稿は B0-verify で証明中 |
+| warmup | **廃止方針**（web best-practice 調査後に確定）。goal-monitor から freeze gate は撤去済み（2a70612c） |
+| X 線 (B5/B8/B6/B7) | **完全廃止**（#18 削除）。コード資産のみ保持 |
+| 残 | #20 website(bio 1リンク) / B6-B7 IG metrics / A7 通知 / #21 funding / cloud 移行 / OSS |
 
 ## 0. 現実（2026-07-17 実測）
 
