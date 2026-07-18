@@ -18,7 +18,7 @@ prints ONE JSON line `{slot, did, earned_usdc, cost_usdc}`, exit 0.
 | SELECT | pick an ACTIVE promote.fun campaign allowing IG, not already clipped | 0 |
 | JOIN | actually join it — this is where a hidden follower-count gate surfaces (see below) | 0 |
 | CLIP | produce a 15–45s 1080×1920 clip (reuse `earn-clip-rewards`) | 0 |
-| POST | post to a WARMED account (`~/.cloak/clip-accounts.json` status==ready) via `ig-reels-poster` | 0 |
+| POST | post to a WARMED account (`~/.cloak/clip-accounts.json` status==ready) via `instagrapi_post.py` (earn/clip) | 0 |
 | SUBMIT | submit the post URL to the campaign | 0 |
 | MEASURE | read views + liveness; 0 views past `DEAD_ZERO_HOURS` (48h) ⇒ STALLED | 0 |
 | WITHDRAW | campaign ENDED + balance>0 → claim USDC on Solana, capture signature | 0 |

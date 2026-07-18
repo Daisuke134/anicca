@@ -23,7 +23,6 @@ POSTED="$CLIP_POSTED"
 ACCTS="$CLIP_ACCTS"
 LEDGER="$CLIP_LEDGER"
 PENDING_VERIFY="$CLIP_PENDING_VERIFY"    # REQ-006: unverified-outcome clips land here, never queue/posted
-POSTER="${CLIP_POSTER_OVERRIDE:-$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py}"  # LEGACY web-composer poster (dead end), kept only as test hook / fallback
 # ★POST-11 (2026-07-14): the VERIFIED FREE posting path — instagrapi + browser sessionid + ffmpeg
 # thumbnail. The web composer (post_reel.py) silently drops automated posts (IG detection); instagrapi
 # via the mobile private API reliably publishes. See docs/earn/ig-posting-method-graph-api-pivot.md.★
