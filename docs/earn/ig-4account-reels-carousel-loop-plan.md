@@ -826,3 +826,30 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 - 恒久策候補: clip 専用の別 CloakBrowser インスタンス(別 profile/port、同 home IP)を provision 用に立てれば Capafy と資源分離できる(scale で必要)。今は scheduled 実行に委ねる。
 - deploy 済みの修正(全て正しい、hang は資源競合のみ): PROVISION step 追加(v38) / durable session=password login+feed検証(v39) / 1500s timeout+bg-ceiling解除(Sol実装)。
 - money_hq: live 垢だが session-dead + tier3 cooldown(明日19:53まで)。write-off。
+
+## v41 — 実装比率 + 残タスク集約（2026-07-18、STATUS 正本）
+### 全体目標
+clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→bio link→$計測」を人間ゼロ・launchd 自走で回す。最後の確定投稿 = aiclipsvault 07-14。
+
+### 実装済み（deploy 済み・実証済み）
+| # | 内容 | 証拠 |
+|---|---|---|
+| ✅ | 真因特定: 生きてる loop(clip_pass.sh)に PROVISION step 無し + poisoned 垢に固定 | v38、err ログ 3日分 |
+| ✅ | PROVISION step 追加(usable=0→自宅IP新垢作成) | money_hq 自動作成を実証(v38) |
+| ✅ | durable session=instagrapi password login-once + feed検証→生存時のみ ready | commit(v39) |
+| ✅ | PROVISION timeout 1500s + bg-ceiling解除(step 3rd arg化) | Sol実装/Fable検証、bash -n OK |
+| ✅ | hang 真因=:9222 共有ブラウザ congestion(Capafy 並行) | v40 実測(tab 25個 Capafy) |
+
+### 残タスク（Fable plan → Sol 実装 → Fable verify）
+| # | タスク | owner | 依存 | 状態 |
+|---|---|---|---|---|
+| 10 | ★clip 専用 CloakBrowser インスタンス(別profile/port・同home IP)を立て PROVISION を資源分離 → Capafy と衝突せず provision★ | Sol実装 | — | 次の一手 |
+| 5 | loop 自走投稿の証明(provision成功→run.sh instagrapi投稿→公開URL) | launchd実行/Fable watch | #10 | blocked |
+| 8 | day-0 投稿垢の生存実測(warmup要否確定) | ledger/reach | #5 | blocked |
+| 9 | money計測: Digistore24 API key→.env→measure_dollar検証 | Sol実装 | :9222空き | 独立 |
+| 7 | security: 5sim pw rotate + AgentMail旧key失効 | Fable/Sol | — | 独立 |
+| 6 | marketing OS化(共有engine+registry、全アプリ横展開) | 設計Fable/実装Sol | — | 大・将来 |
+| 3,4 | poster instagrapi一本化 / warmup engine除去 | **Capafy(SHARED-1〜4)** | — | 彼の lane |
+
+### 次の一手 = #10（資源分離）
+:9222 congestion が唯一の実 blocker。clip 専用ブラウザで分離すれば provision が通り #5→#8 が連鎖で解ける。Sol に実装させ Fable が検証。
