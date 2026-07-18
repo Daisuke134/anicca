@@ -120,3 +120,6 @@ daily telegram 報告（8547730585、secrets 無し）で Dais が毎日1目で�
 
 ### 追補（2026-07-18 Dais warmup 戦略）
 full skip も full 7日も却下 → **warmup 強化 + day3 早期 non-commercial test post で reach 実測**。実装: goal-monitor go-live gate を day>=3 に早期化 / IG daily を非商用初投稿→reach 健全 marker で商用移行 / warmup に timing jitter（warm_jitter.sh、base 11:00 + 0-3h random）。★残（handover 推奨）: warm.py の活動多様化（story/explore/検索/profile訪問 = building-agents 準拠で agentic engagement 層を拡張）+ day1-2 の light follow/profile 充実 + day3 実 live 投稿の reach 実測（account が day3 = ~07-21 になってから）。
+
+### 追補2（2026-07-18 Dais 承認: no-human-loop 完全自走）
+freeze gate（.capafy-ig-golive-approved の人間承認）を**撤去**。goal-monitor は day>=3（clip 3日 floor = loop self-pacing）で IG launchd を**人間承認なしに自動 load → 実投稿**。安全 pacing は全て loop-driven（day1-2 warmup / day3+ 非商用 / reach 健全 marker を loop が書く）で human gate ゼロ。DRY/FREEZE で止めない、毎日 action を取る。commit anicca(freeze撤去)。
