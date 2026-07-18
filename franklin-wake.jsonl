@@ -10374,3 +10374,11 @@
 {"ts":1784390723,"wake_id":"00MRQK5Y9RBFD8E32AF44E4497","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784390790,"wake_id":"00MRQK7DSP4537A3B6EAE3430C","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
 {"ts":1784390857,"wake_id":"00MRQK8T3812F342AE020245EE","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784390925,"wake_id":"00MRQKAA5RB7F36545AB674F6A","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784390999,"wake_id":"00MRQKBV5M41A3F8B880884D3F","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784391066,"wake_id":"00MRQKDACK03215239A0494D23","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784391213,"wake_id":"00MRQKGFT6D9191D2F8EEF4F73","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784391377,"wake_id":"00MRQKJYJOFA62F5D40B1E4C5D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784391523,"wake_id":"00MRQKN3710B41149F4AE84950","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784391683,"wake_id":"00MRQKQJ3WA4E8E49D299648A4","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784391816,"wake_id":"00MRQKTDCU779C33487D594997","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
