@@ -1,0 +1,33 @@
+{
+  "featureName": "capafy-skills-landing",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-18T15:11:02.206Z",
+      "reason": "behavioral spec written"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-18T15:11:02.209Z",
+      "reason": "verification architecture written"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-capafy-skills-landing-1784387340996",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-18T15:09:00.982Z",
+  "updatedAt": "2026-07-18T15:11:02.209Z"
+}
