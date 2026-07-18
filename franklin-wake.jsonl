@@ -10138,3 +10138,13 @@
 {"ts":1784365703,"wake_id":"00MRQ59O4FA1AAB010C70549F1","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784365703,"wake_id":"00MRQ59O4FA1AAB010C70549F1","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784365832,"wake_id":"00MRQ5CG5BDBAC7A3FF5F24AF1","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784366136,"wake_id":"00MRQ5IYCS1F0D3FAC9CAE42F0","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784366136,"wake_id":"00MRQ5IYCS1F0D3FAC9CAE42F0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784366325,"wake_id":"00MRQ5N05M20ECE69CE9E643B0","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784366325,"wake_id":"00MRQ5N05M20ECE69CE9E643B0","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784366456,"wake_id":"00MRQ5PTRR6687BC47B2914373","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784366456,"wake_id":"00MRQ5PTRR6687BC47B2914373","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784366589,"wake_id":"00MRQ5SO6RF759194095EC4944","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784366589,"wake_id":"00MRQ5SO6RF759194095EC4944","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784366719,"wake_id":"00MRQ5VG7D2CD8C68D14094F57","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784367020,"wake_id":"00MRQ61WWI129F081FDEF5460D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
