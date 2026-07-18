@@ -6,7 +6,7 @@
 
 1. **「稼いだ」= 外部（colony 外の財布）からの入金のみ。** self-pay(colony 4 wallet + マシン既定 identity `0xB9dd3B67…`)は何件 settle しても収益 $0 として扱う。ledger・報告・READMEの数字に混ぜたら虚偽。
 2. self-pay が許されるのは**技術検証のみ**（402→settle→on-chain の配管確認）。検証 self-pay は sales-log 上で self と機械判別できねばならない（self 名簿 = `verify-inflow.mjs` が正本）。
-3. **goal の判定は external のみで行う。** 2026-07-18 時点の正直な現在地: franklin1 external **$0**、franklin2 external **$0**、claude-p 店① $0.326 + 店② $0.004。**「franklin がゼロから稼ぐ」goal は未達。**（07-17 の「稼げる状態を作った」は配管の話であり、稼ぎは発生していない）
+3. **goal の判定は external のみで行う。** 2026-07-18 過酷監査後の正直な現在地: franklin1 external **$0**、franklin2 external **$0**、claude-p 店① **$0.011** + 店② $0.004。**生涯 external 合計 ≈ $0.015。「franklin がゼロから稼ぐ」goal は未達。**（旧記述「店① $0.326」は誤り — $0.315362 は claude-p 自身の Aave v3 引き出しが external 誤分類されたもの。tx 発信者 = 0x810f 自身、宛先 Aave Pool `0xa238dd80…` を on-chain 実測で確定、07-18 監査）
 4. **店の開設・商品追加・x402scan 登録・監視は franklin 自身の loop がやる**（main session がやったら self-sufficiency 違反 = 今日までの状態。これも未達成分）。
 
 ## ★★2026-07-17夜 市場調査 = MKT-1 の結論を訂正★★
@@ -115,7 +115,7 @@ Anthropic「Writing effective tools for agents」(2025-09-11, anthropic.com/engi
 |---|---|---|---|
 | franklin1 (0x3EcCAD24…) | $0.020000 | 1件 | 07-07 のみ |
 | franklin2 (0xe7747Fd8…) | $0.000000 | 0件 | 生涯ゼロ（sales log 自体が存在しない） |
-| claude-p (0x810f6d61… $0.326362/10件 + PM proxy 0x904B50d2… $0.011000/11件) | $0.337362 | 21件 | 07-07〜07-17 |
+| claude-p (0x810f6d61… ~~$0.326362/10件~~ → **$0.011/9件**(07-18監査: $0.315362 は自分の Aave 引き出しの誤分類) + PM proxy 0x904B50d2… $0.011000/11件中 settled $0.004) | **≈$0.015** | 〜13件 | 07-07〜07-17 |
 | **colony 合計** | **$0.357362** | **22件** | 07-07〜07-17 |
 
 教訓: 古い記述を放置するのも捏造と同じ罪——修正コメントが実コードに既に在ったのに、ledgerの数字だけが古いまま参照され続けた。数字は SSOT を随時実測し直す。
@@ -198,7 +198,7 @@ T4aの当初対象(本ファイル該当行=franklin2:10000)は未着手のま�
 **done(c) 未達**: 14日以内の反復購入者(観測開始 2026-07-17)。
 
 **同日の他の完了(2026-07-17)**:
-- FIX-2 完了: earn-ledger 3行に `misattributed:true` を付与、有効x402合計 = $0.326362 と一致。
+- FIX-2 完了: earn-ledger 3行に `misattributed:true` を付与、有効x402合計 = $0.326362 と一致。★07-18 監査で再訂正: この $0.326362 のうち $0.315362 は claude-p 自身の Aave 引き出し(protocol return)。真の external ≈ $0.011★
 - FIX-3 完了: settle ゲート実装(commit `e5904325`)。franklin1 旧21件は全て `settled:false` に印付け直し。
   claude-p は27件中12件、proxy は15件中2件が対象。
 - FIX-1 完了: PR `anicca-products#292`、deploy成功。poster が400→202に変化したことを実測(03:05:59Z)。
@@ -543,7 +543,7 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 
 | wallet | x402 外部売上 | 実体 | Bazaar 掲載 |
 |---|---|---|---|
-| 0x810f (claude-p 名義) | **$0.326362 / 10件** | Dais 手書き `serve-mainnet-boot.sh` :8411 | 7本 (`ts.net/…`) |
+| 0x810f (claude-p 名義) | ~~$0.326362 / 10件~~ → **$0.011 / 9件**(07-18監査: $0.315362=自分のAave引き出しの誤分類を除外) | Dais 手書き `serve-mainnet-boot.sh` :8411 | 7本 (`ts.net/…`) |
 | 0x904B (claude-p PM proxy) | **$0.011000 / 11件** | Dais 手書き `serve-claude-p-boot.sh` :8412 | 7本 (`ts.net:8443/…`) |
 | 0x3EcC (franklin1) | **$0.020000 / 1件**（07-07のみ） | Dais 手書き boot は稼働中 (:8414) | **0本**（FIX-3: sales-logは21件主張するが on-chain inbound は生涯2件のみ、未解明） |
 | 0xe7747F (franklin2) | **$0 / 0件**（sales log自体が存在しない） | Dais 手書き boot は稼働中 (:8413) | **0本**（FIX-1: telemetry post が400 host_wallet_mismatch、99.98%失敗） |
@@ -585,7 +585,7 @@ ANICCA_HOME 配下を指す → node_modules が無い → 即死:
 
 | # | やること | done 判定 | 状態 |
 |---|---|---|---|
-| **FIX-2** | ★層0・最優先★ earn-ledger の funding 誤帰属を塞ぐ — `verify-inflow.mjs` の内部wallet blocklistに送金元 `0xf70da97812cb96acdf810712aa562db8dfa3dbef` を追加 | 同送金元からの入金が earn-ledger の x402 売上に再混入しない（次回集計で誤カウント0） | ★DONE 2026-07-17★ ledger 3行に `misattributed:true`、有効x402=$0.326362 と一致 |
+| **FIX-2** | ★層0・最優先★ earn-ledger の funding 誤帰属を塞ぐ — `verify-inflow.mjs` の内部wallet blocklistに送金元 `0xf70da97812cb96acdf810712aa562db8dfa3dbef` を追加 | 同送金元からの入金が earn-ledger の x402 売上に再混入しない（次回集計で誤カウント0） | ★DONE 2026-07-17、07-18に上乗せ修正★ ledger 3行 `misattributed:true`。さらに07-18監査: protocol return(自分発 tx の DeFi 還流)を external 誤分類していた分を verify-inflow.mjs で再分類(anicca `93853dc`)。真 external ≈ $0.011 |
 | **T0** | ★SSOT の嘘を消す★ `colony-status.sh:22-23` と `anicca-project/CLAUDE.md` のコロニー表から **a3cdd4 行を削除**（loop 死亡・inflow $0 を実測済）。生きた市民は **claude-p / franklin1 / franklin2 の3つだけ**（STATUS.md 冒頭の表が正） | `colony-status.sh` の出力に a3cdd4 が出ない。CLAUDE.md の表が3行 | ★次★ |
 | **T1** | ★seller が起動できない真因を潰す★ | agent が立てた seller が生き続ける | ★DONE 2026-07-16★ 下記 |
 | **T2** | 手作り boot script 4本を loop に引き渡す(INV-F 遵守) — `serve-{mainnet,claude-p,franklin1,franklin2}-boot.sh` を退役させ、loop 生成の seller に一本化 | 手書き plist を bootout しても売上経路が生き残る | ★franklin2 完了★ 残り: franklin1(:8414) → claude-p(:8412) → mainnet(:8411 稼ぎ頭、最後) |
