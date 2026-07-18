@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "reviewedBy": "sol-main-verifier",
+  "blockingFindings": [],
+  "scope": "origin/main...53025696",
+  "checks": {
+    "specFidelity": "PASS",
+    "runtimeCorrectness": "PASS",
+    "securityAndEscaping": "PASS",
+    "deploymentIsolation": "PASS",
+    "workflowPreservation": "PASS"
+  },
+  "evidence": {
+    "publicHttp": 200,
+    "publicLinks": 21,
+    "mobileCards": 21,
+    "desktopCards": 21,
+    "darkModeMatched": true,
+    "ctaDestinationHttp": 200,
+    "wrongSiteRestoredHttp": 404,
+    "newGithubWorkflows": 0
+  },
+  "note": "Fresh adversary subagent intentionally not spawned per global verification rule. Main Sol inspected the full branch diff and drove production browser/curl surfaces."
+}
