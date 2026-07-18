@@ -113,7 +113,10 @@ launchd `ai.anicca.capafy-goal-monitor`（daily 09:00 JST）= `~/anicca/skills/e
 |---|---|---|
 | (a) | daily_loop.log の BLOCKED rc=1 連続ゼロ日数（7日で PASS marker） | streak 1/7（07-17 に BLOCKED あり→building） |
 | (b) | capafy-earn-ledger の最新 sales + reconcile 鮮度（>48h で STALE=乖離リスク） | orders=1 gross=$9.99（07-19既知）reconcile 0.6h fresh |
-| (c) | **@useclaudeskills warmup day>=7 で IG marketing launchd を idempotent 自動 load**（実 warmup-ledger の day で判定、日付ハードコード禁止・二重 load 禁止） | warmup 1/7 → go-live=**not_yet**（07-25前に暴発しない厳密 gate が正しく作動） |
+| (c) | **Dais 決定2026-07-18: warmup day>=3 で早期 NON-COMMERCIAL test post を go-live**（full 7日待たない）。IG marketing launchd を idempotent 自動 load（実 warmup-ledger の day 判定、日付ハードコード禁止・二重 load 禁止）。初投稿は非商用（bio link 無し・情報 caption）で reach を実測→健全なら `.capafy-ig-reach-healthy` marker で商用移行、shadowban 兆候なら報告 | warmup 1/3 → go-live=**not_yet**（day3=~07-21 で発火） |
 | (d) | 非破壊 health（launchctl loaded / plist 存在 / key-health gate exit）。本番 process の kill test はしない | capafy-loop=loaded / warmup=loaded / key-gate OK |
 
 daily telegram 報告（8547730585、secrets 無し）で Dais が毎日1目で状況把握（実測 msg 2523）。state=`~/.openclaw/state/capafy-goal-monitor.json`（history 60日）。これで 07-21/07-25/+7日 の判定が自走 = 真の no-human-loop。
+
+### 追補（2026-07-18 Dais warmup 戦略）
+full skip も full 7日も却下 → **warmup 強化 + day3 早期 non-commercial test post で reach 実測**。実装: goal-monitor go-live gate を day>=3 に早期化 / IG daily を非商用初投稿→reach 健全 marker で商用移行 / warmup に timing jitter（warm_jitter.sh、base 11:00 + 0-3h random）。★残（handover 推奨）: warm.py の活動多様化（story/explore/検索/profile訪問 = building-agents 準拠で agentic engagement 層を拡張）+ day1-2 の light follow/profile 充実 + day3 実 live 投稿の reach 実測（account が day3 = ~07-21 になってから）。
