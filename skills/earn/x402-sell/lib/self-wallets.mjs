@@ -6,7 +6,10 @@
 // (__tests__/verify-inflow-wallets.test.mjs pins that agreement).
 export const SELF_WALLETS = [
   "0x810f6d61f7606deee2657d3083e150a222bc29c5", // founder seller payTo
-  "0xb9dd3b67921b354c656523d6851537988f31dd56", // automaton (anicca-a3cdd4 spend wallet) / machine legacy default identity (resolve-identity fallback) — self-probes pay from this
+  "0xb9dd3b67921b354c656523d6851537988f31dd56",
+  // 2026-07-18 harsh audit additions — every identity this machine controls, even "never pays" ones:
+  "0xda4b6e34a25fa70a901f30161f1fd6a3ec68219b", // franklin1 Polymarket deposit proxy (.blockrun/wallets.json)
+  "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502", // claude-p telemetry signing wallet (no funds by design) // automaton (anicca-a3cdd4 spend wallet) / machine legacy default identity (resolve-identity fallback) — self-probes pay from this
   "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", // automaton, pre-rotation address
   "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83", // known-internal wallet
   "0x904b50d2e214da947d83d6a2d32c4e3ffc17eb74", // claude-p
