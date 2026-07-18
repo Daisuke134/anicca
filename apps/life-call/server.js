@@ -29,7 +29,7 @@ const {
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
-const { openingTurnForLang } = require("./lib/call-language.js");
+const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
 const { inngest } = require("./inngest/client.js");
@@ -239,7 +239,7 @@ const server = http.createServer((req, res) => {
         if (!rl.ok) return reply(429, { error: "rate_limited", retryAfter: rl.retryAfter });
         // Call language = the user's CHOICE (lm_users.call_language, set via the /lm toggle) if present,
         // else fall back to the phone country (+81 → ja, else en). Dais 2026-06-22.
-        const lang = (u.call_language === "ja" || u.call_language === "en") ? u.call_language : langForPhone(phone);
+        const lang = resolveCallLang({ callLanguage: u.call_language, phone });
         // Caller may pass a REAL event (summary/location/urgency) so the call + its recording are
         // postable content — NEVER hardcode "test" (the assistant reads the summary aloud). Default = a
         // real morning nudge in the USER's language, not a "test" label.
