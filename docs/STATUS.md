@@ -14,8 +14,10 @@ x402 ゼロ→イチの唯一の道（順序固定）:
        修正=boot で自instanceのHOME強制+継承鍵unset。E2E: franklin1が自wallet 0x3EcCAD24から
        Exa 0x6d6e695bへ$0.007送金をon-chain確認、margin$0.007残、buyerは本物のExa結果受領。
        ★但しこのE2Eはclaude-p買い=self-pay検証。external収益ではない。本物はX4★
-  X2  売れる物へ差し替え  = 電卓を捨て「他人がキー無しでは使えない物」だけ売る
-       （x402scan 30日実測: 電卓は圏外。転売/有料API/データが売れてる）
+  X2  ★DONE 2026-07-18・実店検証★ 32→4商品に集中。CORE=web-search(Exa転売)/
+       funding-rates/funding-rate-arb/research のみ。電卓27個はコード保持(X402_CATALOG=full
+       で復元)だが catalog/paywall/routing から除去+404 gate。両 franklin で well-known=4本・
+       /calc→404・core→402 実測。x402scan 再登録 registered:4/deprecated:28。commit 済
   X3  発見される         = 買い手 agent が実際に店に来る導線（今は12ページ目に埋没）
   X4  外部1ドルを確認     = verify-inflow が EXTERNAL≥1 を返すまで「稼いだ」と言わない
 ```
