@@ -317,6 +317,29 @@ commit `d5d5e24`（profitable-claude）。spec 準拠レビュー ✅（E1-E5 �
   （REQ-CEO-009）。②へ再折込必須（OSS hygiene と CEO 制御の生命線）
 - **M2**: STARTUP 内 `& disown .` のピリオド隣接 → スペース挿入
 
+## 8-0bis 結果記録（2026-07-18）: step1-2（#9）DONE — レビュー発見の消化 + dry 検証
+
+PC commit `1d361de`、anicca commit `fc651ef7`（① C1）。本番（① tmux `anicca-gig-core`・plist・~/gig state）は
+全作業後も無傷（前後で has-session ALIVE 実測）。②はまだ launchd 未配線なので切替は #10 のまま。
+
+- **C1 DONE**: ①②両方の `gig_pass.sh:28`（実測行。spec は :27 と書いていたが実物は 28 行目）を `-gt 1800`
+  → `-gt 7200`（>120min）へ。①は未 commit だと self-update に巻き戻されるため即 commit（`fc651ef7`、実測で巻き戻し1回発生→再適用済み）。
+- **I1 = step0 で既に完了していた（訂正）**: gig_pass.sh:11,13 / gig-healthcheck.sh:31 / gig_judge.py:152 は
+  step0 の commit `6eb8d22` で既に gig-work へ retarget 済み（grep 実測: ② の `~/anicca/skills/earn/gig` 自己参照 =
+  archive 除き 0 hit、browser 参照 `~/anicca/skills/browser` は仕様どおり残存）。#9 での追加変更は不要。
+- **I2 DONE**: ①由来 plist 2本を `archive/launchd/` へ git mv（rename 記録）。`launchd/` は hf-gig-* 2本のみ残存。
+- **I3 DONE**: 現行②（LIVE 同期版）の gig-cli.sh に KYC opt-in gate（GIG_KYC_CONFIRMED、§7.55）と
+  `registry_enforce_or_exit gig`（REQ-CEO-009、fail-open）を再折込。配置は `--status`/`--restart` と
+  idempotent alive-check の**後**（gig-cli.sh:40 と :60-62）＝ status 照会と稼働中 core を壊さず、fresh spawn のみ gate。
+  dry で GIG_KYC_CONFIRMED 未設定→spawn 拒否（tmux 起動ゼロ）を実測。
+- **M2 = 既に充足だった（訂正）**: d5d5e24/6eb8d22 とも occurrence1 は `disown`+SPACE(0x20)+PERIOD(0x2e)+SPACE
+  の hexdump 実測で、reviewer が想定した「ピリオド隣接（スペース無し）」ではない。追加編集不要。
+- **dry 検証4点 green**（本番接触ゼロ、temp socket `/tmp/gig-dry-test.sock`/session `gig-dry-test` の sed コピー、
+  終了時 kill-server+rm で掃除・不在確認）: (a) browser 基盤 6 script py_compile OK (b) ~/gig state 読取 OK
+  (c) ~/.openclaw/.env 読取 OK 743行 (d) :8317 CLIProxyAPI HTTP 200。
+- **既知ベースライン**: 掃除後の `tmux -S <temp> ls` が socket 不在で非ゼロ exit（"error connecting ..."）＝
+  temp socket 除去成功のシグナル。副作用ゼロ、fablize gate 用に記録。
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
