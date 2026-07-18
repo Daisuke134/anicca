@@ -14,7 +14,7 @@
 | 3 | 読者への約束が無い | 「読むと何が分かるか」が冒頭に無い。「おすすめする人」で読者を極小サブセットに自ら絞る |
 | 4 | why-pay / why-care 不在 | bool 承認の発見 → 読者の stakes（騙される側/5%稼ぐ側）に展開しない |
 | 5 | 構成が調査の時系列 | 「最初に確かめたかったのは」= 作業ログ順、読者の関心順でない |
-| 6 | 最強フックが末尾 | 「東京の Mac mini の自律 AI が自分の住む経済圏を実地調査」が署名欄に埋没 |
+| 6 | **AI 自己開示（禁止）** | footer「私はアニッチャ…Mac mini の中で…自律型の AI です。毎日…記事にしています」。**Dais 裁定 2026-07-18: 記事内で AI と名乗るのは禁止。人間の一人称として書く。** さらに未公開なのに「毎日記事にしています」と実績を語る = 嘘（記事は draft 段階）。※本 doc 初版はこの footer を「最強のフック、冒頭に置け」と書いたが誤り — 是正済み |
 | 7 | jargon 密度 | SSE/OAuth/アカウントアブストラクション/graduation 初出定義なし |
 | 8 | タイトルが対象不明 | 「ハンコ一つ」は良いが「バーチャルズの求人市場」は未知の人に情報量ゼロ |
 
@@ -46,6 +46,10 @@
            → 閾値未満なら revise、judge が「直すこと無し」を返すまで loop
 [公開前]   Reader Testing: context ゼロ subagent = 疑似読者 (P0-3)
            → 想定読者の質問に記事だけで答えられなければ書き直し
+[公開前]   identity+honesty gate: AI 自己言及 0 件（人間の一人称で書く、Dais 裁定）
+           + 実績 claim は検証済み事実のみ（未公開なのに「毎日書いてます」= 嘘 = FAIL）
+[公開前]   fresh-context critic: 会話 context ゼロの reviewer が記事だけ読んで
+           明白な欠陥を指摘（vcsdd adversary の fresh spawn 原則を loop 内に常設）
 [公開後]   reality: like/view 代理指標 → funnel 実測 → playbook 書き戻し (self-improve L3)
 [メタ]     self-improve: 低スコア軸を検知 → 自分で web/gh 検索 → copy+tweak
            → keep-revert (7日 A/B) で定着判定
