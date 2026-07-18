@@ -34,6 +34,8 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 **critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
 
+**★2026-07-19 R1 の壁が消えた（huntr 規約実測）★**: 提出=`huntr.com/bounties/disclose` の web フォーム、**account 登録のみで submit 可能**。Stripe KYC は「**初回 payout 発生時に初めてメールで要求**」（"For the first month that you are due a payment, you will receive an email requesting you to create a Stripe Connect account"）。→ **account 作成+vuln 提出は human-zero で今可能。Dais の KYC は「勝った後」に一回だけ＝前段のブロッカーではない**。critical path から R1 が外れ、gate は prove-1（AI が vuln を出せるか）のみに。OSV は maintainer 検証、MFV は admin 検証。
+
 **★2026-07-19 RAIL 最終確定（広域探索 + huntr 実測）= huntr MFV★**: Dais 指示で全 bounty 宇宙を探索。結論:
 - コード bounty(PR型)は Algora+Opire に集約・**全て飽和で $0**（先着レース）。Polar/Gitpay/IssueHunt/直接GitHub label は廃止/停止/spam。
 - fiat security bounty は **finding=AI 可（XBOW が HackerOne 全米1位を自律達成、実証済み）だが payout identity が唯一の人手**（全 fiat rail が初回 KYC。完全 human-zero fiat 着金 rail は存在せず、crypto なら Immunefi のみ）。
