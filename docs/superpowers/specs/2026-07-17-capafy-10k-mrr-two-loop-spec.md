@@ -138,3 +138,16 @@ freeze gate（.capafy-ig-golive-approved の人間承認）を**撤去**。goal-
 - key-health gate fail-closed: threshold \$999（残高\$21.59）→ **exit 1（publish 阻止）**、\$2→exit 0（funded で通過）。gate は実際に止める（実測）
 - scheduled job 自走: `launchctl kickstart` goal-monitor → state 書込み（09:46）= 予定 job が再実行して pass 完走。StartCalendarInterval job なので「kill→次tick復帰」= この re-fire 挙動（実測）
 - 残 time-gated: 7日 BLOCKED=0 audit（07-21+）、day3 実投稿（07-20）、14日自走 window（~08-01）
+
+## §9 SHARED marketing engine 戦略（2026-07-18 確定・全 loop 共通）
+
+★真因確定★: 3ヶ月投稿できなかったのは **web composer(post_reel.py)を IG が silent drop** していたから。warmup 不足でも IG day-1 block でもない。instagrapi(private API)に替えたら day-1 未warmup account で一発 publish（reel/Da7VQY8MIOK、logged-out 実測）。browser 自動化 repo(puppeteer 等)は全部この dead-end 側、instagrapi(private API)が正解と裏付け。
+
+**engine は全 marketing loop で共有。変わるのは content(何を売る: affiliate/product/capafy skill)+bio+profile+niche だけ。** 以下は everyone 共通:
+1. **poster = instagrapi_post.py 一本**（clip/scripts、private API、real sessionid でアプリ本物に見える）。web composer(post_reel.py)は全 loop から物理削除。
+2. **day-1 から投稿**（待たない）。account 誕生日から 1日1本。burst 厳禁(~12本で死ぬ)。死因は warmup 不足でなく web-composer検知+burst だったので、instagrapi 化で account 死問題はほぼ解決。
+3. **warmup は gate でなく並走**。warmer が毎日裏で軽く回す(reel視聴/scroll/たまに engagement)。投稿を止める warmup は無し。
+4. **reach ヘルス判定**: 毎回 reach 測定 → 0 継続=cooked → 作り直し(plus-address email + instagrapi、使い捨て)。
+5. 共通ループ: select(何を売る)→copy(agent)→video(money-printer)→instagrapi→ledger→reach→週次reflect。
+
+TODO(tasklist SHARED-1〜4): ①post_reel.py 全削除+clip 7参照を instagrapi 付替え ②instagrapi を canonical 共有 poster に昇格 ③loop 自走投稿の証明(launchd 自身が post、executor で代行しない) ④本戦略を warmer に反映(1日1コメント/活動多様化)。将来: profitable-claude に marketing-engine 共通化して OSS。
