@@ -30,7 +30,11 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 | R4 | **win-rate 改善（code）**: 旧 harness は実質 $0（agent 飽和 flat-38）。merge されやすい repo 狙い(real USD クラスタ sorosave 等)・PR 品質・spray 回避を self-improve 層に反映（研究 §4 の勝ちパターン） | **Sol** | R2 |
 | R5 | **稼いだか verify**: loop の apply→PR→merge→**着金**を実測。done=金が着いた時のみ・1件で止めず loop 継続 | **Fable** | R1-R4 |
 
-**critical path**: R1(Dais onboarding) が全ての payout を unblock。R2(復活) は即可能。R3 は R1 後。
+| R6 | **autonomy-hardening（code）** ★Dais の「can THEY do it?」の核心 — headless Sonnet コアが対話ゲートでハングして自律で回らない。①中立でない cwd 起動で別セッション resume 混線、②`.claude/active-team.md` external-imports 承認プロンプトで停止。launchd(TTY無)下で人手ゼロで越えられるよう修正（fresh 起動/no-resume + external-imports 事前 trust + 全対話プロンプト自動処理） | **Sol** | R2 |
+
+**critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
+
+**2026-07-18 R2 実測（Fable が手で復活・観測）**: plist 2枚 .disabled 解除+load、`bounty-cli.sh` で core 起動＝ALIVE。だが **headless core は自律で回らないと判明**: (a) `~/anicca-project` から手動起動すると claude が同 cwd の直近 warmup/clip セッションを resume して bounty と無関係な内容を実行、(b) 中立 cwd から起動すると `.claude/active-team.md` の external-imports 承認プロンプト「1.Yes/2.No」でハング。俺が tmux に Enter を送って初めて pass が走り始めた（"Beaming… ↓1.2k tokens"）。**weekly limit 73% 消費(Jul 24 reset)** も判明＝常時 Sonnet コアはこれを食う。→ R6 を Sol に。現 pass の結果は Monitor で観測中。
 
 ---
 
