@@ -448,9 +448,15 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 | 10 | repo 収斂（life-manager repo）| ⬜ | 未着手 |
 | 11 | TikTok bio + caption CTA | 🟡 | caption=✅。bio link=⬜（CloakBrowser）|
 | 12 | dev loop D0 無人1pass | ⬜ | 未着手 |
-| +新 | LM-27 voicemail→answered fix | 🔧 | Sol 実装中（Telnyx AMD + webhook 署名検証）|
+| +新 | LM-27 voicemail→answered fix | ✅ | **prod 投入**（deploy 801047ec）。answered は署名検証済み AMD result=human のみ。staging で無署名 POST /telnyx-events→403 実証（negative test）。fresh-Sol review 5観点 PASS 0 blocking + Fable npm test 27 green + 急所 Read 確認 |
 
 **集計**: 実証close=1/12（#5）。コード prod 投入済み=7領域（LM-24/2, LM-5, LM-6, LM-7, LM-25A, LM-26fix, LM-3）だが E2E 未証多数。未着手=4（#4,#8b,#10,#12）+ bio。核心（電話が鳴り会話が成立）は✅、残りは「実証」と「未着手5本」。
+
+### §5c-9（2026-07-18 23:52）— flowb 確定、#11 drop、LM-27 close
+- **開発方式 = flowb 確定（Dais 指示）**: Fable=plan + 最終実測/検証、Sol(codex)=実装、fresh Sol(codex)=review。direct セッションで Luna(proxy) 不可のため flowa でなく flowb。
+- **#11 TikTok bio = drop**（Dais: marketing は IG の launchd slideshow で回っており TikTok 非アクティブ。building に集中）。TaskList から削除。
+- **LM-27 close**: prod deploy 801047ec、TELNYX_PUBLIC_KEY を staging+prod に設定済み（Ed25519、公開鍵）。answered_at は署名検証済み `call.machine.detection.ended` result=human のみで記録、voicemail(machine/not_sure)/media-start は記録しない（AMD 有効時）。negative test = 無署名 POST→403 実証。→ これで #6 の遅刻メール実証が正しく取れる前提が整った（answered が汚染されない）。
+- 次順（flowb、1本ずつ）: #4 rotate → #8b Unipile calendar → #10 repo 収斂 → #12 dev loop D0。E2E 実 call（#1/#2/#6/#13）は明日の短経路イベントでまとめて。
 
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
