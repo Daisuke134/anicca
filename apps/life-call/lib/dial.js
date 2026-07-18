@@ -5,6 +5,8 @@
 "use strict";
 
 const { telnyxDialBody, telnyxStreamingStartBody } = require("./call-logic.js");
+const { amdEnabled } = require("./answered.js");
+const { encodeWakeClientState } = require("./telnyx-webhook.js");
 
 const TELNYX = "https://api.telnyx.com/v2";
 
@@ -25,6 +27,21 @@ async function balanceUsd() {
   return Number(j && j.data && j.data.balance);
 }
 
+function amdDialOptions(streamUrl, env = process.env) {
+  if (!amdEnabled(env)) return {};
+  const url = new URL(streamUrl);
+  const wakeUid = url.searchParams.get("wakeUid") || "";
+  const wakeEventKey = url.searchParams.get("wakeEventKey") || "";
+  const webhookProtocol = url.protocol === "ws:" ? "http:" : "https:";
+  const clientState = encodeWakeClientState({ wakeUid, wakeEventKey });
+  return {
+    answering_machine_detection: "detect",
+    webhook_url: `${webhookProtocol}//${url.host}/telnyx-events`,
+    webhook_url_method: "POST",
+    ...(clientState ? { client_state: clientState } : {}),
+  };
+}
+
 // to: E.164 callee. streamUrl: wss://<this-svc>/ws?summary=...&dateTime=...&location=...&urgency=...
 // Returns the call_control_id so the caller can issue record_start / streaming_start.
 async function placeCall({ to, streamUrl }) {
@@ -38,7 +55,10 @@ async function placeCall({ to, streamUrl }) {
   const usd = await balanceUsd().catch(() => NaN);
   if (!Number.isFinite(usd) || usd < 0.5) return { ok: false, error: `telnyx balance too low ($${usd})` };
 
-  const dialBody = telnyxDialBody({ connectionId: CONN, to, from: FROM, streamUrl });
+  const dialBody = {
+    ...telnyxDialBody({ connectionId: CONN, to, from: FROM, streamUrl }),
+    ...amdDialOptions(streamUrl),
+  };
   let call;
   try {
     call = await txPost("/calls", dialBody);
@@ -67,4 +87,4 @@ async function startRecording(ccid) {
   }
 }
 
-module.exports = { placeCall, startRecording, telnyxStreamingStartBody, balanceUsd };
+module.exports = { placeCall, startRecording, telnyxStreamingStartBody, balanceUsd, amdDialOptions };
