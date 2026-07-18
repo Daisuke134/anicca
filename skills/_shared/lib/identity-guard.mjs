@@ -50,7 +50,7 @@ export const ALLOWED_EARN_SOURCES = new Set([
   "content", "x402-serve",
   // own-identity store introspection (SELF-STORE-1, 2026-07-18): reading our own sales/attempts
   // logs and re-listing our own catalog moves no funds and touches no foreign identity.
-  "x402-review", "x402-update",
+  "x402-review", "x402-improve", "x402-update",
   // promote.fun per-view clipping: Anicca's OWN IG account + OWN Solana wallet payout (own identity).
   // Added 2026-06-29 (promote-fun-clip-earn). Matches no FORBIDDEN_EARN_SOURCES pattern.
   "promote.fun", "clip-promote", "ig-clip",

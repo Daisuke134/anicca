@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { summarizeOwnProducts } from '../store-improve.mjs';
+
+const SERVED_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
+const NOW = Date.parse('2026-07-18T12:00:00.000Z');
+const SELF = '0x0000000000000000000000000000000000000abc';
+const EXTERNAL = '0x0000000000000000000000000000000000000def';
+
+test('summarizeOwnProducts aggregates only served routes with external, attempts, and age wakes', () => {
+  const sales = [
+    { ts: new Date(NOW - 600_000).toISOString(), route: '/web-search', payer: SELF.toUpperCase(), settled: true },
+    { ts: new Date(NOW - 480_000).toISOString(), route: '/web-search', payer: EXTERNAL, settled: true },
+    { ts: new Date(NOW - 120_000).toISOString(), route: '/funding-rates', payer: EXTERNAL, settled: true },
+    { ts: new Date(NOW - 360_000).toISOString(), route: '/research', payer: EXTERNAL, settled: false },
+    { ts: new Date(NOW - 1_200_000).toISOString(), route: '/not-served', payer: EXTERNAL, settled: true },
+  ];
+  const attempts = [
+    { ts: new Date(NOW - 240_000).toISOString(), route: '/web-search' },
+    { ts: new Date(NOW - 120_000).toISOString(), route: '/web-search' },
+    { ts: new Date(NOW - 360_000).toISOString(), route: '/funding-rates' },
+    { ts: new Date(NOW - 60_000).toISOString(), route: '/funding-rate-arb' },
+    { ts: new Date(NOW - 1_200_000).toISOString(), route: '/not-served' },
+  ];
+
+  assert.deepEqual(summarizeOwnProducts(sales, attempts, SERVED_PATHS, new Set([SELF]), NOW), [
+    { path: '/web-search', external: 1, attempts: 2, ageWakes: 5 },
+    { path: '/funding-rates', external: 1, attempts: 1, ageWakes: 3 },
+    { path: '/funding-rate-arb', external: 0, attempts: 1, ageWakes: 1 },
+    { path: '/research', external: 0, attempts: 0, ageWakes: 3 },
+  ]);
+});
