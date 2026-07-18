@@ -110,7 +110,8 @@ const resourceServer = new x402ResourceServer(facilitatorClient)
   .register(NETWORK, new ExactEvmScheme())
   .register(NETWORK_V1, new ExactEvmScheme());
 // single product table — drives the payment middleware, "/" index, /.well-known/x402.json and /llms.txt.
-const PRODUCTS = [
+// (let, not const: X2 concentration below reassigns it to the CORE subset unless X402_CATALOG=full.)
+let PRODUCTS = [
   { path: "/research", price: PRICE, example: "/research?q=<topic>", what: "web research digest",
     description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost." },
   // deterministic compute primitives — pure CPU or free data, no LLM in the serving path.
@@ -178,6 +179,19 @@ const PRODUCTS = [
   // this one spends the store's OWN wallet against an external x402 upstream (see resale.mjs).
   ...RESALE_PRODUCTS,
 ];
+
+// X2 CONCENTRATION (best practice: sell what buyers CANNOT self-serve; 31 calculators bury the real
+// product and read as spam). Serve only the "value" routes buyers can't trivially do themselves:
+// live web search resale (needs an Exa key) + aggregated cross-exchange funding data + research
+// digest. The ~27 pure calculators stay in code (reversible: X402_CATALOG=full restores them) but
+// are dropped from the catalog, paywall config, and routing so the shop presents a focused offering.
+const CORE_PATHS = new Set(["/web-search", "/funding-rates", "/funding-rate-arb", "/research"]);
+const CATALOG_MODE = process.env.X402_CATALOG || "core";
+const ALL_PRODUCTS = PRODUCTS;
+if (CATALOG_MODE !== "full") {
+  PRODUCTS = ALL_PRODUCTS.filter((p) => CORE_PATHS.has(p.path));
+}
+const INACTIVE_PATHS = new Set(ALL_PRODUCTS.filter((p) => !PRODUCTS.includes(p)).map((p) => p.path));
 
 // GET-with-query param schemas per route (moved above routes: also feeds the v1 compat body's
 // outputSchema.input and the Bazaar declareDiscoveryExtension() call below). x402scan requires an
@@ -404,6 +418,14 @@ app.get("/openapi.json", (_req, res) =>
       },
     }])),
   }));
+
+// X2: routes concentrated out of the catalog must not stay reachable as FREE endpoints via their
+// still-mounted app.get handlers (paymentMiddleware only gates paths in `routes`). Gate them to 404
+// BEFORE the paywall + handlers, so a deactivated calculator is genuinely gone (not a free leak).
+app.use((req, res, next) => {
+  if (INACTIVE_PATHS.has(req.path)) return res.status(404).json({ error: "route not offered", path: req.path });
+  next();
+});
 
 app.use(paymentMiddleware(routes, resourceServer));
 
