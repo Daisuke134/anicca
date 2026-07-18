@@ -389,6 +389,14 @@ test_registry_enforce_core **12/12**（回帰なし）。quality re-review 待�
   次パス自走開始。**Task #11 CLOSED、gig 移設 step0-6 全完了。gig の本番 = profitable-claude。**
   残フォロー: 明日 09:07 の hf-gig-daily-report 初回発火確認（#12 で見る）
 
+## 8-7 結果記録（2026-07-18 23:4x）: registry 整合 DONE（Task #12）
+
+/flowa 体制（Fable plan+verify / Sol execute / Sol fresh review）の初回フル運用。PC commit `25e84cc`:
+registry gig entry に cutover 事実 + REQ-CEO-020 当面 exempt を記録、base_minute 27→0（effective-cron
+"0 */1 * * *" と整合、生成結果は不変とレビューがコード読みで確認）、README gig 行の cadence 修正。
+JSON valid + registry test 12/12 + snapshot test 17/17 を Fable が再実行で確認、Sol fresh review PASS
+（findings 0）。残フォロー: 明日 09:07 hf-gig-daily-report 初回発火の確認のみ。
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
