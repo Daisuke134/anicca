@@ -8,7 +8,7 @@
 //   X402_PAYTO   this instance's own receiving wallet (default: derived from the per-instance key)
 //
 // Loop child-script contract: prints exactly ONE JSON line on stdout, never throws.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateKeyToAccount } from "viem/accounts";
@@ -40,8 +40,19 @@ export function review(env = process.env, now = Date.now()) {
     return { error: "no payTo resolvable (no X402_PAYTO, no per-instance key)" };
   }
   const lower = payTo.toLowerCase();
-  const sales = readJsonl(join(HERE, "state", `sales-${lower}.jsonl`));
-  const attempts = readJsonl(join(HERE, "state", `attempts-${lower}.jsonl`));
+  // The serve daemon writes state/ next to ITS OWN serve-v2.mjs. On colony instances the skill
+  // copy under ANICCA_HOME is synced from the repo checkout while the seller runs FROM the repo
+  // checkout — so this script's own state/ can be empty while the real logs sit in the checkout
+  // (measured 2026-07-18: franklin1 review returned zeros against 5 real settled rows). Resolve:
+  // explicit X402_STATE_DIR wins; else prefer whichever candidate actually has this payTo's file.
+  const candidates = [
+    env.X402_STATE_DIR,
+    join(HERE, "state"),
+    env.HOME ? join(env.HOME, "anicca", "skills", "earn", "x402-sell", "state") : null,
+  ].filter(Boolean);
+  const stateDir = candidates.find((d) => existsSync(join(d, `sales-${lower}.jsonl`))) || candidates[0];
+  const sales = readJsonl(join(stateDir, `sales-${lower}.jsonl`));
+  const attempts = readJsonl(join(stateDir, `attempts-${lower}.jsonl`));
   return aggregateStore(sales, attempts, new Set(SELF_WALLETS), now);
 }
 
