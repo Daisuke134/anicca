@@ -18,20 +18,22 @@ log(){ echo "$(date '+%F %T') gig_pass: $*" >&2; }
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
+    -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. Your CDP browser-context lease is named '$GIG_LEASE' (use EXACTLY that name for any cdp_context_lease.py acquire/release the runbook calls for; this pass owns it, never acquire/release the bare name gig). Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
   log "STEP $1 done (rc=$?)"
 }
 
 # ── deterministic prelude ───────────────────────────────────────────────────
 LOCKD=/tmp/anicca-gig-pass.lock.d
+GIG_LEASE="gig-$$"; export GIG_LEASE   # per-pass lease name, NOT the shared "gig": the EXIT trap releases ONLY this pass's own context, so an interrupt/overlap of one pass never tears down another pass's (or another loop's) browser context. Sub-agent steps inherit GIG_LEASE (env + injected into their prompt) and reuse the same lease.
 [ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 1800 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>30min)
 mkdir "$LOCKD" 2>/dev/null || { log "another pass holds the lock — exit"; exit 0; }   # mkdir = atomic on macOS; only ONE gig_pass.sh runs
-trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
+trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$B/cdp_context_lease.py" release "$GIG_LEASE" >/dev/null 2>&1' EXIT
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
 python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
 python3 "$B/session_vault.py" restore >/dev/null 2>&1
 PREP=$(python3 "$G/passprep.py" 2>/dev/null); log "passprep: ${PREP:0:120}"
-python3 "$B/cdp_context_lease.py" acquire gig >/dev/null 2>&1
+python3 "$B/cdp_context_lease.py" gc --idle-min 45 >/dev/null 2>&1   # reap per-pass leases a crashed/killed prior pass left behind (per-pass names would otherwise pile up in leases.json)
+python3 "$B/cdp_context_lease.py" acquire "$GIG_LEASE" >/dev/null 2>&1
 
 # ── the chain: every step runs, in order, as its own bounded agent ──────────
 step "LEARN"   "STEP 0.5 LEARN: first read the LAST line of ~/gig/reflection.jsonl (the previous pass verbal reflection — what was tried and what to adjust) and let it steer this pass. Then read ~/gig/.selfimprove-todo.json and do any 'missing' steps. Then crwl a best-practice source + scout.py 2-3 TOP-SELLING listings in a target category, extract the generalized winning patterns and MERGE them into ~/gig/playbook.json (general[]+components{}; 3+ winners => tier=core)."
