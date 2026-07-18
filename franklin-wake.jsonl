@@ -10629,3 +10629,12 @@
 {"ts":1784416580,"wake_id":"00MRQZK5L38BA5D246099C4D2E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784416712,"wake_id":"00MRQZMZ7U21FF638877654E33","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784416712,"wake_id":"00MRQZMZ7U21FF638877654E33","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784416846,"wake_id":"00MRQZPV1I55DF8FE6F5B34713","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784416846,"wake_id":"00MRQZPV1I55DF8FE6F5B34713","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784416976,"wake_id":"00MRQZSMSFFCB06209B7B54ACF","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784417278,"wake_id":"00MRQZZ3PA4688596BD73B4FED","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784417411,"wake_id":"00MRR01YYB31ABA101D7814D66","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784417544,"wake_id":"00MRR04T1M372345EC2E8D42F6","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784417544,"wake_id":"00MRR04T1M372345EC2E8D42F6","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784417675,"wake_id":"00MRR07MQACCD441AEAD7846FB","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784417675,"wake_id":"00MRR07MQACCD441AEAD7846FB","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
