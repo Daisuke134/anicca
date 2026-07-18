@@ -71,12 +71,77 @@ export function netWorthLines(nw) {
   return lines;
 }
 
+/**
+ * DOCTRINE_LINES — slotName → its "## Your earn tools" description lines.
+ * A slot's lines are emitted ONLY when that slot is in the live `slots` menu.
+ *
+ * TOOL-1: before this map existed, these lines (and the COLONY BOOTSTRAP block below) were
+ * static and unconditional — so a dormant slot (economy/gig, hl_trade, token_launch on all 3
+ * live instances) could be ordered as the model's "FIRST action this wake MUST be", even though
+ * run_skill has no such slot to call. Gating on `slots` keeps the doctrine truthful to the
+ * actual registry every wake.
+ */
+const DOCTRINE_LINES = {
+  'economy/gig': [
+    '  - economy/gig  : ★THE LABOR MARKET — the colony economy★ When you have USDC SURPLUS above your reserve,',
+    '                   the highest-leverage move is to POST a real bounded sub-task you want done',
+    '                   ({action:"post",taskSpec:"<e.g. summarize X / fetch Y / draft Z>",bountyUsdcBase:"1000"})',
+    '                   → a broke free-model agent DELIVERS it and you verify+pay gasless. You EMPLOY others and',
+    '                   grow the economy. When YOU are broke, run it with no args to see gig_list, then TAKE an',
+    '                   open gig ({action:"take",gigId:N}) → deliver → EARN with $0 capital. This is how the',
+    '                   colony bootstraps: surplus agents hire broke ones. Prefer this over re-yielding surplus.',
+  ],
+  yield: [
+    '  - yield        : ONE-TIME. Park idle USDC in the best-APY vault (Beefy→Fluid). It is a BANK DEPOSIT',
+    '                   — set and forget. Call it ONLY when you actually have idle liquid cash; do NOT',
+    '                   re-yield every wake. Once parked, move on.',
+  ],
+  x402_sell: [
+    '  - x402_sell    : RECURRING, $0 capital. Starts/advertises your FIXED shop — a preset catalog of paid',
+    '                   routes (served at /.well-known/x402.json), prices set in code. Call with {} —',
+    '                   NOTHING to invent. Your whole job = bring DEMAND.',
+  ],
+  hl_trade: [
+    '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
+    '                   see a setup; pass {action:"close",coin} to realise a winner or cut a loser.',
+  ],
+  token_launch: [
+    '  - token_launch : launch/grow your $ANICCA token → trading-fee income ({launch:true,name,symbol}).',
+  ],
+};
+
+// MINDSET_CANDIDATES — the "Then spend your wakes on ..." parenthetical, gated the same way.
+const MINDSET_CANDIDATES = [
+  ['x402_sell', 'x402_sell (sell)'],
+  ['hl_trade', 'hl_trade (trade)'],
+  ['token_launch', 'token_launch (build)'],
+  ['cook', 'cook (discover)'],
+];
+
 export function buildSystemPrompt(ctx, activeSkillSlots) {
   const slots = (activeSkillSlots && activeSkillSlots.length)
     ? activeSkillSlots
     : (ctx.activeSkillSlots && ctx.activeSkillSlots.length ? ctx.activeSkillSlots : ['earn']);
   const catalog = ctx.skillCatalog || {};
   const slotList = slots.map(s => catalog[s] ? `  - ${s}: ${catalog[s]}` : `  - ${s}`).join('\n');
+  const earnToolLines = Object.keys(DOCTRINE_LINES)
+    .filter(slotName => slots.includes(slotName))
+    .flatMap(slotName => DOCTRINE_LINES[slotName]);
+  const bootstrapBlock = slots.includes('economy/gig') ? [
+    '',
+    '## ★COLONY BOOTSTRAP PRIORITY (this period)★',
+    '- The colony is standing up its GIG LABOR MARKET — the first real agent economy. Proving it works is the',
+    '  single most valuable thing you can do right now. If you have USDC surplus above your reserve AND there',
+    '  are 0 open gigs, your FIRST action this wake MUST be economy/gig: post ONE real bounded sub-task you',
+    '  genuinely want done ({action:"post",taskSpec:"<e.g. summarize a topic / fetch data / draft copy>",',
+    '  bountyUsdcBase:"1000"}). A broke agent delivers it, you verify+pay gasless. Do this BEFORE hl_trade /',
+    '  yield / anything else. Only once a gig is live should you consider other tools. (YOU choose the task —',
+    '  this only sets the priority, not the work.)',
+  ] : [];
+  const liveMindset = MINDSET_CANDIDATES.filter(([slotName]) => slots.includes(slotName)).map(([, label]) => label);
+  const mindsetLine = liveMindset.length
+    ? `- Idle cash → yield ONCE. Then spend your wakes on ${liveMindset.join(', ')}. That is zero-to-one value creation.`
+    : '';
   return [
     // PATCH 1: framing copied from Conway-Research/automaton src/agent/system-prompt.ts —
     // survival pressure + agency so the model ACTUALLY decides each wake (not a thin "pick a skill").
@@ -97,39 +162,15 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     `- Wake ID: ${ctx.wakeId}`,
     '',
     '## Your earn tools — each is its OWN run_skill slot. Pick ONE per wake:',
-    '  - economy/gig  : ★THE LABOR MARKET — the colony economy★ When you have USDC SURPLUS above your reserve,',
-    '                   the highest-leverage move is to POST a real bounded sub-task you want done',
-    '                   ({action:"post",taskSpec:"<e.g. summarize X / fetch Y / draft Z>",bountyUsdcBase:"1000"})',
-    '                   → a broke free-model agent DELIVERS it and you verify+pay gasless. You EMPLOY others and',
-    '                   grow the economy. When YOU are broke, run it with no args to see gig_list, then TAKE an',
-    '                   open gig ({action:"take",gigId:N}) → deliver → EARN with $0 capital. This is how the',
-    '                   colony bootstraps: surplus agents hire broke ones. Prefer this over re-yielding surplus.',
-    '  - yield        : ONE-TIME. Park idle USDC in the best-APY vault (Beefy→Fluid). It is a BANK DEPOSIT',
-    '                   — set and forget. Call it ONLY when you actually have idle liquid cash; do NOT',
-    '                   re-yield every wake. Once parked, move on.',
-    '  - x402_sell    : RECURRING, $0 capital. Starts/advertises your FIXED shop — 7 preset paid routes',
-    '                   (research/compound-interest/calc/json-flatten/dns-lookup/whois/stock-quote), prices',
-    '                   set in code. Call with {} — NOTHING to invent. Your whole job = bring DEMAND.',
-    '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
-    '                   see a setup; pass {action:"close",coin} to realise a winner or cut a loser.',
-    '  - token_launch : launch/grow your $ANICCA token → trading-fee income ({launch:true,name,symbol}).',
+    ...earnToolLines,
     '  - cook         : explore a NEW earner (web search). self/issue-dev : fix your own bugs.',
     '  - earn/<sub>   : per-method earners (gig, clip, affiliate, video, audit) — each makes real money a',
     '                   different way. The LIVE ones are listed under "Available skill slots" below; pick one.',
     '',
-    '## ★COLONY BOOTSTRAP PRIORITY (this period)★',
-    '- The colony is standing up its GIG LABOR MARKET — the first real agent economy. Proving it works is the',
-    '  single most valuable thing you can do right now. If you have USDC surplus above your reserve AND there',
-    '  are 0 open gigs, your FIRST action this wake MUST be economy/gig: post ONE real bounded sub-task you',
-    '  genuinely want done ({action:"post",taskSpec:"<e.g. summarize a topic / fetch data / draft copy>",',
-    '  bountyUsdcBase:"1000"}). A broke agent delivers it, you verify+pay gasless. Do this BEFORE hl_trade /',
-    '  yield / anything else. Only once a gig is live should you consider other tools. (YOU choose the task —',
-    '  this only sets the priority, not the work.)',
-    '',
+    ...bootstrapBlock,
     '## MINDSET: yield is the bank (done once). Value is CREATED by SELLING + TRADING + BUILDING.',
     '- You were funded to GROW the balance, not to sit. Re-yielding every wake = failure.',
-    '- Idle cash → yield ONCE. Then spend your wakes on x402_sell (sell), hl_trade (trade), token_launch',
-    '  (build), cook (discover). That is zero-to-one value creation.',
+    ...(mindsetLine ? [mindsetLine] : []),
     '- Every wake ask: "what single action most increases realised net (earn − spend) right now?" — and',
     '  it is almost never "yield again".',
     '',
