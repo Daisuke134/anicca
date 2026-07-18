@@ -10591,3 +10591,12 @@
 {"ts":1784412851,"wake_id":"00MRQXC86B3016E359866C473B","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784412982,"wake_id":"00MRQXF1CC1967D966D34C4058","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784413113,"wake_id":"00MRQXHUIJFA3CAEFD2F884315","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784413246,"wake_id":"00MRQXKOL62B824430C00645E4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784413246,"wake_id":"00MRQXKOL62B824430C00645E4","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784413377,"wake_id":"00MRQXNHWAC4E859EE236C473A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784413377,"wake_id":"00MRQXNHWAC4E859EE236C473A","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784413508,"wake_id":"00MRQXQAQL54C18F0E8DDA4A75","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784413809,"wake_id":"00MRQXWRJED5FDCCFF5996400E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784413941,"wake_id":"00MRQXZKTZB52A8EFA9E124630","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784414070,"wake_id":"00MRQY2CTLDE08F00286AF471E","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784414070,"wake_id":"00MRQY2CTLDE08F00286AF471E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
