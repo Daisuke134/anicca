@@ -10339,3 +10339,10 @@
 {"ts":1784386915,"wake_id":"00MRQHWBW94660AEB8579C49B9","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784387116,"wake_id":"00MRQI0N3M0A34624FCF3D424F","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784387267,"wake_id":"00MRQI3VOM63897EE0DDBC44FB","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784387340,"wake_id":"00MRQI5FM9527BA3EEBB914F94","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784387505,"wake_id":"00MRQI8Z1O4F9AABFC05CC4A79","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784387505,"wake_id":"00MRQI8Z1O4F9AABFC05CC4A79","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784387660,"wake_id":"00MRQICANNC9C0A9ACE98849C5","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784387829,"wake_id":"00MRQIFWQE13B1CFC936E24F0D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784387958,"wake_id":"00MRQIIONDFF7B967869184DEB","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784388121,"wake_id":"00MRQIM6DE5CEA495E21374D99","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
