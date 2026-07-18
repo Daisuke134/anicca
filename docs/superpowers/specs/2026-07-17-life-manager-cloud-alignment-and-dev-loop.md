@@ -388,6 +388,13 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 - 残タスク 12 件を TaskList #1〜#12 に再登録（reboot で消えたため）。順序: E2E close(#1-3) → rotate(#4) → staging(#5) → LM-5/6(#6-7) → Unipile 化(#8) → ledger(#9) → 収斂(#10) → bio(#11) → dev loop D0(#12)。
 - `scripts/lm-staging-smoke.sh` が dev worktree に未 commit で存在（LM-18 の途中成果物）。
 
+### §5c-2 進捗（2026-07-18 21:10 実測）
+- **✅ LM-24/LM-2 CLOSE（C1 実測 PASS）**: 実イベント「打ち合わせ（LM E2E C1v2）」21:30 @渋谷ヒカリエで T-10(20:40:07 JST, lm_wake_log id764 `|10`) + T-5(21:00:07, id766 `|5`) が実着信。Telnyx 実録音 30.5s を whisper 文字起こし → **双方向会話成立**（AI: "This is your life manager… time to leave now" / Dais: "what's 1 plus 2?" / AI: "1 plus 2 is 3" / Dais: "it's working"）。録音 = `~/.openclaw/state/lm-video/recordings/2026-07-18T11-40-47-efcb9798….mp3`。
+- **新発見 LM-26**: AI 発話が英語（done 条件は日本語）。langForPhone/locale 配線を次 wave で fix。
+- **学び（E2E 設計）**: wake は event start でなく **departure 基準**（scheduler.js:195）。テストイベントは「start − travel − 10min が未来」になるよう作る。1回目のイベント(+30min)は作成時点で発火時刻過ぎ = 鳴らないのが正しい挙動だった。
+- **LM-5 v1 実装完了（Sol/codex、flowb）**: branch `feature/lm5-late-notice` commit `6c4b5ffe2` push 済み。T-0「出た？」送信（wave1 に無かった事を Sol が実読で発見）+ late:ok/still callback（HMAC token、新列不要）+ 10min DB 駆動 fallback + atomic dedup。npm test 全 green を Fable が独立再実行で確認。migration `2026-07-18-lm-wake-log-late-notice.sql`（additive 2列、**Supabase 未適用**、デプロイ時に適用）。merge は staging(#5) green 後。
+- A1 テストイベント「MUIT 集会」（明日 10:00、location 無し）作成済み — ask loop の resolved_from 記録待ち。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
