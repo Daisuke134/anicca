@@ -301,6 +301,44 @@ browser/`_shared`/`~/gig` を先に動かすと gig 以外(clip/video/session-va
 
 ---
 
+## 9. OSS 公開時の私密データ保存規約（TO-BE、2026-07-18 追記）
+
+原則: **repo = code のみ。私密データは全て data home `~/.profitable-claude/` に置き、repo には path 契約
+（env 名と既定値）だけを書く。** これで clone した誰でも（追加パッケージなしで）同じ path で動く —
+既定値は `$HOME` 相対だから万人共通、上級者は env で上書き可能。既存実例の踏襲: `~/.blockrun`
+`~/.openclaw` と同型（app-specific data home パターン）。install.sh が mkdir + chmod する。
+
+| 私密データの種類 | 例（gig loop 実物） | 置き場（TO-BE） | 権限 |
+|---|---|---|---|
+| ログインセッション/cookie | Coconala/Google session、CloakBrowser vault | `~/.profitable-claude/vault/`（当機は既存 `~/.cloak` を `PC_VAULT_DIR` で指す） | 700 |
+| API キー/トークン | telegram bot token, CLIProxyAPI, blockrun | `~/.profitable-claude/.env`（repo には `.env.example` のみ） | 600 |
+| loop state（業務データ） | applied.jsonl / shuppin.jsonl / lessons.jsonl | `~/.profitable-claude/state/<loop>/`（当機の gig は既存 `~/gig` を `GIG_STATE_DIR` で指す＝据え置き、§TOP3-3 準拠） | 700 |
+| 金の台帳 | earnings.jsonl / ledgers | `~/.profitable-claude/state/<loop>/` 同上（横断は `~/.profitable-claude/ledgers/`） | 700 |
+| 個人/KYC 情報 | 口座・電話番号・本人情報 | vault のみ。repo/docs/commit 本文にも書かない | 700 |
+| ログ | pass ログ, healthcheck ログ | `~/.profitable-claude/logs/<loop>/` | 755 |
+
+path 解決の契約: 各 loop は `PC_HOME`（既定 `$HOME/.profitable-claude`）起点で解決。当機のような既存
+配置は env 上書きで無改修吸収。plist は install.sh が env を焼き込んで生成（絶対パス手書き禁止）。
+`.gitignore` は deny-by-default（`*` + allowlist）で、state/vault/env の混入を構造的に不可能にする。
+
+## 10. TO-BE tree と残 TODO の最終形（§8 と整合、2026-07-18 時点）
+
+TO-BE tree = `docs/reference/2026-07-18-multi-loop-repo-structure-research.md` の TL;DR に §9 を合成
+（skills/gig-work/ 自己完結 + config/loop-registry.json + 私密は ~/.profitable-claude/）。
+
+残 TODO（順序厳守。番号は §8 と対応、TaskList 登録済み）:
+0. ①→② rsync 同期 + gig-cli.sh に detached 起動と新パスを同時折込（§8bis）
+1. ②の browser/_shared 依存解決検証
+2. dry 検証（本番 tmux は kill しない）
+3. plist 5本 + tmux の原子切替（唯一の停止リスク点）
+4. 旧配置 tombstone
+5. 散在コピー③④の処分判断
+6. 無停止検証（300s heartbeat + 旧 Label 復活ゼロ）
+7. config/loop-registry.json + README 台帳表の新設
+8. OSS 公開前 hygiene: §9 の保存規約実装（install.sh / .env.example / deny-by-default .gitignore / secret 混入 grep 監査）
+
+---
+
 ## 付録: 本 inventory 作成時の tool 非致命 exit（fablize gate 記録用）
 - `diff <(find①) <(find②)` が exit 1 → **正常**（差分ありで 1 を返す仕様）。
 - `ls SKILL.md` が exit 1 → **正常**（両コピーに SKILL.md が無いことの確認、期待どおり）。
