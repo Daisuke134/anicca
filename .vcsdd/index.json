@@ -188,7 +188,14 @@
       "language": "typescript",
       "currentPhase": "complete",
       "updatedAt": "2026-07-10T12:44:10.342Z"
+    },
+    "shared-marketing-engine": {
+      "status": "active",
+      "createdAt": "2026-07-18T10:09:18.993Z",
+      "mode": "lean",
+      "currentPhase": "1a",
+      "updatedAt": "2026-07-18T10:17:35.243Z"
     }
   },
-  "activeFeature": "spawn-funding-swap"
+  "activeFeature": "shared-marketing-engine"
 }

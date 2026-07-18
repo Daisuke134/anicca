@@ -310,3 +310,5 @@
 {"timestamp":"2026-07-10T12:33:48.601Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"3","to":"5","iteration":1,"phase":"5"}
 {"timestamp":"2026-07-10T12:44:02.138Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"5","to":"6","iteration":1,"phase":"6"}
 {"timestamp":"2026-07-10T12:44:10.344Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"6","to":"complete","iteration":1,"phase":"complete"}
+{"timestamp":"2026-07-18T10:09:18.996Z","event":"feature_created","featureName":"shared-marketing-engine","mode":"lean"}
+{"timestamp":"2026-07-18T10:17:35.287Z","event":"phase_transition","featureName":"shared-marketing-engine","from":"init","to":"1a","iteration":1,"phase":"1a"}

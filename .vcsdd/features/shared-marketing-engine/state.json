@@ -1,0 +1,25 @@
+{
+  "featureName": "shared-marketing-engine",
+  "mode": "lean",
+  "currentPhase": "1a",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-18T10:17:35.221Z",
+      "reason": "SHARED-1 lean spec: 1-page invariant list per global CLAUDE.md (no EARS, negative-test gated)"
+    }
+  ],
+  "iterations": {
+    "1a": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-shared-marketing-engine-1784369358994",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-18T10:09:18.993Z",
+  "updatedAt": "2026-07-18T10:17:35.243Z"
+}
