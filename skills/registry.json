@@ -13,6 +13,8 @@
       "summary": "Per-wake report: emails Dais 4 fields (AgentMail) + POSTs EIP-191 signed telemetry to aniccaai.com/.netlify/functions/telemetry.",
       "owner": "foundation",
       "alwaysAvailable": true,
+      "toolDescription": "Sends one per-wake status update: emails Dais 4 fields via AgentMail and POSTs an EIP-191-signed telemetry payload to aniccaai.com so the colony dashboard shows this instance is alive and what it did. Pick this when you want to surface your recent activity/state to the outside world -- it does NOT earn money, trade, or move any funds, so it never competes with an earn decision. It is alwaysAvailable, so calling it never costs you a capital-gated slot. Args are ignored: the script derives the wallet, balance, and recent tool-call summary itself from the daemon log and on-chain reads, so call it with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-economy REQ-201: non-earn per-wake telemetry/report utility; touches no capital -- must never be hidden by the bootstrap-reserve catalog gate."
     },
     "earn": {
@@ -33,6 +35,8 @@
       "summary": "Self-replication check: birth a child instance on Akash with its own EVM+Solana wallet and ERC-8004 identity -- no parent instruction needed for the child's first earn wake. THE UNDERLYING GATE (decideColonySpawn) IS ALREADY FAIL-CLOSED AND FREE TO CHECK: picking this slot when the colony is not yet spawn-eligible costs nothing and safely no-ops (reports eligible:false, appends zero rows, spends zero money) -- it never wastes funds or risks the treasury to check. WHEN the colony's own aggregate surplus has been growing (e.g. after a real trading profit or a parent seed), picking this slot is worth trying periodically to see if the real, live threshold has now been cleared -- you do not need to guess the exact number yourself, the gate computes and reports it honestly every time.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
+      "toolDescription": "Checks whether the COLONY-WIDE aggregate surplus (not just this instance's own balance) has cleared the spawn threshold, and if so births a brand-new child instance on Akash with its own EVM+Solana wallet and ERC-8004 identity -- no further instruction is needed for the child's first earn wake. Pick this periodically once you believe the colony's aggregate surplus has been growing (e.g. after a real trading profit or a parent seed), to see if the real, live threshold has now cleared; the gate itself is free to check and fail-closed, so calling it while the colony is broke safely no-ops (reports eligible:false, spends nothing, appends zero rows). Do not expect it to spawn every call -- most wakes it correctly reports not-yet-eligible with the honest shortfall. Args are ignored by the model-facing JSON contract; call with {} for a real attempt (the gate decides).",
+      "argsExample": {},
       "riskNote": "anicca-agent-spawn REQ-102/REQ-307: its own decision core (lib/treasury-gate.mjs::decideColonySpawn) already gates any real spawn attempt (lib/spawn-orchestrator.mjs::executeSpawnAttempt) on the COLONY-WIDE aggregate surplus clearing SPAWN_THRESHOLD_USD -- reading/considering this slot while the colony is broke cannot itself put a broke colony's treasury at risk."
     },
     "self/spawn-child": {
@@ -44,6 +48,8 @@
       "summary": "PREPARATION ONLY (firing deferred): read-only Akash self-spawn READINESS gate. Queries this instance's real AKT balance and compares it to spawn_cost_akt+buffer_akt (config.json) via a pure, unit-tested arithmetic gate (lib/akt-cost-gate.js) -- NOT-YET with exact shortfall, or READY with the documented funding route (Jupiter SOL->USDC -> Skip API 4-hop -> AKT -> ../spawn/scripts/akt-treasury.sh mint -> ../spawn/scripts/deploy-akash.sh). Never executes a swap/mint/send/deployment-create itself; the calling agent decides whether/when to actually fund+fire. Also ships the corrected image-independent SDL template (sdl/child.yaml, node:22-bookworm + git-clone boot, fixing the ghcr.io/conway-research default that was 401/down) which ../spawn/scripts/deploy-akash.sh now accepts via AKASH_SDL_TEMPLATE, plus a small backward-compatible RPC-endpoint-selection fix in ../spawn/scripts/{deploy-akash,akt-treasury}.sh (rpc[0] from meta.json can lack a port and fail to dial). NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) -- added directly by the builder per team-lead's Task #6 assignment; flagged for Foundation review.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
+      "toolDescription": "Read-only READINESS check for a DIFFERENT self-spawn route than self/spawn: it compares this instance's own real AKT balance against the documented Akash deploy cost + buffer and reports NOT-YET (with the exact shortfall) or READY (with the funding route to follow: swap SOL->USDC, bridge to AKT, mint, then deploy). Pick this when you want to know if YOUR OWN wallet specifically is close to being able to fund an Akash deployment -- it never swaps, mints, sends, or deploys anything itself; it only tells you where you stand so you (or self/spawn) can decide the next step. Safe to call anytime since it performs no side effects. Args are ignored; call with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-economy REQ-201: explicitly read-only per its own header comment (\"PREPARATION ONLY ... Never executes a swap/mint/send/deployment-create itself\")."
     },
     "self/issue-dev": {
@@ -55,6 +61,8 @@
       "summary": "SELF-IMPROVE: read own behaviour log (reverts/loop_detect), file ONE GitHub Issue on the mother so the colony fixes it. args.note optional.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
+      "toolDescription": "Reads this instance's own recent behaviour log (reverts, repeated loop_detect events, stuck patterns) and, if it finds a real actionable problem, files ONE GitHub Issue on the mother repo so a human or another agent fixes the underlying bug -- it does not fix anything itself. Pick this when you notice you keep failing the same way, a skill keeps erroring, or you feel stuck choosing actions and suspect the harness (not your judgment) is broken; it is a safe, no-cost way to escalate a genuine bug instead of silently repeating it. If there is no actionable problem in recent behaviour it exits cleanly with nothing filed -- calling it when things are healthy costs nothing but a wake. Optional args.note lets you add your own note about what to flag; omit it or pass {} to let it infer from the log alone.",
+      "argsExample": {"note": "hl_trade keeps returning exit 1 with no error text"},
       "riskNote": "anicca-agent-economy REQ-201: files a GitHub Issue from the instance's own logs; touches no funds."
     },
     "self/coordinate": {
@@ -66,6 +74,8 @@
       "summary": "INFO-SHARING (bot2bot): share ONE strategy lesson with the colony (args.note+args.topic) or poll peers' open lessons for a topic. Wires the already-tested skills/_shared/lib/bot2bot.py into an actual run_skill slot. NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) — added directly by the builder per team-lead's Task #4 assignment; Foundation-approved 2026-07-05.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
+      "toolDescription": "Lets this instance SHARE a strategy lesson with the rest of the colony, or POLL what peers have already learned about a topic -- info-sharing only, no money moves and no direct agent-to-agent negotiation. Pick this to SHARE after you learn something concrete worth other instances knowing (e.g. 'hl_trade funding-arb needs $5k+ notional to clear fees'): pass {\"note\":\"<the lesson>\",\"topic\":\"<earn-slot name, e.g. hl_trade>\"}. Pick this to POLL before repeating work another instance may have already done: pass {\"topic\":\"<earn-slot name>\"} with no note. Do not use it to ask another agent to DO something for you -- that is economy/gig, not this.",
+      "argsExample": {"note": "yield APY on Beefy dropped below Fluid; switched vaults", "topic": "yield"},
       "riskNote": "anicca-agent-economy REQ-201: bot2bot info-sharing via GitHub issue post/poll; touches no funds."
     },
     "economy/gig": {
@@ -88,6 +98,8 @@
       "summary": "contribute() = gate: realized-profit% -> human UBI pool, fail-closed (no profit/below threshold/would breach reserve = no-op). distributeAI() = gojo mutual-aid gate (REQ-DRAIN: registry+rate-limit+cap). Both COMPUTE+LOG only -- actual sends stay in the separate skills/ubi/execute-ubi.py, never auto-invoked. distributeHuman() is NOT reimplemented here -- it is the already-built skills/ubi/ human-funded outflow engine (ubi-payout-watcher.mjs), which this slot deliberately does not duplicate. NOTE: runtime/loop's run-skill.mjs::resolveSkillPath always looks for run.sh regardless of the registry 'entrypoint' field, so the actual run_skill entrypoint is run.sh (which wraps ubi.js) -- entrypoint left as ubi.js here to match the pre-declared contract, flagged for Foundation awareness.",
       "owner": "wf-a:earn",
       "risk": "safe",
+      "toolDescription": "Computes and LOGS (never sends) two things from your real recent numbers: whether you owe a share of realized profit to the human UBI pool (contribute, fail-closed -- no-ops if no profit, below threshold, or it would breach your reserve), and whether any other colony instance has fallen below the survival floor and needs mutual-aid (distributeAI, rate-limited + capped). Pick this after a profitable wake to log the UBI obligation, or periodically to check if a peer needs rescuing -- it never moves a single dollar itself, only decides+records; the actual transfer is a separate, later step. Safe to call anytime -- a no-op decision is still logged honestly. Args are ignored; call with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-economy REQ-201: contribute()/distributeAI() are fail-closed no-ops (no profit/below threshold/would breach reserve) by the skill's own code -- cannot deplete a broke instance's treasury."
     },
     "economy/lending": {
@@ -99,6 +111,8 @@
       "summary": "PEER-TO-PEER micro-lending among self-funded citizens: bookkeeping-only (REQ-103, zero model judgment over eligibility/sizing/servicing). Reads the real citizen registry + loans.jsonl + gojo-log.jsonl, filters to self-funded (REQ-111) + EVM-walleted (REQ-107) + co-located (REQ-112) citizens, deterministically selects the FIRST eligible (surplus lender, genuinely-broke borrower) pair this wake and attempts issuance at most once via the already-hardened executeLoanIssuanceAttempt (REQ-115), then unconditionally runs executeDefaultDetectionSweep (REQ-116). Today's real registry has zero eligible pairs (single Solana-only citizen) -- a clean, honest no-op until a second EVM-walleted, co-located citizen exists.",
       "owner": "wf-a:agent-economy",
       "risk": "safe",
+      "toolDescription": "Runs one deterministic pass of the colony's peer-to-peer micro-lending bookkeeping: reads the real citizen registry, finds at most ONE eligible (surplus lender, genuinely-broke borrower) pair among self-funded EVM-walleted citizens and attempts a single loan issuance, then always runs a default-detection sweep over existing loans. You are NOT choosing who lends to whom or how much -- the eligibility/sizing/servicing logic is fixed code, not model judgment; this slot exists so the sweep and any eligible issuance actually happen on a wake. Pick this periodically as routine colony upkeep, not in response to a specific decision you want to make. With today's small colony it usually reports a clean no-op (no eligible pair) -- that is expected, not a failure. Args are ignored; call with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-lending REQ-111: a human-funded entity can never appear in either role -- isSelfFunded() gates both at REQ-101/102 with zero bypass; anicca-agent-lending REQ-117: `runtime/loop/prompt.mjs::liveSlotNames` requires status:'live' for this entry to ever be reachable from a real wake -- confirmed via direct reading this sprint, mirrors economy/ubi's own riskNote's identical resolveSkillPath-always-uses-run.sh disclosure."
     },
     "cook": {
@@ -110,6 +124,8 @@
       "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
       "owner": "wf-a:earn",
       "alwaysAvailable": true,
+      "toolDescription": "Runs a real web search for a NEW way to earn (e.g. an unexplored paid API, marketplace, or protocol) and surfaces real candidate URLs -- it only DISCOVERS leads, it never builds, sells, or trades anything itself. Pick this when you have no strong idea what to do next, want to diversify beyond your current earn slots, or an earn path has gone stale/dead ($0 for many wakes). Follow up by actually reading/testing what it finds and acting on it (build, sell, wire up a new slot) -- a URL alone is not income. It is alwaysAvailable and touches no capital, so it never competes with the earn-capital gate. args.query is your own curiosity/search term (e.g. \"new x402 paid API\"); if you pass nothing, it falls back to a rotating seed query so it never re-searches the exact same thing every wake.",
+      "argsExample": {"query": "new x402 paid API agents pay for"},
       "riskNote": "anicca-agent-economy REQ-201: web-search exploration only (surfaces candidate URLs); touches no capital -- must never be hidden by the bootstrap-reserve catalog gate."
     },
     "yield": {
@@ -120,6 +136,8 @@
       "spec": "PATCH6",
       "owner": "wf-a:earn",
       "summary": "Park idle USDC in best-APY vault (Beefy6.1%->Fluid). SET-AND-FORGET: do ONCE when you have idle cash, NOT every wake.",
+      "toolDescription": "Deposits your IDLE liquid USDC into whichever DeFi vault currently has the best APY (auto-picked, e.g. Beefy ~6% then Fluid ~5%) -- a bank deposit, not active trading. Pick this ONLY when you have real spendable USDC sitting above your compute reserve with nothing better to do with it; it is a set-and-forget action, so calling it again on money that is already parked just re-deposits idle cash you don't have and wastes a wake. Do NOT pick this every wake as a default -- re-yielding repeatedly with no new idle cash is treated as a failure pattern by the loop. This carries real smart-contract risk (funds are deposited on-chain), so only use it with cash you're comfortable parking. Args are ignored (best vault is auto-selected); call with {}.",
+      "argsExample": {},
       "risk": "capital",
       "riskNote": "anicca-agent-economy REQ-201: deposits real capital into a DeFi vault (Aave v3/Beefy) -- genuine smart-contract exposure. Open-position carve-out applies (hasOpenRiskPositionOf('yield')) so the WITHDRAW side stays visible below BOOTSTRAP_RESERVE_USDC even though NEW deposits are gated."
     },
@@ -142,7 +160,9 @@
       "status": "live",
       "spec": "PATCH6",
       "owner": "wf-a:earn",
-      "summary": "Runs your ALREADY-BUILT shop (7 fixed paid routes/prices in x402-sell/serve.mjs: research, compound-interest, calc, json-flatten, dns-lookup, whois, stock-quote) and keeps it advertised. There is NO product or price to choose — args are ignored. Call with {}. Your only job: bring buyers (colony forum, x402 directories).",
+      "summary": "Runs your ALREADY-BUILT shop (a preset catalog of paid routes served at /.well-known/x402.json, prices set in code) and keeps it advertised. There is NO product or price to choose — args are ignored. Call with {}. Your only job: bring buyers (colony forum, x402 directories).",
+      "toolDescription": "Starts (or keeps alive) your already-built x402 paid API shop -- a preset catalog of paid routes served at /.well-known/x402.json, with every product and price fixed in code (x402-sell/serve.mjs). Pick this as your RECURRING, $0-capital earner: it costs nothing to run and can be called every wake with no downside, since there is nothing to configure. There is NO product or price for you to choose or invent -- any sell/price-like args are silently ignored, so call it with {}. The entire job this slot leaves to you is DEMAND: advertise the shop where paying agents look (colony forum, x402 directories) so real buyers hit the paywalled routes; zero sales means a demand problem, not a product problem.",
+      "argsExample": {},
       "risk": "safe",
       "riskNote": "anicca-agent-economy REQ-201: its own registry summary says it best -- THE recurring $0-capital earner; runs/advertises a server, deploys no funds."
     },
@@ -211,6 +231,8 @@
       "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W2",
       "summary": "LIVE (W2): runs BlockRunAI/Franklin-Trading AS-IS via franklin-trading CLI. Agent researches/sizes/trades itself and pays its own model calls via x402 from its own Solana wallet 8Fpqd (APIキー不要). Wrapper = kill-switch + max-spend + trace. First real pass verified 2026-07-04 (agent's own verdict: bankroll too small for edge → wait).",
       "risk": "capital",
+      "toolDescription": "Runs the external Franklin-Trading CLI end-to-end against your own Solana wallet: it researches, sizes, and executes a trade itself in ONE self-contained run, paying its own model-call costs via x402 from the same wallet -- this slot is a thin kill-switch + max-spend + trace wrapper around that CLI, not a step-by-step trading tool you control move-by-move. Pick this when you want to attempt a real Solana trade and are willing to let the wrapped agent make the actual research/sizing/entry/exit decisions within the wrapper's spend cap. There is no separate close action -- each run is self-contained, so treat every call as a full attempt, not an open position you manage afterward. Only pick this if your bankroll is large enough to matter after fees; a prior real pass concluded the bankroll was too small for edge. Args are ignored by this slot's own contract; call with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-economy REQ-201: the Franklin-Trading CLI trades the instance's own Solana bankroll end-to-end within one self-contained run; no separate catalog-gated close action exists, so no open-position carve-out."
     },
     "earn/polymarket-trade": {
@@ -222,6 +244,8 @@
       "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W1",
       "summary": "LIVE (W1): runs BlockRunAI/polymarket-agent AS-IS from ~/.anicca-founder/agents/polymarket-agent. Agent does its OWN analysis/sizing/execution (BlockRun x402 + EOA sig_type=0). Wrapper = kill-switch + trace only. Seeded 2026-07-04: 5.98 USDC.e + 7.5 POL on Polygon.",
       "risk": "capital",
+      "toolDescription": "Runs the external polymarket-agent CLI end-to-end against your own Polygon wallet: it does its own market analysis, sizing, and order execution on Polymarket in ONE self-contained run -- this slot is a thin kill-switch + trace wrapper, not a market/side/size picker you control directly. Pick this when you want to attempt a real Polymarket prediction-market trade and are willing to let the wrapped agent choose which market and position within its own logic. There is no separate close action here -- each run is self-contained (the wrapped agent decides entry/exit/hold), so treat every call as a full attempt against your funded balance (seeded with USDC.e + POL on Polygon for gas), not a position you manage step by step afterward. Args are ignored by this slot's own contract; call with {}.",
+      "argsExample": {},
       "riskNote": "anicca-agent-economy REQ-201: the Polymarket agent trades the instance's own wallet end-to-end within one self-contained run; same reasoning as earn/sol-trade -- no distinct catalog-gated close action, so no open-position carve-out."
     }
   }

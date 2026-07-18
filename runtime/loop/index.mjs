@@ -38,6 +38,7 @@ import { isLooping } from './loop-detect.mjs';
 import { formatRecord } from './ledger-record.mjs';
 import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
 import { classifyEarnResult, defaultEarnLedgerPath } from './earn-detect.mjs';
+import { summarizeSkillResult } from './result-summary.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
 import { liveSlotNames } from './prompt.mjs';
 import { classifyLayer, capFailureDetail } from './harness-health.mjs';
@@ -142,6 +143,10 @@ let isProfitable;
 // reserve catalog gate below (filterCatalog) has real `riskTagOf`/`alwaysAvailableOf` inputs.
 let activeSkillSlots = [];
 let skillCatalog = {};
+// TOOL-2 Phase A: per-slot { toolDescription, argsExample } lifted verbatim from registry.json, only
+// for slots that actually define them. Kept parallel to skillCatalog (never replaces it) so a slot
+// missing toolDescription still falls back to its plain summary line — additive, backward-compatible.
+let skillToolDocs = {};
 let riskTagBySlot = {};
 let alwaysAvailableBySlot = {};
 // franklin-alwaysact-skill-router REQ-502: the FULL parsed registry object (not just the derived
@@ -170,6 +175,9 @@ let registryForAlwaysAct = null;
     for (const name of activeSkillSlots) {
       const slotDef = registry.slots[name] || {};
       skillCatalog[name] = slotDef.summary || '';
+      if (slotDef.toolDescription) {
+        skillToolDocs[name] = { toolDescription: slotDef.toolDescription, argsExample: slotDef.argsExample };
+      }
       riskTagBySlot[name] = slotDef.risk;
       alwaysAvailableBySlot[name] = slotDef.alwaysAvailable === true;
     }
@@ -610,6 +618,7 @@ async function runOneWake() {
     ts,
     activeSkillSlots: eligibleSkillSlots,
     skillCatalog,
+    skillToolDocs,
     positionsSummary,
     earnSteer,
     avoidSlot,
@@ -754,7 +763,10 @@ async function runOneWake() {
     // DEEP FEEDBACK FIX (Dais 2026-06-22): record a short summary of what the skill ACTUALLY returned
     // (cook's findings, x402's sales=0, yield's action) so the NEXT wake's prompt shows OUTCOMES, not
     // just "I ran cook" — the model was re-cooking the same query because it never saw the result.
-    ...(safeObservation ? { result: safeObservation.replace(/\s+/g, ' ').slice(0, 900) } : {}),
+    // TOOL-2 Phase A: skills' contract is "stdout emits one JSON line" — summarizeSkillResult prefers
+    // that structured last line over the raw slice so the next wake reasons over sales/errors instead
+    // of re-parsing raw logs.
+    ...(safeObservation ? { result: summarizeSkillResult(safeObservation) } : {}),
   };
 
   // Verify ledger line has no private key pattern (PROP-020)
