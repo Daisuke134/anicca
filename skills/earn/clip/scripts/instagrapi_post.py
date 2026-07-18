@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""CANONICAL SHARED POSTER — 全 marketing loop（clip / capafy / 将来の affiliate 等）が --handle で account を渡して共有。account 名を焼かない。web composer は dead-end につき廃止。"""
 # instagrapi-based IG Reel poster — the VERIFIED FREE posting method (2026-07-14), replaces the
 # web-composer post_reel.py which was a structural dead end (IG silently drops automated web posts).
 # Flow: pull the CloakBrowser's already-logged-in sessionid (avoids a fresh-login challenge) ->
