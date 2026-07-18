@@ -1,0 +1,124 @@
+{
+  "featureName": "capafy-skills-landing",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "complete",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-18T15:11:02.206Z",
+      "reason": "behavioral spec written"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-18T15:11:02.209Z",
+      "reason": "verification architecture written"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-18T15:12:10.420Z",
+      "reason": "spec review artifacts written"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-18T15:12:23.457Z",
+      "reason": "spec review PASS; begin RED tests",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-18T15:13:53.167Z",
+      "reason": "RED evidence: new feature test fails on missing generator; baseline passes",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-18T15:15:55.095Z",
+      "reason": "GREEN tests, live generator, and idempotence pass",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-18T15:29:38.480Z",
+      "reason": "full diff and production runtime review",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-18T15:29:38.484Z",
+      "reason": "implementation review PASS; begin formal hardening",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-18T15:31:52.558Z",
+      "reason": "formal verification, security sweep, and purity audit PASS",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-18T15:33:25.692Z",
+      "reason": "all convergence dimensions PASS",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1,
+    "complete": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-capafy-skills-landing-1784387340996",
+    "beads": []
+  },
+  "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-18T15:29:38.484Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "reviewer": "sol-main-verifier",
+        "blockingFindings": 0
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-18T15:33:10.010Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "findingCount": 0,
+        "blockingFindings": 0
+      }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-18T15:12:23.444Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "reviewer": "sol-main-self-review",
+        "blockingFindings": 0
+      }
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-18T15:09:00.982Z",
+  "updatedAt": "2026-07-18T15:33:25.693Z"
+}
