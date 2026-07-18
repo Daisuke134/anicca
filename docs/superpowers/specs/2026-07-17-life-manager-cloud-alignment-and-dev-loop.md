@@ -416,6 +416,11 @@ Fable=plan/verify、Sol(codex gpt-5.6)=executor の flowb で、各タスク PLA
 - **残 E2E（Dais 依存1点のみ）**: C7b call（23:45 イベント、T-10≈23:01/T-5≈23:06）で①日本語発話 ②T-5 に出る→23:11 TG「出た？」③「まだ」タップ→+lmtest 宛遅刻メール。これで #2/#6/#13 close。onboarding(#7) は実 /start 通し、ledger(#9) は実 call 後の lm_api_cost row で close。
 - **未実行（C7b 検証後の順）**: #4 rotate(13キー、prod 数分ダウン伴うので call 検証後)／#8b Unipile calendar／#10 repo 収斂／#11 TikTok bio(ブラウザ)／#12 dev loop D0。
 
+### §5c-5 進捗（2026-07-18 22:45）— LM-5 answered 記録が本番実証
+- C7b wake（start=23:45）: T-10(22:38, firm)=answered_at null（Dais 出ず）／**T-5(22:44, harsh)=answered_at `2026-07-18T13:44:44Z` 実記録**。→ LM-5 の markAnswered が本番 Supabase に書けた（遅刻検知フローの起点が動作）。
+- **T-0「出た？」設計制約（実装 shouldSendT0: `Date.parse(startIso) <= nowMs`）**: T-0 プロンプトは event start 到達後に送られる。C7b は start=23:45 なので「出た？」ボタンは 23:45 に自動発火 → Dais【まだ】タップで遅刻メール（#2/#6 の残り実往復はこの自動発火で閉じる）。テスト用に「今すぐ T-0」を出すには start≈now+15min かつ location=home 徒歩圏（travel 小）のイベントが要る（travel 大だと departure が過去化して T-10/T-5 が発火しない）。
+- LM-26（日本語）は T-5 録音（answered=録音あり）を whisper で検証予定。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
