@@ -384,7 +384,10 @@ test_registry_enforce_core **12/12**（回帰なし）。quality re-review 待�
   （openclaw `bb594d50`、cron/dispatcher 参照ゼロを grep 実測）。実削除は参照0 grep 後の別 PR
 - ④ founder コピーは anicca-daemon.sh:69 の rsync ミラー = ① の MOVED.md が自動伝播、個別処置不能・不要
   （最終解消は Task #20 + ① 実削除）
-- 残り: 走行中パスの完走（.last-pass 更新 + pass-report 新行）と明日 09:07 の hf-gig-daily-report 初回発火の確認
+- **完了確認（21:29 実測）**: 切替後初パスが 21:08 に全 step 完走（46分走行 = 旧10分制限では不可能、detached の
+  決定的証明）。.last-pass 更新・healthcheck「ALIVE+fresh」遷移・shuppin 2件成立（4313386/4244910 listing 編集）・
+  次パス自走開始。**Task #11 CLOSED、gig 移設 step0-6 全完了。gig の本番 = profitable-claude。**
+  残フォロー: 明日 09:07 の hf-gig-daily-report 初回発火確認（#12 で見る）
 
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
