@@ -7,6 +7,11 @@ const { makeComposioCalendar } = require("./calendar-composio.js");
 const { makeUnipileMail } = require("./mail-unipile.js");
 const { makeGogCalendar } = require("./calendar-gog.js");
 const { makeGogMail } = require("./mail-gog.js");
+const { makeCachedCalendar } = require("../calendar-cache.js");
+
+// CommonJS keeps this module alive for the process lifetime, so repeated getCalendar() calls from
+// separate life-logic modules share one wrapper. The cache itself remains intentionally in-memory.
+const cachedCalendars = new Map();
 
 // Resolve the transport kind, failing LOUD on an unrecognized LIFE_TRANSPORT rather than silently
 // defaulting (a typo'd env must not quietly route a local BYOK box at the cloud provider).
@@ -19,7 +24,20 @@ function resolveKind(opts) {
 }
 
 function getCalendar(opts = {}) {
-  return resolveKind(opts) === "gog" ? makeGogCalendar(opts) : makeComposioCalendar(opts);
+  const kind = resolveKind(opts);
+  const inner = kind === "gog" ? makeGogCalendar(opts) : makeComposioCalendar(opts);
+  if ((process.env.LM_CAL_CACHE || "").toLowerCase() === "off") return inner;
+
+  const identity = kind === "gog"
+    ? [kind, opts.account || process.env.GOG_ACCOUNT || "", opts.bin || process.env.GOG_BIN || "gog", opts.calId || "primary"]
+    : [kind, opts.apiKey || process.env.COMPOSIO_API_KEY || ""];
+  const key = JSON.stringify(identity);
+  let cached = cachedCalendars.get(key);
+  if (!cached) {
+    cached = makeCachedCalendar(inner, opts);
+    cachedCalendars.set(key, cached);
+  }
+  return cached;
 }
 
 function getMail(opts = {}) {
