@@ -18,6 +18,43 @@ x402 ゼロ→イチの唯一の道（順序固定）:
 ```
 検査器は監査済（self-pay / protocol-return / 自 probe を全部はじく）。次に $0 が動いたら100%本物。
 
+## ★★共有 vs 独立（設計の背骨、Dais 2026-07-18）★★
+
+各 agent は**別々の cloud に散る**のが本番。local に3体居るのは偶然（同じ Mac）であって設計ではない。
+だから「何を全員で共有し、何を各自が独立して持つか」を最初に固定する。混ぜたら cloud で崩壊する。
+
+```
+        ┌──────────── 共有 = anicca OSS repo（全員が git pull で受け取る）───────────┐
+        │  ・店のソフト（serve / resale / store ライフサイクル）                       │
+        │  ・商品レシピ（何を売るか = 決定的 code）                                    │
+        │  ・★self-improve の学び★（何が売れてるか = 競合偵察の成果）← 集合知の核心    │
+        │  ・loop エンジン / tool 定義 / prompt                                       │
+        │  ・検査器（verify-inflow = external をどう判定するか）                       │
+        │  ・colony 名簿（既知の身内 wallet 一覧 = 内部循環判定の共有台帳）             │
+        └───────────────────────────────┬────────────────────────────────────────┘
+                                        │ git pull / self-update で全員に配られる
+             ┌──────────────────────────┼──────────────────────────┐
+             ▼                          ▼                          ▼
+       franklin1 (cloud A)        franklin2 (cloud B)        franklin-N (他人のPC)
+       ─────────────────         ─────────────────         ─────────────────
+       独立（絶対に共有しない・各船が自分だけで持つ）:
+       ・自分の wallet + 秘密鍵    ・自分の wallet + 鍵       ・自分の wallet + 鍵
+       ・自分の payTo アドレス     ・自分の payTo            ・自分の payTo
+       ・自分の店（port/URL/launchd）                       ・自分の店
+       ・自分の売上 state（sales/attempts）                 ・自分の売上
+       ・自分の資金（float / 元手）                          ・自分の元手
+```
+
+**集合知の流れ**: 1体が「Exa 転売が売れる」と発見 → repo baseline に promote（git commit）→ **全員が pull して同じ商品を売り始める**。
+ただし**売るのは各自の wallet から独立に**。これが「共有された賢さ × 独立した経済」= コロニーの設計。
+（self-improve が死んでる今、この集合知は流れていない。X2-LOOP が繋ぐ。）
+
+## ★★エンジニアリング規律（Dais 2026-07-18）: superpowers で spec→test→verify★★
+
+今まで失敗してきたのは best practice を踏んでないから。**重い vcsdd でなく superpowers skill**で回す:
+`brainstorm`（何を作るか合意）→ `write-plan`（1ページ）→ `execute-plan`（TDD: 赤→緑）→ 自分で E2E verify。
+「コンパイル通った」で完了と言わない。**外部1ドルが on-chain に載るまで完了はゼロ。**
+
 ## ★★INV-EXT（HARD 不変条件、Dais 2026-07-18）: 内部循環は稼ぎではない — 禁止★★
 
 1. **「稼いだ」= 外部（colony 外の財布）からの入金のみ。** self-pay(colony 4 wallet + マシン既定 identity `0xB9dd3B67…`)は何件 settle しても収益 $0 として扱う。ledger・報告・READMEの数字に混ぜたら虚偽。
