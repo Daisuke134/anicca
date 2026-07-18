@@ -67,6 +67,30 @@ fi
 log "WARM: warm_step.py"
 "$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
+# ── PROVISION (1-loop-1-acc, replace-on-cold, NO HUMAN). v38 root-cause fix: the live loop had
+# NO account-creation step, so once its only account went cold (poisoned) it just gave up every
+# pass ("ready_account=none" → exit) and posted nothing for days. Here the loop CREATES a fresh
+# account on the home residential IP (0-phone / 0-captcha, proven with @aiclipsvault /
+# @useclaudeskills) whenever no usable account exists. Skipped entirely (no LLM cost) when a
+# usable account is already present. run.sh below resolves status==ready dynamically, so a newly
+# provisioned ready account is picked up on THIS same pass. ──
+USABLE_ACCTS=$("$PY" - "$CLIP_ACCTS" <<'PYJSON' 2>/dev/null
+import json,sys
+try: a=json.load(open(sys.argv[1]))
+except Exception: a=[]
+def ok(x):
+    s=(x.get("status") or "").lower()
+    if s not in ("ready","warming"): return False
+    if "poison" in s or "frozen" in s or "blocked" in s: return False
+    return True
+print(sum(1 for x in a if ok(x)))
+PYJSON
+)
+log "PROVISION: usable_accounts=${USABLE_ACCTS:-0}"
+if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
+  step "PROVISION" "STEP PROVISION (1-loop-1-acc, replace-on-cold, ZERO human): clip-accounts.json (~/.cloak/clip-accounts.json) has NO usable account (none with status ready/warming that is not poisoned/frozen/blocked), so CREATE one brand-new IG account NOW and register it as the sole active clip account. Follow the ig-account-create skill at ~/.claude/skills/ig-account-create/SKILL.md EXACTLY as proven for @aiclipsvault and @useclaudeskills. HARD RULES: (a) drive the RUNNING CloakBrowser daily-driver on CDP :9222 via cdp_incognito.py — an isolated context in a NEW tab; NEVER touch or close any existing tab. (b) residential home IP, NO proxy (a fresh/cold proxy IP triggers a phone wall — do not use one). (c) email = a fresh Gmail plus-address keiodaisuke+aiclips<random-tag>@gmail.com; read the 6-digit OTP via 'gog gmail search --account keiodaisuke@gmail.com \\\"instagram in:anywhere newer_than:1h\\\" --max 3 --plain' (OTP often lands in SPAM, so in:anywhere is required). (d) IG email-signup on this home IP needs NO phone and NO captcha — do NOT do the phone flow; if IG unexpectedly forces a phone number or a text-CAPTCHA, STOP and report provision-blocked:<reason> (do NOT buy an SMS number, do NOT switch to a proxy). (e) fill every field with TRUSTED typing (cdp.py insert), DOB via clickxy with scrollIntoView. Then: setup_profile.py --tid <TID> --icon <a $0 PIL monogram png> --bio \\\"one-line AI / money / wealth bio, NO link\\\" --username <handle> (DAY-0: NO commercial link in bio — a day-0 link = suspension). Then run instagrapi login-once so the golden session file ~/.cloak/instagrapi-<handle>.json is saved (this is what lets the loop post forever without logging in again). FINALLY append ONE entry to ~/.cloak/clip-accounts.json: {\\\"handle\\\":\\\"<handle>\\\",\\\"profile\\\":\\\"clip-en<n>\\\",\\\"port\\\":<a FREE port that is NEITHER 9222 NOR 9223 — check with 'lsof -i -P' first>,\\\"lang\\\":\\\"en\\\",\\\"status\\\":\\\"ready\\\",\\\"session_owner\\\":\\\"instagrapi\\\",\\\"created\\\":\\\"<today YYYY-MM-DD>\\\"}. CRITICAL: the port field MUST be present and MUST NOT be 9222 or 9223 (run.sh silently defaults a missing port to 9222 = Dais's personal daily-driver — a wrong-account post hazard). Read the file back and verify the new entry parses and has a valid non-9222/9223 port before you finish. Report: handle + port + golden-session-saved(yes/no), or provision-blocked:<reason>."
+fi
+
 # ── PRODUCE (deterministic: producer.sh makes a captioned 1080x1920 clip into the queue) ──
 log "PRODUCE: producer.sh"
 bash "$C/producer.sh" >/dev/null 2>&1 || log "producer rc=$?"
