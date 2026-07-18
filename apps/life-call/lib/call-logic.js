@@ -407,7 +407,7 @@ function buildCallPrompt(event, urgency, lang, name) {
       tone,
       "そのあと、道順や行き方が必要か尋ねてください。",
       jaOpen,
-      "★ 100% 日本語で話してください。★",
+      "★ lang=ja のため、最初の挨拶から日本語のみで話してください。相手が別の言語で話しかけた場合は、その言語に追従して構いません。★",
     ].filter(Boolean).join(" ");
   }
 

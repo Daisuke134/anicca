@@ -17,6 +17,7 @@ const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
 const { sendLateNotice } = require("./lib/notify.js");
+const { langForPhone } = require("./lib/call-language.js");
 const {
   processWakeRows, deliverLateNotice, listWakeRows,
   claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
@@ -110,12 +111,6 @@ async function maybeAlertLowBalance(errorMsg, nowMs = Date.now()) {
   }
   await sendMessage(token, chatId, `⚠️ Telnyx balance too low — Life Manager wake calls are NOT firing.\n${errorMsg}`)
     .catch((e) => console.error("[scheduler] low-balance alert send failed", e && e.message));
-}
-
-// Pick the call language from the user's phone number: +81 (Japan) → Japanese, everyone else → English
-// (Dais 2026-06-22). Used as the FALLBACK when the user hasn't explicitly chosen a language.
-function langForPhone(phone) {
-  return String(phone || "").replace(/[^\d+]/g, "").startsWith("+81") ? "ja" : "en";
 }
 
 // Resolve the call language for a user row: their EXPLICIT choice (lm_users.call_language, set via the

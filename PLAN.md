@@ -39,3 +39,19 @@ Rules: no deploys, no secret access, no prod API calls, migrations は ADD COLUM
 質問: `~/.agents/skills/agmsg/scripts/send.sh lm sol-codex fable-main '<質問>'`
 受信: `~/.agents/skills/agmsg/scripts/inbox.sh lm sol-codex`
 完了報告も同経路: 「DONE + 変更ファイル一覧 + npm test 結果末尾 20 行」。
+
+---
+
+# PLAN 追記 — LM-26: call の AI 発話を日本語にする（同 branch に積む）
+
+実測事実: 2026-07-18 の C1v2 実録音（whisper 文字起こし）で AI が英語で発話した。ユーザーは日本の番号(+81)。
+done 条件（goal 正本）: 「AI が日本語で発話」。
+
+## 不変条件（MUST）
+1. まず現状配線を実読: scheduler.js の langForPhone → buildStreamUrl → server.js /ws ctx → Gemini system prompt のどこで言語が落ちているかを特定し、PLAN 末尾に1行で記録する（推測禁止、grep/Read で）。
+2. +81 ユーザーの wake call は **挨拶から日本語**。Gemini への system instruction に「lang=ja なら日本語のみで話す」を明示注入。
+3. ユーザーが通話中に他言語で話しかけたら追従してよい（barge-in 会話の自然さを壊さない）。
+4. lang 決定ロジックは pure function 化し node --test を追加（+81→ja、+1→en、不明→en）。既存テスト全 green 維持。
+5. 変更は apps/life-call/** のみ。commit するな。完了は agmsg で DONE 報告（変更ファイル + npm test 末尾）。
+
+原因特定: `langForPhone(+81) → buildStreamUrl(lang=ja) → server.js /ws ctx(lang=ja) → Gemini systemInstruction` は保持されていたが、setup 完了後の開始 turn が常に英語の `Begin the call now with your opening line.` だったため、初回発話を英語へ誘導していた。

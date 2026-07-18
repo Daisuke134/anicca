@@ -29,6 +29,7 @@ const {
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { openingTurnForLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
 const { inngest } = require("./inngest/client.js");
@@ -446,7 +447,7 @@ wss.on("connection", (carrierWs, req) => {
       let msg;
       try { msg = JSON.parse(data.toString()); } catch { return; }
       const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
-      if (r.kind === "setupComplete") geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
+      if (r.kind === "setupComplete") geminiSend(buildGeminiTurn(openingTurnForLang(lang)));
       if (r.kind === "audio") gotAudio = true;
       // Barge-in: the caller spoke over Charon (Gemini server-VAD). Flush Telnyx's queued playback so
       // the caller is heard immediately instead of talked over.
