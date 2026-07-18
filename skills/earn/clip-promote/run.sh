@@ -18,6 +18,11 @@ PY=/opt/homebrew/bin/python3
 NODE=/opt/homebrew/bin/node
 [ -x "$NODE" ] || NODE=node
 [ -x "$PY" ] || PY=python3
+# SHARED-1 (INV-5): posting reads go through instagrapi_post.py (earn/clip), the free
+# instagrapi-based poster -- shares the same self-healed venv as earn/clip and earn/video.
+INSTA_VENV="$HOME/.cache/instagrapi-venv"
+INSTA_PY="$INSTA_VENV/bin/python"
+INSTA_POSTER="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
 
 # env (own-identity only; PII is NOT scrubbed by the harness — we keep it out of the RECORD subprocess).
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
@@ -164,7 +169,7 @@ json.dump(d,open(p,'w'))" 2>/dev/null
     emit "clip:produced-for-$SLUG (queued in ~/clips/queue-clip-promote, ready for POST)"; exit 0
     ;;
   POST)
-    # REQ-4: post via ig-reels-poster to a WARMED account only (~/.cloak/clip-accounts.json
+    # REQ-4: post via instagrapi_post.py (earn/clip) to a WARMED account only (~/.cloak/clip-accounts.json
     # status=="ready"). Currently only @aiclipsvault (port 9223) is ready -- the SAME account
     # the earn/clip loop itself posts to. KNOWN RISK (not yet mitigated): two independent
     # loops (earn/clip hourly, earn/clip-promote every 2h) could in principle race for the
@@ -189,12 +194,14 @@ json.dump(d,open(p,'w'))" 2>/dev/null
     [ -n "$CLIP_FILE" ] || { emit "post:no-clip-in-queue"; exit 0; }
     CAP_FILE="${CLIP_FILE%.mp4}.txt"
     [ -f "$CAP_FILE" ] || CAP_FILE="/dev/null"
-    POSTER="$HOME/anicca-project/.claude/skills/ig-reels-poster/scripts/post_reel.py"
-    # post_reel.py has NO --dry flag -- dry is its DEFAULT (omitting --live IS the dry-run);
-    # passing --dry made argparse exit(2) with "unrecognized arguments: --dry" before any
-    # browser step ran (confirmed live 2026-07-04: manual run without --dry reached DRY-ok
-    # with real screenshots of the caption+share step; with --dry it failed instantly).
-    RES="$(CDP_PORT="$ACCT_PORT" run_step "$STEP_DEADLINE_S" "$PY" "$POSTER" --video "$CLIP_FILE" --caption-file "$CAP_FILE" --handle "$HANDLE" 2>/dev/null | tail -1)"; rc=$?
+    if [ ! -x "$INSTA_PY" ]; then
+      /opt/homebrew/bin/python3 -m venv "$INSTA_VENV" >/tmp/clip-promote-insta-venv.log 2>&1
+      "$INSTA_PY" -m pip install --quiet instagrapi websocket-client pillow >/tmp/clip-promote-insta-pip.log 2>&1 || true
+    fi
+    # instagrapi_post.py has NO --dry flag -- dry is its DEFAULT (omitting --live IS the dry-run):
+    # it logs in and stops (outcome="dry") before ever touching clip_upload (SHARED-1 INV-5:
+    # a login-only check, replacing the prior web-composer dry-verify).
+    RES="$(CDP_PORT="$ACCT_PORT" run_step "$STEP_DEADLINE_S" "$INSTA_PY" "$INSTA_POSTER" --video "$CLIP_FILE" --caption-file "$CAP_FILE" --handle "$HANDLE" --port "$ACCT_PORT" 2>/dev/null | tail -1)"; rc=$?
     blocked_or "post-dry-verify" "$rc" "post:dry-verify-failed"
     emit "post:dry-verify-ok-for-$HANDLE-campaign-tags-not-yet-applied-staying-dry: $RES"
     exit 0

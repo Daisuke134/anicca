@@ -6,6 +6,12 @@
 # EVERY step incl. the affiliate link is a transition here — never a manual後工程.
 set -uo pipefail
 SK="$HOME/anicca/skills/earn/video"; PY=/opt/homebrew/bin/python3
+# SHARED-1: the free VERIFIED posting path is instagrapi_post.py (earn/clip), not the retired
+# post_reel.py web composer (structural dead end, IG silently drops automated web posts). It needs
+# the instagrapi package, so it always runs under this dedicated venv (self-healed below, shared
+# with earn/clip -- never installed into the bare $PY used for this script's own glue logic).
+INSTA_VENV="$HOME/.cache/instagrapi-venv"
+INSTA_PY="$INSTA_VENV/bin/python"
 export PATH="$HOME/.local/bin:$PATH"
 # Delegates to the shared helper (anicca-spawn-identity-resolution-fix REQ-003/FIND-001) instead of
 # sourcing $HOME/.openclaw/.env directly under `set -a`, which would otherwise clobber this caller's
@@ -136,7 +142,12 @@ print('1' if ok else '0')" 2>/dev/null)
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
     VFYBUD=$(( TIMEOUT / 10 )); GENBUD=$(( TIMEOUT * 4 / 10 )); POSTBUD=$(( TIMEOUT * 3 / 10 ))   # ★ FIND-604: sum=0.8×TIMEOUT, headroom for glue/writes so kills are exceptional, not the norm ★
-    PR="$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+    PR="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+    IG_PORT=9222
+    if [ ! -x "$INSTA_PY" ]; then
+      /opt/homebrew/bin/python3 -m venv "$INSTA_VENV" >/tmp/ev-insta-venv.log 2>&1
+      "$INSTA_PY" -m pip install --quiet instagrapi websocket-client pillow >/tmp/ev-insta-pip.log 2>&1 || true
+    fi
     if [ "$DRY" = 1 ]; then
       timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/dev/null 2>&1 || true
       set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"post_attempt_date\": \"$TODAY\"}"; DID="[DRY] would post reel"
@@ -149,12 +160,15 @@ print('1' if ok else '0')" 2>/dev/null)
       #   when the context is actually gone. On failure (OTP/captcha not solved this attempt) keeps the old
       #   TID so the pre-existing "unauthoritative → abort, retry next wake" safety below still applies. ★
       EPC_BUD=$(( TIMEOUT / 6 )); [ "$EPC_BUD" -lt 30 ] && EPC_BUD=30
-      EPC_OUT=$(timeout "$EPC_BUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/ensure_post_context.py" --port 9222 --creds "$CREDS" 2>/tmp/ev_postctx.log | tail -1)
+      EPC_OUT=$(timeout "$EPC_BUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/ensure_post_context.py" --port "$IG_PORT" --creds "$CREDS" 2>/tmp/ev_postctx.log | tail -1)
       if [ -n "$EPC_OUT" ] && ! printf '%s' "$EPC_OUT" | grep -q ERROR; then TID="$EPC_OUT"; fi
       # ★ FIND-502 fix: ONE verify-only call serves BOTH (a) reconcile — if a prior attempt TODAY was timeout-killed
       #   AFTER シェア (post_attempt_date==today, last_post_date unset) and a reel appeared that wasn't in pre_reels,
-      #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt. ★
-      timeout "$VFYBUD" $PY "$PR" --video /dev/null --caption-file /dev/null --handle "$HANDLE" --tid "$TID" --verify-only >/tmp/ev_vfy.log 2>&1 || true
+      #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt.
+      # SHARED-1 (INV-4): reads via instagrapi_post.py --verify-only (instagrapi API), not the
+      # retired post_reel.py browser-DOM read. ensure_post_context.py above still keeps the
+      # daily-driver tab logged in as the tier2 sessionid fallback inside login_resilient(). ★
+      timeout "$VFYBUD" env CDP_PORT="$IG_PORT" "$INSTA_PY" "$PR" --handle "$HANDLE" --port "$IG_PORT" --verify-only >/tmp/ev_vfy.log 2>&1 || true
       # ★ FIND-601: parse VOK (authoritative success) + CUR (reels, compact JSON, no spaces). VOK=1 ONLY when the
       #   verify_only line had ok==true. A failed/aborted verify (not-logged-in, account-guard None, timeout) → VOK=0. ★
       read VOK CUR < <($PY -c "import json
@@ -206,17 +220,20 @@ c.sort(key=os.path.getmtime, reverse=True)
 print(c[0] if c else '')" 2>/dev/null)"
         if [ -n "$MP4" ]; then
           printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
-          # ★ FIND-001: account is warmed (warmup_day>=7) → post LIVE (affiliate link optional for posting). ★
-          timeout "$POSTBUD" $PY "$PR" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" --live >/tmp/ev_post.log 2>&1 || true
-          # ★ FIND-401: mark posted ONLY when post_reel VERIFIES published==true AND non-empty post_url; else leave last_post_date unset → retry, report REAL failure. ★
+          # ★ FIND-001: account is warmed (warmup_day>=7) → post LIVE (affiliate link optional for posting).
+          # SHARED-1 (INV-1/INV-2): publishes via instagrapi_post.py --live (the verified-free path), not
+          # the retired post_reel.py web composer. ★
+          timeout "$POSTBUD" env CDP_PORT="$IG_PORT" "$INSTA_PY" "$PR" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --port "$IG_PORT" --live >/tmp/ev_post.log 2>&1 || true
+          # ★ FIND-401 (adapted, SHARED-1 INV-2): mark posted ONLY when instagrapi_post.py VERIFIES
+          #   outcome=="published" AND non-empty post_url; else leave last_post_date unset → retry, report REAL failure. ★
           PURL=$($PY -c "import json
 u=''
 try:
   for l in open('/tmp/ev_post.log'):
     l=l.strip()
-    if l.startswith('{') and 'published' in l:
+    if l.startswith('{') and 'outcome' in l:
       d=json.loads(l)
-      if d.get('published') is True and d.get('post_url'): u=d['post_url']
+      if d.get('outcome')=='published' and d.get('post_url'): u=d['post_url']
 except: u=''
 print(u)" 2>/dev/null)
           if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"

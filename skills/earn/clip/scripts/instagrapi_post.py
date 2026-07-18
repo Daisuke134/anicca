@@ -308,6 +308,39 @@ def keepalive_main(handle, settings_path=None, accounts_path=None, client_factor
     return res
 
 
+def verify_only_main(handle, port, settings_path=None, accounts_path=None, client_factory=None):
+    # SHARED-1 (INV-3): read-only replacement for post_reel.py's browser-DOM --verify-only mode —
+    # returns the account's current reel/post hrefs via the instagrapi private API (no browser DOM
+    # read needed). Used by self_heal.py and earn/video/run.sh to reconcile a possibly-landed post
+    # without risking a double-post. NEVER posts; the shape ({"ok", "reels"}) matches what those two
+    # callers already parse from the old post_reel.py verify-only JSON.
+    res = {"handle": handle, "verify_only": True, "ok": False, "reels": []}
+    if client_factory is None:
+        from instagrapi import Client
+        client_factory = Client
+    cl = client_factory()
+    cl.delay_range = [2, 5]
+    apply_proxy(cl, handle, res, accounts_path)
+    cl.challenge_code_handler = make_gmail_handler(handle)
+    if not login_resilient(cl, handle, port, res, settings_path, accounts_path):
+        return res
+    try:
+        medias = cl.user_medias(cl.user_id, amount=12)
+        reels = []
+        for m in medias:
+            d = m.model_dump() if hasattr(m, "model_dump") else m.dict()
+            code = d.get("code")
+            if not code:
+                continue
+            kind = "reel" if d.get("product_type") == "clips" else "p"
+            reels.append(f"/{handle}/{kind}/{code}/")
+        res["reels"] = reels
+        res["ok"] = True
+    except Exception as e:
+        res["error"] = f"{type(e).__name__}: {str(e)[:200]}"
+    return res
+
+
 def get_sessionid(port):
     tabs = json.load(urllib.request.urlopen(f"http://localhost:{port}/json/list"))
     tid = next(t["id"] for t in tabs if t.get("type") == "page" and "instagram.com" in (t.get("url") or ""))
@@ -336,11 +369,15 @@ def main():
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--keepalive", action="store_true",
                      help="read-only golden-session probe; no post, never logs in")
+    ap.add_argument("--verify-only", action="store_true",
+                     help="read-only: return the account's current reel/post hrefs; no posting (SHARED-1 INV-3)")
     a = ap.parse_args()
     if a.keepalive:
         print(json.dumps(keepalive_main(a.handle), ensure_ascii=False)); return
+    if a.verify_only:
+        print(json.dumps(verify_only_main(a.handle, a.port), ensure_ascii=False)); return
     if not a.video or not a.caption_file:
-        ap.error("--video and --caption-file are required unless --keepalive")
+        ap.error("--video and --caption-file are required unless --keepalive/--verify-only")
     res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
     try:
         caption = open(a.caption_file, encoding="utf-8").read().strip()

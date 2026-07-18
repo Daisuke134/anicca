@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Shared pure verification logic for the clip-earn IG-reel posting/self-heal pipeline.
 
-Used by both post_reel.py (~/.claude/skills/ig-reels-poster/scripts/) and this
-directory's self-heal driver (reel_verify_selfheal.py). One implementation, no
-duplicate/drifting logic across the two call sites.
+Used by both instagrapi_post.py (this directory's scripts/, SHARED-1 -- replaces the
+retired post_reel.py web-composer poster) and this directory's self-heal driver
+(self_heal.py). One implementation, no duplicate/drifting logic across the two call sites.
 
 Per .vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md
 (REQ-001..REQ-010, PROP-001..PROP-011): every function here is PURE (no I/O, no
