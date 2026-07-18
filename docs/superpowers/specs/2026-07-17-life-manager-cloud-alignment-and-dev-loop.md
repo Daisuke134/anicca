@@ -427,6 +427,11 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 - **LM-27 新バグ（voicemail を answered 誤判定）**: 録音冒頭「この通話は留守番電話に転送されました。発信先は現在電話に出ることができません」= **Dais は出ていない**。なのに lm_wake_log の answered_at が入った（前 §5c-5 の「answered 実証」は voicemail 誤判定だった）。真因 = server.js:543 が record_start 成功=answered と近似、voicemail でも record_start は成功。→ Telnyx AMD / call.answered webhook で人間 pickup と voicemail を区別する fix が必要（TaskList #14）。
 - 教訓: DB の answered_at だけ見て「出た」と判定したのが誤り。実 side-effect（録音の中身）を whisper で聞くまで close しない、を厳守。
 
+### §5c-7 flowa 移行（2026-07-18 23:10、Dais 指示）
+- LM-26 lang fix が prod live 確認（`/health build=lm26-lang-fix-v1`、deploy 5c6c2772）。実 call 再検証は明日の短経路イベントで（handover 手順）。
+- **以後 flowa**: Fable=plan + 最終実測のみ（context 節約）、Sol(codex)=実装、別 Sol(fresh codex)=review。実装レビューまで Sol に委譲、Fable は npm test 独立再実行 + 実 side-effect（録音/DB/curl）だけ担う。
+- 次の実装順（1本ずつ flowa）: **#14 LM-27(voicemail→answered 誤判定 fix、Telnyx AMD/webhook)** → #4 rotate → #8b Unipile calendar → #10 repo 収斂 → #11 TikTok bio → #12 dev loop D0。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
