@@ -403,7 +403,11 @@ app.get("/openapi.json", (_req, res) =>
     openapi: "3.1.0",
     info: {
       title: "Anicca x402 seller", version: "1",
-      "x-guidance": "Deterministic pay-per-call primitives + web research, priced in USDC on Base via x402. GET each path with its query params; a 402 challenge carries the payment requirements, pay it, retry with X-PAYMENT.",
+      // X4/discovery: x402scan/Bazaar rank on metadata quality + verify ownership via info.contact.
+      // Own-identity contact only (aniccaai.com is Anicca's own OSS domain, never a user's PII).
+      description: "Live web search (keyless — no Exa/API account needed, we pay upstream) and real-time cross-exchange crypto funding-rate data + arbitrage signals, paid per call in USDC on Base via x402. For AI agents that need live data without holding any API keys.",
+      contact: { name: "Anicca", email: "contact@aniccaai.com", url: "https://aniccaai.com" },
+      "x-guidance": "Live pay-per-call data (web search resale + cross-exchange funding rates), priced in USDC on Base via x402. GET each path with its query params; a 402 challenge carries the payment requirements, pay it, retry with X-PAYMENT.",
     },
     paths: Object.fromEntries(PRODUCTS.map((p) => [p.path, {
       get: {
