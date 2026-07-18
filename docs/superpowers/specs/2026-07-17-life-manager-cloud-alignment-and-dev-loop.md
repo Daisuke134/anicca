@@ -395,6 +395,12 @@ dev loop（別 repo）: ~/profitable-claude/skills/life-manager-dev/（全 user 
 - **LM-5 v1 実装完了（Sol/codex、flowb）**: branch `feature/lm5-late-notice` commit `6c4b5ffe2` push 済み。T-0「出た？」送信（wave1 に無かった事を Sol が実読で発見）+ late:ok/still callback（HMAC token、新列不要）+ 10min DB 駆動 fallback + atomic dedup。npm test 全 green を Fable が独立再実行で確認。migration `2026-07-18-lm-wake-log-late-notice.sql`（additive 2列、**Supabase 未適用**、デプロイ時に適用）。merge は staging(#5) green 後。
 - A1 テストイベント「MUIT 集会」（明日 10:00、location 無し）作成済み — ask loop の resolved_from 記録待ち。
 
+### §5c-3 進捗（2026-07-18 22:10 実測）— LM-5/LM-26/LM-18 本番入り
+- **✅ LM-18 close**: staging = `life-call-staging-staging.up.railway.app`（CLI service、GitHub 非連動、secrets 最小構成 = TELNYX/TG/GEMINI 無し → 誤発信ゼロ設計、SUPABASE のみ共有）。smoke `scripts/lm-staging-smoke.sh` exit 0 実測。**staging デプロイの正手順: `railway up --path-as-root <repo_root> -e staging -s life-call-staging`**（service rootDirectory=apps/life-call のため archive は repo root 必須。watchPatterns は snapshot 比較で CLI up を skip させるので GraphQL `serviceInstanceUpdate` で [] に変更済み 2026-07-18）。
+- **✅ LM-5+LM-26 本番デプロイ**: PR #301(→dev)→#302(→main) merge、prod deployment `ad85171b` SUCCESS、prod /health `build=lm5-ja-v1` 実測。migration 適用は Supabase Management API `POST /v1/projects/{ref}/database/query`（SUPABASE_ACCESS_TOKEN）で実行→SELECT 検証済み。
+- LM-26 真因: lang=ja は ws ctx まで届いていたが、setup 後の開始 turn が英語ハードコード（"Begin the call now…"）だった。
+- 残 E2E（C7 イベント 23:00 仕込み済み、attendee=keiodaisuke+lmtest@gmail.com）: 日本語 call（LM-26 close）/ T-0「出た？」ボタン（LM-23 #2 close）/「まだ」→実メール（LM-5 #6 close）。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
