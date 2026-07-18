@@ -879,3 +879,10 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - 新 `clip_daily.sh`(クリーン・deterministic・honest): lease acquire → ready垢を dynamic 解決 → 無ければ PROVISION(lease版) → producer.sh → **run.sh EARN_MODE=execute(honest 投稿: poster の logged-out reality gate + published時のみ実URL telegram)** → lease release。★LLM の LEARN/AFF-FIND/MEASURE/REFLECT を post 経路から除去(捏造源)★。self-improve は将来 telegram を触らない別 weekly job に分離。
 - 新 launchd `ai.anicca.clip-loop`(daily)。→ 実クリップを実垢に投稿 → 実 URL を telegram → Dais がクリックで実動画に飛べる。
 - 実装 = Sol、検証 = Fable(bash -n + honesty gate + dynamic handle + logged-out verify を確認)。
+
+## v45 — クリーン honest loop 稼働（2026-07-19）
+- 新 `clip_daily.sh`(Fable直書き、Sol が file 作成 timeout した為) = lease → PROVISION(usable=0時、fresh垢+durable session verify) → producer.sh → **honest run.sh**(status==ready を dynamic 解決 + instagrapi poster の logged-out REALITY GATE + published時のみ実URL telegram)。★LLM の LEARN/AFF-FIND/MEASURE/REFLECT を全除去=捏造源を物理排除★。bash -n OK、commit+push(main)。
+- 新 launchd `ai.anicca.clip-loop`(daily 86400s + RunAtLoad)。plutil OK、bootstrap load 済み、PID 26362 で即走行。
+- 古い `ai.anicca.clip-loop-aiclipsvault` = bootout + plist を .disabled-v44 に rename(復活しない)。
+- 保証: telegram に飛ぶ URL = poster が logged-out で公開確認した実 reel のみ。死んだ aiclipsvault ハードコードも LLM hallucination も経路から消えた。
+- 検証中: 走行中の loop が fresh 垢作成→実投稿→実URL telegram するか。Fable が logged-out curl で URL 独立確認する。
