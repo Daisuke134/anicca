@@ -760,3 +760,26 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 - **垢作成 = 自宅 :9222 incognito、proxy ナシ、Capafy と同一手順のコピー**。proxy を噛ませない。
 - proxy/5sim は当面 **凍結**（scale で1IP飽和したら復活検討）。franklin1 の $7 proxy と 5sim 残高は sunk、追加入金しない。
 - 投稿経路は **browser-direct を第一候補**に格上げ（instagrapi は fallback）。useclaudeskills の初投稿が本番の実証点。
+
+## v36 — ★投稿=instagrapi が正、web composer は削除。前回v35の「browser正」を訂正★（2026-07-18、Capafy agent の live 投稿で確定）
+### 訂正（v35 の投稿経路の記述は誤り）
+- v35 で「browser-direct を第一、instagrapi は fallback」と書いたが**逆だった**。実測で確定:
+  - clip `run.sh:26-30` が明記: 「web composer(post_reel.py)= IG が automated post を **silent drop**（spinner 永久・profile に出ない）。instagrapi(mobile private API)が VERIFIED FREE path」。
+  - Capafy marketing agent が **instagrapi で day-1 未warmup 垢に一発 publish**（reel/Da7VQY8MIOK、logged-out 検証、2026-07-18）。
+- ★過去 clip 垢が instagrapi で bloks/poison になったのは **proxy(冷たいIP)が原因**であって instagrapi のせいではない。自宅IP + instagrapi なら通る（Capafy が実証）。★
+- 結論: **poster = instagrapi_post.py 一本**。web composer(post_reel.py / ig-reels-poster)は全 loop から物理削除。GitHub の puppeteer/browser 自動化 repo は全部この dead-end 側。
+
+### 決定（Dais 2026-07-18）
+1. **投稿 = instagrapi 一本**（web composer 廃止）。
+2. **warmup を今は skip、day-0 から投稿**（Capafy が day-1 未warmup で publish 実証済み。垢がタダなので day-0 生存を実測して engine を決める）。warmup は gate でなく将来「並走」に。
+3. **engine 共有**（clip/capafy/affirm/finance 全 marketing loop で同一）。変わるのは content+bio+niche だけ。
+4. **loop 自身が投稿する**（launchd の run.sh が実行。俺=fable が run.sh を代打しない・subagent に投稿させない。global CLAUDE.md「loop does the work」/ memory watch-loops-never-do-their-work が正本）。俺の仕事 = harness を直す + ledger を watch。
+
+### proxy/5sim の判定
+- $7 proxy(IPRoyal、franklin1 self-funded、sunk)= **投稿/作成には不要どころか有害**（冷たいIP が phone wall + bloks を招いた）。追加入金しない、凍結。
+- 学びとして残る資産: ig_signup_proxy.py の signup gotcha（trusted typing / DOB aria-label / CAPTCHA textarea 手読み）は自宅IP版でも流用可。proxy 自体は scale で1IP飽和時に再検討。
+- 5sim = 電話が要らなくなったので不要。残高 sunk。pw は本session漏洩したので rotate（security task）。
+
+### DAY-0 掟（重要）
+- day-0 に bio へ商用リンクを入れると suspension（@aiclipper.daily が実際に死亡）。**link は数投稿してから**。day-0 は投稿だけ、bio link は後。
+- burst 厳禁（~12本/日で死ぬ）。**1日1本**。死因は warmup 不足でなく web-composer検知 + burst。instagrapi + 1日1本でほぼ解決。
