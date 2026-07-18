@@ -14,6 +14,26 @@ spec は SSOT。発見のたび本文を実測値に書き換える。
 
 ---
 
+## STATUS（実装済み vs 残タスク。2026-07-18）
+
+**実装済み（検証まで完了）:**
+- 研究 + spec（全 rail 実測・SSOT 化・bank-first Algora に pivot）
+- poidh on-chain lib + native-verify（19テスト green、実 tx で 0.1297 ETH 着金検出＝T5 green）。**crypto phase 用に棚上げ**（worktree `feature/bounty-onchain-rail` commit b971d51）
+- 既存 harness の実読 + go-live 差分確定（gh 認証 Daisuke134=repo+workflow OK、pipeline は完成コード）
+
+**残タスク（実際に稼ぐまで。担当明記。/flowa = Fable plan / Sol execute / Fable verify）:**
+| # | 残タスク | 担当 | 依存 |
+|---|---|---|---|
+| R1 | **Algora onboarding（一回限りの人手）**: algora.io に GitHub(Daisuke134) ログイン → Stripe Connect + KYC + 銀行口座 + 税フォーム。日本個人の受取可否/書類は実 onboarding で確定。**Fable がブラウザ駆動、KYC/銀行/税の個人入力は Dais** | Fable(browser)+**Dais**(個人情報) | — |
+| R2 | **loop 復活（ops）**: `.disabled` plist 2枚を再有効化 + `bounty-cli.sh` で core 起動。discover→PR→track が回り始める | Fable(launchd kickstart) | — |
+| R3 | **入金 verify 配線（code）**: record-earn は on-chain USDC 専用。Algora dashboard(login-gated) 読取 or Stripe 入金検知の settle パスを新規実装（merge→paid を auto-verify）。INV-8/9 準拠 | **Sol** | R1 |
+| R4 | **win-rate 改善（code）**: 旧 harness は実質 $0（agent 飽和 flat-38）。merge されやすい repo 狙い(real USD クラスタ sorosave 等)・PR 品質・spray 回避を self-improve 層に反映（研究 §4 の勝ちパターン） | **Sol** | R2 |
+| R5 | **稼いだか verify**: loop の apply→PR→merge→**着金**を実測。done=金が着いた時のみ・1件で止めず loop 継続 | **Fable** | R1-R4 |
+
+**critical path**: R1(Dais onboarding) が全ての payout を unblock。R2(復活) は即可能。R3 は R1 後。
+
+---
+
 ## GOAL（検証可能な done）
 
 **claude-p の loop が、人間ゼロの日次動作で Algora（等）の real bounty に応募→コード→PR を出し、merge され、報酬が Dais の bank/Stripe に着金する。それをループが繰り返し earn ledger に記録する。**
