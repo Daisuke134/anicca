@@ -23,7 +23,7 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, netWorth, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer, alwaysActEngaged, alwaysActMenu }) {
+export function assembleContext({ walletAddress, balanceUsdc, netWorth, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, skillToolDocs, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer, alwaysActEngaged, alwaysActMenu }) {
   return {
     // franklin-alwaysact-skill-router REQ-504: additive fields set by index.mjs's wake loop only for
     // Franklin-identity, flag-engaged wakes (REQ-501). alwaysActEngaged defaults false (byte-for-byte
@@ -60,5 +60,9 @@ export function assembleContext({ walletAddress, balanceUsdc, netWorth, tier, mo
     // spec 25 O1: the live skill slots the LLM may pick + their summaries
     activeSkillSlots: Array.isArray(activeSkillSlots) ? activeSkillSlots : [],
     skillCatalog: skillCatalog && typeof skillCatalog === 'object' ? skillCatalog : {},
+    // TOOL-2 Phase A: optional per-slot { toolDescription, argsExample } (registry.json-sourced).
+    // Empty object when the loop didn't pass it — buildSystemPrompt then falls back to skillCatalog's
+    // one-line summary for every slot, byte-identical to pre-TOOL-2 behaviour.
+    skillToolDocs: skillToolDocs && typeof skillToolDocs === 'object' ? skillToolDocs : {},
   };
 }

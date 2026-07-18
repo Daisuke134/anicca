@@ -123,7 +123,22 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     ? activeSkillSlots
     : (ctx.activeSkillSlots && ctx.activeSkillSlots.length ? ctx.activeSkillSlots : ['earn']);
   const catalog = ctx.skillCatalog || {};
-  const slotList = slots.map(s => catalog[s] ? `  - ${s}: ${catalog[s]}` : `  - ${s}`).join('\n');
+  // TOOL-2 Phase A: when registry.json defines a richer { toolDescription, argsExample } for a slot,
+  // render that instead of the one-line summary (what it does / when to pick it / when not to / what
+  // args mean, plus a concrete args example) — the #1 lever for tool-use quality per Anthropic's
+  // tool-use docs. Falls back to the plain summary line, byte-identical to pre-TOOL-2 output, for any
+  // slot that doesn't define one (additive, backward-compatible).
+  const toolDocs = ctx.skillToolDocs || {};
+  const slotList = slots.map(s => {
+    const doc = toolDocs[s];
+    if (doc && doc.toolDescription) {
+      const argsLine = doc.argsExample !== undefined
+        ? `\n      args example: ${JSON.stringify(doc.argsExample)}`
+        : '';
+      return `  - ${s}: ${doc.toolDescription}${argsLine}`;
+    }
+    return catalog[s] ? `  - ${s}: ${catalog[s]}` : `  - ${s}`;
+  }).join('\n');
   const earnToolLines = Object.keys(DOCTRINE_LINES)
     .filter(slotName => slots.includes(slotName))
     .flatMap(slotName => DOCTRINE_LINES[slotName]);
