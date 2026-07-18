@@ -356,6 +356,14 @@ spec 準拠レビュー ✅。品質レビュー **Not Approved**、以下が #1
 - M-1（非 blocking、将来堅牢化として台帳記録）: lock mtime は mkdir 時のみ。120min 超 pass は依然誤 reap。
   heartbeat 方式（各 step で touch $LOCKD）が真の解。M-2: registry fail-open は set -e 非依存が前提（bounty と同形）。
 
+**FIX 完了（2026-07-18、team-lead 直接実装、commit `ac28be7` PC main push 済み）**: C-1 = gig-cli.sh が
+~/.openclaw/.env を source（gate 前）+ .env に GIG_KYC_CONFIRMED=1 と識別子3キー追記（追記のみ・実測:
+クリーン env から KYC=1/HANDLE=mtdc/REPO 解決）+ 虚偽コメント是正。I-1/I-2 = STARTUP に識別子3変数の
+interpolation 復活 + cron ハードコードを state/effective-cron/gig.txt 読みに置換。snapshot fixture は
+**意図的に再採取**（pass 本体は gig_pass.sh + RUNBOOK へ移行済みの新建築が正。task-request-map/passprep/
+funnel 機構の存在を grep 実測してから採取）。test_prompt_integrity_snapshot **17/17** +
+test_registry_enforce_core **12/12**（回帰なし）。quality re-review 待ち。
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
