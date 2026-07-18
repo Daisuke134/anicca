@@ -10113,3 +10113,10 @@
 {"ts":1784362726,"wake_id":"00MRQ3HVAXEDFE8B816AC64EC7","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784362857,"wake_id":"00MRQ3KOOLDF2894BE8DD94EC9","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784363159,"wake_id":"00MRQ3R5HRCDED4953D54E46C3","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363292,"wake_id":"00MRQ3U00Y92B7CABD0D1F4176","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363425,"wake_id":"00MRQ3WUOOE914CD1733EB4B0C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363555,"wake_id":"00MRQ3ZN4377239586CEAE4171","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363687,"wake_id":"00MRQ42HBU3D0639B2AB884705","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363818,"wake_id":"00MRQ45AD42F3E09115F7E4E51","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784363956,"wake_id":"00MRQ488ARCA14179251A741EA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784364088,"wake_id":"00MRQ4B2HRE7C3C5851F364B4C","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
