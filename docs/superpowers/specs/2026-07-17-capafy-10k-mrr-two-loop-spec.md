@@ -151,3 +151,28 @@ freeze gate（.capafy-ig-golive-approved の人間承認）を**撤去**。goal-
 5. 共通ループ: select(何を売る)→copy(agent)→video(money-printer)→instagrapi→ledger→reach→週次reflect。
 
 TODO(tasklist SHARED-1〜4): ①post_reel.py 全削除+clip 7参照を instagrapi 付替え ②instagrapi を canonical 共有 poster に昇格 ③loop 自走投稿の証明(launchd 自身が post、executor で代行しない) ④本戦略を warmer に反映(1日1コメント/活動多様化)。将来: profitable-claude に marketing-engine 共通化して OSS。
+
+## §10 SHARED/UNIQUE 是正 + multi-tenant（2026-07-18 Dais 訂正）
+
+★訂正1: 何もハードコードしない★ account は config/registry 駆動、動的。将来 **数百人が repo を回し各自が数百万の IG/TikTok account を作る**（1 Capafy account : N SNS account）。engine は account/content-type/product を **パラメータで受ける**。account handle をコードに焼かない（ANICCA_INSTANCE + account file registry で解決）。
+
+★訂正2: content 生成は SHARED でない（俺の誤り）★ money-printer 9:16 動画は共通ではない。**content type が変わる（video / slideshow / carousel / talking-head …）**。content 生成は **pluggable module**: `generate_content(product, type) -> media` インターフェースで、各 instance が自分の type を差す。
+
+**正しい線引き:**
+```
+UNIQUE / PLUGGABLE（instance ごと・config 駆動・ハードコード禁止）:
+  • which account(s)  — 動的・N個・millions scale
+  • what product      — capafy skill / affiliate / 自社 product
+  • CONTENT 生成      — ★pluggable★ video/slideshow/carousel 等、type が変わる
+  • selector(何を宣伝) — データ源が違う
+  • bio link 先 / niche / copy 方向 / profile
+
+SHARED（account を運用して改善する機械・全員同じ）:
+  • account 作成（ig-account-create、plus-address、ハードコードなし）
+  • 投稿（instagrapi private API）
+  • warmup（並走）
+  • metrics 読み + reach ヘルス判定
+  • ★self-improve / reflect（metrics 見て勝ち模倣）★ ← 完全共通
+  • ledger / telegram 報告 / cooked なら作り直し
+```
+**要点**: 「account を作る・投稿する・測る・改善する」機械は全部 SHARED。「どの account で・何を・どの形式(content type)で売るか」は UNIQUE/pluggable。content 生成すら pluggable にすることで video も slideshow も同じ運用 engine に載る。→ SHARED-2 は「instagrapi poster + content-gen interface + warmer + reach + reflect」を account/type/product パラメータ化した共通 engine にする（account 名をどこにも焼かない）。
