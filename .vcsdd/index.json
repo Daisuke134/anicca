@@ -261,7 +261,15 @@
       "mode": "lean",
       "currentPhase": "1c",
       "updatedAt": "2026-07-12T17:02:24.864Z"
+    },
+    "capafy-skills-landing": {
+      "status": "active",
+      "createdAt": "2026-07-18T15:09:00.982Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-18T15:33:25.693Z"
     }
   },
-  "activeFeature": "reality-gate"
+  "activeFeature": "capafy-skills-landing"
 }

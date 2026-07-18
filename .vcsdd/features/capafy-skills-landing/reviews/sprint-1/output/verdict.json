@@ -1,0 +1,89 @@
+{
+  "sprintNumber": 1,
+  "feature": "capafy-skills-landing",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-18T15:31:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/capafy-marketing/scripts/build_landing.py:1",
+          "description": "Live seller endpoint filtering, deterministic single-HTML generation, exact UTM links, and failure handling implement REQ-L1 through REQ-L6."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/capafy-skills-landing/evidence/production-e2e.md:1",
+          "description": "Production HTTP 200, 21 links, light/dark mobile and desktop browser renders, CTA navigation HTTP 200."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/capafy-skills-landing/verification/security-report.md:1",
+          "description": "ShellCheck, escaping, CSP, fixed subprocess argv, secret-free diff, and no-script checks pass."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:17",
+          "description": "Dedicated Netlify site ID is explicit; initial inherited-link deploy was restored to observable HTTP 404."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/capafy-marketing/tests/test_build_landing.py:1",
+          "description": "Daily refresh runs before cadence gate, STEP5 landing target is commercial/live gated, and no GitHub workflow was added."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005",
+      "CRIT-006",
+      "CRIT-007",
+      "CRIT-008",
+      "CRIT-009",
+      "CRIT-010"
+    ],
+    "duplicateFindings": [],
+    "findingCount": 0
+  }
+}

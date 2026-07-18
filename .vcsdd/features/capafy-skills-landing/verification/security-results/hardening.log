@@ -1,0 +1,11 @@
+security-hardening: START
+shellcheck_available=/opt/homebrew/bin/shellcheck
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK
+ast_and_html_security_checks=PASS
+landing_http=200
+wrong_site_http=404
+security-hardening: PASS
