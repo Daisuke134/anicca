@@ -376,6 +376,16 @@ test_registry_enforce_core **12/12**（回帰なし）。quality re-review 待�
   切替シーケンス自体は完遂していた）— one-shot の自己申告を Fable が実測で上書きした実例
 - 残検証は §8-4,5,6（#11）: 300s healthcheck 維持・次毎時パス完走・tombstone
 
+## 8-4,5,6 結果記録（2026-07-18 20:3x）: 無停止検証 green + tombstone 完了
+
+- 無停止検証 4/4 green: 新 healthcheck tick 2回 ALIVE（20:30/20:35、300s 周期）/ tmux ALIVE / 旧 Label 復活ゼロ /
+  **切替直後のパスが 10分超走行を生存 = detached fix の実戦証明**（旧アーキなら 600s で kill されていた）
+- tombstone: ① `skills/earn/gig/MOVED.md`（anicca `c7e656bc`）+ ③ `~/.openclaw/skills/anicca-earn-gig/MOVED.md`
+  （openclaw `bb594d50`、cron/dispatcher 参照ゼロを grep 実測）。実削除は参照0 grep 後の別 PR
+- ④ founder コピーは anicca-daemon.sh:69 の rsync ミラー = ① の MOVED.md が自動伝播、個別処置不能・不要
+  （最終解消は Task #20 + ① 実削除）
+- 残り: 走行中パスの完走（.last-pass 更新 + pass-report 新行）と明日 09:07 の hf-gig-daily-report 初回発火の確認
+
 ## 8ter. Dais 裁定による方針更新（2026-07-18、§6 の「anicca に残して参照」を上書き）
 
 裁定: **PC (profitable-claude) が claude-p loop の唯一の家。clone すれば単体で回る self-contained を最終形とする。
