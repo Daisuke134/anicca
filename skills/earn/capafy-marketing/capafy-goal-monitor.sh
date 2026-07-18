@@ -22,7 +22,9 @@ KEY_GATE="$HOME/.openclaw/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
-WARMUP_DAYS_REQUIRED=7
+# Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
+# MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
+WARMUP_DAYS_REQUIRED=3
 
 # ── goal(c) go-live: create + load the IG launchd ONLY when warmup day>=7. Idempotent. ──
 warmup_day_count() { $PY -c "import json;print(len(json.load(open('$WARMUP')).get('log',[])))" 2>/dev/null || echo 0; }
