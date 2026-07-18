@@ -326,6 +326,19 @@ gig の §8 レシピ = 「①→②同期(0) → 依存解決検証(1) → dry(
 | 共有基盤の扱い | **vendor(copy) + skills.lock 記録。move/tombstone 禁止** | franklin launcher が runtime で literal $HOME/anicca を呼ぶ（§3 実測） |
 | x402/economy の方式 | **方式(a): env 駆動起動体を PC 新設、franklin 側不触。実行順序は最後** | anicca-daemon.sh / serve.mjs の物理共有（§2 実測） |
 
+### §6b 処遇3分類（2026-07-18 Dais 方針: 「self-funded もやれる skill は消さない、copy」）
+
+| 処遇 | 対象 | 理由 |
+|---|---|---|
+| **MOVE**（anicca から実体ごと移す。跡地は tombstone） | gig / capafy-loop + capafy-marketing + capafy-autopublish / reddit-loop / aso・paywall・screenshot(残置先は anicca-project) | human の KYC・アカウント・製品に縛られる = self-funded には原理的に無用（SSOT: franklin の earn = trade 3エンジンのみ） |
+| **COPY**（両 repo が持つ。fork drift は skills.lock で管理） | clip / clip-promote / video / browser 6 script / _shared lib 必要分 | self-funded も実行可能な稼ぎ方・基盤。franklin launcher が runtime 参照中（§3 実測）につき削除不可 |
+| **STAY**（anicca に残る。PC は複製起動体のみ新設） | runtime/anicca-daemon.sh・loop framework / trade 3エンジン(PM/SOL/HL) / x402-sell の franklin 側 | self-funded citizen の生命維持装置。PC 側は claude-p 用に env 駆動起動体を複製（§6 方式(a)） |
+
+COPY の同期規約: **upstream = PC（Dais 裁定: PC が正本）**。anicca 側は PC から vendor し、既存の
+skills.lock 方式（source_repo/source_commit/sha256）で受ける。逆方向の編集は禁止（drift 防止、編集は PC で
+行い anicca へ再 vendor）。franklin の literal $HOME/anicca 参照が生きている間は anicca 側 COPY を消さない
+（Task #20 完了が削除の前提条件）。
+
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
 gig(0)=#8-11 → 共有基盤 vendor(1)=#15 → video(2)+clip系(3)=#16 → reddit(4)+capafy(5)=#19 →
 article 依存刈り+cron 8本廃止(6)=#18 → x402/economy(7)=#17 → 台帳整合(9)=#12 → OSS hygiene=#13 →
