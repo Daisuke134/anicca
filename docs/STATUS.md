@@ -38,7 +38,19 @@ x402 ゼロ→イチの唯一の道（順序固定）:
 | REFACTOR | 重複掃除 | ⬜ X1後 | — |
 
 **実装済み= X1/X2/X2-LOOP全4slice（店+集中+自己改善ループ）。外部収益は依然 $0。本物の稼ぎは X4 まで来ていない。**
-**残るは REFACTOR（掃除）と X4（外部1件・強制不可・待ち）のみ。店は「稼げる状態」に到達、あとは発見されるのを待つ+磨く。**
+**残るは REFACTOR（意図的後回し・店が稼いで安定してから）と X4（外部1件・強制不可・待ち）のみ。**
+
+### ★2026-07-19 到達点: 店は「売れる状態」に完成。ここから先は発見待ち★
+```
+  franklin1/2 の店 = 4商品に集中（web-search転売/funding系×2/research）
+    ├ 転売が自wallet で動く（on-chain実証: franklin1→Exa 送金+margin）
+    ├ self-improve ループ稼働（{action:improve} で市場+自売上→keep/explore/drop+gap）
+    ├ x402scan/Bazaar/agent402 掲載済（Bazaar は決済成立で自動掲載）
+    └ inflow-watch 4本が外部tx を30分毎監視、external>0 で通知
+  external 収益 = $0（変わらず）。ここから先の第一歩(X4)は「他人が買う」= 強制不可。
+  ★エンジニアリングで作れる物は作り切った。次の1ドルは discovery×時間の関数。
+    無理に churn せず、店を磨き（improve推奨に沿った商品調整）+ 発見を待つのが正。★
+```
 
 ## ★★共有 vs 独立（設計の背骨、Dais 2026-07-18）★★
 
