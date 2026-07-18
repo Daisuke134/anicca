@@ -275,6 +275,30 @@ gig 専用のコード（skill）と plist の指す先だけ。移設先は `~/
 browser/`_shared`/`~/gig` を先に動かすと gig 以外(clip/video/session-vault)が巻き添え。よって順序は
 **「②へ同期(0) → 依存解決検証(1) → dry(2) → plist+tmux 原子切替(3) → tombstone(4)」以外は不可**。
 
+### 8bis. 移設時に同時に直すべき既知欠陥（本 inventory では未実装・記載のみ）
+
+**欠陥: B1/PROFILE の mid-pass kill（確定真因）。**
+- 現象: 長いパス（B1 nurture 全トークルーム sweep / PROFILE 画像生成+upload）が途中で殺され、
+  reality-verifier が「claim と実画面が不一致」を検出して self-heal が走る。
+- 確定真因: **gig-core agent が `gig_pass.sh` を Claude Code の background Bash 子プロセスとして起動しており、
+  その Bash tool は timeout 上限 600000ms（= 10分）で kill される。** 10分を超えるパスは harness timeout に
+  殺され、B1/PROFILE のような重いステップが未完で落ちる。gig_pass.sh 自体は各ステップを bounded sub-call に
+  分割している（`gig_pass.sh:4` のコメント参照）が、**親の `gig_pass.sh` 呼び出しそのもの**が 10分枠に収まらない。
+- 該当 file:line（起動箇所, 2 か所とも同一行の STARTUP 文字列内）:
+  - `~/anicca/skills/earn/gig/gig-cli.sh:21` の `STARTUP='...'` 内、CronCreate の `prompt=` に埋め込まれた
+    hourly:27 パス起動: `run bash ~/anicca/skills/earn/gig/gig_pass.sh`
+  - 同 `gig-cli.sh:21` 内、起動直後の即時パス: `THEN run ONE full pass now: bash ~/anicca/skills/earn/gig/gig_pass.sh`
+  - （この STARTUP 文字列は `gig-cli.sh:44` で `~/gig/.startup-prompt.txt` に書き出され、tmux core が読む）
+- 耐久修正案（移設先②の `gig-cli.sh` STARTUP を書き換える際に同時適用。**本 inventory では未実装**）:
+  agent が gig_pass.sh を **detached 起動**するよう prompt を変更し、harness の 10分 timeout から切り離す:
+  ```
+  setsid nohup bash ~/<新パス>/gig_pass.sh >/dev/null 2>&1 & disown
+  ```
+  （fire-and-forget 化。完了確認は従来どおり `tail -3 ~/gig/pass-report.jsonl` を後続 tick で読む形へ。）
+- 移設との結合: STARTUP 内の `~/anicca/skills/earn/gig/gig_pass.sh` は移設で新パスへ書き換える対象なので、
+  **パス書き換えと detached 化を同じ編集で行うのが最小コスト**（②の gig-cli.sh:21 相当行）。この修正は
+  移設手順 (0) の「①→②同期」時点で②側の gig-cli.sh に折り込む。関連 TaskList: #7 gig_pass detached 起動化。
+
 ---
 
 ## 付録: 本 inventory 作成時の tool 非致命 exit（fablize gate 記録用）
