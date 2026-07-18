@@ -50,6 +50,20 @@ const rows = logs.map((l) => ({
   usdc: Number(BigInt(l.data)) / 1e6,
 })).map((r) => ({ ...r, external: !OUR_WALLETS.has(r.from.toLowerCase()) }));
 
+// 2026-07-18 harsh audit: "log sender not ours" is NOT sufficient for external. When WE call a
+// DeFi protocol, the pool contract sends our own funds back and the Transfer's `from` is the pool
+// (measured: claude-p's $0.315362 Aave v3 withdraw + $0.315114 Uniswap swap output were counted
+// as "external revenue" and inflated lifetime x402 earnings from ~$0.011 to $0.326). A protocol
+// return is self-initiated: the enclosing TRANSACTION's from is one of OUR wallets. Reclassify.
+for (const r of rows) {
+  if (!r.external) continue;
+  const tx = await rpc("eth_getTransactionByHash", [r.tx]);
+  if (tx && OUR_WALLETS.has(String(tx.from).toLowerCase())) {
+    r.external = false;
+    r.protocolReturn = true; // our own funds coming back from a pool/router we called
+  }
+}
+
 const ext = rows.filter((r) => r.external);
 const sum = (a) => Math.round(a.reduce((s, r) => s + r.usdc, 0) * 1e6) / 1e6;
 console.log(JSON.stringify({
