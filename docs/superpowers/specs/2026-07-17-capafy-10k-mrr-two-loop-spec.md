@@ -123,3 +123,9 @@ full skip も full 7日も却下 → **warmup 強化 + day3 早期 non-commercia
 
 ### 追補2（2026-07-18 Dais 承認: no-human-loop 完全自走）
 freeze gate（.capafy-ig-golive-approved の人間承認）を**撤去**。goal-monitor は day>=3（clip 3日 floor = loop self-pacing）で IG launchd を**人間承認なしに自動 load → 実投稿**。安全 pacing は全て loop-driven（day1-2 warmup / day3+ 非商用 / reach 健全 marker を loop が書く）で human gate ゼロ。DRY/FREEZE で止めない、毎日 action を取る。commit anicca(freeze撤去)。
+
+
+## §8 (d) 不死身 — behavior 実測（2026-07-18、config でなく挙動）
+- key-health gate fail-closed: threshold \$999（残高\$21.59）→ **exit 1（publish 阻止）**、\$2→exit 0（funded で通過）。gate は実際に止める（実測）
+- scheduled job 自走: `launchctl kickstart` goal-monitor → state 書込み（09:46）= 予定 job が再実行して pass 完走。StartCalendarInterval job なので「kill→次tick復帰」= この re-fire 挙動（実測）
+- 残 time-gated: 7日 BLOCKED=0 audit（07-21+）、day3 実投稿（07-20）、14日自走 window（~08-01）
