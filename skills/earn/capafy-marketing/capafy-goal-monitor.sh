@@ -45,18 +45,15 @@ write_ig_plist() {
 PLIST
 }
 
-# ★ FREEZE GATE (Dais HOLD 2026-07-18): auto go-live is FROZEN until Dais explicitly approves by
-#   creating the marker  ~/.openclaw/state/.capafy-ig-golive-approved . The day>=3 (clip 3-day floor)
-#   threshold + non-commercial first post are ready, but this monitor will NOT load the IG launchd
-#   (= will NOT trigger any live post) until that approval marker exists. This keeps the freeze safe
-#   while leaving the whole pipeline armed to fire the moment Dais says go. ★
-GOLIVE_APPROVED="$HOME/.openclaw/state/.capafy-ig-golive-approved"
+# NO-HUMAN-LOOP (Dais approved 2026-07-18): NO freeze/approval gate. At day>=3 (the clip 3-day
+# floor — loop self-pacing, NOT a human gate) the monitor auto-loads the IG launchd itself, which
+# then posts live daily. Safety pacing that remains is all LOOP-DRIVEN (day1-2 warmup only, day3+
+# NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
+# writes) — zero human approval anywhere. Idempotent: never double-loads.
 WDAY="$(warmup_day_count)"
 GO_LIVE_ACTION="not_yet"
 if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  if [ ! -f "$GOLIVE_APPROVED" ]; then
-    GO_LIVE_ACTION="ready_awaiting_dais_approval"   # day>=3 reached but FROZEN — no auto-load
-  elif ig_loaded; then
+  if ig_loaded; then
     GO_LIVE_ACTION="already_live"
   else
     write_ig_plist
