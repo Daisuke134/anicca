@@ -30,9 +30,15 @@ try:
 except Exception: print(0)
 PY
 )"
-MODE_FLAG=""   # empty = dry (post_reel.py default). --live only after warmup.
-if [ "${WARM_DAY:-0}" -ge 7 ]; then MODE_FLAG="--live"; fi
-echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY}" >>"$LOG"
+# Dais decision 2026-07-18: EARLY test post at day>=3 (not full 7d). The first live posts are
+# NON-COMMERCIAL (no bio link, pure-info caption) so we can MEASURE reach — the only real shadowban
+# test — before adding a commercial link. COMMERCIAL_OK only after reach is confirmed healthy (a
+# marker the reach-check step writes). Until day>=3 it stays DRY.
+MODE_FLAG=""   # empty = dry (post_reel.py default). --live from day>=3.
+COMMERCIAL_MARKER="$HOME/.openclaw/state/.capafy-ig-reach-healthy"
+if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
+COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
+echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
 
 # ── CADENCE GATE (rolling 20h, platform=ig) ──
 if [ -f "$ROT" ] && /opt/homebrew/bin/python3 - "$ROT" <<'PY'
@@ -56,15 +62,17 @@ PROMPT='You are the Anicca Capafy IG-marketing loop (headless; goal = drive Capa
 
 STEP1 SELECT (tool): python3 ~/anicca/skills/earn/capafy-marketing/scripts/select_listing.py  → one online Capafy listing {agent_id,name,desc,url}.
 
-STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill kills + a natural CTA; the Capafy URL goes in the ACCOUNT BIO, NEVER in the caption/first-comment — IG comment links are unclickable, research MD §1) and (b) a one-line on-screen hook for the video.
+COMMERCIAL GATE: commercial_ok='"$COMMERCIAL_OK"'. While commercial_ok=no, EVERY post is NON-COMMERCIAL: pure-info caption ("here is a Claude skill that does X" — NO "buy/subscribe/link in bio" push), and DO NOT add any Capafy link to the bio yet. This avoids the day-0 commercial-link suspension trigger while we measure reach. Only when commercial_ok=yes do you add the bio link + a soft CTA.
+
+STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill does; if commercial_ok=yes add a soft "link in bio" CTA, else pure info, NO push, NO link in caption/comment — IG comment links are unclickable) and (b) a one-line on-screen hook for the video.
 
 STEP3 VIDEO (B3, faceless engine): write YOUR 30-45s voiceover script about THIS listing (hook + what it kills + what it does + "link in bio" CTA; topic = the skill, not generic finance) to a file, then build ONE 9:16 mp4 with:  BROLL_QUERY="<a b-roll query that matches the listing category>" bash ~/.claude/skills/faceless-money-factory/scripts/run-daily.sh <your-script-file> en  . ★Set BROLL_QUERY to topic-appropriate stock footage, NOT the finance default (e.g. YouTube Script Writer -> "video editing laptop creator", Lead Magnet Generator -> "marketing office laptop", a coding skill -> "programmer typing code"). Without BROLL_QUERY the engine falls back to finance "money" b-roll, which mismatches a Capafy skill.★ Gate: only proceed if the mp4 exists and is 1080x1920 9:16.
 
 STEP4 POST (B4, tool): python3 ~/.agents/skills/ig-reels-poster/scripts/post_reel.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' MODE  (MODE = the mode above; omit for DRY). The poster has an account guard that fail-closes if @'"$IG_HANDLE"' is not the active IG account on :9222 — if it aborts on the guard, switch to @'"$IG_HANDLE"' in the IG account switcher (it is logged in) and retry once; do NOT post to any other account. Capture published + profile URL.
 
-STEP5 BIO (only once, and only when MODE=--live): ensure the ACCOUNT BIO / profile Website carries the Capafy listing URL (utm_source=instagram_bio). This is the click path on IG. Do not touch bio during DRY.
+STEP5 BIO: add the Capafy listing URL (utm_source=instagram_bio) to the profile bio/Website ONLY when commercial_ok=yes AND MODE=--live. While commercial_ok=no, DO NOT touch the bio (non-commercial phase — we are only measuring reach). Never in DRY.
 
-STEP6 VERIFY + LEDGER: on --live, confirm the Reel is publicly visible and record its URL in ~/.openclaw/state/capafy-marketing-ig-ledger.jsonl (platform=ig) + the post time in the rotation ledger (platform=ig). On DRY, record that the flow reached the share step cleanly.
+STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible, record its URL in ~/.openclaw/state/capafy-marketing-ig-ledger.jsonl (platform=ig, reel_url=...) + post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch ~/.openclaw/state/.capafy-ig-reach-healthy  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
 
 STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual output, not a summary). Send to telegram chat 8547730585 via openclaw message send:
   (a) the VIDEO itself as media:  openclaw message send --channel telegram --target 8547730585 --media <the mp4 path> --force-document --message "<caption below>" --json  (--force-document keeps it uncompressed; if the video attach fails, fall back to sending a thumbnail/first-frame png + the message).
