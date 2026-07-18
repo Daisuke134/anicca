@@ -25,7 +25,7 @@ step(){ # $1=label  $2=prompt
 # ── deterministic prelude ───────────────────────────────────────────────────
 LOCKD=/tmp/anicca-gig-pass.lock.d
 GIG_LEASE="gig-$$"; export GIG_LEASE   # per-pass lease name, NOT the shared "gig": the EXIT trap releases ONLY this pass's own context, so an interrupt/overlap of one pass never tears down another pass's (or another loop's) browser context. Sub-agent steps inherit GIG_LEASE (env + injected into their prompt) and reuse the same lease.
-[ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 1800 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>30min)
+[ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 7200 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>120min). 7200s (was 1800s): detached passes now survive well past the old 30min window (B1/PROFILE can run ~90min), so a 30min reaper would rmdir a LIVE pass's lock and let the next hourly tick start a 2nd concurrent pass -> duplicate real-market applications. 120min > worst-case pass.
 mkdir "$LOCKD" 2>/dev/null || { log "another pass holds the lock — exit"; exit 0; }   # mkdir = atomic on macOS; only ONE gig_pass.sh runs
 trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$B/cdp_context_lease.py" release "$GIG_LEASE" >/dev/null 2>&1' EXIT
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
