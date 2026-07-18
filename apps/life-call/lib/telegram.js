@@ -48,6 +48,8 @@ function parseUpdate(update) {
     userId: m.from ? String(m.from.id) : "",
     text: (m.text || "").trim(),
     isStart: (m.text || "").trim().toLowerCase().startsWith("/start"),
+    firstName: m.from ? String(m.from.first_name || "") : "",
+    lastName: m.from ? String(m.from.last_name || "") : "",
   };
 }
 
@@ -55,6 +57,7 @@ async function routeCallbackData(data, handlers = {}, log = console.log) {
   const prefix = String(data || "").split(":", 1)[0];
   if (prefix === "ask" && typeof handlers.ask === "function") return handlers.ask(data);
   if (prefix === "late" && typeof handlers.late === "function") return handlers.late(data);
+  if (prefix === "gmail" && typeof handlers.gmail === "function") return handlers.gmail(data);
   log(`[telegram] ignoring unknown callback prefix: ${String(data || "").slice(0, 40)}`);
   return { ignored: true };
 }

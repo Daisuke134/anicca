@@ -349,7 +349,15 @@ async function onboardTick() {
   const base = process.env.PUBLIC_BASE || "https://aniccaai.com";
   const { url: supaUrl, key: supaKey } = SUPA();
   if (!token || !supaUrl) return;
-  const sent = await onboardNudgeAll({ token, base, supaUrl, supaKey });
+  const sent = await onboardNudgeAll({
+    token, base, supaUrl, supaKey,
+    composioKey: process.env.COMPOSIO_API_KEY,
+    geminiKey: process.env.GEMINI_API_KEY,
+    uidSecret: process.env.LM_UID_SECRET,
+    gmailBase: process.env.LIFE_CALL_PUBLIC_BASE || process.env.PUBLIC_WSS || base,
+    gmailConfigured: Boolean(process.env.LM_UID_SECRET && process.env.UNIPILE_DSN &&
+      process.env.UNIPILE_TOKEN && process.env.UNIPILE_NOTIFY_SECRET),
+  });
   if (sent) console.log(`[onboard] nudged ${sent} Telegram user(s) to their next step`);
 }
 function startOnboardLoop() {

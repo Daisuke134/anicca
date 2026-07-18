@@ -40,7 +40,11 @@ const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = req
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
-const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
+const {
+  sendStage, rowByChatId, setStage, saveField, handleOnboardingText, handleGmailCallback,
+  applyTelegramProfileName, backfillIfCalendarCompleted,
+} = require("./lib/telegram-onboard.js");
+const { signedGmailConnectUrl, createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const {
   handleLateCallback, listWakeRows, markAnswered, claimNotified,
@@ -56,6 +60,10 @@ const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+const GMAIL_ROUTE_BASE = process.env.LIFE_CALL_PUBLIC_BASE || process.env.PUBLIC_WSS || PUBLIC_BASE;
+const GMAIL_ONBOARD_CONFIGURED = Boolean(
+  process.env.LM_UID_SECRET && process.env.UNIPILE_DSN && process.env.UNIPILE_TOKEN && process.env.UNIPILE_NOTIFY_SECRET,
+);
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -190,6 +198,24 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "lm5-ja-v1" }));
     return;
   }
+  // GET /gmail-connect — signed Telegram deep link into the existing real Unipile hosted-auth flow.
+  // A provider/config failure is an explicit error; this route never claims Gmail was connected.
+  if (path === "/gmail-connect") {
+    if (req.method !== "GET") { res.writeHead(405); res.end("method"); return; }
+    (async () => {
+      const q = new URL(req.url, "http://x").searchParams;
+      const uid = q.get("uid") || "";
+      if (!verifyUid(uid, q.get("sig") || "")) { res.writeHead(403); res.end("bad uid signature"); return; }
+      const redirect = await createHostedGmailLink(uid, {
+        dsn: process.env.UNIPILE_DSN, token: process.env.UNIPILE_TOKEN,
+        notifySecret: process.env.UNIPILE_NOTIFY_SECRET,
+        publicBase: PUBLIC_BASE,
+      });
+      if (!redirect) { res.writeHead(503); res.end("Gmail connection is temporarily unavailable"); return; }
+      res.writeHead(302, { Location: redirect }); res.end();
+    })().catch((error) => { console.error("[gmail-onboard]", error.message); res.writeHead(503); res.end("Gmail connection is temporarily unavailable"); });
+    return;
+  }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
   // the /lm app already holds; we look up the user's phone and place an immediate Charon call so they
   // hear, right then, that the wake calls work. CORS-open for aniccaai.com (the static /lm page).
@@ -252,7 +278,13 @@ const server = http.createServer((req, res) => {
             await routeCallbackData(u.data, { ask: (data) => handleAskCallback(data, {
                 chatId: u.chatId, telegramToken: LM_TG_TOKEN,
                 supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
-              }), late: async (data) => {
+              }), gmail: async (data) => {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                return handleGmailCallback(data, row, {
+                  token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+              }, late: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 if (!row) return { ok: false, reason: "unlinked_chat" };
                 const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
@@ -277,10 +309,19 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
-          const opts = { token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY };
+          const gmailConnectUrl = row && GMAIL_ONBOARD_CONFIGURED
+            ? signedGmailConnectUrl(row.uid, GMAIL_ROUTE_BASE, LM_UID_SECRET) : "";
+          const opts = {
+            token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
+            composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY,
+          };
           if (u.isStart) {
-            // Guided onboarding: send the user's CURRENT step (asks for name first if brand-new).
-            const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
+            // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
+            const profile = { first_name: u.firstName, last_name: u.lastName };
+            const effective = applyTelegramProfileName(row, profile);
+            if (row && !row.name && effective.name) await saveField(row.uid, { name: effective.name }, SUPA_URL, SUPA_KEY);
+            await backfillIfCalendarCompleted(row, opts);
+            const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
             // Any Telegram message inside a T-0 response window counts as a response and suppresses
