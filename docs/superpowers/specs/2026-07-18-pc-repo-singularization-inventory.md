@@ -317,6 +317,20 @@ gig の §8 レシピ = 「①→②同期(0) → 依存解決検証(1) → dry(
 
 ---
 
+## §6 決定記録（2026-07-18、team-lead 既定採用。Dais から異議があれば上書き）
+
+| 論点 | 決定 | 根拠 |
+|---|---|---|
+| aso / paywall-ab / screenshot-ab の scope | **PC 対象外、anicca-project 残置** | iOS 製品運用 skill（earn loop でない、browser 基盤/tmux 不使用）。broken symlink（~/.openclaw/skills/aso-loop）だけ後日掃除 |
+| registry の pm / hl / sol | **PC から除外（entry は external のまま凍結、PC は起動しない）** | SSOT 上 trade = franklin(self-funded) の領分 |
+| 共有基盤の扱い | **vendor(copy) + skills.lock 記録。move/tombstone 禁止** | franklin launcher が runtime で literal $HOME/anicca を呼ぶ（§3 実測） |
+| x402/economy の方式 | **方式(a): env 駆動起動体を PC 新設、franklin 側不触。実行順序は最後** | anicca-daemon.sh / serve.mjs の物理共有（§2 実測） |
+
+### TaskList との対応（実行順序 §5 ↔ Task ID）
+gig(0)=#8-11 → 共有基盤 vendor(1)=#15 → video(2)+clip系(3)=#16 → reddit(4)+capafy(5)=#19 →
+article 依存刈り+cron 8本廃止(6)=#18 → x402/economy(7)=#17 → 台帳整合(9)=#12 → OSS hygiene=#13 →
+（別トラック）franklin launcher 収斂=#20。scope 判断(8)は本節で決定済み。
+
 ## 付録: 本 inventory 作成時の tool 非致命 exit（fablize gate 記録用）
 - `plutil -extract StartInterval` / `StartCalendarInterval` が「Could not extract value」で exit 1 → **正常**
   （両キーは排他。存在しないオプションキーを引いた期待どおりの失敗）。
