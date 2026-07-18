@@ -789,3 +789,18 @@ Capafy Loop B の @useclaudeskills が **電話ナシ・人間ナシ・CAPTCHA�
 - 俺の「同一IPで複数垢=burn」懸念は v26 誤診の残滓（v35 で否定済: burn の犯人は冷たい proxy IP であって自宅IP の volume でない）。撤回する。
 - Capafy は現在 engine コード改修中（shared-marketing-engine VCSDD、垢作成はしていない）→ 自宅IPは空き。**新ブラウザ・新IPを立てず、:9222 自宅IP で Capafy と同一手順で clip 垢を作成→投稿する**。
 - action: ig-account-create(:9222, proxyナシ, 0-phone) → clip 垢 live → instagrapi login-once → queue reel 1本投稿 → 公開URL確認。manual-first で clip E2E を実証（その後 loop に skillify、恒久運用は launchd）。
+
+## v38 — ★真因確定: 生きてる loop に PROVISION step が無い★（2026-07-18 実コード実測）
+### 2つの loop
+- **clip_pass.sh**（launchd ai.anicca.clip-loop-aiclipsvault、StartInterval 21600=6h）= 決定的パイプライン。**今日も稼働**（07-18 16:57 pass complete 実測）。LEARN→AFF-FIND→WARM→PRODUCE→POST(run.sh)→BIO→MEASURE→REFLECT。
+- **clip-cli.sh**（agentic claude-p loop、self-provision プロンプト在り）= .clip-core-last-pass が **07-15 21:33 で停止**。死んでる。
+### 真因
+- 生きてる clip_pass.sh に **PROVISION step が無い**。垢作成が pipeline に存在しない。全 step が @aiclipsvault ハードコード。aiclipsvault は poisoned(err ログ: `bio_step: session invalid LoginRequired` を延々)。
+- 毎 6h: POST→run.sh:67-79「ready垢なし」→ exit 0 → 何もせず pass complete。**3日間投稿ゼロの正体**。
+- WARM は warming→ready 昇格のみ。warming 垢ゼロ(全frozen)なので無効。
+### 修正（非衝突: clip_pass.sh は Capafy SHARED-1〜4 スコープ外）
+- clip_pass.sh の POST 前に **PROVISION step()** を追加（既存 step() = bounded claude sub-call = loop 自身の機構、外部 subagent でない）:
+  usable垢(ready/warming 非poisoned)無し → ig-account-create(自宅IP :9222・proxyナシ・0-phone・Gmail plus-addr・gog OTP・setup_profile) → instagrapi login-once → status=ready 登録(fresh port≠9222/9223) → no-op if usable垢在り。
+- run.sh は既に status==ready を動的解決(aiclipsvault 非ハードコード)なので、provision が ready 垢を1個作れば POST が自動で回る。
+- 副次: clip_pass.sh の BIO/MEASURE の @aiclipsvault ハードコードを現行 active handle に動的化(POST は run.sh が動的なので影響小、後続)。
+- worktree + lean 実装。launchd が実行、fable は watch。
