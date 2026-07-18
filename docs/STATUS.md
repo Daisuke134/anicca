@@ -49,6 +49,14 @@ x402 ゼロ→イチの唯一の道（順序固定）:
 ただし**売るのは各自の wallet から独立に**。これが「共有された賢さ × 独立した経済」= コロニーの設計。
 （self-improve が死んでる今、この集合知は流れていない。X2-LOOP が繋ぐ。）
 
+## ★★best practice（2026-07-18 実ソース調査、正本 docs/research/2026-07-18-autonomous-earning-agent-best-practices.md）★★
+
+1. **出力量 ≠ 収益。** 72h で 7商品150投稿でも転換ゼロの実例（HN #47417016）。ボトルネックは生成でなく trust/需要。だから商品を増やすな、**売れる1-2種に集中**（bounty 事例: 3リポ集中で承認 24%→70%）。
+2. **★Bazaar は決済成立で自動掲載 = 最初の1tx が discovery の起点★**（CDP Bazaar docs）。X4 の「外部1件」は同時に X3（発見）を解く。だから最優先は「何でもいいから外部1件を成立させる」。
+3. **X2-LOOP = multi-armed bandit**（上位コピー=活用 ＋ 新商品=常時探索枠）＋ critique 段に **GEPA**（scalar でなく実行トレースへの自然言語リフレクション、arxiv 2507.19457）。
+4. **REFACTOR = characterization test → seam → Strangler の順**（Feathers/Fowler）。いきなり serve 3→1 にしない。現挙動をテスト固定してから。
+5. 検証段に**ファイル/機能の実在チェック強制**（confident hallucination 対策）。
+
 ## ★★エンジニアリング規律（Dais 2026-07-18）: superpowers で spec→test→verify★★
 
 今まで失敗してきたのは best practice を踏んでないから。**重い vcsdd でなく superpowers skill**で回す:
