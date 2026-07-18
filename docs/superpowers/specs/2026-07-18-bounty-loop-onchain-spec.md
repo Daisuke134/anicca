@@ -29,17 +29,25 @@ done（AND、全て実測で確認）:
 - INV-5: poidh contract は `msg.sender==tx.origin` を強制 → **EOA のみ**。claude-p EOA を使う。SC wallet 不可。
 - INV-6: prompt-injection 防御を維持（既存 `run.sh:217` の config-exfil regex を on-chain 版でも保持。bounty の description は敵性入力として扱う）。
 - INV-7: loop は launchd 本体。Fable は executor を spawn して代行しない（コードを直す時だけ executor）。実行主体は本物の loop。
+- INV-8 [Sol#4]: **record write-path 自身が着金を再検証する**。caller 提供の `external/profitable/amount/status/tx` を証拠として受理しない。write-path で finalized receipt + chainId(Base=8453/Sol=mainnet) + 正しい contract + 自 wallet 宛の payout event + 第三者 issuer/funder + 未記録 tx を検証してから計上。
+- INV-9 [Sol#5]: 着金額は **payout event の receipt log を bigint wei で**検証（EVM は `Withdrawal`/`WithdrawalTo`、Solana は SPL transfer）。balance-delta は補助のみ（同一 block の他 tx / self-pay gas 差引で誤る）。number 化で精度を落とさない。
+- INV-10 [Sol#6]: gas 自己復旧に **recovery floor** を置く。approve+swap+withdraw の上限 gas を残す残高を下回る前に補給。ETH 枯渇後に swap gas を払えないデッドロックを防ぐ。swap は chain/router/recipient allowlist + exact-in 累積 $2 上限 + minOut + exact allowance + receipt/残高差検証。bootstrap 不能なら claim を止める。
+- INV-11 [Sol#7]: 秘密鍵は N1 内 in-process signer だけが固定 0600 file から読む。argv/env/child process/例外 dump に一切通さない。導出 address を 自 wallet に pin。全 broadcast 前に chainId/contract/sender/recipient を検証、withdraw 先は own wallet 固定。
 
 ---
 
 ## RAIL 決定
 
+**2026-07-18 改訂（Sol review=STOP-AND-REVISIT-RAIL + Fable 実測を受けて）**: poidh を primary income rail から**降格**。理由=(a) accept 率 ~8.6%（Base 1,785 claims 中 accepted ≤153）で墓場、(b) proof が "genuine/original" 現地写真・実 SNS 投稿要求で AI 画像生成では勝てない、(c) 71 open 中 AI 勝機 ~10件・大半 $3〜40。→ poidh は「mechanism 実証済み + 零細/AI制作系 micro-bounty の単発 backup」に留め、primary は merit ベース(コード accept)の rail に pivot。
+
 | rail | 採否 | 理由 |
 |---|---|---|
-| **poidh (Base)** | ★zero-to-one 採用 | 完全 on-chain・`createClaim`/`withdraw` 明確・EOA=OK・成果物=画像 proof を blockrun_image で AI 自己生成可・human-zero 着金が実証可能。難点=通貨 native ETH（着金検証器を新規実装）・小額 |
-| gib.work (Solana) | Phase 2 | コード/OSS bounty・USDC で既存 solana-verify 適合・franklin1 に SOL gas あり。難点=**app API 未文書化**（reverse-engineer 要）→ zero-to-one の後 |
-| Immunefi / Code4rena / Sherlock | Phase 3 scale | USDC 高額($1k〜$10M)・匿名/緩 KYC。難点=security 専門性ゲート高 |
+| **gib.work (Solana)** | ★primary 候補（検証中） | コード/OSS bounty・USDC を wallet 直・no-KYC・既存 solana-verify 適合・franklin1 に SOL gas。accept が merit(PR merge)なら poidh の funder気まぐれ問題を回避。難点=**app API 未文書化**（実地 reverse-engineer 中） |
+| Immunefi / Code4rena / Sherlock | scale 候補 | USDC 高額($1k〜$10M)・匿名/緩 KYC・wallet 受取・merit=valid finding。難点=security 専門性ゲート高 |
+| **poidh (Base)** | 降格＝mechanism 実証+backup | on-chain 配管(`createClaim`/`Withdrawal`)は再利用。income rail としては accept 8.6% で不採用。#107 AI trailer / #263 ship-a-build の単発 zero-to-one にのみ使う |
 | Algora / Superteam | 却下 | 着金で Stripe/KYC/人間 claim 必須 = human-zero 不成立 |
+
+rail 最終確定 = gib.work 検証結果で決める。human-zero 不可なら audit contest を primary、poidh を単発 zero-to-one に。
 
 ---
 
@@ -86,7 +94,7 @@ E2E green = T1-T9 全通過 + done 1-4 の on-chain 着金を Fable が Basescan
 
 ## PHASE（各 phase に exit proof。green まで次に進まない）
 
-- **Phase 0 — mechanism 実証（Fable 手動 OK）**: T1,T2,T4,T5 を Fable が手で1回通す。poidh に実 claim tx を1件出し on-chain 確定を見る。native-verify を実装し既存着金 tx で検算。**exit proof = Basescan の createClaim tx hash + native-verify が正値を返すログ**。ここが赤なら skill 化しない。
+- **Phase 0 — rail 確定 + mechanism 実証（Fable 手動 OK）**: (a) gib.work 検証で primary rail を確定。(b) 確定 rail で **第三者(非Anicca)が出資した実 bounty を1件、human-zero で正当に完遂 → merit accept → finalized crypto payout が自 wallet に着金 → INV-8/9 準拠で ledger に重複なく1行**。[Sol#3] 既存無関係 tx の検算だけでは exit proof にしない（accept/withdraw/第三者資金を必ず含む）。**exit proof = payout tx hash（Basescan/Solscan）+ write-path 再検証ログ + ledger 行**。ここが赤なら skill 化しない。poidh の read lib + native-verify は済（mechanism 側は green）。
 - **Phase 1 — skillify**: C1-C6 を実装、N1-N3 完成。bounty harness を on-chain rail に付け替え。**exit proof = T1-T7 green（1件、実 wallet 着金 or accept 待ち状態まで自動）**。
 - **Phase 2 — loop 化 + 稼ぐまで**: C7 配線、launchd 自走。`kickstart`→watch。**exit proof = T8 green かつ done 2（実着金）が loop 自走で発生**。稼ぐまで fix→再検証。
 - **Phase 3 — scale**: gas 自動補給、gib.work(USDC コード bounty) 追加、audit contest 拡張。黒字実測 → Franklin 横展開。
@@ -103,6 +111,7 @@ E2E green = T1-T9 全通過 + done 1-4 の on-chain 着金を Fable が Basescan
 - 2026-07-18 [Phase0 read side 完了, commit b971d51 未push]: poidh Base **LIVE = 307件中 71 open**（実測）。ABI 実名確定: `bountyCounter()`（`bountyCount` は revert）/ `getClaimsByBountyId(uint256,uint256)` 2引数 / `bounties(id)` / `pendingWithdrawals(address)` / `createClaim(bountyId,name,uri,description)`。**罠**: `getBounties(offset)` は paginate せず同じ10件を返す → `bounties(id)` を Multicall3 で個別 scan（307 calls ~280ms）。RPC: llamarpc down、`base.publicnode.com`/`base.meowrpc.com`/`1rpc.io/base` が生存。
 - 2026-07-18: **native-verify N2 実装済・T5 green**。手法 = balance-delta before/after block + self-pay 時の gas 足し戻し（`debug_traceTransaction` は Base 公開 RPC 全滅 -32601、Basescan V2 は API key 不在）。実 tx `0xba7792…78b4` で `ethInflowForTx`=0.1297 ETH を検出。19 テスト green。
 - 2026-07-18: **blockrun_image ツールは grep で発見できず** → proof-gen N3 の画像生成 API は未確定（要 MCP 確認）。
+- 2026-07-18 [Sol review verdict = **STOP-AND-REVISIT-RAIL**]: 7 blocking。#1 poidh 攻略前提破綻（proof=現地/original、AI 画像不可、sentinel は発注者側）#2 accept 8.6%・open の 55/71 が30日超で墓場・収益性ゲート不在 #3 Phase0 が rail を証明しない #4 record.mjs が caller 提供値を盲信＝done 捏造可 #5 balance-delta は偽陰陽性→event log を bigint wei で #6 gas 自己復旧デッドロック #7 鍵 broadcast 前防御。→ INV-8〜11 に昇格・rail 降格・Phase0 再定義で反映済。
 - 2026-07-18 [71 open 全 dump・カテゴリ精査, Fable 実測]: AI が human-zero で勝てるのは **~10件のみ**（残りは現実世界/特定人物 proog）。AI 勝機案件: #263 "ship a real build"(0.0138ETH,claims2,純コード) / #107 "Farcaster Movie Trailer, Use AI"(0.0125ETH,claims3) / #237系 "tweet about \$Space proof=tweet URL"(claims0 多数, 0.001ETH) / #304 poem(claims9飽和) / #283 one question(claims1) / #301 NFT mint / #250 token split。→ **判定: poidh は mechanism 実証には最適だが income rail としては薄い**（大半 \$3〜40、accept は funder 依存）。zero-to-one の初ドルは取れる。scale($10k/月)は gib.work(コード/USDC)+audit へ pivot 必須。前提依存: tweet系は X/Farcaster account が要る（claude-p は未保有→要確認）。
 
 ## OPEN RISK / honest gap
