@@ -10290,3 +10290,13 @@
 {"ts":1784381329,"wake_id":"00MRQEKLPG52B083D2E8E14B11","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
 {"ts":1784381329,"wake_id":"00MRQEKLPG52B083D2E8E14B11","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784381516,"wake_id":"00MRQEOM8D8C1BA9D286624646","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784381730,"wake_id":"00MRQET6WZA6C0E7283C7A4D54","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784381796,"wake_id":"00MRQEULYN1A8ED7D4FC9845C8","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784381862,"wake_id":"00MRQEW0XK6B4B8E7F19BB49ED","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784381928,"wake_id":"00MRQEXG3WBF4EB15F1839494C","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784381995,"wake_id":"00MRQEYVL093A3ACB9D677414D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784381995,"wake_id":"00MRQEYVL093A3ACB9D677414D","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784382125,"wake_id":"00MRQF1NKYF7FD008D436543F4","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784382191,"wake_id":"00MRQF32HJ841D81E098124281","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784382257,"wake_id":"00MRQF4HP77ABB52F6DAA549C8","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
+{"ts":1784382324,"wake_id":"00MRQF5X38FEDBD819B1254125","kind":"wake_error","sleep_s":60,"model":"nvidia/llama-4-maverick"}
