@@ -265,7 +265,23 @@ Dais指示で即revert(`a0bff196`)・plist復元済み。gigは「human-funded �
 
 今後: gigはprofitable-claude repoへ集約移設予定(GIG-2、別CCセッション担当)。live配線図はTaskList #22に記録済み。
 
-## ★2026-07-17 HL(hl_trade)停止の真相確定 — Dais の記憶と整合★
+## ★2026-07-18 gig B0出品ブロックの真因是正 + パス中断増幅バグ修正★
+
+20+パス続いた「session dead / blocked_login」の真因 = セッション死ではなく **B0が cdp_context_lease の
+使い捨てincognito context(cookie seedのみ)でsellerエリアへアクセスし、Coconalaが /login へ302で弾く自傷バグ**。
+同一URLを永続daily-driver default contextで開くと認証済み200（実測対照あり）。B1応募系が通りB0出品系だけ
+失敗する非対称もこれで説明。是正 = B0/PROFILEをdefault context駆動に変更（新helper `cdp_default_tab.py`、
+commit `4b3d752c` ~/anicca）。実証: fix後パスが 08:55 に service 4313100「10枠限定｜SEO記事を執筆します」を
+draftから新規公開、公開ページHTTP 200確認。同日 4244556 に要相談フラグ+ヒアリング欄追加も成立（公開ページ反映確認）。
+
+第2バグ: 「Killed mid B1」の増幅要因 = gig_pass.sh EXIT trapが共有lease "gig" を無条件disposeし、
+turn中断が他コンテキスト巻き添えteardownに化ける → per-pass lease (gig-$$) 化 + 自lease限定release +
+gc配線で解消（commit `1c34963d`）。release A後もBのcontext生存をCDP実測でPASS。トリガーは調査の結果
+既に1系統（in-tmux hourly cron :27）で削除対象なし。「sub-hourly二重完了」に見えたのは1パス2レポート行（別writer）。
+
+Telegramの30分毎「session dead」通知は 07-17 20:04〜08:19 のCoconala/IGログアウト検知が発生源
+（`session_vault_tick.sh:49`）。08:49・09:20のkeepaliveで Coconala/IG/X 全て logged_out:false、通知停止。
+本日実績: 応募1（08:18 stsuchida返信）+ 出品編集1 + 新規公開1、全てloop自走。paid は依然 ¥0。
 
 franklin2: 意図的停止のconfig証跡あり — plistに `ANICCA_SLOT_ALLOWLIST=x402_sell`(mtime 07-16 06:00 JST、
 最終HL wakeの49分後)。レジストリ段階のハード除外。monitoringの「franklin2にsol/PM未配線」の正体もこれ
