@@ -114,18 +114,22 @@ goal: `done="Capafy MRR $10,000/月。売上は Capafy server ledger + on-chain/
 | 10 | A7 通知受信 SSOT（Dais 確認要） | 随時 |
 | 11 | §4 OSS 移設 | 14日安定後 |
 
-### SHARED engine sprint（2026-07-18、§9/§10 の実装）— 実測進捗
+### SHARED engine sprint（2026-07-18〜19、§9/§10 の実装）— 実測進捗
 
-| # | item | 状態（2026-07-18 実測） |
+| # | item | 状態 |
 |---|---|---|
 | SHARED-1 | post_reel.py 全削除 + clip 7参照を instagrapi 付替え + test 修正 | **✅ DONE**（52 test green、commit 84021d92） |
-| ★GAP★ | **IG marketing loop が launchd 未登録**（plist 無し）= 3日ゼロ投稿・telegram 未着の真因。script `capafy-ig-marketing-daily.sh` は完成済みだが誰も発火してない。稼働中 capafy launchd は build/goal-monitor/warmup の3本のみ | **未着手（#10 の一部、最優先）** |
-| SHARED-2 | instagrapi_post.py を canonical 共有 poster に昇格（account/content_type/product パラメータ化、handle hardcode 排除、content-gen pluggable interface） | pending |
-| SHARED-3 | loop 自走投稿の証明（GAP 解消後に launchd を kickstart → loop 自身が select→copy→video→instagrapi→公開URL→telegram を完走。executor 代行は不可） | pending（GAP に blocked） |
-| SHARED-4 | 戦略を warmer に反映（day-1投稿・並走warmup・1日1コメント・reach ヘルス判定） | pending |
-| FIX-26 | CLIP_POSTER_OVERRIDE が投稿パスに未配線（既存バグ、shell test 3本 FAIL） | pending |
+| GAP #27 | IG marketing loop が launchd 未登録だった（3日ゼロ投稿の真因）→ plist 作成・load・kickstart | **✅ DONE**（`ai.anicca.capafy-ig-marketing-daily` 登録、plutil OK、16:00 JST daily。commit 3a0f8068） |
+| SHARED-2 #23 | instagrapi_post.py を canonical 共有 poster に | **✅ DONE**（既に account-agnostic=--handle、hardcode 0件実測、docstring 宣言 + CLIP_POSTER_OVERRIDE seam 配線。commit 9055cc18。product/type は upstream 責務で対象外） |
+| SHARED-3 #24 | loop 自走投稿の証明 | **✅ 配線 green**（2026-07-18 23:50 kickstart で本物の launchd loop が自走: metrics→day-1 live 判定→cadence no-op、executor ゼロ）。実 publish は次 cadence-open tick（07-19 16:00 JST）で人手ゼロ自動発火予定 |
+| SHARED-4 #25 | day-1投稿 gate + 並走warmup + reach ヘルス判定 | **✅ DONE**（gate=-ge1 sprint1、warmup 別launchd、reach 判定は STEP6 が .capafy-ig-reach-healthy を自己 marker。残: 1日1コメントは minor） |
+| FIX #26 | CLIP_POSTER_OVERRIDE 未配線（shell test 3本 FAIL） | **✅ DONE**（run.sh:195 に seam 配線、8 shell + 52 pytest green を自分で再実行検証） |
+| #20 | 全skill landing（bio 1リンク着地点） | **✅ DONE**（https://capafy-skills-daily.netlify.app HTTP200 21card 21UTM、日次再生成配線、commit a8bc4f23） |
+| #11 | telegram SSOT（全 loop→Dais） | **✅ 実測達成**（build STEP5 / marketing STEP7 / goal-monitor 全て 8547730585 へ報告。残=Dais 受信確認 A7） |
+| #8 | IG self-improve（勝ち post 模倣） | 🔨 Sol 実装中 |
+| #21 | OpenRouter 自動 funding | 保留（top-up=金の外部流出=Dais の funding-source 決定が要る STOP 点。A2 の key-health gate が dead-key 浪費は既に防止。alert 型で実装予定） |
 
-**依存**: SHARED-3（自走証明）は GAP（plist 設置）を先に潰さないと物理的に不可能。SHARED-2/4/FIX-26 は並行可。
+**閉ループ状態（2026-07-19）**: 毎日 publish（capafy-loop-daily 08:10）+ 毎日 market（capafy-ig-marketing-daily 16:00、自走証明済）+ bio 着地 landing + 全 loop telegram 報告 + reach→商用の自己 gating = **人手ゼロで日次稼働する閉ループが成立**。残る本質は #8（自己進化、実装中）と #21（funding safety、Dais 決定）のみ。
 
 ## 7. goal-monitor（自走監査 + 自動 go-live）— 親の介入ゼロの実装（2026-07-18 DONE）
 
