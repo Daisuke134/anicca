@@ -17,7 +17,7 @@ MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
 # shellcheck source=../marketing-engine/load_manifest.sh
 . "$MARKETING_ENGINE_DIR/load_manifest.sh"
-me_load_manifest capafy || true   # per-loop config (persona/product/content/account) — engine stays shared
+me_load_manifest "${MKT_MANIFEST:-capafy}" || true   # per-loop config — engine stays shared; set MKT_MANIFEST to run another loop on this same engine
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 LOG="$HOME/.openclaw/logs/capafy-ig-marketing-daily.log"
 ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
