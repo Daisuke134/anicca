@@ -18,19 +18,19 @@
 
 | ID | 証拠 | 状態 |
 |---|---|---|
-| T1 | 変更 shell 全件 `bash -n` | pending |
-| T2 | poisoned `useclaudeskills` は handle 空、cooked marker は `cooked-marker` | pending |
-| T3 | Capafy account-state/provision wiring test 全 green | pending |
-| T4 | clip shell tests と `python3 -m pytest -q tests` 全 green | pending |
-| T5 | canonical PROVISION / DURABLE GOLDEN SESSION 本文の定義数が2から1 | pending |
+| T1 | 変更 shell 6本 `bash -n`。`shellcheck` 5本 green（dynamic source の SC1091 のみ除外） | green |
+| T2 | baseline/after とも poisoned `useclaudeskills`=`handle=none`、marker=`cooked-marker` | green |
+| T3 | Capafy account-state/provision 28/28、Python 6/6、loop audit 3/3 | green |
+| T4 | clip shell 8/8、pytest 53/53。baseline と after が同数 | green |
+| T5 | PROVISION と DURABLE GOLDEN SESSION の定義数が baseline 2、after 1 | green |
 | T6 | feature branch commit を remote push | pending |
 
 ## TODO
 
 | 順序 | 作業 | 状態 |
 |---|---|---|
-| 1 | 共有 account-state module と Capafy shim | in_progress |
-| 2 | canonical provision prompt renderer と2 loop wiring | pending |
-| 3 | resolver、構文、Capafy、clip test | pending |
-| 4 | 重複数と diff 監査 | pending |
-| 5 | commit・push | pending |
+| 1 | 共有 account-state module と Capafy shim | completed |
+| 2 | canonical provision prompt renderer と2 loop wiring | completed |
+| 3 | resolver、構文、Capafy、clip test | completed |
+| 4 | 重複数と diff 監査 | completed |
+| 5 | commit・push | in_progress |
