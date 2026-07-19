@@ -32,6 +32,10 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
   too young, private-API login is always rejected). Warm day1–2 via browser. **Day3**: establish
   the ONE golden instagrapi session (`Client().login` now accepted, aged) → `dump_settings`.
   **Never relogin after** — a relogin trips bloks `ChallengeRequired` = poison. Post from day3.
+- **Status vocabulary (SSOT)**: `warming_day1` and `warming` mean the account is still warming;
+  both are usable for the provision counter but are not eligible to post. `ready` means posting
+  is allowed. Any poisoned status or poison marker excludes the account. Provisioning therefore
+  counts non-poisoned `warming*`/`ready*`, while posting selection remains strictly `ready` only.
 - **Browser isolation**: every loop leases its OWN isolated context on the shared `:9222`
   daily-driver via `cdp_context_lease.py` (never the raw default context — that churns other
   loops' tabs and poisons accounts). Each account gets a dedicated port (never 9222/9223).

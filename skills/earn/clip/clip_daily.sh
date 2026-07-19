@@ -11,6 +11,8 @@ C="$HOME/anicca/skills/earn/clip"
 MARKETING_ENGINE_DIR="$C/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
+# shellcheck source=../marketing-engine/account_state.sh
+. "$MARKETING_ENGINE_DIR/account_state.sh"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
@@ -68,17 +70,7 @@ python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" --
 log "WARM: warmer.py"
 "$PY" "$MARKETING_ENGINE_DIR/warmer.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
-USABLE_ACCTS=$("$PY" - "$CLIP_ACCTS" <<'PYJSON' 2>/dev/null
-import json,sys
-try: a=json.load(open(sys.argv[1]))
-except Exception: a=[]
-def ok(x):
-    s=(x.get("status") or "").lower()
-    if any(k in s for k in ("poison","frozen","blocked","fail")): return False
-    return s.startswith("ready") or s.startswith("warming")
-print(sum(1 for x in a if ok(x)))
-PYJSON
-)
+USABLE_ACCTS=$(count_ig_usable_accounts "$CLIP_ACCTS")
 log "PROVISION: usable_accounts=${USABLE_ACCTS:-0}"
 if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
   PROVISION_PROMPT="$(
