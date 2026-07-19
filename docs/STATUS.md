@@ -52,7 +52,7 @@ x402 ゼロ→イチの唯一の道（順序固定）:
     無理に churn せず、店を磨き（improve推奨に沿った商品調整）+ 発見を待つのが正。★
 ```
 
-## ★★2026-07-19 最有力真因の発見: 我々は買い手カタログ(CDP Bazaar)に載ってない★★
+## ★★2026-07-19 訂正: 我々は CDP Bazaar に載っている(前「未掲載」は誤診断=壊れたページネーション)★★
 
 実測: `api.cdp.coinbase.com/.../discovery/resources`(総数24846)を1500件走査 → franklin1/franklin2/payTo が**1件もヒットせず**。
 buyer agent が実際に探すのは CDP Bazaar。x402scan 登録 ≠ Bazaar 掲載。**external $0 の主因は商品/需要でなく「買い手が探す場所に存在しない」**可能性が最有力。
