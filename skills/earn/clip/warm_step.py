@@ -11,14 +11,13 @@ its own ~/.cloak/ig-warmup-<handle>.json log history the first time it's seen) a
      account this pass if either is missing (never guesses a profile/port).
   2. Runs warm.py once (CDP_PORT=<port>) if the browser ended up reachable -- warm.py itself is
      idempotent (no-ops if already warmed today).
-  3. Reads the account's warmup state back and decides:
-       - a ban signal anywhere in the log/aborts history -> status: investigating + WARN (never
-         auto-promote a banned account).
-       - day >= 3 (the LAST successful run's own recorded "day", not a recomputed calendar
-         guess) and not banned -> status: ready. Dais 2026-07-15 sets this 3-day floor;
-         ig-account-warmer's SKILL.md recommends 7 days as the safer default -- the 3-day floor
-         is used here per explicit instruction (can be extended later), and the tradeoff is
-         recorded in the promotion note every time.
+  3. Counts account age from started_warming with creation day == day1.
+  4. Reads the account's warmup state back and decides:
+       - a ban signal anywhere in the log/aborts history -> status: investigating + WARN.
+       - day1-2 -> keep status: warming and session_owner: browser.
+       - day >= 3 -> establish the golden instagrapi session once: password login, timeline feed
+         probe, settings dump, then status: ready and session_owner: instagrapi.
+       - a saved/attempted session is never password-relogged. Dead session -> session_failed.
 Only ONE account is touched per pass (deliberately serial -- keeps resource use minimal and
 each promotion decision individually auditable) and only accounts with status=="warming" are
 ever touched -- a live "ready" posting account's browser (e.g. the daily-driver-adjacent
@@ -35,6 +34,97 @@ ENSURE_PY = os.path.expanduser("~/.claude/skills/ig-account-warmer/scripts/ensur
 WARM_PY = os.path.expanduser("~/.claude/skills/ig-account-warmer/scripts/warm.py")
 PY = "/opt/homebrew/bin/python3"
 PROMOTE_DAY = 3
+
+
+def warming_day(started_warming, today=None):
+    """Creation date is day1; invalid or future dates are not promotable."""
+    today = today or datetime.date.today()
+    try:
+        started = datetime.date.fromisoformat(started_warming)
+    except (TypeError, ValueError):
+        return 0
+    elapsed = (today - started).days
+    return elapsed + 1 if elapsed >= 0 else 0
+
+
+def establish_golden_session(handle, home=None, client_factory=None):
+    """Create the one password-backed session, or verify saved settings without relogin."""
+    home = home or os.path.expanduser("~")
+    cloak_dir = os.path.join(home, ".cloak")
+    settings = os.path.join(cloak_dir, f"instagrapi-{handle}.json")
+    attempt = os.path.join(cloak_dir, f".golden-session-attempted-{handle}")
+    creds_path = os.path.join(cloak_dir, f"ig-{handle}.json")
+
+    if client_factory is None:
+        try:
+            from instagrapi import Client
+        except Exception as e:
+            return {"ok": False, "terminal": False, "error": f"instagrapi unavailable: {type(e).__name__}"}
+        client_factory = Client
+
+    if os.path.exists(settings):
+        try:
+            cl = client_factory()
+            cl.load_settings(settings)
+            feed = cl.get_timeline_feed()
+            if feed is None:
+                raise RuntimeError("timeline feed returned no data")
+            cl.dump_settings(settings)
+            return {"ok": True, "terminal": False, "login_performed": False, "settings_path": settings}
+        except Exception as e:
+            return {
+                "ok": False,
+                "terminal": True,
+                "login_performed": False,
+                "error": f"saved session dead; refusing relogin: {type(e).__name__}: {str(e)[:160]}",
+            }
+
+    if os.path.exists(attempt):
+        return {
+            "ok": False,
+            "terminal": True,
+            "login_performed": False,
+            "error": "golden login already attempted; refusing relogin",
+        }
+    if not os.path.exists(creds_path):
+        return {"ok": False, "terminal": False, "login_performed": False, "error": "signup credentials missing"}
+
+    try:
+        creds = json.load(open(creds_path))
+        username, password = creds["username"], creds["pw"]
+        cl = client_factory()
+    except Exception as e:
+        return {"ok": False, "terminal": False, "login_performed": False, "error": f"cannot prepare login: {type(e).__name__}"}
+
+    os.makedirs(cloak_dir, exist_ok=True)
+    try:
+        fd = os.open(attempt, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return {
+            "ok": False,
+            "terminal": True,
+            "login_performed": False,
+            "error": "golden login already attempted; refusing relogin",
+        }
+    with os.fdopen(fd, "w") as f:
+        f.write(f"{datetime.datetime.now(datetime.timezone.utc).isoformat()}\n")
+
+    try:
+        cl.login(username, password)
+        feed = cl.get_timeline_feed()
+        if feed is None:
+            raise RuntimeError("timeline feed returned no data")
+        cl.dump_settings(settings)
+        if not os.path.exists(settings):
+            raise RuntimeError("settings dump missing")
+        return {"ok": True, "terminal": False, "login_performed": True, "settings_path": settings}
+    except Exception as e:
+        return {
+            "ok": False,
+            "terminal": True,
+            "login_performed": True,
+            "error": f"golden session failed; never retry: {type(e).__name__}: {str(e)[:160]}",
+        }
 
 
 def load_warmup_state(handle):
@@ -146,7 +236,11 @@ def main():
         return _write(accts_path, accts, n_before) if changed else 0
 
     handle, port, profile = target["handle"], target.get("port"), target.get("profile")
-    print(f"WARM: target this pass = {handle} (started_warming={target.get('started_warming')})")
+    account_day = warming_day(target.get("started_warming"))
+    print(
+        f"WARM: target this pass = {handle} "
+        f"(started_warming={target.get('started_warming')}, account_day={account_day})"
+    )
 
     if not browser_up(port):
         creds = os.path.expanduser(f"~/.cloak/ig-{handle}.json")
@@ -185,7 +279,7 @@ def main():
         print(f"WARM {handle}: WARN browser still down on :{port} after launch attempt -- warm.py not run")
 
     warmup_state = load_warmup_state(handle)
-    day, banned, _ = state_summary(warmup_state)
+    warm_log_day, banned, _ = state_summary(warmup_state)
     recent_failure = recent_abort_after_last_log(warmup_state)
     for a in accts:
         if a.get("handle") != handle:
@@ -194,29 +288,55 @@ def main():
             a["status"] = "investigating"
             a["note"] = (
                 f"{datetime.date.today().isoformat()} warm_step.py: WARN ban signal detected in "
-                f"warmup log -- moved warming->investigating (day={day})."
+                f"warmup log -- moved warming->investigating (account_day={account_day}, warm_log_day={warm_log_day})."
             )
             changed = True
             print(f"WARM {handle}: BAN SIGNAL -- moved to investigating")
-            append_warmlog(handle, {"action": "ban_detected", "day": day})
+            append_warmlog(handle, {"action": "ban_detected", "day": account_day})
         elif recent_failure:
-            print(f"WARM {handle}: HELD (day={day} >= {PROMOTE_DAY} but a login abort was "
-                  f"recorded after the last successful log day -- not promoting)")
-            append_warmlog(handle, {"action": "held_recent_abort", "day": day})
-        elif day >= PROMOTE_DAY:
-            prior_note = (a.get("note") or "")[:300]
-            a["status"] = "ready"
-            a["note"] = (
-                f"{datetime.date.today().isoformat()} warm_step.py: PROMOTED warming->ready "
-                f"(day={day} >= {PROMOTE_DAY}d floor per Dais 2026-07-15 instruction; "
-                f"ig-account-warmer SKILL.md recommends 7d but Dais's 3-day floor takes "
-                f"precedence -- can extend later). prior note: {prior_note}"
+            print(
+                f"WARM {handle}: HELD (account_day={account_day}, warm_log_day={warm_log_day}; "
+                "a login abort was recorded after the last successful warm log -- not promoting)"
             )
-            changed = True
-            print(f"WARM {handle}: PROMOTED to ready (day={day})")
-            append_warmlog(handle, {"action": "promoted", "day": day})
+            append_warmlog(handle, {"action": "held_recent_abort", "day": account_day})
+        elif account_day >= PROMOTE_DAY:
+            session = establish_golden_session(handle)
+            if session.get("ok"):
+                prior_note = (a.get("note") or "")[:300]
+                a["status"] = "ready"
+                a["session_owner"] = "instagrapi"
+                a["note"] = (
+                    f"{datetime.date.today().isoformat()} warm_step.py: golden session alive; "
+                    f"PROMOTED warming->ready (account_day={account_day}, login_performed="
+                    f"{str(bool(session.get('login_performed'))).lower()}). prior note: {prior_note}"
+                )
+                changed = True
+                print(
+                    f"WARM {handle}: GOLDEN SESSION alive; PROMOTED to ready "
+                    f"(account_day={account_day}, login_performed={session.get('login_performed')})"
+                )
+                append_warmlog(
+                    handle,
+                    {
+                        "action": "golden_session_ready",
+                        "day": account_day,
+                        "login_performed": bool(session.get("login_performed")),
+                    },
+                )
+            elif session.get("terminal"):
+                a["status"] = "session_failed"
+                a["note"] = (
+                    f"{datetime.date.today().isoformat()} warm_step.py: {session.get('error')}; "
+                    "account discarded, password relogin forbidden."
+                )
+                changed = True
+                print(f"WARM {handle}: SESSION FAILED terminally -- discard; never relogin")
+                append_warmlog(handle, {"action": "golden_session_failed", "day": account_day})
+            else:
+                print(f"WARM {handle}: HELD before golden session -- {session.get('error')}")
+                append_warmlog(handle, {"action": "golden_session_held", "day": account_day})
         else:
-            print(f"WARM {handle}: not yet promotable (day={day} < {PROMOTE_DAY})")
+            print(f"WARM {handle}: not yet promotable (account_day={account_day} < {PROMOTE_DAY})")
         break
 
     return _write(accts_path, accts, n_before) if changed else (print("WARM: no changes this pass") or 0)

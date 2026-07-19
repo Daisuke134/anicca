@@ -40,8 +40,8 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 |---|---|
 | 現状実測、spec、feature worktree | completed |
 | day1 signup-only provision | completed |
-| day3 golden session one-shot | in_progress |
-| young-account poison false-positive | pending |
+| day3 golden session one-shot | completed |
+| young-account poison false-positive | in_progress |
 | full tests と stub lifecycle 実測 | pending |
 | commit と push | pending |
 
