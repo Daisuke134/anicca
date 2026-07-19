@@ -466,6 +466,12 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
   - **2026-07-19 ✅ LM-29 done**: launchd `ai.anicca.lm-recording-store`（30分毎 StartInterval 1800、RunAtLoad）+ wrapper `~/.openclaw/skills/life-manager-video/run-store-recordings.sh`（.env source → store-recordings.py）。`launchctl list` に exit0 で登録、out ログに `done: N new, M listed` 実出力を確認。wrapper は main-internal に push（secret-guard no leaks）。flowb: PLAN=Fable、Sol は sandbox が repo 外書込を拒否→Fable が仕上げ。録音は `~/.openclaw/state/lm-video/recordings/`。
 - **一般法則追加**: DB 状態フラグだけで close するな（録音の中身を聞く）＋ **fix の方向を user の希望で確認してから data を書き換える**（locale 推定 < 個別 user の明示希望）。
 
+### §5c-11 進捗（2026-07-19 11:40）— LM-8 Unipile calendar adapter 完成（B）、activation 残
+- **U17 GATE = PASS（実測）**: Unipile は完全 calendar API（list/create/patch、location 更新可）。crwl で OpenAPI 実 schema 確認: primary=`is_default`(bool)、container=`data`、query param=`start`/`end`(RFC3339)、event field=`title`→summary/`body`→description/`location`/`start.date_time`+`time_zone`。
+- **flowb 実走（成功例）**: Fable=PLAN（patch レベル + endpoint 実仕様 + マッピング要件）→ Sol(codex)=`lib/transport/calendar-unipile.js` + test 実装、adapter の全 field 推測が実 schema と一致 → Sol は agmsg で3点質問（primary 判別/propagation A・B/dialect）を投げ待機（**チャネル双方向 実証**）→ Sol は sandbox の `.git/worktrees` index.lock で commit 不可 → Fable が裁定(B)+ commit+push（dev `d780622c6`）+ 独立再実行（calendar-unipile.test.js 4/4 pass、全 suite fail 0）で検証。
+- **状態**: adapter=✅ 完成・test green・commit 済み。`LIFE_CAL_TRANSPORT=unipile` opt-in、未設定=composio 現状維持（後方互換、prod 挙動無変更）。
+- **★残り（LM-8b activation、二重払いを実際に止める step）★**: (A) production call chain（events/travel/ask/notify）に `u.gmail_account_id`+`UNIPILE_TOKEN`+`UNIPILE_DSN` を propagate → getCalendar(opts) 注入。(B) prod で `LIFE_CAL_TRANSPORT=unipile` に flip。(C) 実 gcal で list/create/patch を Fable が E2E。(D) Composio calendar 課金停止確認。← これで初めて二重払いが止まる。次スライスで実 E2E 付き。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
