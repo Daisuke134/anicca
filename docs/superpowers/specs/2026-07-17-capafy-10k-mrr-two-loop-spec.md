@@ -309,15 +309,30 @@ DONE（2026-07-19 検証）
     day3(~07-21) website 設定時=#39 と同じ data-gate。file は ~/.agents=~/.claude ハードリンク
     1実体(git 管理外)、loop 実行パスに反映済。
 
+ ✓ #11 A7 受信照合  **完了(2026-07-19)** — bot token は履歴/自送信を構造的に読めない
+    (core.telegram.org/bots/api、docs.telethon.dev botapi-vs-mtproto、gh openclaw/openclaw
+    action-runtime.ts が非outboundを全throw="Unsupported Telegram action: read")。解=MTProto
+    USER session。建てた: ~/anicca/skills/tools/telegram-user/tg_user.py(Telethon 1.44,
+    venv=~/.cache/telegram-user-venv, read/send/2段headless login/entity解決)。dice0130 として
+    login済(StringSession→~/.cloak/telegram-user.json 0600)。実読 verified: dialogs 12件 +
+    read-by-id(Anicca chat count 4)両方 real data。以後 Dais の受信箱を自分で照合可能。
+
 ── DO-NOW キュー空 ──  残りは全て待ち(下記 BACK-BURNER)。
 
-BACK-BURNER（待ちが本質）
- - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
- - #21 auto-charge  Dais の funding源決定(金流出=不可逆)
- - #1 現4件         Capafy 外部 manual review 待ち
- - #11 A7           Dais 側 受信確認(コードは全 loop 報告済み)
- - #12 OSS          14日安定後 profitable-claude 移設
+### 全残 TODO（2026-07-19 時点、6件、全て「待ち」— 今 build できる分は無し）
 ```
+07-20 day3 データ待ち（明日16:00 初 live 投稿から発生）
+ - #30 FRESH-ACCT   @useclaudeskills day3 golden session→初投稿(演算確定: 07-20 WARM_DAY=3)
+ - #24 SHARED-3     loop 自走投稿の証明(launchd が自身で post した実ログ)
+ - #37 MONEY-LINE   reel→$ attribution(投稿後 reach/売上 実データ、capafy は UTM別返さず代理指標)
+ - #10 B8-B9        marketing 14日 account 運用実測
+
+Dais 判断待ち
+ - #12 OSS          14日安定後 profitable-claude へ two-loop 移設
+ - #41 LIFE-AUTO    tg_user 上に「Dais の telegram 読み→仕分け/応答」loop(今やらない、Dais案)
+```
+（完了: #1 reject-resubmit / #9 売れ筋 / #11 受信照合(telegram-user) / #21 funding alert /
+  #31残 dedup無し確定 / #40 BIO-ROBUST。#21 の実 card 補充のみ Dais の金流出判断で保留）
 
 ## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
 
