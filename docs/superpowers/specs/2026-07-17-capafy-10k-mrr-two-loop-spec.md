@@ -392,8 +392,10 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
 並行 track B（待ち無し、今日から番号順に実行）:
  B1 #46 LANDING-FIX  ✅完了 2026-07-19。真因=plist に WorkingDirectory 無し→launchd cwd=/ で netlify が `//.netlify` を mkdir（env var 空説・HOME 説は再現実測で棄却）。
                      fix=deploy を skill dir へ cd する subshell 化（anicca 52ee0579）。cwd=/ 条件で実 deploy 成功 + landing SSR 200/24KB を実測済。
- B2 #45 ENGINE-BASE  spawn-marketing-loop.sh E2E（2つ目 manifest→loop 生成 dry 実証）+ 2レーン規律を engine README に明文化
-                     （earner lane=agent自己所有のみ / human-funded 製品 lane=Postiz 可: 将来の reelclaw/larry/honne）+ slideshow loop 化
+ B2 #45 ENGINE-BASE  ✅完了 2026-07-19（anicca bd8f9b30）。Fable 独立検証: pytest 8 passed / me_load_manifest slideshow PASS（実走）。
+                     成果: README「Funding lanes」章（earner=agent自己所有+instagrapi / human-funded=Postiz可）、poster.py に album_upload
+                     carousel 経路（--images 2-10、--video と排他、day<3 guard 有効、album は public_verified:None の正直報告）、
+                     manifests/slideshow.manifest.sh（offline SPAWN_FAKE_LLM E2E で生成・validate 通過。LANE: human-funded、live 発火は day3 実証後）
  B3 #37 MONEY-LINE   attribution 配線の先行実装（landing click 代理指標。実データは A3 後に流れ込む）
  B4 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
  B5 #41 LIFE-AUTO    Dais の GO が出た時のみ
