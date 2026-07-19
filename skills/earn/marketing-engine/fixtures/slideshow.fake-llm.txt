@@ -1,0 +1,8 @@
+MKT_PERSONA=Amazon shoppers looking for practical product recommendations
+MKT_PROBLEM=Comparing products takes too much time and research
+MKT_NICHE=amazon-product-guides
+MKT_CONTENT_ADAPTER=slideshow
+MKT_BIO_TEXT=Quick visual guides to products worth considering
+MKT_PRODUCT_SOURCE=Amazon affiliate product recommendations using Dais asset tag aniccaai-22
+MKT_BIO_LINK=https://example.com/amazon-affiliate-landing
+MKT_CADENCE_HOUR=16
