@@ -250,3 +250,19 @@ niche / cadence(投稿時刻)
 - #33 `new-marketing-loop` generator（manifest→launchd 登録→稼働）
 - #34 README「marketing loop の作り方（persona/problem/product/content だけ）」
 - #35 meta-loop: product prompt → manifest 自動生成 → loop scaffold（true takeoff）
+
+### §11.1 AS-IS 実測（2026-07-19、共有の現実）— 「共有 engine は無い」
+ファイル単位で実測した結論: **clip と capafy が共有してるのは `clip/scripts/instagrapi_post.py`（poster）1ファイルだけ。** 残りは全部複製/並行実装。
+```
+共有(実測): earn/clip/scripts/instagrapi_post.py  ← これだけ
+
+複製(capafy 自前): build_landing.py / ig_metrics.py / ig_reflect.py / select_listing.py
+                   / warm_jitter.sh / capafy-goal-monitor.sh / capafy-ig-marketing-daily.sh
+                   (+ X線: x_post.py / x_metrics.py / x_attribution.py / x_post_browser.py)
+複製(clip 自前): warm_step.py / provision(clip_pass.sh) / producer.sh / pipeline.py
+                / reflect相当(無) / reel_verify.py / self_heal.py / bio_step.py / run.sh ...
+```
+- capafy の warmup = ig-account-warmer skill の `warm.py`（別物）、clip の warmup = `warm_step.py`。**別実装**。
+- capafy に provision（account 自作）は**無かった**（@useclaudeskills は手動作成）→ clip の PROVISION を通らず ephemeral session で brick = poison の真因。
+- IG に投稿する loop: capafy-marketing / clip / clip-producer / clip-promote / video（各々ほぼ自前）。
+**結論**: 「5つが同じ engine を共有」は**まだ嘘**。§11 の marketing-engine 抽出（#31）で初めて本当になる。それまでは poster 1個だけが共有。
