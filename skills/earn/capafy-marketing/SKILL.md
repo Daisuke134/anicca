@@ -6,17 +6,24 @@ description: >
   (selector / content adapter / video / IG poster) land here too as they are built.
 metadata:
   loop: B (marketing) — sibling of the clip earn loop; instance-separated via ANICCA_INSTANCE=capafy
-  status: B5 (X poster) BUILT + draft-verified 2026-07-18. B0 IG account @useclaudeskills warming.
+  status: IG landing attribution implemented. X scripts described in historical notes are not present.
 ---
 
 # capafy-marketing
+
+> **Current-files note (2026-07-19):** `scripts/x_post.py`,
+> `scripts/x_post_browser.py`, `scripts/x_metrics.py`, and
+> `scripts/x_attribution.py` are **not implemented in this directory**. References to
+> them below describe the historical X-line design only and must not be treated as
+> runnable commands. The implemented attribution rail is the IG landing redirect
+> plus `scripts/pull_attribution.py` described below.
 
 Marketing arm that promotes online (status=4) Capafy listings. The link-placement rule
 is web-researched: **IG/TikTok comment URLs are not clickable and link-in-body is
 down-ranked on X → bio-led on IG, and on X the link goes in the FIRST self-reply, never
 the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`)
 
-## Pipeline (X line): B1 select → B2 copy (agent) → B5 post
+## Historical pipeline (X line, not runnable here): B1 select → B2 copy → B5 post
 
 ```
 select_listing.py         # B1: pick an online listing (rotation/dedup), emit {agent_id,name,desc,url}
@@ -43,7 +50,7 @@ decision = model). `x_post.py` is the validator/assembler: it rejects a native t
 or over 280 chars, so a bad draft fails closed. Verified 2026-07-18: selector → agent-written
 258-char native tweet → `x_post.py --draft` passed validation and created a Postiz draft (deleted after).
 
-## B5 — X poster: use `scripts/x_post_browser.py` (browser-direct = the WORKING rail)
+## B5 — X poster history (`scripts/x_post_browser.py` is not implemented here)
 
 ★ **`x_post_browser.py` is the rail to use.** `x_post.py` (Postiz) is kept only for reference —
 Postiz strips every URL, so the reply link never reaches X (see the Postiz block below). ★
@@ -72,7 +79,7 @@ NOT post near an existing article post (space by hours); each post is time-stamp
 `~/.openclaw/state/capafy-marketing-rotation.jsonl`. Do NOT overwrite the profile Website (already set);
 the reply URL is the primary CTA.
 
-## B5 (deprecated for X) — Postiz poster (`scripts/x_post.py`)
+## B5 historical Postiz poster (`scripts/x_post.py` is not implemented here)
 
 Posts a listing to X via **Postiz** (integration `POSTIZ_X_INTEGRATION_ID`, account アニッチャ)
 as a 2-tweet self-thread:
@@ -119,21 +126,30 @@ NOT @aniccaxxx as `~/.openclaw/skills/x-poster/SKILL.md` claims.
 
 **Do NOT wire `--live` to a cron** until the rail is switched — it would post link-less tweets.
 
-## B6 metrics + reflect / B7 attribution (X-line learning line)
+## B6/B7 X-line history (the named X scripts are not implemented here)
 
-- **B6 `scripts/x_metrics.py`** — reads views/replies/reposts/likes/bookmarks off each posted
+- **B6 `scripts/x_metrics.py` (not implemented)** — was designed to read views/replies/reposts/likes/bookmarks off each posted
   thread's PUBLIC tweet (browser-direct, :9222) into `capafy-marketing-metrics.jsonl` (time-series).
   Verified 2026-07-18: captured views=3, replies=1 on the first live thread.
 - **B6 reflect** — SKELETON in the daily prompt (STEP6): no-op until 7+ distinct threads, then the
   agent leans next copy toward above-median-views winners (clip REFLECT / above-avg gate). Fires
   naturally once data accrues.
-- **B7 `scripts/x_attribution.py`** — 7-day date-window candidate join of posts × Capafy sales into
+- **B7 `scripts/x_attribution.py` (not implemented)** — was designed as a 7-day date-window candidate join of posts × Capafy sales into
   `capafy-attribution.jsonl`. ★HONEST LIMIT: Capafy sales/trend is per-day aggregate (no per-listing
   granularity) → this is a CANDIDATE signal, never proof a post drove a sale. UTM (utm_medium=x_reply)
   is embedded so the join tightens once Capafy exposes per-listing/UTM data. Verified: empty join (0
   candidates) while sales ~0 = correct.
-- Both run **deterministically in the daily bash caller every day** (before the cadence gate), so the
-  time-series fills even on no-post days.
+- These historical X scripts are not wired into the daily caller because the files do not exist.
+
+## Implemented IG landing attribution
+
+`build_landing.py` links every online listing card to `/go/<agent_id>`. The Netlify
+Function records one immutable Netlify Blob per valid click and redirects to the
+Capafy listing with the Instagram bio UTM parameters. `/go-stats` returns cumulative
+counts. Immediately after `ig_metrics.py`, the daily caller runs
+`scripts/pull_attribution.py` non-fatally; it joins those counts to the current
+`GET /agent/agents` sales snapshot and appends at most one dated row per day to
+`~/.openclaw/state/capafy-attribution.jsonl`.
 
 ## Dependencies / open items
 - Capafy listing URL resolution + rotation = B1 (selector). Capafy user token `CAPAFY_ACCESS_TOKEN`
