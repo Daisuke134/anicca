@@ -41,6 +41,25 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
 - **Poison detection only on day3+ accounts** (a young account failing instagrapi is expected,
   not poison — don't false-cook it).
 
+## Funding lanes
+
+The engine keeps funding and credentials in two explicit lanes:
+
+- **Earner lane**: the agent owns the account and posts only through this engine's
+  `poster.py`/instagrapi session. Postiz and human credentials are forbidden.
+- **Human-funded lane**: Dais/human assets and products (including reelclaw, larry, and honne)
+  may use human credentials and Postiz.
+
+| `MKT_CONTENT_ADAPTER` | Instagram media | `poster.py` route |
+|---|---|---|
+| `faceless-video` | Reel | instagrapi `clip_upload` |
+| `clip-cut` | Reel | instagrapi `clip_upload` |
+| `slideshow` | Carousel | instagrapi `album_upload` |
+| `carousel` | Carousel | instagrapi `album_upload` |
+
+Lane example: an affiliate slideshow using Dais's Amazon tag is **human-funded**, because the
+Amazon tag is a human asset.
+
 ## Files
 
 | File | Role |
