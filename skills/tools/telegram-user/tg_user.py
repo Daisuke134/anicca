@@ -84,6 +84,51 @@ async def cmd_login(cfg):
                       "session_saved": CFG_PATH}))
 
 
+async def cmd_login_send(cfg, phone):
+    # Step 1 of headless login: request the code. Telegram delivers a 5-digit code to the
+    # user's existing Telegram app. Persist the intermediate session + phone_code_hash so
+    # step 2 (login-code) can complete sign_in in a separate process.
+    from telethon.sessions import StringSession
+    cl = await _client(cfg, require_session=False)
+    await cl.connect()
+    sent = await cl.send_code_request(phone)
+    cfg["session"] = StringSession.save(cl.session)
+    cfg["_login_phone"] = phone
+    cfg["_login_code_hash"] = sent.phone_code_hash
+    _save_cfg(cfg)
+    await cl.disconnect()
+    print(json.dumps({"ok": True, "code_sent_to": phone,
+                      "next": "relay the 5-digit code -> tg_user.py login-code <code>"}))
+
+
+async def cmd_login_code(cfg, code, password=None):
+    # Step 2: complete sign_in with the relayed code (+2FA password if the account has one).
+    from telethon.sessions import StringSession
+    from telethon.errors import SessionPasswordNeededError
+    phone = cfg.get("_login_phone"); code_hash = cfg.get("_login_code_hash")
+    if not phone or not code_hash:
+        print(json.dumps({"ok": False, "error": "run login-send <phone> first"}), file=sys.stderr)
+        sys.exit(3)
+    cl = await _client(cfg, require_session=True)  # loads intermediate session from login-send
+    await cl.connect()
+    try:
+        await cl.sign_in(phone=phone, code=str(code), phone_code_hash=code_hash)
+    except SessionPasswordNeededError:
+        if not password:
+            await cl.disconnect()
+            print(json.dumps({"ok": False, "need_2fa": True,
+                              "error": "account has 2FA — run: login-code <code> <2fa_password>"}), file=sys.stderr)
+            sys.exit(4)
+        await cl.sign_in(password=password)
+    cfg["session"] = StringSession.save(cl.session)
+    cfg.pop("_login_phone", None); cfg.pop("_login_code_hash", None)
+    _save_cfg(cfg)
+    me = await cl.get_me()
+    await cl.disconnect()
+    print(json.dumps({"ok": True, "logged_in_as": getattr(me, "username", None) or me.id,
+                      "session_saved": CFG_PATH}))
+
+
 async def cmd_dialogs(cfg, limit):
     cl = await _client(cfg)
     await cl.connect()
@@ -121,6 +166,15 @@ def main():
     cfg = _load_cfg()
     if cmd == "login":
         asyncio.run(cmd_login(cfg))
+    elif cmd == "login-send":
+        if len(sys.argv) < 3:
+            print("usage: tg_user.py login-send <phone>"); sys.exit(1)
+        asyncio.run(cmd_login_send(cfg, sys.argv[2]))
+    elif cmd == "login-code":
+        if len(sys.argv) < 3:
+            print("usage: tg_user.py login-code <code> [2fa_password]"); sys.exit(1)
+        pw = sys.argv[3] if len(sys.argv) > 3 else None
+        asyncio.run(cmd_login_code(cfg, sys.argv[2], pw))
     elif cmd == "dialogs":
         limit = int(sys.argv[2]) if len(sys.argv) > 2 else 20
         asyncio.run(cmd_dialogs(cfg, limit))
