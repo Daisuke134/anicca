@@ -281,11 +281,13 @@ niche / cadence(投稿時刻)
 2. **他 account を follow してない** — warm.py は passive only（reels/stories/scroll/profile 訪問）。follows/likes は「day3+ に agent が agentic に」実行する設計だが day1 で challenge 済み＝一度も follow せず。新規 IG で following=0 = 100% bot signature。
 3. **day1 早期 instagrapi login** — session file は作成6h後(07-18 17:11)に login。新規 account への day1 login は典型的 challenge trigger（設計は day3 まで browser-only のはず）。
 
-**FIX recipe（#30 の正しい作り直し。有料 infra 不要、まず無料の root-cause 修正）**:
-- (a) fresh account を **isolated context/専用 port**（cdp_context_lease.py or warm_iso.py）で作成。生 :9222 main に絶対 login しない。
-- (b) warmup 中に**実際に他 account を follow + like**（社会グラフを作る。agentic follow を day1 から少量、human-like に）。
-- (c) **instagrapi login は day3 に1回だけ**。day1-2 は browser-only を code で強制（day<3 の instagrapi login を禁止）。
-- (d) day3 golden session が生存したら初投稿→reach 実測。dead なら account 破棄→再作成（relogin しない）。
+**★ PIVOT（2026-07-19、実測で approach 是正）— 捨て垢 warmup を捨て、Postiz+IG-Pro に切替 ★**
+上の「instagrapi/browser で捨て垢を warmup 生存」アプローチは**間違い**だった（3 account 連続死＝world_hq2/daily_hq/useclaudeskills）。**既に durable なパスが稼働してた**:
+- Postiz live API 実測 = **IG 8 account が今すぐ postable**（全 disabled=False, type=instagram-standalone）+ TikTok 17 + YT 3 + X 1（`~/.openclaw/state/POSTIZ_ACCOUNT_MAP.md`）。
+- reelclaw/reelfarm/Larry が**数ヶ月 Postiz 公式 API で投稿継続**＝ban 耐性が実証済み。
+- ＝ 正解 = **確立済 IG Professional account + Postiz 公式 API 投稿**（instagrapi/browser 直投を廃止）。その上に **IG Harness（Shudesu/ig-harness-oss, OSS DM 自動化）**で comment→DM→capafy link ファネル（#45, #37 直結）。
+- capafy niche(Claude skills)は既存 anicca 8 account と別ブランド → **capafy 専用 IG account を Professional/Creator で1つ正しく作り Postiz に接続**、以後 capafy-ig-marketing-daily を Postiz 経由に routing（reelclaw と同型）。warmup 生存コードは不要。
+- 旧 FIX recipe (a)-(d)（isolated context/follow step/day3 golden session）は**捨て垢前提なので破棄**。warmup recipe doc(`docs/reference/ig-account-warmup-recipe-2026.md`)は「もし将来 private-API 経路が要る時」の参考として残すが、既定パスではない。
 
 **#37 実測**: capafy sales API は日付別 gross のみ、UTM/referrer 内訳なし → reach 最適化 + 総売上 watch で代替。
 
