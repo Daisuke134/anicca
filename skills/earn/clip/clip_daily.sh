@@ -8,6 +8,9 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 C="$HOME/anicca/skills/earn/clip"
+MARKETING_ENGINE_DIR="$C/../marketing-engine"
+# shellcheck source=../marketing-engine/provision_prompt.sh
+. "$MARKETING_ENGINE_DIR/provision_prompt.sh"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
@@ -58,11 +61,10 @@ python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" --
 # pass ("ready_account=none" → exit) and posted nothing for days. Here the loop CREATES a fresh
 # account on the home residential IP (0-phone / 0-captcha, proven with @aiclipsvault /
 # @useclaudeskills) whenever no usable account exists. Skipped entirely (no LLM cost) when a
-# usable account is already present. run.sh below resolves status==ready dynamically, so a newly
-# provisioned ready account is picked up on THIS same pass. ──
-# ── WARM (deterministic: age each status=warming account via warm_step.py; auto-promotes to
-# ready after the 3-day floor. A fresh account CANNOT post day-0 (instagrapi rejects it, 5/5) —
-# it must age first, so this is the gate to postability.) ──
+# usable account is already present. A new account is appended as day1 warming/browser and posts
+# nothing this pass. ──
+# ── WARM (deterministic: age each status=warming account via warm_step.py; day1-2 stay browser-only,
+# then day3 establishes the one golden instagrapi session before promotion to ready.) ──
 log "WARM: warm_step.py"
 "$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
@@ -79,7 +81,17 @@ PYJSON
 )
 log "PROVISION: usable_accounts=${USABLE_ACCTS:-0}"
 if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
-  step "PROVISION" "STEP PROVISION (1-loop-1-acc, replace-on-cold, ZERO human): clip-accounts.json (~/.cloak/clip-accounts.json) has NO usable account (none with status ready/warming that is not poisoned/frozen/blocked), so CREATE one brand-new IG account NOW and register it as the sole active clip account. BROWSER ISOLATION OVERRIDE: the account-creation signup MUST run INSIDE this pass's already-acquired isolated browser context named '$CLIP_LEASE', NOT the raw shared :9222 default context. Acquire/inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; the lease already created an isolated context on :9222 with its own cookie jar and tab. Get the lease's target_id/ws and drive THAT tab via cdp.py. NEVER navigate or close any tab you did not create, so gig/capafy tabs remain untouched. This overrides any later cdp_incognito.py/raw :9222 wording in this prompt. Follow the ig-account-create skill at ~/.claude/skills/ig-account-create/SKILL.md EXACTLY as proven for @aiclipsvault and @useclaudeskills. HARD RULES: (a) drive the RUNNING CloakBrowser daily-driver on CDP :9222 via cdp_incognito.py — an isolated context in a NEW tab; NEVER touch or close any existing tab. (b) residential home IP, NO proxy (a fresh/cold proxy IP triggers a phone wall — do not use one). (c) email = a fresh Gmail plus-address keiodaisuke+aiclips<random-tag>@gmail.com; read the 6-digit OTP via 'gog gmail search --account keiodaisuke@gmail.com \\\"instagram in:anywhere newer_than:1h\\\" --max 3 --plain' (OTP often lands in SPAM, so in:anywhere is required). (d) IG email-signup on this home IP needs NO phone and NO captcha — do NOT do the phone flow; if IG unexpectedly forces a phone number or a text-CAPTCHA, STOP and report provision-blocked:<reason> (do NOT buy an SMS number, do NOT switch to a proxy). (e) fill every field with TRUSTED typing (cdp.py insert), DOB via clickxy with scrollIntoView. Then: setup_profile.py --tid <TID> --icon <a $0 PIL monogram png> --bio \\\"one-line AI / money / wealth bio, NO link\\\" --username <handle> (DAY-0: NO commercial link in bio — a day-0 link = suspension). Do NOT run ANY instagrapi login now. MEASURED 5/5: instagrapi (the private mobile API) REJECTS a day-0 brand-new account by EVERY login method — Client().login triggers bloks/ChallengeRequired, and login_by_sessionid returns LoginRequired/TooManyRedirects. The account AGE is the gate; a fresh account simply cannot use the private API yet. So do NOT run Client().login, do NOT run login_by_sessionid, and do NOT create any ~/.cloak/instagrapi-<handle>.json file today. IMPORTANT: save the account credentials to ~/.cloak/ig-<handle>.json as JSON with fields username, name, email, pw (the password you set at signup), dob, created (today) — warm_step.py REQUIRES this file to launch the account's browser for daily warmup; without it the account can never warm or post. A successful signup + profile (account LIVE in the browser) is ALL that is needed today; the account becomes postable only after a few days of warmup, which warm_step.py handles and which auto-promotes it to ready. Append ONE new JSON object to the array in ~/.cloak/clip-accounts.json with these fields (write valid JSON, double-quoted keys and string values): handle set to the new handle, profile set to clip-en<n>, port set to a free port that is NEITHER 9222 NOR 9223 (check via lsof -i -P first), lang set to en, status set to warming, session_owner set to browser, started_warming set to today (YYYY-MM-DD), created set to today (YYYY-MM-DD). If signup ITSELF failed (phone wall / captcha / bloks during account creation), set status to provision_failed instead and report provision-blocked:<reason>. The port field MUST be present and MUST NOT be 9222 or 9223 (run.sh silently defaults a missing port to 9222 = Dais's personal daily-driver — a wrong-account post hazard). Read the file back and confirm it parses as JSON. Report: handle + port + status_written, or provision-blocked:<reason>." 1500
+  PROVISION_PROMPT="$(
+    IG_PROVISION_ACCOUNT_STATE_FILE="$CLIP_ACCTS" \
+    IG_PROVISION_HANDLE_PREFIX="aiclips" \
+    IG_PROVISION_INSTANCE="clip" \
+    IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="aiclips" \
+    IG_PROVISION_BIO_TEXT="one-line AI / money / wealth bio, NO link" \
+    IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass's already-acquired isolated browser context named '$CLIP_LEASE', not the raw shared :9222 default context. Acquire and inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; use its target_id/ws and drive only that tab via cdp.py. Never navigate or close a tab this pass did not create, so gig/capafy tabs remain untouched." \
+    IG_PROVISION_PROFILE_PREFIX="clip-en" \
+    render_ig_provision_prompt
+  )"
+  step "PROVISION" "$PROVISION_PROMPT" 1500
 fi
 
 # ── PRODUCE (deterministic: producer.sh makes a captioned 1080x1920 clip into the queue) ──
