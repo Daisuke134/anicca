@@ -374,6 +374,16 @@ flow B（Fable planner / Sol Codex builder）で実装。Fable 独立検証済�
   （旧記載 warming_day1/poison:null は嘘だった）。backup: 同 dir `.bak-20260719`。active handle 不在 → 次 pass で provision 発火。
 - 未検証（次の実測待ち）: :9332 専用 CloakBrowser profile の実 launch と day1 provision E2E（#30 で証明）。
 
+### §12.2 STATUS 2026-07-19 — #30 day1 provision 成功（実測）
+
+kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で E2E 成功:
+- 新 account **@capafy.skills9582** live（loop log: 公開 profile DOM 確認、bio/avatar VERIFY true）
+- Fable 実測（state file 再 parse）: port=**9332**（:9222 でない）/ context_id=**capafy-19929** / status=warming / session_owner=browser
+- `~/.cloak/instagrapi-capafy*` = **不存在**（day1 に API login していない = gate 実効）✅ / cred file `ig-capafy.skills9582.json` 保存済
+- :9332 専用 profile の実 launch も day1 provision E2E も**これで検証済**（§12.1 の未検証項目を解消）
+- 次: day2（07-20、follow 3-5 warmup）→ day3（07-21、golden instagrapi session 生存 = ChallengeRequired 無し）が #30 の exit proof
+- 別穴（既存 baseline、#42 と無関係）: landing netlify deploy が launchd 環境で `mkdir '//.netlify'` ENOENT で毎回失敗（log に4回既出、non-fatal）。#37 前に修理。
+
 ## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
 
 junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、poison 事故(clip_pass の day1-login を copy した類)を繰り返す。混乱度順:
