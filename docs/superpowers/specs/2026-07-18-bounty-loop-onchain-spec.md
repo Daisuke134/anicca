@@ -110,7 +110,53 @@ done（AND、全て実測で確認）:
 
 ---
 
-## 実装（既存 harness の付け替え。file:line）
+## ★LOOP 設計 v2（フル ASCII, multi-rail, research-grounded 2026-07-19）★
+
+勝ちの公式（研究一次情報）: **報酬 ∝ (novelty × severity) ÷ 発見人数**（C4 実測 `10·0.85^(split-1)/split` = 独自High ≈ 重複Highの約10倍）。全段は分母(dup)最小化のため。AI の構造的 edge = ①TIMING(新面に先着) ②JUDGE(dup/FP 自己棄却) ③BREADTH(人間が張れない数の rail 並列)。copy 土台 = `usestrix/strix`(42k★,Apache2)+`six2dez/reconftw`+`google/oss-fuzz-gen`(variant-analysis)+`Cyfrin/audit-checklist`+`arkadiyt/bounty-targets-data`+Sherlock AI の Plan→Research→Validate→Judge→Report。
+
+```
+                 ANICCA BOUNTY LOOP  (every AI earns, zero-to-one)
+                 first threshold = 1件 現金を通す。done=着金のみ
+
+[0] MONITOR  (deterministic, cron常駐 — TIMING edge=誰より先に新面へ)
+    web BB    : bounty-targets-data(30min diff)+certstream(新host)+notify
+    audit     : Code4rena/Sherlock/Immunefi の新 contest feed
+    AI/ML sec : PyPI/GitHub releases(keras/transformers/新loader)=先着
+    code      : Algora/Opire 新規$ラベル(comment<3=未飽和のみ)
+         └──► 新規・低競合ターゲットだけ queue へ
+              │
+[1] SCORE&PICK  EV = reward ÷ 予想競合 × 鮮度 × AI勝率
+    特徴量抽出=script / 最終選定=model判断。dup 数学を最優先
+              │ 1 highest-EV target
+   ┌────────── PER-TARGET PIPELINE (strix/SWE-agent 土台) ──────────┐
+   │ [2] RECON   web:reconFTW  audit:clone+Slither  ML:loader+既知fix commit │
+   │ [3] HYPOTHESIZE ★model予算集中★ threat model / value-flow逆読み /        │
+   │        variant-analysis(既知修正commitの類似bug=盲目fuzzより当たる)      │
+   │ [4] NOVELTY-GATE  既知(CVE/issue/PR/hacktivity/過去提出)除外→既知なら捨てる│
+   │ [5] PoC/VALIDATE ★決定論実行で本物を証明★ web:headless browser /         │
+   │        audit:Foundry fork-test / ML:local load RCE + scanner未検知       │
+   │ [6] JUDGE ★最大投資=FP/dup を厳格棄却★ 通らねば提出しない(XBOW validator型)│
+   │ [7] REPORT  vulnクラス別テンプレ(script)+model執筆・policy準拠           │
+   └────────────────────────────────────────────────────────────────┘
+              │ validated・novel・PoC付き finding
+[8] SUBMIT  rail別 自動提出(web form/API): huntr/H1/Bugcrowd/C4/Sherlock/Immunefi/Algora
+              │
+[9] TRACK→PAYOUT  accept/merge/validate まで poll。done=着金のみ
+   ┌──── CRYPTO ────┐              ┌──── BANK/FIAT ────┐
+   │ Immunefi/C4/    │              │ huntr/H1/Bugcrowd/ │
+   │ Sherlock/poidh  │              │ Algora = Stripe    │
+   │ USDC/ETH→wallet │              │ → Dais bank        │
+   │ on-chain verify │              │ (KYC 初回一回)      │
+   └────────┬────────┘              └─────────┬──────────┘
+            └──► record.mjs (INV-8/9 write-path 再検証) → earn ledger
+              │
+[10] SELF-IMPROVE(週次 metrics/lessons/beat-prev-week) + [11] SELF-HEAL
+     └── 全部 launchd loop が無人で回す (R6 autonomy-hardening 前提)
+```
+
+**build phase**: (P1) strix + reconFTW を vendor、[2]-[7] pipeline を1 rail(=最小 huntr変種 or web BB) で通す → prove-3 で1件 validated finding。(P2) MONITOR[0]+SCORE[1] の自動化(bounty-targets-data/certstream/release feed)。(P3) rail を audit/Immunefi(crypto)へ拡張、payout 2系統(crypto+bank)配線(INV-8/9)。(P4) SELF-IMPROVE/HEAL + launchd 無人化(R6)。**LLM 予算は [3]仮説・[5]PoC・[6]judge の3点に集中、監視/recon は完全 script 化。**
+
+## 実装（旧: poidh crypto-rail 用参照。crypto payout phase で再利用）
 
 土台 = `profitable-claude/skills/bounty/`（state machine は維持、rail 差し替え）。追加 lib は `~/anicca/skills/_shared/lib/`。
 
