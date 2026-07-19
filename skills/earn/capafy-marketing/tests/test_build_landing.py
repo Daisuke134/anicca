@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,6 +8,7 @@ from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_landing.py"
 DAILY_SCRIPT = Path(__file__).resolve().parents[1] / "capafy-ig-marketing-daily.sh"
+NETLIFY_CONFIG = Path(__file__).resolve().parents[1] / "netlify.toml"
 SPEC = importlib.util.spec_from_file_location("build_landing", SCRIPT)
 build_landing = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build_landing)
@@ -60,10 +62,8 @@ class BuildLandingTests(unittest.TestCase):
         self.assertNotIn("<b>facts</b>", html)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt; Analyst", html)
         self.assertIn("Checks &lt;b&gt;facts&lt;/b&gt; before conclusions.", html)
-        self.assertIn(
-            "https://capafy.ai/agent/1?utm_source=instagram_bio&amp;utm_medium=bio_link&amp;utm_campaign=capafy_marketing",
-            html,
-        )
+        self.assertIn('href="/go/1"', html)
+        self.assertNotIn("utm_source=instagram_bio", html)
         self.assertIn('content="width=device-width, initial-scale=1"', html)
         self.assertIn("prefers-color-scheme: dark", html)
         self.assertIn("prefers-reduced-motion: reduce", html)
@@ -89,6 +89,12 @@ class BuildLandingTests(unittest.TestCase):
             self.assertEqual(count, 2)
             self.assertIn("Claude Skills Daily", output.read_text(encoding="utf-8"))
             self.assertNotIn("stale", output.read_text(encoding="utf-8"))
+            allowed = json.loads(
+                (output.parent / "netlify/functions/allowed-agents.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(allowed, ["1", "2"])
 
     def test_build_fails_when_no_online_agents_exist(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -106,24 +112,42 @@ class BuildLandingTests(unittest.TestCase):
         script = DAILY_SCRIPT.read_text(encoding="utf-8")
 
         self.assertIn(
-            'LANDING_URL="https://capafy-skills-daily.netlify.app"', script
+            'LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"',
+            script,
         )
         self.assertIn(
-            'LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"', script
+            'LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"',
+            script,
         )
         self.assertIn('build_landing.py" >>"$LOG"', script)
         self.assertIn('netlify deploy --prod --dir', script)
         self.assertIn('--site "$LANDING_SITE_ID"', script)
         self.assertLess(script.index("build_landing.py"), script.index("# ── CADENCE GATE"))
         self.assertIn(
-            'STEP5 BIO: set the profile Website to the all-skills landing URL '\
+            'STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the all-skills landing URL '\
             '\'"$LANDING_URL"\' ONLY when commercial_ok=yes AND MODE=--live.',
             script,
         )
         self.assertIn(
-            "Never use an individual Capafy listing URL for the profile Website.",
+            "Never use an individual Capafy listing URL for the Website",
             script,
         )
+
+    def test_daily_loop_pulls_attribution_immediately_after_ig_metrics(self):
+        script = DAILY_SCRIPT.read_text(encoding="utf-8")
+        metrics = script.index("scripts/ig_metrics.py")
+        pull = script.index("scripts/pull_attribution.py")
+
+        self.assertLess(metrics, pull)
+        self.assertIn('pull_attribution failed (non-fatal)', script)
+
+    def test_netlify_routes_go_paths_to_functions(self):
+        config = NETLIFY_CONFIG.read_text(encoding="utf-8")
+
+        self.assertIn('directory = "site/netlify/functions"', config)
+        self.assertIn('from = "/go/*"', config)
+        self.assertIn('to = "/.netlify/functions/go/:splat"', config)
+        self.assertIn('from = "/go-stats"', config)
 
 
 if __name__ == "__main__":

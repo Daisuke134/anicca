@@ -49,6 +49,7 @@ fi
 
 # ── IG metrics/attribution run EVERY day (deterministic; IG variants, utm_source=instagram_bio) ──
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py >>"$LOG" 2>&1 || echo "ig_metrics failed (non-fatal)" >>"$LOG"
+/opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/pull_attribution.py >>"$LOG" 2>&1 || echo "pull_attribution failed (non-fatal)" >>"$LOG"
 
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 # netlify-cli writes ./.netlify relative to cwd; launchd starts at / (no WorkingDirectory) -> mkdir '//.netlify' ENOENT. cd keeps it inside the skill dir.

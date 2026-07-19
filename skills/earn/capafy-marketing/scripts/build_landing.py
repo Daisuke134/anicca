@@ -13,10 +13,7 @@ CAPAFY_HTTP = os.path.expanduser(
     "~/.openclaw/skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py"
 )
 OUTPUT_FILE = Path(__file__).resolve().parents[1] / "site" / "index.html"
-LISTING_URL_FMT = "https://capafy.ai/agent/{agent_id}"
-UTM_QUERY = (
-    "utm_source=instagram_bio&utm_medium=bio_link&utm_campaign=capafy_marketing"
-)
+GO_URL_FMT = "/go/{agent_id}"
 
 CSS = """
 :root {
@@ -304,9 +301,7 @@ def _render_card(agent: dict) -> str:
     name = html.escape((agent.get("name") or "Untitled skill").strip(), quote=True)
     description = " ".join((agent.get("desc") or "No description provided.").split())
     description = html.escape(description, quote=True)
-    url = html.escape(
-        f"{LISTING_URL_FMT.format(agent_id=agent_id)}?{UTM_QUERY}", quote=True
-    )
+    url = html.escape(GO_URL_FMT.format(agent_id=agent_id), quote=True)
     return f"""      <article class="skill-card">
         <div class="skill-copy">
           <h2>{name}</h2>
@@ -357,6 +352,12 @@ def build(output_file: Path = OUTPUT_FILE) -> int:
         raise RuntimeError("no online listings")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(render_html(online), encoding="utf-8")
+    allowed_agents = output_file.parent / "netlify" / "functions" / "allowed-agents.json"
+    allowed_agents.parent.mkdir(parents=True, exist_ok=True)
+    allowed_agents.write_text(
+        json.dumps([agent["agentId"] for agent in online], ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     return len(online)
 
 

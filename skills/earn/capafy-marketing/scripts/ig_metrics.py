@@ -8,8 +8,8 @@ engagement IG renders (likes / comments; views/plays when shown). Appends a date
 to `capafy-marketing-ig-metrics.jsonl`. Empty ledger (no Reels yet — account still warming)
 = clean no-op.
 
-IG attribution reuses the same 7-day date-window candidate join as x_attribution.py but keyed
-on utm_source=instagram_bio (the IG click path is the profile Website/bio, not a per-post link).
+IG attribution is handled separately by pull_attribution.py, which pulls the landing redirect
+counter after this metrics pass and joins it to the Capafy sales snapshot.
 """
 import json, os, subprocess, sys, time
 
