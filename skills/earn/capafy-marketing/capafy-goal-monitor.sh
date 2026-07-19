@@ -2,7 +2,7 @@
 # capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
 #
 # This is the "zero parent intervention" implementation: instead of a human tracking the
-# time-dependent goal gates (7-day BLOCKED-free streak, sales reconcile, warmup-day-7 go-live,
+# time-dependent goal gates (7-day BLOCKED-free streak, sales reconcile, warmup-day-3 go-live,
 # self-heal health), this deterministic monitor does it daily and reports to Dais on telegram.
 #
 # HARD RULES: NO LLM. read + append ONLY (never destroys prod state/ledgers). launchd auto-load is
@@ -16,17 +16,21 @@ STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
 DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
-WARMUP="$HOME/.cloak/ig-warmup-useclaudeskills.json"
 EARN_LEDGER="$HOME/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
 KEY_GATE="$HOME/.openclaw/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
+IG_HANDLE="$(sed -nE 's/^IG_HANDLE="([^"]+)".*/\1/p' "$IG_SCRIPT" | head -1)"
+WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
+INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
+INSTA_POSTER="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
 # Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
 # MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
 WARMUP_DAYS_REQUIRED=3
 
-# ── goal(c) go-live: create + load the IG launchd ONLY when warmup day>=7. Idempotent. ──
+# ── goal(c) go-live: create + load the IG launchd ONLY when warmup day>=3. Idempotent. ──
 warmup_day_count() { $PY -c "import json;print(len(json.load(open('$WARMUP')).get('log',[])))" 2>/dev/null || echo 0; }
 ig_loaded() { launchctl list 2>/dev/null | grep -q "$IG_LABEL"; }
 write_ig_plist() {
@@ -51,6 +55,34 @@ PLIST
 # NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
 # writes) — zero human approval anywhere. Idempotent: never double-loads.
 WDAY="$(warmup_day_count)"
+
+# Read-only account health probe. ChallengeRequired is terminal for this account: never relogin.
+VERIFY_JSON=""
+VERIFY_RC=0
+if [ -z "$IG_HANDLE" ]; then
+  VERIFY_JSON='{"ok":false,"error":"IG_HANDLE unresolved from daily script"}'
+  VERIFY_RC=2
+elif [ ! -x "$INSTA_PY" ]; then
+  VERIFY_JSON='{"ok":false,"error":"instagrapi venv missing"}'
+  VERIFY_RC=2
+else
+  VERIFY_JSON="$(CDP_PORT=9222 "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port 9222 --verify-only 2>>"$HOME/.openclaw/logs/capafy-goal-monitor.err.log" | tail -1)"
+  VERIFY_RC=$?
+fi
+ACCOUNT_COOKED="$($PY - "$VERIFY_JSON" <<'PY' 2>/dev/null
+import json, sys
+raw = sys.argv[1]
+try:
+    data = json.loads(raw)
+except Exception:
+    data = {}
+print("yes" if data.get("poisoned") is True or "ChallengeRequired" in raw else "no")
+PY
+)"
+if [ "$ACCOUNT_COOKED" = "yes" ]; then
+  touch "$COOKED_MARKER"
+fi
+
 GO_LIVE_ACTION="not_yet"
 if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
   if ig_loaded; then
@@ -62,10 +94,16 @@ if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
 fi
 
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" <<'PY' > /tmp/capafy_goal_monitor.json
+$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" <<'PY' > /tmp/capafy_goal_monitor.json
 import json, os, re, subprocess, sys, datetime
-state_p, daily_log, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq, golive = sys.argv[1:11]
-wday = int(wday or 0); wreq = int(wreq)
+(state_p, daily_log, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
+ golive, ig_handle, verify_raw, verify_rc, cooked_marker) = sys.argv[1:15]
+wday = int(wday or 0); wreq = int(wreq); verify_rc = int(verify_rc)
+try:
+    verify = json.loads(verify_raw)
+except Exception:
+    verify = {"ok": False, "error": "verify-only returned invalid JSON"}
+account_cooked = verify.get("poisoned") is True or "ChallengeRequired" in verify_raw
 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 today = now.date()
 
@@ -131,6 +169,8 @@ report = {
     "goal_c": {"warmup_day": wday, "required": wreq, "go_live_action": golive,
                "ig_marketing_loaded": health["ig_marketing_loaded"]},
     "goal_d": {**health, "key_health_gate_ok": gate_ok},
+    "account_health": {"handle": ig_handle, "verify_rc": verify_rc, "verify": verify,
+                       "poisoned": account_cooked, "cooked_marker": os.path.exists(cooked_marker)},
 }
 # append to state (history), keep last 60
 hist = []
@@ -142,12 +182,19 @@ json.dump({"latest": report, "history": hist}, open(state_p, "w"), ensure_ascii=
 
 # telegram body (one screen, no secrets)
 ga = report["goal_a"]; gb = report["goal_b"]; gc = report["goal_c"]; gd = report["goal_d"]
+ah = report["account_health"]
+account_line = (
+ "account @" + ah["handle"] + ": account poisoned、fresh 作り直しが必要"
+ if ah["poisoned"] else
+ "account @" + ah["handle"] + ": verify-only ok=" + str(ah["verify"].get("ok"))
+)
 body = (
  "[Capafy goal-monitor " + today.isoformat() + "]\n"
  "goal(a) BLOCKED-free streak: " + str(ga["blocked_free_streak_days"]) + "/7 " + ("PASS" if ga["pass"] else "building") + "\n"
  "goal(b) sales: orders=" + str(gb["orders"]) + " gross=$" + str(gb["gross_usd"]) + " (last " + str(gb["last_sales_date"]) + "), reconcile " + str(gb["reconcile_age_hours"]) + "h ago " + ("OK" if gb["fresh"] else "STALE") + "\n"
  "goal(c) IG warmup day " + str(gc["warmup_day"]) + "/" + str(gc["required"]) + " -> go-live: " + gc["go_live_action"] + " (ig loop loaded=" + str(gc["ig_marketing_loaded"]) + ")\n"
- "goal(d) health: capafy-loop=" + str(gd["capafy_loop_daily_loaded"]) + " warmup=" + str(gd["ig_warmup_loaded"]) + " key-gate=" + str(gd["key_health_gate_ok"])
+ "goal(d) health: capafy-loop=" + str(gd["capafy_loop_daily_loaded"]) + " warmup=" + str(gd["ig_warmup_loaded"]) + " key-gate=" + str(gd["key_health_gate_ok"]) + "\n"
+ + account_line
 )
 open("/tmp/capafy_goal_monitor_body.txt","w").write(body)
 print(json.dumps(report, ensure_ascii=False))

@@ -6,8 +6,8 @@
 # instagrapi post (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
 # LaunchAgent: ai.anicca.capafy-ig-marketing-daily at 16:00 local; stdout/stderr use LOG below.
 #
-# ★ LIVE starts from the first completed warmup day. Initial posts stay NON-COMMERCIAL: no bio
-#   link and no commercial CTA until the reach-health marker exists. Warmup continues in parallel. ★
+# ★ LIVE starts on warmup day 3. Initial posts stay NON-COMMERCIAL: no bio link and no
+#   commercial CTA until the reach-health marker exists. Warmup continues in parallel. ★
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
@@ -17,8 +17,18 @@ WARMUP_STATE="$HOME/.cloak/ig-warmup-useclaudeskills.json"
 LANDING_URL="https://capafy-skills-daily.netlify.app"
 LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"
 IG_HANDLE="useclaudeskills"   # AI-OWNED account only (never a Dais-personal handle)
+COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
+
+# Fail closed before any content/deploy work: ChallengeRequired means replace, never relogin/post.
+if [ -f "$COOKED_MARKER" ]; then
+  COOKED_MSG="account cooked, skipping post (@${IG_HANDLE}); fresh account rebuild required"
+  echo "$COOKED_MSG" >>"$LOG"
+  openclaw message send --channel telegram --target 0000000000 --message "$COOKED_MSG" --json >/dev/null 2>&1 || true
+  touch "$HOME/.openclaw/state/.capafy-ig-marketing-last-pass" 2>/dev/null || true
+  exit 0
+fi
 
 # ── IG metrics/attribution run EVERY day (deterministic; IG variants, utm_source=instagram_bio) ──
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py >>"$LOG" 2>&1 || echo "ig_metrics failed (non-fatal)" >>"$LOG"
@@ -26,7 +36,7 @@ echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 /opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && netlify deploy --prod --dir "$HOME/anicca/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
 
-# ── WARMUP GATE: decide DRY vs LIVE. LIVE from the first completed warmup day. ──
+# ── WARMUP GATE: decide DRY vs LIVE. Day 1-2 DRY; LIVE from day 3. ──
 WARM_DAY="$(/opt/homebrew/bin/python3 - "$WARMUP_STATE" <<'PY' 2>/dev/null
 import json,sys,os
 p=sys.argv[1]
