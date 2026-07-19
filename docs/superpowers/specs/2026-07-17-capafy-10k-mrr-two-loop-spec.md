@@ -384,6 +384,21 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
 - 次: day2（07-20、follow 3-5 warmup）→ day3（07-21、golden instagrapi session 生存 = ChallengeRequired 無し）が #30 の exit proof
 - 別穴（既存 baseline、#42 と無関係）: landing netlify deploy が launchd 環境で `mkdir '//.netlify'` ENOENT で毎回失敗（log に4回既出、non-fatal）。#37 前に修理。
 
+### §12.3 実行順序 2026-07-19 確定（これが正本。「次どれ?」は二度と発生しない — 上から順に着手）
+
+並行 track A（時計待ち、loop が自走。人手ゼロ）:
+ A1 #30 day2 warmup 07-20 → A2 #30 day3 golden session 生存 07-21 → A3 #24 自走投稿+telegram 実ログ → A4 #10 14日実測 → A5 #12 OSS 移設（Dais 判断）
+
+並行 track B（待ち無し、今日から番号順に実行）:
+ B1 #46 LANDING-FIX  netlify deploy の launchd 失敗修理（`mkdir '//.netlify'` = env var 空。金線 bio landing の鮮度に直結）
+ B2 #45 ENGINE-BASE  spawn-marketing-loop.sh E2E（2つ目 manifest→loop 生成 dry 実証）+ 2レーン規律を engine README に明文化
+                     （earner lane=agent自己所有のみ / human-funded 製品 lane=Postiz 可: 将来の reelclaw/larry/honne）+ slideshow loop 化
+ B3 #37 MONEY-LINE   attribution 配線の先行実装（landing click 代理指標。実データは A3 後に流れ込む）
+ B4 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
+ B5 #41 LIFE-AUTO    Dais の GO が出た時のみ
+
+規則: track B は B1 から順に、1個 merge+実測 PASS してから次へ。track A の event（day3 生存/死亡）が来たら A を優先処理して B に戻る。day3 死亡なら FIX recipe 再改訂 → 新 account 再作成（#30 をやり直し。B は継続）。
+
 ## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
 
 junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、poison 事故(clip_pass の day1-login を copy した類)を繰り返す。混乱度順:
