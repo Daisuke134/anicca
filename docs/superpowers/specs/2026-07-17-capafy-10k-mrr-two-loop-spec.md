@@ -296,8 +296,15 @@ DONE（2026-07-19 検証）
           block時)、1日1回 dedup、auto-charge 無し(資金源=Dais 判断)。検証: 健全$21→無発火、
           cushion$50→発火+marker、同日再実行→dedup(openclaw stub、実送信ゼロ)。main-internal push。
 
+ ✓ #31残  dedup 調査完了 → **重複無しと実測確定（抽出しない）**: reach(ig_metrics.py)/
+          reflect(ig_reflect.py)は製品ごとに別物(IG engagement vs clip affiliate $)＝重複でない。
+          telegram=prompt 内 openclaw 一行(同一文字列、hand-roll コード無し)、ledger=既に
+          MKT_INSTANCE パラメタ化済、report helper は ~/anicca/skills/report/loop-report.sh 既存。
+          README 原則「loop 固有=selector/copy/content-adapter」に合致。engine 化=premature。
+
 DO-NOW（待ち無し）
- 1. #31残  reflect/reach/ledger/telegram を engine helper に dedup
+ 1. #40 BIO-ROBUST  setup_profile.py の selector を言語非依存化(現 JA-UI 依存: ウェブサイト/
+    自己紹介/送信する) — scaling で英語UI account が出た時に外れる前に
 
 BACK-BURNER（待ちが本質）
  - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
