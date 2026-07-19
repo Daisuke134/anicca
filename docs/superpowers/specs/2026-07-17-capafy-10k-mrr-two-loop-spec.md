@@ -266,3 +266,30 @@ niche / cadence(投稿時刻)
 - capafy に provision（account 自作）は**無かった**（@useclaudeskills は手動作成）→ clip の PROVISION を通らず ephemeral session で brick = poison の真因。
 - IG に投稿する loop: capafy-marketing / clip / clip-producer / clip-promote / video（各々ほぼ自前）。
 **結論**: 「5つが同じ engine を共有」は**まだ嘘**。§11 の marketing-engine 抽出（#31）で初めて本当になる。それまでは poster 1個だけが共有。
+
+## §12 STATE 2026-07-19 — MARKETING OS 完成 + 順序化した残 TODO
+
+**marketing OS（`~/anicca/skills/earn/marketing-engine/`）は実装完了・全 verify 済み・main merged。**
+- 共有 core: provision_prompt.sh(day1 signup-only) / account_state.sh / warm_step.py(day1-2 warm→day3 golden session 1回, relogin厳禁) / instagrapi_post.py(tier1 poster) / generic state paths(MKT_INSTANCE) / lease isolation(churn停止) / poison検知 day3+。
+- scaling: load_manifest.sh + manifests/{capafy,clip} + new-marketing-loop.sh(manifest→launchd) + spawn-marketing-loop.sh(product説明→manifest自動生成→scaffold) + README。
+- 墓場の3大死因 fix 済み(day1 login廃止 / lease churn停止 / 誤cook廃止)。共有なので1回 fix=全 loop に効く。
+
+**account**: @useclaudeskills 復活・warm-day1 → ~07-21(day3)で golden session→初投稿。
+
+**#37 実測**: capafy sales API は日付別 gross のみ、UTM/referrer 内訳なし → reach 最適化 + 総売上 watch で代替。
+
+### 順序化した残 TODO
+```
+DO-NOW（待ち無し）
+ 1. #1 A1  reject→loop が読む→直す→resubmit 自動化(build self-improve)
+ 2. #9 A5  売れ筋 selector(Capafy ranking→次に作る skill)
+ 3. #21    funding alert 型(低残高 telegram、charge しない)
+ 4. #31残  reflect/reach/ledger/telegram を engine helper に dedup
+
+BACK-BURNER（待ちが本質）
+ - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
+ - #21 auto-charge  Dais の funding源決定(金流出=不可逆)
+ - #1 現4件         Capafy 外部 manual review 待ち
+ - #11 A7           Dais 側 受信確認(コードは全 loop 報告済み)
+ - #12 OSS          14日安定後 profitable-claude 移設
+```
