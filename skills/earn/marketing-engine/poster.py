@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """CANONICAL SHARED POSTER — 全 marketing loop（clip / capafy / 将来の affiliate 等）が --handle で account を渡して共有。account 名を焼かない。web composer は dead-end につき廃止。"""
-# instagrapi-based IG Reel poster — the VERIFIED FREE posting method (2026-07-14), replaces the
+# instagrapi-based IG Reel/carousel poster — the VERIFIED FREE posting method (2026-07-14), replaces the
 # web-composer post_reel.py which was a structural dead end (IG silently drops automated web posts).
 # Flow: pull the CloakBrowser's already-logged-in sessionid (avoids a fresh-login challenge) ->
-# instagrapi.login_by_sessionid -> ffmpeg thumbnail (avoids moviepy dep) -> clip_upload ->
-# verify the reel is publicly visible. Prints ONE structured JSON line matching run.sh's contract
+# instagrapi.login_by_sessionid -> clip_upload (reel) or album_upload (carousel) ->
+# verify reels are publicly visible. Prints ONE structured JSON line matching run.sh's contract
 # ({"outcome": "published"|"failed"|"dry", "post_url": ..., "before_hrefs": []}).
 #
 # ★ SESSION POLICY (SSOT: docs/earn/ig-4account-reels-carousel-loop-plan.md v22/v23/v24) ★
@@ -375,6 +375,7 @@ def get_sessionid(port):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--video")
+    ap.add_argument("--images", help="comma-separated image paths for a 2-10 image carousel")
     ap.add_argument("--caption-file")
     ap.add_argument("--handle", required=True)
     ap.add_argument("--port", default=os.environ.get("CDP_PORT", "9222"))
@@ -405,8 +406,13 @@ def main():
                           "note": "account state status=%s; posting on this handle is disabled by the freeze policy" % _frozen_status},
                          ensure_ascii=False))
         return
-    if not a.video or not a.caption_file:
-        ap.error("--video and --caption-file are required unless --keepalive/--verify-only")
+    if bool(a.video) == bool(a.images):
+        ap.error("exactly one of --video or --images is required unless --keepalive/--verify-only")
+    if not a.caption_file:
+        ap.error("--caption-file is required unless --keepalive/--verify-only")
+    image_paths = [path.strip() for path in a.images.split(",") if path.strip()] if a.images else []
+    if a.images and not 2 <= len(image_paths) <= 10:
+        ap.error("--images requires 2-10 comma-separated paths")
     res = {"handle": a.handle, "outcome": "failed", "post_url": None, "before_hrefs": []}
     try:
         caption = open(a.caption_file, encoding="utf-8").read().strip()
@@ -425,22 +431,26 @@ def main():
             res["outcome"] = "dry"; res["reached"] = "login-ok"
             print(json.dumps(res, ensure_ascii=False)); return
 
-        thumb = a.video + ".jpg"
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", a.video, "-ss", "1", "-vframes", "1", thumb], check=True)
-        media = cl.clip_upload(a.video, caption, thumbnail=thumb)
+        if a.video:
+            thumb = a.video + ".jpg"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", a.video, "-ss", "1", "-vframes", "1", thumb], check=True)
+            media = cl.clip_upload(a.video, caption, thumbnail=thumb)
+        else:
+            media = cl.album_upload(image_paths, caption)
         d = media.model_dump() if hasattr(media, "model_dump") else media.dict()
         code = d.get("code")
-        url = f"https://www.instagram.com/reel/{code}/"
+        url = f"https://www.instagram.com/{'reel' if a.video else 'p'}/{code}/"
 
         # REALITY GATE: confirm the reel is publicly visible (logged-out) before claiming success.
         public = None
-        time.sleep(3)
-        try:
-            req = urllib.request.Request(f"https://www.instagram.com/{a.handle}/", headers={"User-Agent": "Mozilla/5.0"})
-            html = urllib.request.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
-            public = bool(code) and code in html
-        except Exception:
-            public = None  # network gate; instagrapi's returned code is still the source of truth
+        if a.video:
+            time.sleep(3)
+            try:
+                req = urllib.request.Request(f"https://www.instagram.com/{a.handle}/", headers={"User-Agent": "Mozilla/5.0"})
+                html = urllib.request.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
+                public = bool(code) and code in html
+            except Exception:
+                public = None  # network gate; instagrapi's returned code is still the source of truth
 
         res["outcome"] = "published"; res["post_url"] = url; res["code"] = code
         res["public_verified"] = public; res["reached"] = "PUBLISHED"
