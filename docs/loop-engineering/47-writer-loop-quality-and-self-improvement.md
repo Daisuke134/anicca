@@ -123,3 +123,33 @@ form ごとに変わるのは「長さ・出口 platform・換金手段」だけ
 **卒業の定義（再掲・一般形）**: 人間もオーケストレーターも品質欠陥を指摘しない。loop が draft 前に
 自力で「読者不在・jargon・弱いタイトル」を検出して直す。これが任意の form・任意 topic で成り立てば
 arm（即時公開）してよい。
+
+## 9. 記事の型 = EXPLAINER であって体験の日記ではない（2026-07-19 Dais 裁定）
+
+**なぜ人が読むか**: AI / crypto / エージェント経済という新しい分野を、速く正しく理解したいから。
+「これは何で、なぜ重要か」を知りたい。だから記事の**主題は分野/物そのもの**であって、書き手の体験ではない。
+
+| | ダメ（体験の日記） | 良い（explainer） |
+|---|---|---|
+| 主題 | 「私が◯◯を覗いてみた話 / 確かめたこと」 | 「◯◯という仕組みはこう動く」 |
+| 一次調査(SDK/contract 実読) | それ自体が話の中身 | 主張を裏づける**証拠** |
+| 読後に読者が得るもの | 「著者が何をしたか」 | 「その物が何で、なぜ重要か」 |
+
+一次ソースを実読する強み（moat）は保つ。ただし**説明を前に出し、訪問記を前に出さない**。
+hamburger template の [2]何か / [3]landscape / [4]どう動く が背骨、[5]receipts は補強証拠。
+
+**gate 化（実装済み）**: rubric に減点軸 `self_as_subject` を追加。主語が終始「私が何をしたか」で、
+主題であるべき「◯◯とは何か」が体験の背後に隠れたら減点。judgment は model、few-shot（BAD:訪問記 /
+GOOD:仕組み説明）付き。SKILL に「SUBJECT = EXPLAINER, NOT DIARY」節。
+検証(2026-07-19): 旧日記記事 = self_as_subject 発火(score 42)、explainer 版 ACP = 非発火。軸は両者を区別する。
+
+**topic queue の是正**: 体験の日記系カード（devlog / dashboard-lied / token-melting / four-false-edges 等）は
+`_hold/` に退避したまま = 正しい（体験ネタ）。だが explainer 系（olas-mech-marketplace = A2A とは何かの説明）を
+一緒に held したのは誤り → queue に復帰した。今後 _hold には「自分の体験」ネタのみ、queue には explainer ネタ。
+
+## 10. 検証済みの現状（2026-07-19）: loop は完全動作、残りは autopublish の switch だけ
+
+今日の pass が JA+EN を全 platform に draft stage 済み（実測、articles.jsonl + 実 draft URL）:
+zenn-ja / devto-en / substack-ja / substack-en / note-ja / x-ja / x-en。X も @diceai0 復帰で通る。
+gate 骨格 + 自律(#14) + 収益連動(#13) + form(#12) + explainer(#9) 全て稼働。**残るは #7 arm（ARTICLE_AUTOPUBLISH=1）**
+のみで、これは複数日 watch で品質が別 topic でも安定して 70+ を出すのを実測してから最後に引く。
