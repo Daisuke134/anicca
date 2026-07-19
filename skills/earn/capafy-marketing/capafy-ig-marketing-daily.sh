@@ -18,16 +18,17 @@ MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
 # shellcheck source=../marketing-engine/load_manifest.sh
 . "$MARKETING_ENGINE_DIR/load_manifest.sh"
 me_load_manifest "${MKT_MANIFEST:-capafy}" || true   # per-loop config — engine stays shared; set MKT_MANIFEST to run another loop on this same engine
+INSTANCE="${MKT_INSTANCE:-capafy}"   # state namespace; capafy -> identical paths, other loops -> own
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
-LOG="$HOME/.openclaw/logs/capafy-ig-marketing-daily.log"
-ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
+LOG="$HOME/.openclaw/logs/${INSTANCE}-ig-marketing-daily.log"
+ROT="$HOME/.openclaw/state/${INSTANCE}-marketing-rotation.jsonl"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
 IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
 LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"
 LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"
-COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
+COOKED_MARKER="$HOME/.openclaw/state/.${INSTANCE}-ig-account-cooked"
 PROVISION_REASON="$(capafy_ig_provision_reason "$IG_HANDLE" "$COOKED_MARKER")"
 PROVISION_NEEDED="no"
 [ -n "$PROVISION_REASON" ] && PROVISION_NEEDED="yes"
@@ -61,7 +62,9 @@ WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 # NON-COMMERCIAL (no bio link, pure-info caption) to measure reach before adding a commercial
 # link. COMMERCIAL_OK only after the reach-check step writes the healthy marker.
 MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=3.
-COMMERCIAL_MARKER="$HOME/.openclaw/state/.capafy-ig-reach-healthy"
+COMMERCIAL_MARKER="$HOME/.openclaw/state/.${INSTANCE}-ig-reach-healthy"
+LAST_PASS_MARKER="$HOME/.openclaw/state/.${INSTANCE}-ig-marketing-last-pass"
+IG_LEDGER="$HOME/.openclaw/state/${INSTANCE}-marketing-ig-ledger.jsonl"
 if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
 COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
 echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
@@ -80,7 +83,7 @@ sys.exit(0 if last and (time.time()-last)<72000 else 1)
 PY
 then
   echo "cadence gate: last IG Reel < 20h ago — no-op." >>"$LOG"
-  touch "$HOME/.openclaw/state/.capafy-ig-marketing-last-pass" 2>/dev/null || true
+  touch "$LAST_PASS_MARKER" 2>/dev/null || true
   exit 0
 fi
 
@@ -95,7 +98,7 @@ PROVISION_PROMPT="$(
   IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
   IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
   IG_PROVISION_REACH_MARKER="$COMMERCIAL_MARKER" \
-  IG_PROVISION_LAST_PASS_MARKER="$HOME/.openclaw/state/.capafy-ig-marketing-last-pass" \
+  IG_PROVISION_LAST_PASS_MARKER="$LAST_PASS_MARKER" \
   IG_PROVISION_TELEGRAM_TARGET="0000000000" \
   render_ig_provision_prompt
 )"
@@ -118,7 +121,7 @@ STEP4 POST (B4, shared instagrapi poster): CDP_PORT='"$IG_PORT"' ~/.cache/instag
 
 STEP5 BIO: set the profile Website to the all-skills landing URL '"$LANDING_URL"' ONLY when commercial_ok=yes AND MODE=--live. Never use an individual Capafy listing URL for the profile Website. While commercial_ok=no, DO NOT touch the bio (non-commercial phase — we are only measuring reach). Never in DRY.
 
-STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible, record its URL in ~/.openclaw/state/capafy-marketing-ig-ledger.jsonl (platform=ig, reel_url=...) + post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch ~/.openclaw/state/.capafy-ig-reach-healthy  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
+STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible, record its URL in '"$IG_LEDGER"' (platform=ig, reel_url=...) + post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch '"$COMMERCIAL_MARKER"'  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
 After REACH, run python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_reflect.py exactly once to refresh IG_BEST_PRACTICES.md from real ledger + metrics data for the next pass.
 
 STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual output, not a summary). Send to telegram chat 0000000000 via openclaw message send:
@@ -126,7 +129,7 @@ STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual outp
   (b) the message body MUST contain: the promoted listing name + agent_id, the mode (DRY or LIVE), the Reel public URL (or "DRY — not posted" on a dry pass), and the FULL caption text verbatim (the exact caption you wrote for the Reel).
   On a DRY pass you STILL send this once (video + full caption + which listing) so Dais can review the creative before go-live — you just do NOT publish to IG. Confirm the send returned a real message id; also AgentMail via loop-report if that path exists.
 
-FINALLY touch ~/.openclaw/state/.capafy-ig-marketing-last-pass. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
+FINALLY touch '"$LAST_PASS_MARKER"'. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
 
 CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
 if [ -n "$CLIPROXY_KEY" ]; then
@@ -137,5 +140,5 @@ fi
 env -u ANTHROPIC_API_KEY "$CLAUDE" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -p "$PROMPT" >>"$LOG" 2>&1
 RC=$?
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
-touch "$HOME/.openclaw/state/.capafy-ig-marketing-last-pass" 2>/dev/null || true
+touch "$LAST_PASS_MARKER" 2>/dev/null || true
 exit 0
