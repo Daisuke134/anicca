@@ -302,9 +302,14 @@ DONE（2026-07-19 検証）
           MKT_INSTANCE パラメタ化済、report helper は ~/anicca/skills/report/loop-report.sh 既存。
           README 原則「loop 固有=selector/copy/content-adapter」に合致。engine 化=premature。
 
-DO-NOW（待ち無し）
- 1. #40 BIO-ROBUST  setup_profile.py の selector を言語非依存化(現 JA-UI 依存: ウェブサイト/
-    自己紹介/送信する) — scaling で英語UI account が出た時に外れる前に
+ ✓ #40 BIO-ROBUST  setup_profile.py を言語非依存化。3 JA-hardcoded selector(自己紹介/
+    ウェブサイト/送信する)→多言語辞書 FIRST(live実績のJA一致=ゼロregression)+構造 fallback
+    (textarea単体/type=url/button[type=submit])。検証: py_compile OK, 生成JS 5本 node --check OK,
+    JA/EN/EN2 模擬DOM で全 finder が正しい単一要素に解決, JA は byte 等価。実ブラウザ E2E は
+    day3(~07-21) website 設定時=#39 と同じ data-gate。file は ~/.agents=~/.claude ハードリンク
+    1実体(git 管理外)、loop 実行パスに反映済。
+
+── DO-NOW キュー空 ──  残りは全て待ち(下記 BACK-BURNER)。
 
 BACK-BURNER（待ちが本質）
  - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
