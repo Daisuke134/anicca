@@ -402,8 +402,11 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
                      Fable live 実測: 実id 302+UTM / bogus 302 top / stats JSON。初回 502 の真因 = @netlify/blobs 未install（bundle 失敗）
                      → npm install + package-lock commit で解消。SKILL.md の幻参照(x_attribution.py 等)も是正済。実 $ data は A3 投稿開始後。
  B4 #47 CLIP-HEAL    aiclipsvault 系 clip sub-loop 修理（実測: PROVISION rc=124 + no valid session で停止気味。isolated provision 経路で再生）
- B5 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
+ B5 #44 GITHUB-SYNC  ✅完了 2026-07-19（.agents 15c94fb）。~/.agents/skills/self-sync/sync.sh + launchd ai.anicca.agents-skills-sync
+                     (30分毎、listed exit0)。pull --rebase→commit→push、conflict=abort+telegram 警告、secret guard、agmsg db untrack。
+                     Fable 実測: test_sync.sh 3/3 PASS + 実 sync 1回成功（両 repo up to date）。
  B6 #41 LIFE-AUTO    Dais の GO が出た時のみ（不要なら削除）
+ B4 #47 補記        clip 実 pass の WARM 昇格観測は monitor 継続中（kickstart 済）。結果は追記する。
 
 ### §12.5 3-loop 実測 2026-07-19（記憶でなく log/ledger 実測）
 - clip loop: 稼働 exit0。07-19 pass complete、usable=2、新 account aiwealth.pulse day1 warm 済。投稿本体は共通 poster.py（独自 poster 無し）。ledger 112行 realized $0。
