@@ -35,7 +35,7 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
 - **Browser isolation**: every loop leases its OWN isolated context on the shared `:9222`
   daily-driver via `cdp_context_lease.py` (never the raw default context — that churns other
   loops' tabs and poisons accounts). Each account gets a dedicated port (never 9222/9223).
-- **Poster**: `instagrapi_post.py` (tier1 saved session). One poster for every loop. The web
+- **Poster**: `poster.py` (tier1 saved session). One poster for every loop. The web
   composer (`post_reel.py`) is a dead end — IG silently drops automated web-composer posts.
 - **Reach is the real shadowban test**; near-zero views across posts = cooked → provision fresh.
 - **Poison detection only on day3+ accounts** (a young account failing instagrapi is expected,
@@ -49,6 +49,8 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
 | `account_state.sh` | resolve active handle/port from a loop's account state file |
 | `load_manifest.sh` | `me_load_manifest <name>` → export `MKT_*`, validate required keys |
 | `manifests/*.manifest.sh` | per-loop config (the ONLY thing that changes) |
+| `poster.py` | shared instagrapi poster (tier1 saved session), one poster for every loop |
+| `warmer.py` | deterministic WARM step; establishes the golden instagrapi session on day3 |
 
 ## Where a loop's own code lives
 

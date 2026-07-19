@@ -7,7 +7,7 @@ with the OLDEST (least-recently-attempted) mtime, a self-balancing round-robin: 
 clip's mtime is touched on every unresolved attempt, so a permanently-stuck clip becomes
 the MOST recently touched and a different clip is tried next wake.
 
-Calls instagrapi_post.py's --verify-only flag (SHARED-1 INV-4; replaces the retired
+Calls poster.py's --verify-only flag (SHARED-1 INV-4; replaces the retired
 post_reel.py web-composer --verify-only mode with the same {"ok","reels"} contract) via
 reel_verify.stabilize_reads, then confirms via reel_verify.select_confirmed_href's exact
 substring token match -- never hook/caption prose (HARD RULE 0.18: proven hook text is
@@ -46,7 +46,7 @@ def _read_sidecar(pending_verify, clip_base):
 
 
 def _call_verify_only(poster_path, python_bin, handle, tid, clip_mp4, clip_txt, cdp_port=None):
-    # SHARED-1 (INV-4): poster_path now points at instagrapi_post.py, which reads reels via the
+    # SHARED-1 (INV-4): poster_path now points at poster.py, which reads reels via the
     # instagrapi API (no browser DOM, no --video/--caption-file/--tid needed) -- tid/clip_mp4/
     # clip_txt are kept as params for call-site/test-stub compatibility but unused here.
     env = dict(os.environ)
@@ -142,11 +142,11 @@ if __name__ == "__main__":
     pending_verify = a.pending_verify
     posted = a.posted
     ledger = a.ledger
-    # SHARED-1 (INV-4): instagrapi_post.py replaces the retired post_reel.py web-composer poster.
+    # SHARED-1 (INV-4): poster.py replaces the retired post_reel.py web-composer poster.
     # It needs the instagrapi package, so it runs under the SAME dedicated venv the clip poster
     # uses (run.sh self-heals this venv before invoking self_heal.py) -- never the bare $PY used
     # to run this wrapper itself.
-    poster_path = f"{clip_dir}/scripts/instagrapi_post.py"
+    poster_path = f"{os.path.dirname(clip_dir)}/marketing-engine/poster.py"
     insta_py = f"{home}/.cache/instagrapi-venv/bin/python"
     python_bin = insta_py if os.path.exists(insta_py) else sys.executable
     cdp_dir = f"{home}/.claude/skills/ig-account-create/scripts"

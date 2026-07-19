@@ -13,4 +13,4 @@ if [ -z "$IG_HANDLE" ]; then
   exit 0
 fi
 sleep $(( RANDOM % 10800 ))   # 0..10800s = 0..3h jitter
-exec /opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/clip/warm_step.py" "$ACCOUNTS_FILE"
+exec /opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/marketing-engine/warmer.py" "$ACCOUNTS_FILE"

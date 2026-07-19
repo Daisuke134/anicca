@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Regression test for warm_step.py's promotion guard (2026-07-17 session-churn fix).
+"""Regression test for warmer.py's promotion guard (2026-07-17 session-churn fix).
 
 Real bug found in production ~/.cloak/ig-warmup-aiclips_world_hq.json: log ends at
 day=3/date=2026-07-15 (clean success), but aborts has a LATER entry
 date=2026-07-16 "not logged in". The OLD code only checked state_summary()'s
 day (from log[-1]) and a "banned" flag scanning for the literal word "ban" --
-a login abort that is NOT a ban signal was silently ignored, so warm_step.py
+a login abort that is NOT a ban signal was silently ignored, so warmer.py
 would promote warming->ready off a stale day=3 even though the account failed
 to log in the very next day. That is the same class of bug that causes
 session churn: promoting an account whose session is not actually healthy.
@@ -15,7 +15,7 @@ aborts entry is dated after the most recent log entry, and main()'s promotion
 branch must hold (not promote) whenever that guard is True, even if
 day >= PROMOTE_DAY and banned is False.
 
-recent_abort_after_last_log does not exist yet on the pre-fix warm_step.py --
+recent_abort_after_last_log does not exist yet on the pre-fix warmer.py --
 this test MUST FAIL (AttributeError) until the fix lands.
 """
 import json
@@ -26,9 +26,10 @@ import unittest
 from unittest import mock
 
 CLIP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, CLIP_DIR)
+MARKETING_ENGINE_DIR = os.path.join(os.path.dirname(CLIP_DIR), "marketing-engine")
+sys.path.insert(0, MARKETING_ENGINE_DIR)
 
-import warm_step  # noqa: E402
+import warmer  # noqa: E402
 
 REAL_BUG_STATE = {
     "handle": "aiclips_world_hq",
@@ -46,18 +47,18 @@ REAL_BUG_STATE = {
 class TestRecentAbortGuard(unittest.TestCase):
     def test_day3_log_then_abort_the_next_day_blocks_promotion(self):
         """The exact real-world shape from ig-warmup-aiclips_world_hq.json."""
-        day, banned, _ = warm_step.state_summary(REAL_BUG_STATE)
+        day, banned, _ = warmer.state_summary(REAL_BUG_STATE)
         self.assertEqual(day, 3)
         self.assertFalse(banned, "a plain 'not logged in' abort must not trip the ban-signal detector")
         self.assertTrue(
-            warm_step.recent_abort_after_last_log(REAL_BUG_STATE),
+            warmer.recent_abort_after_last_log(REAL_BUG_STATE),
             "an abort dated AFTER the last successful log entry must block promotion "
             "even though day(3) >= PROMOTE_DAY(3) and banned is False",
         )
 
     def test_no_aborts_never_blocks(self):
         st = {"log": [{"date": "2026-07-15", "day": 3}], "aborts": []}
-        self.assertFalse(warm_step.recent_abort_after_last_log(st))
+        self.assertFalse(warmer.recent_abort_after_last_log(st))
 
     def test_abort_before_last_log_does_not_block(self):
         """An old abort that happened BEFORE the account's most recent success (e.g. a
@@ -70,11 +71,11 @@ class TestRecentAbortGuard(unittest.TestCase):
             ],
             "aborts": [{"date": "2026-07-11", "day": 2, "ABORT": "not logged in"}],
         }
-        self.assertFalse(warm_step.recent_abort_after_last_log(st))
+        self.assertFalse(warmer.recent_abort_after_last_log(st))
 
     def test_only_aborts_no_log_blocks(self):
         st = {"log": [], "aborts": [{"date": "2026-07-16", "day": 1, "ABORT": "not logged in"}]}
-        self.assertTrue(warm_step.recent_abort_after_last_log(st))
+        self.assertTrue(warmer.recent_abort_after_last_log(st))
 
 
 class TestMainDoesNotPromoteOnRecentAbort(unittest.TestCase):
@@ -83,7 +84,7 @@ class TestMainDoesNotPromoteOnRecentAbort(unittest.TestCase):
 
     def setUp(self):
         import tempfile
-        self.tmp = tempfile.mkdtemp(prefix="warm_step_test_")
+        self.tmp = tempfile.mkdtemp(prefix="warmer_test_")
         self.fake_home = os.path.join(self.tmp, "home")
         os.makedirs(os.path.join(self.fake_home, ".cloak"), exist_ok=True)
         self.accts_path = os.path.join(self.tmp, "clip-accounts.json")
@@ -110,7 +111,7 @@ class TestMainDoesNotPromoteOnRecentAbort(unittest.TestCase):
         env = dict(os.environ)
         env["HOME"] = self.fake_home
         r = subprocess.run(
-            [sys.executable, os.path.join(CLIP_DIR, "warm_step.py"), self.accts_path],
+            [sys.executable, os.path.join(MARKETING_ENGINE_DIR, "warmer.py"), self.accts_path],
             env=env, capture_output=True, text=True, timeout=60,
         )
         with open(self.accts_path) as f:
@@ -165,14 +166,14 @@ class TestGoldenSessionLifecycle(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_day_count_uses_creation_day_as_day1(self):
-        today = warm_step.datetime.date(2026, 7, 19)
-        self.assertEqual(warm_step.warming_day("2026-07-19", today), 1)
-        self.assertEqual(warm_step.warming_day("2026-07-18", today), 2)
-        self.assertEqual(warm_step.warming_day("2026-07-17", today), 3)
+        today = warmer.datetime.date(2026, 7, 19)
+        self.assertEqual(warmer.warming_day("2026-07-19", today), 1)
+        self.assertEqual(warmer.warming_day("2026-07-18", today), 2)
+        self.assertEqual(warmer.warming_day("2026-07-17", today), 3)
 
     def test_first_day3_session_logs_in_feeds_and_dumps_once(self):
         client = FakeClient()
-        result = warm_step.establish_golden_session(
+        result = warmer.establish_golden_session(
             self.handle, home=self.home, client_factory=lambda: client
         )
         self.assertTrue(result["ok"])
@@ -186,7 +187,7 @@ class TestGoldenSessionLifecycle(unittest.TestCase):
         with open(settings, "w") as f:
             json.dump({"cookies": {"sessionid": "saved"}}, f)
         client = FakeClient()
-        result = warm_step.establish_golden_session(
+        result = warmer.establish_golden_session(
             self.handle, home=self.home, client_factory=lambda: client
         )
         self.assertTrue(result["ok"])
@@ -200,7 +201,7 @@ class TestGoldenSessionLifecycle(unittest.TestCase):
         with open(settings, "w") as f:
             json.dump({"cookies": {"sessionid": "dead"}}, f)
         client = FakeClient(fail_feed=True)
-        result = warm_step.establish_golden_session(
+        result = warmer.establish_golden_session(
             self.handle, home=self.home, client_factory=lambda: client
         )
         self.assertFalse(result["ok"])
@@ -213,7 +214,7 @@ class TestGoldenSessionLifecycle(unittest.TestCase):
         with open(marker, "w") as f:
             f.write("already-attempted\n")
         client = FakeClient()
-        result = warm_step.establish_golden_session(
+        result = warmer.establish_golden_session(
             self.handle, home=self.home, client_factory=lambda: client
         )
         self.assertFalse(result["ok"])
@@ -246,18 +247,18 @@ class TestMainDayGate(unittest.TestCase):
 
     def run_main(self, session_result):
         with mock.patch.dict(os.environ, {"HOME": self.home}), \
-             mock.patch.object(sys, "argv", ["warm_step.py", self.accounts]), \
-             mock.patch.object(warm_step, "browser_up", return_value=False), \
-             mock.patch.object(warm_step, "load_warmup_state", return_value={"log": [], "aborts": []}), \
-             mock.patch.object(warm_step, "append_warmlog"), \
-             mock.patch.object(warm_step, "establish_golden_session", return_value=session_result) as establish:
-            rc = warm_step.main()
+             mock.patch.object(sys, "argv", ["warmer.py", self.accounts]), \
+             mock.patch.object(warmer, "browser_up", return_value=False), \
+             mock.patch.object(warmer, "load_warmup_state", return_value={"log": [], "aborts": []}), \
+             mock.patch.object(warmer, "append_warmlog"), \
+             mock.patch.object(warmer, "establish_golden_session", return_value=session_result) as establish:
+            rc = warmer.main()
         with open(self.accounts) as f:
             account = json.load(f)[0]
         return rc, account, establish
 
     def test_day2_does_not_create_golden_session(self):
-        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=1)).isoformat())
+        self.write_account((warmer.datetime.date.today() - warmer.datetime.timedelta(days=1)).isoformat())
         rc, account, establish = self.run_main({"ok": True})
         self.assertEqual(rc, 0)
         self.assertEqual(account["status"], "warming")
@@ -265,7 +266,7 @@ class TestMainDayGate(unittest.TestCase):
         establish.assert_not_called()
 
     def test_day3_creates_session_then_promotes(self):
-        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=2)).isoformat())
+        self.write_account((warmer.datetime.date.today() - warmer.datetime.timedelta(days=2)).isoformat())
         rc, account, establish = self.run_main({"ok": True, "login_performed": True})
         self.assertEqual(rc, 0)
         self.assertEqual(account["status"], "ready")

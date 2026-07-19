@@ -26,7 +26,7 @@ PENDING_VERIFY="$CLIP_PENDING_VERIFY"    # REQ-006: unverified-outcome clips lan
 # ★POST-11 (2026-07-14): the VERIFIED FREE posting path — instagrapi + browser sessionid + ffmpeg
 # thumbnail. The web composer (post_reel.py) silently drops automated posts (IG detection); instagrapi
 # via the mobile private API reliably publishes. See docs/earn/ig-posting-method-graph-api-pivot.md.★
-INSTA_POSTER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/instagrapi_post.py"
+INSTA_POSTER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../marketing-engine/poster.py"
 INSTA_VENV="$HOME_DIR/.cache/instagrapi-venv"
 INSTA_PY="$INSTA_VENV/bin/python"
 # OBS-6: Telegram report (reel link so Dais can tap→watch→screenshot). Best-effort, never blocks posting.
@@ -82,7 +82,7 @@ if [ "$EARN_MODE" != "execute" ]; then
 fi
 
 # --- execute: prefer a CONFIRMED browser login; fall back to instagrapi's own settings-based
-# login when the browser is down or not confirmed logged in. POST-11's instagrapi_post.py has
+# login when the browser is down or not confirmed logged in. POST-11's poster.py has
 # ITS OWN fail-closed account-guard in login_resilient() (tier1: instagrapi-<handle>.json
 # settings, verified against cl.username==handle before ever posting; tier2: browser sessionid,
 # also verified; tier3: password) — so gating posting on THIS script's separate DOM-based

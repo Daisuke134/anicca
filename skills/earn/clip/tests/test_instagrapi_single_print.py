@@ -2,7 +2,7 @@
 """SHARED-1 (INV-6) replacement for test_post_reel_single_print.py (post_reel.py retired,
 web composer was a structural dead end -- IG silently dropped its automated posts).
 
-Verifies instagrapi_post.py's single-JSON-print contract: every caller (earn/clip's run.sh,
+Verifies poster.py's single-JSON-print contract: every caller (earn/clip's run.sh,
 self_heal.py, earn/video's run.sh, earn/clip-promote's run.sh) parses stdout expecting EXACTLY
 ONE JSON line per invocation. main()'s early-return sites (login-fail, dry-mode-success,
 verify-only) and verify_only_main() are exercised here with instagrapi mocked out (no real
@@ -17,15 +17,15 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
-SCRIPTS_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/scripts"
-sys.path.insert(0, SCRIPTS_PATH)
+MARKETING_ENGINE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "/marketing-engine"
+sys.path.insert(0, MARKETING_ENGINE_PATH)
 
 
 def _fresh_import():
-    if "instagrapi_post" in sys.modules:
-        del sys.modules["instagrapi_post"]
-    import instagrapi_post  # noqa
-    return instagrapi_post
+    if "poster" in sys.modules:
+        del sys.modules["poster"]
+    import poster  # noqa
+    return poster
 
 
 def _mktemp_files():
@@ -39,7 +39,7 @@ def _mktemp_files():
 def _run_main(post, argv):
     buf = io.StringIO()
     old_argv = sys.argv
-    sys.argv = ["instagrapi_post.py"] + argv
+    sys.argv = ["poster.py"] + argv
     try:
         with redirect_stdout(buf):
             post.main()

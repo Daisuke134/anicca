@@ -137,7 +137,7 @@ else
   # These are EXCLUDED from browser warming above (a parallel web session is the churn vector,
   # v22) — instead their golden instagrapi session gets a read-only two-stage keepalive probe
   # (v24 #12: get_timeline_feed + launcher/sync ping, never logs in, poisons on bloks).
-  IG_POST="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+  IG_POST="$HOME/anicca/skills/earn/marketing-engine/poster.py"
   jq -r '.[] | select((.session_owner // "") == "instagrapi" and (.status=="ready" or .status=="warming" or .status=="provisioned_pending_live_post")) | .handle' "$ACCOUNTS" |
   while IFS= read -r handle; do
     [ -z "$handle" ] && continue

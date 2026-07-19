@@ -8,7 +8,7 @@
 # NEVER touches ~/.cloak/.last-pwlogin-<handle> — it only loads the saved instagrapi session
 # (~/.cloak/instagrapi-<handle>.json) and validates it with a read-only get_timeline_feed().
 # If that session is missing/invalid it silently no-ops (outcome=skip) rather than triggering
-# a password login — instagrapi_post.py's login_resilient (tier1->tier2->tier3, with the 24h
+# a password login — poster.py's login_resilient (tier1->tier2->tier3, with the 24h
 # tier3 cooldown guard, commit b0a80b65) remains the ONLY path allowed to attempt tier2/tier3
 # login, inside run.sh's POST step. Once that step refreshes the saved session, this step
 # starts working again on the next pass with no code change needed.

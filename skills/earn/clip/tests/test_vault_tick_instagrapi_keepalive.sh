@@ -13,7 +13,7 @@ T="$ROOT/skills/browser/scripts/session_vault_tick.sh"
 fail(){ echo "FAIL: $*"; exit 1; }
 grep -q 'session_owner // ""' "$T" || fail "roster filter missing"
 grep -q -- '--keepalive' "$T" || fail "no instagrapi --keepalive probe wired"
-grep -q 'instagrapi_post.py' "$T" || fail "keepalive must go through instagrapi_post.py (single owner of session logic)"
+grep -q 'poster.py' "$T" || fail "keepalive must go through poster.py (single owner of session logic)"
 # the keepalive block must appear AFTER the clip_pass.sh guard line (same guard applies)
 guard_line=$(grep -n 'pgrep -f "clip_pass' "$T" | head -1 | cut -d: -f1)
 ka_line=$(grep -n -- '--keepalive' "$T" | head -1 | cut -d: -f1)

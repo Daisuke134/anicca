@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for instagrapi_post.py's session-preserving login policy (SSOT: docs/earn/
+"""Tests for poster.py's session-preserving login policy (SSOT: docs/earn/
 ig-4account-reels-carousel-loop-plan.md v22/v23/v24 — "never let the golden session die, never
 relogin once it has").
 
@@ -19,10 +19,10 @@ import time
 import unittest
 from unittest import mock
 
-CLIP_SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/scripts"
-sys.path.insert(0, CLIP_SCRIPTS_DIR)
+MARKETING_ENGINE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "/marketing-engine"
+sys.path.insert(0, MARKETING_ENGINE_DIR)
 
-import instagrapi_post as ip  # noqa: E402
+import poster as ip  # noqa: E402
 from instagrapi.exceptions import ChallengeRequired, LoginRequired, RateLimitError  # noqa: E402
 
 

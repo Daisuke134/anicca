@@ -32,7 +32,7 @@ WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
-INSTA_POSTER="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+INSTA_POSTER="$HOME/anicca/skills/earn/marketing-engine/poster.py"
 COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
 # Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
 # MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
