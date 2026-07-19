@@ -193,3 +193,60 @@ SHARED（account を運用して改善する機械・全員同じ）:
   • ledger / telegram 報告 / cooked なら作り直し
 ```
 **要点**: 「account を作る・投稿する・測る・改善する」機械は全部 SHARED。「どの account で・何を・どの形式(content type)で売るか」は UNIQUE/pluggable。content 生成すら pluggable にすることで video も slideshow も同じ運用 engine に載る。→ SHARED-2 は「instagrapi poster + content-gen interface + warmer + reach + reflect」を account/type/product パラメータ化した共通 engine にする（account 名をどこにも焼かない）。
+
+## §11 GENERALIZED MARKETING ENGINE（2026-07-19 Dais — loop が loop を作る土台 / true takeoff）
+
+**方針**: これから marketing loop を大量に作る（video / life-manager / 各 product）。**engine は1つ、共有。** loop 毎に変わるのは「誰に・どの問題を・何を・どう見せて売るか」だけ。人間(や親 loop)が product を決めれば、あとは汎用エンジンが distribution を全部やる。**車輪の再発明を構造的に不可能にする** = engine を共有物として1箇所に置き、loop はそれを config で呼ぶだけ。
+
+### なぜ今これを（poison 事故の教訓）
+@useclaudeskills が poison した真因 = capafy が clip の poster だけ借りて **account作成/warmup/session を自前複製**し、clip が baked した教訓（durable session・day3）を**受け継がなかった**。複製 = 教訓が伝播しない = 同じ穴を各 loop が踏む。**共有 engine なら1回直せば全 loop に効く。**
+
+### SHARED core（1実装。`~/anicca/skills/earn/marketing-engine/` → 安定後 profitable-claude へ OSS）
+| module | 責務 | 教訓が baked される場所 |
+|---|---|---|
+| `provision` | account 自作 + **durable golden session**(instagrapi password login-once + get_timeline_feed 検証)、replace-on-cold、ZERO human | ephemeral sessionid=brick の回避 |
+| `warmer` | day1-2 warm のみ / day3 で postable に promote | 早期投稿=poison の回避 |
+| `poster` | instagrapi_post.py（唯一の poster、account-agnostic --handle） | web composer=silent drop の回避 |
+| `reach` | reach/shadowban 健全判定（0継続=cooked） | 本物の shadowban テスト |
+| `reflect` | post を engagement で ranking → BEST_PRACTICES 生成（勝ち模倣） | データ薄なら baseline-only（捏造禁止） |
+| `ledger` | append-only post 台帳 | |
+| `telegram` | Dais へ日次報告 | PushNotification は届かない→message send |
+| `landing` | bio-link 用 全商品 landing 生成（任意） | comment link はクリック不可→bio 集約 |
+| `engine.sh` | 日次 orchestrator: resolve-account →(cold なら provision)→ warm/post gate → select → copy → content → post → reach → reflect → telegram | |
+
+### PER-LOOP config（変わるのはこれだけ = product manifest 1枚）
+```yaml
+persona:  "誰に"（例: ready-made Claude skill が欲しい indie hacker）
+problem:  "どの問題を解くか"
+product:
+  name / source(何を列挙して売るか) / listing_url / bio_link
+content:
+  adapter: faceless-video | slideshow | carousel | clip-cut  ← pluggable
+  hint: ...
+account:
+  state_file / handle_prefix
+niche / cadence(投稿時刻)
+```
+→ manifest を書けば marketing loop が1本立つ。**engine コードは触らない。**
+
+### META（loop が loop を作る = true takeoff）
+- `new-marketing-loop <manifest>`: manifest 検証 → launchd 登録 → 共有 engine で稼働。
+- 究極形: 「この product を宣伝しろ」と言えば、meta-loop が **persona/problem/product/content を LLM 判断で manifest 化** → scaffold + 登録 → 自走。人間は product を決めるだけ。AI が distribution loop 自体を生む。
+- README に明記（下記）: 新 loop を作る人/AI は **engine を再実装しない**。manifest を書く。
+
+### README に書くこと（`~/anicca` + profitable-claude）
+> **marketing loop の作り方**: あなたが決めるのは4つだけ — WHO(persona) / WHAT PROBLEM / WHAT you sell / HOW(content adapter)。account 作成・warmup・投稿・reach・self-improve・telegram は **generalized marketing-engine が共有で提供**。engine を再発明するな。manifest を書いて engine に載せろ。
+
+### 移行（Strangler Fig、稼働を壊さない）
+1. まず capafy を応急復活（sprint6、clip pattern を copy）→ 日次を回す
+2. `marketing-engine/` に core を抽出、clip と capafy を **config で同一 engine に載せ替え**（1つずつ、test green を保ちながら）
+3. `new-marketing-loop` generator + README
+4. profitable-claude へ OSS 移設（#12）
+5. meta-loop（product prompt → loop 自動生成）
+
+### TODO（tasklist）
+- #31 marketing-engine core 抽出（provision/warmer/poster/reach/reflect/ledger/telegram を1実装に。clip+capafy を載せ替え、Strangler Fig）
+- #32 product manifest schema 確定 + capafy/clip の manifest 化
+- #33 `new-marketing-loop` generator（manifest→launchd 登録→稼働）
+- #34 README「marketing loop の作り方（persona/problem/product/content だけ）」
+- #35 meta-loop: product prompt → manifest 自動生成 → loop scaffold（true takeoff）
