@@ -269,7 +269,15 @@
       "language": "python",
       "currentPhase": "complete",
       "updatedAt": "2026-07-18T15:33:25.693Z"
+    },
+    "marketing-session-lifecycle": {
+      "status": "active",
+      "createdAt": "2026-07-19T02:16:29.093Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-19T02:17:58.824Z"
     }
   },
-  "activeFeature": "capafy-skills-landing"
+  "activeFeature": "marketing-session-lifecycle"
 }
