@@ -19,7 +19,7 @@ except Exception:
 usable = []
 for account in accounts if isinstance(accounts, list) else []:
     status = str(account.get("status") or "").lower()
-    if status not in {"ready", "warming"}:
+    if not (status.startswith("ready") or status.startswith("warming")):
         continue
     if any(account.get(key) for key in ("poisoned", "poisoned_at", "frozen_at", "blocked_at")):
         continue
@@ -40,6 +40,34 @@ resolve_ig_handle() {
 
 resolve_ig_port() {
   resolve_ig_account_field "$1" port
+}
+
+resolve_ig_session_owner() {
+  resolve_ig_account_field "$1" session_owner
+}
+
+resolve_ig_started_warming() {
+  resolve_ig_account_field "$1" started_warming
+}
+
+ig_warming_day() {
+  local started_warming="${1:-}"
+  local today="${2:-}"
+  local python_bin="${IG_ACCOUNT_STATE_PYTHON:-/opt/homebrew/bin/python3}"
+  [ -x "$python_bin" ] || python_bin="$(command -v python3)"
+  "$python_bin" - "$started_warming" "$today" <<'PY' 2>/dev/null
+import datetime
+import sys
+
+started_raw, today_raw = sys.argv[1:3]
+try:
+    started = datetime.date.fromisoformat(started_raw)
+    today = datetime.date.fromisoformat(today_raw) if today_raw else datetime.date.today()
+    elapsed = (today - started).days
+    print(elapsed + 1 if elapsed >= 0 else 0)
+except (TypeError, ValueError):
+    print(0)
+PY
 }
 
 ig_provision_reason() {

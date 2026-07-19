@@ -24,6 +24,12 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 | warmer が day3 golden session を作る | `warm_step.py` は warm log の day だけ見て `ready` にし、session を作らない | 棄却 |
 | goal-monitor は若い browser account を除外する | account owner/day gate なしで全 active account に `--verify-only` を実行する | 棄却 |
 
+## Production state 実測
+
+- `@useclaudeskills` は `status=warming_day1`、`session_owner=browser`、`started_warming=2026-07-18`。実測 account day は2。
+- 旧 goal-monitor が作った `.capafy-ig-account-cooked` は存在した。新 owner/day gate の verify probe は `verify_eligible=no`、`poisoned=false`、verify invocation 0回を返し、false marker を除去した。
+- legacy `~/.cloak/instagrapi-useclaudeskills.json` は存在する。削除せず、day3 warmer は settings を load/verify し、password relogin を行わない。
+
 ## 検証
 
 - `bash -n` で変更 shell script 全て green。
@@ -41,8 +47,8 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 | 現状実測、spec、feature worktree | completed |
 | day1 signup-only provision | completed |
 | day3 golden session one-shot | completed |
-| young-account poison false-positive | in_progress |
-| full tests と stub lifecycle 実測 | pending |
+| young-account poison false-positive | completed |
+| full tests と stub lifecycle 実測 | in_progress |
 | commit と push | pending |
 
 ## 根拠
