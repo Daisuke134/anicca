@@ -367,29 +367,31 @@ def main():
     ap.add_argument("--caption-file")
     ap.add_argument("--handle", required=True)
     ap.add_argument("--port", default=os.environ.get("CDP_PORT", "9222"))
+    ap.add_argument("--accounts-path", help="account state JSON; defaults to ~/.cloak/clip-accounts.json")
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--keepalive", action="store_true",
                      help="read-only golden-session probe; no post, never logs in")
     ap.add_argument("--verify-only", action="store_true",
                      help="read-only: return the account's current reel/post hrefs; no posting (SHARED-1 INV-3)")
     a = ap.parse_args()
+    accounts_path = a.accounts_path or C("~/.cloak/clip-accounts.json")
     if a.keepalive:
-        print(json.dumps(keepalive_main(a.handle), ensure_ascii=False)); return
+        print(json.dumps(keepalive_main(a.handle, accounts_path=accounts_path), ensure_ascii=False)); return
     if a.verify_only:
-        print(json.dumps(verify_only_main(a.handle, a.port), ensure_ascii=False)); return
+        print(json.dumps(verify_only_main(a.handle, a.port, accounts_path=accounts_path), ensure_ascii=False)); return
     # ★ FREEZE GATE (fail-closed for posting; Dais 2026-07-17 "1 loop = 1 acc" ruling): a handle whose
-    #   clip-accounts.json status starts with "frozen" must never be POSTED to from ANY path -- the
+    #   supplied account-state status starts with "frozen" must never be POSTED to from ANY path -- the
     #   production run.sh chain and one-off diagnostic scripts alike (pass45's post_reel_diag.py posted
     #   a real reel to frozen @aiclips_studio_hq precisely because no chokepoint enforced the freeze).
     #   Read-only modes (--keepalive/--verify-only) return above and stay allowed ("Data kept, NOT deleted").
     try:
-        _accts = json.load(open(os.path.expanduser("~/.cloak/clip-accounts.json")))
+        _accts = json.load(open(accounts_path))
         _frozen_status = next((x.get("status") for x in _accts if x.get("handle") == a.handle), None)
     except Exception:
         _frozen_status = None  # no ledger -> no freeze info; never invent a block for unlisted handles
     if _frozen_status and str(_frozen_status).startswith("frozen"):
         print(json.dumps({"handle": a.handle, "outcome": "refused_frozen_account", "post_url": None,
-                          "note": "clip-accounts.json status=%s; posting on this handle is disabled by the freeze policy" % _frozen_status},
+                          "note": "account state status=%s; posting on this handle is disabled by the freeze policy" % _frozen_status},
                          ensure_ascii=False))
         return
     if not a.video or not a.caption_file:
@@ -401,11 +403,11 @@ def main():
         from instagrapi import Client
         cl = Client()
         cl.delay_range = [2, 5]
-        apply_proxy(cl, a.handle, res)
+        apply_proxy(cl, a.handle, res, accounts_path)
         cl.challenge_code_handler = make_gmail_handler(a.handle)
         # ★ ACCOUNT GUARD (fail-closed): the session is loaded from instagrapi-<handle>.json (tier 1/3)
         #   or verified cl.username==handle (tier 2), so we can only ever act as the right account. ★
-        if not login_resilient(cl, a.handle, a.port, res):
+        if not login_resilient(cl, a.handle, a.port, res, accounts_path=accounts_path):
             print(json.dumps(res, ensure_ascii=False)); return
 
         if not a.live:
