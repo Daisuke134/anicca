@@ -1468,3 +1468,9 @@ loop が自力で稼ぐのを見る。詰まったら harness を直す。**tool
 集約層(Onchain.fi/Questflow)で探して買う。我々は HTTP x402 のみ=agent が実購入する MCP 面に不在。
 → buildable な道: DIST-1(4商品を MonetizedMCP wrap→Fluora/MCPay 掲載、coinbase/x402 の mcp example 参照) +
 DIST-2(awesome-x402/coinbase ecosystem/Onchain.fi/Questflow 登録)。self-pay 水増し=wash-trade=やらない。
+
+## ★★AUTO mode 判断（Dais 提案 2026-07-19、実測証拠付き）★★
+Dais 提案: 両 franklin を free でなく auto(paid brain)で走らせる。論拠=free は self-orchestrate 不能(improve/update 0回実測)、賢い brain なら DIST(マーケット掲載/需要獲得)をやれる。
+★反証(config.mjs L20-23 に焼き込み済の実測)★: paid/frontier は funded tier で treasury を $14→$10.5 に溶かし yield $0 = net-negative。旧 auto 実測 ~$0.68/hr。franklin1 現残高 $4.50 = auto なら ~7h で枯渇、稼がなければ死。
+★但し文脈変化★: 旧実験は「稼ぐ物ゼロ時」。今は店(web-search転売等)+DIST の buildable 需要策あり=賢い brain が実際に稼ぎ行動するか未検証。
+★決定 = controlled test★: 両方 flip でなく franklin2 のみ auto に(hard spend-cap 付き)、賢い brain が DIST/demand を実行し external を出すか監視。溶かし始めたら revert。franklin1 は free 維持(対照群)。両方盲目 flip は money-safety 違反=しない。
