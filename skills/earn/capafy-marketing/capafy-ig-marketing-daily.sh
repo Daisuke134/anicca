@@ -12,6 +12,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=account_state.sh
 . "$SCRIPT_DIR/account_state.sh"
+MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
+# shellcheck source=../marketing-engine/provision_prompt.sh
+. "$MARKETING_ENGINE_DIR/provision_prompt.sh"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 LOG="$HOME/.openclaw/logs/capafy-ig-marketing-daily.log"
 ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
@@ -79,17 +82,29 @@ then
   exit 0
 fi
 
+PROVISION_PROMPT="$(
+  IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS_FILE" \
+  IG_PROVISION_HANDLE_PREFIX="capafy" \
+  IG_PROVISION_INSTANCE="capafy" \
+  IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="capafy" \
+  IG_PROVISION_BIO_TEXT="one-line Claude-skills bio, NO link" \
+  IG_PROVISION_BROWSER_INSTRUCTIONS="Drive the existing CloakBrowser daily-driver on CDP :9222 only through cdp_incognito.py in a new isolated context and new tab. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops." \
+  IG_PROVISION_PROFILE_PREFIX="capafy-mkt" \
+  IG_PROVISION_SUCCESS_STATUS="warming" \
+  IG_PROVISION_STARTED_WARMING="yes" \
+  IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
+  IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
+  IG_PROVISION_REACH_MARKER="$COMMERCIAL_MARKER" \
+  IG_PROVISION_LAST_PASS_MARKER="$HOME/.openclaw/state/.capafy-ig-marketing-last-pass" \
+  IG_PROVISION_TELEGRAM_TARGET="0000000000" \
+  render_ig_provision_prompt
+)"
+
 PROMPT='You are the Anicca Capafy IG-marketing loop (headless; goal = drive Capafy skill subscribers via Instagram Reels; revenue → Dais bank; human NOT in loop). Triggered by launchd (ai.anicca.capafy-ig-marketing-daily). Active account SSOT is '"$ACCOUNTS_FILE"'; resolved handle='"${IG_HANDLE:-none}"', port='"${IG_PORT:-none}"'. NEVER use a Dais-personal account. The bash caller passed MODE='"${MODE_FLAG:-DRY}"'. If MODE=DRY, do not publish. Only MODE=--live may publish.
 
 PROVISION GATE: provision_needed='"$PROVISION_NEEDED"', reason='"${PROVISION_REASON:-none}"'. When provision_needed=yes, run STEP PROVISION below and STOP THIS PASS after its success/failure report. Do not run STEP1-STEP7, do not build content, do not edit bio, and do not publish. A newly provisioned account is day 1 and MUST receive zero posts until warmup reaches day 3.
 
-STEP PROVISION (copied and tweaked from ~/anicca/skills/earn/clip/clip_pass.sh STEP PROVISION; 1-loop-1-account, replace-on-cold, ZERO human): Read ~/.claude/skills/ig-account-create/SKILL.md and follow its proven email-only flow. Create one brand-new Capafy IG account on residential home IP with NO proxy. Use a fresh Gmail plus-address keiodaisuke+capafy<random-tag>@gmail.com. Read the 6-digit OTP with: gog gmail search --account redacted@example.invalid "instagram in:anywhere newer_than:1h" --max 3 --plain. The in:anywhere term is mandatory because OTP can land in spam. Do not use phone flow unless Instagram forces it; if phone or text-CAPTCHA is forced, stop and report provision-blocked:<reason>. BROWSER ISOLATION: drive the existing CloakBrowser daily-driver on CDP :9222 only through cdp_incognito.py in a NEW isolated context and NEW tab. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops. Fill fields with trusted CDP typing, set DOB with trusted clicks, create a unique handle, and run setup_profile.py with a $0 PIL monogram avatar plus one-line Claude-skills bio containing NO link. Save signup credentials to ~/.cloak/ig-<handle>.json.
-
-DURABLE GOLDEN SESSION — mandatory make-or-break step copied from clip: the browser sessionid is ephemeral and dies when isolated context closes. NEVER call login_by_sessionid and never save browser sessionid as the durable session. Instead use ~/.cache/instagrapi-venv/bin/python and the fresh password from ~/.cloak/ig-<handle>.json: from instagrapi import Client; cl=Client(); cl.login(<username>, <pw>) exactly once as the first fresh-account login; feed=cl.get_timeline_feed(); require real returned data; cl.dump_settings("~/.cloak/instagrapi-<handle>.json"). This is the required Client().login flow. Read the settings file back. Feed verification, not file existence, proves session alive.
-
-STATE WRITE: use '"$ACCOUNTS_FILE"' only. Preserve every existing row. Choose a free dedicated port that is neither 9222 nor 9223 after checking lsof, and a unique profile such as capafy-mkt-<tag>. On confirmed get_timeline_feed success, atomically append {"handle":"<handle>","profile":"<profile>","port":<free-port>,"lang":"en","status":"warming","session_owner":"instagrapi","instance":"capafy","created":"<today YYYY-MM-DD>","started_warming":"<today YYYY-MM-DD>"}. If reason=cooked-marker, first mark prior ready/warming rows poisoned_manual_backup with poisoned_reason and poisoned_at so only the new appended row is active. Parse the full JSON after writing, confirm row count increased by one and the final row matches the new handle, then remove '"$COOKED_MARKER"' and remove ~/.openclaw/state/.capafy-ig-reach-healthy so the replacement account restarts non-commercial reach validation. Send Telegram chat 0000000000 a success message containing handle, port, feed_verified_alive=yes, status_written=warming, and that this pass posted nothing.
-
-FAILURE: if signup, Client().login, get_timeline_feed(), dump_settings, or state verification fails, append a best-effort row with status=provision_failed and the failure reason, ensure '"$COOKED_MARKER"' remains present, and send Telegram chat 0000000000 exactly one provision-blocked:<reason> report. Never label ready/warming and never remove the marker on failure. Touch ~/.openclaw/state/.capafy-ig-marketing-last-pass and stop this pass.
+'"$PROVISION_PROMPT"'
 
 STEP1 SELECT (tool): python3 ~/anicca/skills/earn/capafy-marketing/scripts/select_listing.py  → one online Capafy listing {agent_id,name,desc,url}.
 
