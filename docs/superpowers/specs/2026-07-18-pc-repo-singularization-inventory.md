@@ -372,6 +372,24 @@ anicca-earn-gig。退避 plist 置場 = ~/Library/LaunchAgents.disabled-gig-migr
 の誤退避なし + reddit 2）。残移設 = clip 切替 / capafy / article 依存刈り / x402 の4件 + 公開ゲート #13 +
 別トラック #20。
 
+### 詳細 TO-BE tree（2026-07-19 Dais 合意版 — 実装の照準）
+
+```
+profitable-claude/  ← clone → ./install.sh で単独稼働する OSS
+├── README.md/.ja.md(thesis+unlock ladder+honest numbers)  install.sh(data home生成+全loop launchd機械生成)
+├── .env.example  .gitignore(deny-by-default)  skills.lock(vendor台帳)
+├── config/loop-registry.json(全loop SSOT、requires欄=unlock自動ゲート)
+├── bin/{start-all,status,ceo-run}.sh  launchd/(横断のみ)  ledgers/  lib/  tests/ceo/(常時green)
+└── skills/   ★1 loop = 1 自己完結 dir（模範解剖 = gig-work: cli.sh[.env source→KYC gate→registry gate]
+    │          + detached driver + healthcheck + launchd/hf-*.plist + RUNBOOK + tests、state は外）
+    ├── _shared/browser/(vendor済)  gig-work●  reddit●  article-writer●(cron一本化後)
+    ├── video○  clip○ clip-promote○(v44後に切替)  capafy⏳(launchd4本ごと)  x402-economy⏳(複製)
+    └── bounty● affiliate● connector● explorer● life-manager●(将来のLM marketing loopもここ)
+外(私密、env契約): ~/.profitable-claude/{.env,vault,state,ledgers,logs}。当機override: ~/gig ~/.cloak 据置
+anicca = franklin専用に純化: daemon+trade+x402(franklin側)=STAY / browser・_shared・clip・video=COPY元
+(#20完了まで削除禁止) / gig・reddit=墓標
+```
+
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
 gig(0)=#8-11 → 共有基盤 vendor(1)=#15 → video(2)+clip系(3)=#16 → reddit(4)+capafy(5)=#19 →
 article 依存刈り+cron 8本廃止(6)=#18 → x402/economy(7)=#17 → 台帳整合(9)=#12 → OSS hygiene=#13 →
