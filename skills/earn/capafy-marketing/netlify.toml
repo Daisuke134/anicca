@@ -1,0 +1,15 @@
+[build]
+  publish = "site"
+
+[functions]
+  directory = "site/netlify/functions"
+
+[[redirects]]
+  from = "/go-stats"
+  to = "/.netlify/functions/go-stats"
+  status = 200
+
+[[redirects]]
+  from = "/go/*"
+  to = "/.netlify/functions/go/:splat"
+  status = 200
