@@ -407,7 +407,13 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
                      Fable 実測: test_sync.sh 3/3 PASS + 実 sync 1回成功（両 repo up to date）。
  B6 #41 LIFE-AUTO    DEFERRED（Dais 確認 07-19）: 構想=mail/telegram/LINE 等の全受信+全 contact を基に自動で応募・返信・仕分けする loop。
                      単体では作らず **life manager の機能として**後日構築。着手 trigger = Dais が life manager 作業を開始した時。
- B4 #47 補記        clip 実 pass の WARM 昇格観測は monitor 継続中（kickstart 済）。結果は追記する。
+ B4 #47 補記        ✅実 E2E 観測済 2026-07-19 21:09（前回 20:43 は disk<5GB gate で abort → cache 回収 2.4→5.2GB 後に再発火）。
+                     実測: warmer が day3 の aiclips_world_hq2 を選択、★#42 の day-gated engagement が本番で実走 — follow=6 が
+                     UI state change 検証付きで成功（recipe day3 cap 5-10 内）、reels 8 実再生★。golden session は terminally FAILED
+                     → 正直 discard（status=session_failed、relogin せず、backup 付き state 書換）。想定通り: world_hq2 は旧 flow
+                     （day1 instagrapi login 時代）の 07-17 作成で既に焼けていた。loop は usable=1 (aiwealth.pulse) で自走継続。
+                     → 両 loop の初投稿はともに 07-21（aiwealth.pulse と capafy.skills9582 が同日 day3）。clean recipe 経路の
+                     account が day3 生存するかが 07-21 の単一の山場。
 
 ### §12.6 終了条件 = FULL-VERIFY マトリクス（2026-07-19 Dais 明示: 「TODO は clip loop + capafy loop + engine が検証込みで完成した時だけ終わる」）
 
