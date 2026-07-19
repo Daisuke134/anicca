@@ -69,8 +69,8 @@ fi
 # ── WARM (deterministic bookkeeping, not an LLM step: fresh accounts (status=="warming" in
 # clip-accounts.json) need passive warmup before they may post. Runs ig-account-warmer's
 # warm.py once per warming account (skips + WARNs if that account's browser is down) and
-# promotes warming->ready once the account clears Dais's 3-day/3-run floor. See
-# warm_step.py for the full policy citation.) ──
+# establishes the one golden instagrapi session and promotes warming->ready on day3. See
+# warm_step.py for the full policy.) ──
 log "WARM: warm_step.py"
 "$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
@@ -79,8 +79,8 @@ log "WARM: warm_step.py"
 # pass ("ready_account=none" → exit) and posted nothing for days. Here the loop CREATES a fresh
 # account on the home residential IP (0-phone / 0-captcha, proven with @aiclipsvault /
 # @useclaudeskills) whenever no usable account exists. Skipped entirely (no LLM cost) when a
-# usable account is already present. run.sh below resolves status==ready dynamically, so a newly
-# provisioned ready account is picked up on THIS same pass. ──
+# usable account is already present. A new account is appended as day1 warming/browser and posts
+# nothing this pass. ──
 USABLE_ACCTS=$("$PY" - "$CLIP_ACCTS" <<'PYJSON' 2>/dev/null
 import json,sys
 try: a=json.load(open(sys.argv[1]))
@@ -103,7 +103,6 @@ if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
     IG_PROVISION_BIO_TEXT="one-line AI / money / wealth bio, NO link" \
     IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass's already-acquired isolated browser context named '$CLIP_LEASE', not the raw shared :9222 default context. Acquire and inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; use its target_id/ws and drive only that tab via cdp.py. Never navigate or close a tab this pass did not create, so gig/capafy tabs remain untouched." \
     IG_PROVISION_PROFILE_PREFIX="clip-en" \
-    IG_PROVISION_SUCCESS_STATUS="ready" \
     render_ig_provision_prompt
   )"
   step "PROVISION" "$PROVISION_PROMPT" 1500
