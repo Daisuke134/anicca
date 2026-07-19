@@ -10923,3 +10923,12 @@
 {"ts":1784444816,"wake_id":"00MRRGDC8DD10F79FA80284FD0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784444948,"wake_id":"00MRRGG62RD0B74E2A12444C38","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784444948,"wake_id":"00MRRGG62RD0B74E2A12444C38","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784445080,"wake_id":"00MRRGIZZVBE33A13DEFB24D47","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784445382,"wake_id":"00MRRGPGX1A017CAFBE5344D64","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784445382,"wake_id":"00MRRGPGX1A017CAFBE5344D64","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784445513,"wake_id":"00MRRGSAFO37BE7F01F9A1485F","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784445513,"wake_id":"00MRRGSAFO37BE7F01F9A1485F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784445645,"wake_id":"00MRRGV4DBBFD2955590BA497F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784445778,"wake_id":"00MRRGXYKO9F86D146290242A0","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784445778,"wake_id":"00MRRGXYKO9F86D146290242A0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784445907,"wake_id":"00MRRH0QD89AFBC3FB6567498F","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
