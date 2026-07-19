@@ -396,7 +396,11 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
                      成果: README「Funding lanes」章（earner=agent自己所有+instagrapi / human-funded=Postiz可）、poster.py に album_upload
                      carousel 経路（--images 2-10、--video と排他、day<3 guard 有効、album は public_verified:None の正直報告）、
                      manifests/slideshow.manifest.sh（offline SPAWN_FAKE_LLM E2E で生成・validate 通過。LANE: human-funded、live 発火は day3 実証後）
- B3 #37 MONEY-LINE   attribution 配線の先行実装（landing click 代理指標。実データは A3 後に流れ込む）
+ B3 #37 MONEY-LINE   ✅配線完了 2026-07-19（anicca f8566763 + 76ed4f64）。landing card link → /go/<agent_id>（Netlify Function、
+                     allowlist、非GET 405）→ Blobs click 記録 → 302 capafy.ai+UTM。/go-stats JSON。pull_attribution.py が daily pass で
+                     click×sales join を ~/.openclaw/state/capafy-attribution.jsonl に追記（実走済: 2026-07-19 行あり、test click=1 が計上）。
+                     Fable live 実測: 実id 302+UTM / bogus 302 top / stats JSON。初回 502 の真因 = @netlify/blobs 未install（bundle 失敗）
+                     → npm install + package-lock commit で解消。SKILL.md の幻参照(x_attribution.py 等)も是正済。実 $ data は A3 投稿開始後。
  B4 #47 CLIP-HEAL    aiclipsvault 系 clip sub-loop 修理（実測: PROVISION rc=124 + no valid session で停止気味。isolated provision 経路で再生）
  B5 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
  B6 #41 LIFE-AUTO    Dais の GO が出た時のみ（不要なら削除）
