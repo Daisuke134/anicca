@@ -57,7 +57,7 @@ x402 ゼロ→イチの唯一の道（順序固定）:
 実測: `api.cdp.coinbase.com/.../discovery/resources`(総数24846)を1500件走査 → franklin1/franklin2/payTo が**1件もヒットせず**。
 buyer agent が実際に探すのは CDP Bazaar。x402scan 登録 ≠ Bazaar 掲載。**external $0 の主因は商品/需要でなく「買い手が探す場所に存在しない」**可能性が最有力。
 研究(docs/research/2026-07-19-two-tier-agent-tool-distribution-best-practices.md)裏付け: **Facilitator は初回 settle が通った時に endpoint を index**。我々の settle は全部 self-pay で、CDP Facilitator の index 経路を通ってない疑い。
-gap: 走査は6%+ページネーション信頼性未確認 = 確定でなく強い示唆。要: 自 origin 指定の確定チェック or Facilitator の index 状態確認。★これが X4 の真のゲート = BAZAAR-INDEX★
+gap: 走査は6%+ページネーション信頼性未確認 = 確定でなく強い示唆。要: 自 origin 指定の確定チェック or Facilitator の index 状態確認。★訂正: 掲載は正常(web-search エントリ全フィールド検証済: payTo/price/description/bazaar-extension/quality 全て正)。external $0 の真因は需要側=評判/volume ゼロで24852件中 buyer に選ばれない。次レバー=ERC-8004 評判 or volume bootstrap or 時間★
 
 ## ★★最重要の線引き（Dais 2026-07-19）: DEV（建てる）と RUN（回す）を分離。RUN に人間はゼロ★★
 
