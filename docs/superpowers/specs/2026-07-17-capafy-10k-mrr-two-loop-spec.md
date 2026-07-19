@@ -281,13 +281,19 @@ niche / cadence(投稿時刻)
 2. **他 account を follow してない** — warm.py は passive only（reels/stories/scroll/profile 訪問）。follows/likes は「day3+ に agent が agentic に」実行する設計だが day1 で challenge 済み＝一度も follow せず。新規 IG で following=0 = 100% bot signature。
 3. **day1 早期 instagrapi login** — session file は作成6h後(07-18 17:11)に login。新規 account への day1 login は典型的 challenge trigger（設計は day3 まで browser-only のはず）。
 
-**★ PIVOT（2026-07-19、実測で approach 是正）— 捨て垢 warmup を捨て、Postiz+IG-Pro に切替 ★**
-上の「instagrapi/browser で捨て垢を warmup 生存」アプローチは**間違い**だった（3 account 連続死＝world_hq2/daily_hq/useclaudeskills）。**既に durable なパスが稼働してた**:
-- Postiz live API 実測 = **IG 8 account が今すぐ postable**（全 disabled=False, type=instagram-standalone）+ TikTok 17 + YT 3 + X 1（`~/.openclaw/state/POSTIZ_ACCOUNT_MAP.md`）。
-- reelclaw/reelfarm/Larry が**数ヶ月 Postiz 公式 API で投稿継続**＝ban 耐性が実証済み。
-- ＝ 正解 = **確立済 IG Professional account + Postiz 公式 API 投稿**（instagrapi/browser 直投を廃止）。その上に **IG Harness（Shudesu/ig-harness-oss, OSS DM 自動化）**で comment→DM→capafy link ファネル（#45, #37 直結）。
-- capafy niche(Claude skills)は既存 anicca 8 account と別ブランド → **capafy 専用 IG account を Professional/Creator で1つ正しく作り Postiz に接続**、以後 capafy-ig-marketing-daily を Postiz 経由に routing（reelclaw と同型）。warmup 生存コードは不要。
-- 旧 FIX recipe (a)-(d)（isolated context/follow step/day3 golden session）は**捨て垢前提なので破棄**。warmup recipe doc(`docs/reference/ig-account-warmup-recipe-2026.md`)は「もし将来 private-API 経路が要る時」の参考として残すが、既定パスではない。
+**★ 不変条件（最上位、これが approach を決める）— ZERO human, agent が全部自前 ★**
+capafy loop の存在意義 = **human ゼロで自走する earner**。従って:
+- human in the loop 無し / **human credential 無し** / Claude sub 以外に human が払う金 無し / agent は自分で稼ぐ。
+- ⇒ **Postiz は却下**（Dais の human 資産: Dais の Postiz login・Dais 所有 IG account・Dais の Meta 連携）。IG Harness も Dais/human の Meta app 前提なら却下（agent が Meta stack を完全自己所有できる時のみ再検討）。
+- ⇒ **正解 = agent が自分の account を自作・所有・warmup・自分で投稿**（agent 自前 email で作成、instagrapi/browser は agent 自身の session）。既存 anicca 8 IG(Postiz)は human 資産なので capafy に流用しない。
+- ⇒ 2026-07-19 に一度「Postiz+IG-Pro へ pivot」と書いたのは**誤り**（この不変条件を破っていた）。撤回。
+
+**FIX recipe（agent 自作 account を survive させる。IP は Mac Mini home 回線=既に residential なので真因は IP でなく下記）**:
+- (a) fresh account を **isolated context/専用 fingerprint+port**（cdp_context_lease.py / warm_iso.py）で作成。生 :9222 main に絶対 login しない（真因#1）。
+- (b) warmup を recipe どおり（`docs/reference/ig-account-warmup-recipe-2026.md`）: day1=browser-only・follow 0・API login 無し / day2=follow 3-5・like 5-10 / day3=follow 5-10・**初 instagrapi login 1回→dump_settings**・初投稿(リンク無し)。空プロフィール+即書き込みを避ける（真因#2 の正確版）。
+- (c) **instagrapi login は day<3 禁止**（provision/warmer に gate。真因#3）。login 1回→load_settings のみ・再login 厳禁・delay_range=[1,3]。
+- (d) day3 session 生存で初投稿→reach 実測。dead なら account 破棄→再作成（relogin しない）。
+- 有料 residential proxy が要る場合も **agent の earn 金**で払う（Dais は払わない）。まず (a)-(c) を無料で。
 
 **#37 実測**: capafy sales API は日付別 gross のみ、UTM/referrer 内訳なし → reach 最適化 + 総売上 watch で代替。
 
