@@ -19,8 +19,13 @@ DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
 EARN_LEDGER="$HOME/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
 KEY_GATE="$HOME/.openclaw/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
-IG_HANDLE="$(sed -nE 's/^IG_HANDLE="([^"]+)".*/\1/p' "$IG_SCRIPT" | head -1)"
-WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE}.json"
+ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$HOME/anicca/skills/earn/capafy-marketing/account_state.sh}"
+# shellcheck source=account_state.sh
+. "$ACCOUNT_STATE_HELPER"
+ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
+IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
+IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
+WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
@@ -29,6 +34,11 @@ COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
 # Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
 # MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
 WARMUP_DAYS_REQUIRED=3
+if [ "${CAPAFY_GOAL_MONITOR_PROBE_ONLY:-0}" = "1" ]; then
+  printf 'active_handle=%s active_port=%s accounts_path=%s\n' \
+    "${IG_HANDLE:-none}" "${IG_PORT:-none}" "$ACCOUNTS_FILE"
+  exit 0
+fi
 
 # ── goal(c) go-live: create + load the IG launchd ONLY when warmup day>=3. Idempotent. ──
 warmup_day_count() { $PY -c "import json;print(len(json.load(open('$WARMUP')).get('log',[])))" 2>/dev/null || echo 0; }
@@ -60,13 +70,16 @@ WDAY="$(warmup_day_count)"
 VERIFY_JSON=""
 VERIFY_RC=0
 if [ -z "$IG_HANDLE" ]; then
-  VERIFY_JSON='{"ok":false,"error":"IG_HANDLE unresolved from daily script"}'
+  VERIFY_JSON='{"ok":false,"error":"IG_HANDLE unresolved from Capafy account state"}'
+  VERIFY_RC=2
+elif [ -z "$IG_PORT" ]; then
+  VERIFY_JSON='{"ok":false,"error":"IG_PORT unresolved from Capafy account state"}'
   VERIFY_RC=2
 elif [ ! -x "$INSTA_PY" ]; then
   VERIFY_JSON='{"ok":false,"error":"instagrapi venv missing"}'
   VERIFY_RC=2
 else
-  VERIFY_JSON="$(CDP_PORT=9222 "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port 9222 --verify-only 2>>"$HOME/.openclaw/logs/capafy-goal-monitor.err.log" | tail -1)"
+  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.openclaw/logs/capafy-goal-monitor.err.log")"
   VERIFY_RC=$?
 fi
 ACCOUNT_COOKED="$($PY - "$VERIFY_JSON" <<'PY' 2>/dev/null

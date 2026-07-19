@@ -17,7 +17,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
-SCRIPTS_PATH = os.path.expanduser("~/anicca/skills/earn/clip/scripts")
+SCRIPTS_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/scripts"
 sys.path.insert(0, SCRIPTS_PATH)
 
 
@@ -71,6 +71,19 @@ class TestSinglePrint(unittest.TestCase):
                 post, ["--video", video, "--caption-file", cap, "--handle", "h"])
         self.assertEqual(len(parsed), 1, f"expected exactly 1 JSON line, got {len(parsed)}: {lines}")
         self.assertEqual(parsed[0]["outcome"], "dry")
+
+    def test_accounts_path_reaches_login_policy(self):
+        post = _fresh_import()
+        video, cap = _mktemp_files()
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as accounts:
+            json.dump([{"handle": "h", "status": "warming", "session_owner": "instagrapi"}], accounts)
+            accounts_path = accounts.name
+        post.login_resilient = mock.MagicMock(return_value=False)
+        with mock.patch("instagrapi.Client") as MockClient:
+            MockClient.return_value = mock.MagicMock()
+            _run_main(post, ["--video", video, "--caption-file", cap, "--handle", "h",
+                             "--accounts-path", accounts_path])
+        self.assertEqual(post.login_resilient.call_args.kwargs["accounts_path"], accounts_path)
 
     def test_verify_only_returns_reels_list(self):
         # unit-level: verify_only_main() maps instagrapi Media objects -> href strings,
