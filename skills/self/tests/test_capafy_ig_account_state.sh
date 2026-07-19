@@ -148,6 +148,8 @@ RENDERED_PROMPT="$(
   IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="testtag" \
   IG_PROVISION_BIO_TEXT="test bio, NO link" \
   IG_PROVISION_BROWSER_INSTRUCTIONS="test isolated browser context" \
+  IG_PROVISION_PORT="9339" \
+  IG_PROVISION_CONTEXT_ID="test-dedicated" \
   render_ig_provision_prompt
 )"
 for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"'; do

@@ -101,7 +101,9 @@ if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
     IG_PROVISION_INSTANCE="clip" \
     IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="aiclips" \
     IG_PROVISION_BIO_TEXT="one-line AI / money / wealth bio, NO link" \
-    IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass's already-acquired isolated browser context named '$CLIP_LEASE', not the raw shared :9222 default context. Acquire and inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; use its target_id/ws and drive only that tab via cdp.py. Never navigate or close a tab this pass did not create, so gig/capafy tabs remain untouched." \
+    IG_PROVISION_PORT="9331" \
+    IG_PROVISION_CONTEXT_ID="$CLIP_LEASE" \
+    IG_PROVISION_BROWSER_INSTRUCTIONS="Launch and use the dedicated CloakBrowser profile on :9331 for context '$CLIP_LEASE'. Never use or log in through the raw shared :9222 browser." \
     IG_PROVISION_PROFILE_PREFIX="clip-en" \
     render_ig_provision_prompt
   )"
