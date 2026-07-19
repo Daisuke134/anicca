@@ -292,10 +292,12 @@ DONE（2026-07-19 検証）
           CP2(59-66)+key_health_gate.sh(<$2 拒否)。結果検証=isConfirmedConfigKeys=1 を
           live 反復達成(agent 4014388606/2485008254/4886968609 が rejected→status=1)。
  ✓ #9 A5  売れ筋 selector — sales_selector.py, build loop STEP2 配線, live signal=none。
+ ✓ #21    funding alert — key_health_gate.sh が低残高で Dais に telegram(早期警告 <$5 +
+          block時)、1日1回 dedup、auto-charge 無し(資金源=Dais 判断)。検証: 健全$21→無発火、
+          cushion$50→発火+marker、同日再実行→dedup(openclaw stub、実送信ゼロ)。main-internal push。
 
 DO-NOW（待ち無し）
- 1. #21    funding alert 型(低残高 telegram、charge しない)
- 2. #31残  reflect/reach/ledger/telegram を engine helper に dedup
+ 1. #31残  reflect/reach/ledger/telegram を engine helper に dedup
 
 BACK-BURNER（待ちが本質）
  - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
