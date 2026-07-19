@@ -21,7 +21,7 @@ ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
-WARMUP_STATE="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
+IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
 LANDING_URL="https://capafy-skills-daily.netlify.app"
 LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"
 COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
@@ -43,15 +43,8 @@ fi
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 /opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && netlify deploy --prod --dir "$HOME/anicca/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
 
-# ── WARMUP GATE: decide DRY vs LIVE. Day 1-2 DRY; LIVE from day 3. ──
-WARM_DAY="$(/opt/homebrew/bin/python3 - "$WARMUP_STATE" <<'PY' 2>/dev/null
-import json,sys,os
-p=sys.argv[1]
-try:
-    d=json.load(open(p)); log=d.get("log",[]); print(len(log))
-except Exception: print(0)
-PY
-)"
+# ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
+WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 # ★STRATEGY (2026-07-19 Dais, WHOLE marketing engine): warm up for 2 days, post from DAY 3.
 # day1-2 = warmup ONLY (no posting) so the fresh account is NOT poisoned/cooled/polluted by
 # early posting. instagrapi CAN post (proven) — the failure mode was posting too early, not the
@@ -90,8 +83,6 @@ PROVISION_PROMPT="$(
   IG_PROVISION_BIO_TEXT="one-line Claude-skills bio, NO link" \
   IG_PROVISION_BROWSER_INSTRUCTIONS="Drive the existing CloakBrowser daily-driver on CDP :9222 only through cdp_incognito.py in a new isolated context and new tab. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops." \
   IG_PROVISION_PROFILE_PREFIX="capafy-mkt" \
-  IG_PROVISION_SUCCESS_STATUS="warming" \
-  IG_PROVISION_STARTED_WARMING="yes" \
   IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
   IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
   IG_PROVISION_REACH_MARKER="$COMMERCIAL_MARKER" \

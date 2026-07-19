@@ -387,3 +387,10 @@
 {"timestamp":"2026-07-18T15:31:52.566Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"5","to":"6","iteration":1,"phase":"6"}
 {"timestamp":"2026-07-18T15:33:10.011Z","event":"gate_recorded","featureName":"capafy-skills-landing","phase":"6","verdict":"PASS","reviewedBy":"verifier"}
 {"timestamp":"2026-07-18T15:33:25.695Z","event":"phase_transition","featureName":"capafy-skills-landing","from":"6","to":"complete","iteration":1,"phase":"complete"}
+{"timestamp":"2026-07-19T02:16:29.097Z","event":"feature_created","featureName":"marketing-session-lifecycle","mode":"lean","language":"python"}
+{"timestamp":"2026-07-19T02:17:58.823Z","event":"phase_transition","featureName":"marketing-session-lifecycle","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-19T02:17:58.825Z","event":"phase_transition","featureName":"marketing-session-lifecycle","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-19T02:18:41.888Z","event":"phase_transition","featureName":"marketing-session-lifecycle","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-19T02:20:14.739Z","event":"gate_recorded","featureName":"marketing-session-lifecycle","phase":"1c","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-07-19T02:20:14.755Z","event":"phase_transition","featureName":"marketing-session-lifecycle","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-19T02:20:14.755Z","event":"sprint_started","featureName":"marketing-session-lifecycle","sprintNumber":1,"phase":"2a"}
