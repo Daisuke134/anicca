@@ -921,3 +921,9 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 1. warm_step/warm.py が **垢の persistent browser を creds で launch** → 日次 warmup(現状 profile 無しで launch 不可)。
 2. warm.py を human-like 化(上記 research 反映、全 marketing engine 共通)。
 - これで aiwealth.pulse が day1-2 warmup → day3 で ready 昇格 → run.sh 投稿。honesty gate は生存中(偽物ゼロ)。
+
+## v49 — ★成功: warmup が実際に回り始めた★（2026-07-19 10:07）
+- creds 復旧 + PROVISION に creds 保存追加後、WARM 実行: ensure_warmup_browser rc=0(browser launch 成功)、warm.py rc=0(aiwealth.pulse day1: reels 6実再生 verified, scrolls 5)、day=1<3 で正しく未昇格。
+- **lifecycle 全体が実証: 作成→warming(day1 実走)→day3 昇格→投稿**。clip-loop launchd(毎日)が自走。
+- 3日後 day3 に warm_step が warming→ready 昇格 → run.sh が instagrapi 投稿(年齢クリア) → poster logged-out 公開確認 → 実URL telegram。cron 不要(launchd が正本、実投稿時のみ telegram)。
+- honesty gate 生存(偽物ゼロ)。残 polish: warm.py human-like 化(#11後半、研究済 story/profile/explore)、#9 money、#7 security。
