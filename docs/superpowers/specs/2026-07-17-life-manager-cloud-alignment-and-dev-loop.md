@@ -463,6 +463,7 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 - **★LM-28 発生（新規・最優先）★**: Dais は自分の call を**英語**で受けたい（verbatim: "I wanted it in English though... Japanese works fine too, no worries"）。LM-26 で Dais の `lm_users.call_language` を en→ja に data-fix したのは**方向が逆**だった。langForPhone の +81→ja ロジックと resolveCallLang 配線は正しいが、**個別 user の明示希望が locale 推定に勝つ**。→ Dais 行を ja→en に戻す（data-fix、コード変更不要のはず）。実 call 録音 whisper が英語になるまで close しない。
   - **2026-07-19 実行済み**: `lm_784ad279…`（Daisuke, +818046270314）を PATCH で `call_language="en"` に戻し、return=representation で確認。コード無変更（resolveCallLang が明示値優先）。実 call 録音での英語確認だけ次テスト call に残る。
 - **録音常設要望**: Dais「全 call/voice セッションを録音保存すれば working か俺が聞いて判断できる」。→ store-recordings の定期実行（cron/launchd）を確認/常設する（新規タスク LM-29）。
+  - **2026-07-19 ✅ LM-29 done**: launchd `ai.anicca.lm-recording-store`（30分毎 StartInterval 1800、RunAtLoad）+ wrapper `~/.openclaw/skills/life-manager-video/run-store-recordings.sh`（.env source → store-recordings.py）。`launchctl list` に exit0 で登録、out ログに `done: N new, M listed` 実出力を確認。wrapper は main-internal に push（secret-guard no leaks）。flowb: PLAN=Fable、Sol は sandbox が repo 外書込を拒否→Fable が仕上げ。録音は `~/.openclaw/state/lm-video/recordings/`。
 - **一般法則追加**: DB 状態フラグだけで close するな（録音の中身を聞く）＋ **fix の方向を user の希望で確認してから data を書き換える**（locale 推定 < 個別 user の明示希望）。
 
 ## 6. 調査ソース
