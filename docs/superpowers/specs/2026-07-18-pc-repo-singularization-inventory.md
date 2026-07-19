@@ -362,6 +362,16 @@ skills.lock 方式（source_repo/source_commit/sha256）で受ける。逆方向
   capafy も並行の気配あり要確認。x402(#17) は最難関で最後、OSS hygiene(#13) は移設完了後
 - 体制 = /flowa: Fable plan+verify / Sol xhigh execute / Sol fresh review
 
+### AS-IS スナップショット（2026-07-19 10:3x、全行実測ベース）
+PC 本番稼働: gig-work（毎時、07-18 cutover、daily-report 初発火済）/ reddit（日次、07-19 08:41 初投稿成功）/
+bounty / affiliate / connector / explorer / life-manager / article-writer（cron 二重のまま）= 8 loop。
+PC copy 済み待機: video（休眠）/ clip + clip-promote（切替は v44 並行作業の完了待ち）。
+anicca 残留中（未移設）: capafy 起動側 / x402+economy（franklin 物理共有）。openclaw 残留: capafy-autopublish
+実処理 + article cron 8本 + TikTok cron 3本。tombstone 済み: anicca gig / anicca reddit / openclaw
+anicca-earn-gig。退避 plist 置場 = ~/Library/LaunchAgents.disabled-gig-migration-20260718/（gig 5 + clip 1
+の誤退避なし + reddit 2）。残移設 = clip 切替 / capafy / article 依存刈り / x402 の4件 + 公開ゲート #13 +
+別トラック #20。
+
 ### TaskList との対応（実行順序 §5 ↔ Task ID）
 gig(0)=#8-11 → 共有基盤 vendor(1)=#15 → video(2)+clip系(3)=#16 → reddit(4)+capafy(5)=#19 →
 article 依存刈り+cron 8本廃止(6)=#18 → x402/economy(7)=#17 → 台帳整合(9)=#12 → OSS hygiene=#13 →
