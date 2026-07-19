@@ -29,6 +29,12 @@ PROVISION_REASON="$(capafy_ig_provision_reason "$IG_HANDLE" "$COOKED_MARKER")"
 PROVISION_NEEDED="no"
 [ -n "$PROVISION_REASON" ] && PROVISION_NEEDED="yes"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
+# ── BROWSER ISOLATION (same lease system clip uses): take our own isolated context on :9222 so
+#    capafy never churns against clip/gig/Dais tabs on the shared daily-driver (churn = poison). ──
+BROWSER_SCRIPTS="$SCRIPT_DIR/../../browser/scripts"
+CAPAFY_LEASE="capafy-$$"; export CAPAFY_LEASE
+trap 'python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" release "$CAPAFY_LEASE" >/dev/null 2>&1' EXIT
+python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" acquire "$CAPAFY_LEASE" >/dev/null 2>&1 || true
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 echo "account_state=$ACCOUNTS_FILE active_handle=${IG_HANDLE:-none} active_port=${IG_PORT:-none} provision_needed=$PROVISION_NEEDED reason=${PROVISION_REASON:-none}" >>"$LOG"
 if [ "${CAPAFY_IG_PROBE_ONLY:-0}" = "1" ]; then
@@ -81,7 +87,7 @@ PROVISION_PROMPT="$(
   IG_PROVISION_INSTANCE="capafy" \
   IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="capafy" \
   IG_PROVISION_BIO_TEXT="one-line Claude-skills bio, NO link" \
-  IG_PROVISION_BROWSER_INSTRUCTIONS="Drive the existing CloakBrowser daily-driver on CDP :9222 only through cdp_incognito.py in a new isolated context and new tab. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops." \
+  IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass already-acquired isolated browser context named $CAPAFY_LEASE (leased via ~/anicca/skills/browser/scripts/cdp_context_lease.py), NOT the raw shared :9222 default context. Acquire and inspect that exact lease via cdp_context_lease.py, get its target_id and ws, and drive ONLY that tab via cdp.py. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops." \
   IG_PROVISION_PROFILE_PREFIX="capafy-mkt" \
   IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
   IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
