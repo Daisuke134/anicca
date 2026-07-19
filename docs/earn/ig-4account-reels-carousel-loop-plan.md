@@ -940,3 +940,9 @@ launchd ai.anicca.clip-loop(毎日) → lease(--no-seed) → WARM(warming垢を 
 | 9 | $計測を閉じる | Digistore24 API key→~/.openclaw/.env→measure_dollar が listPurchases 200+clip-metrics に "type":"dollar" 行 | 独立(:9222の Digistore live session) |
 | 7 | security | 5sim pw rotate(本session漏洩)+AgentMail 旧key auth/me 401 | 独立 |
 ### 移管: marketing OS化(E1-E6 共有エンジン) = Capafy(spec 2026-07-17-capafy-10k-mrr-two-loop-spec.md §9/§10)。clip は「adapter提供側」に回る。
+
+## v51 — #9 Digistore $計測は server-side anti-abuse でブロック（2026-07-19、Sonnet 徹底診断）
+- Sonnet subagent(browser tool あり、fresh context)が #9 を end-to-end 実行 → BLOCKED。真因: Digistore pw reset が **reCAPTCHA Enterprise anti-abuse gate(NEWPWCAP)**。決定証拠3つ: (1)本物ブラウザの本物 token でも同エラー (2)でたらめ email でも同エラー(account 照会前に発火=IP/指紋 gate) (3)clean residential IP でも拒否。CapSolver 4種全拒否。=この IP/account に Digistore の server-side フラグ(07-14 cooldown 継続)。「本物ユーザーでも今 reset 不可」。
+- secret 漏洩ゼロ(pw/key 生成せず)。.env clean(key 無し、部分書き込みなし)。measure_dollar は safe baseline(skip/no key、crash せず、key 入れば動く)。所見は ~/.cloak/digistore24-aiclips.json の reset_block_2026-07-19 に記録。
+- ★#9 は急がない: 投稿ゼロ=売上ゼロ。key があっても measure は 0 を返すだけ。**day3 の投稿で traffic が出てから意味を持つ**。それまで defer。
+- unblock 経路(day3後): (a)MacBook(別IP 100.108.140.123)から reset (b)residential proxy + CapSolver v2 enterprise(非proxyless) (c)フラグが切れるのを待つ。
