@@ -153,3 +153,41 @@ GOOD:仕組み説明）付き。SKILL に「SUBJECT = EXPLAINER, NOT DIARY」節
 zenn-ja / devto-en / substack-ja / substack-en / note-ja / x-ja / x-en。X も @diceai0 復帰で通る。
 gate 骨格 + 自律(#14) + 収益連動(#13) + form(#12) + explainer(#9) 全て稼働。**残るは #7 arm（ARTICLE_AUTOPUBLISH=1）**
 のみで、これは複数日 watch で品質が別 topic でも安定して 70+ を出すのを実測してから最後に引く。
+
+## 11. #7 arm と #8 OSS 化は別物（2026-07-19 明確化）
+
+**#7 と #8 は対象が違う**:
+- **#7 ARM** = Dais 自身の loop を live 化。Dais のアカウント(note=anicca123 / substack=aniccabuddha / X=diceai0)に毎日投稿して Dais が稼ぐ。コード作業ゼロ、環境変数1個。
+- **#8 OSS 化** = 見知らぬ他人が clone して、自分のアカウントで自分が稼げるようにする。まとまった実装。
+
+### #7 arm の正確なコマンド（品質確認後に実行）
+毎朝 06:00 JST の定期 pass を live 化する = plist に env を焼く:
+```bash
+PB=/usr/libexec/PlistBuddy; P=~/Library/LaunchAgents/ai.anicca.article-daily.plist
+$PB -c "Add :EnvironmentVariables dict" -c "Add :EnvironmentVariables:ARTICLE_AUTOPUBLISH string 1" "$P" 2>/dev/null || \
+  $PB -c "Set :EnvironmentVariables:ARTICLE_AUTOPUBLISH 1" "$P"
+launchctl unload "$P"; launchctl load "$P"
+```
+これで次の 06:00 pass から draft でなく即公開。dev.to だけは常に draft(仕様)。
+
+### #8 OSS 化の実際の gap（実測 2026-07-19）
+「git clone profitable-claude && 1コマンドで自動起動→自分のメールでアカウント自動作成→全platform投稿→稼ぐ」
+という理想に対し、今の実体:
+
+| ステップ | 状態 | gap |
+|---|---|---|
+| clone→launchd 起動 | ✅ | plist 置くだけ |
+| 記事執筆→gate→publish | ✅ | loop 本体は完成 |
+| 自分のメールで signup | 🔶 | self-signup/gen-plus-address.sh あり。だが keiodaisuke gmail 固定、全platform自動signup未配線 |
+| 各platformログイン | 🔶 | ig-account-create は IG で実証済。note/substack/zenn/X の自動作成+login は要ビルド。今は「人間が1回作ってログイン」前提 |
+| アカウント名を自分のに | ❌ | anicca123(12) / aniccabuddha(15) / diceai0 / anicca_301 / telegram 8547730585 がハードコード。env 化して剥がす |
+| payout(稼いだ金の受取) | 人間 | KYC/銀行/Stripe = 各人の1回手作業(Substack $/note振込/X Premium) |
+
+**#8 のタスク** = ①ハードコード(アカウント名/telegram/email)を env 化 ②全platform自動signup を IG パターンで note/substack/zenn/X に展開 ③KYC/payout は loop が「あなたの銀行を1回繋いで」と依頼する導線。
+**「clone して勝手に全部」の単一コマンドは今は存在しない** — それを作るのが #8。KYC だけは各人1回の人間作業で正解、それ以外は自動化可能。
+
+## 12. 残り TODO（2026-07-19 時点、正しい順序）
+build は全 done(#1-6,9-14 完了)。残り:
+1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
+2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
+3. (arm後) 親skills 昇格 / OSS前 PII scrub
