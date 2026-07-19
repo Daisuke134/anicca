@@ -63,10 +63,10 @@ python3 "$C/../../browser/scripts/cdp_context_lease.py" acquire "$CLIP_LEASE" --
 # @useclaudeskills) whenever no usable account exists. Skipped entirely (no LLM cost) when a
 # usable account is already present. A new account is appended as day1 warming/browser and posts
 # nothing this pass. ──
-# ── WARM (deterministic: age each status=warming account via warm_step.py; day1-2 stay browser-only,
+# ── WARM (deterministic: age each status=warming account via warmer.py; day1-2 stay browser-only,
 # then day3 establishes the one golden instagrapi session before promotion to ready.) ──
-log "WARM: warm_step.py"
-"$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
+log "WARM: warmer.py"
+"$PY" "$MARKETING_ENGINE_DIR/warmer.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
 USABLE_ACCTS=$("$PY" - "$CLIP_ACCTS" <<'PYJSON' 2>/dev/null
 import json,sys
@@ -99,7 +99,7 @@ log "PRODUCE: producer.sh"
 bash "$C/producer.sh" >/dev/null 2>&1 || log "producer rc=$?"
 
 # ── POST (HONEST daily job: run.sh resolves the status==ready account DYNAMICALLY, posts via
-# instagrapi_post.py whose logged-out REALITY GATE confirms the reel is publicly visible before
+# poster.py whose logged-out REALITY GATE confirms the reel is publicly visible before
 # claiming success, and telegrams ONLY a verified-published REAL url. NO LLM LEARN/MEASURE/REFLECT
 # here = no fabricated metrics or hallucinated reel URLs can ever be reported. This is the whole job.) ──
 log "POST: run.sh EARN_MODE=execute"

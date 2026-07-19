@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for instagrapi_post.py's keepalive_main() — the read-only golden-session probe fired by
+"""Tests for poster.py's keepalive_main() — the read-only golden-session probe fired by
 session_vault_tick.sh every 30 min (v24 #12). It must NEVER log in: a dead session is self-heal's
 job (replace the account), not keepalive's.
 
@@ -13,10 +13,10 @@ import tempfile
 import unittest
 from unittest import mock
 
-CLIP_SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/scripts"
-sys.path.insert(0, CLIP_SCRIPTS_DIR)
+MARKETING_ENGINE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "/marketing-engine"
+sys.path.insert(0, MARKETING_ENGINE_DIR)
 
-import instagrapi_post as ip  # noqa: E402
+import poster as ip  # noqa: E402
 
 
 class TestKeepaliveMain(unittest.TestCase):

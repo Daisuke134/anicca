@@ -6,7 +6,7 @@
 # EVERY step incl. the affiliate link is a transition here — never a manual後工程.
 set -uo pipefail
 SK="$HOME/anicca/skills/earn/video"; PY=/opt/homebrew/bin/python3
-# SHARED-1: the free VERIFIED posting path is instagrapi_post.py (earn/clip), not the retired
+# SHARED-1: the free VERIFIED posting path is poster.py (earn/marketing-engine), not the retired
 # post_reel.py web composer (structural dead end, IG silently drops automated web posts). It needs
 # the instagrapi package, so it always runs under this dedicated venv (self-healed below, shared
 # with earn/clip -- never installed into the bare $PY used for this script's own glue logic).
@@ -142,7 +142,7 @@ print('1' if ok else '0')" 2>/dev/null)
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
     VFYBUD=$(( TIMEOUT / 10 )); GENBUD=$(( TIMEOUT * 4 / 10 )); POSTBUD=$(( TIMEOUT * 3 / 10 ))   # ★ FIND-604: sum=0.8×TIMEOUT, headroom for glue/writes so kills are exceptional, not the norm ★
-    PR="$HOME/anicca/skills/earn/clip/scripts/instagrapi_post.py"
+    PR="$HOME/anicca/skills/earn/marketing-engine/poster.py"
     IG_PORT=9222
     if [ ! -x "$INSTA_PY" ]; then
       /opt/homebrew/bin/python3 -m venv "$INSTA_VENV" >/tmp/ev-insta-venv.log 2>&1
@@ -165,7 +165,7 @@ print('1' if ok else '0')" 2>/dev/null)
       # ★ FIND-502 fix: ONE verify-only call serves BOTH (a) reconcile — if a prior attempt TODAY was timeout-killed
       #   AFTER シェア (post_attempt_date==today, last_post_date unset) and a reel appeared that wasn't in pre_reels,
       #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt.
-      # SHARED-1 (INV-4): reads via instagrapi_post.py --verify-only (instagrapi API), not the
+      # SHARED-1 (INV-4): reads via poster.py --verify-only (instagrapi API), not the
       # retired post_reel.py browser-DOM read. ensure_post_context.py above still keeps the
       # daily-driver tab logged in as the tier2 sessionid fallback inside login_resilient(). ★
       timeout "$VFYBUD" env CDP_PORT="$IG_PORT" "$INSTA_PY" "$PR" --handle "$HANDLE" --port "$IG_PORT" --verify-only >/tmp/ev_vfy.log 2>&1 || true
@@ -221,10 +221,10 @@ print(c[0] if c else '')" 2>/dev/null)"
         if [ -n "$MP4" ]; then
           printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
           # ★ FIND-001: account is warmed (warmup_day>=7) → post LIVE (affiliate link optional for posting).
-          # SHARED-1 (INV-1/INV-2): publishes via instagrapi_post.py --live (the verified-free path), not
+          # SHARED-1 (INV-1/INV-2): publishes via poster.py --live (the verified-free path), not
           # the retired post_reel.py web composer. ★
           timeout "$POSTBUD" env CDP_PORT="$IG_PORT" "$INSTA_PY" "$PR" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --port "$IG_PORT" --live >/tmp/ev_post.log 2>&1 || true
-          # ★ FIND-401 (adapted, SHARED-1 INV-2): mark posted ONLY when instagrapi_post.py VERIFIES
+          # ★ FIND-401 (adapted, SHARED-1 INV-2): mark posted ONLY when poster.py VERIFIES
           #   outcome=="published" AND non-empty post_url; else leave last_post_date unset → retry, report REAL failure. ★
           PURL=$($PY -c "import json
 u=''

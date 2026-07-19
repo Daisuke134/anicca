@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shared pure verification logic for the clip-earn IG-reel posting/self-heal pipeline.
 
-Used by both instagrapi_post.py (this directory's scripts/, the free instagrapi-based
+Used by both poster.py (earn/marketing-engine, the free instagrapi-based
 poster; SHARED-1 retired the earlier web-composer poster) and this directory's self-heal
 driver (self_heal.py). One implementation, no duplicate/drifting logic across the two call sites.
 

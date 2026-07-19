@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""warm_step.py — deterministic WARM step for clip_pass.sh (bookkeeping + subprocess dispatch
+"""warmer.py — deterministic WARM step for clip_pass.sh (bookkeeping + subprocess dispatch
 only, no LLM judgment; per building-agents this is mechanical, not a place for model judgment).
 
 Per pass, picks the SINGLE OLDEST warming account (earliest started_warming -- backfilled from
@@ -26,7 +26,7 @@ aiclipsvault instance) is never started/stopped/touched by this script.
 Safety: clip-accounts.json edits are backup -> in-place (edit only the touched account object,
 never drop/reorder/duplicate rows) -> row-count-verified before AND after the write.
 
-Usage: warm_step.py [path-to-clip-accounts.json]   (defaults to ~/.cloak/clip-accounts.json)
+Usage: warmer.py [path-to-clip-accounts.json]   (defaults to ~/.cloak/clip-accounts.json)
 """
 import sys, os, json, subprocess, shutil, datetime, time, urllib.request
 
@@ -287,7 +287,7 @@ def main():
         if banned:
             a["status"] = "investigating"
             a["note"] = (
-                f"{datetime.date.today().isoformat()} warm_step.py: WARN ban signal detected in "
+                f"{datetime.date.today().isoformat()} warmer.py: WARN ban signal detected in "
                 f"warmup log -- moved warming->investigating (account_day={account_day}, warm_log_day={warm_log_day})."
             )
             changed = True
@@ -306,7 +306,7 @@ def main():
                 a["status"] = "ready"
                 a["session_owner"] = "instagrapi"
                 a["note"] = (
-                    f"{datetime.date.today().isoformat()} warm_step.py: golden session alive; "
+                    f"{datetime.date.today().isoformat()} warmer.py: golden session alive; "
                     f"PROMOTED warming->ready (account_day={account_day}, login_performed="
                     f"{str(bool(session.get('login_performed'))).lower()}). prior note: {prior_note}"
                 )
@@ -326,7 +326,7 @@ def main():
             elif session.get("terminal"):
                 a["status"] = "session_failed"
                 a["note"] = (
-                    f"{datetime.date.today().isoformat()} warm_step.py: {session.get('error')}; "
+                    f"{datetime.date.today().isoformat()} warmer.py: {session.get('error')}; "
                     "account discarded, password relogin forbidden."
                 )
                 changed = True

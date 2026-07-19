@@ -70,9 +70,9 @@ fi
 # clip-accounts.json) need passive warmup before they may post. Runs ig-account-warmer's
 # warm.py once per warming account (skips + WARNs if that account's browser is down) and
 # establishes the one golden instagrapi session and promotes warming->ready on day3. See
-# warm_step.py for the full policy.) ──
-log "WARM: warm_step.py"
-"$PY" "$C/warm_step.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
+# warmer.py for the full policy.) ──
+log "WARM: warmer.py"
+"$PY" "$MARKETING_ENGINE_DIR/warmer.py" "$CLIP_ACCTS" 2>&1 | while IFS= read -r line; do log "  $line"; done
 
 # ── PROVISION (1-loop-1-acc, replace-on-cold, NO HUMAN). v38 root-cause fix: the live loop had
 # NO account-creation step, so once its only account went cold (poisoned) it just gave up every

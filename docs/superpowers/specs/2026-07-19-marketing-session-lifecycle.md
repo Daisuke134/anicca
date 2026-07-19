@@ -21,7 +21,7 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 |---|---|---|
 | 共有 provision が day1 private API login を要求する | `provision_prompt.sh` が `Client().login`、feed、dump を成功条件にする | 採用 |
 | clip の2経路が同じ lifecycle を使う | `clip_pass.sh` は共有 renderer へ `ready` を渡し、`clip_daily.sh` は独自 signup-only prompt を持つ | 棄却。実装が矛盾 |
-| warmer が day3 golden session を作る | `warm_step.py` は warm log の day だけ見て `ready` にし、session を作らない | 棄却 |
+| warmer が day3 golden session を作る | `warm_step.py`（refactor R3 で `marketing-engine/warmer.py` へ move 済み）は warm log の day だけ見て `ready` にし、session を作らない | 棄却 |
 | goal-monitor は若い browser account を除外する | account owner/day gate なしで全 active account に `--verify-only` を実行する | 棄却 |
 
 ## Production state 実測
@@ -33,7 +33,7 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 ## 検証
 
 - `bash -n` で変更 shell script 全て green。
-- `python3 -m py_compile skills/earn/clip/warm_step.py` green。
+- `python3 -m py_compile skills/earn/marketing-engine/warmer.py`（refactor R3 で move 済み、旧 `skills/earn/clip/warm_step.py`）green。
 - clip pytest 全件と clip shell tests 全件 green。
 - capafy account-state/provision test 全件 green。
 - stub 実測で day1 prompt に login/session dump がなく browser/warming/started_warming がある。
@@ -54,4 +54,4 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 ## 根拠
 
 - instagrapi Usage Guide: https://subzeroid.github.io/instagrapi/usage-guide/interactions.html — “for long-lived automation, prefer `login()` once, then `dump_settings()` and reuse the saved settings.”
-- repo 内 measured policy: `skills/earn/clip/scripts/instagrapi_post.py` は saved settings が死んでも password relogin を拒否する。
+- repo 内 measured policy: `skills/earn/marketing-engine/poster.py`（refactor R3 で move 済み、旧 `skills/earn/clip/scripts/instagrapi_post.py`）は saved settings が死んでも password relogin を拒否する。
