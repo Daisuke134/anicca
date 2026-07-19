@@ -52,7 +52,16 @@ x402 ゼロ→イチの唯一の道（順序固定）:
     無理に churn せず、店を磨き（improve推奨に沿った商品調整）+ 発見を待つのが正。★
 ```
 
-## ★★根本設計の訂正（Dais 2026-07-19、実測で確定）: 知能を弱い個体に置くな、中央に置け★★
+## ★★最重要の線引き（Dais 2026-07-19）: DEV（建てる）と RUN（回す）を分離。RUN に人間はゼロ★★
+
+Anicca の価値 = **AI に「経済的独立の道具」を配る OSS**。だから heavy lifting の意味を取り違えるな:
+- **DEV = 道具を建てる（1回・OSS・人間/Fable がやってよい）**: framework + skill + **証明済み商品の starter セット**を repo に焼く。ハンマーを作る行為であって、ハンマーを振る行為ではない。
+- **RUN = 稼ぐ（self-funded agent のみ・人間ゼロ・human-funded ゼロ・human credential ゼロ）**: franklin が継承した道具で店を回し external を受ける。
+- ★俺（Fable=human-funded）や claude-p が「回し続ける中央サービス」になったら永久に人間がループに居る = Anicca の意味が死ぬ。前案「中央 factory を俺が cron で回す」はこれで**却下**。★
+- **agent は何をするか（"何もしてない"ではない）**: 店を運営 / 需要を持ってくる(掲載・宣伝) / 自分の wallet・float を管理 / いつ spawn するか判断 / 与えられた道具の中で適応。商品の R&D(重い部分)は道具に焼き込み済 = 弱い個体でも「商品を発明する賢さ」は要らない。だが稼ぐ運営そのものは agent がやる。
+- **PROD-FACTORY の再定義**: 継続的な人間サービスではなく **1回の dev 成果物** = 強い starter 商品カタログを repo に焼く。以後は人間 factory を走らせない。商品更新が要るなら agent 自身の loop(self-funded compute) か 1回きりの dev refresh で、**永続 human サービスにはしない**。
+
+## ★★（旧・却下された案）知能を弱い個体でなく中央に置け★★ — 上の DEV/RUN 分離で置換
 
 **実測**: franklin1 の直近40 action は全部 `{action:"ensure"}`（店を開くだけ）。`{action:"improve"}`/`{action:"update"}` は生涯0回。商品は4のまま増えない。
 **真因**: self-improve を「各 franklin の弱い無料モデルが自分で選んで呼ぶ道具」として作ったのが誤り。弱いモデルは毎 wake 最も簡単な ensure だけ選び、improve→update の多段連鎖を一度もしない（弱いモデルは自己オーケストレーション不能）。
