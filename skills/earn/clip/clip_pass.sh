@@ -8,6 +8,10 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 C="$HOME/anicca/skills/earn/clip"
+CLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MARKETING_ENGINE_DIR="$CLIP_SCRIPT_DIR/../marketing-engine"
+# shellcheck source=../marketing-engine/provision_prompt.sh
+. "$MARKETING_ENGINE_DIR/provision_prompt.sh"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
@@ -91,7 +95,18 @@ PYJSON
 )
 log "PROVISION: usable_accounts=${USABLE_ACCTS:-0}"
 if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
-  step "PROVISION" "STEP PROVISION (1-loop-1-acc, replace-on-cold, ZERO human): clip-accounts.json (~/.cloak/clip-accounts.json) has NO usable account (none with status ready/warming that is not poisoned/frozen/blocked), so CREATE one brand-new IG account NOW and register it as the sole active clip account. BROWSER ISOLATION OVERRIDE: the account-creation signup MUST run INSIDE this pass's already-acquired isolated browser context named '$CLIP_LEASE', NOT the raw shared :9222 default context. Acquire/inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; the lease already created an isolated context on :9222 with its own cookie jar and tab. Get the lease's target_id/ws and drive THAT tab via cdp.py. NEVER navigate or close any tab you did not create, so gig/capafy tabs remain untouched. This overrides any later cdp_incognito.py/raw :9222 wording in this prompt. Follow the ig-account-create skill at ~/.claude/skills/ig-account-create/SKILL.md EXACTLY as proven for @aiclipsvault and @useclaudeskills. HARD RULES: (a) drive the RUNNING CloakBrowser daily-driver on CDP :9222 via cdp_incognito.py — an isolated context in a NEW tab; NEVER touch or close any existing tab. (b) residential home IP, NO proxy (a fresh/cold proxy IP triggers a phone wall — do not use one). (c) email = a fresh Gmail plus-address keiodaisuke+aiclips<random-tag>@gmail.com; read the 6-digit OTP via 'gog gmail search --account keiodaisuke@gmail.com \\\"instagram in:anywhere newer_than:1h\\\" --max 3 --plain' (OTP often lands in SPAM, so in:anywhere is required). (d) IG email-signup on this home IP needs NO phone and NO captcha — do NOT do the phone flow; if IG unexpectedly forces a phone number or a text-CAPTCHA, STOP and report provision-blocked:<reason> (do NOT buy an SMS number, do NOT switch to a proxy). (e) fill every field with TRUSTED typing (cdp.py insert), DOB via clickxy with scrollIntoView. Then: setup_profile.py --tid <TID> --icon <a $0 PIL monogram png> --bio \\\"one-line AI / money / wealth bio, NO link\\\" --username <handle> (DAY-0: NO commercial link in bio — a day-0 link = suspension). Then establish a DURABLE golden session — THE make-or-break step. A prior provision saved an EPHEMERAL browser-sessionid that died the instant the incognito context closed, which bricked the account (tier1 dead + tier2 forbidden + a saved-but-dead file blocks the fresh-account password exemption). Do NOT repeat that. Instead do a real instagrapi PASSWORD login-once (this is the legitimate FIRST login for a brand-new account, NOT a relogin, so it is safe and browser-independent): using the instagrapi venv python ~/.cache/instagrapi-venv/bin/python, run Client().login(<username>, <the pw you set at signup — read it from ~/.cloak/ig-<handle>.json>), then IMMEDIATELY call get_timeline_feed() and confirm it returns real data — this VERIFIES the session is actually ALIVE, not merely that a file was written — then dump_settings to ~/.cloak/instagrapi-<handle>.json. NEVER use login_by_sessionid (the browser sessionid) — it dies when the context closes. If login or get_timeline_feed() raises ChallengeRequired/bloks or otherwise fails, the account is NOT usable: report provision-blocked:<reason> and register it with status \\\"provision_failed\\\" (NOT ready). ONLY when get_timeline_feed() has CONFIRMED a live session, append ONE entry to ~/.cloak/clip-accounts.json: {\\\"handle\\\":\\\"<handle>\\\",\\\"profile\\\":\\\"clip-en<n>\\\",\\\"port\\\":<a FREE port that is NEITHER 9222 NOR 9223 — check with 'lsof -i -P' first>,\\\"lang\\\":\\\"en\\\",\\\"status\\\":\\\"ready\\\",\\\"session_owner\\\":\\\"instagrapi\\\",\\\"created\\\":\\\"<today YYYY-MM-DD>\\\"}. CRITICAL: write status \\\"ready\\\" ONLY IF get_timeline_feed() verified the session alive (otherwise \\\"provision_failed\\\"); the port field MUST be present and MUST NOT be 9222 or 9223 (run.sh silently defaults a missing port to 9222 = Dais's personal daily-driver — a wrong-account post hazard). Read the file back and verify it parses. Report: handle + port + feed_verified_alive(yes/no) + status_written, or provision-blocked:<reason>." 1500
+  PROVISION_PROMPT="$(
+    IG_PROVISION_ACCOUNT_STATE_FILE="$CLIP_ACCTS" \
+    IG_PROVISION_HANDLE_PREFIX="aiclips" \
+    IG_PROVISION_INSTANCE="clip" \
+    IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="aiclips" \
+    IG_PROVISION_BIO_TEXT="one-line AI / money / wealth bio, NO link" \
+    IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass's already-acquired isolated browser context named '$CLIP_LEASE', not the raw shared :9222 default context. Acquire and inspect that exact lease via ~/anicca/skills/browser/scripts/cdp_context_lease.py; use its target_id/ws and drive only that tab via cdp.py. Never navigate or close a tab this pass did not create, so gig/capafy tabs remain untouched." \
+    IG_PROVISION_PROFILE_PREFIX="clip-en" \
+    IG_PROVISION_SUCCESS_STATUS="ready" \
+    render_ig_provision_prompt
+  )"
+  step "PROVISION" "$PROVISION_PROMPT" 1500
 fi
 
 # ── PRODUCE (deterministic: producer.sh makes a captioned 1080x1920 clip into the queue) ──

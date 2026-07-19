@@ -8,19 +8,26 @@ fail(){ echo "  FAIL $1"; F=$((F+1)); }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 HELPER="$ROOT/earn/capafy-marketing/account_state.sh"
+ENGINE_STATE="$ROOT/earn/marketing-engine/account_state.sh"
+ENGINE_PROMPT="$ROOT/earn/marketing-engine/provision_prompt.sh"
 DAILY="$ROOT/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 WARM="$ROOT/earn/capafy-marketing/warm_jitter.sh"
 GOAL="$ROOT/earn/capafy-marketing/capafy-goal-monitor.sh"
+CLIP_PASS="$ROOT/earn/clip/clip_pass.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-if [ ! -f "$HELPER" ]; then
-  fail "account state helper exists"
-  echo "=== test_capafy_ig_account_state: $P passed $F failed ==="
-  exit 1
-fi
+for required_file in "$HELPER" "$ENGINE_STATE" "$ENGINE_PROMPT"; do
+  if [ ! -f "$required_file" ]; then
+    fail "required helper exists: $required_file"
+    echo "=== test_capafy_ig_account_state: $P passed $F failed ==="
+    exit 1
+  fi
+done
 # shellcheck source=/dev/null
 . "$HELPER"
+# shellcheck source=/dev/null
+. "$ENGINE_PROMPT"
 
 printf '[]\n' > "$TMP/accounts.json"
 [ -z "$(resolve_capafy_ig_handle "$TMP/accounts.json")" ] \
@@ -37,6 +44,9 @@ JSON
 [ "$(resolve_capafy_ig_handle "$TMP/accounts.json")" = "new_warming" ] \
   && ok "latest usable ready/warming account wins" \
   || fail "resolver did not return latest usable account"
+[ "$(resolve_ig_handle "$TMP/accounts.json")" = "new_warming" ] \
+  && ok "generic resolver matches Capafy shim" \
+  || fail "generic resolver and Capafy shim differ"
 
 cat > "$TMP/accounts.json" <<'JSON'
 [
@@ -92,8 +102,37 @@ else
   fail "goal monitor is not fully wired to account state"
 fi
 
-for needle in 'PROVISION_NEEDED' 'Client().login' 'get_timeline_feed()' 'dump_settings' 'login_by_sessionid' 'provision-blocked:'; do
-  grep -Fq "$needle" "$DAILY" && ok "daily prompt wires $needle" || fail "daily prompt missing $needle"
+grep -Fq 'PROVISION_NEEDED' "$DAILY" \
+  && ok "daily keeps PROVISION gate" \
+  || fail "daily lost PROVISION gate"
+for caller in "$DAILY" "$CLIP_PASS"; do
+  grep -Fq 'render_ig_provision_prompt' "$caller" \
+    && ok "caller uses shared provision renderer: $(basename "$caller")" \
+    || fail "caller bypasses shared provision renderer: $(basename "$caller")"
+done
+for needle in 'DURABLE GOLDEN SESSION' 'Client().login' 'get_timeline_feed()' 'dump_settings' 'login_by_sessionid' 'provision-blocked:'; do
+  grep -Fq "$needle" "$ENGINE_PROMPT" \
+    && ok "shared prompt wires $needle" \
+    || fail "shared prompt missing $needle"
+done
+DURABLE_DEFINITIONS="$(grep -Fhl 'DURABLE GOLDEN SESSION' "$ENGINE_PROMPT" "$DAILY" "$CLIP_PASS" | wc -l | tr -d ' ')"
+[ "$DURABLE_DEFINITIONS" = "1" ] \
+  && ok "durable session canonical text has one definition" \
+  || fail "durable session canonical text definition count: $DURABLE_DEFINITIONS"
+
+RENDERED_PROMPT="$(
+  IG_PROVISION_ACCOUNT_STATE_FILE="$TMP/shared-state.json" \
+  IG_PROVISION_HANDLE_PREFIX="testhandle" \
+  IG_PROVISION_INSTANCE="test-instance" \
+  IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="testtag" \
+  IG_PROVISION_BIO_TEXT="test bio, NO link" \
+  IG_PROVISION_BROWSER_INSTRUCTIONS="test isolated browser context" \
+  render_ig_provision_prompt
+)"
+for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context'; do
+  grep -Fq "$needle" <<<"$RENDERED_PROMPT" \
+    && ok "shared prompt renders parameter: $needle" \
+    || fail "shared prompt omitted parameter: $needle"
 done
 
 echo "=== test_capafy_ig_account_state: $P passed $F failed ==="
