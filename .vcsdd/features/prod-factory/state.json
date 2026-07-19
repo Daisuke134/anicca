@@ -1,0 +1,16 @@
+{
+  "featureName": "prod-factory",
+  "mode": "lean",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-prod-factory-1784424689383",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-19T01:31:29.382Z",
+  "updatedAt": "2026-07-19T01:31:29.382Z"
+}

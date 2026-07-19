@@ -195,7 +195,14 @@
       "mode": "lean",
       "currentPhase": "1a",
       "updatedAt": "2026-07-18T10:17:35.243Z"
+    },
+    "prod-factory": {
+      "status": "active",
+      "createdAt": "2026-07-19T01:31:29.382Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-19T01:31:29.382Z"
     }
   },
-  "activeFeature": "shared-marketing-engine"
+  "activeFeature": "prod-factory"
 }
