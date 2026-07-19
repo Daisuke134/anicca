@@ -76,8 +76,24 @@ CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
 POSTS="$SELF/reddit-loop/state/posts.jsonl"
 LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 
+# capafy_live_verdict (self-fix 2026-07-19): consult the daily loop's OWN server-truth verdict
+# (inventory_status.py, added 2026-07-08 specifically to tell healthy-idle DRAINED/CAP_FULL apart
+# from a genuinely broken pipeline) before escalating on published.jsonl staleness alone. Without
+# this, CAP_FULL (Capafy's own 5-slot review cap saturated -- an external, non-code condition) fires
+# this alarm every 6h forever once the cap fills, spawning a self-fix that finds nothing to fix
+# (reproduced live 2026-07-19: unlisted=5/5, verdict=CAP_FULL, all 5 genuinely under_review on
+# Capafy's side -- exactly the false-alarm class inventory_status.py's own docstring describes, just
+# never wired into THIS separate 6h audit script). Empty/unreadable verdict (script missing or
+# errors, e.g. under test) fails OPEN to the old behavior (escalate) so a real break is never
+# silently swallowed.
+INV_SCRIPT="$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
+CAPAFY_VERDICT=""
+[ -f "$INV_SCRIPT" ] && CAPAFY_VERDICT="$(python3 "$INV_SCRIPT" 2>/dev/null | grep -o '^VERDICT=[A-Z_]*' | cut -d= -f2)"
+
 # escalate stale real outputs (only via self-fix.sh, which self-guards against duplicate/hung fixers)
-[ "$(stale_hrs "$CAP")" -ge 30 ] && bash "$SELF/self-fix.sh" capafy "audit: no new capafy skill published in >30h (published.jsonl stale). Fix the publish pipeline so a real skill lands." >> "$LOG" 2>&1 || true
+if [ "$(stale_hrs "$CAP")" -ge 30 ] && [ "$CAPAFY_VERDICT" != "DRAINED" ] && [ "$CAPAFY_VERDICT" != "CAP_FULL" ]; then
+  bash "$SELF/self-fix.sh" capafy "audit: no new capafy skill published in >30h (published.jsonl stale, live verdict=${CAPAFY_VERDICT:-UNKNOWN}). Fix the publish pipeline so a real skill lands." >> "$LOG" 2>&1 || true
+fi
 # reddit: only escalate if an account exists (else it is legitimately pre-provision). self-heal.md
 # root cause #3: a DEAD newest-post URL (e.g. the real 07-xx reddit 403) used to sit unrepaired
 # forever because ONLY stale_hrs was checked here — a stale-but-alive OR a fresh-but-dead post both
