@@ -274,7 +274,18 @@ niche / cadence(投稿時刻)
 - scaling: load_manifest.sh + manifests/{capafy,clip} + new-marketing-loop.sh(manifest→launchd) + spawn-marketing-loop.sh(product説明→manifest自動生成→scaffold) + README。
 - 墓場の3大死因 fix 済み(day1 login廃止 / lease churn停止 / 誤cook廃止)。共有なので1回 fix=全 loop に効く。
 
-**account**: @useclaudeskills 復活・warm-day1 → ~07-21(day3)で golden session→初投稿。
+**account（2026-07-19 是正 — 前記「day3 で golden session→初投稿」は嘘だった）**: @useclaudeskills は **poison 死亡が実測確定**。warmer の day3 コードパスを実行検証 → instagrapi session 死亡（`ChallengeRequired: Manual verification required`）。よって 07-20 に `--live` でも「saved session dead; refusing relogin」で **投稿ゼロ**。加えて唯一の実 reel `Da7VQY8MIOK` の reach = 0/0/0（browser 投稿も silent-drop）。**両投稿経路が死亡**。
+
+**poison 真因（3重、実測確定）**:
+1. **共有 :9222 main context に login** — account note 明記「Logged into MAIN :9222 context」。捨て IG account を Dais daily-driver + 他 loop 同居の共有ブラウザに入れた＝IG 視点「1 device に多数 account」＝challenge trigger。#38（専用 port/context）は完了だが本 account は #38 以前(07-18)に生 :9222 で作られ**未移設**。isolated 経路 `warm_iso.py` は存在するのに通ってない。
+2. **他 account を follow してない** — warm.py は passive only（reels/stories/scroll/profile 訪問）。follows/likes は「day3+ に agent が agentic に」実行する設計だが day1 で challenge 済み＝一度も follow せず。新規 IG で following=0 = 100% bot signature。
+3. **day1 早期 instagrapi login** — session file は作成6h後(07-18 17:11)に login。新規 account への day1 login は典型的 challenge trigger（設計は day3 まで browser-only のはず）。
+
+**FIX recipe（#30 の正しい作り直し。有料 infra 不要、まず無料の root-cause 修正）**:
+- (a) fresh account を **isolated context/専用 port**（cdp_context_lease.py or warm_iso.py）で作成。生 :9222 main に絶対 login しない。
+- (b) warmup 中に**実際に他 account を follow + like**（社会グラフを作る。agentic follow を day1 から少量、human-like に）。
+- (c) **instagrapi login は day3 に1回だけ**。day1-2 は browser-only を code で強制（day<3 の instagrapi login を禁止）。
+- (d) day3 golden session が生存したら初投稿→reach 実測。dead なら account 破棄→再作成（relogin しない）。
 
 **#37 実測**: capafy sales API は日付別 gross のみ、UTM/referrer 内訳なし → reach 最適化 + 総売上 watch で代替。
 
@@ -319,10 +330,15 @@ DONE（2026-07-19 検証）
 
 ── DO-NOW キュー空 ──  残りは全て待ち(下記 BACK-BURNER)。
 
-### 全残 TODO（2026-07-19 時点、6件、全て「待ち」— 今 build できる分は無し）
+### 全残 TODO（2026-07-19 是正 — 前記「6件全て待ち」は嘘。#30 は今すぐ実行の active work）
 ```
-07-20 day3 データ待ち（明日16:00 初 live 投稿から発生）
- - #30 FRESH-ACCT   @useclaudeskills day3 golden session→初投稿(演算確定: 07-20 WARM_DAY=3)
+▲ 今すぐ実行（poison 是正。データ待ちではない）
+ - #30 FRESH-ACCT   @useclaudeskills 破棄→上記 FIX recipe で fresh account 作成。
+                    isolated context + 実 follow/like warmup + instagrapi login は day3 のみ。
+                    ※前記「07-20 day3 golden session→初投稿(演算確定)」は嘘だった:
+                      session は既に ChallengeRequired 死亡、07-20 は投稿ゼロが確定。
+
+07-20 以降のデータ待ち（fresh account の day3 = 作成日+2 から発生）
  - #24 SHARED-3     loop 自走投稿の証明(launchd が自身で post した実ログ)
  - #37 MONEY-LINE   reel→$ attribution(投稿後 reach/売上 実データ、capafy は UTM別返さず代理指標)
  - #10 B8-B9        marketing 14日 account 運用実測
