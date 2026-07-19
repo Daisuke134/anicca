@@ -21,6 +21,8 @@ for account in accounts if isinstance(accounts, list) else []:
     status = str(account.get("status") or "").lower()
     if not (status.startswith("ready") or status.startswith("warming")):
         continue
+    if any(word in status for word in ("poison", "frozen", "blocked")):
+        continue
     if any(account.get(key) for key in ("poisoned", "poisoned_at", "frozen_at", "blocked_at")):
         continue
     if not account.get("handle"):
@@ -31,6 +33,34 @@ if usable:
     value = usable[-1].get(field)
     if value is not None:
         print(value)
+PY
+}
+
+count_ig_usable_accounts() {
+  local state_file="$1"
+  local python_bin="${IG_ACCOUNT_STATE_PYTHON:-/opt/homebrew/bin/python3}"
+  [ -x "$python_bin" ] || python_bin="$(command -v python3)"
+  "$python_bin" - "$state_file" <<'PY' 2>/dev/null
+import json
+import sys
+
+try:
+    with open(sys.argv[1]) as f:
+        accounts = json.load(f)
+except Exception:
+    accounts = []
+
+count = 0
+for account in accounts if isinstance(accounts, list) else []:
+    status = str(account.get("status") or "").lower()
+    if not (status.startswith("ready") or status.startswith("warming")):
+        continue
+    if any(word in status for word in ("poison", "frozen", "blocked")):
+        continue
+    if any(account.get(key) for key in ("poisoned", "poisoned_at", "frozen_at", "blocked_at")):
+        continue
+    count += 1
+print(count)
 PY
 }
 
