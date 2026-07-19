@@ -309,3 +309,9 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | ★ | **死 plist**: capafy-loop-healthcheck.disabled 等 | launchd 汚れ | rm |
 
 **原則**: 共有物は marketing-engine/ に物理集約、loop 固有(selector/content adapter)だけ各 loop に。dead は消す(git が歴史を持つ)。矛盾実装は1本に。
+
+## §14 BIO-LINK 導線の検証（2026-07-19）
+- comment link = 意図的に不使用（IG comment link はクリック不可、実証）。
+- bio link = STEP5 を proven `setup_profile.py --website`（~/.agents/skills/ig-account-create/scripts/）に配線済み。機構: accounts/edit を nav → ウェブサイト input に insert → 送信する click → 再 nav で value 再確認（persistence verify FIND-402、host+path+query を CONTAIN 要求、IG strip 時 website_set=false で fail-closed）。同機構の bio セットは signup で成功実績あり。--website は FIND-402/501/602 で実 IG debug 済み＝実走行の証拠。
+- ★リスク: selectors が日本語 UI 依存（ウェブサイト/自己紹介/送信する）。JP IP→JA UI で現状一致。英語 UI account では要 robustness（UI 言語検知 or 固定）。→ 新 todo BIO-ROBUST。
+- live 発火は reach 健全 marker 後（~07-21+）。website_set=true が最終証明。
