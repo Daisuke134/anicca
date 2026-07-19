@@ -25,6 +25,9 @@ ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$HOME/anicca/skills/earn/ca
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
+IG_SESSION_OWNER="$(resolve_capafy_ig_session_owner "$ACCOUNTS_FILE")"
+IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
+ACCOUNT_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
@@ -40,8 +43,7 @@ if [ "${CAPAFY_GOAL_MONITOR_PROBE_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
-# ── goal(c) go-live: create + load the IG launchd ONLY when warmup day>=3. Idempotent. ──
-warmup_day_count() { $PY -c "import json;print(len(json.load(open('$WARMUP')).get('log',[])))" 2>/dev/null || echo 0; }
+# ── goal(c) go-live: create + load the IG launchd ONLY when account day>=3. Idempotent. ──
 ig_loaded() { launchctl list 2>/dev/null | grep -q "$IG_LABEL"; }
 write_ig_plist() {
   cat > "$IG_PLIST" <<PLIST
@@ -64,12 +66,19 @@ PLIST
 # then posts live daily. Safety pacing that remains is all LOOP-DRIVEN (day1-2 warmup only, day3+
 # NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
 # writes) — zero human approval anywhere. Idempotent: never double-loads.
-WDAY="$(warmup_day_count)"
+WDAY="$ACCOUNT_DAY"
 
-# Read-only account health probe. ChallengeRequired is terminal for this account: never relogin.
+# Read-only account health probe. Only an aged instagrapi-owned account has a golden session to
+# verify. browser-owned/day1-2 accounts are intentionally sessionless and must never be cooked.
+VERIFY_ELIGIBLE="no"
+if [ "$IG_SESSION_OWNER" = "instagrapi" ] && [ "${ACCOUNT_DAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
+  VERIFY_ELIGIBLE="yes"
+fi
 VERIFY_JSON=""
 VERIFY_RC=0
-if [ -z "$IG_HANDLE" ]; then
+if [ "$VERIFY_ELIGIBLE" != "yes" ]; then
+  VERIFY_JSON="{\"ok\":true,\"skipped\":true,\"poisoned\":false,\"reason\":\"session not established\",\"session_owner\":\"${IG_SESSION_OWNER:-none}\",\"account_day\":${ACCOUNT_DAY:-0}}"
+elif [ -z "$IG_HANDLE" ]; then
   VERIFY_JSON='{"ok":false,"error":"IG_HANDLE unresolved from Capafy account state"}'
   VERIFY_RC=2
 elif [ -z "$IG_PORT" ]; then
@@ -94,6 +103,15 @@ PY
 )"
 if [ "$ACCOUNT_COOKED" = "yes" ]; then
   touch "$COOKED_MARKER"
+elif [ "$VERIFY_ELIGIBLE" != "yes" ] && [ -n "$IG_HANDLE" ] && [ -f "$COOKED_MARKER" ]; then
+  rm -f "$COOKED_MARKER"
+fi
+
+if [ "${CAPAFY_GOAL_MONITOR_VERIFY_PROBE_ONLY:-0}" = "1" ]; then
+  printf 'verify_eligible=%s session_owner=%s account_day=%s verify_rc=%s cooked_marker=%s verify_json=%s\n' \
+    "$VERIFY_ELIGIBLE" "${IG_SESSION_OWNER:-none}" "${ACCOUNT_DAY:-0}" "$VERIFY_RC" \
+    "$([ -f "$COOKED_MARKER" ] && printf present || printf absent)" "$VERIFY_JSON"
+  exit 0
 fi
 
 GO_LIVE_ACTION="not_yet"
@@ -199,6 +217,8 @@ ah = report["account_health"]
 account_line = (
  "account @" + ah["handle"] + ": account poisoned、fresh 作り直しが必要"
  if ah["poisoned"] else
+ "account @" + ah["handle"] + ": session 未確立、verify 対象外"
+ if ah["verify"].get("skipped") else
  "account @" + ah["handle"] + ": verify-only ok=" + str(ah["verify"].get("ok"))
 )
 body = (

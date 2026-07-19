@@ -39,7 +39,7 @@ cat > "$TMP/accounts.json" <<'JSON'
 [
   {"handle":"old_poisoned","status":"poisoned_manual_backup","session_owner":"browser"},
   {"handle":"older_ready","status":"ready","session_owner":"instagrapi"},
-  {"handle":"new_warming","status":"warming","session_owner":"browser","started_warming":"2026-07-19"}
+  {"handle":"new_warming","status":"warming_day1","session_owner":"browser","started_warming":"2026-07-19"}
 ]
 JSON
 [ "$(resolve_capafy_ig_handle "$TMP/accounts.json")" = "new_warming" ] \
