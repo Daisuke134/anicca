@@ -52,6 +52,20 @@ x402 ゼロ→イチの唯一の道（順序固定）:
     無理に churn せず、店を磨き（improve推奨に沿った商品調整）+ 発見を待つのが正。★
 ```
 
+## ★★根本設計の訂正（Dais 2026-07-19、実測で確定）: 知能を弱い個体に置くな、中央に置け★★
+
+**実測**: franklin1 の直近40 action は全部 `{action:"ensure"}`（店を開くだけ）。`{action:"improve"}`/`{action:"update"}` は生涯0回。商品は4のまま増えない。
+**真因**: self-improve を「各 franklin の弱い無料モデルが自分で選んで呼ぶ道具」として作ったのが誤り。弱いモデルは毎 wake 最も簡単な ensure だけ選び、improve→update の多段連鎖を一度もしない（弱いモデルは自己オーケストレーション不能）。
+**正しい設計（heavy lifting は中央がやる）**:
+```
+  中央（賢い層=我々 or 強モデル、cron/1回）: scout 偵察→売れ筋選定→商品コード生成→repo に commit
+        ↓ git pull / self-update（daemon が起動毎に repo→各HOME を既に自動同期・実測済）
+  各 franklin（弱い個体）: 継承したカタログで店を開くだけ→自分の wallet で稼ぐ。商品を作らない・選ばない。
+```
+- broke/弱い AI に「商品を作れ・売れ筋を探せ」をやらせない。**中央が証明済み商品を repo に置き、全 franklin が自動継承**。
+- 仕組みは既存: daemon の skill 自動同期。足りないのは「中央で商品を作り repo に流すパイプライン」だけ（→ 新タスク PROD-FACTORY）。
+- scout/gaps/bandit/improve は「各 franklin の wake action」でなく **中央パイプラインの部品**として使う（作った資産は無駄にならない、置き場所が変わるだけ）。
+
 ## ★★共有 vs 独立（設計の背骨、Dais 2026-07-18）★★
 
 各 agent は**別々の cloud に散る**のが本番。local に3体居るのは偶然（同じ Mac）であって設計ではない。
