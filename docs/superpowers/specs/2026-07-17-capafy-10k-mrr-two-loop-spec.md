@@ -402,6 +402,13 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
 
 規則: track B は B1 から順に、1個 merge+実測 PASS してから次へ。track A の event（day3 生存/死亡）が来たら A を優先処理して B に戻る。day3 死亡なら FIX recipe 再改訂 → 新 account 再作成（#30 をやり直し。B は継続）。
 
+### §12.4 決定 2026-07-19（Dais 明示）— Postiz 解約 = 1レーンのみ
+
+- **Postiz subscription は今月(2026-07)から解約**。「human-funded lane では Postiz 可」という2レーン規律は**廃止**（B2 で書いた README の Funding lanes 章は誤りだったため書き直し済 — anicca repo で是正 commit）。
+- **唯一のレーン = marketing engine + agent 自己所有 account**。現行(capafy/clip/video/slideshow)も将来(reelclaw/larry/honne の openclaw cron 化)も全て同じ: agent が account を自作→recipe warmup→poster.py(instagrapi) で投稿。human credential・投稿 SaaS は全面禁止。
+- 収益資産は別チェック: live には agent 自己所有の収益リンクが必須（slideshow の Amazon tag aniccaai-22 は Dais 資産 → live 前に置換必須、manifest に明記済）。
+- #41 LIFE-AUTO 注記: これは marketing と無関係の個人 loop 案（#11 で作った tg_user MTProto session を使い「Dais の telegram を読んで仕分け」する構想。07-19 handover 由来、Dais 発案扱い）。不要なら削除可。
+
 ## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
 
 junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、poison 事故(clip_pass の day1-login を copy した類)を繰り返す。混乱度順:
