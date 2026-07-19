@@ -472,6 +472,10 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 - **状態**: adapter=✅ 完成・test green・commit 済み。`LIFE_CAL_TRANSPORT=unipile` opt-in、未設定=composio 現状維持（後方互換、prod 挙動無変更）。
 - **★残り（LM-8b activation、二重払いを実際に止める step）★**: (A) production call chain（events/travel/ask/notify）に `u.gmail_account_id`+`UNIPILE_TOKEN`+`UNIPILE_DSN` を propagate → getCalendar(opts) 注入。(B) prod で `LIFE_CAL_TRANSPORT=unipile` に flip。(C) 実 gcal で list/create/patch を Fable が E2E。(D) Composio calendar 課金停止確認。← これで初めて二重払いが止まる。次スライスで実 E2E 付き。
 
+### §5c-12（2026-07-19 12:00）— #10 repo 収斂 = DROP（Dais 決定）
+- **LM-20（#10 repo 収斂）= 中止**。理由（Dais verbatim 主旨）: cloud（`anicca-products/apps/life-call`）が SSOT で既に動作・deploy 済み。`Daisuke134/life-manager` repo は別物（古い OSS skill 構造 07-11、一度も作業していない）で、放置（趣味/local skill、消すのは後で任意）。動いてる cloud を別 repo へ移す churn は不要。Railway deploy 元は anicca-products のまま。
+- **影響**: 残ビルドは #8b(Unipile activation) と #12(dev loop) の2本 + E2E 実証束(LM-5/23/3/6/7) + 最後に #4 rotate。dev loop(#12) が PR する先も anicca-products。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
