@@ -12,6 +12,8 @@ CLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETING_ENGINE_DIR="$CLIP_SCRIPT_DIR/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
+# shellcheck source=../marketing-engine/account_state.sh
+. "$MARKETING_ENGINE_DIR/account_state.sh"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
@@ -41,7 +43,7 @@ step(){ # $1=label  $2=prompt
   # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
   local out="$HOME/.openclaw/logs/clip-step-last.out"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 env -u ANTHROPIC_API_KEY timeout "$timeout_seconds" "$CLAUDE" --model "$STEP_MODEL" --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+    -p "You are the Anicca clip earn-core (IG = the active clip account in ~/.cloak/clip-accounts.json, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"
@@ -81,18 +83,7 @@ log "WARM: warmer.py"
 # @useclaudeskills) whenever no usable account exists. Skipped entirely (no LLM cost) when a
 # usable account is already present. A new account is appended as day1 warming/browser and posts
 # nothing this pass. ──
-USABLE_ACCTS=$("$PY" - "$CLIP_ACCTS" <<'PYJSON' 2>/dev/null
-import json,sys
-try: a=json.load(open(sys.argv[1]))
-except Exception: a=[]
-def ok(x):
-    s=(x.get("status") or "").lower()
-    if s not in ("ready","warming"): return False
-    if "poison" in s or "frozen" in s or "blocked" in s: return False
-    return True
-print(sum(1 for x in a if ok(x)))
-PYJSON
-)
+USABLE_ACCTS=$(count_ig_usable_accounts "$CLIP_ACCTS")
 log "PROVISION: usable_accounts=${USABLE_ACCTS:-0}"
 if [ "${USABLE_ACCTS:-0}" -eq 0 ]; then
   PROVISION_PROMPT="$(
@@ -124,15 +115,18 @@ EARN_MODE=execute bash "$C/run.sh" >/dev/null 2>&1 || log "run.sh rc=$?"
 # no-ops when the saved instagrapi session is missing/invalid — self-heals once run.sh's POST
 # step (login_resilient) refreshes that session, no code change needed. See bio_step.py.) ──
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
-if [ -x "$INSTA_PY" ]; then
-  log "BIO: bio_step.py aiclipsvault"
-  "$INSTA_PY" "$C/scripts/bio_step.py" --handle aiclipsvault 2>>"$HOME/.openclaw/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
+BIO_HANDLE=$(resolve_ig_handle "$CLIP_ACCTS")
+if [ -z "$BIO_HANDLE" ]; then
+  log "BIO: skip — no active handle"
+elif [ -x "$INSTA_PY" ]; then
+  log "BIO: bio_step.py $BIO_HANDLE"
+  "$INSTA_PY" "$C/scripts/bio_step.py" --handle "$BIO_HANDLE" 2>>"$HOME/.openclaw/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
 else
   log "BIO: skip — instagrapi venv not present at $INSTA_PY"
 fi
 
 # ── MEASURE (Evaluator: read real view counts of recent reels) ──
-step "MEASURE" "STEP MEASURE: resolve @aiclipsvault's CloakBrowser CDP port from $HOME/.cloak/clip-accounts.json, open instagram.com/aiclipsvault/ in it, and read the view + like counts of the 3 most recent reels. Append ONE compact json line per reel to $STATE/clip-metrics.jsonl: {ts:<integer epoch>, reel_url, views:<int>, likes:<int>}. Ground ONLY on the real numbers shown on the page; if logged out, restore the session first; never guess."
+step "MEASURE" "STEP MEASURE: the active clip account is @${BIO_HANDLE:-none} (resolved from $HOME/.cloak/clip-accounts.json; if 'none', log measure-skip and stop this step). Resolve its CloakBrowser CDP port from that same file, open instagram.com/${BIO_HANDLE:-none}/ in it, and read the view + like counts of the 3 most recent reels. Append ONE compact json line per reel to $STATE/clip-metrics.jsonl: {ts:<integer epoch>, reel_url, views:<int>, likes:<int>}. Ground ONLY on the real numbers shown on the page; if logged out, restore the session first; never guess."
 
 # ── REFLECT (Self-Reflection: verbal reinforcement for the next pass) ──
 step "REFLECT" "STEP REFLECT (Reflexion + PHASE gate, bible = 47-cold-start-self-improvement-bible.md): read tail -10 $STATE/clip-metrics.jsonl and the last line of $STATE/reflection.jsonl. Decide the PHASE: 'imitate' while own posts are still noise (no self-outlier yet) — keep copying winners, don't over-trust your own tiny numbers; flip to 'optimize' ONLY once one of YOUR OWN reels hits ~3x your own average views (a self-outlier), then that reel becomes the new imitation source. Append ONE compact json line to $STATE/reflection.jsonl: {ts:<int epoch>, phase:<imitate|optimize>, tried:<what changed this pass, lever-named e.g. hook/pattern-interrupt/thumbnail>, metrics_moved:<views delta vs prior, or flat>, self_outlier:<true if a own-post hit 3x own avg, else false>, next:<the single most promising lever next pass — in imitate phase this is 'copy a fresh winner outlier's HOOK', prioritise the hook>}. Be concrete and honest; if flat, pick a DIFFERENT lever than last time (hook first)."

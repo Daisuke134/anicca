@@ -19,7 +19,7 @@ its own ~/.cloak/ig-warmup-<handle>.json log history the first time it's seen) a
          probe, settings dump, then status: ready and session_owner: instagrapi.
        - a saved/attempted session is never password-relogged. Dead session -> session_failed.
 Only ONE account is touched per pass (deliberately serial -- keeps resource use minimal and
-each promotion decision individually auditable) and only accounts with status=="warming" are
+each promotion decision individually auditable) and only accounts with status starting "warming" are
 ever touched -- a live "ready" posting account's browser (e.g. the daily-driver-adjacent
 aiclipsvault instance) is never started/stopped/touched by this script.
 
@@ -195,7 +195,7 @@ def pick_target(accts):
     """The single oldest warming account this pass. started_warming is backfilled (once) from
     the account's own log history when missing, then the earliest started_warming wins; a tie
     falls back to list order (deterministic, no randomness)."""
-    warming = [a for a in accts if a.get("status") == "warming"]
+    warming = [a for a in accts if str(a.get("status") or "").lower().startswith("warming")]
     changed = False
     for a in warming:
         if not a.get("started_warming"):

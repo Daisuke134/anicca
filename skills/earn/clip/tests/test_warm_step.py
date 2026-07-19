@@ -31,6 +31,18 @@ sys.path.insert(0, MARKETING_ENGINE_DIR)
 
 import warmer  # noqa: E402
 
+
+class TestWarmingStatusVocabulary(unittest.TestCase):
+    def test_pick_target_accepts_warming_day1(self):
+        account = {
+            "handle": "day1",
+            "status": "warming_day1",
+            "started_warming": "2026-07-19",
+        }
+        target, changed = warmer.pick_target([account])
+        self.assertIs(target, account)
+        self.assertFalse(changed)
+
 REAL_BUG_STATE = {
     "handle": "aiclips_world_hq",
     "log": [
@@ -271,7 +283,7 @@ class TestMainDayGate(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(account["status"], "ready")
         self.assertEqual(account["session_owner"], "instagrapi")
-        establish.assert_called_once_with("fresh_account")
+        establish.assert_called_once_with("fresh_account", warming_day_value=3)
 
 
 if __name__ == "__main__":
