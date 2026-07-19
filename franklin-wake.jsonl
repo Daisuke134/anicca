@@ -11365,3 +11365,13 @@
 {"ts":1784490795,"wake_id":"00MRS7QUGMF6F34BE0742342E4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784490926,"wake_id":"00MRS7TN7T14B3CC5AA2D3470F","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784491228,"wake_id":"00MRS8040Y175FE99CFD3943C1","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784491361,"wake_id":"00MRS82YX89806A4D94258460E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784491361,"wake_id":"00MRS82YX89806A4D94258460E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784491493,"wake_id":"00MRS85SEZ71D5D59CF1834A4D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784491493,"wake_id":"00MRS85SEZ71D5D59CF1834A4D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784491623,"wake_id":"00MRS88KU75BA0616480C840DF","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784491623,"wake_id":"00MRS88KU75BA0616480C840DF","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784491753,"wake_id":"00MRS8BDL430A46CAC7E2847AC","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784492055,"wake_id":"00MRS8HUG4B88DE76771764F6D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784492181,"wake_id":"00MRS8KJAT638D1025623C4606","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784492181,"wake_id":"00MRS8KJAT638D1025623C4606","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
