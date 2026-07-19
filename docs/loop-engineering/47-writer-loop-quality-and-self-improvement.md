@@ -190,5 +190,11 @@ launchctl unload "$P"; launchctl load "$P"
 build は全 done(#1-6,9-14 完了)。残り:
 1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
 2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
-3. **優良記事コーパス（新規、2026-07-19 Dais 指示）** — 実測で判明した欠落: loop が外部を見るのは STEP 2 の「トピックの事実調査」だけで、「人が金を払う優良記事の実物を手本として読む」経路が無い。書き方の外部資産は `vendor/zinsser/`（本の要約3本）のみ。rubric-judge.sh に実在記事の few-shot は 0 件。やること: ① `vendor/exemplars/` を新設し、実在する有料/人気記事の本文+「なぜ売れるか」メモを蓄積 ② 週次 launchd job（learn-whitelist.sh と同パターン）が note 有料ランキング / Substack bestseller / zenn trending / dev.to top を crwl で取得して蓄積 ③ STEP 3 WRITE の前に同 form の exemplar 2-3 本を必読（バーを知ってから書く） ④ rubric-judge の few-shot をこの実在記事から引く ⑤ self-improve が弱点軸を見つけたら exemplar の同じ軸の書き方を読む
+3. **優良記事の毎日1教訓学習（2026-07-19 Dais 設計）** — 実測で判明した欠落: loop が外部を見るのは STEP 2 の「トピックの事実調査」だけで、「人が金を払う優良記事の実物を手本として読む」経路が無い。書き方の外部資産は `vendor/zinsser/`（本の要約3本）のみ。rubric-judge.sh に実在記事の few-shot は 0 件。現状の記事は「人が金を払うバー」に達していない前提で設計する。
+   - **cadence = 毎日1本、1教訓**（Dais: 一気にやるな。1日1個で月30個・年365個、焦らず積む。既存 self-improve の「一度に1変更」規律と同型）
+   - **丸ごと取る**: 対象記事は crwl で**全文 scrape**（タイトルから結びまで完全な artifact）。断片では「優良とは何か」が分からない。全文を `vendor/exemplars/YYYY-MM-DD-<slug>.md` に保存
+   - **教訓抽出**: model が全文を読み「これが優良タイトル / 優良な概念の立て方 / 優良な構成だ」という**教訓を1個だけ**書く（形式: 手本記事 / 観察した技 / 自分の記事への適用方法）→ 教訓台帳 `vendor/exemplars/lessons.jsonl` に追記
+   - **適用**: 既存 STEP 1.5 READ PLAYBOOK（先週の教訓を読む工程）がこの台帳も読む。教訓は self-improve の experiment として1個ずつ試し、rubric/実売の delta で kept/revert（既存機構に載せる、新機構は作らない）
+   - **選定元**: note 有料ランキング / Substack bestseller / zenn trending / dev.to top。「これは人が金を払う記事か」の判定は model が行う（regex 禁止）
+   - **rubric few-shot**: 蓄積した exemplar から引く = 採点基準が実在の売れてる記事に紐づく
 4. (arm後) `skills/article-writer/scripts/` の汎用部品（rubric-judge.sh / self-improve.sh / reader-testing-gate.sh）を `skills/_shared/` へ移動して clip/reddit 等の兄弟 loop からも使えるようにする / OSS 公開前に Dais の個人情報（アカウント名・telegram ID・gmail）をコードと state ログから消して env 変数に置換する
