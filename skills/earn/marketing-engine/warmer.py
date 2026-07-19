@@ -47,8 +47,12 @@ def warming_day(started_warming, today=None):
     return elapsed + 1 if elapsed >= 0 else 0
 
 
-def establish_golden_session(handle, home=None, client_factory=None):
+def establish_golden_session(handle, home=None, client_factory=None, warming_day_value=None):
     """Create the one password-backed session, or verify saved settings without relogin."""
+    if warming_day_value is not None and warming_day_value < PROMOTE_DAY:
+        return {"ok": False, "terminal": False, "login_performed": False,
+                "refused": "warming_day<3",
+                "error": f"instagrapi login refused: warming_day={warming_day_value} < {PROMOTE_DAY}"}
     home = home or os.path.expanduser("~")
     cloak_dir = os.path.join(home, ".cloak")
     settings = os.path.join(cloak_dir, f"instagrapi-{handle}.json")
@@ -65,6 +69,7 @@ def establish_golden_session(handle, home=None, client_factory=None):
     if os.path.exists(settings):
         try:
             cl = client_factory()
+            cl.delay_range = [1, 3]
             cl.load_settings(settings)
             feed = cl.get_timeline_feed()
             if feed is None:
@@ -93,6 +98,7 @@ def establish_golden_session(handle, home=None, client_factory=None):
         creds = json.load(open(creds_path))
         username, password = creds["username"], creds["pw"]
         cl = client_factory()
+        cl.delay_range = [1, 3]
     except Exception as e:
         return {"ok": False, "terminal": False, "login_performed": False, "error": f"cannot prepare login: {type(e).__name__}"}
 
@@ -300,7 +306,7 @@ def main():
             )
             append_warmlog(handle, {"action": "held_recent_abort", "day": account_day})
         elif account_day >= PROMOTE_DAY:
-            session = establish_golden_session(handle)
+            session = establish_golden_session(handle, warming_day_value=account_day)
             if session.get("ok"):
                 prior_note = (a.get("note") or "")[:300]
                 a["status"] = "ready"
