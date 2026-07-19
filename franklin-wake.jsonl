@@ -11121,3 +11121,11 @@
 {"ts":1784463951,"wake_id":"00MRRRRGTH192CFE2E17384A03","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784464253,"wake_id":"00MRRRXXZ33DA15152FFFE420B","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784464253,"wake_id":"00MRRRXXZ33DA15152FFFE420B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784464386,"wake_id":"00MRRS0SUT8529EE7B41C14D18","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784464386,"wake_id":"00MRRS0SUT8529EE7B41C14D18","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784464516,"wake_id":"00MRRS3L2DC518CC309CDE41EE","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784464649,"wake_id":"00MRRS6FRD1865494C487F4105","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784464783,"wake_id":"00MRRS9B0RC3C810C9884449CA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784464918,"wake_id":"00MRRSC6Y72672B8C3D7344E58","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784464918,"wake_id":"00MRRSC6Y72672B8C3D7344E58","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784465049,"wake_id":"00MRRSF08E03B9ED02F0024A74","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
