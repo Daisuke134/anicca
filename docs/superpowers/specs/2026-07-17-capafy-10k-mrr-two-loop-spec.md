@@ -390,7 +390,8 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
  A1 #30 day2 warmup 07-20 → A2 #30 day3 golden session 生存 07-21 → A3 #24 自走投稿+telegram 実ログ → A4 #10 14日実測 → A5 #12 OSS 移設（Dais 判断）
 
 並行 track B（待ち無し、今日から番号順に実行）:
- B1 #46 LANDING-FIX  netlify deploy の launchd 失敗修理（`mkdir '//.netlify'` = env var 空。金線 bio landing の鮮度に直結）
+ B1 #46 LANDING-FIX  ✅完了 2026-07-19。真因=plist に WorkingDirectory 無し→launchd cwd=/ で netlify が `//.netlify` を mkdir（env var 空説・HOME 説は再現実測で棄却）。
+                     fix=deploy を skill dir へ cd する subshell 化（anicca 52ee0579）。cwd=/ 条件で実 deploy 成功 + landing SSR 200/24KB を実測済。
  B2 #45 ENGINE-BASE  spawn-marketing-loop.sh E2E（2つ目 manifest→loop 生成 dry 実証）+ 2レーン規律を engine README に明文化
                      （earner lane=agent自己所有のみ / human-funded 製品 lane=Postiz 可: 将来の reelclaw/larry/honne）+ slideshow loop 化
  B3 #37 MONEY-LINE   attribution 配線の先行実装（landing click 代理指標。実データは A3 後に流れ込む）
