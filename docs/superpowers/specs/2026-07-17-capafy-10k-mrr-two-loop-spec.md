@@ -397,8 +397,15 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
                      carousel 経路（--images 2-10、--video と排他、day<3 guard 有効、album は public_verified:None の正直報告）、
                      manifests/slideshow.manifest.sh（offline SPAWN_FAKE_LLM E2E で生成・validate 通過。LANE: human-funded、live 発火は day3 実証後）
  B3 #37 MONEY-LINE   attribution 配線の先行実装（landing click 代理指標。実データは A3 後に流れ込む）
- B4 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
- B5 #41 LIFE-AUTO    Dais の GO が出た時のみ
+ B4 #47 CLIP-HEAL    aiclipsvault 系 clip sub-loop 修理（実測: PROVISION rc=124 + no valid session で停止気味。isolated provision 経路で再生）
+ B5 #44 GITHUB-SYNC  ~/.agents + ~/.claude/skills の双方向 sync 機構（phone 編集反映）
+ B6 #41 LIFE-AUTO    Dais の GO が出た時のみ（不要なら削除）
+
+### §12.5 3-loop 実測 2026-07-19（記憶でなく log/ledger 実測）
+- clip loop: 稼働 exit0。07-19 pass complete、usable=2、新 account aiwealth.pulse day1 warm 済。投稿本体は共通 poster.py（独自 poster 無し）。ledger 112行 realized $0。
+- capafy marketing: 稼働 exit0。07-19 DRY pass rc=0、@capafy.skills9582 provision 成功、telegram msgId 2800 送信済。途中 @capafy.skills32113 が instagrapi_login_rejected で provision_failed → 破棄し再作成（gate が仕事をした形。監視継続）。
+- capafy dev loop: 稼働 exit0。07-19 CAP_FULL 正当 no-op、sales signal=none（26 listings under_review、捏造なし）。lifetime gross $9.99 / pending $8 / realized $0。
+- engine 共用: clip・capafy-marketing とも marketing-engine（poster.py/warmer.py/provision/load_manifest/account_state）を source。dev loop は account_state のみ（設計通り）。
 
 規則: track B は B1 から順に、1個 merge+実測 PASS してから次へ。track A の event（day3 生存/死亡）が来たら A を優先処理して B に戻る。day3 死亡なら FIX recipe 再改訂 → 新 account 再作成（#30 をやり直し。B は継続）。
 
