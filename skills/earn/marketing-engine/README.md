@@ -41,14 +41,13 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
 - **Poison detection only on day3+ accounts** (a young account failing instagrapi is expected,
   not poison — don't false-cook it).
 
-## Funding lanes
+## One lane: agent-owned (Postiz cancelled 2026-07)
 
-The engine keeps funding and credentials in two explicit lanes:
-
-- **Earner lane**: the agent owns the account and posts only through this engine's
-  `poster.py`/instagrapi session. Postiz and human credentials are forbidden.
-- **Human-funded lane**: Dais/human assets and products (including reelclaw, larry, and honne)
-  may use human credentials and Postiz.
+There is NO second lane. The Postiz subscription is cancelled from 2026-07, so every
+marketing loop — current (capafy, clip, video, slideshow) and future (reelclaw, larry,
+honne) — runs on THIS engine: the agent creates and owns the account, warms it per the
+recipe, and posts through `poster.py`'s instagrapi session. Human credentials and
+third-party posting SaaS are forbidden everywhere, for every product.
 
 | `MKT_CONTENT_ADAPTER` | Instagram media | `poster.py` route |
 |---|---|---|
@@ -57,8 +56,8 @@ The engine keeps funding and credentials in two explicit lanes:
 | `slideshow` | Carousel | instagrapi `album_upload` |
 | `carousel` | Carousel | instagrapi `album_upload` |
 
-Lane example: an affiliate slideshow using Dais's Amazon tag is **human-funded**, because the
-Amazon tag is a human asset.
+Monetization assets are a separate check: a loop may only go live with revenue links the
+agent owns (an affiliate tag owned by a human must be replaced before live).
 
 ## Files
 
