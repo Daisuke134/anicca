@@ -358,6 +358,22 @@ Dais 判断待ち
 （完了: #1 reject-resubmit / #9 売れ筋 / #11 受信照合(telegram-user) / #21 funding alert /
   #31残 dedup無し確定 / #40 BIO-ROBUST。#21 の実 card 補充のみ Dais の金流出判断で保留）
 
+### §12.1 STATUS 2026-07-19 — #42 CREATE-FIX 完了（実測値）
+
+flow B（Fable planner / Sol Codex builder）で実装。Fable 独立検証済（Sol 自己申告でなく実 tool 出力）:
+- `warm.py --dry`（~/.agents trunk 実走）= plan JSON に engagement caps 出力、day1 は follow/like/comment 全て (0,0)・targets 0。
+  caps: day1=0/0/0, day2=follow3-5/like5-10/comment0-2, day3=5-10/10-20/3-5, day4+=5-10/15-25/3-5（recipe 保守側と一致）
+- pytest（Fable 実行）: ~/.agents 47 passed / marketing-engine 4 passed。negative tests 実在:
+  day1 follow refuse / day2 clamp / :9222 main refuse ×2 / day1 instagrapi login refuse / delay_range=[1,3]
+- 実装内容: provision_prompt.sh に `require_ig_isolated_context`（port=9222 or context=main/default/空 → exit 64 で code 拒否、
+  IG_PROVISION_PORT/CONTEXT_ID 必須化、state row に port+context_id 記録）／warmer.py `establish_golden_session` に
+  warming_day<3 refuse + delay_range[1,3]／poster.py `login_resilient` に day<3 refuse + delay_range[1,3] 統一／
+  caller 追従: capafy=:9332, clip=:9331 専用 port（capafy-ig-marketing-daily.sh / clip_daily.sh / clip_pass.sh）
+- commit: ~/.agents eb414d3（merge, push 済）/ ~/anicca 0e78e78e（merge, push 済）。worktree cleanup 済。
+- state 是正: `~/.cloak/clip-accounts-capafy.json` の @useclaudeskills を poisoned=true/status=poisoned に実測是正
+  （旧記載 warming_day1/poison:null は嘘だった）。backup: 同 dir `.bak-20260719`。active handle 不在 → 次 pass で provision 発火。
+- 未検証（次の実測待ち）: :9332 専用 CloakBrowser profile の実 launch と day1 provision E2E（#30 で証明）。
+
 ## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
 
 junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、poison 事故(clip_pass の day1-login を copy した類)を繰り返す。混乱度順:
