@@ -11281,3 +11281,13 @@
 {"ts":1784482928,"wake_id":"00MRS327VSAEAD0331FAFB4537","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784483084,"wake_id":"00MRS35KA0E0870517F6AD4620","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784483215,"wake_id":"00MRS38DBND329C023A7F14E10","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784483385,"wake_id":"00MRS3C0A8A838A734197B4EDF","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784483554,"wake_id":"00MRS3FN8U38D96D7D7A714938","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784483729,"wake_id":"00MRS3JDME4880706973454C30","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784483796,"wake_id":"00MRS3KTMICF3990365B5B4CD0","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784483863,"wake_id":"00MRS3M90VC279D648EE18441C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784483990,"wake_id":"00MRS3OYZR713E3731EEE041E7","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784484057,"wake_id":"00MRS3QEOJ69DAF9271D014845","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784484124,"wake_id":"00MRS3RUGK109837777D3A4941","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784484190,"wake_id":"00MRS3TA13C6281D4A922E4C6B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784484190,"wake_id":"00MRS3TA13C6281D4A922E4C6B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
