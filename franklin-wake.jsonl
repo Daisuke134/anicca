@@ -11183,3 +11183,9 @@
 {"ts":1784470067,"wake_id":"00MRRVEK7RF5D24892FE444451","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784470274,"wake_id":"00MRRVJ0AFC710BAFF38FC4AC0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784470520,"wake_id":"00MRRVO9W91810ED09CB004FC6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784470742,"wake_id":"00MRRVT0YL671DB13BFC3A4945","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784470874,"wake_id":"00MRRVVV7J973CE2B8FDA2493D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784471015,"wake_id":"00MRRVYVYO8AC37F70B2D84545","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784471146,"wake_id":"00MRRW1OJMBB6DFECA12B84356","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784471279,"wake_id":"00MRRW4JEX018966E7B3064843","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784471443,"wake_id":"00MRRW81T23ED5CA133FE44513","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
