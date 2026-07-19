@@ -105,7 +105,7 @@ async function backfillIfCalendarCompleted(row, opts = {}) {
   const backfill = opts.backfillCalendarContext || backfillCalendarContext;
   await backfill(row.uid, {
     composioKey: opts.composioKey, geminiKey: opts.geminiKey,
-    supaUrl: opts.supaUrl, supaKey: opts.supaKey,
+    supaUrl: opts.supaUrl, supaKey: opts.supaKey, gmailAccountId: row.gmail_account_id,
   });
   return true;
 }

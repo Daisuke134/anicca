@@ -35,7 +35,7 @@ async function inferCalendarContext(events, geminiKey, inferJson = geminiJson) {
 async function backfillCalendarContext(uid, opts = {}) {
   const log = opts.log || console.log;
   try {
-    const calendar = opts.calendar || getCalendar({ apiKey: opts.composioKey });
+    const calendar = opts.calendar || getCalendar({ apiKey: opts.composioKey, gmailAccountId: opts.gmailAccountId });
     if (!uid || !opts.geminiKey || !opts.supaUrl || !opts.supaKey || !calendar || (calendar.ready && !calendar.ready())) {
       log(`[context-graph] skipped uid=${String(uid || "").slice(0, 12)} unavailable dependency`);
       return 0;

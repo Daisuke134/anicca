@@ -27,7 +27,7 @@ async function fetchUpcomingEvents(uid, opts = {}) {
 
   // #74: calendar reads go through the transport adapter (composio cloud / gog local). Tests inject
   // their own via opts.calendar; production builds the env-selected one.
-  const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey });
+  const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey, gmailAccountId: opts.gmailAccountId });
   const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs), timeMax: isoZ(horizonMs) });
   const out = [];
   for (const e of items) {

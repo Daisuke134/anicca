@@ -319,10 +319,14 @@ const server = http.createServer((req, res) => {
         if (u && LM_TG_TOKEN) {
           if (u.kind === "callback") {
             await answerCallbackQuery(LM_TG_TOKEN, u.callbackQueryId, "Received");
-            await routeCallbackData(u.data, { ask: (data) => handleAskCallback(data, {
-                chatId: u.chatId, telegramToken: LM_TG_TOKEN,
-                supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
-              }), gmail: async (data) => {
+            await routeCallbackData(u.data, { ask: async (data) => {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                return handleAskCallback(data, {
+                  chatId: u.chatId, telegramToken: LM_TG_TOKEN,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
+                  gmailAccountId: row && row.gmail_account_id,
+                });
+              }, gmail: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 return handleGmailCallback(data, row, {
                   token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
@@ -338,11 +342,13 @@ const server = http.createServer((req, res) => {
                   secret: process.env.LM_CALL_SECRET || "", telegramToken: LM_TG_TOKEN,
                   noticeOpts: {
                     composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
-                    userEmail: row.email, userName: row.name,
+                    userEmail: row.email, userName: row.name, gmailAccountId: row.gmail_account_id,
                   },
                 }, {
                   markAnswered: (uid, eventKey) => markAnswered(uid, eventKey, dbOpts),
-                  summaryFor: (uid, startIso) => eventSummaryFor(uid, startIso, { composioKey: COMPOSIO_KEY }),
+                  summaryFor: (uid, startIso) => eventSummaryFor(uid, startIso, {
+                    composioKey: COMPOSIO_KEY, gmailAccountId: row.gmail_account_id,
+                  }),
                   deliver: (input) => deliverLateNotice(input, {
                     claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
                     sendLateNotice, sendMessage,
@@ -386,6 +392,7 @@ const server = http.createServer((req, res) => {
                 const n = await sendLateNotice(row.uid, u.text, {
                   composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
                   userEmail: row.email, userName: row.name, etaMinutes: late.etaMinutes,
+                  gmailAccountId: row.gmail_account_id,
                 });
                 await sendMessage(LM_TG_TOKEN, u.chatId,
                   n.sent ? `✅ Let <b>${n.to}</b> know you're ${n.etaMinutes ? `~${n.etaMinutes} min ` : ""}late to “${n.event}”.`

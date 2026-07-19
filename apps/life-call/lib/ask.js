@@ -243,14 +243,14 @@ Use null for both if the reply doesn't clearly answer a location question.`,
   return null;
 }
 
-async function listEvents48h(uid, key, nowMs) {
-  return getCalendar({ apiKey: key }).listEventsRaw(uid, {
+async function listEvents48h(uid, key, nowMs, gmailAccountId) {
+  return getCalendar({ apiKey: key, gmailAccountId }).listEventsRaw(uid, {
     timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(nowMs + 48 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
   });
 }
-async function patchEvent(uid, eventId, patch, key) {
-  return getCalendar({ apiKey: key }).patchEvent(uid, { calendar_id: "primary", event_id: eventId, ...patch });
+async function patchEvent(uid, eventId, patch, key, gmailAccountId) {
+  return getCalendar({ apiKey: key, gmailAccountId }).patchEvent(uid, { calendar_id: "primary", event_id: eventId, ...patch });
 }
 function needsLocation(ev) {
   const s = (ev.summary || "").trim();
@@ -318,7 +318,7 @@ async function askTick(uid, opts) {
   const { composioKey, userEmail, resendKey, supaUrl, supaKey, mapsKey, geminiKey } = opts;
   const nowMs = opts.nowMs || Date.now();
   let autofilled = 0, asked = 0, resolved = 0;
-  const events = await listEvents48h(uid, composioKey, nowMs);
+  const events = await listEvents48h(uid, composioKey, nowMs, opts.gmailAccountId);
   const already = await askedSet(uid, supaUrl, supaKey);
 
   // For EVERY event still missing a location, let the agent RESOLVE it again every tick — the agent may
@@ -335,7 +335,7 @@ async function askTick(uid, opts) {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
     }
     if (res.kind === "filled") {
-      await patchEvent(uid, event.id, { location: res.location }, composioKey);
+      await patchEvent(uid, event.id, { location: res.location }, composioKey, opts.gmailAccountId);
       await recordResolution(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
       autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
@@ -435,7 +435,7 @@ async function handleAskCallback(data, opts = {}) {
     token, id, opts.supaUrl, opts.supaKey, opts.fetchImpl));
   const hit = await lookup(replyToken, eventId);
   if (!hit || !hit.candidate) return { ok: false, reason: "candidate not found" };
-  const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey));
+  const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey, opts.gmailAccountId));
   await patch(hit.uid, hit.eventId || eventId, hit.candidate);
   if (hit.summary) {
     const remember = opts.remember || ((uid, summary, location) => rememberPlace(
@@ -454,9 +454,9 @@ async function handleInboundReply(token, replyText, opts = {}) {
   const { composioKey, geminiKey, supaUrl, supaKey } = opts;
   if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
   const consume = opts.consume || ((t) => consumeAskToken(t, supaUrl, supaKey, opts.fetchImpl));
-  const listEv = opts.listEvents || ((uid) => listEvents48h(uid, composioKey, opts.nowMs || Date.now()));
+  const listEv = opts.listEvents || ((uid) => listEvents48h(uid, composioKey, opts.nowMs || Date.now(), opts.gmailAccountId));
   const match = opts.match || ((text, ev) => agentMatchReply(text, [ev], geminiKey));
-  const patch = opts.patch || ((uid, id, loc) => patchEvent(uid, id, { location: loc }, composioKey));
+  const patch = opts.patch || ((uid, id, loc) => patchEvent(uid, id, { location: loc }, composioKey, opts.gmailAccountId));
   const remember = opts.remember || ((uid, summary, loc) => rememberPlace(uid, placeKey(summary), loc, supaUrl, supaKey));
   const needs = opts.needsLocation || needsLocation;
 
