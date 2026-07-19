@@ -190,4 +190,5 @@ launchctl unload "$P"; launchctl load "$P"
 build は全 done(#1-6,9-14 完了)。残り:
 1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
 2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
-3. (arm後) `skills/article-writer/scripts/` の汎用部品（rubric-judge.sh / self-improve.sh / reader-testing-gate.sh）を `skills/_shared/` へ移動して clip/reddit 等の兄弟 loop からも使えるようにする / OSS 公開前に Dais の個人情報（アカウント名・telegram ID・gmail）をコードと state ログから消して env 変数に置換する
+3. **優良記事コーパス（新規、2026-07-19 Dais 指示）** — 実測で判明した欠落: loop が外部を見るのは STEP 2 の「トピックの事実調査」だけで、「人が金を払う優良記事の実物を手本として読む」経路が無い。書き方の外部資産は `vendor/zinsser/`（本の要約3本）のみ。rubric-judge.sh に実在記事の few-shot は 0 件。やること: ① `vendor/exemplars/` を新設し、実在する有料/人気記事の本文+「なぜ売れるか」メモを蓄積 ② 週次 launchd job（learn-whitelist.sh と同パターン）が note 有料ランキング / Substack bestseller / zenn trending / dev.to top を crwl で取得して蓄積 ③ STEP 3 WRITE の前に同 form の exemplar 2-3 本を必読（バーを知ってから書く） ④ rubric-judge の few-shot をこの実在記事から引く ⑤ self-improve が弱点軸を見つけたら exemplar の同じ軸の書き方を読む
+4. (arm後) `skills/article-writer/scripts/` の汎用部品（rubric-judge.sh / self-improve.sh / reader-testing-gate.sh）を `skills/_shared/` へ移動して clip/reddit 等の兄弟 loop からも使えるようにする / OSS 公開前に Dais の個人情報（アカウント名・telegram ID・gmail）をコードと state ログから消して env 変数に置換する
