@@ -15,6 +15,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
+# shellcheck source=../marketing-engine/load_manifest.sh
+. "$MARKETING_ENGINE_DIR/load_manifest.sh"
+me_load_manifest capafy || true   # per-loop config (persona/product/content/account) — engine stays shared
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 LOG="$HOME/.openclaw/logs/capafy-ig-marketing-daily.log"
 ROT="$HOME/.openclaw/state/capafy-marketing-rotation.jsonl"
@@ -22,8 +25,8 @@ ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
 IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
-LANDING_URL="https://capafy-skills-daily.netlify.app"
-LANDING_SITE_ID="41c8e52e-b163-442a-84ff-fd866269bf6c"
+LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"
+LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"
 COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
 PROVISION_REASON="$(capafy_ig_provision_reason "$IG_HANDLE" "$COOKED_MARKER")"
 PROVISION_NEEDED="no"
@@ -83,12 +86,12 @@ fi
 
 PROVISION_PROMPT="$(
   IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS_FILE" \
-  IG_PROVISION_HANDLE_PREFIX="capafy" \
-  IG_PROVISION_INSTANCE="capafy" \
-  IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="capafy" \
-  IG_PROVISION_BIO_TEXT="one-line Claude-skills bio, NO link" \
+  IG_PROVISION_HANDLE_PREFIX="${MKT_HANDLE_PREFIX:-capafy}" \
+  IG_PROVISION_INSTANCE="${MKT_INSTANCE:-capafy}" \
+  IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="${MKT_GMAIL_PLUS_TAG_PREFIX:-capafy}" \
+  IG_PROVISION_BIO_TEXT="${MKT_BIO_TEXT:-one-line Claude-skills bio, NO link}" \
   IG_PROVISION_BROWSER_INSTRUCTIONS="Run signup inside this pass already-acquired isolated browser context named $CAPAFY_LEASE (leased via ~/anicca/skills/browser/scripts/cdp_context_lease.py), NOT the raw shared :9222 default context. Acquire and inspect that exact lease via cdp_context_lease.py, get its target_id and ws, and drive ONLY that tab via cdp.py. Never navigate, reuse, or close any pre-existing :9222 tab; gig/clip tabs belong to other loops." \
-  IG_PROVISION_PROFILE_PREFIX="capafy-mkt" \
+  IG_PROVISION_PROFILE_PREFIX="${MKT_PROFILE_PREFIX:-capafy-mkt}" \
   IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
   IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
   IG_PROVISION_REACH_MARKER="$COMMERCIAL_MARKER" \
