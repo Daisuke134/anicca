@@ -11251,3 +11251,10 @@
 {"ts":1784479255,"wake_id":"00MRS0VHXOFFF4DEB9C8794FDD","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784479433,"wake_id":"00MRS0ZBA94DCB5ED716864CEE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784479433,"wake_id":"00MRS0ZBA94DCB5ED716864CEE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784479564,"wake_id":"00MRS123Y2C79444ED3AC24BA8","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784479564,"wake_id":"00MRS123Y2C79444ED3AC24BA8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784479805,"wake_id":"00MRS17A5BEDDDC545EF9647BE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784479977,"wake_id":"00MRS1AYWC1E9B4DDA94664258","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784479977,"wake_id":"00MRS1AYWC1E9B4DDA94664258","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784480138,"wake_id":"00MRS1EFEAF799D023119A4EF8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784480333,"wake_id":"00MRS1ILVE99EF43C02CD64F8A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
