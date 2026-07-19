@@ -927,3 +927,16 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - **lifecycle 全体が実証: 作成→warming(day1 実走)→day3 昇格→投稿**。clip-loop launchd(毎日)が自走。
 - 3日後 day3 に warm_step が warming→ready 昇格 → run.sh が instagrapi 投稿(年齢クリア) → poster logged-out 公開確認 → 実URL telegram。cron 不要(launchd が正本、実投稿時のみ telegram)。
 - honesty gate 生存(偽物ゼロ)。残 polish: warm.py human-like 化(#11後半、研究済 story/profile/explore)、#9 money、#7 security。
+
+## v50 — clip loop STATUS + full TODO（俺の担当。marketing OS化は Capafy へ移管）2026-07-19
+### 動き(現行 clip_daily.sh、honest 自走)
+launchd ai.anicca.clip-loop(毎日) → lease(--no-seed) → WARM(warming垢を creds で browser launch→human-like warmup→day3 で ready 昇格) → PROVISION(usable垢=0時のみ新垢作成、自宅IP/0-phone/warming登録/creds保存、day-0 instagrapi login しない) → PRODUCE(pipeline.py: YouTube→clip→queue) → POST(run.sh: ready垢に instagrapi_post.py、logged-out REALITY GATE で公開確認、本物だけ ledger+実URL telegram) → lease release。金: bio_step が affiliate link(Q-Money 50%/$88)、measure_dollar が Digistore売上。
+### 現状: aiwealth.pulse = warming day1(reels6実再生)。3日後 ready→初投稿。honesty gate 生存(偽物ゼロ)。
+### full TODO（clip、俺の担当）
+| # | task | 完了検証(実測) | 依存 |
+|---|---|---|---|
+| 5 | 初の実投稿を通す | day3: ~/clips/*.jsonl に status=posted+reel URL、logged-out curl 200、実 telegram 到達 | warmup day3待ち |
+| 11b | warm.py human-like 化 | story閲覧/profile訪問/niche explore/working-hours/range randomize、7日 warmup ban 0(copy: alsk1992 human_mimic.py+GramAddict) | 独立 |
+| 9 | $計測を閉じる | Digistore24 API key→~/.openclaw/.env→measure_dollar が listPurchases 200+clip-metrics に "type":"dollar" 行 | 独立(:9222の Digistore live session) |
+| 7 | security | 5sim pw rotate(本session漏洩)+AgentMail 旧key auth/me 401 | 独立 |
+### 移管: marketing OS化(E1-E6 共有エンジン) = Capafy(spec 2026-07-17-capafy-10k-mrr-two-loop-spec.md §9/§10)。clip は「adapter提供側」に回る。
