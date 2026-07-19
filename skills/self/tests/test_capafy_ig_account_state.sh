@@ -14,6 +14,7 @@ DAILY="$ROOT/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 WARM="$ROOT/earn/capafy-marketing/warm_jitter.sh"
 GOAL="$ROOT/earn/capafy-marketing/capafy-goal-monitor.sh"
 CLIP_PASS="$ROOT/earn/clip/clip_pass.sh"
+CLIP_DAILY="$ROOT/earn/clip/clip_daily.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -38,7 +39,7 @@ cat > "$TMP/accounts.json" <<'JSON'
 [
   {"handle":"old_poisoned","status":"poisoned_manual_backup","session_owner":"browser"},
   {"handle":"older_ready","status":"ready","session_owner":"instagrapi"},
-  {"handle":"new_warming","status":"warming","session_owner":"instagrapi"}
+  {"handle":"new_warming","status":"warming","session_owner":"browser","started_warming":"2026-07-19"}
 ]
 JSON
 [ "$(resolve_capafy_ig_handle "$TMP/accounts.json")" = "new_warming" ] \
@@ -47,6 +48,17 @@ JSON
 [ "$(resolve_ig_handle "$TMP/accounts.json")" = "new_warming" ] \
   && ok "generic resolver matches Capafy shim" \
   || fail "generic resolver and Capafy shim differ"
+[ "$(resolve_ig_session_owner "$TMP/accounts.json")" = "browser" ] \
+  && ok "generic resolver returns active session owner" \
+  || fail "generic resolver missed active session owner"
+[ "$(resolve_ig_started_warming "$TMP/accounts.json")" = "2026-07-19" ] \
+  && ok "generic resolver returns active started_warming" \
+  || fail "generic resolver missed active started_warming"
+[ "$(ig_warming_day "2026-07-19" "2026-07-19")" = "1" ] \
+  && [ "$(ig_warming_day "2026-07-18" "2026-07-19")" = "2" ] \
+  && [ "$(ig_warming_day "2026-07-17" "2026-07-19")" = "3" ] \
+  && ok "warming day is elapsed days plus one" \
+  || fail "warming day does not use day1=creation semantics"
 
 cat > "$TMP/accounts.json" <<'JSON'
 [
@@ -105,20 +117,29 @@ fi
 grep -Fq 'PROVISION_NEEDED' "$DAILY" \
   && ok "daily keeps PROVISION gate" \
   || fail "daily lost PROVISION gate"
-for caller in "$DAILY" "$CLIP_PASS"; do
+for caller in "$DAILY" "$CLIP_PASS" "$CLIP_DAILY"; do
   grep -Fq 'render_ig_provision_prompt' "$caller" \
     && ok "caller uses shared provision renderer: $(basename "$caller")" \
     || fail "caller bypasses shared provision renderer: $(basename "$caller")"
 done
-for needle in 'DURABLE GOLDEN SESSION' 'Client().login' 'get_timeline_feed()' 'dump_settings' 'login_by_sessionid' 'provision-blocked:'; do
+for needle in 'DAY 1 SIGNUP ONLY' 'Do not run Client().login' 'Do not run login_by_sessionid' 'Do not create ~/.cloak/instagrapi-<handle>.json' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"' 'provision-blocked:'; do
   grep -Fq "$needle" "$ENGINE_PROMPT" \
     && ok "shared prompt wires $needle" \
     || fail "shared prompt missing $needle"
 done
-DURABLE_DEFINITIONS="$(grep -Fhl 'DURABLE GOLDEN SESSION' "$ENGINE_PROMPT" "$DAILY" "$CLIP_PASS" | wc -l | tr -d ' ')"
-[ "$DURABLE_DEFINITIONS" = "1" ] \
-  && ok "durable session canonical text has one definition" \
-  || fail "durable session canonical text definition count: $DURABLE_DEFINITIONS"
+if ! grep -Fq 'DURABLE GOLDEN SESSION' "$ENGINE_PROMPT" \
+  && ! grep -Fq 'cl.login(<username>' "$ENGINE_PROMPT"; then
+  ok "shared provision contains no day1 golden-session action"
+else
+  fail "shared provision still commands day1 golden-session creation"
+fi
+if grep -Fq 'IG_SESSION_OWNER' "$GOAL" \
+  && grep -Fq 'ACCOUNT_DAY' "$GOAL" \
+  && grep -Fq 'VERIFY_ELIGIBLE' "$GOAL"; then
+  ok "goal monitor gates verify-only by session owner and account day"
+else
+  fail "goal monitor lacks owner/day verify-only gate"
+fi
 
 RENDERED_PROMPT="$(
   IG_PROVISION_ACCOUNT_STATE_FILE="$TMP/shared-state.json" \
@@ -129,7 +150,7 @@ RENDERED_PROMPT="$(
   IG_PROVISION_BROWSER_INSTRUCTIONS="test isolated browser context" \
   render_ig_provision_prompt
 )"
-for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context'; do
+for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'keiodaisuke+testtag<random-tag>@gmail.com' 'test bio, NO link' 'test isolated browser context' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"'; do
   grep -Fq "$needle" <<<"$RENDERED_PROMPT" \
     && ok "shared prompt renders parameter: $needle" \
     || fail "shared prompt omitted parameter: $needle"

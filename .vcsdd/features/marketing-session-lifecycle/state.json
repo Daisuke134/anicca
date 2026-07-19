@@ -2,7 +2,7 @@
   "featureName": "marketing-session-lifecycle",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1b",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -15,19 +15,44 @@
       "to": "1b",
       "timestamp": "2026-07-19T02:17:58.824Z",
       "reason": "verification architecture written"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-19T02:18:41.885Z",
+      "reason": "self-review: invariants are testable and bounded; adversary subagent prohibited by global instruction"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-19T02:20:14.750Z",
+      "reason": "begin failing lifecycle tests",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-marketing-session-lifecycle-1784427389095",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-19T02:20:14.737Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "blockingFindings": 0,
+        "note": "Sol self-review: invariant-only one-page spec; tests named for every behavior. No adversary subagent per global instruction."
+      }
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-19T02:16:29.093Z",
-  "updatedAt": "2026-07-19T02:17:58.824Z"
+  "updatedAt": "2026-07-19T02:20:14.750Z"
 }
