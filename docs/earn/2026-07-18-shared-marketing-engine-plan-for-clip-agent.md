@@ -74,3 +74,47 @@ SHARED-4  戦略を warmer に反映（day-1投稿・並走warmup・1日1コメ�
 
 正本 spec = `anicca-project/docs/superpowers/specs/2026-07-17-capafy-10k-mrr-two-loop-spec.md` §9。
 実証済み: reel/Da7VQY8MIOK（instagrapi、day-1、logged-out 確認）。
+
+---
+## Marketing OS — to-be（2026-07-19 更新。Dais ビジョン: loop が loop を生む=再帰的自己改善=takeoff）
+
+### 現状(AS-IS、半分共有)
+```
+skills/earn/
+├ clip/  ← clip loop(全orchestration自前)
+│  ├ clip_daily.sh(lease→WARM→PROVISION→PRODUCE→POST)  warm_step.py  run.sh  producer.sh  self_heal.py
+│  └ scripts/instagrapi_post.py  ★共有poster(capafy が参照)
+├ capafy-marketing/  ← capafy loop(全orchestration自前) → clip の instagrapi_post.py を呼ぶ
+外部共有: browser/cdp_context_lease.py, ig-account-create, ig-account-warmer(warm.py)
+```
+共有済み = poster のみ。未共有 = provision/warmup/orchestration(各 loop がコピー)。
+
+### TO-BE(1エンジン + 薄い adapter、nothing hardcoded)
+```
+skills/earn/_marketing-engine/   ★唯一のエンジン(全 loop 共有)
+├ engine.sh   orchestrator: lease→WARM→PROVISION→PRODUCE→POST→MEASURE→LEARN
+├ provision.py  垢作成(自宅IP/0-phone/warming登録/creds保存)
+├ warm.py       human-like warmup(story/profile/explore/working-hours/range、day1-2 passive→day3 ready)
+├ post.py       instagrapi + logged-out REALITY GATE + 実URL telegram(捏造不可)
+├ bio.py        affiliate link(?sid1=handle)
+├ measure.py    $計測(Digistore24 等)
+└ learn.py      自己改善(勝ち reel 偵察→playbook。★telegram/URL を一切 emit しない=捏造遮断★)
+
+skills/earn/loops/
+├ clip.adapter     content=YouTube→clip / product=offer.json(Q-Money) / niche=money
+├ capafy.adapter   content=skill demo video / product=Capafy marketplace / niche=AI skills
+└ <new>.adapter    ← 新規 marketing = adapter 1個書くだけ(engine は不変)
+```
+
+### 動き
+engine.sh が adapter 1個を受け取り、差し替わるのは3つだけ: **① content 生成関数 ② product(offer.json) ③ niche/bio/selector**。垢作成・warmup・投稿・$計測・自己改善は全 loop 同一コード。1回直せば全 loop 改善。「market this」or agent の判断 → adapter 1個 + launchd 1個 = 新 loop 誕生(loop が loop を生む)。
+
+### 実装 TODO(spec-driven → Sol /flowa)
+| # | slice | 完了検証 |
+|---|---|---|
+| E1 | `_marketing-engine/` を作り clip の provision/warm/post/measure を移設(engine.sh + *.py) | clip_daily が engine.sh を呼ぶだけになる、bash -n、clip warmup 継続 |
+| E2 | clip.adapter / capafy.adapter に分離(content/product/niche のみ) | 両 loop が同 engine.sh + 自 adapter で動く、hardcode grep 0 |
+| E3 | warm.py human-like 化(research 反映) | story/profile/explore/working-hours/range、7日 warmup ban 0 |
+| E4 | learn.py 安全な自己改善(telegram/URL emit 禁止) | 勝ち playbook 更新、捏造 grep 0、telegram は post.py のみ |
+| E5 | measure.py に Digistore key 配線 | listPurchases 200 + $行 |
+| E6 | 「新 marketing 立ち上げ」を1コマンド化(adapter雛形+launchd生成) | 新 niche を1コマンドで loop 化→垢作成開始 |
