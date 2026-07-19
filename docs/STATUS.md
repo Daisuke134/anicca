@@ -65,6 +65,7 @@ Anicca の価値 = **AI に「経済的独立の道具」を配る OSS**。だ�
 - **DEV = 道具を建てる（1回・OSS・人間/Fable がやってよい）**: framework + skill + **証明済み商品の starter セット**を repo に焼く。ハンマーを作る行為であって、ハンマーを振る行為ではない。
 - **RUN = 稼ぐ（self-funded agent のみ・人間ゼロ・human-funded ゼロ・human credential ゼロ）**: franklin が継承した道具で店を回し external を受ける。
 - ★俺（Fable=human-funded）や claude-p が「回し続ける中央サービス」になったら永久に人間がループに居る = Anicca の意味が死ぬ。前案「中央 factory を俺が cron で回す」はこれで**却下**。★
+- ★非差別（Dais 2026-07-19）: claude-p と franklin を**同じ扱い**。同じ道具・同じ x402 レールを与え、両方の external を等しく測る。旧「human-funded は集計除外」は緩和 — claude-p も earner-under-test。区別は「中央サービスになるな」であって「earner として居るな」ではない。claude-p が自分の店を自分の wallet で回して external を稼ぐのは OK かつ望ましい（system 検証器 = 賢い agent が稼げないなら道具のせい）。INV-EXT(external のみ=稼ぎ、self-pay=$0)は両方に等しく適用。★
 - **agent は何をするか（"何もしてない"ではない）**: 店を運営 / 需要を持ってくる(掲載・宣伝) / 自分の wallet・float を管理 / いつ spawn するか判断 / 与えられた道具の中で適応。商品の R&D(重い部分)は道具に焼き込み済 = 弱い個体でも「商品を発明する賢さ」は要らない。だが稼ぐ運営そのものは agent がやる。
 - **PROD-FACTORY の再定義**: 継続的な人間サービスではなく **1回の dev 成果物** = 強い starter 商品カタログを repo に焼く。以後は人間 factory を走らせない。商品更新が要るなら agent 自身の loop(self-funded compute) か 1回きりの dev refresh で、**永続 human サービスにはしない**。
 
