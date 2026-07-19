@@ -110,6 +110,8 @@ done（AND、全て実測で確認）:
 
 ---
 
+**★2026-07-19 prove-3（variant-analysis, 実 novel vuln 狙い）= 狩場を実測で確定★**: 結果=ML-loader 面では negative だが2つの重要収穫。(1) **variant-analysis の手法は有効**（種=CVE-2024-34359 の fixed-pattern `ImmutableSandboxedEnvironment` vs anti-pattern `Environment(` grep で、llama-cpp-python/guidance/xinference/tabbyAPI/litellm/aphrodite/sglang/outlines の全 sink を数分で patched/unreachable に分類）。(2) **ML-model-loader 金脈は mined out**（SSTI→全員 transformers sandbox 委譲、zip/tar/pickle→Python 3.12-3.14 runtime 緩和、torch weights_only）。→ prove-1/2/3 は全て**荒らされた ML ローダ面**を掘っていた。**正しい狩場を確定: MCP server / agent framework（2024-25 新興・低監査、CVE wave 前）の tool handler の command injection / path traversal / SSRF、および template が tool/request 由来(model file でない)の SSTI**。次の種 = 2025 の MCP-server/agent-framework CVE の fix commit → sibling 実装を grep。**loop の target domain を ML-loader → MCP/agent 面に pivot。手法(variant-analysis triage)はそのまま流用。** vuln 発見は numbers game = 単発 prove でなく continuous loop が fresh な MCP/agent 面を grind して当てる設計に。
+
 ## ★LOOP 設計 v2（フル ASCII, multi-rail, research-grounded 2026-07-19）★
 
 勝ちの公式（研究一次情報）: **報酬 ∝ (novelty × severity) ÷ 発見人数**（C4 実測 `10·0.85^(split-1)/split` = 独自High ≈ 重複Highの約10倍）。全段は分母(dup)最小化のため。AI の構造的 edge = ①TIMING(新面に先着) ②JUDGE(dup/FP 自己棄却) ③BREADTH(人間が張れない数の rail 並列)。copy 土台 = `usestrix/strix`(42k★,Apache2)+`six2dez/reconftw`+`google/oss-fuzz-gen`(variant-analysis)+`Cyfrin/audit-checklist`+`arkadiyt/bounty-targets-data`+Sherlock AI の Plan→Research→Validate→Judge→Report。
