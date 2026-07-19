@@ -10646,3 +10646,12 @@
 {"ts":1784418197,"wake_id":"00MRR0ISWP33E5690B551D4CB1","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784418498,"wake_id":"00MRR0P9NM3F78F825D9294335","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784418632,"wake_id":"00MRR0S4HL39C47AF8E70344A7","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784418764,"wake_id":"00MRR0UYRL84CBEC812F604203","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784418894,"wake_id":"00MRR0XQUI18CF28EB856D45AC","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784418894,"wake_id":"00MRR0XQUI18CF28EB856D45AC","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784419025,"wake_id":"00MRR10JRE220DAF9BD39B41E1","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784419157,"wake_id":"00MRR13DMN705301BDB5844EB4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784419157,"wake_id":"00MRR13DMN705301BDB5844EB4","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784419287,"wake_id":"00MRR166GW7DBC220D13704C6C","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784419419,"wake_id":"00MRR18ZX0982E8A55BCA24506","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784419419,"wake_id":"00MRR18ZX0982E8A55BCA24506","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
