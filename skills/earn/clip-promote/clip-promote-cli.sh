@@ -14,6 +14,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOM
 #   bash clip-promote-cli.sh --restart  # kill the existing session then start fresh
 #   bash clip-promote-cli.sh --status   # is the session alive?
 set -uo pipefail
+# RETIRED (Dais 2026-07-19, 掟3: retire from watchlists first — no revenue produced, no active
+# cadence watchlist entry, explicit turn-off instruction). Refuse to (re)start until re-enabled.
+echo "clip-promote-core: OFF (retired by Dais 2026-07-19) — refusing to start. Delete this guard to re-enable." >&2
+exit 0
 SOCK="/tmp/anicca-clip-promote-tmux.sock"
 SESSION="anicca-clip-promote-core"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
