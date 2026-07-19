@@ -11383,3 +11383,12 @@
 {"ts":1784492875,"wake_id":"00MRS8ZFB8970EF77109304DC1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784493008,"wake_id":"00MRS929RTD1C45E16AC5C4281","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784493140,"wake_id":"00MRS9536ZDC2246059E634F0E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493278,"wake_id":"00MRS9822Y6EE679BB98974F8C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493412,"wake_id":"00MRS9AX3XC4E50EB1F26C468C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493543,"wake_id":"00MRS9DQE20163CC5811B74BC5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493674,"wake_id":"00MRS9GJ9I954329B9B6DA4DE7","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784493674,"wake_id":"00MRS9GJ9I954329B9B6DA4DE7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493804,"wake_id":"00MRS9JC2765978843DD0442B9","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784493804,"wake_id":"00MRS9JC2765978843DD0442B9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784493936,"wake_id":"00MRS9M5N1E58B041B57364B06","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784494067,"wake_id":"00MRS9OYSM8882FB9E3143498E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
