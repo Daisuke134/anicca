@@ -908,3 +908,16 @@ clip loop が「ready 垢無し→自宅IPで新垢自作→instagrapi 投稿→
 - 訂正: day-0 投稿は自動化では技術的に不可能。垢を数日 warmup で熟成 → instagrapi が受理 → 投稿、が唯一の道。
 - 対処: PROVISION が作った live 垢を provision_failed でなく **warming** に(捨てず育てる)。aiwealth.pulse を warming_day0 に。WARM step を clip_daily に戻し、age floor 後 ready 昇格 → 投稿。
 - honesty は完璧に稼働(5/5 を正直に記録、偽投稿ゼロ)。
+
+## v48 — lifecycle 正常化 + warmup 研究反映（2026-07-19）
+### lifecycle 修正(deploy済)
+- clip_daily.sh: 新垢を status=**warming**(ready でなく)登録、WARM step(warm_step.py)追加、detection が warming* を usable 計上(過剰作成防止)。aiwealth.pulse を warming(started_warming=07-19)に。
+- WARM が aiwealth.pulse を target 認識。だが **browser down on :9233 + no creds/profile to launch → warm.py 走らず**。=垢に persistent browser profile が無い(lease で作られ released)。→ 次の gap。
+### GitHub 研究(day3 postable + human-like)確定
+- **day3 で browser-warmed 垢は postable**(day1-2 warmup→day3投稿)。instagrapi 直は day8+。gate=WARM_DAY>=3(既存 warm_step が持つ)。
+- warm.py に足すべき(copy元=alsk1992/instagram-ai-agent human_mimic.py + GramAddict/bot): story閲覧・profile訪問・niche explore検索・working-hours gate・全cap を range randomize・pre_post_scroll+post_cooldown。day1-2 は純passive(like/follow 0)、day3 から軽く。
+- 掟: day-0 に instagrapi login 叩かない(fresh login 繰り返し=challenge)、read-heavy 先行、1垢=1固定IP、day-0 bio link 禁止、like 全押し禁止(UGC 5%則)、poison は relogin せず新垢。
+### 次(要実装、Sol)
+1. warm_step/warm.py が **垢の persistent browser を creds で launch** → 日次 warmup(現状 profile 無しで launch 不可)。
+2. warm.py を human-like 化(上記 research 反映、全 marketing engine 共通)。
+- これで aiwealth.pulse が day1-2 warmup → day3 で ready 昇格 → run.sh 投稿。honesty gate は生存中(偽物ゼロ)。
