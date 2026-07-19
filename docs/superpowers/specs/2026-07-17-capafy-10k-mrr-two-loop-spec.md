@@ -293,3 +293,19 @@ BACK-BURNER（待ちが本質）
  - #11 A7           Dais 側 受信確認(コードは全 loop 報告済み)
  - #12 OSS          14日安定後 profitable-claude 移設
 ```
+
+## §13 REFACTOR INVENTORY 2026-07-19（junk = 将来 dev の混乱源。実測）
+
+junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、poison 事故(clip_pass の day1-login を copy した類)を繰り返す。混乱度順:
+
+| 混乱度 | junk | 実測 | 対処 |
+|---|---|---|---|
+| ★★★ | **provision 2実装**: clip_pass.sh(11.4K, day1 login=壊れた方) と clip_daily.sh(6.7K) 両方生存 | 矛盾が poison を生んだ | ★1本に統一。壊れた clip_pass の day1-login 経路を消し、共有 provision_prompt.sh を単一の正に |
+| ★★★ | **X線 dead code**: capafy-marketing/scripts/x_{post,metrics,attribution,post_browser}.py + capafy-x-marketing-daily.sh + disabled plist | Dais が X 凍結(@aniccaen revoke) | 削除(資産は git 履歴に残る) |
+| ★★ | **poster/warmer が clip/ に物理配置**: instagrapi_post.py, warm_step.py を capafy が参照(by-reference 共有) | 「共有物なのに clip 固有ディレクトリ」 | marketing-engine/ へ MOVE(poster.py/warmer.py)、両 loop が engine を参照 |
+| ★★ | **clip account 墓場**: clip-accounts.json 8/10 が frozen/poisoned/provision_failed | dead 8件 | active 以外を archive(別 file)、live state を痩せさせる |
+| ★ | **account_state.sh の shim**: capafy-marketing/account_state.sh(44行)は marketing-engine 版(81行)への redirect | 二重に見える | 呼び元を engine 版直参照にして shim 削除 |
+| ★ | **reach/reflect/ledger/telegram 未抽出**: ig_metrics.py/ig_reflect.py が capafy 固有のまま | 次 loop が再実装しがち | engine の reach.py/reflect.py に汎用化(#31残) |
+| ★ | **死 plist**: capafy-loop-healthcheck.disabled 等 | launchd 汚れ | rm |
+
+**原則**: 共有物は marketing-engine/ に物理集約、loop 固有(selector/content adapter)だけ各 loop に。dead は消す(git が歴史を持つ)。矛盾実装は1本に。
