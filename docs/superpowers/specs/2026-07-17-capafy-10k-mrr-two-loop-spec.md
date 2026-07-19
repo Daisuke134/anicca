@@ -315,3 +315,13 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 - bio link = STEP5 を proven `setup_profile.py --website`（~/.agents/skills/ig-account-create/scripts/）に配線済み。機構: accounts/edit を nav → ウェブサイト input に insert → 送信する click → 再 nav で value 再確認（persistence verify FIND-402、host+path+query を CONTAIN 要求、IG strip 時 website_set=false で fail-closed）。同機構の bio セットは signup で成功実績あり。--website は FIND-402/501/602 で実 IG debug 済み＝実走行の証拠。
 - ★リスク: selectors が日本語 UI 依存（ウェブサイト/自己紹介/送信する）。JP IP→JA UI で現状一致。英語 UI account では要 robustness（UI 言語検知 or 固定）。→ 新 todo BIO-ROBUST。
 - live 発火は reach 健全 marker 後（~07-21+）。website_set=true が最終証明。
+
+## §15 REFACTOR 実施結果（2026-07-19）
+- R1 clip_pass.sh: **保留**（test が consumer 参照 + 既に共有 provision 使用＝poison 安全。dead-file 掃除は将来）。
+- R2 X線 dead code: **削除済み**（x_*.py×4 + capafy-x-marketing-daily.sh + disabled plist 2個、consumer 0 verify、main d8aba11d）。
+- R3 poster/warmer MOVE: **完了**（instagrapi_post.py→marketing-engine/poster.py、warm_step.py→warmer.py、25参照更新、旧path 0、全 test green、main 1de96a72）。
+- R4 clip account 墓場: **archive 済み**（8 dead → ~/.cloak/clip-accounts-archive.json、backup 取得、live は alive 2件のみ、行を落とさず）。
+- ★R5 shim: **是正 = junk でない**。capafy account_state.sh は engine の generic resolver を source し capafy の account file default + capafy 名前空間関数を足す**正しい per-loop アダプタ**。削除しない。§13 の「shim=redirect junk」は誤り。
+- 残 polish（低優先）: reach(ig_metrics)/reflect(ig_reflect) を engine の generic helper に抽出。ただし capafy 固有ロジックを含むため per-loop に残す判断も可。
+
+**結論: marketing-engine は「共有 core を物理集約 + 各 loop は固有アダプタ+content のみ」の TO-BE 構造に到達。真の junk(dead code/墓場)は一掃。**
