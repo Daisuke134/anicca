@@ -61,6 +61,21 @@ def _entity(e):
         return e
 
 
+async def _resolve(cl, entity):
+    # Telethon cannot resolve a raw numeric peer id unless its access_hash is cached.
+    # Warming get_dialogs() populates that cache so read/send by chat_id just works.
+    ent = _entity(entity)
+    if isinstance(ent, int):
+        try:
+            return await cl.get_entity(ent)
+        except (ValueError, TypeError):
+            async for d in cl.iter_dialogs():
+                if d.id == ent:
+                    return d.entity
+            raise
+    return ent
+
+
 async def _client(cfg, require_session=True):
     from telethon import TelegramClient
     from telethon.sessions import StringSession
@@ -143,7 +158,7 @@ async def cmd_dialogs(cfg, limit):
 async def cmd_read(cfg, entity, limit):
     cl = await _client(cfg)
     await cl.connect()
-    msgs = await cl.get_messages(_entity(entity), limit=limit)
+    msgs = await cl.get_messages(await _resolve(cl, entity), limit=limit)
     out = [{"id": m.id, "date": m.date.isoformat() if m.date else None,
             "sender_id": m.sender_id, "out": bool(m.out), "text": (m.raw_text or "")[:500]}
            for m in msgs]
@@ -154,7 +169,7 @@ async def cmd_read(cfg, entity, limit):
 async def cmd_send(cfg, entity, text):
     cl = await _client(cfg)
     await cl.connect()
-    m = await cl.send_message(_entity(entity), text)
+    m = await cl.send_message(await _resolve(cl, entity), text)
     await cl.disconnect()
     print(json.dumps({"ok": True, "sent_id": m.id, "entity": entity}))
 
