@@ -11095,3 +11095,12 @@
 {"ts":1784461240,"wake_id":"00MRRQ5DO30C8BC7F1D54F4F30","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784461372,"wake_id":"00MRRQ86SU66BFB07924644F79","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784461372,"wake_id":"00MRRQ86SU66BFB07924644F79","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784461507,"wake_id":"00MRRQB2ZM5DA9D84A048342F4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784461507,"wake_id":"00MRRQB2ZM5DA9D84A048342F4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784461637,"wake_id":"00MRRQDVXM49810FD43C724C5D","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784461939,"wake_id":"00MRRQKCS524EC6201EE074747","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784462071,"wake_id":"00MRRQN6W26C2C68144C444C94","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784462202,"wake_id":"00MRRQPZGV9EF59340D6C149BC","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784462202,"wake_id":"00MRRQPZGV9EF59340D6C149BC","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784462333,"wake_id":"00MRRQST0B5C0474DEDD654902","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784462333,"wake_id":"00MRRQST0B5C0474DEDD654902","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
