@@ -35,12 +35,15 @@ try:
 except Exception: print(0)
 PY
 )"
-# Post from day 1 while warmup continues. First live posts remain NON-COMMERCIAL (no bio link,
-# pure-info caption) to measure reach before adding a commercial link. COMMERCIAL_OK only after
-# the reach-check step writes the healthy marker. Before day 1 the pipeline remains DRY.
-MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=1.
+# ★STRATEGY (2026-07-19 Dais, WHOLE marketing engine): warm up for 2 days, post from DAY 3.
+# day1-2 = warmup ONLY (no posting) so the fresh account is NOT poisoned/cooled/polluted by
+# early posting. instagrapi CAN post (proven) — the failure mode was posting too early, not the
+# poster. From day3 the account is warm enough to post daily 100%. First live posts stay
+# NON-COMMERCIAL (no bio link, pure-info caption) to measure reach before adding a commercial
+# link. COMMERCIAL_OK only after the reach-check step writes the healthy marker.
+MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=3.
 COMMERCIAL_MARKER="$HOME/.openclaw/state/.capafy-ig-reach-healthy"
-if [ "${WARM_DAY:-0}" -ge 1 ]; then MODE_FLAG="--live"; fi
+if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
 COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
 echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
 
