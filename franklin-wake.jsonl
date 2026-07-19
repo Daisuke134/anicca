@@ -11176,3 +11176,10 @@
 {"ts":1784469403,"wake_id":"00MRRV0BKBADDA6AB1530B4FCA","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784469403,"wake_id":"00MRRV0BKBADDA6AB1530B4FCA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784469535,"wake_id":"00MRRV35T102982EE3C0EF4B62","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784469671,"wake_id":"00MRRV6302F12E3D12CF4444EB","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784469671,"wake_id":"00MRRV6302F12E3D12CF4444EB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784469803,"wake_id":"00MRRV8WATD9353B7BEF57429C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784469934,"wake_id":"00MRRVBPFB7AD4153D143D4D84","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784470067,"wake_id":"00MRRVEK7RF5D24892FE444451","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784470274,"wake_id":"00MRRVJ0AFC710BAFF38FC4AC0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784470520,"wake_id":"00MRRVO9W91810ED09CB004FC6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
