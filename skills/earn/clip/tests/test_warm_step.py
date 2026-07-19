@@ -23,6 +23,7 @@ import os
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 CLIP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, CLIP_DIR)
@@ -120,6 +121,156 @@ class TestMainDoesNotPromoteOnRecentAbort(unittest.TestCase):
             f"must NOT promote to ready when a login abort was recorded after the last "
             f"successful log day (rc={r.returncode}, stdout={r.stdout!r}, stderr={r.stderr!r})",
         )
+
+
+class FakeClient:
+    def __init__(self, fail_feed=False):
+        self.fail_feed = fail_feed
+        self.login_calls = []
+        self.load_calls = []
+        self.feed_calls = 0
+        self.dump_calls = []
+
+    def login(self, username, password):
+        self.login_calls.append((username, password))
+
+    def load_settings(self, path):
+        self.load_calls.append(path)
+
+    def get_timeline_feed(self):
+        self.feed_calls += 1
+        if self.fail_feed:
+            raise RuntimeError("dead session")
+        return {"feed_items": [1]}
+
+    def dump_settings(self, path):
+        self.dump_calls.append(path)
+        with open(path, "w") as f:
+            json.dump({"cookies": {"sessionid": "saved"}}, f)
+        return True
+
+
+class TestGoldenSessionLifecycle(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp(prefix="golden_session_test_")
+        self.home = os.path.join(self.tmp, "home")
+        os.makedirs(os.path.join(self.home, ".cloak"), exist_ok=True)
+        self.handle = "aged_account"
+        with open(os.path.join(self.home, ".cloak", f"ig-{self.handle}.json"), "w") as f:
+            json.dump({"username": self.handle, "pw": "secret"}, f)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_day_count_uses_creation_day_as_day1(self):
+        today = warm_step.datetime.date(2026, 7, 19)
+        self.assertEqual(warm_step.warming_day("2026-07-19", today), 1)
+        self.assertEqual(warm_step.warming_day("2026-07-18", today), 2)
+        self.assertEqual(warm_step.warming_day("2026-07-17", today), 3)
+
+    def test_first_day3_session_logs_in_feeds_and_dumps_once(self):
+        client = FakeClient()
+        result = warm_step.establish_golden_session(
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["login_performed"])
+        self.assertEqual(client.login_calls, [(self.handle, "secret")])
+        self.assertEqual(client.feed_calls, 1)
+        self.assertEqual(len(client.dump_calls), 1)
+
+    def test_existing_settings_are_loaded_without_password_relogin(self):
+        settings = os.path.join(self.home, ".cloak", f"instagrapi-{self.handle}.json")
+        with open(settings, "w") as f:
+            json.dump({"cookies": {"sessionid": "saved"}}, f)
+        client = FakeClient()
+        result = warm_step.establish_golden_session(
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["login_performed"])
+        self.assertEqual(client.login_calls, [])
+        self.assertEqual(client.load_calls, [settings])
+        self.assertEqual(client.feed_calls, 1)
+
+    def test_dead_saved_session_never_falls_back_to_password_login(self):
+        settings = os.path.join(self.home, ".cloak", f"instagrapi-{self.handle}.json")
+        with open(settings, "w") as f:
+            json.dump({"cookies": {"sessionid": "dead"}}, f)
+        client = FakeClient(fail_feed=True)
+        result = warm_step.establish_golden_session(
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["terminal"])
+        self.assertEqual(client.login_calls, [])
+        self.assertEqual(client.load_calls, [settings])
+
+    def test_attempt_marker_blocks_second_password_login(self):
+        marker = os.path.join(self.home, ".cloak", f".golden-session-attempted-{self.handle}")
+        with open(marker, "w") as f:
+            f.write("already-attempted\n")
+        client = FakeClient()
+        result = warm_step.establish_golden_session(
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["terminal"])
+        self.assertEqual(client.login_calls, [])
+
+
+class TestMainDayGate(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.mkdtemp(prefix="warm_day_gate_test_")
+        self.home = os.path.join(self.tmp, "home")
+        os.makedirs(os.path.join(self.home, ".cloak"), exist_ok=True)
+        self.accounts = os.path.join(self.tmp, "accounts.json")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def write_account(self, started_warming):
+        with open(self.accounts, "w") as f:
+            json.dump([{
+                "handle": "fresh_account",
+                "profile": "clip-en1",
+                "port": 65431,
+                "status": "warming",
+                "session_owner": "browser",
+                "started_warming": started_warming,
+            }], f)
+
+    def run_main(self, session_result):
+        with mock.patch.dict(os.environ, {"HOME": self.home}), \
+             mock.patch.object(sys, "argv", ["warm_step.py", self.accounts]), \
+             mock.patch.object(warm_step, "browser_up", return_value=False), \
+             mock.patch.object(warm_step, "load_warmup_state", return_value={"log": [], "aborts": []}), \
+             mock.patch.object(warm_step, "append_warmlog"), \
+             mock.patch.object(warm_step, "establish_golden_session", return_value=session_result) as establish:
+            rc = warm_step.main()
+        with open(self.accounts) as f:
+            account = json.load(f)[0]
+        return rc, account, establish
+
+    def test_day2_does_not_create_golden_session(self):
+        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=1)).isoformat())
+        rc, account, establish = self.run_main({"ok": True})
+        self.assertEqual(rc, 0)
+        self.assertEqual(account["status"], "warming")
+        self.assertEqual(account["session_owner"], "browser")
+        establish.assert_not_called()
+
+    def test_day3_creates_session_then_promotes(self):
+        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=2)).isoformat())
+        rc, account, establish = self.run_main({"ok": True, "login_performed": True})
+        self.assertEqual(rc, 0)
+        self.assertEqual(account["status"], "ready")
+        self.assertEqual(account["session_owner"], "instagrapi")
+        establish.assert_called_once_with("fresh_account")
 
 
 if __name__ == "__main__":

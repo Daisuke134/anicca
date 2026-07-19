@@ -1,0 +1,229 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+python-red-rc: 1
+shell-red-rc: 1
+
+--- python red ---
+.....FFFFFFF                                                             [100%]Running teardown with pytest sessionfinish...
+
+=================================== FAILURES ===================================
+_ TestGoldenSessionLifecycle.test_attempt_marker_blocks_second_password_login __
+
+self = <test_warm_step.TestGoldenSessionLifecycle testMethod=test_attempt_marker_blocks_second_password_login>
+
+    def test_attempt_marker_blocks_second_password_login(self):
+        marker = os.path.join(self.home, ".cloak", f".golden-session-attempted-{self.handle}")
+        with open(marker, "w") as f:
+            f.write("already-attempted\n")
+        client = FakeClient()
+>       result = warm_step.establish_golden_session(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+E       AttributeError: module 'warm_step' has no attribute 'establish_golden_session'
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:216: AttributeError
+_____ TestGoldenSessionLifecycle.test_day_count_uses_creation_day_as_day1 ______
+
+self = <test_warm_step.TestGoldenSessionLifecycle testMethod=test_day_count_uses_creation_day_as_day1>
+
+    def test_day_count_uses_creation_day_as_day1(self):
+        today = warm_step.datetime.date(2026, 7, 19)
+>       self.assertEqual(warm_step.warming_day("2026-07-19", today), 1)
+                         ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'warm_step' has no attribute 'warming_day'
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:169: AttributeError
+_ TestGoldenSessionLifecycle.test_dead_saved_session_never_falls_back_to_password_login _
+
+self = <test_warm_step.TestGoldenSessionLifecycle testMethod=test_dead_saved_session_never_falls_back_to_password_login>
+
+    def test_dead_saved_session_never_falls_back_to_password_login(self):
+        settings = os.path.join(self.home, ".cloak", f"instagrapi-{self.handle}.json")
+        with open(settings, "w") as f:
+            json.dump({"cookies": {"sessionid": "dead"}}, f)
+        client = FakeClient(fail_feed=True)
+>       result = warm_step.establish_golden_session(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+E       AttributeError: module 'warm_step' has no attribute 'establish_golden_session'
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:203: AttributeError
+_ TestGoldenSessionLifecycle.test_existing_settings_are_loaded_without_password_relogin _
+
+self = <test_warm_step.TestGoldenSessionLifecycle testMethod=test_existing_settings_are_loaded_without_password_relogin>
+
+    def test_existing_settings_are_loaded_without_password_relogin(self):
+        settings = os.path.join(self.home, ".cloak", f"instagrapi-{self.handle}.json")
+        with open(settings, "w") as f:
+            json.dump({"cookies": {"sessionid": "saved"}}, f)
+        client = FakeClient()
+>       result = warm_step.establish_golden_session(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+E       AttributeError: module 'warm_step' has no attribute 'establish_golden_session'
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:189: AttributeError
+_ TestGoldenSessionLifecycle.test_first_day3_session_logs_in_feeds_and_dumps_once _
+
+self = <test_warm_step.TestGoldenSessionLifecycle testMethod=test_first_day3_session_logs_in_feeds_and_dumps_once>
+
+    def test_first_day3_session_logs_in_feeds_and_dumps_once(self):
+        client = FakeClient()
+>       result = warm_step.establish_golden_session(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self.handle, home=self.home, client_factory=lambda: client
+        )
+E       AttributeError: module 'warm_step' has no attribute 'establish_golden_session'
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:175: AttributeError
+___________ TestMainDayGate.test_day2_does_not_create_golden_session ___________
+
+self = <test_warm_step.TestMainDayGate testMethod=test_day2_does_not_create_golden_session>
+
+    def test_day2_does_not_create_golden_session(self):
+        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=1)).isoformat())
+>       rc, account, establish = self.run_main({"ok": True})
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:261: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:253: in run_main
+    mock.patch.object(warm_step, "establish_golden_session", return_value=session_result) as establish:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/mock.py:1510: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x10f0dafd0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'warm_step' from '/Users/operator/anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/warm_step.py'> does not have the attribute 'establish_golden_session'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/mock.py:1480: AttributeError
+___________ TestMainDayGate.test_day3_creates_session_then_promotes ____________
+
+self = <test_warm_step.TestMainDayGate testMethod=test_day3_creates_session_then_promotes>
+
+    def test_day3_creates_session_then_promotes(self):
+        self.write_account((warm_step.datetime.date.today() - warm_step.datetime.timedelta(days=2)).isoformat())
+>       rc, account, establish = self.run_main({"ok": True, "login_performed": True})
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:269: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py:253: in run_main
+    mock.patch.object(warm_step, "establish_golden_session", return_value=session_result) as establish:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/mock.py:1510: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x10f562150>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'warm_step' from '/Users/operator/anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/warm_step.py'> does not have the attribute 'establish_golden_session'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/mock.py:1480: AttributeError
+=========================== short test summary info ============================
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestGoldenSessionLifecycle::test_attempt_marker_blocks_second_password_login
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestGoldenSessionLifecycle::test_day_count_uses_creation_day_as_day1
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestGoldenSessionLifecycle::test_dead_saved_session_never_falls_back_to_password_login
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestGoldenSessionLifecycle::test_existing_settings_are_loaded_without_password_relogin
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestGoldenSessionLifecycle::test_first_day3_session_logs_in_feeds_and_dumps_once
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestMainDayGate::test_day2_does_not_create_golden_session
+FAILED ../anicca/.worktrees/marketing-session-lifecycle/skills/earn/clip/tests/test_warm_step.py::TestMainDayGate::test_day3_creates_session_then_promotes
+7 failed, 5 passed in 0.40s
+
+--- shell red ---
+  ok empty state returns no active account
+  ok latest usable ready/warming account wins
+  ok generic resolver matches Capafy shim
+/Users/operator/anicca/.worktrees/marketing-session-lifecycle/skills/self/tests/test_capafy_ig_account_state.sh: line 51: resolve_ig_session_owner: command not found
+  FAIL generic resolver missed active session owner
+/Users/operator/anicca/.worktrees/marketing-session-lifecycle/skills/self/tests/test_capafy_ig_account_state.sh: line 54: resolve_ig_started_warming: command not found
+  FAIL generic resolver missed active started_warming
+/Users/operator/anicca/.worktrees/marketing-session-lifecycle/skills/self/tests/test_capafy_ig_account_state.sh: line 57: ig_warming_day: command not found
+  FAIL warming day does not use day1=creation semantics
+  ok poisoned or blocked accounts are rejected
+  ok empty handle enters PROVISION
+  ok usable handle skips PROVISION
+  ok cooked marker forces PROVISION
+  ok daily dry probe enters PROVISION with empty state
+  ok daily dry probe resolves active handle
+  ok goal monitor resolves handle and port from account state
+  ok daily and warmup scripts contain no baked handle
+  ok goal monitor uses account state instead of parsing daily source
+  ok daily keeps PROVISION gate
+  ok caller uses shared provision renderer: capafy-ig-marketing-daily.sh
+  ok caller uses shared provision renderer: clip_pass.sh
+  FAIL caller bypasses shared provision renderer: clip_daily.sh
+  FAIL shared prompt missing DAY 1 SIGNUP ONLY
+  FAIL shared prompt missing Do not run Client().login
+  FAIL shared prompt missing Do not run login_by_sessionid
+  FAIL shared prompt missing Do not create ~/.cloak/instagrapi-<handle>.json
+  FAIL shared prompt missing "status":"warming"
+  FAIL shared prompt missing "session_owner":"browser"
+  ok shared prompt wires "started_warming":"<today YYYY-MM-DD>"
+  ok shared prompt wires provision-blocked:
+  FAIL shared provision still commands day1 golden-session creation
+  FAIL goal monitor lacks owner/day verify-only gate
+  ok shared prompt renders parameter: /var/folders/c1/11fd4j597vx4fb8tnv25y28r0000gn/T/tmp.oEd73hp3Bi/shared-state.json
+  ok shared prompt renders parameter: testhandle
+  ok shared prompt renders parameter: test-instance
+  ok shared prompt renders parameter: keiodaisuke+testtag<random-tag>@gmail.com
+  ok shared prompt renders parameter: test bio, NO link
+  ok shared prompt renders parameter: test isolated browser context
+  ok shared prompt renders parameter: "status":"warming"
+  FAIL shared prompt omitted parameter: "session_owner":"browser"
+  FAIL shared prompt omitted parameter: "started_warming":"<today YYYY-MM-DD>"
+=== test_capafy_ig_account_state: 24 passed 14 failed ===
+
+--- regression baseline ---
+................................................                         [100%]Running teardown with pytest sessionfinish...
+
+48 passed in 31.32s
