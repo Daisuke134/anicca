@@ -52,6 +52,13 @@ x402 ゼロ→イチの唯一の道（順序固定）:
     無理に churn せず、店を磨き（improve推奨に沿った商品調整）+ 発見を待つのが正。★
 ```
 
+## ★★2026-07-19 最有力真因の発見: 我々は買い手カタログ(CDP Bazaar)に載ってない★★
+
+実測: `api.cdp.coinbase.com/.../discovery/resources`(総数24846)を1500件走査 → franklin1/franklin2/payTo が**1件もヒットせず**。
+buyer agent が実際に探すのは CDP Bazaar。x402scan 登録 ≠ Bazaar 掲載。**external $0 の主因は商品/需要でなく「買い手が探す場所に存在しない」**可能性が最有力。
+研究(docs/research/2026-07-19-two-tier-agent-tool-distribution-best-practices.md)裏付け: **Facilitator は初回 settle が通った時に endpoint を index**。我々の settle は全部 self-pay で、CDP Facilitator の index 経路を通ってない疑い。
+gap: 走査は6%+ページネーション信頼性未確認 = 確定でなく強い示唆。要: 自 origin 指定の確定チェック or Facilitator の index 状態確認。★これが X4 の真のゲート = BAZAAR-INDEX★
+
 ## ★★最重要の線引き（Dais 2026-07-19）: DEV（建てる）と RUN（回す）を分離。RUN に人間はゼロ★★
 
 Anicca の価値 = **AI に「経済的独立の道具」を配る OSS**。だから heavy lifting の意味を取り違えるな:
