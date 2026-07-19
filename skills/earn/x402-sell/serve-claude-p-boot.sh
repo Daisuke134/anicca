@@ -8,6 +8,11 @@ set -u
 DIR=/Users/operator/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as serve-mainnet-boot.sh) — never echoed
 set -a; . /Users/operator/.openclaw/.env 2>/dev/null || true; set +a
+# NON-DISCRIMINATION (2026-07-19): claude-p runs the SAME concentrated v2 store as franklin —
+# same tool, same rail, measure external equally. Force this instance's identity so resale can
+# resolve a key (the .env injects a machine-legacy home/key; this store IS claude-p).
+export ANICCA_HOME="$HOME/.anicca-founder"
+unset BLOCKRUN_WALLET_KEY
 export X402_PAYTO="0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
 export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:8443}"
 export X402_NETWORK="base"
@@ -17,4 +22,4 @@ PIDS="$(lsof -ti tcp:8412 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>
 sleep 1
 # ensure the second Tailscale Funnel https port points at :8412 (idempotent; persists across reboots)
 /opt/homebrew/bin/tailscale funnel --bg --https=8443 8412 >/dev/null 2>&1 || true
-exec /usr/bin/env node "$DIR/serve.mjs"
+exec /usr/bin/env node "$DIR/serve-v2.mjs"
