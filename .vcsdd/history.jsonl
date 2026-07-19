@@ -186,6 +186,7 @@
 {"timestamp":"2026-07-07T20:59:25.628Z","event":"sprint_started","featureName":"anicca-agent-lending","sprintNumber":2,"phase":"2a"}
 {"timestamp":"2026-07-08T04:31:27.402Z","event":"phase_transition","featureName":"anicca-agent-lending","from":"2a","to":"2b","iteration":2,"phase":"2b"}
 {"timestamp":"2026-07-08T04:53:30.332Z","event":"phase_transition","featureName":"anicca-agent-lending","from":"2b","to":"2c","iteration":2,"phase":"2c"}
+<<<<<<< Updated upstream
 {"timestamp":"2026-07-08T05:29:34.397Z","event":"phase_transition","featureName":"anicca-agent-lending","from":"2c","to":"3","iteration":2,"phase":"3"}
 {"timestamp":"2026-07-08T05:36:05.422Z","event":"feature_created","featureName":"claude-p-loop-verification","mode":"lean"}
 {"timestamp":"2026-07-08T05:41:05.032Z","event":"phase_transition","featureName":"anicca-agent-lending","from":"3","to":"5","iteration":2,"phase":"5"}
@@ -313,3 +314,5 @@
 {"timestamp":"2026-07-18T10:09:18.996Z","event":"feature_created","featureName":"shared-marketing-engine","mode":"lean"}
 {"timestamp":"2026-07-18T10:17:35.287Z","event":"phase_transition","featureName":"shared-marketing-engine","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-19T01:31:29.385Z","event":"feature_created","featureName":"prod-factory","mode":"lean"}
+=======
+>>>>>>> Stashed changes

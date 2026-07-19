@@ -128,14 +128,20 @@
       "status": "active",
       "createdAt": "2026-07-07T07:54:18.175Z",
       "mode": "strict",
+<<<<<<< Updated upstream
       "currentPhase": "5",
       "updatedAt": "2026-07-10T01:40:22.282Z"
+=======
+      "currentPhase": "2c",
+      "updatedAt": "2026-07-07T20:53:47.860Z"
+>>>>>>> Stashed changes
     },
     "anicca-agent-lending": {
       "status": "active",
       "createdAt": "2026-07-07T10:06:12.029Z",
       "mode": "strict",
       "language": "typescript",
+<<<<<<< Updated upstream
       "currentPhase": "complete",
       "updatedAt": "2026-07-08T10:52:10.874Z"
     },
@@ -202,6 +208,10 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-07-19T01:31:29.382Z"
+=======
+      "currentPhase": "2c",
+      "updatedAt": "2026-07-08T04:53:30.324Z"
+>>>>>>> Stashed changes
     }
   },
   "activeFeature": "prod-factory"

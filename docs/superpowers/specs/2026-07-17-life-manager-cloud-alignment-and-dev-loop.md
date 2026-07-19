@@ -476,6 +476,14 @@ C7b T-5 録音（`~/.openclaw/state/lm-video/recordings/c7b-t5-134646.mp3`、whi
 - **LM-20（#10 repo 収斂）= 中止**。理由（Dais verbatim 主旨）: cloud（`anicca-products/apps/life-call`）が SSOT で既に動作・deploy 済み。`Daisuke134/life-manager` repo は別物（古い OSS skill 構造 07-11、一度も作業していない）で、放置（趣味/local skill、消すのは後で任意）。動いてる cloud を別 repo へ移す churn は不要。Railway deploy 元は anicca-products のまま。
 - **影響**: 残ビルドは #8b(Unipile activation) と #12(dev loop) の2本 + E2E 実証束(LM-5/23/3/6/7) + 最後に #4 rotate。dev loop(#12) が PR する先も anicca-products。
 
+### §5c-13（2026-07-19 12:30）— LM-8b propagation コード done、activation は BLOCKED（Unipile token 無効）
+- **propagation コード ✅ done**（builder subagent、commit dev `f9577546a`、12ファイル +114/-34、`npm test` fail 0）: 全 getCalendar 消費者（ask/events/context-graph/late-notice/notify/telegram-reply/travel/telegram-onboard/scheduler、11箇所）に `gmailAccountId` を配線。後方互換=`LIFE_CAL_TRANSPORT` 未設定で無変更（composio 現状維持）。TDD 1本追加（unipile flip 時 account_id 伝播）。曖昧ケース server.js:421 `/inbound-email` は uid が handleInboundReply 内で resolve のため composio fallback で明示的に残置。
+- **★activation = BLOCKED（実測ゲート FAIL）★**: prod creds で Unipile API を実測 → **UNIPILE_TOKEN が 401 invalid_credentials（mail・calendar 両方）**。`railway run -s life-call` 注入の token=`[/e4xqi...LNQ=]`(len53) が api35.unipile.com で invalid、bare `/api/v1/accounts` でも missing/invalid_credentials。→ **calendar scope でも DSN でもなく token 自体が死んでいる**。
+  - **flip は禁止**: `LIFE_CAL_TRANSPORT=unipile` に切替えると Unipile が空返し → Dais の calendar 全喪失（wake call/location ask が止まる）= 破壊的。よって flip せず composio 現状維持（二重払いは token 復旧まで継続）。
+  - **副次発見（重要）**: Unipile **mail も現 prod で 401 で死んでいる**（`mail-unipile.js` は fail-soft で `[]`/`false` 返し → search-before-ask の inbox 読み・gmail 連携が silently 機能停止していた）。
+  - **残り（token 復旧タスク、別立て LM-8c）**: Unipile dashboard(dashboard.unipile.com) で API key を re-issue → prod env(UNIPILE_TOKEN、必要なら UNIPILE_DSN)更新 → mail 復活を実測 → calendar list が返ることを実測 → 初めて flip 可能。Dais の gmail_account_id=`98Lv6EhZS1q11UqXeiKlRQ`(接続済み) は在るので、token さえ生き返れば calendar scope の有無を実測できる。
+- **一般法則**: 「adapter が書けた」「gmailAccountId を配線した」で activation 完了と言うな。**実 creds で live API を叩いて 200 が返るまでが activation**。実測で token が 401 と判明＝flip 前に破壊を防げた（DB 状態や code だけ見ていたら Dais の calendar を壊していた）。
+
 ## 6. 調査ソース
 - issues: `gh issue view 1..11 -R Daisuke134/life-manager` 実読（07-17）。
 - cloud: `.worktrees/release-1.9.5/apps/life-call/` 実読（07-17）。
