@@ -51,7 +51,8 @@ fi
 /opt/homebrew/bin/python3 ~/anicca/skills/earn/capafy-marketing/scripts/ig_metrics.py >>"$LOG" 2>&1 || echo "ig_metrics failed (non-fatal)" >>"$LOG"
 
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
-/opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && netlify deploy --prod --dir "$HOME/anicca/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
+# netlify-cli writes ./.netlify relative to cwd; launchd starts at / (no WorkingDirectory) -> mkdir '//.netlify' ENOENT. cd keeps it inside the skill dir.
+/opt/homebrew/bin/python3 "$HOME/anicca/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && ( cd "$HOME/anicca/skills/earn/capafy-marketing" && netlify deploy --prod --dir "$HOME/anicca/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
 
 # ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
 WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
