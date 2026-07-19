@@ -405,8 +405,23 @@ kickstart した capafy-ig-marketing-daily の provision が新 recipe 経路で
  B5 #44 GITHUB-SYNC  ✅完了 2026-07-19（.agents 15c94fb）。~/.agents/skills/self-sync/sync.sh + launchd ai.anicca.agents-skills-sync
                      (30分毎、listed exit0)。pull --rebase→commit→push、conflict=abort+telegram 警告、secret guard、agmsg db untrack。
                      Fable 実測: test_sync.sh 3/3 PASS + 実 sync 1回成功（両 repo up to date）。
- B6 #41 LIFE-AUTO    Dais の GO が出た時のみ（不要なら削除）
+ B6 #41 LIFE-AUTO    DEFERRED（Dais 確認 07-19）: 構想=mail/telegram/LINE 等の全受信+全 contact を基に自動で応募・返信・仕分けする loop。
+                     単体では作らず **life manager の機能として**後日構築。着手 trigger = Dais が life manager 作業を開始した時。
  B4 #47 補記        clip 実 pass の WARM 昇格観測は monitor 継続中（kickstart 済）。結果は追記する。
+
+### §12.6 終了条件 = FULL-VERIFY マトリクス（2026-07-19 Dais 明示: 「TODO は clip loop + capafy loop + engine が検証込みで完成した時だけ終わる」）
+
+#44/#47 は infra 修理であり最終検証ではない。**全体の done は以下が全部実測で埋まった時**:
+
+| 対象 | 検証 gate | 対応# | 証拠（全て実 log/実 URL/実 ledger。自己申告不可） |
+|---|---|---|---|
+| capafy marketing loop | day3 golden session 生存 | #30 | warmer log に ok:true, ChallengeRequired 無し (07-21) |
+| 〃 | 自走投稿 + 報告 | #24 | loop が投稿した reel の public URL + telegram mp4 着信 + ledger 行 |
+| 〃 | 金の線 | #37✅(配線)→実データ | capafy-attribution.jsonl に click>0 → sales join |
+| clip loop | ready 昇格 + 自走投稿 | #48 | WARM 昇格実ログ + reel public URL + clip-metrics.jsonl 実 views |
+| marketing engine | 両 loop が同一 engine で full cycle | #10（両 loop に拡張） | **14日間 人手ゼロ**で provision→warm→ready→post→measure→report が回った実ログ + 正直な realized $ 報告 |
+
+#10 を「capafy のみ」から「clip + capafy 両方の 14日 full-verify」に拡張定義（この表が正）。self-improving は ig_reflect/reflection.jsonl が 14日窓で実データを食って回ることを含む。
 
 ### §12.5 3-loop 実測 2026-07-19（記憶でなく log/ledger 実測）
 - clip loop: 稼働 exit0。07-19 pass complete、usable=2、新 account aiwealth.pulse day1 warm 済。投稿本体は共通 poster.py（独自 poster 無し）。ledger 112行 realized $0。
