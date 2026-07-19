@@ -1461,3 +1461,10 @@ X402_PAYTO=<wallet> node verify-inflow.mjs 48
 ## 役割(Fable=親、不変)
 harness を作り watch するだけ。seller を代打しない(run.sh を手で叩かない)。
 loop が自力で稼ぐのを見る。詰まったら harness を直す。**tool 出力を捏造しない(観測は実 result のみ)**。
+
+## ★★2026-07-19 検索で訂正: X4 は「待ち」でなく「build」できる（発見面は Bazaar だけでない）★★
+前「external $0 は需要待ち・強制不可」は検索不足の誤り(Stop hook 指摘)。実測(x402.org ecosystem):
+買い手 agent は CDP Bazaar 以外に MCP マーケット(Fluora=MonetizedMCP「agent が自律で探し購入」/ MCPay)や
+集約層(Onchain.fi/Questflow)で探して買う。我々は HTTP x402 のみ=agent が実購入する MCP 面に不在。
+→ buildable な道: DIST-1(4商品を MonetizedMCP wrap→Fluora/MCPay 掲載、coinbase/x402 の mcp example 参照) +
+DIST-2(awesome-x402/coinbase ecosystem/Onchain.fi/Questflow 登録)。self-pay 水増し=wash-trade=やらない。
