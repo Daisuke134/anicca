@@ -23,7 +23,7 @@
 | T3 | Capafy account-state/provision 28/28、Python 6/6、loop audit 3/3 | green |
 | T4 | clip shell 8/8、pytest 53/53。baseline と after が同数 | green |
 | T5 | PROVISION と DURABLE GOLDEN SESSION の定義数が baseline 2、after 1 | green |
-| T6 | feature branch commit を remote push | pending |
+| T6 | `feature/marketing-engine-slice1` の実装 commit `4d58a82b` を remote push | green |
 
 ## TODO
 
@@ -33,4 +33,4 @@
 | 2 | canonical provision prompt renderer と2 loop wiring | completed |
 | 3 | resolver、構文、Capafy、clip test | completed |
 | 4 | 重複数と diff 監査 | completed |
-| 5 | commit・push | in_progress |
+| 5 | commit・push | completed |
