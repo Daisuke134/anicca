@@ -13,7 +13,7 @@ set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
 # resolve a key (the .env injects a machine-legacy home/key; this store IS claude-p).
 export ANICCA_HOME="$HOME/.anicca-founder"
 unset BLOCKRUN_WALLET_KEY
-export X402_PAYTO="0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
+export X402_PAYTO="0x810F6D61F7606dEEE2657d3083E150a222Bc29C5"
 export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:8443}"
 export X402_NETWORK="base"
 export X402_PRICE="\$0.003"
