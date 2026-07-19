@@ -11204,3 +11204,10 @@
 {"ts":1784473298,"wake_id":"00MRRXBTPUFFDF91B57F6A4E0E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784473432,"wake_id":"00MRRXEOU25B2768687117491B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784473577,"wake_id":"00MRRXHSIH39A92461195B483B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784473713,"wake_id":"00MRRXKPEV4259DA851BD74DC0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784473846,"wake_id":"00MRRXNK7J31A97194071A4CFD","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784473977,"wake_id":"00MRRXQDJU8BA5B6231B8F458F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784474117,"wake_id":"00MRRXTD7F710C1360E16D43C2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784474248,"wake_id":"00MRRXW6GG1E62436B04ED4B13","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784474387,"wake_id":"00MRRXZ5A72D70E73C45CE4161","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1784474525,"wake_id":"00MRRY247113732249608C4951","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
