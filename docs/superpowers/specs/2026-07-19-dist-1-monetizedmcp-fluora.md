@@ -34,13 +34,20 @@ franklin の4商品(web-search/funding-rates/funding-rate-arb/research)が Fluor
      を `x-internal-key` 付き fetch で実行し結果を返す。決済は MCP 層で1回のみ、商品実行は serve-v2 handler を再利用。
    - INV-EXT: settle は buyer→X402_PAYTO の実 tx。self-pay 監査(verify-inflow の self-tx 除外)はそのまま効く。
 
-## 実装手順（Fable 計画→Sol build→Fable 検証）
-1. serve-v2 に internal-bypass middleware 追加（additive、既存テスト green 維持）。
-2. mcp-server.mjs 新規作成（上記3 method）。
-3. ローカル probe: serve-v2 起動 + mcp-server 起動 → MCP tool list に4商品 + 1件 paid make-purchase が通るか自己確認。
-4. fluora.ai/submit 登録（人間ゼロ submit 確認、human gate なら API/PR/tier-a-bypass）。
-5. mcpay.tech にも同 server 登録。
+## 実装手順（Fable 計画→build→検証）
+1. ~~serve-v2 に internal-bypass~~ → **不要になった**。設計 v2 で serve-v2 は完全無変更。
+2. ✅ mcp-server.mjs 新規作成（3 method、buyer の X-PAYMENT を serve-v2 に forward）。
+3. ✅ E2E probe（probe-dist1.mjs）: serve-v2+mcp-server を子起動→MCP client で 8/8 PASS
+   （tools=3、price-listing 4件、payment-methods=payTo、make-purchase 無決済→402 forward、unknown-id graceful、
+   serve-v2 unpaid=402 で外部経路不変）。commit 済み。
+4. ⏳ mcp-server を live 起動（boot+funnel、public https /mcp）。
+5. ⏳ Fluora(fluora.ai/submit)+MCPay 登録（実 submit フロー調査中→human gate なら API/PR/tier-a-bypass）。
 6. done 検証: Fluora/MCPay で franklin 商品検索可能 + 外部 buyer 実購入 on-chain（verify-inflow external≥1）。
+
+## 実装状況（2026-07-19、実測）
+- adapter = `skills/earn/x402-sell/mcp-server.mjs`。設計 v2 採用（forward X-PAYMENT、serve-v2 無変更、二重払い構造的に不可能）。
+- E2E = `skills/earn/x402-sell/probe-dist1.mjs`、本番 CDP creds で **8/8 PASS**（commit 済み）。
+- 残: live 起動（funnel）+ marketplace 提出。提出フローは deep-researcher 調査中。
 
 ## リスク
 - Fluora submit が human gate を持つ可能性→API/PR/別マーケットにフォールバック(tier-a-bypass)。

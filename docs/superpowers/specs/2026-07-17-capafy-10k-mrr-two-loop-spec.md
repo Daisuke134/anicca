@@ -280,11 +280,22 @@ niche / cadence(投稿時刻)
 
 ### 順序化した残 TODO
 ```
+DONE（2026-07-19 検証）
+ ✓ #1 A1  reject→resubmit 自動化 — 既実装+live 検証済み。DAILY_LOOP.md §2a が
+          launchd→daily_loop.sh→headless Sonnet で自走: review_rejected 検出
+          →remote-status 確認→BEST_PRACTICES §6 overclaim 再読で修正
+          →publish_finish.sh <AGENT_ID>(元 agent_id carry=create_version_from_draft)
+          で ship+CP3 resubmit。Capafy は reject 理由テキストを一切返さない
+          (api-docs:429「no review management API」)→「理由読む」= lint+overclaim
+          judgment 再読が唯一の代理(regex hardcode でなく model 判断=正)。
+          provider: build_config.py:50 "openrouter.ai" / hosted key: publish_finish.sh
+          CP2(59-66)+key_health_gate.sh(<$2 拒否)。結果検証=isConfirmedConfigKeys=1 を
+          live 反復達成(agent 4014388606/2485008254/4886968609 が rejected→status=1)。
+ ✓ #9 A5  売れ筋 selector — sales_selector.py, build loop STEP2 配線, live signal=none。
+
 DO-NOW（待ち無し）
- 1. #1 A1  reject→loop が読む→直す→resubmit 自動化(build self-improve)
- 2. #9 A5  売れ筋 selector(Capafy ranking→次に作る skill)
- 3. #21    funding alert 型(低残高 telegram、charge しない)
- 4. #31残  reflect/reach/ledger/telegram を engine helper に dedup
+ 1. #21    funding alert 型(低残高 telegram、charge しない)
+ 2. #31残  reflect/reach/ledger/telegram を engine helper に dedup
 
 BACK-BURNER（待ちが本質）
  - #30/#37/#10  07-21 day3 投稿の実データ待ち(reach/money line/14日運用)
