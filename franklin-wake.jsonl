@@ -10700,3 +10700,11 @@
 {"ts":1784423740,"wake_id":"00MRR3TM5I3DE6CDB3C1624692","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784423740,"wake_id":"00MRR3TM5I3DE6CDB3C1624692","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784423870,"wake_id":"00MRR3WE8A429FF0F572634B8E","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784424002,"wake_id":"00MRR3Z8250B8E88DBAFE24D65","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784424134,"wake_id":"00MRR421YZB02B5E63F0534D21","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784424134,"wake_id":"00MRR421YZB02B5E63F0534D21","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784424263,"wake_id":"00MRR44TI3CCA5C8CB00964AB3","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784424565,"wake_id":"00MRR4BAGV2826F379999848F3","kind":"wake","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784424691,"wake_id":"00MRR4DZZ713C08F42D4C64043","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784424822,"wake_id":"00MRR4GT2GBA4EEC0CE9304ECA","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784424822,"wake_id":"00MRR4GT2GBA4EEC0CE9304ECA","kind":"router_no_realized_action","sleep_s":120,"model":"nvidia/llama-4-maverick","slot":null,"attemptsUsed":1,"profitable":false}
