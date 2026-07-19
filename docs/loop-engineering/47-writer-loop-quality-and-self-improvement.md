@@ -98,3 +98,28 @@ builder（別セッション）が Unit 分解で実装、Unit 4 まで commit �
 9. **自己診断に頼りすぎない**（gig の設計判断）: 問題発見は fresh 外部 judge + 決定論シグナルに委ね、Reflexion（前パス内省1行）は補助
 
 X アカウント真因（実測）: 投稿先はコード/設定でなく **daily-driver ブラウザのログインセッションで決まる**（x-publish は CDP :9222 にアタッチするだけ）。@diceai0 セッション復帰 = アカウント是正 + Premium 問題消滅。
+
+## 8. North-star: これは「Writer Loop」であって article writer ではない（2026-07-19 Dais）
+
+**一般化が全て。** 学ぶ教訓は1記事用でなく全 writing 用。ACP 特化のルールは書かない。
+これは **writing で稼ぐ自己改善 loop**。記事は最初の form にすぎず、同じ骨格を form を変えて展開する:
+
+| form | 出口 | 換金 |
+|---|---|---|
+| X 投稿（短文/フック） | X | creator revenue |
+| 記事（現行） | note/zenn/substack/dev.to/X Articles | 単発¥ + 購読 |
+| 電子書籍（長文） | zenn 本 / Amazon KDP 等 | ebook 販売 |
+
+**設計原則（一般化ゲート）**: gate も few-shot も「form・topic に依存しない原則」だけを焼く。
+例: title_jargon 軸の正本は「見出しは finding/機能を平易に約束し vendor 名を名乗らない」——
+これは記事タイトルにも X フックにも本のタイトルにも効く1つの原則。few-shot は**複数ドメインに散らす**
+（tech-protocol / consumer-tool / narrative）ことで model がパターンを学ぶ。1ドメイン2例は「その話題の
+タイトル」を教えてしまい一般化しない（building-agents: judgment は model、canonical few-shot は多様に）。
+
+**form は lane パラメータ**: 現在の lane A/B（topic 由来）に加え、将来 form 次元（xpost/article/ebook）を
+足す。gate 骨格（identity/rubric/reader-testing/render-verify/self-improve）は form 非依存で共通、
+form ごとに変わるのは「長さ・出口 platform・換金手段」だけ。
+
+**卒業の定義（再掲・一般形）**: 人間もオーケストレーターも品質欠陥を指摘しない。loop が draft 前に
+自力で「読者不在・jargon・弱いタイトル」を検出して直す。これが任意の form・任意 topic で成り立てば
+arm（即時公開）してよい。
