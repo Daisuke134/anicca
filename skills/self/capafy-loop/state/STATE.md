@@ -1,6 +1,6 @@
 # Capafy money loop — STATE (GLVS, no-human, money → Dais bank)
 goal: real Capafy $ monthly payout, growing. Real $ only; never masked-error-as-0; monthly = latest payout month.
-last_wake_utc: 2026-07-17T23:17:07Z
+last_wake_utc: 2026-07-18T23:12:42Z
 heal_first: all healthy (auth ✓, publish loop ran ≤2d ✓)
 capafy_monthly_payout_usd: 0.0
 prev_capafy_monthly_payout_usd: 0.0
