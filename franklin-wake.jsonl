@@ -12134,3 +12134,13 @@
 {"ts":1784570663,"wake_id":"00MRTJAOTB38E9998674D14C03","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784570663,"wake_id":"00MRTJAOTB38E9998674D14C03","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784570794,"wake_id":"00MRTJDHQF705A2C7996334B3E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784570928,"wake_id":"00MRTJGD065E1CCF369D4E47D2","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784570928,"wake_id":"00MRTJGD065E1CCF369D4E47D2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784571058,"wake_id":"00MRTJJ59TA15BD6BAB8B94724","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784571189,"wake_id":"00MRTJLY8B8908B23FF2834FA5","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784571189,"wake_id":"00MRTJLY8B8908B23FF2834FA5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784571320,"wake_id":"00MRTJORQ08C0C218B23784C7D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784571320,"wake_id":"00MRTJORQ08C0C218B23784C7D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784571450,"wake_id":"00MRTJRJM3541E7353B07D4A69","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784571751,"wake_id":"00MRTJY0EVEB734ECED3AA4EB9","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784571751,"wake_id":"00MRTJY0EVEB734ECED3AA4EB9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
