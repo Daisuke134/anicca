@@ -12217,3 +12217,12 @@
 {"ts":1784578710,"wake_id":"00MRTO35OJEB5A9060E5F24E23","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784578841,"wake_id":"00MRTO5YTK839FC7E186DC4CF3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784578971,"wake_id":"00MRTO8R9Q29D11BDA54904BB5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784579104,"wake_id":"00MRTOBLTW4AC98EE75CC44D55","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784579104,"wake_id":"00MRTOBLTW4AC98EE75CC44D55","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784579234,"wake_id":"00MRTOEE4D470842D167E84826","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784579537,"wake_id":"00MRTOKVTB3DF44A8D00C14039","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784579668,"wake_id":"00MRTONOVCC7232C107D504139","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784579668,"wake_id":"00MRTONOVCC7232C107D504139","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784579797,"wake_id":"00MRTOQGHT04F99A672B9649C4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784579927,"wake_id":"00MRTOT8PJA0824A0CD0404277","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784579927,"wake_id":"00MRTOT8PJA0824A0CD0404277","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
