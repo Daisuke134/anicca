@@ -9,6 +9,8 @@ goal: 「ノートPCを返却しました。今日からiPhoneだけでAI開発�
 - 22:38 ★未検証5項目★ を research 2 並走で調査中（research-landscape = 競合全数+分類軸、research-tech = Tailscale-in-sandbox / Orca残量表示 / Cmux）。
 - 22:40 note タグ実測（tag-counts.py）: ClaudeCode=40,468 / AIエージェント=45,234 / iPhone=49,873 / AI開発=9,286 / 開発環境=1,650 / Orca=255 / リモート開発=76 / スマホ=119,908。
 
+- 22:50 eyecatch 生成完了（chatgpt-imagegen web backend、~/.cloak/note-work/orca-assets/eyecatch.png、1731x909、日本語テキスト「ノートPCを返却しました / iPhoneだけでAI開発」崩れ無しを Read で目視確認）。
+
 ## リスク（実測）
 
 - Zenn: 2026-07-20 17:08 JST に `2026-07-20-set-cookiex30` を公開済み（git log 実測）。24h 1 本の rate limit に当たる可能性 → push 後 NOT-LIVE なら window 明け（明日 17:08 以降）の再 trigger（empty commit）で解決。bug ではない。
