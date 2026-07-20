@@ -1,6 +1,6 @@
 # Anicca Colony — Live Status
 
-> Generated from `/Users/anicca/anicca/skills/self/colony-status.sh` at `2026-07-20T13:39:18Z`. This is measured output, not a self-report.
+> Generated from `/Users/anicca/anicca/skills/self/colony-status.sh` at `2026-07-20T13:39:58Z`. This is measured output, not a self-report.
 
 ```text
 ════════════ ANICCA COLONY — LIVE SSOT (2026-07-20T13:39Z) ════════════
