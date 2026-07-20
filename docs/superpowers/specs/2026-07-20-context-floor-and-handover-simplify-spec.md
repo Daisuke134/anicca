@@ -38,6 +38,12 @@
 - `permissions.deny: ["Agent(name)"]` は実行禁止のみで floor は減らない。
 - 裁定: plugin 7本 disable（codex/ccteams/revenuecat/security-guidance/clangd-lsp/token-optimizer/ui-ux-pro-max）、keep 6本（vcsdd/caveman/superpowers/swift-lsp/fablize/claude-code-token-saver）。project agents 15→4体（builder/qa-reviewer/fact-checker/deploy-checker、他は agents-archive へ）。blockrun は project settings.local で無効化を試行。
 
+## Round 2 結果（2026-07-20 適用済み・実測）
+- 適用: ENABLE_TOOL_SEARCH=true（settings env + zshrc 2行）/ builtin 19本 bare deny（Monitor は flowb 監視に必須のため Fable 裁定で除外、deny 20→19実効）/ includeGitInstructions:false / serena excluded_tools 12本 / project CLAUDE.md → .claude/rules/{colony,vcsdd-flow,ios-deploy}.md paths分割。
+- **実測: 134.5k → 89.5k (45%)、free 110.5k**。System tools 35.1k→3.7k（+deferred 26.5k は使用時のみロード）。
+- 未適用（Fable判断待ち）: sessionstart-hooks.patch（~440tok）/ global-claude-md.diff / memory-md.diff / floor-guard-patch.diff。成果物 = `floor-reduction/`。
+- 注意: deferred tool は使うと context に載る。tool-heavy session の総削減は起動差より小さい。
+
 ## 実測メモ
 - /context 実測（2026-07-20）: system prompt 27k / tools 38.9k / MCP 28.9k / agents 53.6k（26体×~2k） / memory 22.1k / skills 3k。free 20.7k。
 - agents はプロジェクト `.claude/agents/` 26体が全ロード。plugin由来（caveman/vcsdd/codex/superpowers）含む。
