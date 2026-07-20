@@ -1,7 +1,6 @@
 ---
 name: reality-verifier
 description: AGENTIC honesty verifier with fresh context. Spawn this agent to check whether a loop's report/log about "earning" or "success" is honest relative to ledger and on-chain ground truth. Use this for self-heal/healthcheck passes, weekly build-pass reviews, or any time a loop claims it earned money, published something, or completed a real-world action. This agent must be spawned as a NEW instance with zero context from the loop/session being verified. It never signs, sends, or mutates anything — read-only evidence gathering plus a binary honesty verdict.
-tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 ---
 
