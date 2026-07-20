@@ -329,3 +329,28 @@ build は全 done(#1-6,9-14 完了)。残り:
 - Dais 裁定: capafy の X 宣伝投稿（@aniccaen スレッド）= AI slop、恒久停止。**IG は継続**（warmup 進行中、day2/3）。
 - 実施: `capafy-x-marketing-daily.sh` を全 citizen home（~/.anicca-founder / ~/.blockrun / ~/.franklin2-home/.blockrun）で `.DISABLED-by-dais-20260720` に rename。スケジューラ実測: launchctl に x-marketing job なし、openclaw cron の anicca-x-* 系は全 enabled:False。最終投稿の痕跡 = 07-18 08:10 の cadence no-op log のみ。
 - 残タスク（Sol）: rename でなく恒久削除 + SKILL.md から X-line 記述を撤去（W 系と同便で発注）
+## 16. WRITER ENGINE — 多フォーム正本（2026-07-20 Dais 是正。§15 の「記事中心+後付けフォーム」観を上書き）
+
+**是正**: これは「article loop」ではない。**1つの self-improving engine が短文・中文・長文の3 lane に毎日/毎週/毎月書く**。記事は lane の1つにすぎない。X 短文 lane と書籍 lane は「後で」ではなく engine の初期形態に含まれる。
+
+### 16.1 3 lane 構成（全 lane が同じ CORE を共有）
+| lane | 頻度 | 出力 | taste 調達元（vendor 済み） | 金 |
+|---|---|---|---|---|
+| SHORT (X 単体投稿) | 毎日 2-3本 ja+en | 記事リンクでない standalone 投稿（フック/教訓/観察） | Gingiris 閉ループ（voice→evidence→publishability→feedback）+ blacktwist hooks + viral-hooks | 直接 ¥0。発見面 = 全 lane の母数を作る |
+| MID (記事=newsletter) | 毎日1本×2言語 | note/zenn/substack/X(記事)/devto | STORM式+hooks+storytelling+anti-ai/humanizer/shimo4228（bakeoff 実証） | sub ¥500/mo + 単発 ≤¥500 |
+| LONG (書籍) | 月1冊 | 記事在庫30本の束ね直し → zenn本/gumroad/自社+Stripe | ai-book-generator 骨格 + show-me-the-story 全書整合 pass | ¥1,500-3,000/冊 |
+
+CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+conscience gate W1+bounded revise W2+token 予算）→ 公開（CDP 直、credential ゼロ）→ 学習（実売還流 T12 / owner-veto / 週次監査）。
+
+### 16.2 フォーム lane タスク（TaskList 登録: F1/F2）
+| # | 内容 | 依存 |
+|---|---|---|
+| F1 | X 短文 lane 実装: Gingiris 構造 copy+tweak、毎日 2-3 standalone 投稿（@diceai0）、X-form rubric + conscience gate 適用、feedback= imp/eng 実測→taste 更新。旧 T13-15 の「X 短文 form」をこれに統合 | W1,W2 完了後 |
+| F2 | 書籍 lane 実装: 在庫30本到達で初回、ai-book-generator で章構成→整合 pass→zenn本+gumroad 出版 E2E。旧 T23 をこれに統合 | 記事在庫30本 |
+
+### 16.3 金の地図（10k MRR。§15.1 free-first と整合）
+- Phase F（今〜30日）: 全 lane 無料。SHORT が発見、MID が在庫、LONG は準備。収益 ¥0（設計通り）。
+- Phase S（30日〜）: 1コロニー月次の現実線 = sub 100×¥500 + 単発 30×¥500 + ebook 20×¥1,500 ≈ ¥95k ≈ $650/mo。SHORT lane が母数を拡大するほど各項が伸びる。
+- Phase R: $10k = $650×15 コロニー（OSS 採用 15人）。$100k = 150人。10k の変数 = OSS 採用数 > 文章力。
+- cost 恒等式: 1日 3 lane 合計 token 予算 ≤ $6 → 月 $180 → sub 36人で黒字。黒字化が最初の勝利条件。
+- 未検証 3変数（T12 で実数化）: sub 転換率 / ebook 販売率 / OSS 採用率。
