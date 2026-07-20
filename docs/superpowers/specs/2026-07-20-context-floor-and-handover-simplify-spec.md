@@ -16,8 +16,17 @@
 |---|---|---|---|
 | 1 | best practice調査（agents/MCP/memory削減） | subagent | in_progress |
 | 2 | /handover skill 書き換え | Sol | in_progress |
-| 3 | floor削減実施（agents剪定・plugin/MCP無効化・MEMORY剪定） | Sol | pending |
-| 4 | E2E検証（floor-guard + /context + handoverテンプレ） + push | Fable | pending |
+| 3 | floor削減実施（agents剪定・plugin/MCP無効化） | Sol | done |
+| 4 | E2E検証（新session /context 実測） + push | Fable | done |
+
+## 結果（2026-07-20 実測、新session /context）
+- 179.3k/200k (90%) → **132.8k/200k (66%)**。free 20.7k → 67.2k（+46.5k）。
+- MCP tools 28.9k → 10.5k（blockrun を project settings.local の disabledMcpjsonServers で停止。serena は残存）。
+- Custom agents 53.6k → 29.1k（project agents 15→4体、plugin 7本 disable: codex/ccteams/revenuecat/security-guidance/clangd-lsp/token-optimizer/ui-ux-pro-max）。
+- System tools 38.9k → 35.1k、Skills 3k → 2.9k（plugin disable の副次効果）。
+- raw API floor 実測: total 60.5k（cache_read 51.3k + input 9.3k）— /context 表示より実請求はずっと小さい（表示過大バグ #71301 と整合）。
+- Memory files 22.1k は未剪定（残TODO候補だが floor-guard 予算内のため今回は見送り）。
+- 注意: .claude/agents は .cursor/agents への symlink だった。archive は .cursor/agents 側から git mv 済み。
 
 ## 調査結果（2026-07-20 subagent実測）
 - `/context` の agents 53.6k は過大計上バグ疑い（issue #71301: 表示83.2kに対しraw API ~24k、agent各2k表示が実際59–174 tok）。raw裏取りまで削減見積りに使わない。
