@@ -29,4 +29,33 @@
 
 ## 件1-2: 競合全数調査 + 分類軸（[2] の材料）
 
-（research-landscape の結果をここに追記する）
+結論: **「自宅遠隔 vs cloud の 2 系統しかない」は不正確。** 同一 UI が両方を選べる製品（Claude Code app、Cursor mobile）や自社 VPC 実行（Ona）が存在する。分類は 3 軸:
+①コード（状態）の正本がどこにあるか ②誰の計算機で実行するか ③接続経路（direct P2P / vendor relay / SSH / public tunnel / browser）。
+
+**主要プレイヤー（一次情報で確認済み、2026-07-20 時点）:**
+
+| 製品 | 実行場所 | 接続経路 | 根拠 |
+|---|---|---|---|
+| Orca (stablyai/orca, MIT, 22,980★, v1.4.146) | 自分の desktop | device token 直結、relay 無し | onorca.dev/docs/mobile "The pairing exchange happens directly between desktop and phone… there is no cloud relay." |
+| Happy (slopus/happy, MIT, 22,742★) | 自分の PC | Happy Server relay（E2EE） | happy.engineering "We store and relay opaque ciphertext. We never receive the key." |
+| Omnara (2,651★, **archived**、新 platform へ移行) | 自分の machine | Omnara API/DB 経由 relay | github.com/omnara-ai/omnara "We've migrated to a new… platform" |
+| VibeTunnel (**amantus-ai**/vibetunnel、steipete は 404、4,600★) | 自宅 Mac/Linux | browser。推奨 Tailscale P2P | README "Tailscale creates a secure peer-to-peer VPN" |
+| SSH 古典解: Termius / Blink (6,861★) / mosh (14,191★) + tmux (47,898★) | 自宅マシン | SSH/UDP 直結 | mosh.org "logs in… via SSH… connects… over UDP" |
+| Claude Code web/iOS | Anthropic VM（cloud session）。app は "client… rather than a place where code runs" | browser/app。**Remote Control なら自分の PC 実行 + Anthropic relay** | code.claude.com/docs/en/mobile + /remote-control "All traffic travels through the Anthropic API over TLS" |
+| OpenAI Codex cloud | OpenAI cloud sandbox | ChatGPT mobile app | openai.com "on the cloud via the Codex web, GitHub, and the ChatGPT mobile app" |
+| Google Jules | Google cloud VM（task ごとに fresh VM） | web。mobile 正式対応は未確認 | jules.google/docs/faq "Each task runs in a fresh virtual machine" |
+| Cursor Cloud Agents (iOS beta) | **選べる**: cloud VM / Self-Hosted Pool / My Machines | native iOS app | cursor.com/docs "controlling agents running in the cloud and on your local computer" |
+| Devin | cloud（"cloud Devin"、local CLI から /handoff） | mobile 正式仕様 **未確認** | docs.devin.ai/get-started/devin-intro |
+| GitHub Codespaces | GitHub 管理 container/Azure VM（永続 storage） | browser | docs.github.com "hosted by GitHub in a Docker container" |
+| vscode.dev + Remote Tunnels | **自分の machine**（hybrid） | Microsoft dev tunnels relay、SSH 不要 | code.visualstudio.com/docs/remote/tunnels "secure tunnel… without SSH" |
+| code-server (78,451★, v4.129.0) | 自分の machine/VM に self-host | browser（経路は自分で用意） | coder.com/docs "Run VS Code on any machine anywhere" |
+| Gitpod→**Ona**（Classic 終了 2025-10-15） | Ona Cloud or 自社 AWS/GCP VPC | browser VS Code | ona.com/docs "Deploy on Ona Cloud or in your own AWS or GCP account" |
+
+**2026 年の新顔（stars>100、抜粋）:** CloudCLI/claudecodeui 12,758★（self-host/cloud 両対応）、Paseo 10,914★（自分の machine + relay）、Agent of Empires 2,847★（local tmux + Tailscale Funnel/Cloudflare Tunnel）、CC Pocket 981★（self-host Bridge + Tailscale）、handmux 116★（自分の tmux を phone browser へ）他多数 — この 1 年で「自宅マシン + phone」系 OSS が爆発的に増えている。
+
+**記事上の扱い:** [2] の表は代表 8 個程度に絞る（Orca / Happy / SSH古典 / Claude Code web / Codex cloud / Codespaces / Remote Tunnels / Cursor）。軸は「コードの正本がどこ × 誰のマシンで走る × 経路」を平易に。「2 系統」でなくスペクトラムであることを一言。
+
+## 未確認事項（記事で断定しない）
+
+- Devin の native mobile app 正式仕様 / Jules の mobile 正式対応 / Codespaces の GitHub Mobile app 内 full editor
+- Claude Code web sandbox 内での tailscaled 実起動（報告 0 件）
