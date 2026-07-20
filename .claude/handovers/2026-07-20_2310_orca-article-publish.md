@@ -1,8 +1,11 @@
 # Handover: Orca 記事 — 執筆完了、公開は STEP 2 から再開（token 切れで停止）
 
-★2026-07-21 更新: カードは queue/ に戻した（Dais 指示: codex 手動実行 vs 朝の article loop の比較実験のため）。
-場所 = `~/profitable-claude/skills/article-writer/topics/queue/orca-phone-coding-setup.md`（commit 6900421）。
-どちらの経路でも: 記事本文は執筆済み・変更禁止、この handover と PLAN-orca-publish.md STEP 2〜 が実行手順の正本。
+★2026-07-21 更新2（最新）: **note draft は既に存在する。** API 実測（23:59）:
+- draft key = `nfeca7663e750`、status=draft、price=0
+- 本文 11,982 字、画像 3 枚埋め込み済み（@@marker 残 0）、eyecatch 設定済み
+- つまり PLAN の STEP 2+3 は完了。**残り = STEP 4（検証gate: draft screenshot + DOM assert）→ STEP 5（publish-paid --key nfeca7663e750 --price 1000 --after-chars 2445 --tags "ClaudeCode,AIエージェント,iPhone,AI開発,開発環境" --arm、NOTE_MODE=go）→ STEP 6-9（無料版/Zenn/X/カード書き戻し/メール）**
+- カードは in-progress/ に戻した（queue 比較実験は中止、codex が直接 publish する）。
+- 注意: 目次(TOC)挿入が済んでいるかは未確認 → STEP 4 の screenshot で確認し、無ければ insert-toc-save.py を先に。
 
 ## 完了済み（全部実測検証済み）
 
