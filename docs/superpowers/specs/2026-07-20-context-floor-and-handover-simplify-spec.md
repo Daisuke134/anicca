@@ -24,9 +24,11 @@
 - MCP tools 28.9k → 10.5k（blockrun を project settings.local の disabledMcpjsonServers で停止。serena は残存）。
 - Custom agents 53.6k → 29.1k（project agents 15→4体、plugin 7本 disable: codex/ccteams/revenuecat/security-guidance/clangd-lsp/token-optimizer/ui-ux-pro-max）。
 - System tools 38.9k → 35.1k、Skills 3k → 2.9k（plugin disable の副次効果）。
-- raw API floor 実測: total 60.5k（cache_read 51.3k + input 9.3k）— /context 表示より実請求はずっと小さい（表示過大バグ #71301 と整合）。
-- Memory files 22.1k は未剪定（残TODO候補だが floor-guard 予算内のため今回は見送り）。
-- 注意: .claude/agents は .cursor/agents への symlink だった。archive は .cursor/agents 側から git mv 済み。
+- **raw API floor は減っていない（是正）**: BEFORE cache 51,250+input 11,830=63.1k → AFTER cache 60,798+input 10,390=71.2k（+8k）。/context の 46.5k 削減は「window 表示」の削減であり課金 floor の削減ではない。前記「実請求はずっと小さい」は誤読 — 正しくは「/context 表示と raw 課金は別物で、今回効いたのは window 側」。
+- blockrun 停止の実態: project settings.local の disabledMcpjsonServers は user-scope server に効かず、`claude mcp list` には残る（接続失敗状態）。ただし tool schema は context に載らなくなり window 削減は成立。根治するなら ~/.claude.json から blockrun を外して colony 作業ディレクトリのみに移す（未実施、残TODO候補）。
+- Tool Search 実験: proxy (:8317) で is_error=false、cache_creation 14,756（baseline比 −36.5k）。ただし cache 合計はほぼ同値。焼き込みは見送り。
+- Memory files 22.1k は未剪定（Dais の規律集のため勝手に削らない）。
+- 注意: .claude/agents は .cursor/agents への symlink。archive は .cursor/agents 側から git mv 済み。
 
 ## 調査結果（2026-07-20 subagent実測）
 - `/context` の agents 53.6k は過大計上バグ疑い（issue #71301: 表示83.2kに対しraw API ~24k、agent各2k表示が実際59–174 tok）。raw裏取りまで削減見積りに使わない。
