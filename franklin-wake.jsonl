@@ -11642,3 +11642,13 @@
 {"ts":1784517998,"wake_id":"00MRSNXW67C4FA465C50C6463F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784518132,"wake_id":"00MRSO0RL79D8E9EDF14E74D0A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784518264,"wake_id":"00MRSO3LOK226CCEE18D0B413C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784518406,"wake_id":"00MRSO6MVRD6B2B8E462C64D30","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784518539,"wake_id":"00MRSO9HF5DA0F518DC8BE4738","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784518673,"wake_id":"00MRSOCD3B0025A6D8556E4E68","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784518673,"wake_id":"00MRSOCD3B0025A6D8556E4E68","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784518862,"wake_id":"00MRSOGEQ369C4BFA038B2467C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784518995,"wake_id":"00MRSOJ96T9202A223A1F2401B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519131,"wake_id":"00MRSOM5Y585D4DB132B9B403E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784519131,"wake_id":"00MRSOM5Y585D4DB132B9B403E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519262,"wake_id":"00MRSOOZ3BE6EE07060AB742A0","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784519262,"wake_id":"00MRSOOZ3BE6EE07060AB742A0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
