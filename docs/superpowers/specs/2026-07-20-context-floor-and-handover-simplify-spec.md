@@ -40,6 +40,7 @@
 
 ## Round 2 結果（2026-07-20 適用済み・実測）
 - 適用: ENABLE_TOOL_SEARCH=true（settings env + zshrc 2行）/ builtin 19本 bare deny（Monitor は flowb 監視に必須のため Fable 裁定で除外、deny 20→19実効）/ includeGitInstructions:false / serena excluded_tools 12本 / project CLAUDE.md → .claude/rules/{colony,vcsdd-flow,ios-deploy}.md paths分割。
+- blockrun 根治: `~/.claude.json` の user root 定義を `/Users/anicca/.blockrun` project scope へ移動（backup: `.claude.json.bak.cloud-mobile-20260720-224110`）。`anicca-project` で `claude -p 'say ok'` は `ok`、`claude mcp list` は blockrun 不在を実測。
 - **実測: 134.5k → 89.5k (45%)、free 110.5k**。System tools 35.1k→3.7k（+deferred 26.5k は使用時のみロード）。
 - 未適用（Fable判断待ち）: sessionstart-hooks.patch（~440tok）/ global-claude-md.diff / memory-md.diff / floor-guard-patch.diff。成果物 = `floor-reduction/`。
 - 注意: deferred tool は使うと context に載る。tool-heavy session の総削減は起動差より小さい。
