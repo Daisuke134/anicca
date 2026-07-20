@@ -7,6 +7,12 @@
 - カードは in-progress/ に戻した（queue 比較実験は中止、codex が直接 publish する）。
 - 注意: 目次(TOC)挿入が済んでいるかは未確認 → STEP 4 の screenshot で確認し、無ければ insert-toc-save.py を先に。
 
+## Codex 起動 prompt（これをそのまま `codex` に貼る）
+
+```
+codex exec -m gpt-5.6-sol --sandbox danger-full-access --skip-git-repo-check "この handover /Users/anicca/anicca-project/.claude/handovers/2026-07-20_2310_orca-article-publish.md と plan /Users/anicca/anicca-project/PLAN-orca-publish.md を読め。note draft nfeca7663e750 は作成済み（本文11,982字・画像3枚・eyecatch有、API実測済み）。STEP 4 から STEP 9 まで順に実行して記事を公開し切れ: (4)draft screenshot+DOM assert検証、TOC無ければ insert-toc-save.py (5)publish-paid.py --key nfeca7663e750 --price 1000 --after-chars 2445 --tags 'ClaudeCode,AIエージェント,iPhone,AI開発,開発環境' --arm を NOTE_MODE=go で実行し API readback で price=1000 確認 (6)make-free-version.py で無料版 (7)Zenn publish-to-zenn.sh slug=orca-iphone-ai-dev-setup、rate limit で NOT-LIVE なら bug ではない・報告して続行 (8)X Articles draft (9)カードを ~/profitable-claude/skills/article-writer/topics/in-progress/orca-phone-coding-setup.md から done/ へ mv し frontmatter に status: published と実URL を書いて commit+push、最後に AgentMail（~/.openclaw/.env の AGENTMAIL_API_KEY、inbox myclaude-clip@agentmail.to）で keiodaisuke@gmail.com へ全 live URL を送り thread read-back で検証。禁止: 検証gateの skip、rtk proxy 使用、本文の書き換え。exit code でなく API readback と file 実在で検証しろ。" < /dev/null
+```
+
 ## 完了済み（全部実測検証済み）
 
 - リサーチ 5 項目: `docs/articles/2026-07-20-orca-phone-coding-research.md`（commit ee96355d8、一次情報 URL 付き）
