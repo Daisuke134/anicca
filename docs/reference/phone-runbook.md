@@ -9,6 +9,39 @@
    receives repository-tracked instructions and files; Mac Mini launchd loops stay
    on the Mac Mini and are only edited, instructed, or monitored from the cloud.
 
+### One-time cloud authorization and proof run (Dais physical action)
+
+The local CLI cannot complete this authorization while it is using the current
+third-party provider. On 2026-07-20, `claude --cloud` reached cloud creation but
+returned HTTP 403; `claude doctor` reported that claude.ai subscription auth was
+inactive and the `user:profile` scope was missing. Complete this one-time flow on
+the phone:
+
+1. Sign in to the Dais claude.ai subscription in Claude iOS, open **Code**, and
+   choose **Connect GitHub**. If the App authorization page opens, approve the
+   `Daisuke134` account and restrict repository access to `anicca-products`,
+   `anicca`, and `anicca-dais`.
+2. Create the default cloud environment with **Trusted** network access and no
+   secrets or setup script. Select `anicca-products`, then select the branch that
+   contains this migration spec.
+3. Start a **Plan** mode session with this exact read-only prompt:
+
+   ```text
+   Do not edit, commit, or push. Report the current git commit; prove that
+   AGENTS.md, CLAUDE.md, .claude/settings.json, and .claude/rules were loaded;
+   quote the names of two applicable repository rules; run
+   echo "$CLAUDE_CODE_REMOTE_SESSION_ID"; and return the session URL.
+   ```
+
+4. Keep the session URL and its output as the evidence for spec task #4. The
+   expected repository evidence is root `AGENTS.md`, root `CLAUDE.md`, project
+   `.claude/settings.json`, and the tracked Markdown files under `.claude/rules/`.
+
+After this authorization, a direct subscription-authenticated terminal can also
+run `/web-setup` inside interactive `claude`, then create a session with
+`claude --cloud "<task>"`. `claude --remote` is only a deprecated alias for
+`--cloud`; `claude --teleport` pulls an existing cloud session into a terminal.
+
 ## SSH from Termius through Tailscale
 
 1. Connect the phone to the same Tailscale tailnet as the Mac Mini.
