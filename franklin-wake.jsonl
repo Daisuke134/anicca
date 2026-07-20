@@ -11921,3 +11921,11 @@
 {"ts":1784544786,"wake_id":"00MRT3W1QQ652C0E7C15B949CB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784544971,"wake_id":"00MRT400BJC0230B14F9154060","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784544971,"wake_id":"00MRT400BJC0230B14F9154060","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545102,"wake_id":"00MRT42TVH179B2E72156941DF","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784545102,"wake_id":"00MRT42TVH179B2E72156941DF","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545233,"wake_id":"00MRT45ML37B3F706A44D44641","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545365,"wake_id":"00MRT48GCL6E0EAFC2CF0C42CA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545504,"wake_id":"00MRT4BFIQE5B2EAC323584D77","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545651,"wake_id":"00MRT4ELBKDE9DB04753264B5F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545785,"wake_id":"00MRT4HGNBA4CF316C92084A04","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784545920,"wake_id":"00MRT4KCN6FF448840AC9A44C5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
