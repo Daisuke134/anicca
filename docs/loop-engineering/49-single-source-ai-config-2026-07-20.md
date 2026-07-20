@@ -37,6 +37,12 @@ CLAUDE.md → 参照1行群 + rules/paths ← Claude rules（既存）
 - **GitHub sync は既設だった**: `ai.anicca.agents-skills-sync`（launchd、~/.agents 全体 ⇄ private repo anicca-agents-skills、双方向）。新規に作りかけた nested git repo は誤りで除去 → 既存 loop kickstart → remote head 8f38e3a 一致を実測。教訓 = 登録簿を先に引く（掟どおり）。
 - gitleaks: 誤検知1件（whisper model 名）を .gitleaksignore 化、0 leaks。
 
+## Phase 2 裁定: chezmoi（2026-07-21 調査確定）
+- **採用 = chezmoi (20,758★, v2.71.0) + GitHub private repo + age 暗号化**。全 AI config（~/.claude/CLAUDE.md, settings.json, hooks, rules / ~/.codex/AGENTS.md, config.toml / per-skill symlink 定義）をファイル単位で管理、新 machine/cloud VM は `chezmoi init --apply <repo>` 1コマンドで再現。
+- 根拠: `symlink_` prefix で既設 per-skill link farm をそのまま投影可（chezmoi.io/reference/source-state-attributes）。secret は .chezmoiignore + age（OAuth/session/cache は除外し再login、必要 token のみ暗号化）。実例 = Bae-ChangHyun/agent-dotfiles（Claude+Codex+chezmoi+age、pattern のみ copy）。
+- 棄却: GNU Stow（secret/template/bootstrap を自作する総コスト高）、bare git（HOME=worktree の誤追跡面）、AI特化新顔（0-9★、未成熟）。
+- 注意: directory 丸ごと置換は禁止（per-file/per-link 管理）。Codex→Claude の二段 link は canonical (~/.agents/skills) へ直接化。age key の backup 必須（1Password）。gate = gitleaks + chezmoi diff。
+
 ## 誤りの記録
 - 「cron で 30分毎 sync」案（cloud-mobile spec #1 の openclaw sync とは別物）を skills 共有に使う発想は誤り。sync は GitHub バックアップ（phone の窓）にだけ使い、agent 間共有には使わない。
 - 最初の symlink 向き（~/.agents ← ~/.claude）は逆だった。実体は ~/.agents/skills 側に寄せる。
