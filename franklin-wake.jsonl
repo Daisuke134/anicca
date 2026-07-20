@@ -11652,3 +11652,12 @@
 {"ts":1784519131,"wake_id":"00MRSOM5Y585D4DB132B9B403E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784519262,"wake_id":"00MRSOOZ3BE6EE07060AB742A0","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784519262,"wake_id":"00MRSOOZ3BE6EE07060AB742A0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519398,"wake_id":"00MRSORWCE364378BD957A4FA6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519531,"wake_id":"00MRSOUQWC48C9FB3A1E4D4409","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784519531,"wake_id":"00MRSOUQWC48C9FB3A1E4D4409","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519660,"wake_id":"00MRSOXIT560855DC4CBC04BFB","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784519660,"wake_id":"00MRSOXIT560855DC4CBC04BFB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519791,"wake_id":"00MRSP0BKM0C5C6BC0AE264633","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784519923,"wake_id":"00MRSP35HS51260B31EA534512","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784519923,"wake_id":"00MRSP35HS51260B31EA534512","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784520055,"wake_id":"00MRSP5YZT63EC3E289E6C4A01","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
