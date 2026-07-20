@@ -1,5 +1,9 @@
 # Handover: Orca 記事 — 執筆完了、公開は STEP 2 から再開（token 切れで停止）
 
+★2026-07-21 更新: カードは queue/ に戻した（Dais 指示: codex 手動実行 vs 朝の article loop の比較実験のため）。
+場所 = `~/profitable-claude/skills/article-writer/topics/queue/orca-phone-coding-setup.md`（commit 6900421）。
+どちらの経路でも: 記事本文は執筆済み・変更禁止、この handover と PLAN-orca-publish.md STEP 2〜 が実行手順の正本。
+
 ## 完了済み（全部実測検証済み）
 
 - リサーチ 5 項目: `docs/articles/2026-07-20-orca-phone-coding-research.md`（commit ee96355d8、一次情報 URL 付き）
