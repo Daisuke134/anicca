@@ -1,7 +1,6 @@
 ---
 name: fact-checker
 description: Use this agent after Claude has made claims about what code does, what tests passed, or what a library supports. Invoke before any commit, before any user-facing summary, after any task that involved new dependencies, after multi-file refactor, and before "task complete" handoff to Dais. This is Layer 4 of the 4-layer honesty setup — independent audit of all claims.
-tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 

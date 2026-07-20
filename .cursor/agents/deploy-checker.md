@@ -1,7 +1,6 @@
 ---
 name: deploy-checker
 description: Runs test → build → deploy verification pipeline. Use PROACTIVELY after code changes before merging.
-tools: Bash, Read, Glob, Grep
 model: haiku
 color: blue
 skills:
