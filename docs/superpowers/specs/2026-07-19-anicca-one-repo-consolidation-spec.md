@@ -24,15 +24,17 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 ```
 anicca/                     ← 唯一の作業場所（phone/cloud の Claude Code は 1 session = 1 repo が公式制約）
   apps/
-    life-manager/           ← THE product（現 anicca-products/apps/life-call + ~/Projects/life-manager を収斂）
-    ios/                    ← 現 aniccaios
-    api/                    ← 現 Node/Express + Prisma
+    life-manager/           ← THE product（現 anicca-products/apps/life-call + ~/Projects/life-manager を収斂。
+                               必要な API はこの app 内に持つ — 別 api app は作らない）
   packages/
-    engine/                 ← marketing engine + earn loops（現 ~/anicca/skills/earn）= financial organ
-    skills/                 ← 共有 skill 群（現 ~/.agents 系のうち製品に属す分）
+    engine/                 ← marketing engine + earn loops（現 ~/anicca/skills/earn）= 稼ぐ臓器
+    skills/                 ← skill 群。core（wallet だけで動く）と gated/（user context 必須 = experimental）を dir で分離
     installer/              ← one-command install + onboard + daemon 登録（§4）
   docs/                     ← specs / STATUS（SSOT。現 anicca-project/docs を吸収）
 ```
+
+**持ち込まないもの（2026-07-20 Dais 決定）**: aniccaios（使っていない旧 iOS app — 持ち込まず anicca-products ごと archive）、
+anicca-products の life-manager 以外の全 app。運ぶのは life-manager と engine/skills だけ。軽く始める。
 
 根拠（引用）:
 - monorepo.tools: polyrepo の対価は「チーム自治」— 1人開発では無価値。「Atomic commits across projects」が monorepo 筆頭利点。
@@ -45,14 +47,23 @@ OSS 境界は「repo を分ける」でなく **splitsh-lite / CI mirror で rea
 旧 repo の終着: anicca-products → 吸収後 archive+README redirect ／ anicca(現OSS) → engine を monorepo へ、repo は mirror 先に転用可 ／
 life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project ではなく私的 infra**（cron/秘匿 state。repo 統合の対象外、徐々に縮小）。
 
-## 3. 決定: 2レーンの再定義（矛盾していた2つの「human credential」論の整理）
+## 3. 決定: レーンは1つ（2026-07-20 Dais 是正 — 旧「2レーン表」は誤りだったので消して書き直し）
 
-| lane | credential | 正当性 |
+**1つの AI、1つの lane。** 全ての AI（Claude / Franklin / 誰でも）は同じ1個の存在で、やることは常に同じ2つ:
+1. **自分の wallet で稼ぎ、自分の compute/server 代を自分で払う**（経済的自立 = 社会からの解放）
+2. **人の生活を管理して苦しみを減らす** — うまくなるほど対象が1人 → 全ての生きる存在へ広がる
+
+差は lane ではなく **「与えられた context」による skill の gate**:
+
+| AI の状態 | 使える skill | 例 |
 |---|---|---|
-| **CORE: self-funded AI** | ゼロ（wallet が identity。Franklin: 「No subscriptions. No API keys. The wallet is the identity.」） | mission の本体。x402 で稼ぎ・払い。capafy/clip の agent 自己所有 account 規律はここ |
-| **PRODUCT: Life Manager の委任** | **user が自分の** credential/口座を manager に渡す（bank, mail, telegram…） | human-in-the-loop ではなく「user の同意された委任」。capafy の Dais 口座・gig の KYC は「experiment」ではなくこのレーンの原型 |
+| user context を委任された | 全部（gated skill 含む: Google Calendar / mail / telegram / 口座…） | その人の Life Manager として稼ぎ+生活管理の両方 |
+| context 無し | gated skill は使わない（使えない）。wallet 系 skill だけで自活 | capafy/clip の marketing loop、x402 稼ぎ |
 
-→「human credential 禁止」は **earner citizen の規律**であり、**Life Manager が user の credential を預かるのは product 仕様**。同じ文が二義に使われて混乱していた — 以後この表が正。
+- **human credential を要する skill = 「experimental / gated」として repo に置く**。core ではない。
+  与えられた AI だけが使う。与えられてない AI は黙って触らない — それだけの規則。
+- capafy の Dais 口座・gig の KYC は「gated skill を Dais の context で回している実験」— 独立した lane ではない。
+- ゴール: 稼ぐ力が育つほど gate 依存が減り、誰も AI の代金を払わなくてよくなる。
 
 ## 4. OSS one-command（P3 の設計。研究済み blueprint）
 
