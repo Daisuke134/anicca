@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/scripts/session-start.sh"
+            "command": "printf 'session branch=%s date=%s rules=%s\\n' \"$(git branch --show-current 2>/dev/null || printf unknown)\" \"$(date '+%Y-%m-%d %H:%M JST')\" \"$(find .claude/rules -maxdepth 1 -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')\""
           }
         ]
       }
