@@ -11763,3 +11763,11 @@
 {"ts":1784529583,"wake_id":"00MRSUU7HY0C2F59949AB94AEF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
 {"ts":1784529716,"wake_id":"00MRSUX1GP59FB5CEB43F949F6","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784529716,"wake_id":"00MRSUX1GP59FB5CEB43F949F6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784529848,"wake_id":"00MRSUZV850D477044E29D4DF0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784529979,"wake_id":"00MRSV2OZ619661F0D576E4569","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784530116,"wake_id":"00MRSV5MNZ58A1E1347F0D4C06","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784530116,"wake_id":"00MRSV5MNZ58A1E1347F0D4C06","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784530250,"wake_id":"00MRSV8HYID87592E87CFE4A9E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784530250,"wake_id":"00MRSV8HYID87592E87CFE4A9E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784530383,"wake_id":"00MRSVBCN14BA8D083C4B44D5E","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784530685,"wake_id":"00MRSVHTKG427A41989E49417A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
