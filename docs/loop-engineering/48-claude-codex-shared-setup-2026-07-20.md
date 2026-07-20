@@ -24,6 +24,12 @@
 ## firecrawl 復活（2026-07-20 実測）
 `firecrawl scrape https://example.com` 成功（v1.6.2, /opt/homebrew/bin/firecrawl）。credit 切れ解消 → web 取得の既定を firecrawl に戻す（crwl は fallback）。
 
+## 実施済み（2026-07-20 実測）
+- repo AGENTS.md 作成（ツール既定: firecrawl/ctx7/x-search-cdp/gh、WebSearch禁止）+ push 済み。
+- `~/.codex/AGENTS.md`（global）にも同内容適用（setup-parity.sh、冪等確認済み）。
+- `~/.agents/skills` へ Claude user skills 9個を symlink（計66 skill が Codex から可視）。
+- ~/.openclaw 資産 push 完了（private repo anicca-dais）。**secrets 掃除実施**: browser/ profile 全体・auth-state.json×2・playwright Cookies/Login Data×8 を untrack + .gitignore 恒久化（ファイルはローカル残存、gitleaks 0 leaks 確認）。
+
 ## cloud 移行の含意
 - mobile 操作: Claude iOS Code タブ（cloud sandbox）が既に使える。repo に CLAUDE.md/rules/skills が push されていれば cloud session でも同じ規律で動く = **STEP 2（GitHub に全部上げる）が cloud 移行の実体**。
 - Mac Mini へは Tailscale SSH が phone からも可能。loops は当面 Mac Mini 常駐で問題なし。
