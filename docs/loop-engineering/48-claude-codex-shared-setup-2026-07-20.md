@@ -37,6 +37,7 @@
 - リスク: rulesync は高速 major churn（30日で 25 releases、breaking 6）+ **無確認上書き** → version pin + 一時 HOME で dry-run diff → 本適用、の gate 必須。
 - 自分が間違う最有力筋: 共有対象が rules+skills だけなら HF 型 symlink の方が総コスト小。MCP/paths 変換が要らなくなったら symlink へ後退してよい。
 - 健全性実測: rulesync 1,246★/584 commits(30d)/25 releases、ruler 2,811★/67 commits/2 releases。
+- 精密化: rulesync の **global import は rules/commands のみ**（公式 Global Mode docs）。~/.claude/skills と global MCP は契約外 → skills 移行は temp project tree 経由の project import か .rulesync/skills への copy+tweak で行う。
 
 ## cloud 移行の含意
 - mobile 操作: Claude iOS Code タブ（cloud sandbox）が既に使える。repo に CLAUDE.md/rules/skills が push されていれば cloud session でも同じ規律で動く = **STEP 2（GitHub に全部上げる）が cloud 移行の実体**。
