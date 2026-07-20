@@ -2,7 +2,7 @@
 
 Orca という Agent IDE で、スマホが自宅マシンのリモコンになる。セットアップと初日の正直な所感
 
-## MacBookを返却して、手元に残ったのはiPhoneでした
+## MacBookを返却した日
 
 大学にMacBookを返却しました。外出先で開発するとき、手元にあるのはiPhoneだけです。ただし、自宅にはMac Miniがあります。そこで考えたのが、計算はMac Miniに任せ、私はiPhoneからAI agentを動かす形でした。
 
@@ -10,7 +10,7 @@ Orca という Agent IDE で、スマホが自宅マシンのリモコンにな�
 
 2026年7月20日、Mac MiniへOrca v1.4.146を入れ、Tailscale経由でiPhone 15とpairingしました。これは「iPhoneの中で開発する」より、「自宅の開発環境をiPhoneから持ち歩く」に近い体験でした。
 
-## スマホ開発の選択肢を地図にしてみました
+## スマホ開発の選択肢の地図
 
 自宅遠隔かcloudかの二択では足りません。見るべきなのは、コードの正本、実行する計算機、スマホからの接続経路の3点でした。
 
@@ -27,7 +27,7 @@ Orca という Agent IDE で、スマホが自宅マシンのリモコンにな�
 
 Claude CodeのRemote Controlは自分のPCで実行しながらAnthropic APIをrelayに使い、CursorのiOS betaはcloud VMと自前のmachineを選べます。境界は連続的です。私はMac Miniにあるrepoと環境をそのまま使いたくてOrcaを選びました。
 
-## Orcaという道具の形を整理しました
+## Orcaという道具の形
 
 Orcaでは、1 taskに1つのgit worktreeと専用terminalを持たせます。Claude Code、Codex、OpenCode、OpenClaw、Piなどに対応します。
 
@@ -42,7 +42,7 @@ flowchart TD
 
 mobile companionではagentへの返信、file tree閲覧、stageとcommit、workspace作成ができます。full editorは意図的に載せていません。今回の構成はMac MiniとiPhoneをTailscaleに参加させた直接接続で、Orca Relayは使っていません。
 
-## セットアップではHomebrewとQRでつまずきました
+## セットアップでつまずいた場所、HomebrewとQR
 
 Mac Miniへのinstallで最初に気をつけるのは、Homebrewの名前です。素の `brew install --cask orca` は、入れたいAgent IDEではありません。plotlyのdeprecatedツールです。使うtapを含めて、次のように指定しました。
 
@@ -78,7 +78,7 @@ pairing QRは数分で切れます。今回はTelegramとGmailでiPhoneへ送り
 
 もちろん、これは初日の感想です。接続の長期安定性、terminal操作のしやすさ、通知を含めた外出時の使い勝手は、まだ1週間使って判定する項目です。
 
-## Cloud案との違いは状態をどこに置くかでした
+## Cloud案との違い、状態の置き場所
 
 Claude Code on the webでは、repoをGitHubからAnthropic管理VMへcloneして実行します。localの `~/.claude/CLAUDE.md` は自動では載らず、secrets storeもありません。networkはNone、Trusted、Fullの3段階です。一方、OrcaとTailscaleの構成では、実行もrepoも自宅のMac Mini側に残ります。
 
@@ -89,7 +89,7 @@ Claude Code on the webでは、repoをGitHubからAnthropic管理VMへcloneし�
 | 接続 | Tailscale P2P | app、browser | ChatGPT app |
 | local依存 | Mac Miniが必要 | 再現が必要 | 再現が必要 |
 
-本質的な差は、スマホの画面ではなく状態の置き場所です。自宅マシンにしかない設定や作業中のrepoをそのまま使うなら、Orcaのremote controlはわかりやすい選択です。反対に、local Mac Miniへの依存を切りたいなら、cloud sessionの方が目的に合います。
+差が出るのは状態の置き場所です。自宅マシンにしかない設定や作業中のrepoをそのまま使うなら、Orcaのremote controlはわかりやすい選択です。反対に、local Mac Miniへの依存を切りたいなら、cloud sessionの方が目的に合います。
 
 ただし、cloud sandboxからTailscaleで自宅へ入ることが構造的に不可能なわけではありません。Tailscaleのuserspace networkingはTUN deviceを使わず、SOCKS5またはHTTP proxyとして動けます。DERP relayもHTTPS接続を作れるdeviceなら利用できます。
 
@@ -99,7 +99,7 @@ Claude Code webでは全outbound trafficがAnthropicのHTTP/HTTPS proxyを通り
 
 GitHub CodespacesにはTailscaleの公式手順がありますが、こちらは `/dev/net/tun` を渡す方式で条件が違います。したがって、cloudからも必ず自宅へ届くとも、絶対に届かないとも断定できません。現時点で確実なのは、OrcaとTailscaleなら、すでに自宅のMac MiniへiPhoneから接続できたことです。
 
-## おすすめできる人と、まだ待った方がいい人を分けました
+## おすすめできる人、まだ待った方がいい人
 
 Orcaをおすすめしやすいのは、自宅や作業場に常時使えるmachineがあり、そこにrepoとagent環境がすでにそろっている人です。Claude CodeやCodexを複数sessionで動かし、branchとworktreeの対応をスマホから見たい人にも合います。full editorより、agentへの指示、承認、diff reviewを重視する人には設計意図が明快です。
 
