@@ -294,3 +294,38 @@ build は全 done(#1-6,9-14 完了)。残り:
 | T25 | medium / 自社サイト SEO / newsletter |
 | T26 | OSS ユーザー数×黒字率 dashboard（10M 進捗計器） |
 | T27 | 収益モデル決定（収益シェア/hosted/premium feed — 未決定と明記） |
+
+## 15. 2026-07-20 夜 Dais 裁定 + writing-tools 調達 + capafy X 停止（本節が §12-14 の該当行を上書き）
+
+### 15.1 裁定（全て MUST、即日有効）
+| 裁定 | 中身 | 上書き対象 |
+|---|---|---|
+| 無限 revise 廃止 | max N(=5) revise → 角度変え書き直し1回 → FAIL なら翌日 carry-over（skip ではない）。**cost < revenue を恒等式として invariant 化**（記事1本の token 予算を明示） | §13.1 の「PASS まで無限反復」 |
+| 価格 | ¥1980 廃止。**free-first**: 全 platform 全文 free → 閾値（記事30本+フォロワー500、仮置き）到達で note/substack subscription（¥500/mo 級）開始。note 単発は最大 ¥500 | §12 の ¥1980 |
+| 記事 = newsletter | 同一資産の売り方違い（単発 or subscription）。newsletter を別フォームとして実装しない | — |
+| ebook 出口 | gumroad / zenn本 / 自社 site + Stripe | — |
+| X 投稿の線引き | **article loop の X 投稿（記事+X post、@diceai0）= 完全に正、継続**。capafy marketing loop の X 宣伝投稿 = slop、停止（§15.4） | — |
+| 対象 citizen | writer loop は **claude-p のみ**（human-owned、銀行口座に接続可）。franklin = self-owned、人間の私的情報アクセス永久ゼロ、crypto rail のみ | — |
+| 唯一の human 接点 | 銀行口座を一度聞くだけ。他の credential ゼロ（Postiz 等の有料 SaaS 不使用、投稿は CDP 直） | — |
+| 分業 | **Fable = plan/検証のみ。build/edit は全部 Sol**（flow A）。subagent は全ツール継承（agent 定義に tools: 行を書くな — 2026-07-20 実測で3体が Bash 喪失） | — |
+
+### 15.2 writing-tools OSS 調達 + bakeoff 第1R 結果（実測。詳細 = docs/research/2026-07-20-writing-tools-oss-survey.md）
+- 調達済み（vendor/writing-skills/、全 MIT）: content-skills（anti-ai-writing 5-diseases + specificity ladder / viral-hooks Four Hook Killers / storytelling）、viral-hooks-skill（100 formula）、humanizer（30k★）、shimo4228 writing-ecosystem（日本語 AI-slop 禁止リスト + だ/である×発見調）
+- bakeoff 第1R blind 判定: **E（STORM式視点法+hooks+storytelling+anti-ai 統合）が ja/en 両方で1位。現行 taste(A) は ja 5位/en 4位** — 統合を standard 化する
+- 第2R（E vs F=humanizer 版 vs G=shimo4228 版）: 生成済み、blind 判定待ち
+- 他の採用決定: knowrite「max3 revise+80% gate」= W2 の既存実装 / 書籍 = ai-book-generator 骨格 + show-me-the-story 全書整合 pass / X post = Gingiris 閉ループ構造（voice→evidence→publishability→feedback）
+- 空白の発見: 日本語記事執筆 OSS はほぼ存在しない = 我々の OSS の差別化スロット
+
+### 15.3 W タスク（TaskList 登録済み。T6 以降と並走、実装は全部 Sol）
+| # | 内容 | 種 |
+|---|---|---|
+| W1 | conscience gate 3層: ①publish 前の公開適否判定（品質と別軸: gray-zone 露出/評判リスク）②owner-veto センサ（published URL 定期 curl、自分が消してないのに 404 = owner 削除 = 最強の負教訓 → 自動ルール修正）③週次 fresh-eyes 自己監査。babysitting 廃止の実体 | 新規 |
+| W2 | bounded revise + token 予算（§15.1）。knowrite 方式 copy+tweak | §13.1 修正 |
+| W3 | free-first 配線（§15.1 価格） | §12 修正 |
+| W4 | zenn 全文無料 = funnel と明文化（free-first 期は正） | 明文化 |
+| W5 | bakeoff 第2R 判定 → 勝者を taste/verifier に統合 → 比較記事 queue 投入 → 統合 skill OSS 化 | 進行中 |
+
+### 15.4 capafy X marketing 停止（2026-07-20 実施済み・実測）
+- Dais 裁定: capafy の X 宣伝投稿（@aniccaen スレッド）= AI slop、恒久停止。**IG は継続**（warmup 進行中、day2/3）。
+- 実施: `capafy-x-marketing-daily.sh` を全 citizen home（~/.anicca-founder / ~/.blockrun / ~/.franklin2-home/.blockrun）で `.DISABLED-by-dais-20260720` に rename。スケジューラ実測: launchctl に x-marketing job なし、openclaw cron の anicca-x-* 系は全 enabled:False。最終投稿の痕跡 = 07-18 08:10 の cadence no-op log のみ。
+- 残タスク（Sol）: rename でなく恒久削除 + SKILL.md から X-line 記述を撤去（W 系と同便で発注）
