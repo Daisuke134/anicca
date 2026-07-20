@@ -38,6 +38,23 @@
 3. 判定: fresh spawn の blind 比較（どれが良いか + なぜ）× ja/en 両方
 4. 結果 → ①勝者を article-writer の taste/verifier に統合 ②比較記事を queue に投入 ③統合 skill を profitable-claude で OSS 化
 
+## 記事レーン追補（research-articles subagent、2026-07-20 追記）— ★初回調査を上書きする大物★
+
+初回の俺の直接検索は 45★以下の米粒しか出せていなかった。subagent が 20k-40k★級を発掘。
+raw README で実在+内容は俺が裏取り済み（stars 数値は subagent 実測、俺の gh api は rate limit で未再検証）:
+
+| repo | stars(未再検証) | 何者か | 盗むべき部分 |
+|---|---:|---|---|
+| **coreyhaines31/marketingskills** | 40,824 | マーケ系 agent skill 集（Corey Haines 作、agentskills.io 準拠） | headline 複数案、Voice-of-Customer、clarity→proof→specificity の critic-loop、7回編集 sweep |
+| **blader/humanizer** | 29,991 | AI 文体除去 skill（plain Markdown、どの harness でも動く） | Wikipedia 由来 AI 文体パターン検出を**最終 gate 化**。content-skills の anti-ai-writing の上位互換候補 |
+| **alirezarezvani/claude-skills** | 22,855 | 362 skill の総合庫。content-production に機械的 publish gate | `content_quality_gates.py`、headline 5-10案採点、"A failing gate blocks publish; fix and re-run until clean" |
+| **KKKKhazix/khazix-skills** | 17,492 | 中文 writing skill（実記事の AI初稿→修正版 few-shot） | HKR 選題、具体場面 hook、4層自己監査 |
+| **shimo4228/claude-skill-writing-ecosystem** | 1 | **日本語 writing ecosystem**: AI-slop 禁止語リスト(ja+en)、だ/である×発見調、煽らないタイトル規範、editor/essay-reviewer/fact-checker の役割分離 | **日本語 lane の唯一の直接候補**。stars=1 で成熟度未証明 → bakeoff 必須 |
+
+subagent 単一推奨（採択）: **英語 = alirezarezvani の品質ゲート骨格 / 日本語 = shimo4228 の voice+reviewer / 調査前段 = STORM**。
+STORM を最終 writer にしない根拠 = README 自身が「publication-ready には大幅編集が必要」と明記。
+→ bakeoff 第2ラウンドに humanizer / marketingskills / shimo4228 を追加すべき（第1ラウンドは content-skills 系のみで実施済み）。
+
 ## 書籍レーン追補（research-books subagent 実測、2026-07-20 追記）
 
 当初「3レーン全滅」と書いたが books レーンは後着で完走 — 是正。上位実測:
@@ -53,6 +70,37 @@
 書籍フォームの単一推奨（subagent 提案を採択）: **ai-book-generator を骨格**（非小説の章構造 + 記事流し込み + KDP/EPUB 組版が一気通貫）+ **show-me-the-story の全書整合 pass** と **knowrite の bounded revise** を品質 loop として移植。
 誤り筋: 再編集品質を組版より優先するなら show-me-the-story が第一候補に入れ替わる。
 knowrite の「最大3 revise + 80% gate」は W2 の設計そのもの — 車輪あり、copy+tweak せよ。
+
+## X post レーン追補（research-xposts subagent 実測、2026-07-20 追記）
+
+| repo | stars | 最終push | 品質の作り方 | 盗むべき部分 |
+|---|---:|---|---|---|
+| blacktwist/social-media-skills | 344 | 2026-05-01 | voice context→9種 hook→thread arc→A/B 記録 | 5-7 hook案、standalone hook、1投稿1idea |
+| TheMattBerman/x-algo-skill | 63 | 2026-05-18 | xai 公開 repo 再監査、underperformance 診断 | negative-signal scan。★重要: "The actual weight numbers are NOT in the open-source repo" — algo 重み数値を謳う他 repo の数字は捨てる★ |
+| aaaronmiller/create-viral-content | 51 | 2026-06-22 | draft→audience 攻撃→AI-tell 除去→20%圧縮→再攻撃 | 4視点 refinement + specificity gate |
+| shannhk/viral-x-posts | 11 | 2026-02-18 | 23 formula の目的別 routing | formula catalog のみ（重み数値は不採用） |
+| Gingiris-1031/gingiris-twitter-agent-ops | 7 | 2026-07-06 | 本人語料→voice 鉄律→SOURCE-INDEX→publishability gate→週次学習 | **voice/evidence/publishability/feedback の閉ループ構造**（45日 1,150→1,837 followers のケース記録付き） |
+| emremy/tweet-dna | 1 | 2026-01-21 | 最大400投稿から persona JSON、critic/refine | persona 蒸留→structured generation |
+
+X フォームの単一推奨（subagent 提案を採択）: **Gingiris の閉ループ構造を骨格に copy+tweak**、生成部だけ既存 CDP 投稿レールへ接続。voice→evidence→publishability gate→feedback は我々の conscience gate(W1) + 実売還流(T12) と同型 — 7★でも構造が正しい。
+hook 素材は blacktwist(344★) を併読。algo 重みを数値で謳う repo は x-algo-skill の反証により全部眉唾。
+
+## bakeoff 第1ラウンド結果（2026-07-20 実施、blind 判定）
+
+同一題材（loop-engineering-explainer + goldmine doc）で5構成が「タイトル+第1段落」を ja/en 生成。
+shuffle+匿名化（D の process 節は剥離）→ fresh spawn 編集長が blind 審査。mapping: entry-1=C, 2=B, 3=A, 4=D, 5=E。
+
+| 構成 | ja 順位 | en 順位 | 講評の要点 |
+|---|---:|---:|---|
+| **E = STORM式視点法+hooks+storytelling+anti-ai 全部統合** | **1位** | **1位** | 「テスト失敗で止まる agent」という観測可能な実景から入り、保存状態・独立検証・再試行・予算・停止条件を一息で示す。タイトルやや長い |
+| C = viral-hooks のみ | 2位 | 3位 | exit code 0・空 queue・公開 URL の実物が効く。ただし完結しすぎて先を読む余白が小さい |
+| D = STORM式視点法のみ | 3位 | 2位 | 問題設定明快だが後半に抽象語が続く |
+| B = anti-ai-writing のみ | 4位 | 5位 | 転換は伝わるが実物ゼロ、「設計者へ移る」が紋切り型 |
+| A = 現行 baseline | 5位 | 4位 | 「もう古い？」が軽い煽り、不自然表現で意味が止まる |
+
+**結論: 現行 taste は blind でほぼ最下位。skill 統合(E)が両言語で勝利 — 統合を standard 化する。**
+勝者から standard 化すべき原則（judge の言）: 抽象的な「自律性」でなく**観測可能な場面**から始め、実装部品を出し、モデルの自己申告でなく証拠で完了を決める構造を第1段落で示す。
+第2ラウンド候補: humanizer(30k★) / marketingskills(41k★) / shimo4228(日本語)。
 
 ## 注記
 
