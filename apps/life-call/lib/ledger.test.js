@@ -79,6 +79,16 @@ test("recordDailyComposioPoll uses a DB day query and inserts at most one row", 
   assert.equal(requests[2][1].method, undefined);
 });
 
+test("monthlyComposioCallCount reads the exact monthly composio_call count", async () => {
+  const requests = [];
+  const count = await ledger().monthlyComposioCallCount({ nowMs: Date.parse("2026-07-21T12:00:00Z"),
+    supaUrl: "https://db.example", supaKey: "service",
+    fetchImpl: async (...args) => { requests.push(args); return { ok: true, headers: { get: () => "0-0/19500" } }; } });
+  assert.equal(count, 19500);
+  assert.match(requests[0][0], /kind=eq\.composio_call/);
+  assert.match(requests[0][0], /ts=gte\.2026-07-01/);
+});
+
 test("businessSummary is pure and groups calls and total cost per uid", () => {
   const rows = [
     { ts: "2026-07-18T10:00:00Z", uid: "u1", kind: "telnyx_call", quantity: "90", est_usd: "0.003" },

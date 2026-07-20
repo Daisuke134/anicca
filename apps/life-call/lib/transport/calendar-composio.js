@@ -3,6 +3,7 @@
 // so the same JS runs cloud (this) or local (calendar-gog.js, slice 5). Behaviour-identical to the
 // inline Composio calls it replaces — the live caller is unchanged.
 "use strict";
+const { recordCost } = require("../ledger.js");
 
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute";
 
@@ -15,8 +16,17 @@ async function exec(tool, uid, args, apiKey) {
   return r.json();
 }
 
-function makeComposioCalendar({ apiKey } = {}) {
+function makeComposioCalendar({ apiKey, recordCall } = {}) {
   const key = apiKey || process.env.COMPOSIO_API_KEY;
+  const ledger = recordCall || ((uid, tool) => {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return false;
+    return recordCost({ uid, kind: "composio_call", quantity: 1, unit: "call", estUsd: 0, meta: { tool } });
+  });
+  const execute = async (tool, uid, args) => {
+    const result = await exec(tool, uid, args, key);
+    await Promise.resolve(ledger(uid, tool)).catch(() => false);
+    return result;
+  };
   return {
     kind: "composio",
     ready: () => !!key,
@@ -27,7 +37,7 @@ function makeComposioCalendar({ apiKey } = {}) {
       if (maxResults) args.maxResults = maxResults;
       let j;
       try {
-        j = await exec("GOOGLECALENDAR_EVENTS_LIST", uid, args, key);
+        j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
       } catch { return []; }
       if (!j || !j.successful) return [];
       const d = j.data || {};
@@ -35,11 +45,11 @@ function makeComposioCalendar({ apiKey } = {}) {
     },
     async createEvent(uid, args) {
       if (!key) return { successful: false };
-      try { return await exec("GOOGLECALENDAR_CREATE_EVENT", uid, args, key); } catch { return { successful: false }; }
+      try { return await execute("GOOGLECALENDAR_CREATE_EVENT", uid, args); } catch { return { successful: false }; }
     },
     async patchEvent(uid, args) {
       if (!key) return { successful: false };
-      try { return await exec("GOOGLECALENDAR_PATCH_EVENT", uid, args, key); } catch { return { successful: false }; }
+      try { return await execute("GOOGLECALENDAR_PATCH_EVENT", uid, args); } catch { return { successful: false }; }
     },
   };
 }

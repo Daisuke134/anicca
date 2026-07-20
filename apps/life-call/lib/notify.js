@@ -39,7 +39,7 @@ async function sendLateNotice(uid, text, opts) {
   if (!composioKey || !geminiKey || !resendKey) return { sent: false };
 
   // Events from a bit before now to +6h that have at least one EXTERNAL attendee (someone to notify).
-  const items = await getCalendar({ apiKey: composioKey }).listEventsRaw(uid, {
+  const items = await getCalendar({ apiKey: composioKey, gmailAccountId: opts.gmailAccountId }).listEventsRaw(uid, {
     timeMin: new Date(nowMs - 30 * 60000).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(nowMs + 6 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
     maxResults: 25,

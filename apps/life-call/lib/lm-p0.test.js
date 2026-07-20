@@ -16,8 +16,10 @@ const {
   agentSearchCandidate,
   closedAskMessage,
   handleAskCallback,
+  askTick,
 } = require("./ask.js");
 const { makeUnipileMail } = require("./transport/mail-unipile.js");
+const { mailAvailable, resetMailAvailabilityCache } = require("./mail-availability.js");
 
 test("LM-24: both Telnyx streaming bodies target the caller leg", () => {
   assert.equal(telnyxDialBody({ connectionId: "c", to: "+1", from: "+2", streamUrl: "wss://x" }).stream_bidirectional_target_legs, "self");
@@ -91,6 +93,32 @@ test("LM-3: search then extraction uses two Gemini calls and Gmail snippets", as
   assert.equal(bodies[1].tools.some((t) => t.google_search), false);
 });
 
+test("Gmail OFF: cached provider probe rejects 401 and avoids a probe on every call", async () => {
+  resetMailAvailabilityCache();
+  let probes = 0;
+  const opts = { token: "expired", dsn: "api.example", nowMs: 1000,
+    fetchImpl: async () => { probes++; return { ok: false, status: 401 }; }, warn: () => {} };
+  assert.equal(await mailAvailable({ gmail_account_id: "a" }, opts), false);
+  assert.equal(await mailAvailable({ gmail_account_id: "b" }, { ...opts, nowMs: 2000 }), false);
+  assert.equal(probes, 1);
+});
+
+test("Gmail OFF: search-before-ask skips inbox and goes directly to Google Search", async () => {
+  let searched = 0;
+  const bodies = [];
+  await agentSearchCandidate({ summary: "MUIT", description: "" }, {
+    geminiKey: "k", gmailAccountId: "a", unipileToken: "expired", unipileDsn: "api.example",
+    mailAvailable: async () => false,
+    mail: { searchInbox: async () => { searched++; return []; } },
+    geminiRaw: async (body) => { bodies.push(body); return bodies.length === 1
+      ? { candidates: [{ content: { parts: [{ text: "web result" }] } }] }
+      : { candidates: [{ content: { parts: [{ functionCall: { name: "submit_candidate", args: { found: false, candidate: "", source: "web_search" } } }] } }] }; },
+  });
+  assert.equal(searched, 0);
+  assert.deepEqual(bodies[0].tools, [{ google_search: {} }]);
+  assert.match(bodies[0].contents[0].parts[0].text, /Gmail unavailable/);
+});
+
 test("LM-3: candidate found builds the exact closed-question buttons", () => {
   assert.deepEqual(closedAskMessage({ id: "e1", summary: "MUIT 集会" }, "Tokyo Hall", "r1"), {
     text: "📍 “MUIT 集会” は Tokyo Hall で開催ですか？",
@@ -126,4 +154,51 @@ test("LM-3: no candidate is a silent null so existing open question remains", as
     mail: { ready: () => false, searchInbox: async () => { throw new Error("must skip"); } },
   });
   assert.deepEqual(out, { found: false, candidate: "", source: "" });
+});
+
+// life-manager#11: resolveLocation alone can't place the event ("ask" kind) but agentSearchCandidate finds a
+// candidate via Gmail/web search — askTick must autofill directly (like the "filled" branch) and never send
+// an ask. Asking is the failure mode, not the fallback of first resort.
+test("life-manager#11: ask-kind event with a found candidate autofills, sends no ask", async () => {
+  const patches = [], records = [];
+  const bodies = [];
+  const raw = async (body) => {
+    bodies.push(body);
+    if (bodies.length === 1) return { candidates: [{ content: { parts: [{ text: "Official page: Tokyo Hall." }] } }] };
+    return { candidates: [{ content: { parts: [{ functionCall: { name: "submit_candidate", args: { found: true, candidate: "Tokyo Hall", source: "gmail" } } }] } }] };
+  };
+  const result = await askTick("u1", {
+    composioKey: "c", supaUrl: "http://s", supaKey: "k", geminiKey: "g",
+    listEvents: async () => [{ id: "e1", summary: "MUIT 集会", description: "", start: { dateTime: "2026-07-01T12:00:00Z" } }],
+    askedSet: async () => new Set(),
+    patchEvent: async (...args) => patches.push(args),
+    recordResolution: async (...args) => records.push(args),
+    recall: async () => null,
+    resolve: async () => ({ kind: "ask" }),
+    geminiRaw: raw,
+    mail: { ready: () => true, searchInbox: async () => [{ subject: "MUIT", body: "Venue: Tokyo Hall" }] },
+  });
+  assert.deepEqual(result, { autofilled: 1, asked: 0, resolved: 0 });
+  assert.deepEqual(patches[0], ["u1", "e1", { location: "Tokyo Hall" }, "c", undefined]);
+  assert.deepEqual(records[0], ["u1", "e1", "gmail", "http://s", "k"]);
+});
+
+// life-manager#11 (control): when NO candidate is found either, the event still falls through to the ask
+// path unchanged (claimAsk gates the real send, which needs Supabase — asserted here via the fast-path
+// askedSet dedup instead, proving askTick does not autofill on a genuinely unresolvable event).
+test("life-manager#11: ask-kind event with no candidate does not autofill", async () => {
+  const patches = [];
+  const result = await askTick("u1", {
+    composioKey: "c", supaUrl: "http://s", supaKey: "k", geminiKey: "g",
+    listEvents: async () => [{ id: "e1", summary: "造語イベント", start: { dateTime: "2026-07-01T12:00:00Z" } }],
+    askedSet: async () => new Set(["e1"]), // already asked this event → claimAsk path is skipped, isolating the assertion to autofill-or-not
+    patchEvent: async (...args) => patches.push(args),
+    recordResolution: async () => {},
+    recall: async () => null,
+    resolve: async () => ({ kind: "ask" }),
+    geminiRaw: async () => ({ candidates: [{ content: { parts: [{ text: "No reliable venue." }] } }] }),
+    mail: { ready: () => false, searchInbox: async () => { throw new Error("must skip"); } },
+  });
+  assert.deepEqual(result, { autofilled: 0, asked: 0, resolved: 0 });
+  assert.deepEqual(patches, []);
 });

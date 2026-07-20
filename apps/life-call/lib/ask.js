@@ -19,6 +19,7 @@ const { getCalendar, getMail } = require("./transport/index.js");
 const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
+const { mailAvailable } = require("./mail-availability.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -59,7 +60,12 @@ async function agentSearchCandidate(event, deps = {}) {
   const mail = deps.mail || getMail({
     accountId: deps.gmailAccountId, token: deps.unipileToken, dsn: deps.unipileDsn,
   });
-  if (mail && typeof mail.searchInbox === "function" && (!mail.ready || mail.ready())) {
+  const available = deps.mailAvailable
+    ? await deps.mailAvailable({ gmail_account_id: deps.gmailAccountId })
+    : deps.mail
+      ? (!mail.ready || mail.ready())
+      : await mailAvailable({ gmail_account_id: deps.gmailAccountId }, { token: deps.unipileToken, dsn: deps.unipileDsn });
+  if (available && mail && typeof mail.searchInbox === "function") {
     snippets = await mail.searchInbox(String(event.summary || "")).catch(() => []);
   }
   const compactMail = snippets.slice(0, 5).map((m) => ({
@@ -67,7 +73,7 @@ async function agentSearchCandidate(event, deps = {}) {
   }));
   const grounded = await raw({
     contents: [{ role: "user", parts: [{ text:
-      `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\nGmail snippets: ${JSON.stringify(compactMail)}` }] }],
+      `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\n${available ? `Gmail snippets: ${JSON.stringify(compactMail)}` : "Gmail unavailable: use web_search directly."}` }] }],
     tools: [{ google_search: {} }],
     generationConfig: { temperature: 0 },
   }, deps.geminiKey);
@@ -243,14 +249,14 @@ Use null for both if the reply doesn't clearly answer a location question.`,
   return null;
 }
 
-async function listEvents48h(uid, key, nowMs) {
-  return getCalendar({ apiKey: key }).listEventsRaw(uid, {
+async function listEvents48h(uid, key, nowMs, gmailAccountId) {
+  return getCalendar({ apiKey: key, gmailAccountId }).listEventsRaw(uid, {
     timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(nowMs + 48 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
   });
 }
-async function patchEvent(uid, eventId, patch, key) {
-  return getCalendar({ apiKey: key }).patchEvent(uid, { calendar_id: "primary", event_id: eventId, ...patch });
+async function patchEvent(uid, eventId, patch, key, gmailAccountId) {
+  return getCalendar({ apiKey: key, gmailAccountId }).patchEvent(uid, { calendar_id: "primary", event_id: eventId, ...patch });
 }
 function needsLocation(ev) {
   const s = (ev.summary || "").trim();
@@ -317,9 +323,15 @@ async function recallOrResolve(event, opts) {
 async function askTick(uid, opts) {
   const { composioKey, userEmail, resendKey, supaUrl, supaKey, mapsKey, geminiKey } = opts;
   const nowMs = opts.nowMs || Date.now();
+  // Injectable (default to the real impls) so the ask-vs-autofill decision is unit-testable without
+  // hitting the calendar transport / Supabase over the network — same DI pattern as recall/resolve above.
+  const listEvents = opts.listEvents || listEvents48h;
+  const getAskedSet = opts.askedSet || askedSet;
+  const patch = opts.patchEvent || patchEvent;
+  const record = opts.recordResolution || recordResolution;
   let autofilled = 0, asked = 0, resolved = 0;
-  const events = await listEvents48h(uid, composioKey, nowMs);
-  const already = await askedSet(uid, supaUrl, supaKey);
+  const events = await listEvents(uid, composioKey, nowMs, opts.gmailAccountId);
+  const already = await getAskedSet(uid, supaUrl, supaKey);
 
   // For EVERY event still missing a location, let the agent RESOLVE it again every tick — the agent may
   // now succeed where a past tick asked (better search / a newer model). We dedup only the ASK SEND
@@ -335,32 +347,38 @@ async function askTick(uid, opts) {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
     }
     if (res.kind === "filled") {
-      await patchEvent(uid, event.id, { location: res.location }, composioKey);
-      await recordResolution(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
+      await patch(uid, event.id, { location: res.location }, composioKey, opts.gmailAccountId);
+      await record(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
       autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
     }
-    // res.kind === "ask" — a human must tell us. ATOMIC dedup (C-H1): CLAIM before sending so two
-    // concurrent ticks can't double-ask; release the claim if the send fails so a later tick retries.
+    // res.kind === "ask" — resolveLocation alone couldn't place it. ATOMIC dedup (C-H1): CLAIM before
+    // sending so two concurrent ticks can't double-ask; release the claim if the send fails.
     if (already.has(event.id)) continue; // fast-path: known-asked this tick → skip
+    // Before bothering the user, let the agent search Gmail/web for evidence (life-manager#11: asking is
+    // the failure mode, not the fallback of first resort — a found candidate autofills directly, same as
+    // the "filled" branch above). Only a genuinely unresolvable event reaches the actual ask below.
+    const candidate = await agentSearchCandidate(event, {
+      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
+      gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
+    });
+    if (candidate.found) {
+      await patch(uid, event.id, { location: candidate.candidate }, composioKey, opts.gmailAccountId);
+      await record(uid, event.id, candidate.source || "web_search", supaUrl, supaKey);
+      autofilled++;
+      continue;
+    }
     // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook); otherwise
     // email from OUR domain via Resend, with a short opaque token in the Reply-To (reply+<token>@reply.
     // aniccaai.com). The reply lands on /inbound-email, which looks the token up in lm_ask_log and patches
     // this event. We NEVER read the user's Gmail. CLAIM (with the token) before sending so two ticks can't
     // double-ask; release the claim if the send fails so a later tick retries.
-    const candidate = await agentSearchCandidate(event, {
-      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
-      gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
-    });
     const replyToken = newReplyToken();
-    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken,
-      candidate.found ? { candidate: candidate.candidate, resolvedFrom: candidate.source } : {}))) continue;
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken, {}))) continue;
     let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
-      const msg = candidate.found
-        ? closedAskMessage(event, candidate.candidate, replyToken)
-        : { text: `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.` };
-      const r = await tgSend(opts.telegramToken, opts.telegramChatId, msg.text, msg.extra);
+      const r = await tgSend(opts.telegramToken, opts.telegramChatId,
+        `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
       sent = !!(r && r.ok);
     } else if (userEmail && resendKey) {
       const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
@@ -435,7 +453,7 @@ async function handleAskCallback(data, opts = {}) {
     token, id, opts.supaUrl, opts.supaKey, opts.fetchImpl));
   const hit = await lookup(replyToken, eventId);
   if (!hit || !hit.candidate) return { ok: false, reason: "candidate not found" };
-  const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey));
+  const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey, opts.gmailAccountId));
   await patch(hit.uid, hit.eventId || eventId, hit.candidate);
   if (hit.summary) {
     const remember = opts.remember || ((uid, summary, location) => rememberPlace(
@@ -454,9 +472,9 @@ async function handleInboundReply(token, replyText, opts = {}) {
   const { composioKey, geminiKey, supaUrl, supaKey } = opts;
   if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
   const consume = opts.consume || ((t) => consumeAskToken(t, supaUrl, supaKey, opts.fetchImpl));
-  const listEv = opts.listEvents || ((uid) => listEvents48h(uid, composioKey, opts.nowMs || Date.now()));
+  const listEv = opts.listEvents || ((uid) => listEvents48h(uid, composioKey, opts.nowMs || Date.now(), opts.gmailAccountId));
   const match = opts.match || ((text, ev) => agentMatchReply(text, [ev], geminiKey));
-  const patch = opts.patch || ((uid, id, loc) => patchEvent(uid, id, { location: loc }, composioKey));
+  const patch = opts.patch || ((uid, id, loc) => patchEvent(uid, id, { location: loc }, composioKey, opts.gmailAccountId));
   const remember = opts.remember || ((uid, summary, loc) => rememberPlace(uid, placeKey(summary), loc, supaUrl, supaKey));
   const needs = opts.needsLocation || needsLocation;
 

@@ -48,8 +48,8 @@ function shortName(addr) {
   return (addr || "").split(/[,、]/)[0].slice(0, 18) || "?";
 }
 
-async function listEvents7d(uid, apiKey, nowMs, calendar) {
-  const cal = calendar || getCalendar({ apiKey });
+async function listEvents7d(uid, apiKey, nowMs, calendar, gmailAccountId) {
+  const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const items = await cal.listEventsRaw(uid, {
     timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(nowMs + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
@@ -198,8 +198,8 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
   return compute(); // un-geocodable address → uncached (rare)
 }
 
-async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar) {
-  const cal = calendar || getCalendar({ apiKey });
+async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar, gmailAccountId) {
+  const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const hours = Math.floor((arriveMs - leaveMs) / 3600000);
   const minutes = Math.round(((arriveMs - leaveMs) % 3600000) / 60000);
   const j = await cal.createEvent(uid, {
@@ -237,10 +237,10 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
-  const cal = calendar || getCalendar({ apiKey });
-  const events = await listEvents7d(uid, apiKey, nowMs, cal);
+  const cal = calendar || getCalendar({ apiKey, gmailAccountId });
+  const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
@@ -298,7 +298,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
           } else {
             // C-H1: atomically CLAIM the GO leg before creating — two concurrent runs can't double-insert.
             if (await claimTravel(uid, evKey, "go", supaUrl, supaKey)) {
-              if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal)) {
+              if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal, gmailAccountId)) {
                 inserted++;
                 outboundInserted = true;
               } else {
@@ -350,7 +350,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     const retArriveMs = retLeaveMs + retMins * 60000;
     // C-H1: atomically CLAIM the RETURN leg before creating.
     if (await claimTravel(uid, evKey, "return", supaUrl, supaKey)) {
-      if (await createTravelBlock(uid, apiKey, retLeaveMs, retArriveMs, venue, home, home, cal)) inserted++;
+      if (await createTravelBlock(uid, apiKey, retLeaveMs, retArriveMs, venue, home, home, cal, gmailAccountId)) inserted++;
       else { skipped++; await unclaimTravel(uid, evKey, "return", supaUrl, supaKey); } // create failed → release
     } else {
       skipped++; // another writer already claimed the RETURN block (race-safe)

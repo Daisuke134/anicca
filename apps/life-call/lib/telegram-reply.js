@@ -44,11 +44,11 @@ async function resolveTelegramReply(chatId, text, deps = {}) {
   const out = { filled: false, event: "", location: "" };
   if (!deps.calendar && (!composioKey || !geminiKey)) return out;
   const lookupUser = deps.lookupUser || userByChatId;
-  const cal = deps.calendar || getCalendar({ apiKey: composioKey });
   const match0 = deps.match || ((t, p) => agentMatchReply(t, p, geminiKey));
   const remember = deps.remember || rememberPlace;
   const user = await lookupUser(chatId);
   if (!user || user.calendar_provider !== "composio_gcal") return out;
+  const cal = deps.calendar || getCalendar({ apiKey: composioKey, gmailAccountId: user.gmail_account_id });
 
   const now = Date.now();
   const items = await cal.listEventsRaw(user.uid, {

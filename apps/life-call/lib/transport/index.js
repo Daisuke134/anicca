@@ -4,6 +4,7 @@
 "use strict";
 
 const { makeComposioCalendar } = require("./calendar-composio.js");
+const { makeUnipileCalendar } = require("./calendar-unipile.js");
 const { makeUnipileMail } = require("./mail-unipile.js");
 const { makeGogCalendar } = require("./calendar-gog.js");
 const { makeGogMail } = require("./mail-gog.js");
@@ -23,14 +24,33 @@ function resolveKind(opts) {
   return kind;
 }
 
+function resolveCalendarKind(opts) {
+  const override = String(process.env.LIFE_CAL_TRANSPORT || "").trim().toLowerCase();
+  if (!override) return resolveKind(opts);
+  if (override !== "composio" && override !== "gog" && override !== "unipile") {
+    throw new Error(`Unknown LIFE_CAL_TRANSPORT="${override}" (expected "composio", "gog", or "unipile")`);
+  }
+  return override;
+}
+
 function getCalendar(opts = {}) {
-  const kind = resolveKind(opts);
-  const inner = kind === "gog" ? makeGogCalendar(opts) : makeComposioCalendar(opts);
+  const kind = resolveCalendarKind(opts);
+  const unipileOpts = kind === "unipile" ? {
+    ...opts,
+    accountId: opts.accountId || opts.gmailAccountId,
+    token: opts.token || opts.unipileToken || process.env.UNIPILE_TOKEN,
+    dsn: opts.dsn || opts.unipileDsn || process.env.UNIPILE_DSN,
+  } : opts;
+  const inner = kind === "gog" ? makeGogCalendar(opts)
+    : kind === "unipile" ? makeUnipileCalendar(unipileOpts)
+      : makeComposioCalendar(opts);
   if ((process.env.LM_CAL_CACHE || "").toLowerCase() === "off") return inner;
 
   const identity = kind === "gog"
     ? [kind, opts.account || process.env.GOG_ACCOUNT || "", opts.bin || process.env.GOG_BIN || "gog", opts.calId || "primary"]
-    : [kind, opts.apiKey || process.env.COMPOSIO_API_KEY || ""];
+    : kind === "unipile"
+      ? [kind, unipileOpts.accountId || "", unipileOpts.token || "", unipileOpts.dsn || ""]
+      : [kind, opts.apiKey || process.env.COMPOSIO_API_KEY || ""];
   const key = JSON.stringify(identity);
   let cached = cachedCalendars.get(key);
   if (!cached) {

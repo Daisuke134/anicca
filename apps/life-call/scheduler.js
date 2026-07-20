@@ -19,6 +19,7 @@ const { sendMessage } = require("./lib/telegram.js");
 const { sendLateNotice } = require("./lib/notify.js");
 const { langForPhone } = require("./lib/call-language.js");
 const { recordDailyComposioPoll } = require("./lib/ledger.js");
+const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processWakeRows, deliverLateNotice, listWakeRows,
   claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
@@ -146,7 +147,7 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
   const dbOpts = { supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl };
   const rows = deps.rows || await (deps.listWakeRows || listWakeRows)(u.uid, dbOpts);
   const summaryFor = deps.summaryFor || ((uid, startIso) => eventSummaryFor(uid, startIso, {
-    composioKey: process.env.COMPOSIO_API_KEY, calendar: deps.calendar,
+    composioKey: process.env.COMPOSIO_API_KEY, calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
   }));
   const deliver = deps.deliver || ((input) => deliverLateNotice({
     ...input, token: process.env.LM_TELEGRAM_BOT_TOKEN,
@@ -160,6 +161,7 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
     noticeOpts: {
       composioKey: process.env.COMPOSIO_API_KEY, geminiKey: process.env.GEMINI_API_KEY,
       resendKey: process.env.RESEND_API_KEY, userEmail: u.email, userName: u.name,
+      gmailAccountId: u.gmail_account_id,
     },
   }, {
     claimPrompt: deps.claimPrompt || ((uid, eventKey) => claimPrompt(uid, eventKey, dbOpts)),
@@ -186,7 +188,7 @@ async function wakeUserOnce(u, nowMs) {
     await recordDailyComposioPoll(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
-    events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
+    events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6, gmailAccountId: u.gmail_account_id });
   } catch {
     return;
   }
@@ -263,9 +265,14 @@ function startScheduler() {
     console.warn("[scheduler] PUBLIC_WSS not set — calls would have no media bridge URL; loop still runs but won't dial");
   }
   console.log(`[scheduler] started — tick every ${TICK_MS / 1000}s, escalating wakes at T-${WAKE_LEVELS.map((l) => l.min).join("/")}min`);
-  const run = () => tick().catch((e) => console.error("[scheduler] tick err", e.message));
+  let timer;
+  const run = async () => {
+    try { await tick(); } catch (e) { console.error("[scheduler] tick err", e.message); }
+    const intervalMs = await schedulerPollInterval().catch(() => TICK_MS);
+    timer = setTimeout(run, intervalMs);
+  };
   run();
-  return setInterval(run, TICK_MS);
+  return { close: () => clearTimeout(timer) };
 }
 
 // ── Travel auto-fill (every 30 min) — keep today+7d filled with [Travel] blocks ─────────────────
@@ -278,7 +285,7 @@ async function travelUserOnce(u) {
   if (!apiKey || !mapsKey) return;
   const { url: supaUrl, key: supaKey } = SUPA(); // C-H1: atomic [Travel] claim ledger (lm_travel_log)
   try {
-    const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address, supaUrl, supaKey });
+    const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address, supaUrl, supaKey, gmailAccountId: u.gmail_account_id });
     if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
   } catch (e) {
     console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);

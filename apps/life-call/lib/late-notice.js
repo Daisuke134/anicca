@@ -200,7 +200,7 @@ async function eventSummaryFor(uid, startIso, opts = {}) {
   const startMs = Date.parse(startIso);
   if (!Number.isFinite(startMs)) return "the event";
   try {
-    const calendar = opts.calendar || getCalendar({ apiKey: opts.composioKey });
+    const calendar = opts.calendar || getCalendar({ apiKey: opts.composioKey, gmailAccountId: opts.gmailAccountId });
     const items = await calendar.listEventsRaw(uid, {
       timeMin: new Date(startMs - 60 * 1000).toISOString(),
       timeMax: new Date(startMs + 60 * 1000).toISOString(), maxResults: 10,

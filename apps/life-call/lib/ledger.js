@@ -72,6 +72,32 @@ async function recordDailyComposioPoll(uid, opts = {}) {
   }
 }
 
+async function monthlyComposioCallCount(opts = {}) {
+  const supaUrl = opts.supaUrl || process.env.SUPABASE_URL;
+  const supaKey = opts.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const fetchImpl = opts.fetchImpl || globalThis.fetch;
+  const log = opts.log || console.error;
+  try {
+    if (!supaUrl || !supaKey || typeof fetchImpl !== "function") return null;
+    const now = new Date(opts.nowMs == null ? Date.now() : opts.nowMs);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const query = ["select=id", "kind=eq.composio_call",
+      `ts=gte.${encodeURIComponent(monthStart.toISOString())}`,
+      `ts=lt.${encodeURIComponent(nextMonth.toISOString())}`, "limit=1"].join("&");
+    const response = await fetchImpl(`${supaUrl}/rest/v1/lm_api_cost?${query}`, {
+      headers: headers(supaKey, { Prefer: "count=exact" }),
+    });
+    if (!response.ok) throw new Error(`Supabase monthly count failed (${response.status})`);
+    const range = response.headers && response.headers.get("content-range");
+    const match = String(range || "").match(/\/(\d+)$/);
+    return match ? Number(match[1]) : 0;
+  } catch (error) {
+    log("[ledger] monthly Composio count failed", error && error.message ? error.message : error);
+    return null;
+  }
+}
+
 function finite(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -111,4 +137,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, businessSummary };
