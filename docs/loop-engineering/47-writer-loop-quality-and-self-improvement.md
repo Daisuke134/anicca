@@ -243,3 +243,54 @@ build は全 done(#1-6,9-14 完了)。残り:
 
 - `~/.openclaw/skills/.backups/` を日次生成する cron を特定し、保持 1 世代 + heavy dir（venv/media/state）除外に是正。14GB/本の tar.gz を毎日積むのが今回の根本原因
 - 検証: 是正後の backup サイズ < 2GB、free > 20GB を維持
+
+## 14. FULL TODO — Layer 1 完成から 10M MRR まで（2026-07-20。TaskList と二重トラック、この表が順序の正本）
+
+体制（Dais 裁定 2026-07-20 恒久）: Fable = plan/spec/検証、Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）、検索 = sonnet。spec と TODO は発見のたびに更新し続ける。
+
+### 今日（Layer 1 完成 = 初の全自動公開日）
+| # | owner | やること | 完了の証拠 |
+|---|---|---|---|
+| T1 | Sol | U5 arm(ARTICLE_AUTOPUBLISH=1+publish経路反転) / U6 queue 3-lane+mech復帰 / U7 backup cron 是正+14G削除 | launchctl に env、queue に mech、backup <2G |
+| T2 | Fable | Sol 成果の独立検証（bash -n / grep / launchctl） | 実 tool 出力 |
+| T3 | Fable | kickstart ai.anicca.article-daily | 再走ログ |
+| T4 | loop | olas 記事を実物パターン title で書き直し → PASS まで revise → 全 platform 実公開 | rubric ≥70 + live URL |
+| T5 | Fable | 公開 own-eyes 検証 + ledger published:true + Telegram 実在 | HTTP 200 / screenshot |
+| T6 | Fable→codex | #9 exemplar 毎日1教訓 loop 発注（PLAN-exemplar-daily-loop.md 545f08f、flow B） | lessons.jsonl 実1行 |
+
+### 今週（「自動」の証明）
+| # | やること | 証拠 |
+|---|---|---|
+| T7 | 明朝 06:00 pass が人間ゼロで公開完走 | 07-21 ledger published:true |
+| T8 | devlog カード毎日自動生成の実測 | 07-21 カードが自然に生える |
+| T9 | lane 3 自走の実証（queue 空の日） | lane B ledger 行 |
+| T10 | exemplar loop 日次実走（3日分） | lessons.jsonl 3行 |
+| T11 | disk: backup <2G + free >20G 維持 | df 実測 |
+
+### Phase 1.5（実売最適化 → 1 loop 10k MRR）
+| # | やること |
+|---|---|
+| T12 | measure-sales → self-improve 採点接続の検証（¥0 は ¥0 と報告） |
+| T13 | 有料化実配線: note 有料価格 / Substack 有料 tier / X Premium 収益化 |
+| T14 | 実売由来の kept/revert が回る実証（experiments.json） |
+| T15 | X 短文 form の実運用化（forms.json xpost） |
+
+### Phase 2a（OSS 化 = 複製。#8、VCSDD で）
+| # | やること |
+|---|---|
+| T16 | ハードコード剥がし: anicca123/aniccabuddha/diceai0/anicca_301/telegram/gmail → env 化（grep 0 ヒット gate） |
+| T17 | .env.example に全 platform var 定義 |
+| T18 | 全 platform 自動 signup（ig-account-create パターン展開、新規メールで E2E own-eyes） |
+| T19 | KYC/payout 人間依頼導線（README + article-daily） |
+| T20 | PII scrub（公開前） |
+| T21 | spec 47 §15 に OSS onboarding 完成形を記録 |
+| T22 | 「clone → 1コマンド → 稼働」の第三者環境 E2E |
+
+### Phase 2b（単価×面×言語 → 10M MRR）
+| # | やること |
+|---|---|
+| T23 | ebook/books form（記事束ね、単価×10） |
+| T24 | 多言語 es/zh/ko（資産の再収益化） |
+| T25 | medium / 自社サイト SEO / newsletter |
+| T26 | OSS ユーザー数×黒字率 dashboard（10M 進捗計器） |
+| T27 | 収益モデル決定（収益シェア/hosted/premium feed — 未決定と明記） |
