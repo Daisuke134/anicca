@@ -11808,3 +11808,13 @@
 {"ts":1784534014,"wake_id":"00MRSXH68REEDC6178ED6142C8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
 {"ts":1784534146,"wake_id":"00MRSXK06N69791813984A4CB7","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784534146,"wake_id":"00MRSXK06N69791813984A4CB7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534279,"wake_id":"00MRSXMUCWF4C5C1E09CF24D00","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784534279,"wake_id":"00MRSXMUCWF4C5C1E09CF24D00","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534410,"wake_id":"00MRSXPO02BF864559B83545FA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534542,"wake_id":"00MRSXSHA8F7EE8B9297A24AA1","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784534542,"wake_id":"00MRSXSHA8F7EE8B9297A24AA1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534676,"wake_id":"00MRSXVCSU7E64D7CE7CAA448C","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784534676,"wake_id":"00MRSXVCSU7E64D7CE7CAA448C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534809,"wake_id":"00MRSXY7K748A663C49B844282","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784534809,"wake_id":"00MRSXY7K748A663C49B844282","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784534940,"wake_id":"00MRSY10XBFCA2256A9E2A4848","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
