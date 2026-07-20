@@ -19,6 +19,14 @@
 | 3 | floor削減実施（agents剪定・plugin/MCP無効化・MEMORY剪定） | Sol | pending |
 | 4 | E2E検証（floor-guard + /context + handoverテンプレ） + push | Fable | pending |
 
+## 調査結果（2026-07-20 subagent実測）
+- `/context` の agents 53.6k は過大計上バグ疑い（issue #71301: 表示83.2kに対しraw API ~24k、agent各2k表示が実際59–174 tok）。raw裏取りまで削減見積りに使わない。
+- agent 本文は main floor に載らない（name/description/toolsのみ）→ 本文短縮は効果なし（棄却）。
+- 確定値: plugin always-on 合計 26,436 tok/session（vcsdd 6,117 + caveman 3,365 + superpowers 3,095 + codex 2,393 が上位）。`claude plugin details` 実測。
+- MCP Tool Search: custom base URL（CLIProxyAPI :8317）では既定OFF。`ENABLE_TOOL_SEARCH=true` で試せるが proxy が tool_reference 非対応なら壊れる（要小実験）。
+- `permissions.deny: ["Agent(name)"]` は実行禁止のみで floor は減らない。
+- 裁定: plugin 7本 disable（codex/ccteams/revenuecat/security-guidance/clangd-lsp/token-optimizer/ui-ux-pro-max）、keep 6本（vcsdd/caveman/superpowers/swift-lsp/fablize/claude-code-token-saver）。project agents 15→4体（builder/qa-reviewer/fact-checker/deploy-checker、他は agents-archive へ）。blockrun は project settings.local で無効化を試行。
+
 ## 実測メモ
 - /context 実測（2026-07-20）: system prompt 27k / tools 38.9k / MCP 28.9k / agents 53.6k（26体×~2k） / memory 22.1k / skills 3k。free 20.7k。
 - agents はプロジェクト `.claude/agents/` 26体が全ロード。plugin由来（caveman/vcsdd/codex/superpowers）含む。
