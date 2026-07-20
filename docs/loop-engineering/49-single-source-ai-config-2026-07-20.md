@@ -41,7 +41,7 @@ CLAUDE.md → 参照1行群 + rules/paths ← Claude rules（既存）
 - **採用 = chezmoi (20,758★, v2.71.0) + GitHub private repo + age 暗号化**。全 AI config（~/.claude/CLAUDE.md, settings.json, hooks, rules / ~/.codex/AGENTS.md, config.toml / per-skill symlink 定義）をファイル単位で管理、新 machine/cloud VM は `chezmoi init --apply <repo>` 1コマンドで再現。
 - 根拠: `symlink_` prefix で既設 per-skill link farm をそのまま投影可（chezmoi.io/reference/source-state-attributes）。secret は .chezmoiignore + age（OAuth/session/cache は除外し再login、必要 token のみ暗号化）。実例 = Bae-ChangHyun/agent-dotfiles（Claude+Codex+chezmoi+age、pattern のみ copy）。
 - 棄却: GNU Stow（secret/template/bootstrap を自作する総コスト高）、bare git（HOME=worktree の誤追跡面）、AI特化新顔（0-9★、未成熟）。
-- 注意: directory 丸ごと置換は禁止（per-file/per-link 管理）。Codex→Claude の二段 link は canonical (~/.agents/skills) へ直接化。age key の backup 必須（1Password）。gate = gitleaks + chezmoi diff。
+- 注意: directory 丸ごと置換は禁止（per-file/per-link 管理）。Codex→Claude の二段 link は canonical (~/.agents/skills) へ直接化。gate = gitleaks + chezmoi diff。
 
 ### Phase 2 実装結果（spec #7）
 - private repo = `https://github.com/Daisuke134/ai-config`。chezmoi v2.71.0 + age v1.3.1。private key は `~/.config/chezmoi/key.txt` mode 600、repo は public key のみ。
@@ -49,8 +49,9 @@ CLAUDE.md → 参照1行群 + rules/paths ← Claude rules（既存）
 - 除外 = Claude/Codex の projects(memory 含む)、history、session、cache、`.credentials*`、plugin cache、todos、statsig、Claude `.claude.json`、Codex `auth.json`。`.claude.json` は project/session 状態と API-key 関連 metadata が混在するため暗号化対象にもせず除外。
 - global rules は、食い違っていた旧 Codex 要約でなく現行 `~/.claude/CLAUDE.md` の文言を勝者にした。該当本文を一字も変えず `~/.config/ai/common-rules.md` へ移設し、Claude は先頭 `@~/.config/ai/common-rules.md`、import 構文のない Codex は chezmoi の同一 `common-rules.md` template から `AGENTS.md` を生成する。移設前 backup = `CLAUDE.md.bak-20260721-pre-chezmoi` / `AGENTS.md.bak-20260721-pre-chezmoi`。
 - per-skill link = `symlink_*.tmpl` 11本。全 target は直接 `~/.agents/skills/<name>`。
-- 実測 gate = `chezmoi diff` 0 byte、gitleaks 0 leaks。fresh `claude -p` は日本語+検索規律を回答、fresh `codex exec` は「私は間違っている」+ push command 列を回答、`chezmoi doctor` exit 0、temporary HOME の `chezmoi init --apply` は exit 0・11 links・bad target 0・全主要 file 再現。
-- age key の 1Password backup は `op` v2.35.0 を導入したが account 0 / service token なしのため、Dais の private sign-in 情報なしでは実行不能。local key 生成・mode 600・repo 非混入までは完了し、この1点だけ external credential 待ち。
+- 独立検証で、以前の `chezmoi diff` 0 byte claim は stale/誤りと判明。暗号化 source の `settings.json` に Claude hook 6 commands / 12 path strings が Codex plugin cache `~/.codex/.../5.11.51` を指す bug があり、Claude の実配置 `~/.claude/.../5.11.39` に修正して再暗号化した（ai-config `2931c0b`）。
+- age private key は `~/.config/chezmoi/key.txt` mode 600 で local-only を現状態として受容する。`~/.cloak` に既存の git/off-machine backup はなく、1Password credential を要件から外して BLOCKED11 を閉じる。残余リスクは、この machine を失うと暗号化済み secret を復号できない単一 machine 障害点が残ること。
+- 修正後 gate は fresh command で実測する。`chezmoi doctor` exit 0（commit 前の dirty-worktree warning のみ）、ai-config repo の gitleaks は 2 commits / 110.04 KB scan・0 leaks、fresh `claude -p` / `codex exec` sanity は各 exit 0、temporary HOME の `chezmoi init --apply` は pushed commit `2931c0b` から exit 0・主要5 files・11 links・bad target 0・bad hook path 0 を確認する。最終 `chezmoi apply` 直後に Claude settings と Codex config の `chezmoi diff` empty を確認する。
 
 ## 誤りの記録
 - 「cron で 30分毎 sync」案（cloud-mobile spec #1 の openclaw sync とは別物）を skills 共有に使う発想は誤り。sync は GitHub バックアップ（phone の窓）にだけ使い、agent 間共有には使わない。
