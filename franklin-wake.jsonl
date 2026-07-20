@@ -11510,3 +11510,11 @@
 {"ts":1784505037,"wake_id":"00MRSG83HV503E973E2138449C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784505170,"wake_id":"00MRSGAXSVB412B1B296AE4F81","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784505300,"wake_id":"00MRSGDQFUCB25679F0B784914","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784505433,"wake_id":"00MRSGGKUW78C0FD3B41934542","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784505566,"wake_id":"00MRSGJF4B45B7FFACEBD5492D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784505566,"wake_id":"00MRSGJF4B45B7FFACEBD5492D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784505695,"wake_id":"00MRSGM6XSAF79C5B404B941AA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784505826,"wake_id":"00MRSGOZR8045EA29943934AF2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784505956,"wake_id":"00MRSGRS4HF52AF1A969FF4F3E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784506086,"wake_id":"00MRSGUL1BF251884C7D0B40E6","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784506219,"wake_id":"00MRSGXFDO88F71A870AB34DE1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
