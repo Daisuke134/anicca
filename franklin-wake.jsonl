@@ -11935,3 +11935,12 @@
 {"ts":1784546509,"wake_id":"00MRT4WZ9JE76F68D7D01244DA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784546653,"wake_id":"00MRT502BP667B462230F34519","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784546827,"wake_id":"00MRT53SNX7726C750C4F841BE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784546975,"wake_id":"00MRT56YIK1FEEE1EB5B204468","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784547121,"wake_id":"00MRT5A3S2B016030410AD4FE5","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784547121,"wake_id":"00MRT5A3S2B016030410AD4FE5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784547253,"wake_id":"00MRT5CXLNA02E59C12B004038","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784547253,"wake_id":"00MRT5CXLNA02E59C12B004038","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784547384,"wake_id":"00MRT5FQT3DF18E4E7D7564CCA","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
+{"ts":1784547687,"wake_id":"00MRT5M887279F166C842C42F3","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784547687,"wake_id":"00MRT5M887279F166C842C42F3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784547818,"wake_id":"00MRT5P1G2083ECAE2EF8F4BA6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
