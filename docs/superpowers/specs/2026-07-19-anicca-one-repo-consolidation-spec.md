@@ -158,6 +158,10 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
   （選択肢2-3個）を event あたり最大1問。答えは context graph に永続保存し**二度と同じ質問をしない**。
 - **「出た?」質問は ToBe で廃止**（現行 LM-23 ボタンは暫定。人に聞く方式では正確な情報が取れない、が理由）。
   代替 = §9.6 の location gate。
+- **★AI は人間に電話をかけない（2026-07-20 Dais 裁定。user 本人への call だけが例外）★**
+  対外連絡（遅刻連絡・予約・問い合わせ）は**必ずメール**。相手のメールアドレスを探して送る。
+  見つからなければ**送れなかった事実を正直に報告する**（例:「先方のメールが見つからず、遅刻連絡は送れていません」）。
+  黙って放置＝最悪。正直な失敗報告＞偽の成功。旧裁定（LM-11「予約=Telnyx outbound で店に電話」2026-07-17 spec Q13）は**誤りとして上書き** — 予約も web フォーム/メールのみ、不可なら候補提示+報告。
 
 ### 9.6 CONTEXT GATES（context を貰った時だけ解錠される feature）
 
@@ -331,7 +335,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | 実ブラウザで5要素表示 + gate 状態が実データ | pending |
 | 9 | MKT | marketing video loop 毎日1本（§9.2 + §9.10-9.11 脚本銀行16本。slideshow 廃止） | 7日連続人手ゼロで IG(claude-p)+TT(Postiz cmp9txjdp01c8oh0yb6dhlarr) 実投稿 URL | pending |
 | 10 | DEV | dev loop general 化（§9.3。feedback→PII scrub(user側)→issue→auto-PR） | 実 feedback 1件が PII 除去済み issue → merge された PR になる | pending |
-| 11 | PHY | PHYSICAL organ（§9.1/9.5。未通院検知+予約代行、事後報告） | 実予約1件 + §9.11 copy での報告実測 | pending |
+| 11 | PHY | PHYSICAL organ（§9.1/9.5。未通院検知+予約代行=web/メールのみ、電話禁止 §9.5、事後報告） | 実予約1件 + §9.11 copy での報告実測 | pending |
 | 12 | MEN | MENTAL organ（§9.11。schedule-aware affirmation。固定時刻禁止・3通/日上限） | 実 schedule 由来 trigger で実 TG 着信3種 | pending |
 | 13 | FIN | FINANCIAL organ（§9.8。crypto rail 配線、送金先のみ取得） | agent wallet→user wallet 実送金 tx + 月次報告実 TG | pending |
 
