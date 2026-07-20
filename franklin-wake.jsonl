@@ -11608,3 +11608,12 @@
 {"ts":1784514604,"wake_id":"00MRSLX52T009FE47144D1472F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784514733,"wake_id":"00MRSLZX5Q8713327AA0A84AD9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784514864,"wake_id":"00MRSM2PLN3EBB905B1F7E48DD","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784514997,"wake_id":"00MRSM5KUS636CE099506D4DC7","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784514997,"wake_id":"00MRSM5KUS636CE099506D4DC7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784515185,"wake_id":"00MRSM9LH2606776E174E640E3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784515316,"wake_id":"00MRSMCEI0F6A2B59EFB204D1A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784515316,"wake_id":"00MRSMCEI0F6A2B59EFB204D1A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784515446,"wake_id":"00MRSMF6PH7D13022354774380","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784515446,"wake_id":"00MRSMF6PH7D13022354774380","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784515578,"wake_id":"00MRSMI0MME90143C40CAD467C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784515710,"wake_id":"00MRSMKULWF0791CFC0E6B49FE","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
