@@ -150,6 +150,58 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 - 質問は closed question を最小回数（credential 取得も含む）。
 - 全体像 ASCII（architecture / UI / life-change）はこの spec と同日の session log 正本。
 
+### 9.5 自律原則: REPORT, DON'T ASK（2026-07-20 Dais 裁定。全 organ の不変条件）
+
+- **委任済み scope 内では、行動してから報告する。許可を求めない。**
+  誤: 「木曜18時に空きがあります。取りますか?」／ 正: 「木曜18時で予約した。」
+- **質問してよいのは「本人の context 無しには物理的に決められない」時だけ**。その時も closed question
+  （選択肢2-3個）を event あたり最大1問。答えは context graph に永続保存し**二度と同じ質問をしない**。
+- **「出た?」質問は ToBe で廃止**（現行 LM-23 ボタンは暫定。人に聞く方式では正確な情報が取れない、が理由）。
+  代替 = §9.6 の location gate。
+
+### 9.6 CONTEXT GATES（context を貰った時だけ解錠される feature）
+
+| feature | 必要 context | gate 前の挙動 | gate 後の挙動 |
+|---|---|---|---|
+| 遅刻連絡(chikoku renraku) v2 | **TG real-time location 共有** | 機能 OFF（質問で代替しない） | 現在地→会場の所要時間を常時計算 → 間に合わない確定時点で「◯分遅刻見込み」を自動メール。**本人には何も聞かない** |
+| travel autofill 高精度 | home/職場の住所 | 駅名等から推定 | 実住所起点で分単位 |
+| 予約代行(PHYSICAL) | 生活圏 + 委任 | 候補提示のみ | 予約して報告（§9.5） |
+| fiat 送金(FINANCIAL) | 振込先口座のみ（最小） | crypto wallet 送金のみ | 稼ぎを口座直行 |
+
+- **feature discovery**: 未解錠 feature は TG chat で定期的に知らせる（例:「位置情報を共有すると遅刻連絡が全自動になる」）。
+  頻度は鬱陶しくない範囲（週1程度、解錠済みは告知しない）。
+
+### 9.7 calendar 解釈 edge case matrix（closed question engine の仕様種）
+
+| # | ケース | 自動判定 | 判定不能時の closed Q |
+|---|---|---|---|
+| 1 | online/offline 不明 | meet/zoom URL あり=online(travel 0)。location 欄あり=offline | 「これオンライン?」[はい/いいえ] |
+| 2 | タイトル1語のみ(「歯医者」) | context graph の履歴から場所を推定 | 「いつもの◯◯歯科?」[はい/別の場所] |
+| 3 | 場所だけ・時刻曖昧 | 過去の同種 event に倣う | 1問で確定 |
+| 4 | 連続 event | travel 起点=直前 event の場所（home でない） | — |
+| 5 | 終日 event | call 対象外（記念日等） | — |
+| 6 | 繰り返し event | 初回だけ判定/質問し、答えを series 全体に適用 | 初回のみ |
+| 7 | 現在地=会場 | travel 0、出発 call 不要 | — |
+| 8 | 招待(他人作成)・tentative/declined | declined=無視。tentative=call 対象外 | — |
+| 9 | timezone 跨ぎ | event の TZ を正とする | — |
+- 原則: **判定できるものは全部自動**。closed Q は「本人しか知らない」残余のみ（§9.5）。答えは永続。
+
+### 9.8 ship 順序と FINANCIAL の法的立ち位置（2026-07-20 Dais 裁定）
+
+- **順序 = DAILY → PHYSICAL → MENTAL → FINANCIAL**。DAILY が最初の出荷 feature。
+- FINANCIAL の中心 = **anicca の crypto rail（wallet-as-identity、human credential ゼロ、human loop ゼロ）**。
+  グレーでない: 「AI が自分の wallet で稼ぐ」であり、投資助言でも user 資産運用でもない。
+- gig/KYC 系 fiat 手法は「そのまま置く」が優先しない（法的にグレー寄り + human credential 要）。
+- user から取る credential は**送金先だけ**（銀行口座 or 取引所アドレス）。免許証等は絶対に求めない。
+
+### 9.9 control panel（web app）確定仕様の骨子
+
+- 役割 = **鏡**。操作の場ではない（操作は電話/TG が主）。見るもの:
+  ①今日の timeline（解釈済み calendar + call 実績✅）②3 organ スコア（財務=稼ぎ/送金、身体=予約/未通院、精神=傾聴/就寝）
+  ③FINANCIAL 台帳（agent wallet 残高・user への送金履歴、on-chain link）④context gates 状態（何が解錠済みか + 解錠方法）
+  ⑤設定（call 言語・時間帯・委任の付与/剥奪）
+- gate 状態画面が feature discovery の Web 側入口（TG 告知と同内容）。
+
 ## 8. 次セッションへの引き継ぎ（実装はそこから）
 
 1. 新 monorepo `anicca` を GitHub に作成（Turborepo scaffold）→ life-manager 収斂 spec に従い web app を移す
