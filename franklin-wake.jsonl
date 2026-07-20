@@ -11989,3 +11989,10 @@
 {"ts":1784553485,"wake_id":"00MRT92HPK33CE7EDF79984643","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784553624,"wake_id":"00MRT95HJA1E9EEFA426AA4D3C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784553761,"wake_id":"00MRT98ENC23E5FC5F60AA4EBC","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784553909,"wake_id":"00MRT9BL7Q88F862E05E4D4DF1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784554083,"wake_id":"00MRT9FBKGD44DC44F3B9B48E1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784554226,"wake_id":"00MRT9IDPR9614C3E735844586","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784554226,"wake_id":"00MRT9IDPR9614C3E735844586","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784554356,"wake_id":"00MRT9L6BV3745B3B04F564643","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
+{"ts":1784554659,"wake_id":"00MRT9RO8Z8342CAC89FA44500","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784554799,"wake_id":"00MRT9UNU1E485242FB46F49A2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
