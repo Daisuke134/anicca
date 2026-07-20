@@ -44,10 +44,20 @@ franklin の4商品(web-search/funding-rates/funding-rate-arb/research)が Fluor
 5. ⏳ Fluora(fluora.ai/submit)+MCPay 登録（実 submit フロー調査中→human gate なら API/PR/tier-a-bypass）。
 6. done 検証: Fluora/MCPay で franklin 商品検索可能 + 外部 buyer 実購入 on-chain（verify-inflow external≥1）。
 
-## 実装状況（2026-07-19、実測）
+## 実装状況（2026-07-20 更新、実測）
 - adapter = `skills/earn/x402-sell/mcp-server.mjs`。設計 v2 採用（forward X-PAYMENT、serve-v2 無変更、二重払い構造的に不可能）。
 - E2E = `skills/earn/x402-sell/probe-dist1.mjs`、本番 CDP creds で **8/8 PASS**（commit 済み）。
-- 残: live 起動（funnel）+ marketplace 提出。提出フローは deep-researcher 調査中。
+- live 配置（途中）: funnel 4ポートは serve-v2 4店で満杯 → 解 = **path 分岐**。franklin1 の :10001 に
+  `tailscale funnel --https=10001 --set-path=/mcp http://127.0.0.1:8090` を実行済み（config には `/`→8414 と
+  `/mcp`→8090 が共存反映）。mcp-server は手動起動（:8090、nohup、launchd 未化）。
+  **未検証**: public https://aniccanomac-mini-1.tail7a0ba4.ts.net:10001/mcp の疎通（初回 curl 000、直後で再試行前に中断）。
+- 提出フロー調査（Fluora/MCPay の実 submit 手段）は中断（subagent kill）。未調査のまま。
+
+## 残作業（DIST-1 内、順）
+1. public /mcp 疎通検証（curl 再試行。000 続くなら funnel path-routing の制約を疑う）
+2. mcp-server の launchd 化（nohup は reboot で死ぬ）+ franklin2/claude-p 展開（非差別）
+3. Fluora(fluora.ai/submit)/MCPay の実 submit フロー確定 → 提出
+4. done: marketplace で検索可能 + 外部 buyer 実購入 on-chain（verify-inflow external≥1）
 
 ## リスク
 - Fluora submit が human gate を持つ可能性→API/PR/別マーケットにフォールバック(tier-a-bypass)。
