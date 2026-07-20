@@ -30,6 +30,14 @@
 - `~/.agents/skills` へ Claude user skills 9個を symlink（計66 skill が Codex から可視）。
 - ~/.openclaw 資産 push 完了（private repo anicca-dais）。**secrets 掃除実施**: browser/ profile 全体・auth-state.json×2・playwright Cookies/Login Data×8 を untrack + .gitignore 恒久化（ファイルはローカル残存、gitleaks 0 leaks 確認）。
 
+## Round 2 研究（articles + repo 深掘り、2026-07-20）
+- 記事の多数派: AGENTS.md を正本にし CLAUDE.md は `@AGENTS.md` import か symlink（AGYN / SSW / RuleSell。公式 memory docs も同手を明記）。
+- HF Transformers 実例: root AGENTS.md/CLAUDE.md 両方が `.ai/AGENTS.md` への symlink、skills は Makefile 生成。
+- **裁定 = rulesync@14.1.0 固定導入**。理由: import で既存 CLAUDE.md/.claude/rules/.claude/skills/.mcp.json を取り込め、Codex 側 AGENTS.md/.agents/skills/.codex/config.toml まで生成できる唯一の tool。Ruler(2,811★) は import 無し・global 生成不向きで棄却（ただし低churn は魅力）。
+- リスク: rulesync は高速 major churn（30日で 25 releases、breaking 6）+ **無確認上書き** → version pin + 一時 HOME で dry-run diff → 本適用、の gate 必須。
+- 自分が間違う最有力筋: 共有対象が rules+skills だけなら HF 型 symlink の方が総コスト小。MCP/paths 変換が要らなくなったら symlink へ後退してよい。
+- 健全性実測: rulesync 1,246★/584 commits(30d)/25 releases、ruler 2,811★/67 commits/2 releases。
+
 ## cloud 移行の含意
 - mobile 操作: Claude iOS Code タブ（cloud sandbox）が既に使える。repo に CLAUDE.md/rules/skills が push されていれば cloud session でも同じ規律で動く = **STEP 2（GitHub に全部上げる）が cloud 移行の実体**。
 - Mac Mini へは Tailscale SSH が phone からも可能。loops は当面 Mac Mini 常駐で問題なし。
