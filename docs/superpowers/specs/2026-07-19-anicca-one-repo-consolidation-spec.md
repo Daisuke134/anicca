@@ -62,8 +62,19 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 
 - **human credential を要する skill = 「experimental / gated」として repo に置く**。core ではない。
   与えられた AI だけが使う。与えられてない AI は黙って触らない — それだけの規則。
-- capafy の Dais 口座・gig の KYC は「gated skill を Dais の context で回している実験」— 独立した lane ではない。
 - ゴール: 稼ぐ力が育つほど gate 依存が減り、誰も AI の代金を払わなくてよくなる。
+
+### 3.1 skill の棚卸し（2026-07-20 Dais 明確化 — 分類軸は「人間から何が要るか」1本）
+
+| tier | 人間から要るもの | skill 実例 | 置き場所 |
+|---|---|---|---|
+| **CORE** | **何も要らない**（wallet が identity、human loop ゼロ、human credential ゼロ） | clip/IG marketing（account は agent 自作）、SOL/HL/PM trade、x402 稼ぎ | `packages/skills/core/` — anicca が磨いてきた本体。OSS の顔 |
+| **GATED (bootstrap)** | **起動時に human credential 1回**（以後 human loop 無し） | capafy（Dais の銀行口座で payout）、gig work（KYC）、Postiz 型 SaaS 全般 | `packages/skills/gated/` — experimental。credential を与えられた AI だけが使う |
+| **GATED (delegation)** | **user の生活 context の委任**（calendar/mail/telegram/口座） | Life Manager 系 skill、LIFE-AUTO | 同じく `gated/`。委任された AI だけが使う |
+
+- **profitable-claude の中身は実はほぼ GATED**（capafy=口座、gig=KYC）— OSS の看板にするのは CORE 群。
+  mirror（§4）の既定公開範囲 = core + installer。gated は「experimental」と明示して公開可否を P3 で個別判断。
+- 走行中の capafy loop は GATED の実験としてそのまま続行（14日 verify の価値は変わらない — engine 自体は CORE と共通）。
 
 ## 4. OSS one-command（P3 の設計。研究済み blueprint）
 
