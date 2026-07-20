@@ -1,0 +1,50 @@
+# Proposal only — Fable decides whether to apply.
+# The frontend rule is genuinely file-scoped. The five low-frequency tool rows are
+# file-independent, so `paths` cannot model them without loading them at the wrong time.
+# Per Fable's decision, do not use `paths: ["**/*"]`; replace them with one concise skill/
+# on-demand reference line instead of creating an unconditional rule.
+
+--- a/Users/anicca/.claude/CLAUDE.md
++++ b/Users/anicca/.claude/CLAUDE.md
+@@
+ ## フロントエンド作成順序
+ 
+-`gpt-tasteskill`（設計規律）→ `frontend-design` skill で実装 → 実ブラウザで見た目とクリックを確認。順序を変えない。
++→ `~/.claude/rules/frontend-order.md`
+@@
+ | Web検索/URL取得 | `crwl <url> -o markdown`（gh search 併用、WebSearch/WebFetch 禁止） |
+-| X(Twitter)検索 | skill `x-search-cdp`（無料・API key不要・既存ログイン流用。grok CLI/twikit は使わない→SKILL.md参照） |
+ | ライブラリ/SDK の docs | `npx ctx7@latest library <name>` → `docs <id> "<質問>"` |
+ | コード内シンボル操作 | Serena MCP（プレーンテキストは Grep/Glob） |
+ | ブラウザ操作 | CloakBrowser daily-driver（既存タブ、CDP :9222）。camofox は bot 判定で弾かれた時のみ |
+-| Mac デスクトップ操作 | `cua-driver`（汎用 computer-use MCP は使わない） |
+ | Git 並行作業 | `.worktrees/<feature>/` |
+-| agent 設計 | skill `building-agents`（judgment は model に、regex hardcode 禁止） |
+-| CAPTCHA/OAuth/3DS 突破 | skill `tier-a-bypass` |
+-| トークン節約 CLI | `rtk`（hook 自動最適化。`rtk gain`/`rtk discover` は直接実行）→ `~/.claude/RTK.md` |
++| 低頻度ツール | X検索→`x-search-cdp`、Mac UI→`cua-driver`、agent設計→`building-agents`、CAPTCHA/OAuth/3DS→`tier-a-bypass`、token CLI→必要時 `~/.claude/RTK.md` |
+@@
+-**VCSDD の token 上限（破ったら罪）**: spec レビューの adversary は**1ラウンドのみ**（2ラウンド目で blocking が残ったら spec を止めて即コードへ）／spec は**1ページ = 不変条件の箇条書き**（EARS 大全・脅威モデル表は禁止）／**subagent の resume 禁止**（毎回 fresh spawn + 差分だけ）／adversary への指示は「この N 個の不変条件を破れ」／本当のゲートは **negative test**／3回 FAIL で止めて handover。実行ハーネス → `~/anicca/skills/self/founder-loop/`。
++VCSDD token 上限詳細 → `~/.claude/rules/vcsdd-token-limits.md`
+
+--- /dev/null
++++ b/Users/anicca/.claude/rules/frontend-order.md
+@@
++---
++paths: ["**/*.tsx", "**/*.jsx", "**/*.css", "**/*.html"]
++---
++
++# フロントエンド作成順序
++
++`gpt-tasteskill`（設計規律）→ `frontend-design` skill で実装 → 実ブラウザで見た目とクリックを確認。順序を変えない。
+
+--- /dev/null
++++ b/Users/anicca/.claude/rules/vcsdd-token-limits.md
+@@
++---
++paths: ["docs/superpowers/**", ".vcsdd/**"]
++---
++
++# VCSDD の token 上限
++
++spec レビューの adversary は**1ラウンドのみ**（2ラウンド目で blocking が残ったら spec を止めて即コードへ）／spec は**1ページ = 不変条件の箇条書き**（EARS 大全・脅威モデル表は禁止）／**subagent の resume 禁止**（毎回 fresh spawn + 差分だけ）／adversary への指示は「この N 個の不変条件を破れ」／本当のゲートは **negative test**／3回 FAIL で止めて handover。実行ハーネス → `~/anicca/skills/self/founder-loop/`。

@@ -1,0 +1,44 @@
+--- a/.claude/scripts/floor-guard.py
++++ b/.claude/scripts/floor-guard.py
+@@ -4,8 +4,10 @@
+ ★測定器の正本は Claude Code の /context★
+   実測（2026-07-13, fresh session）:
+     System prompt ........  2.7k  ┐
+-    System tools .........  5.0k  ├ 構造コスト = 23.6k。触れない。減らそうとするな
+-    System tools(deferred) 15.1k  ┘  MCP を全部切っても減らない = Claude Code 組込みの遅延ツール
++    System tools .........  5.0k  ├ ENABLE_TOOL_SEARCH=false 時の構造コスト = 23.6k
++    System tools(deferred) 15.1k  ┘
++    ENABLE_TOOL_SEARCH=true では deferred tools の定義は前載せされず、必要時に ToolSearch で取得される。
++    したがって 23.6k は固定床ではない。MCP の有効/無効だけでなく /context で再測定する。
+     ---------------------------------
+     Memory files .........  9.7k  ┐
+     Skills ...............  9.9k  ├ ★我々の分 = 22.4k。ここだけが戦場★
+@@ -36,7 +38,9 @@
+ 
+ # 我々が触れる3つの的（/context の実測に合わせた予算）
+ BUDGET = {"memory": 9_000, "skills": 8_000, "agents": 3_000}
+-STRUCTURAL = 23_600  # System prompt + tools + deferred。触れない
++TOOL_SEARCH_ENABLED = os.environ.get("ENABLE_TOOL_SEARCH", "false").lower() == "true"
++STRUCTURAL = 8_500 if TOOL_SEARCH_ENABLED else 23_600
++STRUCTURAL_NOTE = "ToolSearch 有効。tools 定義は必要時に取得" if TOOL_SEARCH_ENABLED else "ToolSearch 無効時の実測値"
+ 
+ 
+ def tok(s: str) -> int:
+@@ -197,7 +201,7 @@
+     over = [k for k, v in (("memory", mem), ("skills", skl), ("agents", agt)) if v > BUDGET[k]]
+ 
+     print("=" * 64)
+-    print(f"床 = 構造 {STRUCTURAL:,}（触れない） + 我々 {ours:,}（ここだけが戦場）≈ {STRUCTURAL + ours:,} tok")
++    print(f"床 = 構造 {STRUCTURAL:,}（{STRUCTURAL_NOTE}） + 我々 {ours:,} ≈ {STRUCTURAL + ours:,} tok")
+     print("  → tool 1回 = API 1回 = この床を毎回まるごと払う")
+     print(f"  memory {mem:>6,} / {BUDGET['memory']:,}   ({len(mem_rows)} files)")
+     print(f"  skills {skl:>6,} / {BUDGET['skills']:,}   ({len(skl_rows)} 個が model 呼び出し可能)")
+@@ -212,7 +216,7 @@
+     if over:
+         print(f"\n★ 予算超過: {', '.join(over)}。足す前に同量を削れ。")
+         print("  置き場所は安い順: skill → skill + disable-model-invocation → rules + paths: → memory → CLAUDE.md")
+-        print("  ★@import は床を減らさない（公式）★  ★構造 23.6k は削れない（MCP を切っても減らない）★")
++        print("  ★@import は床を減らさない（公式）★  ★ToolSearch 有効時は tools 定義の前載せがなくなるため /context で再測定★")
+         print('  after を測る唯一の方法: claude -p "/context"')
+         return 1
+     return 0

@@ -1,0 +1,39 @@
+# Consumable jq rewrite patch for either user or project settings.
+# Review/apply manually:
+#   jq -f floor-reduction/sessionstart-hooks.patch SETTINGS.json > SETTINGS.json.tmp
+#   jq empty SETTINGS.json.tmp && mv SETTINGS.json.tmp SETTINGS.json
+
+def command_contains($needle):
+  (.command? // "") | contains($needle);
+
+if any(.hooks.SessionStart[]?.hooks[]?; command_contains("ssot-guard.sh")) then
+  .hooks.SessionStart |=
+    map(
+      .hooks |= map(
+        select(
+          (command_contains("ssot-guard.sh")
+           or command_contains("compact-restore --new-session-only")
+           or command_contains("compact-restore --compact"))
+          | not
+        )
+      )
+    )
+  | .hooks.SessionStart |= map(select((.hooks | length) > 0))
+  | .hooks.SessionStart |= map(
+      .hooks |= map(
+        if command_contains("floor-guard.py")
+        then .command = "python3 ~/.claude/scripts/floor-guard.py 2>&1 | tail -n 1 || true"
+        else .
+        end
+      )
+    )
+else
+  .hooks.SessionStart |= map(
+    .hooks |= map(
+      if command_contains(".claude/hooks/scripts/session-start.sh")
+      then .command = "printf 'session branch=%s date=%s rules=%s\\n' \"$(git branch --show-current 2>/dev/null || printf unknown)\" \"$(date '+%Y-%m-%d %H:%M JST')\" \"$(find .claude/rules -maxdepth 1 -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')\""
+      else .
+      end
+    )
+  )
+end

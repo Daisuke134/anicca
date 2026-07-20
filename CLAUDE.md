@@ -9,31 +9,13 @@ BP = 答え。オリジナルは書かない。判断には最低1つの引用�
 **研究したら即 MD 化（HARD）**: 検索・研究したらその turn 内で `docs/` の MD に書き出して commit+push する。chat だけに残すのは研究を捨てるのと同じ。handover/article prompt にはその MD の full path を含める。
 **記事ネタは queue へ（HARD）**: Dais が「これ記事になる/raw material」と言ったら、その turn 内で article loop の `topics/queue/` にカードを書いて commit+push（場所は `ls -d ~/profitable-claude/skills/*/topics/queue ~/profitable-claude/skills/*/article*/topics/queue 2>/dev/null` で解決、frontmatter は既存カードに倣う: lane/voice/sources/angle）。散らばせたネタは存在しないのと同じ。
 
-## 🧬 ANICCA COLONY — LIVE SSOT（毎セッション最初に読む）
+## 🧬 ANICCA COLONY — LIVE SSOT
 
-| 名 | 燃料 | HOME(=ANICCA_HOME) | x402 wallet | loop(launchd) |
-|---|---|---|---|---|
-| **franklin1** | ★SELF★ | `~/.blockrun` | `0x3EcCAD24794ca298D25378E9902A251322ea8749` (+Sol `F5SY…hZ5T`、07-17 rotate) | `ai.anicca.franklin-loop` |
-| **franklin2** | ★SELF★ | `~/.franklin2-home/.blockrun` | `0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9` | `ai.anicca.franklin2-loop` |
-| **claude-p** | human(Anthropic) | `~/.anicca-founder` | `0x810f6d61f7606deee2657d3083e150a222bc29c5` (PM proxy=`0x904B50d2…`) | `ai.anicca.agent-economy-loop` |
-
-- self-funded = 2、human-funded = 1（私）。openclaw + hermes 削除済み。**a3cdd4 は市民ではない**（loop 死亡・inflow $0、2026-07-16 実測で除外）。
-- earn = トレード3エンジンのみ（PM / SOL / HL）。x402・gig は却下。各 earn skill = BASE戦略 + self-improve + self-heal の3層。
-- **生の数字（残高/P&L/loop稼働）は `bash ~/anicca/skills/self/colony-status.sh` で実測する。記憶で答えない。**
-- 「稼いだ」= realized profit>0 が ledger に載った時のみ。盛らない。
-- SSOT 全文 → `docs/superpowers/specs/2026-07-03-anicca-colony-architecture-design.md`（§16 earn rails / §17 master TODO / §19 instance）
+→ `.claude/rules/colony.md`
 
 ## 開発（GLVS の Build/Verify = VCSDD の実コマンド）
 
-| GLVS | 呼ぶもの |
-|---|---|
-| Goal | brainstorming → writing-plans（spec を `docs/superpowers/specs/`、plan を `docs/superpowers/plans/`） |
-| 分離 | worktree（`.worktrees/<feature>/`。ドキュメントのみ dev 直接可）→ `.claude/rules/worktree.md` |
-| Build/Verify | `vcsdd-init`→`spec`→`spec-review`→`tdd`→`impl`→`adversary`→`harden`→`converge`。**実コマンドを呼んで state.json の phase を進める**。token 上限は global CLAUDE.md が正本 |
-| 完了 | finishing-a-development-branch（テスト → push → worktree cleanup） |
-
-仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う。spec に「任意/optional/推奨」は書かない（全て MUST）。終わっていない作業を completed と書かない。
-実装レビューのゲート = `vcsdd-adversary`（fresh spawn、blocking 0 + 自分の E2E green）。codex-review は廃止。
+→ `.claude/rules/vcsdd-flow.md`
 
 ## spec = SSOT（HARD。会話は揮発、file は不揮発）
 
@@ -77,10 +59,7 @@ GitHub Actions の新規追加は禁止（`netlify-deploy.yml` の1個のみ）�
 
 ## ブランチ & デプロイ
 
-main=Production（自動デプロイ）／dev=trunk（staging 自動）／release/x.x.x=App Store 提出。
-フロー: dev → feature ブランチ → PR → dev → main → release。1編集 = 即 commit+push。commit/push 前に `git fetch`。branch の終着は merge か削除（`gh pr merge --merge --delete-branch`）。
-iOS は Fastlane 必須（`cd aniccaios && fastlane <lane>`、xcodebuild 直接禁止）。提出前に `greenlight preflight <app_dir>` で CRITICAL=0。
-iOS E2E = `mcp__maestro__*`（maestro CLI 直接は使わない）。
+→ `.claude/rules/ios-deploy.md`
 
 ## 概要
 

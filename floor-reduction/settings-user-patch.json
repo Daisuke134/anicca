@@ -1,0 +1,28 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
+  "includeGitInstructions": false,
+  "permissions": {
+    "deny": [
+      "Workflow",
+      "DesignSync",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "NotebookEdit",
+      "ReportFindings",
+      "ScheduleWakeup",
+      "LSP",
+      "ListMcpResourcesTool",
+      "ReadMcpResourceTool",
+      "ReadMcpResourceDirTool",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "EnterWorktree",
+      "ExitWorktree",
+      "PushNotification",
+      "AskUserQuestion"
+    ]
+  }
+}

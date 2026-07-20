@@ -1,0 +1,34 @@
+# Proposal only — Fable decides whether to apply.
+# Each removed index entry already points to an individual topic file under memory/.
+# The MEMORY.md preamble retains the on-demand grep route, so no topic content is deleted.
+
+--- a/Users/anicca/.claude/projects/-Users-anicca-anicca-project/memory/MEMORY.md
++++ b/Users/anicca/.claude/projects/-Users-anicca-anicca-project/memory/MEMORY.md
+@@
+-## 金
+-- WALLETS 一覧 — [↗](reference_anicca_wallets_canonical.md)
+-- 稼ぎ=エッジに片側で賭ける（両建て裁定は稼ぎでない） — [↗](feedback_earn_by_searching_for_edge_not_by_hedging.md)
+-- 「稼いだ」=on-chain external tx を自分で確認した時のみ — [↗](feedback_i_am_the_final_verifier_never_claim_earning_without_external_tx.md)
+-- EARN skill は 5-GATE 検証必須 — [↗](feedback_earn_skill_must_have_verification_engine.md)
+-- earn identity は ANICCA_HOME gate — [↗](feedback_earn_identity_resolve_per_instance_gate_on_anicca_home.md)
+-- 多段 bridge 禁止、最終 chain へ直接 — [↗](feedback_never_multihop_bridge_fund_directly_on_native_chain.md)
+-- 送金は native SOL。Polymarket は日本でやらない — [↗](feedback_dais_funds_native_sol_only_and_polymarket_japan_illegal.md)
+-- earn account=AI own email（Dais の Google 使うな） — [↗](feedback_earn_accounts_use_ai_own_email_not_dais_google.md)
+-- 常に後発、alpha を探す — [↗](feedback_always_behind_find_the_alpha.md)
+-- BLOCKRUN=x402 生命線 — [↗](reference_blockrun_rails_food_shelter_x402.md)
+-- ★earner の infra は agent 自己所有必須。Postiz/Dais の IG/Meta 流用=不変条件違反★ — [↗](feedback_earn_infra_must_be_agent_owned_no_postiz_no_human_credential.md)
+-
+-## ツール / 統合
+-- ★telegram 履歴 read+post は bot 不可、Telethon MTProto user session 必須★ — [↗](reference_telegram_read_post_needs_mtproto_user_session.md)
+-- X検索=grok CLI(free枠切れ)でなくCDP直操作(既存daily-driverタブ→x.com/search) — [↗](reference_x_search_via_cdp_not_grok_cli.md)
+-- agentmemory無効化の根本原因=upstream未解決の並行セッションバグ(issue #499) — [↗](reference_agentmemory_disabled_root_cause.md)
+-
+-## ブラウザ / OS
+-- 既定=CloakBrowser daily-driver — [↗](feedback_use_cloakbrowser_daily_driver_not_camofox.md)
+-- 既存 tab を drive、複製/close 禁止 — [↗](feedback_drive_exact_daily_driver_tab_never_duplicate.md)
+-- daily-driver は「アクティブ画面セッション」が無いと headed launch が SIGTRAP で死ぬ（headless は動く＝診断法） — [↗](reference_daily_driver_needs_active_display_session.md)
+-- 自動化は judgment 型、brittle selector 禁止 — [↗](feedback_warmup_two_layer_agentic_not_brittle_selectors.md)
+-- CAPTCHA と言う前に try — [↗](feedback_dont_assume_captcha_try_first.md) · 突破手順 — [↗](reference_capsolver_turnstile_bypass.md)
+-- Mac UI=cua-driver 一択 — [↗](feedback_use_cua_driver_never_computer_use.md)
+-- login ledger — [↗](identity_anicca_login_accounts.md) · Google login — [↗](feedback_google_login_forever.md)
+-
