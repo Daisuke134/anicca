@@ -11771,3 +11771,13 @@
 {"ts":1784530250,"wake_id":"00MRSV8HYID87592E87CFE4A9E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784530383,"wake_id":"00MRSVBCN14BA8D083C4B44D5E","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784530685,"wake_id":"00MRSVHTKG427A41989E49417A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784530819,"wake_id":"00MRSVKOQ65A6D1FB683EB4E58","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784530819,"wake_id":"00MRSVKOQ65A6D1FB683EB4E58","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784530949,"wake_id":"00MRSVNH0I950D88B8202440AB","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784530949,"wake_id":"00MRSVNH0I950D88B8202440AB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784531079,"wake_id":"00MRSVQ9CBF92AA939178C4FCE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784531079,"wake_id":"00MRSVQ9CBF92AA939178C4FCE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784531212,"wake_id":"00MRSVT40K0D0550F1F77848D0","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784531515,"wake_id":"00MRSVZLQX8A1A152B5D8C4775","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784531515,"wake_id":"00MRSVZLQX8A1A152B5D8C4775","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784531703,"wake_id":"00MRSW3MNG52BDC11DF09A4202","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
