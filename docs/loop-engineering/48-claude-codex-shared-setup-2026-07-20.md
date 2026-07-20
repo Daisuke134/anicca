@@ -39,6 +39,17 @@
 - 健全性実測: rulesync 1,246★/584 commits(30d)/25 releases、ruler 2,811★/67 commits/2 releases。
 - 精密化: rulesync の **global import は rules/commands のみ**（公式 Global Mode docs）。~/.claude/skills と global MCP は契約外 → skills 移行は temp project tree 経由の project import か .rulesync/skills への copy+tweak で行う。
 
+## Phase 1 E2E 結果と最終裁定（2026-07-20 sandbox 実測、詳細 = codex-parity/rulesync-e2e-report.md）
+
+実測: import は rules 10件（paths → globs+claudecode.paths で意味保持）/commands 30件/MCP 2件を拾えたが、skills は sandbox の broken symlink で 0件停止（import は非原子的・部分書込みを残す）。generate 産物の AGENTS.md = **493行の全文連結**で、Claude 固有参照・見出し重複・path-scoped rules の常時読込化を含む。
+
+**最終裁定（前の「rulesync 全面採用」を修正）**:
+- rules の共有: rulesync 生成 AGENTS.md は**棄却**。Codex の起動 context を 493 行で焼く = 今日の floor 削減の逆行。**手書き 40 行 AGENTS.md（curated 要約）を正本として維持**。CLAUDE.md との drift は「ツール既定を変えたら AGENTS.md も同 turn で更新」の運用規律で抑える。
+- skills の共有: symlink 維持（HF Transformers 同型、公式が symlink 追跡を明記）。
+- MCP の共有: 必要になったら rulesync の mcp 変換だけを使う（.mcp.json → .codex/config.toml。絶対 path 残存に注意）。現状 Codex に serena 不要のため見送り。
+- rulesync の位置づけ: 「将来 .rulesync 正本へ全面移行する時の変換器」として codex-parity/ に手順と apply script を保存。今は起動しない。
+- 誤りだった点の記録: Round 2 の「rulesync 全面採用」裁定は、生成物の質（全文連結）を実測する前の判断だった。E2E が棄却根拠。
+
 ## cloud 移行の含意
 - mobile 操作: Claude iOS Code タブ（cloud sandbox）が既に使える。repo に CLAUDE.md/rules/skills が push されていれば cloud session でも同じ規律で動く = **STEP 2（GitHub に全部上げる）が cloud 移行の実体**。
 - Mac Mini へは Tailscale SSH が phone からも可能。loops は当面 Mac Mini 常駐で問題なし。
