@@ -15,6 +15,7 @@ goal: 「ノートPCを返却しました。今日からiPhoneだけでAI開発�
 
 - Zenn: 2026-07-20 17:08 JST に `2026-07-20-set-cookiex30` を公開済み（git log 実測）。24h 1 本の rate limit に当たる可能性 → push 後 NOT-LIVE なら window 明け（明日 17:08 以降）の再 trigger（empty commit）で解決。bug ではない。
 - note cookie: on-disk sqlite は `_note_session_v5` 欠落 → CDP live 抽出で 8 cookie 取得、`/api/v2/current_user` = anicca123 で有効性確認済み（22:44）。
+- kroki.io が mermaid PNG で Error 400（server 側 chromium 起動失敗、2 回再現）→ fallback = `npx @mermaid-js/mermaid-cli`（ローカル、PNG 生成成功を実測 22:53）。図は local render で進める。
 
 ## 決定
 
