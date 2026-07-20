@@ -54,3 +54,16 @@ Telegram（Anicca chat msg_id 3322）+ Gmail（AgentMail 経由、添付 4 枚�
 | B: 全部 cloud | Claude iOS app → GitHub repo + cloud 実行 | local Mac Mini 依存を切れるか / cost |
 
 判定結果が出たらこの表を実測で更新する。
+
+## Deep dive（2026-07-20 実読: onorca.dev/docs + GitHub README）
+
+- 本体 = 「worktree-native の Agent IDE」。1 task = 1 git worktree + 専用 agent terminal + 専用 browser tab。MIT license、Electron 系 desktop、Ghostty 級 WebGL terminal（scrollback が再起動を生存）。
+- Agent 対応: Claude Code / Codex / Cursor CLI / OpenCode / GLM / Pi / **OpenClaw** / custom CLI。BYO subscription（Orca 自体は model を持たない）。
+- 並列レース: 同一 prompt を複数 agent に fan-out、各自の worktree で走らせ diff 比較して勝者を merge（docs/recipes/parallel-agents）。
+- Review: diff viewer + Annotate AI Diff（diff 行への注釈が agent への follow-up prompt になる）+ Attribution（どの行を AI が書いたか）。GitHub PR/issues/Actions + Linear/Jira を in-app 表示。
+- Design Mode: 内蔵 Chromium で UI 要素をクリック → HTML/CSS/cropped screenshot が agent prompt に直行。
+- Remote: SSH worktrees（auto-reconnect、port forwarding）/ self-hosted Orca server / ephemeral VM。
+- CLI & automation: orca CLI で orchestration、scheduled automations、computer use、skills registry & MCP。
+- Mobile companion（beta）: 「desktop の remote control」設計。read-mostly + 要所の操作 = agent への返信（continue/yes/free-text/写真添付/音声入力）、Live mode（keystroke 直送）、file tree 閲覧、source control（stage/commit）、workspace 新規作成、account 切替+rate-limit 表示、push 通知（agent 完了時）。full editor は意図的に非搭載。
+- Pairing の本質: **cloud relay 無し**。desktop⇔phone 直接接続、device token 方式。desktop app を閉じると切断、再開で自動再接続。QR は数分で期限切れ。我々は Tailscale IP (100.99.82.95) 選択で外出先からも P2P。
+- 「MacBook Pro」「M1ミニ・ホーム」等 onboarding 画面のデスクトップ一覧はデモ/サンプル表示。
