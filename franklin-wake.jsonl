@@ -12144,3 +12144,12 @@
 {"ts":1784571450,"wake_id":"00MRTJRJM3541E7353B07D4A69","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784571751,"wake_id":"00MRTJY0EVEB734ECED3AA4EB9","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784571751,"wake_id":"00MRTJY0EVEB734ECED3AA4EB9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784571882,"wake_id":"00MRTK0TFE589765E128364E52","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784571882,"wake_id":"00MRTK0TFE589765E128364E52","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784572013,"wake_id":"00MRTK3MFH64DE5F5A8CDD4CCF","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784572013,"wake_id":"00MRTK3MFH64DE5F5A8CDD4CCF","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784572142,"wake_id":"00MRTK6E3V49EE5C01B84448B4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784572142,"wake_id":"00MRTK6E3V49EE5C01B84448B4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784572271,"wake_id":"00MRTK95H32EB5024EF70743E0","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784572271,"wake_id":"00MRTK95H32EB5024EF70743E0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784572400,"wake_id":"00MRTKBX9P6E95EACAD68B42B6","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
