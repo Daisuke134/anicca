@@ -339,8 +339,23 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 12 | MEN | MENTAL organ（§9.11。schedule-aware affirmation。固定時刻禁止・3通/日上限） | 実 schedule 由来 trigger で実 TG 着信3種 | pending |
 | 13 | FIN | FINANCIAL organ（§9.8。crypto rail 配線、送金先のみ取得） | agent wallet→user wallet 実送金 tx + 月次報告実 TG | pending |
 
-- 実装は全て flow A hybrid（Fable plan → Sol subagent 実装 → Sol adversary → Fable E2E）+ VCSDD phase 順。
+- **実装方式 = flowb（Dais 裁定 2026-07-20 再確認）: Fable = plan + spec + 最終検証のみ。Sol(codex) = build + execute + verify + push 全部。Fable は手を動かさない。**
 - 順1-4 = 稼働系の証明と修理（先行必須）。順5-8 = DAILY 完成。順9-10 = 両 loop。順11-13 = organ 拡張。
+
+### 10.1 不確実性 U1-U10 の解決（2026-07-20 実測。4 subagent 並行調査の裁定）
+
+| # | 結論（全て close） |
+|---|---|
+| U1 | **Unipile 401 = 7日 trial 失効**（6/19 作成、paid 未開始、status page は All Operational）。rotate では復活しない。復旧 = **$55/mo 課金必須** → 停止点。**Fable 推奨: 今は払わない**（subs=0 で固定費 $55 は margin 即死）。calendar は Composio+cache 継続、mail 依存機能は OFF を明示、構造 fix = 自前 Google OAuth calendar（sensitive 審査10営業日・CASA 不要・$0）を LM-31 後に。**順3 は Dais 判断待ち** |
+| U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
+| U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
+| U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
+| U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・opaque token URL → HttpOnly session 交換**。token は hash 保存 + chat_id/expires/used_at 束縛。`/lm?tg=` は廃止。LM-33 spec に採用 |
+| U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
+| U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
+| U8 | 対外メールの名乗り = `Anicca（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
+| U9 | rotate runbook 正本 = `2026-07-17-lm21-rotation-runbook.md`（実在確認済み）+ 13キー発行元/再登録表を今回更新。実行 = `railway variable set K=V ... --skip-deploys` → redeploy 1回 → setWebhook/inbound URL 再登録 → 全 smoke 後に旧 key revoke |
+| U10 | PR #312 = **OPEN 未マージ**（dev loop D0 産、issue #11 travel-autofill fix）。順2 に「review→merge 判断」を含めた |
 
 ## 8. 次セッションへの引き継ぎ（実装はそこから）
 
