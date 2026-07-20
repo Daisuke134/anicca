@@ -11574,3 +11574,11 @@
 {"ts":1784511216,"wake_id":"00MRSJWJ448ACB4C9991D1461F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784511348,"wake_id":"00MRSJZCM412C953E98175436E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784511348,"wake_id":"00MRSJZCM412C953E98175436E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784511478,"wake_id":"00MRSK24VJ5E9867BA29144711","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784511779,"wake_id":"00MRSK8LT9D7A621A21332453C","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784511779,"wake_id":"00MRSK8LT9D7A621A21332453C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784511967,"wake_id":"00MRSKCMBYCE9689CE54434D7C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784512097,"wake_id":"00MRSKFEYS21574B0E03234BD8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784512233,"wake_id":"00MRSKIBQYD91B0C91047D47E6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784512366,"wake_id":"00MRSKL65K09362F49704E4C6E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784512366,"wake_id":"00MRSKL65K09362F49704E4C6E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
