@@ -42,6 +42,17 @@ project 4 + user 2 + plugin 8（vcsdd 4 / superpowers 1 / caveman 3）。floor �
 ### paths 化より先: MEMORY.md ↔ CLAUDE.md 重複削除候補
 「次を聞かない」「Task登録」「検索優先」「token/adversary 制限」「研究即MD化」「捏造禁止」の6項目が global/project CLAUDE.md と重複。索引1行化 or 削除で ~200-400 tok。
 
+## 第2ラウンド実測（floor-research2、v2.1.210）
+
+| 施策 | 実測効果 | 備考 |
+|---|---:|---|
+| `ENABLE_TOOL_SEARCH=true` | **起動 132.4k→100.7k（−31.7k）** | ~/.zshrc:108,132 が false 固定＝犯人。proxy :8317 で deferred tool 実行 E2E 成功済み。長い tool-heavy session では使った schema が後から載るため総削減は起動差より小さい |
+| built-in bare deny（未使用19本） | System tools 34.1k→15.2k（−18.9k） | `--tools Read,Edit,Bash` なら 4.1k まで落ちるが日常用には過激 |
+| caveman plugin disable | agents −6.2k + memory −1.2k | `Agent(name)` deny は床削減0（実測）。skill だけ残すには plugin fork 必要 |
+| serena excluded_tools | memory系7本除外で −1.5k、6本構成なら −5.2k | keys: excluded_tools / fixed_tools（排他） |
+| SessionStart 静的重複 silent 化 | ~−1.1k（caveman 全文 on-demand 化で追加 −1k） | stdout 実測: caveman 917 / git-lite 513 / project 245 tok |
+| `--bare`（headless 用） | 132.4k→10.8k（−121.6k） | hooks/skills/plugins/MCP/memory 全 skip。loop/cron の claude -p に最適 |
+
 ## 落とし穴（棄却済み含む）
 - agent 本文短縮 → floor に載らないので無効（棄却）
 - scoped deny（`Read(**/*.pem)` 等）→ schema 削減にならない
