@@ -327,7 +327,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 |---|---|---|---|---|
 | 1 | E2E束 | LM-5/3/6/7 実 call E2E（短経路イベント1本。※LM-23「出た?」は検証対象から除外 — 廃止決定済み） | T-10/T-5 実 call + 録音 whisper 英語 + 遅刻メール実受信(message_id)。spec §5c 記録 | pending |
 | 2 | #12締め | PR #312 TG 報告確認 + launchctl load 常設化 | launchctl list に life-manager-dev | pending |
-| 3 | LM-8c→8b | Unipile token 再発行 → LIFE_CAL_TRANSPORT=unipile flip + Composio 停止 | mail/calendar 200 実測 → flip 後 list/create/patch 実測 | pending |
+| 3 | LM-8c改 | **Composio 一本化**（Unipile 棄却裁定済み→§10.1 U1）: mail-composio.js 新設 + cache/budget guard + Unipile 参照除去 | Gmail fetch/send 実測 200 + calendar 現行維持 + 月間 call 数が guard 下 | pending |
 | 4 | LM-21 | 13 secret rotate（GEMINI/TELNYX 優先。公開前必須） | /health 200 + TG echo + dial preflight ok | pending |
 | 5 | LM-31 | calendar edge-case engine（§9.7 の9件 + §9.11 follow-up copy） | 9ケースのテスト green + 実 calendar で1件ずつ実測 | pending |
 | 6 | LM-30 | 「出た?/まだ?」ボタン全面撤去 + location gate 遅刻連絡 v2（§9.5-9.6。v1 出荷なし） | deta/mada 送信コードゼロ + location 共有時の自動メール実測 | pending |
@@ -346,7 +346,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 | # | 結論（全て close） |
 |---|---|
-| U1 | **Unipile 401 = 7日 trial 失効**（6/19 作成、paid 未開始、status page は All Operational）。rotate では復活しない。復旧 = **$55/mo 課金必須** → 停止点。**Fable 推奨: 今は払わない**（subs=0 で固定費 $55 は margin 即死）。calendar は Composio+cache 継続、mail 依存機能は OFF を明示、構造 fix = 自前 Google OAuth calendar（sensitive 審査10営業日・CASA 不要・$0）を LM-31 後に。**順3 は Dais 判断待ち** |
+| U1 | **Unipile 401 = 7日 trial 失効**（6/19 作成、paid 未開始）。rotate では復活しない。復旧 = $55/mo 課金必須 → **Dais 裁定 2026-07-20: 払わない・Unipile 棄却**。代替の free-forever connector を5候補実測比較（Pipedream Connect=Free は dev 専用・本番 $99/mo で棄却／Nango self-host・自前 googleapis=Gmail readonly が restricted scope で年次 CASA 復活のため棄却／Arcade=2K call/月で容量不足／Paragon=恒久 Free なし）→ **勝者 = Composio 一本化**: Free $0 / 20K tool calls/月 / Unlimited Connected Accounts / OAuth managed（trial 表記なし、8/15 改定後も同条件。出典 composio.dev/updated-pricing）。cache 済み 8,640 call/月/user 前提で **$0 のまま 2 user**。**順3 の中身 = mail-composio.js 新設**（mail-unipile.js と同 interface、Gmail Fetch/Send toolkit へ写像）+ 5分 TTL cache/in-flight dedupe + 月 18K warning/19.5K hard guard + Unipile 参照の除去。移行前に実 connected account で Gmail scope と Calendar Create/Patch schema（Meet conferenceData）を1回 live 確認（研究 agent の自己疑義）。scale 時（3+ users）= Composio 有料 or 自前 OAuth+CASA を §8b S2 で再判断 |
 | U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
 | U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
 | U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
