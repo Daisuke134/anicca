@@ -317,9 +317,15 @@ async function recallOrResolve(event, opts) {
 async function askTick(uid, opts) {
   const { composioKey, userEmail, resendKey, supaUrl, supaKey, mapsKey, geminiKey } = opts;
   const nowMs = opts.nowMs || Date.now();
+  // Injectable (default to the real impls) so the ask-vs-autofill decision is unit-testable without
+  // hitting the calendar transport / Supabase over the network — same DI pattern as recall/resolve above.
+  const listEvents = opts.listEvents || listEvents48h;
+  const getAskedSet = opts.askedSet || askedSet;
+  const patch = opts.patchEvent || patchEvent;
+  const record = opts.recordResolution || recordResolution;
   let autofilled = 0, asked = 0, resolved = 0;
-  const events = await listEvents48h(uid, composioKey, nowMs, opts.gmailAccountId);
-  const already = await askedSet(uid, supaUrl, supaKey);
+  const events = await listEvents(uid, composioKey, nowMs, opts.gmailAccountId);
+  const already = await getAskedSet(uid, supaUrl, supaKey);
 
   // For EVERY event still missing a location, let the agent RESOLVE it again every tick — the agent may
   // now succeed where a past tick asked (better search / a newer model). We dedup only the ASK SEND
@@ -335,32 +341,38 @@ async function askTick(uid, opts) {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
     }
     if (res.kind === "filled") {
-      await patchEvent(uid, event.id, { location: res.location }, composioKey, opts.gmailAccountId);
-      await recordResolution(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
+      await patch(uid, event.id, { location: res.location }, composioKey, opts.gmailAccountId);
+      await record(uid, event.id, res.fromMemory ? "location_field" : (res.resolvedFrom || "web_search"), supaUrl, supaKey);
       autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
     }
-    // res.kind === "ask" — a human must tell us. ATOMIC dedup (C-H1): CLAIM before sending so two
-    // concurrent ticks can't double-ask; release the claim if the send fails so a later tick retries.
+    // res.kind === "ask" — resolveLocation alone couldn't place it. ATOMIC dedup (C-H1): CLAIM before
+    // sending so two concurrent ticks can't double-ask; release the claim if the send fails.
     if (already.has(event.id)) continue; // fast-path: known-asked this tick → skip
+    // Before bothering the user, let the agent search Gmail/web for evidence (life-manager#11: asking is
+    // the failure mode, not the fallback of first resort — a found candidate autofills directly, same as
+    // the "filled" branch above). Only a genuinely unresolvable event reaches the actual ask below.
+    const candidate = await agentSearchCandidate(event, {
+      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
+      gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
+    });
+    if (candidate.found) {
+      await patch(uid, event.id, { location: candidate.candidate }, composioKey, opts.gmailAccountId);
+      await record(uid, event.id, candidate.source || "web_search", supaUrl, supaKey);
+      autofilled++;
+      continue;
+    }
     // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook); otherwise
     // email from OUR domain via Resend, with a short opaque token in the Reply-To (reply+<token>@reply.
     // aniccaai.com). The reply lands on /inbound-email, which looks the token up in lm_ask_log and patches
     // this event. We NEVER read the user's Gmail. CLAIM (with the token) before sending so two ticks can't
     // double-ask; release the claim if the send fails so a later tick retries.
-    const candidate = await agentSearchCandidate(event, {
-      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
-      gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
-    });
     const replyToken = newReplyToken();
-    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken,
-      candidate.found ? { candidate: candidate.candidate, resolvedFrom: candidate.source } : {}))) continue;
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken, {}))) continue;
     let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
-      const msg = candidate.found
-        ? closedAskMessage(event, candidate.candidate, replyToken)
-        : { text: `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.` };
-      const r = await tgSend(opts.telegramToken, opts.telegramChatId, msg.text, msg.extra);
+      const r = await tgSend(opts.telegramToken, opts.telegramChatId,
+        `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
       sent = !!(r && r.ok);
     } else if (userEmail && resendKey) {
       const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
