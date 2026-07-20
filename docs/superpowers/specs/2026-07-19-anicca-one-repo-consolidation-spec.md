@@ -111,6 +111,45 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 - **base**: account もう1周作り直し → OSS は 8月末。P1 (Life Manager) は影響なしで進む。
 - **worst**: IG recipe が構造的に死ぬ → engine の IG adapter を捨て、PRODUCT lane（user 委任型）を主軸化。mission は不変、稼ぎ口だけ差し替え。
 
+## 9. PRODUCT VISION 詳細（2026-07-20 Dais 口述の正本化。§0 mission の具体形）
+
+**Life Manager = 人の一日全体を管理し、財務・身体・精神を健康にする。human loop 最小（理想ゼロ）。**
+「Life manager makes you financially healthy, physically healthy and mentally healthy.」
+
+### 9.1 頭脳 + 三臓器
+
+- **頭脳 = context graph**: calendar + mail + TG 履歴 + 場所（home/職場）。calendar は「人があらゆる書き方で登録する」前提
+  （場所だけ・曖昧タイトル・移動時間なし等）— 解釈して正規化し travel time を autofill する。現行の travel autofill はこの入口。
+- **DAILY organ（稼働中の核）**: 全予定に T-10/T-5 call（起床・就寝・出発・「出た?」）+ 遅刻メール。人が実際に動けるようにする。
+- **PHYSICAL organ**: schedule + 場所から「歯医者/散髪 等に行っていない」を検知 → 生活圏（自宅/職場の近く。都心勤務なら職場寄り）
+  で候補を選び予約を代行。全 schedule と居場所を知っているからこそ正しい場所・時間に入れられる。
+- **MENTAL organ**: 傾聴 call・習慣/就寝 nudge・孤独対策。suffering/clinging を減らす方向。
+- **FINANCIAL organ**: agent が自分の wallet を持ち `packages/engine`（earn loops = anicca で磨いてきた稼ぐ力）で自ら稼ぐ。
+  - crypto: agent wallet で稼ぐ → user の wallet へ送金。
+  - fiat: user が closed question（最小回数）で渡した credential の範囲で稼ぎ、user の銀行口座へ直行。
+  - = §3 CORE skills + profitable-claude がそのまま Life Manager の financial organ になる（§2 統合の意味）。
+
+### 9.2 MARKETING loop（毎日 video、self-improving）
+
+- **決定: slideshow 廃止 → video 毎日1本**（slideshow は promote しない、と Dais 実感。video の方が伝わる。
+  money-printer-turbo 型の video 生成 loop を流用）。
+- 配信: **IG = 既存 claude-p loop**（ig 専用のまま）／ **TikTok = Postiz、channel id `cmp9txjdp01c8oh0yb6dhlarr`**。
+- self-improve: 伸びた動画の型を学習して次の生成に反映。launchd 常設・毎日・人手ゼロ。
+- done = 7日連続、毎日1本、人手ゼロで IG+TT に実投稿（投稿 URL で実測）。
+
+### 9.3 DEV loop（self-build。#12 の general 化）
+
+- 入力: user feedback（TG / X 等）。**PII は収集側（user に近い側）で scrub してから issue 化** — 生の private 情報を
+  こちらの DB に送る設計は scammy なので最初から作らない。何を送るかは「PII 除去済み要約のみ」を不変条件にする。
+- 流れ: feedback 収集 → PII 除去 → issue 生成 → nested agent が修正 PR → merge → deploy（D0 実証済み: PR #312）。
+- = Life Manager が自分自身を毎日 build/iterate する。product 自体が self-improving loop。
+
+### 9.4 UX 原則
+
+- **ambient first**: 主 UI は電話 + TG（向こうから来る）。web app = control panel（timeline / 3 organ スコア / 収益台帳 / 設定）。
+- 質問は closed question を最小回数（credential 取得も含む）。
+- 全体像 ASCII（architecture / UI / life-change）はこの spec と同日の session log 正本。
+
 ## 8. 次セッションへの引き継ぎ（実装はそこから）
 
 1. 新 monorepo `anicca` を GitHub に作成（Turborepo scaffold）→ life-manager 収斂 spec に従い web app を移す
