@@ -6,15 +6,13 @@ Orca という Agent IDE で、スマホが自宅マシンのリモコンにな�
 
 大学にMacBookを返却しました。外出先で開発するとき、手元にあるのはiPhoneだけです。ただし、自宅にはMac Miniがあります。そこで考えたのが、計算はMac Miniに任せ、私はiPhoneからAI agentを動かす形でした。
 
-試したのはOrcaです。Claude CodeやCodexなどを別々のgit worktreeで走らせるAgent IDEで、iOSとAndroid向けのmobile companionもあります。スマホ版は小さなコードエディタではなく、desktopのremote controlとして設計されています。外からagentの状態を見て、返答し、diffを確認し、次のタスクを始めるための画面です。
+試したのはOrcaです。Claude CodeやCodexを別々のgit worktreeで走らせるAgent IDEで、スマホ版はdesktopのremote controlとして設計されています。
 
-2026年7月20日、Mac MiniへOrca v1.4.146を入れ、iPhone 15とのpairingまで終えました。接続にはTailscaleを使っています。初日に触った限りでは、これは「iPhoneの中で開発する」というより、「自宅の開発環境をiPhoneから持ち歩く」に近い体験でした。
+2026年7月20日、Mac MiniへOrca v1.4.146を入れ、Tailscale経由でiPhone 15とpairingしました。これは「iPhoneの中で開発する」より、「自宅の開発環境をiPhoneから持ち歩く」に近い体験でした。
 
 ## スマホ開発の選択肢を地図にしてみました
 
-最初は、自宅マシンへの遠隔接続か、cloud sandboxか、その二択だと思っていました。調べると、この分け方では足りません。同じ画面からlocalとcloudを選べる製品もあれば、自分のマシンをvendor relay越しに操作する製品、自社VPCで動かせる製品もあります。
-
-見るべきなのは、コードの正本がどこにあるか、誰の計算機で実行するか、スマホからどの経路で届くかの3点でした。代表的な選択肢をこの軸で並べると、違いが見えます。
+自宅遠隔かcloudかの二択では足りません。見るべきなのは、コードの正本、実行する計算機、スマホからの接続経路の3点でした。
 
 | 選択肢 | コードと実行場所 | 接続経路 | 向いている操作 |
 |---|---|---|---|
@@ -27,13 +25,11 @@ Orca という Agent IDE で、スマホが自宅マシンのリモコンにな�
 | Remote Tunnels | 自分のmachine | Microsoft relay | VS Code |
 | Cursor | cloud、自前環境 | native iOS | agent操作 |
 
-VibeTunnelやcode-serverのようにbrowserを入口にする方法もあります。Claude CodeのRemote Controlは自分のPCで実行しながらAnthropic APIをrelayに使います。CursorのiOS betaはcloud VMだけでなくSelf-Hosted PoolやMy Machinesも選べます。境界は一本の線ではなく、かなり連続的です。
-
-私がOrcaを選んだ理由は、自宅のMac Miniにすでにあるrepoと開発環境を、そのまま使いたかったからです。modelのsubscriptionも自分で用意する方式なので、Orcaがmodelを抱えるわけではありません。手元の状態を別のsandboxへ再現するより、今あるマシンにiPhoneから届く方が今回の目的には素直でした。
+Claude CodeのRemote Controlは自分のPCで実行しながらAnthropic APIをrelayに使い、CursorのiOS betaはcloud VMと自前のmachineを選べます。境界は連続的です。私はMac Miniにあるrepoと環境をそのまま使いたくてOrcaを選びました。
 
 ## Orcaという道具の形を整理しました
 
-Orcaの中心にある考え方は、1 taskにつき1つのgit worktreeと専用terminalを持たせることです。同じrepoで複数のagentを走らせても、作業場所が分かれます。Claude Code、Codex、OpenCode、OpenClaw、Piなどに対応し、custom CLIも扱えます。
+Orcaでは、1 taskに1つのgit worktreeと専用terminalを持たせます。Claude Code、Codex、OpenCode、OpenClaw、Piなどに対応します。
 
 ```mermaid
 flowchart TD
@@ -44,11 +40,7 @@ flowchart TD
     E --> F[AI agent]
 ```
 
-mobile companionからできるのは、agentへのcontinue、yes、自由文の返信、写真添付、音声入力、file treeの閲覧、stageとcommit、workspaceの作成などです。Live modeではkeystrokeを直接送れます。一方で、full editorは意図的に載せていません。スマホだけで細かなコード編集を再現するのではなく、agentを監督する範囲に絞っています。
-
-desktop側にはdiff viewerがあり、diffの行へ付けた注釈をfollow-up promptにできます。GitHubのPR、issues、Actionsに加え、LinearやJiraもin-appで表示できます。同じpromptを複数agentへ送り、それぞれのworktreeで結果を比べる並列レースも用意されています。
-
-remote接続もmobileだけではありません。SSH worktree、self-hosted Orca server、ephemeral VMを扱えます。ただ、今回使った構成はもっと単純です。Mac Mini上のOrcaとiPhoneをpairingし、両方をTailscaleに参加させました。Orca Relayは使っていません。
+mobile companionではagentへの返信、file tree閲覧、stageとcommit、workspace作成ができます。full editorは意図的に載せていません。今回の構成はMac MiniとiPhoneをTailscaleに参加させた直接接続で、Orca Relayは使っていません。
 
 ## セットアップではHomebrewとQRでつまずきました
 
@@ -60,19 +52,11 @@ xattr -dr com.apple.quarantine /Applications/Orca.app
 open -a Orca
 ```
 
-このとき入ったのはv1.4.146でした。初回起動ではGatekeeperのdialogが出たため、quarantine属性を外しています。その後も、ほかのアプリからのデータへのアクセスやiCloud Driveへのアクセスを求めるdialogが複数重なりました。実際のセットアップでは、それぞれ許可して進めました。
-
-onboardingは3 stepです。最初にdefault agentとしてClaudeを選びました。ほかにClaude Agent Teams、Codex、OpenClawも検出されています。「Yolo / Dangerously skip permissions」は既定のONのままにしました。次にthemeをsystemへ合わせ、通知設定はskipしました。
-
-project追加では `/Users/anicca/anicca-project` を選びました。sidebarにdev、feature/realtime-dashboard、release/1.9.5などのbranchが並び、terminalが開けば準備完了です。package-lock.jsonから検出された `npm install` のセットアップスクリプトも保存できます。
+Gatekeeperのdialogはquarantine属性を外して回避しました。続くaccess dialogを許可し、3 stepのonboardingではdefault agentにClaude、themeにsystemを選び、通知はskipしました。projectに `/Users/anicca/anicca-project` を追加し、branch一覧とterminalが出れば準備完了です。
 
 iPhoneとのpairingは、desktopのsidebarにある「Orcaモバイル」から始めます。重要だったのはNetwork selectorです。ここでLAN IPではなく、Tailscale IPの `100.99.82.95 (utun0)` を選びました。phone側でもTailscaleをONにします。Orca RelayはOFFのままなので、構成はTailscale経由のP2Pです。
 
-pairing QRは数分で期限切れになります。Mac Miniの前にいない状態で読み取るには、QRをiPhoneへ届けなければなりません。今回はTelegramとGmailの2経路で送り、Gmailで届いたものを使って、2026年7月20日20時40分ごろにpairingできました。QRが切れたら「コードを再生成する」で作り直せます。文字列のpairing codeをcopyする方法もあります。
-
-画面操作の自動化にも小さな罠がありました。System Eventsを使った `osascript` のclickはaccessibility権限で固まることがあり、実測では `cliclick` の座標clickが安定しました。installそのものより、初回dialogの処理と、期限の短いQRをどうiPhoneへ渡すかの方が手間でした。
-
-ここまで終われば、iPhoneのOrca appでDesktopsを開き、pairingしたMac Miniへ接続できます。desktop appを閉じると接続も切れ、再開すると自動でつながります。私の構成では、外出先から使うためにMac Mini、Orca、Tailscaleが動いていることが前提です。
+pairing QRは数分で切れます。今回はTelegramとGmailでiPhoneへ送り、Gmail経由のQRで20時40分ごろにpairingできました。期限切れなら再生成できます。desktop appを閉じると接続も切れ、再開すると自動接続します。
 
 ## 初日に一番よかったのは並列作業の見通しでした
 
