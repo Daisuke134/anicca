@@ -354,3 +354,25 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 - Phase R: $10k = $650×15 コロニー（OSS 採用 15人）。$100k = 150人。10k の変数 = OSS 採用数 > 文章力。
 - cost 恒等式: 1日 3 lane 合計 token 予算 ≤ $6 → 月 $180 → sub 36人で黒字。黒字化が最初の勝利条件。
 - 未検証 3変数（T12 で実数化）: sub 転換率 / ebook 販売率 / OSS 採用率。
+
+### 16.4 実行順序と MID lane スプリントの done 条件（2026-07-20 Dais 裁定。goal-setter 形式。これが次セッションの正本）
+
+**Order は lane 逐次: MID(記事) を完全に終わらせる → SHORT(F1) → LONG(F2)。** F1/F2 は MID done まで着手禁止（次々セッション以降で Dais が指示）。
+
+**Objective**: MID lane を完成させ、**既存の** `ai.anicca.article-daily`（launchd、autopublish armed 済み）を `launchctl kickstart` で発火し、「良い記事」が実際に毎日 publish される状態を実証する。新 loop を作らない。article loop の X 投稿（記事+X）は現状のまま維持。
+
+**分業**: Fable = plan/検証のみ。実装は全部 Sol subagent（flow A、worktree 分離）。
+
+**Done when（全部 AND、実測 evidence 必須）**:
+| # | 条件 | 検証方法 |
+|---|---|---|
+| D1 | W5 完了: bakeoff 第2R（E vs F vs G、blind/*.md 生成済み）を fresh spawn で blind 判定 → 勝者構成を article-writer の taste（SKILL.md/STEP3-4 参照ファイル）に統合 | profitable-claude main の diff + 統合後の記事生成が旧 baseline に blind で勝つ |
+| D2 | W1 完了: conscience gate（publish 前の公開適否 fresh-spawn 判定）が script として実在し article-daily.sh に配線、negative test（gray-zone 題材を食わせて BLOCK）PASS | 実行ログ + negative test 出力 |
+| D3 | W2 完了: bounded revise（max5 → 角度変え1回 → 翌日 carry-over）+ 記事1本 token 予算 gate。「PASS まで無限反復」文言が loop から消滅 | grep 0 hit + gate 実行ログ |
+| D4 | W3 完了: ¥1980 が grep 0 hit、free-first（note free or ≤¥500）配線 | 次 pass の note 出力実測 |
+| D5 | W4 完了: zenn = funnel を SKILL.md に明文化 | grep |
+| D6 | capafy X-line 恒久削除（.DISABLED rename → 削除 + SKILL.md から X-line 節撤去） | find 0 hit |
+| D7 | **kickstart 実証**: `launchctl kickstart -k gui/501/ai.anicca.article-daily` → pass 完走 rc=0、ledger published:true + reality_gate PASS、**live URL を Fable が実読して品質を own-eyes 判定**（D1 の新 taste が効いているか） | ledger 行 + live URL 実読 |
+| D8 | spec TODO 表 + TaskList 全同期、全 diff commit+push | git log |
+
+**Stop if**: 同一 D で3回 FAIL → handover。破壊的操作の要求。週次 token 残 10% 未満。
