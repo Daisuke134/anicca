@@ -46,7 +46,8 @@ const {
   sendStage, rowByChatId, setStage, saveField, handleOnboardingText, handleGmailCallback,
   applyTelegramProfileName, backfillIfCalendarCompleted,
 } = require("./lib/telegram-onboard.js");
-const { signedGmailConnectUrl, createHostedGmailLink } = require("./lib/gmail-onboard.js");
+const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
+const { mailAvailable } = require("./lib/mail-availability.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const {
   handleLateCallback, listWakeRows, markAnswered, claimNotified,
@@ -63,10 +64,6 @@ const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
-const GMAIL_ROUTE_BASE = process.env.LIFE_CALL_PUBLIC_BASE || process.env.PUBLIC_WSS || PUBLIC_BASE;
-const GMAIL_ONBOARD_CONFIGURED = Boolean(
-  process.env.LM_UID_SECRET && process.env.UNIPILE_DSN && process.env.UNIPILE_TOKEN && process.env.UNIPILE_NOTIFY_SECRET,
-);
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -130,7 +127,7 @@ async function userForUid(uid) {
   if (!url || !key) return null;
   // phone (to dial) + call_language (user-chosen call language, may be null → fall back to phone) +
   // name (so the call can address them by name).
-  const r = await fetch(`${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=phone,call_language,name`,
+  const r = await fetch(`${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=phone,call_language,name,gmail_account_id`,
     { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   const d = await r.json().catch(() => []);
   return Array.isArray(d) && d[0] ? d[0] : null;
@@ -250,6 +247,8 @@ const server = http.createServer((req, res) => {
       const q = new URL(req.url, "http://x").searchParams;
       const uid = q.get("uid") || "";
       if (!verifyUid(uid, q.get("sig") || "")) { res.writeHead(403); res.end("bad uid signature"); return; }
+      const user = await userForUid(uid);
+      if (!await mailAvailable(user)) { res.writeHead(503); res.end("Gmail integration is currently being prepared"); return; }
       const redirect = await createHostedGmailLink(uid, {
         dsn: process.env.UNIPILE_DSN, token: process.env.UNIPILE_TOKEN,
         notifySecret: process.env.UNIPILE_NOTIFY_SECRET,
@@ -359,8 +358,7 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
-          const gmailConnectUrl = row && GMAIL_ONBOARD_CONFIGURED
-            ? signedGmailConnectUrl(row.uid, GMAIL_ROUTE_BASE, LM_UID_SECRET) : "";
+          const gmailConnectUrl = ""; // Gmail connect is honestly OFF; sendStage auto-skips without rendering OAuth.
           const opts = {
             token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
             composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY,

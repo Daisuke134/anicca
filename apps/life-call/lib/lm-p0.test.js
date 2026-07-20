@@ -19,6 +19,7 @@ const {
   askTick,
 } = require("./ask.js");
 const { makeUnipileMail } = require("./transport/mail-unipile.js");
+const { mailAvailable, resetMailAvailabilityCache } = require("./mail-availability.js");
 
 test("LM-24: both Telnyx streaming bodies target the caller leg", () => {
   assert.equal(telnyxDialBody({ connectionId: "c", to: "+1", from: "+2", streamUrl: "wss://x" }).stream_bidirectional_target_legs, "self");
@@ -90,6 +91,32 @@ test("LM-3: search then extraction uses two Gemini calls and Gmail snippets", as
   assert.match(bodies[0].contents[0].parts[0].text, /Tokyo Hall/);
   assert.ok(bodies[1].tools[0].functionDeclarations[0].name === "submit_candidate");
   assert.equal(bodies[1].tools.some((t) => t.google_search), false);
+});
+
+test("Gmail OFF: cached provider probe rejects 401 and avoids a probe on every call", async () => {
+  resetMailAvailabilityCache();
+  let probes = 0;
+  const opts = { token: "expired", dsn: "api.example", nowMs: 1000,
+    fetchImpl: async () => { probes++; return { ok: false, status: 401 }; }, warn: () => {} };
+  assert.equal(await mailAvailable({ gmail_account_id: "a" }, opts), false);
+  assert.equal(await mailAvailable({ gmail_account_id: "b" }, { ...opts, nowMs: 2000 }), false);
+  assert.equal(probes, 1);
+});
+
+test("Gmail OFF: search-before-ask skips inbox and goes directly to Google Search", async () => {
+  let searched = 0;
+  const bodies = [];
+  await agentSearchCandidate({ summary: "MUIT", description: "" }, {
+    geminiKey: "k", gmailAccountId: "a", unipileToken: "expired", unipileDsn: "api.example",
+    mailAvailable: async () => false,
+    mail: { searchInbox: async () => { searched++; return []; } },
+    geminiRaw: async (body) => { bodies.push(body); return bodies.length === 1
+      ? { candidates: [{ content: { parts: [{ text: "web result" }] } }] }
+      : { candidates: [{ content: { parts: [{ functionCall: { name: "submit_candidate", args: { found: false, candidate: "", source: "web_search" } } }] } }] }; },
+  });
+  assert.equal(searched, 0);
+  assert.deepEqual(bodies[0].tools, [{ google_search: {} }]);
+  assert.match(bodies[0].contents[0].parts[0].text, /Gmail unavailable/);
 });
 
 test("LM-3: candidate found builds the exact closed-question buttons", () => {

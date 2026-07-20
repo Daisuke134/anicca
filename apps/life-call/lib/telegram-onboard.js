@@ -4,6 +4,7 @@
 const { sendMessage, onboardLink } = require("./telegram.js");
 const { signedGmailConnectUrl } = require("./gmail-onboard.js");
 const { backfillCalendarContext } = require("./context-graph.js");
+const { mailAvailable } = require("./mail-availability.js");
 
 // PURE: calendar/pay are taps, phone is the only typed question, and Gmail is skippable after pay.
 function computeStage(row) {
@@ -66,7 +67,16 @@ function stageMessage(stage, chatId, base, gmailConnectUrl, profileName) {
 
 async function sendStage(token, chatId, row, base, opts = {}) {
   const effective = applyTelegramProfileName(row, opts.profile || null);
-  const stage = computeStage(effective);
+  let stage = computeStage(effective);
+  if (stage === "gmail") {
+    const available = await (opts.mailAvailable || mailAvailable)(effective, opts.mailOptions || {});
+    if (!available) {
+      await (opts.saveField || saveField)(effective.uid, { gmail_skipped: true }, opts.supaUrl, opts.supaKey);
+      await (opts.sendMessage || sendMessage)(token, chatId,
+        "✉️ Gmail integration is currently being prepared, so I skipped that optional step. Your Calendar and all Gmail-independent features are ready.");
+      return "done";
+    }
+  }
   const message = stageMessage(stage, chatId, base, opts.gmailConnectUrl, effective.name);
   await (opts.sendMessage || sendMessage)(token, chatId, message.text, message.extra);
   return stage;
@@ -155,7 +165,19 @@ async function onboardNudgeAll(opts) {
   const rows = await list(opts.supaUrl, opts.supaKey);
   let sent = 0;
   for (const row of rows) {
-    const stage = computeStage(row);
+    let stage = computeStage(row);
+    if (stage === "gmail") {
+      const available = await (opts.mailAvailable || mailAvailable)(row, opts.mailOptions || {});
+      if (!available) {
+        await (opts.saveField || saveField)(row.uid, { gmail_skipped: true }, opts.supaUrl, opts.supaKey);
+        await (opts.sendMessage || sendMessage)(opts.token, row.telegram_chat_id,
+          "✉️ Gmail integration is currently being prepared, so I skipped that optional step. Your Calendar and all Gmail-independent features are ready.");
+        stage = "done";
+        await persistStage(row.uid, stage, opts.supaUrl, opts.supaKey);
+        sent++;
+        continue;
+      }
+    }
     if (stage === row.tg_onboard_stage) continue;
     await backfillIfCalendarCompleted(row, { ...opts, backfillCalendarContext: backfill });
     const gmailConnectUrl = opts.gmailConfigured === false

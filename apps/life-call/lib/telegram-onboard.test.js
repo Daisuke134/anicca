@@ -69,6 +69,21 @@ test("Gmail skip persists gmail_skipped=true and advances to done", async () => 
   assert.match(sent[0], /all set/i);
 });
 
+test("Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button", async () => {
+  const saved = [], stages = [], messages = [];
+  const row = { ...full, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+  const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
+    linkedRows: async () => [row], mailAvailable: async () => false,
+    saveField: async (_uid, patch) => saved.push(patch),
+    sendMessage: async (_token, _chat, text, extra) => messages.push({ text, extra }),
+    setStage: async (_uid, stage) => stages.push(stage) });
+  assert.equal(sent, 1);
+  assert.deepEqual(saved, [{ gmail_skipped: true }]);
+  assert.deepEqual(stages, ["done"]);
+  assert.match(messages[0].text, /currently being prepared/i);
+  assert.equal(messages[0].extra, undefined);
+});
+
 test("calendar completion triggers best-effort context backfill once before announcing phone", async () => {
   const calls = [];
   const row = { ...full, phone: null, paid: false, tg_onboard_stage: "calendar" };

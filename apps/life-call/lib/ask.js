@@ -19,6 +19,7 @@ const { getCalendar, getMail } = require("./transport/index.js");
 const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
+const { mailAvailable } = require("./mail-availability.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -59,7 +60,12 @@ async function agentSearchCandidate(event, deps = {}) {
   const mail = deps.mail || getMail({
     accountId: deps.gmailAccountId, token: deps.unipileToken, dsn: deps.unipileDsn,
   });
-  if (mail && typeof mail.searchInbox === "function" && (!mail.ready || mail.ready())) {
+  const available = deps.mailAvailable
+    ? await deps.mailAvailable({ gmail_account_id: deps.gmailAccountId })
+    : deps.mail
+      ? (!mail.ready || mail.ready())
+      : await mailAvailable({ gmail_account_id: deps.gmailAccountId }, { token: deps.unipileToken, dsn: deps.unipileDsn });
+  if (available && mail && typeof mail.searchInbox === "function") {
     snippets = await mail.searchInbox(String(event.summary || "")).catch(() => []);
   }
   const compactMail = snippets.slice(0, 5).map((m) => ({
@@ -67,7 +73,7 @@ async function agentSearchCandidate(event, deps = {}) {
   }));
   const grounded = await raw({
     contents: [{ role: "user", parts: [{ text:
-      `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\nGmail snippets: ${JSON.stringify(compactMail)}` }] }],
+      `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\n${available ? `Gmail snippets: ${JSON.stringify(compactMail)}` : "Gmail unavailable: use web_search directly."}` }] }],
     tools: [{ google_search: {} }],
     generationConfig: { temperature: 0 },
   }, deps.geminiKey);

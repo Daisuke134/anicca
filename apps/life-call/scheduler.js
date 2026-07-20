@@ -19,6 +19,7 @@ const { sendMessage } = require("./lib/telegram.js");
 const { sendLateNotice } = require("./lib/notify.js");
 const { langForPhone } = require("./lib/call-language.js");
 const { recordDailyComposioPoll } = require("./lib/ledger.js");
+const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processWakeRows, deliverLateNotice, listWakeRows,
   claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
@@ -264,9 +265,14 @@ function startScheduler() {
     console.warn("[scheduler] PUBLIC_WSS not set — calls would have no media bridge URL; loop still runs but won't dial");
   }
   console.log(`[scheduler] started — tick every ${TICK_MS / 1000}s, escalating wakes at T-${WAKE_LEVELS.map((l) => l.min).join("/")}min`);
-  const run = () => tick().catch((e) => console.error("[scheduler] tick err", e.message));
+  let timer;
+  const run = async () => {
+    try { await tick(); } catch (e) { console.error("[scheduler] tick err", e.message); }
+    const intervalMs = await schedulerPollInterval().catch(() => TICK_MS);
+    timer = setTimeout(run, intervalMs);
+  };
   run();
-  return setInterval(run, TICK_MS);
+  return { close: () => clearTimeout(timer) };
 }
 
 // ── Travel auto-fill (every 30 min) — keep today+7d filled with [Travel] blocks ─────────────────
