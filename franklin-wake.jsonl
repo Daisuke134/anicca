@@ -11555,3 +11555,13 @@
 {"ts":1784509416,"wake_id":"00MRSITY2R8596FB2D1A304B93","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784509602,"wake_id":"00MRSIXXEJ16A1551B836C4639","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784509602,"wake_id":"00MRSIXXEJ16A1551B836C4639","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784509733,"wake_id":"00MRSJ0QO01689F720D42349A8","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784509733,"wake_id":"00MRSJ0QO01689F720D42349A8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784509864,"wake_id":"00MRSJ3K6P22B36867AF3449C8","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784509864,"wake_id":"00MRSJ3K6P22B36867AF3449C8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784509997,"wake_id":"00MRSJ6EOJ580DDBFC78AE4709","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784509997,"wake_id":"00MRSJ6EOJ580DDBFC78AE4709","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784510129,"wake_id":"00MRSJ988G4700869B12EB4C75","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784510262,"wake_id":"00MRSJC35MF55B35126CED4C72","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784510262,"wake_id":"00MRSJC35MF55B35126CED4C72","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784510392,"wake_id":"00MRSJEVETC95E0B86991E4C95","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
