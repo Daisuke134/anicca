@@ -20,6 +20,9 @@ Dais が phone（Claude iOS の Code タブ / Codex app）だけで開発・監�
 | 2 | **status-to-repo**: colony-status.sh の出力を docs/STATUS-live.md に定期書き出し（#1 の sync に同乗）。phone から repo を見るだけで loop 稼働/残高が分かる | STATUS-live.md が repo に現れ、値が実測と一致 | implemented; local live output verified |
 | 3 | **phone runbook**: docs/reference/phone-runbook.md — Claude iOS Code タブの接続手順（GitHub App で 3 repo 許可）、Termius+Tailscale SSH 手順、緊急時（loop 死亡/ディスク満杯）の一次対応コマンド集 | ファイル存在 + 手順が実環境の値（repo 名/IP）と一致 | implemented; pending Fable verification |
 | 4 | **cloud session 実証**: Fable が Claude web で anicca-project session を1回開き、AGENTS.md/rules が効いてることを確認 | cloud session の実行ログ | pending(Fable) |
+| 5 | **MacBook Pro 返却（物理・今日/明日）**: Dais が初期化（Apple ID サインアウト→設定>一般>転送またはリセット）→ 箱 or プチプチ + 充電器・ケーブル同梱 → 郵送: 〒630-0192 奈良県生駒市高山町8916-5 奈良先端科学技術大学院大学 脳・行動モデリング研究室 谷本様 TEL 0743-72-5354（金曜来学 or 郵送、先方指定）。前提の「MacBook 依存ゼロ」は確認済み（Dais 明言 + Mac Mini 側監査済み） | 発送完了 | pending(Dais 物理) |
+| 6 | **floor 残り弾の適用**: floor-reduction/ の sessionstart-hooks.patch・global-claude-md.diff・memory-md.diff・floor-guard-patch.diff を Sol が適用+検証（.bak 必須、global CLAUDE.md/MEMORY は Dais 規律のため意味を変えない移設のみ） | 適用後 新session /context で floor 低下 + 全 hook/session 正常動作 | pending(Sol) |
+| 7 | **global rules 単一実体化 Phase 2**: ~/.claude/CLAUDE.md ⇄ ~/.codex/AGENTS.md を実体1つ+import/link に（docs/loop-engineering/49 の裁定に従う）。Sol が提案 diff → 適用 → 両 CLI で規律ロード検証 | 両 CLI が同一実体から規律を読む実測 | pending(Sol) |
 
 ## 進捗記録
 - 2026-07-20: spec 作成。#1-3 を Sol へ発注。
