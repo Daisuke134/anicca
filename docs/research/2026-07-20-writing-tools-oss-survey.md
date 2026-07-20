@@ -38,6 +38,22 @@
 3. 判定: fresh spawn の blind 比較（どれが良いか + なぜ）× ja/en 両方
 4. 結果 → ①勝者を article-writer の taste/verifier に統合 ②比較記事を queue に投入 ③統合 skill を profitable-claude で OSS 化
 
+## 書籍レーン追補（research-books subagent 実測、2026-07-20 追記）
+
+当初「3レーン全滅」と書いたが books レーンは後着で完走 — 是正。上位実測:
+
+| repo | stars | 最終push | 品質の作り方 | 盗むべき部分 |
+|---|---:|---|---|---|
+| THUDM/LongWriter | 1,867 | 2025-06-24 | AgentWrite が plan を step 分割、累積本文を毎 step 注入 | step cache/resume、長文分割 |
+| Nigh/show-me-the-story | 373 | 2026-07-19 | outline 承認→章別 review、事実検査 NG で自動 rewrite、全書診断→最小 diff 改稿 | **既存本文 import + 全書整合 pass** — 記事束ね直しに直結 |
+| KazKozDev/NovelGenerator | 138 | 2025-11-05 | 3段編集 + 全章整合 pass | 最終整合 pass、EPUB/PDF export |
+| knoai/knowrite | 16 | 2026-05-09 | **Editor 最大3 revise、80% gate**、3層 memory | **bounded revise** — W2（無限 revise 廃止）の既存実装例 |
+| alexeygrigorev/ai-book-generator | 13 | 2026-04-06 | parts→chapters→sections→bullets、進捗注入 | plan.yaml、章素材束ね、**EPUB + KDP print-ready PDF** |
+
+書籍フォームの単一推奨（subagent 提案を採択）: **ai-book-generator を骨格**（非小説の章構造 + 記事流し込み + KDP/EPUB 組版が一気通貫）+ **show-me-the-story の全書整合 pass** と **knowrite の bounded revise** を品質 loop として移植。
+誤り筋: 再編集品質を組版より優先するなら show-me-the-story が第一候補に入れ替わる。
+knowrite の「最大3 revise + 80% gate」は W2 の設計そのもの — 車輪あり、copy+tweak せよ。
+
 ## 注記
 
 - gh API rate limit（5,000/hr）に当日到達。追加検索は reset 後。"zenn article" / "buzz tweet" クエリは未実行。
