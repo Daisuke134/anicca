@@ -325,7 +325,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
-| 1 | E2E束 | LM-5/3/6/7 実 call E2E（短経路イベント1本。※LM-23「出た?」は検証対象から除外 — 廃止決定済み） | T-10/T-5 実 call + 録音 whisper 英語 + 遅刻メール実受信(message_id)。spec §5c 記録 | pending |
+| 1 | E2E束 | LM-5/3/6/7 実 call E2E | **done (2026-07-21 00:15 実測)**: ①実 call+双方向+**英語** = 07-20 朝 call 録音 whisper 実証（`2026-07-19T23-40-35-932b3fad….mp3`「This is your life manager… Tokyo at 930. Time to leave now」/Dais「Yes?…What's one plus two?」）+ lm_wake_log T-10 行 answered_at=2026-07-19T23:40:05Z → **LM-2/24/26/28 全 close** ②LM-3 = lm_ask_log resolved_from=web_search 実 row 2件 ③LM-7 = lm_api_cost 15行（gemini_live $0.046/telnyx $0.004 実記録）。**残1点 = 遅刻メール実受信証拠は順6へ移管**（trigger 経路 = T-0「出た?」ボタン = LM-30 撤去対象。廃止コードの E2E は行わず、v2 location gate の E2E でメール送信ごと実証する。sendLateNotice/Resend は共通部品として v2 で検証される） | **done** |
 | 2 | #12締め | PR #312 TG 報告確認 + launchctl load 常設化 | launchctl list に life-manager-dev | pending |
 | 3 | LM-8c改2 | calendar=Composio 継続 + **Gmail 読み=正直 OFF gate**（Unipile dormant 化 graceful-off 実測 + Composio budget guard。§10.1 U1 是正済み） | mail 無し時に ask/context が例外なく動く実測 + guard 動作 + 月間 call 数可視 | pending |
 | 4 | LM-21 | 13 secret rotate（GEMINI/TELNYX 優先。公開前必須） | /health 200 + TG echo + dial preflight ok | pending |
