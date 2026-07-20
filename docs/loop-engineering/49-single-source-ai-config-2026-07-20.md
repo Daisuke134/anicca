@@ -31,6 +31,12 @@ AGENTS.md (repo, 40行 curated)     ← Codex rules
 CLAUDE.md → 参照1行群 + rules/paths ← Claude rules（既存）
 ```
 
+## 実施結果（2026-07-20 実測検証済み）
+- ~/.claude/skills = 11 symlink（全て ~/.agents/skills 配下向き）、~/.agents/skills = 実体65 + broken 0、重複 0件。Sol 実装（backup: skills.bak-20260720 ×2、broken vendor link は skills.broken-20260720/ へ退避、旧 .git は skills.gitmeta-20260720/ へ退避）。
+- claude -p での skill listing 83 unique 確認（Sol 実測）。
+- **GitHub sync は既設だった**: `ai.anicca.agents-skills-sync`（launchd、~/.agents 全体 ⇄ private repo anicca-agents-skills、双方向）。新規に作りかけた nested git repo は誤りで除去 → 既存 loop kickstart → remote head 8f38e3a 一致を実測。教訓 = 登録簿を先に引く（掟どおり）。
+- gitleaks: 誤検知1件（whisper model 名）を .gitleaksignore 化、0 leaks。
+
 ## 誤りの記録
 - 「cron で 30分毎 sync」案（cloud-mobile spec #1 の openclaw sync とは別物）を skills 共有に使う発想は誤り。sync は GitHub バックアップ（phone の窓）にだけ使い、agent 間共有には使わない。
 - 最初の symlink 向き（~/.agents ← ~/.claude）は逆だった。実体は ~/.agents/skills 側に寄せる。
