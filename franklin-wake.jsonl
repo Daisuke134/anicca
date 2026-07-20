@@ -12192,3 +12192,10 @@
 {"ts":1784576015,"wake_id":"00MRTMHEDPF4A3845CEBA44F98","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784576145,"wake_id":"00MRTMK6PF6B4E2A60A05F4680","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784576145,"wake_id":"00MRTMK6PF6B4E2A60A05F4680","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784576278,"wake_id":"00MRTMN0ZY2F4BDBEEBD9244B8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784576408,"wake_id":"00MRTMPTO064C6AD8F02724129","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784576539,"wake_id":"00MRTMSM9I32878E0C57894957","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784576539,"wake_id":"00MRTMSM9I32878E0C57894957","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784576668,"wake_id":"00MRTMVEB8215DF5ED05934185","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784576971,"wake_id":"00MRTN1VKAF1F8CB37D31E4069","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784577101,"wake_id":"00MRTN4OE863A225858F364918","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
