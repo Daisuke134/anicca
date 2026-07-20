@@ -12199,3 +12199,12 @@
 {"ts":1784576668,"wake_id":"00MRTMVEB8215DF5ED05934185","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784576971,"wake_id":"00MRTN1VKAF1F8CB37D31E4069","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784577101,"wake_id":"00MRTN4OE863A225858F364918","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784577229,"wake_id":"00MRTN7FAJ42AA47CF2CD94777","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784577361,"wake_id":"00MRTNA91PC1446B4717BC4095","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784577361,"wake_id":"00MRTNA91PC1446B4717BC4095","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784577492,"wake_id":"00MRTND1YP810E1CB9C86A4901","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784577492,"wake_id":"00MRTND1YP810E1CB9C86A4901","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784577621,"wake_id":"00MRTNFTR6C2587C408D8B46FD","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784577621,"wake_id":"00MRTNFTR6C2587C408D8B46FD","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784577752,"wake_id":"00MRTNIMQJDE8EB45FAC2743DE","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784578055,"wake_id":"00MRTNP3ZR7CC380BC6B5B46AC","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
