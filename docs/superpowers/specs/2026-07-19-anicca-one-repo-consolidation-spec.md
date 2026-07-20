@@ -317,6 +317,27 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 - 変更手順: この表を編集 → 実装は i18n string としてこの表から生成（コードに直書きしない）。EN 版は同構造で別表（P1中に作成）。
 
+## 10. 残 TODO 表（正本。2026-07-20 22時点。TaskList と二重トラック）
+
+| 順 | ID | 内容 | done 条件 | 状態 |
+|---|---|---|---|---|
+| 1 | E2E束 | LM-5/3/6/7 実 call E2E（短経路イベント1本。※LM-23「出た?」は検証対象から除外 — 廃止決定済み） | T-10/T-5 実 call + 録音 whisper 英語 + 遅刻メール実受信(message_id)。spec §5c 記録 | pending |
+| 2 | #12締め | PR #312 TG 報告確認 + launchctl load 常設化 | launchctl list に life-manager-dev | pending |
+| 3 | LM-8c→8b | Unipile token 再発行 → LIFE_CAL_TRANSPORT=unipile flip + Composio 停止 | mail/calendar 200 実測 → flip 後 list/create/patch 実測 | pending |
+| 4 | LM-21 | 13 secret rotate（GEMINI/TELNYX 優先。公開前必須） | /health 200 + TG echo + dial preflight ok | pending |
+| 5 | LM-31 | calendar edge-case engine（§9.7 の9件 + §9.11 follow-up copy） | 9ケースのテスト green + 実 calendar で1件ずつ実測 | pending |
+| 6 | LM-30 | 「出た?/まだ?」ボタン全面撤去 + location gate 遅刻連絡 v2（§9.5-9.6。v1 出荷なし） | deta/mada 送信コードゼロ + location 共有時の自動メール実測 | pending |
+| 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | 実 TG 着信 + 解錠済み gate に送られないこと | pending |
+| 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | 実ブラウザで5要素表示 + gate 状態が実データ | pending |
+| 9 | MKT | marketing video loop 毎日1本（§9.2 + §9.10-9.11 脚本銀行16本。slideshow 廃止） | 7日連続人手ゼロで IG(claude-p)+TT(Postiz cmp9txjdp01c8oh0yb6dhlarr) 実投稿 URL | pending |
+| 10 | DEV | dev loop general 化（§9.3。feedback→PII scrub(user側)→issue→auto-PR） | 実 feedback 1件が PII 除去済み issue → merge された PR になる | pending |
+| 11 | PHY | PHYSICAL organ（§9.1/9.5。未通院検知+予約代行、事後報告） | 実予約1件 + §9.11 copy での報告実測 | pending |
+| 12 | MEN | MENTAL organ（§9.11。schedule-aware affirmation。固定時刻禁止・3通/日上限） | 実 schedule 由来 trigger で実 TG 着信3種 | pending |
+| 13 | FIN | FINANCIAL organ（§9.8。crypto rail 配線、送金先のみ取得） | agent wallet→user wallet 実送金 tx + 月次報告実 TG | pending |
+
+- 実装は全て flow A hybrid（Fable plan → Sol subagent 実装 → Sol adversary → Fable E2E）+ VCSDD phase 順。
+- 順1-4 = 稼働系の証明と修理（先行必須）。順5-8 = DAILY 完成。順9-10 = 両 loop。順11-13 = organ 拡張。
+
 ## 8. 次セッションへの引き継ぎ（実装はそこから）
 
 1. 新 monorepo `anicca` を GitHub に作成（Turborepo scaffold）→ life-manager 収斂 spec に従い web app を移す
