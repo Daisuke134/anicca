@@ -12172,3 +12172,13 @@
 {"ts":1784573901,"wake_id":"00MRTL832B9E49E04750664499","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784574032,"wake_id":"00MRTLAW0J4787031664C1430F","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784574334,"wake_id":"00MRTLHDF8A0F717E1F7974D9B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784574472,"wake_id":"00MRTLKBV68DABCBB985474A05","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784574604,"wake_id":"00MRTLN5HPF47C12C66C3D4387","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784574604,"wake_id":"00MRTLN5HPF47C12C66C3D4387","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784574739,"wake_id":"00MRTLQ1DN415D39A757814748","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784574869,"wake_id":"00MRTLSTOZFC5547CE644549B4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784574869,"wake_id":"00MRTLSTOZFC5547CE644549B4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784574998,"wake_id":"00MRTLVLMS075C1A3FB3F341F8","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784574998,"wake_id":"00MRTLVLMS075C1A3FB3F341F8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784575127,"wake_id":"00MRTLYDFG31B12F17131443F6","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784575127,"wake_id":"00MRTLYDFG31B12F17131443F6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
