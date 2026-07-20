@@ -36,7 +36,8 @@ Desktop 側: sidebar「Orca モバイル」→ 始めましょう → step 2/2 �
 - Orca Relay（cloud 中継、sign-in 必要）は OFF のまま = 純 Tailscale P2P。
 
 iPhone 側: Orca app → Desktops → Pair a desktop → QR スキャン。
-QR は 2026-07-20 20:20 JST に Telegram Saved Messages へ送付済み（msg_id 3320）。
+**2026-07-20 20:40 JST 頃 pairing 成功（Dais 実機 iPhone 15、Tailscale 経由）。** QR 配送は
+Telegram（Anicca chat msg_id 3322）+ Gmail（AgentMail 経由、添付 4 枚）の 2 経路で行い、後者で成立。
 
 ## 落とし穴（実測）
 
