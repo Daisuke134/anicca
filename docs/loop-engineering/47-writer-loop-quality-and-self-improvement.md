@@ -198,3 +198,48 @@ build は全 done(#1-6,9-14 完了)。残り:
    - **選定元**: note 有料ランキング / Substack bestseller / zenn trending / dev.to top。「これは人が金を払う記事か」の判定は model が行う（regex 禁止）
    - **rubric few-shot**: 蓄積した exemplar から引く = 採点基準が実在の売れてる記事に紐づく
 4. (arm後) `skills/article-writer/scripts/` の汎用部品（rubric-judge.sh / self-improve.sh / reader-testing-gate.sh）を `skills/_shared/` へ移動して clip/reddit 等の兄弟 loop からも使えるようにする / OSS 公開前に Dais の個人情報（アカウント名・telegram ID・gmail）をコードと state ログから消して env 変数に置換する
+
+## 13. 2026-07-20 Dais 裁定: no-skip 毎日必 publish + 今日から autopublish + queue 3-lane（§10 の「複数日 watch」を上書き）
+
+### 13.0 今朝の実測（2026-07-20 06:00 pass の失敗解剖）
+
+- olas-mech explainer は書けた（ja/en）。機械 gate + reader-testing 全 PASS、**rubric FAIL ja 62 / en 61**（title_jargon: 見出しの Mech/Requester。gate は正しく検出し improvements #1 で「タイトルから外せ」まで指示済み）
+- **規定の revise loop（3回）が 0 回実行**: ja FAIL から 7 秒で en の gate に素通り。ledger 0 行・Telegram 無しのまま rc=0 で終了（07:00:36、最終 stdout は文脈不明の1行）
+- **真犯人 = disk**: emergency-disk-guard.log 実測で 06:00-07:00 に free 0GB ×89 回 / 1GB ×77 回。2026-07-14 ENOSPC brick と同 class。guard の 60 分 transcript 掃除で当該 pass の transcript も消失
+- 応急処置済み: `~/.openclaw/skills/.backups/` の旧 tar.gz 2 本削除（+7.5GB、free 9.7GB）。残 = 07-14 の 14GB backup（新 backup 成功後に削除）と生成側 cron の是正（§13.5）
+
+### 13.1 不変条件（全て MUST。Dais verbatim「no option to skip」「they have to ship article everyday no matter what」）
+
+1. **毎日 1 記事、publish まで完走する。skip という出口は存在しない**
+2. rubric revise = **max 5 回/言語**。5 回 FAIL → 同 topic のまま**角度とタイトルを変えて書き直し** → 再 gate。PASS まで継続する（「FAIL のまま未 staging で正直報告して終了」の枝は削除）
+3. pass 完了の定義 = rubric PASS + 全 platform publish + reality-gate PASS + ledger `published:true` + Telegram 報告。**これ未満での exit は「未完了」であり成功ではない**
+4. **wrapper self-heal**: pass 終了時に当日の完了 ledger 行が無ければ wrapper が自動 respawn（上限付き、間隔をあけて）。今朝のような途中死は次の respawn が拾う
+5. **disk preflight**: pass 冒頭で free < 5GB なら承認済み掃除（backup 旧世代・再DL可能 cache）を自分で実行してから走る
+6. STEP 3 執筆時に `reference/title-best-practices.md`（profitable-claude main、commit 3826828）を**必ず読む**。タイトル = 平易な機能語ファースト・未定義固有名詞禁止・発見（数字/結果)を約束。「〜を徹底解説」型は禁止
+
+### 13.2 autopublish（Dais 裁定: 今日 2026-07-20 から arm。§10 の「複数日 watch してから」は本節が上書き）
+
+- §11 の arm コマンドを実行し `ARTICLE_AUTOPUBLISH=1`。armed 時は draft-only doctrine を反転: **publish が happy path**、reality-gate PASS が必須 gate。unarmed 時は従来どおり draft-only（OSS 利用者の既定）
+- dev.to のみ常に draft（仕様維持）
+- 品質の担保は「人間が draft を読む」から「**rubric PASS まで無限 revise**（13.1-2）」へ移る。gate を弱めて通すのは最悪の違反
+
+### 13.3 queue 3-lane（ネタ供給の設計。目標比率 ≈ Dais 指名 50% / auto devlog 30% / 自走 20%）
+
+| lane | 供給 | 状態 |
+|---|---|---|
+| 1. Dais 指名 | Dais「これ記事に」→ Fable がその turn 内に `topics/queue/` へカード作成（既存 frontmatter に倣う。HARD） | 運用ルールとして確立 |
+| 2. auto devlog | 毎日の開発ログ → devlog カード自動生成。07-19 分は存在、**07-20 分が無い** → 生成器を特定し毎日生成を保証する | 要配線 |
+| 3. 自走 | queue 空なら loop が自分でネタを発掘して書く（これが moat・core） | 既存 lane B の保証を確認 |
+
+- 優先順: Dais カード > devlog > 自走
+- 今朝の `olas-mech-marketplace.md` は in-progress に stuck → queue に戻す
+
+### 13.4 Phase 区分
+
+- **Phase 1** = 13.1〜13.3 が 100% 稼働。今日が初の full E2E no-human 公開日（fix → arm → kickstart → olas 記事を PASS まで反復 → 実公開 → own-eyes 検証）
+- **Phase 2** = #8 OSS 化（§11）→ 一般 writing / X 短文 / books / 多言語 / medium・自社サイト+SEO。north star: 誰でも clone → 10k MRR/人、合計 10M MRR
+
+### 13.5 disk 恒久対策（loop の生存条件）
+
+- `~/.openclaw/skills/.backups/` を日次生成する cron を特定し、保持 1 世代 + heavy dir（venv/media/state）除外に是正。14GB/本の tar.gz を毎日積むのが今回の根本原因
+- 検証: 是正後の backup サイズ < 2GB、free > 20GB を維持
