@@ -361,6 +361,15 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
   2. **gate の意味を限定**: 順1 green が block するのは順5-13 の **merge/prod 反映のみ**。spec 書き・TDD RED・worktree 内実装は順1 待ちの間も Sol が進めてよい（未検証の土台に「本番を」積まない、が gate の目的。準備まで止める理由はない）。
   3. **待ち時間の既定動作 = 次の独立タスク**: 順1 が Dais 都合で取れない間は順2/3/4 → 順5-8 の準備、と自動で降りる。「待ってます」報告で停止するのは罪。Dais への連絡は (a)窓の予約 (b)全完了報告 (c)真の停止点、の3種のみ。
 
+### 10.0 出荷ラン実況（2026-07-21 未明。live 状態の要約 — 詳細は各 §10 行）
+
+- **prod 昇格済み**: 今夜の PR 6本（#323 edge engine+eval / #324 「出た?」根絶+location gate / #325 discovery / #326-328 panel 認証·API·UI）を dev→main #329 で本番へ。migration 4テーブル+discovery 列は Supabase Management API で適用し SELECT で実在確認済み。
+- **⚠ 事故と修理（実測記録）**: rotate 用に --skip-deploys で staged されていた新 secret 群が #329 の auto-deploy で本番に乗り、Telegram webhook が secret 不一致で**全 update を 401 拒否**（ボタン無反応・live location 不達の真因）。修理 = Sol が setWebhook を現 prod secret + `edited_message` 追加で再登録 → **実測で last_error 消滅・pending 0・allowed_updates=[message, edited_message, callback_query]**（2026-07-21 03時頃）。
+- **rotate は Dais 裁定で中止**。staged 済み新値（GEMINI/TELNYX/SUPABASE/self-mint 4件）はそのまま本番有効。Stripe 新旧 endpoint は並走中（無害）。Unipile/Composio/Resend の再発行は不要になった。
+- **Railway CLI 認証は Dais が復旧**（whoami = keiodaisuke@gmail.com 実測）。
+- **panel は Dais が実際に開けた**（「一部動く、直しが要る」— 指摘詳細は panel-fix 発注で回収予定）。
+- 実行中: Sol fixwebhook 発注の残り = D-1 遅刻連絡 E2E（lm_late_notice_log poll 中）→ D-2 ボタン実タップ → D-3 panel screenshot → 本表 done 化。次発注 = M-1 launch demo video（発注書 .claude/sol-orders/order-m1.md 作成済み）。
+
 ### 10.1 不確実性 U1-U10 の解決（2026-07-20 実測。4 subagent 並行調査の裁定）
 
 | # | 結論（全て close） |
