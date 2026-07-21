@@ -26,7 +26,7 @@ async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl
   const args = parseArgs(argv);
   const nowMs = Date.now();
   const controlledL3 = args.mode === "controlled-l3"
-    ? await collectControlledL3({ mode: args.mode, nowMs, env, fetchImpl })
+    ? await collectControlledL3({ mode: args.mode })
     : undefined;
   const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });
   const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });

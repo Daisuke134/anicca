@@ -34,11 +34,9 @@ test("public CLI rejects caller supplied --proofs", () => {
   assert.throws(() => parseArgs(["--proofs", "/tmp/forged.json"]), /unknown argument/);
 });
 
-test("production main ignores forged collectors and cannot be turned green", async () => {
-  let invoked = 0;
-  const forged = { telegram: async () => { invoked += 1; return good().telegram; }, email: async () => { invoked += 1; return good().email; } };
-  await assert.rejects(() => main({ argv: ["--mode", "controlled-l3", "--timeout-ms", "1"], env: {}, collectors: forged }));
-  assert.equal(invoked, 0);
+test("production main has no collector or transport injection parameters", () => {
+  const parameters = main.toString().match(/^async function main\(([^)]*)\)/)?.[1] || "";
+  assert.doesNotMatch(parameters, /\b(?:collectors?|botCall|mtprotoSend|mtprotoRead|execFileImpl|send|findReceipt|mailFactory|now|randomNonce|sleep|maxPolls)\b/);
 });
 
 test("read-only production main invokes zero caller or controlled sends", async () => {
@@ -66,6 +64,27 @@ test("test-only controlled runner invokes each collector exactly once", async ()
 test("production entrypoint cannot import or activate test-only collector DI", () => {
   const source = fs.readFileSync(path.join(__dirname, "../scripts/daily-preflight.js"), "utf8");
   assert.doesNotMatch(source, /test-support|collectors|proof(?:s|File|_file)/i);
+});
+
+test("production controlled collectors expose no factory or transport injection surface", () => {
+  const collectorPath = path.join(__dirname, "daily-preflight-collectors.js");
+  const collectorSource = fs.readFileSync(collectorPath, "utf8");
+  const controlledSource = fs.readFileSync(path.join(__dirname, "daily-preflight.js"), "utf8");
+  const cliSource = fs.readFileSync(path.join(__dirname, "../scripts/daily-preflight.js"), "utf8");
+  const exports = Object.keys(require(collectorPath)).sort();
+  const exported = require(collectorPath);
+  const forbiddenParameters = /\b(?:env|fetch|fetchImpl|botCall|mtprotoSend|mtprotoRead|execFileImpl|send|findReceipt|mailFactory|now|randomNonce|sleep|maxPolls|maxReplyPolls|maxWebhookPolls)\b/;
+
+  assert.deepEqual(exports, ["collectProductionControlledL3", "validateEmailObservation", "validateTelegramObservation"]);
+  assert.equal(exported.collectProductionControlledL3.length, 0);
+  assert.doesNotMatch(exported.collectProductionControlledL3.toString().match(/^async function [^(]+\(([^)]*)\)/)?.[1] || "", forbiddenParameters);
+  for (const name of exports) assert.doesNotMatch(name, /^(?:create|make)/);
+  assert.doesNotMatch(collectorSource, /function\s+create(?:Telegram|Email|ProductionCollector)/);
+  assert.doesNotMatch(collectorSource, /collectProductionControlledL3\s*\([^)]/);
+  assert.doesNotMatch(`${collectorSource}\n${controlledSource}`, /\.test-support\.js/);
+  assert.match(collectorSource, /async function collectProductionControlledL3\(\)/);
+  assert.match(controlledSource, /async function collectControlledL3\(\{ mode \} = \{\}\)/);
+  assert.doesNotMatch(cliSource, /collectControlledL3\([^)]*(?:env|fetch|collector)/);
 });
 
 test("controlled CLI prerequisite errors exit nonzero with sanitized output", () => {

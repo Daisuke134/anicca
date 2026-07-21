@@ -7,7 +7,7 @@ const { LIVE_MODEL } = require("./call-logic.js");
 const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");
 const { schedulerCohortFilter } = require("./user-selector.js");
 const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");
-const { createProductionCollectorRegistry } = require("./daily-preflight-collectors.js");
+const { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");
 
 const DEPENDENCY_NAMES = Object.freeze([
   "health",
@@ -671,11 +671,11 @@ function validateEmailProof(value, nowMs) {
   });
 }
 
-async function collectControlledL3({ mode, nowMs = Date.now(), env = process.env, fetchImpl = fetch } = {}) {
+async function collectControlledL3({ mode } = {}) {
   if (mode !== "controlled-l3") throw collectorFailure("controlled_mode_required");
-  const collectors = createProductionCollectorRegistry({ env, fetchImpl });
-  const [telegram, email] = await Promise.all([collectors.telegram(), collectors.email()]);
-  return Object.freeze({ telegram: validateTelegramProof(telegram, nowMs), email: validateEmailProof(email, nowMs) });
+  const observations = await collectProductionControlledL3();
+  const nowMs = Date.now();
+  return Object.freeze({ telegram: validateTelegramProof(observations.telegram, nowMs), email: validateEmailProof(observations.email, nowMs) });
 }
 
 function serializeControlledL3(controlledL3, nowMs) {

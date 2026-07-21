@@ -3,12 +3,10 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
-  createEmailCollector,
-  createProductionCollectorRegistry,
-  createTelegramCollector,
   validateEmailObservation,
   validateTelegramObservation,
 } = require("./daily-preflight-collectors.js");
+const { createEmailCollector, createTelegramCollector } = require("./daily-preflight.test-support.js");
 
 const NOW = Date.parse("2026-07-21T06:00:00Z");
 const hash = "sha256:0123456789abcdef";
@@ -133,21 +131,7 @@ test("collector failures never contain raw provider errors or PII", async () => 
   await assert.rejects(collect, error => !String(error).includes("person@example.com") && !String(error).includes("raw secret"));
 });
 
-test("production registry contains real fixed adapters rather than unavailable stubs", () => {
-  const registry = createProductionCollectorRegistry({ env: {} });
-  assert.equal(typeof registry.telegram, "function");
-  assert.equal(typeof registry.email, "function");
-  assert.doesNotMatch(String(registry.telegram), /collector_unavailable/);
-  assert.doesNotMatch(String(registry.email), /collector_unavailable/);
-});
-
-test("production registry collector functions both execute and fail closed on missing prerequisites", async () => {
-  const registry = createProductionCollectorRegistry({ env: {} });
-  await assert.rejects(registry.telegram, /telegram_configuration/);
-  await assert.rejects(registry.email, /email_recipient_not_controlled/);
-});
-
-test("production Telegram transport uses only pinned interpreter and sidecar argv and discards reply text", async () => {
+test("test-support Telegram mirror requires fake exec before any sidecar invocation", async () => {
   const invocations = []; let botCalls = 0;
   const execFileImpl = async (file, args, options) => {
     invocations.push({ file, args, options });
@@ -177,7 +161,7 @@ test("production Telegram transport uses only pinned interpreter and sidecar arg
   assert.doesNotMatch(JSON.stringify(result), /opaque|panel\?t=/);
 });
 
-test("production email transport uses Resend acceptance and gog exact receipt without caller success booleans", async () => {
+test("test-support email mirror uses acceptance and exact receipt without caller success booleans", async () => {
   const nonce = "c".repeat(32); let receives = 0;
   const collect = createEmailCollector({
     env: { GOG_ACCOUNT: "controlled@aniccaai.com", LM_CONTROLLED_EMAIL_ALLOWLIST: "controlled@aniccaai.com", RESEND_API_KEY: "key" },
