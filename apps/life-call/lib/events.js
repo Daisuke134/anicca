@@ -41,8 +41,10 @@ async function fetchUpcomingEvents(uid, opts = {}) {
     const endRaw = (e.end || {}).dateTime;       // for the leave-time anchor (#69): match a [Travel]
     const endMs = endRaw ? Date.parse(endRaw) : NaN; // block whose endMs === a later event's startMs
     out.push({
+      id: e.id || "",
       summary: e.summary || "予定",
       location: e.location || null,
+      attendees: Array.isArray(e.attendees) ? e.attendees : [],
       startMs,
       startIso: raw,
       endMs: Number.isNaN(endMs) ? null : endMs,

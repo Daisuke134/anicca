@@ -21,8 +21,7 @@ const { langForPhone } = require("./lib/call-language.js");
 const { recordDailyComposioPoll } = require("./lib/ledger.js");
 const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
-  processWakeRows, deliverLateNotice, listWakeRows,
-  claimPrompt, releasePrompt, claimNotified, eventSummaryFor,
+  processLocationLateNotice, getLiveLocation, claimLateEvent,
 } = require("./lib/late-notice.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
@@ -138,37 +137,32 @@ function buildStreamUrl(ev, urgency, lang, name) {
   return `${base}/ws?${qs.toString()}`;
 }
 
-// LM-5 runs inside the durable 60s wake tick. All eligibility comes from lm_wake_log rows, so a
-// Railway restart loses no timer/state. Side effects are injected by processWakeRows for unit tests.
+// LM-30 runs inside the durable 60s wake tick. A non-expired Telegram live location is the sole gate;
+// lm_late_notice_log atomically deduplicates one action per calendar event across restarts.
 async function lateNoticeUserOnce(u, nowMs, deps = {}) {
   const now = nowMs !== undefined ? nowMs : Date.now();
   const { url: supaUrl, key: supaKey } = SUPA();
   if (!u || !u.uid || !supaUrl || !supaKey) return;
   const dbOpts = { supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl };
-  const rows = deps.rows || await (deps.listWakeRows || listWakeRows)(u.uid, dbOpts);
-  const summaryFor = deps.summaryFor || ((uid, startIso) => eventSummaryFor(uid, startIso, {
-    composioKey: process.env.COMPOSIO_API_KEY, calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
-  }));
-  const deliver = deps.deliver || ((input) => deliverLateNotice({
-    ...input, token: process.env.LM_TELEGRAM_BOT_TOKEN,
-  }, {
-    claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
-    sendLateNotice: deps.sendLateNotice || sendLateNotice,
-    sendMessage: deps.sendMessage || sendMessage,
-  }));
-  await processWakeRows({
-    user: u, rows, nowMs: now, secret: process.env.LM_CALL_SECRET || "",
+  const location = deps.location !== undefined
+    ? deps.location
+    : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, dbOpts);
+  const events = deps.events || await fetchUpcomingEvents(u.uid, {
+    nowMs: now, horizonH: 6, apiKey: process.env.COMPOSIO_API_KEY,
+    calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
+  });
+  return processLocationLateNotice({
+    user: u, location, events, nowMs: now,
+    mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+    telegramToken: process.env.LM_TELEGRAM_BOT_TOKEN,
     noticeOpts: {
-      composioKey: process.env.COMPOSIO_API_KEY, geminiKey: process.env.GEMINI_API_KEY,
       resendKey: process.env.RESEND_API_KEY, userEmail: u.email, userName: u.name,
-      gmailAccountId: u.gmail_account_id,
     },
   }, {
-    claimPrompt: deps.claimPrompt || ((uid, eventKey) => claimPrompt(uid, eventKey, dbOpts)),
-    releasePrompt: deps.releasePrompt || ((uid, eventKey) => releasePrompt(uid, eventKey, dbOpts)),
-    summaryFor,
-    sendQuestion: deps.sendQuestion || ((chatId, question) => sendMessage(process.env.LM_TELEGRAM_BOT_TOKEN, chatId, question.text, question.extra)),
-    deliver,
+    routeMinutes: deps.routeMinutes || directionsMinutes,
+    claimEvent: deps.claimEvent || ((uid, eventKey) => claimLateEvent(uid, eventKey, dbOpts)),
+    sendLateNotice: deps.sendLateNotice || sendLateNotice,
+    sendMessage: deps.sendMessage || sendMessage,
   });
 }
 
@@ -179,8 +173,6 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
 
 async function wakeUserOnce(u, nowMs) {
   const now = nowMs !== undefined ? nowMs : Date.now();
-  try { await lateNoticeUserOnce(u, now); }
-  catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   let events;
   try {
     // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
@@ -192,6 +184,8 @@ async function wakeUserOnce(u, nowMs) {
   } catch {
     return;
   }
+  try { await lateNoticeUserOnce(u, now, { events }); }
+  catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else

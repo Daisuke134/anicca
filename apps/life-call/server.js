@@ -48,17 +48,14 @@ const {
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
-const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const {
-  handleLateCallback, listWakeRows, markAnswered, claimNotified,
-  eventSummaryFor, deliverLateNotice, pendingT0Keys,
+  markAnswered, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
-const RESEND_API_KEY = process.env.RESEND_API_KEY || ""; // our-domain email send (asks + late-notice)
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -331,33 +328,19 @@ const server = http.createServer((req, res) => {
                   token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
-              }, late: async (data) => {
-                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
-                if (!row) return { ok: false, reason: "unlinked_chat" };
-                const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
-                const rows = await listWakeRows(row.uid, dbOpts);
-                return handleLateCallback({
-                  uid: row.uid, chatId: u.chatId, data, rows,
-                  secret: process.env.LM_CALL_SECRET || "", telegramToken: LM_TG_TOKEN,
-                  noticeOpts: {
-                    composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
-                    userEmail: row.email, userName: row.name, gmailAccountId: row.gmail_account_id,
-                  },
-                }, {
-                  markAnswered: (uid, eventKey) => markAnswered(uid, eventKey, dbOpts),
-                  summaryFor: (uid, startIso) => eventSummaryFor(uid, startIso, {
-                    composioKey: COMPOSIO_KEY, gmailAccountId: row.gmail_account_id,
-                  }),
-                  deliver: (input) => deliverLateNotice(input, {
-                    claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
-                    sendLateNotice, sendMessage,
-                  }),
-                });
               } });
             res.writeHead(200); res.end("ok");
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          if (u.kind === "location") {
+            if (row) {
+              const saved = await upsertLiveLocation(row.uid, u, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+              if (!saved) console.error(`[telegram] live location save failed uid=${row.uid.slice(0, 12)}`);
+            }
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           const gmailConnectUrl = ""; // Gmail connect is honestly OFF; sendStage auto-skips without rendering OAuth.
           const opts = {
             token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
@@ -372,35 +355,13 @@ const server = http.createServer((req, res) => {
             const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
-            // Any Telegram message inside a T-0 response window counts as a response and suppresses
-            // the DB-driven 10-minute fallback. Each row update is conditional on answered_at NULL.
-            if (row) {
-              const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
-              const wakeRows = await listWakeRows(row.uid, dbOpts);
-              for (const eventKey of pendingT0Keys(wakeRows, Date.now()))
-                await markAnswered(row.uid, eventKey, dbOpts);
-            }
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);
             if (result === "done") {
-              // Onboarded → a free-text message is either "I'm running late …" (notify a stakeholder)
-              // or a reply to a location ask. Classify, then route.
-              const late = await classifyLate(u.text, GEMINI_KEY);
-              if (late.isLate) {
-                const n = await sendLateNotice(row.uid, u.text, {
-                  composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
-                  userEmail: row.email, userName: row.name, etaMinutes: late.etaMinutes,
-                  gmailAccountId: row.gmail_account_id,
-                });
-                await sendMessage(LM_TG_TOKEN, u.chatId,
-                  n.sent ? `✅ Let <b>${n.to}</b> know you're ${n.etaMinutes ? `~${n.etaMinutes} min ` : ""}late to “${n.event}”.`
-                         : "I couldn't find an upcoming event with someone to notify. Which meeting did you mean?");
-              } else {
-                const res2 = await resolveTelegramReply(u.chatId, u.text);
-                await sendMessage(LM_TG_TOKEN, u.chatId,
-                  res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
-                              : "Thanks! If that was an event location, reply to my question and I'll add it.");
-              }
+              const res2 = await resolveTelegramReply(u.chatId, u.text);
+              await sendMessage(LM_TG_TOKEN, u.chatId,
+                res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
+                            : "Thanks! If that was an event location, reply to my question and I'll add it.");
             }
           }
         }

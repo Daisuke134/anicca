@@ -23,7 +23,7 @@ const getMe = (token) => tgCall(token, "getMe");
 
 // Register the webhook with a secret token Telegram echoes back in a header we verify on each update.
 const setWebhook = (token, url, secret) =>
-  tgCall(token, "setWebhook", { url, secret_token: secret, allowed_updates: ["message", "callback_query"] });
+  tgCall(token, "setWebhook", { url, secret_token: secret, allowed_updates: ["message", "edited_message", "callback_query"] });
 
 const answerCallbackQuery = (token, id, text) =>
   tgCall(token, "answerCallbackQuery", { callback_query_id: id, ...(text ? { text } : {}) });
@@ -40,8 +40,23 @@ function parseUpdate(update) {
       callbackQueryId: String(q.id || ""),
     };
   }
-  const m = update && update.message;
+  const edited = update && update.edited_message;
+  const m = edited || (update && update.message);
   if (!m || !m.chat) return null;
+  const loc = m.location;
+  if (loc && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude) &&
+      Number.isInteger(loc.live_period) && loc.live_period > 0) {
+    return {
+      kind: "location",
+      chatId: String(m.chat.id),
+      userId: m.from ? String(m.from.id) : "",
+      messageId: String(m.message_id || ""),
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      observedAtMs: Number(m.edit_date || m.date || 0) * 1000,
+      expiresAtMs: (Number(m.date || 0) + loc.live_period) * 1000,
+    };
+  }
   return {
     kind: "message",
     chatId: String(m.chat.id),
@@ -56,7 +71,6 @@ function parseUpdate(update) {
 async function routeCallbackData(data, handlers = {}, log = console.log) {
   const prefix = String(data || "").split(":", 1)[0];
   if (prefix === "ask" && typeof handlers.ask === "function") return handlers.ask(data);
-  if (prefix === "late" && typeof handlers.late === "function") return handlers.late(data);
   if (prefix === "gmail" && typeof handlers.gmail === "function") return handlers.gmail(data);
   log(`[telegram] ignoring unknown callback prefix: ${String(data || "").slice(0, 40)}`);
   return { ignored: true };
