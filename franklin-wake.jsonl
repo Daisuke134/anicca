@@ -12981,3 +12981,13 @@
 {"ts":1784660891,"wake_id":"00MRV10LDKFA96F4DC16E74228","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
 {"ts":1784660891,"wake_id":"00MRV10LDKFA96F4DC16E74228","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784661023,"wake_id":"00MRV13F2XB7DCDED1DB314D73","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784661327,"wake_id":"00MRV19XSRB5D5DCADBDA44E2F","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784661327,"wake_id":"00MRV19XSRB5D5DCADBDA44E2F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784661513,"wake_id":"00MRV1DX4S6F19B46A8BC54972","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784661513,"wake_id":"00MRV1DX4S6F19B46A8BC54972","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784661648,"wake_id":"00MRV1GTA837335DC5C0E94D94","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784661784,"wake_id":"00MRV1JPRCFDFF4C0C69F04729","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784661916,"wake_id":"00MRV1MJTC80D96DBFDADF4EF3","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784661916,"wake_id":"00MRV1MJTC80D96DBFDADF4EF3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784662050,"wake_id":"00MRV1PF9O86767BF21DCB494E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784662050,"wake_id":"00MRV1PF9O86767BF21DCB494E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
