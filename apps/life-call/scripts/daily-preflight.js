@@ -34,21 +34,15 @@ function currentSourceSnapshotRef() {
   return `sha256:${crypto.createHash("sha256").update(tree).digest("hex")}`;
 }
 
-async function main(options) {
-  if (options && Object.prototype.hasOwnProperty.call(options, "transport")) {
-    throw new Error("caller transport injection rejected");
-  }
-  const { argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = options || {};
-  const args = parseArgs(argv);
-  const nowMs = Date.now();
-  const controlledL3 = args.mode === "controlled-l3"
-    ? await collectControlledL3({ mode: args.mode })
-    : undefined;
-  const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });
+async function main(...callerArguments) {
+  if (callerArguments.length !== 0) throw new Error("caller argument injection rejected");
+  const args = parseArgs(process.argv.slice(2));
   const report = args.mode === "controlled-l3"
-    ? await buildFinalPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs,
+    ? await buildFinalPreflightReport({
+      checks: controlledL3 => createDependencyChecks({ controlledL3 }),
+      controlledL3: () => collectControlledL3({ mode: args.mode }), timeoutMs: args.timeoutMs,
       sourceSnapshotRef: currentSourceSnapshotRef() })
-    : await buildPreflightReport({ checks, timeoutMs: args.timeoutMs });
+    : await buildPreflightReport({ checks: createDependencyChecks(), timeoutMs: args.timeoutMs });
   if (args.output) {
     const output = path.resolve(args.output);
     fs.mkdirSync(path.dirname(output), { recursive: true });

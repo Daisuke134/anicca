@@ -2,6 +2,15 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { validateDocument } = require("/Users/anicca/.codex/plugins/cache/vcsdd-claude-code/vcsdd/1.0.0/scripts/lib/vcsdd-schema.js");
+const FEATURE = ".vcsdd/features/life-manager-daily-preflight";
+const BASE_MODULES = new Set([
+  "lib/daily-preflight.js", "lib/daily-preflight-collectors.js",
+  "lib/transport/mail-gog.js", "scripts/daily-preflight.js",
+]);
 
 function fail() { process.stderr.write("verification failed\n"); process.exit(1); }
 function text(file) { try { return readFileSync(file, "utf8"); } catch { fail(); } }
@@ -22,17 +31,47 @@ function snapshot(file) {
 function verifyScope(file) {
   const values = snapshot(file);
   if (values.get("greenCommit") !== git(["rev-parse", "HEAD"]) ||
-      values.get("greenTree") !== git(["rev-parse", "HEAD:apps/life-call"])) fail();
+      values.get("greenTree") !== git(["rev-parse", "HEAD:apps/life-call"]) ||
+      values.get("baselineTree") !== git(["rev-parse", `${values.get("baselineCommit")}:apps/life-call`]) ||
+      values.get("greenTree") !== git(["rev-parse", `${values.get("greenCommit")}:apps/life-call`])) fail();
   return values;
 }
-function allJsonFiles(root) {
-  const out = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const target = path.join(root, entry.name);
-    if (entry.isDirectory()) out.push(...allJsonFiles(target));
-    else if (entry.name.endsWith(".json")) out.push(target);
+function changedPaths(values) {
+  const output = git(["diff", "--name-only", values.get("baselineCommit"), values.get("greenCommit")]);
+  return output ? output.split(/\r?\n/).filter(Boolean) : [];
+}
+function productionModules(values) {
+  const modules = new Set(BASE_MODULES);
+  for (const file of changedPaths(values)) {
+    if (!/^apps\/life-call\/(?:lib|scripts)\/.+\.js$/.test(file) ||
+        /(?:\.test\.|\.test-support\.|\/test-support\/)/.test(file)) continue;
+    modules.add(file.slice("apps/life-call/".length));
   }
-  return out;
+  return modules;
+}
+function coverageRows(file) {
+  const rows = new Map();
+  for (const line of text(file).split(/\r?\n/)) {
+    const match = /^\s*(?:apps\/life-call\/)?((?:lib|scripts)\/[\w./-]+\.js)\s*\|\s*([^|]+)\s*\|(?:\s*[^|]+\s*\|)?\s*([^|]+?)\s*(?:\||$)/.exec(line);
+    if (!match) continue;
+    const lines = Number(match[2]); const functions = Number(match[3]);
+    if (rows.has(match[1]) || !Number.isFinite(lines) || !Number.isFinite(functions)) fail();
+    rows.set(match[1], { lines, functions });
+  }
+  return rows;
+}
+function exactSet(actual, expected) {
+  return actual.size === expected.size && [...expected].every(value => actual.has(value));
+}
+function allowedChangedPath(file) {
+  if (file === ".vcsdd/history.jsonl") return true;
+  if (file === `${FEATURE}/state.json`) return true;
+  if (["verify-phase2-process.mjs", "verify-safe-scan.mjs", "verify-controlled-l3-gates.mjs"]
+    .some(name => file === `${FEATURE}/tests/${name}`)) return true;
+  if (file.startsWith(`${FEATURE}/evidence/sprint-1/manager-review-green-ba370/`)) return true;
+  if (file.startsWith("apps/life-call/") && !/(?:\.test\.|\/test-support\/|\.test-support\.)/.test(file)) return true;
+  if (["apps/life-call/test-support/core8d-cli-loader.cjs", "apps/life-call/test-support/core8d-runtime-harness.js"].includes(file)) return true;
+  return false;
 }
 
 const args = process.argv.slice(2);
@@ -62,30 +101,44 @@ if (args[0] === "historical") {
   const beads = state.traceability?.beads;
   if (!Array.isArray(beads)) fail();
   const byId = new Map(beads.map(bead => [bead.beadId, bead]));
-  for (const bead of beads) for (const linked of bead.linkedBeads || []) if (!byId.has(linked)) fail();
-  if ([...required, ...props, ...criteria].some(id => !beads.some(bead => bead.externalId === id))) fail();
+  if (byId.size !== beads.length) fail();
+  const requireReciprocal = beads.filter(bead => bead.type === "test-case").every(bead => bead.status === "green");
+  for (const bead of beads) for (const linked of bead.linkedBeads || []) {
+    const other = byId.get(linked);
+    if (!other || (requireReciprocal && !(other.linkedBeads || []).includes(bead.beadId))) fail();
+  }
+  const byExternal = new Map();
+  for (const bead of beads) {
+    if (!bead.externalId) continue;
+    if (byExternal.has(bead.externalId)) fail();
+    byExternal.set(bead.externalId, bead);
+  }
+  if ([...required, ...props, ...criteria].some(id => !byExternal.has(id))) fail();
+  for (const requirement of required.map(id => byExternal.get(id))) {
+    const propertyBeads = requirement.linkedBeads.map(id => byId.get(id)).filter(bead => bead?.type === "verification-property");
+    const reachable = propertyBeads.some(property => property.linkedBeads.map(id => byId.get(id))
+      .filter(bead => bead?.type === "contract-criterion")
+      .some(criterion => criterion.linkedBeads.some(id => byId.get(id)?.type === "test-case")));
+    if (!reachable) fail();
+  }
 } else if (args[0] === "schemas") {
   const root = args[1];
   if (!existsSync(root) || !statSync(root).isDirectory() || !existsSync(path.join(root, "state.json")) ||
       !existsSync(path.join(root, "contracts/sprint-1.md"))) fail();
   const state = json(path.join(root, "state.json"));
-  if (state.featureName !== "life-manager-daily-preflight" || !Array.isArray(state.traceability?.beads)) fail();
-  const files = allJsonFiles(root);
-  if (files.length < 10) fail();
-  for (const file of files) {
-    const value = json(file);
-    if (file.endsWith("verdict.json") && (!value.overallVerdict || !Array.isArray(value.dimensions))) fail();
-    if (/FIND-\d{3}\.json$/.test(file) && (!/^FIND-\d{3}$/.test(value.findingId || "") || !value.routeToPhase)) fail();
+  const verdict = json(path.join(root, "reviews/sprint-1/output/verdict.json"));
+  if (!validateDocument("state", state).valid || !validateDocument("grading", verdict).valid) fail();
+  for (let index = 1; index <= 11; index += 1) {
+    const finding = json(path.join(root, `reviews/sprint-1/output/findings/FIND-${String(index).padStart(3, "0")}.json`));
+    if (!validateDocument("finding", finding).valid) fail();
   }
 } else if (args[0] === "scope") {
-  verifyScope(args[1]);
+  const values = verifyScope(args[1]);
+  if (changedPaths(values).some(file => !allowedChangedPath(file))) fail();
 } else if (args[0] === "coverage") {
-  verifyScope(args[2]);
-  const rows = text(args[1]).split(/\r?\n/).map(line => {
-    const match = /^.*?([\w./-]+\.js)\s*\|\s*(\d+(?:\.\d+)?)\s*\|(?:\s*\d+(?:\.\d+)?\s*\|)?\s*(\d+(?:\.\d+)?)\s*(?:\||$)/.exec(line);
-    return match && { file: match[1], lines: Number(match[2]), functions: Number(match[3]) };
-  }).filter(Boolean);
-  const required = ["daily-preflight.js", "daily-preflight-collectors.js", "mail-gog.js"];
-  if (required.some(name => !rows.some(row => row.file.endsWith(name))) ||
-      rows.some(row => row.lines < 90 || row.functions < 90)) fail();
+  const values = verifyScope(args[2]);
+  const expectedModules = productionModules(values);
+  const rows = coverageRows(args[1]);
+  if (!exactSet(new Set(rows.keys()), expectedModules) ||
+      [...rows.values()].some(row => row.lines < 90 || row.functions < 90)) fail();
 }

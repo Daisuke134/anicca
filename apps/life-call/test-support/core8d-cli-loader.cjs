@@ -23,7 +23,10 @@ Module._load = function core8dTestProvider(request, parent, isMain) {
           messageIdRef: "sha256:444444444444", inboxReadCount: 1 },
       }),
       createDependencyChecks: () => dependencies.map(dependency => ({
-        name: dependency, run: async () => ({ ok: true, evidence: { status: "pass" } }),
+        name: dependency, run: async context => ({
+          ok: true, evidence: { status: "pass" }, checkedAtMs: Date.now(),
+          runCorrelation: context.runCorrelation,
+        }),
       })),
       buildFinalPreflightReport,
       buildPreflightReport: async () => ({

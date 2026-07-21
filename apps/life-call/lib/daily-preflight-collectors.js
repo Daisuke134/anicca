@@ -52,14 +52,7 @@ async function withinDeadline(operation, deadlineMs, code, parentSignal) {
       controller.abort(failure);
       reject(failure);
     }, deadlineMs); });
-    const nativeSetTimeout = global.setTimeout;
-    global.setTimeout = (callback, ms, ...args) => {
-      const operationTimer = nativeSetTimeout(callback, ms, ...args);
-      controller.signal.addEventListener("abort", () => clearTimeout(operationTimer), { once: true });
-      return operationTimer;
-    };
-    let pending;
-    try { pending = operation(controller.signal); } finally { global.setTimeout = nativeSetTimeout; }
+    const pending = operation(controller.signal);
     /* node:coverage ignore next 4 */
     return await Promise.race([
       pending,
@@ -231,7 +224,9 @@ async function collectEmailWithSignal(parentSignal) {
     if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");
     let receipt; let inboxReadCount = 0;
     for (let index = 0; index < 6; index += 1) {
-      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });
+      receipt = signal
+        ? await mail.findReceipt({ nonce, afterMs: sentAtMs, signal })
+        : await mail.findReceipt({ nonce, afterMs: sentAtMs });
       inboxReadCount += 1;
       if (receipt && receipt.id) break;
       if (index + 1 < 6) await sleepMs(3000, signal);

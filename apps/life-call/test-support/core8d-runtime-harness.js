@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const { AsyncLocalStorage, createHook } = require("node:async_hooks");
 const Module = require("node:module");
 const path = require("node:path");
 
@@ -27,20 +28,29 @@ function loadCollectors(hooks = {}) {
     makeGogMail: () => ({ findReceipt: async () => ({ id: "receipt", matchedNonce: hooks.nonce, receivedAtLowerMs: Date.now(), receivedAtUpperMs: Date.now() }) }),
     ...hooks,
   };
-  const makeMail = global.__core8dHooks.makeGogMail;
-  global.__core8dHooks.makeGogMail = options => {
-    const mail = makeMail(options);
-    return { ...mail, findReceipt: async args => {
-      const receipt = await mail.findReceipt(args);
-      if (!receipt || !Number.isFinite(receipt.receivedAtUpperMs) || receipt.receivedAtUpperMs >= args.afterMs ||
-          args.afterMs - receipt.receivedAtUpperMs > 1000) return receipt;
-      return { ...receipt, receivedAtLowerMs: args.afterMs, receivedAtUpperMs: args.afterMs };
-    } };
-  };
   const loaded = new Module(filename, module);
   loaded.filename = filename;
   loaded.paths = Module._nodeModulePaths(path.dirname(filename));
   loaded._compile(source, filename);
+  const productionWithinDeadline = loaded.exports.withinDeadline;
+  loaded.exports.withinDeadline = async (operation, ...args) => {
+    const storage = new AsyncLocalStorage();
+    const ownedTimers = new Set();
+    const hook = createHook({
+      init(_id, type, _triggerId, resource) {
+        if (type === "Timeout" && storage.getStore() === ownedTimers) ownedTimers.add(resource);
+      },
+      destroy(_id) {},
+    });
+    hook.enable();
+    try {
+      return await productionWithinDeadline(signal => storage.run(ownedTimers, () => operation(signal)), ...args);
+    } finally {
+      for (const timer of ownedTimers) clearTimeout(timer);
+      hook.disable();
+      storage.disable();
+    }
+  };
   return loaded.exports;
 }
 

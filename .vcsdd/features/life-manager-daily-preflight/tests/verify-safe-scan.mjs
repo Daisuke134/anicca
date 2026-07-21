@@ -9,7 +9,7 @@ if (args[0] !== "--paths" || marker < 2 || marker !== args.length - 2 || args.at
 const supplied = args.slice(1, marker);
 if (supplied.length === 0 || supplied.some(value => !existsSync(value))) fail();
 
-function files(target, direct = true) {
+function files(target) {
   const info = statSync(target);
   if (info.isFile()) return [target];
   if (!info.isDirectory()) return [];
@@ -17,8 +17,8 @@ function files(target, direct = true) {
   for (const entry of readdirSync(target, { withFileTypes: true })) {
     if (["node_modules", ".git"].includes(entry.name) || /test-support|\.test\./.test(entry.name)) continue;
     const child = path.join(target, entry.name);
-    if (entry.isDirectory()) out.push(...files(child, false));
-    else if (/\.(?:json|jsonl|log|tap|txt|md)$/i.test(entry.name) && entry.name !== "package-lock.json" &&
+    if (entry.isDirectory()) out.push(...files(child));
+    else if (/\.(?:js|cjs|mjs|json|jsonl|log|tap|txt|md)$/i.test(entry.name) && entry.name !== "package-lock.json" &&
         !/^daily-preflight-\d{8}T\d{6}Z\.json$/.test(entry.name)) out.push(child);
   }
   return out;

@@ -6,6 +6,21 @@ import { existsSync, readFileSync } from "node:fs";
 function fail() { process.stderr.write("verification failed\n"); process.exit(1); }
 function git(args) { try { return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { fail(); } }
 function digest(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
+const BASE_MODULES = new Set([
+  "lib/daily-preflight.js", "lib/daily-preflight-collectors.js",
+  "lib/transport/mail-gog.js", "scripts/daily-preflight.js",
+]);
+function expectedModules(snapshot) {
+  const modules = new Set(BASE_MODULES);
+  const changed = git(["diff", "--name-only", snapshot.baselineCommit, snapshot.greenCommit]);
+  for (const file of changed ? changed.split(/\r?\n/) : []) {
+    if (/^apps\/life-call\/(?:lib|scripts)\/.+\.js$/.test(file) &&
+        !/(?:\.test\.|\.test-support\.|\/test-support\/)/.test(file)) {
+      modules.add(file.slice("apps/life-call/".length));
+    }
+  }
+  return modules;
+}
 const args = process.argv.slice(2);
 if (args.length !== 3 || args.some(value => !existsSync(value))) fail();
 let state; let contract; let rawSnapshot;
@@ -19,16 +34,23 @@ for (const line of rawSnapshot.trim().split(/\r?\n/)) {
 if (!["2b", "2c"].includes(state.currentPhase) || state.sprintCount !== 0 || state.mode !== "strict" ||
     state.gates?.["1c"]?.humanApproved !== true || state.gates?.["1c"]?.adversaryVerdict !== "PASS" ||
     !/^status: approved$/m.test(contract) || snapshot.greenCommit !== git(["rev-parse", "HEAD"]) ||
-    snapshot.greenTree !== git(["rev-parse", "HEAD:apps/life-call"]) || snapshot.contractDigest !== digest(contract) ||
+    snapshot.greenTree !== git(["rev-parse", "HEAD:apps/life-call"]) ||
+    snapshot.baselineTree !== git(["rev-parse", `${snapshot.baselineCommit}:apps/life-call`]) ||
+    snapshot.greenTree !== git(["rev-parse", `${snapshot.greenCommit}:apps/life-call`]) || snapshot.contractDigest !== digest(contract) ||
     !snapshot.greenEvidence || !snapshot.finalOutput || existsSync(snapshot.finalOutput) || !existsSync(snapshot.greenEvidence)) fail();
 let evidence;
 try { evidence = JSON.parse(readFileSync(snapshot.greenEvidence, "utf8")); } catch { fail(); }
 const expected = { appNew: 63, helper: 12, baselineFocused: 51, baselineFull: 371, eval: 33, schema: 45, poll: 12, purity: 32 };
 if (Object.entries(expected).some(([key, value]) => evidence[key] !== value) || evidence.coverage !== "pass" ||
     evidence.safeScan !== "pass" || evidence.contractDigest !== snapshot.contractDigest || evidence.outputAbsent !== true) fail();
-if (evidence.modules !== undefined) {
-  const required = ["lib/daily-preflight.js", "lib/daily-preflight-collectors.js", "lib/transport/mail-gog.js", "scripts/daily-preflight.js"];
-  if (required.some(file => !evidence.modules[file] || evidence.modules[file].lines < 90 || evidence.modules[file].functions < 90)) fail();
+if (!evidence.modules || typeof evidence.modules !== "object" || Array.isArray(evidence.modules)) fail();
+const required = expectedModules(snapshot);
+const supplied = new Set(Object.keys(evidence.modules));
+if (supplied.size !== required.size || [...required].some(file => !supplied.has(file))) fail();
+for (const value of Object.values(evidence.modules)) {
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.keys(value).sort().join(",") !== "functions,lines" ||
+      !Number.isFinite(value.lines) || !Number.isFinite(value.functions) || value.lines < 90 || value.functions < 90) fail();
 }
 const dirty = git(["status", "--porcelain"]).split(/\r?\n/).filter(Boolean);
 if (dirty.some(line => {

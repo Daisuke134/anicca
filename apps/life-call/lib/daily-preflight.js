@@ -139,6 +139,8 @@ const FINAL_EFFECT_KEYS = new Set(["telegramSendCount", "emailSendCount", "phone
 const FINAL_SERIALIZED_ROOT_KEYS = new Set(["schema", "version", "runStatus", "generatedAt", "freshUntil", "requiredDependencyCount",
   "passedDependencyCount", "failedDependencyCount", "sourceSnapshotRef", "runRef", "dependencies", "effects"]);
 const FINAL_SERIALIZED_DEPENDENCY_KEYS = new Set(["dependency", "status", "fresh", "checkedAt", "evidenceRef"]);
+const RUN_OBSERVATION = Symbol("daily-preflight-run-observation");
+const CURRENT_RUN_REFS = new Set();
 
 function exactKeys(value, allowed) {
   return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(key => allowed.has(key));
@@ -158,6 +160,7 @@ function validateSerializedFinalReport(input) {
       !strictUtcMs(input.freshUntil) || Date.parse(input.freshUntil) - Date.parse(input.generatedAt) !== PROOF_MAX_AGE_MS ||
       !Array.isArray(input.dependencies) || input.dependencies.length !== DEPENDENCY_NAMES.length ||
       !exactKeys(input.effects, FINAL_EFFECT_KEYS)) throw new Error("final_report_invalid");
+  if (CURRENT_RUN_REFS.size > 0 && !CURRENT_RUN_REFS.has(input.runRef)) throw new Error("final_report_invalid");
   const generatedAtMs = Date.parse(input.generatedAt);
   for (let index = 0; index < DEPENDENCY_NAMES.length; index += 1) {
     const dependency = input.dependencies[index];
@@ -212,7 +215,11 @@ function validateAndBuildFinalReport(input) {
   }
   const runCorrelation = input.runCorrelation;
   const hashedRef = finalHashedRef;
-  return Object.freeze({ ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef: hashedRef(runCorrelation), dependencies, effects: { ...effects } });
+  const currentRunBinding = { runRef: hashedRef(runCorrelation) };
+  const runRef = currentRunBinding.runRef;
+  CURRENT_RUN_REFS.add(runRef);
+  if (CURRENT_RUN_REFS.size > 64) CURRENT_RUN_REFS.delete(CURRENT_RUN_REFS.values().next().value);
+  return Object.freeze({ ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef, dependencies, effects: { ...effects } });
 }
 
 function healthBase(env) {
@@ -644,16 +651,23 @@ function createDependencyChecks({
     { name: "discovery", run: ({ signal }) => discoveryCheck(env, fetchImpl, signal, nowMs) },
     { name: "gemini", run: ({ signal }) => geminiCheck(env, fetchImpl, signal) },
     { name: "maps", run: ({ signal }) => mapsCheck(env, fetchImpl, signal, nowMs) },
-  ].map((check) => ({ ...check, secrets }));
+  ].map((check) => ({
+    ...check,
+    run: async context => {
+      const value = await check.run(context);
+      return { ...value, checkedAtMs: Date.now(), runCorrelation: context.runCorrelation };
+    },
+    secrets,
+  }));
 }
 
-async function runOne(check, timeoutMs, now) {
+async function runOne(check, timeoutMs, now, runContext) {
   const startedAt = now();
   const controller = new AbortController();
   let timer;
   try {
     const result = await Promise.race([
-      Promise.resolve().then(() => check.run({ signal: controller.signal })),
+      Promise.resolve().then(() => check.run({ signal: controller.signal, ...runContext })),
       new Promise((_, reject) => {
         timer = setTimeout(() => {
           controller.abort();
@@ -673,13 +687,19 @@ async function runOne(check, timeoutMs, now) {
         failureClass: explicit ? String(result.failureClass || "dependency_error") : "invalid_result",
       };
     }
-    return {
+    const observation = runContext && {
+      checkedAtMs: result.checkedAtMs,
+      runCorrelation: result.runCorrelation,
+    };
+    const dependency = {
       dependency: check.name,
       status: "pass",
       latencyMs: Math.max(0, now() - startedAt),
       evidence: sanitizeEvidence(result.evidence, check.secrets),
       failureClass: null,
     };
+    if (observation) Object.defineProperty(dependency, RUN_OBSERVATION, { value: observation });
+    return dependency;
   } catch (error) {
     const timedOut = error === TIMEOUT;
     const classification = timedOut ? "timeout"
@@ -698,9 +718,9 @@ async function runOne(check, timeoutMs, now) {
   }
 }
 
-async function runPreflight({ checks, timeoutMs = 15000, now = Date.now } = {}) {
+async function runPreflight({ checks, timeoutMs = 15000, now = Date.now, runContext } = {}) {
   if (!Array.isArray(checks) || checks.length === 0) throw new Error("preflight checks required");
-  const dependencies = await Promise.all(checks.map((check) => runOne(check, timeoutMs, now)));
+  const dependencies = await Promise.all(checks.map((check) => runOne(check, timeoutMs, now, runContext)));
   const passed = dependencies.filter((item) => item.status === "pass").length;
   const failed = dependencies.filter((item) => item.status === "fail").length;
   const timedOut = dependencies.filter((item) => item.status === "timeout").length;
@@ -811,22 +831,28 @@ async function buildFinalPreflightReport({ checks, controlledL3, timeoutMs = 150
   sourceSnapshotRef, now = Date.now } = {}) {
   const runStartedAtMs = now();
   const runCorrelation = crypto.randomBytes(32).toString("hex");
-  const report = await runPreflight({ checks, timeoutMs, now });
-  if (report.exitCode !== 0 || report.summary.required !== DEPENDENCY_NAMES.length || !controlledL3) {
+  const runContext = Object.freeze({ runCorrelation, runStartedAtMs });
+  const resolvedControlledL3 = typeof controlledL3 === "function" ? await controlledL3(runContext) : controlledL3;
+  const resolvedChecks = typeof checks === "function" ? checks(resolvedControlledL3, runContext) : checks;
+  const report = await runPreflight({ checks: resolvedChecks, timeoutMs, now, runContext });
+  if (report.exitCode !== 0 || report.summary.required !== DEPENDENCY_NAMES.length || !resolvedControlledL3) {
     throw new Error("final_report_dependencies_failed");
   }
   const generatedAtMs = Date.parse(report.generatedAt);
-  const telegram = validateTelegramProof(controlledL3.telegram, generatedAtMs);
-  const email = validateEmailProof(controlledL3.email, generatedAtMs);
-  const dependencies = report.dependencies.map(value => ({
-    dependency: value.dependency,
-    status: "pass",
-    fresh: true,
-    checkedAt: new Date(generatedAtMs).toISOString(),
-    checkedAtMs: generatedAtMs,
-    evidenceRef: finalHashedRef(JSON.stringify({ dependency: value.dependency, evidence: value.evidence })),
-    runCorrelation,
-  }));
+  const telegram = validateTelegramProof(resolvedControlledL3.telegram, generatedAtMs);
+  const email = validateEmailProof(resolvedControlledL3.email, generatedAtMs);
+  const dependencies = report.dependencies.map(value => {
+    const observation = value[RUN_OBSERVATION] || {};
+    return {
+      dependency: value.dependency,
+      status: "pass",
+      fresh: true,
+      checkedAt: Number.isFinite(observation.checkedAtMs) ? new Date(observation.checkedAtMs).toISOString() : undefined,
+      checkedAtMs: observation.checkedAtMs,
+      evidenceRef: finalHashedRef(JSON.stringify({ dependency: value.dependency, evidence: value.evidence })),
+      runCorrelation: observation.runCorrelation,
+    };
+  });
   return validateAndBuildFinalReport({
     sourceSnapshotRef,
     runCorrelation,
