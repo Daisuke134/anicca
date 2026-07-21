@@ -2,6 +2,7 @@
 "use strict";
 
 const crypto = require("crypto");
+const { renderPanelPage } = require("./panel-ui.js");
 
 const PANEL_TOKEN_TTL_MS = 5 * 60 * 1000;
 const PANEL_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -107,12 +108,6 @@ async function sessionUid(session, opts = {}) {
   return Array.isArray(rows) && rows[0] && rows[0].uid ? String(rows[0].uid) : null;
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character]);
-}
-
 async function handlePanelRequest(req, res, opts = {}) {
   if (req.method !== "GET") {
     res.writeHead(405, { Allow: "GET" });
@@ -134,7 +129,7 @@ async function handlePanelRequest(req, res, opts = {}) {
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
     });
-    res.end(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anicca Life Manager</title></head><body><main><h1>Anicca Life Manager</h1><p>${escapeHtml(uid)}</p></main></body></html>`);
+    res.end(renderPanelPage());
     return;
   }
 

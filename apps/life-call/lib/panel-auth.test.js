@@ -106,7 +106,7 @@ test("LM-33a: a valid one-time token is burned and exchanged for a separate 24-h
   assert.doesNotMatch(calls[1].init.body, new RegExp(sessionBytes.toString("base64url")));
 });
 
-test("LM-33a: /panel with a live session renders only the placeholder title and uid", async () => {
+test("LM-33a/33c: /panel with a live session renders the authenticated mirror without leaking uid", async () => {
   const session = Buffer.alloc(32, 0x33).toString("base64url");
   let lookupUrl = "";
   await withPanelServer({
@@ -125,7 +125,10 @@ test("LM-33a: /panel with a live session renders only the placeholder title and 
     assert.equal(response.headers.get("cache-control"), "no-store");
     const html = await response.text();
     assert.match(html, /<h1>Anicca Life Manager<\/h1>/);
-    assert.match(html, /<p>lm_u1<\/p>/);
+    for (const section of ["timeline", "scores", "ledger", "gates", "settings"]) {
+      assert.match(html, new RegExp(`data-panel-section="${section}"`));
+    }
+    assert.doesNotMatch(html, /lm_u1/);
   });
   const lookup = new URL(lookupUrl);
   assert.equal(lookup.pathname, "/rest/v1/lm_panel_sessions");
