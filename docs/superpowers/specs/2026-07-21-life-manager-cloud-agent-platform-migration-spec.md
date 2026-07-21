@@ -102,7 +102,7 @@ TO-BE
 | AC-10 | 1本の実動画がobject storage入力からrender・投稿・evidence記録まで完走する | real clip E2E |
 | AC-11 | tenant月次budget超過時に新規agent/media/browser jobをfail-closedで止める | budget E2E |
 | AC-12 | DB・artifact・workflow stateをcold restoreし、未完jobを継続できる | clean environment restore |
-| AC-13 | productionでClaude subscription OAuthが参照されない | config/code/runtime grep |
+| AC-13 | production proxyがsubscription OAuthをDB制約と実行時認可の両方で拒否し、明示allowlist済みmachine/service authだけを使う | config/code/runtime scan + DB constraint + forbidden OAuth保存/呼出negative E2E |
 | AC-14 | Mac Mini上のproduction launchd対象が0になる | launchctl + cloud health実測 |
 
 ## 3. As-Is / To-Be
@@ -197,7 +197,8 @@ lm_jobs
   attempt_count, cost_reserved_usd, started_at, finished_at, error_code
 
 lm_permissions
-  tenant_id, tool, account_ref, mode(read|write), granted_at, revoked_at
+  id, tenant_id, tool, account_id, credential_ref, operation,
+  granted_scopes, allowed_auth_kinds, granted_at, revoked_at
 
 lm_artifacts
   id, tenant_id, job_id, object_key, media_type, size_bytes, sha256, created_at
@@ -207,7 +208,8 @@ lm_outcome_ledger
   cost_usd, revenue_usd, outcome, evidence_ref, created_at
 
 lm_credential_refs
-  id, tenant_id, provider, encrypted_ref, scopes, rotated_at, revoked_at
+  id, tenant_id, account_id, provider, encrypted_ref, auth_kind,
+  scopes, rotated_at, revoked_at
 ```
 
 Constraints:
@@ -217,8 +219,31 @@ Constraints:
 - service-role access MUST remain server-side only.
 - workflow/event payload MUST contain credential reference only。raw secretは禁止。
 - object key MUST begin with tenant UUID and MUST NOT contain email, phone, token, or account number.
+- `lm_credential_refs.auth_kind` MUST be one of the explicit machine/service allowlist (`api_key`, `service_account`, `service_token`, `workload_identity`)。`subscription_oauth` はCHECK制約で保存を拒否する。
+- `lm_permissions` MUST have a unique active grant for `(tenant_id, tool, account_id, credential_ref, operation)` and a composite FK to the same tenant/account credential owner。cross-tenant/account grantはDBで表現できない。
+- `lm_jobs` ownershipとpermission/credential ownershipはproxy transaction内で同じ `tenant_id` に一致しなければならない。
 
-### 3.6 Control API
+### 3.6 Credential/tool proxy authorization contract
+
+Agentからproxyへのrequestは次のfieldだけを受理する。
+
+```text
+tenant_id, job_id, tool, account_id, credential_ref,
+operation, requested_scope, idempotency_key
+```
+
+Proxyは次の順序をすべて同一のfail-closed decisionとして評価する。
+
+1. authenticated callerがrequestの `tenant_id` / `job_id` を実行でき、`lm_jobs.tenant_id` と一致する。
+2. 未revokeの `lm_permissions` を `(tenant_id, tool, account_id, credential_ref, operation)` のexact tupleで引き、permission・account・credentialのtenant ownershipを一致させる。
+3. `requested_scope` がgrantとcredential scopeの両方の部分集合である。
+4. credentialの `auth_kind` がpermissionとprovider/tool/operation別machine/service allowlistの両方に含まれる。subscription/user OAuthは常にdenyし、未知kind・空allowlist・lookup error・timeoutもdenyする。
+5. budget reserveとpause gateがgreenである。
+6. `(tenant_id, tool, operation, idempotency_key)` の一意なoperationを作り、provider callの前後をledgerへ記録する。
+
+Proxyだけがcredentialをdecrypt/injectし、agent env・prompt・stdout・workflow payload/historyへraw secretを返さない。失敗responseはstable error codeとoperation IDだけを返し、provider response bodyやcredential valueを含めない。migrationはsubscription OAuth rowのinsert/updateをDB CHECKで拒否し、proxyも同じauth kindを明示拒否する。negative E2Eは、forbidden OAuth credentialの保存と、fixtureを直接seedした場合のinvokeの両方がprovider call前に失敗し、ledgerへdenyを1件だけ残すことを実証する。
+
+### 3.7 Control API
 
 ```text
 POST /api/lm/workflows/:organ/start
@@ -244,13 +269,13 @@ All mutation endpoints MUST authenticate tenant ownership and return a stable op
 | 5 | pause hierarchy | `cloud_user_loop_global_pause` | OK |
 | 6 | idempotent side effects | `cloud_retry_no_duplicate_effect` | OK |
 | 7 | tenant RLS | `cloud_tenant_a_cannot_read_tenant_b` | OK |
-| 8 | credential proxy | `cloud_agent_never_receives_raw_secret` | OK |
+| 8 | credential proxy | `cloud_agent_never_receives_raw_secret` + missing/unknown permission fail-closed | OK |
 | 9 | Personal CEO resume | `cloud_personal_ceo_resume_same_tenant` | OK |
 | 10 | media object pipeline | `cloud_real_clip_object_to_publish` | OK |
 | 11 | ephemeral scratch cleanup | `cloud_media_worker_removes_scratch` | OK |
 | 12 | Steel profile isolation | `cloud_browser_profiles_do_not_cross_tenants` | OK |
 | 13 | cost/outcome ledger | `cloud_every_effect_has_ledger_row` | OK |
-| 14 | subscription OAuth ban | `cloud_no_claude_subscription_auth` | OK |
+| 14 | subscription OAuth ban | `cloud_subscription_oauth_insert_and_invoke_denied` | OK |
 | 15 | cold restore | `cloud_restore_resumes_pending_job` | OK |
 | 16 | Mac Mini independence | `cloud_e2e_with_mac_mini_offline` | OK |
 
@@ -320,8 +345,10 @@ npm test
 npm run lint
 npm run typecheck
 
-# secret and source checks
-gitleaks detect --redact
+# exact TODO #2 artifact secret gate and source checks
+artifact_gate=$(mktemp -d)
+cp docs/reference/cloud-agent-credential-observations.json docs/reference/cloud-agent-credential-review-manifest.json docs/reference/cloud-agent-credential-objects.json docs/reference/cloud-agent-credential-inventory.tsv "$artifact_gate"/
+gitleaks dir "$artifact_gate" --config .gitleaks-cloud-agent.toml --redact --no-banner
 rg 'CLAUDE_CODE_OAUTH_TOKEN|claude\.ai.*oauth|subscription.*credential' apps/life-call
 
 # deployment and health
@@ -337,6 +364,34 @@ node scripts/e2e-cloud-1000-tenants.mjs
 node scripts/e2e-cloud-worker-restart.mjs
 node scripts/e2e-cloud-mac-mini-offline.mjs
 ```
+
+### 6.3 TODO #2 verification ledger
+
+| Iteration | Review group | Verdict | Evidence / open blocker |
+|---|---|---|---|
+| 14 | C — current artifact/schema validation | approved | current artifact baseline validates; six targeted single-mutation tests return exact errors |
+| 15 | A — AST/source integrity | reject | iteration 14 remediationの同一source-fd projection/blob、repo配下`openat`、missing/unsupported/symlink import、runtime import fail-closeは承認対象。残blockerは (A1) repository rootをabsolute pathnameで直接openし上位ancestorを検証しない、(A2) import resolverが`lstat`後にPathだけを返しregular-file rename/replacement raceで置換後を再openできる |
+| 15 | B — credential-object policy/path validation | reject | closed credential type、auth alias拒否、canonical tuple/ID、typed locator full grammarは承認対象。残blockerは境界文字列挙依存のraw path regexがpipe/quote後のhome/drive/UNC pathを見逃す |
+| 15 | A — remediation evidence | re-review_required | REDでrepository root上位symlink、root parent replacement、import regular-file replacementを再現し、既知trust anchorからrepository rootまでの全componentをheld directory fd + `O_NOFOLLOW`でwalk、解決済import fdをprojection/blobまで保持してGREEN。nearby 9 testと全171 testがPASS。独立re-reviewは未実施 |
+| 15 | B — remediation evidence | re-review_required | pipe/quoteを含む区切り依存なしの全non-locator string portable-path判定へ置換し、home/drive/UNC mutationを全7 fieldへ適用するRED→GREEN。typed locator full grammarは維持。独立re-reviewは未実施 |
+| 16 | A — AST/source integrity | reject | iteration 15のimport解決fd保持、same source-fd projection/blob、repo配下`openat`、missing/unsupported/symlink import、runtime nonexistent import unverifiedは承認対象。残blockerは `REPOSITORY_TRUST_ANCHOR` 自体をabsolute pathnameでopenするため、その上位ancestorがfd chain外となりsymlink/replacementを検出できないこと。kernel-known filesystem root fdからabsolute production REPOの全componentを`openat` + `O_DIRECTORY` + `O_NOFOLLOW`で開き、production REPOがcompatibility fallbackへ入る場合はfail-closeする |
+| 16 | B — credential-object policy/path validation | reject | closed credential type、auth alias拒否、canonical tuple/ID、typed locator full grammar、pipe/quote後のsingle-slash home/drive/UNC拒否は承認対象。残blockerはdelimiter-independent regexの`/(?!/)`が2個以上のleading slashを持つPOSIX absolute pathを除外し、`//Users`、`//home`、`//Volumes`、`//private`を通すこと |
+| 16 | A — remediation evidence | re-review_required | REDでtrust anchor上位symlink、上位ancestor replacement、production absolute fallbackを再現。kernel-known `/` fdからabsolute production-treeの全componentを`openat(dir_fd)` + `O_DIRECTORY` + `O_NOFOLLOW`で開き、anchor/REPOのabsolute reopenを廃止しproduction fallbackを明示denyしてGREEN。iteration 15の解決済import fd保持を維持。独立re-reviewは未実施 |
+| 16 | B — remediation evidence | re-review_required | pipe、quote、em dash、Unicode記号後の`//Users`、`//home`、`//Volumes`、`//private`を全6 non-locator fieldへcanonical ID再計算付きで適用するRED→GREEN。1個以上のleading slashをdelimiter-independentに拒否し、typed locator full grammar positiveを維持。独立re-reviewは未実施 |
+| 17 | A — AST/source integrity | reject | kernel-known `/` fdからproduction-tree全componentを開くroot chain、import解決fd保持、same source-fd projection/blob、repo配下`openat`、missing/unsupported/symlink import、runtime nonexistent import unverifiedは承認対象。残blockerは `_typescript_module_path` がprotected parser fdを開く前にparser sourceをabsolute pathnameの`resolved.read_bytes()`でpre-readし、その後のreplacement/redirectでdigest対象とNode AST使用対象が分離できること。parser sourceのdigest・identity・Node useを同じkernel-root/openat held regular-file fdへ統合し、全parser-source pathname read/reopenを除去する |
+| 17 | B — credential-object policy/path validation | approved | 114 synthetic caseでsingle/multi-leading-slash POSIX、home、drive、UNCをdelimiter-independentに全non-locator fieldからrejectしcanonical IDを再計算。pipe、quote、em dash、Unicode記号を含むdelimiter matrix、closed credential type/auth alias、canonical tuple/ID、typed locator full grammar positive/negativeを全て維持 |
+| 17 | A — remediation evidence | re-review_required | REDでproduction parser source pathname pre-read 1件と、metadata locator後・protected open前の同一byte inode replacement通過を再現。locatorをpath + final `lstat` identity candidateへ分離し、parser source pathname content readを0件化。parser fdをkernel-root/openatで1回だけ開き、同じheld fdの`fstat` identityとSHA-256を検証して同じdescriptorをNode ASTへ渡すGREEN。exact TS5.5.4 manifest/lock/installed-version、symlink/version/integrity、A2 import fd保持を維持。独立re-reviewは未実施 |
+| 18 | A — final AST/source integrity re-review | approved | `ok:true`, blocking 0。parser sourceはkernel-known `/` fdからの`openat`で1回だけ開き、locatorの`lstat`とheld fdの`fstat` identityを一致させ、同じfdでSHA-256検証とNode AST useを行う。同一byte inode replacementはfail-close。production fallback deny、filesystem-root component chain、ResolvedImport fd保持、same source-fd projection/blobを維持 |
+| 18 | D — current artifact final re-review | approved | `ok:true`, blocking 0。observation/reviewは330 parentをexact coverageし、456 edgeはregenerationとtrackedがexact、statusはinactive 177 / none_observed 75 / observed 47 / policy_violation 87 / unverified 70。55 objectはloop-used 50 + catalog-only 5、finding 1。digest/revision/evidence binding、unverifiedからabsenceへの昇格なし、safety validatorがPASS。disk manifestは`review_required`、in-memory approved full generationがPASSし、applicable 68 testがPASS |
+| 19 | whole-change cross-check | reject | A/B/C/D/E approvedは維持。残blockerはcurrent CLIが`EDGE_FIELDS` + `build_loop_dependency_edges`でparent TSV / safe observations / independent review manifest / credential objectsからedge TSVを生成する一方、generatorに旧schema `FIELDS`（`credential_inventory_id` / `status` / `evidence`）とlegacy public paths `validate_reviewed_manifest` / `references_for_parent` / `reference_row` / `status_row` / `rows` / `validate`、およびlegacy-only testが残り、module public contractが二重化していること。current validator/shared helperを維持しつつlegacy surfaceと専用testを除去し、docstringを4 non-secret inputからedge TSVをfail-closed生成するcurrent contractへ一致させる |
+| 19 | whole-change remediation evidence | re-review_required | 旧`FIELDS`、legacy constants/class/public pathsとそれらだけが使う経路を除去し、legacy-only test 16件を削除。current edge contractの公開面と4 non-secret input（parent TSV / safe observations / independent review manifest / credential objects）からedge TSVをfail-closed生成するdocstringを固定するRED 1件を追加しGREEN。legacy definition exact scan 0、targeted 1 testと全162 testがPASSし、traceはcurrent generator 1,252 executable lineの85.5%。exact TypeScript 5.5.4 install、JS/Python syntax、self-test、live 2回の`observed_at`正規化A=B=tracked、in-memory approved generation=tracked byte exact、disk `review_required` fail-close（exit 1 / stdout 0）、4 artifact gitleaks 0を実測。330 parent / 456 unique edge（inactive 177 / none_observed 75 / observed 47 / policy_violation 87 / unverified 70）、55 object（loop-used 50 / catalog-only 5）・finding 1、OpenClaw failure 5・absence 0を維持。fresh whole-change re-cross-checkはiteration 20でapproved →参照 |
+| 20 | whole-change final cross-check | approved | `ok:true`, blocking 0。A/B/C/D/Eの既承認とiteration 19 remediationをwhole changeとして再確認し、legacy schema/public contractの二重化blockerは解消。独立review sandboxはread-onlyで一時fileを作れない点だけnonblockingであり、rootのfresh全162 testで補完する。manifestは`approved`でstatus以外の内容・330 parent・observation digestを維持。disk generatorはexit 0、456 stdout rowがtrackedとbyte exact、summaryは330 parent / 456 edge（inactive 177 / none_observed 75 / observed 47 / policy_violation 87 / unverified 70）/ 55 credential object / finding 1。object regeneration exact、exact TypeScript 5.5.4、JS/Python syntax、diff check、live 2回の`observed_at`正規化A=B=tracked、4 artifact gitleaks 0、legacy definition scan 0、synthetic `review_required` fail-close（exit 1 / stdout 0）をfresh実測し、blocking 0を維持 |
+| 21 | approved-manifest final-state review | reject | fresh reviewでmanifestの`review_status: approved`と`review_basis: independent_architecture_review_pending`が矛盾し、validatorもapproved statusに対するcoherent final basisを要求しないblockerを確認。approved manifestのpending basisをfail closedするcurrent-contract REDを追加し、validatorとtracked manifestをiteration 20 approvalに対応するstable final basisへ一致させる。TODO #2はremediationとfresh GREENまで`in_progress`へ戻す |
+| 21 | approved-manifest remediation evidence | approved | approved＋pending basisが通過するfocused testをRED（`SystemExit not raised`）で再現。validatorはapproved statusにexact `review_basis: iteration_20_whole_change_approved`を要求し、tracked manifest、positive/negative test fixture、current reference docを同じtupleへ統一する。focused 5/5、fresh全163/163、Python/JS syntax、diff check、TypeScript manifest/lock/installed 5.5.4、disk generator exit 0と456 row tracked byte exact、330 parent / status 177/75/47/87/70 / 55 credential object / finding 1 summary、review-observation digestとobject regeneration exact、synthetic pending basis fail-close（exit 1 / stdout 0）、4 artifact gitleaks 0を実測し、blockerを解消 |
+| 22 | exact documentation secret gate | reject | root fresh command `gitleaks detect --no-git --redact --config .gitleaks-cloud-agent.toml --source docs/reference/cloud-agent-credential-inventory.md` がline 75の公開GitHub immutable blob source URL内にある40-hex commit ref 2件をcustom `credential-artifact-generic-high-entropy`として誤検出。公開immutable blob URLだけを必要最小shapeで除外し、opaque prefixless high-entropy tokenは引き続き検出するRED→GREENと、4 credential artifact個別exact command gateを要求。TODO #2は全gate GREENまで`in_progress`へ戻す |
+| 22 | exact documentation secret gate remediation | approved | root exact commandを使うcurrent-contract testを追加し、reference docが2 findings / exit 1となる一方、同じ公開URL行へ置くopaque prefixless tokenは検出されるREDを確認。gitleaks 8.30.1の複数rule allowlistを使い、既存secret allowlistと分離したmatch-targetをcurrent OpenClaw repoのimmutable `blob/<40hex>` source 2 pathだけへexact限定してGREEN。reference docとobservation/review/object/edgeの4 artifactを個別exact commandでscanして全clean、公開URL同一行のopaque tokenは1 finding / exit 1、focused 1/1、fresh全164/164、Python/JS syntax、diff check、generator exit 0・456 row tracked byte exact、330 parent / status 177/75/47/87/70 / 55 credential object / finding 1 summaryを実測し、blockerを解消 |
+| 23 | commit-boundary final review | approved | `ok:true`, blocking 0。exact staged 13 pathを境界として、manifestの`approved / iteration_20_whole_change_approved`、pending basis rejection、reference doc＋4 artifactの個別gitleaks、generatorのtracked byte exact、TODO #2のsingle `done`、iteration 21/22のreject→remediation truthをfresh検証 |
+| 14 | E — external secret review | approved | `ok:true`, blocking 0; generic entropy ruleは11 canonical string fieldでmiss 0（account aliasを含む）、safe digest/blob/UUID/object ID 5 fixtureはclean、same-line malicious miss 0、tracked 4 artifactはclean |
 
 Completion claims MUST include fresh command output, remote commit hash, deployment commit hash, and real provider evidence IDs.
 
@@ -360,7 +415,7 @@ state values: `pending | in_progress | code_done | done | blocked`。
 | # | Task | Done condition | State |
 |---|---|---|---|
 | 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — `docs/reference/cloud-agent-loop-inventory.tsv` 330 data rows / 331 physical lines（launchd 103 / OpenClaw cron 222 / Railway 1 / repo entrypoint 4）、generator self-test・`--check`・tracked TSV diff がPASS。秘密・prompt本文・個人home pathは非収録 |
-| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | pending |
+| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | done — Group A/B/C/D/E、iteration 20 whole-change、iteration 21 review-basis remediationの承認証跡を維持。iteration 22 exact documentation secret gateのfalse positiveをREDで再現し、既存secret allowlistを広げず、current OpenClaw immutable `blob/<40hex>` source 2 pathのmatchだけをexact許可してGREEN。reference doc＋4 credential artifactの個別root exact commandは全clean、公開URL同一行のopaque prefixless tokenは1 finding / exit 1。focused 1/1、fresh全164/164、Python/JS syntax、diff check、generator 456 row tracked byte exactを実測。330 parent、456 unique edge（inactive 177 / none_observed 75 / observed 47 / policy_violation 87 / unverified 70）、55 object（loop-used 50 / catalog-only 5）・finding 1、OpenClaw failure 5・absence 0 |
 | 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | pending |
 | 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | pending |
 | 5 | macOS依存を分類する | Linux可/要置換/廃止を全loopに付与 | pending |
@@ -392,11 +447,11 @@ state values: `pending | in_progress | code_done | done | blocked`。
 | 31 | agent max turns/timeoutを設定する | runaway sessionが自動停止 | pending |
 | 32 | agent session resumeを実装する | stop/restart後も同tenant文脈を再開 | pending |
 | 33 | agent egress allowlistを設定する |未許可domain通信が失敗 | pending |
-| 34 | credential/tool proxyを作る | agent envにraw secret 0 | pending |
-| 35 | proxyにtenant ownership gateを作る | cross-tenant tool call拒否 | pending |
-| 36 | proxyにscope gateを作る | read credentialでwrite不可 | pending |
-| 37 | proxyにbudget gateを作る | budget超過tool call拒否 | pending |
-| 38 | proxy audit logを作る | provider callごとにoperation ID記録 | pending |
+| 34 | credential/tool proxyを作る | 8-field request schema以外を拒否し、agent env/prompt/stdout/historyのraw secret 0、lookup error/timeoutはprovider call前にfail-closed | pending |
+| 35 | proxyにtenant ownership gateを作る | job・permission・account・credentialが同一tenantのexact tupleでなければ拒否し、cross-tenant/account negative E2E PASS | pending |
+| 36 | proxyにscope/auth-kind gateを作る | requested scopeがgrant/credential両方の部分集合。subscription OAuthはDB insert/updateとinvokeを拒否し、明示allowlist済みmachine/service authだけを許可するnegative E2E PASS | pending |
+| 37 | proxyにbudget gateを作る | permission greenでもreserve不能・pause中・budget超過ならprovider call 0で拒否 | pending |
+| 38 | proxy audit logを作る | `(tenant_id, tool, operation, idempotency_key)` 一意制約、provider call/denyごとにoperation ID・scope・auth kind・cost/outcome/evidenceをbody/secretなしで記録 | pending |
 | 39 | media upload/source APIを作る | tenant所有のinput object生成 | pending |
 | 40 | Spaces/S3 bucketとretentionを作る | private bucket + signed URL + lifecycle実測 | pending |
 | 41 | media job rowを作る | inputからqueued job生成 | pending |
