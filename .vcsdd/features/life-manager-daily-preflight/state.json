@@ -2,7 +2,7 @@
   "featureName": "life-manager-daily-preflight",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "3",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -84,14 +84,27 @@
       "timestamp": "2026-07-21T12:37:15.659Z",
       "reason": "Fresh artifact-only sprint-1 implementation review prepared under the approved sprintCount=0 corrective convention",
       "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-21T12:50:51.170Z",
+      "reason": "Phase 3 FAIL: route FIND-004/FIND-005 to earliest authoritative phase 2a; retain 2b/2c findings for subsequent corrective phases"
+    },
+    {
+      "from": "4",
+      "to": "2a",
+      "timestamp": "2026-07-21T12:50:51.177Z",
+      "reason": "Phase 3 FAIL: route FIND-004/FIND-005 to earliest authoritative phase 2a; retain 2b/2c findings for subsequent corrective phases"
     }
   ],
   "iterations": {
     "3": 1,
+    "4": 1,
     "1a": 3,
     "1b": 3,
     "1c": 3,
-    "2a": 1,
+    "2a": 2,
     "2b": 1,
     "2c": 1
   },
@@ -204,7 +217,10 @@
         "linkedBeads": [
           "BEAD-019",
           "BEAD-030",
-          "BEAD-048"
+          "BEAD-048",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.908Z",
         "createdInPhase": "1a",
@@ -263,7 +279,12 @@
           "BEAD-089",
           "BEAD-090",
           "BEAD-091",
-          "BEAD-092"
+          "BEAD-092",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.908Z",
         "createdInPhase": "1a",
@@ -330,7 +351,9 @@
           "BEAD-044",
           "BEAD-045",
           "BEAD-046",
-          "BEAD-047"
+          "BEAD-047",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T08:56:28.910Z",
         "createdInPhase": "1a",
@@ -401,7 +424,9 @@
           "BEAD-095",
           "BEAD-096",
           "BEAD-097",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118"
         ],
         "createdAt": "2026-07-21T08:56:28.911Z",
         "createdInPhase": "1a",
@@ -419,7 +444,9 @@
           "BEAD-095",
           "BEAD-096",
           "BEAD-097",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118"
         ],
         "createdAt": "2026-07-21T08:56:28.911Z",
         "createdInPhase": "1a",
@@ -477,7 +504,12 @@
           "BEAD-089",
           "BEAD-090",
           "BEAD-091",
-          "BEAD-092"
+          "BEAD-092",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.912Z",
         "createdInPhase": "1a",
@@ -512,7 +544,12 @@
           "BEAD-095",
           "BEAD-096",
           "BEAD-097",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.912Z",
         "createdInPhase": "1a",
@@ -525,7 +562,9 @@
         "status": "active",
         "linkedBeads": [
           "BEAD-027",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-116",
+          "BEAD-117"
         ],
         "createdAt": "2026-07-21T08:56:28.913Z",
         "createdInPhase": "1a",
@@ -545,7 +584,8 @@
           "BEAD-095",
           "BEAD-096",
           "BEAD-097",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-118"
         ],
         "createdAt": "2026-07-21T08:56:28.913Z",
         "createdInPhase": "1a",
@@ -569,7 +609,10 @@
           "BEAD-107",
           "BEAD-108",
           "BEAD-109",
-          "BEAD-110"
+          "BEAD-110",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-119"
         ],
         "createdAt": "2026-07-21T08:56:28.913Z",
         "createdInPhase": "1a",
@@ -841,7 +884,10 @@
           "BEAD-019",
           "BEAD-023",
           "BEAD-028",
-          "BEAD-030"
+          "BEAD-030",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.920Z",
         "createdInPhase": "1b",
@@ -928,7 +974,9 @@
           "BEAD-044",
           "BEAD-045",
           "BEAD-046",
-          "BEAD-047"
+          "BEAD-047",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T08:56:28.921Z",
         "createdInPhase": "1b",
@@ -946,7 +994,10 @@
           "BEAD-095",
           "BEAD-096",
           "BEAD-097",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T08:56:28.921Z",
         "createdInPhase": "1b",
@@ -1018,7 +1069,14 @@
           "BEAD-107",
           "BEAD-108",
           "BEAD-109",
-          "BEAD-110"
+          "BEAD-110",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-118",
+          "BEAD-119",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T08:56:28.922Z",
         "createdInPhase": "1b",
@@ -2191,10 +2249,193 @@
         "createdAt": "2026-07-21T11:53:11.105Z",
         "createdInPhase": "2a",
         "externalId": "TEST-075"
+      },
+      {
+        "beadId": "BEAD-111",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.143Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-001"
+      },
+      {
+        "beadId": "BEAD-112",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-002.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-034"
+        ],
+        "createdAt": "2026-07-21T12:50:51.145Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-002"
+      },
+      {
+        "beadId": "BEAD-113",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-003.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-033"
+        ],
+        "createdAt": "2026-07-21T12:50:51.146Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-003"
+      },
+      {
+        "beadId": "BEAD-114",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-004.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-033"
+        ],
+        "createdAt": "2026-07-21T12:50:51.150Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-004"
+      },
+      {
+        "beadId": "BEAD-115",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-005.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.152Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-005"
+      },
+      {
+        "beadId": "BEAD-116",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-006.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-016",
+          "BEAD-018",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.153Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-006"
+      },
+      {
+        "beadId": "BEAD-117",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-007.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-016",
+          "BEAD-018",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.154Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-007"
+      },
+      {
+        "beadId": "BEAD-118",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-008.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-017",
+          "BEAD-034",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.155Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-008"
+      },
+      {
+        "beadId": "BEAD-119",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-009.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.157Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-009"
+      },
+      {
+        "beadId": "BEAD-120",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-010.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T12:50:51.158Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-010"
+      },
+      {
+        "beadId": "BEAD-121",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-011.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-034"
+        ],
+        "createdAt": "2026-07-21T12:50:51.159Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-011"
       }
     ]
   },
   "gates": {
+    "3": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-21T12:50:51.138Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "verdictPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/verdict.json",
+        "iteration": 1,
+        "findingCount": 11,
+        "evaluatedCriteria": [
+          "CRIT-001",
+          "CRIT-002",
+          "CRIT-003",
+          "CRIT-004",
+          "CRIT-005"
+        ]
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-21T10:26:27.049Z",
@@ -2216,5 +2457,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T12:37:15.659Z"
+  "updatedAt": "2026-07-21T12:50:51.178Z"
 }
