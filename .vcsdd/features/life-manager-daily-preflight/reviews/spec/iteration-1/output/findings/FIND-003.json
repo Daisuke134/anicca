@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "Controlled readback is called bounded but no numeric timeout, maximum poll count, or closed deadline is specified for Telegram backlog or email inbox polling. This leaves acceptance and side-effect failure behavior non-binary and cannot prove that a post-send failure terminates without retry. Define exact per-provider deadlines and/or maximum poll counts, with boundary tests for the final allowed poll and the first disallowed poll.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/verification-architecture.md",
+    "lineRange": "97-105",
+    "snippet": "Provider/inbox read | 0 | bounded as implementation contract"
+  },
+  "routeToPhase": "1b"
+}

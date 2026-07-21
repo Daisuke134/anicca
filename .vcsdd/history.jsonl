@@ -20,3 +20,5 @@
 {"timestamp":"2026-07-07T11:53:58.241Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"5","to":"6","iteration":1,"phase":"6"}
 {"timestamp":"2026-07-07T11:54:23.319Z","event":"gate_recorded","featureName":"fable5-config-slimdown","phase":"6","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-07-07T11:55:22.048Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"6","to":"complete","iteration":1,"phase":"complete"}
+{"timestamp":"2026-07-21T09:30:23.593Z","event":"phase_transition","featureName":"life-manager-daily-preflight","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-21T09:31:37.599Z","event":"gate_recorded","featureName":"life-manager-daily-preflight","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}

@@ -2,7 +2,7 @@
   "featureName": "life-manager-daily-preflight",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "1b",
+  "currentPhase": "1c",
   "phaseHistory": [
     {
       "from": "init",
@@ -15,11 +15,18 @@
       "to": "1b",
       "timestamp": "2026-07-21T08:56:28.913Z",
       "reason": "Verification architecture authored; awaiting fresh Phase 1c review"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-21T09:30:23.590Z",
+      "reason": "Fresh artifact-only Phase 1c adversarial spec review started"
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1
   },
   "proofObligations": [
     {
@@ -605,8 +612,21 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-21T09:31:37.597Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "findingCount": 4,
+        "verdictPath": ".vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/verdict.json"
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-21T09:31:37.597Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T08:56:28.922Z"
+  "updatedAt": "2026-07-21T09:31:37.598Z"
 }
