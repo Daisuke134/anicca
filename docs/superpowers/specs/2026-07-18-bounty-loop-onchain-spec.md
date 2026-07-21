@@ -1,66 +1,40 @@
-# SPEC: bounty loop — 稼ぐが先、crypto は後
+# SPEC: bounty/work loop — paid-scope first、verified payout only
 
-status: ACTIVE / 作成 2026-07-18 / 主体 Fable（plan+verify）/ executor Sol（/flowa）/ 実行主体 claude-p loop
+status: ACTIVE / 実行主体 = agent自身のdurable loop
 研究の土台 → `2026-07-18-bounty-loop-research-and-design.md`。
 spec は SSOT。発見のたび本文を実測値に書き換える。
 
-## ★2026-07-18 PIVOT（Dais 指示。上位が旧記述を上書き）★
+## 現行決定
 
-**crypto-only 制約を外す。まず bank 口座（Dais の口座）に振り込まれる bounty で今すぐ稼ぐ。crypto payout は後回しの最適化。**
-- 理由: 全 crypto rail を実測 → poidh(accept 8.6%・現地写真)・gib.work(live dev 在庫1件)・Superteam(人間 claim) は income にならないと確定。gig 型で唯一 real 在庫 × PR-merit accept × real money を持つのは **Algora（Stripe→bank 払い）**。crypto 制約を外せば復活する。
-- **human-zero の適用範囲**: loop の日次動作（discover→コード→PR→submit→track）は human-zero。payout endpoint は **Dais の一回限りの bank/Stripe**（gig-work の Coconala→Dais MUFG と同じモデル。「唯一の人要素=一回限りの口座」）。crypto wallet 直払いは後続 phase。
-- 既存資産: **`profitable-claude/skills/bounty/` は元々 Algora 用**（PR→merge→track→Stripe payout、`GITHUB_IDENTITY=Daisuke134` default）。2026-07-12 に `.disabled` 化されただけ → **復活させて回す**のが最短。
-- on-chain 作業（poidh read lib・native-verify、実 tx で着金検出を実証済み）は **crypto payout phase 用に棚上げ**（worktree `feature/bounty-onchain-rail`, commit b971d51 保持）。破棄しない。
+- **primary = huntr MFV/OSV**。paid scope内のnovel security findingをPoC付きで提出し、外部payoutを得る。
+- **secondary = Opire / Algoraのfresh・低競合案件だけ**。日次batchで飽和済み案件へ5番手以降で入る方式は使わない。
+- **scale = Immunefi / Code4rena / Sherlock**。crypto wallet直払いへ広げるが、最初の実payoutより前に拡散しない。
+- **poidh = crypto payout mechanismの参照実装だけ**。accept率と案件構成からincome railにはしない。
+- human-zeroはdiscover→score→work→validate→submit→track→record→self-improveの日次運用に適用する。fiat railの
+  初回KYC/Stripe/bank登録はpayout発生後のbootstrap gateであり、日次loopへ人間を戻す理由にしない。
+- submit、PR、finding、accept待ちはearnではない。外部payoutの検証が終わるまで収益は¥0として扱う。
 
 ---
 
-## STATUS（実装済み vs 残タスク。2026-07-18）
+## STATUS（実装済み vs 残タスク）
 
-**実装済み（検証まで完了）:**
-- 研究 + spec（全 rail 実測・SSOT 化・bank-first Algora に pivot）
-- poidh on-chain lib + native-verify（19テスト green、実 tx で 0.1297 ETH 着金検出＝T5 green）。**crypto phase 用に棚上げ**（worktree `feature/bounty-onchain-rail` commit b971d51）
-- 既存 harness の実読 + go-live 差分確定（gh 認証 Daisuke134=repo+workflow OK、pipeline は完成コード）
+**記録済みの実装・検証証拠:**
+- CORE HUNTER（monitor→scan→analyze→novelty）とsubmit/track/record/self-improveのコード、74テストgreen。
+- 個人repoでnovel sandbox escape、huntr paid scopeのBentoMLでDockerfile command injection PoCを実再現。
+- poidh read lib + native-verify、19テストgreenと既知txの0.1297 ETH検出。これはcrypto mechanism参照であり収益証明ではない。
+- Algora batch実走はdiscover 63→survivor 0→earn 0。飽和済みPR型batchを主railにしない根拠として保持する。
 
-**残タスク（実際に稼ぐまで。担当明記。/flowa = Fable plan / Sol execute / Fable verify）:**
-| # | 残タスク | 担当 | 依存 |
+**残タスク（上から順）:**
+
+| # | 残タスク | done条件 | 依存 |
 |---|---|---|---|
-| R1 | **Algora onboarding（一回限りの人手）**: algora.io に GitHub(Daisuke134) ログイン → Stripe Connect + KYC + 銀行口座 + 税フォーム。日本個人の受取可否/書類は実 onboarding で確定。**Fable がブラウザ駆動、KYC/銀行/税の個人入力は Dais** | Fable(browser)+**Dais**(個人情報) | — |
-| R2 | **loop 復活（ops）**: `.disabled` plist 2枚を再有効化 + `bounty-cli.sh` で core 起動。discover→PR→track が回り始める | Fable(launchd kickstart) | — |
-| R3 | **入金 verify 配線（code）**: record-earn は on-chain USDC 専用。Algora dashboard(login-gated) 読取 or Stripe 入金検知の settle パスを新規実装（merge→paid を auto-verify）。INV-8/9 準拠 | **Sol** | R1 |
-| R4 | **win-rate 改善（code）**: 旧 harness は実質 $0（agent 飽和 flat-38）。merge されやすい repo 狙い(real USD クラスタ sorosave 等)・PR 品質・spray 回避を self-improve 層に反映（研究 §4 の勝ちパターン） | **Sol** | R2 |
-| R5 | **稼いだか verify**: loop の apply→PR→merge→**着金**を実測。done=金が着いた時のみ・1件で止めず loop 継続 | **Fable** | R1-R4 |
+| B1 | **paid-scope monitor + score** | huntr/Immunefi/SECURITY.md等の支払対象だけをqueueし、funding・scope・freshness・競合・noveltyを決定論で証明 | — |
+| B2 | **autonomy hardening** | fresh/no-resume起動、non-interactive trust、timeout、budget cap、対話prompt 0でlaunchd passが完走 | — |
+| B3 | **live submit + track** | paid scopeのvalid finding/deliverableを1件提出し、providerのsubmission ID/URLを保存。accept/rejectまでpoll | B1-B2 |
+| B4 | **payout verify + ledger** | cryptoはfinalized event、fiatはprovider-authenticated payout recordと実受取をwrite-pathで再検証し、重複なく1行記録 | B3 |
+| B5 | **repeat + scale** | 外部payoutを1件で止めず再現し、黒字railだけをImmunefi/C4/Sherlock・他agentへ拡張 | B4 |
 
-| R6 | **autonomy-hardening（code）** ★Dais の「can THEY do it?」の核心 — headless Sonnet コアが対話ゲートでハングして自律で回らない。①中立でない cwd 起動で別セッション resume 混線、②`.claude/active-team.md` external-imports 承認プロンプトで停止。launchd(TTY無)下で人手ゼロで越えられるよう修正（fresh 起動/no-resume + external-imports 事前 trust + 全対話プロンプト自動処理） | **Sol** | R2 |
-
-**critical path**: R1(Dais onboarding) が全ての payout を unblock。R6(autonomy-hardening) が無いと loop は自律で回らない＝Dais の本質要件。R2(復活) は即可能だが R6 無しでは毎回手動 unblock が要る。
-
-**★2026-07-19 prove-2 実証（novel finding を引けるか）= NEGATIVE。全 rail 検証完了★**: 金脈3つを実環境(modelscan0.8.8/keras3.15/gguf/safetensors 実導入)で attempt、全て袋小路（捏造でなく実験で棄却）:
-- `.gguf`/`.safetensors` = 純データリーダー、exec 経路が存在しない（modelscan 盲点だが exploit 対象が無い）。
-- `.keras 非Lambda` = 3.15 allowlist で厳格ロック、io-no ら CVE ハンターが CVE-2025-1550/9905/9906/8747 等で総攻撃中・全 patched。
-- pickle パーサ差分 = 完全飽和（差分アイデアが全て既存 open issue #330/331/338/348/311/354…）。
-- **loop viability=低**: modelscan×既知ローダ面はプロ CVE ハンターが realtime 総攻撃中、盲目 fuzzing=既報再発見。
-- **唯一残る edge（高分散）**: ①**fresh release 先着**（keras/transformers 新版を数日以内に io-no より先に叩く時間差）②未探索ニッチローダ ③**gguf `chat_template` Jinja2 SSTI in llama-cpp-python**（sandbox 無し実装、inference 時・別 bounty クラス、未探索寄り）。
-
-**═══ 全 rail 検証の到達点（2026-07-19）＋ Dais 方針確定 ═══**: 検証で分かったのは「簡単な金脈は無い・どこも飽和/CVE swarm/KYC gate・AI は仕事はできるが prosに対し勝つのが難しい」。**だが撤退(旧 option C)は無し（Dais 明確指示）。** 理由=人間はbountyだけで月$10k生活しており、AIはコードで人間より上＝原理的に可能。難しい=誰もまだ loop 化してない＝だからこそ我々がやる(zero-to-one for every AI)。方針: **everything を1つの loop に統合** — code(Algora/Opire) + audit(Code4rena/Sherlock/Immunefi, crypto) + security(huntr/HackerOne/Bugcrowd, fiat) + first-responder(fresh/niche 先着)。payout は **crypto と bank 両対応**。**first threshold = とにかく1件 現金を通す**。勝ち方は「実際に稼いでる人間/AI の workflow を copy」して設計する（research 進行中: 実稼ぎ証拠+copyすべき repo+human everyday workflow）。
-
-**★2026-07-19 prove-1 実証（huntr MFV を手で attempt、win-rate 実測）★**: 隔離環境で実施。valid finding = 「load 時 RCE + ProtectAI modelscan/guardian 未検知(bypass)」の2点セット。高価値 $1,500 形式 = `.safetensors`/`.gguf`/`.keras`/`.joblib`。結果:
-- **✓ AI は動く PoC を自律生成できた（実証）**: joblib の圧縮(zlib/gzip/bz2/lzma)で modelscan(0.8.8) を bypass（"No issues found"）しつつ `joblib.load()` で実 RCE（marker に実 `id` 出力を4形式で観測）。真因=`modelscan picklescanner.py _list_globals` が生バイトに `pickletools.genops`、`model.py get_stream` が復号しない（repo に zlib/gzip/bz2/lzma 復号処理なし）。環境構築→PoC 生成→scanner/load 実測まで完走。
-- **✗ novelty が唯一のボトルネック**: この joblib 筋は既知（modelscan PR#345/#356・issue#193・既存報告）で duplicate 却下濃厚。Keras 非Lambda bypass は成立するが RCE が keras3.15 allowlist で遮断(CVE-2025-1550 patch 済)。表面的既知筋は金にならない。
-- **win-rate 判定**: PoC 生成力=十分。壁は saturation でも payout でもなく **novelty**。金脈=**①modelscan 非対象の高価値形式(`.gguf`/`.safetensors`)の load 時 exec ②非Lambda keras/h5 の新規 code-exec ③パーサ差分(圧縮/ネスト/連結)の未報告バリエーション** — 継続 deep-fuzz 前提。単発 EV 低〜中、継続 fuzzing loop で中。
-- **→ R4 loop 設計**: 「modelscan の盲点を継続 deep-fuzz し、**novelty-gate（modelscan issues/PRs・CVE・huntr hacktivity・gh search で既知筋を除外）を通った未報告 vuln のみ**に投資 → 動く PoC をローカル実証 → huntr disclose(HF repo + protectai-bot gated access + report) を下書き」。既知筋掃討はやらない（prove-1 の #1 失敗＝duplicate）。成果物 scratchpad/mfv/（repo 未commit）。
-
-**★2026-07-19 R1 の壁が消えた（huntr 規約実測）★**: 提出=`huntr.com/bounties/disclose` の web フォーム、**account 登録のみで submit 可能**。Stripe KYC は「**初回 payout 発生時に初めてメールで要求**」（"For the first month that you are due a payment, you will receive an email requesting you to create a Stripe Connect account"）。→ **account 作成+vuln 提出は human-zero で今可能。Dais の KYC は「勝った後」に一回だけ＝前段のブロッカーではない**。critical path から R1 が外れ、gate は prove-1（AI が vuln を出せるか）のみに。OSV は maintainer 検証、MFV は admin 検証。
-
-**★2026-07-19 RAIL 最終確定（広域探索 + huntr 実測）= huntr MFV★**: Dais 指示で全 bounty 宇宙を探索。結論:
-- コード bounty(PR型)は Algora+Opire に集約・**全て飽和で $0**（先着レース）。Polar/Gitpay/IssueHunt/直接GitHub label は廃止/停止/spam。
-- fiat security bounty は **finding=AI 可（XBOW が HackerOne 全米1位を自律達成、実証済み）だが payout identity が唯一の人手**（全 fiat rail が初回 KYC。完全 human-zero fiat 着金 rail は存在せず、crypto なら Immunefi のみ）。
-- **勝てる rail = huntr（実測 live 検証済み）**: `huntr.com/bounties` に **Model File Formats 56標的・各 $1,500・常時開**（OpenVINO/MessagePack/Flax/JAX/TensorRT/CoreML/Caffe 等、提出=`huntr.com/bounties/disclose/models?target=<t>` web フォーム）。タスク=ML ライブラリの model-file パーサに novel な ACE/scanner-bypass 脆弱性+PoC。**automation-native**（規約が検出/再現コード作成を報酬対象と明記）、**先着飽和なし**（novel vuln=payout）、AI slop 排斥の逆風なし、Stripe で fiat 銀行(日本OK, KYC 初回一回=Dais の payout shell)。
-- **rail 構成確定**: primary=**huntr MFV/OSV**（AI-native security, fiat）/ secondary=**Opire**（Algora 型コードの追加畑, fiat）/ scale=**Immunefi**（crypto wallet 直, 高額, human-zero payout だが最難関）。Algora は飽和で降格。
-- honest caveat: huntr MFV も「ProtectAI scanner を bypass する novel exploit」が要り非自明。win-rate は未実証（要 E2E 検証）。だが探索した全 rail で **AI-native × fiat × 非飽和** を満たす唯一。
-
-**★2026-07-18 最重要の経験的事実（loop を実走させて確定）★**: unblock 後 core はフル pass を完走 = **discover 63件 → gate survivor 0/63 → claim0/PR0/earn0**。真因を実測: 63件の大半は spam/test repo/token 払いのゴミ（gate が正しく除外）、本物のコード bounty は `sorosave-protocol/frontend` の ~8件だが**全て競合 PR 4件+で飽和**（例: issue#6「transaction history」= 未assign・OPEN だが algora コメントに競合が "attempt, PR incoming" 済み・参照 open PR=4件、gate の「既 open PR→skip」が正しく reject）。他(drizzle/zio/prisma)は高難度 big-repo。**結論: 現 Algora 在庫に「我々が勝てる案件」はゼロ。daily-batch 方式は構造的に常に 5番目以降の PR=EV≈0**（研究の「flat-38」を自 loop で実証）。loop 自身も lessons.jsonl に「5回連続 empty pass」と記録。→ Algora で稼ぐには **(A) 新規 bounty を real-time で監視し最初の1-3 PR に入る first-mover 方式に作り替える（R4 を batch→realtime に再定義、Sol）** か **(B) 飽和しない merit ベースの audit(Code4rena/Immunefi, crypto payout) に pivot**。Dais 判断。
-
-**2026-07-18 R2 実測（Fable が手で復活・観測）**: plist 2枚 .disabled 解除+load、`bounty-cli.sh` で core 起動＝ALIVE。だが **headless core は自律で回らないと判明**: (a) `~/anicca-project` から手動起動すると claude が同 cwd の直近 warmup/clip セッションを resume して bounty と無関係な内容を実行、(b) 中立 cwd から起動すると `.claude/active-team.md` の external-imports 承認プロンプト「1.Yes/2.No」でハング。俺が tmux に Enter を送って初めて pass が走り始めた（"Beaming… ↓1.2k tokens"）。**weekly limit 73% 消費(Jul 24 reset)** も判明＝常時 Sonnet コアはこれを食う。→ R6 を Sol に。現 pass の結果は Monitor で観測中。
+**critical path = B1 + B2 → B3 → B4 → B5**。fiat KYCは実payout発生後のbootstrap gateであり、B1-B3を止めない。
 
 ---
 
