@@ -9,7 +9,7 @@
 
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
-const { calendarProviderFilter } = require("./lib/user-selector.js");
+const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
@@ -51,7 +51,7 @@ const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_S
 async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
-  const base = `${url}/rest/v1/lm_users?phone=not.is.null&paid=is.true&${calendarProviderFilter()}`;
+  const base = `${url}/rest/v1/lm_users?${schedulerCohortFilter()}`;
   const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,email,telegram_chat_id,call_language";
   const hdr = { apikey: key, Authorization: `Bearer ${key}` };
   // FAIL-SAFE: try WITH wake_policy; if the column is missing (PostgREST 400) fall back to the base
@@ -411,7 +411,7 @@ async function getUserByUid(uid) {
   const { url, key } = SUPA();
   if (!url || !key || !uid) return null;
   const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,email,telegram_chat_id,call_language";
-  const base = `${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&phone=not.is.null&paid=is.true&${calendarProviderFilter()}`;
+  const base = `${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&${schedulerCohortFilter()}`;
   const hdr = { apikey: key, Authorization: `Bearer ${key}` };
   let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });
   if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr });

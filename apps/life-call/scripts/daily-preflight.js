@@ -6,9 +6,10 @@ const path = require("node:path");
 const { createDependencyChecks, runPreflight } = require("../lib/daily-preflight.js");
 
 function parseArgs(argv) {
-  const args = { output: "", timeoutMs: 15000 };
+  const args = { output: "", proofs: "", timeoutMs: 15000 };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--output") args.output = argv[++index] || "";
+    else if (argv[index] === "--proofs") args.proofs = argv[++index] || "";
     else if (argv[index] === "--timeout-ms") args.timeoutMs = Number(argv[++index]);
     else throw new Error(`unknown argument: ${argv[index]}`);
   }
@@ -18,7 +19,13 @@ function parseArgs(argv) {
 
 async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {
   const args = parseArgs(argv);
-  const checks = createDependencyChecks({ env, fetchImpl, nowMs: Date.now() });
+  let proofs = {};
+  if (args.proofs) {
+    const parsed = JSON.parse(fs.readFileSync(path.resolve(args.proofs), "utf8"));
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") throw new Error("--proofs must contain an object");
+    proofs = parsed;
+  }
+  const checks = createDependencyChecks({ env, fetchImpl, nowMs: Date.now(), proofs });
   const report = await runPreflight({ checks, timeoutMs: args.timeoutMs });
   if (args.output) {
     const output = path.resolve(args.output);

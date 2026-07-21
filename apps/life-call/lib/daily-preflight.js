@@ -5,6 +5,8 @@
 const crypto = require("node:crypto");
 const { LIVE_MODEL } = require("./call-logic.js");
 const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");
+const { schedulerCohortFilter } = require("./user-selector.js");
+const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");
 
 const DEPENDENCY_NAMES = Object.freeze([
   "health",
@@ -21,7 +23,8 @@ const DEPENDENCY_NAMES = Object.freeze([
 const REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);
 const TELNYX_BASE = "https://api.telnyx.com/v2";
 const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";
-const RESEND_DOMAINS = "https://api.resend.com/domains";
+const STANDARD_GEMINI_MODEL = "gemini-2.5-flash";
+const PROOF_MAX_AGE_MS = 15 * 60 * 1000;
 const TIMEOUT = Symbol("preflight-timeout");
 
 class PreflightFailure extends Error {
@@ -47,6 +50,44 @@ function secretValues(env) {
     .map(([, value]) => String(value));
 }
 
+function sanitizeUrl(match) {
+  try {
+    const url = new URL(match);
+    url.username = "";
+    url.password = "";
+    url.search = "";
+    url.hash = "";
+    url.pathname = url.pathname.split("/").map((segment) => {
+      let decoded = segment;
+      try { decoded = decodeURIComponent(segment); } catch {}
+      const opaque = decoded.length >= 12 && (
+        /[A-Za-z]/.test(decoded) && /\d/.test(decoded)
+        || /[_:-]/.test(decoded)
+        || decoded.length >= 24
+      );
+      return opaque ? "[REDACTED_PATH]" : segment;
+    }).join("/");
+    return url.toString().replace(/\/$/, url.pathname === "/" ? "" : "/");
+  } catch {
+    return "[REDACTED_URL]";
+  }
+}
+
+function sanitizeString(value, secrets) {
+  let safe = String(value)
+    .replace(/\b(?:https?|wss?):\/\/[^\s"'<>]+/gi, sanitizeUrl)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")
+    .replace(/\+\d[\d ()-]{7,}\d/g, "[REDACTED_NUMBER]")
+    .replace(/(?<!\d)0\d{1,4}[- ()]\d{1,4}[- ]\d{3,4}(?!\d)/g, "[REDACTED_NUMBER]")
+    .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+    .replace(/\b(?:api[_-]?key|access[_-]?token|token|secret)\s*[=:]\s*[^\s,;]+/gi, "$1=[REDACTED]")
+    .replace(/\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\b/g, "[REDACTED_KEY]")
+    .replace(/\b(?:chat|user)(?:_?id)?\s*[=: ]+\d{5,}\b/gi, "$1=[REDACTED_ID]")
+    .replace(/\b\d{8,}\b/g, "[REDACTED_ID]");
+  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");
+  return safe.slice(0, 200);
+}
+
 function sanitizeEvidence(value, secrets = [], key = "") {
   if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\buid\b|raw|body)/i.test(key)) {
     return "[REDACTED]";
@@ -59,12 +100,7 @@ function sanitizeEvidence(value, secrets = [], key = "") {
     ]));
   }
   if (typeof value !== "string") return value;
-  let safe = value
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")
-    .replace(/\+\d[\d ()-]{7,}\d/g, "[REDACTED_NUMBER]")
-    .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]");
-  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");
-  return safe.slice(0, 200);
+  return sanitizeString(value, secrets);
 }
 
 async function requestJson(fetchImpl, url, options, signal) {
@@ -95,9 +131,13 @@ function supabaseHeaders(env) {
   };
 }
 
-async function currentComposioUser(env, fetchImpl, signal) {
+async function currentSchedulerUser(env, fetchImpl, signal) {
   requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
-  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?paid=is.true&calendar_provider=eq.composio_gcal&select=uid&limit=1`;
+  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()
+    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`
+    : "";
+  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +
+    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";
   const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);
   const user = Array.isArray(rows) && rows[0];
   if (!user || !user.uid) fail("state_unavailable", { current_user: false });
@@ -112,7 +152,26 @@ async function healthCheck(env, fetchImpl, signal) {
   return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };
 }
 
-async function telegramCheck(env, fetchImpl, signal) {
+function proofIsFresh(proof, nowMs) {
+  const checkedAt = Date.parse(proof && proof.checkedAt);
+  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;
+}
+
+function isHashedRef(value) {
+  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));
+}
+
+function expectedServiceUrl(env, pathname) {
+  const base = healthBase(env);
+  let url;
+  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+    fail("configuration", { service_url_valid: false });
+  }
+  return new URL(pathname, `${url.origin}/`).toString();
+}
+
+async function telegramCheck(env, fetchImpl, signal, nowMs, proof) {
   requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);
   const token = env.LM_TELEGRAM_BOT_TOKEN;
   const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {
@@ -122,34 +181,44 @@ async function telegramCheck(env, fetchImpl, signal) {
   }, signal);
   const info = body && body.result;
   const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];
-  let webhookHost = "";
-  try { webhookHost = new URL(info && info.url).hostname; } catch {}
+  const expectedUrl = expectedServiceUrl(env, "/telegram");
+  let webhookUrl = null;
+  try { webhookUrl = new URL(info && info.url); } catch {}
+  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);
   const pending = Number(info && info.pending_update_count);
   const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));
-  if (body.ok !== true || !webhookHost || !Number.isFinite(pending) || pending !== 0 ||
+  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&
+    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));
+  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||
       info.last_error_message || info.last_error_date || missingUpdates.length) {
     fail("webhook_not_ready", {
-      webhook_configured: Boolean(webhookHost),
+      webhook_configured: Boolean(webhookUrl),
+      webhook_url_exact: webhookExact,
       pending_updates: Number.isFinite(pending) ? pending : -1,
       last_error: Boolean(info && (info.last_error_message || info.last_error_date)),
       missing_update_count: missingUpdates.length,
     });
   }
+  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });
   return {
     ok: true,
     evidence: {
-      webhook_host: webhookHost,
+      webhook_host: webhookUrl.hostname,
+      webhook_path: webhookUrl.pathname,
+      webhook_url_exact: true,
       pending_updates: pending,
       last_error: false,
       allowed_updates: [...allowed].sort(),
-      webhook_auth_configured: true,
+      round_trip_verified: true,
+      request_message_ref: proof.requestMessageRef,
+      reply_message_ref: proof.replyMessageRef,
     },
   };
 }
 
 async function calendarCheck(env, fetchImpl, signal, nowMs) {
   requireEnv(env, ["COMPOSIO_API_KEY"]);
-  const user = await currentComposioUser(env, fetchImpl, signal);
+  const user = await currentSchedulerUser(env, fetchImpl, signal);
   const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {
     method: "POST",
     headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },
@@ -173,8 +242,53 @@ async function calendarCheck(env, fetchImpl, signal, nowMs) {
   };
 }
 
-async function callCheck(env, fetchImpl, signal) {
+function productionBridgeUrl(env) {
+  requireEnv(env, ["PUBLIC_WSS", "LM_CALL_SECRET"]);
+  const secret = String(env.LM_CALL_SECRET).trim();
+  if (secret.length < 8 || /^(?:secret|test|unit|dummy|example|placeholder|changeme)(?:[-_\d].*)?$/i.test(secret)) {
+    fail("call_secret_not_ready", { call_secret_configured: false });
+  }
+  let base;
+  try { base = new URL(String(env.PUBLIC_WSS)); } catch { fail("bridge_url_not_ready", { bridge_url_valid: false }); }
+  const expectedHost = new URL(expectedServiceUrl(env, "/health")).host;
+  if (base.protocol !== "wss:" || base.host !== expectedHost || base.pathname !== "/" ||
+      base.username || base.password || base.search || base.hash) {
+    fail("bridge_url_not_ready", { bridge_url_valid: false, bridge_host_aligned: base.host === expectedHost });
+  }
+  return `${base.origin}/ws`;
+}
+
+function probeWebSocketAuthGate(url, { signal } = {}) {
+  return new Promise((resolve, reject) => {
+    const WebSocket = require("ws");
+    const socket = new WebSocket(url);
+    let opened = false;
+    let settled = false;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      signal && signal.removeEventListener("abort", onAbort);
+      fn(value);
+    };
+    const onAbort = () => {
+      try { socket.terminate(); } catch {}
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      finish(reject, error);
+    };
+    if (signal && signal.aborted) return onAbort();
+    signal && signal.addEventListener("abort", onAbort, { once: true });
+    socket.once("open", () => { opened = true; });
+    socket.once("close", (code) => finish(resolve, { opened, closeCode: Number(code) }));
+    socket.once("error", (error) => {
+      if (!opened) finish(reject, error);
+    });
+  });
+}
+
+async function callCheck(env, fetchImpl, signal, webSocketProbe) {
   requireEnv(env, ["TELNYX_API_KEY", "TELNYX_PHONE_NUMBER", "TELNYX_CONNECTION_ID"]);
+  const bridgeUrl = productionBridgeUrl(env);
   const headers = { Authorization: `Bearer ${env.TELNYX_API_KEY}` };
   const balanceBody = await requestJson(fetchImpl, `${TELNYX_BASE}/balance`, { headers }, signal);
   const balance = Number(balanceBody && balanceBody.data && balanceBody.data.balance);
@@ -187,7 +301,10 @@ async function callCheck(env, fetchImpl, signal) {
   const assigned = Array.isArray(numberBody && numberBody.data)
     ? numberBody.data.find((item) => String(item.phone_number || "").replace(/\D/g, "") === digits)
     : null;
-  if (!assigned || assigned.status !== "active") fail("number_not_ready", { number_assigned: Boolean(assigned), active: false });
+  const numberConnectionExact = Boolean(assigned && assigned.connection_id === env.TELNYX_CONNECTION_ID);
+  if (!assigned || assigned.status !== "active" || !numberConnectionExact) {
+    fail("number_not_ready", { number_assigned: Boolean(assigned), active: Boolean(assigned && assigned.status === "active"), connection_exact: numberConnectionExact });
+  }
 
   const appBody = await requestJson(fetchImpl,
     `${TELNYX_BASE}/call_control_applications/${encodeURIComponent(env.TELNYX_CONNECTION_ID)}`,
@@ -197,6 +314,21 @@ async function callCheck(env, fetchImpl, signal) {
   if (!app || app.id !== env.TELNYX_CONNECTION_ID || app.active !== true || !profileConfigured) {
     fail("call_control_not_ready", { active: Boolean(app && app.active), outbound_profile_configured: profileConfigured });
   }
+  const expectedWebhook = expectedServiceUrl(env, "/telnyx-events");
+  if (String(app.webhook_event_url || "") !== expectedWebhook) {
+    fail("call_control_not_ready", { active: true, outbound_profile_configured: true, webhook_exact: false });
+  }
+  const profileId = app.outbound.outbound_voice_profile_id;
+  const profileBody = await requestJson(fetchImpl,
+    `${TELNYX_BASE}/outbound_voice_profiles/${encodeURIComponent(profileId)}`, { headers }, signal);
+  const profile = profileBody && profileBody.data;
+  if (!profile || profile.id !== profileId || profile.enabled !== true) {
+    fail("outbound_profile_not_ready", { profile_exact: Boolean(profile && profile.id === profileId), profile_enabled: Boolean(profile && profile.enabled) });
+  }
+  const bridge = await webSocketProbe(bridgeUrl, { signal });
+  if (!bridge || bridge.opened !== true || bridge.closeCode !== 1008) {
+    fail("bridge_not_ready", { bridge_reachable: Boolean(bridge && bridge.opened), auth_gate_verified: false });
+  }
   return {
     ok: true,
     evidence: {
@@ -205,16 +337,24 @@ async function callCheck(env, fetchImpl, signal) {
       currency: String((balanceBody.data && balanceBody.data.currency) || "unknown"),
       number_assigned: true,
       number_status: "active",
+      number_connection_exact: true,
       call_control_active: true,
       outbound_profile_configured: true,
-      webhook_configured: Boolean(app.webhook_event_url),
+      outbound_profile_enabled: true,
+      webhook_exact: true,
+      bridge_host: new URL(bridgeUrl).hostname,
+      bridge_path: "/ws",
+      bridge_reachable: true,
+      bridge_auth_gate_verified: true,
+      call_secret_configured: true,
+      probe_provider_cost_usd: 0,
       dial_attempted: false,
     },
   };
 }
 
 async function locationCheck(env, fetchImpl, signal, nowMs) {
-  const user = await currentComposioUser(env, fetchImpl, signal);
+  const user = await currentSchedulerUser(env, fetchImpl, signal);
   const url = `${env.SUPABASE_URL}/rest/v1/lm_user_locations?uid=eq.${encodeURIComponent(user.uid)}` +
     "&select=observed_at,expires_at&limit=1";
   const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);
@@ -222,6 +362,9 @@ async function locationCheck(env, fetchImpl, signal, nowMs) {
   const row = rows[0] || null;
   const expiresAt = Date.parse(row && row.expires_at);
   const state = !row ? "absent" : Number.isFinite(expiresAt) && expiresAt > nowMs ? "fresh" : "expired";
+  if (state !== "fresh") fail("location_not_fresh", {
+    schema_read: true, current_user_state: state, row_present: Boolean(row), user_ref: hashedRef(user.uid), write_attempted: false,
+  });
   return {
     ok: true,
     evidence: { schema_read: true, current_user_state: state, row_present: Boolean(row), user_ref: hashedRef(user.uid), write_attempted: false },
@@ -233,19 +376,29 @@ function fromDomain(value) {
   return match ? match[1].toLowerCase() : "";
 }
 
-async function emailCheck(env, fetchImpl, signal) {
+async function emailCheck(env, _fetchImpl, _signal, nowMs, proof) {
   requireEnv(env, ["RESEND_API_KEY", "LM_MAIL_FROM"]);
   const domain = fromDomain(env.LM_MAIL_FROM);
   if (!domain) fail("from_not_ready", { from_domain_configured: false });
-  const body = await requestJson(fetchImpl, RESEND_DOMAINS, {
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}` },
-  }, signal);
-  const domains = Array.isArray(body && body.data) ? body.data : [];
-  const record = domains.find((item) => String(item.name || "").toLowerCase() === domain);
-  if (!record || record.status !== "verified") fail("domain_not_ready", { from_domain: domain, verified: false });
+  const verified = Boolean(proof && proof.providerAccepted === true && proof.inboxReceived === true &&
+    proof.recipientOwned === true && proofIsFresh(proof, nowMs) && isHashedRef(proof.messageIdRef));
+  if (!verified) fail("send_receipt_unverified", {
+    controlled_send_attempted: Boolean(proof && proof.attempted),
+    provider_accepted: Boolean(proof && proof.providerAccepted),
+    inbox_receipt: Boolean(proof && proof.inboxReceived),
+    recipient_owned: Boolean(proof && proof.recipientOwned),
+  });
   return {
     ok: true,
-    evidence: { auth: true, from_domain: domain, domain_status: "verified", send_attempted: false },
+    evidence: {
+      auth: true,
+      from_domain: domain,
+      controlled_send: true,
+      provider_accepted: true,
+      inbox_receipt: true,
+      recipient_owned: true,
+      message_id_ref: proof.messageIdRef,
+    },
   };
 }
 
@@ -285,16 +438,46 @@ async function geminiCheck(env, fetchImpl, signal) {
   if (!String(body && body.name || "").endsWith(LIVE_MODEL) || !methods.includes("bidiGenerateContent")) {
     fail("model_not_ready", { model_available: false, bidi_supported: methods.includes("bidiGenerateContent") });
   }
+  const standardBody = await requestJson(fetchImpl,
+    `https://generativelanguage.googleapis.com/v1beta/models/${STANDARD_GEMINI_MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: "Reply with OK." }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 8 },
+      }),
+    }, signal);
+  const generated = Array.isArray(standardBody && standardBody.candidates) && standardBody.candidates.length > 0;
+  if (!generated) fail("standard_model_not_ready", { model_available: false, generate_content_supported: false });
   return {
     ok: true,
-    evidence: { model: LIVE_MODEL, model_available: true, bidi_supported: true, generation_attempted: false },
+    evidence: {
+      live_model: LIVE_MODEL,
+      live_model_available: true,
+      bidi_supported: true,
+      standard_model: STANDARD_GEMINI_MODEL,
+      standard_generate_content: true,
+      prompt_contains_pii: false,
+      response_stored: false,
+    },
   };
+}
+
+async function providerJson(fetchImpl, url, options, signal) {
+  try {
+    const response = await fetchImpl(url, { ...(options || {}), signal });
+    const body = await response.json().catch(() => null);
+    return { ok: Boolean(response && response.ok), status: Number(response && response.status) || 0, body };
+  } catch (error) {
+    if (signal && signal.aborted) throw error;
+    return { ok: false, status: 0, body: null };
+  }
 }
 
 async function mapsCheck(env, fetchImpl, signal, nowMs) {
   const key = env.LIFE_MAPS_KEY || env.GOOGLE_API_KEY;
   if (!key) fail("configuration", { configured: false });
-  const routesBody = await requestJson(fetchImpl, "https://routes.googleapis.com/directions/v2:computeRoutes", {
+  const routesRequest = providerJson(fetchImpl, "https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": "routes.duration" },
     body: JSON.stringify({
@@ -305,8 +488,6 @@ async function mapsCheck(env, fetchImpl, signal, nowMs) {
       departureTime: new Date(nowMs + 60_000).toISOString(),
     }),
   }, signal);
-  const routeDuration = routesBody && routesBody.routes && routesBody.routes[0] && routesBody.routes[0].duration;
-  if (!routeDuration) fail("routes_not_ready", { routes_api: false });
 
   const params = new URLSearchParams({
     origin: "35.681236,139.767125",
@@ -315,25 +496,51 @@ async function mapsCheck(env, fetchImpl, signal, nowMs) {
     departure_time: "now",
     key,
   });
-  const legacyBody = await requestJson(fetchImpl,
+  const legacyRequest = providerJson(fetchImpl,
     `https://maps.googleapis.com/maps/api/directions/json?${params.toString()}`, {}, signal);
-  const leg = legacyBody && legacyBody.routes && legacyBody.routes[0] && legacyBody.routes[0].legs && legacyBody.routes[0].legs[0];
-  if (legacyBody.status !== "OK" || !leg) fail("directions_not_ready", { directions_api: false });
+  const [routesResult, legacyResult] = await Promise.all([routesRequest, legacyRequest]);
+  const routeDuration = routesResult.ok && routesResult.body && routesResult.body.routes &&
+    routesResult.body.routes[0] && routesResult.body.routes[0].duration;
+  const routeSeconds = parseDurationSeconds(routeDuration);
+  const routesDrive = routeSeconds == null ? null : minutesFromSeconds(routeSeconds);
+  const legacyBody = legacyResult.body;
+  const leg = legacyResult.ok && legacyBody && legacyBody.status === "OK" && legacyBody.routes &&
+    legacyBody.routes[0] && legacyBody.routes[0].legs && legacyBody.routes[0].legs[0];
+  const legacySeconds = leg ? Number(leg.duration && leg.duration.value) : NaN;
+  const legacyTransit = Number.isFinite(legacySeconds) ? minutesFromSeconds(legacySeconds) : null;
+  const acceptance = acceptRouteResults({ legacyTransit, routesDrive });
+  if (!acceptance.operational) fail("routes_not_ready", {
+    operational: false,
+    available_provider_count: 0,
+    degraded_providers: acceptance.degradedProviders,
+  });
   return {
     ok: true,
-    evidence: { routes_api: true, directions_api: true, drive_duration_reported: true, transit_duration_reported: true, write_attempted: false },
+    evidence: {
+      operational: true,
+      available_providers: acceptance.availableProviders,
+      degraded_providers: acceptance.degradedProviders,
+      accepted_minutes_reported: Number.isFinite(acceptance.minutes),
+      write_attempted: false,
+    },
   };
 }
 
-function createDependencyChecks({ env = process.env, fetchImpl = fetch, nowMs = Date.now() } = {}) {
+function createDependencyChecks({
+  env = process.env,
+  fetchImpl = fetch,
+  nowMs = Date.now(),
+  proofs = {},
+  webSocketProbe = probeWebSocketAuthGate,
+} = {}) {
   const secrets = secretValues(env);
   return [
     { name: "health", run: ({ signal }) => healthCheck(env, fetchImpl, signal) },
-    { name: "telegram", run: ({ signal }) => telegramCheck(env, fetchImpl, signal) },
+    { name: "telegram", run: ({ signal }) => telegramCheck(env, fetchImpl, signal, nowMs, proofs.telegram) },
     { name: "calendar", run: ({ signal }) => calendarCheck(env, fetchImpl, signal, nowMs) },
-    { name: "call", run: ({ signal }) => callCheck(env, fetchImpl, signal) },
+    { name: "call", run: ({ signal }) => callCheck(env, fetchImpl, signal, webSocketProbe) },
     { name: "location", run: ({ signal }) => locationCheck(env, fetchImpl, signal, nowMs) },
-    { name: "email", run: ({ signal }) => emailCheck(env, fetchImpl, signal) },
+    { name: "email", run: ({ signal }) => emailCheck(env, fetchImpl, signal, nowMs, proofs.email) },
     { name: "discovery", run: ({ signal }) => discoveryCheck(env, fetchImpl, signal, nowMs) },
     { name: "gemini", run: ({ signal }) => geminiCheck(env, fetchImpl, signal) },
     { name: "maps", run: ({ signal }) => mapsCheck(env, fetchImpl, signal, nowMs) },

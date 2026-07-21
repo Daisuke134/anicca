@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "kind": "life-call-daily-preflight",
+  "generatedAt": "2026-07-21T06:46:44.480Z",
+  "timeoutMs": 20000,
+  "overallStatus": "fail",
+  "exitCode": 1,
+  "summary": {
+    "required": 9,
+    "passed": 6,
+    "failed": 3,
+    "timedOut": 0
+  },
+  "controlledL3": {
+    "telegram": {
+      "attempted": true,
+      "command": "panel",
+      "round_trip_verified": true,
+      "request_message_ref": "sha256:9c7be863c0a7",
+      "reply_message_ref": "sha256:f23d089e7f2e",
+      "opaque_reply_stored": false
+    },
+    "email": {
+      "attempted": true,
+      "provider_accepted": false,
+      "inbox_receipt": false,
+      "recipient_owned": true,
+      "recipient_stored": false,
+      "raw_provider_response_stored": false
+    },
+    "call": {
+      "dial_attempted": false,
+      "provider_cost_usd": 0
+    }
+  },
+  "dependencies": [
+    {
+      "dependency": "health",
+      "status": "pass",
+      "latencyMs": 144,
+      "evidence": {
+        "service": "life-call",
+        "healthy": true,
+        "build": "lm27-voicemail-v1"
+      },
+      "failureClass": null
+    },
+    {
+      "dependency": "telegram",
+      "status": "fail",
+      "latencyMs": 749,
+      "evidence": {
+        "webhook_configured": true,
+        "webhook_url_exact": true,
+        "pending_updates": 1,
+        "last_error": false,
+        "missing_update_count": 0
+      },
+      "failureClass": "webhook_not_ready"
+    },
+    {
+      "dependency": "calendar",
+      "status": "pass",
+      "latencyMs": 1468,
+      "evidence": {
+        "transport": "composio",
+        "authenticated_read": true,
+        "item_count": 1,
+        "user_ref": "0bc24a2e11d5"
+      },
+      "failureClass": null
+    },
+    {
+      "dependency": "call",
+      "status": "fail",
+      "latencyMs": 1259,
+      "evidence": {
+        "active": true,
+        "outbound_profile_configured": true,
+        "webhook_exact": false
+      },
+      "failureClass": "call_control_not_ready"
+    },
+    {
+      "dependency": "location",
+      "status": "pass",
+      "latencyMs": 1324,
+      "evidence": {
+        "schema_read": true,
+        "current_user_state": "fresh",
+        "row_present": true,
+        "user_ref": "0bc24a2e11d5",
+        "write_attempted": false
+      },
+      "failureClass": null
+    },
+    {
+      "dependency": "email",
+      "status": "fail",
+      "latencyMs": 37,
+      "evidence": {
+        "controlled_send_attempted": true,
+        "provider_accepted": false,
+        "inbox_receipt": false,
+        "recipient_owned": true
+      },
+      "failureClass": "send_receipt_unverified"
+    },
+    {
+      "dependency": "discovery",
+      "status": "pass",
+      "latencyMs": 868,
+      "evidence": {
+        "bot_configured": true,
+        "state_schema_read": true,
+        "eligible_user": true,
+        "user_ref": "0bc24a2e11d5",
+        "last_discovery_state": "set",
+        "current_due_state": "throttled",
+        "last_gate": "location",
+        "notification_attempted": false
+      },
+      "failureClass": null
+    },
+    {
+      "dependency": "gemini",
+      "status": "pass",
+      "latencyMs": 1735,
+      "evidence": {
+        "live_model": "gemini-2.5-flash-native-audio-preview-09-2025",
+        "live_model_available": true,
+        "bidi_supported": true,
+        "standard_model": "gemini-2.5-flash",
+        "standard_generate_content": true,
+        "prompt_contains_pii": false,
+        "response_stored": false
+      },
+      "failureClass": null
+    },
+    {
+      "dependency": "maps",
+      "status": "pass",
+      "latencyMs": 260,
+      "evidence": {
+        "operational": true,
+        "available_providers": [
+          "routes_drive"
+        ],
+        "degraded_providers": [
+          "legacy_transit"
+        ],
+        "accepted_minutes_reported": true,
+        "write_attempted": false
+      },
+      "failureClass": null
+    }
+  ]
+}

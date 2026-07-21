@@ -11,4 +11,10 @@ function calendarProviderFilter() {
   return `calendar_provider=in.(${WAKE_CALENDAR_PROVIDERS.join(",")})`;
 }
 
-module.exports = { WAKE_CALENDAR_PROVIDERS, calendarProviderFilter };
+// Full scheduler cohort contract. Any readiness check selecting a DAILY target must reuse this
+// fragment so phone/paid/provider eligibility cannot drift from scheduler.js.
+function schedulerCohortFilter() {
+  return `phone=not.is.null&paid=is.true&${calendarProviderFilter()}`;
+}
+
+module.exports = { WAKE_CALENDAR_PROVIDERS, calendarProviderFilter, schedulerCohortFilter };
