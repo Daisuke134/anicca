@@ -11,8 +11,10 @@ LEASE_DIR="$STATE_DIR/gig-workers"
 LOG_DIR="$HOME_DIR/.openclaw/logs"
 LOG="$LOG_DIR/emergency-disk-guard.log"
 DECISION_LEDGER="$STATE_DIR/emergency-disk-guard-decisions.tsv"
-RECLAIM_LEDGER="$STATE_DIR/emergency-disk-guard-reclaim.tsv"
+RECLAIM_LEDGER="$STATE_DIR/emergency-disk-guard-reclaim-v2.tsv"
+OPS_LEDGER="$STATE_DIR/emergency-disk-guard-ops-v2.tsv"
 BACKPRESSURE="$STATE_DIR/disk-pressure.block"
+ALERT="$STATE_DIR/disk-pressure.alert"
 LOCK="$STATE_DIR/.emergency-disk-guard.lock"
 GIG_LOCK_PID="${EMERGENCY_GUARD_TEST_LOCK_OWNER:-}"
 GIG_WORKER_MAX_SECONDS="${GIG_WORKER_MAX_SECONDS:-7200}"
@@ -24,8 +26,12 @@ TEST_MODE=0
 [ -n "${EMERGENCY_GUARD_TEST_PROCESS_FIXTURE:-}" ] && TEST_MODE=1
 DRY_RUN="${EMERGENCY_GUARD_DRY_RUN:-0}"
 RECLAIM_SEQ=0
+RECLAIM_ELIGIBLE=0
+RECLAIMED_TOTAL=0
 STOP_DECISION=""
 STOP_REASON=""
+RECLAIM_HEADER=$'timestamp\ttxid\tphase\tpath\towner\tclass\tbefore_bytes\tafter_bytes\treclaimed_bytes\treason\tpolicy_version\tdetail'
+OPS_HEADER=$'timestamp\tresult\treason\tfree_before_gb\tfree_after_gb\teligible_paths\treclaimed_bytes\tpolicy_version'
 
 mkdir -p "$LOG_DIR" "$STATE_DIR" 2>/dev/null || exit 1
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
@@ -56,6 +62,24 @@ append_decision() {
   else
     printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$subject" "$decision" "$reason" "$POLICY_VERSION" >> "$DECISION_LEDGER"
   fi
+}
+
+ensure_tsv_header() {
+  local file="$1" header="$2" tmp
+  if [ -s "$file" ]; then
+    [ "$(head -1 "$file")" = "$header" ]
+    return
+  fi
+  tmp="$file.$$.$RANDOM.tmp"
+  printf '%s\n' "$header" > "$tmp" || return 1
+  mv "$tmp" "$file"
+}
+
+append_ops() {
+  local result="$1" reason="$2" free_before="$3" free_after="$4"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$(date -u '+%FT%TZ')" "$result" "$reason" "$free_before" "$free_after" \
+    "$RECLAIM_ELIGIBLE" "$RECLAIMED_TOTAL" "$POLICY_VERSION" >> "$OPS_LEDGER"
 }
 
 path_bytes() {
@@ -104,6 +128,7 @@ reclaim_path() {
     append_decision "$path" preserve zero-byte-reclaim
     return 1
   fi
+  RECLAIM_ELIGIBLE=$((RECLAIM_ELIGIBLE + 1))
   if [ "$DRY_RUN" = 1 ]; then
     append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "$before" 0 "$reason" dry-run-preserved
     printf 'candidate\t%s\t%s\t%s\t%s\t%s\n' "$path" "$owner" "$class" "$before" "$POLICY_VERSION"
@@ -128,6 +153,7 @@ reclaim_path() {
     append_decision "$path" preserve zero-byte-reclaim
     return 1
   fi
+  RECLAIMED_TOTAL=$((RECLAIMED_TOTAL + reclaimed))
   append_reclaim "$txid" removed "$path" "$owner" "$class" "$before" "$after" "$reclaimed" "$reason" removed
 }
 
@@ -409,13 +435,23 @@ evaluate_gig_workers() {
 FREE=$(free_gb)
 [ -n "$FREE" ] || exit 1
 if [ "$FREE" -ge "$THRESHOLD_GB" ]; then
-  rm -f "$BACKPRESSURE"
+  rm -f "$BACKPRESSURE" "$ALERT"
   exit 0
 fi
 
 printf 'free_gb=%s threshold_gb=%s policy=%s observed_at=%s\n' \
   "$FREE" "$THRESHOLD_GB" "$POLICY_VERSION" "$(date -u '+%FT%TZ')" > "$BACKPRESSURE"
 log "LOW DISK: ${FREE}GB free (< ${THRESHOLD_GB}GB) — safe containment start"
+
+# v1 is intentionally read-only. v2 has a deterministic 12-column header, so
+# rows from the legacy 8-column contract can never be mixed into this file.
+if ! ensure_tsv_header "$RECLAIM_LEDGER" "$RECLAIM_HEADER" || \
+   ! ensure_tsv_header "$OPS_LEDGER" "$OPS_HEADER"; then
+  append_decision disk-pressure failure ledger-schema-invalid
+  printf 'result=failure reason=ledger-schema-invalid policy=%s\n' "$POLICY_VERSION" > "$ALERT"
+  log "FAILURE: ledger schema invalid; preserving all paths"
+  exit 3
+fi
 
 if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]; then
   # Exact, known-regenerable caches only. No transcript, todo, lock, worktree,
@@ -476,4 +512,18 @@ if [ "$FREE" -lt "$ULTRA_GB" ]; then
 fi
 
 NEW=$(free_gb)
-log "safe containment done: ${FREE}GB -> ${NEW}GB free"
+if [ "$RECLAIM_ELIGIBLE" -eq 0 ] || [ "$RECLAIMED_TOTAL" -eq 0 ]; then
+  if [ "$RECLAIM_ELIGIBLE" -eq 0 ]; then
+    FAILURE_REASON=no-eligible-reclaim
+  else
+    FAILURE_REASON=zero-reclaimed-bytes
+  fi
+  append_decision disk-pressure failure "$FAILURE_REASON"
+  append_ops failure "$FAILURE_REASON" "$FREE" "$NEW"
+  printf 'result=failure reason=%s free_before_gb=%s free_after_gb=%s eligible_paths=%s reclaimed_bytes=%s policy=%s\n' \
+    "$FAILURE_REASON" "$FREE" "$NEW" "$RECLAIM_ELIGIBLE" "$RECLAIMED_TOTAL" "$POLICY_VERSION" > "$ALERT"
+  log "FAILURE: ${FAILURE_REASON}; ${FREE}GB -> ${NEW}GB; backpressure remains"
+  exit 3
+fi
+append_ops success reclaimed-bytes "$FREE" "$NEW"
+log "safe containment done: ${FREE}GB -> ${NEW}GB free; reclaimed=${RECLAIMED_TOTAL} bytes"

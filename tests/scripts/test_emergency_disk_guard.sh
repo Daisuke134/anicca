@@ -16,6 +16,12 @@ mkdir -p "$HOME_DIR/Library/Application Support/Claude/vm_bundles/active.bundle"
 mkdir -p "$HOME_DIR/Library/Application Support/Claude/vm_bundles/error.bundle"
 mkdir -p "$HOME_DIR/.cache/codex-runtimes" "$HOME_DIR/.cache/whisper" "$HOME_DIR/.cache/torch"
 mkdir -p "$HOME_DIR/.codex/.tmp" "$HOME_DIR/.openclaw/workspace/runs/run-1"
+LEGACY_RECLAIMS="$STATE_DIR/emergency-disk-guard-reclaim.tsv"
+cat > "$LEGACY_RECLAIMS" <<'EOF'
+2026-07-20T00:00:00Z	/legacy/cache	legacy	ephemeral-cache	4096	old-format	p0-containment-v1	removed
+2026-07-20T00:01:00Z	/legacy/cache2	legacy	ephemeral-cache	0	old-format	p0-containment-v1	failed
+EOF
+LEGACY_HASH_BEFORE=$(shasum -a 256 "$LEGACY_RECLAIMS" | awk '{print $1}')
 printf 'active evidence\n' > "$HOME_DIR/.claude/projects/incident/active.jsonl"
 printf '4242\n' > "$HOME_DIR/gig/.pass.lock"
 printf 'cookie identity\n' > "$HOME_DIR/.cloak/profiles/inactive/Default/Cookies"
@@ -83,7 +89,7 @@ GIG_WORKER_CANONICAL_ARGV="$CANONICAL_ARGV" \
 bash "$GUARD"
 
 DECISIONS="$STATE_DIR/emergency-disk-guard-decisions.tsv"
-RECLAIMS="$STATE_DIR/emergency-disk-guard-reclaim.tsv"
+RECLAIMS="$STATE_DIR/emergency-disk-guard-reclaim-v2.tsv"
 
 test -e "$HOME_DIR/.claude/projects/incident/active.jsonl" || { echo 'active transcript was deleted'; exit 1; }
 test -e "$HOME_DIR/gig/.pass.lock" || { echo 'active lock was deleted'; exit 1; }
@@ -96,6 +102,10 @@ test -e "$HOME_DIR/.openclaw/workspace/runs/run-1/reel-text.mp4" || { echo 'unfi
 test -e "$TMP/unknown-class" || { echo 'unknown reclaim class was deleted'; exit 1; }
 test -d "$HOME_DIR/.cache/whisper" || { echo 'zero-byte path was deleted instead of failing closed'; exit 1; }
 test -e "$HOME_DIR/.cache/torch/model" || { echo 'failed removal did not preserve the path'; exit 1; }
+test "$(shasum -a 256 "$LEGACY_RECLAIMS" | awk '{print $1}')" = "$LEGACY_HASH_BEFORE" || {
+  echo 'legacy 8-column reclaim ledger was modified'
+  exit 1
+}
 
 test -e "$TMP/killed.tsv" || { echo 'missing signal ledger'; exit 1; }
 test "$(cut -f1 "$TMP/killed.tsv" | sort | tr '\n' ' ')" = '1103 1111 ' || {
@@ -117,14 +127,16 @@ grep -q $'^1111\tfailed\tprocess-group-survived$' "$DECISIONS"
 
 # Every attempted reclaim has planned + exactly one terminal row. Unknown class
 # and zero-byte paths fail closed; successful rows carry positive reclaimed bytes.
-awk -F '\t' '
+test "$(head -1 "$RECLAIMS")" = $'timestamp\ttxid\tphase\tpath\towner\tclass\tbefore_bytes\tafter_bytes\treclaimed_bytes\treason\tpolicy_version\tdetail'
+awk -F '\t' 'NF != 12 { exit 1 }' "$RECLAIMS"
+tail -n +2 "$RECLAIMS" | awk -F '\t' '
   $3 == "planned" { planned[$2]++ }
   $3 == "removed" || $3 == "failed" { terminal[$2]++ }
   END {
     for (tx in planned) if (planned[tx] != 1 || terminal[tx] != 1) exit 1
     for (tx in terminal) if (planned[tx] != 1 || terminal[tx] != 1) exit 1
   }
-' "$RECLAIMS"
+'
 grep -q $'\tfailed\t.*\tunknown-class\t' "$RECLAIMS"
 grep -q $'\tfailed\t.*\.cache/whisper\t' "$RECLAIMS"
 grep -q $'\tfailed\t.*\.cache/torch\t.*\tremove-command-failed$' "$RECLAIMS"

@@ -3,73 +3,97 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 GUARD="$ROOT/scripts/emergency-disk-guard.sh"
+LAUNCHER="/Users/anicca/profitable-claude/skills/gig-work/scripts/launch_gig_worker.sh"
 FIXTURE="$ROOT/tests/scripts/fixtures/gig_pass_fixture.sh"
 TMP=$(mktemp -d /tmp/emergency-guard-e2e.XXXXXX)
-PIDS=""
+LAUNCHERS=""
+TRACKED_PGIDS=""
 cleanup() {
-  for pid in $PIDS; do /bin/kill -KILL "-$pid" 2>/dev/null || true; done
-  for pid in $PIDS; do wait "$pid" 2>/dev/null || true; done
+  for pgid in $TRACKED_PGIDS; do /bin/kill -KILL "-$pgid" 2>/dev/null || true; done
+  for launcher in $LAUNCHERS; do kill -TERM "$launcher" 2>/dev/null || true; done
+  for launcher in $LAUNCHERS; do wait "$launcher" 2>/dev/null || true; done
   rm -rf "$TMP"
 }
 trap cleanup EXIT
 
+test -x "$LAUNCHER" || { echo "production launcher missing: $LAUNCHER"; exit 1; }
 HOME_DIR="$TMP/home"
 LEASE_DIR="$HOME_DIR/.openclaw/state/gig-workers"
 mkdir -p "$LEASE_DIR"
 CANONICAL_ARGV="/bin/bash $FIXTURE"
 
-spawn_group() {
-  local child_file=$1
-  GIG_FIXTURE_CHILD_FILE="$child_file" python3 -c 'import os,sys; os.setpgid(0,0); os.execv("/bin/bash", ["/bin/bash", sys.argv[1]])' "$FIXTURE" &
-  SPAWNED_PID=$!
-  PIDS="$PIDS $SPAWNED_PID"
-  for _ in $(seq 1 50); do [ -s "$child_file" ] && break; sleep 0.1; done
-  test -s "$child_file"
+wait_for_file() {
+  local file=$1
+  for _ in $(seq 1 100); do [ -s "$file" ] && return 0; sleep 0.1; done
+  return 1
 }
 
-process_start() { ps -p "$1" -o lstart= | awk '{$1=$1; print}'; }
-process_pgid() { ps -p "$1" -o pgid= | awk '{$1=$1; print}'; }
+launch_managed() {
+  local name=$1 heartbeat_interval=$2 child_file ready_file
+  child_file="$TMP/$name-child"
+  ready_file="$TMP/$name-ready"
+  GIG_WORKER_SCRIPT="$FIXTURE" \
+  GIG_WORKER_LEASE_DIR="$LEASE_DIR" \
+  GIG_WORKER_HEARTBEAT_INTERVAL="$heartbeat_interval" \
+  GIG_WORKER_READY_FILE="$ready_file" \
+  GIG_FIXTURE_CHILD_FILE="$child_file" \
+  bash "$LAUNCHER" >"$TMP/$name-launcher.log" 2>&1 &
+  MANAGED_LAUNCHER=$!
+  LAUNCHERS="$LAUNCHERS $MANAGED_LAUNCHER"
+  wait_for_file "$ready_file"
+  wait_for_file "$child_file"
+  MANAGED_PID=$(cat "$ready_file")
+  MANAGED_CHILD=$(cat "$child_file")
+  TRACKED_PGIDS="$TRACKED_PGIDS $MANAGED_PID"
+}
 
-spawn_group "$TMP/stale-child"
-stale_pid=$SPAWNED_PID
-stale_child=$(cat "$TMP/stale-child")
-stale_start=$(process_start "$stale_pid")
-stale_pgid=$(process_pgid "$stale_pid")
-test "$stale_pid" = "$stale_pgid"
-cat > "$LEASE_DIR/$stale_pid.lease" <<EOF
-pid=$stale_pid
-start_token=$stale_start
-pgid=$stale_pgid
-canonical_argv=$CANONICAL_ARGV
-EOF
+launch_managed stale 300
+stale_launcher=$MANAGED_LAUNCHER
+stale_pid=$MANAGED_PID
+stale_child=$MANAGED_CHILD
+launch_managed healthy 1
+healthy_pid=$MANAGED_PID
+healthy_child=$MANAGED_CHILD
 
-spawn_group "$TMP/healthy-child"
-healthy_pid=$SPAWNED_PID
-healthy_start=$(process_start "$healthy_pid")
-healthy_pgid=$(process_pgid "$healthy_pid")
-test "$healthy_pid" = "$healthy_pgid"
-cat > "$LEASE_DIR/$healthy_pid.lease" <<EOF
-pid=$healthy_pid
-start_token=$healthy_start
-pgid=$healthy_pgid
-canonical_argv=$CANONICAL_ARGV
-EOF
-touch "$LEASE_DIR/$healthy_pid.heartbeat"
+# A same-argv, dedicated-PGID worker without a lease must remain fail-closed.
+GIG_FIXTURE_CHILD_FILE="$TMP/no-lease-child" python3 -c \
+  'import os,sys; os.setpgid(0,0); os.execv("/bin/bash", ["/bin/bash", sys.argv[1]])' "$FIXTURE" &
+no_lease_pid=$!
+TRACKED_PGIDS="$TRACKED_PGIDS $no_lease_pid"
+wait_for_file "$TMP/no-lease-child"
 
-sleep 2
+test "$stale_pid" = "$(ps -p "$stale_pid" -o pgid= | awk '{$1=$1; print}')"
+test "$healthy_pid" = "$(ps -p "$healthy_pid" -o pgid= | awk '{$1=$1; print}')"
+test -f "$LEASE_DIR/$stale_pid.lease"
+test -f "$LEASE_DIR/$healthy_pid.lease"
+sleep 4
+
+set +e
 EMERGENCY_GUARD_TEST_HOME="$HOME_DIR" \
 EMERGENCY_GUARD_TEST_FREE_GB=2 \
 EMERGENCY_GUARD_TEST_ENABLE_RECLAIM=0 \
 GIG_WORKER_MAX_SECONDS=1 \
-GIG_HEARTBEAT_MAX_SECONDS=180 \
+GIG_HEARTBEAT_MAX_SECONDS=3 \
 GIG_WORKER_CANONICAL_ARGV="$CANONICAL_ARGV" \
 bash "$GUARD"
+guard_rc=$?
+set -e
+test "$guard_rc" -ne 0 || { echo 'zero-reclaim cross-repo emergency returned success'; exit 1; }
 
-! kill -0 "$stale_pid" 2>/dev/null || { echo 'stale parent survived'; exit 1; }
-! kill -0 "$stale_child" 2>/dev/null || { echo 'stale child survived'; exit 1; }
-wait "$stale_pid" 2>/dev/null || true
-kill -0 "$healthy_pid" 2>/dev/null || { echo 'healthy worker was stopped'; exit 1; }
+! kill -0 "$stale_pid" 2>/dev/null || { echo 'stale managed parent survived'; exit 1; }
+! kill -0 "$stale_child" 2>/dev/null || { echo 'stale managed child survived'; exit 1; }
+wait "$stale_launcher" 2>/dev/null || true
+kill -0 "$healthy_pid" 2>/dev/null || { echo 'healthy managed worker was stopped'; exit 1; }
+kill -0 "$healthy_child" 2>/dev/null || { echo 'healthy managed child was stopped'; exit 1; }
+kill -0 "$no_lease_pid" 2>/dev/null || { echo 'no-lease worker was not preserved fail-closed'; exit 1; }
+test ! -e "$LEASE_DIR/$stale_pid.lease" || { echo 'stale lease was not cleaned after worker exit'; exit 1; }
+test ! -e "$LEASE_DIR/$stale_pid.heartbeat" || { echo 'stale heartbeat was not cleaned after worker exit'; exit 1; }
+test -e "$LEASE_DIR/$healthy_pid.lease"
 grep -q $'^.*\t'"$stale_pid"$'\tstopped\tstale-runaway\t' "$HOME_DIR/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q $'^.*\t'"$healthy_pid"$'\tpreserve\tfresh-heartbeat\t' "$HOME_DIR/.openclaw/state/emergency-disk-guard-decisions.tsv"
+if grep -q $'^.*\t'"$no_lease_pid"$'\t' "$HOME_DIR/.openclaw/state/emergency-disk-guard-decisions.tsv"; then
+  echo 'no-lease worker was evaluated'
+  exit 1
+fi
 
-echo 'PASS: real dedicated group stopped with child; healthy leased group preserved'
+echo 'PASS: production launcher contract stops stale tree, preserves healthy and no-lease workers'
