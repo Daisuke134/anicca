@@ -521,20 +521,22 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 
 | Area | 現在の事実 | 一次証拠 |
 |---|---|---|
-| Claude runtime | direct `claude -p --model sonnet` は `You've hit your weekly limit · resets Jul 24 at 6am (Asia/Tokyo)` で停止する | この session の実 probe |
+| Claude runtime | direct Sonnet はquota/cooldownで利用不能。gig-core実画面も `429 / All credentials for claude-sonnet-5 are cooling down` で停止する | direct probe、tmux `anicca-gig-core` pane |
 | Codex runtime | `codex exec --ephemeral -m gpt-5.6-luna` と `gpt-5.6-terra` は read-only probe がともに rc=0、期待文字列を返す | `/private/tmp/codex-loop-probe.txt`、`/private/tmp/codex-terra-probe.txt` |
 | OpenClaw | global primary は `deepseek/deepseek-v4-flash`、fallback は `openai/gpt-5.4-mini`。gpt-5.5-mini ではない | `/Users/anicca/.openclaw/openclaw.json` |
-| gig process | tmux `anicca-gig-core` は存在するが productive pass は存在しない。lock owner PID 19006 は dead、`/tmp/anicca-gig-pass.lock.d` が残る | `tmux display-message`、`kill -0 19006`、lock `pid` |
+| gig process | tmux `anicca-gig-core` は存在するが起動commandも各stepも `--model sonnet` 固定。coreは429後idle、`pass-report.jsonl` / `.last-pass` の最終更新は前日で、本日のproductive passはない | tmux pane/process argv、`~/gig/pass-report.jsonl`、`~/anicca/skills/earn/gig/gig_pass.sh:12-20` |
 | false success | `gig_pass.sh` の `step()` は sub-call stdout/stderr を `/dev/null` に捨て、非zero rcでも後続へ進める。最後に `.last-pass` / pass report を更新できる | `/Users/anicca/anicca/skills/earn/gig/gig_pass.sh:15-24,38-56` |
-| 木村様案件 | requestId `5138597`、Python/OpenCV 囲碁盤 PoC、契約額は **¥65,000**、納品予定日は 2026-07-21。¥40,000 は別の `jibieaian` SNS契約 | `/Users/anicca/gig/applied.jsonl`、real `received_orders/open` evidence |
-| 木村様成果物 | code と7画像分の CSV/JSON/overlay は存在するが正式納品前。0石画像で black=19 / black=13, white=4 等の誤検出があり受入不可 | `/Users/anicca/gig/wip/5138597_fkimura_goboard/`、`out_20260721/summary.json` |
-| Capafy account | `capafy.skills9582` は browser login 後、synthetic warmup（reels 8 / scrolls 6 / follows 4）を実行し、day3 private API login が `ChallengeRequired`。投稿0件 | §16 evidence |
-| Capafy launch state | IG daily / goal-monitor は unloaded、warmup は loaded / not running | `launchctl print gui/501/<label>` |
+| 木村様案件 | requestId `5138597`、契約額 **¥65,000**、納品予定日は本日。実talkroomは `取引中 / 進行中 / 納品送付前`、`正式な納品` checkbox未選択。最新は出品者のテキスト返信で、改善版file添付も正式納品もない | real `https://coconala.com/talkrooms/17963099` DOM + `/private/tmp/fkimura-talkroom-current.png` |
+| 木村様成果物 | code と7画像分の CSV/JSON/overlay はあるが、package/README/requirements/expected matrixがなく、空盤で black=19 / black=13, white=4 のまま。受入不可 | `~/gig/wip/5138597_fkimura_goboard/`、`out_20260721/summary.json` |
+| paid queue | real `received_orders/open` は2件。Fkimura ¥65,000 と `jibieaian` ¥40,000。後者も最新は「7/25目安で草案」のテキストだけで、現在buyer-visible artifact未提出 | real Coconala `received_orders/open` DOM |
+| quote queue | `sunai267` の Minecraft銃addon bug修正は **¥17,000、提案期限 7/24、要提案**。購入済みではなく、sellerから提案を送るまで契約・作業開始にならない | real `mypage/received_orders/requests` DOM |
+| Capafy marketplace loop | launchd dailyはloaded。直近passは本日08:10〜08:33にSonnetで成功したが、scriptはSonnet固定であり、現在のquota/cooldown下では次回成功を保証できない | `capafy-loop-daily.log`、`capafy-loop-daily.sh:11,27` |
+| Capafy marketing account | `capafy.skills9582` はsynthetic warmup後のprivate API `ChallengeRequired` でterminal discard、投稿0件。active accountなし | §16、warmup log/state |
+| Capafy marketing launch state | IG marketing daily / goal-monitor はunloaded。last-passは前日、warmupだけloaded/not-running。scriptはSonnet固定。したがって毎日投稿loopは稼働していない | `launchctl print/list`、`.capafy-ig-marketing-last-pass`、`capafy-ig-marketing-daily.sh:22,144` |
 | shared blast radius | `marketing-engine/warmer.py` / `poster.py` は Capafy のほか clip / video / clip-promote が参照する | `/Users/anicca/anicca/skills/earn/{capafy-marketing,clip,video,clip-promote,marketing-engine}` |
-| disk pressure | Data volume の空きは調査中に 139MiB〜1.8GiBで推移し、emergency 3GB閾値を下回る | `df -h /System/Volumes/Data` |
-| overlapping cleaners | `com.anicca.disk-cleaner`、`com.anicca.emergency-disk-guard`、`ai.anicca.disk-autoprune` が同時にloaded。OpenClaw側にも cleanup / process-kill job がある | `launchctl list`、OpenClaw cron inventory |
-| cleaner livelock | emergency guard は1分ごとに全 `gig_pass.sh` / `Coconala gig` worker候補をkillし、空き容量をほぼ回収しない。disk-cleanerも直近runで `0GB -> 0GB` | `~/.openclaw/logs/{emergency-disk-guard,disk-cleaner}.log`、`~/scripts/emergency-disk-guard.sh:49-68` |
-| forensic loss | emergency guard は `~/.claude/projects/*.jsonl` のうち60分超を削除し、障害原因を追う実行証拠を消す | `~/scripts/emergency-disk-guard.sh:42-43` |
+| disk pressure | P0 attemptで再生成可能cache等をledger付き回収し、raw freeは10GiB超へ回復。旧disk-cleaner/autopruneはreversible disable、phone-cleanupは維持 | reclaim/ops ledger、independent 16-sample poll |
+| cleaner review | Builder版は独立review **FAIL**。active `reel-text.mp4` のmtime削除、substring worker誤kill、runaway child残存、PID reuse未対策、`lsof` error fail-open、delete ledger/unknown/0-byte failure不足が再現した | fresh reviewer negative probes + 962秒real E2E |
+| active VM debt | 旧guardがactive Claude VM bundleをunlink済み。PID 92713がlink-count 0のrootfs/sessiondata各10GBをopen保持。現guardは再発防止するが、active dependencyのため既存PIDは停止しない | `lsof +L1`、Claude local-agent/app activity |
 | large consumers | `.openclaw` 24GB、`anicca-project` 14GB（`.worktrees` 8.7GB）、`.cloak` 7GB。既存cleanerは主な占有元のowner/lifecycleを管理しない | read-only `du -xhd` inventory |
 | incomplete protection | 共通 protected-paths manifest は `reelclaw-assets` 1件だけ。gig納品物、checkpoint、marketing state、browser identityは分類されない | `~/.openclaw/state/protected-paths.json` |
 
@@ -549,6 +551,8 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 - 現在のcleanerは容量制御として成立しない。低容量→正常なgig worker kill→transcript削除→空き容量不変→再killのlivelockになり、収益作業と原因調査を同時に止める。
 - 過去の `.venv`、作業中clone、runtime `dist`、`reelclaw-assets` 誤削除は、mtime/glob中心の複数executorとfail-open保護が同じ削除判断を持つ構造から再発する。個別exclude追加だけでは閉じない。
 - 自己改善はread-only analyzerがpolicy変更案を作る層に限定する。削除executorは承認済みmanifestを決定論的に実行し、実行時に対象範囲を学習・拡張しない。
+- Coconalaの「納品予定日」は待機日ではなく最終期限。paid contractにactionable feedbackがある限り、次のbuyer-visible versionを作らずテキストだけ返すことは進捗ではない。
+- ただし未完成物へ常時 `正式な納品` を付けるのも誤り。公式要件どおり、合意scopeを満たすacceptance PASS後に即時チェックし、差し戻し後は修正版artifactを添えて再度正式納品する。
 
 ### 17.4 Invariants
 
@@ -559,6 +563,10 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | INV-R3 | lock は PID liveness を時刻より優先する。dead owner は安全にreapし、live ownerはreapしない |
 | INV-R4 | paid / due contract は listing改善・応募・学習より常に優先する |
 | INV-R5 | 正式納品は成果物存在だけでなく、acceptance test PASS、package hash、Coconala buyer-visible delivery stateを必要とする |
+| INV-R6 | buyerのactionable feedbackを読んだpassは、単なる受領テキストで終了しない。versioned artifact、acceptance delta、または具体的external blockerのいずれかを同じpassでbuyer-visibleにする |
+| INV-R7 | 合意scopeのacceptanceがPASSした瞬間に、deadlineまで待たずartifactを添付して `正式な納品` を送る。未完成・既知failのartifactへ正式納品を付けない |
+| INV-R8 | 差し戻し/追加feedback後は新versionを作り、変更点とevidenceを添えて再納品する。paid work中もトークルームと納品確認を毎pass確認する |
+| INV-R9 | queue優先順位は `期限超過/当日paid deliverable → buyer feedback/revision → 要提案quote → その他paid work → nurture → listing/apply/learn`。予定日は開始日として使わない |
 | INV-M1 | account warmup を目的とした自動 follow / like / comment / reel-scroll を行わない |
 | INV-M2 | account ageだけの day1/day2/day3 gate を使わない。publisher health と public verification が gate |
 | INV-M3 | first post は original / non-commercial / linkなし。commercial化は複数reach snapshot後のみ |
@@ -602,14 +610,16 @@ Planner は実装を持たず、Builder は完了判定を持たない。各 TOD
 
 | 順 | TODO | Builder scope | Done / E2E gate |
 |---:|---|---|---|
-| 1 | **P0 disk containment — 誤爆と証拠消失を止め安全なheadroomを作る** | disk占有をowner/class別に再実測。既知の再生成可能cache/outputだけで安全に10GiB以上を確保。emergency guardを正常gig worker・active transcript・lockを守るfail-closed判定へ変更し、暴走した個別workerを止める安全弁は維持 | 削除候補dry-runとreclaim ledgerあり、free >=10GiB。normal/core/runawayのfixtureで normal worker+gig-core生存、runawayだけ停止。active/incident transcript保持。guard発火を含む15分pollでgig-coreとnormal workerが連続生存し、Chromium profile/identity、納品物、user WIPの欠損0 |
-| 2 | **provider-agnostic runner + fail-closed foundation** | `claude -p` 呼出しinventory、共通runner、Luna/Terra/Sol routing、rc/evidence schema、timeout、PID-aware lock、supervisor/backoff。gig / Capafy / active claude-p consumersをadapter化 | Claudeを利用不能にしたfixtureでも Luna/Terra実callが成功。各failure fixtureで後続step・`.last-pass`・success ledgerが更新されない。dead lockはreap、live lockは保持。対象loopのdirect `claude -p` production call=0 |
-| 3 | **gig rescue + 木村様 ¥65,000 PoC正式納品** | paid-contract deadline queueを最優先化。7枚のexpected stone matrixをtest化し、OpenCVを修正、package、Coconala正式納品。別の¥40,000 SNS契約もdeadline queueへ保持 | 7画像の期待 black/white/empty がtest PASS、overlay目視PASS、README/requirements/package hashあり。talkroomにfileがbuyer-visible、`正式な納品` state、delivery URL/screenshot、ledger `delivered`。gig-coreは15分以上複数poll + 次のscheduled pass成功 |
-| 4 | **cleanup control plane + artifact lifecycleを単一化** | cleanup entrypointを1つにし、重複LaunchAgent/OpenClaw cleanerを無効化。全artifactにowner/class/TTL/quota/lease/finalizerを宣言し、fail-closed manifest、off-volume quarantine、append-only delete ledgerを実装 | active cleanup executor=1。manifest欠損/破損/unknown/active/deliverable fixtureは削除0、expired ephemeralだけ削除。過去事故fixture（`.venv`、WIP clone、runtime `dist`、`reelclaw-assets`）全保持。delete ledgerとrestore E2E PASS |
-| 5 | **producer budgets + capacity observability** | gig / marketing / clip / video / browser / worktree producerにrun quota、rotation、checkpoint圧縮、reserve-space backpressureを実装。容量trendとowner別growthを観測し、0-byte reclaim反復をfailure化 | free-space reserveを割るfixtureで新規runは開始せずactive run/checkpointは保持。producer別quota test、log rotation、recovery後resume E2E。cleanerが2回連続0-byte reclaimならalert/failureとなりsuccessを記録しない |
-| 6 | **shared marketing-engineをno-synthetic-warmupへ移行** | `warming/day3 golden private session` を `setup/publisher_ready/posted/measuring/commercial` へ置換。automatic follow/like/comment/scrollを削除。official Meta publisher primary、product adapter分離。Capafy / clip / video consumer contractを更新 | testでsynthetic engagement call=0、day-count branch=0、全consumerが同じ lifecycle/publisherを参照。official publisher health probeとfailure state transitionをE2E。current terminal accountは再利用しない |
-| 7 | **fresh Capafy accountからfull-cycleを実証しfleet rollout** | isolated account setup、professional/publish permission、first non-commercial Reel、public/reach measurement、commercial gate、Telegram/ledgers。全consumer regression後に14日自走 | account creation/setup evidence、publisher-ready evidence、public Reel URL、logged-out screenshot、publish status、IG/rotation ledger、Telegram message ID。複数snapshotで非zero reach後のみ commercial marker。14日 `setup→post→measure→report` 継続、全gate green |
-| 8 | **read-only cleanup analyzer + fleet self-improvement gate** | owner別growth/anomalyを分析しpolicy変更案とRED fixtureを生成するread-only analyzerを追加。policy変更はshadow/canaryと独立review後のみpromote | analyzer権限でdelete/policy write不可を実証。提案→RED→GREEN→shadow→canary→promote ledger E2E。14日間、protected artifact欠損0、disk reserve違反0、正常revenue worker誤kill 0 |
+| 1 | **P0 disk containment review findingsを閉じる** | active/WIP `reel-text` mtime削除を除去。leaseはPID+start token+canonical argv+PGID化、signal直前再検証、process group停止、numeric parse/lsof errorはpreserve。delete ledgerをplanned→removed/failed化しunknown/0-byteをfailure report | reviewerの全negative probeがRED→GREEN。runaway parent+全child停止、normal/core/WIP/VM/transcript保持。fresh 16回/15分pollでraw free>=10GiB、protected欠損0。独立review PASSまではTODO #1を閉じない |
+| 2 | **gig hot pathをLuna/Terra/Solへ移しdelivery-first化** | gig-core/stepのSonnet直結を共通runnerへ置換。paid/feedback/quote queueをdeterministicに先頭化し、artifact/evidenceなしの「了解」返信をsuccessにしない | Sonnet 429 fixtureでもLuna/Terra実callでpaid queueを処理。direct Sonnet production call=0。Fkimura→jibieaian→sunaiの実画面順をloopが選択し、missing artifact/正式納品 stateをfailureとして返す |
+| 3 | **木村様 ¥65,000 PoCを修正・package・即時正式納品** | 7画像expected matrixをtest化しOpenCVを修正。正検出/見逃し/誤検出/座標report、README、requirements、versioned zip、hashを作り、loop自身がtalkroom添付+正式納品 | 7画像acceptance/overlay目視PASS。buyer-visible新version、`正式な納品` checkbox送信後の `納品確認待ち` 画面、URL+screenshot+ledger。テキストだけの返信は不可 |
+| 4 | **全gigへversioned delivery cadenceを展開** | `jibieaian` は最初の投稿草案artifactを即提出し、以後feedbackごとにversion更新。`sunai267` はfeasibility/scope確認後すぐ¥17,000提案。全契約へINV-R6〜R9を適用 | real Coconalaでjibieaian artifact添付、sunai提案済みstate。fixtureでfeedback→artifact→acceptance→formal delivery→差し戻し→new version→formal redeliveryを証明。daily visual verifierがstatus/screenshotを残す |
+| 5 | **provider-agnostic runnerをCapafy/Fleetへ展開** | Capafy marketplace / IG marketing / active claude-p consumersを共通runner化し、rc/evidence schema、timeout、supervisor/backoff、PID-aware lockを統一 | Claude利用不能でもCapafy marketplaceとmarketingのscheduled passがLuna/Terraで成功。failure時last-pass/success ledgerを更新しない。全対象のdirect Sonnet production call=0 |
+| 6 | **cleanup control plane + artifact lifecycleを単一化** | cleanup entrypointを1つにし、重複LaunchAgent/OpenClaw cleanerを無効化。全artifactにowner/class/TTL/quota/lease/finalizerを宣言し、fail-closed manifest、off-volume quarantine、append-only delete ledgerを実装 | active cleanup executor=1。manifest欠損/破損/unknown/active/deliverable fixtureは削除0、expired ephemeralだけ削除。過去事故fixture（`.venv`、WIP clone、runtime `dist`、`reelclaw-assets`）全保持。delete ledgerとrestore E2E PASS |
+| 7 | **producer budgets + capacity observability** | gig / marketing / clip / video / browser / worktree producerにrun quota、rotation、checkpoint圧縮、reserve-space backpressureを実装。容量trendとowner別growthを観測し、0-byte reclaim反復をfailure化 | free-space reserveを割るfixtureで新規runは開始せずactive run/checkpointは保持。producer別quota test、log rotation、recovery後resume E2E。cleanerが2回連続0-byte reclaimならalert/failureとなりsuccessを記録しない |
+| 8 | **shared marketing-engineをno-synthetic-warmupへ移行** | `warming/day3 golden private session` を `setup/publisher_ready/posted/measuring/commercial` へ置換。automatic follow/like/comment/scrollを削除。official Meta publisher primary、product adapter分離。Capafy / clip / video consumer contractを更新 | testでsynthetic engagement call=0、day-count branch=0、全consumerが同じ lifecycle/publisherを参照。official publisher health probeとfailure state transitionをE2E。current terminal accountは再利用しない |
+| 9 | **fresh Capafy accountからfull-cycleを実証しfleet rollout** | isolated account setup、professional/publish permission、first non-commercial Reel、public/reach measurement、commercial gate、Telegram/ledgers。全consumer regression後に14日自走 | account creation/setup evidence、publisher-ready evidence、public Reel URL、logged-out screenshot、publish status、IG/rotation ledger、Telegram message ID。複数snapshotで非zero reach後のみ commercial marker。14日 `setup→post→measure→report` 継続、全gate green |
+| 10 | **read-only cleanup analyzer + fleet self-improvement gate** | owner別growth/anomalyを分析しpolicy変更案とRED fixtureを生成するread-only analyzerを追加。policy変更はshadow/canaryと独立review後のみpromote | analyzer権限でdelete/policy write不可を実証。提案→RED→GREEN→shadow→canary→promote ledger E2E。14日間、protected artifact欠損0、disk reserve違反0、正常revenue worker誤kill 0 |
 
 ### 17.8 Acceptance scenarios
 
@@ -619,9 +629,12 @@ Planner は実装を持たず、Builder は完了判定を持たない。各 TOD
 4. **All providers fail** — Given every provider returns nonzero, when a pass runs, then the pass is failed, the lock is released/reaped safely, and no success marker is written.
 5. **Paid deadline** — Given an active paid contract is due, when gig wakes, then delivery work runs before learn/listing/apply and continues until formally delivered or a concrete blocker is recorded.
 6. **OpenCV acceptance** — Given the seven buyer images and expected counts, when the package test runs, then every count and output schema passes before upload.
-7. **Fresh marketing account** — Given account setup and official publisher health are green, when the first content is ready, then one original non-commercial Reel may publish on day1; no artificial engagement or arbitrary waiting day is required.
-8. **Reach gate** — Given a public Reel exists but reach evidence is absent/zero, when daily runs, then commercial link/CTA remains disabled.
-9. **Shared regression** — Given shared lifecycle changes, when Capafy/clip/video tests run, then each consumer uses its own state namespace and the same engine contract without cross-account mutation.
+7. **Immediate delivery** — Given acceptance is green before the registered deadline, when the gig pass runs, then it attaches the versioned artifact and sends `正式な納品` in that pass; it does not wait for the deadline.
+8. **Feedback iteration** — Given buyer feedback or a formal return, when the next pass runs, then a new artifact version and delta evidence are produced; a text-only acknowledgment cannot mark the step successful.
+9. **Quote priority** — Given a feasible `要提案` quote exists, when no due/feedback paid item blocks it, then the loop sends the proposal before listing/apply/learn work.
+10. **Fresh marketing account** — Given account setup and official publisher health are green, when the first content is ready, then one original non-commercial Reel may publish on day1; no artificial engagement or arbitrary waiting day is required.
+11. **Reach gate** — Given a public Reel exists but reach evidence is absent/zero, when daily runs, then commercial link/CTA remains disabled.
+12. **Shared regression** — Given shared lifecycle changes, when Capafy/clip/video tests run, then each consumer uses its own state namespace and the same engine contract without cross-account mutation.
 
 ### 17.9 Full TO-BE
 
@@ -652,19 +665,25 @@ launchd / tmux / OpenClaw scheduler
  paid/deadline queue            product manifest/adapter
         │                              │
         ├─ Fkimura ¥65k #5138597       ▼
-        │  7-image acceptance     isolated account setup
-        │  → OpenCV fix                │
-        │  → package/hash              ├─ challenge → terminal/report
-        │  → Coconala正式納品           │
-        │  → buyer-visible proof       ▼
-        │  → delivered/paid ledger official publisher health
+        │  buyer feedback         isolated account setup
+        │  → versioned artifact        │
+        │  → acceptance PASS           ├─ challenge → terminal/report
+        │  → package/hash              │
+        │  → 即Coconala正式納品         ▼
+        │  → accept/return monitor official publisher health
+        │  → returnならnew version
+        │  → buyer-visible proof
+        │  → delivered/paid ledger
         │                              │
         ├─ jibieaian ¥40k              ├─ fail → explicit failed state
         │  deadline/work/delivery      │
         │                              ▼
-        └─ listings/applications  first original non-commercial Reel
-           only after paid work         │
-           is safe                      ├─ public URL + logged-out proof
+        ├─ sunai ¥17k 要提案       first original non-commercial Reel
+        │  feasibility→即提案            │
+        │                              ├─ public URL + logged-out proof
+        └─ listings/applications       │
+           only after paid/quote       │
+           queues are safe             │
                                        ├─ IG/rotation ledger
                                        └─ Telegram report
                                               │
@@ -713,3 +732,6 @@ Every step: real evidence → Planner independent verification → spec update
 - Claude Code Programmatic usage: https://code.claude.com/docs/en/headless — 「pass `-p` ... to run it non-interactively」。現行loopが使うsurface自体は正しいが、subscription単一依存が失敗点。
 - Meta Instagram Content Publishing: https://developers.facebook.com/documentation/instagram-platform/content-publishing — professional account向けに `/<IG_ID>/media` と `/<IG_ID>/media_publish` を提供し、Reelsを正式公開できる。
 - Meta Spam policy: https://transparency.meta.com/policies/community-standards/spam/ — 「restrictions ... at lower frequencies when ... signals of inauthenticity are present」。回数を少なくするだけでは不十分で、synthetic engagement自体を除く。
+- Coconala 正式な納品: https://coconala-support.zendesk.com/hc/ja/articles/218721047 — 合意内容を満たす提供が完了した時に出品者が送信する。
+- Coconala 納品確認: https://coconala-support.zendesk.com/hc/ja/articles/900005474606 — 承諾/差し戻しを行わない場合は正式納品から72時間後の次の00分に自動クローズする。
+- Coconala 要対応: https://coconala-support.zendesk.com/hc/ja/articles/5894870734745 — 見積り提案期限72時間前、納品予定日超過、差し戻し等を要対応として扱う。
