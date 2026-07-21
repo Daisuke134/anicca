@@ -12991,3 +12991,12 @@
 {"ts":1784661916,"wake_id":"00MRV1MJTC80D96DBFDADF4EF3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784662050,"wake_id":"00MRV1PF9O86767BF21DCB494E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784662050,"wake_id":"00MRV1PF9O86767BF21DCB494E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784662183,"wake_id":"00MRV1SA8Y313AC8830BF84656","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784662485,"wake_id":"00MRV1YRBI1D2B2D1B70A140D2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784662620,"wake_id":"00MRV21N5J045F8A5FF91A404B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784662620,"wake_id":"00MRV21N5J045F8A5FF91A404B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784662753,"wake_id":"00MRV24HF05EAA373E1125435A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784662753,"wake_id":"00MRV24HF05EAA373E1125435A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784662884,"wake_id":"00MRV27ASF20C0660FEAC642A8","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784662884,"wake_id":"00MRV27ASF20C0660FEAC642A8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784663015,"wake_id":"00MRV2A3WJ626738B33D7446D6","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
