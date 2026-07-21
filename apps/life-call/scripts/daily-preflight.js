@@ -33,7 +33,19 @@ async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl
   if (args.output) {
     const output = path.resolve(args.output);
     fs.mkdirSync(path.dirname(output), { recursive: true });
-    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
+    const temporary = `${output}.${process.pid}.${Date.now()}.tmp`;
+    let handle;
+    try {
+      handle = fs.openSync(temporary, "wx", 0o600);
+      fs.writeFileSync(handle, `${JSON.stringify(report, null, 2)}\n`);
+      fs.fsyncSync(handle);
+      fs.closeSync(handle); handle = undefined;
+      fs.renameSync(temporary, output);
+    } catch (error) {
+      if (handle !== undefined) try { fs.closeSync(handle); } catch {}
+      try { fs.unlinkSync(temporary); } catch {}
+      throw error;
+    }
   }
   process.stdout.write(`${JSON.stringify({
     artifact: args.output || null,

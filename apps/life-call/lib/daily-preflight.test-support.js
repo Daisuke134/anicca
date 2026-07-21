@@ -2,7 +2,7 @@
 
 // Tests only: production CLI and production modules never import this collector-DI harness.
 const crypto = require("node:crypto");
-const { validateEmailProof, validateTelegramProof } = require("./daily-preflight.js");
+const { validateAndBuildFinalReport, validateEmailProof, validateTelegramProof } = require("./daily-preflight.js");
 const { validateEmailObservation, validateTelegramObservation } = require("./daily-preflight-collectors.js");
 
 function failure(code) { return new Error(code); }
@@ -124,4 +124,5 @@ async function collectTelegramControlledForTest({ roundTrip, getWebhookInfo, sle
   };
 }
 
-module.exports = { collectControlledL3ForTest, collectTelegramControlledForTest, createEmailCollector, createTelegramCollector };
+module.exports = { collectControlledL3ForTest, collectTelegramControlledForTest, createEmailCollector, createTelegramCollector,
+  validateAndBuildFinalReportForTest: validateAndBuildFinalReport };

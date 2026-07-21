@@ -2,7 +2,7 @@
   "featureName": "life-manager-daily-preflight",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "2a",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -63,13 +63,21 @@
       "to": "2a",
       "timestamp": "2026-07-21T10:26:27.058Z",
       "reason": "Explicit human/orchestrator approval recorded for iteration-3 Phase 1c PASS"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-21T12:01:17.436Z",
+      "reason": "Phase 2a RED evidence accepted; enter minimal GREEN only",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 3,
     "1b": 3,
     "1c": 3,
-    "2a": 1
+    "2a": 1,
+    "2b": 1
   },
   "proofObligations": [
     {
@@ -1004,7 +1012,7 @@
         "beadId": "BEAD-036",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-01",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1019,7 +1027,7 @@
         "beadId": "BEAD-037",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-02",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1033,7 +1041,7 @@
         "beadId": "BEAD-038",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-03",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1048,7 +1056,7 @@
         "beadId": "BEAD-039",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-04",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1062,7 +1070,7 @@
         "beadId": "BEAD-040",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-05",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1077,7 +1085,7 @@
         "beadId": "BEAD-041",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-06",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1091,7 +1099,7 @@
         "beadId": "BEAD-042",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-07",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1105,7 +1113,7 @@
         "beadId": "BEAD-043",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-08",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1119,7 +1127,7 @@
         "beadId": "BEAD-044",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-09",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1133,7 +1141,7 @@
         "beadId": "BEAD-045",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-10",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1147,7 +1155,7 @@
         "beadId": "BEAD-046",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-11",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1161,7 +1169,7 @@
         "beadId": "BEAD-047",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-12",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
@@ -1175,7 +1183,7 @@
         "beadId": "BEAD-048",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-01",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1193,7 +1201,7 @@
         "beadId": "BEAD-049",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-02",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1210,7 +1218,7 @@
         "beadId": "BEAD-050",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-03",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1226,7 +1234,7 @@
         "beadId": "BEAD-051",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-04",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1242,7 +1250,7 @@
         "beadId": "BEAD-052",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-05",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1258,7 +1266,7 @@
         "beadId": "BEAD-053",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-06",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1274,7 +1282,7 @@
         "beadId": "BEAD-054",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-07",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1290,7 +1298,7 @@
         "beadId": "BEAD-055",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-08",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1306,7 +1314,7 @@
         "beadId": "BEAD-056",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-09",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1322,7 +1330,7 @@
         "beadId": "BEAD-057",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-10",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1338,7 +1346,7 @@
         "beadId": "BEAD-058",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-11",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1354,7 +1362,7 @@
         "beadId": "BEAD-059",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-12",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1370,7 +1378,7 @@
         "beadId": "BEAD-060",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-13",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1386,7 +1394,7 @@
         "beadId": "BEAD-061",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-14",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1402,7 +1410,7 @@
         "beadId": "BEAD-062",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-15",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1418,7 +1426,7 @@
         "beadId": "BEAD-063",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-16",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1434,7 +1442,7 @@
         "beadId": "BEAD-064",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-17",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1450,7 +1458,7 @@
         "beadId": "BEAD-065",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-18",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1466,7 +1474,7 @@
         "beadId": "BEAD-066",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-19",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1482,7 +1490,7 @@
         "beadId": "BEAD-067",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-20",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1498,7 +1506,7 @@
         "beadId": "BEAD-068",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-21",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1514,7 +1522,7 @@
         "beadId": "BEAD-069",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-22",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1530,7 +1538,7 @@
         "beadId": "BEAD-070",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-23",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1546,7 +1554,7 @@
         "beadId": "BEAD-071",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-24",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1562,7 +1570,7 @@
         "beadId": "BEAD-072",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-25",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1578,7 +1586,7 @@
         "beadId": "BEAD-073",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-26",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1594,7 +1602,7 @@
         "beadId": "BEAD-074",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-27",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1611,7 +1619,7 @@
         "beadId": "BEAD-075",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-28",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1627,7 +1635,7 @@
         "beadId": "BEAD-076",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-29",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1644,7 +1652,7 @@
         "beadId": "BEAD-077",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-30",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1661,7 +1669,7 @@
         "beadId": "BEAD-078",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-31",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1677,7 +1685,7 @@
         "beadId": "BEAD-079",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-32",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1693,7 +1701,7 @@
         "beadId": "BEAD-080",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-33",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1709,7 +1717,7 @@
         "beadId": "BEAD-081",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-34",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1725,7 +1733,7 @@
         "beadId": "BEAD-082",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-35",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1741,7 +1749,7 @@
         "beadId": "BEAD-083",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-36",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1757,7 +1765,7 @@
         "beadId": "BEAD-084",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-37",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1773,7 +1781,7 @@
         "beadId": "BEAD-085",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-38",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1789,7 +1797,7 @@
         "beadId": "BEAD-086",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-39",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1805,7 +1813,7 @@
         "beadId": "BEAD-087",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-40",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1821,7 +1829,7 @@
         "beadId": "BEAD-088",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-41",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1837,7 +1845,7 @@
         "beadId": "BEAD-089",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-42",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1853,7 +1861,7 @@
         "beadId": "BEAD-090",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-43",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1869,7 +1877,7 @@
         "beadId": "BEAD-091",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-44",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1885,7 +1893,7 @@
         "beadId": "BEAD-092",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-45",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1901,7 +1909,7 @@
         "beadId": "BEAD-093",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-01",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -1918,7 +1926,7 @@
         "beadId": "BEAD-094",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-02",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -1935,7 +1943,7 @@
         "beadId": "BEAD-095",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-03",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -1952,7 +1960,7 @@
         "beadId": "BEAD-096",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-04",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -1969,7 +1977,7 @@
         "beadId": "BEAD-097",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-05",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -1986,7 +1994,7 @@
         "beadId": "BEAD-098",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-06",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -2004,7 +2012,7 @@
         "beadId": "BEAD-099",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-01",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2018,7 +2026,7 @@
         "beadId": "BEAD-100",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-02",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2032,7 +2040,7 @@
         "beadId": "BEAD-101",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-03",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2046,7 +2054,7 @@
         "beadId": "BEAD-102",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-04",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2060,7 +2068,7 @@
         "beadId": "BEAD-103",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-05",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2074,7 +2082,7 @@
         "beadId": "BEAD-104",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-06",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2088,7 +2096,7 @@
         "beadId": "BEAD-105",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-07",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2102,7 +2110,7 @@
         "beadId": "BEAD-106",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-08",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2116,7 +2124,7 @@
         "beadId": "BEAD-107",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-09",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2130,7 +2138,7 @@
         "beadId": "BEAD-108",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-10",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2144,7 +2152,7 @@
         "beadId": "BEAD-109",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-11",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2158,7 +2166,7 @@
         "beadId": "BEAD-110",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-12",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
@@ -2192,5 +2200,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T11:54:01.689Z"
+  "updatedAt": "2026-07-21T12:06:46.415Z"
 }

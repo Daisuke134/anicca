@@ -30,7 +30,7 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
   const gogBin = bin || process.env.GOG_BIN || "gog";
   const acct = account || process.env.GOG_ACCOUNT || "";
   const keyringPwd = keyring != null ? keyring : (process.env.GOG_KEYRING_PASSWORD || "");
-  const exec = run || ((args, timeout = 30000) =>
+  const exec = run || ((args, timeout = 15000) =>
     execFileSyncImpl(gogBin, [...args, "--account", acct], {
       env: { ...process.env, GOG_KEYRING_PASSWORD: keyringPwd, GOG_ACCOUNT: acct },
       encoding: "utf8", timeout,
@@ -71,7 +71,7 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
       if (!acct || !/^[a-f0-9]{16,64}$/i.test(String(nonce || ""))) return null;
       try {
         const query = `in:anywhere newer_than:1d \"${nonce}\"`;
-        const d = JSON.parse(exec(["gmail", "messages", "search", query, "-j", "--max=10", "--include-body"]));
+        const d = JSON.parse(exec(["gmail", "messages", "search", query, "-j", "--max=10", "--include-body"], 15000));
         const messages = d.messages || (Array.isArray(d) ? d : []);
         for (const message of messages) {
           if (!message.id || /^-/.test(String(message.id))) continue;

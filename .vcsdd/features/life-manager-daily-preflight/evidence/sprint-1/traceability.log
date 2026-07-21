@@ -1,1 +1,1 @@
-{"currentPhase":"2a","sprintCount":0,"adversaryVerdict":"PASS","humanVerdict":"PASS","testBeads":75,"redTestBeads":75,"bidirectional":true,"reqCovered":true}
+REQ=18 PROP=12 CRIT=5 testBeadsGreen=75

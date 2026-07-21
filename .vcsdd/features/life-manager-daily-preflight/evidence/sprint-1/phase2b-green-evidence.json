@@ -1,0 +1,21 @@
+{
+  "phase": "2b",
+  "sprintCount": 0,
+  "result": "GREEN-READY",
+  "counts": {
+    "appNew": 63,
+    "helper": 12,
+    "baselineFocused": 51,
+    "baselineFull": 371,
+    "fullFinal": 434,
+    "eval": 33,
+    "temporal": 18,
+    "pollDeadline": 12,
+    "schema": 45,
+    "purity": 32
+  },
+  "providerNetworkRun": false,
+  "controlledL3Run": false,
+  "finalReportCreated": false,
+  "testBeadsGreen": 75
+}

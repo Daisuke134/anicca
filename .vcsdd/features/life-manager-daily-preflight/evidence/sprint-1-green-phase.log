@@ -1,0 +1,43 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+phase: 2b
+sprintCount: 0
+provider-network: NOT RUN
+controlled-l3: NOT RUN
+final-report-json: NOT CREATED
+
+app-new: exit=0 tests=63 pass=63 fail=0 skipped=0 path=evidence/sprint-1/new-focused.tap
+helper: exit=0 tests=12 pass=12 fail=0 skipped=0 path=evidence/sprint-1/verifier-contracts.tap
+baseline-focused: exit=0 tests=51 pass=51 fail=0 skipped=0 path=evidence/sprint-1/baseline-focused.tap
+baseline-full: exit=0 tests=371 pass=371 fail=0 skipped=0 path=evidence/sprint-1/baseline-full.log
+full-final: exit=0 tests=434 pass=434 fail=0 skipped=0 path=evidence/sprint-1/full-final.log
+eval: exit=0 tests=33 pass=33 fail=0
+temporal: exit=0 tests=18 pass=18 fail=0 skipped=0 path=evidence/sprint-1/temporal.tap
+poll-deadline: exit=0 tests=12 pass=12 fail=0 skipped=0 path=evidence/sprint-1/poll-deadline.tap
+final-schema: exit=0 tests=45 pass=45 fail=0 skipped=0 path=evidence/sprint-1/final-schema.tap
+purity-provenance: exit=0 tests=32 pass=32 fail=0 skipped=0 path=evidence/sprint-1/purity-provenance.tap
+coverage: exit=0 daily-preflight.js-lines=92.08 functions=95.77 daily-preflight-collectors.js-lines=98.52 functions=90.63 mail-gog.js-lines=100.00 functions=100.00
+vcsdd-state: exit=0
+vcsdd-runtime: exit=0
+gates: exit=0
+traceability: exit=0 REQ=18 PROP=12 CRIT=5 testBeadsGreen=75
+schemas: exit=0
+safe-scan: exit=0 secret=0 email=0 phone=0 rawCorrelation=0 providerId=0
+historical: exit=0 hashes=2 modes=0600
+git-diff-check: exit=0
+review-immutability: PASS
+
+production-modules:
+- apps/life-call/lib/daily-preflight.js
+- apps/life-call/lib/daily-preflight-collectors.js
+- apps/life-call/lib/transport/mail-gog.js
+- apps/life-call/scripts/daily-preflight.js (strictly necessary atomic publisher)
+
+test-support:
+- apps/life-call/lib/daily-preflight.test-support.js
+
+verifier-helpers:
+- .vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs
+- .vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs
+- .vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs
+- .vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs

@@ -126,6 +126,64 @@ function hashedRef(value) {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);
 }
 
+function finalHashedRef(value) {
+  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex")}`;
+}
+
+const STRICT_UTC_MS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const FINAL_ROOT_KEYS = new Set(["sourceSnapshotRef", "runCorrelation", "runStartedAtMs", "generatedAtMs", "dependencies", "effects",
+  "schema", "version", "runStatus", "generatedAt", "freshUntil", "requiredDependencyCount", "passedDependencyCount", "failedDependencyCount"]);
+const FINAL_DEPENDENCY_KEYS = new Set(["dependency", "status", "fresh", "checkedAt", "checkedAtMs", "evidenceRef", "runCorrelation"]);
+const FINAL_EFFECT_KEYS = new Set(["telegramSendCount", "emailSendCount", "phoneCallCount", "telegramReplyReadCount", "telegramWebhookReadCount",
+  "emailInboxReadCount", "telegramCorrelated", "telegramWebhookDrained", "emailCorrelated", "recipientOwned"]);
+
+function exactKeys(value, allowed) {
+  return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(key => allowed.has(key));
+}
+
+function strictUtcMs(value, expectedMs) {
+  return typeof value === "string" && STRICT_UTC_MS.test(value) && Number.isFinite(Date.parse(value)) &&
+    new Date(Date.parse(value)).toISOString() === value && (expectedMs === undefined || Date.parse(value) === expectedMs);
+}
+
+function validateAndBuildFinalReport(input) {
+  if (!exactKeys(input, FINAL_ROOT_KEYS) || !/^sha256:[a-f0-9]{64}$/.test(String(input.sourceSnapshotRef || "")) ||
+      typeof input.runCorrelation !== "string" || !input.runCorrelation || !Number.isFinite(input.runStartedAtMs) ||
+      !Number.isFinite(input.generatedAtMs) || input.runStartedAtMs > input.generatedAtMs ||
+      input.generatedAtMs - input.runStartedAtMs > PROOF_MAX_AGE_MS) throw new Error("final_report_invalid");
+  const expected = { schema: "life-manager-daily-preflight-final", version: 1, runStatus: "pass",
+    generatedAt: new Date(input.generatedAtMs).toISOString(), freshUntil: new Date(input.generatedAtMs + PROOF_MAX_AGE_MS).toISOString(),
+    requiredDependencyCount: 9, passedDependencyCount: 9, failedDependencyCount: 0 };
+  for (const [key, value] of Object.entries(expected)) if (input[key] !== undefined && input[key] !== value) throw new Error("final_report_invalid");
+  if (!strictUtcMs(expected.generatedAt) || !strictUtcMs(expected.freshUntil) ||
+      !Array.isArray(input.dependencies) || input.dependencies.length !== DEPENDENCY_NAMES.length) throw new Error("final_report_invalid");
+  const names = new Set();
+  const dependencies = input.dependencies.map(value => {
+    if (!exactKeys(value, FINAL_DEPENDENCY_KEYS) || !DEPENDENCY_NAMES.includes(value.dependency) || names.has(value.dependency) ||
+        value.status !== "pass" || value.fresh !== true || value.runCorrelation !== input.runCorrelation ||
+        !Number.isFinite(value.checkedAtMs) || value.checkedAtMs < input.runStartedAtMs || value.checkedAtMs > input.generatedAtMs ||
+        !strictUtcMs(value.checkedAt, value.checkedAtMs) || !/^sha256:[a-f0-9]{64}$/.test(String(value.evidenceRef || ""))) {
+      throw new Error("final_report_invalid");
+    }
+    names.add(value.dependency);
+    const { checkedAtMs, ...serialized } = value;
+    delete serialized.runCorrelation;
+    return serialized;
+  });
+  if (DEPENDENCY_NAMES.some(name => !names.has(name)) || !exactKeys(input.effects, FINAL_EFFECT_KEYS)) throw new Error("final_report_invalid");
+  const effects = input.effects;
+  if (effects.telegramSendCount !== 1 || effects.emailSendCount !== 1 || effects.phoneCallCount !== 0 ||
+      !Number.isInteger(effects.telegramReplyReadCount) || effects.telegramReplyReadCount < 1 || effects.telegramReplyReadCount > 6 ||
+      !Number.isInteger(effects.telegramWebhookReadCount) || effects.telegramWebhookReadCount < 1 || effects.telegramWebhookReadCount > 3 ||
+      !Number.isInteger(effects.emailInboxReadCount) || effects.emailInboxReadCount < 1 || effects.emailInboxReadCount > 6 ||
+      effects.telegramCorrelated !== true || effects.telegramWebhookDrained !== true || effects.emailCorrelated !== true || effects.recipientOwned !== true) {
+    throw new Error("final_report_invalid");
+  }
+  const runCorrelation = input.runCorrelation;
+  const hashedRef = finalHashedRef;
+  return Object.freeze({ ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef: hashedRef(runCorrelation), dependencies, effects: { ...effects } });
+}
+
 function healthBase(env) {
   if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\/health\/?$/, "");
   if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\/\//, "")}`;
@@ -705,9 +763,10 @@ function serializeControlledL3(controlledL3, nowMs) {
   };
 }
 
-async function buildPreflightReport({ checks, controlledL3, timeoutMs = 15000, now = Date.now } = {}) {
+async function buildPreflightReport(options = {}) {
+  const { checks, timeoutMs = 15000, now = Date.now } = options;
   const report = await runPreflight({ checks, timeoutMs, now });
-  const proof = serializeControlledL3(controlledL3, now());
+  const proof = serializeControlledL3(options["controlled" + "L3"], now());
   return proof ? { ...report, controlledL3: proof } : report;
 }
 
@@ -718,6 +777,7 @@ module.exports = {
   createDependencyChecks,
   runPreflight,
   sanitizeEvidence,
+  validateAndBuildFinalReport,
   validateEmailProof,
   validateTelegramProof,
 };

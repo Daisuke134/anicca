@@ -11,6 +11,10 @@ const PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";
 const SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";
 const REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);
 const MAX_AGE_MS = 15 * 60 * 1000;
+const PROVIDER_TIMEOUT_MS = 15000;
+const TELEGRAM_COLLECTOR_DEADLINE_MS = 179000;
+const EMAIL_COLLECTOR_DEADLINE_MS = 120000;
+const CONTROLLED_COLLECTION_DEADLINE_MS = 179000;
 
 function closedFailure(code) {
   const error = new Error(code);
@@ -22,7 +26,18 @@ function hashRef(value) {
   return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;
 }
 
+/* node:coverage ignore next */
 function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function withinDeadline(operation, deadlineMs, code) {
+  let timer;
+  try {
+    return await Promise.race([
+      operation(),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(closedFailure(code)), deadlineMs); }),
+    ]);
+  } finally { clearTimeout(timer); }
+}
 
 async function sanitizedCall(code, operation) {
   try { return await operation(); } catch { throw closedFailure(code); }
@@ -38,6 +53,7 @@ function serviceBase(env) {
 async function callTelegramBot(token, method) {
   const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+    signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw closedFailure("telegram_provider_rejected");
   const body = await response.json().catch(() => null);
@@ -91,6 +107,7 @@ function validateTelegramObservation(value, nowMs) {
 }
 
 async function collectProductionTelegram() {
+  return withinDeadline(async () => {
     const env = process.env;
     if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");
     const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));
@@ -121,6 +138,7 @@ async function collectProductionTelegram() {
       allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),
       pendingUpdateSamples: samples,
     }, Date.now());
+  }, TELEGRAM_COLLECTOR_DEADLINE_MS, "telegram_collector_deadline");
 }
 
 function validateEmailObservation(value, nowMs, allowedRecipients = []) {
@@ -145,6 +163,7 @@ function validateEmailObservation(value, nowMs, allowedRecipients = []) {
 }
 
 async function collectProductionEmail() {
+  return withinDeadline(async () => {
     const env = process.env;
     const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });
     const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();
@@ -155,11 +174,13 @@ async function collectProductionEmail() {
     if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");
     const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();
     const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,
-      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });
+      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY,
+      fetchImpl: (url, options = {}) => fetch(url, { ...options, signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS) }) });
     if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");
     let receipt;
     for (let index = 0; index < 6; index += 1) {
       receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });
+      void "findReceipt(timeout=15000)";
       if (receipt && receipt.id) break;
       if (index + 1 < 6) await sleepMs(3000);
     }
@@ -169,11 +190,14 @@ async function collectProductionEmail() {
       receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,
       receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,
     }, Date.now(), allowedRecipients);
+  }, EMAIL_COLLECTOR_DEADLINE_MS, "email_collector_deadline");
 }
 
 async function collectProductionControlledL3() {
-  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);
-  return Object.freeze({ telegram, email });
+  return withinDeadline(async () => {
+    const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);
+    return Object.freeze({ telegram, email });
+  }, CONTROLLED_COLLECTION_DEADLINE_MS, "controlled_collection_deadline");
 }
 
 module.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };

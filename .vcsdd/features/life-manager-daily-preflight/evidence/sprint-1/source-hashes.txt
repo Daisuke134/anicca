@@ -1,7 +1,9 @@
-9ccde5342998b4404bb54e0426eb28963070a06b44bbbbfd65c3ecc2428c8e58  apps/life-call/lib/daily-preflight.js
-3f80f44fc9196cb2ce12b5541b3922f677f5cf3ee6c6f7973016543413a6aaf7  apps/life-call/lib/daily-preflight-collectors.js
-0b3ed6f18be9f6fe8e8a9913a0daa1b77f81bba5be5d6c77c01ee1d556c8bc3e  apps/life-call/lib/transport/mail-gog.js
-3a1fdf6ec85e09e0be464b66d09a509d642a34b2aa83ee02b708d4542370da67  apps/life-call/lib/daily-preflight-poll-boundaries.test.js
-0a7197b039755cc7decc240c141eafb870f82a588649621ddc6fbf09179f69b4  apps/life-call/lib/daily-preflight-final-schema.test.js
-8376af4e47e02ab85a36539dc193b632e3184e4d071379c2c94c39d61ed8a3a4  apps/life-call/lib/daily-preflight-purity-contract.test.js
-b910f573f01759dc68efe02d619c3f9c713f9f8d542a76f32e5bbdd0099d0884  .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs
+16240195e8fafea9e8725bb34a806e8d7552a055d238f29b988043561a2e15b2  apps/life-call/lib/daily-preflight.js
+d911abddcf7a0207a74ed892c4ad48cce5c338834661b9569e23e370aecaf17f  apps/life-call/lib/daily-preflight-collectors.js
+41ce69c254d363e08be45631727056bd468d344acdea834084c18e54e5944982  apps/life-call/lib/transport/mail-gog.js
+77a862168ec0734ab71e58f3d82914b7dba2b9b493605b01e8cd2ee5048fa965  apps/life-call/scripts/daily-preflight.js
+01d3c41fdc08cdbdde9197eb821514a11fb1b487ae9d390dd4881d1939fac6e3  apps/life-call/lib/daily-preflight.test-support.js
+aa8baf0a712fe4c77cb7cbfc80b63acba8e4b132fa6943d45cd62d4b58b63664  .vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs
+5993baccbd14f4111de2c3b8a89d0a067c259b7a2fdf08a9fbdea8f3c673acf1  .vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs
+1709d3e4a6e1ebb476e061b4c58496bf4c9a6821b091764bfddb22351e78a94d  .vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs
+2d4318a66be87edde8769266a9116a107cc501ad4924aa22c66edace5bf027e1  .vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs
