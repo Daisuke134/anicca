@@ -1,6 +1,6 @@
 # Manager-review corrective GREEN verification
 
-Implementation binding: `5ab512de08216ed5c7214c05a9d96ffebe00dee1`, app tree `edc1588322016adb651c4ce8c977d97c8db34cf0`, baseline `ba370ef67d4a85aa090d7711268059ed1521f4ca`.
+Implementation binding: `c1e876f10af6f2a098f57794a0fd745070546ca2`, app tree `edc1588322016adb651c4ce8c977d97c8db34cf0`, baseline `ba370ef67d4a85aa090d7711268059ed1521f4ca`.
 
 No provider, network, Telegram, email, phone, controlled L3, final production report, deployment, merge, or production side effect runs.
 
@@ -47,7 +47,7 @@ cd apps/life-call && node --test --test-concurrency=1 --experimental-test-covera
 
 Observed: `147 tests`, `147 pass`, `0 fail`. Per-module lines/functions are recorded in `coverage.log`; every module independently exceeds 90% for both metrics.
 
-Changed production modules derived by `git diff --name-only ba370ef67d4a85aa090d7711268059ed1521f4ca 5ab512de08216ed5c7214c05a9d96ffebe00dee1 -- apps/life-call`:
+Changed production modules derived by `git diff --name-only ba370ef67d4a85aa090d7711268059ed1521f4ca c1e876f10af6f2a098f57794a0fd745070546ca2 -- apps/life-call`:
 
 ```text
 apps/life-call/lib/daily-preflight-collectors.js
