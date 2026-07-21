@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "review_status": "review_required",
+  "review_basis": "pending_independent_architecture_review",
+  "parent_inventory_digest": "sha256:a0fde66c:f8f11931:6772a27d:4bf27026:f1c14816:e3bdbd49:8edb1504:26de2be4",
+  "sources": [
+    {
+      "source_id": "source-000000000000001",
+      "source_locator": "repo:.claude/skills/earn-gig/scripts/earn_inbox_watch.py",
+      "source_revision_digest": "sha256:f023dab3:6d2bbfd9:a3cd0ad6:7d9b3bd3:8d5824cd:5e3e634d:58a88550:03ff84d4",
+      "analysis_method": "reviewed_static_source_literals",
+      "parent_binding": "unbound_parent_unverified",
+      "declarations": [
+        {
+          "declaration_id": "declaration-000000000000001",
+          "artifact_category": "state",
+          "artifact_role": "state_queue",
+          "evidence_literals": ["earn_action_queue.jsonl"],
+          "path_class": "state:action_queue",
+          "runtime_path_kind": "home_relative",
+          "runtime_path": ".claude/skills/earn-gig/state/earn_action_queue.jsonl"
+        },
+        {
+          "declaration_id": "declaration-000000000000002",
+          "artifact_category": "state",
+          "artifact_role": "state_checkpoint",
+          "evidence_literals": ["earn_inbox_seen.txt"],
+          "path_class": "state:seen_checkpoint",
+          "runtime_path_kind": "home_relative",
+          "runtime_path": ".claude/skills/earn-gig/state/earn_inbox_seen.txt"
+        },
+        {
+          "declaration_id": "declaration-000000000000003",
+          "artifact_category": "output",
+          "artifact_role": "output_transient",
+          "evidence_literals": ["earn_inbox_alert.txt"],
+          "path_class": "output:transient_alert",
+          "runtime_path_kind": "home_relative",
+          "runtime_path": ".claude/skills/earn-gig/state/earn_inbox_alert.txt"
+        }
+      ]
+    },
+    {
+      "source_id": "source-000000000000002",
+      "source_locator": "repo:scripts/cross-poster/state.py",
+      "source_revision_digest": "sha256:cf196549:5dac751d:e97b305e:85305eed:9f28f841:1a37276b:f7a15d0a:af6a467a",
+      "analysis_method": "reviewed_static_source_literals",
+      "parent_binding": "explicit_parent_list",
+      "loop_refs": [
+        "loop-228394195708341",
+        "loop-252053043438682"
+      ],
+      "declarations": [
+        {
+          "declaration_id": "declaration-000000000000004",
+          "artifact_category": "cache",
+          "artifact_role": "state_cache",
+          "evidence_literals": ["processed_ids.json"],
+          "path_class": "state:processed_identifier_cache",
+          "runtime_path_kind": "repo_relative",
+          "runtime_path": "scripts/cross-poster/processed_ids.json"
+        }
+      ]
+    },
+    {
+      "source_id": "source-000000000000003",
+      "source_locator": "repo:scripts/cross-poster/cross_post_tiktok_to_ig.py",
+      "source_revision_digest": "sha256:93bf4d79:c1672400:9784483b:0d84544e:0921c6d8:85bf3321:d2cee568:7a05d553",
+      "analysis_method": "reviewed_static_source_import_and_media_flow",
+      "parent_binding": "explicit_parent_list",
+      "loop_refs": [
+        "loop-228394195708341",
+        "loop-252053043438682"
+      ],
+      "declarations": [
+        {
+          "declaration_id": "declaration-000000000000005",
+          "artifact_category": "media",
+          "artifact_role": "media_input",
+          "evidence_symbols": ["images", "upload_and_post_carousel"],
+          "path_class": "media:remote_input_pattern",
+          "runtime_path_kind": "non_local",
+          "runtime_path": "unverified"
+        }
+      ]
+    }
+  ]
+}

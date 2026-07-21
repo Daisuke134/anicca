@@ -1,0 +1,17 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "state-artifact-generic-high-entropy"
+description = "Prefixless high-entropy string in TODO #3 state/artifact metadata"
+regex = '''(?i)(?:^|[^A-Za-z0-9])([A-Za-z0-9+/_=-]{32,})(?:$|[^A-Za-z0-9])'''
+secretGroup = 1
+entropy = 4.5
+
+[[rules.allowlists]]
+regexTarget = "secret"
+regexes = [
+  '''^[0-9a-f]{40}$''',
+  '''^[0-9a-f]{64}$''',
+  '''^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$''',
+]

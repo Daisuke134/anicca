@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "review_status": "approved",
+  "approval_basis": "todo3_independent_candidate_review_approved_v1",
+  "reviewer_role": "independent_fresh_sol_review",
+  "manifest_digest": "sha256:b9bb12e4:13182f89:7bf22a77:7adc8c26:223730c9:06798b19:228698d0:bea5814f",
+  "parent_inventory_digest": "sha256:a0fde66c:f8f11931:6772a27d:4bf27026:f1c14816:e3bdbd49:8edb1504:26de2be4",
+  "source_revisions": {
+    "source-000000000000001": "sha256:f023dab3:6d2bbfd9:a3cd0ad6:7d9b3bd3:8d5824cd:5e3e634d:58a88550:03ff84d4",
+    "source-000000000000002": "sha256:cf196549:5dac751d:e97b305e:85305eed:9f28f841:1a37276b:f7a15d0a:af6a467a",
+    "source-000000000000003": "sha256:93bf4d79:c1672400:9784483b:0d84544e:0921c6d8:85bf3321:d2cee568:7a05d553"
+  }
+}
