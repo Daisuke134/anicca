@@ -12865,3 +12865,13 @@
 {"ts":1784647804,"wake_id":"00MRUT82NU132990ACC6DB48EE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784648015,"wake_id":"00MRUTCM09080400C4834E4F2E","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1784648015,"wake_id":"00MRUTCM09080400C4834E4F2E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784648230,"wake_id":"00MRUTH7YM3AF987AB2F3E46F4","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784648230,"wake_id":"00MRUTH7YM3AF987AB2F3E46F4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784648362,"wake_id":"00MRUTK1YK61789C5DA43543AE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784648362,"wake_id":"00MRUTK1YK61789C5DA43543AE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784648544,"wake_id":"00MRUTNY6G835EE15FF83E443D","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784648611,"wake_id":"00MRUTPDWOE964ADEAF36F466E","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784648611,"wake_id":"00MRUTPDWOE964ADEAF36F466E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784648745,"wake_id":"00MRUTS9GQFE1D29C231504826","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784648814,"wake_id":"00MRUTTQC68E61DDA01DD244BB","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784648881,"wake_id":"00MRUTV6396D7FBED02EA049EB","kind":"wake_error","sleep_s":60,"model":"auto"}
