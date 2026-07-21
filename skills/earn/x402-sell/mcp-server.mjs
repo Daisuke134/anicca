@@ -22,6 +22,10 @@
 //   MCP_UPSTREAM_ORIGIN  optional override for the serve-v2 origin (default http://127.0.0.1:$X402_PORT)
 
 import { MonetizedMCPServer, PaymentMethods } from "monetizedmcp-sdk";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import express from "express";
+import { randomUUID } from "node:crypto";
 
 const PAYTO = process.env.X402_PAYTO || "";
 const SERVE_PORT = Number(process.env.X402_PORT || 8403);
@@ -91,11 +95,6 @@ function buildQuery(product, params) {
 }
 
 class AniccaShopMCP extends MonetizedMCPServer {
-  constructor() {
-    super();
-    this.runMonetizeMCPServer();
-  }
-
   async priceListing({ searchQuery } = {}) {
     const q = (searchQuery || "").toLowerCase().trim();
     const items = PRODUCTS.filter(
@@ -191,4 +190,57 @@ function safeJson(text) {
   }
 }
 
-new AniccaShopMCP();
+// monetizedmcp-sdk@0.1.23 keeps one McpServer instance for every HTTP session. The official
+// MCP SDK permits a Server to connect only once, so the second registry/buyer session crashes
+// that runner. Follow the SDK's sessionful HTTP example: create a fresh server per initialized
+// transport while keeping subsequent requests on the same transport.
+function startMcpServer() {
+  const app = express();
+  const transports = new Map();
+  app.use(express.json());
+
+  app.post("/mcp", async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"];
+    let transport = sessionId ? transports.get(sessionId) : undefined;
+
+    if (!transport && !sessionId && isInitializeRequest(req.body)) {
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (initializedSessionId) => {
+          transports.set(initializedSessionId, transport);
+        },
+      });
+      transport.onclose = () => {
+        if (transport.sessionId) transports.delete(transport.sessionId);
+      };
+      const shop = new AniccaShopMCP();
+      await shop.server.connect(transport);
+    } else if (!transport) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: { code: -32000, message: "Bad Request: No valid session ID provided" },
+        id: null,
+      });
+      return;
+    }
+
+    await transport.handleRequest(req, res, req.body);
+  });
+
+  const handleSessionRequest = async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"];
+    const transport = sessionId ? transports.get(sessionId) : undefined;
+    if (!transport) {
+      res.status(400).send("Invalid or missing session ID");
+      return;
+    }
+    await transport.handleRequest(req, res);
+  };
+
+  app.get("/mcp", handleSessionRequest);
+  app.delete("/mcp", handleSessionRequest);
+  const port = Number(process.env.PORT || 8080);
+  app.listen(port, () => console.log(`MCP Server listening on port ${port}`));
+}
+
+startMcpServer();

@@ -84,4 +84,5 @@ test("MCP listeners use three distinct ports", () => {
 test("clean install includes the pinned MonetizedMCP SDK", () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
   assert.equal(packageJson.dependencies?.["monetizedmcp-sdk"], "0.1.23");
+  assert.equal(packageJson.dependencies?.["@modelcontextprotocol/sdk"], "1.29.0");
 });

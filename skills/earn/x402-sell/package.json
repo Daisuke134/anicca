@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@coinbase/x402": "^2.1.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@x402/core": "^2.17.0",
     "@x402/evm": "^2.17.0",
     "@x402/express": "^2.17.0",

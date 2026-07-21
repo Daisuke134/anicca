@@ -88,6 +88,23 @@ try {
     mpBadData.toolResult);
 
   await client.close();
+
+  // A registry crawler and a buyer are separate MCP sessions. The server must survive the
+  // crawler disconnect and accept a fresh initialization instead of crashing on a reused
+  // McpServer instance.
+  const secondClient = new Client({ name: "probe-second-session", version: "1.0.0" });
+  const secondTransport = new StreamableHTTPClientTransport(
+    new URL(`http://127.0.0.1:${MCP_PORT}/mcp`)
+  );
+  await secondClient.connect(secondTransport);
+  const secondTools = await secondClient.listTools();
+  const secondNames = secondTools.tools.map((t) => t.name).sort();
+  check(
+    "fresh second MCP session succeeds",
+    ["make-purchase", "payment-methods", "price-listing"].every((n) => secondNames.includes(n)),
+    secondNames.join(",")
+  );
+  await secondClient.close();
 } catch (e) {
   check("probe ran without throw", false, String(e.stack || e));
 } finally {
