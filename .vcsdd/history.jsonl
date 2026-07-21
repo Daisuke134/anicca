@@ -37,3 +37,5 @@
 {"timestamp":"2026-07-21T10:01:54.797Z","event":"spec_feedback_routed","featureName":"life-manager-daily-preflight","from":"1c","to":"1a","iteration":2,"findings":["FIND-005","FIND-006"],"adjudication":"FIND-005 accepted in Phase 1a; FIND-006 accepted for Phase 1b after legal 1a to 1b transition","phase":"1a"}
 {"timestamp":"2026-07-21T10:02:21.893Z","event":"phase_transition","featureName":"life-manager-daily-preflight","from":"1a","to":"1b","iteration":3,"phase":"1b"}
 {"timestamp":"2026-07-21T10:06:44.713Z","event":"phase1_traceability_refreshed","featureName":"life-manager-daily-preflight","phase":"1b","iteration":2,"paths":["FIND-005:REQ-002/013->PROP-001/007->CRIT-001/002/005","FIND-006:PROP-006..012->CRIT-003/004/005"]}
+{"timestamp":"2026-07-21T10:20:58.847Z","event":"phase_transition","featureName":"life-manager-daily-preflight","from":"1b","to":"1c","iteration":3,"phase":"1c"}
+{"timestamp":"2026-07-21T10:21:38.272Z","event":"gate_recorded","featureName":"life-manager-daily-preflight","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
