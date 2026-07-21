@@ -427,6 +427,23 @@ Independent fresh candidate re-review evidence: approved。verdictは`ok:true`�
 
 Final approved transition evidence: builder manifestは`review_required`を維持し、separate reviewだけが`approved / todo3_independent_candidate_review_approved_v1 / independent_fresh_sol_review`。canonical manifest digest、parent digest、exact source revision mapはreview / manifest / observation間でexact。transition RED 1 failure後、approval/negative focused 4/4、TODO #3 24/24、full 188/188、Python syntax、diff checkがfresh PASS。normal live observation A=B=tracked、edge/object/summary A=B=tracked、全outputは`independent_review_approved`。missing/unapproved/wrong-basis/stale manifest/stale parent/stale sourceはnonzero・stdout 0・output非作成。accountingは330 parent / 1,980 category / 330 definition / 2,310 edge / 120 object、discovered 4 / unverified 1,976、raw parent ID 0。6 artifact exact gitleaksは全clean。独立approvalと全semantic gateが揃うためTODO #3を`done`とする。
 
+### 6.5 TODO #4 TaskList — external side-effect inventory
+
+Contractは330 parent×required category exact coverageとindependent effect object / opaque loop→effect edgeとする。required categoryはexact `call | post | mail | render | wallet`、reviewedされた列挙済み効果に限りexplicit `other`を許可する。resolutionは`discovered | none | unverified`を区別し、unknownをabsenceにしない。definition/credentialはevidence inputでありside effectとして計上しない。
+
+- [x] TODO #1 parent、TODO #2 credential object/edge、TODO #3 secure FD / opaque loop ref / manifest-review / exact schema / privacy contractを実測して再利用する。
+- [x] CodeGraph→safe AST/exact source searchでreal call/post/mail/render参照とwallet-like behaviorをcontent非読取で列挙し、source/config digestにbindする。
+- [x] RED: required files、330×5 exact matrix、known production effects、wallet policy、shared object accounting、revision staleness、builder self-approval、raw ID/key-value privacy/exact schemaをcurrent contractで固定する。
+- [x] GREEN: metadata-only collector、fail-closed generator/validator、builder `review_required` manifest、separate pending independent review artifact、candidate observations/object/edge/docを最小実装する。
+- [x] effect objectにoperation class/direction/provider-tool opaque ref/mutability/financial risk/idempotency/approval gate/evidence/source revisionを必須とする。shared provider/effectは1 objectに集約する。
+- [x] wallet-like behaviorは`policy_violation/blocked | unverified`だけを許可し、autonomous real-money mutationのapproved executionを禁止する。
+- [x] pre-reviewはexplicit `--candidate`だけが`review_required`出力を生成し、normal modeはnonzero・stdout 0・output非作成でfail closedする。
+- [ ] live A/B/tracked、330×5/object-edge accounting、raw TODO #1 ID 0、full suite、全artifact exact gitleaksをfresh検証する。
+- [x] independent approval前はTODO #4を`in_progress`に留める。
+- [ ] fresh-contextのindependent reviewerがcandidate artifactsだけを根拠にapproveし、review artifactを更新する。
+
+TODO #1 refreshでlive A=B=trackedは334 row（launchd 107 / OpenClaw cron 222 / Railway 1 / repository entrypoint 4）、旧revisionからexact 4追加 / 0削除となる。TODO #4 candidateは旧330-parent digestへbindしたままであり、TODO #2〜#4 revision cascadeとindependent reviewが完了するまでcurrent completenessおよびapprovalを主張しない。
+
 Completion claims MUST include fresh command output, remote commit hash, deployment commit hash, and real provider evidence IDs.
 
 ## 7. Research decisions
@@ -448,10 +465,10 @@ state values: `pending | in_progress | code_done | done | blocked`。
 
 | # | Task | Done condition | State |
 |---|---|---|---|
-| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — `docs/reference/cloud-agent-loop-inventory.tsv` 330 data rows / 331 physical lines（launchd 103 / OpenClaw cron 222 / Railway 1 / repo entrypoint 4）、generator self-test・`--check`・tracked TSV diff がPASS。秘密・prompt本文・個人home pathは非収録 |
-| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | done — Group A/B/C/D/E、iteration 20 whole-change、iteration 21 review-basis remediationの承認証跡を維持。iteration 22 exact documentation secret gateのfalse positiveをREDで再現し、既存secret allowlistを広げず、current OpenClaw immutable `blob/<40hex>` source 2 pathのmatchだけをexact許可してGREEN。reference doc＋4 credential artifactの個別root exact commandは全clean、公開URL同一行のopaque prefixless tokenは1 finding / exit 1。focused 1/1、fresh全164/164、Python/JS syntax、diff check、generator 456 row tracked byte exactを実測。330 parent、456 unique edge（inactive 177 / none_observed 75 / observed 47 / policy_violation 87 / unverified 70）、55 object（loop-used 50 / catalog-only 5）・finding 1、OpenClaw failure 5・absence 0 |
-| 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | done — independent fresh candidate reviewは`ok:true` / blocking 0 / basis `todo3_independent_candidate_review_approved_v1`。builder manifestは`review_required`のまま、separate reviewだけをapprovedにtransition。normal outputsは`independent_review_approved`でlive A=B=tracked、330×6 coverage + 330 definition = 2,310 edge / 120 object、raw parent ID 0。missing/unapproved/wrong/stale reviewはfail closed。final fresh 24/24 + 188/188、syntax/diff、accounting、6 gitleaksが全GREEN |
-| 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | pending |
+| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — focused review rejectをremediate。旧330 ID集合はcount 330＋canonical sorted SHA-256 digest、新規はexact 4 set、既存4 rowはexact state、removal/addition substitution fixtureはreject。fixture RED 1/1 failure、334-row update RED 2 failures→GREEN focused 5/5。live A=B=tracked byte exact、334 data / 335 physical（launchd 107 / OpenClaw 222 / Railway 1 / repo 4）、旧revisionからexact 4追加 / 0削除。self-test、Python syntax、TSV/doc default gitleaks、privacy boundaryがPASS |
+| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | in_progress — stale-parent-rebind-required。既承認artifactは330-parent digestへbindしており、TODO #1 refresh後に334-parent revisionで再収集・reviewが必要。現artifactは変更しない |
+| 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | in_progress — stale-parent-rebind-required。既承認artifactは330-parent digestへbindしており、TODO #1 refresh後に334-parent revisionで再収集・independent reviewが必要。現artifactは変更しない |
+| 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | in_progress — §6.5 TaskListで330×5 completeness、known call/post/mail/render、wallet policy、independent object/edge、revision/review/privacy/security gatesをTDD実装中。independent approval前は`done`に進めない |
 | 5 | macOS依存を分類する | Linux可/要置換/廃止を全loopに付与 | pending |
 | 6 | workload classを確定する | 全loopが5 queueのどれかに所属 | pending |
 | 7 | DigitalOcean bridge Dropletを作る | key-only SSH + firewall + Tailscale実測 | pending |
