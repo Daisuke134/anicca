@@ -12774,3 +12774,8 @@
 {"ts":1784633479,"wake_id":"00MRUKP1RYDF743073EE2D4962","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784633661,"wake_id":"00MRUKSYHG0E8B3A8C29C84D21","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784633661,"wake_id":"00MRUKSYHG0E8B3A8C29C84D21","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784633851,"wake_id":"00MRUKX0ZBC401828D91924B91","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784634153,"wake_id":"00MRUL3I6QC74D219528554B3A","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784634345,"wake_id":"00MRUL7LSK4FCBFBD9097D42A2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784634508,"wake_id":"00MRULB3F83D29A5BFCF62413C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784634643,"wake_id":"00MRULDZOY611EE9979099458B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
