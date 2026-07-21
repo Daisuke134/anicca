@@ -1,9 +1,9 @@
 # Anicca Colony — Live Status
 
-> Generated from `/Users/anicca/anicca/skills/self/colony-status.sh` at `2026-07-21T00:38:50Z`. This is measured output, not a self-report.
+> Generated from `/Users/anicca/anicca/skills/self/colony-status.sh` at `2026-07-21T01:08:52Z`. This is measured output, not a self-report.
 
 ```text
-════════════ ANICCA COLONY — LIVE SSOT (2026-07-21T00:38Z) ════════════
+════════════ ANICCA COLONY — LIVE SSOT (2026-07-21T01:08Z) ════════════
 
 [1] franklin1       SELF-funded  (Franklin-Trading, Solana)   HOME=~/.blockrun
     sol    F5SY…hZ5T   SOL=0.038  USDC=$0.03   loop(franklin-loop)=RUNNING
