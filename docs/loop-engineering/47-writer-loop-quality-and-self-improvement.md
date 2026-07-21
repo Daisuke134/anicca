@@ -66,7 +66,7 @@
 3. 新記事で品質収束を 2-3 日 watch（draft のまま）
 4. 収束確認後に `ARTICLE_AUTOPUBLISH` arm（完全無人公開、最後）
 
-TaskList の現在状態は §16.5 と §17 を正本とする。D1-D8 はすべて **DONE**、model-agnostic daily sprint は P1 **DONE** / P2-P4 **TODO**。§16.4 は D1-D8 の完了条件だけを定義する。
+TaskList の現在状態は §16.5 と §17 を正本とする。D1-D8 はすべて **DONE**、model-agnostic daily sprint は P1-P2 **DONE** / P3-P4 **TODO**。§16.4 は D1-D8 の完了条件だけを定義する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -405,6 +405,6 @@ fallback設計根拠: ソース [Claude Code CLI reference](https://code.claude.
 | # | 状態 | 内容 | done evidence |
 |---|---|---|---|
 | P1 | **DONE** | 日次 writer の primary model を `gpt-5.6-luna`、effort を `xhigh` にする。`ARTICLE_MODEL` / `ARTICLE_EFFORT` の明示的 default とし、CLIProxy認証とローカル認証の両分岐が同じ値を使う | profitable-claude `7907269`: contractを先に変更した旧実装REDは `rc=1`（Luna default欠落、xhigh default欠落、共通引数0件、hard-coded Sonnet残存）。実装後は `bash -n rc=0`、contract `rc=0`、quality-best-effort / run-completion / run-prune-pending / zenn-deferred-retry は全て `rc=0`。render wiringは今回差分外の古いSTEP列期待により11/12で、変更前live checkoutでも同一失敗を再現。実CLIProxy probe `claude --model gpt-5.6-luna --effort xhigh --no-session-persistence --tools '' -p 'Reply with exactly: MODEL_OK'` は6秒で `rc=0` / `MODEL_OK`。profitable-claude は branch、`origin/main`、live checkout がすべて `7907269df887a246e04176efbe6346741691e0e9`、live checkoutの既存life/video差分は前後同一 |
-| P2 | **TODO** | retryable infrastructure failure（429 / 5xx / timeout / provider unavailable）だけで別modelへ切り替える fallback と、失敗modelをcooldownする circuit breaker を実装する。品質・安全判定をmodel切替で迂回しない | 2回目のfresh reviewでsystem wrapper外側のauth retry/completion respawnがfull promptを再実行する反例を確認。temp HOME system RED 7ケースとcontract REDを追加し、P3前のblind respawnを安全停止する修正を検証中 |
+| P2 | **DONE** | retryable infrastructure failure（429 / 5xx / timeout / provider unavailable）だけで別modelへ切り替える fallback と、失敗modelをcooldownする circuit breaker を実装する。品質・安全判定をmodel切替で迂回しない | profitable-claude `4bbcd7c` は副作用なし `MODEL_OK` preflightだけでcandidateを切替え、healthy model決定後のfull promptを1回だけ実行する。永続stateは`flock`付きatomic RMW、known secretはchunk境界を含めてlogからredactする。auth/billing/usage/ENOENT/EACCESとfull-pass終了結果は明示fallback対象外。実CLIProxyではSonnet preflightが20秒timeout→Luna選択→full `MODEL_OK` `rc=0`、proxy secret露出なし。2回目のfresh reviewでwrapper外側のauth retry/completion respawnがfull promptを再実行する反例を検出し、`f5567da` でP3前のblind replayを停止する。temp HOME system 7ケース（`rc=0` incomplete、partial+503、timeout、auth、ordinary failure、cooldown `rc=75`、Zenn handoff）はwrapper full invocationが各exact1、partial marker最大1、lock解放・alert/handoff・`exit 0`を実測。helper+system pytestは32/32 PASS、article-daily contract全PASS、`bash -n`・helper `py_compile`・`git diff --check` PASS、関連regression 17/17 PASS。`origin/main` とlive checkoutは `f5567dac760c45c9571fc6577a38dc0ea82b9bd0`、既存life/video差分のSHA-256は反映前後同一。platform別の安全な再開はP3の責務 |
 | P3 | **TODO** | finite quality best-draft、platform別resume、run lock/idempotencyを現行実装と照合監査し、不足だけを実装する。品質上限到達は最良draftで先へ進み、既にliveの媒体は再投稿しない | 既存経路の監査表、欠落分のRED→GREEN、途中失敗から同一run再開、重複live URL 0件 |
 | P4 | **TODO** | `ai.anicca.article-daily` をmanual kickstartし、日次writer自身が全媒体へ公開する最終E2Eを行う。全live URLとreality gateを実測し、その後の06:00 schedule起動も確認する | manual runの同一run exact6、全媒体live URL実読、ledger `published:true` + `reality_gate:PASS`、Telegram、次回06:00 launchd run evidence |
