@@ -515,6 +515,7 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 3. 木村様の囲碁盤 OpenCV PoC を受入基準まで修正し、実ファイルを Coconala で正式納品する。
 4. marketing-engine は Capafy 専用ではなく clip / video / future products の共有 core とし、bot-like な synthetic engagement warmup を廃止する。
 5. fresh Instagram account は固定 day gate ではなく `account setup → publisher health → first non-commercial post → public/reach verification → commercial` の実状態で進む。
+6. disk cleanup は revenue loop の実行中 worker・納品物・checkpoint・identity state・調査証拠を削除せず、既知の再生成可能 artifact だけを単一 policy で回収する。
 
 ### 17.2 Current measured facts
 
@@ -530,6 +531,12 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | Capafy account | `capafy.skills9582` は browser login 後、synthetic warmup（reels 8 / scrolls 6 / follows 4）を実行し、day3 private API login が `ChallengeRequired`。投稿0件 | §16 evidence |
 | Capafy launch state | IG daily / goal-monitor は unloaded、warmup は loaded / not running | `launchctl print gui/501/<label>` |
 | shared blast radius | `marketing-engine/warmer.py` / `poster.py` は Capafy のほか clip / video / clip-promote が参照する | `/Users/anicca/anicca/skills/earn/{capafy-marketing,clip,video,clip-promote,marketing-engine}` |
+| disk pressure | Data volume の空きは調査中に 139MiB〜1.8GiBで推移し、emergency 3GB閾値を下回る | `df -h /System/Volumes/Data` |
+| overlapping cleaners | `com.anicca.disk-cleaner`、`com.anicca.emergency-disk-guard`、`ai.anicca.disk-autoprune` が同時にloaded。OpenClaw側にも cleanup / process-kill job がある | `launchctl list`、OpenClaw cron inventory |
+| cleaner livelock | emergency guard は1分ごとに全 `gig_pass.sh` / `Coconala gig` worker候補をkillし、空き容量をほぼ回収しない。disk-cleanerも直近runで `0GB -> 0GB` | `~/.openclaw/logs/{emergency-disk-guard,disk-cleaner}.log`、`~/scripts/emergency-disk-guard.sh:49-68` |
+| forensic loss | emergency guard は `~/.claude/projects/*.jsonl` のうち60分超を削除し、障害原因を追う実行証拠を消す | `~/scripts/emergency-disk-guard.sh:42-43` |
+| large consumers | `.openclaw` 24GB、`anicca-project` 14GB（`.worktrees` 8.7GB）、`.cloak` 7GB。既存cleanerは主な占有元のowner/lifecycleを管理しない | read-only `du -xhd` inventory |
+| incomplete protection | 共通 protected-paths manifest は `reelclaw-assets` 1件だけ。gig納品物、checkpoint、marketing state、browser identityは分類されない | `~/.openclaw/state/protected-paths.json` |
 
 ### 17.3 Diagnosis
 
@@ -539,6 +546,9 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 - 木村様成果物は生成済みだが判定精度が壊れている。quota reset は OpenCV の誤検出を直さず、正式納品もしない。
 - Capafy の challenge と synthetic warmup の因果は断定できない。ただし warmup が健全性を上げた証拠はなく、bot-like な follow / scroll / replay を追加した直後も投稿可能 session を確立できていない。
 - Instagram の official publishing path は professional account と publish permission を前提に Reel 公開を提供する。shared engine の primary publisher は official API、private API は primary から外す。
+- 現在のcleanerは容量制御として成立しない。低容量→正常なgig worker kill→transcript削除→空き容量不変→再killのlivelockになり、収益作業と原因調査を同時に止める。
+- 過去の `.venv`、作業中clone、runtime `dist`、`reelclaw-assets` 誤削除は、mtime/glob中心の複数executorとfail-open保護が同じ削除判断を持つ構造から再発する。個別exclude追加だけでは閉じない。
+- 自己改善はread-only analyzerがpolicy変更案を作る層に限定する。削除executorは承認済みmanifestを決定論的に実行し、実行時に対象範囲を学習・拡張しない。
 
 ### 17.4 Invariants
 
@@ -555,6 +565,11 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | INV-M4 | account challenge を password retry、marker削除、account churnで迂回しない |
 | INV-M5 | account lifecycle / publishing / reach contract は shared engine に1つだけ置き、各productは manifest / content adapterだけを持つ |
 | INV-E1 | Builderの自己申告は完了証拠にしない。Plannerがfresh command / artifact / public UIで独立検証する |
+| INV-D1 | cleanup executor は1つのversioned policy / artifact manifestだけを参照する。manifest不在・parse失敗・未分類pathはfail-closedで削除しない |
+| INV-D2 | `deliverable`、`checkpoint`、`identity/state/secret`、active lease、incident evidenceは自動削除しない。既知の `ephemeral` だけがTTL/quota後に削除可能 |
+| INV-D3 | emergency mode は正常workerを一括killしない。新規runをbackpressureし、heartbeat/lease/timeoutで暴走と実証された個別workerだけを停止する。gig-core本体は常に除外する |
+| INV-D4 | 削除前後に path、owner、class、bytes、reason、policy version、result をappend-only ledgerへ残す。削除量0の反復emergencyは成功扱いしない |
+| INV-D5 | AI analyzerはread-only。削除policy変更はspec→RED test→builder→shadow/canary→独立reviewを通り、executor自身はpolicyを書き換えない |
 
 ### 17.5 Model routing contract
 
@@ -587,25 +602,35 @@ Planner は実装を持たず、Builder は完了判定を持たない。各 TOD
 
 | 順 | TODO | Builder scope | Done / E2E gate |
 |---:|---|---|---|
-| 1 | **provider-agnostic runner + fail-closed foundation** | `claude -p` 呼出しinventory、共通runner、Luna/Terra/Sol routing、rc/evidence schema、timeout、PID-aware lock、supervisor/backoff。gig / Capafy / active claude-p consumersをadapter化 | Claudeを利用不能にしたfixtureでも Luna/Terra実callが成功。各failure fixtureで後続step・`.last-pass`・success ledgerが更新されない。dead lockはreap、live lockは保持。対象loopのdirect `claude -p` production call=0 |
-| 2 | **gig rescue + 木村様 ¥65,000 PoC正式納品** | paid-contract deadline queueを最優先化。7枚のexpected stone matrixをtest化し、OpenCVを修正、package、Coconala正式納品。別の¥40,000 SNS契約もdeadline queueへ保持 | 7画像の期待 black/white/empty がtest PASS、overlay目視PASS、README/requirements/package hashあり。talkroomにfileがbuyer-visible、`正式な納品` state、delivery URL/screenshot、ledger `delivered`。gig-coreは15分以上複数poll + 次のscheduled pass成功 |
-| 3 | **shared marketing-engineをno-synthetic-warmupへ移行** | `warming/day3 golden private session` を `setup/publisher_ready/posted/measuring/commercial` へ置換。automatic follow/like/comment/scrollを削除。official Meta publisher primary、product adapter分離。Capafy / clip / video consumer contractを更新 | testでsynthetic engagement call=0、day-count branch=0、全consumerが同じ lifecycle/publisherを参照。official publisher health probeとfailure state transitionをE2E。current terminal accountは再利用しない |
-| 4 | **fresh Capafy accountからfull-cycleを実証しfleet rollout** | isolated account setup、professional/publish permission、first non-commercial Reel、public/reach measurement、commercial gate、Telegram/ledgers。全consumer regression後に14日自走 | account creation/setup evidence、publisher-ready evidence、public Reel URL、logged-out screenshot、publish status、IG/rotation ledger、Telegram message ID。複数snapshotで非zero reach後のみ commercial marker。14日 `setup→post→measure→report` 継続、全gate green |
+| 1 | **P0 disk containment — 誤爆と証拠消失を止め安全なheadroomを作る** | disk占有をowner/class別に再実測。既知の再生成可能cache/outputだけで安全に10GiB以上を確保。emergency guardを正常gig worker・active transcript・lockを守るfail-closed判定へ変更し、暴走した個別workerを止める安全弁は維持 | 削除候補dry-runとreclaim ledgerあり、free >=10GiB。normal/core/runawayのfixtureで normal worker+gig-core生存、runawayだけ停止。active/incident transcript保持。guard発火を含む15分pollでgig-coreとnormal workerが連続生存し、Chromium profile/identity、納品物、user WIPの欠損0 |
+| 2 | **provider-agnostic runner + fail-closed foundation** | `claude -p` 呼出しinventory、共通runner、Luna/Terra/Sol routing、rc/evidence schema、timeout、PID-aware lock、supervisor/backoff。gig / Capafy / active claude-p consumersをadapter化 | Claudeを利用不能にしたfixtureでも Luna/Terra実callが成功。各failure fixtureで後続step・`.last-pass`・success ledgerが更新されない。dead lockはreap、live lockは保持。対象loopのdirect `claude -p` production call=0 |
+| 3 | **gig rescue + 木村様 ¥65,000 PoC正式納品** | paid-contract deadline queueを最優先化。7枚のexpected stone matrixをtest化し、OpenCVを修正、package、Coconala正式納品。別の¥40,000 SNS契約もdeadline queueへ保持 | 7画像の期待 black/white/empty がtest PASS、overlay目視PASS、README/requirements/package hashあり。talkroomにfileがbuyer-visible、`正式な納品` state、delivery URL/screenshot、ledger `delivered`。gig-coreは15分以上複数poll + 次のscheduled pass成功 |
+| 4 | **cleanup control plane + artifact lifecycleを単一化** | cleanup entrypointを1つにし、重複LaunchAgent/OpenClaw cleanerを無効化。全artifactにowner/class/TTL/quota/lease/finalizerを宣言し、fail-closed manifest、off-volume quarantine、append-only delete ledgerを実装 | active cleanup executor=1。manifest欠損/破損/unknown/active/deliverable fixtureは削除0、expired ephemeralだけ削除。過去事故fixture（`.venv`、WIP clone、runtime `dist`、`reelclaw-assets`）全保持。delete ledgerとrestore E2E PASS |
+| 5 | **producer budgets + capacity observability** | gig / marketing / clip / video / browser / worktree producerにrun quota、rotation、checkpoint圧縮、reserve-space backpressureを実装。容量trendとowner別growthを観測し、0-byte reclaim反復をfailure化 | free-space reserveを割るfixtureで新規runは開始せずactive run/checkpointは保持。producer別quota test、log rotation、recovery後resume E2E。cleanerが2回連続0-byte reclaimならalert/failureとなりsuccessを記録しない |
+| 6 | **shared marketing-engineをno-synthetic-warmupへ移行** | `warming/day3 golden private session` を `setup/publisher_ready/posted/measuring/commercial` へ置換。automatic follow/like/comment/scrollを削除。official Meta publisher primary、product adapter分離。Capafy / clip / video consumer contractを更新 | testでsynthetic engagement call=0、day-count branch=0、全consumerが同じ lifecycle/publisherを参照。official publisher health probeとfailure state transitionをE2E。current terminal accountは再利用しない |
+| 7 | **fresh Capafy accountからfull-cycleを実証しfleet rollout** | isolated account setup、professional/publish permission、first non-commercial Reel、public/reach measurement、commercial gate、Telegram/ledgers。全consumer regression後に14日自走 | account creation/setup evidence、publisher-ready evidence、public Reel URL、logged-out screenshot、publish status、IG/rotation ledger、Telegram message ID。複数snapshotで非zero reach後のみ commercial marker。14日 `setup→post→measure→report` 継続、全gate green |
+| 8 | **read-only cleanup analyzer + fleet self-improvement gate** | owner別growth/anomalyを分析しpolicy変更案とRED fixtureを生成するread-only analyzerを追加。policy変更はshadow/canaryと独立review後のみpromote | analyzer権限でdelete/policy write不可を実証。提案→RED→GREEN→shadow→canary→promote ledger E2E。14日間、protected artifact欠損0、disk reserve違反0、正常revenue worker誤kill 0 |
 
 ### 17.8 Acceptance scenarios
 
-1. **Provider outage** — Given Claude is quota-blocked, when a repeatable/tool task runs, then Luna/Terra completes through the same runner; no business script changes provider-specific code.
-2. **All providers fail** — Given every provider returns nonzero, when a pass runs, then the pass is failed, the lock is released/reaped safely, and no success marker is written.
-3. **Paid deadline** — Given an active paid contract is due, when gig wakes, then delivery work runs before learn/listing/apply and continues until formally delivered or a concrete blocker is recorded.
-4. **OpenCV acceptance** — Given the seven buyer images and expected counts, when the package test runs, then every count and output schema passes before upload.
-5. **Fresh marketing account** — Given account setup and official publisher health are green, when the first content is ready, then one original non-commercial Reel may publish on day1; no artificial engagement or arbitrary waiting day is required.
-6. **Reach gate** — Given a public Reel exists but reach evidence is absent/zero, when daily runs, then commercial link/CTA remains disabled.
-7. **Shared regression** — Given shared lifecycle changes, when Capafy/clip/video tests run, then each consumer uses its own state namespace and the same engine contract without cross-account mutation.
+1. **Disk emergency** — Given free space is below the emergency threshold, when the guard runs, then gig-core and a healthy leased worker remain alive, a fixture-proven runaway worker alone stops, active evidence remains, and the decision is ledgered.
+2. **Unknown cleanup candidate** — Given a path lacks a valid artifact classification, when cleanup evaluates it, then it is not deleted and the manifest violation is reported.
+3. **Provider outage** — Given Claude is quota-blocked, when a repeatable/tool task runs, then Luna/Terra completes through the same runner; no business script changes provider-specific code.
+4. **All providers fail** — Given every provider returns nonzero, when a pass runs, then the pass is failed, the lock is released/reaped safely, and no success marker is written.
+5. **Paid deadline** — Given an active paid contract is due, when gig wakes, then delivery work runs before learn/listing/apply and continues until formally delivered or a concrete blocker is recorded.
+6. **OpenCV acceptance** — Given the seven buyer images and expected counts, when the package test runs, then every count and output schema passes before upload.
+7. **Fresh marketing account** — Given account setup and official publisher health are green, when the first content is ready, then one original non-commercial Reel may publish on day1; no artificial engagement or arbitrary waiting day is required.
+8. **Reach gate** — Given a public Reel exists but reach evidence is absent/zero, when daily runs, then commercial link/CTA remains disabled.
+9. **Shared regression** — Given shared lifecycle changes, when Capafy/clip/video tests run, then each consumer uses its own state namespace and the same engine contract without cross-account mutation.
 
 ### 17.9 Full TO-BE
 
 ```text
 launchd / tmux / OpenClaw scheduler
+                │
+                ▼
+        capacity admission gate
+        reserve / quota / backpressure
                 │
                 ▼
         supervisor + health check
@@ -657,6 +682,26 @@ launchd / tmux / OpenClaw scheduler
                                               │
                          Capafy / clip / video / future products
                          share the same engine, isolated state only
+
+        GIG + MARKETING + BROWSER + WORKTREE PRODUCERS
+                              │
+             artifact declaration at write time
+          owner / class / TTL / quota / lease / finalizer
+                              │
+                              ▼
+                 shared artifact registry
+          ┌───────────────────┼────────────────────┐
+          ▼                   ▼                    ▼
+      ephemeral          active/progress      durable/identity
+      TTL+quota          lease+checkpoint     deliverable/state/secret
+          │                   │                    │
+          ▼                   └──── preserve ──────┘
+   single deterministic
+    cleanup executor ── append-only decision/reclaim ledger
+          ▲
+          │ versioned policy only
+   read-only AI analyzer
+   growth/anomaly → spec proposal → RED test → shadow/canary → promote
 
 Every step: real evidence → Planner independent verification → spec update
 ```
