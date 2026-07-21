@@ -16,8 +16,10 @@
       "sections": ["all"]
     },
     {
-      "path": "docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md",
-      "sections": ["9.5", "10 row 8d", "10.2", "10.3"]
+      "path": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md",
+      "sections": ["9.5", "10 row 8d", "10.2", "10.3"],
+      "sourceCommit": "d5e261724",
+      "sha256": "2235b89a9a734f30539e364006af68d87285c7a310eb3d644693d7e84367782a"
     }
   ],
   "artifactsToReview": {
