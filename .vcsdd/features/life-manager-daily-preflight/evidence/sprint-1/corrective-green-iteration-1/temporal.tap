@@ -1,0 +1,26 @@
+✔ email observation accepts a same-minute interval containing the send instant (2.291334ms)
+✔ email observation accepts a later minute interval after send and not after now (0.085417ms)
+✔ email observation rejects future, malformed, missing-id, nonce, and over-15-minute evidence (0.146583ms)
+✔ email observation keeps exact timestamps strictly between send and now (0.088209ms)
+✔ checkedAt: one millisecond stale is rejected (4.262584ms)
+✔ checkedAt: one millisecond future is rejected (0.157084ms)
+✔ checkedAt: malformed strict timestamp is rejected (0.079958ms)
+✔ checkedAt: non-finite internal millisecond is rejected (0.089625ms)
+✔ checkedAt: before current run start is rejected (0.087291ms)
+✔ checkedAt: mixed-run observation is rejected (0.070167ms)
+✔ checkedAt: fresh true without time proof is rejected (0.060083ms)
+✔ checkedAt: non-round-trip UTC timestamp is rejected (0.065917ms)
+✔ findReceipt accepts a minute-precision bucket containing afterMs (3.482333ms)
+✔ findReceipt accepts the next minute when its bucket is not wholly before afterMs (0.390083ms)
+✔ findReceipt rejects the previous minute and intervals wholly before afterMs (0.431917ms)
+✔ findReceipt keeps second/timezone timestamps strictly ordered and unknown dates closed (0.3225ms)
+✔ findReceipt rejects an impossible exact calendar date instead of normalizing it (0.265333ms)
+✔ findReceipt fails closed for nonce mismatch and stale messages (0.123875ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 158.476083

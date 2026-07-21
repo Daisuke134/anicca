@@ -1,0 +1,27 @@
+{
+  "implementationCommit": "f9a35c8d2e5e74088948f7ccf3118afdc0562029",
+  "appNew": 63,
+  "helper": 12,
+  "baselineFocused": 51,
+  "baselineFull": 371,
+  "fullFinal": 434,
+  "eval": 33,
+  "temporal": 18,
+  "schema": 45,
+  "poll": 12,
+  "purityContract": 6,
+  "purity": 32,
+  "coverage": "pass",
+  "safeScan": "pass",
+  "contractDigest": "608ef6878d9e626ad5d4e6cbee55029c057b2c37c72f0c238387b626c0bbe8cf",
+  "outputAbsent": true,
+  "modules": {
+    "lib/daily-preflight.js": { "lines": 92.58, "functions": 95.95 },
+    "lib/daily-preflight-collectors.js": { "lines": 90.27, "functions": 91.43 },
+    "lib/transport/mail-gog.js": { "lines": 100.00, "functions": 100.00 },
+    "scripts/daily-preflight.js": { "lines": 95.70, "functions": 100.00 }
+  },
+  "providerNetworkCalls": 0,
+  "controlledL3Invocations": 0,
+  "productionFinalReports": 0
+}

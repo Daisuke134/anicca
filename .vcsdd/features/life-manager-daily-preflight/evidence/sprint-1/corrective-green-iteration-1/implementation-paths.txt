@@ -1,0 +1,12 @@
+.vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs
+.vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs
+.vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs
+.vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs
+apps/life-call/lib/daily-preflight-collectors.js
+apps/life-call/lib/daily-preflight.js
+apps/life-call/scripts/daily-preflight.js
+apps/life-call/test-support/core8d-cli-loader.cjs
+apps/life-call/test-support/core8d-runtime-harness.js
+
+Changes:
+

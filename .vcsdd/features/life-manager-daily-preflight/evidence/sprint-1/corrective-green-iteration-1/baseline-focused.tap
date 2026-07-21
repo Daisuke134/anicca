@@ -1,0 +1,62 @@
+✔ telegram observation rejects missing/rejected round trip, timeout, URL/update/error/backlog (3.488291ms)
+✔ email observation rejects ownership, send, timeout, nonce mismatch, and stale receipt (0.227083ms)
+✔ email observation accepts a same-minute interval containing the send instant (0.155208ms)
+✔ email observation accepts a later minute interval after send and not after now (0.051584ms)
+✔ email observation rejects future, malformed, missing-id, nonce, and over-15-minute evidence (0.118208ms)
+✔ email observation keeps exact timestamps strictly between send and now (0.078667ms)
+✔ telegram adapter sends once and bounded-polls [1,0] (0.565375ms)
+✔ telegram adapter fails closed on reply timeout without a duplicate send (0.169875ms)
+✔ telegram adapter fails closed when MTProto rejects the one send (0.158ms)
+✔ email adapter sends exactly once and accepts only exact nonce receipt (0.224833ms)
+✔ email adapter derives recipient from GOG_ACCOUNT and rejects outside fixed allowlist before send (0.071458ms)
+✔ email adapter rejects send rejection, nonce mismatch, timeout, and stale receipt without duplicate sends (0.18175ms)
+✔ collector failures never contain raw provider errors or PII (0.068791ms)
+✔ test-support Telegram mirror requires fake exec before any sidecar invocation (0.433709ms)
+✔ test-support email mirror uses acceptance and exact receipt without caller success booleans (0.38525ms)
+✔ closed production wiring uses only preinstalled fakes and sends each transport once (3.260583ms)
+✔ public CLI rejects caller supplied --proofs (0.788125ms)
+✔ production main has no collector or transport injection parameters (0.189166ms)
+✔ read-only production main invokes zero caller or controlled sends (10.24575ms)
+✔ test-only controlled runner invokes each collector exactly once (0.319042ms)
+✔ production entrypoint cannot import or activate test-only collector DI (0.136167ms)
+✔ production controlled collectors expose no factory or transport injection surface (0.42825ms)
+✔ production receipt bounds come only from the gog parser (0.150667ms)
+✔ controlled CLI prerequisite errors exit nonzero with sanitized output (61.348875ms)
+✔ CLI exit wrapper maps completion and sanitized pre-report failure (0.235125ms)
+✔ controlled L3 is collected by the runner and bound into the generated report (0.324666ms)
+▶ controlled collectors fail closed for missing, malformed, and stale results
+  ✔ missing (0.176417ms)
+  ✔ malformed (0.059708ms)
+  ✔ stale (0.050791ms)
+✔ controlled collectors fail closed for missing, malformed, and stale results (0.892625ms)
+▶ email collector requires every same-run acceptance and receipt field
+  ✔ attempted (0.107917ms)
+  ✔ providerAccepted (0.0465ms)
+  ✔ inboxReceived (0.036375ms)
+  ✔ recipientOwned (0.043084ms)
+  ✔ providerRef (0.0465ms)
+  ✔ messageIdRef (0.047208ms)
+✔ email collector requires every same-run acceptance and receipt field (0.484667ms)
+▶ telegram bounded polling must observe the real webhook backlog drain to exactly zero
+  ✔ pending (0.079542ms)
+  ✔ missing (0.036208ms)
+✔ telegram bounded polling must observe the real webhook backlog drain to exactly zero (0.224834ms)
+✔ telegram collector performs round trip then bounded-polls getWebhookInfo (0.1275ms)
+✔ final evidence schema replaces unknown strings, URLs, PII, errors, and nested raw text (0.463ms)
+✔ findReceipt uses message search, exact nonce content, and returns only safe receipt metadata (3.410875ms)
+✔ findReceipt accepts a minute-precision bucket containing afterMs (0.194291ms)
+✔ findReceipt accepts the next minute when its bucket is not wholly before afterMs (0.092042ms)
+✔ findReceipt rejects the previous minute and intervals wholly before afterMs (0.142083ms)
+✔ findReceipt keeps second/timezone timestamps strictly ordered and unknown dates closed (0.115416ms)
+✔ findReceipt rejects an impossible exact calendar date instead of normalizing it (0.074375ms)
+✔ findReceipt fails closed for nonce mismatch and stale messages (0.084458ms)
+✔ existing gog transport send and inbox paths retain their contracts (0.159916ms)
+✔ default gog runner uses execFile argv with the fixed account (0.149583ms)
+ℹ tests 51
+ℹ suites 0
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166.3755

@@ -1,0 +1,20 @@
+✔ poll: Telegram reply attempt 6 is the final allowed attempt (6.409083ms)
+✔ poll: Telegram reply attempt 7 is forbidden (0.576791ms)
+✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.287666ms)
+✔ poll: Telegram webhook attempt 4 is forbidden (0.233333ms)
+✔ poll: email inbox attempt 6 is the final allowed attempt (0.5345ms)
+✔ poll: email inbox attempt 7 is forbidden (0.560458ms)
+✔ timeout: Telegram Bot API work is aborted at 15000 ms (45.631333ms)
+✔ timeout: Resend work is aborted at 15000 ms (42.549958ms)
+✔ timeout: gog inbox work is aborted at 15000 ms (42.926792ms)
+✔ deadline: Telegram collector cancels at 179000 ms (43.822292ms)
+✔ deadline: email collector cancels at 120000 ms (43.8745ms)
+✔ deadline: parallel collector cancels at 179000 ms (42.323833ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 370.4035
