@@ -1,0 +1,4 @@
+- The code, credentials, and execution stay on my Mac Mini while the iPhone acts as the control panel.
+- Orca gives each task its own git worktree and terminal, making parallel agent sessions easier to track.
+- Mobile development choices make more sense across three axes: state, execution location, and connection path.
+- Choosing the Tailscale address let me pair the iPhone and Mac Mini without enabling Orca Relay.
