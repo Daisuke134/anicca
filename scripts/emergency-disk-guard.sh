@@ -20,6 +20,7 @@ THRESHOLD_GB="${EMERGENCY_GUARD_THRESHOLD_GB:-6}"
 ULTRA_GB="${EMERGENCY_GUARD_ULTRA_GB:-3}"
 TEST_MODE=0
 [ -n "${EMERGENCY_GUARD_TEST_PROCESS_FIXTURE:-}" ] && TEST_MODE=1
+DRY_RUN="${EMERGENCY_GUARD_DRY_RUN:-0}"
 
 mkdir -p "$LOG_DIR" "$STATE_DIR" 2>/dev/null || exit 1
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
@@ -61,6 +62,10 @@ reclaim_path() {
   local path="$1" owner="$2" class="$3" reason="$4" before result after reclaimed
   [ -e "$path" ] || return 0
   before=$(path_bytes "$path")
+  if [ "$DRY_RUN" = 1 ]; then
+    printf 'candidate\t%s\t%s\t%s\t%s\t%s\t%s\n' "$path" "$owner" "$class" "$before" "$reason" "$POLICY_VERSION"
+    return 0
+  fi
   result=removed
   rm -rf "$path" 2>/dev/null || result=failed
   after=$(path_bytes "$path")
@@ -120,6 +125,7 @@ classify_worker() {
 
 stop_runaway() {
   local pid="$1" reason="$2"
+  [ "$DRY_RUN" = 1 ] && return
   if [ "$TEST_MODE" -eq 1 ]; then
     printf '%s\t%s\n' "$pid" "$reason" >> "$EMERGENCY_GUARD_TEST_KILL_LEDGER"
     return
