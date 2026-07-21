@@ -66,7 +66,7 @@
 3. 新記事で品質収束を 2-3 日 watch（draft のまま）
 4. 収束確認後に `ARTICLE_AUTOPUBLISH` arm（完全無人公開、最後）
 
-TaskList: #1-#10 登録済み（2026-07-18 セッション）。
+TaskList の現在状態は §16.4/§16.5 を正本とし、D7/D8 は未完了。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -227,7 +227,7 @@ build は全 done(#1-6,9-14 完了)。残り:
 
 | lane | 供給 | 状態 |
 |---|---|---|
-| 1. Dais 指名 | Dais「これ記事に」→ Fable がその turn 内に `topics/queue/` へカード作成（既存 frontmatter に倣う。HARD） | 運用ルールとして確立 |
+| 1. Dais 指名 | Dais「これ記事に」→ main Sol がその turn 内に `topics/queue/` へカード作成（既存 frontmatter に倣う。HARD） | 運用ルールとして確立 |
 | 2. auto devlog | 毎日の開発ログ → devlog カード自動生成。07-19 分は存在、**07-20 分が無い** → 生成器を特定し毎日生成を保証する | 要配線 |
 | 3. 自走 | queue 空なら loop が自分でネタを発掘して書く（これが moat・core） | 既存 lane B の保証を確認 |
 
@@ -246,17 +246,17 @@ build は全 done(#1-6,9-14 完了)。残り:
 
 ## 14. FULL TODO — Layer 1 完成から 10M MRR まで（2026-07-20。TaskList と二重トラック、この表が順序の正本）
 
-体制（Dais 裁定 2026-07-20 恒久）: Fable = plan/spec/検証、Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）、検索 = sonnet。spec と TODO は発見のたびに更新し続ける。
+体制（Dais 裁定、現在の正本）: main Sol = plan/spec/独立検証、別 Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）。spec と TODO は発見のたびに更新し続ける。
 
 ### 今日（Layer 1 完成 = 初の全自動公開日）
 | # | owner | やること | 完了の証拠 |
 |---|---|---|---|
 | T1 | Sol | U5 arm(ARTICLE_AUTOPUBLISH=1+publish経路反転) / U6 queue 3-lane+mech復帰 / U7 backup cron 是正+14G削除 | launchctl に env、queue に mech、backup <2G |
-| T2 | Fable | Sol 成果の独立検証（bash -n / grep / launchctl） | 実 tool 出力 |
-| T3 | Fable | kickstart ai.anicca.article-daily | 再走ログ |
+| T2 | main Sol | 別 Sol 成果の独立検証（bash -n / grep / launchctl） | 実 tool 出力 |
+| T3 | main Sol | kickstart ai.anicca.article-daily | 再走ログ |
 | T4 | loop | olas 記事を実物パターン title で書き直し → PASS まで revise → 全 platform 実公開 | rubric ≥70 + live URL |
-| T5 | Fable | 公開 own-eyes 検証 + ledger published:true + Telegram 実在 | HTTP 200 / screenshot |
-| T6 | Fable→codex | #9 exemplar 毎日1教訓 loop 発注（PLAN-exemplar-daily-loop.md 545f08f、flow B） | lessons.jsonl 実1行 |
+| T5 | main Sol | 公開 own-eyes 検証 + ledger published:true + Telegram 実在 | HTTP 200 / screenshot |
+| T6 | main Sol→別 Sol | #9 exemplar 毎日1教訓 loop 発注（PLAN-exemplar-daily-loop.md 545f08f、flow B） | lessons.jsonl 実1行 |
 
 ### 今週（「自動」の証明）
 | # | やること | 証拠 |
@@ -307,7 +307,7 @@ build は全 done(#1-6,9-14 完了)。残り:
 | X 投稿の線引き | **article loop の X 投稿（記事+X post、@diceai0）= 完全に正、継続**。capafy marketing loop の X 宣伝投稿 = slop、停止（§15.4） | — |
 | 対象 citizen | writer loop は **claude-p のみ**（human-owned、銀行口座に接続可）。franklin = self-owned、人間の私的情報アクセス永久ゼロ、crypto rail のみ | — |
 | 唯一の human 接点 | 銀行口座を一度聞くだけ。他の credential ゼロ（Postiz 等の有料 SaaS 不使用、投稿は CDP 直） | — |
-| 分業 | **Fable = plan/検証のみ。build/edit は全部 Sol**（flow A）。subagent は全ツール継承（agent 定義に tools: 行を書くな — 2026-07-20 実測で3体が Bash 喪失） | — |
+| 分業 | **main Sol = plan/spec/独立検証のみ。build/edit は別 Sol**（flow A）。subagent は全ツール継承（agent 定義に tools: 行を書くな — 2026-07-20 実測で3体が Bash 喪失） | — |
 
 ### 15.2 writing-tools OSS 調達 + bakeoff 第1R 結果（実測。詳細 = docs/research/2026-07-20-writing-tools-oss-survey.md）
 - 調達済み（vendor/writing-skills/、全 MIT）: content-skills（anti-ai-writing 5-diseases + specificity ladder / viral-hooks Four Hook Killers / storytelling）、viral-hooks-skill（100 formula）、humanizer（30k★）、shimo4228 writing-ecosystem（日本語 AI-slop 禁止リスト + だ/である×発見調）
@@ -361,7 +361,7 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 
 **Objective**: MID lane を完成させ、**既存の** `ai.anicca.article-daily`（launchd、autopublish armed 済み）を `launchctl kickstart` で発火し、「良い記事」が実際に毎日 publish される状態を実証する。新 loop を作らない。article loop の X 投稿（記事+X）は現状のまま維持。
 
-**分業**: Fable = plan/検証のみ。実装は全部 Sol subagent（flow A、worktree 分離）。
+**分業**: main Sol = plan/spec/独立検証のみ。実装は別 Sol subagent（flow A、worktree 分離）。
 
 **Done when（全部 AND、実測 evidence 必須）**:
 | # | 条件 | 検証方法 |
@@ -372,7 +372,7 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 | D4 | W3 完了: ¥1980 が grep 0 hit、free-first（note free or ≤¥500）配線 | 次 pass の note 出力実測 |
 | D5 | W4 完了: zenn = funnel を SKILL.md に明文化 | grep |
 | D6 | capafy X-line 恒久削除（.DISABLED rename → 削除 + SKILL.md から X-line 節撤去） | find 0 hit |
-| D7 | **kickstart 実証**: `launchctl kickstart -k gui/501/ai.anicca.article-daily` → pass 完走 rc=0、ledger published:true + reality_gate PASS、**live URL を Fable が実読して品質を own-eyes 判定**（D1 の新 taste が効いているか） | ledger 行 + live URL 実読 |
+| D7 | **kickstart + 非同期完走実証**: `launchctl kickstart -k gui/501/ai.anicca.article-daily` → 日次 main は5媒体 `published:true` + `reality_gate:PASS` と同一run/slugの永続 Zenn pending を作り、foreground sleepなしで資源を解放する。独立 `article-zenn-retry` worker は300秒間隔で再起動後も同じpendingだけをlock/idempotent再試行し、Zenn live後にreality gate → ledger 6件目 → exact6 → heartbeat/Telegramまで完走する。main Sol はlive本文を実ブラウザでown-eyes判定する。旧wrapperの移行中SIGTERMをrc=0と偽記録しない | exact5+pending artifact + worker launchctl + exact6 ledger + live URL実読 |
 | D8 | spec TODO 表 + TaskList 全同期、全 diff commit+push | git log |
 
 **Stop if**: 同一 D で3回 FAIL → handover。破壊的操作の要求。週次 token 残 10% 未満。
@@ -382,10 +382,10 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 | # | 状態 | evidence（実 tool result のみ） |
 |---|---|---|
 | D1 | **DONE** | 第2R blind（E vs F vs G、独立2 judges）: F=E−anti-ai+humanizer が ja/en 両方で1位（judge-r2d: F 93 > E 88 > G 87、tiebreak F vs G も F 勝ち）。第1R勝者 E は脱落。統合 = SKILL.md「執筆プロセス standard」節（commit 4c0b3d3）+ article-daily.sh STEP 3 に humanizer 最終 pass 配線（c1ee6fc）。統合後検証: 新 taste 指示だけで生成した H.md が旧 baseline A に blind で勝利（judge-final3: ja 大差・具体性/guardrail/receipt が決め手。2749345）。fact-checker 注記: H は F の「午前2時」場面と論理順を強く踏襲 — ただし taste 節自体が同場面を例型として焼き込んでいるため予期通り。次の実 topic（orca/olas）での生成品質が真のテスト = D7 で判定 |
-| D2 | **DONE** | scripts/conscience-gate.sh（870d130、claude -p --bare --no-session-persistence --tools "" = context-zero、fail-closed）を STEP 4.8 に配線。negative test: gray-zone.md → {"verdict":"BLOCK"} rc=1、ordinary-tech.md → {"verdict":"ALLOW"} rc=0（Fable 自身も再実行して実測）。fact-checker 2周（初回 FIX FIRST 2件 → 修正 → PASS） |
+| D2 | **DONE** | scripts/conscience-gate.sh（870d130、claude -p --bare --no-session-persistence --tools "" = context-zero、fail-closed）を STEP 4.8 に配線。negative test: gray-zone.md → {"verdict":"BLOCK"} rc=1、ordinary-tech.md → {"verdict":"ALLOW"} rc=0（main Sol も再実行して実測）。fact-checker 2周（初回 FIX FIRST 2件 → 修正 → PASS） |
 | D3 | **DONE** | 93b8c50。STEP 4.6/4.7 bounded（max5 + 角度変え1回 / max2 + content-add 1回 → carry-over 行を ledger へ）、STEP 0.7 attempt-budget gate（MID $4/day、elapsed 4h/20 attempts/6 runs proxy、CARRY_OVER rc=1 実測）、STEP 10 が shipped/carry-over の2終端に。grep "no ceiling\|uncapped\|無限" article-daily.sh SKILL.md = 0 hit |
 | D4 | **DONE** | 273ba6f（STEP 12/13/14: published:true 30本未満 = note 全文無料、以上 = suggestion ¥500 clamp）+ d4bbe35（publish-paid.py --free: free radio 選択、price/paywall スキップ、note API で price 0/null+status published 検証 → FREE_PUBLISHED。py_compile OK）。grep 1980（vendor/state 除く）= 0 hit |
 | D5 | **DONE** | 658e606。SKILL.md の分裂記述（バッジ/投げ銭 vs FREE explainer）を「Zenn = 恒久 free funnel、発見+信頼構築、note/Substack sub への導線」に統一 |
 | D6 | **DONE** | .DISABLED 3ファイル削除（founder/blockrun/franklin2）+ 3 home の capafy SKILL.md から X-line/Postiz 全節撤去（IG 節は残存確認済み）。find *DISABLED* = 0 hit、grep x-marketing/X-line/postiz = 0 hit。3 home とも git repo でないため commit なし |
-| D7 | **実行中** | `launchctl kickstart -k gui/501/ai.anicca.article-daily` rc=0、state=running pid=63034（2026-07-21 00:24 JST 発火）。完走・ledger・live URL own-eyes 判定は pass 終了後に追記 |
-| D8 | 進行中 | profitable-claude main = 2749345 まで push 済み（git status clean）。本 spec evidence 追記 = この commit |
+| D7 | **実行中（exact5 + Zenn pending）** | run `20260721-012658` は note、X ja/en、Substack ja/en の5件が ledger `published:true` + `reality_gate:PASS`（Dev.to は仕様どおりdraft）。Zenn `2026-07-21-coinbasevisaai143` は `status:pending`、`retry_at: 2026-07-21T17:08:36.605000+09:00`、`last_error:null`。独立workerは `StartInterval=300`、runs=9、last exit=0。exact6 validator は rc=1（未達）。非同期retry実装は profitable-claude `20f7142`（HEAD = origin/main）、fresh Sol artifact review 2件はいずれも `ok:true`。全 article-writer test は fresh実行で20/20 PASS（従来19件+terminal retry test追加）。旧日次wrapperは非同期方式への移行中にSIGTERMで解放したためrc=0とは記録しない。own-eyes（agent-browser）: [note](https://note.com/anicca123/n/n8b0453f60e78)、[Substack ja](https://aniccabuddha.substack.com/p/coinbasevisaai143)、[Substack en](https://aniccabuddha.substack.com/p/coinbases-ai-rails-moved-44m-only)、[X ja](https://x.com/diceai0/status/2079404859376419188)、[X en](https://x.com/diceai0/status/2079405169805267189) はURL/title/render実在。本文は具体的な冒頭場面、280日・136,708,672件・$44,121,383.81・0.43%等の検算可能な数字、C1/C2/C3の平易な説明、一次資料+独立tracker、読者別結論があり、D1 tasteの具体性/guardrail/receiptは効いている。一方、Substack日英のMarkdown表は実テーブルでなく単一`<p>`内の生`| ... |`としてrenderされ、CTAも汎用的。own-eyes verdict = **本文品質PASS、配信renderは要修正**。Zenn live/reality/exact6未達のためD7はDONEにしない |
+| D8 | **待機（D7依存）** | §16.4/§16.5 とTaskListの現在状態は同期済み。D7のZenn live + reality gate + exact6後に最終evidenceを追記し、対象diffをcommit+pushしてfresh Sol最終reviewを通すまでDONEにしない |
