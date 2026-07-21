@@ -1,7 +1,11 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
+const { setTimeout: wait } = require("node:timers/promises");
 const { makeGogMail } = require("./mail-gog.js");
 
 test("findReceipt uses message search, exact nonce content, and returns only safe receipt metadata", async () => {
@@ -116,4 +120,27 @@ test("default gog runner uses execFile argv with the fixed account", async () =>
   assert.equal(calls[0].file, "/opt/homebrew/bin/gog");
   assert.deepEqual(calls[0].args.slice(-2), ["--account", "controlled@aniccaai.com"]);
   assert.equal(calls[0].options.env.GOG_ACCOUNT, "controlled@aniccaai.com");
+});
+
+test("manager RED: gog transport uses an abort-capable async process and deadline abort prevents its later effect", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "core8d-gog-abort-"));
+  const executable = path.join(directory, "gog-fixture");
+  const effect = path.join(directory, "post-deadline-effect");
+  fs.writeFileSync(executable, `#!/usr/bin/env node
+const fs = require("node:fs");
+setTimeout(() => {
+  fs.writeFileSync(${JSON.stringify(effect)}, "effect");
+  process.stdout.write(JSON.stringify({ messages: [] }));
+}, 80);
+`);
+  fs.chmodSync(executable, 0o700);
+  try {
+    const mail = makeGogMail({ bin: executable, account: "controlled@aniccaai.com" });
+    const receipt = await mail.findReceipt({ nonce: "a".repeat(32), afterMs: 0, signal: AbortSignal.timeout(10) });
+    assert.equal(receipt, null);
+    await wait(120);
+    assert.equal(fs.existsSync(effect), false, "aborted gog child must not create a post-deadline effect");
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });

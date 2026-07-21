@@ -8,6 +8,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const support = require("./daily-preflight.test-support.js");
+const { buildFinalPreflightReport, validateAndBuildFinalReport } = require("./daily-preflight.js");
 
 const GENERATED_MS = Date.parse("2026-07-21T06:00:00.000Z");
 const RUN_STARTED_MS = GENERATED_MS - 900000;
@@ -105,3 +106,92 @@ const securityCases = [
   ["security: previous-run observation is rejected despite fresh true", v => { for (const d of v.dependencies) d.runCorrelation = "previous-run"; }],
 ];
 for (const [name, mutate] of securityCases) rejects(name, mutate);
+
+function controlledProof(checkedAt) {
+  return {
+    telegram: {
+      attempted: true, verified: true, checkedAt,
+      requestMessageRef: "sha256:111111111111", replyMessageRef: "sha256:222222222222",
+      exactUrl: true, allowedUpdates: ["message", "edited_message", "callback_query"],
+      providerError: false, pendingUpdateCount: 0, pendingUpdateSamples: [0],
+      replyReadCount: 1, webhookReadCount: 1,
+    },
+    email: {
+      attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true, checkedAt,
+      providerRef: "sha256:333333333333", messageIdRef: "sha256:444444444444", inboxReadCount: 1,
+    },
+  };
+}
+
+async function boundReport(mutateResult = () => {}) {
+  const base = Date.parse("2026-07-21T06:00:00.000Z");
+  let tick = 0;
+  const now = () => base + tick++;
+  const contexts = [];
+  const observations = [];
+  const checks = DEPENDENCIES.map((dependency, index) => ({
+    name: dependency,
+    secrets: [],
+    run: async context => {
+      contexts.push(context);
+      const checkedAtMs = now();
+      observations.push(checkedAtMs);
+      const result = {
+        ok: true,
+        evidence: { status: "pass" },
+        checkedAtMs,
+        runCorrelation: context.runCorrelation,
+      };
+      mutateResult(result, index, context);
+      return result;
+    },
+  }));
+  const report = await buildFinalPreflightReport({
+    checks,
+    controlledL3: controlledProof(new Date(base).toISOString()),
+    timeoutMs: 100,
+    sourceSnapshotRef: hash("source"),
+    now,
+  });
+  return { report, contexts, observations };
+}
+
+test("manager RED: current-run binding: correlation and run start exist before the first dependency collection", async () => {
+  const { contexts } = await boundReport();
+  assert.equal(contexts.length, DEPENDENCIES.length);
+  assert.equal(contexts.every(context => typeof context.runCorrelation === "string" && context.runCorrelation.length > 0), true);
+  assert.equal(contexts.every(context => Number.isFinite(context.runStartedAtMs)), true);
+  assert.equal(new Set(contexts.map(context => context.runCorrelation)).size, 1);
+  assert.equal(new Set(contexts.map(context => context.runStartedAtMs)).size, 1);
+});
+
+test("manager RED: current-run binding: final report preserves each distinct actual observation time", async () => {
+  const { report, observations } = await boundReport();
+  assert.equal(new Set(observations).size, DEPENDENCIES.length);
+  assert.deepEqual(report.dependencies.map(item => Date.parse(item.checkedAt)), observations);
+});
+
+test("manager RED: current-run binding: missing checkedAtMs is rejected", async () => {
+  await assert.rejects(boundReport((result, index) => { if (index === 0) delete result.checkedAtMs; }));
+});
+
+test("manager RED: current-run binding: mismatched dependency correlation is rejected", async () => {
+  await assert.rejects(boundReport((result, index) => { if (index === 0) result.runCorrelation = "previous-run"; }));
+});
+
+test("manager RED: current-run binding: one-millisecond pre-run observation is rejected", async () => {
+  await assert.rejects(boundReport((result, index, context) => {
+    if (index === 0) result.checkedAtMs = context.runStartedAtMs - 1;
+  }));
+});
+
+test("manager RED: current-run binding: future observation is rejected", async () => {
+  await assert.rejects(boundReport((result, index) => { if (index === 0) result.checkedAtMs = Number.MAX_SAFE_INTEGER; }));
+});
+
+test("manager RED: current-run binding: arbitrary nonzero serialized runRef is rejected", async () => {
+  const { report } = await boundReport();
+  const forged = structuredClone(report);
+  forged.runRef = `sha256:${"f".repeat(64)}`;
+  assert.throws(() => validateAndBuildFinalReport(forged), /final_report_invalid/);
+});

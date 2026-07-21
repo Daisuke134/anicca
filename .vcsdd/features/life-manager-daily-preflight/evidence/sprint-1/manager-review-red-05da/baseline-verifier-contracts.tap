@@ -1,0 +1,20 @@
+✔ verify-phase2-process.mjs: every mode accepts valid phase-appropriate fixtures (371.670542ms)
+✔ verify-phase2-process.mjs: corrupt hash/mode/trace/schema/scope/coverage all fail (279.147583ms)
+✔ verify-phase2-process.mjs: malformed argv and stale current-HEAD scope fail (119.68925ms)
+✔ verify-final-artifact.mjs: accepts the valid actual CLI artifact (85.822709ms)
+✔ verify-final-artifact.mjs: rejects closed-schema identity/order/time/binding/effects mutations and empty object (719.939459ms)
+✔ verify-final-artifact.mjs: malformed argv and wrong mode fail (112.237167ms)
+✔ verify-safe-scan.mjs: clean fixture passes without matched content (61.613208ms)
+✔ verify-safe-scan.mjs: secret email phone raw-correlation and provider-ID fixtures fail without leakage (247.023625ms)
+✔ verify-safe-scan.mjs: malformed argv and missing path fail safely (97.334167ms)
+✔ verify-controlled-l3-gates.mjs: valid synthetic post-Phase3-PASS snapshot passes (464.3425ms)
+✔ verify-controlled-l3-gates.mjs: HEAD/tree/count/coverage/schema/scan/digest/output mutations all fail (288.986833ms)
+✔ verify-controlled-l3-gates.mjs: malformed argv and pre-Phase3 state fail (104.029208ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3144.720417

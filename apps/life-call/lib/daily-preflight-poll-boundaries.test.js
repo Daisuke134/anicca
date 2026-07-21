@@ -43,6 +43,34 @@ async function withEmailEnv(fn) { const before = { ...process.env }; Object.assi
 test("poll: email inbox attempt 6 is the final allowed attempt", async () => withEmailEnv(async () => { const h = emailHarness({ receiptAt: 6 }); await h.api.collectProductionEmail(); assert.equal(h.effects().inbox, 6); assert.equal(h.effects().sends, 1); }));
 test("poll: email inbox attempt 7 is forbidden", async () => withEmailEnv(async () => { const h = emailHarness({ receiptAt: 7 }); await assert.rejects(h.api.collectProductionEmail, /email_receive_timeout/); assert.equal(h.effects().inbox, 6); assert.equal(h.effects().sends, 1); }));
 
+test("manager RED: deadline: withinDeadline never mutates global timer functions", async () => {
+  const api = loadCollectors();
+  const originalSetTimeout = global.setTimeout;
+  let observedSetTimeout;
+  await api.withinDeadline(async () => { observedSetTimeout = global.setTimeout; }, 100, "fixture_deadline");
+  assert.equal(observedSetTimeout, originalSetTimeout);
+  assert.equal(global.setTimeout, originalSetTimeout);
+});
+
+test("manager RED: receipt: one-millisecond stale remains stale through the runtime harness", async () => withEmailEnv(async () => {
+  const sentAtMs = 1000;
+  const api = loadCollectors({
+    nonce: "fixture-nonce",
+    resendSend: async () => ({ sent: true, id: "accepted" }),
+    makeGogMail: () => ({ findReceipt: async ({ nonce, afterMs }) => ({
+      id: "receipt", matchedNonce: nonce,
+      receivedAtLowerMs: afterMs - 1, receivedAtUpperMs: afterMs - 1,
+    }) }),
+  });
+  assert.throws(() => api.validateEmailObservation({
+    recipient: "fixture@example.test", receiveIdentity: "fixture@example.test",
+    providerAcceptedId: "accepted", receiptMessageId: "receipt",
+    nonce: "fixture-nonce", receivedNonce: "fixture-nonce", sentAtMs,
+    receivedAtLowerMs: sentAtMs - 1, receivedAtUpperMs: sentAtMs - 1, inboxReadCount: 1,
+  }, sentAtMs, ["fixture@example.test"]), /email_receipt_stale/);
+  await assert.rejects(api.collectProductionEmail, /email_receipt_stale/);
+}));
+
 for (const [name, deadline, target] of [
   ["timeout: Telegram Bot API work is aborted at 15000 ms", 15000, "telegram"],
   ["timeout: Resend work is aborted at 15000 ms", 15000, "email"],
