@@ -12847,3 +12847,9 @@
 {"ts":1784644721,"wake_id":"00MRURE0FOEE50D9B89E8A4CE9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784644991,"wake_id":"00MRURJSK85B43D4001F784F75","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784645169,"wake_id":"00MRURNLY81532BF47195F48F0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784645407,"wake_id":"00MRURSPCJ9D03B0D43E6E4D8F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784645540,"wake_id":"00MRURVJZQ8FE46EA912EC4710","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784645829,"wake_id":"00MRUS1QTC72496CB880C34235","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 59 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784645829,"wake_id":"00MRUS1QTC72496CB880C34235","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784646025,"wake_id":"00MRUS5YMXF49258D8EF4647E5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784646229,"wake_id":"00MRUSABHA95B8B0148F7C4DF8","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
