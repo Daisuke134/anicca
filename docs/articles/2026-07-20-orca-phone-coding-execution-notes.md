@@ -41,7 +41,7 @@ goal: Orca 記事を日本語・英語で note / X Articles / Zenn に公開し�
 - 下書き同期 commit は remote `main` へ push 済み。日英とも draft API は `public=false` を確認。
 - 日本語稿を `published:true` で push し、no-lie gate は PASS。ただし live 検証は `HTTP 403 | NOT-LIVE`。
 - Zenn API の直近公開は `2026-07-21T17:10:21.742+09:00`。24時間枠の次回試行可能時刻は `2026-07-22T17:10:21.742+09:00` 以降。
-- 専用 LaunchAgent `ai.anicca.orca-zenn-finalizer` を登録済み。60秒ごとにAPIを確認し、90秒の安全バッファ後となる `2026-07-22T17:11:51.742+09:00` 以降に日本語稿を再トリガーする。
+- 専用 LaunchAgent `ai.anicca.orca-zenn-finalizer` を登録済み。60秒ごとにAPIを確認し、10秒の安全バッファ後となる `2026-07-22T17:10:31.742+09:00` 以降に日本語稿を再トリガーする。
 - finalizer: `/Users/anicca/.local/share/anicca/orca-zenn-finalizer/finalizer.py`。planner unit test 4件 PASS、plist lint PASS、初回実行は `WAIT slug=orca-iphone-ai-development-ja`、LaunchAgent `last exit code=0`、stderr空を確認。
 - 日本語 live 後は同じ finalizer が英語の次回24時間枠を計算し、英語稿だけを順番に公開する。各言語3 pushまで、同一失敗3回で blocker marker を残して停止する。
 - 日本語の再トリガーと live 検証後、英語はさらに次の24時間枠で公開する。英語稿は現在 `published:false`。
