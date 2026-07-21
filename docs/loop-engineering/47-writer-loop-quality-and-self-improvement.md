@@ -66,7 +66,7 @@
 3. 新記事で品質収束を 2-3 日 watch（draft のまま）
 4. 収束確認後に `ARTICLE_AUTOPUBLISH` arm（完全無人公開、最後）
 
-TaskList の現在状態は §16.4/§16.5 を正本とし、D7/D8 は未完了。
+TaskList の現在状態は §16.5 を正本とし、D1-D8 はすべて **DONE**。§16.4 は完了条件だけを定義する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -363,6 +363,8 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 
 **分業**: main Sol = plan/spec/独立検証のみ。実装は別 Sol subagent（flow A、worktree 分離）。
 
+**現在状態**: **DONE**（状態と実測 evidence の正本 → §16.5）。
+
 **Done when（全部 AND、実測 evidence 必須）**:
 | # | 条件 | 検証方法 |
 |---|---|---|
@@ -377,7 +379,7 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 
 **Stop if**: 同一 D で3回 FAIL → handover。破壊的操作の要求。週次 token 残 10% 未満。
 
-### 16.5 D1-D8 実測 evidence（2026-07-20/21 深夜スプリント。全 commit = profitable-claude main）
+### 16.5 D1-D8 実測 evidence（現在状態の正本）
 
 | # | 状態 | evidence（実 tool result のみ） |
 |---|---|---|
@@ -387,5 +389,5 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 | D4 | **DONE** | 273ba6f（STEP 12/13/14: published:true 30本未満 = note 全文無料、以上 = suggestion ¥500 clamp）+ d4bbe35（publish-paid.py --free: free radio 選択、price/paywall スキップ、note API で price 0/null+status published 検証 → FREE_PUBLISHED。py_compile OK）。grep 1980（vendor/state 除く）= 0 hit |
 | D5 | **DONE** | 658e606。SKILL.md の分裂記述（バッジ/投げ銭 vs FREE explainer）を「Zenn = 恒久 free funnel、発見+信頼構築、note/Substack sub への導線」に統一 |
 | D6 | **DONE** | .DISABLED 3ファイル削除（founder/blockrun/franklin2）+ 3 home の capafy SKILL.md から X-line/Postiz 全節撤去（IG 節は残存確認済み）。find *DISABLED* = 0 hit、grep x-marketing/X-line/postiz = 0 hit。3 home とも git repo でないため commit なし |
-| D7 | **実行中（exact5 + Zenn pending）** | run `20260721-012658` は note、X ja/en、Substack ja/en の5件が ledger `published:true` + `reality_gate:PASS`（Dev.to は仕様どおりdraft）。Zenn `2026-07-21-coinbasevisaai143` は `status:pending`、`retry_at: 2026-07-21T17:08:36.605000+09:00`、`last_error:null`。独立workerは `StartInterval=300`、runs=9、last exit=0。exact6 validator は rc=1（未達）。非同期retry実装は profitable-claude `20f7142`（HEAD = origin/main）、fresh Sol artifact review 2件はいずれも `ok:true`。全 article-writer test は fresh実行で20/20 PASS（従来19件+terminal retry test追加）。旧日次wrapperは非同期方式への移行中にSIGTERMで解放したためrc=0とは記録しない。own-eyes（agent-browser）: [note](https://note.com/anicca123/n/n8b0453f60e78)、[Substack ja](https://aniccabuddha.substack.com/p/coinbasevisaai143)、[Substack en](https://aniccabuddha.substack.com/p/coinbases-ai-rails-moved-44m-only)、[X ja](https://x.com/diceai0/status/2079404859376419188)、[X en](https://x.com/diceai0/status/2079405169805267189) はURL/title/render実在。本文は具体的な冒頭場面、280日・136,708,672件・$44,121,383.81・0.43%等の検算可能な数字、C1/C2/C3の平易な説明、一次資料+独立tracker、読者別結論があり、D1 tasteの具体性/guardrail/receiptは効いている。一方、Substack日英のMarkdown表は実テーブルでなく単一`<p>`内の生`| ... |`としてrenderされ、CTAも汎用的。own-eyes verdict = **本文品質PASS、配信renderは要修正**。Zenn live/reality/exact6未達のためD7はDONEにしない |
-| D8 | **待機（D7依存）** | §16.4/§16.5 とTaskListの現在状態は同期済み。D7のZenn live + reality gate + exact6後に最終evidenceを追記し、対象diffをcommit+pushしてfresh Sol最終reviewを通すまでDONEにしない |
+| D7 | **DONE** | run `20260721-012658` の ledger は note、X ja/en、Substack ja/en、Zenn の6件がすべて `published:true` + `reality_gate:PASS`。published+PASS 抽出の第6行目（ledger物理行95）が Zenn `2026-07-21-coinbasevisaai143` で、Dev.to は仕様どおりdraft。指定validator `article-run-complete.py --ledger .../articles.jsonl --run-id 20260721-012658 --armed 1` は fresh `rc=0`、独立集計も `exact_count:6`。`zenn-deferred.json` は `status:complete`、`completion_check:passed`、`notification_status:sent`、heartbeat/completed URLあり。retry launchctl は `run interval=300 seconds`、`runs>=27`、`last exit code=0`。profitable-claude は `HEAD == origin/main`（`c37d5db`）で、非同期retry `20f7142` と Substack table互換修正 `1e97a74` を含む。Zenn remote `origin/main` は公開commit `45659e9` と再試行commit `3f222c9` を含み、remote上のfrontmatterは `published: true`。agent-browser fresh own-eyes: [Zenn](https://zenn.dev/anicca/articles/2026-07-21-coinbasevisaai143) はURL/title一致、本文7,989文字、H2 11個、表1個、出典まで描画。[Substack ja](https://aniccabuddha.substack.com/p/coinbasevisaai143) / [en](https://aniccabuddha.substack.com/p/coinbases-ai-rails-moved-44m-only) はURL/title一致、本文8,692/15,398文字で、raw pipe段落0件・Markdown区切り記法0件。旧raw pipe表は両言語とも見出し段落 + 強調ラベル付き7項目ULとしてrender済み。fresh全ページ画像は `/tmp/d7d8-finalizer-20260721-012658/`（SHA-256: Zenn `096e97ff40d7e8be344fde48752f4e37a71952ecced713edb90d6a145b39a98b`、ja `c73af5d62789033afc1aa9f76ec202dd241c13ff64467949c6408547c5f48295`、en `67c86958f2b496d29f3c1360fac3ce1b800376b5b8dc0bc3add9510bd55cb470`）。永続比較画像は run artifact `assets/substack-table-after/{ja,en}-full.png`（ja `32340c1eef4ef16b8a802defa02292bc6efef96ec1380f9f059c40f603bfec15`、en `efc5870924a3b9ab67790cc4c2d73889012766eac9f489d3a112ef00aae86e09`）。具体的な冒頭、280日・136,708,672件・$44,121,383.81・0.43%の検算可能な数字、C1/C2/C3の説明、一次資料と独立tracker、読者別結論が実ページで連続しており、本文品質・配信品質とも **PASS** |
+| D8 | **DONE** | 状態とevidenceは本節だけを正本とし、§16.4 とTaskListは本節への参照に同期。対象specだけをcommitして `dev` へpushし、`HEAD == origin/dev`・対象spec cleanをfresh実測する。最終判定はfresh-context別Solのartifact-only/read-only review `ok:true` を必須とする |
