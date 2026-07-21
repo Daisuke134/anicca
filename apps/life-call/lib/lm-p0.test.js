@@ -120,11 +120,11 @@ test("Gmail OFF: search-before-ask skips inbox and goes directly to Google Searc
 });
 
 test("LM-3: candidate found builds the exact closed-question buttons", () => {
-  assert.deepEqual(closedAskMessage({ id: "e1", summary: "MUIT 集会" }, "Tokyo Hall", "r1"), {
-    text: "📍 “MUIT 集会” は Tokyo Hall で開催ですか？",
+  assert.deepEqual(closedAskMessage({ id: "e1", summary: "MUIT 集会", whenLabel: "金曜" }, "Tokyo Hall", "r1"), {
+    text: "金曜の「MUIT 集会」は、いつものTokyo Hallですか？\n［はい］［別の場所］",
     extra: { reply_markup: { inline_keyboard: [[
       { text: "はい", callback_data: "ask:yes:e1:r1" },
-      { text: "いいえ", callback_data: "ask:no:e1:r1" },
+      { text: "別の場所", callback_data: "ask:no:e1:r1" },
     ]] } },
   });
 });
@@ -144,7 +144,7 @@ test("LM-3: yes callback writes persisted candidate; no falls back to free text"
     sendMessage: async (...args) => { messages.push(args); return { ok: true }; },
   });
   assert.equal(no.fallback, true);
-  assert.match(messages[0][2], /Where is “MUIT 集会”/);
+  assert.equal(messages[0][2], "場所はどこですか？住所か、お店・会社の名前を送ってください。");
 });
 
 test("LM-3: no candidate is a silent null so existing open question remains", async () => {

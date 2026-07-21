@@ -5,7 +5,8 @@
 // event summary (bookkeeping, like lm_ask_log keys by event_id) — NOT the regex-for-judgment anti-pattern.
 
 // placeKey(summary) → normalized phrase. PURE: lowercase, collapse internal whitespace, trim. Empty → "".
-function placeKey(summary) {
+function placeKey(summary, recurringEventId) {
+  if (recurringEventId) return `series:${String(recurringEventId).trim()}`;
   return String(summary || "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 

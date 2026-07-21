@@ -20,6 +20,7 @@ const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
 const { mailAvailable } = require("./mail-availability.js");
+const { interpretCalendarEvent, PLACE_QUESTION } = require("./calendar-interpreter.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -105,10 +106,10 @@ async function agentSearchCandidate(event, deps = {}) {
 
 function closedAskMessage(event, candidate, replyToken) {
   return {
-    text: `📍 “${event.summary || "your event"}” は ${candidate} で開催ですか？`,
+    text: PLACE_QUESTION(event.whenLabel || "次回", event.summary || "予定", candidate),
     extra: { reply_markup: { inline_keyboard: [[
       { text: "はい", callback_data: `ask:yes:${event.id}:${replyToken}` },
-      { text: "いいえ", callback_data: `ask:no:${event.id}:${replyToken}` },
+      { text: "別の場所", callback_data: `ask:no:${event.id}:${replyToken}` },
     ]] } },
   };
 }
@@ -262,6 +263,8 @@ function needsLocation(ev) {
   const s = (ev.summary || "").trim();
   if (s.startsWith("[Travel]") || s.startsWith("[Ask]")) return false;
   if (!((ev.start || {}).dateTime)) return false;
+  const interpreted = interpretCalendarEvent(ev);
+  if (interpreted.decision === "no_call" || interpreted.decision === "online") return false;
   return !((ev.location || "").trim());
 }
 
@@ -314,7 +317,9 @@ async function recordResolution(uid, eventId, source, supaUrl, supaKey) {
 async function recallOrResolve(event, opts) {
   const recall = opts.recall || recallPlace;
   const resolve = opts.resolve || agentResolveLocation;
-  const mem = await recall(opts.uid, placeKey(event.summary), opts.supaUrl, opts.supaKey);
+  const seriesPhrase = placeKey(event.summary, event.recurringEventId);
+  let mem = await recall(opts.uid, seriesPhrase, opts.supaUrl, opts.supaKey);
+  if (!mem && event.recurringEventId) mem = await recall(opts.uid, placeKey(event.summary), opts.supaUrl, opts.supaKey);
   if (mem) return { kind: "filled", location: mem, fromMemory: true };
   return await resolve(event, { home: opts.home, mapsKey: opts.mapsKey, geminiKey: opts.geminiKey });
 }
@@ -444,7 +449,9 @@ async function handleAskCallback(data, opts = {}) {
   if (!match) return { ok: false, ignored: true };
   const [, choice, eventId, replyToken] = match;
   if (choice === "no") {
-    const text = `📍 Where is “${opts.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`;
+    const text = /歯医者|歯科/.test(opts.summary || "")
+      ? "住所か、歯医者さんの名前を教えてください。"
+      : "場所はどこですか？住所か、お店・会社の名前を送ってください。";
     const send = opts.sendMessage || tgSend;
     if (opts.telegramToken && opts.chatId) await send(opts.telegramToken, opts.chatId, text);
     return { ok: true, fallback: true, eventId };
@@ -489,7 +496,7 @@ async function handleInboundReply(token, replyText, opts = {}) {
   const m = await match(replyText, ev);
   if (!m || !m.location) return { ok: false, reason: "no location in reply", uid, eventId };
   await patch(uid, eventId, m.location);
-  await remember(uid, ev.summary, m.location);
+  await remember(uid, placeKey(ev.summary, ev.recurringEventId), m.location);
   return { ok: true, uid, eventId, location: m.location };
 }
 

@@ -14,6 +14,7 @@
 "use strict";
 
 const { getCalendar } = require("./transport/index.js");
+const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
 function isoZ(ms) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -31,6 +32,7 @@ async function fetchUpcomingEvents(uid, opts = {}) {
   const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs), timeMax: isoZ(horizonMs) });
   const out = [];
   for (const e of items) {
+    if (interpretCalendarEvent(e).decision === "no_call") continue;
     const raw = (e.start || {}).dateTime; // timed events only; date-only (all-day) skipped
     if (!raw) continue;
     const startMs = Date.parse(raw);
