@@ -137,14 +137,15 @@ test("manifest covers every required DAILY runtime dependency and real adapters 
     env,
     fetchImpl,
     nowMs,
-    proofs: {
+    controlledL3: {
       email: {
-        providerAccepted: true, inboxReceived: true, recipientOwned: true,
-        checkedAt: new Date(nowMs).toISOString(), messageIdRef: "sha256:333333333333",
+        attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,
+        checkedAt: new Date(nowMs).toISOString(), providerRef: "sha256:555555555555", messageIdRef: "sha256:333333333333",
       },
       telegram: {
         verified: true, checkedAt: new Date(nowMs).toISOString(),
         requestMessageRef: "sha256:111111111111", replyMessageRef: "sha256:222222222222",
+        pendingUpdateSamples: [0], pendingUpdateCount: 0,
       },
     },
     webSocketProbe: async () => ({ opened: true, closeCode: 1008 }),
@@ -264,11 +265,12 @@ test("email: restricted send-only key needs controlled POST /emails plus inbox r
       domainsCalled = true;
       return jsonResponse({ name: "restricted_api_key" }, 401);
     },
-    proofs: {
+    controlledL3: {
       email: {
-        providerAccepted: true,
+        attempted: true, providerAccepted: true,
         inboxReceived: true,
         checkedAt: new Date(nowMs).toISOString(),
+        providerRef: "sha256:111111111111",
         messageIdRef: "sha256:0123456789ab",
         recipientOwned: true,
       },
@@ -283,7 +285,7 @@ test("email: restricted send-only key needs controlled POST /emails plus inbox r
     env,
     nowMs,
     fetchImpl: async () => { throw new Error("must not fetch"); },
-    proofs: {
+    controlledL3: {
       email: {
         attempted: true,
         providerAccepted: false,
@@ -353,12 +355,13 @@ test("telegram: exact production webhook URL and fresh provider-to-webhook round
     env,
     fetchImpl: exactFetch,
     nowMs,
-    proofs: {
+    controlledL3: {
       telegram: {
         verified: true,
         checkedAt: new Date(nowMs).toISOString(),
         requestMessageRef: "sha256:111111111111",
         replyMessageRef: "sha256:222222222222",
+        pendingUpdateSamples: [0], pendingUpdateCount: 0,
       },
     },
     now: () => nowMs,
@@ -423,6 +426,30 @@ test("call: production PUBLIC_WSS /ws, non-placeholder LM_CALL_SECRET, and bridg
   assert.equal(probedUrl, "wss://life-call.example.test/ws");
 });
 
+test("call: each Telnyx binding and auth gate mismatch fails nonzero", async (t) => {
+  const env = productionLikeEnv();
+  const cases = [
+    ["number_connection", (url, body) => url.includes("/phone_numbers?") ? { data: [{ phone_number: "+15551234567", status: "active", connection_id: "wrong" }] } : body],
+    ["application_id", (url, body) => url.includes("/call_control_applications/") ? { data: { ...body.data, id: "wrong" } } : body],
+    ["profile", (url, body) => url.includes("/outbound_voice_profiles/") ? { data: { ...body.data, enabled: false } } : body],
+    ["webhook", (url, body) => url.includes("/call_control_applications/") ? { data: { ...body.data, webhook_event_url: "https://wrong.example/telnyx-events" } } : body],
+  ];
+  for (const [name, mutate] of cases) await t.test(name, async () => {
+    const fetchImpl = async (url, options) => {
+      const response = await successfulFetch(url, options);
+      const body = await response.json();
+      return jsonResponse(mutate(String(url), body));
+    };
+    const report = await runNamed("call", { env, fetchImpl, webSocketProbe: async () => ({ opened: true, closeCode: 1008 }) });
+    assert.equal(report.exitCode, 1);
+    assert.equal(report.dependencies[0].status, "fail");
+  });
+  const authMismatch = await runNamed("call", {
+    env, fetchImpl: successfulFetch, webSocketProbe: async () => ({ opened: true, closeCode: 1000 }),
+  });
+  assert.equal(authMismatch.exitCode, 1);
+});
+
 test("location: required scheduler cohort user must have a present unexpired live-location row", async () => {
   const nowMs = Date.parse("2026-07-21T06:00:00Z");
   const env = productionLikeEnv();
@@ -462,6 +489,23 @@ test("gemini: same credential proves Live bidi and DAILY gemini-2.5-flash genera
   assert.equal(report.dependencies[0].status, "pass");
   assert.equal(calls.some((call) => call.url.endsWith("/gemini-2.5-flash:generateContent") && call.method === "POST"), true);
   assert.ok(calls.every((call) => call.key === env.GEMINI_API_KEY));
+});
+
+test("gemini: missing Live bidi or standard generateContent each fails nonzero", async (t) => {
+  const env = productionLikeEnv();
+  for (const missing of ["bidi", "standard"]) await t.test(missing, async () => {
+    const report = await runNamed("gemini", {
+      env,
+      fetchImpl: async (url) => String(url).endsWith(":generateContent")
+        ? jsonResponse(missing === "standard" ? { candidates: [] } : { candidates: [{}] })
+        : jsonResponse({
+          name: "models/gemini-2.5-flash-native-audio-preview-09-2025",
+          supportedGenerationMethods: missing === "bidi" ? [] : ["bidiGenerateContent"],
+        }),
+    });
+    assert.equal(report.exitCode, 1);
+    assert.equal(report.dependencies[0].status, "fail");
+  });
 });
 
 test("evidence sanitizer redacts query values, phones, email, IDs, provider keys, and nested messages by value", () => {

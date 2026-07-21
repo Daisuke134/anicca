@@ -88,8 +88,15 @@ function sanitizeString(value, secrets) {
   return safe.slice(0, 200);
 }
 
+const SAFE_EVIDENCE_STRINGS = new Set([
+  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",
+  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",
+  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,
+  "dependency_error", "invalid_result",
+]);
+
 function sanitizeEvidence(value, secrets = [], key = "") {
-  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\buid\b|raw|body)/i.test(key)) {
+  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\buid\b|raw|body|error|response|url|host|path|name)/i.test(key)) {
     return "[REDACTED]";
   }
   if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));
@@ -100,7 +107,8 @@ function sanitizeEvidence(value, secrets = [], key = "") {
     ]));
   }
   if (typeof value !== "string") return value;
-  return sanitizeString(value, secrets);
+  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);
+  return "[REDACTED]";
 }
 
 async function requestJson(fetchImpl, url, options, signal) {
@@ -380,8 +388,9 @@ async function emailCheck(env, _fetchImpl, _signal, nowMs, proof) {
   requireEnv(env, ["RESEND_API_KEY", "LM_MAIL_FROM"]);
   const domain = fromDomain(env.LM_MAIL_FROM);
   if (!domain) fail("from_not_ready", { from_domain_configured: false });
-  const verified = Boolean(proof && proof.providerAccepted === true && proof.inboxReceived === true &&
-    proof.recipientOwned === true && proofIsFresh(proof, nowMs) && isHashedRef(proof.messageIdRef));
+  const verified = Boolean(proof && proof.attempted === true && proof.providerAccepted === true &&
+    proof.inboxReceived === true && proof.recipientOwned === true && proofIsFresh(proof, nowMs) &&
+    isHashedRef(proof.providerRef) && isHashedRef(proof.messageIdRef));
   if (!verified) fail("send_receipt_unverified", {
     controlled_send_attempted: Boolean(proof && proof.attempted),
     provider_accepted: Boolean(proof && proof.providerAccepted),
@@ -397,6 +406,7 @@ async function emailCheck(env, _fetchImpl, _signal, nowMs, proof) {
       provider_accepted: true,
       inbox_receipt: true,
       recipient_owned: true,
+      provider_ref: proof.providerRef,
       message_id_ref: proof.messageIdRef,
     },
   };
@@ -530,17 +540,17 @@ function createDependencyChecks({
   env = process.env,
   fetchImpl = fetch,
   nowMs = Date.now(),
-  proofs = {},
+  controlledL3 = {},
   webSocketProbe = probeWebSocketAuthGate,
 } = {}) {
   const secrets = secretValues(env);
   return [
     { name: "health", run: ({ signal }) => healthCheck(env, fetchImpl, signal) },
-    { name: "telegram", run: ({ signal }) => telegramCheck(env, fetchImpl, signal, nowMs, proofs.telegram) },
+    { name: "telegram", run: ({ signal }) => telegramCheck(env, fetchImpl, signal, nowMs, controlledL3.telegram) },
     { name: "calendar", run: ({ signal }) => calendarCheck(env, fetchImpl, signal, nowMs) },
     { name: "call", run: ({ signal }) => callCheck(env, fetchImpl, signal, webSocketProbe) },
     { name: "location", run: ({ signal }) => locationCheck(env, fetchImpl, signal, nowMs) },
-    { name: "email", run: ({ signal }) => emailCheck(env, fetchImpl, signal, nowMs, proofs.email) },
+    { name: "email", run: ({ signal }) => emailCheck(env, fetchImpl, signal, nowMs, controlledL3.email) },
     { name: "discovery", run: ({ signal }) => discoveryCheck(env, fetchImpl, signal, nowMs) },
     { name: "gemini", run: ({ signal }) => geminiCheck(env, fetchImpl, signal) },
     { name: "maps", run: ({ signal }) => mapsCheck(env, fetchImpl, signal, nowMs) },
@@ -617,8 +627,128 @@ async function runPreflight({ checks, timeoutMs = 15000, now = Date.now } = {}) 
   };
 }
 
+function collectorFailure(classification) {
+  const error = new Error(classification);
+  error.classification = classification;
+  return error;
+}
+
+function validateTelegramProof(value, nowMs) {
+  if (!value || value.attempted !== true || value.verified !== true || !proofIsFresh(value, nowMs) ||
+      !isHashedRef(value.requestMessageRef) || !isHashedRef(value.replyMessageRef) || value.exactUrl !== true ||
+      value.providerError !== false) throw collectorFailure("telegram_collector_invalid");
+  const allowed = Array.isArray(value.allowedUpdates) ? value.allowedUpdates : [];
+  if (REQUIRED_TELEGRAM_UPDATES.some((item) => !allowed.includes(item))) {
+    throw collectorFailure("telegram_allowed_updates");
+  }
+  const samples = Array.isArray(value.pendingUpdateSamples) ? value.pendingUpdateSamples : [];
+  if (!samples.length || samples.some((item) => !Number.isInteger(item) || item < 0) ||
+      samples[samples.length - 1] !== 0 || value.pendingUpdateCount !== 0) {
+    throw collectorFailure("telegram_backlog");
+  }
+  return Object.freeze({
+    attempted: true,
+    verified: true,
+    checkedAt: value.checkedAt,
+    requestMessageRef: value.requestMessageRef,
+    replyMessageRef: value.replyMessageRef,
+    exactUrl: true,
+    allowedUpdates: [...allowed].sort(),
+    providerError: false,
+    pendingUpdateCount: 0,
+    pendingUpdateSamples: [...samples],
+  });
+}
+
+function validateEmailProof(value, nowMs) {
+  if (!value || value.attempted !== true || value.providerAccepted !== true || value.recipientOwned !== true ||
+      value.inboxReceived !== true || !proofIsFresh(value, nowMs) || !isHashedRef(value.providerRef) ||
+      !isHashedRef(value.messageIdRef)) throw collectorFailure("email collector invalid");
+  return Object.freeze({
+    attempted: true, providerAccepted: true, recipientOwned: true, inboxReceived: true,
+    checkedAt: value.checkedAt, providerRef: value.providerRef, messageIdRef: value.messageIdRef,
+  });
+}
+
+async function collectTelegramControlled({ roundTrip, getWebhookInfo, sleep = () => Promise.resolve(), now = Date.now, maxPolls = 3 } = {}) {
+  if (typeof roundTrip !== "function" || typeof getWebhookInfo !== "function") {
+    throw collectorFailure("telegram_collector_unavailable");
+  }
+  const trip = await roundTrip();
+  const samples = [];
+  let finalInfo;
+  for (let index = 0; index < maxPolls; index += 1) {
+    finalInfo = await getWebhookInfo();
+    samples.push(finalInfo && finalInfo.pending_update_count);
+    if (samples[samples.length - 1] === 0) break;
+    if (index + 1 < maxPolls) await sleep();
+  }
+  return {
+    attempted: true,
+    verified: trip && trip.verified === true,
+    checkedAt: new Date(now()).toISOString(),
+    requestMessageRef: trip && trip.requestMessageRef,
+    replyMessageRef: trip && trip.replyMessageRef,
+    exactUrl: finalInfo && finalInfo.exactUrl === true,
+    allowedUpdates: finalInfo && finalInfo.allowed_updates,
+    providerError: Boolean(finalInfo && finalInfo.providerError),
+    pendingUpdateCount: samples[samples.length - 1],
+    pendingUpdateSamples: samples,
+  };
+}
+
+const CONTROLLED_COLLECTOR_REGISTRY = Object.freeze({
+  telegram: async () => { throw collectorFailure("telegram_collector_unavailable"); },
+  email: async () => { throw collectorFailure("email_collector_unavailable"); },
+});
+
+async function collectControlledL3({ mode, nowMs = Date.now(), collectors = CONTROLLED_COLLECTOR_REGISTRY } = {}) {
+  if (mode !== "controlled-l3") throw collectorFailure("controlled_mode_required");
+  if (!collectors || typeof collectors.telegram !== "function" || typeof collectors.email !== "function") {
+    throw collectorFailure("collector_registry_invalid");
+  }
+  const [telegram, email] = await Promise.all([collectors.telegram(), collectors.email()]);
+  return Object.freeze({ telegram: validateTelegramProof(telegram, nowMs), email: validateEmailProof(email, nowMs) });
+}
+
+function serializeControlledL3(controlledL3, nowMs) {
+  if (!controlledL3) return undefined;
+  const telegram = validateTelegramProof(controlledL3.telegram, nowMs);
+  const email = validateEmailProof(controlledL3.email, nowMs);
+  return {
+    telegram: {
+      checkedAt: telegram.checkedAt,
+      request_message_ref: telegram.requestMessageRef,
+      reply_message_ref: telegram.replyMessageRef,
+      webhook_url_exact: true,
+      allowed_updates: telegram.allowedUpdates,
+      provider_error: false,
+      pending_update_count: 0,
+      pending_update_samples: telegram.pendingUpdateSamples,
+    },
+    email: {
+      checkedAt: email.checkedAt,
+      attempted: true,
+      provider_accepted: true,
+      recipient_owned: true,
+      inbox_receipt: true,
+      provider_ref: email.providerRef,
+      message_id_ref: email.messageIdRef,
+    },
+  };
+}
+
+async function buildPreflightReport({ checks, controlledL3, timeoutMs = 15000, now = Date.now } = {}) {
+  const report = await runPreflight({ checks, timeoutMs, now });
+  const proof = serializeControlledL3(controlledL3, now());
+  return proof ? { ...report, controlledL3: proof } : report;
+}
+
 module.exports = {
   DEPENDENCY_NAMES,
+  buildPreflightReport,
+  collectControlledL3,
+  collectTelegramControlled,
   createDependencyChecks,
   runPreflight,
   sanitizeEvidence,
