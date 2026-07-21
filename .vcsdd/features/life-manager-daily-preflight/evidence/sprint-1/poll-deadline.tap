@@ -1,15 +1,15 @@
-✔ poll: Telegram reply attempt 6 is the final allowed attempt (0.738709ms)
-✔ poll: Telegram reply attempt 7 is forbidden (0.059709ms)
-✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.04475ms)
-✔ poll: Telegram webhook attempt 4 is forbidden (0.04225ms)
-✔ poll: email inbox attempt 6 is the final allowed attempt (0.038542ms)
-✔ poll: email inbox attempt 7 is forbidden (0.041084ms)
-✔ timeout: Telegram Bot API calls are bounded at 15000 ms (0.035375ms)
-✔ timeout: Resend calls are bounded at 15000 ms (0.030541ms)
-✔ timeout: gog inbox calls are bounded at 15000 ms (0.064209ms)
-✔ deadline: Telegram collector is bounded at 179000 ms (0.09675ms)
-✔ deadline: email collector is bounded at 120000 ms (0.057917ms)
-✔ deadline: parallel controlled collection is bounded at 179000 ms (0.050083ms)
+✔ poll: Telegram reply attempt 6 is the final allowed attempt (0.819916ms)
+✔ poll: Telegram reply attempt 7 is forbidden (0.064125ms)
+✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.049166ms)
+✔ poll: Telegram webhook attempt 4 is forbidden (0.046875ms)
+✔ poll: email inbox attempt 6 is the final allowed attempt (0.044292ms)
+✔ poll: email inbox attempt 7 is forbidden (0.043541ms)
+✔ timeout: Telegram Bot API calls are bounded at 15000 ms (0.038709ms)
+✔ timeout: Resend calls are bounded at 15000 ms (0.034125ms)
+✔ timeout: gog inbox calls are bounded at 15000 ms (0.068792ms)
+✔ deadline: Telegram collector is bounded at 179000 ms (0.108375ms)
+✔ deadline: email collector is bounded at 120000 ms (0.062209ms)
+✔ deadline: parallel controlled collection is bounded at 179000 ms (0.049959ms)
 ℹ tests 12
 ℹ suites 0
 ℹ pass 12
@@ -17,4 +17,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 62.708209
+ℹ duration_ms 72.196042

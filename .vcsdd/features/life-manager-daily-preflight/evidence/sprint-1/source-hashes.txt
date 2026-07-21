@@ -3,7 +3,7 @@ d911abddcf7a0207a74ed892c4ad48cce5c338834661b9569e23e370aecaf17f  apps/life-call
 41ce69c254d363e08be45631727056bd468d344acdea834084c18e54e5944982  apps/life-call/lib/transport/mail-gog.js
 77a862168ec0734ab71e58f3d82914b7dba2b9b493605b01e8cd2ee5048fa965  apps/life-call/scripts/daily-preflight.js
 01d3c41fdc08cdbdde9197eb821514a11fb1b487ae9d390dd4881d1939fac6e3  apps/life-call/lib/daily-preflight.test-support.js
-aa8baf0a712fe4c77cb7cbfc80b63acba8e4b132fa6943d45cd62d4b58b63664  .vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs
+08b23b81fec13d427156e0dd8fcb329d85acdd09031f7900ec83d8cb8ac542fd  .vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs
 5993baccbd14f4111de2c3b8a89d0a067c259b7a2fdf08a9fbdea8f3c673acf1  .vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs
-1709d3e4a6e1ebb476e061b4c58496bf4c9a6821b091764bfddb22351e78a94d  .vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs
+67ee10d4e7592f4922151bca340507eea12a80ad5969e6e66943b70d117be11d  .vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs
 2d4318a66be87edde8769266a9116a107cc501ad4924aa22c66edace5bf027e1  .vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs

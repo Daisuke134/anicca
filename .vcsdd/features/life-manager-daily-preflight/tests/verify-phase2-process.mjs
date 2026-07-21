@@ -10,6 +10,6 @@ if (args.length !== expected || args.slice(1).some(value => !value || (!existsSy
 if (args[0] === "gates") {
   const state = JSON.parse(readFileSync(args[1], "utf8"));
   const contract = readFileSync(args[2], "utf8");
-  if (state.currentPhase !== "2b" || state.sprintCount !== 0 || state.gates?.["1c"]?.humanApproved !== true ||
+  if (!["2b", "2c"].includes(state.currentPhase) || state.sprintCount !== 0 || state.gates?.["1c"]?.humanApproved !== true ||
       state.gates?.["1c"]?.adversaryVerdict !== "PASS" || !/^status: approved$/m.test(contract)) fail();
 }

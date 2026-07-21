@@ -2,10 +2,10 @@
 > anicca-life-call@1.0.0 pretest
 > node --test lib/composio-budget.test.js && node --test lib/calendar-interpreter.test.js && node --test lib/daily-preflight-collectors.test.js lib/daily-preflight-production-wiring.test.js lib/transport/mail-gog-receipt.test.js
 
-✔ Composio budget boundaries: alert at 18,000 and soft-degrade only at 19,500 (1.09825ms)
-✔ Composio admin alert is throttled for six hours (0.094625ms)
-✔ Composio soft-degrade recovers when the monthly count resets (0.078334ms)
-✔ each real Composio execution records one composio_call without making ledger failure fatal (0.245708ms)
+✔ Composio budget boundaries: alert at 18,000 and soft-degrade only at 19,500 (1.236167ms)
+✔ Composio admin alert is throttled for six hours (0.123791ms)
+✔ Composio soft-degrade recovers when the monthly count resets (0.087917ms)
+✔ each real Composio execution records one composio_call without making ledger failure fatal (0.335ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -13,9 +13,9 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 64.785833
-✔ declined and tentative invitations never call (0.648459ms)
-✔ a recurring series answer is reused (0.635167ms)
+ℹ duration_ms 68.757833
+✔ declined and tentative invitations never call (0.645417ms)
+✔ a recurring series answer is reused (0.627084ms)
 ℹ tests 2
 ℹ suites 0
 ℹ pass 2
@@ -23,32 +23,32 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 64.65075
-✔ telegram observation rejects missing/rejected round trip, timeout, URL/update/error/backlog (3.015208ms)
-✔ email observation rejects ownership, send, timeout, nonce mismatch, and stale receipt (0.236458ms)
-✔ email observation accepts a same-minute interval containing the send instant (0.166209ms)
-✔ email observation accepts a later minute interval after send and not after now (0.055334ms)
-✔ email observation rejects future, malformed, missing-id, nonce, and over-15-minute evidence (0.117958ms)
-✔ email observation keeps exact timestamps strictly between send and now (0.321708ms)
-✔ telegram adapter sends once and bounded-polls [1,0] (0.582542ms)
-✔ telegram adapter fails closed on reply timeout without a duplicate send (0.159208ms)
-✔ telegram adapter fails closed when MTProto rejects the one send (0.168708ms)
-✔ email adapter sends exactly once and accepts only exact nonce receipt (0.287ms)
-✔ email adapter derives recipient from GOG_ACCOUNT and rejects outside fixed allowlist before send (0.083584ms)
-✔ email adapter rejects send rejection, nonce mismatch, timeout, and stale receipt without duplicate sends (0.200792ms)
-✔ collector failures never contain raw provider errors or PII (0.080792ms)
-✔ test-support Telegram mirror requires fake exec before any sidecar invocation (0.324625ms)
-✔ test-support email mirror uses acceptance and exact receipt without caller success booleans (0.107666ms)
-✔ closed production wiring uses only preinstalled fakes and sends each transport once (3.434541ms)
-✔ findReceipt uses message search, exact nonce content, and returns only safe receipt metadata (4.148416ms)
-✔ findReceipt accepts a minute-precision bucket containing afterMs (0.195375ms)
-✔ findReceipt accepts the next minute when its bucket is not wholly before afterMs (0.083791ms)
-✔ findReceipt rejects the previous minute and intervals wholly before afterMs (0.137375ms)
-✔ findReceipt keeps second/timezone timestamps strictly ordered and unknown dates closed (0.118083ms)
-✔ findReceipt rejects an impossible exact calendar date instead of normalizing it (0.068334ms)
-✔ findReceipt fails closed for nonce mismatch and stale messages (0.094708ms)
-✔ existing gog transport send and inbox paths retain their contracts (0.149084ms)
-✔ default gog runner uses execFile argv with the fixed account (0.187958ms)
+ℹ duration_ms 64.181625
+✔ telegram observation rejects missing/rejected round trip, timeout, URL/update/error/backlog (2.742042ms)
+✔ email observation rejects ownership, send, timeout, nonce mismatch, and stale receipt (0.227833ms)
+✔ email observation accepts a same-minute interval containing the send instant (0.252666ms)
+✔ email observation accepts a later minute interval after send and not after now (0.072417ms)
+✔ email observation rejects future, malformed, missing-id, nonce, and over-15-minute evidence (0.158333ms)
+✔ email observation keeps exact timestamps strictly between send and now (0.091333ms)
+✔ telegram adapter sends once and bounded-polls [1,0] (0.597792ms)
+✔ telegram adapter fails closed on reply timeout without a duplicate send (0.161167ms)
+✔ telegram adapter fails closed when MTProto rejects the one send (0.163416ms)
+✔ email adapter sends exactly once and accepts only exact nonce receipt (0.225042ms)
+✔ email adapter derives recipient from GOG_ACCOUNT and rejects outside fixed allowlist before send (0.07225ms)
+✔ email adapter rejects send rejection, nonce mismatch, timeout, and stale receipt without duplicate sends (0.210542ms)
+✔ collector failures never contain raw provider errors or PII (0.082958ms)
+✔ test-support Telegram mirror requires fake exec before any sidecar invocation (0.328166ms)
+✔ test-support email mirror uses acceptance and exact receipt without caller success booleans (0.105875ms)
+✔ closed production wiring uses only preinstalled fakes and sends each transport once (3.066417ms)
+✔ findReceipt uses message search, exact nonce content, and returns only safe receipt metadata (2.150166ms)
+✔ findReceipt accepts a minute-precision bucket containing afterMs (0.172875ms)
+✔ findReceipt accepts the next minute when its bucket is not wholly before afterMs (0.084875ms)
+✔ findReceipt rejects the previous minute and intervals wholly before afterMs (0.141917ms)
+✔ findReceipt keeps second/timezone timestamps strictly ordered and unknown dates closed (0.11725ms)
+✔ findReceipt rejects an impossible exact calendar date instead of normalizing it (0.078125ms)
+✔ findReceipt fails closed for nonce mismatch and stale messages (0.082875ms)
+✔ existing gog transport send and inbox paths retain their contracts (0.152167ms)
+✔ default gog runner uses execFile argv with the fixed account (0.18575ms)
 ℹ tests 25
 ℹ suites 0
 ℹ pass 25
@@ -56,31 +56,31 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 77.511959
+ℹ duration_ms 79.155375
 
 > anicca-life-call@1.0.0 test
 > node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js && node --test skill-life-manager/openclaw/crons.test.js && node --test lib/daily-preflight.test.js lib/daily-preflight-provenance.test.js && node --test lib/answered.test.js && node --test lib/maybe-start-loops.test.js && node --test lib/feature-discovery.test.js && node --test lib/panel-ui.test.js && node --test lib/panel-auth.test.js && node --test lib/panel-api.test.js && node --test lib/ch1-atomic-dedup.test.js && node --test lib/lm-p0.test.js && node --test lib/telegram-onboard.test.js && node --test lib/context-graph.test.js && node --test lib/gmail-onboard.test.js && node --test lib/late-notice.test.js && node --test lib/ledger.test.js && node --test lib/calendar-cache.test.js && node --test lib/transport/calendar-unipile.test.js && node --test test/inngest.test.js && node --test lib/billing.test.js && node --test test/tenant-isolation.test.js && node --test lib/places-memory.test.js && node --test test/wake-levels.test.js && node --test test/phase-c-wiring.test.js && node --test test/testcall-ratelimit.test.js && node --test lib/reply-token.test.js && node --test lib/transit.test.js && node --test lib/route-cache.test.js && node --test lib/call-bridge.test.js && node --test lib/call-language.test.js && node --test lib/user-selector.test.js && node --test lib/money-path.test.js && node --test lib/travel-transit-wire.test.js && node --test lib/events-gmail-account-propagation.test.js
 
 ✅ scheduler unit tests pass (helper-skip + signed streamUrl)
-✔ tick.js passes node --check (41.876375ms)
-✔ travel.js passes node --check (41.212917ms)
-✔ ask.js passes node --check (45.294167ms)
-✔ tick.js exports run as a function (8.300209ms)
-✔ travel.js exports run as a function (0.120417ms)
-✔ ask.js exports run as a function (0.102541ms)
-✔ tick.run(stub) calls stub.tick exactly once (0.068875ms)
-✔ travel.run(stub) calls stub.travelTick exactly once (0.051291ms)
-✔ ask.run(stub) calls stub.askTickAll exactly once (0.057541ms)
-✔ SKILL.md exists (0.121167ms)
-✔ SKILL.md mentions tick entrypoint (0.662333ms)
-✔ SKILL.md mentions travel entrypoint (0.07ms)
-✔ SKILL.md mentions ask entrypoint (0.047917ms)
-✔ tick.run: calls tick once AND does NOT call travelTick or askTickAll (no-cross-wiring) (0.054ms)
-✔ travel.run: calls travelTick once AND does NOT call tick or askTickAll (no-cross-wiring) (0.0515ms)
-✔ ask.run: calls askTickAll once AND does NOT call tick or travelTick (no-cross-wiring) (0.035ms)
-✔ tick.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (50.653667ms)
-✔ travel.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (51.501167ms)
-✔ ask.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (50.057625ms)
+✔ tick.js passes node --check (49.596333ms)
+✔ travel.js passes node --check (45.34075ms)
+✔ ask.js passes node --check (44.689542ms)
+✔ tick.js exports run as a function (7.755125ms)
+✔ travel.js exports run as a function (0.120292ms)
+✔ ask.js exports run as a function (0.100792ms)
+✔ tick.run(stub) calls stub.tick exactly once (0.067708ms)
+✔ travel.run(stub) calls stub.travelTick exactly once (0.053291ms)
+✔ ask.run(stub) calls stub.askTickAll exactly once (0.060292ms)
+✔ SKILL.md exists (0.118375ms)
+✔ SKILL.md mentions tick entrypoint (0.1205ms)
+✔ SKILL.md mentions travel entrypoint (0.073459ms)
+✔ SKILL.md mentions ask entrypoint (0.066667ms)
+✔ tick.run: calls tick once AND does NOT call travelTick or askTickAll (no-cross-wiring) (0.081708ms)
+✔ travel.run: calls travelTick once AND does NOT call tick or askTickAll (no-cross-wiring) (0.059834ms)
+✔ ask.run: calls askTickAll once AND does NOT call tick or travelTick (no-cross-wiring) (0.042125ms)
+✔ tick.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (48.76775ms)
+✔ travel.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (48.248417ms)
+✔ ask.js: fresh require() returns {run: function} with no side-effects (no-auto-run) (48.742458ms)
 ℹ tests 19
 ℹ suites 0
 ℹ pass 19
@@ -88,15 +88,15 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 354.343458
-✔ crons.json defines exactly the 3 expected jobs (1.148042ms)
-✔ job lm-wake: schedule + command-argv + script exists (0.086375ms)
-✔ job lm-travel: schedule + command-argv + script exists (0.047791ms)
-✔ job lm-ask: schedule + command-argv + script exists (0.04325ms)
-✔ buildRegisterCommands: emits a literal JSON-array --command-argv that bash round-trips (0.098791ms)
-✔ buildRegisterCommands: idempotent rm precedes create, and NO model-job flags (zero tokens) (0.154666ms)
-✔ buildRegisterCommands: cwd from json drives all 3, no crossed scripts (0.059167ms)
-✔ register-crons.sh drives from build-commands.js under errexit, cwd from env, no hardcoded host (0.099375ms)
+ℹ duration_ms 365.433833
+✔ crons.json defines exactly the 3 expected jobs (1.177459ms)
+✔ job lm-wake: schedule + command-argv + script exists (0.090917ms)
+✔ job lm-travel: schedule + command-argv + script exists (0.04575ms)
+✔ job lm-ask: schedule + command-argv + script exists (0.0415ms)
+✔ buildRegisterCommands: emits a literal JSON-array --command-argv that bash round-trips (0.095083ms)
+✔ buildRegisterCommands: idempotent rm precedes create, and NO model-job flags (zero tokens) (0.155167ms)
+✔ buildRegisterCommands: cwd from json drives all 3, no crossed scripts (0.068125ms)
+✔ register-crons.sh drives from build-commands.js under errexit, cwd from env, no hardcoded host (0.093042ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -104,59 +104,59 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 71.084416
-✔ public CLI rejects caller supplied --proofs (0.770083ms)
-✔ production main has no collector or transport injection parameters (0.197875ms)
-✔ read-only production main invokes zero caller or controlled sends (2.148792ms)
-✔ test-only controlled runner invokes each collector exactly once (0.8255ms)
-✔ production entrypoint cannot import or activate test-only collector DI (0.165625ms)
-✔ production controlled collectors expose no factory or transport injection surface (0.478459ms)
-✔ production receipt bounds come only from the gog parser (0.143417ms)
-✔ controlled CLI prerequisite errors exit nonzero with sanitized output (51.523708ms)
-✔ CLI exit wrapper maps completion and sanitized pre-report failure (0.185541ms)
-✔ controlled L3 is collected by the runner and bound into the generated report (0.288917ms)
+ℹ duration_ms 67.709
+✔ public CLI rejects caller supplied --proofs (0.802083ms)
+✔ production main has no collector or transport injection parameters (0.201084ms)
+✔ read-only production main invokes zero caller or controlled sends (10.944583ms)
+✔ test-only controlled runner invokes each collector exactly once (0.291833ms)
+✔ production entrypoint cannot import or activate test-only collector DI (0.118667ms)
+✔ production controlled collectors expose no factory or transport injection surface (0.429583ms)
+✔ production receipt bounds come only from the gog parser (0.156666ms)
+✔ controlled CLI prerequisite errors exit nonzero with sanitized output (55.241542ms)
+✔ CLI exit wrapper maps completion and sanitized pre-report failure (0.188167ms)
+✔ controlled L3 is collected by the runner and bound into the generated report (0.307167ms)
 ▶ controlled collectors fail closed for missing, malformed, and stale results
-  ✔ missing (0.134542ms)
-  ✔ malformed (0.049125ms)
-  ✔ stale (0.043208ms)
-✔ controlled collectors fail closed for missing, malformed, and stale results (0.745833ms)
+  ✔ missing (0.144958ms)
+  ✔ malformed (0.053625ms)
+  ✔ stale (0.049416ms)
+✔ controlled collectors fail closed for missing, malformed, and stale results (0.766167ms)
 ▶ email collector requires every same-run acceptance and receipt field
-  ✔ attempted (0.092125ms)
-  ✔ providerAccepted (0.038708ms)
-  ✔ inboxReceived (0.03125ms)
-  ✔ recipientOwned (0.034333ms)
-  ✔ providerRef (0.039584ms)
-  ✔ messageIdRef (0.038416ms)
-✔ email collector requires every same-run acceptance and receipt field (0.406292ms)
+  ✔ attempted (0.065959ms)
+  ✔ providerAccepted (0.031292ms)
+  ✔ inboxReceived (0.029334ms)
+  ✔ recipientOwned (0.033ms)
+  ✔ providerRef (0.041333ms)
+  ✔ messageIdRef (0.036792ms)
+✔ email collector requires every same-run acceptance and receipt field (0.343958ms)
 ▶ telegram bounded polling must observe the real webhook backlog drain to exactly zero
-  ✔ pending (0.072334ms)
-  ✔ missing (0.035459ms)
-✔ telegram bounded polling must observe the real webhook backlog drain to exactly zero (0.206ms)
-✔ telegram collector performs round trip then bounded-polls getWebhookInfo (0.122917ms)
-✔ final evidence schema replaces unknown strings, URLs, PII, errors, and nested raw text (0.402458ms)
-✔ manifest covers every required DAILY runtime dependency and real adapters pass with useful redacted evidence (5.196292ms)
-✔ explicit failure for every dependency is fail-closed and never becomes zero/empty success (0.250417ms)
-✔ empty, false, and zero adapter results are invalid failures rather than success (0.190167ms)
-✔ timeout for every dependency is classified and forces a nonzero exit (6.136333ms)
-✔ thrown provider errors expose only a classification, never raw messages or secrets (0.167542ms)
-✔ email: restricted send-only key needs controlled POST /emails plus inbox receipt proof (0.267625ms)
-✔ maps: preflight accepts the same drive-only or transit-only results and reports degradation (0.238375ms)
-✔ telegram: exact production webhook URL and fresh provider-to-webhook round-trip proof are required (0.230041ms)
-✔ call: production PUBLIC_WSS /ws, non-placeholder LM_CALL_SECRET, and bridge auth-gate reachability are required (0.336458ms)
+  ✔ pending (0.071209ms)
+  ✔ missing (0.033875ms)
+✔ telegram bounded polling must observe the real webhook backlog drain to exactly zero (0.204084ms)
+✔ telegram collector performs round trip then bounded-polls getWebhookInfo (0.115334ms)
+✔ final evidence schema replaces unknown strings, URLs, PII, errors, and nested raw text (0.448542ms)
+✔ manifest covers every required DAILY runtime dependency and real adapters pass with useful redacted evidence (5.153209ms)
+✔ explicit failure for every dependency is fail-closed and never becomes zero/empty success (0.252875ms)
+✔ empty, false, and zero adapter results are invalid failures rather than success (0.206041ms)
+✔ timeout for every dependency is classified and forces a nonzero exit (5.119917ms)
+✔ thrown provider errors expose only a classification, never raw messages or secrets (0.195042ms)
+✔ email: restricted send-only key needs controlled POST /emails plus inbox receipt proof (0.309041ms)
+✔ maps: preflight accepts the same drive-only or transit-only results and reports degradation (0.265375ms)
+✔ telegram: exact production webhook URL and fresh provider-to-webhook round-trip proof are required (0.233541ms)
+✔ call: production PUBLIC_WSS /ws, non-placeholder LM_CALL_SECRET, and bridge auth-gate reachability are required (0.345167ms)
 ▶ call: each Telnyx binding and auth gate mismatch fails nonzero
-  ✔ number_connection (0.124458ms)
-  ✔ application_id (0.08625ms)
-  ✔ profile (0.081833ms)
-  ✔ webhook (0.066ms)
-✔ call: each Telnyx binding and auth gate mismatch fails nonzero (0.59775ms)
-✔ location: required scheduler cohort user must have a present unexpired live-location row (0.130959ms)
-✔ gemini: same credential proves Live bidi and DAILY gemini-2.5-flash generateContent (0.0995ms)
+  ✔ number_connection (0.127417ms)
+  ✔ application_id (0.0855ms)
+  ✔ profile (0.097416ms)
+  ✔ webhook (0.075875ms)
+✔ call: each Telnyx binding and auth gate mismatch fails nonzero (0.652ms)
+✔ location: required scheduler cohort user must have a present unexpired live-location row (0.14675ms)
+✔ gemini: same credential proves Live bidi and DAILY gemini-2.5-flash generateContent (0.106792ms)
 ▶ gemini: missing Live bidi or standard generateContent each fails nonzero
-  ✔ bidi (0.066833ms)
-  ✔ standard (0.036ms)
-✔ gemini: missing Live bidi or standard generateContent each fails nonzero (0.163125ms)
-✔ evidence sanitizer redacts query values, phones, email, IDs, provider keys, and nested messages by value (0.044125ms)
-✔ calendar: target selection is the scheduler phone+paid+supported-provider cohort (0.16525ms)
+  ✔ bidi (0.065542ms)
+  ✔ standard (0.039541ms)
+✔ gemini: missing Live bidi or standard generateContent each fails nonzero (0.171167ms)
+✔ evidence sanitizer redacts query values, phones, email, IDs, provider keys, and nested messages by value (0.048208ms)
+✔ calendar: target selection is the scheduler phone+paid+supported-provider cohort (0.177917ms)
 ℹ tests 47
 ℹ suites 0
 ℹ pass 47
@@ -164,15 +164,15 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 128.096292
-✔ machine AMD result does not record answered (0.615584ms)
-✔ human AMD result records answered (0.04725ms)
-✔ AMD enabled never treats media start as answered (0.037917ms)
-✔ AMD disabled falls back to the legacy media-start approximation (0.036083ms)
-✔ not_sure is not a human-confirmed answer (0.036833ms)
-✔ AMD dial options request detection and correlate the webhook to the wake row (0.894875ms)
-✔ LM_AMD=off omits AMD dial options (0.374417ms)
-✔ Telnyx signature verifier accepts authentic fresh raw payload and rejects tampering (1.507125ms)
+ℹ duration_ms 142.185958
+✔ machine AMD result does not record answered (0.6225ms)
+✔ human AMD result records answered (0.047917ms)
+✔ AMD enabled never treats media start as answered (0.038583ms)
+✔ AMD disabled falls back to the legacy media-start approximation (0.037792ms)
+✔ not_sure is not a human-confirmed answer (0.039791ms)
+✔ AMD dial options request detection and correlate the webhook to the wake row (1.09325ms)
+✔ LM_AMD=off omits AMD dial options (0.055792ms)
+✔ Telnyx signature verifier accepts authentic fresh raw payload and rejects tampering (2.359958ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -180,15 +180,15 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.708583
-✔ default (unset) → all 5 loops start once (Railway behaviour unchanged) (1.301959ms)
-✔ LIFE_RUN_LOOPS="true" → all 5 loops start (0.069416ms)
-✔ LIFE_RUN_LOOPS="false" → voice daemon, NO loops start (0.11ms)
-✔ LIFE_RUN_LOOPS="FALSE" → voice daemon, NO loops start (0.066625ms)
-✔ LIFE_RUN_LOOPS=" False " → voice daemon, NO loops start (0.052125ms)
-✔ LIFE_RUN_LOOPS="0" → voice daemon, NO loops start (0.044291ms)
-✔ LIFE_RUN_LOOPS="off" → voice daemon, NO loops start (0.040875ms)
-✔ an unrelated value (e.g. 'yes') is treated as ON (fail-safe to running, not silent-off) (0.041375ms)
+ℹ duration_ms 74.108584
+✔ default (unset) → all 5 loops start once (Railway behaviour unchanged) (1.175916ms)
+✔ LIFE_RUN_LOOPS="true" → all 5 loops start (0.058667ms)
+✔ LIFE_RUN_LOOPS="false" → voice daemon, NO loops start (0.100416ms)
+✔ LIFE_RUN_LOOPS="FALSE" → voice daemon, NO loops start (0.062583ms)
+✔ LIFE_RUN_LOOPS=" False " → voice daemon, NO loops start (0.042833ms)
+✔ LIFE_RUN_LOOPS="0" → voice daemon, NO loops start (0.038916ms)
+✔ LIFE_RUN_LOOPS="off" → voice daemon, NO loops start (0.035375ms)
+✔ an unrelated value (e.g. 'yes') is treated as ON (fail-safe to running, not silent-off) (0.038541ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -196,16 +196,16 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 69.38625
-✔ LM-32: location and payout gates distinguish missing, expired, fresh, and registered states (1.73375ms)
-✔ LM-32: seven-day throttle includes the exact boundary and rejects future timestamps (0.088417ms)
-✔ LM-32: multiple locked gates rotate while unlocked gates are never selected (0.065791ms)
-✔ LM-32: discovery copy comes verbatim from the i18n table with one gate per message (1.23475ms)
-✔ LM-32: user run sends one due locked gate and persists only after Telegram accepts it (0.240875ms)
-✔ LM-32: failed Telegram send does not burn the weekly throttle (0.087833ms)
-✔ LM-32: a user inside the seven-day window performs no gate lookup or send (0.0595ms)
-✔ LM-32: discovery callbacks reuse the router; how-to replies and later stays silent (0.220084ms)
-✔ LM-32: migration is additive and the E2E hook targets one user (0.60875ms)
+ℹ duration_ms 65.816833
+✔ LM-32: location and payout gates distinguish missing, expired, fresh, and registered states (1.8335ms)
+✔ LM-32: seven-day throttle includes the exact boundary and rejects future timestamps (0.088542ms)
+✔ LM-32: multiple locked gates rotate while unlocked gates are never selected (0.071375ms)
+✔ LM-32: discovery copy comes verbatim from the i18n table with one gate per message (0.932166ms)
+✔ LM-32: user run sends one due locked gate and persists only after Telegram accepts it (0.178667ms)
+✔ LM-32: failed Telegram send does not burn the weekly throttle (0.077541ms)
+✔ LM-32: a user inside the seven-day window performs no gate lookup or send (0.051208ms)
+✔ LM-32: discovery callbacks reuse the router; how-to replies and later stays silent (0.191083ms)
+✔ LM-32: migration is additive and the E2E hook targets one user (0.280542ms)
 ℹ tests 9
 ℹ suites 0
 ℹ pass 9
@@ -213,11 +213,11 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 74.517375
-✔ LM-33c: panel renders the five mirror sections in spec order (0.807334ms)
-✔ LM-33c: panel is read-only and fetches only the five same-origin read APIs (0.188125ms)
-✔ LM-33c: panel CSS collapses to one column without horizontal overflow at 375px (0.125583ms)
-✔ LM-33c: panel provides an inline favicon without an extra failing request (0.04625ms)
+ℹ duration_ms 69.04425
+✔ LM-33c: panel renders the five mirror sections in spec order (0.783541ms)
+✔ LM-33c: panel is read-only and fetches only the five same-origin read APIs (0.168958ms)
+✔ LM-33c: panel CSS collapses to one column without horizontal overflow at 375px (0.116ms)
+✔ LM-33c: panel provides an inline favicon without an extra failing request (0.038959ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -225,18 +225,18 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 70.201458
-✔ LM-33a: /panel token is 256-bit opaque, hash-only at rest, and expires in five minutes (2.542208ms)
-✔ LM-33a: a valid one-time token is burned and exchanged for a separate 24-hour session (28.454959ms)
-✔ LM-33a/33c: /panel with a live session renders the authenticated mirror without leaking uid (5.894791ms)
-✔ LM-33a negative: reusing a burned token returns 403 (1.865459ms)
-✔ LM-33a negative: an expired token returns 403 (1.117041ms)
-✔ LM-33a negative: a tampered token returns 403 (0.969916ms)
-✔ LM-33a negative: /panel without a session returns 401 (1.123083ms)
-✔ LM-33a: Telegram recognizes only the /panel command (0.100875ms)
-✔ LM-33a: Telegram /panel sends the generated single-use URL (0.17175ms)
-✔ LM-33a: additive migration stores token/session hashes and atomically claims once before expiry (0.809166ms)
-✔ LM-33a: life-call wires GET /panel and Telegram /panel without changing /lm onboarding (0.904208ms)
+ℹ duration_ms 63.854375
+✔ LM-33a: /panel token is 256-bit opaque, hash-only at rest, and expires in five minutes (2.54ms)
+✔ LM-33a: a valid one-time token is burned and exchanged for a separate 24-hour session (29.598917ms)
+✔ LM-33a/33c: /panel with a live session renders the authenticated mirror without leaking uid (5.724583ms)
+✔ LM-33a negative: reusing a burned token returns 403 (1.82225ms)
+✔ LM-33a negative: an expired token returns 403 (1.074583ms)
+✔ LM-33a negative: a tampered token returns 403 (1.072875ms)
+✔ LM-33a negative: /panel without a session returns 401 (0.857584ms)
+✔ LM-33a: Telegram recognizes only the /panel command (0.097958ms)
+✔ LM-33a: Telegram /panel sends the generated single-use URL (0.157708ms)
+✔ LM-33a: additive migration stores token/session hashes and atomically claims once before expiry (0.7785ms)
+✔ LM-33a: life-call wires GET /panel and Telegram /panel without changing /lm onboarding (0.211083ms)
 ℹ tests 11
 ℹ suites 0
 ℹ pass 11
@@ -244,16 +244,16 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 131.847959
-✔ LM-33b timeline returns today's interpreted calendar and call telemetry (43.760292ms)
-✔ LM-33b scores use real aggregates and expose unimplemented/no-data organs (4.299125ms)
-✔ LM-33b ledger aggregates lm_api_cost and is honest when FIN ledger is absent (1.303292ms)
-✔ LM-33b gates reuse LM-32 lock decisions and discovery copy (1.297709ms)
-✔ LM-33b settings mirror language, actual call schedule, and connection state (1.583542ms)
-✔ LM-33b negative: every endpoint requires a panel session (2.954625ms)
-✔ LM-33b negative: a panel cookie outside /api/panel cannot touch session or panel data (1.771625ms)
-✔ LM-33b negative: API is read-only (0.92025ms)
-✔ LM-33b negative: request UID is ignored and every data source stays bound to session UID (4.905125ms)
+ℹ duration_ms 127.355
+✔ LM-33b timeline returns today's interpreted calendar and call telemetry (42.759709ms)
+✔ LM-33b scores use real aggregates and expose unimplemented/no-data organs (4.451541ms)
+✔ LM-33b ledger aggregates lm_api_cost and is honest when FIN ledger is absent (1.326708ms)
+✔ LM-33b gates reuse LM-32 lock decisions and discovery copy (1.237792ms)
+✔ LM-33b settings mirror language, actual call schedule, and connection state (1.336458ms)
+✔ LM-33b negative: every endpoint requires a panel session (3.083666ms)
+✔ LM-33b negative: a panel cookie outside /api/panel cannot touch session or panel data (1.976125ms)
+✔ LM-33b negative: API is read-only (0.996ms)
+✔ LM-33b negative: request UID is ignored and every data source stays bound to session UID (3.916625ms)
 ℹ tests 9
 ℹ suites 0
 ℹ pass 9
@@ -261,24 +261,24 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 142.282458
+ℹ duration_ms 144.137625
 [scheduler] LOW BALANCE (no LM_ADMIN_TELEGRAM_CHAT_ID configured): telnyx balance too low ($0.10)
-✔ claimAsk: 201 → claimed (true); 409 → already asked (false); POSTs to lm_ask_log (0.76075ms)
-✔ claimAsk: any non-201 (500/network) → false (do NOT proceed to send on an unknown write) (0.057667ms)
-✔ claimAsk: no supa configured → true (best-effort, don't block the ask) (0.041208ms)
-✔ claimTravel: 201 → true, 409 → false; POSTs lm_travel_log with the leg (0.084ms)
-✔ claimTravel: go and return are SEPARATE legs (so one event gets both blocks, not deduped together) (0.079459ms)
-✔ claimTravel: no supa → true (in-memory gcal dedup still guards obvious dups) (0.037708ms)
-✔ unclaimAsk DELETEs the exact (uid,event_id) row; unclaimTravel DELETEs (uid,event_key,leg) (0.09375ms)
-✔ [INTEGRATION][FIND-001] two same-startMs events with DIFFERENT ids BOTH get [Travel] blocks (evKey uses id, not startMs) (1.213042ms)
-✔ [INTEGRATION] re-running fillTravel does NOT double-create — 2nd run's claims all 409 (0.200708ms)
-✔ claimWake: 201 → true (fresh), 409 → false (already called); POSTs lm_wake_log (0.128708ms)
-✔ releaseWake DELETEs the exact (uid,event_key) row (mirrors unclaimTravel) (0.366875ms)
-✔ [INTEGRATION] claim→dial-fail→release→re-claim: a failed dial is retryable on the next tick (0.059166ms)
-✔ isLowBalanceError matches the exact dial.js message, ignores unrelated dial errors (0.054334ms)
-✔ shouldAlertLowBalance: fires once, then throttled for LOW_BALANCE_ALERT_COOLDOWN_MS (0.048625ms)
-✔ maybeAlertLowBalance: no LM_ADMIN_TELEGRAM_CHAT_ID configured → logs, does not throw, does not fetch (0.400708ms)
-✔ maybeAlertLowBalance: with admin chat configured, sends via the Telegram Bot API and respects the throttle (0.089ms)
+✔ claimAsk: 201 → claimed (true); 409 → already asked (false); POSTs to lm_ask_log (0.780083ms)
+✔ claimAsk: any non-201 (500/network) → false (do NOT proceed to send on an unknown write) (0.057583ms)
+✔ claimAsk: no supa configured → true (best-effort, don't block the ask) (0.039208ms)
+✔ claimTravel: 201 → true, 409 → false; POSTs lm_travel_log with the leg (0.082459ms)
+✔ claimTravel: go and return are SEPARATE legs (so one event gets both blocks, not deduped together) (0.067208ms)
+✔ claimTravel: no supa → true (in-memory gcal dedup still guards obvious dups) (0.036625ms)
+✔ unclaimAsk DELETEs the exact (uid,event_id) row; unclaimTravel DELETEs (uid,event_key,leg) (0.091875ms)
+✔ [INTEGRATION][FIND-001] two same-startMs events with DIFFERENT ids BOTH get [Travel] blocks (evKey uses id, not startMs) (1.287125ms)
+✔ [INTEGRATION] re-running fillTravel does NOT double-create — 2nd run's claims all 409 (0.197875ms)
+✔ claimWake: 201 → true (fresh), 409 → false (already called); POSTs lm_wake_log (0.152208ms)
+✔ releaseWake DELETEs the exact (uid,event_key) row (mirrors unclaimTravel) (0.409084ms)
+✔ [INTEGRATION] claim→dial-fail→release→re-claim: a failed dial is retryable on the next tick (0.097666ms)
+✔ isLowBalanceError matches the exact dial.js message, ignores unrelated dial errors (0.084917ms)
+✔ shouldAlertLowBalance: fires once, then throttled for LOW_BALANCE_ALERT_COOLDOWN_MS (0.052042ms)
+✔ maybeAlertLowBalance: no LM_ADMIN_TELEGRAM_CHAT_ID configured → logs, does not throw, does not fetch (0.464334ms)
+✔ maybeAlertLowBalance: with admin chat configured, sends via the Telegram Bot API and respects the throttle (0.103ms)
 ℹ tests 16
 ℹ suites 0
 ℹ pass 16
@@ -286,21 +286,21 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 74.060708
+ℹ duration_ms 77.375959
 [ask] callback yes uid=u1 event=e1
-✔ LM-24: both Telnyx streaming bodies target the caller leg (0.639458ms)
-✔ LM-30: webhook subscribes to edited live-location updates; callbacks are answered (0.725833ms)
-✔ LM-30: parseUpdate preserves message fields and parses callback_query/live location (0.140958ms)
-✔ LM-23/LM-6: callback router dispatches ask/gmail and ignores removed/unknown prefixes (0.14475ms)
-✔ LM-3: Unipile searchInbox uses the verified search query parameter (0.424791ms)
-✔ LM-3: search then extraction uses two Gemini calls and Gmail snippets (0.222625ms)
-✔ Gmail OFF: cached provider probe rejects 401 and avoids a probe on every call (0.121584ms)
-✔ Gmail OFF: search-before-ask skips inbox and goes directly to Google Search (0.086459ms)
-✔ LM-3: candidate found builds the exact closed-question buttons (0.0815ms)
-✔ LM-3: yes callback writes persisted candidate; no falls back to free text (0.541417ms)
-✔ LM-3: no candidate is a silent null so existing open question remains (0.073667ms)
-✔ life-manager#11: ask-kind event with a found candidate autofills, sends no ask (0.965ms)
-✔ life-manager#11: ask-kind event with no candidate does not autofill (0.141ms)
+✔ LM-24: both Telnyx streaming bodies target the caller leg (0.694292ms)
+✔ LM-30: webhook subscribes to edited live-location updates; callbacks are answered (0.767459ms)
+✔ LM-30: parseUpdate preserves message fields and parses callback_query/live location (0.1465ms)
+✔ LM-23/LM-6: callback router dispatches ask/gmail and ignores removed/unknown prefixes (0.165416ms)
+✔ LM-3: Unipile searchInbox uses the verified search query parameter (0.438541ms)
+✔ LM-3: search then extraction uses two Gemini calls and Gmail snippets (0.235459ms)
+✔ Gmail OFF: cached provider probe rejects 401 and avoids a probe on every call (0.12675ms)
+✔ Gmail OFF: search-before-ask skips inbox and goes directly to Google Search (0.0955ms)
+✔ LM-3: candidate found builds the exact closed-question buttons (0.082708ms)
+✔ LM-3: yes callback writes persisted candidate; no falls back to free text (0.575458ms)
+✔ LM-3: no candidate is a silent null so existing open question remains (0.081ms)
+✔ life-manager#11: ask-kind event with a found candidate autofills, sends no ask (1.189167ms)
+✔ life-manager#11: ask-kind event with no candidate does not autofill (0.128708ms)
 ℹ tests 13
 ℹ suites 0
 ℹ pass 13
@@ -308,26 +308,26 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 71.049
-✔ null row → calendar (name is never a blocking typed stage) (0.633291ms)
-✔ no calendar → calendar even when name is absent (0.045167ms)
-✔ calendar set, no phone → phone (0.034875ms)
-✔ phone set, not paid → pay (0.032417ms)
-✔ paid without Gmail decision → gmail (0.041958ms)
-✔ Gmail connected → done (0.039458ms)
-✔ Gmail skipped → done (0.04225ms)
-✔ order is strict: phone and pay precede Gmail (0.037333ms)
-✔ telegramProfileName: derives name from first_name + last_name (0.065542ms)
-✔ applyTelegramProfileName: fills missing name without overwriting an existing name (0.607792ms)
-✔ phone is the only NATIVE typed stage (0.0645ms)
-✔ calendar/pay carry web buttons; Gmail carries connect + skip buttons (0.136209ms)
-✔ phone acknowledges calendar; pay acknowledges phone; Gmail never claims connection (0.109167ms)
-✔ Gmail skip persists gmail_skipped=true and advances to done (0.114125ms)
-✔ Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button (0.138917ms)
-✔ calendar completion triggers best-effort context backfill once before announcing phone (0.129542ms)
-✔ calendar completion hook also runs on immediate /start or text resume (0.0605ms)
-✔ normalizePhone: valid forms (0.075209ms)
-✔ normalizePhone: junk → null (0.037583ms)
+ℹ duration_ms 77.807208
+✔ null row → calendar (name is never a blocking typed stage) (0.651834ms)
+✔ no calendar → calendar even when name is absent (0.048417ms)
+✔ calendar set, no phone → phone (0.037791ms)
+✔ phone set, not paid → pay (0.038416ms)
+✔ paid without Gmail decision → gmail (0.063ms)
+✔ Gmail connected → done (0.036958ms)
+✔ Gmail skipped → done (0.036209ms)
+✔ order is strict: phone and pay precede Gmail (0.034791ms)
+✔ telegramProfileName: derives name from first_name + last_name (0.06475ms)
+✔ applyTelegramProfileName: fills missing name without overwriting an existing name (0.627125ms)
+✔ phone is the only NATIVE typed stage (0.067ms)
+✔ calendar/pay carry web buttons; Gmail carries connect + skip buttons (0.140167ms)
+✔ phone acknowledges calendar; pay acknowledges phone; Gmail never claims connection (0.104625ms)
+✔ Gmail skip persists gmail_skipped=true and advances to done (0.118959ms)
+✔ Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button (0.140833ms)
+✔ calendar completion triggers best-effort context backfill once before announcing phone (0.121833ms)
+✔ calendar completion hook also runs on immediate /start or text resume (0.04975ms)
+✔ normalizePhone: valid forms (0.079667ms)
+✔ normalizePhone: junk → null (0.033458ms)
 ℹ tests 19
 ℹ suites 0
 ℹ pass 19
@@ -335,10 +335,10 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 69.977125
-✔ contextEntries returns exactly the five required graph fields (1.152958ms)
-✔ backfillCalendarContext reads the previous 60 days and upserts five memories (0.732291ms)
-✔ backfillCalendarContext logs and skips instead of crashing when inference is unavailable (0.187208ms)
+ℹ duration_ms 74.15975
+✔ contextEntries returns exactly the five required graph fields (1.145291ms)
+✔ backfillCalendarContext reads the previous 60 days and upserts five memories (0.829458ms)
+✔ backfillCalendarContext logs and skips instead of crashing when inference is unavailable (0.190041ms)
 ℹ tests 3
 ℹ suites 0
 ℹ pass 3
@@ -346,10 +346,10 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.738083
-✔ signedGmailConnectUrl creates a life-call deep link with a server-verifiable uid signature (1.18275ms)
-✔ createHostedGmailLink wires the existing Unipile Gmail hosted-auth flow (1.364292ms)
-✔ createHostedGmailLink returns null when unavailable and never fakes success (0.151666ms)
+ℹ duration_ms 69.087667
+✔ signedGmailConnectUrl creates a life-call deep link with a server-verifiable uid signature (1.209625ms)
+✔ createHostedGmailLink wires the existing Unipile Gmail hosted-auth flow (1.438ms)
+✔ createHostedGmailLink returns null when unavailable and never fakes success (0.139959ms)
 ℹ tests 3
 ℹ suites 0
 ℹ pass 3
@@ -357,15 +357,15 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 71.612291
-✔ location gate distinguishes missing, expired, on-time, and late (1.201917ms)
-✔ success copy follows spec table and rounds the notice ETA up to five minutes (0.622792ms)
-✔ location helpers upsert the latest live fix, enforce expiry, and atomically claim an event (0.389334ms)
-✔ gate-closed and on-time decisions perform no claim, email, or Telegram I/O (0.156041ms)
-✔ late event with no external email is claimed once and reports the exact honest failure copy (0.146583ms)
-✔ late event sends one Resend notice then the exact success report (0.121875ms)
-✔ structured notice reuses the Resend mail path and excludes self/organizer attendees (0.188875ms)
-✔ migration creates additive location and event-dedup tables (0.304292ms)
+ℹ duration_ms 70.58175
+✔ location gate distinguishes missing, expired, on-time, and late (1.205667ms)
+✔ success copy follows spec table and rounds the notice ETA up to five minutes (0.607083ms)
+✔ location helpers upsert the latest live fix, enforce expiry, and atomically claim an event (0.380667ms)
+✔ gate-closed and on-time decisions perform no claim, email, or Telegram I/O (0.155667ms)
+✔ late event with no external email is claimed once and reports the exact honest failure copy (0.157042ms)
+✔ late event sends one Resend notice then the exact success report (0.126333ms)
+✔ structured notice reuses the Resend mail path and excludes self/organizer attendees (0.193875ms)
+✔ migration creates additive location and event-dedup tables (0.304333ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -373,14 +373,14 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 70.123667
-✔ LM-7 migration creates only the additive lm_api_cost ledger (1.467958ms)
-✔ recordCost inserts the normalized row through Supabase REST (1.4555ms)
-✔ recordCost logs and resolves false when Supabase fails (0.268916ms)
-✔ recordDailyComposioPoll uses a DB day query and inserts at most one row (1.720083ms)
-✔ monthlyComposioCallCount reads the exact monthly composio_call count (0.245417ms)
-✔ businessSummary is pure and groups calls and total cost per uid (0.261541ms)
-✔ production bridge and scheduler contain all three LM-7 recording points (0.310167ms)
+ℹ duration_ms 68.6015
+✔ LM-7 migration creates only the additive lm_api_cost ledger (1.039458ms)
+✔ recordCost inserts the normalized row through Supabase REST (0.918542ms)
+✔ recordCost logs and resolves false when Supabase fails (0.206ms)
+✔ recordDailyComposioPoll uses a DB day query and inserts at most one row (0.781334ms)
+✔ monthlyComposioCallCount reads the exact monthly composio_call count (0.191041ms)
+✔ businessSummary is pure and groups calls and total cost per uid (0.233125ms)
+✔ production bridge and scheduler contain all three LM-7 recording points (0.21675ms)
 ℹ tests 7
 ℹ suites 0
 ℹ pass 7
@@ -388,14 +388,14 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 85.1975
-✔ same uid and minute-rounded window is fetched once within TTL (0.718417ms)
-✔ expired entry is fetched again (0.078458ms)
-✔ createEvent invalidates every cached window for that uid (0.1285ms)
-✔ patchEvent invalidates that uid without invalidating another uid (0.097958ms)
-✔ different uids use different cache keys (0.071875ms)
-✔ an empty inner result remains an empty array (0.556958ms)
-✔ getCalendar shares the cached wrapper unless LM_CAL_CACHE=off (1.192041ms)
+ℹ duration_ms 68.04675
+✔ same uid and minute-rounded window is fetched once within TTL (0.731708ms)
+✔ expired entry is fetched again (0.085333ms)
+✔ createEvent invalidates every cached window for that uid (0.125333ms)
+✔ patchEvent invalidates that uid without invalidating another uid (0.099125ms)
+✔ different uids use different cache keys (0.076792ms)
+✔ an empty inner result remains an empty array (1.334458ms)
+✔ getCalendar shares the cached wrapper unless LM_CAL_CACHE=off (2.944125ms)
 ℹ tests 7
 ℹ suites 0
 ℹ pass 7
@@ -403,11 +403,11 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 68.08775
-✔ listEventsRaw maps Unipile events to Google Calendar shape (1.653042ms)
-✔ patchEvent PATCHes the Unipile event URL with a partial location body (0.171541ms)
-✔ createEvent translates the existing Composio argument shape to Unipile v1 (0.701584ms)
-✔ getCalendar selects Unipile only via LIFE_CAL_TRANSPORT and fails loud on unknown values (0.278667ms)
+ℹ duration_ms 70.259333
+✔ listEventsRaw maps Unipile events to Google Calendar shape (1.681708ms)
+✔ patchEvent PATCHes the Unipile event URL with a partial location body (0.178ms)
+✔ createEvent translates the existing Composio argument shape to Unipile v1 (0.784875ms)
+✔ getCalendar selects Unipile only via LIFE_CAL_TRANSPORT and fails loud on unknown values (0.360625ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -415,41 +415,41 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 71.653125
-✔ scheduler exports wakeUserOnce as a function (7.525ms)
-✔ scheduler exports travelUserOnce as a function (0.065792ms)
-✔ scheduler exports askUserOnce as a function (0.049625ms)
-✔ scheduler exports listPaidUsers as a function (0.039584ms)
-✔ scheduler exports getUserByUid as a function (FIND-004) (0.0425ms)
-✔ inngest/client.js exports an inngest object (60.777958ms)
-✔ server.js imports serve from inngest/node (not inngest/express) — FIND-002 (0.141042ms)
-✔ inngest/functions.js exports a functions array (0.45675ms)
-✔ sweep-wake handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is unset — FIND-003 (0.088959ms)
-✔ sweep-travel handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is 'true' — FIND-003 (0.103833ms)
-✔ sweep-ask handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is unset — FIND-003 (0.060458ms)
-✔ sweep-wake handler fans out when LIFE_RUN_LOOPS=false — FIND-003 (0.100792ms)
-✔ sweep-wake fans out ONLY { uid } not full user row — FIND-004 (0.617792ms)
-✔ sweep-travel fans out ONLY { uid } — FIND-004 (0.071375ms)
-✔ sweep-ask fans out ONLY { uid } — FIND-004 (0.051291ms)
-✔ sweep-wake with empty user list → 0 sendEvent calls — FIND-002 (0.036208ms)
-✔ wake-user handler re-fetches user by uid then invokes wakeUserOnce — FIND-004 (0.080583ms)
-✔ travel-user handler re-fetches user then invokes travelUserOnce — FIND-004 (0.056667ms)
-✔ ask-user handler re-fetches user then invokes askUserOnce — FIND-004 (0.054083ms)
-✔ wake-user handler: unknown uid (getUserByUid → null) → no-op, no throw — FIND-002 (0.083833ms)
-✔ travel-user handler: unknown uid → no-op, no throw — FIND-002 (0.040708ms)
-✔ ask-user handler: unknown uid → no-op, no throw — FIND-002 (0.039083ms)
-✔ wake-user handler: missing uid in event.data → no-op, no throw — FIND-002 (0.03325ms)
-✔ wake-user Inngest function has concurrency key 'event.data.uid' (0.033083ms)
-✔ travel-user Inngest function has concurrency key 'event.data.uid' (0.034584ms)
-✔ ask-user Inngest function has concurrency key 'event.data.uid' (0.027375ms)
-✔ server.js source contains the /api/inngest mount (0.072958ms)
-✔ server.js source still contains /ws (WebSocket bridge not removed) (0.068375ms)
-✔ server.js source still contains LIFE_RUN_LOOPS gate (in-process path preserved) (0.072292ms)
-✔ inngestServeAllowed returns true in dev (INNGEST_DEV=1) even without signing key — FIND-005 (76.463583ms)
-✔ inngestServeAllowed returns true in dev with INNGEST_DEV=1 and signing key present — FIND-005 (0.0425ms)
-✔ inngestServeAllowed returns false in prod (no INNGEST_DEV) when signing key missing — FIND-005 (0.024791ms)
-✔ inngestServeAllowed returns false when INNGEST_DEV is not '1' and key is missing — FIND-005 (0.022084ms)
-✔ inngestServeAllowed returns true in prod when signing key is set — FIND-005 (0.0205ms)
+ℹ duration_ms 77.000459
+✔ scheduler exports wakeUserOnce as a function (45.045958ms)
+✔ scheduler exports travelUserOnce as a function (0.079084ms)
+✔ scheduler exports askUserOnce as a function (0.045584ms)
+✔ scheduler exports listPaidUsers as a function (0.04125ms)
+✔ scheduler exports getUserByUid as a function (FIND-004) (0.042167ms)
+✔ inngest/client.js exports an inngest object (30.911291ms)
+✔ server.js imports serve from inngest/node (not inngest/express) — FIND-002 (0.158208ms)
+✔ inngest/functions.js exports a functions array (0.315917ms)
+✔ sweep-wake handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is unset — FIND-003 (0.099ms)
+✔ sweep-travel handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is 'true' — FIND-003 (0.103584ms)
+✔ sweep-ask handler does NOTHING (no sendEvent) when LIFE_RUN_LOOPS is unset — FIND-003 (0.066084ms)
+✔ sweep-wake handler fans out when LIFE_RUN_LOOPS=false — FIND-003 (0.099875ms)
+✔ sweep-wake fans out ONLY { uid } not full user row — FIND-004 (0.65725ms)
+✔ sweep-travel fans out ONLY { uid } — FIND-004 (0.067875ms)
+✔ sweep-ask fans out ONLY { uid } — FIND-004 (0.057166ms)
+✔ sweep-wake with empty user list → 0 sendEvent calls — FIND-002 (0.040167ms)
+✔ wake-user handler re-fetches user by uid then invokes wakeUserOnce — FIND-004 (0.092458ms)
+✔ travel-user handler re-fetches user then invokes travelUserOnce — FIND-004 (0.063959ms)
+✔ ask-user handler re-fetches user then invokes askUserOnce — FIND-004 (0.054625ms)
+✔ wake-user handler: unknown uid (getUserByUid → null) → no-op, no throw — FIND-002 (0.08875ms)
+✔ travel-user handler: unknown uid → no-op, no throw — FIND-002 (0.041ms)
+✔ ask-user handler: unknown uid → no-op, no throw — FIND-002 (0.0395ms)
+✔ wake-user handler: missing uid in event.data → no-op, no throw — FIND-002 (0.034ms)
+✔ wake-user Inngest function has concurrency key 'event.data.uid' (0.038625ms)
+✔ travel-user Inngest function has concurrency key 'event.data.uid' (0.029417ms)
+✔ ask-user Inngest function has concurrency key 'event.data.uid' (0.03125ms)
+✔ server.js source contains the /api/inngest mount (0.084375ms)
+✔ server.js source still contains /ws (WebSocket bridge not removed) (0.066875ms)
+✔ server.js source still contains LIFE_RUN_LOOPS gate (in-process path preserved) (0.071666ms)
+✔ inngestServeAllowed returns true in dev (INNGEST_DEV=1) even without signing key — FIND-005 (32.503625ms)
+✔ inngestServeAllowed returns true in dev with INNGEST_DEV=1 and signing key present — FIND-005 (0.049083ms)
+✔ inngestServeAllowed returns false in prod (no INNGEST_DEV) when signing key missing — FIND-005 (0.027667ms)
+✔ inngestServeAllowed returns false when INNGEST_DEV is not '1' and key is missing — FIND-005 (0.023334ms)
+✔ inngestServeAllowed returns true in prod when signing key is set — FIND-005 (0.02325ms)
 ℹ tests 34
 ℹ suites 0
 ℹ pass 34
@@ -457,29 +457,29 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 214.400375
-✔ entitlementFor: active/trialing/past_due → paid=true (provision + grace) (0.665ms)
-✔ entitlementFor: canceled/unpaid/incomplete* → paid=false (revoke) (0.056458ms)
-✔ entitlementFor: unknown/empty/null → paid=false (fail-safe) (0.046834ms)
-✔ parseStripeEvent: checkout → uid, customer, sub, paymentStatus, created (0.625291ms)
-✔ parseStripeEvent: subscription.updated → status, currentPeriodEnd, created (0.065958ms)
-✔ parseStripeEvent: deleted → canceled; unknown → null (0.047334ms)
-✔ isStale: older created → stale; newer/equal → fresh (0.569709ms)
-✔ isStale: no stored timestamp → never stale (first event applies) (0.038917ms)
-✔ FIND-002: immediate-cancel with LOWER current_period_end but LATER created still applies (not stale) (0.049458ms)
-✔ toEpoch parses ISO + numeric + epoch (0.075834ms)
-✔ claimEvent: 201 → true; 409 → false; no creds → true (0.120667ms)
-✔ unclaimEvent: DELETE → true; failure → false (caller logs RECONCILE) (0.076ms)
-✔ applyBilling checkout PAID → provision (paid=true, plan=active, linked) (0.615708ms)
-✔ applyBilling checkout UNPAID → link only, paid=false (FIND-003) (0.071333ms)
-✔ FIND-007: out-of-order UNPAID checkout (older created) does NOT clobber an active payer (0.059916ms)
-✔ FIND-007: a FRESH checkout (no prior event) still provisions (first event never stale) (0.056792ms)
-✔ applyBilling subscription active → provision; canceled → deprovision (0.106166ms)
-✔ applyBilling subscription STALE (older created) → no write (0.037541ms)
-✔ applyBilling orphan customer (no row) → no-op, no throw (0.033459ms)
-✔ applyBilling past_due → paid=true (grace) + dunning notify fired once (0.068416ms)
-✔ applyBilling unknown event type → ignored, no write (0.029458ms)
-✔ applyBilling patch failure → throws (handler 500s + unclaims) (0.132666ms)
+ℹ duration_ms 183.512584
+✔ entitlementFor: active/trialing/past_due → paid=true (provision + grace) (0.698208ms)
+✔ entitlementFor: canceled/unpaid/incomplete* → paid=false (revoke) (0.059125ms)
+✔ entitlementFor: unknown/empty/null → paid=false (fail-safe) (0.04775ms)
+✔ parseStripeEvent: checkout → uid, customer, sub, paymentStatus, created (0.633875ms)
+✔ parseStripeEvent: subscription.updated → status, currentPeriodEnd, created (0.060333ms)
+✔ parseStripeEvent: deleted → canceled; unknown → null (0.047167ms)
+✔ isStale: older created → stale; newer/equal → fresh (0.622208ms)
+✔ isStale: no stored timestamp → never stale (first event applies) (0.037459ms)
+✔ FIND-002: immediate-cancel with LOWER current_period_end but LATER created still applies (not stale) (0.047334ms)
+✔ toEpoch parses ISO + numeric + epoch (0.080375ms)
+✔ claimEvent: 201 → true; 409 → false; no creds → true (0.114666ms)
+✔ unclaimEvent: DELETE → true; failure → false (caller logs RECONCILE) (0.427458ms)
+✔ applyBilling checkout PAID → provision (paid=true, plan=active, linked) (0.237625ms)
+✔ applyBilling checkout UNPAID → link only, paid=false (FIND-003) (0.062666ms)
+✔ FIND-007: out-of-order UNPAID checkout (older created) does NOT clobber an active payer (0.055083ms)
+✔ FIND-007: a FRESH checkout (no prior event) still provisions (first event never stale) (0.057708ms)
+✔ applyBilling subscription active → provision; canceled → deprovision (0.102042ms)
+✔ applyBilling subscription STALE (older created) → no write (0.038584ms)
+✔ applyBilling orphan customer (no row) → no-op, no throw (0.034166ms)
+✔ applyBilling past_due → paid=true (grace) + dunning notify fired once (0.074291ms)
+✔ applyBilling unknown event type → ignored, no write (0.029542ms)
+✔ applyBilling patch failure → throws (handler 500s + unclaims) (0.140625ms)
 ℹ tests 22
 ℹ suites 0
 ℹ pass 22
@@ -487,23 +487,23 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 68.710458
+ℹ duration_ms 70.783958
 [test] uid=bbbbbbbbbbbb err boom
 [test] uid=u2 err async boom
 [test] uid=? err Cannot read properties of null (reading 'uid')
 [scheduler] uid=tB err boom
 [travel] uid=a err boom
 [ask] uid=a err boom
-✔ forEachUserSafe: a throwing tenant does NOT stop the others (1.625417ms)
-✔ forEachUserSafe: an async rejection for one tenant is contained too (0.176666ms)
-✔ forEachUserSafe: all-ok processes every tenant in order (0.07075ms)
-✔ forEachUserSafe: empty list is a no-op (no throw) (0.046792ms)
-✔ forEachUserSafe: a malformed user row (no uid) is contained, others continue (0.137167ms)
-✔ FIND-001: tick() isolates a throwing tenant (others still processed) (0.132125ms)
-✔ FIND-001: travelTick() isolates a throwing tenant (0.11625ms)
-✔ FIND-001: askTickAll() isolates a throwing tenant (0.109833ms)
+✔ forEachUserSafe: a throwing tenant does NOT stop the others (1.708834ms)
+✔ forEachUserSafe: an async rejection for one tenant is contained too (0.178666ms)
+✔ forEachUserSafe: all-ok processes every tenant in order (0.0755ms)
+✔ forEachUserSafe: empty list is a no-op (no throw) (0.048167ms)
+✔ forEachUserSafe: a malformed user row (no uid) is contained, others continue (0.137584ms)
+✔ FIND-001: tick() isolates a throwing tenant (others still processed) (0.117208ms)
+✔ FIND-001: travelTick() isolates a throwing tenant (0.107875ms)
+✔ FIND-001: askTickAll() isolates a throwing tenant (0.112542ms)
 [test] uid=hang err tenant timeout 50ms
-✔ FIND-002: a hanging tenant is abandoned after the timeout, others still processed (52.392208ms)
+✔ FIND-002: a hanging tenant is abandoned after the timeout, others still processed (52.615791ms)
 ℹ tests 9
 ℹ suites 0
 ℹ pass 9
@@ -511,16 +511,16 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 122.057292
-✔ placeKey: lowercase + collapse whitespace + trim (0.635625ms)
-✔ placeKey: empty/null → '' (no key) (0.04975ms)
-✔ placeKey: same summary with different casing/spacing maps to the SAME key (recurring-event recall) (0.039875ms)
-✔ recallPlace: row found → its address (0.623ms)
-✔ recallPlace: no row → null (0.068833ms)
-✔ recallPlace: missing phrase/uid/creds → null (never queries) (0.045792ms)
-✔ recallPlace: TTL (FIND-002) adds an updated_at filter so stale memory expires; ttlDays=0 disables it (0.093666ms)
-✔ rememberPlace: upsert (POST merge-duplicates) → true on 201/200/204 (0.113084ms)
-✔ rememberPlace: missing address/phrase/creds → false (no-op) (0.054208ms)
+ℹ duration_ms 126.691542
+✔ placeKey: lowercase + collapse whitespace + trim (0.664542ms)
+✔ placeKey: empty/null → '' (no key) (0.050583ms)
+✔ placeKey: same summary with different casing/spacing maps to the SAME key (recurring-event recall) (0.041875ms)
+✔ recallPlace: row found → its address (0.729542ms)
+✔ recallPlace: no row → null (0.094458ms)
+✔ recallPlace: missing phrase/uid/creds → null (never queries) (0.056584ms)
+✔ recallPlace: TTL (FIND-002) adds an updated_at filter so stale memory expires; ttlDays=0 disables it (0.111333ms)
+✔ rememberPlace: upsert (POST merge-duplicates) → true on 201/200/204 (0.122375ms)
+✔ rememberPlace: missing address/phrase/creds → false (no-op) (0.053375ms)
 ℹ tests 9
 ℹ suites 0
 ℹ pass 9
@@ -528,9 +528,9 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 63.202125
-✔ WAKE_LEVELS = exactly two calls: T-10 firm, T-5 harsh (no T-15) (1.06725ms)
-✔ WAKE_LEVELS: every urgency is valid (gentle|firm|harsh) and minutes are 5 apart, non-overlapping (0.097542ms)
+ℹ duration_ms 68.011958
+✔ WAKE_LEVELS = exactly two calls: T-10 firm, T-5 harsh (no T-15) (1.116209ms)
+✔ WAKE_LEVELS: every urgency is valid (gentle|firm|harsh) and minutes are 5 apart, non-overlapping (0.099125ms)
 ℹ tests 2
 ℹ suites 0
 ℹ pass 2
@@ -538,11 +538,11 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.976958
-✔ recallOrResolve: memory HIT → filled+fromMemory, model NOT called (1.184583ms)
-✔ recallOrResolve: memory MISS → delegates to agentResolveLocation (0.079291ms)
-✔ resolveTelegramReply: patch→REMEMBER fires with placeKey(summary) (0.811375ms)
-✔ resolveTelegramReply: no match → no remember (0.103334ms)
+ℹ duration_ms 72.813416
+✔ recallOrResolve: memory HIT → filled+fromMemory, model NOT called (1.239208ms)
+✔ recallOrResolve: memory MISS → delegates to agentResolveLocation (0.078417ms)
+✔ resolveTelegramReply: patch→REMEMBER fires with placeKey(summary) (0.825208ms)
+✔ resolveTelegramReply: no match → no remember (0.0855ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -550,12 +550,12 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.775667
-✔ first test call for a uid is allowed (0.611958ms)
-✔ a second call within the cooldown is rejected with retryAfter (0.077791ms)
-✔ a call after the cooldown elapses is allowed again (0.041542ms)
-✔ the daily cap blocks further calls even when spaced past the cooldown (0.053042ms)
-✔ calls older than 24h fall out of the window (cap resets) (0.050458ms)
+ℹ duration_ms 70.416208
+✔ first test call for a uid is allowed (0.629583ms)
+✔ a second call within the cooldown is rejected with retryAfter (0.083333ms)
+✔ a call after the cooldown elapses is allowed again (0.045458ms)
+✔ the daily cap blocks further calls even when spaced past the cooldown (0.057ms)
+✔ calls older than 24h fall out of the window (cap resets) (0.051042ms)
 ℹ tests 5
 ℹ suites 0
 ℹ pass 5
@@ -563,11 +563,11 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 130.746083
-✔ newReplyToken is 22 base64url chars (128 bits) and passes isReplyToken (0.795542ms)
-✔ reply+<token>@reply.aniccaai.com stays under the 64-char local-part limit (0.059542ms)
-✔ tokens are unique across calls (1.724292ms)
-✔ isReplyToken rejects garbage / wrong shape (0.090834ms)
+ℹ duration_ms 133.395375
+✔ newReplyToken is 22 base64url chars (128 bits) and passes isReplyToken (0.812584ms)
+✔ reply+<token>@reply.aniccaai.com stays under the 64-char local-part limit (0.058958ms)
+✔ tokens are unique across calls (1.772042ms)
+✔ isReplyToken rejects garbage / wrong shape (0.081ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -575,13 +575,13 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.622958
-✔ parseTransitPlan: best journey → {durationSecs, legs, transferCount} (0.677416ms)
-✔ parseTransitPlan: no journeys → null (caller falls back to Google) (0.057542ms)
-✔ isJapanGeo: JP bbox (lat 24–46, lon 122–146) (0.055167ms)
-✔ chooseRouter: both endpoints JP → 'transit', else 'google' (0.054458ms)
-✔ isJapanGeo: exact bbox boundaries 24/46/122/146 inclusive, just-outside excluded — FIND-001 (0.044042ms)
-✔ parseTransitPlan: picks EARLIEST ARRIVAL, not journeys[0] — FIND-006 (0.04375ms)
+ℹ duration_ms 70.01425
+✔ parseTransitPlan: best journey → {durationSecs, legs, transferCount} (0.688542ms)
+✔ parseTransitPlan: no journeys → null (caller falls back to Google) (0.051208ms)
+✔ isJapanGeo: JP bbox (lat 24–46, lon 122–146) (0.056458ms)
+✔ chooseRouter: both endpoints JP → 'transit', else 'google' (0.054959ms)
+✔ isJapanGeo: exact bbox boundaries 24/46/122/146 inclusive, just-outside excluded — FIND-001 (0.042958ms)
+✔ parseTransitPlan: picks EARLIEST ARRIVAL, not journeys[0] — FIND-006 (0.044416ms)
 ℹ tests 6
 ℹ suites 0
 ℹ pass 6
@@ -589,13 +589,13 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.851875
-✔ timeBucket: rounds a departure epoch to a coarse bucket (e.g. 10-min) (0.595583ms)
-✔ cacheKey: stable for same (uid, from, to, bucket) (0.08ms)
-✔ getOrCompute: provider called at most ONCE per key within TTL (0.096792ms)
-✔ getOrCompute: moved event (new bucket) recomputes (0.067625ms)
-✔ getOrCompute: stale beyond TTL recomputes (0.062292ms)
-✔ cacheKey: coords within ~11m (4dp) COLLIDE; coords across the rounding boundary do NOT — FIND-002 (0.043667ms)
+ℹ duration_ms 77.202916
+✔ timeBucket: rounds a departure epoch to a coarse bucket (e.g. 10-min) (0.626834ms)
+✔ cacheKey: stable for same (uid, from, to, bucket) (0.09675ms)
+✔ getOrCompute: provider called at most ONCE per key within TTL (0.101333ms)
+✔ getOrCompute: moved event (new bucket) recomputes (0.072875ms)
+✔ getOrCompute: stale beyond TTL recomputes (0.06575ms)
+✔ cacheKey: coords within ~11m (4dp) COLLIDE; coords across the rounding boundary do NOT — FIND-002 (0.045958ms)
 ℹ tests 6
 ℹ suites 0
 ℹ pass 6
@@ -603,13 +603,13 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 67.529167
-✔ makeGeminiEndHandler: ws error THEN close for ONE socket → reconnect once, carrier NOT closed (iteration-6 bug guard) (0.685417ms)
-✔ makeGeminiEndHandler: a reconnected socket that fails again (reconnects=1) ends the call, no 2nd retry (0.057208ms)
-✔ makeGeminiEndHandler: a drop AFTER audio started ends cleanly, never reconnects (0.042959ms)
-✔ routeGeminiMessage: serverContent.interrupted → {kind:'interrupted'}, no audio frame sent (0.584292ms)
-✔ carrierActionForGeminiKind: interrupted → {event:'clear'}; anything else → null (0.050875ms)
-✔ decideGeminiEnd: reconnect ONCE on a pre-audio transient failure, then end cleanly (no infinite loop) (0.042ms)
+ℹ duration_ms 66.990333
+✔ makeGeminiEndHandler: ws error THEN close for ONE socket → reconnect once, carrier NOT closed (iteration-6 bug guard) (0.661ms)
+✔ makeGeminiEndHandler: a reconnected socket that fails again (reconnects=1) ends the call, no 2nd retry (0.06775ms)
+✔ makeGeminiEndHandler: a drop AFTER audio started ends cleanly, never reconnects (0.046542ms)
+✔ routeGeminiMessage: serverContent.interrupted → {kind:'interrupted'}, no audio frame sent (0.613625ms)
+✔ carrierActionForGeminiKind: interrupted → {event:'clear'}; anything else → null (0.053417ms)
+✔ decideGeminiEnd: reconnect ONCE on a pre-audio transient failure, then end cleanly (no infinite loop) (0.043083ms)
 ℹ tests 6
 ℹ suites 0
 ℹ pass 6
@@ -617,18 +617,18 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 65.922791
-✔ langForPhone maps +81 to ja (0.652167ms)
-✔ langForPhone maps +1 to en (0.04525ms)
-✔ langForPhone defaults unknown numbers to en (0.038875ms)
-✔ resolveCallLang prioritizes an explicit Japanese language (0.040125ms)
-✔ resolveCallLang prioritizes an explicit English language (0.039708ms)
-✔ resolveCallLang infers Japanese from an +81 phone when language is unset (0.033375ms)
-✔ resolveCallLang infers English from a +1 phone when language is unset (0.042417ms)
-✔ resolveCallLang defaults to English when language and phone are absent (0.030666ms)
-✔ resolveCallLang falls back to phone inference for an invalid language (0.048583ms)
-✔ Japanese calls receive a Japanese opening turn (0.07675ms)
-✔ Japanese system instruction requires Japanese first and permits user-led switching (0.155542ms)
+ℹ duration_ms 69.097917
+✔ langForPhone maps +81 to ja (0.647709ms)
+✔ langForPhone maps +1 to en (0.04825ms)
+✔ langForPhone defaults unknown numbers to en (0.040625ms)
+✔ resolveCallLang prioritizes an explicit Japanese language (0.042917ms)
+✔ resolveCallLang prioritizes an explicit English language (0.037291ms)
+✔ resolveCallLang infers Japanese from an +81 phone when language is unset (0.034167ms)
+✔ resolveCallLang infers English from a +1 phone when language is unset (0.040458ms)
+✔ resolveCallLang defaults to English when language and phone are absent (0.03175ms)
+✔ resolveCallLang falls back to phone inference for an invalid language (0.043542ms)
+✔ Japanese calls receive a Japanese opening turn (0.077ms)
+✔ Japanese system instruction requires Japanese first and permits user-led switching (0.158125ms)
 ℹ tests 11
 ℹ suites 0
 ℹ pass 11
@@ -636,12 +636,12 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 66.734458
-✔ providers include composio_gcal AND pipedream_gcal (0.588041ms)
-✔ calendarProviderFilter: PostgREST in.() over both providers, not eq.composio_gcal (0.062709ms)
-✔ schedulerCohortFilter is the phone+paid+supported-provider SSOT (0.044541ms)
-✔ scheduler.js uses the shared filter at BOTH sites (exactly 2), no lingering eq.composio_gcal — FIND-007 (0.161834ms)
-✔ scheduler batch and uid selectors execute the same shared cohort contract (7.635334ms)
+ℹ duration_ms 68.0955
+✔ providers include composio_gcal AND pipedream_gcal (0.608542ms)
+✔ calendarProviderFilter: PostgREST in.() over both providers, not eq.composio_gcal (0.064458ms)
+✔ schedulerCohortFilter is the phone+paid+supported-provider SSOT (0.043959ms)
+✔ scheduler.js uses the shared filter at BOTH sites (exactly 2), no lingering eq.composio_gcal — FIND-007 (0.175916ms)
+✔ scheduler batch and uid selectors execute the same shared cohort contract (7.554333ms)
 ℹ tests 5
 ℹ suites 0
 ℹ pass 5
@@ -649,15 +649,15 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 69.680042
-✔ extractStripeLink: pulls buy.stripe.com/<slug> out of a chunk string (0.657708ms)
-✔ assertMoneyPath: PASS when bundle link == registry, FAIL on the ¥700k bug (0.1075ms)
-✔ RollbackController: debounce — needs >=2 consecutive FAIL before rollback (0.064667ms)
-✔ RollbackController: a PASS resets the debounce counter (0.039417ms)
-✔ RollbackController: flap guard — do not roll back into a target that also fails (0.040833ms)
-✔ RollbackController: Telegram dedup — ONE alert per incident, re-armed after recovery (0.04125ms)
-✔ assertMoneyPath: FAIL when a rogue 2nd stripe link is present (¥700k class) — FIND-003 (0.055125ms)
-✔ RollbackController: rollback fires ONCE per incident, not every cycle — FIND-004 (0.041417ms)
+ℹ duration_ms 73.971125
+✔ extractStripeLink: pulls buy.stripe.com/<slug> out of a chunk string (0.6645ms)
+✔ assertMoneyPath: PASS when bundle link == registry, FAIL on the ¥700k bug (0.122666ms)
+✔ RollbackController: debounce — needs >=2 consecutive FAIL before rollback (0.07125ms)
+✔ RollbackController: a PASS resets the debounce counter (0.042042ms)
+✔ RollbackController: flap guard — do not roll back into a target that also fails (0.0445ms)
+✔ RollbackController: Telegram dedup — ONE alert per incident, re-armed after recovery (0.043833ms)
+✔ assertMoneyPath: FAIL when a rogue 2nd stripe link is present (¥700k class) — FIND-003 (0.056041ms)
+✔ RollbackController: rollback fires ONCE per incident, not every cycle — FIND-004 (0.041042ms)
 ℹ tests 8
 ℹ suites 0
 ℹ pass 8
@@ -665,11 +665,11 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 62.236083
-✔ directionsMinutes: JP src+dst → uses transit (17 min), NO Google call (0.767ms)
-✔ directionsMinutes: non-JP dst → falls back to Google (0.086917ms)
-✔ directionsMinutes: transit 0 journeys → Google fallback (0.074583ms)
-✔ directionsMinutes: repeated ticks (same event) call the provider ONCE — FIND-002 cache (0.087875ms)
+ℹ duration_ms 65.734417
+✔ directionsMinutes: JP src+dst → uses transit (17 min), NO Google call (0.994833ms)
+✔ directionsMinutes: non-JP dst → falls back to Google (0.094ms)
+✔ directionsMinutes: transit 0 journeys → Google fallback (0.08525ms)
+✔ directionsMinutes: repeated ticks (same event) call the provider ONCE — FIND-002 cache (0.091ms)
 ℹ tests 4
 ℹ suites 0
 ℹ pass 4
@@ -677,9 +677,9 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 65.388208
-✔ fetchUpcomingEvents threads opts.gmailAccountId to the Unipile account_id query param (1.733666ms)
-✔ backward compat: without LIFE_CAL_TRANSPORT, gmailAccountId is a harmless no-op (composio path) (0.241416ms)
+ℹ duration_ms 81.738625
+✔ fetchUpcomingEvents threads opts.gmailAccountId to the Unipile account_id query param (2.205792ms)
+✔ backward compat: without LIFE_CAL_TRANSPORT, gmailAccountId is a harmless no-op (composio path) (0.280209ms)
 ℹ tests 2
 ℹ suites 0
 ℹ pass 2
@@ -687,70 +687,70 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 63.6295
-✔ schema positive: closed 9/9 current-run report is accepted (1.94675ms)
-✔ schema positive: exact 900000 ms checkedAt lower boundary is accepted (0.115792ms)
-✔ schema closed field: root unknown key (0.115958ms)
-✔ schema closed field: wrong schema enum (0.072541ms)
-✔ schema closed field: wrong version enum (0.070708ms)
-✔ schema closed field: wrong runStatus enum (0.062166ms)
-✔ schema closed field: invalid sourceSnapshotRef (0.06725ms)
-✔ schema closed field: caller supplied runRef (0.052167ms)
-✔ schema closed field: generatedAt after freshUntil (0.063709ms)
-✔ schema closed field: fresh window over 15 minutes (0.108ms)
-✔ schema closed field: required count not 9 (0.074875ms)
-✔ schema closed field: passed count not 9 (0.061042ms)
-✔ schema closed field: failed count not 0 (0.050084ms)
-✔ schema closed field: dependency unknown key (0.049625ms)
-✔ schema closed field: dependency status not pass (0.446041ms)
-✔ schema closed field: dependency fresh not true (0.051667ms)
-✔ schema closed field: invalid evidenceRef (0.045166ms)
-✔ schema closed field: effects unknown key (0.066041ms)
-✔ schema closed field: telegram send count not 1 (0.062208ms)
-✔ schema closed field: email send count not 1 (0.066708ms)
-✔ schema closed field: phone call count not 0 (0.064792ms)
-✔ schema closed field: reply reads outside 1..6 (0.056625ms)
-✔ schema closed field: webhook reads outside 1..3 (0.0555ms)
-✔ schema closed field: inbox reads outside 1..6 (0.054291ms)
-✔ schema closed field: correlation boolean false (0.05475ms)
-✔ schema closed field: recipient ownership false (0.060459ms)
-✔ checkedAt: one millisecond stale is rejected (0.046416ms)
-✔ checkedAt: one millisecond future is rejected (0.042917ms)
-✔ checkedAt: malformed strict timestamp is rejected (0.042125ms)
-✔ checkedAt: non-finite internal millisecond is rejected (0.0425ms)
-✔ checkedAt: before current run start is rejected (0.044417ms)
-✔ checkedAt: mixed-run observation is rejected (0.048375ms)
-✔ checkedAt: fresh true without time proof is rejected (0.045417ms)
-✔ checkedAt: non-round-trip UTC timestamp is rejected (0.039916ms)
-✔ dependency set: duplicate dependency is rejected (0.056125ms)
-✔ dependency set: missing dependency is rejected (0.0465ms)
-✔ dependency set: extra dependency is rejected (0.052041ms)
-✔ failure channel: failure diagnostics cannot enter a successful artifact (0.042458ms)
-✔ security: raw run correlation is never serialized (0.044625ms)
-✔ security: runRef must hash current correlation (0.040375ms)
-✔ security: provider response is forbidden (0.0545ms)
-✔ security: provider ID is forbidden (0.05025ms)
-✔ security: address is forbidden (0.041791ms)
-✔ security: arbitrary nested string is forbidden (0.059209ms)
-✔ security: previous-run observation is rejected despite fresh true (0.044417ms)
-✔ poll: Telegram reply attempt 6 is the final allowed attempt (0.744ms)
-✔ poll: Telegram reply attempt 7 is forbidden (0.056958ms)
-✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.04425ms)
-✔ poll: Telegram webhook attempt 4 is forbidden (0.043209ms)
-✔ poll: email inbox attempt 6 is the final allowed attempt (0.039458ms)
-✔ poll: email inbox attempt 7 is forbidden (0.044167ms)
-✔ timeout: Telegram Bot API calls are bounded at 15000 ms (0.033625ms)
-✔ timeout: Resend calls are bounded at 15000 ms (0.03175ms)
-✔ timeout: gog inbox calls are bounded at 15000 ms (0.061417ms)
-✔ deadline: Telegram collector is bounded at 179000 ms (0.088333ms)
-✔ deadline: email collector is bounded at 120000 ms (0.06225ms)
-✔ deadline: parallel controlled collection is bounded at 179000 ms (0.047084ms)
-✔ purity: production report API accepts no caller proof or correlation object (0.650542ms)
-✔ purity: production collectors retain zero injected transport surface (0.069917ms)
-✔ purity: runRef is derived from current internal correlation (0.067291ms)
-✔ purity: raw run correlation is excluded from serialization (0.086584ms)
-✔ purity: successful report uses temp-file fsync rename atomic publication (0.057166ms)
-✔ purity: failed publication removes temporary output and leaves no final artifact (0.05325ms)
+ℹ duration_ms 72.281333
+✔ schema positive: closed 9/9 current-run report is accepted (6.686ms)
+✔ schema positive: exact 900000 ms checkedAt lower boundary is accepted (0.301875ms)
+✔ schema closed field: root unknown key (0.417375ms)
+✔ schema closed field: wrong schema enum (0.081625ms)
+✔ schema closed field: wrong version enum (0.08275ms)
+✔ schema closed field: wrong runStatus enum (0.275542ms)
+✔ schema closed field: invalid sourceSnapshotRef (0.079917ms)
+✔ schema closed field: caller supplied runRef (0.062417ms)
+✔ schema closed field: generatedAt after freshUntil (0.073958ms)
+✔ schema closed field: fresh window over 15 minutes (0.109542ms)
+✔ schema closed field: required count not 9 (0.085209ms)
+✔ schema closed field: passed count not 9 (0.066625ms)
+✔ schema closed field: failed count not 0 (0.049875ms)
+✔ schema closed field: dependency unknown key (0.420083ms)
+✔ schema closed field: dependency status not pass (0.2125ms)
+✔ schema closed field: dependency fresh not true (0.292166ms)
+✔ schema closed field: invalid evidenceRef (0.117667ms)
+✔ schema closed field: effects unknown key (0.0925ms)
+✔ schema closed field: telegram send count not 1 (0.073708ms)
+✔ schema closed field: email send count not 1 (0.084791ms)
+✔ schema closed field: phone call count not 0 (0.084375ms)
+✔ schema closed field: reply reads outside 1..6 (0.07275ms)
+✔ schema closed field: webhook reads outside 1..3 (0.062584ms)
+✔ schema closed field: inbox reads outside 1..6 (0.062208ms)
+✔ schema closed field: correlation boolean false (0.061625ms)
+✔ schema closed field: recipient ownership false (0.07575ms)
+✔ checkedAt: one millisecond stale is rejected (0.050583ms)
+✔ checkedAt: one millisecond future is rejected (0.046875ms)
+✔ checkedAt: malformed strict timestamp is rejected (0.043375ms)
+✔ checkedAt: non-finite internal millisecond is rejected (0.044292ms)
+✔ checkedAt: before current run start is rejected (0.0485ms)
+✔ checkedAt: mixed-run observation is rejected (0.052ms)
+✔ checkedAt: fresh true without time proof is rejected (0.05ms)
+✔ checkedAt: non-round-trip UTC timestamp is rejected (0.05175ms)
+✔ dependency set: duplicate dependency is rejected (0.0655ms)
+✔ dependency set: missing dependency is rejected (0.054333ms)
+✔ dependency set: extra dependency is rejected (0.051375ms)
+✔ failure channel: failure diagnostics cannot enter a successful artifact (0.045208ms)
+✔ security: raw run correlation is never serialized (0.055208ms)
+✔ security: runRef must hash current correlation (0.044208ms)
+✔ security: provider response is forbidden (0.066458ms)
+✔ security: provider ID is forbidden (0.045792ms)
+✔ security: address is forbidden (0.04575ms)
+✔ security: arbitrary nested string is forbidden (0.070792ms)
+✔ security: previous-run observation is rejected despite fresh true (0.084875ms)
+✔ poll: Telegram reply attempt 6 is the final allowed attempt (1.479834ms)
+✔ poll: Telegram reply attempt 7 is forbidden (0.062166ms)
+✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.048416ms)
+✔ poll: Telegram webhook attempt 4 is forbidden (0.045708ms)
+✔ poll: email inbox attempt 6 is the final allowed attempt (0.042041ms)
+✔ poll: email inbox attempt 7 is forbidden (0.039834ms)
+✔ timeout: Telegram Bot API calls are bounded at 15000 ms (0.032ms)
+✔ timeout: Resend calls are bounded at 15000 ms (0.034875ms)
+✔ timeout: gog inbox calls are bounded at 15000 ms (0.075791ms)
+✔ deadline: Telegram collector is bounded at 179000 ms (0.104917ms)
+✔ deadline: email collector is bounded at 120000 ms (0.058209ms)
+✔ deadline: parallel controlled collection is bounded at 179000 ms (0.049375ms)
+✔ purity: production report API accepts no caller proof or correlation object (0.850958ms)
+✔ purity: production collectors retain zero injected transport surface (0.223208ms)
+✔ purity: runRef is derived from current internal correlation (0.277875ms)
+✔ purity: raw run correlation is excluded from serialization (0.342583ms)
+✔ purity: successful report uses temp-file fsync rename atomic publication (0.28675ms)
+✔ purity: failed publication removes temporary output and leaves no final artifact (0.247542ms)
 ℹ tests 63
 ℹ suites 0
 ℹ pass 63
@@ -758,4 +758,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 77.856667
+ℹ duration_ms 101.845291

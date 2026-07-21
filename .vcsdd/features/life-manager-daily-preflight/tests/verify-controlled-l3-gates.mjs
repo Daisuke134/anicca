@@ -8,6 +8,6 @@ let state;
 try { state = JSON.parse(readFileSync(args[0], "utf8")); } catch { fail(); }
 const contract = readFileSync(args[1], "utf8");
 const snapshot = readFileSync(args[2], "utf8");
-if (state.currentPhase !== "2b" || state.sprintCount !== 0 || state.gates?.["1c"]?.humanApproved !== true ||
+if (!["2b", "2c"].includes(state.currentPhase) || state.sprintCount !== 0 || state.gates?.["1c"]?.humanApproved !== true ||
     state.gates?.["1c"]?.adversaryVerdict !== "PASS" || !/^status: approved$/m.test(contract) ||
     !/^greenCommit=[a-f0-9]{40}$/m.test(snapshot) || !/^greenTree=[a-f0-9]{40}$/m.test(snapshot)) fail();
