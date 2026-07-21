@@ -147,7 +147,7 @@ async function handlePanelRequest(req, res, opts = {}) {
   const session = await createPanelSession({ uid: claimed.uid, chatId: claimed.chat_id }, opts);
   res.writeHead(303, {
     Location: "/panel",
-    "Set-Cookie": `lm_panel_session=${session}; Max-Age=86400; Path=/panel; HttpOnly; Secure; SameSite=Lax`,
+    "Set-Cookie": `lm_panel_session=${session}; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax`,
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",
   });

@@ -89,7 +89,7 @@ test("LM-33a: a valid one-time token is burned and exchanged for a separate 24-h
     assert.equal(response.headers.get("location"), "/panel");
     assert.equal(
       response.headers.get("set-cookie"),
-      `lm_panel_session=${sessionBytes.toString("base64url")}; Max-Age=86400; Path=/panel; HttpOnly; Secure; SameSite=Lax`,
+      `lm_panel_session=${sessionBytes.toString("base64url")}; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax`,
     );
     assert.equal(response.headers.get("cache-control"), "no-store");
     assert.equal(response.headers.get("referrer-policy"), "no-referrer");

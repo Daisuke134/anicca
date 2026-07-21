@@ -40,6 +40,7 @@ const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, routeCallbackData } = require("./lib/telegram.js");
 const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
+const { handlePanelApiRequest } = require("./lib/panel-api.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -195,6 +196,18 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path.startsWith("/api/panel/")) {
+    handlePanelApiRequest(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      timeZone: process.env.LM_TIME_ZONE || "Asia/Tokyo",
+    }).catch((error) => {
+      console.error("[panel-api] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "panel_unavailable" }));
+    });
+    return;
+  }
   if (path === "/panel") {
     handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch((error) => {
       console.error("[panel] request failed", error.message);
