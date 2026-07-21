@@ -194,7 +194,7 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
     reclaim_path "$HOME_DIR/Library/Caches/ms-playwright" playwright ephemeral-cache browser-redownload
   fi
   if ! pgrep -f '[/](cargo|rustc)([[:space:]]|$)' >/dev/null 2>&1; then
-    reclaim_path "$HOME_DIR/.cargo/registry/cache" cargo ephemeral-cache crate-redownload
+    reclaim_path "$HOME_DIR/.cargo/registry" cargo ephemeral-cache crate-redownload
   fi
   for profile in "$HOME_DIR"/.cloak/profiles/*; do
     [ -d "$profile" ] || continue
@@ -215,6 +215,15 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   fi
   if ! pgrep -f 'hammer-and-nail|tent_backend|[/](cargo|rustc)([[:space:]]|$)' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/.openclaw/workspace/hammer-and-nail/backend/target" hammer-and-nail build-output cargo-build-regenerated
+  fi
+  if ! pgrep -f "$HOME_DIR/.openclaw/skills/anicca-earn-bounty/work/" >/dev/null 2>&1; then
+    for modules in "$HOME_DIR"/.openclaw/skills/anicca-earn-bounty/work/*/*/node_modules; do
+      [ -d "$modules" ] || continue
+      project=${modules%/node_modules}
+      if [ -f "$project/package-lock.json" ] || [ -f "$project/pnpm-lock.yaml" ] || [ -f "$project/yarn.lock" ]; then
+        reclaim_path "$modules" anicca-earn-bounty dependency-output lockfile-reinstall
+      fi
+    done
   fi
 fi
 
