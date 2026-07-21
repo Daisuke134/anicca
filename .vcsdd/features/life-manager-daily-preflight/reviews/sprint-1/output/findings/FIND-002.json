@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-011/012 prohibit caller-supplied transports or test doubles at the production entry point, but exported production main accepts both env and fetchImpl and passes them into production dependency construction. The purity test deliberately checks only collector-named parameters, leaving this real transport-injection surface unguarded.",
+  "evidence": {
+    "filePath": "apps/life-call/scripts/daily-preflight.js",
+    "lineRange": "25-32",
+    "snippet": "async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) { ... const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });"
+  },
+  "routeToPhase": "2b"
+}

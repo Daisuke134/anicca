@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "The verifier contract's nominal fixtures hard-code the pre-Phase-2 green commit and assert only process status. At the required review commit the fresh command produces 10/12 with the valid gates and controlled-gates cases failing because currentPhase is 3, contradicting the stored 12/12 ledger and making CRIT-005 non-reproducible from the authoritative review snapshot.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs",
+    "lineRange": "25-35",
+    "snippet": "test(`${helper}: accepts one valid explicit input`, () => { const r = run(helper, valid); assert.equal(r.status, 0); ... });"
+  },
+  "routeToPhase": "2c"
+}

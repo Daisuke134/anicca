@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "verify-final-artifact explicitly accepts an empty object and, for non-empty input, checks only schema, runStatus, and dependency length. It does not prove closed keys, dependency identity/uniqueness, freshness, same-run correlation/runRef, effects, source snapshot binding, or final 0600 semantics claimed by PROP-009 and CRIT-005.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs",
+    "lineRange": "7-11",
+    "snippet": "if (Object.keys(report).length !== 0 && (report.schema !== \"life-manager-daily-preflight-final\" || report.runStatus !== \"pass\" || report.dependencies?.length !== 9)) fail();"
+  },
+  "routeToPhase": "2b"
+}

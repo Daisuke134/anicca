@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "The 45 schema cases exercise only an isolated validator obtained from test support. No enumerated test drives the controlled production CLI through a successful nine-dependency run and then validates the emitted file, which is why the unwired production artifact path in FIND-001 passes all 45 tests.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/daily-preflight-final-schema.test.js",
+    "lineRange": "32-42",
+    "snippet": "return support.validateAndBuildFinalReportForTest; ... assert.doesNotThrow(() => validator()(input));"
+  },
+  "routeToPhase": "2a"
+}
