@@ -1,0 +1,164 @@
+{
+  "policy_version": "cleanup-control-v1",
+  "artifacts": [
+    {
+      "id": "gig-deliverables-and-evidence",
+      "path": "$HOME/gig",
+      "owner": "gig-revenue-loop",
+      "class": "deliverable",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "anicca-source",
+      "path": "$HOME/anicca",
+      "owner": "anicca-runtime",
+      "class": "source",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "anicca-project-source",
+      "path": "$HOME/anicca-project",
+      "owner": "anicca-products",
+      "class": "source",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "work-clones",
+      "path": "$HOME/.cache/anicca-clones",
+      "owner": "revenue-workers",
+      "class": "source",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "browser-identity",
+      "path": "$HOME/.cloak",
+      "owner": "browser-fleet",
+      "class": "identity",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "openclaw-runtime-state",
+      "path": "$HOME/.openclaw/state",
+      "owner": "openclaw",
+      "class": "state",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "claude-session-evidence",
+      "path": "$HOME/.claude/projects",
+      "owner": "claude-runtime",
+      "class": "evidence",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "reelclaw-assets",
+      "path": "$HOME/.openclaw/workspace/reelclaw-assets",
+      "owner": "reelclaw",
+      "class": "deliverable",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "preserve" }
+    },
+    {
+      "id": "whisper-cache",
+      "path": "$HOME/.cache/whisper",
+      "owner": "whisper",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "torch-cache",
+      "path": "$HOME/.cache/torch",
+      "owner": "torch",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "uv-cache",
+      "path": "$HOME/.cache/uv",
+      "owner": "python-runtime",
+      "class": "ephemeral",
+      "ttl_seconds": 1209600,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "pip-cache",
+      "path": "$HOME/Library/Caches/pip",
+      "owner": "python-runtime",
+      "class": "ephemeral",
+      "ttl_seconds": 1209600,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "codex-runtime-cache",
+      "path": "$HOME/.cache/codex-runtimes",
+      "owner": "codex-runtime",
+      "class": "ephemeral",
+      "ttl_seconds": 1209600,
+      "quota_bytes": 0,
+      "lease": {
+        "path": "$HOME/.openclaw/state/codex-runtime.lease",
+        "max_age_seconds": 300
+      },
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "codex-plugin-staging",
+      "path": "$HOME/.codex/.tmp",
+      "owner": "codex-runtime",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": {
+        "path": "$HOME/.openclaw/state/codex-plugin-staging.lease",
+        "max_age_seconds": 300
+      },
+      "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "playwright-browser-cache",
+      "path": "$HOME/Library/Caches/ms-playwright",
+      "owner": "browser-fleet",
+      "class": "ephemeral",
+      "ttl_seconds": 2592000,
+      "quota_bytes": 0,
+      "lease": {
+        "path": "$HOME/.openclaw/state/playwright.lease",
+        "max_age_seconds": 300
+      },
+      "finalizer": { "kind": "off_volume_quarantine" }
+    }
+  ]
+}

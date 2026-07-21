@@ -1,0 +1,302 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import os
+import time
+from pathlib import Path
+from unittest import mock
+
+import pytest
+
+
+MODULE_PATH = Path(__file__).parents[1] / "cleanup_control.py"
+SPEC = importlib.util.spec_from_file_location("cleanup_control", MODULE_PATH)
+assert SPEC and SPEC.loader
+cleanup_control = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(cleanup_control)
+
+
+def entry(
+    path: Path,
+    *,
+    artifact_class: str = "ephemeral",
+    ttl_seconds: int | None = 60,
+    quota_bytes: int = 0,
+    lease: dict[str, object] | None = None,
+    finalizer: str | None = None,
+) -> dict[str, object]:
+    return {
+        "id": path.name.replace(".", "dot-") or "root",
+        "path": str(path),
+        "owner": "test-owner",
+        "class": artifact_class,
+        "ttl_seconds": ttl_seconds,
+        "quota_bytes": quota_bytes,
+        "lease": lease,
+        "finalizer": {
+            "kind": finalizer
+            or ("off_volume_quarantine" if artifact_class == "ephemeral" else "preserve")
+        },
+    }
+
+
+def write_manifest(path: Path, entries: list[dict[str, object]]) -> Path:
+    path.write_text(
+        json.dumps({"policy_version": "cleanup-v1", "artifacts": entries}),
+        encoding="utf-8",
+    )
+    return path
+
+
+def make_old(path: Path, now: int, age_seconds: int = 120) -> None:
+    stamp = now - age_seconds
+    for child in sorted(path.rglob("*"), reverse=True):
+        os.utime(child, (stamp, stamp), follow_symlinks=False)
+    os.utime(path, (stamp, stamp), follow_symlinks=False)
+
+
+def run(
+    manifest: Path,
+    quarantine: Path,
+    ledger: Path,
+    *,
+    now: int,
+    candidates: list[Path] | None = None,
+    cross_device: bool = True,
+):
+    quarantine.mkdir(parents=True, exist_ok=True)
+
+    def fake_device(path: Path) -> int:
+        resolved = Path(path).resolve()
+        if cross_device and (resolved == quarantine.resolve() or quarantine.resolve() in resolved.parents):
+            return 22
+        return 11
+
+    with mock.patch.object(cleanup_control, "device_id", side_effect=fake_device):
+        return cleanup_control.sweep(
+            manifest_path=manifest,
+            quarantine_root=quarantine,
+            ledger_path=ledger,
+            now=now,
+            candidates=candidates,
+        )
+
+
+@pytest.mark.parametrize("mode", ["missing", "corrupt", "missing-field"])
+def test_manifest_failure_is_fail_closed(tmp_path: Path, mode: str) -> None:
+    source = tmp_path / "cache"
+    source.mkdir()
+    (source / "payload").write_text("keep", encoding="utf-8")
+    manifest = tmp_path / "manifest.json"
+    if mode == "corrupt":
+        manifest.write_text("{not json", encoding="utf-8")
+    elif mode == "missing-field":
+        bad = entry(source)
+        del bad["owner"]
+        write_manifest(manifest, [bad])
+
+    result = run(manifest, tmp_path / "q", tmp_path / "ledger.jsonl", now=1_000)
+
+    assert result["status"] == "manifest_error"
+    assert source.exists()
+    assert result["quarantined"] == 0
+
+
+def test_unknown_candidate_is_reported_and_preserved(tmp_path: Path) -> None:
+    known = tmp_path / "known"
+    unknown = tmp_path / "unknown"
+    known.mkdir()
+    unknown.mkdir()
+    (unknown / "payload").write_text("keep", encoding="utf-8")
+    manifest = write_manifest(tmp_path / "manifest.json", [entry(known)])
+    ledger = tmp_path / "ledger.jsonl"
+
+    result = run(
+        manifest,
+        tmp_path / "q",
+        ledger,
+        now=1_000,
+        candidates=[unknown],
+    )
+
+    assert result == {
+        "status": "ok",
+        "evaluated": 1,
+        "quarantined": 0,
+        "preserved": 1,
+        "errors": 0,
+        "bytes_quarantined": 0,
+    }
+    assert unknown.exists()
+    event = json.loads(ledger.read_text(encoding="utf-8").splitlines()[-1])
+    assert (event["event"], event["reason"]) == ("preserved", "unknown_artifact")
+
+
+def test_active_lease_and_deliverable_are_preserved(tmp_path: Path) -> None:
+    now = 10_000
+    active = tmp_path / "active-cache"
+    deliverable = tmp_path / "delivery.zip"
+    lease = tmp_path / "active.lease"
+    active.mkdir()
+    (active / "payload").write_text("keep", encoding="utf-8")
+    deliverable.write_text("customer work", encoding="utf-8")
+    lease.write_text("owner=worker", encoding="utf-8")
+    make_old(active, now)
+    make_old(deliverable, now)
+    os.utime(lease, (now - 5, now - 5))
+    entries = [
+        entry(
+            active,
+            lease={"path": str(lease), "max_age_seconds": 30},
+        ),
+        entry(
+            deliverable,
+            artifact_class="deliverable",
+            ttl_seconds=None,
+            finalizer="preserve",
+        ),
+    ]
+    ledger = tmp_path / "ledger.jsonl"
+
+    result = run(
+        write_manifest(tmp_path / "manifest.json", entries),
+        tmp_path / "q",
+        ledger,
+        now=now,
+    )
+
+    assert result["quarantined"] == 0
+    assert result["preserved"] == 2
+    assert active.exists() and deliverable.exists()
+    reasons = {json.loads(line)["reason"] for line in ledger.read_text().splitlines()}
+    assert reasons == {"active_lease", "protected_class"}
+
+
+def test_only_expired_over_quota_ephemeral_is_quarantined(tmp_path: Path) -> None:
+    now = 10_000
+    expired = tmp_path / "expired"
+    fresh = tmp_path / "fresh"
+    under_quota = tmp_path / "under-quota"
+    for path in (expired, fresh, under_quota):
+        path.mkdir()
+        (path / "payload").write_bytes(path.name.encode() * 20)
+    make_old(expired, now)
+    make_old(under_quota, now)
+    entries = [entry(expired), entry(fresh), entry(under_quota, quota_bytes=10_000)]
+    quarantine = tmp_path / "q"
+    ledger = tmp_path / "ledger.jsonl"
+
+    result = run(
+        write_manifest(tmp_path / "manifest.json", entries),
+        quarantine,
+        ledger,
+        now=now,
+    )
+
+    assert result["quarantined"] == 1
+    assert not expired.exists()
+    assert fresh.exists() and under_quota.exists()
+    quarantined = [json.loads(line) for line in ledger.read_text().splitlines() if json.loads(line)["event"] == "quarantined"]
+    assert len(quarantined) == 1
+    assert quarantined[0]["path"] == str(expired)
+    assert Path(quarantined[0]["quarantine_path"]).exists()
+    assert quarantined[0]["manifest_sha256"]
+
+
+def test_same_volume_quarantine_is_fail_closed(tmp_path: Path) -> None:
+    now = 10_000
+    source = tmp_path / "expired"
+    source.mkdir()
+    (source / "payload").write_text("keep", encoding="utf-8")
+    make_old(source, now)
+    ledger = tmp_path / "ledger.jsonl"
+
+    result = run(
+        write_manifest(tmp_path / "manifest.json", [entry(source)]),
+        tmp_path / "q",
+        ledger,
+        now=now,
+        cross_device=False,
+    )
+
+    assert result["quarantined"] == 0
+    assert result["errors"] == 1
+    assert source.exists()
+    assert json.loads(ledger.read_text().splitlines()[-1])["reason"] == "quarantine_not_off_volume"
+
+
+@pytest.mark.parametrize("incident_name", [".venv", "wip-clone", "dist", "reelclaw-assets"])
+def test_past_incident_artifacts_are_preserved(tmp_path: Path, incident_name: str) -> None:
+    now = 10_000
+    source = tmp_path / incident_name
+    source.mkdir()
+    (source / "important").write_text("must survive", encoding="utf-8")
+    make_old(source, now, age_seconds=10_000)
+    manifest = write_manifest(tmp_path / "manifest.json", [])
+
+    result = run(
+        manifest,
+        tmp_path / "q",
+        tmp_path / "ledger.jsonl",
+        now=now,
+        candidates=[source],
+    )
+
+    assert result["quarantined"] == 0
+    assert (source / "important").read_text() == "must survive"
+
+
+def test_restore_round_trip_and_conflict_fail_closed(tmp_path: Path) -> None:
+    now = int(time.time())
+    source = tmp_path / "expired"
+    source.mkdir()
+    (source / "nested").mkdir()
+    (source / "nested" / "payload.bin").write_bytes(b"irrecoverable-customer-evidence")
+    make_old(source, now)
+    quarantine = tmp_path / "q"
+    ledger = tmp_path / "ledger.jsonl"
+    manifest = write_manifest(tmp_path / "manifest.json", [entry(source)])
+    result = run(manifest, quarantine, ledger, now=now)
+    assert result["quarantined"] == 1
+    q_event = next(
+        json.loads(line)
+        for line in ledger.read_text().splitlines()
+        if json.loads(line)["event"] == "quarantined"
+    )
+
+    restore = cleanup_control.restore(
+        transaction_id=q_event["transaction_id"],
+        quarantine_root=quarantine,
+        ledger_path=ledger,
+    )
+
+    assert restore["status"] == "restored"
+    assert (source / "nested" / "payload.bin").read_bytes() == b"irrecoverable-customer-evidence"
+    assert json.loads(ledger.read_text().splitlines()[-1])["event"] == "restored"
+
+    conflict_source = tmp_path / "conflict"
+    conflict_source.write_text("original", encoding="utf-8")
+    old = tmp_path / "old-conflict"
+    old.write_text("quarantine me", encoding="utf-8")
+    os.utime(old, (now - 120, now - 120))
+    result = run(
+        write_manifest(tmp_path / "manifest-2.json", [entry(old)]),
+        quarantine,
+        ledger,
+        now=now,
+    )
+    event = [json.loads(line) for line in ledger.read_text().splitlines() if json.loads(line)["event"] == "quarantined"][-1]
+    record = Path(event["quarantine_path"]).parent / "record.json"
+    data = json.loads(record.read_text())
+    data["original_path"] = str(conflict_source)
+    record.write_text(json.dumps(data), encoding="utf-8")
+
+    refused = cleanup_control.restore(
+        transaction_id=event["transaction_id"],
+        quarantine_root=quarantine,
+        ledger_path=ledger,
+    )
+
+    assert refused["status"] == "conflict"
+    assert conflict_source.read_text() == "original"
