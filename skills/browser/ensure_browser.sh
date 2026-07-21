@@ -40,6 +40,7 @@ echo "$(date '+%F %T') ensure_browser: :9222 dead -> relaunching" >> "$LOG"
 # --memory-pressure-off do not exist in current Chromium; do not add them back).
 nohup "$BIN" --remote-debugging-port=9222 --user-data-dir="$PROFILE" \
   --disk-cache-size=209715200 --disk-cache-dir=/tmp/cloak-cache \
+  --disable-gpu \
   --disable-gpu-shader-disk-cache --gpu-disk-cache-size-kb=2048 \
   --no-first-run --no-default-browser-check >> "$LOG" 2>&1 &
 
