@@ -7,13 +7,14 @@ TMP=$(mktemp -d /tmp/emergency-guard-test.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/home/.claude/projects/incident" "$TMP/home/gig" "$TMP/home/.openclaw/state"
-mkdir -p "$TMP/home/.cloak/profiles/inactive/Default/Cache" "$TMP/home/.cloak/profiles/inactive/Default/Code Cache"
+mkdir -p "$TMP/home/.cloak/profiles/inactive/Default/Cache" "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" "$TMP/home/.cloak/profiles/inactive/Default/GPUCache"
 printf 'active evidence\n' > "$TMP/home/.claude/projects/incident/active.jsonl"
 printf '4242\n' > "$TMP/home/gig/.pass.lock"
 printf 'cookie identity\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cookies"
 printf 'login identity\n' > "$TMP/home/.cloak/profiles/inactive/Default/Login Data"
 printf 'cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cache/data"
 printf 'code cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Code Cache/data"
+printf 'gpu cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/GPUCache/data"
 touch -t 202001010000 "$TMP/home/.claude/projects/incident/active.jsonl" "$TMP/home/gig/.pass.lock"
 
 cat > "$TMP/processes.tsv" <<'EOF'
@@ -38,7 +39,8 @@ bash "$GUARD"
 test -e "$TMP/home/.claude/projects/incident/active.jsonl" || { echo 'active transcript was deleted'; exit 1; }
 test -e "$TMP/home/gig/.pass.lock" || { echo 'active lock was deleted'; exit 1; }
 test ! -e "$TMP/home/.cloak/profiles/inactive/Default/Cache" || { echo 'regenerable cache was not reclaimed'; exit 1; }
-test -e "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" || { echo 'active browser code cache was deleted'; exit 1; }
+test ! -e "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" || { echo 'active browser code cache was not reclaimed'; exit 1; }
+test ! -e "$TMP/home/.cloak/profiles/inactive/Default/GPUCache" || { echo 'active browser GPU cache was not reclaimed'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Cookies" || { echo 'browser cookie identity was deleted'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Login Data" || { echo 'browser login identity was deleted'; exit 1; }
 test -e "$TMP/killed.tsv" || { echo 'missing kill ledger'; exit 1; }

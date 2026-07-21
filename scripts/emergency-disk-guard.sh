@@ -213,7 +213,9 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
     [ -d "$profile" ] || continue
     if profile_is_active "$profile"; then
       printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$profile" preserve active-browser-identity-preserved "$POLICY_VERSION" >> "$DECISION_LEDGER"
-      reclaim_path "$profile/Default/Cache" cloakbrowser active-ephemeral-cache browser-cache-regenerated
+      for cache in "$profile/Default/Cache" "$profile/Default/Code Cache" "$profile/Default/GPUCache"; do
+        reclaim_path "$cache" cloakbrowser active-ephemeral-cache browser-cache-regenerated
+      done
       continue
     fi
     for cache in \
