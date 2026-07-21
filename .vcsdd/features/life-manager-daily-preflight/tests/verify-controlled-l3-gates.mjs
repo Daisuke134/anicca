@@ -53,8 +53,4 @@ for (const value of Object.values(evidence.modules)) {
       !Number.isFinite(value.lines) || !Number.isFinite(value.functions) || value.lines < 90 || value.functions < 90) fail();
 }
 const dirty = git(["status", "--porcelain"]).split(/\r?\n/).filter(Boolean);
-if (dirty.some(line => {
-  const file = line.slice(3);
-  return !file.startsWith(".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/") &&
-    file !== ".vcsdd/features/life-manager-daily-preflight/state.json";
-})) fail();
+if (dirty.length !== 0) fail();
