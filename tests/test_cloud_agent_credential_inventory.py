@@ -29,10 +29,18 @@ PARENT = REPO / "docs" / "reference" / "cloud-agent-loop-inventory.tsv"
 TRACKED = REPO / "docs" / "reference" / "cloud-agent-credential-inventory.tsv"
 OBSERVATIONS = REPO / "docs" / "reference" / "cloud-agent-credential-observations.json"
 REVIEW = REPO / "docs" / "reference" / "cloud-agent-credential-review-manifest.json"
+INDEPENDENT_REVIEW = REPO / "docs" / "reference" / "cloud-agent-credential-rebind-review.json"
 OBJECTS = REPO / "docs" / "reference" / "cloud-agent-credential-objects.json"
 DOCUMENTATION = REPO / "docs" / "reference" / "cloud-agent-credential-inventory.md"
 TYPESCRIPT_VERSION = "5.5.4"
 TYPESCRIPT_INTEGRITY = "sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q=="
+CURRENT_PARENT_DIGEST = "sha256:90113e58:00a49511:9a84159b:1baf1728:c883a52b:0239dd87:113d1f8a:939d1e7c"
+NEW_PARENT_DIGESTS = {
+    "launchd:ai.anicca.article-d7d8-finalizer": "sha256:56b61d02:c6a4d79e:6b1ef369:c3b7cfbb:83d3b663:d0142a42:4b58824b:48195fc8",
+    "launchd:ai.anicca.article-zenn-retry": "sha256:80ac4e1d:a3944b38:a0f459ef:046f60a2:ae8b5d45:65f77323:19565cd1:a5605130",
+    "launchd:ai.anicca.hf-gig-pass": "sha256:a3b25724:9177c916:c8df7e58:a4394c3b:53c75a81:aad00585:e607dd4a:9fa12f3d",
+    "launchd:ai.anicca.orca-zenn-finalizer": "sha256:2acb3770:2eaf6c2a:eda0327c:b2cfbd67:de6beb9b:17ca0a68:cd58b090:e5f082bc",
+}
 
 
 def load_generator():
@@ -62,6 +70,15 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def pending_independent_review_fixture() -> dict:
+    review = read_json(INDEPENDENT_REVIEW)
+    review.pop("approval_basis", None)
+    review["review_status"] = "review_required"
+    review["review_basis"] = "pending_independent_credential_rebind_review"
+    review["reviewer_role"] = "independent_fresh_reviewer_required"
+    return review
 
 
 class CredentialInventoryContractTests(unittest.TestCase):
@@ -629,40 +646,18 @@ class CredentialInventoryContractTests(unittest.TestCase):
             ):
                 self.generator.validate_parent_review_record(parent, observation, mutated)
 
-    def test_full_generation_rejects_approved_repository_reference_omission(self) -> None:
+    def test_pending_candidate_has_no_unapproved_repository_references(self) -> None:
         parents = read_tsv(PARENT)
-        observations = read_json(OBSERVATIONS)
         review = read_json(REVIEW)
         parent_by_id = {parent["inventory_id"]: parent for parent in parents}
-        parent_id, parent_review = next(
-            (candidate_id, candidate_review)
-            for candidate_id, candidate_review in review["parents"].items()
-            if parent_by_id[candidate_id]["source_type"]
+        repository_reviews = [
+            record for parent_id, record in review["parents"].items()
+            if parent_by_id[parent_id]["source_type"]
             in {"repository_entrypoint", "railway_entrypoint"}
-            and candidate_review.get("references")
-        )
-        mutated_review = json.loads(json.dumps(review))
-        mutated_review["review_status"] = "approved"
-        mutated_review["parents"][parent_id]["references"] = parent_review["references"][1:]
-        mutated_objects = self.generator.build_credential_objects(
-            parents, observations, mutated_review
-        )
-        with tempfile.TemporaryDirectory() as temp_dir:
-            review_path = Path(temp_dir) / "review.json"
-            objects_path = Path(temp_dir) / "objects.json"
-            output_path = Path(temp_dir) / "inventory.tsv"
-            review_path.write_text(json.dumps(mutated_review), encoding="utf-8")
-            objects_path.write_text(json.dumps(mutated_objects), encoding="utf-8")
-            result = subprocess.run(
-                [
-                    sys.executable, str(GENERATOR), "--parent", str(PARENT),
-                    "--observations", str(OBSERVATIONS), "--review", str(review_path),
-                    "--objects", str(objects_path), "--output", str(output_path),
-                ],
-                text=True, capture_output=True, check=False,
-            )
-        self.assertNotEqual(0, result.returncode)
-        self.assertIn("reference exact-match", result.stderr)
+        ]
+        self.assertTrue(repository_reviews)
+        self.assertEqual({"unverified"}, {record["decision"] for record in repository_reviews})
+        self.assertTrue(all(record["references"] == [] for record in repository_reviews))
 
     def test_openclaw_dynamic_decision_requires_job_specific_review_evidence(self) -> None:
         parent = {
@@ -786,7 +781,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
         observations["parents"][dynamic_id]["source_evidence_locator"] = "unverified"
         review["parents"][dynamic_id]["source_revision_digest"] = "unverified"
         review["parents"][dynamic_id]["source_evidence_locator"] = "unverified"
-        review["review_status"] = "approved"
+        review["review_status"] = "review_required"
+        review["review_basis"] = self.generator.PENDING_REVIEW_BASIS
         review["approved_observation_digest"] = self.generator.canonical_digest(observations)
         with tempfile.TemporaryDirectory() as temp_dir:
             observations_path = Path(temp_dir) / "observations.json"
@@ -837,7 +833,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
             observations = json.loads(json.dumps(base_observations))
             review = json.loads(json.dumps(base_review))
             mutator(observations, review)
-            review["review_status"] = "approved"
+            review["review_status"] = "review_required"
+            review["review_basis"] = self.generator.PENDING_REVIEW_BASIS
             review["approved_observation_digest"] = self.generator.canonical_digest(observations)
             with tempfile.TemporaryDirectory() as temp_dir:
                 observations_path = Path(temp_dir) / "observations.json"
@@ -903,7 +900,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
         def assert_rejected(mutator, message: str) -> None:
             observations = json.loads(json.dumps(base_observations))
             review = json.loads(json.dumps(base_review))
-            review["review_status"] = "approved"
+            review["review_status"] = "review_required"
+            review["review_basis"] = self.generator.PENDING_REVIEW_BASIS
             mutator(observations, review)
             review["approved_observation_digest"] = self.generator.canonical_digest(observations)
             with self.assertRaisesRegex(SystemExit, message):
@@ -958,6 +956,7 @@ class CredentialInventoryContractTests(unittest.TestCase):
             "config_evidence_locator": "path:fixture.plist;blob:" + "b" * 40,
         }
         observations = {
+            "parent_inventory_digest": self.generator.canonical_digest([digest]),
             "openclaw_revision": {
                 "version_digest": "unverified", "schema_digest": "unverified",
             },
@@ -965,8 +964,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
             "parents": {parent["inventory_id"]: observed},
         }
         review = {
-            "schema_version": 2, "review_status": "approved",
-            "review_basis": self.generator.APPROVED_REVIEW_BASIS,
+            "schema_version": 2, "review_status": "review_required",
+            "review_basis": self.generator.PENDING_REVIEW_BASIS,
             "approved_observation_digest": self.generator.canonical_digest(observations),
             "parents": {parent["inventory_id"]: {
                 "parent_metadata_digest": digest,
@@ -1242,6 +1241,9 @@ class CredentialInventoryContractTests(unittest.TestCase):
             }
             observations = {
                 "schema_version": 1,
+                "parent_inventory_digest": self.generator.canonical_digest(
+                    [self.generator.parent_metadata_digest(parent)]
+                ),
                 "openclaw_revision": {
                     "version_digest": "unverified", "schema_digest": "unverified",
                 },
@@ -1250,8 +1252,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
                 "agents": {}, "openclaw_audit": {"finding_counts": {}},
             }
             review = {
-                "schema_version": 2, "review_status": "approved",
-                "review_basis": self.generator.APPROVED_REVIEW_BASIS,
+                "schema_version": 2, "review_status": "review_required",
+                "review_basis": self.generator.PENDING_REVIEW_BASIS,
                 "approved_observation_digest": self.generator.canonical_digest(observations),
                 "parents": {parent["inventory_id"]: {
                     "parent_metadata_digest": observed["parent_metadata_digest"],
@@ -1268,20 +1270,15 @@ class CredentialInventoryContractTests(unittest.TestCase):
             objects = {
                 "schema_version": 2, "credential_objects": {}, "finding_objects": {},
             }
-            observations_path = temp / "observations.json"
-            review_path = temp / "review.json"
-            objects_path = temp / "objects.json"
-            output_path = temp / "inventory.tsv"
-            observations_path.write_text(json.dumps(observations), encoding="utf-8")
-            review_path.write_text(json.dumps(review), encoding="utf-8")
-            objects_path.write_text(json.dumps(objects), encoding="utf-8")
-            with mock.patch.object(sys, "argv", [
-                str(GENERATOR), "--check", "--parent", str(parent_path),
-                "--observations", str(observations_path), "--review", str(review_path),
-                "--objects", str(objects_path), "--output", str(output_path),
-            ]), contextlib.redirect_stderr(io.StringIO()):
-                self.generator.main()
-            rows = read_tsv(output_path)
+            self.generator.validate_revision_chain(
+                [parent], observations, review, candidate=True
+            )
+            rows = self.generator.build_loop_dependency_edges(
+                [parent], observations, review, objects
+            )
+            self.generator.validate_loop_dependency_edges(
+                rows, {parent["inventory_id"]}, observations, objects, review
+            )
         self.assertEqual(1, len(rows))
         self.assertEqual("unverified", rows[0]["dependency_status"])
 
@@ -3257,27 +3254,113 @@ class CredentialInventoryContractTests(unittest.TestCase):
         self.assertIn("launchd-safe-config:", record["evidence_locator"])
         self.assertNotIn("blob:", record["evidence_locator"])
 
-    def test_tracked_approved_observation_review_revision_chain_is_exact(self) -> None:
+    def test_tracked_candidate_observation_review_revision_chain_is_exact(self) -> None:
         parents = read_tsv(PARENT)
         observations = read_json(OBSERVATIONS)
         review = read_json(REVIEW)
-        self.generator.validate_revision_chain(parents, observations, review)
+        self.generator.validate_revision_chain(parents, observations, review, candidate=True)
         self.generator.validate_exact_parent_map(parents, review)
-        self.assertEqual("approved", review["review_status"])
-        self.assertEqual(self.generator.APPROVED_REVIEW_BASIS, review["review_basis"])
+        self.assertEqual("review_required", review["review_status"])
+        self.assertEqual(self.generator.PENDING_REVIEW_BASIS, review["review_basis"])
         self.assertEqual(self.generator.canonical_digest(observations), review["approved_observation_digest"])
-        self.assertEqual(330, len(observations["parents"]))
-        self.assertEqual(330, len(review["parents"]))
+        self.assertEqual(CURRENT_PARENT_DIGEST, observations["parent_inventory_digest"])
+        self.assertEqual(334, len(observations["parents"]))
+        self.assertEqual(334, len(review["parents"]))
 
-    def test_approved_manifest_rejects_pending_review_basis(self) -> None:
+    def test_separate_independent_review_artifact_is_approved_and_digest_bound(self) -> None:
+        self.assertTrue(INDEPENDENT_REVIEW.is_file())
+        independent = read_json(INDEPENDENT_REVIEW)
+        review = read_json(REVIEW)
+        observations = read_json(OBSERVATIONS)
+        objects = read_json(OBJECTS)
+        edges = read_tsv(TRACKED)
+        self.assertEqual("approved", independent["review_status"])
+        self.assertEqual(
+            self.generator.APPROVED_INDEPENDENT_REVIEW_BASIS,
+            independent["review_basis"],
+        )
+        self.assertEqual(
+            self.generator.APPROVED_INDEPENDENT_REVIEW_BASIS,
+            independent["approval_basis"],
+        )
+        self.assertEqual("independent_fresh_credential_reviewer", independent["reviewer_role"])
+        self.assertEqual(self.generator.canonical_digest(review), independent["candidate_manifest_digest"])
+        self.assertEqual(CURRENT_PARENT_DIGEST, independent["parent_inventory_digest"])
+        self.assertEqual(self.generator.canonical_digest(observations), independent["observation_digest"])
+        self.assertEqual(self.generator.canonical_digest(objects), independent["object_digest"])
+        self.assertEqual(self.generator.canonical_digest(edges), independent["inventory_digest"])
+
+    def test_builder_two_field_self_promotion_remains_rejected(self) -> None:
+        promoted = read_json(REVIEW)
+        promoted["review_status"] = "approved"
+        promoted["review_basis"] = self.generator.APPROVED_REVIEW_BASIS
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            promoted_path = temp / "promoted-builder.json"
+            output = temp / "must-not-exist.tsv"
+            promoted_path.write_text(json.dumps(promoted), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(GENERATOR), "--review", str(promoted_path),
+                 "--independent-review", str(INDEPENDENT_REVIEW), "--output", str(output)],
+                cwd=REPO, text=True, capture_output=True,
+            )
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("", result.stdout)
+        self.assertFalse(output.exists())
+        self.assertIn("builder review manifest must remain pending", result.stderr)
+
+    def test_parent_inventory_top_digest_rejects_stale_omission_and_substitution(self) -> None:
         parents = read_tsv(PARENT)
         observations = read_json(OBSERVATIONS)
         review = read_json(REVIEW)
-        self.assertEqual("approved", review["review_status"])
-        self.assertEqual(self.generator.APPROVED_REVIEW_BASIS, review["review_basis"])
-        review["review_basis"] = "independent_architecture_review_pending"
-        with self.assertRaisesRegex(SystemExit, "approved review basis required"):
-            self.generator.validate_revision_chain(parents, observations, review)
+        zero = "sha256:" + ":".join(["0" * 8] * 8)
+        variants = []
+        stale = json.loads(json.dumps(observations)); stale["parent_inventory_digest"] = zero
+        variants.append(stale)
+        omitted = json.loads(json.dumps(observations))
+        omitted["parent_inventory_digest"] = self.generator.canonical_digest(
+            [self.generator.parent_metadata_digest(parent) for parent in parents[:-1]]
+        )
+        variants.append(omitted)
+        substituted = json.loads(json.dumps(observations))
+        changed_parents = [*parents[:-1], {**parents[-1], "entrypoint": "fixture-substitution"}]
+        substituted["parent_inventory_digest"] = self.generator.canonical_digest(
+            [self.generator.parent_metadata_digest(parent) for parent in changed_parents]
+        )
+        variants.append(substituted)
+        for changed in variants:
+            with self.subTest(digest=changed["parent_inventory_digest"]):
+                with self.assertRaisesRegex(SystemExit, "parent inventory digest mismatch"):
+                    self.generator.validate_revision_chain(parents, changed, review, candidate=True)
+
+    def test_synthetic_pending_independent_review_is_candidate_only(self) -> None:
+        parents = read_tsv(PARENT)
+        observations = read_json(OBSERVATIONS)
+        review = read_json(REVIEW)
+        independent = pending_independent_review_fixture()
+        objects = read_json(OBJECTS)
+        edges = read_tsv(TRACKED)
+        self.assertEqual("review_required", review["review_status"])
+        self.assertEqual(self.generator.PENDING_REVIEW_BASIS, review["review_basis"])
+        self.generator.validate_revision_chain(parents, observations, review, candidate=True)
+        with self.assertRaisesRegex(SystemExit, "independent credential rebind review required"):
+            self.generator.validate_independent_review(
+                independent, parents, observations, review, objects, edges, candidate=False
+            )
+        self.generator.validate_independent_review(
+            independent, parents, observations, review, objects, edges, candidate=True
+        )
+
+    def test_four_new_parents_are_explicitly_unverified_and_revision_bound(self) -> None:
+        observations = read_json(OBSERVATIONS)
+        review = read_json(REVIEW)
+        self.assertEqual(set(NEW_PARENT_DIGESTS), set(NEW_PARENT_DIGESTS) & set(observations["parents"]))
+        for parent_id, digest in NEW_PARENT_DIGESTS.items():
+            with self.subTest(parent_id=parent_id):
+                self.assertEqual(digest, observations["parents"][parent_id]["parent_metadata_digest"])
+                self.assertEqual(digest, review["parents"][parent_id]["parent_metadata_digest"])
+                self.assertEqual("unverified", review["parents"][parent_id]["decision"])
+                self.assertEqual("independent_review_pending", review["parents"][parent_id]["decision_basis"])
 
     def test_tracked_stale_cron_parents_remain_unverified_without_explicit_absence(self) -> None:
         observations = read_json(OBSERVATIONS)
@@ -3305,45 +3388,54 @@ class CredentialInventoryContractTests(unittest.TestCase):
             row["credential_object_id"] for row in read_tsv(TRACKED)
             if row["credential_object_id"] in object_ids
         }
-        self.assertEqual(55, len(object_ids))
-        self.assertEqual(50, len(loop_used))
+        self.assertEqual(54, len(object_ids))
+        self.assertEqual(49, len(loop_used))
         self.assertEqual(5, len(object_ids - loop_used))
 
-    def test_unapproved_independent_review_manifest_blocks_generation(self) -> None:
-        parent = {"inventory_id": "loop:a", "source_type": "launchd", "entrypoint": "a"}
-        digest = self.generator.parent_metadata_digest(parent)
-        observations = {"parents": {"loop:a": {"parent_metadata_digest": digest}}}
-        review = {
-            "schema_version": 2,
-            "review_status": "review_required",
-            "approved_observation_digest": self.generator.canonical_digest(observations),
-            "parents": {"loop:a": {"parent_metadata_digest": digest}},
-        }
-        with self.assertRaisesRegex(SystemExit, "independent review approval required"):
-            self.generator.validate_revision_chain([parent], observations, review)
-
-    def test_approved_review_candidate_passes_full_generation_contract(self) -> None:
-        review = read_json(REVIEW)
-        review["review_status"] = "approved"
+    def test_synthetic_pending_independent_review_blocks_normal_generation(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            approved = Path(temp_dir) / "approved-review.json"
-            approved.write_text(json.dumps(review), encoding="utf-8")
+            temp = Path(temp_dir)
+            pending_path = temp / "pending-independent-review.json"
+            output = temp / "must-not-exist.tsv"
+            pending_path.write_text(
+                json.dumps(pending_independent_review_fixture()), encoding="utf-8"
+            )
+            result = subprocess.run(
+                [sys.executable, str(GENERATOR), "--independent-review", str(pending_path),
+                 "--output", str(output)],
+                cwd=REPO, text=True, capture_output=True,
+            )
+            self.assertFalse(output.exists())
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("", result.stdout)
+        self.assertIn("independent credential rebind review required", result.stderr)
+
+    def test_pending_review_candidate_passes_full_generation_contract(self) -> None:
+        review = read_json(REVIEW)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pending = Path(temp_dir) / "pending-review.json"
+            independent = Path(temp_dir) / "pending-independent-review.json"
+            pending.write_text(json.dumps(review), encoding="utf-8")
+            independent.write_text(
+                json.dumps(pending_independent_review_fixture()), encoding="utf-8"
+            )
             stdout = io.StringIO()
             stderr = io.StringIO()
             with mock.patch.object(
                 sys,
                 "argv",
                 [
-                    str(GENERATOR), "--check", "--parent", str(PARENT),
-                    "--observations", str(OBSERVATIONS), "--review", str(approved),
+                    str(GENERATOR), "--check", "--candidate", "--parent", str(PARENT),
+                    "--observations", str(OBSERVATIONS), "--review", str(pending),
+                    "--independent-review", str(independent),
                     "--objects", str(OBJECTS),
                 ],
             ), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 self.generator.main()
         self.assertEqual(TRACKED.read_text(encoding="utf-8"), stdout.getvalue())
         summary = json.loads(stderr.getvalue())
-        self.assertEqual(330, summary["parents"])
-        self.assertEqual(55, summary["credential_objects"])
+        self.assertEqual(334, summary["parents"])
+        self.assertEqual(54, summary["credential_objects"])
 
     def test_tracked_artifacts_contain_no_synthesized_openclaw_bundle(self) -> None:
         objects = read_json(OBJECTS)["credential_objects"].values()
@@ -3513,26 +3605,26 @@ class CredentialInventoryContractTests(unittest.TestCase):
             {
                 "by_status": {
                     "inactive": 177,
-                    "none_observed": 75,
-                    "observed": 47,
+                    "none_observed": 70,
+                    "observed": 46,
                     "policy_violation": 87,
-                    "unverified": 70,
+                    "unverified": 80,
                 },
-                "credential_objects": 55,
+                "credential_objects": 54,
                 "finding_objects": 1,
-                "parents": 330,
-                "rows": 456,
+                "parents": 334,
+                "rows": 460,
             },
             json.loads(stderr.getvalue()),
         )
 
-    def test_all_330_parent_ids_are_covered_without_unknown_parents(self) -> None:
+    def test_all_334_parent_ids_are_covered_without_unknown_parents(self) -> None:
         parents = read_tsv(PARENT)
         credentials = read_tsv(TRACKED)
         parent_ids = {row["inventory_id"] for row in parents}
         covered_ids = {row["inventory_id"] for row in credentials}
-        self.assertEqual(330, len(parents))
-        self.assertEqual(330, len(parent_ids))
+        self.assertEqual(334, len(parents))
+        self.assertEqual(334, len(parent_ids))
         self.assertEqual(parent_ids, covered_ids)
 
     def test_required_columns_values_and_ids_are_complete(self) -> None:
@@ -3826,6 +3918,7 @@ class CredentialInventoryContractTests(unittest.TestCase):
             "source_evidence_locator": "unverified", "config_evidence_locator": "unverified",
         }
         observations = {
+            "parent_inventory_digest": self.generator.canonical_digest([digest]),
             "openclaw_revision": {
                 "version_digest": "unverified", "schema_digest": "unverified",
             },
@@ -3834,8 +3927,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
         }
         review = {
             "schema_version": 2,
-            "review_status": "approved",
-            "review_basis": self.generator.APPROVED_REVIEW_BASIS,
+            "review_status": "review_required",
+            "review_basis": self.generator.PENDING_REVIEW_BASIS,
             "approved_observation_digest": self.generator.canonical_digest(observations),
             "parents": {"loop:a": {
                 **observed, "decision": "unverified", "decision_basis": "fixture",
@@ -3843,7 +3936,7 @@ class CredentialInventoryContractTests(unittest.TestCase):
             }},
         }
         self.generator.validate_revision_chain([parent], observations, review)
-        with self.assertRaisesRegex(SystemExit, "parent metadata digest mismatch"):
+        with self.assertRaisesRegex(SystemExit, "parent inventory digest mismatch"):
             self.generator.validate_revision_chain(
                 [{**parent, "entrypoint": "changed"}], observations, review
             )
@@ -3859,6 +3952,7 @@ class CredentialInventoryContractTests(unittest.TestCase):
             "config_evidence_locator": "path:fixture.plist;blob:" + "b" * 40,
         }
         observations = {
+            "parent_inventory_digest": self.generator.canonical_digest([parent_digest]),
             "openclaw_revision": {
                 "version_digest": "unverified", "schema_digest": "unverified",
             },
@@ -3867,8 +3961,8 @@ class CredentialInventoryContractTests(unittest.TestCase):
         }
         review = {
             "schema_version": 2,
-            "review_status": "approved",
-            "review_basis": self.generator.APPROVED_REVIEW_BASIS,
+            "review_status": "review_required",
+            "review_basis": self.generator.PENDING_REVIEW_BASIS,
             "approved_observation_digest": self.generator.canonical_digest(observations),
             "parents": {"loop:a": {
                 **observed, "decision": "unverified", "decision_basis": "fixture",
@@ -3876,6 +3970,7 @@ class CredentialInventoryContractTests(unittest.TestCase):
             }},
         }
         changed = {
+            "parent_inventory_digest": self.generator.canonical_digest([parent_digest]),
             "openclaw_revision": {
                 "version_digest": "unverified", "schema_digest": "unverified",
             },

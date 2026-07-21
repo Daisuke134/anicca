@@ -2,7 +2,7 @@
 
 ## Purpose and SSOT
 
-TODO #2 のapproved loop dependency edge artifactは [`cloud-agent-credential-inventory.tsv`](./cloud-agent-credential-inventory.tsv)、unique credential/finding object artifactは [`cloud-agent-credential-objects.json`](./cloud-agent-credential-objects.json) である。親集合は [`cloud-agent-loop-inventory.tsv`](./cloud-agent-loop-inventory.tsv) の330 `inventory_id` とexact matchする。live非秘密metadataは [`cloud-agent-credential-observations.json`](./cloud-agent-credential-observations.json)、独立review manifestは [`cloud-agent-credential-review-manifest.json`](./cloud-agent-credential-review-manifest.json) である。review manifestは `review_status: approved` / `review_basis: iteration_20_whole_change_approved` であり、generatorはこのcoherent approval tupleとreview/observation/object bindingを検証してedge TSVを生成する。未承認またはpending basisのmanifestはfail closedする。
+TODO #2 のloop dependency edge artifactは [`cloud-agent-credential-inventory.tsv`](./cloud-agent-credential-inventory.tsv)、unique credential/finding object artifactは [`cloud-agent-credential-objects.json`](./cloud-agent-credential-objects.json) である。親集合は [`cloud-agent-loop-inventory.tsv`](./cloud-agent-loop-inventory.tsv) の334 `inventory_id` とexact matchする。live非秘密metadataは [`cloud-agent-credential-observations.json`](./cloud-agent-credential-observations.json)、builder candidate manifestは [`cloud-agent-credential-review-manifest.json`](./cloud-agent-credential-review-manifest.json)、分離したindependent review artifactは [`cloud-agent-credential-rebind-review.json`](./cloud-agent-credential-rebind-review.json) である。builder manifestはpendingを維持し、独立artifactだけが `approved / todo2_334_rebind_independent_review_approved_v1 / independent_fresh_credential_reviewer` へ遷移する。independent artifactはbuilder manifest、ordered parent、observation、object、inventoryの5 digestへexact bindする。generator normal modeはこのexact approvalを要求してtracked TSVを生成し、explicit `--candidate`はsynthetic pending review検証専用とする。
 
 TSV列は `loop_dependency_edge_id`, `inventory_id`, `loop_state`, `dependency_status`, `credential_object_id`, `consumer_locator`, 実操作分類の `permission_scope`, `dependency_basis`, `evidence_locator`, `parent_metadata_digest`, `source_revision_digest`, `config_revision_digest` である。provider/account/ref/policyはunique object側だけに置き、edgeはobject IDを参照する。
 
@@ -30,23 +30,23 @@ LaunchAgent sourceは全argvから安全に投影したwrapper/executable/config
 
 | Measure | Count |
 |---|---:|
-| Parent loops covered | 330 / 330 |
-| Loop dependency edges | 456 |
-| Unique credential objects | 55 |
-| Loop-used credential objects | 50 |
+| Parent loops covered | 334 / 334 |
+| Loop dependency edges | 460 |
+| Unique credential objects | 54 |
+| Loop-used credential objects | 49 |
 | Catalog-only credential objects | 5 |
 | Unique unattributed finding objects | 1 |
-| `observed` edges | 47 |
-| `none_observed` edges | 75 |
+| `observed` edges | 46 |
+| `none_observed` edges | 70 |
 | `inactive` edges | 177 |
-| `unverified` edges | 70 |
+| `unverified` edges | 80 |
 | `policy_violation` edges | 87 |
 | Source revision unverified parents | 15 |
 | OpenClaw audit plaintext findings | 38 |
 | OpenClaw audit unresolved refs | 0 |
 | OpenClaw audit legacy residue | 6 |
 
-OpenClaw親222件のうちlive cron metadataは217件、親inventoryにだけ残る5件はsafe retryでstderr class `unstructured_not_found` となる。これは明示的な構造化Gateway `NOT_FOUND` responseではないためabsence objectは0件で、5件は `cron_metadata_unavailable` / `unverified` のままである。過去のabsenceを保持・完了根拠にせず、parent inventoryのstalenessを解消する独立reviewを要する。live disabledは182件だが、inspectionとreview provenanceがverifiedな177件だけをinactiveにし、未構成agent 5件はstateに関係なくunverifiedにする。enabled 35件はreview済みderived setとexact一致するmodel、Telegram delivery、解決不能なinherited tool依存edgeを個別に持つ。55 credential objectのうち50件はloop edgeから参照され、残る5件は安全なOpenClaw auth profile全体を監査するためのcatalog-only objectである。catalog-onlyをloop依存数へ混ぜない。unattributed plaintext findingは1つのconfig-level finding objectとして保持し、各loopへ複製しない。finding codeはOpenClaw primary enumの `PLAINTEXT_FOUND | REF_UNRESOLVED | REF_SHADOWED | LEGACY_RESIDUE` 以外を拒否し、config findingのlocator/attributionもexact tupleで検証する。独立reviewはapprovedであり、このcountをTODO #2の完了値とする。
+OpenClaw親222件のうちlive cron metadataは217件、親inventoryにだけ残る5件はsafe retryでstderr class `unstructured_not_found` となる。これは明示的な構造化Gateway `NOT_FOUND` responseではないためabsence objectは0件で、5件は `cron_metadata_unavailable` / `unverified` のままである。過去のabsenceを保持・完了根拠にしない。live disabledは182件だが、inspectionとreview provenanceがverifiedな177件だけをinactiveにし、未構成agent 5件はstateに関係なくunverifiedにする。54 credential objectのうち49件はloop edgeから参照され、残る5件は安全なOpenClaw auth profile全体を監査するためのcatalog-only objectである。catalog-onlyをloop依存数へ混ぜない。unattributed plaintext findingは1つのconfig-level finding objectとして保持し、各loopへ複製しない。current countは334-parent独立reviewの承認済み完了値である。
 
 `openclaw_revision` はexact `version_digest/schema_digest` schemaを持ち、source locatorのversion identityとschema digestからgateway/source revisionを独立導出して全OpenClaw親とcron failure/absenceへexact bindingする。cron failure/absenceはtop-level map、親observation、review recordの6 field tupleとID集合をexact一致させる。`dynamic_openclaw` はverifiedなversion/schema/source/config、job-specific safe cron metadata、`inspection_status=verified` が揃う場合だけ許可し、observed/policy edgeはlive `enabled=true` / `payload_kind=agentTurn` とreview済みderived referenceのkind/object/locatorへexact bindingする。inactive edgeも同じrevision/inspection/review provenanceを要求する。いずれかが欠ける親はstateに関係なく `unverified` edgeだけを許可する。
 
@@ -54,7 +54,7 @@ source revisionがunverifiedのLaunchAgent 15親は `component_unavailable` 12�
 
 fresh収集でsource revisionが変化したLaunchAgentは旧 `none` reviewを再利用せず `source_revision_changed_review_required` / `unverified` に戻す。
 
-iteration 14では実在しないliteral relative runtime importを持つ単一repository親を、silent skipせずreference inspection `unverified`へ戻した。旧reviewed referencesは再利用せず、review decision・observation digest・objects・edgesを同じsafe snapshotへ再bindingした。独立collector 2回は`observed_at`正規化後に相互およびtracked snapshotとexact一致し、330親、456 edge、55 credential object、1 finding、OpenClaw transient failure 5件・absence 0件となる。
+Historical iteration 14 snapshotでは、実在しないliteral relative runtime importを持つ単一repository親をsilent skipせずreference inspection `unverified`へ戻し、330親 / 456 edge / 55 credential object / 1 findingを記録する。このhistorical countはcurrent candidate countではない。
 
 ## Reproduce and verify
 
@@ -68,7 +68,7 @@ python3 scripts/generate-cloud-agent-credential-inventory.py --check > /tmp/clou
 cmp /tmp/cloud-agent-credential-inventory.tsv docs/reference/cloud-agent-credential-inventory.tsv
 python3 -m trace --count --missing --summary --coverdir /tmp/cloud-agent-todo2-trace --module unittest tests.test_cloud_agent_credential_inventory
 artifact_gate=$(mktemp -d)
-cp docs/reference/cloud-agent-credential-observations.json docs/reference/cloud-agent-credential-review-manifest.json docs/reference/cloud-agent-credential-objects.json docs/reference/cloud-agent-credential-inventory.tsv "$artifact_gate"/
+cp docs/reference/cloud-agent-credential-observations.json docs/reference/cloud-agent-credential-review-manifest.json docs/reference/cloud-agent-credential-rebind-review.json docs/reference/cloud-agent-credential-objects.json docs/reference/cloud-agent-credential-inventory.tsv "$artifact_gate"/
 gitleaks dir "$artifact_gate" --config .gitleaks-cloud-agent.toml --redact --no-banner
 ```
 

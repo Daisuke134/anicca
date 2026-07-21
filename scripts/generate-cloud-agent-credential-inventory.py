@@ -23,8 +23,12 @@ HOME = Path.home()
 DEFAULT_PARENT = REPO / "docs" / "reference" / "cloud-agent-loop-inventory.tsv"
 DEFAULT_OBSERVATIONS = REPO / "docs" / "reference" / "cloud-agent-credential-observations.json"
 DEFAULT_REVIEW = REPO / "docs" / "reference" / "cloud-agent-credential-review-manifest.json"
+DEFAULT_INDEPENDENT_REVIEW = REPO / "docs" / "reference" / "cloud-agent-credential-rebind-review.json"
 DEFAULT_OBJECTS = REPO / "docs" / "reference" / "cloud-agent-credential-objects.json"
 APPROVED_REVIEW_BASIS = "iteration_20_whole_change_approved"
+PENDING_REVIEW_BASIS = "independent_architecture_review_pending"
+PENDING_INDEPENDENT_REVIEW_BASIS = "pending_independent_credential_rebind_review"
+APPROVED_INDEPENDENT_REVIEW_BASIS = "todo2_334_rebind_independent_review_approved_v1"
 
 EDGE_FIELDS = (
     "loop_dependency_edge_id",
@@ -222,11 +226,21 @@ def validate_revision_chain(
     parent_rows: list[dict[str, str]],
     observations: dict[str, object],
     review_manifest: dict[str, object],
+    *,
+    candidate: bool = False,
 ) -> None:
-    if review_manifest.get("schema_version") != 2 or review_manifest.get("review_status") != "approved":
-        raise SystemExit("independent review approval required")
-    if review_manifest.get("review_basis") != APPROVED_REVIEW_BASIS:
-        raise SystemExit("approved review basis required")
+    if review_manifest.get("schema_version") != 2:
+        raise SystemExit("builder review manifest schema mismatch")
+    if (
+        review_manifest.get("review_status") != "review_required"
+        or review_manifest.get("review_basis") != PENDING_REVIEW_BASIS
+    ):
+        raise SystemExit("builder review manifest must remain pending")
+    expected_parent_digest = canonical_digest(
+        [parent_metadata_digest(parent) for parent in parent_rows]
+    )
+    if observations.get("parent_inventory_digest") != expected_parent_digest:
+        raise SystemExit("parent inventory digest mismatch")
     validate_exact_parent_map(parent_rows, review_manifest)
     observed = observations.get("parents", {})
     reviewed = review_manifest.get("parents", {})
@@ -253,6 +267,56 @@ def validate_revision_chain(
     expected_observation_digest = review_manifest.get("approved_observation_digest")
     if expected_observation_digest != canonical_digest(observations):
         raise SystemExit("observation digest mismatch")
+
+
+def validate_independent_review(
+    independent_review: dict[str, object],
+    parent_rows: list[dict[str, str]],
+    observations: dict[str, object],
+    builder_manifest: dict[str, object],
+    objects_artifact: dict[str, object],
+    edges: list[dict[str, str]],
+    *,
+    candidate: bool,
+) -> None:
+    common_fields = {
+        "schema_version", "review_status", "review_basis", "reviewer_role",
+        "candidate_manifest_digest", "parent_inventory_digest", "observation_digest",
+        "object_digest", "inventory_digest",
+    }
+    expected_fields = (
+        common_fields | {"approval_basis"}
+        if independent_review.get("review_status") == "approved"
+        else common_fields
+    )
+    if set(independent_review) != expected_fields or independent_review.get("schema_version") != 1:
+        raise SystemExit("independent credential rebind review schema mismatch")
+    if candidate:
+        if (
+            independent_review.get("review_status") != "review_required"
+            or independent_review.get("review_basis") != PENDING_INDEPENDENT_REVIEW_BASIS
+            or independent_review.get("reviewer_role") != "independent_fresh_reviewer_required"
+        ):
+            raise SystemExit("independent credential rebind review must remain pending")
+    elif (
+        independent_review.get("review_status") != "approved"
+        or independent_review.get("review_basis") != APPROVED_INDEPENDENT_REVIEW_BASIS
+        or independent_review.get("approval_basis") != APPROVED_INDEPENDENT_REVIEW_BASIS
+        or independent_review.get("reviewer_role") != "independent_fresh_credential_reviewer"
+    ):
+        raise SystemExit("independent credential rebind review required")
+    expected = {
+        "candidate_manifest_digest": canonical_digest(builder_manifest),
+        "parent_inventory_digest": canonical_digest(
+            [parent_metadata_digest(parent) for parent in parent_rows]
+        ),
+        "observation_digest": canonical_digest(observations),
+        "object_digest": canonical_digest(objects_artifact),
+        "inventory_digest": canonical_digest(edges),
+    }
+    for field, value in expected.items():
+        if independent_review.get(field) != value:
+            raise SystemExit(f"independent credential rebind {field} mismatch")
 
 
 def validate_openclaw_revision_binding(
@@ -664,6 +728,78 @@ def build_review_manifest(
     parent_rows: list[dict[str, str]], observations: dict[str, object]
 ) -> dict[str, object]:
     raise SystemExit("review manifest must be independently authored")
+
+
+def _pending_unverified_review_record(
+    parent: dict[str, str], observation: dict[str, object]
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "parent_metadata_digest": parent_metadata_digest(parent),
+        "source_revision_digest": compact(observation.get("source_revision_digest", "unverified")),
+        "config_revision_digest": compact(observation.get("config_revision_digest", "unverified")),
+        "source_evidence_locator": compact(observation.get("source_evidence_locator", "unverified")),
+        "config_evidence_locator": compact(observation.get("config_evidence_locator", "unverified")),
+        "decision": "unverified",
+        "decision_basis": "independent_review_pending",
+        "evidence_locator": "safe-observation:unverified",
+        "references": [],
+    }
+    for field, basis, result in (
+        ("cron_lookup_failure", "cron_metadata_unavailable", None),
+        ("cron_absence_evidence", "stale_parent_live_job_not_found", "not_found"),
+    ):
+        evidence = observation.get(field)
+        if not isinstance(evidence, dict):
+            continue
+        record[field] = evidence
+        record["decision_basis"] = basis
+        record["evidence_locator"] = (
+            "openclaw-cli:cron-list-complete+cron-get;job:"
+            + compact(evidence.get("job_id", ""))
+            + ";result:"
+            + (result or compact(evidence.get("individual_get", "")))
+        )
+    return record
+
+
+def build_pending_rebind_review_manifest(
+    parent_rows: list[dict[str, str]],
+    observations: dict[str, object],
+    prior_review: dict[str, object],
+) -> dict[str, object]:
+    """Carry unchanged reviewed decisions into a non-approved rebind candidate."""
+    observed = observations.get("parents", {})
+    prior = prior_review.get("parents", {})
+    if not isinstance(observed, dict) or not isinstance(prior, dict):
+        raise SystemExit("pending review requires parent maps")
+    result: dict[str, dict[str, object]] = {}
+    revision_fields = (
+        "parent_metadata_digest", "source_revision_digest", "config_revision_digest",
+        "source_evidence_locator", "config_evidence_locator",
+    )
+    for parent in parent_rows:
+        parent_id = parent["inventory_id"]
+        observation = observed.get(parent_id)
+        old = prior.get(parent_id)
+        if not isinstance(observation, dict):
+            raise SystemExit(f"{parent_id}: missing observation")
+        unchanged = (
+            isinstance(old, dict)
+            and all(old.get(field) == observation.get(field) for field in revision_fields)
+            and old.get("cron_lookup_failure") == observation.get("cron_lookup_failure")
+            and old.get("cron_absence_evidence") == observation.get("cron_absence_evidence")
+        )
+        result[parent_id] = dict(old) if unchanged else _pending_unverified_review_record(parent, observation)
+    manifest: dict[str, object] = {
+        "schema_version": 2,
+        "review_status": "review_required",
+        "review_basis": PENDING_REVIEW_BASIS,
+        "approved_observation_digest": canonical_digest(observations),
+        "parents": dict(sorted(result.items())),
+    }
+    validate_exact_parent_map(parent_rows, manifest)
+    validate_revision_chain(parent_rows, observations, manifest, candidate=True)
+    return manifest
 
 
 def _base_revision_fields(
@@ -1224,7 +1360,7 @@ def validate_loop_dependency_edges(
         if edge["dependency_status"] not in allowed_status:
             raise SystemExit(f"{edge_id}: invalid dependency_status")
         if re.fullmatch(
-            r"(?:enabled|disabled|loaded(?:;declared_entrypoint_missing)?|installed_not_loaded|"
+            r"(?:enabled|disabled|disabled_by_launchctl|loaded(?:;declared_entrypoint_missing)?|installed_not_loaded|"
             r"declared_in_repository(?:;runtime_not_verified_here)?|present_on_origin_[a-z0-9_-]+;deployment_health_not_part_of_TODO_1|"
             r"parse_error:[A-Za-z0-9_-]+)",
             edge["loop_state"],
@@ -1562,10 +1698,12 @@ def main() -> None:
     parser.add_argument("--parent", type=Path, default=DEFAULT_PARENT)
     parser.add_argument("--observations", type=Path, default=DEFAULT_OBSERVATIONS)
     parser.add_argument("--review", type=Path, default=DEFAULT_REVIEW)
+    parser.add_argument("--independent-review", type=Path, default=DEFAULT_INDEPENDENT_REVIEW)
     parser.add_argument("--objects", type=Path, default=DEFAULT_OBJECTS)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--candidate", action="store_true")
     args = parser.parse_args()
     if args.check or args.self_test:
         run_self_tests()
@@ -1575,7 +1713,10 @@ def main() -> None:
     parent_rows = read_parent(args.parent)
     observations = read_json(args.observations)
     review_manifest = read_json(args.review)
-    validate_revision_chain(parent_rows, observations, review_manifest)
+    independent_review = read_json(args.independent_review)
+    validate_revision_chain(
+        parent_rows, observations, review_manifest, candidate=args.candidate
+    )
     expected_objects = build_credential_objects(parent_rows, observations, review_manifest)
     objects_artifact = read_json(args.objects)
     if canonical_digest(objects_artifact) != canonical_digest(expected_objects):
@@ -1590,6 +1731,10 @@ def main() -> None:
         observations,
         objects_artifact,
         review_manifest,
+    )
+    validate_independent_review(
+        independent_review, parent_rows, observations, review_manifest,
+        objects_artifact, result, candidate=args.candidate,
     )
     output_handle = args.output.open("w", encoding="utf-8", newline="") if args.output else sys.stdout
     writer = csv.DictWriter(output_handle, fieldnames=EDGE_FIELDS, delimiter="\t", lineterminator="\n")
