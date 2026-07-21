@@ -1,0 +1,17 @@
+file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js:217
+            throw new Error('Already connected to a transport. Call close() before connecting to a new transport, or use a separate Protocol instance per connection.');
+                  ^
+
+Error: Already connected to a transport. Call close() before connecting to a new transport, or use a separate Protocol instance per connection.
+    at Server.connect (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js:217:19)
+    at McpServer.connect (file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js:48:34)
+    at file:///Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/dist/monetized-mcp/monetized-mcp-server.js:110:35
+    at Layer.handle [as handle_request] (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/layer.js:95:5)
+    at /Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/index.js:284:15
+    at router.process_params (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/index.js:346:12)
+    at next (/Users/anicca/anicca/skills/earn/x402-sell/node_modules/monetizedmcp-sdk/node_modules/express/lib/router/index.js:280:10)
+
+Node.js v25.6.1
