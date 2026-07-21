@@ -31,11 +31,16 @@ test("poll: Telegram webhook attempt 3 is the final allowed attempt", async () =
 test("poll: Telegram webhook attempt 4 is forbidden", async () => withTelegramEnv(async () => { const h = telegramHarness({ replyAt: 1, webhookAt: 4 }); await assert.rejects(h.api.collectProductionTelegram, /telegram_backlog/); assert.equal(h.effects().webhookReads, 3); }));
 
 function emailHarness({ receiptAt = 6 } = {}) {
-  let inbox = 0; let sends = 0; const now = Date.now();
+  let inbox = 0; let sends = 0;
   const api = loadCollectors({
     nonce: "fixture-nonce",
     resendSend: async () => { sends += 1; return { sent: true, id: "accepted" }; },
-    makeGogMail: () => ({ findReceipt: async () => { inbox += 1; return inbox >= receiptAt ? { id: "receipt", matchedNonce: "fixture-nonce", receivedAtLowerMs: now, receivedAtUpperMs: now } : null; } }),
+    makeGogMail: () => ({ findReceipt: async () => {
+      inbox += 1;
+      if (inbox < receiptAt) return null;
+      const receivedAtMs = Date.now();
+      return { id: "receipt", matchedNonce: "fixture-nonce", receivedAtLowerMs: receivedAtMs, receivedAtUpperMs: receivedAtMs };
+    } }),
   });
   return { api, effects: () => ({ inbox, sends }) };
 }
