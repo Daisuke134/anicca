@@ -14,7 +14,7 @@ const INSTANCES = [
     payTo: "0x3EcCAD24794ca298D25378E9902A251322ea8749",
     upstreamPort: "8414",
     mcpPort: "8090",
-    tsbridgeName: "franklin1-mcp",
+    funnelPort: "443",
   },
   {
     name: "franklin2",
@@ -51,9 +51,6 @@ for (const instance of INSTANCES) {
           `tailscale funnel --bg --https=${instance.funnelPort} --set-path=/mcp http://127.0.0.1:${instance.mcpPort}/mcp`
         )
       );
-    } else {
-      assert.doesNotMatch(boot, /tailscale funnel/);
-      assert.ok(instance.tsbridgeName, "non-Funnel MCP service must declare its tsbridge node");
     }
     assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/mcp-server\.mjs"/);
   });
