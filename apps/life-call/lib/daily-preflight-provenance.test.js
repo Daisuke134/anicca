@@ -42,12 +42,21 @@ test("production main has no collector or transport injection parameters", () =>
 test("read-only production main invokes zero caller or controlled sends", async () => {
   let invoked = 0;
   const forged = { telegram: async () => { invoked += 1; }, email: async () => { invoked += 1; } };
+  const outputDirectory = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "daily-preflight-"));
+  const output = path.join(outputDirectory, "report.json");
   const originalWrite = process.stdout.write; let exitCode;
   process.stdout.write = () => true;
   try {
-    exitCode = await main({ argv: ["--mode", "read-only", "--timeout-ms", "5"], env: {},
+    exitCode = await main({ argv: ["--mode", "read-only", "--timeout-ms", "5", "--output", output], env: {},
       fetchImpl: async () => { throw new Error("offline fixture"); }, collectors: forged });
-  } finally { process.stdout.write = originalWrite; }
+    const report = JSON.parse(fs.readFileSync(output, "utf8"));
+    assert.equal(report.exitCode, 1);
+    assert.equal(fs.statSync(output).mode & 0o777, 0o600);
+    assert.deepEqual(fs.readdirSync(outputDirectory), ["report.json"]);
+  } finally {
+    process.stdout.write = originalWrite;
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
   assert.equal(exitCode, 1);
   assert.equal(invoked, 0);
 });
