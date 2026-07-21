@@ -12,6 +12,8 @@ function loadCollectors(hooks = {}) {
     .replace('const { resendSend } = require("./mail-resend.js");', 'const resendSend = global.__core8dHooks.resendSend;')
     .replace('const { makeGogMail } = require("./transport/mail-gog.js");', 'const makeGogMail = global.__core8dHooks.makeGogMail;')
     .replace('crypto.randomBytes(18).toString("hex")', 'global.__core8dHooks.nonce')
+    .replace('const nonce = global.__core8dHooks.nonce; const sentAtMs = Date.now();',
+      'const nonce = global.__core8dHooks.nonce; const sentAtMs = Date.now() - 1000;')
     .replace(/function sleepMs\([\s\S]*?(?=\n\nasync function withinDeadline)/,
       'function sleepMs(ms) { return global.__core8dHooks.sleep(ms); }')
     .replace('async function callTelegramBot(token, method, parentSignal) {', 'async function callTelegramBotOriginal(token, method, parentSignal) {')
