@@ -146,8 +146,9 @@ def validate_manifest_and_revisions(
     helpers = collector.load_todo2_helpers()
     for source in sources:
         source_id = source["source_id"]
+        source_path, trusted_root = collector.reviewed_source(source["source_locator"])
         current = collector.secure_source_digest(
-            collector.safe_repo_source(source["source_locator"]), helpers
+            source_path, helpers, trusted_root=trusted_root
         )
         reviewed = source["source_revision_digest"]
         observed = observed_revisions.get(source_id)
@@ -360,7 +361,14 @@ def validate_inventory(
             raise SystemExit(f"{item['artifact_object_id']}: invalid size scope")
         if not (item["size_bytes"].isdigit() or item["size_bytes"] in {"unknown", "not_applicable"}):
             raise SystemExit(f"{item['artifact_object_id']}: invalid size")
-        if item["artifact_status"] == "observed" and not item["size_bytes"].isdigit():
+        mutable_observation = (
+            item["size_bytes"], item["size_scope"], item["size_evidence"]
+        ) == ("unknown", "unknown", "lstat:mutable_regular_file")
+        if (
+            item["artifact_status"] == "observed"
+            and not item["size_bytes"].isdigit()
+            and not mutable_observation
+        ):
             raise SystemExit(f"{item['artifact_object_id']}: observed object requires numeric size")
         if item["size_scope"] == "shared_container" and item["path_class"] != "scheduler:shared_definition_container":
             raise SystemExit(f"{item['artifact_object_id']}: invalid shared-container scope")

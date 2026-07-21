@@ -282,19 +282,34 @@ def format_digest(raw: str) -> str:
 
 
 def safe_repo_source(locator: str) -> Path:
-    if not locator.startswith("repo:"):
+    path, trusted_root = reviewed_source(locator)
+    if trusted_root != REPO:
         raise SystemExit("reviewed source locator must be repository-relative")
-    relative = locator.removeprefix("repo:")
+    return path
+
+
+def reviewed_source(locator: str) -> tuple[Path, Path]:
+    roots = {
+        "repo:": REPO,
+        "local-share:": HOME / ".local/share/anicca",
+    }
+    prefix = next((candidate for candidate in roots if locator.startswith(candidate)), None)
+    if prefix is None:
+        raise SystemExit("reviewed source locator class invalid")
+    relative = locator.removeprefix(prefix)
     if SAFE_RELATIVE.fullmatch(relative) is None or any(
         part in {"", ".", ".."} for part in relative.split("/")
     ):
         raise SystemExit("invalid reviewed source locator")
-    return REPO / relative
+    trusted_root = roots[prefix]
+    return trusted_root / relative, trusted_root
 
 
-def secure_source_analysis(path: Path, helpers) -> tuple[str, set[str], set[str]]:
+def secure_source_analysis(
+    path: Path, helpers, *, trusted_root: Path = REPO
+) -> tuple[str, set[str], set[str]]:
     descriptor = helpers._open_lstat_bound_fd(
-        path, "state/artifact reviewed source", trusted_root=REPO
+        path, "state/artifact reviewed source", trusted_root=trusted_root
     )
     try:
         raw_digest = helpers._fd_sha256(descriptor)
@@ -317,8 +332,8 @@ def secure_source_analysis(path: Path, helpers) -> tuple[str, set[str], set[str]
         os.close(descriptor)
 
 
-def secure_source_digest(path: Path, helpers) -> str:
-    return secure_source_analysis(path, helpers)[0]
+def secure_source_digest(path: Path, helpers, *, trusted_root: Path = REPO) -> str:
+    return secure_source_analysis(path, helpers, trusted_root=trusted_root)[0]
 
 
 def opaque_id(prefix: str, material: str) -> str:
@@ -364,8 +379,12 @@ def object_record(
     source_revision_digest: str,
     discovery_evidence_kind: str,
     discovery_evidence_locator: str,
+    mutable_size: bool = False,
 ) -> dict[str, str]:
     status, size, size_evidence = inspect_path(path)
+    if mutable_size and status == "observed":
+        size = "unknown"
+        size_evidence = "lstat:mutable_regular_file"
     return {
         "artifact_object_id": object_id,
         "artifact_category": artifact_category,
@@ -425,6 +444,8 @@ def resolve_declaration_path(declaration: dict[str, object]) -> Path | None:
         return REPO / value
     if kind == "home_relative":
         return HOME / value
+    if kind == "local_share_relative":
+        return HOME / ".local/share/anicca" / value
     raise SystemExit("invalid reviewed runtime path kind")
 
 
@@ -560,8 +581,9 @@ def collect(
 
     for source in sources:
         source_id = str(source["source_id"])
+        source_path, trusted_root = reviewed_source(str(source["source_locator"]))
         live_digest, literals, symbols = secure_source_analysis(
-            safe_repo_source(str(source["source_locator"])), helpers
+            source_path, helpers, trusted_root=trusted_root
         )
         source_revisions[source_id] = live_digest
         bound_parents = source.get("loop_refs", [])
@@ -582,6 +604,7 @@ def collect(
                 source_revision_digest=live_digest,
                 discovery_evidence_kind="reviewed_static_source",
                 discovery_evidence_locator=source_id,
+                mutable_size=str(declaration["artifact_role"]) == "log_append_only",
             )
             if source["parent_binding"] == "explicit_parent_list":
                 for parent_reference in bound_parents:

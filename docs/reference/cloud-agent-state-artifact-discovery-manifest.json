@@ -2,7 +2,7 @@
   "schema_version": 2,
   "review_status": "review_required",
   "review_basis": "pending_independent_architecture_review",
-  "parent_inventory_digest": "sha256:a0fde66c:f8f11931:6772a27d:4bf27026:f1c14816:e3bdbd49:8edb1504:26de2be4",
+  "parent_inventory_digest": "sha256:90113e58:00a49511:9a84159b:1baf1728:c883a52b:0239dd87:113d1f8a:939d1e7c",
   "sources": [
     {
       "source_id": "source-000000000000001",
@@ -81,6 +81,48 @@
           "path_class": "media:remote_input_pattern",
           "runtime_path_kind": "non_local",
           "runtime_path": "unverified"
+        }
+      ]
+    },
+    {
+      "source_id": "source-000000000000004",
+      "source_locator": "local-share:orca-zenn-finalizer/finalizer.py",
+      "source_revision_digest": "sha256:85929c72:381db5d9:32484e85:a3047df8:457b3cf5:2f90b681:2d6850bf:43004e7d",
+      "analysis_method": "reviewed_static_source_literals_and_symbols",
+      "parent_binding": "explicit_parent_list",
+      "loop_refs": [
+        "loop-173899012226255"
+      ],
+      "declarations": [
+        {
+          "declaration_id": "declaration-000000000000006",
+          "artifact_category": "state",
+          "artifact_role": "state_checkpoint",
+          "evidence_literals": ["state.json"],
+          "evidence_symbols": ["STATE_PATH", "load_state"],
+          "path_class": "state:finalizer_checkpoint",
+          "runtime_path_kind": "local_share_relative",
+          "runtime_path": "orca-zenn-finalizer/state.json"
+        },
+        {
+          "declaration_id": "declaration-000000000000007",
+          "artifact_category": "log",
+          "artifact_role": "log_append_only",
+          "evidence_literals": ["finalizer.log"],
+          "evidence_symbols": ["LOG_PATH", "log"],
+          "path_class": "log:finalizer_event_log",
+          "runtime_path_kind": "local_share_relative",
+          "runtime_path": "orca-zenn-finalizer/finalizer.log"
+        },
+        {
+          "declaration_id": "declaration-000000000000008",
+          "artifact_category": "output",
+          "artifact_role": "output_verification_evidence",
+          "evidence_literals": ["live-evidence.json"],
+          "evidence_symbols": ["atomic_json", "evidence"],
+          "path_class": "output:verification_evidence",
+          "runtime_path_kind": "local_share_relative",
+          "runtime_path": "orca-zenn-finalizer/live-evidence.json"
         }
       ]
     }
