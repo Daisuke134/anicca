@@ -13009,3 +13009,13 @@
 {"ts":1784663850,"wake_id":"00MRV2S0AX23E0429F32AE4B79","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
 {"ts":1784663850,"wake_id":"00MRV2S0AX23E0429F32AE4B79","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784663990,"wake_id":"00MRV2V0FM75C927BCCB214BB7","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784664294,"wake_id":"00MRV31IX4E0214E81DAA84037","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784664429,"wake_id":"00MRV34F41FC914B3E591A4E97","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784664569,"wake_id":"00MRV37F2282A0ACD3775C4B1A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784664703,"wake_id":"00MRV3AAM42181108B949A411E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784664836,"wake_id":"00MRV3D4X8D64BCAAFEAE24ED1","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784664836,"wake_id":"00MRV3D4X8D64BCAAFEAE24ED1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784664967,"wake_id":"00MRV3FXSH58F8C3FD660E4392","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784664967,"wake_id":"00MRV3FXSH58F8C3FD660E4392","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784665106,"wake_id":"00MRV3IXOT7525D3FAF7B9473A","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784665106,"wake_id":"00MRV3IXOT7525D3FAF7B9473A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
