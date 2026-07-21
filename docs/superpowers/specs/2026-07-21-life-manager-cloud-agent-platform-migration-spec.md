@@ -359,7 +359,7 @@ state values: `pending | in_progress | code_done | done | blocked`。
 
 | # | Task | Done condition | State |
 |---|---|---|---|
-| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | pending |
+| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — `docs/reference/cloud-agent-loop-inventory.tsv` 330 data rows / 331 physical lines（launchd 103 / OpenClaw cron 222 / Railway 1 / repo entrypoint 4）、generator self-test・`--check`・tracked TSV diff がPASS。秘密・prompt本文・個人home pathは非収録 |
 | 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | pending |
 | 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | pending |
 | 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | pending |
