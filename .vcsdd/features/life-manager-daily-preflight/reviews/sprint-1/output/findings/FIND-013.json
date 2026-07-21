@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "Serialized report validation accepts historical run references retained in module-global state and accepts any structurally valid run reference in a fresh process with no explicit invocation provenance.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/daily-preflight.js",
+    "lineRange": "143-163",
+    "snippet": "CURRENT_RUN_REFS is module-global and the membership check is skipped when the set is empty.",
+    "testName": "review6 RED: serialized validation requires explicit same-invocation provenance in current and fresh processes"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}

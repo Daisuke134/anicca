@@ -483,3 +483,15 @@
 {"timestamp":"2026-07-21T16:25:08.663Z","event":"bead_linked","featureName":"life-manager-daily-preflight","from":"BEAD-106","to":"BEAD-120","phase":"2b"}
 {"timestamp":"2026-07-21T16:25:08.664Z","event":"bead_linked","featureName":"life-manager-daily-preflight","from":"BEAD-109","to":"BEAD-119","phase":"2b"}
 {"timestamp":"2026-07-21T16:25:08.665Z","event":"bead_linked","featureName":"life-manager-daily-preflight","from":"BEAD-109","to":"BEAD-120","phase":"2b"}
+{"timestamp":"2026-07-21T22:10:34.769Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-155","type":"test-case","phase":"2b","externalId":"TEST-102"}
+{"timestamp":"2026-07-21T22:10:34.771Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-156","type":"test-case","phase":"2b","externalId":"TEST-103"}
+{"timestamp":"2026-07-21T22:10:34.773Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-157","type":"test-case","phase":"2b","externalId":"TEST-104"}
+{"timestamp":"2026-07-21T22:10:34.775Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-158","type":"test-case","phase":"2b","externalId":"TEST-105"}
+{"timestamp":"2026-07-21T22:10:34.777Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-159","type":"test-case","phase":"2b","externalId":"TEST-106"}
+{"timestamp":"2026-07-21T22:10:34.778Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-160","type":"test-case","phase":"2b","externalId":"TEST-107"}
+{"timestamp":"2026-07-21T22:10:34.779Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-161","type":"adversary-finding","phase":"2b","externalId":"FIND-012"}
+{"timestamp":"2026-07-21T22:10:34.781Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-162","type":"adversary-finding","phase":"2b","externalId":"FIND-013"}
+{"timestamp":"2026-07-21T22:10:34.783Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-163","type":"adversary-finding","phase":"2b","externalId":"FIND-014"}
+{"timestamp":"2026-07-21T22:10:34.784Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-164","type":"adversary-finding","phase":"2b","externalId":"FIND-015"}
+{"timestamp":"2026-07-21T22:10:34.786Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-165","type":"adversary-finding","phase":"2b","externalId":"FIND-016"}
+{"timestamp":"2026-07-21T22:10:34.787Z","event":"bead_created","featureName":"life-manager-daily-preflight","beadId":"BEAD-166","type":"adversary-finding","phase":"2b","externalId":"FIND-017"}

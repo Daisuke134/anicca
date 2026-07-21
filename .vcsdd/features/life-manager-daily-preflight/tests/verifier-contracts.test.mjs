@@ -233,3 +233,51 @@ test("manager audit: stored f9a35c8d2 controlled-L3 snapshot is rejected against
   const stored = path.join(feature, "evidence/sprint-1/corrective-green-iteration-1/controlled-l3-gate-snapshot.txt");
   rejected("verify-controlled-l3-gates.mjs", [path.join(feature, "state.json"), contract, stored]);
 });
+
+test("review6 RED: tracked closure binds the implementation tree and permits only descendant evidence commits", () => {
+  const fixture = gitFixture("review6-tracked-closure", {
+    "apps/life-call/lib/daily-preflight.js": "module.exports = { implementation: true };\n",
+  });
+  const implementationCommit = fixture.greenCommit;
+  const implementationTree = fixture.greenTree;
+  const evidenceRelative = ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/manager-review6-red-a5dc/closure.txt";
+  writeIn(fixture.directory, evidenceRelative, "post-implementation evidence\n");
+  git(fixture.directory, ["add", "--", evidenceRelative]);
+  git(fixture.directory, ["commit", "-q", "-m", "evidence closure"]);
+  const digest = hash(readFileSync(contract));
+  const evidence = write("review6-green-evidence.json", JSON.stringify({
+    appNew: 63, helper: 12, baselineFocused: 51, baselineFull: 371, eval: 33, schema: 45, poll: 12, purity: 32,
+    coverage: "pass", safeScan: "pass", contractDigest: digest, outputAbsent: true, modules: l3Modules,
+  }));
+  const candidate = write("review6-source-snapshot.txt", [
+    `baselineCommit=${fixture.baselineCommit}`, `baselineTree=${fixture.baselineTree}`,
+    `greenCommit=${implementationCommit}`, `greenTree=${implementationTree}`,
+    `contractDigest=${digest}`, `greenEvidence=${evidence}`, `finalOutput=${path.join(fixtureRoot, "review6-final.json")}`,
+  ].join("\n") + "\n");
+  const coverage = write("review6-coverage.log", Object.keys(l3Modules).map(file => `apps/life-call/${file} | 95 | 95`).join("\n") + "\n");
+  const observed = {
+    scope: run("verify-phase2-process.mjs", ["scope", candidate], { cwd: fixture.directory }).status,
+    coverage: run("verify-phase2-process.mjs", ["coverage", coverage, candidate], { cwd: fixture.directory }).status,
+    controlledL3: run("verify-controlled-l3-gates.mjs", [state, contract, candidate], { cwd: fixture.directory }).status,
+  };
+  assert.deepEqual(observed, { scope: 0, coverage: 0, controlledL3: 0 });
+});
+
+test("review6 RED: schema discovery honors an explicitly injected installed plugin root", () => {
+  const pluginRoot = path.join(fixtureRoot, "injected-vcsdd-plugin");
+  writeIn(pluginRoot, "scripts/lib/vcsdd-schema.js", "module.exports={validateDocument(){return {valid:false,errors:['injected-root-used']}}};\n");
+  const result = spawnSync(process.execPath, [path.join(here, "verify-phase2-process.mjs"), "schemas", feature], {
+    cwd: root, encoding: "utf8", env: { PATH: process.env.PATH ?? "", CLAUDE_PLUGIN_ROOT: pluginRoot },
+  });
+  assert.notEqual(result.status, 0, "the verifier ignored CLAUDE_PLUGIN_ROOT and used a machine-specific absolute import");
+  assert.match(result.stderr, /verification failed/);
+});
+
+test("review6 RED: architecture-approved recursive privacy scope succeeds and reports its measured path count", () => {
+  const result = run("verify-safe-scan.mjs", ["--paths", path.join(root, "apps/life-call"), feature,
+    "--exclude-historical-json", "--allow-utc-timestamps"]);
+  assert.equal(result.status, 0, "the declared recursive privacy scope must be executable without detector self-literal false positives");
+  const match = /^paths=(\d+) secret=0 email=0 phone=0 rawCorrelation=0 providerId=0\n$/.exec(result.stdout);
+  assert.ok(match);
+  assert.ok(Number(match[1]) > 0, "path count must be measured, not a fixed zero");
+});

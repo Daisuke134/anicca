@@ -195,3 +195,23 @@ test("manager RED: current-run binding: arbitrary nonzero serialized runRef is r
   forged.runRef = `sha256:${"f".repeat(64)}`;
   assert.throws(() => validateAndBuildFinalReport(forged), /final_report_invalid/);
 });
+
+test("review6 RED: serialized validation requires explicit same-invocation provenance in current and fresh processes", async () => {
+  const first = (await boundReport()).report;
+  await boundReport();
+  let firstReplayAcceptedAfterSecond = false;
+  try { validateAndBuildFinalReport(first); firstReplayAcceptedAfterSecond = true; } catch {}
+
+  const arbitrary = { ...first, runRef: `sha256:${"a".repeat(64)}` };
+  const child = spawnSync(process.execPath, ["-e", [
+    "const {validateAndBuildFinalReport}=require(process.argv[1]);",
+    "const report=JSON.parse(Buffer.from(process.argv[2],'base64').toString('utf8'));",
+    "try{validateAndBuildFinalReport(report);process.exit(0)}catch{process.exit(1)}",
+  ].join(""), path.join(__dirname, "daily-preflight.js"), Buffer.from(JSON.stringify(arbitrary)).toString("base64")], {
+    cwd: __dirname, encoding: "utf8", env: { PATH: process.env.PATH || "" },
+  });
+  assert.deepEqual({ firstReplayAcceptedAfterSecond, freshProcessArbitraryRunRefAccepted: child.status === 0 }, {
+    firstReplayAcceptedAfterSecond: false,
+    freshProcessArbitraryRunRefAccepted: false,
+  });
+});

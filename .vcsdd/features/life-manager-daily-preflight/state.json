@@ -953,7 +953,9 @@
           "BEAD-089",
           "BEAD-090",
           "BEAD-091",
-          "BEAD-092"
+          "BEAD-092",
+          "BEAD-156",
+          "BEAD-158"
         ],
         "createdAt": "2026-07-21T08:56:28.921Z",
         "createdInPhase": "1b",
@@ -982,7 +984,8 @@
           "BEAD-046",
           "BEAD-047",
           "BEAD-113",
-          "BEAD-114"
+          "BEAD-114",
+          "BEAD-157"
         ],
         "createdAt": "2026-07-21T08:56:28.921Z",
         "createdInPhase": "1b",
@@ -1082,7 +1085,10 @@
           "BEAD-117",
           "BEAD-118",
           "BEAD-119",
-          "BEAD-120"
+          "BEAD-120",
+          "BEAD-155",
+          "BEAD-159",
+          "BEAD-160"
         ],
         "createdAt": "2026-07-21T08:56:28.922Z",
         "createdInPhase": "1b",
@@ -3130,6 +3136,156 @@
         "createdAt": "2026-07-21T15:45:22.858Z",
         "createdInPhase": "2b",
         "externalId": "TEST-101"
+      },
+      {
+        "beadId": "BEAD-155",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-tracked-closure",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-161"
+        ],
+        "createdAt": "2026-07-21T22:10:34.766Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-102"
+      },
+      {
+        "beadId": "BEAD-156",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#review6-current-run-provenance",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-162"
+        ],
+        "createdAt": "2026-07-21T22:10:34.770Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-103"
+      },
+      {
+        "beadId": "BEAD-157",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#review6-deadline-harness-semantics",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-033",
+          "BEAD-163"
+        ],
+        "createdAt": "2026-07-21T22:10:34.772Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-104"
+      },
+      {
+        "beadId": "BEAD-158",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#review6-receipt-boundary-integrity",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-164"
+        ],
+        "createdAt": "2026-07-21T22:10:34.774Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-105"
+      },
+      {
+        "beadId": "BEAD-159",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-portable-schema-discovery",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-165"
+        ],
+        "createdAt": "2026-07-21T22:10:34.776Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-106"
+      },
+      {
+        "beadId": "BEAD-160",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-recursive-privacy-scope",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-166"
+        ],
+        "createdAt": "2026-07-21T22:10:34.777Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-107"
+      },
+      {
+        "beadId": "BEAD-161",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-012.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-155"
+        ],
+        "createdAt": "2026-07-21T22:10:34.779Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-012"
+      },
+      {
+        "beadId": "BEAD-162",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-013.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-156"
+        ],
+        "createdAt": "2026-07-21T22:10:34.780Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-013"
+      },
+      {
+        "beadId": "BEAD-163",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-014.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-157"
+        ],
+        "createdAt": "2026-07-21T22:10:34.782Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-014"
+      },
+      {
+        "beadId": "BEAD-164",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-015.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-158"
+        ],
+        "createdAt": "2026-07-21T22:10:34.784Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-015"
+      },
+      {
+        "beadId": "BEAD-165",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-016.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-159"
+        ],
+        "createdAt": "2026-07-21T22:10:34.785Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-016"
+      },
+      {
+        "beadId": "BEAD-166",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-017.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-160"
+        ],
+        "createdAt": "2026-07-21T22:10:34.787Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-017"
       }
     ]
   },
@@ -3172,5 +3328,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T16:25:08.664Z"
+  "updatedAt": "2026-07-21T22:10:34.787Z"
 }

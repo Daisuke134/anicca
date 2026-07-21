@@ -52,24 +52,30 @@ test("manager RED: deadline: withinDeadline never mutates global timer functions
   assert.equal(global.setTimeout, originalSetTimeout);
 });
 
-test("manager RED: receipt: one-millisecond stale remains stale through the runtime harness", async () => withEmailEnv(async () => {
-  const sentAtMs = 1000;
+test("review6 RED: receipt boundary: one millisecond before the actual send is rejected without rewriting sentAtMs", async () => withEmailEnv(async () => {
+  let actualSentAtMs;
   const api = loadCollectors({
     nonce: "fixture-nonce",
-    resendSend: async () => ({ sent: true, id: "accepted" }),
-    makeGogMail: () => ({ findReceipt: async ({ nonce, afterMs }) => ({
+    resendSend: async () => { actualSentAtMs = Date.now(); return { sent: true, id: "accepted" }; },
+    makeGogMail: () => ({ findReceipt: async ({ nonce }) => ({
       id: "receipt", matchedNonce: nonce,
-      receivedAtLowerMs: afterMs - 1, receivedAtUpperMs: afterMs - 1,
+      receivedAtLowerMs: actualSentAtMs - 1, receivedAtUpperMs: actualSentAtMs - 1,
     }) }),
   });
-  assert.throws(() => api.validateEmailObservation({
-    recipient: "fixture@example.test", receiveIdentity: "fixture@example.test",
-    providerAcceptedId: "accepted", receiptMessageId: "receipt",
-    nonce: "fixture-nonce", receivedNonce: "fixture-nonce", sentAtMs,
-    receivedAtLowerMs: sentAtMs - 1, receivedAtUpperMs: sentAtMs - 1, inboxReadCount: 1,
-  }, sentAtMs, ["fixture@example.test"]), /email_receipt_stale/);
   await assert.rejects(api.collectProductionEmail, /email_receipt_stale/);
 }));
+
+test("review6 RED: deadline harness preserves non-cooperative timer semantics after abort", async () => {
+  const api = loadCollectors(); let continued = 0; let observedSignal;
+  await assert.rejects(api.withinDeadline(async signal => {
+    observedSignal = signal;
+    await new Promise(resolve => setTimeout(resolve, 25));
+    continued += 1;
+  }, 1, "fixture_deadline"));
+  await new Promise(resolve => setTimeout(resolve, 40));
+  assert.equal(observedSignal?.aborted, true);
+  assert.equal(continued, 1, "test support must not delete arbitrary timers to manufacture cancellation");
+});
 
 for (const [name, deadline, target] of [
   ["timeout: Telegram Bot API work is aborted at 15000 ms", 15000, "telegram"],
@@ -79,8 +85,12 @@ for (const [name, deadline, target] of [
   ["deadline: email collector cancels at 120000 ms", 120000, "email"],
   ["deadline: parallel collector cancels at 179000 ms", 179000, "parallel"],
 ]) test(name, async () => {
-  const api = loadCollectors(); let continued = 0; let observedSignal;
-  await assert.rejects(api.withinDeadline(async signal => { observedSignal = signal; await new Promise(resolve => setTimeout(resolve, 25)); continued += 1; }, 1, `${target}_deadline`));
+  const api = loadCollectors(); let continued = 0; let observedSignal; let timer;
+  await assert.rejects(api.withinDeadline(signal => new Promise((resolve, reject) => {
+    observedSignal = signal;
+    timer = setTimeout(() => { continued += 1; resolve(); }, 25);
+    signal.addEventListener("abort", () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+  }), 1, `${target}_deadline`));
   await new Promise(resolve => setTimeout(resolve, 40));
   assert.equal(deadline > 0, true);
   assert.equal(observedSignal?.aborted, true, "deadline must abort underlying work");

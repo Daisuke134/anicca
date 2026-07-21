@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The architecture-approved recursive privacy scope fails on detector literals and production paths, so the declared command is not executable and cannot truthfully report its measured path count.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs",
+    "lineRange": "27-39",
+    "snippet": "Detector patterns are applied recursively without a fixture-literal strategy, causing the scanner to match its own declared tokens.",
+    "testName": "review6 RED: architecture-approved recursive privacy scope succeeds and reports its measured path count"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}
