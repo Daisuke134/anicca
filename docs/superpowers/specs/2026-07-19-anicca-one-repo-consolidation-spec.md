@@ -332,12 +332,27 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 5 | LM-31 | calendar edge-case engine（§9.7 の9件 + §9.11 follow-up copy）+ L2 eval harness 初建立 | **done (2026-07-21 実測)**: 21 cases、RED 9/21 → GREEN 21/21(100%)。Fable 独立再実行 = `npm test` fail 0 + `npm run eval` 21/21 を worktree で自分の目で確認 → PR #323 squash-**merge 済み**(00:01:25Z 実測)。Sol が追加した GHA workflow は Fable が merge 前に削除（GHA 禁止ルール — eval は npm script として dev loop/ローカルで回す）。実 calendar 1件ずつの L3 は次の prod 昇格後に運用内で実測 | **done** |
 | 6 | LM-30 | 「出た?/まだ?」全面撤去 + location gate 遅刻連絡 v2 | **code done / E2E 残 (2026-07-21)**: PR #324 squash-merge (00:23:13Z)。撤去 grep 0（出た/まだ/late:ok/late:still/lateQuestion 送信コード消滅、Fable 独立 grep でも 0）。edited_message 分岐 + live location 保存 + 間に合わない確定時の自動メール + 宛先不明時の正直報告分岐 実装済み。eval: calendar 21/21 + **late 12/12** を Fable 独立再実行。GHA calendar-eval check も初回 SUCCESS。**残 = L3 E2E**（prod 昇格 + setWebhook edited_message 追加 + Dais の live location 共有 1回 + 実メール/正直報告の実受信）— rotate(順4) の redeploy と同窓で prod 昇格する | code-done |
 | 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | 実 TG 着信 + 解錠済み gate に送られないこと | pending |
-| 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | 実ブラウザで5要素表示 + gate 状態が実データ | pending |
-| 9 | MKT | marketing video loop 毎日1本（§9.2 + §9.10-9.11 脚本銀行16本。slideshow 廃止） | 7日連続人手ゼロで IG(claude-p)+TT(Postiz cmp9txjdp01c8oh0yb6dhlarr) 実投稿 URL | pending |
-| 10 | DEV | dev loop general 化（§9.3。feedback→PII scrub(user側)→issue→auto-PR） | 実 feedback 1件が PII 除去済み issue → merge された PR になる | pending |
-| 11 | PHY | PHYSICAL organ（§9.1/9.5。未通院検知+予約代行=web/メールのみ、電話禁止 §9.5、事後報告） | 実予約1件 + §9.11 copy での報告実測 | pending |
-| 12 | MEN | MENTAL organ（§9.11。schedule-aware affirmation。固定時刻禁止・3通/日上限） | 実 schedule 由来 trigger で実 TG 着信3種 | pending |
-| 13 | FIN | FINANCIAL organ（§9.8。crypto rail 配線、送金先のみ取得） | agent wallet→user wallet 実送金 tx + 月次報告実 TG | pending |
+| 8a | LM-33a | panel 認証: TG `/panel` コマンド → 5分単回 opaque token URL → HttpOnly session。`/lm?tg=` 廃止（§10.1 U5） | token 再利用が 403 + 期限切れ 403 の negative test green | pending |
+| 8b | LM-33b | panel read API: 今日の timeline / call 実績 / 3 organ スコア / gate 状態 / 台帳 の JSON endpoints | 各 endpoint が実 DB データを 200 で返す curl 実測 | pending |
+| 8c | LM-33c | panel UI（gpt-tasteskill → frontend-design、§9.9 の5要素、鏡 = read-only） | 実ブラウザ full-page screenshot で5要素 + 実データ表示 | pending |
+| 9a | MKT-a | video 生成 PoC 1本: §9.10 matrix の1行 → MPT backend（faceless-money-factory 代替レンダラー、§10.1 U6）で mp4 | ローカルに実 mp4 1本 + 生成コスト/時間実測 | pending |
+| 9b | MKT-b | 生成 loop 常設: launchd 日次、脚本銀行 rotation + 伸びた行を優先する self-improve 記帳 | launchctl list 実出力 + 2日連続自動生成 | pending |
+| 9c | MKT-c | 配信配線: IG（claude-p loop に受け渡し）+ TikTok（Postiz cmp9txjdp01c8oh0yb6dhlarr） | 実投稿 URL 各1本 | pending |
+| 9d | MKT-d | 7日連続人手ゼロ実測（§9.2 done 条件） | 7日分の実投稿 URL 台帳 | pending |
+| 10a | DEV-a | feedback intake: TG メッセージ→「feedback」判定→PII scrub（user 側で除去、§9.3 不変条件） | 実 TG feedback 1件が PII ゼロの要約になる実測 | pending |
+| 10b | DEV-b | issue 自動生成 + dev loop 接続（既存 launchd D0 が食う形） | scrub 済み issue が gh に実生成 | pending |
+| 10c | DEV-c | E2E: 実 feedback 1件 → issue → dev loop auto-PR → merge | merge された実 PR URL | pending |
+| 11a | PHY-a | 未通院検知 rule: calendar/context 履歴から歯科6mo・散髪6-8wk を検知。eval `phy-cases.jsonl` 10+ cases | eval 100% + 実 calendar で検知1件 | pending |
+| 11b | PHY-b | 候補選定: 生活圏（home/work）+ 履歴の「いつもの店」優先。web 予約可否の判定込み | 実データで候補3件 + 予約経路の判定実測 | pending |
+| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Anicca (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
+| 11d | PHY-d | 事後報告 + calendar 登録 + 当日 call 連動（§9.11 PHYSICAL copy） | §9.11 copy での実 TG + gcal 実 event | pending |
+| 12a | MEN-a | trigger 判定 engine: schedule+location+直前 event から「効く瞬間」を判定。固定時刻禁止・3通/日上限。eval `men-cases.jsonl` 10+ cases | eval 100%（上限・抑制ケース含む） | pending |
+| 12b | MEN-b | 文面生成: aniccaios affirmation 資産を種に LLM が状況別生成（§9.11 MENTAL 例文の型） | 生成文が §9.11 原則（一方向・絵文字1個まで）を満たす sample 10本 | pending |
+| 12c | MEN-c | 送信配線 + E2E: 実 schedule 由来 trigger 3種（予定前/合間/就寝前）で実 TG 着信 | 実 TG 3通のスクショ/メッセージ id | pending |
+| 13a | FIN-a | agent wallet 自己生成（§10.1 U7 Franklin 型。既存 wallet 流用禁止）+ 秘密鍵の安全保存 | 新 address 実在 + 残高 0 確認 + 鍵が repo/log に無い grep | pending |
+| 13b | FIN-b | 送金先 closed Q（§9.11 FINANCIAL copy、初回1問のみ）+ 永続保存 | 実 TG で登録往復1回 + DB 実 row | pending |
+| 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | pending |
+| 13d | FIN-d | 実送金 E2E: agent wallet → user wallet、spend-cap 内、tx 報告（§9.11 copy） | on-chain 実 tx hash + 実 TG 報告 | pending |
 
 - **実装方式 = flowb（Dais 裁定 2026-07-20 再確認）: Fable = plan + spec + 最終検証のみ。Sol(codex) = build + execute + verify + push 全部。Fable は手を動かさない。**
 - 順1-4 = 稼働系の証明と修理（先行必須）。順5-8 = DAILY 完成。順9-10 = 両 loop。順11-13 = organ 拡張。
