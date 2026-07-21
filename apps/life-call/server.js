@@ -38,7 +38,8 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, routeCallbackData } = require("./lib/telegram.js");
+const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -62,6 +63,10 @@ const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+// The panel is served by this life-call HTTP service, not by the /lm onboarding site.
+// Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
+const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -190,6 +195,14 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path === "/panel") {
+    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch((error) => {
+      console.error("[panel] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+      res.end("panel unavailable");
+    });
+    return;
+  }
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
@@ -338,6 +351,24 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          if (isPanelCommand(u.text)) {
+            if (!row) {
+              await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before opening your panel.");
+            } else if (!LM_PANEL_BASE) {
+              console.error("[panel] LM_PANEL_BASE_URL/RAILWAY_PUBLIC_DOMAIN not configured");
+              await sendMessage(LM_TG_TOKEN, u.chatId, "The panel is temporarily unavailable. Please try again shortly.");
+            } else {
+              await sendPanelLink({ uid: row.uid, chatId: u.chatId }, {
+                token: LM_TG_TOKEN,
+                supaUrl: SUPA_URL,
+                supaKey: SUPA_KEY,
+                panelBaseUrl: LM_PANEL_BASE,
+                sendMessage,
+              });
+            }
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           if (u.kind === "location") {
             if (row) {
               const saved = await upsertLiveLocation(row.uid, u, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });

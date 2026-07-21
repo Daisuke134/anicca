@@ -28,6 +28,10 @@ const setWebhook = (token, url, secret) =>
 const answerCallbackQuery = (token, id, text) =>
   tgCall(token, "answerCallbackQuery", { callback_query_id: id, ...(text ? { text } : {}) });
 
+function isPanelCommand(text) {
+  return /^\/panel(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(String(text || "").trim());
+}
+
 // Pull the meaningful bits out of a Telegram update. Message fields remain backward-compatible.
 function parseUpdate(update) {
   const q = update && update.callback_query;
@@ -100,4 +104,4 @@ function startReply(chatId, base) {
   };
 }
 
-module.exports = { tgCall, sendMessage, getMe, setWebhook, answerCallbackQuery, parseUpdate, routeCallbackData, onboardLink, startReply };
+module.exports = { tgCall, sendMessage, getMe, setWebhook, answerCallbackQuery, isPanelCommand, parseUpdate, routeCallbackData, onboardLink, startReply };
