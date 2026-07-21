@@ -1,221 +1,167 @@
-// LM-5 late-notice decision core + thin Supabase helpers.
-// All timing decisions consume persisted lm_wake_log values; there are no process timers.
+// LM-30 location-gated late notice decision core + Supabase helpers.
+// A fresh Telegram live location is the only gate. The scheduler observes and reports; it never asks.
 "use strict";
 
-const crypto = require("crypto");
-const { isReplyToken } = require("./reply-token.js");
-const { getCalendar } = require("./transport/index.js");
+const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
+const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
 
-const FALLBACK_MS = 10 * 60 * 1000;
-
-function parseWakeEventKey(eventKey) {
-  const parts = String(eventKey || "").split("|");
-  if (parts.length !== 3 || !parts[0] || Number.isNaN(Date.parse(parts[1]))) return null;
-  const level = Number(parts[2]);
-  if (!Number.isInteger(level)) return null;
-  return { uid: parts[0], startIso: parts[1], level };
+function evaluateLateArrival({ nowMs, event, travelMinutes, location }) {
+  if (!location) return { decision: "location_missing" };
+  const expiresMs = Date.parse(location.expires_at || location.expiresAt || "");
+  if (!Number.isFinite(expiresMs) || expiresMs <= nowMs) return { decision: "location_expired" };
+  if (!event || !Number.isFinite(event.startMs)) return { decision: "no_event" };
+  if (!Number.isFinite(travelMinutes) || travelMinutes < 0) return { decision: "route_unavailable" };
+  const arrivalMs = nowMs + travelMinutes * 60_000;
+  const lateMinutes = Math.max(0, Math.ceil((arrivalMs - event.startMs) / 60_000));
+  return { decision: arrivalMs > event.startMs ? "late" : "on_time", arrivalMs, lateMinutes };
 }
 
-function t0EventKey(eventKey) {
-  const parsed = parseWakeEventKey(eventKey);
-  return parsed ? `${parsed.uid}|${parsed.startIso}|0` : null;
+function offsetMinutes(iso) {
+  if (/Z$/i.test(String(iso || ""))) return 0;
+  const match = /([+-])(\d{2}):(\d{2})$/.exec(String(iso || ""));
+  if (!match) return 0;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === "-" ? -minutes : minutes;
 }
 
-function shouldSendT0(t5Row, nowMs, t0Exists) {
-  const parsed = parseWakeEventKey(t5Row && t5Row.event_key);
-  return Boolean(parsed && parsed.level === 5 && t5Row.answered_at && !t0Exists && parsed.startIso && Date.parse(parsed.startIso) <= nowMs);
+function clockAt(ms, referenceIso) {
+  const shifted = new Date(ms + offsetMinutes(referenceIso) * 60_000);
+  return `${String(shifted.getUTCHours()).padStart(2, "0")}:${String(shifted.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-function shouldFallback(t0Row, nowMs) {
-  const parsed = parseWakeEventKey(t0Row && t0Row.event_key);
-  const calledMs = Date.parse(t0Row && t0Row.called_at);
-  return Boolean(parsed && parsed.level === 0 && Number.isFinite(calledMs) &&
-    !t0Row.answered_at && !t0Row.notified_late_at && nowMs - calledMs >= FALLBACK_MS);
+function roundedEtaMinutes(minutes) {
+  return Math.max(5, Math.ceil(minutes / 5) * 5);
 }
 
-// Short opaque token without a new DB column: bind the persisted event_key to the existing call secret.
-// The callback's chat id resolves uid first; only that uid's DB rows are compared, in constant time.
-function lateToken(eventKey, secret) {
-  if (!eventKey || !secret) return "";
-  return crypto.createHmac("sha256", secret).update(String(eventKey)).digest().subarray(0, 16).toString("base64url");
+function formatLateSuccessMessage(event, arrivalMs, lateMinutes) {
+  const eta = roundedEtaMinutes(lateMinutes);
+  return `📨 現在地から見て${clockAt(event.startMs, event.startIso)}に間に合わないため、先方に「${eta}分ほど遅れます」とメールを送っておきました。次の電車なら${clockAt(arrivalMs, event.startIso)}着です。`;
 }
 
-function tokenMatches(a, b) {
-  const aa = Buffer.from(String(a || ""));
-  const bb = Buffer.from(String(b || ""));
-  return aa.length > 0 && aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
+function externalAttendees(event) {
+  return (event && Array.isArray(event.attendees) ? event.attendees : [])
+    .filter((attendee) => attendee && attendee.email && !attendee.self && !attendee.organizer)
+    .map((attendee) => attendee.email);
 }
 
-function lateQuestion(summary, token) {
-  return {
-    text: `⏰ “${summary || "次の予定"}” — 出た？`,
-    extra: { reply_markup: { inline_keyboard: [[
-      { text: "出た", callback_data: `late:ok:${token}` },
-      { text: "まだ", callback_data: `late:still:${token}` },
-    ]] } },
+function locationOrigin(location) {
+  return `${Number(location.latitude)},${Number(location.longitude)}`;
+}
+
+function eventKey(event) {
+  return String(event.id || `${event.startIso || event.startMs}|${event.summary || "event"}`);
+}
+
+async function processLocationLateNotice(input, deps) {
+  const nowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
+  const event = (input.events || []).find((candidate) => candidate && candidate.location && Number.isFinite(candidate.startMs)) || null;
+  const gate = evaluateLateArrival({ nowMs, event, travelMinutes: null, location: input.location });
+  if (["location_missing", "location_expired", "no_event"].includes(gate.decision)) return gate;
+
+  const travelMinutes = await deps.routeMinutes(
+    locationOrigin(input.location), event.location, input.mapsKey, event.startMs, nowMs,
+  );
+  const assessment = evaluateLateArrival({ nowMs, event, travelMinutes, location: input.location });
+  if (assessment.decision !== "late") return assessment;
+
+  const fresh = await deps.claimEvent(input.user.uid, eventKey(event));
+  if (!fresh) return { decision: "late", deduped: true };
+
+  const notifyTelegram = async (text) => {
+    if (input.telegramToken && input.user.telegram_chat_id)
+      await deps.sendMessage(input.telegramToken, input.user.telegram_chat_id, text);
   };
-}
-
-function parseLateCallback(data) {
-  const m = /^late:(ok|still):([A-Za-z0-9_-]{16,64})$/.exec(String(data || ""));
-  return m && isReplyToken(m[2]) ? { action: m[1], token: m[2] } : null;
-}
-
-function runningLateText(summary) {
-  return `running late to ${String(summary || "").trim() || "the event"}`;
-}
-
-function pendingT0Keys(rows, nowMs) {
-  return (rows || []).filter((row) => {
-    const parsed = parseWakeEventKey(row && row.event_key);
-    const calledMs = Date.parse(row && row.called_at);
-    return parsed && parsed.level === 0 && Number.isFinite(calledMs) && calledMs <= nowMs &&
-      nowMs - calledMs <= FALLBACK_MS && !row.answered_at && !row.notified_late_at;
-  }).map((row) => row.event_key);
-}
-
-async function processWakeRows(input, deps) {
-  const { user, rows, nowMs, secret } = input;
-  const existing = new Set((rows || []).map((row) => row.event_key));
-  for (const row of (rows || [])) {
-    const key = t0EventKey(row.event_key);
-    if (!shouldSendT0(row, nowMs, key && existing.has(key)) || !user.telegram_chat_id || !secret) continue;
-    if (!await deps.claimPrompt(user.uid, key)) continue;
-    const parsed = parseWakeEventKey(key);
-    const summary = await deps.summaryFor(user.uid, parsed.startIso);
-    const sent = await deps.sendQuestion(user.telegram_chat_id, lateQuestion(summary, lateToken(key, secret)));
-    if (!sent || sent.ok === false) await deps.releasePrompt(user.uid, key);
+  const attendees = externalAttendees(event);
+  if (!attendees.length) {
+    await notifyTelegram(NO_DESTINATION_MESSAGE);
+    return { ...assessment, notified: true, sent: false, reason: "no_destination" };
   }
-  for (const row of (rows || [])) {
-    if (!shouldFallback(row, nowMs)) continue;
-    const parsed = parseWakeEventKey(row.event_key);
-    const summary = await deps.summaryFor(user.uid, parsed.startIso);
-    await deps.deliver({
-      uid: user.uid, eventKey: row.event_key, summary, chatId: user.telegram_chat_id,
-      noticeOpts: input.noticeOpts || {}, requireUnanswered: true,
-    });
-  }
-}
 
-async function deliverLateNotice(input, deps) {
-  const claimed = await deps.claimNotified(input.uid, input.eventKey, { requireUnanswered: input.requireUnanswered === true });
-  if (!claimed) return { notified: false, deduped: true };
-  let result = { sent: false };
+  const etaMinutes = roundedEtaMinutes(assessment.lateMinutes);
+  let result;
   try {
-    result = await deps.sendLateNotice(input.uid, runningLateText(input.summary), input.noticeOpts || {});
-  } catch {
-    result = { sent: false };
+    result = await deps.sendLateNotice(input.user.uid, event, {
+      ...(input.noticeOpts || {}), etaMinutes,
+      userEmail: input.user.email, userName: input.user.name,
+    });
+  } catch (error) {
+    result = { sent: false, reason: "send_failed", error: String(error && error.message || error) };
   }
   if (!result || !result.sent) {
-    if (input.chatId) await deps.sendMessage(input.token, input.chatId,
-      "遅刻連絡先が見つからなかったため、メールは送信しませんでした。");
-    return { notified: true, sent: false, reason: "no_destination" };
+    const noDestination = result && result.reason === "no_destination";
+    await notifyTelegram(noDestination ? NO_DESTINATION_MESSAGE : MAIL_FAILURE_MESSAGE);
+    return { ...assessment, notified: true, sent: false, reason: noDestination ? "no_destination" : "send_failed" };
   }
-  return { notified: true, sent: true, result };
-}
-
-async function handleLateCallback(input, deps) {
-  const parsed = parseLateCallback(input.data);
-  if (!parsed) return { ok: false, ignored: true };
-  const row = (input.rows || []).find((candidate) => {
-    const key = parseWakeEventKey(candidate && candidate.event_key);
-    return key && key.uid === input.uid && key.level === 0 && tokenMatches(parsed.token, lateToken(candidate.event_key, input.secret));
-  });
-  if (!row) return { ok: false, reason: "unknown_token" };
-  if (parsed.action === "ok") {
-    await deps.markAnswered(input.uid, row.event_key);
-    return { ok: true, action: "ok" };
-  }
-  const key = parseWakeEventKey(row.event_key);
-  const summary = await deps.summaryFor(input.uid, key.startIso);
-  const result = await deps.deliver({
-    uid: input.uid, eventKey: row.event_key, summary, chatId: input.chatId,
-    token: input.telegramToken, noticeOpts: input.noticeOpts || {}, requireUnanswered: false,
-  });
-  await deps.markAnswered(input.uid, row.event_key);
-  return { ok: true, action: "still", notified: result.notified === true };
+  await notifyTelegram(formatLateSuccessMessage(event, assessment.arrivalMs, assessment.lateMinutes));
+  return { ...assessment, notified: true, sent: true, result };
 }
 
 function supaHeaders(key, prefer) {
-  return { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...(prefer ? { Prefer: prefer } : {}) };
+  return {
+    apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json",
+    ...(prefer ? { Prefer: prefer } : {}),
+  };
 }
 
-async function listWakeRows(uid, opts = {}) {
+async function upsertLiveLocation(uid, location, opts = {}) {
   const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey || !uid) return [];
-  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&select=uid,event_key,called_at,answered_at,notified_late_at`;
-  const r = await f(url, { headers: supaHeaders(opts.supaKey) });
-  if (!r.ok) return [];
-  const rows = await r.json().catch(() => []);
-  return Array.isArray(rows) ? rows : [];
+  if (!opts.supaUrl || !opts.supaKey || !uid || !location ||
+      !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude) ||
+      !Number.isFinite(location.observedAtMs) || !Number.isFinite(location.expiresAtMs) ||
+      location.expiresAtMs <= location.observedAtMs) return false;
+  const response = await f(`${opts.supaUrl}/rest/v1/lm_user_locations?on_conflict=uid`, {
+    method: "POST",
+    headers: supaHeaders(opts.supaKey, "resolution=merge-duplicates,return=minimal"),
+    body: JSON.stringify({
+      uid,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      telegram_message_id: String(location.messageId || ""),
+      observed_at: new Date(location.observedAtMs).toISOString(),
+      expires_at: new Date(location.expiresAtMs).toISOString(),
+    }),
+  }).catch(() => null);
+  return Boolean(response && response.ok);
 }
 
-async function claimPrompt(uid, eventKey, opts = {}) {
+async function getLiveLocation(uid, nowMs = Date.now(), opts = {}) {
   const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey) return false;
-  const r = await f(`${opts.supaUrl}/rest/v1/lm_wake_log`, {
+  if (!opts.supaUrl || !opts.supaKey || !uid) return null;
+  const url = `${opts.supaUrl}/rest/v1/lm_user_locations?uid=eq.${encodeURIComponent(uid)}&select=uid,latitude,longitude,observed_at,expires_at&limit=1`;
+  const response = await f(url, { headers: supaHeaders(opts.supaKey) }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const rows = await response.json().catch(() => []);
+  const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  return row && Date.parse(row.expires_at) > nowMs ? row : null;
+}
+
+async function claimLateEvent(uid, key, opts = {}) {
+  const f = opts.fetchImpl || fetch;
+  if (!opts.supaUrl || !opts.supaKey || !uid || !key) return false;
+  const response = await f(`${opts.supaUrl}/rest/v1/lm_late_notice_log`, {
     method: "POST", headers: supaHeaders(opts.supaKey, "return=minimal"),
-    body: JSON.stringify({ uid, event_key: eventKey }),
-  });
-  return r.status === 201;
+    body: JSON.stringify({ uid, event_key: key }),
+  }).catch(() => null);
+  return Boolean(response && response.status === 201);
 }
 
-async function releasePrompt(uid, eventKey, opts = {}) {
+// Wake-call answer telemetry remains useful to the authenticated Telnyx webhook even though it no
+// longer unlocks or triggers a late notice. No new T-0 rows are created by this helper.
+async function markAnswered(uid, key, opts = {}) {
   const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey) return false;
-  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}`;
-  const r = await f(url, { method: "DELETE", headers: supaHeaders(opts.supaKey, "return=minimal") }).catch(() => null);
-  return Boolean(r && r.ok);
-}
-
-async function markAnswered(uid, eventKey, opts = {}) {
-  const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey) return false;
-  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&answered_at=is.null&select=event_key`;
-  const r = await f(url, {
+  if (!opts.supaUrl || !opts.supaKey || !uid || !key) return false;
+  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&answered_at=is.null&select=event_key`;
+  const response = await f(url, {
     method: "PATCH", headers: supaHeaders(opts.supaKey, "return=representation"),
     body: JSON.stringify({ answered_at: new Date(opts.nowMs || Date.now()).toISOString() }),
-  });
-  if (!r.ok) return false;
-  const rows = await r.json().catch(() => []);
+  }).catch(() => null);
+  if (!response || !response.ok) return false;
+  const rows = await response.json().catch(() => []);
   return Array.isArray(rows) && rows.length > 0;
-}
-
-async function claimNotified(uid, eventKey, claimOpts = {}, opts = {}) {
-  const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey) return false;
-  const unanswered = claimOpts.requireUnanswered ? "&answered_at=is.null" : "";
-  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&notified_late_at=is.null${unanswered}&select=event_key`;
-  const r = await f(url, {
-    method: "PATCH", headers: supaHeaders(opts.supaKey, "return=representation"),
-    body: JSON.stringify({ notified_late_at: new Date(opts.nowMs || Date.now()).toISOString() }),
-  });
-  if (!r.ok) return false;
-  const rows = await r.json().catch(() => []);
-  return Array.isArray(rows) && rows.length > 0;
-}
-
-async function eventSummaryFor(uid, startIso, opts = {}) {
-  if (!uid || !startIso) return "the event";
-  const startMs = Date.parse(startIso);
-  if (!Number.isFinite(startMs)) return "the event";
-  try {
-    const calendar = opts.calendar || getCalendar({ apiKey: opts.composioKey, gmailAccountId: opts.gmailAccountId });
-    const items = await calendar.listEventsRaw(uid, {
-      timeMin: new Date(startMs - 60 * 1000).toISOString(),
-      timeMax: new Date(startMs + 60 * 1000).toISOString(), maxResults: 10,
-    });
-    const match = (items || []).find((item) => Date.parse(item && item.start && item.start.dateTime) === startMs);
-    return match && match.summary ? match.summary : "the event";
-  } catch {
-    return "the event";
-  }
 }
 
 module.exports = {
-  FALLBACK_MS,
-  parseWakeEventKey, t0EventKey, shouldSendT0, shouldFallback,
-  lateToken, lateQuestion, parseLateCallback, runningLateText, pendingT0Keys,
-  processWakeRows, deliverLateNotice, handleLateCallback,
-  listWakeRows, claimPrompt, releasePrompt, markAnswered, claimNotified, eventSummaryFor,
+  NO_DESTINATION_MESSAGE, MAIL_FAILURE_MESSAGE,
+  evaluateLateArrival, formatLateSuccessMessage, externalAttendees,
+  processLocationLateNotice, upsertLiveLocation, getLiveLocation, claimLateEvent, markAnswered,
 };

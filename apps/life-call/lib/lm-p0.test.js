@@ -26,7 +26,7 @@ test("LM-24: both Telnyx streaming bodies target the caller leg", () => {
   assert.equal(telnyxStreamingStartBody({ streamUrl: "wss://x" }).stream_bidirectional_target_legs, "self");
 });
 
-test("LM-23: webhook subscribes to messages and callbacks; callbacks are answered", async () => {
+test("LM-30: webhook subscribes to edited live-location updates; callbacks are answered", async () => {
   const original = global.fetch;
   const calls = [];
   global.fetch = async (url, init) => {
@@ -36,13 +36,13 @@ test("LM-23: webhook subscribes to messages and callbacks; callbacks are answere
   try {
     await setWebhook("t", "https://x/telegram", "s");
     await answerCallbackQuery("t", "cb-1", "Saved");
-    assert.deepEqual(calls[0].body.allowed_updates, ["message", "callback_query"]);
+    assert.deepEqual(calls[0].body.allowed_updates, ["message", "edited_message", "callback_query"]);
     assert.match(calls[1].url, /answerCallbackQuery$/);
     assert.deepEqual(calls[1].body, { callback_query_id: "cb-1", text: "Saved" });
   } finally { global.fetch = original; }
 });
 
-test("LM-23: parseUpdate preserves message fields and parses callback_query", () => {
+test("LM-30: parseUpdate preserves message fields and parses callback_query/live location", () => {
   assert.deepEqual(parseUpdate({ message: { chat: { id: 7 }, from: { id: 8, first_name: "Dais", last_name: "Tanaka" }, text: " /start x " } }), {
     kind: "message", chatId: "7", userId: "8", text: "/start x", isStart: true,
     firstName: "Dais", lastName: "Tanaka",
@@ -50,18 +50,30 @@ test("LM-23: parseUpdate preserves message fields and parses callback_query", ()
   assert.deepEqual(parseUpdate({ callback_query: { id: "cb", from: { id: 8 }, data: "ask:yes:e1:r1", message: { chat: { id: 7 } } } }), {
     kind: "callback", chatId: "7", userId: "8", data: "ask:yes:e1:r1", callbackQueryId: "cb",
   });
+  assert.deepEqual(parseUpdate({ edited_message: {
+    message_id: 41, date: 1_721_612_800, edit_date: 1_721_613_100,
+    chat: { id: 7 }, from: { id: 8 },
+    location: { latitude: 35.681236, longitude: 139.767125, live_period: 900 },
+  } }), {
+    kind: "location", chatId: "7", userId: "8", messageId: "41",
+    latitude: 35.681236, longitude: 139.767125,
+    observedAtMs: 1_721_613_100_000, expiresAtMs: 1_721_613_700_000,
+  });
+  assert.equal(parseUpdate({ message: {
+    message_id: 40, date: 1_721_612_800, chat: { id: 7 }, from: { id: 8 },
+    location: { latitude: 35.68, longitude: 139.76, live_period: 900 },
+  } }).kind, "location", "the initial live-location message opens the gate before edits arrive");
 });
 
-test("LM-23/LM-6: callback router dispatches ask/late/gmail and ignores unknown prefixes", async () => {
+test("LM-23/LM-6: callback router dispatches ask/gmail and ignores removed/unknown prefixes", async () => {
   const routed = [], logs = [];
   assert.equal(await routeCallbackData("ask:yes:e:r", { ask: async (data) => { routed.push(data); return "ok"; } }), "ok");
   assert.deepEqual(routed, ["ask:yes:e:r"]);
-  assert.equal(await routeCallbackData("late:still:t", { late: async (data) => { routed.push(data); return "late"; } }), "late");
-  assert.deepEqual(routed, ["ask:yes:e:r", "late:still:t"]);
   assert.equal(await routeCallbackData("gmail:skip", { gmail: async (data) => { routed.push(data); return "gmail"; } }), "gmail");
-  assert.deepEqual(routed, ["ask:yes:e:r", "late:still:t", "gmail:skip"]);
+  assert.deepEqual(routed, ["ask:yes:e:r", "gmail:skip"]);
+  assert.deepEqual(await routeCallbackData("retired:t", {}, (line) => logs.push(line)), { ignored: true });
   assert.deepEqual(await routeCallbackData("leave:no:e", {}, (line) => logs.push(line)), { ignored: true });
-  assert.match(logs[0], /unknown callback prefix/);
+  assert.ok(logs.every((line) => /unknown callback prefix/.test(line)));
 });
 
 test("LM-3: Unipile searchInbox uses the verified search query parameter", async () => {
@@ -120,11 +132,11 @@ test("Gmail OFF: search-before-ask skips inbox and goes directly to Google Searc
 });
 
 test("LM-3: candidate found builds the exact closed-question buttons", () => {
-  assert.deepEqual(closedAskMessage({ id: "e1", summary: "MUIT 集会" }, "Tokyo Hall", "r1"), {
-    text: "📍 “MUIT 集会” は Tokyo Hall で開催ですか？",
+  assert.deepEqual(closedAskMessage({ id: "e1", summary: "MUIT 集会", whenLabel: "金曜" }, "Tokyo Hall", "r1"), {
+    text: "金曜の「MUIT 集会」は、いつものTokyo Hallですか？\n［はい］［別の場所］",
     extra: { reply_markup: { inline_keyboard: [[
       { text: "はい", callback_data: "ask:yes:e1:r1" },
-      { text: "いいえ", callback_data: "ask:no:e1:r1" },
+      { text: "別の場所", callback_data: "ask:no:e1:r1" },
     ]] } },
   });
 });
@@ -144,7 +156,7 @@ test("LM-3: yes callback writes persisted candidate; no falls back to free text"
     sendMessage: async (...args) => { messages.push(args); return { ok: true }; },
   });
   assert.equal(no.fallback, true);
-  assert.match(messages[0][2], /Where is “MUIT 集会”/);
+  assert.equal(messages[0][2], "場所はどこですか？住所か、お店・会社の名前を送ってください。");
 });
 
 test("LM-3: no candidate is a silent null so existing open question remains", async () => {

@@ -14,6 +14,7 @@
 "use strict";
 
 const { getCalendar } = require("./transport/index.js");
+const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
 function isoZ(ms) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -31,6 +32,7 @@ async function fetchUpcomingEvents(uid, opts = {}) {
   const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs), timeMax: isoZ(horizonMs) });
   const out = [];
   for (const e of items) {
+    if (interpretCalendarEvent(e).decision === "no_call") continue;
     const raw = (e.start || {}).dateTime; // timed events only; date-only (all-day) skipped
     if (!raw) continue;
     const startMs = Date.parse(raw);
@@ -39,8 +41,10 @@ async function fetchUpcomingEvents(uid, opts = {}) {
     const endRaw = (e.end || {}).dateTime;       // for the leave-time anchor (#69): match a [Travel]
     const endMs = endRaw ? Date.parse(endRaw) : NaN; // block whose endMs === a later event's startMs
     out.push({
+      id: e.id || "",
       summary: e.summary || "予定",
       location: e.location || null,
+      attendees: Array.isArray(e.attendees) ? e.attendees : [],
       startMs,
       startIso: raw,
       endMs: Number.isNaN(endMs) ? null : endMs,

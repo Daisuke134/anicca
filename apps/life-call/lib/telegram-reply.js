@@ -66,7 +66,7 @@ async function resolveTelegramReply(chatId, text, deps = {}) {
   await cal.patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
   await (deps.markAnswered || markUserAnswer)(user.uid, ev.id);
   // PC-1 (C3 REQ-46): remember so a future same-summary event autofills without re-asking.
-  const ok = await remember(user.uid, placeKey(ev.summary), match.location, process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const ok = await remember(user.uid, placeKey(ev.summary, ev.recurringEventId), match.location, process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!ok) console.error(`[tg-reply] rememberPlace FAILED uid=${user.uid.slice(0, 12)} — will re-ask (FIND-003)`);
   return { filled: true, event: ev.summary || "your event", location: match.location };
 }

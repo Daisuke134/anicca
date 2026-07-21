@@ -175,6 +175,19 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 - **feature discovery**: 未解錠 feature は TG chat で定期的に知らせる（例:「位置情報を共有すると遅刻連絡が全自動になる」）。
   頻度は鬱陶しくない範囲（週1程度、解錠済みは告知しない）。
 
+#### LM-30 location gate 実装契約
+
+- webhook code の `allowed_updates` は `message, edited_message, callback_query`。初回 live location は
+  `message.location`、更新は `edited_message.location` として同じ parser を通す。prod `setWebhook` の実発火は E2E 時だけ行う。
+- `lm_user_locations` は user ごとの最新座標・Telegram message id・`observed_at`・`expires_at` を upsert する。
+  TTL は Telegram Bot API の定義どおり `message.date + location.live_period`。期限切れまたは未共有なら gate は閉じる。
+- scheduler は fresh location がある user の直近の対面 event だけを対象に、既存 travel route で到着見込みを計算する。
+  到着見込みが event start を越えた時だけ `lm_late_notice_log` を先に claim し、event ごとに1回だけ既存 Resend 経路でメールする。
+- 遅刻メールの trigger はこの scheduler location gate だけ。旧 T-0 row/question/callback、無応答 fallback、free-text late 分類は使わない。
+  `lm_wake_log.answered_at` は認証済み wake-call telemetry として残るが、遅刻連絡の条件にはならない。
+- 外部 attendee email が無ければ送信せず、「⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません」と1回だけ TG 報告する。
+  送信成功時は §9.11 の copy 型から start/遅刻分/到着時刻を生成し、本人への確認質問は出さない。
+
 ### 9.7 calendar 解釈 edge case matrix（closed question engine の仕様種）
 
 | # | ケース | 自動判定 | 判定不能時の closed Q |
@@ -321,6 +334,16 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 - 変更手順: この表を編集 → 実装は i18n string としてこの表から生成（コードに直書きしない）。EN 版は同構造で別表（P1中に作成）。
 
+##### LM-32 feature discovery 実装契約
+
+- Railway/standalone の既存 in-process scheduler に7日間隔の loop を1本追加する。起動直後も走るが、
+  `lm_users.last_discovery_at` の durable throttle で再起動を含め7日未満の再送を止める。新規 cron/launchd は作らない。
+- 毎回の送信直前に `lm_user_locations.expires_at` と `lm_users.payout_destination` を再読み込み、
+  未解錠 gate だけを `last_discovery_gate` の次から rotation する。送るのは1回に1 gate だけ。
+- 本文とボタン文言は i18n string map から参照し、L1 がこの表との逐語一致を検査する。
+  location の［やり方を見る］は TG 内のライブ位置共有手順を返し、［今はしない］は追加送信せず通常の週次 throttle に従う。
+- 実 TG E2E は `node scripts/send-feature-discovery.js <uid>` で1 user だけを対象にし、本番と同じ gate/throttle を通す。
+
 ## 10. 残 TODO 表（正本。2026-07-20 22時点。TaskList と二重トラック）
 
 | 順 | ID | 内容 | done 条件 | 状態 |
@@ -330,9 +353,9 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 3 | LM-8c改2 | calendar=Composio 継続 + **Gmail 読み=正直 OFF gate**（Unipile dormant 化 graceful-off 実測 + Composio budget guard。§10.1 U1 是正済み） | **PR 済み・merge 待ち（2026-07-21 実測）**: `mailAvailable(user)` は account + provider credential + 1h cached live probe のみ true。401/未設定時は warn throttle 付き false、ask は Gmail を呼ばず `google_search` へ直行、onboarding は `gmail_skipped=true` を保存して「currently being prepared」と通知し OAuth button を非表示。Composio 実 call は `lm_api_cost.kind=composio_call`、月 18,000 で admin alert（6h throttle）、19,500 で wake poll 60s→300s、翌月 count reset で60s復帰（hard stop 無し）。`origin/dev` reconcile 後の fresh `npm test` = **266 tests / fail 0 / exit 0**、Railway staging deploy `0cfabe21-a4e3-454b-be70-4ecd5063aa82`、`scripts/lm-staging-smoke.sh` = **HTTP 200 / SMOKE OK / exit 0**。PR **#320**: https://github.com/Daisuke134/anicca-products/pull/320（base `dev`）。 | **PR 済み・merge 待ち** |
 | 4 | LM-21 | 13 secret rotate（GEMINI/TELNYX 優先。公開前必須） | /health 200 + TG echo + dial preflight ok | pending |
 | 5 | LM-31 | calendar edge-case engine（§9.7 の9件 + §9.11 follow-up copy） | 9ケースのテスト green + 実 calendar で1件ずつ実測 | pending |
-| 6 | LM-30 | 「出た?/まだ?」ボタン全面撤去 + location gate 遅刻連絡 v2（§9.5-9.6。v1 出荷なし） | deta/mada 送信コードゼロ + location 共有時の自動メール実測 | pending |
-| 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | 実 TG 着信 + 解錠済み gate に送られないこと | pending |
-| 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | 実ブラウザで5要素表示 + gate 状態が実データ | pending |
+| 6 | LM-30 | 「出た?/まだ?」ボタン全面撤去 + location gate 遅刻連絡 v2（§9.5-9.6。v1 出荷なし） | **PR #324・local 検証 green、staging E2E 待ち**: T-0 question/callback/fallback と free-text trigger を撤去。`edited_message` 購読 code、live-location TTL upsert、route 判定、event 単位 atomic dedup、Resend + 宛先なし正直報告を実装。最新 `origin/dev` rebase 後の `npm test` exit 0、targeted tests exit 0、calendar eval 21/21、late eval 12/12、禁止文言/legacy path 0件。code commit `ef95da891`、PR https://github.com/Daisuke134/anicca-products/pull/324 。Railway CLI login が browser 再認証待ちのため staging deploy/smoke は Fable E2E 時に実行し、additive migration も同時適用する。prod webhook はこの PR では変更しない。 | **PR 済み・staging 認証待ち** |
+| 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | **PR #325・Fable 実 TG E2E 待ち**: location/payout gate 判定、7日境界 throttle、未解錠だけの rotation、i18n 逐語 copy、inline callback、additive migration、1-user E2E hook を実装。`npm test` = 273 tests / fail 0 / exit 0。code commit `6034c3c`、PR https://github.com/Daisuke134/anicca-products/pull/325 。Railway staging deploy は CLI 再認証待ちのため skip（BLOCKED-on-Dais）。 | **PR 済み・staging 認証/実 TG E2E 待ち** |
+| 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | **8a/8b merged + 8c PR #328 / review pending**: session 必須の server-rendered `/panel` が同一originの5 read APIを取得し、今日timeline + call実績、3 organ（no_data=`準備中`）、空FINANCIAL=`まだ収益はありません`、未解錠gateの§9.11解錠copy、read-only設定を表示する。request uid はHTMLへ出さず、write controlsは0。`npm test` fail 0、`npm run smoke:panel-ui`はDOM 5/5 + read-only controls 0、`npm run smoke:panel-api`は5/5 HTTP 200。Playwright実測は5 sectionすべて`loaded`、375px横overflowなし、console error 0。full-page screenshot=`.playwright-cli/lm33c-panel-375-full.png`。code commit `3bfbad6`、PR https://github.com/Daisuke134/anicca-products/pull/328（base `dev`）。prod deployなし。 | **8c PR済み・review待ち** |
 | 9 | MKT | marketing video loop 毎日1本（§9.2 + §9.10-9.11 脚本銀行16本。slideshow 廃止） | 7日連続人手ゼロで IG(claude-p)+TT(Postiz cmp9txjdp01c8oh0yb6dhlarr) 実投稿 URL | pending |
 | 10 | DEV | dev loop general 化（§9.3。feedback→PII scrub(user側)→issue→auto-PR） | 実 feedback 1件が PII 除去済み issue → merge された PR になる | pending |
 | 11 | PHY | PHYSICAL organ（§9.1/9.5。未通院検知+予約代行=web/メールのみ、電話禁止 §9.5、事後報告） | 実予約1件 + §9.11 copy での報告実測 | pending |
@@ -351,10 +374,10 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | # | 結論（全て close） |
 |---|---|
 | U1 | **Unipile 401 = 7日 trial 失効**（6/19 作成、paid 未開始）。rotate では復活しない。復旧 = $55/mo 課金必須 → **Dais 裁定 2026-07-20: 払わない・Unipile 棄却**。代替の free-forever connector を5候補実測比較（Pipedream Connect=Free は dev 専用・本番 $99/mo で棄却／Nango self-host・自前 googleapis=Gmail readonly が restricted scope で年次 CASA 復活のため棄却／Arcade=2K call/月で容量不足／Paragon=恒久 Free なし）→ **勝者 = Composio 一本化**: Free $0 / 20K tool calls/月 / Unlimited Connected Accounts / OAuth managed（trial 表記なし、8/15 改定後も同条件。出典 composio.dev/updated-pricing）。cache 済み 8,640 call/月/user 前提で **$0 のまま 2 user**。**⚠ 是正（2026-07-20 深夜、origin/main 実読）: 「Gmail も Composio」案は不成立** — prod コード unipile-connect.js 冒頭に実測記録あり:「Composio managed Google app は restricted gmail scope 未認証で consent が HARD-BLOCK（実ブラウザ実証）」。研究 agent の推奨はこの実測と矛盾 → 実測が勝つ。**確定裁定: ①calendar = Composio 継続（現行、cache 済み）②Gmail 読み(search-before-ask A2/context graph/PHY 履歴) = 当面 OFF（正直な feature gate。DAILY は Gmail 不要 — 遅刻メール送信は Resend で自走）③Unipile 参照は dormant 化（削除でなく env 無し時 graceful off を確認）④Gmail 復活の道 = 有償 Unipile($55) or 自前 OAuth+CASA、S2 で再判断**。順3 の実装 = graceful-off 確認 + budget guard のみに縮小。scale 時（3+ users）= §8b S2 で再判断 |
-| U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
+| U2 | 旧無応答 fallback は T-5 AMD=human → T-0 row/question → 10分待機で sendLateNotice に到達することを実測済みだが、LM-30 branch で経路ごと撤去する。新 trigger は fresh live location → route 判定だけ。TG live-location message id は `lm_user_locations.telegram_message_id`、メール証拠は Resend Message-ID とする。 |
 | U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
-| U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
-| U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・opaque token URL → HttpOnly session 交換**。token は hash 保存 + chat_id/expires/used_at 束縛。`/lm?tg=` は廃止。LM-33 spec に採用 |
+| U4 | prod webhook allowed_updates=["message","callback_query"] のまま（この PR から実変更しない）。LM-30 code は `["message","edited_message","callback_query"]`。prod `setWebhook` 発火と実 live-location update は Fable E2E 時に行う。 |
+| U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・256bit opaque token URL → HttpOnly/Secure/SameSite=Lax session 交換 → token 無し `/panel` へ redirect**。token は SHA-256 hash 保存 + uid/chat_id/expires_at/used_at 束縛し、DB の単一 `UPDATE ... RETURNING` で競合時も1回だけ claim する。session は24時間の別 random 値を `lm_panel_sessions` に hash 保存する（既存 PostgREST と同じ primitive で実装でき、signing secret を追加しないため）。実装正本 = `apps/life-call/lib/panel-auth.js`、additive migration = `apps/life-call/migrations/2026-07-21-lm33a-panel-auth.sql`（適用は Fable E2E）。`/lm?tg=` の panel 認証用途は廃止し、実読確認した onboarding handoff は維持する。実装 = PR #326（`npm test` green、focused 11/11、negative 4本 green、dev merge 前）。LM-33a に採用 |
 | U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
 | U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
 | U8 | 対外メールの名乗り = `Anicca（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |

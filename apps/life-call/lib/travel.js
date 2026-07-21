@@ -8,6 +8,7 @@
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, timeBucket } = require("./route-cache.js");
+const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
@@ -54,7 +55,7 @@ async function listEvents7d(uid, apiKey, nowMs, calendar, gmailAccountId) {
     timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(nowMs + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
   });
-  return items.map((e) => ({
+  return items.filter((e) => interpretCalendarEvent(e).decision !== "no_call").map((e) => ({
     id: e.id || "",                                   // C-H1: stable per-event key for the atomic claim ledger
     summary: e.summary || "",
     location: e.location || "",

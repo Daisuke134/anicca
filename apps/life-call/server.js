@@ -28,7 +28,7 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -38,7 +38,9 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, answerCallbackQuery, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, routeCallbackData } = require("./lib/telegram.js");
+const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
+const { handlePanelApiRequest } = require("./lib/panel-api.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -48,22 +50,24 @@ const {
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
-const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const {
-  handleLateCallback, listWakeRows, markAnswered, claimNotified,
-  eventSummaryFor, deliverLateNotice, pendingT0Keys,
+  markAnswered, upsertLiveLocation,
 } = require("./lib/late-notice.js");
+const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
-const RESEND_API_KEY = process.env.RESEND_API_KEY || ""; // our-domain email send (asks + late-notice)
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+// The panel is served by this life-call HTTP service, not by the /lm onboarding site.
+// Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
+const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -192,6 +196,26 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path.startsWith("/api/panel/")) {
+    handlePanelApiRequest(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      timeZone: process.env.LM_TIME_ZONE || "Asia/Tokyo",
+    }).catch((error) => {
+      console.error("[panel-api] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "panel_unavailable" }));
+    });
+    return;
+  }
+  if (path === "/panel") {
+    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch((error) => {
+      console.error("[panel] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+      res.end("panel unavailable");
+    });
+    return;
+  }
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
@@ -331,33 +355,41 @@ const server = http.createServer((req, res) => {
                   token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
-              }, late: async (data) => {
-                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
-                if (!row) return { ok: false, reason: "unlinked_chat" };
-                const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
-                const rows = await listWakeRows(row.uid, dbOpts);
-                return handleLateCallback({
-                  uid: row.uid, chatId: u.chatId, data, rows,
-                  secret: process.env.LM_CALL_SECRET || "", telegramToken: LM_TG_TOKEN,
-                  noticeOpts: {
-                    composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
-                    userEmail: row.email, userName: row.name, gmailAccountId: row.gmail_account_id,
-                  },
-                }, {
-                  markAnswered: (uid, eventKey) => markAnswered(uid, eventKey, dbOpts),
-                  summaryFor: (uid, startIso) => eventSummaryFor(uid, startIso, {
-                    composioKey: COMPOSIO_KEY, gmailAccountId: row.gmail_account_id,
-                  }),
-                  deliver: (input) => deliverLateNotice(input, {
-                    claimNotified: (uid, eventKey, claimOpts) => claimNotified(uid, eventKey, claimOpts, dbOpts),
-                    sendLateNotice, sendMessage,
-                  }),
+              }, discovery: async (data) => {
+                return handleDiscoveryCallback(data, {
+                  token: LM_TG_TOKEN, chatId: u.chatId,
                 });
               } });
             res.writeHead(200); res.end("ok");
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          if (isPanelCommand(u.text)) {
+            if (!row) {
+              await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before opening your panel.");
+            } else if (!LM_PANEL_BASE) {
+              console.error("[panel] LM_PANEL_BASE_URL/RAILWAY_PUBLIC_DOMAIN not configured");
+              await sendMessage(LM_TG_TOKEN, u.chatId, "The panel is temporarily unavailable. Please try again shortly.");
+            } else {
+              await sendPanelLink({ uid: row.uid, chatId: u.chatId }, {
+                token: LM_TG_TOKEN,
+                supaUrl: SUPA_URL,
+                supaKey: SUPA_KEY,
+                panelBaseUrl: LM_PANEL_BASE,
+                sendMessage,
+              });
+            }
+            res.writeHead(200); res.end("ok");
+            return;
+          }
+          if (u.kind === "location") {
+            if (row) {
+              const saved = await upsertLiveLocation(row.uid, u, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+              if (!saved) console.error(`[telegram] live location save failed uid=${row.uid.slice(0, 12)}`);
+            }
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           const gmailConnectUrl = ""; // Gmail connect is honestly OFF; sendStage auto-skips without rendering OAuth.
           const opts = {
             token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
@@ -372,35 +404,13 @@ const server = http.createServer((req, res) => {
             const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
-            // Any Telegram message inside a T-0 response window counts as a response and suppresses
-            // the DB-driven 10-minute fallback. Each row update is conditional on answered_at NULL.
-            if (row) {
-              const dbOpts = { supaUrl: SUPA_URL, supaKey: SUPA_KEY };
-              const wakeRows = await listWakeRows(row.uid, dbOpts);
-              for (const eventKey of pendingT0Keys(wakeRows, Date.now()))
-                await markAnswered(row.uid, eventKey, dbOpts);
-            }
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);
             if (result === "done") {
-              // Onboarded → a free-text message is either "I'm running late …" (notify a stakeholder)
-              // or a reply to a location ask. Classify, then route.
-              const late = await classifyLate(u.text, GEMINI_KEY);
-              if (late.isLate) {
-                const n = await sendLateNotice(row.uid, u.text, {
-                  composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
-                  userEmail: row.email, userName: row.name, etaMinutes: late.etaMinutes,
-                  gmailAccountId: row.gmail_account_id,
-                });
-                await sendMessage(LM_TG_TOKEN, u.chatId,
-                  n.sent ? `✅ Let <b>${n.to}</b> know you're ${n.etaMinutes ? `~${n.etaMinutes} min ` : ""}late to “${n.event}”.`
-                         : "I couldn't find an upcoming event with someone to notify. Which meeting did you mean?");
-              } else {
-                const res2 = await resolveTelegramReply(u.chatId, u.text);
-                await sendMessage(LM_TG_TOKEN, u.chatId,
-                  res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
-                              : "Thanks! If that was an event location, reply to my question and I'll add it.");
-              }
+              const res2 = await resolveTelegramReply(u.chatId, u.text);
+              await sendMessage(LM_TG_TOKEN, u.chatId,
+                res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
+                            : "Thanks! If that was an event location, reply to my question and I'll add it.");
             }
           }
         }
@@ -628,7 +638,9 @@ if (require.main === module) {
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
-    const loops = maybeStartLoops(process.env, { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop });
+    const loops = maybeStartLoops(process.env, {
+      startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+    });
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
   });
 }
