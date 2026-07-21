@@ -6,13 +6,14 @@
 
 | 用途 | 既定 |
 |---|---|
-| Web検索・URL取得 | `/opt/homebrew/bin/firecrawl scrape <url>` |
+| Web検索・URL取得 | `crwl <url> -o markdown`（crawl4ai CLI。firecrawl は credit 切れのため既定から外す） |
 | ライブラリ・SDK docs | `npx ctx7@latest library <name>` → `npx ctx7@latest docs <id> "<質問>"` |
 | X検索 | skill `x-search-cdp`（その `SKILL.md` に従う） |
 | GitHub | `gh` CLI |
 
-- `WebSearch` / `WebFetch` は禁止。Web取得は実測済みの firecrawl CLI を使う。
+- `WebSearch` / `WebFetch` は禁止。Web取得は `crwl` を使う。
 - GitHub の探索・issue・PR・API 操作は `gh` を優先する。
+- fleet全体の現状（context floor / skills単一化 / chezmoi / cloud移行）→ `docs/reference/local-env-and-architecture.md`（tracked、全 session 共通）。
 
 ## 検索優先
 

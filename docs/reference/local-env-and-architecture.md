@@ -118,6 +118,33 @@ openclaw models status | head -5     # → openai-codex
 # Claude Code: system prompt の "Powered by ..." 表示、出ないなら /model
 ```
 
+## Fleet全体の現状（2026-07-21、cold reader向け。詳細は各 spec/doc へ）
+
+このセクションは Mac Mini 上で Fable(Claude)+Sol(Codex) が完走した infra 作業の要約。新しい machine/cloud session/Codex session がゼロから読んでも全体像が分かるように書く。詳細な実測値・手順は各リンク先の spec/doc が正本（このセクションは要約のみ、重複させたら古い方を消す）。
+
+### 1. Context floor 削減（Claude Code）
+起動時固定費 179.3k/200k(90%) → 実測 86.8k/200k(43%)。手段: `ENABLE_TOOL_SEARCH=true`（MCP tool 遅延ロード）/ 未使用 builtin tool の bare-deny / 未使用 plugin 7本 disable / project agents 15→4体 / Serena excluded_tools / `includeGitInstructions:false` / CLAUDE.md の path分割（`.claude/rules/*.md`）。詳細 → `docs/superpowers/specs/2026-07-20-context-floor-and-handover-simplify-spec.md`。`/handover` は「spec+handover path だけ含む Start/Go 2 プロンプト」形式に変更済み（`.claude/commands/handover.md`）。
+
+### 2. Skills 単一実体化（Claude/Codex 共有）
+**正本 = `~/.agents/skills`**（実体66、Codex 公式 user scope）。`~/.claude/skills/<name>` は per-skill symlink（11本、whole-dir symlink は禁止）。GitHub 双方向 sync は既存 launchd `ai.anicca.agents-skills-sync`（private repo `Daisuke134/anicca-agents-skills`）— 新規 sync は作らない。
+
+### 3. Claude/Codex ツール parity
+両者とも `crwl`(crawl4ai CLI)/`ctx7`/`x-search-cdp`/`gh` を既定にし、`WebSearch`/`WebFetch` 禁止で揃える。Codex 側は repo root `AGENTS.md`（40行、この上のセクション）+ global `~/.codex/AGENTS.md`。rulesync ツールは rule 生成用途では棄却（493行への全concat化で floor 悪化）、変換部分のみ `codex-parity/` に保存。
+
+### 4. Global rules / secrets 単一化（chezmoi、Phase 2）
+`~/.claude/CLAUDE.md`（Dais 規律の正本）と `~/.codex/AGENTS.md`（Codex 側、同内容を template から生成）はどちらも `~/.config/ai/common-rules.md` を共有元にする。Claude は `@~/.config/ai/common-rules.md` import、Codex は chezmoi の `.chezmoitemplates/common-rules.md` から生成。
+管理ツール = **chezmoi**、source = private repo `Daisuke134/ai-config`。secret混在ファイル（`settings.json`/`config.toml`/`.zshrc`）は age 暗号化（private key は `~/.config/chezmoi/key.txt` mode 600、**local-only**＝この machine を失うと復号不能という残余リスクを受容中。1Password バックアップは要件から外した）。
+新 machine/cloud VM 再現 = `chezmoi init --apply https://github.com/Daisuke134/ai-config` 1コマンド。gate = `chezmoi diff`(空) + `chezmoi doctor`(exit 0) + gitleaks(0 leaks)。実装ログ・修正履歴 → `docs/loop-engineering/49-single-source-ai-config-2026-07-20.md`。
+
+### 5. Cloud/Mobile 移行
+`~/.openclaw` `~/anicca` `~/anicca-project/docs` を30分毎に gateway cron（openclaw 側、cron id `a4577898-...`）が GitHub へ auto-sync（`cloud-migration/auto-sync.sh`、gitleaks staged-diff scan付き）。`docs/STATUS-live.md` が phone から見える colony 状態の窓。Phone 側の接続手順（Claude iOS Code tab の GitHub App 連携、Termius+Tailscale SSH、緊急コマンド集）→ `docs/reference/phone-runbook.md`。全体 spec → `docs/superpowers/specs/2026-07-20-cloud-mobile-migration-spec.md`。
+
+### 6. vcsdd は Claude 専用（Codex には無い、意図的）
+`vcsdd`(spec/adversary/harden 等の phase gate) は Claude Code の marketplace plugin であり、Codex CLI には同等の仕組みがない（Codex 側の対応物は `~/.codex/prompts` だが未導入）。これはバグではなく設計: GLVS の Verify(vcsdd phase 管理) は常に Fable(Claude側) が担当し、Sol(Codex, `codex exec`)は brief を渡された実装 doer に徹する。Codex に vcsdd を移植する必要はない。
+
+### 7. 分業（2026-07-20 Dais 裁定）
+Fable = plan・spec 作成・**最終検証のみ**。Sol(`codex exec -m gpt-5.6-sol`) = build も execute も全部（実装・実走・cron登録・fix loop・spec更新・commit+push）。research subagent = 検索調査のみ。Fable は Sol の自己申告を信じず、必ず実 tool_result（cron実在/remote head/launchctl/on-chain 等）で独立検証してから完了とする。
+
 ## （CLAUDE.md から移動）参照先（必要時に Read）
 
 | ファイル | いつ読む |
