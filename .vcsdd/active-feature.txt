@@ -1,1 +1,1 @@
-life-manager-daily-preflight
+fable5-config-slimdown

@@ -7,14 +7,7 @@
       "mode": "lean",
       "currentPhase": "complete",
       "updatedAt": "2026-07-07T11:55:22.046Z"
-    },
-    "life-manager-daily-preflight": {
-      "status": "active",
-      "createdAt": "2026-07-21T08:54:18.426Z",
-      "mode": "strict",
-      "currentPhase": "2b",
-      "updatedAt": "2026-07-21T12:01:17.438Z"
     }
   },
-  "activeFeature": "life-manager-daily-preflight"
+  "activeFeature": "fable5-config-slimdown"
 }
