@@ -400,6 +400,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ### 10.0 出荷ラン実況（live状態。詳細は各§10行）
 
+- **CORE 8d VCSDD Phase 1c iteration 1はFAIL / blocker 4**: fresh reviewer commit=`9bf5e1cf5`、PR #330 head一致。findingは①Phase 1c開始後も1b維持を要求するstate矛盾 ②final evidence allowlistの曖昧さ ③Telegram/email pollの数値上限不足 ④exact command/evidence path/module別coverage閾値不足。main裁定では②を「fixed enum・boolean・bounded count・UTC freshness timestamp・sha256 refだけのclosed typed schema」へ修正し、任意文字列/error/path/PIIは禁止する。現在はPhase 1a/1b correctiveのみを別Solが実行中で、Phase 2・provider side effect・merge/deployは未着手。
 - **CORE 8d method 2はcode GREEN / VCSDD review FAIL**: reviewerはfocused 51/51、full 371/371、eval 33/33、boundary 10/10を再現したが、featureのstate/spec/verdictと追跡RED→GREEN evidenceが無くcontrolled runを不許可。PR head=`58846034b`はorchestratorが独立確認。現在はPhase 1 artifactsを正規toolingで復旧中で、本番side effectは行わない。
 - **PANEL 8d.1 fresh reviewはFAIL / blocker 10**: PR #331 commit=`84e1cebae`のlocal tests/smokeは通るが、実runtimeへ効かないtoggleとprovider/tenant/idempotency/OAuth/body-limit/Connect表示の欠陥、strict VCSDD gate不整合をfresh reviewerが再現。merge/deploy/L3は禁止し、同じblockerをRED化してcorrective buildへ戻す。
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
