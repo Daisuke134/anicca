@@ -22,11 +22,11 @@ function parseArgs(argv) {
   return args;
 }
 
-async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch, collectors } = {}) {
+async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {
   const args = parseArgs(argv);
   const nowMs = Date.now();
   const controlledL3 = args.mode === "controlled-l3"
-    ? await collectControlledL3({ mode: args.mode, nowMs, ...(collectors ? { collectors } : {}) })
+    ? await collectControlledL3({ mode: args.mode, nowMs, env, fetchImpl })
     : undefined;
   const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });
   const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });
@@ -47,11 +47,13 @@ async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl
   return report.exitCode;
 }
 
-if (require.main === module) {
-  main().then((exitCode) => { process.exitCode = exitCode; }).catch(() => {
+async function runCli(runMain = main) {
+  try { process.exitCode = await runMain(); } catch {
     process.stderr.write("daily preflight failed before report generation\n");
     process.exitCode = 1;
-  });
+  }
 }
 
-module.exports = { main, parseArgs };
+if (require.main === module) runCli();
+
+module.exports = { main, parseArgs, runCli };

@@ -7,6 +7,7 @@ const { LIVE_MODEL } = require("./call-logic.js");
 const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");
 const { schedulerCohortFilter } = require("./user-selector.js");
 const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");
+const { createProductionCollectorRegistry } = require("./daily-preflight-collectors.js");
 
 const DEPENDENCY_NAMES = Object.freeze([
   "health",
@@ -670,43 +671,9 @@ function validateEmailProof(value, nowMs) {
   });
 }
 
-async function collectTelegramControlled({ roundTrip, getWebhookInfo, sleep = () => Promise.resolve(), now = Date.now, maxPolls = 3 } = {}) {
-  if (typeof roundTrip !== "function" || typeof getWebhookInfo !== "function") {
-    throw collectorFailure("telegram_collector_unavailable");
-  }
-  const trip = await roundTrip();
-  const samples = [];
-  let finalInfo;
-  for (let index = 0; index < maxPolls; index += 1) {
-    finalInfo = await getWebhookInfo();
-    samples.push(finalInfo && finalInfo.pending_update_count);
-    if (samples[samples.length - 1] === 0) break;
-    if (index + 1 < maxPolls) await sleep();
-  }
-  return {
-    attempted: true,
-    verified: trip && trip.verified === true,
-    checkedAt: new Date(now()).toISOString(),
-    requestMessageRef: trip && trip.requestMessageRef,
-    replyMessageRef: trip && trip.replyMessageRef,
-    exactUrl: finalInfo && finalInfo.exactUrl === true,
-    allowedUpdates: finalInfo && finalInfo.allowed_updates,
-    providerError: Boolean(finalInfo && finalInfo.providerError),
-    pendingUpdateCount: samples[samples.length - 1],
-    pendingUpdateSamples: samples,
-  };
-}
-
-const CONTROLLED_COLLECTOR_REGISTRY = Object.freeze({
-  telegram: async () => { throw collectorFailure("telegram_collector_unavailable"); },
-  email: async () => { throw collectorFailure("email_collector_unavailable"); },
-});
-
-async function collectControlledL3({ mode, nowMs = Date.now(), collectors = CONTROLLED_COLLECTOR_REGISTRY } = {}) {
+async function collectControlledL3({ mode, nowMs = Date.now(), env = process.env, fetchImpl = fetch } = {}) {
   if (mode !== "controlled-l3") throw collectorFailure("controlled_mode_required");
-  if (!collectors || typeof collectors.telegram !== "function" || typeof collectors.email !== "function") {
-    throw collectorFailure("collector_registry_invalid");
-  }
+  const collectors = createProductionCollectorRegistry({ env, fetchImpl });
   const [telegram, email] = await Promise.all([collectors.telegram(), collectors.email()]);
   return Object.freeze({ telegram: validateTelegramProof(telegram, nowMs), email: validateEmailProof(email, nowMs) });
 }
@@ -748,8 +715,9 @@ module.exports = {
   DEPENDENCY_NAMES,
   buildPreflightReport,
   collectControlledL3,
-  collectTelegramControlled,
   createDependencyChecks,
   runPreflight,
   sanitizeEvidence,
+  validateEmailProof,
+  validateTelegramProof,
 };

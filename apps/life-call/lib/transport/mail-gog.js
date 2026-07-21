@@ -6,12 +6,12 @@
 
 const { execFileSync } = require("node:child_process");
 
-function makeGogMail({ bin, account, keyring, run } = {}) {
+function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSync } = {}) {
   const gogBin = bin || process.env.GOG_BIN || "gog";
   const acct = account || process.env.GOG_ACCOUNT || "";
   const keyringPwd = keyring != null ? keyring : (process.env.GOG_KEYRING_PASSWORD || "");
   const exec = run || ((args, timeout = 30000) =>
-    execFileSync(gogBin, [...args, "--account", acct], {
+    execFileSyncImpl(gogBin, [...args, "--account", acct], {
       env: { ...process.env, GOG_KEYRING_PASSWORD: keyringPwd, GOG_ACCOUNT: acct },
       encoding: "utf8", timeout,
     }));
@@ -46,6 +46,24 @@ function makeGogMail({ bin, account, keyring, run } = {}) {
         } catch { out.push({ subject: h.subject, body: "" }); }
       }
       return out;
+    },
+    async findReceipt({ nonce, afterMs }) {
+      if (!acct || !/^[a-f0-9]{16,64}$/i.test(String(nonce || ""))) return null;
+      try {
+        const query = `in:anywhere newer_than:1d \"${nonce}\"`;
+        const d = JSON.parse(exec(["gmail", "messages", "search", query, "-j", "--max=10", "--include-body"]));
+        const messages = d.messages || (Array.isArray(d) ? d : []);
+        for (const message of messages) {
+          if (!message.id || /^-/.test(String(message.id))) continue;
+          const subject = String(message.subject || "");
+          const body = String(message.body || "");
+          const receivedAtMs = Date.parse(message.date || "");
+          if ((subject.includes(nonce) || body.includes(nonce)) && Number.isFinite(receivedAtMs) && receivedAtMs >= afterMs) {
+            return { id: String(message.id), receivedAtMs, matchedNonce: nonce };
+          }
+        }
+      } catch {}
+      return null;
     },
   };
 }
