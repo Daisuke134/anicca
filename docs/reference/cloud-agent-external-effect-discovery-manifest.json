@@ -1,0 +1,212 @@
+{
+  "parent_inventory_digest": "sha256:90113e58:00a49511:9a84159b:1baf1728:c883a52b:0239dd87:113d1f8a:939d1e7c",
+  "review_basis": "pending_independent_external_effect_review",
+  "review_status": "review_required",
+  "schema_version": 1,
+  "sources": [
+    {
+      "declarations": [
+        {
+          "action_class": "publish_carousel",
+          "approval_gate": "candidate_review_required",
+          "direction": "outbound",
+          "effect_category": "post",
+          "effect_key": "effect-social-carousel-publish",
+          "effect_kind": "social_publish",
+          "evidence_tokens": [
+            "upload_and_post_carousel",
+            "blotato"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "none",
+          "idempotency": "provider_dependent",
+          "loop_refs": [
+            "loop-228394195708341",
+            "loop-252053043438682"
+          ],
+          "provider_class": "social_publishing_api",
+          "provider_tool_ref": "tool-ref-221171569973926",
+          "mutability": "external_mutation",
+          "target_class": "managed_social_account"
+        }
+      ],
+      "source_id": "source-social-poster",
+      "source_locator": "repo:scripts/cross-poster/instagram_poster.py",
+      "source_revision_digest": "sha256:cdb54118:c9da0a57:5d662d1e:1fb16958:548e5505:f0ee8a42:c96381dc:9df9351c"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "send_transactional_message",
+          "approval_gate": "candidate_review_required",
+          "direction": "outbound",
+          "effect_category": "mail",
+          "effect_key": "effect-newsletter-send",
+          "effect_kind": "email_send",
+          "evidence_tokens": [
+            "sendDailyNewsletter",
+            "emails.send"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "none",
+          "idempotency": "provider_dependent",
+          "loop_refs": [
+            "loop-143580971326299"
+          ],
+          "provider_class": "transactional_mail_api",
+          "provider_tool_ref": "tool-ref-014017013973831",
+          "mutability": "external_mutation",
+          "target_class": "subscribed_recipient"
+        }
+      ],
+      "source_id": "source-newsletter-mailer",
+      "source_locator": "repo:apps/api/src/routes/mobile/newsletter.js",
+      "source_revision_digest": "sha256:925665bb:d3b419be:407a9225:484675f7:92ce9c6d:49a30365:786fefd5:c94715d1"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "encode_vertical_video",
+          "approval_gate": "candidate_review_required",
+          "direction": "local_output",
+          "effect_category": "render",
+          "effect_key": "effect-clip-video-render",
+          "effect_kind": "media_render",
+          "evidence_tokens": [
+            "pipeline.py",
+            "burn_captions.py"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "none",
+          "idempotency": "output_replace",
+          "loop_refs": [
+            "loop-087531096948808"
+          ],
+          "provider_class": "local_media_toolchain",
+          "provider_tool_ref": "tool-ref-269113373718703",
+          "mutability": "artifact_mutation",
+          "target_class": "generated_media_asset"
+        }
+      ],
+      "source_id": "source-clip-renderer",
+      "source_locator": "runtime:skills/earn/clip/producer.sh",
+      "source_revision_digest": "sha256:6d2a354b:e34ef0a6:e09aeb54:6c4e4179:f4ab1898:458c21eb:7ca137fd:da692344"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "place_voice_call",
+          "approval_gate": "candidate_review_required",
+          "direction": "outbound",
+          "effect_category": "call",
+          "effect_key": "effect-guidance-voice-call",
+          "effect_kind": "voice_call",
+          "evidence_tokens": [
+            "twilio_call",
+            "Calls.json"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "metered_service",
+          "idempotency": "non_idempotent",
+          "loop_refs": [
+            "loop-125866289280909"
+          ],
+          "provider_class": "telephony_api",
+          "provider_tool_ref": "tool-ref-184012580687045",
+          "mutability": "external_mutation",
+          "target_class": "configured_user_endpoint"
+        }
+      ],
+      "source_id": "source-guidance-caller",
+      "source_locator": "runtime:skills/anicca-life-manager/scripts/realtime_guide.py",
+      "source_revision_digest": "sha256:adad0ab2:f8ef1efd:45c037cb:6a5d02f7:b25abf21:371d1410:ea358f28:2b4dd940"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "submit_on_chain_stake",
+          "approval_gate": "execution_blocked",
+          "direction": "outbound",
+          "effect_category": "wallet",
+          "effect_key": "effect-wallet-stake-mutation",
+          "effect_kind": "wallet_mutation",
+          "evidence_tokens": [
+            "def stake",
+            "agentRateAndClaimStake"
+          ],
+          "execution_policy": "blocked",
+          "financial_risk": "real_money",
+          "idempotency": "non_idempotent",
+          "loop_refs": [],
+          "provider_class": "wallet_native_marketplace",
+          "provider_tool_ref": "tool-ref-214029135411569",
+          "mutability": "financial_mutation",
+          "target_class": "on_chain_contract"
+        }
+      ],
+      "source_id": "source-wallet-mutation-catalog",
+      "source_locator": "repo:.claude/skills/earn-gig/scripts/claw_agent.py",
+      "source_revision_digest": "sha256:340f2a9a:ce73c1bd:1bc8076f:c49ee015:b58ed16e:a7469190:abf72e9a:470d4bbf"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "push_published_article",
+          "approval_gate": "candidate_review_required",
+          "direction": "outbound",
+          "effect_category": "post",
+          "effect_key": "effect-zenn-retry-publish",
+          "effect_kind": "source_control_publish",
+          "evidence_tokens": [
+            "git",
+            "push",
+            "refs/heads/main"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "none",
+          "idempotency": "commit_addressed",
+          "loop_refs": [
+            "loop-145753367515202"
+          ],
+          "provider_class": "source_control_remote",
+          "provider_tool_ref": "tool-ref-101122320653075",
+          "mutability": "external_mutation",
+          "target_class": "public_article_repository"
+        }
+      ],
+      "source_id": "source-zenn-retry-publisher",
+      "source_locator": "profitable:skills/article-writer/scripts/zenn-deferred-worker.py",
+      "source_revision_digest": "sha256:de467764:09d44c61:45aa76f9:43d4083e:69f6efb0:2e1c0c03:1b3730c6:0beb06f4"
+    },
+    {
+      "declarations": [
+        {
+          "action_class": "push_published_article",
+          "approval_gate": "candidate_review_required",
+          "direction": "outbound",
+          "effect_category": "post",
+          "effect_key": "effect-orca-zenn-publish",
+          "effect_kind": "source_control_publish",
+          "evidence_tokens": [
+            "git",
+            "push",
+            "HEAD:main"
+          ],
+          "execution_policy": "allowed",
+          "financial_risk": "none",
+          "idempotency": "commit_addressed",
+          "loop_refs": [
+            "loop-173899012226255"
+          ],
+          "provider_class": "source_control_remote",
+          "provider_tool_ref": "tool-ref-186402345642538",
+          "mutability": "external_mutation",
+          "target_class": "public_article_repository"
+        }
+      ],
+      "source_id": "source-orca-zenn-publisher",
+      "source_locator": "local-share:orca-zenn-finalizer/finalizer.py",
+      "source_revision_digest": "sha256:85929c72:381db5d9:32484e85:a3047df8:457b3cf5:2f90b681:2d6850bf:43004e7d"
+    }
+  ]
+}

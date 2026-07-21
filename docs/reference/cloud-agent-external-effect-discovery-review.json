@@ -1,0 +1,18 @@
+{
+  "manifest_digest": "sha256:f4b4a382:b31cd39e:6a1a2b80:8512af15:56bcbf59:617ec6f5:3a470241:9631dbf7",
+  "parent_inventory_digest": "sha256:90113e58:00a49511:9a84159b:1baf1728:c883a52b:0239dd87:113d1f8a:939d1e7c",
+  "approval_basis": "todo4_independent_candidate_review_approved_v1",
+  "review_basis": "todo4_independent_candidate_review_approved_v1",
+  "review_status": "approved",
+  "reviewer_role": "independent_fresh_sol_review",
+  "schema_version": 1,
+  "source_revisions": {
+    "source-clip-renderer": "sha256:6d2a354b:e34ef0a6:e09aeb54:6c4e4179:f4ab1898:458c21eb:7ca137fd:da692344",
+    "source-guidance-caller": "sha256:adad0ab2:f8ef1efd:45c037cb:6a5d02f7:b25abf21:371d1410:ea358f28:2b4dd940",
+    "source-newsletter-mailer": "sha256:925665bb:d3b419be:407a9225:484675f7:92ce9c6d:49a30365:786fefd5:c94715d1",
+    "source-orca-zenn-publisher": "sha256:85929c72:381db5d9:32484e85:a3047df8:457b3cf5:2f90b681:2d6850bf:43004e7d",
+    "source-social-poster": "sha256:cdb54118:c9da0a57:5d662d1e:1fb16958:548e5505:f0ee8a42:c96381dc:9df9351c",
+    "source-wallet-mutation-catalog": "sha256:340f2a9a:ce73c1bd:1bc8076f:c49ee015:b58ed16e:a7469190:abf72e9a:470d4bbf",
+    "source-zenn-retry-publisher": "sha256:de467764:09d44c61:45aa76f9:43d4083e:69f6efb0:2e1c0c03:1b3730c6:0beb06f4"
+  }
+}

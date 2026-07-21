@@ -1,0 +1,39 @@
+title = "Cloud agent external-effect artifact scan"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "todo4-email-address"
+description = "Email addresses are forbidden in TODO #4 artifacts"
+regex = '''(?i)[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}'''
+
+[[rules]]
+id = "todo4-wallet-address"
+description = "Wallet addresses are forbidden in TODO #4 artifacts"
+regex = '''(?i)0x[0-9a-f]{40}'''
+
+[[rules]]
+id = "todo4-phone-number"
+description = "International phone numbers are forbidden in TODO #4 artifacts"
+regex = '''\+[1-9][0-9]{9,14}'''
+
+[[rules]]
+id = "todo4-private-home-path"
+description = "Private absolute home paths are forbidden in TODO #4 artifacts"
+regex = '''/Users/[A-Za-z0-9._-]+/'''
+
+[[rules]]
+id = "todo4-opaque-entropy"
+description = "Opaque base64-like material is forbidden in TODO #4 artifacts"
+regex = '''(?i)(?:^|[^A-Za-z0-9])([A-Za-z0-9+/_=-]{32,})(?:$|[^A-Za-z0-9])'''
+secretGroup = 1
+entropy = 4.5
+
+[[rules.allowlists]]
+regexTarget = "secret"
+regexes = [
+  '''^[0-9a-f]{40}$''',
+  '''^[0-9a-f]{64}$''',
+  '''^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$''',
+]
