@@ -117,6 +117,10 @@ classify_worker() {
   case "$cmdline" in
     *"--name anicca-gig-core"*) printf 'preserve\tgig-core\n'; return ;;
   esac
+  case "$cmdline" in
+    bash\ *gig_pass.sh*|/bin/bash\ *gig_pass.sh*|/usr/bin/bash\ *gig_pass.sh*|/opt/homebrew/bin/bash\ *gig_pass.sh*) ;;
+    *) printf 'preserve\tnot-worker-process\n'; return ;;
+  esac
   if hb_age=$(heartbeat_age "$pid") && [ "$hb_age" -le "$GIG_HEARTBEAT_MAX_SECONDS" ]; then
     printf 'preserve\tfresh-heartbeat\n'; return
   fi

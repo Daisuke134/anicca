@@ -21,6 +21,7 @@ cat > "$TMP/processes.tsv" <<'EOF'
 1102	9001	bash /tmp/gig_pass.sh
 1103	99999	bash /tmp/gig_pass.sh
 1104	99999	claude --name anicca-gig-core Coconala gig
+1105	99999	tmux new-session /bin/bash /tmp/gig_pass.sh
 EOF
 
 EMERGENCY_GUARD_TEST_HOME="$TMP/home" \
@@ -52,6 +53,7 @@ grep -q $'^1101\tpreserve\tlock-owner$' "$TMP/home/.openclaw/state/emergency-dis
 grep -q $'^1102\tpreserve\tfresh-heartbeat$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q $'^1103\tkill\tstale-runaway$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q $'^1104\tpreserve\tgig-core$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
+grep -q $'^1105\tpreserve\tnot-worker-process$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q 'active-browser-identity-preserved' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 
 echo 'PASS: core + normal worker + active evidence preserved; only stale runaway killed'
