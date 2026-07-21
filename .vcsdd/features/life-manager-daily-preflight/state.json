@@ -2,7 +2,7 @@
   "featureName": "life-manager-daily-preflight",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "1c",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -21,11 +21,23 @@
       "to": "1c",
       "timestamp": "2026-07-21T09:30:23.590Z",
       "reason": "Fresh artifact-only Phase 1c adversarial spec review started"
+    },
+    {
+      "from": "1c",
+      "to": "1a",
+      "timestamp": "2026-07-21T09:40:21.177Z",
+      "reason": "Iteration-1 spec review FAIL routed to earliest accepted affected phase 1a (FIND-001 and modified FIND-002 adjudication)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-21T09:45:05.291Z",
+      "reason": "Phase 1a corrections complete; Phase 1b verification architecture corrected for FIND-003 and FIND-004; awaiting fresh iteration-2 review"
     }
   ],
   "iterations": {
-    "1a": 1,
-    "1b": 1,
+    "1a": 2,
+    "1b": 2,
     "1c": 1
   },
   "proofObligations": [
@@ -623,10 +635,11 @@
         "verdictPath": ".vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/verdict.json"
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-21T09:31:37.597Z"
+      "adversaryReviewedAt": "2026-07-21T09:31:37.597Z",
+      "humanApproved": false
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T09:31:37.598Z"
+  "updatedAt": "2026-07-21T09:45:05.291Z"
 }

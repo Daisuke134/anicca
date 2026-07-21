@@ -30,7 +30,9 @@ The nine required dependencies are exactly: `health`, `telegram`, `calendar`, `c
 
 ### REQ-006 — One-shot side-effect limits
 
-**When** controlled L3 collection is invoked once, **the system shall** permit at most one Telegram send and one email send, perform bounded read-only polling after each send, and perform zero phone calls; rejection or timeout shall not trigger another send.
+**When** controlled L3 collection is invoked once, **the system shall** permit at most one Telegram send and one email send, perform bounded read-only polling after each send, and perform zero phone calls; rejection, exhaustion, per-call timeout, or overall deadline shall terminate without another send. Telegram reply readback shall allow exactly 6 attempts separated by 2,000 ms (attempt 6 is final; attempt 7 is forbidden), Telegram webhook drain shall allow exactly 3 attempts separated by 2,000 ms (attempt 3 is final; attempt 4 is forbidden), and email inbox readback shall allow exactly 6 attempts separated by 3,000 ms (attempt 6 is final; attempt 7 is forbidden).
+
+Every Telegram provider/sidecar call and Resend call shall time out at 15,000 ms; every gog inbox call shall time out at 15,000 ms. The Telegram collector hard deadline shall be 179,000 ms, the email collector hard deadline shall be 120,000 ms, and the parallel controlled collection hard deadline shall be 179,000 ms, measured from collector entry. The current source already enforces the attempt/delay limits, a 15,000 ms sidecar timeout, and a 30,000 ms gog timeout; Phase 2 must begin with RED tests for the absent Bot API/Resend per-call timeouts, the tighter gog timeout, and the absent collector hard deadlines before claiming this requirement implemented.
 
 ### REQ-007 — Minute precision as a closed interval
 
@@ -58,7 +60,20 @@ The nine required dependencies are exactly: `health`, `telegram`, `calendar`, `c
 
 ### REQ-013 — Sanitized evidence
 
-**When** a report or error is serialized, **the system shall** retain only allowlisted booleans, classifications, counts, timestamps needed for freshness, and one-way hash references; it shall exclude raw nonce, email address, provider ID, message body/subject, provider response/error, token, secret, phone number, location, URL, host, and path.
+**When** a successful final production report is serialized, **the system shall** validate it against the following closed typed schema, with `additionalProperties: false` at the root and at every nested object:
+
+- `schema`: the fixed enum `life-manager-daily-preflight-final`.
+- `version`: the fixed enum `1`.
+- `runStatus`: the fixed enum `pass`.
+- `sourceSnapshotRef` and `runRef`: one-way strings matching `^sha256:[a-f0-9]{64}$`.
+- `generatedAt` and `freshUntil`: UTC strings matching `YYYY-MM-DDTHH:mm:ss.sssZ`, with `generatedAt <= freshUntil` and a maximum 15-minute interval.
+- `requiredDependencyCount`, `passedDependencyCount`, and `failedDependencyCount`: integers in `[0,9]`, fixed to `9`, `9`, and `0` respectively for a final artifact.
+- `dependencies`: exactly 9 unique entries, one for each fixed dependency enum `health|telegram|calendar|call|location|email|discovery|gemini|maps`; every entry has only `dependency`, fixed `status: pass`, `fresh: true`, UTC `checkedAt`, and a 64-hex `evidenceRef` prefixed by `sha256:`.
+- `effects`: an object containing only `telegramSendCount: 1`, `emailSendCount: 1`, `phoneCallCount: 0`, `telegramReplyReadCount` in `[1,6]`, `telegramWebhookReadCount` in `[1,3]`, `emailInboxReadCount` in `[1,6]`, and booleans `telegramCorrelated`, `telegramWebhookDrained`, `emailCorrelated`, and `recipientOwned`, all fixed to `true` for success.
+
+No other string or field is legal. In particular, the final schema shall reject arbitrary strings, raw classifications, paths, hosts, URLs, provider responses, provider errors, provider IDs, message IDs, nonce, address, email, phone, location, subject, body, token, secret, credential, authorization data, and unknown keys at any depth. Provider/message identity may appear only through the declared one-way `sha256:` reference fields.
+
+Failure diagnostics shall use a separate non-final, non-artifact channel containing only fixed `schema: life-manager-daily-preflight-failure`, fixed `version: 1`, fixed `runStatus: fail`, a fixed dependency enum, UTC `occurredAt`, and one closed safe `failureCode` enum: `configuration|timeout|provider_unavailable|provider_rejected|malformed_response|identity_mismatch|correlation_failed|freshness_failed|poll_exhausted|schema_rejected|dependency_failed`. It shall reject unknown keys, shall never contain raw provider data or arbitrary strings, and shall never be copied into or persisted within a successful final artifact.
 
 ### REQ-014 — Dependency-specific production checks
 
@@ -78,7 +93,7 @@ The nine required dependencies are exactly: `health`, `telegram`, `calendar`, `c
 
 ### REQ-018 — Process gate honesty
 
-**Until** a fresh artifact-only Phase 1c review and explicit strict-mode human/orchestrator approval pass, **the VCSDD state shall** remain at Phase `1b`, the sprint contract shall remain unapproved, and no Phase 2/3/4/5/6 completion or RED/GREEN acceptance shall be recorded retroactively.
+**When** a fresh artifact-only Phase 1c review begins, **the VCSDD state shall** legally transition from `1b` to `1c`; after the adversary verdict is recorded it shall remain `currentPhase=1c`, `sprintCount=0`, the sprint contract shall remain `status: draft`, and `humanApproved=false` until explicit strict-mode human/orchestrator approval. Transition to `2a` is forbidden unless the fresh adversary verdict is `PASS` and explicit human/orchestrator approval is also `PASS`; no Phase 2/3/4/5/6 completion or RED/GREEN acceptance shall be recorded retroactively.
 
 ## Purity boundary candidates
 
