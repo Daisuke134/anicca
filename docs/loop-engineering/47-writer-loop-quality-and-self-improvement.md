@@ -66,7 +66,7 @@
 3. 新記事で品質収束を 2-3 日 watch（draft のまま）
 4. 収束確認後に `ARTICLE_AUTOPUBLISH` arm（完全無人公開、最後）
 
-TaskList の現在状態は §16.5 と §17 を正本とする。D1-D8 はすべて **DONE**、model-agnostic daily sprint は P1 **DONE** / P2-P4 **TODO**。§16.4 は D1-D8 の完了条件だけを定義する。
+TaskList の現在状態は §16.5 と §17 を正本とする。D1-D8 はすべて **DONE**、model-agnostic daily sprint は P1-P2 **DONE** / P3-P4 **TODO**。§16.4 は D1-D8 の完了条件だけを定義する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -400,9 +400,11 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 
 設計根拠: ソース [Anthropic Model migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide) / 核心の引用: “Start with the xhigh effort level for coding and agentic use cases”。実際に採用するmodel名は推測せず、同じCLIProxy経路の実probeで成功した値だけを使う。
 
+fallback設計根拠: ソース [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) / 核心の引用: “Enable automatic fallback to the specified model(s) when the primary model is overloaded or not available ... Accepts a comma-separated list tried in order.” 同時にソース [Claude Code model configuration](https://code.claude.com/docs/en/model-config) / 核心の引用: “Authentication, billing, rate-limit, request-size, and transport errors never trigger a switch”。したがって既存 `--fallback-model` をavailability/overloadへそのまま使い、429/5xx/connection/初回応答timeoutだけを薄いsupervisorが同一runで次modelへ継続する。circuit breakerはソース [Microsoft Azure Architecture Center: Circuit Breaker pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker) / 核心の引用: “fail fast without making the remote call when an operation is likely to fail” に従い、永続cooldown中は既知の不健康modelを呼ばない。
+
 | # | 状態 | 内容 | done evidence |
 |---|---|---|---|
 | P1 | **DONE** | 日次 writer の primary model を `gpt-5.6-luna`、effort を `xhigh` にする。`ARTICLE_MODEL` / `ARTICLE_EFFORT` の明示的 default とし、CLIProxy認証とローカル認証の両分岐が同じ値を使う | profitable-claude `7907269`: contractを先に変更した旧実装REDは `rc=1`（Luna default欠落、xhigh default欠落、共通引数0件、hard-coded Sonnet残存）。実装後は `bash -n rc=0`、contract `rc=0`、quality-best-effort / run-completion / run-prune-pending / zenn-deferred-retry は全て `rc=0`。render wiringは今回差分外の古いSTEP列期待により11/12で、変更前live checkoutでも同一失敗を再現。実CLIProxy probe `claude --model gpt-5.6-luna --effort xhigh --no-session-persistence --tools '' -p 'Reply with exactly: MODEL_OK'` は6秒で `rc=0` / `MODEL_OK`。profitable-claude は branch、`origin/main`、live checkout がすべて `7907269df887a246e04176efbe6346741691e0e9`、live checkoutの既存life/video差分は前後同一 |
-| P2 | **TODO** | retryable infrastructure failure（429 / 5xx / timeout / provider unavailable）だけで別modelへ切り替える fallback と、失敗modelをcooldownする circuit breaker を実装する。品質・安全判定をmodel切替で迂回しない | RED→GREEN contract、provider障害fixture、primary/fallback選択log、同一run継続の実測 |
+| P2 | **DONE** | retryable infrastructure failure（429 / 5xx / timeout / provider unavailable）だけで別modelへ切り替える fallback と、失敗modelをcooldownする circuit breaker を実装する。品質・安全判定をmodel切替で迂回しない | profitable-claude `499f57e`: native `--fallback-model` のdefault chainは `sonnet`、env override可、CLIProxy/ローカル認証は共通supervisorを使用。429/5xx/connection/timeoutだけがfallbackし、安全BLOCK・品質判定・通常tool失敗は元rcのまま。atomic `model-health.json` は秘密を保存せず、6h cooldown中はskip、期限後probe成功で回復、全候補cooldownは `rc=75` で10分foreground sleepを回避。記事本体はtimeoutしない一方、初回応答 `MODEL_OK` probeだけ45秒でbounded。TDD REDは初期12件がhelper欠落、contract 4条件欠落で失敗し、実Sonnet hang発見後の追加REDも未知 `--probe-timeout-seconds` + contract欠落で失敗。GREENはprovider fixture 13/13、contract、`bash -n`、`py_compile` が全て `rc=0`。実probeはLuna `MODEL_OK rc=0`、Sonnet primaryは20秒初回応答timeout→circuit open→同一runのLunaへ継続して `MODEL_OK / chain rc=0`。quality/completion/resume/Zenn回帰17本は全PASS。`origin/main` とlive HEADは `499f57e8cbf28b4cefb187318bd72ce4448ded25`、既存life/video dirty差分の前後SHA-256は全件同一 |
 | P3 | **TODO** | finite quality best-draft、platform別resume、run lock/idempotencyを現行実装と照合監査し、不足だけを実装する。品質上限到達は最良draftで先へ進み、既にliveの媒体は再投稿しない | 既存経路の監査表、欠落分のRED→GREEN、途中失敗から同一run再開、重複live URL 0件 |
 | P4 | **TODO** | `ai.anicca.article-daily` をmanual kickstartし、日次writer自身が全媒体へ公開する最終E2Eを行う。全live URLとreality gateを実測し、その後の06:00 schedule起動も確認する | manual runの同一run exact6、全媒体live URL実読、ledger `published:true` + `reality_gate:PASS`、Telegram、次回06:00 launchd run evidence |
