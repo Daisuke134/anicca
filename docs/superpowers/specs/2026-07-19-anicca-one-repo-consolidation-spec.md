@@ -394,6 +394,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ### 10.0 出荷ラン実況（live状態。詳細は各§10行）
 
+- **CORE 8d receipt precision corrective buildはlocal GREEN / production pending**: gogのminute precisionをparser内で閉区間`[minute start, minute end]`へ変換し、exact second/TZは単一点として扱う。receiptはfinite ordered bounds、freshな`sentAtMs`、`lowerMs <= nowMs`、`upperMs >= sentAtMs`、`upperMs >= nowMs - 15min`を満たす場合だけ受理するため、送信`17:59:59.500`→receipt`18:00`を許可し、current-minuteの`upperMs > nowMs`も許可する。production callerはraw date/precision/boundsを注入できず、bounds導出はgog parserだけが行う。今回追加したREDはnext-minute parser 1 + validator 1 + impossible calendar date 1の計3件（各exit 1）、focused GREENは51/51。provider/network/TG/email/phone/Railway/gog inbox、deploy、production artifact生成は実行せず、production 9/9は未主張。fresh controlled review/runはmainへ委ねる。
 - **CORE 8d controlled runはpending**: production binding preflightでTelnyx webhookを既定URLへ復元後、非送信依存は7/7 PASS。唯一のcontrolled invocationはTG 1通・email 1通・phone 0で、両receiptをreadbackしたが、gogの分精度dateを厳密な送信ミリ秒と比較したため`email_receipt_stale`となりreport生成前exit 1。再送・artifact手編集は行わない。安全なhash refsとfalse hypothesisはrow 8dに記録。
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
 - **COREは再open**: Daisがpanelを実使用し、DAILY scoreの意味が体感と不一致、timelineに内部生ログが露出、画面全体もbrokenと判定。従来の「API 200 / loaded / screenshot」はUX doneの証拠として不足。8g/8hを先頭未完了として扱う。

@@ -87,6 +87,16 @@ test("production controlled collectors expose no factory or transport injection 
   assert.doesNotMatch(cliSource, /collectControlledL3\([^)]*(?:env|fetch|collector)/);
 });
 
+test("production receipt bounds come only from the gog parser", () => {
+  const collectorSource = fs.readFileSync(path.join(__dirname, "daily-preflight-collectors.js"), "utf8");
+  const gogSource = fs.readFileSync(path.join(__dirname, "transport/mail-gog.js"), "utf8");
+  assert.match(gogSource, /function parseReceiptInterval\(value\)/);
+  assert.match(gogSource, /async findReceipt\(\{ nonce, afterMs \}\)/);
+  assert.doesNotMatch(gogSource, /async findReceipt\(\{[^}]*\b(?:date|precision|lowerMs|upperMs)\b/);
+  assert.match(collectorSource, /findReceipt\(\{ nonce, afterMs: sentAtMs \}\)/);
+  assert.doesNotMatch(collectorSource, /findReceipt\(\{[^}]*\b(?:date|precision|lowerMs|upperMs)\b/);
+});
+
 test("controlled CLI prerequisite errors exit nonzero with sanitized output", () => {
   const result = spawnSync(process.execPath, [path.join(__dirname, "../scripts/daily-preflight.js"), "--mode", "controlled-l3"], {
     encoding: "utf8", env: { PATH: process.env.PATH || "" }, timeout: 5000,

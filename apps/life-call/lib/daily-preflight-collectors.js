@@ -130,8 +130,13 @@ function validateEmailObservation(value, nowMs, allowedRecipients = []) {
   }
   if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");
   if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");
-  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(value.receivedAtMs) || value.receivedAtMs < value.sentAtMs ||
-      value.receivedAtMs < nowMs - MAX_AGE_MS) throw closedFailure("email_receipt_stale");
+  const lowerMs = value.receivedAtLowerMs;
+  const upperMs = value.receivedAtUpperMs;
+  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||
+      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||
+      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {
+    throw closedFailure("email_receipt_stale");
+  }
   return Object.freeze({
     attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,
     checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),
@@ -161,7 +166,8 @@ async function collectProductionEmail() {
     return validateEmailObservation({ recipient, receiveIdentity,
       providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,
       nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,
-      receivedAtMs: receipt && receipt.receivedAtMs,
+      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,
+      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,
     }, Date.now(), allowedRecipients);
 }
 

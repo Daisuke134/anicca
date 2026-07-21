@@ -6,6 +6,26 @@
 
 const { execFileSync } = require("node:child_process");
 
+function parseReceiptInterval(value) {
+  const raw = String(value || "");
+  const minute = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(raw);
+  if (minute) {
+    const parts = minute.slice(1).map(Number);
+    const lowerMs = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], 0, 0).getTime();
+    const check = new Date(lowerMs);
+    if (check.getFullYear() !== parts[0] || check.getMonth() !== parts[1] - 1 || check.getDate() !== parts[2] ||
+        check.getHours() !== parts[3] || check.getMinutes() !== parts[4]) return null;
+    return { lowerMs, upperMs: lowerMs + 59999 };
+  }
+  const exact = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.exec(raw);
+  if (!exact) return null;
+  const [year, month, day, hour, minuteValue, second] = exact.slice(1).map(Number);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth || hour > 23 || minuteValue > 59 || second > 59) return null;
+  const instantMs = Date.parse(raw);
+  return Number.isFinite(instantMs) ? { lowerMs: instantMs, upperMs: instantMs } : null;
+}
+
 function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSync } = {}) {
   const gogBin = bin || process.env.GOG_BIN || "gog";
   const acct = account || process.env.GOG_ACCOUNT || "";
@@ -57,9 +77,11 @@ function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSy
           if (!message.id || /^-/.test(String(message.id))) continue;
           const subject = String(message.subject || "");
           const body = String(message.body || "");
-          const receivedAtMs = Date.parse(message.date || "");
-          if ((subject.includes(nonce) || body.includes(nonce)) && Number.isFinite(receivedAtMs) && receivedAtMs >= afterMs) {
-            return { id: String(message.id), receivedAtMs, matchedNonce: nonce };
+          const interval = parseReceiptInterval(message.date);
+          const sameRun = interval && interval.upperMs >= afterMs;
+          if ((subject.includes(nonce) || body.includes(nonce)) && sameRun) {
+            return { id: String(message.id), receivedAtLowerMs: interval.lowerMs,
+              receivedAtUpperMs: interval.upperMs, matchedNonce: nonce };
           }
         }
       } catch {}

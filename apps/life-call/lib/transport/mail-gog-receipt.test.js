@@ -14,9 +14,73 @@ test("findReceipt uses message search, exact nonce content, and returns only saf
   } });
   const receipt = await mail.findReceipt({ nonce, afterMs: Date.parse("2026-07-21T05:59:00Z") });
   assert.deepEqual(calls, [["gmail", "messages", "search", `in:anywhere newer_than:1d \"${nonce}\"`, "-j", "--max=10", "--include-body"]]);
-  assert.deepEqual(receipt, { id: "gmail-id", receivedAtMs: Date.parse("2026-07-21T06:00:00Z"), matchedNonce: nonce });
+  assert.deepEqual(receipt, { id: "gmail-id", receivedAtLowerMs: Date.parse("2026-07-21T06:00:00Z"),
+    receivedAtUpperMs: Date.parse("2026-07-21T06:00:00Z"), matchedNonce: nonce });
   assert.equal("subject" in receipt, false);
   assert.equal("body" in receipt, false);
+});
+
+test("findReceipt accepts a minute-precision bucket containing afterMs", async () => {
+  const nonce = "c".repeat(32);
+  const afterMs = new Date(2026, 6, 21, 6, 0, 37, 250).getTime();
+  const lowerMs = new Date(2026, 6, 21, 6, 0, 0, 0).getTime();
+  const mail = makeGogMail({ account: "controlled@aniccaai.com", run: () => JSON.stringify({ messages: [{
+    id: "gmail-id", subject: nonce, body: "", date: "2026-07-21 06:00",
+  }] }) });
+  assert.deepEqual(await mail.findReceipt({ nonce, afterMs }), {
+    id: "gmail-id", matchedNonce: nonce,
+    receivedAtLowerMs: lowerMs, receivedAtUpperMs: lowerMs + 59999,
+  });
+});
+
+test("findReceipt accepts the next minute when its bucket is not wholly before afterMs", async () => {
+  const nonce = "f".repeat(32);
+  const afterMs = new Date(2026, 6, 21, 17, 59, 59, 500).getTime();
+  const lowerMs = new Date(2026, 6, 21, 18, 0, 0, 0).getTime();
+  const mail = makeGogMail({ account: "controlled@aniccaai.com", run: () => JSON.stringify({ messages: [{
+    id: "gmail-id", subject: nonce, body: "", date: "2026-07-21 18:00",
+  }] }) });
+  assert.deepEqual(await mail.findReceipt({ nonce, afterMs }), {
+    id: "gmail-id", matchedNonce: nonce,
+    receivedAtLowerMs: lowerMs, receivedAtUpperMs: lowerMs + 59999,
+  });
+});
+
+test("findReceipt rejects the previous minute and intervals wholly before afterMs", async () => {
+  const nonce = "d".repeat(32);
+  for (const [date, afterMs] of [
+    ["2026-07-21 05:59", new Date(2026, 6, 21, 6, 0, 37, 250).getTime()],
+    ["2026-07-21T06:00:37.249Z", Date.parse("2026-07-21T06:00:37.250Z")],
+  ]) {
+    const mail = makeGogMail({ account: "controlled@aniccaai.com", run: () => JSON.stringify({ messages: [{
+      id: "gmail-id", subject: nonce, body: "", date,
+    }] }) });
+    assert.equal(await mail.findReceipt({ nonce, afterMs }), null);
+  }
+});
+
+test("findReceipt keeps second/timezone timestamps strictly ordered and unknown dates closed", async () => {
+  const nonce = "e".repeat(32);
+  const afterMs = Date.parse("2026-07-21T06:00:37.250Z");
+  for (const [date, accepted] of [
+    ["2026-07-21T15:00:37.250+09:00", true],
+    ["2026-07-21T15:00:37.249+09:00", false],
+    ["2026/07/21 15:00", false],
+    ["not-a-date", false],
+  ]) {
+    const mail = makeGogMail({ account: "controlled@aniccaai.com", run: () => JSON.stringify({ messages: [{
+      id: "gmail-id", subject: nonce, body: "", date,
+    }] }) });
+    assert.equal(Boolean(await mail.findReceipt({ nonce, afterMs })), accepted, date);
+  }
+});
+
+test("findReceipt rejects an impossible exact calendar date instead of normalizing it", async () => {
+  const nonce = "1".repeat(32);
+  const mail = makeGogMail({ account: "controlled@aniccaai.com", run: () => JSON.stringify({ messages: [{
+    id: "gmail-id", subject: nonce, body: "", date: "2026-02-30T06:00:37.250Z",
+  }] }) });
+  assert.equal(await mail.findReceipt({ nonce, afterMs: Date.parse("2026-02-01T00:00:00Z") }), null);
 });
 
 test("findReceipt fails closed for nonce mismatch and stale messages", async () => {

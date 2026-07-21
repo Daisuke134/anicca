@@ -34,7 +34,7 @@ const gog = require("./transport/mail-gog.js");
 gog.makeGogMail = () => ({
   findReceipt: async ({ nonce, afterMs }) => {
     receiptCalls += 1;
-    return { id: "gmail-id", matchedNonce: nonce, receivedAtMs: afterMs };
+    return { id: "gmail-id", matchedNonce: nonce, receivedAtLowerMs: afterMs, receivedAtUpperMs: afterMs };
   },
 });
 

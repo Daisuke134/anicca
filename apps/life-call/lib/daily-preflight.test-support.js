@@ -89,7 +89,8 @@ function createEmailCollector({ env = {}, send, findReceipt, mailFactory = () =>
     }
     return validateEmailObservation({ recipient, receiveIdentity: recipient, providerAcceptedId: accepted.id,
       receiptMessageId: receipt && receipt.id, nonce, receivedNonce: receipt && receipt.matchedNonce,
-      sentAtMs, receivedAtMs: receipt && receipt.receivedAtMs }, now(), allowed);
+      sentAtMs, receivedAtLowerMs: receipt && (receipt.receivedAtLowerMs ?? receipt.receivedAtMs),
+      receivedAtUpperMs: receipt && (receipt.receivedAtUpperMs ?? receipt.receivedAtMs) }, now(), allowed);
   };
 }
 

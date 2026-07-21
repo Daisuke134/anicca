@@ -19,7 +19,8 @@ const telegramGood = () => ({
 const emailGood = () => ({
   recipient: "controlled@aniccaai.com", receiveIdentity: "controlled@aniccaai.com",
   providerAcceptedId: "provider-id", receiptMessageId: "gmail-id",
-  nonce: "a".repeat(32), receivedNonce: "a".repeat(32), sentAtMs: NOW - 1000, receivedAtMs: NOW,
+  nonce: "a".repeat(32), receivedNonce: "a".repeat(32), sentAtMs: NOW - 1000,
+  receivedAtLowerMs: NOW, receivedAtUpperMs: NOW,
 });
 const EMAIL_ALLOWLIST = ["controlled@aniccaai.com"];
 
@@ -38,11 +39,64 @@ test("email observation rejects ownership, send, timeout, nonce mismatch, and st
   const cases = [
     v => { v.recipient = "other@example.com"; },
     v => { v.providerAcceptedId = ""; }, v => { v.receiptMessageId = ""; },
-    v => { v.receivedNonce = `${v.nonce}x`; }, v => { v.receivedAtMs = v.sentAtMs - 1; },
-    v => { v.receivedAtMs = NOW - 900001; },
+    v => { v.receivedNonce = `${v.nonce}x`; },
+    v => { v.receivedAtLowerMs = v.sentAtMs - 1; v.receivedAtUpperMs = v.sentAtMs - 1; },
+    v => { v.receivedAtLowerMs = NOW - 900001; v.receivedAtUpperMs = NOW - 900001; },
   ];
   for (const mutate of cases) { const value = emailGood(); mutate(value); assert.throws(() => validateEmailObservation(value, NOW, EMAIL_ALLOWLIST)); }
   assert.equal(validateEmailObservation(emailGood(), NOW, EMAIL_ALLOWLIST).providerRef.startsWith("sha256:"), true);
+});
+
+test("email observation accepts a same-minute interval containing the send instant", () => {
+  const value = emailGood();
+  value.sentAtMs = NOW - 2250;
+  value.receivedAtLowerMs = NOW - 60000;
+  value.receivedAtUpperMs = NOW - 1;
+  assert.equal(validateEmailObservation(value, NOW, EMAIL_ALLOWLIST).inboxReceived, true);
+
+  for (const upperMs of [value.receivedAtLowerMs - 1, value.sentAtMs - 1]) {
+    const stale = { ...value, receivedAtUpperMs: upperMs };
+    assert.throws(() => validateEmailObservation(stale, NOW, EMAIL_ALLOWLIST), /email_receipt_stale/);
+  }
+});
+
+test("email observation accepts a later minute interval after send and not after now", () => {
+  const value = emailGood();
+  value.sentAtMs = NOW - 60500;
+  value.receivedAtLowerMs = NOW - 60000;
+  value.receivedAtUpperMs = NOW - 1;
+  assert.equal(validateEmailObservation(value, NOW, EMAIL_ALLOWLIST).inboxReceived, true);
+});
+
+test("email observation rejects future, malformed, missing-id, nonce, and over-15-minute evidence", () => {
+  const cases = [
+    v => { v.receivedAtLowerMs = NOW + 1; v.receivedAtUpperMs = NOW + 1; },
+    v => { v.receivedAtLowerMs = NaN; },
+    v => { v.receivedAtLowerMs = NOW; v.receivedAtUpperMs = NOW - 1; },
+    v => { v.providerAcceptedId = ""; },
+    v => { v.receiptMessageId = ""; },
+    v => { v.receivedNonce = "mismatch"; },
+    v => { v.sentAtMs = NOW - 900001; v.receivedAtLowerMs = NOW; v.receivedAtUpperMs = NOW; },
+    v => { v.sentAtMs = NOW - 900002; v.receivedAtLowerMs = NOW - 900002; v.receivedAtUpperMs = NOW - 900001; },
+  ];
+  for (const mutate of cases) {
+    const value = emailGood(); mutate(value);
+    assert.throws(() => validateEmailObservation(value, NOW, EMAIL_ALLOWLIST));
+  }
+});
+
+test("email observation keeps exact timestamps strictly between send and now", () => {
+  const exact = emailGood();
+  exact.sentAtMs = NOW - 1;
+  exact.receivedAtLowerMs = NOW;
+  exact.receivedAtUpperMs = NOW;
+  assert.equal(validateEmailObservation(exact, NOW, EMAIL_ALLOWLIST).inboxReceived, true);
+
+  for (const receivedAtMs of [exact.sentAtMs - 1, NOW + 1]) {
+    assert.throws(() => validateEmailObservation({
+      ...exact, receivedAtLowerMs: receivedAtMs, receivedAtUpperMs: receivedAtMs,
+    }, NOW, EMAIL_ALLOWLIST), /email_receipt_stale/);
+  }
 });
 
 test("telegram adapter sends once and bounded-polls [1,0]", async () => {
