@@ -190,15 +190,15 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   reclaim_path "$HOME_DIR/.cache/torch" torch ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/uv" uv ephemeral-cache package-redownload
   reclaim_path "$HOME_DIR/Library/Caches/pip" pip ephemeral-cache package-redownload
-  if ! ps axww -o command= 2>/dev/null | grep -Fq '/Library/Caches/ms-playwright/'; then
+  if ! pgrep -f '/Library/Caches/ms-playwright/' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/Library/Caches/ms-playwright" playwright ephemeral-cache browser-redownload
   fi
-  if ! ps axww -o command= 2>/dev/null | grep -Eq '(^|/)(cargo|rustc)( |$)'; then
+  if ! pgrep -f '[/](cargo|rustc)([[:space:]]|$)' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/.cargo/registry/cache" cargo ephemeral-cache crate-redownload
   fi
   for profile in "$HOME_DIR"/.cloak/profiles/*; do
     [ -d "$profile" ] || continue
-    if [ "$TEST_MODE" -eq 0 ] && ps axww -o command= 2>/dev/null | grep -Fq -- "--user-data-dir=$profile"; then
+    if [ "$TEST_MODE" -eq 0 ] && pgrep -f -- "--user-data-dir=$profile([[:space:]]|$)" >/dev/null 2>&1; then
       printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$profile" preserve active-browser-profile "$POLICY_VERSION" >> "$DECISION_LEDGER"
       continue
     fi
@@ -213,7 +213,7 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
       reclaim_path "$intermediate" reelclaw intermediate-output final-mp4-preserved
     done < <(find "$HOME_DIR/.openclaw/workspace/runs" -mindepth 2 -maxdepth 2 -type f -name reel-text.mp4 -mtime +1 -print 2>/dev/null)
   fi
-  if ! ps axww -o command= 2>/dev/null | grep -Eq 'hammer-and-nail|tent_backend|(^|/)(cargo|rustc)( |$)'; then
+  if ! pgrep -f 'hammer-and-nail|tent_backend|[/](cargo|rustc)([[:space:]]|$)' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/.openclaw/workspace/hammer-and-nail/backend/target" hammer-and-nail build-output cargo-build-regenerated
   fi
 fi
