@@ -10,5 +10,6 @@ export X402_PORT="8414"
 export PORT="8090"
 PIDS="$(lsof -ti tcp:8090 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>/dev/null || true
 sleep 1
-/opt/homebrew/bin/tailscale funnel --bg --https=10001 --set-path=/mcp http://127.0.0.1:8090 >/dev/null 2>&1 || true
+# Public routing is owned by the additive `franklin1-mcp` tsbridge node. Tailscale Funnel cannot
+# listen on :10001; only 443/8443/10000 are externally reachable.
 exec /usr/bin/env node "$DIR/mcp-server.mjs"
