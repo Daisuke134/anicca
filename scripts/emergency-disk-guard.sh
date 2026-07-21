@@ -4,9 +4,10 @@
 set -u
 export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
-POLICY_VERSION="p0-containment-v1"
+POLICY_VERSION="p0-containment-v2"
 HOME_DIR="${EMERGENCY_GUARD_TEST_HOME:-$HOME}"
 STATE_DIR="$HOME_DIR/.openclaw/state"
+LEASE_DIR="$STATE_DIR/gig-workers"
 LOG_DIR="$HOME_DIR/.openclaw/logs"
 LOG="$LOG_DIR/emergency-disk-guard.log"
 DECISION_LEDGER="$STATE_DIR/emergency-disk-guard-decisions.tsv"
@@ -16,11 +17,15 @@ LOCK="$STATE_DIR/.emergency-disk-guard.lock"
 GIG_LOCK_PID="${EMERGENCY_GUARD_TEST_LOCK_OWNER:-}"
 GIG_WORKER_MAX_SECONDS="${GIG_WORKER_MAX_SECONDS:-7200}"
 GIG_HEARTBEAT_MAX_SECONDS="${GIG_HEARTBEAT_MAX_SECONDS:-180}"
+CANONICAL_GIG_ARGV="${GIG_WORKER_CANONICAL_ARGV:-/bin/bash $HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh}"
 THRESHOLD_GB="${EMERGENCY_GUARD_THRESHOLD_GB:-6}"
 ULTRA_GB="${EMERGENCY_GUARD_ULTRA_GB:-3}"
 TEST_MODE=0
 [ -n "${EMERGENCY_GUARD_TEST_PROCESS_FIXTURE:-}" ] && TEST_MODE=1
 DRY_RUN="${EMERGENCY_GUARD_DRY_RUN:-0}"
+RECLAIM_SEQ=0
+STOP_DECISION=""
+STOP_REASON=""
 
 mkdir -p "$LOG_DIR" "$STATE_DIR" 2>/dev/null || exit 1
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
@@ -45,33 +50,85 @@ free_gb() {
 now_epoch() { printf '%s\n' "${EMERGENCY_GUARD_TEST_NOW_EPOCH:-$(date +%s)}"; }
 
 append_decision() {
-  local pid="$1" decision="$2" reason="$3"
+  local subject="$1" decision="$2" reason="$3"
   if [ "$TEST_MODE" -eq 1 ]; then
-    printf '%s\t%s\t%s\n' "$pid" "$decision" "$reason" >> "$DECISION_LEDGER"
+    printf '%s\t%s\t%s\n' "$subject" "$decision" "$reason" >> "$DECISION_LEDGER"
   else
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$pid" "$decision" "$reason" "$POLICY_VERSION" >> "$DECISION_LEDGER"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$subject" "$decision" "$reason" "$POLICY_VERSION" >> "$DECISION_LEDGER"
   fi
 }
 
 path_bytes() {
-  [ -e "$1" ] || { printf '0\n'; return; }
-  du -sk "$1" 2>/dev/null | awk '{print $1 * 1024}'
+  [ -e "$1" ] || { printf '0\n'; return 0; }
+  du -sk "$1" 2>/dev/null | awk 'NF {print $1 * 1024}'
+}
+
+append_reclaim() {
+  local txid="$1" phase="$2" path="$3" owner="$4" class="$5"
+  local before="$6" after="$7" reclaimed="$8" reason="$9" detail="${10}"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$(date -u '+%FT%TZ')" "$txid" "$phase" "$path" "$owner" "$class" \
+    "$before" "$after" "$reclaimed" "$reason" "$POLICY_VERSION" "$detail" >> "$RECLAIM_LEDGER"
+}
+
+reclaim_class_allowed() {
+  case "$1" in
+    ephemeral-cache|active-ephemeral-cache|build-output|dependency-output) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 reclaim_path() {
-  local path="$1" owner="$2" class="$3" reason="$4" before result after reclaimed
+  local path="$1" owner="$2" class="$3" reason="$4"
+  local before after reclaimed txid
   [ -e "$path" ] || return 0
+  RECLAIM_SEQ=$((RECLAIM_SEQ + 1))
+  txid="$(date -u '+%Y%m%dT%H%M%SZ')-$$-$RECLAIM_SEQ"
   before=$(path_bytes "$path")
+  append_reclaim "$txid" planned "$path" "$owner" "$class" "${before:-unknown}" "${before:-unknown}" 0 "$reason" pending
+
+  if ! reclaim_class_allowed "$class"; then
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "${before:-unknown}" "${before:-unknown}" 0 "$reason" unknown-class
+    append_decision "$path" preserve unknown-reclaim-class
+    return 1
+  fi
+  case "$before" in
+    ''|*[!0-9]*)
+      append_reclaim "$txid" failed "$path" "$owner" "$class" "${before:-unknown}" "${before:-unknown}" 0 "$reason" unreadable-before-bytes
+      append_decision "$path" preserve unreadable-before-bytes
+      return 1
+      ;;
+  esac
+  if [ "$before" -le 0 ]; then
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "$before" 0 "$reason" zero-byte-reclaim
+    append_decision "$path" preserve zero-byte-reclaim
+    return 1
+  fi
   if [ "$DRY_RUN" = 1 ]; then
-    printf 'candidate\t%s\t%s\t%s\t%s\t%s\t%s\n' "$path" "$owner" "$class" "$before" "$reason" "$POLICY_VERSION"
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "$before" 0 "$reason" dry-run-preserved
+    printf 'candidate\t%s\t%s\t%s\t%s\t%s\n' "$path" "$owner" "$class" "$before" "$POLICY_VERSION"
     return 0
   fi
-  result=removed
-  rm -rf "$path" 2>/dev/null || result=failed
+  if [ "${EMERGENCY_GUARD_TEST_RM_FAIL_PATH:-}" = "$path" ] || ! rm -rf "$path" 2>/dev/null; then
+    after=$(path_bytes "$path")
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "${after:-unknown}" 0 "$reason" remove-command-failed
+    append_decision "$path" preserve reclaim-failed
+    return 1
+  fi
   after=$(path_bytes "$path")
+  case "$after" in ''|*[!0-9]*) after=unknown ;; esac
+  if [ -e "$path" ] || [ "$after" = unknown ]; then
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "$after" 0 "$reason" path-still-present
+    append_decision "$path" preserve reclaim-failed
+    return 1
+  fi
   reclaimed=$((before - after))
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$(date -u '+%FT%TZ')" "$path" "$owner" "$class" "$reclaimed" "$reason" "$POLICY_VERSION" "$result" >> "$RECLAIM_LEDGER"
+  if [ "$reclaimed" -le 0 ]; then
+    append_reclaim "$txid" failed "$path" "$owner" "$class" "$before" "$after" "$reclaimed" "$reason" zero-byte-reclaim
+    append_decision "$path" preserve zero-byte-reclaim
+    return 1
+  fi
+  append_reclaim "$txid" removed "$path" "$owner" "$class" "$before" "$after" "$reclaimed" "$reason" removed
 }
 
 etime_seconds() {
@@ -87,13 +144,13 @@ etime_seconds() {
     *:*) minutes=${rest%%:*}; seconds=${rest#*:} ;;
     *) return 1 ;;
   esac
-  case "$days:$hours:$minutes:$seconds" in *[!0-9:]* ) return 1 ;; esac
+  case "$days:$hours:$minutes:$seconds" in *[!0-9:]*) return 1 ;; esac
   printf '%s\n' "$((10#$days * 86400 + 10#$hours * 3600 + 10#$minutes * 60 + 10#$seconds))"
 }
 
 heartbeat_age() {
   local pid="$1" heartbeat mtime
-  heartbeat="$STATE_DIR/gig-workers/$pid.heartbeat"
+  heartbeat="$LEASE_DIR/$pid.heartbeat"
   if [ "$TEST_MODE" -eq 1 ] && [ "${EMERGENCY_GUARD_TEST_HEARTBEAT_PID:-}" = "$pid" ]; then
     printf '0\n'
     return 0
@@ -112,82 +169,240 @@ profile_is_active() {
   pgrep -f -- "--user-data-dir=$profile([[:space:]]|$)" >/dev/null 2>&1
 }
 
-path_is_open() {
-  local path="$1"
+# Prints exactly one of: open, confirmed-closed, error.
+path_open_state() {
+  local path="$1" output rc
   if [ "$TEST_MODE" -eq 1 ]; then
-    [ "${EMERGENCY_GUARD_TEST_OPEN_PATH:-}" = "$path" ]
+    if [ "${EMERGENCY_GUARD_TEST_OPEN_PATH:-}" = "$path" ]; then
+      printf 'open\n'
+    elif [ "${EMERGENCY_GUARD_TEST_LSOF_ERROR_PATH:-}" = "$path" ]; then
+      printf 'error\n'
+    else
+      printf 'confirmed-closed\n'
+    fi
     return
   fi
-  lsof +D "$path" >/dev/null 2>&1
+  command -v lsof >/dev/null 2>&1 || { printf 'error\n'; return; }
+  output=$(lsof +D "$path" 2>&1)
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf 'open\n'
+  elif [ "$rc" -eq 1 ] && [ -z "$output" ]; then
+    printf 'confirmed-closed\n'
+  else
+    printf 'error\n'
+  fi
 }
 
-classify_worker() {
-  local pid="$1" elapsed="$2" cmdline="$3" hb_age
-  case "$cmdline" in
-    *"--name anicca-gig-core"*) printf 'preserve\tgig-core\n'; return ;;
+reclaim_if_confirmed_closed() {
+  local path="$1" owner="$2" class="$3" reason="$4" state
+  [ -e "$path" ] || return 0
+  state=$(path_open_state "$path")
+  case "$state" in
+    confirmed-closed) reclaim_path "$path" "$owner" "$class" "$reason" ;;
+    open) append_decision "$path" preserve open-path-preserved ;;
+    *) append_decision "$path" preserve lsof-error-preserved ;;
   esac
-  case "$cmdline" in
-    bash\ *gig_pass.sh*|/bin/bash\ *gig_pass.sh*|/usr/bin/bash\ *gig_pass.sh*|/opt/homebrew/bin/bash\ *gig_pass.sh*) ;;
-    *) printf 'preserve\tnot-worker-process\n'; return ;;
-  esac
-  if hb_age=$(heartbeat_age "$pid") && [ "$hb_age" -le "$GIG_HEARTBEAT_MAX_SECONDS" ]; then
-    printf 'preserve\tfresh-heartbeat\n'; return
+}
+
+lease_value() {
+  local lease="$1" key="$2"
+  awk -F= -v key="$key" '
+    $1 == key { count++; sub(/^[^=]*=/, ""); value=$0 }
+    END { if (count != 1) exit 1; print value }
+  ' "$lease" 2>/dev/null
+}
+
+fixture_field() {
+  local pid="$1" column="$2"
+  awk -F '\t' -v pid="$pid" -v column="$column" '$1 == pid { print $column; found=1; exit } END { if (!found) exit 1 }' \
+    "$EMERGENCY_GUARD_TEST_PROCESS_FIXTURE"
+}
+
+observed_start() {
+  local pid="$1" stage="$2"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    if [ "$stage" = initial ]; then fixture_field "$pid" 2; else fixture_field "$pid" 6; fi
+  else
+    ps -p "$pid" -o lstart= 2>/dev/null | awk '{$1=$1; if (NF) print}'
   fi
-  if [ -z "$elapsed" ]; then
-    printf 'preserve\tunknown-age-fail-closed\n'; return
+}
+
+observed_pgid() {
+  local pid="$1" stage="$2"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    if [ "$stage" = initial ]; then fixture_field "$pid" 3; else fixture_field "$pid" 7; fi
+  else
+    ps -p "$pid" -o pgid= 2>/dev/null | awk '{$1=$1; if (NF) print}'
   fi
-  if [ "$pid" = "$GIG_LOCK_PID" ] && [ "$elapsed" -le "$GIG_WORKER_MAX_SECONDS" ]; then
-    printf 'preserve\tlock-owner\n'; return
+}
+
+observed_argv() {
+  local pid="$1" stage="$2"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    if [ "$stage" = initial ]; then fixture_field "$pid" 5; else fixture_field "$pid" 8; fi
+  else
+    ps -p "$pid" -o command= 2>/dev/null | awk '{$1=$1; if (NF) print}'
   fi
-  if [ "$elapsed" -le "$GIG_WORKER_MAX_SECONDS" ]; then
-    printf 'preserve\twithin-timeout\n'; return
+}
+
+observed_elapsed() {
+  local pid="$1" raw
+  if [ "$TEST_MODE" -eq 1 ]; then
+    fixture_field "$pid" 4
+  else
+    raw=$(ps -p "$pid" -o etime= 2>/dev/null) || return 1
+    etime_seconds "$raw"
   fi
-  printf 'kill\tstale-runaway\n'
+}
+
+group_members() {
+  local pgid="$1"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    [ "$(fixture_field "$pgid" 9 2>/dev/null || true)" = gone ] || printf '%s\n' "$pgid"
+  else
+    ps -axo pid=,pgid= 2>/dev/null | awk -v pgid="$pgid" '$2 == pgid { print $1 }'
+  fi
+}
+
+descendants_same_group() {
+  local root="$1" pgid="$2" descendant descendant_pgid
+  [ "$TEST_MODE" -eq 1 ] && return 0
+  while IFS= read -r descendant; do
+    [ -n "$descendant" ] || continue
+    descendant_pgid=$(ps -p "$descendant" -o pgid= 2>/dev/null | awk '{$1=$1; print}')
+    [ "$descendant_pgid" = "$pgid" ] || return 1
+  done < <(ps -axo pid=,ppid= 2>/dev/null | awk -v root="$root" '
+    { pid[NR]=$1; parent[NR]=$2 }
+    END {
+      marked[root]=1
+      changed=1
+      while (changed) {
+        changed=0
+        for (i=1; i<=NR; i++) if (marked[parent[i]] && !marked[pid[i]]) { marked[pid[i]]=1; changed=1 }
+      }
+      for (i=1; i<=NR; i++) if (pid[i] != root && marked[pid[i]]) print pid[i]
+    }
+  ')
+}
+
+lease_matches_observation() {
+  local lease="$1" pid="$2" expected_start="$3" expected_pgid="$4" expected_argv="$5" stage="$6"
+  local lease_pid lease_start lease_pgid lease_argv actual_start actual_pgid actual_argv
+  lease_pid=$(lease_value "$lease" pid) || return 1
+  lease_start=$(lease_value "$lease" start_token) || return 1
+  lease_pgid=$(lease_value "$lease" pgid) || return 1
+  lease_argv=$(lease_value "$lease" canonical_argv) || return 1
+  [ "$lease_pid" = "$pid" ] && [ "$lease_start" = "$expected_start" ] && \
+    [ "$lease_pgid" = "$expected_pgid" ] && [ "$lease_argv" = "$expected_argv" ] || return 1
+  actual_start=$(observed_start "$pid" "$stage") || return 1
+  actual_pgid=$(observed_pgid "$pid" "$stage") || return 1
+  actual_argv=$(observed_argv "$pid" "$stage") || return 1
+  [ "$actual_start" = "$expected_start" ] && [ "$actual_pgid" = "$expected_pgid" ] && \
+    [ "$actual_argv" = "$expected_argv" ] || return 1
+  descendants_same_group "$pid" "$expected_pgid"
 }
 
 stop_runaway() {
-  local pid="$1" reason="$2"
-  [ "$DRY_RUN" = 1 ] && return
-  if [ "$TEST_MODE" -eq 1 ]; then
-    printf '%s\t%s\n' "$pid" "$reason" >> "$EMERGENCY_GUARD_TEST_KILL_LEDGER"
-    return
+  local lease="$1" pid="$2" start_token="$3" pgid="$4" argv="$5" reason="$6"
+  local i members snapshot member
+  STOP_DECISION=preserve
+  STOP_REASON=revalidation-failed
+
+  snapshot=$(group_members "$pgid")
+  # The lease and all three kernel-observed identity fields are checked again
+  # immediately before the first signal. No substring-derived PID enters here.
+  lease_matches_observation "$lease" "$pid" "$start_token" "$pgid" "$argv" recheck || return 1
+  if [ "$DRY_RUN" = 1 ]; then
+    STOP_DECISION=preserve
+    STOP_REASON=dry-run-candidate
+    return 0
   fi
-  kill -TERM "$pid" 2>/dev/null || return
-  local i=0
-  while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 5 ]; do sleep 1; i=$((i + 1)); done
-  kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null || true
+  if [ "$TEST_MODE" -eq 1 ]; then
+    printf '%s\t%s\t%s\n' "$pid" "$reason" "$pgid" >> "$EMERGENCY_GUARD_TEST_KILL_LEDGER"
+    if [ "$(fixture_field "$pid" 9 2>/dev/null || true)" = gone ]; then
+      STOP_DECISION=stopped
+      STOP_REASON="$reason"
+      return 0
+    fi
+    STOP_DECISION=failed
+    STOP_REASON=process-group-survived
+    return 1
+  fi
+
+  /bin/kill -TERM "-$pgid" 2>/dev/null || {
+    STOP_DECISION=failed
+    STOP_REASON=term-signal-failed
+    return 1
+  }
+  i=0
+  while [ -n "$(group_members "$pgid")" ] && [ "$i" -lt 5 ]; do sleep 1; i=$((i + 1)); done
+  if [ -n "$(group_members "$pgid")" ]; then
+    /bin/kill -KILL "-$pgid" 2>/dev/null || true
+    i=0
+    while [ -n "$(group_members "$pgid")" ] && [ "$i" -lt 5 ]; do sleep 1; i=$((i + 1)); done
+  fi
+  members=$(group_members "$pgid")
+  if [ -n "$members" ]; then
+    STOP_DECISION=failed
+    STOP_REASON=process-group-survived
+    return 1
+  fi
+  for member in $snapshot; do
+    if ps -p "$member" >/dev/null 2>&1; then
+      STOP_DECISION=failed
+      STOP_REASON="descendant-survived"
+      return 1
+    fi
+  done
+  STOP_DECISION=stopped
+  STOP_REASON="$reason"
 }
 
-evaluate_worker() {
-  local pid="$1" elapsed="$2" cmdline="$3" verdict decision reason
-  verdict=$(classify_worker "$pid" "$elapsed" "$cmdline")
-  decision=${verdict%%$'\t'*}
-  reason=${verdict#*$'\t'}
-  append_decision "$pid" "$decision" "$reason"
-  [ "$decision" = kill ] && stop_runaway "$pid" "$reason"
+evaluate_lease() {
+  local lease="$1" basename pid start_token pgid argv actual_start actual_pgid actual_argv elapsed hb_age
+  basename=${lease##*/}
+  pid=${basename%.lease}
+  case "$pid" in ''|*[!0-9]*) append_decision "$pid" preserve invalid-lease-pid; return ;; esac
+  start_token=$(lease_value "$lease" start_token) || { append_decision "$pid" preserve invalid-lease; return; }
+  pgid=$(lease_value "$lease" pgid) || { append_decision "$pid" preserve invalid-lease; return; }
+  argv=$(lease_value "$lease" canonical_argv) || { append_decision "$pid" preserve invalid-lease; return; }
+  [ "$(lease_value "$lease" pid 2>/dev/null || true)" = "$pid" ] || { append_decision "$pid" preserve invalid-lease-pid; return; }
+  case "$pgid" in ''|*[!0-9]*) append_decision "$pid" preserve invalid-lease-pgid; return ;; esac
+  [ "$pgid" = "$pid" ] || { append_decision "$pid" preserve lease-not-dedicated-pgid; return; }
+  [ "$argv" = "$CANONICAL_GIG_ARGV" ] || { append_decision "$pid" preserve lease-argv-not-allowed; return; }
+
+  actual_start=$(observed_start "$pid" initial 2>/dev/null || true)
+  [ "$actual_start" = "$start_token" ] || { append_decision "$pid" preserve lease-start-token-mismatch; return; }
+  actual_pgid=$(observed_pgid "$pid" initial 2>/dev/null || true)
+  [ "$actual_pgid" = "$pgid" ] || { append_decision "$pid" preserve lease-pgid-mismatch; return; }
+  actual_argv=$(observed_argv "$pid" initial 2>/dev/null || true)
+  [ "$actual_argv" = "$argv" ] || { append_decision "$pid" preserve lease-argv-mismatch; return; }
+  descendants_same_group "$pid" "$pgid" || { append_decision "$pid" preserve descendant-outside-dedicated-pgid; return; }
+  elapsed=$(observed_elapsed "$pid" 2>/dev/null || true)
+  case "$elapsed" in ''|*[!0-9]*) append_decision "$pid" preserve invalid-elapsed; return ;; esac
+  if hb_age=$(heartbeat_age "$pid") && [ "$hb_age" -le "$GIG_HEARTBEAT_MAX_SECONDS" ]; then
+    append_decision "$pid" preserve fresh-heartbeat
+    return
+  fi
+  if [ "$pid" = "$GIG_LOCK_PID" ] && [ "$elapsed" -le "$GIG_WORKER_MAX_SECONDS" ]; then
+    append_decision "$pid" preserve lock-owner
+    return
+  fi
+  if [ "$elapsed" -le "$GIG_WORKER_MAX_SECONDS" ]; then
+    append_decision "$pid" preserve within-timeout
+    return
+  fi
+  stop_runaway "$lease" "$pid" "$start_token" "$pgid" "$argv" stale-runaway || true
+  append_decision "$pid" "$STOP_DECISION" "$STOP_REASON"
 }
 
 evaluate_gig_workers() {
-  local pid elapsed cmdline pattern etime seen=" "
-  if [ "$TEST_MODE" -eq 1 ]; then
-    while IFS=$'\t' read -r pid elapsed cmdline; do
-      [ -n "$pid" ] || continue
-      evaluate_worker "$pid" "$elapsed" "$cmdline"
-    done < "$EMERGENCY_GUARD_TEST_PROCESS_FIXTURE"
-    return
-  fi
-  [ -n "$GIG_LOCK_PID" ] || GIG_LOCK_PID=$(cat /tmp/anicca-gig-pass.lock.d/pid 2>/dev/null || true)
-  for pattern in "gig_pass.sh" "Coconala gig"; do
-    while IFS= read -r pid; do
-      case "$seen" in *" $pid "*) continue ;; esac
-      seen="$seen$pid "
-      cmdline=$(ps -p "$pid" -o command= 2>/dev/null) || continue
-      [ -n "$cmdline" ] || continue
-      case "$cmdline" in *"$pattern"*) ;; *) continue ;; esac
-      etime=$(ps -p "$pid" -o etime= 2>/dev/null || true)
-      elapsed=$(etime_seconds "$etime" 2>/dev/null || true)
-      evaluate_worker "$pid" "$elapsed" "$cmdline"
-    done < <(pgrep -f "$pattern" 2>/dev/null || true)
+  local lease
+  [ -d "$LEASE_DIR" ] || return 0
+  for lease in "$LEASE_DIR"/*.lease; do
+    [ -f "$lease" ] || continue
+    evaluate_lease "$lease"
   done
 }
 
@@ -207,21 +422,13 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   # deliverable, browser identity, cookies, Login Data, or session database.
   for bundle in "$HOME_DIR/Library/Application Support/Claude/vm_bundles/"*.bundle; do
     [ -e "$bundle" ] || continue
-    if path_is_open "$bundle"; then
-      printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$bundle" preserve active-vm-state "$POLICY_VERSION" >> "$DECISION_LEDGER"
-    else
-      reclaim_path "$bundle" claude-vm ephemeral-cache regenerated-by-claude
-    fi
+    reclaim_if_confirmed_closed "$bundle" claude-vm ephemeral-cache regenerated-by-claude
   done
   reclaim_path "$HOME_DIR/.cache/whisper" whisper ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/torch" torch ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/uv" uv ephemeral-cache package-redownload
-  if [ -d "$HOME_DIR/.cache/codex-runtimes" ] && ! path_is_open "$HOME_DIR/.cache/codex-runtimes"; then
-    reclaim_path "$HOME_DIR/.cache/codex-runtimes" codex ephemeral-cache runtime-redownload
-  fi
-  if [ -d "$HOME_DIR/.codex/.tmp" ] && ! path_is_open "$HOME_DIR/.codex/.tmp"; then
-    reclaim_path "$HOME_DIR/.codex/.tmp" codex ephemeral-cache plugin-staging-regenerated
-  fi
+  reclaim_if_confirmed_closed "$HOME_DIR/.cache/codex-runtimes" codex ephemeral-cache runtime-redownload
+  reclaim_if_confirmed_closed "$HOME_DIR/.codex/.tmp" codex ephemeral-cache plugin-staging-regenerated
   reclaim_path "$HOME_DIR/Library/Caches/pip" pip ephemeral-cache package-redownload
   if ! pgrep -f '/Library/Caches/ms-playwright/' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/Library/Caches/ms-playwright" playwright ephemeral-cache browser-redownload
@@ -232,7 +439,7 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   for profile in "$HOME_DIR"/.cloak/profiles/*; do
     [ -d "$profile" ] || continue
     if profile_is_active "$profile"; then
-      printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$profile" preserve active-browser-identity-preserved "$POLICY_VERSION" >> "$DECISION_LEDGER"
+      append_decision "$profile" preserve active-browser-identity-preserved
       for cache in "$profile/Default/Cache" "$profile/Default/Code Cache" "$profile/Default/GPUCache"; do
         reclaim_path "$cache" cloakbrowser active-ephemeral-cache browser-cache-regenerated
       done
@@ -244,11 +451,8 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
       reclaim_path "$cache" cloakbrowser ephemeral-cache browser-cache-regenerated
     done
   done
-  if [ -d "$HOME_DIR/.openclaw/workspace/runs" ]; then
-    while IFS= read -r intermediate; do
-      reclaim_path "$intermediate" reelclaw intermediate-output final-mp4-preserved
-    done < <(find "$HOME_DIR/.openclaw/workspace/runs" -mindepth 2 -maxdepth 2 -type f -name reel-text.mp4 -mtime +1 -print 2>/dev/null)
-  fi
+  # runs/*/reel-text.mp4 is intentionally not age-deleted. It remains protected
+  # until a producer lease and finalized-output classification exist.
   if ! pgrep -f 'hammer-and-nail|tent_backend|[/](cargo|rustc)([[:space:]]|$)' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/.openclaw/workspace/hammer-and-nail/backend/target" hammer-and-nail build-output cargo-build-regenerated
   fi
@@ -261,11 +465,14 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
       fi
     done
   fi
+  if [ -n "${EMERGENCY_GUARD_TEST_EXTRA_RECLAIM:-}" ]; then
+    reclaim_path "$EMERGENCY_GUARD_TEST_EXTRA_RECLAIM" test unknown-class negative-probe
+  fi
 fi
 
 if [ "$FREE" -lt "$ULTRA_GB" ]; then
   evaluate_gig_workers
-  log "ULTRA: applied backpressure; preserved core/healthy workers; stopped only stale runaway workers"
+  log "ULTRA: applied backpressure; lease-only worker containment complete"
 fi
 
 NEW=$(free_gb)
