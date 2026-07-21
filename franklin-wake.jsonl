@@ -12717,3 +12717,11 @@
 {"ts":1784625457,"wake_id":"00MRUFX4AV43D8E1536D4C4E34","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784625595,"wake_id":"00MRUG02KGB5C9B9831B9D451A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784625738,"wake_id":"00MRUG34PT101D2CBE1A8E48A3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784625875,"wake_id":"00MRUG6272D43AC00F253544FA","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784625875,"wake_id":"00MRUG6272D43AC00F253544FA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784626025,"wake_id":"00MRUG9A531ACCFCCAC5EF41CE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784626157,"wake_id":"00MRUGC3UR60F95DFDAA184B81","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784626157,"wake_id":"00MRUGC3UR60F95DFDAA184B81","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784626288,"wake_id":"00MRUGEWUC6EABA15DAF1E448D","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1784626589,"wake_id":"00MRUGLDLY32E4E932826A4111","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784626729,"wake_id":"00MRUGODSB11AC4E7F3A3A4614","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
