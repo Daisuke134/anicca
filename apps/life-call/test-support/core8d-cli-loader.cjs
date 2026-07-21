@@ -4,25 +4,8 @@ const Module = require("node:module");
 const path = require("node:path");
 
 const productionModule = path.resolve(__dirname, "../lib/daily-preflight.js");
-const { validateAndBuildFinalReport } = require(productionModule);
+const { buildFinalPreflightReport } = require(productionModule);
 const originalLoad = Module._load;
-
-function closedReport() {
-  const crypto = require("node:crypto");
-  const hash = value => `sha256:${crypto.createHash("sha256").update(value).digest("hex")}`;
-  const generatedAtMs = Date.parse("2026-07-21T06:00:00.000Z");
-  const runCorrelation = "loader-current-run";
-  return validateAndBuildFinalReport({
-    sourceSnapshotRef: hash("source"), runCorrelation, runStartedAtMs: generatedAtMs - 1000, generatedAtMs,
-    dependencies: ["health", "telegram", "calendar", "call", "location", "email", "discovery", "gemini", "maps"].map((dependency, index) => ({
-      dependency, status: "pass", fresh: true, checkedAt: new Date(generatedAtMs - index).toISOString(), checkedAtMs: generatedAtMs - index,
-      evidenceRef: hash(dependency), runCorrelation,
-    })),
-    effects: { telegramSendCount: 1, emailSendCount: 1, phoneCallCount: 0, telegramReplyReadCount: 1,
-      telegramWebhookReadCount: 1, emailInboxReadCount: 1, telegramCorrelated: true, telegramWebhookDrained: true,
-      emailCorrelated: true, recipientOwned: true },
-  });
-}
 
 Module._load = function core8dTestProvider(request, parent, isMain) {
   let resolved;
@@ -30,9 +13,20 @@ Module._load = function core8dTestProvider(request, parent, isMain) {
   if (resolved === productionModule) {
     const dependencies = ["health", "telegram", "calendar", "call", "location", "email", "discovery", "gemini", "maps"];
     return {
-      collectControlledL3: async () => ({ telegram: {}, email: {} }),
-      createDependencyChecks: () => dependencies.map(dependency => ({ name: dependency, run: async () => ({ ok: true }) })),
-      buildPreflightReport: async () => process.env.CORE8D_LOADER_FINAL === "1" ? closedReport() : ({
+      collectControlledL3: async () => ({
+        telegram: { attempted: true, verified: true, checkedAt: new Date().toISOString(),
+          requestMessageRef: "sha256:111111111111", replyMessageRef: "sha256:222222222222",
+          exactUrl: true, allowedUpdates: ["message", "edited_message", "callback_query"], providerError: false,
+          pendingUpdateCount: 0, pendingUpdateSamples: [0], replyReadCount: 1, webhookReadCount: 1 },
+        email: { attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,
+          checkedAt: new Date().toISOString(), providerRef: "sha256:333333333333",
+          messageIdRef: "sha256:444444444444", inboxReadCount: 1 },
+      }),
+      createDependencyChecks: () => dependencies.map(dependency => ({
+        name: dependency, run: async () => ({ ok: true, evidence: { status: "pass" } }),
+      })),
+      buildFinalPreflightReport,
+      buildPreflightReport: async () => ({
         schemaVersion: 1,
         kind: "life-manager-daily-preflight",
         overallStatus: "pass",

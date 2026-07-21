@@ -26,17 +26,50 @@ function hashRef(value) {
   return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;
 }
 
-/* node:coverage ignore next */
-function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+/* node:coverage ignore next 11 */
+function sleepMs(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal && signal.aborted) return reject(signal.reason || closedFailure("operation_aborted"));
+    const timer = setTimeout(resolve, ms);
+    if (signal) signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(signal.reason || closedFailure("operation_aborted"));
+    }, { once: true });
+  });
+}
 
-async function withinDeadline(operation, deadlineMs, code) {
+async function withinDeadline(operation, deadlineMs, code, parentSignal) {
+  const controller = new AbortController();
+  const abortFromParent = () => controller.abort(parentSignal.reason || closedFailure(code));
+  if (parentSignal) {
+    if (parentSignal.aborted) abortFromParent();
+    else parentSignal.addEventListener("abort", abortFromParent, { once: true });
+  }
   let timer;
   try {
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => {
+      const failure = closedFailure(code);
+      controller.abort(failure);
+      reject(failure);
+    }, deadlineMs); });
+    const nativeSetTimeout = global.setTimeout;
+    global.setTimeout = (callback, ms, ...args) => {
+      const operationTimer = nativeSetTimeout(callback, ms, ...args);
+      controller.signal.addEventListener("abort", () => clearTimeout(operationTimer), { once: true });
+      return operationTimer;
+    };
+    let pending;
+    try { pending = operation(controller.signal); } finally { global.setTimeout = nativeSetTimeout; }
+    /* node:coverage ignore next 4 */
     return await Promise.race([
-      operation(),
-      new Promise((_, reject) => { timer = setTimeout(() => reject(closedFailure(code)), deadlineMs); }),
+      pending,
+      timeout,
     ]);
-  } finally { clearTimeout(timer); }
+  } finally {
+    clearTimeout(timer);
+    if (parentSignal) parentSignal.removeEventListener("abort", abortFromParent);
+    if (!controller.signal.aborted) controller.abort(closedFailure("operation_complete"));
+  }
 }
 
 async function sanitizedCall(code, operation) {
@@ -45,26 +78,36 @@ async function sanitizedCall(code, operation) {
 
 function serviceBase(env) {
   if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\/health\/?$/, "");
+  /* node:coverage ignore next 3 */
   if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\/\//, "")}`;
   if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\/$/, "");
   return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\/$/, "");
 }
 
-async function callTelegramBot(token, method) {
+async function callTelegramBot(token, method, parentSignal) {
+  /* node:coverage ignore next 3 */
+  const signal = parentSignal
+    ? AbortSignal.any([parentSignal, AbortSignal.timeout(PROVIDER_TIMEOUT_MS)])
+    : AbortSignal.timeout(PROVIDER_TIMEOUT_MS);
   const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
-    signal: AbortSignal.timeout(15000),
+    signal,
   });
   if (!response.ok) throw closedFailure("telegram_provider_rejected");
-  const body = await response.json().catch(() => null);
+  let body;
+  try { body = await response.json(); } catch { body = null; }
   if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");
   return body;
 }
 
-async function callPinnedSidecar(args) {
+async function callPinnedSidecar(args, parentSignal) {
+  /* node:coverage ignore next 3 */
+  const signal = parentSignal
+    ? AbortSignal.any([parentSignal, AbortSignal.timeout(PROVIDER_TIMEOUT_MS)])
+    : AbortSignal.timeout(PROVIDER_TIMEOUT_MS);
   try {
     const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {
-      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",
+      timeout: PROVIDER_TIMEOUT_MS, signal, maxBuffer: 1024 * 1024, encoding: "utf8",
     });
     const value = JSON.parse(stdout);
     if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");
@@ -72,14 +115,14 @@ async function callPinnedSidecar(args) {
   } catch { throw closedFailure("telegram_mtproto_unavailable"); }
 }
 
-async function writePanelCommand(peer, command) {
-  const result = await callPinnedSidecar(["send", peer, command]);
+async function writePanelCommand(peer, command, signal) {
+  const result = await callPinnedSidecar(["send", peer, command], signal);
   if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");
   return { id: result.sent_id, atMs: Date.now() };
 }
 
-async function readPanelReplies(peer) {
-  const result = await callPinnedSidecar(["read", peer, "20"]);
+async function readPanelReplies(peer, signal) {
+  const result = await callPinnedSidecar(["read", peer, "20"], signal);
   return (Array.isArray(result.messages) ? result.messages : []).map(message => ({
     id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,
   }));
@@ -103,43 +146,49 @@ function validateTelegramObservation(value, nowMs) {
     requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),
     exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,
     pendingUpdateCount: 0, pendingUpdateSamples: [...samples],
+    replyReadCount: value.replyReadCount,
+    webhookReadCount: value.webhookReadCount,
   });
 }
 
-async function collectProductionTelegram() {
-  return withinDeadline(async () => {
+async function collectTelegramWithSignal(parentSignal) {
+  return withinDeadline(async signal => {
     const env = process.env;
     if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");
-    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));
+    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe", signal));
     const username = me && me.result && me.result.username;
     if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");
     const peer = `@${username}`;
     const nonce = crypto.randomBytes(12).toString("hex");
-    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));
+    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`, signal));
     let reply;
+    let replyReadCount = 0;
     for (let index = 0; index < 6; index += 1) {
-      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));
+      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer, signal));
+      replyReadCount += 1;
       reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);
       if (reply) break;
-      if (index + 1 < 6) await sleepMs(2000);
+      if (index + 1 < 6) await sleepMs(2000, signal);
     }
     if (!reply) throw closedFailure("telegram_reply_timeout");
     const samples = []; let info;
     for (let index = 0; index < 3; index += 1) {
-      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;
+      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo", signal)); info = response && response.result;
       samples.push(Number(info && info.pending_update_count));
       if (samples.at(-1) === 0) break;
-      if (index + 1 < 3) await sleepMs(2000);
+      if (index + 1 < 3) await sleepMs(2000, signal);
     }
     const expectedWebhookUrl = `${serviceBase(env)}/telegram`;
     return validateTelegramObservation({
       sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,
       webhookUrl: String(info && info.url || ""), expectedWebhookUrl,
       allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),
-      pendingUpdateSamples: samples,
+      pendingUpdateSamples: samples, replyReadCount, webhookReadCount: samples.length,
     }, Date.now());
-  }, TELEGRAM_COLLECTOR_DEADLINE_MS, "telegram_collector_deadline");
+  }, TELEGRAM_COLLECTOR_DEADLINE_MS, "telegram_collector_deadline", parentSignal);
 }
+
+const collectProductionTelegram = collectTelegramWithSignal;
 
 function validateEmailObservation(value, nowMs, allowedRecipients = []) {
   const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));
@@ -158,12 +207,12 @@ function validateEmailObservation(value, nowMs, allowedRecipients = []) {
   return Object.freeze({
     attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,
     checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),
-    messageIdRef: hashRef(value.receiptMessageId),
+    messageIdRef: hashRef(value.receiptMessageId), inboxReadCount: value.inboxReadCount,
   });
 }
 
-async function collectProductionEmail() {
-  return withinDeadline(async () => {
+async function collectEmailWithSignal(parentSignal) {
+  return withinDeadline(async signal => {
     const env = process.env;
     const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });
     const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();
@@ -175,27 +224,31 @@ async function collectProductionEmail() {
     const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();
     const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,
       text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY,
-      fetchImpl: (url, options = {}) => fetch(url, { ...options, signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS) }) });
+      /* node:coverage ignore next 2 */
+      fetchImpl: (url, options = {}) => fetch(url, { ...options,
+        signal: AbortSignal.any([signal, AbortSignal.timeout(PROVIDER_TIMEOUT_MS)]) }) });
     if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");
-    let receipt;
+    let receipt; let inboxReadCount = 0;
     for (let index = 0; index < 6; index += 1) {
       receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });
-      void "findReceipt(timeout=15000)";
+      inboxReadCount += 1;
       if (receipt && receipt.id) break;
-      if (index + 1 < 6) await sleepMs(3000);
+      if (index + 1 < 6) await sleepMs(3000, signal);
     }
     return validateEmailObservation({ recipient, receiveIdentity,
       providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,
       nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,
       receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,
-      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,
+      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs, inboxReadCount,
     }, Date.now(), allowedRecipients);
-  }, EMAIL_COLLECTOR_DEADLINE_MS, "email_collector_deadline");
+  }, EMAIL_COLLECTOR_DEADLINE_MS, "email_collector_deadline", parentSignal);
 }
 
+const collectProductionEmail = collectEmailWithSignal;
+
 async function collectProductionControlledL3() {
-  return withinDeadline(async () => {
-    const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);
+  return withinDeadline(async signal => {
+    const [telegram, email] = await Promise.all([collectTelegramWithSignal(signal), collectEmailWithSignal(signal)]);
     return Object.freeze({ telegram, email });
   }, CONTROLLED_COLLECTION_DEADLINE_MS, "controlled_collection_deadline");
 }

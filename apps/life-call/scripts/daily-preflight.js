@@ -2,8 +2,11 @@
 "use strict";
 
 const fs = require("node:fs");
+const crypto = require("node:crypto");
+const { execFileSync } = require("node:child_process");
 const path = require("node:path");
 const {
+  buildFinalPreflightReport,
   buildPreflightReport,
   collectControlledL3,
   createDependencyChecks,
@@ -22,14 +25,30 @@ function parseArgs(argv) {
   return args;
 }
 
-async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {
+function currentSourceSnapshotRef() {
+  const root = path.resolve(__dirname, "../../..");
+  const tree = execFileSync("git", ["rev-parse", "HEAD:apps/life-call"], {
+    cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+  if (!/^[a-f0-9]{40}$/.test(tree)) throw new Error("source snapshot unavailable");
+  return `sha256:${crypto.createHash("sha256").update(tree).digest("hex")}`;
+}
+
+async function main(options) {
+  if (options && Object.prototype.hasOwnProperty.call(options, "transport")) {
+    throw new Error("caller transport injection rejected");
+  }
+  const { argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = options || {};
   const args = parseArgs(argv);
   const nowMs = Date.now();
   const controlledL3 = args.mode === "controlled-l3"
     ? await collectControlledL3({ mode: args.mode })
     : undefined;
   const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });
-  const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });
+  const report = args.mode === "controlled-l3"
+    ? await buildFinalPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs,
+      sourceSnapshotRef: currentSourceSnapshotRef() })
+    : await buildPreflightReport({ checks, timeoutMs: args.timeoutMs });
   if (args.output) {
     const output = path.resolve(args.output);
     fs.mkdirSync(path.dirname(output), { recursive: true });
@@ -49,14 +68,17 @@ async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl
   }
   process.stdout.write(`${JSON.stringify({
     artifact: args.output || null,
-    overallStatus: report.overallStatus,
-    exitCode: report.exitCode,
-    summary: report.summary,
-    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) => ({
-      dependency, status, latencyMs, failureClass,
-    })),
+    overallStatus: report.runStatus || report.overallStatus,
+    exitCode: report.runStatus === "pass" ? 0 : report.exitCode,
+    summary: report.runStatus === "pass" ? {
+      required: report.requiredDependencyCount,
+      passed: report.passedDependencyCount,
+      failed: report.failedDependencyCount,
+    } : report.summary,
+    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) =>
+      report.runStatus === "pass" ? { dependency, status } : { dependency, status, latencyMs, failureClass }),
   })}\n`);
-  return report.exitCode;
+  return report.runStatus === "pass" ? 0 : report.exitCode;
 }
 
 async function runCli(runMain = main) {

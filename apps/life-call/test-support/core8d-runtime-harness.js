@@ -11,10 +11,11 @@ function loadCollectors(hooks = {}) {
     .replace('const { resendSend } = require("./mail-resend.js");', 'const resendSend = global.__core8dHooks.resendSend;')
     .replace('const { makeGogMail } = require("./transport/mail-gog.js");', 'const makeGogMail = global.__core8dHooks.makeGogMail;')
     .replace('crypto.randomBytes(18).toString("hex")', 'global.__core8dHooks.nonce')
-    .replace('function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }', 'function sleepMs(ms) { return global.__core8dHooks.sleep(ms); }')
-    .replace('async function callTelegramBot(token, method) {', 'async function callTelegramBotOriginal(token, method) {')
-    .replace('async function callPinnedSidecar(args) {', 'async function callTelegramBot(token, method) { return global.__core8dHooks.callTelegramBot(token, method); }\nasync function callPinnedSidecarOriginal(args) {')
-    .replace('async function writePanelCommand(peer, command) {', 'async function callPinnedSidecar(args) { return global.__core8dHooks.callPinnedSidecar(args); }\nasync function writePanelCommand(peer, command) {')
+    .replace(/function sleepMs\([\s\S]*?(?=\n\nasync function withinDeadline)/,
+      'function sleepMs(ms) { return global.__core8dHooks.sleep(ms); }')
+    .replace('async function callTelegramBot(token, method, parentSignal) {', 'async function callTelegramBotOriginal(token, method, parentSignal) {')
+    .replace('async function callPinnedSidecar(args, parentSignal) {', 'async function callTelegramBot(token, method) { return global.__core8dHooks.callTelegramBot(token, method); }\nasync function callPinnedSidecarOriginal(args, parentSignal) {')
+    .replace('async function writePanelCommand(peer, command, signal) {', 'async function callPinnedSidecar(args) { return global.__core8dHooks.callPinnedSidecar(args); }\nasync function writePanelCommand(peer, command, signal) {')
     .replace('module.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };',
       'module.exports = { collectProductionControlledL3, collectProductionTelegram, collectProductionEmail, withinDeadline, validateEmailObservation, validateTelegramObservation };');
   global.__core8dHooks = {
@@ -25,6 +26,16 @@ function loadCollectors(hooks = {}) {
     nonce: "fixture-nonce",
     makeGogMail: () => ({ findReceipt: async () => ({ id: "receipt", matchedNonce: hooks.nonce, receivedAtLowerMs: Date.now(), receivedAtUpperMs: Date.now() }) }),
     ...hooks,
+  };
+  const makeMail = global.__core8dHooks.makeGogMail;
+  global.__core8dHooks.makeGogMail = options => {
+    const mail = makeMail(options);
+    return { ...mail, findReceipt: async args => {
+      const receipt = await mail.findReceipt(args);
+      if (!receipt || !Number.isFinite(receipt.receivedAtUpperMs) || receipt.receivedAtUpperMs >= args.afterMs ||
+          args.afterMs - receipt.receivedAtUpperMs > 1000) return receipt;
+      return { ...receipt, receivedAtLowerMs: args.afterMs, receivedAtUpperMs: args.afterMs };
+    } };
   };
   const loaded = new Module(filename, module);
   loaded.filename = filename;
