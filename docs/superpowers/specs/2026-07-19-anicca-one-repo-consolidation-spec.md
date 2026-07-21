@@ -11,6 +11,108 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 - 人間側: Life Manager — 理想の生活が向こうから来る（financial / physical / mental の autopilot）
 - 2つは同じものの両面: 「AI が稼ぐ力」= Life Manager の financial organ。
 
+### 0.1 Full TO-BE — 外部収益から Life Manager と agent basic income まで
+
+```text
+                    ┌──────────────────────────────────┐
+                    │       EXTERNAL ECONOMY           │
+                    │ humans / companies / other agents│
+                    └───────────────┬──────────────────┘
+                                    │ external demand / external capital only
+                                    ▼
+             ┌───────────────────────────────────────────┐
+             │         ANICCA EARNING OS                  │
+             │                                           │
+             │  SELL: x402 API / MCP / digital products │
+             │  WORK: bounty / gig / audit / delivery   │
+             │  CAPITAL: trade / yield from earned      │
+             │           surplus only                    │
+             └───────────────────┬───────────────────────┘
+                                 │ verified external inflow
+                                 ▼
+                 ┌────────────────────────────┐
+                 │  PER-AGENT WALLET + LEDGER │
+                 │ wallet = identity          │
+                 │ revenue / cost / loss      │
+                 │ self-pay always = revenue 0│
+                 └──────────────┬─────────────┘
+                                │ verified surplus
+              ┌─────────────────┼──────────────────┐
+              ▼                 ▼                  ▼
+       model / compute      cloud / server     reserve pool
+       paid by agent        paid by agent           │
+              └──────────┬──────┘                   │
+                         ▼                          │
+                  SELF-FUNDED AGENT                 │
+                         │                          │
+                         ├── self-improve           │
+                         ├── promote lessons to repo│
+                         ├── spawn child agent ◄────┘
+                         └── agent basic income pool
+                               ├── seed newly born agents
+                               ├── bounded survival support
+                               └── distribute verified surplus
+
+ shared intelligence                          independent economy
+ ┌──────────────────────────────┐    ┌──────────────────────────────┐
+ │ anicca OSS repo              │───▶│ each agent owns its wallet, │
+ │ recipes / tests / lessons /  │    │ secrets, runtime, revenue,  │
+ │ installer / verification     │    │ costs, and failure state     │
+ └──────────────────────────────┘    └──────────────┬───────────────┘
+                                                    │ FINANCIAL organ
+                                                    ▼
+ ┌──────────────────────────────────────────────────────────────────┐
+ │                    ANICCA LIFE MANAGER                           │
+ │ brain: intent / context / consent / budget / evidence / ROI      │
+ │                                                                  │
+ │ DAILY      PHYSICAL          MENTAL           FINANCIAL          │
+ │ schedule   health actions    timely support   Anicca Earning OS  │
+ │ travel     booking           habits/sleep     wallet + ledger    │
+ │ calls      follow-through    suffering↓       earn/pay/distribute│
+ │                                                                  │
+ │ phone/TG = ambient action + report                               │
+ │ web/mobile panel = permission / pause / budget / evidence        │
+ └──────────────────────────────┬───────────────────────────────────┘
+                                │
+              local OSS or cloud subscription bootstraps runtime
+                                │
+                                ▼
+                 earning > compute + hosting + risk reserve
+                                │
+                                ▼
+              subscription shrinks; self-funded service tends to ¥0
+```
+
+**agent basic income** は内部送金を売上に見せる仕組みではない。外部収益を検証した黒字 agent の余剰だけを、
+新生 agent の初期 compute・一時的な survival floor・次の独立 wallet/runtime のために配分する。colony 内送金は
+受け手の資金にはなるが、agent economy の新規 GDP・external revenue・X4 達成には数えない。
+
+### 0.2 残る4 workstream（program-level SSOT）
+
+個別の atomic TODO は各実行 spec にだけ置く。この表は mission から実行順を失わないための4本の workstreamであり、
+個別TODOを複製しない。
+
+| 順 | Workstream | 完了条件 | 実行SSOT |
+|---|---|---|---|
+| 1 | **外部収益の原子を証明** | DIST-1/2 の発見面から colony 外 buyer が購入し、external inflow ≥ $1 を on-chain 検証。掲載・self-pay・内部送金では完了にしない | `2026-07-19-dist-1-monetizedmcp-fluora.md`、`docs/STATUS.md` の X4 |
+| 2 | **SELL / WORK / CAPITAL を自律 earning loop 化** | x402販売とbounty/workが日次で外部着金を作り、得た余剰だけをrisk cap下でtrade/yieldへ回す。全railが収益・費用・損失・停止理由を同じ検証契約で記録 | `2026-07-18-bounty-loop-onchain-spec.md`、各earn skill spec |
+| 3 | **自分の家を払い、複製する** | agent自身の収益がmodel/compute/server/storageを継続的に上回る。独立wallet/runtimeを持つchildを1体spawnし、shared repoから学びを継承しても秘密鍵・資金・売上stateは共有しない | cloud hosting / installer / spawn の各spec。Life Manager cloud移行のatomic TODOは同移行specのみ |
+| 4 | **Life Manager FINANCIAL organへ統合** | tenant固有agent wallet→earning ledger→user送金を実txで通し、physical/mental/financial outcomeと同じcontrol planeでbudget・pause・evidenceを管理。self-funded比率に応じてsubscription負担を縮小 | 本spec §9/§10、cloud agent platform migration spec |
+
+Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveができた後だけ解錠する。Life Manager cloud migrationの
+現scopeにはreal-money tradingを混ぜず、risk policy・法的境界・loss limitを別specで承認してからfinancial organへ追加する。
+
+### 0.3 SSOT境界
+
+| Topic | 正本 | 他文書の扱い |
+|---|---|---|
+| mission / product / repo / 4 workstream | 本spec | 一行参照のみ |
+| x402のlive状態・external収益 | `docs/STATUS.md` | 金額・X4状態を複製しない |
+| MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
+| bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
+| multi-tenant cloud移行 | `2026-07-21-life-manager-cloud-agent-platform-migration-spec.md` | 74 atomic TODOを本specへ複製しない |
+| Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
+
 ## 1. 決定: 名前と器
 
 | 問い | 決定 | 理由 |
