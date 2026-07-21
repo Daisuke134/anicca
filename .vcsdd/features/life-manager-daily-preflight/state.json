@@ -2361,7 +2361,7 @@
         "beadId": "BEAD-111",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-001.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-001",
           "BEAD-002",
@@ -2374,7 +2374,8 @@
           "BEAD-131",
           "BEAD-132",
           "BEAD-133",
-          "BEAD-136"
+          "BEAD-136",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-21T12:50:51.143Z",
         "createdInPhase": "3",
@@ -2384,7 +2385,7 @@
         "beadId": "BEAD-112",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-002.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -2392,7 +2393,8 @@
           "BEAD-124",
           "BEAD-139",
           "BEAD-140",
-          "BEAD-141"
+          "BEAD-141",
+          "BEAD-093"
         ],
         "createdAt": "2026-07-21T12:50:51.145Z",
         "createdInPhase": "3",
@@ -2402,14 +2404,20 @@
         "beadId": "BEAD-113",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-003.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-033",
           "BEAD-122",
           "BEAD-129",
           "BEAD-137",
-          "BEAD-142"
+          "BEAD-142",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047"
         ],
         "createdAt": "2026-07-21T12:50:51.146Z",
         "createdInPhase": "3",
@@ -2419,7 +2427,7 @@
         "beadId": "BEAD-114",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-004.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-033",
@@ -2427,7 +2435,13 @@
           "BEAD-129",
           "BEAD-137",
           "BEAD-138",
-          "BEAD-142"
+          "BEAD-142",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047"
         ],
         "createdAt": "2026-07-21T12:50:51.150Z",
         "createdInPhase": "3",
@@ -2437,7 +2451,7 @@
         "beadId": "BEAD-115",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-005.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-001",
           "BEAD-002",
@@ -2453,7 +2467,8 @@
           "BEAD-134",
           "BEAD-135",
           "BEAD-136",
-          "BEAD-138"
+          "BEAD-138",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-21T12:50:51.152Z",
         "createdInPhase": "3",
@@ -2463,7 +2478,7 @@
         "beadId": "BEAD-116",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-006.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -2471,7 +2486,8 @@
           "BEAD-016",
           "BEAD-018",
           "BEAD-035",
-          "BEAD-126"
+          "BEAD-126",
+          "BEAD-103"
         ],
         "createdAt": "2026-07-21T12:50:51.153Z",
         "createdInPhase": "3",
@@ -2481,7 +2497,7 @@
         "beadId": "BEAD-117",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-007.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -2500,7 +2516,9 @@
           "BEAD-151",
           "BEAD-152",
           "BEAD-153",
-          "BEAD-154"
+          "BEAD-154",
+          "BEAD-100",
+          "BEAD-101"
         ],
         "createdAt": "2026-07-21T12:50:51.154Z",
         "createdInPhase": "3",
@@ -2510,7 +2528,7 @@
         "beadId": "BEAD-118",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-008.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
@@ -2518,7 +2536,8 @@
           "BEAD-034",
           "BEAD-035",
           "BEAD-127",
-          "BEAD-145"
+          "BEAD-145",
+          "BEAD-106"
         ],
         "createdAt": "2026-07-21T12:50:51.155Z",
         "createdInPhase": "3",
@@ -2528,7 +2547,7 @@
         "beadId": "BEAD-119",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-009.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-035",
@@ -2540,7 +2559,8 @@
           "BEAD-151",
           "BEAD-152",
           "BEAD-153",
-          "BEAD-154"
+          "BEAD-154",
+          "BEAD-109"
         ],
         "createdAt": "2026-07-21T12:50:51.157Z",
         "createdInPhase": "3",
@@ -2550,7 +2570,7 @@
         "beadId": "BEAD-120",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-010.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-035",
           "BEAD-125",
@@ -2566,7 +2586,12 @@
           "BEAD-151",
           "BEAD-152",
           "BEAD-153",
-          "BEAD-154"
+          "BEAD-154",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-103",
+          "BEAD-106",
+          "BEAD-109"
         ],
         "createdAt": "2026-07-21T12:50:51.158Z",
         "createdInPhase": "3",
@@ -2576,7 +2601,7 @@
         "beadId": "BEAD-121",
         "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-011.json",
-        "status": "open",
+        "status": "resolved",
         "linkedBeads": [
           "BEAD-001",
           "BEAD-002",
@@ -2589,7 +2614,8 @@
           "BEAD-131",
           "BEAD-132",
           "BEAD-133",
-          "BEAD-136"
+          "BEAD-136",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-21T12:50:51.159Z",
         "createdInPhase": "3",
@@ -2765,7 +2791,7 @@
         "beadId": "BEAD-129",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-abort-lineage.test.js#abort-lineage",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-113",
           "BEAD-114"
@@ -2778,7 +2804,7 @@
         "beadId": "BEAD-130",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#correlation-before-collection",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-111",
           "BEAD-115",
@@ -2792,7 +2818,7 @@
         "beadId": "BEAD-131",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#actual-observation-times",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-111",
           "BEAD-115",
@@ -2806,7 +2832,7 @@
         "beadId": "BEAD-132",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#missing-checked-at",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-111",
           "BEAD-115",
@@ -2820,7 +2846,7 @@
         "beadId": "BEAD-133",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#mismatched-correlation",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-111",
           "BEAD-115",
@@ -2834,7 +2860,7 @@
         "beadId": "BEAD-134",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#pre-run-observation",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-115"
         ],
@@ -2846,7 +2872,7 @@
         "beadId": "BEAD-135",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#future-observation",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-115"
         ],
@@ -2858,7 +2884,7 @@
         "beadId": "BEAD-136",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#arbitrary-run-ref",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-111",
           "BEAD-115",
@@ -2872,7 +2898,7 @@
         "beadId": "BEAD-137",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#global-timer-purity",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-113",
           "BEAD-114"
@@ -2885,7 +2911,7 @@
         "beadId": "BEAD-138",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#one-ms-stale-harness",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-114",
           "BEAD-115"
@@ -2898,7 +2924,7 @@
         "beadId": "BEAD-139",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-provenance.test.js#zero-argument-main",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-112"
         ],
@@ -2910,7 +2936,7 @@
         "beadId": "BEAD-140",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#env-only-injection",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-112"
         ],
@@ -2922,7 +2948,7 @@
         "beadId": "BEAD-141",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#fetch-only-injection",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-112"
         ],
@@ -2934,7 +2960,7 @@
         "beadId": "BEAD-142",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/transport/mail-gog-receipt.test.js#abort-capable-process",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-113",
           "BEAD-114"
@@ -2947,7 +2973,7 @@
         "beadId": "BEAD-143",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#changed-cli-coverage",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -2961,7 +2987,7 @@
         "beadId": "BEAD-144",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#complete-changed-module-coverage",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -2975,7 +3001,7 @@
         "beadId": "BEAD-145",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#production-js-safe-scan",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-118"
         ],
@@ -2987,7 +3013,7 @@
         "beadId": "BEAD-146",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#trace-reachability",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117"
         ],
@@ -2999,7 +3025,7 @@
         "beadId": "BEAD-147",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#state-schema-validation",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-120"
@@ -3012,7 +3038,7 @@
         "beadId": "BEAD-148",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review-schema-validation",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-120"
@@ -3025,7 +3051,7 @@
         "beadId": "BEAD-149",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#unauthorized-scope",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3039,7 +3065,7 @@
         "beadId": "BEAD-150",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#historical-immutability-scope",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3053,7 +3079,7 @@
         "beadId": "BEAD-151",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#root-spec-immutability-scope",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3067,7 +3093,7 @@
         "beadId": "BEAD-152",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#missing-modules-gate",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3081,7 +3107,7 @@
         "beadId": "BEAD-153",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#extra-module-gate",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3095,7 +3121,7 @@
         "beadId": "BEAD-154",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#nonfinite-module-gate",
-        "status": "red",
+        "status": "green",
         "linkedBeads": [
           "BEAD-117",
           "BEAD-119",
@@ -3146,5 +3172,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T15:45:22.874Z"
+  "updatedAt": "2026-07-21T16:25:08.664Z"
 }
