@@ -4,4 +4,7 @@ child_file=${GIG_FIXTURE_CHILD_FILE:?}
 sleep 300 &
 child=$!
 printf '%s\n' "$child" > "$child_file"
+if [ "${GIG_FIXTURE_CHURN:-0}" = 1 ]; then
+  (while :; do sleep 0.01; done) &
+fi
 while :; do sleep 1; done

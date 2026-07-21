@@ -20,7 +20,7 @@ GIG_LOCK_PID="${EMERGENCY_GUARD_TEST_LOCK_OWNER:-}"
 GIG_WORKER_MAX_SECONDS="${GIG_WORKER_MAX_SECONDS:-7200}"
 GIG_HEARTBEAT_MAX_SECONDS="${GIG_HEARTBEAT_MAX_SECONDS:-180}"
 CANONICAL_GIG_ARGV="${GIG_WORKER_CANONICAL_ARGV:-/bin/bash $HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh}"
-THRESHOLD_GB="${EMERGENCY_GUARD_THRESHOLD_GB:-6}"
+THRESHOLD_GB="${EMERGENCY_GUARD_THRESHOLD_GB:-11}"
 ULTRA_GB="${EMERGENCY_GUARD_ULTRA_GB:-3}"
 TEST_MODE=0
 [ -n "${EMERGENCY_GUARD_TEST_PROCESS_FIXTURE:-}" ] && TEST_MODE=1
@@ -186,6 +186,37 @@ heartbeat_age() {
   printf '%s\n' "$(($(now_epoch) - mtime))"
 }
 
+cleanup_orphan_heartbeats() {
+  local heartbeat basename pid lease
+  [ -d "$LEASE_DIR" ] || return 0
+  for heartbeat in "$LEASE_DIR"/*.heartbeat; do
+    [ -f "$heartbeat" ] || continue
+    basename=${heartbeat##*/}
+    pid=${basename%.heartbeat}
+    lease="$LEASE_DIR/$pid.lease"
+    [ -e "$lease" ] && continue
+    case "$pid" in
+      ''|*[!0-9]*)
+        append_decision "$pid" preserve orphan-heartbeat-invalid-pid
+        continue
+        ;;
+    esac
+    if kill -0 "$pid" 2>/dev/null; then
+      append_decision "$pid" preserve orphan-heartbeat-live-pid
+      continue
+    fi
+    # Revalidate immediately before unlink so a PID reuse or newly-published
+    # lease turns this into preserve rather than deleting live state.
+    if [ -e "$lease" ] || kill -0 "$pid" 2>/dev/null; then
+      append_decision "$pid" preserve orphan-heartbeat-revalidation-failed
+    elif rm -f "$heartbeat" && [ ! -e "$heartbeat" ]; then
+      append_decision "$pid" cleanup orphan-heartbeat-dead-pid
+    else
+      append_decision "$pid" preserve orphan-heartbeat-cleanup-failed
+    fi
+  done
+}
+
 profile_is_active() {
   local profile="$1"
   if [ "$TEST_MODE" -eq 1 ]; then
@@ -297,6 +328,14 @@ descendants_same_group() {
   while IFS= read -r descendant; do
     [ -n "$descendant" ] || continue
     descendant_pgid=$(ps -p "$descendant" -o pgid= 2>/dev/null | awk '{$1=$1; print}')
+    if [ -z "$descendant_pgid" ]; then
+      # A child observed in the process-table snapshot may exit naturally
+      # before this per-PID check. Disappearance is convergence, not an
+      # identity mismatch. A still-live PID with unreadable identity remains
+      # fail-closed, as does a reused PID observed in another PGID below.
+      kill -0 "$descendant" 2>/dev/null && return 1
+      continue
+    fi
     [ "$descendant_pgid" = "$pgid" ] || return 1
   done < <(ps -axo pid=,ppid= 2>/dev/null | awk -v root="$root" '
     { pid[NR]=$1; parent[NR]=$2 }
@@ -432,6 +471,8 @@ evaluate_gig_workers() {
   done
 }
 
+cleanup_orphan_heartbeats
+
 FREE=$(free_gb)
 [ -n "$FREE" ] || exit 1
 if [ "$FREE" -ge "$THRESHOLD_GB" ]; then
@@ -512,11 +553,13 @@ if [ "$FREE" -lt "$ULTRA_GB" ]; then
 fi
 
 NEW=$(free_gb)
-if [ "$RECLAIM_ELIGIBLE" -eq 0 ] || [ "$RECLAIMED_TOTAL" -eq 0 ]; then
+if [ "$RECLAIM_ELIGIBLE" -eq 0 ] || [ "$RECLAIMED_TOTAL" -eq 0 ] || [ "$NEW" -lt "$THRESHOLD_GB" ]; then
   if [ "$RECLAIM_ELIGIBLE" -eq 0 ]; then
     FAILURE_REASON=no-eligible-reclaim
-  else
+  elif [ "$RECLAIMED_TOTAL" -eq 0 ]; then
     FAILURE_REASON=zero-reclaimed-bytes
+  else
+    FAILURE_REASON=reserve-not-restored
   fi
   append_decision disk-pressure failure "$FAILURE_REASON"
   append_ops failure "$FAILURE_REASON" "$FREE" "$NEW"
@@ -525,5 +568,6 @@ if [ "$RECLAIM_ELIGIBLE" -eq 0 ] || [ "$RECLAIMED_TOTAL" -eq 0 ]; then
   log "FAILURE: ${FAILURE_REASON}; ${FREE}GB -> ${NEW}GB; backpressure remains"
   exit 3
 fi
+rm -f "$BACKPRESSURE" "$ALERT"
 append_ops success reclaimed-bytes "$FREE" "$NEW"
 log "safe containment done: ${FREE}GB -> ${NEW}GB free; reclaimed=${RECLAIMED_TOTAL} bytes"

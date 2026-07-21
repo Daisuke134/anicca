@@ -29,7 +29,7 @@ wait_for_file() {
 }
 
 launch_managed() {
-  local name=$1 heartbeat_interval=$2 child_file ready_file
+  local name=$1 heartbeat_interval=$2 churn=${3:-0} child_file ready_file
   child_file="$TMP/$name-child"
   ready_file="$TMP/$name-ready"
   GIG_WORKER_SCRIPT="$FIXTURE" \
@@ -37,6 +37,7 @@ launch_managed() {
   GIG_WORKER_HEARTBEAT_INTERVAL="$heartbeat_interval" \
   GIG_WORKER_READY_FILE="$ready_file" \
   GIG_FIXTURE_CHILD_FILE="$child_file" \
+  GIG_FIXTURE_CHURN="$churn" \
   bash "$LAUNCHER" >"$TMP/$name-launcher.log" 2>&1 &
   MANAGED_LAUNCHER=$!
   LAUNCHERS="$LAUNCHERS $MANAGED_LAUNCHER"
@@ -47,10 +48,12 @@ launch_managed() {
   TRACKED_PGIDS="$TRACKED_PGIDS $MANAGED_PID"
 }
 
-launch_managed stale 300
+launch_managed stale 300 1
 stale_launcher=$MANAGED_LAUNCHER
 stale_pid=$MANAGED_PID
 stale_child=$MANAGED_CHILD
+sleep 1.2
+touch -t 202001010000 "$LEASE_DIR/$stale_pid.heartbeat"
 launch_managed healthy 1
 healthy_pid=$MANAGED_PID
 healthy_child=$MANAGED_CHILD
@@ -66,13 +69,12 @@ test "$stale_pid" = "$(ps -p "$stale_pid" -o pgid= | awk '{$1=$1; print}')"
 test "$healthy_pid" = "$(ps -p "$healthy_pid" -o pgid= | awk '{$1=$1; print}')"
 test -f "$LEASE_DIR/$stale_pid.lease"
 test -f "$LEASE_DIR/$healthy_pid.lease"
-sleep 4
 
 set +e
 EMERGENCY_GUARD_TEST_HOME="$HOME_DIR" \
 EMERGENCY_GUARD_TEST_FREE_GB=2 \
 EMERGENCY_GUARD_TEST_ENABLE_RECLAIM=0 \
-GIG_WORKER_MAX_SECONDS=1 \
+GIG_WORKER_MAX_SECONDS=0 \
 GIG_HEARTBEAT_MAX_SECONDS=3 \
 GIG_WORKER_CANONICAL_ARGV="$CANONICAL_ARGV" \
 bash "$GUARD"

@@ -86,7 +86,8 @@ EMERGENCY_GUARD_TEST_KILL_LEDGER="$TMP/killed.tsv" \
 EMERGENCY_GUARD_TEST_EXTRA_RECLAIM="$TMP/unknown-class" \
 EMERGENCY_GUARD_TEST_RM_FAIL_PATH="$HOME_DIR/.cache/torch" \
 GIG_WORKER_CANONICAL_ARGV="$CANONICAL_ARGV" \
-bash "$GUARD"
+bash "$GUARD" || guard_rc=$?
+test "${guard_rc:-0}" -eq 3 || { echo "low reserve with incomplete recovery returned rc=${guard_rc:-0}"; exit 1; }
 
 DECISIONS="$STATE_DIR/emergency-disk-guard-decisions.tsv"
 RECLAIMS="$STATE_DIR/emergency-disk-guard-reclaim-v2.tsv"
