@@ -3,6 +3,10 @@
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const test = require("node:test");
+const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const support = require("./daily-preflight.test-support.js");
 
 const GENERATED_MS = Date.parse("2026-07-21T06:00:00.000Z");
@@ -42,7 +46,20 @@ function rejects(name, mutate) {
   test(name, () => { const input = validInput(); mutate(input); const validate = validator(); assert.throws(() => validate(input)); });
 }
 
-accepts("schema positive: closed 9/9 current-run report is accepted");
+test("schema positive: actual offline CLI artifact is the closed 9/9 current-run report", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "core8d-cli-red-"));
+  const output = path.join(directory, "report.json");
+  try {
+    const result = spawnSync(process.execPath, ["--require", path.join(__dirname, "../test-support/core8d-cli-loader.cjs"),
+      path.join(__dirname, "../scripts/daily-preflight.js"), "--mode", "controlled-l3", "--output", output], {
+      cwd: path.join(__dirname, ".."), encoding: "utf8", env: { PATH: process.env.PATH || "" },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.existsSync(output), true);
+    const emitted = JSON.parse(fs.readFileSync(output, "utf8"));
+    assert.doesNotThrow(() => validator()(emitted));
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
 accepts("schema positive: exact 900000 ms checkedAt lower boundary is accepted", v => { v.dependencies[0].checkedAtMs = RUN_STARTED_MS; v.dependencies[0].checkedAt = new Date(RUN_STARTED_MS).toISOString(); });
 
 const closedFieldCases = [

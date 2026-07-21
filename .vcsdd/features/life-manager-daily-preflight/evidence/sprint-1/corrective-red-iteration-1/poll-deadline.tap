@@ -1,0 +1,136 @@
+✔ poll: Telegram reply attempt 6 is the final allowed attempt (17.899042ms)
+✔ poll: Telegram reply attempt 7 is forbidden (0.782458ms)
+✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.29925ms)
+✔ poll: Telegram webhook attempt 4 is forbidden (0.243416ms)
+✔ poll: email inbox attempt 6 is the final allowed attempt (0.441458ms)
+✔ poll: email inbox attempt 7 is forbidden (0.192416ms)
+✖ timeout: Telegram Bot API work is aborted at 15000 ms (63.312291ms)
+✖ timeout: Resend work is aborted at 15000 ms (43.256583ms)
+✖ timeout: gog inbox work is aborted at 15000 ms (44.820875ms)
+✖ deadline: Telegram collector cancels at 179000 ms (43.32125ms)
+✖ deadline: email collector cancels at 120000 ms (43.592ms)
+✖ deadline: parallel collector cancels at 179000 ms (42.708083ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 6
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 544.284292
+
+✖ failing tests:
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ timeout: Telegram Bot API work is aborted at 15000 ms (63.312291ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ timeout: Resend work is aborted at 15000 ms (43.256583ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ timeout: gog inbox work is aborted at 15000 ms (44.820875ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ deadline: Telegram collector cancels at 179000 ms (43.32125ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ deadline: email collector cancels at 120000 ms (43.592ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:53:4
+✖ deadline: parallel collector cancels at 179000 ms (42.708083ms)
+  AssertionError [ERR_ASSERTION]: deadline must abort underlying work
+  + actual - expected
+
+  + undefined
+  - true
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:58:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

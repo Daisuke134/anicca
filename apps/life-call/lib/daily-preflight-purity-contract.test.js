@@ -4,13 +4,17 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const { main } = require("../scripts/daily-preflight.js");
 
 const production = fs.readFileSync(path.join(__dirname, "daily-preflight.js"), "utf8");
 const collectors = fs.readFileSync(path.join(__dirname, "daily-preflight-collectors.js"), "utf8");
 const cli = fs.readFileSync(path.join(__dirname, "../scripts/daily-preflight.js"), "utf8");
 
-test("purity: production report API accepts no caller proof or correlation object", () => {
-  assert.doesNotMatch(production, /buildPreflightReport\(\{[^}]*\bcontrolledL3\b/);
+test("purity: exported production main rejects caller env/fetch/transport and never calls forged transport", async () => {
+  let calls = 0;
+  const forged = async () => { calls += 1; throw new Error("forged transport called"); };
+  await assert.rejects(() => main({ argv: ["--mode", "read-only"], env: {}, fetchImpl: forged, transport: forged }), /caller|argument|injection/i);
+  assert.equal(calls, 0);
 });
 
 test("purity: production collectors retain zero injected transport surface", () => {

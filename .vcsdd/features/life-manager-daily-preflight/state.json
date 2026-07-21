@@ -1173,11 +1173,13 @@
         "beadId": "BEAD-042",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-07",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.051Z",
         "createdInPhase": "2a",
@@ -1187,11 +1189,13 @@
         "beadId": "BEAD-043",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-08",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.051Z",
         "createdInPhase": "2a",
@@ -1201,11 +1205,13 @@
         "beadId": "BEAD-044",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-09",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.052Z",
         "createdInPhase": "2a",
@@ -1215,11 +1221,13 @@
         "beadId": "BEAD-045",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-10",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.052Z",
         "createdInPhase": "2a",
@@ -1229,11 +1237,13 @@
         "beadId": "BEAD-046",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-11",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.053Z",
         "createdInPhase": "2a",
@@ -1243,11 +1253,13 @@
         "beadId": "BEAD-047",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-12",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-006",
           "BEAD-024",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114"
         ],
         "createdAt": "2026-07-21T11:53:11.054Z",
         "createdInPhase": "2a",
@@ -1257,7 +1269,7 @@
         "beadId": "BEAD-048",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-01",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-002",
           "BEAD-013",
@@ -1265,7 +1277,10 @@
           "BEAD-032",
           "BEAD-035",
           "BEAD-001",
-          "BEAD-014"
+          "BEAD-014",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
         ],
         "createdAt": "2026-07-21T11:53:11.054Z",
         "createdInPhase": "2a",
@@ -1983,14 +1998,15 @@
         "beadId": "BEAD-093",
         "type": "test-case",
         "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-01",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-011",
           "BEAD-012",
           "BEAD-015",
           "BEAD-017",
           "BEAD-026",
-          "BEAD-034"
+          "BEAD-034",
+          "BEAD-112"
         ],
         "createdAt": "2026-07-21T11:53:11.088Z",
         "createdInPhase": "2a",
@@ -2100,11 +2116,13 @@
         "beadId": "BEAD-100",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-02",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-117",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T11:53:11.096Z",
         "createdInPhase": "2a",
@@ -2114,11 +2132,13 @@
         "beadId": "BEAD-101",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-03",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-117",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T11:53:11.096Z",
         "createdInPhase": "2a",
@@ -2142,11 +2162,13 @@
         "beadId": "BEAD-103",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-05",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-116",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T11:53:11.098Z",
         "createdInPhase": "2a",
@@ -2184,11 +2206,13 @@
         "beadId": "BEAD-106",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-08",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-118",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T11:53:11.101Z",
         "createdInPhase": "2a",
@@ -2226,11 +2250,13 @@
         "beadId": "BEAD-109",
         "type": "test-case",
         "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-11",
-        "status": "green",
+        "status": "red",
         "linkedBeads": [
           "BEAD-018",
           "BEAD-028",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-119",
+          "BEAD-120"
         ],
         "createdAt": "2026-07-21T11:53:11.104Z",
         "createdInPhase": "2a",

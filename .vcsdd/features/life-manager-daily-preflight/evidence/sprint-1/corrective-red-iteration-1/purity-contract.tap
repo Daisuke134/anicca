@@ -1,0 +1,31 @@
+{"artifact":null,"overallStatus":"fail","exitCode":1,"summary":{"required":9,"passed":0,"failed":9,"timedOut":0},"dependencies":[{"dependency":"health","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"telegram","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"calendar","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"call","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"location","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"email","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"discovery","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"gemini","status":"fail","latencyMs":1,"failureClass":"configuration"},{"dependency":"maps","status":"fail","latencyMs":1,"failureClass":"configuration"}]}
+✖ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (3.633542ms)
+✔ purity: production collectors retain zero injected transport surface (0.150584ms)
+✔ purity: runRef is derived from current internal correlation (0.073375ms)
+✔ purity: raw run correlation is excluded from serialization (0.10225ms)
+✔ purity: successful report uses temp-file fsync rename atomic publication (0.063583ms)
+✔ purity: failed publication removes temporary output and leaves no final artifact (0.057375ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 273.696708
+
+✖ failing tests:
+
+test at lib/daily-preflight-purity-contract.test.js:13:1
+✖ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (3.633542ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:16:3)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /caller|argument|injection/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

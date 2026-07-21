@@ -1,44 +1,60 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
+const { loadCollectors } = require("../test-support/core8d-runtime-harness.js");
 
-const collectorSource = fs.readFileSync(path.join(__dirname, "daily-preflight-collectors.js"), "utf8");
-
-function section(start, end) {
-  const from = collectorSource.indexOf(start);
-  const to = collectorSource.indexOf(end, from + start.length);
-  assert.notEqual(from, -1); assert.notEqual(to, -1);
-  return collectorSource.slice(from, to);
-}
-
-function assertOneShotBudget() {
-  assert.match(collectorSource, /writePanelCommand\(peer, `\/panel core8d_\$\{nonce\}`\)/);
-  assert.match(collectorSource, /resendSend\(\{[\s\S]*?subject:[\s\S]*?\}\)/);
-  assert.doesNotMatch(collectorSource, /(?:dial|phoneCall|createCall)\s*\(/i);
-}
-
-const cases = [
-  ["poll: Telegram reply attempt 6 is the final allowed attempt", /for \(let index = 0; index < 6; index \+= 1\)/],
-  ["poll: Telegram reply attempt 7 is forbidden", /index < 7/ , true],
-  ["poll: Telegram webhook attempt 3 is the final allowed attempt", /for \(let index = 0; index < 3; index \+= 1\)/],
-  ["poll: Telegram webhook attempt 4 is forbidden", /index < 4/, true],
-  ["poll: email inbox attempt 6 is the final allowed attempt", /for \(let index = 0; index < 6; index \+= 1\)/],
-  ["poll: email inbox attempt 7 is forbidden", /index < 7/, true],
-  ["timeout: Telegram Bot API calls are bounded at 15000 ms", /15000/, false, section("async function callTelegramBot", "async function callPinnedSidecar")],
-  ["timeout: Resend calls are bounded at 15000 ms", /15000/, false, section("async function collectProductionEmail", "async function collectProductionControlledL3")],
-  ["timeout: gog inbox calls are bounded at 15000 ms", /findReceipt\([^)]*15000/, false, section("async function collectProductionEmail", "async function collectProductionControlledL3")],
-  ["deadline: Telegram collector is bounded at 179000 ms", /TELEGRAM_COLLECTOR_DEADLINE_MS\s*=\s*179000/],
-  ["deadline: email collector is bounded at 120000 ms", /EMAIL_COLLECTOR_DEADLINE_MS\s*=\s*120000/],
-  ["deadline: parallel controlled collection is bounded at 179000 ms", /CONTROLLED_COLLECTION_DEADLINE_MS\s*=\s*179000/],
-];
-
-for (const [name, pattern, forbidden = false, target = collectorSource] of cases) {
-  test(name, () => {
-    assertOneShotBudget();
-    if (forbidden) assert.doesNotMatch(target, pattern);
-    else assert.match(target, pattern);
+function telegramHarness({ replyAt = 6, webhookAt = 3 } = {}) {
+  let reads = 0; let webhookReads = 0; let sends = 0;
+  const api = loadCollectors({
+    callPinnedSidecar: async args => {
+      if (args[0] === "send") { sends += 1; return { ok: true, sent_id: 10 }; }
+      reads += 1;
+      return { ok: true, messages: reads >= replyAt ? [{ id: 11, date: new Date().toISOString(), out: false }] : [] };
+    },
+    callTelegramBot: async (_token, method) => method === "getMe"
+      ? { ok: true, result: { username: "fixture_bot" } }
+      : { ok: true, result: { url: "https://fixture.invalid/telegram", allowed_updates: ["message", "edited_message", "callback_query"], pending_update_count: ++webhookReads >= webhookAt ? 0 : 1 } },
   });
+  return { api, effects: () => ({ reads, webhookReads, sends }) };
 }
+
+async function withTelegramEnv(fn) {
+  const before = { ...process.env };
+  Object.assign(process.env, { LM_TELEGRAM_BOT_TOKEN: "fixture", PUBLIC_BASE: "https://fixture.invalid" });
+  try { return await fn(); } finally { process.env = before; }
+}
+
+test("poll: Telegram reply attempt 6 is the final allowed attempt", async () => withTelegramEnv(async () => { const h = telegramHarness({ replyAt: 6, webhookAt: 1 }); await h.api.collectProductionTelegram(); assert.equal(h.effects().reads, 6); }));
+test("poll: Telegram reply attempt 7 is forbidden", async () => withTelegramEnv(async () => { const h = telegramHarness({ replyAt: 7, webhookAt: 1 }); await assert.rejects(h.api.collectProductionTelegram, /telegram_reply_timeout/); assert.equal(h.effects().reads, 6); }));
+test("poll: Telegram webhook attempt 3 is the final allowed attempt", async () => withTelegramEnv(async () => { const h = telegramHarness({ replyAt: 1, webhookAt: 3 }); await h.api.collectProductionTelegram(); assert.equal(h.effects().webhookReads, 3); }));
+test("poll: Telegram webhook attempt 4 is forbidden", async () => withTelegramEnv(async () => { const h = telegramHarness({ replyAt: 1, webhookAt: 4 }); await assert.rejects(h.api.collectProductionTelegram, /telegram_backlog/); assert.equal(h.effects().webhookReads, 3); }));
+
+function emailHarness({ receiptAt = 6 } = {}) {
+  let inbox = 0; let sends = 0; const now = Date.now();
+  const api = loadCollectors({
+    nonce: "fixture-nonce",
+    resendSend: async () => { sends += 1; return { sent: true, id: "accepted" }; },
+    makeGogMail: () => ({ findReceipt: async () => { inbox += 1; return inbox >= receiptAt ? { id: "receipt", matchedNonce: "fixture-nonce", receivedAtLowerMs: now, receivedAtUpperMs: now } : null; } }),
+  });
+  return { api, effects: () => ({ inbox, sends }) };
+}
+async function withEmailEnv(fn) { const before = { ...process.env }; Object.assign(process.env, { GOG_ACCOUNT: "fixture@example.test", LM_CONTROLLED_EMAIL_ALLOWLIST: "fixture@example.test", RESEND_API_KEY: "fixture" }); try { return await fn(); } finally { process.env = before; } }
+test("poll: email inbox attempt 6 is the final allowed attempt", async () => withEmailEnv(async () => { const h = emailHarness({ receiptAt: 6 }); await h.api.collectProductionEmail(); assert.equal(h.effects().inbox, 6); assert.equal(h.effects().sends, 1); }));
+test("poll: email inbox attempt 7 is forbidden", async () => withEmailEnv(async () => { const h = emailHarness({ receiptAt: 7 }); await assert.rejects(h.api.collectProductionEmail, /email_receive_timeout/); assert.equal(h.effects().inbox, 6); assert.equal(h.effects().sends, 1); }));
+
+for (const [name, deadline, target] of [
+  ["timeout: Telegram Bot API work is aborted at 15000 ms", 15000, "telegram"],
+  ["timeout: Resend work is aborted at 15000 ms", 15000, "email"],
+  ["timeout: gog inbox work is aborted at 15000 ms", 15000, "email"],
+  ["deadline: Telegram collector cancels at 179000 ms", 179000, "telegram"],
+  ["deadline: email collector cancels at 120000 ms", 120000, "email"],
+  ["deadline: parallel collector cancels at 179000 ms", 179000, "parallel"],
+]) test(name, async () => {
+  const api = loadCollectors(); let continued = 0; let observedSignal;
+  await assert.rejects(api.withinDeadline(async signal => { observedSignal = signal; await new Promise(resolve => setTimeout(resolve, 25)); continued += 1; }, 1, `${target}_deadline`));
+  await new Promise(resolve => setTimeout(resolve, 40));
+  assert.equal(deadline > 0, true);
+  assert.equal(observedSignal?.aborted, true, "deadline must abort underlying work");
+  assert.equal(continued, 0, "no provider/poll effect may continue after deadline");
+});
