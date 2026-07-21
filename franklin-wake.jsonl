@@ -12507,3 +12507,13 @@
 {"ts":1784605204,"wake_id":"00MRU3V0HK74667333E715442D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784605338,"wake_id":"00MRU3XWCP05260D55636D490D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784605471,"wake_id":"00MRU40QCIE1C0DDC8F1194AB7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784605603,"wake_id":"00MRU43KRPABB794712DEC42D9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784605735,"wake_id":"00MRU46E2D844239A9986E4464","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784605735,"wake_id":"00MRU46E2D844239A9986E4464","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784605866,"wake_id":"00MRU4976Q0E867681DEF24030","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784605866,"wake_id":"00MRU4976Q0E867681DEF24030","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784605997,"wake_id":"00MRU4C0KP57DFCC1305434766","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784606129,"wake_id":"00MRU4EUIP7D56143418254A41","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784606260,"wake_id":"00MRU4HNU508E01FED54F24CD9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784606392,"wake_id":"00MRU4KHJKAE063E6F59BD49C1","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784606392,"wake_id":"00MRU4KHJKAE063E6F59BD49C1","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
