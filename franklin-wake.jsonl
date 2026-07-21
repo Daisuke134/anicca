@@ -12459,3 +12459,14 @@
 {"ts":1784600766,"wake_id":"00MRU17VZ46668F590424043D2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784600897,"wake_id":"00MRU1AP75EFCAFE4B04E84C66","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784601028,"wake_id":"00MRU1DISXE2F6C09A8A9C4E33","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601161,"wake_id":"00MRU1GD7R00EEB10C75B34F8C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601292,"wake_id":"00MRU1J689546E2E5D6F694BE3","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 59 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784601292,"wake_id":"00MRU1J689546E2E5D6F694BE3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601482,"wake_id":"00MRU1N8Z1D37177BAF9B84FB4","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784601482,"wake_id":"00MRU1N8Z1D37177BAF9B84FB4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601614,"wake_id":"00MRU1Q2OM0217DA373EBD4F51","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784601614,"wake_id":"00MRU1Q2OM0217DA373EBD4F51","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601744,"wake_id":"00MRU1SV9TE47658B6A7E4476E","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784601744,"wake_id":"00MRU1SV9TE47658B6A7E4476E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784601873,"wake_id":"00MRU1VMRL50DF80D803B7470B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784601873,"wake_id":"00MRU1VMRL50DF80D803B7470B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
