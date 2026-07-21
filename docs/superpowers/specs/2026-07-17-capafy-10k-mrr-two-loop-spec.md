@@ -534,8 +534,8 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | Capafy marketing account | `capafy.skills9582` はsynthetic warmup後のprivate API `ChallengeRequired` でterminal discard、投稿0件。active accountなし | §16、warmup log/state |
 | Capafy marketing launch state | IG marketing daily / goal-monitor はunloaded。last-passは前日、warmupだけloaded/not-running。scriptはSonnet固定。したがって毎日投稿loopは稼働していない | `launchctl print/list`、`.capafy-ig-marketing-last-pass`、`capafy-ig-marketing-daily.sh:22,144` |
 | shared blast radius | `marketing-engine/warmer.py` / `poster.py` は Capafy のほか clip / video / clip-promote が参照する | `/Users/anicca/anicca/skills/earn/{capafy-marketing,clip,video,clip-promote,marketing-engine}` |
-| disk pressure | inactive・clean・untracked 0・remote-contained・lock/process/lsof 0のworktree 9件だけを非force `git worktree remove`し、branch/commitを保持したまま5,929,028KiBを回復。raw freeは11,964,304KiB、10GiB gateと11GiB reserveがgreen、backpressure/alertはabsent。locked/active/dirty worktree、active VM/Codex/WIPは保持。最終16回poll待ち | `/tmp/disk-worktree-reclaim.tsv`、`/tmp/disk-worktree-reclaim-final-assertions.tsv` |
-| cleaner review | 全機能gateとstrict shellcheckはPASS: race 50/50、stale group停止、healthy/no-lease保持、orphan cleanup、reserve、v2 ledger、live hash、OS scheduled passのlease/heartbeat→last exit=1→cleanup、`.last-pass`不変、protected 24件欠損0。capacity回復後のfresh 16回/15分close reviewを実行するまでTODO #1は未完了 | `/private/tmp/disk-containment-restart-review.z2lppA`、commits `69a065a5a`/`9c2766c`/`15c9e88`/`6b0039cb` |
+| disk pressure | inactive・clean・remote-contained worktree 9件だけを非force解除し5,929,028KiBを回復。fresh 16回/15分13秒pollはraw free min 12,835,096KiB、max 12,928,772KiB、10GiB failure 0。locked/active/dirty worktree、active VM/Codex/WIP、protected 24件を全sampleで保持。backpressure/alertは容量正常時absent | `/private/tmp/disk-containment-capacity-close.09kky5/poll-clean-16x60.tsv` |
+| cleaner review | **PASS / TODO #1 closed**。race 50/50、stale group停止、healthy/no-lease保持、orphan cleanup、reserve、v2 ledger、live hash、strict shellcheck、全target testsがgreen。OS scheduled passは自然発火しlease/heartbeat→last exit=1→cleanup、`.last-pass`不変。guard core/CDP/VM/protected/worktree invariantは16/16 green | `/private/tmp/disk-containment-capacity-close.09kky5/AUTHORITATIVE_EVIDENCE.txt`、commits `69a065a5a`/`9c2766c`/`15c9e88`/`6b0039cb` |
 | active VM debt | 旧guardがactive Claude VM bundleをunlink済み。PID 92713がlink-count 0のrootfs/sessiondata各10GBをopen保持。現guardは再発防止するが、active dependencyのため既存PIDは停止しない | `lsof +L1`、Claude local-agent/app activity |
 | large consumers | `.openclaw` 24GB、`anicca-project` 14GB（`.worktrees` 8.7GB）、`.cloak` 7GB。既存cleanerは主な占有元のowner/lifecycleを管理しない | read-only `du -xhd` inventory |
 | incomplete protection | 共通 protected-paths manifest は `reelclaw-assets` 1件だけ。gig納品物、checkpoint、marketing state、browser identityは分類されない | `~/.openclaw/state/protected-paths.json` |
@@ -608,9 +608,10 @@ Planner は実装を持たず、Builder は完了判定を持たない。各 TOD
 
 ### 17.7 Remaining TODO — order SSOT
 
+Completed gate: **TODO #1 P0 disk containment review findings — PASS**。正本証拠は `/private/tmp/disk-containment-capacity-close.09kky5/`。
+
 | 順 | TODO | Builder scope | Done / E2E gate |
 |---:|---|---|---|
-| 1 | **P0 disk containment review findingsを閉じる** | active/WIP `reel-text` mtime削除を除去。leaseはPID+start token+canonical argv+PGID化、signal直前再検証、process group停止、numeric parse/lsof errorはpreserve。delete ledgerをplanned→removed/failed化しunknown/0-byteをfailure report | reviewerの全negative probeがRED→GREEN。runaway parent+全child停止、normal/core/WIP/VM/transcript保持。fresh 16回/15分pollでraw free>=10GiB、protected欠損0。独立review PASSまではTODO #1を閉じない |
 | 2 | **gig hot pathをLuna/Terra/Solへ移しdelivery-first化** | gig-core/stepのSonnet直結を共通runnerへ置換。paid/feedback/quote queueをdeterministicに先頭化し、artifact/evidenceなしの「了解」返信をsuccessにしない | Sonnet 429 fixtureでもLuna/Terra実callでpaid queueを処理。direct Sonnet production call=0。Fkimura→jibieaian→sunaiの実画面順をloopが選択し、missing artifact/正式納品 stateをfailureとして返す |
 | 3 | **木村様 ¥65,000 PoCを修正・package・即時正式納品** | 7画像expected matrixをtest化しOpenCVを修正。正検出/見逃し/誤検出/座標report、README、requirements、versioned zip、hashを作り、loop自身がtalkroom添付+正式納品 | 7画像acceptance/overlay目視PASS。buyer-visible新version、`正式な納品` checkbox送信後の `納品確認待ち` 画面、URL+screenshot+ledger。テキストだけの返信は不可 |
 | 4 | **全gigへversioned delivery cadenceを展開** | `jibieaian` は最初の投稿草案artifactを即提出し、以後feedbackごとにversion更新。`sunai267` はfeasibility/scope確認後すぐ¥17,000提案。全契約へINV-R6〜R9を適用 | real Coconalaでjibieaian artifact添付、sunai提案済みstate。fixtureでfeedback→artifact→acceptance→formal delivery→差し戻し→new version→formal redeliveryを証明。daily visual verifierがstatus/screenshotを残す |
