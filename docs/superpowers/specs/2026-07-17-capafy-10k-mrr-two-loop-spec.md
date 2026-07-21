@@ -475,3 +475,29 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 - 残 polish（低優先）: reach(ig_metrics)/reflect(ig_reflect) を engine の generic helper に抽出。ただし capafy 固有ロジックを含むため per-loop に残す判断も可。
 
 **結論: marketing-engine は「共有 core を物理集約 + 各 loop は固有アダプタ+content のみ」の TO-BE 構造に到達。真の junk(dead code/墓場)は一掃。**
+
+## §16 CURRENT SSOT — capafy.skills9582 day3 実測
+
+### 実測状態
+
+| 項目 | 現在の事実 | 一次証拠 |
+|---|---|---|
+| 前回 DRY の根因 | 2026-07-20 pass は `warmup day-count=2`。`MODE_FLAG=--live` は day 3 からなので DRY は正しい。`commercial_ok=no` は非商用投稿 gate であり DRY の原因ではない | `/Users/anicca/.openclaw/logs/capafy-ig-marketing-daily.log:399-400`、`/Users/anicca/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:58-72,118-128` |
+| browser 健全性 | `capafy.skills9582` は専用 profile `:9332` で login 成功。feed、プロフィール編集、新規投稿 UI が表示され、確認範囲に suspension / restriction / challenge banner は無い。投稿は 0 件なので reach / shadowban は未評価 | `/Users/anicca/.openclaw/logs/capafy-skills9582-home-logged-in-2026-07-21.png`、`/Users/anicca/.openclaw/logs/capafy-skills9582-profile-logged-in-2026-07-21.png` |
+| day3 warmup | 本物の `ai.anicca.capafy-marketing-warmup` を kickstart。`warm.py` は reels 8、scrolls 6、follows 4 を実行・検証した | `/Users/anicca/.cloak/ig-warmup-capafy.skills9582.json:50-67`、`/Users/anicca/.cloak/warmlog-capafy.skills9582.jsonl:5` |
+| golden session | warmup 後の初回 instagrapi login は `ChallengeRequired: Manual verification required` で terminal failure。state は `session_failed`、settings は不存在、attempt marker は存在する。再 password login と marker 削除は禁止 | `/Users/anicca/.cloak/clip-accounts-capafy.json:18-28`、`/Users/anicca/.cloak/.golden-session-attempted-capafy.skills9582`、`/Users/anicca/anicca/skills/earn/marketing-engine/warmer.py:87-132,332-340` |
+| 実投稿 | 実投稿は行っていない。`session_failed` は active resolver から除外されるため daily path は `no-active-account` の provision branch に入る。terminal challenge を迂回した手動 poster 呼出しは行わない | `/Users/anicca/anicca/skills/earn/marketing-engine/account_state.sh:19-35`、`/Users/anicca/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:31-34,92-114` |
+| 停止状態 | scope 外の新 account 自動作成を防ぐため `ai.anicca.capafy-ig-marketing-daily` と `ai.anicca.capafy-goal-monitor` は unload。`ai.anicca.capafy-marketing-warmup` は loaded / not running で、`session_failed` account を処理しない | `launchctl print gui/501/<label>` 実測 |
+| コード変更 | なし。gate の stale/過剰判定ではなく、day3 private API challenge が停止理由 | `git -C /Users/anicca/anicca status --porcelain=v1` = empty |
+
+### 残 TODO（順序の正本）
+
+| 順 | item | done 条件 |
+|---:|---|---|
+| 1 | current account を terminal として保持 | `session_failed`、attempt marker、settings 不存在を維持。password relogin、attempt marker 削除、browser fallback 投稿を行わない |
+| 2 | 新 account 作成は新しい明示 scope が来るまで停止 | daily / goal-monitor を unload のまま維持し、自動 provision が発火しない |
+| 3 | 新しい明示 scope が来た場合のみ fresh account を作成 | 専用 isolated profile / port、browser-only day 1-2、成功 warmup log を実測 |
+| 4 | fresh account の day 3 golden session を検証 | 初回 instagrapi login 1回、timeline feed probe、settings dump、`status=ready`、`session_owner=instagrapi`。ChallengeRequired なら terminal discard |
+| 5 | session 成功時のみ daily / goal-monitor を load して loop 起点の非商用 Reel を1本投稿 | public Reel URL、logged-out screenshot、IG ledger、rotation ledger、telegram message id が全て存在 |
+| 6 | reach を測定して commercial gate を判定 | 複数 snapshot で非ゼロ plays/views と公開可視性を確認した場合のみ `.capafy-ig-reach-healthy` を作成 |
+| 7 | 14日 full-cycle を実測 | provision → warm → ready → post → measure → report が人手ゼロで14日継続し、§12.6 の全 gate が green |

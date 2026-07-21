@@ -1,0 +1,3 @@
+- spec の絶対パス: `/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-17-capafy-10k-mrr-two-loop-spec.md`
+- 残 TODO の正本: 上記 spec の「§16 CURRENT SSOT — capafy.skills9582 day3 実測」内「残 TODO（順序の正本）」表。
+- 未 commit の変更に関する注意点: 本 handover/spec 以外に、既存の iOS/landing 削除、`work/bug-bounty-743`、別 handover、settings backup、`.claude/sol-orders/` が作業ツリーに存在する。これらは本作業と無関係なので stage/restore しない。
