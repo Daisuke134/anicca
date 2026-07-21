@@ -396,6 +396,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
 - **COREは再open**: Daisがpanelを実使用し、DAILY scoreの意味が体感と不一致、timelineに内部生ログが露出、画面全体もbrokenと判定。従来の「API 200 / loaded / screenshot」はUX doneの証拠として不足。8g/8hを先頭未完了として扱う。
+- **CORE 8d fresh review = FAIL / PR #330 merge不可**: reviewerはhead `a22b6bd26`のartifactだけを読み、worktree無変更でblocking finding 8件を確定。Resend `/domains` はsend-only keyの`POST /emails`を証明しない、Mapsがruntimeのaccept-eitherより厳しい、Telegram webhook authの一致未証明、callのWSS/secret未検証、location absent/expiredがpass、通常Gemini model未検証、sanitizerの一般文字列にquery token/PIIが残る、calendar対象userがscheduler cohortと不一致。targeted tests=89/89、eval=33/33、timeout AbortはGREENだが、8dは`pending`のまま別fresh SolがTDD修正する。review log=`.claude/sol-orders/logs/core-8d-review.log`。
 - **M-2旧Solは停止**: fixture unit/wiringはGREENだが、process消失、log末尾=`collab: Wait`、実MP4/launchd video run/IG video URL/commit/push/spec実測更新なし。未commit M-2差分は回収対象であり、doneではない。
 - **M-2は既存loopのrenderer交換**: Life Manager用の新しいmarketing loopやsocial accountを作らない。既存の日次起動、account、rotation、配信経路を維持し、slideshow artifactを同じテーマのvideo artifactへ置換する。MPTはその代替rendererとしてのみ使う。
 - **fresh M-2 rescue Solは未起動**: 発注書 `.claude/sol-orders/order-m2-rescue.md` は存在するが、ユーザーの「specと全TODOを先に確定」に従い実装開始を止めている。
