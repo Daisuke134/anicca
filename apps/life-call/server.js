@@ -28,7 +28,7 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -51,6 +51,7 @@ const { mailAvailable } = require("./lib/mail-availability.js");
 const {
   markAnswered, upsertLiveLocation,
 } = require("./lib/late-notice.js");
+const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -328,6 +329,10 @@ const server = http.createServer((req, res) => {
                   token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
+              }, discovery: async (data) => {
+                return handleDiscoveryCallback(data, {
+                  token: LM_TG_TOKEN, chatId: u.chatId,
+                });
               } });
             res.writeHead(200); res.end("ok");
             return;
@@ -589,7 +594,9 @@ if (require.main === module) {
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
-    const loops = maybeStartLoops(process.env, { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop });
+    const loops = maybeStartLoops(process.env, {
+      startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+    });
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
   });
 }

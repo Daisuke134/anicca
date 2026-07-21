@@ -23,6 +23,9 @@ const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processLocationLateNotice, getLiveLocation, claimLateEvent,
 } = require("./lib/late-notice.js");
+const {
+  DISCOVERY_WEEK_MS, listDiscoveryUsers, runDiscoveryForUser,
+} = require("./lib/feature-discovery.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -372,6 +375,31 @@ function startOnboardLoop() {
   return setInterval(run, ONBOARD_TICK_MS);
 }
 
+// ── Context-gate feature discovery (weekly) ────────────────────────────────
+// The per-user last_discovery_at gate is durable, so process restarts do not
+// increase frequency. Each run re-reads live-location freshness before send.
+async function discoveryTick(deps = {}) {
+  const { url: supaUrl, key: supaKey } = SUPA();
+  const token = process.env.LM_TELEGRAM_BOT_TOKEN;
+  if (!token || !supaUrl || !supaKey) return;
+  const dbOpts = { supaUrl, supaKey, fetchImpl: deps.fetchImpl };
+  const listUsers = deps.listUsers || (() => listDiscoveryUsers(dbOpts));
+  const discover = deps.discover || ((user, nowMs) => runDiscoveryForUser(user, nowMs, {
+    ...dbOpts, token,
+  }));
+  const users = await listUsers();
+  const now = deps.now !== undefined ? deps.now : Date.now();
+  await forEachUserSafe(users, "discovery", (user) => discover(user, now));
+}
+
+function startDiscoveryLoop() {
+  console.log("[discovery] started — weekly, one locked gate per eligible Telegram user");
+  const run = () => discoveryTick().catch((error) =>
+    console.error("[discovery] tick err", error && error.message));
+  run();
+  return setInterval(run, DISCOVERY_WEEK_MS);
+}
+
 // listPaidUsers: public alias for supaUsers — used by Inngest sweep functions.
 const listPaidUsers = supaUsers;
 
@@ -393,8 +421,8 @@ async function getUserByUid(uid) {
 }
 
 module.exports = {
-  startScheduler, startTravelLoop, startAskLoop, startOnboardLoop,
-  tick, travelTick, askTickAll, onboardTick,
+  startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+  tick, travelTick, askTickAll, onboardTick, discoveryTick,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
   lateNoticeUserOnce,

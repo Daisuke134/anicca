@@ -334,6 +334,16 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 - 変更手順: この表を編集 → 実装は i18n string としてこの表から生成（コードに直書きしない）。EN 版は同構造で別表（P1中に作成）。
 
+##### LM-32 feature discovery 実装契約
+
+- Railway/standalone の既存 in-process scheduler に7日間隔の loop を1本追加する。起動直後も走るが、
+  `lm_users.last_discovery_at` の durable throttle で再起動を含め7日未満の再送を止める。新規 cron/launchd は作らない。
+- 毎回の送信直前に `lm_user_locations.expires_at` と `lm_users.payout_destination` を再読み込み、
+  未解錠 gate だけを `last_discovery_gate` の次から rotation する。送るのは1回に1 gate だけ。
+- 本文とボタン文言は i18n string map から参照し、L1 がこの表との逐語一致を検査する。
+  location の［やり方を見る］は TG 内のライブ位置共有手順を返し、［今はしない］は追加送信せず通常の週次 throttle に従う。
+- 実 TG E2E は `node scripts/send-feature-discovery.js <uid>` で1 user だけを対象にし、本番と同じ gate/throttle を通す。
+
 ## 10. 残 TODO 表（正本。2026-07-20 22時点。TaskList と二重トラック）
 
 | 順 | ID | 内容 | done 条件 | 状態 |
@@ -344,7 +354,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 4 | LM-21 | 13 secret rotate（GEMINI/TELNYX 優先。公開前必須） | /health 200 + TG echo + dial preflight ok | pending |
 | 5 | LM-31 | calendar edge-case engine（§9.7 の9件 + §9.11 follow-up copy） | 9ケースのテスト green + 実 calendar で1件ずつ実測 | pending |
 | 6 | LM-30 | 「出た?/まだ?」ボタン全面撤去 + location gate 遅刻連絡 v2（§9.5-9.6。v1 出荷なし） | **PR #324・local 検証 green、staging E2E 待ち**: T-0 question/callback/fallback と free-text trigger を撤去。`edited_message` 購読 code、live-location TTL upsert、route 判定、event 単位 atomic dedup、Resend + 宛先なし正直報告を実装。最新 `origin/dev` rebase 後の `npm test` exit 0、targeted tests exit 0、calendar eval 21/21、late eval 12/12、禁止文言/legacy path 0件。code commit `ef95da891`、PR https://github.com/Daisuke134/anicca-products/pull/324 。Railway CLI login が browser 再認証待ちのため staging deploy/smoke は Fable E2E 時に実行し、additive migration も同時適用する。prod webhook はこの PR では変更しない。 | **PR 済み・staging 認証待ち** |
-| 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | 実 TG 着信 + 解錠済み gate に送られないこと | pending |
+| 7 | LM-32 | feature discovery 告知 loop（週1・未解錠 gate のみ・§9.11 copy） | **PR #325・Fable 実 TG E2E 待ち**: location/payout gate 判定、7日境界 throttle、未解錠だけの rotation、i18n 逐語 copy、inline callback、additive migration、1-user E2E hook を実装。`npm test` = 273 tests / fail 0 / exit 0。code commit `6034c3c`、PR https://github.com/Daisuke134/anicca-products/pull/325 。Railway staging deploy は CLI 再認証待ちのため skip（BLOCKED-on-Dais）。 | **PR 済み・staging 認証/実 TG E2E 待ち** |
 | 8 | LM-33 | control panel web UI（§9.9。gpt-tasteskill → frontend-design） | 実ブラウザで5要素表示 + gate 状態が実データ | pending |
 | 9 | MKT | marketing video loop 毎日1本（§9.2 + §9.10-9.11 脚本銀行16本。slideshow 廃止） | 7日連続人手ゼロで IG(claude-p)+TT(Postiz cmp9txjdp01c8oh0yb6dhlarr) 実投稿 URL | pending |
 | 10 | DEV | dev loop general 化（§9.3。feedback→PII scrub(user側)→issue→auto-PR） | 実 feedback 1件が PII 除去済み issue → merge された PR になる | pending |

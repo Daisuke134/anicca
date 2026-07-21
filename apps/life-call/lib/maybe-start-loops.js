@@ -9,7 +9,7 @@
 // the loops never have two writers.
 "use strict";
 
-// PURE: (env, starters) -> {started, reason}. Calls the 4 starters ONLY when loops are enabled.
+// PURE: (env, starters) -> {started, reason}. Calls the starters ONLY when loops are enabled.
 // Default is ENABLED so existing Railway behaviour is unchanged unless LIFE_RUN_LOOPS is explicitly "false".
 function maybeStartLoops(env, starters) {
   const flag = String((env && env.LIFE_RUN_LOOPS) || "").trim().toLowerCase();
@@ -20,6 +20,7 @@ function maybeStartLoops(env, starters) {
   starters.startTravelLoop();
   starters.startAskLoop();
   starters.startOnboardLoop();
+  starters.startDiscoveryLoop();
   return { started: true, reason: "in-process scheduler loops started (Railway/standalone mode)" };
 }
 
