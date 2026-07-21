@@ -2,7 +2,7 @@
   "featureName": "life-manager-daily-preflight",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "1c",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -39,11 +39,23 @@
       "to": "1c",
       "timestamp": "2026-07-21T09:55:23.414Z",
       "reason": "Fresh artifact-only Phase 1c iteration-2 adversarial spec review started"
+    },
+    {
+      "from": "1c",
+      "to": "1a",
+      "timestamp": "2026-07-21T10:01:40.332Z",
+      "reason": "Iteration-2 spec review FAIL routed to earliest accepted affected phase 1a (FIND-005; FIND-006 follows in Phase 1b)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-21T10:02:21.891Z",
+      "reason": "FIND-005 Phase 1a correction complete; entering Phase 1b for FIND-006 command-contract correction"
     }
   ],
   "iterations": {
-    "1a": 2,
-    "1b": 2,
+    "1a": 3,
+    "1b": 3,
     "1c": 2
   },
   "proofObligations": [
@@ -474,7 +486,8 @@
         "status": "active",
         "linkedBeads": [
           "BEAD-013",
-          "BEAD-035"
+          "BEAD-035",
+          "BEAD-032"
         ],
         "createdAt": "2026-07-21T08:56:28.917Z",
         "createdInPhase": "1b",
@@ -552,7 +565,8 @@
           "BEAD-014",
           "BEAD-015",
           "BEAD-031",
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-035"
         ],
         "createdAt": "2026-07-21T08:56:28.920Z",
         "createdInPhase": "1b",
@@ -581,7 +595,8 @@
         "linkedBeads": [
           "BEAD-020",
           "BEAD-021",
-          "BEAD-022"
+          "BEAD-022",
+          "BEAD-025"
         ],
         "createdAt": "2026-07-21T08:56:28.921Z",
         "createdInPhase": "1b",
@@ -622,7 +637,8 @@
         "linkedBeads": [
           "BEAD-025",
           "BEAD-027",
-          "BEAD-028"
+          "BEAD-028",
+          "BEAD-030"
         ],
         "createdAt": "2026-07-21T08:56:28.922Z",
         "createdInPhase": "1b",
@@ -647,5 +663,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-21T08:54:18.426Z",
-  "updatedAt": "2026-07-21T09:56:27.643Z"
+  "updatedAt": "2026-07-21T10:06:44.711Z"
 }
