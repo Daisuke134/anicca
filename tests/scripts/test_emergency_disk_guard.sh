@@ -9,6 +9,7 @@ trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/home/.claude/projects/incident" "$TMP/home/gig" "$TMP/home/.openclaw/state"
 mkdir -p "$TMP/home/.cloak/profiles/inactive/Default/Cache" "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" "$TMP/home/.cloak/profiles/inactive/Default/GPUCache"
 mkdir -p "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle"
+mkdir -p "$TMP/home/.cache/codex-runtimes"
 printf 'active evidence\n' > "$TMP/home/.claude/projects/incident/active.jsonl"
 printf '4242\n' > "$TMP/home/gig/.pass.lock"
 printf 'cookie identity\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cookies"
@@ -17,6 +18,7 @@ printf 'cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cache/data"
 printf 'code cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Code Cache/data"
 printf 'gpu cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/GPUCache/data"
 printf 'active vm state\n' > "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle/sessiondata.img"
+printf 'runtime cache\n' > "$TMP/home/.cache/codex-runtimes/runtime"
 touch -t 202001010000 "$TMP/home/.claude/projects/incident/active.jsonl" "$TMP/home/gig/.pass.lock"
 
 cat > "$TMP/processes.tsv" <<'EOF'
@@ -47,6 +49,7 @@ test ! -e "$TMP/home/.cloak/profiles/inactive/Default/GPUCache" || { echo 'activ
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Cookies" || { echo 'browser cookie identity was deleted'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Login Data" || { echo 'browser login identity was deleted'; exit 1; }
 test -e "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle/sessiondata.img" || { echo 'active VM state was unlinked'; exit 1; }
+test ! -e "$TMP/home/.cache/codex-runtimes" || { echo 'unused Codex runtime cache was not reclaimed'; exit 1; }
 test -e "$TMP/killed.tsv" || { echo 'missing kill ledger'; exit 1; }
 
 test "$(cut -f1 "$TMP/killed.tsv" | sort | tr '\n' ' ')" = '1103 ' || {

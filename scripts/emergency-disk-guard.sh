@@ -216,6 +216,9 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   reclaim_path "$HOME_DIR/.cache/whisper" whisper ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/torch" torch ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/uv" uv ephemeral-cache package-redownload
+  if [ -d "$HOME_DIR/.cache/codex-runtimes" ] && ! path_is_open "$HOME_DIR/.cache/codex-runtimes"; then
+    reclaim_path "$HOME_DIR/.cache/codex-runtimes" codex ephemeral-cache runtime-redownload
+  fi
   reclaim_path "$HOME_DIR/Library/Caches/pip" pip ephemeral-cache package-redownload
   if ! pgrep -f '/Library/Caches/ms-playwright/' >/dev/null 2>&1; then
     reclaim_path "$HOME_DIR/Library/Caches/ms-playwright" playwright ephemeral-cache browser-redownload
