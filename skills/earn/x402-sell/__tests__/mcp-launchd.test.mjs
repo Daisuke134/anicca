@@ -48,7 +48,7 @@ for (const instance of INSTANCES) {
     if (instance.funnelPort) {
       assert.ok(
         boot.includes(
-          `tailscale funnel --bg --https=${instance.funnelPort} --set-path=/mcp http://127.0.0.1:${instance.mcpPort}`
+          `tailscale funnel --bg --https=${instance.funnelPort} --set-path=/mcp http://127.0.0.1:${instance.mcpPort}/mcp`
         )
       );
     } else {
