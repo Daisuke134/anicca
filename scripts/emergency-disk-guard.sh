@@ -103,6 +103,15 @@ heartbeat_age() {
   printf '%s\n' "$(($(now_epoch) - mtime))"
 }
 
+profile_is_active() {
+  local profile="$1"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    [ "${EMERGENCY_GUARD_TEST_ACTIVE_PROFILE:-}" = "$profile" ]
+    return
+  fi
+  pgrep -f -- "--user-data-dir=$profile([[:space:]]|$)" >/dev/null 2>&1
+}
+
 classify_worker() {
   local pid="$1" elapsed="$2" cmdline="$3" hb_age
   case "$cmdline" in
@@ -198,8 +207,9 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   fi
   for profile in "$HOME_DIR"/.cloak/profiles/*; do
     [ -d "$profile" ] || continue
-    if [ "$TEST_MODE" -eq 0 ] && pgrep -f -- "--user-data-dir=$profile([[:space:]]|$)" >/dev/null 2>&1; then
-      printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$profile" preserve active-browser-profile "$POLICY_VERSION" >> "$DECISION_LEDGER"
+    if profile_is_active "$profile"; then
+      printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$profile" preserve active-browser-identity-preserved "$POLICY_VERSION" >> "$DECISION_LEDGER"
+      reclaim_path "$profile/Default/Cache" cloakbrowser active-ephemeral-cache browser-cache-regenerated
       continue
     fi
     for cache in \

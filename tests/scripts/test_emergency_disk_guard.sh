@@ -28,6 +28,7 @@ EMERGENCY_GUARD_TEST_FREE_GB=2 \
 EMERGENCY_GUARD_TEST_NOW_EPOCH=100000 \
 EMERGENCY_GUARD_TEST_PROCESS_FIXTURE="$TMP/processes.tsv" \
 EMERGENCY_GUARD_TEST_ENABLE_RECLAIM=1 \
+EMERGENCY_GUARD_TEST_ACTIVE_PROFILE="$TMP/home/.cloak/profiles/inactive" \
 EMERGENCY_GUARD_TEST_LOCK_OWNER=1101 \
 EMERGENCY_GUARD_TEST_HEARTBEAT_PID=1102 \
 EMERGENCY_GUARD_TEST_KILL_LEDGER="$TMP/killed.tsv" \
@@ -36,7 +37,7 @@ bash "$GUARD"
 test -e "$TMP/home/.claude/projects/incident/active.jsonl" || { echo 'active transcript was deleted'; exit 1; }
 test -e "$TMP/home/gig/.pass.lock" || { echo 'active lock was deleted'; exit 1; }
 test ! -e "$TMP/home/.cloak/profiles/inactive/Default/Cache" || { echo 'regenerable cache was not reclaimed'; exit 1; }
-test ! -e "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" || { echo 'regenerable code cache was not reclaimed'; exit 1; }
+test -e "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" || { echo 'active browser code cache was deleted'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Cookies" || { echo 'browser cookie identity was deleted'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Login Data" || { echo 'browser login identity was deleted'; exit 1; }
 test -e "$TMP/killed.tsv" || { echo 'missing kill ledger'; exit 1; }
@@ -51,5 +52,6 @@ grep -q $'^1101\tpreserve\tlock-owner$' "$TMP/home/.openclaw/state/emergency-dis
 grep -q $'^1102\tpreserve\tfresh-heartbeat$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q $'^1103\tkill\tstale-runaway$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 grep -q $'^1104\tpreserve\tgig-core$' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
+grep -q 'active-browser-identity-preserved' "$TMP/home/.openclaw/state/emergency-disk-guard-decisions.tsv"
 
 echo 'PASS: core + normal worker + active evidence preserved; only stale runaway killed'
