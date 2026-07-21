@@ -7,34 +7,29 @@ criteria:
     dimension: spec_fidelity
     description: All requirements, including legal strict Phase 1c gate semantics, are implemented without unsupported production or process claims.
     weight: 0.25
-    passThreshold: >-
-      PASS iff every REQ-001..018 reaches at least one PROP and CRIT, iteration-1/2 review outputs remain immutable, the fresh iteration-3 Phase 1c verdict is independently recorded with humanApproved=false until explicit approval, and transition to 2a is rejected unless iteration-3 adversaryVerdict=PASS and humanApproved=true.
+    passThreshold: "PASS iff every REQ-001..018 reaches at least one PROP and CRIT, iteration-1/2 review outputs remain immutable, the fresh iteration-3 Phase 1c verdict is independently recorded with humanApproved=false until explicit approval, and transition to 2a is rejected unless iteration-3 adversaryVerdict=PASS and humanApproved=true."
   - id: CRIT-002
     dimension: edge_case_coverage
     description: Receipt intervals and every final dependency checkedAt/current-run correlation boundary are deterministically covered.
     weight: 0.20
-    passThreshold: >-
-      PASS iff the fixed receipt audit is 10/10 and the eight checkedAt cases pass: exact 900000 ms boundary accepted, and one-ms stale, one-ms future, malformed, non-finite, before-run-start, mixed-run, and fresh-only inputs rejected; raw correlation IDs are absent and runRef is the current-run one-way hash.
+    passThreshold: "PASS iff the fixed receipt audit is 10/10 and the eight checkedAt cases pass: exact 900000 ms boundary accepted, and one-ms stale, one-ms future, malformed, non-finite, before-run-start, mixed-run, and fresh-only inputs rejected; raw correlation IDs are absent and runRef is the current-run one-way hash."
   - id: CRIT-003
     dimension: implementation_correctness
     description: Exact correlation, polling boundaries, call/deadline bounds, and one-shot budgets remain fail-closed in production behavior.
     weight: 0.20
-    passThreshold: >-
-      PASS iff Telegram reply attempts are exactly bounded at 6 with 2000 ms delays, webhook attempts at 3 with 2000 ms delays, email attempts at 6 with 3000 ms delays, attempt 7/4/7 never occurs, every provider call is bounded at 15000 ms, collector deadlines are 179000/120000/179000 ms, timeout after send produces no duplicate send and zero phone calls, and command results are baseline 51/51 plus new 63/63, full final 434/434, eval 33/33, temporal 18/18, and poll/deadline 12/12.
+    passThreshold: "PASS iff Telegram reply attempts are exactly bounded at 6 with 2000 ms delays, webhook attempts at 3 with 2000 ms delays, email attempts at 6 with 3000 ms delays, attempt 7/4/7 never occurs, every provider call is bounded at 15000 ms, collector deadlines are 179000/120000/179000 ms, timeout after send produces no duplicate send and zero phone calls, and command results are baseline 51/51 plus new 63/63, full final 434/434, eval 33/33, temporal 18/18, and poll/deadline 12/12."
   - id: CRIT-004
     dimension: structural_integrity
     description: Production provenance is fixed and test injection cannot enter production collectors, transports, receipt bounds, or CLI proof inputs.
     weight: 0.15
-    passThreshold: >-
-      PASS iff immutable provenance 26/26 plus new purity 6/6 equals 32/32, with zero production injection paths, zero accidental real-provider fallback, current-run runRef derivation, no raw-correlation serialization, and atomic report/no-artifact-on-failure behavior.
+    passThreshold: "PASS iff immutable provenance 26/26 plus new purity 6/6 equals 32/32, with zero production injection paths, zero accidental real-provider fallback, current-run runRef derivation, no raw-correlation serialization, and atomic report/no-artifact-on-failure behavior."
   - id: CRIT-005
     dimension: verification_readiness
     description: Evidence uses the closed typed final schema, is reproducible from a bound snapshot, and preserves historical artifacts.
     weight: 0.20
-    passThreshold: >-
-      PASS iff final schema tests are exactly 45/45 (2 positive + 43 fail-closed negative), verifier contracts are 12/12, every command writes its declared snapshot-bound evidence with exact exit/count, planned production modules lib/daily-preflight.js, lib/daily-preflight-collectors.js, and lib/transport/mail-gog.js plus every additional production module actually changed during Phase 2 each independently have lines >=90.00% and functions >=90.00%, and the coverage verifier compares the Phase 2 production diff with the coverage table and rejects any missing module, combined-only average, sub-threshold lines, or sub-threshold functions; VCSDD state/runtime/gates, REQ-PROP-CRIT traceability, review/artifact schemas, safe ISO-aware secret/PII scan, git/diff/staged scope, and historical SHA-256+0600 checks all exit 0, and the separately authorized single L3 produces exactly one closed 9/9 TG=1/email=1/phone=0 same-run report or no artifact on failure.
+    passThreshold: "PASS iff final schema tests are exactly 45/45 (2 positive + 43 fail-closed negative), verifier contracts are 12/12, every command writes its declared snapshot-bound evidence with exact exit/count, planned production modules lib/daily-preflight.js, lib/daily-preflight-collectors.js, and lib/transport/mail-gog.js plus every additional production module actually changed during Phase 2 each independently have lines >=90.00% and functions >=90.00%, and the coverage verifier compares the Phase 2 production diff with the coverage table and rejects any missing module, combined-only average, sub-threshold lines, or sub-threshold functions; VCSDD state/runtime/gates, REQ-PROP-CRIT traceability, review/artifact schemas, safe ISO-aware secret/PII scan, git/diff/staged scope, and historical SHA-256+0600 checks all exit 0, and the separately authorized single L3 produces exactly one closed 9/9 TG=1/email=1/phone=0 same-run report or no artifact on failure."
 negotiationRound: 0
-status: draft
+status: approved
 ---
 
 # Sprint 1 Contract Draft
