@@ -32,3 +32,5 @@
 {"timestamp":"2026-07-21T09:45:05.291Z","event":"bead_linked","featureName":"life-manager-daily-preflight","from":"BEAD-028","to":"BEAD-035","phase":"1a"}
 {"timestamp":"2026-07-21T09:45:05.291Z","event":"phase1_traceability_refreshed","featureName":"life-manager-daily-preflight","phase":"1a","paths":["REQ-006->PROP-006->CRIT-003","REQ-013->PROP-007->CRIT-005","REQ-018->PROP-010->CRIT-001/CRIT-005"]}
 {"timestamp":"2026-07-21T09:45:05.292Z","event":"phase_transition","featureName":"life-manager-daily-preflight","from":"1a","to":"1b","iteration":2,"phase":"1b"}
+{"timestamp":"2026-07-21T09:55:23.416Z","event":"phase_transition","featureName":"life-manager-daily-preflight","from":"1b","to":"1c","iteration":2,"phase":"1c"}
+{"timestamp":"2026-07-21T09:56:27.645Z","event":"gate_recorded","featureName":"life-manager-daily-preflight","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}

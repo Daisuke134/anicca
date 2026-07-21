@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "proof_gap",
+  "severity": "high",
+  "description": "The exact command matrix is not a complete binary adjudication plan. Focused L1 explicitly permits its expected count to be changed later, while full regression fixes the baseline count even though Phase 2 adds test files; PROP-009 historical hash/mode immutability, PROP-010 gate/contract/traceability assertions, artifact-schema and safe secret/PII scans have no exact executable command with expected count and evidence path; and the separately authorized L3 command named by the matrix is absent. Replace mutable or baseline-only counts with exact final RED/GREEN contracts, and add exact executable commands, exits/counts, bound evidence paths, and binary thresholds for every omitted process, historical-immutability, artifact-schema, secret/PII, traceability, and controlled-L3 obligation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/verification-architecture.md",
+    "lineRange": "79-94",
+    "snippet": "future tests update the declared count before GREEN; network/provider credentials absent except the separately authorized L3 command"
+  },
+  "routeToPhase": "1b"
+}

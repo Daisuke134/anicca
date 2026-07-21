@@ -1,0 +1,18 @@
+{
+  "reviewType": "spec",
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "contracts/sprint-1.md",
+    "evidence/original-tdd-log-provenance.md",
+    "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md#9.5,10-row-8d,10.0,10.2,10.3"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "reviewBoundary": "fresh artifact-only Phase 1c iteration 2; iteration-1 resolution is routing-only; draft contract is traceability input only; provenance file declares immutable evidence boundaries"
+}
