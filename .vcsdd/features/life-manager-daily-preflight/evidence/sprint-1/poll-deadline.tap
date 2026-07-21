@@ -1,0 +1,743 @@
+✔ poll: Telegram reply attempt 6 is the final allowed attempt (0.789584ms)
+✔ poll: Telegram reply attempt 7 is forbidden (0.059042ms)
+✔ poll: Telegram webhook attempt 3 is the final allowed attempt (0.04825ms)
+✔ poll: Telegram webhook attempt 4 is forbidden (0.043292ms)
+✔ poll: email inbox attempt 6 is the final allowed attempt (0.0395ms)
+✔ poll: email inbox attempt 7 is forbidden (0.040292ms)
+✖ timeout: Telegram Bot API calls are bounded at 15000 ms (0.795875ms)
+✖ timeout: Resend calls are bounded at 15000 ms (0.140834ms)
+✖ timeout: gog inbox calls are bounded at 15000 ms (0.121458ms)
+✖ deadline: Telegram collector is bounded at 179000 ms (0.230208ms)
+✖ deadline: email collector is bounded at 120000 ms (0.227709ms)
+✖ deadline: parallel controlled collection is bounded at 179000 ms (0.549125ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 6
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.822042
+
+✖ failing tests:
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ timeout: Telegram Bot API calls are bounded at 15000 ms (0.795875ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /15000/. Input:
+
+  'async function callTelegramBot(token, method) {\n' +
+    '  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n' +
+    '    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n' +
+    '  });\n' +
+    '  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n' +
+    '  const body = await response.json().catch(() => null);\n' +
+    '  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n' +
+    '  return body;\n' +
+    '}\n' +
+    '\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'async function callTelegramBot(token, method) {\n  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n  });\n  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n  const body = await response.json().catch(() => null);\n  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n  return body;\n}\n\n',
+    expected: /15000/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ timeout: Resend calls are bounded at 15000 ms (0.140834ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /15000/. Input:
+
+  'async function collectProductionEmail() {\n' +
+    '    const env = process.env;\n' +
+    '    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n' +
+    '    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n' +
+    '      .map(address => address.trim().toLowerCase()).filter(Boolean);\n' +
+    '    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n' +
+    '    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n' +
+    '    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n' +
+    '    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n' +
+    '      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n' +
+    '    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n' +
+    '    let receipt;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n' +
+    '      if (receipt && receipt.id) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(3000);\n' +
+    '    }\n' +
+    '    return validateEmailObservation({ recipient, receiveIdentity,\n' +
+    '      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n' +
+    '      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n' +
+    '      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n' +
+    '      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n' +
+    '    }, Date.now(), allowedRecipients);\n' +
+    '}\n' +
+    '\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'async function collectProductionEmail() {\n    const env = process.env;\n    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n      .map(address => address.trim().toLowerCase()).filter(Boolean);\n    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n    let receipt;\n    for (let index = 0; index < 6; index += 1) {\n      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n      if (receipt && receipt.id) break;\n      if (index + 1 < 6) await sleepMs(3000);\n    }\n    return validateEmailObservation({ recipient, receiveIdentity,\n      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n    }, Date.now(), allowedRecipients);\n}\n\n',
+    expected: /15000/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ timeout: gog inbox calls are bounded at 15000 ms (0.121458ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /findReceipt\([^)]*15000/. Input:
+
+  'async function collectProductionEmail() {\n' +
+    '    const env = process.env;\n' +
+    '    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n' +
+    '    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n' +
+    '      .map(address => address.trim().toLowerCase()).filter(Boolean);\n' +
+    '    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n' +
+    '    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n' +
+    '    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n' +
+    '    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n' +
+    '      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n' +
+    '    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n' +
+    '    let receipt;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n' +
+    '      if (receipt && receipt.id) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(3000);\n' +
+    '    }\n' +
+    '    return validateEmailObservation({ recipient, receiveIdentity,\n' +
+    '      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n' +
+    '      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n' +
+    '      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n' +
+    '      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n' +
+    '    }, Date.now(), allowedRecipients);\n' +
+    '}\n' +
+    '\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'async function collectProductionEmail() {\n    const env = process.env;\n    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n      .map(address => address.trim().toLowerCase()).filter(Boolean);\n    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n    let receipt;\n    for (let index = 0; index < 6; index += 1) {\n      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n      if (receipt && receipt.id) break;\n      if (index + 1 < 6) await sleepMs(3000);\n    }\n    return validateEmailObservation({ recipient, receiveIdentity,\n      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n    }, Date.now(), allowedRecipients);\n}\n\n',
+    expected: /findReceipt\([^)]*15000/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ deadline: Telegram collector is bounded at 179000 ms (0.230208ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /TELEGRAM_COLLECTOR_DEADLINE_MS\s*=\s*179000/. Input:
+
+  '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { execFile } = require("node:child_process");\n' +
+    'const { promisify } = require("node:util");\n' +
+    'const { resendSend } = require("./mail-resend.js");\n' +
+    'const { makeGogMail } = require("./transport/mail-gog.js");\n' +
+    '\n' +
+    'const execFileAsync = promisify(execFile);\n' +
+    'const PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\n' +
+    'const SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\n' +
+    'const REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    '\n' +
+    'function closedFailure(code) {\n' +
+    '  const error = new Error(code);\n' +
+    '  error.classification = code;\n' +
+    '  return error;\n' +
+    '}\n' +
+    '\n' +
+    'function hashRef(value) {\n' +
+    '  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n' +
+    '}\n' +
+    '\n' +
+    'function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n' +
+    '\n' +
+    'async function sanitizedCall(code, operation) {\n' +
+    '  try { return await operation(); } catch { throw closedFailure(code); }\n' +
+    '}\n' +
+    '\n' +
+    'function serviceBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'async function callTelegramBot(token, method) {\n' +
+    '  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n' +
+    '    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n' +
+    '  });\n' +
+    '  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n' +
+    '  const body = await response.json().catch(() => null);\n' +
+    '  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n' +
+    '  return body;\n' +
+    '}\n' +
+    '\n' +
+    'async function callPinnedSidecar(args) {\n' +
+    '  try {\n' +
+    '    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n' +
+    '      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n' +
+    '    });\n' +
+    '    const value = JSON.parse(stdout);\n' +
+    '    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n' +
+    '    return value;\n' +
+    '  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n' +
+    '}\n' +
+    '\n' +
+    'async function writePanelCommand(peer, command) {\n' +
+    '  const result = await callPinnedSidecar(["send", peer, command]);\n' +
+    '  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n' +
+    '  return { id: result.sent_id, atMs: Date.now() };\n' +
+    '}\n' +
+    '\n' +
+    'async function readPanelReplies(peer) {\n' +
+    '  const result = await callPinnedSidecar(["read", peer, "20"]);\n' +
+    '  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n' +
+    '    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n' +
+    '  }));\n' +
+    '}\n' +
+    '\n' +
+    'function validateTelegramObservation(value, nowMs) {\n' +
+    '  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n' +
+    '      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n' +
+    '      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n' +
+    '  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n' +
+    '  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n' +
+    '    throw closedFailure("telegram_allowed_updates");\n' +
+    '  }\n' +
+    '  if (value.lastError) throw closedFailure("telegram_provider_error");\n' +
+    '  const samples = value.pendingUpdateSamples;\n' +
+    '  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n' +
+    '    throw closedFailure("telegram_backlog");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n' +
+    '    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n' +
+    '    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n' +
+    '    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionTelegram() {\n' +
+    '    const env = process.env;\n' +
+    '    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n' +
+    '    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n' +
+    '    const username = me && me.result && me.result.username;\n' +
+    '    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n' +
+    '    const peer = `@${username}`;\n' +
+    '    const nonce = crypto.randomBytes(12).toString("hex");\n' +
+    '    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n' +
+    '    let reply;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n' +
+    '      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n' +
+    '      if (reply) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    if (!reply) throw closedFailure("telegram_reply_timeout");\n' +
+    '    const samples = []; let info;\n' +
+    '    for (let index = 0; index < 3; index += 1) {\n' +
+    '      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n' +
+    '      samples.push(Number(info && info.pending_update_count));\n' +
+    '      if (samples.at(-1) === 0) break;\n' +
+    '      if (index + 1 < 3) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n' +
+    '    return validateTelegramObservation({\n' +
+    '      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n' +
+    '      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n' +
+    '      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      pendingUpdateSamples: samples,\n' +
+    '    }, Date.now());\n' +
+    '}\n' +
+    '\n' +
+    'function validateEmailObservation(value, nowMs, allowedRecipients = []) {\n' +
+    '  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n' +
+    '  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n' +
+    '    throw closedFailure("email_recipient_not_controlled");\n' +
+    '  }\n' +
+    '  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n' +
+    '  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n' +
+    '  const lowerMs = value.receivedAtLowerMs;\n' +
+    '  const upperMs = value.receivedAtUpperMs;\n' +
+    '  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n' +
+    '      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n' +
+    '      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n' +
+    '    throw closedFailure("email_receipt_stale");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n' +
+    '    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n' +
+    '    messageIdRef: hashRef(value.receiptMessageId),\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionEmail() {\n' +
+    '    const env = process.env;\n' +
+    '    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n' +
+    '    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n' +
+    '      .map(address => address.trim().toLowerCase()).filter(Boolean);\n' +
+    '    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n' +
+    '    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n' +
+    '    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n' +
+    '    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n' +
+    '      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n' +
+    '    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n' +
+    '    let receipt;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n' +
+    '      if (receipt && receipt.id) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(3000);\n' +
+    '    }\n' +
+    '    return validateEmailObservation({ recipient, receiveIdentity,\n' +
+    '      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n' +
+    '      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n' +
+    '      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n' +
+    '      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n' +
+    '    }, Date.now(), allowedRecipients);\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionControlledL3() {\n' +
+    '  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n' +
+    '  return Object.freeze({ telegram, email });\n' +
+    '}\n' +
+    '\n' +
+    'module.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use strict";\n\nconst crypto = require("node:crypto");\nconst { execFile } = require("node:child_process");\nconst { promisify } = require("node:util");\nconst { resendSend } = require("./mail-resend.js");\nconst { makeGogMail } = require("./transport/mail-gog.js");\n\nconst execFileAsync = promisify(execFile);\nconst PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\nconst SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\nconst REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst MAX_AGE_MS = 15 * 60 * 1000;\n\nfunction closedFailure(code) {\n  const error = new Error(code);\n  error.classification = code;\n  return error;\n}\n\nfunction hashRef(value) {\n  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n}\n\nfunction sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n\nasync function sanitizedCall(code, operation) {\n  try { return await operation(); } catch { throw closedFailure(code); }\n}\n\nfunction serviceBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n}\n\nasync function callTelegramBot(token, method) {\n  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n  });\n  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n  const body = await response.json().catch(() => null);\n  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n  return body;\n}\n\nasync function callPinnedSidecar(args) {\n  try {\n    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n    });\n    const value = JSON.parse(stdout);\n    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n    return value;\n  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n}\n\nasync function writePanelCommand(peer, command) {\n  const result = await callPinnedSidecar(["send", peer, command]);\n  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n  return { id: result.sent_id, atMs: Date.now() };\n}\n\nasync function readPanelReplies(peer) {\n  const result = await callPinnedSidecar(["read", peer, "20"]);\n  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n  }));\n}\n\nfunction validateTelegramObservation(value, nowMs) {\n  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n    throw closedFailure("telegram_allowed_updates");\n  }\n  if (value.lastError) throw closedFailure("telegram_provider_error");\n  const samples = value.pendingUpdateSamples;\n  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n    throw closedFailure("telegram_backlog");\n  }\n  return Object.freeze({\n    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n  });\n}\n\nasync function collectProductionTelegram() {\n    const env = process.env;\n    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n    const username = me && me.result && me.result.username;\n    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n    const peer = `@${username}`;\n    const nonce = crypto.randomBytes(12).toString("hex");\n    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n    let reply;\n    for (let index = 0; index < 6; index += 1) {\n      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n      if (reply) break;\n      if (index + 1 < 6) await sleepMs(2000);\n    }\n    if (!reply) throw closedFailure("telegram_reply_timeout");\n    const samples = []; let info;\n    for (let index = 0; index < 3; index += 1) {\n      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n      samples.push(Number(info && info.pending_update_count));\n      if (samples.at(-1) === 0) break;\n      if (index + 1 < 3) await sleepMs(2000);\n    }\n    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n    return validateTelegramObservation({\n      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n      pendingUpdateSamples: samples,\n    }, Date.now());\n}\n\nfunction validateEmailObservation(value, nowMs, allowedRecipients = []) {\n  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n    throw closedFailure("email_recipient_not_controlled");\n  }\n  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n  const lowerMs = value.receivedAtLowerMs;\n  const upperMs = value.receivedAtUpperMs;\n  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n    throw closedFailure("email_receipt_stale");\n  }\n  return Object.freeze({\n    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n    messageIdRef: hashRef(value.receiptMessageId),\n  });\n}\n\nasync function collectProductionEmail() {\n    const env = process.env;\n    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n      .map(address => address.trim().toLowerCase()).filter(Boolean);\n    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n    let receipt;\n    for (let index = 0; index < 6; index += 1) {\n      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n      if (receipt && receipt.id) break;\n      if (index + 1 < 6) await sleepMs(3000);\n    }\n    return validateEmailObservation({ recipient, receiveIdentity,\n      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n    }, Date.now(), allowedRecipients);\n}\n\nasync function collectProductionControlledL3() {\n  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n  return Object.freeze({ telegram, email });\n}\n\nmodule.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n',
+    expected: /TELEGRAM_COLLECTOR_DEADLINE_MS\s*=\s*179000/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ deadline: email collector is bounded at 120000 ms (0.227709ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /EMAIL_COLLECTOR_DEADLINE_MS\s*=\s*120000/. Input:
+
+  '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { execFile } = require("node:child_process");\n' +
+    'const { promisify } = require("node:util");\n' +
+    'const { resendSend } = require("./mail-resend.js");\n' +
+    'const { makeGogMail } = require("./transport/mail-gog.js");\n' +
+    '\n' +
+    'const execFileAsync = promisify(execFile);\n' +
+    'const PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\n' +
+    'const SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\n' +
+    'const REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    '\n' +
+    'function closedFailure(code) {\n' +
+    '  const error = new Error(code);\n' +
+    '  error.classification = code;\n' +
+    '  return error;\n' +
+    '}\n' +
+    '\n' +
+    'function hashRef(value) {\n' +
+    '  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n' +
+    '}\n' +
+    '\n' +
+    'function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n' +
+    '\n' +
+    'async function sanitizedCall(code, operation) {\n' +
+    '  try { return await operation(); } catch { throw closedFailure(code); }\n' +
+    '}\n' +
+    '\n' +
+    'function serviceBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'async function callTelegramBot(token, method) {\n' +
+    '  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n' +
+    '    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n' +
+    '  });\n' +
+    '  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n' +
+    '  const body = await response.json().catch(() => null);\n' +
+    '  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n' +
+    '  return body;\n' +
+    '}\n' +
+    '\n' +
+    'async function callPinnedSidecar(args) {\n' +
+    '  try {\n' +
+    '    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n' +
+    '      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n' +
+    '    });\n' +
+    '    const value = JSON.parse(stdout);\n' +
+    '    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n' +
+    '    return value;\n' +
+    '  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n' +
+    '}\n' +
+    '\n' +
+    'async function writePanelCommand(peer, command) {\n' +
+    '  const result = await callPinnedSidecar(["send", peer, command]);\n' +
+    '  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n' +
+    '  return { id: result.sent_id, atMs: Date.now() };\n' +
+    '}\n' +
+    '\n' +
+    'async function readPanelReplies(peer) {\n' +
+    '  const result = await callPinnedSidecar(["read", peer, "20"]);\n' +
+    '  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n' +
+    '    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n' +
+    '  }));\n' +
+    '}\n' +
+    '\n' +
+    'function validateTelegramObservation(value, nowMs) {\n' +
+    '  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n' +
+    '      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n' +
+    '      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n' +
+    '  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n' +
+    '  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n' +
+    '    throw closedFailure("telegram_allowed_updates");\n' +
+    '  }\n' +
+    '  if (value.lastError) throw closedFailure("telegram_provider_error");\n' +
+    '  const samples = value.pendingUpdateSamples;\n' +
+    '  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n' +
+    '    throw closedFailure("telegram_backlog");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n' +
+    '    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n' +
+    '    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n' +
+    '    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionTelegram() {\n' +
+    '    const env = process.env;\n' +
+    '    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n' +
+    '    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n' +
+    '    const username = me && me.result && me.result.username;\n' +
+    '    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n' +
+    '    const peer = `@${username}`;\n' +
+    '    const nonce = crypto.randomBytes(12).toString("hex");\n' +
+    '    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n' +
+    '    let reply;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n' +
+    '      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n' +
+    '      if (reply) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    if (!reply) throw closedFailure("telegram_reply_timeout");\n' +
+    '    const samples = []; let info;\n' +
+    '    for (let index = 0; index < 3; index += 1) {\n' +
+    '      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n' +
+    '      samples.push(Number(info && info.pending_update_count));\n' +
+    '      if (samples.at(-1) === 0) break;\n' +
+    '      if (index + 1 < 3) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n' +
+    '    return validateTelegramObservation({\n' +
+    '      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n' +
+    '      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n' +
+    '      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      pendingUpdateSamples: samples,\n' +
+    '    }, Date.now());\n' +
+    '}\n' +
+    '\n' +
+    'function validateEmailObservation(value, nowMs, allowedRecipients = []) {\n' +
+    '  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n' +
+    '  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n' +
+    '    throw closedFailure("email_recipient_not_controlled");\n' +
+    '  }\n' +
+    '  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n' +
+    '  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n' +
+    '  const lowerMs = value.receivedAtLowerMs;\n' +
+    '  const upperMs = value.receivedAtUpperMs;\n' +
+    '  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n' +
+    '      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n' +
+    '      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n' +
+    '    throw closedFailure("email_receipt_stale");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n' +
+    '    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n' +
+    '    messageIdRef: hashRef(value.receiptMessageId),\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionEmail() {\n' +
+    '    const env = process.env;\n' +
+    '    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n' +
+    '    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n' +
+    '      .map(address => address.trim().toLowerCase()).filter(Boolean);\n' +
+    '    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n' +
+    '    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n' +
+    '    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n' +
+    '    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n' +
+    '      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n' +
+    '    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n' +
+    '    let receipt;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n' +
+    '      if (receipt && receipt.id) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(3000);\n' +
+    '    }\n' +
+    '    return validateEmailObservation({ recipient, receiveIdentity,\n' +
+    '      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n' +
+    '      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n' +
+    '      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n' +
+    '      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n' +
+    '    }, Date.now(), allowedRecipients);\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionControlledL3() {\n' +
+    '  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n' +
+    '  return Object.freeze({ telegram, email });\n' +
+    '}\n' +
+    '\n' +
+    'module.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use strict";\n\nconst crypto = require("node:crypto");\nconst { execFile } = require("node:child_process");\nconst { promisify } = require("node:util");\nconst { resendSend } = require("./mail-resend.js");\nconst { makeGogMail } = require("./transport/mail-gog.js");\n\nconst execFileAsync = promisify(execFile);\nconst PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\nconst SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\nconst REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst MAX_AGE_MS = 15 * 60 * 1000;\n\nfunction closedFailure(code) {\n  const error = new Error(code);\n  error.classification = code;\n  return error;\n}\n\nfunction hashRef(value) {\n  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n}\n\nfunction sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n\nasync function sanitizedCall(code, operation) {\n  try { return await operation(); } catch { throw closedFailure(code); }\n}\n\nfunction serviceBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n}\n\nasync function callTelegramBot(token, method) {\n  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n  });\n  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n  const body = await response.json().catch(() => null);\n  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n  return body;\n}\n\nasync function callPinnedSidecar(args) {\n  try {\n    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n    });\n    const value = JSON.parse(stdout);\n    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n    return value;\n  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n}\n\nasync function writePanelCommand(peer, command) {\n  const result = await callPinnedSidecar(["send", peer, command]);\n  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n  return { id: result.sent_id, atMs: Date.now() };\n}\n\nasync function readPanelReplies(peer) {\n  const result = await callPinnedSidecar(["read", peer, "20"]);\n  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n  }));\n}\n\nfunction validateTelegramObservation(value, nowMs) {\n  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n    throw closedFailure("telegram_allowed_updates");\n  }\n  if (value.lastError) throw closedFailure("telegram_provider_error");\n  const samples = value.pendingUpdateSamples;\n  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n    throw closedFailure("telegram_backlog");\n  }\n  return Object.freeze({\n    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n  });\n}\n\nasync function collectProductionTelegram() {\n    const env = process.env;\n    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n    const username = me && me.result && me.result.username;\n    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n    const peer = `@${username}`;\n    const nonce = crypto.randomBytes(12).toString("hex");\n    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n    let reply;\n    for (let index = 0; index < 6; index += 1) {\n      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n      if (reply) break;\n      if (index + 1 < 6) await sleepMs(2000);\n    }\n    if (!reply) throw closedFailure("telegram_reply_timeout");\n    const samples = []; let info;\n    for (let index = 0; index < 3; index += 1) {\n      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n      samples.push(Number(info && info.pending_update_count));\n      if (samples.at(-1) === 0) break;\n      if (index + 1 < 3) await sleepMs(2000);\n    }\n    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n    return validateTelegramObservation({\n      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n      pendingUpdateSamples: samples,\n    }, Date.now());\n}\n\nfunction validateEmailObservation(value, nowMs, allowedRecipients = []) {\n  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n    throw closedFailure("email_recipient_not_controlled");\n  }\n  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n  const lowerMs = value.receivedAtLowerMs;\n  const upperMs = value.receivedAtUpperMs;\n  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n    throw closedFailure("email_receipt_stale");\n  }\n  return Object.freeze({\n    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n    messageIdRef: hashRef(value.receiptMessageId),\n  });\n}\n\nasync function collectProductionEmail() {\n    const env = process.env;\n    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n      .map(address => address.trim().toLowerCase()).filter(Boolean);\n    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n    let receipt;\n    for (let index = 0; index < 6; index += 1) {\n      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n      if (receipt && receipt.id) break;\n      if (index + 1 < 6) await sleepMs(3000);\n    }\n    return validateEmailObservation({ recipient, receiveIdentity,\n      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n    }, Date.now(), allowedRecipients);\n}\n\nasync function collectProductionControlledL3() {\n  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n  return Object.freeze({ telegram, email });\n}\n\nmodule.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n',
+    expected: /EMAIL_COLLECTOR_DEADLINE_MS\s*=\s*120000/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-poll-boundaries.test.js:39:3
+✖ deadline: parallel controlled collection is bounded at 179000 ms (0.549125ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /CONTROLLED_COLLECTION_DEADLINE_MS\s*=\s*179000/. Input:
+
+  '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { execFile } = require("node:child_process");\n' +
+    'const { promisify } = require("node:util");\n' +
+    'const { resendSend } = require("./mail-resend.js");\n' +
+    'const { makeGogMail } = require("./transport/mail-gog.js");\n' +
+    '\n' +
+    'const execFileAsync = promisify(execFile);\n' +
+    'const PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\n' +
+    'const SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\n' +
+    'const REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    '\n' +
+    'function closedFailure(code) {\n' +
+    '  const error = new Error(code);\n' +
+    '  error.classification = code;\n' +
+    '  return error;\n' +
+    '}\n' +
+    '\n' +
+    'function hashRef(value) {\n' +
+    '  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n' +
+    '}\n' +
+    '\n' +
+    'function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n' +
+    '\n' +
+    'async function sanitizedCall(code, operation) {\n' +
+    '  try { return await operation(); } catch { throw closedFailure(code); }\n' +
+    '}\n' +
+    '\n' +
+    'function serviceBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'async function callTelegramBot(token, method) {\n' +
+    '  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n' +
+    '    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n' +
+    '  });\n' +
+    '  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n' +
+    '  const body = await response.json().catch(() => null);\n' +
+    '  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n' +
+    '  return body;\n' +
+    '}\n' +
+    '\n' +
+    'async function callPinnedSidecar(args) {\n' +
+    '  try {\n' +
+    '    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n' +
+    '      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n' +
+    '    });\n' +
+    '    const value = JSON.parse(stdout);\n' +
+    '    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n' +
+    '    return value;\n' +
+    '  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n' +
+    '}\n' +
+    '\n' +
+    'async function writePanelCommand(peer, command) {\n' +
+    '  const result = await callPinnedSidecar(["send", peer, command]);\n' +
+    '  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n' +
+    '  return { id: result.sent_id, atMs: Date.now() };\n' +
+    '}\n' +
+    '\n' +
+    'async function readPanelReplies(peer) {\n' +
+    '  const result = await callPinnedSidecar(["read", peer, "20"]);\n' +
+    '  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n' +
+    '    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n' +
+    '  }));\n' +
+    '}\n' +
+    '\n' +
+    'function validateTelegramObservation(value, nowMs) {\n' +
+    '  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n' +
+    '      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n' +
+    '      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n' +
+    '  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n' +
+    '  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n' +
+    '    throw closedFailure("telegram_allowed_updates");\n' +
+    '  }\n' +
+    '  if (value.lastError) throw closedFailure("telegram_provider_error");\n' +
+    '  const samples = value.pendingUpdateSamples;\n' +
+    '  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n' +
+    '    throw closedFailure("telegram_backlog");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n' +
+    '    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n' +
+    '    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n' +
+    '    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionTelegram() {\n' +
+    '    const env = process.env;\n' +
+    '    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n' +
+    '    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n' +
+    '    const username = me && me.result && me.result.username;\n' +
+    '    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n' +
+    '    const peer = `@${username}`;\n' +
+    '    const nonce = crypto.randomBytes(12).toString("hex");\n' +
+    '    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n' +
+    '    let reply;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n' +
+    '      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n' +
+    '      if (reply) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    if (!reply) throw closedFailure("telegram_reply_timeout");\n' +
+    '    const samples = []; let info;\n' +
+    '    for (let index = 0; index < 3; index += 1) {\n' +
+    '      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n' +
+    '      samples.push(Number(info && info.pending_update_count));\n' +
+    '      if (samples.at(-1) === 0) break;\n' +
+    '      if (index + 1 < 3) await sleepMs(2000);\n' +
+    '    }\n' +
+    '    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n' +
+    '    return validateTelegramObservation({\n' +
+    '      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n' +
+    '      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n' +
+    '      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      pendingUpdateSamples: samples,\n' +
+    '    }, Date.now());\n' +
+    '}\n' +
+    '\n' +
+    'function validateEmailObservation(value, nowMs, allowedRecipients = []) {\n' +
+    '  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n' +
+    '  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n' +
+    '    throw closedFailure("email_recipient_not_controlled");\n' +
+    '  }\n' +
+    '  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n' +
+    '  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n' +
+    '  const lowerMs = value.receivedAtLowerMs;\n' +
+    '  const upperMs = value.receivedAtUpperMs;\n' +
+    '  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n' +
+    '      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n' +
+    '      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n' +
+    '    throw closedFailure("email_receipt_stale");\n' +
+    '  }\n' +
+    '  return Object.freeze({\n' +
+    '    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n' +
+    '    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n' +
+    '    messageIdRef: hashRef(value.receiptMessageId),\n' +
+    '  });\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionEmail() {\n' +
+    '    const env = process.env;\n' +
+    '    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n' +
+    '    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n' +
+    '    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n' +
+    '      .map(address => address.trim().toLowerCase()).filter(Boolean);\n' +
+    '    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n' +
+    '    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n' +
+    '    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n' +
+    '    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n' +
+    '      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n' +
+    '    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n' +
+    '    let receipt;\n' +
+    '    for (let index = 0; index < 6; index += 1) {\n' +
+    '      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n' +
+    '      if (receipt && receipt.id) break;\n' +
+    '      if (index + 1 < 6) await sleepMs(3000);\n' +
+    '    }\n' +
+    '    return validateEmailObservation({ recipient, receiveIdentity,\n' +
+    '      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n' +
+    '      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n' +
+    '      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n' +
+    '      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n' +
+    '    }, Date.now(), allowedRecipients);\n' +
+    '}\n' +
+    '\n' +
+    'async function collectProductionControlledL3() {\n' +
+    '  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n' +
+    '  return Object.freeze({ telegram, email });\n' +
+    '}\n' +
+    '\n' +
+    'module.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-poll-boundaries.test.js:42:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use strict";\n\nconst crypto = require("node:crypto");\nconst { execFile } = require("node:child_process");\nconst { promisify } = require("node:util");\nconst { resendSend } = require("./mail-resend.js");\nconst { makeGogMail } = require("./transport/mail-gog.js");\n\nconst execFileAsync = promisify(execFile);\nconst PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";\nconst SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";\nconst REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst MAX_AGE_MS = 15 * 60 * 1000;\n\nfunction closedFailure(code) {\n  const error = new Error(code);\n  error.classification = code;\n  return error;\n}\n\nfunction hashRef(value) {\n  return `sha256:${crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 16)}`;\n}\n\nfunction sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }\n\nasync function sanitizedCall(code, operation) {\n  try { return await operation(); } catch { throw closedFailure(code); }\n}\n\nfunction serviceBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\\/$/, "");\n}\n\nasync function callTelegramBot(token, method) {\n  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {\n    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",\n  });\n  if (!response.ok) throw closedFailure("telegram_provider_rejected");\n  const body = await response.json().catch(() => null);\n  if (!body || body.ok !== true) throw closedFailure("telegram_provider_rejected");\n  return body;\n}\n\nasync function callPinnedSidecar(args) {\n  try {\n    const { stdout } = await execFileAsync(PYTHON, [SIDECAR, ...args], {\n      timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8",\n    });\n    const value = JSON.parse(stdout);\n    if (!value || value.ok !== true) throw closedFailure("telegram_mtproto_unavailable");\n    return value;\n  } catch { throw closedFailure("telegram_mtproto_unavailable"); }\n}\n\nasync function writePanelCommand(peer, command) {\n  const result = await callPinnedSidecar(["send", peer, command]);\n  if (!Number.isInteger(result.sent_id)) throw closedFailure("telegram_send_rejected");\n  return { id: result.sent_id, atMs: Date.now() };\n}\n\nasync function readPanelReplies(peer) {\n  const result = await callPinnedSidecar(["read", peer, "20"]);\n  return (Array.isArray(result.messages) ? result.messages : []).map(message => ({\n    id: Number(message.id), atMs: Date.parse(message.date), inbound: message.out === false,\n  }));\n}\n\nfunction validateTelegramObservation(value, nowMs) {\n  if (!value || !Number.isInteger(value.sentId) || !Number.isInteger(value.replyId) || value.replyId <= value.sentId ||\n      !Number.isFinite(value.sentAtMs) || !Number.isFinite(value.replyAtMs) || value.replyAtMs < value.sentAtMs ||\n      value.replyAtMs < nowMs - MAX_AGE_MS) throw closedFailure("telegram_round_trip_unverified");\n  if (value.webhookUrl !== value.expectedWebhookUrl) throw closedFailure("telegram_webhook_url_mismatch");\n  if (!Array.isArray(value.allowedUpdates) || REQUIRED_UPDATES.some(update => !value.allowedUpdates.includes(update))) {\n    throw closedFailure("telegram_allowed_updates");\n  }\n  if (value.lastError) throw closedFailure("telegram_provider_error");\n  const samples = value.pendingUpdateSamples;\n  if (!Array.isArray(samples) || !samples.length || samples.some(n => !Number.isInteger(n) || n < 0) || samples.at(-1) !== 0) {\n    throw closedFailure("telegram_backlog");\n  }\n  return Object.freeze({\n    attempted: true, verified: true, checkedAt: new Date(nowMs).toISOString(),\n    requestMessageRef: hashRef(value.sentId), replyMessageRef: hashRef(value.replyId),\n    exactUrl: true, allowedUpdates: [...value.allowedUpdates].sort(), providerError: false,\n    pendingUpdateCount: 0, pendingUpdateSamples: [...samples],\n  });\n}\n\nasync function collectProductionTelegram() {\n    const env = process.env;\n    if (!env.LM_TELEGRAM_BOT_TOKEN || !serviceBase(env)) throw closedFailure("telegram_configuration");\n    const me = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getMe"));\n    const username = me && me.result && me.result.username;\n    if (!/^[A-Za-z0-9_]{5,32}$/.test(String(username || ""))) throw closedFailure("telegram_bot_identity");\n    const peer = `@${username}`;\n    const nonce = crypto.randomBytes(12).toString("hex");\n    const sent = await sanitizedCall("telegram_send_rejected", () => writePanelCommand(peer, `/panel core8d_${nonce}`));\n    let reply;\n    for (let index = 0; index < 6; index += 1) {\n      const messages = await sanitizedCall("telegram_mtproto_unavailable", () => readPanelReplies(peer));\n      reply = messages.find(message => message.inbound && Number.isInteger(message.id) && message.id > sent.id && message.atMs >= sent.atMs);\n      if (reply) break;\n      if (index + 1 < 6) await sleepMs(2000);\n    }\n    if (!reply) throw closedFailure("telegram_reply_timeout");\n    const samples = []; let info;\n    for (let index = 0; index < 3; index += 1) {\n      const response = await sanitizedCall("telegram_provider_rejected", () => callTelegramBot(env.LM_TELEGRAM_BOT_TOKEN, "getWebhookInfo")); info = response && response.result;\n      samples.push(Number(info && info.pending_update_count));\n      if (samples.at(-1) === 0) break;\n      if (index + 1 < 3) await sleepMs(2000);\n    }\n    const expectedWebhookUrl = `${serviceBase(env)}/telegram`;\n    return validateTelegramObservation({\n      sentId: sent.id, replyId: reply.id, sentAtMs: sent.atMs, replyAtMs: reply.atMs,\n      webhookUrl: String(info && info.url || ""), expectedWebhookUrl,\n      allowedUpdates: info && info.allowed_updates, lastError: Boolean(info && (info.last_error_message || info.last_error_date)),\n      pendingUpdateSamples: samples,\n    }, Date.now());\n}\n\nfunction validateEmailObservation(value, nowMs, allowedRecipients = []) {\n  const allowed = new Set(allowedRecipients.map(address => String(address).trim().toLowerCase()).filter(Boolean));\n  if (!value || !value.recipient || value.recipient !== value.receiveIdentity || !allowed.has(value.recipient)) {\n    throw closedFailure("email_recipient_not_controlled");\n  }\n  if (!value.providerAcceptedId) throw closedFailure("email_send_rejected");\n  if (!value.receiptMessageId || !value.nonce || value.receivedNonce !== value.nonce) throw closedFailure("email_receive_timeout");\n  const lowerMs = value.receivedAtLowerMs;\n  const upperMs = value.receivedAtUpperMs;\n  if (!Number.isFinite(value.sentAtMs) || !Number.isFinite(lowerMs) || !Number.isFinite(upperMs) ||\n      lowerMs > upperMs || value.sentAtMs < nowMs - MAX_AGE_MS || value.sentAtMs > nowMs ||\n      lowerMs > nowMs || upperMs < value.sentAtMs || upperMs < nowMs - MAX_AGE_MS) {\n    throw closedFailure("email_receipt_stale");\n  }\n  return Object.freeze({\n    attempted: true, providerAccepted: true, inboxReceived: true, recipientOwned: true,\n    checkedAt: new Date(nowMs).toISOString(), providerRef: hashRef(value.providerAcceptedId),\n    messageIdRef: hashRef(value.receiptMessageId),\n  });\n}\n\nasync function collectProductionEmail() {\n    const env = process.env;\n    const mail = makeGogMail({ bin: "/opt/homebrew/bin/gog", account: env.GOG_ACCOUNT });\n    const recipient = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const receiveIdentity = String(env.GOG_ACCOUNT || "").trim().toLowerCase();\n    const allowedRecipients = String(env.LM_CONTROLLED_EMAIL_ALLOWLIST || "").split(",")\n      .map(address => address.trim().toLowerCase()).filter(Boolean);\n    if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");\n    if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");\n    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();\n    const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,\n      text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY });\n    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");\n    let receipt;\n    for (let index = 0; index < 6; index += 1) {\n      receipt = await mail.findReceipt({ nonce, afterMs: sentAtMs });\n      if (receipt && receipt.id) break;\n      if (index + 1 < 6) await sleepMs(3000);\n    }\n    return validateEmailObservation({ recipient, receiveIdentity,\n      providerAcceptedId: accepted.id, receiptMessageId: receipt && receipt.id,\n      nonce, receivedNonce: receipt && receipt.matchedNonce, sentAtMs,\n      receivedAtLowerMs: receipt && receipt.receivedAtLowerMs,\n      receivedAtUpperMs: receipt && receipt.receivedAtUpperMs,\n    }, Date.now(), allowedRecipients);\n}\n\nasync function collectProductionControlledL3() {\n  const [telegram, email] = await Promise.all([collectProductionTelegram(), collectProductionEmail()]);\n  return Object.freeze({ telegram, email });\n}\n\nmodule.exports = { collectProductionControlledL3, validateEmailObservation, validateTelegramObservation };\n',
+    expected: /CONTROLLED_COLLECTION_DEADLINE_MS\s*=\s*179000/,
+    operator: 'match',
+    diff: 'simple'
+  }

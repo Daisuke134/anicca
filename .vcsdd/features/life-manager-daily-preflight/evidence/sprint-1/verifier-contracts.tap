@@ -1,0 +1,284 @@
+✖ verify-phase2-process.mjs: accepts one valid explicit input (1.132292ms)
+✖ verify-phase2-process.mjs: rejects missing or malformed argv (0.088041ms)
+✖ verify-phase2-process.mjs: rejects stale or wrong-snapshot input (0.069625ms)
+✖ verify-final-artifact.mjs: accepts one valid explicit input (0.048917ms)
+✖ verify-final-artifact.mjs: rejects missing or malformed argv (0.058292ms)
+✖ verify-final-artifact.mjs: rejects stale or wrong-snapshot input (0.045917ms)
+✖ verify-safe-scan.mjs: accepts one valid explicit input (0.039375ms)
+✖ verify-safe-scan.mjs: rejects missing or malformed argv (0.036334ms)
+✖ verify-safe-scan.mjs: rejects stale or wrong-snapshot input (0.054625ms)
+✖ verify-controlled-l3-gates.mjs: accepts one valid explicit input (0.086417ms)
+✖ verify-controlled-l3-gates.mjs: rejects missing or malformed argv (0.050583ms)
+✖ verify-controlled-l3-gates.mjs: rejects stale or wrong-snapshot input (0.077792ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 0
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.502333
+
+✖ failing tests:
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:3
+✖ verify-phase2-process.mjs: accepts one valid explicit input (1.132292ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-phase2-process.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:73)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:3
+✖ verify-phase2-process.mjs: rejects missing or malformed argv (0.088041ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-phase2-process.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:74)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:3
+✖ verify-phase2-process.mjs: rejects stale or wrong-snapshot input (0.069625ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-phase2-process.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:78)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:3
+✖ verify-final-artifact.mjs: accepts one valid explicit input (0.048917ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-final-artifact.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:73)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:3
+✖ verify-final-artifact.mjs: rejects missing or malformed argv (0.058292ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-final-artifact.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:74)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:3
+✖ verify-final-artifact.mjs: rejects stale or wrong-snapshot input (0.045917ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-final-artifact.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:78)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:3
+✖ verify-safe-scan.mjs: accepts one valid explicit input (0.039375ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-safe-scan.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:73)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:3
+✖ verify-safe-scan.mjs: rejects missing or malformed argv (0.036334ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-safe-scan.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:74)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:3
+✖ verify-safe-scan.mjs: rejects stale or wrong-snapshot input (0.054625ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-safe-scan.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:78)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:3
+✖ verify-controlled-l3-gates.mjs: accepts one valid explicit input (0.086417ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-controlled-l3-gates.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:33:73)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:3
+✖ verify-controlled-l3-gates.mjs: rejects missing or malformed argv (0.050583ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-controlled-l3-gates.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:34:74)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:3
+✖ verify-controlled-l3-gates.mjs: rejects stale or wrong-snapshot input (0.077792ms)
+  AssertionError [ERR_ASSERTION]: missing Phase 2 helper: verify-controlled-l3-gates.mjs
+
+  false !== true
+
+      at run (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:21:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:35:78)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

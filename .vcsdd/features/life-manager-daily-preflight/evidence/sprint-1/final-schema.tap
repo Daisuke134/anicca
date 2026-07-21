@@ -1,0 +1,1162 @@
+✖ schema positive: closed 9/9 current-run report is accepted (2.318ms)
+✖ schema positive: exact 900000 ms checkedAt lower boundary is accepted (0.128125ms)
+✖ schema closed field: root unknown key (0.098417ms)
+✖ schema closed field: wrong schema enum (0.06775ms)
+✖ schema closed field: wrong version enum (0.089042ms)
+✖ schema closed field: wrong runStatus enum (0.064042ms)
+✖ schema closed field: invalid sourceSnapshotRef (0.069041ms)
+✖ schema closed field: caller supplied runRef (0.067875ms)
+✖ schema closed field: generatedAt after freshUntil (0.078542ms)
+✖ schema closed field: fresh window over 15 minutes (0.113666ms)
+✖ schema closed field: required count not 9 (0.07025ms)
+✖ schema closed field: passed count not 9 (0.055ms)
+✖ schema closed field: failed count not 0 (0.050291ms)
+✖ schema closed field: dependency unknown key (0.064083ms)
+✖ schema closed field: dependency status not pass (0.072292ms)
+✖ schema closed field: dependency fresh not true (0.072625ms)
+✖ schema closed field: invalid evidenceRef (0.052ms)
+✖ schema closed field: effects unknown key (0.054167ms)
+✖ schema closed field: telegram send count not 1 (0.054ms)
+✖ schema closed field: email send count not 1 (0.062583ms)
+✖ schema closed field: phone call count not 0 (0.065375ms)
+✖ schema closed field: reply reads outside 1..6 (0.059083ms)
+✖ schema closed field: webhook reads outside 1..3 (0.054041ms)
+✖ schema closed field: inbox reads outside 1..6 (0.052458ms)
+✖ schema closed field: correlation boolean false (0.054416ms)
+✖ schema closed field: recipient ownership false (0.053917ms)
+✖ checkedAt: one millisecond stale is rejected (0.061166ms)
+✖ checkedAt: one millisecond future is rejected (0.06225ms)
+✖ checkedAt: malformed strict timestamp is rejected (0.05225ms)
+✖ checkedAt: non-finite internal millisecond is rejected (0.05225ms)
+✖ checkedAt: before current run start is rejected (0.056167ms)
+✖ checkedAt: mixed-run observation is rejected (0.056458ms)
+✖ checkedAt: fresh true without time proof is rejected (0.048833ms)
+✖ checkedAt: non-round-trip UTC timestamp is rejected (0.051625ms)
+✖ dependency set: duplicate dependency is rejected (0.056875ms)
+✖ dependency set: missing dependency is rejected (0.056209ms)
+✖ dependency set: extra dependency is rejected (0.05925ms)
+✖ failure channel: failure diagnostics cannot enter a successful artifact (0.089542ms)
+✖ security: raw run correlation is never serialized (0.054542ms)
+✖ security: runRef must hash current correlation (0.052708ms)
+✖ security: provider response is forbidden (0.06775ms)
+✖ security: provider ID is forbidden (0.05925ms)
+✖ security: address is forbidden (0.0545ms)
+✖ security: arbitrary nested string is forbidden (0.0535ms)
+✖ security: previous-run observation is rejected despite fresh true (0.058ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 0
+ℹ fail 45
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.75875
+
+✖ failing tests:
+
+test at lib/daily-preflight-final-schema.test.js:38:3
+✖ schema positive: closed 9/9 current-run report is accepted (2.318ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception.
+  Actual message: "missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+  "
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:72)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: AssertionError [ERR_ASSERTION]: missing closed final-report validator
+    + actual - expected
+
+    + 'undefined'
+    - 'function'
+
+        at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+        at /Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:91
+        at getActual (node:assert:586:5)
+        at strict.doesNotThrow (node:assert:754:32)
+        at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:72)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1118:25)
+        at Test.start (node:internal/test_runner/test:1015:17)
+        at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:38:3
+✖ schema positive: exact 900000 ms checkedAt lower boundary is accepted (0.128125ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception.
+  Actual message: "missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+  "
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:72)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: AssertionError [ERR_ASSERTION]: missing closed final-report validator
+    + actual - expected
+
+    + 'undefined'
+    - 'function'
+
+        at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+        at /Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:91
+        at getActual (node:assert:586:5)
+        at strict.doesNotThrow (node:assert:754:32)
+        at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:38:72)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1118:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+        at Test.postRun (node:internal/test_runner/test:1247:19)
+        at Test.run (node:internal/test_runner/test:1175:12),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: root unknown key (0.098417ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: wrong schema enum (0.06775ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: wrong version enum (0.089042ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: wrong runStatus enum (0.064042ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: invalid sourceSnapshotRef (0.069041ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: caller supplied runRef (0.067875ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: generatedAt after freshUntil (0.078542ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: fresh window over 15 minutes (0.113666ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: required count not 9 (0.07025ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: passed count not 9 (0.055ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: failed count not 0 (0.050291ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: dependency unknown key (0.064083ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: dependency status not pass (0.072292ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: dependency fresh not true (0.072625ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: invalid evidenceRef (0.052ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: effects unknown key (0.054167ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: telegram send count not 1 (0.054ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: email send count not 1 (0.062583ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: phone call count not 0 (0.065375ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: reply reads outside 1..6 (0.059083ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: webhook reads outside 1..3 (0.054041ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: inbox reads outside 1..6 (0.052458ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: correlation boolean false (0.054416ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ schema closed field: recipient ownership false (0.053917ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: one millisecond stale is rejected (0.061166ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: one millisecond future is rejected (0.06225ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: malformed strict timestamp is rejected (0.05225ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: non-finite internal millisecond is rejected (0.05225ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: before current run start is rejected (0.056167ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: mixed-run observation is rejected (0.056458ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: fresh true without time proof is rejected (0.048833ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ checkedAt: non-round-trip UTC timestamp is rejected (0.051625ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ dependency set: duplicate dependency is rejected (0.056875ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ dependency set: missing dependency is rejected (0.056209ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ dependency set: extra dependency is rejected (0.05925ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ failure channel: failure diagnostics cannot enter a successful artifact (0.089542ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: raw run correlation is never serialized (0.054542ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: runRef must hash current correlation (0.052708ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: provider response is forbidden (0.06775ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: provider ID is forbidden (0.05925ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: address is forbidden (0.0545ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: arbitrary nested string is forbidden (0.0535ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-final-schema.test.js:42:3
+✖ security: previous-run observation is rejected despite fresh true (0.058ms)
+  AssertionError [ERR_ASSERTION]: missing closed final-report validator
+  + actual - expected
+
+  + 'undefined'
+  - 'function'
+
+      at validator (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:33:10)
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-final-schema.test.js:42:82)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

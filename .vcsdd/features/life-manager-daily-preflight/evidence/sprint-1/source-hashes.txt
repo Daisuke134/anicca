@@ -1,0 +1,7 @@
+9ccde5342998b4404bb54e0426eb28963070a06b44bbbbfd65c3ecc2428c8e58  apps/life-call/lib/daily-preflight.js
+3f80f44fc9196cb2ce12b5541b3922f677f5cf3ee6c6f7973016543413a6aaf7  apps/life-call/lib/daily-preflight-collectors.js
+0b3ed6f18be9f6fe8e8a9913a0daa1b77f81bba5be5d6c77c01ee1d556c8bc3e  apps/life-call/lib/transport/mail-gog.js
+3a1fdf6ec85e09e0be464b66d09a509d642a34b2aa83ee02b708d4542370da67  apps/life-call/lib/daily-preflight-poll-boundaries.test.js
+0a7197b039755cc7decc240c141eafb870f82a588649621ddc6fbf09179f69b4  apps/life-call/lib/daily-preflight-final-schema.test.js
+8376af4e47e02ab85a36539dc193b632e3184e4d071379c2c94c39d61ed8a3a4  apps/life-call/lib/daily-preflight-purity-contract.test.js
+b910f573f01759dc68efe02d619c3f9c713f9f8d542a76f32e5bbdd0099d0884  .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs
