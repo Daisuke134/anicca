@@ -12545,3 +12545,13 @@
 {"ts":1784608962,"wake_id":"00MRU63KPP492CEBF5D970476C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784609094,"wake_id":"00MRU66E8AEE7A4EC57EA143F7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784609225,"wake_id":"00MRU697J2FEBE08C35CAA4016","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 server: up (payTo=[REDACTED] port=8414 instance=franklin1) [earn] x402 register: {\"registered\":false"}
+{"ts":1784609360,"wake_id":"00MRU6C3311A5F0104C60A4F5D","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1784609360,"wake_id":"00MRU6C3311A5F0104C60A4F5D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784609493,"wake_id":"00MRU6EY7LE64DEC642F474804","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784609628,"wake_id":"00MRU6HUC49C89DECEC3C040E7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784609793,"wake_id":"00MRU6LDB4F43AC2CE3DAF4D67","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784609793,"wake_id":"00MRU6LDB4F43AC2CE3DAF4D67","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784609925,"wake_id":"00MRU6O734C97740448D114086","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":""}
+{"ts":1784609925,"wake_id":"00MRU6O734C97740448D114086","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784610055,"wake_id":"00MRU6QZPL74A96BDB565647CD","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 58 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784610055,"wake_id":"00MRU6QZPL74A96BDB565647CD","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
