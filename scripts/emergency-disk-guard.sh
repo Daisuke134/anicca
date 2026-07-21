@@ -112,6 +112,15 @@ profile_is_active() {
   pgrep -f -- "--user-data-dir=$profile([[:space:]]|$)" >/dev/null 2>&1
 }
 
+path_is_open() {
+  local path="$1"
+  if [ "$TEST_MODE" -eq 1 ]; then
+    [ "${EMERGENCY_GUARD_TEST_OPEN_PATH:-}" = "$path" ]
+    return
+  fi
+  lsof +D "$path" >/dev/null 2>&1
+}
+
 classify_worker() {
   local pid="$1" elapsed="$2" cmdline="$3" hb_age
   case "$cmdline" in
@@ -197,7 +206,12 @@ if [ "$TEST_MODE" -eq 0 ] || [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]
   # Exact, known-regenerable caches only. No transcript, todo, lock, worktree,
   # deliverable, browser identity, cookies, Login Data, or session database.
   for bundle in "$HOME_DIR/Library/Application Support/Claude/vm_bundles/"*.bundle; do
-    [ -e "$bundle" ] && reclaim_path "$bundle" claude-vm ephemeral-cache regenerated-by-claude
+    [ -e "$bundle" ] || continue
+    if path_is_open "$bundle"; then
+      printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u '+%FT%TZ')" "$bundle" preserve active-vm-state "$POLICY_VERSION" >> "$DECISION_LEDGER"
+    else
+      reclaim_path "$bundle" claude-vm ephemeral-cache regenerated-by-claude
+    fi
   done
   reclaim_path "$HOME_DIR/.cache/whisper" whisper ephemeral-cache model-redownload
   reclaim_path "$HOME_DIR/.cache/torch" torch ephemeral-cache model-redownload

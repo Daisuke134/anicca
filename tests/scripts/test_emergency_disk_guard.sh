@@ -8,6 +8,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/home/.claude/projects/incident" "$TMP/home/gig" "$TMP/home/.openclaw/state"
 mkdir -p "$TMP/home/.cloak/profiles/inactive/Default/Cache" "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" "$TMP/home/.cloak/profiles/inactive/Default/GPUCache"
+mkdir -p "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle"
 printf 'active evidence\n' > "$TMP/home/.claude/projects/incident/active.jsonl"
 printf '4242\n' > "$TMP/home/gig/.pass.lock"
 printf 'cookie identity\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cookies"
@@ -15,6 +16,7 @@ printf 'login identity\n' > "$TMP/home/.cloak/profiles/inactive/Default/Login Da
 printf 'cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Cache/data"
 printf 'code cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/Code Cache/data"
 printf 'gpu cache\n' > "$TMP/home/.cloak/profiles/inactive/Default/GPUCache/data"
+printf 'active vm state\n' > "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle/sessiondata.img"
 touch -t 202001010000 "$TMP/home/.claude/projects/incident/active.jsonl" "$TMP/home/gig/.pass.lock"
 
 cat > "$TMP/processes.tsv" <<'EOF'
@@ -31,6 +33,7 @@ EMERGENCY_GUARD_TEST_NOW_EPOCH=100000 \
 EMERGENCY_GUARD_TEST_PROCESS_FIXTURE="$TMP/processes.tsv" \
 EMERGENCY_GUARD_TEST_ENABLE_RECLAIM=1 \
 EMERGENCY_GUARD_TEST_ACTIVE_PROFILE="$TMP/home/.cloak/profiles/inactive" \
+EMERGENCY_GUARD_TEST_OPEN_PATH="$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle" \
 EMERGENCY_GUARD_TEST_LOCK_OWNER=1101 \
 EMERGENCY_GUARD_TEST_HEARTBEAT_PID=1102 \
 EMERGENCY_GUARD_TEST_KILL_LEDGER="$TMP/killed.tsv" \
@@ -43,6 +46,7 @@ test ! -e "$TMP/home/.cloak/profiles/inactive/Default/Code Cache" || { echo 'act
 test ! -e "$TMP/home/.cloak/profiles/inactive/Default/GPUCache" || { echo 'active browser GPU cache was not reclaimed'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Cookies" || { echo 'browser cookie identity was deleted'; exit 1; }
 test -e "$TMP/home/.cloak/profiles/inactive/Default/Login Data" || { echo 'browser login identity was deleted'; exit 1; }
+test -e "$TMP/home/Library/Application Support/Claude/vm_bundles/active.bundle/sessiondata.img" || { echo 'active VM state was unlinked'; exit 1; }
 test -e "$TMP/killed.tsv" || { echo 'missing kill ledger'; exit 1; }
 
 test "$(cut -f1 "$TMP/killed.tsv" | sort | tr '\n' ' ')" = '1103 ' || {
