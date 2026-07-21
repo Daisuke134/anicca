@@ -13,6 +13,7 @@ SOLUSDC=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 erc20(){ curl -s -m8 -X POST "$1" -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"$2\",\"data\":\"0x70a08231000000000000000000000000${3:2}\"},\"latest\"]}" | python3 -c "import sys,json;r=json.load(sys.stdin).get('result','0x0');print('%.2f'%(int(r,16)/1e6) if r and r!='0x' else '0')" 2>/dev/null; }
 sol(){ curl -s -m8 "$SOLR" -X POST -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getBalance\",\"params\":[\"$1\"]}" | python3 -c "import sys,json;print('%.3f'%(json.load(sys.stdin).get('result',{}).get('value',0)/1e9))" 2>/dev/null; }
 solusdc(){ curl -s -m8 "$SOLR" -X POST -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenAccountsByOwner\",\"params\":[\"$1\",{\"mint\":\"$SOLUSDC\"},{\"encoding\":\"jsonParsed\"}]}" | python3 -c "import sys,json;v=json.load(sys.stdin).get('result',{}).get('value',[]);print('%.2f'%sum(float(a['account']['data']['parsed']['info']['tokenAmount']['uiAmount'] or 0) for a in v) if v else '0')" 2>/dev/null; }
+http(){ local code; code=$(curl -s -m8 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null) || true; echo "${code:-000}"; }
 # grep -q would SIGPIPE launchctl under pipefail → spurious STOPPED; capture instead
 loop(){ [ -n "$(launchctl list 2>/dev/null | grep "$1")" ] && echo RUNNING || echo STOPPED; }
 
@@ -26,7 +27,7 @@ echo ""
 
 echo "[1] franklin1       SELF-funded  (Franklin-Trading, Solana)   HOME=~/.blockrun"
 echo "    sol    F5SY…hZ5T   SOL=$(sol F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T)  USDC=\$$(solusdc F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T)   loop(franklin-loop)=$(loop franklin-loop)"
-echo "    x402   0x3EcCAD24…8749  Base USDC=\$$(erc20 $BASE $BUSDC 0x3EcCAD24794ca298D25378E9902A251322ea8749)   ★no X402_PUBLIC_URL = cannot list on Bazaar (T2b)★"
+echo "    x402   0x3EcCAD24…8749  Base USDC=\$$(erc20 $BASE $BUSDC 0x3EcCAD24794ca298D25378E9902A251322ea8749)   loop(x402-franklin1)=$(loop x402-franklin1)  url=:10001 public=$(http https://aniccanomac-mini-1.tail7a0ba4.ts.net:10001/)"
 echo ""
 echo "[2] franklin2       SELF-funded  (x402 seller)                HOME=~/.franklin2-home/.blockrun"
 echo "    x402   0xe7747F…7ce9  Base USDC=\$$(erc20 $BASE $BUSDC 0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9)   loop(franklin2-loop)=$(loop franklin2-loop)  url=:10000"
