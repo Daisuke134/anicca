@@ -208,11 +208,15 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 
 ### 9.9 control panel（web app）確定仕様の骨子
 
-- 役割 = **鏡**。操作の場ではない（操作は電話/TG が主）。見るもの:
+- 役割 = **個人専用の鏡 + control center**。日常の依頼・自動実行・事後報告は電話/TGが主だが、panelは単なるread-only pageではない。connection、権限、organ別automation、通知、call言語/時間帯、委任を本人が確認・接続・切断・ON/OFFできるdashboardとする。見るもの:
   ①今日の timeline（解釈済み calendar + call 実績✅）②3 organ スコア（財務=稼ぎ/送金、身体=予約/未通院、精神=傾聴/就寝）
   ③FINANCIAL 台帳（agent wallet 残高・user への送金履歴、on-chain link）④context gates 状態（何が解錠済みか + 解錠方法）
   ⑤設定（call 言語・時間帯・委任の付与/剥奪）
 - gate 状態画面が feature discovery の Web 側入口（TG 告知と同内容）。
+- **入口は2つ、backend actionは1つ**: ①chatで「Gmailをつないで」「callを止めて」等の自然言語intentを送る ②`/panel` dashboardのconnection card/toggleを操作する。どちらも同じuser-scoped command handlerを通り、同じ状態へ収束する。OAuth/OS permission等の本人操作が必要な時だけ、botはinline WebApp buttonまたはclickable single-use URLを1本送る。対応clientではbuttonから開き、非対応clientではURLを送る。
+- **personalization/tenant isolationはHARD**: HttpOnly sessionの`uid + telegram_chat_id`を唯一のscopeとし、timeline、score、context、connection、gate、setting、ledger、actionを全query/mutationでそのuserへ束縛する。connection状態・文脈・推奨action・toggle値をglobal定数、Dais専用値、fixture、別user rowから表示しない。静的label/copyだけ共有可。同じ画面構造でも内容と可能なactionはuserごとに変わる。
+- connection cardはcalendar / Telegram / location / call / email / wallet等を実provider/gate状態から `connected / action required / unavailable / error` で表示し、可能な時だけ `Connect / Reconnect / Disconnect / Turn on / Turn off` をclickableにする。未提供・scope不足・課金gateは偽のConnect成功にせず、理由と次に必要な本人操作を正直に表示する。
+- fresh `/panel` tokenは5分・単回で必ずdashboardへ交換できる。使用済み/期限切れtokenの403はsecurity PASSだが、fresh tokenの403は出荷blocker。失効画面は「Telegramで新しい `/panel` を送る」導線を表示し、dead endにしない。
 - **score はbackend activityの件数ではなく、user outcomeを説明できる値**:
   - DAILY = rolling 7日で「必要な travel/call/late handling が完了した対象予定 ÷ 対象予定」。call log件数やAPI row件数を加点しない。対象0件は0点でなく `insufficient data`。
   - PHYSICAL = overdue need の検知→予約/実施で解消した割合。候補を表示しただけでは加点しない。
@@ -352,6 +356,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 8b | LM-33b | panel read API: timeline / scores / ledger / gates / settings の5 JSON endpoints | **done (L3 実測)**: authenticated browser から timeline / scores / ledger / gates / settings が全て HTTP 200、各 section は `loaded`（body chars=865/106/29/128/107） | **done** |
 | 8c | LM-33c | panel UI（gpt-tasteskill → frontend-design、§9.9 の5要素、鏡 = read-only） | **done (L3 実測)**: prod 実データで5要素すべて `loaded`。full-page screenshot=`/Users/anicca/.cloak/evidence/lm-panel-e2e-20260721.png`（mode 600、private path） | **done** |
 | 8d | CORE-a | DAILY runtime 再監査: `/health`、TG webhook、calendar、call、location、email、discovery の依存をfresh smokeし、historical doneを現在の稼働保証に使わない | **pending — PR #330、production truth は6/9**。artifact=`.vcsdd/features/life-manager-daily-preflight/evidence/daily-preflight-20260721T064624Z.json`、PASS=health/calendar/location/discovery/Gemini/Maps、FAIL=Telegram/call/email、exit 1。commit `2df9585c7` は arbitrary `--proofs`・PII露出・手動artifact追記と負系test不足を修正し、focused 39/39、eval 21/21+12/12、diff checkを通過。ただしfresh artifact reviewは **FAIL / blocker 2**: ①production固定registryのTelegram/email collectorが常にunavailableで実証跡を収集不能 ②production entrypointの`main({ collectors })`が任意DIを受け、自己申告booleanでfalse-green可能。固定in-repo collectorを実round-trip/受信確認へ配線し、production DIを除去してからcontrolled prod rerun。9/9までdone/merge禁止 | pending |
+| 8d.1 | PANEL-0 | dashboard access + personalization + connection controls: fresh `/panel` forbiddenを修理し、chat intentとpanel操作を同じuser-scoped commandへ統一。connection card・権限・organ automation・通知・call/委任を本人が接続/切断/ON/OFFできる | RED: fresh token 403、dead link、non-clickable card、cross-user leakage、hardcoded connection/context、chat/panel state drift。GREEN: tenant isolation/CSRF/single-use/auth/action contract 100%。L3: 実TG `/panel` inline buttonまたはlink→fresh HTTP 200→token消滅→本人固有dashboard、harmless toggleをpanel→chat readback→chat intent→panel readbackの双方向で実証。isolated第2userで表示/action混入0。supported connectorはtest userで実OAuth開始+callback、未提供connectorは正直なunavailable。mobile/desktopで全action clickable、使用済み/期限切れ403から新link導線あり | pending |
 | 8e | CORE-b | DAILY user journey: 実calendar作成→travel autofill→T-10/T-5 call→location判定→必要時email→TG事後報告を1本で通す | 実call録音+whisper、実calendar event、実TG id、実email Message-ID、late不要ケースも実測 | pending |
 | 8f | CORE-c | context/onboarding/discovery: 初回user、既存user、location未解錠/解錠後、同じclosed Qを二度聞かないことを再検証 | eval 100% + 実TG callback + DB/context provenance。質問禁止領域の発話0件 | pending |
 | 8g | PANEL-a | score semantic fix: §9.9の outcome-based DAILY/PHYSICAL/MENTAL/FINANCIAL 定義へ統一し、根拠を表示 | fixed dataset eval 100% + prod実データで numerator/denominator/reason が一致。対象0件は insufficient data | pending |
@@ -395,7 +400,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 ### 10.0 出荷ラン実況（live状態。詳細は各§10行）
 
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
-- **COREは再open**: Daisがpanelを実使用し、DAILY scoreの意味が体感と不一致、timelineに内部生ログが露出、画面全体もbrokenと判定。従来の「API 200 / loaded / screenshot」はUX doneの証拠として不足。8g/8hを先頭未完了として扱う。
+- **CORE / panelは再open**: Daisがpanelを実使用し、fresh `/panel` linkがforbidden、connection/settingsがnon-clickable、個人別connection/contextを操作できず単なるpageと判定。加えてDAILY scoreの意味が体感と不一致、timelineに内部生ログが露出。従来の「API 200 / loaded / screenshot」はdashboard doneの証拠として不足。8d review直後に8d.1を最優先で実行し、access・二入口・personalization・connection/toggleを実side effect付きで直す。score/timelineは8g/8hで続ける。
 - **CORE 8d fresh review = FAIL / PR #330 merge不可**: reviewerはhead `a22b6bd26`のartifactだけを読み、worktree無変更でblocking finding 8件を確定。Resend `/domains` はsend-only keyの`POST /emails`を証明しない、Mapsがruntimeのaccept-eitherより厳しい、Telegram webhook authの一致未証明、callのWSS/secret未検証、location absent/expiredがpass、通常Gemini model未検証、sanitizerの一般文字列にquery token/PIIが残る、calendar対象userがscheduler cohortと不一致。targeted tests=89/89、eval=33/33、timeout AbortはGREENだが、8dは`pending`のまま別fresh SolがTDD修正する。review log=`.claude/sol-orders/logs/core-8d-review.log`。
 - **CORE 8d post-commit reviewも FAIL / head `145f18dd19` merge不可**: 8指摘の修正とlocal GREEN（focused 35/35、full 312/312、eval 33/33）はpush済みだが、fresh artifact-only reviewが追加4件を実測。任意の`--proofs` booleanと現在時刻でemailを偽greenにできる、sanitizerがopaque hostname・氏名・provider error値を残す、artifactの`controlledL3`が生成コード外の手追記でproof freshnessを再現できない、stale proof / TG backlog / Telnyx不一致 / Gemini method失敗の単独negative testが無い。productionは再実行せず、次のfresh Solがproof provenance・schema allowlist・再現可能artifact・分岐testをRED→GREENで修正する。review log=`.claude/sol-orders/logs/core-8d-postcommit-review.log`。
 - **M-2旧Solは停止**: fixture unit/wiringはGREENだが、process消失、log末尾=`collab: Wait`、実MP4/launchd video run/IG video URL/commit/push/spec実測更新なし。未commit M-2差分は回収対象であり、doneではない。
@@ -413,7 +418,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
 | U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
 | U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
-| U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・opaque token URL → HttpOnly session 交換**。token は hash 保存 + chat_id/expires/used_at 束縛。`/lm?tg=` は廃止。LM-33 spec に採用 |
+| U5 | control panel 認証 = **TG bot `/panel` またはchatのconnect intent → 5分・単回・opaque token付きinline WebApp button/clickable URL → HttpOnly session交換**。tokenはhash保存 + uid/chat_id/expires/used_at束縛。fresh tokenは200 dashboard、使用済み/期限切れだけ403。失効画面は新しい`/panel`取得導線を出す。`/lm?tg=`は廃止。panelとchatは同じuser-scoped connection/setting commandを使う |
 | U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
 | U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
 | U8 | 対外メールの名乗り = `Anicca（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
