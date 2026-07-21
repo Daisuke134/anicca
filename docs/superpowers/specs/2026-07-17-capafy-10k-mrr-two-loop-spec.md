@@ -476,7 +476,9 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 
 **結論: marketing-engine は「共有 core を物理集約 + 各 loop は固有アダプタ+content のみ」の TO-BE 構造に到達。真の junk(dead code/墓場)は一掃。**
 
-## §16 CURRENT SSOT — capafy.skills9582 day3 実測
+## §16 HISTORICAL EVIDENCE — capafy.skills9582 day3 実測
+
+この節は失敗実測の履歴。現在の要件・残 TODO・順序の正本は §17。
 
 ### 実測状態
 
@@ -490,7 +492,7 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | 停止状態 | scope 外の新 account 自動作成を防ぐため `ai.anicca.capafy-ig-marketing-daily` と `ai.anicca.capafy-goal-monitor` は unload。`ai.anicca.capafy-marketing-warmup` は loaded / not running で、`session_failed` account を処理しない | `launchctl print gui/501/<label>` 実測 |
 | コード変更 | なし。gate の stale/過剰判定ではなく、day3 private API challenge が停止理由 | `git -C /Users/anicca/anicca status --porcelain=v1` = empty |
 
-### 残 TODO（順序の正本）
+### 旧 TODO（§17 により置換）
 
 | 順 | item | done 条件 |
 |---:|---|---|
@@ -501,3 +503,168 @@ junk が増える = 将来の dev(人/AI)が「どれが本物か」で迷い、
 | 5 | session 成功時のみ daily / goal-monitor を load して loop 起点の非商用 Reel を1本投稿 | public Reel URL、logged-out screenshot、IG ledger、rotation ledger、telegram message id が全て存在 |
 | 6 | reach を測定して commercial gate を判定 | 複数 snapshot で非ゼロ plays/views と公開可視性を確認した場合のみ `.capafy-ig-reach-healthy` を作成 |
 | 7 | 14日 full-cycle を実測 | provision → warm → ready → post → measure → report が人手ゼロで14日継続し、§12.6 の全 gate が green |
+
+## §17 CURRENT SSOT — provider-agnostic revenue loops + gig 納品 + shared marketing engine
+
+### 17.1 Outcome
+
+以下を同時に成立させる。
+
+1. Claude subscription の残量に依存せず、全 revenue loop が共通 runner 経由で GPT / Claude / その他 provider を差し替えて動く。
+2. gig-core は「tmux が生きている」ではなく、各 step の成功を証拠付きで判定し、失敗を成功扱いせず、paid contract を締切順に完成・正式納品する。
+3. 木村様の囲碁盤 OpenCV PoC を受入基準まで修正し、実ファイルを Coconala で正式納品する。
+4. marketing-engine は Capafy 専用ではなく clip / video / future products の共有 core とし、bot-like な synthetic engagement warmup を廃止する。
+5. fresh Instagram account は固定 day gate ではなく `account setup → publisher health → first non-commercial post → public/reach verification → commercial` の実状態で進む。
+
+### 17.2 Current measured facts
+
+| Area | 現在の事実 | 一次証拠 |
+|---|---|---|
+| Claude runtime | direct `claude -p --model sonnet` は `You've hit your weekly limit · resets Jul 24 at 6am (Asia/Tokyo)` で停止する | この session の実 probe |
+| Codex runtime | `codex exec --ephemeral -m gpt-5.6-luna` と `gpt-5.6-terra` は read-only probe がともに rc=0、期待文字列を返す | `/private/tmp/codex-loop-probe.txt`、`/private/tmp/codex-terra-probe.txt` |
+| OpenClaw | global primary は `deepseek/deepseek-v4-flash`、fallback は `openai/gpt-5.4-mini`。gpt-5.5-mini ではない | `/Users/anicca/.openclaw/openclaw.json` |
+| gig process | tmux `anicca-gig-core` は存在するが productive pass は存在しない。lock owner PID 19006 は dead、`/tmp/anicca-gig-pass.lock.d` が残る | `tmux display-message`、`kill -0 19006`、lock `pid` |
+| false success | `gig_pass.sh` の `step()` は sub-call stdout/stderr を `/dev/null` に捨て、非zero rcでも後続へ進める。最後に `.last-pass` / pass report を更新できる | `/Users/anicca/anicca/skills/earn/gig/gig_pass.sh:15-24,38-56` |
+| 木村様案件 | requestId `5138597`、Python/OpenCV 囲碁盤 PoC、契約額は **¥65,000**、納品予定日は 2026-07-21。¥40,000 は別の `jibieaian` SNS契約 | `/Users/anicca/gig/applied.jsonl`、real `received_orders/open` evidence |
+| 木村様成果物 | code と7画像分の CSV/JSON/overlay は存在するが正式納品前。0石画像で black=19 / black=13, white=4 等の誤検出があり受入不可 | `/Users/anicca/gig/wip/5138597_fkimura_goboard/`、`out_20260721/summary.json` |
+| Capafy account | `capafy.skills9582` は browser login 後、synthetic warmup（reels 8 / scrolls 6 / follows 4）を実行し、day3 private API login が `ChallengeRequired`。投稿0件 | §16 evidence |
+| Capafy launch state | IG daily / goal-monitor は unloaded、warmup は loaded / not running | `launchctl print gui/501/<label>` |
+| shared blast radius | `marketing-engine/warmer.py` / `poster.py` は Capafy のほか clip / video / clip-promote が参照する | `/Users/anicca/anicca/skills/earn/{capafy-marketing,clip,video,clip-promote,marketing-engine}` |
+
+### 17.3 Diagnosis
+
+待つだけでは完了しない。
+
+- Claude quota は reset 後に一時復旧しても、provider 単一障害・dead lock・rc無視・false success を残す。
+- 木村様成果物は生成済みだが判定精度が壊れている。quota reset は OpenCV の誤検出を直さず、正式納品もしない。
+- Capafy の challenge と synthetic warmup の因果は断定できない。ただし warmup が健全性を上げた証拠はなく、bot-like な follow / scroll / replay を追加した直後も投稿可能 session を確立できていない。
+- Instagram の official publishing path は professional account と publish permission を前提に Reel 公開を提供する。shared engine の primary publisher は official API、private API は primary から外す。
+
+### 17.4 Invariants
+
+| ID | 必須条件 |
+|---|---|
+| INV-R1 | scheduler / business flow は provider CLI を直接呼ばず、共通 `agent-runner` contract だけを呼ぶ |
+| INV-R2 | step の nonzero rc、timeout、missing evidence、schema error は pass failure。`.last-pass`、success ledger、次 step を更新しない |
+| INV-R3 | lock は PID liveness を時刻より優先する。dead owner は安全にreapし、live ownerはreapしない |
+| INV-R4 | paid / due contract は listing改善・応募・学習より常に優先する |
+| INV-R5 | 正式納品は成果物存在だけでなく、acceptance test PASS、package hash、Coconala buyer-visible delivery stateを必要とする |
+| INV-M1 | account warmup を目的とした自動 follow / like / comment / reel-scroll を行わない |
+| INV-M2 | account ageだけの day1/day2/day3 gate を使わない。publisher health と public verification が gate |
+| INV-M3 | first post は original / non-commercial / linkなし。commercial化は複数reach snapshot後のみ |
+| INV-M4 | account challenge を password retry、marker削除、account churnで迂回しない |
+| INV-M5 | account lifecycle / publishing / reach contract は shared engine に1つだけ置き、各productは manifest / content adapterだけを持つ |
+| INV-E1 | Builderの自己申告は完了証拠にしない。Plannerがfresh command / artifact / public UIで独立検証する |
+
+### 17.5 Model routing contract
+
+| Class | Default | 対象 |
+|---|---|---|
+| deterministic | modelなし | lock、state transition、deadline queue、metrics、ledger、publisher API、schema validation |
+| repeatable-agent | `gpt-5.6-luna`, low | extraction、定型copy、分類、短いreflection、bounded transform |
+| tool-agent | `gpt-5.6-terra`, medium | browserを含む通常のB0/B1/B2判断、account setup、daily marketing pass |
+| high-value-agent | `gpt-5.6-sol`, medium→high | paid deliverableの実装、OpenCV修正、複雑な障害解析、最終adversarial review |
+
+provider名・model名は runner config に閉じ込める。business script は task class のみを渡す。利用不能時は同じ class の別providerへ failoverし、全provider失敗時は明示 failure にする。
+
+### 17.6 Planner / Builder split
+
+```text
+Planner (root)
+  spec SSOT更新 → 1 bounded taskを発行 → Builder evidence受領
+       ↑                                      ↓
+  独立E2E検証 ← commit/hash/log/screenshot/public URL
+
+Builder (fresh SOL instance)
+  AGENTS + §17 + named filesだけを読む
+  RED → minimal GREEN → refactor → focused E2E
+  対象pathだけcommit/push → Plannerへ証拠を返す
+```
+
+Planner は実装を持たず、Builder は完了判定を持たない。各 TODO は前の gate が green になってから次へ進む。
+
+### 17.7 Remaining TODO — order SSOT
+
+| 順 | TODO | Builder scope | Done / E2E gate |
+|---:|---|---|---|
+| 1 | **provider-agnostic runner + fail-closed foundation** | `claude -p` 呼出しinventory、共通runner、Luna/Terra/Sol routing、rc/evidence schema、timeout、PID-aware lock、supervisor/backoff。gig / Capafy / active claude-p consumersをadapter化 | Claudeを利用不能にしたfixtureでも Luna/Terra実callが成功。各failure fixtureで後続step・`.last-pass`・success ledgerが更新されない。dead lockはreap、live lockは保持。対象loopのdirect `claude -p` production call=0 |
+| 2 | **gig rescue + 木村様 ¥65,000 PoC正式納品** | paid-contract deadline queueを最優先化。7枚のexpected stone matrixをtest化し、OpenCVを修正、package、Coconala正式納品。別の¥40,000 SNS契約もdeadline queueへ保持 | 7画像の期待 black/white/empty がtest PASS、overlay目視PASS、README/requirements/package hashあり。talkroomにfileがbuyer-visible、`正式な納品` state、delivery URL/screenshot、ledger `delivered`。gig-coreは15分以上複数poll + 次のscheduled pass成功 |
+| 3 | **shared marketing-engineをno-synthetic-warmupへ移行** | `warming/day3 golden private session` を `setup/publisher_ready/posted/measuring/commercial` へ置換。automatic follow/like/comment/scrollを削除。official Meta publisher primary、product adapter分離。Capafy / clip / video consumer contractを更新 | testでsynthetic engagement call=0、day-count branch=0、全consumerが同じ lifecycle/publisherを参照。official publisher health probeとfailure state transitionをE2E。current terminal accountは再利用しない |
+| 4 | **fresh Capafy accountからfull-cycleを実証しfleet rollout** | isolated account setup、professional/publish permission、first non-commercial Reel、public/reach measurement、commercial gate、Telegram/ledgers。全consumer regression後に14日自走 | account creation/setup evidence、publisher-ready evidence、public Reel URL、logged-out screenshot、publish status、IG/rotation ledger、Telegram message ID。複数snapshotで非zero reach後のみ commercial marker。14日 `setup→post→measure→report` 継続、全gate green |
+
+### 17.8 Acceptance scenarios
+
+1. **Provider outage** — Given Claude is quota-blocked, when a repeatable/tool task runs, then Luna/Terra completes through the same runner; no business script changes provider-specific code.
+2. **All providers fail** — Given every provider returns nonzero, when a pass runs, then the pass is failed, the lock is released/reaped safely, and no success marker is written.
+3. **Paid deadline** — Given an active paid contract is due, when gig wakes, then delivery work runs before learn/listing/apply and continues until formally delivered or a concrete blocker is recorded.
+4. **OpenCV acceptance** — Given the seven buyer images and expected counts, when the package test runs, then every count and output schema passes before upload.
+5. **Fresh marketing account** — Given account setup and official publisher health are green, when the first content is ready, then one original non-commercial Reel may publish on day1; no artificial engagement or arbitrary waiting day is required.
+6. **Reach gate** — Given a public Reel exists but reach evidence is absent/zero, when daily runs, then commercial link/CTA remains disabled.
+7. **Shared regression** — Given shared lifecycle changes, when Capafy/clip/video tests run, then each consumer uses its own state namespace and the same engine contract without cross-account mutation.
+
+### 17.9 Full TO-BE
+
+```text
+launchd / tmux / OpenClaw scheduler
+                │
+                ▼
+        supervisor + health check
+        PID-aware lock / retry / backoff
+                │
+                ▼
+       provider-agnostic agent-runner
+       ├─ deterministic: shell/python
+       ├─ repeatable: GPT-5.6 Luna
+       ├─ tool work:  GPT-5.6 Terra
+       ├─ high value: GPT-5.6 Sol
+       └─ future: Claude/Kimi/DeepSeek adapters
+                │
+      rc + schema + artifact evidence
+                │
+        ┌───────┴──────────────────────┐
+        ▼                              ▼
+ GIG REVENUE LOOP              SHARED MARKETING ENGINE
+ paid/deadline queue            product manifest/adapter
+        │                              │
+        ├─ Fkimura ¥65k #5138597       ▼
+        │  7-image acceptance     isolated account setup
+        │  → OpenCV fix                │
+        │  → package/hash              ├─ challenge → terminal/report
+        │  → Coconala正式納品           │
+        │  → buyer-visible proof       ▼
+        │  → delivered/paid ledger official publisher health
+        │                              │
+        ├─ jibieaian ¥40k              ├─ fail → explicit failed state
+        │  deadline/work/delivery      │
+        │                              ▼
+        └─ listings/applications  first original non-commercial Reel
+           only after paid work         │
+           is safe                      ├─ public URL + logged-out proof
+                                       ├─ IG/rotation ledger
+                                       └─ Telegram report
+                                              │
+                                              ▼
+                                      repeated reach snapshots
+                                              │
+                              ┌───────────────┴──────────────┐
+                              ▼                              ▼
+                       zero/unhealthy                  healthy/nonzero
+                       no commercial                   commercial marker
+                       continue measure                link + soft CTA
+                              └───────────────┬──────────────┘
+                                              ▼
+                                      14-day full cycle
+                                              │
+                         Capafy / clip / video / future products
+                         share the same engine, isolated state only
+
+Every step: real evidence → Planner independent verification → spec update
+```
+
+### 17.10 External primary sources
+
+- OpenAI Models: https://learn.chatgpt.com/docs/models — 「Terra as the everyday workhorse」「Luna for clear, repeatable work」。
+- OpenAI Non-interactive mode: https://learn.chatgpt.com/docs/non-interactive-mode — 「Non-interactive mode lets you run Codex from scripts ... You invoke it with `codex exec`」。
+- Claude Code Programmatic usage: https://code.claude.com/docs/en/headless — 「pass `-p` ... to run it non-interactively」。現行loopが使うsurface自体は正しいが、subscription単一依存が失敗点。
+- Meta Instagram Content Publishing: https://developers.facebook.com/documentation/instagram-platform/content-publishing — professional account向けに `/<IG_ID>/media` と `/<IG_ID>/media_publish` を提供し、Reelsを正式公開できる。
+- Meta Spam policy: https://transparency.meta.com/policies/community-standards/spam/ — 「restrictions ... at lower frequencies when ... signals of inauthenticity are present」。回数を少なくするだけでは不十分で、synthetic engagement自体を除く。
