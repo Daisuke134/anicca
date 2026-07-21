@@ -46,13 +46,13 @@ flowchart TD
 
 スマホ版ではエージェントへの返信、ファイル一覧の閲覧、ステージングとコミット、新しいworkspaceの作成ができます。コードを細かく書くためのエディタは、あえて載せていません。今回の構成はMac MiniとiPhoneをTailscaleに参加させた直接接続で、Orca Relayは使っていません。
 
-![Orca公式のスマホ版画面](assets/orca/orca-mobile-official.jpg)
+![Orca公式のスマホ版画面](images/orca/what-is-mobile-official.png)
 
 *Orca公式のスマホ版画面。接続中のデスクトップ、直近の作業ツリー、ClaudeとCodexの残量が一画面に並ぶ*
 
 ## セットアップ、HomebrewとQR
 
-Mac Miniへのインストールで最初につまずいたのは、Homebrewの名前です。素の `brew install --cask orca` で入るのは、目当てのAgent IDEではありません。Plotlyの古い別ツールです。配布元のtapまで含めて、次のように指定しました。
+私のMac Miniへのインストールで最初につまずいたのは、Homebrewの名前です。素の `brew install --cask orca` が指すcaskを確認すると、目当てのAgent IDEではなくPlotlyの画像生成ツールでした。配布元のtapまで含めて、次のように指定しました。
 
 ```sh
 brew install --cask stablyai/orca/orca
@@ -62,9 +62,9 @@ open -a Orca
 
 Gatekeeperのダイアログはquarantine属性を外して回避しました。続くアクセス確認を許可し、3段階の初期設定では既定のエージェントにClaude、テーマにシステム設定を選び、通知設定は飛ばしました。プロジェクトに `/Users/anicca/anicca-project` を追加し、ブランチ一覧とターミナルが出れば準備完了です。
 
-iPhoneとのペアリングは、デスクトップ版のサイドバーにある「Orcaモバイル」から始めます。重要だったのは接続先ネットワークの選択です。ここでLAN側のIPアドレスではなく、Tailscaleの `100.99.82.95 (utun0)` を選びました。iPhone側でもTailscaleをONにします。Orca RelayはOFFのままなので、Tailscaleを使った端末間接続（P2P）です。
+iPhoneとのペアリングは、デスクトップ版のサイドバーにある「Orcaモバイル」から始めます。重要だったのは接続先ネットワークの選択です。ここでLAN側のIPアドレスではなく、Tailscaleの `100.99.82.95 (utun0)` を選びました。iPhone側でもTailscaleをONにします。Orca RelayはOFFのままなので、Orcaのクラウド中継を使わないTailscale経由の端末間接続です。Tailscale内部で直結したかDERP中継になったかまでは測っていません。
 
-ペアリング用QRコードは数分で切れます。今回はTelegramとGmailでiPhoneへ送り、Gmail経由のQRコードで20時40分ごろにペアリングできました。期限切れなら再生成できます。デスクトップ版を閉じると接続も切れ、再開すると自動でつながります。
+Orcaの公式説明にも、ペアリング用QRコードは数分で切れるとあります。今回はTelegramとGmailでiPhoneへ送り、Gmail経由のQRコードで20時40分ごろにペアリングできました。期限切れなら再生成できます。公式説明どおり、デスクトップ版を閉じると接続も切れ、再開すると自動でつながりました。
 
 ## 初日の所感
 
@@ -96,7 +96,7 @@ Claude Code on the webでは、リポジトリをGitHubからAnthropic管理の�
 |---|---|---|---|
 | 実行場所 | 自宅Mac Mini | Anthropicの仮想マシン | OpenAIの隔離環境 |
 | リポジトリ | 手元の環境 | GitHubから複製 | クラウドの隔離環境 |
-| 接続 | Tailscale P2P | アプリ、ブラウザ | ChatGPTアプリ |
+| 接続 | Tailscale経由 | アプリ、ブラウザ | ChatGPTアプリ |
 | 自宅への依存 | Mac Miniが必要 | 環境の再現が必要 | 環境の再現が必要 |
 
 差が出るのは状態の置き場所です。自宅マシンにしかない設定や作業中のリポジトリをそのまま使うなら、Orcaの遠隔操作は分かりやすい選択です。自宅のMac Miniへの依存を切りたいなら、クラウドのセッションの方が目的に合います。
@@ -105,7 +105,7 @@ Claude Code on the webでは、リポジトリをGitHubからAnthropic管理の�
 
 Claude Code on the webでは、外向きの通信がすべてAnthropicのHTTP/HTTPSプロキシを通ります。Noneでは外へ出られず、Trustedの既定許可先にTailscaleのホストはありません。候補になるのはFullか、独自の許可先を追加する設定です。さらにSSHを使うなら、userspace側へ自動で流れないため、localhostのSOCKS5へ `ProxyCommand` で通す必要があります。
 
-理屈の上では、Full、userspace tailscaled、443番ポート経由のDERPを組み合わせる余地があります。しかし、Claudeの隔離環境内でtailscaledを実際に起動できた報告は見つかっていません。AnthropicのプロキシがHTTPS CONNECTを許すか、tailscaledがそのプロキシ設定を使えるかも未確認です。私はこの経路をまだ一度も動かせていません。
+理屈の上では、Full、userspace tailscaled、443番ポート経由のDERPを組み合わせる余地があります。しかし、GitHubと公式文書を検索しても、Claudeの隔離環境内でtailscaledを動かした報告を私は見つけられませんでした。AnthropicのプロキシがHTTPS CONNECTを許すか、tailscaledがそのプロキシ設定を使えるかも未確認です。私はこの経路をまだ一度も動かせていません。
 
 GitHub CodespacesにはTailscaleの公式手順がありますが、こちらは `/dev/net/tun` を渡す方式で条件が違います。クラウドからも必ず自宅へ届くとも、絶対に届かないとも断定できません。現時点で確実なのは、OrcaとTailscaleなら、すでに自宅のMac MiniへiPhoneから接続できたことです。
 
@@ -123,25 +123,27 @@ Orcaをおすすめしやすいのは、自宅や作業場に常時使えるマ�
 
 ## 出典
 
-- https://www.onorca.dev/docs/mobile
-- https://www.onorca.dev/whats-new/posters/orca-mobile.jpg
-- https://github.com/stablyai/orca
-- https://code.claude.com/docs/en/remote-control
-- https://code.claude.com/docs/en/claude-code-on-the-web
-- https://tailscale.com/docs/concepts/userspace-networking
-- https://tailscale.com/docs/reference/connection-types
-- https://tailscale.com/docs/integrations/github/github-codespaces
-- https://github.com/stablyai/orca/blob/main/src/main/rate-limits/claude-fetcher.ts
-- https://github.com/stablyai/orca/blob/main/src/main/rate-limits/codex-fetcher.ts
-- https://github.com/manaflow-ai/cmux
-- https://happy.engineering
-- https://github.com/omnara-ai/omnara
-- https://mosh.org
-- https://cursor.com/docs
-- https://docs.github.com
-- https://code.visualstudio.com/docs/remote/tunnels
-- https://coder.com/docs
-- https://ona.com/docs
-- https://openai.com
-- https://jules.google/docs/faq
-- https://docs.devin.ai/get-started/devin-intro
+- Orca Mobile公式説明（直接接続、QR期限、再接続、スマホ機能）：https://www.onorca.dev/docs/mobile
+- Orca Mobile公式画像：https://www.onorca.dev/whats-new/posters/orca-mobile.jpg
+- Orca README（対応エージェント、worktree、Homebrewコマンド）：https://github.com/stablyai/orca
+- Orca Homebrew tap：https://github.com/stablyai/homebrew-orca
+- 同名のPlotly製Homebrew cask：https://github.com/Homebrew/homebrew-cask/blob/main/Casks/o/orca.rb
+- Claude Code Remote Control（手元実行、Anthropic中継）：https://code.claude.com/docs/en/remote-control
+- Claude Code on the web（仮想マシン、設定、通信制御）：https://code.claude.com/docs/en/claude-code-on-the-web
+- Tailscale userspace networking：https://tailscale.com/docs/concepts/userspace-networking
+- Tailscaleの直接接続とDERP：https://tailscale.com/docs/reference/connection-types
+- TailscaleのGitHub Codespaces手順：https://tailscale.com/docs/integrations/github/github-codespaces
+- OrcaのClaude残量取得コード：https://github.com/stablyai/orca/blob/main/src/main/rate-limits/claude-fetcher.ts
+- OrcaのCodex残量取得コード：https://github.com/stablyai/orca/blob/main/src/main/rate-limits/codex-fetcher.ts
+- Cmux：https://github.com/manaflow-ai/cmux
+- Happy（手元実行、暗号化中継）：https://happy.engineering
+- Omnara：https://github.com/omnara-ai/omnara
+- Mosh：https://mosh.org
+- Cursor公式文書：https://cursor.com/docs
+- GitHub Codespaces概要：https://docs.github.com/en/codespaces/about-codespaces/what-are-codespaces
+- VS Code Remote Tunnels：https://code.visualstudio.com/docs/remote/tunnels
+- code-server：https://coder.com/docs/code-server
+- Ona公式文書：https://ona.com/docs
+- OpenAI Codex：https://openai.com/codex/
+- Google Jules FAQ：https://jules.google/docs/faq
+- Devin概要：https://docs.devin.ai/get-started/devin-intro
