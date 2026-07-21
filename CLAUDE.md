@@ -54,7 +54,7 @@ Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行。自�
 
 **Life Manager**: cloud 本番 = `anicca-products` **origin/main** `apps/life-call/`（Railway。dev/feature branch には無い）。local 版 = `~/Projects/life-manager`（Daisuke134/life-manager、収斂予定）。SSOT spec → `docs/superpowers/specs/2026-07-17-life-manager-cloud-alignment-and-dev-loop.md`、vision → `docs/loop-engineering/46-life-manager-northstar-and-personal-loops.md`
 
-GitHub Actions の新規追加は禁止（`netlify-deploy.yml` の1個のみ）。定期実行は `~/.openclaw` の gateway cron が正本。
+GitHub Actions の追加は可（Dais 裁定 2026-07-21 — 旧「新規追加禁止」ルールは撤廃）。**定期実行の正本**は引き続き `~/.openclaw` の gateway cron（GHA cron を稼働 loop の正本にしない）。CI（test/eval/deploy gate）は GHA でよい。
 詳細（folder tree / architecture 図 / write 制限 / fleet全体の現状）→ `docs/reference/local-env-and-architecture.md`（tracked、全 Claude/Codex session が読める。CLAUDE.local.md は gitignored の個人設定のみ）。
 
 ## ブランチ & デプロイ
