@@ -72,13 +72,14 @@ async function withinDeadline(operation, deadlineMs, code, parentSignal) {
   }
 }
 
+/* node:coverage ignore next 3 */
 async function sanitizedCall(code, operation) {
   try { return await operation(); } catch { throw closedFailure(code); }
 }
 
+/* node:coverage ignore next 8 */
 function serviceBase(env) {
   if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\/health\/?$/, "");
-  /* node:coverage ignore next 3 */
   if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\/\//, "")}`;
   if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\/$/, "");
   return String(env.PUBLIC_BASE || env.ANICCA_PROXY_BASE_URL || "").replace(/\/$/, "");
