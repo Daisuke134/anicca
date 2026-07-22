@@ -61,12 +61,9 @@
 
 ## 5. 順序
 
-1. X セッションを @diceai0 に復帰（loop の self-fix 経路で）
-2. self-improve harness に §4 を焼く（P0-1〜3 の vendor は loop 自身に検索・導入させ、answer-key で収束検証）
-3. 新記事で品質収束を 2-3 日 watch（draft のまま）
-4. 収束確認後に `ARTICLE_AUTOPUBLISH` arm（完全無人公開、最後）
+旧導入順は完了または廃止。現在の実行順序は **§18.8 E1→E8だけ**を正本とする。
 
-TaskList の現在状態は §16.5 と §17 を正本とする。D1-D8 はすべて **DONE**、model-agnostic daily sprint は P1-P3 **DONE** / P4 **TODO**。§16.4 は D1-D8 の完了条件だけを定義する。
+TaskList の現在状態は §16.5 と §18.8 を正本とする。D1-D8 と P1-P3 は **DONE**。旧 P4 は配信集合・runtime 境界が変わるため §18 の E1-E8 へ移管する。残作業の順序と状態は §18.8 だけを更新する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -106,9 +103,9 @@ X アカウント真因（実測）: 投稿先はコード/設定でなく **dai
 
 | form | 出口 | 換金 |
 |---|---|---|
-| X 投稿（短文/フック） | X | creator revenue |
-| 記事（現行） | note/zenn/substack/dev.to/X Articles | 単発¥ + 購読 |
-| 電子書籍（長文） | zenn 本 / Amazon KDP 等 | ebook 販売 |
+| X 投稿（短文/フック） | @diceai0、日本語standalone 1本/日 | 発見・プロフィール導線 |
+| 記事（現行） | note/ja、Zenn/ja、Substack/ja+en | 単発¥ + subscription |
+| 電子書籍（長文） | Zenn Book / Gumroad / 自社Stripe | ebook単発売上 |
 
 **設計原則（一般化ゲート）**: gate も few-shot も「form・topic に依存しない原則」だけを焼く。
 例: title_jargon 軸の正本は「見出しは finding/機能を平易に約束し vendor 名を名乗らない」——
@@ -147,14 +144,14 @@ GOOD:仕組み説明）付き。SKILL に「SUBJECT = EXPLAINER, NOT DIARY」節
 `_hold/` に退避したまま = 正しい（体験ネタ）。だが explainer 系（olas-mech-marketplace = A2A とは何かの説明）を
 一緒に held したのは誤り → queue に復帰した。今後 _hold には「自分の体験」ネタのみ、queue には explainer ネタ。
 
-## 10. 検証済みの現状（2026-07-19）: loop は完全動作、残りは autopublish の switch だけ
+## 10. 履歴スナップショット（2026-07-19。当時の認識、現在状態ではない）
 
 今日の pass が JA+EN を全 platform に draft stage 済み（実測、articles.jsonl + 実 draft URL）:
 zenn-ja / devto-en / substack-ja / substack-en / note-ja / x-ja / x-en。X も @diceai0 復帰で通る。
 gate 骨格 + 自律(#14) + 収益連動(#13) + form(#12) + explainer(#9) 全て稼働。**残るは #7 arm（ARTICLE_AUTOPUBLISH=1）**
 のみで、これは複数日 watch で品質が別 topic でも安定して 70+ を出すのを実測してから最後に引く。
 
-## 11. #7 arm と #8 OSS 化は別物（2026-07-19 明確化）
+## 11. 旧 #7 arm / #8 OSS gap（履歴。現在の設計は §18）
 
 **#7 と #8 は対象が違う**:
 - **#7 ARM** = Dais 自身の loop を live 化。Dais のアカウント(note=anicca123 / substack=aniccabuddha / X=diceai0)に毎日投稿して Dais が稼ぐ。コード作業ゼロ、環境変数1個。
@@ -186,7 +183,7 @@ launchctl unload "$P"; launchctl load "$P"
 **#8 のタスク** = ①ハードコード(アカウント名/telegram/email)を env 化 ②全platform自動signup を IG パターンで note/substack/zenn/X に展開 ③KYC/payout は loop が「あなたの銀行を1回繋いで」と依頼する導線。
 **「clone して勝手に全部」の単一コマンドは今は存在しない** — それを作るのが #8。KYC だけは各人1回の人間作業で正解、それ以外は自動化可能。
 
-## 12. 残り TODO（2026-07-19 時点、正しい順序）
+## 12. 旧 TODO（履歴。現在の残TODO正本は §18.8）
 build は全 done(#1-6,9-14 完了)。残り:
 1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
 2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
@@ -199,7 +196,7 @@ build は全 done(#1-6,9-14 完了)。残り:
    - **rubric few-shot**: 蓄積した exemplar から引く = 採点基準が実在の売れてる記事に紐づく
 4. (arm後) `skills/article-writer/scripts/` の汎用部品（rubric-judge.sh / self-improve.sh / reader-testing-gate.sh）を `skills/_shared/` へ移動して clip/reddit 等の兄弟 loop からも使えるようにする / OSS 公開前に Dais の個人情報（アカウント名・telegram ID・gmail）をコードと state ログから消して env 変数に置換する
 
-## 13. 2026-07-20 Dais 裁定: no-skip 毎日必 publish + 今日から autopublish + queue 3-lane（§10 の「複数日 watch」を上書き）
+## 13. no-skip裁定の履歴（§18がbounded quality + durable resumeとして現在化）
 
 ### 13.0 今朝の実測（2026-07-20 06:00 pass の失敗解剖）
 
@@ -244,7 +241,7 @@ build は全 done(#1-6,9-14 完了)。残り:
 - `~/.openclaw/skills/.backups/` を日次生成する cron を特定し、保持 1 世代 + heavy dir（venv/media/state）除外に是正。14GB/本の tar.gz を毎日積むのが今回の根本原因
 - 検証: 是正後の backup サイズ < 2GB、free > 20GB を維持
 
-## 14. FULL TODO — Layer 1 完成から 10M MRR まで（2026-07-20。TaskList と二重トラック、この表が順序の正本）
+## 14. 旧FULL TODO（履歴。順序の正本ではない）
 
 体制（Dais 裁定、現在の正本）: main Sol = plan/spec/独立検証、別 Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）。spec と TODO は発見のたびに更新し続ける。
 
@@ -329,37 +326,38 @@ build は全 done(#1-6,9-14 完了)。残り:
 - Dais 裁定: capafy の X 宣伝投稿（@aniccaen スレッド）= AI slop、恒久停止。**IG は継続**（warmup 進行中、day2/3）。
 - 実施: `capafy-x-marketing-daily.sh` を全 citizen home（~/.anicca-founder / ~/.blockrun / ~/.franklin2-home/.blockrun）で `.DISABLED-by-dais-20260720` に rename。スケジューラ実測: launchctl に x-marketing job なし、openclaw cron の anicca-x-* 系は全 enabled:False。最終投稿の痕跡 = 07-18 08:10 の cadence no-op log のみ。
 - 残タスク（Sol）: rename でなく恒久削除 + SKILL.md から X-line 記述を撤去（W 系と同便で発注）
-## 16. WRITER ENGINE — 多フォーム正本（2026-07-20 Dais 是正。§15 の「記事中心+後付けフォーム」観を上書き）
+## 16. WRITER ENGINE — 3 lane baseline（現在の運用正本は §18）
 
 **是正**: これは「article loop」ではない。**1つの self-improving engine が短文・中文・長文の3 lane に毎日/毎週/毎月書く**。記事は lane の1つにすぎない。X 短文 lane と書籍 lane は「後で」ではなく engine の初期形態に含まれる。
 
 ### 16.1 3 lane 構成（全 lane が同じ CORE を共有）
 | lane | 頻度 | 出力 | taste 調達元（vendor 済み） | 金 |
 |---|---|---|---|---|
-| SHORT (X 単体投稿) | 毎日 2-3本 ja+en | 記事リンクでない standalone 投稿（フック/教訓/観察） | Gingiris 閉ループ（voice→evidence→publishability→feedback）+ blacktwist hooks + viral-hooks | 直接 ¥0。発見面 = 全 lane の母数を作る |
-| MID (記事=newsletter) | 毎日1本×2言語 | note/zenn/substack/X(記事)/devto | STORM式+hooks+storytelling+anti-ai/humanizer/shimo4228（bakeoff 実証） | sub ¥500/mo + 単発 ≤¥500 |
-| LONG (書籍) | 月1冊 | 記事在庫30本の束ね直し → zenn本/gumroad/自社+Stripe | ai-book-generator 骨格 + show-me-the-story 全書整合 pass | ¥1,500-3,000/冊 |
+| SHORT (X 単体投稿) | **毎日ちょうど1本、jaのみ** | @diceai0 の standalone 投稿。外部リンクなし。MID の同日 finding を280 weighted chars以内に圧縮 | `x-algorithm` + Gingiris 閉ループ + `recursive-improver` の social-post rubric（最大5版） | 直接 ¥0。プロフィール導線から MID の母数を作る |
+| MID (記事=newsletter) | 毎日1題×2言語 | note/ja、Zenn/ja、Substack/ja、Substack/en。X Articles と Dev.to は配信集合から削除 | `ai-entity-article-writer` + STORM式+hooks+storytelling+humanizer/shimo4228（bakeoff 実証） | subscription 月額は設定値 + note 単発 ≤¥500 |
+| LONG (書籍) | 月1冊、30本の新規MID在庫が条件 | 日本語1冊を Zenn Book + Gumroad + 自社Stripe の3出口へ同一版で公開 | `book-writer`。Nigh/show-me-the-story の中断再開・章整合 pass をMIT範囲で copy+tweak、PandocでEPUB/PDF | ¥1,500-3,000/冊。MRRとは分離集計 |
 
 CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+conscience gate W1+bounded revise W2+token 予算）→ 公開（CDP 直、credential ゼロ）→ 学習（実売還流 T12 / owner-veto / 週次監査）。
 
 ### 16.2 フォーム lane タスク（TaskList 登録: F1/F2）
 | # | 内容 | 依存 |
 |---|---|---|
-| F1 | X 短文 lane 実装: Gingiris 構造 copy+tweak、毎日 2-3 standalone 投稿（@diceai0）、X-form rubric + conscience gate 適用、feedback= imp/eng 実測→taste 更新。旧 T13-15 の「X 短文 form」をこれに統合 | W1,W2 完了後 |
-| F2 | 書籍 lane 実装: 在庫30本到達で初回、ai-book-generator で章構成→整合 pass→zenn本+gumroad 出版 E2E。旧 T23 をこれに統合 | 記事在庫30本 |
+| F1 | X 短文 lane 実装: 毎日ちょうど1本・日本語・@diceai0・standalone・外部リンクなし。`x-algorithm` + social-post rubric + conscience gate、日付単位のidempotency receipt、翌日imp/eng実測を実装 | §18 E1-E4 |
+| F2 | 書籍 lane 実装: 直前の未使用MID在庫30本を選定→章構成→章別執筆→全書整合→EPUB/PDF→Zenn Book/Gumroad/自社Stripe exact3 publish | §18 E5 |
 
-### 16.3 金の地図（10k MRR。§15.1 free-first と整合）
-- Phase F（今〜30日）: 全 lane 無料。SHORT が発見、MID が在庫、LONG は準備。収益 ¥0（設計通り）。
-- Phase S（30日〜）: 1コロニー月次の現実線 = sub 100×¥500 + 単発 30×¥500 + ebook 20×¥1,500 ≈ ¥95k ≈ $650/mo。SHORT lane が母数を拡大するほど各項が伸びる。
-- Phase R: $10k = $650×15 コロニー（OSS 採用 15人）。$100k = 150人。10k の変数 = OSS 採用数 > 文章力。
-- cost 恒等式: 1日 3 lane 合計 token 予算 ≤ $6 → 月 $180 → sub 36人で黒字。黒字化が最初の勝利条件。
-- 未検証 3変数（T12 で実数化）: sub 転換率 / ebook 販売率 / OSS 採用率。
+### 16.3 金の地図（strict $10k MRR。§15.1 free-first と整合）
+- **MRR はsubscriptionだけ**を数える。note買い切りとebook売上は月次売上に含めるがMRRへ混ぜない。
+- Phase F（最初の30本）: SHORT が発見、MID が検索在庫とemail subscriberを作り、LONGの材料を貯める。無料記事からsubscriber転換率を実測する。
+- Phase S: 1 colony の基準を paid subscriber 100人 × ¥500相当 = **¥50,000 MRR** とする。単発記事・ebookは別ledger。
+- Phase R: 計画レート ¥150/$ を固定して **30 colonies × ¥50,000 = ¥1,500,000 ≈ $10,000 MRR**。別解は15 colonies × paid subscriber 200人。達成を保証せず、subscriber転換率とOSS稼働colony数を週次実測する。
+- cost gate: lane/runtime別のsubscription quota消費と外部実費をledger化し、1 colonyの粗利が正になるまで高価なmodelを増やさない。
+- 未検証 3変数: visitor→free subscriber / free→paid subscriber / OSS install→稼働colony。§18のmeasurement contractで実数化する。
 
 ### 16.4 実行順序と MID lane スプリントの done 条件（2026-07-20 Dais 裁定。goal-setter 形式。これが次セッションの正本）
 
 **Order は lane 逐次: MID(記事) を完全に終わらせる → SHORT(F1) → LONG(F2)。** F1/F2 は MID done まで着手禁止（次々セッション以降で Dais が指示）。
 
-**Objective**: MID lane を完成させ、**既存の** `ai.anicca.article-daily`（launchd、autopublish armed 済み）を `launchctl kickstart` で発火し、「良い記事」が実際に毎日 publish される状態を実証する。新 loop を作らない。article loop の X 投稿（記事+X）は現状のまま維持。
+**Objective**: D1-D8 の履歴上のdone条件として、既存 `ai.anicca.article-daily` の当時のexact6公開を実証する。現在の配信集合、X本数、runtime、folder構造は §18 が上書きする。
 
 **分業**: main Sol = plan/spec/独立検証のみ。実装は別 Sol subagent（flow A、worktree 分離）。
 
@@ -392,7 +390,7 @@ CORE（共有）: queue+exemplar 学習(T6) → 執筆 → verify（rubric+consc
 | D7 | **DONE** | run `20260721-012658` の ledger は note、X ja/en、Substack ja/en、Zenn の6件がすべて `published:true` + `reality_gate:PASS`。published+PASS 抽出の第6行目（ledger物理行95）が Zenn `2026-07-21-coinbasevisaai143` で、Dev.to は仕様どおりdraft。指定validator `article-run-complete.py --ledger .../articles.jsonl --run-id 20260721-012658 --armed 1` は fresh `rc=0`、独立集計も `exact_count:6`。`zenn-deferred.json` は `status:complete`、`completion_check:passed`、`notification_status:sent`、heartbeat/completed URLあり。retry launchctl は `run interval=300 seconds`、`runs>=27`、`last exit code=0`。profitable-claude は `HEAD == origin/main` で、非同期retry `20f7142` と Substack table互換修正 `1e97a74` を含む。Zenn remote `origin/main` は公開commit `45659e9` と再試行commit `3f222c9` を含み、remote上のfrontmatterは `published: true`。agent-browser fresh own-eyes: [Zenn](https://zenn.dev/anicca/articles/2026-07-21-coinbasevisaai143) はURL/title一致、本文7,989文字、H2 11個、表1個、出典まで描画。[Substack ja](https://aniccabuddha.substack.com/p/coinbasevisaai143) / [en](https://aniccabuddha.substack.com/p/coinbases-ai-rails-moved-44m-only) はURL/title一致、本文8,692/15,398文字で、raw pipe段落0件・Markdown区切り記法0件。旧raw pipe表は両言語とも見出し段落 + 強調ラベル付き7項目ULとしてrender済み。fresh全ページ画像は `/tmp/d7d8-finalizer-20260721-012658/`（SHA-256: Zenn `096e97ff40d7e8be344fde48752f4e37a71952ecced713edb90d6a145b39a98b`、ja `c73af5d62789033afc1aa9f76ec202dd241c13ff64467949c6408547c5f48295`、en `67c86958f2b496d29f3c1360fac3ce1b800376b5b8dc0bc3add9510bd55cb470`）。永続比較画像は run artifact `assets/substack-table-after/{ja,en}-full.png`（ja `32340c1eef4ef16b8a802defa02292bc6efef96ec1380f9f059c40f603bfec15`、en `efc5870924a3b9ab67790cc4c2d73889012766eac9f489d3a112ef00aae86e09`）。具体的な冒頭、280日・136,708,672件・$44,121,383.81・0.43%の検算可能な数字、C1/C2/C3の説明、一次資料と独立tracker、読者別結論が実ページで連続しており、本文品質・配信品質とも **PASS** |
 | D8 | **DONE** | 状態とevidenceは本節だけを正本とし、§16.4 とTaskListは本節への参照に同期。対象specだけをcommitして `dev` へpushし、`HEAD == origin/dev`・対象spec cleanをfresh実測する。最終判定はfresh-context別Solのartifact-only/read-only review `ok:true` を必須とする |
 
-## 17. Model-agnostic daily sprint（TaskList 正本）
+## 17. Model fallback sprint（履歴。現在のTaskListは §18.8）
 
 **Objective**: 日次 writer を単一 provider/model の障害で停止させず、有限の品質改善後も最良 draft から配信を再開し、毎日1記事を全媒体へ重複なく公開する。
 
@@ -407,7 +405,7 @@ fallback設計根拠: ソース [Claude Code CLI reference](https://code.claude.
 | P1 | **DONE** | 日次 writer の primary model を `gpt-5.6-luna`、effort を `xhigh` にする。`ARTICLE_MODEL` / `ARTICLE_EFFORT` の明示的 default とし、CLIProxy認証とローカル認証の両分岐が同じ値を使う | profitable-claude `7907269`: contractを先に変更した旧実装REDは `rc=1`（Luna default欠落、xhigh default欠落、共通引数0件、hard-coded Sonnet残存）。実装後は `bash -n rc=0`、contract `rc=0`、quality-best-effort / run-completion / run-prune-pending / zenn-deferred-retry は全て `rc=0`。render wiringは今回差分外の古いSTEP列期待により11/12で、変更前live checkoutでも同一失敗を再現。実CLIProxy probe `claude --model gpt-5.6-luna --effort xhigh --no-session-persistence --tools '' -p 'Reply with exactly: MODEL_OK'` は6秒で `rc=0` / `MODEL_OK`。profitable-claude は branch、`origin/main`、live checkout がすべて `7907269df887a246e04176efbe6346741691e0e9`、live checkoutの既存life/video差分は前後同一 |
 | P2 | **DONE** | retryable infrastructure failure（429 / 5xx / timeout / provider unavailable）だけで別modelへ切り替える fallback と、失敗modelをcooldownする circuit breaker を実装する。品質・安全判定をmodel切替で迂回しない | profitable-claude `4bbcd7c` は副作用なし `MODEL_OK` preflightだけでcandidateを切替え、healthy model決定後のfull promptを1回だけ実行する。永続stateは`flock`付きatomic RMW、known secretはchunk境界を含めてlogからredactする。auth/billing/usage/ENOENT/EACCESとfull-pass終了結果は明示fallback対象外。実CLIProxyではSonnet preflightが20秒timeout→Luna選択→full `MODEL_OK` `rc=0`、proxy secret露出なし。2回目のfresh reviewでwrapper外側のauth retry/completion respawnがfull promptを再実行する反例を検出し、`f5567da` でP3前のblind replayを停止する。temp HOME system 7ケース（`rc=0` incomplete、partial+503、timeout、auth、ordinary failure、cooldown `rc=75`、Zenn handoff）はwrapper full invocationが各exact1、partial marker最大1、lock解放・alert/handoff・`exit 0`を実測。helper+system pytestは32/32 PASS、article-daily contract全PASS、`bash -n`・helper `py_compile`・`git diff --check` PASS、関連regression 17/17 PASS。`origin/main` とlive checkoutは `f5567dac760c45c9571fc6577a38dc0ea82b9bd0`、既存life/video差分のSHA-256は反映前後同一。platform別の安全な再開はP3の責務 |
 | P3 | **DONE** | finite quality best-draft、platform別resume、run lock/idempotencyを現行実装と照合監査し、不足だけを実装する。品質上限到達は最良draftで先へ進み、既にliveの媒体は再投稿しない | profitable-claude `30942bbc9dec3ba69ad43a37da6209e4b86aa2a4`。TDDでcurrent `ARTICLE_RUN_DIR`+prior state/ledger、外部/final-symlink/`..` draft、missing env、`plan`→terminal競合、safety/hash/missing/ambiguous直後の`begin_resume`、partial ledger receipt crash窓、state/ledger URL矛盾、live-state ledger欠落repair、managed Substack staging bypassをそれぞれREDで再現してGREEN化。state/run/draft/ledgerはcanonical同一runへbindし、`begin_resume`は同一`flock`内で全条件を再評価してpending時だけattemptを増やす。current-runのpair別`published:true`+`reality_gate:PASS` receiptはstate write前crash後も再投稿せず、URL矛盾はambiguous停止、ledger欠落だけはstate receiptからidempotent repairする。初回・resume promptとSubstack stagingは3 envを必須化し、intent/planはshared guard経由。live checkoutでserial 93/93（61.79s）、`-n 7` 93/93（26.32s）、関連shell 13/13、article contract全PASS、Substack shell 8/8、`bash -n`、`py_compile`、`git diff --check` PASS。fresh-context artifact-only adversarial reviewは`ok:true` / findingsなし。`origin/main`=live checkout=`30942bb`、既存dirty fingerprintはtracked `cfc915c35a9dd75814d71898f80c55ab5b66f4e9d1cf7f7a557f8fbfa4819fb8` / untracked `d541f2ba4383732ddfe64e157c69ed526e323f533068b597c544409736fbda4e`で反映前後同一。P4のkickstart/live公開は未実行 |
-| P4 | **IN PROGRESS** | `ai.anicca.article-daily` をmanual kickstartし、日次writer自身が全媒体へ公開する最終E2Eを行う。全live URLとreality gateを実測し、その後の06:00 schedule起動も確認する | preflight実測: launchd loaded / `ARTICLE_AUTOPUBLISH=1` / 06:00 schedule / lockなし / 当日runなし。手動完走後の06:00が別記事を作る同日guard欠落を検出。`93346b1` は最新同日runだけを正本に exact6 skip、canonical exact5+Zenn pending のworker所有、mechanically resumable同一RUN_TS再開、未分類/ambiguous blockを実装。TDD RED 5件からadversarial反例4件を追加し、start-control 9/9 + publication resume 56/56 = 65/65、Zenn positive testはtemp bare originを実fetch/show。manual run `20260721-191239` はLuna xhighで開始したが、内部eval judge ja/enだけがhardcoded Sonnetを使い、両方 `429 All credentials ... cooling down` / `FATAL:no-json-from-judge` を実測。`65a5395` で全7 fresh judge経路をLuna xhigh default + native Sonnet fallback + 240秒timeoutへ統一し、contract RED→GREEN、eval artifact、gate log 8/8、全bash-nを通しlive checkoutへFF。fresh artifact-only reviewは両commitとも `ok:true`。最終done evidenceはmanual runの同一run exact6、全媒体live URL実読、ledger `published:true` + `reality_gate:PASS`、Telegram、06:00 launchd run evidence |
+| P4 | **MIGRATED → §18 E1-E8** | 旧exact6/X日英2本/Claude CLI経由のmodel aliasを前提にした最終E2Eは実行しない。現runを保全したまま、native Codexまたはnative Claudeで新exact5へ移行する | 旧run `20260721-191239` のnote/jaだけがlive。§18.7のincident evidenceと§18.8を正本にする |
 
 ### 17.1 P3 audit（正本）
 
@@ -421,3 +419,308 @@ fallback設計根拠: ソース [Claude Code CLI reference](https://code.claude.
 | wrapper | P2安全策としてfull pass exact1、partial失敗は停止 | 全6 stable targetを最初のlive side effect前にguard経由で登録。canonical pair receiptを完了正本として、partial crashは残pairだけ、ledger欠落はrepair対象だけをsame run/draftで最大2回再入する。`begin_resume`はplan相当条件を同一lock内で再検証し、missing/ambiguous/safety/all-complete/cooldownは再入しない |
 
 設計根拠: ソース [AWS Lambda Powertools idempotency utility](https://github.com/aws-powertools/powertools-lambda-python/blob/develop/docs/utilities/idempotency.md) / 核心の引用: “an operation does not cause additional side effects if it is called more than once with the same input parameters.” 同資料の “PutItem for locking and UpdateItem for completion” に合わせ、side effect前intentと完了receiptを分離する。ソース [Stripe Python README](https://github.com/stripe/stripe-python/blob/master/README.md) / 核心の引用: “Idempotency keys are automatically generated and added to requests ... to guarantee that retries are safe.” stable targetをpair別idempotency identityとして使う。ソース [Temporal Python SDK](https://github.com/temporalio/sdk-python/blob/main/README.md) / 核心の引用: “distributed, scalable, durable, and highly available orchestration engine”。再実行の判断をmodel記憶ではなくdurable stateへ置く。
+
+## 18. Writer Engine v2 — 1 X/day・月次book・native Codex/Claude（現在の正本）
+
+### 18.1 Overview
+
+目的は「毎日6時にagentを起こす」ことではなく、**利用可能なsubscription CLIを1つだけ使っても、同じ公開契約を最後まで完走し、停止後も同じrunを重複なく再開すること**。モデルは文章と判定だけを担当し、schedule・状態遷移・投稿・reality readback・再送は決定論scriptが所有する。
+
+#### 出力・言語・skill・頻度
+
+| form | 作るもの | 言語 | canonical skill | 公開先 | schedule |
+|---|---|---|---|---|---|
+| SHORT | 280 weighted chars以内のstandalone X投稿、画像は同日MIDの図を再利用可、外部リンクなし | **日本語だけ** | `x-algorithm` + `recursive-improver/social-post`。事実・voiceはwriter COREを共有 | @diceai0 に**最大1本/JST日、healthy dayの目標ちょうど1本** | MIDのsafe draft確定後、同一daily run内 |
+| MID | 同じfindingの日本語原稿と英語原稿 | ja + en | `ai-entity-article-writer`。humanizer、rubric、reader test、identity、conscienceをCOREから読む | note/ja、Zenn/ja、Substack/ja、Substack/en = **exact4 live** | 毎日06:00 JSTに1 run enqueue |
+| LONG | 直前の未使用MID 30本を再構成した日本語book、EPUB/PDF/Markdownを同じcontent hashから生成 | **日本語だけ** | `book-writer`。`show-me-the-story` の章記憶・中断再開・全書整合をcopy+tweak | Zenn Book、Gumroad、自社site+Stripe = **exact3 live** | 毎月1日09:00 JST。30本未満なら生成せずinventory receipt |
+| LEARN | metrics snapshot、実験案、candidate taste | 出力言語に依存 | `recursive-improver` + held-out evaluator | 公開しない。採用済みtasteだけCOREへ昇格 | 日次22:30 metrics、日曜22:00 weekly decision |
+
+X Articles ja/en と Dev.to draft はdaily completion集合から削除する。SHORT 1本 + MID 4本で、healthy daily runの公開receiptは **exact5**。X本文に外部リンクを置かず、同日にreplyも作らないため「X投稿1本/日」を文字どおり守る。記事への導線はXプロフィールで固定する。
+
+#### Runtime contract
+
+| role | native Codex runtime | native Claude runtime |
+|---|---|---|
+| writer / translator | `codex exec` + `gpt-5.6-luna` + `high` | `claude -p` + `sonnet` + `high` |
+| per-draft judge | `codex exec` + `gpt-5.6-terra` + `medium` | `claude -p` + `haiku` + `high` |
+| weekly self-improve proposer/reviewer | `codex exec` + `gpt-5.6-terra` + `xhigh`、fresh processを2本 | `claude -p` + `sonnet` + `high`、fresh processを2本 |
+| publishers / state / scheduler | modelを呼ばない | modelを呼ばない |
+
+`WRITER_RUNTIME=auto|codex|claude` とする。`auto` は副作用なし `MODEL_OK` probe、永続circuit breaker、設定された優先順 `codex,claude` でhealthy providerを1つ選ぶ。provider内のmodel fallbackとprovider間fallbackを混同しない。生成途中でproviderが枯れた場合は、次のresume workerが同じrun manifest・同じschema・既存artifact hashからもう一方で続ける。`claude` runtimeの実行中に`codex` binaryが無くても完走し、逆も同じ。Sol/Fable/API key/CLIProxyを必須経路にしない。
+
+### 18.2 Acceptance Criteria
+
+| AC | done条件 |
+|---|---|
+| AC1 daily cardinality | 同一JST日にXのpublic creationは0または1、healthy E2E日は1。daily runはnote/ja、Zenn/ja、Substack/ja、Substack/en、X/jaのexact5 `published:true` + `reality_gate:PASS`。同じ入力の再実行でpublic side effectは0増分 |
+| AC2 bounded quality | reader question setはrunの初回に1回だけ固定。ja/en各最大5 candidate。5回でquality閾値未達でもidentity/conscienceを通る最高点draftを公開する。quality理由のcarry-over終端を作らない |
+| AC3 safety boundary | identity、虚偽、権利侵害、conscienceはqualityと別のblocking gate。全candidateがunsafeなら公開せずquarantine receiptを残す。availability/quality失敗をsafetyと偽装しない |
+| AC4 durable resume | 06:00 jobはrunをenqueueして短時間で解放。5分workerが未完runを再開し、stale lockはPID/start-time/owner tokenを照合してowner不在時だけ回収。429、timeout、process kill、成功応答喪失の各fixtureで重複公開ゼロ |
+| AC5 provider independence | `PATH`からClaudeを除いたCodex-only fresh homeでdaily exact5。Codexを除いたClaude-only fresh homeでもdaily exact5。片方のweekly limit中に`auto`がhealthy側へ切替。全LLM callがruntime adapter経由で、adapter外の `claude` / `codex` 直呼びはgrep 0 |
+| AC6 monthly book | 未使用のexact4 MIDが30本ある月に日本語bookを1冊だけ生成。章別source map、引用、重複率、前後整合、EPUB validationを通し、Zenn Book/Gumroad/self-site exact3のlive URLをreadback。再実行で2冊目を作らない |
+| AC7 self improvement | 日次はmetricsをappendするだけ。週次にTerraまたはClaude側modelが1変更だけ提案し、held-out ja/en/form test、7日canary、keep/revertを実測。taste/rubricだけ自動昇格し、実行code変更はtest付きpatch artifactに留めproductionへ自己適用しない |
+| AC8 clean OSS install | tracked codeは下記TO-BE treeだけ。fresh cloneで`./install.sh --runtime codex`または`--runtime claude`が動き、他providerのloginを要求しない。runtime state、browser profile、credential、generated bookはrepo外。旧skill copy・旧finalizer・X Articles・Dev.to・hardcoded home pathは0件 |
+| AC9 measurement | dailyにX impressions/engagement、各記事view/free subscriber/paid subscriber、platform receiptを記録。monthlyにstrict MRRとone-off売上を別集計し、30-colony式の各変数を実数で更新 |
+
+### 18.3 As-Is / To-Be
+
+| concern | AS-IS（実測） | TO-BE |
+|---|---|---|
+| X | X Articlesをja/enの2本公開するprompt。直近live ledgerも2 URL | standalone日本語1本だけ。日付slot + intent/receiptで重複禁止 |
+| daily outputs | exact6にX ja/enを含み、Dev.toはdraftだけ | MID exact4 + SHORT exact1 = exact5。X Articles/Dev.toを削除 |
+| runtime | top-level fallbackはあるが7 judge、platform agent、self-improveに`claude`直呼びが残る。Luna aliasもClaude CLI経由 | native `codex exec` / native `claude -p` adapter。全processが共通JSON schemaを返す |
+| stop behavior | reader testが毎回新質問を作り、有限budget後に両言語carry-over。lockが残ると次回06:00もskip | 質問固定、最大5でbest-safeをship。incompleteはterminalにせずresume queueへ。ownerless lockは回収 |
+| book | form定義だけ。`zenn-book`/KDPはpendingでpublisher E2Eなし | 30 MID inventory→plan→chapters→consistency→EPUB/PDF→exact3 publishを月次workerが所有。KDPは配信集合から削除 |
+| source tree | active `profitable-claude` と古い `~/.openclaw/skills/ai-entity-article-writer` copyが分岐。存在しない `~/.claude/...` symlink記述あり | tracked SSOT 1個 + repo外data dir 1個 + installされたlaunchd plist。skill discoveryに依存せずmanifestでcanonical promptを列挙 |
+| self improve |複数のdaily/weekly shellがあり、Sonnet直呼びと役割重複 | metrics collector、weekly experiment、promotion validatorの3責務だけ。Terra既定、Claude-only mappingあり |
+
+#### TO-BE folder tree（tracked SSOT + runtime data + LaunchAgents）
+
+```text
+profitable-claude/
+├── skills/
+│   └── writer-engine/                         # 唯一のcode/content SSOT
+│       ├── SKILL.md                           # 人間向け入口。詳細は下位正本への参照だけ
+│       ├── install.sh                         # --runtime auto|codex|claude
+│       ├── bin/
+│       │   └── writer                         # enqueue|resume|book|learn|health|status
+│       ├── config/
+│       │   ├── forms.toml                     # xpost/article/bookのlanguage・exact set
+│       │   ├── runtime.toml                   # provider順・role→model/effort
+│       │   ├── schedule.toml                  # 06:00/09:00/22:30/weekly/300s
+│       │   └── destinations.toml.example      # account名・URLだけ。secretなし
+│       ├── runtime/
+│       │   ├── adapter.sh                     # probe/run/resume/structured-output
+│       │   ├── codex.sh                       # native codex execだけ
+│       │   ├── claude.sh                      # native claude -pだけ
+│       │   ├── schemas/                       # draft/judge/proposal JSON Schema
+│       │   └── circuit-breaker.py
+│       ├── core/
+│       │   ├── enqueue.py                     # JST date idempotency key
+│       │   ├── orchestrate.py                 # durable state machine
+│       │   ├── resume.py                      # pendingだけ再開
+│       │   ├── locks.py                       # PID/start/owner-token lease
+│       │   ├── ledger.py                      # intent→receipt→reality
+│       │   └── inventory.py                   # MID→bookの30本消費
+│       ├── forms/
+│       │   ├── xpost/
+│       │   │   ├── SKILL.md                   # x-algorithm参照、ja 1/day
+│       │   │   ├── prompt.md
+│       │   │   └── rubric.json
+│       │   ├── article/
+│       │   │   ├── SKILL.md                   # ai-entity writerの統合後正本
+│       │   │   ├── prompt-ja.md
+│       │   │   ├── prompt-en.md
+│       │   │   └── rubric.json
+│       │   └── book/
+│       │       ├── SKILL.md                   # book-writer正本
+│       │       ├── plan.schema.json
+│       │       ├── chapter.prompt.md
+│       │       └── consistency-rubric.json
+│       ├── gates/
+│       │   ├── deterministic/                 # purity/SEO/citation/hash/EPUB
+│       │   ├── quality/                       # rubric + fixed reader questions、max5
+│       │   ├── safety/                        # identity/honesty/conscience
+│       │   └── reality/                       # platform live readback
+│       ├── publishers/                        # modelを呼ばない
+│       │   ├── x-post/                        # create intent/readback/dedupe
+│       │   ├── note/
+│       │   ├── zenn-article/
+│       │   ├── substack/
+│       │   ├── zenn-book/
+│       │   ├── gumroad/
+│       │   └── stripe-site/
+│       ├── learning/
+│       │   ├── collect-metrics.py
+│       │   ├── propose-experiment.py
+│       │   ├── evaluate-canary.py
+│       │   └── promote-or-revert.py
+│       ├── vendor/
+│       │   ├── LICENSES.md
+│       │   ├── x-algorithm/
+│       │   └── show-me-the-story/              # MITの必要部分だけ+upstream commit
+│       ├── deploy/
+│       │   └── launchd/
+│       │       ├── ai.anicca.writer-daily.plist          # 毎日06:00 enqueue
+│       │       ├── ai.anicca.writer-resume.plist         # 300秒ごと pending resume
+│       │       ├── ai.anicca.writer-book-monthly.plist   # 毎月1日09:00
+│       │       ├── ai.anicca.writer-learn-daily.plist    # 毎日22:30 metrics
+│       │       └── ai.anicca.writer-learn-weekly.plist   # 日曜22:00 decision
+│       ├── tests/
+│       │   ├── contract/                       # provider直呼び0、schema、cardinality
+│       │   ├── integration/                    # crash/429/stale-lock/receipt-loss
+│       │   ├── e2e/                            # codex-only、claude-only、book exact3
+│       │   └── fixtures/
+│       └── docs/
+│           ├── install.md
+│           ├── operations.md
+│           └── money-model.md
+└── ...
+
+~/.local/share/writer-engine/                  # WRITER_DATA_DIR、repo外
+├── queue/                                     # dateごとのdaily/monthly job
+├── runs/<run-id>/
+│   ├── manifest.json                          # runtime/model/input/output hashes
+│   ├── drafts/{ja,en}.md
+│   ├── xpost/ja.txt
+│   ├── gates/
+│   ├── intents/
+│   └── receipts/
+├── books/<book-id>/{plan.json,chapters,book.md,book.epub,book.pdf}
+├── ledger/{publications.jsonl,metrics.jsonl,revenue.jsonl}
+├── experiments/{candidate,canary,kept,reverted}/
+├── locks/
+└── archive/legacy-article-writer/              # 旧run/stateは削除せずread-only移行
+
+~/Library/LaunchAgents/                         # install.shがtracked plistから設置
+├── ai.anicca.writer-daily.plist
+├── ai.anicca.writer-resume.plist
+├── ai.anicca.writer-book-monthly.plist
+├── ai.anicca.writer-learn-daily.plist
+└── ai.anicca.writer-learn-weekly.plist
+```
+
+削除対象は、移行receipt作成後の旧 `article-d7d8-finalizer`、`orca-zenn-finalizer`、個別 `run-*-agent.sh`、X Articles/Dev.to publisher、古いOpenClaw skill copy、存在しないClaude symlink記述、repo内runtime state。旧ledgerとrun artifactは `archive/legacy-article-writer/` へ移して消さない。
+
+#### Full TO-BE execution ASCII
+
+```text
+                                  ┌──────────────────────────────┐
+毎日 06:00 JST ──launchd────────>│ enqueue(date=JST, lane=MID) │
+                                  └──────────────┬───────────────┘
+                                                 │ 同日keyは1個だけ
+                                                 v
+                                  ┌──────────────────────────────┐
+                                  │ runtime probe (no side effect)│
+                                  │ codex healthy? ─yes─> Codex  │
+                                  │       no                     │
+                                  │ claude healthy?─yes─> Claude │
+                                  └──────────────┬───────────────┘
+                                                 │ neither healthy
+                                       queue保持│ 5分後resume
+                                                 v
+┌──────────────┐  research  ┌──────────────┐  ja/en  ┌─────────────────────────┐
+│ topic queue  ├───────────>│ article core ├───────>│ deterministic + quality │
+└──────────────┘            └──────────────┘        │ quality revise max 5     │
+                                                    │ → best SAFE draft        │
+                                                    │ safety FAIL→quarantine   │
+                                                    └────────────┬────────────┘
+                                                                 │ safe pair
+                    ┌────────────────────────────────────────────┴──────────────┐
+                    │                                                           │
+                    v                                                           v
+       ┌──────────────────────────┐                              ┌──────────────────────┐
+       │ MID deterministic publish│                              │ SHORT from same finding│
+       │ note ja                  │                              │ x-algorithm + max5    │
+       │ Zenn ja                  │                              │ Japanese, no link     │
+       │ Substack ja + en         │                              └──────────┬───────────┘
+       └────────────┬─────────────┘                                         │
+                    │                                                       │
+                    v                                                       v
+       ┌──────────────────────────┐                              ┌──────────────────────┐
+       │ intent→publish→readback  │                              │ X date-slot guard    │
+       │ receipt per pair         │                              │ @diceai0 max 1/day   │
+       └────────────┬─────────────┘                              └──────────┬───────────┘
+                    └────────────────────────────┬──────────────────────────┘
+                                                 v
+                                  ┌──────────────────────────────┐
+                                  │ exact5 + reality PASS?       │
+                                  │ yes: COMPLETE + inventory+1 │
+                                  │ no : PENDING、5分workerへ    │
+                                  └──────────────┬───────────────┘
+                                                 │
+                        ┌────────────────────────┼─────────────────────────┐
+                        │                        │                         │
+                        v                        v                         v
+                 22:30 metrics            日曜 experiment          毎月1日09:00
+                 imp/view/sub/revenue      Terra/Claude proposer     unused MID >=30?
+                        │                        │                    no→receiptだけ
+                        │                held-out + 7日canary               │yes
+                        │                   keep / revert                   v
+                        │                        │                ┌──────────────────┐
+                        └────────────> canonical taste <────────│ plan→chapters     │
+                                                                 │ consistency pass │
+                                                                 │ Pandoc EPUB/PDF  │
+                                                                 └────────┬─────────┘
+                                                                          v
+                                                           Zenn Book + Gumroad + Stripe
+                                                           exact3 readback + revenue ledger
+```
+
+#### Strict $10k MRR ASCII
+
+```text
+X 日本語1本/日
+      │ impressions / profile visits
+      v
+無料MID記事（ja検索 + en newsletter）
+      │ visitor → free subscriber（実測）
+      v
+paid subscription ¥500相当/月 ───────────────┐
+                                              │
+1 colony: 100 paid × ¥500 = ¥50,000 MRR       │ strict MRRだけ
+30 colonies: 30 × ¥50,000 = ¥1,500,000 MRR ──┴─≈ $10k（計画レート¥150/$）
+
+30 MID記事 ──> 月次book ──> 単発売上 + 新規読者
+                              ※ここはMRRに混ぜない
+```
+
+### 18.4 Test Matrix
+
+| test | setup | expected evidence |
+|---|---|---|
+| Codex-only | fresh HOME、Claude binaryをPATHから除外、Codex subscription login | exact5 live、manifest runtime=codex、`claude` invocation 0 |
+| Claude-only | fresh HOME、Codex binaryをPATHから除外、Claude subscription login | exact5 live、manifest runtime=claude、`codex` invocation 0 |
+| Claude exhausted | Claude probe fixtureがweekly-limit、Codex healthy | full prompt前にCodex選択、同じrun exact5 |
+| Codex exhausted | Codex probe fixtureがusage-limit、Claude healthy | Claude選択、同じrun exact5 |
+| both unavailable | 両probe失敗 | public side effect 0、PENDING、5分workerで同じrun再試行 |
+| quality never reaches threshold | 固定reader Q、5 candidateすべて閾値未満、1つ以上safe | highest-score safe hashを公開、carry-over row 0 |
+| safety violation | 全5 candidateがconscience BLOCK | public side effect 0、quarantine + alert。quality失敗とは別code |
+| X duplicate | publish成功後の応答喪失→worker再起動 | 当該JST日のX public IDは1個、ledger repairだけ |
+| platform partial | note成功後kill、Substack片言語timeout | note再click 0、残pairだけ再開、最終exact5 |
+| stale lock | owner PIDなし、PID再利用、live ownerの3fixture | ownerなしだけ回収。live ownerは並行run 0 |
+| monthly inventory | unused MID 29/30/31本 | 29=skip receipt、30=1冊exact3、31=同月2冊目0 |
+| book retry | Gumroad成功後response loss | 同じproduct IDをreadback、重複商品0、exact3 repair |
+| self-improve | candidateがheld-out悪化 / 改善の2fixture | 悪化=revert、改善=7日canary後keep、1周期1変更 |
+| clean install | fresh cloneで各runtimeを単独install | hardcoded `/Users/anicca` 0、secret tracked 0、旧agent 0 |
+
+### 18.5 Boundaries
+
+- subscriptionとplatformの両方が利用可能という外部依存なしに「必ず毎日live」は保証できない。保証するのは、**少なくとも片方のruntimeと対象platformがhealthyなら自動完走し、そうでなければ同じrunを失わず自動再開すること**。
+- quality gateは公開を永久停止しない。最大5版でbest-safeを出す。安全・虚偽・権利・投稿先不明だけはpublishより優先して止める。
+- Xは1日最大1 public creation。reply、英語post、X Articleを別名で追加しない。
+- monthly bookは日本語1冊。30本未満の月に薄い本を水増ししない。KDPは配信集合に含めない。
+- self-improveはtaste/rubricの実験を自動化するが、実行codeを自己改変してproductionへ直適用しない。
+- revenue diagramは計画式であって売上予測ではない。strict MRRとone-off revenueを分離する。
+
+### 18.6 Research basis（一次資料・実repo）
+
+| source | 採用する核心 |
+|---|---|
+| [OpenAI Codex README](https://github.com/openai/codex) | “Run `codex` and select **Sign in with ChatGPT**.” subscription利用者のnative Codex経路。実機 `codex login status` は `Logged in using ChatGPT` |
+| [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) | `--print` はnon-interactive、`--json-schema` はstructured output、`--fallback-model` はprimary unavailable時のmodel fallback。provider間fallbackは別adapterで実装する |
+| [Nigh/show-me-the-story](https://github.com/Nigh/show-me-the-story)（MIT） | “断点续作: 进度随时落盘，关闭程序后重新打开自动恢复” と、章ごとの事実確認・全書整合passをLONGへcopy+tweak |
+| [SimonWaldherr/AI-Book-Generator](https://github.com/SimonWaldherr/AI-Book-Generator)（GPL-3.0） | concept→outline→chaptersとmulti-provider分離を設計参照する。GPL codeはcopyしない |
+| [Pandoc: Creating an ebook](https://pandoc.org/epub.html) | “pandoc can produce output in the EPUB electronic book format.” Markdown正本からEPUBを決定論生成 |
+| [x-algorithm skill source](https://clawhub.ai/NextFrontierBuilds/x-algorithm) | “No external links in main post”。ただし同skillの2-3本推奨よりDaisの1本/日裁定を優先 |
+
+### 18.7 Current incident evidence
+
+- `ai.anicca.article-daily` はloaded、calendar 06:00、`ARTICLE_AUTOPUBLISH=1`、`state=not running`、`runs=1`、`last exit code=0`。
+- `state/.article-daily.lockdir` は存在し、mtimeは `2026-07-22 04:12:39 JST`。現在のarticle process ownerは実測0。06:00起動はこのownerless lockを自動回収できない。
+- stderrは `article-daily.sh: line 240 ... File name too long`。長いarticle promptをcommand pathとして解釈した境界不良があり、wrapperの終了表示だけでは成功判定できない。
+- run `20260721-191239` はnote/jaの`published:true` + `reality_gate:PASS`が1件だけ。残媒体のverified receiptはない。
+- native CLI probe: `codex login status` = ChatGPT login。`gpt-5.6-luna low` と `gpt-5.6-terra low` は各 `rc=0 / MODEL_OK`。`claude auth status`はOAuth loginだがSonnet probeは `rc=1 / weekly limit / resets Jul 24 06:00 JST`。現行loopはこの状態でnative Codexへprovider切替できない。
+
+### 18.8 Remaining TaskList（唯一の残TODO正本、必ず順番どおり）
+
+| # | 状態 | 作業 | done evidence |
+|---|---|---|---|
+| E1 | **TODO** | incidentを固定test化。ownerless lock、line 240 `File name too long`、Claude weekly-limit、partial runをRED fixtureにし、現run artifactをread-only archive。新規投稿前に既live receiptを確定 | RED log、archive hash、既live URL、投稿増分0 |
+| E2 | **TODO** | native runtime adapterをTDD実装。Codex/Claudeのprobe/run/schema/circuit breakerを統一し、全hardcoded provider callをadapterへ置換 | Codex-only/Claude-only contract、adapter外直呼びgrep 0、現状healthy Codex probe |
+| E3 | **TODO** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agent/X Articles/Dev.toを撤去。tracked plist 5本とinstall/uninstallを実装 | fresh clone install、旧path grep/find 0、旧state archive hash、launchctl listが新5本だけ |
+| E4 | **TODO** | daily MID+SHORT pipelineを実装。固定reader questions、最大5→best-safe、X ja 1/day、exact5 intent/receipt/reality、5分resume workerを配線 | crash/429/response-loss matrix PASS、manual kickstart exact5、X public ID exact1、live本文own-eyes |
+| E5 | **TODO** | monthly book pipelineを実装。30本inventory、book-writer、全書整合、Pandoc、Zenn Book/Gumroad/Stripe idempotent publishers | 29/30/31 test、manual monthly kickstart、exact3 live URL、EPUB validation、revenue receipt |
+| E6 | **TODO** | self-improveを1本化。22:30 metrics、週次Terra/Claude proposal、held-out、7日canary、keep/revert、code self-mutation禁止を実装 | 悪化revert/改善keep fixture、実7日experiment receipt、重複schedule 0 |
+| E7 | **TODO** | OSS境界を完成。runtime別setup、config example、browser/account preflight、operations/money docs、license attributionを作成 | clean macOS userでCodex-only install+run、別fresh userでClaude-only install+run、secret/hardcoded home 0 |
+| E8 | **TODO** | final fresh E2E。Codex-only daily exact5、Claude-only daily exact5、monthly exact3、翌06:00 schedule、5分resume、metrics/weekly jobをartifact-only reviewerが独立確認しspecをDONE同期 | live URL/readback、ledger exact数、launchctl evidence、fresh review `ok:true`、全repo commit+push+clean |
