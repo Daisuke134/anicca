@@ -1,0 +1,26 @@
+{
+  "reviewType": "spec",
+  "featureName": "panel-score-semantics",
+  "iteration": 3,
+  "authoritativeSpec": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+  "artifactsToReview": [
+    ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/verdict.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-001.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-002.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-003.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-004.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-005.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-006.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-2/output/findings/FIND-007.json"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "outputDirectory": ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output"
+}

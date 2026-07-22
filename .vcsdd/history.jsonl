@@ -42,3 +42,10 @@
 {"timestamp":"2026-07-21T23:48:09.613Z","event":"bead_created","featureName":"life-manager-panel-control-center","beadId":"BEAD-010","type":"adversary-finding","phase":"4","externalId":"FIND-010"}
 {"timestamp":"2026-07-21T23:48:09.623Z","event":"phase_transition","featureName":"life-manager-panel-control-center","from":"4","to":"2a","iteration":2,"phase":"2a"}
 {"timestamp":"2026-07-21T23:48:09.623Z","event":"sprint_started","featureName":"life-manager-panel-control-center","sprintNumber":2,"phase":"2a"}
+{"timestamp":"2026-07-22T14:20:06.993Z","event":"feature_created","featureName":"panel-score-semantics","mode":"strict","language":"typescript"}
+{"timestamp":"2026-07-22T14:21:11.630Z","event":"phase_transition","featureName":"panel-score-semantics","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-22T14:22:26.972Z","event":"phase_transition","featureName":"panel-score-semantics","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-22T14:28:08.696Z","event":"gate_recorded","featureName":"panel-score-semantics","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-22T14:37:19.537Z","event":"gate_recorded","featureName":"panel-score-semantics","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-22T14:42:43.165Z","event":"gate_recorded","featureName":"panel-score-semantics","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-22T14:42:43.166Z","event":"escalation_created","featureName":"panel-score-semantics","phase":"1c","iteration":3,"limit":3}

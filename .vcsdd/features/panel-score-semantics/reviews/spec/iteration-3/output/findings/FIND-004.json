@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "The L2 plan names an endpoint suite and explicitly static migration contract tests, but it does not identify an executable PostgreSQL harness or database-role matrix. Mocked RPC arguments and static SQL inspection cannot establish real statement-snapshot membership under concurrent commits, the complete-or-overflow behavior at the fixed limit, RLS enforcement, or function/table denial for PUBLIC, anon, and authenticated roles. A real PostgreSQL migration/concurrency/access-control harness and its command/artifact are required.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "80-84",
+    "snippet": "panel-api-score-semantics.test.js ... exact RPC arguments/scope ... transaction-snapshot concurrency fixture ... panel-score-migration.test.js: static migration contract for checks, uniqueness, RLS, grants, and indexes."
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "The tenant-scoped PostgREST RPC is not given an executable privilege or function-security contract. REQ-008 constrains only table grants, while REQ-009 makes the function accept a UID that must be session-bound. An implementation can therefore satisfy the stated table-grant checks yet expose RPC execution to anon/authenticated roles or use unsafe definer semantics, allowing an untrusted caller to supply another tenant's UID. The spec must pin invoker/definer behavior, safe search_path where applicable, PUBLIC/anon/authenticated EXECUTE revocation, and service-role-only execution.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "103-107",
+    "snippet": "The additive migration has explicit checks, uniqueness, indexes, RLS, and no anon/authenticated table grants. ... all four organ row sets through one read-only database RPC transaction bound to the authenticated session UID"
+  },
+  "routeToPhase": "1a"
+}

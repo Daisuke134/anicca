@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "The effectful shell promises four bounded PostgREST reads but defines neither pagination nor an explicit completeness limit. A tenant with more eligible rows than the service response cap can be silently truncated, producing a score that violates the requirement to aggregate every eligible outcome in the period.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "9-13",
+    "snippet": "Four bounded PostgREST reads query lm_score_outcomes with exact uid, organ, occurred_at.gte, and occurred_at.lt filters."
+  },
+  "routeToPhase": "1b"
+}

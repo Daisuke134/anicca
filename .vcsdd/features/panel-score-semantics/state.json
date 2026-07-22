@@ -1,0 +1,309 @@
+{
+  "featureName": "panel-score-semantics",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-22T14:21:11.627Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-22T14:22:26.970Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [
+    {
+      "id": "PROP-001",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/ratio-invariants.js",
+      "beadId": "BEAD-014"
+    },
+    {
+      "id": "PROP-002",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/dedup-invariants.js",
+      "beadId": "BEAD-015"
+    },
+    {
+      "id": "PROP-003",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/period-invariants.js",
+      "beadId": "BEAD-016"
+    },
+    {
+      "id": "PROP-004",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/tenant-query-invariants.js",
+      "beadId": "BEAD-017"
+    },
+    {
+      "id": "PROP-005",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/migration-invariants.js",
+      "beadId": "BEAD-018"
+    },
+    {
+      "id": "PROP-006",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "verification/proof-harnesses/render-linkage-invariants.js",
+      "beadId": "BEAD-019"
+    }
+  ],
+  "traceability": {
+    "epicId": "VCSDD-panel-score-semantics-1784730006992",
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-001"
+      },
+      {
+        "beadId": "BEAD-002",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-002"
+      },
+      {
+        "beadId": "BEAD-003",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-003"
+      },
+      {
+        "beadId": "BEAD-004",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-004"
+      },
+      {
+        "beadId": "BEAD-005",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-005"
+      },
+      {
+        "beadId": "BEAD-006",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-006"
+      },
+      {
+        "beadId": "BEAD-007",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-007"
+      },
+      {
+        "beadId": "BEAD-008",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-008"
+      },
+      {
+        "beadId": "BEAD-009",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-009"
+      },
+      {
+        "beadId": "BEAD-010",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-010"
+      },
+      {
+        "beadId": "BEAD-011",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-011"
+      },
+      {
+        "beadId": "BEAD-012",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-012"
+      },
+      {
+        "beadId": "BEAD-013",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-013"
+      },
+      {
+        "beadId": "BEAD-014",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-003",
+          "BEAD-004",
+          "BEAD-005",
+          "BEAD-006",
+          "BEAD-007"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-001"
+      },
+      {
+        "beadId": "BEAD-015",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-003",
+          "BEAD-004",
+          "BEAD-005",
+          "BEAD-006",
+          "BEAD-008"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-002"
+      },
+      {
+        "beadId": "BEAD-016",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-003"
+      },
+      {
+        "beadId": "BEAD-017",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-009"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-004"
+      },
+      {
+        "beadId": "BEAD-018",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-008"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-005"
+      },
+      {
+        "beadId": "BEAD-019",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-010",
+          "BEAD-013"
+        ],
+        "createdAt": "2026-07-22T14:23:08.126Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-006"
+      }
+    ]
+  },
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-22T14:42:43.164Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 3,
+        "findingCount": 4,
+        "previousFindingCount": 7,
+        "critical": 1,
+        "high": 3
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-22T14:42:43.164Z"
+    }
+  },
+  "sprintCount": 0,
+  "createdAt": "2026-07-22T14:20:06.991Z",
+  "updatedAt": "2026-07-22T14:42:43.164Z"
+}
