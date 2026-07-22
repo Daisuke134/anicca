@@ -42,7 +42,7 @@ const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDe
 const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
-const { parseUserCommand, executeUserCommand } = require("./lib/user-command.js");
+const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -409,24 +409,29 @@ const server = http.createServer((req, res) => {
             token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
             composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY,
           };
-          if (u.text && parsedControl.kind === "command") {
-            if (!row) {
+          if (u.text && (parsedControl.kind === "command" || parsedControl.kind === "unavailable")) {
+            if (parsedControl.kind === "command" && !row) {
               await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before changing settings.");
             } else {
               try {
-                const result = await executeUserCommand({ uid: row.uid, chatId: u.chatId }, parsedControl.command, {
-                  store: createSupabaseCommandStore({ supaUrl: SUPA_URL, supaKey: SUPA_KEY }),
-                  idempotencyKey: `telegram:${u.messageId || crypto.randomUUID()}`,
-                  composioKey: COMPOSIO_KEY,
-                  composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
-                  panelBaseUrl: LM_PANEL_BASE,
-                  startCalendarConnection: (scope) => composioCalendarStart(scope, { composioKey: COMPOSIO_KEY }),
-                  disconnectCalendar: (scope) => composioCalendarDisconnect(scope, { composioKey: COMPOSIO_KEY }),
+                const dispatched = await dispatchParsedControl(parsedControl, {
+                  executeCommand: executeUserCommand,
+                  scope: row ? { uid: row.uid, chatId: u.chatId } : null,
+                  commandDeps: row ? {
+                    store: createSupabaseCommandStore({ supaUrl: SUPA_URL, supaKey: SUPA_KEY }),
+                    idempotencyKey: `telegram:${u.messageId || crypto.randomUUID()}`,
+                    composioKey: COMPOSIO_KEY,
+                    composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+                    panelBaseUrl: LM_PANEL_BASE,
+                    startCalendarConnection: (scope) => composioCalendarStart(scope, { composioKey: COMPOSIO_KEY }),
+                    disconnectCalendar: (scope) => composioCalendarDisconnect(scope, { composioKey: COMPOSIO_KEY }),
+                  } : null,
                 });
-                if (result.state && result.state.redirectUrl) {
+                const result = dispatched.result;
+                if (result && result.state && result.state.redirectUrl) {
                   await sendMessage(LM_TG_TOKEN, u.chatId, "Calendar needs your Google permission.", { reply_markup: { inline_keyboard: [[{ text: "Connect Calendar", url: result.state.redirectUrl }]] } });
                 } else {
-                  await sendMessage(LM_TG_TOKEN, u.chatId, `✅ ${result.message}`);
+                  await sendMessage(LM_TG_TOKEN, u.chatId, result ? `✅ ${dispatched.message}` : dispatched.message);
                 }
               } catch {
                 await sendMessage(LM_TG_TOKEN, u.chatId, "I couldn't apply that change. Your previous setting is unchanged.");

@@ -2,7 +2,7 @@
 
 const crypto = require("node:crypto");
 
-const BOOLEAN_SETTINGS = new Set(["call_enabled", "notifications_enabled", "daily_automation_enabled", "delegation_enabled"]);
+const BOOLEAN_SETTINGS = new Set(["call_enabled", "notifications_enabled", "daily_automation_enabled"]);
 const USER_SETTINGS = new Set(["call_language", "wake_policy"]);
 const TIME_ZONES = new Set(["Asia/Tokyo", "UTC", "Europe/London", "America/New_York", "America/Los_Angeles"]);
 const AVAILABLE_ACTIONS = Object.freeze([
@@ -11,8 +11,11 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "turn calls on|off / 電話をオン|オフ",
   "turn notifications on|off / 通知をオン|オフ",
   "turn daily automation on|off / デイリー自動化をオン|オフ",
-  "turn delegation on|off / 委任をオン|オフ",
 ]);
+const DELEGATION_UNAVAILABLE = Object.freeze({
+  en: "Delegation is unavailable because no safe delegated-action runtime is active.",
+  ja: "安全な委任アクション実行基盤が稼働していないため、委任は利用できません。",
+});
 
 function invalid() { const error = new Error("invalid_action"); error.status = 400; throw error; }
 function exactKeys(value, expected) {
@@ -55,11 +58,20 @@ function parseUserCommand(text) {
   if (/^通知を?(オン|オフ)$/.test(value)) return setting("notifications_enabled", value.endsWith("オン"));
   if (/^(turn )?daily automation (on|off)$/.test(value)) return setting("daily_automation_enabled", value.endsWith("on"));
   if (/^デイリー自動化を?(オン|オフ)$/.test(value)) return setting("daily_automation_enabled", value.endsWith("オン"));
-  if (/^(turn )?delegation (on|off)$/.test(value)) return setting("delegation_enabled", value.endsWith("on"));
-  if (/^委任を?(オン|オフ)$/.test(value)) return setting("delegation_enabled", value.endsWith("オン"));
+  if (/^(turn )?delegation (on|off)$/.test(value)) return { kind: "unavailable", message: DELEGATION_UNAVAILABLE.en };
+  if (/^委任を?(オン|オフ)$/.test(value)) return { kind: "unavailable", message: DELEGATION_UNAVAILABLE.ja };
   if (/^calls? in (english|japanese)$/.test(value)) return { kind: "command", command: { type: "setting.set", setting: "call_language", value: value.endsWith("japanese") ? "ja" : "en" } };
   if (/^電話を?(英語|日本語)にして$/.test(value)) return { kind: "command", command: { type: "setting.set", setting: "call_language", value: value.includes("日本語") ? "ja" : "en" } };
   return { kind: "help", availableActions: [...AVAILABLE_ACTIONS] };
+}
+
+async function dispatchParsedControl(parsedControl, opts = {}) {
+  if (parsedControl && parsedControl.kind === "unavailable") {
+    return { handled: true, message: parsedControl.message };
+  }
+  if (!parsedControl || parsedControl.kind !== "command") return { handled: false };
+  const result = await (opts.executeCommand || executeUserCommand)(opts.scope, parsedControl.command, opts.commandDeps);
+  return { handled: true, result, message: result.message };
 }
 
 function hash(value) { return crypto.createHash("sha256").update(String(value)).digest("hex"); }
@@ -166,4 +178,4 @@ async function claimCalendarOAuthState(scope, stateToken, deps = {}) {
   return Boolean(await deps.store.claimOAuthState(scope, hash(stateToken)));
 }
 
-module.exports = { BOOLEAN_SETTINGS, parseUserCommand, validateCommand, buildControlCenter, executeUserCommand, disconnectCalendar, startCalendarOAuth, claimCalendarOAuthState, requestHash };
+module.exports = { BOOLEAN_SETTINGS, parseUserCommand, dispatchParsedControl, validateCommand, buildControlCenter, executeUserCommand, disconnectCalendar, startCalendarOAuth, claimCalendarOAuthState, requestHash };
