@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { allocateBandit } from './bandit.mjs';
-import { computeGaps } from './product-gaps.mjs';
+import { CORE_PATHS, computeGaps } from './product-gaps.mjs';
 import { inferCategory } from './scout-market.mjs';
 import { SELF_WALLETS } from './lib/self-wallets.mjs';
 import { readJsonl, resolvePayTo, resolveStateDir } from './store-review.mjs';
@@ -20,7 +20,6 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STATE_DIR = join(HERE, 'state');
-const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research', '/llm'];
 const SCOUT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const WAKE_MS = 120_000;
 

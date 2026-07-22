@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { inferCategory } from './scout-market.mjs';
 
-export const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research', '/llm'];
+export const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research', '/llm', '/image'];
 const EXCLUDED_CATEGORIES = new Set(['other', 'calc']);
 
 function formatUsd(value) {

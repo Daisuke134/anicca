@@ -20,6 +20,10 @@ test('the gap scout knows the live LLM route is already served', () => {
   assert.equal(CORE_PATHS.includes('/llm'), true);
 });
 
+test('the gap scout knows the live image route is already served', () => {
+  assert.equal(CORE_PATHS.includes('/image'), true);
+});
+
 test('computeGaps ranks opportunities by supply-adjusted observed revenue', () => {
   const result = computeGaps(scout, ourCategories, 1_700_000_000.9);
 

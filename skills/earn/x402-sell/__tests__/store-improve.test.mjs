@@ -16,6 +16,10 @@ test('controller stays dependency-free in the rsynced Franklin runtime body', ()
   const source = readFileSync(join(HERE, '..', 'store-improve.mjs'), 'utf8');
   assert.doesNotMatch(source, /from ['"]\.\/llm-resale\.mjs['"]/, 'controller must not import paid-runtime dependencies');
   assert.match(source, /from ['"]\.\/llm-offers\.mjs['"]/, 'controller must import the pure offer catalog');
+  assert.match(source, /import \{ CORE_PATHS, computeGaps \} from ['"]\.\/product-gaps\.mjs['"];/,
+    'controller must share the product-gaps served-path catalog');
+  assert.doesNotMatch(source, /const CORE_PATHS =/,
+    'controller must not drift a second served-path catalog');
 });
 
 test('summarizeOwnProducts aggregates only served routes with external, attempts, and age wakes', () => {
