@@ -57,3 +57,29 @@ test('franklin2 image plist is a persistent per-instance service', () => {
   assert.ok(plist.includes('<string>/Users/anicca/anicca/skills/earn/x402-sell/logs/image-franklin2.out.log</string>'));
   assert.ok(plist.includes('<string>/Users/anicca/anicca/skills/earn/x402-sell/logs/image-franklin2.err.log</string>'));
 });
+
+test('claude-p image boot pins its identity, local port, public origin, and additive funnel path', () => {
+  const boot = fs.readFileSync(path.join(ROOT, 'image-claude-p-boot.sh'), 'utf8');
+
+  assert.match(boot, /\. \/Users\/anicca\/\.openclaw\/\.env/);
+  assert.ok(boot.includes('export ANICCA_HOME="$HOME/.anicca-founder"'));
+  assert.match(boot, /unset BLOCKRUN_WALLET_KEY/);
+  assert.ok(boot.includes('export X402_PAYTO="0x810F6D61F7606dEEE2657d3083E150a222Bc29C5"'));
+  assert.ok(boot.includes('export X402_IMAGE_PORT="8095"'));
+  assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net:8443"'));
+  assert.ok(boot.includes('tailscale funnel --bg --https=8443 --set-path=/image http://127.0.0.1:8095/image'));
+  assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/image-server\.mjs"/);
+});
+
+test('claude-p image plist is a persistent per-instance service', () => {
+  const label = 'ai.anicca.image-claude-p';
+  const plist = fs.readFileSync(path.join(ROOT, 'launchd', `${label}.plist`), 'utf8');
+
+  assert.ok(plist.includes(`<string>${label}</string>`));
+  assert.ok(plist.includes('<string>/Users/anicca/anicca/skills/earn/x402-sell/image-claude-p-boot.sh</string>'));
+  assert.match(plist, /<key>KeepAlive<\/key><true\/>/);
+  assert.match(plist, /<key>RunAtLoad<\/key><true\/>/);
+  assert.match(plist, /<key>ThrottleInterval<\/key><integer>15<\/integer>/);
+  assert.ok(plist.includes('<string>/Users/anicca/anicca/skills/earn/x402-sell/logs/image-claude-p.out.log</string>'));
+  assert.ok(plist.includes('<string>/Users/anicca/anicca/skills/earn/x402-sell/logs/image-claude-p.err.log</string>'));
+});
