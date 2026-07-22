@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "The new safe-integer regression invokes the CommonJS renderScoreCards export only, so it cannot detect that renderPanelPage emits a browser script with an undeclared roundedScoreValue dependency. This leaves the required canonical safe-integer UI boundary unguarded in its real delivery path despite the module-level test passing.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.test.js",
+    "lineRange": "156-166",
+    "snippet": "The regression calls renderScoreCards({ organs }) directly and asserts doesNotThrow; it neither calls renderPanelPage nor executes its emitted score renderer.",
+    "testName": "Fresh Node VM reproduction of the renderPanelPage inline score script rejected the same canonical model with ReferenceError: roundedScoreValue is not defined."
+  },
+  "routeToPhase": "2a"
+}
