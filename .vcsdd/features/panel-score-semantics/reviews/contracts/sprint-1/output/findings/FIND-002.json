@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "error_handling",
+  "severity": "high",
+  "description": "CRIT-002 is false for malformed storage snapshots. A snapshot whose rows_by_organ.daily value is a string passes the shallow object check, is treated as an empty row set by the core, and returns HTTP 200 with fabricated insufficient_data instead of HTTP 503 source_table_unavailable.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-api.js",
+    "lineRange": "182-191",
+    "snippet": "rows_by_organ is checked only as an object before computePanelScores; individual daily, physical, mental, and financial arrays are not validated.",
+    "testName": "artifact-only malformed snapshot probe"
+  },
+  "routeToPhase": "2b",
+  "beadId": "BEAD-042",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 1,
+    "fixedInPhase": "2c",
+    "notes": "The API now requires rows_by_organ to contain exactly four array values; malformed storage is covered by endpoint tests and fixed matrix and returns 503 source_table_unavailable."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "reviewType": "implementation",
+  "featureName": "panel-score-semantics",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "dd4f1575b4a0738be5d99eabf8084d33cdb6c4f1d09ebcfd46f86aeb12e8d6c5",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-1.md"
+    ],
+    "tests": [
+      "apps/life-call/lib/panel-score-semantics.test.js",
+      "apps/life-call/lib/panel-api-score-semantics.test.js",
+      "apps/life-call/lib/panel-score-migration.test.js",
+      "apps/life-call/lib/panel-api.test.js",
+      "apps/life-call/lib/panel-ui.test.js",
+      "apps/life-call/scripts/independent-panel-score-readback.test.js",
+      "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+      "apps/life-call/eval/score-semantics-cases.json",
+      "apps/life-call/eval/run-score-semantics-eval.js"
+    ],
+    "source": [
+      "apps/life-call/lib/panel-score-semantics.js",
+      "apps/life-call/lib/panel-api.js",
+      "apps/life-call/lib/panel-ui.js",
+      "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+      "apps/life-call/scripts/independent-panel-score-readback.js",
+      "apps/life-call/package.json",
+      ".vcsdd/features/panel-score-semantics/state.json",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-1-red-phase.log",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-1-green-phase.log"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ]
+}

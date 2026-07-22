@@ -1,0 +1,30 @@
+{
+  "reviewType": "spec",
+  "featureName": "panel-score-semantics",
+  "iteration": 4,
+  "authoritativeSpec": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+  "artifactsToReview": [
+    ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output/verdict.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output/findings/FIND-001.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output/findings/FIND-002.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output/findings/FIND-003.json",
+    ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-3/output/findings/FIND-004.json"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "focusedCorrections": [
+    "one_rpc_contract",
+    "revision_key_idempotency",
+    "rpc_security",
+    "real_postgresql_harness"
+  ],
+  "scopeRule": "Review only closure of iteration-3 FIND-001..004. Material new correctness/security contradictions may block; cosmetic or unrelated observations are non-blocking notes.",
+  "outputDirectory": ".vcsdd/features/panel-score-semantics/reviews/spec/iteration-4/output"
+}

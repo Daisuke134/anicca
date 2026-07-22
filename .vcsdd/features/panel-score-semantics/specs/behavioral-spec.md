@@ -93,14 +93,15 @@ This feature implements only §10 row 8g of `docs/superpowers/specs/2026-07-19-a
 - All four organs cover success, partial, and denominator-zero cases in the fixed matrix.
 
 ### REQ-008: Outcome ledger and inflation resistance
-**EARS**: WHEN source outcomes are persisted THE SYSTEM SHALL append an immutable semantic revision retaining tenant, organ, stable entity key, typed outcome kind/status, occurred/resolved/recorded timestamps, optional minor-unit amount/currency, structured components, and an opaque browser-safe reference under a database uniqueness contract that prevents same-status retries from inflating scores.
+**EARS**: WHEN source outcomes are persisted THE SYSTEM SHALL append an immutable semantic revision retaining tenant, organ, stable entity key, typed outcome kind/status, an explicit immutable `revision_key`, occurred/resolved/recorded timestamps, optional minor-unit amount/currency, structured components, and an opaque browser-safe reference under a database idempotency contract that prevents retries from inflating scores without preventing later corrections or status re-entry.
 **Edge Cases**:
 - Production rows are source outcomes; request/activity/log counts are not score outcomes.
 - Test fixture IDs, Dais-specific values, and production magic numbers are prohibited in production code or migrations.
 - Financial `amount_minor` is an integer in `0..9007199254740991`; aggregation uses integer-safe arithmetic and fails to `invalid_data` before JSON number conversion if the sum exceeds that limit.
-- Same-status retries are unique on `(uid, organ, entity_key, outcome_kind, outcome_status)`. A legitimate state transition appends a different-status revision; UPDATE/DELETE are rejected. DAILY selects the greatest `recorded_at`, then lexicographically greatest `public_ref`, per event/handling kind. PHYSICAL selects one need revision by `confirmed_completion > confirmed_booking > all other states`, then greatest `recorded_at`, then greatest `public_ref`. MENTAL and FINANCIAL select one trigger/transaction revision per entity by greatest `recorded_at`, then greatest `public_ref`. These exact semantic winners alone drive components and source references.
+- `revision_key` is a caller-issued non-zero UUID. The exact unique tuple is `(uid, organ, entity_key, outcome_kind, revision_key)`. An exact retry reuses the key and is an idempotent success returning the existing revision only when every caller-controlled immutable semantic field is identical; reusing that key with any different status, time, amount, currency, or component is rejected as `revision_key_conflict`. Every legitimate transition, status re-entry, and same-status correction supplies a fresh key and appends a row. The service-role append function validates the UUID and typed payload atomically; direct `INSERT`, `UPDATE`, and `DELETE` privileges are absent from browser roles, while an append-only trigger rejects UPDATE/DELETE for every role.
+- Winner selection is deterministic and input-order invariant. DAILY selects the greatest `(recorded_at, revision_key, public_ref)` per event/handling kind. PHYSICAL first applies `confirmed_completion > confirmed_booking > all other states`, then selects the greatest `(recorded_at, revision_key, public_ref)` per need. MENTAL and FINANCIAL select the greatest `(recorded_at, revision_key, public_ref)` per trigger/transaction. UUID ordering is by canonical lowercase text. These exact semantic winners alone drive components and source references.
 **Acceptance Criteria**:
-- The additive migration has explicit checks, uniqueness, indexes, RLS, and no anon/authenticated table grants.
+- The additive migration has explicit checks, the exact revision-key uniqueness tuple, atomic exact-retry/conflict tests, append-only enforcement, indexes, RLS, and no `PUBLIC`/`anon`/`authenticated` table grants.
 - Raw internal database IDs or source-provider IDs are not exposed to the browser.
 
 ### REQ-009: Tenant isolation and read-only behavior
@@ -108,9 +109,11 @@ This feature implements only §10 row 8g of `docs/superpowers/specs/2026-07-19-a
 **Edge Cases**:
 - Cross-tenant rows sharing entity keys or timestamps are ignored.
 - PostgreSQL statement-snapshot semantics define membership: rows visible when the single RPC statement begins are eligible; concurrent commits after that snapshot are excluded. The RPC returns either every eligible row or an overflow marker, never a paginated partial set.
+- `public.lm_panel_score_outcome_snapshot(text,jsonb)` is `SECURITY INVOKER` with fixed `SET search_path = public, pg_temp`. `SELECT` on `public.lm_score_outcomes` is available only to `service_role`; all function privileges are revoked from `PUBLIC`, `anon`, and `authenticated`, and `EXECUTE` is granted only to `service_role`. Browser roles therefore cannot select the table or invoke the function with their own or another tenant UID. The server may invoke it only after session authentication and substitutes the session UID for any request-supplied UID.
 - Forged, stale, replayed, logged-out, or path-invalid sessions preserve all existing zero-mutation auth behavior.
 **Acceptance Criteria**:
-- Integration tests inspect every score query for `uid=eq.<session uid>`, `organ=eq.<organ>`, inclusive start, and exclusive end.
+- The endpoint makes exactly one PostgREST call to `/rpc/lm_panel_score_outcome_snapshot` whose JSON body is exactly the authenticated `p_uid` plus `p_periods` containing the four exact `{start_at,end_at}` objects; the HTTP request has no contradictory direct `uid`/`organ`/`gte`/`lt` filters.
+- Executable PostgreSQL tests seed cross-tenant and boundary rows and prove the function itself applies `uid = p_uid`, each organ, `occurred_at >= start_at`, and `occurred_at < end_at` for all four periods. They also prove `PUBLIC`/`anon`/`authenticated` cannot execute or read even when supplying another tenant UID, while `service_role` succeeds.
 
 ### REQ-010: Human-readable score cards
 **EARS**: WHEN the panel renders score data THE SYSTEM SHALL render four organ cards with measured percentage or visible `insufficient data`, the period, numerator/denominator, plain-language reason, and meaningful components rather than an unexplained color or bare percentage.
@@ -159,5 +162,6 @@ This feature implements only §10 row 8g of `docs/superpowers/specs/2026-07-19-a
 
 ## Reused external patterns
 
-- PostgreSQL documents that a multi-column unique constraint makes the column combination unique, which supports retry-resistant `(uid, organ, entity_key, outcome_kind)` storage: https://www.postgresql.org/docs/current/ddl-constraints.html
+- PostgreSQL documents that a multi-column unique constraint guarantees uniqueness for the named column combination; the ledger uses the exact `(uid, organ, entity_key, outcome_kind, revision_key)` tuple: https://www.postgresql.org/docs/current/ddl-constraints.html
+- PostgreSQL documents that `SECURITY INVOKER` runs with the caller's privileges; this is paired with service-role-only table and function grants: https://www.postgresql.org/docs/current/sql-createfunction.html
 - Existing public code uses `source_outcome_ids` as an explicit audit-linkage response field rather than substituting activity counts: https://github.com/Gonyak-cell/law-firm-os/blob/main/packages/dms/src/service.js

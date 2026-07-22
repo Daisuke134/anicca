@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "The renderer recomputes measured ratios with floating-point Math.round, so a valid safe-integer FINANCIAL API model produced by the integer-safe core is rejected as invalid score payload. With gross=9007199253740991 and net=945755921642804, the core returns value=10 but the renderer computes 11 and turns the score section into a load error.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.js",
+    "lineRange": "71-75",
+    "snippet": "organ.value === Math.max(0, Math.min(100, Math.round(organ.numerator / organ.denominator * 100)))",
+    "testName": "fresh Node reproduction: computePanelScores returned value=10 for numerator=945755921642804 denominator=9007199253740991; renderScoreCards then threw invalid score payload because UI Math.round returned 11"
+  },
+  "routeToPhase": "2b"
+}

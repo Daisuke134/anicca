@@ -9,12 +9,13 @@
 - **Effectful Query Shell**: `apps/life-call/lib/panel-api.js`
   - Authenticated session UID and explicit clock enter the shell.
   - Preferences supply the effective timezone.
-  - One read-only `lm_panel_score_outcome_snapshot(p_uid, p_periods)` PostgREST RPC executes one SQL statement snapshot, scopes `WHERE uid = p_uid`, applies each organ's inclusive start/exclusive end, and returns all supported source columns grouped by organ.
+  - One read-only `lm_panel_score_outcome_snapshot(p_uid, p_periods)` PostgREST RPC executes one SQL statement snapshot. The HTTP body contains exactly the authenticated session UID and four exact period objects; filtering is inside SQL, where the function applies `uid = p_uid`, the matching organ, `occurred_at >= start_at`, and `occurred_at < end_at` for each organ.
   - The SQL function's fixed contract limit is 20,000 total eligible revisions. Its result is either the complete row set or `{overflow:true}`; it never returns a truncated array. Overflow fails HTTP 503 `source_outcome_limit`.
+  - The function is `SECURITY INVOKER SET search_path = public, pg_temp`. `public.lm_score_outcomes` has `SELECT` only for `service_role`; `PUBLIC`, `anon`, and `authenticated` have no table privileges and no function privileges; only `service_role` has `EXECUTE`. The endpoint, not the browser, binds `p_uid` from the authenticated session.
   - A missing source table fails HTTP 503 `source_table_unavailable`; it never becomes an empty organ.
   - Only selected typed columns enter the core. Score reads perform no write or provider call.
 - **Persistence Shell**: `apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql`
-  - Additive normalized outcome ledger with RLS, service-role-only access, typed checks, retry-dedup uniqueness, and query indexes.
+  - Additive normalized outcome ledger with RLS, service-role-only access, typed checks, explicit immutable revision-key idempotency, append-only enforcement, and query indexes.
 - **Presentation Shell**: `apps/life-call/lib/panel-ui.js`
   - Renders the closed API model into four human-readable cards; never recomputes score semantics.
 - **Release/L3 Shell**: authenticated production browser/API readback, independent service-role database query and pure-core recomputation, private screenshots/evidence.
@@ -32,6 +33,7 @@ The score source is `public.lm_score_outcomes`, not `lm_wake_log`, `lm_api_cost`
 | `entity_key` | stable tenant-local source entity key used for semantic dedupe |
 | `outcome_kind` | typed handling/need/trigger/financial fact |
 | `outcome_status` | typed semantic state interpreted by the pure core |
+| `revision_key` | caller-issued non-zero UUID; immutable idempotency identity for exactly one semantic revision |
 | `occurred_at` | source outcome time used for period inclusion |
 | `resolved_at` | deterministic precedence/order time when applicable |
 | `recorded_at` | database insertion time used for immutable snapshot/keyset traversal |
@@ -39,7 +41,7 @@ The score source is `public.lm_score_outcomes`, not `lm_wake_log`, `lm_api_cost`
 | `currency` | uppercase three-letter currency for financial rows only |
 | `components` | privacy-safe structured facts needed to validate the state |
 
-Unique `(uid, organ, entity_key, outcome_kind, outcome_status)` prevents same-status retry persistence from creating extra score facts. State changes append immutable revisions; a database trigger rejects UPDATE/DELETE. The pure core applies REQ-008's organ-specific slot/winner rules: DAILY per entity/kind latest; PHYSICAL terminal confirmation precedence then latest; MENTAL and FINANCIAL per entity latest. Latest means greatest `recorded_at`, then lexicographically greatest `public_ref`. These rules are input-order invariant; `resolved_at` is used only for exact MENTAL delivery validation/order.
+Unique `(uid, organ, entity_key, outcome_kind, revision_key)` identifies exactly one immutable semantic revision. The service-role append function accepts a non-zero UUID, treats an identical retry as success returning the existing row, rejects reuse with a different immutable semantic payload as `revision_key_conflict`, and appends every fresh-key status transition, status re-entry, or same-status correction. A trigger rejects UPDATE/DELETE for every role. The pure core applies REQ-008's organ-specific winner rules: DAILY per entity/kind latest; PHYSICAL terminal confirmation precedence then latest; MENTAL and FINANCIAL per entity latest. Latest is greatest `recorded_at`, then canonical-lowercase `revision_key`, then `public_ref`; these rules are input-order invariant, and `resolved_at` is used only for exact MENTAL delivery validation/order.
 
 ### Typed kinds and states
 
@@ -78,10 +80,11 @@ Rows with invalid kind/state pairings are rejected by migration checks. Multiple
 ## L2 Integration Strategy
 
 - `apps/life-call/lib/panel-score-semantics.test.js`: fixed and bounded property tests for the pure core.
-- `apps/life-call/lib/panel-api-score-semantics.test.js`: real `handlePanelApi` session/query path, closed response, four tenant/organ/time filters, cross-tenant resistance, no mutation.
-- The endpoint suite exercises exact RPC arguments/scope, a 20,000-row complete marker, a 20,001-row overflow marker, and a transaction-snapshot concurrency fixture without allocating production-sized payloads in one response.
+- `apps/life-call/lib/panel-api-score-semantics.test.js`: real `handlePanelApi` session/query path, closed response, exactly one snapshot RPC with authenticated `p_uid` and four exact period objects, cross-tenant resistance, and no mutation.
+- `apps/life-call/test/postgres/panel-score-postgres.integration.sh`, run by `npm run test:panel-score:postgres`, creates an ephemeral local PostgreSQL 18 cluster with `initdb`/`pg_ctl`, defines real `anon`, `authenticated`, and `service_role` roles plus the minimal referenced schema, applies the additive migration, and tears the cluster down on every exit. Static SQL inspection and mocks are not acceptance evidence.
+- The PostgreSQL harness executes seeded function-result assertions for tenant/organ/inclusive-start/exclusive-end filtering; non-zero revision-key validation, exact-retry idempotency, changed-payload conflict, same-status correction/status re-entry append, append-only rejection, RLS/table/function grants and denials; service-role success; one statement snapshot coordinated across two concurrent `psql` sessions; an actual complete 20,000-row response; and an actual 20,001-row overflow response with no partial score rows.
 - `apps/life-call/lib/panel-ui.test.js`: four-card rendering contract, insufficient-data copy, reasons/components, mobile layout, legacy activity-score removal.
-- `apps/life-call/lib/panel-score-migration.test.js`: static migration contract for checks, uniqueness, RLS, grants, and indexes.
+- `apps/life-call/lib/panel-score-migration.test.js`: fast static migration lint supplements, but never replaces, the executable PostgreSQL contract harness.
 - Focused regression: panel API/UI/auth/control plus `test/tenant-isolation.test.js`.
 - Full regression: `npm test`.
 - Existing + score evals: `npm run eval`, including `npm run eval:score`.
@@ -93,8 +96,8 @@ Rows with invalid kind/state pairings are rejected by migration checks. Multiple
 | PROP-001 | Across count pairs `0..256`, safe-integer boundary pairs, and 10,000 seeded generated safe pairs, denominator zero has the exact insufficient state; otherwise integer-safe ratio output is rounded/clamped and `0 <= numerator <= denominator` for non-financial organs. | 1 | true | bounded property Node harness in `verification/proof-harnesses/ratio-invariants.js` |
 | PROP-002 | For 500 seeded row sets (seed `0x8A17C0DE`), each containing 1..7 entities and 1..4 revisions drawn across every organ kind/state with timestamp/public-ref ties, baseline output is invariant under reverse, rotate, and 21 seeded Fisher-Yates permutations; fixed literal fixtures independently establish the expected winner/output. | 1 | true | 12,000-case bounded permutation harness in `verification/proof-harnesses/dedup-invariants.js` |
 | PROP-003 | Period calculation and inclusion preserve `[start,end)` across UTC, invalid timezone fallback, DST spring/fall, and month edges. | 1 | true | boundary harness in `verification/proof-harnesses/period-invariants.js` |
-| PROP-004 | The browser score endpoint is GET-only; its sole database outcome request is the read-only snapshot RPC with the authenticated tenant and all four exact periods, and the SQL function scopes every row by `uid` and period without mutation. | 1 | true | endpoint/RPC/migration integration tests plus captured security result |
-| PROP-005 | The migration enforces typed outcome rows, retry uniqueness, RLS, service-only grants, and bounded query indexes. | 1 | true | migration contract test and production postflight readback |
+| PROP-004 | The browser score endpoint is GET-only; its sole database outcome request is the read-only snapshot RPC with the authenticated tenant and all four exact periods. Executable PostgreSQL evidence proves internal tenant/organ/half-open filtering, statement-snapshot membership, complete-or-overflow behavior, and browser-role denial. | 1 | true | endpoint test plus `test:panel-score:postgres` and captured security result |
+| PROP-005 | The migration enforces typed outcome rows, explicit immutable revision-key idempotency, append-only revisions, deterministic winner keys, RLS, service-only table/function grants, and bounded query indexes. | 1 | true | real PostgreSQL harness, migration lint, and production postflight readback |
 | PROP-006 | Rendered reason/components/source references agree with the core numerator/denominator without raw internal/provider identifiers. | 1 | true | fixed matrix + UI semantic assertions + L3 equality |
 
 ## Formal Hardening Strategy

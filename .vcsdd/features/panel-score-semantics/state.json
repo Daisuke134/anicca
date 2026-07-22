@@ -2,7 +2,7 @@
   "featureName": "panel-score-semantics",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "1b",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -13,18 +13,206 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-22T14:22:26.970Z"
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-22T14:50:42.000Z",
+      "reason": "Architect escalation approved for phase 1c: one focused corrective iteration limited to iteration-3 FIND-001..004; counter reset under vcsdd-escalate contract"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-22T14:53:12.422Z",
+      "reason": "Focused corrective iteration-4 artifact-only review PASS"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-22T14:53:12.428Z",
+      "reason": "Architect approval supplied in corrective order; begin fixed-dataset RED",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-22T14:59:43.356Z",
+      "reason": "Genuine fixed-dataset and endpoint/migration RED captured; baseline remains green",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-22T15:13:29.536Z",
+      "reason": "Sprint 1 GREEN verified: fixed matrix and independent oracle 19/19, focused 92/92, full regression 445/445, PostgreSQL role/snapshot/bounds integration PASS",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-22T15:46:02.405Z",
+      "reason": "Approved sprint-1 contract passed fresh artifact-only round-2 remediation review with CRIT-001..008 and zero findings",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-22T15:59:48.884Z",
+      "reason": "Sprint 1 adversary FAIL: FIND-003 routes earliest to Phase 2a; FIND-001 and FIND-002 route to Phase 2b",
+      "sprint": 1
+    },
+    {
+      "from": "4",
+      "to": "2a",
+      "timestamp": "2026-07-22T15:59:48.889Z",
+      "reason": "Sprint 1 adversary FAIL: FIND-003 routes earliest to Phase 2a; FIND-001 and FIND-002 route to Phase 2b",
+      "sprint": 2
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-22T16:02:30.419Z",
+      "reason": "Sprint 2 genuine RED: UI accepts non-ISO/extra-organ models and real PostgreSQL accepts fractional minor units; zero revision rejection now asserted",
+      "sprint": 2
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-22T16:03:50.353Z",
+      "reason": "Sprint 2 GREEN verified: UI 12/12, panel score 14/14, full regression exit 0, eval 21+12+12+27, real PostgreSQL rejects zero/fractional inputs and passes role/snapshot/20000-20001 bounds",
+      "sprint": 2
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-22T16:10:28.705Z",
+      "reason": "Approved sprint-2 corrective contract passed fresh artifact-only review with CRIT-009..012 and zero findings",
+      "sprint": 2
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-22T16:16:44.662Z",
+      "reason": "Sprint 2 fresh implementation review PASS with zero findings; all CRIT-009..012 evaluated and prior three findings eliminated",
+      "sprint": 2
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-22T20:03:50.861Z",
+      "reason": "Phase 5 hardening complete: PROP-001..006 proved with fresh bounded harnesses, focused/full/eval regressions, real PostgreSQL contract, security scan, and purity audit.",
+      "sprint": 2
+    },
+    {
+      "from": "6",
+      "to": "3",
+      "timestamp": "2026-07-22T20:03:50.864Z",
+      "reason": "A product correction to integer-safe score rounding occurred after the prior Phase 3 PASS; re-enter fresh artifact-only implementation review before release.",
+      "sprint": 2
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-22T20:09:22.864Z",
+      "reason": "Fresh Phase 3 review FAIL: FIND-004 integer-safe UI ratio rounding bug routes to 2b and FIND-005 boundary test gap routes earliest to 2a.",
+      "sprint": 2
+    },
+    {
+      "from": "4",
+      "to": "2a",
+      "timestamp": "2026-07-22T20:09:22.871Z",
+      "reason": "Fresh Phase 3 review FAIL: FIND-004 integer-safe UI ratio rounding bug routes to 2b and FIND-005 boundary test gap routes earliest to 2a.",
+      "sprint": 3
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-22T20:11:02.811Z",
+      "reason": "Sprint 3 genuine RED recorded: safe-integer FINANCIAL UI boundary model failed only the new test because float ratio validation disagreed with canonical server value 10.",
+      "sprint": 3
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-22T20:11:31.662Z",
+      "reason": "Sprint 3 GREEN: shared integer-safe ratio helper accepts the canonical FINANCIAL boundary; focused tests 27/27, full regression exit 0, all evals 21/21+12/12+12/12+27/27, real PostgreSQL PASS 20000/20001.",
+      "sprint": 3
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-22T20:17:56.861Z",
+      "reason": "Sprint 3 contract review PASS with approved CRIT-013..015; dispatch fresh artifact-only implementation review of the integer-safe UI boundary correction.",
+      "sprint": 3
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-22T20:23:04.026Z",
+      "reason": "Sprint 3 implementation review FAIL: FIND-006 browser inline renderer lacks roundedScoreValue and FIND-007 lacks an emitted-script regression; route earliest to Phase 2a.",
+      "sprint": 3
+    },
+    {
+      "from": "4",
+      "to": "2a",
+      "timestamp": "2026-07-22T20:23:04.036Z",
+      "reason": "Sprint 3 implementation review FAIL: FIND-006 browser inline renderer lacks roundedScoreValue and FIND-007 lacks an emitted-script regression; route earliest to Phase 2a.",
+      "sprint": 4
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-22T20:24:07.315Z",
+      "reason": "Sprint 4 genuine RED recorded: actual renderPanelPage inline score script threw ReferenceError because roundedScoreValue was omitted; canonical FINANCIAL boundary module test remained green.",
+      "sprint": 4
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-22T20:24:35.951Z",
+      "reason": "Sprint 4 GREEN: renderPanelPage serializes the shared integer-safe helper before dependent validators; emitted browser VM boundary and module tests pass, focused 28/28, full/eval/PostgreSQL regressions pass.",
+      "sprint": 4
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-22T20:27:39.402Z",
+      "reason": "Sprint 4 contract review PASS with approved CRIT-016..018; dispatch fresh implementation review of the emitted browser renderer correction.",
+      "sprint": 4
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-22T20:30:35.007Z",
+      "reason": "Sprint 4 fresh artifact-only implementation review PASS; begin final hardening after browser-path correction.",
+      "sprint": 4
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-22T20:31:52.251Z",
+      "reason": "Final Phase 5 hardening complete: all six proofs, security/purity, focused/full/evals, and real PostgreSQL contract rerun after emitted-browser correction.",
+      "sprint": 4
     }
   ],
   "iterations": {
+    "3": 5,
+    "4": 3,
+    "5": 2,
+    "6": 2,
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 3,
+    "2a": 4,
+    "2b": 4,
+    "2c": 4
   },
   "proofObligations": [
     {
       "id": "PROP-001",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/ratio-invariants.js",
       "beadId": "BEAD-014"
     },
@@ -32,7 +220,7 @@
       "id": "PROP-002",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/dedup-invariants.js",
       "beadId": "BEAD-015"
     },
@@ -40,7 +228,7 @@
       "id": "PROP-003",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/period-invariants.js",
       "beadId": "BEAD-016"
     },
@@ -48,7 +236,7 @@
       "id": "PROP-004",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/tenant-query-invariants.js",
       "beadId": "BEAD-017"
     },
@@ -56,7 +244,7 @@
       "id": "PROP-005",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/migration-invariants.js",
       "beadId": "BEAD-018"
     },
@@ -64,7 +252,7 @@
       "id": "PROP-006",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "verification/proof-harnesses/render-linkage-invariants.js",
       "beadId": "BEAD-019"
     }
@@ -77,7 +265,13 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-027",
+          "BEAD-028",
+          "BEAD-029",
+          "BEAD-041",
+          "BEAD-042"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-001"
@@ -87,7 +281,10 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-002"
@@ -97,7 +294,10 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-021",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-003"
@@ -107,7 +307,10 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-023",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-004"
@@ -117,7 +320,10 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-024",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-005"
@@ -127,7 +333,11 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-025",
+          "BEAD-026",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-006"
@@ -137,7 +347,12 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-025",
+          "BEAD-026",
+          "BEAD-027",
+          "BEAD-041"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-007"
@@ -147,7 +362,17 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-021",
+          "BEAD-022",
+          "BEAD-023",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-043",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-057"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-008"
@@ -157,7 +382,16 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-021",
+          "BEAD-028",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-042",
+          "BEAD-043"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-009"
@@ -167,7 +401,13 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-033",
+          "BEAD-045",
+          "BEAD-052",
+          "BEAD-059"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-010"
@@ -177,7 +417,10 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-034",
+          "BEAD-044"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-011"
@@ -187,7 +430,12 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-030",
+          "BEAD-035",
+          "BEAD-042",
+          "BEAD-043"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-012"
@@ -197,7 +445,9 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-032"
+        ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1a",
         "externalId": "REQ-013"
@@ -213,7 +463,8 @@
           "BEAD-004",
           "BEAD-005",
           "BEAD-006",
-          "BEAD-007"
+          "BEAD-007",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
@@ -229,7 +480,8 @@
           "BEAD-004",
           "BEAD-005",
           "BEAD-006",
-          "BEAD-008"
+          "BEAD-008",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
@@ -241,7 +493,8 @@
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
         "status": "active",
         "linkedBeads": [
-          "BEAD-002"
+          "BEAD-002",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
@@ -253,7 +506,8 @@
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
         "status": "active",
         "linkedBeads": [
-          "BEAD-009"
+          "BEAD-009",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
@@ -265,7 +519,8 @@
         "artifactPath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
         "status": "active",
         "linkedBeads": [
-          "BEAD-008"
+          "BEAD-008",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
@@ -279,31 +534,753 @@
         "linkedBeads": [
           "BEAD-001",
           "BEAD-010",
-          "BEAD-013"
+          "BEAD-013",
+          "BEAD-048"
         ],
         "createdAt": "2026-07-22T14:23:08.126Z",
         "createdInPhase": "1b",
         "externalId": "PROP-006"
+      },
+      {
+        "beadId": "BEAD-020",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.142Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-001"
+      },
+      {
+        "beadId": "BEAD-021",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-003",
+          "BEAD-008",
+          "BEAD-009",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.144Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-002"
+      },
+      {
+        "beadId": "BEAD-022",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.144Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-003"
+      },
+      {
+        "beadId": "BEAD-023",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-004",
+          "BEAD-008",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.145Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-004"
+      },
+      {
+        "beadId": "BEAD-024",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-005",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.145Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-005"
+      },
+      {
+        "beadId": "BEAD-025",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-007",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.146Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-006"
+      },
+      {
+        "beadId": "BEAD-026",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-007",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.146Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-007"
+      },
+      {
+        "beadId": "BEAD-027",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-007",
+          "BEAD-036",
+          "BEAD-041",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.147Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-008"
+      },
+      {
+        "beadId": "BEAD-028",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-api-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-009",
+          "BEAD-037",
+          "BEAD-042",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.147Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-009"
+      },
+      {
+        "beadId": "BEAD-029",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-api-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-009",
+          "BEAD-037",
+          "BEAD-042",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.147Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-010"
+      },
+      {
+        "beadId": "BEAD-030",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-api-score-semantics.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-009",
+          "BEAD-012",
+          "BEAD-037",
+          "BEAD-042",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.148Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-011"
+      },
+      {
+        "beadId": "BEAD-031",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-score-migration.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-009",
+          "BEAD-038",
+          "BEAD-043",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.148Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-012"
+      },
+      {
+        "beadId": "BEAD-032",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-ui.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-010",
+          "BEAD-039",
+          "BEAD-013",
+          "BEAD-045",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.148Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-013"
+      },
+      {
+        "beadId": "BEAD-033",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-ui.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-010",
+          "BEAD-039",
+          "BEAD-045",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.149Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-014"
+      },
+      {
+        "beadId": "BEAD-034",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/eval/run-score-semantics-eval.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-036",
+          "BEAD-040",
+          "BEAD-044",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-22T14:59:23.149Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-015"
+      },
+      {
+        "beadId": "BEAD-035",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-009",
+          "BEAD-012",
+          "BEAD-038",
+          "BEAD-043",
+          "BEAD-047",
+          "BEAD-051",
+          "BEAD-053",
+          "BEAD-054"
+        ],
+        "createdAt": "2026-07-22T14:59:23.149Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-016"
+      },
+      {
+        "beadId": "BEAD-036",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/panel-score-semantics.js",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-021",
+          "BEAD-022",
+          "BEAD-023",
+          "BEAD-024",
+          "BEAD-025",
+          "BEAD-026",
+          "BEAD-027",
+          "BEAD-034",
+          "BEAD-041",
+          "BEAD-044",
+          "BEAD-046"
+        ],
+        "createdAt": "2026-07-22T15:13:17.042Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-001"
+      },
+      {
+        "beadId": "BEAD-037",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/panel-api.js",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-028",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-042",
+          "BEAD-046"
+        ],
+        "createdAt": "2026-07-22T15:13:17.044Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-002"
+      },
+      {
+        "beadId": "BEAD-038",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-043",
+          "BEAD-046",
+          "BEAD-049",
+          "BEAD-054",
+          "BEAD-055"
+        ],
+        "createdAt": "2026-07-22T15:13:17.045Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-003"
+      },
+      {
+        "beadId": "BEAD-039",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/panel-ui.js",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-033",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-050",
+          "BEAD-052",
+          "BEAD-056"
+        ],
+        "createdAt": "2026-07-22T15:13:17.046Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-004"
+      },
+      {
+        "beadId": "BEAD-040",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/scripts/independent-panel-score-readback.js",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-034",
+          "BEAD-044",
+          "BEAD-046"
+        ],
+        "createdAt": "2026-07-22T15:13:17.046Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-005"
+      },
+      {
+        "beadId": "BEAD-041",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-003",
+          "BEAD-004",
+          "BEAD-005",
+          "BEAD-006",
+          "BEAD-007",
+          "BEAD-020",
+          "BEAD-021",
+          "BEAD-022",
+          "BEAD-023",
+          "BEAD-024",
+          "BEAD-025",
+          "BEAD-026",
+          "BEAD-027",
+          "BEAD-036"
+        ],
+        "createdAt": "2026-07-22T15:15:16.374Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-001"
+      },
+      {
+        "beadId": "BEAD-042",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-009",
+          "BEAD-012",
+          "BEAD-028",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-037"
+        ],
+        "createdAt": "2026-07-22T15:15:16.378Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-002"
+      },
+      {
+        "beadId": "BEAD-043",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-009",
+          "BEAD-012",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-038",
+          "BEAD-049",
+          "BEAD-051",
+          "BEAD-053",
+          "BEAD-054"
+        ],
+        "createdAt": "2026-07-22T15:15:16.379Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-003"
+      },
+      {
+        "beadId": "BEAD-044",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-034",
+          "BEAD-036",
+          "BEAD-040"
+        ],
+        "createdAt": "2026-07-22T15:15:16.380Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-004"
+      },
+      {
+        "beadId": "BEAD-045",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-010",
+          "BEAD-032",
+          "BEAD-033",
+          "BEAD-039",
+          "BEAD-050",
+          "BEAD-052"
+        ],
+        "createdAt": "2026-07-22T15:15:16.381Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-005"
+      },
+      {
+        "beadId": "BEAD-046",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-036",
+          "BEAD-037",
+          "BEAD-038",
+          "BEAD-039",
+          "BEAD-040"
+        ],
+        "createdAt": "2026-07-22T15:15:16.381Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-006"
+      },
+      {
+        "beadId": "BEAD-047",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-021",
+          "BEAD-022",
+          "BEAD-023",
+          "BEAD-024",
+          "BEAD-025",
+          "BEAD-026",
+          "BEAD-027",
+          "BEAD-028",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-031",
+          "BEAD-032",
+          "BEAD-033",
+          "BEAD-034",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-22T15:15:16.382Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-007"
+      },
+      {
+        "beadId": "BEAD-048",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-014",
+          "BEAD-015",
+          "BEAD-016",
+          "BEAD-017",
+          "BEAD-018",
+          "BEAD-019"
+        ],
+        "createdAt": "2026-07-22T15:15:16.382Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-008"
+      },
+      {
+        "beadId": "BEAD-049",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-038",
+          "BEAD-043",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T15:59:48.876Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-001"
+      },
+      {
+        "beadId": "BEAD-050",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-002.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-039",
+          "BEAD-045",
+          "BEAD-052",
+          "BEAD-056",
+          "BEAD-059",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T15:59:48.879Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-002"
+      },
+      {
+        "beadId": "BEAD-051",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-003.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-043",
+          "BEAD-053",
+          "BEAD-058",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T15:59:48.880Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-003"
+      },
+      {
+        "beadId": "BEAD-052",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/panel-ui.test.js",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-010",
+          "BEAD-039",
+          "BEAD-045",
+          "BEAD-050",
+          "BEAD-056",
+          "BEAD-059",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T16:02:30.412Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-017"
+      },
+      {
+        "beadId": "BEAD-053",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-035",
+          "BEAD-043",
+          "BEAD-051",
+          "BEAD-055",
+          "BEAD-058",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T16:02:30.417Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-018"
+      },
+      {
+        "beadId": "BEAD-054",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-035",
+          "BEAD-038",
+          "BEAD-043",
+          "BEAD-049",
+          "BEAD-055",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T16:02:30.418Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-019"
+      },
+      {
+        "beadId": "BEAD-055",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-038",
+          "BEAD-049",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T16:03:50.343Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-006"
+      },
+      {
+        "beadId": "BEAD-056",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/panel-ui.js",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-039",
+          "BEAD-050",
+          "BEAD-052",
+          "BEAD-059",
+          "BEAD-060"
+        ],
+        "createdAt": "2026-07-22T16:03:50.348Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-007"
+      },
+      {
+        "beadId": "BEAD-057",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-2.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-049",
+          "BEAD-054",
+          "BEAD-055"
+        ],
+        "createdAt": "2026-07-22T16:05:03.915Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-009"
+      },
+      {
+        "beadId": "BEAD-058",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-2.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-049",
+          "BEAD-051",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055"
+        ],
+        "createdAt": "2026-07-22T16:05:03.919Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-010"
+      },
+      {
+        "beadId": "BEAD-059",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-2.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-010",
+          "BEAD-050",
+          "BEAD-052",
+          "BEAD-056"
+        ],
+        "createdAt": "2026-07-22T16:05:03.921Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-011"
+      },
+      {
+        "beadId": "BEAD-060",
+        "type": "contract-criterion",
+        "artifactPath": ".vcsdd/features/panel-score-semantics/contracts/sprint-2.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056"
+        ],
+        "createdAt": "2026-07-22T16:05:03.921Z",
+        "createdInPhase": "2c",
+        "externalId": "CRIT-012"
       }
     ]
   },
   "gates": {
-    "1c": {
-      "verdict": "FAIL",
-      "timestamp": "2026-07-22T14:42:43.164Z",
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-22T20:30:35.003Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 3,
-        "findingCount": 4,
-        "previousFindingCount": 7,
-        "critical": 1,
-        "high": 3
+        "sprint": 4,
+        "verdictPath": ".vcsdd/features/panel-score-semantics/reviews/sprint-4/output/verdict.json",
+        "findingCount": 0
+      }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-22T14:53:12.423Z",
+      "reviewedBy": "human",
+      "details": {
+        "approvedBasedOn": "adversary",
+        "authority": "manager-architect",
+        "scope": "iteration-3 FIND-001..004"
       },
-      "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-22T14:42:43.164Z"
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-22T14:53:12.420Z",
+      "humanVerdict": "PASS",
+      "humanApproved": true,
+      "humanApprovedAt": "2026-07-22T14:53:12.423Z"
     }
   },
-  "sprintCount": 0,
+  "sprintCount": 4,
   "createdAt": "2026-07-22T14:20:06.991Z",
-  "updatedAt": "2026-07-22T14:42:43.164Z"
+  "updatedAt": "2026-07-22T20:31:52.251Z"
 }

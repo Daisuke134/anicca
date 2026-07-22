@@ -64,6 +64,16 @@ function makeFixture() {
     if (url.pathname.endsWith("/lm_panel_sessions")) {
       return jsonResponse(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "u1", chat_id: "101" }] : []);
     }
+    if (url.pathname.endsWith("/rpc/lm_panel_score_outcome_snapshot")) {
+      const request = JSON.parse(init.body);
+      return jsonResponse({ overflow: false, rows_by_organ: {
+        daily: request.p_uid === "u1" ? [{
+          public_ref: "10000000-0000-4000-8000-000000000001", revision_key: "20000000-0000-4000-8000-000000000001",
+          uid: "u1", organ: "daily", entity_key: "evt-u1", outcome_kind: "daily_call", outcome_status: "required_succeeded",
+          occurred_at: "2026-07-21T08:50:00.000Z", resolved_at: null, recorded_at: "2026-07-21T08:50:00.000Z", amount_minor: null, currency: null, components: {},
+        }] : [], physical: [], mental: [], financial: [],
+      } });
+    }
     const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
     const fixture = byUid[uid];
     if (url.pathname.endsWith("/lm_users")) return jsonResponse(fixture ? [fixture.user] : []);
@@ -139,15 +149,15 @@ test("LM-33b timeline returns today's interpreted calendar and call telemetry", 
   assert.deepEqual(fixture.calendarUids, ["u1"]);
 });
 
-test("LM-33b scores use real aggregates and expose unimplemented/no-data organs", async () => {
+test("PANEL-8g scores use source outcomes and expose all four closed organs", async () => {
   await withApiServer(makeFixture(), async (base) => {
     const { response, body } = await getJson(base, "scores");
     assert.equal(response.status, 200);
-    assert.deepEqual(body, { organs: {
-      daily: { score: 50, no_data: false, calls: 2, answered: 1, window_days: 7 },
-      physical: { score: null, no_data: true, unimplemented: true, missed_visits: 0 },
-      financial: { score: null, no_data: true, ledger_entries: 0 },
-    } });
+    assert.deepEqual(Object.keys(body.organs), ["daily", "physical", "mental", "financial"]);
+    assert.deepEqual({ status: body.organs.daily.status, value: body.organs.daily.value, numerator: body.organs.daily.numerator, denominator: body.organs.daily.denominator }, { status: "measured", value: 100, numerator: 1, denominator: 1 });
+    assert.equal(body.organs.physical.status, "insufficient_data");
+    assert.equal(body.organs.mental.status, "insufficient_data");
+    assert.equal(body.organs.financial.status, "insufficient_data");
   });
 });
 
@@ -221,7 +231,7 @@ test("LM-33b negative: API is read-only", async () => {
     assert.deepEqual(body, { error: "method_not_allowed" });
     assert.equal(response.headers.get("allow"), "GET");
   });
-  assert.ok(fixture.calls.every(({ url, init }) => !init.method || init.method === "GET" || url.pathname.endsWith("/rpc/resolve_lm_panel_session")));
+  assert.ok(fixture.calls.every(({ url, init }) => !init.method || init.method === "GET" || url.pathname.endsWith("/rpc/resolve_lm_panel_session") || url.pathname.endsWith("/rpc/lm_panel_score_outcome_snapshot")));
 });
 
 test("LM-33b negative: request UID is ignored and every data source stays bound to session UID", async () => {

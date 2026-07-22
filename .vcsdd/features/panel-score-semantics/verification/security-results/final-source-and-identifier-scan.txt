@@ -1,0 +1,6 @@
+security-scan scope_files=4
+hardcoded_secret_findings=0
+credential_shape_findings=0
+unsafe_output_key_findings=0
+unsafe_render_access_findings=0
+result=PASS
