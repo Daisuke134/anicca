@@ -25,16 +25,39 @@ test("LM-33c: panel renders the five mirror sections in spec order", () => {
   }
 });
 
-test("LM-33c: panel is read-only and fetches only the five same-origin read APIs", () => {
+test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();
-  assert.doesNotMatch(html, /<(?:form|input|button|select|textarea)\b/i);
+  assert.match(html, /data-panel-section="control-center"/);
+  assert.match(html, /id="connection-cards"/);
+  assert.match(html, /id="settings-controls"/);
+  assert.match(html, /<button\b/i);
   assert.match(html, /credentials:\s*["']same-origin["']/);
   for (const endpoint of ["timeline", "scores", "ledger", "gates", "settings"]) {
     assert.match(html, new RegExp(`/api/panel/${endpoint}`));
   }
   assert.match(html, /準備中/);
   assert.match(html, /まだ収益はありません/);
+});
+
+test("PANEL-0: visible actions have semantic delegated handlers", () => {
+  const html = renderPanelPage();
+  assert.match(html, /addEventListener\("click"/);
+  assert.match(html, /addEventListener\("change"/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, /min-height:\s*44px/);
+  assert.doesNotMatch(html, /<span[^>]+data-action=/);
+  for (const action of ["connect-calendar", "toggle-calls", "toggle-notifications", "toggle-daily", "toggle-delegation", "instructions-location", "instructions-wallet", "instructions-call"]) {
+    assert.match(html, new RegExp(`case ["']${action}["']`));
+  }
+});
+
+test("PANEL-0: Calendar renders native Disconnect and Reconnect controls", () => {
+  const html = renderPanelPage();
+  assert.match(html, /connection\.disconnect/);
+  assert.match(html, /disconnect-calendar/);
+  assert.match(html, /Reconnect calendar/);
+  assert.match(html, /case "disconnect-calendar": return \{ type: "connection\.disconnect", provider: "calendar" \}/);
 });
 
 test("LM-33c: panel CSS collapses to one column without horizontal overflow at 375px", () => {

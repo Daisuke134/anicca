@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-001", "dimension": "spec_fidelity", "category": "requirement_mismatch", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/user-command.js:114 — `call_enabled`、通知、DAILY、委任は新規preferences行を更新するだけで、実runtimeに参照箇所がないため、UIは成功を表示しても実automationをON/OFFしない。",
+  "evidence": { "filePath": "apps/life-call/lib/user-command.js", "lineRange": "114-114" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

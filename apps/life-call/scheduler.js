@@ -10,6 +10,7 @@
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
 const { calendarProviderFilter } = require("./lib/user-selector.js");
+const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
@@ -59,7 +60,15 @@ async function supaUsers() {
   let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });
   if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr }); // wake_policy → undefined → travel-only
   if (!r.ok) return [];
-  return r.json().catch(() => []);
+  const users = await r.json().catch(() => []);
+  if (!Array.isArray(users) || users.length === 0) return [];
+  const ids = users.map(u => u.uid).filter(Boolean).join(",");
+  const prefsResponse = await fetch(`${url}/rest/v1/lm_panel_preferences?uid=in.(${encodeURIComponent(ids)})&select=uid,call_enabled,notifications_enabled,daily_automation_enabled`, { headers: hdr });
+  if (!prefsResponse.ok) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
+  const preferenceRows = await prefsResponse.json().catch(() => null);
+  if (!Array.isArray(preferenceRows)) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
+  const byUid = new Map(preferenceRows.map(row => [row.uid, row]));
+  return users.map(u => ({ ...RUNTIME_DEFAULTS, ...u, ...(byUid.get(u.uid) || {}) }));
 }
 
 // Returns true if this (uid,event_key) was NOT already called — and records it atomically.
@@ -175,6 +184,7 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
 // LIFE_RUN_LOOPS path continues to work unchanged.
 
 async function wakeUserOnce(u, nowMs) {
+  if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
   let events;
   try {
@@ -187,13 +197,14 @@ async function wakeUserOnce(u, nowMs) {
   } catch {
     return;
   }
-  try { await lateNoticeUserOnce(u, now, { events }); }
+  try { if (u.notifications_enabled !== false) await lateNoticeUserOnce(u, now, { events }); }
   catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  if (u.call_enabled === false) return;
   for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
     const depMs = await resolveDeparture(ev, events, {
       home: u.home_address, mapsKey, nowMs: now, bufferMin: 5, directionsFn: directionsMinutes,
@@ -254,7 +265,7 @@ async function tick(deps = {}) {
   const wake = deps.wake || wakeUserOnce;
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users, "scheduler", (u) => wake(u, now));
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false), "scheduler", (u) => wake(u, now));
 }
 
 function startScheduler() {
@@ -276,6 +287,7 @@ function startScheduler() {
 const TRAVEL_TICK_MS = 30 * 60 * 1000;
 
 async function travelUserOnce(u) {
+  if (u && u.daily_automation_enabled === false) return;
   const apiKey = process.env.COMPOSIO_API_KEY;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY; // agentic resolve of room-name / unroutable locations
@@ -296,7 +308,7 @@ async function travelTick(deps = {}) {
   const listUsers = deps.listUsers || supaUsers;
   const travel = deps.travel || travelUserOnce;
   const users = await listUsers();
-  await forEachUserSafe(users, "travel", travel);
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false), "travel", travel);
 }
 function startTravelLoop() {
   console.log(`[travel] started — every ${TRAVEL_TICK_MS / 60000}min, horizon 7d`);
@@ -310,6 +322,7 @@ function startTravelLoop() {
 const ASK_TICK_MS = 20 * 60 * 1000;
 
 async function askUserOnce(u) {
+  if (u && (u.daily_automation_enabled === false || u.notifications_enabled === false)) return;
   const composioKey = process.env.COMPOSIO_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;                            // our-domain email send
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
@@ -341,7 +354,7 @@ async function askTickAll(deps = {}) {
   const listUsers = deps.listUsers || supaUsers;
   const ask = deps.ask || askUserOnce;
   const users = await listUsers();
-  await forEachUserSafe(users, "ask", ask);
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.notifications_enabled !== false), "ask", ask);
 }
 function startAskLoop() {
   console.log(`[ask] started — every ${ASK_TICK_MS / 60000}min`);
@@ -389,7 +402,7 @@ async function discoveryTick(deps = {}) {
   }));
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users, "discovery", (user) => discover(user, now));
+  await forEachUserSafe(users.filter(user => user.notifications_enabled !== false), "discovery", (user) => discover(user, now));
 }
 
 function startDiscoveryLoop() {
@@ -417,7 +430,10 @@ async function getUserByUid(uid) {
   if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr });
   if (!r.ok) return null;
   const rows = await r.json().catch(() => []);
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  const user = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!user) return null;
+  const prefs = await readRuntimePreferences(uid, { supaUrl: url, supaKey: key, fetchImpl: fetch });
+  return prefs ? { ...user, ...prefs } : { ...user, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false };
 }
 
 module.exports = {

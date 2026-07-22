@@ -1,0 +1,12 @@
+{
+  "reviewType": "spec",
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "specs/implementation-spec.md",
+    "contracts/sprint-1.md",
+    "evidence/phase-1-production-findings.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "constraint": "User explicitly prohibited nested agent/review; primary session performs artifact-only gate."
+}

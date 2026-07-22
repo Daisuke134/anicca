@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-004", "dimension": "implementation_correctness", "category": "implementation_bug", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:289 — receiptのread/finish条件が`uid + idempotency_key`だけでchat_idを含まず、migrationの主キーも同様。要求された`uid + chat_id`単位のidempotency隔離と不一致。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "289-289" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

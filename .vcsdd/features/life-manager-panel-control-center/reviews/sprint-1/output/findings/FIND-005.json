@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-005", "dimension": "implementation_correctness", "category": "implementation_bug", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:311 — Calendar statusは複数account中にACTIVEが1件あればconnectedとし、返却accountのuser/toolkitを実値で検証しない。曖昧・foreign結果をfail closedできない。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "311-311" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

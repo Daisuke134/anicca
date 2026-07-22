@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-008", "dimension": "spec_fidelity", "category": "requirement_mismatch", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-ui.js:674 — Calendarの未接続状態とdisabled状態を区別せず、`connection.start`を常に“Reconnect calendar”として描画する。必須の新規“Connect” controlが存在しない。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-ui.js", "lineRange": "674-674" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

@@ -57,12 +57,17 @@ function makeFixture() {
   const fetchImpl = async (input, init = {}) => {
     const url = new URL(input);
     calls.push({ url, init });
+    if (url.pathname.endsWith("/rpc/resolve_lm_panel_session")) {
+      const body = JSON.parse(init.body);
+      return jsonResponse(body.p_session_hash === SESSION_HASH ? [{ uid: "u1", chat_id: "101", rotated: false }] : []);
+    }
     if (url.pathname.endsWith("/lm_panel_sessions")) {
-      return jsonResponse(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "u1" }] : []);
+      return jsonResponse(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "u1", chat_id: "101" }] : []);
     }
     const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
     const fixture = byUid[uid];
     if (url.pathname.endsWith("/lm_users")) return jsonResponse(fixture ? [fixture.user] : []);
+    if (url.pathname.endsWith("/lm_panel_preferences")) return jsonResponse(uid === "u1" ? [{ call_time_zone: "UTC" }] : []);
     if (url.pathname.endsWith("/lm_user_locations")) return jsonResponse(fixture ? [fixture.location] : []);
     if (url.pathname.endsWith("/lm_wake_log")) return jsonResponse(fixture ? fixture.wakes : []);
     if (url.pathname.endsWith("/lm_api_cost")) return jsonResponse(fixture ? fixture.costs : []);
@@ -180,7 +185,7 @@ test("LM-33b settings mirror language, actual call schedule, and connection stat
     assert.deepEqual(body, {
       call_language: "ja",
       call_schedule: { time_zone: "UTC", minutes_before: [10, 5], wake_policy: "travel-only" },
-      connections: { calendar: true, gmail: false, telegram: true },
+      connections: { calendar: false, gmail: false, telegram: true },
     });
   });
 });
@@ -216,7 +221,7 @@ test("LM-33b negative: API is read-only", async () => {
     assert.deepEqual(body, { error: "method_not_allowed" });
     assert.equal(response.headers.get("allow"), "GET");
   });
-  assert.ok(fixture.calls.every(({ init }) => !init.method || init.method === "GET"));
+  assert.ok(fixture.calls.every(({ url, init }) => !init.method || init.method === "GET" || url.pathname.endsWith("/rpc/resolve_lm_panel_session")));
 });
 
 test("LM-33b negative: request UID is ignored and every data source stays bound to session UID", async () => {
@@ -228,7 +233,7 @@ test("LM-33b negative: request UID is ignored and every data source stays bound 
       assert.doesNotMatch(JSON.stringify(body), /u2|secret/);
     }
   });
-  const dataReads = fixture.calls.filter(({ url }) => !url.pathname.endsWith("/lm_panel_sessions"));
+  const dataReads = fixture.calls.filter(({ url }) => !url.pathname.endsWith("/lm_panel_sessions") && !url.pathname.includes("/rpc/"));
   assert.ok(dataReads.length > 0);
   for (const { url } of dataReads) assert.equal(url.searchParams.get("uid"), "eq.u1", url.toString());
   assert.ok(fixture.calendarUids.length > 0);
