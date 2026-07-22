@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "evidence"],
+  "properties": {
+    "status": {"type": "string", "const": "ok"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  }
+}
