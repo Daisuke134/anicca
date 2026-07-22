@@ -314,8 +314,12 @@ async function travelUserOnce(u, deps = {}) {
     const telegramToken = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
     if (u.notifications_enabled !== false && telegramToken && u.telegram_chat_id) {
       for (const report of r.outboundReports || []) {
-        await (deps.sendMessage || sendMessage)(telegramToken, u.telegram_chat_id,
-          formatTravelAutofillMessage(report, deps.nowMs === undefined ? Date.now() : deps.nowMs));
+        try {
+          await (deps.sendMessage || sendMessage)(telegramToken, u.telegram_chat_id,
+            formatTravelAutofillMessage(report, deps.nowMs === undefined ? Date.now() : deps.nowMs));
+        } catch (error) {
+          console.error(`[travel] uid=${u.uid.slice(0, 12)} report send failed: ${error && error.message}`);
+        }
       }
     }
     return r;

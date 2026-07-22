@@ -227,3 +227,54 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
     "📨 現在地から見て14:00に間に合わないため、先方に「10分ほど遅れます」とメールを送っておきました。次の電車なら14:10着です。",
   ], "late email/report emit once while the prior travel report remains the only on-time report");
 });
+
+test("CORE 8e preserves accepted travel results and continues reports when one Telegram send fails", async () => {
+  const first = calendarEvent({
+    id: "controlled-first",
+    summary: "最初の予定",
+    location: "会場A",
+    startIso: "2026-07-24T14:00:00+09:00",
+    endIso: "2026-07-24T15:00:00+09:00",
+  });
+  const second = calendarEvent({
+    id: "controlled-second",
+    summary: "次の予定",
+    location: "会場B",
+    startIso: "2026-07-24T15:30:00+09:00",
+    endIso: "2026-07-24T16:30:00+09:00",
+  });
+  const existingReturn = calendarEvent({
+    id: "controlled-existing-return",
+    summary: "[Travel] 🚆 会場B→自宅",
+    location: "自宅",
+    startIso: "2026-07-24T16:30:00+09:00",
+    endIso: "2026-07-24T17:00:00+09:00",
+  });
+  const calendar = new JourneyCalendar([first, second, existingReturn]);
+  calendar.acceptCreates = true;
+  const attempts = [];
+  const result = await travelUserOnce({
+    uid: "controlled-user",
+    home_address: "自宅",
+    telegram_chat_id: "controlled-chat",
+    notifications_enabled: true,
+    daily_automation_enabled: true,
+  }, {
+    nowMs: TRAVEL_NOW_MS,
+    apiKey: "controlled-composio-key",
+    mapsKey: "controlled-maps-key",
+    calendar,
+    directionsMinutes: async () => 20,
+    telegramToken: "controlled-telegram-token",
+    sendMessage: async (_token, _chatId, text) => {
+      attempts.push(text);
+      if (attempts.length === 1) throw new Error("controlled Telegram outage");
+      return { ok: true, result: { message_id: 2 } };
+    },
+  });
+
+  assert.equal(result.inserted, 2, "provider-accepted calendar results survive report I/O failure");
+  assert.equal(calendar.rows.filter((row) => row.summary.startsWith("[Travel]")).length, 3,
+    "both accepted outbound blocks remain plus the pre-existing return block");
+  assert.equal(attempts.length, 2, "one report failure cannot suppress a later accepted report");
+});
