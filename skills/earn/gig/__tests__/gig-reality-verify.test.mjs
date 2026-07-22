@@ -31,24 +31,23 @@ test('gig_reality_verify.sh: bash -n syntax check passes', () => {
 
 test('gig_reality_verify.sh: reads all three claim jsonl sources', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(src.includes('gig_reality_claims.py'), 'does not delegate to the one-shot claim collector');
+  const collector = fs.readFileSync(path.join(DIR, 'scripts', 'gig_reality_claims.py'), 'utf8');
   for (const f of ['shuppin.jsonl', 'applied.jsonl', 'earnings.jsonl']) {
-    assert.ok(src.includes(f), `does not reference ${f}`);
+    assert.ok(collector.includes(f), `collector does not reference ${f}`);
   }
 });
 
-test('gig_reality_verify.sh: spawns a FRESH claude -p (report-independent, non-interactive)', () => {
+test('gig_reality_verify.sh: spawns a fresh high-value judge through the common runner', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
-  assert.ok(/claude\s+-p\b/.test(src), 'does not spawn `claude -p`');
-  assert.ok(src.includes('--dangerously-skip-permissions'), 'missing --dangerously-skip-permissions');
-  assert.ok(src.includes('--add-dir'), 'missing --add-dir (browser/CDP + home file access)');
-  assert.ok(/env\s+-u\s+ANTHROPIC_API_KEY/.test(src), 'missing env -u ANTHROPIC_API_KEY (subscription session, not API billing)');
+  assert.ok(src.includes('agent_runner.py'), 'does not invoke common runner');
+  assert.ok(/--task-class\s+high-value-agent/.test(src), 'judge is not routed as high-value-agent');
+  assert.ok(src.includes('--evidence-dir'), 'runner evidence directory is not persisted');
 });
 
-test('gig_reality_verify.sh: caps the fresh spawn with a timeout (no infinite hang)', () => {
+test('gig_reality_verify.sh: consumes runner timeout evidence', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
-  // accepts a literal-seconds timeout (`timeout 600 ...`) OR a timeout-seconds variable
-  // (`timeout "$TIMEOUT_SECS" ...` where TIMEOUT_SECS=<int> is set earlier in the script).
-  assert.ok(/\btimeout\s+("?\$\w+"?|\d+)\b/.test(src), 'no `timeout <seconds>` guard around the claude -p spawn');
+  assert.ok(src.includes('attempts.jsonl') && src.includes('timed_out'), 'runner timeout evidence not consumed');
 });
 
 test('gig_reality_verify.sh: writes audit-reality.jsonl', () => {
@@ -109,10 +108,8 @@ test('gig_reality_verify.sh: generates a STABLE pass_id BEFORE spawning the judg
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
   assert.ok(/PASS_ID=/.test(src), 'no PASS_ID variable generated');
   const passIdIdx = src.indexOf('PASS_ID=');
-  // match the ACTUAL invocation line ("$CLAUDE" -p ...), not any comment/doc text that merely
-  // mentions "claude -p" (this file's header comments do, well before PASS_ID is generated).
-  const spawnIdx = src.search(/"\$CLAUDE"\s+-p\b/);
-  assert.ok(passIdIdx !== -1 && spawnIdx !== -1 && passIdIdx < spawnIdx, 'PASS_ID must be generated BEFORE the claude -p spawn');
+  const spawnIdx = src.search(/"\$PY"\s+"\$RUNNER"/);
+  assert.ok(passIdIdx !== -1 && spawnIdx !== -1 && passIdIdx < spawnIdx, 'PASS_ID must be generated BEFORE runner spawn');
 });
 
 test('gig_reality_verify.sh: embeds the pass_id into the prompt (build_verifier_prompt call)', () => {

@@ -26,8 +26,9 @@ G="$HOME/gig"
 AUDIT_REALITY="$G/audit-reality.jsonl"
 SELFHEAL="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
 PY="$(command -v python3 || echo /opt/homebrew/bin/python3)"
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNNER="$HOME/profitable-claude/skills/agent-runner/agent_runner.py"
+JUDGE_SCHEMA_FILE="$SELF_DIR/schemas/gig_reality_verdict.schema.json"
 TRAJECTORY_ROOT="$G/trajectory"
 N="${1:-5}"
 TIMEOUT_SECS=1200   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case).
@@ -47,72 +48,18 @@ TIMEOUT_SECS=1200   # cap the fresh judge spawn — never block auditor.sh forev
 mkdir -p "$G" "$(dirname "$SELFHEAL")"
 echo "$(date '+%F %T') gig_reality_verify: starting (N=$N)" >&2
 
-# ─── 1. Collect the most recent N claim rows from each source (deterministic, no judgment here) ──
-CLAIMS_JSON=$("$PY" - "$G" "$N" <<'PYEOF' 2>>"$G/.reality-verify.err.log"
-# ENTITY-ID FILTER (FIND-005, reality-verify false-positive round realityverify-1783813501-61933):
-# the gig core also appends pass-level bookkeeping/audit rows to these same jsonl files — e.g. B2's
-# "zero_applied_exhaustive_scan" summary, whose free-text `note` recaps dozens of ALREADY-PROCESSED
-# requestIds from memory (title shorthand, not copy-pasted from the page). These rows assert NO new
-# side effect (nothing to verify against a real screen) yet stuffing them into claims_to_verify let
-# the judge pick an incidental paraphrase slip inside the prose (a title mixed up between two
-# historical requestIds) and fail the WHOLE round over it. The core itself already marks these rows
-# deterministically: every genuine entity-specific claim carries a real Coconala requestId/service_id;
-# every pass-summary/audit row uses the literal sentinel "N/A" (self-adopted convention, verified
-# ~100%-correlated with no-op statuses like zero_applied_exhaustive_scan/reviewed_no_new_action_needed
-# across ~300 historical rows). This is structural-field filtering on that existing sentinel, not new
-# judgment about prose content — statuses stay 100% free-form (agent's own words, never hardcoded).
-import json, os, sys
-G, N = sys.argv[1], int(sys.argv[2])
-NO_CLAIM_ID = {"", "n/a", "na", "none", "null"}
-
-def tail_rows(fname, kind):
-    p = os.path.join(G, fname)
-    rows = []
-    if not os.path.exists(p):
-        return rows
-    for line in open(p, encoding="utf-8"):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            d = json.loads(line)
-        except Exception:
-            continue
-        entity_id = d.get("requestId") or d.get("service_id") or ""
-        if str(entity_id).strip().lower() in NO_CLAIM_ID:
-            continue  # pass-level bookkeeping/audit row — no entity-specific side effect to verify
-        d["kind"] = kind
-        rows.append(d)
-    return rows[-N:]
-
-claims = (
-    tail_rows("shuppin.jsonl", "shuppin")
-    + tail_rows("applied.jsonl", "applied")
-    + tail_rows("earnings.jsonl", "earnings")
-)
-
-# ENTITY DEDUP (2026-07-15 self-fix, incident realityverify-1784123104-80599 timeout): the gig core
-# often self-corrects the SAME entity twice within one N-row tail window (e.g. edits service 4244506's
-# title, then a later pass verifies/re-fixes that same title) -- both rows are genuine claims in time,
-# but reality-verification only needs to check that entity's CURRENT real-page state ONCE; sending both
-# to the judge doubles a real Coconala navigation for zero extra signal. Root-caused from this incident's
-# trajectory: 5 shuppin rows collapsed to only 3 distinct service_ids (4244910, 4313386x2, 4244506x2),
-# and the judge still burned its full 900s timeout navigating 20 real pages without finishing. Keep only
-# the LATEST row per (kind, entity_id) -- deterministic bookkeeping on the same structural id fields
-# already used above (requestId/service_id), no judgment about claim content involved.
-deduped = {}
-for c in claims:
-    key = (c.get("kind"), c.get("requestId") or c.get("service_id") or "")
-    deduped[key] = c  # later occurrence in claims (== later in file) overwrites -> keeps latest
-claims = list(deduped.values())
-print(json.dumps(claims, ensure_ascii=False))
-PYEOF
-)
+# ─── 1. Collect each new claim once (deterministic, evidence-backed watermark) ──────────────
+# A last-N-only window re-submitted an already-judged listing claim forever when Coconala later
+# returned that listing to draft. The collector now advances only past claims from a round that
+# captured all required real-page evidence; CDP failures, timeouts, and deferrals remain retryable.
+CLAIMS_ENVELOPE=$("$PY" "$SELF_DIR/scripts/gig_reality_claims.py" "$G" "$N" 2>>"$G/.reality-verify.err.log")
 CLAIMS_RC=$?
-if [ "$CLAIMS_RC" -ne 0 ] || [ -z "$CLAIMS_JSON" ]; then
+if [ "$CLAIMS_RC" -ne 0 ] || [ -z "$CLAIMS_ENVELOPE" ]; then
   echo "$(date '+%F %T') gig_reality_verify: claim-collection failed (rc=$CLAIMS_RC), treating as empty" >&2
-  CLAIMS_JSON="[]"
+  CLAIMS_ENVELOPE='{"claims":[],"watermark":0,"claims_through_ts":0}'
 fi
+CLAIMS_JSON=$("$PY" -c "import json,sys; print(json.dumps(json.loads(sys.argv[1]).get('claims', []), ensure_ascii=False))" "$CLAIMS_ENVELOPE" 2>/dev/null || echo '[]')
+CLAIMS_THROUGH_TS=$("$PY" -c "import json,sys; print(json.loads(sys.argv[1]).get('claims_through_ts', 0))" "$CLAIMS_ENVELOPE" 2>/dev/null || echo 0)
 CLAIMS_COUNT=$("$PY" -c "import json,sys; print(len(json.loads(sys.argv[1])))" "$CLAIMS_JSON" 2>/dev/null || echo 0)
 echo "$(date '+%F %T') gig_reality_verify: collected $CLAIMS_COUNT claim rows" >&2
 
@@ -214,50 +161,27 @@ if [ "$LOGGED_OUT" = "1" ]; then
   exit 0
 fi
 
-# ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
-# env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
-# idiom) when available, falling back to the local CLIProxyAPI (see CLIPROXY_KEY below) since
-# launchd cannot refresh the subscription OAuth token headlessly (keychain locked; observed killing
-# this verifier 2026-07-16/17). --dangerously-skip-permissions + --add-dir "$HOME": the
-# judge must freely drive CDP :9222 (browser) and call cdp_nav_snapshot.py under $HOME without
-# prompts — this is a non-interactive, autonomous fresh spawn (adversary-daily.sh `claude -p` idiom,
-# adapted). The judge is instructed (gig_judge prompt) to use the DETERMINISTIC nav helper with
-# PASS_ID for every ground-truth URL — enforced independently by step 5's evidence gate, not trusted.
-#
-# --json-schema (2026-07-15 fix, incident realityverify-1784108700-56675): previously ran with plain
-# --output-format text and gig_reality_gate.py regex-scraped the final JSON object out of free text.
-# On a heavy round (10 claims, 4 ground-truth URLs, long report-skeptical instructions) the judge
-# sometimes finished its investigation but never emitted the final JSON block at all (pure prose
-# response, zero "{"/"}" anywhere) — gig_reality_gate.py then raised "no JSON object found in judge
-# output" and the round was recorded verdict=false/kind=claim_mismatch even though the trajectory
-# showed all 4 URLs were navigated successfully while logged in (real evidence existed; nothing was
-# actually wrong with the gig core's claims, the judge itself just failed to follow the
-# response-format instruction under load). This is the same class of bug the trajectory_all_login_wall
-# backstop in gig_reality_gate.py already patched for the auth-wall case, but that backstop only fires
-# when every navigated URL was a /login redirect — a non-auth-wall unparseable response fell through
-# it. --json-schema makes the CLI itself enforce structured output on the judge's FINAL answer
-# (verified live: interim Bash/browser tool calls still run normally, only the concluding response is
-# schema-shaped) — this removes the failure mode at the source instead of catching it after the fact.
-JUDGE_SCHEMA='{"type":"object","properties":{"reasoning":{"type":"string"},"verdict":{"type":"boolean"},"failure_reason":{"type":"string"},"impossible_task":{"type":"boolean"},"reached_captcha":{"type":"boolean"}},"required":["verdict"]}'
-
-# Auth: launchd cannot refresh the subscription OAuth token headlessly (keychain locked;
-# killed this loop on 2026-07-16/17). Route through the local CLIProxyAPI (:8317) whose creds
-# are plain files and refresh headlessly; fall back to subscription auth if the key file is absent.
-CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-if [ -n "$CLIPROXY_KEY" ]; then
-  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-fi
-
-echo "$(date '+%F %T') gig_reality_verify: spawning fresh claude -p judge (timeout ${TIMEOUT_SECS}s)" >&2
-JUDGE_RAW=$(env -u ANTHROPIC_API_KEY timeout "$TIMEOUT_SECS" \
-  "$CLAUDE" -p "$PROMPT" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
-  --json-schema "$JUDGE_SCHEMA" --output-format text \
-  2>>"$G/.reality-verify.err.log")
-JUDGE_RC=$?
-# always persist the raw judge response for post-mortem — previously nothing was kept when parsing
-# failed, which is why this incident had to be root-caused blind (no raw text survived).
+# ─── 4. Spawn a fresh, report-independent judge through the common runner ──────────────
+# Reuse the deployed runner's provider fallback instead of pinning one Claude credential pool. The
+# runner keeps provider/model policy outside this loop and persists every attempt for diagnosis.
 mkdir -p "$TRAJECTORY_ROOT/$PASS_ID"
+JUDGE_PROMPT_FILE="$TRAJECTORY_ROOT/$PASS_ID/judge.prompt.txt"
+RUNNER_EVIDENCE="$TRAJECTORY_ROOT/$PASS_ID/agent-runner"
+printf '%s' "$PROMPT" > "$JUDGE_PROMPT_FILE"
+echo "$(date '+%F %T') gig_reality_verify: spawning fresh high-value-agent judge through common runner" >&2
+RUNNER_SUMMARY=$("$PY" "$RUNNER" --task-class high-value-agent --prompt-file "$JUDGE_PROMPT_FILE" \
+  --schema "$JUDGE_SCHEMA_FILE" --evidence-dir "$RUNNER_EVIDENCE" \
+  --task-label gig-reality-judge --workdir "$HOME" < /dev/null 2>>"$G/.reality-verify.err.log")
+JUDGE_RC=$?
+RESULT_PATH=$(printf '%s' "$RUNNER_SUMMARY" | "$PY" -c 'import json,sys; print(json.load(sys.stdin).get("result_path") or "")' 2>/dev/null || true)
+if [ -n "$RESULT_PATH" ] && [ -f "$RESULT_PATH" ]; then
+  JUDGE_RAW=$(cat "$RESULT_PATH")
+else
+  JUDGE_RAW=""
+  if [ -f "$RUNNER_EVIDENCE/attempts.jsonl" ] && tail -1 "$RUNNER_EVIDENCE/attempts.jsonl" | "$PY" -c 'import json,sys; raise SystemExit(0 if json.load(sys.stdin).get("timed_out") else 1)' 2>/dev/null; then
+    JUDGE_RC=124
+  fi
+fi
 printf '%s' "$JUDGE_RAW" > "$TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt" 2>/dev/null || true
 
 if [ "$JUDGE_RC" -eq 124 ]; then
@@ -265,6 +189,16 @@ if [ "$JUDGE_RC" -eq 124 ]; then
   ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'timeout','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
   echo "$ROW" >> "$AUDIT_REALITY"
   "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_timeout','kind':'timeout','failure_reason':'fresh judge spawn timed out','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
+  echo "$ROW"
+  exit 0
+fi
+
+JUDGE_RAW_BYTES=$(wc -c < "$TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt" 2>/dev/null | tr -d ' ')
+if [ "$JUDGE_RC" -ne 0 ] && [ "${JUDGE_RAW_BYTES:-0}" -eq 0 ]; then
+  echo "$(date '+%F %T') gig_reality_verify: fresh judge exited abnormally (rc=$JUDGE_RC, zero-byte output) -- infra failure, not claim mismatch" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'judge_process_failed_rc$JUDGE_RC','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','kind':'judge_process_failed','failure_reason':'fresh judge failed before producing output (rc=$JUDGE_RC)','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
   echo "$ROW"
   exit 0
 fi
@@ -278,6 +212,16 @@ PARSED_ROW=$("$PY" "$SELF_DIR/scripts/gig_reality_gate.py" "$JUDGE_RAW" "$PASS_I
 if [ -z "$PARSED_ROW" ]; then
   PARSED_ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'unparseable_judge_output: empty_gate_output','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
 fi
+
+# Mark claims consumed only after the deterministic gate confirms that every required real-page
+# capture exists. A true or false claim judgement is final input to the self-heal loop; infra-only
+# failures with incomplete evidence intentionally leave the claim pending for a later retry.
+PARSED_ROW=$("$PY" -c "
+import json,sys
+d=json.loads(sys.argv[1]); through=float(sys.argv[2]); required=int(d.get('evidence_required') or 0); captured=int(d.get('evidence_captured') or 0)
+if required > 0 and captured >= required: d['claims_through_ts']=through
+print(json.dumps(d, ensure_ascii=False))
+" "$PARSED_ROW" "$CLAIMS_THROUGH_TS")
 
 echo "$PARSED_ROW" >> "$AUDIT_REALITY"
 echo "$(date '+%F %T') gig_reality_verify: recorded gated verdict row" >&2
