@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createImageApp, imageProduct } from '../image-server.mjs';
+import { createImageApp, imageDiscoveryConfig, imageProduct } from '../image-server.mjs';
 
 test('image product publishes positive unit economics and POST discovery metadata', () => {
   const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
@@ -10,6 +10,13 @@ test('image product publishes positive unit economics and POST discovery metadat
   assert.equal(product.price, '$0.05');
   assert.equal(product.upstreamMaxUsd, 0.018);
   assert.equal(product.resource, 'https://seller.example/image');
+});
+
+test('POST Bazaar discovery declares a JSON body instead of query parameters', () => {
+  const discovery = imageDiscoveryConfig();
+  assert.equal(discovery.method, 'POST');
+  assert.equal(discovery.bodyType, 'json');
+  assert.deepEqual(discovery.input, { prompt: 'A blue robot building a self-funded agent economy' });
 });
 
 test('image app keeps discovery free and gates the image handler before delivery', async (t) => {

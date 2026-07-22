@@ -18,6 +18,19 @@ export function imageProduct({ publicUrl = '', payTo = '' } = {}) {
   };
 }
 
+export function imageDiscoveryConfig() {
+  return {
+    method: 'POST',
+    bodyType: 'json',
+    input: { prompt: 'A blue robot building a self-funded agent economy' },
+    inputSchema: {
+      properties: { prompt: { type: 'string', description: 'Image prompt, 1..2000 characters' } },
+      required: ['prompt'],
+    },
+    output: { example: { url: 'https://cdn.example/generated.png' } },
+  };
+}
+
 export function createImageApp({ product, paymentGate, handler = imageResaleHandler }) {
   if (!product) throw new TypeError('product is required');
   if (typeof paymentGate !== 'function') throw new TypeError('paymentGate is required');
@@ -82,15 +95,7 @@ async function createRuntimePaymentGate(product, env) {
       resource: product.resource,
       description: product.description,
       mimeType: 'application/json',
-      extensions: declareDiscoveryExtension({
-        method: 'POST',
-        input: { prompt: 'A blue robot building a self-funded agent economy' },
-        inputSchema: {
-          properties: { prompt: { type: 'string', description: 'Image prompt, 1..2000 characters' } },
-          required: ['prompt'],
-        },
-        output: { example: { url: 'https://cdn.example/generated.png' } },
-      }),
+      extensions: declareDiscoveryExtension(imageDiscoveryConfig()),
     },
   };
   return paymentMiddleware(routes, resourceServer);
