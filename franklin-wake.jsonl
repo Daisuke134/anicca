@@ -13527,3 +13527,11 @@
 {"ts":1784729509,"wake_id":"00MRW5VB24FF7A2CEC60D448F5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784729518,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
 {"ts":1784729639,"wake_id":"00MRW5Y3ORF1C89949DCAC447D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784729863,"wake_id":"00MRW62W8B23CC686EE7BE47A6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784730023,"wake_id":"00MRW66BSZ126A58855BBE433E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784730048,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
+{"ts":1784730171,"wake_id":"00MRW69HTU5A4DD89A751E4F84","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784730328,"wake_id":"00MRW6CUX4C91DE12B14014923","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784730485,"wake_id":"00MRW6G7Q55F2BE72E197E4AE9","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784730552,"wake_id":"00MRW6HNKD9F8D31A75F6546B7","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784730619,"wake_id":"00MRW6J3DR3ECD34E7F9F54BBD","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784730686,"wake_id":"00MRW6KJB94EF2CB6689BE4ED8","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784730694,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
+{"ts":1784730839,"wake_id":"00MRW6NTKB9F173F2AEE814147","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
