@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { createImageApp, imageDiscoveryConfig, imageProduct, mergeImageOpenApi } from '../image-server.mjs';
+import {
+  createImageApp,
+  createImageTelemetryRecorder,
+  imageDiscoveryConfig,
+  imageProduct,
+  mergeImageOpenApi,
+} from '../image-server.mjs';
 
 test('image product publishes positive unit economics and POST discovery metadata', () => {
   const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
@@ -92,4 +101,58 @@ test('image app keeps discovery free and gates the image handler before delivery
   });
   assert.equal(response.status, 200);
   assert.deepEqual(order, ['gate:/image', 'handler:blue robot']);
+});
+
+test('image app records a privacy-safe 402 attempt without prompt or payment headers', async (t) => {
+  const rows = [];
+  const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  const app = createImageApp({
+    product,
+    paymentGate(_req, res) { res.status(402).json({ error: 'payment_required' }); },
+    recordAccess(row) { rows.push(row); },
+    loadUpstreamOpenApi: async () => ({ openapi: '3.1.0', info: {}, paths: {} }),
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(() => server.close());
+  const { port } = server.address();
+
+  const response = await fetch(`http://127.0.0.1:${port}/image`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-payment': 'not-a-valid-payment' },
+    body: JSON.stringify({ prompt: 'private buyer prompt' }),
+  });
+  assert.equal(response.status, 402);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0], {
+    ts: rows[0].ts,
+    route: '/image',
+    price: '$0.05',
+    payer: null,
+    settled: false,
+    status: 402,
+  });
+  assert.equal('prompt' in rows[0], false);
+  assert.equal('headers' in rows[0], false);
+});
+
+test('image telemetry recorder separates attempts and settled sales by seller wallet', (t) => {
+  const stateDir = mkdtempSync(join(tmpdir(), 'image-telemetry-'));
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }));
+  const payTo = '0xAbC';
+  const record = createImageTelemetryRecorder({ stateDir, payTo });
+  const attempt = { ts: '2026-07-23T00:00:00.000Z', route: '/image', price: '$0.05', payer: null, settled: false, status: 402 };
+  const sale = { ts: '2026-07-23T00:01:00.000Z', route: '/image', price: '$0.05', payer: '0xBuyer', settled: true, status: 200 };
+
+  record(attempt);
+  record(sale);
+
+  assert.deepEqual(
+    JSON.parse(readFileSync(join(stateDir, 'attempts-0xabc.jsonl'), 'utf8').trim()),
+    attempt,
+  );
+  assert.deepEqual(
+    JSON.parse(readFileSync(join(stateDir, 'sales-0xabc.jsonl'), 'utf8').trim()),
+    sale,
+  );
 });

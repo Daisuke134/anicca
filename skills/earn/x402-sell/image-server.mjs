@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 import express from 'express';
-import { pathToFileURL } from 'node:url';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { privateKeyToAccount } from 'viem/accounts';
 
 import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { IMAGE_OFFER, imageResaleHandler } from './image-resale.mjs';
+import { decodePayer, isSettled } from './lib/settle-gate.mjs';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 export function imageProduct({ publicUrl = '', payTo = '' } = {}) {
   const origin = String(publicUrl).replace(/\/+$/, '');
@@ -86,14 +90,45 @@ export function mergeImageOpenApi(upstream, product) {
   };
 }
 
+export function createImageTelemetryRecorder({ stateDir, payTo }) {
+  if (!stateDir) throw new TypeError('stateDir is required');
+  if (!payTo) throw new TypeError('payTo is required');
+  const wallet = String(payTo).toLowerCase();
+  const attemptsLog = join(stateDir, `attempts-${wallet}.jsonl`);
+  const salesLog = join(stateDir, `sales-${wallet}.jsonl`);
+  try { mkdirSync(stateDir, { recursive: true }); } catch { /* best-effort telemetry */ }
+  return (row) => {
+    const safeRow = {
+      ts: String(row.ts),
+      route: String(row.route),
+      price: String(row.price),
+      payer: row.payer ? String(row.payer) : null,
+      settled: row.settled === true,
+      status: Number(row.status),
+    };
+    try {
+      appendFileSync(safeRow.settled ? salesLog : attemptsLog, `${JSON.stringify(safeRow)}\n`);
+    } catch { /* logging must never break serving */ }
+  };
+}
+
+function paymentPayer(req) {
+  try {
+    const decoded = JSON.parse(Buffer.from(req.header('x-payment') || '', 'base64').toString('utf8'));
+    return decoded?.payload?.authorization?.from || null;
+  } catch { return null; }
+}
+
 export function createImageApp({
   product,
   paymentGate,
   handler = imageResaleHandler,
   loadUpstreamOpenApi,
+  recordAccess,
 }) {
   if (!product) throw new TypeError('product is required');
   if (typeof paymentGate !== 'function') throw new TypeError('paymentGate is required');
+  if (recordAccess !== undefined && typeof recordAccess !== 'function') throw new TypeError('recordAccess must be a function');
   const app = express();
   app.use(express.json({ limit: '16kb' }));
   app.get('/.well-known/x402.json', (_req, res) => res.json({
@@ -120,6 +155,24 @@ export function createImageApp({
       res.status(502).json({ error: 'upstream_openapi_unavailable' });
     }
   });
+  if (recordAccess) {
+    app.use((req, res, next) => {
+      if (req.path !== product.path) return next();
+      const requestPayer = paymentPayer(req);
+      res.on('finish', () => {
+        const paymentResponse = res.getHeader('PAYMENT-RESPONSE');
+        recordAccess({
+          ts: new Date().toISOString(),
+          route: req.path,
+          price: product.price,
+          payer: requestPayer || decodePayer(paymentResponse),
+          settled: isSettled(paymentResponse),
+          status: res.statusCode,
+        });
+      });
+      next();
+    });
+  }
   app.use(paymentGate);
   app.post(product.path, handler);
   return app;
@@ -180,6 +233,10 @@ async function main(env = process.env) {
   const app = createImageApp({
     product,
     paymentGate,
+    recordAccess: createImageTelemetryRecorder({
+      stateDir: env.X402_STATE_DIR || join(HERE, 'state'),
+      payTo: product.payTo,
+    }),
     loadUpstreamOpenApi: async () => {
       const response = await fetch(upstreamOpenApi, { signal: AbortSignal.timeout(10_000) });
       if (!response.ok) throw new Error(`upstream OpenAPI HTTP ${response.status}`);
