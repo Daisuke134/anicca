@@ -7,7 +7,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const { createPanelToken, sendPanelLink, handlePanelRequest } = require("./panel-auth.js");
+const { sendPanelLink, handlePanelRequest } = require("./panel-auth.js");
 const { isPanelCommand } = require("./telegram.js");
 
 async function withPanelServer(opts, run) {
@@ -25,41 +25,6 @@ async function withPanelServer(opts, run) {
     await new Promise((resolve) => server.close(resolve));
   }
 }
-
-test("LM-33a: /panel token is 256-bit opaque, hash-only at rest, and expires in five minutes", async () => {
-  const calls = [];
-  const now = new Date("2026-07-21T00:00:00.000Z");
-  const rawBytes = Buffer.alloc(32, 0xab);
-
-  const result = await createPanelToken({ uid: "lm_u1", chatId: "123" }, {
-    supaUrl: "https://db.example",
-    supaKey: "service-key",
-    panelBaseUrl: "https://life.example",
-    now: () => now,
-    randomBytes: (size) => {
-      assert.equal(size, 32);
-      return rawBytes;
-    },
-    fetchImpl: async (url, init) => {
-      calls.push({ url, init });
-      return { ok: true, status: 201 };
-    },
-  });
-
-  const token = rawBytes.toString("base64url");
-  assert.equal(result.url, `https://life.example/panel?t=${token}`);
-  assert.equal(result.token, token);
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://db.example/rest/v1/lm_panel_tokens");
-  const stored = JSON.parse(calls[0].init.body);
-  assert.deepEqual(stored, {
-    token_hash: crypto.createHash("sha256").update(token).digest("hex"),
-    uid: "lm_u1",
-    chat_id: "123",
-    expires_at: "2026-07-21T00:05:00.000Z",
-  });
-  assert.doesNotMatch(calls[0].init.body, new RegExp(token));
-});
 
 test("PANEL-1: a legacy ?t= URL is stripped without claiming or creating a session", async () => {
   const rawToken = Buffer.alloc(32, 0x11).toString("base64url");
@@ -116,7 +81,14 @@ test("LM-33a/33c: /panel with a live session renders the authenticated mirror wi
 
 test("LM-33a negative: /panel without a session returns human login HTML", async () => {
   await withPanelServer({
-    fetchImpl: async () => { throw new Error("must not query for a missing cookie"); },
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x70),
+    fetchImpl: async (url, init) => {
+      assert.match(url, /\/rest\/v1\/lm_panel_device_challenges$/);
+      assert.equal(init.method, "POST");
+      return { ok: true, status: 201 };
+    },
   }, async (base) => {
     const response = await fetch(`${base}/panel`);
     assert.equal(response.status, 200);
@@ -156,6 +128,19 @@ test("PANEL-1: Telegram /panel sends one canonical web_app button with zero toke
   assert.equal(buttonUrl.pathname, "/panel");
   assert.equal(buttonUrl.search, "");
   assert.equal(buttonUrl.hash, "");
+});
+
+test("PANEL-1: Telegram /panel fails closed when the canonical web_app button is rejected", async () => {
+  const dbCalls = [];
+  await assert.rejects(() => sendPanelLink({ uid: "lm_u1", chatId: "123" }, {
+    token: "telegram-token",
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    panelBaseUrl: "https://life.example/",
+    fetchImpl: async (...args) => { dbCalls.push(args); return { ok: true, status: 201 }; },
+    sendMessage: async () => ({ ok: false, error_code: 400 }),
+  }), /panel web app button send failed/);
+  assert.equal(dbCalls.length, 0);
 });
 
 test("PANEL-0: live session resolves immutable uid + telegram chat", async () => {

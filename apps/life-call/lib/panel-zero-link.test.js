@@ -135,6 +135,29 @@ test("PANEL-1: valid initData binds one Telegram actor, returns canonical /panel
   });
 });
 
+test("PANEL-1: semantically identical reordered initData is the same one-time replay", async () => {
+  const botToken = "123456:expected-fixture-bot-token";
+  const fixture = telegramFixture();
+  const initData = signedInitData(botToken);
+  const reorderedInitData = new URLSearchParams([...new URLSearchParams(initData).entries()].reverse()).toString();
+  assert.notEqual(reorderedInitData, initData);
+
+  await withPanelServer({
+    supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
+    panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
+    now: () => new Date(1784678400 * 1000), randomBytes: () => Buffer.alloc(32, 0x82), fetchImpl: fixture.fetchImpl,
+  }, async (base) => {
+    assert.equal((await postTelegram(base, initData)).status, 200);
+    const afterClaim = { ...fixture.state };
+    const replayed = await postTelegram(base, reorderedInitData);
+    assert.equal(replayed.status, 409);
+    assert.equal(replayed.headers.get("set-cookie"), null);
+    assert.equal(fixture.state.dbMutations, afterClaim.dbMutations);
+    assert.equal(fixture.state.sessionInserts, afterClaim.sessionInserts);
+    assert.equal(fixture.state.providerMutations, 0);
+  });
+});
+
 function deviceFixture() {
   const state = {
     row: null, confirmed: false, exchanged: false,
