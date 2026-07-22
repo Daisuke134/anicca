@@ -160,17 +160,20 @@ async function disconnectCalendar(scope, deps = {}) {
 
 async function startCalendarOAuth(scope, stateToken, deps = {}) {
   if (!deps.composioKey || !deps.composioAuthConfig) throw new Error("provider_unavailable");
-  const response = await (deps.fetchImpl || fetch)("https://backend.composio.dev/api/v3/connected_accounts", {
+  const callback = `${String(deps.panelBaseUrl || "").replace(/\/$/, "")}/panel/oauth/calendar?state=${encodeURIComponent(stateToken)}`;
+  const response = await (deps.fetchImpl || fetch)("https://backend.composio.dev/api/v3/connected_accounts/link", {
     method: "POST", headers: { "x-api-key": deps.composioKey, "content-type": "application/json" },
-    body: JSON.stringify({ auth_config: { id: deps.composioAuthConfig }, connection: { user_id: scope.uid } }),
+    body: JSON.stringify({ auth_config_id: deps.composioAuthConfig, user_id: scope.uid, callback_url: callback }),
   });
   if (!response.ok) throw new Error("provider_failed");
   const body = await response.json().catch(() => ({}));
-  const redirect = body.redirect_url || body.redirect_uri || body.connectionData?.val?.redirectUrl;
-  if (!redirect) throw new Error("provider_failed");
-  const callback = `${String(deps.panelBaseUrl || "").replace(/\/$/, "")}/panel/oauth/calendar?state=${encodeURIComponent(stateToken)}`;
-  const url = new URL(redirect); url.searchParams.set("state", callback);
-  return { redirectUrl: url.toString() };
+  const redirect = body.redirect_url;
+  if (typeof redirect !== "string" || !redirect) throw new Error("provider_failed");
+  try {
+    const url = new URL(redirect);
+    if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("invalid_protocol");
+  } catch { throw new Error("provider_failed"); }
+  return { redirectUrl: redirect };
 }
 
 async function claimCalendarOAuthState(scope, stateToken, deps = {}) {
