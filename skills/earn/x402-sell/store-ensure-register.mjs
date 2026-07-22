@@ -58,7 +58,7 @@ export async function fetchProductCount(publicUrl) {
 // throws; resolves {ok:boolean}.
 export function runRegister(origin, env = process.env) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [join(HERE, "register-x402scan.mjs")], {
+    const child = spawn("/bin/bash", [join(HERE, "register-x402scan-boot.sh")], {
       env: { ...env, ORIGIN: origin },
       stdio: ["ignore", "pipe", "pipe"],
     });
