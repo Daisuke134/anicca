@@ -16,7 +16,7 @@ test('image product publishes positive unit economics and POST discovery metadat
   const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
   assert.equal(product.method, 'POST');
   assert.equal(product.path, '/image');
-  assert.equal(product.price, '$0.05');
+  assert.equal(product.price, '$0.03');
   assert.equal(product.upstreamMaxUsd, 0.018);
   assert.equal(product.resource, 'https://seller.example/image');
 });
@@ -47,7 +47,7 @@ test('combined OpenAPI preserves upstream routes and declares the paid POST imag
   assert.equal(image.responses['200'].content['application/json'].schema.properties.url.format, 'uri');
   assert.equal(image.responses['402'].description, 'Payment Required');
   assert.deepEqual(image['x-payment-info'], {
-    price: { mode: 'fixed', currency: 'USD', amount: '0.05' },
+    price: { mode: 'fixed', currency: 'USD', amount: '0.03' },
     protocols: [{ x402: {} }],
   });
 });
@@ -127,7 +127,7 @@ test('image app records a privacy-safe 402 attempt without prompt or payment hea
   assert.deepEqual(rows[0], {
     ts: rows[0].ts,
     route: '/image',
-    price: '$0.05',
+    price: '$0.03',
     payer: null,
     tx: null,
     settled: false,
@@ -142,8 +142,8 @@ test('image telemetry recorder separates attempts and settled sales by seller wa
   t.after(() => rmSync(stateDir, { recursive: true, force: true }));
   const payTo = '0xAbC';
   const record = createImageTelemetryRecorder({ stateDir, payTo });
-  const attempt = { ts: '2026-07-23T00:00:00.000Z', route: '/image', price: '$0.05', payer: null, tx: null, settled: false, status: 402 };
-  const sale = { ts: '2026-07-23T00:01:00.000Z', route: '/image', price: '$0.05', payer: '0xBuyer', tx: '0xTransaction', settled: true, status: 200 };
+  const attempt = { ts: '2026-07-23T00:00:00.000Z', route: '/image', price: '$0.03', payer: null, tx: null, settled: false, status: 402 };
+  const sale = { ts: '2026-07-23T00:01:00.000Z', route: '/image', price: '$0.03', payer: '0xBuyer', tx: '0xTransaction', settled: true, status: 200 };
 
   record(attempt);
   record(sale);

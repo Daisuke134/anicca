@@ -66,7 +66,7 @@ export function mergeImageOpenApi(upstream, product) {
             },
           },
           'x-payment-info': {
-            price: { mode: 'fixed', currency: 'USD', amount: '0.05' },
+            price: { mode: 'fixed', currency: 'USD', amount: String(product.price).replace(/^\$/, '') },
             protocols: [{ x402: {} }],
           },
           responses: {

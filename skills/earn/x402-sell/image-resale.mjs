@@ -25,9 +25,9 @@ const walletLocks = new Map();
 
 export const IMAGE_OFFER = Object.freeze({
   path: '/image',
-  price: '$0.05',
+  price: '$0.03',
   upstreamMaxUsd: 0.018,
-  grossMarginUsd: 0.032,
+  grossMarginUsd: 0.012,
   model: 'zai/cogview-4',
   size: '1024x1024',
   what: 'AI image generation',

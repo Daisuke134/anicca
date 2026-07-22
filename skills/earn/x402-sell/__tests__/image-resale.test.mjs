@@ -41,9 +41,9 @@ function fake402(amount) {
 test('image offer stays profitable against the guarded upstream quote', () => {
   assert.doesNotThrow(() => assertProfitableImageOffer(IMAGE_OFFER));
   assert.equal(IMAGE_OFFER.model, 'zai/cogview-4');
-  assert.equal(IMAGE_OFFER.price, '$0.05');
+  assert.equal(IMAGE_OFFER.price, '$0.03');
   assert.equal(IMAGE_OFFER.upstreamMaxUsd, 0.018);
-  assert.ok(IMAGE_OFFER.grossMarginUsd >= 0.032);
+  assert.ok(IMAGE_OFFER.grossMarginUsd >= 0.012);
   assert.throws(
     () => assertProfitableImageOffer({ price: '$0.018', upstreamMaxUsd: 0.018 }),
     /must exceed upstream/i,
