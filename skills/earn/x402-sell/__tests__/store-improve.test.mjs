@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { summarizeOwnProducts } from '../store-improve.mjs';
+import { scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
 
 const SERVED_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
 const NOW = Date.parse('2026-07-18T12:00:00.000Z');
@@ -30,4 +30,20 @@ test('summarizeOwnProducts aggregates only served routes with external, attempts
     { path: '/funding-rate-arb', external: 0, attempts: 1, ageWakes: 1 },
     { path: '/research', external: 0, attempts: 0, ageWakes: 3 },
   ]);
+});
+
+test('scoutIsFresh invalidates the old listing-only cache schema', () => {
+  const now = 1_700_000_000_000;
+  assert.equal(scoutIsFresh({
+    ts: now / 1_000,
+    byCategory: [{ category: 'defi', count: 11, medianPriceUsd: 0.007 }],
+  }, now), false);
+});
+
+test('scoutIsFresh accepts a recent demand-aware cache', () => {
+  const now = 1_700_000_000_000;
+  assert.equal(scoutIsFresh({
+    ts: now / 1_000,
+    byCategory: [{ category: 'defi', count: 1_014, medianPriceUsd: 0.01, calls30d: 9_398 }],
+  }, now), true);
 });

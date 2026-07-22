@@ -55,9 +55,12 @@ function readScout(path) {
   try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
 }
 
-function scoutIsFresh(scout, now) {
+export function scoutIsFresh(scout, now) {
   const scoutMs = Number(scout?.ts) * 1000;
-  return Number.isFinite(scoutMs) && now - scoutMs <= SCOUT_MAX_AGE_MS;
+  const demandAware = Array.isArray(scout?.byCategory)
+    && scout.byCategory.length > 0
+    && scout.byCategory.every((item) => Number.isFinite(Number(item?.calls30d)));
+  return demandAware && Number.isFinite(scoutMs) && now - scoutMs <= SCOUT_MAX_AGE_MS;
 }
 
 function loadScout(now) {
