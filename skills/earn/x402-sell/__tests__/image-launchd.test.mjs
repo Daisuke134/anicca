@@ -15,7 +15,9 @@ test('franklin1 image boot pins its identity, local port, public origin, and add
   assert.ok(boot.includes('export X402_PAYTO="0x3EcCAD24794ca298D25378E9902A251322ea8749"'));
   assert.ok(boot.includes('export X402_IMAGE_PORT="8093"'));
   assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net"'));
+  assert.ok(boot.includes('export X402_IMAGE_UPSTREAM_OPENAPI="http://127.0.0.1:8411/openapi.json"'));
   assert.ok(boot.includes('tailscale funnel --bg --https=443 --set-path=/image http://127.0.0.1:8093/image'));
+  assert.ok(boot.includes('tailscale funnel --bg --https=443 --set-path=/openapi.json http://127.0.0.1:8093/openapi.json'));
   assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/image-server\.mjs"/);
 });
 
@@ -41,7 +43,9 @@ test('franklin2 image boot pins its identity, local port, public origin, and add
   assert.ok(boot.includes('export X402_PAYTO="0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9"'));
   assert.ok(boot.includes('export X402_IMAGE_PORT="8094"'));
   assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net:10000"'));
+  assert.ok(boot.includes('export X402_IMAGE_UPSTREAM_OPENAPI="http://127.0.0.1:8413/openapi.json"'));
   assert.ok(boot.includes('tailscale funnel --bg --https=10000 --set-path=/image http://127.0.0.1:8094/image'));
+  assert.ok(boot.includes('tailscale funnel --bg --https=10000 --set-path=/openapi.json http://127.0.0.1:8094/openapi.json'));
   assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/image-server\.mjs"/);
 });
 
@@ -67,7 +71,9 @@ test('claude-p image boot pins its identity, local port, public origin, and addi
   assert.ok(boot.includes('export X402_PAYTO="0x810F6D61F7606dEEE2657d3083E150a222Bc29C5"'));
   assert.ok(boot.includes('export X402_IMAGE_PORT="8095"'));
   assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net:8443"'));
+  assert.ok(boot.includes('export X402_IMAGE_UPSTREAM_OPENAPI="http://127.0.0.1:8412/openapi.json"'));
   assert.ok(boot.includes('tailscale funnel --bg --https=8443 --set-path=/image http://127.0.0.1:8095/image'));
+  assert.ok(boot.includes('tailscale funnel --bg --https=8443 --set-path=/openapi.json http://127.0.0.1:8095/openapi.json'));
   assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/image-server\.mjs"/);
 });
 

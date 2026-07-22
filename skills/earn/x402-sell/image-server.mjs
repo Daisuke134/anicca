@@ -31,7 +31,67 @@ export function imageDiscoveryConfig() {
   };
 }
 
-export function createImageApp({ product, paymentGate, handler = imageResaleHandler }) {
+export function mergeImageOpenApi(upstream, product) {
+  if (!upstream || typeof upstream !== 'object' || !upstream.paths || typeof upstream.paths !== 'object') {
+    throw new TypeError('upstream OpenAPI document must contain paths');
+  }
+  const existingPath = upstream.paths[product.path] || {};
+  return {
+    ...upstream,
+    paths: {
+      ...upstream.paths,
+      [product.path]: {
+        ...existingPath,
+        post: {
+          operationId: 'generateImage',
+          summary: 'Generate an image from a text prompt',
+          description: product.description,
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    prompt: { type: 'string', minLength: 1, maxLength: 2000 },
+                  },
+                  required: ['prompt'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+          'x-payment-info': {
+            price: { mode: 'fixed', currency: 'USD', amount: '0.05' },
+            protocols: [{ x402: {} }],
+          },
+          responses: {
+            200: {
+              description: 'Generated image URL',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: { url: { type: 'string', format: 'uri' } },
+                    required: ['url'],
+                  },
+                },
+              },
+            },
+            402: { description: 'Payment Required' },
+          },
+        },
+      },
+    },
+  };
+}
+
+export function createImageApp({
+  product,
+  paymentGate,
+  handler = imageResaleHandler,
+  loadUpstreamOpenApi,
+}) {
   if (!product) throw new TypeError('product is required');
   if (typeof paymentGate !== 'function') throw new TypeError('paymentGate is required');
   const app = express();
@@ -52,6 +112,14 @@ export function createImageApp({ product, paymentGate, handler = imageResaleHand
     products: [{ path: product.path, method: product.method, price: product.price, what: product.what }],
     manifest: '/.well-known/x402.json',
   }));
+  app.get('/openapi.json', async (_req, res) => {
+    try {
+      if (typeof loadUpstreamOpenApi !== 'function') throw new Error('upstream loader missing');
+      res.json(mergeImageOpenApi(await loadUpstreamOpenApi(), product));
+    } catch {
+      res.status(502).json({ error: 'upstream_openapi_unavailable' });
+    }
+  });
   app.use(paymentGate);
   app.post(product.path, handler);
   return app;
@@ -107,7 +175,17 @@ async function main(env = process.env) {
     payTo: resolvePayTo(env),
   });
   const paymentGate = await createRuntimePaymentGate(product, env);
-  const app = createImageApp({ product, paymentGate });
+  const upstreamOpenApi = env.X402_IMAGE_UPSTREAM_OPENAPI;
+  if (!upstreamOpenApi) throw new Error('set X402_IMAGE_UPSTREAM_OPENAPI');
+  const app = createImageApp({
+    product,
+    paymentGate,
+    loadUpstreamOpenApi: async () => {
+      const response = await fetch(upstreamOpenApi, { signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) throw new Error(`upstream OpenAPI HTTP ${response.status}`);
+      return response.json();
+    },
+  });
   const port = Number(env.X402_IMAGE_PORT || 8093);
   app.listen(port, '127.0.0.1', () => {
     process.stdout.write(`${JSON.stringify({ status: 'up', port, product })}\n`);
