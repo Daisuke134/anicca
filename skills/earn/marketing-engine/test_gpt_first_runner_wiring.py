@@ -14,7 +14,16 @@ CONSUMERS = (
     ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh",
     ROOT / "earn" / "clip" / "clip_daily.sh",
     ENGINE / "spawn-marketing-loop.sh",
+    ROOT / "self" / "self-fix.sh",
 )
+
+EXPECTED_TASK_CLASSES = {
+    ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "tool-agent",
+    ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "tool-agent",
+    ROOT / "earn" / "clip" / "clip_daily.sh": "tool-agent",
+    ENGINE / "spawn-marketing-loop.sh": "repeatable-agent",
+    ROOT / "self" / "self-fix.sh": "high-value-agent",
+}
 
 
 class GptFirstRunnerWiringTest(unittest.TestCase):
@@ -23,6 +32,7 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             with self.subTest(script=script):
                 text = script.read_text(encoding="utf-8")
                 self.assertIn("run_agent.sh", text)
+                self.assertIn(f"--task-class {EXPECTED_TASK_CLASSES[script]}", text)
                 self.assertNotRegex(text, r"command -v claude|\$CLAUDE|claude\s+-p|--model\s+sonnet")
                 self.assertNotRegex(text, r"codex\s+exec|gpt-5(?:\.|-)" )
 
