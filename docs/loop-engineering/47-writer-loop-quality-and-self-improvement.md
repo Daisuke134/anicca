@@ -729,6 +729,9 @@ paid subscription ¥500相当/月 ───────────────�
 | [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) | `--print` はnon-interactive、`--json-schema` はstructured output、`--fallback-model` はprimary unavailable時のmodel fallback。provider間fallbackは別adapterで実装する |
 | [NyxFoundation/speca runtime registry](https://github.com/NyxFoundation/speca/blob/8b7da09eaf87737c1cb3b281b520a4bf71a73b55/scripts/orchestrator/runtime_registry.py) | runtimeごとのcommand/model/capabilityをregistryに集約し、workflowからprovider差分を隔離する構造をcopy+tweak |
 | [synaptent/aragora CLI agents](https://github.com/synaptent/aragora/blob/04071f594de9052ff9bb5e1e2e8bc90f6217758f/aragora/agents/cli_agents.py) | “Pass prompt via stdin to avoid shell argument length limits.” 長文promptをargvへ載せずfile→stdinで渡す境界をcopy+tweak |
+| [SQLite Transactions](https://www.sqlite.org/lang_transaction.html) | `BEGIN IMMEDIATE`でwrite transactionを先に取得し、state更新とTelegram logical outbox eventを同一transactionで確定する |
+| [Apple Daemons and Services Programming Guide](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html) | user agentは`~/Library/LaunchAgents`へ置き、`ProgramArguments`をtokenized arrayにする。tracked templateからinstalled absolute pathへ展開する |
+| [TylerKoster/AMC sqlite outbox](https://github.com/TylerKoster/AMC/blob/460f615/pilot/sqlite_outbox.py) | SQLite transactionとoutboxを一体化する既存構造を参照し、stdlib `sqlite3`へcopy+tweakする |
 | [Nigh/show-me-the-story](https://github.com/Nigh/show-me-the-story)（MIT） | “断点续作: 进度随时落盘，关闭程序后重新打开自动恢复” と、章ごとの事実確認・全書整合passをLONGへcopy+tweak |
 | [SimonWaldherr/AI-Book-Generator](https://github.com/SimonWaldherr/AI-Book-Generator)（GPL-3.0） | concept→outline→chaptersとmulti-provider分離を設計参照する。GPL codeはcopyしない |
 | [Pandoc: Creating an ebook](https://pandoc.org/epub.html) | “pandoc can produce output in the EPUB electronic book format.” Markdown正本からEPUBを決定論生成 |
@@ -736,8 +739,8 @@ paid subscription ¥500相当/月 ───────────────�
 
 ### 18.7 Current incident evidence
 
-- `ai.anicca.article-daily` はloaded、calendar 06:00、`ARTICLE_AUTOPUBLISH=1`、`state=not running`、`runs=1`、`last exit code=0`。
-- `state/.article-daily.lockdir` は存在し、mtimeは `2026-07-22 04:12:39 JST`。現在のarticle process ownerは実測0。06:00起動はこのownerless lockを自動回収できない。
+- 旧article/orca LaunchAgent 9本はbootout済みでplistをrepo外read-only archiveへ保存した。`launchctl list`は新writer 5本だけで、daily 06:00、resume 300秒、book月初09:00、learn daily 22:30、learn weekly日曜22:00。全plistは`RunAtLoad=false`、切替時kickstart 0。
+- 旧`state/.article-daily.lockdir`を含むlegacy stateは新agentから参照されない。repo外schema migration済みで、旧sourceは削除せず保持する。E4未配線の`writer-resume`は安全に`rc=75`を返し、public side effect 0。
 - stderrは `article-daily.sh: line 240 ... File name too long`。長いarticle promptをcommand pathとして解釈した境界不良があり、wrapperの終了表示だけでは成功判定できない。
 - run `20260721-191239` はnote/jaの`published:true` + `reality_gate:PASS`が1件だけ。残媒体のverified receiptはない。
 - native CLI probe: `codex login status` = ChatGPT login。`gpt-5.6-luna low` と `gpt-5.6-terra low` は各 `rc=0 / MODEL_OK`。`claude auth status`はOAuth loginだがSonnet probeは `rc=1 / weekly limit / resets Jul 24 06:00 JST`。E2 adapterはClaude probe失敗後にCodexを選び、full promptをhealthy runtimeへexact1送信する。
@@ -748,6 +751,9 @@ paid subscription ¥500相当/月 ───────────────�
 - E2はfeature commit `8bb2aaedf4657cb520874409034c2ee95ca298e4`へpush済み。native Codex/Claudeのprobe/run/schema/circuitを`skills/writer-engine/runtime/adapter.sh`だけに集約し、article-writerのprovider/model直呼びはproduction contractで0件。長文promptはfile→stdin、full promptはprovider間replay 0。
 - E2の主担当fresh検証はPython `73 passed + 27 subtests`、article shell `22/22`、focused E2 `42 passed`。実Codex/Luna-low probeは`rc=0`、raw stdout `MODEL_OK\n` exact9 bytes、stdout SHA-256 `33625b290395a098681e593cfd6849615c972380c7a6c300a943cb1ea03505b9`、calls SHA-256 `c5e588456c4abee4829140dd0adf50f8a67586d411271771a0d6c1b85f420fbc`。
 - E2のfresh artifact-only reviewは`ok:true / findings:[]`。half-open probeからfull完了までowner/generation leaseを保持し、lease中の別worker provider call 0、失効後の古いsuccess/failureはstate mutation 0かつ新state byte-identical、stale resultはfailed、SIGKILL後はlease回復、closed-state旧completionもCASでfenceする。legacy全circuit-openはprovider call 0、`rc=75`、`transient_circuit_open`をresumeへ渡す。ledgerは96行・同hashで投稿増分0。
+- E3はfeature commit `7b55799e87e1dbadb919fb7b0b7e5846577493f0`へpush済み。旧`skills/article-writer`、legacy finalizer、個別agent、存在しないsymlink記述は0。X Article/X Post/Dev.to canonical publisherは各exact1で、note/Zenn/Substack、quality/safety gate、article contentも新`skills/writer-engine` SSOTへ移動した。
+- E3のfresh clone/root installはCodex-only/Claude-onlyともPASS。tracked plistはexact5、file-only installはlaunchctl call 0、`--activate`再実行は旧9 bootout→新5 bootout→新5 bootstrap、kickstart 0、`--uninstall`は新5だけを外してdataを保持する。installed symlinkからhealth/status/migrate-state/plist entrypointを実行し、全suite `103 passed`、fresh review `ok:true / findings:[]`。
+- actual legacy stateはrepo外`$HOME/.local/share/writer-engine/archive/legacy-article-writer/25bfbbdee4a079a790c35a1df9d32e63b2ea47aab135a95e19e4bad5db521983`へschema migration済み。source/archive manifest SHA-256は同じ`25bfbbde...1983`、archive 754 entries、writable 0、再実行は`already_migrated`、DB row/receipt exact1。旧ledgerは96行・SHA-256 `856af4bf992bf0624c679a3b75c3fd5141c4fe7046a6cecf819f515fbc3023b0`で不変、publication attempt/receiptは0。
 
 ### 18.8 Remaining TaskList（唯一の残TODO正本、必ず順番どおり）
 
@@ -755,7 +761,7 @@ paid subscription ¥500相当/月 ───────────────�
 |---|---|---|---|
 | E1 | **DONE** | incidentを固定test化。ownerless lock、line 240 `File name too long`、Claude weekly-limit、partial runをbehavioral RED fixtureにし、現run artifactをread-only archive。既live receipt確定後も新規投稿を実行しない | commit `db32520`、`RED_SUITE_CONFIRMED 4/4`、runner/時系列guard 11 PASS、archive 235 files + manifest `2fced19...` + writable 0、既live note/ja exact1、ledger hash不変・投稿増分0、fresh review `ok:true` |
 | E2 | **DONE** | native runtime adapterをTDD実装。Codex/Claudeのprobe/run/schema/circuit breakerを統一し、全hardcoded provider callをadapterへ置換 | commit `8bb2aae`、Python 73 + subtests 27、shell 22/22、E2 42 PASS、adapter外直呼び0、実Codex/Luna probe `MODEL_OK`、race/lease/replay/legacy rc75 contract PASS、fresh review `ok:true`、ledger不変・投稿増分0 |
-| E3 | **TODO** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agentを撤去。既存X Articles/Dev.to publisherは新SSOTへ各1実装として移植し、X Post publisher、Telegram outbox、tracked plist 5本、install/uninstallを実装 | fresh clone install、旧path grep/find 0、X Article/X Post/Dev.to publisher各exact1実装、旧state archive hash、launchctl listが新5本だけ |
+| E3 | **DONE** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agentを撤去。既存X Articles/Dev.to publisherは新SSOTへ各1実装として移植し、X Post publisher、Telegram outbox、tracked plist 5本、install/uninstallを実装 | commit `7b55799`、fresh root Codex/Claude install、tests 103 PASS、旧path/tree 0、X Article/X Post/Dev.to各exact1、state hash `25bfbbde...1983`・754 entries・writable 0・再実行safe、launchctl新5のみ、fresh review `ok:true`、ledger不変・投稿増分0 |
 | E4 | **TODO** | daily MID+X pipelineを実装。固定reader questions、最大5→best-safe、MID exact5 live、X Articlesはrun別ja/enを`published_at`差6h〜6h10m、X Postは日本語exact1/JST日のFIFO 12:00–23:55 slot window、exact8 intent/receipt/reality、draft-only終端0、全stateと同transactionのTelegram outbox、5分resume workerを配線 | crash/429/response-loss/date-slot backlog/late-ready/6時間clock matrix PASS、manual kickstart exact8、X Post/ja ID exact1、英語X Post/reply 0、X Article ja/en ID各exact1、Dev.to live、8 live outputのown-eyes、Telegram event UUID/send receipt |
 | E5 | **TODO** | monthly book pipelineを実装。X Postを除くarticle exact7完了済みMID topicの30本inventory、book-writer、全書整合、Pandoc、Zenn Book/Gumroad/Stripe idempotent publishers | 29/30/31 test、X Post障害時も在庫維持、manual monthly kickstart、exact3 live URL、EPUB validation、revenue receipt、Telegram receipt |
 | E6 | **TODO** | self-improveを1本化。22:30 metrics、週次Terra/Claude proposal、held-out、7日canary、keep/revert、code self-mutation禁止を実装 | 悪化revert/改善keep fixture、実7日experiment receipt、重複schedule 0 |
