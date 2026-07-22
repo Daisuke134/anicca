@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-007", "dimension": "implementation_correctness", "category": "implementation_bug", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:299 — OAuth callbackはstateをclaimして即303にするだけでACTIVE readbackを行わない。server.js:226もComposio設定をcallbackへ渡しておらず、callback成功判定をprovider truthへ束縛できない。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "299-299" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

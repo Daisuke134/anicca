@@ -15,10 +15,11 @@ function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
-async function fixtureFetch(input) {
+async function fixtureFetch(input, init = {}) {
   const url = new URL(input);
+  if (url.pathname.endsWith("/rpc/resolve_lm_panel_session")) return response(JSON.parse(init.body).p_session_hash === SESSION_HASH ? [{ uid: "fixture-u1", chat_id: "101", rotated: false }] : []);
   if (url.pathname.endsWith("/lm_panel_sessions")) {
-    return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1" }] : []);
+    return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1", chat_id: "101" }] : []);
   }
   assert.equal(url.searchParams.get("uid"), "eq.fixture-u1", `tenant filter missing: ${url}`);
   if (url.pathname.endsWith("/lm_users")) return response([{
@@ -26,6 +27,7 @@ async function fixtureFetch(input) {
     calendar_provider: "composio_gcal", gmail_account_id: null,
     telegram_chat_id: "101", payout_destination: null,
   }]);
+  if (url.pathname.endsWith("/lm_panel_preferences")) return response([{ call_time_zone: "Asia/Tokyo" }]);
   if (url.pathname.endsWith("/lm_user_locations")) return response([{
     uid: "fixture-u1", observed_at: "2026-07-21T11:00:00.000Z", expires_at: "2026-07-21T13:00:00.000Z",
   }]);
@@ -52,6 +54,20 @@ const calendar = {
   },
 };
 
+let fixturePreferences = { call_enabled: true, notifications_enabled: true, daily_automation_enabled: true, delegation_enabled: false, call_time_zone: "Asia/Tokyo" };
+const fixtureReceipts = new Map();
+const commandStore = {
+  readUser: async () => ({ uid: "fixture-u1", name: "Fixture User", telegram_chat_id: "101", phone: "+81000000000", call_language: "ja", wake_policy: "travel-only", calendar_provider: "composio_gcal", gmail_account_id: null, payout_destination: null }),
+  readPreferences: async () => ({ ...fixturePreferences }),
+  readLocation: async () => ({ observed_at: "2026-07-21T11:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }),
+  readReceipt: async (_scope, key) => fixtureReceipts.get(key) || null,
+  claimReceipt: async (_scope, key, value) => { if (fixtureReceipts.has(key)) return false; fixtureReceipts.set(key, value); return true; },
+  finishReceipt: async (_scope, key, value) => fixtureReceipts.set(key, value),
+  patchPreferences: async (_scope, patch) => { fixturePreferences = { ...fixturePreferences, ...patch }; return { ...fixturePreferences }; },
+  patchUser: async () => { throw new Error("not used in fixture"); },
+  createOAuthState: async () => { throw new Error("OAuth excluded from fixture smoke"); },
+};
+
 function createFixtureServer() {
   return http.createServer((req, res) => {
     const pathname = new URL(req.url || "/", "http://fixture.local").pathname;
@@ -73,6 +89,9 @@ function createFixtureServer() {
       now: () => new Date(NOW),
       nowMs: NOW,
       timeZone: "UTC",
+      commandStore,
+      calendarStatus: async () => "ACTIVE",
+      panelOrigin: "http://127.0.0.1:43119",
     };
     const handler = pathname.startsWith("/api/panel/") ? handlePanelApiRequest
       : pathname === "/panel" ? handlePanelRequest : null;
@@ -98,7 +117,7 @@ async function assertShell(base) {
   const result = await fetch(`${base}/panel`, { headers: { Cookie: `lm_panel_session=${SESSION}` } });
   assert.equal(result.status, 200);
   const html = await result.text();
-  const sections = ["timeline", "scores", "ledger", "gates", "settings"];
+  const sections = ["timeline", "scores", "ledger", "gates", "settings", "control-center"];
   let previous = -1;
   for (const section of sections) {
     const position = html.indexOf(`data-panel-section="${section}"`);
@@ -106,8 +125,9 @@ async function assertShell(base) {
     previous = position;
     console.log(`DOM ${section}: present`);
   }
-  assert.doesNotMatch(html, /<(?:form|input|button|select|textarea)\b/i);
-  console.log("panel DOM assert: 5/5 sections present in spec order; read-only controls 0");
+  assert.match(html, /<button\b/i);
+  assert.match(html, /addEventListener\("click"/);
+  console.log("panel DOM assert: 6/6 sections present; semantic controls wired");
 }
 
 async function main() {
