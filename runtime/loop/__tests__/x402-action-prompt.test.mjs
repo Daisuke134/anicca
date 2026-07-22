@@ -41,3 +41,18 @@ test("Claude-provider shape prompt no longer pins x402_sell to empty args", asyn
     assert.match(brain, new RegExp(`\\b${action}\\b`, "i"), action);
   }
 });
+
+test("x402-only wake never tells the model to call unavailable capital slots", () => {
+  const value = buildUserMessage({
+    ...ctx,
+    balanceUsdc: 4.5,
+    reserveUsdc: 5,
+    activeSkillSlots: ["report", "cook", "x402_sell"],
+  });
+  assert.match(value, /x402_sell/);
+  assert.match(value, /zero-capital/i);
+  for (const unavailable of ["hl_trade", "token_launch", "yield", "self/issue-dev"]) {
+    assert.doesNotMatch(value, new RegExp(unavailable.replace("/", "\\/"), "i"), unavailable);
+  }
+  assert.doesNotMatch(value, /close a profitable HL|withdraw idle yield/i);
+});
