@@ -14,7 +14,11 @@ liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
   local u; u="$(tail -1 "$f" 2>/dev/null | grep -oE 'https?://[^"[:space:]]+' | head -1)"
   [ -z "$u" ] && { echo "NO-URL-IN-NEWEST-RECORD"; return; }
   local code; code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 -L "$u" 2>/dev/null||echo 000)"
-  case "$code" in 200|201|202|301|302|308) echo "LIVE($code) $u";; *) echo "DEAD($code) $u";; esac; }
+  case "$code" in
+    200|201|202|301|302|308) echo "LIVE($code) $u";;
+    403) echo "INCONCLUSIVE($code) $u";;
+    *) echo "DEAD($code) $u";;
+  esac; }
 
 echo "=== LOOP REAL-SIDE-EFFECT VERIFICATION ($(date '+%F %H:%M')) ==="
 # 1 CAPAFY: a skill actually published + the newest listing URL actually live
@@ -22,7 +26,8 @@ PUB="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
 echo "[capafy]  published: $(count "$PUB") skills | newest-line: $(fresh "$PUB") | live-check: $(liveurl "$PUB")"
 echo "          → PASS only if count grows daily AND newest listing URL is LIVE"
 # 2 REDDIT: a real post made + its URL live + an account exists
-ACC="$HOME/.cloak/reddit-accounts.json"; POSTS="$HOME/anicca/skills/self/reddit-loop/state/posts.jsonl"
+ACC="$HOME/.cloak/reddit-accounts.json"
+POSTS="${VERIFY_LOOPS_REDDIT_POSTS_PATH:-$HOME/profitable-claude/skills/reddit/state/posts.jsonl}"
 NACC=0; [ -f "$ACC" ] && NACC="$(python3 -c "import json;d=json.load(open('$ACC'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
 echo "[reddit]  accounts: $NACC | posts: $(count "$POSTS") | newest-post: $(fresh "$POSTS") | live-check: $(liveurl "$POSTS")"
 echo "          → PASS only if posts.jsonl grows AND newest comment URL is LIVE"

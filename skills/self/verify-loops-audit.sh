@@ -26,7 +26,13 @@ liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
   # User-Agent even for genuinely-live posts (confirmed live: same URL returns 200 with a
   # browser UA) — a false DEAD would have spuriously re-triggered self-fix on a healthy loop.
   local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o /dev/null -w '%{http_code}' --max-time 12 -L -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' "$u" 2>/dev/null||echo 000)"
-  case "$code" in 200|201|202|301|302|308) echo "LIVE($code) $u";; *) echo "DEAD($code) $u";; esac; }
+  case "$code" in
+    200|201|202|301|302|308) echo "LIVE($code) $u";;
+    # Reddit blocks anonymous HTTP clients with 403 even when an authenticated browser shows the
+    # comment live. Account suspension is checked independently via its distinctive profile title.
+    403) echo "INCONCLUSIVE($code) $u";;
+    *) echo "DEAD($code) $u";;
+  esac; }
 # reddit_username (G2 item1, self-heal.md root cause #3 continuation): newest posts.jsonl record's
 # own "account" field -- the account that actually made the newest post, never guessed.
 reddit_username(){ local f="$1"; [ -f "$f" ] || { echo ""; return; }
@@ -73,7 +79,9 @@ reddit_account_banned(){ local user="$1"; [ -n "$user" ] || { echo "NO-USER"; re
   fi
 }
 CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
-POSTS="$SELF/reddit-loop/state/posts.jsonl"
+# Reddit's canonical loop/state moved to profitable-claude. Keep an explicit test seam so audit
+# fixtures can remain isolated, but never consult the frozen pre-migration tombstone in production.
+POSTS="${VERIFY_LOOPS_REDDIT_POSTS_PATH:-$HOME/profitable-claude/skills/reddit/state/posts.jsonl}"
 LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 
 # capafy_live_verdict (self-fix 2026-07-19): consult the daily loop's OWN server-truth verdict

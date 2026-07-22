@@ -19,6 +19,7 @@ setup(){
   FAKE_HOME="$(mktemp -d)"
   FAKE_BIN="$(mktemp -d)"
   mkdir -p "$FAKE_HOME/.openclaw/state" "$FAKE_HOME/.openclaw/logs" \
+           "$FAKE_HOME/profitable-claude/skills/reddit/state" \
            "$FAKE_SELF/reddit-loop/state" "$FAKE_SELF/life-manager-loop/state"
 
   cat > "$FAKE_SELF/verify-loops.sh" <<'EOF'
@@ -64,8 +65,12 @@ run(){
   # VERIFY_LOOPS_AUDIT_CURL_BIN: the script's own PATH= line always puts the REAL system curl
   # ahead of anything a test could put on PATH, so this test-only seam (added alongside the fix)
   # is the only reliable way to stub the HTTP outcome without hitting the real network.
-  HOME="$FAKE_HOME" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF" VERIFY_LOOPS_AUDIT_CURL_BIN="$FAKE_BIN/fake-curl" bash "$REAL_SCRIPT" >/dev/null 2>&1
+  HOME="$FAKE_HOME" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF" \
+    VERIFY_LOOPS_REDDIT_POSTS_PATH="$FAKE_SELF/reddit-loop/state/posts.jsonl" \
+    VERIFY_LOOPS_AUDIT_CURL_BIN="$FAKE_BIN/fake-curl" bash "$REAL_SCRIPT" >/dev/null 2>&1
 }
+run_canonical(){ HOME="$FAKE_HOME" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF" \
+  VERIFY_LOOPS_AUDIT_CURL_BIN="$FAKE_BIN/fake-curl" bash "$REAL_SCRIPT" >/dev/null 2>&1; }
 
 # --- scenario 1: FRESH posts.jsonl (mtime=now, stale_hrs<30) + curl LIVE(200) -> NO escalation ---
 setup; mkroot
@@ -77,13 +82,13 @@ run
 rm -rf "$FAKE_SELF" "$FAKE_HOME" "$FAKE_BIN"
 
 # --- scenario 2 (THE FIX): FRESH posts.jsonl (stale_hrs<30, would NOT escalate under the old
-# stale_hrs-only condition) + curl DEAD(403, the real reddit incident) -> escalation MUST fire ---
+# stale_hrs-only condition) + curl DEAD(404) -> escalation MUST fire ---
 setup; mkroot
 echo '{"url": "https://old.reddit.com/r/test/comments/dead/x/"}' > "$FAKE_SELF/reddit-loop/state/posts.jsonl"
-fake_curl 403
+fake_curl 404
 run
-[ "$(reddit_call_count)" = 1 ] && ok "fresh + DEAD(403) -> 1 reddit self-fix call (the fix: OR liveurl==DEAD)" \
-  || fail "fresh + DEAD(403): expected 1 call, got $(reddit_call_count) (liveness gate not wired)"
+[ "$(reddit_call_count)" = 1 ] && ok "fresh + DEAD(404) -> 1 reddit self-fix call (the fix: OR liveurl==DEAD)" \
+  || fail "fresh + DEAD(404): expected 1 call, got $(reddit_call_count) (liveness gate not wired)"
 rm -rf "$FAKE_SELF" "$FAKE_HOME" "$FAKE_BIN"
 
 # --- scenario 3 (pre-existing behavior preserved): STALE posts.jsonl (mtime old, stale_hrs>=30)
@@ -107,6 +112,31 @@ fake_curl 403
 run
 [ "$(reddit_call_count)" = 0 ] && ok "no account + DEAD(403) -> 0 reddit self-fix calls (NACC guard intact)" \
   || fail "no account + DEAD(403): expected 0 calls, got $(reddit_call_count)"
+rm -rf "$FAKE_SELF" "$FAKE_HOME" "$FAKE_BIN"
+
+# --- scenario 5 (migration regression): production's canonical reddit state moved to
+# ~/profitable-claude/skills/reddit/state. A stale tombstone under the old SELF path must not
+# trigger self-fix when the canonical ledger is fresh+LIVE. ---
+setup; mkroot
+echo '{"url": "https://old.reddit.com/r/test/comments/stale-tombstone/x/"}' > "$FAKE_SELF/reddit-loop/state/posts.jsonl"
+OLD=$(( $(date +%s) - 3600*72 ))
+python3 -c "import os,sys; t=float(sys.argv[1]); os.utime(sys.argv[2], (t,t))" "$OLD" "$FAKE_SELF/reddit-loop/state/posts.jsonl"
+echo '{"url": "https://old.reddit.com/r/test/comments/canonical-live/x/", "account": "anicca_sao"}' > "$FAKE_HOME/profitable-claude/skills/reddit/state/posts.jsonl"
+fake_curl 200
+run_canonical
+[ "$(reddit_call_count)" = 0 ] && ok "fresh canonical ledger ignores stale pre-migration tombstone" \
+  || fail "canonical ledger ignored: expected 0 calls, got $(reddit_call_count)"
+rm -rf "$FAKE_SELF" "$FAKE_HOME" "$FAKE_BIN"
+
+# --- scenario 6: Reddit now returns anonymous HTTP 403 for a browser-verified live permalink.
+# Treating every 403 as DEAD recreates the self-fix loop; account suspension has its own distinct
+# profile-title check below, so a post-level 403 is inconclusive and must not escalate. ---
+setup; mkroot
+echo '{"url": "https://old.reddit.com/r/test/comments/live-but-anon-blocked/x/", "account": "anicca_sao"}' > "$FAKE_SELF/reddit-loop/state/posts.jsonl"
+fake_curl 403
+run
+[ "$(reddit_call_count)" = 0 ] && ok "fresh + anonymous-blocked(403) -> 0 reddit self-fix calls" \
+  || fail "anonymous Reddit 403 misclassified DEAD: expected 0 calls, got $(reddit_call_count)"
 rm -rf "$FAKE_SELF" "$FAKE_HOME" "$FAKE_BIN"
 
 echo "=== test_verify_loops_audit_reddit_liveness: $P passed $F failed ==="

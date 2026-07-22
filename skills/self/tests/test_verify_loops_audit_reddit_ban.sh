@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test_verify_loops_audit_reddit_ban.sh — G2 item1 regression test (2026-07-11 loop-arch redesign /
 # LOOPS-TRUTH-AUDIT.md: "liveurl HTTP200のみ→reddit BAN...を全て見逃す"). Before this fix, a BANNED
-# reddit account (real incident: u/anicca_sao, confirmed via screenshot 2026-07-11) with a
+# reddit account with a distinctive suspended profile response while its
 # fresh-mtime, HTTP-200 newest post URL never re-triggered self-fix, because only the post URL's
 # own HTTP code was checked -- never the ACCOUNT's own liveness. Proves: (a) a banned account
 # escalates even when its own post URL is fresh+LIVE, (b) a healthy account (post 200, profile 200)
@@ -70,13 +70,15 @@ EOF
   chmod +x "$FAKE_BIN/fake-curl"
 }
 
-run(){ HOME="$FAKE_HOME" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF" VERIFY_LOOPS_AUDIT_CURL_BIN="$FAKE_BIN/fake-curl" bash "$REAL_SCRIPT" >/dev/null 2>&1; }
+run(){ HOME="$FAKE_HOME" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF" \
+  VERIFY_LOOPS_REDDIT_POSTS_PATH="$FAKE_SELF/reddit-loop/state/posts.jsonl" \
+  VERIFY_LOOPS_AUDIT_CURL_BIN="$FAKE_BIN/fake-curl" bash "$REAL_SCRIPT" >/dev/null 2>&1; }
 
-# --- scenario 1 (THE FIX): fresh post URL, LIVE(200) -- but the ACCOUNT is BANNED (profile 404,
-# username-embedded title, the real u/anicca_sao signature) -> escalation MUST fire ---
+# --- scenario 1 (THE FIX): fresh post URL, LIVE(200) -- but the ACCOUNT is BANNED (profile 403
+# with the distinctive suspended title) -> escalation MUST fire ---
 setup; mkroot
 echo '{"url": "https://old.reddit.com/r/test/comments/live/x/", "account": "anicca_sao"}' > "$FAKE_SELF/reddit-loop/state/posts.jsonl"
-fake_curl 200 404 "u/anicca_sao: page not found"
+fake_curl 200 403 "reddit.com: suspended"
 run
 [ "$(reddit_call_count)" = 1 ] && ok "fresh+LIVE post but BANNED account -> 1 reddit self-fix call (the fix)" \
   || fail "fresh+LIVE post but BANNED account: expected 1 call, got $(reddit_call_count) (BAN check not wired)"
