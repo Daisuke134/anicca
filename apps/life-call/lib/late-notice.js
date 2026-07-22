@@ -2,6 +2,8 @@
 // A fresh Telegram live location is the only gate. The scheduler observes and reports; it never asks.
 "use strict";
 
+const { isHelperBlock } = require("./wake-filter.js");
+
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
 
@@ -54,7 +56,8 @@ function eventKey(event) {
 
 async function processLocationLateNotice(input, deps) {
   const nowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
-  const event = (input.events || []).find((candidate) => candidate && candidate.location && Number.isFinite(candidate.startMs)) || null;
+  const event = (input.events || []).find((candidate) => candidate && !isHelperBlock(candidate.summary) &&
+    candidate.location && Number.isFinite(candidate.startMs)) || null;
   const gate = evaluateLateArrival({ nowMs, event, travelMinutes: null, location: input.location });
   if (["location_missing", "location_expired", "no_event"].includes(gate.decision)) return gate;
 

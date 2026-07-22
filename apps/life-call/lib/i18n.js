@@ -20,4 +20,56 @@ const DISCOVERY_STRINGS = Object.freeze({
   }),
 });
 
-module.exports = { DISCOVERY_STRINGS };
+const DAILY_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    travelAutofill: "📅 {when}「{summary}」を確認しました。{origin}からの移動時間{travelMinutes}分をカレンダーに入れておきました。{departure}発です。",
+  }),
+});
+
+function offsetMinutes(referenceIso) {
+  if (/Z$/i.test(String(referenceIso || ""))) return 0;
+  const match = /([+-])(\d{2}):(\d{2})$/.exec(String(referenceIso || ""));
+  if (!match) return 0;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === "-" ? -minutes : minutes;
+}
+
+function localDate(ms, referenceIso) {
+  return new Date(ms + offsetMinutes(referenceIso) * 60_000);
+}
+
+function localDayNumber(ms, referenceIso) {
+  const date = localDate(ms, referenceIso);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000;
+}
+
+function dayLabel(eventMs, nowMs, referenceIso) {
+  const diff = localDayNumber(eventMs, referenceIso) - localDayNumber(nowMs, referenceIso);
+  if (diff === 0) return "今日";
+  if (diff === 1) return "明日";
+  const date = localDate(eventMs, referenceIso);
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+}
+
+function clockLabel(ms, referenceIso) {
+  const date = localDate(ms, referenceIso);
+  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function formatTravelAutofillMessage(report, nowMs = Date.now()) {
+  const referenceIso = report.startIso || new Date(report.startMs).toISOString();
+  const values = {
+    when: `${dayLabel(report.startMs, nowMs, referenceIso)}${clockLabel(report.startMs, referenceIso)}`,
+    summary: escapeHtml(report.summary || "予定"),
+    origin: escapeHtml(report.origin || "出発地"),
+    travelMinutes: Math.max(0, Math.round((report.arriveMs - report.leaveMs) / 60_000)),
+    departure: clockLabel(report.leaveMs, referenceIso),
+  };
+  return DAILY_STRINGS.ja.travelAutofill.replace(/\{(\w+)\}/g, (_match, key) => String(values[key]));
+}
+
+module.exports = { DAILY_STRINGS, DISCOVERY_STRINGS, formatTravelAutofillMessage };

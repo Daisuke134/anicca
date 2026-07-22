@@ -59,6 +59,7 @@ async function listEvents7d(uid, apiKey, nowMs, calendar, gmailAccountId) {
     id: e.id || "",                                   // C-H1: stable per-event key for the atomic claim ledger
     summary: e.summary || "",
     location: e.location || "",
+    startIso: (e.start || {}).dateTime || "",
     startMs: Date.parse((e.start || {}).dateTime || ""),
     endMs: Date.parse((e.end || {}).dateTime || ""),
   })).filter((e) => Number.isFinite(e.startMs));
@@ -243,6 +244,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
+  const outboundReports = [];
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
@@ -302,6 +304,17 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
               if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal, gmailAccountId)) {
                 inserted++;
                 outboundInserted = true;
+                const sameAsHome = home && String(origin).replace(/\s+/g, "").toLowerCase() ===
+                  String(home).replace(/\s+/g, "").toLowerCase();
+                outboundReports.push({
+                  eventId: evKey,
+                  summary: ev.summary || "予定",
+                  startMs: ev.startMs,
+                  startIso: ev.startIso,
+                  origin: sameAsHome ? "自宅" : shortName(origin),
+                  leaveMs,
+                  arriveMs,
+                });
               } else {
                 skipped++;
                 await unclaimTravel(uid, evKey, "go", supaUrl, supaKey); // create failed → release for retry
@@ -358,7 +371,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     }
     void outboundInserted; // suppress unused warning — used for semantic clarity only
   }
-  return { inserted, checked, skipped };
+  return { inserted, checked, skipped, outboundReports };
 }
 
 // PURE return-leg decision — mirrors travelDecision geometry for the post-event leg (venue→home).
