@@ -6,7 +6,7 @@
 // single correct choke point is filtering that object once at load — not re-filtering per path.
 //
 // Contract:
-//   applySlotAllowlist(registry, envValue) -> { registry, applied: string[] | null }
+//   applySlotAllowlist(registry, envValue) -> { registry, applied: string[] | null, singleSlotFocus }
 //   - envValue empty/blank            -> registry returned UNTOUCHED, applied = null (production default)
 //   - envValue "a,b"                  -> every slot NOT in {a,b} is removed, EXCEPT slots with
 //                                        alwaysAvailable === true (the same maintainer-designated
@@ -17,15 +17,15 @@
 // Pure: never mutates the input object.
 export function applySlotAllowlist(registry, envValue) {
   const raw = String(envValue || '').trim();
-  if (!raw) return { registry, applied: null };
+  if (!raw) return { registry, applied: null, singleSlotFocus: false };
   if (!registry || typeof registry !== 'object' || !registry.slots || typeof registry.slots !== 'object') {
-    return { registry, applied: null };
+    return { registry, applied: null, singleSlotFocus: false };
   }
   const allow = new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
-  if (!allow.size) return { registry, applied: null };
+  if (!allow.size) return { registry, applied: null, singleSlotFocus: false };
   const slots = {};
   for (const [name, def] of Object.entries(registry.slots)) {
     if (allow.has(name) || (def && def.alwaysAvailable === true)) slots[name] = def;
   }
-  return { registry: { ...registry, slots }, applied: [...allow] };
+  return { registry: { ...registry, slots }, applied: [...allow], singleSlotFocus: allow.size === 1 };
 }

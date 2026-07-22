@@ -149,6 +149,9 @@ let skillCatalog = {};
 let skillToolDocs = {};
 let riskTagBySlot = {};
 let alwaysAvailableBySlot = {};
+// An explicit one-slot allowlist is a focused continuous controller, not an accidental behavior
+// loop. Parking its only action would make a no-human loop incapable of acting at all.
+let singleSlotFocus = false;
 // franklin-alwaysact-skill-router REQ-502: the FULL parsed registry object (not just the derived
 // activeSkillSlots/riskTagBySlot maps above), needed as-is by assembleAlwaysActMenu each wake.
 let registryForAlwaysAct = null;
@@ -168,6 +171,7 @@ let registryForAlwaysAct = null;
       const { applySlotAllowlist } = await import('./slot-allowlist.mjs');
       const res = applySlotAllowlist(registry, process.env.ANICCA_SLOT_ALLOWLIST);
       registry = res.registry;
+      singleSlotFocus = res.singleSlotFocus === true;
       if (res.applied) process.stderr.write(`[loop] slot allowlist active: ${res.applied.join(', ')}\n`);
     }
     registryForAlwaysAct = registry;
@@ -505,7 +509,7 @@ async function runOneWake() {
   // instantly re-fire on stale entries, and (c) sleep briefly — then the NEXT wake's prompt FORBIDS that
   // slot, forcing the model to diversify (try a different earn path / actually act on what it found).
   const loopWindow = cfgNum(config.LOOP_DETECT_WINDOW, 3);
-  if (loopWindow > 0 && isLooping(recentActions, loopWindow)) {
+  if (!singleSlotFocus && loopWindow > 0 && isLooping(recentActions, loopWindow)) {
     avoidSlot = recentActions[recentActions.length - 1]?.slot || null;
     // Same slot re-offending back-to-back → escalate; a different slot looping → fresh streak of 1.
     loopDetectStreak = (avoidSlot && avoidSlot === loopDetectSlot) ? loopDetectStreak + 1 : 1;

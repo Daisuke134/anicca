@@ -20,14 +20,21 @@ test('empty env -> registry untouched, applied null', () => {
 });
 
 test('allowlist keeps named slot + alwaysAvailable, drops the rest', () => {
-  const { registry, applied } = applySlotAllowlist(REG(), 'x402_sell');
+  const { registry, applied, singleSlotFocus } = applySlotAllowlist(REG(), 'x402_sell');
   assert.deepEqual(Object.keys(registry.slots).sort(), ['report', 'x402_sell']);
   assert.deepEqual(applied, ['x402_sell']);
+  assert.equal(singleSlotFocus, true, 'one requested slot is an intentional repeated-focus loop');
 });
 
 test('comma list + whitespace + unknown names tolerated', () => {
-  const { registry } = applySlotAllowlist(REG(), ' x402_sell , nonexistent ,earn/sol-trade');
+  const { registry, singleSlotFocus } = applySlotAllowlist(REG(), ' x402_sell , nonexistent ,earn/sol-trade');
   assert.deepEqual(Object.keys(registry.slots).sort(), ['earn/sol-trade', 'report', 'x402_sell']);
+  assert.equal(singleSlotFocus, false);
+});
+
+test('loop detector is bypassed only for an explicit single-slot focus', async () => {
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('../index.mjs', import.meta.url), 'utf8'));
+  assert.match(source, /!singleSlotFocus\s*&&\s*loopWindow > 0/);
 });
 
 test('does not mutate the input registry', () => {
