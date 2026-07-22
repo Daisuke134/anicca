@@ -36,6 +36,7 @@ import {
 import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from "./funding-rates.mjs";
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 import { RESALE_PRODUCTS, resaleHandler } from "./resale.mjs";
+import { llmProduct, llmResaleHandler } from "./llm-resale.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -175,6 +176,7 @@ let PRODUCTS = [
     description: "Perp funding rates across Binance/Bybit/Hyperliquid, normalized to 8h-equivalent, plus cross-exchange divergence (annualized bps, top20 arbitrage signal). GET /funding-rates or /funding-rates?symbol=BTC → JSON. Free-source, 60s cache." },
   { path: "/funding-rate-arb", price: "$0.003", example: "/funding-rate-arb?symbol=BTC", what: "pairwise funding-rate arbitrage signal",
     description: "Every distinct Binance/Bybit/Hyperliquid exchange-pair funding-rate spread per symbol (not just the single highest-vs-lowest pair), sorted by annualized bps divergence descending, with short(high-funding venue)/long(low-funding venue) direction per pair. GET /funding-rate-arb (top20 across all symbols) or /funding-rate-arb?symbol=BTC (all pairs for that symbol) → JSON. Pure arithmetic on the same cached data as /funding-rates, $0 marginal cost, 60s cache." },
+  llmProduct(process.env),
   // PROD-2: resale product — unlike every route above (deterministic compute, $0 marginal cost),
   // this one spends the store's OWN wallet against an external x402 upstream (see resale.mjs).
   ...RESALE_PRODUCTS,
@@ -185,7 +187,7 @@ let PRODUCTS = [
 // live web search resale (needs an Exa key) + aggregated cross-exchange funding data + research
 // digest. The ~27 pure calculators stay in code (reversible: X402_CATALOG=full restores them) but
 // are dropped from the catalog, paywall config, and routing so the shop presents a focused offering.
-const CORE_PATHS = new Set(["/web-search", "/funding-rates", "/funding-rate-arb", "/research"]);
+const CORE_PATHS = new Set(["/web-search", "/funding-rates", "/funding-rate-arb", "/research", "/llm"]);
 const CATALOG_MODE = process.env.X402_CATALOG || "core";
 const ALL_PRODUCTS = PRODUCTS;
 if (CATALOG_MODE !== "full") {
@@ -199,6 +201,10 @@ const INACTIVE_PATHS = new Set(ALL_PRODUCTS.filter((p) => !PRODUCTS.includes(p))
 // x402scan.com/discovery/spec. Query params only (no request body: all our routes are GET).
 const QUERY_PARAMS = {
   "/research": [{ name: "q", required: true, type: "string", description: "topic to research" }],
+  "/llm": [
+    { name: "prompt", required: true, type: "string", description: "prompt text (1..2000 characters)" },
+    { name: "maxTokens", required: false, type: "number", description: "maximum output tokens (1..512)" },
+  ],
   "/compound-interest": [
     { name: "principal", required: true, type: "number" }, { name: "rate", required: true, type: "number" },
     { name: "years", required: true, type: "number" }, { name: "compoundsPerYear", required: false, type: "number" },
@@ -287,6 +293,7 @@ const QUERY_PARAMS = {
 // example, distinct from inputSchema's type constraints), mirrors PRODUCTS[].example.
 const EXAMPLE_INPUT = {
   "/research": { q: "AI agents 2026" },
+  "/llm": { prompt: "Summarize the latest x402 payment standard", maxTokens: 256 },
   "/compound-interest": { principal: 10000, rate: 5, years: 10, compoundsPerYear: 12 },
   "/mortgage": { principal: 300000, rate: 6, years: 30 },
   "/loan-payoff": { balance: 10000, rate: 6, monthlyPayment: 500 },
@@ -531,6 +538,7 @@ app.get("/funding-rate-arb", (req, res) => {
 // an external x402 upstream under a daily cap + float guard (see resale.mjs's top comment for the
 // settle-on-error money-safety audit).
 app.get("/web-search", resaleHandler);
+app.get("/llm", llmResaleHandler);
 
 // free: tells a buyer what's for sale + the price (so demand can find it).
 app.get("/", (_req, res) =>

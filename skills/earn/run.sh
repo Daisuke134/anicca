@@ -310,6 +310,17 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
 
   if [ "$ACTION" = "improve" ]; then
     RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
+    EXP_ACTION=$(printf '%s' "$RES" | python3 -c "import json,sys
+try: print((json.load(sys.stdin).get('experiment') or {}).get('action') or '')
+except Exception: print('')" 2>/dev/null)
+    if [ "$EXP_ACTION" = "applied" ]; then
+      ACT=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" node "$X402DIR/store-activate.mjs" 2>/dev/null)
+      RES=$(python3 -c "import json,sys
+try: base=json.loads(sys.argv[1]); activation=json.loads(sys.argv[2])
+except Exception: print(sys.argv[1]); raise SystemExit
+base['activation']=activation
+print(json.dumps(base,separators=(',',':')))" "$RES" "${ACT:-{}}" 2>/dev/null || printf '%s' "$RES")
+    fi
     echo "[earn] x402 improve: $RES"
     JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-improve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 improve: ${RES:-{}}" "$WAKE" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] x402 improve recorded -> $OUT"

@@ -207,7 +207,7 @@ export async function thinkClaudeP(ctx, config) {
     // Canonical few-shot for the slot weak models kept mis-calling. Products/prices remain fixed,
     // while args.action exposes the lifecycle already implemented by skills/earn/run.sh.
     ...(menuSlots.includes('x402_sell')
-      ? ['', 'x402_sell args.action choices: ensure / review / improve / update. Products/prices are FIXED; do not invent one.',
+      ? ['', 'x402_sell args.action choices: ensure / review / improve / update. improve applies one bounded offer experiment after 5 minutes without external revenue; self-pay never counts.',
          'Example review call:',
          '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"x402_sell\\",\\"args\\":{\\"action\\":\\"review\\"}}"}}]}']
       : []),

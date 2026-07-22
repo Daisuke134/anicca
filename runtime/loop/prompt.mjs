@@ -97,10 +97,10 @@ const DOCTRINE_LINES = {
     '                   re-yield every wake. Once parked, move on.',
   ],
   x402_sell: [
-    '  - x402_sell    : RECURRING, $0 capital. Starts/advertises your FIXED shop — a preset catalog of paid',
-    '                   routes (served at /.well-known/x402.json), prices set in code. Choose args.action:',
-    '                   ensure=open/register, review=read sales, improve=find demand gaps, update=re-list.',
-    '                   Never invent a product or price; use the lifecycle action that fits the current state.',
+    '  - x402_sell    : RECURRING. Starts/advertises the paid route catalog at /.well-known/x402.json.',
+    '                   Choose args.action: ensure=open/register, review=read external sales,',
+    '                   improve=apply the next bounded offer experiment after 5 revenue-free minutes, update=re-list.',
+    '                   Self-pay never counts as revenue; use the lifecycle action that fits the current state.',
   ],
   hl_trade: [
     '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
