@@ -3,13 +3,16 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const DISCOVERY_URL = 'https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources?limit=100';
-const MAX_RESOURCES = 500;
+const DISCOVERY_URL = 'https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources?limit=1000';
+const MAX_RESOURCES = 30_000;
 const USDC_DECIMALS = 1_000_000n;
 
-export function inferCategory(url) {
-  const value = String(url ?? '').toLowerCase();
+export function inferCategory(input) {
+  const value = (input && typeof input === 'object'
+    ? [input.resource, input.serviceName, ...(Array.isArray(input.tags) ? input.tags : [])].join(' ')
+    : String(input ?? '')).toLowerCase();
   if (value.includes('search')) return 'search';
+  if (/(swap|defi|dex|yield|apy|lend|liquidity|vault|protocol|pool)/.test(value)) return 'defi';
   if (/(funding|price|market)/.test(value)) return 'data';
   if (/(gpt|llm|chat)/.test(value)) return 'llm';
   if (value.includes('image')) return 'image';
@@ -67,7 +70,9 @@ function listingFromResource(item) {
   return {
     resource,
     priceUsd: Math.min(...prices),
-    category: inferCategory(resource),
+    category: inferCategory(item),
+    calls30d: Math.max(0, Number(item.quality?.l30DaysTotalCalls) || 0),
+    payerSignals30d: Math.max(0, Number(item.quality?.l30DaysUniquePayers) || 0),
   };
 }
 
@@ -95,20 +100,24 @@ export function aggregateMarket(resources, now) {
 
   const listings = resources.map(listingFromResource).filter(Boolean);
   const prices = listings.map((item) => item.priceUsd).sort((a, b) => a - b);
-  const categoryPrices = new Map();
+  const categories = new Map();
   for (const listing of listings) {
-    const values = categoryPrices.get(listing.category) ?? [];
-    values.push(listing.priceUsd);
-    categoryPrices.set(listing.category, values);
+    const aggregate = categories.get(listing.category) ?? { prices: [], calls30d: 0, payerSignals30d: 0 };
+    aggregate.prices.push(listing.priceUsd);
+    aggregate.calls30d += listing.calls30d;
+    aggregate.payerSignals30d += listing.payerSignals30d;
+    categories.set(listing.category, aggregate);
   }
 
-  const byCategory = [...categoryPrices.entries()]
-    .map(([category, values]) => {
-      values.sort((a, b) => a - b);
+  const byCategory = [...categories.entries()]
+    .map(([category, aggregate]) => {
+      aggregate.prices.sort((a, b) => a - b);
       return {
         category,
-        count: values.length,
-        medianPriceUsd: roundUsd(percentile(values, 0.5)),
+        count: aggregate.prices.length,
+        medianPriceUsd: roundUsd(percentile(aggregate.prices, 0.5)),
+        calls30d: aggregate.calls30d,
+        payerSignals30d: aggregate.payerSignals30d,
       };
     })
     .sort((a, b) => b.count - a.count || compareText(a.category, b.category));
@@ -153,7 +162,7 @@ function nextPageUrl(body, currentUrl, pageSize) {
     }
     const next = new URL(currentUrl);
     next.searchParams.set('cursor', directNext);
-    next.searchParams.set('limit', '100');
+    next.searchParams.set('limit', new URL(currentUrl).searchParams.get('limit') || '1000');
     return next.href;
   }
 
@@ -161,7 +170,7 @@ function nextPageUrl(body, currentUrl, pageSize) {
   if (typeof cursor === 'string' && cursor) {
     const next = new URL(currentUrl);
     next.searchParams.set('cursor', cursor);
-    next.searchParams.set('limit', '100');
+    next.searchParams.set('limit', new URL(currentUrl).searchParams.get('limit') || '1000');
     return next.href;
   }
 
@@ -170,24 +179,28 @@ function nextPageUrl(body, currentUrl, pageSize) {
   if (Number.isFinite(offset) && Number.isFinite(total) && pageSize > 0 && offset + pageSize < total) {
     const next = new URL(currentUrl);
     next.searchParams.set('offset', String(offset + pageSize));
-    next.searchParams.set('limit', '100');
+    next.searchParams.set('limit', new URL(currentUrl).searchParams.get('limit') || '1000');
     return next.href;
   }
   return null;
 }
 
-async function fetchResources() {
+export async function fetchResources({
+  fetchImpl = fetch,
+  discoveryUrl = DISCOVERY_URL,
+  maxResources = MAX_RESOURCES,
+} = {}) {
   const resources = [];
   const visited = new Set();
-  let nextUrl = DISCOVERY_URL;
+  let nextUrl = discoveryUrl;
 
-  while (nextUrl && resources.length < MAX_RESOURCES && !visited.has(nextUrl)) {
+  while (nextUrl && resources.length < maxResources && !visited.has(nextUrl)) {
     visited.add(nextUrl);
-    const response = await fetch(nextUrl, { headers: { Accept: 'application/json' } });
+    const response = await fetchImpl(nextUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`CDP Bazaar request failed: ${response.status}`);
     const body = await response.json();
     const items = responseItems(body);
-    resources.push(...items.slice(0, MAX_RESOURCES - resources.length));
+    resources.push(...items.slice(0, maxResources - resources.length));
     nextUrl = nextPageUrl(body, nextUrl, items.length);
   }
 
