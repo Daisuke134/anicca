@@ -300,6 +300,25 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
   esac
   XPORT="${X402_PORT:-$X402_DEFAULT_PORT}"
 
+  # FIVE-MINUTE REVENUE CONTROLLER: evaluate the bounded /llm offer experiment on EVERY x402
+  # wake, before a model-selected review/update/ensure branch can exit. The model still chooses
+  # the broader store action; this deterministic safety/control plane only rotates the active
+  # price after five revenue-free minutes or freezes a proven winner. `store-improve.mjs` is
+  # idempotent inside the interval, and store activation only runs when a variant changed.
+  IMPROVE_RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
+  EXP_ACTION=$(printf '%s' "$IMPROVE_RES" | python3 -c "import json,sys
+try: print((json.load(sys.stdin).get('experiment') or {}).get('action') or '')
+except Exception: print('')" 2>/dev/null)
+  if [ "$EXP_ACTION" = "applied" ]; then
+    ACT=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" node "$X402DIR/store-activate.mjs" 2>/dev/null)
+    IMPROVE_RES=$(python3 -c "import json,sys
+try: base=json.loads(sys.argv[1]); activation=json.loads(sys.argv[2])
+except Exception: print(sys.argv[1]); raise SystemExit
+base['activation']=activation
+print(json.dumps(base,separators=(',',':')))" "$IMPROVE_RES" "${ACT:-{}}" 2>/dev/null || printf '%s' "$IMPROVE_RES")
+  fi
+  echo "[earn] x402 five-minute controller: ${IMPROVE_RES:-{}}"
+
   if [ "$ACTION" = "review" ]; then
     RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-review.mjs" 2>/dev/null)
     echo "[earn] x402 review: $RES"
@@ -309,18 +328,7 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
   fi
 
   if [ "$ACTION" = "improve" ]; then
-    RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
-    EXP_ACTION=$(printf '%s' "$RES" | python3 -c "import json,sys
-try: print((json.load(sys.stdin).get('experiment') or {}).get('action') or '')
-except Exception: print('')" 2>/dev/null)
-    if [ "$EXP_ACTION" = "applied" ]; then
-      ACT=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" node "$X402DIR/store-activate.mjs" 2>/dev/null)
-      RES=$(python3 -c "import json,sys
-try: base=json.loads(sys.argv[1]); activation=json.loads(sys.argv[2])
-except Exception: print(sys.argv[1]); raise SystemExit
-base['activation']=activation
-print(json.dumps(base,separators=(',',':')))" "$RES" "${ACT:-{}}" 2>/dev/null || printf '%s' "$RES")
-    fi
+    RES="$IMPROVE_RES"
     echo "[earn] x402 improve: $RES"
     JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-improve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 improve: ${RES:-{}}" "$WAKE" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] x402 improve recorded -> $OUT"
