@@ -55,6 +55,31 @@ test('aggregateMarket computes interpolated percentiles and category medians', (
     { resource: 'https://example.com/weather', priceUsd: 10 },
     { resource: 'https://example.com/mortgage', priceUsd: 9 },
   ]);
+  assert.deepEqual(report.demandGate, {
+    passed: true,
+    paidCalls30d: 15,
+    payerSignals30d: 7,
+    categoriesWithPaidDemand: 1,
+    reason: 'observed paid calls and payer signals in the last 30 days',
+  });
+});
+
+test('aggregateMarket does not pass the demand gate for listings without payer signals', () => {
+  const report = aggregateMarket([
+    {
+      resource: 'https://example.com/search',
+      accepts: [{ maxAmountRequired: '10000' }],
+      quality: { l30DaysTotalCalls: 50, l30DaysUniquePayers: 0 },
+    },
+  ], 1_700_000_000);
+
+  assert.deepEqual(report.demandGate, {
+    passed: false,
+    paidCalls30d: 50,
+    payerSignals30d: 0,
+    categoriesWithPaidDemand: 0,
+    reason: 'no category has both paid calls and payer signals in the last 30 days',
+  });
 });
 
 test('inferCategory uses service metadata for DeFi routes whose URL is generic', () => {

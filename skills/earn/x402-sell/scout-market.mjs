@@ -127,6 +127,13 @@ export function aggregateMarket(resources, now) {
     .slice(0, 15)
     .map(({ resource, priceUsd }) => ({ resource, priceUsd: roundUsd(priceUsd) }));
 
+  const paidCalls30d = byCategory.reduce((sum, item) => sum + item.calls30d, 0);
+  const payerSignals30d = byCategory.reduce((sum, item) => sum + item.payerSignals30d, 0);
+  const categoriesWithPaidDemand = byCategory
+    .filter((item) => item.calls30d > 0 && item.payerSignals30d > 0)
+    .length;
+  const demandPassed = categoriesWithPaidDemand > 0;
+
   return {
     ts: Math.floor(timestamp),
     source: 'cdp-bazaar',
@@ -139,6 +146,15 @@ export function aggregateMarket(resources, now) {
     },
     byCategory,
     topPricedSamples,
+    demandGate: {
+      passed: demandPassed,
+      paidCalls30d,
+      payerSignals30d,
+      categoriesWithPaidDemand,
+      reason: demandPassed
+        ? 'observed paid calls and payer signals in the last 30 days'
+        : 'no category has both paid calls and payer signals in the last 30 days',
+    },
   };
 }
 

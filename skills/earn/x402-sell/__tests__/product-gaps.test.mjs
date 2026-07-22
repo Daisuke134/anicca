@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { computeGaps } from '../product-gaps.mjs';
+import { CORE_PATHS, computeGaps } from '../product-gaps.mjs';
 
 const scout = {
   byCategory: [
@@ -16,14 +16,18 @@ const scout = {
 };
 const ourCategories = new Set(['search', 'data']);
 
-test('computeGaps ranks opportunities by observed 30-day calls times median price', () => {
+test('the gap scout knows the live LLM route is already served', () => {
+  assert.equal(CORE_PATHS.includes('/llm'), true);
+});
+
+test('computeGaps ranks opportunities by supply-adjusted observed revenue', () => {
   const result = computeGaps(scout, ourCategories, 1_700_000_000.9);
 
   assert.equal(result.ts, 1_700_000_000);
   assert.deepEqual(result.opportunities.map(({ category, opportunityScore }) => ({ category, opportunityScore })), [
-    { category: 'image', opportunityScore: 100 },
-    { category: 'llm', opportunityScore: 30 },
-    { category: 'data', opportunityScore: 4 },
+    { category: 'image', opportunityScore: 33.333333 },
+    { category: 'llm', opportunityScore: 7.5 },
+    { category: 'data', opportunityScore: 0.8 },
   ]);
 });
 
@@ -57,6 +61,16 @@ test('computeGaps excludes categories with no observed calls', () => {
   const result = computeGaps(scout, ourCategories, 1_700_000_000);
 
   assert.equal(result.opportunities.some(({ category }) => category === 'search'), false);
+});
+
+test('computeGaps excludes apparent calls with no payer signals', () => {
+  const result = computeGaps({
+    byCategory: [
+      { category: 'llm', count: 5, medianPriceUsd: 2, calls30d: 100, payerSignals30d: 0 },
+    ],
+  }, new Set(), 1_700_000_000);
+
+  assert.deepEqual(result.opportunities, []);
 });
 
 test('computeGaps returns no opportunities for empty scout data', () => {

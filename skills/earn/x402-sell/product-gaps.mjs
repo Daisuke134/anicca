@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { inferCategory } from './scout-market.mjs';
 
-const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
+export const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research', '/llm'];
 const EXCLUDED_CATEGORIES = new Set(['other', 'calc']);
 
 function formatUsd(value) {
@@ -16,7 +16,7 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
   if (!(ourCategories instanceof Set)) throw new TypeError('ourCategories must be a Set');
   const timestamp = Number(now);
   if (!Number.isFinite(timestamp)) throw new TypeError('now must be a finite Unix timestamp');
-  const { minMarketCount = 3, minCalls30d = 1 } = opts;
+  const { minMarketCount = 3, minCalls30d = 1, minPayerSignals30d = 1 } = opts;
 
   const opportunities = (Array.isArray(scout?.byCategory) ? scout.byCategory : [])
     .filter((item) => item && !EXCLUDED_CATEGORIES.has(item.category))
@@ -28,7 +28,8 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
       const payerSignals30d = Number(item.payerSignals30d);
       if (!category || !Number.isFinite(marketCount) || marketCount < minMarketCount
         || !Number.isFinite(medianPriceUsd) || medianPriceUsd < 0
-        || !Number.isFinite(calls30d) || calls30d < minCalls30d) {
+        || !Number.isFinite(calls30d) || calls30d < minCalls30d
+        || !Number.isFinite(payerSignals30d) || payerSignals30d < minPayerSignals30d) {
         return null;
       }
 
@@ -42,7 +43,7 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
         calls30d,
         payerSignals30d: payerSignals,
         weServe,
-        opportunityScore: calls30d * medianPriceUsd,
+        opportunityScore: Number(((calls30d * medianPriceUsd) / marketCount).toFixed(6)),
         rationale: weServe
           ? `already covered (${marketSummary})`
           : `observed paid demand (${marketSummary}) we do NOT serve yet`,
