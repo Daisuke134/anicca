@@ -292,8 +292,13 @@ export function buildUserMessage(ctx) {
   const over = Object.entries(counts).filter(([, n]) => n >= 3).map(([s]) => s);
   // DYNAMIC (GAP-C): the menu includes the live per-method earn slots (earn/gig, earn/clip, …) the loop
   // surfaced via ctx.activeSkillSlots — NOT a hardcoded list — so a CC dropping a new earn slot is pickable.
-  const earnSubs = (ctx.activeSkillSlots || []).filter((s) => typeof s === 'string' && s.startsWith('earn/'));
-  const ALL = ['yield', 'hl_trade', 'x402_sell', 'token_launch', 'cook', ...earnSubs];
+  const defaultActionSlots = ['yield', 'hl_trade', 'x402_sell', 'token_launch', 'cook', 'self/issue-dev'];
+  const activeSlots = Array.isArray(ctx.activeSkillSlots) && ctx.activeSkillSlots.length
+    ? ctx.activeSkillSlots
+    : defaultActionSlots;
+  const hasSlot = (slot) => activeSlots.includes(slot);
+  const earnSubs = activeSlots.filter((s) => typeof s === 'string' && s.startsWith('earn/'));
+  const ALL = [...new Set([...activeSlots.filter((s) => defaultActionSlots.includes(s)), ...earnSubs])];
   const untried = ALL.filter((s) => !counts[s]);
   const overuse = over.length
     ? `⚠️ You've used [${over.join(', ')}] heavily this session for $0 realised. Do NOT repeat them now. ${untried.length ? `Try a path you have NOT tried: [${untried.join(', ')}].` : 'Switch to a different earn path.'} Concretely: deploy idle cash to yield, open or CLOSE an hl trade to realise PnL, or act on what cook already found. Diversify — don't spin one slot.`
@@ -306,7 +311,10 @@ export function buildUserMessage(ctx) {
   // itself at ~$0 and can fund inference. The agent still decides the action (HARD RULE #0). The numbers
   // are the instance's own (its liquid + its reserve) — nothing hardcoded per agent.
   const reserve = typeof ctx.reserveUsdc === 'number' ? ctx.reserveUsdc : 5;
-  const lowLiquid = liquidityDirective(ctx.balanceUsdc, reserve);
+  const rawLowLiquid = liquidityDirective(ctx.balanceUsdc, reserve);
+  const lowLiquid = rawLowLiquid && !hasSlot('hl_trade') && !hasSlot('yield') && hasSlot('x402_sell')
+    ? `⚠️ LIQUID BELOW COMPUTE BUFFER: $${ctx.balanceUsdc.toFixed(4)} < $${reserve} — preserve capital and use the zero-capital x402_sell lifecycle to earn.`
+    : rawLowLiquid;
   // SELF-EVAL (H2/H3): the AI's OWN realised P&L per action. This is the money signal the loop was
   // missing — it turns "you did hl_trade a lot" into "hl_trade made you $0, it's DEAD" so the AI stops it.
   const earnSteer = typeof ctx.earnSteer === 'string' ? ctx.earnSteer : '';
@@ -323,12 +331,12 @@ export function buildUserMessage(ctx) {
     overuse,
     avoid,
     `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal earn/action option):`,
-    `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.`,
-    `  - x402_sell — operate your FIXED-menu shop; choose {action:"ensure"|"review"|"improve"|"update"}.`,
-    `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.`,
-    `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.`,
-    `  - cook — explore a NEW earner: {query:"..."}.`,
-    `  - self/issue-dev — file a bug to fix yourself if you're stuck.`,
+    hasSlot('hl_trade') ? `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.` : '',
+    hasSlot('x402_sell') ? `  - x402_sell — operate your FIXED-menu shop; choose {action:"ensure"|"review"|"improve"|"update"}.` : '',
+    hasSlot('token_launch') ? `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.` : '',
+    hasSlot('yield') ? `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.` : '',
+    hasSlot('cook') ? `  - cook — explore a NEW earner: {query:"..."}.` : '',
+    hasSlot('self/issue-dev') ? `  - self/issue-dev — file a bug to fix yourself if you're stuck.` : '',
     earnSubs.length ? `  - per-method earners (each makes real money a different way): ${earnSubs.join(', ')}.` : '',
     `These are all open to you every wake — choose by your situation, include args. Vary your actions.`,
     mustActReinforcement,
