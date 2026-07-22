@@ -11,7 +11,7 @@ import { computeGaps } from './product-gaps.mjs';
 import { inferCategory } from './scout-market.mjs';
 import { SELF_WALLETS } from './lib/self-wallets.mjs';
 import { readJsonl, resolvePayTo, resolveStateDir } from './store-review.mjs';
-import { LLM_OFFER_VARIANTS } from './llm-resale.mjs';
+import { LLM_OFFER_VARIANTS } from './llm-offers.mjs';
 import {
   decideExperiment,
   readExperimentState,

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { experimentExternalCount, scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
 
@@ -7,6 +10,13 @@ const SERVED_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/re
 const NOW = Date.parse('2026-07-18T12:00:00.000Z');
 const SELF = '0x0000000000000000000000000000000000000abc';
 const EXTERNAL = '0x0000000000000000000000000000000000000def';
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+test('controller stays dependency-free in the rsynced Franklin runtime body', () => {
+  const source = readFileSync(join(HERE, '..', 'store-improve.mjs'), 'utf8');
+  assert.doesNotMatch(source, /from ['"]\.\/llm-resale\.mjs['"]/, 'controller must not import paid-runtime dependencies');
+  assert.match(source, /from ['"]\.\/llm-offers\.mjs['"]/, 'controller must import the pure offer catalog');
+});
 
 test('summarizeOwnProducts aggregates only served routes with external, attempts, and age wakes', () => {
   const sales = [
