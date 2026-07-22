@@ -13580,3 +13580,12 @@
 {"ts":1784736224,"wake_id":"00MRW9V82W9D43560D3E4140CB","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784736296,"wake_id":"00MRW9WRKHFC24CE1737544F99","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784736480,"wake_id":"00MRWA0PPM886FEFCA8836430D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784736520,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
+{"ts":1784736646,"wake_id":"00MRWA4ABT6CEF54280F0346CE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784736796,"wake_id":"00MRWA7I1K061D1C72F6A54EA2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784736948,"wake_id":"00MRWAARBGB93F2BAE1B444091","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784737016,"wake_id":"00MRWAC79G87A3D2506580450B","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784737083,"wake_id":"00MRWADMZM7787C08E673F482E","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784737150,"wake_id":"00MRWAF2JF8C30BABD4B7B4079","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784737217,"wake_id":"00MRWAGIEA6D9F571C7E6F4A01","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784737227,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
+{"ts":1784737348,"wake_id":"00MRWAJBL6EBC4D09145504DB3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784737499,"wake_id":"00MRWAMKB0261EB339701F4436","kind":"wake_error","sleep_s":60,"model":"auto"}
