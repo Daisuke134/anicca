@@ -1,7 +1,7 @@
 // LM-33c: server-rendered, read-only mirror for the Life Manager panel.
 "use strict";
 
-function renderPanelPage() {
+function renderPanelPage(options = {}) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -143,6 +143,7 @@ function renderPanelPage() {
     .panel-section:nth-child(3) { grid-column: span 7; animation-delay: 220ms; }
     .panel-section:nth-child(4) { grid-column: span 5; animation-delay: 270ms; }
     .panel-section:nth-child(5) { grid-column: span 12; animation-delay: 320ms; }
+    .panel-section:nth-child(6) { grid-column: span 12; animation-delay: 360ms; }
 
     .section-head {
       display: flex;
@@ -408,6 +409,20 @@ function renderPanelPage() {
     .connection::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--line-dark); }
     .connection.is-on::before { background: var(--success); }
 
+    .control-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .control-card { display: grid; align-content: start; gap: 10px; min-height: 170px; padding: 16px; border: 1px solid var(--line); background: var(--paper-bright); }
+    .control-card h3, .control-card p { margin: 0; }
+    .control-state { color: var(--ink-soft); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .control-reason { color: var(--ink-soft); font-size: .78rem; line-height: 1.6; }
+    .control-action, .setting-switch, .setting-select select { min-height: 44px; border: 1px solid var(--ink); border-radius: 0; padding: 8px 12px; background: var(--ink); color: var(--paper-bright); font: inherit; font-weight: 700; cursor: pointer; }
+    .control-action:disabled, .setting-switch:disabled, .setting-select select:disabled { cursor: wait; opacity: .55; }
+    .control-action:focus-visible, .setting-switch:focus-visible, .setting-select select:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .settings-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+    .setting-switch[aria-checked="true"] { background: var(--success); }
+    .setting-select { display: grid; gap: 6px; color: var(--ink-soft); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+    .setting-select select { width: 100%; min-width: 0; letter-spacing: 0; }
+    .action-status { min-height: 1.5rem; margin: 14px 0 0; color: var(--ink-soft); font-size: .78rem; }
+
     @keyframes reveal {
       from { opacity: 0; transform: translateY(9px); }
       to { opacity: 1; transform: translateY(0); }
@@ -437,6 +452,7 @@ function renderPanelPage() {
       .ledger-empty { grid-template-columns: 1fr; }
       .ledger-cost { text-align: left; }
       .settings-grid { grid-template-columns: 1fr; }
+      .control-grid, .settings-controls { grid-template-columns: 1fr; }
       .setting-group { padding: 17px 0; border-left: 0; border-top: 1px solid var(--line); }
       .setting-group:first-child { padding-top: 0; border-top: 0; }
       .setting-group:last-child { padding-bottom: 0; }
@@ -456,11 +472,12 @@ function renderPanelPage() {
       </div>
       <div>
         <p class="masthead-note">今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。</p>
-        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>READ-ONLY MIRROR</div>
+        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>PERSONAL CONTROL CENTER</div>
+        <form action="/panel/logout" method="post"><button class="control-action" type="submit">Logout</button></form>
       </div>
     </header>
 
-    <p class="mirror-note"><strong>ここは操作画面ではなく、いまの状態を映す鏡です。</strong><span>変更や相談は、いつもの電話か Telegram でどうぞ。</span></p>
+    <p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>
 
     <main class="panel-grid">
       <section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
@@ -487,6 +504,11 @@ function renderPanelPage() {
         <header class="section-head"><h2 id="settings-title">設定</h2><span class="section-kicker">Read only</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">設定を確認しています。</p></div>
       </section>
+
+      <section class="panel-section" data-panel-section="control-center" data-state="loading" aria-labelledby="control-center-title">
+        <header class="section-head"><h2 id="control-center-title">接続と automation</h2><span class="section-kicker">Control</span></header>
+        <div class="section-body" data-panel-body aria-live="polite"><p class="loading">あなたの接続と設定を確認しています。</p></div>
+      </section>
     </main>
   </div>
 
@@ -499,6 +521,7 @@ function renderPanelPage() {
       ledger: "/api/panel/ledger",
       gates: "/api/panel/gates",
       settings: "/api/panel/settings",
+      "control-center": "/api/panel/control-center",
     });
 
     function escapeHtml(value) {
@@ -647,7 +670,53 @@ function renderPanelPage() {
       return '<div class="settings-grid"><div class="setting-group"><p class="setting-label">CALL LANGUAGE</p><p class="setting-value">' + languageLabel(data.call_language) + '</p></div><div class="setting-group"><p class="setting-label">CALL SCHEDULE</p><p class="setting-value">' + escapeHtml(scheduleText) + '<br><span style="color:var(--ink-soft)">' + escapeHtml(schedule.time_zone || "timezone 未設定") + '</span></p></div><div class="setting-group"><p class="setting-label">接続状態</p><div class="connection-list">' + chips + '</div></div></div>';
     }
 
-    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings });
+    let controlCsrf = "";
+    const connectionLabels = Object.freeze({ calendar: "Calendar", telegram: "Telegram", location: "Location", call: "Call", email: "Email", wallet: "Payout / wallet" });
+
+    function actionButton(action, item) {
+      if (action === "connection.start:calendar") { const label = item && item.actionLabel === "Reconnect calendar" ? "Reconnect calendar" : "Connect calendar"; return '<button class="control-action" type="button" aria-label="' + label + '" data-action="connect-calendar">' + label + '</button>'; }
+      if (action === "connection.disconnect:calendar") return '<button class="control-action" type="button" data-command="connection.disconnect" data-action="disconnect-calendar">Disconnect calendar</button>';
+      if (action === "instructions:location") return '<button class="control-action" type="button" data-action="instructions-location">Telegram instructions</button>';
+      if (action === "instructions:wallet") return '<button class="control-action" type="button" data-action="instructions-wallet">Telegram instructions</button>';
+      if (action === "instructions:call") return '<button class="control-action" type="button" data-action="instructions-call">Telegram instructions</button>';
+      return "";
+    }
+
+    function switchButton(action, label, enabled) {
+      return '<button class="setting-switch" type="button" role="switch" aria-checked="' + String(Boolean(enabled)) + '" data-action="' + action + '">' + escapeHtml(label) + ': ' + (enabled ? "ON" : "OFF") + '</button>';
+    }
+
+    function settingSelect(attributes, label, current, options) {
+      const hasCurrent = options.some(function (option) { return option.value === current; });
+      const placeholder = hasCurrent ? "" : '<option value="" selected disabled>Not configured</option>';
+      const choices = options.map(function (option) {
+        return '<option value="' + escapeHtml(option.value) + '"' + (option.value === current ? " selected" : "") + '>' + escapeHtml(option.label) + '</option>';
+      }).join("");
+      return '<label class="setting-select"><span>' + escapeHtml(label) + '</span><select ' + attributes + ' aria-label="' + escapeHtml(label) + '">' + placeholder + choices + '</select></label>';
+    }
+
+    function renderControlCenter(data) {
+      controlCsrf = data.csrf || "";
+      const connections = data.connections || {};
+      const cards = ["calendar", "telegram", "location", "call", "email", "wallet"].map(function (name) {
+        const item = connections[name] || { state: "error", reason: "State unavailable", actions: [] };
+        const actions = (Array.isArray(item.actions) ? item.actions : []).map(function (action) { return actionButton(action, item); }).join("");
+        return '<article class="control-card"><p class="control-state">' + escapeHtml(item.state) + '</p><h3>' + escapeHtml(connectionLabels[name]) + '</h3><p class="control-reason">' + escapeHtml(item.reason) + '</p>' + actions + '</article>';
+      }).join("");
+      const settings = data.settings || {};
+      const switches = [
+        switchButton("toggle-calls", "Calls", settings.call_enabled),
+        switchButton("toggle-notifications", "Notifications", settings.notifications_enabled),
+        switchButton("toggle-daily", "DAILY automation", settings.daily_automation_enabled),
+        '<p class="control-unavailable" role="status">Delegation unavailable: no safe delegated-action runtime is available.</p>',
+        settingSelect('data-setting="call_language" data-action="call_language"', "Call language", settings.call_language, [{ value: "en", label: "English" }, { value: "ja", label: "日本語" }]),
+        settingSelect('data-setting="call_time_zone" data-action="call_time_zone"', "Call timezone", settings.call_time_zone, [{ value: "Asia/Tokyo", label: "Asia/Tokyo" }, { value: "UTC", label: "UTC" }, { value: "Europe/London", label: "Europe/London" }, { value: "America/New_York", label: "America/New_York" }, { value: "America/Los_Angeles", label: "America/Los_Angeles" }]),
+        settingSelect('data-setting="wake_policy" data-action="wake_policy"', "Wake policy", settings.wake_policy, [{ value: "travel-only", label: "Travel events only" }, { value: "all-events", label: "All events" }]),
+      ].join("");
+      return '<p><strong>' + escapeHtml((data.identity || {}).name || "Life Manager user") + '</strong></p><div class="control-grid" id="connection-cards">' + cards + '</div><div class="settings-controls" id="settings-controls">' + switches + '</div><p class="action-status" id="action-status" aria-live="polite"></p>';
+    }
+
+    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
 
     async function loadPanelSection(name) {
       const response = await fetch(panelEndpoints[name], { credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -658,6 +727,56 @@ function renderPanelPage() {
       if (!response.ok) throw new Error(name + " unavailable");
       markLoaded(name, renderers[name](await response.json()));
     }
+
+    function commandForAction(action, button) {
+      switch (action) {
+        case "connect-calendar": return { type: "connection.start", provider: "calendar" };
+        case "disconnect-calendar": return { type: "connection.disconnect", provider: "calendar" };
+        case "toggle-calls": return { type: "setting.set", setting: "call_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-notifications": return { type: "setting.set", setting: "notifications_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-daily": return { type: "setting.set", setting: "daily_automation_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-delegation": return { type: "setting.set", setting: "delegation_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "call_language": return { type: "setting.set", setting: "call_language", value: button.value };
+        case "call_time_zone": return { type: "setting.set", setting: "call_time_zone", value: button.value };
+        case "wake_policy": return { type: "setting.set", setting: "wake_policy", value: button.value };
+        case "instructions-location": window.location.href = "https://t.me/LifeManagerBotbot?start=location"; return null;
+        case "instructions-wallet": window.location.href = "https://t.me/LifeManagerBotbot?start=payout"; return null;
+        case "instructions-call": window.location.href = "https://t.me/LifeManagerBotbot?start=call"; return null;
+        default: return null;
+      }
+    }
+
+    async function runControlAction(button) {
+      const command = commandForAction(button.dataset.action, button);
+      if (!command) return;
+      const section = document.querySelector('[data-panel-section="control-center"]');
+      const before = section.innerHTML;
+      const status = document.getElementById("action-status");
+      button.disabled = true; button.setAttribute("aria-busy", "true");
+      if (status) status.textContent = "Updating…";
+      try {
+        const response = await fetch("/api/panel/commands", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", "x-lm-csrf": controlCsrf, "idempotency-key": (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-panel") }, body: JSON.stringify(command) });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error("update failed");
+        if (result.state && result.state.redirectUrl) { window.location.href = result.state.redirectUrl; return; }
+        await loadPanelSection("control-center");
+        const nextStatus = document.getElementById("action-status"); if (nextStatus) nextStatus.textContent = "Updated";
+      } catch {
+        section.innerHTML = before;
+        const restored = document.getElementById("action-status"); if (restored) restored.textContent = "Update failed. Your previous setting is unchanged.";
+      }
+    }
+
+    document.addEventListener("click", function (event) {
+      const button = event.target.closest("button[data-action]");
+      if (button) runControlAction(button);
+    });
+    const logout = document.querySelector('form[action="/panel/logout"]');
+    if (logout) logout.addEventListener("submit", function (event) { event.preventDefault(); fetch("/panel/logout", { method: "POST", credentials: "same-origin", headers: { "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}" } }).then(function () { window.location.href = "/panel"; }); });
+    document.addEventListener("change", function (event) {
+      const select = event.target.closest('select[data-action]');
+      if (select) runControlAction(select);
+    });
 
     Promise.allSettled(Object.keys(panelEndpoints).map(function (name) {
       return loadPanelSection(name).catch(function (error) {

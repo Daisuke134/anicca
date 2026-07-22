@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-010", "dimension": "verification_readiness", "category": "proof_gap", "severity": "critical",
+  "description": "[blocking] .vcsdd/features/life-manager-panel-control-center/state.json:5 — strict workflowなのにPhase 3 implementation verdict、contract-review PASS、正式RED/GREEN logが存在せず、contractも`amended`のままPhase 4へ自己遷移している。VCSDDのPhase 3→4 gateを満たさない。",
+  "evidence": { "filePath": ".vcsdd/features/life-manager-panel-control-center/state.json", "lineRange": "5-5" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

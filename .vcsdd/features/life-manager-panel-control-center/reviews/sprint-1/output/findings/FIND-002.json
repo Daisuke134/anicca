@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-002", "dimension": "edge_case_coverage", "category": "test_coverage", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/user-command.js:104 — 同一idempotency keyのreceiptが`pending`かつresult未設定の場合も処理を続行する。fresh再現で`PENDING_DUPLICATE_MUTATIONS=1`となり、並行再送が二重mutation/provider callを起こす。",
+  "evidence": { "filePath": "apps/life-call/lib/user-command.js", "lineRange": "104-104", "testName": "pending-receipt duplicate reproduction" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

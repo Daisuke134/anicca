@@ -38,9 +38,11 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
 const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
-const { handlePanelApiRequest } = require("./lib/panel-api.js");
+const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
+const { createSupabaseCommandStore } = require("./lib/panel-api.js");
+const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -201,6 +203,10 @@ const server = http.createServer((req, res) => {
       supaUrl: SUPA_URL,
       supaKey: SUPA_KEY,
       timeZone: process.env.LM_TIME_ZONE || "Asia/Tokyo",
+      panelOrigin: LM_PANEL_BASE,
+      panelBaseUrl: LM_PANEL_BASE,
+      composioKey: COMPOSIO_KEY,
+      composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
     }).catch((error) => {
       console.error("[panel-api] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
@@ -208,11 +214,18 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (path === "/panel") {
-    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY }).catch((error) => {
+  if (path === "/panel" || path === "/panel/logout") {
+    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE, botUsername: process.env.LM_TELEGRAM_BOT_USERNAME }).catch((error) => {
       console.error("[panel] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
       res.end("panel unavailable");
+    });
+    return;
+  }
+  if (path === "/panel/oauth/calendar") {
+    handlePanelOAuthCallback(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY }).catch(() => {
+      if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain", "cache-control": "no-store" });
+      res.end("oauth callback unavailable");
     });
     return;
   }
@@ -364,7 +377,8 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
-          if (isPanelCommand(u.text)) {
+          const parsedControl = parseUserCommand(u.text);
+          if (isPanelCommand(u.text) || isPanelDeepLink(u.text) || parsedControl.kind === "panel") {
             if (!row) {
               await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before opening your panel.");
             } else if (!LM_PANEL_BASE) {
@@ -395,6 +409,37 @@ const server = http.createServer((req, res) => {
             token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY, gmailConnectUrl,
             composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY,
           };
+          if (u.text && (parsedControl.kind === "command" || parsedControl.kind === "unavailable")) {
+            if (parsedControl.kind === "command" && !row) {
+              await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before changing settings.");
+            } else {
+              try {
+                const dispatched = await dispatchParsedControl(parsedControl, {
+                  executeCommand: executeUserCommand,
+                  scope: row ? { uid: row.uid, chatId: u.chatId } : null,
+                  commandDeps: row ? {
+                    store: createSupabaseCommandStore({ supaUrl: SUPA_URL, supaKey: SUPA_KEY }),
+                    idempotencyKey: `telegram:${u.messageId || crypto.randomUUID()}`,
+                    composioKey: COMPOSIO_KEY,
+                    composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+                    panelBaseUrl: LM_PANEL_BASE,
+                    startCalendarConnection: (scope) => composioCalendarStart(scope, { composioKey: COMPOSIO_KEY }),
+                    disconnectCalendar: (scope) => composioCalendarDisconnect(scope, { composioKey: COMPOSIO_KEY }),
+                  } : null,
+                });
+                const result = dispatched.result;
+                if (result && result.state && result.state.redirectUrl) {
+                  await sendMessage(LM_TG_TOKEN, u.chatId, "Calendar needs your Google permission.", { reply_markup: { inline_keyboard: [[{ text: "Connect Calendar", url: result.state.redirectUrl }]] } });
+                } else {
+                  await sendMessage(LM_TG_TOKEN, u.chatId, result ? `✅ ${dispatched.message}` : dispatched.message);
+                }
+              } catch {
+                await sendMessage(LM_TG_TOKEN, u.chatId, "I couldn't apply that change. Your previous setting is unchanged.");
+              }
+            }
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           if (u.isStart) {
             // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
             const profile = { first_name: u.firstName, last_name: u.lastName };

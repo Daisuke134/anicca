@@ -65,11 +65,16 @@ function parseUpdate(update) {
     kind: "message",
     chatId: String(m.chat.id),
     userId: m.from ? String(m.from.id) : "",
+    ...(m.message_id == null ? {} : { messageId: String(m.message_id) }),
     text: (m.text || "").trim(),
     isStart: (m.text || "").trim().toLowerCase().startsWith("/start"),
     firstName: m.from ? String(m.from.first_name || "") : "",
     lastName: m.from ? String(m.from.last_name || "") : "",
   };
+}
+
+function isPanelDeepLink(text) {
+  return /^\/start(?:@[A-Za-z0-9_]+)?\s+panel$/i.test(String(text || "").trim());
 }
 
 async function routeCallbackData(data, handlers = {}, log = console.log) {
@@ -104,4 +109,4 @@ function startReply(chatId, base) {
   };
 }
 
-module.exports = { tgCall, sendMessage, getMe, setWebhook, answerCallbackQuery, isPanelCommand, parseUpdate, routeCallbackData, onboardLink, startReply };
+module.exports = { tgCall, sendMessage, getMe, setWebhook, answerCallbackQuery, isPanelCommand, isPanelDeepLink, parseUpdate, routeCallbackData, onboardLink, startReply };
