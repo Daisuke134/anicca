@@ -129,6 +129,7 @@ test('image app records a privacy-safe 402 attempt without prompt or payment hea
     route: '/image',
     price: '$0.05',
     payer: null,
+    tx: null,
     settled: false,
     status: 402,
   });
@@ -141,8 +142,8 @@ test('image telemetry recorder separates attempts and settled sales by seller wa
   t.after(() => rmSync(stateDir, { recursive: true, force: true }));
   const payTo = '0xAbC';
   const record = createImageTelemetryRecorder({ stateDir, payTo });
-  const attempt = { ts: '2026-07-23T00:00:00.000Z', route: '/image', price: '$0.05', payer: null, settled: false, status: 402 };
-  const sale = { ts: '2026-07-23T00:01:00.000Z', route: '/image', price: '$0.05', payer: '0xBuyer', settled: true, status: 200 };
+  const attempt = { ts: '2026-07-23T00:00:00.000Z', route: '/image', price: '$0.05', payer: null, tx: null, settled: false, status: 402 };
+  const sale = { ts: '2026-07-23T00:01:00.000Z', route: '/image', price: '$0.05', payer: '0xBuyer', tx: '0xTransaction', settled: true, status: 200 };
 
   record(attempt);
   record(sale);

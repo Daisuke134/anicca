@@ -7,7 +7,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 
 import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { IMAGE_OFFER, imageResaleHandler } from './image-resale.mjs';
-import { decodePayer, isSettled } from './lib/settle-gate.mjs';
+import { decodePayer, decodeTransaction, isSettled } from './lib/settle-gate.mjs';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -103,6 +103,7 @@ export function createImageTelemetryRecorder({ stateDir, payTo }) {
       route: String(row.route),
       price: String(row.price),
       payer: row.payer ? String(row.payer) : null,
+      tx: row.tx ? String(row.tx) : null,
       settled: row.settled === true,
       status: Number(row.status),
     };
@@ -166,6 +167,7 @@ export function createImageApp({
           route: req.path,
           price: product.price,
           payer: requestPayer || decodePayer(paymentResponse),
+          tx: decodeTransaction(paymentResponse),
           settled: isSettled(paymentResponse),
           status: res.statusCode,
         });

@@ -14,3 +14,10 @@ export function decodePayer(headerValue) {
     return d?.payer || null;
   } catch { return null; }
 }
+export function decodeTransaction(headerValue) {
+  if (!headerValue) return null;
+  try {
+    const d = JSON.parse(Buffer.from(String(headerValue), "base64").toString("utf8"));
+    return typeof d?.transaction === "string" && d.transaction ? d.transaction : null;
+  } catch { return null; }
+}
