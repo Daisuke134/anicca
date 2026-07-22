@@ -7,9 +7,12 @@ const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 const { getCalendar } = require("./transport/index.js");
 const { lockedDiscoveryGates } = require("./feature-discovery.js");
 const { DISCOVERY_STRINGS } = require("./i18n.js");
+const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
+const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
+const SORTED_SCORE_ORGANS = Object.freeze([...SCORE_ORGANS].sort());
 
 function headers(key) {
   return { apikey: key, Authorization: `Bearer ${key}` };
@@ -27,6 +30,19 @@ function configuredTimeZone(value) {
   } catch {
     return "UTC";
   }
+}
+
+function scoreUnavailable(reason) {
+  const error = new Error(reason);
+  error.scoreUnavailableReason = reason;
+  return error;
+}
+
+function validScoreSnapshotRows(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(value).sort();
+  if (keys.length !== SCORE_ORGANS.length || keys.some((key, index) => key !== SORTED_SCORE_ORGANS[index])) return false;
+  return SCORE_ORGANS.every((organ) => Array.isArray(value[organ]));
 }
 
 function zonedParts(ms, timeZone) {
@@ -150,31 +166,38 @@ async function timeline(uid, opts) {
 
 async function scores(uid, opts) {
   const nowMs = opts.nowMs == null ? Date.now() : opts.nowMs;
-  const { rows: calls } = await readRows("lm_wake_log", {
-    uid: `eq.${uid}`,
-    called_at: `gte.${new Date(nowMs - 7 * 86400000).toISOString()}`,
-    and: `(called_at.lte.${new Date(nowMs).toISOString()})`,
-    select: "called_at,answered_at",
-  }, opts);
-  const answered = calls.filter((row) => row.answered_at).length;
-  const { rows: financialRows } = await readRows("lm_financial_ledger", {
-    uid: `eq.${uid}`, select: "id", limit: "1",
-  }, opts, true);
-  return { organs: {
-    daily: {
-      score: calls.length ? Math.round(answered / calls.length * 100) : null,
-      no_data: calls.length === 0,
-      calls: calls.length,
-      answered,
-      window_days: 7,
-    },
-    physical: { score: null, no_data: true, unimplemented: true, missed_visits: 0 },
-    financial: {
-      score: financialRows.length ? 100 : null,
-      no_data: financialRows.length === 0,
-      ledger_entries: financialRows.length,
-    },
-  } };
+  const preferences = await readPanelPreferences(uid, opts);
+  const timeZone = configuredTimeZone(preferences.call_time_zone || opts.timeZone);
+  let periods;
+  try {
+    periods = buildScorePeriods(nowMs, timeZone);
+  } catch {
+    throw scoreUnavailable("period_resolution_failed");
+  }
+  if (!opts.supaUrl || !opts.supaKey) throw new Error("panel database is not configured");
+  const rpcPeriods = Object.fromEntries(SCORE_ORGANS.map((organ) => [organ, {
+    start_at: periods[organ].start_at,
+    end_at: periods[organ].end_at,
+  }]));
+  const response = await (opts.fetchImpl || fetch)(`${String(opts.supaUrl).replace(/\/$/, "")}/rest/v1/rpc/lm_panel_score_outcome_snapshot`, {
+    method: "POST",
+    headers: { ...headers(opts.supaKey), "content-type": "application/json" },
+    body: JSON.stringify({ p_uid: uid, p_periods: rpcPeriods }),
+  });
+  if (!response.ok) {
+    await jsonOr(response, {});
+    throw scoreUnavailable("source_table_unavailable");
+  }
+  let snapshot = await jsonOr(response, null);
+  if (Array.isArray(snapshot) && snapshot.length === 1) snapshot = snapshot[0];
+  if (!snapshot || typeof snapshot !== "object" || snapshot.overflow === true) {
+    throw scoreUnavailable(snapshot && snapshot.overflow === true ? "source_outcome_limit" : "source_table_unavailable");
+  }
+  const rowsByOrgan = snapshot.rows_by_organ;
+  if (!validScoreSnapshotRows(rowsByOrgan)) {
+    throw scoreUnavailable("source_table_unavailable");
+  }
+  return { organs: computePanelScores({ uid, ...rowsByOrgan }, periods, timeZone) };
 }
 
 function aggregateCosts(rows) {
@@ -467,7 +490,15 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     sendJson(res, 200, { ...model, csrf: scope.csrf || csrfToken(session) }); return;
   }
   const readers = { timeline, scores, ledger, gates, settings };
-  sendJson(res, 200, await readers[endpoint](scope.uid, { ...opts, nowMs, scope }));
+  try {
+    sendJson(res, 200, await readers[endpoint](scope.uid, { ...opts, nowMs, scope }));
+  } catch (error) {
+    if (endpoint === "scores" && error.scoreUnavailableReason) {
+      sendJson(res, 503, { error: "score_data_unavailable", reason: error.scoreUnavailableReason });
+      return;
+    }
+    throw error;
+  }
 }
 
 module.exports = {

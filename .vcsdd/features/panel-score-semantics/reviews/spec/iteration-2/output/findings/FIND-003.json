@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "spec_ambiguity",
+  "severity": "high",
+  "description": "Defensive deduplication does not define whether resolved_at and occurred_at precedence choose the earliest or latest timestamp, how null resolved_at sorts, or which public_ref direction wins. Duplicate rows with different semantic states can therefore select different winners and change numerator, denominator, components, and source linkage while conforming to this architecture.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "41-41",
+    "snippet": "The pure core additionally deduplicates defensive fixture/query duplicates by the same key using deterministic resolved_at, then occurred_at, then public_ref precedence."
+  },
+  "routeToPhase": "1a"
+}

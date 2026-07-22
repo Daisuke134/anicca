@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "implementation_correctness",
+  "category": "error_handling",
+  "severity": "high",
+  "description": "The missing-source-table rollback case says only fail closed and does not define an HTTP status, response body, whether the four-organ envelope is absent, or how the UI distinguishes this outage from legitimate insufficient data. This directly conflicts with binary verification of the complete-response requirement and permits materially different failure behavior.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "9-16",
+    "snippet": "Missing optional source table during pre-migration rollback: fail the score request closed; do not synthesize scores."
+  },
+  "routeToPhase": "1a"
+}

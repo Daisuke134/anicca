@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-009 requires all four organ row sets to come through one RPC, but its acceptance criterion still requires every score query to contain four direct PostgREST-style uid, organ, inclusive-start, and exclusive-end filters. A sole RPC request carries p_uid and p_periods rather than uid=eq/organ=eq URL filters, so the endpoint and its tests cannot satisfy both contracts without deciding whether the filter assertions apply to the HTTP request or to SQL inside the RPC.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "107-113",
+    "snippet": "obtain all four organ row sets through one read-only database RPC transaction ... Integration tests inspect every score query for uid=eq.<session uid>, organ=eq.<organ>, inclusive start, and exclusive end."
+  },
+  "routeToPhase": "1a"
+}

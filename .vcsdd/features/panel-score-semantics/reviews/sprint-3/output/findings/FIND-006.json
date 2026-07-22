@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "The corrected module renderer imports roundedScoreValue, but renderPanelPage serializes validScoreOrgan and renderScoreCards into the browser without serializing that helper. Every measured score card therefore throws ReferenceError in the actual panel page, including the canonical safe-integer FINANCIAL model whose core value is 10; the score section becomes a load error instead of rendering the valid closed payload.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.js",
+    "lineRange": "698-710",
+    "snippet": "The inline script emits scoreEscapeHtml, scoreAsDate, scoreFormatDate, scoreExactKeys, scoreNonNegativeInteger, validScoreComponents, scoreComponentRatio, validScoreOrgan, renderScoreComponents, and renderScoreCards, but no roundedScoreValue definition.",
+    "testName": "Fresh Node VM reproduction extracted the score script from renderPanelPage(); with numerator=945755921642804, denominator=9007199253740991, value=10, renderScoreCards threw ReferenceError: roundedScoreValue is not defined. The shared core returned 10 for the same pair."
+  },
+  "routeToPhase": "2b"
+}

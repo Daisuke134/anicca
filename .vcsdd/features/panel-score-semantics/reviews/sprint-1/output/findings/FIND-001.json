@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "The ledger accepts a fractional amount_minor, silently rounds 1.5 to 2 in numeric(16,0), and then rejects an identical retry as revision_key_conflict; this violates integer typed validation and exact-retry idempotency.",
+  "evidence": {
+    "filePath": "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+    "lineRange": "14-18",
+    "snippet": "amount_minor numeric(16, 0), ... CHECK (amount_minor IS NULL OR (amount_minor >= 0 AND amount_minor <= 9007199254740991))",
+    "testName": "real PostgreSQL fractional minor-unit probe: stored_amount=2; identical retry rejected with SQLSTATE 23505 revision_key_conflict"
+  },
+  "routeToPhase": "2b"
+}

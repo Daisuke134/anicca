@@ -1,0 +1,53 @@
+{
+  "reviewType": "implementation",
+  "featureName": "panel-score-semantics",
+  "sprintNumber": 2,
+  "reviewIteration": 3,
+  "reentryReason": "Fresh material implementation review required after Phase 5 found and corrected the integer-safe ratio rounding regression; do not reuse the prior Phase 3 verdict.",
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "b7f81e3023560e29c0d1692649a3103374b8f87abadc6fcf5f02102bb30ce7b7",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-2.md"
+    ],
+    "tests": [
+      "apps/life-call/lib/panel-score-semantics.test.js",
+      "apps/life-call/lib/panel-api-score-semantics.test.js",
+      "apps/life-call/lib/panel-score-migration.test.js",
+      "apps/life-call/lib/panel-api.test.js",
+      "apps/life-call/lib/panel-ui.test.js",
+      "apps/life-call/scripts/independent-panel-score-readback.test.js",
+      "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+      "apps/life-call/eval/score-semantics-cases.json",
+      "apps/life-call/eval/run-score-semantics-eval.js"
+    ],
+    "source": [
+      "apps/life-call/lib/panel-score-semantics.js",
+      "apps/life-call/lib/panel-api.js",
+      "apps/life-call/lib/panel-ui.js",
+      "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+      "apps/life-call/scripts/independent-panel-score-readback.js",
+      "apps/life-call/package.json",
+      ".vcsdd/features/panel-score-semantics/state.json",
+      ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/verdict.json",
+      ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-001.json",
+      ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-002.json",
+      ".vcsdd/features/panel-score-semantics/reviews/sprint-1/output/findings/FIND-003.json",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-2-red-phase.log",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-2-green-phase.log",
+      ".vcsdd/features/panel-score-semantics/verification/verification-report.md",
+      ".vcsdd/features/panel-score-semantics/verification/security-report.md",
+      ".vcsdd/features/panel-score-semantics/verification/purity-audit.md",
+      ".vcsdd/features/panel-score-semantics/verification/proof-harnesses/ratio-invariants.js"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ]
+}

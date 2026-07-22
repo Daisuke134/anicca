@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "CRIT-004 can pass at exactly 19/19 even though the literal fixture omits required failure/schema cases from REQ-011 and the verification architecture, including missing-table, period-resolution, source-limit, malformed-UI, and concurrent-snapshot cases. The independent oracle replays only the same underspecified fixture, so the threshold is not aligned with the required fixed matrix.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/contracts/sprint-1.md",
+    "lineRange": "28-30",
+    "snippet": "The criterion claims every required failure case is covered, but its threshold accepts the current 19 literal cases; behavioral-spec.md:130 and verification-architecture.md:76-77 require failure/schema and snapshot cases absent from score-semantics-cases.json.",
+    "testName": "npm run eval:score"
+  },
+  "routeToPhase": "2a",
+  "beadId": "BEAD-044",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 1,
+    "fixedInPhase": "2c",
+    "notes": "Expanded the executable matrix to 27/27 with six explicit failure/UI/snapshot contract cases plus unknown-kind and MENTAL timestamp cases; actual two-session PostgreSQL snapshot remains required by CRIT-003."
+  }
+}

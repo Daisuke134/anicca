@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-002 states permutation invariance without defining a bounded row domain, permutation cardinality, generated-case count, seed, or independent expected-value oracle. A finite Node permutation harness can establish only whichever examples its implementation chooses, not the unqualified deduplication and retry/activity invariance claimed by the required proof obligation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "89-93",
+    "snippet": "PROP-002 | Deduplication and retry/activity permutations do not change numerator, denominator, value, or source linkage. | 1 | true | permutation harness"
+  },
+  "routeToPhase": "1b"
+}

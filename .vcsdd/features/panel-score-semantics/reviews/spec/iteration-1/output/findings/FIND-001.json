@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "spec_ambiguity",
+  "severity": "high",
+  "description": "REQ-001 calls the response schema closed but specifies only field names. It does not define field types, allowed status or period.kind values, component shapes, or the membership and ordering rules for source_outcome_ids. Independent endpoint and test implementations can therefore return incompatible payloads while each claims conformance.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "9-16",
+    "snippet": "THE SYSTEM SHALL return exactly daily, physical, mental, and financial, each with status, value, period.kind, period.start_at, period.end_at, numerator, denominator, plain-language reason, components, and privacy-safe source_outcome_ids."
+  },
+  "routeToPhase": "1a"
+}

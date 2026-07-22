@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "CRIT-005 is not met: the score renderer accepts semantically contradictory measured values, duplicate source references, and organs missing their required component fields, then renders the supplied percentage as a real score instead of failing the score section closed.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.js",
+    "lineRange": "24-31",
+    "snippet": "validScoreOrgan checks only broad status/value/period/reason/reference shapes; it does not enforce exact component schemas, unique sorted references, or agreement between value and numerator/denominator. A fresh runtime probe with value=100, numerator=0, denominator=1, duplicate refs, and only components.timezone was accepted for all four cards."
+  },
+  "routeToPhase": "2b",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 1,
+    "fixedInPhase": "2c",
+    "notes": "The renderer now checks exact organ/period/component schemas, per-organ component ratios, computed percentages, sorted unique UUID references, and period ordering. Executable negative probes cover contradictory ratios, duplicate refs, and incomplete components."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "The production L3 recomputation feeds production rows through the same pure core used by the endpoint. This is not the independent recomputation required by REQ-013: a shared arithmetic, deduplication, period, or reference-selection defect will reproduce the same wrong result on both sides and pass the equality check.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "113-119",
+    "snippet": "Feed those rows to the same pure core in a separate readback process and independently compare expected arithmetic/references to API and UI."
+  },
+  "routeToPhase": "1b"
+}

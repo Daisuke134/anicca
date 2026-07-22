@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "spec_ambiguity",
+  "severity": "medium",
+  "description": "REQ-005 limits scoring to the first three deliveries in deterministic local-day order but does not name the ordering timestamp or a tie-breaker. Equal occurred_at or resolved_at values permit different triggers and source references to win the cap, so deterministic audit linkage cannot be implemented from this contract.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "48-56",
+    "snippet": "Only the first three otherwise-valid deliveries in deterministic local-day order may add points; cap overflow does not."
+  },
+  "routeToPhase": "1a"
+}

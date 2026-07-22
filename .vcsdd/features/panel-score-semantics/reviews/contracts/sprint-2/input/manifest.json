@@ -1,0 +1,31 @@
+{
+  "reviewType": "contract",
+  "featureName": "panel-score-semantics",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "b7f81e3023560e29c0d1692649a3103374b8f87abadc6fcf5f02102bb30ce7b7",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "apps/life-call/lib/panel-ui.test.js",
+      "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-2-red-phase.log",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-2-green-phase.log"
+    ],
+    "source": [
+      "apps/life-call/lib/panel-ui.js",
+      "apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql",
+      ".vcsdd/features/panel-score-semantics/state.json"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ]
+}

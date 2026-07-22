@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "The score-card tests exercise only small FINANCIAL ratios and do not cover a valid safe-integer boundary ratio produced by the core. Consequently they pass while the renderer rejects the legal value=10 payload identified in FIND-004, leaving the post-Phase-5 integer-safe rounding regression unguarded at the presentation boundary.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.test.js",
+    "lineRange": "100-154",
+    "snippet": "The executable valid model uses financial numerator=700/denominator=1000, and the contradictory-ratio matrix uses only 100/100; no safe-integer boundary ratio is rendered.",
+    "testName": "fresh Node reproduction with numerator=945755921642804 denominator=9007199253740991 produced core value=10 and renderer rejection"
+  },
+  "routeToPhase": "2a"
+}

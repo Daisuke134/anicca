@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "CRIT-004's claim that the 27-case closed matrix covers every required boundary and invalid-data case is false: it has only a single over-limit financial row and no aggregate-overflow case made from individually safe rows, and its MENTAL invalid-time case omits resolved_at before occurred_at and at or after period end.",
+  "evidence": {
+    "filePath": "apps/life-call/eval/score-semantics-cases.json",
+    "lineRange": "157-184",
+    "snippet": "The financial unsafe fixture uses one amount 9007199254740992, while the MENTAL fixture covers only absent and unparsable resolved timestamps. The matrix contains no individually-safe aggregate overflow, resolved-before-occurred, or resolved-at/after-end fixture required by the authoritative specs."
+  },
+  "routeToPhase": "2a",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 1,
+    "fixedInPhase": "2c",
+    "notes": "The 27-group closed matrix now independently asserts a two-row individually-safe aggregate overflow variant and MENTAL absent, unparsable, before-occurred, exact-end, and after-end resolution timestamps in both production scorer and independent oracle."
+  }
+}

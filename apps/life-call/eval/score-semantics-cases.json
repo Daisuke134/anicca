@@ -1,0 +1,208 @@
+{
+  "defaultNow": "2026-07-15T12:00:00.000Z",
+  "defaultTimeZone": "UTC",
+  "tenant": "tenant-a",
+  "periodCases": [
+    {
+      "id": "utc_periods_and_month_start",
+      "now": "2026-07-15T12:00:00.000Z",
+      "timeZone": "UTC",
+      "expected": {
+        "daily": ["2026-07-08T12:00:00.000Z", "2026-07-15T12:00:00.000Z"],
+        "physical": ["2026-06-15T12:00:00.000Z", "2026-07-15T12:00:00.000Z"],
+        "financial": ["2026-07-01T00:00:00.000Z", "2026-07-15T12:00:00.000Z"]
+      }
+    },
+    {
+      "id": "new_york_spring_gap_preserves_minutes",
+      "now": "2026-03-15T06:30:00.000Z",
+      "timeZone": "America/New_York",
+      "expected": { "daily": ["2026-03-08T07:30:00.000Z", "2026-03-15T06:30:00.000Z"] }
+    },
+    {
+      "id": "new_york_fall_overlap_chooses_earlier",
+      "now": "2026-11-08T06:30:00.000Z",
+      "timeZone": "America/New_York",
+      "expected": { "daily": ["2026-11-01T05:30:00.000Z", "2026-11-08T06:30:00.000Z"] }
+    },
+    {
+      "id": "invalid_timezone_falls_back_to_utc",
+      "now": "2026-07-15T12:00:00.000Z",
+      "timeZone": "Invalid/Zone",
+      "effectiveTimeZone": "UTC",
+      "expected": { "daily": ["2026-07-08T12:00:00.000Z", "2026-07-15T12:00:00.000Z"] }
+    }
+  ],
+  "scoreCases": [
+    {
+      "id": "daily_success_mixed_required_optional_context",
+      "organ": "daily",
+      "rows": [
+        { "n": 1, "entity": "event-1", "kind": "daily_travel", "status": "required_succeeded", "at": "2026-07-14T09:00:00.000Z" },
+        { "n": 2, "entity": "event-1", "kind": "daily_call", "status": "optional", "at": "2026-07-14T09:00:00.000Z" },
+        { "n": 3, "entity": "event-2", "kind": "daily_late", "status": "context_unnecessary", "at": "2026-07-13T09:00:00.000Z" }
+      ],
+      "expected": { "status": "measured", "value": 100, "numerator": 2, "denominator": 2, "sourceCount": 3, "components": { "eligible_events": 2, "resolved_events": 2, "required_succeeded": 1, "context_unnecessary": 1, "optional_ignored": 1 } }
+    },
+    {
+      "id": "daily_latest_retry_cross_tenant_and_half_open_bounds",
+      "organ": "daily",
+      "rows": [
+        { "n": 10, "entity": "event-1", "kind": "daily_travel", "status": "required_succeeded", "at": "2026-07-14T09:00:00.000Z", "recorded": "2026-07-14T10:00:00.000Z" },
+        { "n": 11, "entity": "event-1", "kind": "daily_travel", "status": "required_failed", "at": "2026-07-14T09:00:00.000Z", "recorded": "2026-07-14T11:00:00.000Z" },
+        { "n": 11, "entity": "event-1", "kind": "daily_travel", "status": "required_failed", "at": "2026-07-14T09:00:00.000Z", "recorded": "2026-07-14T11:00:00.000Z" },
+        { "n": 12, "entity": "event-2", "kind": "daily_call", "status": "required_pending", "at": "2026-07-12T09:00:00.000Z" },
+        { "n": 13, "entity": "at-start", "kind": "daily_late", "status": "context_unnecessary", "at": "2026-07-08T12:00:00.000Z" },
+        { "n": 14, "entity": "at-end", "kind": "daily_late", "status": "required_succeeded", "at": "2026-07-15T12:00:00.000Z" },
+        { "n": 15, "entity": "other", "kind": "daily_late", "status": "required_succeeded", "at": "2026-07-14T09:00:00.000Z", "uid": "tenant-b" }
+      ],
+      "expected": { "status": "measured", "value": 33, "numerator": 1, "denominator": 3, "sourceCount": 3, "components": { "required_failed": 1, "required_pending": 1, "context_unnecessary": 1 } }
+    },
+    {
+      "id": "daily_optional_only_is_insufficient",
+      "organ": "daily",
+      "rows": [{ "n": 20, "entity": "event-optional", "kind": "daily_call", "status": "optional", "at": "2026-07-14T09:00:00.000Z" }],
+      "expected": { "status": "insufficient_data", "value": null, "numerator": 0, "denominator": 0, "sourceCount": 1, "components": { "optional_ignored": 1 } }
+    },
+    {
+      "id": "physical_confirmed_precedence_and_unconfirmed_exclusion",
+      "organ": "physical",
+      "rows": [
+        { "n": 30, "entity": "need-1", "kind": "physical_need", "status": "confirmed_booking", "at": "2026-07-10T09:00:00.000Z" },
+        { "n": 31, "entity": "need-1", "kind": "physical_need", "status": "candidate", "at": "2026-07-10T09:00:00.000Z", "recorded": "2026-07-11T09:00:00.000Z" },
+        { "n": 32, "entity": "need-2", "kind": "physical_need", "status": "confirmed_completion", "at": "2026-07-09T09:00:00.000Z" },
+        { "n": 33, "entity": "need-3", "kind": "physical_need", "status": "detected", "at": "2026-07-08T09:00:00.000Z" },
+        { "n": 34, "entity": "need-4", "kind": "physical_need", "status": "unconfirmed_request", "at": "2026-07-07T09:00:00.000Z" }
+      ],
+      "expected": { "status": "measured", "value": 50, "numerator": 2, "denominator": 4, "sourceCount": 4, "components": { "detected_needs": 4, "confirmed_booking": 1, "confirmed_completion": 1, "unresolved_needs": 2, "search_candidate_unconfirmed": 1 } }
+    },
+    {
+      "id": "physical_success",
+      "organ": "physical",
+      "rows": [{ "n": 35, "entity": "need-success", "kind": "physical_need", "status": "confirmed_completion", "at": "2026-07-10T09:00:00.000Z" }],
+      "expected": { "status": "measured", "value": 100, "numerator": 1, "denominator": 1, "sourceCount": 1, "components": { "detected_needs": 1, "confirmed_completion": 1, "unresolved_needs": 0 } }
+    },
+    {
+      "id": "physical_zero",
+      "organ": "physical",
+      "rows": [],
+      "expected": { "status": "insufficient_data", "value": null, "numerator": 0, "denominator": 0, "sourceCount": 0, "components": { "detected_needs": 0 } }
+    },
+    {
+      "id": "mental_dedup_cap_suppression_correction_and_invalid_states",
+      "organ": "mental",
+      "rows": [
+        { "n": 40, "entity": "trigger-1", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T08:00:00.000Z", "resolved": "2026-07-14T08:01:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 41, "entity": "trigger-2", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T09:00:00.000Z", "resolved": "2026-07-14T09:01:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 42, "entity": "trigger-3", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T10:00:00.000Z", "resolved": "2026-07-14T10:01:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 43, "entity": "trigger-4", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T11:00:00.000Z", "resolved": "2026-07-14T11:01:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 44, "entity": "trigger-5", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T12:00:00.000Z", "resolved": "2026-07-14T12:01:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 45, "entity": "trigger-6", "kind": "mental_trigger", "status": "suppression_honored", "at": "2026-07-13T08:00:00.000Z", "components": { "send_count": 0 } },
+        { "n": 46, "entity": "trigger-7", "kind": "mental_trigger", "status": "correction_persisted", "at": "2026-07-13T09:00:00.000Z", "components": { "context_persisted": true } },
+        { "n": 47, "entity": "trigger-8", "kind": "mental_trigger", "status": "suppression_honored", "at": "2026-07-13T10:00:00.000Z", "components": { "send_count": 1 } },
+        { "n": 48, "entity": "trigger-9", "kind": "mental_trigger", "status": "correction_persisted", "at": "2026-07-13T11:00:00.000Z", "components": { "context_persisted": false } }
+      ],
+      "expected": { "status": "measured", "value": 56, "numerator": 5, "denominator": 9, "sourceCount": 9, "components": { "deduplicated_triggers": 9, "delivered_within_cap": 3, "suppression_honored": 1, "correction_persisted": 1, "cap_overflow": 2, "unresolved_triggers": 2 } }
+    },
+    {
+      "id": "mental_success",
+      "organ": "mental",
+      "rows": [{ "n": 49, "entity": "trigger-success", "kind": "mental_trigger", "status": "suppression_honored", "at": "2026-07-13T08:00:00.000Z", "components": { "send_count": 0 } }],
+      "expected": { "status": "measured", "value": 100, "numerator": 1, "denominator": 1, "sourceCount": 1, "components": { "deduplicated_triggers": 1, "suppression_honored": 1, "unresolved_triggers": 0 } }
+    },
+    {
+      "id": "mental_zero",
+      "organ": "mental",
+      "rows": [],
+      "expected": { "status": "insufficient_data", "value": null, "numerator": 0, "denominator": 0, "sourceCount": 0, "components": { "deduplicated_triggers": 0 } }
+    },
+    {
+      "id": "financial_verified_net_transfer_separate_and_exclusions",
+      "organ": "financial",
+      "rows": [
+        { "n": 50, "entity": "tx-income", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": 1000, "currency": "USD" },
+        { "n": 51, "entity": "tx-loss", "kind": "financial_realized_loss", "status": "realized", "at": "2026-07-10T10:00:00.000Z", "amount": 200, "currency": "USD" },
+        { "n": 52, "entity": "tx-fee", "kind": "financial_fee", "status": "charged", "at": "2026-07-10T11:00:00.000Z", "amount": 100, "currency": "USD" },
+        { "n": 53, "entity": "tx-transfer", "kind": "financial_user_transfer", "status": "confirmed", "at": "2026-07-10T12:00:00.000Z", "amount": 300, "currency": "USD" },
+        { "n": 54, "entity": "tx-self", "kind": "financial_self_funding", "status": "excluded", "at": "2026-07-10T13:00:00.000Z", "amount": 500, "currency": "USD" }
+      ],
+      "expected": { "status": "measured", "value": 70, "numerator": 700, "denominator": 1000, "sourceCount": 5, "components": { "currency": "USD", "gross_income_minor": 1000, "realized_loss_minor": 200, "fee_minor": 100, "user_transfer_minor": 300, "excluded_rows": 1, "net_clamped": false } }
+    },
+    {
+      "id": "financial_success",
+      "organ": "financial",
+      "rows": [{ "n": 55, "entity": "tx-success", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": 1000, "currency": "USD" }],
+      "expected": { "status": "measured", "value": 100, "numerator": 1000, "denominator": 1000, "sourceCount": 1, "components": { "currency": "USD", "gross_income_minor": 1000, "realized_loss_minor": 0, "fee_minor": 0, "user_transfer_minor": 0, "excluded_rows": 0, "net_clamped": false } }
+    },
+    {
+      "id": "financial_negative_net_clamps",
+      "organ": "financial",
+      "rows": [
+        { "n": 60, "entity": "tx-income", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": 100, "currency": "JPY" },
+        { "n": 61, "entity": "tx-loss", "kind": "financial_realized_loss", "status": "realized", "at": "2026-07-10T10:00:00.000Z", "amount": 150, "currency": "JPY" },
+        { "n": 62, "entity": "tx-fee", "kind": "financial_fee", "status": "charged", "at": "2026-07-10T11:00:00.000Z", "amount": 10, "currency": "JPY" }
+      ],
+      "expected": { "status": "measured", "value": 0, "numerator": 0, "denominator": 100, "sourceCount": 3, "components": { "net_clamped": true } }
+    },
+    {
+      "id": "financial_zero_with_transfer_and_excluded_rows",
+      "organ": "financial",
+      "rows": [
+        { "n": 70, "entity": "tx-transfer", "kind": "financial_user_transfer", "status": "confirmed", "at": "2026-07-10T09:00:00.000Z", "amount": 200, "currency": "USD" },
+        { "n": 71, "entity": "tx-deposit", "kind": "financial_deposit", "status": "excluded", "at": "2026-07-10T10:00:00.000Z", "amount": 300, "currency": "USD" }
+      ],
+      "expected": { "status": "insufficient_data", "value": null, "numerator": 0, "denominator": 0, "sourceCount": 2, "components": { "currency": "USD", "gross_income_minor": 0, "user_transfer_minor": 200, "excluded_rows": 1, "net_clamped": false } }
+    },
+    {
+      "id": "financial_mixed_currency_is_invalid",
+      "organ": "financial",
+      "rows": [
+        { "n": 80, "entity": "tx-income", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": 100, "currency": "USD" },
+        { "n": 81, "entity": "tx-fee", "kind": "financial_fee", "status": "charged", "at": "2026-07-10T10:00:00.000Z", "amount": 10, "currency": "EUR" }
+      ],
+      "expected": { "status": "invalid_data", "value": null, "numerator": null, "denominator": null, "sourceCount": 2, "reason": "Financial outcomes use more than one currency.", "components": { "currency": null, "gross_income_minor": null, "realized_loss_minor": null, "fee_minor": null, "user_transfer_minor": null } }
+    },
+    {
+      "id": "financial_unsafe_amount_is_invalid",
+      "organ": "financial",
+      "rows": [{ "n": 90, "entity": "tx-income", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": "9007199254740992", "currency": "USD" }],
+      "expected": { "status": "invalid_data", "value": null, "numerator": null, "denominator": null, "sourceCount": 1, "reason": "Financial outcome amount is outside the supported range.", "components": { "currency": null, "gross_income_minor": null, "realized_loss_minor": null, "fee_minor": null, "user_transfer_minor": null } },
+      "variants": [
+        {
+          "id": "financial_individually_safe_aggregate_overflow_is_invalid",
+          "rows": [
+            { "n": 900, "entity": "tx-income-a", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T09:00:00.000Z", "amount": "4503599627370496", "currency": "USD" },
+            { "n": 901, "entity": "tx-income-b", "kind": "financial_external_income", "status": "verified", "at": "2026-07-10T10:00:00.000Z", "amount": "4503599627370496", "currency": "USD" }
+          ],
+          "expected": { "status": "invalid_data", "value": null, "numerator": null, "denominator": null, "sourceCount": 2, "reason": "Financial outcome amount is outside the supported range.", "components": { "currency": null, "gross_income_minor": null, "realized_loss_minor": null, "fee_minor": null, "user_transfer_minor": null } }
+        }
+      ]
+    },
+    {
+      "id": "unknown_kind_is_excluded",
+      "organ": "daily",
+      "rows": [{ "n": 91, "entity": "unknown", "kind": "daily_unknown", "status": "required_succeeded", "at": "2026-07-14T09:00:00.000Z" }],
+      "expected": { "status": "insufficient_data", "value": null, "numerator": 0, "denominator": 0, "sourceCount": 0, "components": { "excluded_unknown_count": 1 } }
+    },
+    {
+      "id": "mental_absent_and_invalid_resolved_timestamps",
+      "organ": "mental",
+      "rows": [
+        { "n": 92, "entity": "trigger-absent", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T08:00:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 93, "entity": "trigger-invalid", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T09:00:00.000Z", "resolved": "not-an-instant", "components": { "intervention_valid": true } },
+        { "n": 94, "entity": "trigger-before", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T10:00:00.000Z", "resolved": "2026-07-14T09:59:59.000Z", "components": { "intervention_valid": true } },
+        { "n": 95, "entity": "trigger-at-end", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T11:00:00.000Z", "resolved": "2026-07-15T12:00:00.000Z", "components": { "intervention_valid": true } },
+        { "n": 96, "entity": "trigger-after-end", "kind": "mental_trigger", "status": "delivered", "at": "2026-07-14T12:00:00.000Z", "resolved": "2026-07-15T12:00:01.000Z", "components": { "intervention_valid": true } }
+      ],
+      "expected": { "status": "measured", "value": 20, "numerator": 1, "denominator": 5, "sourceCount": 5, "components": { "delivered_within_cap": 1, "unresolved_triggers": 4 } }
+    }
+  ],
+  "contractCases": [
+    { "id": "missing_source_table_is_503", "type": "api", "rpcStatus": 404, "rpcBody": { "code": "42P01" }, "expectedStatus": 503, "expectedReason": "source_table_unavailable" },
+    { "id": "source_limit_is_503", "type": "api", "rpcStatus": 200, "rpcBody": { "overflow": true, "rows_by_organ": {} }, "expectedStatus": 503, "expectedReason": "source_outcome_limit" },
+    { "id": "malformed_snapshot_is_503", "type": "api", "rpcStatus": 200, "rpcBody": { "overflow": false, "rows_by_organ": { "daily": "not-an-array", "physical": [], "mental": [], "financial": [] } }, "expectedStatus": 503, "expectedReason": "source_table_unavailable" },
+    { "id": "period_resolution_failure_is_503", "type": "period_failure", "expectedStatus": 503, "expectedReason": "period_resolution_failed" },
+    { "id": "malformed_ui_model_is_rejected", "type": "ui_rejection" },
+    { "id": "captured_snapshot_excludes_late_commit", "type": "snapshot_membership", "expectedSourceCount": 1, "expectedValue": 100 }
+  ]
+}
