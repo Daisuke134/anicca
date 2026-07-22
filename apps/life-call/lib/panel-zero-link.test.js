@@ -33,12 +33,13 @@ async function withPanelServer(opts, run) {
   }
 }
 
-function signedInitData(botToken, { userId = 123, authDate = 1784678400, queryId = "fixture-query" } = {}) {
+function signedInitData(botToken, { userId = 123, authDate = 1784678400, queryId = "fixture-query", signature } = {}) {
   const fields = {
     auth_date: String(authDate),
     query_id: queryId,
     user: JSON.stringify({ id: userId, first_name: "Fixture" }),
   };
+  if (signature !== undefined) fields.signature = signature;
   const dataCheckString = Object.keys(fields).sort().map((key) => `${key}=${fields[key]}`).join("\n");
   const secret = crypto.createHmac("sha256", "WebAppData").update(botToken).digest();
   const hash = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
@@ -132,6 +133,22 @@ test("PANEL-1: valid initData binds one Telegram actor, returns canonical /panel
     assert.equal(fixture.state.dbMutations, beforeReplay.dbMutations);
     assert.equal(fixture.state.sessionInserts, beforeReplay.sessionInserts);
     assert.equal(fixture.state.providerMutations, 0);
+  });
+});
+
+test("PANEL-1: actual Telegram initData signature field remains inside the HMAC data-check-string", async () => {
+  const botToken = "123456:expected-fixture-bot-token";
+  const fixture = telegramFixture();
+  const initData = signedInitData(botToken, { signature: "fixture-ed25519-signature" });
+  await withPanelServer({
+    supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
+    panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
+    now: () => new Date(1784678400 * 1000), randomBytes: () => Buffer.alloc(32, 0x82), fetchImpl: fixture.fetchImpl,
+  }, async (base) => {
+    const accepted = await postTelegram(base, initData);
+    assert.equal(accepted.status, 200);
+    assert.deepEqual(await accepted.json(), { redirect: "/panel" });
+    assert.equal(fixture.state.sessionInserts, 1);
   });
 });
 
