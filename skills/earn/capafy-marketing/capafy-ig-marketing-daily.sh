@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # capafy-ig-marketing-daily.sh — B1-B4 IG line — DETERMINISTIC daily trigger for the Capafy
 # Instagram marketing loop. Active IG account comes only from clip-accounts-capafy.json.
-# launchd -> this script -> headless `claude -p`: provision-or-selector -> copy -> faceless video
+# launchd -> this script -> shared agent runner: provision-or-selector -> copy -> faceless video
 # (B3) -> instagrapi post (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
 # LaunchAgent: ai.anicca.capafy-ig-marketing-daily at 16:00 local; stdout/stderr use LOG below.
 #
@@ -19,7 +19,7 @@ MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
 . "$MARKETING_ENGINE_DIR/load_manifest.sh"
 me_load_manifest "${MKT_MANIFEST:-capafy}" || true   # per-loop config — engine stays shared; set MKT_MANIFEST to run another loop on this same engine
 INSTANCE="${MKT_INSTANCE:-capafy}"   # state namespace; capafy -> identical paths, other loops -> own
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
+RUN_AGENT="$MARKETING_ENGINE_DIR/run_agent.sh"
 LOG="$HOME/.openclaw/logs/${INSTANCE}-ig-marketing-daily.log"
 ROT="$HOME/.openclaw/state/${INSTANCE}-marketing-rotation.jsonl"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
@@ -135,13 +135,11 @@ STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual outp
 
 FINALLY touch '"$LAST_PASS_MARKER"'. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
 
-CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-if [ -n "$CLIPROXY_KEY" ]; then
-  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-fi
-
-env -u ANTHROPIC_API_KEY "$CLAUDE" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -p "$PROMPT" >>"$LOG" 2>&1
+EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
+printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
+  --task-class tool-agent \
+  --evidence-dir "$EVIDENCE_DIR" \
+  --task-label "${INSTANCE}-ig-marketing-daily" >>"$LOG" 2>&1
 RC=$?
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$LAST_PASS_MARKER" 2>/dev/null || true

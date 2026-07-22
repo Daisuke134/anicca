@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # spawn-marketing-loop.sh — the "loop that builds loops". Given a product slug + a free-text
-# product description, uses ONE headless `claude -p` call to fill in the JUDGMENT parts of a
+# product description, uses ONE shared-runner call to fill in the JUDGMENT parts of a
 # marketing-engine manifest (persona / problem / niche / content adapter / bio / cadence hour),
 # writes manifests/<slug>.manifest.sh, validates it via load_manifest.sh, and (optionally)
 # registers the loop via new-marketing-loop.sh. The engine itself stays shared/untouched.
@@ -9,7 +9,7 @@
 #        the audience, and (optional) a bio/landing URL and a listing-source note>" [--register]
 #
 # Testing override: set SPAWN_FAKE_LLM=<file> to read the 8 judgment lines from a file instead
-# of invoking claude (keeps CI/dev runs free of live LLM calls).
+# of invoking the shared runner (keeps CI/dev runs free of live model calls).
 set -uo pipefail
 
 SLUG="${1:-}"
@@ -43,7 +43,7 @@ MKT_HANDLE_PREFIX="$HANDLE_PREFIX"
 MKT_PROFILE_PREFIX="${SLUG}-mkt"
 MKT_GMAIL_PLUS_TAG_PREFIX="$HANDLE_PREFIX"
 
-# ── JUDGMENT parts via `claude -p` (or SPAWN_FAKE_LLM override for testing) ──
+# ── JUDGMENT parts via shared runner (or SPAWN_FAKE_LLM override for testing) ──
 JUDGMENT_RAW=""
 if [ -n "${SPAWN_FAKE_LLM:-}" ]; then
   if [ ! -f "$SPAWN_FAKE_LLM" ]; then
@@ -52,12 +52,11 @@ if [ -n "${SPAWN_FAKE_LLM:-}" ]; then
   fi
   JUDGMENT_RAW="$(cat "$SPAWN_FAKE_LLM")"
 else
-  CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
   PROMPT='You are filling in the JUDGMENT parts of a marketing-loop manifest for this product:
 
 '"$DESC"'
 
-Output STRICTLY these 8 lines and NOTHING else (no prose, no code fence, no blank lines, no extra keys):
+Return manifest_lines containing exactly these 8 lines and no extra keys:
 MKT_PERSONA=<one line>
 MKT_PROBLEM=<one line>
 MKT_NICHE=<short>
@@ -67,12 +66,14 @@ MKT_PRODUCT_SOURCE=<one line: what to enumerate/sell>
 MKT_BIO_LINK=<a URL if the description gave one, else empty>
 MKT_CADENCE_HOUR=<an integer 0-23; default 16 if unsure>'
 
-  CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-  if [ -n "$CLIPROXY_KEY" ]; then
-    export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-    export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-  fi
-  JUDGMENT_RAW="$(env -u ANTHROPIC_API_KEY "$CLAUDE" --model sonnet --dangerously-skip-permissions -p "$PROMPT")"
+  EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/marketing-spawn-${SLUG}/$(date +%s)-$$"
+  JUDGMENT_JSON="$(printf '%s\n' "$PROMPT" | "$ENGINE_DIR/run_agent.sh" \
+    --task-class repeatable-agent \
+    --schema "$ENGINE_DIR/schemas/manifest_judgment.schema.json" \
+    --evidence-dir "$EVIDENCE_DIR" \
+    --task-label "marketing-spawn-${SLUG}" \
+    --print-result)" || exit $?
+  JUDGMENT_RAW="$(printf '%s' "$JUDGMENT_JSON" | /usr/bin/python3 -c 'import json,sys; data=json.load(sys.stdin); lines=data.get("manifest_lines", []); len(lines) == 8 or sys.exit("expected exactly 8 manifest_lines"); print("\\n".join(lines))')" || exit $?
 fi
 
 # ── PARSE defensively: keep only MKT_*= lines, whitelist exactly the 8 judgment keys ──
