@@ -48,7 +48,12 @@ test("PANEL-0 isolates read, mutation target, OAuth state, and chat scope", asyn
   await assert.rejects(buildControlCenter({ uid: "u-a", chatId: "202" }, { store }), /scope_mismatch/);
   const result = await executeUserCommand({ uid: "u-a", chatId: "101" }, { type: "setting.set", setting: "notifications_enabled", value: false }, { store, idempotencyKey: "iso-key-0001" });
   assert.equal(result.ok, true); assert.deepEqual(store.mutations, [{ uid: "u-a", patch: { notifications_enabled: false } }]);
-  const oauth = await executeUserCommand({ uid: "u-b", chatId: "202" }, { type: "connection.start", provider: "calendar" }, { store, idempotencyKey: "iso-key-0002", randomBytes: () => Buffer.alloc(32, 7), startCalendarOAuth: async () => ({ redirectUrl: "https://provider.example/oauth" }) });
+  const oauth = await executeUserCommand({ uid: "u-b", chatId: "202" }, { type: "connection.start", provider: "calendar" }, { store, idempotencyKey: "iso-key-0002", randomBytes: () => Buffer.alloc(32, 7), startCalendarOAuth: async (scope, stateToken) => {
+    assert.deepEqual(scope, { uid: "u-b", chatId: "202" });
+    assert.equal(stateToken, Buffer.alloc(32, 7).toString("base64url"));
+    assert.deepEqual(store.oauth.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: "u-b", chatId: "202" }]);
+    return { redirectUrl: "https://provider.example/oauth" };
+  } });
   assert.equal(oauth.ok, true); assert.deepEqual(store.oauth.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: "u-b", chatId: "202" }]);
   const token = Buffer.alloc(32, 7).toString("base64url");
   assert.equal(await claimCalendarOAuthState({ uid: "u-a", chatId: "101" }, token, { store }), false);
@@ -137,15 +142,62 @@ test("PANEL-0 Composio reconnect enables the scoped inactive account and require
   assert.match(requests[2].url, /user_ids=u-a/);
 });
 
-test("PANEL-0 provider helper contracts are explicit and fail closed", async () => {
+test("PANEL-0 provider disconnect helper contracts are explicit and fail closed", async () => {
   await assert.rejects(disconnectCalendar({ uid: "u-a", chatId: "101" }, {}), /provider_unavailable/);
   assert.deepEqual(await disconnectCalendar({ uid: "u-a", chatId: "101" }, { composioKey: "test", calendarAccount: { disable: async (scope) => ({ scope }) } }), { scope: { uid: "u-a", chatId: "101" } });
-  const oauth = await startCalendarOAuth({ uid: "u-a", chatId: "101" }, Buffer.alloc(32, 3).toString("base64url"), {
-    composioKey: "test", composioAuthConfig: "auth-test", panelBaseUrl: "https://panel.example",
-    fetchImpl: async () => ({ ok: true, json: async () => ({ redirect_url: "https://provider.example/connect" }) }),
+});
+
+test("PANEL-0 Composio managed OAuth uses the exact link contract and preserves the provider redirect", async () => {
+  const requests = [];
+  const stateToken = Buffer.alloc(32, 3).toString("base64url");
+  const providerRedirect = "https://provider.example/connect?state=provider-owned&prompt=consent&scope=calendar%20events#continue";
+  const oauth = await startCalendarOAuth({ uid: "u-a", chatId: "101" }, stateToken, {
+    composioKey: "test", composioAuthConfig: "auth-test", panelBaseUrl: "https://panel.example/",
+    fetchImpl: async (url, init) => { requests.push({ url: String(url), init }); return { ok: true, json: async () => ({ redirect_url: providerRedirect }) }; },
   });
-  assert.match(oauth.redirectUrl, /^https:\/\/provider\.example\/connect\?state=/);
-  assert.match(decodeURIComponent(new URL(oauth.redirectUrl).searchParams.get("state")), /^https:\/\/panel\.example\/panel\/oauth\/calendar\?state=/);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, "https://backend.composio.dev/api/v3/connected_accounts/link");
+  assert.equal(requests[0].init.method, "POST");
+  const requestBody = JSON.parse(requests[0].init.body);
+  assert.deepEqual(requestBody, {
+    auth_config_id: "auth-test",
+    user_id: "u-a",
+    callback_url: `https://panel.example/panel/oauth/calendar?state=${stateToken}`,
+  });
+  assert.equal(Object.hasOwn(requestBody, "auth_config"), false);
+  assert.equal(Object.hasOwn(requestBody, "connection"), false);
+  assert.equal(oauth.redirectUrl, providerRedirect);
+});
+
+test("PANEL-0 Composio OAuth failure is fail-closed without a legacy retry", async (t) => {
+  for (const status of [400, 503]) {
+    await t.test(`HTTP ${status}`, async () => {
+      const requests = [];
+      await assert.rejects(startCalendarOAuth({ uid: "u-a", chatId: "101" }, Buffer.alloc(32, 4).toString("base64url"), {
+        composioKey: "test", composioAuthConfig: "auth-test", panelBaseUrl: "https://panel.example",
+        fetchImpl: async (url) => { requests.push(String(url)); return { ok: false, status, json: async () => ({}) }; },
+      }), /provider_failed/);
+      assert.deepEqual(requests, ["https://backend.composio.dev/api/v3/connected_accounts/link"]);
+    });
+  }
+});
+
+test("PANEL-0 Composio OAuth redirect data is required and must be usable", async (t) => {
+  const cases = [
+    ["missing", {}],
+    ["malformed", { redirect_url: "not a usable URL" }],
+    ["legacy redirect_uri only", { redirect_uri: "https://provider.example/legacy" }],
+  ];
+  for (const [name, body] of cases) {
+    await t.test(name, async () => {
+      let calls = 0;
+      await assert.rejects(startCalendarOAuth({ uid: "u-a", chatId: "101" }, Buffer.alloc(32, 5).toString("base64url"), {
+        composioKey: "test", composioAuthConfig: "auth-test", panelBaseUrl: "https://panel.example",
+        fetchImpl: async () => { calls += 1; return { ok: true, json: async () => body }; },
+      }), /provider_failed/);
+      assert.equal(calls, 1);
+    });
+  }
 });
 
 test("PANEL-0 allowlist, idempotency, and provider rollback", async () => {
