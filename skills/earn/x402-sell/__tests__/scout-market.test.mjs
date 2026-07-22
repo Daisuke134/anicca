@@ -55,6 +55,24 @@ test('aggregateMarket computes interpolated percentiles and category medians', (
     { resource: 'https://example.com/weather', priceUsd: 10 },
     { resource: 'https://example.com/mortgage', priceUsd: 9 },
   ]);
+  assert.deepEqual(report.topDemandSamples, [
+    {
+      resource: 'https://example.com/research/two',
+      category: 'search',
+      priceUsd: 3,
+      calls30d: 5,
+      payerSignals30d: 3,
+      estimatedGrossUsd30d: 15,
+    },
+    {
+      resource: 'https://example.com/search/one',
+      category: 'search',
+      priceUsd: 1,
+      calls30d: 10,
+      payerSignals30d: 4,
+      estimatedGrossUsd30d: 10,
+    },
+  ]);
   assert.deepEqual(report.demandGate, {
     passed: true,
     paidCalls30d: 15,
