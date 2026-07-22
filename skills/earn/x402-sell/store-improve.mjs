@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// store-improve.mjs — market + own-store recommendation for x402_sell action=improve.
+// store-improve.mjs — market + own-store 5-minute experiment controller for action=improve.
 // Loop child-script contract: prints exactly ONE JSON line on stdout, never throws.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -11,10 +11,16 @@ import { computeGaps } from './product-gaps.mjs';
 import { inferCategory } from './scout-market.mjs';
 import { SELF_WALLETS } from './lib/self-wallets.mjs';
 import { readJsonl, resolvePayTo, resolveStateDir } from './store-review.mjs';
+import { LLM_OFFER_VARIANTS } from './llm-resale.mjs';
+import {
+  decideExperiment,
+  readExperimentState,
+  writeExperimentState,
+} from './store-experiment.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STATE_DIR = join(HERE, 'state');
-const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
+const CORE_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research', '/llm'];
 const SCOUT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const WAKE_MS = 120_000;
 
@@ -49,6 +55,11 @@ export function summarizeOwnProducts(salesRows, attemptRows, servedPaths, selfSe
 
     return { path, external, attempts: routeAttempts.length, ageWakes };
   });
+}
+
+export function experimentExternalCount(products, path) {
+  const product = (Array.isArray(products) ? products : []).find((item) => item.path === path);
+  return Number.isFinite(product?.external) ? product.external : 0;
 }
 
 function readScout(path) {
@@ -123,6 +134,33 @@ export function improve(env = process.env, now = Date.now()) {
     drop: bandit.drop,
     topGaps,
     recommendation: recommendationFor(bandit, topGaps),
+    externalCount: experimentExternalCount(products, '/llm'),
+  };
+}
+
+export function improveAndApply(env = process.env, now = Date.now()) {
+  const result = improve(env, now);
+  const payTo = resolvePayTo(env);
+  const stateDir = resolveStateDir(payTo, env);
+  const previous = readExperimentState(payTo, stateDir);
+  const decision = decideExperiment({
+    state: previous,
+    externalCount: result.externalCount,
+    now,
+    variants: LLM_OFFER_VARIANTS,
+  });
+  if (decision.action === 'applied') writeExperimentState(payTo, decision.state, stateDir);
+  const active = LLM_OFFER_VARIANTS[decision.state.variantIndex] || LLM_OFFER_VARIANTS[0];
+  return {
+    ...result,
+    experiment: {
+      action: decision.action,
+      rewardExternalCount: decision.rewardExternalCount,
+      experimentId: decision.state.experimentId,
+      price: active.price,
+      upstreamMaxUsd: active.upstreamMaxUsd,
+      startedAt: decision.state.startedAt,
+    },
   };
 }
 
@@ -130,7 +168,7 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.arg
 if (isMain) {
   let output;
   try {
-    output = improve();
+    output = improveAndApply();
     mkdirSync(STATE_DIR, { recursive: true });
     writeFileSync(join(STATE_DIR, 'store-improve.json'), `${JSON.stringify(output)}\n`, 'utf8');
   } catch (error) {

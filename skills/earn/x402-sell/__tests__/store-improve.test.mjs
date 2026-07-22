@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
+import { experimentExternalCount, scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
 
 const SERVED_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
 const NOW = Date.parse('2026-07-18T12:00:00.000Z');
@@ -46,4 +46,14 @@ test('scoutIsFresh accepts a recent demand-aware cache', () => {
     ts: now / 1_000,
     byCategory: [{ category: 'defi', count: 1_014, medianPriceUsd: 0.01, calls30d: 9_398 }],
   }, now), true);
+});
+
+test('LLM experiment reward ignores external sales on every other route', () => {
+  const products = [
+    { path: '/research', external: 4 },
+    { path: '/web-search', external: 2 },
+    { path: '/llm', external: 0 },
+  ];
+  assert.equal(experimentExternalCount(products, '/llm'), 0);
+  assert.equal(experimentExternalCount([{ path: '/llm', external: 1 }], '/llm'), 1);
 });
