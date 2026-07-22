@@ -725,7 +725,10 @@ paid subscription ¥500相当/月 ───────────────�
 | source | 採用する核心 |
 |---|---|
 | [OpenAI Codex README](https://github.com/openai/codex) | “Run `codex` and select **Sign in with ChatGPT**.” subscription利用者のnative Codex経路。実機 `codex login status` は `Logged in using ChatGPT` |
+| [OpenAI Codex manual — Permissions and safety](https://developers.openai.com/codex/codex-manual.md#permissions-and-safety) | automationは必要最小権限にし、`--ignore-user-config`でambient configを隔離する。CodexにClaude型tool allowlistがないため、judgeはread-only sandbox・rules/config無視・web search無効を明示する |
 | [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) | `--print` はnon-interactive、`--json-schema` はstructured output、`--fallback-model` はprimary unavailable時のmodel fallback。provider間fallbackは別adapterで実装する |
+| [NyxFoundation/speca runtime registry](https://github.com/NyxFoundation/speca/blob/8b7da09eaf87737c1cb3b281b520a4bf71a73b55/scripts/orchestrator/runtime_registry.py) | runtimeごとのcommand/model/capabilityをregistryに集約し、workflowからprovider差分を隔離する構造をcopy+tweak |
+| [synaptent/aragora CLI agents](https://github.com/synaptent/aragora/blob/04071f594de9052ff9bb5e1e2e8bc90f6217758f/aragora/agents/cli_agents.py) | “Pass prompt via stdin to avoid shell argument length limits.” 長文promptをargvへ載せずfile→stdinで渡す境界をcopy+tweak |
 | [Nigh/show-me-the-story](https://github.com/Nigh/show-me-the-story)（MIT） | “断点续作: 进度随时落盘，关闭程序后重新打开自动恢复” と、章ごとの事実確認・全書整合passをLONGへcopy+tweak |
 | [SimonWaldherr/AI-Book-Generator](https://github.com/SimonWaldherr/AI-Book-Generator)（GPL-3.0） | concept→outline→chaptersとmulti-provider分離を設計参照する。GPL codeはcopyしない |
 | [Pandoc: Creating an ebook](https://pandoc.org/epub.html) | “pandoc can produce output in the EPUB electronic book format.” Markdown正本からEPUBを決定論生成 |
@@ -737,18 +740,21 @@ paid subscription ¥500相当/月 ───────────────�
 - `state/.article-daily.lockdir` は存在し、mtimeは `2026-07-22 04:12:39 JST`。現在のarticle process ownerは実測0。06:00起動はこのownerless lockを自動回収できない。
 - stderrは `article-daily.sh: line 240 ... File name too long`。長いarticle promptをcommand pathとして解釈した境界不良があり、wrapperの終了表示だけでは成功判定できない。
 - run `20260721-191239` はnote/jaの`published:true` + `reality_gate:PASS`が1件だけ。残媒体のverified receiptはない。
-- native CLI probe: `codex login status` = ChatGPT login。`gpt-5.6-luna low` と `gpt-5.6-terra low` は各 `rc=0 / MODEL_OK`。`claude auth status`はOAuth loginだがSonnet probeは `rc=1 / weekly limit / resets Jul 24 06:00 JST`。現行loopはこの状態でnative Codexへprovider切替できない。
+- native CLI probe: `codex login status` = ChatGPT login。`gpt-5.6-luna low` と `gpt-5.6-terra low` は各 `rc=0 / MODEL_OK`。`claude auth status`はOAuth loginだがSonnet probeは `rc=1 / weekly limit / resets Jul 24 06:00 JST`。E2 adapterはClaude probe失敗後にCodexを選び、full promptをhealthy runtimeへexact1送信する。
 - E1の事故fixtureは`codex/writer-e1-incident-red` commit `db32520012e238e4d40a9d55837c39970bc95427`へpush済み。ownerless lock、長文prompt境界、Claude weekly-limit、partial resumeの4件は、production interface未実装を原因とする固有`rc=1`を`RED_SUITE_CONFIRMED 4/4`で固定する。
 - RED meta-runnerは4ケースごとのwrong rc / wrong reasonを拒否する8件とexact-positive 1件がPASS。runtime契約は`Claude probe -> Codex probe -> Codex full`の完全時系列を要求し、extra probeとwrong orderも拒否する。fresh artifact-only reviewは`ok:true / findings:[]`。
 - legacy run archiveは`$HOME/.local/share/writer-engine/archive/legacy-article-writer/20260721-191239`。source/targetは各235 files、manifest SHA-256は`2fced19a70f81b7135babb0454f0516488ffff1f86a31eebadfaa1f1e35827ea`で一致し、archiveのwritable entryは0。
 - E1前後のledgerは96行、SHA-256 `856af4bf992bf0624c679a3b75c3fd5141c4fe7046a6cecf819f515fbc3023b0`で不変。既liveはnote/ja [公開URL](https://note.com/anicca123/n/nbf2012b9953e) exact1を本文readback済みで、新規投稿増分は0。
+- E2はfeature commit `8bb2aaedf4657cb520874409034c2ee95ca298e4`へpush済み。native Codex/Claudeのprobe/run/schema/circuitを`skills/writer-engine/runtime/adapter.sh`だけに集約し、article-writerのprovider/model直呼びはproduction contractで0件。長文promptはfile→stdin、full promptはprovider間replay 0。
+- E2の主担当fresh検証はPython `73 passed + 27 subtests`、article shell `22/22`、focused E2 `42 passed`。実Codex/Luna-low probeは`rc=0`、raw stdout `MODEL_OK\n` exact9 bytes、stdout SHA-256 `33625b290395a098681e593cfd6849615c972380c7a6c300a943cb1ea03505b9`、calls SHA-256 `c5e588456c4abee4829140dd0adf50f8a67586d411271771a0d6c1b85f420fbc`。
+- E2のfresh artifact-only reviewは`ok:true / findings:[]`。half-open probeからfull完了までowner/generation leaseを保持し、lease中の別worker provider call 0、失効後の古いsuccess/failureはstate mutation 0かつ新state byte-identical、stale resultはfailed、SIGKILL後はlease回復、closed-state旧completionもCASでfenceする。legacy全circuit-openはprovider call 0、`rc=75`、`transient_circuit_open`をresumeへ渡す。ledgerは96行・同hashで投稿増分0。
 
 ### 18.8 Remaining TaskList（唯一の残TODO正本、必ず順番どおり）
 
 | # | 状態 | 作業 | done evidence |
 |---|---|---|---|
 | E1 | **DONE** | incidentを固定test化。ownerless lock、line 240 `File name too long`、Claude weekly-limit、partial runをbehavioral RED fixtureにし、現run artifactをread-only archive。既live receipt確定後も新規投稿を実行しない | commit `db32520`、`RED_SUITE_CONFIRMED 4/4`、runner/時系列guard 11 PASS、archive 235 files + manifest `2fced19...` + writable 0、既live note/ja exact1、ledger hash不変・投稿増分0、fresh review `ok:true` |
-| E2 | **TODO** | native runtime adapterをTDD実装。Codex/Claudeのprobe/run/schema/circuit breakerを統一し、全hardcoded provider callをadapterへ置換 | Codex-only/Claude-only contract、adapter外直呼びgrep 0、現状healthy Codex probe |
+| E2 | **DONE** | native runtime adapterをTDD実装。Codex/Claudeのprobe/run/schema/circuit breakerを統一し、全hardcoded provider callをadapterへ置換 | commit `8bb2aae`、Python 73 + subtests 27、shell 22/22、E2 42 PASS、adapter外直呼び0、実Codex/Luna probe `MODEL_OK`、race/lease/replay/legacy rc75 contract PASS、fresh review `ok:true`、ledger不変・投稿増分0 |
 | E3 | **TODO** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agentを撤去。既存X Articles/Dev.to publisherは新SSOTへ各1実装として移植し、X Post publisher、Telegram outbox、tracked plist 5本、install/uninstallを実装 | fresh clone install、旧path grep/find 0、X Article/X Post/Dev.to publisher各exact1実装、旧state archive hash、launchctl listが新5本だけ |
 | E4 | **TODO** | daily MID+X pipelineを実装。固定reader questions、最大5→best-safe、MID exact5 live、X Articlesはrun別ja/enを`published_at`差6h〜6h10m、X Postは日本語exact1/JST日のFIFO 12:00–23:55 slot window、exact8 intent/receipt/reality、draft-only終端0、全stateと同transactionのTelegram outbox、5分resume workerを配線 | crash/429/response-loss/date-slot backlog/late-ready/6時間clock matrix PASS、manual kickstart exact8、X Post/ja ID exact1、英語X Post/reply 0、X Article ja/en ID各exact1、Dev.to live、8 live outputのown-eyes、Telegram event UUID/send receipt |
 | E5 | **TODO** | monthly book pipelineを実装。X Postを除くarticle exact7完了済みMID topicの30本inventory、book-writer、全書整合、Pandoc、Zenn Book/Gumroad/Stripe idempotent publishers | 29/30/31 test、X Post障害時も在庫維持、manual monthly kickstart、exact3 live URL、EPUB validation、revenue receipt、Telegram receipt |
