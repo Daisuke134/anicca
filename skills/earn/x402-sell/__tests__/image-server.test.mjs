@@ -1,0 +1,39 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createImageApp, imageProduct } from '../image-server.mjs';
+
+test('image product publishes positive unit economics and POST discovery metadata', () => {
+  const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  assert.equal(product.method, 'POST');
+  assert.equal(product.path, '/image');
+  assert.equal(product.price, '$0.05');
+  assert.equal(product.upstreamMaxUsd, 0.018);
+  assert.equal(product.resource, 'https://seller.example/image');
+});
+
+test('image app keeps discovery free and gates the image handler before delivery', async (t) => {
+  const order = [];
+  const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  const app = createImageApp({
+    product,
+    paymentGate(req, _res, next) { order.push(`gate:${req.path}`); next(); },
+    handler(req, res) { order.push(`handler:${req.body.prompt}`); res.json({ url: 'https://cdn.example/x.png' }); },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(() => server.close());
+  const { port } = server.address();
+
+  const manifest = await fetch(`http://127.0.0.1:${port}/.well-known/x402.json`).then((res) => res.json());
+  assert.equal(manifest.resources[0].method, 'POST');
+  assert.deepEqual(order, []);
+
+  const response = await fetch(`http://127.0.0.1:${port}/image`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ prompt: 'blue robot' }),
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(order, ['gate:/image', 'handler:blue robot']);
+});
