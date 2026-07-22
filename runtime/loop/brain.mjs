@@ -200,15 +200,16 @@ export async function thinkClaudeP(ctx, config) {
   const shapeSpec = [
     'Answer with ONE JSON object and nothing else — no prose, no markdown fence:',
     '',
-    '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"<slot>\\"}"}}]}',
+    '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"<slot>\\",\\"args\\":{}}"}}]}',
     '',
     'where <slot> is EXACTLY one of:',
     slotList || '  (no slots available this wake)',
-    // Canonical few-shot for the one slot weak models kept mis-calling (invented products, observed
-    // live 2026-07-14): the only correct x402_sell call is the empty-args call.
+    // Canonical few-shot for the slot weak models kept mis-calling. Products/prices remain fixed,
+    // while args.action exposes the lifecycle already implemented by skills/earn/run.sh.
     ...(menuSlots.includes('x402_sell')
-      ? ['', 'PERFECT x402_sell call (copy this shape exactly — products/prices are FIXED in code, do NOT invent one):',
-         '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"x402_sell\\"}"}}]}']
+      ? ['', 'x402_sell args.action choices: ensure / review / improve / update. Products/prices are FIXED; do not invent one.',
+         'Example review call:',
+         '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"x402_sell\\",\\"args\\":{\\"action\\":\\"review\\"}}"}}]}']
       : []),
     ...(canSleep
       ? ['', 'Or, to do nothing this wake:', '{"tool_calls":[{"function":{"name":"sleep","arguments":"{}"}}]}']
