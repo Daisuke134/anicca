@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "invariant_violation",
+  "severity": "high",
+  "description": "The global uniqueness tuple permits each status only once for an entity/kind, while the same requirement allows immutable revisions for legitimate different-status transitions. A valid re-entry such as required_pending -> required_failed -> required_pending has a different status at each transition edge but its final append violates the uniqueness constraint; amount or metadata correction under the same status is likewise impossible. The spec must either require monotonic state machines with no status re-entry/correction or define an idempotency/revision key and corresponding winner rule.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "95-101",
+    "snippet": "Same-status retries are unique on (uid, organ, entity_key, outcome_kind, outcome_status). A legitimate state transition appends a different-status revision; UPDATE/DELETE are rejected."
+  },
+  "routeToPhase": "1a"
+}

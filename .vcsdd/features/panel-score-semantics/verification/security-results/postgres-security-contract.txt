@@ -1,0 +1,4 @@
+command: cd apps/life-call && rtk npm run test:panel-score:postgres
+exit_code: 0
+panel-score-postgres: PASS roles=3 snapshot_sessions=2 complete_rows=20000 overflow_rows=20001
+note: PostgreSQL emitted only the expected first-application NOTICE that the append-only trigger did not previously exist.

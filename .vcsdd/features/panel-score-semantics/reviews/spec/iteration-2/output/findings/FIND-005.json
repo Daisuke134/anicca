@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "error_handling",
+  "severity": "high",
+  "description": "REQ-002 requires period construction to fail when no valid instant is found within 180 minutes but defines no HTTP status/body, envelope presence, or UI state for that failure. This permits the authenticated endpoint to return a 500, synthesize a period, or mislabel the organ as insufficient_data, none of which is binary-gradable against the otherwise closed failure contract.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "40-44",
+    "snippet": "Fail period construction rather than guessing if no matching/next valid instant exists within 180 minutes."
+  },
+  "routeToPhase": "1a"
+}

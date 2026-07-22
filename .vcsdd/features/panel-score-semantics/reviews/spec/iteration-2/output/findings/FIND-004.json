@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "spec_ambiguity",
+  "severity": "high",
+  "description": "MENTAL cap membership depends on resolved_at 'when valid', but neither artifact defines validity, null handling, chronological constraints, or treatment of a parseable timestamp outside the trigger period. Implementations can bucket the same delivery on different local days and select different first-three winners, so iteration-1 FIND-005 is not materially closed despite the added tie-breaker.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "64-70",
+    "snippet": "Delivery day/order use resolved_at when valid, otherwise occurred_at, then lexicographic public_ref as the exact tie-breaker."
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,105 @@
+{
+  "sprintNumber": 1,
+  "feature": "panel-score-semantics",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-22T14:52:15Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "spec",
+    "scope": "closure of iteration-3 FIND-001..004"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:108",
+          "description": "REQ-009 requires one read-only RPC transaction for all four organ row sets, and lines 115-116 unambiguously separate the single PostgREST request contract from filtering inside the SQL function, closing iteration-3 FIND-001."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:12",
+          "description": "Lines 12-14 mirror the one-RPC body, internal tenant/organ/half-open filters, complete-or-overflow result, and service-only execution contract."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:101",
+          "description": "REQ-008 defines a caller-issued non-zero revision key, the exact uniqueness tuple, exact-retry success, changed-payload conflict, and fresh-key status re-entry and same-status correction, closing iteration-3 FIND-002."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:44",
+          "description": "The source contract mirrors retry/conflict and re-entry/correction semantics and supplies deterministic organ-specific winner rules."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:112",
+          "description": "REQ-009 pins SECURITY INVOKER, a fixed search_path, table SELECT and function EXECUTE to service_role, revokes browser-role access, and binds p_uid only after session authentication, closing iteration-3 FIND-003."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:14",
+          "description": "The query-shell design independently repeats the function security, table privileges, function privileges, and authenticated endpoint UID binding."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:5",
+          "description": "Lines 5-21 keep deterministic scoring in the pure core while isolating authenticated querying, persistence, presentation, and release readback in explicit effectful shells."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:149",
+          "description": "Lines 149-153 define the same purity boundary and prohibit score derivation or mutation in the read shell."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:84",
+          "description": "Lines 84-85 name an executable PostgreSQL 18 command and artifact and require real roles, migration application, concurrent psql sessions, access denials, idempotency/conflict/re-entry checks, and actual limit/overflow cases, closing iteration-3 FIND-004."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:99",
+          "description": "PROP-004 and PROP-005 make the executable database security, snapshot, overflow, idempotency, append-only, and grant checks required proof obligations."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

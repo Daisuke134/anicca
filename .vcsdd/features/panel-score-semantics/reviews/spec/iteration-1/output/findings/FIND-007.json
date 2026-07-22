@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-001 claims exhaustive verification for all bounded numerator/denominator pairs, but neither artifact defines a maximum row count, denominator, or financial minor-unit amount. A bounded Node enumeration over an unstated subset cannot establish the universal ratio property, and large integer arithmetic is not constrained to an exactly representable domain.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "85-92",
+    "snippet": "For all bounded numerator/denominator pairs produced by each organ ... deterministic exhaustive Node harness in verification/proof-harnesses/ratio-invariants.js"
+  },
+  "routeToPhase": "1b"
+}
