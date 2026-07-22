@@ -42,6 +42,7 @@ function parseUpdate(update) {
       userId: q.from ? String(q.from.id) : "",
       data: String(q.data || ""),
       callbackQueryId: String(q.id || ""),
+      ...(q.message.message_id == null ? {} : { messageId: String(q.message.message_id) }),
     };
   }
   const edited = update && update.edited_message;

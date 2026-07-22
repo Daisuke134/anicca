@@ -63,7 +63,8 @@ test("location helpers upsert the latest live fix, enforce expiry, and atomicall
   assert.match(calls[0].init.headers.Prefer, /resolution=merge-duplicates/);
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     uid: "u1", latitude: LIVE.latitude, longitude: LIVE.longitude,
-    telegram_message_id: "41", observed_at: LIVE.observed_at, expires_at: LIVE.expires_at,
+    telegram_message_id: "41", source: "telegram_live_location",
+    observed_at: LIVE.observed_at, expires_at: LIVE.expires_at,
   });
   assert.deepEqual(await getLiveLocation("u1", NOW, opts), { uid: "u1", ...LIVE });
   assert.equal(await claimLateEvent("u1", "event-1", opts), true);

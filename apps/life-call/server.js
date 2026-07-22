@@ -358,7 +358,9 @@ const server = http.createServer((req, res) => {
             await routeCallbackData(u.data, { ask: async (data) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 return handleAskCallback(data, {
-                  chatId: u.chatId, telegramToken: LM_TG_TOKEN,
+                  uid: row && row.uid, chatId: u.chatId, actorId: u.userId,
+                  messageId: u.messageId, callbackQueryId: u.callbackQueryId,
+                  telegramToken: LM_TG_TOKEN,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
                   gmailAccountId: row && row.gmail_account_id,
                 });
