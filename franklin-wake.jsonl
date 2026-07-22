@@ -13249,3 +13249,16 @@
 {"ts":1784686436,"wake_id":"00MRVG83RD79AA8F19E9A54476","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784686567,"wake_id":"00MRVGAWTZFDD25EFFA0FB48CB","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
 {"ts":1784686869,"wake_id":"00MRVGHDTJEDB575603C1C4622","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687004,"wake_id":"00MRVGK9L47C067F5554F84D01","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 59 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1784687004,"wake_id":"00MRVGK9L47C067F5554F84D01","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687201,"wake_id":"00MRVGOI7BD544402DF4844DAB","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784687201,"wake_id":"00MRVGOI7BD544402DF4844DAB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687332,"wake_id":"00MRVGRB79909AD446BB4A4647","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687438,"wake_id":"00MRVGTKIU5E34B962BF7F48E1","kind":"shutdown","sleep_s":0}
+{"ts":1784687439,"wake_id":"00MRVGTLG242BB474BB39B4A51","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687584,"wake_id":"00MRVGWP3U94C9E410DE17438D","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":""}
+{"ts":1784687584,"wake_id":"00MRVGWP3U94C9E410DE17438D","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687654,"wake_id":"00MRVGY7JU521CBBCC65B94444","kind":"shutdown","sleep_s":0}
+{"ts":1784687668,"wake_id":"00MRVGYHX0565B40FB8DC54934","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784687768,"wake_id":"00MRVH0N4Z3A33BD019E2943B5","kind":"shutdown","sleep_s":0}
+{"ts":1784687768,"wake_id":"00MRVH0NTX13E0092CEC1246C2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 review: {\"settledCount\":7,\"settledUsd\":0.043,\"externalCount\":0,\"externalUsd\":0,\"topRoutes\":[{\"route\""}
