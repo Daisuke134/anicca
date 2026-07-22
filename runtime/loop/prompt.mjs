@@ -98,8 +98,9 @@ const DOCTRINE_LINES = {
   ],
   x402_sell: [
     '  - x402_sell    : RECURRING, $0 capital. Starts/advertises your FIXED shop — a preset catalog of paid',
-    '                   routes (served at /.well-known/x402.json), prices set in code. Call with {} —',
-    '                   NOTHING to invent. Your whole job = bring DEMAND.',
+    '                   routes (served at /.well-known/x402.json), prices set in code. Choose args.action:',
+    '                   ensure=open/register, review=read sales, improve=find demand gaps, update=re-list.',
+    '                   Never invent a product or price; use the lifecycle action that fits the current state.',
   ],
   hl_trade: [
     '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
@@ -244,7 +245,8 @@ export function getToolDefinitions(slots, opts = {}) {
           'yield, cook, self/issue-dev, AND any earn/<sub> slot — gig, clip, affiliate, video, audit) — ' +
           'each is a first-class earn/action. Use `args` to pass YOUR decision (HARD RULE #0: the skill is the tool, YOU ' +
           'decide): hl_trade → {"coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6} to open ' +
-          'or {"action":"close","coin":"ETH"} to realise; x402_sell → {} (products+prices are FIXED in code; sell/price args are ignored — do NOT invent a product); ' +
+          'or {"action":"close","coin":"ETH"} to realise; x402_sell → {"action":"ensure"|"review"|"improve"|"update"} ' +
+          '(products+prices are FIXED in code; do NOT invent a product); ' +
           'token_launch → {"launch":true,"name":"...","symbol":"..."}; yield → {} (auto best vault); ' +
           'cook → {"query":"..."}. The skill reads these via $ANICCA_ARGS.',
         parameters: {
@@ -322,7 +324,7 @@ export function buildUserMessage(ctx) {
     avoid,
     `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal earn/action option):`,
     `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.`,
-    `  - x402_sell — start/advertise your FIXED-menu shop (nothing to invent, args ignored): {}.`,
+    `  - x402_sell — operate your FIXED-menu shop; choose {action:"ensure"|"review"|"improve"|"update"}.`,
     `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.`,
     `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.`,
     `  - cook — explore a NEW earner: {query:"..."}.`,
