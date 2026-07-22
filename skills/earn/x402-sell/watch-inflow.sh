@@ -12,6 +12,14 @@ FLAG="$HOME/.openclaw/.logs/x402-first-external${TAG:+-$TAG}.json"
 mkdir -p "$(dirname "$LOG")"
 
 OUT="$(cd "$DIR" && /usr/bin/env node verify-inflow.mjs 2 2>/dev/null)"
+# Durable B4 write path: only a tx already emitted by a settled x402 response is independently
+# reverified against the finalized Base receipt and appended once to the wallet-specific ledger.
+# Unpaid attempts and arbitrary external USDC deposits have no write path.
+RECORD_OUT="$(cd "$DIR" && /usr/bin/env node record-external-inflow.mjs 2 2>&1)"
+RECORD_RC=$?
+if [ "$RECORD_RC" -ne 0 ]; then
+  printf 'record-external-inflow failed: %s\n' "$RECORD_OUT" >&2
+fi
 SUMMARY="$(printf '%s' "$OUT" | /usr/bin/env node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{const m=d.match(/\{[\s\S]*?\n\}/);const j=JSON.parse(m[0]);console.log(JSON.stringify({ts:new Date().toISOString(),external:j.EXTERNAL,externalUsdc:j.externalUsdc,inflows:j.inflows}))}catch(e){console.log(JSON.stringify({ts:new Date().toISOString(),error:String(e).slice(0,120)}))}})")"
 printf '%s\n' "$SUMMARY" >> "$LOG"
 
