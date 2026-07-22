@@ -14,8 +14,8 @@ test('franklin1 image boot pins its identity, local port, public origin, and add
   assert.match(boot, /unset BLOCKRUN_WALLET_KEY/);
   assert.ok(boot.includes('export X402_PAYTO="0x3EcCAD24794ca298D25378E9902A251322ea8749"'));
   assert.ok(boot.includes('export X402_IMAGE_PORT="8093"'));
-  assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net:10001"'));
-  assert.ok(boot.includes('tailscale funnel --bg --https=10001 --set-path=/image http://127.0.0.1:8093/image'));
+  assert.ok(boot.includes('export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net"'));
+  assert.ok(boot.includes('tailscale funnel --bg --https=443 --set-path=/image http://127.0.0.1:8093/image'));
   assert.match(boot, /exec \/usr\/bin\/env node "\$DIR\/image-server\.mjs"/);
 });
 
