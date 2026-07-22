@@ -16,7 +16,7 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
   if (!(ourCategories instanceof Set)) throw new TypeError('ourCategories must be a Set');
   const timestamp = Number(now);
   if (!Number.isFinite(timestamp)) throw new TypeError('now must be a finite Unix timestamp');
-  const { minMarketCount = 3 } = opts;
+  const { minMarketCount = 3, minCalls30d = 1 } = opts;
 
   const opportunities = (Array.isArray(scout?.byCategory) ? scout.byCategory : [])
     .filter((item) => item && !EXCLUDED_CATEGORIES.has(item.category))
@@ -24,22 +24,28 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
       const category = String(item.category ?? '');
       const marketCount = Number(item.count);
       const medianPriceUsd = Number(item.medianPriceUsd);
+      const calls30d = Number(item.calls30d);
+      const payerSignals30d = Number(item.payerSignals30d);
       if (!category || !Number.isFinite(marketCount) || marketCount < minMarketCount
-        || !Number.isFinite(medianPriceUsd) || medianPriceUsd < 0) {
+        || !Number.isFinite(medianPriceUsd) || medianPriceUsd < 0
+        || !Number.isFinite(calls30d) || calls30d < minCalls30d) {
         return null;
       }
 
       const weServe = ourCategories.has(category);
-      const marketSummary = `${marketCount} sellers @ $${formatUsd(medianPriceUsd)} median`;
+      const payerSignals = Number.isFinite(payerSignals30d) && payerSignals30d >= 0 ? payerSignals30d : 0;
+      const marketSummary = `${calls30d} paid calls/30d, ${payerSignals} payer signals, ${marketCount} listings @ $${formatUsd(medianPriceUsd)} median`;
       return {
         category,
         marketCount,
         medianPriceUsd,
+        calls30d,
+        payerSignals30d: payerSignals,
         weServe,
-        opportunityScore: marketCount * medianPriceUsd,
+        opportunityScore: calls30d * medianPriceUsd,
         rationale: weServe
           ? `already covered (${marketSummary})`
-          : `high-volume category (${marketSummary}) we do NOT serve yet`,
+          : `observed paid demand (${marketSummary}) we do NOT serve yet`,
       };
     })
     .filter(Boolean)

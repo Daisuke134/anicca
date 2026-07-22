@@ -80,12 +80,12 @@ function recommendationFor({ keep, explore, drop }, topGaps) {
   const gap = topGaps[0]?.category;
   if (drop.length > 0) {
     const keepClause = keep.length > 0 ? `keep ${keep.join(', ')}, ` : '';
-    return `${keepClause}drop ${drop.join(', ')} (never earned external), and ${gap ? `consider the unserved ${gap} gap` : 'note no big unserved gap'}.`;
+    return `${keepClause}drop ${drop.join(', ')} (never earned external), and ${gap ? `consider the observed-demand ${gap} category` : 'note no proven demand category'}.`;
   }
   if (keep.length > 0) {
-    return `Keep ${keep.join(', ')} and ${gap ? `consider the unserved ${gap} gap` : 'note no big unserved gap'}.`;
+    return `Keep ${keep.join(', ')} and ${gap ? `consider the observed-demand ${gap} category` : 'note no proven demand category'}.`;
   }
-  return `Keep testing ${explore.join(', ') || 'current routes'} and ${gap ? `consider the unserved ${gap} gap` : 'note no big unserved gap'}.`;
+  return `Keep testing ${explore.join(', ') || 'current routes'} and ${gap ? `consider the observed-demand ${gap} category` : 'note no proven demand category'}.`;
 }
 
 export function improve(env = process.env, now = Date.now()) {
@@ -104,10 +104,12 @@ export function improve(env = process.env, now = Date.now()) {
   const topGaps = gaps.opportunities
     .filter(({ weServe }) => !weServe)
     .slice(0, 3)
-    .map(({ category, marketCount, medianPriceUsd, opportunityScore }) => ({
+    .map(({ category, marketCount, medianPriceUsd, calls30d, payerSignals30d, opportunityScore }) => ({
       category,
       marketCount,
       medianPriceUsd,
+      calls30d,
+      payerSignals30d,
       opportunityScore,
     }));
 
