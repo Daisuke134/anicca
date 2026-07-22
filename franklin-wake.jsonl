@@ -13573,3 +13573,10 @@
 {"ts":1784735179,"wake_id":"00MRW98U4257AE41367B8F4CC5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784735220,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
 {"ts":1784735344,"wake_id":"00MRW9CD390C4E9D2CA1864061","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784735472,"wake_id":"00MRW9F43M978A62AA3D664E68","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784735638,"wake_id":"00MRW9INY6D2DC4E5FF5F04701","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784735802,"wake_id":"00MRW9M6V59157B37BC6B54CFA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784735930,"wake_id":"00MRW9OXIMB5C8603BE7384F32","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784736076,"wake_id":"00MRW9S27K2A09521C69C24CE6","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784736224,"wake_id":"00MRW9V82W9D43560D3E4140CB","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784736296,"wake_id":"00MRW9WRKHFC24CE1737544F99","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784736480,"wake_id":"00MRWA0PPM886FEFCA8836430D","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784736520,\"keep\":[],\"explore\":[],\"drop\":[\"/llm\",\"/web-search\",\"/fundi"}
