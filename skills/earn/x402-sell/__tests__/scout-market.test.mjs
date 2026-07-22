@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { aggregateMarket, inferCategory } from '../scout-market.mjs';
+import { aggregateMarket, fetchResources, inferCategory } from '../scout-market.mjs';
 
 const categoryCases = [
   ['search', 'https://example.com/research/query'],
@@ -22,9 +22,9 @@ for (const [category, url] of categoryCases) {
 
 test('aggregateMarket computes interpolated percentiles and category medians', () => {
   const fixture = [
-    { resource: 'https://example.com/search/one', accepts: [{ maxAmountRequired: '1000000' }] },
+    { resource: 'https://example.com/search/one', accepts: [{ maxAmountRequired: '1000000' }], quality: { l30DaysTotalCalls: 10, l30DaysUniquePayers: 4 } },
     { resource: 'https://example.com/funding/one', accepts: [{ maxAmountRequired: '2000000' }] },
-    { resource: 'https://example.com/research/two', accepts: [{ maxAmountRequired: '3000000' }] },
+    { resource: 'https://example.com/research/two', accepts: [{ maxAmountRequired: '3000000' }], quality: { l30DaysTotalCalls: 5, l30DaysUniquePayers: 3 } },
     { resource: 'https://example.com/market/two', accepts: [{ maxAmountRequired: '4000000' }] },
     { resource: 'https://example.com/gpt', accepts: [{ maxAmountRequired: '5000000' }] },
     { resource: 'https://example.com/image', accepts: [{ maxAmountRequired: '6000000' }] },
@@ -48,11 +48,47 @@ test('aggregateMarket computes interpolated percentiles and category medians', (
     p90: 9.1,
   });
   assert.deepEqual(report.byCategory.slice(0, 2), [
-    { category: 'data', count: 2, medianPriceUsd: 3 },
-    { category: 'search', count: 2, medianPriceUsd: 2 },
+    { category: 'data', count: 2, medianPriceUsd: 3, calls30d: 0, payerSignals30d: 0 },
+    { category: 'search', count: 2, medianPriceUsd: 2, calls30d: 15, payerSignals30d: 7 },
   ]);
   assert.deepEqual(report.topPricedSamples.slice(0, 2), [
     { resource: 'https://example.com/weather', priceUsd: 10 },
     { resource: 'https://example.com/mortgage', priceUsd: 9 },
   ]);
+});
+
+test('inferCategory uses service metadata for DeFi routes whose URL is generic', () => {
+  assert.equal(inferCategory({
+    resource: 'https://example.com/pools',
+    serviceName: 'Yield Optimizer',
+    tags: ['defi', 'apy'],
+  }), 'defi');
+});
+
+test('fetchResources follows the entire catalog instead of stopping at 500 resources', async () => {
+  const total = 2_500;
+  const offsets = [];
+  const fetchImpl = async (url) => {
+    const offset = Number(new URL(url).searchParams.get('offset') ?? 0);
+    offsets.push(offset);
+    const count = Math.min(1_000, total - offset);
+    return {
+      ok: true,
+      async json() {
+        return {
+          items: Array.from({ length: count }, (_, index) => ({ resource: `https://example.com/${offset + index}` })),
+          pagination: { offset, total },
+        };
+      },
+    };
+  };
+
+  const resources = await fetchResources({
+    fetchImpl,
+    discoveryUrl: 'https://example.com/resources?limit=1000',
+    maxResources: 30_000,
+  });
+
+  assert.equal(resources.length, total);
+  assert.deepEqual(offsets, [0, 1_000, 2_000]);
 });
