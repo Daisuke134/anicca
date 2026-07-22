@@ -198,7 +198,7 @@ function verifyTelegramInitData(rawInitData, opts = {}) {
   const receivedHex = params.get("hash") || "";
   if (!/^[a-f0-9]{64}$/i.test(receivedHex)) return { ok: false, reason: "invalid" };
   const dataCheckString = [...params.entries()]
-    .filter(([key]) => key !== "hash" && key !== "signature")
+    .filter(([key]) => key !== "hash")
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
