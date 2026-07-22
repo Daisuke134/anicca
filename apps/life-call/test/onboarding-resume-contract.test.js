@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { createRequire, stripTypeScriptTypes } = require("node:module");
+const { createRequire } = require("node:module");
 
 const LANDING = path.resolve(__dirname, "../../landing");
 const ONBOARD_HANDLER = path.join(LANDING, "netlify/functions/lm-onboard.js");
@@ -108,6 +108,20 @@ function memoryStorage(entries = {}) {
   };
 }
 
+function transpileClientBehavior(fragment) {
+  return fragment
+    .replace(/^type .*$/gm, "")
+    .replace(/const COUNTRIES:\s*\{[^=]+\}\[\]\s*=/, "const COUNTRIES =")
+    .replace(/function splitPhone\(phone: unknown\)/, "function splitPhone(phone)")
+    .replace(/function calendarGrantQuery\(uid: string, grant: CalendarGrant\)/,
+      "function calendarGrantQuery(uid, grant)")
+    .replace(/useState<[^>]+>/g, "useState")
+    .replace(/useRef<[^>]+>/g, "useRef")
+    .replace(/let d: any;/, "let d;")
+    .replace(/durable\.step as Step/g, "durable.step")
+    .replace(/\(fn: string, set: \(s: ConnState\) => void\)/, "(fn, set)");
+}
+
 function loadActualClient({ fetchImpl, getSession, storage, search = "", stateOverrides = {} }) {
   const source = fs.readFileSync(LM_CLIENT, "utf8");
   const constantsStart = source.indexOf("const EXCHANGE_URL");
@@ -120,7 +134,7 @@ function loadActualClient({ fetchImpl, getSession, storage, search = "", stateOv
   const component = source.slice(componentStart, renderStart)
     .replace("export default function LmClient()", "function LmClient()") +
     "return { saveName, savePhone, runConnect };\n}";
-  const executable = stripTypeScriptTypes(`${constants}\n${component}`, { mode: "transform" });
+  const executable = transpileClientBehavior(`${constants}\n${component}`);
 
   const effects = [];
   const updates = [];
@@ -246,4 +260,6 @@ test("actual LmClient keeps a recoverable Telegram binding after a non-2xx link"
   await flushAsyncWork();
   assert.equal(linkCalls.filter((url) => url.includes("action=telegram-link")).length, 1);
   assert.equal(linkClient.historyCalls.length, 0, "failed Telegram link must keep the binding URL recoverable");
+  const pending = linkClient.storage.entries().filter(([key]) => key === "anicca.lm.user:lm_user-a:telegram-binding");
+  assert.equal(pending.length, 1, "failed binding is cached only under the authenticated uid");
 });

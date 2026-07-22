@@ -13,6 +13,7 @@
 // not judgment.
 "use strict";
 
+const crypto = require("node:crypto");
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
 const { getCalendar, getMail } = require("./transport/index.js");
@@ -110,6 +111,28 @@ function closedAskMessage(event, candidate, replyToken) {
     extra: { reply_markup: { inline_keyboard: [[
       { text: "はい", callback_data: `ask:yes:${event.id}:${replyToken}` },
       { text: "別の場所", callback_data: `ask:no:${event.id}:${replyToken}` },
+    ]] } },
+  };
+}
+
+function semanticQuestionKey(event, questionType) {
+  const summary = String(event.summary || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const organizer = String((event.organizer || {}).email || "").trim().toLowerCase();
+  const identity = event.recurringEventId
+    ? `series:${event.recurringEventId}`
+    : summary || organizer
+      ? `context:${summary}\n${organizer}`
+      : `event:${event.id || "unknown"}`;
+  const digest = crypto.createHash("sha256").update(`${questionType}\n${identity}`).digest("hex");
+  return `${questionType}:${digest}`;
+}
+
+function closedOnlineAskMessage(event, interpretation, replyToken) {
+  return {
+    text: interpretation.question.text,
+    extra: { reply_markup: { inline_keyboard: [[
+      { text: "オンライン", callback_data: `ask:calendar_online:online:${replyToken}` },
+      { text: "対面", callback_data: `ask:calendar_online:offline:${replyToken}` },
     ]] } },
   };
 }
@@ -269,10 +292,22 @@ function needsLocation(ev) {
 }
 
 async function askedSet(uid, supaUrl, supaKey) {
-  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}&select=event_id`,
+  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}` +
+    `&select=event_id,semantic_key,question_type,question_context,answer_value`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });
   const d = await r.json().catch(() => []);
-  return new Set((Array.isArray(d) ? d : []).map((x) => x.event_id));
+  const rows = Array.isArray(d) ? d : [];
+  const result = new Set();
+  result.seriesAnswers = {};
+  for (const row of rows) {
+    if (row.event_id) result.add(row.event_id);
+    if (row.semantic_key) result.add(row.semantic_key);
+    const seriesId = row.question_context && row.question_context.seriesId;
+    if (seriesId && row.question_type === "calendar_online" && ["online", "offline"].includes(row.answer_value)) {
+      result.seriesAnswers[seriesId] = { decision: row.answer_value };
+    }
+  }
+  return result;
 }
 // ATOMIC claim of an ask (C-H1) — mirrors claimWake. INSERT relies on lm_ask_log UNIQUE(uid,event_id):
 // 201 = first claimer (proceed to send); 409 = already asked (skip). Race-safe; no SELECT-then-POST window.
@@ -283,6 +318,10 @@ async function claimAsk(uid, eventId, supaUrl, supaKey, replyToken, metadata = {
   if (replyToken) row.reply_token = replyToken; // ties the email reply (reply+<token>@) back to this event
   if (metadata.candidate) row.candidate_location = metadata.candidate;
   if (metadata.resolvedFrom) row.resolved_from = metadata.resolvedFrom;
+  if (metadata.semanticKey) row.semantic_key = metadata.semanticKey;
+  if (metadata.questionType) row.question_type = metadata.questionType;
+  if (metadata.questionContext) row.question_context = metadata.questionContext;
+  if (metadata.telegramChatId) row.telegram_chat_id = String(metadata.telegramChatId);
   const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log`, {
     method: "POST",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
@@ -343,10 +382,15 @@ async function askTick(uid, opts) {
   // (don't email/Telegram the same event twice), NOT the resolve attempt — that's what kept "MUIT 出社"
   // permanently unfilled after one old ask. (Dais 2026-06-23: the agent must keep doing the work.)
   for (const event of events.filter((e) => needsLocation(e))) {
+    const interpretation = interpretCalendarEvent(event, {
+      now: new Date(nowMs).toISOString(), seriesAnswers: already.seriesAnswers || {},
+    });
+    if (interpretation.decision === "online" || interpretation.decision === "no_call") continue;
     // PC-1 (C3 REQ-45): memory FIRST (a hit fills WITHOUT calling the model, never asks); else agentic resolve.
     const res = await recallOrResolve(event, {
       uid, supaUrl, supaKey, home: opts.home, mapsKey, geminiKey,
-      recall: opts.recall, resolve: opts.resolve,
+      recall: opts.recall,
+      resolve: interpretation.decision === "ask_closed" ? async () => ({ kind: "ask" }) : opts.resolve,
     });
     if (res.kind === "online") {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
@@ -359,7 +403,10 @@ async function askTick(uid, opts) {
     }
     // res.kind === "ask" — resolveLocation alone couldn't place it. ATOMIC dedup (C-H1): CLAIM before
     // sending so two concurrent ticks can't double-ask; release the claim if the send fails.
-    if (already.has(event.id)) continue; // fast-path: known-asked this tick → skip
+    const questionType = interpretation.question && interpretation.question.type === "online"
+      ? "calendar_online" : "calendar_location";
+    const semanticKey = semanticQuestionKey(event, questionType);
+    if (already.has(event.id) || already.has(semanticKey)) continue;
     // Before bothering the user, let the agent search Gmail/web for evidence (life-manager#11: asking is
     // the failure mode, not the fallback of first resort — a found candidate autofills directly, same as
     // the "filled" branch above). Only a genuinely unresolvable event reaches the actual ask below.
@@ -379,13 +426,22 @@ async function askTick(uid, opts) {
     // this event. We NEVER read the user's Gmail. CLAIM (with the token) before sending so two ticks can't
     // double-ask; release the claim if the send fails so a later tick retries.
     const replyToken = newReplyToken();
-    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken, {}))) continue;
+    const questionContext = {
+      ...(event.recurringEventId ? { seriesId: String(event.recurringEventId) } : {}),
+      summary: String(event.summary || "").slice(0, 200),
+      start: String((event.start || {}).dateTime || "").slice(0, 80),
+    };
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken, {
+      semanticKey, questionType, questionContext, telegramChatId: opts.telegramChatId,
+    }))) continue;
     let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
-      const r = await tgSend(opts.telegramToken, opts.telegramChatId,
-        `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
+      const message = questionType === "calendar_online"
+        ? closedOnlineAskMessage(event, interpretation, replyToken)
+        : { text: `場所はどこですか？住所か、お店・会社の名前を送ってください。`, extra: undefined };
+      const r = await tgSend(opts.telegramToken, opts.telegramChatId, message.text, message.extra);
       sent = !!(r && r.ok);
-    } else if (userEmail && resendKey) {
+    } else if (questionType !== "calendar_online" && userEmail && resendKey) {
       const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
       sent = !!(r && r.sent);
     }
@@ -444,7 +500,55 @@ async function lookupAskCandidate(replyToken, eventId, supaUrl, supaKey, fetchIm
     : null;
 }
 
+async function consumeTypedAsk(replyToken, answerValue, opts) {
+  const f = opts.fetchImpl || fetch;
+  const provenance = {
+    kind: "telegram_callback", chat_id: String(opts.chatId), actor_id: String(opts.actorId),
+    ...(opts.messageId ? { message_id: String(opts.messageId) } : {}),
+    ...(opts.callbackQueryId ? { callback_query_id: String(opts.callbackQueryId) } : {}),
+  };
+  const url = `${opts.supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(opts.uid)}` +
+    `&reply_token=eq.${encodeURIComponent(replyToken)}` +
+    `&telegram_chat_id=eq.${encodeURIComponent(opts.chatId)}` +
+    `&question_type=eq.calendar_online&answered_at=is.null` +
+    `&select=uid,event_id,semantic_key,question_type,question_context`;
+  const result = await f(url, {
+    method: "PATCH",
+    headers: {
+      apikey: opts.supaKey, Authorization: `Bearer ${opts.supaKey}`,
+      "Content-Type": "application/json", Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      answered_at: new Date().toISOString(), answer_value: answerValue,
+      answer_source: "telegram_callback", answer_provenance: provenance,
+      resolved_from: "user_answer",
+    }),
+  }).catch(() => null);
+  const rows = result ? await result.json().catch(() => []) : [];
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+
 async function handleAskCallback(data, opts = {}) {
+  const typed = String(data || "").match(/^ask:calendar_online:(online|offline):([A-Za-z0-9_-]+)$/);
+  if (typed) {
+    const [, answerValue, replyToken] = typed;
+    const chatId = String(opts.chatId || "");
+    const actorId = String(opts.actorId || "");
+    if (!opts.uid || !chatId || !actorId || actorId !== chatId || !opts.supaUrl || !opts.supaKey) {
+      return { ok: false, reason: "callback scope mismatch" };
+    }
+    const consume = opts.consumeTyped || ((token, value) => consumeTypedAsk(token, value, opts));
+    const hit = await consume(replyToken, answerValue);
+    if (!hit || hit.uid !== opts.uid) return { ok: false, reason: "unknown, replayed, or cross-tenant callback" };
+    if (answerValue === "offline" && opts.telegramToken) {
+      const send = opts.sendMessage || tgSend;
+      await send(opts.telegramToken, chatId, "場所はどこですか？住所か、お店・会社の名前を送ってください。");
+    }
+    return {
+      ok: true, uid: hit.uid, eventId: hit.event_id, questionType: "calendar_online",
+      answerValue, semanticKey: hit.semantic_key,
+    };
+  }
   const match = String(data || "").match(/^ask:(yes|no):([^:]+):([^:]+)$/);
   if (!match) return { ok: false, ignored: true };
   const [, choice, eventId, replyToken] = match;
@@ -503,6 +607,7 @@ async function handleInboundReply(token, replyText, opts = {}) {
 module.exports = {
   geminiJson,
   askTick, recallOrResolve, agentResolveLocation, agentSearchCandidate, closedAskMessage,
+  closedOnlineAskMessage, semanticQuestionKey,
   agentMatchReply, claimAsk, unclaimAsk, recordResolution, handleAskCallback, lookupAskCandidate,
   handleInboundReply, parseInboundRecipient, consumeAskToken,
 };

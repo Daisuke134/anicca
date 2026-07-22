@@ -196,12 +196,24 @@ async function evaluateJourney() {
       } });
       await answerCallbackQuery("tg-token", parsed.callbackQueryId, "Received");
       callbackResult = await routeCallbackData(parsed.data, { ask: (data) => handleAskCallback(data, {
-        uid: "u1", chatId: parsed.chatId, messageId: parsed.messageId,
+        uid: "u1", chatId: parsed.chatId, actorId: parsed.userId, messageId: parsed.messageId,
         callbackQueryId: parsed.callbackQueryId, telegramToken: "tg-token",
         supaUrl: "https://fixture.invalid", supaKey: "service", fetchImpl,
       }) });
     }
     const answerRow = state.asks.find((row) => row.uid === "u1" && row.answer_value);
+    const beforeUnauthorizedCallbacks = JSON.stringify(stable(state.asks));
+    if (callbackData) {
+      await handleAskCallback(callbackData, {
+        uid: "u1", chatId: "100", actorId: "100", telegramToken: "tg-token",
+        supaUrl: "https://fixture.invalid", supaKey: "service", fetchImpl,
+      });
+      await handleAskCallback(callbackData, {
+        uid: "unrelated-user", chatId: "999", actorId: "999", telegramToken: "tg-token",
+        supaUrl: "https://fixture.invalid", supaKey: "service", fetchImpl,
+      });
+    }
+    const unauthorizedMutations = JSON.stringify(stable(state.asks)) === beforeUnauthorizedCallbacks ? 0 : 1;
 
     const beforeRepeat = state.telegramMessages.length;
     await askTick("u1", askOptions);
@@ -308,6 +320,7 @@ async function evaluateJourney() {
       "location-unlocked": { locationDiscoveryMessages, forbiddenRealtimeQuestions: forbiddenCount },
       "unrelated-tenant-unchanged": {
         unchanged: JSON.stringify(stable(unrelatedBefore)) === JSON.stringify(stable(unrelatedAfter)),
+        unauthorizedMutations,
       },
       "additive-provenance-schema": {
         exists: Boolean(migration), additive: !/\b(?:DROP|TRUNCATE)\b/i.test(migration),

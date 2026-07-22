@@ -8,5 +8,5 @@
 {"id":"location-locked-throttled","expected":{"discoveryMessages":0,"reason":"throttled"}}
 {"id":"location-update-provenance","expected":{"persisted":true,"source":"telegram_live_location","telegramMessageId":"7001"}}
 {"id":"location-unlocked","expected":{"locationDiscoveryMessages":0,"forbiddenRealtimeQuestions":0}}
-{"id":"unrelated-tenant-unchanged","expected":{"unchanged":true}}
+{"id":"unrelated-tenant-unchanged","expected":{"unchanged":true,"unauthorizedMutations":0}}
 {"id":"additive-provenance-schema","expected":{"exists":true,"additive":true,"tenantKeyed":true,"semanticUnique":true,"rls":true}}
