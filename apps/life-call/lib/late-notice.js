@@ -120,6 +120,7 @@ async function upsertLiveLocation(uid, location, opts = {}) {
       latitude: location.latitude,
       longitude: location.longitude,
       telegram_message_id: String(location.messageId || ""),
+      source: "telegram_live_location",
       observed_at: new Date(location.observedAtMs).toISOString(),
       expires_at: new Date(location.expiresAtMs).toISOString(),
     }),
