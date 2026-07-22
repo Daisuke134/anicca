@@ -84,9 +84,9 @@ test("B1 real /panel keeps +25h cookie usable, rotates, renders login HTML when 
     now: () => new Date(now), randomBytes: () => Buffer.alloc(32, 2),
     fetchImpl: async (url, init = {}) => {
       calls.push({ url: String(url), init });
-      if (String(url).includes("claim_lm_panel_token")) return jsonResponse([{ uid: "u1", chat_id: "101" }]);
       if (String(url).endsWith("/rpc/resolve_lm_panel_session")) return jsonResponse([{ uid: "u1", chat_id: "101", rotated: true }]);
       if (String(url).endsWith("/lm_panel_sessions")) return jsonResponse({}, 201);
+      if (String(url).endsWith("/lm_panel_device_challenges")) return jsonResponse({}, 201);
       return jsonResponse([]);
     },
   }), async (base) => {
@@ -99,7 +99,10 @@ test("B1 real /panel keeps +25h cookie usable, rotates, renders login HTML when 
     const missing = await fetch(`${base}/panel`);
     assert.equal(missing.status, 200);
     assert.match(missing.headers.get("content-type") || "", /text\/html/);
-    assert.equal(((await missing.text()).match(/https:\/\/t\.me\//g) || []).length, 1);
+    const login = await missing.text();
+    assert.match(login, /data-device-code="[2-9A-HJ-NP-Z]{8}"/);
+    assert.match(login, /Open (?:this panel )?inside Telegram/i);
+    assert.doesNotMatch(login, /https:\/\/t\.me\/|new dashboard link|\?t=/i);
     const boot = await fetch(`${base}/panel?t=${secret(9)}`, { redirect: "manual" });
     assert.equal(boot.status, 303); assert.equal(boot.headers.get("location"), "/panel");
   });
@@ -201,13 +204,14 @@ test("B3 rebound session cannot render page or claim OAuth/provider state", asyn
   const fetchImpl = async (url) => {
     const value = String(url);
     if (value.includes("resolve_lm_panel_session")) return jsonResponse([]);
+    if (value.endsWith("/lm_panel_device_challenges")) return jsonResponse({}, 201);
     if (value.includes("lm_panel_sessions")) return jsonResponse([{ uid: "u1", chat_id: "old-chat" }]);
     if (value.includes("lm_users")) return jsonResponse([]);
     throw new Error(value);
   };
   await withServer((req, res) => auth.handlePanelRequest(req, res, { supaUrl: "https://db.example", supaKey: "service", fetchImpl }), async (base) => {
     const response = await fetch(`${base}/panel`, { headers: { cookie: `lm_panel_session=${raw}` } });
-    assert.match(await response.text(), /Get a new dashboard link/); assert.equal(response.status, 200);
+    assert.match(await response.text(), /data-device-code="[2-9A-HJ-NP-Z]{8}"/); assert.equal(response.status, 200);
   });
   const req = { method: "GET", url: `/panel/oauth/calendar?state=${secret(12)}`, headers: { cookie: `lm_panel_session=${raw}` } };
   const res = { status: 0, writeHead(code) { this.status = code; }, end() {} };

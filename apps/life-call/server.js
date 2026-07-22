@@ -39,7 +39,7 @@ const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
-const { sendPanelLink, handlePanelRequest } = require("./lib/panel-auth.js");
+const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -198,6 +198,18 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path === "/api/panel/session/telegram" || path === "/api/panel/session/device") {
+    handlePanelRequest(req, res, {
+      supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN,
+      panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE,
+      botUsername: process.env.LM_TELEGRAM_BOT_USERNAME,
+    }).catch((error) => {
+      console.error("[panel-auth] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "panel_auth_unavailable" }));
+    });
+    return;
+  }
   if (path.startsWith("/api/panel/")) {
     handlePanelApiRequest(req, res, {
       supaUrl: SUPA_URL,
@@ -215,7 +227,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (path === "/panel" || path === "/panel/logout") {
-    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE, botUsername: process.env.LM_TELEGRAM_BOT_USERNAME }).catch((error) => {
+    handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN, panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE, botUsername: process.env.LM_TELEGRAM_BOT_USERNAME }).catch((error) => {
       console.error("[panel] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
       res.end("panel unavailable");
@@ -381,11 +393,19 @@ const server = http.createServer((req, res) => {
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
           const parsedControl = parseUserCommand(u.text);
           if (isPanelCommand(u.text) || isPanelDeepLink(u.text) || parsedControl.kind === "panel") {
+            const deviceCode = panelDeviceCodeFromCommand(u.text);
             if (!row) {
               await sendMessage(LM_TG_TOKEN, u.chatId, "Complete Life Manager setup with /start before opening your panel.");
             } else if (!LM_PANEL_BASE) {
               console.error("[panel] LM_PANEL_BASE_URL/RAILWAY_PUBLIC_DOMAIN not configured");
               await sendMessage(LM_TG_TOKEN, u.chatId, "The panel is temporarily unavailable. Please try again shortly.");
+            } else if (deviceCode) {
+              const confirmed = await confirmPanelDeviceCode({
+                uid: row.uid, chatId: u.chatId, actorId: u.userId, code: deviceCode,
+              }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+              await sendMessage(LM_TG_TOKEN, u.chatId, confirmed
+                ? "Browser confirmed. Return to the same panel tab."
+                : "That browser code is invalid or no longer available. Reload /panel for a new code.");
             } else {
               await sendPanelLink({ uid: row.uid, chatId: u.chatId }, {
                 token: LM_TG_TOKEN,
