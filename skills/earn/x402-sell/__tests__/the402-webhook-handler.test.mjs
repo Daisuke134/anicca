@@ -141,3 +141,42 @@ test('fails closed on method, media type, malformed events, and missing server s
   assert.deepEqual(await unconfigured.json(), { ok: false, error: 'temporarily_unavailable' });
   assert.equal(inbox.stats().total, 0);
 }));
+
+test('acknowledges only the exact official unsigned test probe without enqueueing it', () => withTempInbox(async (inbox) => {
+  const testPayload = JSON.stringify({
+    type: 'job_dispatch',
+    job_id: 'test_job_abc123',
+    service_id: 'svc_expected',
+    test: true,
+  });
+  const testResponse = await handleThe402WebhookRequest(new Request('https://seller.example/webhooks/the402', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: testPayload,
+  }), {
+    inbox,
+    apiKey: API_KEY,
+    webhookSecret: WEBHOOK_SECRET,
+    allowUnsignedTestProbe: true,
+    expectedTestServiceId: 'svc_expected',
+    nowMs: NOW_MS,
+  });
+  assert.equal(testResponse.status, 200);
+  assert.deepEqual(await testResponse.json(), { ok: true, test: true });
+  assert.equal(inbox.stats().total, 0);
+
+  const realResponse = await handleThe402WebhookRequest(new Request('https://seller.example/webhooks/the402', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'job_dispatch', job_id: 'job_unsigned', service_id: 'svc_expected' }),
+  }), {
+    inbox,
+    apiKey: API_KEY,
+    webhookSecret: WEBHOOK_SECRET,
+    allowUnsignedTestProbe: true,
+    expectedTestServiceId: 'svc_expected',
+    nowMs: NOW_MS,
+  });
+  assert.equal(realResponse.status, 401);
+  assert.equal(inbox.stats().total, 0);
+}));

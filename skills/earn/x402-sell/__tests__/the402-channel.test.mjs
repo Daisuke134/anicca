@@ -130,6 +130,28 @@ test('webhook verifier rejects forged, mutated, stale, future, wrong-key, and un
   }
 });
 
+test('accepts the documented API-key-only dispatch only when compatibility is explicit', () => {
+  const rawBody = JSON.stringify({ type: 'job_dispatch', job_id: 'job_api_key_only' });
+  const headers = { 'x-platform-secret': API_KEY };
+
+  assert.throws(() => verifyThe402Webhook({
+    rawBody,
+    headers,
+    apiKey: API_KEY,
+    webhookSecret: WEBHOOK_SECRET,
+    nowMs: NOW_MS,
+  }), /the402 webhook rejected/);
+
+  assert.equal(verifyThe402Webhook({
+    rawBody,
+    headers,
+    apiKey: API_KEY,
+    webhookSecret: WEBHOOK_SECRET,
+    allowApiKeyOnly: true,
+    nowMs: NOW_MS,
+  }).eventId, 'job_dispatch:job_api_key_only');
+});
+
 test('privacy-safe webhook audit never includes buyer brief, raw body, headers, or secrets', () => {
   const row = privacySafeThe402Audit({
     ts: '2026-07-22T21:48:47.000Z',

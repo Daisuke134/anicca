@@ -44,6 +44,11 @@ export async function handleThe402WebhookRequest(request, {
   inbox,
   apiKey,
   webhookSecret,
+  allowApiKeyOnly = false,
+  allowMissingPlatformSecret = false,
+  allowUnsignedTestProbe = false,
+  expectedTestServiceId = null,
+  onRejected = () => {},
   nowMs = Date.now(),
   maxBodyBytes = 1_048_576,
 }) {
@@ -63,12 +68,24 @@ export async function handleThe402WebhookRequest(request, {
   }
   try {
     const rawBody = await readBoundedBody(request, maxBodyBytes);
+    if (allowUnsignedTestProbe) {
+      let testPayload = null;
+      try { testPayload = JSON.parse(rawBody); } catch {}
+      if (testPayload?.test === true
+          && testPayload?.type === 'job_dispatch'
+          && /^test_job_[A-Za-z0-9]+$/.test(testPayload?.job_id || '')
+          && testPayload?.service_id === expectedTestServiceId) {
+        return jsonResponse({ ok: true, test: true }, 200);
+      }
+    }
     const accepted = acceptThe402Webhook({
       inbox,
       rawBody,
       headers: request.headers,
       apiKey,
       webhookSecret,
+      allowApiKeyOnly,
+      allowMissingPlatformSecret,
       nowMs,
     });
     return jsonResponse(accepted, 200);
@@ -77,6 +94,7 @@ export async function handleThe402WebhookRequest(request, {
       return jsonResponse({ ok: false, error: 'payload_too_large' }, 413);
     }
     if (String(error?.message).startsWith('the402 webhook rejected:')) {
+      onRejected(error.message);
       const malformed = /invalid JSON|unknown event type|invalid event id/.test(error.message);
       return jsonResponse({ ok: false, error: malformed ? 'invalid_event' : 'unauthorized' }, malformed ? 400 : 401);
     }

@@ -84,6 +84,8 @@ export function verifyThe402Webhook({
   headers,
   apiKey,
   webhookSecret,
+  allowApiKeyOnly = false,
+  allowMissingPlatformSecret = false,
   nowMs = Date.now(),
   toleranceSeconds = 300,
 }) {
@@ -95,23 +97,29 @@ export function verifyThe402Webhook({
   }
 
   const platformSecret = headerValue(headers, 'x-platform-secret');
-  if (!platformSecret || !constantTimeStringEqual(platformSecret, apiKey)) {
+  const platformSecretMatches = Boolean(
+    platformSecret && constantTimeStringEqual(platformSecret, apiKey),
+  );
+  if ((!platformSecret && !allowMissingPlatformSecret)
+      || (platformSecret && !platformSecretMatches)) {
     webhookRejected('platform secret mismatch');
   }
-  const timestamp = headerValue(headers, 'x-webhook-timestamp');
-  if (!timestamp || !/^\d+$/.test(timestamp)) webhookRejected('invalid timestamp');
-  if (Math.abs(nowMs / 1000 - Number(timestamp)) > toleranceSeconds) {
-    webhookRejected('timestamp outside replay window');
-  }
+  if (!(allowApiKeyOnly && platformSecretMatches)) {
+    const timestamp = headerValue(headers, 'x-webhook-timestamp');
+    if (!timestamp || !/^\d+$/.test(timestamp)) webhookRejected('invalid timestamp');
+    if (Math.abs(nowMs / 1000 - Number(timestamp)) > toleranceSeconds) {
+      webhookRejected('timestamp outside replay window');
+    }
 
-  const signature = headerValue(headers, 'x-webhook-signature');
-  const match = /^sha256=([0-9a-f]{64})$/i.exec(signature || '');
-  if (!match) webhookRejected('invalid signature format');
-  const expected = createHmac('sha256', webhookSecret)
-    .update(`${timestamp}.${rawBody}`)
-    .digest();
-  const supplied = Buffer.from(match[1], 'hex');
-  if (!timingSafeEqual(expected, supplied)) webhookRejected('signature mismatch');
+    const signature = headerValue(headers, 'x-webhook-signature');
+    const match = /^sha256=([0-9a-f]{64})$/i.exec(signature || '');
+    if (!match) webhookRejected('invalid signature format');
+    const expected = createHmac('sha256', webhookSecret)
+      .update(`${timestamp}.${rawBody}`)
+      .digest();
+    const supplied = Buffer.from(match[1], 'hex');
+    if (!timingSafeEqual(expected, supplied)) webhookRejected('signature mismatch');
+  }
 
   let payload;
   try { payload = JSON.parse(rawBody); }

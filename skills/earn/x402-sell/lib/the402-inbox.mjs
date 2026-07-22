@@ -84,6 +84,16 @@ export function openThe402Inbox(dbPath) {
     ORDER BY received_at_ms, event_id
     LIMIT 1
   `);
+  const nextReadyByType = db.prepare(`
+    SELECT event_id, event_type, payload_json, attempts
+    FROM webhook_events
+    WHERE event_type = ? AND (
+      (status = 'pending' AND available_at_ms <= ?)
+      OR (status = 'processing' AND lease_until_ms <= ?)
+    )
+    ORDER BY received_at_ms, event_id
+    LIMIT 1
+  `);
   const claim = db.prepare(`
     UPDATE webhook_events
     SET status = 'processing', attempts = attempts + 1,
@@ -146,13 +156,18 @@ export function openThe402Inbox(dbPath) {
       return { accepted: true, duplicate, eventId: valid.eventId, status: row.status };
     },
 
-    claimNext({ nowMs, leaseMs = 30_000 }) {
+    claimNext({ nowMs, leaseMs = 30_000, type = null }) {
       validateTime(nowMs, 'claim time');
       if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0 || leaseMs > 86_400_000) {
         reject('invalid lease duration');
       }
+      if (type !== null && (typeof type !== 'string' || !/^[A-Za-z0-9_.:-]{1,64}$/.test(type))) {
+        reject('invalid event type');
+      }
       return inImmediateTransaction(() => {
-        const row = nextReady.get(nowMs, nowMs);
+        const row = type === null
+          ? nextReady.get(nowMs, nowMs)
+          : nextReadyByType.get(type, nowMs, nowMs);
         if (!row) return null;
         const leaseToken = randomUUID();
         const leaseUntilMs = nowMs + leaseMs;
@@ -241,6 +256,8 @@ export function acceptThe402Webhook({
   headers,
   apiKey,
   webhookSecret,
+  allowApiKeyOnly = false,
+  allowMissingPlatformSecret = false,
   nowMs = Date.now(),
 }) {
   if (!inbox || typeof inbox.enqueue !== 'function') reject('missing durable inbox');
@@ -249,6 +266,8 @@ export function acceptThe402Webhook({
     headers,
     apiKey,
     webhookSecret,
+    allowApiKeyOnly,
+    allowMissingPlatformSecret,
     nowMs,
   });
   const write = inbox.enqueue({
