@@ -1,0 +1,4 @@
+apps/life-call/lib/daily-preflight.js | 92.68 | 96.00
+apps/life-call/lib/daily-preflight-collectors.js | 90.08 | 90.91
+apps/life-call/lib/transport/mail-gog.js | 99.06 | 100.00
+apps/life-call/scripts/daily-preflight.js | 95.40 | 100.00

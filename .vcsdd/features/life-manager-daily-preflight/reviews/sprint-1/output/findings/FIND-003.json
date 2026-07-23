@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "REQ-006 requires collector/deadline exhaustion to terminate. withinDeadline only races the operation against a timer and never aborts or cancels the operation; after rejection, the Telegram/email/parallel work continues in the background and can keep polling providers beyond the declared hard deadline.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/daily-preflight-collectors.js",
+    "lineRange": "32-39",
+    "snippet": "return await Promise.race([ operation(), new Promise((_, reject) => { timer = setTimeout(() => reject(closedFailure(code)), deadlineMs); }) ]);"
+  },
+  "routeToPhase": "2b"
+}

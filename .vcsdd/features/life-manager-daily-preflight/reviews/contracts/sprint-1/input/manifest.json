@@ -1,0 +1,22 @@
+{
+  "reviewType": "contract",
+  "featureName": "life-manager-daily-preflight",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "34eb1c8ea3db0bdc3ff4c0bb6f1b59f5699baf459b10948a01856b494d0c02ef",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [],
+    "source": []
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ]
+}

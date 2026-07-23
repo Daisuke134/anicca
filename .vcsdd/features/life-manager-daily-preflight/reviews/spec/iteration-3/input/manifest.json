@@ -1,0 +1,26 @@
+{
+  "reviewType": "spec",
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "contracts/sprint-1.md",
+    "evidence/original-tdd-log-provenance.md",
+    "reviews/spec/iteration-1/output/verdict.json",
+    "reviews/spec/iteration-1/output/findings/FIND-001.json",
+    "reviews/spec/iteration-1/output/findings/FIND-002.json",
+    "reviews/spec/iteration-1/output/findings/FIND-003.json",
+    "reviews/spec/iteration-1/output/findings/FIND-004.json",
+    "reviews/spec/iteration-2/output/verdict.json",
+    "reviews/spec/iteration-2/output/findings/FIND-005.json",
+    "reviews/spec/iteration-2/output/findings/FIND-006.json",
+    "docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md#9.5,10-row-8d,10.0,10.2,10.3"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "reviewBoundary": "fresh artifact-only Phase 1c iteration 3; iteration-1/2 resolutions are untrusted builder claims; draft contract is traceability input only; provenance declares immutable evidence boundaries; no future Phase 2 or L3 evidence is required when honestly specified"
+}

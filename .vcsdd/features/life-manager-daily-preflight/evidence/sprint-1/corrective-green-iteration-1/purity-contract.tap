@@ -1,0 +1,14 @@
+✔ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (0.883708ms)
+✔ purity: production collectors retain zero injected transport surface (0.107125ms)
+✔ purity: runRef is derived from current internal correlation (0.06775ms)
+✔ purity: raw run correlation is excluded from serialization (0.079625ms)
+✔ purity: successful report uses temp-file fsync rename atomic publication (0.06225ms)
+✔ purity: failed publication removes temporary output and leaves no final artifact (0.046291ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.140667

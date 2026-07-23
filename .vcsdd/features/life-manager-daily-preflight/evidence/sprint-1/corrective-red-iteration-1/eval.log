@@ -1,0 +1,6 @@
+
+> anicca-life-call@1.0.0 eval
+> node eval/run-calendar-eval.js && node eval/run-late-eval.js
+
+Calendar eval: 21/21 (100.0%) judge=deterministic
+Late eval: 12/12 (100.0%) judge=deterministic

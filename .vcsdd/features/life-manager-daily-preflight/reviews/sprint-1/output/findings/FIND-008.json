@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "The declared safe secret/PII verifier never reads or scans any file. It only parses flag placement and checks that paths exist, allowing arbitrary secrets, email, phone, raw correlation, and provider IDs to pass while the evidence ledger reports zero counts.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs",
+    "lineRange": "5-8",
+    "snippet": "const args = process.argv.slice(2); ... args.slice(1, marker).some(value => !existsSync(value))) fail();"
+  },
+  "routeToPhase": "2b"
+}

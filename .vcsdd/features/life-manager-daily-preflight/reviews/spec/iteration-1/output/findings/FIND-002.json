@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The final evidence allowlist is broader than the required hashes-and-booleans boundary: REQ-013 permits classifications, counts, and timestamps in serialized reports and errors. Narrow the final production evidence schema to sanitized booleans and one-way hash references only, and keep any timing arithmetic or failure classification transient or in a separately defined non-final diagnostic channel that cannot enter the final artifact.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/behavioral-spec.md",
+    "lineRange": "59-61",
+    "snippet": "retain only allowlisted booleans, classifications, counts, timestamps needed for freshness, and one-way hash references"
+  },
+  "routeToPhase": "1a"
+}

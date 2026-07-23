@@ -1,0 +1,43 @@
+✔ public CLI rejects caller supplied --proofs (0.822583ms)
+✔ production main has no collector or transport injection parameters (0.195167ms)
+✔ read-only production main invokes zero caller or controlled sends (11.854125ms)
+✔ test-only controlled runner invokes each collector exactly once (0.379166ms)
+✔ production entrypoint cannot import or activate test-only collector DI (0.149833ms)
+✔ production controlled collectors expose no factory or transport injection surface (0.474541ms)
+✔ production receipt bounds come only from the gog parser (0.184083ms)
+✔ controlled CLI prerequisite errors exit nonzero with sanitized output (63.766041ms)
+✔ CLI exit wrapper maps completion and sanitized pre-report failure (0.22225ms)
+✔ controlled L3 is collected by the runner and bound into the generated report (0.3325ms)
+▶ controlled collectors fail closed for missing, malformed, and stale results
+  ✔ missing (0.164083ms)
+  ✔ malformed (0.06075ms)
+  ✔ stale (0.488417ms)
+✔ controlled collectors fail closed for missing, malformed, and stale results (0.894ms)
+▶ email collector requires every same-run acceptance and receipt field
+  ✔ attempted (0.066083ms)
+  ✔ providerAccepted (0.031334ms)
+  ✔ inboxReceived (0.029375ms)
+  ✔ recipientOwned (0.033667ms)
+  ✔ providerRef (0.041542ms)
+  ✔ messageIdRef (0.03525ms)
+✔ email collector requires every same-run acceptance and receipt field (0.342542ms)
+▶ telegram bounded polling must observe the real webhook backlog drain to exactly zero
+  ✔ pending (0.075292ms)
+  ✔ missing (0.034375ms)
+✔ telegram bounded polling must observe the real webhook backlog drain to exactly zero (0.207375ms)
+✔ telegram collector performs round trip then bounded-polls getWebhookInfo (0.11675ms)
+✔ final evidence schema replaces unknown strings, URLs, PII, errors, and nested raw text (0.450916ms)
+✔ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (0.973291ms)
+✔ purity: production collectors retain zero injected transport surface (0.124292ms)
+✔ purity: runRef is derived from current internal correlation (0.0735ms)
+✔ purity: raw run correlation is excluded from serialization (0.082625ms)
+✔ purity: successful report uses temp-file fsync rename atomic publication (0.060875ms)
+✔ purity: failed publication removes temporary output and leaves no final artifact (0.048292ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 158.61275

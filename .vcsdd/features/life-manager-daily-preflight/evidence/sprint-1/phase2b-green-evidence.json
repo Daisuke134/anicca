@@ -1,0 +1,29 @@
+{
+  "phase": "2c",
+  "sprintCount": 0,
+  "result": "PHASE2C-REVIEW-READY",
+  "counts": {
+    "appNew": 63,
+    "helper": 12,
+    "baselineFocused": 51,
+    "baselineFull": 371,
+    "fullFinal": 434,
+    "eval": 33,
+    "temporal": 18,
+    "pollDeadline": 12,
+    "schema": 45,
+    "purity": 32
+  },
+  "providerNetworkRun": false,
+  "controlledL3Run": false,
+  "finalReportCreated": false,
+  "testBeadsGreen": 75,
+  "sourceCommit": "b0b2925748e7126d31d83c281169e98ae23f3d15",
+  "sourceTree": "df3ed47eae5a243302c10d9f7a625f52e1bd7f76",
+  "coverage": {
+    "lib/daily-preflight.js": { "lines": 92.08, "functions": 95.77 },
+    "lib/daily-preflight-collectors.js": { "lines": 98.52, "functions": 90.63 },
+    "lib/transport/mail-gog.js": { "lines": 100.00, "functions": 100.00 },
+    "scripts/daily-preflight.js": { "lines": 94.37, "functions": 100.00 }
+  }
+}

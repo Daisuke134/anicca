@@ -1,0 +1,60 @@
+✔ public CLI rejects caller supplied --proofs (1.308791ms)
+✔ production main has no collector or transport injection parameters (0.202292ms)
+✔ read-only production main invokes zero caller or controlled sends (22.617125ms)
+✔ test-only controlled runner invokes each collector exactly once (0.43125ms)
+✔ production entrypoint cannot import or activate test-only collector DI (0.130292ms)
+✔ production controlled collectors expose no factory or transport injection surface (0.455667ms)
+✔ production receipt bounds come only from the gog parser (0.173333ms)
+✔ controlled CLI prerequisite errors exit nonzero with sanitized output (90.9715ms)
+✔ CLI exit wrapper maps completion and sanitized pre-report failure (0.203ms)
+✔ controlled L3 is collected by the runner and bound into the generated report (0.448375ms)
+▶ controlled collectors fail closed for missing, malformed, and stale results
+  ✔ missing (0.161333ms)
+  ✔ malformed (0.075292ms)
+  ✔ stale (0.459416ms)
+✔ controlled collectors fail closed for missing, malformed, and stale results (0.896042ms)
+▶ email collector requires every same-run acceptance and receipt field
+  ✔ attempted (0.08975ms)
+  ✔ providerAccepted (0.039166ms)
+  ✔ inboxReceived (0.034584ms)
+  ✔ recipientOwned (0.035959ms)
+  ✔ providerRef (0.043ms)
+  ✔ messageIdRef (0.034791ms)
+✔ email collector requires every same-run acceptance and receipt field (0.411666ms)
+▶ telegram bounded polling must observe the real webhook backlog drain to exactly zero
+  ✔ pending (0.176334ms)
+  ✔ missing (0.054125ms)
+✔ telegram bounded polling must observe the real webhook backlog drain to exactly zero (0.356875ms)
+✔ telegram collector performs round trip then bounded-polls getWebhookInfo (0.154125ms)
+✔ final evidence schema replaces unknown strings, URLs, PII, errors, and nested raw text (0.448959ms)
+{"artifact":null,"overallStatus":"fail","exitCode":1,"summary":{"required":9,"passed":0,"failed":9,"timedOut":0},"dependencies":[{"dependency":"health","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"telegram","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"calendar","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"call","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"location","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"email","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"discovery","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"gemini","status":"fail","latencyMs":2,"failureClass":"configuration"},{"dependency":"maps","status":"fail","latencyMs":2,"failureClass":"configuration"}]}
+✖ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (4.5835ms)
+✔ purity: production collectors retain zero injected transport surface (0.129916ms)
+✔ purity: runRef is derived from current internal correlation (0.075209ms)
+✔ purity: raw run correlation is excluded from serialization (0.276084ms)
+✔ purity: successful report uses temp-file fsync rename atomic publication (0.342166ms)
+✔ purity: failed publication removes temporary output and leaves no final artifact (0.1685ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 31
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 248.191958
+
+✖ failing tests:
+
+test at lib/daily-preflight-purity-contract.test.js:13:1
+✖ purity: exported production main rejects caller env/fetch/transport and never calls forged transport (4.5835ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:16:3)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /caller|argument|injection/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

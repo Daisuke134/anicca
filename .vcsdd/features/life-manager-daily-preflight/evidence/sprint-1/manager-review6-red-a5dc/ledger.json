@@ -1,0 +1,20 @@
+{
+  "tests": {
+    "TEST-102": { "beadId": "BEAD-155", "status": "red", "finding": "FIND-012" },
+    "TEST-103": { "beadId": "BEAD-156", "status": "red", "finding": "FIND-013" },
+    "TEST-104": { "beadId": "BEAD-157", "status": "red", "finding": "FIND-014" },
+    "TEST-105": { "beadId": "BEAD-158", "status": "red", "finding": "FIND-015" },
+    "TEST-106": { "beadId": "BEAD-159", "status": "red", "finding": "FIND-016" },
+    "TEST-107": { "beadId": "BEAD-160", "status": "red", "finding": "FIND-017" }
+  },
+  "findings": {
+    "FIND-012": { "beadId": "BEAD-161", "status": "open", "test": "TEST-102", "routeToPhase": "2b" },
+    "FIND-013": { "beadId": "BEAD-162", "status": "open", "test": "TEST-103", "routeToPhase": "2b" },
+    "FIND-014": { "beadId": "BEAD-163", "status": "open", "test": "TEST-104", "routeToPhase": "2b" },
+    "FIND-015": { "beadId": "BEAD-164", "status": "open", "test": "TEST-105", "routeToPhase": "2b" },
+    "FIND-016": { "beadId": "BEAD-165", "status": "open", "test": "TEST-106", "routeToPhase": "2b" },
+    "FIND-017": { "beadId": "BEAD-166", "status": "open", "test": "TEST-107", "routeToPhase": "2b" }
+  },
+  "historical": { "greenTests": 101, "resolvedFindings": 11 },
+  "reciprocalLinks": "pass"
+}

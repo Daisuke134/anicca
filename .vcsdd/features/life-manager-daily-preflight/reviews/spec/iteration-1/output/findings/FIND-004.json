@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "proof_gap",
+  "severity": "high",
+  "description": "The verification plan names command classes but does not specify exact executable commands or concrete output paths, and it delegates coverage to a threshold that the draft contract never declares. Therefore CRIT-003 and CRIT-005 cannot be adjudicated reproducibly or as binary PASS/FAIL. Add exact commands, expected exits/counts, evidence paths, source-snapshot binding, and numeric line/function coverage thresholds for every L1, L2, boundary, security, purity, and process obligation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/verification-architecture.md",
+    "lineRange": "84-95",
+    "snippet": "Verification command classes ... Coverage | changed production modules | line/function threshold declared by contract"
+  },
+  "routeToPhase": "1b"
+}

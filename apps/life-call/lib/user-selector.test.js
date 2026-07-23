@@ -9,7 +9,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { calendarProviderFilter, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
+const { calendarProviderFilter, schedulerCohortFilter, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
 
 test("providers include composio_gcal AND pipedream_gcal", () => {
   assert.ok(WAKE_CALENDAR_PROVIDERS.includes("composio_gcal"));
@@ -22,13 +22,20 @@ test("calendarProviderFilter: PostgREST in.() over both providers, not eq.compos
   assert.equal(f.includes("eq.composio_gcal"), false); // the old exclusive filter is gone
 });
 
+test("schedulerCohortFilter is the phone+paid+supported-provider SSOT", () => {
+  assert.equal(
+    schedulerCohortFilter(),
+    "phone=not.is.null&paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)",
+  );
+});
+
 test("scheduler.js uses the shared filter at BOTH sites (exactly 2), no lingering eq.composio_gcal — FIND-007", () => {
   const src = fs.readFileSync(path.join(__dirname, "../scheduler.js"), "utf8");
   // no hardcoded exclusive filter remains anywhere
   assert.equal((src.match(/calendar_provider=eq\.composio_gcal/g) || []).length, 0);
   // the shared helper is INTERPOLATED (inside a template literal) at BOTH selection sites → exactly 2
-  const uses = (src.match(/\$\{calendarProviderFilter\(\)\}/g) || []).length;
-  assert.equal(uses, 2, `expected calendarProviderFilter() at both selector sites, found ${uses}`);
+  const uses = (src.match(/\$\{schedulerCohortFilter\(\)\}/g) || []).length;
+  assert.equal(uses, 2, `expected schedulerCohortFilter() at both selector sites, found ${uses}`);
   // and it is imported
   assert.ok(/require\(["']\.\/lib\/user-selector\.js["']\)/.test(src));
 });

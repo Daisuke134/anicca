@@ -1,0 +1,6 @@
+apps/life-call/lib/ask.js
+apps/life-call/lib/context-graph.js
+apps/life-call/lib/panel-api.js
+apps/life-call/lib/mail-resend.js
+apps/life-call/lib/telegram-onboard.js
+.vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "verify-phase2-process implements substantive logic only for gates. The historical, trace, schemas, scope, and coverage modes merely validate argument counts and path existence, then exit successfully, so they cannot perform the hashes, traceability, schema validation, changed-module coverage, or git-scope proofs promised by the verification architecture and CRIT-005.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs",
+    "lineRange": "6-15",
+    "snippet": "const commands = new Set([\"historical\", \"gates\", \"trace\", \"schemas\", \"scope\", \"coverage\"]); ... if (args[0] === \"gates\") { ... }"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The closed success schema does not bind each dependency checkedAt timestamp to the current run or the 15-minute freshness window. It requires only UTC syntax while allowing fresh=true, so a schema-valid success artifact can carry stale or future per-dependency timestamps. Add binary semantic constraints and negative boundary cases for every checkedAt: finite valid UTC, not after generatedAt, not older than the configured 15-minute limit at generatedAt, and bound to the same run; test the exact limit, one millisecond stale, and one millisecond future.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/behavioral-spec.md",
+    "lineRange": "69-72",
+    "snippet": "dependencies: exactly 9 unique entries ... fresh: true, UTC checkedAt ..."
+  },
+  "routeToPhase": "1a"
+}

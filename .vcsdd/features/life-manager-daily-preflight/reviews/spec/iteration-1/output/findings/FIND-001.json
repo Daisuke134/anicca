@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-018 makes the installed strict Phase 1c workflow impossible: it requires state to remain at 1b until both adversary review and later human approval pass, while the atomic workflow must transition 1b to 1c before recording the adversary gate. PROP-010 and the final review checklist repeat the incompatible requirement that no 1c verdict exist. Correct REQ-018, PROP-010, and the final checklist so Phase 1c means currentPhase=1c with an adversary verdict recorded, sprintCount=0, draft contract unapproved, humanApproved=false, and no transition to 2a.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/specs/behavioral-spec.md",
+    "lineRange": "79-81",
+    "snippet": "Until a fresh artifact-only Phase 1c review and explicit strict-mode human/orchestrator approval pass, the VCSDD state shall remain at Phase 1b."
+  },
+  "routeToPhase": "1a"
+}

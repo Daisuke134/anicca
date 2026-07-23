@@ -1,0 +1,38 @@
+{
+  "implementationCommits": [
+    "8f648b732dd479b1b48bc5aca4e2e79dc5af0752",
+    "5ab512de08216ed5c7214c05a9d96ffebe00dee1",
+    "c1e876f10af6f2a098f57794a0fd745070546ca2"
+  ],
+  "managerReview": 137,
+  "preExistingSelection": 75,
+  "appNew": 63,
+  "helper": 12,
+  "baselineFocused": 51,
+  "baselineFull": 371,
+  "currentFocused": 52,
+  "currentFull": 372,
+  "eval": 33,
+  "schema": 45,
+  "poll": 12,
+  "purity": 32,
+  "coverage": "pass",
+  "safeScan": "pass",
+  "contractDigest": "608ef6878d9e626ad5d4e6cbee55029c057b2c37c72f0c238387b626c0bbe8cf",
+  "outputAbsent": true,
+  "providerNetworkCalls": 0,
+  "controlledL3Invocations": 0,
+  "productionFinalReports": 0,
+  "testBeadsGreen": 101,
+  "testBeadsRed": 0,
+  "findingsResolved": 11,
+  "findingsOpen": 0,
+  "currentPhase": "2b",
+  "sprintCount": 0,
+  "modules": {
+    "lib/daily-preflight.js": { "lines": 92.68, "functions": 96.00 },
+    "lib/daily-preflight-collectors.js": { "lines": 90.08, "functions": 90.91 },
+    "lib/transport/mail-gog.js": { "lines": 99.06, "functions": 100.00 },
+    "scripts/daily-preflight.js": { "lines": 95.40, "functions": 100.00 }
+  }
+}

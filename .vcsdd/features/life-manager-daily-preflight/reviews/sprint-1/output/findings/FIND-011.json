@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "structural_integrity",
+  "category": "code_structure",
+  "severity": "critical",
+  "description": "The closed final-report builder is a disconnected parallel abstraction: production buildPreflightReport returns the legacy report and never calls validateAndBuildFinalReport. This dead-end split permits schema tests to pass while the only publishing path emits a different structure, defeating the stated pure-core/effectful-shell boundary.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/daily-preflight.js",
+    "lineRange": "766-770",
+    "snippet": "const report = await runPreflight({ checks, timeoutMs, now }); ... return proof ? { ...report, controlledL3: proof } : report;"
+  },
+  "routeToPhase": "2b"
+}

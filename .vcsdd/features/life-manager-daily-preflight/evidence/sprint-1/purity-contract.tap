@@ -1,0 +1,952 @@
+✖ purity: production report API accepts no caller proof or correlation object (3.199917ms)
+✔ purity: production collectors retain zero injected transport surface (0.099417ms)
+✖ purity: runRef is derived from current internal correlation (0.334167ms)
+✖ purity: raw run correlation is excluded from serialization (0.476584ms)
+✖ purity: successful report uses temp-file fsync rename atomic publication (0.14575ms)
+✖ purity: failed publication removes temporary output and leaves no final artifact (0.112625ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 1
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.058667
+
+✖ failing tests:
+
+test at lib/daily-preflight-purity-contract.test.js:12:1
+✖ purity: production report API accepts no caller proof or correlation object (3.199917ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /buildPreflightReport\(\{[^}]*\bcontrolledL3\b/. Input:
+
+  '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n' +
+    '// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n' +
+    '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { LIVE_MODEL } = require("./call-logic.js");\n' +
+    'const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\n' +
+    'const { schedulerCohortFilter } = require("./user-selector.js");\n' +
+    'const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\n' +
+    'const { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n' +
+    '\n' +
+    'const DEPENDENCY_NAMES = Object.freeze([\n' +
+    '  "health",\n' +
+    '  "telegram",\n' +
+    '  "calendar",\n' +
+    '  "call",\n' +
+    '  "location",\n' +
+    '  "email",\n' +
+    '  "discovery",\n' +
+    '  "gemini",\n' +
+    '  "maps",\n' +
+    ']);\n' +
+    '\n' +
+    'const REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const TELNYX_BASE = "https://api.telnyx.com/v2";\n' +
+    'const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\n' +
+    'const STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\n' +
+    'const PROOF_MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    'const TIMEOUT = Symbol("preflight-timeout");\n' +
+    '\n' +
+    'class PreflightFailure extends Error {\n' +
+    '  constructor(classification, evidence = {}) {\n' +
+    '    super(classification);\n' +
+    '    this.classification = classification;\n' +
+    '    this.evidence = evidence;\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function fail(classification, evidence) {\n' +
+    '  throw new PreflightFailure(classification, evidence);\n' +
+    '}\n' +
+    '\n' +
+    'function requireEnv(env, names) {\n' +
+    '  const missing = names.filter((name) => !String(env[name] || "").trim());\n' +
+    '  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n' +
+    '}\n' +
+    '\n' +
+    'function secretValues(env) {\n' +
+    '  return Object.entries(env || {})\n' +
+    '    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n' +
+    '    .map(([, value]) => String(value));\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeUrl(match) {\n' +
+    '  try {\n' +
+    '    const url = new URL(match);\n' +
+    '    url.username = "";\n' +
+    '    url.password = "";\n' +
+    '    url.search = "";\n' +
+    '    url.hash = "";\n' +
+    '    url.pathname = url.pathname.split("/").map((segment) => {\n' +
+    '      let decoded = segment;\n' +
+    '      try { decoded = decodeURIComponent(segment); } catch {}\n' +
+    '      const opaque = decoded.length >= 12 && (\n' +
+    '        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n' +
+    '        || /[_:-]/.test(decoded)\n' +
+    '        || decoded.length >= 24\n' +
+    '      );\n' +
+    '      return opaque ? "[REDACTED_PATH]" : segment;\n' +
+    '    }).join("/");\n' +
+    '    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n' +
+    '  } catch {\n' +
+    '    return "[REDACTED_URL]";\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeString(value, secrets) {\n' +
+    '  let safe = String(value)\n' +
+    `    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"'<>]+/gi, sanitizeUrl)\n` +
+    '    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n' +
+    '    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n' +
+    '    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n' +
+    '    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n' +
+    '    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n' +
+    '    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n' +
+    '  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n' +
+    '  return safe.slice(0, 200);\n' +
+    '}\n' +
+    '\n' +
+    'const SAFE_EVIDENCE_STRINGS = new Set([\n' +
+    '  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n' +
+    '  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n' +
+    '  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n' +
+    '  "dependency_error", "invalid_result",\n' +
+    ']);\n' +
+    '\n' +
+    'function sanitizeEvidence(value, secrets = [], key = "") {\n' +
+    '  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n' +
+    '    return "[REDACTED]";\n' +
+    '  }\n' +
+    '  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n' +
+    '  if (value && typeof value === "object") {\n' +
+    '    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n' +
+    '      childKey,\n' +
+    '      sanitizeEvidence(childValue, secrets, childKey),\n' +
+    '    ]));\n' +
+    '  }\n' +
+    '  if (typeof value !== "string") return value;\n' +
+    '  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n' +
+    '  return "[REDACTED]";\n' +
+    '}\n' +
+    '\n' +
+    'async function requestJson(fetchImpl, url, options, signal) {\n' +
+    '  const response = await fetchImpl(url, { ...(options || {}), signal });\n' +
+    '  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n' +
+    '  try {\n' +
+    '    return await response.json();\n' +
+    '  } catch {\n' +
+    '    fail("invalid_response", { json: false });\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function hashedRef(value) {\n' +
+    '  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n' +
+    '}\n' +
+    '\n' +
+    'function healthBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'function supabaseHeaders(env) {\n' +
+    '  return {\n' +
+    '    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n' +
+    '    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function currentSchedulerUser(env, fetchImpl, signal) {\n' +
+    '  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n' +
+    '  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n' +
+    '    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n' +
+    '    : "";\n' +
+    '  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n' +
+    '    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n' +
+    '  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n' +
+    '  const user = Array.isArray(rows) && rows[0];\n' +
+    '  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n' +
+    '  return user;\n' +
+    '}\n' +
+    '\n' +
+    'async function healthCheck(env, fetchImpl, signal) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  if (!base) fail("configuration", { configured: false });\n' +
+    '  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n' +
+    '  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n' +
+    '  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n' +
+    '}\n' +
+    '\n' +
+    'function proofIsFresh(proof, nowMs) {\n' +
+    '  const checkedAt = Date.parse(proof && proof.checkedAt);\n' +
+    '  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n' +
+    '}\n' +
+    '\n' +
+    'function isHashedRef(value) {\n' +
+    '  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n' +
+    '}\n' +
+    '\n' +
+    'function expectedServiceUrl(env, pathname) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  let url;\n' +
+    '  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n' +
+    '  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n' +
+    '    fail("configuration", { service_url_valid: false });\n' +
+    '  }\n' +
+    '  return new URL(pathname, `${url.origin}/`).toString();\n' +
+    '}\n' +
+    '\n' +
+    'async function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n' +
+    '  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n' +
+    '  const token = env.LM_TELEGRAM_BOT_TOKEN;\n' +
+    '  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "Content-Type": "application/json" },\n' +
+    '    body: "{}",\n' +
+    '  }, signal);\n' +
+    '  const info = body && body.result;\n' +
+    '  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n' +
+    '  const expectedUrl = expectedServiceUrl(env, "/telegram");\n' +
+    '  let webhookUrl = null;\n' +
+    '  try { webhookUrl = new URL(info && info.url); } catch {}\n' +
+    '  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n' +
+    '  const pending = Number(info && info.pending_update_count);\n' +
+    '  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n' +
+    '  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n' +
+    '    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n' +
+    '  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n' +
+    '      info.last_error_message || info.last_error_date || missingUpdates.length) {\n' +
+    '    fail("webhook_not_ready", {\n' +
+    '      webhook_configured: Boolean(webhookUrl),\n' +
+    '      webhook_url_exact: webhookExact,\n' +
+    '      pending_updates: Number.isFinite(pending) ? pending : -1,\n' +
+    '      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      missing_update_count: missingUpdates.length,\n' +
+    '    });\n' +
+    '  }\n' +
+    '  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n' +
+    '  return {\n' +
+    '    ok: true,\n' +
+    '    evidence: {\n' +
+    '      webhook_host: webhookUrl.hostname,\n' +
+    '      webhook_path: webhookUrl.pathname,\n' +
+    '      webhook_url_exact: true,\n' +
+    '      pending_updates: pending,\n' +
+    '      last_error: false,\n' +
+    '      allowed_updates: [...allowed].sort(),\n' +
+    '      round_trip_verified: true,\n' +
+    '      request_message_ref: proof.requestMessageRef,\n' +
+    '      reply_message_ref: proof.replyMessageRef,\n' +
+    '    },\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function calendarCheck(env, fetchImpl, signal, nowMs) {\n' +
+    '  requireEnv(env, ["COMPOSIO_API_KEY"]);\n' +
+    '  const user = await currentSchedulerUser(env, fetchImpl, signal);\n' +
+    '  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n' +
+    '    body: JSON.stringify({\n' +
+    '      user_id: user.uid,\n' +
+    '      arguments: {\n' +
+    '        calendarId: "primary",\n' +
+    '        singleEvents: true,\n' +
+    '        orderBy: "startTime",\n' +
+    '        timeMin: ne'... 21750 more characters
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:13:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n"use strict";\n\nconst crypto = require("node:crypto");\nconst { LIVE_MODEL } = require("./call-logic.js");\nconst { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\nconst { schedulerCohortFilter } = require("./user-selector.js");\nconst { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\nconst { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n\nconst DEPENDENCY_NAMES = Object.freeze([\n  "health",\n  "telegram",\n  "calendar",\n  "call",\n  "location",\n  "email",\n  "discovery",\n  "gemini",\n  "maps",\n]);\n\nconst REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst TELNYX_BASE = "https://api.telnyx.com/v2";\nconst COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\nconst STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\nconst PROOF_MAX_AGE_MS = 15 * 60 * 1000;\nconst TIMEOUT = Symbol("preflight-timeout");\n\nclass PreflightFailure extends Error {\n  constructor(classification, evidence = {}) {\n    super(classification);\n    this.classification = classification;\n    this.evidence = evidence;\n  }\n}\n\nfunction fail(classification, evidence) {\n  throw new PreflightFailure(classification, evidence);\n}\n\nfunction requireEnv(env, names) {\n  const missing = names.filter((name) => !String(env[name] || "").trim());\n  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n}\n\nfunction secretValues(env) {\n  return Object.entries(env || {})\n    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n    .map(([, value]) => String(value));\n}\n\nfunction sanitizeUrl(match) {\n  try {\n    const url = new URL(match);\n    url.username = "";\n    url.password = "";\n    url.search = "";\n    url.hash = "";\n    url.pathname = url.pathname.split("/").map((segment) => {\n      let decoded = segment;\n      try { decoded = decodeURIComponent(segment); } catch {}\n      const opaque = decoded.length >= 12 && (\n        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n        || /[_:-]/.test(decoded)\n        || decoded.length >= 24\n      );\n      return opaque ? "[REDACTED_PATH]" : segment;\n    }).join("/");\n    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n  } catch {\n    return "[REDACTED_URL]";\n  }\n}\n\nfunction sanitizeString(value, secrets) {\n  let safe = String(value)\n    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"\'<>]+/gi, sanitizeUrl)\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n  return safe.slice(0, 200);\n}\n\nconst SAFE_EVIDENCE_STRINGS = new Set([\n  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n  "dependency_error", "invalid_result",\n]);\n\nfunction sanitizeEvidence(value, secrets = [], key = "") {\n  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n    return "[REDACTED]";\n  }\n  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n  if (value && typeof value === "object") {\n    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n      childKey,\n      sanitizeEvidence(childValue, secrets, childKey),\n    ]));\n  }\n  if (typeof value !== "string") return value;\n  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n  return "[REDACTED]";\n}\n\nasync function requestJson(fetchImpl, url, options, signal) {\n  const response = await fetchImpl(url, { ...(options || {}), signal });\n  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n  try {\n    return await response.json();\n  } catch {\n    fail("invalid_response", { json: false });\n  }\n}\n\nfunction hashedRef(value) {\n  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n}\n\nfunction healthBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n}\n\nfunction supabaseHeaders(env) {\n  return {\n    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n  };\n}\n\nasync function currentSchedulerUser(env, fetchImpl, signal) {\n  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n    : "";\n  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n  const user = Array.isArray(rows) && rows[0];\n  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n  return user;\n}\n\nasync function healthCheck(env, fetchImpl, signal) {\n  const base = healthBase(env);\n  if (!base) fail("configuration", { configured: false });\n  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n}\n\nfunction proofIsFresh(proof, nowMs) {\n  const checkedAt = Date.parse(proof && proof.checkedAt);\n  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n}\n\nfunction isHashedRef(value) {\n  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n}\n\nfunction expectedServiceUrl(env, pathname) {\n  const base = healthBase(env);\n  let url;\n  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n    fail("configuration", { service_url_valid: false });\n  }\n  return new URL(pathname, `${url.origin}/`).toString();\n}\n\nasync function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n  const token = env.LM_TELEGRAM_BOT_TOKEN;\n  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: "{}",\n  }, signal);\n  const info = body && body.result;\n  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n  const expectedUrl = expectedServiceUrl(env, "/telegram");\n  let webhookUrl = null;\n  try { webhookUrl = new URL(info && info.url); } catch {}\n  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n  const pending = Number(info && info.pending_update_count);\n  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n      info.last_error_message || info.last_error_date || missingUpdates.length) {\n    fail("webhook_not_ready", {\n      webhook_configured: Boolean(webhookUrl),\n      webhook_url_exact: webhookExact,\n      pending_updates: Number.isFinite(pending) ? pending : -1,\n      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n      missing_update_count: missingUpdates.length,\n    });\n  }\n  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n  return {\n    ok: true,\n    evidence: {\n      webhook_host: webhookUrl.hostname,\n      webhook_path: webhookUrl.pathname,\n      webhook_url_exact: true,\n      pending_updates: pending,\n      last_error: false,\n      allowed_updates: [...allowed].sort(),\n      round_trip_verified: true,\n      request_message_ref: proof.requestMessageRef,\n      reply_message_ref: proof.replyMessageRef,\n    },\n  };\n}\n\nasync function calendarCheck(env, fetchImpl, signal, nowMs) {\n  requireEnv(env, ["COMPOSIO_API_KEY"]);\n  const user = await currentSchedulerUser(env, fetchImpl, signal);\n  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n    method: "POST",\n    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n    body: JSON.stringify({\n      user_id: user.uid,\n      arguments: {\n        calendarId: "primary",\n        singleEvents: true,\n        orderBy: "startTime",\n        timeMin: ne'... 21750 more characters,
+    expected: /buildPreflightReport\(\{[^}]*\bcontrolledL3\b/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-purity-contract.test.js:20:1
+✖ purity: runRef is derived from current internal correlation (0.334167ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /runRef:\s*hashedRef\(runCorrelation\)/. Input:
+
+  '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n' +
+    '// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n' +
+    '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { LIVE_MODEL } = require("./call-logic.js");\n' +
+    'const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\n' +
+    'const { schedulerCohortFilter } = require("./user-selector.js");\n' +
+    'const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\n' +
+    'const { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n' +
+    '\n' +
+    'const DEPENDENCY_NAMES = Object.freeze([\n' +
+    '  "health",\n' +
+    '  "telegram",\n' +
+    '  "calendar",\n' +
+    '  "call",\n' +
+    '  "location",\n' +
+    '  "email",\n' +
+    '  "discovery",\n' +
+    '  "gemini",\n' +
+    '  "maps",\n' +
+    ']);\n' +
+    '\n' +
+    'const REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const TELNYX_BASE = "https://api.telnyx.com/v2";\n' +
+    'const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\n' +
+    'const STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\n' +
+    'const PROOF_MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    'const TIMEOUT = Symbol("preflight-timeout");\n' +
+    '\n' +
+    'class PreflightFailure extends Error {\n' +
+    '  constructor(classification, evidence = {}) {\n' +
+    '    super(classification);\n' +
+    '    this.classification = classification;\n' +
+    '    this.evidence = evidence;\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function fail(classification, evidence) {\n' +
+    '  throw new PreflightFailure(classification, evidence);\n' +
+    '}\n' +
+    '\n' +
+    'function requireEnv(env, names) {\n' +
+    '  const missing = names.filter((name) => !String(env[name] || "").trim());\n' +
+    '  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n' +
+    '}\n' +
+    '\n' +
+    'function secretValues(env) {\n' +
+    '  return Object.entries(env || {})\n' +
+    '    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n' +
+    '    .map(([, value]) => String(value));\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeUrl(match) {\n' +
+    '  try {\n' +
+    '    const url = new URL(match);\n' +
+    '    url.username = "";\n' +
+    '    url.password = "";\n' +
+    '    url.search = "";\n' +
+    '    url.hash = "";\n' +
+    '    url.pathname = url.pathname.split("/").map((segment) => {\n' +
+    '      let decoded = segment;\n' +
+    '      try { decoded = decodeURIComponent(segment); } catch {}\n' +
+    '      const opaque = decoded.length >= 12 && (\n' +
+    '        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n' +
+    '        || /[_:-]/.test(decoded)\n' +
+    '        || decoded.length >= 24\n' +
+    '      );\n' +
+    '      return opaque ? "[REDACTED_PATH]" : segment;\n' +
+    '    }).join("/");\n' +
+    '    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n' +
+    '  } catch {\n' +
+    '    return "[REDACTED_URL]";\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeString(value, secrets) {\n' +
+    '  let safe = String(value)\n' +
+    `    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"'<>]+/gi, sanitizeUrl)\n` +
+    '    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n' +
+    '    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n' +
+    '    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n' +
+    '    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n' +
+    '    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n' +
+    '    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n' +
+    '  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n' +
+    '  return safe.slice(0, 200);\n' +
+    '}\n' +
+    '\n' +
+    'const SAFE_EVIDENCE_STRINGS = new Set([\n' +
+    '  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n' +
+    '  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n' +
+    '  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n' +
+    '  "dependency_error", "invalid_result",\n' +
+    ']);\n' +
+    '\n' +
+    'function sanitizeEvidence(value, secrets = [], key = "") {\n' +
+    '  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n' +
+    '    return "[REDACTED]";\n' +
+    '  }\n' +
+    '  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n' +
+    '  if (value && typeof value === "object") {\n' +
+    '    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n' +
+    '      childKey,\n' +
+    '      sanitizeEvidence(childValue, secrets, childKey),\n' +
+    '    ]));\n' +
+    '  }\n' +
+    '  if (typeof value !== "string") return value;\n' +
+    '  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n' +
+    '  return "[REDACTED]";\n' +
+    '}\n' +
+    '\n' +
+    'async function requestJson(fetchImpl, url, options, signal) {\n' +
+    '  const response = await fetchImpl(url, { ...(options || {}), signal });\n' +
+    '  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n' +
+    '  try {\n' +
+    '    return await response.json();\n' +
+    '  } catch {\n' +
+    '    fail("invalid_response", { json: false });\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function hashedRef(value) {\n' +
+    '  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n' +
+    '}\n' +
+    '\n' +
+    'function healthBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'function supabaseHeaders(env) {\n' +
+    '  return {\n' +
+    '    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n' +
+    '    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function currentSchedulerUser(env, fetchImpl, signal) {\n' +
+    '  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n' +
+    '  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n' +
+    '    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n' +
+    '    : "";\n' +
+    '  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n' +
+    '    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n' +
+    '  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n' +
+    '  const user = Array.isArray(rows) && rows[0];\n' +
+    '  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n' +
+    '  return user;\n' +
+    '}\n' +
+    '\n' +
+    'async function healthCheck(env, fetchImpl, signal) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  if (!base) fail("configuration", { configured: false });\n' +
+    '  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n' +
+    '  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n' +
+    '  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n' +
+    '}\n' +
+    '\n' +
+    'function proofIsFresh(proof, nowMs) {\n' +
+    '  const checkedAt = Date.parse(proof && proof.checkedAt);\n' +
+    '  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n' +
+    '}\n' +
+    '\n' +
+    'function isHashedRef(value) {\n' +
+    '  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n' +
+    '}\n' +
+    '\n' +
+    'function expectedServiceUrl(env, pathname) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  let url;\n' +
+    '  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n' +
+    '  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n' +
+    '    fail("configuration", { service_url_valid: false });\n' +
+    '  }\n' +
+    '  return new URL(pathname, `${url.origin}/`).toString();\n' +
+    '}\n' +
+    '\n' +
+    'async function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n' +
+    '  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n' +
+    '  const token = env.LM_TELEGRAM_BOT_TOKEN;\n' +
+    '  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "Content-Type": "application/json" },\n' +
+    '    body: "{}",\n' +
+    '  }, signal);\n' +
+    '  const info = body && body.result;\n' +
+    '  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n' +
+    '  const expectedUrl = expectedServiceUrl(env, "/telegram");\n' +
+    '  let webhookUrl = null;\n' +
+    '  try { webhookUrl = new URL(info && info.url); } catch {}\n' +
+    '  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n' +
+    '  const pending = Number(info && info.pending_update_count);\n' +
+    '  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n' +
+    '  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n' +
+    '    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n' +
+    '  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n' +
+    '      info.last_error_message || info.last_error_date || missingUpdates.length) {\n' +
+    '    fail("webhook_not_ready", {\n' +
+    '      webhook_configured: Boolean(webhookUrl),\n' +
+    '      webhook_url_exact: webhookExact,\n' +
+    '      pending_updates: Number.isFinite(pending) ? pending : -1,\n' +
+    '      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      missing_update_count: missingUpdates.length,\n' +
+    '    });\n' +
+    '  }\n' +
+    '  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n' +
+    '  return {\n' +
+    '    ok: true,\n' +
+    '    evidence: {\n' +
+    '      webhook_host: webhookUrl.hostname,\n' +
+    '      webhook_path: webhookUrl.pathname,\n' +
+    '      webhook_url_exact: true,\n' +
+    '      pending_updates: pending,\n' +
+    '      last_error: false,\n' +
+    '      allowed_updates: [...allowed].sort(),\n' +
+    '      round_trip_verified: true,\n' +
+    '      request_message_ref: proof.requestMessageRef,\n' +
+    '      reply_message_ref: proof.replyMessageRef,\n' +
+    '    },\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function calendarCheck(env, fetchImpl, signal, nowMs) {\n' +
+    '  requireEnv(env, ["COMPOSIO_API_KEY"]);\n' +
+    '  const user = await currentSchedulerUser(env, fetchImpl, signal);\n' +
+    '  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n' +
+    '    body: JSON.stringify({\n' +
+    '      user_id: user.uid,\n' +
+    '      arguments: {\n' +
+    '        calendarId: "primary",\n' +
+    '        singleEvents: true,\n' +
+    '        orderBy: "startTime",\n' +
+    '        timeMin: ne'... 21750 more characters
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:21:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n"use strict";\n\nconst crypto = require("node:crypto");\nconst { LIVE_MODEL } = require("./call-logic.js");\nconst { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\nconst { schedulerCohortFilter } = require("./user-selector.js");\nconst { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\nconst { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n\nconst DEPENDENCY_NAMES = Object.freeze([\n  "health",\n  "telegram",\n  "calendar",\n  "call",\n  "location",\n  "email",\n  "discovery",\n  "gemini",\n  "maps",\n]);\n\nconst REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst TELNYX_BASE = "https://api.telnyx.com/v2";\nconst COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\nconst STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\nconst PROOF_MAX_AGE_MS = 15 * 60 * 1000;\nconst TIMEOUT = Symbol("preflight-timeout");\n\nclass PreflightFailure extends Error {\n  constructor(classification, evidence = {}) {\n    super(classification);\n    this.classification = classification;\n    this.evidence = evidence;\n  }\n}\n\nfunction fail(classification, evidence) {\n  throw new PreflightFailure(classification, evidence);\n}\n\nfunction requireEnv(env, names) {\n  const missing = names.filter((name) => !String(env[name] || "").trim());\n  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n}\n\nfunction secretValues(env) {\n  return Object.entries(env || {})\n    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n    .map(([, value]) => String(value));\n}\n\nfunction sanitizeUrl(match) {\n  try {\n    const url = new URL(match);\n    url.username = "";\n    url.password = "";\n    url.search = "";\n    url.hash = "";\n    url.pathname = url.pathname.split("/").map((segment) => {\n      let decoded = segment;\n      try { decoded = decodeURIComponent(segment); } catch {}\n      const opaque = decoded.length >= 12 && (\n        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n        || /[_:-]/.test(decoded)\n        || decoded.length >= 24\n      );\n      return opaque ? "[REDACTED_PATH]" : segment;\n    }).join("/");\n    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n  } catch {\n    return "[REDACTED_URL]";\n  }\n}\n\nfunction sanitizeString(value, secrets) {\n  let safe = String(value)\n    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"\'<>]+/gi, sanitizeUrl)\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n  return safe.slice(0, 200);\n}\n\nconst SAFE_EVIDENCE_STRINGS = new Set([\n  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n  "dependency_error", "invalid_result",\n]);\n\nfunction sanitizeEvidence(value, secrets = [], key = "") {\n  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n    return "[REDACTED]";\n  }\n  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n  if (value && typeof value === "object") {\n    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n      childKey,\n      sanitizeEvidence(childValue, secrets, childKey),\n    ]));\n  }\n  if (typeof value !== "string") return value;\n  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n  return "[REDACTED]";\n}\n\nasync function requestJson(fetchImpl, url, options, signal) {\n  const response = await fetchImpl(url, { ...(options || {}), signal });\n  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n  try {\n    return await response.json();\n  } catch {\n    fail("invalid_response", { json: false });\n  }\n}\n\nfunction hashedRef(value) {\n  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n}\n\nfunction healthBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n}\n\nfunction supabaseHeaders(env) {\n  return {\n    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n  };\n}\n\nasync function currentSchedulerUser(env, fetchImpl, signal) {\n  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n    : "";\n  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n  const user = Array.isArray(rows) && rows[0];\n  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n  return user;\n}\n\nasync function healthCheck(env, fetchImpl, signal) {\n  const base = healthBase(env);\n  if (!base) fail("configuration", { configured: false });\n  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n}\n\nfunction proofIsFresh(proof, nowMs) {\n  const checkedAt = Date.parse(proof && proof.checkedAt);\n  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n}\n\nfunction isHashedRef(value) {\n  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n}\n\nfunction expectedServiceUrl(env, pathname) {\n  const base = healthBase(env);\n  let url;\n  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n    fail("configuration", { service_url_valid: false });\n  }\n  return new URL(pathname, `${url.origin}/`).toString();\n}\n\nasync function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n  const token = env.LM_TELEGRAM_BOT_TOKEN;\n  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: "{}",\n  }, signal);\n  const info = body && body.result;\n  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n  const expectedUrl = expectedServiceUrl(env, "/telegram");\n  let webhookUrl = null;\n  try { webhookUrl = new URL(info && info.url); } catch {}\n  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n  const pending = Number(info && info.pending_update_count);\n  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n      info.last_error_message || info.last_error_date || missingUpdates.length) {\n    fail("webhook_not_ready", {\n      webhook_configured: Boolean(webhookUrl),\n      webhook_url_exact: webhookExact,\n      pending_updates: Number.isFinite(pending) ? pending : -1,\n      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n      missing_update_count: missingUpdates.length,\n    });\n  }\n  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n  return {\n    ok: true,\n    evidence: {\n      webhook_host: webhookUrl.hostname,\n      webhook_path: webhookUrl.pathname,\n      webhook_url_exact: true,\n      pending_updates: pending,\n      last_error: false,\n      allowed_updates: [...allowed].sort(),\n      round_trip_verified: true,\n      request_message_ref: proof.requestMessageRef,\n      reply_message_ref: proof.replyMessageRef,\n    },\n  };\n}\n\nasync function calendarCheck(env, fetchImpl, signal, nowMs) {\n  requireEnv(env, ["COMPOSIO_API_KEY"]);\n  const user = await currentSchedulerUser(env, fetchImpl, signal);\n  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n    method: "POST",\n    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n    body: JSON.stringify({\n      user_id: user.uid,\n      arguments: {\n        calendarId: "primary",\n        singleEvents: true,\n        orderBy: "startTime",\n        timeMin: ne'... 21750 more characters,
+    expected: /runRef:\s*hashedRef\(runCorrelation\)/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-purity-contract.test.js:24:1
+✖ purity: raw run correlation is excluded from serialization (0.476584ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /delete\s+\w+\.runCorrelation|\{\s*runCorrelation\s*,\s*\.\.\./. Input:
+
+  '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n' +
+    '// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n' +
+    '"use strict";\n' +
+    '\n' +
+    'const crypto = require("node:crypto");\n' +
+    'const { LIVE_MODEL } = require("./call-logic.js");\n' +
+    'const { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\n' +
+    'const { schedulerCohortFilter } = require("./user-selector.js");\n' +
+    'const { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\n' +
+    'const { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n' +
+    '\n' +
+    'const DEPENDENCY_NAMES = Object.freeze([\n' +
+    '  "health",\n' +
+    '  "telegram",\n' +
+    '  "calendar",\n' +
+    '  "call",\n' +
+    '  "location",\n' +
+    '  "email",\n' +
+    '  "discovery",\n' +
+    '  "gemini",\n' +
+    '  "maps",\n' +
+    ']);\n' +
+    '\n' +
+    'const REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\n' +
+    'const TELNYX_BASE = "https://api.telnyx.com/v2";\n' +
+    'const COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\n' +
+    'const STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\n' +
+    'const PROOF_MAX_AGE_MS = 15 * 60 * 1000;\n' +
+    'const TIMEOUT = Symbol("preflight-timeout");\n' +
+    '\n' +
+    'class PreflightFailure extends Error {\n' +
+    '  constructor(classification, evidence = {}) {\n' +
+    '    super(classification);\n' +
+    '    this.classification = classification;\n' +
+    '    this.evidence = evidence;\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function fail(classification, evidence) {\n' +
+    '  throw new PreflightFailure(classification, evidence);\n' +
+    '}\n' +
+    '\n' +
+    'function requireEnv(env, names) {\n' +
+    '  const missing = names.filter((name) => !String(env[name] || "").trim());\n' +
+    '  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n' +
+    '}\n' +
+    '\n' +
+    'function secretValues(env) {\n' +
+    '  return Object.entries(env || {})\n' +
+    '    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n' +
+    '    .map(([, value]) => String(value));\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeUrl(match) {\n' +
+    '  try {\n' +
+    '    const url = new URL(match);\n' +
+    '    url.username = "";\n' +
+    '    url.password = "";\n' +
+    '    url.search = "";\n' +
+    '    url.hash = "";\n' +
+    '    url.pathname = url.pathname.split("/").map((segment) => {\n' +
+    '      let decoded = segment;\n' +
+    '      try { decoded = decodeURIComponent(segment); } catch {}\n' +
+    '      const opaque = decoded.length >= 12 && (\n' +
+    '        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n' +
+    '        || /[_:-]/.test(decoded)\n' +
+    '        || decoded.length >= 24\n' +
+    '      );\n' +
+    '      return opaque ? "[REDACTED_PATH]" : segment;\n' +
+    '    }).join("/");\n' +
+    '    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n' +
+    '  } catch {\n' +
+    '    return "[REDACTED_URL]";\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function sanitizeString(value, secrets) {\n' +
+    '  let safe = String(value)\n' +
+    `    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"'<>]+/gi, sanitizeUrl)\n` +
+    '    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n' +
+    '    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n' +
+    '    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n' +
+    '    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n' +
+    '    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n' +
+    '    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n' +
+    '    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n' +
+    '  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n' +
+    '  return safe.slice(0, 200);\n' +
+    '}\n' +
+    '\n' +
+    'const SAFE_EVIDENCE_STRINGS = new Set([\n' +
+    '  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n' +
+    '  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n' +
+    '  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n' +
+    '  "dependency_error", "invalid_result",\n' +
+    ']);\n' +
+    '\n' +
+    'function sanitizeEvidence(value, secrets = [], key = "") {\n' +
+    '  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n' +
+    '    return "[REDACTED]";\n' +
+    '  }\n' +
+    '  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n' +
+    '  if (value && typeof value === "object") {\n' +
+    '    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n' +
+    '      childKey,\n' +
+    '      sanitizeEvidence(childValue, secrets, childKey),\n' +
+    '    ]));\n' +
+    '  }\n' +
+    '  if (typeof value !== "string") return value;\n' +
+    '  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n' +
+    '  return "[REDACTED]";\n' +
+    '}\n' +
+    '\n' +
+    'async function requestJson(fetchImpl, url, options, signal) {\n' +
+    '  const response = await fetchImpl(url, { ...(options || {}), signal });\n' +
+    '  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n' +
+    '  try {\n' +
+    '    return await response.json();\n' +
+    '  } catch {\n' +
+    '    fail("invalid_response", { json: false });\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function hashedRef(value) {\n' +
+    '  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n' +
+    '}\n' +
+    '\n' +
+    'function healthBase(env) {\n' +
+    '  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n' +
+    '  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n' +
+    '  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n' +
+    '  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n' +
+    '}\n' +
+    '\n' +
+    'function supabaseHeaders(env) {\n' +
+    '  return {\n' +
+    '    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n' +
+    '    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function currentSchedulerUser(env, fetchImpl, signal) {\n' +
+    '  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n' +
+    '  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n' +
+    '    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n' +
+    '    : "";\n' +
+    '  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n' +
+    '    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n' +
+    '  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n' +
+    '  const user = Array.isArray(rows) && rows[0];\n' +
+    '  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n' +
+    '  return user;\n' +
+    '}\n' +
+    '\n' +
+    'async function healthCheck(env, fetchImpl, signal) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  if (!base) fail("configuration", { configured: false });\n' +
+    '  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n' +
+    '  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n' +
+    '  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n' +
+    '}\n' +
+    '\n' +
+    'function proofIsFresh(proof, nowMs) {\n' +
+    '  const checkedAt = Date.parse(proof && proof.checkedAt);\n' +
+    '  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n' +
+    '}\n' +
+    '\n' +
+    'function isHashedRef(value) {\n' +
+    '  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n' +
+    '}\n' +
+    '\n' +
+    'function expectedServiceUrl(env, pathname) {\n' +
+    '  const base = healthBase(env);\n' +
+    '  let url;\n' +
+    '  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n' +
+    '  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n' +
+    '    fail("configuration", { service_url_valid: false });\n' +
+    '  }\n' +
+    '  return new URL(pathname, `${url.origin}/`).toString();\n' +
+    '}\n' +
+    '\n' +
+    'async function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n' +
+    '  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n' +
+    '  const token = env.LM_TELEGRAM_BOT_TOKEN;\n' +
+    '  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "Content-Type": "application/json" },\n' +
+    '    body: "{}",\n' +
+    '  }, signal);\n' +
+    '  const info = body && body.result;\n' +
+    '  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n' +
+    '  const expectedUrl = expectedServiceUrl(env, "/telegram");\n' +
+    '  let webhookUrl = null;\n' +
+    '  try { webhookUrl = new URL(info && info.url); } catch {}\n' +
+    '  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n' +
+    '  const pending = Number(info && info.pending_update_count);\n' +
+    '  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n' +
+    '  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n' +
+    '    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n' +
+    '  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n' +
+    '      info.last_error_message || info.last_error_date || missingUpdates.length) {\n' +
+    '    fail("webhook_not_ready", {\n' +
+    '      webhook_configured: Boolean(webhookUrl),\n' +
+    '      webhook_url_exact: webhookExact,\n' +
+    '      pending_updates: Number.isFinite(pending) ? pending : -1,\n' +
+    '      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n' +
+    '      missing_update_count: missingUpdates.length,\n' +
+    '    });\n' +
+    '  }\n' +
+    '  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n' +
+    '  return {\n' +
+    '    ok: true,\n' +
+    '    evidence: {\n' +
+    '      webhook_host: webhookUrl.hostname,\n' +
+    '      webhook_path: webhookUrl.pathname,\n' +
+    '      webhook_url_exact: true,\n' +
+    '      pending_updates: pending,\n' +
+    '      last_error: false,\n' +
+    '      allowed_updates: [...allowed].sort(),\n' +
+    '      round_trip_verified: true,\n' +
+    '      request_message_ref: proof.requestMessageRef,\n' +
+    '      reply_message_ref: proof.replyMessageRef,\n' +
+    '    },\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    'async function calendarCheck(env, fetchImpl, signal, nowMs) {\n' +
+    '  requireEnv(env, ["COMPOSIO_API_KEY"]);\n' +
+    '  const user = await currentSchedulerUser(env, fetchImpl, signal);\n' +
+    '  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n' +
+    '    method: "POST",\n' +
+    '    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n' +
+    '    body: JSON.stringify({\n' +
+    '      user_id: user.uid,\n' +
+    '      arguments: {\n' +
+    '        calendarId: "primary",\n' +
+    '        singleEvents: true,\n' +
+    '        orderBy: "startTime",\n' +
+    '        timeMin: ne'... 21750 more characters
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:25:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '// Fail-closed, read-only readiness audit for the production DAILY runtime.\n// Every adapter returns curated evidence only; raw provider bodies, credentials and PII never enter reports.\n"use strict";\n\nconst crypto = require("node:crypto");\nconst { LIVE_MODEL } = require("./call-logic.js");\nconst { GATE_ORDER, discoveryMessage } = require("./feature-discovery.js");\nconst { schedulerCohortFilter } = require("./user-selector.js");\nconst { acceptRouteResults, minutesFromSeconds, parseDurationSeconds } = require("./travel.js");\nconst { collectProductionControlledL3 } = require("./daily-preflight-collectors.js");\n\nconst DEPENDENCY_NAMES = Object.freeze([\n  "health",\n  "telegram",\n  "calendar",\n  "call",\n  "location",\n  "email",\n  "discovery",\n  "gemini",\n  "maps",\n]);\n\nconst REQUIRED_TELEGRAM_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);\nconst TELNYX_BASE = "https://api.telnyx.com/v2";\nconst COMPOSIO_EXEC = "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";\nconst STANDARD_GEMINI_MODEL = "gemini-2.5-flash";\nconst PROOF_MAX_AGE_MS = 15 * 60 * 1000;\nconst TIMEOUT = Symbol("preflight-timeout");\n\nclass PreflightFailure extends Error {\n  constructor(classification, evidence = {}) {\n    super(classification);\n    this.classification = classification;\n    this.evidence = evidence;\n  }\n}\n\nfunction fail(classification, evidence) {\n  throw new PreflightFailure(classification, evidence);\n}\n\nfunction requireEnv(env, names) {\n  const missing = names.filter((name) => !String(env[name] || "").trim());\n  if (missing.length) fail("configuration", { configured: false, missing_count: missing.length });\n}\n\nfunction secretValues(env) {\n  return Object.entries(env || {})\n    .filter(([name, value]) => /(?:KEY|TOKEN|SECRET|PHONE_NUMBER|CONNECTION_ID)$/i.test(name) && String(value || "").length >= 4)\n    .map(([, value]) => String(value));\n}\n\nfunction sanitizeUrl(match) {\n  try {\n    const url = new URL(match);\n    url.username = "";\n    url.password = "";\n    url.search = "";\n    url.hash = "";\n    url.pathname = url.pathname.split("/").map((segment) => {\n      let decoded = segment;\n      try { decoded = decodeURIComponent(segment); } catch {}\n      const opaque = decoded.length >= 12 && (\n        /[A-Za-z]/.test(decoded) && /\\d/.test(decoded)\n        || /[_:-]/.test(decoded)\n        || decoded.length >= 24\n      );\n      return opaque ? "[REDACTED_PATH]" : segment;\n    }).join("/");\n    return url.toString().replace(/\\/$/, url.pathname === "/" ? "" : "/");\n  } catch {\n    return "[REDACTED_URL]";\n  }\n}\n\nfunction sanitizeString(value, secrets) {\n  let safe = String(value)\n    .replace(/\\b(?:https?|wss?):\\/\\/[^\\s"\'<>]+/gi, sanitizeUrl)\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")\n    .replace(/\\+\\d[\\d ()-]{7,}\\d/g, "[REDACTED_NUMBER]")\n    .replace(/(?<!\\d)0\\d{1,4}[- ()]\\d{1,4}[- ]\\d{3,4}(?!\\d)/g, "[REDACTED_NUMBER]")\n    .replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")\n    .replace(/\\b(?:api[_-]?key|access[_-]?token|token|secret)\\s*[=:]\\s*[^\\s,;]+/gi, "$1=[REDACTED]")\n    .replace(/\\b(?:sk|re|tg)_[A-Za-z0-9_-]{12,}\\b/g, "[REDACTED_KEY]")\n    .replace(/\\b(?:chat|user)(?:_?id)?\\s*[=: ]+\\d{5,}\\b/gi, "$1=[REDACTED_ID]")\n    .replace(/\\b\\d{8,}\\b/g, "[REDACTED_ID]");\n  for (const secret of secrets) safe = safe.split(secret).join("[REDACTED]");\n  return safe.slice(0, 200);\n}\n\nconst SAFE_EVIDENCE_STRINGS = new Set([\n  "pass", "fail", "timeout", "active", "fresh", "expired", "absent", "set", "never", "due", "throttled", "none",\n  "life-call", "composio", "location", "message", "edited_message", "callback_query", "routes_drive", "legacy_transit",\n  "USD", "unknown", LIVE_MODEL, STANDARD_GEMINI_MODEL,\n  "dependency_error", "invalid_result",\n]);\n\nfunction sanitizeEvidence(value, secrets = [], key = "") {\n  if (/(?:secret|token|api.?key|authorization|phone|email|address|latitude|longitude|chat.?id|\\buid\\b|raw|body|error|response|url|host|path|name)/i.test(key)) {\n    return "[REDACTED]";\n  }\n  if (Array.isArray(value)) return value.map((item) => sanitizeEvidence(item, secrets));\n  if (value && typeof value === "object") {\n    return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [\n      childKey,\n      sanitizeEvidence(childValue, secrets, childKey),\n    ]));\n  }\n  if (typeof value !== "string") return value;\n  if (isHashedRef(value) || SAFE_EVIDENCE_STRINGS.has(value)) return sanitizeString(value, secrets);\n  return "[REDACTED]";\n}\n\nasync function requestJson(fetchImpl, url, options, signal) {\n  const response = await fetchImpl(url, { ...(options || {}), signal });\n  if (!response || !response.ok) fail("http_error", { http_status: Number(response && response.status) || 0 });\n  try {\n    return await response.json();\n  } catch {\n    fail("invalid_response", { json: false });\n  }\n}\n\nfunction hashedRef(value) {\n  return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12);\n}\n\nfunction healthBase(env) {\n  if (env.LIFE_CALL_HEALTH_URL) return String(env.LIFE_CALL_HEALTH_URL).replace(/\\/health\\/?$/, "");\n  if (env.RAILWAY_PUBLIC_DOMAIN) return `https://${String(env.RAILWAY_PUBLIC_DOMAIN).replace(/^https?:\\/\\//, "")}`;\n  if (env.PUBLIC_WSS) return String(env.PUBLIC_WSS).replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\\/$/, "");\n  return String(env.PUBLIC_BASE || "").replace(/\\/$/, "");\n}\n\nfunction supabaseHeaders(env) {\n  return {\n    apikey: env.SUPABASE_SERVICE_ROLE_KEY,\n    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,\n  };\n}\n\nasync function currentSchedulerUser(env, fetchImpl, signal) {\n  requireEnv(env, ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);\n  const uidFilter = String(env.LM_PREFLIGHT_UID || "").trim()\n    ? `uid=eq.${encodeURIComponent(String(env.LM_PREFLIGHT_UID).trim())}&`\n    : "";\n  const url = `${env.SUPABASE_URL}/rest/v1/lm_users?${uidFilter}${schedulerCohortFilter()}` +\n    "&select=uid,calendar_provider,gmail_account_id&order=uid.asc&limit=1";\n  const rows = await requestJson(fetchImpl, url, { headers: supabaseHeaders(env) }, signal);\n  const user = Array.isArray(rows) && rows[0];\n  if (!user || !user.uid) fail("state_unavailable", { current_user: false });\n  return user;\n}\n\nasync function healthCheck(env, fetchImpl, signal) {\n  const base = healthBase(env);\n  if (!base) fail("configuration", { configured: false });\n  const body = await requestJson(fetchImpl, `${base}/health`, {}, signal);\n  if (!body || body.ok !== true || body.service !== "life-call") fail("unhealthy", { healthy: false });\n  return { ok: true, evidence: { service: "life-call", healthy: true, build: String(body.build || "unreported") } };\n}\n\nfunction proofIsFresh(proof, nowMs) {\n  const checkedAt = Date.parse(proof && proof.checkedAt);\n  return Number.isFinite(checkedAt) && checkedAt <= nowMs + 60_000 && checkedAt >= nowMs - PROOF_MAX_AGE_MS;\n}\n\nfunction isHashedRef(value) {\n  return /^sha256:[a-f0-9]{12,64}$/i.test(String(value || ""));\n}\n\nfunction expectedServiceUrl(env, pathname) {\n  const base = healthBase(env);\n  let url;\n  try { url = new URL(base); } catch { fail("configuration", { service_url_valid: false }); }\n  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {\n    fail("configuration", { service_url_valid: false });\n  }\n  return new URL(pathname, `${url.origin}/`).toString();\n}\n\nasync function telegramCheck(env, fetchImpl, signal, nowMs, proof) {\n  requireEnv(env, ["LM_TELEGRAM_BOT_TOKEN", "LM_TELEGRAM_WEBHOOK_SECRET"]);\n  const token = env.LM_TELEGRAM_BOT_TOKEN;\n  const body = await requestJson(fetchImpl, `https://api.telegram.org/bot${token}/getWebhookInfo`, {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: "{}",\n  }, signal);\n  const info = body && body.result;\n  const allowed = Array.isArray(info && info.allowed_updates) ? info.allowed_updates : [];\n  const expectedUrl = expectedServiceUrl(env, "/telegram");\n  let webhookUrl = null;\n  try { webhookUrl = new URL(info && info.url); } catch {}\n  const webhookExact = Boolean(webhookUrl && webhookUrl.toString() === expectedUrl);\n  const pending = Number(info && info.pending_update_count);\n  const missingUpdates = REQUIRED_TELEGRAM_UPDATES.filter((name) => !allowed.includes(name));\n  const roundTripVerified = Boolean(proof && proof.verified === true && proofIsFresh(proof, nowMs) &&\n    isHashedRef(proof.requestMessageRef) && isHashedRef(proof.replyMessageRef));\n  if (body.ok !== true || !webhookExact || !Number.isFinite(pending) || pending !== 0 ||\n      info.last_error_message || info.last_error_date || missingUpdates.length) {\n    fail("webhook_not_ready", {\n      webhook_configured: Boolean(webhookUrl),\n      webhook_url_exact: webhookExact,\n      pending_updates: Number.isFinite(pending) ? pending : -1,\n      last_error: Boolean(info && (info.last_error_message || info.last_error_date)),\n      missing_update_count: missingUpdates.length,\n    });\n  }\n  if (!roundTripVerified) fail("round_trip_unverified", { webhook_url_exact: true, round_trip_verified: false });\n  return {\n    ok: true,\n    evidence: {\n      webhook_host: webhookUrl.hostname,\n      webhook_path: webhookUrl.pathname,\n      webhook_url_exact: true,\n      pending_updates: pending,\n      last_error: false,\n      allowed_updates: [...allowed].sort(),\n      round_trip_verified: true,\n      request_message_ref: proof.requestMessageRef,\n      reply_message_ref: proof.replyMessageRef,\n    },\n  };\n}\n\nasync function calendarCheck(env, fetchImpl, signal, nowMs) {\n  requireEnv(env, ["COMPOSIO_API_KEY"]);\n  const user = await currentSchedulerUser(env, fetchImpl, signal);\n  const body = await requestJson(fetchImpl, COMPOSIO_EXEC, {\n    method: "POST",\n    headers: { "x-api-key": env.COMPOSIO_API_KEY, "Content-Type": "application/json" },\n    body: JSON.stringify({\n      user_id: user.uid,\n      arguments: {\n        calendarId: "primary",\n        singleEvents: true,\n        orderBy: "startTime",\n        timeMin: ne'... 21750 more characters,
+    expected: /delete\s+\w+\.runCorrelation|\{\s*runCorrelation\s*,\s*\.\.\./,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-purity-contract.test.js:28:1
+✖ purity: successful report uses temp-file fsync rename atomic publication (0.14575ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /mkdtemp|\.tmp/. Input:
+
+  '#!/usr/bin/env node\n' +
+    '"use strict";\n' +
+    '\n' +
+    'const fs = require("node:fs");\n' +
+    'const path = require("node:path");\n' +
+    'const {\n' +
+    '  buildPreflightReport,\n' +
+    '  collectControlledL3,\n' +
+    '  createDependencyChecks,\n' +
+    '} = require("../lib/daily-preflight.js");\n' +
+    '\n' +
+    'function parseArgs(argv) {\n' +
+    '  const args = { output: "", mode: "read-only", timeoutMs: 15000 };\n' +
+    '  for (let index = 0; index < argv.length; index += 1) {\n' +
+    '    if (argv[index] === "--output") args.output = argv[++index] || "";\n' +
+    '    else if (argv[index] === "--mode") args.mode = argv[++index] || "";\n' +
+    '    else if (argv[index] === "--timeout-ms") args.timeoutMs = Number(argv[++index]);\n' +
+    '    else throw new Error(`unknown argument: ${argv[index]}`);\n' +
+    '  }\n' +
+    '  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs < 1) throw new Error("--timeout-ms must be positive");\n' +
+    '  if (!["read-only", "controlled-l3"].includes(args.mode)) throw new Error("--mode must be read-only or controlled-l3");\n' +
+    '  return args;\n' +
+    '}\n' +
+    '\n' +
+    'async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {\n' +
+    '  const args = parseArgs(argv);\n' +
+    '  const nowMs = Date.now();\n' +
+    '  const controlledL3 = args.mode === "controlled-l3"\n' +
+    '    ? await collectControlledL3({ mode: args.mode })\n' +
+    '    : undefined;\n' +
+    '  const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });\n' +
+    '  const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });\n' +
+    '  if (args.output) {\n' +
+    '    const output = path.resolve(args.output);\n' +
+    '    fs.mkdirSync(path.dirname(output), { recursive: true });\n' +
+    '    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\\n`, { mode: 0o600 });\n' +
+    '  }\n' +
+    '  process.stdout.write(`${JSON.stringify({\n' +
+    '    artifact: args.output || null,\n' +
+    '    overallStatus: report.overallStatus,\n' +
+    '    exitCode: report.exitCode,\n' +
+    '    summary: report.summary,\n' +
+    '    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) => ({\n' +
+    '      dependency, status, latencyMs, failureClass,\n' +
+    '    })),\n' +
+    '  })}\\n`);\n' +
+    '  return report.exitCode;\n' +
+    '}\n' +
+    '\n' +
+    'async function runCli(runMain = main) {\n' +
+    '  try { process.exitCode = await runMain(); } catch {\n' +
+    '    process.stderr.write("daily preflight failed before report generation\\n");\n' +
+    '    process.exitCode = 1;\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'if (require.main === module) runCli();\n' +
+    '\n' +
+    'module.exports = { main, parseArgs, runCli };\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:29:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '#!/usr/bin/env node\n"use strict";\n\nconst fs = require("node:fs");\nconst path = require("node:path");\nconst {\n  buildPreflightReport,\n  collectControlledL3,\n  createDependencyChecks,\n} = require("../lib/daily-preflight.js");\n\nfunction parseArgs(argv) {\n  const args = { output: "", mode: "read-only", timeoutMs: 15000 };\n  for (let index = 0; index < argv.length; index += 1) {\n    if (argv[index] === "--output") args.output = argv[++index] || "";\n    else if (argv[index] === "--mode") args.mode = argv[++index] || "";\n    else if (argv[index] === "--timeout-ms") args.timeoutMs = Number(argv[++index]);\n    else throw new Error(`unknown argument: ${argv[index]}`);\n  }\n  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs < 1) throw new Error("--timeout-ms must be positive");\n  if (!["read-only", "controlled-l3"].includes(args.mode)) throw new Error("--mode must be read-only or controlled-l3");\n  return args;\n}\n\nasync function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {\n  const args = parseArgs(argv);\n  const nowMs = Date.now();\n  const controlledL3 = args.mode === "controlled-l3"\n    ? await collectControlledL3({ mode: args.mode })\n    : undefined;\n  const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });\n  const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });\n  if (args.output) {\n    const output = path.resolve(args.output);\n    fs.mkdirSync(path.dirname(output), { recursive: true });\n    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\\n`, { mode: 0o600 });\n  }\n  process.stdout.write(`${JSON.stringify({\n    artifact: args.output || null,\n    overallStatus: report.overallStatus,\n    exitCode: report.exitCode,\n    summary: report.summary,\n    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) => ({\n      dependency, status, latencyMs, failureClass,\n    })),\n  })}\\n`);\n  return report.exitCode;\n}\n\nasync function runCli(runMain = main) {\n  try { process.exitCode = await runMain(); } catch {\n    process.stderr.write("daily preflight failed before report generation\\n");\n    process.exitCode = 1;\n  }\n}\n\nif (require.main === module) runCli();\n\nmodule.exports = { main, parseArgs, runCli };\n',
+    expected: /mkdtemp|\.tmp/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at lib/daily-preflight-purity-contract.test.js:32:1
+✖ purity: failed publication removes temporary output and leaves no final artifact (0.112625ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unlink/. Input:
+
+  '#!/usr/bin/env node\n' +
+    '"use strict";\n' +
+    '\n' +
+    'const fs = require("node:fs");\n' +
+    'const path = require("node:path");\n' +
+    'const {\n' +
+    '  buildPreflightReport,\n' +
+    '  collectControlledL3,\n' +
+    '  createDependencyChecks,\n' +
+    '} = require("../lib/daily-preflight.js");\n' +
+    '\n' +
+    'function parseArgs(argv) {\n' +
+    '  const args = { output: "", mode: "read-only", timeoutMs: 15000 };\n' +
+    '  for (let index = 0; index < argv.length; index += 1) {\n' +
+    '    if (argv[index] === "--output") args.output = argv[++index] || "";\n' +
+    '    else if (argv[index] === "--mode") args.mode = argv[++index] || "";\n' +
+    '    else if (argv[index] === "--timeout-ms") args.timeoutMs = Number(argv[++index]);\n' +
+    '    else throw new Error(`unknown argument: ${argv[index]}`);\n' +
+    '  }\n' +
+    '  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs < 1) throw new Error("--timeout-ms must be positive");\n' +
+    '  if (!["read-only", "controlled-l3"].includes(args.mode)) throw new Error("--mode must be read-only or controlled-l3");\n' +
+    '  return args;\n' +
+    '}\n' +
+    '\n' +
+    'async function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {\n' +
+    '  const args = parseArgs(argv);\n' +
+    '  const nowMs = Date.now();\n' +
+    '  const controlledL3 = args.mode === "controlled-l3"\n' +
+    '    ? await collectControlledL3({ mode: args.mode })\n' +
+    '    : undefined;\n' +
+    '  const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });\n' +
+    '  const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });\n' +
+    '  if (args.output) {\n' +
+    '    const output = path.resolve(args.output);\n' +
+    '    fs.mkdirSync(path.dirname(output), { recursive: true });\n' +
+    '    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\\n`, { mode: 0o600 });\n' +
+    '  }\n' +
+    '  process.stdout.write(`${JSON.stringify({\n' +
+    '    artifact: args.output || null,\n' +
+    '    overallStatus: report.overallStatus,\n' +
+    '    exitCode: report.exitCode,\n' +
+    '    summary: report.summary,\n' +
+    '    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) => ({\n' +
+    '      dependency, status, latencyMs, failureClass,\n' +
+    '    })),\n' +
+    '  })}\\n`);\n' +
+    '  return report.exitCode;\n' +
+    '}\n' +
+    '\n' +
+    'async function runCli(runMain = main) {\n' +
+    '  try { process.exitCode = await runMain(); } catch {\n' +
+    '    process.stderr.write("daily preflight failed before report generation\\n");\n' +
+    '    process.exitCode = 1;\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'if (require.main === module) runCli();\n' +
+    '\n' +
+    'module.exports = { main, parseArgs, runCli };\n'
+
+      at TestContext.<anonymous> (/Users/anicca/anicca-project/.worktrees/lm-p0-order8d/apps/life-call/lib/daily-preflight-purity-contract.test.js:33:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '#!/usr/bin/env node\n"use strict";\n\nconst fs = require("node:fs");\nconst path = require("node:path");\nconst {\n  buildPreflightReport,\n  collectControlledL3,\n  createDependencyChecks,\n} = require("../lib/daily-preflight.js");\n\nfunction parseArgs(argv) {\n  const args = { output: "", mode: "read-only", timeoutMs: 15000 };\n  for (let index = 0; index < argv.length; index += 1) {\n    if (argv[index] === "--output") args.output = argv[++index] || "";\n    else if (argv[index] === "--mode") args.mode = argv[++index] || "";\n    else if (argv[index] === "--timeout-ms") args.timeoutMs = Number(argv[++index]);\n    else throw new Error(`unknown argument: ${argv[index]}`);\n  }\n  if (!Number.isFinite(args.timeoutMs) || args.timeoutMs < 1) throw new Error("--timeout-ms must be positive");\n  if (!["read-only", "controlled-l3"].includes(args.mode)) throw new Error("--mode must be read-only or controlled-l3");\n  return args;\n}\n\nasync function main({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch } = {}) {\n  const args = parseArgs(argv);\n  const nowMs = Date.now();\n  const controlledL3 = args.mode === "controlled-l3"\n    ? await collectControlledL3({ mode: args.mode })\n    : undefined;\n  const checks = createDependencyChecks({ env, fetchImpl, nowMs, controlledL3 });\n  const report = await buildPreflightReport({ checks, controlledL3, timeoutMs: args.timeoutMs });\n  if (args.output) {\n    const output = path.resolve(args.output);\n    fs.mkdirSync(path.dirname(output), { recursive: true });\n    fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\\n`, { mode: 0o600 });\n  }\n  process.stdout.write(`${JSON.stringify({\n    artifact: args.output || null,\n    overallStatus: report.overallStatus,\n    exitCode: report.exitCode,\n    summary: report.summary,\n    dependencies: report.dependencies.map(({ dependency, status, latencyMs, failureClass }) => ({\n      dependency, status, latencyMs, failureClass,\n    })),\n  })}\\n`);\n  return report.exitCode;\n}\n\nasync function runCli(runMain = main) {\n  try { process.exitCode = await runMain(); } catch {\n    process.stderr.write("daily preflight failed before report generation\\n");\n    process.exitCode = 1;\n  }\n}\n\nif (require.main === module) runCli();\n\nmodule.exports = { main, parseArgs, runCli };\n',
+    expected: /unlink/,
+    operator: 'match',
+    diff: 'simple'
+  }
