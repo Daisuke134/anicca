@@ -81,7 +81,7 @@ export async function runThe402BidderOnce({
       },
       body: JSON.stringify({
         price_usd: candidate.priceUsd,
-        eta_hours: 1,
+        eta_hours: 0.25,
         service_id: candidate.serviceId,
         pitch: candidate.pitch,
       }),
