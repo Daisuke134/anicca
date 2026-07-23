@@ -31,7 +31,7 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
 | model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
 | tests | reply pathはPython `298 passed, 158 subtests passed`、Node `74`、shell integration `4` PASS。`test_gig_paid_work_gate.sh` の browser-fail recoveryだけRED |
-| live reply blocker | thread `9967694`、action `1`、revision `36`、`blocked`。seller message 0、last sender buyer、verified hash/seller send timeなし。相手プロフィールはnot-foundで、同じbuyer eventの再送を隔離中 |
+| live reply blocker | thread `9967694` action `1` revision `36`とthread `9967721` action `2` revision `3`は`blocked`。両方seller message 0、last sender buyer、相手profile not-found。active profileのcontrol thread `9976213` action `3`はproduction loopが`replied`・Telegram sentまで完了 |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
 | verifier integration debt | 正常な`no_change` pass後もselfimprove verifierが6項目すべてをmissing扱いする。self-improvement本体の再実装ではなく、no-change契約の修正対象 |
 
@@ -76,15 +76,23 @@ authoritative rereadし、seller message 0、last sender buyer、outgoing hash�
 thread DOMが指す相手 `/users/6186053` は、profile link 3件、block対象form、thread data IDが一致する。
 同じ認証済みbrowserでprofileを読むと「ご指定のページが 見つかりませんでした」となり、通常の
 message controlも存在しない。自分側はlogin済みでmessage formが存在し、利用停止表示もない。
+別thread `9967721` も相手 `/users/6186059` が同じnot-foundで、revision `1` と `2` が同じ
+`submit_rejected_sending_unavailable`、120秒後もseller message 0となる。
+
+対照としてactive profileのthread `9976213` は、同じproduction native pathの初回POSTが成功する。
+action `3` revision `1` はthread URL、outgoing hash、seller send timeを再読して`replied`となり、
+Telegram `gig:telegram:reply:v1:3:1`も`sent`、同一hash重複0である。したがってbrowser transport
+全体の障害ではなく、not-found相手とのthreadに限定したexternal blockerである。
 
 ソース: [ココナラヘルプ「メッセージ機能について」](https://coconala-support.zendesk.com/hc/ja/articles/218721057-%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E6%A9%9F%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
 / 核心の引用: 「相手に機能制限がかかっている」場合は「メッセージが送信できません」。
+同記事は「制限解除可否・時期をご案内することはできません」とも明記する。
 
-この相手状態はloop側で解除できない。action `1` はrevision `36`の`blocked`へ隔離し、同じeventを
-blind retryしない。相手profileがactiveへ戻る、または同threadで新しい一意buyer eventを観測した
-場合だけpendingへ戻し、production loop自身が1回送信する。profileがnot-foundのままなら、
-Coconala問い合わせによる相手状態の確認・解除が外部解除条件であり、Codex/loopは問い合わせを
-自動送信しない。
+この相手状態はloop側で解除できない。action `1` revision `36`、action `2` revision `3`、同じ
+not-foundのaction `8` revision `1`は`blocked`へ隔離し、同じeventをblind retryしない。
+相手profileがactiveへ戻る、または同threadで新しい一意buyer eventを観測した場合だけpendingへ
+戻し、production loop自身が1回送信する。Coconala問い合わせは一般診断には使えるが解除を保証せず、
+Codex/loopは問い合わせを自動送信しない。
 
 ---
 

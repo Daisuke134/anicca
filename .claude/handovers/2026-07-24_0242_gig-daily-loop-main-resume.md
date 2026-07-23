@@ -37,8 +37,18 @@
 - The thread links its counterpart to `/users/6186053` in three places, the block form uses the
   same ID, and thread data contains the same ID. The authenticated profile read returns
   「ご指定のページが 見つかりませんでした」 and exposes no message control.
+- A second production action proves the same target-state failure: thread `9967721`, counterpart
+  `/users/6186059`, revisions `1` and `2`, both `submit_rejected_sending_unavailable`; authoritative
+  reread after 120 seconds remains seller 0 / buyer last / matching hash 0. Action `2` is revision
+  `3` `blocked`. Action `8` is also blocked before click because its counterpart profile is
+  not-found.
+- An active-profile control proves the transport works. Production action `3` on thread `9976213`
+  sends once, rereads exact thread URL/hash/seller time, reaches `replied`, and emits exactly one
+  sent Telegram report `gig:telegram:reply:v1:3:1` with message ID `3334`.
 - Source: [Coconala Help — メッセージ機能について](https://coconala-support.zendesk.com/hc/ja/articles/218721057-%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E6%A9%9F%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
   / core quote: 「相手に機能制限がかかっている」場合は「メッセージが送信できません」。
+  The same article says 「制限解除可否・時期をご案内することはできません」, so support is
+  not an unblock guarantee.
 - `ai.anicca.hf-gig-pass` and `ai.anicca.hf-gig-reply-detector` are loaded again after quarantine.
   The reply detector exits 0 without claiming the blocked action; the half-hour pass remains
   available for the other lanes.
@@ -63,6 +73,7 @@ ground truth. Do not retry thread `9967694` while `/users/6186053` remains not-f
 only after a read-only profile check proves the profile active, or after the same thread produces a
 new unique buyer event (which reactivates the blocked action). Then let the production loop—not
 Codex—perform exactly one customer action and reconcile it. If the profile remains not-found,
-Coconala support/account restoration is the smallest external unblock; do not send the inquiry
-without new authority. Mark #1 done only after the loop reads back thread URL, outgoing hash,
-seller send time, outbox=`replied`, one Telegram event, and zero duplicate sends.
+there is no loop-side unblock; wait for an active profile or new buyer event. A Coconala inquiry
+may diagnose the account state but does not guarantee restoration and requires new authority.
+Mark #1 done only after the loop reads back thread URL, outgoing hash, seller send time,
+outbox=`replied`, one Telegram event, and zero duplicate sends.
