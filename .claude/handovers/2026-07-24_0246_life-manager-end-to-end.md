@@ -9,8 +9,8 @@
 
 ## Verified repository routing
 
-- Session start/shared checkout: `/Users/anicca/anicca-project`, branch `main`, upstream `origin/main`, verified `7ce9db9b3a4ebdf3a9a262eea9f59f4213f0e9ac`. It has 16 pre-existing untracked paths. Read/fetch only; do not edit, switch, stage, clean, merge, or rebase it.
-- Spec/handover writes: `/Users/anicca/anicca-project/.worktrees/lm-8i-handover-20260724`, branch `docs/lm-8i-handover-20260724`, base `7ce9db9b3a4ebdf3a9a262eea9f59f4213f0e9ac`, push target `origin/docs/lm-8i-handover-20260724`.
+- Session start/shared checkout: `/Users/anicca/anicca-project`, branch `main`, upstream `origin/main`. It is safely fast-forwarded through handover PR `#359` merge `6467e6dae78ecd739a3cd0cfe11ce06d41efee77`, has no tracked changes, and shows 19 pre-existing untracked entries after tracked handover files make the old directory grouping expand. Read/fetch only; do not edit, switch, stage, clean, merge, or rebase it.
+- Spec/handover writes: `/Users/anicca/anicca-project/.worktrees/lm-8i-handover-20260724`, branch `docs/lm-8i-handover-20260724`, fast-forwarded through `6467e6dae78ecd739a3cd0cfe11ce06d41efee77`, push target `origin/docs/lm-8i-handover-20260724`.
 - Canonical implementation: `/Users/anicca/anicca/.worktrees/one-repo-migration`, branch `feat/one-repo-migration`, HEAD `bfbcb915cbf7ed08da2d44c498bd82b9a5f07ae4`, clean, no unique commits, nine behind verified canonical `origin/main=303fc30a50e4db88522d88c6da71b40bf2e67665`. Fetch and fast-forward only before editing; push target `origin/feat/one-repo-migration`.
 - Protected checkout: `/Users/anicca/anicca`, branch `feature/dist1-mcp-launchd`, HEAD/upstream `72b74d59df80cb72936ccd04f5ee1ed7a19e7ec0`, 17 modified live log files. Do not touch it.
 - Reviewers use temporary detached snapshots of exact candidate commits and never edit writable worktrees.
