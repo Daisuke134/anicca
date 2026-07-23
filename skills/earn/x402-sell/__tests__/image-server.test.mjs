@@ -9,7 +9,10 @@ import {
   createImageTelemetryRecorder,
   imageDiscoveryConfig,
   imageProduct,
+  makeUsdcBalanceHandler,
   mergeImageOpenApi,
+  usdcBalanceDiscoveryConfig,
+  usdcBalanceProduct,
 } from '../image-server.mjs';
 
 test('image product publishes positive unit economics and POST discovery metadata', () => {
@@ -26,6 +29,56 @@ test('POST Bazaar discovery declares a JSON body instead of query parameters', (
   assert.equal(discovery.method, 'POST');
   assert.equal(discovery.bodyType, 'json');
   assert.deepEqual(discovery.input, { prompt: 'A blue robot building a self-funded agent economy' });
+});
+
+test('finalized Base USDC balance product is a low-cost paid GET', () => {
+  const product = usdcBalanceProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  assert.equal(product.method, 'GET');
+  assert.equal(product.path, '/base-usdc-balance');
+  assert.equal(product.price, '$0.003');
+  assert.equal(product.resource, 'https://seller.example/base-usdc-balance');
+});
+
+test('Base USDC balance discovery uses a query address without an image prompt', () => {
+  const discovery = usdcBalanceDiscoveryConfig();
+  assert.equal(discovery.method, 'GET');
+  assert.deepEqual(discovery.inputSchema.required, ['address']);
+  assert.equal('prompt' in discovery.input, false);
+});
+
+test('Base USDC balance handler reads the finalized block and returns atomic plus display units', async (t) => {
+  const product = imageProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  const balanceProduct = usdcBalanceProduct({ publicUrl: 'https://seller.example', payTo: '0xabc' });
+  const app = createImageApp({
+    product,
+    balanceProduct,
+    paymentGate(_req, _res, next) { next(); },
+    balanceHandler: makeUsdcBalanceHandler({
+      createClient: () => ({
+        getBlock: async () => ({ number: 123n }),
+        readContract: async ({ blockNumber }) => {
+          assert.equal(blockNumber, 123n);
+          return 1_234_567n;
+        },
+      }),
+    }),
+    loadUpstreamOpenApi: async () => ({ openapi: '3.1.0', info: {}, paths: {} }),
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(() => server.close());
+  const { port } = server.address();
+
+  const response = await fetch(`http://127.0.0.1:${port}/base-usdc-balance?address=0x0000000000000000000000000000000000000001`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    chain_id: 8453,
+    asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    address: '0x0000000000000000000000000000000000000001',
+    balance_atomic: '1234567',
+    balance_usdc: '1.234567',
+    finalized_block: '123',
+  });
 });
 
 test('combined OpenAPI preserves upstream routes and declares the paid POST image operation', () => {

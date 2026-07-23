@@ -3,7 +3,9 @@ import express from 'express';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createPublicClient, formatUnits, http, isAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { base } from 'viem/chains';
 
 import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { IMAGE_OFFER, imageResaleHandler } from './image-resale.mjs';
@@ -11,6 +13,20 @@ import { decodePayer, decodeTransaction, isSettled } from './lib/settle-gate.mjs
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const HERE = dirname(fileURLToPath(import.meta.url));
+const USDC_BALANCE_OFFER = Object.freeze({
+  path: '/base-usdc-balance',
+  method: 'GET',
+  price: '$0.003',
+  what: 'finalized Base USDC balance',
+  description: 'Return the finalized Base USDC balance for one EVM address.',
+});
+const ERC20_BALANCE_ABI = [{
+  type: 'function',
+  name: 'balanceOf',
+  stateMutability: 'view',
+  inputs: [{ name: 'account', type: 'address' }],
+  outputs: [{ name: '', type: 'uint256' }],
+}];
 
 export function imageProduct({ publicUrl = '', payTo = '' } = {}) {
   const origin = String(publicUrl).replace(/\/+$/, '');
@@ -19,6 +35,46 @@ export function imageProduct({ publicUrl = '', payTo = '' } = {}) {
     method: 'POST',
     payTo,
     resource: origin ? `${origin}${IMAGE_OFFER.path}` : IMAGE_OFFER.path,
+  };
+}
+
+export function usdcBalanceProduct({ publicUrl = '', payTo = '' } = {}) {
+  const origin = String(publicUrl).replace(/\/+$/, '');
+  return {
+    ...USDC_BALANCE_OFFER,
+    payTo,
+    resource: origin ? `${origin}${USDC_BALANCE_OFFER.path}` : USDC_BALANCE_OFFER.path,
+  };
+}
+
+export function makeUsdcBalanceHandler({
+  rpcUrl = 'https://mainnet.base.org',
+  createClient = ({ url }) => createPublicClient({ chain: base, transport: http(url) }),
+} = {}) {
+  return async function usdcBalanceHandler(req, res) {
+    const address = String(req.query?.address || '');
+    if (!isAddress(address)) return res.status(400).json({ error: 'pass ?address=0x...' });
+    try {
+      const client = createClient({ url: rpcUrl });
+      const block = await client.getBlock({ blockTag: 'finalized' });
+      const atomic = await client.readContract({
+        address: USDC_BASE,
+        abi: ERC20_BALANCE_ABI,
+        functionName: 'balanceOf',
+        args: [address],
+        blockNumber: block.number,
+      });
+      return res.json({
+        chain_id: 8453,
+        asset: USDC_BASE,
+        address,
+        balance_atomic: atomic.toString(),
+        balance_usdc: formatUnits(atomic, 6),
+        finalized_block: block.number.toString(),
+      });
+    } catch {
+      return res.status(502).json({ error: 'base_rpc_unavailable' });
+    }
   };
 }
 
@@ -32,6 +88,31 @@ export function imageDiscoveryConfig() {
       required: ['prompt'],
     },
     output: { example: { url: 'https://cdn.example/generated.png' } },
+  };
+}
+
+export function usdcBalanceDiscoveryConfig() {
+  return {
+    method: 'GET',
+    input: { address: '0x0000000000000000000000000000000000000001' },
+    inputSchema: {
+      properties: {
+        address: {
+          type: 'string',
+          pattern: '^0x[0-9a-fA-F]{40}$',
+          description: 'EVM address whose finalized Base USDC balance will be returned',
+        },
+      },
+      required: ['address'],
+    },
+    output: {
+      example: {
+        chain_id: 8453,
+        balance_atomic: '0',
+        balance_usdc: '0',
+        finalized_block: '0',
+      },
+    },
   };
 }
 
@@ -122,8 +203,10 @@ function paymentPayer(req) {
 
 export function createImageApp({
   product,
+  balanceProduct,
   paymentGate,
   handler = imageResaleHandler,
+  balanceHandler = makeUsdcBalanceHandler(),
   loadUpstreamOpenApi,
   recordAccess,
 }) {
@@ -132,40 +215,72 @@ export function createImageApp({
   if (recordAccess !== undefined && typeof recordAccess !== 'function') throw new TypeError('recordAccess must be a function');
   const app = express();
   app.use(express.json({ limit: '16kb' }));
+  const products = [product, balanceProduct].filter(Boolean);
   app.get('/.well-known/x402.json', (_req, res) => res.json({
     x402Version: 2,
-    resources: [{
-      resource: product.resource,
-      method: product.method,
-      price: product.price,
+    resources: products.map((candidate) => ({
+      resource: candidate.resource,
+      method: candidate.method,
+      price: candidate.price,
       network: 'eip155:8453',
-      payTo: product.payTo,
+      payTo: candidate.payTo,
       asset: USDC_BASE,
-      description: product.description,
-    }],
+      description: candidate.description,
+    })),
   }));
   app.get('/', (_req, res) => res.json({
-    products: [{ path: product.path, method: product.method, price: product.price, what: product.what }],
+    products: products.map((candidate) => ({
+      path: candidate.path,
+      method: candidate.method,
+      price: candidate.price,
+      what: candidate.what,
+    })),
     manifest: '/.well-known/x402.json',
   }));
   app.get('/openapi.json', async (_req, res) => {
     try {
       if (typeof loadUpstreamOpenApi !== 'function') throw new Error('upstream loader missing');
-      res.json(mergeImageOpenApi(await loadUpstreamOpenApi(), product));
+      const document = mergeImageOpenApi(await loadUpstreamOpenApi(), product);
+      if (balanceProduct) {
+        document.paths[balanceProduct.path] = {
+          get: {
+            operationId: 'getFinalizedBaseUsdcBalance',
+            summary: balanceProduct.what,
+            description: balanceProduct.description,
+            parameters: [{
+              in: 'query',
+              name: 'address',
+              required: true,
+              schema: { type: 'string', pattern: '^0x[0-9a-fA-F]{40}$' },
+            }],
+            'x-payment-info': {
+              price: { mode: 'fixed', currency: 'USD', amount: String(balanceProduct.price).replace(/^\$/, '') },
+              protocols: [{ x402: {} }],
+            },
+            responses: {
+              200: { description: 'Finalized Base USDC balance' },
+              400: { description: 'Invalid address' },
+              402: { description: 'Payment Required' },
+            },
+          },
+        };
+      }
+      res.json(document);
     } catch {
       res.status(502).json({ error: 'upstream_openapi_unavailable' });
     }
   });
   if (recordAccess) {
     app.use((req, res, next) => {
-      if (req.path !== product.path) return next();
+      const matched = products.find((candidate) => candidate.path === req.path);
+      if (!matched) return next();
       const requestPayer = paymentPayer(req);
       res.on('finish', () => {
         const paymentResponse = res.getHeader('PAYMENT-RESPONSE');
         recordAccess({
           ts: new Date().toISOString(),
           route: req.path,
-          price: product.price,
+          price: matched.price,
           payer: requestPayer || decodePayer(paymentResponse),
           tx: decodeTransaction(paymentResponse),
           settled: isSettled(paymentResponse),
@@ -177,6 +292,7 @@ export function createImageApp({
   }
   app.use(paymentGate);
   app.post(product.path, handler);
+  if (balanceProduct) app.get(balanceProduct.path, balanceHandler);
   return app;
 }
 
@@ -187,7 +303,7 @@ function resolvePayTo(env) {
   return privateKeyToAccount(key).address;
 }
 
-async function createRuntimePaymentGate(product, env) {
+async function createRuntimePaymentGate(products, env) {
   const { paymentMiddleware, x402ResourceServer } = await import('@x402/express');
   const { HTTPFacilitatorClient } = await import('@x402/core/server');
   const { ExactEvmScheme } = await import('@x402/evm/exact/server');
@@ -206,8 +322,9 @@ async function createRuntimePaymentGate(product, env) {
   }
   const resourceServer = new x402ResourceServer(facilitatorClient)
     .register('eip155:8453', new ExactEvmScheme());
-  const routes = {
-    [`${product.method} ${product.path}`]: {
+  const routes = Object.fromEntries(products.map((product) => [
+    `${product.method} ${product.path}`,
+    {
       accepts: [{
         scheme: 'exact',
         price: product.price,
@@ -218,9 +335,13 @@ async function createRuntimePaymentGate(product, env) {
       resource: product.resource,
       description: product.description,
       mimeType: 'application/json',
-      extensions: declareDiscoveryExtension(imageDiscoveryConfig()),
+      extensions: declareDiscoveryExtension(
+        product.path === USDC_BALANCE_OFFER.path
+          ? usdcBalanceDiscoveryConfig()
+          : imageDiscoveryConfig(),
+      ),
     },
-  };
+  ]));
   return paymentMiddleware(routes, resourceServer);
 }
 
@@ -229,11 +350,18 @@ async function main(env = process.env) {
     publicUrl: env.X402_IMAGE_PUBLIC_URL || env.X402_PUBLIC_URL || '',
     payTo: resolvePayTo(env),
   });
-  const paymentGate = await createRuntimePaymentGate(product, env);
+  const balanceProduct = env.X402_BASE_USDC_BALANCE_ENABLED === '1'
+    ? usdcBalanceProduct({
+      publicUrl: env.X402_IMAGE_PUBLIC_URL || env.X402_PUBLIC_URL || '',
+      payTo: product.payTo,
+    })
+    : null;
+  const paymentGate = await createRuntimePaymentGate([product, balanceProduct].filter(Boolean), env);
   const upstreamOpenApi = env.X402_IMAGE_UPSTREAM_OPENAPI;
   if (!upstreamOpenApi) throw new Error('set X402_IMAGE_UPSTREAM_OPENAPI');
   const app = createImageApp({
     product,
+    balanceProduct,
     paymentGate,
     recordAccess: createImageTelemetryRecorder({
       stateDir: env.X402_STATE_DIR || join(HERE, 'state'),
