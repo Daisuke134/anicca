@@ -1,0 +1,16 @@
+{
+  "name": "x402-challenge-inspector",
+  "version": "1.0.0",
+  "description": "Strict offline inspection of x402 v2 Payment-Required challenges",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "bin": {
+    "x402-challenge-inspect": "./bin/inspect.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
