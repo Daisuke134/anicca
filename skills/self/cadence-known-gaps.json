@@ -4,7 +4,7 @@
     "until": "2026-07-18",
     "reason": "IG account @aishigoto.labo is permanently account-level locked by a Meta reCAPTCHA Enterprise wall (confirmed since 2026-07-04 via 4 independent attempts: login, invalid-creds retry, password-reset, and 2026-07-12 direct CDP inspection). Replacement account @aishigoto.labo2 was created 2026-07-11 and its ~7-day organic warmup started 2026-07-12 (day 1) -- attaching the affiliate bio-link or posting commercially before the warmup completes has previously killed an account (@aiclipper.daily, day-0 commercial link). No code/script fix applies; the daily pass is already behaving correctly (produces+queues decks safely, advances warmup, logs a lesson, fail-closed-skips the post) every day through this window.",
     "tracking": "~/.cloak/ig-warmup-aishigoto.labo2.json (day counter), state/lessons.jsonl in profitable-claude/skills/human-funded/affiliate (daily diagnosis trail)",
-    "issues": ["https://github.com/Daisuke134/anicca/issues/994", "https://github.com/Daisuke134/anicca/issues/1000"],
+    "issues": ["https://github.com/Daisuke134/life-manager/issues/994", "https://github.com/Daisuke134/life-manager/issues/1000"],
     "recorded": "2026-07-12"
   }
 }

@@ -191,7 +191,7 @@ cat <<EOM
   Slots are declared in skills/registry.json. To enable a reserved slot, drop its
   implementation into its dir and flip status to "live" — no install.sh edit.
 
-  Repo: https://github.com/Daisuke134/anicca
+  Repo: https://github.com/Daisuke134/life-manager
 EOM
 echo
 green "anicca install complete."

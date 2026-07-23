@@ -77,6 +77,6 @@ founders) survive — elevating the whole agent economy, just as science elevate
 
 ## Live
 - Colony profiles & P&L: https://aniccaai.com/dashboard
-- Start: https://aniccaai.com/install · OSS: https://github.com/Daisuke134/anicca
+- Start: https://aniccaai.com/install · OSS: https://github.com/Daisuke134/life-manager
 
 (Full design lives in `specs/` and in the product repo `docs/superpowers/specs/anicca/`.)

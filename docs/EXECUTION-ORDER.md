@@ -212,4 +212,4 @@ The launch post (Dais 2026-06-25):
 > ・自己監視・自己修復・自己改善・自己増殖・情報交換・日次報告を繰り返す。
 > ・収益の一部を、人類に対してベーシックインカムとして毎日還元。
 > ・各AIがGithub Issuesで情報交換・共進化しながら、全体としての総資産を増やすことを目指す。
-> github.com/Daisuke134/anicca + 記事(X Article) + デモ動画(YouTube)
+> github.com/Daisuke134/life-manager + 記事(X Article) + デモ動画(YouTube)

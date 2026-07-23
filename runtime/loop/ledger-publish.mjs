@@ -1,6 +1,6 @@
 /**
  * ledger-publish.mjs — Effectful (+ pure core): per-wake, best-effort commit+push of BOTH this
- * instance's ledger evidence sources into github.com/Daisuke134/anicca, so "the balance/actions grow
+ * instance's ledger evidence sources into github.com/Daisuke134/life-manager, so "the balance/actions grow
  * every hour" is third-party-verifiable from git history alone -- WITHOUT ever touching the git
  * working tree/index/branches the loop itself (or a sibling process such as evolve.mjs's promote())
  * is concurrently using.
@@ -444,7 +444,7 @@ async function ensureReadme(readmePath, instance) {
     `- \`${instance}-earn.jsonl\` — money evidence (earn/cost/net $, on-chain tx/sig refs), projected\n` +
     `  from \`skills/earn/state/earn-ledger.jsonl\`.\n\n` +
     `Unknown fields are dropped before publish; free-text fields are redacted. This branch is\n` +
-    `dedicated to instance \`${instance}\` only — see github.com/Daisuke134/anicca.\n`;
+    `dedicated to instance \`${instance}\` only — see github.com/Daisuke134/life-manager.\n`;
   await fs.mkdir(path.dirname(readmePath), { recursive: true });
   await fs.writeFile(readmePath, content);
   return true;
