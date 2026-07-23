@@ -8,11 +8,22 @@
 
 **Tech Stack:** Node.js CommonJS, `node:test`, direct request/response fixtures, emitted panel JavaScript executed with `vm`, Playwright for authenticated mobile/desktop evidence.
 
-**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` is read-only. Its v5 closure package identifies the three unresolved findings and intended deterministic totals, but it is not an executable source of truth. Fresh review found that 365 retained negatives and both positive compatibility cases lack per-case API/browser expectations. Do not copy that generator unchanged, and do not create or modify VCSDD artifacts.
+**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` was used only to discover the prior findings and intended totals. It is not an implementation input and must not be read by the new generator, tests, package scripts, or product code. Fresh review found that 365 retained negatives and both positive compatibility cases lack per-case API/browser expectations. Do not copy that generator unchanged, and do not create or modify VCSDD artifacts.
 
 **Mandatory correction to historical v5:** Every generated case with `api-production` must contain an exact `apiExpected` assertion. Every case with `emitted-browser` must also contain an exact `browserExpected` assertion tied to the captured API response. Both positive compatibility cases require the same expectations. Generation must abort when any expectation is missing. Reported execution totals are derived only from assertions that passed after the real API/browser call; layer metadata alone never increments a counter.
 
-The historical package also claims immutable v1–v4 coverage while hashing only two v4 files. Do not repeat that claim. The new ordinary-repository contract must contain every source definition needed to generate its cases, record its own deterministic source/output hashes in test output, and have no runtime or test dependency on the dirty historical worktree.
+The historical package also claims immutable v1–v4 coverage while hashing only two v4 files. Do not repeat that claim. The new ordinary-repository contract independently derives its hostile cases from its committed closed schemas, typed mutation catalog, synthetic-secret recipes, channel catalog, and compatibility catalog. These are the complete generation inputs; the historical cases are not copied or imported.
+
+Create a committed `panel-v5-source-manifest.json` listing the path and SHA-256 of exactly these six generation inputs:
+
+1. `panel-v5-closed-schemas.js`
+2. `panel-v5-hostile-mutations.js`
+3. `panel-v5-secret-recipes.js`
+4. `panel-v5-channels.js`
+5. `panel-v5-compatibility.js`
+6. `panel-v5-contract.js`
+
+The generator must declare the same six paths in `GENERATION_INPUTS`, reject a missing/extra/duplicate dependency, verify every manifest hash before generation, and load no other local data file. The generated matrix SHA-256 is computed twice and compared in test output; it is not falsely described as covering files outside this six-file dependency set.
 
 **External security basis:**
 
@@ -26,6 +37,12 @@ The historical package also claims immutable v1–v4 coverage while hashing only
 
 **Files:**
 
+- Create: `apps/life-call/eval/panel-v5-closed-schemas.js`
+- Create: `apps/life-call/eval/panel-v5-hostile-mutations.js`
+- Create: `apps/life-call/eval/panel-v5-secret-recipes.js`
+- Create: `apps/life-call/eval/panel-v5-channels.js`
+- Create: `apps/life-call/eval/panel-v5-compatibility.js`
+- Create: `apps/life-call/eval/panel-v5-source-manifest.json`
 - Create: `apps/life-call/eval/panel-v5-contract.js`
 - Create: `apps/life-call/eval/panel-v5-matrix-harness.js`
 - Create: `apps/life-call/eval/run-panel-v5-matrix-eval.js`
@@ -34,7 +51,9 @@ The historical package also claims immutable v1–v4 coverage while hashing only
 
 **Step 1: Write the failing contract test**
 
-Encode the retained hostile path/variant matrix, the 19-value synthetic secret corpus, the nine presentation channels, and the two positive `call_language=null` compatibility cases. Give every API/browser layer an exact expected status/body/field or DOM/fallback outcome. Assert that zero API/browser expectations are missing, deterministic generation holds, and these derived totals are reached only after successful assertions:
+Independently enumerate the closed scores, gates, settings, and control-center schemas with a typed hostile-mutation catalog (missing/extra keys, wrong types, malformed values, fragment/diagnostic values, and finite tuple violations). This enumeration must produce 365 non-secret negatives over 130 paths after treating both `call_language=null` paths as positive. Build 19 synthetic-secret recipes from non-secret string fragments at runtime, apply them to the nine committed presentation channels, and add the two committed positive `call_language=null` cases. No source file contains a complete token-like synthetic credential.
+
+Give every API/browser layer an exact expected status/body/field or DOM/fallback outcome. Assert the six-file manifest is complete, zero API/browser expectations are missing, deterministic generation holds, and these derived totals are reached only after successful assertions:
 
 - 536 negative cases over 139 paths
 - 536 policy-unit executions
