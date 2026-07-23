@@ -34,6 +34,26 @@ async function loadCaptured(section, options = {}) {
   };
 }
 
+async function loadExactCandidate(section, candidate) {
+  return loadCaptured(section, {
+    responseCandidateTransform(candidateSection, original) {
+      return candidateSection === section ? candidate : original;
+    },
+  });
+}
+
+function withGateUnlockMethod(candidate, value) {
+  const next = structuredClone(candidate);
+  next.gates[0].unlock_method = value;
+  return next;
+}
+
+function withControlConnection(candidate, name, mutate) {
+  const next = structuredClone(candidate);
+  mutate(next.connections[name]);
+  return next;
+}
+
 test("PANEL-8h: emitted loadPanelSection renders five projected sections as human-readable content in order", async () => {
   const page = renderPanelPage();
   let previous = -1;
@@ -134,4 +154,62 @@ test("PANEL-8h: emitted page has desktop grid structure and a 375px one-column n
   assert.match(page, /body\s*\{[^}]*overflow-x:\s*hidden/s);
   assert.match(page, /\.panel-section\s*\{[^}]*min-width:\s*0/s);
   assert.match(page, /\.section-body\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+});
+
+test("PANEL-8h: every API-accepted gate text boundary loads from the exact same candidate", async () => {
+  const baseline = (await capturePanelResponse({ section: "gates" })).body;
+  for (const [label, unlockMethod] of [
+    ["normal safe text", "Telegramで位置情報を共有してください。"],
+    ["maximum 1000 characters", "A".repeat(1000)],
+  ]) {
+    const { captured, browser } = await loadExactCandidate(
+      "gates",
+      withGateUnlockMethod(baseline, unlockMethod),
+    );
+    assert.equal(captured.status, 200, `${label}: API accepted`);
+    assert.equal(browser.state, "loaded", `${label}: emitted loadPanelSection parity`);
+    assert.equal(browser.html.includes(unlockMethod), true, `${label}: safe text rendered`);
+  }
+
+  for (const [label, unlockMethod] of [
+    ["empty text", ""],
+    ["overlong safe text", "A".repeat(1001)],
+  ]) {
+    const { captured, browser } = await loadExactCandidate(
+      "gates",
+      withGateUnlockMethod(baseline, unlockMethod),
+    );
+    assert.equal(captured.status, 422, `${label}: API rejects browser-invalid candidate`);
+    assert.deepEqual(captured.body, { error: "section_unavailable", section: "gates" });
+    assert.equal(browser.state, "error", `${label}: emitted loader stays closed`);
+    assert.equal(browser.html, `<p class="error">${BROWSER_LOAD_ERROR_COPY}</p>`);
+  }
+});
+
+test("PANEL-8h: control-center optional action fields have identical API and emitted-browser semantics", async () => {
+  const baseline = (await capturePanelResponse({ section: "control-center" })).body;
+  const accepted = [
+    ["real buildControlCenter DTO", baseline],
+    ["actions absent", withControlConnection(baseline, "telegram", (item) => { delete item.actions; })],
+    ["actions array", withControlConnection(baseline, "telegram", (item) => { item.actions = []; })],
+    ["actionLabel absent", withControlConnection(baseline, "calendar", (item) => { delete item.actionLabel; })],
+    ["actionLabel safe string", withControlConnection(baseline, "calendar", (item) => { item.actionLabel = "Connect calendar"; })],
+  ];
+  for (const [label, candidate] of accepted) {
+    const { captured, browser } = await loadExactCandidate("control-center", candidate);
+    assert.equal(captured.status, 200, `${label}: API accepted`);
+    assert.equal(browser.state, "loaded", `${label}: emitted loadPanelSection parity`);
+  }
+
+  const rejected = [
+    ["actions null", withControlConnection(baseline, "telegram", (item) => { item.actions = null; })],
+    ["actionLabel null", withControlConnection(baseline, "calendar", (item) => { item.actionLabel = null; })],
+  ];
+  for (const [label, candidate] of rejected) {
+    const { captured, browser } = await loadExactCandidate("control-center", candidate);
+    assert.equal(captured.status, 422, `${label}: API rejects browser-invalid candidate`);
+    assert.deepEqual(captured.body, { error: "section_unavailable", section: "control-center" });
+    assert.equal(browser.state, "error", `${label}: emitted loader stays closed`);
+    assert.equal(browser.html, `<p class="error">${BROWSER_LOAD_ERROR_COPY}</p>`);
+  }
 });

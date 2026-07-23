@@ -163,7 +163,13 @@ function candidateTransform(section) {
     : candidate;
 }
 
-async function capturePanelResponse({ section, source = "", hostileValue = "", malformed = false }) {
+async function capturePanelResponse({
+  section,
+  source = "",
+  hostileValue = "",
+  malformed = false,
+  responseCandidateTransform,
+}) {
   const req = {
     url: `/api/panel/${section}`,
     method: "GET",
@@ -181,7 +187,8 @@ async function capturePanelResponse({ section, source = "", hostileValue = "", m
     sessionScopeImpl: async () => SCOPE,
     commandStore: store,
     calendarStatus: async () => "MISSING",
-    responseCandidateTransform: malformed ? candidateTransform(section) : undefined,
+    responseCandidateTransform: responseCandidateTransform
+      || (malformed ? candidateTransform(section) : undefined),
   };
 
   if (section === "control-center") {

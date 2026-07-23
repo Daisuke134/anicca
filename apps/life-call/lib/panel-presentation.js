@@ -51,6 +51,13 @@ function exactKeys(value, keys) {
     && actual.every((key, index) => key === expected[index]);
 }
 
+function validDisplayText(value) {
+  return typeof value === "string"
+    && value.trim().length > 0
+    && value.length <= 1000
+    && !containsSensitiveDisplayValue(value);
+}
+
 function validTimeZone(value) {
   if (typeof value !== "string" || containsSensitiveDisplayValue(value)) return false;
   try {
@@ -205,8 +212,7 @@ function validateGates(candidate) {
       !exactKeys(gate, ["id", "unlocked", "unlock_method"])
       || gate.id !== expectedIds[index]
       || typeof gate.unlocked !== "boolean"
-      || typeof gate.unlock_method !== "string"
-      || containsSensitiveDisplayValue(gate.unlock_method)
+      || !validDisplayText(gate.unlock_method)
     ) fail("gates");
   }
   return candidate;
@@ -241,9 +247,12 @@ function validConnection(value) {
   const allowedKeys = new Set(["state", "reason", "actions", "actionLabel"]);
   if (Object.keys(value).some((key) => !allowedKeys.has(key))) return false;
   if (typeof value.state !== "string" || !CONNECTION_STATES.has(value.state)) return false;
-  if (typeof value.reason !== "string" || containsSensitiveDisplayValue(value.reason)) return false;
-  if (value.actions != null && (!Array.isArray(value.actions) || value.actions.some((action) => typeof action !== "string" || containsSensitiveDisplayValue(action)))) return false;
-  if (value.actionLabel != null && (typeof value.actionLabel !== "string" || containsSensitiveDisplayValue(value.actionLabel))) return false;
+  if (!validDisplayText(value.reason)) return false;
+  if (
+    Object.hasOwn(value, "actions")
+    && (!Array.isArray(value.actions) || value.actions.some((action) => !validDisplayText(action)))
+  ) return false;
+  if (Object.hasOwn(value, "actionLabel") && !validDisplayText(value.actionLabel)) return false;
   return true;
 }
 
@@ -259,7 +268,7 @@ function validControlSettings(value) {
 
 function validControls(value) {
   if (!exactKeys(value, CONTROL_NAMES)) return false;
-  if (!exactKeys(value.delegation, ["state", "reason"]) || value.delegation.state !== "unavailable" || typeof value.delegation.reason !== "string") return false;
+  if (!exactKeys(value.delegation, ["state", "reason"]) || value.delegation.state !== "unavailable" || !validDisplayText(value.delegation.reason)) return false;
   return CONTROL_NAMES.slice(1).every((name) => exactKeys(value[name], ["state"]) && value[name].state === "unavailable");
 }
 
@@ -276,8 +285,7 @@ function validateControlCenter(candidate) {
     || CONNECTION_NAMES.some((name) => !validConnection(candidate.connections[name]))
     || !validControlSettings(candidate.settings)
     || !validControls(candidate.controls)
-    || typeof candidate.csrf !== "string"
-    || !candidate.csrf
+    || !validDisplayText(candidate.csrf)
     || containsSensitiveDisplayValue(candidate)
   ) fail("control-center");
   return candidate;
