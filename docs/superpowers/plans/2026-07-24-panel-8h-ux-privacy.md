@@ -87,6 +87,8 @@ The test must still fail for product behavior, not harness syntax. Commit and pu
 - Create: `apps/life-call/lib/panel-display-policy.js`
 - Create: `apps/life-call/lib/panel-presentation.js`
 - Create: `apps/life-call/lib/panel-display-policy.test.js`
+- Create: `apps/life-call/lib/panel-privacy-api.test.js`
+- Modify: `apps/life-call/eval/panel-privacy-harness.js`
 - Modify: `apps/life-call/lib/panel-api.js`
 - Modify: `apps/life-call/lib/user-command.js`
 - Modify: `apps/life-call/lib/panel-api.test.js`
@@ -130,10 +132,10 @@ Run:
 
 ```bash
 cd apps/life-call
-node --test lib/panel-display-policy.test.js lib/panel-privacy-contract.test.js lib/panel-api.test.js lib/panel-api-score-semantics.test.js lib/panel-control-center.test.js lib/panel-score-semantics.test.js
+node --test lib/panel-display-policy.test.js lib/panel-privacy-api.test.js lib/panel-api.test.js lib/panel-api-score-semantics.test.js lib/panel-control-center.test.js lib/panel-score-semantics.test.js
 ```
 
-Expected: all pass, including exact execution totals and zero source echo.
+Expected: all API tests pass, including exact `177/177` real API execution, zero source echo, and `call_language=null` compatibility. Re-run `lib/panel-privacy-contract.test.js` separately and require it to remain RED only for the not-yet-implemented emitted-browser assertions; no API assertion may remain failed.
 
 **Step 5: Commit and push**
 
