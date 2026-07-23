@@ -15,17 +15,15 @@ function candidateFor(posting, { researchServiceId, explainerServiceId }) {
   if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min || max > 25) return null;
   const category = String(posting.category || '').toLowerCase();
   const searchable = JSON.stringify({ title: posting.title, brief: posting.brief }).toLowerCase();
-  let basePrice;
+  const basePrice = 1;
   let serviceId;
   let pitch;
   if (category === 'research'
       && /\b(?:x402|machine[- ]payments?|agent payments?|http 402|usdc on base)\b/i.test(searchable)) {
-    basePrice = 3;
     serviceId = researchServiceId;
     pitch = 'Automated evidence-backed x402 adoption brief with primary-source links and the requested structure.';
   } else if (category === 'writing'
       && /(?:http\s*402|payment required)/i.test(searchable)) {
-    basePrice = 2;
     serviceId = explainerServiceId;
     pitch = 'Beginner-friendly evergreen HTTP 402 explainer with four required sections and no product references.';
   } else {

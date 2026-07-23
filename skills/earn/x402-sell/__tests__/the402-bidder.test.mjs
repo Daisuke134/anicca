@@ -54,7 +54,7 @@ test('bids only a matched open x402 research request and completes its durable e
     assert.equal(calls[0].url, 'https://api.the402.ai/v1/postings/post_match');
     assert.equal(calls[1].url, 'https://api.the402.ai/v1/postings/post_match/bids');
     assert.deepEqual(JSON.parse(calls[1].init.body), {
-      price_usd: 3,
+      price_usd: 1,
       eta_hours: 1,
       service_id: 'svc_research',
       pitch: 'Automated evidence-backed x402 adoption brief with primary-source links and the requested structure.',
