@@ -20,10 +20,7 @@ import os
 import sys
 import time
 import urllib.request
-
-CDP = "http://127.0.0.1:9222"
-VAULT = os.path.expanduser("~/.cloak/vault/daily-driver/auth-state.json")
-LEASES = os.path.expanduser("~/.cloak/vault/leases.json")
+from urllib.parse import urlparse
 
 try:
     import websockets
@@ -32,8 +29,33 @@ except ImportError:
     sys.exit(1)
 
 
+def _cdp_base():
+    return os.environ.get("CLOAK_CDP_BASE_URL", "http://127.0.0.1:9222").rstrip("/")
+
+
+def _vault_path():
+    return os.path.expanduser(
+        os.environ.get(
+            "CLOAK_SESSION_VAULT_FILE",
+            "~/.cloak/vault/daily-driver/auth-state.json",
+        )
+    )
+
+
+def _leases_path():
+    return os.path.expanduser(
+        os.environ.get("CLOAK_CONTEXT_LEASES_FILE", "~/.cloak/vault/leases.json")
+    )
+
+
+def _page_ws(target_id):
+    return f"ws://{urlparse(_cdp_base()).netloc}/devtools/page/{target_id}"
+
+
 def _browser_ws():
-    d = json.loads(urllib.request.urlopen(f"{CDP}/json/version", timeout=8).read())
+    d = json.loads(
+        urllib.request.urlopen(f"{_cdp_base()}/json/version", timeout=8).read()
+    )
     return d["webSocketDebuggerUrl"]
 
 
@@ -54,20 +76,23 @@ async def _calls(pairs):
 
 
 def _leases():
-    if os.path.exists(LEASES):
+    leases_path = _leases_path()
+    if os.path.exists(leases_path):
         try:
-            return json.load(open(LEASES))
+            with open(leases_path, encoding="utf-8") as handle:
+                return json.load(handle)
         except Exception:
             pass
     return {}
 
 
 def _save(d):
-    os.makedirs(os.path.dirname(LEASES), exist_ok=True)
-    tmp = LEASES + ".tmp"
-    with open(tmp, "w") as f:
+    leases_path = _leases_path()
+    os.makedirs(os.path.dirname(leases_path), exist_ok=True)
+    tmp = leases_path + f".{os.getpid()}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, indent=2)
-    os.replace(tmp, LEASES)
+    os.replace(tmp, leases_path)
 
 
 def acquire(task, url="about:blank", no_seed=False):
@@ -77,8 +102,10 @@ def acquire(task, url="about:blank", no_seed=False):
         return {"ok": True, "reused": True, **held}
 
     cookies = []
-    if not no_seed and os.path.exists(VAULT):
-        cookies = json.load(open(VAULT)).get("cookies", [])
+    vault_path = _vault_path()
+    if not no_seed and os.path.exists(vault_path):
+        with open(vault_path, encoding="utf-8") as handle:
+            cookies = json.load(handle).get("cookies", [])
 
     (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
     ctx_id = ctx["browserContextId"]
@@ -94,7 +121,7 @@ def acquire(task, url="about:blank", no_seed=False):
     lease = {
         "context_id": ctx_id,
         "target_id": target_id,
-        "ws": f"ws://127.0.0.1:9222/devtools/page/{target_id}",
+        "ws": _page_ws(target_id),
         "ts": int(time.time()),
         "cookies_seeded": len(cookies),
     }

@@ -10,9 +10,12 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-CDP="http://127.0.0.1:9222"
-LOG="$HOME/.openclaw/logs/cdp-daily-driver-guard.log"
+CDP="${CLOAK_CDP_BASE_URL:-http://127.0.0.1:9222}"
+CDP_PORT="${CDP_DAILY_DRIVER_PORT:-${CDP##*:}}"
+LOG="${CDP_GUARD_LOG:-$HOME/.openclaw/logs/cdp-daily-driver-guard.log}"
 GUARD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../earn/gig/scripts/cdp_daily_driver_guard.sh"
+export CDP_DAILY_DRIVER_PORT="$CDP_PORT"
+export SESSION_VAULT_PORT="${SESSION_VAULT_PORT:-$CDP_PORT}"
 
 alive() { curl -s --max-time 4 "$CDP/json/version" >/dev/null 2>&1; }
 
@@ -30,7 +33,7 @@ if [ ! -f "$GUARD" ]; then
 fi
 
 mkdir -p "$(dirname "$LOG")"
-echo "$(date '+%F %T') ensure_browser: :9222 dead -> managed recovery" >> "$LOG"
+echo "$(date '+%F %T') ensure_browser: :$CDP_PORT dead -> managed recovery" >> "$LOG"
 # Use the same launchd-owned persistent CloakBrowser context as the reality verifier. The previous
 # raw nohup launch was a second recovery implementation: it could answer the first probe but had no
 # owner supervising the browser lifecycle, so normal passes repeatedly fell back to the crash-prone
@@ -41,7 +44,9 @@ if cdp_guard_ensure_healthy 4 45; then
   # already logged in — a re-login means 2FA, and 2FA means a human, which is the one thing the
   # loops must never need.
   python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/session_vault.py" restore >> "$LOG" 2>&1 || true
-  python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_tab_gc.py" >> "$LOG" 2>&1 || true
+  if [ -n "${CLOAK_BROWSER_OWNER:-}" ]; then
+    python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_tab_gc.py" --owner "$CLOAK_BROWSER_OWNER" >> "$LOG" 2>&1 || true
+  fi
   echo "$(date '+%F %T') ensure_browser: RECOVERED by persistent owner" >> "$LOG"
   echo "RECOVERED"
   exit 0
