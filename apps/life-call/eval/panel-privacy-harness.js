@@ -14,6 +14,7 @@ const {
   MALFORMED_CASES,
   POSITIVE_CASES,
   RECIPE_IDS,
+  RECIPE_PATTERNS,
   buildRecipes,
 } = require("./panel-privacy-contract.js");
 
@@ -306,6 +307,10 @@ function escapeRegExp(value) {
 function assertContractShape() {
   assert.equal(RECIPE_IDS.length, 19);
   assert.equal(new Set(RECIPE_IDS).size, 19);
+  assert.deepEqual(Object.keys(RECIPE_PATTERNS), RECIPE_IDS);
+  for (const recipe of buildRecipes()) {
+    assert.match(recipe.value, RECIPE_PATTERNS[recipe.id], `${recipe.id}: pinned semantic shape`);
+  }
   assert.deepEqual(CHANNELS.map((channel) => channel.id), [
     "api-timeline-text",
     "api-ledger-href",
