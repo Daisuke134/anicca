@@ -140,7 +140,7 @@ const FINAL_SERIALIZED_ROOT_KEYS = new Set(["schema", "version", "runStatus", "g
   "passedDependencyCount", "failedDependencyCount", "sourceSnapshotRef", "runRef", "dependencies", "effects"]);
 const FINAL_SERIALIZED_DEPENDENCY_KEYS = new Set(["dependency", "status", "fresh", "checkedAt", "evidenceRef"]);
 const RUN_OBSERVATION = Symbol("daily-preflight-run-observation");
-const CURRENT_RUN_REFS = new Set();
+const RUN_PROVENANCE = Symbol("daily-preflight-run-provenance");
 
 function exactKeys(value, allowed) {
   return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(key => allowed.has(key));
@@ -151,7 +151,7 @@ function strictUtcMs(value, expectedMs) {
     new Date(Date.parse(value)).toISOString() === value && (expectedMs === undefined || Date.parse(value) === expectedMs);
 }
 
-function validateSerializedFinalReport(input) {
+function validateSerializedFinalReportShape(input) {
   if (!exactKeys(input, FINAL_SERIALIZED_ROOT_KEYS) || input.schema !== "life-manager-daily-preflight-final" ||
       input.version !== 1 || input.runStatus !== "pass" || input.requiredDependencyCount !== 9 ||
       input.passedDependencyCount !== 9 || input.failedDependencyCount !== 0 ||
@@ -160,7 +160,6 @@ function validateSerializedFinalReport(input) {
       !strictUtcMs(input.freshUntil) || Date.parse(input.freshUntil) - Date.parse(input.generatedAt) !== PROOF_MAX_AGE_MS ||
       !Array.isArray(input.dependencies) || input.dependencies.length !== DEPENDENCY_NAMES.length ||
       !exactKeys(input.effects, FINAL_EFFECT_KEYS)) throw new Error("final_report_invalid");
-  if (CURRENT_RUN_REFS.size > 0 && !CURRENT_RUN_REFS.has(input.runRef)) throw new Error("final_report_invalid");
   const generatedAtMs = Date.parse(input.generatedAt);
   for (let index = 0; index < DEPENDENCY_NAMES.length; index += 1) {
     const dependency = input.dependencies[index];
@@ -179,8 +178,19 @@ function validateSerializedFinalReport(input) {
   return input;
 }
 
+function validateSerializedFinalReport(input, provenance) {
+  validateSerializedFinalReportShape(input);
+  if (!provenance || provenance.report !== input || provenance.runRef !== input.runRef || provenance.consumed === true) {
+    throw new Error("final_report_invalid");
+  }
+  provenance.consumed = true;
+  return input;
+}
+
 function validateAndBuildFinalReport(input) {
-  if (input && input.runRef !== undefined && input.runCorrelation === undefined) return validateSerializedFinalReport(input);
+  if (input && input.runRef !== undefined && input.runCorrelation === undefined) {
+    return validateSerializedFinalReport(input, input[RUN_PROVENANCE]);
+  }
   if (!exactKeys(input, FINAL_ROOT_KEYS) || !/^sha256:[a-f0-9]{64}$/.test(String(input.sourceSnapshotRef || "")) ||
       typeof input.runCorrelation !== "string" || !input.runCorrelation || !Number.isFinite(input.runStartedAtMs) ||
       !Number.isFinite(input.generatedAtMs) || input.runStartedAtMs > input.generatedAtMs ||
@@ -217,9 +227,11 @@ function validateAndBuildFinalReport(input) {
   const hashedRef = finalHashedRef;
   const currentRunBinding = { runRef: hashedRef(runCorrelation) };
   const runRef = currentRunBinding.runRef;
-  CURRENT_RUN_REFS.add(runRef);
-  if (CURRENT_RUN_REFS.size > 64) CURRENT_RUN_REFS.delete(CURRENT_RUN_REFS.values().next().value);
-  return Object.freeze({ ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef, dependencies, effects: { ...effects } });
+  const report = { ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef, dependencies, effects: { ...effects } };
+  const provenance = { report, runRef, consumed: false };
+  Object.defineProperty(report, RUN_PROVENANCE, { value: provenance, enumerable: false });
+  validateSerializedFinalReport(report, provenance);
+  return Object.freeze(report);
 }
 
 function healthBase(env) {
@@ -883,6 +895,7 @@ module.exports = {
   runPreflight,
   sanitizeEvidence,
   validateAndBuildFinalReport,
+  validateSerializedFinalReportShape,
   validateEmailProof,
   validateTelegramProof,
 };
