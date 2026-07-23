@@ -16,17 +16,19 @@
   local main only after checking untracked collisions.
 - Implementation worktree: `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable`,
   branch `fix/gig-browser-ownership-20260724`, upstream
-  `origin/fix/gig-browser-ownership-20260724`, verified commit `f7f180a`.
+  `origin/fix/gig-browser-ownership-20260724`, verified commit `4e956f7`.
 - Live runtime repository: `/Users/anicca/profitable-claude`, branch
-  `deploy/gig-speedy-reply-cutover`, commit `3993372`. Do not implement here or overwrite concurrent
-  article-writer work.
+  `deploy/gig-speedy-reply-cutover`, current commit `078c26c`; reviewed Gig deploy merge `59957c5`
+  is its first-parent ancestor. Do not implement here or overwrite concurrent article-writer work.
 - Old spec worktree `/Users/anicca/anicca-project/.worktrees/coconala-reply-sla` is historical and
   must not become the continuation SSOT.
 
 ## Current item and evidence
 
-- Current item: §6 #1, close B1 native submit for Coconala thread `9967694`; it is externally
-  blocked by the target account/profile state, not by the browser transport.
+- Current item: §6 #1, close B1 native submit for Coconala thread `9967694`; the exact target
+  remains externally blocked. The browser/native transport works on control threads, while
+  `submit_rejected_sending_unavailable` also occurs on at least one active-profile thread, so the
+  bounded code must not be reduced to a single inferred cause.
 - Connector DB: `~/gig/connector-outbox.sqlite3`, action `1`, revision `36`, state `blocked`;
   verified thread URL/hash and seller send time remain empty. Slot is free and Telegram count is 0.
 - The production loop reaches the exact Coconala native request: URL-encoded jQuery form, 10
@@ -45,13 +47,28 @@
 - An active-profile control proves the transport works. Production action `3` on thread `9976213`
   sends once, rereads exact thread URL/hash/seller time, reaches `replied`, and emits exactly one
   sent Telegram report `gig:telegram:reply:v1:3:1` with message ID `3334`.
+- Active-profile thread `9993478` action `4` also returns
+  `submit_rejected_sending_unavailable`; its 120-second reread remains seller 0 / buyer last /
+  matching hash 0 and it is revision `2` `blocked`. Active profile is therefore not sufficient for
+  success, and Coconala does not expose the exact per-thread reason behind the bounded code.
+- Reviewed implementation `4e956f7` and deploy merge `59957c5` persist only five bounded rejection
+  codes. Explicit rejection becomes `blocked` only after executor quiescence, 120 seconds, and
+  authoritative absence. Raw server text is not persisted. A new event during the window is
+  transactionally moved to a fresh revision and deferred to the next pass; a stale read rolls back.
+- Production proof after deploy: thread `9995190` action `5` rejects once, the immediate follow-up
+  returns `consistency_window_open` with no resend, and the 120-second reread automatically makes
+  revision `1` `blocked` with its intent `superseded` and Telegram count 0. In the same production
+  pass, thread `9976947` action `6` sends once and reaches `replied` with verified hash
+  `7922006b5050d7c1e935e866e24016a3b2575444ed2d06c59ec42880a57bd92b`, seller time `1784847705`,
+  one verified intent, and exactly one sent Telegram event `gig:telegram:reply:v1:6:1`
+  (message ID `3335`).
 - Source: [Coconala Help — メッセージ機能について](https://coconala-support.zendesk.com/hc/ja/articles/218721057-%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E6%A9%9F%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
   / core quote: 「相手に機能制限がかかっている」場合は「メッセージが送信できません」。
   The same article says 「制限解除可否・時期をご案内することはできません」, so support is
   not an unblock guarantee.
-- `ai.anicca.hf-gig-pass` and `ai.anicca.hf-gig-reply-detector` are loaded again after quarantine.
-  The reply detector exits 0 without claiming the blocked action; the half-hour pass remains
-  available for the other lanes.
+- `ai.anicca.hf-gig-pass` and `ai.anicca.hf-gig-reply-detector` are loaded after reviewed deploy;
+  both latest exits are `0`. The reply detector skips blocked actions and continues other threads;
+  the half-hour pass remains available for the other lanes.
 - No customer reply/application/delivery was manually performed in the handover session.
 - Browser `ai.anicca.hf-gig-browser` is running. Gig pass/reply/auditor/core/self-improve labels
   remain installed; latest observed exits were `0`. Daily report has not yet naturally run since
@@ -69,11 +86,11 @@
 
 Start on local `main`; read this file and spec §0/§6. Fetch all relevant remotes and re-measure
 HEAD/upstream/dirty state, connector action/revision, launchd state, and Coconala authoritative
-ground truth. Do not retry thread `9967694` while `/users/6186053` remains not-found. Resume §6 #1
-only after a read-only profile check proves the profile active, or after the same thread produces a
-new unique buyer event (which reactivates the blocked action). Then let the production loop—not
-Codex—perform exactly one customer action and reconcile it. If the profile remains not-found,
-there is no loop-side unblock; wait for an active profile or new buyer event. A Coconala inquiry
-may diagnose the account state but does not guarantee restoration and requires new authority.
+ground truth. Do not retry thread `9967694` for the same event. Resume §6 #1 only after a read-only
+check shows a material counterpart/platform-state change, or after the same thread produces a new
+unique buyer event (which reactivates the blocked action). Then let the production loop—not
+Codex—perform exactly one customer action and reconcile it. If neither changes, there is no
+loop-side unblock. A Coconala inquiry may diagnose the account state but does not guarantee
+restoration and requires new authority.
 Mark #1 done only after the loop reads back thread URL, outgoing hash, seller send time,
 outbox=`replied`, one Telegram event, and zero duplicate sends.
