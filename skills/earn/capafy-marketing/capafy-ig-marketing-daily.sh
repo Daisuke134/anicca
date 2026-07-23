@@ -139,7 +139,8 @@ EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/${INSTANCE}-ig-marketi
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-class tool-agent \
   --evidence-dir "$EVIDENCE_DIR" \
-  --task-label "${INSTANCE}-ig-marketing-daily" >>"$LOG" 2>&1
+  --task-label "${INSTANCE}-ig-marketing-daily" \
+  --loop capafy >>"$LOG" 2>&1
 RC=$?
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$LAST_PASS_MARKER" 2>/dev/null || true

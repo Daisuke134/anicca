@@ -25,6 +25,14 @@ EXPECTED_TASK_CLASSES = {
     ROOT / "self" / "self-fix.sh": "high-value-agent",
 }
 
+EXPECTED_LOOPS = {
+    ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "--loop capafy",
+    ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "--loop capafy",
+    ROOT / "earn" / "clip" / "clip_daily.sh": "--loop clip",
+    ENGINE / "spawn-marketing-loop.sh": "--loop marketing-engine",
+    ROOT / "self" / "self-fix.sh": "--loop $LOOP_Q",
+}
+
 
 class GptFirstRunnerWiringTest(unittest.TestCase):
     def test_revenue_consumers_use_shared_runner_without_provider_or_model_names(self):
@@ -33,6 +41,7 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
                 text = script.read_text(encoding="utf-8")
                 self.assertIn("run_agent.sh", text)
                 self.assertIn(f"--task-class {EXPECTED_TASK_CLASSES[script]}", text)
+                self.assertIn(EXPECTED_LOOPS[script], text)
                 self.assertNotRegex(text, r"command -v claude|\$CLAUDE|claude\s+-p|--model\s+sonnet")
                 self.assertNotRegex(text, r"codex\s+exec|gpt-5(?:\.|-)" )
 
@@ -62,6 +71,7 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
                 [
                     "bash", str(RUN_AGENT), "--task-class", "tool-agent",
                     "--evidence-dir", str(evidence), "--task-label", "capafy-fixture",
+                    "--loop", "capafy",
                 ],
                 input="Do one bounded fixture pass.\n",
                 env=env,
@@ -71,6 +81,7 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             args = json.loads(args_file.read_text(encoding="utf-8"))
             self.assertEqual(args[args.index("--task-class") + 1], "tool-agent")
+            self.assertEqual(args[args.index("--loop") + 1], "capafy")
             self.assertNotIn("--model", args)
             self.assertFalse(any("sonnet" in arg or arg.startswith("gpt-") for arg in args))
             summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))

@@ -25,7 +25,7 @@ step(){ # $1=label  $2=prompt
   local out="$HOME/.openclaw/logs/clip-step-last.out"
   local evidence="$HOME/.openclaw/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
   printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" | \
-    "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" \
+    "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" --loop clip \
       >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
