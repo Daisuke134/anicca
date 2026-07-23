@@ -1,6 +1,6 @@
 {
   "name": "Life Manager Web Research API",
-  "slug": "anicca-research_finchip",
+  "slug": "life-manager-research_finchip",
   "standard": "ERC1155",
   "metadataURI": "https://raw.githubusercontent.com/Daisuke134/life-manager/main/skills/earn/x402-sell/chip-metadata.json",
   "contentHash": "0x3c69ea1cfcb31bd480ffa62a213b7c64bca399ad2250ec03a1a30a29c6e35209",

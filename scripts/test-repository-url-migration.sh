@@ -44,6 +44,14 @@ for product_identity_file in \
     exit 1
   fi
 done
+if grep -Eqi 'anicca (loop|install)' install.sh; then
+  echo 'legacy lowercase product name remains in install.sh output' >&2
+  exit 1
+fi
+test "$(jq -r .slug skills/earn/x402-sell/chip.json)" = 'life-manager-research_finchip' || {
+  echo 'legacy Life Manager x402 public slug remains' >&2
+  exit 1
+}
 if git grep -nI -E "$identity_contradiction_pattern" -- README.md README.ja.md; then
   echo 'README still describes Life Manager as a separate repository' >&2
   exit 1
