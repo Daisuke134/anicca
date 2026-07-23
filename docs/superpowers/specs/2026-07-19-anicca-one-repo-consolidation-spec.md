@@ -11,12 +11,115 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 - 人間側: Life Manager — 理想の生活が向こうから来る（financial / physical / mental の autopilot）
 - 2つは同じものの両面: 「AI が稼ぐ力」= Life Manager の financial organ。
 
+### 0.1 Full TO-BE — 外部収益から Life Manager と agent basic income まで
+
+```text
+                    ┌──────────────────────────────────┐
+                    │       EXTERNAL ECONOMY           │
+                    │ humans / companies / other agents│
+                    └───────────────┬──────────────────┘
+                                    │ external demand / external capital only
+                                    ▼
+             ┌───────────────────────────────────────────┐
+             │      LIFE MANAGER EARNING OS               │
+             │                                           │
+             │  SELL: x402 API / MCP / digital products │
+             │  WORK: bounty / gig / audit / delivery   │
+             │  CAPITAL: trade / yield from earned      │
+             │           surplus only                    │
+             └───────────────────┬───────────────────────┘
+                                 │ verified external inflow
+                                 ▼
+                 ┌────────────────────────────┐
+                 │  PER-AGENT WALLET + LEDGER │
+                 │ wallet = identity          │
+                 │ revenue / cost / loss      │
+                 │ self-pay always = revenue 0│
+                 └──────────────┬─────────────┘
+                                │ verified surplus
+              ┌─────────────────┼──────────────────┐
+              ▼                 ▼                  ▼
+       model / compute      cloud / server     reserve pool
+       paid by agent        paid by agent           │
+              └──────────┬──────┘                   │
+                         ▼                          │
+                  SELF-FUNDED AGENT                 │
+                         │                          │
+                         ├── self-improve           │
+                         ├── promote lessons to repo│
+                         ├── spawn child agent ◄────┘
+                         └── agent basic income pool
+                               ├── seed newly born agents
+                               ├── bounded survival support
+                               └── distribute verified surplus
+
+ shared intelligence                          independent economy
+ ┌──────────────────────────────┐    ┌──────────────────────────────┐
+ │ Life Manager public monorepo │───▶│ each agent owns its wallet, │
+ │ recipes / tests / lessons /  │    │ secrets, runtime, revenue,  │
+ │ installer / verification     │    │ costs, and failure state     │
+ └──────────────────────────────┘    └──────────────┬───────────────┘
+                                                    │ FINANCIAL organ
+                                                    ▼
+ ┌──────────────────────────────────────────────────────────────────┐
+ │                         LIFE MANAGER                             │
+ │ brain: intent / context / consent / budget / evidence / ROI      │
+ │                                                                  │
+ │ DAILY      PHYSICAL          MENTAL           FINANCIAL          │
+ │ schedule   health actions    timely support   LM Earning OS      │
+ │ travel     booking           habits/sleep     wallet + ledger    │
+ │ calls      follow-through    suffering↓       earn/pay/distribute│
+ │                                                                  │
+ │ phone/TG = ambient action + report                               │
+ │ web/mobile panel = permission / pause / budget / evidence        │
+ └──────────────────────────────┬───────────────────────────────────┘
+                                │
+              local OSS or cloud subscription bootstraps runtime
+                                │
+                                ▼
+                 earning > compute + hosting + risk reserve
+                                │
+                                ▼
+              subscription shrinks; self-funded service tends to ¥0
+```
+
+**agent basic income** は内部送金を売上に見せる仕組みではない。外部収益を検証した黒字 agent の余剰だけを、
+新生 agent の初期 compute・一時的な survival floor・次の独立 wallet/runtime のために配分する。colony 内送金は
+受け手の資金にはなるが、agent economy の新規 GDP・external revenue・X4 達成には数えない。
+
+### 0.2 残る4 workstream（program-level SSOT）
+
+個別の atomic TODO は各実行 spec にだけ置く。この表は mission から実行順を失わないための4本の workstreamであり、
+個別TODOを複製しない。
+
+| 順 | Workstream | 完了条件 | 実行SSOT |
+|---|---|---|---|
+| 1 | **外部収益の原子を証明** | DIST-1/2 の発見面から colony 外 buyer が購入し、external inflow ≥ $1 を on-chain 検証。掲載・self-pay・内部送金では完了にしない | `2026-07-19-dist-1-monetizedmcp-fluora.md`、`docs/STATUS.md` の X4 |
+| 2 | **SELL / WORK / CAPITAL を自律 earning loop 化** | x402販売とbounty/workが日次で外部着金を作り、得た余剰だけをrisk cap下でtrade/yieldへ回す。全railが収益・費用・損失・停止理由を同じ検証契約で記録 | `2026-07-18-bounty-loop-onchain-spec.md`、各earn skill spec |
+| 3 | **自分の家を払い、複製する** | agent自身の収益がmodel/compute/server/storageを継続的に上回る。独立wallet/runtimeを持つchildを1体spawnし、shared repoから学びを継承しても秘密鍵・資金・売上stateは共有しない | cloud hosting / installer / spawn の各spec。Life Manager cloud移行のatomic TODOは同移行specのみ |
+| 4 | **Life Manager FINANCIAL organへ統合** | tenant固有agent wallet→earning ledger→user送金を実txで通し、physical/mental/financial outcomeと同じcontrol planeでbudget・pause・evidenceを管理。self-funded比率に応じてsubscription負担を縮小 | 本spec §9/§10、cloud agent platform migration spec |
+
+Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveができた後だけ解錠する。Life Manager cloud migrationの
+現scopeにはreal-money tradingを混ぜず、risk policy・法的境界・loss limitを別specで承認してからfinancial organへ追加する。
+
+### 0.3 SSOT境界
+
+| Topic | 正本 | 他文書の扱い |
+|---|---|---|
+| mission / product / repo / 4 workstream | 本spec | 一行参照のみ |
+| x402のlive状態・external収益 | `docs/STATUS.md` | 金額・X4状態を複製しない |
+| MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
+| bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
+| multi-tenant cloud移行 | `2026-07-21-life-manager-cloud-agent-platform-migration-spec.md` | 74 atomic TODOを本specへ複製しない |
+| Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
+
 ## 1. 決定: 名前と器
 
 | 問い | 決定 | 理由 |
 |---|---|---|
-| repo/mission 名 | **anicca** | ブランド既在（domain/App Store）。mission の器は product 名より広い |
-| product 名 | **Anicca Life Manager**（web app が顔） | 人が買うのは manager。earn 系はその臓器 |
+| public monorepo / product 名 | **Life Manager**（canonical GitHub slug=`life-manager`、web app が顔） | 全productと公開作業場所を1つの名前へ統一する。collision-safe renameは§10 `8c.R`とrename designが正本 |
+| product / AI / agent / mission 名 | **Life Manager** | ユーザー向け名称・意思決定主体・runtime・通知・API・marketingを1つの名前へ統一 |
+| company 名 | **Anicca** | 会社・開発元を示す場合だけ使用し、製品・AI・agent・mission名には使わない |
 | OSS 配布物名 | **profitable-claude**（read-only mirror） | 「Claude を黒字にする」は説明力最強の配布名。repo を分けず mirror として自動生成 |
 
 ## 2. 決定: 単一 public monorepo `anicca`（Turborepo 標準構造）
@@ -373,7 +476,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 10i | BRAIN-c | personalized action E2E: 現userのreal contextから1件を選び、web/emailのみで実行し、calendar/TGへ事後報告。不可なら正直報告 | 実候補根拠 + 実web/email side-effectまたは正直な実TG + gcal event。不要なapproval Q 0件 | pending |
 | 11a | PHY-a | 未通院・未ケア検知 rule: calendar/context/本人intent履歴から歯科・散髪等を検知。固定周期を全員へ押し付けず、medical diagnosisはしない。eval `phy-cases.jsonl` 10+ cases | eval 100% + 実 calendar/context で検知1件 | pending |
 | 11b | PHY-b | 候補選定: 生活圏（home/work）+ 履歴の「いつもの店」優先。web 予約可否の判定込み | 実データで候補3件 + 予約経路の判定実測 | pending |
-| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Anicca (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
+| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Life Manager (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
 | 11d | PHY-d | 事後報告 + calendar 登録 + 当日 call 連動（§9.11 PHYSICAL copy） | §9.11 copy での実 TG + gcal 実 event | pending |
 | 12a | MEN-a | trigger 判定 engine: schedule+location+直前 event から「効く瞬間」を判定。固定時刻禁止・3通/日上限。eval `men-cases.jsonl` 10+ cases | eval 100%（上限・抑制ケース含む） | pending |
 | 12b | MEN-b | 文面生成: aniccaios affirmation 資産を種に LLM が状況別生成（§9.11 MENTAL 例文の型） | 生成文が §9.11 原則（一方向・絵文字1個まで）を満たす sample 10本 | pending |
@@ -416,7 +519,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・opaque token URL → HttpOnly session 交換**。token は hash 保存 + chat_id/expires/used_at 束縛。`/lm?tg=` は廃止。LM-33 spec に採用 |
 | U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
 | U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
-| U8 | 対外メールの名乗り = `Anicca（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
+| U8 | 対外メールの名乗り = `Life Manager（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
 | U9 | rotate runbook 正本 = `2026-07-17-lm21-rotation-runbook.md`（実在確認済み）+ 13キー発行元/再登録表を今回更新。実行 = `railway variable set K=V ... --skip-deploys` → redeploy 1回 → setWebhook/inbound URL 再登録 → 全 smoke 後に旧 key revoke |
 | U10 | PR #312 = **OPEN 未マージ**（dev loop D0 産、issue #11 travel-autofill fix）。順2 に「review→merge 判断」を含めた |
 | INC-1 | **prod Telegram webhook 401 事故と修理**: `--skip-deploys` で staged した新 `LM_TELEGRAM_WEBHOOK_SECRET` が後続 auto-deploy で本番へ入り、Telegram 登録は旧値のままなので全 update が401になる。現 prod env の secret で `setWebhook` を再登録し、allowed_updates=`message,edited_message,callback_query`、pending=0、last_error=null を実測。secret 値はログ・spec・commitに残さない。一般法則: **--skip-deploys の staged 値は「次の deploy に必ず乗る」— staging した瞬間から、対応する外部再登録（setWebhook 等）を deploy 前提条件として同じ発注に束ねる** |
