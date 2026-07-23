@@ -8,7 +8,7 @@ function errorCode(error) {
     .slice(0, 64);
 }
 
-function candidateFor(posting, { researchServiceId, explainerServiceId }) {
+export function the402BidCandidate(posting, { researchServiceId, explainerServiceId }) {
   if (posting?.status !== 'open') return null;
   const min = Number(posting.budget_min_usd);
   const max = Number(posting.budget_max_usd);
@@ -67,7 +67,7 @@ export async function runThe402BidderOnce({
     if (!detailResponse.ok) throw new Error(`posting_http_${detailResponse.status}`);
     const detailBody = await detailResponse.json();
     const posting = detailBody?.data || detailBody;
-    const candidate = candidateFor(posting, { researchServiceId, explainerServiceId });
+    const candidate = the402BidCandidate(posting, { researchServiceId, explainerServiceId });
     if (!candidate) {
       inbox.complete({ eventId: event.eventId, leaseToken: event.leaseToken, nowMs });
       return { worked: true, eventId: event.eventId, status: 'skipped', postingId };
