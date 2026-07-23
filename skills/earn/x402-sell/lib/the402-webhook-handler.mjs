@@ -71,10 +71,13 @@ export async function handleThe402WebhookRequest(request, {
     if (allowUnsignedTestProbe) {
       let testPayload = null;
       try { testPayload = JSON.parse(rawBody); } catch {}
+      const expectedServiceIds = Array.isArray(expectedTestServiceId)
+        ? expectedTestServiceId
+        : [expectedTestServiceId];
       if (testPayload?.test === true
           && testPayload?.type === 'job_dispatch'
           && /^test_job_[A-Za-z0-9]+$/.test(testPayload?.job_id || '')
-          && testPayload?.service_id === expectedTestServiceId) {
+          && expectedServiceIds.includes(testPayload?.service_id)) {
         return jsonResponse({ ok: true, test: true }, 200);
       }
     }

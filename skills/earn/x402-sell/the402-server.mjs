@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { Readable } from 'node:stream';
 
 import { openThe402Inbox } from './lib/the402-inbox.mjs';
@@ -11,10 +11,14 @@ const ROUTE = '/webhooks/the402';
 const PUBLIC_URL = `https://aniccanomac-mini-1.tail7a0ba4.ts.net${ROUTE}`;
 const CREDENTIALS_PATH = '/Users/anicca/.anicca/the402-credentials.json';
 const SERVICE_PATH = '/Users/anicca/.anicca/the402-service.json';
+const EXPLAINER_SERVICE_PATH = '/Users/anicca/.anicca/the402-service-http402.json';
 const INBOX_PATH = '/Users/anicca/.anicca/the402-inbox.sqlite';
 
 const credentials = JSON.parse(readFileSync(CREDENTIALS_PATH, 'utf8'));
 const service = JSON.parse(readFileSync(SERVICE_PATH, 'utf8'));
+const explainerService = existsSync(EXPLAINER_SERVICE_PATH)
+  ? JSON.parse(readFileSync(EXPLAINER_SERVICE_PATH, 'utf8'))
+  : null;
 const inbox = openThe402Inbox(INBOX_PATH);
 
 function sendJson(response, status, body, extraHeaders = {}) {
@@ -56,7 +60,10 @@ const server = createServer(async (request, response) => {
       // Keep strict HMAC verification as the fallback when that header is absent.
       allowApiKeyOnly: true,
       allowUnsignedTestProbe: true,
-      expectedTestServiceId: service.service_id || service.id,
+      expectedTestServiceId: [
+        service.service_id || service.id,
+        explainerService?.service_id || explainerService?.id,
+      ].filter(Boolean),
       onRejected: (reason) => process.stderr.write(`${reason}\n`),
     });
     const headers = Object.fromEntries(result.headers.entries());

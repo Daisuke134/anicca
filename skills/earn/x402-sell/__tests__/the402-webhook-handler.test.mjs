@@ -158,7 +158,7 @@ test('acknowledges only the exact official unsigned test probe without enqueuein
     apiKey: API_KEY,
     webhookSecret: WEBHOOK_SECRET,
     allowUnsignedTestProbe: true,
-    expectedTestServiceId: 'svc_expected',
+    expectedTestServiceId: ['svc_research', 'svc_expected'],
     nowMs: NOW_MS,
   });
   assert.equal(testResponse.status, 200);
