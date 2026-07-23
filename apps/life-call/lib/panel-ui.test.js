@@ -60,7 +60,35 @@ test("PANEL-0: panel includes a real control center and keeps read APIs same-ori
     assert.match(html, new RegExp(`/api/panel/${endpoint}`));
   }
   assert.match(html, /insufficient data/);
-  assert.match(html, /まだ収益はありません/);
+  assert.match(html, /まだ収支の記録はありません/);
+});
+
+test("PANEL-8h: emitted renderers accept only projected timeline and ledger DTO fields", () => {
+  const html = renderPanelPage();
+  assert.match(html, /validateTimelineData\(data\)/);
+  assert.match(html, /data\.items/);
+  assert.match(html, /validateLedgerData\(data\)/);
+  assert.match(html, /data\.financial\.items\.concat\(data\.api_cost\.items\)/);
+  assert.match(html, /displaySafeLink\(entry\.link\)/);
+  assert.doesNotMatch(html, /data\.events|data\.calls|financial\.entries/);
+  assert.doesNotMatch(html, /url\.protocol === "http:"/);
+});
+
+test("PANEL-8h: emitted loader applies closed validators and shared secret patterns before display", () => {
+  const html = renderPanelPage();
+  for (const validator of [
+    "validateTimelineData",
+    "validateLedgerData",
+    "validateGatesData",
+    "validateSettingsData",
+    "validateControlCenterData",
+  ]) {
+    assert.match(html, new RegExp(`${validator}\\(data\\)`));
+  }
+  assert.match(html, /displaySecretPatterns/);
+  assert.match(html, /displayContainsSensitiveValue\(data\)/);
+  assert.match(html, /if \(!response\.ok\) throw new Error\(name \+ " unavailable"\)/);
+  assert.doesNotMatch(html, /response\.statusText|response\.text\(\)|JSON\.stringify\(data\)/);
 });
 
 test("PANEL-0: visible actions have semantic delegated handlers", () => {
