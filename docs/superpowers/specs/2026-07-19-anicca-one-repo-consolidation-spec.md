@@ -1,4 +1,4 @@
-# ANICCA ONE-REPO 統合 spec — 1つの mission、1つの repo、1つの product
+# LIFE MANAGER ONE-REPO 統合 spec — 1つの mission、1つの repo、1つの product
 
 2026-07-19 Fable 起案（Dais 相談への単一推奨）。**このセッションでは実装しない — plan のみ。**
 research 出典: monorepo.tools / Vercel blog / Turborepo docs / gh api 実測(Cal.com,n8n,Plausible,Supabase) /
@@ -11,18 +11,121 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 - 人間側: Life Manager — 理想の生活が向こうから来る（financial / physical / mental の autopilot）
 - 2つは同じものの両面: 「AI が稼ぐ力」= Life Manager の financial organ。
 
+### 0.1 Full TO-BE — 外部収益から Life Manager と agent basic income まで
+
+```text
+                    ┌──────────────────────────────────┐
+                    │       EXTERNAL ECONOMY           │
+                    │ humans / companies / other agents│
+                    └───────────────┬──────────────────┘
+                                    │ external demand / external capital only
+                                    ▼
+             ┌───────────────────────────────────────────┐
+             │      LIFE MANAGER EARNING OS               │
+             │                                           │
+             │  SELL: x402 API / MCP / digital products │
+             │  WORK: bounty / gig / audit / delivery   │
+             │  CAPITAL: trade / yield from earned      │
+             │           surplus only                    │
+             └───────────────────┬───────────────────────┘
+                                 │ verified external inflow
+                                 ▼
+                 ┌────────────────────────────┐
+                 │  PER-AGENT WALLET + LEDGER │
+                 │ wallet = identity          │
+                 │ revenue / cost / loss      │
+                 │ self-pay always = revenue 0│
+                 └──────────────┬─────────────┘
+                                │ verified surplus
+              ┌─────────────────┼──────────────────┐
+              ▼                 ▼                  ▼
+       model / compute      cloud / server     reserve pool
+       paid by agent        paid by agent           │
+              └──────────┬──────┘                   │
+                         ▼                          │
+                  SELF-FUNDED AGENT                 │
+                         │                          │
+                         ├── self-improve           │
+                         ├── promote lessons to repo│
+                         ├── spawn child agent ◄────┘
+                         └── agent basic income pool
+                               ├── seed newly born agents
+                               ├── bounded survival support
+                               └── distribute verified surplus
+
+ shared intelligence                          independent economy
+ ┌──────────────────────────────┐    ┌──────────────────────────────┐
+ │ Life Manager public monorepo │───▶│ each agent owns its wallet, │
+ │ recipes / tests / lessons /  │    │ secrets, runtime, revenue,  │
+ │ installer / verification     │    │ costs, and failure state     │
+ └──────────────────────────────┘    └──────────────┬───────────────┘
+                                                    │ FINANCIAL organ
+                                                    ▼
+ ┌──────────────────────────────────────────────────────────────────┐
+ │                         LIFE MANAGER                             │
+ │ brain: intent / context / consent / budget / evidence / ROI      │
+ │                                                                  │
+ │ DAILY      PHYSICAL          MENTAL           FINANCIAL          │
+ │ schedule   health actions    timely support   LM Earning OS      │
+ │ travel     booking           habits/sleep     wallet + ledger    │
+ │ calls      follow-through    suffering↓       earn/pay/distribute│
+ │                                                                  │
+ │ phone/TG = ambient action + report                               │
+ │ web/mobile panel = permission / pause / budget / evidence        │
+ └──────────────────────────────┬───────────────────────────────────┘
+                                │
+              local OSS or cloud subscription bootstraps runtime
+                                │
+                                ▼
+                 earning > compute + hosting + risk reserve
+                                │
+                                ▼
+              subscription shrinks; self-funded service tends to ¥0
+```
+
+**agent basic income** は内部送金を売上に見せる仕組みではない。外部収益を検証した黒字 agent の余剰だけを、
+新生 agent の初期 compute・一時的な survival floor・次の独立 wallet/runtime のために配分する。colony 内送金は
+受け手の資金にはなるが、agent economy の新規 GDP・external revenue・X4 達成には数えない。
+
+### 0.2 残る4 workstream（program-level SSOT）
+
+個別の atomic TODO は各実行 spec にだけ置く。この表は mission から実行順を失わないための4本の workstreamであり、
+個別TODOを複製しない。
+
+| 順 | Workstream | 完了条件 | 実行SSOT |
+|---|---|---|---|
+| 1 | **外部収益の原子を証明** | DIST-1/2 の発見面から colony 外 buyer が購入し、external inflow ≥ $1 を on-chain 検証。掲載・self-pay・内部送金では完了にしない | `2026-07-19-dist-1-monetizedmcp-fluora.md`、`docs/STATUS.md` の X4 |
+| 2 | **SELL / WORK / CAPITAL を自律 earning loop 化** | x402販売とbounty/workが日次で外部着金を作り、得た余剰だけをrisk cap下でtrade/yieldへ回す。全railが収益・費用・損失・停止理由を同じ検証契約で記録 | `2026-07-18-bounty-loop-onchain-spec.md`、各earn skill spec |
+| 3 | **自分の家を払い、複製する** | agent自身の収益がmodel/compute/server/storageを継続的に上回る。独立wallet/runtimeを持つchildを1体spawnし、shared repoから学びを継承しても秘密鍵・資金・売上stateは共有しない | cloud hosting / installer / spawn の各spec。Life Manager cloud移行のatomic TODOは同移行specのみ |
+| 4 | **Life Manager FINANCIAL organへ統合** | tenant固有agent wallet→earning ledger→user送金を実txで通し、physical/mental/financial outcomeと同じcontrol planeでbudget・pause・evidenceを管理。self-funded比率に応じてsubscription負担を縮小 | 本spec §9/§10、cloud agent platform migration spec |
+
+Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveができた後だけ解錠する。Life Manager cloud migrationの
+現scopeにはreal-money tradingを混ぜず、risk policy・法的境界・loss limitを別specで承認してからfinancial organへ追加する。
+
+### 0.3 SSOT境界
+
+| Topic | 正本 | 他文書の扱い |
+|---|---|---|
+| mission / product / repo / 4 workstream | 本spec | 一行参照のみ |
+| x402のlive状態・external収益 | `docs/STATUS.md` | 金額・X4状態を複製しない |
+| MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
+| bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
+| multi-tenant cloud移行 | `2026-07-21-life-manager-cloud-agent-platform-migration-spec.md` | 74 atomic TODOを本specへ複製しない |
+| Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
+
 ## 1. 決定: 名前と器
 
 | 問い | 決定 | 理由 |
 |---|---|---|
-| repo/mission 名 | **anicca** | ブランド既在（domain/App Store）。mission の器は product 名より広い |
-| product 名 | **Anicca Life Manager**（web app が顔） | 人が買うのは manager。earn 系はその臓器 |
+| public monorepo / product 名 | **Life Manager**（canonical GitHub slug=`life-manager`、web app が顔） | 全productと公開作業場所を1つの名前へ統一する。collision-safe renameは§10 `8c.R`とrename designが正本 |
+| product / AI / agent / mission 名 | **Life Manager** | ユーザー向け名称・意思決定主体・runtime・通知・API・marketingを1つの名前へ統一 |
+| company 名 | **Anicca** | 会社・開発元を示す場合だけ使用し、製品・AI・agent・mission名には使わない |
 | OSS 配布物名 | **profitable-claude**（read-only mirror） | 「Claude を黒字にする」は説明力最強の配布名。repo を分けず mirror として自動生成 |
 
-## 2. 決定: 単一 public monorepo `anicca`（Turborepo 標準構造）
+## 2. 決定: 単一 public monorepo `life-manager`（Turborepo 標準構造）
 
 ```
-anicca/                     ← 唯一の作業場所（phone/cloud の Claude Code は 1 session = 1 repo が公式制約）
+life-manager/               ← 唯一の公開作業場所（phone/cloud の Claude Code は 1 session = 1 repo が公式制約）
   apps/
     life-manager/           ← THE product（現 anicca-products/apps/life-call + ~/Projects/life-manager を収斂。
                                必要な API はこの app 内に持つ — 別 api app は作らない）
@@ -44,8 +147,8 @@ anicca-products の life-manager 以外の全 app。運ぶのは life-manager �
 OSS 境界は「repo を分ける」でなく **splitsh-lite / CI mirror で read-only public repo を自動生成**（Laravel/Symfony が10年運用。
 `illuminate/support` は「[READ ONLY] Subtree split of …」）。profitable-claude は `packages/engine + installer` の mirror になる。
 
-旧 repo の終着: anicca-products → 吸収後 archive+README redirect ／ anicca(現OSS) → engine を monorepo へ、repo は mirror 先に転用可 ／
-life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project ではなく私的 infra**（cron/秘匿 state。repo 統合の対象外、徐々に縮小）。
+旧 repo の終着: anicca-products → 自身の移行まで現状維持し、吸収後 archive+README redirect ／ repository ID `1248111245` の現`anicca` → final `life-manager` ／
+repository ID `1273052304` の現`life-manager` → `life-manager-v0`として履歴/content importとequivalence実証までpublic/unarchivedで保持 ／ **~/.openclaw = project ではなく私的 infra**（cron/秘匿 state。repo 統合の対象外、徐々に縮小）。renameの唯一の設計正本→`2026-07-23-life-manager-repository-rename-design.md`。
 
 ## 3. 決定: レーンは1つ（2026-07-20 Dais 是正 — 旧「2レーン表」は誤りだったので消して書き直し）
 
@@ -93,7 +196,7 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 | P | brick | 中身 | 着手 |
 |---|---|---|---|
 | P0 | **loop 検証**（走行中） | capafy/clip 14日 full-verify（capafy spec §12.6）。手を出さず loop に回させ、event 時のみ介入 | 今〜08-02 |
-| P1 | **Life Manager web app** | 次セッションから唯一の実装対象。新 monorepo `anicca` を作り life-manager をそこで開発（= 統合作業を別 project 化しない）。LIFE-AUTO（mail/telegram 仕分け）もこの中の機能 | 次セッション |
+| P1 | **Life Manager web app** | 次セッションから唯一の実装対象。public monorepo `life-manager` でwhole productを開発（= 統合作業を別 project 化しない）。LIFE-AUTO（mail/telegram 仕分け）もこの中の機能 | 次セッション |
 | P2 | **臓器接続** | engine/loops を packages/ へ移し Life Manager の financial organ として配線（§3 PRODUCT lane） | P1 の中盤 |
 | P3 | **OSS 公開** | installer + mirror 生成 → 14日 verify 通過後に profitable-claude 公開 | 08-02 以降 |
 
@@ -101,7 +204,7 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 
 - **現状維持（repo 分散）**: 最強論拠 = 移行コスト・稼働 loop を触る危険。棄却理由 = phone 開発の 1-repo 制約(一次ソース)と注意分散が致命。
 - **OSS を手動別 repo 維持（旧 #12 案）**: 棄却 = drift の温床（mirror 自動生成が実証済み標準）。
-- **repo 名 = life-manager**: 棄却 = AI 経済自立（mission の半分）が product 名の下で居場所を失う。
+- **旧「repo 名 = life-manager を棄却」の裁定**: 上書きして **採用**。whole productとpublic monorepoを同じ`Life Manager`にすると、利用者・contributor・local cloneのidentityが1つになる。AniccaはAI経済自立と苦しみを減らすagent/mission名として保持できるため、missionを失わない。collision-safe根拠と実行順→`2026-07-23-life-manager-repository-rename-design.md`。
 - **俺が間違うとしたら最有力**: 「full-public monorepo」。IG 自動化 recipe は公開すると platform 対策で腐る/ToS グレー。
   mitigation: mirror の filter で公開粒度を制御（recipe 詳細 dir を mirror から除外する選択肢を P3 で判断）。
 
@@ -208,16 +311,22 @@ life-manager(local) → 既存 spec 通り収斂 ／ **~/.openclaw = project で
 
 ### 9.9 control panel（web app）確定仕様の骨子
 
-- 役割 = **鏡**。操作の場ではない（操作は電話/TG が主）。見るもの:
+- 役割 = **個人専用の鏡 + control center**。日常の依頼・自動実行・事後報告は電話/TGが主だが、panelは単なるread-only pageではない。connection、権限、organ別automation、通知、call言語/時間帯、委任を本人が確認・接続・切断・ON/OFFできるdashboardとする。見るもの:
   ①今日の timeline（解釈済み calendar + call 実績✅）②3 organ スコア（財務=稼ぎ/送金、身体=予約/未通院、精神=傾聴/就寝）
   ③FINANCIAL 台帳（agent wallet 残高・user への送金履歴、on-chain link）④context gates 状態（何が解錠済みか + 解錠方法）
   ⑤設定（call 言語・時間帯・委任の付与/剥奪）
 - gate 状態画面が feature discovery の Web 側入口（TG 告知と同内容）。
+- **入口は2つ、backend actionは1つ**: ①chatで「Gmailをつないで」「callを止めて」等の自然言語intentを送る ②`/panel` dashboardのconnection card/toggleを操作する。どちらも同じuser-scoped command handlerを通り、同じ状態へ収束する。OAuth/OS permission等の本人操作が必要な時だけ、botはinline WebApp buttonまたはclickable single-use URLを1本送る。対応clientではbuttonから開き、非対応clientではURLを送る。
+- **`/panel` は全user共通で本人がbookmarkして日常利用する唯一の恒久canonical URL**。panel認証に期限付き・単回・user別URLを作らない。TG `/panel` はURLがexact canonical `/panel`の `web_app` buttonを返し、Telegram Mini Appの署名済み`initData`をURLでなくPOST bodyからserver検証して、個人別のrotating HttpOnly sessionへ交換する。通常browserで未認証の同じ`/panel`を開いた場合もURLは変えず、画面内の短命one-time device codeを本人bot chatへ入力してsessionを結ぶ。codeはURL/query/path/referrer/historyへ入れない。sessionは明示logout、uid↔telegram_chat_id再紐付け、security revoke、browser storage消去までrotation/refreshし、固定24時間expiryを設けない。永久bearer tokenもtemporary panel linkも禁止。
+- **personalization/tenant isolationはHARD**: HttpOnly sessionの`uid + telegram_chat_id`を唯一のscopeとし、timeline、score、context、connection、gate、setting、ledger、actionを全query/mutationでそのuserへ束縛する。connection状態・文脈・推奨action・toggle値をglobal定数、Dais専用値、fixture、別user rowから表示しない。静的label/copyだけ共有可。同じ画面構造でも内容と可能なactionはuserごとに変わる。
+- connection cardはcalendar / Telegram / location / call / email / wallet等を実provider/gate状態から `connected / action required / unavailable / error` で表示し、可能な時だけ `Connect / Reconnect / Disconnect / Turn on / Turn off` をclickableにする。未提供・scope不足・課金gateは偽のConnect成功にせず、理由と次に必要な本人操作を正直に表示する。
+- panel auth materialはURLに0件。Telegram `initData`はHMAC、`auth_date` freshness、exact bot/user/chat binding、one-time replay claimをserverで検証する。通常browserのdevice codeはhash-only保存、短命、one-time、exact browser challenge + Telegram actor + tenant bindingとし、成功後は同じ`/panel`をreloadして個人dashboardを表示する。forged/stale/replayed/cross-user authはsession/DB/provider mutation 0。旧`?t=` token URLはsession交換せずqueryを除去してcanonical loginへ戻す。
 - **score はbackend activityの件数ではなく、user outcomeを説明できる値**:
-  - DAILY = rolling 7日で「必要な travel/call/late handling が完了した対象予定 ÷ 対象予定」。call log件数やAPI row件数を加点しない。対象0件は0点でなく `insufficient data`。
-  - PHYSICAL = overdue need の検知→予約/実施で解消した割合。候補を表示しただけでは加点しない。
-  - MENTAL = context triggerに対して上限内で届いた有効介入と、明示された抑制/訂正を根拠にする。送信数の多さを健康とみなさない。
-  - FINANCIAL = verified net income・userへの実送金・損失/feeを分離し、入金や自己資金移動を収益扱いしない。
+  - DAILY = rolling 7日。denominatorはtravel/call/lateのいずれかが必要な対象予定、numeratorはその予定に必要な全handlingが成功またはcontext上不要と確定した予定。call/API/log row数、同一予定への再試行、通知数は加点しない。
+  - PHYSICAL = rolling 30日。denominatorは期間内に検知したoverdue need、numeratorは予約確認または実施完了で解消したneed。候補表示、検索、未確認requestは加点しない。
+  - MENTAL = rolling 7日。denominatorはdedup済みcontext trigger、numeratorは①3通/日上限内の有効介入が届いた ②本人のsuppressionを送信0で守った ③本人の訂正をcontextへ反映した、のいずれかを満たすtrigger。通知数、duplicate、上限超過は加点しない。
+  - FINANCIAL = user timezoneのcalendar month。denominatorは外部由来のverified gross income、numeratorは`max(0, gross income - realized loss - fee)`（同一minor currency unit）とし、valueはその比率。userへの実送金額は別componentとしてreasonへ表示し、numeratorから減算しない。自己入金、deposit、wallet間自己移動、未verified額はgross incomeにも送金にも含めない。
+- valueは上記`numerator / denominator * 100`を0–100へ丸めた整数。denominator 0はvalue 0ではなく`status=insufficient_data,value=null,numerator=0,denominator=0`。全organで`period.kind/start_at/end_at`を返し、期間境界はuser timezoneの半開区間`[start,end)`。
 - 各scoreは `value / period / numerator / denominator / plain-language reason / source outcome ids` を表示する。magic number、根拠不明の色、体感と逆のスコアは禁止。
 - timeline は人間向けの出来事だけを表示する。raw DB row、JSON、table名、stack trace、secret断片、内部prompt、provider生ログを出さない。内部証拠はprivate evidence storeに残し、panelには「何をした/できなかった/次に何が起きる」を1行で出す。
 - **API 200・section loaded・screenshotだけではdoneにしない**。実データの意味が正しい、mobile/desktopで読める、主導線にdead endがない、private内部情報が見えないことをbrowser操作+semantic assertionで証明する。
@@ -339,6 +448,8 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ## 10. 残 TODO 表（唯一の live 状態。上から順に実行）
 
+**Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
+
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
 | 1 | E2E束 | LM-5/3/6/7 実 call E2E | **done (2026-07-21 00:15 実測)**: ①実 call+双方向+**英語** = 07-20 朝 call 録音 whisper 実証（`2026-07-19T23-40-35-932b3fad….mp3`「This is your life manager… Tokyo at 930. Time to leave now」/Dais「Yes?…What's one plus two?」）+ lm_wake_log T-10 行 answered_at=2026-07-19T23:40:05Z → **LM-2/24/26/28 全 close** ②LM-3 = lm_ask_log resolved_from=web_search 実 row 2件 ③LM-7 = lm_api_cost 15行（gemini_live $0.046/telnyx $0.004 実記録）。**残1点 = 遅刻メール実受信証拠は順6へ移管**（trigger 経路 = T-0「出た?」ボタン = LM-30 撤去対象。廃止コードの E2E は行わず、v2 location gate の E2E でメール送信ごと実証する。sendLateNotice/Resend は共通部品として v2 で検証される） | **done** |
@@ -351,14 +462,17 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 8a | LM-33a | panel 認証: TG `/panel` → 5分単回 opaque token → HttpOnly session（§10.1 U5） | **done (L3 実測)**: TG `/panel` message 3391 → bot message 3392。単回 URL を daily-driver で開き、exchange 後 HTTP 200、final path=`/panel`、query token 消滅を実測。token 値は stdout/spec に残さない | **done** |
 | 8b | LM-33b | panel read API: timeline / scores / ledger / gates / settings の5 JSON endpoints | **done (L3 実測)**: authenticated browser から timeline / scores / ledger / gates / settings が全て HTTP 200、各 section は `loaded`（body chars=865/106/29/128/107） | **done** |
 | 8c | LM-33c | panel UI（gpt-tasteskill → frontend-design、§9.9 の5要素、鏡 = read-only） | **done (L3 実測)**: prod 実データで5要素すべて `loaded`。full-page screenshot=`/Users/anicca/.cloak/evidence/lm-panel-e2e-20260721.png`（mode 600、private path） | **done** |
-| 8d | CORE-a | DAILY runtime 再監査: `/health`、TG webhook、calendar、call、location、email、discovery の依存をfresh smokeし、historical doneを現在の稼働保証に使わない | **pending — fresh implementation reviewはVCSDD process artifact欠落でFAIL、code verification自体はGREEN**。exact correction head/local/upstream/origin=`58846034b4505f585bd8b4ea3fbcaa04c38e31bc`、PR #330 headもmain orchestratorが独立確認済み。fresh code verificationはfocused `51/51`、full `371/371`、eval `33/33`、boundary assertions `10/10`。欠落していたstrict VCSDD Phase 1a behavioral spec、Phase 1b verification architecture、draft sprint contract、traceability/proof obligations、TDD log provenanceを `.vcsdd/features/life-manager-daily-preflight/` に復元し、stateは`1b`でfresh Phase 1c artifact-only reviewと明示承認待ち。Phase 1c PASS、Phase 2 RED/GREEN受理、production 9/9、deploy、mergeは未主張。historical evidence 2件はbyte/hash/mode 0600不変で、既存controlled runはTG=1/email=1/phone=0の後`email_receipt_stale`でreport生成前exit 1のまま。根拠→§10.3。PR=`https://github.com/Daisuke134/anicca-products/pull/330` | pending |
-| 8e | CORE-b | DAILY user journey: 実calendar作成→travel autofill→T-10/T-5 call→location判定→必要時email→TG事後報告を1本で通す | 実call録音+whisper、実calendar event、実TG id、実email Message-ID、late不要ケースも実測 | pending |
-| 8f | CORE-c | context/onboarding/discovery: 初回user、既存user、location未解錠/解錠後、同じclosed Qを二度聞かないことを再検証 | eval 100% + 実TG callback + DB/context provenance。質問禁止領域の発話0件 | pending |
-| 8g | PANEL-a | score semantic fix: §9.9の outcome-based DAILY/PHYSICAL/MENTAL/FINANCIAL 定義へ統一し、根拠を表示 | fixed dataset eval 100% + prod実データで numerator/denominator/reason が一致。対象0件は insufficient data | pending |
-| 8h | PANEL-b | panel UX/privacy fix: timelineの生ログ・raw JSON・内部名を除去し、mobile/desktopの5要素を人間語で成立させる | authenticated browserで全画面操作、semantic assertion、mobile+desktop screenshot、raw log/secret/internal prompt検索0件。Fable final check PASS | pending |
+| 8c.R | REPO-RENAME | whole product/public monorepoを`Life Manager`へ統一するcollision-safe GitHub rename。ID `1273052304`: `life-manager→life-manager-v0`、続いてID `1248111245`: `anicca→life-manager`。repo設定だけを対象にし、`anicca-products`/Railway/§10 product workは自身のmigrationまで触らない | 両IDがfinal nameでpublic/unarchived、両local shared remote更新、baseline ref欠損0かつ変更refは同名fast-forward、default HEAD/issues/stars保持、旧`anicca` web/git redirect、old `life-manager` takeover、new Pages URL/workflow、Action manifest/webhook/ruleset 0、live URL TDD RED→GREEN、review、scoped commit/push/merge/remote SHA証拠を実測。どちらのrepo/historyも削除しない。正本→`2026-07-23-life-manager-repository-rename-design.md` / execution→`../plans/2026-07-23-life-manager-repository-rename.md` | **done**。ID `1273052304`=`Daisuke134/life-manager-v0`、ID `1248111245`=`Daisuke134/life-manager`、双方public/unarchived。旧`anicca` web/API/Git redirect PASS。baseline ref名欠損0、変更3本は同名fast-forward、issues/stars保持。Life Manager単一名称とlive URL guardをRED→GREENし、review FAIL 2回の残存名を是正後PASS。PR `#1071` merge、main=`303fc30a50e4db88522d88c6da71b40bf2e67665`。Pages run `30014896860` success、新URL/raw main logged-out PASS。Action manifest/webhook/ruleset=`0/0/0`、`anicca-products`不変。private evidence=`/Users/anicca/.codex/evidence/life-manager-repository-rename/final-completion-report.md`、manifest 119 files verified。Railway/§10 product runtime side effect=0 |
+| 8d | CORE-a | DAILY runtime 再監査: `/health`、TG webhook、calendar、call、location、email、discovery の依存をfresh smokeし、historical doneを現在の稼働保証に使わない | fresh 9 dependencyを同一runへ束縛し、実TG=1・実email=1・phone=0、current source snapshot、15分freshness、closed schema、secret/PII 0、exact production SHAを実測 | **done (production L3)**: clean HEADで150件中3 REDを再現後、send acceptance後のreceipt下限、任意timerを消さないharness、module-private `WeakSet`による偽造不能・一回限りprovenanceを最小修正。fresh reviewはSymbol偽装を再現して1回FAIL、corrective RED→GREEN後PASS。focused=`151/151`、Life Call full=`npm test` PASS、eval=`72/72`、PR #346/#347/#330/#348を通常merge。origin/main=`8159dbbe2fbb07d235cd4fb91e964b481c543ea2`、Railway production deployment=`a659eb3c-c652-4ab3-81ef-411890d71e22`はactive/latest exact SHAでSUCCESS、health/panel 200。controlled production preflightはexactly 1回で9/9、TG=1、email=1、phone=0、source tree一致、schema/privacy PASS。artifact=`/Users/anicca/.codex/evidence/core8d-production/final-report.json` mode=`0600` SHA-256=`7919adea615fa9acb055a0b0a681ba9c6fa6708b1a63bdb9a5933d7bd53a5e33`、completion report SHA-256=`ab0ae354a84ece45f28e79aad6a86e2bd204637b63fdee69a854dc7c85f60195`。既知のnudge-cron failureはLife Call外で変更なし | **done** |
+| 8d.1 | PANEL-0 | permanent personalized dashboard access + connection controls: bookmark可能なstable `/panel`、chat intentとpanel操作を同じuser-scoped commandへ統一。connection card・権限・organ automation・通知・call/委任を本人が接続/切断/ON/OFFできる | RED: fresh token 403、24h固定session、未認証raw 401/403、dead link、non-clickable card、cross-user leakage、hardcoded connection/context、chat/panel state drift。GREEN: 5分単回tokenはlogin bootstrapだけ、token交換後はstable `/panel` + rotating/refreshing HttpOnly session、明示logout/rebind/revoke/storage消去まで通常利用を維持。tenant isolation/CSRF/single-use/auth/action/session-rotation contract 100%。L3: 実TG login→fresh HTTP 200→token消滅→bookmarkした`/panel`をbrowser再起動後も直接再訪→本人固有dashboard。clock-advanced testで24h超のrotation/refreshとlogout/rebind/revokeを実証。harmless toggleをpanel→chat readback→chat intent→panel readbackの双方向で実証し、isolated第2userの表示/action混入0。supported connectorはtest userで実OAuth開始+callback、未提供connectorは正直なunavailable。mobile/desktopで全action clickable | **done (production L3 + bounded identity waiver)**: PR #334を`dev→main`の通常2-parent mergeで昇格し、merge/origin-main=`b25437f053c51b604e2c0eda36e3a6251a28ab98`。Railway production current deployment=`62493fc4-7603-499f-b01f-594b62396f83`はservice status/listともexact SHAでSUCCESS。`COMPOSIO_GCAL_AUTH_CONFIG`は実測済みNetlify production値からstdout/argv/file非露出のstdin secret-to-secretで設定し、値一致booleanを確認。実TG `/panel` 1回→HTTP 200→query/token消滅→HttpOnly session→同一隔離profileを閉じて再起動後もstable `/panel`へ直接200、本人name/uidRef一致。desktop/mobileはconnection cards=`6/6`、interactive=`8`、clickable=`8/8`。通知はbaseline=true→panel実click=false→API/DB=false→TG intentでtrueへ復元→panel/API/DB=true、receipt 2件ともsucceeded、他tenant preference/receipt=`0/0`。TG replyは§9.11どおりgeneric `Setting updated`で値readbackには数えず、値はauthenticated panel/API/DBで確認。CalendarはDais所有ACTIVE=`1`かつpanel=`connected`、disconnect/provider mutation=0。fresh focused/full/eval/API/UI/tenant=`54/328/33/5/6/9`全PASS、manager fresh focused+tenant=`63/63`、HTTPとpersistent authenticated readbackも再PASS。専用test Telegram/Google identityは存在せず、他人identity・synthetic admin session・無断OAuthを作らないためreal第2identityとfresh OAuth callbackは未実行と明示し、deployed-source tenant isolation 9/9、cross-tenant mutation 0、既存本人connector readbackをproduction-safe代替としてfinal裁定。evidence=`/Users/anicca/.codex/evidence/panel-0-production-l3.md` SHA-256=`dd49a41415210803908236e1bd17752d19d117bcc9dd854dd9bc2735375a0326` mode=`0600` | **done** |
+| 8d.2 | PANEL-1 | zero-temporary-link permanent personalized panel: TG/WebApp・通常browserの両入口が常にexact canonical `/panel`を使い、URLにtoken/code/user idを載せず個人sessionへ結ぶ | RED: 現production `/panel` bot responseが`?t=`5分URL、通常browserは新しいtemporary linkを要求。GREEN: TG `web_app` URL exact `/panel` + signed initData POST exchange、通常browserは同じpage内device code→本人TG確認→同URLでsession、旧`?t=`交換0。HMAC/freshness/replay/cross-user/tenant/session/CSRF contract 100%。L3: Dais本人TG `/panel`→button URL exact canonical・query 0→real MTProto WebView/initData→personalized dashboard、browser再起動後もdirect `/panel`。fresh browser device-code pathも同URLで完了。URL/referrer/history/logのauth material 0、他tenant mutation 0 | **done — production L3 success**。accepted base=`47d0f143e`、RED=`52a5d60e6`、GREEN candidate=`60d8bf564`。fresh artifact-only material reviewはexactly 1回・input SHA-256=`2de8fda8140d5ce23d4db2e56b119956742844466682fc74e91280c97fed035a`・`MATERIAL_REVIEW_PASS`。PR #340/#341で初回release後、実Dais Telegram WebViewが`signature`をHMAC data-check-stringから誤除外する401を発見し、genuine RED→最小修正=`c58e7a1f6`→PR #342/#343で再release。final main=`d04c522f08161c69ff83e25335a0630d3940a84c`、Railway production deploy=`ea570232-fd20-4614-b2c8-084cb9d3256c` exact commit/status SUCCESS、health=200。additive migration SHA-256=`8abfc30d96c7c9d25b48ea870c4a6e816ca72cba8ad8fee2837fdb865167392e`を単独適用し、2 tableのRLS、anon/auth grants 0、service-role-only、5 indexes、PK/unique/FK/check、3 SECURITY DEFINER RPCの`search_path=public, pg_temp`をproduction DBで確認。fresh focused=`14/14`、existing panel/session/API/UI/control/tenant=`76/76`、Life Call full `npm test` exit 0、eval=`21/21 + 12/12 + 12/12`、source auth URL/log leak=0、diff check=0。実TGは`KeyboardButtonWebView` 1個、button exact=`https://life-call-production.up.railway.app/panel`、query/fragment 0、real `RequestWebViewRequest`→Daisのexact actor↔tenant 1件、6 sections/error 0、DB name↔DOM identity hash exact、internal UID 0、HttpOnly cookie、direct再訪・browser restart後も同URLで永続。fresh通常browserも同じ`/panel`で8文字code→Dais本人TG `/panel <code>`→同tab自動認証、single confirm/exchange、replay reply invalid・challenge不変・session delta 0。provider/email/call/calendar/wallet mutation=0、raw initData/code/token/cookie/PII保存=0、一時profile/secret/log削除済み。manager独立final checkでもevidence 3件のmode 0600/JSON/hash、origin/main包含、exact deploy、production GET 200、auth query 0、device-code形状、Secure/HttpOnly cookieを再実測。証跡=`/Users/anicca/.codex/evidence/panel-8d2-release-verification.json` SHA-256 `482622a2a6beba7b97a79caffd62c32efeb8dc028a6ea6cf6ae57cf3f2665211`、`panel-8d2-production-l3.json` `476834fa2a69a2e4e69ec777dbf4a706a3cf2757598eaca7f1cb662bd29a5e7c`、`panel-8d2-artifact-review.json` `0dac1169571d8ed0ead9a805573fb221c01be694408e5d9bc885592ad0197908`。PR #343の既存`nudge-cron` Prisma P1000だけはLife Call外の既知設定失敗として変更せず、Life Call staging/API/eval/reviewはgreen | done |
+| 8e | CORE-b | DAILY user journey: 実calendar作成→travel autofill→T-10/T-5 call→location判定→必要時email→TG事後報告を1本で通す | 実call録音+whisper、実calendar event、実TG id、実email Message-ID、late不要ケースも実測 | **pending — code/release PASS、production L3は3手法FAILのため次の独立atomic 8fへ**。RED=`2dd363bb7`、GREEN=`6d48ab1b3`、TG failure isolation RED/GREEN=`40b1bec93`/`e3551873f`。focused/full/eval=`89/407/33` PASS、fresh review blocker 0。PR #335/#337/#336を通常mergeし、origin/main=`85a68abaa22df0d9bd0d7fe2fcf7fee0ae796eaf`、Railway production deployment=`450d523a-2c21-4632-826d-396a919b05c3` exact SHA SUCCESS。L3 method 1は実nonce eventを1件作成したが、`plus aliasはCalendarでもexternal attendeeのまま`がfalseでprovider readback=`self=true, organizer=true, external=0`としてfail closed。call/email/TG/travel/late=0のままT-10窓231秒前にexact cleanupし、nonce event=`1→0`、nonce Travel=`0`、unrelated calendar/tenant不変。cleanup evidence=`/Users/anicca/.codex/evidence/core-8e-orphan-cleanup.md` mode=`0600` SHA-256=`ea5f87244cb35b8cb85e44db36ac3c85eda9d420f1f41e43df4aeb6c547c1fa1`。method 2はprovider mutation前に停止しside effect 0。false hypotheses=`宛先を通常CLIで扱ってもargv/logへPIIを残さない`、`late対象はnonce eventへ自動で束縛される`、`verified forwarding destination宛の実メールはprimary inboxで読める`、`nonce由来Travelは常にoutbound 1件だけ`。method 2bはread-only探索でaccepted targetが唯一のlocal Gmail auth/send-as/Calendar ownerとdistinctだが、target mailboxのOAuth/IMAP/browser authもtarget→primary reverse-forwarding証拠も0と確定し、provider mutation前にfail closed。false hypothesis=`accepted verified-forwardingなら実受信RFC Message-IDまでlocal readbackできる`。Stop規律に従い8fを進め、8e再開条件はtarget mailboxの実readback authまたは既存の外部controlled inbox経路 | pending |
+| 8f | CORE-c | context/onboarding/discovery: 初回user、既存user、location未解錠/解錠後、同じclosed Qを二度聞かないことを再検証 | eval 100% + 実TG callback + DB/context provenance。質問禁止領域の発話0件 | **pending — code/schema/release PASS、production L3は3手法FAILのため次の独立atomic 8gへ**。accepted base=`85a68abaa`、journey RED=`90933cbb9`、corrective endpoint/UI RED=`0fc453527`、GREEN=`771f996c9`。fixed context eval=`12/12 (100%)`、focused=`39/39`、Life Call full=`417/417` + scheduler PASS、calendar/late/context eval=`21/21 + 12/12 + 12/12`。PR #338/#339をmergeし、feature=`771f996c953c15374ca5b387ef6c18d38902775c`はcurrent origin/main=`d04c522f08161c69ff83e25335a0630d3940a84c`に包含、current Railway production deployment=`ea570232-fd20-4614-b2c8-084cb9d3256c` exact SHA SUCCESS、health=200。additive migrationはask追加column=`7/7`、location source、nonce table/3 indexes、RLS、forbidden grants=`0`、service DMLをpostflight。実Dais TG L3 method 1はclosed Q→callback後に`typed_message_binding_mismatch`、false hypothesis=`MTProto user-view message IDはBot API webhook message_idと一致する`。method 2は同じ質問を再利用し、callback/replay/cross-tenant/dedup/locked discoveryまで通過したがhigh-level Telethon live locationが`live_location_unlock / poll_timeout`、false hypothesis=`Telethon high-level live-location sendは現Bot API webhook location形として到達・処理される`。method 3はraw `messages.SendMediaRequest(InputMediaGeoLive)`へ独立変更し、新規質問0、callback 2、discovery 1、live location 1、他chat/broadcast 0。closed Q/callback、replay追加transition 0、cross-tenant mutation 0、same-series duplicate 0、locked discovery 1、forbidden question 0はPASSしたがtyped `source=telegram_live_location`永続化が同じく`live_location_unlock / poll_timeout`、unlocked discoveryはhard-stopで未到達。false hypothesis=`raw MTProto InputMediaGeoLiveはtyped Bot API live-location updateとして到達・処理される`。3手法ともexact restoration=true。最終controlled ask=`0`、controlled state/component hashとunrelated counts (`lm_users=2/lm_ask_log=0/lm_user_locations=0`) はbefore/after一致。第4手法は禁止。failure evidence=`/Users/anicca/.codex/evidence/core-8f-production-l3-method3-failure.json`、mode=`0600`、SHA-256=`0008efde8c3ce508d8b28d5e7e33b6a0a99106a6db8b296cd1d2f55783a700b6`。再開条件はBot API webhookへMTProto live locationが渡らない境界の独立原因または別の既存real location input経路 | pending |
+| 8g | PANEL-a | score semantic fix: §9.9の outcome-based DAILY/PHYSICAL/MENTAL/FINANCIAL 定義へ統一し、根拠を表示 | fixed dataset eval 100% + prod実データで numerator/denominator/reason が一致。対象0件は insufficient data | **pending — code/review/merge PASS、Railway外部停止でmigration・production L3未実施**。VCSDDは4 corrective sprintを経てfresh implementation review=`PASS / finding 0`、canonical safe-integer FINANCIAL=`945755921642804 / 9007199253740991 → 10`をmoduleと実emitted browser VMの両経路で描画しmalformed payloadをfail-closed。final hardeningはratio=`66049 pairs / 198147 evaluations / generated 10000`、focused score/UI=`14/14 + 14/14`、full exit 0、eval=`21/21 + 12/12 + 12/12 + 27/27`、実PostgreSQL=`roles 3 / snapshot_sessions 2 / complete 20000 / overflow 20001`、security/purity PASS。feature commit=`bc444136aef9df457f2db948dc884d3abb37ecff`、PR #344→dev merge=`bc323916e5ffc02197b62a0e90cf7ff7f19c1596`、PR #345→main/origin-main=`5a61251e35b0cc3eaaa79354e352fd371ba39b11`、calendar-eval SUCCESS。Railway production `life-call`のdriftを最後の成功構成へ復元（rootDirectory不変、`RAILPACK/null/null → NIXPACKS /apps/life-call/railway.toml / node server.js`）。証跡=`panel-8g-railway-production-pre-config.json` SHA-256 `69d203443191f63ce7f7ea0760ece5777a8a1e9f4ce4ab79d7ce29a473215983`、post SHA-256 `39647143a307ef558b17c4f88fb97d58ca1329a58361e7fcafe7a28b05ab769c`、ともに`/Users/anicca/.codex/evidence/`・mode `0600`。同一release atomicは①Git auto exact SHA deployment `5e938051…`がstopped/no build ②detached app-root upload `02536d2d…`もstopped/no build ③config復元後Git exact `4718e445…`が`upstream GitHub issues`でqueue停止 ④exact archive upload `1e5064a8…`が`INITIALIZING/stopped=true/instances 0/image digestなし`で3手法以上FAIL。false hypotheses=`main mergeならGit連携buildが開始する`、`detached exact source uploadならcontrol-plane停止を回避できる`、`既知正常service config復元だけでRailway upstream queueを解消できる`。旧healthy deployment `ea570232…`（commit `d04c522…`, image `sha256:b7d56d…f9078eb0`）は未変更SUCCESS。fresh read-only diagnosis（CLI `5.28.0`）では、`railway deployment list`の最新`1e5064a8…`は`FAILED`、`railway status --json`は`deploymentStopped=true / instances=0 / commitHash=null / imageDigest=null / configErrors=[Unknown region: asia-southeast1-eqsg3a]`、build logsはexit 1 `Deployment does not have an associated build`、deploy logsはexit 0・空。active `ea570232…`は`SUCCESS / stopped=false / instances=1 / d04c522… / sha256:b7d56d…f9078eb0`。公式Status（https://status.railway.com/）は`Fully Operational`かつ`This status page reports incidents with significant, widespread user impact. Smaller or isolated issues won't show up here.`。公式Regions（https://docs.railway.com/deployments/regions、Last updated Jul 22, 2026）は`Southeast Asia Metal &#124; Singapore &#124; asia-southeast1-eqsg3a`、live GraphQLも`{name:asia-southeast1-eqsg3a,id:sin,country:Singapore,location:Southeast Asia,deploymentConstraints:null}`。旧CLI `4.30.5`の`scale --help` panicは公式open issue #874（https://github.com/railwayapp/cli/issues/874）`Cannot query field "railwayMetal" on type "Region"`と一致し、公式release `v5.28.0`（https://github.com/railwayapp/cli/releases/tag/v5.28.0、published `2026-07-22T20:45:41Z`）へ更新後は`scale --help`が正常終了して`southeast-asia`/region IDsを列挙する。**推論**: 広域outageの証拠はなく、region ID無効/廃止仮説は反証され、stale CLIはlocal panicだけを説明する。残件はbuild前のproject/deployment-pipeline control-plane不整合であり、status caveat上isolated issueは否定できない。第5deployは行わずread-only監視だけ継続する。migration、Dais本人production `/panel`、UI=API=独立DB再計算、mobile/desktop screenshot、final L3 JSONは未実施のためdone禁止。Railway read-only再監視条件=`exact main SHAのbuild/image/instanceが生成されSUCCESS` | pending |
+| 8h | PANEL-b | panel UX/privacy fix: timelineの生ログ・raw JSON・内部名を除去し、mobile/desktopの5要素を人間語で成立させる | authenticated browserで全画面操作、semantic assertion、mobile+desktop screenshot、raw log/secret/internal prompt検索0件。Fable final check PASS | **pending — historical VCSDD Phase 1 evidence preserved、future continuationはSuperpowers/TDD/review/verification、product/release side effect 0**。historical order=`.claude/sol-orders/order-panel-8h-ux-privacy.md`、worktree=`.worktrees/sol-panel-8h-ux-privacy`、branch=`sol/panel-8h-ux-privacy`、base/current origin-main=`5a61251e`、heartbeat=`.claude/sol-orders/logs/panel-8h-collab-progress.log` mode `0600`。historical fresh spec reviewはiteration 1=`FAIL/2`、iteration 2=`FAIL/1`、iteration 3=`FAIL/3`でnominal上限へ到達。managerはprivacyの本質に限定してiteration 4を追加裁定し、HEAD由来contract v2とdeterministic matrix=`303 cases / 101 exact paths / generator byte-identical`まで実測したが、fresh reviewはexactly 3件を再現: ①score organ keyをfull conditional schemaへ未束縛 ②control-center connectionsをrequired six-key/static tupleへ未束縛 ③score `status/value/numerator/denominator`がmatrixから欠落。false hypotheses=`nested key listだけでschema bindingを証明できる`、`item schemaだけでper-key static tupleを証明できる`、`nested text path列挙だけでscore scalar field coverageを証明できる`。当時のmanager continuation planはこの3件をimmutable v3 contract/generator/matrixへ機械的に閉じ、closure-only fresh reviewer PASS後にREDへ進むものだった。今後は同じ3件をSuperpowers workflowで閉じ、新VCSDD artifact/commandは作らない。product code/RED/GREEN/commit/push/external side effectはまだ0。8g production L3 PASSまで8hのPR/merge/deploy/provider/prod/TG/email/call/L3は禁止 | pending |
 | 9a | MKT-a | video 生成 PoC 1本: §9.10 matrix の1行 → MPT backend（faceless-money-factory 代替レンダラー、§10.1 U6）で mp4 | **done (L3 実測)**: T-10/T-5 行を英語 34.666667s・1080×1920 H.264/AAC に変換。実 call 録音 + 実 Telegram Web message #3393 + 既存 real stock を FFmpeg 1-pass で合成。音声 track / 9:16 / 20-40s / full decode exit 0。render 42s、追加 cost $0。local=`.claude/sol-orders/out/m1/anicca-life-manager-t10-demo.mp4`、SHA-256=`c4bd480ed37db2a3f5d59223756805307f2c7c5c603244a0c13370e6353479f4`。未投稿。**Fable final check 済み（03:15）**: sha256 一致 + ffprobe 1080×1920/h264+aac/34.7s + フレーム3枚実視認（実写手元+「REAL T-10 CALL・TOKYO」+ whisper 字幕「TOKYO AT 9:30. TIME TO LEAVE NOW.」）。X/Slack launch 用に Dais 納品 | **done** |
-| 9b | MKT-b / M-2 | runtime+生成 loop常設: current Claude Sonnet/CLIProxy false-greenを廃止し、fresh `gpt-5.6-luna` pass、実exit、timeout、cost、16行rotation、video生成をlaunchdへ配線 | Luna probe/real pass、failure injectionがnonzero、launchctl run増分、fresh ffprobe/full decode、2日連続自動生成。1日目は `started` と記録して次へ進む | pending |
-| 9c | MKT-c / M-3 | 配信配線: IG file/script経路 + TikTok Postiz `cmp9txjdp01c8oh0yb6dhlarr`。同じexact video/caption contractを使う | IG/TT 実投稿 URL 各1本 + logged-out readback + ledger creative id一致 | pending |
+| 9b | MKT-b / M-2 | runtime+生成 loop常設: **既存 Life Manager marketing loop / `ai.anicca.life-manager-daily` / rotation / account を再利用し、別loopや新accountを作らない**。slideshow rendererだけをLife Manager向けMPT video rendererへ置換。current Claude Sonnet/CLIProxy false-greenを廃止し、fresh `gpt-5.6-luna` pass、実exit、timeout、cost、16行rotation、video生成をlaunchdへ配線 | Luna probe/real pass、failure injectionがnonzero、launchctl run増分、fresh ffprobe/full decode、2日連続自動生成。1日目は `started` と記録して次へ進む | pending |
+| 9c | MKT-c / M-3 | 配信配線: **既存 Life Manager IG/TikTok accountを再利用**し、IG file/script経路 + TikTok Postiz `cmp9txjdp01c8oh0yb6dhlarr`へ同じexact video/caption contractを流す | IG/TT 実投稿 URL 各1本 + logged-out readback + ledger creative id一致 | pending |
 | 9d | MKT-d / M-4 | 全marketing共通の search+metrics self-improve: BP検索、views/watch-time/completion/click/signup取得、winner/loser記帳、次video変更 | 初日URL+launchd常設で `started`。日次loopが7日分のIG/TT URL、metric、翌日変更理由を自動記帳し7日目にdone判定 | pending |
 | 9e | MKT-e | TikTokをPostizから自前file/script経路へ移行し定常コスト$0化。先に同等性を証明し、証明前にPostizを外さない | 自前scriptの実TT URL + 2日連続成功 + logged-out readback + Postiz非使用のcost ledger | pending |
 | 9f | MKT-f | Phase 1 core + marketing完了後のone-time launch: M-1 demo videoを使いXへ1投稿 | Dais本人が投稿した実X URL。agentによるDais個人account代行は禁止。これは定常loopではない | pending |
@@ -373,7 +487,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 10i | BRAIN-c | personalized action E2E: 現userのreal contextから1件を選び、web/emailのみで実行し、calendar/TGへ事後報告。不可なら正直報告 | 実候補根拠 + 実web/email side-effectまたは正直な実TG + gcal event。不要なapproval Q 0件 | pending |
 | 11a | PHY-a | 未通院・未ケア検知 rule: calendar/context/本人intent履歴から歯科・散髪等を検知。固定周期を全員へ押し付けず、medical diagnosisはしない。eval `phy-cases.jsonl` 10+ cases | eval 100% + 実 calendar/context で検知1件 | pending |
 | 11b | PHY-b | 候補選定: 生活圏（home/work）+ 履歴の「いつもの店」優先。web 予約可否の判定込み | 実データで候補3件 + 予約経路の判定実測 | pending |
-| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Anicca (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
+| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Life Manager (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
 | 11d | PHY-d | 事後報告 + calendar 登録 + 当日 call 連動（§9.11 PHYSICAL copy） | §9.11 copy での実 TG + gcal 実 event | pending |
 | 12a | MEN-a | trigger 判定 engine: schedule+location+直前 event から「効く瞬間」を判定。固定時刻禁止・3通/日上限。eval `men-cases.jsonl` 10+ cases | eval 100%（上限・抑制ケース含む） | pending |
 | 12b | MEN-b | 文面生成: aniccaios affirmation 資産を種に LLM が状況別生成（§9.11 MENTAL 例文の型） | 生成文が §9.11 原則（一方向・絵文字1個まで）を満たす sample 10本 | pending |
@@ -383,7 +497,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | pending |
 | 13d | FIN-d | 実送金 E2E: agent wallet → user wallet、spend-cap 内、tx 報告（§9.11 copy） | on-chain 実 tx hash + 実 TG 報告 | pending |
 
-- **実装方式 = flowb: Fable = vision整理・spec・発注書・read-only調査/裁定・final checkのみ。Sol(`codex exec -m gpt-5.6-sol`) = build・execute・verify・specの実測値更新・対象限定commit/push全部。Fable main contextで実装しない。**
+- **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
 - **実行phase = ①CORE 8d-h → ②MARKETING 9b-e → ③one-time X launch 9f → ④DEV 10a-f → ⑤BRAIN 10g-i → ⑥BODY 11a-d → ⑦MIND 12a-c → ⑧FINANCE 13a-d**。前phaseのL3が無い状態で次phaseをprodへmergeしない。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
@@ -394,16 +508,40 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ### 10.0 出荷ラン実況（live状態。詳細は各§10行）
 
-- **CORE 8d VCSDD receipt correctiveはPhase 1c review待ち / production pending**: fresh implementation reviewはコード欠陥ではなく `.vcsdd/features/life-manager-daily-preflight/` のstate/spec/verdict系process artifact欠落を理由にFAIL。コードはfocused 51/51、full 371/371、eval 33/33、boundary 10/10をfresh通過し、PR #330 head=`58846034b4505f585bd8b4ea3fbcaa04c38e31bc`はmain orchestratorが独立確認済み。strict Phase 1a/1b、draft contract、traceability、provenanceを復元し、state=`1b`で停止。fresh Phase 1c adversary PASS/明示承認、Phase 2 evidence adjudication、production run/deploy/mergeは未実施。
-- **CORE 8d receipt precision corrective buildはlocal GREEN / production pending**: gogのminute precisionをparser内で閉区間`[minute start, minute end]`へ変換し、exact second/TZは単一点として扱う。receiptはfinite ordered bounds、freshな`sentAtMs`、`lowerMs <= nowMs`、`upperMs >= sentAtMs`、`upperMs >= nowMs - 15min`を満たす場合だけ受理するため、送信`17:59:59.500`→receipt`18:00`を許可し、current-minuteの`upperMs > nowMs`も許可する。production callerはraw date/precision/boundsを注入できず、bounds導出はgog parserだけが行う。今回追加したREDはnext-minute parser 1 + validator 1 + impossible calendar date 1の計3件（各exit 1）、focused GREENは51/51。provider/network/TG/email/phone/Railway/gog inbox、deploy、production artifact生成は実行せず、production 9/9は未主張。fresh controlled review/runはmainへ委ねる。
-- **CORE 8d controlled runはpending**: production binding preflightでTelnyx webhookを既定URLへ復元後、非送信依存は7/7 PASS。唯一のcontrolled invocationはTG 1通・email 1通・phone 0で、両receiptをreadbackしたが、gogの分精度dateを厳密な送信ミリ秒と比較したため`email_receipt_stale`となりreport生成前exit 1。再送・artifact手編集は行わない。安全なhash refsとfalse hypothesisはrow 8dに記録。
+- **REPO 8c.RとCORE 8dはdone、次はCORE 8e**: repository renameの証跡は`/Users/anicca/.codex/evidence/life-manager-repository-rename/final-completion-report.md`。CORE 8dはmain=`8159dbbe2fbb07d235cd4fb91e964b481c543ea2`、Railway production exact-SHA SUCCESS、controlled production preflight 9/9（TG=1、email=1、phone=0）。証跡=`/Users/anicca/.codex/evidence/core8d-production/completion-report.md`。残TODOはCORE 8eから再開する。
+- **PANEL 8gはcode/review/通常merge PASS、Railway外部停止でpending**: feature=`bc444136a`、dev=`bc323916e`、main=`5a61251e`。fresh review 0 finding、hardening/full/eval/実PostgreSQLはPASS。production service config driftは最後の成功構成へ復元したが、Git auto・detached upload・config復元後Git再投入・exact archive uploadの3手法以上がRailway upstream/control-plane停止でbuild/image/instanceを作れない。旧healthy deploymentは未変更。migration/L3は0のまま、false hypothesesとmode 0600証跡はrow 8gへ固定し、read-only monitorだけを残す。
+- **PANEL 8hはisolated exact-contract closure中**: iteration 1/2/3=`FAIL 2/1/3`、manager追加iteration 4も`FAIL 3`。残りはscore per-organ conditional binding、control-center six-key static tuple binding、score scalar 4 fieldのmatrix coverageだけ。v2 generatorは`303 cases / 101 paths / byte-identical`まで到達。次はfresh Superpowers workerがこの3件だけをTDDで閉じ、`requesting-code-review`と`verification-before-completion`を通す。新しいVCSDD artifact/commandは作らない。product code/RED/GREEN/commit/push/external side effectは0、8g L3前のrelease系actionは禁止。
+
+- **CORE 8dは3手法連続FAILで差分保全・次の独立atomicへ**: base=`09dbd5ef5`。①first GREENはharnessの`Date.now()+1`推測がproduction send-boundary欠陥を隠して停止（false hypothesis=`expanded全GREENならharnessもproduction境界を忠実に実行している`）。②rescue method 1はacceptance後境界を直したが、pre-acceptance固定時刻fixtureとの契約矛盾でcoverage=`149 total / 148 pass / 1 fail`（false hypothesis=`immutable six-attempt fixtureの固定nowはacceptance後境界と両立する`）。③method 2はfixture-only commit=`c01057a0b`をpushし、clean RED baseで`142 total / 136 pass / 6 fail`不変、dirty GREENでexpanded=`142/142`、old/focused/full/eval/deadline=`75/52/372/33/6`、coverage tests=`149/149`まで到達したが、collectors lines=`88.54%`を2文1行化で数値だけ上げようとしたためmanagerがcommit前に停止（false hypothesis=`semantic不変の行圧縮をcoverage改善として受理できる`）。未commit 8-path差分は保全し、8dのPhase 2c/provider/L3/final-report/deploy/mergeは禁止のまま。Stop規律に従い次の独立行8d.1 PANEL-0へ進む。
+- **PANEL 8d.1 product corrective buildへ**: process repair=`ef2673ab`をpushし、orchestrator独立実測でHEAD=upstream、state/runtime PASS、schema=`12/12`、state=`2a`、sprint=`2`、gate3=`FAIL`、open finding=`10`。metadata修復は3 key rename + 8 categoryのみで本文不変。global indexの表示は旧`2b`だがfeature stateを実行正本とし、これ以上process分類へ時間を使わない。次は10 blocker各1件以上のgenuine RED→product実装→local GREEN→fresh artifact-only review。RED/implementationを分離commitし、provider disconnect、実OAuth、Dais account mutation、deploy、merge、L3は禁止。
+- **PANEL 8d.1 corrective-1はfresh product review FAIL / blocker 6**: RED=`5f8db7f13`、GREEN=`1c74ff0f7`、evidence=`c3fbf22eb`をpushし、focused/full/eval/smokeはGREEN。ただしfresh artifact-only reviewはprocess nitを除外しても、恒久session、production runtime toggle、rebind後page/OAuth、same-account provider readback/rollback、personalized settings/control、oversize後socket errorの6件を実再現した。fixture GREENを出荷証拠に昇格しない。provider/OAuth/send/deploy/L3は0のまま。次は6件だけをproduction-path RED→GREENへ戻し、変更module coverageは意味のあるbranch testで満たす。scheduler全体の数値だけを上げる行圧縮は禁止。
+- **PANEL 8d.1 corrective-2 method 1はfalse REDで停止**: fresh Solは15/15 failを作ったが、runtime selector/provider/personalization/oversizeの大半が関数やHTTPを実行しないsource regex検査だった。managerがcommit前に停止し、untracked testだけを保全。false hypothesis=`source shape assertionはproduction-path behavior REDを代替できる`。fresh rescueはstatic assertionをSQL grant/markup補助に限定し、HTTP route、RPC state machine、production selector、provider mutation/readback、stream late-errorを実行してからRED commitする。
+- **PANEL 8d.1 corrective-2 method 2は発注path不備で変更0**: rescue SolはHEAD/upstream/PR headと唯一のdirty test hashを一致確認したが、feature worktree相対の`.claude/sol-orders/order-panel-permanent-session.md`が存在せず停止。false hypothesis=`別worktreeからもrelative order pathで正本を読める`。絶対pathへ是正し、同じdirty hashからmethod 3をfresh発注する。
+- **PANEL 8d.1 corrective-2 method 3はGREEN後fresh product review FAIL / blocker 4**: behavior RED=`0f0675a7b`、fixture correction RED=`5bfd87d59`、GREEN/evidence=`3e23328d9`をpush。manager独立実測もbehavior=`17/17`、focused=`39/39`、full/eval/smoke GREEN。ただしfresh reviewerが実click、異なるchildを使う並列rotation、clock advance、malformed preferences JSONを実行し、選択不能な固定値settings UI、並列APIでのrotation cookie競合、active sessionの30日/180日強制失効、batch scheduler fail-openを再現。false hypotheses=`data-action marker + handcrafted API testは実click選択性を証明する`、`同じ固定childを使う並列testは実rotation競合を証明する`、`期限列の存在はactive session refreshを証明する`、`200 responseはJSON parse成功を意味する`。corrective-3はこの4件だけを対象にし、process/coverage nitへ広げない。
+- **PANEL 8d.1 corrective-3は4件GREEN後manager final check FAIL / logout blocker 1**: RED=`cecb45e64`、GREEN=`8f8900e5e`、evidence=`5353bc0c1`をpush。managerもnew/permanent/focused/full/eval/smoke=`4/17/63/378/33/5+6`全GREENを再実行。ただしrotation後の実組合せで、resolverは`family_id`由来CSRFを返しUIが送信する一方、`/panel/logout`はraw session由来CSRFだけを検証し403、revoke 0を再現。false hypothesis=`旧raw-session CSRFの単体logout testはrotation後UIのlogout契約を代表する`。corrective-4はfamily_idを返すreal resolver→rendered UI→POST logout→family revoke→再訪login pageを1本でRED/GREENにし、他範囲へ広げない。
+- **PANEL 8d.1 parent integration final PASS / migration・実L3へ**: corrective-4 RED=`6122c184e`、GREEN=`106edbb1a`。親PR #330 head=`c01057a0b`へ14 PANEL commitをrebaseし、reviewed code=`a4c869914`、evidence/final=`900db6a24`をpush。PR #331=`MERGEABLE/CLEAN`、checks=`2/2 success`。Sol・manager・fresh reviewerがexact rebased codeでlogout成功/negativeと全blockerを再実測し、corrective4/corrective3/permanent/focused/full/eval/API/UI=`1/4/17/63/390/33/5/6`全PASS、important/critical blocker 0。親CORE path・正本はbyte-identical、既知RED=`142/136/6 inherited`不変。production side effectはまだ0。次は未完COREを巻き込まないrelease topologyを確定し、additive migration→staging smoke→controlled production L3。
+- **PANEL 8d.1 schema・dev merge・staging PASS / production L3へ**: migration 2本をhash固定の単一transactionで適用し、manager postflightはRLS=`4/4`、durable columns=`8/8`、functions=`6/6`、ACL failure/obsolete resolver=`0/0`、legacy sessions=`total 4 / revoked 4 / active 0`。PR #332は通常merge、merge/origin-dev=`835e28a5b`。Railway staging deployment=`6fa417c6-3d0d-4ff0-93ca-48dca1788b0e`はexact SHAでSUCCESS。fresh HTTPはhealth 200、panel 200/no-store/Forbiddenなし、invalid 403、API 401、unauth POST 401かつDB aggregate `0/0→0/0`。evidence hash=`962f43f375625c63c2757420f87219647a3d8d57c49e53c7c2882922be71038d`。production/認証/provider/TG/email/call等は0。次は`dev→main` promotionとcontrolled production PANEL L3のみ。
+- **PANEL 8d.1 production promotionはpre-merge停止 / Composio contract correctiveへ**: fresh Solはaccepted refs、54 PANEL paths + runtime-inert writer doc 1件、PR #330/#331/#322 head非混入を確認した時点でmanagerが停止。一次資料 `ComposioHQ/composio@89b0ad24` のmigration noticeはmanaged OAuth legacy `POST /api/v3/connected_accounts`が2026-07-03以降`400 BadRequest`、replacement=`POST /api/v3/connected_accounts/link`と明記し、現`startCalendarOAuth`は旧endpoint・legacy body・provider redirectの`state`上書きを使用する。production PR作成/merge/deploy/env変更/provider/TG/user preference side effectは0、`origin/main=d4efde694a`,`origin/dev=835e28a5b`不変。次はこのprovider contract 1件だけをTDD build→focused/full/eval/smoke→fresh final checkし、広いadversarial reviewへ戻らない。
+- **PANEL 8d.1 Composio correctiveはbuild + manager final check PASS / staging releaseへ**: PR #333はRED=`0c3f3df62`、GREEN/head=`50f63a20c`、base=`dev@835e28a5b`、2 filesのみ、OPEN/CLEAN、calendar-eval SUCCESS。旧endpoint/fallbackを除去し`/connected_accounts/link`のexact bodyとprovider redirect不変をproduction-path testで固定。Solとmanagerのfresh primary/focused/full/eval/API/UI=`21/54/328/33/5/6`は全PASS、`panel-api.js`はbaseとbyte-identical、evidence SHA=`98ff6588572a0b1eb3f1424674cb8e8dad7599f0b558679da300cec7187c65a1`。merge/deploy/provider/OAuth/env/TG/user preference side effectは0。次は`order-panel-composio-link-staging.md`でPR #333を通常mergeし、exact `origin/dev` staging deploymentとnon-mutating HTTP smokeを実測する。
+- **PANEL 8d.1 Composio correctiveはdev merge + exact-SHA staging PASS / production L3へ**: PR #333は通常の2-parent merge、merge/origin-dev=`984a088e3ed59941dbb2c1015cef5017ba462d93`。Railway staging deployment=`aa9ec3c2-c448-400d-91eb-1f3f2b1d978d`はservice status/listとも同SHAでSUCCESS。Solとmanagerのfresh primary/focused/full/eval/API/UI=`21/54/328/33/5/6`全PASS、HTTP=`health 200`、`panel 200/no-store/Forbiddenなし`、invalid=`403`、protected API/POST=`401`、DB aggregate=`0/0→0/0`。evidence SHA=`34fafa2536a8a827172278228e5e608285b0c04e785f0b0f6749d1a0671a3f17`。production/provider/OAuth/env/TG/user preference side effectは0。次は更新済み`order-panel-production-l3.md`で`dev→main`通常promotionとDais本人controlled L3を実行する。
+- **PANEL 8d.1 production promotion + controlled L3 PASS / done**: PR #334 merge/origin-main=`b25437f053c51b604e2c0eda36e3a6251a28ab98`、Railway production current deployment=`62493fc4-7603-499f-b01f-594b62396f83` exact SHA SUCCESS。実TG bootstrapからtoken消滅、隔離browser再起動後のstable `/panel`直接200、本人personalization、desktop/mobile 8/8 clickable、panel→TG通知往復とbaseline復元、Dais所有Calendar ACTIVE 1件、他tenant mutation 0をSolとmanagerが実測。専用second TG/Google identity不在の2項目は無断identity作成を避けて未実行と明示し、tenant contract 9/9・本人connector readbackでproduction-safe代替としてfinal裁定。evidence SHA=`dd49a41415210803908236e1bd17752d19d117bcc9dd854dd9bc2735375a0326` mode=`0600`。
+- **CORE 8d method 2はcode GREEN / VCSDD review FAIL**: reviewerはfocused 51/51、full 371/371、eval 33/33、boundary 10/10を再現したが、featureのstate/spec/verdictと追跡RED→GREEN evidenceが無くcontrolled runを不許可。PR head=`58846034b`はorchestratorが独立確認。現在はPhase 1 artifactsを正規toolingで復旧中で、本番side effectは行わない。
+- **PANEL 8d.1 fresh reviewはFAIL / blocker 10**: PR #331 commit=`84e1cebae`のlocal tests/smokeは通るが、実runtimeへ効かないtoggleとprovider/tenant/idempotency/OAuth/body-limit/Connect表示の欠陥、strict VCSDD gate不整合をfresh reviewerが再現。merge/deploy/L3は禁止し、同じblockerをRED化してcorrective buildへ戻す。
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
-- **COREは再open**: Daisがpanelを実使用し、DAILY scoreの意味が体感と不一致、timelineに内部生ログが露出、画面全体もbrokenと判定。従来の「API 200 / loaded / screenshot」はUX doneの証拠として不足。8g/8hを先頭未完了として扱う。
+- **CORE / panelは再open**: Daisがpanelを実使用し、fresh `/panel` linkがforbidden、connection/settingsがnon-clickable、個人別connection/contextを操作できず単なるpageと判定。加えてDAILY scoreの意味が体感と不一致、timelineに内部生ログが露出。従来の「API 200 / loaded / screenshot」はdashboard doneの証拠として不足。8d review直後に8d.1を最優先で実行し、access・二入口・personalization・connection/toggleを実side effect付きで直す。score/timelineは8g/8hで続ける。
+- **CORE 8d controlled runはpending**: local closed-collector reviewはPASS/blocker 0。production binding preflightでTelnyx webhookを既定URLへ復元後、非送信依存は7/7 PASS。唯一のcontrolled invocationはTG 1通・email 1通・phone 0で両receiptをreadbackしたが、gogの分精度dateを厳密な送信ミリ秒と比較したため`email_receipt_stale`となりreport生成前exit 1。再送・artifact手編集は行わず、false hypothesisをrow 8dへ記録。次は分精度境界をTDDで是正する独立手法2。review log=`.claude/sol-orders/logs/core-8d-closed-final-review.log`、run log=`.claude/sol-orders/logs/core-8d-production-9of9.log`。
+- **CORE 8e method 1はexternal-attendee gateでfail closedしexact cleanup済み**: production codeはPR #335/#337/#336、main/deployment exact SHA=`85a68abaa`で出荷済み。実nonce eventのplus aliasをGoogleが本人organizerへ正規化したためexternal attendee 0で停止。event作成1件以外のside effectは0。managerはT-10まで約6分を検知して旧Solを停止し、fresh emergency Solがexact-id+nonce-description guardでT-10窓231秒前に削除。provider/DB readbackはnonce event/Travel/wake/late/email/TG/call=`0/0/0/0/0/0/0`、unrelated calendar/tenant不変。false hypothesis=`plus aliasはCalendar external attendeeになる`。method 2はaccepted verified forwarding recipientの所有/distinctnessをcreate前に閉じる。cleanup evidence hash=`ea5f87244cb35b8cb85e44db36ac3c85eda9d420f1f41e43df4aeb6c547c1fa1`。
+- **CORE 8e method 2はprovider mutation前に安全停止**: production SHA/deploy/loop時刻とrequired envだけをread-only確認し、calendar/email/TG/call/location mutationは0。material blockerは①通常CLIのrecipient/attendeeがargv/logへPII露出し得る ②late selectorが6時間窓の先頭located non-helperを選ぶためnonceへの自動束縛を仮定できない ③forwarding destination宛メールをprimary inboxで実読取できる保証がない ④travel loopはreturn helperも生成し得て1件cleanup前提が残骸を作る、の4点。method 2bは単一0600 process、exact late-target preflight、実target-inbox Message-ID、nonce由来helper全件exact cleanupへ是正してfresh再発注する。
+- **CORE 8e method 2bはtarget mailbox readback gateでfail closed**: accepted forwarding targetはprimary/send-as/Calendar ownerとdistinctだが、local authはprimary 1件だけでtarget mailboxのOAuth/IMAP/browser identityは0、target→primary reverse-forwarding証拠も0。ownership metadataは実受信RFC Message-IDを代替しないため、fresh Solをprovider mutation前に停止しside effect 0。これで同一atomicの3手法FAILを満たし、false hypothesesを8e行へ固定して次の独立atomic 8fへ進む。
+- **CORE 8fはcorrective GREEN local PASS / fresh continuationへ**: endpoint/UI corrective RED=`0fc453527`は7/7 genuine FAIL、production GREENはcontext eval=`12/12`とactual callback/replay/cross-tenant、user-scoped onboarding resume、signed calendar connectをPASS。full Life Call test/evalもfail 0で、provider side effect 0。変更はstagedのまま保全。重大事項だけに絞ったfresh reviewは指摘なしのまま10分超で打切り、巨大review出力を処理していた旧builderも交代する。次は再reviewせず、fresh Solがstaged diffとGREENを再確認してcommit/push→通常release→実TG/DB L3を完遂する。
+- **CORE 8f GREEN/dev/staging PASS**: fresh continuationはGREEN=`771f996c9`をpush、PR #338を通常mergeしてorigin/dev=`a4e3ae9c6`。Railway staging deployment=`bcd237d9-590b-49e4-9ada-cdebcfa54beb`はexact SHA SUCCESS、non-mutating smoke PASS。production/provider/TG/DB migration side effectはまだ0。次は既存実績経路でmigration→production promotion→controlled L3だけを行う。
+- **CORE 8f schema/production release PASS / L3中**: migration postflightは7 ask columns、location source、nonce table/index、RLS、public grants 0、service-role DML 4/4。PR #339 merge/origin-main=`47d0f143e`、Railway production deployment=`b0e75e9f-c48e-46dd-9ed7-2fde96323651` exact SHA SUCCESS。実TG/DB controlled L3以外は完了。
 - **M-2旧Solは停止**: fixture unit/wiringはGREENだが、process消失、log末尾=`collab: Wait`、実MP4/launchd video run/IG video URL/commit/push/spec実測更新なし。未commit M-2差分は回収対象であり、doneではない。
+- **M-2は既存loopのrenderer交換**: Life Manager用の新しいmarketing loopやsocial accountを作らない。既存の日次起動、account、rotation、配信経路を維持し、slideshow artifactを同じテーマのvideo artifactへ置換する。MPTはその代替rendererとしてのみ使う。
 - **fresh M-2 rescue Solは未起動**: 発注書 `.claude/sol-orders/order-m2-rescue.md` は存在するが、ユーザーの「specと全TODOを先に確定」に従い実装開始を止めている。
 - **Life Manager marketing loopはtmux常駐ではない**: launchd `ai.anicca.life-manager-daily` が10:15にfresh passを起動。現行scriptはClaude SonnetをCLIProxyAPI `:8317`経由で呼び、内部RC後も末尾`exit 0`のためfalse-greenになる。daily logにはOAuth失効が2回ある。
 - model実測: `gpt-5.6-luna` fresh probe=`LM_LUNA_PROVIDER_OK`、context window=272k。現Claude Sonnet同経路のfresh probeは45秒timeout (`rc=124`)。9bでLuna primary・ephemeral pass・実exitへ移行する。
-- 現在は実装Solなし。次の実装号令はCORE 8dからで、M-2 rescueを先に走らせない。
+- 現在はCORE 8d manager-review corrective Phase 2bのfresh artifact-only review段階。implementation GREENは確認済みだがevidence closure blockerが1件確定しているため、review結果をRED化してfresh Solへ戻す。M-2 rescueを先に走らせない。
 
 ### 10.1 不確実性 U1-U10 の解決（2026-07-20 実測。4 subagent 並行調査の裁定）
 
@@ -413,10 +551,10 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
 | U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
 | U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
-| U5 | control panel 認証 = **TG bot `/panel` → 5分・単回・opaque token URL → HttpOnly session 交換**。token は hash 保存 + chat_id/expires/used_at 束縛。`/lm?tg=` は廃止。LM-33 spec に採用 |
+| U5 | control panel認証 = **全user共通の恒久・bookmark可能なexact canonical `/panel` + 個人別durable rotating session**。temporary/single-use/user-specific panel URLは禁止。TG bot `/panel` はexact canonical URLの`web_app` buttonだけを返し、serverはPOSTされたTelegram `initData`のHMAC・auth_date・bot/user/chat・one-time replayを検証してsessionへ交換。通常browserの未認証`/panel`は同じpage内にhash-only短命device codeを出し、本人がbot chatへcodeを入力すると同じbrowser challengeへsessionを結ぶ。code/token/user idはURL/query/path/referrer/history/logへ0件。旧`?t=`は交換せずcanonical loginへ戻す。sessionはlogout・uid/chat再紐付け・security revoke・storage消去までrotation/refresh。panelとchatは同じuser-scoped connection/setting commandを使う |
 | U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
 | U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
-| U8 | 対外メールの名乗り = `Anicca（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
+| U8 | 対外メールの名乗り = `Life Manager（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
 | U9 | rotate runbook 正本 = `2026-07-17-lm21-rotation-runbook.md`（実在確認済み）+ 13キー発行元/再登録表を今回更新。実行 = `railway variable set K=V ... --skip-deploys` → redeploy 1回 → setWebhook/inbound URL 再登録 → 全 smoke 後に旧 key revoke |
 | U10 | PR #312 = **OPEN 未マージ**（dev loop D0 産、issue #11 travel-autofill fix）。順2 に「review→merge 判断」を含めた |
 | INC-1 | **prod Telegram webhook 401 事故と修理**: `--skip-deploys` で staged した新 `LM_TELEGRAM_WEBHOOK_SECRET` が後続 auto-deploy で本番へ入り、Telegram 登録は旧値のままなので全 update が401になる。現 prod env の secret で `setWebhook` を再登録し、allowed_updates=`message,edited_message,callback_query`、pending=0、last_error=null を実測。secret 値はログ・spec・commitに残さない。一般法則: **--skip-deploys の staged 値は「次の deploy に必ず乗る」— staging した瞬間から、対応する外部再登録（setWebhook 等）を deploy 前提条件として同じ発注に束ねる** |
@@ -441,14 +579,6 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 - historical evidence、DB flag、agent自己申告、API 200だけではL3を代替しない。success/failure/timeoutの各classが発火し得るtestを持つ。
 - 7日streakはsessionが待たず、launchd/gateway cronがURL/metric/no-op理由を日次追記し、7日目にmachine判定する。
 
-#### CORE-a / 8d controlled collector 根拠
-
-- Telegram Bot API `getMe`: https://core.telegram.org/bots/api#getme — 「Requires no parameters. Returns basic information about the bot in form of a User object.」よって peer は caller 入力でなく bot token 自身の username から導出する。
-- Telegram Bot API `getWebhookInfo`: https://core.telegram.org/bots/api#getwebhookinfo — 「pending_update_count: Number of updates awaiting delivery」。よって bounded poll の最終値が0の場合だけ backlog PASS とする。
-- Telethon `send_message`: https://docs.telethon.dev/en/stable/modules/client.html#telethon.client.messages.MessageMethods.send_message — 「Sends a message to the specified user, chat or channel.」固定 sidecar は導出済み bot dialog に `/panel core8d_<nonce>` を1回だけ送る。
-- Resend Send Email: https://resend.com/docs/api-reference/emails/send-email — 成功 response は `{ "id": "..." }`。この ID は provider acceptance ref にのみ使い、delivery は Gmail receipt で別途証明する。
-- gog Gmail message search: https://github.com/openclaw/gogcli/blob/4747fb05a4290176716ddfd07340f684346a9c18/internal/cmd/gmail_messages.go — 実装は `Users.Messages.List` を使い JSON の `messages` を返す。recipient/receiver は同じ `GOG_ACCOUNT`、nonce 一致 message の ID/date だけを保持する。
-
 | Item | Value |
 |---|---|
 | UI変更 | あり（panel score/timeline/UX） |
@@ -458,6 +588,6 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ## 8. 次セッションへの引き継ぎ（実装はそこから）
 
-1. 新 monorepo `anicca` を GitHub に作成（Turborepo scaffold）→ life-manager 収斂 spec に従い web app を移す
-2. このファイルと capafy spec §12.6 を読み、P1 を開始。P0 の event（07-21 day3）は既存セッション/loop が処理
+1. 最上位pending `8c.R`を`2026-07-23-life-manager-repository-rename-design.md`と`../plans/2026-07-23-life-manager-repository-rename.md`どおり実行し、既存2 repoのID/historyを保持してcanonical public monorepoを`Daisuke134/life-manager`にする。新しい`anicca` repoは作らない
+2. rename完了後、このファイルと capafy spec §12.6 を読み、Superpowers/TDD/review/verification workflowで次の未完atomicを上から再開する。既存VCSDD artifactはhistorical evidenceとしてのみ参照する
 3. TaskList: #12(OSS) は P3 に吸収、#41(LIFE-AUTO) は P1 内機能として再定義済
