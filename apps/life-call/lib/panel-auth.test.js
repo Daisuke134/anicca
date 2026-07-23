@@ -69,7 +69,8 @@ test("LM-33a/33c: /panel with a live session renders the authenticated mirror wi
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), "no-store");
     const html = await response.text();
-    assert.match(html, /<h1>Anicca Life Manager<\/h1>/);
+    assert.match(html, /<h1>Life Manager<\/h1>/);
+    assert.doesNotMatch(html, /\bAnicca\b/i);
     for (const section of ["timeline", "scores", "ledger", "gates", "settings"]) {
       assert.match(html, new RegExp(`data-panel-section="${section}"`));
     }

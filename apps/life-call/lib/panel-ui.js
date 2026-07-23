@@ -67,7 +67,7 @@ function renderPanelPage(options = {}) {
   <meta name="color-scheme" content="light">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23122238'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%23c94a32'/%3E%3C/svg%3E">
-  <title>Anicca Life Manager</title>
+  <title>Life Manager</title>
   <style>
     :root {
       --paper: #f3efe5;
@@ -528,8 +528,8 @@ function renderPanelPage(options = {}) {
   <div class="page">
     <header class="masthead">
       <div>
-        <p class="wordmark">Anicca / life operations</p>
-        <h1>Anicca Life Manager</h1>
+        <p class="wordmark">Life Manager / life operations</p>
+        <h1>Life Manager</h1>
       </div>
       <div>
         <p class="masthead-note">今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。</p>

@@ -272,7 +272,9 @@ test("blocker 3: periodic activity survives days 30/180 with server Max-Age whil
       machine.setNow(day * DAY_MS);
       const response = await fetch(`${server.base}/panel`, { headers: { cookie: `lm_panel_session=${active}` } });
       assert.equal(response.status, 200);
-      assert.match(await response.text(), /Anicca Life Manager/);
+      const html = await response.text();
+      assert.match(html, /<h1>Life Manager<\/h1>/);
+      assert.doesNotMatch(html, /\bAnicca\b/i);
       assert.match(response.headers.get("set-cookie") || "", new RegExp(`__Host-lm_panel_session=${active}; Max-Age=${machine.cookieMaxAge}`));
     }
 

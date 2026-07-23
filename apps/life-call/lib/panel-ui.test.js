@@ -33,6 +33,14 @@ function emittedScoreRenderer() {
   return sandbox.__renderScores;
 }
 
+test("PANEL-8h: panel shell identifies the product only as Life Manager", () => {
+  const html = renderPanelPage();
+  assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], "Life Manager");
+  assert.equal(html.match(/<p class="wordmark">([^<]+)<\/p>/)?.[1], "Life Manager / life operations");
+  assert.equal(html.match(/<h1>([^<]+)<\/h1>/)?.[1], "Life Manager");
+  assert.doesNotMatch(html, /\bAnicca\b/i);
+});
+
 test("LM-33c: panel renders the five mirror sections in spec order", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();
