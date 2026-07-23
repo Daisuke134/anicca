@@ -31,7 +31,7 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
 | model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
 | tests | Python `267 passed, 119 subtests passed`、Node self-improvement suite PASS。`test_gig_paid_work_gate.sh` の browser-fail recoveryだけRED |
-| live reply blocker | thread `9967694`、revision `18`、`reconcile_pending`。verified hash/seller send timeなし |
+| live reply blocker | thread `9967694`、revision `19`、`reconcile_pending`。verified hash/seller send timeなし |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
 | verifier integration debt | 正常な`no_change` pass後もselfimprove verifierが6項目すべてをmissing扱いする。self-improvement本体の再実装ではなく、no-change契約の修正対象 |
 
@@ -51,6 +51,18 @@ Dais 確定方針:
 - canonical codeは `~/profitable-claude/skills/gig-work/`、runtime stateは当機では `GIG_STATE_DIR=~/gig`。`~/anicca/skills/earn/gig/` はtombstoneであり編集しない。
 - Coconalaの利用可否・許可はDais確認済みとして固定し、agentは規約・許可の再検索へtokenを使わない。他platform追加時だけ一度onboarding manifestを作る。
 - 各段階をbuilderと別contextのreality-verifierが結果画面で確認する。通常運転は人間の承認・下書き送信待ちをterminal stateにしない。
+
+### §0.3 毎日の4 lane契約
+
+本番loopは自然日ごとに **Shuppin（出品/既存出品改善）、Oubo（応募）、Reply（返信）、
+Nouhin（制作/進捗/納品/修正/承諾/入金）** の4 laneすべてを確認する。合法・実行可能な対象が
+あればloop自身が実行し、対象がなければ理由付き`verified_noop`を記録する。件数を作るための
+不要な出品・応募・返信・納品は禁止する。優先順位は `Reply/Nouhin > Oubo > Shuppin` とする。
+
+各laneの日次evidenceは `checked`、`eligible_count`、`actions_performed`、
+`verified_outcomes`、`noop_reason`、`duplicate_count`、`model_calls`、`cost`、`revenue`
+を持つ。4 laneのいずれかが欠測なら、その日のdaily operationはPASSにしない。self-improvementは
+このlane別ground truthを使い、改善をkeep/revertする。
 
 ---
 
@@ -430,18 +442,19 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
-| **1** | **B1 native submitを閉じる** | thread `9967694` revision `18`をauthoritative rereadし、未送信を確認してからCoconala自身のvalidation/native submit経路をsenderで発火させる。interactive browserで手動返信しない | 本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
+| **1** | **B1 native submitを閉じる** | thread `9967694` revision `19`をauthoritative rereadし、未送信を確認してからCoconala自身のvalidation/native submit経路をsenderで発火させる。interactive browserで手動返信しない | 本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
 | **2** | **paid-work recovery REDを閉じる** | `test_gig_paid_work_gate.sh`のbrowser-fail recoveryで欠けるpaid-progress再開を直す。accepted artifact/hash/acceptance bundleを再利用しbuilderを再起動しない | shell suite PASS。browser failure後も`deterministic-paid-progress`が実行され、`gig-PAID_WORK`再実行0、下位ledger無変更 |
 | **3** | **selfimprove verifierのno-change誤警報を閉じる** | mtimeだけでなく最新`poll-control.json`のpass ID/outcomeを読む。`no_change`は正常no-op、material/improve passだけ必要証拠を要求する | no-changeでmissing 0・model call 0。material/improve fixtureで証拠欠落だけを次pass TODOへ記録。既存keep/revert挙動不変 |
-| **4** | **state-machine failure injectionを完了する** | P1 DM、P0 no-message初回連絡、P0 coalesce race、応募、paid work、進捗、formal delivery、revision、acceptance、payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。各side effect 1、blind retry 0、terminal manual state 0 |
-| **5** | **task-level attributionを日報へ接続する** | pass/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportにtask label、provider/model、tokens、cost、browser action、verified outcome、revenueを表示。欠測は推測せず`missing evidence` |
+| **4** | **4 lane state-machine failure injectionを完了する** | Shuppinの公開/更新/no-op、Oubo、Reply、Nouhinの制作/進捗/formal delivery/revision/acceptance/payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0 |
+| **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
 | **6** | **provider fallback canaryを通す** | side-effectなしfixtureでTerra/Lunaのtransient failureを注入し、同一schemaのClaude `sonnet` fallbackを通す。次にfence付きbounded canaryを行う | fallback前後でbusiness outcome同一、customer action最大1、schema/telemetry完全。`sonnet` aliasの実model mappingを証拠へ記録 |
 | **7** | **controlled real transactionをloopだけで`banked`まで通す** | controlled buyer eventを1件作り、検知→返信→受注→制作→進捗→納品→修正→承諾→入金をlaunchd loopに処理させる。Codexは監視のみ | buyer-visible evidence、payout evidence、cost/revenue、完全audit trail。最終state=`banked` |
-| **8** | **24時間の自然運転を証明する** | force-runではなく自然scheduleを観測する | 673 scheduled invocation、miss/overlap/browser hang/duplicate/budget breach 0。09:07 report成功、browser KeepAlive継続 |
-| **9** | **zero-human graduationを完了する** | 7日stabilization後、14日production observation。browser crash、stale lease、provider timeoutを注入する | 人間による応募/返信/納品代行0。duplicate action、deadlock、budget breach 0。self-heal復旧とself-improve keep/revertを実証 |
+| **8** | **4 laneの24時間自然運転を証明する** | force-runではなく自然scheduleを観測し、各laneをactionまたは`verified_noop`で閉じる | 4 lane evidence欠測0、673 scheduled invocation、miss/overlap/browser hang/duplicate/budget breach 0。09:07 report成功、browser KeepAlive継続 |
+| **9** | **zero-human graduationを完了する** | 7日stabilization後、14日production observation。browser crash、stale lease、provider timeoutを注入する | 人間による出品/応募/返信/納品代行0。毎日4 lane evidence完全、duplicate action、deadlock、budget breach 0。self-heal復旧とself-improve keep/revertを実証 |
 
-**done 全体**: live connector上の合法・実行可能eventが、人間のdraft承認なしで検知→実行→ground-truth確認→
-自己修復まで閉じ、controlled実取引が`banked`へ到達し、24時間と7+14日の自然運転を通過した時だけdone。
+**done 全体**: 毎日4 laneすべてがactionまたは`verified_noop`で閉じ、合法・実行可能eventが人間の
+draft承認なしで検知→実行→ground-truth確認→自己修復まで進み、controlled実取引が`banked`へ到達し、
+4 lane evidence完全な24時間と7+14日の自然運転を通過した時だけdone。
 
 ### §6.1 Test matrix
 
@@ -450,12 +463,12 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 | 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
 | 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery | 必須 |
 | 3 | no-change verifier contract | `test_selfimprove_no_change_is_not_missing`、material/improve欠落fixture | 必須 |
-| 4 | full state machine | reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
-| 5 | exact attribution | `test_telegram_reporting.py` + natural 09:07 message | 必須 |
+| 4 | four-lane state machine | listing/application/reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
+| 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
 | 6 | provider parity | runner transient-fallback fixture + fence assertion | 必須 |
 | 7 | banked | controlled transaction audit bundle | 必須 |
-| 8 | daily operation | 24-hour launchd ledger reconciliation | 必須 |
-| 9 | graduation | 7+14-day soak ledger | 必須 |
+| 8 | four-lane daily operation | 4 lane action/no-opを含む24-hour launchd ledger reconciliation | 必須 |
+| 9 | graduation | 4 lane完全な7+14-day soak ledger | 必須 |
 
 | E2E item | Value |
 |---|---|

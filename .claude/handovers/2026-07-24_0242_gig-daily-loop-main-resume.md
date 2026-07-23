@@ -10,7 +10,7 @@
 ## Repository routing
 
 - Session start/spec repository: `/Users/anicca/anicca-project`, branch `main`, upstream
-  `origin/main`, verified spec baseline `0c95a1c94`. The shared main worktree has many
+  `origin/main`, verified minimum baseline `7ce9db9b3`. The shared main worktree has many
   user-owned untracked paths. Never reset, clean, mass-add, delete, or switch it. For spec edits,
   create a clean worktree from fresh `origin/main`, open/merge a PR to `main`, then fast-forward
   local main only after checking untracked collisions.
@@ -27,7 +27,7 @@
 ## Current item and evidence
 
 - Current item: §6 #1, close B1 native submit for Coconala thread `9967694`.
-- Connector DB: `~/gig/connector-outbox.sqlite3`, action `1`, revision `18`,
+- Connector DB: `~/gig/connector-outbox.sqlite3`, action `1`, revision `19`,
   state `reconcile_pending`; verified thread URL/hash and seller send time remain empty.
 - No customer reply/application/delivery was manually performed in the handover session.
 - Browser `ai.anicca.hf-gig-browser` is running. Gig pass/reply/auditor/core/self-improve labels
@@ -37,6 +37,10 @@
   recovery expects `deterministic-paid-progress`, but the recovery browser log is empty.
 - Self-improvement is implemented (`pass_count=529`, `improve_cycle=76`, kept/reverted evidence).
   The verifier still falsely lists six missing items after normal no-change operation.
+- Final Done requires every natural day to close all four lanes: Shuppin, Oubo, Reply, and Nouhin.
+  Each lane must have either an authoritative verified action or a reasoned `verified_noop`, plus
+  checked/eligible/action/outcome/duplicate/model-call/cost/revenue evidence. Missing one lane
+  makes the daily proof fail.
 
 ## First safe resume action
 
