@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The controlled-L3 gate checks only that snapshot labels look like 40-hex values. It does not compare greenCommit/greenTree with current HEAD/tree, verify any required GREEN evidence/count/coverage/schema/scan result, bind the approved contract digest, or prove that the requested output is absent before permitting the invocation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs",
+    "lineRange": "5-13",
+    "snippet": "if (... !/^greenCommit=[a-f0-9]{40}$/m.test(snapshot) || !/^greenTree=[a-f0-9]{40}$/m.test(snapshot)) fail();"
+  },
+  "routeToPhase": "2b"
+}

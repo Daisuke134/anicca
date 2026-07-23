@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "verification_readiness",
+  "category": "proof_gap",
+  "severity": "critical",
+  "description": "Tracked verification binds the implementation commit to current HEAD, so a later evidence-only commit makes the recorded scope, coverage, and controlled gate commands fail despite an unchanged application tree.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs",
+    "lineRange": "31-36",
+    "snippet": "verifyScope requires greenCommit to equal HEAD instead of allowing a clean descendant with an identical bound application tree.",
+    "testName": "review6 RED: tracked closure binds the implementation tree and permits only descendant evidence commits"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "CRIT-003 and PROP-006 require executable boundary behavior, but all 12 poll/deadline cases are source-text regex assertions. They do not advance a clock, execute production polling, observe delays, prove cancellation, or prove that the final allowed attempt succeeds; constants and comments can satisfy these tests without the required runtime behavior.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js",
+    "lineRange": "23-43",
+    "snippet": "const cases = [[... /for \\(let index = 0; index < 6/ ...], ...]; ... assert.match(target, pattern);"
+  },
+  "routeToPhase": "2a"
+}

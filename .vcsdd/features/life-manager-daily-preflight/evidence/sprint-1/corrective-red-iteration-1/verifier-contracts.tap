@@ -1,0 +1,117 @@
+✔ verify-phase2-process.mjs: every mode accepts valid phase-appropriate fixtures (440.856416ms)
+✖ verify-phase2-process.mjs: corrupt hash/mode/trace/schema/scope/coverage all fail (58.988583ms)
+✖ verify-phase2-process.mjs: malformed argv and stale current-HEAD scope fail (132.775792ms)
+✔ verify-final-artifact.mjs: accepts the valid actual CLI artifact (66.574458ms)
+✖ verify-final-artifact.mjs: rejects closed-schema identity/order/time/binding/effects mutations and empty object (69.2515ms)
+✔ verify-final-artifact.mjs: malformed argv and wrong mode fail (149.164417ms)
+✔ verify-safe-scan.mjs: clean fixture passes without matched content (65.611292ms)
+✖ verify-safe-scan.mjs: secret email phone raw-correlation and provider-ID fixtures fail without leakage (63.675042ms)
+✔ verify-safe-scan.mjs: malformed argv and missing path fail safely (132.502208ms)
+✔ verify-controlled-l3-gates.mjs: valid synthetic post-Phase3-PASS snapshot passes (53.885083ms)
+✖ verify-controlled-l3-gates.mjs: HEAD/tree/count/coverage/schema/scan/digest/output mutations all fail (56.983541ms)
+✔ verify-controlled-l3-gates.mjs: malformed argv and pre-Phase3 state fail (115.907375ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 7
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1848.6295
+
+✖ failing tests:
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:52:1
+✖ verify-phase2-process.mjs: corrupt hash/mode/trace/schema/scope/coverage all fail (58.988583ms)
+  AssertionError [ERR_ASSERTION]: verify-phase2-process.mjs accepted corrupt fixture
+      at rejected (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:23:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:55:77)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:57:1
+✖ verify-phase2-process.mjs: malformed argv and stale current-HEAD scope fail (132.775792ms)
+  AssertionError [ERR_ASSERTION]: verify-phase2-process.mjs accepted corrupt fixture
+      at rejected (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:23:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:57:286)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:60:1
+✖ verify-final-artifact.mjs: rejects closed-schema identity/order/time/binding/effects mutations and empty object (69.2515ms)
+  AssertionError [ERR_ASSERTION]: verify-final-artifact.mjs accepted corrupt fixture
+      at rejected (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:23:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:65:192)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:72:1
+✖ verify-safe-scan.mjs: secret email phone raw-correlation and provider-ID fixtures fail without leakage (63.675042ms)
+  AssertionError [ERR_ASSERTION]: verify-safe-scan.mjs accepted corrupt fixture
+      at rejected (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:23:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:74:56)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at .vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:82:1
+✖ verify-controlled-l3-gates.mjs: HEAD/tree/count/coverage/schema/scan/digest/output mutations all fail (56.983541ms)
+  AssertionError [ERR_ASSERTION]: verify-controlled-l3-gates.mjs accepted corrupt fixture
+      at rejected (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:23:10)
+      at TestContext.<anonymous> (file:///Users/anicca/anicca-project/.worktrees/lm-p0-order8d/.vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs:84:101)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 0,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }

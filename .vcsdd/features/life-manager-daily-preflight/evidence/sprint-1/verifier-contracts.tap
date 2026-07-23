@@ -1,0 +1,20 @@
+✔ verify-phase2-process.mjs: accepts one valid explicit input (55.729042ms)
+✔ verify-phase2-process.mjs: rejects missing or malformed argv (56.313625ms)
+✔ verify-phase2-process.mjs: rejects stale or wrong-snapshot input (47.886292ms)
+✔ verify-final-artifact.mjs: accepts one valid explicit input (49.304875ms)
+✔ verify-final-artifact.mjs: rejects missing or malformed argv (51.853166ms)
+✔ verify-final-artifact.mjs: rejects stale or wrong-snapshot input (47.55ms)
+✔ verify-safe-scan.mjs: accepts one valid explicit input (46.781625ms)
+✔ verify-safe-scan.mjs: rejects missing or malformed argv (48.372791ms)
+✔ verify-safe-scan.mjs: rejects stale or wrong-snapshot input (49.775541ms)
+✔ verify-controlled-l3-gates.mjs: accepts one valid explicit input (47.241917ms)
+✔ verify-controlled-l3-gates.mjs: rejects missing or malformed argv (47.944917ms)
+✔ verify-controlled-l3-gates.mjs: rejects stale or wrong-snapshot input (51.988416ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 677.03725

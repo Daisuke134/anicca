@@ -1,0 +1,3332 @@
+{
+  "featureName": "life-manager-daily-preflight",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "2b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-21T08:56:28.905Z",
+      "reason": "Behavioral specification authored; no gate verdict recorded"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-21T08:56:28.913Z",
+      "reason": "Verification architecture authored; awaiting fresh Phase 1c review"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-21T09:30:23.590Z",
+      "reason": "Fresh artifact-only Phase 1c adversarial spec review started"
+    },
+    {
+      "from": "1c",
+      "to": "1a",
+      "timestamp": "2026-07-21T09:40:21.177Z",
+      "reason": "Iteration-1 spec review FAIL routed to earliest accepted affected phase 1a (FIND-001 and modified FIND-002 adjudication)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-21T09:45:05.291Z",
+      "reason": "Phase 1a corrections complete; Phase 1b verification architecture corrected for FIND-003 and FIND-004; awaiting fresh iteration-2 review"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-21T09:55:23.414Z",
+      "reason": "Fresh artifact-only Phase 1c iteration-2 adversarial spec review started"
+    },
+    {
+      "from": "1c",
+      "to": "1a",
+      "timestamp": "2026-07-21T10:01:40.332Z",
+      "reason": "Iteration-2 spec review FAIL routed to earliest accepted affected phase 1a (FIND-005; FIND-006 follows in Phase 1b)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-21T10:02:21.891Z",
+      "reason": "FIND-005 Phase 1a correction complete; entering Phase 1b for FIND-006 command-contract correction"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-21T10:20:58.844Z",
+      "reason": "Fresh artifact-only Phase 1c iteration-3 adversarial spec review started"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-21T10:26:27.058Z",
+      "reason": "Explicit human/orchestrator approval recorded for iteration-3 Phase 1c PASS"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-21T12:01:17.436Z",
+      "reason": "Phase 2a RED evidence accepted; enter minimal GREEN only",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-21T12:22:01.828Z",
+      "reason": "Phase 2b GREEN evidence accepted; feature-local atomic transition preserving the approved sprintCount=0 corrective convention",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-21T12:37:15.659Z",
+      "reason": "Fresh artifact-only sprint-1 implementation review prepared under the approved sprintCount=0 corrective convention",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-21T12:50:51.170Z",
+      "reason": "Phase 3 FAIL: route FIND-004/FIND-005 to earliest authoritative phase 2a; retain 2b/2c findings for subsequent corrective phases"
+    },
+    {
+      "from": "4",
+      "to": "2a",
+      "timestamp": "2026-07-21T12:50:51.177Z",
+      "reason": "Phase 3 FAIL: route FIND-004/FIND-005 to earliest authoritative phase 2a; retain 2b/2c findings for subsequent corrective phases"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-21T13:47:45.035Z",
+      "reason": "Corrective Phase 2b GREEN: 75/75 executable tests pass for Phase 3 iteration-1 findings FIND-001..FIND-011"
+    }
+  ],
+  "iterations": {
+    "3": 1,
+    "4": 1,
+    "1a": 3,
+    "1b": 3,
+    "1c": 3,
+    "2a": 2,
+    "2b": 2,
+    "2c": 1
+  },
+  "proofObligations": [
+    {
+      "id": "PROP-001",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-001",
+      "beadId": "BEAD-019"
+    },
+    {
+      "id": "PROP-002",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-002",
+      "beadId": "BEAD-020"
+    },
+    {
+      "id": "PROP-003",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-003",
+      "beadId": "BEAD-021"
+    },
+    {
+      "id": "PROP-004",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-004",
+      "beadId": "BEAD-022"
+    },
+    {
+      "id": "PROP-005",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-005",
+      "beadId": "BEAD-023"
+    },
+    {
+      "id": "PROP-006",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-006",
+      "beadId": "BEAD-024"
+    },
+    {
+      "id": "PROP-007",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-007",
+      "beadId": "BEAD-025"
+    },
+    {
+      "id": "PROP-008",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-008",
+      "beadId": "BEAD-026"
+    },
+    {
+      "id": "PROP-009",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-009",
+      "beadId": "BEAD-027"
+    },
+    {
+      "id": "PROP-010",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-010",
+      "beadId": "BEAD-028"
+    },
+    {
+      "id": "PROP-011",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-011",
+      "beadId": "BEAD-029"
+    },
+    {
+      "id": "PROP-012",
+      "tier": 3,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#prop-012",
+      "beadId": "BEAD-030"
+    }
+  ],
+  "traceability": {
+    "epicId": "VCSDD-life-manager-daily-preflight-1784624058427",
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-001",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-019",
+          "BEAD-030",
+          "BEAD-048",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.908Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-001"
+      },
+      {
+        "beadId": "BEAD-002",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-002",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-019",
+          "BEAD-022",
+          "BEAD-030",
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.908Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-002"
+      },
+      {
+        "beadId": "BEAD-003",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-003",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-023",
+          "BEAD-030",
+          "BEAD-036"
+        ],
+        "createdAt": "2026-07-21T08:56:28.908Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-003"
+      },
+      {
+        "beadId": "BEAD-004",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-004",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-023",
+          "BEAD-030",
+          "BEAD-038"
+        ],
+        "createdAt": "2026-07-21T08:56:28.909Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-004"
+      },
+      {
+        "beadId": "BEAD-005",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-005",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-023",
+          "BEAD-030",
+          "BEAD-040"
+        ],
+        "createdAt": "2026-07-21T08:56:28.909Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-005"
+      },
+      {
+        "beadId": "BEAD-006",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-006",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-024",
+          "BEAD-030",
+          "BEAD-036",
+          "BEAD-037",
+          "BEAD-038",
+          "BEAD-039",
+          "BEAD-040",
+          "BEAD-041",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047",
+          "BEAD-113",
+          "BEAD-114"
+        ],
+        "createdAt": "2026-07-21T08:56:28.910Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-006"
+      },
+      {
+        "beadId": "BEAD-007",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-007",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-049"
+        ],
+        "createdAt": "2026-07-21T08:56:28.910Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-007"
+      },
+      {
+        "beadId": "BEAD-008",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-008",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-021",
+          "BEAD-076"
+        ],
+        "createdAt": "2026-07-21T08:56:28.910Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-008"
+      },
+      {
+        "beadId": "BEAD-009",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-009",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-021",
+          "BEAD-077"
+        ],
+        "createdAt": "2026-07-21T08:56:28.910Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-009"
+      },
+      {
+        "beadId": "BEAD-010",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-010",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-022",
+          "BEAD-074"
+        ],
+        "createdAt": "2026-07-21T08:56:28.911Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-010"
+      },
+      {
+        "beadId": "BEAD-011",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-011",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-026",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118"
+        ],
+        "createdAt": "2026-07-21T08:56:28.911Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-011"
+      },
+      {
+        "beadId": "BEAD-012",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-012",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-026",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118"
+        ],
+        "createdAt": "2026-07-21T08:56:28.911Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-012"
+      },
+      {
+        "beadId": "BEAD-013",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-013",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-025",
+          "BEAD-030",
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.912Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-013"
+      },
+      {
+        "beadId": "BEAD-014",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-014",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-019",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-048"
+        ],
+        "createdAt": "2026-07-21T08:56:28.912Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-014"
+      },
+      {
+        "beadId": "BEAD-015",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-015",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-019",
+          "BEAD-024",
+          "BEAD-030",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.912Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-015"
+      },
+      {
+        "beadId": "BEAD-016",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-016",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-027",
+          "BEAD-098",
+          "BEAD-116",
+          "BEAD-117"
+        ],
+        "createdAt": "2026-07-21T08:56:28.913Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-016"
+      },
+      {
+        "beadId": "BEAD-017",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-017",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-026",
+          "BEAD-029",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-118"
+        ],
+        "createdAt": "2026-07-21T08:56:28.913Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-017"
+      },
+      {
+        "beadId": "BEAD-018",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#req-018",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-028",
+          "BEAD-099",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-102",
+          "BEAD-103",
+          "BEAD-104",
+          "BEAD-105",
+          "BEAD-106",
+          "BEAD-107",
+          "BEAD-108",
+          "BEAD-109",
+          "BEAD-110",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-119"
+        ],
+        "createdAt": "2026-07-21T08:56:28.913Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-018"
+      },
+      {
+        "beadId": "BEAD-019",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-001",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-014",
+          "BEAD-015",
+          "BEAD-031"
+        ],
+        "createdAt": "2026-07-21T08:56:28.914Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-001"
+      },
+      {
+        "beadId": "BEAD-020",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-002",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-007",
+          "BEAD-010",
+          "BEAD-017",
+          "BEAD-032"
+        ],
+        "createdAt": "2026-07-21T08:56:28.915Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-002"
+      },
+      {
+        "beadId": "BEAD-021",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-003",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-008",
+          "BEAD-009",
+          "BEAD-032"
+        ],
+        "createdAt": "2026-07-21T08:56:28.916Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-003"
+      },
+      {
+        "beadId": "BEAD-022",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-004",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-010",
+          "BEAD-032"
+        ],
+        "createdAt": "2026-07-21T08:56:28.916Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-004"
+      },
+      {
+        "beadId": "BEAD-023",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-005",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-003",
+          "BEAD-004",
+          "BEAD-005",
+          "BEAD-031",
+          "BEAD-033"
+        ],
+        "createdAt": "2026-07-21T08:56:28.917Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-005"
+      },
+      {
+        "beadId": "BEAD-024",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-006",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-015",
+          "BEAD-033",
+          "BEAD-036",
+          "BEAD-037",
+          "BEAD-038",
+          "BEAD-039",
+          "BEAD-040",
+          "BEAD-041",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-21T08:56:28.917Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-006"
+      },
+      {
+        "beadId": "BEAD-025",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-007",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-013",
+          "BEAD-035",
+          "BEAD-032",
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092"
+        ],
+        "createdAt": "2026-07-21T08:56:28.917Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-007"
+      },
+      {
+        "beadId": "BEAD-026",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-008",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-017",
+          "BEAD-034",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098"
+        ],
+        "createdAt": "2026-07-21T08:56:28.918Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-008"
+      },
+      {
+        "beadId": "BEAD-027",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-009",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-016",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T08:56:28.918Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-009"
+      },
+      {
+        "beadId": "BEAD-028",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-010",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-099",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-102",
+          "BEAD-103",
+          "BEAD-104",
+          "BEAD-105",
+          "BEAD-106",
+          "BEAD-107",
+          "BEAD-108",
+          "BEAD-109",
+          "BEAD-110"
+        ],
+        "createdAt": "2026-07-21T08:56:28.919Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-010"
+      },
+      {
+        "beadId": "BEAD-029",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-011",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-014",
+          "BEAD-017",
+          "BEAD-033"
+        ],
+        "createdAt": "2026-07-21T08:56:28.919Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-011"
+      },
+      {
+        "beadId": "BEAD-030",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#prop-012",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-003",
+          "BEAD-004",
+          "BEAD-005",
+          "BEAD-006",
+          "BEAD-013",
+          "BEAD-014",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-033",
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-21T08:56:28.920Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-012"
+      },
+      {
+        "beadId": "BEAD-031",
+        "type": "contract-criterion",
+        "artifactPath": "contracts/sprint-1.md#crit-001",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-019",
+          "BEAD-023",
+          "BEAD-028",
+          "BEAD-030",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.920Z",
+        "createdInPhase": "1b",
+        "externalId": "CRIT-001"
+      },
+      {
+        "beadId": "BEAD-032",
+        "type": "contract-criterion",
+        "artifactPath": "contracts/sprint-1.md#crit-002",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-020",
+          "BEAD-021",
+          "BEAD-022",
+          "BEAD-025",
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-156",
+          "BEAD-158"
+        ],
+        "createdAt": "2026-07-21T08:56:28.921Z",
+        "createdInPhase": "1b",
+        "externalId": "CRIT-002"
+      },
+      {
+        "beadId": "BEAD-033",
+        "type": "contract-criterion",
+        "artifactPath": "contracts/sprint-1.md#crit-003",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-023",
+          "BEAD-024",
+          "BEAD-029",
+          "BEAD-030",
+          "BEAD-036",
+          "BEAD-037",
+          "BEAD-038",
+          "BEAD-039",
+          "BEAD-040",
+          "BEAD-041",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-157"
+        ],
+        "createdAt": "2026-07-21T08:56:28.921Z",
+        "createdInPhase": "1b",
+        "externalId": "CRIT-003"
+      },
+      {
+        "beadId": "BEAD-034",
+        "type": "contract-criterion",
+        "artifactPath": "contracts/sprint-1.md#crit-004",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-026",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-112",
+          "BEAD-118",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T08:56:28.921Z",
+        "createdInPhase": "1b",
+        "externalId": "CRIT-004"
+      },
+      {
+        "beadId": "BEAD-035",
+        "type": "contract-criterion",
+        "artifactPath": "contracts/sprint-1.md#crit-005",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-025",
+          "BEAD-027",
+          "BEAD-028",
+          "BEAD-030",
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-099",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-102",
+          "BEAD-103",
+          "BEAD-104",
+          "BEAD-105",
+          "BEAD-106",
+          "BEAD-107",
+          "BEAD-108",
+          "BEAD-109",
+          "BEAD-110",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-116",
+          "BEAD-117",
+          "BEAD-118",
+          "BEAD-119",
+          "BEAD-120",
+          "BEAD-155",
+          "BEAD-159",
+          "BEAD-160"
+        ],
+        "createdAt": "2026-07-21T08:56:28.922Z",
+        "createdInPhase": "1b",
+        "externalId": "CRIT-005"
+      },
+      {
+        "beadId": "BEAD-036",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-01",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-003",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.043Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-001"
+      },
+      {
+        "beadId": "BEAD-037",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-02",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.047Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-002"
+      },
+      {
+        "beadId": "BEAD-038",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-03",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-004",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.049Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-003"
+      },
+      {
+        "beadId": "BEAD-039",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-04",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.049Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-004"
+      },
+      {
+        "beadId": "BEAD-040",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-05",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-005",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.050Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-005"
+      },
+      {
+        "beadId": "BEAD-041",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-06",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.050Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-006"
+      },
+      {
+        "beadId": "BEAD-042",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-07",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.051Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-007"
+      },
+      {
+        "beadId": "BEAD-043",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-08",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.051Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-008"
+      },
+      {
+        "beadId": "BEAD-044",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-09",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.052Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-009"
+      },
+      {
+        "beadId": "BEAD-045",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-10",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.052Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-010"
+      },
+      {
+        "beadId": "BEAD-046",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-11",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.053Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-011"
+      },
+      {
+        "beadId": "BEAD-047",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#case-12",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-024",
+          "BEAD-033",
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-122"
+        ],
+        "createdAt": "2026-07-21T11:53:11.054Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-012"
+      },
+      {
+        "beadId": "BEAD-048",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-01",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-001",
+          "BEAD-014",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.054Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-013"
+      },
+      {
+        "beadId": "BEAD-049",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-02",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-007",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.055Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-014"
+      },
+      {
+        "beadId": "BEAD-050",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-03",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.055Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-015"
+      },
+      {
+        "beadId": "BEAD-051",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-04",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.056Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-016"
+      },
+      {
+        "beadId": "BEAD-052",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-05",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.056Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-017"
+      },
+      {
+        "beadId": "BEAD-053",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-06",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.057Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-018"
+      },
+      {
+        "beadId": "BEAD-054",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-07",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.058Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-019"
+      },
+      {
+        "beadId": "BEAD-055",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-08",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.058Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-020"
+      },
+      {
+        "beadId": "BEAD-056",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-09",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.059Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-021"
+      },
+      {
+        "beadId": "BEAD-057",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-10",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.060Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-022"
+      },
+      {
+        "beadId": "BEAD-058",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-11",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.061Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-023"
+      },
+      {
+        "beadId": "BEAD-059",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-12",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.062Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-024"
+      },
+      {
+        "beadId": "BEAD-060",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-13",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.062Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-025"
+      },
+      {
+        "beadId": "BEAD-061",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-14",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.063Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-026"
+      },
+      {
+        "beadId": "BEAD-062",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-15",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.064Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-027"
+      },
+      {
+        "beadId": "BEAD-063",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-16",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.064Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-028"
+      },
+      {
+        "beadId": "BEAD-064",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-17",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.065Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-029"
+      },
+      {
+        "beadId": "BEAD-065",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-18",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.066Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-030"
+      },
+      {
+        "beadId": "BEAD-066",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-19",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.066Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-031"
+      },
+      {
+        "beadId": "BEAD-067",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-20",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.067Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-032"
+      },
+      {
+        "beadId": "BEAD-068",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-21",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.068Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-033"
+      },
+      {
+        "beadId": "BEAD-069",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-22",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.069Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-034"
+      },
+      {
+        "beadId": "BEAD-070",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-23",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.069Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-035"
+      },
+      {
+        "beadId": "BEAD-071",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-24",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.070Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-036"
+      },
+      {
+        "beadId": "BEAD-072",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-25",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.071Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-037"
+      },
+      {
+        "beadId": "BEAD-073",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-26",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.072Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-038"
+      },
+      {
+        "beadId": "BEAD-074",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-27",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-010",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.072Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-039"
+      },
+      {
+        "beadId": "BEAD-075",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-28",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.073Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-040"
+      },
+      {
+        "beadId": "BEAD-076",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-29",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-008",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.074Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-041"
+      },
+      {
+        "beadId": "BEAD-077",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-30",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-009",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.074Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-042"
+      },
+      {
+        "beadId": "BEAD-078",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-31",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.075Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-043"
+      },
+      {
+        "beadId": "BEAD-079",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-32",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.076Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-044"
+      },
+      {
+        "beadId": "BEAD-080",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-33",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.077Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-045"
+      },
+      {
+        "beadId": "BEAD-081",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-34",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.078Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-046"
+      },
+      {
+        "beadId": "BEAD-082",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-35",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.078Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-047"
+      },
+      {
+        "beadId": "BEAD-083",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-36",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.079Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-048"
+      },
+      {
+        "beadId": "BEAD-084",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-37",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.080Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-049"
+      },
+      {
+        "beadId": "BEAD-085",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-38",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.081Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-050"
+      },
+      {
+        "beadId": "BEAD-086",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-39",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.082Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-051"
+      },
+      {
+        "beadId": "BEAD-087",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-40",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.082Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-052"
+      },
+      {
+        "beadId": "BEAD-088",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-41",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.083Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-053"
+      },
+      {
+        "beadId": "BEAD-089",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-42",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.084Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-054"
+      },
+      {
+        "beadId": "BEAD-090",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-43",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.085Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-055"
+      },
+      {
+        "beadId": "BEAD-091",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-44",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.086Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-056"
+      },
+      {
+        "beadId": "BEAD-092",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#case-45",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-025",
+          "BEAD-032",
+          "BEAD-035",
+          "BEAD-123"
+        ],
+        "createdAt": "2026-07-21T11:53:11.087Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-057"
+      },
+      {
+        "beadId": "BEAD-093",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-01",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-112",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.088Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-058"
+      },
+      {
+        "beadId": "BEAD-094",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-02",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.089Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-059"
+      },
+      {
+        "beadId": "BEAD-095",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-03",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.090Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-060"
+      },
+      {
+        "beadId": "BEAD-096",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-04",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.091Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-061"
+      },
+      {
+        "beadId": "BEAD-097",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-05",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.093Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-062"
+      },
+      {
+        "beadId": "BEAD-098",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#case-06",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-015",
+          "BEAD-017",
+          "BEAD-026",
+          "BEAD-034",
+          "BEAD-016",
+          "BEAD-124"
+        ],
+        "createdAt": "2026-07-21T11:53:11.094Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-063"
+      },
+      {
+        "beadId": "BEAD-099",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-01",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-125"
+        ],
+        "createdAt": "2026-07-21T11:53:11.095Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-064"
+      },
+      {
+        "beadId": "BEAD-100",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-02",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-117",
+          "BEAD-120",
+          "BEAD-125"
+        ],
+        "createdAt": "2026-07-21T11:53:11.096Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-065"
+      },
+      {
+        "beadId": "BEAD-101",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-03",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-117",
+          "BEAD-120",
+          "BEAD-125"
+        ],
+        "createdAt": "2026-07-21T11:53:11.096Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-066"
+      },
+      {
+        "beadId": "BEAD-102",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-04",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-126"
+        ],
+        "createdAt": "2026-07-21T11:53:11.097Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-067"
+      },
+      {
+        "beadId": "BEAD-103",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-05",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-116",
+          "BEAD-120",
+          "BEAD-126"
+        ],
+        "createdAt": "2026-07-21T11:53:11.098Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-068"
+      },
+      {
+        "beadId": "BEAD-104",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-06",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-126"
+        ],
+        "createdAt": "2026-07-21T11:53:11.099Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-069"
+      },
+      {
+        "beadId": "BEAD-105",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-07",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-127"
+        ],
+        "createdAt": "2026-07-21T11:53:11.100Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-070"
+      },
+      {
+        "beadId": "BEAD-106",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-08",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-118",
+          "BEAD-120",
+          "BEAD-127"
+        ],
+        "createdAt": "2026-07-21T11:53:11.101Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-071"
+      },
+      {
+        "beadId": "BEAD-107",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-09",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-127"
+        ],
+        "createdAt": "2026-07-21T11:53:11.102Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-072"
+      },
+      {
+        "beadId": "BEAD-108",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-10",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-128"
+        ],
+        "createdAt": "2026-07-21T11:53:11.103Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-073"
+      },
+      {
+        "beadId": "BEAD-109",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-11",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-119",
+          "BEAD-120",
+          "BEAD-128"
+        ],
+        "createdAt": "2026-07-21T11:53:11.104Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-074"
+      },
+      {
+        "beadId": "BEAD-110",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#case-12",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-028",
+          "BEAD-035",
+          "BEAD-128"
+        ],
+        "createdAt": "2026-07-21T11:53:11.105Z",
+        "createdInPhase": "2a",
+        "externalId": "TEST-075"
+      },
+      {
+        "beadId": "BEAD-111",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-123",
+          "BEAD-130",
+          "BEAD-131",
+          "BEAD-132",
+          "BEAD-133",
+          "BEAD-136",
+          "BEAD-048"
+        ],
+        "createdAt": "2026-07-21T12:50:51.143Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-001"
+      },
+      {
+        "beadId": "BEAD-112",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-002.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-034",
+          "BEAD-124",
+          "BEAD-139",
+          "BEAD-140",
+          "BEAD-141",
+          "BEAD-093"
+        ],
+        "createdAt": "2026-07-21T12:50:51.145Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-002"
+      },
+      {
+        "beadId": "BEAD-113",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-003.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-033",
+          "BEAD-122",
+          "BEAD-129",
+          "BEAD-137",
+          "BEAD-142",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-21T12:50:51.146Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-003"
+      },
+      {
+        "beadId": "BEAD-114",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-004.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-006",
+          "BEAD-033",
+          "BEAD-122",
+          "BEAD-129",
+          "BEAD-137",
+          "BEAD-138",
+          "BEAD-142",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047"
+        ],
+        "createdAt": "2026-07-21T12:50:51.150Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-004"
+      },
+      {
+        "beadId": "BEAD-115",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-005.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-035",
+          "BEAD-123",
+          "BEAD-130",
+          "BEAD-131",
+          "BEAD-132",
+          "BEAD-133",
+          "BEAD-134",
+          "BEAD-135",
+          "BEAD-136",
+          "BEAD-138",
+          "BEAD-048"
+        ],
+        "createdAt": "2026-07-21T12:50:51.152Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-005"
+      },
+      {
+        "beadId": "BEAD-116",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-006.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-016",
+          "BEAD-018",
+          "BEAD-035",
+          "BEAD-126",
+          "BEAD-103"
+        ],
+        "createdAt": "2026-07-21T12:50:51.153Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-006"
+      },
+      {
+        "beadId": "BEAD-117",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-007.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-016",
+          "BEAD-018",
+          "BEAD-035",
+          "BEAD-125",
+          "BEAD-143",
+          "BEAD-144",
+          "BEAD-146",
+          "BEAD-147",
+          "BEAD-148",
+          "BEAD-149",
+          "BEAD-150",
+          "BEAD-151",
+          "BEAD-152",
+          "BEAD-153",
+          "BEAD-154",
+          "BEAD-100",
+          "BEAD-101"
+        ],
+        "createdAt": "2026-07-21T12:50:51.154Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-007"
+      },
+      {
+        "beadId": "BEAD-118",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-008.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-011",
+          "BEAD-012",
+          "BEAD-017",
+          "BEAD-034",
+          "BEAD-035",
+          "BEAD-127",
+          "BEAD-145",
+          "BEAD-106"
+        ],
+        "createdAt": "2026-07-21T12:50:51.155Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-008"
+      },
+      {
+        "beadId": "BEAD-119",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-009.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-018",
+          "BEAD-035",
+          "BEAD-128",
+          "BEAD-143",
+          "BEAD-144",
+          "BEAD-149",
+          "BEAD-150",
+          "BEAD-151",
+          "BEAD-152",
+          "BEAD-153",
+          "BEAD-154",
+          "BEAD-109"
+        ],
+        "createdAt": "2026-07-21T12:50:51.157Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-009"
+      },
+      {
+        "beadId": "BEAD-120",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-010.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-125",
+          "BEAD-126",
+          "BEAD-127",
+          "BEAD-128",
+          "BEAD-143",
+          "BEAD-144",
+          "BEAD-147",
+          "BEAD-148",
+          "BEAD-149",
+          "BEAD-150",
+          "BEAD-151",
+          "BEAD-152",
+          "BEAD-153",
+          "BEAD-154",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-103",
+          "BEAD-106",
+          "BEAD-109"
+        ],
+        "createdAt": "2026-07-21T12:50:51.158Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-010"
+      },
+      {
+        "beadId": "BEAD-121",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-011.json",
+        "status": "resolved",
+        "linkedBeads": [
+          "BEAD-001",
+          "BEAD-002",
+          "BEAD-013",
+          "BEAD-015",
+          "BEAD-031",
+          "BEAD-034",
+          "BEAD-123",
+          "BEAD-130",
+          "BEAD-131",
+          "BEAD-132",
+          "BEAD-133",
+          "BEAD-136",
+          "BEAD-048"
+        ],
+        "createdAt": "2026-07-21T12:50:51.159Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-011"
+      },
+      {
+        "beadId": "BEAD-122",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/daily-preflight-collectors.js#withinDeadline",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-036",
+          "BEAD-037",
+          "BEAD-038",
+          "BEAD-039",
+          "BEAD-040",
+          "BEAD-041",
+          "BEAD-042",
+          "BEAD-043",
+          "BEAD-044",
+          "BEAD-045",
+          "BEAD-046",
+          "BEAD-047",
+          "BEAD-113",
+          "BEAD-114"
+        ],
+        "createdAt": "2026-07-21T13:47:45.040Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-001"
+      },
+      {
+        "beadId": "BEAD-123",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/lib/daily-preflight.js#buildFinalPreflightReport",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-048",
+          "BEAD-049",
+          "BEAD-050",
+          "BEAD-051",
+          "BEAD-052",
+          "BEAD-053",
+          "BEAD-054",
+          "BEAD-055",
+          "BEAD-056",
+          "BEAD-057",
+          "BEAD-058",
+          "BEAD-059",
+          "BEAD-060",
+          "BEAD-061",
+          "BEAD-062",
+          "BEAD-063",
+          "BEAD-064",
+          "BEAD-065",
+          "BEAD-066",
+          "BEAD-067",
+          "BEAD-068",
+          "BEAD-069",
+          "BEAD-070",
+          "BEAD-071",
+          "BEAD-072",
+          "BEAD-073",
+          "BEAD-074",
+          "BEAD-075",
+          "BEAD-076",
+          "BEAD-077",
+          "BEAD-078",
+          "BEAD-079",
+          "BEAD-080",
+          "BEAD-081",
+          "BEAD-082",
+          "BEAD-083",
+          "BEAD-084",
+          "BEAD-085",
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089",
+          "BEAD-090",
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T13:47:45.042Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-002"
+      },
+      {
+        "beadId": "BEAD-124",
+        "type": "implementation",
+        "artifactPath": "apps/life-call/scripts/daily-preflight.js#main",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-112"
+        ],
+        "createdAt": "2026-07-21T13:47:45.043Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-003"
+      },
+      {
+        "beadId": "BEAD-125",
+        "type": "implementation",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-099",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-117",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T13:47:45.045Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-004"
+      },
+      {
+        "beadId": "BEAD-126",
+        "type": "implementation",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-102",
+          "BEAD-103",
+          "BEAD-104",
+          "BEAD-116",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T13:47:45.046Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-005"
+      },
+      {
+        "beadId": "BEAD-127",
+        "type": "implementation",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-105",
+          "BEAD-106",
+          "BEAD-107",
+          "BEAD-118",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T13:47:45.047Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-006"
+      },
+      {
+        "beadId": "BEAD-128",
+        "type": "implementation",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs",
+        "status": "implemented",
+        "linkedBeads": [
+          "BEAD-108",
+          "BEAD-109",
+          "BEAD-110",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T13:47:45.049Z",
+        "createdInPhase": "2b",
+        "externalId": "IMPL-007"
+      },
+      {
+        "beadId": "BEAD-129",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-abort-lineage.test.js#abort-lineage",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-113",
+          "BEAD-114"
+        ],
+        "createdAt": "2026-07-21T15:45:22.810Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-076"
+      },
+      {
+        "beadId": "BEAD-130",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#correlation-before-collection",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T15:45:22.815Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-077"
+      },
+      {
+        "beadId": "BEAD-131",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#actual-observation-times",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T15:45:22.817Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-078"
+      },
+      {
+        "beadId": "BEAD-132",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#missing-checked-at",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T15:45:22.819Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-079"
+      },
+      {
+        "beadId": "BEAD-133",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#mismatched-correlation",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T15:45:22.821Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-080"
+      },
+      {
+        "beadId": "BEAD-134",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#pre-run-observation",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-115"
+        ],
+        "createdAt": "2026-07-21T15:45:22.823Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-081"
+      },
+      {
+        "beadId": "BEAD-135",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#future-observation",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-115"
+        ],
+        "createdAt": "2026-07-21T15:45:22.825Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-082"
+      },
+      {
+        "beadId": "BEAD-136",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#arbitrary-run-ref",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-111",
+          "BEAD-115",
+          "BEAD-121"
+        ],
+        "createdAt": "2026-07-21T15:45:22.827Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-083"
+      },
+      {
+        "beadId": "BEAD-137",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#global-timer-purity",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-113",
+          "BEAD-114"
+        ],
+        "createdAt": "2026-07-21T15:45:22.829Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-084"
+      },
+      {
+        "beadId": "BEAD-138",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#one-ms-stale-harness",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-114",
+          "BEAD-115"
+        ],
+        "createdAt": "2026-07-21T15:45:22.830Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-085"
+      },
+      {
+        "beadId": "BEAD-139",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-provenance.test.js#zero-argument-main",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-112"
+        ],
+        "createdAt": "2026-07-21T15:45:22.833Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-086"
+      },
+      {
+        "beadId": "BEAD-140",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#env-only-injection",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-112"
+        ],
+        "createdAt": "2026-07-21T15:45:22.835Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-087"
+      },
+      {
+        "beadId": "BEAD-141",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-purity-contract.test.js#fetch-only-injection",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-112"
+        ],
+        "createdAt": "2026-07-21T15:45:22.836Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-088"
+      },
+      {
+        "beadId": "BEAD-142",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/transport/mail-gog-receipt.test.js#abort-capable-process",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-113",
+          "BEAD-114"
+        ],
+        "createdAt": "2026-07-21T15:45:22.838Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-089"
+      },
+      {
+        "beadId": "BEAD-143",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#changed-cli-coverage",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.840Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-090"
+      },
+      {
+        "beadId": "BEAD-144",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#complete-changed-module-coverage",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.842Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-091"
+      },
+      {
+        "beadId": "BEAD-145",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#production-js-safe-scan",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-118"
+        ],
+        "createdAt": "2026-07-21T15:45:22.845Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-092"
+      },
+      {
+        "beadId": "BEAD-146",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#trace-reachability",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117"
+        ],
+        "createdAt": "2026-07-21T15:45:22.847Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-093"
+      },
+      {
+        "beadId": "BEAD-147",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#state-schema-validation",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.848Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-094"
+      },
+      {
+        "beadId": "BEAD-148",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review-schema-validation",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.850Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-095"
+      },
+      {
+        "beadId": "BEAD-149",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#unauthorized-scope",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.851Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-096"
+      },
+      {
+        "beadId": "BEAD-150",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#historical-immutability-scope",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.853Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-097"
+      },
+      {
+        "beadId": "BEAD-151",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#root-spec-immutability-scope",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.854Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-098"
+      },
+      {
+        "beadId": "BEAD-152",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#missing-modules-gate",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.856Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-099"
+      },
+      {
+        "beadId": "BEAD-153",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#extra-module-gate",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.857Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-100"
+      },
+      {
+        "beadId": "BEAD-154",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#nonfinite-module-gate",
+        "status": "green",
+        "linkedBeads": [
+          "BEAD-117",
+          "BEAD-119",
+          "BEAD-120"
+        ],
+        "createdAt": "2026-07-21T15:45:22.858Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-101"
+      },
+      {
+        "beadId": "BEAD-155",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-tracked-closure",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-161"
+        ],
+        "createdAt": "2026-07-21T22:10:34.766Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-102"
+      },
+      {
+        "beadId": "BEAD-156",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-final-schema.test.js#review6-current-run-provenance",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-162"
+        ],
+        "createdAt": "2026-07-21T22:10:34.770Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-103"
+      },
+      {
+        "beadId": "BEAD-157",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#review6-deadline-harness-semantics",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-033",
+          "BEAD-163"
+        ],
+        "createdAt": "2026-07-21T22:10:34.772Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-104"
+      },
+      {
+        "beadId": "BEAD-158",
+        "type": "test-case",
+        "artifactPath": "apps/life-call/lib/daily-preflight-poll-boundaries.test.js#review6-receipt-boundary-integrity",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-032",
+          "BEAD-164"
+        ],
+        "createdAt": "2026-07-21T22:10:34.774Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-105"
+      },
+      {
+        "beadId": "BEAD-159",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-portable-schema-discovery",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-165"
+        ],
+        "createdAt": "2026-07-21T22:10:34.776Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-106"
+      },
+      {
+        "beadId": "BEAD-160",
+        "type": "test-case",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs#review6-recursive-privacy-scope",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-035",
+          "BEAD-166"
+        ],
+        "createdAt": "2026-07-21T22:10:34.777Z",
+        "createdInPhase": "2b",
+        "externalId": "TEST-107"
+      },
+      {
+        "beadId": "BEAD-161",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-012.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-155"
+        ],
+        "createdAt": "2026-07-21T22:10:34.779Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-012"
+      },
+      {
+        "beadId": "BEAD-162",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-013.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-156"
+        ],
+        "createdAt": "2026-07-21T22:10:34.780Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-013"
+      },
+      {
+        "beadId": "BEAD-163",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-014.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-157"
+        ],
+        "createdAt": "2026-07-21T22:10:34.782Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-014"
+      },
+      {
+        "beadId": "BEAD-164",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-015.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-158"
+        ],
+        "createdAt": "2026-07-21T22:10:34.784Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-015"
+      },
+      {
+        "beadId": "BEAD-165",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-016.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-159"
+        ],
+        "createdAt": "2026-07-21T22:10:34.785Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-016"
+      },
+      {
+        "beadId": "BEAD-166",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/findings/FIND-017.json",
+        "status": "open",
+        "linkedBeads": [
+          "BEAD-160"
+        ],
+        "createdAt": "2026-07-21T22:10:34.787Z",
+        "createdInPhase": "2b",
+        "externalId": "FIND-017"
+      }
+    ]
+  },
+  "gates": {
+    "3": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-21T12:50:51.138Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "verdictPath": ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/verdict.json",
+        "iteration": 1,
+        "findingCount": 11,
+        "evaluatedCriteria": [
+          "CRIT-001",
+          "CRIT-002",
+          "CRIT-003",
+          "CRIT-004",
+          "CRIT-005"
+        ]
+      }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-21T10:26:27.049Z",
+      "reviewedBy": "human",
+      "details": {
+        "iteration": 3,
+        "findingCount": 0,
+        "verdictPath": ".vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-3/output/verdict.json",
+        "approvedBasedOn": "adversary",
+        "adversaryIteration": 3,
+        "approvalAuthority": "human/orchestrator"
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-21T10:21:38.270Z",
+      "humanApproved": true,
+      "humanVerdict": "PASS",
+      "humanApprovedAt": "2026-07-21T10:26:27.049Z"
+    }
+  },
+  "sprintCount": 0,
+  "createdAt": "2026-07-21T08:54:18.426Z",
+  "updatedAt": "2026-07-21T22:10:34.787Z"
+}

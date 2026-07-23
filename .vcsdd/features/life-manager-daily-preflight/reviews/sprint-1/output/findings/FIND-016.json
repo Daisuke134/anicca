@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "The Phase 2 schema verifier imports the VCSDD schema library from one workstation-specific cache path and ignores an explicitly supplied installed plugin root.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs",
+    "lineRange": "7-8",
+    "snippet": "The schema module is required from a fixed absolute cache location.",
+    "testName": "review6 RED: schema discovery honors an explicitly injected installed plugin root"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}

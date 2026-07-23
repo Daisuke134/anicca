@@ -1,0 +1,117 @@
+{
+  "reviewType": "implementation",
+  "featureName": "life-manager-daily-preflight",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "34eb1c8ea3db0bdc3ff4c0bb6f1b59f5699baf459b10948a01856b494d0c02ef",
+  "reviewBaseCommit": "8bac59bb0e9902fdbd3afdefd5550b9220ffecac",
+  "reviewSourceCommit": "8275d5d9fd2b0ecf79d1e52270960b3ad61f40dd",
+  "authoritativeSpecInputs": [
+    {
+      "path": ".vcsdd/features/life-manager-daily-preflight/specs/behavioral-spec.md",
+      "sections": ["all"]
+    },
+    {
+      "path": ".vcsdd/features/life-manager-daily-preflight/specs/verification-architecture.md",
+      "sections": ["all"]
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md",
+      "sections": ["9.5", "10 row 8d", "10.2", "10.3"],
+      "sourceCommit": "d5e261724",
+      "sha256": "2235b89a9a734f30539e364006af68d87285c7a310eb3d644693d7e84367782a"
+    }
+  ],
+  "artifactsToReview": {
+    "productionModules": [
+      "apps/life-call/lib/daily-preflight-collectors.js",
+      "apps/life-call/lib/daily-preflight.js",
+      "apps/life-call/lib/transport/mail-gog.js",
+      "apps/life-call/scripts/daily-preflight.js"
+    ],
+    "testSupport": [
+      "apps/life-call/lib/daily-preflight.test-support.js"
+    ],
+    "appTests": [
+      "apps/life-call/lib/daily-preflight-final-schema.test.js",
+      "apps/life-call/lib/daily-preflight-poll-boundaries.test.js",
+      "apps/life-call/lib/daily-preflight-provenance.test.js",
+      "apps/life-call/lib/daily-preflight-purity-contract.test.js"
+    ],
+    "featureVerifierHelpersAndTests": [
+      ".vcsdd/features/life-manager-daily-preflight/tests/verifier-contracts.test.mjs",
+      ".vcsdd/features/life-manager-daily-preflight/tests/verify-controlled-l3-gates.mjs",
+      ".vcsdd/features/life-manager-daily-preflight/tests/verify-final-artifact.mjs",
+      ".vcsdd/features/life-manager-daily-preflight/tests/verify-phase2-process.mjs",
+      ".vcsdd/features/life-manager-daily-preflight/tests/verify-safe-scan.mjs"
+    ],
+    "processArtifacts": [
+      ".vcsdd/features/life-manager-daily-preflight/state.json",
+      ".vcsdd/features/life-manager-daily-preflight/contracts/sprint-1.md",
+      ".vcsdd/features/life-manager-daily-preflight/reviews/contracts/sprint-1/input/manifest.json",
+      ".vcsdd/features/life-manager-daily-preflight/reviews/contracts/sprint-1/output/verdict.json"
+    ],
+    "phase2Evidence": [
+      ".vcsdd/features/life-manager-daily-preflight/evidence/daily-preflight-20260721T055121Z.json",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/daily-preflight-20260721T064624Z.json",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/original-tdd-log-provenance.md",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1-green-phase.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1-red-phase.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/baseline-focused-post.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/baseline-focused.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/baseline-full.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/coverage-verification.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/coverage.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/eval-post.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/eval.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/final-schema.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/full-final.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/git-scope.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/historical-immutability.txt",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/immutable-prior-artifacts.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/new-focused.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/phase2b-green-evidence.json",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/poll-deadline.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/prior-artifact-hashes.txt",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/production-diff.txt",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/purity-contract.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/purity-provenance.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/safe-scan.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/schema-validation.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/source-hashes.txt",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/source-snapshot.txt",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/temporal.tap",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/traceability.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/vcsdd-runtime.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/vcsdd-state.log",
+      ".vcsdd/features/life-manager-daily-preflight/evidence/sprint-1/verifier-contracts.tap"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "mandatoryFindingCategories": [
+    "test_quality",
+    "test_coverage",
+    "requirement_mismatch",
+    "security_surface",
+    "spec_gap",
+    "purity_boundary",
+    "verification_tool_mismatch"
+  ],
+  "reviewerWriteScope": [
+    ".vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/**"
+  ],
+  "prohibitedActions": [
+    "network_access",
+    "provider_access",
+    "controlled_l3_execution",
+    "final_report_creation",
+    "deployment",
+    "merge"
+  ]
+}

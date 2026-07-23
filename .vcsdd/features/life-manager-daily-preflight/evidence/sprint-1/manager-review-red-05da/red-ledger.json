@@ -1,0 +1,25 @@
+{
+  "baseHead": "05da7b34f685089b4402ef01f28ef40a1bc0eb2e",
+  "entryBundle": { "tests": 112, "pass": 97, "fail": 15 },
+  "auditedApplicationBundle": { "tests": 111, "pass": 97, "fail": 14 },
+  "verifierContractBundle": { "tests": 26, "pass": 14, "fail": 12 },
+  "fullIntendedBundle": { "tests": 137, "pass": 111, "fail": 26 },
+  "preExistingTestBeads": { "count": 75, "green": 75, "red": 0 },
+  "newRedBeads": {
+    "count": 26,
+    "beadRange": "BEAD-129..BEAD-154",
+    "externalTestRange": "TEST-076..TEST-101",
+    "status": "red"
+  },
+  "reopenedFindings": [
+    "FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006",
+    "FIND-007", "FIND-008", "FIND-009", "FIND-010", "FIND-011"
+  ],
+  "state": { "currentPhase": "2b", "sprintCount": 0 },
+  "globalActiveFeature": "fable5-config-slimdown",
+  "implementationDiffPaths": 0,
+  "vcsddStateValidator": "OK",
+  "vcsddRuntimeValidator": "OK",
+  "featureSchemaValidation": "OK",
+  "productionSideEffects": 0
+}

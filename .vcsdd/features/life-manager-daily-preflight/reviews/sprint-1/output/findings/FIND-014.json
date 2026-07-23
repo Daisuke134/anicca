@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "The runtime harness clears timers owned by the tested operation after deadline abort, manufacturing cancellation of non-cooperative JavaScript instead of exercising supported signal-aware provider and polling boundaries.",
+  "evidence": {
+    "filePath": "apps/life-call/test-support/core8d-runtime-harness.js",
+    "lineRange": "37-54",
+    "snippet": "AsyncLocalStorage tracks operation timers and the harness clears them in finally.",
+    "testName": "review6 RED: deadline harness preserves non-cooperative timer semantics after abort"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}

@@ -1,0 +1,10 @@
+4511b12e33d3a0c184891ded3764a1ea21a07d9a920c8bb886a369489451655b  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/input/manifest.json
+6445b664be36ae4682407aa4d5fbe1ec153ad1a30fc41f262f2f32e3880d7567  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-2/input/manifest.json
+caa96b92748c1cadbe96b70aadc31b8e198aabf3a446239ec8897d44748aba51  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/verdict.json
+4d641823490b5a7c2bc7303059a35ac097a14a784f264d66640440351751a4af  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-2/output/verdict.json
+ff2c39bb8b8632e620aca0bc026e47b2f169db24fb06a01dcb139580a75f10e1  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/findings/FIND-001.json
+517179ba7a18b017a782461213c6ad23efa05b853e1e5a337c79d0bf1a1e75f2  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/findings/FIND-002.json
+0eaa8a68d512ca881d38486fb571974bf9c365596ba9b44cfb8bbf28c5535ae9  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/findings/FIND-003.json
+5f9692ad4e4fdf38e7df87ff051f7079438d214114deb101f7c89359a7bd8fae  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-1/output/findings/FIND-004.json
+a97fe363aac4e356fea260f60b03d53ed3e8b97814dc10066562bc2c09d172a3  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-2/output/findings/FIND-005.json
+e4eb587921048f30fb1746bf1244aa798e343d3fe19984deedf1ccda4148c930  .vcsdd/features/life-manager-daily-preflight/reviews/spec/iteration-2/output/findings/FIND-006.json

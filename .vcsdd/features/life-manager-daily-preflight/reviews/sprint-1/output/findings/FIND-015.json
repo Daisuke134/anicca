@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "verification_readiness",
+  "category": "invariant_violation",
+  "severity": "critical",
+  "description": "The runtime harness rewrites the production send timestamp backward by one second, allowing a receipt immediately before the actual send boundary to be treated as fresh.",
+  "evidence": {
+    "filePath": "apps/life-call/test-support/core8d-runtime-harness.js",
+    "lineRange": "14-16",
+    "snippet": "The source transform replaces the production timestamp with a timestamp reduced by one second.",
+    "testName": "review6 RED: receipt boundary: one millisecond before the actual send is rejected without rewriting sentAtMs"
+  },
+  "routeToPhase": "2b",
+  "resolution": { "status": "open" }
+}

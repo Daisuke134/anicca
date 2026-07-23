@@ -78,6 +78,24 @@ function minutesFromSeconds(sec) {
   if (!Number.isFinite(sec)) return null;
   return Math.max(5, Math.round(sec / 60));
 }
+
+// Shared provider acceptance contract for the production route fallback and readiness preflight.
+// Either valid provider keeps routing operational; when both work, preserve the never-late max bias.
+function acceptRouteResults({ legacyTransit, routesDrive }) {
+  const providers = [
+    ["legacy_transit", legacyTransit],
+    ["routes_drive", routesDrive],
+  ];
+  const availableProviders = providers.filter(([, value]) => Number.isFinite(value)).map(([name]) => name);
+  const degradedProviders = providers.filter(([, value]) => !Number.isFinite(value)).map(([name]) => name);
+  const values = providers.map(([, value]) => value).filter(Number.isFinite);
+  return {
+    operational: values.length > 0,
+    minutes: values.length ? Math.max(...values) : null,
+    availableProviders,
+    degradedProviders,
+  };
+}
 function buildDriveBody(src, dst, departIso) {
   return {
     origin: { address: src }, destination: { address: dst },
@@ -148,8 +166,7 @@ async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(
       : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
     routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
   ]);
-  const cands = [transit, drive].filter((n) => n != null);
-  return cands.length ? Math.max(...cands) : null;
+  return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
 }
 
 // C3: address→geo memo — the 60s scheduler tick must NOT re-geocode the same home/event address every
@@ -406,5 +423,5 @@ function returnDecision(ev, next, home) {
 module.exports = {
   fillTravel, directionsMinutes, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
   // #71 pure helpers (unit-tested)
-  parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
+  parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
 };

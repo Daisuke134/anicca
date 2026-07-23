@@ -3,7 +3,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, directionsMinutes } = require("./travel.js");
+const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, directionsMinutes, acceptRouteResults } = require("./travel.js");
 
 // ── fetch-injection helpers for the never-late ordering tests ────────────────────────────────────
 // Route by URL: legacy Directions (transit) vs Routes API (drive). Each test supplies the two bodies.
@@ -70,6 +70,28 @@ test("clampDepartIso: past depart bumped to now+60s (Routes rejects past departu
   const now = Date.parse("2026-06-21T00:00:00Z");
   const past = Date.parse("2026-06-20T00:00:00Z");
   assert.equal(clampDepartIso(past, now), "2026-06-21T00:01:00Z");
+});
+
+test("acceptRouteResults is operational with either provider and exposes degradation", () => {
+  assert.deepEqual(acceptRouteResults({ legacyTransit: null, routesDrive: 15 }), {
+    operational: true,
+    minutes: 15,
+    availableProviders: ["routes_drive"],
+    degradedProviders: ["legacy_transit"],
+  });
+  assert.deepEqual(acceptRouteResults({ legacyTransit: 20, routesDrive: null }), {
+    operational: true,
+    minutes: 20,
+    availableProviders: ["legacy_transit"],
+    degradedProviders: ["routes_drive"],
+  });
+  assert.deepEqual(acceptRouteResults({ legacyTransit: 12, routesDrive: 45 }), {
+    operational: true,
+    minutes: 45,
+    availableProviders: ["legacy_transit", "routes_drive"],
+    degradedProviders: [],
+  });
+  assert.equal(acceptRouteResults({ legacyTransit: null, routesDrive: null }).operational, false);
 });
 
 // ── NEVER-LATE ordering (fix 1+2 from the adversarial gate) ──────────────────────────────────────

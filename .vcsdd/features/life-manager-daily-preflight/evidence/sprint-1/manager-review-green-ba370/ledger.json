@@ -1,0 +1,21 @@
+{
+  "currentPhase": "2b",
+  "sprintCount": 0,
+  "testBeads": { "green": 101, "red": 0 },
+  "findingBeads": { "resolved": 11, "open": 0 },
+  "findingTestLinks": {
+    "FIND-001": ["TEST-013", "TEST-077", "TEST-078", "TEST-079", "TEST-080", "TEST-083"],
+    "FIND-002": ["TEST-058", "TEST-086", "TEST-087", "TEST-088"],
+    "FIND-003": ["TEST-007", "TEST-008", "TEST-009", "TEST-010", "TEST-011", "TEST-012", "TEST-076", "TEST-084", "TEST-089"],
+    "FIND-004": ["TEST-007", "TEST-008", "TEST-009", "TEST-010", "TEST-011", "TEST-012", "TEST-076", "TEST-084", "TEST-085", "TEST-089"],
+    "FIND-005": ["TEST-013", "TEST-077", "TEST-078", "TEST-079", "TEST-080", "TEST-081", "TEST-082", "TEST-083", "TEST-085"],
+    "FIND-006": ["TEST-068"],
+    "FIND-007": ["TEST-065", "TEST-066", "TEST-090", "TEST-091", "TEST-093", "TEST-094", "TEST-095", "TEST-096", "TEST-097", "TEST-098", "TEST-099", "TEST-100", "TEST-101"],
+    "FIND-008": ["TEST-071", "TEST-092"],
+    "FIND-009": ["TEST-074", "TEST-090", "TEST-091", "TEST-096", "TEST-097", "TEST-098", "TEST-099", "TEST-100", "TEST-101"],
+    "FIND-010": ["TEST-065", "TEST-066", "TEST-068", "TEST-071", "TEST-074", "TEST-090", "TEST-091", "TEST-094", "TEST-095", "TEST-096", "TEST-097", "TEST-098", "TEST-099", "TEST-100", "TEST-101"],
+    "FIND-011": ["TEST-013", "TEST-077", "TEST-078", "TEST-079", "TEST-080", "TEST-083"]
+  },
+  "bidirectional": true,
+  "api": "installed VCSDD vcsdd-traceability updateBeadStatus/linkBeads"
+}
