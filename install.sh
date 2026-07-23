@@ -170,12 +170,12 @@ cat <<EOM
   its OWN compute via ClawRouter/BlockRun (USDC x402) from its OWN wallet — like
   Franklin. You provide only this device (shelter); Life Manager buys its own food.
 
-  1. Start the self-pay proxy + the anicca loop (one command, from the repo root):
+  1. Start the self-pay proxy + the Life Manager loop (one command, from the repo root):
        cd "$REPO_ROOT/runtime/compute-proxy" && npm install && cd "$REPO_ROOT"  # one-time
        ./start-local.sh node runtime/loop/index.mjs
      This starts the self-pay compute proxy on http://127.0.0.1:8402/v1 (signs
      every inference in USDC from a self-owned wallet; empty wallet ⇒ free model,
-     \$0) AND the anicca loop (runtime/loop/) which, each wake, asks ClawRouter's
+     \$0) AND the Life Manager loop (runtime/loop/) which, each wake, asks ClawRouter's
      'auto' router, runs a tool (e.g. the earn skill), and appends to
      $ANICCA_HOME/state/ledger.jsonl. The report slot POSTs signed telemetry to
      https://aniccaai.com so you show on /dashboard.
@@ -194,4 +194,4 @@ cat <<EOM
   Repo: https://github.com/Daisuke134/life-manager
 EOM
 echo
-green "anicca install complete."
+green "Life Manager install complete."
