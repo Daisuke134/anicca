@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { openThe402Inbox } from './lib/the402-inbox.mjs';
+import { runThe402BidderOnce } from './lib/the402-bidder.mjs';
 import { runThe402WorkerOnce } from './lib/the402-worker.mjs';
 import { the402ServiceProfile } from './lib/the402-service-profiles.mjs';
 
@@ -137,18 +138,34 @@ process.on('SIGINT', () => { stopping = true; });
 process.on('SIGTERM', () => { stopping = true; });
 
 while (!stopping) {
-  const result = await runThe402WorkerOnce({
+  const jobResult = await runThe402WorkerOnce({
     inbox,
     apiKey: credentials.api_key,
     processJob: processResearchJob,
   });
-  if (result.worked) {
+  if (jobResult.worked) {
     process.stdout.write(`${JSON.stringify({
       worked: true,
-      eventId: result.eventId,
-      status: result.status,
-      attempt: result.attempt,
-      errorCode: result.errorCode || null,
+      eventId: jobResult.eventId,
+      status: jobResult.status,
+      attempt: jobResult.attempt,
+      errorCode: jobResult.errorCode || null,
+    })}\n`);
+  }
+  const bidResult = await runThe402BidderOnce({
+    inbox,
+    apiKey: credentials.api_key,
+    researchServiceId,
+    explainerServiceId,
+  });
+  if (bidResult.worked) {
+    process.stdout.write(`${JSON.stringify({
+      worked: true,
+      eventId: bidResult.eventId,
+      status: bidResult.status,
+      postingId: bidResult.postingId || null,
+      bidId: bidResult.bidId || null,
+      errorCode: bidResult.errorCode || null,
     })}\n`);
   }
   await delay(POLL_MS);
