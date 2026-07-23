@@ -12,16 +12,18 @@ So: B0 storefront work drives the DEFAULT context via this helper; B1/B2 keep us
 A tab created with Target.createTarget and NO browserContextId lands in the default context (same
 primitive session_vault.py keepalive already uses to reach the authenticated session).
 
-    python3 cdp_default_tab.py open <url>        # -> {"ok":true,"target_id":...,"ws":...}
-    python3 cdp_default_tab.py close <target_id> # close a tab THIS helper opened (self-cleanup)
+    python3 cdp_default_tab.py open <url> --owner gig-pass
+    python3 cdp_default_tab.py close <target_id> --owner gig-pass
 """
+import argparse
 import asyncio
 import json
 import os
 import sys
 import urllib.request
+from urllib.parse import urlparse
 
-CDP = "http://127.0.0.1:9222"
+import target_ownership
 
 try:
     import websockets
@@ -30,9 +32,20 @@ except ImportError:
     sys.exit(1)
 
 
+def _cdp_base():
+    return os.environ.get("CLOAK_CDP_BASE_URL", "http://127.0.0.1:9222").rstrip("/")
+
+
 def _browser_ws():
-    d = json.loads(urllib.request.urlopen(f"{CDP}/json/version", timeout=8).read())
+    d = json.loads(
+        urllib.request.urlopen(f"{_cdp_base()}/json/version", timeout=8).read()
+    )
     return d["webSocketDebuggerUrl"]
+
+
+def _page_ws(target_id):
+    parsed = urlparse(_cdp_base())
+    return f"ws://{parsed.netloc}/devtools/page/{target_id}"
 
 
 async def _call(method, params=None):
@@ -46,23 +59,27 @@ async def _call(method, params=None):
                 return msg.get("result", {})
 
 
-def open_tab(url, background=False):
+def open_tab(url, background=False, owner=None):
+    owner = target_ownership.require_owner(owner)
     # No browserContextId => the default (persistent, authenticated) context.
     params = {"url": url}
     if background:
         params["background"] = background
     res = asyncio.run(_call("Target.createTarget", params))
     tid = res["targetId"]
+    target_ownership.claim_target(tid, owner)
     return {
         "ok": True,
         "target_id": tid,
-        "ws": f"ws://127.0.0.1:9222/devtools/page/{tid}",
+        "ws": _page_ws(tid),
         "context": "default",
         "background": background,
+        "owner": owner,
     }
 
 
-async def _serve_hidden_tab(url):
+async def _serve_hidden_tab(url, owner=None):
+    owner = target_ownership.require_owner(owner)
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         await ws.send(json.dumps({
             "id": 1,
@@ -76,36 +93,62 @@ async def _serve_hidden_tab(url):
                     raise RuntimeError(f"Target.createTarget: {msg['error']}")
                 target_id = msg["result"]["targetId"]
                 break
+        target_ownership.claim_target(target_id, owner)
         print(json.dumps({
             "ok": True,
             "target_id": target_id,
-            "ws": f"ws://127.0.0.1:9222/devtools/page/{target_id}",
+            "ws": _page_ws(target_id),
             "context": "default",
             "hidden": True,
+            "owner": owner,
         }), flush=True)
         # CDP hidden targets live only for the session that created them. Keep
         # this browser connection open until the collector closes our stdin.
-        await asyncio.get_running_loop().run_in_executor(None, sys.stdin.buffer.read)
+        try:
+            await asyncio.get_running_loop().run_in_executor(
+                None, sys.stdin.buffer.read
+            )
+        finally:
+            target_ownership.release_target(target_id, owner)
 
 
-def close_tab(target_id):
+def close_tab(target_id, owner=None):
+    owner = target_ownership.require_owner(owner)
+    if not target_ownership.owns_target(target_id, owner):
+        actual_owner = target_ownership.owner_for_target(target_id)
+        raise PermissionError(
+            f"target {target_id} is owned by {actual_owner or 'nobody'}, not {owner}"
+        )
     asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
-    return {"ok": True, "closed": target_id}
+    target_ownership.release_target(target_id, owner)
+    return {"ok": True, "closed": target_id, "owner": owner}
 
 
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "open"
-    arg = sys.argv[2] if len(sys.argv) > 2 else None
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("open", "serve-hidden", "close"))
+    parser.add_argument("value", nargs="?")
+    parser.add_argument("--owner", default=os.environ.get("CLOAK_BROWSER_OWNER"))
+    parser.add_argument("--background", action="store_true")
+    args = parser.parse_args()
     try:
-        if cmd == "open":
-            out = open_tab(arg or "about:blank", background="--background" in sys.argv)
-        elif cmd == "serve-hidden":
-            asyncio.run(_serve_hidden_tab(arg or "about:blank"))
+        if args.command == "open":
+            out = open_tab(
+                args.value or "about:blank",
+                background=args.background,
+                owner=args.owner,
+            )
+        elif args.command == "serve-hidden":
+            asyncio.run(
+                _serve_hidden_tab(args.value or "about:blank", owner=args.owner)
+            )
             sys.exit(0)
-        elif cmd == "close":
-            out = close_tab(arg) if arg else {"ok": False, "reason": "close needs a target_id"}
         else:
-            out = {"ok": False, "reason": f"unknown command {cmd}"}
+            out = (
+                close_tab(args.value, owner=args.owner)
+                if args.value
+                else {"ok": False, "reason": "close needs a target_id"}
+            )
     except Exception as e:
         out = {"ok": False, "reason": f"{type(e).__name__}: {e}"}
     print(json.dumps(out, ensure_ascii=False))
