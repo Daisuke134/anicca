@@ -140,7 +140,7 @@ const FINAL_SERIALIZED_ROOT_KEYS = new Set(["schema", "version", "runStatus", "g
   "passedDependencyCount", "failedDependencyCount", "sourceSnapshotRef", "runRef", "dependencies", "effects"]);
 const FINAL_SERIALIZED_DEPENDENCY_KEYS = new Set(["dependency", "status", "fresh", "checkedAt", "evidenceRef"]);
 const RUN_OBSERVATION = Symbol("daily-preflight-run-observation");
-const RUN_PROVENANCE = Symbol("daily-preflight-run-provenance");
+const CURRENT_RUN_REPORTS = new WeakSet();
 
 function exactKeys(value, allowed) {
   return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(key => allowed.has(key));
@@ -178,18 +178,15 @@ function validateSerializedFinalReportShape(input) {
   return input;
 }
 
-function validateSerializedFinalReport(input, provenance) {
+function validateSerializedFinalReport(input) {
   validateSerializedFinalReportShape(input);
-  if (!provenance || provenance.report !== input || provenance.runRef !== input.runRef || provenance.consumed === true) {
-    throw new Error("final_report_invalid");
-  }
-  provenance.consumed = true;
+  if (!CURRENT_RUN_REPORTS.delete(input)) throw new Error("final_report_invalid");
   return input;
 }
 
 function validateAndBuildFinalReport(input) {
   if (input && input.runRef !== undefined && input.runCorrelation === undefined) {
-    return validateSerializedFinalReport(input, input[RUN_PROVENANCE]);
+    return validateSerializedFinalReport(input);
   }
   if (!exactKeys(input, FINAL_ROOT_KEYS) || !/^sha256:[a-f0-9]{64}$/.test(String(input.sourceSnapshotRef || "")) ||
       typeof input.runCorrelation !== "string" || !input.runCorrelation || !Number.isFinite(input.runStartedAtMs) ||
@@ -228,9 +225,8 @@ function validateAndBuildFinalReport(input) {
   const currentRunBinding = { runRef: hashedRef(runCorrelation) };
   const runRef = currentRunBinding.runRef;
   const report = { ...expected, sourceSnapshotRef: input.sourceSnapshotRef, runRef, dependencies, effects: { ...effects } };
-  const provenance = { report, runRef, consumed: false };
-  Object.defineProperty(report, RUN_PROVENANCE, { value: provenance, enumerable: false });
-  validateSerializedFinalReport(report, provenance);
+  CURRENT_RUN_REPORTS.add(report);
+  validateSerializedFinalReport(report);
   return Object.freeze(report);
 }
 
