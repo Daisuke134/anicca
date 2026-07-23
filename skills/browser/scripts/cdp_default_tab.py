@@ -62,6 +62,32 @@ def open_tab(url, background=False):
     }
 
 
+async def _serve_hidden_tab(url):
+    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+        await ws.send(json.dumps({
+            "id": 1,
+            "method": "Target.createTarget",
+            "params": {"url": url, "hidden": True, "background": True},
+        }))
+        while True:
+            msg = json.loads(await ws.recv())
+            if msg.get("id") == 1:
+                if "error" in msg:
+                    raise RuntimeError(f"Target.createTarget: {msg['error']}")
+                target_id = msg["result"]["targetId"]
+                break
+        print(json.dumps({
+            "ok": True,
+            "target_id": target_id,
+            "ws": f"ws://127.0.0.1:9222/devtools/page/{target_id}",
+            "context": "default",
+            "hidden": True,
+        }), flush=True)
+        # CDP hidden targets live only for the session that created them. Keep
+        # this browser connection open until the collector closes our stdin.
+        await asyncio.get_running_loop().run_in_executor(None, sys.stdin.buffer.read)
+
+
 def close_tab(target_id):
     asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
     return {"ok": True, "closed": target_id}
@@ -73,6 +99,9 @@ if __name__ == "__main__":
     try:
         if cmd == "open":
             out = open_tab(arg or "about:blank", background="--background" in sys.argv)
+        elif cmd == "serve-hidden":
+            asyncio.run(_serve_hidden_tab(arg or "about:blank"))
+            sys.exit(0)
         elif cmd == "close":
             out = close_tab(arg) if arg else {"ok": False, "reason": "close needs a target_id"}
         else:
