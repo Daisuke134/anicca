@@ -17,6 +17,7 @@ const AUDITOR_SH = path.join(DIR, 'auditor.sh');
 const CDP_GUARD_SH = path.join(DIR, 'scripts', 'cdp_daily_driver_guard.sh');
 const RUNBOOK_MD = path.join(DIR, 'GIG_PASS_RUNBOOK.md');
 const CDP_KEEPALIVE_PY = path.join(DIR, 'scripts', 'cdp_daily_driver_keepalive.py');
+const ENSURE_BROWSER_SH = path.join(DIR, '..', '..', 'browser', 'ensure_browser.sh');
 
 test('gig_reality_verify.sh exists', () => {
   assert.ok(fs.existsSync(VERIFY_SH), 'gig_reality_verify.sh missing');
@@ -95,6 +96,13 @@ test('cdp guard: recovery launches a persistent CloakBrowser context owner', () 
   const owner = fs.readFileSync(CDP_KEEPALIVE_PY, 'utf8');
   assert.ok(owner.includes('while not stopping'), 'persistent context owner does not remain alive');
   assert.ok(src.includes('launchctl submit'), 'context owner is an orphaned background child instead of a managed service');
+});
+
+test('daily browser entrypoint: dead-browser recovery delegates to the persistent owner guard', () => {
+  const src = fs.readFileSync(ENSURE_BROWSER_SH, 'utf8');
+  assert.ok(src.includes('cdp_daily_driver_guard.sh'), 'daily entrypoint bypasses the persistent owner guard');
+  assert.ok(src.includes('cdp_guard_ensure_healthy'), 'daily entrypoint does not invoke managed recovery');
+  assert.ok(!src.includes('nohup "$BIN"'), 'daily entrypoint still launches an unmanaged raw Chromium process');
 });
 
 test('cdp guard: finds the Chromium root even when a persistent owner is its parent', () => {
