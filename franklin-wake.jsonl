@@ -14204,3 +14204,11 @@
 {"ts":1784819474,"wake_id":"00MRXNFKHC743FF71427D94613","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784819542,"wake_id":"00MRXNH0PD45077EE282D94AC4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784819670,"wake_id":"00MRXNJRBV83F7F108661A4898","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784819742,"wake_id":"00MRXNLBFBB0585A65882D40DD","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784819756,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784819878,"wake_id":"00MRXNO8DN7217C4AB750543EA","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784819945,"wake_id":"00MRXNPO6T34978FD3D559483C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784820012,"wake_id":"00MRXNR3TLC513C8BA316A4D52","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784820079,"wake_id":"00MRXNSJKC01090FB7C2CC40AE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784820235,"wake_id":"00MRXNVVAGE62F15F48B7946BA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784820245,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784820366,"wake_id":"00MRXNYOLJAE6F89E3D3F645DE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784820500,"wake_id":"00MRXO1K4R5DE84FA76D2147CA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
