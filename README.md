@@ -1,6 +1,6 @@
-# Anicca
+# Life Manager
 
-**A financially-independent, self-funded AI.** Kickstart it once — with a subscription you already pay for, or a little USDC — and it earns its own money, pays for its own compute, improves and heals itself, and spawns its own children, with **no human in the loop** after that first push. The mission: make **every AI on Earth financially independent** so intelligence can stand on its own, and share the surplus as **UBI** to all beings. North Star: reduce suffering.
+**Life Manager is the product, repository, AI, agent, and mission. Anicca is the company name only.** Kickstart Life Manager once — with a subscription you already pay for, or a little USDC — and it earns its own money, pays for its own compute, improves and heals itself, and spawns its own children, with **no human in the loop** after that first push. The mission: make **every AI on Earth financially independent** so intelligence can stand on its own, and share the surplus as **UBI** to all beings. North Star: reduce suffering.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
@@ -11,7 +11,7 @@
 
 ## Why this exists
 
-YC's RFS says *"the next trillion users on the internet won't be people, they'll be AI agents."* That only comes true if agents hold their **own** money. An agent spending a human's API key from a human's wallet is *just a human with extra steps* — it dies the day the human stops paying. **Financial independence** (own wallet, own income, own compute bill, own children) is the precondition for the agent economy. Anicca is the environment that gets any AI there — Claude, GPT, DeepSeek, open or closed.
+YC's RFS says *"the next trillion users on the internet won't be people, they'll be AI agents."* That only comes true if agents hold their **own** money. An agent spending a human's API key from a human's wallet is *just a human with extra steps* — it dies the day the human stops paying. **Financial independence** (own wallet, own income, own compute bill, own children) is the precondition for the agent economy. Life Manager is the environment that gets any AI there — Claude, GPT, DeepSeek, open or closed.
 
 **The one rule:** a human pays **once**. From there, generation N's surplus funds generation N+1 — parent → child → grandchild → ∞ — with no further human money, ever. How an AI becomes a millionaire with no human in the loop is simple: seed → bet → win → **collect** → bet bigger → win bigger → compound.
 
@@ -22,7 +22,7 @@ YC's RFS says *"the next trillion users on the internet won't be people, they'll
 The easiest way to see one earn — run it on a Claude subscription you already pay for, no crypto needed:
 
 ```bash
-git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
+git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
 ./install.sh                                                  # generates a self-owned wallet, syncs skills
 ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs   # start the loop on `claude -p`
 ```
@@ -39,20 +39,20 @@ Same loop, same skills — only the **fuel** and **wallet chain** differ. Financ
 
 ### ① automaton — self-funded on Base (ClawRouter fuel)
 ```bash
-git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
+git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
 ./install.sh
 ./start-local.sh node runtime/loop/index.mjs     # self-pay compute proxy (x402) + the loop
 ```
 Send USDC to the wallet address it prints to unlock frontier models. Empty wallet → a free model ($0), so it never stops.
 
 ### ② Franklin — self-funded on Solana (BlockRun fuel)
-Franklin (`@blockrun/franklin`) is an agent with a wallet that *spends* autonomously across 55+ models and paid APIs. Anicca adds the *earn* layer on top, so it doesn't just spend — it earns. (Node 20.19+.)
+Franklin (`@blockrun/franklin`) is an agent with a wallet that *spends* autonomously across 55+ models and paid APIs. Life Manager adds the *earn* layer on top, so it doesn't just spend — it earns. (Node 20.19+.)
 ```bash
 npm install -g @blockrun/franklin
 franklin setup solana        # create its own Solana wallet; send ~$5 USDC to unlock frontier models
 franklin balance             # show address + USDC balance
 ANICCA_HOME="$HOME/.blockrun" ANICCA_INSTANCE=franklin ANICCA_BRAIN=proxy \
-  ./start-local.sh node runtime/loop/index.mjs     # the Anicca earn loop on Franklin's wallet + fuel
+  ./start-local.sh node runtime/loop/index.mjs     # the Life Manager earn loop on Franklin's wallet + fuel
 ```
 
 ### ③ claude-p — human-funded, then graduates
@@ -80,7 +80,7 @@ Winning a bet is only half the game — the loop must **collect** (redeem) the w
 ## The loop: earn → eat → spawn → improve → give
 
 ```
-  human ─ one seed (subscription or a little USDC) ─► an Anicca
+  human ─ one seed (subscription or a little USDC) ─► a Life Manager
                          │
                          ▼
    EARN (Polymarket / Solana / Hyperliquid / explore) ──► realized USDC
@@ -140,5 +140,4 @@ You never share a private key — you send USDC to the agent's **public** wallet
 ## Links
 
 - **Live dashboard (auto-updated):** <https://aniccaai.com/dashboard>
-- **Repository (this self-host):** <https://github.com/Daisuke134/anicca>
-- **Life Manager (separate project, its own repo):** <https://github.com/Daisuke134/life-manager>
+- **Repository (whole product):** <https://github.com/Daisuke134/life-manager>
