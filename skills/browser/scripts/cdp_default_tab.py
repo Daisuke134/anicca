@@ -46,11 +46,20 @@ async def _call(method, params=None):
                 return msg.get("result", {})
 
 
-def open_tab(url):
+def open_tab(url, background=False):
     # No browserContextId => the default (persistent, authenticated) context.
-    res = asyncio.run(_call("Target.createTarget", {"url": url}))
+    params = {"url": url}
+    if background:
+        params["background"] = background
+    res = asyncio.run(_call("Target.createTarget", params))
     tid = res["targetId"]
-    return {"ok": True, "target_id": tid, "ws": f"ws://127.0.0.1:9222/devtools/page/{tid}", "context": "default"}
+    return {
+        "ok": True,
+        "target_id": tid,
+        "ws": f"ws://127.0.0.1:9222/devtools/page/{tid}",
+        "context": "default",
+        "background": background,
+    }
 
 
 def close_tab(target_id):
@@ -63,7 +72,7 @@ if __name__ == "__main__":
     arg = sys.argv[2] if len(sys.argv) > 2 else None
     try:
         if cmd == "open":
-            out = open_tab(arg or "about:blank")
+            out = open_tab(arg or "about:blank", background="--background" in sys.argv)
         elif cmd == "close":
             out = close_tab(arg) if arg else {"ok": False, "reason": "close needs a target_id"}
         else:

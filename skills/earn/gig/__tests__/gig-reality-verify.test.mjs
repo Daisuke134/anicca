@@ -18,6 +18,7 @@ const CDP_GUARD_SH = path.join(DIR, 'scripts', 'cdp_daily_driver_guard.sh');
 const RUNBOOK_MD = path.join(DIR, 'GIG_PASS_RUNBOOK.md');
 const CDP_KEEPALIVE_PY = path.join(DIR, 'scripts', 'cdp_daily_driver_keepalive.py');
 const ENSURE_BROWSER_SH = path.join(DIR, '..', '..', 'browser', 'ensure_browser.sh');
+const CDP_DEFAULT_TAB_PY = path.join(DIR, '..', '..', 'browser', 'scripts', 'cdp_default_tab.py');
 
 test('gig_reality_verify.sh exists', () => {
   assert.ok(fs.existsSync(VERIFY_SH), 'gig_reality_verify.sh missing');
@@ -103,6 +104,13 @@ test('daily browser entrypoint: dead-browser recovery delegates to the persisten
   assert.ok(src.includes('cdp_daily_driver_guard.sh'), 'daily entrypoint bypasses the persistent owner guard');
   assert.ok(src.includes('cdp_guard_ensure_healthy'), 'daily entrypoint does not invoke managed recovery');
   assert.ok(!src.includes('nohup "$BIN"'), 'daily entrypoint still launches an unmanaged raw Chromium process');
+});
+
+test('default-context helper: background mode does not focus every automation tab', () => {
+  const src = fs.readFileSync(CDP_DEFAULT_TAB_PY, 'utf8');
+  assert.ok(src.includes('--background'), 'helper has no background-tab mode');
+  assert.match(src, /["']background["']\s*:\s*background/,
+    'background mode is not passed to Target.createTarget');
 });
 
 test('cdp guard: finds the Chromium root even when a persistent owner is its parent', () => {
