@@ -8,7 +8,11 @@
 
 **Tech Stack:** Node.js CommonJS, `node:test`, direct request/response fixtures, emitted panel JavaScript executed with `vm`, Playwright for authenticated mobile/desktop evidence.
 
-**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` is read-only. Its v5 closure package defines the three unresolved findings and deterministic totals. Do not create or modify VCSDD artifacts.
+**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` is read-only. Its v5 closure package identifies the three unresolved findings and intended deterministic totals, but it is not an executable source of truth. Fresh review found that 365 retained negatives and both positive compatibility cases lack per-case API/browser expectations. Do not copy that generator unchanged, and do not create or modify VCSDD artifacts.
+
+**Mandatory correction to historical v5:** Every generated case with `api-production` must contain an exact `apiExpected` assertion. Every case with `emitted-browser` must also contain an exact `browserExpected` assertion tied to the captured API response. Both positive compatibility cases require the same expectations. Generation must abort when any expectation is missing. Reported execution totals are derived only from assertions that passed after the real API/browser call; layer metadata alone never increments a counter.
+
+The historical package also claims immutable v1–v4 coverage while hashing only two v4 files. Do not repeat that claim. The new ordinary-repository contract must contain every source definition needed to generate its cases, record its own deterministic source/output hashes in test output, and have no runtime or test dependency on the dirty historical worktree.
 
 **External security basis:**
 
@@ -30,7 +34,7 @@
 
 **Step 1: Write the failing contract test**
 
-Encode the retained hostile path/variant matrix, the 19-value synthetic secret corpus, the nine presentation channels, and the two positive `call_language=null` compatibility cases. Assert deterministic generation and these derived totals:
+Encode the retained hostile path/variant matrix, the 19-value synthetic secret corpus, the nine presentation channels, and the two positive `call_language=null` compatibility cases. Give every API/browser layer an exact expected status/body/field or DOM/fallback outcome. Assert that zero API/browser expectations are missing, deterministic generation holds, and these derived totals are reached only after successful assertions:
 
 - 536 negative cases over 139 paths
 - 536 policy-unit executions
@@ -38,7 +42,7 @@ Encode the retained hostile path/variant matrix, the 19-value synthetic secret c
 - 422 emitted-browser executions
 - 2/2/2 positive compatibility executions
 
-Each API count increments only after a real `handlePanelApiRequest` response has been captured and asserted. Each browser count increments only after `loadPanelSection` consumes that captured response. Control-center cases must execute the exported real `buildControlCenter`; they must not use `buildControlCenterImpl`.
+Each API count increments only after a real `handlePanelApiRequest` response has been captured and its case-specific `apiExpected` assertion passes. Each browser count increments only after `loadPanelSection` consumes that captured response and its case-specific `browserExpected` assertion passes. Control-center cases must execute the exported real `buildControlCenter`; they must not use `buildControlCenterImpl`.
 
 **Step 2: Run RED**
 
