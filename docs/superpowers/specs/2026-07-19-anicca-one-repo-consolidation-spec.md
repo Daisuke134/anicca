@@ -500,7 +500,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 10i | BRAIN-c | personalized action E2E: 現userのreal contextから1件を選び、web/emailのみで実行し、calendar/TGへ事後報告。不可なら正直報告 | 実候補根拠 + 実web/email side-effectまたは正直な実TG + gcal event。不要なapproval Q 0件 | pending |
 | 11a | PHY-a | 未通院・未ケア検知 rule: calendar/context/本人intent履歴から歯科・散髪等を検知。固定周期を全員へ押し付けず、medical diagnosisはしない。eval `phy-cases.jsonl` 10+ cases | eval 100% + 実 calendar/context で検知1件 | pending |
 | 11b | PHY-b | 候補選定: 生活圏（home/work）+ 履歴の「いつもの店」優先。web 予約可否の判定込み | 実データで候補3件 + 予約経路の判定実測 | pending |
-| 11c | PHY-c | 予約実行: web フォーム or メール（§9.5 電話禁止）。不可なら候補提示 + 正直報告。名乗り = "Life Manager (AI secretary, acting for <user>)"（§10.1 U8） | 実予約1件 or 正直報告の実 TG | pending |
+| 11c | PHY-c | 予約実行: VPS/cloud常駐browserのwebフォーム or メール（§9.5 電話禁止）。local Mac/browserを定常runtimeにしない。不可なら候補提示 + 正直報告。名乗り = "Life Manager (AI secretary, acting for <user>)"（§10.1 U8） | cloud/VPS browserまたはemail経由の実予約1件 + provider readback、または正直報告の実TG。CAPTCHA/OAuth/3DSは本人handoff後に同じcloud jobが再開し、local session継続依存0 | pending |
 | 11d | PHY-d | 事後報告 + calendar 登録 + 当日 call 連動（§9.11 PHYSICAL copy） | §9.11 copy での実 TG + gcal 実 event | pending |
 | 12a | MEN-a | trigger 判定 engine: schedule+location+直前 event から「効く瞬間」を判定。固定時刻禁止・3通/日上限。eval `men-cases.jsonl` 10+ cases | eval 100%（上限・抑制ケース含む） | pending |
 | 12b | MEN-b | 文面生成: aniccaios affirmation 資産を種に LLM が状況別生成（§9.11 MENTAL 例文の型） | 生成文が §9.11 原則（一方向・絵文字1個まで）を満たす sample 10本 | pending |
@@ -513,6 +513,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
 - **実行phase = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。現在の実行cursorは② `8i`。前phaseのL3が無い状態で次phaseをprodへmergeしない。`8e`/`8f`は明示resume条件待ちのためbuildを止めないが、両L3をcloseするまでPhase 1全体をdoneにしない。
+- **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
   1. **Dais 依存は1窓に束ねる**: Dais にやってもらうのは「①T-5 call に1回出る(約1分) ②その後10分放置 ③（必要なら）Gmail scope の OAuth 1クリック」だけ。事前に TG で時刻を1回通知し、その窓以外で Dais を呼ばない。
