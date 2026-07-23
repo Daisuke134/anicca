@@ -226,7 +226,7 @@ async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toNam
     start_datetime: isoNaiveUTC(leaveMs),
     event_duration_hour: hours, event_duration_minutes: Math.min(59, minutes),
     calendar_id: "primary", timezone: "UTC", location: dstAddr,
-    description: "Auto-inserted by Anicca Life Manager — adjust if the route is wrong.",
+    description: "Auto-inserted by Life Manager — adjust if the route is wrong.",
   });
   return !!(j && j.successful);
 }

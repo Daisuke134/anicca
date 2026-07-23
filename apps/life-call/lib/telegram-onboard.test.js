@@ -7,6 +7,7 @@ const {
   computeStage, stageMessage, isNativeStage, normalizePhone, telegramProfileName,
   applyTelegramProfileName, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
 } = require("./telegram-onboard.js");
+const { startReply } = require("./telegram.js");
 
 const full = {
   uid: "u1", telegram_chat_id: "1", name: "Dais", calendar_provider: "composio_gcal",
@@ -23,6 +24,12 @@ test("Gmail skipped → done", () => assert.equal(computeStage({ ...full, gmail_
 test("order is strict: phone and pay precede Gmail", () => {
   assert.equal(computeStage({ ...full, phone: null, paid: true, gmail_account_id: null }), "phone");
   assert.equal(computeStage({ ...full, paid: false, gmail_account_id: null }), "pay");
+});
+
+test("Telegram /start identifies the product only as Life Manager", () => {
+  const reply = startReply("1", "https://life.example");
+  assert.match(reply.text, /^👋 <b>Life Manager<\/b>/);
+  assert.doesNotMatch(reply.text, /\bAnicca\b/i);
 });
 
 test("telegramProfileName: derives name from first_name + last_name", () => {

@@ -98,7 +98,7 @@ function onboardLink(chatId, base) {
 function startReply(chatId, base) {
   return {
     text:
-      "👋 <b>Anicca Life Manager</b>\n\n" +
+      "👋 <b>Life Manager</b>\n\n" +
       "I keep you on time — I call you before you must leave, fill in travel time, ask where events are, " +
       "and handle late-notices. Set up takes a minute: connect Google Calendar, add your phone, subscribe.\n\n" +
       "Tap below to start 👇",

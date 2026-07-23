@@ -94,6 +94,10 @@ test("LM-33a negative: /panel without a session returns human login HTML", async
     const response = await fetch(`${base}/panel`);
     assert.equal(response.status, 200);
     assert.match(response.headers.get("content-type"), /text\/html/);
+    const html = await response.text();
+    assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], "Life Manager sign in");
+    assert.equal(html.match(/<main class="card" data-panel-login><p>([^<]+)<\/p>/)?.[1], "Life Manager");
+    assert.doesNotMatch(html, /\bAnicca\b/i);
   });
 });
 
@@ -121,6 +125,8 @@ test("PANEL-1: Telegram /panel sends one canonical web_app button with zero toke
   assert.equal(sent.length, 1);
   assert.equal(sent[0][0], "telegram-token");
   assert.equal(sent[0][1], "123");
+  assert.equal(sent[0][2], "Open your personal Life Manager panel.");
+  assert.doesNotMatch(sent[0][2], /\bAnicca\b/i);
   assert.doesNotMatch(sent[0][2], /expires|temporary|token|\?t=/i);
   const button = sent[0][3].reply_markup.inline_keyboard[0][0];
   assert.deepEqual(button.web_app, { url: "https://life.example/panel" });

@@ -228,6 +228,8 @@ test("[INTEGRATION][FIND-002](a) last event of day → fillTravel creates a retu
   assert.ok(returnBlock, `expected a return [Travel] block starting at ev.endMs (${new Date(evEndMs).toISOString()}), but none found among: ${JSON.stringify(cal._created.map(c => ({ s: c.summary, t: c.start_datetime })))}`);
   // Return block goes venue → home.
   assert.ok(returnBlock.summary.includes(VENUE.slice(0, 5)), `return block summary should reference venue: ${returnBlock.summary}`);
+  assert.equal(returnBlock.description, "Auto-inserted by Life Manager — adjust if the route is wrong.");
+  assert.doesNotMatch(returnBlock.description, /\bAnicca\b/i);
 });
 
 // ── Integration (b): back-to-back ≤90min real venue → NO return block ─────────────────────────
