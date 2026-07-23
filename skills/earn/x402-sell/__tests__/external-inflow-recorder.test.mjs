@@ -9,6 +9,7 @@ import {
   TRANSFER_TOPIC,
   appendUniqueExternalInflows,
   collectVerifiedExternalInflows,
+  collectVerifiedSaleCandidates,
   walletLedgerPath,
 } from "../lib/external-inflow-recorder.mjs";
 
@@ -39,10 +40,11 @@ function transferLog({
   };
 }
 
-function rpcFixture({ candidates, receipts, transactions, finalized = "0x64" }) {
+function rpcFixture({ candidates, receipts, transactions, finalized = "0x64", chainId = "0x2105" }) {
   const calls = [];
   const rpcCall = async (method, params) => {
     calls.push([method, params]);
+    if (method === "eth_chainId") return chainId;
     if (method === "eth_getBlockByNumber") return { number: finalized };
     if (method === "eth_getLogs") return candidates;
     if (method === "eth_getTransactionReceipt") return receipts.get(String(params[0]).toLowerCase()) ?? null;
@@ -51,6 +53,62 @@ function rpcFixture({ candidates, receipts, transactions, finalized = "0x64" }) 
   };
   return { calls, rpcCall };
 }
+
+test("verifies normalized sale candidates against Base finality and exact receipt amount", async () => {
+  const tx = hash("a");
+  const wrongAmountTx = hash("b");
+  const receiptLog = transferLog({ tx, units: 50_000n });
+  const wrongAmountLog = transferLog({ tx: wrongAmountTx, units: 49_999n });
+  const receipts = new Map([
+    [tx, { transactionHash: tx, status: "0x1", blockNumber: "0x63", logs: [receiptLog] }],
+    [wrongAmountTx, { transactionHash: wrongAmountTx, status: "0x1", blockNumber: "0x63", logs: [wrongAmountLog] }],
+  ]);
+  const transactions = new Map([
+    [tx, { hash: tx, from: FACILITATOR }],
+    [wrongAmountTx, { hash: wrongAmountTx, from: FACILITATOR }],
+  ]);
+  const { rpcCall, calls } = rpcFixture({ candidates: [], receipts, transactions });
+  const candidates = [
+    {
+      source: "the402", source_sale_id: "the402:set_1", offer_id: "svc_1",
+      tx, expected_pay_to: PAY_TO, expected_usdc_atomic: "50000",
+      observed_at: "2026-07-23T02:00:00.000Z",
+    },
+    {
+      source: "clawmerchants", source_sale_id: "clawmerchants:cm_1", offer_id: "asset_1",
+      tx: wrongAmountTx, expected_pay_to: PAY_TO, expected_usdc_atomic: "50000",
+      observed_at: "2026-07-23T02:01:00.000Z",
+    },
+  ];
+
+  const result = await collectVerifiedSaleCandidates({
+    candidates,
+    rpcCall,
+    selfWallets: [SELF],
+    allowedPayTos: [PAY_TO],
+  });
+
+  assert.equal(result.chainId, 8453);
+  assert.equal(result.finalizedBlock, 100);
+  assert.deepEqual(result.rows, [{
+    source: "the402",
+    source_sale_id: "the402:set_1",
+    offer_id: "svc_1",
+    tx,
+    block: 99,
+    from: EXTERNAL.toLowerCase(),
+    to: PAY_TO.toLowerCase(),
+    payTo: PAY_TO.toLowerCase(),
+    usdc: 0.05,
+    usdc_atomic: "50000",
+    finalized: true,
+    status: "success",
+    external: true,
+    observed_at: "2026-07-23T02:00:00.000Z",
+  }]);
+  assert.deepEqual(calls[0], ["eth_chainId", []]);
+  assert.deepEqual(calls[1], ["eth_getBlockByNumber", ["finalized", false]]);
+});
 
 test("records only receipt-derived finalized successful Base USDC inbound value", async () => {
   const tx = hash("a");
@@ -209,6 +267,28 @@ test("wallet ledger path is lowercase and append is exactly-once by case-insensi
   const saved = readFileSync(ledgerPath, "utf8").trim().split("\n").map(JSON.parse);
   assert.equal(saved.length, 2);
   assert.equal(saved[1].tx, hash("b"));
+});
+
+test("wallet ledger also dedupes a marketplace source sale ID independently of tx", () => {
+  const dir = mkdtempSync(join(tmpdir(), "x402-external-source-sale-"));
+  const ledgerPath = walletLedgerPath(PAY_TO, { stateDir: dir });
+  const base = {
+    source: "the402", source_sale_id: "the402:set_1", offer_id: "svc_1",
+    tx: hash("a"), block: 99, from: EXTERNAL, to: PAY_TO, payTo: PAY_TO,
+    usdc: 0.05, usdc_atomic: "50000", finalized: true, status: "success", external: true,
+  };
+  writeFileSync(ledgerPath, `${JSON.stringify(base)}\n`);
+
+  const result = appendUniqueExternalInflows(ledgerPath, [
+    { ...base, tx: hash("b") },
+    { ...base, source_sale_id: "the402:set_2" },
+    { ...base, source_sale_id: "clawmerchants:cm_1", tx: hash("c") },
+  ]);
+
+  assert.deepEqual(result, { recorded: 1, duplicates: 2 });
+  const saved = readFileSync(ledgerPath, "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(saved.length, 2);
+  assert.equal(saved[1].source_sale_id, "clawmerchants:cm_1");
 });
 
 test("a competing writer's lock is never removed when this writer fails to acquire it", () => {

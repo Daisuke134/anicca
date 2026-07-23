@@ -69,6 +69,7 @@ function receiptTransfer(receipt, { tx, payTo, finalizedBlock, selfSet }) {
     to: payTo,
     payTo,
     usdc: Number(atomic) / 1_000_000,
+    atomic: atomic.toString(),
     finalized: true,
     status: 'success',
     external: true,
@@ -112,9 +113,82 @@ export async function collectVerifiedExternalInflows({
     const initiator = normalizeAddress(transaction?.from);
     if (!initiator || selfSet.has(initiator)) continue;
     const row = receiptTransfer(receipt, { tx, payTo: receiver, finalizedBlock, selfSet });
-    if (row) rows.push(row);
+    if (row) {
+      const { atomic: _atomic, ...legacyRow } = row;
+      rows.push(legacyRow);
+    }
   }
   return { finalizedBlock, rows };
+}
+
+function normalizeSaleCandidate(row, allowedPayToSet) {
+  const source = ['x402-image', 'the402', 'clawmerchants'].includes(row?.source) ? row.source : null;
+  const sourceSaleId = typeof row?.source_sale_id === 'string'
+    && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,191}$/.test(row.source_sale_id)
+    ? row.source_sale_id
+    : null;
+  const offerId = typeof row?.offer_id === 'string'
+    && /^[a-zA-Z0-9/][a-zA-Z0-9._:/-]{0,191}$/.test(row.offer_id)
+    ? row.offer_id
+    : null;
+  const tx = normalizeTx(row?.tx);
+  const payTo = normalizeAddress(row?.expected_pay_to);
+  const atomic = typeof row?.expected_usdc_atomic === 'string' && /^\d+$/.test(row.expected_usdc_atomic)
+    ? row.expected_usdc_atomic.replace(/^0+(?=\d)/, '')
+    : null;
+  const observed = typeof row?.observed_at === 'string' ? new Date(row.observed_at) : null;
+  const observedAt = observed && !Number.isNaN(observed.getTime()) ? observed.toISOString() : null;
+  if (!source || !sourceSaleId || !offerId || !tx || !payTo || !atomic || BigInt(atomic) <= 0n || !observedAt) return null;
+  if (!allowedPayToSet.has(payTo)) return null;
+  return { source, sourceSaleId, offerId, tx, payTo, atomic, observedAt };
+}
+
+export async function collectVerifiedSaleCandidates({
+  candidates,
+  rpcCall,
+  selfWallets = [],
+  allowedPayTos = [],
+}) {
+  if (typeof rpcCall !== 'function') throw new TypeError('rpcCall must be a function');
+  const allowedPayToSet = new Set(allowedPayTos.map(normalizeAddress).filter(Boolean));
+  if (allowedPayToSet.size === 0) throw new TypeError('allowedPayTos must contain an owned wallet');
+
+  const chainHex = await rpcCall('eth_chainId', []);
+  const chainId = blockNumber(chainHex);
+  if (chainId !== 8453) throw new Error('RPC is not Base mainnet');
+  const finalized = await rpcCall('eth_getBlockByNumber', ['finalized', false]);
+  const finalizedBlock = blockNumber(finalized?.number);
+  if (finalizedBlock === null) throw new Error('RPC returned no finalized block');
+
+  const selfSet = new Set(selfWallets.map(normalizeAddress).filter(Boolean));
+  const seenTxs = new Set();
+  const rows = [];
+  for (const input of Array.isArray(candidates) ? candidates : []) {
+    const candidate = normalizeSaleCandidate(input, allowedPayToSet);
+    if (!candidate || seenTxs.has(candidate.tx)) continue;
+    seenTxs.add(candidate.tx);
+    const receipt = await rpcCall('eth_getTransactionReceipt', [candidate.tx]);
+    const transaction = await rpcCall('eth_getTransactionByHash', [candidate.tx]);
+    const initiator = normalizeAddress(transaction?.from);
+    if (!initiator || selfSet.has(initiator)) continue;
+    const transfer = receiptTransfer(receipt, {
+      tx: candidate.tx,
+      payTo: candidate.payTo,
+      finalizedBlock,
+      selfSet: new Set([candidate.payTo, ...selfSet]),
+    });
+    if (!transfer || transfer.atomic !== candidate.atomic) continue;
+    const { atomic, ...verified } = transfer;
+    rows.push({
+      source: candidate.source,
+      source_sale_id: candidate.sourceSaleId,
+      offer_id: candidate.offerId,
+      ...verified,
+      usdc_atomic: atomic,
+      observed_at: candidate.observedAt,
+    });
+  }
+  return { chainId, finalizedBlock, rows };
 }
 
 export function walletLedgerPath(payTo, { stateDir = DEFAULT_STATE_DIR } = {}) {
@@ -123,14 +197,19 @@ export function walletLedgerPath(payTo, { stateDir = DEFAULT_STATE_DIR } = {}) {
   return join(stateDir, `external-inflows-${receiver}.jsonl`);
 }
 
-function readExistingTransactions(ledgerPath) {
-  if (!existsSync(ledgerPath)) return new Set();
-  return new Set(readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean).flatMap((line) => {
+function readExistingKeys(ledgerPath) {
+  const txs = new Set();
+  const sourceSaleIds = new Set();
+  if (!existsSync(ledgerPath)) return { txs, sourceSaleIds };
+  for (const line of readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean)) {
     try {
-      const tx = normalizeTx(JSON.parse(line)?.tx);
-      return tx ? [tx] : [];
-    } catch { return []; }
-  }));
+      const row = JSON.parse(line);
+      const tx = normalizeTx(row?.tx);
+      if (tx) txs.add(tx);
+      if (typeof row?.source_sale_id === 'string') sourceSaleIds.add(row.source_sale_id);
+    } catch { /* malformed historical rows provide no dedupe evidence */ }
+  }
+  return { txs, sourceSaleIds };
 }
 
 export function appendUniqueExternalInflows(ledgerPath, rows) {
@@ -139,16 +218,18 @@ export function appendUniqueExternalInflows(ledgerPath, rows) {
   let lock;
   try {
     lock = openSync(lockPath, 'wx');
-    const seen = readExistingTransactions(ledgerPath);
+    const { txs, sourceSaleIds } = readExistingKeys(ledgerPath);
     const fresh = [];
     let duplicates = 0;
     for (const row of rows || []) {
       const tx = normalizeTx(row?.tx);
-      if (!tx || seen.has(tx)) {
+      const sourceSaleId = typeof row?.source_sale_id === 'string' ? row.source_sale_id : null;
+      if (!tx || txs.has(tx) || (sourceSaleId && sourceSaleIds.has(sourceSaleId))) {
         duplicates += 1;
         continue;
       }
-      seen.add(tx);
+      txs.add(tx);
+      if (sourceSaleId) sourceSaleIds.add(sourceSaleId);
       fresh.push({ ...row, tx });
     }
     if (fresh.length) appendFileSync(ledgerPath, `${fresh.map((row) => JSON.stringify(row)).join('\n')}\n`);
