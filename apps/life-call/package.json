@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "eval": "node eval/run-calendar-eval.js && node eval/run-late-eval.js && node eval/run-context-onboarding-discovery-eval.js && node eval/run-score-semantics-eval.js",
+    "eval:panel-privacy": "node eval/run-panel-privacy-eval.js",
     "eval:score": "node eval/run-score-semantics-eval.js",
     "test:panel-score": "node --test lib/panel-score-semantics.test.js lib/panel-api-score-semantics.test.js lib/panel-score-migration.test.js scripts/independent-panel-score-readback.test.js",
     "test:panel-score:postgres": "test/postgres/panel-score-postgres.integration.sh",
