@@ -87,6 +87,45 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual(summary["attempt_count"], 1)
 
+    def test_shared_runner_accepts_marketing_agent_without_a_model_argument(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            args_file = root / "args.json"
+            fake_runner = root / "agent-runner"
+            fake_runner.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, os, pathlib, sys\n"
+                "args = sys.argv[1:]\n"
+                "pathlib.Path(os.environ['ARGS_FILE']).write_text(json.dumps(args))\n"
+                "evidence = pathlib.Path(args[args.index('--evidence-dir') + 1])\n"
+                "evidence.mkdir(parents=True, exist_ok=True)\n"
+                "(evidence / 'summary.json').write_text(json.dumps({'status': 'success'}))\n",
+                encoding="utf-8",
+            )
+            fake_runner.chmod(0o755)
+            evidence = root / "evidence"
+            completed = subprocess.run(
+                [
+                    "bash", str(RUN_AGENT), "--task-class", "marketing-agent",
+                    "--evidence-dir", str(evidence), "--task-label", "larry-fixture",
+                    "--loop", "larry-marketing", "--workdir", str(root),
+                ],
+                input="Create and publish one bounded fixture.\n",
+                env={
+                    **os.environ,
+                    "AGENT_RUNNER_BIN": str(fake_runner),
+                    "ARGS_FILE": str(args_file),
+                },
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            args = json.loads(args_file.read_text(encoding="utf-8"))
+            self.assertEqual(args[args.index("--task-class") + 1], "marketing-agent")
+            self.assertEqual(args[args.index("--loop") + 1], "larry-marketing")
+            self.assertNotIn("--model", args)
+
     def test_shared_output_schemas_are_strict_codex_contracts(self):
         for name in ("loop_pass.schema.json", "manifest_judgment.schema.json"):
             with self.subTest(schema=name):

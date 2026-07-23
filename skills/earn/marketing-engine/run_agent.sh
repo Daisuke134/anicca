@@ -25,7 +25,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 case "$TASK_CLASS" in
-  repeatable-agent|tool-agent|high-value-agent) ;;
+  repeatable-agent|tool-agent|marketing-agent|high-value-agent) ;;
   *) echo "run_agent.sh: invalid or missing --task-class" >&2; exit 2 ;;
 esac
 [ -n "$EVIDENCE_DIR" ] || { echo "run_agent.sh: missing --evidence-dir" >&2; exit 2; }
