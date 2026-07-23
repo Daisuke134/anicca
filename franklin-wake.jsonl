@@ -14220,3 +14220,12 @@
 {"ts":1784821295,"wake_id":"00MRXOILIGF86B232A9DB84FDF","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784821362,"wake_id":"00MRXOK0XN868C1BE3FBEA4A2F","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784821529,"wake_id":"00MRXONLQD7763286D98524534","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784821697,"wake_id":"00MRXOR7QGF92C8044AB76453F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784821825,"wake_id":"00MRXOTYGODC38123FFAF740B0","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784821892,"wake_id":"00MRXOVDTKFC1696D6F4C64F7E","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784821959,"wake_id":"00MRXOWTN40855E2FFA86644B9","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784822029,"wake_id":"00MRXOYC23BF7EB736175B4A8C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784822096,"wake_id":"00MRXOZRKS3873BDC229FD416E","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784822163,"wake_id":"00MRXP17FV13C2989702F04CFC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784822173,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784822297,"wake_id":"00MRXP432L34E569D6641145FC","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784822367,"wake_id":"00MRXP5KMR801FD15F421B4EEA","kind":"wake_error","sleep_s":60,"model":"auto"}
