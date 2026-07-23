@@ -106,11 +106,13 @@ test('daily browser entrypoint: dead-browser recovery delegates to the persisten
   assert.ok(!src.includes('nohup "$BIN"'), 'daily entrypoint still launches an unmanaged raw Chromium process');
 });
 
-test('default-context helper: background mode does not focus every automation tab', () => {
+test('default-context helper: hidden mode stays out of the tab UI for its CDP session', () => {
   const src = fs.readFileSync(CDP_DEFAULT_TAB_PY, 'utf8');
-  assert.ok(src.includes('--background'), 'helper has no background-tab mode');
-  assert.match(src, /["']background["']\s*:\s*background/,
-    'background mode is not passed to Target.createTarget');
+  assert.ok(src.includes('serve-hidden'), 'helper has no session-owned hidden-target mode');
+  assert.match(src, /["']hidden["']\s*:\s*True/,
+    'hidden mode is not passed to Target.createTarget');
+  assert.ok(src.includes('sys.stdin.buffer.read'),
+    'hidden target creator does not keep its CDP session alive until the caller exits');
 });
 
 test('cdp guard: finds the Chromium root even when a persistent owner is its parent', () => {
