@@ -8,28 +8,15 @@
 
 **Tech Stack:** Node.js CommonJS, `node:test`, direct request/response fixtures, emitted panel JavaScript executed with `vm`, Playwright for authenticated mobile/desktop evidence.
 
-**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` was used only to discover the prior findings and intended totals. It is not an implementation input and must not be read by the new generator, tests, package scripts, or product code. Fresh review found that 365 retained negatives and both positive compatibility cases lack per-case API/browser expectations. Do not copy that generator unchanged, and do not create or modify VCSDD artifacts.
+**Historical input:** The dirty worktree `.worktrees/sol-panel-8h-ux-privacy` identified three real defects, but its 536-case VCSDD matrix is rejected as an implementation input. It duplicates existing schema tests, has incomplete per-case oracles, and caused planning work to dominate product work. New tests must not read that worktree or create VCSDD artifacts.
 
-**Mandatory correction to historical v5:** Every generated case with `api-production` must contain an exact `apiExpected` assertion. Every case with `emitted-browser` must also contain an exact `browserExpected` assertion tied to the captured API response. Both positive compatibility cases require the same expectations. Generation must abort when any expectation is missing. Reported execution totals are derived only from assertions that passed after the real API/browser call; layer metadata alone never increments a counter.
-
-The historical package also claims immutable v1–v4 coverage while hashing only two v4 files. Do not repeat that claim. The new ordinary-repository contract independently derives its hostile cases from its committed closed schemas, typed mutation catalog, synthetic-secret recipes, channel catalog, and compatibility catalog. These are the complete generation inputs; the historical cases are not copied or imported.
-
-Create a committed `panel-v5-source-manifest.json` listing the path and SHA-256 of exactly these six generation inputs:
-
-1. `panel-v5-closed-schemas.js`
-2. `panel-v5-hostile-mutations.js`
-3. `panel-v5-secret-recipes.js`
-4. `panel-v5-channels.js`
-5. `panel-v5-compatibility.js`
-6. `panel-v5-contract.js`
-
-The generator must declare the same six paths in `GENERATION_INPUTS`, reject a missing/extra/duplicate dependency, verify every manifest hash before generation, and load no other local data file. The generated matrix SHA-256 is computed twice and compared in test output; it is not falsely described as covering files outside this six-file dependency set.
+**Focused Superpowers contract:** Test only the three remaining defects: provider/generic secret leakage, truthful real API/browser execution, and valid `call_language=null`. Existing panel tests remain the regression guard for every other schema path.
 
 **External security basis:**
 
 - OWASP Logging Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html — access tokens, passwords, database connection strings, and encryption keys should not be logged directly.
 - GitHub Secret scanning: https://docs.github.com/ja/code-security/secret-scanning/introduction/about-secret-scanning — scans for API keys, passwords, tokens, private keys, connection strings, and generic API keys.
-- Gitleaks default configuration: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml — established provider patterns cover Google, OpenAI, private keys, Stripe, and Telegram credentials.
+- Gitleaks default configuration pinned at `b58d3f102cf3a2c84cb7f923d05c25c9b1aed84b`: https://github.com/gitleaks/gitleaks/blob/b58d3f102cf3a2c84cb7f923d05c25c9b1aed84b/config/gitleaks.toml — use its provider/private-key pattern shapes for the first 16 recipes; use credential-bearing PostgreSQL, Redis, and MongoDB SRV URLs for the final three.
 
 ---
 
@@ -37,31 +24,42 @@ The generator must declare the same six paths in `GENERATION_INPUTS`, reject a m
 
 **Files:**
 
-- Create: `apps/life-call/eval/panel-v5-closed-schemas.js`
-- Create: `apps/life-call/eval/panel-v5-hostile-mutations.js`
-- Create: `apps/life-call/eval/panel-v5-secret-recipes.js`
-- Create: `apps/life-call/eval/panel-v5-channels.js`
-- Create: `apps/life-call/eval/panel-v5-compatibility.js`
-- Create: `apps/life-call/eval/panel-v5-source-manifest.json`
-- Create: `apps/life-call/eval/panel-v5-contract.js`
-- Create: `apps/life-call/eval/panel-v5-matrix-harness.js`
-- Create: `apps/life-call/eval/run-panel-v5-matrix-eval.js`
-- Create: `apps/life-call/lib/panel-v5-contract.test.js`
+- Create: `apps/life-call/eval/panel-privacy-contract.js`
+- Create: `apps/life-call/eval/panel-privacy-harness.js`
+- Create: `apps/life-call/eval/run-panel-privacy-eval.js`
+- Create: `apps/life-call/lib/panel-privacy-contract.test.js`
 - Modify: `apps/life-call/package.json`
 
 **Step 1: Write the failing contract test**
 
-Independently enumerate the closed scores, gates, settings, and control-center schemas with a typed hostile-mutation catalog (missing/extra keys, wrong types, malformed values, fragment/diagnostic values, and finite tuple violations). This enumeration must produce 365 non-secret negatives over 130 paths after treating both `call_language=null` paths as positive. Build 19 synthetic-secret recipes from non-secret string fragments at runtime, apply them to the nine committed presentation channels, and add the two committed positive `call_language=null` cases. No source file contains a complete token-like synthetic credential.
+Build these 19 synthetic credential recipes from harmless string fragments at runtime so no committed file contains a complete token-like value:
 
-Give every API/browser layer an exact expected status/body/field or DOM/fallback outcome. Assert the six-file manifest is complete, zero API/browser expectations are missing, deterministic generation holds, and these derived totals are reached only after successful assertions:
+`github-classic-token`, `github-fine-grained-token`, `gitlab-personal-token`, `slack-bot-token`, `slack-user-token`, `npm-access-token`, `aws-access-key-id`, `stripe-secret-key`, `google-api-key`, `openai-project-key`, `resend-api-key`, `telnyx-api-key`, `telegram-bot-token`, `stripe-webhook-secret`, `stripe-restricted-key`, `pem-private-key-header`, `postgres-credential-uri`, `redis-credential-uri`, `mongodb-srv-credential-uri`.
 
-- 536 negative cases over 139 paths
-- 536 policy-unit executions
-- 536 real API executions
-- 422 emitted-browser executions
-- 2/2/2 positive compatibility executions
+Run every recipe through exactly these nine channels and fixed oracles:
 
-Each API count increments only after a real `handlePanelApiRequest` response has been captured and its case-specific `apiExpected` assertion passes. Each browser count increments only after `loadPanelSection` consumes that captured response and its case-specific `browserExpected` assertion passes. Control-center cases must execute the exported real `buildControlCenter`; they must not use `buildControlCenterImpl`.
+| Channel | Real API oracle | Emitted-browser oracle |
+|---|---|---|
+| `api-timeline-text` | 200; `items[0].sentence` equals the fixed safe timeline sentence | n/a |
+| `api-ledger-href` | 200; `financial.items[0].link` is `null` | n/a |
+| `api-settings-call-language` | exact 422 `{"error":"section_unavailable","section":"settings"}` | n/a |
+| `api-settings-wake-policy` | exact 422 `{"error":"section_unavailable","section":"settings"}` | n/a |
+| `api-control-center-call-language` | exact 422 `{"error":"section_unavailable","section":"control-center"}` | n/a |
+| `api-control-center-wake-policy` | exact 422 `{"error":"section_unavailable","section":"control-center"}` | n/a |
+| `browser-timeline-text` | same 200 safe timeline DTO | section loaded; fixed safe sentence visible; source absent |
+| `browser-ledger-href` | same 200 ledger DTO with `null` link | section loaded; `a.ledger-link` absent; source absent |
+| `browser-control-center-identity` | 200; `identity.name` equals `Life Manager user` | section loaded; `Life Manager user` visible; source absent |
+
+The fixed timeline sentence is `予定の詳細を安全に表示できず、次はカレンダーで開始時刻を確認してください。`
+
+Add these exact positive cases:
+
+- settings `call_language=null`: API 200 with complete closed DTO and exact `null`; browser remains loaded and displays `未設定`.
+- control-center `settings.call_language=null`: API 200 via the exported real `buildControlCenter`; browser remains loaded and displays a disabled `Not configured` option.
+
+Add one representative malformed candidate for each closed section: scores, gates, settings, and control-center. Each must return exact section-specific HTTP 422, and its captured response must produce only the fixed browser load-error copy.
+
+Expected executed assertions are exactly 177 real API responses (`19×9 + 2 + 4`) and 63 emitted-browser loads (`19×3 + 2 + 4`). Increment a counter only after the case-specific assertion passes. Control-center cases must execute the exported real `buildControlCenter`; they must not use `buildControlCenterImpl`.
 
 **Step 2: Run RED**
 
@@ -69,14 +67,14 @@ Run:
 
 ```bash
 cd apps/life-call
-node --test lib/panel-v5-contract.test.js
+node --test lib/panel-privacy-contract.test.js
 ```
 
 Expected: FAIL because the closed policy, response boundary, and compatibility behavior do not exist.
 
 **Step 3: Add the smallest deterministic harness**
 
-Use only synthetic fixtures. Inject hostile source values through existing store/provider dependencies. For hostile DTO shapes impossible from a valid source, use one direct-call-only response-candidate transform after the real reader/builder executes. Never accept the transform from URL, headers, cookies, or body.
+Use only synthetic fixtures. Inject hostile source values through existing store/provider dependencies. For the four representative malformed DTOs, use one direct-call-only response-candidate transform after the real reader/builder executes. Never accept the transform from URL, headers, cookies, or body.
 
 **Step 4: Re-run RED and commit the test-only contract**
 
@@ -110,7 +108,7 @@ Run:
 
 ```bash
 cd apps/life-call
-node --test lib/panel-display-policy.test.js lib/panel-api.test.js lib/panel-control-center.test.js lib/panel-v5-contract.test.js
+node --test lib/panel-display-policy.test.js lib/panel-api.test.js lib/panel-control-center.test.js lib/panel-privacy-contract.test.js
 ```
 
 Expected: FAIL on the missing policy/projection and exact response behavior.
@@ -132,7 +130,7 @@ Run:
 
 ```bash
 cd apps/life-call
-node --test lib/panel-display-policy.test.js lib/panel-v5-contract.test.js lib/panel-api.test.js lib/panel-api-score-semantics.test.js lib/panel-control-center.test.js lib/panel-score-semantics.test.js
+node --test lib/panel-display-policy.test.js lib/panel-privacy-contract.test.js lib/panel-api.test.js lib/panel-api-score-semantics.test.js lib/panel-control-center.test.js lib/panel-score-semantics.test.js
 ```
 
 Expected: all pass, including exact execution totals and zero source echo.
@@ -166,7 +164,7 @@ Run:
 
 ```bash
 cd apps/life-call
-node --test lib/panel-ui.test.js lib/panel-privacy-browser.test.js lib/panel-v5-contract.test.js
+node --test lib/panel-ui.test.js lib/panel-privacy-browser.test.js lib/panel-privacy-contract.test.js
 ```
 
 Expected: FAIL on old raw renderers and null placeholder behavior.
@@ -182,7 +180,7 @@ Run:
 ```bash
 cd apps/life-call
 npm run test:panel
-npm run eval:panel-v5
+npm run eval:panel-privacy
 npm test
 ```
 
@@ -201,7 +199,7 @@ Commit the browser/UI closure and push before review.
 
 **Step 1: Fresh task review**
 
-Give a fresh reviewer the plan, diff, RED/GREEN commands, and matrix output. Fix every Critical/Important finding with another RED/GREEN cycle, commit, and push.
+Give a fresh reviewer the plan, diff, RED/GREEN commands, and focused privacy-eval output. Fix every Critical/Important finding with another RED/GREEN cycle, commit, and push.
 
 **Step 2: Fresh final review**
 
