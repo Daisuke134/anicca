@@ -1,5 +1,11 @@
 # gig SELF-IMPROVING MULTI-APPLY LOOP — VCSDD spec (2026-06-30)
 
+**状態: 実装済みの履歴設計。active TODOではない。** 現行productionは
+`~/profitable-claude/skills/gig-work/`にあり、現在状態・残TODOは
+`anicca-products/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §0/§6だけを参照する。
+live stateは`pass_count=529`、`improve_cycle=76`で、実験の`kept`と`reverted`を実証済み。
+残るのはself-improvement再実装ではなく、正常`no_change` passをmissing扱いするverifier統合の修正とsoak proofである。
+
 Extends `2026-06-30-gig-earn-core-recipe-design.md`.  
 Adds 5 behaviors to the existing autonomous Coconala earn-core:
 nurture-all + apply-broadly + learn + self-improve + bot-to-bot GitHub learning.
