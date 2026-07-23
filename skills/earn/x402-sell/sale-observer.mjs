@@ -71,7 +71,16 @@ export async function pollSaleSources({
 
   for (const source of imageSources) {
     try {
-      candidates.push(...normalizeImageSales(source.rows, { payTo: source.payTo }));
+      const offers = Array.isArray(source.offers) && source.offers.length
+        ? source.offers
+        : [{ route: '/image', priceUsd: '0.03' }];
+      for (const offer of offers) {
+        candidates.push(...normalizeImageSales(source.rows, {
+          payTo: source.payTo,
+          route: offer.route,
+          priceUsd: offer.priceUsd,
+        }));
+      }
     } catch {
       errors.push({ source: 'x402-image', code: 'source_invalid' });
     }
@@ -145,6 +154,12 @@ function imageSources() {
   return [FRANKLIN1, FRANKLIN2, CLAUDE_P].map((payTo) => ({
     payTo,
     rows: readJsonLines(join(HERE, 'state', `sales-${payTo.toLowerCase()}.jsonl`)),
+    offers: payTo === FRANKLIN1
+      ? [
+        { route: '/image', priceUsd: '0.03' },
+        { route: '/base-usdc-balance', priceUsd: '0.003' },
+      ]
+      : [{ route: '/image', priceUsd: '0.03' }],
   }));
 }
 

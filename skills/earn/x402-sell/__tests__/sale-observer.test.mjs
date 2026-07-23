@@ -163,14 +163,26 @@ test('runner polls all live sources without sending the402 credentials to ClawMe
 
   const result = await pollSaleSources({
     fetchFn,
-    imageSources: [{ payTo: PAY_TO, rows: [{ ts: '2026-07-23T02:00:00.000Z', route: '/image', price: '$0.03', tx: `0x${'c'.repeat(64)}`, settled: true, status: 200 }] }],
+    imageSources: [{
+      payTo: PAY_TO,
+      offers: [
+        { route: '/image', priceUsd: '0.03' },
+        { route: '/base-usdc-balance', priceUsd: '0.003' },
+      ],
+      rows: [
+        { ts: '2026-07-23T02:00:00.000Z', route: '/image', price: '$0.03', tx: `0x${'c'.repeat(64)}`, settled: true, status: 200 },
+        { ts: '2026-07-23T02:01:00.000Z', route: '/base-usdc-balance', price: '$0.003', tx: `0x${'d'.repeat(64)}`, settled: true, status: 200 },
+      ],
+    }],
     the402: { apiKey: 'the402-secret', payTo: PAY_TO, productId, allowedOffers: { [serviceId]: { minUsd: '0.50', maxUsd: '25' }, [productId]: { minUsd: '0.50', maxUsd: '0.50' } } },
     claw: { assetId, payTo: PAY_TO, priceUsd: '0.03' },
   });
 
-  assert.deepEqual(result.candidates.map((row) => row.source), ['x402-image', 'the402', 'clawmerchants']);
+  assert.deepEqual(result.candidates.map((row) => row.source), ['x402-image', 'x402-image', 'the402', 'clawmerchants']);
+  assert.equal(result.candidates[1].offer_id, '/base-usdc-balance');
+  assert.equal(result.candidates[1].expected_usdc_atomic, '3000');
   assert.deepEqual(result.metrics, {
-    image: { settled_candidates: 1 },
+    image: { settled_candidates: 2 },
     the402: { jobs: 0, threads: 0, settled_usd: 0.95, held_usd: 0, pending_usd: 0, product_purchases: 1, settlement_candidates: 1 },
     clawmerchants: { purchases: 1, discovery_count: 5, transaction_candidates: 1 },
   });
