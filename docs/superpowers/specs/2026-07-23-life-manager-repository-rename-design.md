@@ -2,6 +2,8 @@
 
 ## Status and authority
 
+Status: complete. Final evidence is `/Users/anicca/.codex/evidence/life-manager-repository-rename/final-completion-report.md`, with the full private checksum inventory in `manifest.sha256`.
+
 The user approves this design in full. The product, AI, agent, mission, runtime, and single public monorepo are all **Life Manager** at `Daisuke134/life-manager`. `Anicca` is the company name only. This decision is closed and does not require another choice or review gate.
 
 Repository Tasks 1–4 are partially executed and recorded below. All continuation, including the redirect repair, follows `docs/superpowers/plans/2026-07-23-life-manager-repository-rename.md` in a separately reviewed scoped run.

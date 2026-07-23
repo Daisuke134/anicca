@@ -41,7 +41,7 @@
 - Consumes: GitHub admin authentication; local clones `/Users/anicca/Projects/life-manager` and `/Users/anicca/anicca`
 - Produces: normalized ID-keyed before snapshots used by Tasks 4 and 7
 
-- [ ] **Step 1: Invoke the execution process skills and verify GitHub authentication**
+- [x] **Step 1: Invoke the execution process skills and verify GitHub authentication**
 
 Invoke `superpowers:using-git-worktrees`, `superpowers:subagent-driven-development`, and `superpowers:verification-before-completion`. Then run:
 
@@ -52,7 +52,7 @@ gh api user --jq .login
 
 Expected: both commands exit `0`, and the authenticated login is `Daisuke134`. Do not print token values or environment variables.
 
-- [ ] **Step 2: Create a non-overwriting evidence directory**
+- [x] **Step 2: Create a non-overwriting evidence directory**
 
 ```bash
 set -euo pipefail
@@ -63,7 +63,7 @@ install -d -m 0700 "$RENAME_EVIDENCE"
 
 Expected: the directory exists with mode `drwx------`. If it already exists, stop and inspect it rather than overwriting prior evidence.
 
-- [ ] **Step 3: Capture exact repository metadata by numeric ID**
+- [x] **Step 3: Capture exact repository metadata by numeric ID**
 
 ```bash
 set -euo pipefail
@@ -82,7 +82,7 @@ jq -e '[.data.__type.inputFields[].name] | index("repositoryId") != null and ind
 
 Expected: all four `jq` checks print `true`. Current measured baselines are 59 branches/0 tags/1044 issues/25 pull requests/4 stars for ID `1248111245`, and 1 branch/0 tags/11 issues/0 pull requests/1 star for ID `1273052304`; Task 4 compares captured identities rather than assuming counts remain static.
 
-- [ ] **Step 4: Prove the intermediate slug is unused and the final slug is the known collision**
+- [x] **Step 4: Prove the intermediate slug is unused and the final slug is the known collision**
 
 ```bash
 set -euo pipefail
@@ -99,7 +99,7 @@ test "$(gh api repos/Daisuke134/anicca --jq .id)" = 1248111245
 
 Expected: `life-manager-v0` is `404`, while the two current slugs resolve to the approved IDs.
 
-- [ ] **Step 5: Capture complete refs, issues, stargazers, and default HEADs**
+- [x] **Step 5: Capture complete refs, issues, stargazers, and default HEADs**
 
 ```bash
 set -euo pipefail
@@ -118,7 +118,7 @@ test -s "$RENAME_EVIDENCE/repository-1248111245.refs.before"
 
 Expected: both refs and HEAD snapshots are nonempty; issue and stargazer files are normalized JSON arrays.
 
-- [ ] **Step 6: Capture Pages, workflow, Action manifest, webhook, ruleset, and local remote evidence**
+- [x] **Step 6: Capture Pages, workflow, Action manifest, webhook, ruleset, and local remote evidence**
 
 ```bash
 set -euo pipefail
@@ -154,7 +154,7 @@ Expected: Pages is workflow-built at `/anicca/` with no custom domain, workflow 
 - Consumes: Task 1 ID `1273052304` and availability proof
 - Produces: public, unarchived `Daisuke134/life-manager-v0` plus a verified local remote
 
-- [ ] **Step 1: Re-check the exact external target immediately before mutation**
+- [x] **Step 1: Re-check the exact external target immediately before mutation**
 
 ```bash
 set -euo pipefail
@@ -172,7 +172,7 @@ rg -q 'HTTP 404' /tmp/life-manager-v0-immediate-check.stderr
 
 Expected: the current slug and recorded numeric lookup identify `1273052304` / `R_kgDOS-E8kA`, and `life-manager-v0` is still unused. Any difference stops before rename.
 
-- [ ] **Step 2: Rename only the explicitly targeted repository**
+- [x] **Step 2: Rename only the explicitly targeted repository**
 
 ```bash
 set -euo pipefail
@@ -189,7 +189,7 @@ jq -e '.data.updateRepository.repository.databaseId == 1273052304 and .data.upda
 
 Expected: exit `0`. Do not run any create, delete, archive, transfer, visibility, or force-push command.
 
-- [ ] **Step 3: Verify the rename by numeric ID**
+- [x] **Step 3: Verify the rename by numeric ID**
 
 ```bash
 set -euo pipefail
@@ -201,7 +201,7 @@ test "$(gh api repositories/1273052304 --jq .archived)" = false
 
 Expected: ID `1273052304` has only changed its name and remains public/unarchived.
 
-- [ ] **Step 4: Immediately update and verify `/Users/anicca/Projects/life-manager`**
+- [x] **Step 4: Immediately update and verify `/Users/anicca/Projects/life-manager`**
 
 ```bash
 set -euo pipefail
@@ -223,7 +223,7 @@ Expected: fetch and `ls-remote` exit `0`; the clone no longer depends on the red
 - Consumes: verified Task 2 state
 - Produces: canonical public `Daisuke134/life-manager` at ID `1248111245`; all linked legacy-path worktrees use the final remote
 
-- [ ] **Step 1: Re-check and record both identities immediately before the second mutation**
+- [x] **Step 1: Re-check and record both identities immediately before the second mutation**
 
 ```bash
 set -euo pipefail
@@ -237,7 +237,7 @@ jq -e '.id == 1273052304 and .node_id == "R_kgDOS-E8kA" and .full_name == "Daisu
 
 Expected: both numeric identities match the approved intermediate state. If GitHub reports the final slug unavailable, stop and use the Task 7 recovery gate; never delete the owner of a collision.
 
-- [ ] **Step 2: Rename only ID `1248111245` through its verified GraphQL node ID**
+- [x] **Step 2: Rename only ID `1248111245` through its verified GraphQL node ID**
 
 ```bash
 set -euo pipefail
@@ -254,7 +254,7 @@ jq -e '.data.updateRepository.repository.databaseId == 1248111245 and .data.upda
 
 Expected: exit `0`.
 
-- [ ] **Step 3: Verify final names by numeric ID before changing local configuration**
+- [x] **Step 3: Verify final names by numeric ID before changing local configuration**
 
 ```bash
 set -euo pipefail
@@ -266,7 +266,7 @@ test "$(gh api repos/Daisuke134/life-manager-v0 --jq .id)" = 1273052304
 
 Expected: the canonical slug resolves to `1248111245`, and the preserved former repository resolves explicitly to `1273052304`.
 
-- [ ] **Step 4: Immediately update the shared `/Users/anicca/anicca` remote**
+- [x] **Step 4: Immediately update the shared `/Users/anicca/anicca` remote**
 
 ```bash
 set -euo pipefail
@@ -291,7 +291,7 @@ Expected: base clone and every linked worktree report the final URL; fetch and `
 - Consumes: Task 1 snapshots and final names from Task 3
 - Produces: byte comparisons proving history/branch/tag/issue/star preservation and redirect behavior
 
-- [ ] **Step 1: Capture normalized after snapshots under the final names**
+- [x] **Step 1: Capture normalized after snapshots under the final names**
 
 ```bash
 set -euo pipefail
@@ -313,7 +313,7 @@ gh api --paginate --slurp 'repos/Daisuke134/life-manager/stargazers?per_page=100
 
 Expected: all commands exit `0` and create the after snapshots.
 
-- [ ] **Step 2: Compare history, branches, tags, issues, stars, and default HEADs by ID**
+- [x] **Step 2: Compare history, branches, tags, issues, stars, and default HEADs by ID**
 
 ```bash
 set -euo pipefail
@@ -330,7 +330,7 @@ jq -e '.id == 1248111245 and .node_id == "R_kgDOSmSqjQ" and .full_name == "Daisu
 
 Expected: every `cmp` exits `0`; both `jq` commands print `true`. A single mismatch fails the migration and permits no destructive repair.
 
-- [ ] **Step 3: Verify old `anicca` web/Git redirects and final slug takeover**
+- [x] **Step 3: Verify old `anicca` web/Git redirects and final slug takeover**
 
 ```bash
 set -euo pipefail
@@ -348,7 +348,7 @@ rg -q '^HTTP/.* 200' "$RENAME_EVIDENCE/life-manager-final.headers"
 
 Expected: old `anicca` redirects to final `life-manager`, its Git URL exposes ID `1248111245` refs, final `life-manager` is the actual repository with HTTP `200`, and `life-manager-v0` remains explicit. Never create a new `anicca` repository to test the warning.
 
-- [ ] **Step 4: Prove the production source repository remains outside the rename**
+- [x] **Step 4: Prove the production source repository remains outside the rename**
 
 ```bash
 set -euo pipefail
@@ -522,7 +522,7 @@ Invoke `superpowers:requesting-code-review` and `superpowers:verification-before
 - Consumes: final repository at `Daisuke134/life-manager` and origin/main
 - Produces: a reviewed, merged live-reference commit plus a permanent regression guard; historical evidence remains unchanged
 
-- [ ] **Step 1: Create an isolated worktree from final `origin/main`**
+- [x] **Step 1: Create an isolated worktree from final `origin/main`**
 
 Invoke `superpowers:using-git-worktrees`, then run:
 
@@ -542,7 +542,7 @@ git status --short --branch
 
 Expected: a clean isolated branch based exactly on final `origin/main`; the target canonical path is absent and the tracked pre-consolidation docs inventory is recorded. If the canonical path exists, stop and narrow the guard scope before proceeding. Existing dirty files in `/Users/anicca/anicca` remain untouched.
 
-- [ ] **Step 2: Write the failing live identity/reference guard**
+- [x] **Step 2: Write the failing live identity/reference guard**
 
 Invoke `superpowers:test-driven-development`, then apply:
 
@@ -616,7 +616,7 @@ Then run `chmod 0755 scripts/test-repository-url-migration.sh`.
 
 Expected: the guard is executable, asserts both exact Life Manager H1s, asserts the English/Japanese product/AI/agent/mission identity boundary and company-only use of Anicca, rejects the measured separate-repository contradictions, requires one whole-product repository link label per README, and does not embed a contiguous forbidden identity phrase or legacy URL in its own source.
 
-- [ ] **Step 3: Run the guard and verify RED**
+- [x] **Step 3: Run the guard and verify RED**
 
 ```bash
 cd /Users/anicca/anicca/.worktrees/life-manager-repository-urls
@@ -625,7 +625,7 @@ scripts/test-repository-url-migration.sh
 
 Expected: the first run exits `1` with `wrong README.md H1`. The remaining semantic and URL assertions stay RED until Step 4 applies the complete identity/reference patch. A passing initial result is a false RED and stops implementation.
 
-- [ ] **Step 4: Update only the measured live identity and URLs**
+- [x] **Step 4: Update only the measured live identity and URLs**
 
 ```diff
 *** Begin Patch
@@ -713,7 +713,7 @@ Expected: the first run exits `1` with `wrong README.md H1`. The remaining seman
 
 Expected: the patch applies exactly. If a live file changed since the plan, re-run the RED inventory and update only a measured live reference; do not rewrite historical specs.
 
-- [ ] **Step 5: Run GREEN and proportional syntax/data checks**
+- [x] **Step 5: Run GREEN and proportional syntax/data checks**
 
 ```bash
 set -euo pipefail
@@ -730,7 +730,7 @@ git diff --check
 
 Expected: all commands exit `0`; the live-reference test prints no legacy match.
 
-- [ ] **Step 6: Inspect, explicitly stage, commit, push, and verify remote SHA**
+- [x] **Step 6: Inspect, explicitly stage, commit, push, and verify remote SHA**
 
 ```bash
 set -euo pipefail
@@ -749,7 +749,7 @@ test "$LOCAL_REFERENCE_SHA" = "$REMOTE_REFERENCE_SHA"
 
 Expected: only the 13 listed files are staged; commit/push succeed; local and remote branch SHAs are identical.
 
-- [ ] **Step 7: Request review, merge through a PR, and verify final main**
+- [x] **Step 7: Request review, merge through a PR, and verify final main**
 
 Invoke `superpowers:requesting-code-review`. Resolve every material finding and re-run Step 5 after any edit. Then run:
 
@@ -778,7 +778,7 @@ Expected: review has no unresolved material finding, checks pass, merge succeeds
 - Consumes: final repo identity and merged live-reference commit
 - Produces: successful Pages workflow and logged-out new URL proof; zero-drift settings proof
 
-- [ ] **Step 1: Verify the preserved Pages configuration now targets the final repository**
+- [x] **Step 1: Verify the preserved Pages configuration now targets the final repository**
 
 ```bash
 set -euo pipefail
@@ -791,7 +791,7 @@ jq -e '.id == 307239134 and .name == "Deploy Pages" and .state == "active"' "$RE
 
 Expected: the Pages API reports the new project URL, no custom domain, `workflow` build type, and the same active workflow ID.
 
-- [ ] **Step 2: Dispatch the existing Pages workflow on `gh-pages` and wait for evidence**
+- [x] **Step 2: Dispatch the existing Pages workflow on `gh-pages` and wait for evidence**
 
 ```bash
 set -euo pipefail
@@ -807,7 +807,7 @@ jq -e '.workflowName == "Deploy Pages" and .status == "completed" and .conclusio
 
 Expected: a new workflow-dispatch run completes successfully. If no run appears or the workflow fails, stop and repair Pages forward; do not rename backward or recreate `anicca`.
 
-- [ ] **Step 3: Verify the new Pages URL and live raw URLs logged out**
+- [x] **Step 3: Verify the new Pages URL and live raw URLs logged out**
 
 ```bash
 set -euo pipefail
@@ -822,7 +822,7 @@ curl --silent --show-error --head https://daisuke134.github.io/anicca/ > "$RENAM
 
 Expected: new Pages and raw-content URLs return usable content with no live old URL. The old Pages response is recorded only; GitHub does not promise a project-site redirect.
 
-- [ ] **Step 4: Re-prove Action manifest, webhook, and ruleset counts**
+- [x] **Step 4: Re-prove Action manifest, webhook, and ruleset counts**
 
 ```bash
 set -euo pipefail
@@ -852,7 +852,7 @@ Expected: manifest, webhook, and ruleset counts remain zero.
 - Consumes: every prior task and the state at any failure point
 - Produces: either a safe rollback before the second rename or a forward-repaired, independently verified final state
 
-- [ ] **Step 1: Apply the only permitted rollback if the second rename never succeeded**
+- [x] **Step 1: Evaluate the rollback gate — not applicable because the second rename succeeds**
 
 Run this step only when Task 2 succeeded, Task 3 rename failed, ID `1248111245` still has name `anicca`, and the `life-manager` lookup still resolves through the redirect to ID `1273052304`:
 
@@ -879,7 +879,7 @@ test "$(git -C /Users/anicca/Projects/life-manager remote get-url origin)" = htt
 
 Expected: the pre-operation naming is restored without deletion. If the `life-manager` lookup resolves to any different ID, do not execute the rollback; preserve both repositories and report the collision.
 
-- [ ] **Step 2: Enforce forward-only recovery after the second rename succeeds**
+- [x] **Step 2: Enforce forward-only recovery after the second rename succeeds**
 
 ```bash
 set -euo pipefail
@@ -890,7 +890,7 @@ test "$(gh api repos/Daisuke134/anicca --jq .id)" = 1248111245
 
 Expected: all checks pass. After this point, do not run any rename-back, repository-create, delete, archive, visibility, or force-push command except the already reviewed two-leg Task 4R REST redirect repair. All other repair remains forward-only.
 
-- [ ] **Step 3: Run the complete fresh verification gate**
+- [x] **Step 3: Run the complete fresh verification gate**
 
 Invoke `superpowers:verification-before-completion`, then run:
 
@@ -928,7 +928,7 @@ test "$(git rev-parse origin/main)" = "$REMOTE_MAIN_SHA"
 
 Expected: every command exits `0`; this is the evidence required for a completion claim.
 
-- [ ] **Step 4: Hash the evidence and finish the development branch safely**
+- [x] **Step 4: Hash the evidence and finish the development branch safely**
 
 ```bash
 set -euo pipefail
