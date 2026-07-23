@@ -26,7 +26,8 @@
 - Task 1 PASS: immutable metadata/schema/availability/refs/HEAD/issues/stars/Pages/settings/remotes are captured.
 - Tasks 2–3 PASS: ID `1273052304` is `life-manager-v0`; ID `1248111245` is final `life-manager`; both are public/unarchived and both shared remotes are correct.
 - Task 4 preservation checks PASS for refs/default HEAD/issues/stars and `anicca-products`, but redirect verification FAILS: old `Daisuke134/anicca` is web/API `404` and Git `ls-remote` fails. Evidence=`task4-preservation-verification-report.md`, SHA-256=`13eaf0c6b4b4205aef227d0b29dd6e5ff39166698b18c0ee3d782aa432238c81`.
-- False hypothesis: GraphQL `updateRepository` creates the documented compatibility redirects. Do not rerun Tasks 1–3. Execute Task 4R next, obtain fresh review evidence, then repeat Task 4 redirect assertions before Task 5.
+- Task 4R PASS: the official REST roundtrip succeeds on both first attempts. After transient GitHub edge propagation, final `life-manager` returns HTTP 200 and old `anicca` web/API/Git resolve to ID `1248111245`. Fresh review finds no missing baseline ref; the only two changed branches are same-name fast-forwards. HEAD, issues, stars, remotes, dirty fingerprints, and `anicca-products` remain preserved. Evidence=`task4r-redirect-repair-report.md`. Execute Task 5 next.
+- False hypotheses closed: GraphQL `updateRepository` creates the documented compatibility redirects; rename-edge state is immediately consistent; byte equality across unrelated concurrent branch pushes is a valid preservation gate.
 
 ---
 
@@ -370,7 +371,7 @@ Expected: exact metadata comparison succeeds; no Railway command or product depl
 
 GitHub documents automatic web/Git redirects after a repository rename. The official `gh repo rename` implementation calls REST `PATCH repos/{owner}/{repo}` with the new `name`; Task 4R uses that exact REST surface. This is a bounded repair for the observed GraphQL redirect gap, not a general rollback.
 
-- [ ] **Step 1: Freeze the exact pre-repair state and dirty fingerprints**
+- [x] **Step 1: Freeze the exact pre-repair state and dirty fingerprints**
 
 ```bash
 set -euo pipefail
@@ -391,7 +392,7 @@ rg -q '^HTTP/.* 404' "$RENAME_EVIDENCE/anicca-redirect.before-repair.headers"
 
 Expected: both numeric identities and remotes are exact; current dirty state is recorded by hash only; old `anicca` still reproduces the known `404`.
 
-- [ ] **Step 2: REST-rename final `life-manager` temporarily to `anicca`**
+- [x] **Step 2: REST-rename final `life-manager` temporarily to `anicca`**
 
 Immediately before mutation, re-read the slug and numeric endpoint. No other worker may mutate either repository during the two-leg sequence.
 
@@ -416,7 +417,7 @@ jq -e '.id == 1248111245 and .node_id == "R_kgDOSmSqjQ" and .full_name == "Daisu
 
 Expected: only ID `1248111245` changes name to `anicca`. Do not update local remotes.
 
-- [ ] **Step 3: Observe first-leg compatibility, but always attempt the final REST leg immediately**
+- [x] **Step 3: Observe first-leg compatibility, but always attempt the final REST leg immediately**
 
 The observation is evidence, not a gate that may leave the repository at the temporary name.
 
@@ -459,7 +460,7 @@ jq -e '.id == 1248111245 and .node_id == "R_kgDOSmSqjQ" and .full_name == "Daisu
 
 Expected: the canonical name is restored through REST. A second-leg failure gets one exact-ID-gated retry only; there is no GraphQL fallback, create/delete/archive, force-push, or mutation of ID `1273052304`.
 
-- [ ] **Step 4: Re-run full redirect and preservation proof**
+- [x] **Step 4: Re-run full redirect and preservation proof**
 
 ```bash
 set -euo pipefail
@@ -496,7 +497,7 @@ cmp "$RENAME_EVIDENCE/repository-1245528469.before.json" "$RENAME_EVIDENCE/repos
 
 Expected: old `anicca` web/API/Git resolve to ID `1248111245`; canonical and v0 names/IDs are exact; refs/HEAD/issues/stars, dirty fingerprints, remotes, and `anicca-products` are unchanged. Pages remains a later Task 6 gate.
 
-- [ ] **Step 5: Independent review and private report**
+- [x] **Step 5: Independent review and private report**
 
 Invoke `superpowers:requesting-code-review` and `superpowers:verification-before-completion`. A fresh read-only worker repeats Step 4, records all command exit codes and the first-leg observation, and writes `task4r-redirect-repair-report.md` mode `0600` plus SHA-256. Task 5 is forbidden until that review is PASS with no material finding.
 

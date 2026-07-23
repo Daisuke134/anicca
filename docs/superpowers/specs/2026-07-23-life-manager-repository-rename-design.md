@@ -39,7 +39,9 @@ Tasks 1–3 finish the collision-safe identity move:
 
 Task 4 exposes one failure only: old `Daisuke134/anicca` returns web/API `404` and Git `ls-remote` fails. The false hypothesis is **GraphQL `updateRepository` establishes the same compatibility redirects as GitHub's documented repository rename path**. Name and identity preservation succeed, but redirect creation does not.
 
-Task 4R repairs only that missing compatibility surface. It performs an official REST rename roundtrip on ID `1248111245`, `life-manager → anicca → life-manager`, after exact numeric/node/slug/collision checks. The first REST leg makes the final URL the previous name and is observed before the mandatory second leg; the second REST leg recreates old `anicca` as the previous name of final `life-manager`. No local remote changes during the roundtrip. The roundtrip is not a general rollback and does not authorize creation of a new `anicca` repository.
+Task 4R repairs only that missing compatibility surface. It performs an official REST rename roundtrip on ID `1248111245`, `life-manager → anicca → life-manager`, after exact numeric/node/slug/collision checks. Both REST legs succeed on their first attempt. GitHub's edge briefly returns the previous redirect after the final leg, then stabilizes for three consecutive observations: final `life-manager` returns HTTP 200 and old `anicca` redirects to `life-manager`. No local remote changes occur during the roundtrip. The roundtrip is not a general rollback and does not authorize creation of a new `anicca` repository.
+
+Fresh review finds no missing baseline ref name. Two branches advance concurrently after the baseline snapshot, and both changes are same-name fast-forwards whose old commits remain ancestors of the current tips. Therefore preservation is proved as no missing ref plus unchanged-or-fast-forward ancestry, rather than a false byte-equality requirement across unrelated concurrent pushes.
 
 ## Collision-safe sequence
 
@@ -97,7 +99,7 @@ This documentation worktree belongs to `Daisuke134/anicca-products`; its remote 
 The rename is done only when one evidence bundle proves all of the following:
 
 - ID `1273052304` is exactly `Daisuke134/life-manager-v0`, public and unarchived; ID `1248111245` is exactly `Daisuke134/life-manager`, public and unarchived.
-- Before/after normalized refs, issue IDs/numbers/states, and stargazer IDs are byte-identical for each repository ID; default branches and their head SHAs match. This proves no lost history, branches, tags, issues, or stars.
+- Every baseline ref name still exists. Each ref SHA is either unchanged or its baseline SHA is an ancestor of the current same-name ref; every concurrent advance is recorded. Issue IDs/numbers/states and stargazer IDs are byte-identical for each repository ID, and default branches and their head SHAs match. This proves no lost history, branches, tags, issues, or stars without treating legitimate concurrent fast-forwards as loss.
 - `/Users/anicca/Projects/life-manager` and `/Users/anicca/anicca` use their approved final remotes, all linked worktrees agree, and fetch/`ls-remote` succeed.
 - Old `anicca` web and Git URLs resolve to ID `1248111245`; final `life-manager` resolves to ID `1248111245`; explicit `life-manager-v0` resolves to ID `1273052304`.
 - Pages API and successful workflow evidence identify `https://daisuke134.github.io/life-manager/`, and a logged-out request succeeds. No custom domain appears unexpectedly.
@@ -119,6 +121,7 @@ Each material operational decision above is grounded in the following source or 
 - Immutable mutation target: [GitHub GraphQL `UpdateRepositoryInput`](https://docs.github.com/en/graphql/reference/input-objects#updaterepositoryinput) / live schema descriptions: “The ID of the repository to update.” and “The new name of the repository.”
 - Official redirect-producing rename path: [GitHub CLI `RenameRepo`](https://github.com/cli/cli/blob/trunk/api/queries_repo.go) / source uses `client.REST(..., "PATCH", path, ...)` against `repos/{owner}/{repo}` with the new `name`.
 - Task 4 live failure: private evidence `/Users/anicca/.codex/evidence/life-manager-repository-rename/task4-preservation-verification-report.md`, SHA-256 `13eaf0c6b4b4205aef227d0b29dd6e5ff39166698b18c0ee3d782aa432238c81`; refs/HEAD/issues/stars pass while old web/API/Git redirect fails.
+- Task 4R repair review: private evidence `/Users/anicca/.codex/evidence/life-manager-repository-rename/task4r-redirect-repair-report.md`; old web/API/Git redirect, repository identities, ref ancestry, HEAD, issues, stars, remotes, dirty fingerprints, and `anicca-products` preservation all pass with no material finding.
 - Pages state: [GitHub Pages live API response](https://api.github.com/repos/Daisuke134/anicca/pages) / direct quote: `"html_url":"https://daisuke134.github.io/anicca/"` and `"cname":null`.
 - Webhook absence: [GitHub repository hooks live API](https://api.github.com/repos/Daisuke134/anicca/hooks) / authenticated live response: `[]`.
 - Ruleset absence: [GitHub repository rulesets live API](https://api.github.com/repos/Daisuke134/anicca/rulesets) / authenticated live response: `[]`.
