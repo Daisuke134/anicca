@@ -18,8 +18,9 @@
   branch `fix/gig-browser-ownership-20260724`, upstream
   `origin/fix/gig-browser-ownership-20260724`, verified commit `4e956f7`.
 - Live runtime repository: `/Users/anicca/profitable-claude`, branch
-  `deploy/gig-speedy-reply-cutover`, current commit `078c26c`; reviewed Gig deploy merge `59957c5`
-  is its first-parent ancestor. Do not implement here or overwrite concurrent article-writer work.
+  `deploy/gig-speedy-reply-cutover`. HEAD advances with concurrent article-writer merges, so treat
+  `33e87ee` only as the observed baseline. Reviewed Gig deploy merge `59957c5` must remain a
+  first-parent ancestor of the current HEAD. Do not implement here or overwrite concurrent work.
 - Old spec worktree `/Users/anicca/anicca-project/.worktrees/coconala-reply-sla` is historical and
   must not become the continuation SSOT.
 
