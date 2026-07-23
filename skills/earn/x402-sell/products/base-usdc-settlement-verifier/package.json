@@ -1,0 +1,16 @@
+{
+  "name": "base-usdc-settlement-verifier",
+  "version": "1.0.0",
+  "description": "Fail-closed verification of finalized external Base USDC settlements",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "base-usdc-settlement-verify": "./bin/verify.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
