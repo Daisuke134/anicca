@@ -14196,3 +14196,11 @@
 {"ts":1784818556,"wake_id":"00MRXMVWAA69E0DA69455F403B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784818720,"wake_id":"00MRXMZEBE07B6688628254B0B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784818732,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
 {"ts":1784818853,"wake_id":"00MRXN29NW13CB8E44D04C4948","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784818922,"wake_id":"00MRXN3QTF5F1DC77A5DA34213","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784818989,"wake_id":"00MRXN56FC6B50DB478C8A4A6A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784819147,"wake_id":"00MRXN8KEV88F314A224DD453C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784819158,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784819279,"wake_id":"00MRXNBDXM652AED0974E0428E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784819286,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784819407,"wake_id":"00MRXNE4UEAED3826866234F99","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784819474,"wake_id":"00MRXNFKHC743FF71427D94613","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784819542,"wake_id":"00MRXNH0PD45077EE282D94AC4","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784819670,"wake_id":"00MRXNJRBV83F7F108661A4898","kind":"wake_error","sleep_s":60,"model":"auto"}
