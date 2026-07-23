@@ -10,17 +10,18 @@
 ## Repository routing
 
 - Session start/spec repository: `/Users/anicca/anicca-project`, branch `main`, upstream
-  `origin/main`, current baseline `7b649bbc1`. The shared main worktree has many
+  `origin/main`, required merged baseline `22e2694bb`. The shared main worktree has many
   user-owned untracked paths. Never reset, clean, mass-add, delete, or switch it. For spec edits,
   create a clean worktree from fresh `origin/main`, open/merge a PR to `main`, then fast-forward
   local main only after checking untracked collisions.
 - Implementation worktree: `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable`,
   branch `fix/gig-browser-ownership-20260724`, upstream
-  `origin/fix/gig-browser-ownership-20260724`, verified commit `4e956f7`.
+  `origin/fix/gig-browser-ownership-20260724`, verified commit `b293831`.
 - Live runtime repository: `/Users/anicca/profitable-claude`, branch
   `deploy/gig-speedy-reply-cutover`. HEAD advances with concurrent article-writer merges, so treat
-  `33e87ee` only as the observed baseline. Reviewed Gig deploy merge `59957c5` must remain a
-  first-parent ancestor of the current HEAD. Do not implement here or overwrite concurrent work.
+  any concrete SHA only as an observed baseline. Reviewed Gig deploy merges `59957c5` and
+  `c4007a8` must remain first-parent ancestors of the current HEAD. Do not implement here or
+  overwrite concurrent work.
 - Old spec worktree `/Users/anicca/anicca-project/.worktrees/coconala-reply-sla` is historical and
   must not become the continuation SSOT.
 
@@ -74,10 +75,16 @@
 - Browser `ai.anicca.hf-gig-browser` is running. Gig pass/reply/auditor/core/self-improve labels
   remain installed; latest observed exits were `0`. Daily report has not yet naturally run since
   reload.
-- Fresh RED: `bash skills/gig-work/tests/test_gig_paid_work_gate.sh` exits `1`; browser-fail
-  recovery expects `deterministic-paid-progress`, but the recovery browser log is empty.
+- §6 #2 is closed by reviewed test commit `b293831` and deploy merge `c4007a8`; production code is
+  unchanged. The prior RED was a fixture-only missing `GIG_PASS_ID` that made its fake runner exit
+  `46` before browser recovery. First pass now proves builder 1/browser 1/exit 1 and durable exact
+  artifact/hash/acceptance binding; second pass proves builder/model 0, browser 1, same binding,
+  buyer-visible success, and unchanged lower ledger. Shell integration 17 and related Python 34
+  pass.
 - Self-improvement is implemented (`pass_count=529`, `improve_cycle=76`, kept/reverted evidence).
   The verifier still falsely lists six missing items after normal no-change operation.
+- Next safe implementation item while §6 #1 remains externally blocked is §6 #3, the
+  self-improvement verifier no-change false positive.
 - Final Done requires every natural day to close all four lanes: Shuppin, Oubo, Reply, and Nouhin.
   Each lane must have either an authoritative verified action or a reasoned `verified_noop`, plus
   checked/eligible/action/outcome/duplicate/model-call/cost/revenue evidence. Missing one lane
@@ -91,7 +98,7 @@ ground truth. Do not retry thread `9967694` for the same event. Resume §6 #1 on
 check shows a material counterpart/platform-state change, or after the same thread produces a new
 unique buyer event (which reactivates the blocked action). Then let the production loop—not
 Codex—perform exactly one customer action and reconcile it. If neither changes, there is no
-loop-side unblock. A Coconala inquiry may diagnose the account state but does not guarantee
-restoration and requires new authority.
+loop-side unblock; leave #1 blocked and continue §6 #3. A Coconala inquiry may diagnose the
+account state but does not guarantee restoration and requires new authority.
 Mark #1 done only after the loop reads back thread URL, outgoing hash, seller send time,
 outbox=`replied`, one Telegram event, and zero duplicate sends.

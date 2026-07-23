@@ -24,13 +24,13 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 
 | 分類 | 現在状態 |
 |---|---|
-| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離のreview済み実装 `4e956f7` / deploy merge `59957c5` が現HEADの祖先であることを不変条件とする（観測baseline `33e87ee`） |
+| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5` とpaid recovery回帰 `b293831` / `c4007a8` が現HEADの祖先であることを不変条件とする |
 | browser | launchd所有 `ai.anicca.hf-gig-browser`、Gig専用 CDP `:9223`、profile `gig-daily-driver`、KeepAlive。対話用`:9222`とは分離 |
 | scheduler | pass `:00/:30`、reply 300秒、auditor `:45`、core-health 300秒、selfimprove verify 3600秒、report `09:07`。合計673 scheduled invocation/日、browserは常駐 |
-| completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、material-event gate、bounded context、provider routing、token circuit breaker |
+| completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、paid-work browser recovery、material-event gate、bounded context、provider routing、token circuit breaker |
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
 | model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
-| tests | 拒否隔離を含むGig Python `279`、shell integration `16` PASS。review済みmerge上でもPython `279` PASS。`test_gig_paid_work_gate.sh` の browser-fail recoveryだけ編集前から同じRED |
+| tests | 拒否隔離を含むGig Python `279`、shell integration `17` PASS。review済みmerge上でもPython `279`と`test_gig_paid_work_gate.sh`がPASS。既知REDはselfimprove verifierのno-change誤警報 |
 | live reply blocker | target thread `9967694` action `1` revision `36`は`blocked`のまま。action `2/4/5/8`も拒否または事前根拠により`blocked`。control action `3`とdeploy後のaction `6`はproduction loopが`replied`・Telegram sentまで完了 |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
 | verifier integration debt | 正常な`no_change` pass後もselfimprove verifierが6項目すべてをmissing扱いする。self-improvement本体の再実装ではなく、no-change契約の修正対象 |
@@ -110,6 +110,20 @@ deploy後のproduction実測ではthread `9995190` action `5` revision `1` が
 `7922006b5050d7c1e935e866e24016a3b2575444ed2d06c59ec42880a57bd92b`、seller time `1784847705`を
 再読して`replied`となる。intent 1/verified 1、Telegram `gig:telegram:reply:v1:6:1` 1件だけが
 `sent`（message ID `3335`）で、同一hash重複0である。
+
+### §0.5 Paid-work browser recovery
+
+`test_gig_paid_work_gate.sh`のbrowser-fail REDはproduction recoveryの欠陥ではなく、recovery fixtureだけが
+`GIG_PASS_ID`を渡さず、fake runnerのscope一致検査でexit `46`となってbrowser helper前に停止した
+fixture不整合である。通常fixtureと同じpass identityを与えるreview済みcommit `b293831`、deploy merge
+`c4007a8`で閉じる。productionコードの変更と顧客side effectはない。
+
+回復fixtureの第一passはbuilder `gig-PAID_WORK`を1回、deterministic paid-progress browserを1回だけ実行し、
+browser失敗をexit `1`のまま記録する。stateは`buyer_visible=false`、
+`artifact_ready_pending_browser=true`、`next_action=retry_buyer_visible_delivery`となり、artifact version/path、
+package SHA256、acceptance evidence/deltaを固定する。第二passはrunner/model call 0で同じbindingを再利用し、
+browserだけを1回実行して`buyer_visible=true`、`next_action=await_buyer_feedback`となる。version/path/hash/
+acceptance bindingと下位ledgerは不変で、shell integration 17件と関連Python 34件がPASSする。
 
 ---
 
@@ -490,7 +504,6 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
 | **1** | **B1 native submitを閉じる — external BLOCKED** | thread `9967694`へ同じeventを再送しない。相手/platform状態の変化または新しい一意buyer eventをauthoritative rereadしてから、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる。待機中も他threadはdurable rejection quarantineで継続する | 対象threadについて本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
-| **2** | **paid-work recovery REDを閉じる** | `test_gig_paid_work_gate.sh`のbrowser-fail recoveryで欠けるpaid-progress再開を直す。accepted artifact/hash/acceptance bundleを再利用しbuilderを再起動しない | shell suite PASS。browser failure後も`deterministic-paid-progress`が実行され、`gig-PAID_WORK`再実行0、下位ledger無変更 |
 | **3** | **selfimprove verifierのno-change誤警報を閉じる** | mtimeだけでなく最新`poll-control.json`のpass ID/outcomeを読む。`no_change`は正常no-op、material/improve passだけ必要証拠を要求する | no-changeでmissing 0・model call 0。material/improve fixtureで証拠欠落だけを次pass TODOへ記録。既存keep/revert挙動不変 |
 | **4** | **4 lane state-machine failure injectionを完了する** | Shuppinの公開/更新/no-op、Oubo、Reply、Nouhinの制作/進捗/formal delivery/revision/acceptance/payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0 |
 | **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
@@ -508,7 +521,7 @@ draft承認なしで検知→実行→ground-truth確認→自己修復まで進
 | # | To-Be | Test / evidence | Cover |
 |---:|---|---|---|
 | 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
-| 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery | 必須 |
+| 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery | **PASS** `b293831` / `c4007a8` |
 | 3 | no-change verifier contract | `test_selfimprove_no_change_is_not_missing`、material/improve欠落fixture | 必須 |
 | 4 | four-lane state machine | listing/application/reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
 | 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
