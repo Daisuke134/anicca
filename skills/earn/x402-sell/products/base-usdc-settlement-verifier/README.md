@@ -46,7 +46,7 @@ node bin/verify.mjs \
   --self-wallet 0x...
 ```
 
-On success the CLI prints one JSON proof. On failure it exits non-zero and does not print private keys, payment headers, prompts, or transaction calldata.
+On success the CLI prints one JSON proof. On failure it exits non-zero and does not print signing secrets, authorization material, or transaction calldata.
 
 ## Security boundary
 

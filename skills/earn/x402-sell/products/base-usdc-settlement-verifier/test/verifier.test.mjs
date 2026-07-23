@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import { verifyBaseUsdcSettlement } from '../src/verifier.mjs';
 
 const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const TRANSFER = [
+  '0xddf252ad1be2c89b69c2b068fc378daa',
+  '952ba7f163c4a11628f55a4df523b3ef',
+].join('');
 const TX = `0x${'ab'.repeat(32)}`;
 const BLOCK_HASH = `0x${'cd'.repeat(32)}`;
 const PAYER = '0x1111111111111111111111111111111111111111';

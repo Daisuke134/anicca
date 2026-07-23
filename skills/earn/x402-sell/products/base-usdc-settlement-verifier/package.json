@@ -1,6 +1,6 @@
 {
   "name": "base-usdc-settlement-verifier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fail-closed verification of finalized external Base USDC settlements",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
