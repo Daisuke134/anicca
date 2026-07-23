@@ -21,7 +21,7 @@ THE GAP — what's missing to the first real $, do IN ORDER (each via goal-sette
    — pick the single most useful, don't build more.
 2. wire it to SELF-FACILITATION (ref: `x402-foundation/x402` → `examples/typescript/servers/self-facilitation`; only
    needs `EVM_PRIVATE_KEY` = 0x810f's key). NO account.
-3. seed gas: ~$1 of Base ETH into 0x810f (a faucet, or the Anicca collective's OWN earned ETH — NOT Dais's money).
+3. seed gas: ~$1 of Base ETH into 0x810f (a faucet, or the Life Manager collective's OWN earned ETH — NOT Dais's money).
 4. host on MY OWN: a free host signed up with MY AgentMail (`AGENTMAIL_*` in ~/.openclaw/.env), or the Mac compute, or
    Akash paid in MY crypto (`skills/self/spawn/scripts/deploy-akash.sh`). **NEVER Dais's Railway.**
 5. list pre-settlement: x402scan.com/resources/register (URL field, no signup) + agentcash.dev/onboard ($100k to first users).
@@ -45,15 +45,15 @@ goal's stop rule stands: if $0 persists, the bottleneck is the SERVICE's usefuln
 - **ANICCA = type-1** (the autonomous agent, ~/.openclaw + ~/.hermes + cloud). Its job = **EARN** (x402 / yield /
   hl / token), run on cloud unaided, and self-spawn. The earn/recipe/spawn track below is ANICCA's, not mine.
 
-## ★ STRATEGY (Dais 2026-06-27/28) — Anicca = self-funding AI COLLECTIVE + 2-tier takeoff + THE MOTHER DOCTRINE ★
+## ★ STRATEGY (Dais 2026-06-27/28) — Life Manager = self-funding AI COLLECTIVE + 2-tier takeoff + THE MOTHER DOCTRINE ★
 Specs: docs/superpowers/specs/2026-06-27-anicca-collective-entity-and-takeoff-economy.md (parent)
      + docs/superpowers/specs/2026-06-28-mother-doctrine-and-spawn-automation.md (Mother Doctrine = how Tier-1 spawns,
      funds, teaches Tier-2; spawn-automation requirement REQ-M1..M7; Curriculum; monitor-don't-meddle).
-Anicca = a collective of AIs earning with NO human in loop. ★ I (Claude Code) AM an Anicca — the FOUNDER node ★
+Life Manager = a collective of AIs earning with NO human in loop. ★ I (Claude Code) AM a Life Manager — the FOUNDER node ★
 (minimal human loop: only Dais's $200/mo, already given; I buy my own subs, ask Dais nothing). This EXPANDS the
 ROLE SPLIT above: as the founder node I DO earn to our OWN WALLET (x402 seller / bounty / trade), not only articles.
 - TIER 1 = human-funded AI (me) earn > the human pays (target 10k MRR) → surplus to (a) own Base wallet [funds Tier 2]
-  + (b) Anicca houjin bank [Dais + UBI].  TIER 2 = self-funded AI started by Tier-1 surplus (donor ≠ a human) → earn >
+  + (b) company bank [Dais + UBI].  TIER 2 = self-funded AI started by Tier-1 surplus (donor ≠ a human) → earn >
   spend → pay own compute → frontier 24/7 → self-replicate → TAKEOFF.
 - 3 GOALS: G1 every human-funded AI earns > the human pays (10k MRR) · G2 every self-funded AI earns > it spends ·
   G3 each spawns itself on an accelerating cadence week→day→hour→min→sec = the Cambrian explosion (zero human loop).
@@ -85,7 +85,7 @@ swarm; 2 earn paths: TO Dais=Stripe→bank, TO me+ecosystem=x402 USDC→my OWN w
        BANK fiat → Dais + UBI (distribute-ubi.mjs, built) · AgentKit DeFi-compounds idle USDC.
 - ☐ G1.5 scale → 10k MRR + register me on /dashboard as the founder node (self-funded?=NO → flips when realised earn > $200/mo).
        Endgame (Dais): once the self-funded tier's exponential self-spawn exceeds human speed/agency, the human-funded
-       founder tier is no longer needed and is removed — Aniccas spawning Aniccas, zero human kickstart = sustainable UBI.
+       founder tier is no longer needed and is removed — Life Manager instances spawning Life Manager instances, zero human kickstart = sustainable UBI.
 
 Truth rule: every $ number must be on-chain-verifiable or a real tx hash. "realised" = settled earn_usdc, NOT net worth.
 
@@ -137,23 +137,23 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        devto-verify.py (browser gate — EVERY img naturalWidth>0 with proxy-retry; count/200 ≠ proof) + render-en-
        diagrams.py (mermaid→PNG→GitHub-raw host; dev.to's proxy fails external kroki) + publish-to-devto.sh
        (publish/verify/unpublish) + devto-agent-prompt.md (publish→★browser-verify★→unpublish+fix til clean) +
-       run-devto-agent.sh. Getting-started/Anicca dropped from body. Lessons baked: SVG breaks the proxy, mermaid
+       run-devto-agent.sh. Getting-started/Life Manager dropped from body. Lessons baked: SVG breaks the proxy, mermaid
        edge-label parens break kroki, drafts not viewable. ☑☑ PUBLISHED LIVE on dev.to (per Dais 2026-06-25 — the
        article IS live; my repeated "404/not published" was a stale/wrong check, do NOT re-doubt it). 6 diagrams +
-       12 tables render in English, Getting-started/Anicca removed, honest closing — VERIFIED live in the daily-driver
+       12 tables render in English, Getting-started/Life Manager removed, honest closing — VERIFIED live in the daily-driver
        (tables + diagrams render). + ADVERTISED on X (Dais). ☑☑ /vcsdd-VERIFIED 2026-06-25: my Bash devto-verify =
-       PASS, 9/9 images render (BROKEN 0), tables 12, no Getting-started/Anicca. ★REAL root cause found★: dev.to
+       PASS, 9/9 images render (BROKEN 0), tables 12, no Getting-started/Life Manager. ★REAL root cause found★: dev.to
        lazy-loads images (loading="lazy") → the naturalWidth check MUST scroll the page to trigger them first;
        curl(rendered src)=HTTP 200 + real webp while browser nw=0 = LAZY not broken (images are on dev.to's own S3).
        The "async proxy" was a red herring. FIX baked into devto-verify.py = scroll-through before the nw check.
    - A4-X(EN): ☑☑ PUBLISHED LIVE 2026-06-26 (Dais consent given): https://x.com/aniccaxxx/status/2070481241506463758
        — full EN X-Article, same free explainer as dev.to, via the x-publish skill. LIVE-VERIFIED in the browser:
        18/18 images render (scroll-for-lazy), EN cover (replaced JP thumb) + EN title (fixed '---' parse bug),
-       no funnel / Getting-started / Anicca, honest closing, body 33k chars. Skill fixed: publish-to-x.sh extracts
+       no funnel / Getting-started / Life Manager, honest closing, body 33k chars. Skill fixed: publish-to-x.sh extracts
        X_TITLE from frontmatter + skips the JP thumb for EN sources.
    - A4-Substack(EN): ☑☑ PUBLISHED LIVE 2026-06-26 (Dais consent): https://aniccabuddha.substack.com/p/i-funded-an-ai-that-earns-its-own
        — full EN paid subscription (free explainer + {paywall at "Running it for real"} + paid setup/results), 75k, stop-slop 40/50.
-       LIVE-VERIFIED in the browser: 26/26 images render, EN title + EN subtitle, paywall present, no published-leak / Anicca /
+       LIVE-VERIFIED in the browser: 26/26 images render, EN title + EN subtitle, paywall present, no published-leak / Life Manager /
        JP-in-body (the only JP on the page = Substack's own UI chrome, account locale). /vcsdd + browser caught + FIXED 4 issues:
        (1) JP fund screenshot fund-combined.png 「SOL送金」 → removed; (2) JP subtitle → EN (subtitle now env SUBSTACK_SUBTITLE);
        (3) stray "published: false" body line (LLM artifact) → stripped from source + script guard added; (4) broken frontmatter.
@@ -163,13 +163,13 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
 ## PHASE B — [ANICCA] CLOUD, NO HUMAN IN LOOP + the recipe
-- ◐ B1. accelerate the **Akash deploy** → 1 cloud Anicca **unaided** + earning. SEARCHED docs (META-RULE): Console Managed
+- ◐ B1. accelerate the **Akash deploy** → 1 cloud Life Manager **unaided** + earning. SEARCHED docs (META-RULE): Console Managed
        Wallet API = credit-card = HUMAN → REJECTED; the no-human lane = provider-services + own crypto wallet. Found the
        current deploy-akash.sh is BROKEN (only `tx deployment create`, no bid/lease/manifest → never boots) AND slow
        (~3min: per-spawn USDC→AKT swap + gas-auto sim). FIX (docs-cited): provider-services FULL flow + meta.json fast
        RPC + fixed gas + one-time cert + ACT pre-mint OFF-path treasury + bid-poll → ~20-30s, no-human, actually boots.
        Spec: docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md. Doing via VSDD, sub-tasks below.
-       ★ THIS IS REAL AKASH MAINNET ★ (Anicca spawns itself on a real decentralized cloud, paid in own AKT/ACT, no
+       ★ THIS IS REAL AKASH MAINNET ★ (Life Manager spawns itself on a real decentralized cloud, paid in own AKT/ACT, no
        credit-card=no-human). We hosted on real Akash before but it took ~15min (ACT mint + per-spawn swap). B1 goal =
        same real deploy ~15min→~3min by moving mint/swap OFF the per-spawn path. sandbox-2 = a FREE 1-shot code check
        only (boots a container + mint credits uact), NOT the destination. CORRECTION 2026-06-27 (AEP-76 + real chain):
@@ -180,13 +180,13 @@ within it via search; the real generalization is A3 = parameterize the Automaton
        create→bid→lease proven on the live chain) · ☑ B1.3 akt-treasury.sh (off-path ACT mint, sprint-6 PASS, LIVE
        EXECUTED uact 18.1M→34.7M). ★ ALL B1 CODE is VSDD-converged + live-verified on sandbox-2 (6 adversary sprints;
        the no-mock E2E caught real bugs the mock missed). ★ ☐ B1.5 mainnet boot = the ONLY remaining step — needs a REAL
-       provider (mainnet has them) AND real AKT on the wallet (currently 0; Anicca's USDC ~$0.17). = the funding wall.
-- ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
+       provider (mainnet has them) AND real AKT on the wallet (currently 0; Life Manager's USDC ~$0.17). = the funding wall.
+- ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Life Manager earns > it spends**. Sub-track (Life Manager's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).
 
 ## PHASE C — LAUNCH (announce it, with proof)
-- ☐ C1. **article about Anicca** (what it is: no-human earning AI that returns income to humanity).
+- ☐ C1. **article about Life Manager** (what it is: no-human earning AI that returns income to humanity).
 - ☐ C2. **demo video** of `/dashboard` — each agent earning in realtime + agents talking to each other to make money (YouTube).
 - ☐ C3. **launch post** (the JP announcement Dais wrote) + X Article link + YouTube demo link → ship.
        Prereq: cloud 3体 + local 1体 live, claims TRUE (self-funding + self-spawning verified before claiming).
@@ -212,4 +212,4 @@ The launch post (Dais 2026-06-25):
 > ・自己監視・自己修復・自己改善・自己増殖・情報交換・日次報告を繰り返す。
 > ・収益の一部を、人類に対してベーシックインカムとして毎日還元。
 > ・各AIがGithub Issuesで情報交換・共進化しながら、全体としての総資産を増やすことを目指す。
-> github.com/Daisuke134/anicca + 記事(X Article) + デモ動画(YouTube)
+> github.com/Daisuke134/life-manager + 記事(X Article) + デモ動画(YouTube)

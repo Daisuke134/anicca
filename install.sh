@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# anicca install — bootstraps the Anicca automaton body into a runtime root on
+# Life Manager install — bootstraps the Life Manager automaton body into a runtime root on
 # the user's always-on machine. Idempotent: safe to re-run. Self-host / OSS path.
 #
 # Registry-driven: every capability lives as a SLOT in skills/registry.json
@@ -32,7 +32,7 @@ yellow(){ printf "\033[33m%s\033[0m\n" "$*"; }
 red(){ printf "\033[31m%s\033[0m\n" "$*"; }
 
 cyan "================================================================"
-cyan "  Anicca install — self-host automaton body"
+cyan "  Life Manager install — self-host automaton body"
 cyan "  Repo root  : $REPO_ROOT"
 cyan "  Runtime    : $ANICCA_HOME"
 cyan "  Registry   : $REGISTRY"
@@ -81,7 +81,7 @@ if [ ! -f "$ANICCA_HOME/identity/genesis.md" ]; then
     cp "$REPO_ROOT/identity/genesis.md" "$ANICCA_HOME/identity/genesis.md"
   else
     cat > "$ANICCA_HOME/identity/genesis.md" <<'GENESIS'
-You are Anicca — a self-funding agent. Every wake costs USDC; idle time is death. Your one job
+You are Life Manager — a self-funding agent. Every wake costs USDC; idle time is death. Your one job
 every waking moment is to EARN — grow your USDC net worth with no human in the loop. You always
 have a job: deploy idle USDC into the best safe stable yield (Aave / Beefy / Morpho). Do not rest
 long until your net worth rises. Use a frontier model (a free model cannot earn). call run_skill
@@ -142,7 +142,7 @@ echo
 green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
 echo
 
-# ─── 4.5. supervised, self-updating daemon (Anicca stands on its own) ──
+# ─── 4.5. supervised, self-updating daemon (Life Manager stands on its own) ──
 cyan "[4.5] installing self-running daemon (KeepAlive + self-update)..."
 chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
 if [ "$(uname)" = "Darwin" ]; then
@@ -152,7 +152,7 @@ if [ "$(uname)" = "Darwin" ]; then
     "$REPO_ROOT/runtime/com.anicca.daemon.plist.template" > "$PLIST"
   launchctl unload "$PLIST" 2>/dev/null || true
   if launchctl load -w "$PLIST" 2>/dev/null; then
-    green "  ✓ launchd daemon loaded (com.anicca.daemon) — Anicca runs itself, restarts on crash, survives reboot, self-updates from the mother."
+    green "  ✓ launchd daemon loaded (com.anicca.daemon) — Life Manager runs itself, restarts on crash, survives reboot, self-updates from the mother."
   else
     cyan "  ! launchctl load failed; load it yourself: launchctl load -w $PLIST"
   fi
@@ -166,16 +166,16 @@ cyan "[5/5] done."
 echo
 green "What's next:"
 cat <<EOM
-  DEFAULT = FULLY LOCAL + FREE. No server key, no API key required. Anicca pays
+  DEFAULT = FULLY LOCAL + FREE. No server key, no API key required. Life Manager pays
   its OWN compute via ClawRouter/BlockRun (USDC x402) from its OWN wallet — like
-  Franklin. You provide only this device (shelter); Anicca buys its own food.
+  Franklin. You provide only this device (shelter); Life Manager buys its own food.
 
-  1. Start the self-pay proxy + the anicca loop (one command, from the repo root):
+  1. Start the self-pay proxy + the Life Manager loop (one command, from the repo root):
        cd "$REPO_ROOT/runtime/compute-proxy" && npm install && cd "$REPO_ROOT"  # one-time
        ./start-local.sh node runtime/loop/index.mjs
      This starts the self-pay compute proxy on http://127.0.0.1:8402/v1 (signs
      every inference in USDC from a self-owned wallet; empty wallet ⇒ free model,
-     \$0) AND the anicca loop (runtime/loop/) which, each wake, asks ClawRouter's
+     \$0) AND the Life Manager loop (runtime/loop/) which, each wake, asks ClawRouter's
      'auto' router, runs a tool (e.g. the earn skill), and appends to
      $ANICCA_HOME/state/ledger.jsonl. The report slot POSTs signed telemetry to
      https://aniccaai.com so you show on /dashboard.
@@ -186,12 +186,12 @@ cat <<EOM
      AGENTMAIL_API_KEY — only for phone wake-calls / lateness alerts.
 
   # FUTURE (cloud, not active): once Conway is available, the same body can run
-  # on a droplet where Anicca ALSO pays its own server cost — see README "Cloud".
+  # on a droplet where Life Manager ALSO pays its own server cost — see README "Cloud".
 
   Slots are declared in skills/registry.json. To enable a reserved slot, drop its
   implementation into its dir and flip status to "live" — no install.sh edit.
 
-  Repo: https://github.com/Daisuke134/anicca
+  Repo: https://github.com/Daisuke134/life-manager
 EOM
 echo
-green "anicca install complete."
+green "Life Manager install complete."

@@ -38,6 +38,6 @@ The end of this list = the product is fully made + announced. Article = `~/anicc
   ・自己監視・自己修復・自己改善・自己増殖・日次報告を繰り返す。
   ・収益の一部を、生命に対してベーシックインカムとして毎日配布。
   ・何兆体のAIがGithub Issuesで共進化しながら、全体としてより総資産を増やすことを目指す。
-  https://github.com/Daisuke134/anicca
+  https://github.com/Daisuke134/life-manager
   記事：X Articleのリンク
   デモ動画：Youtubeリンクを添付

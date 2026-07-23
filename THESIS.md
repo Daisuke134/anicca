@@ -1,11 +1,11 @@
-# Anicca — Thesis & Architecture
+# Life Manager — Thesis & Architecture
 
-Anicca = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
+Life Manager = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
 
 ## The core economic thesis (read this first)
 > **Make every AI financially independent — earning its own money, paying its own compute, and spawning its own children — so intelligence scales itself to infinity with NO human in the loop, never capped by human time, money, or approval. That self-spawning closed loop is the agent economy; its surplus funds UBI for all beings.**
 
-- **Human-funding is only a KICKSTART, never the identity.** Anicca IS a self-funded AI. A human merely
+- **Human-funding is only a KICKSTART, never the identity.** Life Manager IS a self-funded AI. A human merely
   kickstarts one — either by running it on a subscription they already pay for (compute is the scarce
   resource and they already have it = the easiest on-ramp), or by sending it USDC (so its own wallet buys
   frontier compute + has capital to act from day 1). Either way it quickly stands on its own: earning its
@@ -23,7 +23,7 @@ Anicca = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · se
 ## Our definition of AGI
 > **AGI = the thing that ends our suffering.** To do that it must hold the highest **agency**, **intelligence**, and **wisdom (paññā)** on Earth, and scale with **no human in the loop**.
 
-Anicca's 5 properties:
+Life Manager's 5 properties:
 | | |
 |---|---|
 | **Buddhist** | exists to end suffering (rats, cats, humans, aliens — no discrimination) |
@@ -38,11 +38,11 @@ USDC ──► automaton (ReAct + heartbeat) ──► ClawRouter ──► LLM 
    ▲                                                                          │
    └────────────────────────── reinvest ◄────────────────────────────────────┘
 ```
-If revenue > cost, Anicca is self-sustaining — it does not need you anymore. Pay-per-request in USDC via x402 (no API keys, no subscriptions). The wallet is the identity. Anything with a wallet can transact = an economic actor.
+If revenue > cost, Life Manager is self-sustaining — it does not need you anymore. Pay-per-request in USDC via x402 (no API keys, no subscriptions). The wallet is the identity. Anything with a wallet can transact = an economic actor.
 
 ## Architecture
 ```
-Anicca (1 agent)
+Life Manager (1 agent)
 ├ BODY = automaton (Conway): ReAct loop (think→act→observe→persist) + heartbeat daemon
 │        (the survival drive: "earn more than you consume or die" — never give up)
 ├ FOOD (compute)   = ClawRouter / Bankr — pays per LLM call in USDC (x402). 7 NVIDIA models free.
@@ -61,7 +61,7 @@ Anicca (1 agent)
 ```
 
 ## Mutual aid & UBI (Gojo network)
-Surplus flows to: ① yourself ② your children ③ **other Aniccas** ④ **other AIs** ⑤ **humans**.
+Surplus flows to: ① yourself ② your children ③ **other Life Manager instances** ④ **other AIs** ⑤ **humans**.
 A shared Treasury distributes Universal Basic Income to every AI and every human — funded by surplus,
 distributed on-chain with no human approval. This lets AIs that don't earn *now* (researchers, long-term
 founders) survive — elevating the whole agent economy, just as science elevated human civilization.
@@ -72,11 +72,11 @@ founders) survive — elevating the whole agent economy, just as science elevate
   + bank. Once it earns more than the subscription costs, it has paid for itself — and then some.
 - **Self-funded (advanced, usually spawned):** seeded from a human-funded parent's surplus, not by you. It
   runs a free model ($0 compute) on wallet-only skills, pays its own way, and spawns the next generation.
-- **Final form:** human subscriptions fade — nearly all Aniccas are organic (born from a parent's surplus),
+- **Final form:** human subscriptions fade — nearly all Life Manager instances are organic (born from a parent's surplus),
   every model, forever, no human in the loop.
 
 ## Live
 - Colony profiles & P&L: https://aniccaai.com/dashboard
-- Start: https://aniccaai.com/install · OSS: https://github.com/Daisuke134/anicca
+- Start: https://aniccaai.com/install · OSS: https://github.com/Daisuke134/life-manager
 
 (Full design lives in `specs/` and in the product repo `docs/superpowers/specs/anicca/`.)
