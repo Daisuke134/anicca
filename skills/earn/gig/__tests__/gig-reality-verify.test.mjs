@@ -14,6 +14,9 @@ const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VERIFY_SH = path.join(DIR, 'gig_reality_verify.sh');
 const JUDGE_PY = path.join(DIR, 'gig_judge.py');
 const AUDITOR_SH = path.join(DIR, 'auditor.sh');
+const CDP_GUARD_SH = path.join(DIR, 'scripts', 'cdp_daily_driver_guard.sh');
+const RUNBOOK_MD = path.join(DIR, 'GIG_PASS_RUNBOOK.md');
+const CDP_KEEPALIVE_PY = path.join(DIR, 'scripts', 'cdp_daily_driver_keepalive.py');
 
 test('gig_reality_verify.sh exists', () => {
   assert.ok(fs.existsSync(VERIFY_SH), 'gig_reality_verify.sh missing');
@@ -58,6 +61,55 @@ test('gig_reality_verify.sh: writes audit-reality.jsonl', () => {
 test('gig_reality_verify.sh: writes selfheal-request on verdict false', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
   assert.ok(src.includes('.gig-core-selfheal-request.json'), 'does not reference the selfheal-request file');
+});
+
+test('gig_reality_verify.sh: classifies a failed CDP recovery as infra, not claim mismatch', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.match(src, /'kind'\s*:\s*'infra'/, 'CDP recovery failure does not emit kind=infra');
+});
+
+test('cdp guard: clears dead Chromium singleton artifacts before relaunch', () => {
+  const src = fs.readFileSync(CDP_GUARD_SH, 'utf8');
+  assert.ok(src.includes('_cdp_guard_clear_stale_profile_artifacts'), 'missing stale profile cleanup helper');
+  const cleanupIdx = src.indexOf('_cdp_guard_clear_stale_profile_artifacts', src.indexOf('_cdp_guard_recover_locked'));
+  const relaunchIdx = src.indexOf('_cdp_guard_relaunch', src.indexOf('_cdp_guard_recover_locked'));
+  assert.ok(cleanupIdx !== -1 && relaunchIdx !== -1 && cleanupIdx < relaunchIdx,
+    'stale singleton artifacts must be cleared before relaunch');
+});
+
+test('cdp guard: accepts a DevTools endpoint bound on IPv6 loopback', () => {
+  const src = fs.readFileSync(CDP_GUARD_SH, 'utf8');
+  assert.ok(src.includes('"::1"'), 'probe only checks IPv4 127.0.0.1 and rejects a healthy [::1] endpoint');
+});
+
+test('cdp guard: relaunch binds the canonical IPv4 endpoint used by existing helpers', () => {
+  const owner = fs.readFileSync(CDP_KEEPALIVE_PY, 'utf8');
+  assert.ok(owner.includes('--remote-debugging-address=127.0.0.1'),
+    'relaunch can bind only [::1] while cdp_default_tab.py and other helpers use 127.0.0.1');
+});
+
+test('cdp guard: recovery launches a persistent CloakBrowser context owner', () => {
+  const src = fs.readFileSync(CDP_GUARD_SH, 'utf8');
+  assert.ok(fs.existsSync(CDP_KEEPALIVE_PY), 'persistent context owner script is missing');
+  assert.ok(src.includes('cdp_daily_driver_keepalive.py'), 'guard still launches a raw short-lived Chromium process');
+  const owner = fs.readFileSync(CDP_KEEPALIVE_PY, 'utf8');
+  assert.ok(owner.includes('while not stopping'), 'persistent context owner does not remain alive');
+  assert.ok(src.includes('launchctl submit'), 'context owner is an orphaned background child instead of a managed service');
+});
+
+test('cdp guard: finds the Chromium root even when a persistent owner is its parent', () => {
+  const src = fs.readFileSync(CDP_GUARD_SH, 'utf8');
+  const finder = src.slice(src.indexOf('_cdp_guard_find_pid()'), src.indexOf('_cdp_guard_clear_stale_profile_artifacts'));
+  assert.ok(!finder.includes('$2==1'), 'PID discovery assumes Chromium is orphaned to launchd');
+  assert.ok(finder.includes('--type=') && finder.includes('index($0,type)==0'), 'PID discovery can select a renderer/helper');
+});
+
+test('gig runbook: listing claims copy the fresh public H1 and name the observable delta', () => {
+  const src = fs.readFileSync(RUNBOOK_MD, 'utf8');
+  assert.ok(src.includes('service_title MUST be copied verbatim from the fresh public H1'),
+    'runbook permits an inferred or intended title to be claimed as public reality');
+  assert.ok(src.includes('before_value') && src.includes('after_value'),
+    'listing edit claim does not identify the concrete buyer-visible delta');
 });
 
 test('gig_reality_verify.sh: stdout-JSON-only discipline (work goes to stderr, not bare echo to stdout mid-script)', () => {
@@ -153,6 +205,12 @@ test('auditor.sh: cooldown-gates auth_wall selfheal requests before spawning sel
   const kindIdx = src.indexOf("KIND=");
   const spawnIdx = src.indexOf('bash "$SELF_FIX"');
   assert.ok(kindIdx !== -1 && spawnIdx !== -1 && kindIdx < spawnIdx, 'kind must be read before the self-fix.sh spawn decision');
+});
+
+test('auditor.sh: cooldown-gates verifier infra failures separately from claim mismatches', () => {
+  const src = fs.readFileSync(AUDITOR_SH, 'utf8');
+  assert.ok(src.includes('INFRA_COOLDOWN_MARKER'), 'no infra cooldown marker defined');
+  assert.match(src, /"\$KIND"\s*=\s*"infra"/, 'auditor does not branch on kind=infra');
 });
 
 test('auditor.sh: still consumes (rm -f) the selfheal-request even when cooldown-skipped (no stale request pileup)', () => {

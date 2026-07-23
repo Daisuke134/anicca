@@ -139,7 +139,7 @@ if ! cdp_guard_ensure_healthy 6 45; then
   echo "$(date '+%F %T') gig_reality_verify: CDP :9222 unreachable even after guard relaunch attempt — recording infra failure, not spawning judge" >&2
   ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'cdp_daily_driver_down_after_guard_relaunch','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
   echo "$ROW" >> "$AUDIT_REALITY"
-  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','failure_reason':'cdp_daily_driver_down_after_guard_relaunch','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
+  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','kind':'infra','failure_reason':'cdp_daily_driver_down_after_guard_relaunch','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
   echo "$ROW"
   exit 0
 fi

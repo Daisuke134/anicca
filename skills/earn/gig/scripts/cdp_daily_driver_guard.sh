@@ -23,6 +23,8 @@ CDP_PORT="${CDP_DAILY_DRIVER_PORT:-9222}"
 CDP_PROFILE="${CDP_DAILY_DRIVER_PROFILE:-$HOME/.cloak/profiles/daily-driver}"
 CDP_GUARD_LOCK="${CDP_GUARD_LOCK:-$HOME/gig/.cdp-guard.lock}"
 CDP_GUARD_LOG="${CDP_GUARD_LOG:-$HOME/.openclaw/logs/cdp-daily-driver-guard.log}"
+CDP_GUARD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CDP_OWNER_LABEL="${CDP_OWNER_LABEL:-ai.anicca.cdp-daily-driver-owner}"
 mkdir -p "$(dirname "$CDP_GUARD_LOG")" 2>/dev/null || true
 
 _cdp_guard_log() { echo "$(date '+%F %T') cdp_guard: $*" >> "$CDP_GUARD_LOG"; }
@@ -33,19 +35,23 @@ _cdp_guard_log() { echo "$(date '+%F %T') cdp_guard: $*" >> "$CDP_GUARD_LOG"; }
 _cdp_guard_probe() {
   local timeout="${1:-6}"
   python3 - "$CDP_PORT" "$timeout" <<'PYEOF' 2>/dev/null
-import socket, sys, urllib.request
+import http.client, sys
 port, timeout = int(sys.argv[1]), float(sys.argv[2])
-try:
-    s = socket.create_connection(("127.0.0.1", port), timeout=timeout)
-    s.close()
-except Exception:
-    sys.exit(1)
-try:
-    with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=timeout) as r:
-        r.read(1)
-    sys.exit(0)
-except Exception:
-    sys.exit(1)
+for host in ("127.0.0.1", "::1"):
+    conn = None
+    try:
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        conn.request("GET", "/json/version")
+        response = conn.getresponse()
+        response.read(1)
+        if response.status == 200:
+            sys.exit(0)
+    except Exception:
+        pass
+    finally:
+        if conn is not None:
+            conn.close()
+sys.exit(1)
 PYEOF
 }
 
@@ -53,28 +59,43 @@ PYEOF
 # PID — re-discover it fresh each call, since a prior relaunch changes it).
 _cdp_guard_find_pid() {
   ps -ax -o pid=,ppid=,command= 2>/dev/null \
-    | awk -v port="--remote-debugging-port=$CDP_PORT" -v profile="--user-data-dir=$CDP_PROFILE" \
-      '$2==1 && index($0,port) && index($0,profile) {print $1; exit}'
+    | awk -v port="--remote-debugging-port=$CDP_PORT" -v profile="--user-data-dir=$CDP_PROFILE" -v type="--type=" \
+      'index($0,port) && index($0,profile) && index($0,type)==0 {print $1; exit}'
 }
 
-# Relaunch with the EXACT flags the daily-driver has always been started with (captured from the live
-# process 2026-07-13; no other flags were present). Detached (setsid-equivalent via disown) so it
-# survives this guard script exiting.
+# Chromium leaves these profile-level singleton symlinks behind when its root process dies
+# uncleanly. A later launch then exits immediately with "existing browser session" even though no
+# process owns this profile. Call this only after the matching profile process and helpers are gone.
+_cdp_guard_clear_stale_profile_artifacts() {
+  local live_pid
+  live_pid="$(_cdp_guard_find_pid)"
+  if [ -n "$live_pid" ] && kill -0 "$live_pid" 2>/dev/null; then
+    _cdp_guard_log "refusing singleton cleanup: daily-driver profile still owned by pid=$live_pid"
+    return 1
+  fi
+  rm -f "$CDP_PROFILE/SingletonLock" "$CDP_PROFILE/SingletonSocket" "$CDP_PROFILE/SingletonCookie"
+  _cdp_guard_log "cleared stale Chromium singleton artifacts for profile=$CDP_PROFILE"
+}
+
+# Relaunch through a managed persistent-context owner. A raw headed Chromium process can answer the
+# initial probe and then exit when its creating job ends; the launchd-owned Python process keeps the
+# Playwright context and browser alive across verifier/auditor process exits.
 _cdp_guard_relaunch() {
-  local chromium_bin
-  chromium_bin="$(ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium 2>/dev/null | sort -V | tail -1)"
-  if [ -z "$chromium_bin" ] || [ ! -x "$chromium_bin" ]; then
-    _cdp_guard_log "relaunch FAILED: no chromium binary found under ~/.cloakbrowser/"
+  local cloak_python keepalive_script
+  cloak_python="$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3"
+  keepalive_script="$CDP_GUARD_DIR/cdp_daily_driver_keepalive.py"
+  if [ ! -x "$cloak_python" ] || [ ! -f "$keepalive_script" ]; then
+    _cdp_guard_log "relaunch FAILED: CloakBrowser runtime or persistent owner script missing"
     return 1
   fi
   mkdir -p "$CDP_PROFILE" 2>/dev/null || true
-  nohup "$chromium_bin" \
-    --remote-debugging-port="$CDP_PORT" \
-    --user-data-dir="$CDP_PROFILE" \
-    --no-first-run --no-default-browser-check \
-    >>"$CDP_GUARD_LOG" 2>&1 < /dev/null &
-  disown 2>/dev/null || true
-  _cdp_guard_log "relaunched daily-driver: $chromium_bin (pid $!)"
+  launchctl remove "$CDP_OWNER_LABEL" 2>/dev/null || true
+  if ! launchctl submit -l "$CDP_OWNER_LABEL" -o "$CDP_GUARD_LOG" -e "$CDP_GUARD_LOG" -- \
+    "$cloak_python" "$keepalive_script" --profile "$CDP_PROFILE" --port "$CDP_PORT"; then
+    _cdp_guard_log "relaunch FAILED: launchctl could not submit $CDP_OWNER_LABEL"
+    return 1
+  fi
+  _cdp_guard_log "relaunched daily-driver persistent context owner via launchctl label=$CDP_OWNER_LABEL"
 }
 
 # macOS ships bash 3.2 (no `trap ... RETURN` support — it silently errors "undefined signal: RETURN"
@@ -105,6 +126,7 @@ _cdp_guard_recover_locked() {
   pkill -9 -f "user-data-dir=$CDP_PROFILE" 2>/dev/null || true
   sleep 2
 
+  _cdp_guard_clear_stale_profile_artifacts || return 1
   _cdp_guard_relaunch || return 1
 
   local waited=0

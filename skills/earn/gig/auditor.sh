@@ -98,6 +98,10 @@ AUTH_WALL_COOLDOWN_SECS=21600  # 6h: re-alert periodically without spawning a fr
 # cooldown a recurring timeout would respawn a full self-fix.sh Sonnet agent every single hour forever.
 TIMEOUT_COOLDOWN_MARKER="$G/.timeout-selfheal-cooldown"
 TIMEOUT_COOLDOWN_SECS=21600  # 6h: same window as auth_wall
+# Infra failures mean the verifier never reached Coconala, so they are not evidence of a false core
+# claim. Dispatch one repair attempt, then suppress identical expensive repair spawns for six hours.
+INFRA_COOLDOWN_MARKER="$G/.infra-selfheal-cooldown"
+INFRA_COOLDOWN_SECS=21600
 if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
   KIND="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('kind','claim_mismatch'))" 2>/dev/null || echo 'claim_mismatch')"
   REASON="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('reason','') or json.load(open('$SELFHEAL_REQ')).get('failure_reason',''))" 2>/dev/null || echo '')"
@@ -120,6 +124,15 @@ if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
       echo "$(date '+%F %T') auditor: timeout selfheal within cooldown (${cooldown_age}s<${TIMEOUT_COOLDOWN_SECS}s) -- skip self-fix.sh spawn (already diagnosed)" >> "$G/.self-fix.err.log"
     else
       date +%s > "$TIMEOUT_COOLDOWN_MARKER"
+    fi
+  elif [ "$KIND" = "infra" ]; then
+    cooldown_age=999999
+    [ -f "$INFRA_COOLDOWN_MARKER" ] && cooldown_age=$(( $(date +%s) - $(cat "$INFRA_COOLDOWN_MARKER" 2>/dev/null || echo 0) ))
+    if [ "$cooldown_age" -lt "$INFRA_COOLDOWN_SECS" ]; then
+      SKIP_SELFHEAL=1
+      echo "$(date '+%F %T') auditor: infra selfheal within cooldown (${cooldown_age}s<${INFRA_COOLDOWN_SECS}s) -- skip self-fix.sh spawn (verifier did not reach Coconala)" >> "$G/.self-fix.err.log"
+    else
+      date +%s > "$INFRA_COOLDOWN_MARKER"
     fi
   fi
   if [ "$SKIP_SELFHEAL" = "0" ]; then
