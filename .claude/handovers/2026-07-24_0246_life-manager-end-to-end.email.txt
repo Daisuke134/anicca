@@ -1,0 +1,48 @@
+HANDOVER_MARKER: LM-END-TO-END-20260724-0246-7CE9
+
+Life Manager end-to-end restart handover
+
+Handover path:
+/Users/anicca/anicca-project/.claude/handovers/2026-07-24_0246_life-manager-end-to-end.md
+
+Spec and remaining-TODO SSOT:
+/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
+Section: §10 table and Current cursor
+
+HANDOVER BODY
+
+Source of truth
+- Remaining pending count: 28
+- Current item: 8i REPO-CONSOLIDATE
+- Persisted goal: /Users/anicca/anicca-project/.claude/handovers/2026-07-24_0246_life-manager-end-to-end.goal.txt
+
+Verified repository routing
+- Session start/shared checkout: /Users/anicca/anicca-project, branch main, upstream origin/main, verified 7ce9db9b3a4ebdf3a9a262eea9f59f4213f0e9ac. It has 16 pre-existing untracked paths. Read/fetch only; do not edit, switch, stage, clean, merge, or rebase it.
+- Spec/handover writes: /Users/anicca/anicca-project/.worktrees/lm-8i-handover-20260724, branch docs/lm-8i-handover-20260724, base 7ce9db9b3a4ebdf3a9a262eea9f59f4213f0e9ac, push target origin/docs/lm-8i-handover-20260724.
+- Canonical implementation: /Users/anicca/anicca/.worktrees/one-repo-migration, branch feat/one-repo-migration, HEAD bfbcb915cbf7ed08da2d44c498bd82b9a5f07ae4, clean, no unique commits, nine behind verified canonical origin/main=303fc30a50e4db88522d88c6da71b40bf2e67665. Fetch and fast-forward only before editing; push target origin/feat/one-repo-migration.
+- Protected checkout: /Users/anicca/anicca, branch feature/dist1-mcp-launchd, HEAD/upstream 72b74d59df80cb72936ccd04f5ee1ed7a19e7ec0, 17 modified live log files. Do not touch it.
+- Reviewers use temporary detached snapshots of exact candidate commits.
+
+Verified state
+- Daisuke134/life-manager is repository ID 1248111245, but main has apps/life-manager=0, packages/engine=0, and canonical consolidation spec=0.
+- Daisuke134/anicca-products still contains apps/life-call and the spec. Rename is done; whole-product consolidation is not.
+- PRs #355 and #356 are merged; they add 8i, set pending count to 28, route 9b after 8i, and require VPS/cloud browser execution.
+- Latest successful Life Call production deployment is b3fd36f5-2f8e-4b54-b714-d387e7eb194c at commit 4836ca90ddd4999fc952718023cf92583220ca2c; later documentation commits are Railway SKIPPED.
+- Fresh smoke: production /health HTTP 200 with ok=true; /panel HTTP 200 with cache-control no-store.
+- No product/provider/account mutation occurred during this handover run.
+
+Active blockers
+- 8e: code/release pass; production L3 requires real controlled target-inbox Message-ID readback.
+- 8f: code/schema/release pass; production L3 requires a real location input reaching the Bot API webhook. Do not run a fourth MTProto simulation.
+- Continue every independent item; Phase 1 cannot be called done while either remains pending.
+
+First safe resume action
+From shared local main, fetch and verify HEAD/upstream/dirty state without editing. Read this handover and spec §10 from current origin/main. Require both routed worktrees clean, fast-forward the spec worktree to current anicca-products/origin/main and implementation worktree to current life-manager/origin/main, create durable execution-notes.md, and execute 8i through Superpowers/TDD/review/real L3. Continue through all remaining rows.
+
+EXACT USER-SENDABLE GOAL
+
+/goal Finish Life Manager end-to-end until every pending row in §10 of the canonical spec is genuinely done; never stop at a plan, local tests, one PR, 8i, or marketing setup. First read `/Users/anicca/anicca-project/.claude/handovers/2026-07-24_0246_life-manager-end-to-end.md` and `/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §10, then fetch and re-measure git/runtime truth. Routing: the session starts at `/Users/anicca/anicca-project` branch `main`, upstream `origin/main`, verified baseline `7ce9db9b3a4ebdf3a9a262eea9f59f4213f0e9ac`; it has 16 pre-existing untracked paths, so NEVER edit, switch, stage, clean, merge, or rebase this shared checkout. Spec/handover writes use `/Users/anicca/anicca-project/.worktrees/lm-8i-handover-20260724`, branch `docs/lm-8i-handover-20260724`, push `origin/docs/lm-8i-handover-20260724`; fetch and fast-forward it before edits. 8i implementation uses `/Users/anicca/anicca/.worktrees/one-repo-migration`, branch `feat/one-repo-migration`, verified HEAD `bfbcb915cbf7ed08da2d44c498bd82b9a5f07ae4`, clean, nine behind canonical `origin/main=303fc30a50e4db88522d88c6da71b40bf2e67665`; fetch, require clean, fast-forward only, then push `origin/feat/one-repo-migration`. Never touch dirty `/Users/anicca/anicca` (`feature/dist1-mcp-launchd`, 17 live-log changes) or unrelated worktrees. After 8i cutover, use one isolated `/Users/anicca/anicca/.worktrees/lm-<ID>` branch from latest canonical main per atomic and merge it before the next; `Daisuke134/life-manager` becomes the only product/spec/deployment repo. Complete 8i first: migrate only `apps/life-call→apps/life-manager`, required engine/skills, SSOT docs, and deployment config; preserve repository ID/history, secrets/PII/generated artifacts=0, no force-push/new repo/downtime, and archive `anicca-products` only after equivalence, focused/full/eval, build, real `/health`+TG+`/panel` L3, Railway exact-commit deployment, and fresh review pass. Then finish all 28 rows: close 8e only with real controlled-inbox Message-ID readback and 8f only with real Bot API location input; complete 9b–9f marketing with public URLs/readback and delegated streaks; complete DEV 10a–10f, BRAIN 10g–10i, PHYSICAL 11a–11d, MENTAL 12a–12c, and FINANCE 13a–13d with each row’s exact L1/L2/L3 evidence. Browser research/booking/external actions run on VPS/cloud, never a persistent local session; CAPTCHA/OAuth/3DS gets minimal user handoff, then the same cloud job resumes. For each meaningful edit: verify, stage, commit, push, PR, merge, fetch, and prove exact commit containment in remote main; update §10 and durable `execution-notes.md` from measured facts. Search docs/web/GitHub before assumptions. After 3 distinct failures, record evidence, search the boundary, pivot, and continue independent work. Never weaken tests, substitute fixtures/demo/local state for named real evidence, expose secrets/PII, or trust worker completion claims. Use `spawn_agent` for one fresh read-only adversarial review from a temporary detached snapshot at each high-risk migration/production release; correctness/security/Done findings block until fixed. Do not end a turn on a progress report while safe required work remains. Honest blocked-stop is allowed only after 3 distinct approaches or a required credential/approval/real-user action has no safe substitute: preserve and push state, update spec/notes with exact evidence and the smallest user action, then continue every independent row. Done only when §10 pending count is zero, canonical repo and production match exact commits, all public/provider/on-chain evidence reads back, old `anicca-products` is archived+redirected only after cutover, independent final review passes, and the final report links every artifact/URL/hash without overclaiming.
+
+READ-ONLY FALLBACK START PROMPT
+
+Read `/Users/anicca/anicca-project/.claude/handovers/2026-07-24_0246_life-manager-end-to-end.md` and the current `origin/main` version of `/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §10. Verify git state read-only, list the exact remaining TODOs, draw the complete TO-BE ASCII tree, and wait. Do not edit files, activate a goal, create workers, or perform external side effects.
