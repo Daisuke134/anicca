@@ -36,6 +36,14 @@ if grep -Fq 'アニッチャ' README.ja.md; then
   echo 'legacy AI name remains in README.ja.md' >&2
   exit 1
 fi
+for product_identity_file in \
+  THESIS.md docs/EXECUTION-ORDER.md install.sh runtime/loop/ledger-publish.mjs \
+  skills/earn/x402-sell/chip-metadata.json skills/earn/x402-sell/chip.json; do
+  if grep -Fq 'Anicca' "$product_identity_file"; then
+    echo "legacy product/AI name remains: $product_identity_file" >&2
+    exit 1
+  fi
+done
 if git grep -nI -E "$identity_contradiction_pattern" -- README.md README.ja.md; then
   echo 'README still describes Life Manager as a separate repository' >&2
   exit 1
