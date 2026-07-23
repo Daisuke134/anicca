@@ -24,14 +24,14 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 
 | 分類 | 現在状態 |
 |---|---|
-| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`、HEAD `da9bcd6`（runtime実装baseline `845b010`、以後はdocs-only） |
+| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`、HEAD `3993372`。実装branch `fix/gig-browser-ownership-20260724` は `f7f180a` |
 | browser | launchd所有 `ai.anicca.hf-gig-browser`、Gig専用 CDP `:9223`、profile `gig-daily-driver`、KeepAlive。対話用`:9222`とは分離 |
 | scheduler | pass `:00/:30`、reply 300秒、auditor `:45`、core-health 300秒、selfimprove verify 3600秒、report `09:07`。合計673 scheduled invocation/日、browserは常駐 |
 | completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、material-event gate、bounded context、provider routing、token circuit breaker |
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
 | model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
-| tests | Python `267 passed, 119 subtests passed`、Node self-improvement suite PASS。`test_gig_paid_work_gate.sh` の browser-fail recoveryだけRED |
-| live reply blocker | thread `9967694`、revision `19`、`reconcile_pending`。verified hash/seller send timeなし |
+| tests | reply pathはPython `298 passed, 158 subtests passed`、Node `74`、shell integration `4` PASS。`test_gig_paid_work_gate.sh` の browser-fail recoveryだけRED |
+| live reply blocker | thread `9967694`、action `1`、revision `36`、`blocked`。seller message 0、last sender buyer、verified hash/seller send timeなし。相手プロフィールはnot-foundで、同じbuyer eventの再送を隔離中 |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
 | verifier integration debt | 正常な`no_change` pass後もselfimprove verifierが6項目すべてをmissing扱いする。self-improvement本体の再実装ではなく、no-change契約の修正対象 |
 
@@ -63,6 +63,28 @@ Nouhin（制作/進捗/納品/修正/承諾/入金）** の4 laneすべてを確
 `verified_outcomes`、`noop_reason`、`duplicate_count`、`model_calls`、`cost`、`revenue`
 を持つ。4 laneのいずれかが欠測なら、その日のdaily operationはPASSにしない。self-improvementは
 このlane別ground truthを使い、改善をkeep/revertする。
+
+### §0.4 B1 external blocker gate
+
+thread `9967694` はCoconala自身のjQuery submitと同じ
+`application/x-www-form-urlencoded`、同じ10 fields、同じendpoint
+`/mypage/direct_message_ajax/9967694`まで一致する。production loopのrevision `34` と `35` は
+HTTP完了後に `submit_rejected_sending_unavailable` となる。各executor停止から120秒後に
+authoritative rereadし、seller message 0、last sender buyer、outgoing hash一致0、Telegram 0を
+確認するため、delivery unknownではない。
+
+thread DOMが指す相手 `/users/6186053` は、profile link 3件、block対象form、thread data IDが一致する。
+同じ認証済みbrowserでprofileを読むと「ご指定のページが 見つかりませんでした」となり、通常の
+message controlも存在しない。自分側はlogin済みでmessage formが存在し、利用停止表示もない。
+
+ソース: [ココナラヘルプ「メッセージ機能について」](https://coconala-support.zendesk.com/hc/ja/articles/218721057-%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E6%A9%9F%E8%83%BD%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
+/ 核心の引用: 「相手に機能制限がかかっている」場合は「メッセージが送信できません」。
+
+この相手状態はloop側で解除できない。action `1` はrevision `36`の`blocked`へ隔離し、同じeventを
+blind retryしない。相手profileがactiveへ戻る、または同threadで新しい一意buyer eventを観測した
+場合だけpendingへ戻し、production loop自身が1回送信する。profileがnot-foundのままなら、
+Coconala問い合わせによる相手状態の確認・解除が外部解除条件であり、Codex/loopは問い合わせを
+自動送信しない。
 
 ---
 
@@ -442,7 +464,7 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
-| **1** | **B1 native submitを閉じる** | thread `9967694` revision `19`をauthoritative rereadし、未送信を確認してからCoconala自身のvalidation/native submit経路をsenderで発火させる。interactive browserで手動返信しない | 本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
+| **1** | **B1 native submitを閉じる — external BLOCKED** | §0.4の相手profile not-foundが解除されるまでthread `9967694`へ再送しない。profile activeまたは新しい一意buyer eventをauthoritative rereadしてから、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる | 本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
 | **2** | **paid-work recovery REDを閉じる** | `test_gig_paid_work_gate.sh`のbrowser-fail recoveryで欠けるpaid-progress再開を直す。accepted artifact/hash/acceptance bundleを再利用しbuilderを再起動しない | shell suite PASS。browser failure後も`deterministic-paid-progress`が実行され、`gig-PAID_WORK`再実行0、下位ledger無変更 |
 | **3** | **selfimprove verifierのno-change誤警報を閉じる** | mtimeだけでなく最新`poll-control.json`のpass ID/outcomeを読む。`no_change`は正常no-op、material/improve passだけ必要証拠を要求する | no-changeでmissing 0・model call 0。material/improve fixtureで証拠欠落だけを次pass TODOへ記録。既存keep/revert挙動不変 |
 | **4** | **4 lane state-machine failure injectionを完了する** | Shuppinの公開/更新/no-op、Oubo、Reply、Nouhinの制作/進捗/formal delivery/revision/acceptance/payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0 |
