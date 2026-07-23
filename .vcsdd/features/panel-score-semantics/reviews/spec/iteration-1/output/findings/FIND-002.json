@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "The verification architecture introduces mixed-currency failure behavior that the authoritative behavioral specification never defines. The phrase non-measured state supplies no exact status, value, numerator, denominator, reason, or HTTP behavior, so this architecture-only branch cannot be graded against REQ-006 or REQ-007.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "43-48",
+    "snippet": "Financial scoring inputs for one evaluation use one currency; mixed-currency rows fail closed with a plain-language non-measured state and never produce a percentage."
+  },
+  "routeToPhase": "1a"
+}

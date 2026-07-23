@@ -7,7 +7,23 @@
       "mode": "lean",
       "currentPhase": "complete",
       "updatedAt": "2026-07-07T11:55:22.046Z"
+    },
+    "life-manager-panel-control-center": {
+      "status": "active",
+      "createdAt": "2026-07-21T08:10:26.407Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "2b",
+      "updatedAt": "2026-07-21T08:29:43.007Z"
+    },
+    "panel-score-semantics": {
+      "status": "active",
+      "createdAt": "2026-07-22T14:20:06.991Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "6",
+      "updatedAt": "2026-07-22T20:31:52.251Z"
     }
   },
-  "activeFeature": "fable5-config-slimdown"
+  "activeFeature": "panel-score-semantics"
 }

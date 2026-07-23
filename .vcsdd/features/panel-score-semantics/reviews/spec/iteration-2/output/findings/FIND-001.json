@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-001 still does not supply the promised closed field-and-type contract for components. The common, DAILY, PHYSICAL, and MENTAL component keys have no value types or nullability rules, and even the FINANCIAL sentence leaves each named key's count-versus-boolean mapping implicit. Incompatible JSON payloads can therefore satisfy the listed key names while breaking endpoint and UI interoperability, so iteration-1 FIND-001 is not materially closed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "27-31",
+    "snippet": "components: a JSON object with common timezone and excluded_unknown_count, plus exactly: ... DAILY ... PHYSICAL ... MENTAL ... FINANCIAL"
+  },
+  "routeToPhase": "1a"
+}

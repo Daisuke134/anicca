@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-003", "dimension": "structural_integrity", "category": "code_structure", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:370 — sessionから得た`uid + chat_id`を`lm_users`へ全リクエストで再照合していない。既存timeline/scores/ledger/gates/settingsはuidだけで読むため、Telegram再紐付け後の旧sessionでもデータを読める。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "370-370" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

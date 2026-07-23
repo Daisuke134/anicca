@@ -1,0 +1,31 @@
+{
+  "reviewType": "contract",
+  "featureName": "panel-score-semantics",
+  "sprintNumber": 3,
+  "contractPath": "contracts/sprint-3.md",
+  "contractDigest": "a6a3b6848ba26167823751bf5437508bff61c36640d0ac7720df844f987365ea",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "apps/life-call/lib/panel-score-semantics.test.js",
+      "apps/life-call/lib/panel-ui.test.js",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-3-red-phase.log",
+      ".vcsdd/features/panel-score-semantics/evidence/sprint-3-green-phase.log"
+    ],
+    "source": [
+      "apps/life-call/lib/panel-score-semantics.js",
+      "apps/life-call/lib/panel-ui.js",
+      ".vcsdd/features/panel-score-semantics/state.json"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ]
+}

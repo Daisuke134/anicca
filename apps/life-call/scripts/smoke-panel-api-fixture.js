@@ -14,10 +14,13 @@ function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
-async function fixtureFetch(input) {
+async function fixtureFetch(input, init = {}) {
   const url = new URL(input);
+  if (url.pathname.endsWith("/rpc/resolve_lm_panel_session")) {
+    return response(JSON.parse(init.body).p_session_hash === SESSION_HASH ? [{ uid: "fixture-u1", chat_id: "101", rotated: false }] : []);
+  }
   if (url.pathname.endsWith("/lm_panel_sessions")) {
-    return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1" }] : []);
+    return response(url.searchParams.get("session_hash") === `eq.${SESSION_HASH}` ? [{ uid: "fixture-u1", chat_id: "101" }] : []);
   }
   assert.equal(url.searchParams.get("uid"), "eq.fixture-u1", `tenant filter missing: ${url}`);
   if (url.pathname.endsWith("/lm_users")) return response([{
@@ -25,6 +28,7 @@ async function fixtureFetch(input) {
     calendar_provider: "composio_gcal", gmail_account_id: null,
     telegram_chat_id: "101", payout_destination: null,
   }]);
+  if (url.pathname.endsWith("/lm_panel_preferences")) return response([{ call_time_zone: "UTC" }]);
   if (url.pathname.endsWith("/lm_user_locations")) return response([{
     uid: "fixture-u1", observed_at: "2026-07-21T11:00:00.000Z", expires_at: "2026-07-21T13:00:00.000Z",
   }]);

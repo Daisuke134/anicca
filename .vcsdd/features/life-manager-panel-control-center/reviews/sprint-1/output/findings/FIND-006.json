@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-006", "dimension": "implementation_correctness", "category": "implementation_bug", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:328 — disable後のreadbackが同じaccount IDか確認されず、失敗時に再enableするrollbackもない。provider状態を変更したまま失敗を返し、「以前の状態は不変」というUI/chat報告を偽にする。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "328-328" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

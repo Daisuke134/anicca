@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "spec_ambiguity",
+  "severity": "high",
+  "description": "The period algorithm requires the same local wall-clock time across DST but gives no disambiguation rule when that target local time is nonexistent during spring-forward or occurs twice during fall-back. An iterative offset calculation alone does not select earlier, later, shift-forward, or reject semantics, so start_at and included rows are not deterministic for the named DST cases.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "52-57",
+    "snippet": "DAILY and MENTAL start at the same local wall-clock time seven local calendar days earlier."
+  },
+  "routeToPhase": "1a"
+}

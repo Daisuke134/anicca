@@ -33,8 +33,10 @@ const TG_LINK_URL = '/.netlify/functions/lm-onboard?action=telegram-link';
 // If the env is unset, the button is hidden and the user sees a truthful "checkout not ready" note.
 const STRIPE_LM_URL = process.env.NEXT_PUBLIC_STRIPE_LM_URL || '';
 const PHONE_RE = /^\+?[1-9]\d{7,14}$/;
-const STORAGE_KEY = 'anicca.lm.uid';
-const SIG_KEY = 'anicca.lm.sig';
+const LEGACY_UNSCOPED_KEYS = [
+  'anicca.lm.uid', 'anicca.lm.sig', 'anicca.lm.step', 'anicca.lm.cal',
+  'anicca.lm.tg', 'anicca.lm.tgname',
+];
 // /test-call on the cloud wake service: POST {uid, sig} (HMAC auth) -> phone lookup -> ONE immediate Charon
 // call. We expose it as a ONE-TIME proof-of-life button on the dashboard (disabled after success) so a new
 // user hears it works once -- without inviting repeated billed taps (Dais 2026-06-22 cost concern). Real wake
@@ -69,6 +71,23 @@ const COUNTRIES: { c: string; n: string; d: string; f: string }[] = [
 
 type Step = 'login' | 'name' | 'connect' | 'phone' | 'pay' | 'dashboard';
 type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
+type CalendarGrant = { purpose: 'oauth' | 'status'; exp: number; nonce: string; sig: string };
+type CalendarGrants = { oauth: CalendarGrant; status: CalendarGrant };
+
+function splitPhone(phone: unknown) {
+  const value = String(phone || '');
+  if (!PHONE_RE.test(value)) return { dial: '81', national: '' };
+  const digits = value.replace(/^\+/, '');
+  const match = [...COUNTRIES].sort((a, b) => b.d.length - a.d.length).find((country) => digits.startsWith(country.d));
+  return match ? { dial: match.d, national: digits.slice(match.d.length) } : { dial: '81', national: '' };
+}
+
+function calendarGrantQuery(uid: string, grant: CalendarGrant) {
+  const query = new URLSearchParams({
+    uid, purpose: grant.purpose, exp: String(grant.exp), nonce: grant.nonce, sig: grant.sig,
+  });
+  return `/.netlify/functions/calendar-connect?${query.toString()}`;
+}
 
 function StepDots({ step, ariaLabel }: { step: Step; ariaLabel: string }) {
   const order: Step[] = ['login', 'name', 'connect', 'phone', 'pay', 'dashboard'];
@@ -108,6 +127,7 @@ export default function LmClient() {
   // useState's initializer only runs once (before locale hydrates), so keep the default in sync with the
   // display language until the user explicitly picks — then their choice sticks.
   const langPicked = useRef(false);
+  const calendarGrants = useRef<CalendarGrants | null>(null);
   useEffect(() => {
     if (!langPicked.current) setLang(locale === 'ja' ? 'ja' : 'en');
   }, [locale]);
@@ -131,89 +151,72 @@ export default function LmClient() {
     }
   }, [uid, sig]);
 
-  // Login = Supabase Auth (Google). On return from Google OAuth (or any load with a live session),
-  // exchange the Supabase access token for a signed uid, then restore in-session progress. The
-  // persistent Supabase session (not localStorage) is the source of truth for "logged in".
+  // Login = Supabase Auth (Google). The exchange response contains the authenticated user's durable
+  // onboarding row; browser storage is never allowed to choose a step or connector state.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let id = window.localStorage.getItem(STORAGE_KEY) || '';
-      let s = window.localStorage.getItem(SIG_KEY) || '';
       const session = await getSession();
-      if (session?.access_token) {
-        try {
-          const r = await fetch(EXCHANGE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token: session.access_token }),
-          });
-          const d = await r.json();
-          if (d.uid && d.sig) {
-            id = d.uid;
-            s = d.sig;
-          }
-        } catch {}
-      }
-      if (cancelled || !id) return;
+      if (!session?.access_token) return;
+      let d: any;
+      try {
+        const r = await fetch(EXCHANGE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: session.access_token }),
+        });
+        d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.uid || !d.sig || !d.onboarding) return;
+      } catch { return; }
+      if (cancelled) return;
+
+      const id = String(d.uid);
+      const s = String(d.sig);
+      const durable = d.onboarding;
       setUid(id);
       setSig(s);
-      window.localStorage.setItem(STORAGE_KEY, id);
-      if (s) window.localStorage.setItem(SIG_KEY, s);
-      // Restore connect state. If a reload caught a connection mid-flight ('connecting'), the poll that
-      // would have resolved it died with the previous page — so re-check the REAL status (check=1) and
-      // resolve to 'connected'/'idle' instead of leaving the button stuck on "接続中…" forever (E3 fix).
-      const restoreConn = (key: string, fn: string, set: (st: ConnState) => void) => {
-        const saved = (window.localStorage.getItem(key) as ConnState) || 'idle';
-        if (saved !== 'connecting') { set(saved); return; }
-        set('connecting');
-        fetch(`/.netlify/functions/${fn}?uid=${encodeURIComponent(id)}&sig=${encodeURIComponent(s)}&check=1`)
-          .then((r) => r.json())
-          .then((d) => set(d && d.connected ? 'connected' : 'idle'))
-          .catch(() => set('idle'));
-      };
-      restoreConn('anicca.lm.cal', 'calendar-connect', setCal);
-      // Telegram deep-link (/lm?tg=<chat_id>): stash the chat id (survives the Google redirect via
-      // localStorage), then bind it to this row once we have a signed uid so the cloud loops can
-      // message the user on Telegram.
+      calendarGrants.current = d.calendarConnect || null;
+      for (const key of LEGACY_UNSCOPED_KEYS) window.localStorage.removeItem(key);
+      setName(typeof durable.name === 'string' ? durable.name : '');
+      setCal(durable.calendarConnected === true ? 'connected' : 'idle');
+      if (durable.callLanguage === 'en' || durable.callLanguage === 'ja') {
+        langPicked.current = true;
+        setLang(durable.callLanguage);
+      }
+      const savedPhone = splitPhone(durable.phone);
+      setDial(savedPhone.dial);
+      setNatNum(savedPhone.national);
+      const durableStep = ['name', 'connect', 'phone', 'pay', 'dashboard'].includes(durable.step)
+        ? durable.step as Step : 'name';
+      setStep(durableStep);
+
+      // Telegram deep-link (/lm?tg=<chat_id>) is removed only after the server confirms the binding.
+      // A non-2xx keeps the URL intact so a reload can safely retry it.
       const sp = new URLSearchParams(window.location.search);
       const tgParam = sp.get('tg');
-      if (tgParam && /^\d{1,20}$/.test(tgParam)) window.localStorage.setItem('anicca.lm.tg', tgParam);
-      // The Telegram bot collects the name in-chat and passes it via ?name= — stash + persist it so
-      // the two channels share one row (and the user skips re-typing their name on the web form).
       const nameParam = sp.get('name');
-      if (nameParam && nameParam.trim()) window.localStorage.setItem('anicca.lm.tgname', nameParam.trim().slice(0, 120));
-      const tg = window.localStorage.getItem('anicca.lm.tg');
-      if (tg && s) {
-        const tgname = window.localStorage.getItem('anicca.lm.tgname') || '';
-        fetch(TG_LINK_URL, {
+      if (tgParam && /^\d{1,20}$/.test(tgParam)) {
+        const bindingKey = `anicca.lm.user:${id}:telegram-binding`;
+        window.localStorage.setItem(bindingKey, JSON.stringify({
+          tg: tgParam, name: nameParam && nameParam.trim() ? nameParam.trim().slice(0, 120) : '',
+        }));
+        const linked = await fetch(TG_LINK_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: id, sig: s, tg, name: tgname }),
-        }).then(() => {
-          window.localStorage.removeItem('anicca.lm.tg');
-          window.localStorage.removeItem('anicca.lm.tgname');
-        }).catch(() => {});
+          body: JSON.stringify({
+            uid: id, sig: s, tg: tgParam,
+            name: nameParam && nameParam.trim() ? nameParam.trim().slice(0, 120) : '',
+          }),
+        }).catch(() => null);
+        const linkedBody = linked ? await linked.json().catch(() => ({})) : {};
+        if (!linked || !linked.ok || !linkedBody.ok) return;
+        window.localStorage.removeItem(bindingKey);
       }
-      // Returning from Stripe (?paid=1) → straight to the dashboard. The lm-stripe-webhook flips
-      // paid=true server-side; this just lands the user on the right screen immediately.
-      const paidReturn = new URLSearchParams(window.location.search).get('paid') === '1';
-      const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
-      setStep(paidReturn ? 'dashboard' : savedStep && savedStep !== 'login' ? savedStep : 'name');
-      // strip any OAuth/Stripe params from the visible URL
       window.history.replaceState(null, '', '/lm');
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  // Persist progress (cal/step) so the OAuth redirect never strands the user mid-flow.
-  useEffect(() => {
-    if (!uid) return;
-    try {
-      window.localStorage.setItem('anicca.lm.cal', cal);
-      window.localStorage.setItem('anicca.lm.step', step);
-    } catch {}
-  }, [uid, cal, step]);
 
   const login = useCallback(() => {
     // Supabase Auth (Google provider). Redirects to Google consent, returns to /lm with a session.
@@ -224,11 +227,13 @@ export default function LmClient() {
     setErr('');
     if (!name.trim()) return setErr(t.name.error);
     try {
-      await fetch(SAVE_URL, {
+      const r = await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, sig, name: name.trim(), call_language: lang }),
       });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) return setErr(t.name.saveError);
       setStep('connect');
     } catch (e) {
       setErr(t.name.saveError);
@@ -243,10 +248,19 @@ export default function LmClient() {
       set('connecting');
       // Open the consent tab NOW, synchronously in the click gesture (survives popup blockers).
       const w = window.open('about:blank', '_blank');
-      const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
+      const grants = calendarGrants.current;
+      if (fn !== 'calendar-connect' || !grants) {
+        set('error');
+        try { w && w.close(); } catch {}
+        return;
+      }
+      const base = calendarGrantQuery(uid, grants.oauth);
+      const statusUrl = `${calendarGrantQuery(uid, grants.status)}&check=1`;
       (async () => {
         try {
-          const d = await (await fetch(base)).json();
+          const first = await fetch(base);
+          const d = await first.json().catch(() => ({}));
+          if (!first.ok) throw new Error('calendar connect rejected');
           if (d.connected) {
             set('connected');
             try { w && w.close(); } catch {}
@@ -264,8 +278,9 @@ export default function LmClient() {
                 return;
               }
               try {
-                const dd = await (await fetch(`${base}&check=1`)).json();
-                if (dd.connected) {
+                const status = await fetch(statusUrl);
+                const dd = await status.json().catch(() => ({}));
+                if (status.ok && dd.connected) {
                   clearInterval(poll);
                   set('connected');
                   try { w && w.close(); } catch {}
