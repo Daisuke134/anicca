@@ -6,6 +6,7 @@ set -euo pipefail
 TASK_CLASS=""
 EVIDENCE_DIR=""
 TASK_LABEL=""
+LOOP=""
 SCHEMA=""
 WORKDIR="${AGENT_RUNNER_WORKDIR:-$HOME}"
 PRINT_RESULT=0
@@ -15,6 +16,7 @@ while [ "$#" -gt 0 ]; do
     --task-class) TASK_CLASS="${2:-}"; shift 2 ;;
     --evidence-dir) EVIDENCE_DIR="${2:-}"; shift 2 ;;
     --task-label) TASK_LABEL="${2:-}"; shift 2 ;;
+    --loop) LOOP="${2:-}"; shift 2 ;;
     --schema) SCHEMA="${2:-}"; shift 2 ;;
     --workdir) WORKDIR="${2:-}"; shift 2 ;;
     --print-result) PRINT_RESULT=1; shift ;;
@@ -28,6 +30,7 @@ case "$TASK_CLASS" in
 esac
 [ -n "$EVIDENCE_DIR" ] || { echo "run_agent.sh: missing --evidence-dir" >&2; exit 2; }
 [ -n "$TASK_LABEL" ] || { echo "run_agent.sh: missing --task-label" >&2; exit 2; }
+[ -n "$LOOP" ] || { echo "run_agent.sh: missing --loop" >&2; exit 2; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNNER="${AGENT_RUNNER_BIN:-$HOME/profitable-claude/skills/agent-runner/agent_runner.py}"
@@ -52,6 +55,7 @@ set +e
   --schema "$SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "$TASK_LABEL" \
+  --loop "$LOOP" \
   --workdir "$WORKDIR" >"$RUNNER_STDOUT"
 RC=$?
 set -e

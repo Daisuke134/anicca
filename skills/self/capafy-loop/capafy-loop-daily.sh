@@ -20,7 +20,8 @@ EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/capafy-marketplace/$(d
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-class tool-agent \
   --evidence-dir "$EVIDENCE_DIR" \
-  --task-label capafy-marketplace-daily >>"$LOG" 2>&1
+  --task-label capafy-marketplace-daily \
+  --loop capafy >>"$LOG" 2>&1
 RC=$?
 echo "=== capafy-loop-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$HOME/.openclaw/state/.capafy-loop-last-pass" 2>/dev/null || true

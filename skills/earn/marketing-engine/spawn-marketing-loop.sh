@@ -72,6 +72,7 @@ MKT_CADENCE_HOUR=<an integer 0-23; default 16 if unsure>'
     --schema "$ENGINE_DIR/schemas/manifest_judgment.schema.json" \
     --evidence-dir "$EVIDENCE_DIR" \
     --task-label "marketing-spawn-${SLUG}" \
+    --loop marketing-engine \
     --print-result)" || exit $?
   JUDGMENT_RAW="$(printf '%s' "$JUDGMENT_JSON" | /usr/bin/python3 -c 'import json,sys; data=json.load(sys.stdin); lines=data.get("manifest_lines", []); len(lines) == 8 or sys.exit("expected exactly 8 manifest_lines"); print("\\n".join(lines))')" || exit $?
 fi
