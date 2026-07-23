@@ -32,3 +32,13 @@ def test_browser_guard_passes_owner_to_recovery_gc():
 
     assert 'CDP="${CLOAK_CDP_BASE_URL:-http://127.0.0.1:9222}"' in source
     assert 'cdp_tab_gc.py" --owner "$CLOAK_BROWSER_OWNER"' in source
+
+
+def test_launchd_owned_browser_recovery_does_not_start_a_second_raw_process():
+    source = (
+        Path(__file__).resolve().parents[1] / "ensure_browser.sh"
+    ).read_text(encoding="utf-8")
+
+    assert 'CLOAK_BROWSER_LAUNCHD_LABEL' in source
+    assert 'launchctl kickstart -k "gui/$(id -u)/$CLOAK_BROWSER_LAUNCHD_LABEL"' in source
+    assert "wait_for_alive" in source
