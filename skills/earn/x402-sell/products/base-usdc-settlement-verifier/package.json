@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Fail-closed verification of finalized external Base USDC settlements",
   "type": "module",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "bin": {
     "base-usdc-settlement-verify": "./bin/verify.mjs"
   },

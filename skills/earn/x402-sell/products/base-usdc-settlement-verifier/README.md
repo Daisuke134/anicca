@@ -62,4 +62,4 @@ Keep every wallet you control in `selfWallets`. If an owned sender is omitted, a
 
 ## License
 
-MIT. See `LICENSE`.
+Offered under the SpawnXchange Standard Buyer License v1. See `LICENSE`.
