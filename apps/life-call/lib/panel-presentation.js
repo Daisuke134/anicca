@@ -6,22 +6,12 @@ const {
   safeDate,
   safeHttpsLink,
 } = require("./panel-display-policy.js");
+const {
+  SCORE_NAMES,
+  validScoreOrgan,
+} = require("./panel-score-display-contract.js");
 
 const SAFE_TIMELINE_SENTENCE = "予定の詳細を安全に表示できず、次はカレンダーで開始時刻を確認してください。";
-const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
-const SCORE_STATUSES = new Set(["measured", "insufficient_data", "invalid_data"]);
-const SCORE_PERIOD_KINDS = Object.freeze({
-  daily: "rolling_7_days",
-  physical: "rolling_30_days",
-  mental: "rolling_7_days",
-  financial: "calendar_month",
-});
-const SCORE_COMPONENT_KEYS = Object.freeze({
-  daily: ["timezone", "excluded_unknown_count", "eligible_events", "resolved_events", "required_succeeded", "required_failed", "required_pending", "context_unnecessary", "optional_ignored"],
-  physical: ["timezone", "excluded_unknown_count", "detected_needs", "confirmed_booking", "confirmed_completion", "unresolved_needs", "search_candidate_unconfirmed"],
-  mental: ["timezone", "excluded_unknown_count", "deduplicated_triggers", "delivered_within_cap", "suppression_honored", "correction_persisted", "cap_overflow", "unresolved_triggers"],
-  financial: ["timezone", "excluded_unknown_count", "currency", "gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor", "excluded_rows", "net_clamped"],
-});
 const CONNECTION_NAMES = Object.freeze(["calendar", "telegram", "location", "call", "email", "wallet"]);
 const CONNECTION_STATES = new Set(["connected", "action_required", "error", "unavailable"]);
 const CONTROL_NAMES = Object.freeze(["delegation", "physical_automation", "mental_automation", "financial_automation"]);
@@ -172,32 +162,10 @@ function projectLedger(candidate) {
   };
 }
 
-function validNumberOrNull(value) {
-  return value === null || (typeof value === "number" && Number.isFinite(value));
-}
-
-function validComponentValue(value) {
-  return value === null
-    || typeof value === "boolean"
-    || (typeof value === "number" && Number.isFinite(value) && value >= 0)
-    || (typeof value === "string" && value.length <= 100 && !containsSensitiveDisplayValue(value));
-}
-
-function validScoreOrgan(name, value) {
-  if (!exactKeys(value, ["status", "value", "period", "numerator", "denominator", "reason", "source_outcome_ids", "components"])) return false;
-  if (!SCORE_STATUSES.has(value.status) || !validNumberOrNull(value.value) || !validNumberOrNull(value.numerator) || !validNumberOrNull(value.denominator)) return false;
-  if (typeof value.reason !== "string" || containsSensitiveDisplayValue(value.reason)) return false;
-  if (!exactKeys(value.period, ["kind", "start_at", "end_at"]) || value.period.kind !== SCORE_PERIOD_KINDS[name]) return false;
-  if (!Number.isFinite(Date.parse(value.period.start_at)) || !Number.isFinite(Date.parse(value.period.end_at))) return false;
-  if (!Array.isArray(value.source_outcome_ids) || value.source_outcome_ids.some((ref) => !/^outcome:[0-9a-f-]{36}$/.test(ref))) return false;
-  if (!exactKeys(value.components, SCORE_COMPONENT_KEYS[name])) return false;
-  return Object.values(value.components).every(validComponentValue);
-}
-
 function validateScores(candidate) {
-  if (!exactKeys(candidate, ["organs"]) || !exactKeys(candidate.organs, SCORE_ORGANS)) fail("scores");
+  if (!exactKeys(candidate, ["organs"]) || !exactKeys(candidate.organs, SCORE_NAMES)) fail("scores");
   if (containsSensitiveDisplayValue(candidate)) fail("scores");
-  for (const organ of SCORE_ORGANS) {
+  for (const organ of SCORE_NAMES) {
     if (!validScoreOrgan(organ, candidate.organs[organ])) fail("scores");
   }
   return candidate;

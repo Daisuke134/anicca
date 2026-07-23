@@ -54,6 +54,36 @@ function withControlConnection(candidate, name, mutate) {
   return next;
 }
 
+function measuredScoreCandidate(candidate) {
+  const next = structuredClone(candidate);
+  next.organs.daily = {
+    ...next.organs.daily,
+    status: "measured",
+    value: 50,
+    numerator: 1,
+    denominator: 2,
+    reason: "2件の予定のうち1件に対応しました。",
+    source_outcome_ids: [
+      "outcome:10000000-0000-4000-8000-000000000001",
+      "outcome:10000000-0000-4000-8000-000000000002",
+    ],
+    components: {
+      ...next.organs.daily.components,
+      eligible_events: 2,
+      resolved_events: 1,
+      required_succeeded: 1,
+      required_failed: 1,
+    },
+  };
+  return next;
+}
+
+function withDailyScore(candidate, mutate) {
+  const next = structuredClone(candidate);
+  mutate(next.organs.daily);
+  return next;
+}
+
 test("PANEL-8h: emitted loadPanelSection renders five projected sections as human-readable content in order", async () => {
   const page = renderPanelPage();
   let previous = -1;
@@ -211,5 +241,85 @@ test("PANEL-8h: control-center optional action fields have identical API and emi
     assert.deepEqual(captured.body, { error: "section_unavailable", section: "control-center" });
     assert.equal(browser.state, "error", `${label}: emitted loader stays closed`);
     assert.equal(browser.html, `<p class="error">${BROWSER_LOAD_ERROR_COPY}</p>`);
+  }
+});
+
+test("PANEL-8h: every API-accepted score candidate loads under the complete emitted score semantics", async () => {
+  const baseline = (await capturePanelResponse({ section: "scores" })).body;
+  const valid = measuredScoreCandidate(baseline);
+  for (const [label, candidate] of [
+    ["real score DTO", baseline],
+    ["measured score DTO", valid],
+  ]) {
+    const { captured, browser } = await loadExactCandidate("scores", candidate);
+    assert.equal(captured.status, 200, `${label}: API accepted`);
+    assert.equal(browser.state, "loaded", `${label}: emitted loadPanelSection parity`);
+  }
+
+  const invalid = [
+    ["empty reason", withDailyScore(valid, (organ) => { organ.reason = ""; })],
+    ["ratio contradiction", withDailyScore(valid, (organ) => { organ.value = 49; })],
+    ["invalid period kind", withDailyScore(valid, (organ) => { organ.period.kind = "rolling_30_days"; })],
+    ["reversed period", withDailyScore(valid, (organ) => {
+      [organ.period.start_at, organ.period.end_at] = [organ.period.end_at, organ.period.start_at];
+    })],
+    ["non-canonical period ISO", withDailyScore(valid, (organ) => { organ.period.start_at = "2026-07-14T12:00:00Z"; })],
+    ["malformed source UUID", withDailyScore(valid, (organ) => {
+      organ.source_outcome_ids = ["outcome:------------------------------------"];
+    })],
+    ["duplicate source UUID", withDailyScore(valid, (organ) => {
+      organ.source_outcome_ids = [
+        "outcome:10000000-0000-4000-8000-000000000001",
+        "outcome:10000000-0000-4000-8000-000000000001",
+      ];
+    })],
+    ["unsorted source UUID", withDailyScore(valid, (organ) => { organ.source_outcome_ids.reverse(); })],
+    ["component ratio mismatch", withDailyScore(valid, (organ) => { organ.components.resolved_events = 2; })],
+    ["status component mismatch", withDailyScore(valid, (organ) => {
+      organ.status = "insufficient_data";
+      organ.value = null;
+      organ.numerator = 0;
+      organ.denominator = 0;
+    })],
+  ];
+  for (const [label, candidate] of invalid) {
+    const { captured, browser } = await loadExactCandidate("scores", candidate);
+    assert.equal(captured.status, 422, `${label}: API rejects browser-invalid candidate`);
+    assert.deepEqual(captured.body, { error: "section_unavailable", section: "scores" });
+    assert.equal(browser.state, "error", `${label}: emitted loader stays closed`);
+    assert.equal(browser.html, `<p class="error">${BROWSER_LOAD_ERROR_COPY}</p>`);
+  }
+});
+
+test("PANEL-8h: score evidence uses fixed human labels and never raw component names", async () => {
+  const { browser } = await loadCaptured("scores");
+  assert.equal(browser.state, "loaded");
+  for (const label of [
+    "対象外にした不明データ",
+    "必要な対応の未完了",
+    "追加対応が不要",
+    "確認できた予約",
+    "通知できたきっかけ",
+    "確認済みの収入",
+  ]) {
+    assert.equal(browser.html.includes(label), true, `human score label visible: ${label}`);
+  }
+  for (const internal of [
+    "excluded_unknown_count",
+    "excluded unknown count",
+    "required_failed",
+    "required failed",
+    "context_unnecessary",
+    "context unnecessary",
+    "confirmed_booking",
+    "confirmed booking",
+    "delivered_within_cap",
+    "delivered within cap",
+    "gross_income_minor",
+    "gross income minor",
+    "net_clamped",
+    "net clamped",
+  ]) {
+    assert.equal(browser.html.includes(internal), false, `internal score name absent: ${internal}`);
   }
 });

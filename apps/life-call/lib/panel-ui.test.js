@@ -161,7 +161,8 @@ test("PANEL-8g: executable score renderer shows measured, insufficient, invalid,
   assert.match(html, /invalid data/);
   assert.match(html, /Resolved one of two\./);
   assert.match(html, /rolling 7 days/);
-  assert.match(html, /resolved events/);
+  assert.match(html, /対応できた予定/);
+  assert.doesNotMatch(html, /resolved events/);
   assert.match(html, /根拠 1件/);
   assert.equal((html.match(/data-score-organ=/g) || []).length, 4);
 });

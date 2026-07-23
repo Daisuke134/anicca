@@ -1,17 +1,20 @@
 // LM-33c: server-rendered, read-only mirror for the Life Manager panel.
 "use strict";
 
-const { roundedScoreValue } = require("./panel-score-semantics.js");
 const { SECRET_PATTERNS } = require("./panel-display-policy.js");
-
-const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
-const SCORE_PERIOD_KINDS = Object.freeze({ daily: "rolling_7_days", physical: "rolling_30_days", mental: "rolling_7_days", financial: "calendar_month" });
-const SCORE_COMPONENT_KEYS = Object.freeze({
-  daily: Object.freeze(["timezone", "excluded_unknown_count", "eligible_events", "resolved_events", "required_succeeded", "required_failed", "required_pending", "context_unnecessary", "optional_ignored"]),
-  physical: Object.freeze(["timezone", "excluded_unknown_count", "detected_needs", "confirmed_booking", "confirmed_completion", "unresolved_needs", "search_candidate_unconfirmed"]),
-  mental: Object.freeze(["timezone", "excluded_unknown_count", "deduplicated_triggers", "delivered_within_cap", "suppression_honored", "correction_persisted", "cap_overflow", "unresolved_triggers"]),
-  financial: Object.freeze(["timezone", "excluded_unknown_count", "currency", "gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor", "excluded_rows", "net_clamped"]),
-});
+const { roundedScoreValue } = require("./panel-score-semantics.js");
+const {
+  SCORE_COMPONENT_KEYS,
+  SCORE_COMPONENT_LABELS,
+  SCORE_LABELS,
+  SCORE_PERIOD_KINDS,
+  scoreAsDate,
+  scoreComponentRatio,
+  scoreExactKeys,
+  scoreNonNegativeInteger,
+  validScoreComponents,
+  validScoreOrgan,
+} = require("./panel-score-display-contract.js");
 const DISPLAY_SECRET_PATTERNS = Object.freeze(SECRET_PATTERNS.map((pattern) => Object.freeze({
   source: pattern.source,
   flags: pattern.flags,
@@ -23,74 +26,17 @@ function scoreEscapeHtml(value) {
   });
 }
 
-function scoreAsDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) || date.toISOString() !== value ? null : date;
-}
-
 function scoreFormatDate(value) {
   const date = scoreAsDate(value);
   if (!date) return "";
   return new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric" }).format(date);
 }
 
-function scoreExactKeys(value, expected) {
-  const actual = Object.keys(value).sort();
-  const wanted = expected.slice().sort();
-  return actual.length === wanted.length && actual.every(function (key, index) { return key === wanted[index]; });
-}
-
-function scoreNonNegativeInteger(value) {
-  return Number.isSafeInteger(value) && value >= 0;
-}
-
-function validScoreComponents(name, components, status) {
-  const keys = SCORE_COMPONENT_KEYS[name];
-  if (!keys || !scoreExactKeys(components, keys) || typeof components.timezone !== "string" || !components.timezone) return false;
-  if (name !== "financial") return keys.filter(function (key) { return key !== "timezone"; }).every(function (key) { return scoreNonNegativeInteger(components[key]); });
-  if (!scoreNonNegativeInteger(components.excluded_unknown_count) || !scoreNonNegativeInteger(components.excluded_rows) || typeof components.net_clamped !== "boolean") return false;
-  const amounts = ["gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor"];
-  if (status === "invalid_data") return components.currency === null && amounts.every(function (key) { return components[key] === null; });
-  if (!(components.currency === null || /^[A-Z]{3}$/.test(components.currency)) || !amounts.every(function (key) { return scoreNonNegativeInteger(components[key]); })) return false;
-  return status !== "measured" || /^[A-Z]{3}$/.test(String(components.currency || ""));
-}
-
-function scoreComponentRatio(name, components) {
-  if (name === "daily") return [components.resolved_events, components.eligible_events];
-  if (name === "physical") return [components.confirmed_booking + components.confirmed_completion, components.detected_needs];
-  if (name === "mental") return [components.delivered_within_cap + components.suppression_honored + components.correction_persisted, components.deduplicated_triggers];
-  const gross = components.gross_income_minor;
-  return [Math.max(0, gross - components.realized_loss_minor - components.fee_minor), gross];
-}
-
-function validScoreOrgan(name, organ) {
-  if (!organ || typeof organ !== "object" || !["measured", "insufficient_data", "invalid_data"].includes(organ.status)) return false;
-  if (!scoreExactKeys(organ, ["status", "value", "period", "numerator", "denominator", "reason", "source_outcome_ids", "components"])) return false;
-  if (!organ.period || !scoreExactKeys(organ.period, ["kind", "start_at", "end_at"]) || organ.period.kind !== SCORE_PERIOD_KINDS[name]) return false;
-  const periodStart = scoreAsDate(organ.period.start_at);
-  const periodEnd = scoreAsDate(organ.period.end_at);
-  if (!periodStart || !periodEnd || periodStart >= periodEnd) return false;
-  if (typeof organ.reason !== "string" || !organ.reason.trim() || !organ.components || typeof organ.components !== "object" || Array.isArray(organ.components)) return false;
-  if (!Array.isArray(organ.source_outcome_ids) || organ.source_outcome_ids.some(function (ref) { return !/^outcome:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(ref)); })) return false;
-  if (new Set(organ.source_outcome_ids).size !== organ.source_outcome_ids.length || organ.source_outcome_ids.some(function (ref, index) { return index > 0 && ref < organ.source_outcome_ids[index - 1]; })) return false;
-  if (!validScoreComponents(name, organ.components, organ.status)) return false;
-  if (organ.status === "measured") {
-    if (!Number.isInteger(organ.value) || organ.value < 0 || organ.value > 100 || !scoreNonNegativeInteger(organ.numerator) || !Number.isSafeInteger(organ.denominator) || organ.denominator <= 0 || organ.numerator > organ.denominator) return false;
-    const componentRatio = scoreComponentRatio(name, organ.components);
-    return organ.numerator === componentRatio[0] && organ.denominator === componentRatio[1] && organ.value === roundedScoreValue(organ.numerator, organ.denominator);
-  }
-  if (organ.status === "insufficient_data") {
-    const componentRatio = scoreComponentRatio(name, organ.components);
-    return organ.value === null && organ.numerator === 0 && organ.denominator === 0 && componentRatio[1] === 0;
-  }
-  return organ.value === null && organ.numerator === null && organ.denominator === null;
-}
-
-function renderScoreComponents(organ) {
+function renderScoreComponents(name, organ) {
   const rows = Object.keys(organ.components).filter(function (key) { return key !== "timezone"; }).map(function (key) {
     const value = organ.components[key];
-    return '<li><span>' + scoreEscapeHtml(key.replace(/_/g, " ")) + '</span>: ' + scoreEscapeHtml(value == null ? "—" : value) + '</li>';
+    const displayValue = value == null ? "—" : (typeof value === "boolean" ? (value ? "はい" : "いいえ") : value);
+    return '<li><span>' + scoreEscapeHtml(SCORE_COMPONENT_LABELS[name][key]) + '</span>: ' + scoreEscapeHtml(displayValue) + '</li>';
   }).join("");
   return rows ? '<ul class="score-components">' + rows + '</ul>' : "";
 }
@@ -107,7 +53,7 @@ function renderScoreCards(data) {
       : '<span class="score-ready">' + (organ.status === "insufficient_data" ? "insufficient data" : "invalid data") + '</span>';
     const ratio = organ.status === "invalid_data" ? "not measurable" : organ.numerator + " / " + organ.denominator;
     const period = organ.period.kind.replace(/_/g, " ") + " · " + scoreFormatDate(organ.period.start_at) + " → " + scoreFormatDate(organ.period.end_at) + " · " + String(organ.components.timezone || "UTC");
-    return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
+    return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(name, organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
   }).join("");
   return '<div class="score-grid">' + rows + '</div>';
 }
@@ -852,6 +798,7 @@ function renderPanelPage(options = {}) {
     const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
     const SCORE_PERIOD_KINDS = Object.freeze(${JSON.stringify(SCORE_PERIOD_KINDS)});
     const SCORE_COMPONENT_KEYS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_KEYS)});
+    const SCORE_COMPONENT_LABELS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_LABELS)});
     ${scoreEscapeHtml.toString()}
     ${scoreAsDate.toString()}
     ${scoreFormatDate.toString()}
