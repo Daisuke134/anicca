@@ -1,27 +1,29 @@
 // LM-33c: server-rendered, read-only mirror for the Life Manager panel.
 "use strict";
 
+const { SECRET_PATTERNS } = require("./panel-display-policy.js");
 const { roundedScoreValue } = require("./panel-score-semantics.js");
-
-const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
-const SCORE_PERIOD_KINDS = Object.freeze({ daily: "rolling_7_days", physical: "rolling_30_days", mental: "rolling_7_days", financial: "calendar_month" });
-const SCORE_COMPONENT_KEYS = Object.freeze({
-  daily: Object.freeze(["timezone", "excluded_unknown_count", "eligible_events", "resolved_events", "required_succeeded", "required_failed", "required_pending", "context_unnecessary", "optional_ignored"]),
-  physical: Object.freeze(["timezone", "excluded_unknown_count", "detected_needs", "confirmed_booking", "confirmed_completion", "unresolved_needs", "search_candidate_unconfirmed"]),
-  mental: Object.freeze(["timezone", "excluded_unknown_count", "deduplicated_triggers", "delivered_within_cap", "suppression_honored", "correction_persisted", "cap_overflow", "unresolved_triggers"]),
-  financial: Object.freeze(["timezone", "excluded_unknown_count", "currency", "gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor", "excluded_rows", "net_clamped"]),
-});
+const {
+  SCORE_COMPONENT_KEYS,
+  SCORE_COMPONENT_LABELS,
+  SCORE_LABELS,
+  SCORE_PERIOD_KINDS,
+  scoreAsDate,
+  scoreComponentRatio,
+  scoreExactKeys,
+  scoreNonNegativeInteger,
+  validScoreComponents,
+  validScoreOrgan,
+} = require("./panel-score-display-contract.js");
+const DISPLAY_SECRET_PATTERNS = Object.freeze(SECRET_PATTERNS.map((pattern) => Object.freeze({
+  source: pattern.source,
+  flags: pattern.flags,
+})));
 
 function scoreEscapeHtml(value) {
   return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
   });
-}
-
-function scoreAsDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) || date.toISOString() !== value ? null : date;
 }
 
 function scoreFormatDate(value) {
@@ -30,62 +32,11 @@ function scoreFormatDate(value) {
   return new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric" }).format(date);
 }
 
-function scoreExactKeys(value, expected) {
-  const actual = Object.keys(value).sort();
-  const wanted = expected.slice().sort();
-  return actual.length === wanted.length && actual.every(function (key, index) { return key === wanted[index]; });
-}
-
-function scoreNonNegativeInteger(value) {
-  return Number.isSafeInteger(value) && value >= 0;
-}
-
-function validScoreComponents(name, components, status) {
-  const keys = SCORE_COMPONENT_KEYS[name];
-  if (!keys || !scoreExactKeys(components, keys) || typeof components.timezone !== "string" || !components.timezone) return false;
-  if (name !== "financial") return keys.filter(function (key) { return key !== "timezone"; }).every(function (key) { return scoreNonNegativeInteger(components[key]); });
-  if (!scoreNonNegativeInteger(components.excluded_unknown_count) || !scoreNonNegativeInteger(components.excluded_rows) || typeof components.net_clamped !== "boolean") return false;
-  const amounts = ["gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor"];
-  if (status === "invalid_data") return components.currency === null && amounts.every(function (key) { return components[key] === null; });
-  if (!(components.currency === null || /^[A-Z]{3}$/.test(components.currency)) || !amounts.every(function (key) { return scoreNonNegativeInteger(components[key]); })) return false;
-  return status !== "measured" || /^[A-Z]{3}$/.test(String(components.currency || ""));
-}
-
-function scoreComponentRatio(name, components) {
-  if (name === "daily") return [components.resolved_events, components.eligible_events];
-  if (name === "physical") return [components.confirmed_booking + components.confirmed_completion, components.detected_needs];
-  if (name === "mental") return [components.delivered_within_cap + components.suppression_honored + components.correction_persisted, components.deduplicated_triggers];
-  const gross = components.gross_income_minor;
-  return [Math.max(0, gross - components.realized_loss_minor - components.fee_minor), gross];
-}
-
-function validScoreOrgan(name, organ) {
-  if (!organ || typeof organ !== "object" || !["measured", "insufficient_data", "invalid_data"].includes(organ.status)) return false;
-  if (!scoreExactKeys(organ, ["status", "value", "period", "numerator", "denominator", "reason", "source_outcome_ids", "components"])) return false;
-  if (!organ.period || !scoreExactKeys(organ.period, ["kind", "start_at", "end_at"]) || organ.period.kind !== SCORE_PERIOD_KINDS[name]) return false;
-  const periodStart = scoreAsDate(organ.period.start_at);
-  const periodEnd = scoreAsDate(organ.period.end_at);
-  if (!periodStart || !periodEnd || periodStart >= periodEnd) return false;
-  if (typeof organ.reason !== "string" || !organ.reason.trim() || !organ.components || typeof organ.components !== "object" || Array.isArray(organ.components)) return false;
-  if (!Array.isArray(organ.source_outcome_ids) || organ.source_outcome_ids.some(function (ref) { return !/^outcome:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(ref)); })) return false;
-  if (new Set(organ.source_outcome_ids).size !== organ.source_outcome_ids.length || organ.source_outcome_ids.some(function (ref, index) { return index > 0 && ref < organ.source_outcome_ids[index - 1]; })) return false;
-  if (!validScoreComponents(name, organ.components, organ.status)) return false;
-  if (organ.status === "measured") {
-    if (!Number.isInteger(organ.value) || organ.value < 0 || organ.value > 100 || !scoreNonNegativeInteger(organ.numerator) || !Number.isSafeInteger(organ.denominator) || organ.denominator <= 0 || organ.numerator > organ.denominator) return false;
-    const componentRatio = scoreComponentRatio(name, organ.components);
-    return organ.numerator === componentRatio[0] && organ.denominator === componentRatio[1] && organ.value === roundedScoreValue(organ.numerator, organ.denominator);
-  }
-  if (organ.status === "insufficient_data") {
-    const componentRatio = scoreComponentRatio(name, organ.components);
-    return organ.value === null && organ.numerator === 0 && organ.denominator === 0 && componentRatio[1] === 0;
-  }
-  return organ.value === null && organ.numerator === null && organ.denominator === null;
-}
-
-function renderScoreComponents(organ) {
+function renderScoreComponents(name, organ) {
   const rows = Object.keys(organ.components).filter(function (key) { return key !== "timezone"; }).map(function (key) {
     const value = organ.components[key];
-    return '<li><span>' + scoreEscapeHtml(key.replace(/_/g, " ")) + '</span>: ' + scoreEscapeHtml(value == null ? "—" : value) + '</li>';
+    const displayValue = value == null ? "—" : (typeof value === "boolean" ? (value ? "はい" : "いいえ") : value);
+    return '<li><span>' + scoreEscapeHtml(SCORE_COMPONENT_LABELS[name][key]) + '</span>: ' + scoreEscapeHtml(displayValue) + '</li>';
   }).join("");
   return rows ? '<ul class="score-components">' + rows + '</ul>' : "";
 }
@@ -102,7 +53,7 @@ function renderScoreCards(data) {
       : '<span class="score-ready">' + (organ.status === "insufficient_data" ? "insufficient data" : "invalid data") + '</span>';
     const ratio = organ.status === "invalid_data" ? "not measurable" : organ.numerator + " / " + organ.denominator;
     const period = organ.period.kind.replace(/_/g, " ") + " · " + scoreFormatDate(organ.period.start_at) + " → " + scoreFormatDate(organ.period.end_at) + " · " + String(organ.components.timezone || "UTC");
-    return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
+    return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(name, organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
   }).join("");
   return '<div class="score-grid">' + rows + '</div>';
 }
@@ -633,6 +584,9 @@ function renderPanelPage(options = {}) {
       settings: "/api/panel/settings",
       "control-center": "/api/panel/control-center",
     });
+    const displaySecretPatterns = Object.freeze(${JSON.stringify(DISPLAY_SECRET_PATTERNS)}.map(function (pattern) {
+      return new RegExp(pattern.source, pattern.flags);
+    }));
 
     function escapeHtml(value) {
       return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
@@ -640,25 +594,177 @@ function renderPanelPage(options = {}) {
       });
     }
 
-    function asDate(value) {
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? null : date;
+    function displayRecord(value) {
+      return Boolean(value && typeof value === "object" && !Array.isArray(value));
     }
 
-    function formatTime(value, timeZone) {
-      const date = asDate(value);
-      if (!date) return "時刻未定";
+    function displayExactKeys(value, expected) {
+      if (!displayRecord(value)) return false;
+      const actual = Object.keys(value).sort();
+      const wanted = expected.slice().sort();
+      return actual.length === wanted.length && actual.every(function (key, index) {
+        return key === wanted[index];
+      });
+    }
+
+    function displayContainsSensitiveValue(value) {
+      if (typeof value === "string") {
+        return displaySecretPatterns.some(function (pattern) { return pattern.test(value); });
+      }
+      if (Array.isArray(value)) return value.some(displayContainsSensitiveValue);
+      if (!displayRecord(value)) return false;
+      return Object.entries(value).some(function (entry) {
+        return displayContainsSensitiveValue(entry[0]) || displayContainsSensitiveValue(entry[1]);
+      });
+    }
+
+    function displaySafeText(value, allowEmpty) {
+      return typeof value === "string"
+        && value.length <= 1000
+        && (allowEmpty || value.trim().length > 0)
+        && !displayContainsSensitiveValue(value);
+    }
+
+    function displayValidTimeZone(value) {
+      if (!displaySafeText(value, false)) return false;
       try {
-        return new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: timeZone || undefined }).format(date);
+        new Intl.DateTimeFormat("en", { timeZone: value }).format(0);
+        return true;
       } catch {
-        return new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+        return false;
       }
     }
 
-    function formatDate(value) {
-      const date = asDate(value);
-      if (!date) return "";
-      return new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric" }).format(date);
+    function displaySafeLink(value) {
+      if (value === null) return null;
+      if (!displaySafeText(value, false)) return null;
+      try {
+        const url = new URL(value);
+        if (url.protocol !== "https:" || !url.hostname || url.username || url.password || url.search) return null;
+        return url.toString();
+      } catch {
+        return null;
+      }
+    }
+
+    function validateTimelineData(data) {
+      if (
+        !displayExactKeys(data, ["date", "timezone", "items"])
+        || !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.date)
+        || !displayValidTimeZone(data.timezone)
+        || !Array.isArray(data.items)
+        || data.items.some(function (item) {
+          return !displayExactKeys(item, ["sentence", "status"])
+            || !displaySafeText(item.sentence, false)
+            || !displaySafeText(item.status, false);
+        })
+      ) throw new Error("invalid timeline payload");
+      return data;
+    }
+
+    function validLedgerItem(item) {
+      return displayExactKeys(item, ["label", "date", "amount", "link"])
+        && displaySafeText(item.label, false)
+        && displaySafeText(item.date, false)
+        && displaySafeText(item.amount, false)
+        && (item.link === null || displaySafeLink(item.link) === item.link);
+    }
+
+    function validateLedgerData(data) {
+      if (
+        !displayExactKeys(data, ["api_cost", "financial"])
+        || !displayExactKeys(data.api_cost, ["no_data", "total", "items"])
+        || typeof data.api_cost.no_data !== "boolean"
+        || !displaySafeText(data.api_cost.total, false)
+        || !Array.isArray(data.api_cost.items)
+        || data.api_cost.items.some(function (item) { return !validLedgerItem(item); })
+        || !displayExactKeys(data.financial, ["no_data", "items"])
+        || typeof data.financial.no_data !== "boolean"
+        || !Array.isArray(data.financial.items)
+        || data.financial.items.some(function (item) { return !validLedgerItem(item); })
+      ) throw new Error("invalid ledger payload");
+      return data;
+    }
+
+    function validateGatesData(data) {
+      const expectedIds = ["location", "payout"];
+      if (
+        !displayExactKeys(data, ["gates"])
+        || !Array.isArray(data.gates)
+        || data.gates.length !== expectedIds.length
+        || data.gates.some(function (gate, index) {
+          return !displayExactKeys(gate, ["id", "unlocked", "unlock_method"])
+            || gate.id !== expectedIds[index]
+            || typeof gate.unlocked !== "boolean"
+            || !displaySafeText(gate.unlock_method, false);
+        })
+      ) throw new Error("invalid gates payload");
+      return data;
+    }
+
+    function validCallLanguage(value) {
+      return value === null || value === "ja" || value === "en";
+    }
+
+    function validateSettingsData(data) {
+      if (
+        !displayExactKeys(data, ["call_language", "call_schedule", "connections"])
+        || !validCallLanguage(data.call_language)
+        || !displayExactKeys(data.call_schedule, ["time_zone", "minutes_before", "wake_policy"])
+        || !displayValidTimeZone(data.call_schedule.time_zone)
+        || !Array.isArray(data.call_schedule.minutes_before)
+        || data.call_schedule.minutes_before.length !== 2
+        || data.call_schedule.minutes_before[0] !== 10
+        || data.call_schedule.minutes_before[1] !== 5
+        || !["travel-only", "all-events"].includes(data.call_schedule.wake_policy)
+        || !displayExactKeys(data.connections, ["calendar", "gmail", "telegram"])
+        || Object.values(data.connections).some(function (value) { return typeof value !== "boolean"; })
+      ) throw new Error("invalid settings payload");
+      return data;
+    }
+
+    const controlConnectionNames = Object.freeze(["calendar", "telegram", "location", "call", "email", "wallet"]);
+    const controlConnectionStates = Object.freeze(["connected", "action_required", "error", "unavailable"]);
+
+    function validControlConnection(item) {
+      if (!displayRecord(item)) return false;
+      const allowed = ["state", "reason", "actions", "actionLabel"];
+      if (Object.keys(item).some(function (key) { return !allowed.includes(key); })) return false;
+      return controlConnectionStates.includes(item.state)
+        && displaySafeText(item.reason, false)
+        && (item.actions === undefined || (Array.isArray(item.actions) && item.actions.every(function (action) { return displaySafeText(action, false); })))
+        && (item.actionLabel === undefined || displaySafeText(item.actionLabel, false));
+    }
+
+    function validateControlCenterData(data) {
+      const settingsKeys = ["call_enabled", "notifications_enabled", "daily_automation_enabled", "call_time_zone", "call_language", "wake_policy"];
+      if (
+        !displayExactKeys(data, ["identity", "context", "connections", "settings", "controls", "csrf"])
+        || !displayExactKeys(data.identity, ["name", "uidRef"])
+        || data.identity.name !== "Life Manager user"
+        || !/^user:[0-9a-f]{12}$/.test(data.identity.uidRef)
+        || !displayExactKeys(data.context, ["timeZone", "locationAvailable"])
+        || !displayValidTimeZone(data.context.timeZone)
+        || typeof data.context.locationAvailable !== "boolean"
+        || !displayExactKeys(data.connections, controlConnectionNames)
+        || controlConnectionNames.some(function (name) { return !validControlConnection(data.connections[name]); })
+        || !displayExactKeys(data.settings, settingsKeys)
+        || typeof data.settings.call_enabled !== "boolean"
+        || typeof data.settings.notifications_enabled !== "boolean"
+        || typeof data.settings.daily_automation_enabled !== "boolean"
+        || !displayValidTimeZone(data.settings.call_time_zone)
+        || !validCallLanguage(data.settings.call_language)
+        || !["travel-only", "all-events"].includes(data.settings.wake_policy)
+        || !displayExactKeys(data.controls, ["delegation", "physical_automation", "mental_automation", "financial_automation"])
+        || !displayExactKeys(data.controls.delegation, ["state", "reason"])
+        || data.controls.delegation.state !== "unavailable"
+        || !displaySafeText(data.controls.delegation.reason, false)
+        || ["physical_automation", "mental_automation", "financial_automation"].some(function (name) {
+          return !displayExactKeys(data.controls[name], ["state"]) || data.controls[name].state !== "unavailable";
+        })
+        || !displaySafeText(data.csrf, false)
+      ) throw new Error("invalid control-center payload");
+      return data;
     }
 
     function bodyFor(name) {
@@ -680,17 +786,11 @@ function renderPanelPage(options = {}) {
     }
 
     function renderTimeline(data) {
-      const events = Array.isArray(data.events) ? data.events : [];
-      const calls = Array.isArray(data.calls) ? data.calls : [];
-      const answered = calls.filter(function (call) { return Boolean(call.answered_at); }).length;
-      const summary = '<p class="timeline-summary"><span>' + escapeHtml(data.date || "今日") + '</span><span>通話実績 ' + calls.length + '件 / 応答 ' + answered + '件</span></p>';
-      if (!events.length) return summary + '<p class="empty">今日は予定がありません。必要な call もありません。</p>';
-
-      const rows = events.map(function (event) {
-        const eventCalls = calls.filter(function (call) { return String(call.event_key || "").startsWith(String(event.id || "") + "|"); });
-        const callMark = eventCalls.length ? '<span class="call-mark" aria-label="通話実績あり">✅ call ' + eventCalls.length + '件</span>' : '<span class="call-mark" style="color:var(--ink-soft)">call なし</span>';
-        const location = event.location ? escapeHtml(event.location) : (event.interpretation && event.interpretation.decision === "online" ? "オンライン" : "場所未定");
-        return '<li class="timeline-item"><time class="timeline-time">' + formatTime(event.start_at, data.timezone) + '</time><div><p class="timeline-title">' + escapeHtml(event.summary || "予定") + '</p><p class="timeline-meta">' + location + '</p></div>' + callMark + '</li>';
+      validateTimelineData(data);
+      const summary = '<p class="timeline-summary"><span>' + escapeHtml(data.date) + ' · ' + escapeHtml(data.timezone) + '</span><span>予定と電話 ' + data.items.length + '件</span></p>';
+      if (!data.items.length) return summary + '<p class="empty">今日は表示する予定や電話がありません。</p>';
+      const rows = data.items.map(function (item) {
+        return '<li class="timeline-item"><div><p class="timeline-title">' + escapeHtml(item.sentence) + '</p></div><span class="call-mark">' + escapeHtml(item.status) + '</span></li>';
       }).join("");
       return summary + '<ol class="timeline-list">' + rows + '</ol>';
     }
@@ -698,6 +798,7 @@ function renderPanelPage(options = {}) {
     const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
     const SCORE_PERIOD_KINDS = Object.freeze(${JSON.stringify(SCORE_PERIOD_KINDS)});
     const SCORE_COMPONENT_KEYS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_KEYS)});
+    const SCORE_COMPONENT_LABELS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_LABELS)});
     ${scoreEscapeHtml.toString()}
     ${scoreAsDate.toString()}
     ${scoreFormatDate.toString()}
@@ -711,45 +812,25 @@ function renderPanelPage(options = {}) {
     ${renderScoreCards.toString()}
     const renderScores = renderScoreCards;
 
-    function moneyLabel(entry) {
-      const amount = entry.amount != null ? entry.amount : (entry.amount_usd != null ? entry.amount_usd : entry.value);
-      if (amount == null || amount === "") return "金額記録あり";
-      const currency = entry.currency || (entry.amount_usd != null ? "USD" : "");
-      return (currency ? escapeHtml(currency) + " " : "") + escapeHtml(amount);
-    }
-
-    function safeLink(entry) {
-      const candidate = entry.on_chain_url || entry.explorer_url || entry.tx_url || entry.transaction_url || "";
-      try {
-        const url = new URL(candidate);
-        return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
-      } catch {
-        return "";
-      }
-    }
-
     function renderLedger(data) {
-      const financial = data && data.financial ? data.financial : { no_data: true, entries: [] };
-      const costs = data && data.api_cost ? data.api_cost : { no_data: true, total_est_usd: 0 };
-      if (financial.no_data || !Array.isArray(financial.entries) || !financial.entries.length) {
-        const cost = costs.no_data ? "運用実費の記録もまだありません" : "運用実費（累計） USD " + Number(costs.total_est_usd || 0).toFixed(2);
-        return '<div class="ledger-empty"><h3>まだ収益はありません</h3><p class="ledger-cost">' + escapeHtml(cost) + '</p></div>';
+      validateLedgerData(data);
+      const entries = data.financial.items.concat(data.api_cost.items);
+      if (!entries.length) {
+        const cost = data.api_cost.no_data ? "運用実費の記録もまだありません" : "運用実費（累計） " + data.api_cost.total;
+        return '<div class="ledger-empty"><h3>まだ収支の記録はありません</h3><p class="ledger-cost">' + escapeHtml(cost) + '</p></div>';
       }
-      const rows = financial.entries.map(function (entry) {
-        const title = entry.kind || entry.type || entry.description || "取引";
-        const date = entry.ts || entry.created_at || entry.transferred_at || "";
-        const link = safeLink(entry);
-        return '<li class="ledger-item"><div><p>' + escapeHtml(title) + '</p><p class="ledger-item-meta">' + escapeHtml(formatDate(date)) + (link ? ' · <a class="ledger-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">on-chain で確認</a>' : "") + '</p></div><p class="ledger-amount">' + moneyLabel(entry) + '</p></li>';
+      const rows = entries.map(function (entry) {
+        const link = displaySafeLink(entry.link);
+        return '<li class="ledger-item"><div><p>' + escapeHtml(entry.label) + '</p><p class="ledger-item-meta">' + escapeHtml(entry.date) + (link ? ' · <a class="ledger-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">外部記録で確認</a>' : "") + '</p></div><p class="ledger-amount">' + escapeHtml(entry.amount) + '</p></li>';
       }).join("");
-      return '<ul class="ledger-list">' + rows + '</ul>';
+      return '<p class="ledger-cost">運用実費（累計） ' + escapeHtml(data.api_cost.total) + '</p><ul class="ledger-list">' + rows + '</ul>';
     }
 
     const gateLabels = Object.freeze({ location: "位置情報", payout: "送金先" });
 
     function renderGates(data) {
-      const gates = Array.isArray(data.gates) ? data.gates : [];
-      if (!gates.length) return '<p class="empty">gate の状態はまだありません。</p>';
-      return '<ul class="gate-list">' + gates.map(function (gate) {
+      validateGatesData(data);
+      return '<ul class="gate-list">' + data.gates.map(function (gate) {
         const status = gate.unlocked ? "解錠済み" : "まだ未解錠";
         const copy = gate.unlocked ? "必要な context がつながっています。" : (gate.unlock_method || "解錠方法を準備しています。");
         return '<li class="gate-item"><div class="gate-title-row"><h3 class="gate-title">' + escapeHtml(gateLabels[gate.id] || gate.id || "gate") + '</h3><span class="gate-status ' + (gate.unlocked ? "is-open" : "") + '">' + status + '</span></div><p class="gate-copy">' + escapeHtml(copy) + '</p></li>';
@@ -763,6 +844,7 @@ function renderPanelPage(options = {}) {
     }
 
     function renderSettings(data) {
+      validateSettingsData(data);
       const schedule = data.call_schedule || {};
       const minutes = Array.isArray(schedule.minutes_before) ? schedule.minutes_before : [];
       const scheduleText = minutes.length ? "予定の" + minutes.map(function (minute) { return minute + "分前"; }).join("と") : "call 時間帯は未設定";
@@ -801,6 +883,7 @@ function renderPanelPage(options = {}) {
     }
 
     function renderControlCenter(data) {
+      validateControlCenterData(data);
       controlCsrf = data.csrf || "";
       const connections = data.connections || {};
       const cards = ["calendar", "telegram", "location", "call", "email", "wallet"].map(function (name) {
@@ -830,7 +913,9 @@ function renderPanelPage(options = {}) {
         throw new Error("session expired");
       }
       if (!response.ok) throw new Error(name + " unavailable");
-      markLoaded(name, renderers[name](await response.json()));
+      const data = await response.json();
+      if (displayContainsSensitiveValue(data)) throw new Error(name + " unavailable");
+      markLoaded(name, renderers[name](data));
     }
 
     function commandForAction(action, button) {

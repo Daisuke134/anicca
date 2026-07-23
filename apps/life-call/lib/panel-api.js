@@ -8,6 +8,7 @@ const { getCalendar } = require("./transport/index.js");
 const { lockedDiscoveryGates } = require("./feature-discovery.js");
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
+const { presentPanelSection } = require("./panel-presentation.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
@@ -227,8 +228,8 @@ async function ledger(uid, opts) {
     uid: `eq.${uid}`, select: "*", order: "ts.desc",
   }, opts, true);
   return {
-    api_cost: aggregateCosts(costs),
-    financial: { no_data: financial.rows.length === 0, entries: financial.rows },
+    apiCostEntries: costs,
+    financialEntries: financial.rows,
   };
 }
 
@@ -264,11 +265,11 @@ async function settings(uid, opts) {
   let calendar = false;
   try { calendar = opts.scope ? await composioCalendarStatus(opts.scope, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY }) === "ACTIVE" : false; } catch { calendar = false; }
   return {
-    call_language: user && user.call_language || null,
+    call_language: user && user.call_language != null ? user.call_language : null,
     call_schedule: {
       time_zone: configuredTimeZone(preferences.call_time_zone || opts.timeZone),
       minutes_before: [...CALL_MINUTES_BEFORE],
-      wake_policy: user && user.wake_policy || "travel-only",
+      wake_policy: user && user.wake_policy != null ? user.wake_policy : "travel-only",
     },
     connections: {
       calendar,
@@ -286,6 +287,21 @@ function sendJson(res, status, body, extraHeaders = {}) {
     ...extraHeaders,
   });
   res.end(JSON.stringify(body));
+}
+
+function sendPanelSection(res, section, candidate, opts) {
+  try {
+    const transformed = typeof opts.responseCandidateTransform === "function"
+      ? opts.responseCandidateTransform(section, candidate)
+      : candidate;
+    sendJson(res, 200, presentPanelSection(section, transformed));
+  } catch (error) {
+    if (error && error.code === "section_unavailable" && error.section === section) {
+      sendJson(res, 422, { error: "section_unavailable", section });
+      return;
+    }
+    throw error;
+  }
 }
 
 async function readJson(req) {
@@ -486,12 +502,14 @@ async function handlePanelApiRequest(req, res, opts = {}) {
 
   if (endpoint === "control-center") {
     const store = commandStore;
-    const model = await (opts.buildControlCenterImpl || buildControlCenter)(scope, { ...opts, store, nowMs, calendarStatus: opts.calendarStatus || ((value) => composioCalendarStatus(value, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY })) });
-    sendJson(res, 200, { ...model, csrf: scope.csrf || csrfToken(session) }); return;
+    const model = await buildControlCenter(scope, { ...opts, store, nowMs, calendarStatus: opts.calendarStatus || ((value) => composioCalendarStatus(value, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY })) });
+    sendPanelSection(res, endpoint, { ...model, csrf: scope.csrf || csrfToken(session) }, opts);
+    return;
   }
   const readers = { timeline, scores, ledger, gates, settings };
   try {
-    sendJson(res, 200, await readers[endpoint](scope.uid, { ...opts, nowMs, scope }));
+    const candidate = await readers[endpoint](scope.uid, { ...opts, nowMs, scope });
+    sendPanelSection(res, endpoint, candidate, opts);
   } catch (error) {
     if (endpoint === "scores" && error.scoreUnavailableReason) {
       sendJson(res, 503, { error: "score_data_unavailable", reason: error.scoreUnavailableReason });

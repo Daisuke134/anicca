@@ -92,7 +92,7 @@ async function buildControlCenter(scope, deps = {}) {
   try { if (deps.calendarStatus) calendarState = await deps.calendarStatus(scope); }
   catch { calendarState = "ERROR"; }
   return {
-    identity: { name: user.name || "Life Manager user", uidRef: `user:${hash(user.uid).slice(0, 12)}` },
+    identity: { name: "Life Manager user", uidRef: `user:${hash(user.uid).slice(0, 12)}` },
     context: { timeZone: prefs.call_time_zone, locationAvailable: locationLive },
     connections: {
       calendar: calendarState === "ACTIVE" ? { ...connection("connected", "Google Calendar is connected", ["connection.disconnect:calendar"]), actionLabel: "Disconnect calendar" } : calendarState === "ERROR" ? connection("error", "Calendar status is temporarily unavailable") : calendarState === "DISABLED" ? { ...connection("action_required", "Reconnect Google Calendar", ["connection.start:calendar"]), actionLabel: "Reconnect calendar" } : { ...connection("action_required", "Connect Google Calendar to manage your schedule", ["connection.start:calendar"]), actionLabel: "Connect calendar" },
@@ -102,7 +102,11 @@ async function buildControlCenter(scope, deps = {}) {
       email: connection("unavailable", "Gmail reading is unavailable while a verified free connection path is absent"),
       wallet: user.payout_destination ? connection("connected", "Payout destination is configured") : connection("action_required", "Set up a payout destination in Telegram", ["instructions:wallet"]),
     },
-    settings: { ...prefs, call_language: user.call_language || null, wake_policy: user.wake_policy || "travel-only" },
+    settings: {
+      ...prefs,
+      call_language: user.call_language != null ? user.call_language : null,
+      wake_policy: user.wake_policy != null ? user.wake_policy : "travel-only",
+    },
     controls: { delegation: { state: "unavailable", reason: "No safe delegated-action runtime is available" }, physical_automation: { state: "unavailable" }, mental_automation: { state: "unavailable" }, financial_automation: { state: "unavailable" } },
   };
 }

@@ -135,14 +135,10 @@ test("LM-33b timeline returns today's interpreted calendar and call telemetry", 
     assert.equal(response.headers.get("cache-control"), "no-store");
     assert.deepEqual(body, {
       date: "2026-07-21", timezone: "UTC",
-      events: [{
-        id: "evt-u1", summary: "Dentist", start_at: "2026-07-21T14:00:00.000Z",
-        end_at: "2026-07-21T15:00:00.000Z", location: "Clinic",
-        interpretation: { decision: "offline", travel: null, question: null, timezone: "UTC" },
-      }],
-      calls: [
-        { event_key: "evt-u1|10", called_at: "2026-07-21T08:50:00.000Z", answered_at: "2026-07-21T08:50:10.000Z" },
-        { event_key: "evt-u1|5", called_at: "2026-07-21T08:55:00.000Z", answered_at: null },
+      items: [
+        { sentence: "14:00開始の予定です。詳細はカレンダーで確認してください。", status: "カレンダーで確認" },
+        { sentence: "08:50の電話は応答済みです。", status: "応答済み" },
+        { sentence: "08:55の電話は未応答です。", status: "未応答" },
       ],
     });
   });
@@ -167,10 +163,14 @@ test("LM-33b ledger aggregates lm_api_cost and is honest when FIN ledger is abse
     assert.equal(response.status, 200);
     assert.deepEqual(body, {
       api_cost: {
-        no_data: false, entries: 2, total_est_usd: 0.42,
-        by_kind: { telnyx_call: { entries: 1, quantity: 60, est_usd: 0.12 }, gemini_audio: { entries: 1, quantity: 1, est_usd: 0.3 } },
+        no_data: false,
+        total: "USD 0.42",
+        items: [
+          { label: "API利用料", date: "2026-07-21", amount: "USD 0.12", link: null },
+          { label: "API利用料", date: "2026-07-21", amount: "USD 0.30", link: null },
+        ],
       },
-      financial: { no_data: true, entries: [] },
+      financial: { no_data: true, items: [] },
     });
   });
 });
