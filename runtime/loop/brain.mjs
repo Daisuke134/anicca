@@ -4,7 +4,7 @@
  * REQ-011: Pluggable brain backend:
  *   ANICCA_BRAIN=proxy   → HTTP to OPENAI_BASE_URL (default)
  *   ANICCA_BRAIN=claude-p → spawn `claude -p` subprocess
- *   claude binary missing → fall back to proxy, never crash
+ *   claude transport failure → throw to the wake ledger; never silently fall back to proxy
  *
  * REQ-004: claude -p child env is scrubbed (no private keys).
  */
@@ -20,6 +20,19 @@ import { scrubPrivateKeys } from './env-filter.mjs';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
+const DEFAULT_CLAUDE_P_TIMEOUT_S = 180;
+const MAX_CLAUDE_P_TIMEOUT_S = 300;
+
+/**
+ * Return the model that the selected brain transport actually executes.
+ * Tier models are proxy-routing policy; they must not leak into Claude-p prompts or ledgers.
+ */
+export function resolveBrainModel(config, tierModel) {
+  if ((config.ANICCA_BRAIN || 'proxy') === 'claude-p') {
+    return config.ANICCA_BRAIN_MODEL || 'claude-sonnet-4-6';
+  }
+  return config.ANICCA_MODEL || tierModel;
+}
 
 /**
  * Execute the THINK step for the current wake.
@@ -27,7 +40,7 @@ const RETRY_DELAY_MS = 2000;
  * @param {object} ctx - WakeContext
  * @param {object} config - loaded config
  * @returns {Promise<object>} - raw response (OpenAI-compatible)
- * @throws only if both backends fail (caller writes wake_error)
+ * @throws when the selected backend fails (caller writes wake_error)
  */
 export async function think(ctx, config) {
   const brain = config.ANICCA_BRAIN || 'proxy';
@@ -95,25 +108,28 @@ async function thinkProxy(ctx, config) {
 /**
  * REQ-009: resolves the wall-clock timeout (ms) for a single `claude -p` child.
  *
- * Default = the resolved `SLEEP_BASE_S` (the caller's own already-resolved wake-interval seconds,
- * `config.SLEEP_BASE_S` with its own 120 fallback applied by the caller) converted to milliseconds.
+ * Default = 180 seconds, independently of the wake cadence. A 12-hour wake interval must never make
+ * one model request eligible to hang for 12 hours. The wake interval remains a lower ceiling so a
+ * deliberately faster loop is not blocked by an older request.
  * `overrideVal` (e.g. `CLAUDE_P_TIMEOUT_S`) is used ONLY when it is a positive, finite INTEGER number
  * of seconds — any other value (missing, non-numeric, zero, negative, non-integer) falls back to the
- * default. An override larger than `resolvedSleepBaseS` is clamped DOWN to `resolvedSleepBaseS` itself
- * (never a borrowed unrelated constant) so a single THINK call can never outrun the next scheduled wake.
+ * default. Every override is clamped to both `resolvedSleepBaseS` and a five-minute hard safety ceiling.
  *
  * @param {unknown} overrideVal
  * @param {number} resolvedSleepBaseS
  * @returns {number} timeout in milliseconds
  */
 export function resolveClaudePTimeoutMs(overrideVal, resolvedSleepBaseS) {
-  const defaultMs = resolvedSleepBaseS * 1000;
+  const parsedWakeSeconds = Number(resolvedSleepBaseS);
+  const wakeCeilingSeconds = Number.isFinite(parsedWakeSeconds) && Number.isInteger(parsedWakeSeconds) && parsedWakeSeconds > 0
+    ? parsedWakeSeconds
+    : 120;
   const n = Number(overrideVal);
   const isValidPositiveInteger =
     overrideVal !== null && overrideVal !== undefined && overrideVal !== '' &&
     Number.isFinite(n) && Number.isInteger(n) && n > 0;
-  if (!isValidPositiveInteger) return defaultMs;
-  const clampedSeconds = Math.min(n, resolvedSleepBaseS);
+  const requestedSeconds = isValidPositiveInteger ? n : DEFAULT_CLAUDE_P_TIMEOUT_S;
+  const clampedSeconds = Math.min(requestedSeconds, wakeCeilingSeconds, MAX_CLAUDE_P_TIMEOUT_S);
   return clampedSeconds * 1000;
 }
 
@@ -142,33 +158,57 @@ export function runClaudePWithTimeout(bin, args, { env, cwd, timeoutMs }) {
     let timedOut = false;
     let graceTimer = null;
 
-    const proc = spawn(bin, args, { env, cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    // A CLI can have helper grandchildren. Give each invocation its own process group so a timeout
+    // or parent exit cannot strand one of those helpers as an invisible token-burning orphan.
+    const proc = spawn(bin, args, {
+      env,
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    });
 
-    // REQ-009: today this spawn() has NO timeout at all -- a hung child hangs the wake forever (never
-    // resolves, never rejects). Port index.mjs:1037-1041's existing two-stage pattern here: on timeout,
-    // request termination first, then force-stop after a 2000ms grace period if it is still alive.
+    const killProcessGroup = (signal) => {
+      if (!proc.pid) return;
+      try {
+        process.kill(-proc.pid, signal);
+      } catch {
+        try { proc.kill(signal); } catch {}
+      }
+    };
+    const killOnParentExit = () => killProcessGroup('SIGKILL');
+    process.once('exit', killOnParentExit);
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      clearTimeout(graceTimer);
+      process.removeListener('exit', killOnParentExit);
+    };
+
+    // REQ-009: request termination at the deadline, then force-stop after a 2000ms grace period.
     const timer = setTimeout(() => {
       timedOut = true;
-      try { proc.kill('SIGTERM'); } catch {}
-      graceTimer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);
+      killProcessGroup('SIGTERM');
+      graceTimer = setTimeout(() => killProcessGroup('SIGKILL'), 2000);
     }, timeoutMs);
 
     proc.stdout.on('data', d => { stdout += d; });
     proc.stderr.on('data', d => { stderr += d; });
 
     proc.on('error', (err) => {
-      clearTimeout(timer);
-      clearTimeout(graceTimer);
+      cleanup();
       reject(new Error(`claude_not_found: ${err.message}`));
     });
 
     proc.on('exit', (code) => {
-      clearTimeout(timer);
-      clearTimeout(graceTimer);
       if (timedOut) {
+        // The direct CLI may honor SIGTERM while a helper ignores it. Force-stop the still-addressable
+        // process group before clearing the grace timer and resolving the timeout contract.
+        killProcessGroup('SIGKILL');
+        cleanup();
         reject(new Error(`claude_p_timeout: exceeded ${timeoutMs}ms`));
         return;
       }
+      cleanup();
       resolve({ stdout, stderr, code });
     });
   });
@@ -176,7 +216,7 @@ export function runClaudePWithTimeout(bin, args, { env, cwd, timeoutMs }) {
 
 export async function thinkClaudeP(ctx, config) {
   const claudeBin = config.CLAUDE_BIN || process.env.CLAUDE_BIN || 'claude';
-  const model = config.ANICCA_BRAIN_MODEL || 'claude-sonnet-4-6';
+  const model = resolveBrainModel({ ...config, ANICCA_BRAIN: 'claude-p' }, null);
   const resolvedSleepBaseS = config.SLEEP_BASE_S != null ? Number(config.SLEEP_BASE_S) : 120;
   const timeoutMs = resolveClaudePTimeoutMs(config.CLAUDE_P_TIMEOUT_S, resolvedSleepBaseS);
 

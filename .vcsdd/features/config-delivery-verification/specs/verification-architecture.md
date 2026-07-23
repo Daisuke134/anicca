@@ -67,8 +67,9 @@
 | PROP-013 | detector ソースに severity/danger/critical 等の分類のための regex・キーワードリストが存在しない（REQ-007） | 0 | true | grep |
 | PROP-014 | 再起動後の実インスタンスに対する detector 実行で `ANICCA_BRAIN` 乖離0件（REQ-008, fresh evidence） | 0 | true | 実機 `ps -Awwe` + detector 実行（Phase 2b/5 で実施、モック不可） |
 | PROP-015 | `thinkClaudeP` がタイムアウト内に正常終了する fixture プロセスで正常 resolve（REQ-009） | 1 | true | node `node:test`（短時間で exit するダミー `spawn` ターゲット） |
-| PROP-016 | `thinkClaudeP` がタイムアウトを超えてハングする fixture プロセスで、まず `SIGTERM`→2000ms後に生存していれば `SIGKILL`→`claude_p_timeout` reject という二段階が発生する（REQ-009） | 1 | true | node `node:test`（`sleep 999` 等のダミープロセスをタイムアウト値を短く設定して検証、送信シグナルの順序をモック `kill` で記録） |
-| PROP-017 | `resolveClaudePTimeoutMs` のデフォルトは解決済み `SLEEP_BASE_S`（未設定なら120）で、正の有限整数以外のオーバーライドはデフォルトへフォールバックし、`SLEEP_BASE_S` を超えるオーバーライドは `SLEEP_BASE_S` の値へクランプされる（REQ-009） | 1 | true | bash `chk()`（`mainloop-timeout-lib.sh` と同型のテーブル駆動テスト、クランプ上限が21600ではなく可変の `SLEEP_BASE_S` であることを明示的にケースに含める） |
+| PROP-016 | `thinkClaudeP` がタイムアウトを超えてハングする fixture process tree で、process group 全体に `SIGTERM`→最大2000ms後 `SIGKILL`→`claude_p_timeout` reject が発生し grandchild が残らない（REQ-009） | 1 | true | node `node:test`（direct child と grandchild が signal を無視する fixture） |
+| PROP-017 | `resolveClaudePTimeoutMs` のデフォルトは180秒で、正の有限整数以外は既定値へ fallback し、最終値は `min(SLEEP_BASE_S, 300秒)` に clamp される（REQ-009） | 1 | true | node `node:test`（120秒 cadence、12時間 cadence、oversized override を含む table） |
+| PROP-017b | Claude-p context/ledger の model が tier proxy model ではなく実行時 `ANICCA_BRAIN_MODEL` と一致する（REQ-009） | 1 | true | node `node:test`（claude-p/proxy の比較 fixture） |
 | PROP-018 | `ANTHROPIC_API_KEY=sk-test-secret-value` を含む合成 `ps` fixture を detector に通しても、戻り値・stdout・ログのいずれにも文字列 `sk-test-secret-value` が現れない（NFR-Security） | 1 | true | bash/node（fixture 文字列を通し、全出力チャンネルを grep して不在を確認） |
 | PROP-019 | `parseIndexLoopProcesses` は `runtime/loop/index.mjs` を含む3行の `ps` fixture から3件の `{pid, aniccaHome, xpcServiceName}` を返し、4行目を追加すると関数コード変更なしに4件返す（REQ-010） | 1 | true | node `node:test` |
 | PROP-020 | detector ソースの対象発見ロジック本体に、既知のインスタンス名/絶対パスのリテラル列挙が「対象集合の定義として」存在しない（REQ-010） | 0 | true | grep（テスト fixture 内の期待値としての言及は許容、本体ロジックへの埋め込みのみ禁止） |

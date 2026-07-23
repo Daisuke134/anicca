@@ -711,7 +711,7 @@ test('PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess', { 
   }
 });
 
-test('PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy', { timeout: 15000 }, async () => {
+test('PROP-023(e): ANICCA_BRAIN=claude-p fails loudly without proxy fallback and records its actual model', { timeout: 15000 }, async () => {
   const home = makeTmpHome();
   const ledgerPath = path.join(home, 'state', 'ledger.jsonl');
   fs.mkdirSync(path.join(home, 'identity'), { recursive: true });
@@ -737,13 +737,14 @@ test('PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back t
   });
 
   try {
-    // Should fall back to proxy and still produce ledger lines
+    // The human-funded Claude brain must never silently hand control to a tier proxy model.
     await waitForLines(ledgerPath, 1, 10000);
     const lines = readLedger(ledgerPath);
     proc.kill('SIGTERM');
-    assert.ok(lines.length >= 1, 'Loop must produce ledger lines even when claude binary is missing (fallback to proxy)');
-    // HTTP must have been called (proxy fallback)
-    assert.ok(httpHitCount >= 1, 'Proxy HTTP must be called on claude-p fallback');
+    assert.equal(lines[0].kind, 'wake_error');
+    assert.match(lines[0].error, /claude_not_found/);
+    assert.equal(lines[0].model, 'claude-sonnet-4-6');
+    assert.equal(httpHitCount, 0, 'Claude-p transport failure must not call the proxy');
   } finally {
     server.close();
     proc.kill('SIGTERM');

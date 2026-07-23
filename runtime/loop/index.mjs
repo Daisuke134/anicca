@@ -30,7 +30,7 @@ import { fetchUsdcBalance } from './balance.mjs';
 import { fetchNetWorth, resolveInstanceWallets } from '../../skills/earn/lib/net-worth.mjs';
 import { assembleContext } from './context.mjs';
 import { selfEval } from './self-eval.mjs';
-import { think } from './brain.mjs';
+import { think, resolveBrainModel } from './brain.mjs';
 import { parseToolCall } from './parse-tool-call.mjs';
 import { runSkill } from './run-skill.mjs';
 import { isEarnSlot, earnStrategyFor, earnSkillRelPath } from './earn-slot.mjs';
@@ -324,7 +324,10 @@ async function resolveAlwaysActGate() {
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let currentTier = { tier: 'broke', model: config.ANICCA_FREE_MODEL || 'free/gpt-oss-120b' };
+let currentTier = {
+  tier: 'broke',
+  model: resolveBrainModel(config, config.ANICCA_FREE_MODEL || 'free/gpt-oss-120b'),
+};
 let recentActions = [];
 // When a loop is detected, the repeated slot is parked here and FORBIDDEN on the next wake (then cleared
 // once the model picks something else) — this is what actually breaks the cook/x402 spin (Dais 2026-06-22).
@@ -459,7 +462,11 @@ async function runOneWake() {
   try {
     const balance = await fetchUsdcBalance(walletAddress, config);
     liquidUsdc = typeof balance === 'number' ? balance : 0;
-    currentTier = selectTier(balance, config);
+    const selectedTier = selectTier(balance, config);
+    currentTier = {
+      ...selectedTier,
+      model: resolveBrainModel(config, selectedTier.model),
+    };
   } catch (err) {
     process.stderr.write(`[loop] Balance fetch failed: ${err.message} — keeping tier=${currentTier.tier}\n`);
   }

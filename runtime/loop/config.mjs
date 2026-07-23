@@ -54,6 +54,9 @@ const DEFAULTS = {
   // same-slot re-offense; §24 adversary #4 — hl_trade thrashed ~25x/session against a flat 300s sleep).
   SLEEP_LOOP_DETECT_MAX_S: 3600,
   SKILL_TIMEOUT_S:      120,
+  // A model-call deadline is independent of the wake cadence. Long-cadence agents must not inherit a
+  // multi-hour request timeout; brain.mjs additionally enforces a five-minute hard safety ceiling.
+  CLAUDE_P_TIMEOUT_S:   180,
   LOOP_DETECT_WINDOW:   3,
   BALANCE_CACHE_TTL_S:  300,
   LEAN_TIER_THRESHOLD:  1.00,
@@ -63,7 +66,7 @@ const DEFAULTS = {
 
 const INTEGER_KEYS = new Set([
   'SLEEP_BASE_S', 'SLEEP_ERROR_S', 'SLEEP_LOOP_DETECT_S', 'SLEEP_LOOP_DETECT_MAX_S',
-  'SKILL_TIMEOUT_S', 'LOOP_DETECT_WINDOW', 'BALANCE_CACHE_TTL_S',
+  'SKILL_TIMEOUT_S', 'CLAUDE_P_TIMEOUT_S', 'LOOP_DETECT_WINDOW', 'BALANCE_CACHE_TTL_S',
 ]);
 
 const FLOAT_KEYS = new Set(['LEAN_TIER_THRESHOLD']);

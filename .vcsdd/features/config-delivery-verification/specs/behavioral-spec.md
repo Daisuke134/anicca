@@ -308,45 +308,40 @@ REQ-009 の `SIGTERM`→`SIGKILL` は `runtime/loop/brain.mjs` 自身が `thinkC
 ### REQ-009: 1 wake の所要時間が SLEEP_BASE_S を超えないことの検証とタイムアウト保護
 **EARS**: WHEN `runtime/loop/brain.mjs` の `thinkClaudeP`（`ANICCA_BRAIN=claude-p` 経路）が
 `claude -p` 子プロセスを起動する THE SYSTEM SHALL その子プロセスの実行時間に上限
-（`resolveClaudePTimeoutMs` が解決する値、デフォルト `SLEEP_BASE_S`=120秒）を設け、上限を
+（`resolveClaudePTimeoutMs` が解決する値、デフォルト180秒）を設け、上限を
 超えたら `runtime/loop/index.mjs:1037-1041` の既存パターンと同じ**二段階**（`SIGTERM` を
 送り、2000ms 待って生存していれば `SIGKILL`）で終了させ、明示的なタイムアウトエラー
 （例: `claude_p_timeout`）を返す。
 
 **タイムアウト値の解決規則（MUST、具体値で定義 — 曖昧な「適切に」は禁止）**:
-- デフォルト = 呼び出し時点の `config.SLEEP_BASE_S`（未設定なら120）を秒からミリ秒に
-  変換した値。
+- デフォルト = 180秒。wake cadence と単一モデル呼び出しの deadline は独立させる。
 - オーバーライド（例: `CLAUDE_P_TIMEOUT_S` のような専用の環境変数、`mainloop-timeout-lib.sh`
   の `CLAUDE_P_MAINLOOP_TIMEOUT_SEC` と同型の命名規約）は「正の有限整数の秒数」である
   ときのみ採用し、それ以外（未設定・非数値・0・負数）はデフォルトへフォールバックする
   （`runtime/loop/index.mjs:1128` の既存 `cfgNum` は `val != null ? Number(val) : fallback`
   という素通しヘルパーで、この検証もクランプも行わない — 本 feature が独自に追加する）。
-- **クランプ上限 = 呼び出し時点で解決された `SLEEP_BASE_S` の値そのもの**
+- **クランプ上限 = `min(解決済み SLEEP_BASE_S, 300秒)`**
   （`mainloop-timeout-lib.sh:resolve_mainloop_timeout_sec` が「次にスケジュールされる
   発火（plist の `StartInterval`=21600秒）を超えないようにクランプする」のと同じ**構造**を、
-  この機能の実際の文脈——「次の wake が来るまでの間隔＝ `SLEEP_BASE_S` 自体」——に正しく
-  当てはめたもの。`mainloop-timeout-lib.sh` の 21600 という**数値そのもの**は
-  6時間周期の別ジョブ（`claude-p-mainloop.sh`）固有の値であり、本機能にそのまま転用しない
-  ——数値を借りるのではなく、「次のスケジュールされたサイクルを追い越さない」という
-  クランプの設計原則だけを踏襲する）。
-  すなわちオーバーライド値が `SLEEP_BASE_S` の解決値を超える場合、`SLEEP_BASE_S` の
-  解決値まで切り詰める。これにより、THINK 1回が次の wake サイクルの間隔を追い越して
-  ループ全体を恒久的に遅延させることがなくなる。
+  この機能の実際の文脈——「次の wake を追い越さず、長周期 loop でも単一呼び出しを
+  長時間許可しない」——に当てはめたもの。12時間 cadence は12時間 timeout を意味しない。
+  オーバーライドを指定しても5分を超えず、短い cadence では cadence 自体が上限になる。
 
 **Edge Cases**:
-- 現状（本セッションで `brain.mjs` を読んで確認）、`thinkClaudeP` の `spawn()` 呼び出しには
-  **一切のタイムアウトが設定されていない** — `proc.on('exit', ...)` のみで、ハングした場合
-  永久に resolve/reject されない。この欠落自体が REQ-009 の対象。
+- `SLEEP_BASE_S=43200` の長周期 loop でも、単一 `claude -p` 呼び出しは既定180秒で timeout
+  する。cadence を deadline として流用しない。
 - 本セッションで `claude --help` / `claude -p --help` を実行して確認した通り、この CLI
   バージョンに `--max-turns` フラグは**存在しない**。したがってタイムアウト保護は
   CLI フラグではなく、`runtime/loop/index.mjs:1016-1047`／`:1037-1041` の既存
   `SKILL_TIMEOUT_S` の二段階 kill パターンを `brain.mjs` 側に同じ規約で移植する形で実装する。
-- タイムアウトによる kill 後も `thinkClaudeP` は例外を投げるだけで、既存の
-  `think()` のフォールバック（`brain.mjs:34-44`、proxy へのフォールスルー）は変更しない
-  （この feature はタイムアウト保護の追加のみで、フォールバックロジック自体は
-  対象外 — 既存の catch がそのまま proxy へ fall through する）。
+- タイムアウトによる kill 後も `thinkClaudeP` は例外を投げ、`ANICCA_BRAIN=claude-p` は
+  proxy に silent fallback しない。ledger に `claude_p_timeout` を記録して次 wake で再試行する。
 - `SIGTERM` を受けても2000ms以内に終了しない子プロセス: `SIGKILL` を送る
   （`index.mjs:1037-1041` と同じ猶予時間）。
+- CLI の子孫プロセスを含む専用 process group 全体を終了する。direct child だけを kill して
+  helper を orphan として残してはならない。親 loop 終了時も同じ group を強制終了する。
+- prompt と ledger の `model` は tier 用 proxy model ではなく、実際に CLI へ渡す
+  `ANICCA_BRAIN_MODEL` を記録する。
 **Acceptance Criteria**:
 - `thinkClaudeP` にタイムアウト値より短い時間で正常終了する fixture プロセスを渡すと、
   正常な resolve が返る。
@@ -354,11 +349,10 @@ REQ-009 の `SIGTERM`→`SIGKILL` は `runtime/loop/brain.mjs` 自身が `thinkC
   まず `SIGTERM` が送られ、2000ms以内に終了しなければ `SIGKILL` が送られて子プロセスが
   終了し、`claude_p_timeout` を含むエラーで reject される（ハング状態のまま resolve も
   reject もされない、という現状のバグが再現しないことをテストで確認する）。
-- タイムアウト値のデフォルトが解決された `SLEEP_BASE_S`（未設定なら120）であること、
-  正の有限整数以外のオーバーライドはデフォルトへフォールバックすること、
-  オーバーライドが `SLEEP_BASE_S` の解決値を超える場合は `SLEEP_BASE_S` の解決値へ
-  クランプされることの3点を、`resolveClaudePTimeoutMs` の純粋関数ユニットテストで
-  確認する。
+- タイムアウト既定180秒、無効な override の既定値 fallback、
+  `min(SLEEP_BASE_S, 300秒)` の hard ceiling を `resolveClaudePTimeoutMs` の純粋関数で確認する。
+- fixture が作る grandchild も timeout 後に存在しないこと、および Claude-p の prompt/ledger
+  model が `ANICCA_BRAIN_MODEL` と一致することを確認する。
 
 ### REQ-010: 監視対象集合の発見は静的列挙ではなく稼働中プロセスからの逆算による
 **EARS**: WHEN config-drift detector が REQ-001（plist宣言）または REQ-002（registry
