@@ -15,6 +15,21 @@ PROFILE="$HOME/.cloak/profiles/daily-driver"
 LOG="$HOME/.local/state/life-manager/logs/cdp-daily-driver-guard.log"
 
 alive() { curl -s --max-time 4 "$CDP/json/version" >/dev/null 2>&1; }
+wait_for_alive() {
+  local waited=0
+  while [ "$waited" -lt 45 ]; do
+    alive && return 0
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 1
+}
+post_recovery() {
+  python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/session_vault.py" restore >> "$LOG" 2>&1 || true
+  if [ -n "${CLOAK_BROWSER_OWNER:-}" ]; then
+    python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_tab_gc.py" --owner "$CLOAK_BROWSER_OWNER" >> "$LOG" 2>&1 || true
+  fi
+}
 
 if alive; then
   # A loop killed with -9 never releases its context, and an orphaned context keeps its tabs alive
