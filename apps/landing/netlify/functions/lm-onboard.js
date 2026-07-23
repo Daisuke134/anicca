@@ -26,6 +26,19 @@ function verifyUid(uid, sig) {
   const b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+function signCalendarGrant(uid, purpose, exp, nonce = "") {
+  return crypto.createHmac("sha256", LM_UID_SECRET)
+    .update(`${uid}\ncalendar-connect:${purpose}\n${exp}\n${nonce}`)
+    .digest("base64url");
+}
+function calendarGrants(uid, nowSeconds = Math.floor(Date.now() / 1000)) {
+  const exp = nowSeconds + 5 * 60;
+  const nonce = crypto.randomBytes(18).toString("base64url");
+  return {
+    oauth: { purpose: "oauth", exp, nonce, sig: signCalendarGrant(uid, "oauth", exp, nonce) },
+    status: { purpose: "status", exp, nonce: "", sig: signCalendarGrant(uid, "status", exp, "") },
+  };
+}
 // Allow redirects to our own hosts ONLY; emit a normalized URL with userinfo cleared and any
 // caller-supplied uid/sig stripped (defeats userinfo-confusion open redirect + session fixation).
 function safeReturn(url) {
@@ -59,6 +72,31 @@ async function upsertUser(row) {
     },
     body: JSON.stringify({ ...row, updated_at: new Date().toISOString() }),
   });
+}
+
+async function readUser(uid) {
+  const select = "uid,name,calendar_provider,phone,paid,tg_onboard_stage,call_language";
+  const result = await fetch(
+    `${SUPABASE_URL}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=${select}&limit=1`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+  );
+  if (!result.ok) return { ok: false, row: null };
+  const rows = await result.json().catch(() => null);
+  if (!Array.isArray(rows)) return { ok: false, row: null };
+  return { ok: true, row: rows[0] || null };
+}
+
+function onboardingState(row) {
+  const current = row || {};
+  const name = typeof current.name === "string" && current.name.trim() ? current.name : null;
+  const calendarConnected = current.calendar_provider === "composio_gcal";
+  const phone = typeof current.phone === "string" && current.phone.trim() ? current.phone : null;
+  const paid = current.paid === true;
+  const contextComplete = current.tg_onboard_stage === "done";
+  const callLanguage = current.call_language === "ja" || current.call_language === "en"
+    ? current.call_language : null;
+  const step = !name ? "name" : !calendarConnected ? "connect" : !phone ? "phone" : !paid ? "pay" : "dashboard";
+  return { name, calendarConnected, contextComplete, phone, paid, callLanguage, step };
 }
 
 exports.handler = async (event) => {
@@ -109,8 +147,16 @@ exports.handler = async (event) => {
     const u = await ur.json().catch(() => null);
     if (!u || !u.id) return json(401, { error: "invalid session" });
     const uid = "lm_" + u.id; // deterministic per Supabase user
-    await upsertUser({ uid }).catch(() => {});
-    return json(200, { uid, sig: signUid(uid) });
+    const existing = await readUser(uid).catch(() => ({ ok: false, row: null }));
+    if (!existing.ok) return json(502, { error: "onboarding state unavailable" });
+    if (!existing.row) {
+      const saved = await upsertUser({ uid }).catch(() => null);
+      if (!saved || !saved.ok) return json(502, { error: "onboarding state save failed" });
+    }
+    return json(200, {
+      uid, sig: signUid(uid), onboarding: onboardingState(existing.row),
+      calendarConnect: calendarGrants(uid),
+    });
   }
 
   if (action === "save" && event.httpMethod === "POST") {

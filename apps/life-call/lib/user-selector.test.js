@@ -39,7 +39,6 @@ test("scheduler.js uses the shared filter at BOTH sites (exactly 2), no lingerin
   // and it is imported
   assert.ok(/require\(["']\.\/lib\/user-selector\.js["']\)/.test(src));
 });
-
 test("scheduler batch and uid selectors execute the same shared cohort contract", async () => {
   const oldUrl = process.env.SUPABASE_URL;
   const oldKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,11 +59,14 @@ test("scheduler batch and uid selectors execute the same shared cohort contract"
     if (oldUrl === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = oldUrl;
     if (oldKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = oldKey;
   }
-  assert.equal(urls.length, 2);
-  for (const value of urls) {
+  assert.equal(urls.length, 4);
+  const cohortUrls = urls.filter(value => new URL(value).pathname.endsWith("/lm_users"));
+  assert.equal(cohortUrls.length, 2);
+  for (const value of cohortUrls) {
     const url = new URL(value);
     assert.equal(url.searchParams.get("phone"), "not.is.null");
     assert.equal(url.searchParams.get("paid"), "is.true");
     assert.equal(url.searchParams.get("calendar_provider"), "in.(composio_gcal,pipedream_gcal)");
   }
+  assert.equal(urls.filter(value => new URL(value).pathname.endsWith("/lm_panel_preferences")).length, 2);
 });

@@ -1,0 +1,5 @@
+{
+  "findingId": "FIND-009", "dimension": "edge_case_coverage", "category": "test_coverage", "severity": "critical",
+  "description": "[blocking] apps/life-call/lib/panel-api.js:255 — 32 KiB超過時にPromiseをrejectするだけでstream停止も追加chunkの破棄もせず、`raw`をrequest終了まで伸ばし続けるためbody-size enforcementが実効的でない。",
+  "evidence": { "filePath": "apps/life-call/lib/panel-api.js", "lineRange": "255-255" }, "routeToPhase": "2a", "resolution": { "status": "open" }
+}

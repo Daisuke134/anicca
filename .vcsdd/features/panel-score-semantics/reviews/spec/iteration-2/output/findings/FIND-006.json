@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "Offset pagination across as many as 101 independent PostgREST reads has no snapshot or concurrent-write contract. An insertion before the current offset can shift a previously read row into the next page, causing a duplicate and an omitted row; core deduplication removes the duplicate but cannot recover the omission. The matrix tests static page sequences only, so silently incomplete scoring remains possible without reaching the sentinel.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "12-14",
+    "snippet": "Each stream orders by occurred_at.asc,public_ref.asc and paginates with limit=1000 and explicit offsets until a short page."
+  },
+  "routeToPhase": "1a"
+}

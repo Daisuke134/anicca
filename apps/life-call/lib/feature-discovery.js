@@ -1,5 +1,8 @@
 // lib/feature-discovery.js — LM-32 weekly discovery for still-locked context gates.
 "use strict";
+const { readRuntimePreferences } = require("./runtime-preferences.js");
+
+async function settle(promise, fallback) { try { return await promise; } catch { return fallback; } }
 
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { sendMessage } = require("./telegram.js");
@@ -72,10 +75,14 @@ async function listDiscoveryUsers(opts = {}) {
   if (!opts.supaUrl || !opts.supaKey) return [];
   const select = "uid,telegram_chat_id,last_discovery_at,last_discovery_gate,payout_destination";
   const url = `${opts.supaUrl}/rest/v1/lm_users?telegram_chat_id=not.is.null&select=${select}`;
-  const response = await f(url, { headers: supaHeaders(opts.supaKey) }).catch(() => null);
+  const response = await settle(f(url, { headers: supaHeaders(opts.supaKey) }), null);
   if (!response || !response.ok) return [];
-  const rows = await response.json().catch(() => []);
-  return Array.isArray(rows) ? rows : [];
+  const rows = await settle(response.json(), []);
+  if (!Array.isArray(rows)) return [];
+  return Promise.all(rows.map(async (user) => {
+    const prefs = await readRuntimePreferences(user.uid, opts);
+    return prefs ? { ...user, ...prefs } : { ...user, notifications_enabled: false, runtime_preferences_failed: true };
+  }));
 }
 
 async function getDiscoveryUser(uid, opts = {}) {
@@ -83,29 +90,33 @@ async function getDiscoveryUser(uid, opts = {}) {
   if (!opts.supaUrl || !opts.supaKey || !uid) return null;
   const select = "uid,telegram_chat_id,last_discovery_at,last_discovery_gate,payout_destination";
   const url = `${opts.supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&telegram_chat_id=not.is.null&select=${select}&limit=1`;
-  const response = await f(url, { headers: supaHeaders(opts.supaKey) }).catch(() => null);
+  const response = await settle(f(url, { headers: supaHeaders(opts.supaKey) }), null);
   if (!response || !response.ok) return null;
-  const rows = await response.json().catch(() => []);
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  const rows = await settle(response.json(), []);
+  const user = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!user) return null;
+  const prefs = await readRuntimePreferences(uid, opts);
+  return prefs ? { ...user, ...prefs } : { ...user, notifications_enabled: false, runtime_preferences_failed: true };
 }
 
 async function saveDiscovery(uid, nowMs, gate, opts = {}) {
   const f = opts.fetchImpl || fetch;
   if (!opts.supaUrl || !opts.supaKey || !uid || !GATE_ORDER.includes(gate)) return false;
   const url = `${opts.supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`;
-  const response = await f(url, {
+  const response = await settle(f(url, {
     method: "PATCH",
     headers: supaHeaders(opts.supaKey, "return=minimal"),
     body: JSON.stringify({
       last_discovery_at: new Date(nowMs).toISOString(),
       last_discovery_gate: gate,
     }),
-  }).catch(() => null);
+  }), null);
   return Boolean(response && response.ok);
 }
 
 async function runDiscoveryForUser(user, nowMs = Date.now(), deps = {}) {
   if (!user || !user.uid || !user.telegram_chat_id) return { sent: false, reason: "unreachable" };
+  if (user.notifications_enabled === false) return { sent: false, reason: user.runtime_preferences_failed ? "preferences_unavailable" : "notifications_disabled" };
   if (!isDiscoveryDue(user.last_discovery_at, nowMs)) return { sent: false, reason: "throttled" };
 
   const dbOpts = {

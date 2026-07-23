@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "implementation_bug",
+  "severity": "high",
+  "description": "CRIT-005 is false for malformed closed models. validScoreOrgan accepts any string period kind and accepts a 36-character run of hyphens as an outcome UUID; an artifact-only probe supplied both invalid values for all four organs and renderScoreCards rendered four cards instead of throwing a load error.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.js",
+    "lineRange": "23-30",
+    "snippet": "The validator checks only typeof period.kind === string and /^outcome:[0-9a-f-]{36}$/ rather than the closed period enum and UUID shape.",
+    "testName": "artifact-only malformed closed-model probe"
+  },
+  "routeToPhase": "2b",
+  "beadId": "BEAD-045",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 1,
+    "fixedInPhase": "2c",
+    "notes": "The renderer now enforces exact per-organ period kinds and canonical UUID source references; focused UI and fixed matrix malformed-model probes pass."
+  }
+}

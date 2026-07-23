@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "spec_ambiguity",
+  "severity": "high",
+  "description": "The nonexistent-wall-time rule names two different resolutions. Shifting 02:30 forward by a one-hour DST gap yields 03:30, while choosing the first valid wall time yields 03:00. Both satisfy part of the sentence and produce different start_at values and included rows; the New York spring fixture has no literal expected instant to disambiguate them. Iteration-1 FIND-003 is therefore not materially closed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md",
+    "lineRange": "40-41",
+    "snippet": "For a nonexistent local wall time, shift forward by the DST gap to the first valid wall time."
+  },
+  "routeToPhase": "1a"
+}

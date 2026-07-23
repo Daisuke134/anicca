@@ -1,7 +1,113 @@
 // LM-33c: server-rendered, read-only mirror for the Life Manager panel.
 "use strict";
 
-function renderPanelPage() {
+const { roundedScoreValue } = require("./panel-score-semantics.js");
+
+const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
+const SCORE_PERIOD_KINDS = Object.freeze({ daily: "rolling_7_days", physical: "rolling_30_days", mental: "rolling_7_days", financial: "calendar_month" });
+const SCORE_COMPONENT_KEYS = Object.freeze({
+  daily: Object.freeze(["timezone", "excluded_unknown_count", "eligible_events", "resolved_events", "required_succeeded", "required_failed", "required_pending", "context_unnecessary", "optional_ignored"]),
+  physical: Object.freeze(["timezone", "excluded_unknown_count", "detected_needs", "confirmed_booking", "confirmed_completion", "unresolved_needs", "search_candidate_unconfirmed"]),
+  mental: Object.freeze(["timezone", "excluded_unknown_count", "deduplicated_triggers", "delivered_within_cap", "suppression_honored", "correction_persisted", "cap_overflow", "unresolved_triggers"]),
+  financial: Object.freeze(["timezone", "excluded_unknown_count", "currency", "gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor", "excluded_rows", "net_clamped"]),
+});
+
+function scoreEscapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
+  });
+}
+
+function scoreAsDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) || date.toISOString() !== value ? null : date;
+}
+
+function scoreFormatDate(value) {
+  const date = scoreAsDate(value);
+  if (!date) return "";
+  return new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric" }).format(date);
+}
+
+function scoreExactKeys(value, expected) {
+  const actual = Object.keys(value).sort();
+  const wanted = expected.slice().sort();
+  return actual.length === wanted.length && actual.every(function (key, index) { return key === wanted[index]; });
+}
+
+function scoreNonNegativeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function validScoreComponents(name, components, status) {
+  const keys = SCORE_COMPONENT_KEYS[name];
+  if (!keys || !scoreExactKeys(components, keys) || typeof components.timezone !== "string" || !components.timezone) return false;
+  if (name !== "financial") return keys.filter(function (key) { return key !== "timezone"; }).every(function (key) { return scoreNonNegativeInteger(components[key]); });
+  if (!scoreNonNegativeInteger(components.excluded_unknown_count) || !scoreNonNegativeInteger(components.excluded_rows) || typeof components.net_clamped !== "boolean") return false;
+  const amounts = ["gross_income_minor", "realized_loss_minor", "fee_minor", "user_transfer_minor"];
+  if (status === "invalid_data") return components.currency === null && amounts.every(function (key) { return components[key] === null; });
+  if (!(components.currency === null || /^[A-Z]{3}$/.test(components.currency)) || !amounts.every(function (key) { return scoreNonNegativeInteger(components[key]); })) return false;
+  return status !== "measured" || /^[A-Z]{3}$/.test(String(components.currency || ""));
+}
+
+function scoreComponentRatio(name, components) {
+  if (name === "daily") return [components.resolved_events, components.eligible_events];
+  if (name === "physical") return [components.confirmed_booking + components.confirmed_completion, components.detected_needs];
+  if (name === "mental") return [components.delivered_within_cap + components.suppression_honored + components.correction_persisted, components.deduplicated_triggers];
+  const gross = components.gross_income_minor;
+  return [Math.max(0, gross - components.realized_loss_minor - components.fee_minor), gross];
+}
+
+function validScoreOrgan(name, organ) {
+  if (!organ || typeof organ !== "object" || !["measured", "insufficient_data", "invalid_data"].includes(organ.status)) return false;
+  if (!scoreExactKeys(organ, ["status", "value", "period", "numerator", "denominator", "reason", "source_outcome_ids", "components"])) return false;
+  if (!organ.period || !scoreExactKeys(organ.period, ["kind", "start_at", "end_at"]) || organ.period.kind !== SCORE_PERIOD_KINDS[name]) return false;
+  const periodStart = scoreAsDate(organ.period.start_at);
+  const periodEnd = scoreAsDate(organ.period.end_at);
+  if (!periodStart || !periodEnd || periodStart >= periodEnd) return false;
+  if (typeof organ.reason !== "string" || !organ.reason.trim() || !organ.components || typeof organ.components !== "object" || Array.isArray(organ.components)) return false;
+  if (!Array.isArray(organ.source_outcome_ids) || organ.source_outcome_ids.some(function (ref) { return !/^outcome:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(ref)); })) return false;
+  if (new Set(organ.source_outcome_ids).size !== organ.source_outcome_ids.length || organ.source_outcome_ids.some(function (ref, index) { return index > 0 && ref < organ.source_outcome_ids[index - 1]; })) return false;
+  if (!validScoreComponents(name, organ.components, organ.status)) return false;
+  if (organ.status === "measured") {
+    if (!Number.isInteger(organ.value) || organ.value < 0 || organ.value > 100 || !scoreNonNegativeInteger(organ.numerator) || !Number.isSafeInteger(organ.denominator) || organ.denominator <= 0 || organ.numerator > organ.denominator) return false;
+    const componentRatio = scoreComponentRatio(name, organ.components);
+    return organ.numerator === componentRatio[0] && organ.denominator === componentRatio[1] && organ.value === roundedScoreValue(organ.numerator, organ.denominator);
+  }
+  if (organ.status === "insufficient_data") {
+    const componentRatio = scoreComponentRatio(name, organ.components);
+    return organ.value === null && organ.numerator === 0 && organ.denominator === 0 && componentRatio[1] === 0;
+  }
+  return organ.value === null && organ.numerator === null && organ.denominator === null;
+}
+
+function renderScoreComponents(organ) {
+  const rows = Object.keys(organ.components).filter(function (key) { return key !== "timezone"; }).map(function (key) {
+    const value = organ.components[key];
+    return '<li><span>' + scoreEscapeHtml(key.replace(/_/g, " ")) + '</span>: ' + scoreEscapeHtml(value == null ? "—" : value) + '</li>';
+  }).join("");
+  return rows ? '<ul class="score-components">' + rows + '</ul>' : "";
+}
+
+function renderScoreCards(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || !scoreExactKeys(data, ["organs"])) throw new Error("invalid score payload");
+  const organs = data.organs;
+  if (!organs || typeof organs !== "object" || Array.isArray(organs) || !scoreExactKeys(organs, Object.keys(SCORE_LABELS))) throw new Error("invalid score payload");
+  const rows = ["daily", "physical", "mental", "financial"].map(function (name) {
+    const organ = organs[name];
+    if (!validScoreOrgan(name, organ)) throw new Error("invalid score payload");
+    const value = organ.status === "measured"
+      ? '<span class="score-value">' + organ.value + '<small>/100</small></span><div class="score-track" aria-label="' + scoreEscapeHtml(SCORE_LABELS[name]) + ' score"><span style="width:' + organ.value + '%"></span></div>'
+      : '<span class="score-ready">' + (organ.status === "insufficient_data" ? "insufficient data" : "invalid data") + '</span>';
+    const ratio = organ.status === "invalid_data" ? "not measurable" : organ.numerator + " / " + organ.denominator;
+    const period = organ.period.kind.replace(/_/g, " ") + " · " + scoreFormatDate(organ.period.start_at) + " → " + scoreFormatDate(organ.period.end_at) + " · " + String(organ.components.timezone || "UTC");
+    return '<article class="score-item" data-score-organ="' + name + '"><p class="score-name">' + SCORE_LABELS[name] + '</p>' + value + '<p class="score-caption">outcomes ' + scoreEscapeHtml(ratio) + '</p><p class="score-reason">' + scoreEscapeHtml(organ.reason) + '</p><p class="score-period">' + scoreEscapeHtml(period) + '</p>' + renderScoreComponents(organ) + '<p class="score-sources">根拠 ' + organ.source_outcome_ids.length + '件</p></article>';
+  }).join("");
+  return '<div class="score-grid">' + rows + '</div>';
+}
+
+function renderPanelPage(options = {}) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -143,6 +249,7 @@ function renderPanelPage() {
     .panel-section:nth-child(3) { grid-column: span 7; animation-delay: 220ms; }
     .panel-section:nth-child(4) { grid-column: span 5; animation-delay: 270ms; }
     .panel-section:nth-child(5) { grid-column: span 12; animation-delay: 320ms; }
+    .panel-section:nth-child(6) { grid-column: span 12; animation-delay: 360ms; }
 
     .section-head {
       display: flex;
@@ -242,7 +349,7 @@ function renderPanelPage() {
 
     .score-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       min-height: 190px;
     }
 
@@ -298,6 +405,10 @@ function renderPanelPage() {
       font-size: 0.7rem;
       line-height: 1.55;
     }
+
+    .score-reason { margin: 12px 0 0; color: var(--ink); line-height: 1.55; }
+    .score-period, .score-sources { margin: 8px 0 0; color: var(--ink-soft); font-size: 0.78rem; }
+    .score-components { margin: 10px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 0.78rem; line-height: 1.5; }
 
     .ledger-empty {
       display: grid;
@@ -408,6 +519,20 @@ function renderPanelPage() {
     .connection::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--line-dark); }
     .connection.is-on::before { background: var(--success); }
 
+    .control-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .control-card { display: grid; align-content: start; gap: 10px; min-height: 170px; padding: 16px; border: 1px solid var(--line); background: var(--paper-bright); }
+    .control-card h3, .control-card p { margin: 0; }
+    .control-state { color: var(--ink-soft); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .control-reason { color: var(--ink-soft); font-size: .78rem; line-height: 1.6; }
+    .control-action, .setting-switch, .setting-select select { min-height: 44px; border: 1px solid var(--ink); border-radius: 0; padding: 8px 12px; background: var(--ink); color: var(--paper-bright); font: inherit; font-weight: 700; cursor: pointer; }
+    .control-action:disabled, .setting-switch:disabled, .setting-select select:disabled { cursor: wait; opacity: .55; }
+    .control-action:focus-visible, .setting-switch:focus-visible, .setting-select select:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .settings-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+    .setting-switch[aria-checked="true"] { background: var(--success); }
+    .setting-select { display: grid; gap: 6px; color: var(--ink-soft); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+    .setting-select select { width: 100%; min-width: 0; letter-spacing: 0; }
+    .action-status { min-height: 1.5rem; margin: 14px 0 0; color: var(--ink-soft); font-size: .78rem; }
+
     @keyframes reveal {
       from { opacity: 0; transform: translateY(9px); }
       to { opacity: 1; transform: translateY(0); }
@@ -437,6 +562,7 @@ function renderPanelPage() {
       .ledger-empty { grid-template-columns: 1fr; }
       .ledger-cost { text-align: left; }
       .settings-grid { grid-template-columns: 1fr; }
+      .control-grid, .settings-controls { grid-template-columns: 1fr; }
       .setting-group { padding: 17px 0; border-left: 0; border-top: 1px solid var(--line); }
       .setting-group:first-child { padding-top: 0; border-top: 0; }
       .setting-group:last-child { padding-bottom: 0; }
@@ -456,11 +582,12 @@ function renderPanelPage() {
       </div>
       <div>
         <p class="masthead-note">今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。</p>
-        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>READ-ONLY MIRROR</div>
+        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>PERSONAL CONTROL CENTER</div>
+        <form action="/panel/logout" method="post"><button class="control-action" type="submit">Logout</button></form>
       </div>
     </header>
 
-    <p class="mirror-note"><strong>ここは操作画面ではなく、いまの状態を映す鏡です。</strong><span>変更や相談は、いつもの電話か Telegram でどうぞ。</span></p>
+    <p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>
 
     <main class="panel-grid">
       <section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
@@ -469,7 +596,7 @@ function renderPanelPage() {
       </section>
 
       <section class="panel-section" data-panel-section="scores" data-state="loading" aria-labelledby="scores-title">
-        <header class="section-head"><h2 id="scores-title">3 organ スコア</h2><span class="section-kicker">Signals</span></header>
+        <header class="section-head"><h2 id="scores-title">4 organ スコア</h2><span class="section-kicker">Outcomes</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">記録を確認しています。</p></div>
       </section>
 
@@ -487,6 +614,11 @@ function renderPanelPage() {
         <header class="section-head"><h2 id="settings-title">設定</h2><span class="section-kicker">Read only</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">設定を確認しています。</p></div>
       </section>
+
+      <section class="panel-section" data-panel-section="control-center" data-state="loading" aria-labelledby="control-center-title">
+        <header class="section-head"><h2 id="control-center-title">接続と automation</h2><span class="section-kicker">Control</span></header>
+        <div class="section-body" data-panel-body aria-live="polite"><p class="loading">あなたの接続と設定を確認しています。</p></div>
+      </section>
     </main>
   </div>
 
@@ -499,6 +631,7 @@ function renderPanelPage() {
       ledger: "/api/panel/ledger",
       gates: "/api/panel/gates",
       settings: "/api/panel/settings",
+      "control-center": "/api/panel/control-center",
     });
 
     function escapeHtml(value) {
@@ -562,26 +695,21 @@ function renderPanelPage() {
       return summary + '<ol class="timeline-list">' + rows + '</ol>';
     }
 
-    const scoreLabels = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", financial: "FINANCIAL" });
-
-    function scoreCaption(name, organ) {
-      if (name === "daily") return "直近" + Number(organ.window_days || 7) + "日: " + Number(organ.answered || 0) + " / " + Number(organ.calls || 0) + " call に応答";
-      if (name === "physical") return "予約・通院の記録がつながると表示します。";
-      return "FINANCIAL 台帳: " + Number(organ.ledger_entries || 0) + "件";
-    }
-
-    function renderScores(data) {
-      const organs = data && data.organs ? data.organs : {};
-      const rows = ["daily", "physical", "financial"].map(function (name) {
-        const organ = organs[name] || { no_data: true, score: null };
-        const hasScore = !organ.no_data && Number.isFinite(Number(organ.score));
-        const value = hasScore
-          ? '<span class="score-value">' + Math.max(0, Math.min(100, Number(organ.score))) + '<small>/100</small></span><div class="score-track" aria-label="' + escapeHtml(scoreLabels[name]) + ' score"><span style="width:' + Math.max(0, Math.min(100, Number(organ.score))) + '%"></span></div>'
-          : '<span class="score-ready">準備中</span>';
-        return '<article class="score-item"><p class="score-name">' + scoreLabels[name] + '</p>' + value + '<p class="score-caption">' + escapeHtml(scoreCaption(name, organ)) + '</p></article>';
-      }).join("");
-      return '<div class="score-grid">' + rows + '</div>';
-    }
+    const SCORE_LABELS = Object.freeze({ daily: "DAILY", physical: "PHYSICAL", mental: "MENTAL", financial: "FINANCIAL" });
+    const SCORE_PERIOD_KINDS = Object.freeze(${JSON.stringify(SCORE_PERIOD_KINDS)});
+    const SCORE_COMPONENT_KEYS = Object.freeze(${JSON.stringify(SCORE_COMPONENT_KEYS)});
+    ${scoreEscapeHtml.toString()}
+    ${scoreAsDate.toString()}
+    ${scoreFormatDate.toString()}
+    ${scoreExactKeys.toString()}
+    ${scoreNonNegativeInteger.toString()}
+    ${roundedScoreValue.toString()}
+    ${validScoreComponents.toString()}
+    ${scoreComponentRatio.toString()}
+    ${validScoreOrgan.toString()}
+    ${renderScoreComponents.toString()}
+    ${renderScoreCards.toString()}
+    const renderScores = renderScoreCards;
 
     function moneyLabel(entry) {
       const amount = entry.amount != null ? entry.amount : (entry.amount_usd != null ? entry.amount_usd : entry.value);
@@ -647,7 +775,53 @@ function renderPanelPage() {
       return '<div class="settings-grid"><div class="setting-group"><p class="setting-label">CALL LANGUAGE</p><p class="setting-value">' + languageLabel(data.call_language) + '</p></div><div class="setting-group"><p class="setting-label">CALL SCHEDULE</p><p class="setting-value">' + escapeHtml(scheduleText) + '<br><span style="color:var(--ink-soft)">' + escapeHtml(schedule.time_zone || "timezone 未設定") + '</span></p></div><div class="setting-group"><p class="setting-label">接続状態</p><div class="connection-list">' + chips + '</div></div></div>';
     }
 
-    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings });
+    let controlCsrf = "";
+    const connectionLabels = Object.freeze({ calendar: "Calendar", telegram: "Telegram", location: "Location", call: "Call", email: "Email", wallet: "Payout / wallet" });
+
+    function actionButton(action, item) {
+      if (action === "connection.start:calendar") { const label = item && item.actionLabel === "Reconnect calendar" ? "Reconnect calendar" : "Connect calendar"; return '<button class="control-action" type="button" aria-label="' + label + '" data-action="connect-calendar">' + label + '</button>'; }
+      if (action === "connection.disconnect:calendar") return '<button class="control-action" type="button" data-command="connection.disconnect" data-action="disconnect-calendar">Disconnect calendar</button>';
+      if (action === "instructions:location") return '<button class="control-action" type="button" data-action="instructions-location">Telegram instructions</button>';
+      if (action === "instructions:wallet") return '<button class="control-action" type="button" data-action="instructions-wallet">Telegram instructions</button>';
+      if (action === "instructions:call") return '<button class="control-action" type="button" data-action="instructions-call">Telegram instructions</button>';
+      return "";
+    }
+
+    function switchButton(action, label, enabled) {
+      return '<button class="setting-switch" type="button" role="switch" aria-checked="' + String(Boolean(enabled)) + '" data-action="' + action + '">' + escapeHtml(label) + ': ' + (enabled ? "ON" : "OFF") + '</button>';
+    }
+
+    function settingSelect(attributes, label, current, options) {
+      const hasCurrent = options.some(function (option) { return option.value === current; });
+      const placeholder = hasCurrent ? "" : '<option value="" selected disabled>Not configured</option>';
+      const choices = options.map(function (option) {
+        return '<option value="' + escapeHtml(option.value) + '"' + (option.value === current ? " selected" : "") + '>' + escapeHtml(option.label) + '</option>';
+      }).join("");
+      return '<label class="setting-select"><span>' + escapeHtml(label) + '</span><select ' + attributes + ' aria-label="' + escapeHtml(label) + '">' + placeholder + choices + '</select></label>';
+    }
+
+    function renderControlCenter(data) {
+      controlCsrf = data.csrf || "";
+      const connections = data.connections || {};
+      const cards = ["calendar", "telegram", "location", "call", "email", "wallet"].map(function (name) {
+        const item = connections[name] || { state: "error", reason: "State unavailable", actions: [] };
+        const actions = (Array.isArray(item.actions) ? item.actions : []).map(function (action) { return actionButton(action, item); }).join("");
+        return '<article class="control-card"><p class="control-state">' + escapeHtml(item.state) + '</p><h3>' + escapeHtml(connectionLabels[name]) + '</h3><p class="control-reason">' + escapeHtml(item.reason) + '</p>' + actions + '</article>';
+      }).join("");
+      const settings = data.settings || {};
+      const switches = [
+        switchButton("toggle-calls", "Calls", settings.call_enabled),
+        switchButton("toggle-notifications", "Notifications", settings.notifications_enabled),
+        switchButton("toggle-daily", "DAILY automation", settings.daily_automation_enabled),
+        '<p class="control-unavailable" role="status">Delegation unavailable: no safe delegated-action runtime is available.</p>',
+        settingSelect('data-setting="call_language" data-action="call_language"', "Call language", settings.call_language, [{ value: "en", label: "English" }, { value: "ja", label: "日本語" }]),
+        settingSelect('data-setting="call_time_zone" data-action="call_time_zone"', "Call timezone", settings.call_time_zone, [{ value: "Asia/Tokyo", label: "Asia/Tokyo" }, { value: "UTC", label: "UTC" }, { value: "Europe/London", label: "Europe/London" }, { value: "America/New_York", label: "America/New_York" }, { value: "America/Los_Angeles", label: "America/Los_Angeles" }]),
+        settingSelect('data-setting="wake_policy" data-action="wake_policy"', "Wake policy", settings.wake_policy, [{ value: "travel-only", label: "Travel events only" }, { value: "all-events", label: "All events" }]),
+      ].join("");
+      return '<p><strong>' + escapeHtml((data.identity || {}).name || "Life Manager user") + '</strong></p><div class="control-grid" id="connection-cards">' + cards + '</div><div class="settings-controls" id="settings-controls">' + switches + '</div><p class="action-status" id="action-status" aria-live="polite"></p>';
+    }
+
+    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
 
     async function loadPanelSection(name) {
       const response = await fetch(panelEndpoints[name], { credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -658,6 +832,56 @@ function renderPanelPage() {
       if (!response.ok) throw new Error(name + " unavailable");
       markLoaded(name, renderers[name](await response.json()));
     }
+
+    function commandForAction(action, button) {
+      switch (action) {
+        case "connect-calendar": return { type: "connection.start", provider: "calendar" };
+        case "disconnect-calendar": return { type: "connection.disconnect", provider: "calendar" };
+        case "toggle-calls": return { type: "setting.set", setting: "call_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-notifications": return { type: "setting.set", setting: "notifications_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-daily": return { type: "setting.set", setting: "daily_automation_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "toggle-delegation": return { type: "setting.set", setting: "delegation_enabled", value: button.getAttribute("aria-checked") !== "true" };
+        case "call_language": return { type: "setting.set", setting: "call_language", value: button.value };
+        case "call_time_zone": return { type: "setting.set", setting: "call_time_zone", value: button.value };
+        case "wake_policy": return { type: "setting.set", setting: "wake_policy", value: button.value };
+        case "instructions-location": window.location.href = "https://t.me/LifeManagerBotbot?start=location"; return null;
+        case "instructions-wallet": window.location.href = "https://t.me/LifeManagerBotbot?start=payout"; return null;
+        case "instructions-call": window.location.href = "https://t.me/LifeManagerBotbot?start=call"; return null;
+        default: return null;
+      }
+    }
+
+    async function runControlAction(button) {
+      const command = commandForAction(button.dataset.action, button);
+      if (!command) return;
+      const section = document.querySelector('[data-panel-section="control-center"]');
+      const before = section.innerHTML;
+      const status = document.getElementById("action-status");
+      button.disabled = true; button.setAttribute("aria-busy", "true");
+      if (status) status.textContent = "Updating…";
+      try {
+        const response = await fetch("/api/panel/commands", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", "x-lm-csrf": controlCsrf, "idempotency-key": (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-panel") }, body: JSON.stringify(command) });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error("update failed");
+        if (result.state && result.state.redirectUrl) { window.location.href = result.state.redirectUrl; return; }
+        await loadPanelSection("control-center");
+        const nextStatus = document.getElementById("action-status"); if (nextStatus) nextStatus.textContent = "Updated";
+      } catch {
+        section.innerHTML = before;
+        const restored = document.getElementById("action-status"); if (restored) restored.textContent = "Update failed. Your previous setting is unchanged.";
+      }
+    }
+
+    document.addEventListener("click", function (event) {
+      const button = event.target.closest("button[data-action]");
+      if (button) runControlAction(button);
+    });
+    const logout = document.querySelector('form[action="/panel/logout"]');
+    if (logout) logout.addEventListener("submit", function (event) { event.preventDefault(); fetch("/panel/logout", { method: "POST", credentials: "same-origin", headers: { "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}" } }).then(function () { window.location.href = "/panel"; }); });
+    document.addEventListener("change", function (event) {
+      const select = event.target.closest('select[data-action]');
+      if (select) runControlAction(select);
+    });
 
     Promise.allSettled(Object.keys(panelEndpoints).map(function (name) {
       return loadPanelSection(name).catch(function (error) {
@@ -670,4 +894,4 @@ function renderPanelPage() {
 </html>`;
 }
 
-module.exports = { renderPanelPage };
+module.exports = { renderPanelPage, renderScoreCards };

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The fixed matrix and L2 plan omit explicit cases for REQ-001 unknown outcome kinds and missing-table rollback, the architecture's mixed-currency failure branch, and REQ-010 malformed organ payloads. The planned suite can report 100% while these required or documented branches remain unimplemented.",
+  "evidence": {
+    "filePath": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md",
+    "lineRange": "63-81",
+    "snippet": "The required matrix groups enumerate Envelope, DAILY, PHYSICAL, MENTAL, FINANCIAL, Time, and Security/audit cases; the L2 strategy lists endpoint closure/query checks and UI rendering checks."
+  },
+  "routeToPhase": "1b"
+}

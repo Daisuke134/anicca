@@ -8,6 +8,44 @@ const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
 const GCAL_AUTH_CONFIG = process.env.COMPOSIO_GCAL_AUTH_CONFIG; // ac_FIvQ1FI9Dukl
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
+const crypto = require("crypto");
+
+const json = (statusCode, value) => ({
+  statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify(value),
+});
+
+function verifyCalendarGrant(uid, query, expectedPurpose, nowSeconds = Math.floor(Date.now() / 1000)) {
+  const purpose = String(query.purpose || "");
+  const nonce = String(query.nonce || "");
+  const exp = Number(query.exp);
+  const sig = String(query.sig || "");
+  if (!LM_UID_SECRET || !uid || purpose !== expectedPurpose || !Number.isInteger(exp) ||
+      exp <= nowSeconds || exp > nowSeconds + 10 * 60 || !sig ||
+      (purpose === "oauth" && !nonce) || (purpose === "status" && nonce)) return false;
+  const canonical = `${uid}\ncalendar-connect:${purpose}\n${exp}\n${nonce}`;
+  const expected = crypto.createHmac("sha256", LM_UID_SECRET).update(canonical).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+async function claimOAuthNonce(uid, nonce, exp) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  const nonceHash = crypto.createHash("sha256").update(nonce).digest("hex");
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/lm_calendar_connect_nonces`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json", Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      uid, purpose: "oauth", nonce_hash: nonceHash,
+      expires_at: new Date(exp * 1000).toISOString(),
+    }),
+  }).catch(() => null);
+  return Boolean(result && result.status === 201);
+}
 
 async function supaGetTokenPhone(token) {
   const r = await fetch(
@@ -31,6 +69,13 @@ exports.handler = async (event) => {
   //     primary key), and we mark lm_users. No subscriber row exists for /lm users, so this branch
   //     must NOT go through subscriber_profiles (that path 404s for a raw uid).
   const isLm = !token && !!uid;
+  if (isLm) {
+    const expectedPurpose = qs.check ? "status" : "oauth";
+    if (!verifyCalendarGrant(uid, qs, expectedPurpose)) return json(403, { error: "bad calendar signature" });
+    if (expectedPurpose === "oauth" && !await claimOAuthNonce(uid, String(qs.nonce), Number(qs.exp))) {
+      return json(403, { error: "calendar signature already used" });
+    }
+  }
   const userId = isLm ? uid : await supaGetTokenPhone(token);
   if (!userId) return { statusCode: 404, body: "subscriber not found" };
 

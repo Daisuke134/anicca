@@ -1,0 +1,94 @@
+{
+  "sprintNumber": 1,
+  "feature": "panel-score-semantics",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-22T14:41:17Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "spec"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:28",
+          "description": "Lines 28-32 close iteration-2 FIND-001 by assigning explicit types and nullability to every common and organ-specific component."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:12",
+          "description": "Lines 12-14 close iteration-2 FIND-006 by replacing independent offset pages with one statement-snapshot RPC that is complete-or-overflow."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:42",
+          "description": "Line 42 closes iteration-2 FIND-002 and FIND-005 with literal gap/overlap results and the exact period-resolution failure response."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:70",
+          "description": "Line 70 closes iteration-2 FIND-004 by defining resolved_at validity, fallback, exclusion, and deterministic delivery order."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:101",
+          "description": "Line 101 closes iteration-2 FIND-003 by defining organ-specific winner direction and recorded_at/public_ref tie-breaks."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/behavioral-spec.md:146",
+          "description": "Lines 146-150 isolate deterministic period, dedupe, aggregation, explanation, and reference logic from all effects."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:3",
+          "description": "Lines 3-20 map the pure core and query, persistence, presentation, and release shells to explicit modules."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/panel-score-semantics/specs/verification-architecture.md:94",
+          "description": "Line 94 closes iteration-2 FIND-007 with a bounded generated domain, fixed seed, exact permutation count, and literal expected-value fixtures."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "previousFindingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

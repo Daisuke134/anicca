@@ -10,9 +10,11 @@
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
 const { schedulerCohortFilter } = require("./lib/user-selector.js");
+const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
+const { formatTravelAutofillMessage } = require("./lib/i18n.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 const { sendMessage } = require("./lib/telegram.js");
@@ -59,7 +61,15 @@ async function supaUsers() {
   let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });
   if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr }); // wake_policy → undefined → travel-only
   if (!r.ok) return [];
-  return r.json().catch(() => []);
+  const users = await r.json().catch(() => []);
+  if (!Array.isArray(users) || users.length === 0) return [];
+  const ids = users.map(u => u.uid).filter(Boolean).join(",");
+  const prefsResponse = await fetch(`${url}/rest/v1/lm_panel_preferences?uid=in.(${encodeURIComponent(ids)})&select=uid,call_enabled,notifications_enabled,daily_automation_enabled`, { headers: hdr });
+  if (!prefsResponse.ok) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
+  const preferenceRows = await prefsResponse.json().catch(() => null);
+  if (!Array.isArray(preferenceRows)) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
+  const byUid = new Map(preferenceRows.map(row => [row.uid, row]));
+  return users.map(u => ({ ...RUNTIME_DEFAULTS, ...u, ...(byUid.get(u.uid) || {}) }));
 }
 
 // Returns true if this (uid,event_key) was NOT already called — and records it atomically.
@@ -144,20 +154,22 @@ function buildStreamUrl(ev, urgency, lang, name) {
 // lm_late_notice_log atomically deduplicates one action per calendar event across restarts.
 async function lateNoticeUserOnce(u, nowMs, deps = {}) {
   const now = nowMs !== undefined ? nowMs : Date.now();
-  const { url: supaUrl, key: supaKey } = SUPA();
+  const configuredSupa = SUPA();
+  const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
+  const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
   if (!u || !u.uid || !supaUrl || !supaKey) return;
   const dbOpts = { supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl };
   const location = deps.location !== undefined
     ? deps.location
     : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, dbOpts);
-  const events = deps.events || await fetchUpcomingEvents(u.uid, {
-    nowMs: now, horizonH: 6, apiKey: process.env.COMPOSIO_API_KEY,
+  const events = deps.events || await (deps.fetchUpcomingEvents || fetchUpcomingEvents)(u.uid, {
+    nowMs: now, horizonH: 6, apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
     calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
   });
   return processLocationLateNotice({
     user: u, location, events, nowMs: now,
-    mapsKey: process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
-    telegramToken: process.env.LM_TELEGRAM_BOT_TOKEN,
+    mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+    telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
     noticeOpts: {
       resendKey: process.env.RESEND_API_KEY, userEmail: u.email, userName: u.name,
     },
@@ -174,41 +186,47 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
 // The existing tick/travelTick/askTickAll still call these in a for-loop so the in-process
 // LIFE_RUN_LOOPS path continues to work unchanged.
 
-async function wakeUserOnce(u, nowMs) {
+async function wakeUserOnce(u, nowMs, deps = {}) {
+  if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
   let events;
   try {
     // LM-7: calendar polling is represented once per UTC day/user. The helper checks today's row
     // in Supabase on every tick; no in-memory counter is used, so restarts preserve aggregation.
-    await recordDailyComposioPoll(u.uid, { nowMs: now });
+    await (deps.recordDailyPoll || recordDailyComposioPoll)(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
-    events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6, gmailAccountId: u.gmail_account_id });
+    events = await (deps.fetchUpcomingEvents || fetchUpcomingEvents)(u.uid, {
+      nowMs: now, horizonH: 6, apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+      calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
+    });
   } catch {
     return;
   }
-  try { await lateNoticeUserOnce(u, now, { events }); }
+  try { if (u.notifications_enabled !== false) await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events }); }
   catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
-  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  if (u.call_enabled === false) return;
   for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
     const depMs = await resolveDeparture(ev, events, {
-      home: u.home_address, mapsKey, nowMs: now, bufferMin: 5, directionsFn: directionsMinutes,
+      home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
+      directionsFn: deps.directionsMinutes || directionsMinutes,
     });
     const mins = (depMs - now) / 60000;
     for (const lvl of WAKE_LEVELS) {
       // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
       if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
       const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
-      const fresh = await claimWake(u.uid, eventKey);
+      const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
       if (!fresh) continue; // already called for this (event, level)
       const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
       let res;
       try {
-        res = await placeCall({ to: u.phone, streamUrl });
+        res = await (deps.placeCall || placeCall)({ to: u.phone, streamUrl });
       } catch (e) {
         res = { ok: false, error: String((e && e.message) || e) };
       }
@@ -218,8 +236,8 @@ async function wakeUserOnce(u, nowMs) {
         console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
         // Don't burn the retry: release the claim so the next 60s tick tries again while the event
         // is still in its window (the claim-before-dial order stays intact as the dedup guard).
-        await releaseWake(u.uid, eventKey);
-        await maybeAlertLowBalance(res.error);
+        await (deps.releaseWake || releaseWake)(u.uid, eventKey);
+        await (deps.alertLowBalance || maybeAlertLowBalance)(res.error);
       }
     }
   }
@@ -254,7 +272,7 @@ async function tick(deps = {}) {
   const wake = deps.wake || wakeUserOnce;
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users, "scheduler", (u) => wake(u, now));
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.call_enabled !== false), "scheduler", (u) => wake(u, now));
 }
 
 function startScheduler() {
@@ -275,15 +293,36 @@ function startScheduler() {
 // ── Travel auto-fill (every 30 min) — keep today+7d filled with [Travel] blocks ─────────────────
 const TRAVEL_TICK_MS = 30 * 60 * 1000;
 
-async function travelUserOnce(u) {
-  const apiKey = process.env.COMPOSIO_API_KEY;
-  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY; // agentic resolve of room-name / unroutable locations
+async function travelUserOnce(u, deps = {}) {
+  if (u && u.daily_automation_enabled === false) return;
+  const apiKey = deps.apiKey || process.env.COMPOSIO_API_KEY;
+  const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey = deps.geminiKey || process.env.GEMINI_API_KEY; // agentic resolve of room-name / unroutable locations
   if (!apiKey || !mapsKey) return;
-  const { url: supaUrl, key: supaKey } = SUPA(); // C-H1: atomic [Travel] claim ledger (lm_travel_log)
+  const configuredSupa = SUPA();
+  const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
+  const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
   try {
-    const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address, supaUrl, supaKey, gmailAccountId: u.gmail_account_id });
+    const r = await (deps.fillTravel || fillTravel)(u.uid, {
+      apiKey, mapsKey, geminiKey, home: u.home_address,
+      nowMs: deps.nowMs === undefined ? Date.now() : deps.nowMs,
+      calendar: deps.calendar, supaUrl, supaKey,
+      _directionsMinutes: deps.directionsMinutes,
+      gmailAccountId: u.gmail_account_id,
+    });
     if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
+    const telegramToken = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
+    if (u.notifications_enabled !== false && telegramToken && u.telegram_chat_id) {
+      for (const report of r.outboundReports || []) {
+        try {
+          await (deps.sendMessage || sendMessage)(telegramToken, u.telegram_chat_id,
+            formatTravelAutofillMessage(report, deps.nowMs === undefined ? Date.now() : deps.nowMs));
+        } catch (error) {
+          console.error(`[travel] uid=${u.uid.slice(0, 12)} report send failed: ${error && error.message}`);
+        }
+      }
+    }
+    return r;
   } catch (e) {
     console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);
   }
@@ -296,7 +335,7 @@ async function travelTick(deps = {}) {
   const listUsers = deps.listUsers || supaUsers;
   const travel = deps.travel || travelUserOnce;
   const users = await listUsers();
-  await forEachUserSafe(users, "travel", travel);
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false), "travel", travel);
 }
 function startTravelLoop() {
   console.log(`[travel] started — every ${TRAVEL_TICK_MS / 60000}min, horizon 7d`);
@@ -310,6 +349,7 @@ function startTravelLoop() {
 const ASK_TICK_MS = 20 * 60 * 1000;
 
 async function askUserOnce(u) {
+  if (u && (u.daily_automation_enabled === false || u.notifications_enabled === false)) return;
   const composioKey = process.env.COMPOSIO_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;                            // our-domain email send
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
@@ -341,7 +381,7 @@ async function askTickAll(deps = {}) {
   const listUsers = deps.listUsers || supaUsers;
   const ask = deps.ask || askUserOnce;
   const users = await listUsers();
-  await forEachUserSafe(users, "ask", ask);
+  await forEachUserSafe(users.filter(u => u.daily_automation_enabled !== false && u.notifications_enabled !== false), "ask", ask);
 }
 function startAskLoop() {
   console.log(`[ask] started — every ${ASK_TICK_MS / 60000}min`);
@@ -389,7 +429,7 @@ async function discoveryTick(deps = {}) {
   }));
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
-  await forEachUserSafe(users, "discovery", (user) => discover(user, now));
+  await forEachUserSafe(users.filter(user => user.notifications_enabled !== false), "discovery", (user) => discover(user, now));
 }
 
 function startDiscoveryLoop() {
@@ -417,7 +457,10 @@ async function getUserByUid(uid) {
   if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr });
   if (!r.ok) return null;
   const rows = await r.json().catch(() => []);
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  const user = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!user) return null;
+  const prefs = await readRuntimePreferences(uid, { supaUrl: url, supaKey: key, fetchImpl: fetch });
+  return prefs ? { ...user, ...prefs } : { ...user, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false };
 }
 
 module.exports = {

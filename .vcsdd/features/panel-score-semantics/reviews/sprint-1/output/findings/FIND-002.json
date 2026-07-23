@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "error_handling",
+  "severity": "medium",
+  "description": "The score-card validator accepts numeric period start_at/end_at values because scoreAsDate passes arbitrary values to Date; a malformed non-ISO model is rendered as four cards instead of failing the score section closed.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/panel-ui.js",
+    "lineRange": "19-21",
+    "snippet": "function scoreAsDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? null : date; }",
+    "testName": "malformed-model probe: numeric periods 0/1000 produced acceptedMalformedNumericPeriods=true and cardCount=4"
+  },
+  "routeToPhase": "2b"
+}

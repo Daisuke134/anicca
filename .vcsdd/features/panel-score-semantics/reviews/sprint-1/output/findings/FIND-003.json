@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "The executable PostgreSQL harness never attempts a zero revision_key or a fractional amount_minor. The contract requires a real non-zero-key rejection assertion, and the missing invalid-input coverage allowed the fractional rounding/idempotency defect to pass while the harness reported PASS.",
+  "evidence": {
+    "filePath": "apps/life-call/test/postgres/panel-score-postgres.integration.sh",
+    "lineRange": "86-105",
+    "snippet": "BASE_PAYLOAD uses only a non-zero revision key; the block tests exact retry, changed status, fresh-key correction, and re-entry without an invalid zero-key or fractional-amount call.",
+    "testName": "source scan plus fresh npm run test:panel-score:postgres; harness reports PASS without the required invalid-input assertions"
+  },
+  "routeToPhase": "2a"
+}
