@@ -215,13 +215,13 @@ async function collectEmailWithSignal(parentSignal) {
       .map(address => address.trim().toLowerCase()).filter(Boolean);
     if (!recipient || !allowedRecipients.includes(recipient)) throw closedFailure("email_recipient_not_controlled");
     if (!env.RESEND_API_KEY) throw closedFailure("email_configuration");
-    const nonce = crypto.randomBytes(18).toString("hex"); const sentAtMs = Date.now();
+    const nonce = crypto.randomBytes(18).toString("hex");
     const accepted = await resendSend({ to: recipient, subject: `Life Manager controlled check ${nonce}`,
       text: `Controlled delivery check ${nonce}. No action is required.`, resendKey: env.RESEND_API_KEY,
       /* node:coverage ignore next 2 */
       fetchImpl: (url, options = {}) => fetch(url, { ...options,
         signal: AbortSignal.any([signal, AbortSignal.timeout(PROVIDER_TIMEOUT_MS)]) }) });
-    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected");
+    if (!accepted || accepted.sent !== true || !accepted.id) throw closedFailure("email_send_rejected"); const sentAtMs = Date.now();
     let receipt; let inboxReadCount = 0;
     for (let index = 0; index < 6; index += 1) {
       receipt = signal

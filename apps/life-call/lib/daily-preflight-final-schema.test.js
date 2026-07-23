@@ -215,3 +215,18 @@ test("review6 RED: serialized validation requires explicit same-invocation prove
     freshProcessArbitraryRunRefAccepted: false,
   });
 });
+
+test("review7 RED: serialized provenance cannot be discovered and forged", async () => {
+  const report = (await boundReport()).report;
+  const forged = structuredClone(report);
+  forged.runRef = `sha256:${"b".repeat(64)}`;
+  for (const symbol of Object.getOwnPropertySymbols(report)) {
+    Object.defineProperty(forged, symbol, {
+      value: { report: forged, runRef: forged.runRef, consumed: false },
+      enumerable: false,
+    });
+  }
+
+  assert.throws(() => validateAndBuildFinalReport(forged), /final_report_invalid/);
+  assert.deepEqual(Object.getOwnPropertySymbols(report), []);
+});
