@@ -37,10 +37,20 @@ test("PANEL-0 personalized data differs and capabilities stay honest", async () 
   const store = fixtureStore();
   const a = await buildControlCenter({ uid: "u-a", chatId: "101" }, { store, nowMs: Date.parse("2026-07-21T01:00:00Z"), calendarStatus: async () => "ACTIVE" });
   const b = await buildControlCenter({ uid: "u-b", chatId: "202" }, { store, nowMs: Date.parse("2026-07-21T01:00:00Z"), calendarStatus: async () => "INACTIVE" });
-  assert.equal(a.identity.name, "Aiko"); assert.equal(b.identity.name, "Ben"); assert.notDeepEqual(a.settings, b.settings);
+  assert.equal(a.identity.name, "Life Manager user"); assert.equal(b.identity.name, "Life Manager user"); assert.notDeepEqual(a.settings, b.settings);
   assert.equal(a.connections.calendar.state, "connected"); assert.equal(b.connections.calendar.state, "action_required");
   assert.equal(a.connections.email.state, "unavailable"); assert.equal(b.connections.email.state, "unavailable");
   assert.deepEqual(b.connections.email.actions, []); assert.doesNotMatch(JSON.stringify(a), /Dais/);
+});
+
+test("PANEL-8h control center preserves an unconfigured call language", async () => {
+  const store = fixtureStore();
+  store.users.get("u-a").call_language = null;
+  const model = await buildControlCenter(
+    { uid: "u-a", chatId: "101" },
+    { store, calendarStatus: async () => "ACTIVE" },
+  );
+  assert.equal(model.settings.call_language, null);
 });
 
 test("PANEL-0 isolates read, mutation target, OAuth state, and chat scope", async () => {

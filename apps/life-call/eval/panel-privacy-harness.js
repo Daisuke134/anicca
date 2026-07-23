@@ -360,6 +360,77 @@ function assertControlCenterNull(body) {
   ]);
 }
 
+async function runPanelPrivacyApiEval() {
+  assertContractShape();
+  let api = 0;
+  const failures = [];
+
+  async function check(label, assertion) {
+    try {
+      await assertion();
+    } catch (error) {
+      failures.push({ label, error });
+    }
+  }
+
+  for (const recipe of buildRecipes()) {
+    for (const channel of CHANNELS) {
+      await check(`${recipe.id}/${channel.id}`, async () => {
+        const captured = await capturePanelResponse({
+          section: channel.section,
+          source: channel.source,
+          hostileValue: recipe.value,
+        });
+        assertApiOracle(captured, channel.apiOracle, recipe.value, `${recipe.id}/${channel.id}`);
+        api += 1;
+      });
+    }
+  }
+
+  for (const positive of POSITIVE_CASES) {
+    await check(positive.id, async () => {
+      const captured = await capturePanelResponse({
+        section: positive.section,
+        source: positive.source,
+      });
+      assert.equal(captured.status, 200, `${positive.id}: HTTP status`);
+      if (positive.section === "settings") assertSettingsNull(captured.body);
+      else assertControlCenterNull(captured.body);
+      api += 1;
+    });
+  }
+
+  for (const malformed of MALFORMED_CASES) {
+    await check(malformed.id, async () => {
+      const captured = await capturePanelResponse({
+        section: malformed.section,
+        malformed: true,
+      });
+      assert.equal(captured.status, 422, `${malformed.id}: HTTP status`);
+      assert.deepEqual(captured.body, {
+        error: "section_unavailable",
+        section: malformed.section,
+      }, `${malformed.id}: exact section error`);
+      api += 1;
+    });
+  }
+
+  if (failures.length) {
+    const representatives = new Map();
+    for (const { label, error } of failures) {
+      const contractPart = label.includes("/") ? label.slice(label.indexOf("/") + 1) : label;
+      if (!representatives.has(contractPart)) representatives.set(contractPart, `${label}: ${error.message}`);
+    }
+    throw new Error(
+      `Panel privacy API RED: ${failures.length}/${EXPECTED_COUNTS.api} cases failed; `
+      + `passed assertions api=${api}/${EXPECTED_COUNTS.api}\n${[...representatives.values()].join("\n")}`,
+    );
+  }
+
+  assert.equal(api, EXPECTED_COUNTS.api);
+  return Object.freeze({ api, recipes: RECIPE_IDS.length, channels: CHANNELS.length });
+}
+
 async function runPanelPrivacyEval() {
   assertContractShape();
   const counters = { api: 0, browser: 0 };
@@ -455,5 +526,6 @@ async function runPanelPrivacyEval() {
 module.exports = {
   capturePanelResponse,
   emittedPanelRuntime,
+  runPanelPrivacyApiEval,
   runPanelPrivacyEval,
 };
