@@ -1,5 +1,24 @@
 # 10e guarded auto-merge and production deployment evidence
 
+## Stop boundary
+
+The row remains pending. Three fresh-adversary approaches all stop before merge. PR
+[#1092](https://github.com/Daisuke134/life-manager/pull/1092) and error
+[#1088](https://github.com/Daisuke134/life-manager/issues/1088) remain open. No deployment,
+provider mutation, or issue closure occurs; production remains on successful deployment
+`73afe498…`.
+
+Method 3 independently confirms the exact head and complete diff hash, then blocks on three remaining
+material boundaries:
+
+- the reviewer runner itself inherits credentials and lacks filesystem/network isolation;
+- open-PR uniqueness is limited to the first 100 results rather than all pages;
+- the rollback target is a successful deployment but is not proven to be the currently active exact
+  commit.
+
+Resume requires a credential-free read-only reviewer sandbox, paginated all-PR discovery, and
+active-deployment exact-commit discovery in a trusted promoter outside the candidate.
+
 ## Result
 
 Real privacy-safe production error [#1088](https://github.com/Daisuke134/life-manager/issues/1088)

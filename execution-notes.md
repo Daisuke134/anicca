@@ -271,7 +271,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Focused tests are `22/22`. Evidence: `docs/evidence/10d-production-error-intake.md`.
   Pending becomes 18; next is 10e.
 
-## 10e DEV-e — done (guarded auto-merge/deploy)
+## 10e DEV-e — pending after three fresh-adversary stops
 - Real production error #1088 enters the existing D0 and produces exactly one PR,
   [#1092](https://github.com/Daisuke134/life-manager/pull/1092).
 - Fresh implementation commit `67f38e33…` adds a hanging-calendar-provider regression and bounds
@@ -296,6 +296,14 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Method-3 preflight catches bootstrap test rejection-token fixtures as capabilities. Corrective
   RED `8/9` → GREEN `9/9` excludes only reviewed credential-free bootstrap test lines; runtime and
   guard source remain capability-inspected and complete-diff bound.
+- Fresh adversary method 3 still fails before merge: the reviewer runner itself inherits credentials
+  without filesystem/network isolation, PR uniqueness reads only the first 100 open PRs, and the
+  rollback target is not proven to be the currently active exact commit. PR #1092 and issue #1088
+  remain OPEN; merge/deploy/provider mutation are zero; production deployment remains
+  `73afe498…` SUCCESS.
+- Stop boundary after three approaches. Resume requires a credential-free read-only reviewer
+  sandbox, paginated all-PR uniqueness, and active-deployment exact-commit discovery in a trusted
+  promoter outside candidate code. Pending remains 18; cursor advances to independent 10f.
 - Railway postflight binds the GitHub merge SHA to live `meta.commitHash`, production health, and
   issue closure. Failure triggers one rollback to the pre-verified healthy deployment.
 - The promoter publishes exact merge/deployment/adversary/health receipt values on PR #1092 after
