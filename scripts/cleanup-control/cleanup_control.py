@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import time
 import uuid
@@ -44,7 +45,13 @@ PROTECTED_CLASSES = {
     "dependency",
     "runtime",
 }
-ALLOWED_CLASSES = PROTECTED_CLASSES | {"ephemeral"}
+WORKTREE_COLLECTION_CLASS = "git_worktree_collection"
+REGENERABLE_OUTPUT_CLASS = "regenerable_output"
+ALLOWED_CLASSES = PROTECTED_CLASSES | {
+    "ephemeral",
+    WORKTREE_COLLECTION_CLASS,
+    REGENERABLE_OUTPUT_CLASS,
+}
 TX_RE = re.compile(r"^[0-9a-f]{32}$")
 
 
@@ -101,13 +108,31 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
             raise ManifestError(f"artifact {raw['id']} lease max_age_seconds is invalid")
         lease = {"path": str(lease_path), "max_age_seconds": max_age}
     finalizer = raw["finalizer"]
-    if not isinstance(finalizer, dict) or set(finalizer) != {"kind"}:
+    if not isinstance(finalizer, dict) or "kind" not in finalizer:
         raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
-    expected_finalizer = "off_volume_quarantine" if artifact_class == "ephemeral" else "preserve"
+    if artifact_class == "ephemeral":
+        if set(finalizer) != {"kind"}:
+            raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
+        expected_finalizer = "off_volume_quarantine"
+    elif artifact_class == WORKTREE_COLLECTION_CLASS:
+        if set(finalizer) != {"kind"}:
+            raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
+        expected_finalizer = "remote_recoverable_remove"
+    elif artifact_class == REGENERABLE_OUTPUT_CLASS:
+        if set(finalizer) != {"kind", "proof_path"}:
+            raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
+        expected_finalizer = "verified_regenerable_remove"
+    else:
+        if set(finalizer) != {"kind"}:
+            raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
+        expected_finalizer = "preserve"
     if finalizer["kind"] != expected_finalizer:
         raise ManifestError(
             f"artifact {raw['id']} class {artifact_class} requires {expected_finalizer} finalizer"
         )
+    normalized_finalizer = {"kind": expected_finalizer}
+    if artifact_class == REGENERABLE_OUTPUT_CLASS:
+        normalized_finalizer["proof_path"] = str(_normalized_path(finalizer["proof_path"]))
     return {
         "id": raw["id"],
         "path": str(path),
@@ -116,7 +141,7 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
         "ttl_seconds": ttl,
         "quota_bytes": quota,
         "lease": lease,
-        "finalizer": {"kind": expected_finalizer},
+        "finalizer": normalized_finalizer,
     }
 
 
@@ -264,6 +289,225 @@ def _lease_is_active(entry: dict[str, Any], now: int) -> bool:
     except FileNotFoundError:
         return False
     return age <= lease["max_age_seconds"]
+
+
+def worktree_reclaim_decision(
+    *,
+    is_current: bool,
+    is_locked: bool,
+    is_clean: bool,
+    remote_contains_head: bool,
+    open_state: str,
+) -> str:
+    if is_current:
+        return "current_worktree"
+    if is_locked:
+        return "locked_worktree"
+    if not is_clean:
+        return "dirty_worktree"
+    if not remote_contains_head:
+        return "head_not_on_remote"
+    if open_state == "open":
+        return "open_worktree"
+    if open_state != "confirmed-closed":
+        return "lsof_error"
+    return "eligible"
+
+
+def _command(
+    *args: str, cwd: Path
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(args),
+        cwd=cwd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+
+def path_open_state(path: Path) -> str:
+    executable = Path("/usr/sbin/lsof")
+    if not executable.is_file():
+        return "error"
+    result = _command(str(executable), "+D", str(path), cwd=path.parent)
+    if result.returncode == 0:
+        return "open"
+    if result.returncode == 1 and not result.stdout and not result.stderr:
+        return "confirmed-closed"
+    return "error"
+
+
+def _worktree_records(repo: Path) -> list[dict[str, Any]]:
+    result = _command("git", "worktree", "list", "--porcelain", cwd=repo)
+    if result.returncode != 0:
+        raise OSError(result.stderr.strip() or "git worktree list failed")
+    records: list[dict[str, Any]] = []
+    current: dict[str, Any] = {}
+    for line in result.stdout.splitlines() + [""]:
+        if not line:
+            if current:
+                records.append(current)
+                current = {}
+            continue
+        key, _, value = line.partition(" ")
+        current[key] = value if value else True
+    return records
+
+
+def _inside(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return path != root
+
+
+def _inspect_worktree(repo: Path, path: Path, locked: bool) -> tuple[str, str, list[str]]:
+    if not path.is_dir():
+        return "path_missing", "", []
+    cwd = Path.cwd().resolve()
+    resolved = path.resolve()
+    head_result = _command("git", "rev-parse", "HEAD", cwd=path)
+    if head_result.returncode != 0:
+        return "git_state_unreadable", "", []
+    head = head_result.stdout.strip()
+    status = _command(
+        "git", "status", "--porcelain=v1", "--untracked-files=all", cwd=path
+    )
+    if status.returncode != 0:
+        return "git_state_unreadable", head, []
+    refs_result = _command("git", "branch", "-r", "--contains", head, cwd=repo)
+    if refs_result.returncode != 0:
+        return "remote_state_unreadable", head, []
+    refs = [
+        line.strip()
+        for line in refs_result.stdout.splitlines()
+        if line.strip().removeprefix("* ").startswith("origin/")
+    ]
+    reason = worktree_reclaim_decision(
+        is_current=resolved == cwd or resolved in cwd.parents,
+        is_locked=locked,
+        is_clean=not bool(status.stdout),
+        remote_contains_head=bool(refs),
+        open_state=path_open_state(path),
+    )
+    return reason, head, refs
+
+
+def _du_bytes(path: Path) -> int:
+    result = _command("du", "-sk", str(path), cwd=path.parent)
+    if result.returncode != 0:
+        raise OSError(result.stderr.strip() or "du failed")
+    return int(result.stdout.split()[0]) * 1024
+
+
+def sweep_worktree_collection(
+    *,
+    collection_root: Path,
+    ledger_path: Path,
+    policy_version: str,
+    manifest_sha256: str,
+    now: int,
+) -> dict[str, int]:
+    result = {"removed": 0, "preserved": 0, "errors": 0, "bytes_removed": 0}
+    repo = collection_root.parent
+    fetch = _command("git", "fetch", "--prune", "origin", cwd=repo)
+    if fetch.returncode != 0:
+        event = _event_base(
+            event="preserved",
+            reason="remote_fetch_failed",
+            path=collection_root,
+            entry={"owner": "git-worktrees", "class": WORKTREE_COLLECTION_CLASS},
+            policy_version=policy_version,
+            manifest_sha256=manifest_sha256,
+            now=now,
+        )
+        event["result"] = "error"
+        append_ledger(ledger_path, event)
+        result["errors"] = 1
+        result["preserved"] = 1
+        return result
+    try:
+        records = _worktree_records(repo)
+    except OSError:
+        result["errors"] = 1
+        return result
+    for record in records:
+        path = Path(str(record.get("worktree", "")))
+        if not path.is_absolute() or not _inside(path, collection_root):
+            continue
+        entry = {"owner": "git-worktrees", "class": WORKTREE_COLLECTION_CLASS}
+        locked = bool(record.get("locked"))
+        reason, head, refs = _inspect_worktree(repo, path, locked)
+        if reason != "eligible":
+            event = _event_base(
+                event="preserved",
+                reason=reason,
+                path=path,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            event.update({"head": head or None, "remote_refs": refs})
+            if reason in {"git_state_unreadable", "remote_state_unreadable", "lsof_error"}:
+                event["result"] = "error"
+                result["errors"] += 1
+            append_ledger(ledger_path, event)
+            result["preserved"] += 1
+            continue
+        try:
+            before = _du_bytes(path)
+        except (OSError, ValueError):
+            before = 0
+        recheck_reason, recheck_head, recheck_refs = _inspect_worktree(repo, path, locked)
+        if recheck_reason != "eligible" or recheck_head != head:
+            event = _event_base(
+                event="preserved",
+                reason=f"revalidation_{recheck_reason}",
+                path=path,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            event.update({"head": recheck_head or None, "remote_refs": recheck_refs})
+            append_ledger(ledger_path, event)
+            result["preserved"] += 1
+            continue
+        removed = _command("git", "worktree", "remove", str(path), cwd=repo)
+        if removed.returncode != 0 or path.exists():
+            event_name = "failed"
+            event_reason = "git_worktree_remove_failed"
+            event_result = "error"
+            result["errors"] += 1
+        else:
+            event_name = "removed"
+            event_reason = "remote_recoverable_worktree"
+            event_result = "success"
+            result["removed"] += 1
+            result["bytes_removed"] += before
+        event = _event_base(
+            event=event_name,
+            reason=event_reason,
+            path=path,
+            entry=entry,
+            policy_version=policy_version,
+            manifest_sha256=manifest_sha256,
+            now=now,
+        )
+        event.update(
+            {
+                "result": event_result,
+                "bytes": before,
+                "head": head,
+                "remote_refs": refs,
+            }
+        )
+        append_ledger(ledger_path, event)
+    return result
 
 
 def _quarantine(
@@ -434,7 +678,73 @@ def sweep(
             append_ledger(ledger_path, event)
             result["preserved"] += 1
             continue
-        if entry["class"] != "ephemeral":
+        if entry["class"] == WORKTREE_COLLECTION_CLASS:
+            collection = sweep_worktree_collection(
+                collection_root=target,
+                ledger_path=ledger_path,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            result["quarantined"] += collection["removed"]
+            result["bytes_quarantined"] += collection["bytes_removed"]
+            result["preserved"] += collection["preserved"]
+            result["errors"] += collection["errors"]
+            continue
+        if entry["class"] == REGENERABLE_OUTPUT_CLASS:
+            proof = Path(entry["finalizer"]["proof_path"])
+            if not proof.is_file() or proof.is_symlink():
+                reason = "regeneration_proof_missing"
+            elif _lease_is_active(entry, now):
+                reason = "active_lease"
+            else:
+                open_state = path_open_state(target)
+                if open_state == "open":
+                    reason = "open_path"
+                elif open_state != "confirmed-closed":
+                    reason = "lsof_error"
+                    result["errors"] += 1
+                else:
+                    try:
+                        size = _du_bytes(target)
+                        if (
+                            not proof.is_file()
+                            or proof.is_symlink()
+                            or _lease_is_active(entry, now)
+                            or path_open_state(target) != "confirmed-closed"
+                        ):
+                            reason = "revalidation_failed"
+                        else:
+                            _remove_source(target)
+                            if target.exists() or target.is_symlink():
+                                raise OSError("regenerable output still exists")
+                    except OSError as exc:
+                        reason = f"remove_failed:{type(exc).__name__}"
+                        result["errors"] += 1
+                    else:
+                        event = _event_base(
+                            event="removed",
+                            reason="verified_regenerable_output",
+                            path=target,
+                            entry=entry,
+                            policy_version=policy_version,
+                            manifest_sha256=manifest_sha256,
+                            now=now,
+                        )
+                        event.update(
+                            {
+                                "result": "success",
+                                "bytes": size,
+                                "regeneration_proof": str(proof),
+                            }
+                        )
+                        append_ledger(ledger_path, event)
+                        result["quarantined"] += 1
+                        result["bytes_quarantined"] += size
+                        continue
+        if entry["class"] == REGENERABLE_OUTPUT_CLASS:
+            pass
+        elif entry["class"] != "ephemeral":
             reason = "protected_class"
         elif _lease_is_active(entry, now):
             reason = "active_lease"

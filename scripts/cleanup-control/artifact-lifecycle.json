@@ -32,6 +32,16 @@
       "finalizer": { "kind": "preserve" }
     },
     {
+      "id": "anicca-project-worktrees",
+      "path": "$HOME/anicca-project/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": { "kind": "remote_recoverable_remove" }
+    },
+    {
       "id": "work-clones",
       "path": "$HOME/.cache/anicca-clones",
       "owner": "revenue-workers",
@@ -159,6 +169,19 @@
         "max_age_seconds": 300
       },
       "finalizer": { "kind": "off_volume_quarantine" }
+    },
+    {
+      "id": "kickama-cargo-target",
+      "path": "$HOME/.openclaw/workspace/kickama-manifest-wizard/backend/target",
+      "owner": "cargo",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "$HOME/.openclaw/workspace/kickama-manifest-wizard/backend/Cargo.lock"
+      }
     }
   ]
 }

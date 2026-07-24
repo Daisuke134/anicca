@@ -35,5 +35,8 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
     assert by_id["reelclaw-assets"]["class"] == "deliverable"
     assert by_id["anicca-source"]["class"] == "source"
     assert by_id["anicca-project-source"]["class"] == "source"
+    assert by_id["anicca-project-worktrees"]["class"] == "git_worktree_collection"
+    assert by_id["anicca-project-worktrees"]["finalizer"]["kind"] == "remote_recoverable_remove"
+    assert by_id["kickama-cargo-target"]["class"] == "regenerable_output"
+    assert by_id["kickama-cargo-target"]["finalizer"]["kind"] == "verified_regenerable_remove"
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)
-

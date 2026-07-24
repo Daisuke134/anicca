@@ -300,3 +300,57 @@ def test_restore_round_trip_and_conflict_fail_closed(tmp_path: Path) -> None:
 
     assert refused["status"] == "conflict"
     assert conflict_source.read_text() == "original"
+
+
+def test_regenerable_output_requires_lockfile_proof_and_closed_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "object.o").write_bytes(b"x" * 1024)
+    proof = tmp_path / "Cargo.lock"
+    proof.write_text("[[package]]\n", encoding="utf-8")
+    entry = {
+        "id": "cargo-target",
+        "path": str(target),
+        "owner": "cargo",
+        "class": "regenerable_output",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "verified_regenerable_remove",
+            "proof_path": str(proof),
+        },
+    }
+    manifest = write_manifest(tmp_path / "manifest.json", [entry])
+    monkeypatch.setattr(cleanup_control, "path_open_state", lambda _: "confirmed-closed")
+
+    result = run(manifest, tmp_path / "q", tmp_path / "ledger.jsonl", now=1_000)
+
+    assert result["quarantined"] == 1
+    assert result["bytes_quarantined"] >= 1024
+    assert not target.exists()
+
+    missing_proof_target = tmp_path / "missing-proof-target"
+    missing_proof_target.mkdir()
+    entry["path"] = str(missing_proof_target)
+    entry["finalizer"]["proof_path"] = str(tmp_path / "missing.lock")
+    missing_manifest = write_manifest(tmp_path / "missing.json", [entry])
+    preserved = run(
+        missing_manifest, tmp_path / "q", tmp_path / "missing-ledger.jsonl", now=1_000
+    )
+    assert preserved["quarantined"] == 0
+    assert missing_proof_target.exists()
+
+    open_target = tmp_path / "open-target"
+    open_target.mkdir()
+    entry["path"] = str(open_target)
+    entry["finalizer"]["proof_path"] = str(proof)
+    open_manifest = write_manifest(tmp_path / "open.json", [entry])
+    monkeypatch.setattr(cleanup_control, "path_open_state", lambda _: "open")
+    open_result = run(
+        open_manifest, tmp_path / "q", tmp_path / "open-ledger.jsonl", now=1_000
+    )
+    assert open_result["quarantined"] == 0
+    assert open_target.exists()
