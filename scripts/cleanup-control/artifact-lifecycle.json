@@ -161,14 +161,17 @@
       "id": "playwright-browser-cache",
       "path": "$HOME/Library/Caches/ms-playwright",
       "owner": "browser-fleet",
-      "class": "ephemeral",
-      "ttl_seconds": 2592000,
+      "class": "regenerable_output",
+      "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": {
         "path": "$HOME/.openclaw/state/playwright.lease",
         "max_age_seconds": 300
       },
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "$HOME/.openclaw/skills/roundcube-webmail-skill/package.json"
+      }
     },
     {
       "id": "kickama-cargo-target",

@@ -39,4 +39,13 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
     assert by_id["anicca-project-worktrees"]["finalizer"]["kind"] == "remote_recoverable_remove"
     assert by_id["kickama-cargo-target"]["class"] == "regenerable_output"
     assert by_id["kickama-cargo-target"]["finalizer"]["kind"] == "verified_regenerable_remove"
+    assert by_id["playwright-browser-cache"]["class"] == "regenerable_output"
+    assert (
+        by_id["playwright-browser-cache"]["finalizer"]["proof_path"]
+        == str(Path.home() / ".openclaw/skills/roundcube-webmail-skill/package.json")
+    )
+    assert by_id["playwright-browser-cache"]["lease"] == {
+        "path": str(Path.home() / ".openclaw/state/playwright.lease"),
+        "max_age_seconds": 300,
+    }
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)
