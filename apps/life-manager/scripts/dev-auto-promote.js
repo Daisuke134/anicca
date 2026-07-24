@@ -310,6 +310,21 @@ async function main() {
     "--json", "state,url",
   ]);
   if (issue.state !== "CLOSED") throw new Error("auto_promote_issue_not_closed");
+  run("gh", [
+    "pr", "comment", String(options.pr),
+    "-R", REPO,
+    "--body", [
+      "## Automated production postflight",
+      "",
+      `- Error issue: #${options.issue} (closed)`,
+      `- Merge commit: \`${merged.mergeCommit.oid}\``,
+      `- Railway deployment: \`${deployment.id}\``,
+      `- Deployment commit: \`${deployment.meta.commitHash}\``,
+      "- Production health: `ok`",
+      "- Fresh adversary: `PASS` (blocking findings: `0`)",
+      "- Guard: path allowlist PASS, blocked actions `0`, one issue / one PR PASS",
+    ].join("\n"),
+  ]);
   process.stdout.write(`${JSON.stringify({
     status: "deployed",
     issue: issue.url,

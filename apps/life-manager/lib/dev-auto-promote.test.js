@@ -163,11 +163,13 @@ test("runtime orders full gates and fresh adversary before merge, then exact dep
   const exactDeploy = main.indexOf("waitForExactDeployment", merge);
   const health = main.indexOf("readHealth", exactDeploy);
   const rollback = main.indexOf("deploymentRollback", health);
+  const receipt = main.indexOf("\"pr\", \"comment\"", health);
   assert.equal(adversary > fullGateCall, true);
   assert.equal(merge > adversary, true);
   assert.equal(exactDeploy > merge, true);
   assert.equal(health > exactDeploy, true);
   assert.equal(rollback > health, true);
+  assert.equal(receipt > health, true);
   assert.match(source, /--evaluate-only/);
   assert.doesNotMatch(source, /(?:GH_TOKEN|RAILWAY_TOKEN|DATABASE_URL)\s*=/);
 });
