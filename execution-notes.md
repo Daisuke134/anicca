@@ -123,3 +123,8 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - APPROVE. Non-blocking notes: test-count label (633 actual), landing subset is 5 migrated + 1 new README, Mac-host paths in daily-preflight-collectors.js carried byte-identically (gateway-host code, not Railway boot), residual "life-call" identity strings consistent, diff secrets/PII clean.
 - Reviewer flagged PRE-EXISTING PII on main (predates this PR): execution-notes.md task #5 section names a Coconala counterparty. Scrub separately — public repo.
 - Railway boot check: server.js starts with EMPTY env (PORT defaults, no boot-required secrets); all providers lazily guarded.
+
+## 8i REPO-CONSOLIDATE — DONE (2026-07-24, production cutover complete)
+- Cutover executed on the Mac-side agent with Railway access: service re-pointed to life-manager/apps/life-manager, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
+- Independently verified from cloud session: anicca-products archived=true via GitHub API readback; evidence report in docs/evidence/8i-cutover-report.md (PR #1077); merge containment of a7ac84d4 in origin/main.
+- §10: 8i done. Pending count 24.
