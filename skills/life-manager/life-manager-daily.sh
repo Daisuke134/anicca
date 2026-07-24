@@ -3,6 +3,7 @@
 # route predate 9b; only the creative renderer and agent runtime contract change here.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
+umask 077
 
 if [ "${LM_DAILY_ACTIVE:-0}" = "1" ]; then
   printf 'life-manager-daily: recursive invocation blocked\n' >&2
@@ -18,6 +19,8 @@ LOG="${LM_DAILY_LOG:-$HOME/.openclaw/logs/life-manager-daily.log}"
 RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.openclaw/state/lm-video/daily-run-ledger.jsonl}"
 USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.openclaw/state/lm-video/agent-usage.jsonl}"
 MARKETING_LEDGER="${LM_MARKETING_LEDGER:-$HOME/profitable-claude/skills/life-manager/state/marketing-actions.jsonl}"
+BANK_PATH="$(cd "$HERE/../video/daily-lm-video" && pwd)/creative-bank.jsonl"
+ROTATION_STATE="${LM_VIDEO_STATE:-$HOME/.openclaw/state/lm-video/daily-render-state.jsonl}"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$RUN_LEDGER")" "$(dirname "$USAGE_LEDGER")"
 printf '=== life-manager-daily run %s ===\n' "$(date '+%F %T %Z')" >>"$LOG"
 
@@ -79,8 +82,9 @@ if [ "${LM_DAILY_GENERATION_ONLY:-0}" = "1" ]; then
   PROMPT="GENERATION-ONLY 9b. Do not post, open a browser, send Telegram, invoke launchctl, or
 invoke life-manager-daily.sh. This process is already the single active daily pass. Validate the
 exact MP4 $LM_DAILY_VIDEO for creative $LM_DAILY_CREATIVE_ID with ffprobe and a full decode.
-Read the canonical 16-row bank and append-only rotation state only to confirm this output is the
-current idempotent daily selection. Do not mutate either file. Return the required final schema JSON
+Read only the canonical 16-row bank at $BANK_PATH and append-only rotation state at $ROTATION_STATE
+to confirm this output is the current idempotent daily selection. Do not search other directories.
+Do not mutate either file. Return the required final schema JSON
 immediately after those bounded checks, with concrete evidence for codec, dimensions, audio,
 duration, decode exit, creative id, and output path."
 else
@@ -152,6 +156,11 @@ if attempts_path and pathlib.Path(attempts_path).is_file():
     if lines:
         attempt = json.loads(lines[-1])
 usage = attempt.get("usage") or summary.get("usage") or {}
+cost_tier = attempt.get("cost_tier") or summary.get("cost_tier")
+if not cost_tier and usage.get("cost_basis") == "subscription":
+    cost_tier = "subscription"
+provider_cost = usage.get("provider_cost_usd")
+marginal_cost = 0 if cost_tier == "subscription" else provider_cost
 exit_code = int(os.environ["EXIT_CODE"])
 row = {
     "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -164,8 +173,10 @@ row = {
     "creative_id": os.environ["CREATIVE_ID"],
     "creative_output": os.environ["CREATIVE_OUTPUT"],
     "duration_seconds": float(os.environ["DURATION"]),
-    "provider_cost_usd": usage.get("provider_cost_usd"),
+    "provider_cost_usd": provider_cost,
     "cost_basis": usage.get("cost_basis", "unavailable"),
+    "cost_tier": cost_tier,
+    "marginal_cost_usd": marginal_cost,
 }
 ledger = pathlib.Path(os.environ["RUN_LEDGER"])
 ledger.parent.mkdir(parents=True, exist_ok=True)

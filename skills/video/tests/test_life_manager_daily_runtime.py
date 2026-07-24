@@ -94,6 +94,9 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(row["creative_id"], "A02")
         self.assertEqual(row["creative_output"], "/tmp/exact-daily.mp4")
         self.assertEqual(row["provider_cost_usd"], 0)
+        self.assertEqual(row["marginal_cost_usd"], 0)
+        self.assertEqual(row["cost_tier"], "subscription")
+        self.assertEqual((root / "daily-runs.jsonl").stat().st_mode & 0o777, 0o600)
         self.assertTrue((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
 
     def test_generator_failure_propagates_exact_nonzero_without_runner(self):
@@ -141,6 +144,9 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn("Do not post", prompt)
         self.assertIn("ffprobe", prompt)
         self.assertIn("full decode", prompt)
+        self.assertIn(str(ROOT / "skills/video/daily-lm-video/creative-bank.jsonl"), prompt)
+        self.assertIn(str(root / "home/.openclaw/state/lm-video/daily-render-state.jsonl"), prompt)
+        self.assertIn("Do not search", prompt)
 
     def test_runner_failure_and_timeout_propagate_and_do_not_touch_success_marker(self):
         for runner_rc in (23, 124):
