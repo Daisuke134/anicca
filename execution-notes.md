@@ -225,3 +225,17 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   secrets are removed.
 - Focused `8/8`, full fail 0, every eval 100%, changed-path secret/PII 0.
 - Evidence: `docs/evidence/10a-telegram-feedback-intake.md`. Pending becomes 21; next is 10b.
+
+## 10b DEV-b — done (real GitHub issue + existing D0)
+- The worker atomically claims one privacy-safe production intake row with `FOR UPDATE SKIP LOCKED`,
+  creates or recovers a GitHub issue by deterministic HMAC-derived marker, and writes the exact URL
+  back to the row. A failed provider call releases the claim; a stale incomplete claim is reclaimable.
+- Real production row `1` creates [issue #1085](https://github.com/Daisuke134/life-manager/issues/1085).
+  GitHub readback is OPEN with `lm:type:self-heal`; DB readback is `issued` with the exact URL.
+- A second pass is `no-op`, the exact marker exists on one issue only, and the existing D0 picker
+  selects `#1085`.
+- The single `ai.anicca.life-manager-dev` 04:10 launchd job points to the canonical wrapper, which
+  runs issue generation before delegating to the existing D0.
+- Focused tests are `7/7`; full tests exit 0; all evals remain 100%; changed-path secret/PII scans
+  are clean.
+- Evidence: `docs/evidence/10b-feedback-to-github-issue.md`. Pending becomes 20; next is 10c.
