@@ -132,3 +132,6 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 
 ## 12a MEN-a — done (2026-07-24, L2)
 - mental-trigger.js context-driven trigger engine (pre_event/between_events/pre_sleep), cap 3/day, fixed-time impossible by construction; men-cases.jsonl 15/15 (100%); contract 4/4; full suite fail 0. Spec §10 updated (25 pending).
+
+## 11a PHY-a — L2 done (2026-07-24); L3 (real calendar detection) pending
+- care-detector.js personal-cadence + explicit-goal detection, no fixed cycle (0-1 visits never flag), no diagnosis fields; phy-cases.jsonl 12/12 (100%); contract 4/4; full suite fail 0. Spec §10 updated (row stays pending, L2 recorded).
