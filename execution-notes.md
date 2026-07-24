@@ -323,3 +323,15 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - No diagnosis, recommendation, booking, notification, or provider write occurs. Focused
   runtime/contract tests are `7/7`; full tests and all eval/privacy gates pass.
 - Pending becomes 16; next is 11b. Evidence: `docs/evidence/11a-real-care-detection.md`.
+
+## 11b PHY-b — done (real public candidates)
+- Production home context is consumed only inside the browser search and never persisted or
+  printed.
+- Two historical labels do not prove one usual provider, so all candidates honestly remain
+  `usual=false`; no provider preference is invented.
+- Public Google Maps and official sites verify three providers and non-phone routes: 小滝橋そら
+  内科 (DigiKar), 新宿なないろ (public web endpoint/general walk-in), and ヒロオカ
+  (reserve.ne.jp).
+- Closed selector tests are `3/3`; full tests/evals/privacy pass. Provider writes are zero.
+- Selected/frozen provider for 11c is `otakibashi-sora`. Pending becomes 15; next is 11c.
+  Evidence: `docs/evidence/11b-real-care-candidates.md`.
