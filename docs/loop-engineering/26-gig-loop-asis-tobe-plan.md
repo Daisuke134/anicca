@@ -44,9 +44,10 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 | canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5`、paid recovery回帰 `b293831` + `d02f824` / `c4007a8` + `a61b2ed`、selfimprove verifier `6d47a1e` + `5226b71` + `7de1535` / `141f926` + `0cf5693` が現HEADの祖先であることを不変条件とする |
 | browser | launchd所有 `ai.anicca.hf-gig-browser`、Gig専用 CDP `:9223`、profile `gig-daily-driver`、KeepAlive。対話用`:9222`とは分離 |
 | scheduler | pass `:00/:30`、reply 300秒、auditor `:45`、core-health 300秒、selfimprove verify 3600秒、report `09:07`。合計673 scheduled invocation/日、browserは常駐 |
+| daily 4 lane | launchdのbrowser/pass/reply/auditor/core-health/selfimprove/reportはロードされ、直近終了jobは正常終了している。ただし直近natural passは`poll_controlled:no_change`で全step skip、evidenceはReply/Nouhinのsnapshot/queueまでで、Shuppin/Ouboのactionまたは`verified_noop`閉包と4 lane完全な09:07 reportがない。したがってscheduler稼働は確認済みだが、§0.3の日次4 lane契約は**未検証** |
 | completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、paid-work browser recovery、material-event gate、bounded context、provider routing、token circuit breaker |
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
-| model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
+| model contract | 直近Gig telemetryの実呼出しは`gpt-5.6-terra`。shared agent-runnerはTerra/Lunaを先頭候補、Claude `sonnet`をfallback候補にする。現Claude候補はlocal proxy `:8317`を使い、keiodaisukeのClaude OAuth直接routeではない。`keiodaisuke@gmail.com`のdirect CLI OAuth no-tool probeは成功し、`sonnet`は`claude-sonnet-5`へ解決したが、全Gig task classをdirect OAuthへ固定するselector、no-proxy証拠、side-effect-free parity、fenced live canaryは未実装・未検証 |
 | tests | Gig Python `311` + `160` subtests、shell integration `17` PASS。review済みlive merge上でもselfimprove focused `9` + `14` subtestsと`test_gig_paid_work_gate.sh`がPASS |
 | live reply blocker | target thread `9967694` action `1` revision `36`は`blocked`のまま。action `2/4/5/8`も拒否または事前根拠により`blocked`。control action `3`とdeploy後のaction `6`はproduction loopが`replied`・Telegram sentまで完了 |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
@@ -538,15 +539,21 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 修正後の本番loopをkickして行わせる。
 
 **残りは7項目**: external blockedの#1と、実行可能な#4〜#9。#2 paid recoveryと#3
-selfimprove no-change verifierは完了済み。実装クリティカルパスは
-`#4 -> #5 -> #6 -> #7 -> #8 -> #9`であり、次に実行するのは#4だけである。
+selfimprove no-change verifierは完了済み。今すぐ進めるengineering順は
+`#4 -> #6 -> #5`、その後のproduction/時間依存順は`#7 -> #8 -> #9`である。#1は独立した
+event-driven external gateであり、authoritative platform-state changeまたは新しい一意buyer eventが
+来るまで再送も待機もしない。次に実行するのは#4だけである。
+
+時間依存項目をengineering blockerとして待たない。#5のjoin/report実装は今行えるが、最終done evidenceの
+natural 09:07 reportは次の自然scheduleで採取する。#7はbuyer応答・承諾・payout、#8は24時間、
+#9は7日stabilization + 14日production observationを実時間で観測して初めて閉じる。
 
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
-| **1** | **B1 native submitを閉じる — external BLOCKED** | thread `9967694`へ同じeventを再送しない。相手/platform状態の変化または新しい一意buyer eventをauthoritative rereadしてから、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる。待機中も他threadはdurable rejection quarantineで継続する | 対象threadについて本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
 | **4** | **4 lane state-machine failure injectionを完了する — PARTIAL / 未deploy** | 共通envelope foundation `19ac5a5`と中断点保存WIP `04c093f`はpush済みだがPASSではない。reviewで①fence後execute前crashが`reconcile_pending`に滞留、②active leaseを別ownerが取得可能、③expired ownerがfence可能、の3 blockerを確認。`04c093f`は①のauthoritative-absence再revision案とtestを保存しただけで、最終test/review未実施。これだけを最小修正してからShuppin/Oubo/Reply/Nouhinへ配線する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0。review findings 0と本番配線証拠が必要 |
-| **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
-| **6** | **provider fallback canaryを通す** | side-effectなしfixtureでTerra/Lunaのtransient failureを注入し、同一schemaのClaude `sonnet` fallbackを通す。次にfence付きbounded canaryを行う | fallback前後でbusiness outcome同一、customer action最大1、schema/telemetry完全。`sonnet` aliasの実model mappingを証拠へ記録 |
+| **6** | **keiodaisuke Claude direct OAuth routeとprovider canaryを通す** | local proxy routeとは別に、proxy/API envを除去してClaude CLIのkeiodaisuke OAuthを使う明示的Claude-only selectorを追加する。Gigが使う`composition`、`repeatable`、`tool`、`high-value`の全task classをside-effectなしfixtureで通し、`sonnet -> claude-sonnet-5`、account、provider/model telemetry、schema parityを証明する。顧客向けbounded canaryは#4完了後だけfence付きで行う | direct routeでaccount=`keiodaisuke@gmail.com`、proxy envなし、全Gig task class成功、business outcome/schema同一、actual model mapping記録。live customer action最大1、fence/telemetry完全 |
+| **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでdeterministic joinする。実装後の最終証拠だけは次のnatural 09:07 reportまで待つ | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
+| **1** | **B1 native submitを閉じる — external BLOCKED / event-driven observation** | thread `9967694` action `1` revision `36`へ同じeventを再送しない。相手/platform状態のauthoritative changeまたは新しい一意buyer eventが来た時だけ再読し、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる。待機中も他threadはdurable rejection quarantineで継続する | 対象threadについて本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
 | **7** | **controlled real transactionをloopだけで`banked`まで通す** | controlled buyer eventを1件作り、検知→返信→受注→制作→進捗→納品→修正→承諾→入金をlaunchd loopに処理させる。Codexは監視のみ | buyer-visible evidence、payout evidence、cost/revenue、完全audit trail。最終state=`banked` |
 | **8** | **4 laneの24時間自然運転を証明する** | force-runではなく自然scheduleを観測し、各laneをactionまたは`verified_noop`で閉じる | 4 lane evidence欠測0、673 scheduled invocation、miss/overlap/browser hang/duplicate/budget breach 0。09:07 report成功、browser KeepAlive継続 |
 | **9** | **zero-human graduationを完了する** | 7日stabilization後、14日production observation。browser crash、stale lease、provider timeoutを注入する | 人間による出品/応募/返信/納品代行0。毎日4 lane evidence完全、duplicate action、deadlock、budget breach 0。self-heal復旧とself-improve keep/revertを実証 |
@@ -559,12 +566,12 @@ draft承認なしで検知→実行→ground-truth確認→自己修復まで進
 
 | # | To-Be | Test / evidence | Cover |
 |---:|---|---|---|
-| 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
 | 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery + lower-ledger SHA256 invariance | **PASS** `b293831` + `d02f824` / `c4007a8` + `a61b2ed` |
 | 3 | no-change verifier contract | no-change/material/stale timestamp/stale poll/malformed version fixtures + live material pass | **PASS** `6d47a1e` + `5226b71` + `7de1535` / `141f926` + `0cf5693` |
 | 4 | four-lane state machine | foundation `19ac5a5` + unverified WIP `04c093f`は未deploy・review blocker 3件。listing/application/reply/delivery failure-injection suites + controlled P0/P1 transactionが残る | **PARTIAL** |
+| 6 | keiodaisuke Claude direct parity | proxy/API env除去、account/model mapping、全Gig task class fixture、schema/telemetry parity + #4後のfence assertion | 必須 |
 | 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
-| 6 | provider parity | runner transient-fallback fixture + fence assertion | 必須 |
+| 1 | native reply + authoritative reconcile | authoritative change/new event後の`test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | external gate |
 | 7 | banked | controlled transaction audit bundle | 必須 |
 | 8 | four-lane daily operation | 4 lane action/no-opを含む24-hour launchd ledger reconciliation | 必須 |
 | 9 | graduation | 4 lane完全な7+14-day soak ledger | 必須 |
