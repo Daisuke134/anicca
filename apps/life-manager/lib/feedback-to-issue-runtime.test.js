@@ -41,3 +41,18 @@ test("D0 works only in the canonical repo and gates PR creation on tests and eva
   assert.equal(createPr > evals, true);
   assert.doesNotMatch(source, /gh pr merge/);
 });
+
+
+test("D0 fails closed when the fresh agent runner fails", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "../scripts/life-manager-dev-d0.sh"),
+    "utf8",
+  );
+  assert.match(source, /--loop\s+"life-manager-dev"/);
+  const agentExit = source.indexOf('if [ "$AGENT_RC" -ne 0 ]');
+  const tests = source.indexOf("npm test");
+  const createPr = source.indexOf("gh pr create");
+  assert.equal(agentExit > 0, true);
+  assert.equal(agentExit < tests, true);
+  assert.equal(agentExit < createPr, true);
+});
