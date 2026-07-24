@@ -238,7 +238,8 @@ async function runDailyPass(options = {}) {
 
   const finished = now();
   try {
-    return appendLedgerEntry(path.join(stateDir, "daily-ledger.jsonl"), {
+    const ledgerPath = path.join(stateDir, "daily-ledger.jsonl");
+    const entry = appendLedgerEntry(ledgerPath, {
       run_id: runId,
       day: tokyoDay(started),
       started_at: started.toISOString(),
@@ -247,6 +248,22 @@ async function runDailyPass(options = {}) {
       recovered_stale_lock: lock.recoveredStale,
       ...machine,
     });
+    const entries = fs.readFileSync(ledgerPath, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const summary = summarizeSevenDays(entries);
+    const status = {
+      schema_version: 1,
+      ready: summary.ready,
+      consecutive_days: summary.consecutiveDays,
+      evaluated_at: finished.toISOString(),
+    };
+    const statusPath = path.join(stateDir, "seven-day-status.json");
+    const tempStatusPath = `${statusPath}.${process.pid}.tmp`;
+    fs.writeFileSync(tempStatusPath, JSON.stringify(status), { mode: 0o600 });
+    fs.renameSync(tempStatusPath, statusPath);
+    return { ...entry, seven_day_ready: status.ready };
   } finally {
     try { fs.unlinkSync(resultPath); } catch {}
     lock.release();
@@ -260,14 +277,21 @@ function summarizeSevenDays(entries) {
       byDay.set(entry.day, entry);
     }
   }
-  const days = [...byDay.keys()].sort().slice(-7);
-  if (days.length !== 7) return { ready: false, days };
-  for (let index = 1; index < days.length; index += 1) {
-    const previous = Date.parse(`${days[index - 1]}T00:00:00Z`);
-    const current = Date.parse(`${days[index]}T00:00:00Z`);
-    if (current - previous !== 86_400_000) return { ready: false, days };
+  const allDays = [...byDay.keys()].sort();
+  let consecutiveDays = allDays.length > 0 ? 1 : 0;
+  for (let index = allDays.length - 1; index > 0; index -= 1) {
+    const previous = Date.parse(`${allDays[index - 1]}T00:00:00Z`);
+    const current = Date.parse(`${allDays[index]}T00:00:00Z`);
+    if (current - previous !== 86_400_000) break;
+    consecutiveDays += 1;
   }
-  return { ready: true, days, entries: days.map((day) => byDay.get(day)) };
+  const days = allDays.slice(-Math.min(7, consecutiveDays));
+  return {
+    ready: consecutiveDays >= 7,
+    consecutiveDays,
+    days,
+    entries: days.map((day) => byDay.get(day)),
+  };
 }
 
 module.exports = {
