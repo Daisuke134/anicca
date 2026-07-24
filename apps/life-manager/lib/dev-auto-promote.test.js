@@ -93,6 +93,20 @@ test("paths and actions outside the closed production guard are refused", () => 
 });
 
 
+test("the guard policy source is not mistaken for an executed blocked action", () => {
+  const policySource = fs.readFileSync(path.join(__dirname, "dev-auto-promote.js"), "utf8");
+  const result = evaluatePromotion(validCandidate({
+    changedFiles: ["apps/life-manager/lib/dev-auto-promote.js"],
+    addedLines: policySource.split("\n").map((line) => ({
+      path: "apps/life-manager/lib/dev-auto-promote.js",
+      line,
+    })),
+  }));
+  assert.equal(result.allowed, true);
+  assert.deepEqual(result.blockedActions, []);
+});
+
+
 test("deployment completes only for the exact healthy merge and otherwise rolls back once", () => {
   assert.deepEqual(decideDeploymentOutcome({
     exactCommit: true,

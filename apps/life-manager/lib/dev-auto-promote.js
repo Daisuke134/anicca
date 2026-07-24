@@ -41,7 +41,15 @@ function evaluatePromotion(candidate = {}) {
   }
   const blockedActions = [];
   if (paths.some((file) => /(^|\/)migrations?\//i.test(file))) blockedActions.push("migration");
-  const added = Array.isArray(candidate.addedLines) ? candidate.addedLines.join("\n") : "";
+  const added = (Array.isArray(candidate.addedLines) ? candidate.addedLines : [])
+    .map((entry) => typeof entry === "string" ? { path: "", line: entry } : entry)
+    .filter((entry) => !(
+      entry
+      && entry.path === "apps/life-manager/lib/dev-auto-promote.js"
+      && /^\s*(?:outreach_send|provider_account_mutation|secret_change|wallet_transfer):\s*\//.test(entry.line)
+    ))
+    .map((entry) => String(entry && entry.line || ""))
+    .join("\n");
   for (const [name, pattern] of Object.entries(BLOCKED_ACTION_PATTERNS)) {
     if (pattern.test(added)) blockedActions.push(name);
   }

@@ -67,7 +67,7 @@ function productionAddedLines(diff) {
     }
     const production = /^apps\/life-manager\/(?!.*\.test\.js$)(?:lib|scripts)\//.test(current);
     if (production && line.startsWith("+") && !line.startsWith("+++")) {
-      lines.push(line.slice(1));
+      lines.push({ path: current, line: line.slice(1) });
     }
   }
   return lines;
