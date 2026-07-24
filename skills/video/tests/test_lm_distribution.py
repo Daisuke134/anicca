@@ -116,6 +116,28 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(second["tiktok_url"], first["tiktok_url"])
         self.assertEqual(len(self.ledger.read_text().splitlines()), 2)
 
+    def test_tiktok_profile_url_never_counts_as_a_published_artifact(self):
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        self.ledger.write_text(
+            json.dumps(
+                {
+                    "platform": "tiktok",
+                    "status": "published",
+                    "creative_id": "A03",
+                    "video_sha256": video_hash,
+                    "caption_sha256": caption_hash,
+                    "public_url": "https://www.tiktok.com/@life",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self.run_distribution()
+        rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        exact_rows = [row for row in rows if row.get("public_url", "").find("/video/") >= 0]
+        self.assertEqual(len(exact_rows), 1)
+
     def test_rejects_missing_or_empty_inputs_before_any_provider_call(self):
         self.video.unlink()
         with self.assertRaises(lm_distribution.DistributionError):

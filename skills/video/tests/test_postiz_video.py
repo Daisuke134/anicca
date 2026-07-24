@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -52,6 +53,65 @@ class PostizVideoTests(unittest.TestCase):
     def test_find_post_rejects_published_without_public_url(self):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.find_post([{"id": "p", "state": "PUBLISHED"}], "p")
+
+    def test_profile_release_url_resolves_to_matching_recent_video(self):
+        payload = {
+            "entries": [
+                {
+                    "id": "111",
+                    "url": "https://www.tiktok.com/@life/video/111",
+                    "title": "unrelated old post",
+                    "timestamp": 100,
+                },
+                {
+                    "id": "222",
+                    "url": "https://www.tiktok.com/@life/video/222",
+                    "title": "Exact caption first line and more",
+                    "timestamp": 205,
+                },
+            ]
+        }
+
+        def runner(*_args, **_kwargs):
+            return subprocess.CompletedProcess([], 0, json.dumps(payload), "")
+
+        url = postiz_video.resolve_profile_release_url(
+            "https://www.tiktok.com/@life",
+            "Exact caption first line\nand more",
+            posted_after=200,
+            runner=runner,
+        )
+        self.assertEqual(url, "https://www.tiktok.com/@life/video/222")
+
+    def test_profile_resolution_rejects_old_or_caption_mismatched_entries(self):
+        payload = {
+            "entries": [
+                {
+                    "id": "111",
+                    "url": "https://www.tiktok.com/@life/video/111",
+                    "title": "Exact caption first line",
+                    "timestamp": 100,
+                },
+                {
+                    "id": "222",
+                    "url": "https://www.tiktok.com/@life/video/222",
+                    "title": "wrong current post",
+                    "timestamp": 205,
+                },
+            ]
+        }
+
+        def runner(*_args, **_kwargs):
+            return subprocess.CompletedProcess([], 0, json.dumps(payload), "")
+
+        self.assertIsNone(
+            postiz_video.resolve_profile_release_url(
+                "https://www.tiktok.com/@life",
+                "Exact caption first line",
+                posted_after=200,
+                runner=runner,
+            )
+        )
 
 
 if __name__ == "__main__":

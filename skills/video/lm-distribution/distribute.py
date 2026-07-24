@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 from datetime import datetime, timezone
 from typing import Mapping
@@ -133,11 +134,20 @@ def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str
         and row.get("creative_id") == creative_id
         and row.get("video_sha256") == video_hash
         and row.get("caption_sha256") == caption_hash
-        and isinstance(row.get("public_url"), str)
-        and row["public_url"].startswith("https://")
+        and _valid_public_url(platform, row.get("public_url"))
         and row.get("status") == "published"
     ]
     return matches[-1] if matches else None
+
+
+def _valid_public_url(platform: str, value) -> bool:
+    if not isinstance(value, str):
+        return False
+    if platform == "instagram":
+        return bool(re.fullmatch(r"https://www\.instagram\.com/(?:reel|p)/[A-Za-z0-9_-]+/?", value))
+    if platform == "tiktok":
+        return bool(re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", value))
+    return False
 
 
 def _run_json(argv: list[str], env: Mapping[str, str]) -> dict:
@@ -206,7 +216,7 @@ def distribute(config: DistributionConfig) -> dict:
             config.env,
         )
         instagram_url = result.get("post_url")
-        if result.get("outcome") != "published" or not isinstance(instagram_url, str) or not instagram_url.startswith("https://"):
+        if result.get("outcome") != "published" or not _valid_public_url("instagram", instagram_url):
             raise DistributionError("Instagram did not return a published public URL")
         instagram = _append_success(
             config,
@@ -233,7 +243,7 @@ def distribute(config: DistributionConfig) -> dict:
             config.env,
         )
         tiktok_url = result.get("post_url")
-        if result.get("state") != "PUBLISHED" or not isinstance(tiktok_url, str) or not tiktok_url.startswith("https://"):
+        if result.get("state") != "PUBLISHED" or not _valid_public_url("tiktok", tiktok_url):
             raise DistributionError("TikTok did not return a PUBLISHED public URL")
         tiktok = _append_success(
             config,
