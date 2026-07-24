@@ -101,6 +101,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn("https://www.tiktok.com/@life/video/123", prompt)
         self.assertIn("not repost either platform", prompt)
         self.assertIn("Do not invoke life-manager-daily.sh", prompt)
+        self.assertIn("Do not inspect, monitor, or wait for this active process", prompt)
         distribution_args = (root / "distributor-args").read_text(encoding="utf-8")
         self.assertIn("--creative-id\nA02\n", distribution_args)
         self.assertIn("--video\n/tmp/exact-daily.mp4\n", distribution_args)

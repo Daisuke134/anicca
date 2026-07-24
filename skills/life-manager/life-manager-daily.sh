@@ -134,6 +134,8 @@ This is the existing ai.anicca.life-manager-daily route. Preserve its Reddit kar
 report, cost recording, Telegram report and logged-out verification. Do not create a new account
 or a new marketing loop.
 Do not invoke life-manager-daily.sh or launchctl: this process is already the one active daily pass.
+Do not inspect, monitor, or wait for this active process, its PID, launchd state, or evidence files;
+that creates a self-deadlock. Do not sleep or start background work. Finish this bounded pass directly.
 
 DAILY VIDEO CONTRACT: the exact MP4 is $LM_DAILY_VIDEO and the exact creative id is
 $LM_DAILY_CREATIVE_ID (duration $LM_DAILY_VIDEO_DURATION seconds).
