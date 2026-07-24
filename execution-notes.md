@@ -270,3 +270,27 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   marker readbacks match, and forbidden-content checks are zero.
 - Focused tests are `22/22`. Evidence: `docs/evidence/10d-production-error-intake.md`.
   Pending becomes 18; next is 10e.
+
+## 10e DEV-e — pending after three fresh-adversary stops
+- Real production error #1088 produces exactly one open PR #1092.
+- Three independent fresh-adversary methods stop before merge. The final boundaries are reviewer
+  credential/filesystem/network isolation, complete open-PR pagination, and rollback target
+  binding to the active exact deployment commit.
+- PR #1092 and issue #1088 remain open. Merge, deploy, provider mutation, and issue closure are
+  zero; production remains on successful deployment `73afe498…`.
+- Resume requires all three boundaries to move into a trusted promoter outside candidate code.
+  Evidence: `docs/evidence/10e-auto-merge-deploy.md`.
+
+## 10f DEV-f — pending, real Day 1/7
+- The existing D0 is wrapped by one daily bounded runner; no duplicate queue, agent, or service is
+  introduced.
+- Closed mode-0600 state provides exclusive execution, dead stale-lock recovery, a 25-minute hard
+  timeout, append-only daily receipts, and distinct-consecutive-day readiness.
+- Real Day 1 selects issue #1090, fresh agent commit `b649393c…`, independently passes full
+  test/eval/privacy, opens real PR #1094, appends `pr_created/147499ms`, and sends real Telegram
+  message id `3390`.
+- `ai.anicca.life-manager-dev` is loaded at 04:10 with the canonical daily runner. Focused tests are
+  `7/7`; all full gates pass.
+- Six distinct real days remain. The loop owns readiness calculation; fixtures, duplicate same-day
+  runs, simulation, and backfill cannot complete the row. Pending remains 18; next is independent
+  10i. Evidence: `docs/evidence/10f-daily-self-build-started.md`.

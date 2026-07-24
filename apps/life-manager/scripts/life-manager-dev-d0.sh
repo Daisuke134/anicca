@@ -13,6 +13,7 @@ STATE="${LM_DEV_STATE_DIR:-$HOME/.openclaw/state/life-manager-dev}"
 DONE="$STATE/done.jsonl"
 LOG_DIR="${LM_DEV_LOG_DIR:-$HOME/.openclaw/logs}"
 LOCK_DIR="${LM_DEV_LOCK_DIR:-/tmp/anicca-life-manager-dev-d0.lock.d}"
+RESULT_PATH="${LM_DEV_RESULT_PATH:-}"
 mkdir -p "$STATE" "$LOG_DIR"
 
 log() {
@@ -32,6 +33,24 @@ record() {
   ' "$1" "$2" "$3" >> "$DONE"
 }
 
+write_result() {
+  [ -z "$RESULT_PATH" ] && return 0
+  node - "$RESULT_PATH" "$1" "$2" "${3:-}" "${4:-}" <<'NODE'
+const fs = require("node:fs");
+const [file, status, reason, issueRaw, prRaw] = process.argv.slice(2);
+const issue = Number(issueRaw);
+const prUrl = /^https:\/\/github\.com\/Daisuke134\/life-manager\/pull\/\d+$/.test(prRaw)
+  ? prRaw
+  : null;
+fs.writeFileSync(file, JSON.stringify({
+  status,
+  reason,
+  issue_number: Number.isInteger(issue) && issue > 0 ? issue : null,
+  pr_url: prUrl,
+}), { mode: 0o600 });
+NODE
+}
+
 if [ ! -d "$APP_DIR/node_modules/pg" ]; then
   (cd "$APP_DIR" && npm ci --silent) || log "dependency install failed"
 fi
@@ -45,6 +64,7 @@ if [ -d "$LOCK_DIR" ]; then
 fi
 mkdir "$LOCK_DIR" 2>/dev/null || {
   log "another D0 pass holds the lock"
+  write_result "no_op" "overlapping_d0"
   exit 0
 }
 trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
@@ -84,6 +104,7 @@ NODE
 NUM="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).number || ""))' "$CHOSEN")"
 if [ -z "$NUM" ]; then
   log "no unattempted open lm:type:self-heal issue"
+  write_result "no_op" "no_unattempted_open_issue"
   exit 0
 fi
 TITLE="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).title || ""))' "$CHOSEN")"
@@ -99,6 +120,7 @@ if [ -n "$CONTROLLED_WORKTREE" ]; then
   if [ "$actual_branch" != "$BRANCH" ]; then
     log "controlled worktree branch mismatch"
     record "$NUM" "" "worktree_mismatch"
+    write_result "failed" "worktree_mismatch" "$NUM"
     exit 1
   fi
 else
@@ -125,6 +147,7 @@ log "fresh agent exit=$AGENT_RC"
 if [ "$AGENT_RC" -ne 0 ]; then
   log "fresh agent failed; no test gate or PR"
   record "$NUM" "" "agent_failed"
+  write_result "failed" "agent_failed" "$NUM"
   exit 1
 fi
 
@@ -138,6 +161,7 @@ if ! (
 ) > "$TEST_LOG" 2>&1; then
   log "test/eval gate RED; no PR"
   record "$NUM" "" "test_red"
+  write_result "failed" "test_red" "$NUM"
   exit 1
 fi
 log "test/eval gate GREEN"
@@ -149,6 +173,7 @@ fi
 if [ "$(git -C "$WT" rev-list --count "origin/main..$BRANCH")" -eq 0 ]; then
   log "no committed fix; no PR"
   record "$NUM" "" "no_diff"
+  write_result "failed" "no_diff" "$NUM"
   exit 1
 fi
 
@@ -164,10 +189,12 @@ fi
 if [ -z "$PR_URL" ]; then
   log "PR creation failed"
   record "$NUM" "" "pr_failed"
+  write_result "failed" "pr_failed" "$NUM"
   exit 1
 fi
 
 record "$NUM" "$PR_URL" "pr_open"
+write_result "pr_open" "pr_created" "$NUM" "$PR_URL"
 openclaw message send --channel telegram --target 8547730585 \
   --message "🤖 Life Manager dev loop: issue #$NUM → $PR_URL (tests/evals green, not merged)" \
   --json >> "$LOG_DIR/life-manager-dev.out.log" 2>&1 || log "Telegram report failed"
