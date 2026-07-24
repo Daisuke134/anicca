@@ -310,3 +310,16 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   `9/9`. A real rerun refuses with zero duplicate side effects.
 - Full tests and every eval/privacy gate pass. Pending becomes 17; next is 11a L3. Evidence:
   `docs/evidence/10i-personalized-action-e2e.md`.
+
+## 11a PHY-a — done (real calendar L3)
+- The existing personal-cadence detector is wired to the current managed Google Calendar using
+  only provider id and start/end fields.
+- Real haircut history (5) and health-check history (3) correctly produce no candidate. Two real
+  clinic history events produce one `personal-cadence-overdue` visit-gap observation from the
+  user's own 9-day interval.
+- Exact source provider event IDs are `89ll4pq50l499alj2njcosqdhc` and
+  `sg08fnoe37loddogdp4ov8ub8s`; titles, locations, account/user identity, and notes are absent from
+  the receipt.
+- No diagnosis, recommendation, booking, notification, or provider write occurs. Focused
+  runtime/contract tests are `7/7`; full tests and all eval/privacy gates pass.
+- Pending becomes 16; next is 11b. Evidence: `docs/evidence/11a-real-care-detection.md`.
