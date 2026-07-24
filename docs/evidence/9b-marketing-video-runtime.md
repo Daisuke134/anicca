@@ -35,6 +35,16 @@
 - Life Manager full test command exits 0 with fail 0.
 - `npm run eval` remains 100% across calendar, late, context, score, intent, mental, and physical.
 - Secret scan: gitleaks reports no leaks in `skills/life-manager` and `skills/video`.
+- PR security-gate baseline audit:
+  - The latest accepted `main` security run
+    ([30069163816](https://github.com/Daisuke134/life-manager/actions/runs/30069163816))
+    already fails before this branch with the same 60 repository-wide PII-shape hits and 24
+    repository/history gitleaks findings.
+  - Its Python job also fails because the workflow labels the run “pure-stdlib” but invokes
+    pre-existing pytest/hypothesis suites without installing either dependency.
+  - The 9b changed paths remain clean under a changed-path gitleaks scan, and all 9b tests plus the
+    canonical Life Manager test/eval commands pass. The broken repository-wide baseline is not
+    reclassified as evidence for or against 9b and no test or detector is weakened.
 
 ## Real provider and launchd evidence
 

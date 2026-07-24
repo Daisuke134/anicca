@@ -155,4 +155,8 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   1080×1920 H.264/AAC, 34.666667s and fresh full-decode exit 0.
 - Runtime ledger records provider-reported token counts, subscription cost tier, null unavailable
   provider-equivalent price, and actual marginal cost USD 0 without inventing a price.
+- PR #1079 security-gate audit: accepted main run 30069163816 already has the identical
+  repository-wide baseline failures (PII shapes 60, gitleaks findings 24, Python workflow missing
+  pytest/hypothesis). Changed-path secret scan and every 9b test/eval pass; no detector or test is
+  weakened to make the PR green.
 - Evidence: `docs/evidence/9b-marketing-video-runtime.md`. Pending count becomes 23; next is 9c.
