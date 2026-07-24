@@ -1,0 +1,14 @@
+"use strict";
+const assert = require("assert");
+process.env.LM_CALL_SECRET = "unit_secret";
+const { isHelperBlock, buildStreamUrl } = require("../scheduler.js");
+assert.strictEqual(isHelperBlock("[Travel] [APPLIED] x"), true);
+assert.strictEqual(isHelperBlock("🎤 [PENDING] y"), true);
+assert.strictEqual(isHelperBlock("Dentist"), false);
+process.env.PUBLIC_WSS = "wss://life-call.up.railway.app";
+const u = buildStreamUrl({ summary: "Dentist & Co", startIso: "2026-06-18T20:40:00+09:00", location: "Tokyo" }, "firm");
+const p = new URL(u);
+assert.strictEqual(p.pathname, "/ws");
+assert.ok(p.searchParams.get("sig"), "must carry an HMAC sig");
+assert.strictEqual(p.searchParams.get("urgency"), "firm");
+console.log("✅ scheduler unit tests pass (helper-skip + signed streamUrl)");
