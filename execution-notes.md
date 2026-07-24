@@ -160,3 +160,20 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   pytest/hypothesis). Changed-path secret scan and every 9b test/eval pass; no detector or test is
   weakened to make the PR green.
 - Evidence: `docs/evidence/9b-marketing-video-runtime.md`. Pending count becomes 23; next is 9c.
+
+## 9c MKT-c / M-3 — done
+- Reuses the existing `anicca.affirms2` IG account, shared instagrapi poster, and TikTok Postiz
+  integration `cmp9txjdp01c8oh0yb6dhlarr`; no account or loop is created.
+- TDD binds the same local MP4 and caption file to both adapters and records the same creative id,
+  video SHA, and caption SHA in a mode-600 append-only ledger.
+- Real IG Reel: `https://www.instagram.com/reel/DbKkdfjsaTZ/`; deterministic logged-out checker
+  returns `found=true`, `verdictMaterial=pass`.
+- Real TikTok video:
+  `https://www.tiktok.com/@anicca_buddha/video/7665973874504256785`; provider id
+  `cmryjod3q0193pe0yastxx34h`; logged-out metadata and full public decode pass.
+- Corrective TDD rejects Postiz's profile-only release URL and resolves only a recent,
+  caption-matching `/video/<id>` artifact. The original profile-only private ledger row remains
+  append-only and honest.
+- Corrective launchd pass exits 0 on Luna, distribution ledger stays `3→3` (no repost), and the
+  existing Telegram report returns message id `3378`.
+- Evidence: `docs/evidence/9c-marketing-distribution.md`. Pending count becomes 22; next is 9d.
