@@ -214,3 +214,14 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   impersonation. A real owner status URL makes the launch permanently one-time.
 - Contract tests are `5/5`. Evidence: `docs/evidence/9f-x-owner-launch-blocked.md`.
 - Pending remains 22; cursor advances to independent 10a.
+
+## 10a DEV-a — done (real Telegram + DB)
+- Explicit feedback is classified and scrubbed at the Telegram edge. The database receives only
+  summary, allowlisted labels, and an HMAC source reference; it has zero raw/identity columns.
+- Real user message id `3922` receives real bot acknowledgement id `3923`. Railway Postgres row
+  id `1` is queued with `feedback,calendar,panel` and a PII-free summary.
+- Staging deployment `ac0f6b9a-2a15-4762-88fc-52b7fe92caa4` succeeds after two source-root methods
+  fail before build. Production webhook is restored with pending 0/error null; temporary staging
+  secrets are removed.
+- Focused `8/8`, full fail 0, every eval 100%, changed-path secret/PII 0.
+- Evidence: `docs/evidence/10a-telegram-feedback-intake.md`. Pending becomes 21; next is 10b.
