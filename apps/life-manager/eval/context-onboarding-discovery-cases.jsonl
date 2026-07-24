@@ -1,0 +1,12 @@
+{"id":"new-user-no-fabricated-context","expected":{"stage":"calendar","contextWrites":0}}
+{"id":"existing-user-no-repeat-onboarding","expected":{"onboardingMessages":0,"contextRowsRead":true}}
+{"id":"ambiguous-calendar-closed-question","expected":{"messageCount":1,"text":"明日15:00の「田中さんMTG」、これはオンラインですか？移動時間の計算に使います（次回からは聞きません）。\n［オンライン］［対面］","inline":true,"choiceCount":2,"choiceLabels":["オンライン","対面"]}}
+{"id":"telegram-callback-typed-provenance","expected":{"handled":true,"callbackReceiptCount":1,"questionType":"calendar_online","answerValue":"online","answerSource":"telegram_callback","typedProvenance":true}}
+{"id":"same-event-repeat-dedup","expected":{"additionalQuestions":0}}
+{"id":"later-series-semantic-dedup","expected":{"additionalQuestions":0}}
+{"id":"location-locked-due","expected":{"discoveryMessages":1,"gate":"location","lateActions":0,"forbiddenRealtimeQuestions":0}}
+{"id":"location-locked-throttled","expected":{"discoveryMessages":0,"reason":"throttled"}}
+{"id":"location-update-provenance","expected":{"persisted":true,"source":"telegram_live_location","telegramMessageId":"7001"}}
+{"id":"location-unlocked","expected":{"locationDiscoveryMessages":0,"forbiddenRealtimeQuestions":0}}
+{"id":"unrelated-tenant-unchanged","expected":{"unchanged":true,"unauthorizedMutations":0}}
+{"id":"additive-provenance-schema","expected":{"exists":true,"additive":true,"tenantKeyed":true,"semanticUnique":true,"rls":true}}
