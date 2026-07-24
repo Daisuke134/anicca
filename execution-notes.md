@@ -346,3 +346,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   unconfirmed reservation without asking a question.
 - Closed contract tests are `4/4`; full tests/evals/privacy pass. Pending becomes 14; next is 11d.
   Evidence: `docs/evidence/11c-real-care-booking-boundary.md`.
+
+## 11d PHY-d — pending after three fail-closed approaches
+- 11c has no confirmed booking id, so the §9.11 success copy, Calendar event, and same-day calls
+  cannot truthfully be emitted.
+- Three approaches are rejected: treating a selectable slot as confirmed, reusing failure TG
+  `3394` as success copy, and creating tentative Calendar/call effects.
+- The closed gate requires provider confirmation, booking id, and start time. Until all exist,
+  Telegram success, Calendar, and call effects are `0/0/0`.
+- Focused tests are `3/3`; full tests/evals/privacy pass. Pending remains 14; next is independent
+  12b. Evidence: `docs/evidence/11d-physical-aftercare-blocked.md`.
