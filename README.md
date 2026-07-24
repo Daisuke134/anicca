@@ -1,3 +1,5 @@
+→ Daisuke134/life-manager へ移行済み
+
 # Anicca — Behavior Change Agent + Wake-up SaaS
 
 Proactive agent that helps people break harmful patterns and build better
