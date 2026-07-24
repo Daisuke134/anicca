@@ -520,10 +520,13 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 完了済みfoundationは§0.1に固定し、この表へ戻さない。各項目は上から1件ずつ実行し、顧客向け操作は
 修正後の本番loopをkickして行わせる。
 
+**残りは7項目**: external blockedの#1と、実行可能な#4〜#9。#2 paid recoveryと#3
+selfimprove no-change verifierは完了済み。次に実行するのは#4だけである。
+
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
 | **1** | **B1 native submitを閉じる — external BLOCKED** | thread `9967694`へ同じeventを再送しない。相手/platform状態の変化または新しい一意buyer eventをauthoritative rereadしてから、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる。待機中も他threadはdurable rejection quarantineで継続する | 対象threadについて本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
-| **4** | **4 lane state-machine failure injectionを完了する** | Shuppinの公開/更新/no-op、Oubo、Reply、Nouhinの制作/進捗/formal delivery/revision/acceptance/payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0 |
+| **4** | **4 lane state-machine failure injectionを完了する — PARTIAL / 未deploy** | 共通envelope foundation `19ac5a5`はpush済みだがPASSではない。reviewで①fence後execute前crashが`reconcile_pending`に滞留、②active leaseを別ownerが取得可能、③expired ownerがfence可能、の3 blockerを確認。これだけを最小修正してからShuppin/Oubo/Reply/Nouhinへ配線する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0。review findings 0と本番配線証拠が必要 |
 | **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
 | **6** | **provider fallback canaryを通す** | side-effectなしfixtureでTerra/Lunaのtransient failureを注入し、同一schemaのClaude `sonnet` fallbackを通す。次にfence付きbounded canaryを行う | fallback前後でbusiness outcome同一、customer action最大1、schema/telemetry完全。`sonnet` aliasの実model mappingを証拠へ記録 |
 | **7** | **controlled real transactionをloopだけで`banked`まで通す** | controlled buyer eventを1件作り、検知→返信→受注→制作→進捗→納品→修正→承諾→入金をlaunchd loopに処理させる。Codexは監視のみ | buyer-visible evidence、payout evidence、cost/revenue、完全audit trail。最終state=`banked` |
@@ -541,7 +544,7 @@ draft承認なしで検知→実行→ground-truth確認→自己修復まで進
 | 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
 | 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery + lower-ledger SHA256 invariance | **PASS** `b293831` + `d02f824` / `c4007a8` + `a61b2ed` |
 | 3 | no-change verifier contract | no-change/material/stale timestamp/stale poll/malformed version fixtures + live material pass | **PASS** `6d47a1e` + `5226b71` + `7de1535` / `141f926` + `0cf5693` |
-| 4 | four-lane state machine | listing/application/reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
+| 4 | four-lane state machine | foundation `19ac5a5`は未deploy・review blocker 3件。listing/application/reply/delivery failure-injection suites + controlled P0/P1 transactionが残る | **PARTIAL** |
 | 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
 | 6 | provider parity | runner transient-fallback fixture + fence assertion | 必須 |
 | 7 | banked | controlled transaction audit bundle | 必須 |
