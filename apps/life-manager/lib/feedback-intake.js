@@ -67,9 +67,11 @@ function buildFeedbackIntake({ text, uid, chatId, messageId, provenanceKey }) {
 function exactIntake(intake) {
   const keys = Object.keys(intake || {}).sort();
   if (keys.join(",") !== "labels,source_ref,summary") throw new Error("feedback_schema_invalid");
-  if (!/^tg:sha256:[a-f0-9]{32}$/.test(intake.source_ref)) throw new Error("feedback_schema_invalid");
+  const sourceMatch = String(intake.source_ref || "").match(/^(tg|err):sha256:[a-f0-9]{32}$/);
+  if (!sourceMatch) throw new Error("feedback_schema_invalid");
   if (typeof intake.summary !== "string" || !intake.summary || intake.summary.length > 500) throw new Error("feedback_schema_invalid");
-  if (!Array.isArray(intake.labels) || intake.labels[0] !== "feedback" || intake.labels.some((item) => !/^[a-z-]+$/.test(item))) {
+  const expectedRootLabel = sourceMatch[1] === "tg" ? "feedback" : "error";
+  if (!Array.isArray(intake.labels) || intake.labels[0] !== expectedRootLabel || intake.labels.some((item) => !/^[a-z-]+$/.test(item))) {
     throw new Error("feedback_schema_invalid");
   }
   return intake;

@@ -35,6 +35,19 @@ test("issue contract exposes only the scrubbed summary and deterministic provena
 });
 
 
+test("issue contract accepts a closed production error row without weakening feedback compatibility", () => {
+  const issue = buildFeedbackIssue({
+    id: "2",
+    source_ref: "err:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    summary: "Provider timeout in calendar (calendar-read-deadline).",
+    labels: ["error", "provider-timeout"],
+  });
+  assert.equal(issue.title, "[error] Provider timeout in calendar (calendar-read-deadline).");
+  assert.deepEqual(issue.labels, ["lm:type:self-heal"]);
+  assert.match(issue.body, /<!-- lm-intake:err:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -->/);
+});
+
+
 test("queue claim is concurrency-safe and reclaims only stale incomplete issues", async () => {
   const seen = [];
   const query = async (sql, params) => {
