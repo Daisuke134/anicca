@@ -15,10 +15,11 @@
     then PR/merge and a collision-checked fast-forward of local main.
 - Implementation worktree: `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable`
   - branch `fix/gig-browser-ownership-20260724`, upstream
-    `origin/fix/gig-browser-ownership-20260724`, verified/pushed HEAD `19ac5a548b6b77931b7af0ef90407d6e593287c3`
-  - dirty warning: `scripts/lane_state_machine.py` and
-    `tests/test_four_lane_state_machine.py` contain interrupted, uncommitted follow-up edits.
-    They are not reviewed evidence. Preserve them; inspect the diff before deciding whether to keep or replace it.
+    `origin/fix/gig-browser-ownership-20260724`, clean/pushed HEAD
+    `04c093fb67fadc10265e5e405ff7128d9bef82bc`
+  - `19ac5a5` is the reviewed-foundation baseline with three blocking findings. `04c093f` is an
+    explicitly unverified WIP checkpoint that preserves the interrupted authoritative-absence
+    revision attempt and its test. It is not deploy evidence and the final focused test was not run.
 - Live runtime: `/Users/anicca/profitable-claude`
   - branch `deploy/gig-speedy-reply-cutover`, upstream same, clean and verified
     `0cf56932e1fbe651a9d2a4d40c3ae667c115fb1f`
@@ -41,7 +42,7 @@
    revision `36` remains `blocked`, with no verified outgoing hash. Do not resend the same event.
    It can resume only after an authoritative counterpart/platform-state change or a new unique buyer event.
 2. **#4 is the immediate engineering bottleneck.** The pushed common-envelope foundation
-   `19ac5a5` is not deployable. Review reproduced three correctness defects:
+   `19ac5a5` and WIP continuation `04c093f` are not deployable. Review reproduced three correctness defects:
    - a crash after the durable fence but before execution can remain in `reconcile_pending`;
    - another owner can enter through `run_once` while the active lease still belongs to the first owner;
    - an expired owner can still fence a side effect.
@@ -68,8 +69,8 @@ test expansion before these three defects are closed.
 ## First safe resume action
 
 Start from `/Users/anicca/anicca-project` on `main`. Fetch and verify the spec, all three repository
-HEAD/upstream/dirty states, the implementation diff against `19ac5a5`, and the live launchd/connector
-state. Do not edit, deploy, kick, send, apply, list, or deliver yet. First present to the user:
+HEAD/upstream/dirty states, inspect the exact `19ac5a5..04c093f` WIP diff, and verify the live
+launchd/connector state. Do not edit, deploy, kick, send, apply, list, or deliver yet. First present to the user:
 
 1. the seven remaining TODOs in dependency order;
 2. the distinction between the external #1 blocker and the engineering #4 blocker;
