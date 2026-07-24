@@ -174,7 +174,20 @@ def _append_success(
     video_hash: str,
     caption_hash: str,
     provider_id: str | None,
+    adapter_result: dict | None = None,
 ) -> dict:
+    adapter_result = adapter_result or {}
+    route = adapter_result.get("route")
+    provider_cost = adapter_result.get("provider_cost_usd")
+    logged_out = adapter_result.get("logged_out_readback")
+    migration_date = adapter_result.get("migration_date")
+    if route == "direct_browser" and not (
+        provider_cost == 0
+        and logged_out is True
+        and isinstance(migration_date, str)
+        and re.fullmatch(r"\d{4}-\d{2}-\d{2}", migration_date)
+    ):
+        raise DistributionError("direct TikTok result lacks zero-cost logged-out provenance")
     row = {
         "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "platform": platform,
@@ -186,6 +199,10 @@ def _append_success(
         "caption_sha256": caption_hash,
         "public_url": public_url,
         "provider_id": provider_id,
+        "route": route or ("instagram_file_script" if platform == "instagram" else "postiz"),
+        "provider_cost_usd": provider_cost,
+        "logged_out_readback": logged_out,
+        "migration_date": migration_date,
     }
     config.ledger.parent.mkdir(parents=True, exist_ok=True)
     with config.ledger.open("a", encoding="utf-8") as handle:
@@ -225,6 +242,7 @@ def distribute(config: DistributionConfig) -> dict:
             video_hash=video_hash,
             caption_hash=caption_hash,
             provider_id=result.get("code"),
+            adapter_result=result,
         )
 
     rows = _read_ledger(config.ledger)
@@ -252,6 +270,7 @@ def distribute(config: DistributionConfig) -> dict:
             video_hash=video_hash,
             caption_hash=caption_hash,
             provider_id=result.get("post_id"),
+            adapter_result=result,
         )
 
     return {
@@ -261,6 +280,12 @@ def distribute(config: DistributionConfig) -> dict:
         "instagram_url": instagram["public_url"],
         "tiktok_url": tiktok["public_url"],
     }
+
+
+def default_tiktok_adapter(here: Path, env: Mapping[str, str]) -> Path:
+    if env.get("LM_TIKTOK_DIRECT_MIGRATION") == "1":
+        return Path(here) / "tiktok_direct.mjs"
+    return Path(here) / "postiz_video.py"
 
 
 def main() -> int:
@@ -287,7 +312,7 @@ def main() -> int:
     parser.add_argument(
         "--tiktok-adapter",
         type=Path,
-        default=here / "postiz_video.py",
+        default=default_tiktok_adapter(here, os.environ),
     )
     parser.add_argument("--instagram-handle", default=os.environ.get("LM_INSTAGRAM_HANDLE", "anicca.affirms2"))
     parser.add_argument(

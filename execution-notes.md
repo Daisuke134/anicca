@@ -190,3 +190,17 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   and real Telegram message id `3379`.
 - Evidence: `docs/evidence/9d-marketing-self-improve-started.md`. Pending count remains 22 because
   six distinct real dates remain; cursor advances to independent row 9e.
+
+## 9e MKT-e — equivalence PASS; authentication gate pending
+- Direct TikTok Studio adapter uses the existing CloakBrowser CDP context, exact MP4/caption paths,
+  and the same terminal fields as Postiz. It requires individual public URL, exact logged-out
+  readback, real date, and direct cost USD 0.
+- Distribution/direct tests are `10/10 + 8/8`. Only two consecutive real direct days can retire
+  Postiz; duplicate/gap/simulation/failure rows cannot.
+- Postiz remains the default and its ledger stays at three rows. The exact direct migration env
+  gate remains unset.
+- Real target login reaches TikTok email verification, but the designated masked mailbox is absent
+  from connected Gmail, Keychain/env, and an authenticated domain mail route. No code is guessed,
+  no file is uploaded, and no post is created.
+- Evidence: `docs/evidence/9e-tiktok-direct-migration-started.md`. Pending remains 22; next is 9f,
+  whose Phase 1 prerequisite is evaluated before any X handoff.
