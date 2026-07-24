@@ -94,7 +94,11 @@ function evaluatePromotion(candidate = {}) {
   }
   if (bootstrap) {
     const bootstrapText = entries
-      .filter((entry) => entry && BOOTSTRAP_PATHS.has(entry.path))
+      .filter((entry) =>
+        entry
+        && BOOTSTRAP_PATHS.has(entry.path)
+        && !/\.test\.[cm]?js$/.test(entry.path)
+      )
       .map((entry) => String(entry.line || ""))
       .join("\n");
     const allowedBootstrapCapabilities = new Set([

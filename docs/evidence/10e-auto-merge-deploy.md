@@ -81,6 +81,11 @@ when the fresh review matches the complete diff hash; later D0 PRs cannot change
 Final focused contracts are RED `8/12` → GREEN `12/12`. Both failed review methods have merge and
 deployment side effects of zero.
 
+The method-3 preflight initially refuses because rejection-token fixtures inside the exact bootstrap
+test file are classified as production capabilities. Corrective RED `8/9` → GREEN `9/9` excludes
+only reviewed, credential-free bootstrap test lines from the production-capability count; bootstrap
+runtime/guard source remains inspected and diff-hash bound.
+
 ## Rollback and postflight
 
 - Before merge, the promoter records the current successful Railway deployment and verifies current
@@ -97,7 +102,7 @@ local filesystem path, raw provider error, identity, or contact data.
 
 ## Verification
 
-- Focused calendar regression plus promoter contracts: `17/17`.
+- Focused calendar regression plus promoter contracts: `18/18`.
 - Guard-outside live refusal: exit `3`, no merge/deploy.
 - Final full tests, every eval, panel privacy, changed-path secret/PII scans, and fresh adversary run
   are executed by the exact promoter before merge.

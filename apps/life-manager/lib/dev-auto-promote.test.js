@@ -149,6 +149,21 @@ test("the guard policy source is not mistaken for an executed blocked action", (
 });
 
 
+test("review-bound bootstrap test fixtures do not grant production capabilities", () => {
+  const result = evaluatePromotion(validCandidate({
+    prNumber: 1092,
+    bootstrapReviewBound: true,
+    changedFiles: ["apps/life-manager/lib/dev-auto-promote.test.js"],
+    addedLines: [{
+      path: "apps/life-manager/lib/dev-auto-promote.test.js",
+      line: "sendUnsolicitedEmail(target); wallet.sendTransaction(value);",
+    }],
+  }));
+  assert.equal(result.allowed, true);
+  assert.deepEqual(result.blockedActions, []);
+});
+
+
 test("deployment completes only for the exact healthy merge and otherwise rolls back once", () => {
   assert.deepEqual(decideDeploymentOutcome({
     exactCommit: true,

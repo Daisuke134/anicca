@@ -293,6 +293,9 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   moves review before candidate execution, binds exact head plus complete binary-diff SHA-256,
   executes full gates with a minimal temporary-HOME environment, and blocks routine env/filesystem/
   network/process access. Bootstrap is exact #1088/#1092 reviewed-diff only and cannot recur.
+- Method-3 preflight catches bootstrap test rejection-token fixtures as capabilities. Corrective
+  RED `8/9` → GREEN `9/9` excludes only reviewed credential-free bootstrap test lines; runtime and
+  guard source remain capability-inspected and complete-diff bound.
 - Railway postflight binds the GitHub merge SHA to live `meta.commitHash`, production health, and
   issue closure. Failure triggers one rollback to the pre-verified healthy deployment.
 - The promoter publishes exact merge/deployment/adversary/health receipt values on PR #1092 after
