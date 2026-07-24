@@ -91,3 +91,30 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   B4 improve → B5 share → finalize + .last-pass).
 - Expected: task-request-map.jsonl materialized during B2 apply; task #1
   verified on B5+finalize.
+
+---
+
+## 8i REPO-CONSOLIDATE — execution log (in progress)
+
+**Source:** Daisuke134/anicca-products @ `540b7a428e8e259e47acaa715812802fdb19f947`, path `apps/life-call/`
+**Target:** Daisuke134/life-manager (id 1248111245), path `apps/life-manager/`
+**Branch:** `claude/life-manager-e2e-handover-qkp2q6`
+
+### Completed gates
+- [x] Read-only source access obtained (add_repo, shallow clone at /workspace/anicca-products)
+- [x] Source manifest: 184 tracked files under apps/life-call (183 migrated, .vcsdd/ metadata excluded)
+- [x] Snapshot copy apps/life-call -> apps/life-manager (183 files) + canonical spec -> docs/specs/
+- [x] Byte-equivalence proven: 0 diffs across all 183 files (docs/manifests/8i-life-call-source-manifest.txt, sha256 per file)
+- [x] Secret/PII scan: clean (only synthetic fixture phones, no keys/real PII)
+
+### Remaining gates (blockers noted)
+- [ ] Focused tests on migrated lib/**
+- [ ] Full Life Manager test suite (npm test in apps/life-manager)
+- [ ] Every eval suite (calendar / late / context-onboarding / score-semantics / panel-privacy)
+- [ ] Production build
+- [ ] Fresh-context adversarial review from detached candidate commit
+- [ ] Normal PR + merge
+- [ ] Railway deploy of exact merged commit  — NEEDS Railway credentials
+- [ ] Prove active Railway commit == canonical main
+- [ ] Real production L3: /health, Telegram, canonical /panel  — NEEDS production access
+- [ ] Archive + redirect anicca-products (ONLY after cutover)  — NEEDS admin on source repo
