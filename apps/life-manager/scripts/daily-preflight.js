@@ -27,7 +27,7 @@ function parseArgs(argv) {
 
 function currentSourceSnapshotRef() {
   const root = path.resolve(__dirname, "../../..");
-  const tree = execFileSync("git", ["rev-parse", "HEAD:apps/life-call"], {
+  const tree = execFileSync("git", ["rev-parse", "HEAD:apps/life-manager"], {
     cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
   }).trim();
   if (!/^[a-f0-9]{40}$/.test(tree)) throw new Error("source snapshot unavailable");
