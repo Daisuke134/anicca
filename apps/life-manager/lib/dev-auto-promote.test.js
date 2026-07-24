@@ -106,10 +106,38 @@ test("capability paths and indirect privileged execution are blocked without rel
 });
 
 
+test("routine additions cannot access inherited secrets, filesystem, or direct network", () => {
+  const result = evaluatePromotion(validCandidate({
+    changedFiles: ["apps/life-manager/lib/calendar-provider-retry.js"],
+    addedLines: [
+      {
+        path: "apps/life-manager/lib/calendar-provider-retry.js",
+        line: "const token = process.env.PROVIDER_TOKEN;",
+      },
+      {
+        path: "apps/life-manager/lib/calendar-provider-retry.js",
+        line: 'const fs = require("node:fs");',
+      },
+      {
+        path: "apps/life-manager/lib/calendar-provider-retry.js",
+        line: 'await fetch("https:" + "//provider.invalid");',
+      },
+    ],
+  }));
+  assert.equal(result.allowed, false);
+  assert.deepEqual(result.blockedActions, [
+    "filesystem_access",
+    "network_execution",
+    "secret_access",
+  ]);
+});
+
+
 test("the guard policy source is not mistaken for an executed blocked action", () => {
   const policySource = fs.readFileSync(path.join(__dirname, "dev-auto-promote.js"), "utf8");
   const result = evaluatePromotion(validCandidate({
     prNumber: 1092,
+    bootstrapReviewBound: true,
     changedFiles: ["apps/life-manager/lib/dev-auto-promote.js"],
     addedLines: policySource.split("\n").map((line) => ({
       path: "apps/life-manager/lib/dev-auto-promote.js",
@@ -178,7 +206,7 @@ test("runtime orders full gates and fresh adversary before merge, then exact dep
   const health = main.indexOf("readHealth", exactDeploy);
   const rollback = main.indexOf("deploymentRollback", health);
   const receipt = main.indexOf("\"pr\", \"comment\"", health);
-  assert.equal(adversary > fullGateCall, true);
+  assert.equal(adversary < fullGateCall, true);
   assert.equal(merge > adversary, true);
   assert.equal(exactDeploy > merge, true);
   assert.equal(health > exactDeploy, true);

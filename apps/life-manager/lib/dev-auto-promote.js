@@ -37,6 +37,9 @@ const BLOCKED_ACTION_PATTERNS = Object.freeze({
   secret_change: /\brailway\s+variable\s+set\b|\b(?:api|secret|token)[_-]?key\s*=/i,
   wallet_transfer: /\b(?:sendTransaction|eth_sendRawTransaction|wallet\.transfer)\b/i,
   privileged_execution: /\b(?:process\.mainModule|module\.constructor|child_process|execFile(?:Sync)?|spawn(?:Sync)?|process\.binding|node:vm)\b|\beval\s*\(|\bnew\s+Function\b|require\s*\(\s*[^"'`]/i,
+  secret_access: /\b(?:process|Deno|Bun)\.env\b/i,
+  filesystem_access: /\bnode:fs\b|require\s*\(\s*["']fs["']\s*\)|\b(?:readFile|readdir|createReadStream)\b/i,
+  network_execution: /\bfetch\s*\(|\b(?:node:https|node:http)\b|\b(?:https|http)\.request\s*\(|\bWebSocket\s*\(/i,
 });
 
 
@@ -65,6 +68,7 @@ function evaluatePromotion(candidate = {}) {
   if (!paths.length || paths.some((file) => !pathAllowed(file))) {
     reasons.push("path_allowlist");
   }
+  if (bootstrap && candidate.bootstrapReviewBound !== true) reasons.push("bootstrap_review");
   const blockedActions = [];
   if (paths.some((file) => /(^|\/)migrations?\//i.test(file))) blockedActions.push("migration");
   const routineProductionPaths = paths.filter((file) =>
@@ -74,18 +78,36 @@ function evaluatePromotion(candidate = {}) {
   for (const [name, pattern] of Object.entries(CAPABILITY_PATHS)) {
     if (routineProductionPaths.some((file) => pattern.test(file))) blockedActions.push(name);
   }
-  const added = (Array.isArray(candidate.addedLines) ? candidate.addedLines : [])
+  const entries = (Array.isArray(candidate.addedLines) ? candidate.addedLines : [])
     .map((entry) => typeof entry === "string" ? { path: "", line: entry } : entry)
-    .filter((entry) => !(bootstrap && entry && BOOTSTRAP_PATHS.has(entry.path)))
     .filter((entry) => !(
       entry
       && entry.path === "apps/life-manager/lib/dev-auto-promote.js"
-      && /^\s*(?:outreach_send|provider_account_mutation|secret_change|wallet_transfer):\s*\//.test(entry.line)
-    ))
+      && /^\s*(?:outreach_send|provider_account_mutation|secret_change|wallet_transfer|privileged_execution|secret_access|filesystem_access|network_execution):\s*\//.test(entry.line)
+    ));
+  const added = entries
+    .filter((entry) => !(bootstrap && entry && BOOTSTRAP_PATHS.has(entry.path)))
     .map((entry) => String(entry && entry.line || ""))
     .join("\n");
   for (const [name, pattern] of Object.entries(BLOCKED_ACTION_PATTERNS)) {
     if (pattern.test(added)) blockedActions.push(name);
+  }
+  if (bootstrap) {
+    const bootstrapText = entries
+      .filter((entry) => entry && BOOTSTRAP_PATHS.has(entry.path))
+      .map((entry) => String(entry.line || ""))
+      .join("\n");
+    const allowedBootstrapCapabilities = new Set([
+      "filesystem_access",
+      "network_execution",
+      "privileged_execution",
+      "secret_access",
+    ]);
+    for (const [name, pattern] of Object.entries(BLOCKED_ACTION_PATTERNS)) {
+      if (pattern.test(bootstrapText) && !allowedBootstrapCapabilities.has(name)) {
+        reasons.push("bootstrap_capability");
+      }
+    }
   }
   if (blockedActions.length) reasons.push("blocked_actions");
 

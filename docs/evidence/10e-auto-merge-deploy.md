@@ -65,6 +65,22 @@ Corrective TDD adds provider-interaction tests and changes the guard:
 Corrective runtime/guard tests are RED `6/10` → GREEN `10/10`. The failed review performs no merge
 or deployment.
 
+The second fresh adversary also returns `FAIL` before merge with two blockers:
+
+- candidate tests execute before review with inherited credentials;
+- the one-time bootstrap implementation is excluded from action scanning without an immutable
+  review binding.
+
+Final corrective TDD moves the fresh review before all candidate execution, binds it to both the
+exact head and SHA-256 of the complete binary diff, then runs tests/evals with a mode-700 temporary
+HOME and a five-key environment (`PATH`, `TMPDIR`, `HOME`, `CI`, `NODE_ENV`). Routine additions may
+not introduce environment-secret access, filesystem access, direct network execution, or privileged
+process execution. Bootstrap capabilities are explicit and accepted only for exact #1088 / PR #1092
+when the fresh review matches the complete diff hash; later D0 PRs cannot change those paths.
+
+Final focused contracts are RED `8/12` → GREEN `12/12`. Both failed review methods have merge and
+deployment side effects of zero.
+
 ## Rollback and postflight
 
 - Before merge, the promoter records the current successful Railway deployment and verifies current
@@ -81,7 +97,7 @@ local filesystem path, raw provider error, identity, or contact data.
 
 ## Verification
 
-- Focused calendar regression plus promoter contracts: `15/15`.
+- Focused calendar regression plus promoter contracts: `17/17`.
 - Guard-outside live refusal: exit `3`, no merge/deploy.
 - Final full tests, every eval, panel privacy, changed-path secret/PII scans, and fresh adversary run
   are executed by the exact promoter before merge.

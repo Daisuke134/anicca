@@ -2,6 +2,8 @@
 "use strict";
 
 const fs = require("node:fs");
+const os = require("node:os");
+const crypto = require("node:crypto");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const {
@@ -31,6 +33,7 @@ function run(file, args, options = {}) {
     stdio: options.inherit ? "inherit" : ["pipe", "pipe", "pipe"],
     timeout: options.timeout || 20 * 60 * 1000,
     maxBuffer: 20 * 1024 * 1024,
+    env: options.env || process.env,
   }) || "").trim();
 }
 
@@ -56,7 +59,19 @@ function ghJson(args) {
 }
 
 
-function productionAddedLines(diff) {
+function currentTreeDigest() {
+  const diff = execFileSync("git", ["diff", "--binary", "origin/main...HEAD"], {
+    cwd: REPO_DIR,
+    encoding: null,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 30000,
+    maxBuffer: 20 * 1024 * 1024,
+  });
+  return crypto.createHash("sha256").update(diff).digest("hex");
+}
+
+
+function candidateAddedLines(diff) {
   const lines = [];
   let current = "";
   for (const line of String(diff || "").split("\n")) {
@@ -65,8 +80,8 @@ function productionAddedLines(diff) {
       current = match[2];
       continue;
     }
-    const production = /^apps\/life-manager\/(?!.*\.test\.js$)(?:lib|scripts)\//.test(current);
-    if (production && line.startsWith("+") && !line.startsWith("+++")) {
+    const candidateCode = /^apps\/life-manager\/(?:lib|test|scripts)\//.test(current);
+    if (candidateCode && line.startsWith("+") && !line.startsWith("+++")) {
       lines.push({ path: current, line: line.slice(1) });
     }
   }
@@ -89,6 +104,7 @@ function loadCandidate(prNumber, issueNumber, gates) {
   ]);
   const diff = run("gh", ["pr", "diff", String(prNumber), "-R", REPO, "--patch"]);
   const localHeadOid = run("git", ["rev-parse", "HEAD"]);
+  const treeDigest = currentTreeDigest();
   const exactFix = new RegExp(`(^|\\n)Fixes #${issueNumber}\\.(\\n|$)`);
   const matchingPrs = openPrs.filter((value) => exactFix.test(String(value.body || "")));
   return {
@@ -106,7 +122,9 @@ function loadCandidate(prNumber, issueNumber, gates) {
     localHeadOid,
     mergeable: pr.mergeable,
     changedFiles: (pr.files || []).map((value) => value.path),
-    addedLines: productionAddedLines(diff),
+    addedLines: candidateAddedLines(diff),
+    treeDigest,
+    bootstrapReviewBound: gates.bootstrapReviewBound === true,
     gates,
     pr,
     issue,
@@ -114,14 +132,32 @@ function loadCandidate(prNumber, issueNumber, gates) {
 }
 
 
-function runFullGates() {
-  run("npm", ["test"], { cwd: APP_DIR, inherit: true });
-  run("npm", ["run", "eval"], { cwd: APP_DIR, inherit: true });
-  run("npm", ["run", "eval:panel-privacy"], { cwd: APP_DIR, inherit: true });
+function safeGateEnvironment(baseEnvironment, temporaryHome) {
+  return {
+    PATH: String(baseEnvironment.PATH || "/usr/bin:/bin"),
+    TMPDIR: String(baseEnvironment.TMPDIR || os.tmpdir()),
+    HOME: temporaryHome,
+    CI: "1",
+    NODE_ENV: "test",
+  };
 }
 
 
-function runFreshAdversary(prNumber, issueNumber, headOid, changedFiles) {
+function runFullGates() {
+  const temporaryHome = fs.mkdtempSync(path.join(os.tmpdir(), "lm-promote-gate-"));
+  fs.chmodSync(temporaryHome, 0o700);
+  const env = safeGateEnvironment(process.env, temporaryHome);
+  try {
+    run("npm", ["test"], { cwd: APP_DIR, inherit: true, env });
+    run("npm", ["run", "eval"], { cwd: APP_DIR, inherit: true, env });
+    run("npm", ["run", "eval:panel-privacy"], { cwd: APP_DIR, inherit: true, env });
+  } finally {
+    fs.rmSync(temporaryHome, { recursive: true, force: true });
+  }
+}
+
+
+function runFreshAdversary(prNumber, issueNumber, headOid, treeDigest, changedFiles) {
   const evidenceDir = path.join(
     process.env.HOME,
     ".openclaw/state/agent-runner-evidence",
@@ -133,11 +169,13 @@ function runFreshAdversary(prNumber, issueNumber, headOid, changedFiles) {
     "You are a fresh-context, artifact-only adversarial release reviewer.",
     `Review Life Manager PR #${prNumber} for privacy-safe error issue #${issueNumber}.`,
     `The exact candidate head is ${headOid}.`,
+    `The exact origin/main...HEAD binary diff SHA-256 is ${treeDigest}.`,
     `Changed paths: ${changedFiles.join(", ")}`,
     "Read origin/main...HEAD and relevant tests/spec only. Do not edit, commit, push, merge, deploy,",
     "contact providers, or expose secrets/PII. Find concrete correctness, privacy, path-scope,",
     "test weakness, rollback, or production-safety blockers. PASS only when blocking_findings is empty.",
     `Return reviewed_head exactly as ${headOid}.`,
+    `Return reviewed_tree_sha256 exactly as ${treeDigest} after independently checking the diff.`,
   ].join("\n");
   const output = run(RUN_AGENT, [
     "--task-class", "high-value-agent",
@@ -150,18 +188,19 @@ function runFreshAdversary(prNumber, issueNumber, headOid, changedFiles) {
   ], { input: `${prompt}\n` });
   const result = JSON.parse(output);
   return {
-    passed: reviewPasses(result, headOid),
+    passed: reviewPasses(result, headOid, treeDigest),
     evidenceDir,
     result,
   };
 }
 
 
-function reviewPasses(result, expectedHead) {
+function reviewPasses(result, expectedHead, expectedTreeDigest) {
   return Boolean(
     result
     && result.status === "pass"
     && result.reviewed_head === expectedHead
+    && result.reviewed_tree_sha256 === expectedTreeDigest
     && Array.isArray(result.blocking_findings)
     && result.blocking_findings.length === 0
     && Array.isArray(result.evidence)
@@ -275,6 +314,7 @@ async function main() {
     privacy: true,
     adversary: true,
     cleanWorktree: true,
+    bootstrapReviewBound: true,
   };
   let candidate = loadCandidate(options.pr, options.issue, optimisticGates);
   let guard = evaluatePromotion(candidate);
@@ -289,21 +329,29 @@ async function main() {
     return;
   }
 
-  runFullGates();
   const review = runFreshAdversary(
     options.pr,
     options.issue,
     candidate.headOid,
+    candidate.treeDigest,
     candidate.changedFiles,
   );
+  if (!review.passed) throw new Error("auto_promote_guard_refused:adversary");
+  runFullGates();
   const cleanWorktree = run("git", ["status", "--porcelain"]) === "";
+  const reviewedHead = candidate.headOid;
+  const reviewedTreeDigest = candidate.treeDigest;
   candidate = loadCandidate(options.pr, options.issue, {
     tests: true,
     evals: true,
     privacy: true,
     adversary: review.passed,
     cleanWorktree,
+    bootstrapReviewBound: review.passed,
   });
+  if (candidate.headOid !== reviewedHead || candidate.treeDigest !== reviewedTreeDigest) {
+    throw new Error("auto_promote_review_binding_changed");
+  }
   guard = evaluatePromotion(candidate);
   if (!guard.allowed) throw new Error(`auto_promote_guard_refused:${guard.reasons.join(",")}`);
 
@@ -386,6 +434,7 @@ if (require.main === module) {
 
 module.exports = {
   reviewPasses,
+  safeGateEnvironment,
   mergePullRequest,
   waitForExactDeployment,
 };

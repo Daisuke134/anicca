@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 
 const {
   reviewPasses,
+  safeGateEnvironment,
   mergePullRequest,
   waitForExactDeployment,
 } = require("../scripts/dev-auto-promote.js");
@@ -12,18 +13,46 @@ const {
 
 test("fresh adversary PASS is bound to the exact reviewed head", () => {
   const head = "a".repeat(40);
+  const tree = "c".repeat(64);
   assert.equal(reviewPasses({
     status: "pass",
     reviewed_head: head,
+    reviewed_tree_sha256: tree,
     blocking_findings: [],
     evidence: ["reviewed exact diff"],
-  }, head), true);
+  }, head, tree), true);
   assert.equal(reviewPasses({
     status: "pass",
     reviewed_head: "b".repeat(40),
+    reviewed_tree_sha256: tree,
     blocking_findings: [],
     evidence: ["reviewed stale diff"],
-  }, head), false);
+  }, head, tree), false);
+  assert.equal(reviewPasses({
+    status: "pass",
+    reviewed_head: head,
+    reviewed_tree_sha256: "d".repeat(64),
+    blocking_findings: [],
+    evidence: ["reviewed different tree"],
+  }, head, tree), false);
+});
+
+
+test("candidate gates receive a minimal environment with no inherited credentials", () => {
+  const environment = safeGateEnvironment({
+    PATH: "/usr/bin:/bin",
+    TMPDIR: "/tmp",
+    GH_TOKEN: "fixture-github-token",
+    RAILWAY_TOKEN: "fixture-railway-token",
+    COMPOSIO_API_KEY: "fixture-provider-key",
+  }, "/tmp/lm-gate-home");
+  assert.deepEqual(environment, {
+    PATH: "/usr/bin:/bin",
+    TMPDIR: "/tmp",
+    HOME: "/tmp/lm-gate-home",
+    CI: "1",
+    NODE_ENV: "test",
+  });
 });
 
 

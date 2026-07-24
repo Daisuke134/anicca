@@ -288,6 +288,11 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   Corrective provider interaction tests are RED `6/10` → GREEN `10/10`; rollback now requires a
   new post-mutation deployment ID, merge uses `--match-head-commit`, review output carries exact
   `reviewed_head`, and routine D0 changes are confined to non-privileged lib/test capabilities.
+- Fresh adversary method 2 also stops before merge: candidate tests run before review with inherited
+  credentials, and bootstrap files lack immutable review binding. Final RED `8/12` → GREEN `12/12`
+  moves review before candidate execution, binds exact head plus complete binary-diff SHA-256,
+  executes full gates with a minimal temporary-HOME environment, and blocks routine env/filesystem/
+  network/process access. Bootstrap is exact #1088/#1092 reviewed-diff only and cannot recur.
 - Railway postflight binds the GitHub merge SHA to live `meta.commitHash`, production health, and
   issue closure. Failure triggers one rollback to the pre-verified healthy deployment.
 - The promoter publishes exact merge/deployment/adversary/health receipt values on PR #1092 after
