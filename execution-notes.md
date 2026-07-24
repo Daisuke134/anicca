@@ -103,18 +103,23 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 ### Completed gates
 - [x] Read-only source access obtained (add_repo, shallow clone at /workspace/anicca-products)
 - [x] Source manifest: 184 tracked files under apps/life-call (183 migrated, .vcsdd/ metadata excluded)
-- [x] Snapshot copy apps/life-call -> apps/life-manager (183 files) + canonical spec -> docs/specs/
+- [x] Snapshot copy apps/life-call -> apps/life-manager (183 files) + canonical spec -> docs/superpowers/specs/
 - [x] Byte-equivalence proven: 0 diffs across all 183 files (docs/manifests/8i-life-call-source-manifest.txt, sha256 per file)
 - [x] Secret/PII scan: clean (only synthetic fixture phones, no keys/real PII)
 
 ### Remaining gates (blockers noted)
 - [x] Focused tests on migrated lib/** (all green)
-- [x] Full Life Manager test suite: 606 pass / 0 fail
+- [x] Full Life Manager test suite: 633 TAP pass / 0 fail (reviewer-measured; earlier 606 was a count-method imprecision)
 - [x] Every eval suite: calendar 21/21, late 12/12, context 12/12, score 27/27, panel-privacy pass
 - [x] Production build smoke: server.js/scheduler.js syntax OK; nixpacks entrypoints valid
-- [ ] Fresh-context adversarial review from detached candidate commit
+- [x] Fresh-context adversarial review from detached candidate commit 8752cf35: VERDICT APPROVE, 0 blockers, 7 notes (manifest 183/183 sha256 verified vs source AND target; exactly 1 differing line = documented path rename; boot with empty env verified; history-safety PASS)
 - [ ] Normal PR + merge
 - [ ] Railway deploy of exact merged commit  — NEEDS Railway credentials
 - [ ] Prove active Railway commit == canonical main
 - [ ] Real production L3: /health, Telegram, canonical /panel  — NEEDS production access
 - [ ] Archive + redirect anicca-products (ONLY after cutover)  — NEEDS admin on source repo
+
+### Adversarial review notes (2026-07-24, fresh-context agent, commit 8752cf35)
+- APPROVE. Non-blocking notes: test-count label (633 actual), landing subset is 5 migrated + 1 new README, Mac-host paths in daily-preflight-collectors.js carried byte-identically (gateway-host code, not Railway boot), residual "life-call" identity strings consistent, diff secrets/PII clean.
+- Reviewer flagged PRE-EXISTING PII on main (predates this PR): execution-notes.md task #5 section names a Coconala counterparty. Scrub separately — public repo.
+- Railway boot check: server.js starts with EMPTY env (PORT defaults, no boot-required secrets); all providers lazily guarded.
