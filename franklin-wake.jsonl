@@ -14786,3 +14786,13 @@
 {"ts":1784894780,"wake_id":"00MRYW9MKH97C01A61B83F47B5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784894934,"wake_id":"00MRYWCY0L22D64588F4574081","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784894943,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
 {"ts":1784895064,"wake_id":"00MRYWFPZF7A4FE13B52134AF4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784895074,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784895197,"wake_id":"00MRYWIKM3E9E7E6A9CAF64DE3","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895264,"wake_id":"00MRYWK0H5A2E36ECE6EFA4452","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895331,"wake_id":"00MRYWLGAFB33FEF0699094645","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895399,"wake_id":"00MRYWMW8E62082C3D3ACA493C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895465,"wake_id":"00MRYWOBOZ9E83FA4376984F3A","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895536,"wake_id":"00MRYWPTW8F963D5EF83BE4ED3","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895603,"wake_id":"00MRYWR9NV1DD0BB1177EB44C9","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895669,"wake_id":"00MRYWSP9D84AA6E1C0D724C6D","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784895736,"wake_id":"00MRYWU4RT758E0C7E887240A0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784895890,"wake_id":"00MRYWXF2I403DFB924FC44608","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
