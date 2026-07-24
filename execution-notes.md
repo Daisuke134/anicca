@@ -124,6 +124,18 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Reviewer flagged PRE-EXISTING PII on main (predates this PR): execution-notes.md task #5 section names a Coconala counterparty. Scrub separately — public repo.
 - Railway boot check: server.js starts with EMPTY env (PORT defaults, no boot-required secrets); all providers lazily guarded.
 
+## 10g BRAIN-a — done (2026-07-24, L2)
+- intent-graph.js closed schema (6 kinds, provenance/confidence/expiry), correction-expires-prediction contract, 3 persona fixtures. Tests 7/7; full suite fail 0. Spec §10 row updated in same commit.
+
+## 10h BRAIN-b — done (2026-07-24, L2)
+- opportunity-engine.js six-factor gate over 10g graph; intent-cases.jsonl 18/18 (100%); contract 4/4; wired into test+eval chains; full suite fail 0. Spec §10 updated (26 pending).
+
+## 12a MEN-a — done (2026-07-24, L2)
+- mental-trigger.js context-driven trigger engine (pre_event/between_events/pre_sleep), cap 3/day, fixed-time impossible by construction; men-cases.jsonl 15/15 (100%); contract 4/4; full suite fail 0. Spec §10 updated (25 pending).
+
+## 11a PHY-a — L2 done (2026-07-24); L3 (real calendar detection) pending
+- care-detector.js personal-cadence + explicit-goal detection, no fixed cycle (0-1 visits never flag), no diagnosis fields; phy-cases.jsonl 12/12 (100%); contract 4/4; full suite fail 0. Spec §10 updated (row stays pending, L2 recorded).
+
 ## 8i REPO-CONSOLIDATE — DONE (2026-07-24, production cutover complete)
 - Cutover executed on the Mac-side agent with Railway access: service re-pointed to life-manager/apps/life-manager, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
 - Independently verified from cloud session: anicca-products archived=true via GitHub API readback; evidence report in docs/evidence/8i-cutover-report.md (PR #1077); merge containment of a7ac84d4 in origin/main.
