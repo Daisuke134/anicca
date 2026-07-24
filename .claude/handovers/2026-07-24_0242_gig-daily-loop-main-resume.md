@@ -16,12 +16,12 @@
   local main only after checking untracked collisions.
 - Implementation worktree: `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable`,
   branch `fix/gig-browser-ownership-20260724`, upstream
-  `origin/fix/gig-browser-ownership-20260724`, verified commit `d02f824`.
+  `origin/fix/gig-browser-ownership-20260724`, verified commit `7de1535`.
 - Live runtime repository: `/Users/anicca/profitable-claude`, branch
   `deploy/gig-speedy-reply-cutover`. HEAD advances with concurrent article-writer merges, so treat
   any concrete SHA only as an observed baseline. Reviewed Gig deploy merges `59957c5`, `c4007a8`,
-  and `a61b2ed` must remain first-parent ancestors of the current HEAD. Do not implement here or
-  overwrite concurrent work.
+  `a61b2ed`, `141f926`, and `0cf5693` must remain ancestors of the current HEAD. Do not implement
+  here or overwrite concurrent work.
 - Old spec worktree `/Users/anicca/anicca-project/.worktrees/coconala-reply-sla` is historical and
   must not become the continuation SSOT.
 
@@ -83,10 +83,14 @@
   strategy/applied/task-request-map/shuppin/shared-lessons/playbook/gig-funnel/earnings ledger
   SHA256 values remain equal to their initial values after both passes. Shell integration 17 and
   related Python 34 pass; the focused test also passes on live merge `a61b2ed`.
-- Self-improvement is implemented (`pass_count=529`, `improve_cycle=76`, kept/reverted evidence).
-  The verifier still falsely lists six missing items after normal no-change operation.
-- Next safe implementation item while §6 #1 remains externally blocked is §6 #3, the
-  self-improvement verifier no-change false positive.
+- §6 #3 is closed by reviewed implementation commits `6d47a1e` + `5226b71` + `7de1535` and
+  deploy merges `141f926` + `0cf5693`. The verifier binds fresh successful `.last-pass`
+  ID/status/timestamp to the exact version-1 poll-control artifact. Fresh no-change/model 0 is a
+  normal no-op; material, stale, malformed, or mismatched evidence remains fail-closed. Gig Python
+  `311` + `160` subtests and live focused `9` + `14` subtests pass. launchd run 14/exit 0 reads
+  production material pass `1784853006-11290` exactly and retains its six missing requirements.
+- Next safe implementation item while §6 #1 remains externally blocked is §6 #4, the four-lane
+  state-machine failure-injection matrix.
 - Final Done requires every natural day to close all four lanes: Shuppin, Oubo, Reply, and Nouhin.
   Each lane must have either an authoritative verified action or a reasoned `verified_noop`, plus
   checked/eligible/action/outcome/duplicate/model-call/cost/revenue evidence. Missing one lane
@@ -100,7 +104,7 @@ ground truth. Do not retry thread `9967694` for the same event. Resume §6 #1 on
 check shows a material counterpart/platform-state change, or after the same thread produces a new
 unique buyer event (which reactivates the blocked action). Then let the production loop—not
 Codex—perform exactly one customer action and reconcile it. If neither changes, there is no
-loop-side unblock; leave #1 blocked and continue §6 #3. A Coconala inquiry may diagnose the
+loop-side unblock; leave #1 blocked and continue §6 #4. A Coconala inquiry may diagnose the
 account state but does not guarantee restoration and requires new authority.
 Mark #1 done only after the loop reads back thread URL, outgoing hash, seller send time,
 outbox=`replied`, one Telegram event, and zero duplicate sends.

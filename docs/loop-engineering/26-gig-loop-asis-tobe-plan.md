@@ -24,16 +24,16 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 
 | 分類 | 現在状態 |
 |---|---|
-| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5` とpaid recovery回帰 `b293831` + `d02f824` / `c4007a8` + `a61b2ed` が現HEADの祖先であることを不変条件とする |
+| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5`、paid recovery回帰 `b293831` + `d02f824` / `c4007a8` + `a61b2ed`、selfimprove verifier `6d47a1e` + `5226b71` + `7de1535` / `141f926` + `0cf5693` が現HEADの祖先であることを不変条件とする |
 | browser | launchd所有 `ai.anicca.hf-gig-browser`、Gig専用 CDP `:9223`、profile `gig-daily-driver`、KeepAlive。対話用`:9222`とは分離 |
 | scheduler | pass `:00/:30`、reply 300秒、auditor `:45`、core-health 300秒、selfimprove verify 3600秒、report `09:07`。合計673 scheduled invocation/日、browserは常駐 |
 | completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、paid-work browser recovery、material-event gate、bounded context、provider routing、token circuit breaker |
 | self-improvement | 実装済み。live `strategy.json` は `pass_count=529`、`improve_cycle=76`。`experiments[]` に `kept` と `reverted` の双方が存在し、`ai.anicca.hf-gig-selfimprove-verify` はロード済み |
 | model contract | provider-agnostic runner実装済み。Terra/Luna primary、Claude `sonnet` fallback。残るのはfallback canaryのみ |
-| tests | 拒否隔離を含むGig Python `279`、shell integration `17` PASS。review済みmerge上でもPython `279`と`test_gig_paid_work_gate.sh`がPASS。既知REDはselfimprove verifierのno-change誤警報 |
+| tests | Gig Python `311` + `160` subtests、shell integration `17` PASS。review済みlive merge上でもselfimprove focused `9` + `14` subtestsと`test_gig_paid_work_gate.sh`がPASS |
 | live reply blocker | target thread `9967694` action `1` revision `36`は`blocked`のまま。action `2/4/5/8`も拒否または事前根拠により`blocked`。control action `3`とdeploy後のaction `6`はproduction loopが`replied`・Telegram sentまで完了 |
 | live delivery blocker | accepted artifactは存在するが、buyer agreementとformal deliveryの実画面証拠が未成立。実売上は`banked`未到達 |
-| verifier integration debt | 正常な`no_change` pass後もselfimprove verifierが6項目すべてをmissing扱いする。self-improvement本体の再実装ではなく、no-change契約の修正対象 |
+| verifier contract | 成功済み`.last-pass`のpass ID/status/JSON `ts`/mtimeをexact `poll-control.json`へ結合する。fresh `no_change` + model call 0は正常no-op、material/improve・古い・壊れた・不一致証拠はfail-closed |
 
 ### §0.2 実行境界
 
@@ -127,6 +127,22 @@ browserだけを1回実行して`buyer_visible=true`、`next_action=await_buyer_
 acceptance bindingは同一であり、strategy/applied/task-request-map/shuppin/shared-lessons/playbook/
 gig-funnel/earningsの8 ledgerは第一pass失敗後と第二pass成功後の両方で初期SHA256と一致する。
 live deploy merge `a61b2ed`上でもfocused shell testがPASSし、shell integration 17件と関連Python 34件がPASSする。
+
+### §0.6 Self-improvement no-change verifier
+
+review済み実装 `6d47a1e` + `5226b71` + `7de1535`、deploy merge `141f926` + `0cf5693`で、
+verifierをmtime単独判定からpass-bound contractへ変更する。成功済み`.last-pass`の`pass_id`、
+`status=success`、numeric/non-boolean `ts`（過去90分以内・未来60秒以内）とfile mtimeを検査し、その
+pass専用directoryのversion 1 `poll-control.json`だけを読む。versionはboolean/floatを許さない厳密な
+integer 1、`pass_id`一致、既知outcome、model call count/labels一致が必要である。
+
+fresh `no_change` + model call 0だけを`verification_mode=normal_noop`、`missing=[]`とする。
+material/deterministic pass、古いpass、壊れたJSON/schema、pass ID不一致は
+`material_or_improve`として従来の証拠欠落検査を維持する。pending delivery reviewとmalformed ledger
+diagnosticsは変更しない。feature上のGig Python `311` + `160` subtests、live merge `0cf5693`上の
+focused `9` + `14` subtestsがPASSする。launchd実測はrun `14`、exit `0`で、最新production pass
+`1784853006-11290`の`material_event_handled` / model call 1をexact pathから読み、6欠落を
+fail-closedで記録する。no-change正常化は`test_selfimprove_no_change_is_not_missing`で固定する。
 
 ---
 
@@ -507,7 +523,6 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
 | **1** | **B1 native submitを閉じる — external BLOCKED** | thread `9967694`へ同じeventを再送しない。相手/platform状態の変化または新しい一意buyer eventをauthoritative rereadしてから、Coconala自身のvalidation/native submit経路をproduction loopだけで発火させる。待機中も他threadはdurable rejection quarantineで継続する | 対象threadについて本番reply loop自身がdirect-message POSTを1回発生させ、thread URL + outgoing hash + seller send timeを再読。outbox=`replied`、Telegram event 1、同一hash重複0 |
-| **3** | **selfimprove verifierのno-change誤警報を閉じる** | mtimeだけでなく最新`poll-control.json`のpass ID/outcomeを読む。`no_change`は正常no-op、material/improve passだけ必要証拠を要求する | no-changeでmissing 0・model call 0。material/improve fixtureで証拠欠落だけを次pass TODOへ記録。既存keep/revert挙動不変 |
 | **4** | **4 lane state-machine failure injectionを完了する** | Shuppinの公開/更新/no-op、Oubo、Reply、Nouhinの制作/進捗/formal delivery/revision/acceptance/payoutを同じevent/action envelopeで検証する | crash/timeout/model refusal/ACK lossの全fixtureが最終verified。4 lane各side effect 1、blind retry 0、terminal manual state 0 |
 | **5** | **4 lane task-level attributionを日報へ接続する** | listing/application/reply/delivery/agent-runner/revenue ledgerをpass IDとtask labelでjoinする | 09:07 reportが4 laneごとに§0.3の9項目を表示。欠測は推測せず`missing evidence`としてその日をFAIL |
 | **6** | **provider fallback canaryを通す** | side-effectなしfixtureでTerra/Lunaのtransient failureを注入し、同一schemaのClaude `sonnet` fallbackを通す。次にfence付きbounded canaryを行う | fallback前後でbusiness outcome同一、customer action最大1、schema/telemetry完全。`sonnet` aliasの実model mappingを証拠へ記録 |
@@ -525,7 +540,7 @@ draft承認なしで検知→実行→ground-truth確認→自己修復まで進
 |---:|---|---|---|
 | 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
 | 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery + lower-ledger SHA256 invariance | **PASS** `b293831` + `d02f824` / `c4007a8` + `a61b2ed` |
-| 3 | no-change verifier contract | `test_selfimprove_no_change_is_not_missing`、material/improve欠落fixture | 必須 |
+| 3 | no-change verifier contract | no-change/material/stale timestamp/stale poll/malformed version fixtures + live material pass | **PASS** `6d47a1e` + `5226b71` + `7de1535` / `141f926` + `0cf5693` |
 | 4 | four-lane state machine | listing/application/reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
 | 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
 | 6 | provider parity | runner transient-fallback fixture + fence assertion | 必須 |
