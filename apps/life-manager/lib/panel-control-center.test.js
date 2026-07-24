@@ -43,6 +43,11 @@ test("PANEL-0 personalized data differs and capabilities stay honest", async () 
   assert.deepEqual(b.connections.email.actions, []); assert.doesNotMatch(JSON.stringify(a), /Dais/);
 });
 
+test("#1085 missing Calendar action uses the clear Connect Calendar label", async () => {
+  const model = await buildControlCenter({ uid: "u-b", chatId: "202" }, { store: fixtureStore(), calendarStatus: async () => "INACTIVE" });
+  assert.equal(model.connections.calendar.actionLabel, "Connect Calendar");
+});
+
 test("PANEL-8h control center preserves an unconfigured call language", async () => {
   const store = fixtureStore();
   store.users.get("u-a").call_language = null;
