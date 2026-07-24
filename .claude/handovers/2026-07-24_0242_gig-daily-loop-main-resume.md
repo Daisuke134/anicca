@@ -16,11 +16,11 @@
   local main only after checking untracked collisions.
 - Implementation worktree: `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable`,
   branch `fix/gig-browser-ownership-20260724`, upstream
-  `origin/fix/gig-browser-ownership-20260724`, verified commit `b293831`.
+  `origin/fix/gig-browser-ownership-20260724`, verified commit `d02f824`.
 - Live runtime repository: `/Users/anicca/profitable-claude`, branch
   `deploy/gig-speedy-reply-cutover`. HEAD advances with concurrent article-writer merges, so treat
-  any concrete SHA only as an observed baseline. Reviewed Gig deploy merges `59957c5` and
-  `c4007a8` must remain first-parent ancestors of the current HEAD. Do not implement here or
+  any concrete SHA only as an observed baseline. Reviewed Gig deploy merges `59957c5`, `c4007a8`,
+  and `a61b2ed` must remain first-parent ancestors of the current HEAD. Do not implement here or
   overwrite concurrent work.
 - Old spec worktree `/Users/anicca/anicca-project/.worktrees/coconala-reply-sla` is historical and
   must not become the continuation SSOT.
@@ -75,12 +75,14 @@
 - Browser `ai.anicca.hf-gig-browser` is running. Gig pass/reply/auditor/core/self-improve labels
   remain installed; latest observed exits were `0`. Daily report has not yet naturally run since
   reload.
-- §6 #2 is closed by reviewed test commit `b293831` and deploy merge `c4007a8`; production code is
-  unchanged. The prior RED was a fixture-only missing `GIG_PASS_ID` that made its fake runner exit
-  `46` before browser recovery. First pass now proves builder 1/browser 1/exit 1 and durable exact
-  artifact/hash/acceptance binding; second pass proves builder/model 0, browser 1, same binding,
-  buyer-visible success, and unchanged lower ledger. Shell integration 17 and related Python 34
-  pass.
+- §6 #2 is closed by reviewed test commits `b293831` + `d02f824` and deploy merges `c4007a8` +
+  `a61b2ed`; production code is unchanged. The prior RED was a fixture-only missing `GIG_PASS_ID`
+  that made its fake runner exit `46` before browser recovery. First pass proves builder
+  1/browser 1/exit 1 and durable exact artifact/hash/acceptance binding; second pass proves
+  builder/model 0, browser 1, same binding, and buyer-visible success. The same fixture proves the
+  strategy/applied/task-request-map/shuppin/shared-lessons/playbook/gig-funnel/earnings ledger
+  SHA256 values remain equal to their initial values after both passes. Shell integration 17 and
+  related Python 34 pass; the focused test also passes on live merge `a61b2ed`.
 - Self-improvement is implemented (`pass_count=529`, `improve_cycle=76`, kept/reverted evidence).
   The verifier still falsely lists six missing items after normal no-change operation.
 - Next safe implementation item while §6 #1 remains externally blocked is §6 #3, the

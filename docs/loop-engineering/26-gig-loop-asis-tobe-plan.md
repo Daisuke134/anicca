@@ -24,7 +24,7 @@ multi-apply設計は詳細または履歴であり、残TODOを独自に持た�
 
 | 分類 | 現在状態 |
 |---|---|
-| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5` とpaid recovery回帰 `b293831` / `c4007a8` が現HEADの祖先であることを不変条件とする |
+| canonical code | `~/profitable-claude/skills/gig-work/`、branch `deploy/gig-speedy-reply-cutover`。HEADは並行article-writer mergeで進むため固定しない。Gig拒否隔離 `4e956f7` / `59957c5` とpaid recovery回帰 `b293831` + `d02f824` / `c4007a8` + `a61b2ed` が現HEADの祖先であることを不変条件とする |
 | browser | launchd所有 `ai.anicca.hf-gig-browser`、Gig専用 CDP `:9223`、profile `gig-daily-driver`、KeepAlive。対話用`:9222`とは分離 |
 | scheduler | pass `:00/:30`、reply 300秒、auditor `:45`、core-health 300秒、selfimprove verify 3600秒、report `09:07`。合計673 scheduled invocation/日、browserは常駐 |
 | completed foundations | disk復旧、browser crash recovery、owner/target分離、共通Gig lock、required launchd lanes、SQLite outbox/intent/fencing/click CAS、artifact idempotency/reconciliation、paid-work browser recovery、material-event gate、bounded context、provider routing、token circuit breaker |
@@ -115,15 +115,18 @@ deploy後のproduction実測ではthread `9995190` action `5` revision `1` が
 
 `test_gig_paid_work_gate.sh`のbrowser-fail REDはproduction recoveryの欠陥ではなく、recovery fixtureだけが
 `GIG_PASS_ID`を渡さず、fake runnerのscope一致検査でexit `46`となってbrowser helper前に停止した
-fixture不整合である。通常fixtureと同じpass identityを与えるreview済みcommit `b293831`、deploy merge
-`c4007a8`で閉じる。productionコードの変更と顧客side effectはない。
+fixture不整合である。通常fixtureと同じpass identityを与えるreview済みcommit `b293831`と、同一fixtureで
+下位8 ledgerのpass間SHA256不変を検査するreview済みcommit `d02f824`、deploy merge `c4007a8` /
+`a61b2ed`で閉じる。productionコードの変更と顧客side effectはない。
 
 回復fixtureの第一passはbuilder `gig-PAID_WORK`を1回、deterministic paid-progress browserを1回だけ実行し、
 browser失敗をexit `1`のまま記録する。stateは`buyer_visible=false`、
 `artifact_ready_pending_browser=true`、`next_action=retry_buyer_visible_delivery`となり、artifact version/path、
 package SHA256、acceptance evidence/deltaを固定する。第二passはrunner/model call 0で同じbindingを再利用し、
 browserだけを1回実行して`buyer_visible=true`、`next_action=await_buyer_feedback`となる。version/path/hash/
-acceptance bindingと下位ledgerは不変で、shell integration 17件と関連Python 34件がPASSする。
+acceptance bindingは同一であり、strategy/applied/task-request-map/shuppin/shared-lessons/playbook/
+gig-funnel/earningsの8 ledgerは第一pass失敗後と第二pass成功後の両方で初期SHA256と一致する。
+live deploy merge `a61b2ed`上でもfocused shell testがPASSし、shell integration 17件と関連Python 34件がPASSする。
 
 ---
 
@@ -521,7 +524,7 @@ draft承認なしで検知→実行→ground-truth確認→自己修復まで進
 | # | To-Be | Test / evidence | Cover |
 |---:|---|---|---|
 | 1 | native reply + authoritative reconcile | `test_coconala_reply_browser.py`、reply outbox integration、controlled P1 DM | 必須 |
-| 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery | **PASS** `b293831` / `c4007a8` |
+| 2 | paid recovery | `test_gig_paid_work_gate.sh` browser-fail recovery + lower-ledger SHA256 invariance | **PASS** `b293831` + `d02f824` / `c4007a8` + `a61b2ed` |
 | 3 | no-change verifier contract | `test_selfimprove_no_change_is_not_missing`、material/improve欠落fixture | 必須 |
 | 4 | four-lane state machine | listing/application/reply/delivery failure-injection suites + controlled P0/P1 transaction | 必須 |
 | 5 | four-lane exact attribution | `test_telegram_reporting.py` + 4 lane完全なnatural 09:07 message | 必須 |
