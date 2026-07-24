@@ -5,7 +5,7 @@ const { execFileSync } = require("node:child_process");
 
 const ISSUE_REPO = "Daisuke134/life-manager";
 const DEV_LOOP_LABEL = "lm:type:self-heal";
-const SOURCE_REF = /^tg:sha256:[a-f0-9]{32}$/;
+const SOURCE_REF = /^(tg|err):sha256:[a-f0-9]{32}$/;
 
 
 function normalizeRow(row) {
@@ -15,10 +15,11 @@ function normalizeRow(row) {
   const summary = String(value.summary || "");
   const labels = Array.isArray(value.labels) ? value.labels.map(String) : [];
   if (!/^[1-9][0-9]*$/.test(id)) throw new Error("feedback_issue_row_invalid");
-  if (!SOURCE_REF.test(sourceRef)) throw new Error("feedback_issue_row_invalid");
+  const sourceMatch = sourceRef.match(SOURCE_REF);
+  if (!sourceMatch) throw new Error("feedback_issue_row_invalid");
   if (!summary || summary.length > 500) throw new Error("feedback_issue_row_invalid");
   if (
-    labels[0] !== "feedback"
+    labels[0] !== (sourceMatch[1] === "tg" ? "feedback" : "error")
     || labels.length > 8
     || labels.some((label) => !/^[a-z-]+$/.test(label))
   ) {
@@ -34,15 +35,20 @@ function normalizeRow(row) {
 
 
 function markerFor(row) {
-  return `lm-feedback:${row.source_ref}`;
+  return row.source_ref.startsWith("tg:")
+    ? `lm-feedback:${row.source_ref}`
+    : `lm-intake:${row.source_ref}`;
 }
 
 
 function buildFeedbackIssue(input) {
   const row = normalizeRow(input);
-  const title = `[feedback] ${row.summary}`.slice(0, 220);
+  const title = `[${row.labels[0]}] ${row.summary}`.slice(0, 220);
+  const heading = row.labels[0] === "feedback"
+    ? "## Privacy-safe feedback"
+    : "## Privacy-safe production error";
   const body = [
-    "## Privacy-safe feedback",
+    heading,
     "",
     row.summary,
     "",
