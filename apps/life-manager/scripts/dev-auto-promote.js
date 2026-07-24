@@ -92,6 +92,7 @@ function loadCandidate(prNumber, issueNumber, gates) {
   const exactFix = new RegExp(`(^|\\n)Fixes #${issueNumber}\\.(\\n|$)`);
   const matchingPrs = openPrs.filter((value) => exactFix.test(String(value.body || "")));
   return {
+    prNumber: Number(pr.number),
     issueNumber,
     closingIssueNumbers: (pr.closingIssuesReferences || []).map((value) => Number(value.number)),
     openPrsForIssue: matchingPrs.length,
@@ -136,6 +137,7 @@ function runFreshAdversary(prNumber, issueNumber, headOid, changedFiles) {
     "Read origin/main...HEAD and relevant tests/spec only. Do not edit, commit, push, merge, deploy,",
     "contact providers, or expose secrets/PII. Find concrete correctness, privacy, path-scope,",
     "test weakness, rollback, or production-safety blockers. PASS only when blocking_findings is empty.",
+    `Return reviewed_head exactly as ${headOid}.`,
   ].join("\n");
   const output = run(RUN_AGENT, [
     "--task-class", "high-value-agent",
@@ -148,12 +150,23 @@ function runFreshAdversary(prNumber, issueNumber, headOid, changedFiles) {
   ], { input: `${prompt}\n` });
   const result = JSON.parse(output);
   return {
-    passed: result.status === "pass"
-      && Array.isArray(result.blocking_findings)
-      && result.blocking_findings.length === 0,
+    passed: reviewPasses(result, headOid),
     evidenceDir,
     result,
   };
+}
+
+
+function reviewPasses(result, expectedHead) {
+  return Boolean(
+    result
+    && result.status === "pass"
+    && result.reviewed_head === expectedHead
+    && Array.isArray(result.blocking_findings)
+    && result.blocking_findings.length === 0
+    && Array.isArray(result.evidence)
+    && result.evidence.length > 0
+  );
 }
 
 
@@ -202,18 +215,43 @@ async function readHealth() {
 }
 
 
-async function waitForExactDeployment(commitHash, timeoutMs = 15 * 60 * 1000) {
+async function waitForExactDeployment(commitHash, options = {}) {
+  const timeoutMs = options.timeoutMs || 15 * 60 * 1000;
+  const createdAfterMs = Number(options.createdAfterMs || 0);
+  const excluded = new Set(options.excludeDeploymentIds || []);
+  const listImpl = options.listImpl || listDeployments;
+  const detailImpl = options.detailImpl || deploymentDetail;
+  const sleepImpl = options.sleepImpl
+    || ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    for (const item of listDeployments()) {
-      const detail = deploymentDetail(item.id);
-      if (detail.meta && detail.meta.commitHash === commitHash) {
+    for (const item of listImpl()) {
+      const detail = detailImpl(item.id);
+      const createdMs = Date.parse(detail.createdAt);
+      if (
+        !excluded.has(detail.id)
+        && Number.isFinite(createdMs)
+        && createdMs > createdAfterMs
+        && detail.meta
+        && detail.meta.commitHash === commitHash
+      ) {
         if (detail.status === "SUCCESS" || TERMINAL_FAILURES.has(detail.status)) return detail;
       }
     }
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await sleepImpl(10000);
   }
   throw new Error("auto_promote_deployment_timeout");
+}
+
+
+function mergePullRequest(prNumber, headOid, options = {}) {
+  const runImpl = options.runImpl || run;
+  runImpl("gh", [
+    "pr", "merge", String(prNumber),
+    "-R", REPO,
+    "--squash", "--admin", "--delete-branch",
+    "--match-head-commit", headOid,
+  ]);
 }
 
 
@@ -273,11 +311,7 @@ async function main() {
   const previousDeploymentHealthy = await readHealth();
   if (!previousDeploymentHealthy) throw new Error("auto_promote_previous_health_red");
 
-  run("gh", [
-    "pr", "merge", String(options.pr),
-    "-R", REPO,
-    "--squash", "--admin", "--delete-branch",
-  ]);
+  mergePullRequest(options.pr, candidate.headOid);
   const merged = ghJson([
     "pr", "view", String(options.pr),
     "--json", "state,mergeCommit,url",
@@ -296,8 +330,12 @@ async function main() {
   });
   if (outcome.action === "rollback") {
     if (!previous.canRollback) throw new Error("auto_promote_rollback_unavailable");
+    const rollbackStartedMs = Date.now();
     deploymentRollback(previous.id);
-    const restored = await waitForExactDeployment(previous.meta.commitHash);
+    const restored = await waitForExactDeployment(previous.meta.commitHash, {
+      createdAfterMs: rollbackStartedMs,
+      excludeDeploymentIds: [previous.id, deployment.id],
+    });
     if (restored.status !== "SUCCESS" || !(await readHealth())) {
       throw new Error("auto_promote_rollback_health_red");
     }
@@ -338,7 +376,16 @@ async function main() {
 }
 
 
-main().catch((error) => {
-  process.stderr.write(`dev-auto-promote failed: ${error.message}\n`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    process.stderr.write(`dev-auto-promote failed: ${error.message}\n`);
+    process.exitCode = 1;
+  });
+}
+
+
+module.exports = {
+  reviewPasses,
+  mergePullRequest,
+  waitForExactDeployment,
+};

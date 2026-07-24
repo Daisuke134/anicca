@@ -283,6 +283,11 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   The controlled file is removed before promotion.
 - Corrective RED `5/6` → GREEN `6/6` prevents the guard's own regex definitions from being mistaken
   for executed actions without exempting executable lines.
+- Fresh adversary method 1 stops before merge with four blockers: stale rollback-deployment
+  acceptance, merge-head TOCTOU, unbound review head, and indirect privileged-action bypass.
+  Corrective provider interaction tests are RED `6/10` → GREEN `10/10`; rollback now requires a
+  new post-mutation deployment ID, merge uses `--match-head-commit`, review output carries exact
+  `reviewed_head`, and routine D0 changes are confined to non-privileged lib/test capabilities.
 - Railway postflight binds the GitHub merge SHA to live `meta.commitHash`, production health, and
   issue closure. Failure triggers one rollback to the pre-verified healthy deployment.
 - The promoter publishes exact merge/deployment/adversary/health receipt values on PR #1092 after

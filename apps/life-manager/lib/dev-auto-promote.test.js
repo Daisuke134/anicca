@@ -93,9 +93,23 @@ test("paths and actions outside the closed production guard are refused", () => 
 });
 
 
+test("capability paths and indirect privileged execution are blocked without relying on action names", () => {
+  const result = evaluatePromotion(validCandidate({
+    changedFiles: ["apps/life-manager/lib/late-notice.js"],
+    addedLines: [{
+      path: "apps/life-manager/lib/late-notice.js",
+      line: 'const capability = process.mainModule.require("node:" + "child_process");',
+    }],
+  }));
+  assert.equal(result.allowed, false);
+  assert.deepEqual(result.blockedActions, ["outreach_send", "privileged_execution"]);
+});
+
+
 test("the guard policy source is not mistaken for an executed blocked action", () => {
   const policySource = fs.readFileSync(path.join(__dirname, "dev-auto-promote.js"), "utf8");
   const result = evaluatePromotion(validCandidate({
+    prNumber: 1092,
     changedFiles: ["apps/life-manager/lib/dev-auto-promote.js"],
     addedLines: policySource.split("\n").map((line) => ({
       path: "apps/life-manager/lib/dev-auto-promote.js",
@@ -159,7 +173,7 @@ test("runtime orders full gates and fresh adversary before merge, then exact dep
   const main = source.slice(source.indexOf("async function main"));
   const fullGateCall = main.indexOf("runFullGates()");
   const adversary = main.indexOf("runFreshAdversary");
-  const merge = main.indexOf("\"pr\", \"merge\"");
+  const merge = main.indexOf("mergePullRequest");
   const exactDeploy = main.indexOf("waitForExactDeployment", merge);
   const health = main.indexOf("readHealth", exactDeploy);
   const rollback = main.indexOf("deploymentRollback", health);

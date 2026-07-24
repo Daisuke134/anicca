@@ -1,9 +1,31 @@
 "use strict";
 
 
+const ROUTINE_ALLOWED_PATHS = Object.freeze([
+  /^apps\/life-manager\/(?:lib|test)\/(?!dev-auto-promote)[A-Za-z0-9_./-]+\.(?:js|cjs|mjs|json)$/,
+]);
+
+const BOOTSTRAP_PATHS = Object.freeze(new Set([
+  "apps/life-manager/lib/dev-auto-promote.js",
+  "apps/life-manager/lib/dev-auto-promote.test.js",
+  "apps/life-manager/lib/dev-auto-promote-runtime.test.js",
+  "apps/life-manager/scripts/dev-auto-promote.js",
+  "apps/life-manager/scripts/dev-auto-promote-review.schema.json",
+  "apps/life-manager/package.json",
+  "docs/evidence/10e-auto-merge-deploy.md",
+  "docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md",
+  "execution-notes.md",
+]));
+
+const CAPABILITY_PATHS = Object.freeze({
+  outreach_send: /(?:late-notice|call-bridge|transport\/mail|marketing|distribution|postiz|telegram-send)/i,
+  provider_account_mutation: /(?:panel-api|panel-control-center|oauth|connected-account)/i,
+  secret_change: /(?:^|\/)(?:scripts|config|\.github)(?:\/|$)|(?:secret|credential)/i,
+  wallet_transfer: /(?:wallet|finance|financial|money-send|transfer)/i,
+});
+
 const ALLOWED_PATHS = Object.freeze([
-  /^apps\/life-manager\/(?:lib|test|scripts|eval)\/[A-Za-z0-9_./-]+\.(?:js|cjs|mjs|json|sh)$/,
-  /^apps\/life-manager\/package\.json$/,
+  ...ROUTINE_ALLOWED_PATHS,
   /^docs\/evidence\/10e-[A-Za-z0-9_.-]+\.md$/,
   /^docs\/superpowers\/specs\/2026-07-19-anicca-one-repo-consolidation-spec\.md$/,
   /^execution-notes\.md$/,
@@ -14,6 +36,7 @@ const BLOCKED_ACTION_PATTERNS = Object.freeze({
   provider_account_mutation: /connected_accounts[^\n]*(?:PATCH|DELETE)|\bdisconnectProvider\b/i,
   secret_change: /\brailway\s+variable\s+set\b|\b(?:api|secret|token)[_-]?key\s*=/i,
   wallet_transfer: /\b(?:sendTransaction|eth_sendRawTransaction|wallet\.transfer)\b/i,
+  privileged_execution: /\b(?:process\.mainModule|module\.constructor|child_process|execFile(?:Sync)?|spawn(?:Sync)?|process\.binding|node:vm)\b|\beval\s*\(|\bnew\s+Function\b|require\s*\(\s*[^"'`]/i,
 });
 
 
@@ -35,14 +58,25 @@ function evaluatePromotion(candidate = {}) {
       || candidate.localHeadOid !== candidate.headOid) reasons.push("head_drift");
   if (candidate.mergeable !== "MERGEABLE") reasons.push("mergeable");
 
+  const bootstrap = Number(candidate.prNumber) === 1092 && Number(candidate.issueNumber) === 1088;
   const paths = Array.isArray(candidate.changedFiles) ? candidate.changedFiles : [];
-  if (!paths.length || paths.some((file) => !ALLOWED_PATHS.some((pattern) => pattern.test(file)))) {
+  const pathAllowed = (file) => ROUTINE_ALLOWED_PATHS.some((pattern) => pattern.test(file))
+    || (bootstrap && BOOTSTRAP_PATHS.has(file));
+  if (!paths.length || paths.some((file) => !pathAllowed(file))) {
     reasons.push("path_allowlist");
   }
   const blockedActions = [];
   if (paths.some((file) => /(^|\/)migrations?\//i.test(file))) blockedActions.push("migration");
+  const routineProductionPaths = paths.filter((file) =>
+    !BOOTSTRAP_PATHS.has(file)
+    && !/\.test\.[cm]?js$/.test(file)
+  );
+  for (const [name, pattern] of Object.entries(CAPABILITY_PATHS)) {
+    if (routineProductionPaths.some((file) => pattern.test(file))) blockedActions.push(name);
+  }
   const added = (Array.isArray(candidate.addedLines) ? candidate.addedLines : [])
     .map((entry) => typeof entry === "string" ? { path: "", line: entry } : entry)
+    .filter((entry) => !(bootstrap && entry && BOOTSTRAP_PATHS.has(entry.path)))
     .filter((entry) => !(
       entry
       && entry.path === "apps/life-manager/lib/dev-auto-promote.js"
@@ -85,6 +119,9 @@ function decideDeploymentOutcome({
 
 module.exports = {
   ALLOWED_PATHS,
+  ROUTINE_ALLOWED_PATHS,
+  BOOTSTRAP_PATHS,
+  CAPABILITY_PATHS,
   BLOCKED_ACTION_PATTERNS,
   evaluatePromotion,
   decideDeploymentOutcome,

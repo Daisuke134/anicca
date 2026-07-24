@@ -21,7 +21,7 @@ Promotion requires all of the following at one exact PR head:
 - base branch `main`, exact local/remote head equality, and GitHub `MERGEABLE`;
 - every changed path inside the Life Manager app or the exact 10e evidence/SSOT files;
 - blocked actions zero: migration, outreach send, provider-account mutation, secret change, and
-  wallet transfer;
+  wallet transfer, plus indirect privileged execution;
 - fresh full `npm test`, every eval at 100%, and panel privacy;
 - fresh artifact-only adversary `PASS` with zero blocking findings;
 - clean worktree after review.
@@ -41,6 +41,30 @@ expressions are classified as actions. Corrective TDD adds a policy-source regre
 RED `5/6`, GREEN `6/6`. Only the four exact regex definition lines in the exact guard module are
 excluded; the same tokens in any executable line or other file remain blocked.
 
+## Fresh adversary corrective
+
+The first real fresh-context adversary returns `FAIL` with four blocking findings, so the promoter
+stops before merge:
+
+1. rollback readback can rediscover the old deployment instead of proving a new rollback;
+2. merge is not atomically pinned to the reviewed head;
+3. adversary output is not explicitly bound to the final head;
+4. action-name regexes alone do not prevent indirect privileged execution.
+
+Corrective TDD adds provider-interaction tests and changes the guard:
+
+- rollback accepts only a different deployment ID created after rollback begins, with the exact
+  previous commit;
+- GitHub merge uses `--match-head-commit` with the reviewed SHA;
+- the review schema requires `reviewed_head`, and PASS requires an exact SHA match;
+- routine D0 changes are restricted to non-privileged `lib/test` capability paths; migration,
+  outreach, provider-account, secret, wallet, and privileged-process capabilities are blocked by
+  path plus syntax. The promoter bootstrap files are allowed only for exact #1088 / PR #1092 and
+  become non-editable to later routine D0 PRs.
+
+Corrective runtime/guard tests are RED `6/10` → GREEN `10/10`. The failed review performs no merge
+or deployment.
+
 ## Rollback and postflight
 
 - Before merge, the promoter records the current successful Railway deployment and verifies current
@@ -57,7 +81,7 @@ local filesystem path, raw provider error, identity, or contact data.
 
 ## Verification
 
-- Focused calendar regression plus promoter contracts: `11/11`.
+- Focused calendar regression plus promoter contracts: `15/15`.
 - Guard-outside live refusal: exit `3`, no merge/deploy.
 - Final full tests, every eval, panel privacy, changed-path secret/PII scans, and fresh adversary run
   are executed by the exact promoter before merge.

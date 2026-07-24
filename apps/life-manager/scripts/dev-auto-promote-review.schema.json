@@ -1,11 +1,15 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "blocking_findings", "evidence"],
+  "required": ["status", "reviewed_head", "blocking_findings", "evidence"],
   "properties": {
     "status": {
       "type": "string",
       "enum": ["pass", "fail"]
+    },
+    "reviewed_head": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
     },
     "blocking_findings": {
       "type": "array",
