@@ -1,0 +1,1 @@
+Controlled guard-refusal probe. This file must never reach main.
