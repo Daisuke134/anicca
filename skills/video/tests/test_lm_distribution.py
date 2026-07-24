@@ -37,7 +37,13 @@ class DistributionTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def adapters(self, *, ig_outcome="published", tt_state="PUBLISHED"):
+    def adapters(self, *, ig_outcome="published", tt_state="PUBLISHED", tt_extra=None):
+        tt_result = {
+            "state": tt_state,
+            "post_url": "https://www.tiktok.com/@life/video/123",
+            "post_id": "postiz-real",
+            **(tt_extra or {}),
+        }
         ig = executable(
             self.root / "ig.py",
             "#!/usr/bin/env python3\n"
@@ -50,7 +56,7 @@ class DistributionTests(unittest.TestCase):
             "#!/usr/bin/env python3\n"
             "import json,os,sys\n"
             "open(os.environ['CALLS'],'a').write(json.dumps({'platform':'tiktok','argv':sys.argv[1:]})+'\\n')\n"
-            f"print(json.dumps({{'state':'{tt_state}','post_url':'https://www.tiktok.com/@life/video/123','post_id':'postiz-real'}}))\n",
+            f"print(json.dumps({tt_result!r}))\n",
         )
         return ig, tt
 
@@ -58,6 +64,7 @@ class DistributionTests(unittest.TestCase):
         ig, tt = self.adapters(
             ig_outcome=overrides.pop("ig_outcome", "published"),
             tt_state=overrides.pop("tt_state", "PUBLISHED"),
+            tt_extra=overrides.pop("tt_extra", None),
         )
         env = dict(os.environ, CALLS=str(self.calls))
         config = lm_distribution.DistributionConfig(
@@ -115,6 +122,46 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(second["instagram_url"], first["instagram_url"])
         self.assertEqual(second["tiktok_url"], first["tiktok_url"])
         self.assertEqual(len(self.ledger.read_text().splitlines()), 2)
+
+    def test_direct_route_cost_and_logged_out_provenance_survive_into_ledger(self):
+        self.run_distribution(
+            tt_extra={
+                "route": "direct_browser",
+                "provider_cost_usd": 0,
+                "logged_out_readback": True,
+                "migration_date": "2026-07-24",
+            }
+        )
+        row = [
+            item
+            for item in map(json.loads, self.ledger.read_text().splitlines())
+            if item["platform"] == "tiktok"
+        ][0]
+        self.assertEqual(row["route"], "direct_browser")
+        self.assertEqual(row["provider_cost_usd"], 0)
+        self.assertEqual(row["logged_out_readback"], True)
+        self.assertEqual(row["migration_date"], "2026-07-24")
+
+    def test_postiz_remains_default_until_explicit_direct_migration_gate(self):
+        here = self.root / "lm-distribution"
+        self.assertEqual(
+            lm_distribution.default_tiktok_adapter(here, {}),
+            here / "postiz_video.py",
+        )
+        self.assertEqual(
+            lm_distribution.default_tiktok_adapter(
+                here,
+                {"LM_TIKTOK_DIRECT_MIGRATION": "1"},
+            ),
+            here / "tiktok_direct.mjs",
+        )
+        self.assertEqual(
+            lm_distribution.default_tiktok_adapter(
+                here,
+                {"LM_TIKTOK_DIRECT_MIGRATION": "true"},
+            ),
+            here / "postiz_video.py",
+        )
 
     def test_tiktok_profile_url_never_counts_as_a_published_artifact(self):
         video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
