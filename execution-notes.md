@@ -135,3 +135,8 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 
 ## 11a PHY-a — L2 done (2026-07-24); L3 (real calendar detection) pending
 - care-detector.js personal-cadence + explicit-goal detection, no fixed cycle (0-1 visits never flag), no diagnosis fields; phy-cases.jsonl 12/12 (100%); contract 4/4; full suite fail 0. Spec §10 updated (row stays pending, L2 recorded).
+
+## 8i REPO-CONSOLIDATE — DONE (2026-07-24, production cutover complete)
+- Cutover executed on the Mac-side agent with Railway access: service re-pointed to life-manager/apps/life-manager, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
+- Independently verified from cloud session: anicca-products archived=true via GitHub API readback; evidence report in docs/evidence/8i-cutover-report.md (PR #1077); merge containment of a7ac84d4 in origin/main.
+- §10: 8i done. Pending count 24.
