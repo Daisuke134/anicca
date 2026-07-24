@@ -294,3 +294,19 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Six distinct real days remain. The loop owns readiness calculation; fixtures, duplicate same-day
   runs, simulation, and backfill cannot complete the row. Pending remains 18; next is independent
   10i. Evidence: `docs/evidence/10f-daily-self-build-started.md`.
+
+## 10i BRAIN-c — done (real personalized action E2E)
+- Production paid/calendar-connected context yields five real upcoming event candidates; one real
+  provider event `2ft16f…` is selected without persisting title/location/account identity.
+- The current explicit user instruction supplies `explicit_goal` and `delegation` provenance.
+  Existing `opportunity-engine.js` returns delegated/reversible/low-risk `act`; approval questions
+  remain zero.
+- Real Gmail send id `19f9380e8cbc40f9` is read back with RFC Message-ID
+  `<CAFe2jSZ67NfG8FML7qkRPpkKxzO9XAJim8i1Hc8GN=6-9dO-BQ@mail.gmail.com>`.
+- Post-action receipts are confirmed Google Calendar event `fd7rvh2u2sbqa0e4q4vl6vo0rs` and real
+  Telegram message id `3392`.
+- The missing production profile-email boundary fails before providers. Corrective account
+  selection is RED `3/4` → GREEN, and the provider-side completion marker is RED `4/5` → GREEN
+  `9/9`. A real rerun refuses with zero duplicate side effects.
+- Full tests and every eval/privacy gate pass. Pending becomes 17; next is 11a L3. Evidence:
+  `docs/evidence/10i-personalized-action-e2e.md`.
