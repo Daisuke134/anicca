@@ -204,3 +204,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   no file is uploaded, and no post is created.
 - Evidence: `docs/evidence/9e-tiktok-direct-migration-started.md`. Pending remains 22; next is 9f,
   whose Phase 1 prerequisite is evaluated before any X handoff.
+
+## 9f MKT-f — prerequisite blocked; no owner handoff
+- A closed gate reads the canonical §10 statuses for 8e/8f/9b/9c/9d/9e. The live blockers are
+  `8e, 8f, 9d, 9e`.
+- Live output keeps both owner handoff and agent posting false. X credential/session/draft/upload/
+  post side effects are zero.
+- Even with all prerequisites done, the gate permits only a minimal owner handoff and never agent
+  impersonation. A real owner status URL makes the launch permanently one-time.
+- Contract tests are `5/5`. Evidence: `docs/evidence/9f-x-owner-launch-blocked.md`.
+- Pending remains 22; cursor advances to independent 10a.
