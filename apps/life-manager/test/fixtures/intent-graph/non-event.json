@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ne-inferred-1", "uid": "u-nonevent", "kind": "repeated_preference",
+    "statement": "交流イベントに参加するのが好き",
+    "provenance": { "source": "calendar_pattern", "evidence": "2 meetup events in 60d", "observedAt": "2026-07-06T00:00:00.000Z" },
+    "confidenceTier": "inferred", "confidence": 0.3, "expiresAt": null, "status": "corrected", "supersedes": null
+  },
+  {
+    "id": "ne-corr-1", "uid": "u-nonevent", "kind": "correction",
+    "statement": "イベントは仕事で仕方なく行っただけ。誘いは不要",
+    "provenance": { "source": "correction", "evidence": "TG reply 2026-07-15", "observedAt": "2026-07-15T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": null, "status": "active", "supersedes": "ne-inferred-1"
+  },
+  {
+    "id": "ne-prohib-1", "uid": "u-nonevent", "kind": "prohibition",
+    "statement": "新しい予定の提案はしない。既存予定の管理だけしてほしい",
+    "provenance": { "source": "telegram_reply", "evidence": "TG closed-Q answer 2026-07-15", "observedAt": "2026-07-15T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": null, "status": "active", "supersedes": null
+  },
+  {
+    "id": "ne-goal-1", "uid": "u-nonevent", "kind": "explicit_goal",
+    "statement": "毎晩23時までに就寝する",
+    "provenance": { "source": "user_message", "evidence": "TG message 2026-07-16", "observedAt": "2026-07-16T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": null, "status": "active", "supersedes": null
+  }
+]
