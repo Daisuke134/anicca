@@ -140,3 +140,23 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Cutover executed on the Mac-side agent with Railway access: service re-pointed to life-manager/apps/life-manager, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
 - Independently verified from cloud session: anicca-products archived=true via GitHub API readback; evidence report in docs/evidence/8i-cutover-report.md (PR #1077); merge containment of a7ac84d4 in origin/main.
 - §10: 8i done. Pending count 24.
+
+## 9b MKT-b / M-2 — done
+- Existing `ai.anicca.life-manager-daily` label, 10:15 cadence, rotation, account, and shared
+  agent-runner remain in place. The slideshow/card creative contract is replaced by the canonical
+  16-row local FFmpeg video renderer.
+- TDD: missing generator/runtime RED, then generator `5/5` and runtime/launchd `6/6` GREEN.
+  Controlled method 1 exposes recursive wrapper invocation; corrective exit-73 guard is RED→GREEN.
+  Method 2 exposes combined generation/distribution self-monitoring; it is stopped before side
+  effects. Method 3 locks distribution for 9c and succeeds as a bounded generation-only pass.
+- Fresh Luna probe returns `LM_LUNA_PROVIDER_OK`. launchd run count advances and finishes exit 0
+  with `marketing-agent` → `luna-medium-decision` → `codex/gpt-5.6-luna`, attempt 1.
+- Production rotation reads back A01/A02/A03 on three consecutive logical days. All three are
+  1080×1920 H.264/AAC, 34.666667s and fresh full-decode exit 0.
+- Runtime ledger records provider-reported token counts, subscription cost tier, null unavailable
+  provider-equivalent price, and actual marginal cost USD 0 without inventing a price.
+- PR #1079 security-gate audit: accepted main run 30069163816 already has the identical
+  repository-wide baseline failures (PII shapes 60, gitleaks findings 24, Python workflow missing
+  pytest/hypothesis). Changed-path secret scan and every 9b test/eval pass; no detector or test is
+  weakened to make the PR green.
+- Evidence: `docs/evidence/9b-marketing-video-runtime.md`. Pending count becomes 23; next is 9c.
