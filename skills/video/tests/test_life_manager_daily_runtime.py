@@ -34,9 +34,9 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         )
         self.assertEqual(data["StartCalendarInterval"], {"Hour": 10, "Minute": 15})
         self.assertEqual(data["ProcessType"], "Background")
-        self.assertEqual(data["EnvironmentVariables"], {"LM_DAILY_GENERATION_ONLY": "1"})
+        self.assertEqual(data.get("EnvironmentVariables", {}), {})
 
-    def run_daily(self, generator_rc=0, runner_rc=0):
+    def run_daily(self, generator_rc=0, distributor_rc=0, runner_rc=0):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
@@ -63,16 +63,26 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
             f"\"usage\":{{\"provider_cost_usd\":0,\"cost_basis\":\"subscription\"}}}}' >\"$evidence/summary.json\"\n"
             f"exit {runner_rc}\n",
         )
+        distributor = executable(
+            root / "distributor",
+            "#!/usr/bin/env bash\n"
+            "printf '%s\\n' \"$@\" >\"$CAPTURE_DISTRIBUTOR_ARGS\"\n"
+            f"[ {distributor_rc} -eq 0 ] || exit {distributor_rc}\n"
+            "printf '%s\\n' '{\"creative_id\":\"A02\",\"instagram_url\":\"https://www.instagram.com/reel/IGREAL/\","
+            "\"tiktok_url\":\"https://www.tiktok.com/@life/video/123\"}'\n",
+        )
         env = os.environ.copy()
         env.update(
             {
                 "HOME": str(home),
                 "LM_VIDEO_GENERATOR": str(generator),
                 "RUN_AGENT_BIN": str(runner),
+                "LM_VIDEO_DISTRIBUTOR": str(distributor),
                 "LM_DAILY_RUN_LEDGER": str(root / "daily-runs.jsonl"),
                 "LM_DAILY_USAGE_LEDGER": str(root / "usage.jsonl"),
                 "CAPTURE_ARGS": str(root / "args"),
                 "CAPTURE_PROMPT": str(root / "prompt"),
+                "CAPTURE_DISTRIBUTOR_ARGS": str(root / "distributor-args"),
             }
         )
         result = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
@@ -86,8 +96,15 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         prompt = (root / "prompt").read_text(encoding="utf-8")
         self.assertIn("/tmp/exact-daily.mp4", prompt)
         self.assertIn("A02", prompt)
-        self.assertIn("slideshow/card generation is banned", prompt)
+        self.assertIn("DETERMINISTIC DISTRIBUTION COMPLETE", prompt)
+        self.assertIn("https://www.instagram.com/reel/IGREAL/", prompt)
+        self.assertIn("https://www.tiktok.com/@life/video/123", prompt)
+        self.assertIn("not repost either platform", prompt)
         self.assertIn("Do not invoke life-manager-daily.sh", prompt)
+        self.assertIn("Do not inspect, monitor, or wait for this active process", prompt)
+        distribution_args = (root / "distributor-args").read_text(encoding="utf-8")
+        self.assertIn("--creative-id\nA02\n", distribution_args)
+        self.assertIn("--video\n/tmp/exact-daily.mp4\n", distribution_args)
         row = json.loads((root / "daily-runs.jsonl").read_text(encoding="utf-8"))
         self.assertEqual(row["status"], "success")
         self.assertEqual(row["model"], "gpt-5.6-luna")
@@ -114,6 +131,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
                 "LM_DAILY_ACTIVE": "1",
                 "LM_VIDEO_GENERATOR": str(root / "generator"),
                 "RUN_AGENT_BIN": str(root / "runner"),
+                "LM_VIDEO_DISTRIBUTOR": str(root / "distributor"),
                 "CAPTURE_ARGS": str(root / "recursive-args"),
                 "CAPTURE_PROMPT": str(root / "recursive-prompt"),
             }
@@ -135,6 +153,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
                 "LM_DAILY_USAGE_LEDGER": str(root / "generation-only-usage.jsonl"),
                 "CAPTURE_ARGS": str(root / "generation-only-args"),
                 "CAPTURE_PROMPT": str(root / "generation-only-prompt"),
+                "CAPTURE_DISTRIBUTOR_ARGS": str(root / "generation-only-distributor-args"),
             }
         )
         generation_only = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
@@ -147,6 +166,14 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn(str(ROOT / "skills/video/daily-lm-video/creative-bank.jsonl"), prompt)
         self.assertIn(str(root / "home/.openclaw/state/lm-video/daily-render-state.jsonl"), prompt)
         self.assertIn("Do not search", prompt)
+        self.assertFalse((root / "generation-only-distributor-args").exists())
+
+    def test_distribution_failure_propagates_without_invoking_agent(self):
+        result, root = self.run_daily(distributor_rc=29)
+        self.assertEqual(result.returncode, 29)
+        self.assertTrue((root / "distributor-args").exists())
+        self.assertFalse((root / "args").exists())
+        self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
 
     def test_runner_failure_and_timeout_propagate_and_do_not_touch_success_marker(self):
         for runner_rc in (23, 124):
