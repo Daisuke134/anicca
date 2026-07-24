@@ -190,3 +190,40 @@ b8c12d7bc235f5c26d83a5c6158bdc07f730d7e7bb34b78b9624fc3222182d25  apps/life-call
 82d669df3151e1e766e8bca46a730395284d523788f9afd4f65a969aec01f545  apps/life-call/test/tenant-isolation.test.js  ->  apps/life-manager/test/tenant-isolation.test.js
 820917205b40e2c88e5cac67a113f6e9a582e8cf6dbcf49956ec68defd68a90e  apps/life-call/test/testcall-ratelimit.test.js  ->  apps/life-manager/test/testcall-ratelimit.test.js
 fe33d18f12746bda9a818ef25838d9742d4c8eea6f2b139fc7e8c8e43488c0ea  apps/life-call/test/wake-levels.test.js  ->  apps/life-manager/test/wake-levels.test.js
+
+# ============================================================
+# MIGRATION ADAPTATIONS (semantic-equivalence deltas)
+# ============================================================
+# The 183 apps/life-call files are byte-identical to source EXCEPT one
+# required self-path update below. Byte-equivalence verified: 182/183 identical.
+#
+# 1. apps/life-manager/scripts/daily-preflight.js  (1 line)
+#    - currentSourceSnapshotRef(): "HEAD:apps/life-call" -> "HEAD:apps/life-manager"
+#    - Reason: the app reads its OWN committed git tree as the source snapshot ref.
+#      After the directory rename the path had to follow. Pure path rename, no logic change.
+#      Restores test: lib/daily-preflight-final-schema.test.js (offline CLI 9/9 report).
+#
+# ADDITIONAL FILES migrated from OUTSIDE apps/life-call (byte-identical), required
+# because the migrated test suite is contractually coupled to them:
+#
+# A. docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
+#    <- anicca-products:docs/superpowers/specs/ (same path). Canonical SSOT spec.
+#    Read by lib/feature-discovery.test.js, lib/panel-corrective-red.test.js (§9.11 copy verbatim).
+#
+# B. apps/landing/{app/lm/LmClient.tsx,LmBody.tsx,page.tsx,
+#                  netlify/functions/lm-onboard.js,calendar-connect.js}
+#    <- anicca-products:apps/landing/ (scoped LM subset only; NOT the 397-file shared site).
+#    Executed/read by test/onboarding-resume-contract.test.js,
+#    test/calendar-connect-signature-contract.test.js. See apps/landing/README.md.
+#
+# C. .vcsdd/features/life-manager-cost-connect-reliability/evidence/fixtures/
+#       transit-plan-tokyo-shinjuku.json
+#    <- anicca-products:.vcsdd/ (single fixture; synthetic JR transit data, no PII).
+#    Read by lib/transit.test.js. Rest of .vcsdd/ (evidence/logs/media) NOT migrated.
+#
+# VERIFICATION (target apps/life-manager):
+#   npm test            -> 606 pass / 0 fail
+#   npm run eval        -> calendar 21/21, late 12/12, context 12/12, score 27/27 (100%)
+#   npm run eval:panel-privacy -> api=177 browser=63 recipes=19 channels=9 (pass)
+#   node --check server.js / scheduler.js -> OK
+#   Pre-existing (source-identical, non-blocking): smoke:panel-api fixture tenant-filter assert.

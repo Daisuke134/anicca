@@ -108,10 +108,10 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - [x] Secret/PII scan: clean (only synthetic fixture phones, no keys/real PII)
 
 ### Remaining gates (blockers noted)
-- [ ] Focused tests on migrated lib/**
-- [ ] Full Life Manager test suite (npm test in apps/life-manager)
-- [ ] Every eval suite (calendar / late / context-onboarding / score-semantics / panel-privacy)
-- [ ] Production build
+- [x] Focused tests on migrated lib/** (all green)
+- [x] Full Life Manager test suite: 606 pass / 0 fail
+- [x] Every eval suite: calendar 21/21, late 12/12, context 12/12, score 27/27, panel-privacy pass
+- [x] Production build smoke: server.js/scheduler.js syntax OK; nixpacks entrypoints valid
 - [ ] Fresh-context adversarial review from detached candidate commit
 - [ ] Normal PR + merge
 - [ ] Railway deploy of exact merged commit  — NEEDS Railway credentials
