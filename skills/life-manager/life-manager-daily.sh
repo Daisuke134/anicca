@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# One bounded Life Manager marketing pass. The launchd job, account, rotation and posting
+# route predate 9b; only the creative renderer and agent runtime contract change here.
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
+set -uo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON="${PYTHON_BIN:-$(command -v python3 || echo /opt/homebrew/bin/python3)}"
+RUN_AGENT="${RUN_AGENT_BIN:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
+VIDEO_GENERATOR="${LM_VIDEO_GENERATOR:-$HERE/../video/daily-lm-video/generate.py}"
+LOG="${LM_DAILY_LOG:-$HOME/.openclaw/logs/life-manager-daily.log}"
+RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.openclaw/state/lm-video/daily-run-ledger.jsonl}"
+USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.openclaw/state/lm-video/agent-usage.jsonl}"
+MARKETING_LEDGER="${LM_MARKETING_LEDGER:-$HOME/profitable-claude/skills/life-manager/state/marketing-actions.jsonl}"
+mkdir -p "$(dirname "$LOG")" "$(dirname "$RUN_LEDGER")" "$(dirname "$USAGE_LEDGER")"
+printf '=== life-manager-daily run %s ===\n' "$(date '+%F %T %Z')" >>"$LOG"
+
+if [ "${AGENT_WIRING_PROBE_ONLY:-0}" = "1" ]; then
+  printf '{"task_class":"marketing-agent","runner":"%s","generator":"%s"}\n' "$RUN_AGENT" "$VIDEO_GENERATOR"
+  exit 0
+fi
+
+set +e
+GEN_RESULT="$("$VIDEO_GENERATOR" 2>>"$LOG")"
+GEN_RC=$?
+set -e
+if [ "$GEN_RC" -ne 0 ]; then
+  printf 'daily-lm-video failed rc=%s; agent not invoked\n' "$GEN_RC" >>"$LOG"
+  exit "$GEN_RC"
+fi
+
+FIELDS="$(GEN_RESULT="$GEN_RESULT" "$PYTHON" -c '
+import json, os
+lines = os.environ["GEN_RESULT"].splitlines()
+if len(lines) != 1:
+    raise SystemExit(2)
+data = json.loads(lines[0])
+creative_id = data.get("selected_id")
+output = data.get("output")
+duration = data.get("duration_seconds")
+if not isinstance(creative_id, str) or not creative_id or not isinstance(output, str) or not output:
+    raise SystemExit(2)
+float(duration)
+print("\t".join((creative_id, output, str(duration))))
+' 2>>"$LOG")"
+PARSE_RC=$?
+if [ "$PARSE_RC" -ne 0 ]; then
+  printf 'daily-lm-video returned invalid result rc=%s; agent not invoked\n' "$PARSE_RC" >>"$LOG"
+  exit "$PARSE_RC"
+fi
+IFS=$'\t' read -r LM_DAILY_CREATIVE_ID LM_DAILY_VIDEO LM_DAILY_VIDEO_DURATION <<<"$FIELDS"
+export LM_DAILY_CREATIVE_ID LM_DAILY_VIDEO LM_DAILY_VIDEO_DURATION
+
+LM_DAILY_CREATIVE_ALREADY_POSTED="$(LEDGER="$MARKETING_LEDGER" CREATIVE_ID="$LM_DAILY_CREATIVE_ID" CREATIVE_OUTPUT="$LM_DAILY_VIDEO" "$PYTHON" -c '
+import json, os
+found = False
+try:
+    for line in open(os.environ["LEDGER"], encoding="utf-8"):
+        row = json.loads(line)
+        if (
+            row.get("creative_id") == os.environ["CREATIVE_ID"]
+            and row.get("creative_output") == os.environ["CREATIVE_OUTPUT"]
+            and str(row.get("action", "")).startswith("posted")
+        ):
+            found = True
+except FileNotFoundError:
+    pass
+print("1" if found else "0")
+' 2>>"$LOG")"
+export LM_DAILY_CREATIVE_ALREADY_POSTED
+
+PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the loop.
+This is the existing ai.anicca.life-manager-daily route. Preserve its existing Instagram account,
+CloakBrowser daily-driver posting method, Reddit karma gate, CEO report, cost recording, Telegram
+report and logged-out verification. Do not create a new account or a new marketing loop.
+
+DAILY VIDEO CONTRACT: the exact MP4 is $LM_DAILY_VIDEO and the exact creative id is
+$LM_DAILY_CREATIVE_ID (duration $LM_DAILY_VIDEO_DURATION seconds). Post this exact MP4 through the
+existing warmed Life Manager Instagram route. slideshow/card generation is banned; do not generate
+or substitute another creative. LM_DAILY_CREATIVE_ALREADY_POSTED=$LM_DAILY_CREATIVE_ALREADY_POSTED
+was determined by exact creative id plus exact output in marketing-actions.jsonl. When it is 1,
+do not repost Instagram; continue Reddit, CEO/cost ledger and Telegram reporting. When it is 0,
+post the MP4 even if an earlier non-video post exists today. The Instagram row must record
+creative_id=$LM_DAILY_CREATIVE_ID and creative_output=$LM_DAILY_VIDEO exactly.
+
+IDENTITY AND EVIDENCE: hard-check the existing loop-owned account before posting; never post to a
+personal account. A post counts only after a fresh logged-out readback returns the same public URL.
+On any provider, browser or publication failure, record an honest failure and return a failing
+result; never turn an internal failure into success. Send the existing one-screen Telegram report
+with the real provider message id after all ledgers are written."
+
+EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.openclaw/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
+export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
+# 9b requires Luna and forbids the retired Claude/CLIProxy fallback. marketing-agent selects
+# gpt-5.6-luna; provider pinning makes a Luna failure visible instead of switching providers.
+export AGENT_RUNNER_PROVIDER="codex"
+
+set +e
+printf '%s\n' "$PROMPT" | "$RUN_AGENT" --task-class marketing-agent \
+  --evidence-dir "$EVIDENCE_DIR" --task-label life-manager-daily --loop life-manager >>"$LOG" 2>&1
+RUNNER_RC=$?
+set -e
+
+SUMMARY="$EVIDENCE_DIR/summary.json"
+EFFECTIVE_RC="$RUNNER_RC"
+if [ "$RUNNER_RC" -eq 0 ]; then
+  if ! "$PYTHON" - "$SUMMARY" <<'PY' >/dev/null 2>&1
+import json, pathlib, sys
+summary = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+if summary.get("status") != "success":
+    raise SystemExit(1)
+if summary.get("selected_provider") != "codex" or summary.get("selected_model") != "gpt-5.6-luna":
+    raise SystemExit(1)
+PY
+  then
+    EFFECTIVE_RC=70
+    printf 'runner success rejected: missing success summary or non-Luna runtime\n' >>"$LOG"
+  fi
+fi
+
+SUMMARY="$SUMMARY" RUN_LEDGER="$RUN_LEDGER" CREATIVE_ID="$LM_DAILY_CREATIVE_ID" \
+CREATIVE_OUTPUT="$LM_DAILY_VIDEO" DURATION="$LM_DAILY_VIDEO_DURATION" EXIT_CODE="$EFFECTIVE_RC" \
+"$PYTHON" - <<'PY'
+import json, os, pathlib
+from datetime import datetime, timezone
+
+summary_path = pathlib.Path(os.environ["SUMMARY"])
+summary = {}
+if summary_path.is_file():
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+attempt = {}
+attempts_path = summary.get("attempts_path")
+if attempts_path and pathlib.Path(attempts_path).is_file():
+    lines = pathlib.Path(attempts_path).read_text(encoding="utf-8").splitlines()
+    if lines:
+        attempt = json.loads(lines[-1])
+usage = attempt.get("usage") or summary.get("usage") or {}
+exit_code = int(os.environ["EXIT_CODE"])
+row = {
+    "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    "status": "success" if exit_code == 0 else "failed",
+    "exit_code": exit_code,
+    "provider": summary.get("selected_provider") or attempt.get("provider"),
+    "model": summary.get("selected_model") or attempt.get("model"),
+    "effort": summary.get("selected_effort") or attempt.get("effort"),
+    "attempt_count": summary.get("attempt_count"),
+    "creative_id": os.environ["CREATIVE_ID"],
+    "creative_output": os.environ["CREATIVE_OUTPUT"],
+    "duration_seconds": float(os.environ["DURATION"]),
+    "provider_cost_usd": usage.get("provider_cost_usd"),
+    "cost_basis": usage.get("cost_basis", "unavailable"),
+}
+ledger = pathlib.Path(os.environ["RUN_LEDGER"])
+ledger.parent.mkdir(parents=True, exist_ok=True)
+with ledger.open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+PY
+
+printf '=== life-manager-daily done rc=%s %s ===\n' "$EFFECTIVE_RC" "$(date '+%F %T %Z')" >>"$LOG"
+if [ "$EFFECTIVE_RC" -eq 0 ]; then
+  mkdir -p "$HOME/.openclaw/state"
+  touch "$HOME/.openclaw/state/.life-manager-core-last-pass"
+fi
+exit "$EFFECTIVE_RC"

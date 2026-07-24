@@ -1,0 +1,16 @@
+{"id":"A01","pain":"アラーム3回スヌーズ、起きた瞬間から負け","moment":"電話が鳴る。声で『9:30 出発。雨だから10分早く』","punchline":"人に起こされた朝","material_hint":"スヌーズを止める手元→実 call 着信"}
+{"id":"A02","pain":"移動時間を自分で逆算して手入力","moment":"calendar に書いた瞬間、travel time が勝手に埋まる","punchline":"何も。気づいたら埋まってる","material_hint":"calendar 入力の手元→travel time block"}
+{"id":"A03","pain":"『そろそろ出なきゃ』を頭の RAM に常駐させ続ける","moment":"T-10 / T-5 の2段階 call。出るまで鳴る","punchline":"頭から『時計を見る仕事』が消える","material_hint":"時計を見る手元→実 call 着信→外出"}
+{"id":"A04","pain":"遅れそうな電車内で謝罪文を書く羞恥","moment":"間に合わないと確定した瞬間、先方へ15分遅れるメールが飛ぶ","punchline":"謝罪という仕事の消滅","material_hint":"電車内で文面を打つ手元→送信済みメール"}
+{"id":"A05","pain":"次の場所への経路を毎回検索","moment":"連続 event は前の会場起点で出発 call","punchline":"迷子にならない","material_hint":"地図検索の手元→経路→実 call 着信"}
+{"id":"A06","pain":"だらだらスマホ、罪悪感つき夜更かし","moment":"電話または Telegram で『そろそろ寝よう。明日は7:00起き』","punchline":"誰かが見てくれてる","material_hint":"暗い部屋のスマホ→call または実 Telegram 通知"}
+{"id":"B01","pain":"『歯医者に行かなきゃ』が頭に住み続けて数年","moment":"生活圏で空きを探して予約する","punchline":"木曜18時、◯◯歯科取った。calendar に入れた","material_hint":"歯の付箋→予約画面→実 Telegram 報告"}
+{"id":"B02","pain":"予約する気力が出ない週末","moment":"髪が伸びる周期に、いつもの店の空きを取る","punchline":"土曜11時、いつもの店","material_hint":"伸びた髪→美容院 calendar→実通知"}
+{"id":"B03","pain":"誰にも今日を話さない孤独","moment":"毎晩、傾聴 call が『今日どうだった?』と聞く","punchline":"会話そのものが報告になる","material_hint":"一人の夜→実 call 着信→会話"}
+{"id":"B04","pain":"深夜の暴食、課金、SNS","moment":"悪い習慣の時間に nudge が先回り","punchline":"23時だ。歯磨きして寝よう","material_hint":"深夜の菓子・課金・scroll→実通知"}
+{"id":"B05","pain":"大事な予定の直前に不安と自己否定が湧く","moment":"schedule から効く瞬間を判定して affirmation を通知","punchline":"準備は全部入ってる。あとは話すだけ","material_hint":"予定直前の手元→実 affirmation 通知"}
+{"id":"B06","pain":"収入が労働時間の等価交換のみ","moment":"agent が自分の wallet で稼ぐ","punchline":"今月 $120 稼いだ。$100 送金済み。on-chain: 0x…","material_hint":"作業する手元→wallet/on-chain→月次報告"}
+{"id":"B07","pain":"口座 gate が未解錠で fiat を受け取れない","moment":"gate 解錠時、fiat 分を口座へ直行","punchline":"口座に ¥8,400 入金した","material_hint":"銀行口座設定→実入金通知"}
+{"id":"C01","pain":"calendar に『会議』1語だけで場所が曖昧","moment":"『これオンライン?』を2択で一度だけ聞く","punchline":"同種 event は二度と聞かない","material_hint":"calendar の会議→2択 Telegram 質問"}
+{"id":"C02","pain":"『歯医者』だけで場所が不明","moment":"『いつもの◯◯歯科?』を2択で一度だけ聞く","punchline":"次からは聞かない","material_hint":"calendar の歯医者→2択 Telegram 質問"}
+{"id":"C03","pain":"FINANCIAL の送金先が未登録","moment":"銀行口座か wallet address を2択で一度だけ聞く","punchline":"登録後は質問せず報告だけ届く","material_hint":"送金結果→2択 Telegram 質問→報告"}
