@@ -1,13 +1,30 @@
 # 26 — gig ループ AS-IS / TO-BE / 実行計画（compact-proof 正本・忘れ厳禁）
 
-**これは gig ループを「自己検証・自己修復・自己改善する best-practice browser-use loop」に直すための唯一の durable 計画**。会話は compact で揮発するため、現行状態と残TODOはここに固定する。
+**これは gig ループを「自己検証・自己修復・自己改善する best-practice browser-use loop」に直すための唯一の durable 計画兼SSOT**。会話は compact で揮発するため、現行状態、残TODO、実行順序、repository routingはこのファイルだけに固定する。
 
 ## §0 現行正本の読み方
 
-このファイルの **§0 と §6だけ**が現在状態・残TODO・実行順序の正本である。§1以降の日付付き
+このファイルだけがGig loopの現在状態を持つ。**§0 と §6だけ**が現在状態・残TODO・実行順序の
+正本である。新しいhandover、plan、runbook、memoryへ現在状態や独自TODOを複製しない。他文書から
+現在状態へ触れる必要がある場合は、このファイルへの `→参照` 1行だけにする。§1以降の日付付き
 AS-IS、実装ledger、移設記録、旧番号は根拠を残す履歴であり、現在状態として読み戻さない。
 `loop-control-plane-token-reduction.md`、`GIG_PASS_RUNBOOK.md`、移設inventory、self-improving
 multi-apply設計は詳細または履歴であり、残TODOを独自に持たない。
+
+### §0.0 SSOT更新・repository routing契約
+
+- 実行可能なTODOは§6の先頭から**常に1件だけ**着手する。複数TODOの並行実装、先回り実装、
+  generalized framework拡張をしない。external blocked項目は監視対象であり、実装枠を塞がない。
+- 1件のdone evidenceが揃ったcommitで、§0.1、§6、§6.1を同時更新する。完了項目は§6から外して
+  §0.1のcompletedへ移し、次の1件だけをactiveにする。仕様更新なしに次のTODOへ進まない。
+- 一時的なPID、run番号、会話上のalignment説明を別SSOTとして保存しない。durableな結果と
+  commit/evidenceだけを本ファイルへ反映する。
+
+| route | path / branch | 不変条件 |
+|---|---|---|
+| spec/control | `/Users/anicca/anicca-project` / `main` / `origin/main` | shared worktreeのuser-owned untrackedを保全する。reset、clean、mass-add、blind switchをしない。spec編集はcurrent `origin/main`からclean `.worktrees/gig-main-*`を作り、review/merge後にlocal mainをcollision-checkしてfast-forwardする |
+| implementation | `/Users/anicca/anicca-project/.worktrees/gig-browser-ownership-profitable` / `fix/gig-browser-ownership-20260724` / upstream同名 | pushed HEAD `04c093fb67fadc10265e5e405ff7128d9bef82bc`はauthoritative-absence recoveryの中断保存WIP。PASS、review済み、deploy可能の証拠ではない |
+| production | `/Users/anicca/profitable-claude` / `deploy/gig-speedy-reply-cutover` / upstream同名 | clean baseline `0cf56932e1fbe651a9d2a4d40c3ae667c115fb1f`へ直接実装しない。latest live HEADをfirst parentに持つexact reviewed mergeだけをdeployする |
 
 仕様の6要素は次で固定する。
 
@@ -521,7 +538,8 @@ model=Luna high / cost=$<cost> / evidence=<ref>
 修正後の本番loopをkickして行わせる。
 
 **残りは7項目**: external blockedの#1と、実行可能な#4〜#9。#2 paid recoveryと#3
-selfimprove no-change verifierは完了済み。次に実行するのは#4だけである。
+selfimprove no-change verifierは完了済み。実装クリティカルパスは
+`#4 -> #5 -> #6 -> #7 -> #8 -> #9`であり、次に実行するのは#4だけである。
 
 | # | 残TODO | 実行 | done evidence |
 |---:|---|---|---|
