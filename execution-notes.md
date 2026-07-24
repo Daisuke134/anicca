@@ -253,3 +253,20 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   [#1087](https://github.com/Daisuke134/life-manager/pull/1087), appends a `pr_open` state row, and
   reports to Telegram with message id `3386`.
 - Evidence: `docs/evidence/10c-feedback-dev-loop-auto-pr.md`. Pending becomes 19; next is 10d.
+
+## 10d DEV-d — done (real production error intake)
+- Reuses `lm_feedback_intake`, its unique `source_ref`, the existing issue worker, the
+  `lm:type:self-heal` label, and D0. No second incident queue or developer loop is introduced.
+- The closed builder maps provider timeout, failed call/email/post, 5xx, and eval regression into
+  three incident classes. Raw provider/error content has no output field and is not part of the
+  HMAC fingerprint.
+- Controlled live probes observe a timer deadline, child-process side-effect exit 23, and local
+  HTTP 503 plus eval exit 1 before persistence.
+- Production rows `2/3/4` create real issues
+  [#1088](https://github.com/Daisuke134/life-manager/issues/1088),
+  [#1089](https://github.com/Daisuke134/life-manager/issues/1089), and
+  [#1090](https://github.com/Daisuke134/life-manager/issues/1090).
+- A second injection is duplicate for all three; a fourth worker pass is no-op. DB and GitHub
+  marker readbacks match, and forbidden-content checks are zero.
+- Focused tests are `22/22`. Evidence: `docs/evidence/10d-production-error-intake.md`.
+  Pending becomes 18; next is 10e.
