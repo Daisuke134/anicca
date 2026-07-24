@@ -5,6 +5,7 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$(cd "$HERE/.." && pwd)"
 REPO="Daisuke134/life-manager"
 PROJECT="${LM_DEV_PROJECT:-$HOME/Projects/life-manager-main}"
 RUN_AGENT="${LM_DEV_RUN_AGENT:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
@@ -31,6 +32,9 @@ record() {
   ' "$1" "$2" "$3" >> "$DONE"
 }
 
+if [ ! -d "$APP_DIR/node_modules/pg" ]; then
+  (cd "$APP_DIR" && npm ci --silent) || log "dependency install failed"
+fi
 node "$HERE/feedback-to-issue.js" >&2 || {
   log "feedback-to-issue failed; continuing with an already-open issue"
 }
@@ -113,10 +117,16 @@ printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-class high-value-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "life-manager-dev-$NUM" \
+  --loop "life-manager-dev" \
   --workdir "$WT" \
   > "$AGENT_OUT" 2>> "$LOG_DIR/life-manager-dev.err.log"
 AGENT_RC=$?
 log "fresh agent exit=$AGENT_RC"
+if [ "$AGENT_RC" -ne 0 ]; then
+  log "fresh agent failed; no test gate or PR"
+  record "$NUM" "" "agent_failed"
+  exit 1
+fi
 
 TEST_LOG="$LOG_DIR/life-manager-dev-test-last.out"
 if ! (
