@@ -129,3 +129,6 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 
 ## 10h BRAIN-b — done (2026-07-24, L2)
 - opportunity-engine.js six-factor gate over 10g graph; intent-cases.jsonl 18/18 (100%); contract 4/4; wired into test+eval chains; full suite fail 0. Spec §10 updated (26 pending).
+
+## 12a MEN-a — done (2026-07-24, L2)
+- mental-trigger.js context-driven trigger engine (pre_event/between_events/pre_sleep), cap 3/day, fixed-time impossible by construction; men-cases.jsonl 15/15 (100%); contract 4/4; full suite fail 0. Spec §10 updated (25 pending).
