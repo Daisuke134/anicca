@@ -9,6 +9,8 @@ import json
 import mimetypes
 import os
 from pathlib import Path
+import re
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -79,6 +81,58 @@ def find_post(response, post_id: str) -> dict:
     if state == "PUBLISHED" and (not isinstance(url, str) or not url.startswith("https://")):
         raise PostizError("Postiz marked PUBLISHED without a public release URL")
     return {"state": state, "post_url": url if isinstance(url, str) else None}
+
+
+def _normalized(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def resolve_profile_release_url(
+    profile_url: str,
+    caption: str,
+    *,
+    posted_after: int,
+    runner=subprocess.run,
+) -> str | None:
+    if not re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/?", profile_url):
+        return None
+    proc = runner(
+        [
+            "yt-dlp",
+            "--flat-playlist",
+            "--playlist-end",
+            "12",
+            "--dump-single-json",
+            profile_url,
+        ],
+        text=True,
+        capture_output=True,
+        timeout=60,
+    )
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    entries = data.get("entries", []) if isinstance(data, dict) else []
+    caption_prefix = _normalized(caption)[:24]
+    candidates = []
+    for row in entries:
+        if not isinstance(row, dict):
+            continue
+        url = row.get("url")
+        title = row.get("title") or row.get("description") or ""
+        timestamp = row.get("timestamp")
+        if (
+            isinstance(url, str)
+            and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
+            and isinstance(timestamp, (int, float))
+            and timestamp >= posted_after - 5
+            and _normalized(str(title)).startswith(caption_prefix)
+        ):
+            candidates.append((timestamp, url))
+    return max(candidates)[1] if candidates else None
 
 
 def _request_json(request: urllib.request.Request, timeout: int = 90):
@@ -161,6 +215,7 @@ def main() -> int:
     if not caption:
         raise PostizError("caption is empty")
 
+    posted_after = int(time.time())
     upload_id, upload_path = upload_video(args.video, api_key)
     payload = build_payload(
         integration=args.integration,
@@ -175,11 +230,25 @@ def main() -> int:
     for _ in range(18):
         time.sleep(10)
         state = read_publish_state(post_id, api_key)
-        if state["state"] in {"PUBLISHED", "ERROR"}:
+        if state["state"] == "PUBLISHED" and state["post_url"]:
+            if re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", state["post_url"]):
+                break
+            resolved = resolve_profile_release_url(
+                state["post_url"],
+                caption,
+                posted_after=posted_after,
+            )
+            if resolved:
+                state["post_url"] = resolved
+                break
+        if state["state"] == "ERROR":
             break
     result = {"post_id": post_id, **state}
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
-    if state["state"] != "PUBLISHED":
+    if state["state"] != "PUBLISHED" or not re.fullmatch(
+        r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?",
+        state.get("post_url") or "",
+    ):
         raise PostizError(f"Postiz terminal state is {state['state']}")
     return 0
 
