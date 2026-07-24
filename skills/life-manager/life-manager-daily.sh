@@ -15,6 +15,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${PYTHON_BIN:-$(command -v python3 || echo /opt/homebrew/bin/python3)}"
 RUN_AGENT="${RUN_AGENT_BIN:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
 VIDEO_GENERATOR="${LM_VIDEO_GENERATOR:-$HERE/../video/daily-lm-video/generate.py}"
+VIDEO_DISTRIBUTOR="${LM_VIDEO_DISTRIBUTOR:-$HERE/../video/lm-distribution/distribute.py}"
 LOG="${LM_DAILY_LOG:-$HOME/.openclaw/logs/life-manager-daily.log}"
 RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.openclaw/state/lm-video/daily-run-ledger.jsonl}"
 USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.openclaw/state/lm-video/agent-usage.jsonl}"
@@ -88,26 +89,61 @@ Do not mutate either file. Return the required final schema JSON
 immediately after those bounded checks, with concrete evidence for codec, dimensions, audio,
 duration, decode exit, creative id, and output path."
 else
+  if [ -f "$HOME/.openclaw/.env" ]; then
+    set +u
+    set -a
+    # shellcheck disable=SC1091
+    . "$HOME/.openclaw/.env"
+    set +a
+    set -u
+  fi
+  set +e
+  DISTRIBUTION_RESULT="$("$VIDEO_DISTRIBUTOR" \
+    --creative-id "$LM_DAILY_CREATIVE_ID" \
+    --video "$LM_DAILY_VIDEO" 2>>"$LOG")"
+  DISTRIBUTION_RC=$?
+  set -e
+  if [ "$DISTRIBUTION_RC" -ne 0 ]; then
+    printf 'daily distribution failed rc=%s; agent not invoked\n' "$DISTRIBUTION_RC" >>"$LOG"
+    exit "$DISTRIBUTION_RC"
+  fi
+  DISTRIBUTION_FIELDS="$(DISTRIBUTION_RESULT="$DISTRIBUTION_RESULT" EXPECTED_CREATIVE="$LM_DAILY_CREATIVE_ID" "$PYTHON" -c '
+import json, os
+lines = [line for line in os.environ["DISTRIBUTION_RESULT"].splitlines() if line.strip()]
+if len(lines) != 1:
+    raise SystemExit(2)
+row = json.loads(lines[0])
+if row.get("creative_id") != os.environ["EXPECTED_CREATIVE"]:
+    raise SystemExit(2)
+ig = row.get("instagram_url")
+tt = row.get("tiktok_url")
+if not isinstance(ig, str) or not ig.startswith("https://") or not isinstance(tt, str) or not tt.startswith("https://"):
+    raise SystemExit(2)
+print(ig + "\t" + tt)
+' 2>>"$LOG")"
+  DISTRIBUTION_PARSE_RC=$?
+  if [ "$DISTRIBUTION_PARSE_RC" -ne 0 ]; then
+    printf 'daily distribution returned invalid result rc=%s; agent not invoked\n' "$DISTRIBUTION_PARSE_RC" >>"$LOG"
+    exit 70
+  fi
+  IFS=$'\t' read -r LM_DAILY_INSTAGRAM_URL LM_DAILY_TIKTOK_URL <<<"$DISTRIBUTION_FIELDS"
+  export LM_DAILY_INSTAGRAM_URL LM_DAILY_TIKTOK_URL
+
   PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the loop.
-This is the existing ai.anicca.life-manager-daily route. Preserve its existing Instagram account,
-CloakBrowser daily-driver posting method, Reddit karma gate, CEO report, cost recording, Telegram
-report and logged-out verification. Do not create a new account or a new marketing loop.
+This is the existing ai.anicca.life-manager-daily route. Preserve its Reddit karma gate, CEO
+report, cost recording, Telegram report and logged-out verification. Do not create a new account
+or a new marketing loop.
 Do not invoke life-manager-daily.sh or launchctl: this process is already the one active daily pass.
 
 DAILY VIDEO CONTRACT: the exact MP4 is $LM_DAILY_VIDEO and the exact creative id is
-$LM_DAILY_CREATIVE_ID (duration $LM_DAILY_VIDEO_DURATION seconds). Post this exact MP4 through the
-existing warmed Life Manager Instagram route. slideshow/card generation is banned; do not generate
-or substitute another creative. LM_DAILY_CREATIVE_ALREADY_POSTED=$LM_DAILY_CREATIVE_ALREADY_POSTED
-was determined by exact creative id plus exact output in marketing-actions.jsonl. When it is 1,
-do not repost Instagram; continue Reddit, CEO/cost ledger and Telegram reporting. When it is 0,
-post the MP4 even if an earlier non-video post exists today. The Instagram row must record
-creative_id=$LM_DAILY_CREATIVE_ID and creative_output=$LM_DAILY_VIDEO exactly.
-
-IDENTITY AND EVIDENCE: hard-check the existing loop-owned account before posting; never post to a
-personal account. A post counts only after a fresh logged-out readback returns the same public URL.
-On any provider, browser or publication failure, record an honest failure and return a failing
-result; never turn an internal failure into success. Send the existing one-screen Telegram report
-with the real provider message id after all ledgers are written."
+$LM_DAILY_CREATIVE_ID (duration $LM_DAILY_VIDEO_DURATION seconds).
+DETERMINISTIC DISTRIBUTION COMPLETE: the exact same video and caption contract is already published
+through the existing Life Manager Instagram file/script route at $LM_DAILY_INSTAGRAM_URL and the
+existing TikTok Postiz integration at $LM_DAILY_TIKTOK_URL. The distribution ledger binds both URLs
+to the same creative id plus video/caption SHA-256. Treat those two URLs as immutable input and do
+not repost either platform. Continue only the existing Reddit gate, CEO/cost ledger and one-screen
+Telegram report. On any later failure, report it honestly; never turn an internal failure into
+success."
 fi
 
 EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.openclaw/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"

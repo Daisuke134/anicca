@@ -37,6 +37,13 @@ from instagrapi.exceptions import ChallengeRequired, LoginRequired  # noqa: E402
 C = os.path.expanduser
 
 
+def credential_password(creds):
+    value = creds.get("pw") or creds.get("password")
+    if not isinstance(value, str) or not value:
+        raise ValueError("Instagram credential file has no password")
+    return value
+
+
 def make_gmail_handler(handle):
     # instagrapi calls this on an email challenge; auto-read the 6-digit code from the
     # account's gmail plus-address inbox via `gog gmail`. Never prints the code.
@@ -236,7 +243,7 @@ def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=Non
             return False
         open(stamp, "w").write(str(int(time.time())))  # stamp BEFORE the attempt: failures count too
         creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
-        cl.login(creds["username"], creds["pw"])
+        cl.login(creds["username"], credential_password(creds))
         cl.dump_settings(settings)
         return True
     except Exception as e:
