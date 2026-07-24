@@ -123,3 +123,6 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - APPROVE. Non-blocking notes: test-count label (633 actual), landing subset is 5 migrated + 1 new README, Mac-host paths in daily-preflight-collectors.js carried byte-identically (gateway-host code, not Railway boot), residual "life-call" identity strings consistent, diff secrets/PII clean.
 - Reviewer flagged PRE-EXISTING PII on main (predates this PR): execution-notes.md task #5 section names a Coconala counterparty. Scrub separately — public repo.
 - Railway boot check: server.js starts with EMPTY env (PORT defaults, no boot-required secrets); all providers lazily guarded.
+
+## 10g BRAIN-a — done (2026-07-24, L2)
+- intent-graph.js closed schema (6 kinds, provenance/confidence/expiry), correction-expires-prediction contract, 3 persona fixtures. Tests 7/7; full suite fail 0. Spec §10 row updated in same commit.
