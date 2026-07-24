@@ -16,6 +16,7 @@ PYTHON="${PYTHON_BIN:-$(command -v python3 || echo /opt/homebrew/bin/python3)}"
 RUN_AGENT="${RUN_AGENT_BIN:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
 VIDEO_GENERATOR="${LM_VIDEO_GENERATOR:-$HERE/../video/daily-lm-video/generate.py}"
 VIDEO_DISTRIBUTOR="${LM_VIDEO_DISTRIBUTOR:-$HERE/../video/lm-distribution/distribute.py}"
+MARKETING_SELF_IMPROVER="${LM_MARKETING_SELF_IMPROVER:-$HERE/../video/lm-self-improve/daily.py}"
 LOG="${LM_DAILY_LOG:-$HOME/.openclaw/logs/life-manager-daily.log}"
 RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.openclaw/state/lm-video/daily-run-ledger.jsonl}"
 USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.openclaw/state/lm-video/agent-usage.jsonl}"
@@ -39,6 +40,7 @@ if [ "$GEN_RC" -ne 0 ]; then
   exit "$GEN_RC"
 fi
 
+set +e
 FIELDS="$(GEN_RESULT="$GEN_RESULT" "$PYTHON" -c '
 import json, os
 lines = os.environ["GEN_RESULT"].splitlines()
@@ -54,6 +56,7 @@ float(duration)
 print("\t".join((creative_id, output, str(duration))))
 ' 2>>"$LOG")"
 PARSE_RC=$?
+set -e
 if [ "$PARSE_RC" -ne 0 ]; then
   printf 'daily-lm-video returned invalid result rc=%s; agent not invoked\n' "$PARSE_RC" >>"$LOG"
   exit "$PARSE_RC"
@@ -107,6 +110,7 @@ else
     printf 'daily distribution failed rc=%s; agent not invoked\n' "$DISTRIBUTION_RC" >>"$LOG"
     exit "$DISTRIBUTION_RC"
   fi
+  set +e
   DISTRIBUTION_FIELDS="$(DISTRIBUTION_RESULT="$DISTRIBUTION_RESULT" EXPECTED_CREATIVE="$LM_DAILY_CREATIVE_ID" "$PYTHON" -c '
 import json, os
 lines = [line for line in os.environ["DISTRIBUTION_RESULT"].splitlines() if line.strip()]
@@ -122,12 +126,54 @@ if not isinstance(ig, str) or not ig.startswith("https://") or not isinstance(tt
 print(ig + "\t" + tt)
 ' 2>>"$LOG")"
   DISTRIBUTION_PARSE_RC=$?
+  set -e
   if [ "$DISTRIBUTION_PARSE_RC" -ne 0 ]; then
     printf 'daily distribution returned invalid result rc=%s; agent not invoked\n' "$DISTRIBUTION_PARSE_RC" >>"$LOG"
     exit 70
   fi
   IFS=$'\t' read -r LM_DAILY_INSTAGRAM_URL LM_DAILY_TIKTOK_URL <<<"$DISTRIBUTION_FIELDS"
   export LM_DAILY_INSTAGRAM_URL LM_DAILY_TIKTOK_URL
+  printf 'daily distribution readback complete creative=%s\n' "$LM_DAILY_CREATIVE_ID" >>"$LOG"
+
+  set +e
+  SELF_IMPROVE_RESULT="$("$MARKETING_SELF_IMPROVER" 2>>"$LOG")"
+  SELF_IMPROVE_RC=$?
+  set -e
+  if [ "$SELF_IMPROVE_RC" -ne 0 ]; then
+    printf 'daily self-improvement metrics failed rc=%s; agent not invoked\n' "$SELF_IMPROVE_RC" >>"$LOG"
+    exit "$SELF_IMPROVE_RC"
+  fi
+  set +e
+  SELF_IMPROVE_FIELDS="$(SELF_IMPROVE_RESULT="$SELF_IMPROVE_RESULT" EXPECTED_CREATIVE="$LM_DAILY_CREATIVE_ID" "$PYTHON" -c '
+import json, os
+lines = [line for line in os.environ["SELF_IMPROVE_RESULT"].splitlines() if line.strip()]
+if len(lines) != 1:
+    raise SystemExit(2)
+row = json.loads(lines[0])
+if row.get("creative_id") != os.environ["EXPECTED_CREATIVE"]:
+    raise SystemExit(2)
+status = row.get("status")
+day_index = row.get("day_index")
+next_creative = row.get("next_creative_id")
+reason = row.get("next_change_reason")
+if status not in {"started", "done"} or not isinstance(day_index, int) or day_index < 1:
+    raise SystemExit(2)
+if not isinstance(next_creative, str) or not next_creative or not isinstance(reason, str) or not reason:
+    raise SystemExit(2)
+print("\t".join((status, str(day_index), next_creative, reason)))
+' 2>>"$LOG")"
+  SELF_IMPROVE_PARSE_RC=$?
+  set -e
+  if [ "$SELF_IMPROVE_PARSE_RC" -ne 0 ]; then
+    printf 'daily self-improvement returned invalid result rc=%s; agent not invoked\n' "$SELF_IMPROVE_PARSE_RC" >>"$LOG"
+    exit 70
+  fi
+  IFS=$'\t' read -r LM_SELF_IMPROVE_STATUS LM_SELF_IMPROVE_DAY_INDEX \
+    LM_SELF_IMPROVE_NEXT_CREATIVE LM_SELF_IMPROVE_REASON <<<"$SELF_IMPROVE_FIELDS"
+  export LM_SELF_IMPROVE_STATUS LM_SELF_IMPROVE_DAY_INDEX \
+    LM_SELF_IMPROVE_NEXT_CREATIVE LM_SELF_IMPROVE_REASON
+  printf 'daily self-improvement readback complete day=%s status=%s\n' \
+    "$LM_SELF_IMPROVE_DAY_INDEX" "$LM_SELF_IMPROVE_STATUS" >>"$LOG"
 
   PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the loop.
 This is the existing ai.anicca.life-manager-daily route. Preserve its Reddit karma gate, CEO
@@ -145,7 +191,11 @@ existing TikTok Postiz integration at $LM_DAILY_TIKTOK_URL. The distribution led
 to the same creative id plus video/caption SHA-256. Treat those two URLs as immutable input and do
 not repost either platform. Continue only the existing Reddit gate, CEO/cost ledger and one-screen
 Telegram report. On any later failure, report it honestly; never turn an internal failure into
-success."
+success.
+SELF-IMPROVEMENT LEDGER RECORDED: real public metrics day $LM_SELF_IMPROVE_DAY_INDEX has status
+$LM_SELF_IMPROVE_STATUS. The next creative is $LM_SELF_IMPROVE_NEXT_CREATIVE because:
+$LM_SELF_IMPROVE_REASON. This append-only measurement is already complete. Do not invent, alter,
+backfill, or duplicate metrics."
 fi
 
 EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.openclaw/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"

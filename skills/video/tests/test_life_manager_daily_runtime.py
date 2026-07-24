@@ -36,7 +36,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(data["ProcessType"], "Background")
         self.assertEqual(data.get("EnvironmentVariables", {}), {})
 
-    def run_daily(self, generator_rc=0, distributor_rc=0, runner_rc=0):
+    def run_daily(self, generator_rc=0, distributor_rc=0, self_improver_rc=0, runner_rc=0):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
@@ -71,6 +71,14 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
             "printf '%s\\n' '{\"creative_id\":\"A02\",\"instagram_url\":\"https://www.instagram.com/reel/IGREAL/\","
             "\"tiktok_url\":\"https://www.tiktok.com/@life/video/123\"}'\n",
         )
+        self_improver = executable(
+            root / "self-improver",
+            "#!/usr/bin/env bash\n"
+            "printf '%s\\n' \"$@\" >\"$CAPTURE_SELF_IMPROVER_ARGS\"\n"
+            f"[ {self_improver_rc} -eq 0 ] || exit {self_improver_rc}\n"
+            "printf '%s\\n' '{\"status\":\"started\",\"day_index\":1,\"creative_id\":\"A02\","
+            "\"next_creative_id\":\"A03\",\"next_change_reason\":\"baseline established from real public metrics\"}'\n",
+        )
         env = os.environ.copy()
         env.update(
             {
@@ -78,11 +86,13 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
                 "LM_VIDEO_GENERATOR": str(generator),
                 "RUN_AGENT_BIN": str(runner),
                 "LM_VIDEO_DISTRIBUTOR": str(distributor),
+                "LM_MARKETING_SELF_IMPROVER": str(self_improver),
                 "LM_DAILY_RUN_LEDGER": str(root / "daily-runs.jsonl"),
                 "LM_DAILY_USAGE_LEDGER": str(root / "usage.jsonl"),
                 "CAPTURE_ARGS": str(root / "args"),
                 "CAPTURE_PROMPT": str(root / "prompt"),
                 "CAPTURE_DISTRIBUTOR_ARGS": str(root / "distributor-args"),
+                "CAPTURE_SELF_IMPROVER_ARGS": str(root / "self-improver-args"),
             }
         )
         result = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
@@ -100,11 +110,15 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn("https://www.instagram.com/reel/IGREAL/", prompt)
         self.assertIn("https://www.tiktok.com/@life/video/123", prompt)
         self.assertIn("not repost either platform", prompt)
+        self.assertIn("SELF-IMPROVEMENT LEDGER RECORDED", prompt)
+        self.assertIn("baseline established from real public metrics", prompt)
         self.assertIn("Do not invoke life-manager-daily.sh", prompt)
         self.assertIn("Do not inspect, monitor, or wait for this active process", prompt)
         distribution_args = (root / "distributor-args").read_text(encoding="utf-8")
         self.assertIn("--creative-id\nA02\n", distribution_args)
         self.assertIn("--video\n/tmp/exact-daily.mp4\n", distribution_args)
+        self_improver_args = (root / "self-improver-args").read_text(encoding="utf-8")
+        self.assertEqual(self_improver_args, "\n")
         row = json.loads((root / "daily-runs.jsonl").read_text(encoding="utf-8"))
         self.assertEqual(row["status"], "success")
         self.assertEqual(row["model"], "gpt-5.6-luna")
@@ -167,11 +181,19 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn(str(root / "home/.openclaw/state/lm-video/daily-render-state.jsonl"), prompt)
         self.assertIn("Do not search", prompt)
         self.assertFalse((root / "generation-only-distributor-args").exists())
+        self.assertFalse((root / "generation-only-self-improver-args").exists())
 
     def test_distribution_failure_propagates_without_invoking_agent(self):
         result, root = self.run_daily(distributor_rc=29)
         self.assertEqual(result.returncode, 29)
         self.assertTrue((root / "distributor-args").exists())
+        self.assertFalse((root / "args").exists())
+        self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+
+    def test_self_improver_failure_propagates_without_invoking_agent(self):
+        result, root = self.run_daily(self_improver_rc=31)
+        self.assertEqual(result.returncode, 31)
+        self.assertTrue((root / "self-improver-args").exists())
         self.assertFalse((root / "args").exists())
         self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
 
