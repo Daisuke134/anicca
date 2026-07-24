@@ -98,6 +98,15 @@ printf '%s\n' '{"status":"no_op","reason":"no_unattempted_open_issue","issue_num
   assert.equal(result.reason, "no_unattempted_open_issue");
   const rows = fs.readFileSync(path.join(dir, "daily-ledger.jsonl"), "utf8").trim().split("\n");
   assert.equal(rows.length, 1);
+  assert.deepEqual(
+    JSON.parse(fs.readFileSync(path.join(dir, "seven-day-status.json"), "utf8")),
+    {
+      schema_version: 1,
+      ready: false,
+      consecutive_days: 1,
+      evaluated_at: "2026-07-24T09:15:00.000Z",
+    },
+  );
 });
 
 test("runDailyPass kills a hung child at the hard timeout and records timeout recovery", async () => {
