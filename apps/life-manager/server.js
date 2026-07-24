@@ -43,6 +43,7 @@ const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPa
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
+const { handleFeedbackMessage, createPostgresFeedbackStore } = require("./lib/feedback-intake.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
@@ -104,6 +105,10 @@ async function dunningNotify(uid) {
 }
 
 const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
+const LM_FEEDBACK_PROVENANCE_KEY = process.env.LM_FEEDBACK_PROVENANCE_KEY || LM_UID_SECRET;
+const LM_FEEDBACK_STORE = process.env.LM_FEEDBACK_DATABASE_URL
+  ? createPostgresFeedbackStore(process.env.LM_FEEDBACK_DATABASE_URL)
+  : null;
 function verifyUid(uid, sig) {
   if (!LM_UID_SECRET || !uid || !sig) return false;
   const expected = crypto.createHmac("sha256", LM_UID_SECRET).update(uid).digest("base64url");
@@ -391,6 +396,18 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          const feedback = await handleFeedbackMessage(u, row, {
+            token: LM_TG_TOKEN,
+            provenanceKey: LM_FEEDBACK_PROVENANCE_KEY,
+            supaUrl: SUPA_URL,
+            supaKey: SUPA_KEY,
+            send: sendMessage,
+            ...(LM_FEEDBACK_STORE ? { persist: LM_FEEDBACK_STORE.persist } : {}),
+          });
+          if (feedback.handled) {
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           const parsedControl = parseUserCommand(u.text);
           if (isPanelCommand(u.text) || isPanelDeepLink(u.text) || parsedControl.kind === "panel") {
             const deviceCode = panelDeviceCodeFromCommand(u.text);
