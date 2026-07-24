@@ -177,3 +177,16 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Corrective launchd pass exits 0 on Luna, distribution ledger stays `3→3` (no repost), and the
   existing Telegram report returns message id `3378`.
 - Evidence: `docs/evidence/9c-marketing-distribution.md`. Pending count becomes 22; next is 9d.
+
+## 9d MKT-d / M-4 — started; real-time gate pending
+- Adds an append-only, mode-600 daily metrics ledger keyed by real JST date and the exact 9c
+  creative/video/caption hash pair. Same-day runs are idempotent; gaps reset the streak; simulated
+  backfill cannot satisfy the seven-day gate.
+- Real Day 1 reads Instagram `17/0/0` and TikTok `9/0/0` views/likes/comments from their public
+  URLs. Unavailable watch-time/completion/click/signup values remain null.
+- Corrective TDD fixes the integration schema from `reason` to canonical `next_change_reason`.
+  Core/runtime tests are `5/5 + 8/8`.
+- Controlled launchd finishes exit 0 with Luna attempt 1, distribution `3→3`, measurement `1→1`,
+  and real Telegram message id `3379`.
+- Evidence: `docs/evidence/9d-marketing-self-improve-started.md`. Pending count remains 22 because
+  six distinct real dates remain; cursor advances to independent row 9e.
