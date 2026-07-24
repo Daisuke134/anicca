@@ -4,6 +4,12 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 
+if [ "${LM_DAILY_ACTIVE:-0}" = "1" ]; then
+  printf 'life-manager-daily: recursive invocation blocked\n' >&2
+  exit 73
+fi
+export LM_DAILY_ACTIVE=1
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${PYTHON_BIN:-$(command -v python3 || echo /opt/homebrew/bin/python3)}"
 RUN_AGENT="${RUN_AGENT_BIN:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
@@ -73,6 +79,7 @@ PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the l
 This is the existing ai.anicca.life-manager-daily route. Preserve its existing Instagram account,
 CloakBrowser daily-driver posting method, Reddit karma gate, CEO report, cost recording, Telegram
 report and logged-out verification. Do not create a new account or a new marketing loop.
+Do not invoke life-manager-daily.sh or launchctl: this process is already the one active daily pass.
 
 DAILY VIDEO CONTRACT: the exact MP4 is $LM_DAILY_VIDEO and the exact creative id is
 $LM_DAILY_CREATIVE_ID (duration $LM_DAILY_VIDEO_DURATION seconds). Post this exact MP4 through the

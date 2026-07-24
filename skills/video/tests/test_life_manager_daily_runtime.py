@@ -86,6 +86,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn("/tmp/exact-daily.mp4", prompt)
         self.assertIn("A02", prompt)
         self.assertIn("slideshow/card generation is banned", prompt)
+        self.assertIn("Do not invoke life-manager-daily.sh", prompt)
         row = json.loads((root / "daily-runs.jsonl").read_text(encoding="utf-8"))
         self.assertEqual(row["status"], "success")
         self.assertEqual(row["model"], "gpt-5.6-luna")
@@ -99,6 +100,23 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(result.returncode, 17)
         self.assertFalse((root / "args").exists())
         self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+
+    def test_recursive_invocation_fails_before_generator_or_runner(self):
+        result, root = self.run_daily()
+        env = os.environ.copy()
+        env.update(
+            {
+                "HOME": str(root / "home"),
+                "LM_DAILY_ACTIVE": "1",
+                "LM_VIDEO_GENERATOR": str(root / "generator"),
+                "RUN_AGENT_BIN": str(root / "runner"),
+                "CAPTURE_ARGS": str(root / "recursive-args"),
+                "CAPTURE_PROMPT": str(root / "recursive-prompt"),
+            }
+        )
+        recursive = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
+        self.assertEqual(recursive.returncode, 73)
+        self.assertFalse((root / "recursive-args").exists())
 
     def test_runner_failure_and_timeout_propagate_and_do_not_touch_success_marker(self):
         for runner_rc in (23, 124):
