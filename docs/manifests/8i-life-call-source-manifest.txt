@@ -1,0 +1,229 @@
+# 8i REPO-CONSOLIDATE — source snapshot provenance manifest
+# source_repo: Daisuke134/anicca-products
+# source_commit: 540b7a428e8e259e47acaa715812802fdb19f947
+# source_path: apps/life-call/
+# target_repo: Daisuke134/life-manager (id 1248111245)
+# target_path: apps/life-manager/
+# excluded: .vcsdd/ (VCS metadata)
+# columns: sha256  source_path  ->  target_path
+#
+295aa1f18923880afebb2e08aa70a8c4f285cc52baea238b8d2864d10e45d825  apps/life-call/.gitignore  ->  apps/life-manager/.gitignore
+7a9edd34338b7da43e9ef0d1a6a6a2e61300bb18a2dab2bf80e76a7998d875e5  apps/life-call/eval/calendar-cases.jsonl  ->  apps/life-manager/eval/calendar-cases.jsonl
+8d7d71c53e8447a4e7ad76cf3fb91a21ed40499eb4b46b9523d04325bb986854  apps/life-call/eval/context-onboarding-discovery-cases.jsonl  ->  apps/life-manager/eval/context-onboarding-discovery-cases.jsonl
+51bd52727f72647fde0182113f969a1e3472f81991ccfe0da5fbe10ccbaf639a  apps/life-call/eval/late-cases.jsonl  ->  apps/life-manager/eval/late-cases.jsonl
+32d071f0bb478d05683fd6beeec3783c96f169e41f8bdd2a62b34f36c511a35a  apps/life-call/eval/panel-privacy-contract.js  ->  apps/life-manager/eval/panel-privacy-contract.js
+bbe88511c5c61258b7bf0190fc418f23cab89d120a7083570610c5aa5322cc41  apps/life-call/eval/panel-privacy-harness.js  ->  apps/life-manager/eval/panel-privacy-harness.js
+27d7f14fb235feacd59feb84208a196de6c7f1ff841ead7e7b5734e6741a3b9a  apps/life-call/eval/run-calendar-eval.js  ->  apps/life-manager/eval/run-calendar-eval.js
+4b497629580c42b4a46918d2b7dc6d94b4fce6a9025720fbc4614e77b3849312  apps/life-call/eval/run-context-onboarding-discovery-eval.js  ->  apps/life-manager/eval/run-context-onboarding-discovery-eval.js
+98732bb0e6dab0cefc431f2d5ca8684fd6f9d07deafe791fbf0f5a4a6ba5f2bb  apps/life-call/eval/run-late-eval.js  ->  apps/life-manager/eval/run-late-eval.js
+afe6e717665b897264c466f1de2b63a6d10f5904aa74f9ca4ec8d1a3204ea4e3  apps/life-call/eval/run-panel-privacy-eval.js  ->  apps/life-manager/eval/run-panel-privacy-eval.js
+0a67202100a7742778bf96a9832cbf03bd589deadac2dba98c61134d6663c396  apps/life-call/eval/run-score-semantics-eval.js  ->  apps/life-manager/eval/run-score-semantics-eval.js
+66b7df77e8099235ab2a44861cd966a96e1b400260b72637612bdc42309d9147  apps/life-call/eval/score-semantics-cases.json  ->  apps/life-manager/eval/score-semantics-cases.json
+04dc392ed8cfe67e1a8d3ffa2e5a940d3708379d5846662387f9c60daf0f04af  apps/life-call/inngest/client.js  ->  apps/life-manager/inngest/client.js
+c243839b655bdd1988048a2c317d535f9ee3e734f5feafb2a846f3e2b6ab3d70  apps/life-call/inngest/functions.js  ->  apps/life-manager/inngest/functions.js
+56c15ff2ade29c99a2895affadd47e3a5d8e5225b7900de45cba3eb0875b4349  apps/life-call/lib/answered.js  ->  apps/life-manager/lib/answered.js
+73d1dcdfd4c47a6331b87493ad7ef6e7bc818dd9bbd72badfdc0d7593c1614bb  apps/life-call/lib/answered.test.js  ->  apps/life-manager/lib/answered.test.js
+2e9b90325de95c2715b51c510b1dfdbfe056e609066232eb621a905194020caa  apps/life-call/lib/ask.js  ->  apps/life-manager/lib/ask.js
+b341a19fbc02f450abcb8112392541521852fc589614fe37f1c2fa8a230b9263  apps/life-call/lib/billing.js  ->  apps/life-manager/lib/billing.js
+65d3413d6de82d732f60af380792812b4912bedb6521e1a45ca5df4b7a3c77e4  apps/life-call/lib/billing.test.js  ->  apps/life-manager/lib/billing.test.js
+345c062b7296776203c2ae267459ee4303f78d30d5b23dbf1feaeda74a2ce1f3  apps/life-call/lib/calendar-cache.js  ->  apps/life-manager/lib/calendar-cache.js
+e8f2c015820bbd219eaf11ac10928e2a4d1b2494941634989a3880e9c9547840  apps/life-call/lib/calendar-cache.test.js  ->  apps/life-manager/lib/calendar-cache.test.js
+b9c39a43180cb52e872aee6d62fc02e89f6b01349ca821ef92a25045ca661395  apps/life-call/lib/calendar-interpreter.js  ->  apps/life-manager/lib/calendar-interpreter.js
+f139655c12cd022049cb0689582165dddb3a163f65261cb8701ace9800f750c3  apps/life-call/lib/calendar-interpreter.test.js  ->  apps/life-manager/lib/calendar-interpreter.test.js
+370a7a5f083de1590babb979ae050504100330b5e761a89f48c81177fffbd3b9  apps/life-call/lib/call-bridge.cjs  ->  apps/life-manager/lib/call-bridge.cjs
+2052175567af43019513783eb8bf2e34b836a91ceef174364cfc1f8f2b747331  apps/life-call/lib/call-bridge.test.js  ->  apps/life-manager/lib/call-bridge.test.js
+39ef880700ba5fe39bb5e717357334105da9a3e963e0fbbd74232ba132ecccfd  apps/life-call/lib/call-language.js  ->  apps/life-manager/lib/call-language.js
+a148c08e09d390486fc9e5dcf8b89eea547d40c9925839dee09e3056ea52b4b7  apps/life-call/lib/call-language.test.js  ->  apps/life-manager/lib/call-language.test.js
+e694dc6f08472838626c3d8bb256e0d8610effb8cf07601271277d41a8ac4d6b  apps/life-call/lib/call-logic.js  ->  apps/life-manager/lib/call-logic.js
+39f48cbaffa022f5fd1a204a92254b5fd712f22dc793f99c8db4a03a00e09022  apps/life-call/lib/ch1-atomic-dedup.test.js  ->  apps/life-manager/lib/ch1-atomic-dedup.test.js
+4c024377dc536e505190399c28777325d6c457f6c396b5717947b35c8f3fccff  apps/life-call/lib/composio-budget.js  ->  apps/life-manager/lib/composio-budget.js
+bca2903179d116be1c0f3a41cf0b9cc818c02b3272354f4398b1ad69d3825625  apps/life-call/lib/composio-budget.test.js  ->  apps/life-manager/lib/composio-budget.test.js
+9f22fcca359cd5108c6ba83297405bd777997e4e29dcbe8a1f5ba7201d9ee004  apps/life-call/lib/context-graph.js  ->  apps/life-manager/lib/context-graph.js
+4c81ed281e7d6be90e959a6bce54b2a379376c12905a603c930df7cffda3294a  apps/life-call/lib/context-graph.test.js  ->  apps/life-manager/lib/context-graph.test.js
+b35a86a340660d4c8ea79d2f328a7386770845cad8ff33eff73ad1ca54992539  apps/life-call/lib/daily-preflight-abort-lineage.test.js  ->  apps/life-manager/lib/daily-preflight-abort-lineage.test.js
+b71f813af0736bea18a3113cf2861a2476d11af2a03f56282848cfce78e5ba4b  apps/life-call/lib/daily-preflight-collectors.js  ->  apps/life-manager/lib/daily-preflight-collectors.js
+9a568058c52143f855f2a5711d4486eac627dfb318b7dc54c65684c31fa1d1af  apps/life-call/lib/daily-preflight-collectors.test.js  ->  apps/life-manager/lib/daily-preflight-collectors.test.js
+669925eb17bf2a7ff780ae7a38e1139181ce26d71b0c48b837f2c0d42aff9ea8  apps/life-call/lib/daily-preflight-final-schema.test.js  ->  apps/life-manager/lib/daily-preflight-final-schema.test.js
+de9111ac1044f98392dc69fbbfa529aff9f9620206d8e9befeaed49e7ac3cf9c  apps/life-call/lib/daily-preflight-poll-boundaries.test.js  ->  apps/life-manager/lib/daily-preflight-poll-boundaries.test.js
+eea8f5b41bd58b014a06d941ca034d364b237fd22a34911c78969513fd2725dc  apps/life-call/lib/daily-preflight-production-wiring.test.js  ->  apps/life-manager/lib/daily-preflight-production-wiring.test.js
+01dc4da751d69bee7befa90471f49825a4d81318bfeb0549cfa9d22223981989  apps/life-call/lib/daily-preflight-provenance.test.js  ->  apps/life-manager/lib/daily-preflight-provenance.test.js
+ee02b2bae709e2a3ce2fcff196e49921e53561bda6d5d67ef10684b8ae3a115a  apps/life-call/lib/daily-preflight-purity-contract.test.js  ->  apps/life-manager/lib/daily-preflight-purity-contract.test.js
+e6a92cde063f7b85271266e3676e83e7ca3229c88677fad3dc6d67982b48f71c  apps/life-call/lib/daily-preflight.js  ->  apps/life-manager/lib/daily-preflight.js
+91120ed01ce24b787d425efb4131d6aab28eb285a9259646ecff2c61de46b061  apps/life-call/lib/daily-preflight.test-support.js  ->  apps/life-manager/lib/daily-preflight.test-support.js
+687b7759aee7d9346aa1f06ced5c35a390979ef68a37b729ad1f1f6f9eb93308  apps/life-call/lib/daily-preflight.test.js  ->  apps/life-manager/lib/daily-preflight.test.js
+d2891cf5c82146bb767c586eda156dd480bffa6a3970aa912b290259e20fb874  apps/life-call/lib/dial.js  ->  apps/life-manager/lib/dial.js
+7bb8476c29b0288cc2229a11ec2fe121b03c76dfb43e9399b871f15c0a85743b  apps/life-call/lib/events-gmail-account-propagation.test.js  ->  apps/life-manager/lib/events-gmail-account-propagation.test.js
+cf4d38cf3ec71b500f1145ca0b1b39ba76b4a994135ab77db653efd002ce76d6  apps/life-call/lib/events.js  ->  apps/life-manager/lib/events.js
+15dc2bcce2d4b54a788da371f2e3a95d292eab1ac2ba6e61398bd15bbec2b8ed  apps/life-call/lib/events.test.js  ->  apps/life-manager/lib/events.test.js
+2b316f8a3f69002abaf986b0707598c1492f71fa98bafdb33598efcaf8a8d650  apps/life-call/lib/feature-discovery.js  ->  apps/life-manager/lib/feature-discovery.js
+42bd02b0b42c74c128e8099746aee5c7142a5b4586a0abbdfbf3119c0dafb7a3  apps/life-call/lib/feature-discovery.test.js  ->  apps/life-manager/lib/feature-discovery.test.js
+36a04edff4b25f0a52adae2d27b1a6aa7b5ffc863d32683f8aa9a270d6aeffa2  apps/life-call/lib/gmail-onboard.js  ->  apps/life-manager/lib/gmail-onboard.js
+4219f02ded4fb6d45ccc269c2fd9fc2134888a6aa04aa247d9b22fe488dea2bd  apps/life-call/lib/gmail-onboard.test.js  ->  apps/life-manager/lib/gmail-onboard.test.js
+bdb34cdaa2d4befde64689c2b834c926598117422d79d4161e96ebfa892fa2c8  apps/life-call/lib/i18n.js  ->  apps/life-manager/lib/i18n.js
+bcb8732da7e2a2ed081a088214413ba9b7f3df981fba69c7f4d9e1196f709d37  apps/life-call/lib/inbound-reply.test.js  ->  apps/life-manager/lib/inbound-reply.test.js
+1499a69a4b09c227a08b7a4aba426c838c4bbae587957ae7c1bf4b6d716fbb42  apps/life-call/lib/late-notice.js  ->  apps/life-manager/lib/late-notice.js
+e0ad1cb3efb1386f2b142bbc6b7b77c529cd11d34a1bf2a9bfcf4d5fb7c06332  apps/life-call/lib/late-notice.test.js  ->  apps/life-manager/lib/late-notice.test.js
+f29db61604382ad253a075db012deeac2679a16a7b4e3fdaf1788dc2baa536ec  apps/life-call/lib/ledger.js  ->  apps/life-manager/lib/ledger.js
+afa5fe248aab5b19be5d081a7152333cec479b84bedfba80df273f3fa223d414  apps/life-call/lib/ledger.test.js  ->  apps/life-manager/lib/ledger.test.js
+f4aeb754155a605e0146fb249d62c279694c36e0798c62688207091d093fee18  apps/life-call/lib/lm-p0.test.js  ->  apps/life-manager/lib/lm-p0.test.js
+7a3215f79d74597f2bb94168d45d10c7107f29d0f2199456eba28c8808396b3b  apps/life-call/lib/mail-availability.js  ->  apps/life-manager/lib/mail-availability.js
+291961e9ab5200ed40c2a76194382ed765865762a414806c1e9954570adf927e  apps/life-call/lib/mail-resend.js  ->  apps/life-manager/lib/mail-resend.js
+580a82164dbca50892bf98407c7fd9718dd9f19eefb27401bec01a9d35b839b9  apps/life-call/lib/mail-resend.test.js  ->  apps/life-manager/lib/mail-resend.test.js
+6784a7026240e50cb31ed9676e4e29496eb4e033a848386686652a701dd8791e  apps/life-call/lib/maybe-start-loops.js  ->  apps/life-manager/lib/maybe-start-loops.js
+86f38a8e059296013ad511b05a3fcf0f1f9f64f2d97a26340b443e2a36415b28  apps/life-call/lib/maybe-start-loops.test.js  ->  apps/life-manager/lib/maybe-start-loops.test.js
+798c98f489433ecc66570777eea09f906e1b738a140ed7adfb9c48cfa8ad1f27  apps/life-call/lib/money-path.js  ->  apps/life-manager/lib/money-path.js
+1b7519b852500e15a281311fe346cecc5840ca911e7ed853c10ea8a57f1cb7cc  apps/life-call/lib/money-path.test.js  ->  apps/life-manager/lib/money-path.test.js
+19d62384520a10e08a73b3cd486dbe4aba773f6c5f7ee151358c26a988f1373c  apps/life-call/lib/notify.js  ->  apps/life-manager/lib/notify.js
+f6d7cfb68c2e7adbd203e7f388eb1c98d494fa77b777e552758317fd5d34d58a  apps/life-call/lib/panel-api-score-semantics.test.js  ->  apps/life-manager/lib/panel-api-score-semantics.test.js
+d9675b2b40111a68869b35ed22dbcc8237381acec2d5362264bd4bc5bb852c3a  apps/life-call/lib/panel-api.js  ->  apps/life-manager/lib/panel-api.js
+44cf365fea2a078155c5dd991337944113732b2e9e298326edfad7d28f6fd137  apps/life-call/lib/panel-api.test.js  ->  apps/life-manager/lib/panel-api.test.js
+e22d2fe9b2c5b63bf32410420e63ad1f5fffef9e1a1c371267a992bba4e41fe8  apps/life-call/lib/panel-auth.js  ->  apps/life-manager/lib/panel-auth.js
+6054fa24977d3769dfa49e7b84a9982f4ad9f7e42cc5904cde3daca48bdee35b  apps/life-call/lib/panel-auth.test.js  ->  apps/life-manager/lib/panel-auth.test.js
+f97c6013e3669458df4d04d40d9dc164a9aa7aa788fb541a0208741d6d8dc641  apps/life-call/lib/panel-control-center.test.js  ->  apps/life-manager/lib/panel-control-center.test.js
+69e13cb5ef461a17bc12aa06b50d36beb2b3d737dfc5281dc9ba92a45d8956b5  apps/life-call/lib/panel-corrective-red.test.js  ->  apps/life-manager/lib/panel-corrective-red.test.js
+7620ad21a275a105fcb438710460a1a62c8e58e13a732207803819c07ff5b47f  apps/life-call/lib/panel-corrective3-four-blockers.test.js  ->  apps/life-manager/lib/panel-corrective3-four-blockers.test.js
+a122731978429140e3925a4be78a1903b9e7e92c81653ade01a5127024455e17  apps/life-call/lib/panel-corrective4-logout.test.js  ->  apps/life-manager/lib/panel-corrective4-logout.test.js
+5ff29b0e8644bac0dbc6312a8673e88b7be9002a8ead27675c892d9eedbbbe5e  apps/life-call/lib/panel-delegation-honesty.test.js  ->  apps/life-manager/lib/panel-delegation-honesty.test.js
+4e8a57a2290adf24c8bbb766ba9b8736fbda950ac41b6caf42c5d690c99c30e1  apps/life-call/lib/panel-display-policy.js  ->  apps/life-manager/lib/panel-display-policy.js
+d8b0bb9127c145a1f16fe7b6b22b74e1530a3d6c20f67644e180bd03782092e9  apps/life-call/lib/panel-display-policy.test.js  ->  apps/life-manager/lib/panel-display-policy.test.js
+77ed2f243fe4bb09b171a3fa39d8833d726d2c1e6912ab0bc1859617b98a1bfc  apps/life-call/lib/panel-permanent-session.test.js  ->  apps/life-manager/lib/panel-permanent-session.test.js
+e9663a87dd2afd7d7a623eea97f09716cc64ae86807303fc3ea01a88073be3f6  apps/life-call/lib/panel-presentation.js  ->  apps/life-manager/lib/panel-presentation.js
+63ec9b4b15257b3a20717fa29947d517062f15546522d5ba43363dd5d6faaeb8  apps/life-call/lib/panel-privacy-api.test.js  ->  apps/life-manager/lib/panel-privacy-api.test.js
+6e4e6ea04bf47eb7291ea30898c6496114d3af31df17f0af89dcad1737ec546b  apps/life-call/lib/panel-privacy-browser.test.js  ->  apps/life-manager/lib/panel-privacy-browser.test.js
+c57f8e3d190663aa614ba5fbb8cf9c68887e3221704f55e49bb8a6f65839cc22  apps/life-call/lib/panel-privacy-contract.test.js  ->  apps/life-manager/lib/panel-privacy-contract.test.js
+3ea8742584b1925d2548095d69ba6ad7344fc3d718be10834143747f3eb8bd6e  apps/life-call/lib/panel-score-display-contract.js  ->  apps/life-manager/lib/panel-score-display-contract.js
+fea6f0bd96bc66d38b9692523a12e584e56c0e717ac92156f1ea80cc4e94c842  apps/life-call/lib/panel-score-migration.test.js  ->  apps/life-manager/lib/panel-score-migration.test.js
+be072bf9492824bc2bc095951027f923deeb7fad4469d5ceffb4c59ba891ed3e  apps/life-call/lib/panel-score-semantics.js  ->  apps/life-manager/lib/panel-score-semantics.js
+7e6e48061e6ee188d577a4645ad31567e3d7ffe63ab6894eba04168cf27fc769  apps/life-call/lib/panel-score-semantics.test.js  ->  apps/life-manager/lib/panel-score-semantics.test.js
+1d7e0d46847ad092040f1dfe694cd915da75abdb353edf51c853bbd3e4525915  apps/life-call/lib/panel-ui.js  ->  apps/life-manager/lib/panel-ui.js
+b8c2a973c2cc31b73ba3a2e2a9dbcc46c9818d2c460e1346252138224faa38be  apps/life-call/lib/panel-ui.test.js  ->  apps/life-manager/lib/panel-ui.test.js
+e862c56dbbc8b85219a1ce9e423bca9243be722b3317df0bfb475093f22ede17  apps/life-call/lib/panel-zero-link.test.js  ->  apps/life-manager/lib/panel-zero-link.test.js
+d71611e3d19ab5d2251591375cf6315681a348b0227d5720a6bf0270654d9e0e  apps/life-call/lib/places-memory.js  ->  apps/life-manager/lib/places-memory.js
+3d35da8a9ddbe8fc535d918853223306822b4e498907d277b88667c5cd7c6f6b  apps/life-call/lib/places-memory.test.js  ->  apps/life-manager/lib/places-memory.test.js
+845efb5142bff448e26a2ebdd37e57d6f60809a8b5573e2ca7f0b5084299bbf4  apps/life-call/lib/reply-token.js  ->  apps/life-manager/lib/reply-token.js
+fa4c33a66ac069887ebb953970336fbeb763d0f9ad346a2cb3b758b4cbae07f6  apps/life-call/lib/reply-token.test.js  ->  apps/life-manager/lib/reply-token.test.js
+0069d95db94ba589533fa23ec3f151a710d24d2045ed7ebe0066bcbf525f94c0  apps/life-call/lib/route-cache.js  ->  apps/life-manager/lib/route-cache.js
+f6c0558956b8f4925cccc1a8ba64e7ab5adeb7f41f7960c6e494249ce8ba3a97  apps/life-call/lib/route-cache.test.js  ->  apps/life-manager/lib/route-cache.test.js
+d8a28719bf4ed3cfdd54b67dd6bd5087bb40c94926c0a58a854bde31c15b5bb5  apps/life-call/lib/runtime-preferences.js  ->  apps/life-manager/lib/runtime-preferences.js
+f13ee289aa1b7b22128c5ccdc2a5d3ea637d01ab47a1d8a6ddc7020b927df445  apps/life-call/lib/telegram-onboard.js  ->  apps/life-manager/lib/telegram-onboard.js
+c54d842a0b11b11efe764a4c76aa9170d92db7d053259188375bcdb5f072d396  apps/life-call/lib/telegram-onboard.test.js  ->  apps/life-manager/lib/telegram-onboard.test.js
+d18452f6709e6112e973bd9100ee2133c5377ca58d9cb531c9e938c861ec0edc  apps/life-call/lib/telegram-reply.js  ->  apps/life-manager/lib/telegram-reply.js
+f75841500df284c91880ee55a1f6ef0c6cad155508818fb8aed1b41b479cf428  apps/life-call/lib/telegram.js  ->  apps/life-manager/lib/telegram.js
+7510feadf19e1e1b69f481ffd2184b716a6d7aeba3f1e61d04eccecd75db83f5  apps/life-call/lib/telnyx-webhook.js  ->  apps/life-manager/lib/telnyx-webhook.js
+5922f0688dd313fb75f300b9849eae600612f94c026a8367301b4468b6cb0b3c  apps/life-call/lib/transit.js  ->  apps/life-manager/lib/transit.js
+1599e73b550e8dc79540606f0db4b08209118e149d3d823a51b5ea3a7aca9c41  apps/life-call/lib/transit.test.js  ->  apps/life-manager/lib/transit.test.js
+5a0084a761c48c133e34e1d925bb5f2f2a2455a54336008e4dcbdc40fb59ee1f  apps/life-call/lib/transport/calendar-composio.js  ->  apps/life-manager/lib/transport/calendar-composio.js
+bc2e451ea82a055482a0eaf377d66d2d34ef42240874f841b8ed90f9b0db95de  apps/life-call/lib/transport/calendar-gog.js  ->  apps/life-manager/lib/transport/calendar-gog.js
+8ae9fffa5709188e4c9c27d6f766af0269229ae602ace4dfb1fb72d55f618a48  apps/life-call/lib/transport/calendar-unipile.js  ->  apps/life-manager/lib/transport/calendar-unipile.js
+61882413d6c5ed348fbf7ad02b802325c584dc46a096fd430aeef6e6790365a3  apps/life-call/lib/transport/calendar-unipile.test.js  ->  apps/life-manager/lib/transport/calendar-unipile.test.js
+dae8e699e9fd9c8e93da00d9c787e8f77e1b8c1a794d2d44a52da4ae84bdbe9f  apps/life-call/lib/transport/index.js  ->  apps/life-manager/lib/transport/index.js
+98ca85880bb9802a9892468014a29a7ffe6bc329546515cea5040d276af7ffb2  apps/life-call/lib/transport/mail-gog-receipt.test.js  ->  apps/life-manager/lib/transport/mail-gog-receipt.test.js
+6cd33605aad36f06af3e389cd9b29265d4b431c6a54e29731db4c723503e4495  apps/life-call/lib/transport/mail-gog.js  ->  apps/life-manager/lib/transport/mail-gog.js
+5d537ad636b6cc51504df9fbba1192c4fcc86b9fcfa7e55e31739db0686e8c5a  apps/life-call/lib/transport/mail-unipile.js  ->  apps/life-manager/lib/transport/mail-unipile.js
+05b542d414f7b7fae65b702866a9d52b3e329b4792c77eac17f27bbabe644c91  apps/life-call/lib/transport/transport-gog.test.js  ->  apps/life-manager/lib/transport/transport-gog.test.js
+be314d34716fb4a1514c507e868c247506820994477ec3fdd6982df33735e262  apps/life-call/lib/travel-return.test.js  ->  apps/life-manager/lib/travel-return.test.js
+c59b06854a530f9cb38f2e43507547f37c2ecb95794cc2a44800c3ad26225ad1  apps/life-call/lib/travel-routes.test.js  ->  apps/life-manager/lib/travel-routes.test.js
+63dc798ef00d0df3da0cded6da078be722a32dfe74d9c69cb54f7a2fe46909b6  apps/life-call/lib/travel-transit-wire.test.js  ->  apps/life-manager/lib/travel-transit-wire.test.js
+3501654a784b62366bec8e39bffcefa5417314bbf59c20caad7e7e511c73adfa  apps/life-call/lib/travel.js  ->  apps/life-manager/lib/travel.js
+612f41732ffbf87b9e6a7fe6908fa2e87de93762e75dfdab88aacfd7ec6df5d8  apps/life-call/lib/travel.test.js  ->  apps/life-manager/lib/travel.test.js
+4a9baa54f8091d7e95ec329e31ef34fe5d0806555587f3a03036f1a39fc6f6e4  apps/life-call/lib/user-command.js  ->  apps/life-manager/lib/user-command.js
+21dec5fee84582f12697396418aa2053ac64b2c3779f4c255539776cb6be1517  apps/life-call/lib/user-selector.js  ->  apps/life-manager/lib/user-selector.js
+cbc2b5275aa8cdd336cd16eeedb43d812e911725270a74361abd8bd3ab969363  apps/life-call/lib/user-selector.test.js  ->  apps/life-manager/lib/user-selector.test.js
+d750e87df1e9d9561fe5d918d098dce659df1a00a7f18ccb0ed549ae35e38bf3  apps/life-call/lib/wake-filter.js  ->  apps/life-manager/lib/wake-filter.js
+91ffe72e8b2836e663d47c7e49b896bfdfa36e04a2c844cdcc3944a86f9bef0a  apps/life-call/lib/wake-filter.test.js  ->  apps/life-manager/lib/wake-filter.test.js
+093825b6c9f471e25c238b21eba3db0d0de38e19d020e513bebf25cad84e0d99  apps/life-call/migrations/2026-06-21-wake_policy.sql  ->  apps/life-manager/migrations/2026-06-21-wake_policy.sql
+6d76cbf5bda9f71ec9f63bb93d6c75f51bf2c2452db65d9e573db02f12d28fe1  apps/life-call/migrations/2026-06-22-call_language.sql  ->  apps/life-manager/migrations/2026-06-22-call_language.sql
+d63f5b2aae001258d59a7d4372157da82e1365b41bd5f81487ba79cbf906f825  apps/life-call/migrations/2026-06-24-ch1-atomic-dedup.sql  ->  apps/life-manager/migrations/2026-06-24-ch1-atomic-dedup.sql
+f1aca68f79937f1883a6f174d96699e2429877ca555e33cb33712bb014b8b0e6  apps/life-call/migrations/2026-06-24-hard3-stripe-billing.sql  ->  apps/life-manager/migrations/2026-06-24-hard3-stripe-billing.sql
+c9992ba01b33812729e4a0e5e5945c47dddb861bcec8c79d22dd1d245c49bc80  apps/life-call/migrations/2026-06-25-lm-ask-log-reply-token.sql  ->  apps/life-manager/migrations/2026-06-25-lm-ask-log-reply-token.sql
+3072b71a75c97afc8daa092f93e6014a51798558cb807c35062dd33c0f4874a7  apps/life-call/migrations/2026-06-25-lm-users-email.sql  ->  apps/life-manager/migrations/2026-06-25-lm-users-email.sql
+0df9fd95da7583a0b776f7f0e15fa71cb1abd77bf3dabf6e6ff48e5f67f2af6c  apps/life-call/migrations/2026-06-25-phase-c-user-places.sql  ->  apps/life-manager/migrations/2026-06-25-phase-c-user-places.sql
+c26ed272dc4121c43c3340f068f764c2dffadd3f21455c842a6a80b3270dd142  apps/life-call/migrations/2026-07-04-lm-route-cache.sql  ->  apps/life-manager/migrations/2026-07-04-lm-route-cache.sql
+66870b71aa0e3eabd66e4ee87e1e9d5f6c09678cb8d06f854ad24b04b4df91e8  apps/life-call/migrations/2026-07-17-lm-ask-candidate-location.sql  ->  apps/life-manager/migrations/2026-07-17-lm-ask-candidate-location.sql
+be97905718080d79b5d6dd6ebc6c6d747090e5d7229d36f96cdacd7b4259e312  apps/life-call/migrations/2026-07-17-lm-ask-log-source.sql  ->  apps/life-manager/migrations/2026-07-17-lm-ask-log-source.sql
+81f76b0c7660920dc8d2eb7da4bf05a15e78d81021d6bbb88eaed414ebebbf9f  apps/life-call/migrations/2026-07-18-lm-api-cost.sql  ->  apps/life-manager/migrations/2026-07-18-lm-api-cost.sql
+af02360c7072efb81aa7b4c13edd389a398ced33478e739d0fefe8399e2e9b8d  apps/life-call/migrations/2026-07-18-lm-wake-log-late-notice.sql  ->  apps/life-manager/migrations/2026-07-18-lm-wake-log-late-notice.sql
+8f835361d1bc4a19366557b41a0acca43af751dc821138ed26ac8383280b7058  apps/life-call/migrations/2026-07-18-lm6-gmail-skipped.sql  ->  apps/life-manager/migrations/2026-07-18-lm6-gmail-skipped.sql
+cc00fdaa423ddca210d6389efeaa25e40397cccc16d18fb98036632a52047ae8  apps/life-call/migrations/2026-07-21-lm-panel-control-center.rollback.sql  ->  apps/life-manager/migrations/2026-07-21-lm-panel-control-center.rollback.sql
+da763c54f19997015fbeda24415d70a2f77c71c8879f51537c39b206da0d8462  apps/life-call/migrations/2026-07-21-lm-panel-control-center.sql  ->  apps/life-manager/migrations/2026-07-21-lm-panel-control-center.sql
+993e215e850884352a983a55d806565dda15cbe7ce404dfbb0e1d5d1cf2963cd  apps/life-call/migrations/2026-07-21-lm30-location-gate.sql  ->  apps/life-manager/migrations/2026-07-21-lm30-location-gate.sql
+f45566222a700880beef071f5b534c3fb75d23ad5be19a3ca1cfb4c65e4d0c10  apps/life-call/migrations/2026-07-21-lm32-feature-discovery.sql  ->  apps/life-manager/migrations/2026-07-21-lm32-feature-discovery.sql
+9fe74a67f2cfdc008f964904c3d0e42672fe4e45a42c8932c5f3279c6e1ad310  apps/life-call/migrations/2026-07-21-lm33a-panel-auth.sql  ->  apps/life-manager/migrations/2026-07-21-lm33a-panel-auth.sql
+07d3e6d0aad9860cf65a75cdaa02c7946bba54f35276fed87df9cea7e85d8e0e  apps/life-call/migrations/2026-07-22-core8f-context-provenance.sql  ->  apps/life-manager/migrations/2026-07-22-core8f-context-provenance.sql
+7a812686cf9dfeadaa356c64ec280799df91536c8f032ac8209d1009edb5838e  apps/life-call/migrations/2026-07-22-lm-panel-durable-sessions.sql  ->  apps/life-manager/migrations/2026-07-22-lm-panel-durable-sessions.sql
+eb917c3d2d7931b0888db4ba1b9a19dcfb2bc6f506afe7fb4321f41950e4b5e1  apps/life-call/migrations/2026-07-22-panel-score-outcomes.sql  ->  apps/life-manager/migrations/2026-07-22-panel-score-outcomes.sql
+8abfc30d96c7c9d25b48ea870c4a6e816ca72cba8ad8fee2837fdb865167392e  apps/life-call/migrations/2026-07-22-panel-zero-link-auth.sql  ->  apps/life-manager/migrations/2026-07-22-panel-zero-link-auth.sql
+9a7a4166370f992f9e427fdbfc44c2fcb8aa91adab935595da9ab3be7b623888  apps/life-call/nixpacks.toml  ->  apps/life-manager/nixpacks.toml
+5f6d12aba5107def822b549d1398d0e68898af67b0f2811495c734ed328b5b2d  apps/life-call/package-lock.json  ->  apps/life-manager/package-lock.json
+1e729f48dad0bf9c4a9c080ba754349d270df1c4d98736ce984a7db745146de3  apps/life-call/package.json  ->  apps/life-manager/package.json
+1fbf56cf396dd1de9eccae3f85fcdb496df54289fbe7390a720a31ac84cc34d2  apps/life-call/railway.toml  ->  apps/life-manager/railway.toml
+977ea60213989463b758f1349be8744482d7058f6b3b4ca816eebe0741048e34  apps/life-call/scheduler.js  ->  apps/life-manager/scheduler.js
+f4c6b74ac008166e943f01353b5abd3155f816f929bcd66707450e2c06d44273  apps/life-call/scripts/daily-preflight.js  ->  apps/life-manager/scripts/daily-preflight.js
+53224353d4e36dde3f2207d4b4eaf81a8796634792b876a71977dc7f332440d7  apps/life-call/scripts/e2e-ask.js  ->  apps/life-manager/scripts/e2e-ask.js
+ec298ac942d527bd3d3d0e4658f0b08ae06acc7876f113227466017265b07c49  apps/life-call/scripts/independent-panel-score-readback.js  ->  apps/life-manager/scripts/independent-panel-score-readback.js
+6fa25c02984f3a7b4a2d0f06cc9f6cd819c96e277812cdda7a1b24b5d87c6db0  apps/life-call/scripts/independent-panel-score-readback.test.js  ->  apps/life-manager/scripts/independent-panel-score-readback.test.js
+115848d1b1c735a1bff17d2caaf7d37d0ef256d7f24556817f4fbb15bea15f63  apps/life-call/scripts/phase-c-eval.js  ->  apps/life-manager/scripts/phase-c-eval.js
+cb7edbf8bb824b3a2baa6a8fd60130ff37ef0774fb3c2bd795e5ddcbac3603d2  apps/life-call/scripts/send-feature-discovery.js  ->  apps/life-manager/scripts/send-feature-discovery.js
+550389dcdf98d09d29012a489feb3653704c02e42889204930ca0bc39b9ecd3b  apps/life-call/scripts/smoke-panel-api-fixture.js  ->  apps/life-manager/scripts/smoke-panel-api-fixture.js
+d46672b3cf587e5f68ccd1ebcb5a50881700ddaa64558e063dc6af4679e9582c  apps/life-call/scripts/smoke-panel-ui-fixture.js  ->  apps/life-manager/scripts/smoke-panel-ui-fixture.js
+a07f9ced5867e1cd98f3fc0da724fc291f6dc501a679fb3817c9b6d4f224ed2f  apps/life-call/server.js  ->  apps/life-manager/server.js
+e68d578b4e66fa4186926b4d6294b44d1120cd551fb344718f0cfb059b26805d  apps/life-call/skill-life-manager/SKILL.md  ->  apps/life-manager/skill-life-manager/SKILL.md
+8654ba188bdd6b96ba8e6263cdea2b708ab0a7b9999dd96ce9e4a56210b91942  apps/life-call/skill-life-manager/openclaw/build-commands.js  ->  apps/life-manager/skill-life-manager/openclaw/build-commands.js
+75f3805886e991dcfd206e29c0945383717221f611570b554f76ca2c5a45a967  apps/life-call/skill-life-manager/openclaw/crons.json  ->  apps/life-manager/skill-life-manager/openclaw/crons.json
+153f8d964429df3e88382614a64f0961bdcf5b64ad61b8882beee82196b0ceb5  apps/life-call/skill-life-manager/openclaw/crons.test.js  ->  apps/life-manager/skill-life-manager/openclaw/crons.test.js
+66a5c65b614dfdea76c8dcc43af6fbb2ce484b1facb537238549a9781a99773c  apps/life-call/skill-life-manager/openclaw/register-crons.sh  ->  apps/life-manager/skill-life-manager/openclaw/register-crons.sh
+cf03d4b18deadfed6fb227b4ce4097d1bfc31f1a084c90819a08730387f083bc  apps/life-call/skill-life-manager/scripts/ask.js  ->  apps/life-manager/skill-life-manager/scripts/ask.js
+8f85674d67a9eed6979581449f07012042891a8222686c8a68b0fb3953b5a1e4  apps/life-call/skill-life-manager/scripts/scaffold.test.js  ->  apps/life-manager/skill-life-manager/scripts/scaffold.test.js
+172aea0e575aa0520f82a21cccbf9ad8bcd6b809f140a77f1c4f5592438d3553  apps/life-call/skill-life-manager/scripts/tick.js  ->  apps/life-manager/skill-life-manager/scripts/tick.js
+745ec8f1f14b4f5e815a225b9d79a99ed5825eebc79aa4fe4bad09beea280b6f  apps/life-call/skill-life-manager/scripts/travel.js  ->  apps/life-manager/skill-life-manager/scripts/travel.js
+32f268bd3357f6d773cce1b85e3446668d4de64644dc2a71120f2cdcb6a5929e  apps/life-call/test-support/core8d-cli-loader.cjs  ->  apps/life-manager/test-support/core8d-cli-loader.cjs
+4d2485b494e136065b2a5e35c68a7b48728e3faa51f75dcf91d4f5f5054b5509  apps/life-call/test-support/core8d-runtime-harness.js  ->  apps/life-manager/test-support/core8d-runtime-harness.js
+7870eac0bc4264d5e4c8f6017392305106bc0943b6facc434e5dcd91a519d25e  apps/life-call/test/calendar-connect-signature-contract.test.js  ->  apps/life-manager/test/calendar-connect-signature-contract.test.js
+070769eee1a6207f0ded1e2a1fc000dfcd8d2b498be5779d1dfb5ba6e575a36f  apps/life-call/test/context-onboarding-discovery-contract.test.js  ->  apps/life-manager/test/context-onboarding-discovery-contract.test.js
+fc770e0f6fab0975b17ff2716b0eb0f3c76fbb21a6c1db87bd5f79aca98cce1f  apps/life-call/test/daily-journey-contract.test.js  ->  apps/life-manager/test/daily-journey-contract.test.js
+c40454974cc28261a5963dd183fcd536da94c3ba77a813c8e9d981758c5f1575  apps/life-call/test/inngest.test.js  ->  apps/life-manager/test/inngest.test.js
+d07d2bb0e0e40ce1196d7a3e9bf76742f6c4112efed10d2cbec24dfbbfb48df0  apps/life-call/test/onboarding-resume-contract.test.js  ->  apps/life-manager/test/onboarding-resume-contract.test.js
+0bf62faf9e869face14570f7c5031e52f89d78b12e6e8c6465b4cb7538b9545d  apps/life-call/test/phase-c-wiring.test.js  ->  apps/life-manager/test/phase-c-wiring.test.js
+d6b07f4d3c67afea40c72ba5a20bfc10bbd985edb03664bbee1dad1f7c1f2ac6  apps/life-call/test/postgres/panel-score-postgres.integration.sh  ->  apps/life-manager/test/postgres/panel-score-postgres.integration.sh
+b8c12d7bc235f5c26d83a5c6158bdc07f730d7e7bb34b78b9624fc3222182d25  apps/life-call/test/scheduler.test.js  ->  apps/life-manager/test/scheduler.test.js
+033cb52111dc6c95af44ac82f51873200d485091991862569e2cb5fce42cfd3d  apps/life-call/test/telegram-callback-http-contract.test.js  ->  apps/life-manager/test/telegram-callback-http-contract.test.js
+82d669df3151e1e766e8bca46a730395284d523788f9afd4f65a969aec01f545  apps/life-call/test/tenant-isolation.test.js  ->  apps/life-manager/test/tenant-isolation.test.js
+820917205b40e2c88e5cac67a113f6e9a582e8cf6dbcf49956ec68defd68a90e  apps/life-call/test/testcall-ratelimit.test.js  ->  apps/life-manager/test/testcall-ratelimit.test.js
+fe33d18f12746bda9a818ef25838d9742d4c8eea6f2b139fc7e8c8e43488c0ea  apps/life-call/test/wake-levels.test.js  ->  apps/life-manager/test/wake-levels.test.js
+
+# ============================================================
+# MIGRATION ADAPTATIONS (semantic-equivalence deltas)
+# ============================================================
+# The 183 apps/life-call files are byte-identical to source EXCEPT one
+# required self-path update below. Byte-equivalence verified: 182/183 identical.
+#
+# 1. apps/life-manager/scripts/daily-preflight.js  (1 line)
+#    - currentSourceSnapshotRef(): "HEAD:apps/life-call" -> "HEAD:apps/life-manager"
+#    - Reason: the app reads its OWN committed git tree as the source snapshot ref.
+#      After the directory rename the path had to follow. Pure path rename, no logic change.
+#      Restores test: lib/daily-preflight-final-schema.test.js (offline CLI 9/9 report).
+#
+# ADDITIONAL FILES migrated from OUTSIDE apps/life-call (byte-identical), required
+# because the migrated test suite is contractually coupled to them:
+#
+# A. docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
+#    <- anicca-products:docs/superpowers/specs/ (same path). Canonical SSOT spec.
+#    Read by lib/feature-discovery.test.js, lib/panel-corrective-red.test.js (§9.11 copy verbatim).
+#
+# B. apps/landing/{app/lm/LmClient.tsx,LmBody.tsx,page.tsx,
+#                  netlify/functions/lm-onboard.js,calendar-connect.js}
+#    <- anicca-products:apps/landing/ (scoped LM subset only; NOT the 397-file shared site).
+#    Executed/read by test/onboarding-resume-contract.test.js,
+#    test/calendar-connect-signature-contract.test.js. See apps/landing/README.md.
+#
+# C. .vcsdd/features/life-manager-cost-connect-reliability/evidence/fixtures/
+#       transit-plan-tokyo-shinjuku.json
+#    <- anicca-products:.vcsdd/ (single fixture; synthetic JR transit data, no PII).
+#    Read by lib/transit.test.js. Rest of .vcsdd/ (evidence/logs/media) NOT migrated.
+#
+# VERIFICATION (target apps/life-manager):
+#   npm test            -> 606 pass / 0 fail
+#   npm run eval        -> calendar 21/21, late 12/12, context 12/12, score 27/27 (100%)
+#   npm run eval:panel-privacy -> api=177 browser=63 recipes=19 channels=9 (pass)
+#   node --check server.js / scheduler.js -> OK
+#   Pre-existing (source-identical, non-blocking): smoke:panel-api fixture tenant-filter assert.

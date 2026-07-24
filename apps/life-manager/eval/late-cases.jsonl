@@ -1,0 +1,12 @@
+{"id":"L1-missing","input":{"nowMs":1000,"event":{"startMs":200000},"travelMinutes":3,"location":null},"expected":{"decision":"location_missing"}}
+{"id":"L2-expired-before","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":3,"location":{"expires_at":"1970-01-01T00:01:39.999Z"}},"expected":{"decision":"location_expired"}}
+{"id":"L3-expired-boundary","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":3,"location":{"expires_at":"1970-01-01T00:01:40.000Z"}},"expected":{"decision":"location_expired"}}
+{"id":"L4-live-on-time","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":5,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"on_time","arrivalMs":400000,"lateMinutes":0}}
+{"id":"L5-live-early","input":{"nowMs":100000,"event":{"startMs":400001},"travelMinutes":5,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"on_time","arrivalMs":400000,"lateMinutes":0}}
+{"id":"L6-live-late-ms","input":{"nowMs":100001,"event":{"startMs":400000},"travelMinutes":5,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"late","arrivalMs":400001,"lateMinutes":1}}
+{"id":"L7-live-late-13","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":18,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"late","arrivalMs":1180000,"lateMinutes":13}}
+{"id":"L8-no-event","input":{"nowMs":100000,"event":null,"travelMinutes":5,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"no_event"}}
+{"id":"L9-no-route","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":null,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"route_unavailable"}}
+{"id":"L10-invalid-route","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":-1,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"route_unavailable"}}
+{"id":"L11-invalid-expiry","input":{"nowMs":100000,"event":{"startMs":400000},"travelMinutes":5,"location":{"expires_at":"bad"}},"expected":{"decision":"location_expired"}}
+{"id":"L12-future-expiry-late","input":{"nowMs":100000,"event":{"startMs":160000},"travelMinutes":2,"location":{"expires_at":"1970-01-01T00:10:00.000Z"}},"expected":{"decision":"late","arrivalMs":220000,"lateMinutes":1}}
