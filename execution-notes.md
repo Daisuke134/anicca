@@ -126,3 +126,6 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 
 ## 10g BRAIN-a — done (2026-07-24, L2)
 - intent-graph.js closed schema (6 kinds, provenance/confidence/expiry), correction-expires-prediction contract, 3 persona fixtures. Tests 7/7; full suite fail 0. Spec §10 row updated in same commit.
+
+## 10h BRAIN-b — done (2026-07-24, L2)
+- opportunity-engine.js six-factor gate over 10g graph; intent-cases.jsonl 18/18 (100%); contract 4/4; wired into test+eval chains; full suite fail 0. Spec §10 updated (26 pending).
