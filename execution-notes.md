@@ -239,3 +239,17 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Focused tests are `7/7`; full tests exit 0; all evals remain 100%; changed-path secret/PII scans
   are clean.
 - Evidence: `docs/evidence/10b-feedback-to-github-issue.md`. Pending becomes 20; next is 10c.
+
+## 10c DEV-c — done (real fresh-agent PR)
+- The existing launchd D0 now targets only canonical `Daisuke134/life-manager`, `origin/main`, and
+  `apps/life-manager`. It uses the shared fresh-agent runner and performs full tests/evals before
+  creating a PR; it contains no merge or deploy action.
+- Run 1 exposes a missing required runner loop argument: fresh agent exits 2 and PR #1087 initially
+  contains only D0 infrastructure. The PR is not merged. Corrective TDD makes a nonzero agent exit
+  fail closed before test/PR gates.
+- Run 2 selects real issue #1085, fresh agent exits 0, commits `9c93bf36…`, and changes the missing
+  Calendar model/UI action to exact `Connect Calendar` with focused regression coverage.
+- D0 independently passes full tests and every eval, updates real PR
+  [#1087](https://github.com/Daisuke134/life-manager/pull/1087), appends a `pr_open` state row, and
+  reports to Telegram with message id `3386`.
+- Evidence: `docs/evidence/10c-feedback-dev-loop-auto-pr.md`. Pending becomes 19; next is 10d.

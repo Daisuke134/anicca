@@ -119,6 +119,12 @@ test("PANEL-0: Calendar renders native Disconnect and Reconnect controls", () =>
   assert.match(html, /case "disconnect-calendar": return \{ type: "connection\.disconnect", provider: "calendar" \}/);
 });
 
+test("#1085: Calendar connect action is rendered as Connect Calendar", () => {
+  const html = renderPanelPage();
+  assert.match(html, /item && item\.actionLabel === "Reconnect calendar" \? "Reconnect calendar" : "Connect Calendar"/);
+  assert.doesNotMatch(html, /item && item\.actionLabel === "Reconnect calendar" \? "Reconnect calendar" : "Connect calendar"/);
+});
+
 test("LM-33c: panel CSS collapses to one column without horizontal overflow at 375px", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();
