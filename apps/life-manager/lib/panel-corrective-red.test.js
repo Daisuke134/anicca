@@ -107,7 +107,7 @@ test("FIND-008 connection model distinguishes connect reconnect disconnect", asy
   const scope = { uid: "u1", chatId: "c1" };
   const missing = await buildControlCenter(scope, { store, calendarStatus: async () => "MISSING" });
   const disabled = await buildControlCenter(scope, { store, calendarStatus: async () => "DISABLED" });
-  assert.equal(missing.connections.calendar.actionLabel, "Connect calendar");
+  assert.equal(missing.connections.calendar.actionLabel, "Connect Calendar");
   assert.equal(disabled.connections.calendar.actionLabel, "Reconnect calendar");
 });
 
