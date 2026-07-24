@@ -1,0 +1,26 @@
+[
+  {
+    "id": "dais-goal-1", "uid": "u-dais", "kind": "explicit_goal",
+    "statement": "毎朝6時に起きて午前は執筆に使う",
+    "provenance": { "source": "user_message", "evidence": "TG onboarding answer 2026-07-01", "observedAt": "2026-07-01T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": null, "status": "active", "supersedes": null
+  },
+  {
+    "id": "dais-deleg-1", "uid": "u-dais", "kind": "delegation",
+    "statement": "可逆で低リスクの予約・リマインドは確認なしで実行してよい",
+    "provenance": { "source": "telegram_reply", "evidence": "TG closed-Q answer 2026-07-05", "observedAt": "2026-07-05T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": null, "status": "active", "supersedes": null
+  },
+  {
+    "id": "dais-pref-1", "uid": "u-dais", "kind": "repeated_preference",
+    "statement": "移動は電車を選び、タクシーは使わない",
+    "provenance": { "source": "calendar_pattern", "evidence": "12 rail journeys, 0 taxi in 60d", "observedAt": "2026-07-10T00:00:00.000Z" },
+    "confidenceTier": "repeated", "confidence": 0.6, "expiresAt": null, "status": "active", "supersedes": null
+  },
+  {
+    "id": "dais-goal-2", "uid": "u-dais", "kind": "explicit_goal",
+    "statement": "7月中は週2回コメディのオープンマイクに出る",
+    "provenance": { "source": "user_message", "evidence": "TG message 2026-07-03", "observedAt": "2026-07-03T00:00:00.000Z" },
+    "confidenceTier": "explicit", "confidence": 0.9, "expiresAt": "2026-08-01T00:00:00.000Z", "status": "active", "supersedes": null
+  }
+]
