@@ -14779,3 +14779,10 @@
 {"ts":1784893814,"wake_id":"00MRYVOXDOD17561A35F3742B5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784893948,"wake_id":"00MRYVRSP468C18B0796814F9A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784894079,"wake_id":"00MRYVUM8A7DEDDBA2BD984F08","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894218,"wake_id":"00MRYVXL20F2B40C66B34742EB","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894349,"wake_id":"00MRYW0EB7B9F642FF63A44485","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894482,"wake_id":"00MRYW391S0188848C3AB24BFE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894618,"wake_id":"00MRYW6627496931E6F164473E","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894780,"wake_id":"00MRYW9MKH97C01A61B83F47B5","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784894934,"wake_id":"00MRYWCY0L22D64588F4574081","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784894943,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784895064,"wake_id":"00MRYWFPZF7A4FE13B52134AF4","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784895074,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
