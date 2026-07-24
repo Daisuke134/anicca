@@ -18,6 +18,11 @@
   </dict>
   <key>ProcessType</key>
   <string>Background</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>LM_DAILY_GENERATION_ONLY</key>
+    <string>1</string>
+  </dict>
   <key>StandardOutPath</key>
   <string>/Users/anicca/.openclaw/logs/life-manager-daily.out</string>
   <key>StandardErrorPath</key>

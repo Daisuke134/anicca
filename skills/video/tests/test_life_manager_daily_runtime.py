@@ -34,6 +34,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         )
         self.assertEqual(data["StartCalendarInterval"], {"Hour": 10, "Minute": 15})
         self.assertEqual(data["ProcessType"], "Background")
+        self.assertEqual(data["EnvironmentVariables"], {"LM_DAILY_GENERATION_ONLY": "1"})
 
     def run_daily(self, generator_rc=0, runner_rc=0):
         temporary = tempfile.TemporaryDirectory()
@@ -117,6 +118,29 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         recursive = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
         self.assertEqual(recursive.returncode, 73)
         self.assertFalse((root / "recursive-args").exists())
+
+    def test_generation_only_mode_keeps_distribution_locked_for_9c(self):
+        result, root = self.run_daily()
+        env = os.environ.copy()
+        env.update(
+            {
+                "HOME": str(root / "home"),
+                "LM_DAILY_GENERATION_ONLY": "1",
+                "LM_VIDEO_GENERATOR": str(root / "generator"),
+                "RUN_AGENT_BIN": str(root / "runner"),
+                "LM_DAILY_RUN_LEDGER": str(root / "generation-only-runs.jsonl"),
+                "LM_DAILY_USAGE_LEDGER": str(root / "generation-only-usage.jsonl"),
+                "CAPTURE_ARGS": str(root / "generation-only-args"),
+                "CAPTURE_PROMPT": str(root / "generation-only-prompt"),
+            }
+        )
+        generation_only = subprocess.run(["bash", str(DAILY)], env=env, text=True, capture_output=True)
+        self.assertEqual(generation_only.returncode, 0, generation_only.stderr)
+        prompt = (root / "generation-only-prompt").read_text(encoding="utf-8")
+        self.assertIn("GENERATION-ONLY 9b", prompt)
+        self.assertIn("Do not post", prompt)
+        self.assertIn("ffprobe", prompt)
+        self.assertIn("full decode", prompt)
 
     def test_runner_failure_and_timeout_propagate_and_do_not_touch_success_marker(self):
         for runner_rc in (23, 124):

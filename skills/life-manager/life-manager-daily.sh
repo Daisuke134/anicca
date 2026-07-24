@@ -75,7 +75,16 @@ print("1" if found else "0")
 ' 2>>"$LOG")"
 export LM_DAILY_CREATIVE_ALREADY_POSTED
 
-PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the loop.
+if [ "${LM_DAILY_GENERATION_ONLY:-0}" = "1" ]; then
+  PROMPT="GENERATION-ONLY 9b. Do not post, open a browser, send Telegram, invoke launchctl, or
+invoke life-manager-daily.sh. This process is already the single active daily pass. Validate the
+exact MP4 $LM_DAILY_VIDEO for creative $LM_DAILY_CREATIVE_ID with ffprobe and a full decode.
+Read the canonical 16-row bank and append-only rotation state only to confirm this output is the
+current idempotent daily selection. Do not mutate either file. Return the required final schema JSON
+immediately after those bounded checks, with concrete evidence for codec, dimensions, audio,
+duration, decode exit, creative id, and output path."
+else
+  PROMPT="Run ONE bounded daily Life Manager marketing pass with no human in the loop.
 This is the existing ai.anicca.life-manager-daily route. Preserve its existing Instagram account,
 CloakBrowser daily-driver posting method, Reddit karma gate, CEO report, cost recording, Telegram
 report and logged-out verification. Do not create a new account or a new marketing loop.
@@ -95,6 +104,7 @@ personal account. A post counts only after a fresh logged-out readback returns t
 On any provider, browser or publication failure, record an honest failure and return a failing
 result; never turn an internal failure into success. Send the existing one-screen Telegram report
 with the real provider message id after all ledgers are written."
+fi
 
 EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.openclaw/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
 export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
