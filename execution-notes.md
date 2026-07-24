@@ -335,3 +335,14 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Closed selector tests are `3/3`; full tests/evals/privacy pass. Provider writes are zero.
 - Selected/frozen provider for 11c is `otakibashi-sora`. Pending becomes 15; next is 11c.
   Evidence: `docs/evidence/11b-real-care-candidates.md`.
+
+## 11c PHY-c — done (real booking boundary + honest Telegram)
+- The 11b provider remains frozen as `otakibashi-sora`; no fallback provider is attempted.
+- The logged-out DigiKar flow reaches outpatient, initial visit, and a real available slot. The
+  selected slot redirects to patient verification requiring a mobile number and SMS code.
+- Life Manager has no SMS receive channel, so phone-number submission, code guessing, bypass,
+  and false booking claims are all zero. Booking id remains `null`.
+- Real Telegram message id `3394` honestly reports the measured boundary, unchanged provider, and
+  unconfirmed reservation without asking a question.
+- Closed contract tests are `4/4`; full tests/evals/privacy pass. Pending becomes 14; next is 11d.
+  Evidence: `docs/evidence/11c-real-care-booking-boundary.md`.
