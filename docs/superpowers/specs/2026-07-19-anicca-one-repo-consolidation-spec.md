@@ -460,7 +460,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**Current cursor**: 残りは **28 atomic**。次は `8i REPO-CONSOLIDATE`。`8e`/`8f`はcode/release済みでproduction L3の明示resume条件待ち、`9b`以降は`8i`完了後にcanonical `Daisuke134/life-manager`だけで進める。
+**Current cursor**: 残りは **27 atomic**(10g done)。`8i`はrepo側gate完了(PR #1072 merge=main `a7ac84d4`、byte等価manifest、fresh review APPROVE)でRailway cutover/本番L3/archiveの外部boundaryのみ残。`8e`/`8f`はcode/release済みでproduction L3の明示resume条件待ち、`9b`以降は`8i`完了後にcanonical `Daisuke134/life-manager`だけで進める。
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
@@ -495,7 +495,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 | 10d | DEV-d | production error intake: provider timeout、failed call/email/post、5xx、eval regressionをPII scrubしてdedupe issue化 | 実failure injection 3種→重複なしissue 3件、raw PII/secret 0件 | pending |
 | 10e | DEV-e | guard内auto-merge/deploy: test/eval 100%、fresh adversary、path allowlist、blockedActions、rollback、1 issue/1 PR | 実error由来PR 1本を人手なしでmerge/deployし、再現test GREEN + prod回復。guard外変更はmerge拒否を実測 | pending |
 | 10f | DEV-f | daily self-build運用: errors+feedbackを毎日処理し、Fable/Daisを定常loopから外す | launchd/gateway cron常設 + 7日台帳（各日issue/PR/no-op理由）+ stale/timeout自己回復。sessionは7日待たずloopへ判定委譲 | pending |
-| 10g | BRAIN-a | intent-aware context graph: explicit goal、repeated preference、family/dependent、delegation、prohibition、correctionをprovenance/confidence/expiry付きで保持 | schema/contract test + Dais型/母型/予定を好まない型のfixture。訂正で古い推定が失効 | pending |
+| 10g | BRAIN-a | intent-aware context graph: explicit goal、repeated preference、family/dependent、delegation、prohibition、correctionをprovenance/confidence/expiry付きで保持 | schema/contract test + Dais型/母型/予定を好まない型のfixture。訂正で古い推定が失効 | **done (2026-07-24 L2実測)**: `apps/life-manager/lib/intent-graph.js` 閉schema(6 kind/provenance source enum/閉key)+ confidence tier 明示0.9>繰り返し0.6>推定0.3。`applyCorrection`がsupersedes対象をcorrectedへ失効(削除せずprovenance監査可)、`effectiveEntries`はexpired/corrected除外のpure read。contract test `lib/intent-graph.test.js` 7/7、fixture `test/fixtures/intent-graph/{dais,mother,non-event}.json`(非event型はinferred推定がcorrectionで失効済みの形を実証)。full suite fail 0でmain test chainに常設 |
 | 10h | BRAIN-b | proactive opportunity engine: definite goodとpersonal goodを分け、body/mind/finance/life-admin候補をbenefit/urgency/confidence/reversibility/cost/riskで裁定 | `intent-cases.jsonl` 15+ cases eval 100%。hoikuen、tech event、友人時間、休養、何もしない正解を含む | pending |
 | 10i | BRAIN-c | personalized action E2E: 現userのreal contextから1件を選び、web/emailのみで実行し、calendar/TGへ事後報告。不可なら正直報告 | 実候補根拠 + 実web/email side-effectまたは正直な実TG + gcal event。不要なapproval Q 0件 | pending |
 | 11a | PHY-a | 未通院・未ケア検知 rule: calendar/context/本人intent履歴から歯科・散髪等を検知。固定周期を全員へ押し付けず、medical diagnosisはしない。eval `phy-cases.jsonl` 10+ cases | eval 100% + 実 calendar/context で検知1件 | pending |
