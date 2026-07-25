@@ -481,7 +481,17 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
    - これを毎日、内容だけ変えて TikTok（および IG 復旧後は IG）へ出す。
 8. **Instagram の warm-up は行わない**。bot 的 warm-up が shadowban / 凍結の原因になったという判断。
    人間が居ない運用では warm-up は逆効果なので skip する。
-9. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
+9. **Life Manager は CFO も担う（2026-07-25 Dais 裁定）**。FINANCIAL は「送金する」だけでなく
+   **支出の管理**まで含む: 契約中の subscription を把握し、使われていないものを見つけ、解約を提案し、
+   承認を得て解約する。稼ぐ側（earn loop）と使う側（spend 管理）の両方を持って初めて財務の健全性になる。
+   - **fiat 決済の rail = Stripe Link**（`link.com/agents`、`@stripe/link-cli`）。設計上エージェントに認証情報は
+     露出せず、支出ごとに本人承認が要るため本 spec の安全境界と整合する。CLI 0.10.1 を導入済み。
+   - **2026-07-25 実測: Link は現時点で日本から利用不可**（US 限定）。VPN/VPS で所在地を偽ってサインアップする
+     回避策は採らない — 決済事業者への虚偽申告であり、凍結時の損失が利得を上回る。
+     **JP 提供開始、または正規の US 事業体での契約を待って接続する**。それまで fiat の自動支出は行わない。
+   - **今日動く rail は agent wallet（13a、Base）と x402**。fiat が開くまでの CFO 機能は
+     「棚卸し + 提案 + 本人承認 + 実行は本人」で成立させ、rail が開いた時点で実行だけを引き継ぐ。
+10. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
    参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
 
 
