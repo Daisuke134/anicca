@@ -203,8 +203,15 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   } catch {
     return;
   }
-  try { if (u.notifications_enabled !== false) await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events }); }
-  catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  try {
+    if (u.notifications_enabled !== false) {
+      const late = await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events });
+      // The Telegram leg is otherwise unauditable: name the message that was actually delivered.
+      if (late && late.telegramMessageId !== undefined) {
+        console.log(`[late] uid=${String(u.uid).slice(0, 12)} decision=${late.decision} sent=${!!late.sent} tg_message_id=${late.telegramMessageId}`);
+      }
+    }
+  } catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
