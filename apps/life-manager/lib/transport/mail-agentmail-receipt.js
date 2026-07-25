@@ -30,7 +30,10 @@ function makeAgentMailReceipt({ apiKey, inbox, fetchImpl, limit = 20 } = {}) {
   return {
     kind: "agentmail",
     ready: () => Boolean(key && box),
-    async findReceipt({ nonce, afterMs, signal } = {}) {
+    // `fromIncludes` / `subjectIncludes` pin WHICH message counts. Measured 2026-07-25: putting the
+    // receipt inbox on a calendar event makes Google send it an invitation carrying the same nonce, so
+    // a nonce-only match can report an invitation as proof of a notice that was never delivered.
+    async findReceipt({ nonce, afterMs, signal, fromIncludes, subjectIncludes } = {}) {
       if (!key || !box) return null;
       if (!NONCE_PATTERN.test(String(nonce || ""))) return null;
       const after = Number.isFinite(afterMs) ? afterMs : 0;
@@ -43,8 +46,11 @@ function makeAgentMailReceipt({ apiKey, inbox, fetchImpl, limit = 20 } = {}) {
           ? payload.messages
           : (Array.isArray(payload) ? payload : []);
         for (const message of messages) {
-          const haystack = `${(message && message.subject) || ""}\n${(message && message.preview) || ""}`;
+          const subject = String((message && message.subject) || "");
+          const haystack = `${subject}\n${(message && message.preview) || ""}`;
           if (!haystack.includes(nonce)) continue;
+          if (subjectIncludes && !subject.includes(subjectIncludes)) continue;
+          if (fromIncludes && !String((message && message.from) || "").includes(fromIncludes)) continue;
           const interval = receivedInterval(message);
           if (!interval || interval.upperMs < after) continue;
           // No RFC Message-ID means we cannot satisfy the done condition, so this is not a receipt.
