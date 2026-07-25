@@ -376,3 +376,22 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Pause marker: `~/.openclaw/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE`.
 - Day 1/Day 2 append-only evidence remains intact. No paused dates count toward the 7-day gate.
 - Execution order ends with 10e, then 10f. Current work remains 9c preview-first.
+
+## CORE-8e delivery proof and the claim-suppression bug — code done, L3 pending
+- The unproven boundary was never the send: Resend answers with its own queue id, so the journey could
+  not produce the RFC Message-ID the done condition asks for. The three earlier attempts all failed
+  because the notice recipient was a mailbox we could not read.
+- Resume condition is met: an external controlled `@agentmail.to` inbox exists and its API readback is
+  live (HTTP 200; 20 of 20 real messages carry an RFC-shaped `message_id`).
+- Added `lib/transport/mail-agentmail-receipt.js`, the AgentMail sibling of `makeGogMail().findReceipt`
+  — same fail-closed contract, same safe-metadata-only return, plus the RFC Message-ID.
+- Measured against the live API, `message_id` holds the RFC id and `smtp_id` is AgentMail's own handle;
+  the first pass had them swapped and was corrected from the real data, not from assumption.
+- Production audit found a real journey bug: a located event that was already claimed stopped the whole
+  late-notice path, because the finder took only the first located event and a failed claim returned at
+  once. On 2026-07-25 an all-day located event claimed at 00:31:51Z ran until evening, so every later
+  event that day was unreachable. Candidates are now walked; an all-claimed run stays silent.
+- Verification: `npm test` 729 pass / 0 fail, `npm run eval` 7 suites at 100%, panel privacy PASS.
+- Production runs `a1f3123d`; canonical main is ahead only by docs-only commits that Railway skipped.
+- Still pending: the real L3 run (real call recording, real calendar event, real Telegram id, real RFC
+  Message-ID readback, and the not-late case).
