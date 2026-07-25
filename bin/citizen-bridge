@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+// citizen-bridge — thin CLI entrypoint for S10: moving the colony's idle USDC from Base to Solana
+// via CCTP V2 Standard Transfer, so the shelter wallet's runway stops being measured in hours. No
+// business logic lives here (repo convention: bin/ entrypoints stay thin); everything real is in
+// skills/self/shelter/nosana/bridge/bridge.mjs, which this just calls with real defaults.
+//
+// --dry (DEFAULT): resolves identity (Base source + Solana destination), reads real balances/gas
+//   price/ETH-USD price, computes the worth-it verdict and the spend gate — then stops before any
+//   signing.
+// --live: the only flag that actually signs and broadcasts the approve+burn on Base, paid from the
+//   founder wallet's own ETH. Requires explicit opt-in every invocation. NOTE: this does NOT
+//   complete the Solana-side mint (see bridge.mjs's file header "known gap") — a --live run polls
+//   for the destination credit and will very likely end in `awaiting-credit`, which is expected,
+//   not a failure.
+//
+// Usage: bin/citizen-bridge [--dry|--live] [--help]
+
+import { bridgeToSolana } from "../skills/self/shelter/nosana/bridge/bridge.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-bridge [--dry|--live]",
+      "",
+      "  --dry   (default) resolve identity, read real Base/Solana balances, real Base gas price,",
+      "          and real ETH/USD price, compute the worth-it verdict and the spend gate — then",
+      "          stop before any signing.",
+      "  --live  actually sign and send the approve+depositForBurn transactions on Base, paid from",
+      "          the founder wallet's own ETH, then poll Solana for the destination credit. Does",
+      "          NOT submit the CCTP destination-side finalize call itself (known gap — see",
+      "          skills/self/shelter/nosana/bridge/bridge.mjs's file header).",
+      "",
+      "Env overrides: NOSANA_BRIDGE_AMOUNT_USDC (default 10), NOSANA_BRIDGE_EVM_HOME (default",
+      "  ANICCA_HOME — the Base/source instance, e.g. $HOME/.anicca-founder),",
+      "  NOSANA_BRIDGE_SOLANA_HOME (REQUIRED for --live — the Solana/destination instance, e.g.",
+      "  $HOME/.blockrun for Franklin), NOSANA_BRIDGE_MAX_USD (default 15),",
+      "  NOSANA_BRIDGE_MAX_COST_FRACTION (default 0.05), NOSANA_BRIDGE_APPROVE_GAS_UNITS,",
+      "  NOSANA_BRIDGE_BURN_GAS_UNITS, BASE_RPC_URL, SOLANA_RPC_URL, ANICCA_HOME,",
+      "  ANICCA_STATE_DIR.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-bridge: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+try {
+  const result = await bridgeToSolana({ live });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  const refused = !result.posted && (!result.quote?.worthIt || !result.gate?.allowed);
+  process.exit(live && refused ? 1 : 0);
+} catch (err) {
+  // Error messages from bridge.mjs/identity.mjs/keypair.mjs are constructed to never include
+  // secret material — safe to print verbatim here.
+  process.stderr.write(`citizen-bridge: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}
