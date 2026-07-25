@@ -1,5 +1,7 @@
 # Life Manager 残り24 atomic 完遂ハンドオーバー(2026-07-24)
 
+> **履歴資料。現在の件数・順序・To-doには使わない。** → `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §10 の **Current cursor / Live remaining to-do list** を参照。
+
 正本: `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` の§10表とCurrent cursorのみ。
 本書は現在地の要約であり、§10と食い違ったら§10が勝つ。
 
