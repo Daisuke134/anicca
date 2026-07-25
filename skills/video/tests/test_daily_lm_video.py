@@ -90,7 +90,10 @@ class DailyLmVideoTest(unittest.TestCase):
     def test_canonical_bank_has_exactly_sixteen_rows(self):
         rows = self.module.load_bank(BANK)
         self.assertEqual([row["id"] for row in rows], EXPECTED_IDS)
-        self.assertTrue(all(set(row) == {"id", "pain", "moment", "punchline", "material_hint"} for row in rows))
+        core = {"id", "pain", "moment", "punchline", "material_hint"}
+        english = {"pain_en", "moment_en", "punchline_en"}
+        # Every creative must carry both languages: English runs on TikTok, Japanese on Instagram.
+        self.assertTrue(all(core.issubset(set(row)) and english.issubset(set(row)) for row in rows))
 
     def test_rotation_is_unused_first_then_starts_second_cycle(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -33,6 +33,23 @@ class DistributionTests(unittest.TestCase):
         self.caption.write_text("Exact caption\n#line", encoding="utf-8")
         self.ledger = self.root / "distribution.jsonl"
         self.calls = self.root / "calls.jsonl"
+        self.approvals = self.root / "approvals.jsonl"
+        self.approve()
+
+    def approve(self, *, creative_id="A03", video=None, caption=None):
+        """Record the receipt that lets distribution run, bound to the exact bytes."""
+        video = self.video if video is None else video
+        caption = self.caption if caption is None else caption
+        row = {
+            "approved_at": "2026-07-25T04:00:00Z",
+            "approver": "dais",
+            "creative_id": creative_id,
+            "video_sha256": hashlib.sha256(Path(video).read_bytes()).hexdigest(),
+            "caption_sha256": hashlib.sha256(Path(caption).read_bytes()).hexdigest(),
+        }
+        with self.approvals.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row) + "\n")
+        return row
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -77,6 +94,7 @@ class DistributionTests(unittest.TestCase):
             instagram_handle="anicca.affirms2",
             instagram_accounts=self.root / "accounts.json",
             tiktok_integration="cmp9txjdp01c8oh0yb6dhlarr",
+            approvals=overrides.pop("approvals", self.approvals),
             env=env,
             **overrides,
         )
@@ -219,3 +237,54 @@ class DistributionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ApprovalGateTests(DistributionTests):
+    """9c: nothing reaches Instagram or TikTok until Dais approves that exact video and caption."""
+
+    def assert_no_provider_was_touched(self):
+        self.assertFalse(self.calls.exists(), "no adapter may run before approval")
+        self.assertFalse(self.ledger.exists(), "an unapproved run must not write the ledger")
+
+    def test_a_missing_approvals_file_refuses_and_touches_no_provider(self):
+        self.approvals.unlink()
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_an_empty_approvals_file_refuses_and_touches_no_provider(self):
+        self.approvals.write_text("", encoding="utf-8")
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_an_approval_for_a_different_creative_does_not_authorise_this_one(self):
+        self.approvals.write_text("", encoding="utf-8")
+        self.approve(creative_id="SOME-OTHER")
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_editing_the_video_after_approval_invalidates_the_receipt(self):
+        self.video.write_bytes(b"a-different-cut")
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_editing_the_caption_after_approval_invalidates_the_receipt(self):
+        self.caption.write_text("A rewritten caption", encoding="utf-8")
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_a_malformed_approval_line_is_ignored_rather_than_trusted(self):
+        self.approvals.write_text("{not json\n", encoding="utf-8")
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
+    def test_the_matching_receipt_lets_the_same_bytes_through(self):
+        result = self.run_distribution()
+        calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+        self.assertEqual([row["platform"] for row in calls], ["instagram", "tiktok"])
+        self.assertEqual(result["creative_id"], "A03")
