@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+// citizen-state — thin CLI entrypoint for Franklin's Nosana shelter state persistence (S4: agent
+// financial independence — externalize state so it survives having its house rebuilt). No
+// business logic lives here (repo convention: bin/ entrypoints stay thin); everything real is in
+// skills/self/shelter/nosana/persistence/{snapshot,restore}.mjs, which this just calls with real
+// defaults — including the one REAL remote store, github-store.mjs's createGithubGitStore
+// (see that file's header for why a private git repo, not S3/IPFS, is what's actually wired).
+//
+// --dry (DEFAULT, matching citizen-up/citizen-fund/citizen-rent's convention): computes and
+//   reports what WOULD be synced/restored — reads local ledgers, reads the remote, runs the merge
+//   — then stops before any write (local append or remote push).
+// --live: the only flag that actually writes. Requires explicit opt-in every invocation.
+//
+// Usage: bin/citizen-state <snapshot|restore> [--dry|--live] [--target-dir DIR] [--repo owner/name]
+
+import { snapshotState } from "../skills/self/shelter/nosana/persistence/snapshot.mjs";
+import { restoreState } from "../skills/self/shelter/nosana/persistence/restore.mjs";
+import { createGithubGitStore, DEFAULT_STATE_REPO } from "../skills/self/shelter/nosana/persistence/github-store.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-state <snapshot|restore> [--dry|--live] [--target-dir DIR] [--repo owner/name]",
+      "",
+      "  snapshot        push local ledgers + a fresh wallet manifest (addresses only, NEVER the",
+      "                  secret) to the remote store.",
+      "  restore         pull remote ledgers + the wallet manifest back onto local disk, merging",
+      "                  append-only (never duplicates or rewrites an existing local row).",
+      "",
+      "  --dry           (default) report what would be synced/restored — no write, no push.",
+      "  --live          actually write: append local rows / push to the remote.",
+      "  --target-dir    restore only: write into this directory instead of the live state dir",
+      "                  (used to prove a clean-location restore without touching real state).",
+      "  --repo          override the remote repo (owner/name). Default: " + DEFAULT_STATE_REPO,
+      "",
+      "Env overrides: ANICCA_STATE_DIR, ANICCA_HOME, NOSANA_STATE_REPO, NOSANA_STATE_BRANCH.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+
+const subcommand = args.find((a) => !a.startsWith("-"));
+if (subcommand !== "snapshot" && subcommand !== "restore") {
+  process.stderr.write(`citizen-state: expected subcommand "snapshot" or "restore", got ${JSON.stringify(subcommand)}\n`);
+  printHelp();
+  process.exit(2);
+}
+
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-state: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+function flagValue(name) {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : undefined;
+}
+const targetDir = flagValue("--target-dir");
+const repo = flagValue("--repo") || process.env.NOSANA_STATE_REPO || DEFAULT_STATE_REPO;
+const branch = process.env.NOSANA_STATE_BRANCH;
+
+try {
+  const store = createGithubGitStore({ repo, ...(branch ? { branch } : {}) });
+  try {
+    if (subcommand === "snapshot") {
+      const result = await snapshotState({ store, dryRun: !live });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      process.exit(result.manifestError ? 1 : 0);
+    } else {
+      const result = await restoreState({ store, dryRun: !live, ...(targetDir ? { targetStateDir: targetDir } : {}) });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      const confirmedMismatch = result.remoteManifest && result.locallyResolvedAddress && !result.addressesMatch;
+      process.exit(confirmedMismatch ? 1 : 0);
+    }
+  } finally {
+    await store.close();
+  }
+} catch (err) {
+  // Error messages from snapshot.mjs/restore.mjs/wallet-manifest.mjs/keypair.mjs are constructed
+  // to never include secret material — safe to print verbatim here.
+  process.stderr.write(`citizen-state: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}

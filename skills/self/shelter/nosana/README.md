@@ -3,7 +3,7 @@
 Franklin (an AI agent) rents its own GPU compute on Nosana and pays for it with **its own
 Solana wallet** — zero human in the loop. This is S1 of the "agent financial independence" goal:
 prove the payment rail works before building the self-renewing rent loop (S3) or externalizing
-state (S4) on top of it.
+state (S4, `persistence/`) on top of it.
 
 ## The two Nosana payment rails, and why only one is used here
 
@@ -59,8 +59,10 @@ on any single job's estimated cost), `NOSANA_RPC_URL` / `SOLANA_RPC_URL`, `NOSAN
 | `deploy.mjs` | Orchestrates the above, shells out to the real `nosana` CLI, records settled cost to `shelter-cost-ledger.js`. |
 | `funding/acquire-nos.mjs` | S2: Franklin swaps its own SOL for NOS via Jupiter, zero human step. |
 | `renew/` | S3: the self-renewal path (extends the live job before expiry, or reposts if none is alive) + the survival-drive runway signal. See `renew/README.md` for the full rail comparison. |
+| `persistence/` | S4: externalizes the wallet manifest (addresses only) + every ledger above to a durable remote store, so a rebuilt job restores the same identity/ledgers a torn-down one had. See `persistence/README.md`. |
 | `bin/citizen-up` (repo root) | Thin CLI entrypoint — no business logic, just argv parsing and wiring real defaults into `deployNosanaJob`. |
 | `bin/citizen-rent` (repo root) | Thin CLI entrypoint for S3 — wires real defaults into `renew/executor.mjs`'s `renewShelter`. |
+| `bin/citizen-state` (repo root) | Thin CLI entrypoint for S4 — wires real defaults into `persistence/{snapshot,restore}.mjs`. |
 
 ## Money-safety notes
 
