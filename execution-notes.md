@@ -490,3 +490,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   has no day one to start from.
 - Relaxing the pair rule to TikTok alone would weaken the done condition, so it was left intact.
 - 9d therefore waits on 9c. Moving to the next independent row rather than idling.
+
+## 12b — MENTAL copy generated and checked, done 2026-07-25
+- The 9.11 rule is now machine-checkable rather than a note in a doc: a question mark or a request for a
+  reply is refused outright, a second emoji is refused, and so are empty or lecture-length lines.
+- Copy is generated per moment. The same seed reads differently before an event, in a gap, and before
+  sleep, and an English affirmation is never pasted into Japanese text — it only sets the stance.
+- Ten samples were generated from the real aniccaios affirmation asset: all ten satisfy the rule and all
+  ten are distinct. First attempt produced only six distinct lines, which is not situation-specific in
+  any useful sense, so the stance set was widened and the hash spread before recording the result.
+- Evidence: `docs/evidence/12b-mental-copy-samples.md`.
