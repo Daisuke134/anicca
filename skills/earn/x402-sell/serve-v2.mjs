@@ -37,6 +37,7 @@ import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from 
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 import { RESALE_PRODUCTS, resaleHandler } from "./resale.mjs";
 import { llmProduct, llmResaleHandler } from "./llm-resale.mjs";
+import { ensureFacilitatorInitialized } from "./lib/facilitator-init.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -438,7 +439,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(paymentMiddleware(routes, resourceServer));
+// See lib/facilitator-init.mjs for the full root-cause writeup and why this needs BOTH our own
+// retrying initialize() call AND syncFacilitatorOnStart=false (not just the flag alone: passing
+// syncFacilitatorOnStart=false with no explicit initialize() call left every request permanently
+// failing with "Facilitator does not support exact..." instead of ever succeeding).
+await ensureFacilitatorInitialized(resourceServer);
+app.use(paymentMiddleware(routes, resourceServer, undefined, undefined, false));
 
 // sales log — INV-SETTLE: a request is only a SALE once settle() succeeds on-chain, never on
 // verify alone. v2 (@x402/express@2.17.0, node_modules/@x402/core dist/cjs/http/index.js) sets the

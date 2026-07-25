@@ -9,11 +9,11 @@ export ANICCA_HOME="$HOME/.anicca-founder"
 unset BLOCKRUN_WALLET_KEY
 export X402_PAYTO="0x810F6D61F7606dEEE2657d3083E150a222Bc29C5"
 export X402_IMAGE_PORT="8095"
-export X402_IMAGE_PUBLIC_URL="https://aniccanomac-mini-1.tail7a0ba4.ts.net:8443"
+# T2 fix (2026-07-25): aniccanomac-mini-1 has no public DNS record at all and its funnel calls now
+# hang forever (ACL/authorization lost) -- moved to a dedicated tsbridge tsnet node, same proven
+# pattern as claude-p/franklin1/franklin2/founder's sellers.
+export X402_IMAGE_PUBLIC_URL="https://claude-p-image.tail7a0ba4.ts.net"
 export X402_IMAGE_UPSTREAM_OPENAPI="http://127.0.0.1:8412/openapi.json"
 PIDS="$(lsof -ti tcp:8095 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>/dev/null || true
 sleep 1
-# Add only exact discovery/product paths. Existing / and /mcp mounts on :8443 remain intact.
-/opt/homebrew/bin/tailscale funnel --bg --https=8443 --set-path=/image http://127.0.0.1:8095/image >/dev/null 2>&1 || true
-/opt/homebrew/bin/tailscale funnel --bg --https=8443 --set-path=/openapi.json http://127.0.0.1:8095/openapi.json >/dev/null 2>&1 || true
 exec /usr/bin/env node "$DIR/image-server.mjs"

@@ -10,6 +10,7 @@ import { base } from 'viem/chains';
 import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { IMAGE_OFFER, imageResaleHandler } from './image-resale.mjs';
 import { decodePayer, decodeTransaction, isSettled } from './lib/settle-gate.mjs';
+import { ensureFacilitatorInitialized } from './lib/facilitator-init.mjs';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -342,7 +343,13 @@ async function createRuntimePaymentGate(products, env) {
       ),
     },
   ]));
-  return paymentMiddleware(routes, resourceServer);
+  // See lib/facilitator-init.mjs: we initialize the resourceServer ourselves (retrying, never an
+  // unhandled rejection) and only then hand it to paymentMiddleware with syncFacilitatorOnStart=
+  // false. syncFacilitatorOnStart=false alone (no explicit initialize()) makes the library skip
+  // calling initialize() entirely, forever -- every request fails with "Facilitator does not
+  // support exact..." (confirmed live 2026-07-25, this was the bug in our first attempt at this).
+  await ensureFacilitatorInitialized(resourceServer);
+  return paymentMiddleware(routes, resourceServer, undefined, undefined, false);
 }
 
 async function main(env = process.env) {

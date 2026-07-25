@@ -21,12 +21,16 @@ set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
 export ANICCA_HOME="$HOME/.franklin2-home/.blockrun"
 unset BLOCKRUN_WALLET_KEY
 export X402_PAYTO="0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9"
-export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://aniccanomac-mini-1.tail7a0ba4.ts.net:10000}"
+# T2 fix (2026-07-25): same root cause as serve-claude-p-boot.sh -- aniccanomac-mini-1 lost Funnel
+# authorization (`tailscale funnel --bg --https=10000 8413` hangs forever; sample'd the boot
+# script parked in __wait4()) AND its hostname has no public DNS record at all (dig @8.8.8.8/
+# @1.1.1.1 empty; zero CDP Bazaar listings under aniccanomac-mini-1). tsbridge already runs
+# franklin2 as its own authorized tsnet node with working public DNS. Point PUBLIC_URL there and
+# drop the funnel call (tsbridge does not need it).
+export X402_PUBLIC_URL="${X402_PUBLIC_URL:-https://franklin2.tail7a0ba4.ts.net}"
 export X402_NETWORK="base"
 export X402_PRICE="\$0.003"
 export X402_PORT="8413"
 PIDS="$(lsof -ti tcp:8413 2>/dev/null || true)"; [ -n "$PIDS" ] && kill $PIDS 2>/dev/null || true
 sleep 1
-# ensure the Tailscale Funnel https port points at :8413 (idempotent; persists across reboots)
-/opt/homebrew/bin/tailscale funnel --bg --https=10000 8413 >/dev/null 2>&1 || true
 exec /usr/bin/env node "$DIR/serve-v2.mjs"
