@@ -395,3 +395,19 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Production runs `a1f3123d`; canonical main is ahead only by docs-only commits that Railway skipped.
 - Still pending: the real L3 run (real call recording, real calendar event, real Telegram id, real RFC
   Message-ID readback, and the not-late case).
+
+## CORE-8e — production L3 PASS, closed 2026-07-25
+- Every leg of the DAILY journey is now backed by a real-world readback rather than a self-report:
+  real calendar event (attendee readback `external=1/self=false/organizer=false`), travel autofill with a
+  real outbound block, real T-10 call answered 11s later and transcribed by whisper as a two-way English
+  conversation, live-location late decision, two real RFC Message-IDs, real Telegram id `245`, and the
+  not-late case measured as zero claim rows and a strict receipt of `null`.
+- Both email receipts were re-checked with the sender and subject pinned, so neither can be the Google
+  calendar invitation that the receipt inbox also receives.
+- Two real defects were found by running against production, not by reading code: a claimed meeting
+  silenced every later event that day, and a calendar invitation could pass as delivery proof.
+- Canonical main and Railway production both at `5c855632`. PRs #1104 and #1105.
+- Evidence: `docs/evidence/core-8e-daily-journey-l3.md`.
+- Cleanup: all events and travel blocks created for the run were deleted and the calendar was re-read to
+  confirm only the user's own events remain. No third party was emailed at any point.
+- Remaining: 16 atomics. Next is 8f.
