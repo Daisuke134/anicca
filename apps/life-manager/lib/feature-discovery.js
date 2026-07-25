@@ -7,6 +7,7 @@ async function settle(promise, fallback) { try { return await promise; } catch {
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { sendMessage } = require("./telegram.js");
 const { getLiveLocation } = require("./late-notice.js");
+const { askPayoutQuestion } = require("./payout-question.js");
 
 const DISCOVERY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const GATE_ORDER = Object.freeze(["location", "payout"]);
@@ -164,8 +165,16 @@ async function handleDiscoveryCallback(data, deps = {}) {
       DISCOVERY_STRINGS.ja.locationHowTo,
     );
   }
+  // FIN-b: "register" used to fall through to a bare acknowledgement, which is why the payout gate
+  // could never be unlocked from Telegram. It now opens the §9.11 closed question — asked once ever,
+  // because askPayoutQuestion reads lm_users.payout_destination before it sends anything.
+  if (action === "register" && gate === "payout") {
+    const ask = deps.askPayoutQuestion || askPayoutQuestion;
+    const outcome = await ask(deps);
+    return { handled: true, action, gate, asked: Boolean(outcome && outcome.asked), ...(outcome && outcome.reason ? { reason: outcome.reason } : {}) };
+  }
   // "later" deliberately does not mutate last_discovery_at: the original discovery send already
-  // set the seven-day throttle. Payout registration is owned by the later FIN organ.
+  // set the seven-day throttle.
   return { handled: true, action, gate };
 }
 
