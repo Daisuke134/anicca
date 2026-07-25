@@ -49,3 +49,59 @@ test("missing endMs → null (not NaN) so departureMs/travel can guard", async (
   const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal });
   assert.equal(evs[0].endMs, null);
 });
+
+// 12c: between_events is unreachable when the fetch window starts at `now` — an intense block that
+// ended 10 minutes ago is exactly what the trough trigger needs to see, and exactly what a
+// timeMin=now window can never return. lookbackMs widens the window backwards for the MENTAL read
+// without changing any existing caller (default 0 keeps the strict-future contract).
+test("lookbackMs=0 (default) keeps the strict-future contract: ended events are excluded", async () => {
+  const cal = fakeCalendar([
+    { summary: "ended", start: { dateTime: "2026-06-20T22:00:00Z" }, end: { dateTime: "2026-06-20T23:50:00Z" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal });
+  assert.equal(evs.length, 0);
+});
+
+test("lookbackMs returns an event that ended within the lookback window", async () => {
+  // 110-min block that ended 10 min before now: starts far before now, ends inside the lookback.
+  const cal = fakeCalendar([
+    { summary: "deep work", start: { dateTime: "2026-06-20T22:00:00Z" }, end: { dateTime: "2026-06-20T23:50:00Z" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.equal(evs.length, 1);
+  assert.equal(evs[0].summary, "deep work");
+});
+
+test("lookbackMs widens timeMin passed to the transport", async () => {
+  let seen = null;
+  const cal = { kind: "fake", ready: () => true, async listEventsRaw(_uid, window) { seen = window; return []; } };
+  await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.equal(seen.timeMin, "2026-06-20T23:25:00Z");
+});
+
+test("lookbackMs does not resurrect events that ended before the window", async () => {
+  const cal = fakeCalendar([
+    { summary: "long gone", start: { dateTime: "2026-06-20T20:00:00Z" }, end: { dateTime: "2026-06-20T22:00:00Z" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.equal(evs.length, 0);
+});
+
+test("lookbackMs boundary: an event ending exactly at the window edge is excluded", async () => {
+  const cal = fakeCalendar([
+    { summary: "edge", start: { dateTime: "2026-06-20T22:00:00Z" }, end: { dateTime: "2026-06-20T23:25:00Z" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.equal(evs.length, 0);
+});
+
+test("lookbackMs: malformed end falls back to start+1h instead of skipping the end check", async () => {
+  const cal = fakeCalendar([
+    // starts inside the window with a garbage end — 1h default keeps it (ends after the edge)
+    { summary: "bad-end", start: { dateTime: "2026-06-20T23:30:00Z" }, end: { dateTime: "not-a-date" } },
+    // starts long before the window with a garbage end — 1h default excludes it
+    { summary: "bad-end-old", start: { dateTime: "2026-06-20T20:00:00Z" }, end: { dateTime: "not-a-date" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.deepEqual(evs.map((e) => e.summary), ["bad-end"]);
+});

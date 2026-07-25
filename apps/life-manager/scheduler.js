@@ -13,6 +13,9 @@ const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
+
+// 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
+const MENTAL_LOOKBACK_MS = 35 * 60000;
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
@@ -256,16 +259,21 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
     await (deps.recordDailyPoll || recordDailyComposioPoll)(u.uid, { nowMs: now });
     // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
     // wake 15 min before DEPARTURE, which can be hours before the event itself.
+    // 12c: fetch once with a lookback wide enough for the MENTAL trough (an intense block that
+    // already ENDED within TROUGH_AFTER_MS). Every non-MENTAL consumer below stays on the
+    // strict-future slice, so wake/late behavior is unchanged.
     events = await (deps.fetchUpcomingEvents || fetchUpcomingEvents)(u.uid, {
-      nowMs: now, horizonH: 6, apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+      nowMs: now, horizonH: 6, lookbackMs: MENTAL_LOOKBACK_MS,
+      apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
       calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
     });
   } catch {
     return;
   }
+  const futureEvents = (events || []).filter((e) => Number(e.startMs) >= now);
   try {
     if (u.notifications_enabled !== false) {
-      const late = await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events });
+      const late = await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents });
       // The Telegram leg is otherwise unauditable: name the message that was actually delivered.
       if (late && late.telegramMessageId !== undefined) {
         console.log(`[late] uid=${String(u.uid).slice(0, 12)} decision=${late.decision} sent=${!!late.sent} tg_message_id=${late.telegramMessageId}`);
@@ -285,8 +293,8 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
   const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   if (u.call_enabled === false) return;
-  for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
-    const depMs = await resolveDeparture(ev, events, {
+  for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
+    const depMs = await resolveDeparture(ev, futureEvents, {
       home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
       directionsFn: deps.directionsMinutes || directionsMinutes,
     });
