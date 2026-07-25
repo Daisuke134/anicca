@@ -473,15 +473,20 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 5. **marketing loop と article 執筆 loop は統合する**。persona を読み、message を作り、投稿し、metrics を読み、
    次を変える——という骨格が同一だから、別々に持つ理由がない。統合先は共有 marketing 資産とする。
 6. 選択肢の羅列は禁止。**単一の推奨を出す**。
-7. **毎日の marketing video の確定フォーマット（2026-07-25 Dais 承認）**:
+7. **名乗りは「manager」であって「assistant」ではない（HARD。全 copy に適用）**。
+   assistant は**受動**——呼ばれてから動く。manager は**能動**——呼ばれる前に動かす。
+   Life Manager が電話をかけ、移動時間を埋め、先方へ連絡するのは、依頼を待たずに一日を**運営している**から。
+   copy・台本・UI 文言・対外説明で `assistant` / `アシスタント` / 「手伝う」「サポートする」を使わない。
+   使うのは `manager` / 「運営する」「管理する」「先回りする」。**この1語の違いが製品の定義そのもの**。
+8. **毎日の marketing video の確定フォーマット（2026-07-25 Dais 承認）**:
    - 音声 = MPT ナレーション（edge-tts / `en-US-AndrewNeural`）。録音は使わない。
    - 字幕 = ナレーション由来・**中央やや下**（`--subtitle-position custom --custom-position 60`、font-size 64 / stroke 3）。
    - 映像 = 素材を **9:16 へ center crop** して黒帯を出さない。カットを繋いで動きを保つ（注意維持のため）。
    - 台本 = **恥 → 具体 → 転換 → 証拠 → CTA** の型。**末尾は必ず「Try Life Manager」**。
    - これを毎日、内容だけ変えて TikTok（および IG 復旧後は IG）へ出す。
-8. **Instagram の warm-up は行わない**。bot 的 warm-up が shadowban / 凍結の原因になったという判断。
+9. **Instagram の warm-up は行わない**。bot 的 warm-up が shadowban / 凍結の原因になったという判断。
    人間が居ない運用では warm-up は逆効果なので skip する。
-9. **Life Manager は CFO も担う（2026-07-25 Dais 裁定）**。FINANCIAL は「送金する」だけでなく
+10. **Life Manager は CFO も担う（2026-07-25 Dais 裁定）**。FINANCIAL は「送金する」だけでなく
    **支出の管理**まで含む: 契約中の subscription を把握し、使われていないものを見つけ、解約を提案し、
    承認を得て解約する。稼ぐ側（earn loop）と使う側（spend 管理）の両方を持って初めて財務の健全性になる。
    - **fiat 決済の rail = Stripe Link**（`link.com/agents`、`@stripe/link-cli`）。設計上エージェントに認証情報は
@@ -491,7 +496,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
      **JP 提供開始、または正規の US 事業体での契約を待って接続する**。それまで fiat の自動支出は行わない。
    - **今日動く rail は agent wallet（13a、Base）と x402**。fiat が開くまでの CFO 機能は
      「棚卸し + 提案 + 本人承認 + 実行は本人」で成立させ、rail が開いた時点で実行だけを引き継ぐ。
-10. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
+11. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
    参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
 
 
