@@ -498,6 +498,21 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
      「棚卸し + 提案 + 本人承認 + 実行は本人」で成立させ、rail が開いた時点で実行だけを引き継ぐ。
 11. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
    参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
+12. **11c の cloud browser rail = Browserbase を x402 で買う（2026-07-26 決定。8社比較 + live 実測 + 過去研究2件の合流）**。
+   - **サインアップ不要が決め手**: `x402.browserbase.com` が USDC(Base/Solana) の per-session 販売を公式提供 —
+     "No API keys, no accounts. Just pay and connect."（docs.browserbase.com/integrations/x402）。
+     2026-07-26 live 実測: `POST /browser/session/create {estimatedMinutes:5}` → HTTP 402、$0.01/5min（$0.12/hr）。
+     支払い元 = 13a の agent wallet。これは旧 ANICCA_LIFE_MANAGER_SPEC の T66（Browserbase + Stagehand, Tier 1）と
+     2026-05-23 の6ツール実測 memory の決定に合流する — 新決定ではなく、既決の rail がようやく配線される。
+   - **multi-tenant 隔離** = Browserbase Contexts（user ごと1 Context、"uniquely encrypted at rest"）。
+     user A の salon ログインが B に混ざらないことは Context 分離で担保する。
+   - **JP IP は必要になるまで買わない**: 2026-07-26 実測で HPB トップは海外 DC IP でも 200 + 実コンテンツを返し、
+     Akamai/DataDome 系 marker 0件。geo-block の証拠が出た時だけ Tokyo proxy
+     （`proxies:[{geolocation:{city:"TOKYO",country:"JP"}}]`, $12/GB — 総額を支配する費目）を有効化する。
+   - **fallback**: 実予約フォームの submit が CDP fingerprint / ASN 判定で恒常ブロックされたら
+     `steel-dev/steel-browser`（Apache/MIT）を東京の VPS に self-host して JP 実回線 egress へ逃がす。同一 API 系で移行コスト小。
+   - **未検証の穴**（11c 着手初日に潰す）: ①実 USDC 払いで 200 + connectUrl が返る所（402 schema までは実測済み。
+     wallet 残高 $0 なので seed が要る）②予約フォーム submit 段の bot 防御（トップページ 200 は答えではない）。
 
 
 
