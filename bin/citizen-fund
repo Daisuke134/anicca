@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+// citizen-fund — thin CLI entrypoint for Franklin's self-funded NOS acquisition (S2: agent
+// financial independence). No business logic lives here (repo convention: bin/ entrypoints stay
+// thin); everything real is in skills/self/shelter/nosana/funding/acquire-nos.mjs, which this
+// just calls with real defaults.
+//
+// --dry (DEFAULT, spec hard constraint 1): resolves identity, reads real balances, fetches a real
+//   Jupiter quote, builds the real unsigned swap transaction, and runs the combined spend/
+//   slippage/floor gate — then stops before signing or sending anything.
+// --live: the only flag that actually signs and broadcasts. Requires explicit opt-in every
+//   invocation.
+//
+// Usage: bin/citizen-fund [--dry|--live] [--help]
+
+import { acquireNos } from "../skills/self/shelter/nosana/funding/acquire-nos.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-fund [--dry|--live]",
+      "",
+      "  --dry   (default) resolve identity, read balances, fetch a real Jupiter quote,",
+      "          build the real unsigned swap transaction, and run the spend gate — then",
+      "          stop before signing/sending.",
+      "  --live  actually sign and send the swap on-chain, paid from Franklin's own wallet.",
+      "",
+      "Env overrides: NOSANA_FUND_SPEND_SOL, NOSANA_FUND_MAX_SPEND_SOL,",
+      "  NOSANA_FUND_MAX_SLIPPAGE_BPS, NOSANA_FUND_MAX_PRICE_IMPACT_PCT,",
+      "  NOSANA_FUND_FEE_FLOOR_SOL, NOSANA_RPC_URL, ANICCA_HOME.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-fund: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+try {
+  const result = await acquireNos({ live });
+  process.exit(result.gate && !result.gate.allowed ? 1 : 0);
+} catch (err) {
+  // Error messages from acquire-nos.mjs/keypair.mjs are constructed to never include secret
+  // material — safe to print verbatim here.
+  process.stderr.write(`citizen-fund: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}

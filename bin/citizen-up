@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+// citizen-up — thin CLI entrypoint for Franklin's self-funded Nosana deploy executor. No
+// business logic lives here (repo convention: bin/ entrypoints stay thin); everything real is in
+// skills/self/shelter/nosana/deploy.mjs, which this just calls with real defaults.
+//
+// --dry (DEFAULT, spec hard constraint 4): resolves identity, prices markets, builds+validates
+//   the job definition, and runs the spend gate, then stops before any on-chain post.
+// --live: the only flag that actually posts. Requires explicit opt-in every invocation.
+//
+// Usage: bin/citizen-up [--dry|--live] [--help]
+
+import { deployNosanaJob } from "../skills/self/shelter/nosana/deploy.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-up [--dry|--live]",
+      "",
+      "  --dry   (default) resolve identity, price markets, build+validate the job",
+      "          definition, and run the spend gate — then stop before posting.",
+      "  --live  actually post the job on-chain, paid from Franklin's own wallet.",
+      "",
+      "Env overrides: NOSANA_JOB_IMAGE, NOSANA_JOB_EXPOSE_PORT, NOSANA_JOB_DURATION_MINUTES,",
+      "  NOSANA_MAX_SPEND_USD, NOSANA_RPC_URL, NOSANA_NETWORK, ANICCA_HOME.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-up: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+try {
+  const result = await deployNosanaJob({ live });
+  process.exit(result.gate && !result.gate.allowed ? 1 : 0);
+} catch (err) {
+  // Error messages from deploy.mjs/keypair.mjs are constructed to never include secret
+  // material — safe to print verbatim here.
+  process.stderr.write(`citizen-up: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}
