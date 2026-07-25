@@ -447,3 +447,16 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   closed-question round trip it should open does not exist yet (`payout_destination` still null after the
   press). Recorded rather than patched, so 13b keeps ownership of the §9.11 FINANCIAL wording.
 - Remaining: 15 atomics. Next is 9c.
+
+## 9c — renderer corrected to MoneyPrinterTurbo, preview delivered
+- Grafting a voice layer onto the bespoke ffmpeg renderer was reinventing a wheel we already had.
+  MoneyPrinterTurbo is now installed and drives the render end to end.
+- Measured, not assumed: MPT's voice is `edge_tts` (`app/services/voice.py:18`), so the "MPT voice" and
+  the edge-tts already on this machine are the same thing. `cli.py --video-script` accepts our own script,
+  so no LLM is in the loop. With no Pexels/Pixabay key, `--video-source local` plus the nine existing
+  b-roll clips is enough — the render needs no external API key at all.
+- First real render: task `69b7d234-af5c-499e-b60b-e25e4ffa76f0`, 1080x1920, 14.33s, AI narration, and
+  subtitles generated word-by-word from that narration. The dependence on a real call recording and its
+  whisper transcript is gone.
+- Preview sent to Dais as Telegram message `251`. No approval receipt yet, so the distribution gate stays
+  shut and no Instagram or TikTok call has been made.
