@@ -473,3 +473,12 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   `https://www.instagram.com/accounts/suspended/`; and no `post_reel.py` exists — only the carousel
   poster does. Posting to a different account on a guess would be an irreversible public mistake, so
   nothing was posted there.
+
+## 9c is deferred, NOT done — come back to it
+- TikTok is live; Instagram is not, because the account the browser holds is suspended by Instagram.
+- Dais chose to move on to 9d rather than wait, so 9c stays `pending` and must be reopened before the
+  final phase. Do not let a later pass mistake it for finished.
+- Reopening needs one decision only Dais can make: appeal the suspension himself, or name which of the
+  already-connected Instagram accounts is the Life Manager one. Implementation is ready to follow either
+  way — a real Reel path (`post_reel.py` does not exist yet), then distribution through the gate and a
+  logged-out URL readback.
