@@ -15538,3 +15538,11 @@
 {"ts":1784992794,"wake_id":"00MS0IMF9H19DEC541D8AE44D0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784992982,"wake_id":"00MS0IQG5I160762C699CA4A6A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784993143,"wake_id":"00MS0ITW8G33D7E418E8504420","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784993150,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784993273,"wake_id":"00MS0IWOD21838B4AA3C294EDF","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784993339,"wake_id":"00MS0IY3PA4BD4CA64EE9D4077","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784993406,"wake_id":"00MS0IZJFSC65116280A5E4132","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784993473,"wake_id":"00MS0J0Z98366E9645F8294707","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784993622,"wake_id":"00MS0J45X1A5AC0730423B45BA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784993630,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784993751,"wake_id":"00MS0J6XOMD39B7CC8CB2B4B00","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784993942,"wake_id":"00MS0JB11VD76AF8C8AB5744DE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784994104,"wake_id":"00MS0JEI3BD6EC663EBC7E40B9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
