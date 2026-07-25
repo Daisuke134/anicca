@@ -411,3 +411,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Cleanup: all events and travel blocks created for the run were deleted and the calendar was re-read to
   confirm only the user's own events remain. No third party was emailed at any point.
 - Remaining: 16 atomics. Next is 8f.
+
+## 8f premise corrected from live measurement — 2026-07-25
+- The recorded blocker said typed `source=telegram_live_location` persistence failed with
+  `live_location_unlock / poll_timeout`. Production contradicts that today: the row exists with
+  `telegram_message_id=199` and its `observed_at` advances roughly every 20 seconds.
+- So typed live-location persistence works in production; what failed earlier was specifically the path
+  where the agent injected a location over MTProto. 8e's production L3 used this same real row to reach a
+  late decision, claimed at `2026-07-25T01:57:51Z`.
+- 8f therefore resumes scoped to what is still unproven: never asking the same closed question twice,
+  context provenance, and zero forbidden-topic utterances — not the manufacturing of a real location.
