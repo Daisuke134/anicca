@@ -666,6 +666,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | U10 | PR #312 = **OPEN 未マージ**（dev loop D0 産、issue #11 travel-autofill fix）。順2 に「review→merge 判断」を含めた |
 | INC-1 | **prod Telegram webhook 401 事故と修理**: `--skip-deploys` で staged した新 `LM_TELEGRAM_WEBHOOK_SECRET` が後続 auto-deploy で本番へ入り、Telegram 登録は旧値のままなので全 update が401になる。現 prod env の secret で `setWebhook` を再登録し、allowed_updates=`message,edited_message,callback_query`、pending=0、last_error=null を実測。secret 値はログ・spec・commitに残さない。一般法則: **--skip-deploys の staged 値は「次の deploy に必ず乗る」— staging した瞬間から、対応する外部再登録（setWebhook 等）を deploy 前提条件として同じ発注に束ねる** |
 | INC-2 | transient 露出2件（Sol 自己申告 2026-07-21）: Railway pairing code 1件（既に失効・再利用不能）+ panel 単回 URL 1件（used_at 焼き済み・再利用は 403 を negative test で実証済み）。**Fable 裁定: どちらも自己失効型で rotate 不要・追加対応なし**。永続 secret の漏洩はゼロ |
+| INC-3 | **prod Telegram webhook が空だった（2026-07-26 発見・即修理）**: `getWebhookInfo` が `url=""` — inbound 全滅（button tap / 返信 / /panel が bot に届かない。13b の実往復が構造的に不可能だった）。outbound 送信（12c の pre_event/pre_sleep）は webhook 不要のため生きており、故障が見えにくかった。修理 = prod の `LM_TELEGRAM_WEBHOOK_SECRET` で `setWebhook` を再登録し、`url=https://life-call-production.up.railway.app/telegram`、`allowed_updates=["message","edited_message","callback_query"]`（U4 準拠）、`pending=0`、`last_error=null` を実測 readback。**落ちた原因は未特定**（INC-1 の secret ずれとは別 — 今回は登録自体が消えていた）。恒久対策候補 = server 起動時に self-heal で setWebhook を冪等再登録（未実装、11c 以降の atomic で拾う） |
 
 ### 10.2 検証の3層（用語の確定。「何も無いのに E2E?」への恒久回答）
 
