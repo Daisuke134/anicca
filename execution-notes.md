@@ -531,3 +531,26 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   nonce `0x0` — genuinely new and unused, not a reused wallet.
 - The key lives only in the protected store at mode 0600 and greps to zero hits across the repo, the
   logs, and git history.
+
+## 13b — the payout question exists, and it is asked exactly once
+- The register button on the weekly discovery announcement was a dead end. `handleDiscoveryCallback`
+  matched `discovery:register:payout`, acknowledged the tap and returned, so the one question the
+  FINANCIAL organ depends on was never asked and `lm_users.payout_destination` stayed null forever.
+- The tap now opens the §9.11 FINANCIAL closed question with its three choices. The copy lives in
+  `lib/i18n.js` and a test asserts it appears verbatim in the spec, because this copy is Dais-owned —
+  the implementation quotes the copy bank, it never invents user-facing wording.
+- Asked once, ever: the column is read before anything is sent. A row that already carries a
+  destination is silently skipped. A read that failed is treated as unknown, never as empty — guessing
+  "not answered yet" is exactly how a user ends up asked the same question every week.
+- The write is a compare-and-set on `payout_destination=is.null` and asks the database to hand back the
+  row it wrote, which is then compared to what was sent. A write we cannot see in the database is
+  reported as a failure; nothing tells the user their destination is registered unless it is.
+- ［あとで］ writes nothing, so the gate stays honestly locked and next week's announcement is still due.
+- What is stored is the rail the user chose, marked `awaiting_details`. `isPayoutDestinationUsable()`
+  returns false for it on purpose, so 13c/13d cannot mistake "they told us which rail" for "we know
+  where to send money". Collecting the account number or wallet address is that later work.
+- Wired into the real webhook, not just the library — the 12c lesson. A contract test boots `server.js`,
+  posts the two callbacks Telegram would post, and asserts the question really leaves over the Bot API
+  and the answer really lands on `lm_users`.
+- Still outstanding: the real Telegram round trip and the real database row. This branch proves the
+  logic against fixtures only; it deliberately sent no message and touched no production data.
