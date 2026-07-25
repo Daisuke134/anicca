@@ -57,7 +57,7 @@ test("no matching nonce returns null", async () => {
     apiKey: "k",
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
-      { message_id: "m1", smtp_id: "<x@mail>", subject: "Running late: standup", timestamp: "2026-07-25T02:00:00.000Z" },
+      { smtp_id: "m1", message_id: "<x@mail>", subject: "Running late: standup", timestamp: "2026-07-25T02:00:00.000Z" },
     ])),
   });
   assert.equal(await receipt.findReceipt({ nonce: NONCE, afterMs: 0 }), null);
@@ -69,7 +69,7 @@ test("a nonce match that predates afterMs is stale and fails closed", async () =
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
       {
-        message_id: "m1", smtp_id: "<old@mail>",
+        smtp_id: "m1", message_id: "<old@mail>",
         subject: `Running late: LM-CORE-8E ${NONCE}`,
         timestamp: "2026-07-25T02:00:00.000Z",
       },
@@ -85,8 +85,8 @@ test("a fresh nonce match returns the real RFC Message-ID and only safe metadata
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
       {
-        message_id: "msg_2001",
-        smtp_id: "<0100019a@resend.example>",
+        smtp_id: "msg_2001",
+        message_id: "<0100019a@resend.example>",
         subject: `Running late: LM-CORE-8E ${NONCE}`,
         preview: "Hi — Dais is running about 15 minutes late",
         from: "Life Manager <hello@aniccaai.com>",
@@ -117,7 +117,26 @@ test("a match without an RFC Message-ID fails closed because the done condition 
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
       {
-        message_id: "msg_2002", smtp_id: "",
+        smtp_id: "msg_2002", message_id: "",
+        subject: `Running late: LM-CORE-8E ${NONCE}`,
+        timestamp: "2026-07-25T03:05:00.000Z",
+      },
+    ])),
+  });
+  const afterMs = Date.parse("2026-07-25T03:00:00.000Z");
+  assert.equal(await receipt.findReceipt({ nonce: NONCE, afterMs }), null);
+});
+
+// Measured against the live API on 2026-07-25: `message_id` carries the RFC id (`<...@host>`) and
+// `smtp_id` is AgentMail's own 40-char handle. An id that is not RFC-shaped is not a Message-ID.
+test("an id that is not RFC-shaped is not accepted as a Message-ID", async () => {
+  const receipt = makeAgentMailReceipt({
+    apiKey: "k",
+    inbox: INBOX,
+    fetchImpl: fetchReturning(messagesResponse([
+      {
+        smtp_id: "1f8a0c2b4d6e8091a2b3c4d5e6f708192a3b4c5d",
+        message_id: "1f8a0c2b4d6e8091a2b3c4d5e6f708192a3b4c5d",
         subject: `Running late: LM-CORE-8E ${NONCE}`,
         timestamp: "2026-07-25T03:05:00.000Z",
       },
@@ -133,7 +152,7 @@ test("an unparseable timestamp fails closed rather than being treated as now", a
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
       {
-        message_id: "msg_2003", smtp_id: "<a@b>",
+        smtp_id: "msg_2003", message_id: "<a@b>",
         subject: `Running late: LM-CORE-8E ${NONCE}`,
         timestamp: "not-a-date",
       },
@@ -148,7 +167,7 @@ test("the nonce is matched in the preview body too, not only the subject", async
     inbox: INBOX,
     fetchImpl: fetchReturning(messagesResponse([
       {
-        message_id: "msg_2004", smtp_id: "<c@d>",
+        smtp_id: "msg_2004", message_id: "<c@d>",
         subject: "Running late: standup",
         preview: `ref ${NONCE} — running about 15 minutes late`,
         timestamp: "2026-07-25T03:05:00.000Z",

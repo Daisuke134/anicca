@@ -10,6 +10,9 @@
 // metadata — never a body, an address, or a subject line.
 const API_BASE = "https://api.agentmail.to/v0";
 const NONCE_PATTERN = /^[a-f0-9]{16,64}$/i;
+// Measured against the live API on 2026-07-25: a listed message carries the RFC Message-ID in
+// `message_id` (`<local@host>`), while `smtp_id` is AgentMail's own 40-char handle for the message.
+const RFC_MESSAGE_ID_PATTERN = /^<[^<>@\s]+@[^<>@\s]+>$/;
 
 // A single instant, expressed as an interval so callers can share one comparison shape across providers
 // (gog only knows the minute an message landed in; AgentMail gives an exact timestamp).
@@ -45,10 +48,10 @@ function makeAgentMailReceipt({ apiKey, inbox, fetchImpl, limit = 20 } = {}) {
           const interval = receivedInterval(message);
           if (!interval || interval.upperMs < after) continue;
           // No RFC Message-ID means we cannot satisfy the done condition, so this is not a receipt.
-          const rfcMessageId = String((message && message.smtp_id) || "");
-          if (!rfcMessageId) continue;
+          const rfcMessageId = String((message && message.message_id) || "");
+          if (!RFC_MESSAGE_ID_PATTERN.test(rfcMessageId)) continue;
           return {
-            id: String((message && message.message_id) || ""),
+            id: String((message && message.smtp_id) || ""),
             rfcMessageId,
             matchedNonce: String(nonce),
             receivedAtLowerMs: interval.lowerMs,
