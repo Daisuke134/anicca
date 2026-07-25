@@ -161,3 +161,49 @@ test("migration creates additive location and event-dedup tables", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS lm_late_notice_log/);
   assert.match(sql, /PRIMARY KEY \(uid, event_key\)/);
 });
+
+// Found in production on 2026-07-25: an all-day meeting with a location was claimed at 09:31 JST and
+// runs until 18:00, so every later event that day was unreachable — the finder takes only the FIRST
+// event with a location, and a failed claim returned immediately instead of considering the next one.
+test("a deduplicated leading event does not suppress the next event's late notice", async () => {
+  const leading = { ...EVENT, id: "already-claimed" };
+  const next = { ...EVENT, id: "still-actionable" };
+  const claimed = new Set(["already-claimed"]);
+  const notified = [];
+  const messages = [];
+  const deps = {
+    routeMinutes: async () => 43,
+    claimEvent: async (_uid, key) => { if (claimed.has(key)) return false; claimed.add(key); return true; },
+    sendLateNotice: async (_uid, event) => { notified.push(event.id); return { sent: true, id: "resend-1" }; },
+    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
+  };
+
+  const result = await processLocationLateNotice({
+    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
+    events: [leading, next], nowMs: NOW, telegramToken: "tg",
+  }, deps);
+
+  assert.equal(result.sent, true);
+  assert.deepEqual(notified, ["still-actionable"], "the notice must be about the event we could claim");
+  assert.equal(messages.length, 1);
+});
+
+test("when every candidate is already claimed the run stays deduplicated and silent", async () => {
+  let mailCalls = 0;
+  const messages = [];
+  const deps = {
+    routeMinutes: async () => 43,
+    claimEvent: async () => false,
+    sendLateNotice: async () => { mailCalls++; return { sent: true }; },
+    sendMessage: async (_token, _chat, text) => { messages.push(text); return { ok: true }; },
+  };
+
+  const result = await processLocationLateNotice({
+    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
+    events: [{ ...EVENT, id: "a" }, { ...EVENT, id: "b" }], nowMs: NOW, telegramToken: "tg",
+  }, deps);
+
+  assert.deepEqual(result, { decision: "late", deduped: true });
+  assert.equal(mailCalls, 0);
+  assert.deepEqual(messages, []);
+});
