@@ -12,7 +12,7 @@ const { fetchUpcomingEvents } = require("./lib/events.js");
 const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
-const { mentalUserOnce } = require("./lib/mental-runtime.js");
+const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
@@ -214,7 +214,9 @@ function mentalDeps(u, events, deps = {}) {
   return {
     telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
     seeds: deps.mentalSeeds || MENTAL_SEEDS,
-    sleepTargetMs: Number.isFinite(deps.sleepTargetMs) ? deps.sleepTargetMs : null,
+    sleepTargetMs: Number.isFinite(deps.sleepTargetMs)
+      ? deps.sleepTargetMs
+      : resolveSleepTarget(process.env.LM_MENTAL_SLEEP_TARGET || "23:30", Date.now(), Number(process.env.LM_MENTAL_UTC_OFFSET_HOURS || 9)),
     fetchUpcomingEvents: async () => shaped,
     getLocationState: deps.getLocationState || (async () => "unknown"),
     sendMessage: deps.sendMessage || sendMessage,
