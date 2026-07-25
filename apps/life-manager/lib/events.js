@@ -46,10 +46,13 @@ async function fetchUpcomingEvents(uid, opts = {}) {
     if (lookbackMs === 0) {
       if (startMs < nowMs) continue;
     } else {
-      // keep an event iff it ends inside the lookback window (or later). Google's own timeMin
-      // filter works on end time, so this mirrors the API contract for the widened window.
-      const endForFilter = (e.end || {}).dateTime ? Date.parse((e.end || {}).dateTime) : startMs + 3600000;
-      if (Number.isFinite(endForFilter) && endForFilter <= nowMs - lookbackMs) continue;
+      // keep an event iff it ends strictly after (nowMs - lookbackMs). Google's own timeMin
+      // filter works on end time, so this mirrors the API contract for the widened window. A
+      // malformed end.dateTime parses to NaN and falls back to the 1-hour default rather than
+      // silently skipping the end-time check.
+      const parsedEnd = (e.end || {}).dateTime ? Date.parse((e.end || {}).dateTime) : NaN;
+      const endForFilter = Number.isFinite(parsedEnd) ? parsedEnd : startMs + 3600000;
+      if (endForFilter <= nowMs - lookbackMs) continue;
     }
     const endRaw = (e.end || {}).dateTime;       // for the leave-time anchor (#69): match a [Travel]
     const endMs = endRaw ? Date.parse(endRaw) : NaN; // block whose endMs === a later event's startMs

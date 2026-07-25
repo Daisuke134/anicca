@@ -86,3 +86,22 @@ test("lookbackMs does not resurrect events that ended before the window", async 
   const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
   assert.equal(evs.length, 0);
 });
+
+test("lookbackMs boundary: an event ending exactly at the window edge is excluded", async () => {
+  const cal = fakeCalendar([
+    { summary: "edge", start: { dateTime: "2026-06-20T22:00:00Z" }, end: { dateTime: "2026-06-20T23:25:00Z" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.equal(evs.length, 0);
+});
+
+test("lookbackMs: malformed end falls back to start+1h instead of skipping the end check", async () => {
+  const cal = fakeCalendar([
+    // starts inside the window with a garbage end — 1h default keeps it (ends after the edge)
+    { summary: "bad-end", start: { dateTime: "2026-06-20T23:30:00Z" }, end: { dateTime: "not-a-date" } },
+    // starts long before the window with a garbage end — 1h default excludes it
+    { summary: "bad-end-old", start: { dateTime: "2026-06-20T20:00:00Z" }, end: { dateTime: "not-a-date" } },
+  ]);
+  const evs = await fetchUpcomingEvents("uid", { nowMs: now, calendar: cal, lookbackMs: 35 * 60000 });
+  assert.deepEqual(evs.map((e) => e.summary), ["bad-end"]);
+});
