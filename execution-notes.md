@@ -482,3 +482,11 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   already-connected Instagram accounts is the Life Manager one. Implementation is ready to follow either
   way — a real Reel path (`post_reel.py` does not exist yet), then distribution through the gate and a
   logged-out URL readback.
+
+## 9d is blocked by 9c, not failed
+- `select_latest_pair` in `skills/video/lm-self-improve/daily.py` demands the same creative published to
+  BOTH Instagram and TikTok under identical video and caption digests, and raises otherwise.
+- TikTok went live today; Instagram cannot, because that account is suspended. So the seven-day streak
+  has no day one to start from.
+- Relaxing the pair rule to TikTok alone would weaken the done condition, so it was left intact.
+- 9d therefore waits on 9c. Moving to the next independent row rather than idling.
