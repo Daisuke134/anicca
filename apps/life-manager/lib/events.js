@@ -25,11 +25,16 @@ async function fetchUpcomingEvents(uid, opts = {}) {
   const nowMs = opts.nowMs || Date.now();
   const horizonH = opts.horizonH || 18;
   const horizonMs = nowMs + horizonH * 3600 * 1000;
+  // 12c: the MENTAL trough trigger needs events that ALREADY ENDED (within TROUGH_AFTER_MS). A
+  // timeMin=now window can never return one, which made between_events unreachable in production.
+  // lookbackMs (default 0) widens the window backwards for that one caller; every other caller
+  // keeps the strict-future contract unchanged.
+  const lookbackMs = Number.isFinite(opts.lookbackMs) && opts.lookbackMs > 0 ? opts.lookbackMs : 0;
 
   // #74: calendar reads go through the transport adapter (composio cloud / gog local). Tests inject
   // their own via opts.calendar; production builds the env-selected one.
   const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey, gmailAccountId: opts.gmailAccountId });
-  const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs), timeMax: isoZ(horizonMs) });
+  const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs - lookbackMs), timeMax: isoZ(horizonMs) });
   const out = [];
   for (const e of items) {
     if (interpretCalendarEvent(e).decision === "no_call") continue;
@@ -37,7 +42,18 @@ async function fetchUpcomingEvents(uid, opts = {}) {
     if (!raw) continue;
     const startMs = Date.parse(raw);
     if (Number.isNaN(startMs)) continue;
-    if (startMs < nowMs || startMs > horizonMs) continue;
+    if (startMs > horizonMs) continue;
+    if (lookbackMs === 0) {
+      if (startMs < nowMs) continue;
+    } else {
+      // keep an event iff it ends strictly after (nowMs - lookbackMs). Google's own timeMin
+      // filter works on end time, so this mirrors the API contract for the widened window. A
+      // malformed end.dateTime parses to NaN and falls back to the 1-hour default rather than
+      // silently skipping the end-time check.
+      const parsedEnd = (e.end || {}).dateTime ? Date.parse((e.end || {}).dateTime) : NaN;
+      const endForFilter = Number.isFinite(parsedEnd) ? parsedEnd : startMs + 3600000;
+      if (endForFilter <= nowMs - lookbackMs) continue;
+    }
     const endRaw = (e.end || {}).dateTime;       // for the leave-time anchor (#69): match a [Travel]
     const endMs = endRaw ? Date.parse(endRaw) : NaN; // block whose endMs === a later event's startMs
     out.push({
