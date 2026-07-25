@@ -204,3 +204,63 @@ test("the request authenticates with the key and scopes the read to the configur
   assert.ok(calls[0].url.includes(encodeURIComponent(INBOX)), "inbox must be url-encoded into the path");
   assert.equal(calls[0].init.headers.Authorization, "Bearer secret-key");
 });
+
+// Measured 2026-07-25: adding the receipt inbox as a calendar attendee makes Google send it an
+// invitation whose subject also carries the nonce. Matching on the nonce alone would report that
+// invitation as delivery proof for a notice we never sent, so callers can pin sender and subject.
+test("a nonce match from the wrong sender is not accepted when a sender is required", async () => {
+  const receipt = makeAgentMailReceipt({
+    apiKey: "k",
+    inbox: INBOX,
+    fetchImpl: fetchReturning(messagesResponse([
+      {
+        smtp_id: "invite", message_id: "<calendar-1@google.com>",
+        subject: `Invitation: LM-CORE-8E ${NONCE}`,
+        from: "Google Calendar <calendar-notification@google.com>",
+        timestamp: "2026-07-25T03:05:00.000Z",
+      },
+    ])),
+  });
+  assert.equal(await receipt.findReceipt({ nonce: NONCE, afterMs: 0, fromIncludes: "aniccaai.com" }), null);
+});
+
+test("a nonce match with the wrong subject is not accepted when a subject is required", async () => {
+  const receipt = makeAgentMailReceipt({
+    apiKey: "k",
+    inbox: INBOX,
+    fetchImpl: fetchReturning(messagesResponse([
+      {
+        smtp_id: "invite", message_id: "<calendar-2@google.com>",
+        subject: `Invitation: LM-CORE-8E ${NONCE}`,
+        timestamp: "2026-07-25T03:05:00.000Z",
+      },
+    ])),
+  });
+  assert.equal(await receipt.findReceipt({ nonce: NONCE, afterMs: 0, subjectIncludes: "Running late:" }), null);
+});
+
+test("the right notice still matches when both sender and subject are pinned", async () => {
+  const receipt = makeAgentMailReceipt({
+    apiKey: "k",
+    inbox: INBOX,
+    fetchImpl: fetchReturning(messagesResponse([
+      {
+        smtp_id: "invite", message_id: "<calendar-3@google.com>",
+        subject: `Invitation: LM-CORE-8E ${NONCE}`,
+        from: "Google Calendar <calendar-notification@google.com>",
+        timestamp: "2026-07-25T03:05:00.000Z",
+      },
+      {
+        smtp_id: "notice", message_id: "<real@ap-northeast-1.amazonses.com>",
+        subject: `Running late: LM-CORE-8E ${NONCE}`,
+        from: "Life Manager <hello@aniccaai.com>",
+        timestamp: "2026-07-25T03:06:00.000Z",
+      },
+    ])),
+  });
+  const found = await receipt.findReceipt({
+    nonce: NONCE, afterMs: 0, fromIncludes: "aniccaai.com", subjectIncludes: "Running late:",
+  });
+  assert.ok(found);
+  assert.equal(found.rfcMessageId, "<real@ap-northeast-1.amazonses.com>");
+});

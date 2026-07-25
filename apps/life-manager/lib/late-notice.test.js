@@ -207,3 +207,35 @@ test("when every candidate is already claimed the run stays deduplicated and sil
   assert.equal(mailCalls, 0);
   assert.deepEqual(messages, []);
 });
+
+// The journey's Telegram leg was unauditable: the send result was discarded, so nothing downstream
+// could name the message that was actually delivered. Carry the id the provider returns.
+test("the delivered Telegram message id is carried on the result", async () => {
+  const deps = {
+    routeMinutes: async () => 43,
+    claimEvent: async () => true,
+    sendLateNotice: async () => ({ sent: true, id: "resend-1" }),
+    sendMessage: async () => ({ ok: true, result: { message_id: 4242 } }),
+  };
+  const result = await processLocationLateNotice({
+    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
+    events: [EVENT], nowMs: NOW, telegramToken: "tg",
+  }, deps);
+  assert.equal(result.sent, true);
+  assert.equal(result.telegramMessageId, 4242);
+});
+
+test("a Telegram send that returns no id leaves the field absent rather than inventing one", async () => {
+  const deps = {
+    routeMinutes: async () => 43,
+    claimEvent: async () => true,
+    sendLateNotice: async () => ({ sent: true, id: "resend-1" }),
+    sendMessage: async () => ({ ok: false }),
+  };
+  const result = await processLocationLateNotice({
+    user: { uid: "u1", telegram_chat_id: "7" }, location: LIVE,
+    events: [EVENT], nowMs: NOW, telegramToken: "tg",
+  }, deps);
+  assert.equal(result.sent, true);
+  assert.equal("telegramMessageId" in result, false);
+});
