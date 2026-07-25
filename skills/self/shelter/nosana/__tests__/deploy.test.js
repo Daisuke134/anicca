@@ -179,6 +179,32 @@ test("reconcileNosanaJobViaApi returns null (never throws) when res.json() rejec
   assert.equal(result, null);
 });
 
+test("reconcileNosanaJobViaApi finds a still-QUEUED job (timeStart: 0, no node yet) via listedAt — REGRESSION for a real live-run false negative (2026-07-25)", async () => {
+  // Real incident: job CMZ4B2jvqx63ULMNQ4o1jjjrhRUnktQBHbtWWigFUHaS posted successfully (visible via
+  // the jobs API immediately, `listedAt` set) but had not yet been picked up by a node, so its
+  // `timeStart` was still 0. The old `afterTs` comparison used `timeStart` alone, so `0 >= afterTs`
+  // was always false and a real successful post was reported as "outcome unknown".
+  const result = await reconcileNosanaJobViaApi({
+    fetchImpl: fetchImplReturning({
+      jobs: [
+        {
+          address: "CMZ4B2jvqx63ULMNQ4o1jjjrhRUnktQBHbtWWigFUHaS",
+          market: REAL_MARKET,
+          state: 0,
+          timeStart: 0,
+          listedAt: 1784961549,
+        },
+      ],
+      totalJobs: 1,
+    }),
+    posterAddress: PAYER_WALLET,
+    marketAddress: REAL_MARKET,
+    afterTs: 1784961541,
+  });
+  assert.ok(result);
+  assert.equal(result.address, "CMZ4B2jvqx63ULMNQ4o1jjjrhRUnktQBHbtWWigFUHaS");
+});
+
 test("reconcileNosanaJobViaApi ignores a job entry with no address field rather than crashing", async () => {
   const result = await reconcileNosanaJobViaApi({
     fetchImpl: fetchImplReturning({ jobs: [{ market: REAL_MARKET, timeStart: 1 }], totalJobs: 1 }),

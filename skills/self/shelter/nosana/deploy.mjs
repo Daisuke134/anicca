@@ -146,9 +146,19 @@ export function reconcileNosanaJob({
  * live 2026-07-25 against a real posted job: `GET {NOSANA_JOBS_API_BASE_URL}?payer=<address>`
  * returns `{jobs: [...], totalJobs}`, each job carrying `address`/`market`/`payer`/`project`/
  * `state`/`timeStart` — exactly the CLI's own field names, same indexer backend, no auth needed.
- * Picks the eligible job (matching marketAddress/afterTs, when given) with the highest `timeStart`.
+ * Picks the eligible job (matching marketAddress/afterTs, when given) with the highest
+ * `listedAt` (falling back to `timeStart` when `listedAt` is absent, e.g. in older test fixtures).
  * Never throws — any fetch/parse/shape failure returns null so the caller treats the outcome as
  * still-unknown rather than ever blind-retrying (constraint 5).
+ *
+ * BUG FOUND + FIXED live 2026-07-25: this originally compared `afterTs` against `timeStart` alone.
+ * `timeStart` is 0 until a NODE actually picks up and starts running the job — a job that posted
+ * successfully but is still QUEUED (no node yet) has `timeStart: 0`, which always failed the
+ * `>= afterTs` check and made a real, successfully-posted job look like "outcome unknown" (a real
+ * live post of intent 1784961546-... was misreported this way: job CMZ4B2jvqx63ULMNQ4o1jjjrhRUnktQBHbtWWigFUHaS
+ * existed via the jobs API immediately, with `listedAt` already set, but `timeStart: 0`). `listedAt`
+ * is set the moment the job is posted regardless of node pickup, so it is the correct "was this
+ * posted after my intent" signal; `timeStart` is kept only as a fallback for shapes that lack it.
  */
 export async function reconcileNosanaJobViaApi({
   fetchImpl = fetch,
@@ -163,19 +173,17 @@ export async function reconcileNosanaJobViaApi({
     const data = await res.json();
     const jobs = data && Array.isArray(data.jobs) ? data.jobs : null;
     if (!jobs || jobs.length === 0) return null;
+    const postedAt = (j) => Number((j && (j.listedAt ?? j.timeStart)) || 0);
     const eligible = jobs.filter(
       (j) =>
         j &&
         typeof j.address === "string" &&
         j.address.length > 0 &&
         (!marketAddress || j.market === marketAddress) &&
-        (afterTs == null || Number(j.timeStart || 0) >= Math.floor(afterTs)),
+        (afterTs == null || postedAt(j) >= Math.floor(afterTs)),
     );
     if (eligible.length === 0) return null;
-    return eligible.reduce(
-      (newest, j) => (!newest || Number(j.timeStart || 0) > Number(newest.timeStart || 0) ? j : newest),
-      null,
-    );
+    return eligible.reduce((newest, j) => (!newest || postedAt(j) > postedAt(newest) ? j : newest), null);
   } catch {
     return null; // fetch/parse failure — still-unknown, never blind-retry (constraint 5).
   }
@@ -250,12 +258,23 @@ export async function deployNosanaJob({
   log(`estimated cost for ${durationMinutes}min: $${costUsd.toFixed(4)} USD (~${costNos.toFixed(6)} NOS)`);
 
   // Step 4: build + validate the job definition (pure builder, then our own structural check).
-  const jobDefinition = buildServiceJobDefinition({ image, exposePort, gpu: true });
+  // healthCheck is always attached (default path "/", GET, expect 200): a real incident
+  // (2026-07-25, job FHAjMnM1q3p5c5qCeFRjZLYEo12FUBesFPW8zvG5heAC — see job-definition.mjs's file
+  // header) showed a bare-integer `expose` never flips Nosana's "Service Initializing" placeholder
+  // to real traffic even when the container runs perfectly healthy the whole time; the health
+  // check is what gives the service router a readiness signal.
+  const healthCheckPath = env.NOSANA_JOB_HEALTH_CHECK_PATH || "/";
+  const jobDefinition = buildServiceJobDefinition({
+    image,
+    exposePort,
+    gpu: true,
+    healthCheck: { path: healthCheckPath, method: "GET", expectedStatus: 200 },
+  });
   const structuralValidation = validateJobDefinition(jobDefinition);
   if (!structuralValidation.valid) {
     throw new Error(`deployNosanaJob: built an invalid job definition: ${structuralValidation.errors.join("; ")}`);
   }
-  log(`job definition built + structurally valid (image=${image}, expose=${exposePort})`);
+  log(`job definition built + structurally valid (image=${image}, expose=${exposePort}, healthCheckPath=${healthCheckPath})`);
 
   // Step 5: live balances + the combined spend gate (caps + balance sufficiency).
   const Connection = connectionFactory ? null : (await import("@solana/web3.js")).Connection;

@@ -116,6 +116,164 @@ test("validateJobDefinition accepts a valid port-range expose string", () => {
   assert.equal(validateJobDefinition(def).valid, true);
 });
 
+test("buildServiceJobDefinition reshapes expose into an ExposedPort[] object when healthCheck is given, always including continuous", () => {
+  const def = buildServiceJobDefinition({
+    image: "docker.io/library/nginx:alpine",
+    exposePort: 80,
+    healthCheck: { path: "/" },
+  });
+  assert.deepEqual(def.ops[0].args.expose, [
+    { port: 80, health_checks: [{ type: "http", path: "/", method: "GET", expected_status: 200, continuous: true }] },
+  ]);
+});
+
+test("buildServiceJobDefinition honors healthCheck.method/expectedStatus/type/continuous overrides", () => {
+  const def = buildServiceJobDefinition({
+    image: "my-image",
+    exposePort: 8080,
+    healthCheck: { path: "/health", method: "HEAD", expectedStatus: 204, type: "http", continuous: true },
+  });
+  assert.deepEqual(def.ops[0].args.expose, [
+    { port: 8080, health_checks: [{ type: "http", path: "/health", method: "HEAD", expected_status: 204, continuous: true }] },
+  ]);
+});
+
+test("buildServiceJobDefinition rejects a healthCheck with a missing/empty path", () => {
+  assert.throws(
+    () => buildServiceJobDefinition({ image: "x", exposePort: 80, healthCheck: {} }),
+    /healthCheck.path is required/,
+  );
+  assert.throws(
+    () => buildServiceJobDefinition({ image: "x", exposePort: 80, healthCheck: { path: "" } }),
+    /healthCheck.path is required/,
+  );
+});
+
+test("buildServiceJobDefinition rejects a non-object healthCheck", () => {
+  assert.throws(() => buildServiceJobDefinition({ image: "x", exposePort: 80, healthCheck: "nope" }), /healthCheck must be an object/);
+});
+
+test("validateJobDefinition accepts a definition built with healthCheck (the fixed shape)", () => {
+  const def = buildServiceJobDefinition({ image: "nginx:alpine", exposePort: 80, healthCheck: { path: "/" } });
+  assert.deepEqual(validateJobDefinition(def), { valid: true, errors: [] });
+});
+
+test("validateJobDefinition accepts a multi-port bare-number expose array", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [{ type: "container/run", id: "a", args: { image: "x", expose: [8000, 9000] } }],
+  };
+  assert.equal(validateJobDefinition(def).valid, true);
+});
+
+test("validateJobDefinition accepts an ExposedPort[] object array with health_checks (continuous present)", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [
+      {
+        type: "container/run",
+        id: "a",
+        args: {
+          image: "x",
+          expose: [
+            {
+              port: 80,
+              health_checks: [{ type: "http", path: "/", method: "GET", expected_status: 200, continuous: true }],
+            },
+          ],
+        },
+      },
+    ],
+  };
+  assert.equal(validateJobDefinition(def).valid, true);
+});
+
+test("validateJobDefinition rejects a health_checks entry missing continuous (real @nosana/cli requires it)", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [
+      {
+        type: "container/run",
+        id: "a",
+        args: {
+          image: "x",
+          expose: [{ port: 80, health_checks: [{ type: "http", path: "/", method: "GET", expected_status: 200 }] }],
+        },
+      },
+    ],
+  };
+  const result = validateJobDefinition(def);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes("args.expose")));
+});
+
+test("validateJobDefinition accepts an ExposedPort object with no health_checks", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [{ type: "container/run", id: "a", args: { image: "x", expose: [{ port: 80 }] } }],
+  };
+  assert.equal(validateJobDefinition(def).valid, true);
+});
+
+test("validateJobDefinition rejects an ExposedPort object with an invalid port", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [{ type: "container/run", id: "a", args: { image: "x", expose: [{ port: -1 }] } }],
+  };
+  const result = validateJobDefinition(def);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes("args.expose")));
+});
+
+test("validateJobDefinition rejects a health_checks entry with an unknown type", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [
+      {
+        type: "container/run",
+        id: "a",
+        args: { image: "x", expose: [{ port: 80, health_checks: [{ type: "tcp", path: "/" }] }] },
+      },
+    ],
+  };
+  const result = validateJobDefinition(def);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes("args.expose")));
+});
+
+test("validateJobDefinition rejects a health_checks entry with a missing path", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [
+      {
+        type: "container/run",
+        id: "a",
+        args: { image: "x", expose: [{ port: 80, health_checks: [{ type: "http" }] }] },
+      },
+    ],
+  };
+  const result = validateJobDefinition(def);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.includes("args.expose")));
+});
+
+test("validateJobDefinition rejects an empty health_checks array", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [{ type: "container/run", id: "a", args: { image: "x", expose: [{ port: 80, health_checks: [] }] } }],
+  };
+  const result = validateJobDefinition(def);
+  assert.equal(result.valid, false);
+});
+
 test("validateJobDefinition rejects an unknown key inside args", () => {
   const def = {
     type: "container",
