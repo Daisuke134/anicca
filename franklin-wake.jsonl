@@ -15445,3 +15445,11 @@
 {"ts":1784980372,"wake_id":"00MS0B869LFF02B891A4894D53","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784980440,"wake_id":"00MS0B9MCMB685DBA5A58C43AF","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1784980507,"wake_id":"00MS0BB25EC4AA078D079046D6","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784980576,"wake_id":"00MS0BCJE6AC93BEF42BD441FD","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784980643,"wake_id":"00MS0BDYWHA01A40AAE4CD4781","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784980709,"wake_id":"00MS0BFEFT142F07D3A30A4172","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784980776,"wake_id":"00MS0BGU0L04BEC4AB41474F3C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784980961,"wake_id":"00MS0BKSPL7269E15BE99748F0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784981128,"wake_id":"00MS0BODOLC27D402269784C99","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784981287,"wake_id":"00MS0BRSIZCE32EF7ADFAE45A3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784981439,"wake_id":"00MS0BV1K8877A9EAD65FD49A0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
