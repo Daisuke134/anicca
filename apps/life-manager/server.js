@@ -388,9 +388,15 @@ const server = http.createServer((req, res) => {
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
               }, discovery: async (data) => {
-                return handleDiscoveryCallback(data, {
+                const outcome = await handleDiscoveryCallback(data, {
                   token: LM_TG_TOKEN, chatId: u.chatId,
                 });
+                // Discovery answers were otherwise invisible: nothing recorded which gate the user
+                // responded to, so an unlocked-gate announcement could not be audited after the fact.
+                if (outcome && outcome.handled) {
+                  console.log(`[discovery] callback action=${outcome.action} gate=${outcome.gate}`);
+                }
+                return outcome;
               } });
             res.writeHead(200); res.end("ok");
             return;

@@ -421,3 +421,18 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   late decision, claimed at `2026-07-25T01:57:51Z`.
 - 8f therefore resumes scoped to what is still unproven: never asking the same closed question twice,
   context provenance, and zero forbidden-topic utterances — not the manufacturing of a real location.
+
+## 8f — measured progress, closing on the callback readback
+- Unlocked gates are provably never re-asked: against real production data the locked set is `["payout"]`
+  alone, so the now-unlocked location gate drops out of selection, and the rotation moves `location` →
+  `payout`.
+- Real announcement delivered as Telegram message `246`; DB provenance written as
+  `last_discovery_at=2026-07-25T03:27:14.263Z`, `last_discovery_gate=payout`; a second run is throttled.
+- Forbidden-topic check: no standalone `出た？ / まだ？` prompt exists in shipped source. The one i18n hit
+  is the discovery copy explaining that sharing a location removes that check — the rule matches only a
+  whole-message prompt, so it is not an occurrence.
+- Gap found and closed: a discovery answer left no trace in production, so a press could not be audited.
+  The webhook now records action and gate, and deliberately logs no chat or user identifier.
+- Pressing the payout button registers nothing today — payout registration belongs to 13b, which is not
+  built. Verified: `payout_destination` is still null after the press.
+- Verification: `npm test` 738 pass / 0 fail, `npm run eval` 7 suites at 100%, panel privacy PASS.
