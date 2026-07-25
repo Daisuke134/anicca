@@ -500,3 +500,14 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   ten are distinct. First attempt produced only six distinct lines, which is not situation-specific in
   any useful sense, so the stance set was widened and the hash spread before recording the result.
 - Evidence: `docs/evidence/12b-mental-copy-samples.md`.
+
+## 12c — the MENTAL organ now reaches production, 1 of 3 delivered
+- It had never been wired at all: both rules existed, but only the eval called them.
+- Now on the same sixty-second tick as the late notice, reading the real calendar and the real send
+  history, and suppressing rather than guessing when the calendar cannot be read.
+- First real delivery: `pre_event`, Telegram message `260`, recorded in `lm_mental_send_log` at
+  2026-07-25T09:20:51Z and read back from the production database.
+- The bedtime branch was unreachable because nothing supplied a sleep target; `resolveSleepTarget` now
+  resolves a clock time per tick and refuses an unparseable one rather than firing at the wrong hour.
+- Structural fact worth stating: with a two-hour minimum gap and a cap of three, three real messages
+  cannot happen inside one sitting — the remaining two land later today.

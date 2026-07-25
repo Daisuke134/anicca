@@ -138,3 +138,28 @@ test("every delivered line satisfies the 9.11 rule across all three triggers", a
     assert.equal(validateMentalMessage(d.sent[0]).ok, true);
   }
 });
+
+// The bedtime line could never fire in production: nothing supplied a sleep target, so that branch of
+// the trigger rule was unreachable. The target is a clock time in the user's day, resolved per tick.
+test("a bedtime clock time resolves to today's instant", () => {
+  const { resolveSleepTarget } = require("./mental-runtime.js");
+  const now = Date.parse("2026-07-25T18:20:00+09:00");
+  const target = resolveSleepTarget("23:30", now, 9);
+  assert.equal(new Date(target).toISOString(), "2026-07-25T14:30:00.000Z");
+  assert.ok(target > now);
+});
+
+test("a bedtime already past today rolls to the next day rather than firing in the past", () => {
+  const { resolveSleepTarget } = require("./mental-runtime.js");
+  const now = Date.parse("2026-07-26T00:40:00+09:00");
+  const target = resolveSleepTarget("23:30", now, 9);
+  assert.ok(target > now, "the target must always be ahead of now");
+});
+
+test("an unusable bedtime setting yields no target instead of a wrong one", () => {
+  const { resolveSleepTarget } = require("./mental-runtime.js");
+  const now = Date.parse("2026-07-25T18:20:00+09:00");
+  for (const bad of ["", "25:00", "abc", null, "23:60"]) {
+    assert.equal(resolveSleepTarget(bad, now, 9), null, `expected null for ${JSON.stringify(bad)}`);
+  }
+});
