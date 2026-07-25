@@ -106,6 +106,14 @@ export POLY_MIN_ORDER=1
 # ACTUAL wallet balance -- this constant only stops being a tighter, stricter-than-the-balance
 # artificial ceiling on top of that.
 export MAX_PASS_SPEND=20
+# DRY-RUN GATE (2026-07-25): bundle_arb.py / market_maker.py / place_order.py now each default
+# to DRY when PM_DRY_RUN is unset (no real approve/cancel/order call, only "[DRY] would ..."
+# logging) — added for the new scheduled observe+report loop (decision_loop.py, a SEPARATE
+# entrypoint that does not call this file). THIS file is the pre-existing, already-adversary-
+# reviewed LIVE entrypoint (HARD 0.24: "no dry-run mode exists" was true when that line was
+# written) — force live here, unconditionally, at the same single choke point as the other
+# hard-fixed caps above, so run.sh's documented behavior is byte-for-byte unchanged.
+export PM_DRY_RUN=0
 if [ -n "${EARN_GENOME_ID:-}" ]; then
   MIN_EDGE="${MIN_EDGE:-}" MIN_CONF="${MIN_CONF:-}" RESOLVE_HORIZON_DAYS="${RESOLVE_HORIZON_DAYS:-}" \
   MAX_CANDIDATES="${MAX_CANDIDATES:-}" EARN_CONSENSUS_MODELS="${EARN_CONSENSUS_MODELS:-}" \

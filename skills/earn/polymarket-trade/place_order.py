@@ -66,6 +66,13 @@ NEG_EXCH = "0xe2222d279d744050d28e00520010520000310F59"
 NEG_ADAPTER = "0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296"
 DEFAULT_MAX_BET_SIZE = 2.0
 SLIPPAGE = 0.03
+# DRY-RUN GATE (2026-07-25, added for the scheduled observe+report loop, #decision-loop task).
+# Default DRY (unset/anything but "0"/"false" -> dry): approve_erc20/create_market_order/
+# post_order below are skipped and replaced with a synthetic, clearly-marked "dry_run": true
+# result instead. run.sh (the pre-existing, already-adversary-reviewed LIVE entrypoint)
+# explicitly exports PM_DRY_RUN=0 so ITS documented behavior (HARD 0.24: no dry run existed
+# when written; every invocation was real) is byte-for-byte unchanged for that caller.
+DRY_RUN = os.environ.get("PM_DRY_RUN", "1") not in ("0", "false", "False", "")
 
 
 def _arg(i):
@@ -98,6 +105,9 @@ def approve_spenders(client):
     for spender in (NEG_EXCH, NEG_ADAPTER):
         balance_allowance = client.get_balance_allowance(asset_type="COLLATERAL")
         if int(balance_allowance.allowances.get(spender, 0)) < 1:
+            if DRY_RUN:
+                print(f"[DRY] would approve_erc20 spender={spender[:10]} (skipped, no on-chain tx)")
+                continue
             handle = client.approve_erc20(token_address=PUSD, spender_address=spender, amount="max")
             try:
                 handle.wait()
@@ -163,6 +173,19 @@ def _run():
         ask = best_ask_price(order_book)
         max_price = str(round(ask + SLIPPAGE, 3))
 
+        if DRY_RUN:
+            print(f"[DRY] would create_market_order BUY {amount} token={token_id} "
+                  f"max_price={max_price} (FAK) — no order placed")
+            _emit({
+                "token_id": token_id,
+                "amount": amount,
+                "order_id": None,
+                "post_result": f"DRY_RUN — no order submitted (best_ask={ask}, max_price={max_price})",
+                "ok": False,
+                "dry_run": True,
+            })
+            return
+
         signed_order = client.create_market_order(
             token_id=token_id,
             side="BUY",
@@ -183,6 +206,7 @@ def _run():
             "order_id": getattr(response, "order_id", None),
             "post_result": post_result,
             "ok": bool(getattr(response, "ok", False)),
+            "dry_run": False,
         })
     finally:
         client.close()

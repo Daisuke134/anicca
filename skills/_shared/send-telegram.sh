@@ -24,7 +24,13 @@ try: print(json.load(sys.stdin).get("ok", False))
 except Exception: print(False)' 2>/dev/null)
 
 if [ "$OK" = "True" ]; then
-  echo "TELEGRAM_SENT=true"
+  # MSGID (2026-07-25 addition, backward-compatible): the real Telegram message_id, so a caller
+  # that needs to prove a send actually happened (not just TELEGRAM_SENT=true) can cite it. Old
+  # callers that only check for the "TELEGRAM_SENT=true" substring are unaffected.
+  MSGID=$(printf '%s' "$RESP" | python3 -c 'import json,sys
+try: print(json.load(sys.stdin).get("result",{}).get("message_id",""))
+except Exception: print("")' 2>/dev/null)
+  echo "TELEGRAM_SENT=true MSGID=$MSGID"
   exit 0
 else
   echo "TELEGRAM_SENT=false RESP=$RESP"

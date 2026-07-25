@@ -408,3 +408,44 @@ as a fourth strategy would look like:
 - **Reward market universe**: `paper_run.py` defaults to no Gamma tag filter (scans ALL
   reward-eligible markets), not just poly-maker's `politics` tag default — broader universe,
   untested against poly-maker's own political-market tuning assumptions embedded in `profiles.py`.
+
+## SCHEDULED DRY-RUN DECISION LOOP (`decision_loop.py`, 2026-07-25)
+
+`ai.anicca.pm-decision-loop` (launchd, hourly, `StartInterval=3600`, `RunAtLoad=true`) runs
+`decision_loop.py`, which orchestrates the EXISTING chain (`pinnacle_observe.py` →
+`bundle_arb.py` → `market_maker.py` → `pick.py`[→`place_order.py`]) exactly as `run.sh` already
+does — no strategy/edge logic was changed. It adds three things run.sh's own trace jsonl did not
+have: (1) ONE unified per-cycle decision record in `../state/pm-decisions.jsonl` (append-only —
+what was examined, Pinnacle fair value vs Polymarket price, the computed edge, the position size
+it would take, and the decision WITH its reason, including every `no_trade`); (2) a Telegram push
+of that record every cycle via the shared `skills/_shared/send-telegram.sh`; (3) a NEW daily-scoped
+circuit breaker (`daily_loss_guard.py`) checked before anything else, on top of the existing
+lifetime-cumulative one (`redeem.py`'s `check_cumulative_halt`).
+
+**DRY BY DEFAULT.** `bundle_arb.py`/`market_maker.py`/`place_order.py` each got a `PM_DRY_RUN` gate
+(default dry — every `approve_erc20`/`cancel_all`/`create_*_order`/`post_order` call becomes a
+`"[DRY] would ..."` log line instead) at the exact call sites, nothing else changed. `run.sh`
+explicitly exports `PM_DRY_RUN=0` so ITS documented always-live behavior (HARD 0.24) is
+byte-for-byte unchanged; `decision_loop.py`/`run_decision_loop.sh` never set that override, and
+additionally require `PM_LIVE_CONFIRM=I_UNDERSTAND_THE_RISK` alongside `PM_DRY_RUN=0` before they
+will ever run the child strategies live (double opt-in, on purpose — see
+`decision_loop.py::_live_confirmed()`).
+
+**★ Before ever flipping this live: re-read the "legal pivot" note two sections up.★** Running
+Polymarket live from this Japan-based machine was the reason both prior loops (`pm-earner`,
+`pm-deterministic`) were disabled on 2026-07-12/13 — that finding was never reversed as of
+2026-07-25. Live-enable is a human decision, executed by hand.
+
+`self_critique.py` reads `pm-decisions.jsonl` and reports which reasons preceded realized losses
+(honestly declines below `MIN_CYCLES_FOR_LOSS_PATTERN=20` real cycles — no spurious pattern
+claims from noise) and which knobs look miscalibrated. It NEVER mutates a threshold itself — any
+proposed change is data (`propose_threshold_change`) that must clear
+`self-improve/lib/promote_gate.py` (walk-forward beats baseline → trip-wire clear → fresh-context
+adversary PASS) before it can ever take effect; `submit_candidate_for_gate_assessment` is the one
+function that talks to that real gate, and only its deterministic half (no LLM, no write).
+
+A REAL naked leg (8 shares, "Will there be no change in Fed...", left over from the 2026-07-17
+partial merge) was found sitting on the account by the very first real dry cycle — `market_maker.py`
+correctly detected it and correctly refused to flatten it in dry mode (logged as a WARNING every
+cycle instead). It will be auto-flattened the next time this skill runs LIVE (existing SPEC-no-
+naked-fills behavior, unchanged) — until then it is a known, monitored, unhedged position.
