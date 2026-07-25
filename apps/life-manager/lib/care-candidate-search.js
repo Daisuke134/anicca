@@ -36,7 +36,7 @@ function haversineM(a, b) {
 async function textSearch(fetchImpl, apiKey, query, bias) {
   let url = `${TEXT_SEARCH_URL}?query=${encodeURIComponent(query)}&key=${encodeURIComponent(apiKey)}`;
   if (bias) url += `&location=${bias.lat},${bias.lng}&radius=${bias.radiusM}`;
-  const response = await fetchImpl(url).catch(() => null);
+  const response = await fetchImpl(url, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
   if (!response || !response.ok) return [];
   const body = await response.json().catch(() => null);
   return body && body.status === "OK" && Array.isArray(body.results) ? body.results : [];
@@ -45,7 +45,7 @@ async function textSearch(fetchImpl, apiKey, query, bias) {
 async function placeWebsite(fetchImpl, apiKey, placeId) {
   const url = `${DETAILS_URL}?place_id=${encodeURIComponent(placeId)}`
     + `&fields=${encodeURIComponent("name,website,geometry")}&key=${encodeURIComponent(apiKey)}`;
-  const response = await fetchImpl(url).catch(() => null);
+  const response = await fetchImpl(url, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
   if (!response || !response.ok) return null;
   const body = await response.json().catch(() => null);
   const website = body && body.status === "OK" ? body.result?.website : null;
