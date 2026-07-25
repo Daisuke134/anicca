@@ -20,6 +20,20 @@ const DISCOVERY_STRINGS = Object.freeze({
   }),
 });
 
+// FIN-b: the payout-destination closed question, verbatim from spec §9.11 FINANCIAL. The three button
+// labels are read out of the copy itself rather than restated, so the keyboard can never drift from the
+// sentence the user reads. This copy is Dais-owned — the implementation quotes it, it never invents it.
+const FINANCIAL_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    payoutQuestion: Object.freeze({
+      text: "収益の送金先を1つだけ教えてください。これ以外の個人情報は不要です。\n［銀行口座を登録］［walletアドレスを登録］［あとで］",
+      bankButton: "銀行口座を登録",
+      walletButton: "walletアドレスを登録",
+      laterButton: "あとで",
+    }),
+  }),
+});
+
 const DAILY_STRINGS = Object.freeze({
   ja: Object.freeze({
     travelAutofill: "📅 {when}「{summary}」を確認しました。{origin}からの移動時間{travelMinutes}分をカレンダーに入れておきました。{departure}発です。",
@@ -72,4 +86,4 @@ function formatTravelAutofillMessage(report, nowMs = Date.now()) {
   return DAILY_STRINGS.ja.travelAutofill.replace(/\{(\w+)\}/g, (_match, key) => String(values[key]));
 }
 
-module.exports = { DAILY_STRINGS, DISCOVERY_STRINGS, formatTravelAutofillMessage };
+module.exports = { DAILY_STRINGS, DISCOVERY_STRINGS, FINANCIAL_STRINGS, formatTravelAutofillMessage };
