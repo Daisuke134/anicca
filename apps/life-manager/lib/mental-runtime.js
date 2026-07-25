@@ -20,6 +20,18 @@ function pickSeed(seeds, uid, trigger) {
   return list[hash % list.length];
 }
 
+// A bedtime is a clock time in the user's day, not an instant, so it has to be resolved every tick.
+// Anything unparseable yields no target at all — a wrong bedtime would fire the line at the wrong hour.
+function resolveSleepTarget(clock, nowMs, utcOffsetHours) {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(clock || "").trim());
+  if (!match || !Number.isFinite(nowMs) || !Number.isFinite(utcOffsetHours)) return null;
+  const offsetMs = utcOffsetHours * 3600000;
+  const local = new Date(nowMs + offsetMs);
+  const midnightUtc = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - offsetMs;
+  const target = midnightUtc + Number(match[1]) * 3600000 + Number(match[2]) * 60000;
+  return target > nowMs ? target : target + 24 * 3600000;
+}
+
 async function mentalUserOnce(user, nowMs, deps = {}) {
   if (!user || !user.uid || !user.telegram_chat_id) {
     return { decision: "suppress", reason: "unreachable" };
@@ -69,4 +81,4 @@ async function mentalUserOnce(user, nowMs, deps = {}) {
   return { ...verdict, delivered: true, telegramMessageId: messageId };
 }
 
-module.exports = { mentalUserOnce, pickSeed };
+module.exports = { mentalUserOnce, pickSeed, resolveSleepTarget };
