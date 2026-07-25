@@ -436,3 +436,14 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Pressing the payout button registers nothing today — payout registration belongs to 13b, which is not
   built. Verified: `payout_destination` is still null after the press.
 - Verification: `npm test` 738 pass / 0 fail, `npm run eval` 7 suites at 100%, panel privacy PASS.
+
+## CORE-8f — production L3 PASS, closed 2026-07-25
+- The real press travelled the production webhook and was read back from the log as
+  `[discovery] callback action=register gate=payout` — the piece that had never been observable before.
+- Unlocked gates are provably never re-asked, the announcement carries real DB provenance, a repeat run is
+  throttled, and no standalone forbidden prompt exists in shipped source.
+- Evidence: `docs/evidence/core-8f-context-discovery-l3.md`.
+- Handed to 13b: the payout announcement's "register" button acknowledges and then dead-ends, because the
+  closed-question round trip it should open does not exist yet (`payout_destination` still null after the
+  press). Recorded rather than patched, so 13b keeps ownership of the §9.11 FINANCIAL wording.
+- Remaining: 15 atomics. Next is 9c.
