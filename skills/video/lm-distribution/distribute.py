@@ -31,6 +31,7 @@ class DistributionConfig:
         instagram_handle: str,
         instagram_accounts: Path,
         tiktok_integration: str,
+        approvals: Path,
         env: Mapping[str, str] | None = None,
     ):
         self.creative_id = creative_id
@@ -42,6 +43,7 @@ class DistributionConfig:
         self.instagram_handle = instagram_handle
         self.instagram_accounts = Path(instagram_accounts)
         self.tiktok_integration = tiktok_integration
+        self.approvals = Path(approvals)
         self.env = dict(env or os.environ)
 
 
@@ -124,6 +126,36 @@ def _read_ledger(path: Path) -> list[dict]:
             raise DistributionError("distribution ledger row must be an object")
         rows.append(row)
     return rows
+
+
+def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) -> dict | None:
+    """9c: distribution is authorised by an explicit receipt bound to the exact bytes.
+
+    The receipt names one creative AND the digests of the exact video and caption that were shown for
+    approval, so re-cutting the video or rewriting the caption silently invalidates it. Anything
+    unreadable, unparseable or unmatched is not an approval.
+    """
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        if (
+            row.get("creative_id") == creative_id
+            and row.get("video_sha256") == video_hash
+            and row.get("caption_sha256") == caption_hash
+        ):
+            return row
+    return None
 
 
 def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str, caption_hash: str):
@@ -213,6 +245,12 @@ def _append_success(
 
 def distribute(config: DistributionConfig) -> dict:
     video_hash, caption_hash = _validate(config)
+    # Fail closed BEFORE any adapter runs: without an approval for these exact bytes nothing is posted.
+    approval = _approved(config.approvals, config.creative_id, video_hash, caption_hash)
+    if approval is None:
+        raise DistributionError(
+            f"no approval receipt for creative {config.creative_id} with this exact video and caption"
+        )
     rows = _read_ledger(config.ledger)
 
     instagram = _existing(rows, "instagram", config.creative_id, video_hash, caption_hash)
@@ -326,6 +364,16 @@ def main() -> int:
         ).expanduser(),
     )
     parser.add_argument(
+        "--approvals",
+        type=Path,
+        default=Path(
+            os.environ.get(
+                "LM_DISTRIBUTION_APPROVALS",
+                "~/.openclaw/state/lm-video/distribution-approvals.jsonl",
+            )
+        ).expanduser(),
+    )
+    parser.add_argument(
         "--tiktok-integration",
         default=os.environ.get("LM_TIKTOK_INTEGRATION", "cmp9txjdp01c8oh0yb6dhlarr"),
     )
@@ -346,6 +394,7 @@ def main() -> int:
             instagram_handle=args.instagram_handle,
             instagram_accounts=args.instagram_accounts,
             tiktok_integration=args.tiktok_integration,
+            approvals=args.approvals,
         )
     )
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
