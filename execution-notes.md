@@ -356,3 +356,15 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   Telegram success, Calendar, and call effects are `0/0/0`.
 - Focused tests are `3/3`; full tests/evals/privacy pass. Pending remains 14; next is independent
   12b. Evidence: `docs/evidence/11d-physical-aftercare-blocked.md`.
+
+## SSOT reality audit — status corrected
+- The marketing loop is unloaded before its next scheduled run because the required first-video
+  preview and approval gate is not implemented.
+- 9b remains done. 9c reopens, 9d becomes approved Day 0/7, and 9e is corrected to keep Postiz
+  rather than migrate TikTok to a local direct browser path.
+- The dev loop ledger has two distinct real days; 10f is Day 2/7.
+- 11a/11b/11c reopen because generic clinic cadence, internal-medicine candidate selection, and a
+  local browser boundary do not prove the meaningful care chain required by the product.
+- Pending becomes 17. The live list is maintained only in §10; this note points there rather than
+  becoming a second source of truth.
+- Evidence: `docs/evidence/ssot-reality-audit.md`.
