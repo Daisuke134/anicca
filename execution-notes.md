@@ -511,3 +511,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   resolves a clock time per tick and refuses an unparseable one rather than firing at the wrong hour.
 - Structural fact worth stating: with a two-hour minimum gap and a cap of three, three real messages
   cannot happen inside one sitting — the remaining two land later today.
+
+## 11a — re-measured; the earlier "no history" call was my own shallow search
+- A wider provider-side query found real history after all: three haircuts, two health checks, one dental
+  visit. The first pass used five keywords and concluded too fast.
+- Feeding those six real events to the detector returns `candidates: []`, and that is correct. Haircuts
+  run on a ~240 day cadence with the last one 34 days ago; the health check interval is 445 days with the
+  last 57 days ago. Neither approaches the 1.5x overdue factor.
+- The rule works on real data and there is simply no neglected care to find right now. The done condition
+  needs one real detection, which cannot exist until something actually goes overdue or an intent is
+  recorded — manufacturing one would repeat the weak evidence this row was reopened for.
