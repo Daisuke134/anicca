@@ -521,3 +521,13 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - The rule works on real data and there is simply no neglected care to find right now. The done condition
   needs one real detection, which cannot exist until something actually goes overdue or an intent is
   recorded — manufacturing one would repeat the weak evidence this row was reopened for.
+
+## 13a — the agent has its own wallet, done 2026-07-25
+- Derivation is pinned to published Ethereum vectors rather than to itself, because a subtly wrong
+  address does not throw — it sends money nowhere. Node's SHA3-256 is not keccak256, so the hash and the
+  curve come from audited libraries instead of a hand-rolled permutation.
+- Bad entropy fails loudly instead of being retried, since a silent retry is how a guessable key ships.
+- Address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad` on Base, read from the chain as balance `0x0` and
+  nonce `0x0` — genuinely new and unused, not a reused wallet.
+- The key lives only in the protected store at mode 0600 and greps to zero hits across the repo, the
+  logs, and git history.
