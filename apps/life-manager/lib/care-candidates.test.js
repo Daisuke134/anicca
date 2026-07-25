@@ -81,6 +81,11 @@ test("phone-only or unverifiable paths are judged but never selected for autonom
   assert.equal(receipt.selected_provider_id, "web");
 });
 
-test("anything other than exactly three candidates fails closed", async () => {
-  await assert.rejects(() => evaluateCareCandidates(definitions.slice(0, 2), fakeFetch), /exactly three/);
+test("a real-world shortfall of two candidates is accepted; zero or four fail closed", async () => {
+  // 11b: discovery bound to the user's real life sphere can honestly find fewer than three
+  // providers. Demanding exactly three would force fabrication, so 1..3 are accepted.
+  const two = await evaluateCareCandidates(definitions.slice(0, 2), fakeFetch);
+  assert.equal(two.candidates.length, 2);
+  await assert.rejects(() => evaluateCareCandidates([], fakeFetch), /one to three/);
+  await assert.rejects(() => evaluateCareCandidates([...definitions, definitions[0]], fakeFetch), /one to three/);
 });

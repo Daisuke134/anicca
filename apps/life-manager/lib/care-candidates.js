@@ -23,8 +23,10 @@ function reservationJudgment(html) {
 }
 
 async function evaluateCareCandidates(definitions, fetchImpl = fetch) {
-  if (!Array.isArray(definitions) || definitions.length !== 3) {
-    throw new Error("exactly three candidates are required");
+  // 11b: anchored discovery can honestly find fewer than three real providers in the user's
+  // life sphere; forcing exactly three would force fabrication. One to three are accepted.
+  if (!Array.isArray(definitions) || definitions.length < 1 || definitions.length > 3) {
+    throw new Error("one to three candidates are required");
   }
   const candidates = [];
   for (const definition of definitions) {
