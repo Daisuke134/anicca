@@ -56,47 +56,55 @@ function eventKey(event) {
 
 async function processLocationLateNotice(input, deps) {
   const nowMs = input.nowMs === undefined ? Date.now() : input.nowMs;
-  const event = (input.events || []).find((candidate) => candidate && !isHelperBlock(candidate.summary) &&
-    candidate.location && Number.isFinite(candidate.startMs)) || null;
-  const gate = evaluateLateArrival({ nowMs, event, travelMinutes: null, location: input.location });
+  const candidates = (input.events || []).filter((candidate) => candidate && !isHelperBlock(candidate.summary) &&
+    candidate.location && Number.isFinite(candidate.startMs));
+  const gate = evaluateLateArrival({ nowMs, event: candidates[0] || null, travelMinutes: null, location: input.location });
   if (["location_missing", "location_expired", "no_event"].includes(gate.decision)) return gate;
-
-  const travelMinutes = await deps.routeMinutes(
-    locationOrigin(input.location), event.location, input.mapsKey, event.startMs, nowMs,
-  );
-  const assessment = evaluateLateArrival({ nowMs, event, travelMinutes, location: input.location });
-  if (assessment.decision !== "late") return assessment;
-
-  const fresh = await deps.claimEvent(input.user.uid, eventKey(event));
-  if (!fresh) return { decision: "late", deduped: true };
 
   const notifyTelegram = async (text) => {
     if (input.telegramToken && input.user.telegram_chat_id)
       await deps.sendMessage(input.telegramToken, input.user.telegram_chat_id, text);
   };
-  const attendees = externalAttendees(event);
-  if (!attendees.length) {
-    await notifyTelegram(NO_DESTINATION_MESSAGE);
-    return { ...assessment, notified: true, sent: false, reason: "no_destination" };
-  }
 
-  const etaMinutes = roundedEtaMinutes(assessment.lateMinutes);
-  let result;
-  try {
-    result = await deps.sendLateNotice(input.user.uid, event, {
-      ...(input.noticeOpts || {}), etaMinutes,
-      userEmail: input.user.email, userName: input.user.name,
-    });
-  } catch (error) {
-    result = { sent: false, reason: "send_failed", error: String(error && error.message || error) };
+  // A meeting we already acted on must not hide the rest of the day. Seen in production 2026-07-25:
+  // an all-day located event was claimed in the morning and ran until evening, so every later event
+  // was unreachable — the old code stopped at the first located event and gave up on a failed claim.
+  let deduplicated = false;
+  for (const event of candidates) {
+    const travelMinutes = await deps.routeMinutes(
+      locationOrigin(input.location), event.location, input.mapsKey, event.startMs, nowMs,
+    );
+    const assessment = evaluateLateArrival({ nowMs, event, travelMinutes, location: input.location });
+    if (assessment.decision !== "late") return assessment;
+
+    const fresh = await deps.claimEvent(input.user.uid, eventKey(event));
+    if (!fresh) { deduplicated = true; continue; }
+
+    const attendees = externalAttendees(event);
+    if (!attendees.length) {
+      await notifyTelegram(NO_DESTINATION_MESSAGE);
+      return { ...assessment, notified: true, sent: false, reason: "no_destination" };
+    }
+
+    const etaMinutes = roundedEtaMinutes(assessment.lateMinutes);
+    let result;
+    try {
+      result = await deps.sendLateNotice(input.user.uid, event, {
+        ...(input.noticeOpts || {}), etaMinutes,
+        userEmail: input.user.email, userName: input.user.name,
+      });
+    } catch (error) {
+      result = { sent: false, reason: "send_failed", error: String(error && error.message || error) };
+    }
+    if (!result || !result.sent) {
+      const noDestination = result && result.reason === "no_destination";
+      await notifyTelegram(noDestination ? NO_DESTINATION_MESSAGE : MAIL_FAILURE_MESSAGE);
+      return { ...assessment, notified: true, sent: false, reason: noDestination ? "no_destination" : "send_failed" };
+    }
+    await notifyTelegram(formatLateSuccessMessage(event, assessment.arrivalMs, assessment.lateMinutes));
+    return { ...assessment, notified: true, sent: true, result };
   }
-  if (!result || !result.sent) {
-    const noDestination = result && result.reason === "no_destination";
-    await notifyTelegram(noDestination ? NO_DESTINATION_MESSAGE : MAIL_FAILURE_MESSAGE);
-    return { ...assessment, notified: true, sent: false, reason: noDestination ? "no_destination" : "send_failed" };
-  }
-  await notifyTelegram(formatLateSuccessMessage(event, assessment.arrivalMs, assessment.lateMinutes));
-  return { ...assessment, notified: true, sent: true, result };
+  return deduplicated ? { decision: "late", deduped: true } : gate;
 }
 
 function supaHeaders(key, prefer) {
