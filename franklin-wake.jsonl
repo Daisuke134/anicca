@@ -15522,3 +15522,11 @@
 {"ts":1784990923,"wake_id":"00MS0HIBO231571BD985E34FD9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784991076,"wake_id":"00MS0HLLEFC4B93D6B53DE48EA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1784991204,"wake_id":"00MS0HOC18906636698467408F","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784991362,"wake_id":"00MS0HRQBVCBD639A91CB14219","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784991543,"wake_id":"00MS0HVLZU4E6B5C9E2A3C4985","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784991612,"wake_id":"00MS0HX3CH027E38AF779C4878","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784991679,"wake_id":"00MS0HYIXQD7908174A9204863","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784991686,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1784991807,"wake_id":"00MS0I19LV454569AA258840A9","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784991997,"wake_id":"00MS0I5BTUB34C34EDF34F46A6","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1784992064,"wake_id":"00MS0I6RGR29A98B852E7B46B0","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1784992191,"wake_id":"00MS0I9HMH8CE34CB983224DB2","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1784992199,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
