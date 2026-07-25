@@ -26,7 +26,9 @@ def load_bank(path):
                 row = json.loads(line)
             except json.JSONDecodeError as error:
                 raise ValueError(f"malformed bank line {number}: {error.msg}") from error
-            if not isinstance(row, dict) or set(row) != FIELDS:
+            # The bank now also carries English beats for the narration loop, so require the core
+            # fields rather than forbidding every additional one.
+            if not isinstance(row, dict) or not FIELDS.issubset(set(row)):
                 raise ValueError(f"invalid bank schema at line {number}")
             if any(not isinstance(row[field], str) or not row[field].strip() for field in FIELDS):
                 raise ValueError(f"empty bank field at line {number}")
