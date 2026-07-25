@@ -20,9 +20,14 @@ const DISCOVERY_STRINGS = Object.freeze({
   }),
 });
 
-// FIN-b: the payout-destination closed question, verbatim from spec §9.11 FINANCIAL. The three button
-// labels are read out of the copy itself rather than restated, so the keyboard can never drift from the
-// sentence the user reads. This copy is Dais-owned — the implementation quotes it, it never invents it.
+// FIN-b: the payout-destination closed question, and FIN-c: the monthly report — both verbatim from
+// spec §9.11 FINANCIAL. The payout button labels are read out of the copy itself rather than restated,
+// so the keyboard can never drift from the sentence the user reads. The monthly report has two shapes,
+// because a losing month must not be dressed as a quiet one: `monthly` is the profit shape,
+// `monthlyLoss` is the 盛らない原則 shape. The `verify` line is the same sentence in both — a month we
+// lost money on has to be exactly as checkable on-chain as a month we made money on, and only showing
+// the link when the news is good would be the precise asymmetry that principle forbids. This copy is
+// Dais-owned — the implementation quotes it, it never invents it.
 const FINANCIAL_STRINGS = Object.freeze({
   ja: Object.freeze({
     payoutQuestion: Object.freeze({
@@ -30,6 +35,22 @@ const FINANCIAL_STRINGS = Object.freeze({
       bankButton: "銀行口座を登録",
       walletButton: "walletアドレスを登録",
       laterButton: "あとで",
+    }),
+    monthly: Object.freeze({
+      header: "💰 今月の収支報告です。",
+      revenue: "・私のwalletでの収益: {revenue}",
+      transfer: "・あなたへの送金: {transfer}（送金済み）",
+      // A profitable month that has not sent anything yet keeps the profit shape's label and borrows
+      // the loss shape's explanation, rather than rendering a misleading 「$0.00（送金済み）」.
+      transferNone: "・あなたへの送金: なし（利益が出た月のみ送金します）",
+      cost: "・手数料・実費: {cost}",
+      balance: "・私の残高: {balance}",
+      verify: "取引はすべてこちらで確認できます: basescan.org/address/{address}",
+    }),
+    monthlyLoss: Object.freeze({
+      revenue: "・収益: {revenue}（マイナスでした）",
+      transfer: "・送金: なし（利益が出た月のみ送金します）",
+      outlook: "先月比の要因: {cause}。来月の方針: {plan}。",
     }),
   }),
 });
