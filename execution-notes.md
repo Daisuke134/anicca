@@ -368,3 +368,11 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Pending becomes 17. The live list is maintained only in §10; this note points there rather than
   becoming a second source of truth.
 - Evidence: `docs/evidence/ssot-reality-audit.md`.
+
+## DEV automation paused until final phase
+- `ai.anicca.life-manager-dev` is booted out; no `life-manager-dev-daily.js` process remains.
+- The active LaunchAgent plist is moved to
+  `/Users/operator/Library/LaunchAgents/ai.anicca.life-manager-dev.plist.disabled`.
+- Pause marker: `~/.openclaw/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE`.
+- Day 1/Day 2 append-only evidence remains intact. No paused dates count toward the 7-day gate.
+- Execution order ends with 10e, then 10f. Current work remains 9c preview-first.
