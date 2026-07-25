@@ -554,3 +554,35 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   and the answer really lands on `lm_users`.
 - Still outstanding: the real Telegram round trip and the real database row. This branch proves the
   logic against fixtures only; it deliberately sent no message and touched no production data.
+
+## 13c — the earnings engine is wired; the first real revenue row is not
+- The ledger is append-only in both senses: the module hands back a new frozen array rather than
+  pushing into the old one, and the migration enforces it in the engine with a trigger and a revoked
+  UPDATE/DELETE grant. A row you can edit afterwards is not evidence of anything.
+- Money is integers end to end. Amounts are whole minor units summed as BigInt, and on-chain atomic
+  units convert only when they divide exactly — 0.012345 USD is refused rather than rounded, because
+  rounding down shaves the user's revenue and rounding up invents it.
+- Direction lives in the kind, never in a sign, and the kind vocabulary is the one 9.9 already fixed
+  for the panel score. Sharing it means the score and the report cannot quietly disagree.
+- The one place this deliberately diverges from the panel score: net income is not clamped at zero.
+  The score clamps because a ratio cannot be negative. The report must not, or every losing month
+  would read as a flat one.
+- A losing month cannot be rendered without a real cause and a real plan — the spec's own `◯◯` and
+  `△△` are detected and refused. A losing month that did send money is refused too, because the 9.11
+  loss copy states outright that nothing was sent and there is no verbatim line for the other case.
+- One deliberate addition to the 9.11 loss shape: it ends with the same verbatim basescan line the
+  profit shape uses. Showing the on-chain link only when the news is good is exactly the asymmetry
+  盛らない原則 forbids, and the line itself is not new copy.
+- Measured generation, not a fixture: `scripts/agent-earnings-report.js --month 2026-07` reads the
+  live Base mainnet RPC — native balance `0x0`, USDC `balanceOf` 0 — and renders the July report from
+  it. A non-zero ETH balance would abort rather than be priced at a made-up rate, and a balance the
+  RPC will not give us aborts rather than defaulting to zero: an unread month and an empty month are
+  not the same thing. The loss branch was exercised through the same binary and refuses to run
+  without reasoning (exit 1).
+- **Still outstanding, and the reason this row stays `pending`: there is no real on-chain revenue row.**
+  The wallet is at balance 0 and nonce 0 — nothing has been earned yet, so the "real income/expense
+  row" half of the done condition cannot honestly be claimed. The engine is ready to record it the
+  moment the earn loop produces one; manufacturing a row to close the gate would be the false success
+  this project keeps refusing.
+- The migration is committed but **not applied to production**. That is left to the main session.
+- 815 tests pass (0 fail), up from 770 at 13a. Evals 117/117 across seven suites; panel privacy passes.
