@@ -232,6 +232,14 @@ export async function deployNosanaJob({
   publicKeyCtor,
   execFileImpl = execFileSync,
   now = () => Date.now(),
+  // S7 (tenant/) disclosed addition: when given, this pre-built, already-structurally-valid job
+  // definition is posted AS-IS instead of the default single-service-nginx one this function
+  // builds internally — everything else (identity, market/price discovery, the spend gate,
+  // at-most-once posting + reconciliation, ledger recording) is unchanged and still applies. This
+  // is what lets tenant/job.mjs's buildTenantJobDefinition (a one-shot task job with no exposed
+  // port, running tenant/entrypoint.mjs) reuse this whole proven wallet-rail payment path instead
+  // of duplicating it. See tenant/README.md.
+  jobDefinitionOverride,
 } = {}) {
   refuseCreditsRailIfPresent(env);
 
@@ -264,17 +272,23 @@ export async function deployNosanaJob({
   // to real traffic even when the container runs perfectly healthy the whole time; the health
   // check is what gives the service router a readiness signal.
   const healthCheckPath = env.NOSANA_JOB_HEALTH_CHECK_PATH || "/";
-  const jobDefinition = buildServiceJobDefinition({
-    image,
-    exposePort,
-    gpu: true,
-    healthCheck: { path: healthCheckPath, method: "GET", expectedStatus: 200 },
-  });
+  const jobDefinition =
+    jobDefinitionOverride ||
+    buildServiceJobDefinition({
+      image,
+      exposePort,
+      gpu: true,
+      healthCheck: { path: healthCheckPath, method: "GET", expectedStatus: 200 },
+    });
   const structuralValidation = validateJobDefinition(jobDefinition);
   if (!structuralValidation.valid) {
     throw new Error(`deployNosanaJob: built an invalid job definition: ${structuralValidation.errors.join("; ")}`);
   }
-  log(`job definition built + structurally valid (image=${image}, expose=${exposePort}, healthCheckPath=${healthCheckPath})`);
+  log(
+    jobDefinitionOverride
+      ? `job definition override provided by caller (image=${image}) — used as-is, structurally valid`
+      : `job definition built + structurally valid (image=${image}, expose=${exposePort}, healthCheckPath=${healthCheckPath})`,
+  );
 
   // Step 5: live balances + the combined spend gate (caps + balance sufficiency).
   const Connection = connectionFactory ? null : (await import("@solana/web3.js")).Connection;

@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+// citizen-tenant-fund — thin CLI entrypoint for S7's tenant-funding step: sends a deliberately
+// tiny amount of SOL + NOS from Franklin's treasury wallet to a SEPARATE, disposable tenant
+// wallet (never Franklin's own treasury key) so that wallet can later run INSIDE a Nosana job and
+// prove it holds real funds. No business logic lives here (repo convention: bin/ entrypoints stay
+// thin); everything real is in skills/self/shelter/nosana/tenant/{keypair,fund-tenant}.mjs.
+//
+// --dry (DEFAULT): ensures (generating if needed) the local tenant keypair, reads real treasury +
+//   tenant balances, and runs the funding gate — then stops before building/signing anything.
+// --live: the only flag that actually signs and sends. Requires explicit opt-in every invocation.
+//
+// Usage: bin/citizen-tenant-fund [--dry|--live] [--help]
+
+import { ensureLocalTenantKeypair } from "../skills/self/shelter/nosana/tenant/keypair.mjs";
+import { fundTenant } from "../skills/self/shelter/nosana/tenant/fund-tenant.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-tenant-fund [--dry|--live]",
+      "",
+      "  --dry   (default) ensure the local tenant keypair exists, read real treasury/tenant",
+      "          balances, and run the funding gate — then stop before signing/sending.",
+      "  --live  actually sign and send SOL+NOS from Franklin's treasury wallet to the tenant",
+      "          wallet, paid from Franklin's own wallet.",
+      "",
+      "Env overrides: NOSANA_TENANT_FUND_SOL, NOSANA_TENANT_FUND_NOS, NOSANA_RPC_URL, ANICCA_HOME.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-tenant-fund: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+try {
+  const { address: tenantAddress, keypairPath, created } = await ensureLocalTenantKeypair({});
+  process.stdout.write(
+    `[citizen-tenant-fund] tenant keypair ${created ? "generated" : "loaded"} at ${keypairPath} — address ${tenantAddress}\n`,
+  );
+  const result = await fundTenant({ live, tenantAddress });
+  process.exit(result.gate && !result.gate.allowed ? 1 : 0);
+} catch (err) {
+  // Error messages from fund-tenant.mjs/keypair.mjs/resolve-identity.mjs are constructed to never
+  // include secret material — safe to print verbatim here.
+  process.stderr.write(`citizen-tenant-fund: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}

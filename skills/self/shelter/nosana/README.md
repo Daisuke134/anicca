@@ -60,6 +60,7 @@ on any single job's estimated cost), `NOSANA_RPC_URL` / `SOLANA_RPC_URL`, `NOSAN
 | `funding/acquire-nos.mjs` | S2: Franklin swaps its own SOL for NOS via Jupiter, zero human step. |
 | `renew/` | S3: the self-renewal path (extends the live job before expiry, or reposts if none is alive) + the survival-drive runway signal. See `renew/README.md` for the full rail comparison. |
 | `persistence/` | S4: externalizes the wallet manifest (addresses only) + every ledger above to a durable remote store, so a rebuilt job restores the same identity/ledgers a torn-down one had. See `persistence/README.md`. |
+| `tenant/` | S7: puts a real, identifiable, disposable agent identity *inside* the job Franklin pays for (previously a placeholder `nginx` container) — boots, restores its own history, signs a live proof-of-life, snapshots state back, reports. See `tenant/README.md` for the full trust-boundary writeup. |
 | `bin/citizen-up` (repo root) | Thin CLI entrypoint — no business logic, just argv parsing and wiring real defaults into `deployNosanaJob`. |
 | `bin/citizen-rent` (repo root) | Thin CLI entrypoint for S3 — wires real defaults into `renew/executor.mjs`'s `renewShelter`. |
 | `bin/citizen-state` (repo root) | Thin CLI entrypoint for S4 — wires real defaults into `persistence/{snapshot,restore}.mjs`. |
