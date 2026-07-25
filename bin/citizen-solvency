@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+// citizen-solvency — thin CLI entrypoint for closing the loop between what Franklin earns and what
+// its Nosana shelter costs (T1: agent financial independence). No business logic lives here (repo
+// convention: bin/ entrypoints stay thin); everything real is in
+// skills/self/shelter/nosana/treasury/check.mjs, which this just calls with real defaults.
+//
+// --dry (DEFAULT, matching bin/citizen-up|citizen-fund|citizen-rent|citizen-state's convention):
+//   resolves identity, reads real balances, real ledgers, and a real NOS/USD price, computes the
+//   joined solvency report and the top-up decision — then stops. Never calls acquireNos.
+// --live: additionally executes a top-up swap (via funding/acquire-nos.mjs's OWN full gate,
+//   unchanged) IF AND ONLY IF the top-up decision recommends one. Requires explicit opt-in every
+//   invocation, same as every other citizen-* --live flag.
+//
+// Usage: bin/citizen-solvency [--dry|--live] [--help]
+
+import { checkShelterSolvency } from "../skills/self/shelter/nosana/treasury/check.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-solvency [--dry|--live]",
+      "",
+      "  --dry   (default) resolve identity, read real balances/ledgers/price, compute the joined",
+      "          revenue-vs-shelter-cost solvency report and the top-up decision — then stop.",
+      "  --live  additionally execute a top-up swap (via funding/acquire-nos.mjs) if and only if",
+      "          the decision recommends one. Paid from Franklin's own wallet.",
+      "",
+      "Env overrides: NOSANA_RUNWAY_WARNING_HOURS, NOSANA_RUNWAY_CRITICAL_HOURS,",
+      "  NOSANA_TREASURY_SELF_WALLETS (comma-separated extra Solana self-wallets),",
+      "  NOSANA_RPC_URL, ANICCA_HOME, ANICCA_STATE_DIR.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-solvency: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+const env = process.env;
+const warningHours = env.NOSANA_RUNWAY_WARNING_HOURS ? Number(env.NOSANA_RUNWAY_WARNING_HOURS) : undefined;
+const criticalHours = env.NOSANA_RUNWAY_CRITICAL_HOURS ? Number(env.NOSANA_RUNWAY_CRITICAL_HOURS) : undefined;
+
+try {
+  const result = await checkShelterSolvency({ env, live, warningHours, criticalHours });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  const dangerousSurvival = result.solvencyReport.survivalSignal.level === "insolvent" || result.solvencyReport.survivalSignal.level === "critical";
+  const topupFailed = result.topupExecuted && result.topupResult && result.topupResult.gate && !result.topupResult.gate.allowed;
+  process.exit(dangerousSurvival || topupFailed ? 1 : 0);
+} catch (err) {
+  // Error messages from check.mjs/survival-drive.mjs/acquire-nos.mjs/keypair.mjs are constructed to
+  // never include secret material — safe to print verbatim here.
+  process.stderr.write(`citizen-solvency: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}
