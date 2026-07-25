@@ -2,7 +2,15 @@
 // "container" job definition running one long-running exposed service.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildServiceJobDefinition, validateJobDefinition } from "../job-definition.mjs";
+import {
+  buildServiceJobDefinition,
+  validateJobDefinition,
+  isDiscouragedExposePort,
+  extractExposedPorts,
+  computeExposeIdHash,
+  computeExposeUrl,
+  FRP_SERVER_ADDR_MAINNET,
+} from "../job-definition.mjs";
 
 test("buildServiceJobDefinition produces a minimal valid schema-0.1 container job with expose", () => {
   const def = buildServiceJobDefinition({ image: "docker.io/library/nginx:alpine", exposePort: 80 });
@@ -283,4 +291,99 @@ test("validateJobDefinition rejects an unknown key inside args", () => {
   const result = validateJobDefinition(def);
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((e) => e.includes('unknown key "bogus_key"')));
+});
+
+// ---- isDiscouragedExposePort / computeExposeIdHash / computeExposeUrl -------------------------
+// 2026-07-25 incident: port 80 A/B-tested against every official pipeline-templates port and
+// against our own prior 503s; port 8080 (nginx-unprivileged image) produced a REAL HTTP 200. The
+// hash below is not synthetic — it is the exact value that, once turned into a URL and polled,
+// served that real 200 (server: nginx/1.31.3) for job CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs.
+
+test("isDiscouragedExposePort flags port 80 (zero occurrences across all official templates, five real 503s) and nothing else", () => {
+  assert.equal(isDiscouragedExposePort(80), true);
+  assert.equal(isDiscouragedExposePort(8080), false);
+  assert.equal(isDiscouragedExposePort(3000), false);
+});
+
+test("extractExposedPorts finds the single bare-integer expose port produced by buildServiceJobDefinition", () => {
+  const def = buildServiceJobDefinition({ image: "docker.io/nginxinc/nginx-unprivileged:alpine", exposePort: 8080 });
+  assert.deepEqual(extractExposedPorts(def), [{ opIndex: 0, opId: "main", port: 8080 }]);
+});
+
+test("extractExposedPorts finds the port inside a healthCheck-shaped ExposedPort[] object", () => {
+  const def = buildServiceJobDefinition({ image: "x", exposePort: 8080, healthCheck: { path: "/" } });
+  assert.deepEqual(extractExposedPorts(def), [{ opIndex: 0, opId: "main", port: 8080 }]);
+});
+
+test("extractExposedPorts finds every port in a multi-port bare-number expose array, across multiple ops", () => {
+  const def = {
+    version: "0.1",
+    type: "container",
+    ops: [
+      { type: "container/run", id: "a", args: { image: "x", expose: [8000, 9000] } },
+      { type: "container/run", id: "b", args: { image: "y" } },
+      { type: "container/run", id: "c", args: { image: "z", expose: 3000 } },
+    ],
+  };
+  assert.deepEqual(extractExposedPorts(def), [
+    { opIndex: 0, opId: "a", port: 8000 },
+    { opIndex: 0, opId: "a", port: 9000 },
+    { opIndex: 2, opId: "c", port: 3000 },
+  ]);
+});
+
+test("extractExposedPorts skips a range-string expose (no single concrete port) and returns [] for no exposed ops or a malformed input", () => {
+  const rangeDef = {
+    version: "0.1",
+    type: "container",
+    ops: [{ type: "container/run", id: "a", args: { image: "x", expose: "8000-8010" } }],
+  };
+  assert.deepEqual(extractExposedPorts(rangeDef), []);
+  assert.deepEqual(extractExposedPorts({ version: "0.1", type: "container", ops: [{ type: "container/run", id: "a", args: { image: "x" } }] }), []);
+  assert.deepEqual(extractExposedPorts(null), []);
+  assert.deepEqual(extractExposedPorts({}), []);
+});
+
+test("computeExposeIdHash reproduces the exact real expose-id for the verified-live 200 (job CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs, port 8080)", () => {
+  const hash = computeExposeIdHash({
+    jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs",
+    opIndex: 0,
+    port: 8080,
+  });
+  assert.equal(hash, "wpjZ4FQEeQom3y2PdYWTLwYMpWXw7ddmMi5AeNrqy81r");
+});
+
+test("computeExposeIdHash defaults opIndex to 0", () => {
+  const withDefault = computeExposeIdHash({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", port: 8080 });
+  const explicit = computeExposeIdHash({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", opIndex: 0, port: 8080 });
+  assert.equal(withDefault, explicit);
+});
+
+test("computeExposeIdHash produces a different hash for a different opIndex or port (no accidental collisions)", () => {
+  const base = computeExposeIdHash({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", opIndex: 0, port: 8080 });
+  const diffPort = computeExposeIdHash({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", opIndex: 0, port: 8081 });
+  const diffOp = computeExposeIdHash({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", opIndex: 1, port: 8080 });
+  assert.notEqual(base, diffPort);
+  assert.notEqual(base, diffOp);
+});
+
+test("computeExposeIdHash rejects a missing jobAddress or invalid port/opIndex", () => {
+  assert.throws(() => computeExposeIdHash({ port: 8080 }), /jobAddress is required/);
+  assert.throws(() => computeExposeIdHash({ jobAddress: "x", port: 0 }), /port must be/);
+  assert.throws(() => computeExposeIdHash({ jobAddress: "x", port: 8080, opIndex: -1 }), /opIndex must be/);
+});
+
+test("computeExposeUrl builds the full frp URL from the hash, defaulting to the mainnet frp domain", () => {
+  const url = computeExposeUrl({ jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs", opIndex: 0, port: 8080 });
+  assert.equal(url, `https://wpjZ4FQEeQom3y2PdYWTLwYMpWXw7ddmMi5AeNrqy81r.${FRP_SERVER_ADDR_MAINNET}`);
+  assert.equal(FRP_SERVER_ADDR_MAINNET, "node.k8s.prd.nos.ci");
+});
+
+test("computeExposeUrl honors a custom frpServerAddr override", () => {
+  const url = computeExposeUrl({
+    jobAddress: "CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs",
+    port: 8080,
+    frpServerAddr: "node.k8s.dev.nos.ci",
+  });
+  assert.equal(url, "https://wpjZ4FQEeQom3y2PdYWTLwYMpWXw7ddmMi5AeNrqy81r.node.k8s.dev.nos.ci");
 });

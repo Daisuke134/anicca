@@ -15,14 +15,23 @@ import path from "node:path";
 
 import { ensureNosanaKeypair } from "./keypair.mjs";
 import { fetchMarkets, selectCheapestMarket, estimateJobCost, fetchNosUsdPriceLive, NOS_MINT } from "./market.mjs";
-import { buildServiceJobDefinition, validateJobDefinition } from "./job-definition.mjs";
+import { buildServiceJobDefinition, validateJobDefinition, extractExposedPorts, computeExposeUrl } from "./job-definition.mjs";
 import { evaluateSpendGate, DEFAULT_MAX_SPEND_USD, DEFAULT_SOL_FEE_FLOOR } from "./spend-gate.mjs";
 import { readShelterCostEntriesResolved, appendShelterCostEntry } from "../../spawn/lib/shelter-cost-ledger.js";
 import { appendChild } from "../../spawn/lib/ledger.js";
 import { resolveStateDir } from "../../spawn/lib/state-path.js";
 
-export const DEFAULT_IMAGE = "docker.io/library/nginx:alpine";
-export const DEFAULT_EXPOSE_PORT = 80;
+// DISCLOSED EDIT (2026-07-25, see job-definition.mjs's file header "THIRD real finding"): the
+// prior defaults here — port 80 + plain nginx:alpine — are what every one of five real prior
+// posted jobs used, and every one got a permanent 503 "Service Initializing" placeholder. A live
+// A/B test (job CUcMnkzWL8RdNDtGw7pdbqE8xVawuPf2dUigQ3wS5qDs) proved changing ONLY the port away
+// from 80 — paired with nginx-unprivileged, the same-vendor/same-content nginx image whose only
+// difference from nginx:alpine is listening on 8080 instead of 80 — flips this to a real HTTP 200.
+// Caveat, stated plainly: that live test did NOT include the healthCheck this file's own default
+// path always attaches below (Step 4) — the (healthCheck + non-80-port) combination is therefore
+// still unverified; only (no healthCheck + non-80-port) has been proven live.
+export const DEFAULT_IMAGE = "docker.io/nginxinc/nginx-unprivileged:alpine";
+export const DEFAULT_EXPOSE_PORT = 8080;
 export const DEFAULT_DURATION_MINUTES = 15;
 export const DEFAULT_RPC_URL = "https://api.mainnet-beta.solana.com";
 // Nosana's own public jobs API — no auth, same indexer backend the CLI itself reads. Verified live
@@ -448,8 +457,22 @@ export async function deployNosanaJob({
   appendShelterCostEntry(shelterCostFile, { ts: now() / 1000, settledLeaseCostUsd: costUsd, jobAddress });
   log(`posted job ${jobAddress} — settled cost $${costUsd.toFixed(4)} recorded to ${shelterCostFile}`);
 
+  // DISCLOSED EDIT (2026-07-25): derive+log the real public URL for every exposed port, instead of
+  // leaving the caller to guess (the wrong guess — the bare `<node>.node.k8s.prd.nos.ci` subdomain
+  // — is exactly what this repo guessed for months; see job-definition.mjs's file header). Purely
+  // a computed/logged addition — no new I/O, no change to the post/reconcile/ledger logic above.
+  const serviceUrls = extractExposedPorts(jobDefinition).map(({ opIndex, opId, port }) => ({
+    opId,
+    port,
+    url: computeExposeUrl({ jobAddress, opIndex, port }),
+  }));
+  for (const { opId, port, url } of serviceUrls) {
+    log(`exposed service (op "${opId}", port ${port}): ${url} — poll this to confirm real traffic (503 "Service Initializing" until the node's health check/router catches up).`);
+  }
+
   result.posted = true;
   result.jobAddress = jobAddress;
   result.intentId = intentId;
+  result.serviceUrls = serviceUrls;
   return result;
 }
