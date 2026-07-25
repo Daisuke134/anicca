@@ -57,6 +57,7 @@ const {
   markAnswered, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
+const { handlePayoutCallback } = require("./lib/payout-question.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -388,13 +389,31 @@ const server = http.createServer((req, res) => {
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
               }, discovery: async (data) => {
+                // FIN-b: the payout branch needs the uid to know whether this person already told us
+                // where to send money, so the register button can be answered exactly once.
+                const row = /^discovery:register:payout$/.test(String(data || ""))
+                  ? await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY)
+                  : null;
                 const outcome = await handleDiscoveryCallback(data, {
-                  token: LM_TG_TOKEN, chatId: u.chatId,
+                  token: LM_TG_TOKEN, chatId: u.chatId, uid: row && row.uid,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
                 // Discovery answers were otherwise invisible: nothing recorded which gate the user
                 // responded to, so an unlocked-gate announcement could not be audited after the fact.
                 if (outcome && outcome.handled) {
                   console.log(`[discovery] callback action=${outcome.action} gate=${outcome.gate}`);
+                }
+                return outcome;
+              }, payout: async (data) => {
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                const outcome = await handlePayoutCallback(data, {
+                  uid: row && row.uid, chatId: u.chatId, actorId: u.userId,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+                // Same audit shape as discovery: name the decision, never the person. A failed write
+                // is logged as a failure so a silent non-persist can never look like a registration.
+                if (outcome && outcome.handled) {
+                  console.log(`[payout] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
                 }
                 return outcome;
               } });
