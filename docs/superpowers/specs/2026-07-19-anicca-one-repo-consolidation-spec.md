@@ -473,6 +473,16 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 5. **marketing loop と article 執筆 loop は統合する**。persona を読み、message を作り、投稿し、metrics を読み、
    次を変える——という骨格が同一だから、別々に持つ理由がない。統合先は共有 marketing 資産とする。
 6. 選択肢の羅列は禁止。**単一の推奨を出す**。
+7. **毎日の marketing video の確定フォーマット（2026-07-25 Dais 承認）**:
+   - 音声 = MPT ナレーション（edge-tts / `en-US-AndrewNeural`）。録音は使わない。
+   - 字幕 = ナレーション由来・**中央やや下**（`--subtitle-position custom --custom-position 60`、font-size 64 / stroke 3）。
+   - 映像 = 素材を **9:16 へ center crop** して黒帯を出さない。カットを繋いで動きを保つ（注意維持のため）。
+   - 台本 = **恥 → 具体 → 転換 → 証拠 → CTA** の型。**末尾は必ず「Try Life Manager」**。
+   - これを毎日、内容だけ変えて TikTok（および IG 復旧後は IG）へ出す。
+8. **Instagram の warm-up は行わない**。bot 的 warm-up が shadowban / 凍結の原因になったという判断。
+   人間が居ない運用では warm-up は逆効果なので skip する。
+9. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
+   参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
 
 
 
