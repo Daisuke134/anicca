@@ -498,12 +498,14 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
      「棚卸し + 提案 + 本人承認 + 実行は本人」で成立させ、rail が開いた時点で実行だけを引き継ぐ。
 11. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
    参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
-12. **11c の cloud browser rail = Browserbase を x402 で買う（2026-07-26 決定。8社比較 + live 実測 + 過去研究2件の合流）**。
-   - **サインアップ不要が決め手**: `x402.browserbase.com` が USDC(Base/Solana) の per-session 販売を公式提供 —
-     "No API keys, no accounts. Just pay and connect."（docs.browserbase.com/integrations/x402）。
-     2026-07-26 live 実測: `POST /browser/session/create {estimatedMinutes:5}` → HTTP 402、$0.01/5min（$0.12/hr）。
-     支払い元 = 13a の agent wallet。これは旧 ANICCA_LIFE_MANAGER_SPEC の T66（Browserbase + Stagehand, Tier 1）と
-     2026-05-23 の6ツール実測 memory の決定に合流する — 新決定ではなく、既決の rail がようやく配線される。
+12. **11c の cloud browser rail = Browserbase（2026-07-26 決定。8社比較 + live 実測 + 過去研究2件の合流。
+   Browserless は棄却 — Unit=30秒課金 + residential proxy 6 units/MB で予約 workload だと実質破綻）**。
+   - **★支払いは x402 ではなく通常 account（2026-07-26 Dais 裁定）★**: `x402.browserbase.com` の per-session USDC 販売
+     （$0.01/5min、Base/Solana、"No API keys, no accounts"）は 2026-07-26 に HTTP 402 応答まで live 実測済みだが、
+     「まだ tricky なことはしない」により当面使わない。11c 着手時に Dais が account を作成して
+     `BROWSERBASE_API_KEY` を渡す（env slot は旧 spec T66 から予約済み）。x402 は将来 rail として温存。
+     旧 ANICCA_LIFE_MANAGER_SPEC の T66（Browserbase + Stagehand, Tier 1）と 2026-05-23 の6ツール実測 memory の
+     決定に合流する — 新決定ではなく、既決の rail がようやく配線される。
    - **multi-tenant 隔離** = Browserbase Contexts（user ごと1 Context、"uniquely encrypted at rest"）。
      user A の salon ログインが B に混ざらないことは Context 分離で担保する。
    - **JP IP は必要になるまで買わない**: 2026-07-26 実測で HPB トップは海外 DC IP でも 200 + 実コンテンツを返し、
@@ -511,8 +513,16 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
      （`proxies:[{geolocation:{city:"TOKYO",country:"JP"}}]`, $12/GB — 総額を支配する費目）を有効化する。
    - **fallback**: 実予約フォームの submit が CDP fingerprint / ASN 判定で恒常ブロックされたら
      `steel-dev/steel-browser`（Apache/MIT）を東京の VPS に self-host して JP 実回線 egress へ逃がす。同一 API 系で移行コスト小。
-   - **未検証の穴**（11c 着手初日に潰す）: ①実 USDC 払いで 200 + connectUrl が返る所（402 schema までは実測済み。
-     wallet 残高 $0 なので seed が要る）②予約フォーム submit 段の bot 防御（トップページ 200 は答えではない）。
+   - **未検証の穴**（11c 着手初日に潰す）: 予約フォーム submit 段の bot 防御（トップページ 200 は答えではない）。
+13. **9c の IG は先送り（2026-07-26 Dais 裁定）**。9c の当面の done = **TikTok に MPT 製の新規動画が毎日出続けること**。
+    実測 2026-07-25: `lm-video-post` launchd が Postiz DIRECT_POST で `post_id=cms0bqgx40414pj0yftnc0b4r` を配信済み
+    （`~/.openclaw/logs/lm-video-post-launchd.out.log`）。preview 承認ゲートも撤去（Dais 裁定: 承認不要）。
+    IG は新規アカウント作成（warm-up なし = 裁定9）を Dais が行える時に再開する。
+14. **marketing engine は共有資産（2026-07-26 Dais 方向づけ。実行はまだしない）**。
+    `~/anicca/skills/earn/marketing-engine`（run_agent.sh → profitable-claude/skills/agent-runner、provider-agnostic routing）
+    は Life Manager 専用ではなく、capafy loop・reelclaw・larry が同じ engine に乗る。
+    9d の self-improve（metrics → winner/loser → 翌日変更）は**全 loop 共通の必須規約**であり、Life Manager だけの機能にしない。
+    openclaw の marketing 系 cron はこの repo へ移管する（裁定4「openclaw から離脱」の具体化）。**移管作業は指示があるまで着手しない**。
 
 
 
