@@ -57,7 +57,10 @@ on any single job's estimated cost), `NOSANA_RPC_URL` / `SOLANA_RPC_URL`, `NOSAN
 | `job-definition.mjs` | Pure builder + structural validator for a schema-0.1 `container` job definition exposing one long-running service. |
 | `spend-gate.mjs` | Pure money-safety gate: per-job/daily/cumulative USD caps (mirrors `skills/earn/funding/lib/caps.py`'s semantics) plus NOS/SOL balance sufficiency. |
 | `deploy.mjs` | Orchestrates the above, shells out to the real `nosana` CLI, records settled cost to `shelter-cost-ledger.js`. |
+| `funding/acquire-nos.mjs` | S2: Franklin swaps its own SOL for NOS via Jupiter, zero human step. |
+| `renew/` | S3: the self-renewal path (extends the live job before expiry, or reposts if none is alive) + the survival-drive runway signal. See `renew/README.md` for the full rail comparison. |
 | `bin/citizen-up` (repo root) | Thin CLI entrypoint — no business logic, just argv parsing and wiring real defaults into `deployNosanaJob`. |
+| `bin/citizen-rent` (repo root) | Thin CLI entrypoint for S3 — wires real defaults into `renew/executor.mjs`'s `renewShelter`. |
 
 ## Money-safety notes
 
@@ -93,16 +96,13 @@ If the very first real `--live` run's stdout doesn't match any of the guessed sh
 reconciliation step is what actually finds the job — this is the highest-risk unverified
 assumption in this deliverable (see the implementation report for detail).
 
-## Future replacement: `@nosana/kit` instead of shelling out to the CLI
+## `@nosana/kit`: now a real dependency, used by S3 (renewal), not yet by S1 (this file's post path)
 
-This executor currently shells out to the installed `nosana` binary (`execFileSync`) because that
-is the only mechanism available in this session (`@nosana/kit` is not a dependency of this
-project). `@nosana/kit@2.7.0` exposes an in-memory `KeyPairSigner` you can assign directly —
-`client.wallet = keypair` — letting a caller post/manage jobs entirely in-process, with a real
-Solana keypair object instead of a keyfile path and a spawned child process. That is the intended
-future replacement for the CLI shell-out in `deploy.mjs`'s Step 6–9 (posting + reconciliation):
-same wallet-rail-only, same fail-closed gate, but no `execFileSync`, no on-disk keypair file, and
-a typed SDK response instead of parsed CLI stdout — which would also close the "unverified JSON
-shape" gap above by construction. Not implemented in S1 because `@nosana/kit` was not verified
-against this repo's dependency set in this session; wiring it in is natural follow-up work
-alongside the S3 self-renewing rent loop.
+S3 (`renew/`, see `renew/README.md`) added `@nosana/kit@^2.7.0` to `package.json` — the vendor CLI
+cannot renew a job at all (`nosana job extend` crashes; see `renew/README.md`), so the self-renewal
+path had to use `@nosana/kit`'s `client.jobs.extend()`, the verified wallet-only on-chain rail
+(**not** `client.api.jobs.extend`, which is the credits/Stripe rail — see `renew/README.md` for the
+full comparison with quoted evidence). `deploy.mjs`'s own post path above still shells out to the
+CLI unchanged — migrating it to `@nosana/kit` (closing the "unverified JSON shape" gap above by
+construction) remains real, valuable follow-up work, now genuinely lower-cost since the dependency
+is already present.

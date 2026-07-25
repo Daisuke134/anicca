@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+// citizen-rent — thin CLI entrypoint for Franklin's self-renewal path (S3: agent financial
+// independence). No business logic lives here (repo convention: bin/ entrypoints stay thin);
+// everything real is in skills/self/shelter/nosana/renew/executor.mjs, which this just calls with
+// real defaults.
+//
+// --dry (DEFAULT, spec hard constraint): resolves identity, reads real balances, reads real job
+//   state via the authoritative jobs API, computes the rent-clock decision + the survival-drive
+//   runway signal + the real cost estimate, and runs the spend gate — then stops before any
+//   on-chain action.
+// --live: the only flag that actually extends the job (or posts a successor) on-chain, paid from
+//   Franklin's own wallet. Requires explicit opt-in every invocation.
+//
+// Exit code is loud, not silent (spec: "never silently skip a window"): nonzero whenever the
+// renewal was refused, the outcome is unknown, or the survival signal is insolvent/critical —
+// even in --dry mode — so a cron/monitor wrapper around this command can alert on it.
+//
+// Usage: bin/citizen-rent [--dry|--live] [--help]
+
+import { renewShelter } from "../skills/self/shelter/nosana/renew/executor.mjs";
+
+function printHelp() {
+  process.stdout.write(
+    [
+      "Usage: citizen-rent [--dry|--live]",
+      "",
+      "  --dry   (default) resolve identity, read real balances and real job state, compute the",
+      "          rent-clock decision, the survival-drive runway signal, and the real cost",
+      "          estimate, and run the spend gate — then stop before any on-chain action.",
+      "  --live  actually extend the live job (or post a successor), paid from Franklin's own",
+      "          wallet. At-most-once per renewal window — see renew/README.md.",
+      "",
+      "Env overrides: NOSANA_RENEW_EXTEND_MINUTES, NOSANA_RENEW_LEAD_SECONDS,",
+      "  NOSANA_MAX_SPEND_USD, NOSANA_RUNWAY_WARNING_HOURS, NOSANA_RUNWAY_CRITICAL_HOURS,",
+      "  NOSANA_RPC_URL, NOSANA_NETWORK, ANICCA_HOME.",
+      "",
+    ].join("\n"),
+  );
+}
+
+const args = process.argv.slice(2);
+if (args.includes("--help") || args.includes("-h")) {
+  printHelp();
+  process.exit(0);
+}
+if (args.includes("--live") && args.includes("--dry")) {
+  process.stderr.write("citizen-rent: pass only one of --dry / --live, not both\n");
+  process.exit(2);
+}
+const live = args.includes("--live");
+
+// Decisions that mean "nothing went wrong, there was just nothing to do (or it already happened)"
+// exit 0. Everything else — refused, insolvent/critical survival signal, unknown-and-throwing
+// outcomes (which surface as a thrown error below, not a decision) — exits nonzero and loud.
+const OK_DECISIONS = new Set(["not-due", "would-extend", "would-repost", "extended", "reposted", "reconciled-settled"]);
+
+try {
+  const result = await renewShelter({ live });
+  const dangerousSurvival = result.survivalSignal && (result.survivalSignal.level === "insolvent" || result.survivalSignal.level === "critical");
+  const okDecision = OK_DECISIONS.has(result.decision);
+  process.exit(okDecision && !dangerousSurvival ? 0 : 1);
+} catch (err) {
+  // Error messages from executor.mjs/deploy.mjs/keypair.mjs are constructed to never include
+  // secret material — safe to print verbatim here.
+  process.stderr.write(`citizen-rent: ${(err && err.message) || err}\n`);
+  process.exit(1);
+}
