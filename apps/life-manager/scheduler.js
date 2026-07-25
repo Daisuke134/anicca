@@ -12,6 +12,7 @@ const { fetchUpcomingEvents } = require("./lib/events.js");
 const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
+const { mentalUserOnce } = require("./lib/mental-runtime.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
@@ -186,6 +187,63 @@ async function lateNoticeUserOnce(u, nowMs, deps = {}) {
 // The existing tick/travelTick/askTickAll still call these in a for-loop so the in-process
 // LIFE_RUN_LOOPS path continues to work unchanged.
 
+// MEN-c wiring. The trigger rule needs a shape the calendar does not hand over directly, so the two
+// judgements are made here and stated plainly: an event with a place or people is "important", and one
+// that runs 90 minutes or longer is "intense". Location stays "unknown" rather than pretending we can
+// tell standing still from travelling — "unknown" never suppresses, "moving" would.
+const MENTAL_SEEDS = Object.freeze([
+  "I am enough exactly as I am",
+  "I choose peace over worry",
+  "I release what I cannot control",
+  "Today I choose to be kind to myself",
+]);
+
+function mentalDeps(u, events, deps = {}) {
+  const supa = SUPA();
+  const shaped = (Array.isArray(events) ? events : []).map((event) => {
+    const startMs = Number(event.startMs);
+    const endMs = Number.isFinite(event.endMs) ? Number(event.endMs) : startMs + 60 * 60000;
+    return {
+      startMs,
+      endMs,
+      important: Boolean(event.location) || Boolean(event.attendees && event.attendees.length),
+      intense: endMs - startMs >= 90 * 60000,
+    };
+  }).filter((event) => Number.isFinite(event.startMs) && event.endMs > event.startMs);
+
+  return {
+    telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+    seeds: deps.mentalSeeds || MENTAL_SEEDS,
+    sleepTargetMs: Number.isFinite(deps.sleepTargetMs) ? deps.sleepTargetMs : null,
+    fetchUpcomingEvents: async () => shaped,
+    getLocationState: deps.getLocationState || (async () => "unknown"),
+    sendMessage: deps.sendMessage || sendMessage,
+    readSendState: deps.readMentalState || (async (uid, nowMs) => readMentalSendState(uid, nowMs, supa)),
+    recordSend: deps.recordMentalSend || ((uid, trigger, messageId) => recordMentalSend(uid, trigger, messageId, supa)),
+  };
+}
+
+async function readMentalSendState(uid, nowMs, supa) {
+  if (!supa.url || !supa.key) return { sentTodayCount: 0, lastSentMs: null };
+  const since = new Date(nowMs - 24 * 60 * 60000).toISOString();
+  const url = `${supa.url}/rest/v1/lm_mental_send_log?uid=eq.${encodeURIComponent(uid)}&sent_at=gte.${encodeURIComponent(since)}&select=sent_at&order=sent_at.desc`;
+  const response = await fetch(url, { headers: { apikey: supa.key, Authorization: `Bearer ${supa.key}` } }).catch(() => null);
+  if (!response || !response.ok) return { sentTodayCount: 0, lastSentMs: null };
+  const rows = await response.json().catch(() => []);
+  const times = (Array.isArray(rows) ? rows : []).map((row) => Date.parse(row.sent_at)).filter(Number.isFinite);
+  return { sentTodayCount: times.length, lastSentMs: times.length ? Math.max(...times) : null };
+}
+
+async function recordMentalSend(uid, trigger, messageId, supa) {
+  if (!supa.url || !supa.key) return false;
+  const response = await fetch(`${supa.url}/rest/v1/lm_mental_send_log`, {
+    method: "POST",
+    headers: { apikey: supa.key, Authorization: `Bearer ${supa.key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ uid, trigger, telegram_message_id: String(messageId) }),
+  }).catch(() => null);
+  return Boolean(response && response.status === 201);
+}
+
 async function wakeUserOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
@@ -212,6 +270,13 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
       }
     }
   } catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  // MEN-c: the MENTAL organ rides the same 60s tick. It stays silent unless the day itself says now.
+  try {
+    const mental = await (deps.mental || mentalUserOnce)(u, now, mentalDeps(u, events, deps));
+    if (mental && mental.delivered) {
+      console.log(`[mental] uid=${String(u.uid).slice(0, 12)} trigger=${mental.trigger} tg_message_id=${mental.telegramMessageId}`);
+    }
+  } catch (e) { console.error(`[mental] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
