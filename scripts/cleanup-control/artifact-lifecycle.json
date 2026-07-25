@@ -9,7 +9,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "anicca-source",
@@ -19,7 +21,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "anicca-project-source",
@@ -29,7 +33,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "anicca-project-worktrees",
@@ -39,7 +45,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "remote_recoverable_remove" }
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
     },
     {
       "id": "work-clones",
@@ -49,7 +57,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "browser-identity",
@@ -59,7 +69,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "openclaw-runtime-state",
@@ -69,7 +81,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "claude-session-evidence",
@@ -79,7 +93,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "reelclaw-assets",
@@ -89,7 +105,9 @@
       "ttl_seconds": null,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "preserve" }
+      "finalizer": {
+        "kind": "preserve"
+      }
     },
     {
       "id": "whisper-cache",
@@ -99,7 +117,9 @@
       "ttl_seconds": 604800,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "torch-cache",
@@ -109,7 +129,9 @@
       "ttl_seconds": 604800,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "uv-cache",
@@ -119,7 +141,9 @@
       "ttl_seconds": 1209600,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "pip-cache",
@@ -129,7 +153,9 @@
       "ttl_seconds": 1209600,
       "quota_bytes": 0,
       "lease": null,
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "codex-runtime-cache",
@@ -142,7 +168,9 @@
         "path": "$HOME/.openclaw/state/codex-runtime.lease",
         "max_age_seconds": 300
       },
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "codex-plugin-staging",
@@ -155,7 +183,9 @@
         "path": "$HOME/.openclaw/state/codex-plugin-staging.lease",
         "max_age_seconds": 300
       },
-      "finalizer": { "kind": "off_volume_quarantine" }
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     },
     {
       "id": "playwright-browser-cache",
@@ -184,6 +214,54 @@
       "finalizer": {
         "kind": "verified_regenerable_remove",
         "proof_path": "$HOME/.openclaw/workspace/kickama-manifest-wizard/backend/Cargo.lock"
+      }
+    },
+    {
+      "id": "sparkle-updater-downloads",
+      "path": "$HOME/Library/Caches/com.openai.codex/org.sparkle-project.Sparkle",
+      "owner": "codex-app",
+      "class": "ephemeral",
+      "ttl_seconds": 86400,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "claude-desktop-shipit-cache",
+      "path": "$HOME/Library/Caches/com.anthropic.claudefordesktop.ShipIt",
+      "owner": "claude-desktop",
+      "class": "ephemeral",
+      "ttl_seconds": 86400,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "colima-cache",
+      "path": "$HOME/Library/Caches/colima",
+      "owner": "colima",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "huggingface-cache",
+      "path": "$HOME/.cache/huggingface",
+      "owner": "ml-tooling",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
       }
     }
   ]

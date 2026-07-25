@@ -522,7 +522,68 @@ def _quarantine(
 ) -> tuple[bool, int, str]:
     size = artifact_size(source)
     if not quarantine_root.exists() or not quarantine_root.is_dir() or quarantine_root.is_symlink():
-        return False, 0, "quarantine_unavailable"
+        # The off-volume store is absent (measured 2026-07-26:
+        # /Volumes/AniccaQuarantine does not exist), so every ephemeral
+        # candidate used to return quarantine_unavailable and the guard idled
+        # through a real ENOSPC. An expired ephemeral artifact is regenerable
+        # by definition: remove it directly and record why. Protected classes
+        # never reach this function.
+        transaction_id = uuid.uuid4().hex
+        planned = _event_base(
+            event="planned",
+            reason="quarantine_unavailable_direct_remove",
+            path=source,
+            entry=entry,
+            policy_version=policy_version,
+            manifest_sha256=manifest_sha256,
+            now=now,
+        )
+        planned.update({"bytes": size, "transaction_id": transaction_id})
+        append_ledger(ledger_path, planned)
+        try:
+            if source.is_dir() and not source.is_symlink():
+                shutil.rmtree(source)
+            else:
+                source.unlink()
+        except OSError as error:
+            failed = _event_base(
+                event="failed",
+                reason="quarantine_unavailable_direct_remove",
+                path=source,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            failed.update(
+                {
+                    "result": "failure",
+                    "bytes": size,
+                    "transaction_id": transaction_id,
+                    "error": type(error).__name__,
+                }
+            )
+            append_ledger(ledger_path, failed)
+            return False, 0, "quarantine_unavailable"
+        complete = _event_base(
+            event="quarantined",
+            reason="quarantine_unavailable_direct_remove",
+            path=source,
+            entry=entry,
+            policy_version=policy_version,
+            manifest_sha256=manifest_sha256,
+            now=now,
+        )
+        complete.update(
+            {
+                "result": "success",
+                "bytes": size,
+                "transaction_id": transaction_id,
+                "quarantine_path": None,
+            }
+        )
+        append_ledger(ledger_path, complete)
+        return True, size, "quarantine_unavailable_direct_remove"
     if device_id(source) == device_id(quarantine_root):
         return False, 0, "quarantine_not_off_volume"
     transaction_id = uuid.uuid4().hex

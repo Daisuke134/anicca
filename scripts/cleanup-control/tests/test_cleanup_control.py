@@ -64,8 +64,10 @@ def run(
     now: int,
     candidates: list[Path] | None = None,
     cross_device: bool = True,
+    create_quarantine: bool = True,
 ):
-    quarantine.mkdir(parents=True, exist_ok=True)
+    if create_quarantine:
+        quarantine.mkdir(parents=True, exist_ok=True)
 
     def fake_device(path: Path) -> int:
         resolved = Path(path).resolve()
@@ -354,3 +356,36 @@ def test_regenerable_output_requires_lockfile_proof_and_closed_path(
     )
     assert open_result["quarantined"] == 0
     assert open_target.exists()
+
+
+def test_expired_ephemeral_is_removed_when_quarantine_volume_is_absent(
+    tmp_path: Path,
+) -> None:
+    # Measured 2026-07-26: /Volumes/AniccaQuarantine does not exist, so every
+    # ephemeral candidate returned quarantine_unavailable and the guard idled
+    # at "no-eligible-reclaim" through a real ENOSPC. An expired ephemeral
+    # artifact is regenerable by definition — when the off-volume store is
+    # absent it is removed directly, and the ledger records why.
+    now = 10_000
+    expired = tmp_path / "expired"
+    expired.mkdir()
+    (expired / "payload").write_bytes(b"cache" * 20)
+    make_old(expired, now)
+    ledger = tmp_path / "ledger.jsonl"
+
+    absent = tmp_path / "absent-quarantine"
+    result = run(
+        write_manifest(tmp_path / "manifest.json", [entry(expired)]),
+        absent,
+        ledger,
+        now=now,
+        create_quarantine=False,
+    )
+
+    assert result["quarantined"] == 1
+    assert not expired.exists()
+    assert not absent.exists()
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert any(
+        e["reason"] == "quarantine_unavailable_direct_remove" for e in events
+    ), "the ledger must record why the artifact was removed in place"
