@@ -460,3 +460,16 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   whisper transcript is gone.
 - Preview sent to Dais as Telegram message `251`. No approval receipt yet, so the distribution gate stays
   shut and no Instagram or TikTok call has been made.
+
+## 9c — TikTok is live, Instagram is blocked by a suspended account
+- Approved in chat, so the receipt was written against the exact bytes and distribution ran.
+- Real post: https://www.tiktok.com/@anicca_buddha/video/7666359498763750676 — logged-out readback
+  returns 200 and the page carries the same video id and handle. Account is the one the spec names,
+  and its integration id is distinct from the unrelated comedy account, so nothing was mis-posted.
+- The rotation works: the ledger row moved the loop on to A02 without being told.
+- Instagram did not go out, and the reason is not a missing feature. Four measurements: the in-repo
+  adapter is a stub that always returns failure; the configured handle `anicca.affirms2` has no Postiz
+  integration; the browser session the daily driver holds lands on
+  `https://www.instagram.com/accounts/suspended/`; and no `post_reel.py` exists — only the carousel
+  poster does. Posting to a different account on a guess would be an irreversible public mistake, so
+  nothing was posted there.
