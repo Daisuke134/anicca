@@ -19,7 +19,7 @@ class XOwnerLaunchGateTests(unittest.TestCase):
         canonical = Path(__file__).resolve().parents[3] / "docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md"
         result = gate.evaluate(canonical.read_text(encoding="utf-8"), [])
         self.assertEqual(result["status"], "blocked")
-        self.assertEqual(result["blockers"], ["8e", "8f", "9d", "9e"])
+        self.assertEqual(result["blockers"], ["9c", "9d"])
         self.assertEqual(result["owner_handoff_allowed"], False)
         self.assertEqual(result["agent_posting_allowed"], False)
 

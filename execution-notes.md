@@ -447,3 +447,38 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   closed-question round trip it should open does not exist yet (`payout_destination` still null after the
   press). Recorded rather than patched, so 13b keeps ownership of the §9.11 FINANCIAL wording.
 - Remaining: 15 atomics. Next is 9c.
+
+## 9c — renderer corrected to MoneyPrinterTurbo, preview delivered
+- Grafting a voice layer onto the bespoke ffmpeg renderer was reinventing a wheel we already had.
+  MoneyPrinterTurbo is now installed and drives the render end to end.
+- Measured, not assumed: MPT's voice is `edge_tts` (`app/services/voice.py:18`), so the "MPT voice" and
+  the edge-tts already on this machine are the same thing. `cli.py --video-script` accepts our own script,
+  so no LLM is in the loop. With no Pexels/Pixabay key, `--video-source local` plus the nine existing
+  b-roll clips is enough — the render needs no external API key at all.
+- First real render: task `69b7d234-af5c-499e-b60b-e25e4ffa76f0`, 1080x1920, 14.33s, AI narration, and
+  subtitles generated word-by-word from that narration. The dependence on a real call recording and its
+  whisper transcript is gone.
+- Preview sent to Dais as Telegram message `251`. No approval receipt yet, so the distribution gate stays
+  shut and no Instagram or TikTok call has been made.
+
+## 9c — TikTok is live, Instagram is blocked by a suspended account
+- Approved in chat, so the receipt was written against the exact bytes and distribution ran.
+- Real post: https://www.tiktok.com/@anicca_buddha/video/7666359498763750676 — logged-out readback
+  returns 200 and the page carries the same video id and handle. Account is the one the spec names,
+  and its integration id is distinct from the unrelated comedy account, so nothing was mis-posted.
+- The rotation works: the ledger row moved the loop on to A02 without being told.
+- Instagram did not go out, and the reason is not a missing feature. Four measurements: the in-repo
+  adapter is a stub that always returns failure; the configured handle `anicca.affirms2` has no Postiz
+  integration; the browser session the daily driver holds lands on
+  `https://www.instagram.com/accounts/suspended/`; and no `post_reel.py` exists — only the carousel
+  poster does. Posting to a different account on a guess would be an irreversible public mistake, so
+  nothing was posted there.
+
+## 9c is deferred, NOT done — come back to it
+- TikTok is live; Instagram is not, because the account the browser holds is suspended by Instagram.
+- Dais chose to move on to 9d rather than wait, so 9c stays `pending` and must be reopened before the
+  final phase. Do not let a later pass mistake it for finished.
+- Reopening needs one decision only Dais can make: appeal the suspension himself, or name which of the
+  already-connected Instagram accounts is the Life Manager one. Implementation is ready to follow either
+  way — a real Reel path (`post_reel.py` does not exist yet), then distribution through the gate and a
+  logged-out URL readback.
