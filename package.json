@@ -3,7 +3,8 @@
   "private": true,
   "description": "Anicca monorepo; dev tooling at root",
   "devDependencies": {
-    "@playwright/cli": "latest"
+    "@playwright/cli": "latest",
+    "esbuild": "^0.28.1"
   },
   "dependencies": {
     "@nosana/kit": "^2.7.0",

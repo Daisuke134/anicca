@@ -1,40 +1,50 @@
-// node:test — entrypoint.mjs: the full in-job five-step flow (identify, restore, prove, snapshot,
-// report), exercised end-to-end with every I/O boundary faked — no real network, no real Solana
-// RPC, no real GitHub API. This is the hermetic equivalent of what a real Nosana container would
-// run; __tests__/proof.test.mjs separately proves the underlying crypto is real, not mocked away.
+// node:test — entrypoint.mjs: the full in-job flow (identify, restore, prove, report), exercised
+// end-to-end with every I/O boundary faked — no real network, no real Solana RPC, no real Nosana
+// jobs API, no real Jupiter/markets API. This is the hermetic equivalent of what a real Nosana
+// container would run; __tests__/proof.test.mjs separately proves the underlying crypto is real,
+// not mocked away, and this repo's own real dry runs (see the implementation report) exercise the
+// REAL bundled artifact against REAL public endpoints.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import bs58 from "bs58";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 
 import { runTenantIncarnation } from "../entrypoint.mjs";
-import { TENANT_RUNS_REMOTE_KEY } from "../report-ledger.mjs";
 import { verifyChallengeSignature } from "../proof.mjs";
+import { NOSANA_JOBS_API_BASE_URL } from "../public-job-state.mjs";
+import { MARKETS_PRICE_URL } from "../../market.mjs";
 
-/** A tiny fake GitHub Contents API, same shape as github-contents-store.test.mjs's, inlined here
- * so this test file exercises entrypoint.mjs's actual fetchImpl wiring end-to-end. */
-function makeFakeGithubFetch(initialFiles = {}) {
-  const files = new Map(Object.entries(initialFiles).map(([k, v]) => [k, { text: v, sha: "sha-0" }]));
-  let shaCounter = 0;
-  return async function fetchImpl(url, options = {}) {
-    const match = url.match(/\/repos\/([^/]+)\/([^/]+)\/contents\/(.+?)(?:\?ref=.*)?$/);
-    const key = decodeURIComponent(match[3]);
-    if (!options.method || options.method === "GET") {
-      const entry = files.get(key);
-      if (!entry) return { ok: false, status: 404, json: async () => ({}) };
-      return { ok: true, status: 200, json: async () => ({ content: Buffer.from(entry.text, "utf8").toString("base64"), sha: entry.sha }) };
+const TREASURY_ADDRESS = "F5SYUC4f5QULbEgSYb1DFCBfi74AnWE3ZaXAhqXwhZ5T";
+
+// Standard fetch(url)-shaped fake, for the jobs API + markets-price API (both real GET-a-url
+// endpoints). Deliberately does NOT also serve the NOS/USD price call — see
+// makeNosUsdPriceFetchImpl below for why that is a SEPARATE, differently-shaped fake (a real bug
+// this project found live: conflating the two conventions silently breaks production — see
+// entrypoint.mjs's resolveNosPerHour doc comment).
+function makeFetchImpl({ jobs = [], markets = null } = {}) {
+  return async (url) => {
+    if (url.startsWith(NOSANA_JOBS_API_BASE_URL)) {
+      return { ok: true, status: 200, json: async () => ({ jobs, totalJobs: jobs.length }) };
     }
-    if (options.method === "PUT") {
-      const body = JSON.parse(options.body);
-      shaCounter += 1;
-      files.set(key, { text: Buffer.from(body.content, "base64").toString("utf8"), sha: `sha-${shaCounter}` });
-      return { ok: true, status: 200, json: async () => ({}) };
+    if (url === MARKETS_PRICE_URL) {
+      if (markets === null) {
+        throw new Error(`unexpected markets fetch in a test that didn't configure any: ${url}`);
+      }
+      return { ok: true, status: 200, json: async () => markets };
     }
-    throw new Error("unexpected method");
+    throw new Error(`makeFetchImpl: unexpected URL ${url}`);
   };
 }
 
-function makeFakeConnection({ lamports = 0, nosUiAmount = 0, blockhash = "FakeBlockhash111" } = {}) {
+// ../market.mjs's fetchNosUsdPriceLive (via ../../spawn/lib/cloud-target.mjs) calls its fetchImpl
+// with ZERO arguments and expects `{json: async () => ({price})}` directly — a different contract
+// than the standard `fetch(url)` above. entrypoint.mjs's `nosUsdPriceFetchImpl` param exists
+// specifically so a test can supply this distinctly-shaped fake without it ever being confused
+// with the standard one.
+function makeNosUsdPriceFetchImpl(price) {
+  return async () => ({ ok: true, status: 200, json: async () => ({ price }) });
+}
+
+function makeConnection({ lamports = 0, nosUiAmount = 0, blockhash = "FakeBlockhash111" } = {}) {
   return {
     async getBalance() {
       return lamports;
@@ -49,108 +59,118 @@ function makeFakeConnection({ lamports = 0, nosUiAmount = 0, blockhash = "FakeBl
   };
 }
 
-test("runTenantIncarnation: first-ever incarnation — no prior state, reports priorRunCount 0 and runNumber 1", async () => {
-  const tenantKp = Keypair.generate();
-  const env = { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey), NOSANA_STATE_GITHUB_TOKEN: "fake-token" };
-  const fetchImpl = makeFakeGithubFetch();
-  const connectionFactory = () => makeFakeConnection({ lamports: 0, nosUiAmount: 0 });
-
-  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1_000_000 });
-
-  assert.equal(report.priorRunCount, 0);
-  assert.equal(report.lastRun, null);
-  assert.equal(report.runNumber, 1);
-  assert.equal(report.tenantAddress, tenantKp.publicKey.toBase58());
-  assert.equal(report.solLamports, 0);
-  assert.equal(report.nosBalance, 0);
-  assert.equal(report.x402Attempted, false);
-  assert.match(report.x402Reason, /not attempted/);
+test("runTenantIncarnation: fails closed when NOSANA_TREASURY_ADDRESS is missing", async () => {
+  await assert.rejects(
+    () => runTenantIncarnation({ env: {}, fetchImpl: makeFetchImpl({}), connectionFactory: () => makeConnection({}) }),
+    /NOSANA_TREASURY_ADDRESS is not set/,
+  );
 });
 
-test("runTenantIncarnation: produces a signature that REALLY verifies against the tenant's own public key over the reported message", async () => {
-  const tenantKp = Keypair.generate();
-  const env = { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey), NOSANA_STATE_GITHUB_TOKEN: "fake-token" };
-  const fetchImpl = makeFakeGithubFetch();
-  const connectionFactory = () => makeFakeConnection({ lamports: 23_505_190, nosUiAmount: 2.495705, blockhash: "RealisticBlockhash123" });
+test("runTenantIncarnation: active job present — uses the active job's own price, never touches the market fallback (and never even needs nosUsdPriceFetchImpl)", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const activeJob = { address: "JOB_ACTIVE", state: 1, timeStart: 1000, timeout: 900, price: 47 };
+  const fetchImpl = makeFetchImpl({ jobs: [activeJob] }); // markets: null -> throws if ever touched
+  const connectionFactory = () => makeConnection({ lamports: 26066471, nosUiAmount: 2.495705 });
 
-  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 2_000_000 });
+  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1500 * 1000 });
 
+  assert.equal(report.activeJobAddress, "JOB_ACTIVE");
+  assert.equal(report.rateSource, "active-job:JOB_ACTIVE");
+  assert.ok(Math.abs(report.nosPerHour - 0.1692) < 1e-9);
+  assert.ok(report.runwayHours > 0);
+});
+
+test("runTenantIncarnation: no alive job — falls back to the live cheapest-market estimate, matching ../renew/executor.mjs's own fallback branch", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const deadJob = { address: "JOB_DEAD", state: 2, timeStart: 100, timeout: 50, price: 47 };
+  const markets = [{ address: "MKT1", name: "NVIDIA 3060", usd_reward_per_hour: 0.04796 }];
+  const fetchImpl = makeFetchImpl({ jobs: [deadJob], markets });
+  const nosUsdPriceFetchImpl = makeNosUsdPriceFetchImpl(0.25383035377762303);
+  const connectionFactory = () => makeConnection({ lamports: 26066471, nosUiAmount: 2.495705 });
+
+  const report = await runTenantIncarnation({ env, fetchImpl, nosUsdPriceFetchImpl, connectionFactory, now: () => 1000000 * 1000 });
+
+  assert.equal(report.activeJobAddress, null);
+  assert.equal(report.mostRecentJobAddress, "JOB_DEAD");
+  assert.match(report.rateSource, /^market-fallback:MKT1/);
+  assert.ok(report.nosPerHour > 0);
+  assert.ok(report.runwayHours > 0);
+});
+
+test("runTenantIncarnation: no job history AND no eligible market — reports rate/runway as null, never fabricates one (never even needs nosUsdPriceFetchImpl)", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const fetchImpl = makeFetchImpl({ jobs: [], markets: [] }); // no markets at all -> selectCheapestMarket returns null
+  const connectionFactory = () => makeConnection({ lamports: 0, nosUiAmount: 0 });
+
+  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1000000 * 1000 });
+
+  assert.equal(report.nosPerHour, null);
+  assert.equal(report.runwayHours, null);
+  assert.match(report.rateSource, /unavailable/);
+});
+
+test("runTenantIncarnation: generates a fresh ephemeral identity every call — never the same address twice, never persisted", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const fetchImpl = makeFetchImpl({ jobs: [], markets: [] });
+  const connectionFactory = () => makeConnection({});
+
+  const first = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1 });
+  const second = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 2 });
+  assert.notEqual(first.ephemeralAddress, second.ephemeralAddress);
+});
+
+test("runTenantIncarnation: the reported signature REALLY verifies against the reported ephemeral public key over the reported message", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const activeJob = { address: "JOB1", state: 1, timeStart: 1000, timeout: 900, price: 47 };
+  const fetchImpl = makeFetchImpl({ jobs: [activeJob] });
+  const connectionFactory = () => makeConnection({ lamports: 26066471, nosUiAmount: 2.495705, blockhash: "RealisticBlockhash123" });
+
+  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1500 * 1000 });
+
+  const bs58 = (await import("bs58")).default;
   const signatureBytes = bs58.decode(report.signature);
-  const verified = await verifyChallengeSignature({
-    message: report.message,
-    signatureBytes,
-    publicKeyBytes: tenantKp.publicKey.toBytes(),
-  });
+  const publicKeyBytes = bs58.decode(report.ephemeralAddress);
+  const verified = await verifyChallengeSignature({ message: report.message, signatureBytes, publicKeyBytes });
   assert.equal(verified, true);
   assert.ok(report.message.includes("RealisticBlockhash123"));
-  assert.ok(report.message.includes("23505190"));
+  assert.ok(report.message.includes(String(report.treasurySolLamports)));
 });
 
-test("runTenantIncarnation: second incarnation restores the first's history — priorRunCount 1, runNumber 2, lastRun populated", async () => {
-  const tenantKp = Keypair.generate();
-  const env = { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey), NOSANA_STATE_GITHUB_TOKEN: "fake-token" };
-  const fetchImpl = makeFakeGithubFetch();
-  const connectionFactory = () => makeFakeConnection({ lamports: 1000, nosUiAmount: 0.1 });
-
-  const first = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1_000_000 });
-  assert.equal(first.runNumber, 1);
-
-  const second = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 2_000_000 });
-  assert.equal(second.priorRunCount, 1);
-  assert.equal(second.runNumber, 2);
-  assert.equal(second.lastRun.runNumber, 1);
-  assert.equal(second.lastRun.ts, 1000, "restored previous run's own timestamp (1_000_000ms/1000)");
-});
-
-test("runTenantIncarnation: snapshots the new run back to TENANT_RUNS_REMOTE_KEY before returning", async () => {
-  const tenantKp = Keypair.generate();
-  const env = { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey), NOSANA_STATE_GITHUB_TOKEN: "fake-token" };
-  const files = {};
-  const fetchImpl = makeFakeGithubFetch(files);
-  const connectionFactory = () => makeFakeConnection({});
-
-  await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1_000_000 });
-
-  // Read back via a second, independent fetchImpl-driven getText to confirm it really persisted
-  // (not just returned in-memory) — reuse the same fake store's GET path.
-  const readBack = await fetchImpl(`https://api.github.com/repos/Daisuke134/franklin-shelter-state/contents/${TENANT_RUNS_REMOTE_KEY}?ref=main`, {});
-  assert.equal(readBack.ok, true);
-  const data = await readBack.json();
-  const text = Buffer.from(data.content, "base64").toString("utf8");
-  assert.ok(text.includes(tenantKp.publicKey.toBase58()));
-});
-
-test("runTenantIncarnation: fails closed when NOSANA_TENANT_SECRET_KEY is missing", async () => {
-  await assert.rejects(
-    () => runTenantIncarnation({ env: { NOSANA_STATE_GITHUB_TOKEN: "t" }, fetchImpl: makeFakeGithubFetch(), connectionFactory: () => makeFakeConnection({}) }),
-    /NOSANA_TENANT_SECRET_KEY is not set/,
-  );
-});
-
-test("runTenantIncarnation: fails closed when NOSANA_STATE_GITHUB_TOKEN is missing", async () => {
-  const tenantKp = Keypair.generate();
-  await assert.rejects(
-    () =>
-      runTenantIncarnation({
-        env: { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey) },
-        fetchImpl: makeFakeGithubFetch(),
-        connectionFactory: () => makeFakeConnection({}),
-      }),
-    /NOSANA_STATE_GITHUB_TOKEN is not set/,
-  );
-});
-
-test("runTenantIncarnation: a failed/zero NOS balance read is honestly reported as 0, never fabricated, and does not crash the run", async () => {
-  const tenantKp = Keypair.generate();
-  const env = { NOSANA_TENANT_SECRET_KEY: bs58.encode(tenantKp.secretKey), NOSANA_STATE_GITHUB_TOKEN: "fake-token" };
-  const fetchImpl = makeFakeGithubFetch();
+test("runTenantIncarnation: a failed NOS balance read is honestly reported as 0, never fabricated, and does not crash the run", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const activeJob = { address: "JOB1", state: 1, timeStart: 1000, timeout: 900, price: 47 };
+  const fetchImpl = makeFetchImpl({ jobs: [activeJob] });
   const connectionFactory = () => ({
     async getBalance() { return 500; },
     async getParsedTokenAccountsByOwner() { throw new Error("simulated RPC hiccup"); },
     async getLatestBlockhash() { return { blockhash: "BH" }; },
   });
 
-  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1_000_000 });
-  assert.equal(report.nosBalance, 0);
-  assert.equal(report.solLamports, 500);
+  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1500 * 1000 });
+  assert.equal(report.treasuryNosBalance, 0);
+  assert.equal(report.treasurySolLamports, 500);
+});
+
+test("runTenantIncarnation: the ephemeral identity is a genuine, valid Solana address (round-trips through PublicKey)", async () => {
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const fetchImpl = makeFetchImpl({ jobs: [], markets: [] });
+  const connectionFactory = () => makeConnection({});
+  const report = await runTenantIncarnation({ env, fetchImpl, connectionFactory, now: () => 1 });
+  assert.doesNotThrow(() => new PublicKey(report.ephemeralAddress));
+  assert.notEqual(report.ephemeralAddress, TREASURY_ADDRESS);
+});
+
+test("runTenantIncarnation: honors an injected keypairCtor (for deterministic orchestration tests)", async () => {
+  const fixedKp = Keypair.generate();
+  const env = { NOSANA_TREASURY_ADDRESS: TREASURY_ADDRESS };
+  const fetchImpl = makeFetchImpl({ jobs: [], markets: [] });
+  const connectionFactory = () => makeConnection({});
+  const report = await runTenantIncarnation({
+    env,
+    fetchImpl,
+    connectionFactory,
+    now: () => 1,
+    keypairCtor: { generate: () => fixedKp },
+  });
+  assert.equal(report.ephemeralAddress, fixedKp.publicKey.toBase58());
 });

@@ -5,24 +5,42 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Keypair } from "@solana/web3.js";
 
-import { buildChallengeMessage, signChallenge, verifyChallengeSignature, computeRunwayHoursInformational } from "../proof.mjs";
+import { buildChallengeMessage, signChallenge, verifyChallengeSignature } from "../proof.mjs";
+
+function baseOpts() {
+  return {
+    ephemeralAddress: "EPHEMERAL_ADDR",
+    blockhash: "BH",
+    treasuryAddress: "TREASURY_ADDR",
+    treasurySolLamports: 26066471,
+    treasuryNosBalance: 2.495705,
+    nosPerHour: 0.188945,
+    runwayHours: 13.2,
+    rateSource: "active-job:JOB1",
+    ts: 12345,
+  };
+}
 
 test("buildChallengeMessage: deterministic — same inputs produce the exact same string", () => {
-  const opts = { address: "ADDR", blockhash: "BH", solLamports: 100, nosBalance: 0.5, runNumber: 3, ts: 12345 };
+  const opts = baseOpts();
   assert.equal(buildChallengeMessage(opts), buildChallengeMessage({ ...opts }));
   assert.equal(
     buildChallengeMessage(opts),
-    "nosana-tenant-proof-of-life|address=ADDR|blockhash=BH|solLamports=100|nosBalance=0.5|runNumber=3|ts=12345",
+    "nosana-tenant-proof-of-life-v2|ephemeralAddress=EPHEMERAL_ADDR|blockhash=BH|treasuryAddress=TREASURY_ADDR|" +
+      "treasurySolLamports=26066471|treasuryNosBalance=2.495705|nosPerHour=0.188945|runwayHours=13.2|" +
+      "rateSource=active-job:JOB1|ts=12345",
   );
 });
 
 test("buildChallengeMessage: differs whenever ANY field differs (binds the whole context, not just the address)", () => {
-  const base = { address: "ADDR", blockhash: "BH", solLamports: 100, nosBalance: 0.5, runNumber: 3, ts: 12345 };
+  const base = baseOpts();
   const variants = [
     { ...base, blockhash: "BH2" },
-    { ...base, solLamports: 101 },
-    { ...base, nosBalance: 0.6 },
-    { ...base, runNumber: 4 },
+    { ...base, treasurySolLamports: 101 },
+    { ...base, treasuryNosBalance: 0.6 },
+    { ...base, nosPerHour: 0.2 },
+    { ...base, runwayHours: 14 },
+    { ...base, rateSource: "market-fallback:MKT" },
     { ...base, ts: 12346 },
   ];
   const baseMsg = buildChallengeMessage(base);
@@ -31,19 +49,27 @@ test("buildChallengeMessage: differs whenever ANY field differs (binds the whole
   }
 });
 
-test("buildChallengeMessage: fails closed on missing/non-finite fields", () => {
-  assert.throws(() => buildChallengeMessage({ blockhash: "BH", solLamports: 1, nosBalance: 1, runNumber: 1, ts: 1 }), /address/);
-  assert.throws(() => buildChallengeMessage({ address: "A", blockhash: "BH", solLamports: NaN, nosBalance: 1, runNumber: 1, ts: 1 }), /solLamports/);
+test("buildChallengeMessage: honors null nosPerHour/runwayHours (the honest 'rate unavailable' case)", () => {
+  const msg = buildChallengeMessage({ ...baseOpts(), nosPerHour: null, runwayHours: null, rateSource: "unavailable: no active job and no eligible market" });
+  assert.match(msg, /nosPerHour=null/);
+  assert.match(msg, /runwayHours=null/);
+});
+
+test("buildChallengeMessage: fails closed on missing/non-finite required fields", () => {
+  const base = baseOpts();
+  assert.throws(() => buildChallengeMessage({ ...base, ephemeralAddress: undefined }), /ephemeralAddress/);
+  assert.throws(() => buildChallengeMessage({ ...base, treasuryAddress: "" }), /treasuryAddress/);
+  assert.throws(() => buildChallengeMessage({ ...base, rateSource: "" }), /rateSource/);
+  assert.throws(() => buildChallengeMessage({ ...base, treasurySolLamports: NaN }), /treasurySolLamports/);
+  assert.throws(() => buildChallengeMessage({ ...base, nosPerHour: "not-a-number" }), /nosPerHour/);
 });
 
 test("REGRESSION: sign then verify with REAL tweetnacl + a REAL generated Solana keypair actually round-trips", async () => {
   const kp = Keypair.generate();
   const message = buildChallengeMessage({
-    address: kp.publicKey.toBase58(),
+    ...baseOpts(),
+    ephemeralAddress: kp.publicKey.toBase58(),
     blockhash: "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
-    solLamports: 23505190,
-    nosBalance: 2.495705,
-    runNumber: 1,
     ts: Date.now() / 1000,
   });
   const signatureBytes = await signChallenge({ message, secretKeyBytes: kp.secretKey });
@@ -97,19 +123,4 @@ test("signChallenge: honors an injected signImpl (for hermetic orchestration tes
   });
   assert.equal(result, fakeSig);
   assert.ok(called);
-});
-
-test("computeRunwayHoursInformational: divides balance by burn rate", () => {
-  assert.equal(computeRunwayHoursInformational({ nosBalance: 2, nosPerHourBurnRate: 0.5 }), 4);
-});
-
-test("computeRunwayHoursInformational: returns null (never throws) on an unknown/non-positive rate", () => {
-  assert.equal(computeRunwayHoursInformational({ nosBalance: 2, nosPerHourBurnRate: 0 }), null);
-  assert.equal(computeRunwayHoursInformational({ nosBalance: 2, nosPerHourBurnRate: null }), null);
-  assert.equal(computeRunwayHoursInformational({ nosBalance: 2, nosPerHourBurnRate: undefined }), null);
-});
-
-test("computeRunwayHoursInformational: returns null on an invalid balance rather than throwing", () => {
-  assert.equal(computeRunwayHoursInformational({ nosBalance: -1, nosPerHourBurnRate: 1 }), null);
-  assert.equal(computeRunwayHoursInformational({ nosBalance: NaN, nosPerHourBurnRate: 1 }), null);
 });

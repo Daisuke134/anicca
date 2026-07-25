@@ -1,24 +1,34 @@
-// job.mjs (Mac-side ONLY) — builds the Nosana job definition that runs tenant/entrypoint.mjs
-// inside a job container. Deliberately does NOT reuse ../job-definition.mjs's
-// buildServiceJobDefinition: that function requires an exposePort and always shapes a
-// long-running SERVICE (see its own file header's incident note — the exposed-HTTP-endpoint path
-// has never once worked across two different nodes). This job needs no exposed port at all: it is
-// a one-shot task that boots, restores state, proves itself, snapshots state, and exits — its
-// evidence channel is stdout, read back via the jobs API's `jobResult.opStates[0]` diagnostics
-// (verified live 2026-07-25; see tenant/README.md).
+// job.mjs (Mac-side ONLY) — builds the Nosana job definition that runs the bundled
+// tenant/entrypoint.bundle.mjs inside a job container. Deliberately does NOT reuse
+// ../job-definition.mjs's buildServiceJobDefinition: that function requires an exposePort and
+// always shapes a long-running SERVICE (see its own file header's incident note — the
+// exposed-HTTP-endpoint path has never once worked across two different nodes). This job needs no
+// exposed port at all: it is a one-shot task that boots, restores state, proves itself, and
+// exits — its evidence channel is stdout, read back via the jobs API's `jobResult.opStates[0]`
+// diagnostics (verified live 2026-07-25; see tenant/README.md).
+//
+// SECOND PASS (zero-secret redesign): the job definition carries NO secret of any kind.
+// tenant/README.md's "A finding that changes the design" section documents why this changed —
+// job definitions (this ENTIRE object, verbatim) are published PERMANENTLY to public IPFS the
+// moment a non-confidential job posts, not merely readable by the node operator. The only env var
+// this job carries now is NOSANA_TREASURY_ADDRESS — a public Solana address, not a secret; only a
+// private key would need protecting, and none is present anywhere here.
 //
 // buildTenantJobDefinition's OUTPUT is still checked against ../job-definition.mjs's
-// validateJobDefinition (imported unchanged, zero edits to that file) — that function's structural
-// checks (image required, op.args keys must be from its known-keys allowlist, etc.) are generic
-// enough to apply to any container/run op, not just service ones.
+// validateJobDefinition (imported unchanged, zero edits to that file).
 //
 // Deploys use "docker.io/library/node:20-alpine" (a public, standard, tiny base image) plus a
 // fetched script, per the task's own preference: "prefer NOT publishing a custom image if a
-// public base plus a fetched script gets there." The "fetched script" is TENANT_BUNDLE_RELATIVE_FILES
-// below, retrieved via plain `fetch` from a PINNED commit on the public life-manager repo
-// (raw.githubusercontent.com serves it unauthenticated — verified live 2026-07-25 that
-// github.com/Daisuke134/life-manager is a public repo) — never "latest", so the job always runs
-// exactly the code that was reviewed and pushed, never a moving target.
+// public base plus a fetched script gets there." The "fetched script" is now exactly ONE file —
+// tenant/entrypoint.bundle.mjs, an esbuild-bundled artifact (tenant/build-bundle.mjs) that
+// inlines @solana/web3.js, bs58, and tweetnacl, plus this repo's own ./proof.mjs,
+// ./public-job-state.mjs, ../renew/survival-drive.mjs, and ../market.mjs — so the container needs
+// no `npm install` at all (this repo has never verified npm-registry egress from a Nosana node;
+// the ONLY network calls the container makes are the ones this feature already needs regardless:
+// one fetch for its own code, then Solana RPC + the Nosana jobs API). Retrieved via plain `fetch`
+// from a PINNED commit on the public life-manager repo (raw.githubusercontent.com serves it
+// unauthenticated — verified live 2026-07-25 that github.com/Daisuke134/life-manager is public) —
+// never "latest", so the job always runs exactly the code that was reviewed and pushed.
 
 import { validateJobDefinition } from "../job-definition.mjs";
 
@@ -26,20 +36,8 @@ export const DEFAULT_TENANT_IMAGE = "docker.io/library/node:20-alpine";
 export const DEFAULT_CODE_REPO = "Daisuke134/life-manager";
 export const DEFAULT_RAW_HOST = "https://raw.githubusercontent.com";
 
-// The fixed, small, self-contained file set tenant/entrypoint.mjs actually needs at runtime — see
-// derive-address.mjs's header for why this list is deliberately short and why nothing outside
-// tenant/ is on it.
-export const TENANT_BUNDLE_RELATIVE_FILES = [
-  "tenant/derive-address.mjs",
-  "tenant/github-contents-store.mjs",
-  "tenant/report-ledger.mjs",
-  "tenant/proof.mjs",
-  "tenant/entrypoint.mjs",
-];
-
-// Pinned exactly to this repo's own package.json versions (checked live 2026-07-25) so the
-// in-job npm install reproduces the same dependency code this feature was tested against.
-export const TENANT_NPM_DEPS = ["@solana/web3.js@1.98.4", "bs58@5.0.0", "tweetnacl@1.0.3"];
+// The single bundled artifact the container fetches and runs. See tenant/build-bundle.mjs.
+export const TENANT_BUNDLE_FILE = "tenant/entrypoint.bundle.mjs";
 
 /**
  * Pure: the raw-content base URL for one commit of this repo's nosana skill directory.
@@ -54,74 +52,73 @@ export function buildRawBaseUrl({ repo = DEFAULT_CODE_REPO, commitSha, rawHost =
 }
 
 /**
+ * Pure: the raw URL for the bundled entrypoint artifact at a given base URL.
+ * @param {{rawBaseUrl: string}} opts
+ * @returns {string}
+ */
+export function buildBundleUrl({ rawBaseUrl }) {
+  if (typeof rawBaseUrl !== "string" || rawBaseUrl.length === 0) {
+    throw new Error("buildBundleUrl: rawBaseUrl is required");
+  }
+  return `${rawBaseUrl}/${TENANT_BUNDLE_FILE}`;
+}
+
+/**
  * Pure: the fixed bootstrap shell script every tenant job runs as its container/run `cmd`. Reads
- * NOSANA_CODE_RAW_BASE_URL from its own environment (set as a job env var by
+ * NOSANA_CODE_BUNDLE_URL from its own environment (set as a job env var by
  * buildTenantJobDefinition below) rather than having the URL baked into the script text itself, so
  * this string is a deterministic constant independent of which commit/repo it is pointed at —
  * easy to review once, byte-for-byte, and to unit-test as a fixed value.
  *
- * Uses Node's global `fetch` (stable in Node 20, the base image's runtime) instead of `curl` so
- * the base image needs no extra packages installed at all — just node+npm, which
- * docker.io/library/node:20-alpine already ships.
+ * Fetches exactly ONE file and runs it — no directory structure, no `npm install`, no dependency
+ * list. Uses Node's global `fetch` (stable in Node 20, the base image's runtime).
  *
  * @returns {string}
  */
 export function buildTenantBootstrapScript() {
-  const filesLiteral = JSON.stringify(TENANT_BUNDLE_RELATIVE_FILES);
-  const depsArgs = TENANT_NPM_DEPS.join(" ");
   return [
     "set -e",
-    "mkdir -p /tmp/app/tenant",
     "node --input-type=module -e '",
-    `const files = ${filesLiteral};`,
-    'const base = process.env.NOSANA_CODE_RAW_BASE_URL;',
-    'if (!base) { throw new Error("NOSANA_CODE_RAW_BASE_URL is not set"); }',
+    'const url = process.env.NOSANA_CODE_BUNDLE_URL;',
+    'if (!url) { throw new Error("NOSANA_CODE_BUNDLE_URL is not set"); }',
+    "const res = await fetch(url);",
+    'if (!res.ok) { throw new Error("fetch failed: " + url + " " + res.status); }',
+    "const text = await res.text();",
     'const fs = await import("node:fs");',
-    "for (const f of files) {",
-    "  const res = await fetch(base + \"/\" + f);",
-    '  if (!res.ok) { throw new Error("fetch failed: " + f + " " + res.status); }',
-    "  const text = await res.text();",
-    '  fs.writeFileSync("/tmp/app/" + f, text);',
-    "}",
-    'console.log("bootstrap: fetched " + files.length + " files from " + base);',
+    'fs.writeFileSync("/tmp/entrypoint.bundle.mjs", text);',
+    'console.log("bootstrap: fetched entrypoint bundle from " + url);',
     "'",
-    "cd /tmp/app",
-    `npm install --no-audit --no-fund --silent ${depsArgs}`,
-    "node tenant/entrypoint.mjs",
+    "node /tmp/entrypoint.bundle.mjs",
   ].join("\n");
 }
 
 /**
- * Pure: build the tenant job definition — a single container/run op, no exposed port, running
- * buildTenantBootstrapScript()'s cmd with the tenant secret + state-store token injected as env
- * vars. Throws on missing required params (mirrors ../job-definition.mjs's own style); does NOT
- * itself call validateJobDefinition — callers (bin/citizen-tenant-up) do that, exactly like
- * deploy.mjs already does for its own job definitions, so there is one place that decides
- * structural validity for every job definition this skill ever posts.
+ * Pure: build the tenant job definition — a single container/run op, no exposed port, NO SECRET
+ * of any kind (only NOSANA_TREASURY_ADDRESS, a public key). Throws on missing required params
+ * (mirrors ../job-definition.mjs's own style); does NOT itself call validateJobDefinition —
+ * callers (bin/citizen-tenant-up) do that, exactly like deploy.mjs already does for its own job
+ * definitions, so there is one place that decides structural validity for every job definition
+ * this skill ever posts.
  *
- * @param {{image?: string, rawBaseUrl: string, tenantSecretBase58: string, githubToken: string,
- *          stateRepo?: string, extraEnv?: Record<string,string>, gpu?: boolean}} opts
+ * @param {{image?: string, rawBaseUrl: string, treasuryAddress: string,
+ *          extraEnv?: Record<string,string>, gpu?: boolean}} opts
  * @returns {object} job definition
  */
 export function buildTenantJobDefinition({
   image = DEFAULT_TENANT_IMAGE,
   rawBaseUrl,
-  tenantSecretBase58,
-  githubToken,
-  stateRepo,
+  treasuryAddress,
   extraEnv = {},
   gpu = true,
 } = {}) {
-  for (const [key, value] of Object.entries({ rawBaseUrl, tenantSecretBase58, githubToken })) {
+  for (const [key, value] of Object.entries({ rawBaseUrl, treasuryAddress })) {
     if (typeof value !== "string" || value.length === 0) {
       throw new Error(`buildTenantJobDefinition: ${key} is required (non-empty string)`);
     }
   }
   const env = {
-    NOSANA_CODE_RAW_BASE_URL: rawBaseUrl,
-    NOSANA_TENANT_SECRET_KEY: tenantSecretBase58,
-    NOSANA_STATE_GITHUB_TOKEN: githubToken,
-    ...(stateRepo ? { NOSANA_STATE_REPO: stateRepo } : {}),
+    NOSANA_CODE_BUNDLE_URL: buildBundleUrl({ rawBaseUrl }),
+    NOSANA_TREASURY_ADDRESS: treasuryAddress,
     ...extraEnv,
   };
   return {

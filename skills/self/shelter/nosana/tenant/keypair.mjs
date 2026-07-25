@@ -1,17 +1,21 @@
-// keypair.mjs (tenant, Mac-side ONLY) — generates and persists a SEPARATE, disposable Solana
-// keypair for the tenant identity that will later run INSIDE a Nosana job container. This is
-// deliberately NOT Franklin's treasury identity (../keypair.mjs's ensureNosanaKeypair /
-// skills/earn/lib/resolve-identity.mjs's resolveSolanaSecret) — see tenant/README.md's "Trust
-// boundary" section. The treasury secret ($HOME/.blockrun/.solana-session) is never read,
-// imported, or referenced anywhere in this file — structurally impossible to leak here, because
-// this module has no code path that can reach it.
+// keypair.mjs (tenant, Mac-side ONLY, KEPT-FOR-LATER — see tenant/README.md's "A path not taken"
+// section) — generates and persists a SEPARATE, disposable Solana keypair for a PERSISTENT tenant
+// identity. This was part of the first pass's in-job design (a funded tenant secret in the job's
+// env); the current job (entrypoint.mjs) uses a fresh EPHEMERAL keypair generated inside the
+// container instead and does not call this file at all. Kept, tested, and unused: a future
+// delegated/capped-spend design would need exactly this — a stable address the treasury can
+// `approve` a spending allowance for — see tenant/fund-tenant.mjs's header for the SPL Token
+// delegate primitive this would build on.
 //
-// Unlike derive-address.mjs/github-contents-store.mjs/report-ledger.mjs/proof.mjs/entrypoint.mjs,
-// this file is NEVER fetched into a Nosana job — it only ever runs on this Mac, from
-// bin/citizen-tenant-fund and bin/citizen-tenant-up. The tenant needs a STABLE address across job
-// lives (so persistence/restore-style continuity — tenant/report-ledger.mjs's restoreTenantRuns —
-// recognizes "this is the same tenant as last time"), which is why this generates a keypair ONCE
-// and persists it, rather than minting a fresh one on every deploy.
+// This is deliberately NOT Franklin's treasury identity (../keypair.mjs's ensureNosanaKeypair /
+// skills/earn/lib/resolve-identity.mjs's resolveSolanaSecret). The treasury secret
+// ($HOME/.blockrun/.solana-session) is never read, imported, or referenced anywhere in this file —
+// structurally impossible to leak here, because this module has no code path that can reach it.
+//
+// Only ever runs on this Mac, from bin/citizen-tenant-fund. The persistent design this supports
+// needs a STABLE address across job lives, which is why this generates a keypair ONCE and persists
+// it, rather than minting a fresh one on every deploy (contrast entrypoint.mjs's ephemeral identity,
+// which is deliberately re-generated every run).
 
 import fs from "node:fs";
 import path from "node:path";

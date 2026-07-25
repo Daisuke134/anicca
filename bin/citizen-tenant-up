@@ -3,27 +3,36 @@
 // pays for." Reuses deploy.mjs's entire proven wallet-rail payment path (S1: identity, market
 // pricing, the spend gate, at-most-once posting + reconciliation, ledger recording) via its
 // jobDefinitionOverride param, swapping only WHAT is posted: instead of a placeholder nginx
-// container, this posts a job that fetches and runs tenant/entrypoint.mjs — the tenant identity's
-// own boot/restore/prove/snapshot/report cycle. No business logic lives here (repo convention:
-// bin/ entrypoints stay thin); everything real is in
-// skills/self/shelter/nosana/{deploy,tenant/{keypair,job}}.mjs.
+// container, this posts a job that fetches and runs the bundled tenant entrypoint — a container
+// that generates an ephemeral identity, reads Franklin's real public job history + balance,
+// recomputes its runway, and signs a proof, all without holding any secret. No business logic
+// lives here (repo convention: bin/ entrypoints stay thin); everything real is in
+// skills/self/shelter/nosana/{deploy,tenant/job}.mjs.
 //
-// --dry (DEFAULT): resolves the tenant identity, verifies the current commit's code is actually
-//   fetchable from raw.githubusercontent.com (so a --live post never pays for a job that cannot
-//   bootstrap itself), builds the tenant job definition, and runs deploy.mjs's full dry pipeline —
-//   then stops before any on-chain post.
+// SECOND PASS (zero-secret redesign): this job definition carries NO secret of any kind — see
+// skills/self/shelter/nosana/tenant/README.md's "A finding that changes the design" section for
+// why (job definitions are published PERMANENTLY to public IPFS, not merely readable by the node
+// operator). The only env var the posted job carries is NOSANA_TREASURY_ADDRESS — a public
+// Solana address.
+//
+// IMPORTANT — the bundled entrypoint must be rebuilt + committed + pushed BEFORE running this:
+//   node skills/self/shelter/nosana/tenant/build-bundle.mjs
+//   git add -A && git commit -m "..." && git push canonical <branch>
+// This script's preflight step only checks that the bundle is REACHABLE at the current commit —
+// it cannot detect a bundle that is reachable but stale (built from an older commit).
+//
+// --dry (DEFAULT): resolves Franklin's treasury address, verifies the bundled entrypoint is
+//   actually fetchable from raw.githubusercontent.com at the current commit (so a --live post
+//   never pays for a job that cannot bootstrap itself), builds the tenant job definition, and
+//   runs deploy.mjs's full dry pipeline — then stops before any on-chain post.
 // --live: the only flag that actually posts and pays. Requires explicit opt-in every invocation.
-//
-// REQUIRED before --live: NOSANA_STATE_GITHUB_TOKEN must be set to a fine-grained GitHub PAT
-// scoped to Contents (read+write) on ONLY Daisuke134/franklin-shelter-state — see
-// skills/self/shelter/nosana/tenant/README.md's "Trust boundary" section for exactly how to create
-// one and why it must never be the broad token this Mac's own `gh` CLI uses.
 //
 // Usage: bin/citizen-tenant-up [--dry|--live] [--help]
 
 import { execFileSync } from "node:child_process";
-import { ensureLocalTenantKeypair } from "../skills/self/shelter/nosana/tenant/keypair.mjs";
-import { buildRawBaseUrl, buildTenantJobDefinition, DEFAULT_TENANT_IMAGE, TENANT_BUNDLE_RELATIVE_FILES } from "../skills/self/shelter/nosana/tenant/job.mjs";
+import { resolveSolanaSecret } from "../skills/earn/lib/resolve-identity.mjs";
+import { deriveAddressFromSecret } from "../skills/self/shelter/nosana/keypair.mjs";
+import { buildRawBaseUrl, buildBundleUrl, buildTenantJobDefinition, DEFAULT_TENANT_IMAGE } from "../skills/self/shelter/nosana/tenant/job.mjs";
 import { deployNosanaJob } from "../skills/self/shelter/nosana/deploy.mjs";
 
 function printHelp() {
@@ -31,14 +40,16 @@ function printHelp() {
     [
       "Usage: citizen-tenant-up [--dry|--live]",
       "",
-      "  --dry   (default) resolve the tenant identity, verify the pinned commit's tenant/ files",
-      "          are fetchable publicly, build the job definition, and run deploy.mjs's dry",
-      "          pipeline — then stop before posting.",
-      "  --live  actually post the job on-chain, paid from Franklin's own wallet.",
+      "  --dry   (default) resolve Franklin's treasury address, verify the bundled entrypoint is",
+      "          fetchable at the current commit, build the job definition, and run deploy.mjs's",
+      "          dry pipeline — then stop before posting.",
+      "  --live  actually post the job on-chain, paid from Franklin's own wallet. Carries no",
+      "          secret of any kind — see tenant/README.md.",
       "",
-      "Required env before --live: NOSANA_STATE_GITHUB_TOKEN (fine-grained PAT, Contents-only,",
-      "  scoped to Daisuke134/franklin-shelter-state — see tenant/README.md).",
-      "Env overrides: NOSANA_CODE_REPO, NOSANA_CODE_COMMIT, NOSANA_STATE_REPO, ANICCA_HOME.",
+      "Before --live, rebuild + commit + push the bundle:",
+      "  node skills/self/shelter/nosana/tenant/build-bundle.mjs && git add -A && git commit ... && git push ...",
+      "",
+      "Env overrides: NOSANA_CODE_REPO, NOSANA_CODE_COMMIT, ANICCA_HOME.",
       "",
     ].join("\n"),
   );
@@ -56,45 +67,33 @@ if (args.includes("--live") && args.includes("--dry")) {
 const live = args.includes("--live");
 
 try {
-  const { address: tenantAddress, secretBase58, keypairPath, created } = await ensureLocalTenantKeypair({});
-  process.stdout.write(
-    `[citizen-tenant-up] tenant keypair ${created ? "generated" : "loaded"} at ${keypairPath} — address ${tenantAddress}\n`,
-  );
-
-  const githubToken = process.env.NOSANA_STATE_GITHUB_TOKEN;
-  if (!githubToken) {
-    throw new Error(
-      "NOSANA_STATE_GITHUB_TOKEN is not set — required so the in-job tenant can reach the state store. " +
-        "See skills/self/shelter/nosana/tenant/README.md for how to create a fine-grained, Contents-only PAT " +
-        "scoped to ONLY Daisuke134/franklin-shelter-state.",
-    );
+  const secret = resolveSolanaSecret({});
+  if (!secret) {
+    throw new Error("no Solana secret resolved for this instance — ANICCA_HOME must point at Franklin's home (e.g. $HOME/.blockrun)");
   }
+  const { address: treasuryAddress } = deriveAddressFromSecret(secret);
+  process.stdout.write(`[citizen-tenant-up] treasury address ${treasuryAddress} (public — this is what the job reports on)\n`);
 
   const commitSha =
     process.env.NOSANA_CODE_COMMIT || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const rawBaseUrl = buildRawBaseUrl({ repo: process.env.NOSANA_CODE_REPO, commitSha });
-  process.stdout.write(`[citizen-tenant-up] pinned code commit ${commitSha} -> ${rawBaseUrl}\n`);
+  const bundleUrl = buildBundleUrl({ rawBaseUrl });
+  process.stdout.write(`[citizen-tenant-up] pinned code commit ${commitSha} -> ${bundleUrl}\n`);
 
   // Preflight: refuse to pay for a job whose own bootstrap code cannot even be fetched — e.g. the
-  // current commit was never pushed to canonical. Cheap (one GET), and catches the single most
-  // likely way to waste a real, paid job on a bootstrap failure.
-  const probeFile = TENANT_BUNDLE_RELATIVE_FILES[TENANT_BUNDLE_RELATIVE_FILES.length - 1];
-  const probeUrl = `${rawBaseUrl}/${probeFile}`;
-  const probeRes = await fetch(probeUrl);
+  // current commit (or a freshly-rebuilt bundle) was never pushed to canonical. Cheap (one GET),
+  // and catches the single most likely way to waste a real, paid job on a bootstrap failure.
+  const probeRes = await fetch(bundleUrl);
   if (!probeRes.ok) {
     throw new Error(
-      `preflight failed: ${probeUrl} returned HTTP ${probeRes.status} — commit ${commitSha} is not (yet) fetchable ` +
-        `from raw.githubusercontent.com. Push this commit to canonical before running --live.`,
+      `preflight failed: ${bundleUrl} returned HTTP ${probeRes.status} — commit ${commitSha} is not (yet) fetchable ` +
+        `from raw.githubusercontent.com, or the bundle was never committed. Run ` +
+        `'node skills/self/shelter/nosana/tenant/build-bundle.mjs', commit, and push before --live.`,
     );
   }
-  process.stdout.write(`[citizen-tenant-up] preflight OK — ${probeUrl} is publicly fetchable\n`);
+  process.stdout.write(`[citizen-tenant-up] preflight OK — ${bundleUrl} is publicly fetchable\n`);
 
-  const jobDefinition = buildTenantJobDefinition({
-    rawBaseUrl,
-    tenantSecretBase58: secretBase58,
-    githubToken,
-    stateRepo: process.env.NOSANA_STATE_REPO,
-  });
+  const jobDefinition = buildTenantJobDefinition({ rawBaseUrl, treasuryAddress });
 
   const result = await deployNosanaJob({ live, image: DEFAULT_TENANT_IMAGE, jobDefinitionOverride: jobDefinition });
   process.exit(result.gate && !result.gate.allowed ? 1 : 0);

@@ -1,20 +1,22 @@
-// derive-address.mjs — a deliberately SELF-CONTAINED copy of ../keypair.mjs's
-// deriveAddressFromSecret, plus the in-job identity resolver built on top of it.
+// derive-address.mjs (Mac-side / kept-for-later — NOT part of the current job's in-job bundle) —
+// a deliberately SELF-CONTAINED copy of ../keypair.mjs's deriveAddressFromSecret, plus
+// resolveTenantSecretForJob, an in-job-shaped identity resolver built on top of it.
 //
-// NOT imported from ../keypair.mjs: tenant/'s in-job code (this file + github-contents-store.mjs +
-// report-ledger.mjs + proof.mjs + entrypoint.mjs) has ZERO relative imports outside this directory,
-// on purpose. A fresh Nosana container fetches exactly these five files (see job.mjs's
-// TENANT_BUNDLE_RELATIVE_FILES) from a pinned commit on the public life-manager repo via plain
-// `fetch` — no git, no npm workspace, no monorepo checkout. Reaching into ../keypair.mjs would
-// drag in that file's OWN static import of ../../earn/lib/resolve-identity.mjs (irrelevant to the
-// tenant identity, which never touches Franklin's treasury secret), which would need fetching too,
-// and so on transitively. Keeping the in-job bundle to a fixed, small, self-contained file set is
-// judged more robust than chasing the monorepo's import graph from inside an ephemeral container.
+// HISTORY: this file WAS part of the first pass's in-job bundle (a funded, persistent tenant
+// identity whose secret was resolved here from a job env var). That design was replaced — see
+// tenant/README.md's "The finding that forced the redesign" — with an EPHEMERAL identity
+// (`Keypair.generate()`, no secret at all) generated directly in entrypoint.mjs. This file is no
+// longer imported by anything except its own tests; it is kept because `resolveTenantSecretForJob`
+// and `deriveAddressFromSecret` are exactly the building blocks a future persistent/funded/
+// delegated-spend in-job identity would need again (see tenant/README.md's "A path not taken"
+// section) — not resurrected speculatively, but not deleted either.
 //
-// Solana's secret-key layout (32-byte seed + 32-byte embedded public key, bs58-encoded) is a
-// stable wire format defined by solana-keygen/tweetnacl, not application logic that could
-// plausibly drift out from under a hand-copied duplicate — see ../keypair.mjs's own header for the
-// original.
+// NOT imported from ../keypair.mjs: Solana's secret-key layout (32-byte seed + 32-byte embedded
+// public key, bs58-encoded) is a stable wire format defined by solana-keygen/tweetnacl, not
+// application logic that could plausibly drift out from under a hand-copied duplicate — see
+// ../keypair.mjs's own header for the original. Keeping this self-contained (zero imports beyond
+// bs58) means it could be dropped back into a future in-job bundle without dragging in
+// ../keypair.mjs's own static import of ../../earn/lib/resolve-identity.mjs.
 
 import bs58 from "bs58";
 
