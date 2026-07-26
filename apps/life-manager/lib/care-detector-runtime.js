@@ -36,11 +36,17 @@ function detectCalendarCare(input) {
   return {
     schema_version: 1,
     real_event_count: visits.length,
+    // observe_only / decision_reason carry the CADENCE-1 verdict into the persisted scan row:
+    // observe_only:true means "this was really seen, and it is not something to act on" (the gaps
+    // are not a cadence, so overdue_days is not a meaningful debt). The row stays honest; the 11b
+    // chain in care-daily-runtime.js runs only for observe_only:false detections.
     candidates: detected.candidates.map((candidate) => ({
       care_type: candidate.careType,
       reason: candidate.reason,
       personal_interval_days: candidate.personalIntervalDays,
       overdue_days: candidate.overdueDays,
+      observe_only: candidate.decision === "observe",
+      decision_reason: candidate.decisionReason ?? null,
       source_provider_ids: [...(idsByType.get(candidate.careType) || [])].sort(),
     })),
   };

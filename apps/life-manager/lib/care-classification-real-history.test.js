@@ -11,12 +11,22 @@
 //   - the 9-day "personal cadence" is a genuine median of the user's own clinic gaps, not a fetch
 //     artifact — and it is genuinely a median over a bimodal history (three visits inside ten weeks
 //     in 2025, then a 14-month silence, then two visits in one week in 2026).
+//
+// ⚠️ PIN DELIBERATELY UPDATED by CADENCE-1 (spec §10 row CADENCE-1). The arithmetic below is
+// UNCHANGED — same 10 care visits, same 6 clinic ids, same 9-day median, same 50 overdue days —
+// because none of it was ever wrong. What changed is the MEANING the runtime assigns to it: a
+// median over gaps of 3.2 / 5.7 / 8.5 / 47 / 419 days is a burst, not a cadence, so "50 days
+// overdue against 9" is not a comparison anyone may act on. The detection is therefore now shaped
+// observe_only:true / decision_reason:"cadence-unstable" — still recorded on the scan row (the log
+// stays honest about what was seen), but no 11b chain, no booking. Booking off this row would have
+// been the real false positive; this pin is what stops that regressing back in.
 // Run: node --test lib/care-classification-real-history.test.js
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { classifyCareHistory } = require("./care-daily-runtime.js");
 const { detectCalendarCare } = require("./care-detector-runtime.js");
+const { judgeCadenceStability } = require("./care-detector.js");
 
 // Verbatim from the live Google Calendar of uid lm_784ad279… (read 2026-07-26 via Composio,
 // GOOGLECALENDAR_EVENTS_LIST, 703 events over 548 days). Only these ten carry a care keyword.
@@ -66,13 +76,16 @@ test("history_event_count=10 is the CARE-visit count, not the calendar page size
   assert.equal(receipt.real_event_count, 10);
 });
 
-test("the production detection reproduces exactly from the real events — 9-day cadence, 50 days overdue", () => {
+test("the production detection reproduces exactly from the real events — 9-day cadence, 50 days overdue, but OBSERVE-ONLY", () => {
   const receipt = detectCalendarCare({ nowMs: PROD_SCAN_MS, intents: [], sources: classifyCareHistory(events) });
   assert.deepEqual(receipt.candidates, [{
     care_type: "clinic",
     reason: "personal-cadence-overdue",
     personal_interval_days: 9,
     overdue_days: 50,
+    // CADENCE-1: the numbers are unchanged and correct; the verdict on them is not.
+    observe_only: true,
+    decision_reason: "cadence-unstable",
     source_provider_ids: [
       "0iqiic09kb0jbsh68bjq20sfj4",
       "3rojvqgmtlp7u48lasd9ioklfc",
@@ -94,6 +107,22 @@ test("the 9 days is the true median of the user's own clinic gaps — bimodal, b
   assert.ok(sorted[0] < 6 && sorted[4] > 400, "the distribution really is bimodal, so the median is a weak cadence claim");
   // 58 days since the last visit vs a 9-day median: over the 1.5x OVERDUE_FACTOR either way.
   assert.ok((PROD_SCAN_MS - clinic[clinic.length - 1]) / 86400000 > 58);
+  // CADENCE-1: the guard reads exactly these gaps and refuses to call them a cadence.
+  const gapsMs = clinic.slice(1).map((t, i) => t - clinic[i]);
+  assert.deepEqual(judgeCadenceStability(gapsMs), { decision: "observe", reason: "cadence-unstable" });
+  const m = sorted[2] * 86400000;
+  const mad = [...gapsMs.map((g) => Math.abs(g - m))].sort((a, b) => a - b)[2];
+  assert.ok(mad > 0.5 * m, "MAD exceeds half the median — the dispersion clause fails");
+  assert.ok(sorted[4] * 86400000 > 2.5 * m, "the 419-day gap is far outside the 2.5×median band");
+});
+
+test("the observe-only detection carries the honest numbers AND the refusal to act on them", () => {
+  const receipt = detectCalendarCare({ nowMs: PROD_SCAN_MS, intents: [], sources: classifyCareHistory(events) });
+  const [clinic] = receipt.candidates;
+  assert.equal(clinic.personal_interval_days, 9, "the arithmetic is untouched");
+  assert.equal(clinic.overdue_days, 50);
+  assert.equal(clinic.observe_only, true, "…and it is not something to book against");
+  assert.equal(clinic.decision_reason, "cadence-unstable");
 });
 
 test("haircut and dental stay silent — one and two visits are not a cadence", () => {
