@@ -31,6 +31,7 @@ const {
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
+const { selfHealWebhook } = require("./lib/webhook-selfheal.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
 const { inngest } = require("./inngest/client.js");
 const { functions: inngestFunctions } = require("./inngest/functions.js");
@@ -751,6 +752,10 @@ if (require.main === module) {
       startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
     });
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
+    // INC-3: register our own webhook from our own env — registration and comparison are one value.
+    selfHealWebhook(process.env).then((r) => {
+      console.log(`[life-call] webhook self-heal: healed=${r.healed} ${r.reason}`);
+    }).catch((e) => console.error(`[life-call] webhook self-heal error ${e && e.message}`));
   });
 }
 
