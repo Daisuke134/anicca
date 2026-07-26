@@ -1038,3 +1038,25 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 `skillopt/prompts/merge_failure.md` の merge guideline 1-2 が「Deduplicate」「Resolve conflicts: if patches contradict on the same point, choose the one with stronger justification or synthesize both」。`merge_final.md` は failure 由来を success 由来より優先。編集 op に `delete` が第一級。`<!-- SLOW_UPDATE_START -->` / `<!-- SLOW_UPDATE_END -->` で編集禁止領域を宣言できる（schedule / credential / safety gate をここへ入れる）。
 
 ただし解決対象は**今回生成した patch 同士**に限られ、文書に元から埋まった矛盾も、複数ファイル横断も、証拠の有無による機械的優先も無い。#1-#8 のような既存矛盾は SkillOpt では出てこない。20.3 の矛盾スキャンは自作が要る。
+
+### 20.8 beat rate が事件を自力で再現した（2026-07-26 実測、19-3 の受け入れ証拠）
+
+19-2 corpus（1486行、hn 526/678・zenn 48/48・devto 100/86、metric_primary 幅 0〜2626）と 19-3 `scripts/beat_rate.py` を実 judge で回し、2026-07-26 のタイトル事件そのものを採点した。対戦相手は zenn の実 like 上位から seed 決定で3本、盲検・両順序、18 judge calls。
+
+| beat rate | 役割 | cited_rule | タイトル |
+|---|---|---|---|
+| **1.00** | 却下 | `SKILL.md:124` | 24年間ダメだった僕が、はじめて完成させたもの |
+| 0.67 | 採用 | — | コーディング補助の返答を192回比べたら、日本語は28%減、英語は3%増だった |
+| 0.50 | 却下 | `SKILL.md:114` | バイブコーディングの本質は速度ではない |
+
+`selection_inverted: true`。
+
+**意味**: 却下候補が本物の人気タイトル3本すべてに両順序で勝った。Dais の指摘も、俺の grep も無しに、機械が同じ結論に到達し、さらに**犯人の行（`SKILL.md:124` = 全 self-reference 禁止の playbook rule）を指した**。§20.1 の #4 を人手なしで再発見したことになる。
+
+これで自己改善の鎖が数値で繋がった:
+```
+却下台帳(19-2 P0) → corpus(19-2) → beat rate(19-3) → selection_inverted → 犯人の行
+```
+残るのは、その行を SkillOpt に消させる部分（19-4）と、判定者自身を実 engagement で監査する部分（19-7）。
+
+注意すべき限界（誇張しないための記録）: 対戦相手3本・候補3本の単発測定であり、統計的に確定した数字ではない。beat rate の値そのものより、**inverted フラグが正しく立ち、blame が正しい行に落ちたこと**が今回の成果。
