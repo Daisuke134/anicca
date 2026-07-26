@@ -89,30 +89,56 @@ async function fetchNextEvent(uid, opts = {}) {
 //     path's swallow-to-[] is load-bearing there, but here the caller (careUserOnce) persists an
 //     append-only once-per-day claim — "the read failed" must never look like "empty calendar",
 //     or a single API blip freezes a fabricated empty scan for the whole day.
-//   - CHUNKED window: one 548-day call with orderBy=startTime ascending + maxResults 2500 truncates
-//     the RECENT end on busy calendars — exactly the events that hold the last-visit dates — turning
-//     stale visits into false overdues. The transport wrapper exposes no pageToken, so the window is
-//     split into ≤3 contiguous ~183-day chunks (each safely under 2500 for any human calendar) and
-//     merged, deduped by id (a chunk-boundary event can appear in two chunks).
+//   - PROVABLY COMPLETE window: the read follows the transport's page cursor until it is exhausted.
+//     The previous shape split the window into ≤3 blind ~183-day chunks and ASSUMED no chunk held
+//     more than maxResults events — a guess, not a proof — while throwing Google's nextPageToken
+//     away, so a busier calendar would have frozen a silently truncated history into the append-only
+//     lm_care_scan_log as if it were the whole truth. Truncation is now impossible to mistake for
+//     completeness, in both directions:
+//       * cursor exhausted  → the history is complete, by construction
+//       * cursor still live at HISTORY_MAX_EVENTS, or a cursor-less transport hands back a FULL page
+//         with nothing to follow → THROW. careUserOnce turns that into status:"history_unavailable"
+//         (no row, no daily claim, the next 60s tick retries), which is the honest answer: an
+//         incomplete history is a failed read wearing a success mask, and detectUnmetCare reads
+//         gaps — every event it never saw invents overdue days that did not happen.
 const CARE_HISTORY_MS = 548 * 86400000; // ~18 months
-const HISTORY_CHUNK_MS = 183 * 86400000; // ~6 months per chunk
+const HISTORY_PAGE_SIZE = 2500;   // Google events.list per-page maximum
+const HISTORY_MAX_EVENTS = 5000;  // hard cap: two full pages is far past any human 18-month calendar
+
+// One window, walked to exhaustion. Returns raw transport items; every failure mode throws.
+async function readHistoryWindow(calendar, uid, timeMin, timeMax) {
+  // Transports that cannot page (calendar-gog's `--all-pages` CLI, test fakes) get one shot: a page
+  // that comes back FULL is indistinguishable from a truncated one, so it is treated as truncated.
+  if (typeof calendar.listEventsPage !== "function") {
+    const page = await calendar.listEventsRaw(uid, { timeMin, timeMax, maxResults: HISTORY_PAGE_SIZE, strict: true }) || [];
+    if (page.length >= HISTORY_PAGE_SIZE) {
+      throw new Error(`calendar history truncated: transport returned a full ${HISTORY_PAGE_SIZE}-event page and exposes no cursor to follow`);
+    }
+    return page;
+  }
+  const items = [];
+  let pageToken = null;
+  for (;;) {
+    const page = await calendar.listEventsPage(uid, {
+      timeMin, timeMax, maxResults: HISTORY_PAGE_SIZE, pageToken, strict: true,
+    }) || {};
+    for (const e of page.items || []) items.push(e);
+    const next = page.nextPageToken || null;
+    if (!next) return items;
+    if (items.length >= HISTORY_MAX_EVENTS) {
+      throw new Error(`calendar history truncated: more than ${HISTORY_MAX_EVENTS} events in the window and the cursor is still live`);
+    }
+    if (next === pageToken) throw new Error("calendar history truncated: transport repeated the same page cursor");
+    pageToken = next;
+  }
+}
 
 async function fetchCalendarHistory(uid, opts = {}) {
   if (!uid) return [];
   const nowMs = opts.nowMs || Date.now();
   const historyMs = Number.isFinite(opts.historyMs) && opts.historyMs > 0 ? opts.historyMs : CARE_HISTORY_MS;
   const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey, gmailAccountId: opts.gmailAccountId });
-  const chunkCount = Math.min(3, Math.max(1, Math.ceil(historyMs / HISTORY_CHUNK_MS)));
-  const chunkMs = Math.ceil(historyMs / chunkCount);
-  const items = [];
-  for (let i = 0; i < chunkCount; i += 1) {
-    const chunkStart = nowMs - historyMs + i * chunkMs;
-    const chunkEnd = Math.min(nowMs, chunkStart + chunkMs);
-    const chunk = await calendar.listEventsRaw(uid, {
-      timeMin: isoZ(chunkStart), timeMax: isoZ(chunkEnd), maxResults: 2500, strict: true,
-    });
-    for (const e of chunk || []) items.push(e);
-  }
+  const items = await readHistoryWindow(calendar, uid, isoZ(nowMs - historyMs), isoZ(nowMs));
   const seen = new Set();
   const out = [];
   for (const e of items) {
@@ -128,4 +154,7 @@ async function fetchCalendarHistory(uid, opts = {}) {
   return out;
 }
 
-module.exports = { fetchUpcomingEvents, fetchNextEvent, fetchCalendarHistory, CARE_HISTORY_MS };
+module.exports = {
+  fetchUpcomingEvents, fetchNextEvent, fetchCalendarHistory,
+  CARE_HISTORY_MS, HISTORY_PAGE_SIZE, HISTORY_MAX_EVENTS,
+};
