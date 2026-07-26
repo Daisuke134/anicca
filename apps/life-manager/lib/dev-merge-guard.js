@@ -305,6 +305,15 @@ function evaluateEligibility(pr, options = {}) {
   if (!/^[a-f0-9]{40}$/.test(String(value.headRefOid || ""))) reasons.push("head_oid_missing");
   if (value.mergeable !== "MERGEABLE") reasons.push("not_mergeable");
 
+  // TOCTOU. Whoever picked this PR read its head, judged its file list, and only then handed the
+  // number over. Between those two moments the branch can be force-pushed, and the guard would
+  // then review, test and merge a head nobody ever prechecked. `--expect-head` closes the window:
+  // the caller says which commit it decided about, and a different one is refused outright rather
+  // than silently accepted as "the same PR".
+  if (options.expectHead && String(value.headRefOid || "") !== String(options.expectHead)) {
+    reasons.push("head_moved");
+  }
+
   // `gh pr view --json files` caps at 100 entries and reports a rename as its new path only. Both
   // are silent holes: file 101 is never classified, and `git mv skills/x lib/x` looks like a plain
   // lib/ addition. So the authoritative list is git's own name-status at the head commit, and gh's
@@ -513,6 +522,64 @@ const GUARD_LOCK_STALE_MS = 30 * 60 * 1000;
 
 function guardLockPath(ledgerPath) {
   return `${String(ledgerPath)}.lock`;
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// Stage progress. The guard runs as a detached child of the daily self-build pass, and that parent
+// enforces a wall-clock budget by killing the whole process group. A blind kill can land BETWEEN
+// `git merge` and the ledger append: main is merged, nothing is recorded, and no rollback is even
+// attempted. The parent therefore has to know which stage the child is in, and the only process
+// that knows is the child. So: one small file, rewritten whenever a stage BEGINS.
+//
+// Written rather than returned, because the parent cannot read the child's memory; BEGUN rather
+// than finished, because the dangerous window opens the moment the merge is attempted, not when it
+// succeeds. Best effort in both directions — a progress file that cannot be written must never
+// stop a real run, and one that cannot be read is reported as `null`, which the parent treats as
+// "pre-merge", i.e. killable. That default can waste a run; it can never orphan a merge, because a
+// guard that has truly begun merging has already written the file before touching git.
+// ---------------------------------------------------------------------------------------------
+function readGuardProgress(progressFile) {
+  if (!progressFile) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(progressFile, "utf8"));
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  return {
+    runId: parsed.run_id ?? null,
+    stage: parsed.stage ? String(parsed.stage) : null,
+    stagesBegun: Array.isArray(parsed.stages_begun) ? parsed.stages_begun.map(String) : [],
+    updatedAt: parsed.updated_at ?? null,
+  };
+}
+
+
+function writeGuardProgress(progressFile, { runId, stage } = {}) {
+  if (!progressFile || !stage) return null;
+  const previous = readGuardProgress(progressFile);
+  const stagesBegun = [...(previous?.stagesBegun ?? [])];
+  if (!stagesBegun.includes(String(stage))) stagesBegun.push(String(stage));
+  const payload = {
+    run_id: runId ?? previous?.runId ?? null,
+    stage: String(stage),
+    stages_begun: stagesBegun,
+    updated_at: new Date().toISOString(),
+  };
+  try {
+    fs.mkdirSync(path.dirname(progressFile), { recursive: true, mode: 0o700 });
+    // Rename, not truncate-and-write: the parent may read this file at any instant, and a
+    // half-written progress file parses as null, which would read as "pre-merge" mid-merge.
+    const temporary = `${progressFile}.${process.pid}.tmp`;
+    fs.writeFileSync(temporary, `${JSON.stringify(payload)}\n`, { mode: 0o600 });
+    fs.renameSync(temporary, progressFile);
+    fs.chmodSync(progressFile, 0o600);
+  } catch {
+    // A run that cannot describe itself still has to run. The ledger row is the real record.
+  }
+  return payload;
 }
 
 
@@ -994,9 +1061,14 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
   let verdict = "stopped";
   let postMergeError = null;
 
+  // Announced to the parent BEFORE the stage does anything, so a kill that races the announcement
+  // can only ever be too early (safe) and never too late (a merge nobody knows about).
+  const beginStage = (stage) => writeGuardProgress(options.progressFile, { runId, stage });
+
   try {
     run: {
       // 1. Eligibility.
+      beginStage("eligibility");
       const pr = await deps.getPullRequest(prNumber);
       diffContext = {
         prNumber,
@@ -1022,6 +1094,7 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
       const eligibility = evaluateEligibility(pr, {
         allowedAuthors: options.allowedAuthors,
         protectedPaths: options.protectedPaths,
+        expectHead: options.expectHead,
         changedFiles,
       });
       const reasons = [...eligibility.reasons];
@@ -1058,10 +1131,12 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
         files_cross_check: eligibility.crossCheck,
         changed_files_error: changedFilesError,
         protected_paths: options.protectedPaths ?? [],
+        expected_head: options.expectHead ?? null,
         ...manifest,
       })) break run;
 
       // 2. Fresh adversary — BEFORE the suite, because the suite executes the PR's code.
+      beginStage("review");
       const review = normalizeReview(await deps.review(await loadDiff(), {
         prNumber,
         headOid: pr.headRefOid,
@@ -1072,10 +1147,12 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
       })) break run;
 
       // 3. BlockedActions tripwire — also before the suite, same reason.
+      beginStage("blocked_actions");
       const hits = detectBlockedActions(parseAddedLines(await loadDiff()));
       if (!record("blocked_actions", hits.length === 0, "blocked_actions_present", { hits })) break run;
 
       // 4. Tests + evals, in an isolated worktree of the PR head commit.
+      beginStage("tests");
       const tests = await deps.runTests({ headOid: pr.headRefOid, headRefName: pr.headRefName });
       if (!record("tests", tests?.ok === true && tests.exitCode === 0, "test_suite_red", {
         exit_code: tests?.exitCode ?? null,
@@ -1083,6 +1160,12 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
       })) break run;
 
       // 5. Merge. The rollback target is read BEFORE the merge, while it is still the live one.
+      //
+      // The progress announcement goes out FIRST, before a single irreversible call. From this
+      // line on the parent's wall-clock budget stops being allowed to kill this process: a merge
+      // interrupted between `git merge` and the ledger append leaves main changed, unrecorded and
+      // un-rolled-back, which is strictly worse than a run that simply took too long.
+      beginStage("merge");
       const previous = await deps.getPreviousSuccessfulDeployment();
       const merged = await deps.merge({ prNumber, headOid: pr.headRefOid });
       const mergeOk = merged?.ok === true && /^[a-f0-9]{40}$/.test(String(merged.mergeSha || ""));
@@ -1099,6 +1182,7 @@ async function runMergeGuardLocked({ prNumber, deps, options, now, sleep, starte
       // that dies, a network that vanishes, a deps stub that blows up — must still leave a ledger
       // row saying so, or 10f's Day-N evidence silently loses the one run that mattered: the one
       // that put code into production and then stopped being able to describe it.
+      beginStage("deploy_health");
       try {
         const redeploy = await deps.triggerRedeploy();
         const healthy = await pollUntil(() => deps.checkHealth(), {
@@ -1332,6 +1416,8 @@ module.exports = {
   verifyStageChain,
   guardLedgerPath,
   guardLockPath,
+  readGuardProgress,
+  writeGuardProgress,
   acquireGuardLock,
   releaseGuardLock,
   appendGuardRun,
