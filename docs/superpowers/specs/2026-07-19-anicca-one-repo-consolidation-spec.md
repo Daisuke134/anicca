@@ -569,7 +569,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 | # | ID | 中身 | 出典 | 状態 |
 |---|---|---|---|---|
-| H2 | `ORG-diet` | 新 organ 第1号: 昼食 closed Q + 効く瞬間の提案（junk food 削減）。型 = detector+trigger+closed Q+ledger の複製 | §9 vision + Dais 2026-07-26 口述 | spec から。着手可 |
+| H2 | `ORG-diet` | **spec 確定（2026-07-27、下記）**: ①観測 = 昼食 closed Q（11:30-13:30 JST の予定空白時のみ、週3回上限、4択 tap: 定食・野菜系/麺・丼/バーガー・ファスト/食べてない）②台帳 = `lm_diet_log` append-only ③介入 = 直近14日で fastfood 比率≥50% かつ標本≥4 の時だけ、昼直前の効く瞬間に1通（1/日上限、説教禁止・§9.11 文体、work anchor 近傍の代替を Places で1件添える）④copy は i18n（Dais 編集可）⑤MENTAL と同じ suppression（予定中・移動中は沈黙）⑥診断・カロリー計算はしない — 選択の記録と タイミングの提案のみ | Dais 口述 2026-07-26 | builder 投入中 |
 | H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
 | H4 | `ORG-precepts` | 五戒の就寝前自省 Q + 週次 ledger（MENTAL 拡張） | 同上 | H2 の後（同型） |
 | H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
