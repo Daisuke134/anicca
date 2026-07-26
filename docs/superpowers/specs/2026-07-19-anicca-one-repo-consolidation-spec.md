@@ -562,6 +562,18 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 **crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
 
+**NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
+
+| # | ID | 中身 | 出典 | 状態 |
+|---|---|---|---|---|
+| H1 | `LAND-1` | landing を anicca-products から canonical repo へ移設し Netlify の deploy 元を切替 → anicca-products を archive（§2.1 の未完 cutover を完了させる） | §2.1 実測矛盾 | 着手可 |
+| H2 | `ORG-diet` | 新 organ 第1号: 昼食 closed Q + 効く瞬間の提案（junk food 削減）。型 = detector+trigger+closed Q+ledger の複製 | §9 vision + Dais 2026-07-26 口述 | spec から。着手可 |
+| H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
+| H4 | `ORG-precepts` | 五戒の就寝前自省 Q + 週次 ledger（MENTAL 拡張） | 同上 | H2 の後（同型） |
+| H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
+| H6 | `OPS-1` | Telnyx 残高 top-up 経路（実測 $20.86 ≈ 2日分。alert は配線済みだが補充は未設計 — 資金源は Dais 裁定要） | demo sweep D | **Dais の資金裁定待ち** |
+| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 | crypto track（別 repo）と合流 |
+
 **常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
 
 | loop | 走る場所 | 頻度 | 実測 |
