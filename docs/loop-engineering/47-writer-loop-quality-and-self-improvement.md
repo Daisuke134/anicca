@@ -1932,3 +1932,33 @@ goodhart.py    scorable_pairs が 0 の候補を特徴量サンプルから除�
 **一般法則**: **欠陥を1箇所で塞いだら、同じ値を読む消費者を全部数えてから「直した」と言う。** 今回は3人いて、2人塞いだ時点で完了と報告しかけた。値を生産する側の修正は、消費する側の数だけ未完成でありうる。
 
 **8・10・11 に共通する出自**: すべて**読まずに承認した場所**から出た。実行では通らない分岐（judge broker の停止）がそこにあり、何十回動かしても現れなかった。
+
+### 21.45 12件目 — 「4人目はいない」と書いた直後に4人目が出た（未修正、T26）
+
+§21.44 で「消費者を全部数えてから直したと言え」と書き、その節の中で「4人目・5人目は存在しない」と**grep せずに断定した**。grep したら4人目がいた。
+
+```
+grep -rln '"beat_rate"' → rule_blame / beat_rate / goodhart / vendor/skillopt-writing/writing/rollout.py
+```
+
+`rollout.py:151`:
+```python
+soft = beat_rate if beat_rate is not None else 0.0
+```
+直前の docstring は「opponent pool が無いのは infrastructure gap であって quality verdict ではない、caller は loss として扱ってはならない」と書いている。**その次の行が 0.0 にしている。** 全 pair 判定不能で 0.0 になった場合も同じ経路を通る。
+
+**結果**:
+```
+設備障害の item   soft 0.0 が test_soft の平均に入る
+craft_train の n  非 null pair のみ数える → その item は分母に寄与しない
+                  ↓
+分子は障害を含み、分母は含まない
+平均は不当に下がり、SE はその平均に対して不当に狭い
+片方の phase だけ障害が出れば 差が偽物になる
+```
+
+**未修正**。`test_soft` は SkillOpt の `summary.json` から読んでおり、craft_train 側で平均を再計算していない。構造に手を入れる修正であり、**トレーナは台帳3日分が揃うまで走れない**ので、急いで触るより次セッション冒頭で設計してから入れる（T26）。
+
+**修正案**: `_rollout_one` の結果に `scorable_pairs` を載せ、craft_train が `rollouts.json` から**分子と分母を同じ集合で**再計算する（summary.json の test_soft を信じない）。テストは「障害 item を含む batch で、平均が障害 item を除いた値と一致する」。
+
+**この節の要点は修正案ではない**: 「消費者を全部数えろ」と書いた同じ節で数えずに断定した。**規則を書くことと規則に従うことは別の動作**で、書いた直後こそ従い忘れる。今夜の訂正はこれで8回目。
