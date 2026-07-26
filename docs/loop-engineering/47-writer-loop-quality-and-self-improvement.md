@@ -1060,3 +1060,65 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 残るのは、その行を SkillOpt に消させる部分（19-4）と、判定者自身を実 engagement で監査する部分（19-7）。
 
 注意すべき限界（誇張しないための記録）: 対戦相手3本・候補3本の単発測定であり、統計的に確定した数字ではない。beat rate の値そのものより、**inverted フラグが正しく立ち、blame が正しい行に落ちたこと**が今回の成果。
+
+---
+
+## 21. 実行順序の正本（2026-07-27。§19.6 と §20.4 の TODO 表を置換）
+
+Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節が**唯一の順序正本**。以後この表だけを更新する。
+
+### 21.1 完了（証拠付き。再着手禁止）
+
+| 項目 | done evidence |
+|---|---|
+| 却下台帳 + 行番号 blame | `d48a508` — `scripts/title_candidates.py`、契約テスト 5/5。規則語の却下理由と行番号なし却下を記録段階で拒否 |
+| タイトル規則の是正 | `cc80f10` `6ee5f6a` — 禁止行削除、数字偏重（Goodhart）是正 |
+| prompt の独自規則撤去 | `d48a508` — 禁則の正本を `reference/title-best-practices.md` §2 に一本化 |
+| 矛盾8件の解消 | `715de5c` — editorial-gate 0回問題を含む。`_quality()` が editorial verdict を読む |
+| 公開優先の保証 | `ff37c24` — 台帳が validate 失敗しても公開は止まらない |
+| corpus harvester | `f424056` — 1486行、hn 526/678・zenn 48/48・devto 100/86、metric_primary 0〜2626 |
+| beat rate scorer | `915dfba` — 実 judge で `selection_inverted: true`、犯人 `SKILL.md:124` を特定（§20.8） |
+| 損失台帳 + Goodhart 検出 | `74b8a78` `21ac930` — `SKILL.md:124` が損失1位。Goodhart はサンプル不足時に正しく沈黙 |
+| 矛盾スキャナ | `efac50a` `b5fb2b5` — direct 1205→20、drift 2→1、dead 19→17、歴史的事例 fixture 維持 |
+| disk 自動回収 | `~/scripts` `7a7bb44` — git-ignore された再生成可能ディレクトリを聞かずに回収 |
+
+### 21.2 残作業（この順。前段の done を満たさずに次へ行かない）
+
+| # | 作業 | 依存 | done 条件（検証コマンドで判定） |
+|---|---|---|---|
+| **T1** | dead 検出に run dir 証拠を追加 | — | `reader-questions-ja.json` が報告されず、`self-improve-application.json` が報告される。両方向のテスト付き |
+| **T2** | SkillOpt 実現可能性プローブ | — | `vendor/skillopt-writing/FEASIBILITY.md` に `skillopt-train` の実出力（成功でも失敗でも）が貼られている |
+| **T3** | **採否の判定**（本節の分岐点） | T2 | 下の 21.3 の基準で adopt / reject を spec に書く |
+| **T4** | `skills/writing-craft/` 抽出 | T3 | `CRAFT.md` + `formats/{x-post,article,longform}.md` が存在し、`article-daily.sh` が実際に読む。SkillOpt の `SLOW_UPDATE` 相当の**編集禁止領域**を明示 |
+| **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
+| **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
+| **T7** | launchd 配線 + Telegram | T6 | `ai.anicca.writer-craft-train` が毎晩発火し、Telegram に patch / beat rate 前後 / 採否の1通 |
+| **T8** | 22:30 の盲目解消を実機確認 | — | 次回発火で `no JA/EN quality baseline` が出ない（`~/.openclaw/logs/article-self-improve.err`） |
+| **T9** | 週次 judge 較正 | T5 | judge の選好と自投稿の実 engagement の相関が数値で出る |
+| **T10** | 本文 slice・長文 slice | T6 | 各 format slice で非悪化 gate が通る |
+
+**T5 が見落とされやすい依存**: トレーナは beat rate で gate するが、beat rate には毎日の台帳が要る。台帳を書き始めたのは今日なので、**実データが貯まるまでトレーナは意味のある gate ができない**。T6 の実装は T5 と並行してよいが、T6 の「効いた」判定は T5 の3 run を待つ。
+
+### 21.3 T3 の判定基準（あらかじめ書いておく。結果を見てから基準を作らない）
+
+**adopt（SkillOpt を optimizer に採用）** — 次を全て満たす場合:
+1. `skillopt-train` が 1 epoch を最後まで走る
+2. モデル呼び出しをローカル proxy（`openai_compatible`、127.0.0.1:8317）に向けられる
+3. scorer を外部プロセス（`beat_rate.py`）に差し替える口がある
+4. 編集禁止領域（`SLOW_UPDATE` マーカー）が機能する
+
+**reject（4つのアイデアだけ写して自前 trainer）** — 上のどれかが満たせない場合。写すのは: bounded edit（`op: append|insert_after|replace|delete`）、`learning_rate` = 1晩の最大編集数、held-out gate、却下 patch の記憶。自前実装は 200 行を超えない。
+
+判定を先に書く理由: 結果を見てから基準を作ると、動かなかった時に「まあ動いたことにする」に倒れる。
+
+### 21.4 全体の合格条件（babysitting 終了の定義）
+
+loop が**人手なしで**次を1周する:
+1. 候補を出し、却下を行番号付きで記録する
+2. 本物の勝ちタイトルと盲検で戦い、beat rate を出す
+3. 却下が採用に勝ったら、その却下が引用した行に損失を付ける
+4. 損失1位の行を削除または書き換える patch を作る
+5. held-out で改善しなければ自動で戻す
+6. 結果を Telegram に1通
+
+§20.8 で 1〜3 は実測済み。残るのは 4〜6。**4 が動いた日が、俺が skill を手で直さなくてよくなる日。**
