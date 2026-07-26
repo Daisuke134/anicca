@@ -331,8 +331,11 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // must never break wake calls. It runs LAST — after the wake evaluation — because the wake dial
   // has a ~2-min catch window and a slow Places/Supabase chain must never delay it; care has no
   // deadline (any tick today may claim the scan). Still runs for call-disabled users: skipping the
-  // wake loop must not skip the PHYSICAL organ. This path detects + records candidates only;
-  // 11c/11d own the side effects (no booking, no Telegram from here).
+  // wake loop must not skip the PHYSICAL organ. With LM_BOOKING_ENABLED absent this path detects and
+  // records candidates only; with the gate ON, careUserOnce also runs the 11c booking leg and the 11d
+  // 事後報告 (steel session, Telegram, calendar) inside this same call. The executor holds its own
+  // deadline below USER_TICK_TIMEOUT_MS, so a tick abandoned here can never leave the single steel
+  // session held open behind it.
   try {
     const care = await (deps.care || careUserOnce)(u, now, { apiKey: deps.apiKey, calendar: deps.calendar });
     if (care && care.status && care.status !== "already_scanned") {

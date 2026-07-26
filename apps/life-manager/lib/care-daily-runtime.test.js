@@ -322,8 +322,38 @@ test("classifyCareHistory groups by care type on the user's own words; unrelated
   assert.deepEqual(byType, { haircut: ["a"], dental: ["b"], clinic: ["d"] });
 });
 
-test("this path has NO Telegram surface — 11c/11d own the side effects", () => {
+// 11c/11d gave this module a Telegram/calendar/browser surface, so the old source-grep purity check
+// ("no send path appears in the file at all") is superseded — it would now forbid the very wiring
+// §10 rows 11c/11d call for. The invariant it was PROTECTING is unchanged and is now asserted the
+// stronger, behavioural way, both here (gate absent ⇒ nothing happens) and across
+// lib/care-booking-wiring.test.js. What survives as a source check is the one rule no gate may ever
+// unlock: §9.5 forbids the AI from phoning a provider.
+test("gate absent: no send path, no calendar write, no browser session can run", async () => {
+  const supa = fakeSupa();
+  let sends = 0;
+  let calendarWrites = 0;
+  let steelCalls = 0;
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => overdueHaircutHistory(),
+    searchCareCandidates: async () => ({ definitions: [{}], shortfallReason: null }),
+    evaluateCareCandidates: async () => ({
+      schema_version: 1,
+      selected_provider_id: "p-web",
+      candidates: [{ provider_id: "p-web", public_name: "サロンA", reservation_route: "web", reservation_url: "https://x/reserve" }],
+    }),
+    bookingEnabled: false,
+    sendMessage: async () => { sends += 1; return { ok: true, result: { message_id: 1 } }; },
+    calendar: { createEvent: async () => { calendarWrites += 1; return { successful: true }; } },
+    cdp: { createSession: async () => { steelCalls += 1; throw new Error("must never be reached"); } },
+  }));
+  assert.equal(result.status, "detected");
+  assert.equal(result.bookingOutcome, undefined);
+  assert.equal(sends, 0);
+  assert.equal(calendarWrites, 0);
+  assert.equal(steelCalls, 0);
+});
+
+test("§9.5: no gate unlocks a phone call to a provider", () => {
   const src = fs.readFileSync(path.join(__dirname, "care-daily-runtime.js"), "utf8");
-  assert.doesNotMatch(src, /telegram|sendMessage/i, "care runtime must not import or call any send path");
-  assert.doesNotMatch(src, /placeCall|createEvent|care-booking/i, "no booking / calendar / call side effects in 11a/11b runtime");
+  assert.doesNotMatch(src, /placeCall|telnyx|outboundCall/i, "the AI never phones a provider (§9.5)");
 });
