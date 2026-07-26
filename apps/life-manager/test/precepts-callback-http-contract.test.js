@@ -18,9 +18,11 @@ test("POST /telegram routes precepts:answer:* into the precepts ledger and edits
   process.env.SUPABASE_URL = "https://fixture.supabase.co";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "fixture-service-role";
   process.env.LIFE_RUN_LOOPS = "false";
-  // The webhook has no per-user row timezone to read (lm_users has no tz column), so the env link of
-  // the chain is what makes "is this question still tonight's?" answerable in this contract.
-  process.env.LM_PRECEPTS_UTC_OFFSET_HOURS = "9";
+  // The webhook has NO per-user timezone to read: rowByChatId selects lm_users, and the only per-user
+  // zone in this schema is lm_panel_preferences.call_time_zone, which the scheduler joins and the
+  // webhook does not. So the offset rides in the callback data itself — the ask's own resolution is
+  // the source of truth, and this contract proves the handler needs nothing else.
+  delete process.env.LM_PRECEPTS_UTC_OFFSET_HOURS;
   const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
   const originalCreateServer = http.createServer;
@@ -100,7 +102,7 @@ test("POST /telegram routes precepts:answer:* into the precepts ledger and edits
     const copy = PRECEPTS_STRINGS.ja.nightQuestion;
 
     // 1. The user taps 「きつく当たった」 on the bedtime question.
-    assert.equal(await post(`precepts:answer:harsh:${today}`, "cb-harsh", copy.text), 200);
+    assert.equal(await post(`precepts:answer:harsh:${today}:9`, "cb-harsh", copy.text), 200);
     assert.equal(preceptsRows.length, 1, `the answer must reach lm_precepts_log, got ${JSON.stringify(preceptsRows)}`);
     assert.equal(preceptsRows[0].uid, "u1");
     assert.equal(preceptsRows[0].kind, "answer");
@@ -121,7 +123,7 @@ test("POST /telegram routes precepts:answer:* into the precepts ledger and edits
     assert.equal(mentalRows.length, 0, "only messages WE send count against the cap");
 
     // 5. A second tap is refused by the unique index and answered visibly (§10.0-15 ③).
-    assert.equal(await post(`precepts:answer:calm:${today}`, "cb-again", copy.text), 200);
+    assert.equal(await post(`precepts:answer:calm:${today}:9`, "cb-again", copy.text), 200);
     assert.equal(preceptsRows.length, 1, "no duplicate row for the same night");
     assert.equal(sentMessages.length, 1, "the second tap must not be silent");
     assert.equal(sentMessages[sentMessages.length - 1].text,
@@ -130,12 +132,12 @@ test("POST /telegram routes precepts:answer:* into the precepts ledger and edits
 
     // 6. A stranger's tap on this chat's message writes nothing.
     const beforeRows = preceptsRows.length;
-    assert.equal(await post(`precepts:answer:lie:${today}`, "cb-stranger", copy.text, 999), 200);
+    assert.equal(await post(`precepts:answer:lie:${today}:9`, "cb-stranger", copy.text, 999), 200);
     assert.equal(preceptsRows.length, beforeRows, "a cross-tenant tap must not write");
 
     // 7. A tap on last week's question is refused visibly and files nothing against tonight.
     const beforeStale = sentMessages.length;
-    assert.equal(await post("precepts:answer:harsh:2020-01-01", "cb-stale", copy.text), 200);
+    assert.equal(await post("precepts:answer:harsh:2020-01-01:9", "cb-stale", copy.text), 200);
     assert.equal(preceptsRows.length, beforeRows, "a stale-night tap must not write a row");
     assert.equal(sentMessages[sentMessages.length - 1].text, copy.expired);
     assert.equal(sentMessages.length, beforeStale + 1);

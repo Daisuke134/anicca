@@ -184,7 +184,13 @@ const DIET_STRINGS = Object.freeze({
 // The mirror is assembled from `countItem` joined by `countSeparator` into one of the four whole-
 // message templates. Which template is used is a matter of FACT (see precepts-mirror.js's pattern
 // rule), never of tone: the weekday sentence may only be said when the same weekday really did
-// repeat, and 「連続MTGの後」 only when those days really did carry three or more events.
+// repeat, and the busy sentence only when those days really did carry three or more events.
+//
+// AND THE BUSY SENTENCES SAY WHAT WAS CHECKED. H4 ③'s example wording is 「連続MTGの後」 — back-to-
+// back meetings — but the rule behind it counts events per day and measures how late the last one
+// ran; it never checks whether any two of them touch. Three scattered half-hour calls would have
+// been announced as a solid block of meetings. So both templates say 「予定が3件以上あった…の後」,
+// which is exactly the evidence that exists. §9.5: the honest statement, not the comfortable one.
 const PRECEPTS_STRINGS = Object.freeze({
   ja: Object.freeze({
     nightQuestion: Object.freeze({
@@ -205,7 +211,7 @@ const PRECEPTS_STRINGS = Object.freeze({
       facts: "🌙 最近4週間の記録です。{counts}。",
       weekday: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも{weekday}曜でした。",
       busy: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも予定が3件以上あった日の後でした。",
-      weekdayBusy: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも{weekday}曜の連続MTGの後でした。",
+      weekdayBusy: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも予定が3件以上あった{weekday}曜の後でした。",
       countItem: "「{label}」が{count}回",
       countSeparator: "、",
     }),

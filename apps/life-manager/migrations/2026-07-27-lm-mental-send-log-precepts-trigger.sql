@@ -26,18 +26,33 @@
 -- auto-generated name (`lm_mental_send_log_trigger_check` on every PostgreSQL this has run on), but
 -- dropping a guessed name that does not exist is a no-op that leaves the old constraint in place and
 -- the new one rejected as a duplicate — a migration that reports success and changes nothing.
+--
+-- AND A DEFINITION MATCH IS A SEARCH, SO THE RESULT IS COUNTED BEFORE ANYTHING IS DROPPED. A loop
+-- that drops whatever it finds is silent in both of its failure directions: with ZERO matches it
+-- drops nothing and the ADD below fails on a name that is still there (or, worse, succeeds against a
+-- table whose old constraint was never what we assumed); with TWO OR MORE it also drops the unrelated
+-- CHECK that happens to mention pre_sleep, and nothing in the output ever says a second constraint
+-- existed. Exactly one is the only shape this migration understands, so anything else aborts the
+-- transaction and NAMES what it found. A migration that guesses is a migration nobody can audit.
 DO $$
-DECLARE c record;
+DECLARE
+  names text[];
+  found int;
 BEGIN
-  FOR c IN
-    SELECT conname
-    FROM pg_constraint
-    WHERE conrelid = 'public.lm_mental_send_log'::regclass
-      AND contype = 'c'
-      AND pg_get_constraintdef(oid) ILIKE '%pre_sleep%'
-  LOOP
-    EXECUTE format('ALTER TABLE public.lm_mental_send_log DROP CONSTRAINT %I', c.conname);
-  END LOOP;
+  SELECT array_agg(conname ORDER BY conname) INTO names
+  FROM pg_constraint
+  WHERE conrelid = 'public.lm_mental_send_log'::regclass
+    AND contype = 'c'
+    AND pg_get_constraintdef(oid) ILIKE '%pre_sleep%';
+
+  found := coalesce(array_length(names, 1), 0);
+  IF found <> 1 THEN
+    RAISE EXCEPTION
+      'lm_mental_send_log: expected exactly 1 CHECK constraint mentioning pre_sleep, found %: [%]',
+      found, coalesce(array_to_string(names, ', '), '');
+  END IF;
+
+  EXECUTE format('ALTER TABLE public.lm_mental_send_log DROP CONSTRAINT %I', names[1]);
 END $$;
 
 ALTER TABLE public.lm_mental_send_log

@@ -2,8 +2,18 @@
 // H4 ORG-precepts — the intervention (spec §10 NEXT HORIZON row H4 ③).
 //
 // One message, Sunday night, and it is a MIRROR: it says what happened and — only when the calendar
-// actually says so — where it happened around. 「『きつく当たった』が2回。2回とも木曜の連続MTGの後でし
-// た」. Nothing else. The spec's own words for what this may never be: 説教・評価・スコア化禁止.
+// actually says so — where it happened around. 「『きつく当たった』が2回。2回とも予定が3件以上あった
+// 木曜の後でした」. Nothing else. The spec's own words for what this may never be: 説教・評価・スコア化
+// 禁止.
+//
+// THE COPY SAYS WHAT THE RULE CHECKED, NOT WHAT THE ROW SKETCHED. H4 ③'s example sentence says
+// 「連続MTGの後」 — back-to-back meetings. The rule below checks a COUNT (three or more events on the
+// day) and a TAIL (the last of them ended within 8h of the tap); it never checks whether any two of
+// them touch. Three half-hour calls spread across a working day would have been reported as 連続MTG.
+// So the sentence states the evidence that exists — 「予定が3件以上あった{weekday}曜の後」 — rather
+// than the stronger claim. A contiguity check would have been the other way to close the gap, and it
+// is the wrong one here: it buys a nicer noun at the cost of a rule nobody can restate, and §9.5 asks
+// for the honest statement, not the comfortable one.
 //
 // A CONTRADICTION IN THE SPEC ROW, RESOLVED HERE RATHER THAN HIDDEN. H4 ① sets the question at
 // 週次で closed Q 1問 — at most one ask, and therefore at most ONE ANSWER, per week. H4 ③ then gives
@@ -41,11 +51,17 @@
 //   2. The SUBJECT is the single non-calm answer value with the highest count in the window, ties
 //      broken by the fixed PRECEPTS_ANSWERS order so the same week always produces the same message.
 //      It must occur at least twice. One occurrence has no pattern by construction.
-//   3. WEEKDAY: group the subject's answers by the user's local weekday and take the largest group
-//      (ties → the earliest weekday). Two or more on the same weekday is a weekday pattern.
+//   3. WEEKDAY: group the subject's answers by the weekday of the EVENING THEY DESCRIBE — the day
+//      carried on the row, not the day the tap happened to land on. Half of all answers arrive after
+//      local midnight (the question ships ≤30 min before bedtime), so reading the weekday off
+//      answered_at would tell a Thursday-heavy user that their Fridays are hard. Take the largest
+//      group (ties → the earliest weekday); two or more on the same weekday is a weekday pattern.
 //   4. BUSY: an answer is "after a busy day" when its own local day carried BUSY_MIN_EVENTS (3) or
 //      more calendar events AND the last of them ended within BUSY_TAIL_MS before the tap. Two or
-//      more is a busy pattern.
+//      more is a busy pattern. "Ended" is the provider's real end.dateTime wherever there is one;
+//      where there is none (all-day rows, an unparseable end) the day falls back to start + 1h,
+//      which is an ASSUMPTION and is treated as one — it is documented at both use sites and it
+//      makes the branch harder to reach, never easier.
 //   5. Both, on the SAME answers (every member of the weekday group is also busy) → the combined
 //      sentence, which is the spec's own example. Weekday only → the weekday sentence. Busy only →
 //      the busy sentence. Otherwise → facts, and nothing else.
@@ -53,13 +69,16 @@
 // WHY BUSY_TAIL_MS IS NOT THE 2 HOURS THE ROW SKETCHES. The question is a BEDTIME question, so every
 // tap lands around 23:00 — five or six hours after a working day ends. A literal 2h tail would make
 // this branch unreachable in production: not a conservative heuristic, but a lie in the shape of one.
-// The 8h tail is what the sentence 「連続MTGの後」 actually claims — that the block ran INTO the
-// evening the user is now reflecting on — and it still refuses a day whose three events all finished
-// before lunch. Same-local-day is the constraint doing most of the work; the tail is what keeps
-// "a busy morning" from being reported as the context of a 23:30 tap.
+// The 8h tail is what the sentence 「予定が3件以上あった…の後」 actually claims — that the day's
+// events ran INTO the evening the user is now reflecting on — and it still refuses a day whose three
+// events all finished before lunch. Same-local-day is the constraint doing most of the work; the tail
+// is what keeps "a busy morning" from being reported as the context of a 23:30 tap.
 
 const { PRECEPTS_ANSWERS, PRECEPTS_ANSWER_LABELS, PRECEPTS_CALM } = require("./precepts-question.js");
-const { claimPreceptsRow, resolvePreceptsTzOffsetH, resolvePreceptsSleepTarget } = require("./precepts-runtime.js");
+const {
+  claimPreceptsRow, resolvePreceptsTzOffsetH, resolvePreceptsSleepTarget,
+  markBudgetUnrecorded, isBudgetUnrecorded,
+} = require("./precepts-runtime.js");
 const { localDay, localWeekday } = require("./user-tz.js");
 const { readMentalSendState, recordMentalSend } = require("./mental-send-log.js");
 const { DAILY_CAP, MIN_GAP_MS, LOCATION_STATES } = require("./mental-trigger.js");
@@ -183,6 +202,21 @@ function countAnswers(answers) {
     .map((answer) => ({ answer, count: counts.get(answer) }));
 }
 
+// When an event ended, or — said out loud — when we are ASSUMING it ended.
+//
+// `null` is what fetchCalendarHistory reports for an event with no end instant (an all-day row, or an
+// end the provider could not parse), and `Number(null)` is 0, so a naive Number.isFinite check turns
+// "we do not know" into "it ended at the epoch". The absence has to be tested before the coercion.
+// An end at or before the start is treated the same way: a zero-length or backwards event is not a
+// measurement either.
+const ASSUMED_EVENT_MS = 3600000;
+
+function resolveEventEndMs(event, startMs) {
+  const raw = event ? event.endMs : null;
+  const parsed = raw === null || raw === undefined || raw === "" ? NaN : Number(raw);
+  return Number.isFinite(parsed) && parsed > startMs ? parsed : startMs + ASSUMED_EVENT_MS;
+}
+
 // The busy-day index: local day → { events, lastEndMs }. Built once per mirror rather than scanned
 // per answer, and it holds NO event content — only how many there were and when the last one ended.
 function indexEventDays(events, tzOffsetH) {
@@ -190,9 +224,11 @@ function indexEventDays(events, tzOffsetH) {
   for (const event of (Array.isArray(events) ? events : [])) {
     const startMs = Number(event && event.startMs);
     if (!Number.isFinite(startMs)) continue;
-    // A missing end gets the same 1h assumption the scheduler's shapers make; a malformed end must
-    // not read as a zero-length event.
-    const endMs = Number.isFinite(Number(event.endMs)) ? Number(event.endMs) : startMs + 3600000;
+    // The provider's real end where there is one (fetchCalendarHistory now carries end.dateTime
+    // through). Where there is none, this ASSUMES one hour — stated rather than dressed as a
+    // measurement, and erring toward an EARLIER end, which can only push a day out of the tail and
+    // never pull one in.
+    const endMs = resolveEventEndMs(event, startMs);
     const day = localDay(startMs, tzOffsetH);
     const bucket = byDay.get(day) || { events: 0, lastEndMs: -Infinity };
     bucket.events += 1;
@@ -200,6 +236,20 @@ function indexEventDays(events, tzOffsetH) {
     byDay.set(day, bucket);
   }
   return byDay;
+}
+
+// The weekday of the EVENING the row describes. `day` is what the question carried and what the row
+// is keyed to; answered_at is when the person tapped, which for a bedtime question is very often the
+// next calendar day already. Reading the weekday off the instant would report Fridays to a user whose
+// hard nights are Thursdays. Rows written before the day was carried (or fixtures without one) fall
+// back to the instant, which is all there is for them.
+function sampleWeekday(sample, tzOffsetH) {
+  const day = sample && sample.day ? String(sample.day) : "";
+  if (DAY_PATTERN.test(day)) {
+    const ms = Date.parse(`${day}T00:00:00Z`);
+    if (Number.isFinite(ms)) return new Date(ms).getUTCDay();
+  }
+  return localWeekday(sample.atMs, tzOffsetH);
 }
 
 function isAfterBusyDay(sample, dayIndex, tzOffsetH) {
@@ -229,7 +279,7 @@ function detectPreceptsPattern({ answers = [], events = [], tzOffsetH = 0 } = {}
 
   const byWeekday = new Map();
   for (const sample of subjectSamples) {
-    const weekday = localWeekday(sample.atMs, tzOffsetH);
+    const weekday = sampleWeekday(sample, tzOffsetH);
     byWeekday.set(weekday, [...(byWeekday.get(weekday) || []), sample]);
   }
   let weekdayGroup = null;
@@ -363,10 +413,13 @@ async function readPatternEvents(uid, nowMs, deps) {
     apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
     calendar: deps.calendar, gmailAccountId: deps.gmailAccountId,
   });
-  return (Array.isArray(events) ? events : []).map((event) => ({
-    startMs: Number(event.startMs),
-    endMs: Number.isFinite(Number(event.endMs)) ? Number(event.endMs) : Number(event.startMs) + 3600000,
-  })).filter((event) => Number.isFinite(event.startMs));
+  // Only the two numbers the busy rule reads survive this projection — no summary, no attendees, no
+  // location. The end is the provider's own where it exists and the documented start+1h assumption
+  // where it does not (see resolveEventEndMs).
+  return (Array.isArray(events) ? events : [])
+    .map((event) => ({ startMs: Number(event.startMs), raw: event }))
+    .filter((event) => Number.isFinite(event.startMs))
+    .map(({ startMs, raw }) => ({ startMs, endMs: resolveEventEndMs(raw, startMs) }));
 }
 
 async function preceptsMirrorOnce(u, nowMs, deps = {}) {
@@ -395,6 +448,12 @@ async function preceptsMirrorOnce(u, nowMs, deps = {}) {
     return { status: "suppressed", reason: "outside-bedtime-window" };
   }
   const day = localDay(nowMs, offsetH);
+  // Fail closed on cap accounting, shared with the question leg: both spend MENTAL's three, so a day
+  // whose budget row was lost stands BOTH of them down. Checked before the reads — a stood-down organ
+  // costs nothing.
+  if (isBudgetUnrecorded(u.uid, day)) {
+    return { status: "suppressed", reason: "budget-unrecorded" };
+  }
 
   let lastMirrorDay;
   let answers;
@@ -444,6 +503,9 @@ async function preceptsMirrorOnce(u, nowMs, deps = {}) {
   const budgeted = await (deps.recordMentalSend || recordMentalSend)(
     u.uid, MIRROR_SEND_TRIGGER, messageId, supa, fetchImpl,
   );
+  // Delivered, and the cap never saw it. Stand the organ down for the day rather than let the
+  // question leg keep spending an accounting we know is short.
+  if (!budgeted) markBudgetUnrecorded(u.uid, day);
   return {
     status: "mirrored",
     day,

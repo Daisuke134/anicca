@@ -241,6 +241,24 @@ test("keeps all-day (date-only) events — a care visit logged all-day is still 
   assert.deepEqual(events[1].start, { date: "2026-06-21" });
 });
 
+test("the END of a timed event survives the projection — a consumer must not have to invent one", async () => {
+  // H4's weekly mirror asks "did the block run into the evening this tap is about". Without endMs
+  // here every consumer had to fabricate start+1h and then reason as if it were measured.
+  const cal = fakeCalendar([
+    { id: "t1", summary: "定例", start: { dateTime: "2026-05-01T09:00:00Z" }, end: { dateTime: "2026-05-01T17:30:00Z" } },
+    { id: "t2", summary: "散髪", start: { date: "2026-06-21" } },                       // all-day: no end instant
+    { id: "t3", summary: "壊れた予定", start: { dateTime: "2026-05-02T09:00:00Z" }, end: { dateTime: "not a time" } },
+  ]);
+  const events = await fetchCalendarHistory("uid", { nowMs: NOW, calendar: cal });
+  const byId = Object.fromEntries(events.map((e) => [e.id, e]));
+  assert.equal(byId.t1.endMs, Date.parse("2026-05-01T17:30:00Z"), "a real end must be reported as itself");
+  assert.equal(byId.t2.endMs, null, "an all-day event has no end instant, and null says so");
+  assert.equal(byId.t3.endMs, null, "an unparseable end is an absent end, never a guessed one");
+  // Additive: every key the care callers already read is untouched.
+  assert.equal(byId.t1.summary, "定例");
+  assert.deepEqual(byId.t2.start, { date: "2026-06-21" });
+});
+
 test("drops id-less items and events starting after now — history holds only real past visits", async () => {
   const cal = fakeCalendar([
     { summary: "no-id", start: { dateTime: "2026-05-01T09:00:00Z" } },

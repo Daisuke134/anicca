@@ -18,11 +18,20 @@
 //   STRICT LEDGER READS + A LOG-ONCE LATCH. An unreadable history never becomes "never asked" —
 //     that is how a weekly cap turns into a nightly one during an incident — but the 60s tick must
 //     not narrate the same outage 30 times. One line per user per local day.
-//   THE DAY RIDES IN THE CALLBACK. A keyboard never expires on its own, so the tap says which night
-//     it is about; a tap from an older night is refused VISIBLY rather than back-filled.
+//   THE DAY AND THE CLOCK BOTH RIDE IN THE CALLBACK. A keyboard never expires on its own, so the tap
+//     says which night it is about AND which UTC offset produced that night. The second half matters
+//     because the two halves of this organ run in different processes with different views of the
+//     schema: the scheduler joins lm_panel_preferences.call_time_zone onto the user row, while the
+//     webhook's rowByChatId selects lm_users — which has no timezone column. A handler that
+//     re-resolves the offset therefore judges "is this still tonight?" against a different midnight
+//     than the ask used. The ask moment is the source of truth, so it ships its own answer.
 //   WHOSE CLOCK. deps.tzOffsetH → the user row's own zone → LM_PRECEPTS_UTC_OFFSET_HOURS → NOTHING.
 //     When the chain runs out the organ stays SILENT for that user and says so once per boot. A
 //     default of JST would ask a Berlin user this question at 06:30.
+//   FAIL CLOSED ON CAP ACCOUNTING. recordMentalSend is best-effort by contract (the message is
+//     already delivered when it runs), so it can return false. That means the shared 3/day cap did
+//     not see a send it should have seen. Rather than keep spending a budget we can no longer count,
+//     both legs stand down for the rest of that local day and say `budgeted:false` out loud.
 //
 // AND THE ONE THING H2 DOES NOT DO — H4 ⑤, 別枠にしない. The ask is a MENTAL send: it reads
 // lm_mental_send_log before deciding (3/day cap, 2h spacing) and writes to it after delivering. The
@@ -39,12 +48,20 @@ const {
 const { PRECEPTS_STRINGS } = require("./i18n.js");
 const { sendMessage } = require("./telegram.js");
 const { reflectAnswer } = require("./telegram-callback-visibility.js");
-const { localDay, resolveUserTzOffsetH } = require("./user-tz.js");
+const { localDay, localMinuteOfDay, resolveUserTzOffsetH } = require("./user-tz.js");
 const { resolveSleepTarget } = require("./mental-runtime.js");
 const { readMentalSendState, recordMentalSend } = require("./mental-send-log.js");
 
-// The ask day rides in the callback data (see preceptsQuestionMessage).
-const PRECEPTS_CALLBACK = /^precepts:answer:(lie|harsh|time|impulse|calm):(\d{4}-\d{2}-\d{2})$/;
+// The ask day AND the offset that produced it both ride in the callback data (see
+// preceptsQuestionMessage). The offset group covers every real zone: whole hours, the quarter- and
+// half-hour zones (Kathmandu +5.75, Adelaide +9.5), and the negative side.
+const PRECEPTS_CALLBACK =
+  /^precepts:answer:(lie|harsh|time|impulse|calm):(\d{4}-\d{2}-\d{2}):(-?\d{1,2}(?:\.\d{1,2})?)$/;
+// How long after the described evening a tap is still an answer ABOUT that evening. The question
+// ships at most 30 minutes before bedtime, so a large share of honest answers arrive after the user's
+// own midnight — refusing those would refuse the ordinary case. The morning after is still the same
+// night to the person answering; the afternoon after is a different day to everyone.
+const ANSWER_GRACE_MINUTES = 12 * 60;
 const WEEK_MS = 7 * 86400000;
 // The MENTAL trigger token these sends are recorded under. Both are new legal values of
 // lm_mental_send_log.trigger — see migrations/2026-07-27-lm-mental-send-log-precepts-trigger.sql.
@@ -76,13 +93,33 @@ function resolvePreceptsSleepTarget(deps, nowMs, offsetH) {
   return resolveSleepTarget(clock, nowMs, offsetH);
 }
 
-// Two log latches, both module state ON PURPOSE — being module state is what makes them latches.
+// Three latches, all module state ON PURPOSE — being module state is what makes them latches.
 const MISSING_TZ_LOGGED = new Set();          // uid → warned once since boot
 const LEDGER_UNREADABLE_LOGGED = new Set();   // `${uid}|${day}` → warned once for that day
+// `${uid}|${day}` → a delivered message whose lm_mental_send_log row did NOT land. The shared 3/day
+// cap has stopped counting this organ, so this organ stops spending it for the rest of that local
+// day. In memory rather than in the ledger on purpose: the failure is that a WRITE failed, and a
+// fail-closed rule that depends on the same write is not a rule. Cost, stated: a restart clears it,
+// which trades a bounded over-send at the boundary for never freezing a stand-down we cannot lift.
+const BUDGET_UNRECORDED = new Set();
 
 function resetPreceptsRuntimeState() {
   MISSING_TZ_LOGGED.clear();
   LEDGER_UNREADABLE_LOGGED.clear();
+  BUDGET_UNRECORDED.clear();
+}
+
+function budgetLatchKey(uid, day) {
+  return `${uid}|${day}`;
+}
+
+// Shared with the mirror leg: both spend the SAME cap, so a cap that stopped counting must stop both.
+function markBudgetUnrecorded(uid, day) {
+  BUDGET_UNRECORDED.add(budgetLatchKey(uid, day));
+}
+
+function isBudgetUnrecorded(uid, day) {
+  return BUDGET_UNRECORDED.has(budgetLatchKey(uid, day));
 }
 
 function logOnce(latch, key, log, line) {
@@ -118,6 +155,13 @@ async function readPreceptsAskState(uid, nowMs, supa, fetchImpl, tzOffsetH = 0) 
 // 201 = this tick owns the (uid, day, kind) slot. 409 / PostgREST 23505 = another tick or another tap
 // already owns it. Anything else is a real failure and THROWS: a Supabase 500 is not "already
 // claimed", and swallowing it would silently drop the row we are about to act on.
+//
+// THE BODY IS READ AND THEN DROPPED. PostgREST echoes the offending row back in its error payload,
+// and the offending row here is the answer token — the single most private thing this product
+// records. This error message is thrown into a catch that logs it next to a uid, so quoting the body
+// would put "which of the five did this person tap" into the log stream of an ordinary insert
+// failure. The status is the whole diagnosis a caller needs; the body is only ever consulted for the
+// duplicate-key code, and nothing survives that consultation.
 async function claimPreceptsRow(row, supa, fetchImpl) {
   const response = await fetchImpl(`${supaBase(supa.supaUrl)}/rest/v1/lm_precepts_log`, {
     method: "POST",
@@ -128,8 +172,7 @@ async function claimPreceptsRow(row, supa, fetchImpl) {
   if (response && response.status === 409) return false;
   const body = response && typeof response.text === "function" ? await response.text().catch(() => "") : "";
   if (/23505|duplicate key/i.test(body)) return false;
-  throw new Error(`precepts log insert failed (${response ? response.status : "no response"})`
-    + `${body ? `: ${body.slice(0, 200)}` : ""}`);
+  throw new Error(`precepts log insert failed (${response ? response.status : "no response"})`);
 }
 
 async function readPreceptsRow(uid, day, kind, supa, fetchImpl) {
@@ -172,6 +215,11 @@ async function preceptsUserOnce(u, nowMs, deps = {}) {
     return { status: "suppressed", reason: "outside-bedtime-window" };
   }
   const day = localDay(nowMs, offsetH);
+  // Fail closed BEFORE the reads: a day whose cap accounting is already broken must cost nothing,
+  // not one more round trip to a ledger we have stopped believing.
+  if (isBudgetUnrecorded(u.uid, day)) {
+    return { status: "suppressed", reason: "budget-unrecorded" };
+  }
 
   let state;
   let mentalState;
@@ -209,8 +257,9 @@ async function preceptsUserOnce(u, nowMs, deps = {}) {
   }, supa, fetchImpl);
   if (!claimed) return { status: "already_asked" };
 
-  // The keyboard carries `day`, so this exact question can only ever be answered as this night.
-  const message = preceptsQuestionMessage(day);
+  // The keyboard carries `day` AND `offsetH`, so this exact question can only ever be answered as
+  // this night, judged by the clock that chose it.
+  const message = preceptsQuestionMessage(day, offsetH);
   const sent = await (deps.sendMessage || sendMessage)(
     deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
     chatId, message.text, message.extra,
@@ -222,6 +271,9 @@ async function preceptsUserOnce(u, nowMs, deps = {}) {
   const budgeted = await (deps.recordMentalSend || recordMentalSend)(
     u.uid, PRECEPTS_SEND_TRIGGER, messageId, supa, fetchImpl,
   );
+  // The message is out and the cap did not see it. Stand down for the day rather than keep spending
+  // an accounting we know is short — and hand the fact back so the scheduler can print it.
+  if (!budgeted) markBudgetUnrecorded(u.uid, day);
   return { status: "asked", day, telegramMessageId: messageId, budgeted };
 }
 
@@ -231,7 +283,7 @@ async function preceptsUserOnce(u, nowMs, deps = {}) {
 async function handlePreceptsCallback(data, opts = {}) {
   const match = PRECEPTS_CALLBACK.exec(String(data || ""));
   if (!match) return { ignored: true };
-  const [, answer, askedDay] = match;
+  const [, answer, askedDay, askedOffset] = match;
   const copy = PRECEPTS_STRINGS.ja.nightQuestion;
   const row = opts.row || null;
   const chatId = String(opts.chatId || "");
@@ -256,15 +308,23 @@ async function handlePreceptsCallback(data, opts = {}) {
 
   // The row's day comes from the QUESTION, never from the clock at tap time. A tap at 00:20 is still
   // an answer about the evening that just ended, and filing it as the next day would invent a night
-  // that was never asked about.
+  // that was never asked about. `answered_at` still records the instant the tap really happened, so
+  // the ledger says both true things: which evening this is about, and when the person answered.
   const day = askedDay;
+  // The offset comes from the QUESTION too — see the header. Not from opts, not from the row, not
+  // from env: those are the webhook's guesses, and the ask already knew.
+  const offsetH = Number(askedOffset);
 
-  // Stale taps are refused rather than back-filled: an answer arriving days later is not evidence
-  // about the night it names any more. The tz chain may end in null here (the webhook has no
-  // per-user zone to read); when it does we cannot say what "today" is, so we do NOT guess — we
-  // accept the tap under the day it carries, which is safe precisely because the day is carried.
-  const offsetH = resolvePreceptsTzOffsetH(opts, row, nowMs);
-  if (offsetH !== null && day !== localDay(nowMs, offsetH)) {
+  // FRESHNESS, and why it is not "today only". The question ships at most 30 minutes before the
+  // user's bedtime target, so answers routinely land after their own midnight — that is the ordinary
+  // path, not an edge case, and the previous today-only rule refused it while its own comment
+  // promised the opposite. A tap is accepted while it is still the described evening, or still that
+  // evening's morning (ANSWER_GRACE_MINUTES past local midnight). Past that it is refused: an answer
+  // arriving the following afternoon is a memory of a night, not a reading of it.
+  const today = localDay(nowMs, offsetH);
+  const yesterday = localDay(nowMs - 86400000, offsetH);
+  const stillTheMorningAfter = day === yesterday && localMinuteOfDay(nowMs, offsetH) < ANSWER_GRACE_MINUTES;
+  if (day !== today && !stillTheMorningAfter) {
     // CB-1: strip the dead keyboard WITHOUT claiming a choice, then say why the button did nothing.
     await reflectPreceptsTap(opts, "", "");
     await (opts.sendMessage || sendMessage)(token, chatId, copy.expired);
@@ -316,6 +376,9 @@ function reflectPreceptsTap(opts, label, messageText) {
 module.exports = {
   PRECEPTS_CALLBACK,
   PRECEPTS_SEND_TRIGGER,
+  ANSWER_GRACE_MINUTES,
+  markBudgetUnrecorded,
+  isBudgetUnrecorded,
   resolvePreceptsTzOffsetH,
   resolvePreceptsSleepTarget,
   resetPreceptsRuntimeState,

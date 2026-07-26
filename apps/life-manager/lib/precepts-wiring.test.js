@@ -225,12 +225,39 @@ test("production default wires the real modules (not a stub that can silently va
 test("the webhook router knows the precepts prefix", () => {
   const { routeCallbackData } = require("./telegram.js");
   return Promise.all([
-    routeCallbackData("precepts:answer:harsh:2026-07-27", { precepts: async () => ({ handled: true }) })
+    routeCallbackData("precepts:answer:harsh:2026-07-27:9", { precepts: async () => ({ handled: true }) })
       .then((r) => assert.deepEqual(r, { handled: true })),
     // An unrouted prefix must not fall through into another organ's handler.
-    routeCallbackData("precepts:answer:harsh:2026-07-27", { diet: async () => ({ handled: true }) }, () => {})
+    routeCallbackData("precepts:answer:harsh:2026-07-27:9", { diet: async () => ({ handled: true }) }, () => {})
       .then((r) => assert.deepEqual(r, { ignored: true })),
   ]);
+});
+
+test("the scheduler's own log line says whether the shared cap actually recorded the send", async () => {
+  // budgeted:false means the message went out and lm_mental_send_log never saw it. If that only
+  // lives in a returned object nobody prints, the cap drifts in silence.
+  const lines = [];
+  const originalLog = console.log;
+  console.log = (line) => lines.push(String(line));
+  try {
+    await scheduler.wakeUserOnce(USER, NOW, deps({
+      precepts: async () => ({ status: "asked", day: "2026-07-27", budgeted: false, telegramMessageId: 7 }),
+    }));
+    await scheduler.wakeUserOnce(USER, NOW, deps({
+      preceptsMirror: async () => ({
+        status: "mirrored", day: "2026-07-26", answerCount: 3, pattern: "weekday",
+        telegramMessageId: 9, budgeted: false,
+      }),
+    }));
+  } finally {
+    console.log = originalLog;
+  }
+  const question = lines.find((l) => l.startsWith("[precepts] "));
+  const mirror = lines.find((l) => l.startsWith("[precepts-mirror] "));
+  assert.ok(question, `the question outcome must be logged, got ${JSON.stringify(lines)}`);
+  assert.match(question, /budgeted=false/);
+  assert.ok(mirror, `the mirror outcome must be logged, got ${JSON.stringify(lines)}`);
+  assert.match(mirror, /budgeted=false/);
 });
 
 test("server.js really mounts the precepts callback handler", () => {

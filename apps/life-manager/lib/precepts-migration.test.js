@@ -109,6 +109,17 @@ test("the old constraint is found by DEFINITION, so a guessed name cannot no-op 
   assert.match(TRIGGER_SQL, /ADD CONSTRAINT lm_mental_send_log_trigger_check/i);
 });
 
+test("the match is COUNTED, and anything other than exactly one aborts and names what it found", () => {
+  // A definition match is a search, and a search can return 0 or 3. A loop that drops whatever it
+  // finds would silently delete an unrelated CHECK that happens to mention pre_sleep, or silently do
+  // nothing at all and then fail on a duplicate ADD. Both end as "the migration ran fine".
+  assert.match(TRIGGER_SQL, /array_length\(/i, "the matched constraints must be counted, not iterated blindly");
+  assert.match(TRIGGER_SQL, /<>\s*1/, "exactly one match is the only shape this migration may proceed on");
+  assert.match(TRIGGER_SQL, /RAISE EXCEPTION/i);
+  assert.match(TRIGGER_SQL, /array_to_string\(/i, "the exception must NAME the constraints it found");
+  assert.doesNotMatch(TRIGGER_SQL, /\bFOR\s+\w+\s+IN\b/i, "no drop loop — a loop is what makes a multi-drop silent");
+});
+
 test("the ALTER touches no row and drops no column", () => {
   assert.doesNotMatch(TRIGGER_SQL, /\bDROP (TABLE|COLUMN)\b/i);
   assert.doesNotMatch(TRIGGER_SQL, /\b(DELETE FROM|TRUNCATE|UPDATE)\b/i);

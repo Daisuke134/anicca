@@ -97,6 +97,16 @@ async function saveField(uid, patch, supaUrl, supaKey) {
     body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }),
   }).catch(() => {});
 }
+// NO TIMEZONE HERE, ON PURPOSE (H4). The only per-user zone in this schema is
+// lm_panel_preferences.call_time_zone; SEL is a lm_users projection, so every webhook handler that
+// asks "what day is it for this person" gets whatever env fallback its organ carries — which is not
+// necessarily the offset the SENDING side used. PostgREST could embed it (lm_panel_preferences.uid
+// REFERENCES lm_users.uid, so `select=...,lm_panel_preferences(call_time_zone)` would resolve), and
+// that is deliberately NOT done: it adds a join and a nested array to a query on the hot path of
+// every callback and every typed message, for eight call sites of which one wanted it. The precepts
+// organ instead carries its resolved offset inside the callback data, which is strictly better than
+// a join — it makes the ASK MOMENT the source of truth rather than re-deriving an answer that can
+// drift. Any future handler with the same need should carry it the same way.
 async function rowByChatId(chatId, supaUrl, supaKey) {
   const response = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=eq.${encodeURIComponent(chatId)}&select=${SEL}&limit=1`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });

@@ -125,8 +125,8 @@ test("identical input yields identical output — no clock, no env, no I/O", () 
 
 // ── the message ───────────────────────────────────────────────────────────────────────────────────
 
-test("five taps, quoted from the copy, each carrying the night it belongs to", () => {
-  const message = preceptsQuestionMessage("2026-07-27");
+test("five taps, each carrying the night it belongs to AND the clock that decided it", () => {
+  const message = preceptsQuestionMessage("2026-07-27", 9);
   const copy = PRECEPTS_STRINGS.ja.nightQuestion;
   assert.equal(message.text, copy.text);
   const buttons = message.extra.reply_markup.inline_keyboard.flat();
@@ -135,13 +135,33 @@ test("five taps, quoted from the copy, each carrying the night it belongs to", (
     copy.lieButton, copy.harshButton, copy.timeButton, copy.impulseButton, copy.calmButton,
   ]);
   assert.deepEqual(buttons.map((b) => b.callback_data), [
-    "precepts:answer:lie:2026-07-27", "precepts:answer:harsh:2026-07-27",
-    "precepts:answer:time:2026-07-27", "precepts:answer:impulse:2026-07-27",
-    "precepts:answer:calm:2026-07-27",
+    "precepts:answer:lie:2026-07-27:9", "precepts:answer:harsh:2026-07-27:9",
+    "precepts:answer:time:2026-07-27:9", "precepts:answer:impulse:2026-07-27:9",
+    "precepts:answer:calm:2026-07-27:9",
   ]);
   // Telegram's hard limit. A callback that silently truncates is a tap that files the wrong night.
   for (const button of buttons) {
     assert.ok(Buffer.byteLength(button.callback_data) <= 64, button.callback_data);
+  }
+});
+
+test("the carried offset survives the zones that are not whole hours, and the negative ones", () => {
+  const dataFor = (offsetH) => preceptsQuestionMessage("2026-07-27", offsetH)
+    .extra.reply_markup.inline_keyboard.flat()[0].callback_data;
+  assert.equal(dataFor(-4), "precepts:answer:lie:2026-07-27:-4");
+  assert.equal(dataFor(5.5), "precepts:answer:lie:2026-07-27:5.5");
+  assert.equal(dataFor(5.75), "precepts:answer:lie:2026-07-27:5.75");
+  assert.equal(dataFor(-9.5), "precepts:answer:lie:2026-07-27:-9.5");
+  assert.equal(dataFor(0), "precepts:answer:lie:2026-07-27:0");
+  // The longest legal callback is still far inside Telegram's 64 bytes.
+  const longest = preceptsQuestionMessage("2026-07-27", -12.75)
+    .extra.reply_markup.inline_keyboard.flat().map((b) => b.callback_data);
+  for (const data of longest) assert.ok(Buffer.byteLength(data) <= 64, data);
+});
+
+test("a message without a resolvable offset is refused — a keyboard cannot carry a guess", () => {
+  for (const bad of [undefined, null, "nine", NaN, Infinity]) {
+    assert.throws(() => preceptsQuestionMessage("2026-07-27", bad), /offset/i);
   }
 });
 
@@ -158,7 +178,7 @@ test("the labels the mirror and the CB-1 edit use come from the copy, never rest
 
 test("a message without a day is refused — a dayless keyboard files taps against the wrong night", () => {
   for (const bad of [undefined, null, "", "2026-7-27", "tonight"]) {
-    assert.throws(() => preceptsQuestionMessage(bad), /local day/);
+    assert.throws(() => preceptsQuestionMessage(bad, 9), /local day/);
   }
 });
 

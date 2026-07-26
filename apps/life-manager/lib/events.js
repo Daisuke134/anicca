@@ -85,6 +85,9 @@ async function fetchNextEvent(uid, opts = {}) {
 //   - all-day (date-only) events are KEPT — a barber visit logged all-day is still a visit
 //   - no interpretCalendarEvent filter — "no_call" is a call decision, not a history decision
 //   - the raw `start` object survives so detectCalendarCare can parse dateTime/date itself
+//   - endMs is reported when the source has end.dateTime, and NULL otherwise (all-day rows, or an
+//     end the provider could not give). Null means "unknown", never "zero" and never a guess: a
+//     consumer that needs a duration owns and documents its own assumption.
 //   - STRICT reads: a transport/API failure PROPAGATES (throws) instead of returning []. The wake
 //     path's swallow-to-[] is load-bearing there, but here the caller (careUserOnce) persists an
 //     append-only once-per-day claim — "the read failed" must never look like "empty calendar",
@@ -148,7 +151,19 @@ async function fetchCalendarHistory(uid, opts = {}) {
     const raw = (e.start || {}).dateTime || (e.start || {}).date;
     const startMs = raw ? Date.parse(raw) : NaN;
     if (!Number.isFinite(startMs) || startMs > nowMs) continue; // history holds only real past visits
-    out.push({ id, summary: e.summary || "", location: e.location || null, startMs, start: e.start });
+    // endMs is ADDITIVE (H4: the weekly mirror asks whether a day's events ran into the evening a
+    // bedtime answer is about, and a projection with no end forces every consumer to invent one and
+    // then reason as if it had been measured). Timed events only: an all-day row has no end instant,
+    // and NULL is the honest report of that — a caller that needs a duration must choose and DOCUMENT
+    // its own assumption rather than receive a fabricated end wearing the provider's authority. Care
+    // callers read id/summary/location/startMs/start and are untouched by an extra key.
+    const endRaw = (e.end || {}).dateTime;
+    const endParsed = endRaw ? Date.parse(endRaw) : NaN;
+    out.push({
+      id, summary: e.summary || "", location: e.location || null, startMs,
+      endMs: Number.isFinite(endParsed) ? endParsed : null,
+      start: e.start,
+    });
   }
   out.sort((a, b) => a.startMs - b.startMs);
   return out;

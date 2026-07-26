@@ -15,7 +15,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   preceptsUserOnce, handlePreceptsCallback, readPreceptsAskState, resetPreceptsRuntimeState,
-  PRECEPTS_CALLBACK, PRECEPTS_SEND_TRIGGER,
+  claimPreceptsRow, PRECEPTS_CALLBACK, PRECEPTS_SEND_TRIGGER,
 } = require("./precepts-runtime.js");
 const { PRECEPTS_STRINGS } = require("./i18n.js");
 
@@ -147,15 +147,29 @@ test("in the window with a clean history, the question is sent once and the ask 
   assert.equal(db.inserts[0].answer, undefined, "an ask row carries no answer");
 });
 
-test("every button carries the night it was asked, so a tap can never be filed against another", async () => {
+test("every button carries the night AND the offset that decided it, so a tap cannot be re-judged", async () => {
   const db = supabase();
   const tg = telegram();
   await preceptsUserOnce(USER, NIGHT, deps(db, tg));
   assert.deepEqual(tg.sent[0].extra.reply_markup.inline_keyboard.flat().map((b) => b.callback_data), [
-    "precepts:answer:lie:2026-07-27", "precepts:answer:harsh:2026-07-27",
-    "precepts:answer:time:2026-07-27", "precepts:answer:impulse:2026-07-27",
-    "precepts:answer:calm:2026-07-27",
+    "precepts:answer:lie:2026-07-27:9", "precepts:answer:harsh:2026-07-27:9",
+    "precepts:answer:time:2026-07-27:9", "precepts:answer:impulse:2026-07-27:9",
+    "precepts:answer:calm:2026-07-27:9",
   ]);
+});
+
+test("the offset the ASK resolved is the one the keyboard carries, not the fleet default", async () => {
+  // The webhook cannot see lm_panel_preferences.call_time_zone (rowByChatId selects lm_users only),
+  // so an offset the handler has to re-resolve is an offset that can differ from the ask's. New York
+  // must therefore ship -4 in the callback itself.
+  const nyUser = { ...USER, call_time_zone: "America/New_York" };
+  const tg = telegram();
+  const outcome = await preceptsUserOnce(nyUser, Date.parse("2026-07-28T03:10:00Z"), {
+    ...deps(supabase(), tg), tzOffsetH: undefined, sleepTargetMs: undefined,
+  });
+  assert.equal(outcome.day, "2026-07-27");
+  assert.deepEqual(tg.sent[0].extra.reply_markup.inline_keyboard.flat().map((b) => b.callback_data)[0],
+    "precepts:answer:lie:2026-07-27:-4");
 });
 
 test("the night is CLAIMED before the message is sent", async () => {
@@ -247,6 +261,34 @@ test("the lookup itself throws — an unreadable history is never handed back as
   await assert.rejects(() => readPreceptsAskState("u", NIGHT, SUPA, fetchImpl, JST), /precepts ask state/i);
 });
 
+test("a failed insert reports the STATUS and nothing else — the row never reaches a log line", async () => {
+  // PostgREST echoes the offending row back in its error body. That row is the answer token, and this
+  // error message travels straight into console.error next to the uid. A status is diagnosis enough.
+  const leaky = JSON.stringify({
+    code: "23514", message: "new row for relation \"lm_precepts_log\" violates check constraint",
+    details: "Failing row contains (u-precepts, 2026-07-27, answer, harsh).",
+  });
+  const fetchImpl = async () => ({ ok: false, status: 500, text: async () => leaky, json: async () => ({}) });
+  await assert.rejects(
+    () => claimPreceptsRow({ uid: "u-precepts", day: "2026-07-27", kind: "answer", answer: "harsh" }, SUPA, fetchImpl),
+    (error) => {
+      assert.match(error.message, /precepts log insert failed \(500\)/);
+      for (const leak of ["harsh", "Failing row", "u-precepts", "check constraint"]) {
+        assert.ok(!error.message.includes(leak), `the thrown message must not carry ${leak}: ${error.message}`);
+      }
+      return true;
+    },
+  );
+});
+
+test("a 23505 hidden in the body is still read as 'already claimed', without quoting the body", async () => {
+  const fetchImpl = async () => ({
+    ok: false, status: 400, json: async () => ({}),
+    text: async () => JSON.stringify({ code: "23505", message: "duplicate key value violates unique constraint" }),
+  });
+  assert.equal(await claimPreceptsRow({ uid: "u", day: "2026-07-27", kind: "ask" }, SUPA, fetchImpl), false);
+});
+
 test("a transient read failure is logged ONCE per user per day, not once per 60s tick", async () => {
   const fetchImpl = async () => response(500, { message: "boom" });
   const tg = telegram();
@@ -318,6 +360,40 @@ test("a delivered question SPENDS one of MENTAL's three, recorded under its own 
   assert.equal(String(db.mentalInserts[0].telegram_message_id), String(outcome.telegramMessageId));
 });
 
+test("a LOST budget row is reported, and stands the organ down for the rest of that day", async () => {
+  // recordMentalSend is best-effort by contract: the message is already delivered when it runs. A
+  // false here means the shared 3/day cap did not see a send it should have seen, so the honest move
+  // is to stop spending a cap we can no longer count — fail CLOSED, not "probably fine".
+  const db = supabase();
+  const tg = telegram();
+  const failing = deps(db, tg, { recordMentalSend: async () => false });
+  const asked = await preceptsUserOnce(USER, NIGHT, failing);
+  assert.equal(asked.status, "asked");
+  assert.equal(asked.budgeted, false, "the outcome must say the cap did not record this send");
+
+  // A later tick in the same local day is refused BEFORE any read — the latch is the whole point.
+  let reads = 0;
+  const counted = { fetchImpl: async (...args) => { reads += 1; return db.fetchImpl(...args); } };
+  const later = await preceptsUserOnce(USER, NIGHT + 5 * 60000, deps(counted, tg));
+  assert.equal(later.status, "suppressed");
+  assert.equal(later.reason, "budget-unrecorded");
+  assert.equal(reads, 0, "a stood-down organ must not even read");
+
+  // The latch is per (uid, local day): the next night is a new day and a new budget.
+  const tomorrow = await preceptsUserOnce(USER, NIGHT + 86400000, deps(supabase(), tg, {
+    sleepTargetMs: SLEEP + 86400000,
+  }));
+  assert.equal(tomorrow.status, "asked", "the stand-down lasts a day, not forever");
+});
+
+test("a recorded budget row leaves no latch behind", async () => {
+  const db = supabase();
+  const tg = telegram();
+  assert.equal((await preceptsUserOnce(USER, NIGHT, deps(db, tg))).budgeted, true);
+  const later = await preceptsUserOnce(USER, NIGHT + 5 * 60000, deps(db, tg));
+  assert.notEqual(later.reason, "budget-unrecorded", "a healthy budget must not stand the organ down");
+});
+
 test("a question that never reached anyone does NOT spend the budget", async () => {
   const db = supabase();
   const outcome = await preceptsUserOnce(USER, NIGHT, deps(db, telegram(), {
@@ -371,19 +447,25 @@ function callbackOpts(db, tg, overrides = {}) {
   };
 }
 
-test("the callback pattern accepts exactly the five answers, each carrying its ask day", () => {
+test("the callback pattern accepts exactly the five answers, each carrying its ask day AND offset", () => {
   for (const answer of ["lie", "harsh", "time", "impulse", "calm"]) {
-    assert.ok(PRECEPTS_CALLBACK.test(`precepts:answer:${answer}:2026-07-27`));
+    assert.ok(PRECEPTS_CALLBACK.test(`precepts:answer:${answer}:2026-07-27:9`));
   }
-  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:anger:2026-07-27"));
-  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh:extra"));
-  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh"), "a dayless tap cannot be filed against a night");
+  for (const offset of ["-4", "0", "5.5", "5.75", "-9.5", "14"]) {
+    assert.ok(PRECEPTS_CALLBACK.test(`precepts:answer:harsh:2026-07-27:${offset}`), offset);
+  }
+  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:anger:2026-07-27:9"));
+  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh:extra:9"));
+  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh:9"), "a dayless tap cannot be filed against a night");
+  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh:2026-07-27"),
+    "an offsetless tap would make the handler re-guess the clock the ask already resolved");
+  assert.ok(!PRECEPTS_CALLBACK.test("precepts:answer:harsh:2026-07-27:nine"));
 });
 
 test("a tap persists the choice and answers VISIBLY by editing the question (CB-1 ①)", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, tg));
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, tg));
   assert.equal(outcome.ok, true);
   assert.deepEqual(
     { uid: db.inserts[0].uid, day: db.inserts[0].day, kind: db.inserts[0].kind, answer: db.inserts[0].answer },
@@ -398,14 +480,14 @@ test("a tap persists the choice and answers VISIBLY by editing the question (CB-
 test("no thank-you is sent — the edit IS the response (§10.0-15 ①)", async () => {
   const db = supabase();
   const tg = telegram();
-  await handlePreceptsCallback("precepts:answer:calm:2026-07-27", callbackOpts(db, tg));
+  await handlePreceptsCallback("precepts:answer:calm:2026-07-27:9", callbackOpts(db, tg));
   assert.equal(tg.sent.length, 0, `a tap must not spawn a second message, got ${JSON.stringify(tg.sent)}`);
 });
 
 test("the answer is filed under the day the QUESTION carried; a stale night is refused VISIBLY", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-20", callbackOpts(db, tg));
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-20:9", callbackOpts(db, tg));
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, "expired");
   assert.equal(db.inserts.length, 0, "a week-old question must never write tonight's row");
@@ -414,23 +496,77 @@ test("the answer is filed under the day the QUESTION carried; a stale night is r
   assert.equal(tg.sent[0].text, PRECEPTS_STRINGS.ja.nightQuestion.expired);
 });
 
-test("a tap after local midnight still belongs to the evening it was asked about", async () => {
+// ── the morning after ─────────────────────────────────────────────────────────────────────────────
+//
+// The question ships at most 30 minutes before bedtime. Half its answers therefore arrive after the
+// user's own midnight — that is the ordinary case, not the exceptional one — and the row belongs to
+// the night it describes, not to the calendar day the phone was unlocked on.
+
+test("a tap after local midnight is ACCEPTED, and filed under the evening it describes", async () => {
+  for (const [label, at] of [
+    ["00:05 JST on the 28th", "2026-07-27T15:05:00Z"],
+    ["07:59 JST on the 28th", "2026-07-27T22:59:00Z"],
+  ]) {
+    const db = supabase();
+    const tg = telegram();
+    const nowMs = Date.parse(at);
+    const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9",
+      callbackOpts(db, tg, { nowMs }));
+    assert.equal(outcome.ok, true, `${label} must be accepted, got ${JSON.stringify(outcome)}`);
+    assert.equal(outcome.day, "2026-07-27");
+    assert.equal(db.inserts.length, 1);
+    assert.equal(db.inserts[0].day, "2026-07-27", "the row is keyed to the CARRIED day");
+    assert.equal(db.inserts[0].answered_at, new Date(nowMs).toISOString(),
+      "answered_at says when the tap actually happened — the day is the night, the timestamp is the truth");
+    assert.equal(tg.sent.length, 0, "an accepted tap is not an expiry notice");
+  }
+});
+
+test("a tap a full day later IS expired — 'the next morning' is not 'whenever'", async () => {
   const db = supabase();
   const tg = telegram();
-  // 00:20 JST on the 28th: the question's own day has ended, so the tap expires rather than being
-  // silently re-filed as the 28th — a night nobody was asked about.
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, tg, {
-    nowMs: Date.parse("2026-07-27T15:20:00Z"),
+  // 25 hours after the 23:10 ask: 00:10 JST on the 29th, which is neither the 27th nor its morning.
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, tg, {
+    nowMs: NIGHT + 25 * 3600000,
+  }));
+  assert.equal(outcome.reason, "expired");
+  assert.equal(db.inserts.length, 0);
+  assert.equal(tg.sent[0].text, PRECEPTS_STRINGS.ja.nightQuestion.expired);
+});
+
+test("the afternoon of the following day is expired too — the window closes at local noon", async () => {
+  const db = supabase();
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, telegram(), {
+    nowMs: Date.parse("2026-07-28T03:00:00Z"), // 12:00 JST on the 28th, exactly 12h past midnight
   }));
   assert.equal(outcome.reason, "expired");
   assert.equal(db.inserts.length, 0);
 });
 
+test("the CARRIED offset judges the tap, not whatever clock the webhook can see", async () => {
+  // The webhook resolves nothing (no row zone, no env), which is exactly production: rowByChatId
+  // selects lm_users, and the only per-user zone lives in lm_panel_preferences. The ask carried -4,
+  // so 03:20Z is 23:20 on the 27th in New York and the tap is tonight's.
+  const db = supabase();
+  const tg = telegram();
+  const blind = callbackOpts(db, tg, { tzOffsetH: undefined, row: ROW, nowMs: Date.parse("2026-07-28T03:20:00Z") });
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:-4", blind);
+  assert.equal(outcome.ok, true, `the ask's own offset is the source of truth, got ${JSON.stringify(outcome)}`);
+  assert.equal(db.inserts[0].day, "2026-07-27");
+
+  // The same instant judged by a JST keyboard is 12:20 on the 28th — past the morning window.
+  const jstDb = supabase();
+  const stale = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9",
+    callbackOpts(jstDb, telegram(), { tzOffsetH: undefined, nowMs: Date.parse("2026-07-28T03:20:00Z") }));
+  assert.equal(stale.reason, "expired", "the two offsets must not agree — that is the whole point");
+  assert.equal(jstDb.inserts.length, 0);
+});
+
 test("a second tap gets a visible 'already recorded' reply naming what is ON FILE", async () => {
   const db = supabase();
   const tg = telegram();
-  await handlePreceptsCallback("precepts:answer:time:2026-07-27", callbackOpts(db, tg));
-  const outcome = await handlePreceptsCallback("precepts:answer:calm:2026-07-27", callbackOpts(db, tg));
+  await handlePreceptsCallback("precepts:answer:time:2026-07-27:9", callbackOpts(db, tg));
+  const outcome = await handlePreceptsCallback("precepts:answer:calm:2026-07-27:9", callbackOpts(db, tg));
   assert.equal(outcome.reason, "already_answered");
   assert.equal(db.inserts.length, 1, "the unique index is the guard; no second row");
   assert.equal(tg.sent.length, 1);
@@ -442,14 +578,14 @@ test("a second tap gets a visible 'already recorded' reply naming what is ON FIL
 test("cross-tenant taps are refused: a stranger's actor id writes nothing", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, tg, { actorId: "999" }));
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, tg, { actorId: "999" }));
   assert.equal(outcome.reason, "scope_mismatch");
   assert.equal(db.inserts.length + tg.edits.length, 0);
 });
 
 test("a row that does not name this chat is refused even when the actor matches", async () => {
   const db = supabase();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, telegram(), {
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, telegram(), {
     row: { uid: "someone-else", telegram_chat_id: "555" },
   }));
   assert.equal(outcome.reason, "row_chat_mismatch");
@@ -458,26 +594,26 @@ test("a row that does not name this chat is refused even when the actor matches"
 
 test("an unlinked chat is refused rather than writing an orphan row", async () => {
   const db = supabase();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, telegram(), { row: null }));
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, telegram(), { row: null }));
   assert.equal(outcome.reason, "unlinked");
   assert.equal(db.inserts.length, 0);
 });
 
 test("callbacks that are not ours are ignored, not guessed at", async () => {
   assert.deepEqual(await handlePreceptsCallback("diet:answer:fast:2026-07-27", callbackOpts(supabase(), telegram())), { ignored: true });
-  assert.deepEqual(await handlePreceptsCallback("precepts:answer:anger:2026-07-27", callbackOpts(supabase(), telegram())), { ignored: true });
+  assert.deepEqual(await handlePreceptsCallback("precepts:answer:anger:2026-07-27:9", callbackOpts(supabase(), telegram())), { ignored: true });
 });
 
 test("a persist failure is never dressed up as a recorded answer", async () => {
   const db = { fetchImpl: async () => response(500, { message: "down" }) };
   const tg = telegram();
-  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, tg));
+  const outcome = await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, tg));
   assert.equal(outcome.reason, "persist_failed");
   assert.equal(tg.edits.length, 0, "nothing was recorded, so nothing is shown as recorded");
 });
 
 test("the tap does NOT spend the MENTAL budget — only messages WE send do", async () => {
   const db = supabase();
-  await handlePreceptsCallback("precepts:answer:harsh:2026-07-27", callbackOpts(db, telegram()));
+  await handlePreceptsCallback("precepts:answer:harsh:2026-07-27:9", callbackOpts(db, telegram()));
   assert.equal(db.mentalInserts.length, 0, "the user's own tap is not an unsolicited message");
 });

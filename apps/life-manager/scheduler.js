@@ -264,9 +264,15 @@ function mentalDeps(u, events, deps = {}) {
 
 // readMentalSendState / recordMentalSend moved to lib/mental-send-log.js (imported above) — H4 ⑤
 // makes lm_mental_send_log a SHARED budget, and a budget only one module can reach is not a budget.
-// MENTAL's behaviour is byte-for-byte unchanged: it still calls them non-strict, so an unreadable log
-// still reads as "nothing sent yet" for this organ. Precepts calls them strict and stays silent
-// instead — see lib/mental-send-log.js for why the two callers differ on purpose.
+// MENTAL's semantics are unchanged: it still calls them non-strict, so an unreadable log still reads
+// as "nothing sent yet" for this organ. Precepts calls them strict and stays silent instead — see
+// lib/mental-send-log.js for why the two callers differ on purpose.
+//
+// ONE DELIBERATE DIFFERENCE FROM THE CODE THAT USED TO LIVE HERE, named rather than smuggled: the
+// shared module runs the base URL through supaBase(), which strips a trailing slash. The inline
+// versions interpolated `${supa.url}/rest/v1/...` raw, so a SUPABASE_URL configured with a trailing
+// slash produced `//rest/v1/lm_mental_send_log` — a 404 that reads as "nothing sent yet" and quietly
+// unbounds the 3/day cap. That is a fix, not a refactor, and it applies to MENTAL too.
 
 async function wakeUserOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
@@ -429,8 +435,12 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
       });
       if (mirror && mirror.status === "mirrored") {
         mirrorSentThisTick = true;
+        // budgeted says whether lm_mental_send_log actually recorded this send. A false here means a
+        // delivered message the SHARED 3/day cap cannot see, so it is printed rather than left in a
+        // returned object nobody reads — the organ has already stood itself down for the day.
         console.log(`[precepts-mirror] uid=${String(u.uid).slice(0, 12)} day=${mirror.day}`
-          + ` answers=${mirror.answerCount} pattern=${mirror.pattern} tg_message_id=${mirror.telegramMessageId}`);
+          + ` answers=${mirror.answerCount} pattern=${mirror.pattern} tg_message_id=${mirror.telegramMessageId}`
+          + ` budgeted=${mirror.budgeted === true}`);
       }
     } catch (e) { console.error(`[precepts-mirror] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
     if (!mirrorSentThisTick) {
@@ -441,7 +451,10 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
           events: inProgressEvents(events), getLocationState: deps.getLocationState,
         });
         if (precepts && (precepts.status === "asked" || precepts.status === "send_failed")) {
-          console.log(`[precepts] uid=${String(u.uid).slice(0, 12)} status=${precepts.status} day=${precepts.day}`);
+          // Same reason as the mirror's line: budgeted=false is a delivered message the shared cap
+          // never counted, and a silent cap drift is exactly what H4 ⑤ exists to prevent.
+          console.log(`[precepts] uid=${String(u.uid).slice(0, 12)} status=${precepts.status} day=${precepts.day}`
+            + ` budgeted=${precepts.budgeted === true}`);
         }
       } catch (e) { console.error(`[precepts] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
     }

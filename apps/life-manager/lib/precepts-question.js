@@ -107,14 +107,31 @@ function evaluatePreceptsAsk(input) {
 // Each button CARRIES the day it was asked about, for the reason dietQuestionMessage documents: a
 // Telegram keyboard has no expiry of its own, the question sits in the chat forever, and a tap that
 // lands next week would otherwise be filed as next week's night — a fabricated data point in the one
-// ledger whose whole value is that every row is something the user actually said. Callback data is
-// capped at 64 bytes by Telegram; the longest of these is 34.
-function preceptsQuestionMessage(day) {
+// ledger whose whole value is that every row is something the user actually said.
+//
+// AND IT CARRIES THE OFFSET THAT DECIDED THAT DAY. The ask runs in the scheduler, which joins
+// lm_panel_preferences.call_time_zone onto the user row; the tap runs in the webhook, whose
+// rowByChatId selects lm_users only — a table with no timezone column at all. The handler therefore
+// cannot re-derive the clock the ask used: it would fall back to LM_PRECEPTS_UTC_OFFSET_HOURS (or to
+// nothing) and judge "is this still tonight's question?" against a different midnight than the one
+// that produced the question. Carrying the resolved offset makes the ask moment the single source of
+// truth for both halves. Callback data is capped at 64 bytes by Telegram; the longest of these is 40.
+function formatTzOffsetH(offsetH) {
+  if (!Number.isFinite(offsetH)) {
+    throw new Error("preceptsQuestionMessage needs the resolved UTC offset (hours) the day was computed in");
+  }
+  // Real zones are whole hours or quarter hours, so two decimals is exact and never renders an
+  // exponent. Number() re-parse drops the trailing zeros that would waste callback bytes.
+  return String(Number(Number(offsetH).toFixed(2)));
+}
+
+function preceptsQuestionMessage(day, offsetH) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day || ""))) {
     throw new Error("preceptsQuestionMessage needs the local day (YYYY-MM-DD) the question belongs to");
   }
+  const offset = formatTzOffsetH(offsetH);
   const copy = PRECEPTS_STRINGS.ja.nightQuestion;
-  const tap = (answer) => `precepts:answer:${answer}:${day}`;
+  const tap = (answer) => `precepts:answer:${answer}:${day}:${offset}`;
   return {
     text: copy.text,
     extra: { reply_markup: { inline_keyboard: [[
@@ -149,5 +166,6 @@ module.exports = {
   MENTAL_MIN_GAP_MS: MIN_GAP_MS,
   validateInput,
   evaluatePreceptsAsk,
+  formatTzOffsetH,
   preceptsQuestionMessage,
 };

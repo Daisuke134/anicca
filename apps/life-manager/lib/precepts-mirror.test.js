@@ -13,9 +13,10 @@ const {
   countAnswers, detectPreceptsPattern, evaluatePreceptsMirror, buildMirrorMessage,
   resetPreceptsMirrorState, preceptsMirrorOnce,
 } = require("./precepts-mirror.js");
+const { preceptsUserOnce, resetPreceptsRuntimeState } = require("./precepts-runtime.js");
 const { PRECEPTS_STRINGS } = require("./i18n.js");
 
-test.beforeEach(() => resetPreceptsMirrorState());
+test.beforeEach(() => { resetPreceptsMirrorState(); resetPreceptsRuntimeState(); });
 
 const JST = 9;
 // 2026-07-26 is a SUNDAY. 23:10 JST on it is 14:10Z; the 23:30 bedtime target is 14:30Z.
@@ -30,8 +31,11 @@ const USER = { uid: "u-precepts", telegram_chat_id: "100", notifications_enabled
 const THU_23 = Date.parse("2026-07-23T14:10:00Z"); // 23:10 JST Thursday
 const TUE_21 = Date.parse("2026-07-21T14:10:00Z"); // 23:10 JST Tuesday
 
-function answer(answerValue, atMs) {
-  return { answer: answerValue, atMs, day: new Date(atMs + JST * 3600000).toISOString().slice(0, 10) };
+// A row as readPreceptsAnswers hands it over: the CARRIED day (the evening the question was about)
+// plus the instant the tap actually happened. The two are resolved with the SAME offset in
+// production, so the fixture takes one too rather than hard-coding JST into a New York week.
+function answer(answerValue, atMs, offsetH = JST) {
+  return { answer: answerValue, atMs, day: new Date(atMs + offsetH * 3600000).toISOString().slice(0, 10) };
 }
 
 // ── the pattern rule ──────────────────────────────────────────────────────────────────────────────
@@ -53,10 +57,30 @@ test("two of the same answer on the same weekday is a weekday pattern", () => {
 test("the weekday is the USER's — a New York week is not a Tokyo week", () => {
   // 2026-07-24T02:00Z is Friday 11:00 JST and Thursday 22:00 EDT.
   const instants = [Date.parse("2026-07-24T02:00:00Z"), Date.parse("2026-07-17T02:00:00Z")];
-  const tokyo = detectPreceptsPattern({ answers: instants.map((ms) => answer("harsh", ms)), tzOffsetH: JST });
-  const newYork = detectPreceptsPattern({ answers: instants.map((ms) => answer("harsh", ms)), tzOffsetH: -4 });
+  const tokyo = detectPreceptsPattern({ answers: instants.map((ms) => answer("harsh", ms, JST)), tzOffsetH: JST });
+  const newYork = detectPreceptsPattern({ answers: instants.map((ms) => answer("harsh", ms, -4)), tzOffsetH: -4 });
   assert.equal(tokyo.weekday, 5, "Friday in Tokyo");
   assert.equal(newYork.weekday, 4, "Thursday in New York");
+});
+
+test("the weekday comes from the CARRIED day, so a 00:20 tap is not reported as the next weekday", () => {
+  // The bedtime question ships ≤30 min before sleep, so answers routinely land after local midnight.
+  // The row is keyed to the evening it describes; reading the weekday off answered_at instead would
+  // tell a user their Thursdays were hard when what the calendar shows is Fridays.
+  const thursdayNights = ["2026-07-23", "2026-07-16"];
+  const answers = thursdayNights.map((day) => ({
+    answer: "harsh",
+    // 00:20 JST the NEXT morning: a Friday instant carrying a Thursday night.
+    atMs: Date.parse(`${day}T15:20:00Z`),
+    day,
+  }));
+  const pattern = detectPreceptsPattern({ answers, tzOffsetH: JST });
+  assert.equal(pattern.weekday, 4, `Thursday, the night described — got ${pattern.weekday}`);
+  // And a sample with no carried day still falls back to the instant, unchanged.
+  assert.equal(detectPreceptsPattern({
+    answers: thursdayNights.map((day) => ({ answer: "harsh", atMs: Date.parse(`${day}T15:20:00Z`) })),
+    tzOffsetH: JST,
+  }).weekday, 5, "with nothing carried, the instant is all there is");
 });
 
 test("two answers on different weekdays, with no busy days, is no pattern — facts only", () => {
@@ -83,7 +107,7 @@ test("two events is not a block, and a block that finished before the tail does 
   const nearlyBusy = [0, 1].map((i) => ({ startMs: THU_23 - 10 * 3600000 + i * 3600000, endMs: THU_23 - 9 * 3600000 + i * 3600000 }));
   assert.equal(detectPreceptsPattern({
     answers: [answer("harsh", THU_23), answer("harsh", TUE_21)], events: nearlyBusy, tzOffsetH: JST,
-  }).kind, "none", "two events is not 連続MTG");
+  }).kind, "none", "two events is not the three the sentence claims");
 
   // Three events, but they all ended before dawn of the same local day — well outside the tail.
   const earlyBlock = [0, 1, 2].map((i) => ({
@@ -149,7 +173,7 @@ test("a pattern is stated as a fact, and the combined one is the spec's own sent
   );
   assert.equal(
     buildMirrorMessage({ counts, pattern: { kind: "weekday_busy", answer: "harsh", count: 2, weekday: 4 } }),
-    "🌙 最近4週間の記録です。「きつく当たった」が2回。2回とも木曜の連続MTGの後でした。",
+    "🌙 最近4週間の記録です。「きつく当たった」が2回。2回とも予定が3件以上あった木曜の後でした。",
   );
   assert.equal(
     buildMirrorMessage({ counts, pattern: { kind: "busy", answer: "harsh", count: 2, weekday: null } }),
@@ -353,6 +377,34 @@ test("the mirror spends one of MENTAL's three, under its own trigger token", asy
   assert.equal(db.mentalInserts[0].trigger, "precepts_mirror");
 });
 
+test("a mirror whose budget row is LOST says so, and stands the whole organ down for the day", async () => {
+  const db = supabase(ANSWER_ROWS);
+  const tg = telegram();
+  const outcome = await preceptsMirrorOnce(USER, SUNDAY_NIGHT, mirrorDeps(db, tg, {
+    recordMentalSend: async () => false,
+  }));
+  assert.equal(outcome.status, "mirrored");
+  assert.equal(outcome.budgeted, false, "the outcome must not imply a cap row that never landed");
+
+  // Fail closed ACROSS the legs: the question and the mirror spend the same three, so a cap that
+  // stopped counting must stop BOTH. (The mirror's own claim would have stopped the mirror anyway;
+  // the question is the leg that would otherwise keep spending an unaudited budget.)
+  let reads = 0;
+  const counted = { fetchImpl: async (...args) => { reads += 1; return db.fetchImpl(...args); } };
+  const question = await preceptsUserOnce(USER, SUNDAY_NIGHT + 60000, {
+    ...SUPA,
+    fetchImpl: counted.fetchImpl,
+    telegramToken: "tok",
+    sendMessage: tg.sendMessage,
+    tzOffsetH: JST,
+    sleepTargetMs: SUNDAY_SLEEP + 60000,
+    events: [],
+    getLocationState: async () => "unknown",
+  });
+  assert.equal(question.reason, "budget-unrecorded");
+  assert.equal(reads, 0, "a stood-down organ must not even read");
+});
+
 test("the day is CLAIMED before the message is sent, so 30 ticks cannot mean 30 mirrors", async () => {
   const db = supabase(ANSWER_ROWS);
   const tg = telegram();
@@ -384,6 +436,34 @@ test("the calendar history is pulled ONCE per user per day, not once per tick", 
   assert.equal(pulls, 1, `an 8-day calendar read per tick is 10 reads for one message, got ${pulls}`);
 });
 
+test("the busy tail measures the REAL end when the calendar has one, and says so when it does not", async () => {
+  // A long block: starts 10h before the tap, ends 2h before it. Measured, it is inside the 8h tail.
+  // The start+1h assumption would put its end 9h before the tap and silently rule the day out — so
+  // this pair is the difference between reading the calendar and guessing at it.
+  const thursdays = [THU_23, THU_23 - 7 * 86400000];
+  const rows = thursdays.map((ms) => ({
+    uid: "u-precepts", day: new Date(ms + JST * 3600000).toISOString().slice(0, 10),
+    kind: "answer", answer: "harsh", answered_at: new Date(ms).toISOString(),
+  }));
+  const longBlocks = thursdays.flatMap((ms) => [
+    { startMs: ms - 12 * 3600000, endMs: ms - 11 * 3600000 },
+    { startMs: ms - 11 * 3600000, endMs: ms - 10 * 3600000 },
+    { startMs: ms - 10 * 3600000, endMs: ms - 2 * 3600000 },
+  ]);
+  const measured = await preceptsMirrorOnce(USER, SUNDAY_NIGHT, mirrorDeps(supabase(rows), telegram(), {
+    fetchHistory: async () => longBlocks,
+  }));
+  assert.equal(measured.pattern, "weekday_busy", "the measured end is inside the tail");
+
+  // The SAME calendar with the ends missing (all-day rows, or a provider that gave none) falls back
+  // to start+1h — a documented assumption, and one that refuses the pattern rather than inventing it.
+  resetPreceptsMirrorState();
+  const assumed = await preceptsMirrorOnce(USER, SUNDAY_NIGHT, mirrorDeps(supabase(rows), telegram(), {
+    fetchHistory: async () => longBlocks.map(({ startMs }) => ({ startMs, endMs: null })),
+  }));
+  assert.equal(assumed.pattern, "weekday", "with no measured end we name the weekday and claim no context");
+});
+
 test("a calendar we cannot read costs the CONTEXT, never the message", async () => {
   const db = supabase(ANSWER_ROWS);
   const tg = telegram();
@@ -410,7 +490,7 @@ test("a real weekday+busy week produces the spec's sentence and stores the SHAPE
     fetchHistory: async () => events,
   }));
   assert.equal(outcome.pattern, "weekday_busy");
-  assert.equal(tg.sent[0].text, "🌙 最近4週間の記録です。「きつく当たった」が2回。2回とも木曜の連続MTGの後でした。");
+  assert.equal(tg.sent[0].text, "🌙 最近4週間の記録です。「きつく当たった」が2回。2回とも予定が3件以上あった木曜の後でした。");
   const row = db.inserts.find((r) => r.kind === "mirror");
   assert.deepEqual(row.pattern, { kind: "weekday_busy", answer: "harsh", count: 2, weekday: 4 });
   assert.ok(!JSON.stringify(row).includes("定例MTG"), "no event content may reach the ledger");
