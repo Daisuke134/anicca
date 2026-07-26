@@ -1015,3 +1015,26 @@ editorial-gate は**一度も走っていない**。具体的な命令（4.6/4.7
 - 22:30 `ai.anicca.article-self-improve` は初発火で `self-improve pending: no JA/EN quality baseline is available` を出して rc=75 終了。#2 の帰結が実機で確認された。skill への書き込みは発生していない。
 - disk が 306Mi まで枯渇。原因は watched project root 配下の再生成可能 `node_modules` 1.2G に寿命所有者が無く、sentinel が `needs-dais` で停止していたこと。sentinel を「名前が再生成可能 **かつ** repo が git-ignore」で自動登録する方式に変更（`~/scripts` commit `7a7bb44`、偽 HOME で E2E 実測）。
 - dev.to は自分の下書きに `200 + published:false` を返すため 404 分岐が発火せず ambiguous に落ちていた。認証済み unpublished 一覧で確定するよう修正（`bf5dd61`）。
+
+### 20.6 全文監査の結果（2026-07-26 追補。§20.1 の一覧を置換）
+
+SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監査で **8件**。§20.1 の 6件を含み、**4件は同日の是正作業自身が作った矛盾**だった（規則を直す作業が新しい矛盾を生む、が実際に起きる）。
+
+| # | 級 | 衝突 | 決着 |
+|---|---|---|---|
+| 1 | 直接 | STEP 4.5「editorial-gate が rubric/reader/deslop/eval を置換」⇔ STEP 4.6/4.7 が rubric-judge と reader を最大3評価ずつ命令 | **解消**。4.6 から rubric/deslop/eval の命令を削除。reader testing は「置換対象ではない別機構」と明記（judge ではなく context ゼロ読者の理解度テスト） |
+| 2 | 死 | `_quality()` が rubric JSON のみを読む。置換が効いた瞬間に学習が盲目 | **解消**。editorial-gate が `gates/editorial-<lang>.json` を書き、`_quality()` が binary verdict を1軸スコア（PASS=1.0 / FAIL=0.0）として読む。rubric 経路は fallback で残し旧 run と比較可能 |
+| 3 | 死 | `editorial-gate.sh` が SKILL.md に**一度も登場しない**（grep 0件）のに STEP 4.5 は「置換した」と主張 | **解消**。SKILL.md の gate 節に STEP 4.5 の項を新設 |
+| 4 | 直接 | prompt「禁則は reference §2 の3つだけ、他は無い」⇔ SKILL.md が計測レポート型という4つ目の禁則を追加（**同日に自分で作った**） | **解消**。禁則を reference §2-4 へ移設し証拠（07-26 の採用/却下ペア）を同梱。SKILL.md は参照1行。prompt は「§2 を読んで書いてある通りに適用、言い換え禁止」 |
+| 5 | 直接 | SKILL.md「『skill が禁止している軸』は却下理由として無効」⇔ 却下台帳が `cited_rule` の file:line を必須化（**同日に自分で作った**） | **解消**。`reason`（読者側の言葉）と `cited_rule`（適用した規則の行）は別フィールドで両方必要、と明記 |
+| 6 | 漂流 | reference 禁則1「固有名詞は平易な機能語の後」が SKILL.md で「見出しの仕事は finding を約束すること」へ変異 | 部分解消。禁則の正本一本化で prompt 側は消えた。SKILL.md 側の記述は残存 — 20-5（出典欄）で処理する |
+| 7 | 死 | SKILL.md:242「Old publish crons are DISABLED」 | **不採用**。旧 mirror cron の記述で現行 job を指していない。監査の過剰読み |
+| 8 | 数の不一致 | 「実測で効いていた型は5つ」⇔ 表は8行（**同日に自分で3型足して数を直し忘れ**） | **解消**。8型に訂正 + 「型を足したら数も直す」注記 |
+
+**教訓（一般法則）**: 規則を直す作業は、それ自体が矛盾の生成源。だから 20.3 の矛盾スキャンは「規則ファイルが変わった直後」に必ず回す。人間（俺）が直した直後こそ一番危ない。
+
+### 20.7 SkillOpt の矛盾処理能力（実コード確認、20.2 の詳細）
+
+`skillopt/prompts/merge_failure.md` の merge guideline 1-2 が「Deduplicate」「Resolve conflicts: if patches contradict on the same point, choose the one with stronger justification or synthesize both」。`merge_final.md` は failure 由来を success 由来より優先。編集 op に `delete` が第一級。`<!-- SLOW_UPDATE_START -->` / `<!-- SLOW_UPDATE_END -->` で編集禁止領域を宣言できる（schedule / credential / safety gate をここへ入れる）。
+
+ただし解決対象は**今回生成した patch 同士**に限られ、文書に元から埋まった矛盾も、複数ファイル横断も、証拠の有無による機械的優先も無い。#1-#8 のような既存矛盾は SkillOpt では出てこない。20.3 の矛盾スキャンは自作が要る。
