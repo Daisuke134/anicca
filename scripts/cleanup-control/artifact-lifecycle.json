@@ -263,6 +263,54 @@
       "finalizer": {
         "kind": "off_volume_quarantine"
       }
+    },
+    {
+      "id": "writer-research-npm-cache",
+      "path": "$HOME/profitable-claude/skills/article-writer/state/research/npm-cache",
+      "owner": "article-writer",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "writer-research-bun-tmp",
+      "path": "$HOME/profitable-claude/skills/article-writer/state/research/bun-tmp",
+      "owner": "article-writer",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "writer-research-flair-eval",
+      "path": "$HOME/profitable-claude/skills/article-writer/state/research/flair-eval",
+      "owner": "article-writer",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
+    },
+    {
+      "id": "writer-research-flair-repo",
+      "path": "$HOME/profitable-claude/skills/article-writer/state/research/flair-repo",
+      "owner": "article-writer",
+      "class": "ephemeral",
+      "ttl_seconds": 604800,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "off_volume_quarantine"
+      }
     }
   ]
 }
