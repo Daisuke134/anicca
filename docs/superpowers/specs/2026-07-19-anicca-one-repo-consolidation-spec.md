@@ -555,7 +555,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | # | ID | organ | 残っている実物 | blocker |
 |---|---|---|---|---|
 | 1 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger（Day 1 記帳済 2026-07-26） | 暦のみ — 毎日 10:00 JST に loop が自動追記、agent が日次 verify |
-| 1.5 | `CADENCE-1` | PHYSICAL | **検知の意味論 guard（2026-07-26 初回実 scan の教訓）**: 実測9日「周期」は bimodal burst（2025年3回集中→14ヶ月沈黙→2026年週2回）の median で、これで予約したら真の誤検知。detectUnmetCare に cadence 安定性条件（分散上限 or 期間 coverage）を追加し、burst 由来の検知は「観察のみ・行動しない」へ落とす。実履歴 pin test は #1149 で導入済み | なし — 即着手可 |
+| 1.5 | `CADENCE-1` | PHYSICAL | **検知の意味論 guard（2026-07-26 初回実 scan の教訓）**: 実測9日「周期」は bimodal burst（2025年3回集中→14ヶ月沈黙→2026年週2回）の median で、これで予約したら真の誤検知。detectUnmetCare に cadence 安定性条件（分散上限 or 期間 coverage）を追加し、burst 由来の検知は「観察のみ・行動しない」へ落とす。実履歴 pin test は #1149 で導入済み | **done (2026-07-26)**: #1151 merged — `judgeCadenceStability`（4+ visits AND (MAD≤0.5m OR 全gap∈[0.4m,2.5m])）。実 burst データは `observe_only:true / cadence-unstable` に降格し chain/Places/TG 一切走らない（実履歴 pin 更新は意図的、数値は不変で判定のみ変更）。安定周期（40±6日×5訪問）は actionable のまま。明示 intent は guard bypass。52/52 + eval 15/15 + suite exit 0。deploy 済み — 明日の scan から新判定 |
 | 2 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: haircut 34d/240d 周期、health 57d/445d — いずれも 1.5x 未満）。detector は実データで正常・誤検知0 |
 | 3 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装 #1132 merged: anchors × category、京都床屋排除、usual-first、1〜3件の正直 shortfall） | 11a の care category |
 | 4 | `11c` | PHYSICAL | Browserbase（通常 account = 裁定12）で実予約 or メール。不可なら候補提示 + 正直報告 | 11b実測 + **Dais の Browserbase account 作成（唯一の人間依存）** |
