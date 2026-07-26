@@ -85,20 +85,40 @@ async function fetchNextEvent(uid, opts = {}) {
 //   - all-day (date-only) events are KEPT — a barber visit logged all-day is still a visit
 //   - no interpretCalendarEvent filter — "no_call" is a call decision, not a history decision
 //   - the raw `start` object survives so detectCalendarCare can parse dateTime/date itself
+//   - STRICT reads: a transport/API failure PROPAGATES (throws) instead of returning []. The wake
+//     path's swallow-to-[] is load-bearing there, but here the caller (careUserOnce) persists an
+//     append-only once-per-day claim — "the read failed" must never look like "empty calendar",
+//     or a single API blip freezes a fabricated empty scan for the whole day.
+//   - CHUNKED window: one 548-day call with orderBy=startTime ascending + maxResults 2500 truncates
+//     the RECENT end on busy calendars — exactly the events that hold the last-visit dates — turning
+//     stale visits into false overdues. The transport wrapper exposes no pageToken, so the window is
+//     split into ≤3 contiguous ~183-day chunks (each safely under 2500 for any human calendar) and
+//     merged, deduped by id (a chunk-boundary event can appear in two chunks).
 const CARE_HISTORY_MS = 548 * 86400000; // ~18 months
+const HISTORY_CHUNK_MS = 183 * 86400000; // ~6 months per chunk
 
 async function fetchCalendarHistory(uid, opts = {}) {
   if (!uid) return [];
   const nowMs = opts.nowMs || Date.now();
   const historyMs = Number.isFinite(opts.historyMs) && opts.historyMs > 0 ? opts.historyMs : CARE_HISTORY_MS;
   const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey, gmailAccountId: opts.gmailAccountId });
-  const items = await calendar.listEventsRaw(uid, {
-    timeMin: isoZ(nowMs - historyMs), timeMax: isoZ(nowMs), maxResults: 2500,
-  });
+  const chunkCount = Math.min(3, Math.max(1, Math.ceil(historyMs / HISTORY_CHUNK_MS)));
+  const chunkMs = Math.ceil(historyMs / chunkCount);
+  const items = [];
+  for (let i = 0; i < chunkCount; i += 1) {
+    const chunkStart = nowMs - historyMs + i * chunkMs;
+    const chunkEnd = Math.min(nowMs, chunkStart + chunkMs);
+    const chunk = await calendar.listEventsRaw(uid, {
+      timeMin: isoZ(chunkStart), timeMax: isoZ(chunkEnd), maxResults: 2500, strict: true,
+    });
+    for (const e of chunk || []) items.push(e);
+  }
+  const seen = new Set();
   const out = [];
-  for (const e of items || []) {
+  for (const e of items) {
     const id = e && typeof e.id === "string" ? e.id : "";
-    if (!id) continue;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
     const raw = (e.start || {}).dateTime || (e.start || {}).date;
     const startMs = raw ? Date.parse(raw) : NaN;
     if (!Number.isFinite(startMs) || startMs > nowMs) continue; // history holds only real past visits

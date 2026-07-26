@@ -61,15 +61,21 @@ async function todayScanExists(uid, day, supa, fetchImpl) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
-// 201 = this tick owns today's scan; 409 (unique violation) = another tick already claimed it —
-// the claimWake precedent, so two overlapping ticks can never both run the 11b chain.
+// 201 = this tick owns today's scan; 409 / PostgREST duplicate-key body (23505) = another tick
+// already claimed it — the claimWake precedent, so two overlapping ticks can never both run the 11b
+// chain. Anything ELSE is a real failure and THROWS: a Supabase 500 is not "already scanned", and
+// treating it as the race loss would silently drop the scan (the scheduler's catch logs the throw).
 async function insertScanRow(row, supa, fetchImpl) {
   const response = await fetchImpl(`${supa.url}/rest/v1/lm_care_scan_log`, {
     method: "POST",
     headers: headers(supa.key, { "Content-Type": "application/json", Prefer: "return=minimal" }),
     body: JSON.stringify(row),
   });
-  return response.status === 201;
+  if (response.status === 201) return true;
+  if (response.status === 409) return false;
+  const body = typeof response.text === "function" ? await response.text().catch(() => "") : "";
+  if (/23505|duplicate key/i.test(body)) return false;
+  throw new Error(`care scan insert failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
 }
 
 async function updateScanChain(uid, day, patch, supa, fetchImpl) {
@@ -89,21 +95,33 @@ async function careUserOnce(u, nowMs, deps = {}) {
   };
   if (!u || !u.uid || !supa.url || !supa.key) return { status: "skipped" };
   const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  const logError = deps.logError || console.error;
   const now = Number.isFinite(nowMs) ? nowMs : Date.now();
   const day = new Date(now).toISOString().slice(0, 10); // UTC day, like recordDailyComposioPoll
 
   if (await todayScanExists(u.uid, day, supa, fetchImpl)) return { status: "already_scanned" };
 
-  const history = await (deps.fetchCalendarHistory || fetchCalendarHistory)(u.uid, {
-    nowMs: now,
-    historyMs: deps.historyMs, // undefined → events.js CARE_HISTORY_MS (~18 months)
-    apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
-    calendar: deps.calendar,
-    gmailAccountId: u.gmail_account_id,
-  });
+  // The day is claimed ONLY after a successful history read. fetchCalendarHistory is a STRICT read
+  // (transport failure throws, never []): if the claim were written from a failed read, a single API
+  // blip would freeze history_event_count=0 / detections=[] into the append-only lm_care_scan_log and
+  // poison the whole day. On failure: no row, no claim — the next 60s tick simply retries.
+  let history;
+  try {
+    history = await (deps.fetchCalendarHistory || fetchCalendarHistory)(u.uid, {
+      nowMs: now,
+      historyMs: deps.historyMs, // undefined → events.js CARE_HISTORY_MS (~18 months)
+      apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+      calendar: deps.calendar,
+      gmailAccountId: u.gmail_account_id,
+    });
+  } catch (error) {
+    return { status: "history_unavailable", error: String((error && error.message) || error) };
+  }
   const sources = classifyCareHistory(history);
   const receipt = detectCalendarCare({
     nowMs: now,
+    // intents: deliberately unwired — no intents store exists in production yet (§10 row 11a is
+    // calendar-history-only detection). deps.intents is a test seam, not a production source.
     intents: Array.isArray(deps.intents) ? deps.intents : [],
     sources,
   });
@@ -157,11 +175,16 @@ async function careUserOnce(u, nowMs, deps = {}) {
       selected_provider_id: evaluated.selected_provider_id,
       shortfall_reason: search.shortfallReason || null,
     };
-    await updateScanChain(u.uid, day, { chain }, supa, fetchImpl);
+    // The Places spend above already happened — a silently dropped PATCH would burn the spend and
+    // hide the loss, so a failed chain persist must be VISIBLE (injectable logger, console.error
+    // default). The detection row itself is safe either way: it landed before the chain ran.
+    const persisted = await updateScanChain(u.uid, day, { chain }, supa, fetchImpl);
+    if (!persisted) logError(`[care] chain-persist-failed uid=${u.uid} day=${day} category=${category}`);
     return { status: "detected", category, selectedProviderId: evaluated.selected_provider_id };
   } catch (error) {
     const chainError = String((error && error.message) || error);
-    await updateScanChain(u.uid, day, { chain_error: chainError }, supa, fetchImpl).catch(() => false);
+    const persisted = await updateScanChain(u.uid, day, { chain_error: chainError }, supa, fetchImpl).catch(() => false);
+    if (!persisted) logError(`[care] chain-persist-failed uid=${u.uid} day=${day} chain_error=${chainError}`);
     return { status: "detected", category, chainError };
   }
 }

@@ -31,15 +31,28 @@ function makeComposioCalendar({ apiKey, recordCall } = {}) {
     kind: "composio",
     ready: () => !!key,
     // Raw Google Calendar items (each consumer maps to its own shape) for [timeMin, timeMax] (ISO Z).
-    async listEventsRaw(uid, { timeMin, timeMax, maxResults } = {}) {
-      if (!key || !uid) return [];
+    // Default (wake path): every failure swallows to [] — load-bearing there, a transport blip must
+    // not crash the 60s tick. strict (history path, fetchCalendarHistory): failure THROWS, because a
+    // caller that persists an append-only daily claim must distinguish "empty calendar" from "the
+    // read failed" — [] on failure would freeze a fabricated empty scan forever.
+    async listEventsRaw(uid, { timeMin, timeMax, maxResults, strict } = {}) {
+      if (!key || !uid) {
+        if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
+        return [];
+      }
       const args = { calendarId: "primary", singleEvents: true, orderBy: "startTime", timeMin, timeMax };
       if (maxResults) args.maxResults = maxResults;
       let j;
       try {
         j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
-      } catch { return []; }
-      if (!j || !j.successful) return [];
+      } catch (e) {
+        if (strict) throw e;
+        return [];
+      }
+      if (!j || !j.successful) {
+        if (strict) throw new Error(`calendar list failed: ${String((j && (j.error || j.message)) || "unsuccessful response")}`);
+        return [];
+      }
       const d = j.data || {};
       return d.items || d.events || [];
     },

@@ -28,8 +28,9 @@ function overdueHaircutHistory() {
   ];
 }
 
-// Supabase double: GET returns existingRows, POST returns postStatus, PATCH is recorded.
-function fakeSupa({ existingRows = [], postStatus = 201 } = {}) {
+// Supabase double: GET returns existingRows, POST returns postStatus(+postBody), PATCH is recorded
+// (patchOk=false simulates a failed chain persist).
+function fakeSupa({ existingRows = [], postStatus = 201, postBody = "", patchOk = true } = {}) {
   const calls = { gets: [], posts: [], patches: [] };
   const fetchImpl = async (url, opts = {}) => {
     const method = (opts.method || "GET").toUpperCase();
@@ -39,10 +40,10 @@ function fakeSupa({ existingRows = [], postStatus = 201 } = {}) {
     }
     if (method === "POST") {
       calls.posts.push(JSON.parse(opts.body));
-      return { ok: postStatus === 201, status: postStatus, json: async () => [] };
+      return { ok: postStatus === 201, status: postStatus, json: async () => [], text: async () => postBody };
     }
     calls.patches.push({ url, body: JSON.parse(opts.body) });
-    return { ok: true, status: 204, json: async () => [] };
+    return { ok: patchOk, status: patchOk ? 204 : 500, json: async () => [] };
   };
   return { calls, fetchImpl };
 }
@@ -161,6 +162,62 @@ test("chain failure is isolated: a throwing candidate search cannot lose the det
   assert.equal(supa.calls.posts[0].detections[0].care_type, "haircut");
   assert.equal(supa.calls.patches.length, 1);
   assert.equal(supa.calls.patches[0].body.chain_error, "places quota exhausted");
+});
+
+// 🔴 Finding 1: a failed history read must NOT claim the day. Freezing history_event_count=0 /
+// detections=[] into the append-only lm_care_scan_log on an API failure poisons the claim — the day
+// is permanently marked scanned with fabricated emptiness. Failure ≠ empty calendar.
+test("history read failure → history_unavailable, NO claim row — the next tick retries", async () => {
+  const supa = fakeSupa();
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => { throw new Error("composio 502"); },
+  }));
+  assert.equal(result.status, "history_unavailable");
+  assert.equal(supa.calls.posts.length, 0, "a failed read must never freeze count=0 into the log");
+  assert.equal(supa.calls.patches.length, 0, "no chain either");
+});
+
+test("transport failure through the REAL history reader → history_unavailable (not a fake empty scan)", async () => {
+  const supa = fakeSupa();
+  const deps = baseDeps(supa, {
+    calendar: { kind: "fake", ready: () => true, async listEventsRaw() { throw new Error("api down"); } },
+  });
+  delete deps.fetchCalendarHistory; // exercise the real events.js reader over a failing transport
+  const result = await careUserOnce(USER, NOW, deps);
+  assert.equal(result.status, "history_unavailable");
+  assert.equal(supa.calls.posts.length, 0);
+});
+
+// 🟡 Finding 2: only the duplicate-key race means "already scanned". A 500/503 from Supabase must
+// surface as a throw (the scheduler's catch logs it) — otherwise real outages masquerade as dedup.
+test("insert failure that is NOT the duplicate race throws — 500 is not 'already scanned'", async () => {
+  const supa = fakeSupa({ postStatus: 500, postBody: "internal error" });
+  await assert.rejects(
+    () => careUserOnce(USER, NOW, baseDeps(supa, { fetchCalendarHistory: async () => overdueHaircutHistory() })),
+    /500/,
+  );
+});
+
+test("PostgREST duplicate-key body counts as the race loss even off the 409 status", async () => {
+  const supa = fakeSupa({ postStatus: 400, postBody: JSON.stringify({ code: "23505", message: "duplicate key value violates unique constraint" }) });
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, { fetchCalendarHistory: async () => overdueHaircutHistory() }));
+  assert.equal(result.status, "already_scanned");
+});
+
+// 🟡 Finding 3: the chain PATCH lands AFTER the Places spend already happened. A silent persist
+// failure would burn the spend and hide the loss — it must be visible via the injectable logger.
+test("chain persist failure is visible: failed PATCH logs chain-persist-failed", async () => {
+  const supa = fakeSupa({ patchOk: false });
+  const logs = [];
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => overdueHaircutHistory(),
+    logError: (...args) => logs.push(args.join(" ")),
+  }));
+  assert.equal(result.status, "detected", "the detection row itself already landed");
+  assert.ok(
+    logs.some((m) => m.includes("chain-persist-failed") && m.includes(USER.uid)),
+    `expected a chain-persist-failed log naming the uid, got: ${JSON.stringify(logs)}`,
+  );
 });
 
 test("missing Supabase config → honest skip, no throw", async () => {

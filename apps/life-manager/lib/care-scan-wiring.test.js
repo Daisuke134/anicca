@@ -62,6 +62,30 @@ test("a mental throw does not stop the care scan (isolation is mutual)", async (
   assert.equal(careRan, 1);
 });
 
+// 🟡 Finding 5: care ran BEFORE the wake evaluation, so a slow Places/Supabase chain could delay a
+// wake dial past its ~2-min catch window. The wake loop is the time-critical path — care rides last.
+test("care runs AFTER the wake evaluation — a slow care chain can never delay a wake call", async () => {
+  const order = [];
+  await scheduler.wakeUserOnce(USER, NOW, deps({
+    claimWake: async (_uid, key) => { order.push(`wake:${key}`); return false; },
+    care: async () => { order.push("care"); return { status: "abstained" }; },
+  }));
+  const wakeIdx = order.findIndex((x) => x.startsWith("wake:"));
+  const careIdx = order.indexOf("care");
+  assert.ok(wakeIdx >= 0, "the wake claim fired on this tick");
+  assert.ok(careIdx >= 0, "the care scan fired on this tick");
+  assert.ok(wakeIdx < careIdx, `wake claim must fire before care's work, got order=${JSON.stringify(order)}`);
+});
+
+test("care still runs for a call-disabled user — skipping the wake loop must not skip the PHYSICAL organ", async () => {
+  let careRan = 0;
+  await scheduler.wakeUserOnce({ ...USER, call_enabled: false }, NOW, deps({
+    claimWake: async () => { throw new Error("wake loop must be skipped for call-disabled users"); },
+    care: async () => { careRan += 1; return { status: "abstained" }; },
+  }));
+  assert.equal(careRan, 1);
+});
+
 test("production default wires the real careUserOnce (not a stub that can silently vanish)", () => {
   const fs = require("node:fs");
   const path = require("node:path");
