@@ -92,22 +92,31 @@ test("FIN-b: pressing register on the discovery announcement opens the closed qu
   assert.deepEqual(sent[0][3], payoutQuestionMessage().extra);
 });
 
-test("FIN-b: an already-registered destination is never asked again", async () => {
+test("FIN-b: an already-registered destination is never asked again — but the tap gets a visible reply (CB-1)", async () => {
+  const sent = [];
   const asked = await askPayoutQuestion({
     token: "t", chatId: "7", uid: "u1",
     readPayoutDestination: async () => ({ destination: { type: "bank", status: "awaiting_details" } }),
-    sendMessage: async () => { throw new Error("an answered question must never be asked again"); },
+    sendMessage: async (...args) => { sent.push(args); return { ok: true }; },
   });
   assert.deepEqual(asked, { asked: false, reason: "already_answered" });
+  // §10.0-15 ③: the second tap must not be silent. The reply is the alreadyRegistered copy — never
+  // the question itself, which stays asked-once-ever.
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0][2], "送金先は登録済みです（銀行口座）。変更したい時は「送金先を変更」と送ってください。");
+  assert.notEqual(sent[0][2], FINANCIAL_STRINGS.ja.payoutQuestion.text);
 
+  const discoverySent = [];
   const viaDiscovery = await handleDiscoveryCallback("discovery:register:payout", {
     token: "t", chatId: "7", uid: "u1",
     readPayoutDestination: async () => ({ destination: { type: "wallet", status: "awaiting_details" } }),
-    sendMessage: async () => { throw new Error("an answered question must never be asked again"); },
+    sendMessage: async (...args) => { discoverySent.push(args); return { ok: true }; },
   });
   assert.equal(viaDiscovery.handled, true);
   assert.equal(viaDiscovery.asked, false);
   assert.equal(viaDiscovery.reason, "already_answered");
+  assert.equal(discoverySent.length, 1);
+  assert.equal(discoverySent[0][2], "送金先は登録済みです（wallet）。変更したい時は「送金先を変更」と送ってください。");
 });
 
 test("FIN-b: an unreadable destination neither asks nor claims the question was answered", async () => {
@@ -256,5 +265,72 @@ test("FIN-b: ask, answer, ask again — the whole round trip asks exactly once",
   assert.deepEqual(stored, payoutDestinationRecord("bank", NOW));
 
   assert.deepEqual(await askPayoutQuestion(deps), { asked: false, reason: "already_answered" });
-  assert.equal(sent.length, 1, "the payout question is asked once, ever");
+  // CB-1: the re-ask is answered visibly ("registered already"), but the QUESTION itself went out
+  // exactly once — that is the invariant this round trip pins.
+  assert.equal(sent.length, 2);
+  assert.equal(sent.filter((args) => args[2] === FINANCIAL_STRINGS.ja.payoutQuestion.text).length, 1,
+    "the payout question is asked once, ever");
+  assert.equal(sent[1][2], "送金先は登録済みです（銀行口座）。変更したい時は「送金先を変更」と送ってください。");
+});
+
+// ---- CB-1 (spec §10.0-15): a payout tap must leave a durable, visible response ----
+
+test("CB-1: a persisted answer edits the original question with the chosen label", async () => {
+  const edits = [];
+  const outcome = await handlePayoutCallback("payout:answer:bank", {
+    uid: "u1", chatId: "7", actorId: "7", nowMs: NOW,
+    token: "tok", messageId: "42", messageText: FINANCIAL_STRINGS.ja.payoutQuestion.text,
+    savePayoutAnswer: async () => payoutDestinationRecord("bank", NOW),
+    reflectAnswer: async (args) => { edits.push(args); return { ok: true }; },
+  });
+  assert.equal(outcome.ok, true);
+  assert.equal(edits.length, 1);
+  assert.equal(edits[0].messageId, "42");
+  assert.equal(edits[0].messageText, FINANCIAL_STRINGS.ja.payoutQuestion.text);
+  assert.equal(edits[0].label, FINANCIAL_STRINGS.ja.payoutQuestion.bankButton);
+});
+
+test("CB-1: あとで is reflected on the message (→ あとで, keyboard gone) and still persists nothing", async () => {
+  const edits = [];
+  const outcome = await handlePayoutCallback("payout:answer:later", {
+    uid: "u1", chatId: "7", actorId: "7", nowMs: NOW,
+    token: "tok", messageId: "42", messageText: FINANCIAL_STRINGS.ja.payoutQuestion.text,
+    savePayoutAnswer: async () => { throw new Error("later must never write a destination"); },
+    reflectAnswer: async (args) => { edits.push(args); return { ok: true }; },
+  });
+  assert.deepEqual(outcome, { handled: true, ok: true, answer: "later", persisted: false });
+  assert.equal(edits.length, 1);
+  assert.equal(edits[0].label, FINANCIAL_STRINGS.ja.payoutQuestion.laterButton);
+});
+
+test("CB-1: a re-tap (column already claimed) gets the visible already-registered reply", async () => {
+  const sent = [], edits = [];
+  const outcome = await handlePayoutCallback("payout:answer:wallet", {
+    uid: "u1", chatId: "7", actorId: "7", nowMs: NOW,
+    token: "tok", messageId: "42", messageText: FINANCIAL_STRINGS.ja.payoutQuestion.text,
+    savePayoutAnswer: async () => null, // compare-and-set claimed no row: someone answered already
+    readPayoutDestination: async () => ({ destination: { type: "bank", status: "awaiting_details" } }),
+    sendMessage: async (...args) => { sent.push(args); return { ok: true }; },
+    reflectAnswer: async (args) => { edits.push(args); return { ok: true }; },
+  });
+  assert.equal(outcome.ok, false);
+  assert.equal(outcome.reason, "already_answered");
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0][2], "送金先は登録済みです（銀行口座）。変更したい時は「送金先を変更」と送ってください。");
+  // The stale keyboard the user just tapped must die too — but with NO label appended, because the
+  // rail on file may not be the rail of this tap.
+  assert.equal(edits.length, 1);
+  assert.equal(edits[0].messageText, "", "the already path strips the keyboard without rewriting the text");
+});
+
+test("CB-1: a genuinely failed persist stays persist_failed — no already-registered lie, no edit", async () => {
+  const explode = async () => { throw new Error("a failed persist must not fake visibility"); };
+  const outcome = await handlePayoutCallback("payout:answer:bank", {
+    uid: "u1", chatId: "7", actorId: "7", nowMs: NOW,
+    token: "tok", messageId: "42", messageText: FINANCIAL_STRINGS.ja.payoutQuestion.text,
+    savePayoutAnswer: async () => null,
+    readPayoutDestination: async () => null, // we cannot see the column — unknown, not "already"
+    sendMessage: explode, reflectAnswer: explode,
+  });
+  assert.deepEqual(outcome, { handled: true, ok: false, answer: "bank", reason: "persist_failed" });
 });

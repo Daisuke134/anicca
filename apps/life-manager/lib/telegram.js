@@ -43,6 +43,9 @@ function parseUpdate(update) {
       data: String(q.data || ""),
       callbackQueryId: String(q.id || ""),
       ...(q.message.message_id == null ? {} : { messageId: String(q.message.message_id) }),
+      // CB-1: handlers edit the tapped message into its answered state, which needs the original
+      // text. Absent stays absent — an empty string would make markAnswered rewrite the message to "".
+      ...(q.message.text == null ? {} : { messageText: String(q.message.text) }),
     };
   }
   const edited = update && update.edited_message;

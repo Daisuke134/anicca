@@ -378,7 +378,7 @@ const server = http.createServer((req, res) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 return handleAskCallback(data, {
                   uid: row && row.uid, chatId: u.chatId, actorId: u.userId,
-                  messageId: u.messageId, callbackQueryId: u.callbackQueryId,
+                  messageId: u.messageId, messageText: u.messageText, callbackQueryId: u.callbackQueryId,
                   telegramToken: LM_TG_TOKEN,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY, composioKey: COMPOSIO_KEY,
                   gmailAccountId: row && row.gmail_account_id,
@@ -409,6 +409,9 @@ const server = http.createServer((req, res) => {
                 const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
                 const outcome = await handlePayoutCallback(data, {
                   uid: row && row.uid, chatId: u.chatId, actorId: u.userId,
+                  // CB-1 (§10.0-15): the handler edits the tapped message into its answered state
+                  // and replies visibly on a re-tap, which needs the bot token and the original text.
+                  token: LM_TG_TOKEN, messageId: u.messageId, messageText: u.messageText,
                   supaUrl: SUPA_URL, supaKey: SUPA_KEY,
                 });
                 // Same audit shape as discovery: name the decision, never the person. A failed write
