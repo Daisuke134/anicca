@@ -531,6 +531,11 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 16. **E2E 検証は Dais の手を借りず agent が browser（daily-driver CDP）で Dais の Telegram を実操作してよい
     （2026-07-26 Dais 裁定）**。ただし Dais の私的情報を要する回答（例: 予定がオンラインか対面か）は推測して
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
+17. **FINANCIAL の on-chain 実行系は後回し（2026-07-26 Dais 裁定）**。crypto の実送金・収益 rail は別 repo で
+    別 agent が並行作業中のため、この repo の優先順は **9 → 10 → 11 → 12 を先に完遂**する。13d-a（typed 入力
+    経路）は UX 配管として完遂してよいが、13d-b（on-chain 実 tx）と 13c実測（実収益行）は 9/10/11/12 完了後、
+    または別 repo の成果合流後に行う。これに伴い 10e の前提「他の remaining atomic が全て done」は
+    「9/11 系が done」へ緩和される。
 
 
 
