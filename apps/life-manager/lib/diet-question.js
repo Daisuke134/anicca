@@ -88,16 +88,27 @@ function evaluateDietQuestion(input) {
 
 // §9.5: a closed question. Four taps, no free-text path, and the labels are quoted from the copy so
 // the keyboard cannot drift from the sentence above it.
-function dietQuestionMessage() {
+//
+// Each button CARRIES the day it was asked about. A Telegram keyboard has no expiry of its own: the
+// question sits in the chat forever, and a tap that lands tomorrow would otherwise be filed as
+// tomorrow's lunch — a fabricated data point, in the one ledger whose whole value is that every row
+// is something the user actually said. The day makes the tap self-describing, so the handler can
+// file it correctly or refuse it, and never has to guess. Callback data is capped at 64 bytes by
+// Telegram; the longest of these is 28.
+function dietQuestionMessage(day) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day || ""))) {
+    throw new Error("dietQuestionMessage needs the local day (YYYY-MM-DD) the question belongs to");
+  }
   const copy = DIET_STRINGS.ja.lunchQuestion;
+  const tap = (answer) => `diet:answer:${answer}:${day}`;
   return {
     text: copy.text,
     extra: { reply_markup: { inline_keyboard: [[
-      { text: copy.teishokuButton, callback_data: "diet:answer:teishoku" },
-      { text: copy.menButton, callback_data: "diet:answer:men" },
+      { text: copy.teishokuButton, callback_data: tap("teishoku") },
+      { text: copy.menButton, callback_data: tap("men") },
     ], [
-      { text: copy.fastButton, callback_data: "diet:answer:fast" },
-      { text: copy.skipButton, callback_data: "diet:answer:skip" },
+      { text: copy.fastButton, callback_data: tap("fast") },
+      { text: copy.skipButton, callback_data: tap("skip") },
     ]] } },
   };
 }

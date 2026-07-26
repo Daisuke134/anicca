@@ -144,19 +144,27 @@ test("bad inputs throw rather than defaulting into a send", () => {
 // ── the closed question itself (spec H2 ①, §9.5: closed, tap-only, no free text) ───────────────────
 
 test("the question is exactly four taps and no free-text answer", () => {
-  const message = dietQuestionMessage();
+  const message = dietQuestionMessage("2026-07-27");
   assert.equal(message.text, DIET_STRINGS.ja.lunchQuestion.text);
   const buttons = message.extra.reply_markup.inline_keyboard.flat();
   assert.equal(buttons.length, 4);
+  // The ask day travels IN the button: a tap that arrives tomorrow must be filed against the lunch
+  // it was actually about, or refused — never silently recorded as today's.
   assert.deepEqual(buttons.map((b) => b.callback_data), [
-    "diet:answer:teishoku", "diet:answer:men", "diet:answer:fast", "diet:answer:skip",
+    "diet:answer:teishoku:2026-07-27", "diet:answer:men:2026-07-27",
+    "diet:answer:fast:2026-07-27", "diet:answer:skip:2026-07-27",
   ]);
   assert.deepEqual(DIET_ANSWERS, ["teishoku", "men", "fast", "skip"]);
 });
 
+test("the question refuses to be built without the day it belongs to", () => {
+  assert.throws(() => dietQuestionMessage(), /day/);
+  assert.throws(() => dietQuestionMessage("27 July"), /day/);
+});
+
 test("the button labels come from the Dais-editable copy, never restated in code", () => {
   const copy = DIET_STRINGS.ja.lunchQuestion;
-  assert.deepEqual(dietQuestionMessage().extra.reply_markup.inline_keyboard.flat().map((b) => b.text), [
+  assert.deepEqual(dietQuestionMessage("2026-07-27").extra.reply_markup.inline_keyboard.flat().map((b) => b.text), [
     copy.teishokuButton, copy.menButton, copy.fastButton, copy.skipButton,
   ]);
   // Every label must actually appear in the sentence the user reads — copy and keyboard cannot drift.

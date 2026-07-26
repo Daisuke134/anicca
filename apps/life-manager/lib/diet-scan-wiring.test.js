@@ -108,6 +108,58 @@ test("diet still runs for a call-disabled user — skipping the wake loop must n
   assert.equal(dietRan, 1);
 });
 
+test("a nudge and a question never land in the same tick — the question waits for the next one", async () => {
+  // Two unsolicited messages 0 seconds apart is exactly the sermon the thresholds exist to prevent.
+  let questionRan = 0;
+  await scheduler.wakeUserOnce(USER, NOW, deps({
+    dietNudge: async () => ({ status: "nudged", day: "2026-07-27", sampleCount: 4, fastCount: 2, telegramMessageId: 9 }),
+    diet: async () => { questionRan += 1; return { status: "suppressed" }; },
+  }));
+  assert.equal(questionRan, 0, "the question leg must be deferred when a nudge already went out this tick");
+  // The very next tick, with no nudge, asks as usual — the deferral costs 60 seconds, not the day.
+  await scheduler.wakeUserOnce(USER, NOW + 60000, deps({
+    diet: async () => { questionRan += 1; return { status: "suppressed" }; },
+  }));
+  assert.equal(questionRan, 1);
+});
+
+test("a nudge that was SUPPRESSED or FAILED does not cost the question its tick", async () => {
+  for (const nudgeOutcome of [{ status: "suppressed", reason: "nudge-cooldown" }, { status: "send_failed" }, { status: "skipped" }]) {
+    let questionRan = 0;
+    await scheduler.wakeUserOnce(USER, NOW, deps({
+      dietNudge: async () => nudgeOutcome,
+      diet: async () => { questionRan += 1; return { status: "suppressed" }; },
+    }));
+    assert.equal(questionRan, 1, `only a DELIVERED nudge defers the question, got ${JSON.stringify(nudgeOutcome)}`);
+  }
+});
+
+test("the kill switch answers to 0/false/off/no in any case", async () => {
+  const previous = process.env.LM_DIET_ENABLED;
+  try {
+    for (const value of ["0", "false", "FALSE", "off", "Off", "no", "NO", " off "]) {
+      process.env.LM_DIET_ENABLED = value;
+      let ran = 0;
+      await scheduler.wakeUserOnce(USER, NOW, deps({
+        diet: async () => { ran += 1; return { status: "suppressed" }; },
+        dietNudge: async () => { ran += 1; return { status: "suppressed" }; },
+      }));
+      assert.equal(ran, 0, `LM_DIET_ENABLED=${JSON.stringify(value)} must turn the organ off`);
+    }
+    for (const value of ["1", "true", "on", ""]) {
+      process.env.LM_DIET_ENABLED = value;
+      let ran = 0;
+      await scheduler.wakeUserOnce(USER, NOW, deps({
+        diet: async () => { ran += 1; return { status: "suppressed" }; },
+        dietNudge: async () => { ran += 1; return { status: "suppressed" }; },
+      }));
+      assert.equal(ran, 2, `LM_DIET_ENABLED=${JSON.stringify(value)} is not an off switch`);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.LM_DIET_ENABLED; else process.env.LM_DIET_ENABLED = previous;
+  }
+});
+
 test("LM_DIET_ENABLED=0 is a real off switch: neither leg is called", async () => {
   const previous = process.env.LM_DIET_ENABLED;
   process.env.LM_DIET_ENABLED = "0";

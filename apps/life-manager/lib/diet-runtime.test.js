@@ -15,9 +15,15 @@ const {
   handleDietCallback,
   readDietAskState,
   localDay,
+  resolveDietTzOffsetH,
+  resetDietRuntimeState,
   DIET_CALLBACK,
 } = require("./diet-runtime.js");
 const { DIET_STRINGS } = require("./i18n.js");
+
+// The once-per-boot / once-per-day log latches are module state by design (that IS the fix for the
+// per-tick log storm). Tests share a process, so each one starts from a clean latch.
+test.beforeEach(() => resetDietRuntimeState());
 
 const JST = 9;
 const NOON_JST = Date.parse("2026-07-27T03:00:00Z"); // 12:00 JST
@@ -40,12 +46,13 @@ function supabase(rows = []) {
     if (!url.pathname.endsWith("/lm_diet_log")) return response(200, []);
     if (method === "GET") {
       const kind = String(url.searchParams.get("kind") || "").replace(/^eq\./, "");
-      const day = String(url.searchParams.get("day") || "").replace(/^eq\./, "");
-      const since = String(url.searchParams.get("asked_at") || url.searchParams.get("created_at") || "")
-        .replace(/^gte\./, "");
+      // The reads are keyed on `day`, which is what the (uid, day DESC) index actually serves —
+      // both an exact day (the answer lookup) and a trailing range (the weekly cap).
+      const dayFilter = String(url.searchParams.get("day") || "");
+      const dayEq = dayFilter.startsWith("eq.") ? dayFilter.slice(3) : "";
+      const dayFrom = dayFilter.startsWith("gte.") ? dayFilter.slice(4) : "";
       return response(200, store.filter((r) =>
-        (!kind || r.kind === kind) && (!day || r.day === day)
-        && (!since || String(r.created_at || r.asked_at) >= since)));
+        (!kind || r.kind === kind) && (!dayEq || r.day === dayEq) && (!dayFrom || String(r.day) >= dayFrom)));
     }
     const body = JSON.parse(init.body || "{}");
     if (store.some((r) => r.uid === body.uid && r.day === body.day && r.kind === body.kind)) {
@@ -94,6 +101,63 @@ test("the ledger day is the user's local day, not the UTC one", () => {
   assert.equal(localDay(NOON_JST, JST), "2026-07-27");
 });
 
+// ── whose clock? (the tz chain, and the silence at the end of it) ─────────────────────────────────
+
+test("the chain is deps → the user row's own zone → env, and it reports which link answered", () => {
+  const previous = process.env.LM_DIET_UTC_OFFSET_HOURS;
+  delete process.env.LM_DIET_UTC_OFFSET_HOURS;
+  try {
+    assert.equal(resolveDietTzOffsetH({ tzOffsetH: -5 }, { call_time_zone: "Asia/Tokyo" }, NOON_JST), -5);
+    assert.equal(resolveDietTzOffsetH({}, { call_time_zone: "Asia/Tokyo" }, NOON_JST), 9);
+    assert.equal(resolveDietTzOffsetH({}, { call_time_zone: "America/New_York" }, NOON_JST), -4);
+    assert.equal(resolveDietTzOffsetH({}, { call_time_zone: "Mars/Olympus" }, NOON_JST), null,
+      "an unusable zone name is not silently 9");
+    assert.equal(resolveDietTzOffsetH({}, {}, NOON_JST), null);
+    process.env.LM_DIET_UTC_OFFSET_HOURS = "2";
+    assert.equal(resolveDietTzOffsetH({}, {}, NOON_JST), 2);
+  } finally {
+    if (previous === undefined) delete process.env.LM_DIET_UTC_OFFSET_HOURS;
+    else process.env.LM_DIET_UTC_OFFSET_HOURS = previous;
+  }
+});
+
+test("a user whose timezone we cannot resolve is left ALONE — silence beats a question at 3am", async () => {
+  const db = supabase();
+  const tg = telegram();
+  const logs = [];
+  const blind = { ...deps(db, tg), tzOffsetH: undefined, log: (line) => logs.push(line) };
+  const outcome = await dietUserOnce(USER, NOON_JST, blind);
+  assert.equal(outcome.status, "skipped");
+  assert.equal(outcome.reason, "no-timezone");
+  assert.equal(db.inserts.length + tg.sent.length, 0, "no read, no claim, no message");
+  // The 60s tick would otherwise print this line 1440 times a day, per user.
+  await dietUserOnce(USER, NOON_JST + 60000, blind);
+  await dietUserOnce(USER, NOON_JST + 120000, blind);
+  assert.equal(logs.length, 1, `the missing-zone warning is once per boot, got ${JSON.stringify(logs)}`);
+});
+
+test("the window belongs to the USER's clock — a New York user is asked at New York noon", async () => {
+  const nyUser = { ...USER, call_time_zone: "America/New_York" };
+  const noonNewYork = Date.parse("2026-07-27T16:00:00Z"); // 12:00 EDT
+  const asked = await dietUserOnce(nyUser, noonNewYork, { ...deps(supabase(), telegram()), tzOffsetH: undefined });
+  assert.equal(asked.status, "asked");
+  assert.equal(asked.day, "2026-07-27");
+  const quiet = await dietUserOnce(nyUser, NOON_JST, { ...deps(supabase(), telegram()), tzOffsetH: undefined });
+  assert.equal(quiet.reason, "outside-lunch-window", "JST noon is 23:00 in New York — nobody is asked then");
+});
+
+test("LM_DIET_UTC_OFFSET_HOURS is the last link before silence, not the first", async () => {
+  const previous = process.env.LM_DIET_UTC_OFFSET_HOURS;
+  process.env.LM_DIET_UTC_OFFSET_HOURS = "9";
+  try {
+    const outcome = await dietUserOnce(USER, NOON_JST, { ...deps(supabase(), telegram()), tzOffsetH: undefined });
+    assert.equal(outcome.status, "asked");
+  } finally {
+    if (previous === undefined) delete process.env.LM_DIET_UTC_OFFSET_HOURS;
+    else process.env.LM_DIET_UTC_OFFSET_HOURS = previous;
+  }
+});
+
 // ── asking ────────────────────────────────────────────────────────────────────────────────────────
 
 test("in the window with a clean history, the question is sent once and the ask is recorded", async () => {
@@ -110,6 +174,16 @@ test("in the window with a clean history, the question is sent once and the ask 
     { uid: "u-diet", day: "2026-07-27", kind: "ask" },
   );
   assert.equal(db.inserts[0].answer, undefined, "an ask row carries no answer");
+});
+
+test("every button carries the day it was asked, so a tap can never be filed against another day", async () => {
+  const db = supabase();
+  const tg = telegram();
+  await dietUserOnce(USER, NOON_JST, deps(db, tg));
+  assert.deepEqual(tg.sent[0].extra.reply_markup.inline_keyboard.flat().map((b) => b.callback_data), [
+    "diet:answer:teishoku:2026-07-27", "diet:answer:men:2026-07-27",
+    "diet:answer:fast:2026-07-27", "diet:answer:skip:2026-07-27",
+  ]);
 });
 
 test("the day is CLAIMED before the message is sent", async () => {
@@ -190,10 +264,34 @@ test("readDietAskState counts only ask rows inside the trailing 7 days", async (
   assert.equal(state.lastAskMs, Date.parse("2026-07-25T03:00:00Z"));
 });
 
-test("a ledger we cannot read throws — an unreadable history is never 'never asked'", async () => {
+test("the lookup itself throws — an unreadable history is never handed back as 'never asked'", async () => {
   const fetchImpl = async () => response(500, { message: "boom" });
   await assert.rejects(() => readDietAskState("u-diet", NOON_JST, SUPA, fetchImpl), /diet ask state/i);
-  await assert.rejects(() => dietUserOnce(USER, NOON_JST, deps({ fetchImpl }, telegram())), /diet ask state/i);
+});
+
+test("a transient read failure is logged ONCE per user per day, not once per 60s tick", async () => {
+  const fetchImpl = async () => response(500, { message: "boom" });
+  const tg = telegram();
+  const logs = [];
+  const flaky = { ...deps({ fetchImpl }, tg), log: (line) => logs.push(line) };
+  for (let tick = 0; tick < 30; tick += 1) {
+    const outcome = await dietUserOnce(USER, NOON_JST + tick * 60000, flaky);
+    assert.equal(outcome.status, "suppressed");
+    assert.equal(outcome.reason, "ledger-unreadable", "an outage must never look like a clean history");
+  }
+  assert.equal(logs.length, 1, `30 ticks inside one window must print one line, got ${logs.length}`);
+  assert.equal(tg.sent.length, 0);
+  // A new day is a new incident and says so.
+  await dietUserOnce(USER, NOON_JST + 86400000, flaky);
+  assert.equal(logs.length, 2);
+});
+
+test("the lunch window is checked BEFORE Supabase is touched at all", async () => {
+  let reads = 0;
+  const fetchImpl = async () => { reads += 1; return response(200, []); };
+  const outcome = await dietUserOnce(USER, Date.parse("2026-07-27T01:00:00Z"), deps({ fetchImpl }, telegram()));
+  assert.equal(outcome.reason, "outside-lunch-window");
+  assert.equal(reads, 0, "23 of every 24 hours the organ must cost nothing at all");
 });
 
 test("mid-event and moving suppress the ask in production too, with no Supabase write", async () => {
@@ -247,18 +345,47 @@ function callbackOpts(db, tg, overrides = {}) {
   };
 }
 
-test("the callback pattern accepts exactly the four answers", () => {
+test("the callback pattern accepts exactly the four answers, each carrying its ask day", () => {
   for (const answer of ["teishoku", "men", "fast", "skip"]) {
-    assert.ok(DIET_CALLBACK.test(`diet:answer:${answer}`));
+    assert.ok(DIET_CALLBACK.test(`diet:answer:${answer}:2026-07-27`));
   }
-  assert.ok(!DIET_CALLBACK.test("diet:answer:pizza"));
+  assert.ok(!DIET_CALLBACK.test("diet:answer:pizza:2026-07-27"));
   assert.ok(!DIET_CALLBACK.test("diet:answer:fast:extra"));
+  assert.ok(!DIET_CALLBACK.test("diet:answer:fast"), "a dayless tap cannot be filed against a day");
+});
+
+test("the answer is filed under the day the QUESTION carried, not the day of the tap", async () => {
+  const db = supabase();
+  const tg = telegram();
+  // Tapped at 00:20 JST on the 28th — nearly midnight, an hour after the question's own day ended.
+  // The row still belongs to the 27th, because that is the lunch the user is answering about.
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg, {
+    nowMs: Date.parse("2026-07-27T15:20:00Z"),
+  }));
+  assert.equal(outcome.ok, false, "a question from an earlier day has expired");
+  assert.equal(outcome.reason, "expired");
+  const sameDay = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg));
+  assert.equal(sameDay.ok, true);
+  assert.equal(db.inserts[0].day, "2026-07-27");
+});
+
+test("a stale-day tap is refused VISIBLY: the keyboard goes, the expiry is stated, no row is written", async () => {
+  const db = supabase();
+  const tg = telegram();
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-20", callbackOpts(db, tg));
+  assert.equal(outcome.ok, false);
+  assert.equal(outcome.reason, "expired");
+  assert.equal(db.inserts.length, 0, "a week-old question must never write today's lunch");
+  assert.equal(tg.edits.length, 1, "the dead keyboard is stripped");
+  assert.equal(tg.edits[0].label, "", "stripping a keyboard must not claim a choice");
+  assert.equal(tg.sent.length, 1);
+  assert.equal(tg.sent[0].text, DIET_STRINGS.ja.lunchQuestion.expired);
 });
 
 test("a tap persists the choice and answers VISIBLY by editing the question (CB-1 ①)", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, tg));
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg));
   assert.equal(outcome.ok, true);
   assert.equal(outcome.answer, "fast");
   assert.deepEqual(
@@ -275,15 +402,15 @@ test("a tap persists the choice and answers VISIBLY by editing the question (CB-
 test("no thank-you is sent — the edit IS the response (§10.0-15 ①, no extra chatter)", async () => {
   const db = supabase();
   const tg = telegram();
-  await handleDietCallback("diet:answer:teishoku", callbackOpts(db, tg));
+  await handleDietCallback("diet:answer:teishoku:2026-07-27", callbackOpts(db, tg));
   assert.equal(tg.sent.length, 0, `a tap must not spawn a second message, got ${JSON.stringify(tg.sent)}`);
 });
 
 test("a second tap gets a visible 'already recorded' reply and never a duplicate row (§10.0-15 ③)", async () => {
   const db = supabase();
   const tg = telegram();
-  await handleDietCallback("diet:answer:men", callbackOpts(db, tg));
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, tg));
+  await handleDietCallback("diet:answer:men:2026-07-27", callbackOpts(db, tg));
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg));
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, "already_answered");
   assert.equal(db.inserts.length, 1, "the unique index is the guard; no second row");
@@ -296,7 +423,7 @@ test("a second tap gets a visible 'already recorded' reply and never a duplicate
 test("cross-tenant taps are refused: a stranger's actor id writes nothing", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, tg, { actorId: "999" }));
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg, { actorId: "999" }));
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, "scope_mismatch");
   assert.equal(db.inserts.length, 0);
@@ -306,7 +433,7 @@ test("cross-tenant taps are refused: a stranger's actor id writes nothing", asyn
 test("a row that does not name this chat is refused even when the actor matches", async () => {
   const db = supabase();
   const tg = telegram();
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, tg, {
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg, {
     row: { uid: "someone-else", telegram_chat_id: "555" },
   }));
   assert.equal(outcome.ok, false);
@@ -316,7 +443,7 @@ test("a row that does not name this chat is refused even when the actor matches"
 
 test("an unlinked chat (no row) is refused rather than writing an orphan row", async () => {
   const db = supabase();
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, telegram(), { row: null }));
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, telegram(), { row: null }));
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, "unlinked");
   assert.equal(db.inserts.length, 0);
@@ -330,7 +457,7 @@ test("callbacks that are not ours are ignored, not guessed at", async () => {
 test("a persist failure is never dressed up as a recorded answer", async () => {
   const db = { fetchImpl: async () => response(500, { message: "down" }) };
   const tg = telegram();
-  const outcome = await handleDietCallback("diet:answer:fast", callbackOpts(db, tg));
+  const outcome = await handleDietCallback("diet:answer:fast:2026-07-27", callbackOpts(db, tg));
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, "persist_failed");
   assert.equal(tg.edits.length, 0, "nothing was recorded, so nothing is shown as recorded");

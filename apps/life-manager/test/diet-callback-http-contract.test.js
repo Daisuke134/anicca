@@ -18,6 +18,10 @@ test("POST /telegram routes diet:answer:* into the diet ledger and edits the que
   process.env.SUPABASE_URL = "https://fixture.supabase.co";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "fixture-service-role";
   process.env.LIFE_RUN_LOOPS = "false";
+  // The webhook has no per-user row timezone to read (lm_users has no tz column), so the env link of
+  // the chain is what makes "is this question still today's?" answerable in this contract.
+  process.env.LM_DIET_UTC_OFFSET_HOURS = "9";
+  const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
   const originalCreateServer = http.createServer;
   const originalFetch = global.fetch;
@@ -90,7 +94,7 @@ test("POST /telegram routes diet:answer:* into the diet ledger and edits the que
     const copy = DIET_STRINGS.ja.lunchQuestion;
 
     // 1. The user taps 「バーガー・ファスト」 on the lunch question.
-    assert.equal(await post("diet:answer:fast", "cb-fast", copy.text), 200);
+    assert.equal(await post(`diet:answer:fast:${today}`, "cb-fast", copy.text), 200);
     assert.equal(dietRows.length, 1, `the answer must reach lm_diet_log, got ${JSON.stringify(dietRows)}`);
     assert.equal(dietRows[0].uid, "u1");
     assert.equal(dietRows[0].kind, "answer");
@@ -108,7 +112,7 @@ test("POST /telegram routes diet:answer:* into the diet ledger and edits the que
     assert.equal(sentMessages.length, 0, `no follow-up message on a plain tap, got ${JSON.stringify(sentMessages)}`);
 
     // 4. A second tap is refused by the unique index and answered visibly (§10.0-15 ③).
-    assert.equal(await post("diet:answer:men", "cb-again", copy.text), 200);
+    assert.equal(await post(`diet:answer:men:${today}`, "cb-again", copy.text), 200);
     assert.equal(dietRows.length, 1, "no duplicate row for the same day");
     assert.equal(sentMessages.length, 1, "the second tap must not be silent");
     assert.equal(sentMessages[sentMessages.length - 1].text,
@@ -116,8 +120,15 @@ test("POST /telegram routes diet:answer:* into the diet ledger and edits the que
 
     // 5. A stranger's tap on this chat's message writes nothing.
     const beforeRows = dietRows.length;
-    assert.equal(await post("diet:answer:teishoku", "cb-stranger", copy.text, 999), 200);
+    assert.equal(await post(`diet:answer:teishoku:${today}`, "cb-stranger", copy.text, 999), 200);
     assert.equal(dietRows.length, beforeRows, "a cross-tenant tap must not write");
+
+    // 6. A tap on last week's question is refused visibly and files nothing against today.
+    const beforeStale = sentMessages.length;
+    assert.equal(await post("diet:answer:fast:2020-01-01", "cb-stale", copy.text), 200);
+    assert.equal(dietRows.length, beforeRows, "a stale-day tap must not write a row");
+    assert.equal(sentMessages[sentMessages.length - 1].text, copy.expired);
+    assert.equal(sentMessages.length, beforeStale + 1);
   } finally {
     console.log = originalLog;
     http.createServer = originalCreateServer;

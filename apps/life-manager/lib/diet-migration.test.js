@@ -56,6 +56,18 @@ test("the table is service-only and holds nothing private about the person", () 
   assert.doesNotMatch(STATEMENTS, /\b(home_address|phone|email|private_key|secret|weight|bmi|calorie)\b/i);
 });
 
-test("the trailing-window reads have an index to run on", () => {
-  assert.match(SQL, /CREATE INDEX IF NOT EXISTS lm_diet_log_uid_created_at/i);
+test("the index covers the column the queries actually filter on", () => {
+  // Every read is (uid, trailing range of `day`): the 7-day ask cap, the 14-day fast share, the
+  // 7-day nudge cooldown. An index on created_at serves none of them — it just looks reassuring.
+  assert.match(SQL, /CREATE INDEX IF NOT EXISTS lm_diet_log_uid_day/i);
+  assert.match(SQL, /ON public\.lm_diet_log \(uid, day DESC\)/i);
+  assert.doesNotMatch(STATEMENTS, /\(uid, created_at DESC\)/i);
+});
+
+test("TRUNCATE cannot empty an append-only ledger either", () => {
+  // The row trigger sees UPDATE and DELETE. TRUNCATE is neither, and the table owner keeps it by
+  // default — so the append-only promise had a hole exactly the width of one statement.
+  assert.match(SQL, /REVOKE TRUNCATE, REFERENCES, TRIGGER ON TABLE public\.lm_diet_log FROM service_role/i);
+  assert.match(SQL, /BEFORE TRUNCATE ON public\.lm_diet_log/i);
+  assert.match(SQL, /FOR EACH STATEMENT/i);
 });

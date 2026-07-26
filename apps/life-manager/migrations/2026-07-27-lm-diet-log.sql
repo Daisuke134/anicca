@@ -43,9 +43,14 @@ CREATE TABLE IF NOT EXISTS public.lm_diet_log (
 CREATE UNIQUE INDEX IF NOT EXISTS lm_diet_log_uid_day_kind
   ON public.lm_diet_log (uid, day, kind);
 
--- The trailing 7-day (weekly cap) and 14-day (fast share) reads.
-CREATE INDEX IF NOT EXISTS lm_diet_log_uid_created_at
-  ON public.lm_diet_log (uid, created_at DESC);
+-- The trailing-window reads, on the column they actually filter by. All three — the 7-day ask cap,
+-- the 14-day fast share, the 7-day nudge cooldown — are (uid, day >= <a local day>), because `day`
+-- is the user's own calendar day and the only key a lunch history can honestly be bucketed on. The
+-- asked_at / answered_at windows are served THROUGH this index: the query narrows by day (with a
+-- one-day cushion for timezone slop) and the exact timestamp cut is made on the narrowed rows. An
+-- index on created_at served none of those and merely looked reassuring.
+CREATE INDEX IF NOT EXISTS lm_diet_log_uid_day
+  ON public.lm_diet_log (uid, day DESC);
 
 CREATE OR REPLACE FUNCTION public.lm_diet_log_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -58,9 +63,28 @@ CREATE TRIGGER lm_diet_log_guard
   BEFORE UPDATE OR DELETE ON public.lm_diet_log
   FOR EACH ROW EXECUTE FUNCTION public.lm_diet_log_guard();
 
+-- THE HOLE THE ROW TRIGGER LEAVES, closed. A row-level BEFORE UPDATE OR DELETE trigger never fires
+-- for TRUNCATE — TRUNCATE is neither, it removes the rows without visiting any of them — so a ledger
+-- guarded only by that trigger could still be emptied in one statement, and the append-only promise
+-- would be true of every row and false of the table. Statement-level trigger, same guard function
+-- (it touches neither NEW nor OLD, so it serves both).
+--
+-- HARDENING NOTE FOR EVERY FUTURE LEDGER MIGRATION IN THIS REPO: "append-only" needs all three of
+--   1. REVOKE UPDATE, DELETE (the ordinary writes),
+--   2. REVOKE TRUNCATE (the statement that skips row triggers), plus REFERENCES and TRIGGER — a role
+--      that may add its own trigger or FK to the table can arrange for rows to disappear anyway, so
+--      leaving those granted leaves the guard editable by the very role it is guarding against,
+--   3. triggers for BOTH levels, because a grant is a policy and a trigger is a mechanism, and a
+--      ledger that is evidence needs the mechanism as well as the policy.
+DROP TRIGGER IF EXISTS lm_diet_log_truncate_guard ON public.lm_diet_log;
+CREATE TRIGGER lm_diet_log_truncate_guard
+  BEFORE TRUNCATE ON public.lm_diet_log
+  FOR EACH STATEMENT EXECUTE FUNCTION public.lm_diet_log_guard();
+
 ALTER TABLE public.lm_diet_log ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.lm_diet_log FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON TABLE public.lm_diet_log TO service_role;
 REVOKE UPDATE ON TABLE public.lm_diet_log FROM service_role;
 REVOKE DELETE ON TABLE public.lm_diet_log FROM service_role;
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON TABLE public.lm_diet_log FROM service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.lm_diet_log_id_seq TO service_role;

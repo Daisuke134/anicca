@@ -142,12 +142,23 @@ const DIET_STRINGS = Object.freeze({
       // CB-1 (§10.0-15 ③): a second tap is never silent. {choice} is the label already on file —
       // what was RECORDED, not what was just tapped.
       alreadyAnswered: "今日のお昼はもう記録済みです（{choice}）。",
+      // A tap on a question from an earlier day. The keyboard is stripped and this says why: a
+      // button that silently does nothing reads as a broken bot.
+      expired: "この質問は期限切れです。",
     }),
     // The intervention. `withoutVenue` is not a fallback to be embarrassed about: §9.5 says an
     // honest failure beats a fabricated success, so when Places finds nothing we say we found
     // nothing rather than dropping the sentence or inventing a shop.
+    //
+    // TWO venue variants, and which one is used is a matter of fact rather than tone: 「職場の近く」
+    // may only be said when the shop was found around a WORK anchor. deriveAnchors needs three
+    // repeats of the same calendar location before it will call anything a workplace, which almost
+    // never holds on the short event slice the nudge runs on — so the home-anchored fallback is the
+    // COMMON case and it says 「近くだと」. Claiming the office when we searched near their flat is a
+    // small lie that makes every other sentence in the message less believable.
     lunchNudge: Object.freeze({
       withVenue: "🍚 直近2週間のお昼は{sampleCount}回中{fastCount}回がバーガー・ファストでした。職場の近くだと{venueName}（{venueAddress}）があります。",
+      withVenueNearby: "🍚 直近2週間のお昼は{sampleCount}回中{fastCount}回がバーガー・ファストでした。近くだと{venueName}（{venueAddress}）があります。",
       withoutVenue: "🍚 直近2週間のお昼は{sampleCount}回中{fastCount}回がバーガー・ファストでした。近くの定食・サラダのお店は今日は見つけられませんでした。",
     }),
   }),
