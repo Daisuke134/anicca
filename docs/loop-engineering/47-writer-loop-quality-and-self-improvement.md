@@ -815,6 +815,119 @@ paid subscription ¥500相当/月 ───────────────�
 | E3 | **DONE** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agentを撤去。既存X Articles/Dev.to publisherは新SSOTへ各1実装として移植し、X Post publisher、Telegram outbox、tracked plist 5本、install/uninstallを実装 | commit `7b55799`、fresh root Codex/Claude install、tests 103 PASS、旧path/tree 0、X Article/X Post/Dev.to各exact1、state hash `25bfbbde...1983`・754 entries・writable 0・再実行safe、launchctl新5のみ、fresh review `ok:true`、ledger不変・投稿増分0 |
 | E4 | **TODO** | daily MID+X pipelineを実装。固定reader questions、最大5→best-safe、MID exact5 live、X Articlesはrun別ja/enを`published_at`差6h〜6h10m、X Postは日本語exact1/JST日のFIFO 12:00–23:55 slot window、exact8 intent/receipt/reality、draft-only終端0、全stateと同transactionのTelegram outbox、5分resume worker、06:00後のlogin/reboot catch-up、LaunchAgent用provider絶対pathを配線 | crash/429/response-loss/date-slot backlog/late-ready/6時間clock matrix PASS、manual kickstart exact8、同日reboot/reload後もrun exact1、launchd環境からruntime probe PASS、X Post/ja ID exact1、英語X Post/reply 0、X Article ja/en ID各exact1、Dev.to live、8 live outputのown-eyes、Telegram event UUID/send receipt |
 | E5 | **TODO** | monthly book pipelineを実装。X Postを除くarticle exact7完了済みMID topicの30本inventory、book-writer、全書整合、Pandoc、Zenn Book/Gumroad/Stripe idempotent publishers | 29/30/31 test、X Post障害時も在庫維持、manual monthly kickstart、exact3 live URL、EPUB validation、revenue receipt、Telegram receipt |
-| E6 | **TODO** | self-improveを1本化。22:30 metrics、週次Terra/Claude proposal、held-out、7日canary、keep/revert、code self-mutation禁止を実装 | 悪化revert/改善keep fixture、実7日experiment receipt、重複schedule 0 |
+| E6 | **TODO** | self-improveを1本化（中身の正本は §19）。22:30 metrics、週次Terra/Claude proposal、held-out、7日canary、keep/revert、code self-mutation禁止を実装 | 悪化revert/改善keep fixture、実7日experiment receipt、重複schedule 0 |
 | E7 | **TODO** | OSS境界を完成。runtime別setup、config example、browser/account preflight、operations/money docs、license attributionを作成 | clean macOS userでCodex-only install+run、別fresh userでClaude-only install+run、secret/hardcoded home 0 |
 | E8 | **TODO** | final fresh E2E。Codex-only daily exact8、Claude-only daily exact8、X Articlesのreadback時刻差6h〜6h10m、X Post ja FIFO 12:00–23:55 date slot exact1/JST日、全媒体live、monthly exact3、翌06:00 schedule、5分resume、Telegram、metrics/weekly jobをartifact-only reviewerが独立確認しspecをDONE同期 | 8 live URL/ID readback、英語X Post/reply 0、draft-only 0、daily ledger exact8、article exact7時点のbook inventory receipt、book ledger exact3、Telegram logical event exact1 + UUID付きat-least-once delivery、launchctl evidence、fresh review `ok:true`、全repo commit+push+clean |
+
+---
+
+## 19. Craft Trainer — E6 の中身（2026-07-26 Dais 指示。§4 の「[メタ] self-improve」を上書き）
+
+Dais 指示: 「毎日ちゃんと publish はしてる。でも writing 自体が上手くなってない。書く力そのものを self-improve させろ。短文も長文も本も書ける汎用の書き手にしろ。babysitting は無し」。参照指定: [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt)。
+
+### 19.1 なぜ今の 22:30 loop では上手くならないか（実測）
+
+`skills/article-writer/scripts/self_improve_control.py` の目的関数は 2 入力しかない。
+
+| 入力 | 実装 | 実態 |
+|---|---|---|
+| 品質 | `_quality()` line 93 — `gates/rubric-judge-{ja,en}.json` **だけ**を読む | 自分の judge が自分の draft に付けた点 |
+| 売上 | `_real_revenue()` line 369 — `sales_revenue` 行の合計、無ければ `None` | 今は常に `None` |
+
+つまり勾配が **完全に閉じている**。外から何も入ってこない。この構造では「judge に気に入られる技術」しか上達しない。外部信号なしの自己修正は改善せず劣化するのが実測済み（[arxiv 2310.01798](https://arxiv.org/abs/2310.01798) *LLMs Cannot Self-Correct Reasoning Yet*）。Dais の「上手くなってない」は主観ではなく設計の帰結。
+
+副次欠陥 2 件（同時に直す）:
+- editorial-gate 化で rubric-judge を廃止したのに `_quality()` はまだ `rubric-judge-*.json` を読む。`state/selfimprove-audit.jsonl` に `daily-2026-07-25 rubric-judge-ja.json is missing` が既に記録されている = 学習 loop は今 **盲目**。
+- `article-daily.sh` STEP 4.5 は「editorial-gate が rubric を置換」と書き、STEP 4.6 は今も `rubric-judge.sh` を回せと書いている。矛盾。
+
+### 19.2 SkillOpt から取るもの / 取れないもの
+
+SkillOpt（[arxiv 2605.23904](https://arxiv.org/abs/2605.23904)）は skill 文書を **学習可能パラメータ**として扱う optimizer。対応表は本家 docs のまま:
+
+| Deep learning | SkillOpt |
+|---|---|
+| weights | skill 文書（markdown） |
+| forward | rollout（target が task を実行） |
+| loss/gradient | reflect（optimizer が edit patch を出す） |
+| gradient clipping | edit selection、`learning_rate` = 最大 edit 数 |
+| SGD step | patch 適用 |
+| validation set | held-out split での gate |
+| epoch | slow update + meta skill memory |
+
+**取る**: bounded edit、held-out gate、learning rate、却下 patch の記憶。E6 が欲しかった機構そのもの。自作しない。
+
+**取れない**: 報酬。同梱 benchmark（DocVQA/ALFWorld/OfficeQA/SearchQA/SpreadsheetBench）は全部 ground truth を持つので gate は accuracy。writing に ground truth は無い。ここに自分の judge を差すと **閉ループを部品数だけ増やして再建**することになる。
+
+結論: **SkillOpt は trainer として使い、報酬は自分で外から供給する。** 拡張点は文書化済み（`docs/guide/new-benchmark.md`「~200 lines of code」= dataloader + rollout + adapter + YAML）。
+
+### 19.3 報酬の出どころ
+
+| 源 | 遅延 | 週あたり件数 | 操作耐性 | 役割 |
+|---|---|---|---|---|
+| **A. exemplar beat rate** — 同topicで、実際に伸びた本物の投稿と自draftを盲検 pairwise 比較 | 即時 | 無制限 | 高い（相手は自分が書けない・いじれない文章） | **毎晩の gate** |
+| **B. 実 engagement** — 自分の 8面/日（X impressions/bookmarks、dev.to reactions、note like、substack open） | 24–72h | ~56 | 操作不能 | **週次の錨** |
+| **C. 売上** — note/substack 有料 | 数週 | 今 ~0 | 操作不能 | 最終目的 |
+
+A だけが毎晩 gate できる件数を持つ。B だけが疑いなく本物。だから **周波数を分けて、B に A を監査させる**。
+
+- **毎晩（fast loop）**: corpus を mine → craft 文書に最大 N 個の bounded edit を提案 → held-out の beat rate が厳密に改善し、かつ **どの format slice も悪化しない**時だけ採用。
+- **週次（slow loop / epoch）**: **judge 自身**を採点する。judge が good と言った draft は、実際に engagement を多く取ったか。取っていないなら judge を較正してから次の gate を任せる。
+
+週次が無ければ A はただの高級な閉ループ。**週次が本設計の接地点。**
+
+pairwise は必ず **順序を入れ替えて両方向で判定し平均**する。LLM judge の position bias は判定を反転させるほど強い（[arxiv 2305.17926](https://arxiv.org/abs/2305.17926) *Large Language Models are not Fair Evaluators*）。
+
+### 19.4 学習対象（= 汎用の書き手の実体）
+
+publication 機構と craft を分離する。分離しないと「書く力を上げる」が「launchd schedule も receipt も入った 106KB の SKILL.md を編集する」になる。
+
+```
+skills/writing-craft/
+  CRAFT.md              学習対象コア — format 非依存
+  formats/x-post.md     学習対象 adapter — 短文
+  formats/article.md    学習対象 adapter — 中尺
+  formats/longform.md   学習対象 adapter — 書籍
+```
+
+`CRAFT.md` が weight。article loop は core + 該当 adapter を読む。将来の book loop は core + `longform.md` を読む。`CRAFT.md` への patch は **全 format slice で gate** する。記事に効くが X post に効かない edit は却下。これが「短文も長文も本も書ける」の実装上の意味 — core は全長さで生き残った edit しか受け付けない。
+
+schedule / credential / publication 不変条件 / safety gate は学習対象外。`self_improve_control.py` の `PROTECTED_PATTERN` が既にこの境界を持っているので流用する。
+
+### 19.5 Corpus
+
+`skills/article-writer/state/writing-corpus/` に 1 行 1 exemplar の JSONL。
+
+```json
+{"id":"...","source":"x|hn|devto|note|own","format":"x-post|article|longform",
+ "lang":"ja|en","text":"...","url":"...","metric":{"likes":0,"bookmarks":0,
+ "impressions":0,"points":0,"comments":0,"reactions":0},"followers":0,
+ "norm_score":0.0,"topic_tags":[],"harvested_at":"..."}
+```
+
+収集元（全て本機から到達確認済み）:
+- **X** — daily-driver 上の `x-search-cdp`。niche クエリ + `min_faves:` 演算子。text / likes / RT / bookmarks / 著者 follower を取り、**follower で正規化**（生 like は大アカウント有利で学習信号にならない）。
+- **HN** — `hn.algolia.com/api/v1/search`（2026-07-26 JSON 応答実測）。points と comments が ground truth。
+- **dev.to** — `/api/articles?top=7` の `public_reactions_count`。
+- **自分の投稿** — X analytics（CDP）、dev.to API、note dashboard。これが報酬源 B。
+
+mine は **対比的**に行う。同 source・同 topic の上位十分位 **対** 下位十分位から差分を抽出する。勝者だけ読むと生存バイアスを学習する（伸びた投稿と死んだ投稿が共有している書き出しは、伸びた理由ではない）。
+
+### 19.6 done 条件（E6 の evidence を本節で確定）
+
+| # | 作業 | done evidence |
+|---|---|---|
+| 19-1 | 本節（spec）| production branch に存在 |
+| 19-2 | corpus harvester | `writing-corpus/*.jsonl` が 3 source 以上・200 行以上 |
+| 19-3 | `skills/writing-craft/` | CRAFT.md + adapter 3 本、article loop が実読み |
+| 19-4 | `skillopt/envs/writing/` | `skillopt-train` が 1 epoch 回り beat rate の数値を出す |
+| 19-5 | `_quality()` 付け替え | rubric 軸でなく beat rate + 単一 gate verdict を読む。STEP 4.5/4.6 の矛盾解消 |
+| 19-6 | `ai.anicca.writer-craft-train` | 毎晩 Telegram 1 通: patch 内容 / beat rate before-after / 採用か却下か |
+| 19-7 | 週次 judge 較正 | judge の選好と自投稿の実 engagement の相関を出力 |
+
+### 19.7 成功の定義（「judge の点が上がった」は成功ではない）
+
+1. 本物 exemplar 相手の held-out beat rate が epoch を跨いで上がる、かつ
+2. 週次で judge の選好が自投稿の実 engagement を予測できている、かつ
+3. X と note の 1 投稿あたり engagement が週単位で上向く。
+
+(1) だけ上がって (2)(3) が横ばいなら、loop は自分の gate を gaming していて gate が間違っている。これは定義済みの失敗モードで、検出手段が (2) — (2) を置く理由そのもの。
