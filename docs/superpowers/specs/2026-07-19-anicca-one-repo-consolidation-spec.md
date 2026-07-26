@@ -523,6 +523,14 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     は Life Manager 専用ではなく、capafy loop・reelclaw・larry が同じ engine に乗る。
     9d の self-improve（metrics → winner/loser → 翌日変更）は**全 loop 共通の必須規約**であり、Life Manager だけの機能にしない。
     openclaw の marketing 系 cron はこの repo へ移管する（裁定4「openclaw から離脱」の具体化）。**移管作業は指示があるまで着手しない**。
+15. **全 inline button は tap に見える応答を返す（2026-07-26 Dais 裁定 = 「押しても何も起きない」は欠陥）**。
+    実測: ask（オンライン/対面・yes）と payout（bank/wallet/later）の全 callback が DB write + toast のみで、
+    chat に恒久の視覚応答を残さず、元 message の keyboard も残置される。契約: ①tap された選択を元 message に
+    反映し keyboard を撤去（answered 状態の可視化）②flow が続く場合のみ追加の質問/確認を送信 ③2度目の tap は
+    「登録済み」を可視で返す。ack 文言は `lib/i18n.js` に置き Dais 編集可能とする。
+16. **E2E 検証は Dais の手を借りず agent が browser（daily-driver CDP）で Dais の Telegram を実操作してよい
+    （2026-07-26 Dais 裁定）**。ただし Dais の私的情報を要する回答（例: 予定がオンラインか対面か）は推測して
+    tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 
 
 
@@ -550,6 +558,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | 8 | `13b` | FINANCIAL | 実 TG 往復 1回 + 実 DB row 読み戻し（実装は PR #1121 で merged、fixture 検証のみ） | なし |
 | 9 | `13c` | FINANCIAL | 台帳に実収支行 + 月次報告文の生成実測（PR #1122 が OPEN かつ **CONFLICTING**） | conflict 解消 |
 | 10 | `13d` | FINANCIAL | agent wallet → user wallet の on-chain 実 tx + 実 TG 報告 | 13b の実 payout destination / 13c の台帳 |
+| 6.5 | `CB-1` | UX | 裁定15の callback 可視応答契約を ask/payout/discovery 全 handler に実装（元 message 編集 + keyboard 撤去 + 再tap の可視応答） | 実 tap で chat に恒久応答が残る実測 readback |
 | 11 | `10e` | DEV | guard 内 auto-merge/deploy を実 error 由来 PR 1本で実証 | 上記すべて done |
 | 12 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復 | 10e |
 
