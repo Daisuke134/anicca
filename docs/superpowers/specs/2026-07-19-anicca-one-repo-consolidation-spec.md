@@ -534,19 +534,19 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**: 残りは **12 atomic**（12b は 2026-07-25 done、**13a** は 2026-07-25 done、**9f** は 2026-07-26 に Dais 本人が X へ投稿して done）。**★9c は IG 未達のまま pending。§9.8 順序どおり MARKETING が先頭、10e/10f は最後★**（TikTok は実配信済み、IG は当該アカウントが Instagram 側で凍結）。**8e/8f とも 2026-07-25 に実L3 PASS で done**（`docs/evidence/core-8e-daily-journey-l3.md` / `docs/evidence/core-8f-context-discovery-l3.md`）。次は **9c**。無承認投稿を防ぐため`ai.anicca.life-manager-daily`はunloadedで、Daisが実MP4を承認するまで再loadしない。9bのMPT renderer/実MP4生成はdoneのまま。9cは旧公開実績を履歴として保持するがpreview-firstを満たさないためreopen。9dの旧Day 1はpre-approval baselineとして保持し、新しい7日streakには数えない。9eのTikTok自前script移行は中止し、Postiz継続へscope訂正してdone。11a/11b/11cは意味的根拠・care need/provider binding・cloud実行が不足していたためreopenし、11dはconfirmed booking待ち。10iはdoneだがfinal fresh reviewの再検証対象。DEV自動化`10e→10f`は最終phaseへ移動し、`ai.anicca.life-manager-dev`はunloaded、active plistは`.disabled`へ退避、pause markerあり。10fの実Day 2/7 ledgerは保持し、最終phase再開後の連続日だけを追加する。実測監査=`docs/evidence/ssot-reality-audit.md`。
+**Current cursor**（2026-07-26 更新）: 残りは **10 atomic**。今日 done = **9c**（TikTok+IG daily 自走、2日連続 readback）と **12c**（MENTAL 3/3 実 TG）。11b/13c は実装 merged、実測 leg のみ残。付随修理 = 録音 pipeline 停止（§10.0-1 違反）、prod webhook 復旧×2 + boot self-heal 恒久化（INC-3、PR #1135）、between_events 到達性 fix（PR #1129）。次に動けるのは: 13b（Dais の tap 待ち）、11a（現実の overdue 待ち）、11c 入口 = Dais の Browserbase account 作成。
 
 **Live remaining to-do list (12, execution order = §9.8)**:
 
 | # | ID | organ | 残っている実物 | blocker |
 |---|---|---|---|---|
-| 1 | `9c` | MARKETING | 新規 IG account（**warm-up なし** = §10.0-9）+ 実 MP4 の private preview → 承認後 daily unlock | Dais の MP4 承認 1回 |
+| — | `9c` | MARKETING | **done 2026-07-26** — 表下の行参照 | — |
 | 2 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger（9c 非依存 = §10.0-3） | 実配信 Day 1 |
 | 3 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（2026-07-25 実測: 実履歴6件すべて 1.5x 未満で overdue 0件）。detector 自体は実データ上で正常・誤検知0 |
 | 4 | `11b` | PHYSICAL | 同 care need の実候補3件 + 生活圏 + 予約経路判定 | 11a の care category |
 | 5 | `11c` | PHYSICAL | cloud 常駐 browser/メールで実予約（電話禁止 = §9.5） | 11b |
 | 6 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
-| 7 | `12c` | MENTAL | 残り **2/3** の実 TG 着信（pre_event は 2026-07-25 に message `260` で実配信済み） | 60秒 tick loop が停止中 — 再起動が実作業 |
+| — | `12c` | MENTAL | **done 2026-07-26** — 3/3 実 TG | — |
 | 8 | `13b` | FINANCIAL | 実 TG 往復 1回 + 実 DB row 読み戻し（実装は PR #1121 で merged、fixture 検証のみ） | なし |
 | 9 | `13c` | FINANCIAL | 台帳に実収支行 + 月次報告文の生成実測（PR #1122 が OPEN かつ **CONFLICTING**） | conflict 解消 |
 | 10 | `13d` | FINANCIAL | agent wallet → user wallet の on-chain 実 tx + 実 TG 報告 | 13b の実 payout destination / 13c の台帳 |
