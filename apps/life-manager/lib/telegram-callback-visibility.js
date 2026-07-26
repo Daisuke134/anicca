@@ -49,7 +49,11 @@ function markAnswered(token, chatId, messageId, originalText, chosenLabel, opts 
   if (!originalText) return Promise.resolve({ ok: false, reason: "no_original_text" });
   return editCall(token, "editMessageText", {
     chat_id: chatId, message_id: messageId,
-    text: `${String(originalText)}\n\n→ ${String(chosenLabel || "")}`,
+    // Idempotent: an already-marked text is not marked twice (a retried edit or a raced
+    // duplicate callback must not stack "→ label" lines).
+    text: String(originalText).includes("\n\n→ ")
+      ? String(originalText)
+      : `${String(originalText)}\n\n→ ${String(chosenLabel || "")}`,
   }, opts);
 }
 
