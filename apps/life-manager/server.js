@@ -31,6 +31,7 @@ const {
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
+const { compBootLog } = require("./lib/comp-window.js");
 const { selfHealWebhook } = require("./lib/webhook-selfheal.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
 const { inngest } = require("./inngest/client.js");
@@ -765,6 +766,10 @@ wss.on("connection", (carrierWs, req) => {
 if (require.main === module) {
   server.listen(PORT, () => {
     console.log(`[life-call] listening ${PORT} ws=/ws build=lm27-voicemail-v1`);
+    // A comp window silently changes who gets past the paywall and who the scheduler picks up, so it
+    // announces itself once at boot — an operator must never have to guess whether it is on.
+    const compBanner = compBootLog(process.env);
+    if (compBanner) console.log(compBanner);
     // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
     // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
     // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.

@@ -5,12 +5,17 @@ const { sendMessage, onboardLink } = require("./telegram.js");
 const { signedGmailConnectUrl } = require("./gmail-onboard.js");
 const { backfillCalendarContext } = require("./context-graph.js");
 const { mailAvailable } = require("./mail-availability.js");
+const { compActive } = require("./comp-window.js");
 
 // PURE: calendar/pay are taps, phone is the only typed question, and Gmail is skippable after pay.
-function computeStage(row) {
+// COMP WINDOW: while LM_COMP_UNTIL is in the future an unpaid row passes the paywall and continues to
+// the next stage. This is a READ-TIME override only — the paid column is never written here, so the
+// Stripe webhook (lib/billing.js) remains its single writer and the comp expires by itself.
+// `opts` ({env, now}) exists so tests can pin the clock; production calls computeStage(row).
+function computeStage(row, opts = {}) {
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   if (!row.phone) return "phone";
-  if (row.paid !== true) return "pay";
+  if (row.paid !== true && !compActive(opts.env || process.env, opts.now)) return "pay";
   if (!row.gmail_account_id && row.gmail_skipped !== true) return "gmail";
   return "done";
 }
@@ -98,11 +103,27 @@ async function rowByChatId(chatId, supaUrl, supaKey) {
   const data = await response.json().catch(() => []);
   return Array.isArray(data) && data[0] ? data[0] : null;
 }
-async function linkedRows(supaUrl, supaKey) {
-  const response = await fetch(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=not.is.null&select=${SEL}`,
-    { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });
+// notifications_enabled lives in lm_panel_preferences, not lm_users, so it is joined here the same way
+// scheduler.supaUsers does it: ONE batched `uid=in.(...)` query, because this feeds a 2-minute loop and
+// a per-user round trip would multiply the cost by the size of the fleet. A missing preferences row
+// means the user never touched the toggle → default ON. A failed preferences read fails CLOSED, which
+// matches the ask and discovery loops: silence is recoverable, unwanted messages are not.
+async function linkedRows(supaUrl, supaKey, opts = {}) {
+  const f = opts.fetchImpl || fetch;
+  const headers = { apikey: supaKey, Authorization: `Bearer ${supaKey}` };
+  const response = await f(`${supaUrl}/rest/v1/lm_users?telegram_chat_id=not.is.null&select=${SEL}`, { headers });
   const data = await response.json().catch(() => []);
-  return Array.isArray(data) ? data : [];
+  const rows = Array.isArray(data) ? data : [];
+  if (rows.length === 0) return rows;
+  const ids = rows.map(row => row.uid).filter(Boolean).join(",");
+  const prefsResponse = ids
+    ? await f(`${supaUrl}/rest/v1/lm_panel_preferences?uid=in.(${encodeURIComponent(ids)})&select=uid,notifications_enabled`, { headers }).catch(() => null)
+    : null;
+  if (!prefsResponse || !prefsResponse.ok) return rows.map(row => ({ ...row, notifications_enabled: false }));
+  const prefRows = await prefsResponse.json().catch(() => null);
+  if (!Array.isArray(prefRows)) return rows.map(row => ({ ...row, notifications_enabled: false }));
+  const byUid = new Map(prefRows.map(row => [row.uid, row]));
+  return rows.map(row => ({ notifications_enabled: true, ...row, ...(byUid.get(row.uid) || {}) }));
 }
 async function setStage(uid, stage, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
@@ -158,15 +179,33 @@ async function handleGmailCallback(data, row, opts = {}) {
   return { ok: true, stage };
 }
 
+// This loop ticks every 2 minutes over every linked row. The same-stage guard alone is not enough:
+// a user finishing steps in the browser changes stage several times in a few minutes and gets a
+// Telegram message for each one. One nudge per user per 30 minutes.
+const NUDGE_COOLDOWN_MS = 30 * 60 * 1000;
+// TRADEOFF (accepted): the cooldown lives in memory, not in the database. A restart forgets it, so a
+// deploy can cost a user ONE extra nudge — bounded and harmless. The durable alternative is a new
+// lm_users column plus a write on every tick for every linked user, which buys nothing while a single
+// process owns this loop (see lib/maybe-start-loops.js: exactly one writer). If the loop is ever
+// sharded across processes, move this to a column next to last_discovery_at.
+const nudgeSentAt = new Map();
+
 async function onboardNudgeAll(opts) {
   if (!opts.token || !opts.supaUrl || !opts.supaKey) return 0;
   const list = opts.linkedRows || linkedRows;
   const announce = opts.sendStage || sendStage;
   const persistStage = opts.setStage || setStage;
   const backfill = opts.backfillCalendarContext || backfillCalendarContext;
-  const rows = await list(opts.supaUrl, opts.supaKey);
+  const now = typeof opts.now === "number" ? opts.now : Date.now();
+  const cooldown = opts.nudgeStore || nudgeSentAt;
+  for (const [uid, at] of cooldown) if (now - at >= NUDGE_COOLDOWN_MS) cooldown.delete(uid); // bounded
+  const rows = await list(opts.supaUrl, opts.supaKey, opts);
   let sent = 0;
   for (const row of rows) {
+    // Honour the panel notifications switch, like the ask and discovery loops already do.
+    if (row.notifications_enabled === false) continue;
+    const lastNudge = cooldown.get(row.uid);
+    if (typeof lastNudge === "number" && now - lastNudge < NUDGE_COOLDOWN_MS) continue;
     let stage = computeStage(row);
     if (stage === "gmail") {
       const available = await (opts.mailAvailable || mailAvailable)(row, opts.mailOptions || {});
@@ -176,6 +215,7 @@ async function onboardNudgeAll(opts) {
           "✉️ Gmail integration is currently being prepared, so I skipped that optional step. Your Calendar and all Gmail-independent features are ready.");
         stage = "done";
         await persistStage(row.uid, stage, opts.supaUrl, opts.supaKey);
+        cooldown.set(row.uid, now);
         sent++;
         continue;
       }
@@ -186,6 +226,7 @@ async function onboardNudgeAll(opts) {
       ? "" : signedGmailConnectUrl(row.uid, opts.gmailBase, opts.uidSecret);
     await announce(opts.token, row.telegram_chat_id, row, opts.base, { gmailConnectUrl });
     await persistStage(row.uid, stage, opts.supaUrl, opts.supaKey);
+    cooldown.set(row.uid, now);
     sent++;
   }
   return sent;
@@ -194,5 +235,5 @@ async function onboardNudgeAll(opts) {
 module.exports = {
   computeStage, telegramProfileName, applyTelegramProfileName, stageMessage, sendStage, isNativeStage,
   normalizePhone, handleOnboardingText, handleGmailCallback, rowByChatId, linkedRows, setStage,
-  saveField, backfillIfCalendarCompleted, onboardNudgeAll,
+  saveField, backfillIfCalendarCompleted, onboardNudgeAll, NUDGE_COOLDOWN_MS,
 };

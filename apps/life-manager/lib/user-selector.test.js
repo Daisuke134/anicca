@@ -29,6 +29,42 @@ test("schedulerCohortFilter is the phone+paid+supported-provider SSOT", () => {
   );
 });
 
+// ── Demo comp window ──────────────────────────────────────────────────────────
+// An unpaid row is invisible to the scheduler (paid=is.true), so a comped demo user would get zero
+// wakes/travel/asks. While LM_COMP_UNTIL is in the future the paid predicate drops out of the query;
+// the instant it expires the filter is byte-for-byte what it always was.
+const COMP_UNTIL = "2026-07-27T12:00:00.000Z";
+const COMP_UNTIL_MS = Date.parse(COMP_UNTIL);
+const BASELINE = "phone=not.is.null&paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)";
+
+test("comp active → the paid predicate is dropped, everything else identical", () => {
+  assert.equal(
+    schedulerCohortFilter({ LM_COMP_UNTIL: COMP_UNTIL }, COMP_UNTIL_MS - 1),
+    "phone=not.is.null&calendar_provider=in.(composio_gcal,pipedream_gcal)",
+  );
+});
+
+test("comp expired / invalid / absent → byte-for-byte the current filter", () => {
+  assert.equal(schedulerCohortFilter({ LM_COMP_UNTIL: COMP_UNTIL }, COMP_UNTIL_MS), BASELINE);
+  assert.equal(schedulerCohortFilter({ LM_COMP_UNTIL: COMP_UNTIL }, COMP_UNTIL_MS + 60000), BASELINE);
+  assert.equal(schedulerCohortFilter({ LM_COMP_UNTIL: "someday" }, COMP_UNTIL_MS - 1), BASELINE);
+  assert.equal(schedulerCohortFilter({}, COMP_UNTIL_MS - 1), BASELINE);
+});
+
+test("no-arg call reads process.env, so scheduler.js/daily-preflight.js need no plumbing", () => {
+  const previous = process.env.LM_COMP_UNTIL;
+  try {
+    delete process.env.LM_COMP_UNTIL;
+    assert.equal(schedulerCohortFilter(), BASELINE);
+    process.env.LM_COMP_UNTIL = new Date(Date.now() + 3600000).toISOString();
+    assert.equal(schedulerCohortFilter().includes("paid=is.true"), false);
+    process.env.LM_COMP_UNTIL = new Date(Date.now() - 1000).toISOString();
+    assert.equal(schedulerCohortFilter(), BASELINE);
+  } finally {
+    if (previous === undefined) delete process.env.LM_COMP_UNTIL; else process.env.LM_COMP_UNTIL = previous;
+  }
+});
+
 test("scheduler.js uses the shared filter at BOTH sites (exactly 2), no lingering eq.composio_gcal — FIND-007", () => {
   const src = fs.readFileSync(path.join(__dirname, "../scheduler.js"), "utf8");
   // no hardcoded exclusive filter remains anywhere
