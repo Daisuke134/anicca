@@ -1521,3 +1521,38 @@ insert 25 の内訳: 追記した CTA 20件 + **dev.to 自身**が裸のコー�
 **検証で一度 red が出た**: 最初の確認では「原文が完全一致 16/20」で、4本が不一致だった。差分を開くまでは内容欠損の可能性が消えず、opcode を全件数えて `delete`/`replace` がゼロだと確認して初めて良性と判定した。**部分一致の失敗を「たぶん正規化だろう」で流さない** — 流していたら、本当に欠損していた場合と見分けが付かなかった。
 
 **残る作業**: note / substack / Zenn の在庫にも同じ扉が要る。ただし dev.to の効果（views → aniccaai.com への流入）を1週間観測してから、文面を確定して横展開する。今日いきなり全 platform に同じ文面を撒くと、**効かない文面を4面に固定する**ことになる。
+
+
+### 21.25 収益経路の gate を作った（2026-07-27 05:30、未配線）
+
+`scripts/cta-gate.sh`。**judge ではなく grep**。理由: 「この記事に良い CTA はあるか」とモデルに聞くと、無い記事にも「はい」と答える — 質問が曖昧でモデルは同意的だから。grep は同意しない。品質 gate は本 loop では advisory（§20.1 #1）だが、**扉の不在は品質ではなく収益経路の不変条件**なので fail-closed にする。
+
+実測（fixture + 実原稿）:
+
+```
+扉なし                        FAIL rc=1
+aniccaai.com あり              PASS
+他人の repo へのリンクだけ      FAIL          ← 引用は扉ではない
+実 07-26 原稿                  PASS (aniccaai.com)
+実 07-27 原稿                  PASS (github.com/Daisuke134)
+```
+
+3番目が重要。§21.22 で自分の監査が裸 URL を「リンク」と数えて、**引用しかない記事を接続済みに見せかけた**。同じ誤りを gate に持ち込まないよう、宛先を明示リストにした。
+
+**未配線**: 06:00 の日次公開まで30分の時点で publish 経路に手を入れない。run 着地後に STEP 4 系へ入れる。
+
+### 21.26 一晩の成果物一覧（2026-07-27 05:30 時点）
+
+| 層 | 成果物 | 状態 |
+|---|---|---|
+| 計測 | `collect_own_metrics.py` | 実 engagement を初めて取得（この loop に計器が無かった） |
+| 計測 | `harvest_corpus.py` | 1,835行、ja 43→200、hn/devto/zenn/qiita/hatena |
+| 計測 | `beat_rate.py` | 盲検 pairwise、両順序、hn 除外、opponent source を出力 |
+| 診断 | `rule_blame.py` / `goodhart.py` / `rule_conflicts.py` | 犯人の行 / proxy の署名 / 規則の矛盾 |
+| 学習 | `writing-craft/CRAFT.md` + adapters | 55行 + 保護ブロック |
+| 学習 | `skillopt-writing/` | split タグ・上限・締切・起動前見積もり |
+| 学習 | `craft-train.sh` / `craft-train-notify.sh` | guard + マージン、毎晩1通 sha256 付き |
+| 収益 | `retrofit_cta.py` | 在庫20本に扉を追加（実行済み、2,538 views） |
+| 収益 | `cta-gate.sh` | 扉が無ければ publish しない（未配線） |
+
+**一晩の結論**: 品質を測る装置を作り切ったが、**その装置が測っている先に扉が無かった**。収益 loop を検証するときは、まず転換面が物理的に存在するか数える。存在しない面の手前をいくら最適化しても出力はゼロのまま。
