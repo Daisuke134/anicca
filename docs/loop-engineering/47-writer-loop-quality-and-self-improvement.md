@@ -1959,6 +1959,6 @@ craft_train の n  非 null pair のみ数える → その item は分母に寄
 
 **未修正**。`test_soft` は SkillOpt の `summary.json` から読んでおり、craft_train 側で平均を再計算していない。構造に手を入れる修正であり、**トレーナは台帳3日分が揃うまで走れない**ので、急いで触るより次セッション冒頭で設計してから入れる（T26）。
 
-**修正案**: `_rollout_one` の結果に `scorable_pairs` を載せ、craft_train が `rollouts.json` から**分子と分母を同じ集合で**再計算する（summary.json の test_soft を信じない）。テストは「障害 item を含む batch で、平均が障害 item を除いた値と一致する」。
+**修正案（実コードを読んで簡略化）**: 新しいフィールドは**不要**。`_rollout_one` の戻り値は既に `opponent_pairs` を含み、`craft_train._count_non_null_comparisons` はそこから非 null を数えている。したがって T26 は **`summary.json` の `test_soft` を信じず、`rollouts.json` から「非 null pair を1つ以上持つ item だけ」で平均を再計算する**だけになる。分子と分母が同じ集合になる。テストは「障害 item を含む batch で、再計算した平均が障害 item を除いた値と一致する」。当初『`scorable_pairs` を載せる』と書いたのは、戻り値を読まずに設計したため — **修正案すら、実装を読む前に書くと余計な部品が増える**。
 
 **この節の要点は修正案ではない**: 「消費者を全部数えろ」と書いた同じ節で数えずに断定した。**規則を書くことと規則に従うことは別の動作**で、書いた直後こそ従い忘れる。今夜の訂正はこれで8回目。
