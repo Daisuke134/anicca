@@ -548,13 +548,13 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**（2026-07-27 01:15 更新）: 実装弾は **11c+11d（review 8🔴11🟡 の修理中）と 10e（guard 機械、並行実装中）**、その後 **10f**。2 builder が無交差領域で並走中。9d/11a は loop 自動進行。demo 態勢稼働中（下記）。crypto track は別 repo 合流待ち。rail 変更に注意: **11c は Browserbase ではなく steel self-host**（裁定12 改訂 2026-07-26 夜、account 不要・人間ゼロ）。
+**Current cursor**（2026-07-27 02:00 更新）: **11c+11d 実装 merged**（#1156、gate off）。**10e は review 5🔴8🟡（自己改変 bypass・pre-review RCE・fail-open manifest 等）の修理中**（fixer 並走）。その後 10f。9d/11a は loop 自動進行。demo 態勢稼働中（下記）。crypto track は別 repo 合流待ち。rail 変更に注意: **11c は Browserbase ではなく steel self-host**（裁定12 改訂 2026-07-26 夜、account 不要・人間ゼロ）。
 
 **Live remaining to-do list（2026-07-27 更新。順序 = 今動ける順 — 時間待ちを言い訳にしない）**:
 
 | # | ID | organ | 残っている実物 | 状態 |
 |---|---|---|---|---|
-| 1 | `11c+11d` | PHYSICAL | **steel-browser（裁定12改: self-host rail、稼働中）** 経由の予約 executor + §9.11 事後報告。二重予約禁止・honest_failure・U8 名乗り・`LM_BOOKING_ENABLED` gate（default off） | 🔄 builder 実装中（Opus 5、branch atomic/11cd-booking-executor） |
+| 1 | `11c+11d` | PHYSICAL | steel 予約 executor + §9.11 事後報告 | **実装 merged（#1156, 2026-07-27）**: adversary review 8🔴11🟡 全修理後に merge（cross-day 二重予約 guard・session leak fix・否定文誤読 fix・PII 非保存・load 待ち・75s deadline・U8 maxlength honest_failure 等）。1062/1062 + eval 7/7 100%。**gate `LM_BOOKING_ENABLED` は未設定 = off を実測確認** — 実予約の実弾（row の実測 leg）は actionable 検知が立った時に gate on で実施 |
 | 2 | `10e` | DEV | 無人 merge/deploy の guard 機械の実装 + fixture 検証（実 error 由来 PR での無人実証は機械完成後。材料: open #1092/#1094/#1095） | 次の弾 — 11cd の次に builder 投入 |
 | 3 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復（launchd 再 enable） | 10e の機械が回り始めたら暦で貯まる |
 | 自動 | `9d` | MARKETING | 7日 ledger — Day 1 記帳済 2026-07-26、毎日 10:15 JST に loop が自動追記 | agent の作業対象外（並走） |
