@@ -53,6 +53,11 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
       patches.push({ url: String(url), body: JSON.parse(init.body || "{}") });
       // Honour the compare-and-set the caller asked for: an already-set column claims no row.
       if (url.searchParams.get("payout_destination") === "is.null" && storedDestination) return response(200, []);
+      // 13d-a's marker write CASes on the current status the same way.
+      if (url.searchParams.get("payout_destination->>status")) {
+        const expected = String(url.searchParams.get("payout_destination->>status")).replace(/^eq\./, "");
+        if (!storedDestination || storedDestination.status !== expected) return response(200, []);
+      }
       storedDestination = JSON.parse(init.body || "{}").payout_destination;
       return response(200, [{ uid: "u1", payout_destination: storedDestination }]);
     }
@@ -90,13 +95,19 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
     assert.equal(String(question.chat_id), "100");
     assert.equal(question.reply_markup.inline_keyboard.flat().length, 3);
 
-    // 2. The user taps a rail on that question.
+    // 2. The user taps a rail on that question. Since 13d-a the wallet rail chains straight into the
+    // typed-address intake: the rail CAS write is followed by the awaiting_address marker CAS write,
+    // and the address question goes out — tap → (CB-1 edit) → address question arrives.
     assert.equal(await post("payout:answer:wallet", "cb-wallet", FINANCIAL_STRINGS.ja.payoutQuestion.text), 200);
-    assert.equal(patches.length, 1, `exactly one write, got ${JSON.stringify(patches)}`);
+    assert.equal(patches.length, 2, `rail write + intake marker, got ${JSON.stringify(patches)}`);
     assert.match(patches[0].url, /uid=eq\.u1/);
     assert.match(patches[0].url, /payout_destination=is\.null/);
     assert.equal(patches[0].body.payout_destination.type, "wallet");
+    assert.match(patches[1].url, /payout_destination-(?:>>|%3E%3E)status=eq\.awaiting_details/);
+    assert.equal(patches[1].body.payout_destination.status, "awaiting_address");
     assert.equal(storedDestination.type, "wallet");
+    assert.ok(sentMessages.some((m) => m.text === FINANCIAL_STRINGS.ja.payoutAddress.ask),
+      "the wallet tap must be followed by the typed-address question");
     // CB-1 (§10.0-15): the tap must leave a durable trace — the question message is edited with the
     // chosen label and its keyboard removed. server.js must have passed messageId + text through.
     assert.equal(edits.length, 1, `the answered question must be edited, got ${JSON.stringify(edits)}`);

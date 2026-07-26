@@ -59,6 +59,7 @@ const {
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
+const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -425,6 +426,22 @@ const server = http.createServer((req, res) => {
             return;
           }
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          // FIN-d (13d-a): a pending wallet-address intake claims the typed message BEFORE feedback
+          // can swallow it — an address must never become a feedback ticket. The module returns
+          // handled:false for everything that is not its intake (no marker, bot commands, other
+          // chats), so feedback, /panel, and the ask-location reply flow below stay untouched.
+          if (u.kind === "message" && u.text) {
+            const intake = await handleTypedPayoutAddress(u.text, row, {
+              token: LM_TG_TOKEN, chatId: u.chatId, actorId: u.userId,
+              supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+            });
+            if (intake.handled) {
+              // Audit names the decision, never the address (it is payout PII-adjacent — log outcomes only).
+              console.log(`[payout] typed intake ok=${intake.ok}${intake.action ? ` action=${intake.action}` : ""}${intake.reason ? ` reason=${intake.reason}` : ""}`);
+              res.writeHead(200); res.end("ok");
+              return;
+            }
+          }
           const feedback = await handleFeedbackMessage(u, row, {
             token: LM_TG_TOKEN,
             provenanceKey: LM_FEEDBACK_PROVENANCE_KEY,

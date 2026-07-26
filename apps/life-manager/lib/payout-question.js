@@ -65,10 +65,15 @@ function payoutDestinationRecord(rail, nowMs) {
 }
 
 // A destination is only spendable once someone recorded the actual account/address AND flipped the
-// status. The rail answer alone must never open a transfer.
+// status. The rail answer alone must never open a transfer. Two shapes open the gate:
+//   {status:"usable", address}      — 13d-a's typed wallet-address intake (spec row 2a wording)
+//   {status:"ready", destination}   — the pre-13d shape, kept so no historical row reads as broken
 function isPayoutDestinationUsable(destination) {
   if (!destination || typeof destination !== "object") return false;
   if (!PAYOUT_RAILS.includes(destination.type)) return false;
+  if (destination.status === "usable") {
+    return typeof destination.address === "string" && destination.address.trim().length > 0;
+  }
   if (destination.status !== "ready") return false;
   return typeof destination.destination === "string" && destination.destination.trim().length > 0;
 }
@@ -174,6 +179,15 @@ async function handlePayoutCallback(data, opts = {}) {
   }
   // CB-1 ①: the persisted choice becomes visible on the question message itself.
   await reflectPayoutTap(opts, answer === "bank" ? copy.bankButton : copy.walletButton, opts.messageText);
+  if (answer === "wallet") {
+    // 13d-a: a button cannot carry the address, so the wallet rail immediately opens the typed
+    // intake — tap → (edit) → address question (CB-1 ②: the flow continues, so a follow-up is due).
+    // The ask's failure must not un-persist the rail answer, so it lands in the outcome, not a throw.
+    const ask = opts.askWalletAddress ||
+      ((uid, chat) => require("./payout-address-intake.js").askWalletAddress(uid, chat, opts));
+    const addressAsk = await ask(opts.uid, chatId).catch(() => ({ asked: false, reason: "ask_crashed" }));
+    return { handled: true, ok: true, answer, destination, addressAsk };
+  }
   return { handled: true, ok: true, answer, destination };
 }
 
