@@ -548,7 +548,7 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**（2026-07-27 02:20 更新）: **11c+11d merged**（#1156、gate off）・**10e 機械 merged**（#1158）。残る手書き弾は **10f のみ**（builder 投入中）。9d/11a は loop 自動進行。demo 態勢稼働中（下記）。crypto track は別 repo 合流待ち。11c の rail = steel self-host（裁定12改、account 不要・人間ゼロ）。
+**Current cursor**（2026-07-27 02:45 更新）: 11c+11d merged（#1156, gate off）・10e merged（#1158）・**10f = 実装済み+review 21 findings 修理中（PR #1163、最終弾）**。9d/11a は loop 自動進行。builder が 10f 検証中に実 TG 1通を誤送（stub が PATH で負けた。message 3951、admin chat 宛・無害・開示済み — fixer の指示に PATH-proof stubbing を明記）。
 
 **Live remaining to-do list（2026-07-27 更新。順序 = 今動ける順 — 時間待ちを言い訳にしない）**:
 
@@ -556,7 +556,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 |---|---|---|---|---|
 | 1 | `11c+11d` | PHYSICAL | steel 予約 executor + §9.11 事後報告 | **実装 merged（#1156, 2026-07-27）**: adversary review 8🔴11🟡 全修理後に merge（cross-day 二重予約 guard・session leak fix・否定文誤読 fix・PII 非保存・load 待ち・75s deadline・U8 maxlength honest_failure 等）。1062/1062 + eval 7/7 100%。**gate `LM_BOOKING_ENABLED` は未設定 = off を実測確認** — 実予約の実弾（row の実測 leg）は actionable 検知が立った時に gate on で実施 |
 | 2 | `10e` | DEV | 無人 merge/deploy guard 機械 | **機械 merged（#1158, 2026-07-27）**: 8-stage pipeline、adversary review 5🔴8🟡 全修理（guard 自身+review-cmd の self-deny・review を test 実行より先・fail-open 封鎖・GraphQL rollback+revert-PR fallback・台帳 row 連鎖 hash・lockfile 排他・admin TG alert）。61/61 + suite exit 0。実 PR #1092/#1094 で live 検証（merge せず）。guard 自身の変更は loop で merge 不能（意図した設計、human PR 経由）。残る実測 leg = 実 error PR 1本の無人実証（10f 後） |
-| 3 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復（launchd 再 enable） | 10e の機械が回り始めたら暦で貯まる |
+| 3 | `10f` | DEV | self-build loop 復活（picker→guard→7日台帳→TG 報告→launchd enabler） | **実装済み・review 6🔴15🟡 の修理中（PR #1163）**: 主要指摘 = launchd label 衝突（producer loop を消す）・20分 kill が merge 後窓で half-merge・reviewer への prompt injection・protectedPaths の dead plumbing。fixer 走行中。merge 後に operator が enabler script で点火（新 label、producer と共存） |
 | 自動 | `9d` | MARKETING | 7日 ledger — Day 1 記帳済 2026-07-26、毎日 10:15 JST に loop が自動追記 | agent の作業対象外（並走） |
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
