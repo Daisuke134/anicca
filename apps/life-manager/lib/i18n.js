@@ -164,6 +164,60 @@ const DIET_STRINGS = Object.freeze({
   }),
 });
 
+// H4 ORG-precepts — the bedtime closed question and the weekly mirror (spec §10 NEXT HORIZON row H4,
+// tone from §9.11). **This copy is Dais-editable**（No-human-loop 例外3）: edit the strings here and
+// the implementation follows; precepts-question.js / precepts-mirror.js never write copy inline.
+//
+// THE THREE THINGS THIS COPY MAY NEVER DO, because the templates are the only place they can be
+// prevented — a generator would eventually produce all three:
+//   NO RELIGIOUS VOCABULARY (H4 ①). The five choices are the 五戒 translated into ordinary Japanese:
+//     嘘 / きつく当たった / 時間を奪った / 飲酒・衝動 / 穏やかだった. The words 戒・罪・業・懺悔・
+//     煩悩・悟り・修行・善・悪 appear nowhere, in any message. A person looking at their own day does
+//     not need to be told which tradition the list came from.
+//   NO SCORE (H4 ③). The mirror states counts. It never totals them, never grades a week, never
+//     compares this week to last week, never says 改善/悪化/点数/評価. A count is a fact the user can
+//     check against their own memory; a score is a verdict about a person.
+//   NO ADVICE (H4 ③). 説教・評価・スコア化禁止 in the spec's own words. The mirror ends after the
+//     fact and (when one exists) the context. It never says 〜しましょう / 〜すべき / おすすめ, and it
+//     asks for nothing — no question mark, no buttons, nothing owed back (§9.11 ④).
+//
+// The mirror is assembled from `countItem` joined by `countSeparator` into one of the four whole-
+// message templates. Which template is used is a matter of FACT (see precepts-mirror.js's pattern
+// rule), never of tone: the weekday sentence may only be said when the same weekday really did
+// repeat, and the busy sentence only when those days really did carry three or more events.
+//
+// AND THE BUSY SENTENCES SAY WHAT WAS CHECKED. H4 ③'s example wording is 「連続MTGの後」 — back-to-
+// back meetings — but the rule behind it counts events per day and measures how late the last one
+// ran; it never checks whether any two of them touch. Three scattered half-hour calls would have
+// been announced as a solid block of meetings. So both templates say 「予定が3件以上あった…の後」,
+// which is exactly the evidence that exists. §9.5: the honest statement, not the comfortable one.
+const PRECEPTS_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    nightQuestion: Object.freeze({
+      text: "今日、心に引っかかったことは?\n［嘘をついた］［きつく当たった］［時間を奪った/遅刻］［飲酒/衝動］［なし・穏やかだった］",
+      lieButton: "嘘をついた",
+      harshButton: "きつく当たった",
+      timeButton: "時間を奪った/遅刻",
+      impulseButton: "飲酒/衝動",
+      calmButton: "なし・穏やかだった",
+      // CB-1 (§10.0-15 ③): a second tap is never silent. {choice} is the label already on file —
+      // what was RECORDED, not what was just tapped.
+      alreadyAnswered: "今日の記録はもう残っています（{choice}）。",
+      // A tap on a question from an earlier night. The keyboard is stripped and this says why: a
+      // button that silently does nothing reads as a broken bot.
+      expired: "この質問は期限切れです。",
+    }),
+    weeklyMirror: Object.freeze({
+      facts: "🌙 最近4週間の記録です。{counts}。",
+      weekday: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも{weekday}曜でした。",
+      busy: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも予定が3件以上あった日の後でした。",
+      weekdayBusy: "🌙 最近4週間の記録です。{counts}。{patternCount}回とも予定が3件以上あった{weekday}曜の後でした。",
+      countItem: "「{label}」が{count}回",
+      countSeparator: "、",
+    }),
+  }),
+});
+
 // Elapsed time in the units §9.11 speaks: 「4ヶ月」「6週間」「10日」. Deterministic thresholds, no
 // calendar arithmetic — the input is already a day count the detector measured.
 function elapsedLabel(days) {
@@ -285,6 +339,8 @@ module.exports = {
   DISCOVERY_STRINGS,
   FINANCIAL_STRINGS,
   PHYSICAL_STRINGS,
+  PRECEPTS_STRINGS,
+  WEEKDAY_JA,
   elapsedLabel,
   formatCareBookingReport,
   formatTravelAutofillMessage,

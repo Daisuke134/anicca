@@ -31,7 +31,8 @@
 // whose zone we cannot resolve gets NOTHING (see diet-runtime's header).
 
 const { DIET_ANSWERS } = require("./diet-question.js");
-const { localDay, claimDietRow, resolveDietTzOffsetH } = require("./diet-runtime.js");
+const { claimDietRow, resolveDietTzOffsetH } = require("./diet-runtime.js");
+const { localDay, localMinuteOfDay } = require("./user-tz.js");
 const { deriveAnchors } = require("./care-anchors.js");
 const { textSearch, geocodeAnchor } = require("./care-candidate-search.js");
 const { DIET_STRINGS } = require("./i18n.js");
@@ -51,11 +52,6 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DIET_LUNCH_KEYWORDS = Object.freeze(["定食", "サラダ"]);
 
 const INPUT_KEYS = Object.freeze(["nowMs", "tzOffsetH", "answers", "lastNudgeDay"]);
-
-function localMinuteOfDay(nowMs, tzOffsetH) {
-  const localMs = nowMs + tzOffsetH * 3600000;
-  return Math.floor((((localMs % 86400000) + 86400000) % 86400000) / 60000);
-}
 
 function validateInput(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("input must be an object");
