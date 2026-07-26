@@ -1072,7 +1072,8 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 
 | ~~T4~~ | `skills/writing-craft/` 抽出 | T3 | **DONE** `daa7368`。CRAFT.md 55行・adapter 14/15/18行、末尾に `SLOW_UPDATE` 保護ブロック、タイトル規則は参照1行のみ、`article-daily.sh` が実読み。契約テスト 10/10 |
 | ~~T4.5~~ | 台帳と scorer の接続 | T4 | **DONE** `daa7368`。`scripts/score-latest-run.sh` を `self-improve.sh` から呼ぶ。**発覚した穴**: `beat_rate.py` を呼ぶ caller がツリー内に1つも無く、日次台帳は書かれるだけで採点されない状態だった（学習しているように見えて何も測っていない）|
-| **T22** | **トピック供給の枯渇対策**（最優先） | — | `state/topics/queue/` の残量を毎日監視し、閾値割れで自動補充。実測 2026-07-27 05:40: **キュー1枚**（今日の run が消費）、`state/raw-ideas/` は3件とも `status: published`、4件目は README のスキーマ行。**明日の run に書くものが無い** |
+| ~~T22a~~ | トピック在庫の計器 | — | **DONE** `c2367f3`。`scripts/topic-supply.sh` を 22:30 の入口から呼ぶ（朝ではなく前夜＝丸一日の猶予）。実測 `{"queue":1,"raw_ideas_ready":0,"total":1,"floor":3,"ok":false}` で Telegram 警告。README のスキーマ行を除外（main の grep がこれで ready 1件と誤読した罠）|
+| **T22b** | トピックの実補充（在庫3枚以上へ） | T22a | `topic-supply.sh` が ok:true を返す |
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
 | ~~T6~~ | 夜間トレーナ | T3,T4,T5 | **DONE** `5d56e8e`。契約 15/15、dataset train 68 / val 16 / test 19（全 split に ja と en）、bare-title 18行を除外して残存 0、guard 発火時 `CRAFT.md` の sha256 不変（main が自分で実行して確認）。**学習が実際に効いたかは T5 の3 run 蓄積後**（本節の done は機構の完成であって、改善の証明ではない）|
 | ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
@@ -1577,3 +1578,19 @@ Dais の最も硬い不変条件は「毎日必ず publish、見送りは禁止�
 **補充の材料は今夜できている**: corpus の 1,835 行は「今なにが読まれているか」の一次データ。加えて今夜の実測（5つの欠陥、扉の不在、報酬の汚染、22時間の設定）は**うちにしか書けない**一次体験で、§8 の north-star に合致する。
 
 **一般法則**: loop の不変条件を守るなら、**出口（publish できたか）だけでなく入口（次に書くものがあるか）も毎日数える**。出口の監視だけでは、在庫が尽きた翌朝に初めて気付く。
+
+
+### 21.28 入口に計器を付けた（2026-07-27 05:50、`c2367f3`）
+
+§21.27 の穴に対する第一手。**補充ではなく計測**を先に入れた。
+
+```
+実測  {"queue":1,"raw_ideas_ready":0,"total":1,"floor":3,"ok":false}  → rc=1 + Telegram
+```
+
+設計判断3つ:
+1. **22:30 に走らせる**（朝ではない）。朝に警告が出ても手遅れで、前夜なら丸一日ある。「落ち着いて補充する」と「見送る」の差はそこ。
+2. **read-only**。数えて警告するだけで、補充は別の決定にした。**壊れたカードが1枚あればトピック選択自体が死ぬ**ので、その失敗は在庫切れより悪い。
+3. **README を明示除外**。`status: ready | drafting | published | dropped` というスキーマ行を main の grep が実アイデアと誤読して「ready 1件」と報告した（§21.27）。**自分が引っかかった罠を計器に持ち込まない。**
+
+floor は 3 日分。金曜に気付いて月曜に動ける幅。
