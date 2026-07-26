@@ -75,8 +75,13 @@ function makeUnipileCalendar({ accountId, token, dsn } = {}) {
     kind: "unipile",
     ready: () => !!(accountId && token && dsn),
 
-    async listEventsRaw(_uid, { timeMin, timeMax, maxResults } = {}) {
-      if (!accountId || !token || !dsn) return [];
+    // strict (history path): failure throws instead of masquerading as an empty calendar — see
+    // calendar-composio.js listEventsRaw for the rationale. Default (wake path) swallows to [].
+    async listEventsRaw(_uid, { timeMin, timeMax, maxResults, strict } = {}) {
+      if (!accountId || !token || !dsn) {
+        if (strict) throw new Error("calendar transport not ready (missing unipile account/token/dsn)");
+        return [];
+      }
       try {
         const calendarId = await getPrimaryCalendarId();
         const query = new URLSearchParams({ account_id: accountId });
@@ -85,7 +90,8 @@ function makeUnipileCalendar({ accountId, token, dsn } = {}) {
         if (maxResults) query.set("limit", String(maxResults));
         const body = await requestJson(`${base}/api/v1/calendars/${encodeURIComponent(calendarId)}/events?${query}`);
         return (Array.isArray(body && body.data) ? body.data : []).map(mapEvent);
-      } catch {
+      } catch (e) {
+        if (strict) throw e;
         return [];
       }
     },

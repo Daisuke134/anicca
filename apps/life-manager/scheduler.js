@@ -13,6 +13,7 @@ const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
+const { careUserOnce } = require("./lib/care-daily-runtime.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
@@ -292,37 +293,55 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
   const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
-  if (u.call_enabled === false) return;
-  for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
-    const depMs = await resolveDeparture(ev, futureEvents, {
-      home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
-      directionsFn: deps.directionsMinutes || directionsMinutes,
-    });
-    const mins = (depMs - now) / 60000;
-    for (const lvl of WAKE_LEVELS) {
-      // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
-      if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
-      const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
-      const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
-      if (!fresh) continue; // already called for this (event, level)
-      const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
-      let res;
-      try {
-        res = await (deps.placeCall || placeCall)({ to: u.phone, streamUrl });
-      } catch (e) {
-        res = { ok: false, error: String((e && e.message) || e) };
-      }
-      if (res.ok) {
-        console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
-      } else {
-        console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
-        // Don't burn the retry: release the claim so the next 60s tick tries again while the event
-        // is still in its window (the claim-before-dial order stays intact as the dedup guard).
-        await (deps.releaseWake || releaseWake)(u.uid, eventKey);
-        await (deps.alertLowBalance || maybeAlertLowBalance)(res.error);
+  if (u.call_enabled !== false) {
+    for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
+      const depMs = await resolveDeparture(ev, futureEvents, {
+        home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
+        directionsFn: deps.directionsMinutes || directionsMinutes,
+      });
+      const mins = (depMs - now) / 60000;
+      for (const lvl of WAKE_LEVELS) {
+        // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
+        if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
+        const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
+        const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
+        if (!fresh) continue; // already called for this (event, level)
+        const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
+        let res;
+        try {
+          res = await (deps.placeCall || placeCall)({ to: u.phone, streamUrl });
+        } catch (e) {
+          res = { ok: false, error: String((e && e.message) || e) };
+        }
+        if (res.ok) {
+          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
+        } else {
+          console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
+          // Don't burn the retry: release the claim so the next 60s tick tries again while the event
+          // is still in its window (the claim-before-dial order stays intact as the dedup guard).
+          await (deps.releaseWake || releaseWake)(u.uid, eventKey);
+          await (deps.alertLowBalance || maybeAlertLowBalance)(res.error);
+        }
       }
     }
   }
+  // 11a/11b: the PHYSICAL organ rides the same 60s tick. careUserOnce holds a durable daily claim
+  // in lm_care_scan_log, so despite the 60s cadence there is ONE real scan per user per UTC day —
+  // every other tick costs a single row lookup. Isolated exactly like MENTAL above: a care failure
+  // must never break wake calls. It runs LAST — after the wake evaluation — because the wake dial
+  // has a ~2-min catch window and a slow Places/Supabase chain must never delay it; care has no
+  // deadline (any tick today may claim the scan). Still runs for call-disabled users: skipping the
+  // wake loop must not skip the PHYSICAL organ. This path detects + records candidates only;
+  // 11c/11d own the side effects (no booking, no Telegram from here).
+  try {
+    const care = await (deps.care || careUserOnce)(u, now, { apiKey: deps.apiKey, calendar: deps.calendar });
+    if (care && care.status && care.status !== "already_scanned") {
+      console.log(`[care] uid=${String(u.uid).slice(0, 12)} status=${care.status}`
+        + `${care.category ? ` category=${care.category}` : ""}`
+        + `${care.selectedProviderId ? ` selected=${care.selectedProviderId}` : ""}`
+        + `${care.chainError ? ` chain_err=${care.chainError}` : ""}`);
+    }
+  } catch (e) { console.error(`[care] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
 }
 
 // forEachUserSafe: process each tenant in ISOLATION (HARD-4). A throw/rejection while handling one user is
