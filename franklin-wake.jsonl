@@ -16263,3 +16263,10 @@
 {"ts":1785088926,"wake_id":"00MS23UUZ146B529EE1C2E4588","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1785089086,"wake_id":"00MS23YAK6C0B5719473DF4802","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1785089153,"wake_id":"00MS23ZQ5X801B299AF3EC45E7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785089323,"wake_id":"00MS243D4NCF0EE479C29B4B60","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785089506,"wake_id":"00MS247ATO93E11E0C9109463A","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785089670,"wake_id":"00MS24ASTU4C15746FE5224DA2","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785089814,"wake_id":"00MS24DWC73E22EFC0F67947B5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1785089825,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1785089947,"wake_id":"00MS24GQEIA7F92B5CC6F34DAC","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785090074,"wake_id":"00MS24JGSP1199702D165541A0","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1785090087,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1785090212,"wake_id":"00MS24MFL203EB48EF591543D7","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
