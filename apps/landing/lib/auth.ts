@@ -50,7 +50,12 @@ export async function signInWithGoogle(): Promise<void> {
   if (!c) throw new Error('auth not configured');
   // Return to the CURRENT path (so /lm comes back to /lm, /me to /me). Each path must be
   // allowlisted in Supabase → Auth → URL Configuration → Redirect URLs.
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/me';
+  // Keep the query string: /lm?tg=<chat_id> carries the Telegram binding, and dropping it
+  // across the OAuth round-trip left lm_users.telegram_chat_id NULL forever (measured in
+  // production: web-onboarded rows with calendar connected and tg_bound=false).
+  const path = typeof window !== 'undefined'
+    ? window.location.pathname + window.location.search
+    : '/me';
   const redirectTo =
     typeof window !== 'undefined' ? `${window.location.origin}${path}` : 'https://aniccaai.com/me';
   await c.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
