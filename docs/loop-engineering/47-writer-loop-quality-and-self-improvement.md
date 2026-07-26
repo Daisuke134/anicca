@@ -1074,7 +1074,9 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | ~~T4.5~~ | 台帳と scorer の接続 | T4 | **DONE** `daa7368`。`scripts/score-latest-run.sh` を `self-improve.sh` から呼ぶ。**発覚した穴**: `beat_rate.py` を呼ぶ caller がツリー内に1つも無く、日次台帳は書かれるだけで採点されない状態だった（学習しているように見えて何も測っていない）|
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
 | **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
-| **T7** | launchd 配線 + Telegram | T6 | `ai.anicca.writer-craft-train` が毎晩発火し、Telegram に patch / beat rate 前後 / 採否の1通 |
+| ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
+| **T7b** | Telegram 通知 | T6 | 毎晩1通: patch 内容 / beat rate 前後 / 採用か却下か |
+| **T15** | ja 供給増 | — | 学習に使える行が en 613 / **ja 43**。zenn だけでは1日48行。はてブ・Qiita・note を harvester に追加（別セッションの harvest が239本採れることを実証済み）|
 | **T8** | 22:30 の盲目解消を実機確認 | — | 次回発火で `no JA/EN quality baseline` が出ない（`~/.openclaw/logs/article-self-improve.err`） |
 | **T9** | 週次 judge 較正 | T5 | judge の選好と自投稿の実 engagement の相関が数値で出る |
 | **T10** | 本文 slice・長文 slice | T6 | 各 format slice で非悪化 gate が通る |
@@ -1180,3 +1182,23 @@ reason: "guard: only 0 scored run(s) ... need >= 3 -- refusing to gate on noisy 
 | 文字数 中央値 **37字** | 英語のリズムで20字前後に切ると外す |
 
 **同時に新しい漂流を1件検出して解消した**: `SKILL.md:118` が「JP = 二人称型 + **具体数字**」と書いていた。数字を JP の必須要素とする根拠はどこにも無く、しかも §2-4 の「数字はタイブレークにしない」と正面から矛盾していた。SKILL.md 側の本文を削除し、`reference/title-best-practices.md` §2.5 への参照1行に置換（禁則の §2 と同じ扱い）。**規則の本文は reference にしか置かない**という §20.3 規則1の適用例。
+
+
+### 21.9 judge の effort と、実測で出た位置バイアス（2026-07-27）
+
+**経緯**: subject 生成が 1件38秒だった件を追ったところ、`runtime/model-runner.sh:178` が `model_reasoning_effort="xhigh"` を**全 judge 呼び出しにハードコード**していた（機械の既定 medium を上書き）。beat rate は1候補10回、1晩で100回規模の judge を投げるので、機械的な判定に xhigh を払い続けるのは高い。
+
+**やったこと**: 呼び出し側が effort を選べる knob を入れ、pairwise 採点だけ medium に倒した。**Dais 指摘により一度 revert**（頼まれていない変更を入れたのは逸脱）。その後「理由があるなら承認」を受けて、理由を提示した上で測定した。
+
+**測定結果 — 判断できなかった**: 比較可能なセルは1つ（同一ペア・同一順序）で両 effort とも同じ勝者。xhigh 側は2回中1回が空応答。**1点では品質同等の証拠にならない**ので、knob は残し（既定 xhigh のまま＝既存の呼び出しは不変）、**scorer を medium に倒すのは取り消した**（`16f7d2a`）。測れていないものを入れない。
+
+**副産物のほうが価値があった — 位置バイアスが自分たちのデータで出た**:
+
+| 順序 | 勝者 |
+|---|---|
+| A=検索画面UI, B=192回比べたら | **B** |
+| A=192回比べたら, B=検索画面UI | **B** |
+
+中身に関係なく「後ろ」を選んでいる。§19.3 が引用した arxiv 2305.17926 の位置バイアスが、論文の引用ではなく**この loop の judge で実測された**。両順序で判定し割れたら 0.5 とする `beat_rate.py` の設計は、これで自前の証拠を持つ。
+
+**一般法則**: 高頻度パスのコストを疑うのは正しい。だが「安くしても質は落ちないはず」は仮定であって測定ではない。仮定のまま本番に入れると、劣化したことに気付けないまま学習信号が濁る。**測れないなら入れない。**
