@@ -806,18 +806,15 @@ paid subscription ¥500相当/月 ───────────────�
 - runtime再検証ではdisk上の新writer plistはexact5だったが、launchd内の`ai.anicca.writer-daily`定義だけが古い`/bin/bash -lc ... article-daily.sh`を保持し、06:00から旧Claude runを起動していた。新DBのdaily run/publication attempt/receiptは0、旧run `20260722-210001`のledger matchも0のまま、旧process treeをSIGTERMで停止してjobは`not running`。第20是正PASS後のlatest `install.sh --activate`でloaded definitionをdisk上の`writer enqueue`へ置換するまでkickstartしない。
 - 既存live部品は旧article-writerに存在し、新engineへcopy+tweak中。noteは`publish-note.sh` + `publish-paid.py`、Zennは`zenn-publish/publish-to-zenn.sh`、Substackは`publish-substack-mermaid.sh`、X Articleは`x-publish/publish-to-x.sh`、X Postは既存API/CDP publisherを基礎にし、各platform匿名/API readbackをengine側で統一する。上流X Article skillはdraft-onlyなので、その自己申告をlive evidenceにしない。
 
-### 18.8 Remaining TaskList（**公開エンジンの**残TODO正本、必ず順番どおり。self-improve の中身と順序は §21 を見る）
+### 18.8 E1-E3 の完了 evidence（履歴）
+
+残作業の行（E4-E8）は §21.2 の T11-T14 と T6 に移した。**この節に残作業を書き足さない。**
 
 | # | 状態 | 作業 | done evidence |
 |---|---|---|---|
 | E1 | **DONE** | incidentを固定test化。ownerless lock、line 240 `File name too long`、Claude weekly-limit、partial runをbehavioral RED fixtureにし、現run artifactをread-only archive。既live receipt確定後も新規投稿を実行しない | commit `db32520`、`RED_SUITE_CONFIRMED 4/4`、runner/時系列guard 11 PASS、archive 235 files + manifest `2fced19...` + writable 0、既live note/ja exact1、ledger hash不変・投稿増分0、fresh review `ok:true` |
 | E2 | **DONE** | native runtime adapterをTDD実装。Codex/Claudeのprobe/run/schema/circuit breakerを統一し、全hardcoded provider callをadapterへ置換 | commit `8bb2aae`、Python 73 + subtests 27、shell 22/22、E2 42 PASS、adapter外直呼び0、実Codex/Luna probe `MODEL_OK`、race/lease/replay/legacy rc75 contract PASS、fresh review `ok:true`、ledger不変・投稿増分0 |
 | E3 | **DONE** | TO-BE treeへ段階移行。stateをrepo外へschema migrationし、旧copy/存在しないsymlink記述/legacy finalizer/個別agentを撤去。既存X Articles/Dev.to publisherは新SSOTへ各1実装として移植し、X Post publisher、Telegram outbox、tracked plist 5本、install/uninstallを実装 | commit `7b55799`、fresh root Codex/Claude install、tests 103 PASS、旧path/tree 0、X Article/X Post/Dev.to各exact1、state hash `25bfbbde...1983`・754 entries・writable 0・再実行safe、launchctl新5のみ、fresh review `ok:true`、ledger不変・投稿増分0 |
-| E4 | **TODO** | daily MID+X pipelineを実装。固定reader questions、最大5→best-safe、MID exact5 live、X Articlesはrun別ja/enを`published_at`差6h〜6h10m、X Postは日本語exact1/JST日のFIFO 12:00–23:55 slot window、exact8 intent/receipt/reality、draft-only終端0、全stateと同transactionのTelegram outbox、5分resume worker、06:00後のlogin/reboot catch-up、LaunchAgent用provider絶対pathを配線 | crash/429/response-loss/date-slot backlog/late-ready/6時間clock matrix PASS、manual kickstart exact8、同日reboot/reload後もrun exact1、launchd環境からruntime probe PASS、X Post/ja ID exact1、英語X Post/reply 0、X Article ja/en ID各exact1、Dev.to live、8 live outputのown-eyes、Telegram event UUID/send receipt |
-| E5 | **TODO** | monthly book pipelineを実装。X Postを除くarticle exact7完了済みMID topicの30本inventory、book-writer、全書整合、Pandoc、Zenn Book/Gumroad/Stripe idempotent publishers | 29/30/31 test、X Post障害時も在庫維持、manual monthly kickstart、exact3 live URL、EPUB validation、revenue receipt、Telegram receipt |
-| E6 | **TODO** | self-improveを1本化（中身の正本は §19）。22:30 metrics、週次Terra/Claude proposal、held-out、7日canary、keep/revert、code self-mutation禁止を実装 | 悪化revert/改善keep fixture、実7日experiment receipt、重複schedule 0 |
-| E7 | **TODO** | OSS境界を完成。runtime別setup、config example、browser/account preflight、operations/money docs、license attributionを作成 | clean macOS userでCodex-only install+run、別fresh userでClaude-only install+run、secret/hardcoded home 0 |
-| E8 | **TODO** | final fresh E2E。Codex-only daily exact8、Claude-only daily exact8、X Articlesのreadback時刻差6h〜6h10m、X Post ja FIFO 12:00–23:55 date slot exact1/JST日、全媒体live、monthly exact3、翌06:00 schedule、5分resume、Telegram、metrics/weekly jobをartifact-only reviewerが独立確認しspecをDONE同期 | 8 live URL/ID readback、英語X Post/reply 0、draft-only 0、daily ledger exact8、article exact7時点のbook inventory receipt、book ledger exact3、Telegram logical event exact1 + UUID付きat-least-once delivery、launchctl evidence、fresh review `ok:true`、全repo commit+push+clean |
 
 ---
 
@@ -1044,7 +1041,7 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 
 ## 21. craft trainer の実行順序（2026-07-27。§19.6 と §20.4 の TODO 表を置換）
 
-**範囲**: 自己改善（craft trainer）だけ。公開エンジンの残作業は §18.8 E1→E8 が正本で、本節はそちらを上書きしない。重なるのは E6（self-improve を1本化）だけで、E6 の中身と順序は本節が持つ。
+**範囲**: 残作業の**全部**。craft trainer も公開エンジンも、残っている仕事はこの1つの表にしか書かない。§18.8 は E1-E3 の完了 evidence だけを持つ履歴になり、E4-E8 の残作業行は本節の T11-T14 に移設済み。2つの表を持つと必ず片方が古くなるので、表は1つだけにする。
 
 **この節を更新する時の規則**: 状態は本節の表だけに書く。他節に進捗表を作らない。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
 
@@ -1079,6 +1076,10 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | **T8** | 22:30 の盲目解消を実機確認 | — | 次回発火で `no JA/EN quality baseline` が出ない（`~/.openclaw/logs/article-self-improve.err`） |
 | **T9** | 週次 judge 較正 | T5 | judge の選好と自投稿の実 engagement の相関が数値で出る |
 | **T10** | 本文 slice・長文 slice | T6 | 各 format slice で非悪化 gate が通る |
+| **T11** | daily MID+X pipeline（旧 E4） | — | 固定 reader questions、MID exact5 live、X Articles ja/en の published_at 差 6h〜6h10m、X Post は JST 日 exact1、exact8 intent/receipt/reality、draft-only 終端 0、5分 resume、06:00 後の catch-up |
+| **T12** | monthly book pipeline（旧 E5） | T11 | 30本 inventory、book-writer、Pandoc、Zenn Book/Gumroad/Stripe の idempotent publisher、exact3 live URL |
+| **T13** | OSS 境界（旧 E7） | T11 | clean macOS user で Codex-only install+run、別 fresh user で Claude-only install+run、secret と hardcoded home が 0 |
+| **T14** | final fresh E2E（旧 E8） | T6,T11,T12,T13 | Codex-only と Claude-only の daily exact8、monthly exact3、翌 06:00 schedule、Telegram、artifact-only reviewer の独立確認 |
 
 **T5 が見落とされやすい依存**: トレーナは beat rate で gate するが、beat rate には毎日の台帳が要る。台帳を書き始めたのは今日なので、**実データが貯まるまでトレーナは意味のある gate ができない**。T6 の実装は T5 と並行してよいが、T6 の「効いた」判定は T5 の3 run を待つ。
 
