@@ -544,25 +544,21 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 **Current cursor**（2026-07-26 更新）: 残りは **10 atomic**。今日 done = **9c**（TikTok+IG daily 自走、2日連続 readback）と **12c**（MENTAL 3/3 実 TG）。11b/13c は実装 merged、実測 leg のみ残。付随修理 = 録音 pipeline 停止（§10.0-1 違反）、prod webhook 復旧×2 + boot self-heal 恒久化（INC-3、PR #1135）、between_events 到達性 fix（PR #1129）。次に動けるのは: 13b（Dais の tap 待ち）、11a（現実の overdue 待ち）、11c 入口 = Dais の Browserbase account 作成。
 
-**Live remaining to-do list (12, execution order = §9.8)**:
+**Live remaining to-do list (9, execution order = §9.8。2026-07-26 更新)**:
 
 | # | ID | organ | 残っている実物 | blocker |
 |---|---|---|---|---|
-| — | `9c` | MARKETING | **done 2026-07-26** — 表下の行参照 | — |
-| 2 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger（9c 非依存 = §10.0-3） | 実配信 Day 1 |
-| 3 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（2026-07-25 実測: 実履歴6件すべて 1.5x 未満で overdue 0件）。detector 自体は実データ上で正常・誤検知0 |
-| 4 | `11b` | PHYSICAL | 同 care need の実候補3件 + 生活圏 + 予約経路判定 | 11a の care category |
-| 5 | `11c` | PHYSICAL | cloud 常駐 browser/メールで実予約（電話禁止 = §9.5） | 11b |
-| 6 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
-| — | `12c` | MENTAL | **done 2026-07-26** — 3/3 実 TG | — |
-| 8 | `13b` | FINANCIAL | 実 TG 往復 1回 + 実 DB row 読み戻し（実装は PR #1121 で merged、fixture 検証のみ） | なし |
-| 9 | `13c` | FINANCIAL | 台帳に実収支行 + 月次報告文の生成実測（PR #1122 が OPEN かつ **CONFLICTING**） | conflict 解消 |
-| 10 | `13d` | FINANCIAL | agent wallet → user wallet の on-chain 実 tx + 実 TG 報告 | 13b の実 payout destination / 13c の台帳 |
-| 6.5 | `CB-1` | UX | 裁定15の callback 可視応答契約を ask/payout/discovery 全 handler に実装（元 message 編集 + keyboard 撤去 + 再tap の可視応答） | 実 tap で chat に恒久応答が残る実測 readback |
-| 11 | `10e` | DEV | guard 内 auto-merge/deploy を実 error 由来 PR 1本で実証 | 上記すべて done |
-| 12 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復 | 10e |
+| 1 | `CB-1` | UX | 裁定15の callback 可視応答契約（元 message 編集 + keyboard 撤去 + 再tap可視応答）を ask/payout/discovery 全 handler に実装 → deploy → agent が browser で実 tap readback（裁定16） | 実装中（builder 走行中） |
+| 2 | `13d` | FINANCIAL | wallet address 収集 closed Q → agent wallet → user wallet の on-chain 実 tx + 実 TG 報告 | CB-1（可視応答の上に載せる）+ wallet 残高 seed |
+| 3 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger | 暦のみ（Day 1 記帳済 2026-07-26、毎日 10:00 JST に loop が自動追記） |
+| 4 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: 実履歴6件すべて 1.5x 未満で overdue 0件）。detector は実データで正常・誤検知0 |
+| 5 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装は #1132 merged: anchors × category、京都床屋排除、usual-first） | 11a の care category |
+| 6 | `11c` | PHYSICAL | Browserbase（通常 account = 裁定12）で実予約 or メール。不可なら候補提示 + 正直報告 | 11b実測 + Dais の Browserbase account 作成 |
+| 7 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
+| 8 | `13c実測` | FINANCIAL | 台帳に実収支行 + 月次報告文の生成実測（engine は #1128 merged） | 実収益の発生（earn loop） |
+| 9 | `10e`→`10f` | DEV | 最終 phase: 実 error 由来 PR 1本の無人 merge/deploy → 7日 self-build 台帳 | 上記すべて done |
 
-**done 済みで表から外した row**: `13a`（wallet `0x477EeE9…62ad`、Base で残高/nonce ともに 0、鍵は repo/log/git すべて 0 hit）、`9f`（2026-07-26、Dais 本人が X へ投稿）。
+**done 済みで表から外した row**: `13a`・`9f`・`9c`（TikTok+IG daily 自走）・`12c`（3/3 実TG）・`13b`（実往復 + DB row `{"type":"wallet","status":"awaiting_details"}`）。詳細は各 §10 行と docs/evidence/。
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
