@@ -7,7 +7,9 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { fetchCalendarHistory, CARE_HISTORY_MS } = require("./events.js");
+const {
+  fetchCalendarHistory, CARE_HISTORY_MS, HISTORY_PAGE_SIZE, HISTORY_MAX_EVENTS,
+} = require("./events.js");
 
 const NOW = Date.parse("2026-07-26T00:00:00Z");
 
@@ -18,11 +20,37 @@ function fakeCalendar(items, capture) {
     async listEventsRaw(_uid, opts) {
       if (capture) {
         capture.opts = opts; // last call
-        (capture.all = capture.all || []).push(opts); // every call (the window may be chunked)
+        (capture.all = capture.all || []).push(opts); // every call (the window may be paged)
       }
       return items;
     },
   };
+}
+
+// A cursor-aware transport (the calendar-composio.js shape): hands back one page plus the token
+// that unlocks the next, exactly like Google's events.list nextPageToken.
+function pagingCalendar(pages, capture) {
+  return {
+    kind: "fake-paging",
+    ready: () => true,
+    async listEventsPage(_uid, opts) {
+      if (capture) {
+        capture.opts = opts;
+        (capture.all = capture.all || []).push(opts);
+      }
+      const index = opts.pageToken ? Number(String(opts.pageToken).replace("p", "")) : 0;
+      return { items: pages[index] || [], nextPageToken: index + 1 < pages.length ? `p${index + 1}` : null };
+    },
+  };
+}
+
+function eventsSpanning(count, prefix) {
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    const startMs = NOW - CARE_HISTORY_MS + Math.floor(i * ((CARE_HISTORY_MS - 86400000) / Math.max(count, 1)));
+    out.push({ id: `${prefix}${i}`, summary: "予定", start: { dateTime: new Date(startMs).toISOString() } });
+  }
+  return out;
 }
 
 // Sorted [startMs, endMs] spans of every transport call — the union must cover the whole window.
@@ -48,40 +76,110 @@ test("default window is ~18 months of history (union of all transport calls)", a
   assert.ok(CARE_HISTORY_MS >= 540 * 86400000, "at least ~18 months back");
 });
 
-// 🟡 Finding 4: one 548-day ascending-ordered call with maxResults 2500 truncates the RECENT end on
-// busy calendars, freezing stale last-visits as false overdues. The transport wrapper exposes no
-// pageToken, so the window is split into ≤3 sequential chunks whose union is contiguous.
-test("the 18-month window is split into ≤3 contiguous chunks so maxResults cannot eat the recent end", async () => {
+// 🔴 Completeness must be PROVEN, not guessed. The previous shape split the window into ≤3 ~183-day
+// chunks and hoped no chunk exceeded maxResults; it threw nextPageToken away, so a busier calendar
+// would have written a silently-truncated history into the append-only lm_care_scan_log as if it
+// were the whole truth. Measured against the live Composio GOOGLECALENDAR_EVENTS_LIST: the response
+// carries data.nextPageToken whenever more remain (250-item default page → 3 pages → 703 events),
+// and the same 703 come back either by following the cursor or in one maxResults=2500 call.
+test("follows nextPageToken until the cursor is exhausted — every page's events survive", async () => {
   const capture = {};
-  await fetchCalendarHistory("uid", { nowMs: NOW, calendar: fakeCalendar([], capture) });
-  const spans = spansOf(capture);
-  assert.ok(spans.length >= 2 && spans.length <= 3, `expected 2-3 chunks, got ${spans.length}`);
-  for (let i = 1; i < spans.length; i += 1) {
-    assert.equal(spans[i][0], spans[i - 1][1], "chunks must be contiguous — no gap loses visits");
+  const pages = [
+    [{ id: "a", summary: "予定", start: { dateTime: "2025-08-01T00:00:00Z" } }],
+    [{ id: "b", summary: "散髪", start: { dateTime: "2025-09-01T00:00:00Z" } }],
+    [{ id: "c", summary: "歯科", start: { dateTime: "2026-06-01T00:00:00Z" } }],
+  ];
+  const events = await fetchCalendarHistory("uid", { nowMs: NOW, calendar: pagingCalendar(pages, capture) });
+  assert.deepEqual(events.map((e) => e.id), ["a", "b", "c"], "no page may be dropped");
+  assert.equal(capture.all.length, 3, "one request per page");
+  assert.deepEqual(capture.all.map((o) => o.pageToken || null), [null, "p1", "p2"], "the cursor must be fed back");
+  for (const call of capture.all) {
+    assert.equal(call.strict, true, "every history page is a strict read");
+    assert.equal(call.maxResults, HISTORY_PAGE_SIZE, "ask for the largest page the API allows");
   }
 });
 
-test("busy calendar (> maxResults events): the NEWEST events survive, and merged chunks never duplicate ids", async () => {
-  const DAY = 86400000;
-  const all = [];
-  for (let i = 0; i < 3000; i += 1) {
-    // 3000 events spread across the full window — a single 2500-capped ascending call drops the newest
-    const startMs = NOW - CARE_HISTORY_MS + Math.floor(i * ((CARE_HISTORY_MS - DAY) / 3000));
-    all.push({ id: `e${i}`, summary: i === 2999 ? "散髪" : "予定", start: { dateTime: new Date(startMs).toISOString() } });
-  }
+test("one window, not blind chunks: the cursor walk covers [now - historyMs, now] in a single span", async () => {
+  const capture = {};
+  await fetchCalendarHistory("uid", { nowMs: NOW, calendar: pagingCalendar([[]], capture) });
+  assert.equal(capture.all.length, 1, "a short calendar costs exactly one call");
+  assert.equal(capture.all[0].timeMin, new Date(NOW - CARE_HISTORY_MS).toISOString().replace(/\.\d{3}Z$/, "Z"));
+  assert.equal(capture.all[0].timeMax, new Date(NOW).toISOString().replace(/\.\d{3}Z$/, "Z"));
+});
+
+// 🔴 The two honest failures that replace the silent lie. careUserOnce turns a throw into
+// status:"history_unavailable" — no row, no daily claim, the next 60s tick retries. A truncated
+// history frozen into an append-only table would be a permanent fabrication.
+test("cursor still live at the hard cap → THROWS rather than persisting a partial history as truth", async () => {
+  const pages = [];
+  const per = HISTORY_PAGE_SIZE;
+  for (let p = 0; p < 10; p += 1) pages.push(eventsSpanning(per, `p${p}e`));
+  await assert.rejects(
+    () => fetchCalendarHistory("uid", { nowMs: NOW, calendar: pagingCalendar(pages) }),
+    (e) => /truncat/i.test(e.message) && String(e.message).includes(String(HISTORY_MAX_EVENTS)),
+  );
+});
+
+test("a cursor-less transport that returns a FULL page → THROWS (truncation with nothing to follow)", async () => {
+  const cal = fakeCalendar(eventsSpanning(HISTORY_PAGE_SIZE, "full"));
+  await assert.rejects(
+    () => fetchCalendarHistory("uid", { nowMs: NOW, calendar: cal }),
+    /truncat/i,
+  );
+  // a short page from the same transport is provably complete and must NOT throw
+  const short = await fetchCalendarHistory("uid", { nowMs: NOW, calendar: fakeCalendar(eventsSpanning(3, "s")) });
+  assert.equal(short.length, 3);
+});
+
+test("a transport that repeats its own cursor cannot spin forever — it THROWS", async () => {
   const cal = {
-    kind: "fake",
+    kind: "fake-stuck",
     ready: () => true,
-    // honors [timeMin, timeMax] and truncates ASCENDING at maxResults — Google's orderBy=startTime behavior
-    async listEventsRaw(_uid, { timeMin, timeMax, maxResults }) {
-      const lo = Date.parse(timeMin); const hi = Date.parse(timeMax);
-      const inWindow = all.filter((e) => { const t = Date.parse(e.start.dateTime); return t >= lo && t <= hi; });
-      return maxResults ? inWindow.slice(0, maxResults) : inWindow;
+    async listEventsPage() {
+      return { items: [{ id: "x", summary: "予定", start: { dateTime: "2026-01-01T00:00:00Z" } }], nextPageToken: "same" };
     },
   };
-  const events = await fetchCalendarHistory("uid", { nowMs: NOW, calendar: cal });
-  assert.ok(events.some((e) => e.id === "e2999"), "the newest visit must survive truncation — it IS the last-visit date");
-  assert.equal(new Set(events.map((e) => e.id)).size, events.length, "chunk-boundary events must merge, not duplicate");
+  await assert.rejects(() => fetchCalendarHistory("uid", { nowMs: NOW, calendar: cal }), /cursor/i);
+});
+
+test("merged pages never duplicate ids — a repeated event is one visit, not two", async () => {
+  const dup = { id: "d1", summary: "散髪", start: { dateTime: "2026-01-05T00:00:00Z" } };
+  const events = await fetchCalendarHistory("uid", {
+    nowMs: NOW,
+    calendar: pagingCalendar([[dup], [dup, { id: "d2", summary: "歯科", start: { dateTime: "2026-02-05T00:00:00Z" } }]]),
+  });
+  assert.deepEqual(events.map((e) => e.id), ["d1", "d2"]);
+});
+
+// The live composio transport must actually expose the cursor the walk depends on.
+test("composio transport exposes listEventsPage: returns nextPageToken and forwards pageToken", async () => {
+  const { makeComposioCalendar } = require("./transport/calendar-composio.js");
+  const origFetch = globalThis.fetch;
+  try {
+    const sent = [];
+    globalThis.fetch = async (_url, init) => {
+      sent.push(JSON.parse(init.body).arguments);
+      return { json: async () => ({ successful: true, data: { items: [{ id: "e1" }], nextPageToken: "tok2" } }) };
+    };
+    const cal = makeComposioCalendar({ apiKey: "k", recordCall: () => false });
+    const page = await cal.listEventsPage("uid", { timeMin: "2025-01-01T00:00:00Z", timeMax: "2026-07-26T00:00:00Z", maxResults: 2500, pageToken: "tok1", strict: true });
+    assert.deepEqual(page.items, [{ id: "e1" }]);
+    assert.equal(page.nextPageToken, "tok2");
+    assert.equal(sent[0].pageToken, "tok1", "the cursor must reach Composio");
+    assert.equal(sent[0].maxResults, 2500);
+    // an exhausted cursor reports null, never the empty string Google can send
+    globalThis.fetch = async () => ({ json: async () => ({ successful: true, data: { items: [], nextPageToken: "" } }) });
+    assert.equal((await cal.listEventsPage("uid", { strict: true })).nextPageToken, null);
+    // listEventsRaw keeps its one-page array contract for the wake path
+    globalThis.fetch = async () => ({ json: async () => ({ successful: true, data: { items: [{ id: "w" }], nextPageToken: "more" } }) });
+    assert.deepEqual(await cal.listEventsRaw("uid", {}), [{ id: "w" }]);
+    // strict failure still throws through the paged entry point
+    globalThis.fetch = async () => ({ json: async () => ({ successful: false, error: "quota exceeded" }) });
+    await assert.rejects(() => cal.listEventsPage("uid", { strict: true }), /quota exceeded/);
+    assert.deepEqual(await cal.listEventsPage("uid", {}), { items: [], nextPageToken: null });
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });
 
 // 🔴 Finding 1 (transport leg): the history path must distinguish failure from empty. The composio
@@ -90,7 +188,7 @@ test("busy calendar (> maxResults events): the NEWEST events survive, and merged
 test("history read is STRICT: passes strict to the transport and propagates its failure", async () => {
   const capture = {};
   await fetchCalendarHistory("uid", { nowMs: NOW, calendar: fakeCalendar([], capture) });
-  for (const call of capture.all) assert.equal(call.strict, true, "every history chunk must be a strict read");
+  for (const call of capture.all) assert.equal(call.strict, true, "every history page must be a strict read");
   await assert.rejects(
     () => fetchCalendarHistory("uid", {
       nowMs: NOW,
