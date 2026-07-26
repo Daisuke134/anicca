@@ -547,24 +547,23 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**（2026-07-26 更新）: 残りは **10 atomic**。今日 done = **9c**（TikTok+IG daily 自走、2日連続 readback）と **12c**（MENTAL 3/3 実 TG）。11b/13c は実装 merged、実測 leg のみ残。付随修理 = 録音 pipeline 停止（§10.0-1 違反）、prod webhook 復旧×2 + boot self-heal 恒久化（INC-3、PR #1135）、between_events 到達性 fix（PR #1129）。次に動けるのは: 13b（Dais の tap 待ち）、11a（現実の overdue 待ち）、11c 入口 = Dais の Browserbase account 作成。
+**Current cursor**（2026-07-26 夜 更新）: 残り **7**（+crypto track 保留2）。今日 done = 9c・12c・13b・CB-1・13d-a、実装 merged = 11b・13c、恒久修理 = webhook self-heal（INC-3）・between_events 到達性・standing receipt・録音 pipeline 停止。**入力文法は完成**: tap は可視応答（CB-1、Dais 実 tap 実証）、typed は受領→検証→引用確認（13d-a、agent 単独 E2E）。次に動けるのは 9d 日次 verify / 11a 発火 / Dais の Browserbase account。
 
-**Live remaining to-do list (9, execution order = §9.8。2026-07-26 更新)**:
+**Live remaining to-do list (7, 順序 = 裁定17: 9 → 10 → 11 → 12 優先、crypto は別 track。2026-07-26 夜 更新)**:
 
 | # | ID | organ | 残っている実物 | blocker |
 |---|---|---|---|---|
-| 1 | `CB-1` | UX | 裁定15の callback 可視応答契約（元 message 編集 + keyboard 撤去 + 再tap可視応答）を ask/payout/discovery 全 handler に実装 → deploy → agent が browser で実 tap readback（裁定16） | **done (2026-07-26)**: #1139 merged（877/877）+ deploy 後、Dais 本人の実 tap（［あとで］）で production 実証 — 元 message に `→ あとで` が刻まれ keyboard 撤去、DB の wallet 回答は上書きされず温存。evidence=`docs/evidence/cb1-visible-callbacks-live.md` |
-| 2a | `13d-a` | FINANCIAL | **typed 入力の受領経路（2026-07-26 Dais 裁定: button では渡せない情報がある）**: manager が「walletアドレスを送ってください」と質問 → user が chat に**打ち込む** → server が受領 → EIP-55 checksum validate → `payout_destination` を `{address, status:"usable"}` へ更新 → 検証済み内容を引用した確認返信。不正 address は理由つきで可視 reject。bank 選択者には口座情報の同型 flow（ただし fiat rail 閉鎖中は収集だけ行い実行しない） | **done (2026-07-26)**: #1144 merged + deploy 後、agent が browser で E2E 全通（裁定16）— 「送金先を変更」→ address 質問実着弾 → `DAIS_CREATOR_ADDRESS` を typed → ✅ 確認返信（DB 読み戻し値を引用）→ production readback `{"status":"usable","address":"0x6592…EDc7","confirmed_at":"2026-07-26T11:27:08Z"}`。EIP-55 実通過。evidence=`docs/evidence/13d-a-typed-intake-live.md` |
-| 2b | `13d-b` | FINANCIAL | agent wallet → user wallet の on-chain 実 tx（spend-cap 内）+ §9.11 copy の実 TG 報告 | 13d-a の usable address + wallet 残高 seed |
-| 3 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger | 暦のみ（Day 1 記帳済 2026-07-26、毎日 10:00 JST に loop が自動追記） |
-| 4 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: 実履歴6件すべて 1.5x 未満で overdue 0件）。detector は実データで正常・誤検知0 |
-| 5 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装は #1132 merged: anchors × category、京都床屋排除、usual-first） | 11a の care category |
-| 6 | `11c` | PHYSICAL | Browserbase（通常 account = 裁定12）で実予約 or メール。不可なら候補提示 + 正直報告 | 11b実測 + Dais の Browserbase account 作成 |
-| 7 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
-| 8 | `13c実測` | FINANCIAL | 台帳に実収支行 + 月次報告文の生成実測（engine は #1128 merged） | 実収益の発生（earn loop） |
-| 9 | `10e`→`10f` | DEV | 最終 phase: 実 error 由来 PR 1本の無人 merge/deploy → 7日 self-build 台帳 | 上記すべて done |
+| 1 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger（Day 1 記帳済 2026-07-26） | 暦のみ — 毎日 10:00 JST に loop が自動追記、agent が日次 verify |
+| 2 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: haircut 34d/240d 周期、health 57d/445d — いずれも 1.5x 未満）。detector は実データで正常・誤検知0 |
+| 3 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装 #1132 merged: anchors × category、京都床屋排除、usual-first、1〜3件の正直 shortfall） | 11a の care category |
+| 4 | `11c` | PHYSICAL | Browserbase（通常 account = 裁定12）で実予約 or メール。不可なら候補提示 + 正直報告 | 11b実測 + **Dais の Browserbase account 作成（唯一の人間依存）** |
+| 5 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
+| 6 | `10e` | DEV | 実 error 由来 PR 1本（材料: open #1092/#1094/#1095）の無人 merge/deploy。guard = test/eval 100%・fresh adversary・path allowlist・rollback | 9d + 11系 done（裁定17で「全 atomic done」から緩和） |
+| 7 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復（launchd 再 enable） | 10e |
 
-**done 済みで表から外した row**: `13a`・`9f`・`9c`（TikTok+IG daily 自走）・`12c`（3/3 実TG）・`13b`（実往復 + DB row `{"type":"wallet","status":"awaiting_details"}`）。詳細は各 §10 行と docs/evidence/。
+**crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先は 13d-a で `usable` 済み `0x6592…EDc7`、agent wallet 残高 0 実測・seed 未定）、`13c実測`（実収益行 — engine #1128 merged）。
+
+**done 済みで表から外した row**: `13a`・`9f`・`9c`・`12c`・`13b`・`CB-1`（可視応答契約 — Dais 実 tap で production 実証）・`13d-a`（typed 受領文法 — agent 単独 E2E 全通、DB `usable`）。詳細 = 各 §10 行 + docs/evidence/。
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
