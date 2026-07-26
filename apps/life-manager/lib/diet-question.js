@@ -17,6 +17,7 @@
 
 const { LOCATION_STATES } = require("./mental-trigger.js");
 const { DIET_STRINGS } = require("./i18n.js");
+const { localMinuteOfDay } = require("./user-tz.js");
 
 const DIET_ANSWERS = Object.freeze(["teishoku", "men", "fast", "skip"]);
 const DIET_WEEKLY_CAP = 3;
@@ -28,13 +29,8 @@ const INPUT_KEYS = Object.freeze([
   "nowMs", "tzOffsetH", "events", "askedThisWeek", "lastAskMs", "location",
 ]);
 
-// Minutes since local midnight. The modulo is taken AFTER the offset so a negative offset (the
-// Americas) wraps into the previous local day instead of going negative.
-function localMinuteOfDay(nowMs, tzOffsetH) {
-  const localMs = nowMs + tzOffsetH * 3600000;
-  const dayMs = ((localMs % 86400000) + 86400000) % 86400000;
-  return Math.floor(dayMs / 60000);
-}
+// localMinuteOfDay is shared with the precepts organ (lib/user-tz.js) and re-exported here so this
+// module's callers keep their import unchanged.
 
 function validateInput(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("input must be an object");

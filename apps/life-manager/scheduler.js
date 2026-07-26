@@ -16,6 +16,9 @@ const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js"
 const { careUserOnce } = require("./lib/care-daily-runtime.js");
 const { dietUserOnce } = require("./lib/diet-runtime.js");
 const { dietNudgeOnce } = require("./lib/diet-nudge.js");
+const { preceptsUserOnce } = require("./lib/precepts-runtime.js");
+const { preceptsMirrorOnce } = require("./lib/precepts-mirror.js");
+const { readMentalSendState, recordMentalSend } = require("./lib/mental-send-log.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
@@ -207,10 +210,10 @@ const MENTAL_SEEDS = Object.freeze([
   "Today I choose to be kind to myself",
 ]);
 
-// H2: the diet trigger only asks whether an event is IN PROGRESS, so it needs starts and ends and
-// nothing else. An event with no end is given the same 1h assumption mentalDeps makes — a missing
-// end must not read as a zero-length event that suppresses nothing.
-function dietEvents(events) {
+// H2/H4: the diet and precepts triggers only ask whether an event is IN PROGRESS, so they need
+// starts and ends and nothing else. An event with no end is given the same 1h assumption mentalDeps
+// makes — a missing end must not read as a zero-length event that suppresses nothing.
+function inProgressEvents(events) {
   return (Array.isArray(events) ? events : []).map((event) => {
     const startMs = Number(event.startMs);
     const endMs = Number.isFinite(event.endMs) ? Number(event.endMs) : startMs + 60 * 60000;
@@ -221,9 +224,15 @@ function dietEvents(events) {
 // The kill switch, spelled the way an operator under pressure actually spells it. `LM_DIET_ENABLED=0`
 // was the only accepted form, so `=false` and `=off` silently LEFT THE ORGAN ON — the exact moment
 // an off switch must not be pedantic is the moment someone is reaching for it.
-const DIET_OFF = /^(0|false|off|no)$/i;
+const ORGAN_OFF = /^(0|false|off|no)$/i;
 function dietEnabled() {
-  return !DIET_OFF.test(String(process.env.LM_DIET_ENABLED || "").trim());
+  return !ORGAN_OFF.test(String(process.env.LM_DIET_ENABLED || "").trim());
+}
+
+// H4 ORG-precepts: same switch, same spellings, same default-ON. Defaulting a gate to OFF is how an
+// organ ships and then quietly never runs, which is indistinguishable from not having shipped it.
+function preceptsEnabled() {
+  return !ORGAN_OFF.test(String(process.env.LM_PRECEPTS_ENABLED || "").trim());
 }
 
 function mentalDeps(u, events, deps = {}) {
@@ -253,26 +262,11 @@ function mentalDeps(u, events, deps = {}) {
   };
 }
 
-async function readMentalSendState(uid, nowMs, supa) {
-  if (!supa.url || !supa.key) return { sentTodayCount: 0, lastSentMs: null };
-  const since = new Date(nowMs - 24 * 60 * 60000).toISOString();
-  const url = `${supa.url}/rest/v1/lm_mental_send_log?uid=eq.${encodeURIComponent(uid)}&sent_at=gte.${encodeURIComponent(since)}&select=sent_at&order=sent_at.desc`;
-  const response = await fetch(url, { headers: { apikey: supa.key, Authorization: `Bearer ${supa.key}` } }).catch(() => null);
-  if (!response || !response.ok) return { sentTodayCount: 0, lastSentMs: null };
-  const rows = await response.json().catch(() => []);
-  const times = (Array.isArray(rows) ? rows : []).map((row) => Date.parse(row.sent_at)).filter(Number.isFinite);
-  return { sentTodayCount: times.length, lastSentMs: times.length ? Math.max(...times) : null };
-}
-
-async function recordMentalSend(uid, trigger, messageId, supa) {
-  if (!supa.url || !supa.key) return false;
-  const response = await fetch(`${supa.url}/rest/v1/lm_mental_send_log`, {
-    method: "POST",
-    headers: { apikey: supa.key, Authorization: `Bearer ${supa.key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify({ uid, trigger, telegram_message_id: String(messageId) }),
-  }).catch(() => null);
-  return Boolean(response && response.status === 201);
-}
+// readMentalSendState / recordMentalSend moved to lib/mental-send-log.js (imported above) — H4 ⑤
+// makes lm_mental_send_log a SHARED budget, and a budget only one module can reach is not a budget.
+// MENTAL's behaviour is byte-for-byte unchanged: it still calls them non-strict, so an unreadable log
+// still reads as "nothing sent yet" for this organ. Precepts calls them strict and stays silent
+// instead — see lib/mental-send-log.js for why the two callers differ on purpose.
 
 async function wakeUserOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
@@ -404,12 +398,52 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
         // ALREADY started can answer, and futureEvents drops exactly those. The MENTAL lookback the
         // fetch above already carries is what makes the in-progress event visible here.
         const diet = await (deps.diet || dietUserOnce)(u, now, {
-          events: dietEvents(events), getLocationState: deps.getLocationState,
+          events: inProgressEvents(events), getLocationState: deps.getLocationState,
         });
         if (diet && (diet.status === "asked" || diet.status === "send_failed")) {
           console.log(`[diet] uid=${String(u.uid).slice(0, 12)} status=${diet.status} day=${diet.day}`);
         }
       } catch (e) { console.error(`[diet] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+    }
+  }
+  // H4 ORG-precepts: the bedtime organ rides the same 60s tick, after DIET. Both of its legs hold a
+  // durable claim in lm_precepts_log (UNIQUE (uid, day, kind)), so the 30-minute bedtime window
+  // produces at most one message however many ticks pass through it, and both legs read and write
+  // MENTAL's lm_mental_send_log so the evening budget is shared rather than doubled (H4 ⑤).
+  //
+  // The gate defaults ON (spec H4), `notifications_enabled` is honoured exactly as every other
+  // unsolicited-message organ honours it, and the two legs get SEPARATE try/catch blocks: they share
+  // a table but not a fate, and a calendar-history outage in the mirror must not cost the night its
+  // question.
+  if (preceptsEnabled() && u.notifications_enabled !== false) {
+    let mirrorSentThisTick = false;
+    try {
+      // The mirror is evaluated FIRST because it is the rarer and more time-boxed of the two (one
+      // Sunday, one window). Its own send records to lm_mental_send_log, which starts the 2h spacing
+      // that suppresses the question on every later tick — but not on THIS one, because both legs
+      // read their budget before either wrote. mirrorSentThisTick closes that gap: two unsolicited
+      // messages zero seconds apart is the sermon these thresholds exist to prevent.
+      const mirror = await (deps.preceptsMirror || preceptsMirrorOnce)(u, now, {
+        events: inProgressEvents(events), getLocationState: deps.getLocationState,
+        apiKey: deps.apiKey, calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
+      });
+      if (mirror && mirror.status === "mirrored") {
+        mirrorSentThisTick = true;
+        console.log(`[precepts-mirror] uid=${String(u.uid).slice(0, 12)} day=${mirror.day}`
+          + ` answers=${mirror.answerCount} pattern=${mirror.pattern} tg_message_id=${mirror.telegramMessageId}`);
+      }
+    } catch (e) { console.error(`[precepts-mirror] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+    if (!mirrorSentThisTick) {
+      try {
+        // NOT futureEvents: "is the user mid-something right now" is a question only the event that
+        // has ALREADY started can answer, and futureEvents drops exactly those.
+        const precepts = await (deps.precepts || preceptsUserOnce)(u, now, {
+          events: inProgressEvents(events), getLocationState: deps.getLocationState,
+        });
+        if (precepts && (precepts.status === "asked" || precepts.status === "send_failed")) {
+          console.log(`[precepts] uid=${String(u.uid).slice(0, 12)} status=${precepts.status} day=${precepts.day}`);
+        }
+      } catch (e) { console.error(`[precepts] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
     }
   }
 }

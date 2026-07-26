@@ -91,4 +91,8 @@ function evaluateMentalTrigger(input) {
   return { decision: "suppress", reason: "no-effective-moment" };
 }
 
-module.exports = { TRIGGERS, LOCATION_STATES, DAILY_CAP, validateInput, evaluateMentalTrigger };
+// MIN_GAP_MS is exported because H4 (precepts) shares this organ's budget rather than opening a
+// second one: the precepts question IS a MENTAL send for cap purposes, so it must read the SAME cap
+// and the SAME spacing from the same constant. A copied `2 * 60 * 60 * 1000` in another file is a
+// second budget wearing the first one's name.
+module.exports = { TRIGGERS, LOCATION_STATES, DAILY_CAP, MIN_GAP_MS, validateInput, evaluateMentalTrigger };
