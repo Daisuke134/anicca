@@ -155,7 +155,7 @@ repository ID `1273052304` の現`life-manager` → `life-manager-v0`として�
 | Surface | 現在 | To-Be |
 |---|---|---|
 | canonical public repo | `Daisuke134/life-manager`、repository ID `1248111245`、public/unarchived。ただし `apps/life-manager=0`、`packages/engine=0`、本spec=0 | whole product、engine、skills、SSOT、deployment sourceを保持する唯一の実装repo |
-| operating repo | `Daisuke134/anicca-products`、repository ID `1245528469`、public/unarchived。**実測 2026-07-27: aniccaai.com の landing（apps/landing）は今もこの repo から Netlify deploy される**（OAuth `?tg=` fix `751026f` はここへ push して配信された）。archive は landing の canonical repo への移設完了まで保留 | required treeをcanonical repoへ吸収し、equivalenceとproduction cutover後にarchive + README redirect |
+| operating repo | `Daisuke134/anicca-products`、repository ID `1245528469`、public/unarchived。**実測 2026-07-27: aniccaai.com の landing（apps/landing）は今もこの repo から Netlify deploy される**（OAuth `?tg=` fix `751026f` はここへ push して配信された）。archive は landing の canonical repo への移設完了まで保留 | **裁定18 (2026-07-27): archive 計画は撤回** — landing/mobile/他製品の恒久の家。Life Manager 製品コードのみ canonical repo に住む |
 | local execution | `/Users/operator/anicca-project`とlinked worktreeのshared originは`anicca-products` | migration中はsourceとしてread-only保持し、以後の新規product workはcanonical `life-manager`だけへcommit/push |
 
 repo rename `8c.R`はslug/identity移行だけを完了した。whole productのtree・SSOT・deployment source移行は未完であり、§10 `8i`が唯一の残作業である。`8i`完了前に`9b`以降を旧repoへ新規実装しない。
@@ -537,6 +537,9 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     経路）は UX 配管として完遂してよいが、13d-b（on-chain 実 tx）と 13c実測（実収益行）は 9/10/11/12 完了後、
     または別 repo の成果合流後に行う。これに伴い 10e の前提「他の remaining atomic が全て done」は
     「9/11 系が done」へ緩和される。
+18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
+    landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
+    「cutover 後に anicca-products を archive」する計画は**撤回**。H1/LAND-1 は棄却。
 
 
 
@@ -566,7 +569,6 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 | # | ID | 中身 | 出典 | 状態 |
 |---|---|---|---|---|
-| H1 | `LAND-1` | landing を anicca-products から canonical repo へ移設し Netlify の deploy 元を切替 → anicca-products を archive（§2.1 の未完 cutover を完了させる） | §2.1 実測矛盾 | 着手可 |
 | H2 | `ORG-diet` | 新 organ 第1号: 昼食 closed Q + 効く瞬間の提案（junk food 削減）。型 = detector+trigger+closed Q+ledger の複製 | §9 vision + Dais 2026-07-26 口述 | spec から。着手可 |
 | H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
 | H4 | `ORG-precepts` | 五戒の就寝前自省 Q + 週次 ledger（MENTAL 拡張） | 同上 | H2 の後（同型） |
