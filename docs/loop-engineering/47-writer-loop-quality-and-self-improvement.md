@@ -1639,3 +1639,34 @@ the guard verifies the CDP UUID and refuses that case.
 **判断の一般形**: 計測は不変条件より優先度が低い。計測が不変条件の実行資源と競合する場合、**計測が待つ**。今夜すでに「7時間のデータビルドが 06:00 と judge broker を奪い合う」ケースを殺しており（§21.15 の前段）、同じ形をブラウザで繰り返さない。
 
 **この時点で残作業は全て待ち**: 公開パイプラインに触る作業（T20b, T11-14）は run 着地後、データ蓄積待ち（T5, T10）は3日、ブラウザ待ち（T9）は run 後、横展開（T21）は1週間の観測後。**前に進められる作業が無いことを確認した上での待ちであり、手が空いているのではない。**
+
+### 21.32 dev.to の画像が壊れて公開されていた（実測 04:20 前後、07-25 receipt の追跡から）
+
+保留していた「dev.to 07-25 の receipt が発行できない」を追ったら、bot 判定でも identity でもなく**実在の公開バグ**だった。
+
+追跡の順序（それぞれ前の仮説を潰している）:
+1. bot 判定明けを確認 → 認証 API は `published: true` を返す。**bot は原因ではない**
+2. `record-live` が `REFUSED: remote verified live URL is required` → 手組みの evidence を受け取らない（fail-closed が正しく動作）
+3. CLI 単独の `publication_remote.py` が `missing-protected-devto-identity` → **CLI が state を読まないだけ**で、state には identity がある
+4. state 込みで検証器を回すと `public-asset-readback-failed` ← **本当の理由**
+5. 公開済み本文を開いたら、読み戻す資産が**そもそも存在しなかった**
+
+```
+本文中の画像参照
+  https://raw.githubusercontent.com/.../daily-2026-07-25/body-diagram   → 404（拡張子欠落）
+  同 .../body-diagram.png                                              → 200（正しいURL）
+  headline-image.png                                                   → 相対パス、dev.to で解決しない
+  body-diagram.png                                                     → 相対パス、同上
+
+直近4本の相対パス画像参照
+  07-26 (1)  0本      07-26 (2)  2本      07-25  2本      07-24  2本
+```
+
+**独立した欠陥2件**: (A) 相対パスが書き換えられないまま公開される、(B) GitHub raw URL から `.png` が落ちる。**読者には画像が壊れて見えている**（§21.20 の 0.54% 反応率の一因である可能性が高いが、これは断定しない — 測るなら画像あり/なしの比較が要る）。
+
+**receipt の拒否は正しかった**。「検証器が固すぎる」ではなく「読み戻す資産が本当に無い」。fail-closed が実在の欠陥を捕まえていた例として記録する。**通らない gate を緩める前に、gate が何を見ているかを開く。**
+
+**T11 の具体項目に追加**（公開経路の修正なので 06:00 の run 着地後）:
+- devto publisher で相対画像パスを絶対 URL へ書き換える（zenn 経路は raw.githubusercontent で既にやっている）
+- `.png` 拡張子の欠落を修正し、公開後に画像 URL の 200 を確認してから receipt を出す
+- 既公開分の画像修復は、影響範囲（直近4本中3本）を数えてから決める
