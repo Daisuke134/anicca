@@ -13,6 +13,7 @@ const { schedulerCohortFilter } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
+const { careUserOnce } = require("./lib/care-daily-runtime.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
@@ -287,6 +288,20 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
       console.log(`[mental] uid=${String(u.uid).slice(0, 12)} trigger=${mental.trigger} tg_message_id=${mental.telegramMessageId}`);
     }
   } catch (e) { console.error(`[mental] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  // 11a/11b: the PHYSICAL organ rides the same 60s tick. careUserOnce holds a durable daily claim
+  // in lm_care_scan_log, so despite the 60s cadence there is ONE real scan per user per UTC day —
+  // every other tick costs a single row lookup. Isolated exactly like MENTAL above: a care failure
+  // must never break wake calls. This path detects + records candidates only; 11c/11d own the side
+  // effects (no booking, no Telegram from here).
+  try {
+    const care = await (deps.care || careUserOnce)(u, now, { apiKey: deps.apiKey, calendar: deps.calendar });
+    if (care && care.status && care.status !== "already_scanned") {
+      console.log(`[care] uid=${String(u.uid).slice(0, 12)} status=${care.status}`
+        + `${care.category ? ` category=${care.category}` : ""}`
+        + `${care.selectedProviderId ? ` selected=${care.selectedProviderId}` : ""}`
+        + `${care.chainError ? ` chain_err=${care.chainError}` : ""}`);
+    }
+  } catch (e) { console.error(`[care] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else

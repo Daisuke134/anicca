@@ -76,4 +76,36 @@ async function fetchNextEvent(uid, opts = {}) {
   return events.length ? events[0] : null;
 }
 
-module.exports = { fetchUpcomingEvents, fetchNextEvent };
+// 11a runtime: care detection needs the user's OWN visit HISTORY. fetchUpcomingEvents is
+// future-only by contract (and rightly so — every wake/late consumer depends on it), which is the
+// same unreachable-rule disease 12c had: the one thing the care detector needs (past visits) is the
+// one thing that fetch can never return. This is a dedicated history read with its own contract
+// (mirrors the lookbackMs precedent above rather than stretching it to 18 months):
+//   - window = [now - historyMs, now], default ~18 months
+//   - all-day (date-only) events are KEPT — a barber visit logged all-day is still a visit
+//   - no interpretCalendarEvent filter — "no_call" is a call decision, not a history decision
+//   - the raw `start` object survives so detectCalendarCare can parse dateTime/date itself
+const CARE_HISTORY_MS = 548 * 86400000; // ~18 months
+
+async function fetchCalendarHistory(uid, opts = {}) {
+  if (!uid) return [];
+  const nowMs = opts.nowMs || Date.now();
+  const historyMs = Number.isFinite(opts.historyMs) && opts.historyMs > 0 ? opts.historyMs : CARE_HISTORY_MS;
+  const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey, gmailAccountId: opts.gmailAccountId });
+  const items = await calendar.listEventsRaw(uid, {
+    timeMin: isoZ(nowMs - historyMs), timeMax: isoZ(nowMs), maxResults: 2500,
+  });
+  const out = [];
+  for (const e of items || []) {
+    const id = e && typeof e.id === "string" ? e.id : "";
+    if (!id) continue;
+    const raw = (e.start || {}).dateTime || (e.start || {}).date;
+    const startMs = raw ? Date.parse(raw) : NaN;
+    if (!Number.isFinite(startMs) || startMs > nowMs) continue; // history holds only real past visits
+    out.push({ id, summary: e.summary || "", location: e.location || null, startMs, start: e.start });
+  }
+  out.sort((a, b) => a.startMs - b.startMs);
+  return out;
+}
+
+module.exports = { fetchUpcomingEvents, fetchNextEvent, fetchCalendarHistory, CARE_HISTORY_MS };
