@@ -1066,7 +1066,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 
 | # | 作業 | 依存 | done 条件（検証コマンドで判定） |
 |---|---|---|---|
-| **T1** | dead 検出に run dir 証拠を追加 | — | `reader-questions-ja.json` が報告されず、`self-improve-application.json` が報告される。両方向のテスト付き |
+| ~~T1~~ | dead 検出に run dir 証拠を追加 | — | **DONE** `0c351d3`。dead 17→7、`reader-questions-ja.json` と `platform-dispatch.jsonl` は報告されず（実 run dir に存在＝model が書いている）、`self-improve-application.json` は報告される。契約テスト 23/23。「script が書かない」だけでは死の証明にならない、が教訓 |
 | **T2** | SkillOpt 実現可能性プローブ | — | `vendor/skillopt-writing/FEASIBILITY.md` に `skillopt-train` の実出力（成功でも失敗でも）が貼られている |
 | **T3** | **採否の判定**（本節の分岐点） | T2 | 下の 21.3 の基準で adopt / reject を spec に書く |
 | **T4** | `skills/writing-craft/` 抽出 | T3 | `CRAFT.md` + `formats/{x-post,article,longform}.md` が存在し、`article-daily.sh` が実際に読む。SkillOpt の `SLOW_UPDATE` 相当の**編集禁止領域**を明示 |
