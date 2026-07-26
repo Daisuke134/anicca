@@ -1070,7 +1070,8 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | ~~T2~~ | SkillOpt 実現可能性プローブ | — | **DONE** `f671e04`。`vendor/skillopt-writing/FEASIBILITY.md` に成功と失敗の両方の実出力。1 epoch 完走（9 model calls / 14,169 tokens、ローカル proxy 経由）|
 | ~~T3~~ | 採否判定 | T2 | **DONE = ADOPT**。判定と根拠は §21.5 |
 
-| **T4** | `skills/writing-craft/` 抽出 | T3 | `CRAFT.md` + `formats/{x-post,article,longform}.md` が存在し、`article-daily.sh` が実際に読む。SkillOpt の `SLOW_UPDATE` 相当の**編集禁止領域**を明示 |
+| ~~T4~~ | `skills/writing-craft/` 抽出 | T3 | **DONE** `daa7368`。CRAFT.md 55行・adapter 14/15/18行、末尾に `SLOW_UPDATE` 保護ブロック、タイトル規則は参照1行のみ、`article-daily.sh` が実読み。契約テスト 10/10 |
+| ~~T4.5~~ | 台帳と scorer の接続 | T4 | **DONE** `daa7368`。`scripts/score-latest-run.sh` を `self-improve.sh` から呼ぶ。**発覚した穴**: `beat_rate.py` を呼ぶ caller がツリー内に1つも無く、日次台帳は書かれるだけで採点されない状態だった（学習しているように見えて何も測っていない）|
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
 | **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
 | **T7** | launchd 配線 + Telegram | T6 | `ai.anicca.writer-craft-train` が毎晩発火し、Telegram に patch / beat rate 前後 / 採否の1通 |
