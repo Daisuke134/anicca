@@ -42,6 +42,7 @@ const {
 const { DIET_STRINGS } = require("./i18n.js");
 const { sendMessage } = require("./telegram.js");
 const { reflectAnswer } = require("./telegram-callback-visibility.js");
+const { localDay, zoneOffsetHours, resolveUserTzOffsetH } = require("./user-tz.js");
 
 // The ask day rides in the callback data (see dietQuestionMessage): a keyboard never expires on its
 // own, so the tap has to say which lunch it is about.
@@ -56,45 +57,12 @@ function supaBase(url) {
   return String(url).replace(/\/$/, "");
 }
 
-// The user's LOCAL calendar day as YYYY-MM-DD. Lunch is a local idea: a UTC day would file a 00:30
-// JST row under yesterday and split one person's lunch history across two days.
-function localDay(nowMs, tzOffsetH) {
-  return new Date(nowMs + tzOffsetH * 3600000).toISOString().slice(0, 10);
-}
-
-// An IANA zone name → its UTC offset in hours AT THAT INSTANT (so DST is handled by the platform's
-// tz database rather than by us). Returns null for anything Intl refuses, because a zone name we
-// cannot read is not evidence that the user lives in Tokyo.
-function zoneOffsetHours(timeZone, atMs) {
-  if (typeof timeZone !== "string" || !timeZone.trim()) return null;
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone, year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
-    }).formatToParts(new Date(atMs));
-    const at = Object.fromEntries(parts.filter((p) => p.type !== "literal").map((p) => [p.type, p.value]));
-    const wallMs = Date.UTC(Number(at.year), Number(at.month) - 1, Number(at.day),
-      Number(at.hour), Number(at.minute), Number(at.second));
-    if (!Number.isFinite(wallMs)) return null;
-    return (wallMs - Math.floor(atMs / 1000) * 1000) / 3600000;
-  } catch {
-    return null;
-  }
-}
-
-// The honest chain, in order, ending in null rather than in a guess. `source` is the caller's deps
-// or callback opts; `row` is the user row (which carries call_time_zone when the caller selected it
-// — lm_users itself has no tz column, and this branch does not add one).
-const TZ_ROW_KEYS = Object.freeze(["call_time_zone", "time_zone", "timezone", "tz"]);
+// localDay / zoneOffsetHours / the chain itself now live in lib/user-tz.js — H4 (precepts) needs the
+// exact same rule, and a second copy of a timezone chain is a second chain that drifts. This organ
+// keeps only its OWN env link; everything above it is shared.
+const DIET_TZ_ENV_KEYS = Object.freeze(["LM_DIET_UTC_OFFSET_HOURS"]);
 function resolveDietTzOffsetH(source = {}, row = null, nowMs = Date.now()) {
-  if (Number.isFinite(source && source.tzOffsetH)) return source.tzOffsetH;
-  for (const key of TZ_ROW_KEYS) {
-    const offsetH = zoneOffsetHours(row && row[key], nowMs);
-    if (Number.isFinite(offsetH)) return offsetH;
-  }
-  const fromEnv = Number(process.env.LM_DIET_UTC_OFFSET_HOURS);
-  if (Number.isFinite(fromEnv) && String(process.env.LM_DIET_UTC_OFFSET_HOURS || "").trim() !== "") return fromEnv;
-  return null;
+  return resolveUserTzOffsetH(source, row, nowMs, DIET_TZ_ENV_KEYS);
 }
 
 // Two log latches, both module state ON PURPOSE — being module state is what makes them latches.

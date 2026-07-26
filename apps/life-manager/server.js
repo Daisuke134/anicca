@@ -61,6 +61,7 @@ const {
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
 const { handleDietCallback } = require("./lib/diet-runtime.js");
+const { handlePreceptsCallback } = require("./lib/precepts-runtime.js");
 const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
@@ -440,6 +441,26 @@ const server = http.createServer((req, res) => {
                 // them: the answer value is one of four fixed tokens, which is already public shape.
                 if (outcome && outcome.handled) {
                   console.log(`[diet] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
+                }
+                return outcome;
+              }, precepts: async (data) => {
+                // H4 ORG-precepts: the bedtime tap. Same tenant boundary as the diet sibling —
+                // handlePreceptsCallback re-verifies that the row names THIS chat before writing,
+                // and this is the ledger where a mis-filed row would attach one person's private
+                // evening to another person's uid.
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                const outcome = await handlePreceptsCallback(data, {
+                  row, chatId: u.chatId, actorId: u.userId,
+                  // CB-1 (§10.0-15 ①): the handler edits the question into its answered state, which
+                  // needs the bot token and the original text. No thank-you follows — that edit IS
+                  // the visible response, and the flow does not continue.
+                  token: LM_TG_TOKEN, messageId: u.messageId, messageText: u.messageText,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+                // Name the DECISION, never the person. The answer value is one of five fixed tokens,
+                // which is already public shape; the label the user read never reaches the log.
+                if (outcome && outcome.handled) {
+                  console.log(`[precepts] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
                 }
                 return outcome;
               } });
