@@ -117,6 +117,42 @@ const PHYSICAL_STRINGS = Object.freeze({
   }),
 });
 
+// H2 ORG-diet — the lunch closed question and the intervention line (spec §10 NEXT HORIZON row H2,
+// tone from §9.11). **This copy is Dais-editable**（No-human-loop 例外3）: edit the strings here and
+// the implementation follows; diet-question.js / diet-nudge.js never write copy inline.
+//
+// Two rules the copy itself must carry, not just the code around it:
+//   RECORD, NEVER JUDGE (H2 ⑥) — 診断・カロリー計算はしない. The question asks what happened; the
+//     nudge states a count and names one place. Neither ever says a choice was good or bad, and
+//     neither uses 健康/カロリー/栄養 vocabulary. That restraint is the whole difference between an
+//     organ the user keeps and a diet app they delete.
+//   ONE DIRECTION (§9.11) — the nudge asks for nothing. One 用件, one leading emoji, no question
+//     mark, no buttons. The user does not owe us a reply for having eaten a burger.
+//
+// The question's four labels are read back out of `text` by the keyboard builder, so the sentence
+// the user reads and the buttons they tap can never drift apart.
+const DIET_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    lunchQuestion: Object.freeze({
+      text: "今日のお昼は?\n［定食・野菜系］［麺・丼］［バーガー・ファスト］［食べてない］",
+      teishokuButton: "定食・野菜系",
+      menButton: "麺・丼",
+      fastButton: "バーガー・ファスト",
+      skipButton: "食べてない",
+      // CB-1 (§10.0-15 ③): a second tap is never silent. {choice} is the label already on file —
+      // what was RECORDED, not what was just tapped.
+      alreadyAnswered: "今日のお昼はもう記録済みです（{choice}）。",
+    }),
+    // The intervention. `withoutVenue` is not a fallback to be embarrassed about: §9.5 says an
+    // honest failure beats a fabricated success, so when Places finds nothing we say we found
+    // nothing rather than dropping the sentence or inventing a shop.
+    lunchNudge: Object.freeze({
+      withVenue: "🍚 直近2週間のお昼は{sampleCount}回中{fastCount}回がバーガー・ファストでした。職場の近くだと{venueName}（{venueAddress}）があります。",
+      withoutVenue: "🍚 直近2週間のお昼は{sampleCount}回中{fastCount}回がバーガー・ファストでした。近くの定食・サラダのお店は今日は見つけられませんでした。",
+    }),
+  }),
+});
+
 // Elapsed time in the units §9.11 speaks: 「4ヶ月」「6週間」「10日」. Deterministic thresholds, no
 // calendar arithmetic — the input is already a day count the detector measured.
 function elapsedLabel(days) {
@@ -234,6 +270,7 @@ function formatTravelAutofillMessage(report, nowMs = Date.now()) {
 
 module.exports = {
   DAILY_STRINGS,
+  DIET_STRINGS,
   DISCOVERY_STRINGS,
   FINANCIAL_STRINGS,
   PHYSICAL_STRINGS,

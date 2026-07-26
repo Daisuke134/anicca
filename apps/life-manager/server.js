@@ -60,6 +60,7 @@ const {
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
+const { handleDietCallback } = require("./lib/diet-runtime.js");
 const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
@@ -420,6 +421,25 @@ const server = http.createServer((req, res) => {
                 // is logged as a failure so a silent non-persist can never look like a registration.
                 if (outcome && outcome.handled) {
                   console.log(`[payout] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
+                }
+                return outcome;
+              }, diet: async (data) => {
+                // H2 ORG-diet: the lunch tap. The row is the tenant boundary — handleDietCallback
+                // re-verifies that it names THIS chat before writing, so a lookup bug upstream
+                // fails there instead of filing one person's lunch under another person's uid.
+                const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY);
+                const outcome = await handleDietCallback(data, {
+                  row, chatId: u.chatId, actorId: u.userId,
+                  // CB-1 (§10.0-15 ①): the handler edits the question into its answered state, which
+                  // needs the bot token and the original text. No thank-you follows — that edit IS
+                  // the visible response, and the flow does not continue.
+                  token: LM_TG_TOKEN, messageId: u.messageId, messageText: u.messageText,
+                  supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+                });
+                // Name the decision, never the person and never the meal in a way that identifies
+                // them: the answer value is one of four fixed tokens, which is already public shape.
+                if (outcome && outcome.handled) {
+                  console.log(`[diet] callback answer=${outcome.answer} ok=${outcome.ok}${outcome.reason ? ` reason=${outcome.reason}` : ""}`);
                 }
                 return outcome;
               } });
