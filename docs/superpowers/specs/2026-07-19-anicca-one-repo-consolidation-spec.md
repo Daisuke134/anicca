@@ -562,6 +562,18 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 **crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
 
+**常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
+
+| loop | 走る場所 | 頻度 | 実測 |
+|---|---|---|---|
+| CORE（wake call / travel / late notice） | Railway life-call 60s tick | 常時 | /health ok |
+| MENTAL 3 trigger | 同 tick | 効く瞬間のみ・3通/日上限 | 3/3 実配信済み |
+| PHYSICAL care scan（検知→候補 chain） | 同 tick、日次 claim | 毎日 | scan row 実在、CADENCE-1 guard 付き |
+| webhook self-heal | 同 boot | 毎 deploy | boot log 実測 |
+| MARKETING（MPT render → TikTok+IG → 9d 記帳 → TG 報告） | launchd `ai.anicca.life-manager-daily` | 毎日 10:15 JST | launchctl 登録済み・exit 0 |
+| comp window / standing receipt / admin alert | env / jsonl | 自動失効・常時 | 設定 readback 済み |
+| **回らないもの（要 10f）**: DEV self-build（error→PR→無人 merge→deploy） | launchd `.disabled` 退避中 | — | 10e 機械の完成 + 10f 再 enable で復活。これが最後の「人間/agent セッション依存」 |
+
 **DEMO 態勢（2026-07-27〜28）**: funnel 5欠陥を前夜に全修理（`docs/evidence/demo-ready-20260727.md`）— OAuth `?tg=` 保持 fix 配信済み、`LM_COMP_UNTIL=2026-07-28T15:00Z`（read-time comp、Stripe の paid 書込み不変、自動失効）、cache TTL 15分、admin alert 配線（Telnyx 残高警告含む）、nudge 30分 cooldown。
 
 **done 済みで表から外した row**: `13a`・`9f`・`9c`・`12c`・`13b`・`CB-1`・`13d-a`・`PHY-runtime`（#1147+#1149、care scan 毎日稼働）・`CADENCE-1`（#1151）。詳細 = 各 §10 行 + docs/evidence/。
