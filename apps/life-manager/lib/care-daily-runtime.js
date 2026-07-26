@@ -7,15 +7,27 @@
 // months of the user's OWN calendar history, and records what the detector saw. Abstention (no
 // candidates) is the honest common case and gets a row too. On a REAL detection the 11b chain runs
 // in-process — anchors → anchored candidate search → route evaluation — and the full result lands
-// on the same scan row. NO side effects here: no booking, no calendar writes, no messages of any
-// kind — 11c/11d own those. The product of this module is the self-executing detection+candidates
-// record.
+// on the same scan row.
+//
+// 11c/11d (booking + aftercare) hang off the END of that chain, BEHIND `LM_BOOKING_ENABLED=1`. With
+// the gate absent this module has exactly the side effects it always had: none — no browser session,
+// no Telegram, no calendar write. With the gate on, an ACTIONABLE detection (CADENCE-1: observe_only
+// detections never get this far) whose selected candidate has a web reservation route is booked by
+// care-booking-executor, and care-aftercare reports the outcome and records it under `chain.booking`.
+// The booking leg is isolated the way the chain leg is: it can never lose the detection row, which is
+// written and claimed before any of it runs. It is also deduplicated ACROSS days: the daily claim only
+// stops two ticks on the same day, and an overdue detection stays true until the appointment we just
+// booked actually happens — so prior rows are read for a live booking of the same care type first.
 
 const { detectCalendarCare } = require("./care-detector-runtime.js");
 const { deriveAnchors } = require("./care-anchors.js");
 const { searchCareCandidates } = require("./care-candidate-search.js");
 const { evaluateCareCandidates } = require("./care-candidates.js");
 const { fetchCalendarHistory } = require("./events.js");
+const { executeBooking } = require("./care-booking-executor.js");
+const { runAftercare } = require("./care-aftercare.js");
+const { makeSteelCdpClient } = require("./steel-cdp-client.js");
+const { sendMessage } = require("./telegram.js");
 
 // The user's own words → the 11a care types (dental / haircut / clinic — the exact categories
 // care-candidate-search.js CATEGORY_KEYWORDS knows; no invented types). This is deterministic data
@@ -76,6 +88,39 @@ async function insertScanRow(row, supa, fetchImpl) {
   const body = typeof response.text === "function" ? await response.text().catch(() => "") : "";
   if (/23505|duplicate key/i.test(body)) return false;
   throw new Error(`care scan insert failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
+}
+
+// ─── cross-day double booking ───────────────────────────────────────────────────────────────────
+// The scan runs EVERY day, and an overdue detection stays true until a NEW visit lands on the user's
+// calendar — which will not happen until the appointment we just booked actually takes place, weeks
+// out. The daily claim in lm_care_scan_log stops two ticks on the same day; nothing stopped tomorrow.
+// So before the booking leg runs at all, the prior rows are read for a booking of the SAME care type
+// that is still live. `possibly_booked` counts every bit as much as `booked`: an unconfirmed submit is
+// precisely the case where booking again would double-book a real clinic.
+const BOOKING_DEDUP_WINDOW_MS = 30 * 86_400_000;
+const LIVE_BOOKING_OUTCOMES = new Set(["booked", "possibly_booked"]);
+
+async function findLiveBooking(uid, careType, nowMs, supa, fetchImpl) {
+  const query = `uid=eq.${encodeURIComponent(uid)}&select=id,scan_day,chain&order=scan_day.desc&limit=60`;
+  const response = await fetchImpl(`${supa.url}/rest/v1/lm_care_scan_log?${query}`, { headers: headers(supa.key) });
+  if (!response || !response.ok) {
+    // A lookup we could not run is NOT "no prior booking". Throwing lands as chain_error and skips
+    // the booking leg — the safe side of a question we cannot answer.
+    throw new Error(`care booking history lookup failed (${response ? response.status : "no response"})`);
+  }
+  const rows = await response.json().catch(() => []);
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const booking = row && row.chain && row.chain.booking;
+    if (!booking || row.chain.category !== careType) continue;
+    if (!LIVE_BOOKING_OUTCOMES.has(booking.outcome)) continue;
+    // Prefer the slot that was actually requested; fall back to the day the attempt was made, so a
+    // possibly_booked with no slot still blocks the retry for the window.
+    const slotMs = booking.booked_slot ? Date.parse(booking.booked_slot) : NaN;
+    const referenceMs = Number.isFinite(slotMs) ? slotMs : Date.parse(`${row.scan_day}T00:00:00Z`);
+    if (!Number.isFinite(referenceMs)) continue;
+    if (referenceMs >= nowMs - BOOKING_DEDUP_WINDOW_MS) return { id: row.id, scanDay: row.scan_day, booking };
+  }
+  return null;
 }
 
 async function updateScanChain(uid, day, patch, supa, fetchImpl) {
@@ -189,7 +234,93 @@ async function careUserOnce(u, nowMs, deps = {}) {
     // default). The detection row itself is safe either way: it landed before the chain ran.
     const persisted = await updateScanChain(u.uid, day, { chain }, supa, fetchImpl);
     if (!persisted) logError(`[care] chain-persist-failed uid=${u.uid} day=${day} category=${category}`);
-    return { status: "detected", category, selectedProviderId: evaluated.selected_provider_id };
+
+    // ── 11c/11d, behind the gate ────────────────────────────────────────────────────────────────
+    // The gate is checked BEFORE anything is constructed, so with LM_BOOKING_ENABLED absent not one
+    // steel call, Telegram send, or calendar write can occur — the 11a/11b behaviour is unchanged.
+    const bookingEnabled = deps.bookingEnabled !== undefined
+      ? Boolean(deps.bookingEnabled)
+      : process.env.LM_BOOKING_ENABLED === "1";
+    const selected = evaluated.candidates.find((c) => c.provider_id === evaluated.selected_provider_id) || null;
+    if (!bookingEnabled || !selected) {
+      return { status: "detected", category, selectedProviderId: evaluated.selected_provider_id };
+    }
+
+    // Nothing below here may run twice for the same overdue care. The check reads PRIOR days' rows,
+    // because that is where yesterday's booking lives.
+    const priorBooking = await findLiveBooking(u.uid, category, now, supa, fetchImpl);
+    if (priorBooking) {
+      const record = { outcome: "already_booked_ref", care_type: category, ref_scan_id: priorBooking.id, ref_scan_day: priorBooking.scanDay };
+      const noted = await updateScanChain(u.uid, day, { chain: { ...chain, booking: record } }, supa, fetchImpl);
+      if (!noted) logError(`[care] booking-dedup-persist-failed uid=${u.uid} day=${day} ref=${priorBooking.id}`);
+      return {
+        status: "detected",
+        category,
+        selectedProviderId: evaluated.selected_provider_id,
+        bookingOutcome: "already_booked_ref",
+      };
+    }
+
+    const detection = actionable[0];
+    // Days since the last visit = the cadence plus how far past it we are. Both numbers are the
+    // detector's own arithmetic on real events; nothing here re-derives or rounds them differently.
+    const sinceDays = Number.isFinite(detection.personal_interval_days) && Number.isFinite(detection.overdue_days)
+      ? detection.personal_interval_days + detection.overdue_days
+      : detection.overdue_days;
+
+    let booking;
+    try {
+      booking = await executeBooking({
+        candidate: selected,
+        user: u,
+        // The slot POLICY (which datetime to request) is deliberately not invented here: picking a
+        // time needs the user's real availability, and a guessed 木曜18:00 would be a fabricated
+        // commitment. Absent an injected preference the executor honestly fails on the date field.
+        slotPreference: deps.slotPreference || null,
+        // The executor gets a deadline SHORTER than forEachUserSafe's per-tenant abandon (90s), so a
+        // hung provider page cannot keep the single OSS steel session past the tick that owns it.
+        deps: { cdp: deps.cdp || makeSteelCdpClient(), deadlineMs: deps.bookingDeadlineMs },
+      });
+    } catch (error) {
+      booking = {
+        schema_version: 1,
+        outcome: "honest_failure",
+        provider_id: selected.provider_id,
+        reservation_url: selected.reservation_url || null,
+        reason_code: "booking_executor_failed",
+        reason: `予約処理が途中で失敗しました（${String((error && error.message) || error)}）`,
+        submitted: false,
+      };
+    }
+
+    const aftercare = await runAftercare({
+      booking,
+      candidate: selected,
+      candidates: evaluated.candidates,
+      careType: category,
+      sinceDays,
+      user: u,
+      deps: {
+        sendMessage: deps.sendMessage || sendMessage,
+        telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+        calendar: deps.calendar,
+        logError,
+        // lm_care_scan_log's append-only trigger permits only chain / chain_error to be filled in
+        // after insert, so the booking rides INSIDE the chain jsonb — no new column, no migration.
+        recordBooking: (record) => updateScanChain(u.uid, day, { chain: { ...chain, booking: record } }, supa, fetchImpl),
+      },
+    }).catch((error) => {
+      logError(`[care] aftercare-failed uid=${u.uid} day=${day} ${String((error && error.message) || error)}`);
+      return { status: "failed" };
+    });
+
+    return {
+      status: "detected",
+      category,
+      selectedProviderId: evaluated.selected_provider_id,
+      bookingOutcome: booking.outcome,
+      aftercareStatus: aftercare.status,
+    };
   } catch (error) {
     const chainError = String((error && error.message) || error);
     const persisted = await updateScanChain(u.uid, day, { chain_error: chainError }, supa, fetchImpl).catch(() => false);
