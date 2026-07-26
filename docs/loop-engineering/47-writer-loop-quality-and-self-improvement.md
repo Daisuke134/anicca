@@ -61,7 +61,7 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。現在の実行順序は **§18.8 E1→E8だけ**を正本とする。
+旧導入順は完了または廃止。順序の正本は**範囲で二分する**（2026-07-27 整理）: **公開エンジン**（X Post / book / OSS 境界 / E2E）の順序は **§18.8 E1→E8**、**craft trainer**（自己改善）の順序は **§21.2 T1→T10**。重なるのは §18.8 の E6 だけで、E6 の中身と順序は §21 が上書きする。
 
 TaskList の現在状態は §16.5 と §18.8 を正本とする。D1-D8 と P1-P3 は **DONE**。旧 P4 は配信集合・runtime 境界が変わるため §18 の E1-E8 へ移管する。残作業の順序と状態は §18.8 だけを更新する。
 
@@ -806,7 +806,7 @@ paid subscription ¥500相当/月 ───────────────�
 - runtime再検証ではdisk上の新writer plistはexact5だったが、launchd内の`ai.anicca.writer-daily`定義だけが古い`/bin/bash -lc ... article-daily.sh`を保持し、06:00から旧Claude runを起動していた。新DBのdaily run/publication attempt/receiptは0、旧run `20260722-210001`のledger matchも0のまま、旧process treeをSIGTERMで停止してjobは`not running`。第20是正PASS後のlatest `install.sh --activate`でloaded definitionをdisk上の`writer enqueue`へ置換するまでkickstartしない。
 - 既存live部品は旧article-writerに存在し、新engineへcopy+tweak中。noteは`publish-note.sh` + `publish-paid.py`、Zennは`zenn-publish/publish-to-zenn.sh`、Substackは`publish-substack-mermaid.sh`、X Articleは`x-publish/publish-to-x.sh`、X Postは既存API/CDP publisherを基礎にし、各platform匿名/API readbackをengine側で統一する。上流X Article skillはdraft-onlyなので、その自己申告をlive evidenceにしない。
 
-### 18.8 Remaining TaskList（唯一の残TODO正本、必ず順番どおり）
+### 18.8 Remaining TaskList（**公開エンジンの**残TODO正本、必ず順番どおり。self-improve の中身と順序は §21 を見る）
 
 | # | 状態 | 作業 | done evidence |
 |---|---|---|---|
@@ -837,7 +837,7 @@ Dais 指示: 「毎日ちゃんと publish はしてる。でも writing 自体�
 つまり勾配が **完全に閉じている**。外から何も入ってこない。この構造では「judge に気に入られる技術」しか上達しない。外部信号なしの自己修正は改善せず劣化するのが実測済み（[arxiv 2310.01798](https://arxiv.org/abs/2310.01798) *LLMs Cannot Self-Correct Reasoning Yet*）。Dais の「上手くなってない」は主観ではなく設計の帰結。
 
 副次欠陥 2 件（同時に直す）:
-- editorial-gate 化で rubric-judge を廃止したのに `_quality()` はまだ `rubric-judge-*.json` を読む。`state/selfimprove-audit.jsonl` に `daily-2026-07-25 rubric-judge-ja.json is missing` が既に記録されている = 学習 loop は今 **盲目**。
+- editorial-gate 化で rubric-judge を廃止したのに `_quality()` はまだ `rubric-judge-*.json` を読んでいた。`state/selfimprove-audit.jsonl` の `daily-2026-07-25 rubric-judge-ja.json is missing` と、22:30 job の `self-improve pending: no JA/EN quality baseline is available` が実測。**2026-07-26 に解消済み**（`715de5c`: editorial-gate が `gates/editorial-<lang>.json` を書き、`_quality()` が binary verdict を1軸スコアとして読む。rubric 経路は fallback）。実機での再確認は §21.2 T8。
 - `article-daily.sh` STEP 4.5 は「editorial-gate が rubric を置換」と書き、STEP 4.6 は今も `rubric-judge.sh` を回せと書いている。矛盾。
 
 ### 19.2 SkillOpt から取るもの / 取れないもの
@@ -912,17 +912,9 @@ schedule / credential / publication 不変条件 / safety gate は学習対象�
 
 mine は **対比的**に行う。同 source・同 topic の上位十分位 **対** 下位十分位から差分を抽出する。勝者だけ読むと生存バイアスを学習する（伸びた投稿と死んだ投稿が共有している書き出しは、伸びた理由ではない）。
 
-### 19.6 done 条件（E6 の evidence を本節で確定）
+### 19.6 done 条件
 
-| # | 作業 | done evidence |
-|---|---|---|
-| 19-1 | 本節（spec）| production branch に存在 |
-| 19-2 | corpus harvester | `writing-corpus/*.jsonl` が 3 source 以上・200 行以上 |
-| 19-3 | `skills/writing-craft/` | CRAFT.md + adapter 3 本、article loop が実読み |
-| 19-4 | `skillopt/envs/writing/` | `skillopt-train` が 1 epoch 回り beat rate の数値を出す |
-| 19-5 | `_quality()` 付け替え | rubric 軸でなく beat rate + 単一 gate verdict を読む。STEP 4.5/4.6 の矛盾解消 |
-| 19-6 | `ai.anicca.writer-craft-train` | 毎晩 Telegram 1 通: patch 内容 / beat rate before-after / 採用か却下か |
-| 19-7 | 週次 judge 較正 | judge の選好と自投稿の実 engagement の相関を出力 |
+廃止。done 条件は §21.2 の表に移した。§19 は設計の説明だけを持ち、進捗と順序は持たない。
 
 ### 19.7 成功の定義（「judge の点が上がった」は成功ではない）
 
@@ -993,22 +985,9 @@ editorial-gate は**一度も走っていない**。具体的な命令（4.6/4.7
    出力は「どちらを消すか」ではなく**チケット**。決着は beat rate が付ける。
 4. **規則の予算。** 1本足すなら1本消す。総数を増やさない。SkillOpt の `delete` op と `learning_rate`（1晩2編集）がそのまま予算になる。
 
-### 20.4 §19.6 の進捗（2026-07-26 時点）
+### 20.4 §19.6 の進捗
 
-| # | 作業 | 状態 |
-|---|---|---|
-| 19-1 | spec | **DONE** `3126b1e22` |
-| 19-2 | corpus harvester（title slice 先） | TODO ← 次 |
-| 19-3 | `writing-craft/` | TODO |
-| 19-4 | `skillopt/envs/writing/` | TODO |
-| 19-5 | `_quality()` 付け替え + #1 の矛盾解消 | TODO（#1 は本節で実測確定） |
-| 19-6 | 毎晩 `writer-craft-train` | TODO |
-| 19-7 | 週次 judge 較正 | TODO |
-| **20-1** | 却下台帳（P0）| **DONE** `d48a508`。`scripts/title_candidates.py` + contract test 5/5。規則語の却下理由と行番号なし却下を記録段階で拒否 |
-| **20-2** | prompt の独自タイトル規則を撤去し reference へ一本化 | **DONE** `d48a508` |
-| **20-3** | SKILL.md タイトル禁止行の削除・数字偏重の是正 | **DONE** `cc80f10` `6ee5f6a` |
-| 20-4 | 矛盾スキャナ実装（20.3 の3検出） | TODO |
-| 20-5 | 規則への出典欄追加 + unsourced 印 | TODO |
+廃止。この表は §21.1（完了）と §21.2（残作業）に統合した。順序と状態は §21 だけを見る。
 
 ### 20.5 副次の実測（同日）
 
@@ -1063,9 +1042,13 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 
 ---
 
-## 21. 実行順序の正本（2026-07-27。§19.6 と §20.4 の TODO 表を置換）
+## 21. craft trainer の実行順序（2026-07-27。§19.6 と §20.4 の TODO 表を置換）
 
-Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節が**唯一の順序正本**。以後この表だけを更新する。
+**範囲**: 自己改善（craft trainer）だけ。公開エンジンの残作業は §18.8 E1→E8 が正本で、本節はそちらを上書きしない。重なるのは E6（self-improve を1本化）だけで、E6 の中身と順序は本節が持つ。
+
+**この節を更新する時の規則**: 状態は本節の表だけに書く。他節に進捗表を作らない。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
+
+Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節が **craft trainer の順序正本**。以後この表だけを更新する（公開エンジンは §18.8）。
 
 ### 21.1 完了（証拠付き。再着手禁止）
 
