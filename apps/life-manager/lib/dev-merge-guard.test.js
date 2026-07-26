@@ -2,6 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -9,14 +10,23 @@ const path = require("node:path");
 const {
   GUARD_STAGES,
   BLOCKED_ACTIONS,
+  LEDGER_GENESIS,
   classifyChangedPath,
   evaluatePackageJsonChange,
   evaluateEligibility,
   parseAddedLines,
+  parseNameStatus,
   detectBlockedActions,
+  resolveReviewCommandPaths,
   signStageChain,
   verifyStageChain,
   guardLedgerPath,
+  guardLockPath,
+  acquireGuardLock,
+  releaseGuardLock,
+  appendGuardRun,
+  readLedgerRows,
+  verifyLedgerTail,
   createReviewCommandHook,
   createGuardDeps,
   runMergeGuard,
@@ -81,6 +91,11 @@ function stubDeps(overrides = {}) {
     sleep: async () => {},
     ledgerPath: overrides.ledgerPath,
     getPullRequest: async () => loopPullRequest(overrides.pr),
+    // The authoritative file list is git's, not gh's (see the truncation/rename finding); the
+    // default stub mirrors the PR fixture so only the tests that care have to diverge.
+    listChangedFiles: async () => (
+      overrides.changedFiles ?? loopPullRequest(overrides.pr).files.map((entry) => entry.path)
+    ),
     getDiff: async () => overrides.diff ?? CLEAN_DIFF,
     readFileAtRef: async () => null,
     runTests: async () => ({ ok: true, exitCode: 0, output: "npm test ok\nnpm run eval ok" }),
@@ -118,12 +133,15 @@ function stubDeps(overrides = {}) {
 }
 
 
-test("guard stages run in the documented order", () => {
+// Review and the blocked-actions tripwire come BEFORE the test suite because `npm test` executes
+// the PR's own code. A reviewer that only sees a diff after the runner already ran it is a
+// post-mortem, not a gate.
+test("guard stages run in the documented order, with review before any PR code executes", () => {
   assert.deepEqual(GUARD_STAGES, [
     "eligibility",
-    "tests",
     "review",
     "blocked_actions",
+    "tests",
     "merge",
     "deploy_health",
   ]);
@@ -400,8 +418,12 @@ test("a passing run merges, redeploys, proves health and a fresh deployment id",
     "duration_ms",
     "finished_at",
     "health",
+    "ledger_check",
     "merge_sha",
+    "post_merge_error",
     "pr",
+    "prev",
+    "record_hash",
     "rollback",
     "run_id",
     "schema_version",
@@ -413,7 +435,9 @@ test("a passing run merges, redeploys, proves health and a fresh deployment id",
     "stopped_at_stage",
     "verdict",
   ]);
-  assert.equal(row.schema_version, 1);
+  assert.equal(row.schema_version, 2);
+  assert.equal(row.post_merge_error, null);
+  assert.equal(row.prev, LEDGER_GENESIS);
   assert.equal(row.pr, 1094);
   assert.equal(row.verdict, "merged_deployed");
   assert.deepEqual(row.stages_passed, GUARD_STAGES);
@@ -482,7 +506,22 @@ test("a red test suite stops before merge", async () => {
   assert.equal(deps.calls.merge, 0);
   const [row] = readLedger(ledgerPath);
   assert.deepEqual(row.stages_failed, ["tests"]);
-  assert.deepEqual(row.stages_passed, ["eligibility"]);
+  assert.deepEqual(row.stages_passed, ["eligibility", "review", "blocked_actions"]);
+});
+
+
+test("the reviewer sees the diff before the runner ever executes the PR's code", async () => {
+  const order = [];
+  const deps = stubDeps({
+    ledgerPath: tempLedger(),
+    deps: {
+      review: async () => { order.push("review"); return { verdict: "fail", findings: ["no"] }; },
+      runTests: async () => { order.push("tests"); return { ok: true, exitCode: 0, output: "" }; },
+    },
+  });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+  assert.equal(result.stoppedAtStage, "review");
+  assert.deepEqual(order, ["review"], "a rejected PR must never reach `npm test`");
 });
 
 
@@ -741,8 +780,455 @@ test("createGuardDeps runs the full suite and the evals in a throwaway worktree"
   const result = await deps.runTests({ headOid: HEAD_OID, headRefName: "feature/lm-dev-1090" });
   assert.equal(result.ok, true);
   assert.ok(commands.some((entry) => /^git worktree add/.test(entry)));
-  assert.ok(commands.some((entry) => /^npm ci/.test(entry)));
   assert.ok(commands.some((entry) => entry === "npm test"));
   assert.ok(commands.some((entry) => entry === "npm run eval"));
   assert.ok(commands.some((entry) => /^git worktree remove/.test(entry)));
+
+  // `npm ci` without this flag runs the PR's own install hooks before a single test does, which
+  // hands arbitrary code execution to the diff. It buys one class of safety, not all of them.
+  const install = commands.find((entry) => /^npm ci/.test(entry));
+  assert.ok(install, "the throwaway worktree must install dependencies");
+  assert.match(install, /--ignore-scripts/);
+});
+
+
+// ---------------------------------------------------------------------------------------------
+// Review findings — a guard that can be edited by the PRs it guards is not a guard.
+// ---------------------------------------------------------------------------------------------
+
+const REPO_ROOT = path.resolve(__dirname, "../../..");
+const sha256Hex = (text) => crypto.createHash("sha256").update(text).digest("hex");
+
+
+test("the guard's own files are denied outright, so it cannot be edited by what it guards", () => {
+  for (const file of [
+    "apps/life-manager/lib/dev-merge-guard.js",
+    "apps/life-manager/lib/dev-merge-guard.test.js",
+    "apps/life-manager/lib/dev-merge-guard-runtime.test.js",
+    "apps/life-manager/scripts/dev-merge-guard.js",
+  ]) {
+    const verdict = classifyChangedPath(file);
+    assert.equal(verdict.allowed, false, file);
+    assert.equal(verdict.rule, "deny:guard-self", file);
+  }
+});
+
+
+test("whatever --review-cmd resolves to is protected too, killing the two-PR takeover chain", () => {
+  const protectedPaths = ["apps/life-manager/scripts/fresh-adversary.js"];
+  const verdict = classifyChangedPath("apps/life-manager/scripts/fresh-adversary.js", { protectedPaths });
+  assert.equal(verdict.allowed, false);
+  assert.equal(verdict.rule, "deny:guard-self");
+  // Without the runtime protection that same file is an ordinary allowlisted script — which is
+  // exactly the hole: PR 1 rewrites the reviewer, PR 2 sails through the reviewer it wrote.
+  assert.equal(classifyChangedPath("apps/life-manager/scripts/fresh-adversary.js").allowed, true);
+});
+
+
+test("the review command's own file is discovered by realpath, not by string matching", () => {
+  const found = resolveReviewCommandPaths(
+    "node apps/life-manager/scripts/dev-merge-guard.js --pr 1",
+    { repoDir: REPO_ROOT },
+  );
+  assert.deepEqual(found, ["apps/life-manager/scripts/dev-merge-guard.js"]);
+  assert.deepEqual(resolveReviewCommandPaths("/usr/bin/true", { repoDir: REPO_ROOT }), []);
+});
+
+
+test("a PR that touches the guard stops at eligibility before anything of it runs", async () => {
+  const ledgerPath = tempLedger();
+  const deps = stubDeps({
+    ledgerPath,
+    pr: { files: [{ path: "apps/life-manager/lib/dev-merge-guard.js" }] },
+    changedFiles: ["apps/life-manager/lib/dev-merge-guard.js"],
+  });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+  assert.equal(result.stoppedAtStage, "eligibility");
+  assert.ok(result.stopReason.includes("path_allowlist"));
+  assert.equal(deps.calls.merge, 0);
+  const [row] = readLedger(ledgerPath);
+  const stage = row.stages.find((entry) => entry.stage === "eligibility");
+  assert.deepEqual(stage.evidence.denied_paths, [
+    { path: "apps/life-manager/lib/dev-merge-guard.js", rule: "deny:guard-self" },
+  ]);
+});
+
+
+test("a PR that rewrites the configured reviewer stops at eligibility too", async () => {
+  const deps = stubDeps({
+    ledgerPath: tempLedger(),
+    pr: { files: [{ path: "apps/life-manager/scripts/fresh-adversary.js" }] },
+    changedFiles: ["apps/life-manager/scripts/fresh-adversary.js"],
+  });
+  const result = await runMergeGuard({
+    prNumber: 1094,
+    deps,
+    options: { protectedPaths: ["apps/life-manager/scripts/fresh-adversary.js"] },
+  });
+  assert.equal(result.stoppedAtStage, "eligibility");
+  assert.equal(deps.calls.merge, 0);
+});
+
+
+test("a package.json unreadable at EITHER ref is refused, never treated as empty", async () => {
+  for (const missing of ["base", "head"]) {
+    const deps = stubDeps({
+      ledgerPath: tempLedger(),
+      pr: { files: [{ path: "apps/life-manager/package.json" }] },
+      changedFiles: ["apps/life-manager/package.json"],
+      deps: {
+        readFileAtRef: async ({ ref }) => (
+          (missing === "base") === (ref === "main")
+            ? null
+            : JSON.stringify({ dependencies: { pg: "8.22.0" } })
+        ),
+      },
+    });
+    const result = await runMergeGuard({ prNumber: 1094, deps });
+    assert.equal(result.stoppedAtStage, "eligibility", missing);
+    assert.ok(result.stopReason.includes("package_json:unreadable"), `${missing}: ${result.stopReason}`);
+    assert.equal(deps.calls.merge, 0, missing);
+  }
+});
+
+
+test("a rollback mutation that answers false falls back to a revert PR", async () => {
+  const ledgerPath = tempLedger();
+  const deps = stubDeps({
+    ledgerPath,
+    deps: {
+      checkHealth: async () => false,
+      rollback: async () => ({ ok: false, raw: "{\"data\":{\"deploymentRollback\":false}}" }),
+    },
+  });
+  const result = await runMergeGuard({
+    prNumber: 1094,
+    deps,
+    options: { healthTimeoutMs: 2000, healthIntervalMs: 1000 },
+  });
+  assert.equal(deps.calls.revertPr, 1, "a refused platform rollback must still produce a remedy");
+  assert.equal(result.rollback.method, "revert_pr");
+  assert.equal(result.rollback.railway_rollback_ok, false);
+  assert.equal(result.rollback.ok, true);
+  assert.equal(result.verdict, "rolled_back");
+  const [row] = readLedger(ledgerPath);
+  assert.equal(row.rollback.railway_rollback_ok, false);
+});
+
+
+test("a rollback that fails every available way is recorded as rollback_failed, not rolled_back", async () => {
+  const ledgerPath = tempLedger();
+  const deps = stubDeps({
+    ledgerPath,
+    deps: {
+      checkHealth: async () => false,
+      rollback: async () => ({ ok: false, raw: "boom" }),
+      openRevertPr: async () => ({ url: null, error: "push rejected" }),
+    },
+  });
+  const result = await runMergeGuard({
+    prNumber: 1094,
+    deps,
+    options: { healthTimeoutMs: 2000, healthIntervalMs: 1000 },
+  });
+  assert.equal(result.verdict, "rollback_failed");
+  assert.equal(result.rollback.ok, false);
+  const [row] = readLedger(ledgerPath);
+  assert.equal(row.verdict, "rollback_failed");
+  assert.ok(deps.calls.alerts.length >= 1);
+});
+
+
+test("a throw after the merge still leaves an honest ledger row behind", async () => {
+  const ledgerPath = tempLedger();
+  const deps = stubDeps({
+    ledgerPath,
+    deps: { triggerRedeploy: async () => { throw new Error("railway CLI exploded"); } },
+  });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+
+  assert.equal(result.mergeSha, "b".repeat(40));
+  assert.equal(result.verdict, "merged_unverified");
+  const rows = readLedger(ledgerPath);
+  assert.equal(rows.length, 1, "a merged PR must never go unrecorded");
+  assert.equal(rows[0].merge_sha, "b".repeat(40));
+  assert.match(rows[0].post_merge_error, /railway CLI exploded/);
+  assert.ok(deps.calls.alerts.some((message) => /railway CLI exploded/.test(message)));
+});
+
+
+test("git's file list is authoritative, so a truncated gh list cannot hide a denied path", async () => {
+  const ledgerPath = tempLedger();
+  const deps = stubDeps({
+    ledgerPath,
+    pr: { files: [{ path: "apps/life-manager/lib/a.js" }] },
+    changedFiles: ["apps/life-manager/lib/a.js", ".github/workflows/deploy.yml"],
+  });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+  assert.equal(result.stoppedAtStage, "eligibility");
+  const [row] = readLedger(ledgerPath);
+  const stage = row.stages.find((entry) => entry.stage === "eligibility");
+  assert.deepEqual(stage.evidence.denied_paths, [
+    { path: ".github/workflows/deploy.yml", rule: "deny:workflow" },
+  ]);
+  assert.deepEqual(stage.evidence.files_cross_check.git_only, [".github/workflows/deploy.yml"]);
+});
+
+
+test("a rename is judged on both its old and its new path", () => {
+  assert.deepEqual(
+    parseNameStatus([
+      "M\tapps/life-manager/lib/a.js",
+      "R096\tapps/life-manager/lib/old.js\tapps/life-manager/lib/new.js",
+      "A\tapps/life-manager/lib/b.js",
+      "R100\tapps/life-manager/lib/moved.js\tskills/earn/moved.js",
+    ].join("\n")),
+    [
+      "apps/life-manager/lib/a.js",
+      "apps/life-manager/lib/old.js",
+      "apps/life-manager/lib/new.js",
+      "apps/life-manager/lib/b.js",
+      "apps/life-manager/lib/moved.js",
+      "skills/earn/moved.js",
+    ],
+  );
+  const verdict = evaluateEligibility(loopPullRequest(), {
+    changedFiles: ["apps/life-manager/lib/moved.js", "skills/earn/moved.js"],
+  });
+  assert.equal(verdict.ok, false);
+  assert.deepEqual(verdict.deniedPaths, [{ path: "skills/earn/moved.js", rule: "deny:skill" }]);
+});
+
+
+test("a git file list that cannot be read refuses instead of falling back to gh", async () => {
+  const deps = stubDeps({
+    ledgerPath: tempLedger(),
+    deps: { listChangedFiles: async () => null },
+  });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+  assert.equal(result.stoppedAtStage, "eligibility");
+  assert.ok(result.stopReason.includes("changed_files_unreadable"));
+  assert.equal(deps.calls.merge, 0);
+});
+
+
+test("the blocklist exemption is exact-path and declaration-line only", () => {
+  const guard = "apps/life-manager/lib/dev-merge-guard.js";
+
+  // A real call smuggled onto a line that merely *starts* like a pattern declaration.
+  assert.deepEqual(
+    detectBlockedActions([
+      { path: guard, line: "  pattern: /nothing/, boot: await sendMail(user)," },
+    ]).map((hit) => hit.action),
+    ["outreach_send"],
+  );
+
+  // A look-alike path anywhere else in the tree is not the guard.
+  assert.deepEqual(
+    detectBlockedActions([
+      { path: "vendor/lib/dev-merge-guard.js", line: "  pattern: /x/, boot: await sendMail(user)," },
+    ]).map((hit) => hit.action),
+    ["outreach_send"],
+  );
+
+  // A declaration line that is nothing but a declaration stays exempt.
+  assert.deepEqual(
+    detectBlockedActions([{ path: guard, line: "    pattern: /\\bsendMail\\s*\\(/," }]),
+    [],
+  );
+});
+
+
+test("ledger rows chain to one another, so a removed or edited row is evident", () => {
+  const ledgerPath = tempLedger();
+  const first = appendGuardRun(ledgerPath, { run_id: "r1", verdict: "stopped" });
+  const second = appendGuardRun(ledgerPath, { run_id: "r2", verdict: "stopped" });
+
+  assert.equal(first.prev, LEDGER_GENESIS);
+  assert.match(first.record_hash, /^[a-f0-9]{64}$/);
+  assert.equal(second.prev, sha256Hex(first.record_hash));
+  assert.equal(verifyLedgerTail(ledgerPath).ok, true);
+
+  const rows = readLedgerRows(ledgerPath);
+  rows[0].verdict = "merged_deployed";
+  fs.writeFileSync(ledgerPath, `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`);
+  const tampered = verifyLedgerTail(ledgerPath);
+  assert.equal(tampered.ok, false);
+  assert.ok(tampered.problems.length > 0);
+
+  fs.writeFileSync(ledgerPath, `${JSON.stringify(rows[1])}\n`);
+  assert.equal(verifyLedgerTail(ledgerPath).ok, false, "a deleted first row must not verify");
+});
+
+
+test("a run verifies the ledger tail before it starts and alerts when the chain is broken", async () => {
+  const ledgerPath = tempLedger();
+  appendGuardRun(ledgerPath, { run_id: "r1", verdict: "stopped" });
+  const rows = readLedgerRows(ledgerPath);
+  rows[0].verdict = "merged_deployed";
+  fs.writeFileSync(ledgerPath, `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`);
+
+  const deps = stubDeps({ ledgerPath });
+  const result = await runMergeGuard({ prNumber: 1094, deps });
+  assert.equal(result.ledgerCheck.ok, false);
+  assert.ok(deps.calls.alerts.some((message) => /ledger/i.test(message)));
+  const written = readLedger(ledgerPath);
+  assert.equal(written.at(-1).ledger_check.ok, false);
+});
+
+
+test("a second guard run refuses to start while another holds the lock", async () => {
+  const ledgerPath = tempLedger();
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const first = stubDeps({
+    ledgerPath,
+    deps: { review: async () => { await gate; return { verdict: "pass", findings: [] }; } },
+  });
+  const running = runMergeGuard({ prNumber: 1094, deps: first });
+
+  const second = stubDeps({ ledgerPath });
+  const blocked = await runMergeGuard({ prNumber: 1094, deps: second });
+  assert.equal(blocked.verdict, "locked");
+  assert.equal(second.calls.merge, 0);
+
+  release();
+  const done = await running;
+  assert.equal(done.verdict, "merged_deployed");
+  assert.equal(readLedger(ledgerPath).length, 1, "a locked-out run must not append a row");
+
+  // The lock is released, so the next run gets in.
+  const third = stubDeps({ ledgerPath });
+  assert.equal((await runMergeGuard({ prNumber: 1094, deps: third })).verdict, "merged_deployed");
+});
+
+
+test("a lock left behind by a dead run goes stale after 30 minutes", () => {
+  const ledgerPath = tempLedger();
+  const lockPath = guardLockPath(ledgerPath);
+  const t0 = Date.parse("2026-07-27T00:00:00.000Z");
+
+  assert.equal(acquireGuardLock(lockPath, { now: () => new Date(t0), pid: 111 }).ok, true);
+  assert.equal(
+    acquireGuardLock(lockPath, { now: () => new Date(t0 + 29 * 60 * 1000), pid: 222 }).ok,
+    false,
+  );
+  const stolen = acquireGuardLock(lockPath, { now: () => new Date(t0 + 31 * 60 * 1000), pid: 222 });
+  assert.equal(stolen.ok, true);
+  assert.equal(stolen.stolen.pid, 111);
+  assert.equal(releaseGuardLock(lockPath, { pid: 222 }), true);
+  assert.equal(fs.existsSync(lockPath), false);
+});
+
+
+test("alerts reach the admin Telegram chat, with stderr only as the fallback", async () => {
+  const sent = [];
+  const wired = createGuardDeps({
+    gh: () => "{}",
+    exec: () => "{}",
+    fetch: async () => ({ ok: true, json: async () => ({ ok: true }) }),
+    env: { LM_TELEGRAM_BOT_TOKEN: "bot-token", LM_ADMIN_TELEGRAM_CHAT_ID: "555" },
+    sendMessage: async (token, chatId, text) => { sent.push({ token, chatId, text }); return { ok: true }; },
+  });
+  const delivered = await wired.alert("production is red");
+  assert.equal(delivered.channel, "telegram");
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].token, "bot-token");
+  assert.equal(sent[0].chatId, "555");
+  assert.match(sent[0].text, /production is red/);
+
+  const stderrChunks = [];
+  const originalWrite = process.stderr.write;
+  process.stderr.write = (chunk) => { stderrChunks.push(String(chunk)); return true; };
+  let fallback;
+  try {
+    const bare = createGuardDeps({
+      gh: () => "{}",
+      exec: () => "{}",
+      fetch: async () => ({ ok: true, json: async () => ({ ok: true }) }),
+      env: {},
+    });
+    fallback = await bare.alert("no telegram configured");
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+  assert.equal(fallback.channel, "stderr");
+  assert.ok(stderrChunks.some((chunk) => chunk.includes("no telegram configured")));
+});
+
+
+test("the revert PR that awaits a human is announced on Telegram, not only on stderr", async () => {
+  const sent = [];
+  const wired = createGuardDeps({
+    gh: () => "{}",
+    exec: () => "{}",
+    fetch: async () => ({ ok: true, json: async () => ({ ok: true }) }),
+    env: { LM_TELEGRAM_BOT_TOKEN: "bot-token", LM_ADMIN_TELEGRAM_CHAT_ID: "555" },
+    sendMessage: async (token, chatId, text) => { sent.push(text); return { ok: true }; },
+  });
+  const deps = stubDeps({
+    ledgerPath: tempLedger(),
+    deps: {
+      checkHealth: async () => false,
+      getPreviousSuccessfulDeployment: async () => ({
+        id: "dep-prev", status: "SUCCESS", canRollback: false, commitHash: "c".repeat(40),
+      }),
+      alert: wired.alert,
+    },
+  });
+  await runMergeGuard({
+    prNumber: 1094,
+    deps,
+    options: { healthTimeoutMs: 2000, healthIntervalMs: 1000 },
+  });
+  assert.ok(sent.some((text) => /revert/i.test(text)), JSON.stringify(sent));
+});
+
+
+test("the reviewed diff is taken from the fetched head commit, not from a moving branch", async () => {
+  const commands = [];
+  const deps = createGuardDeps({
+    gh: (args) => { commands.push(["gh", ...args]); return ""; },
+    exec: (file, args) => { commands.push([file, ...args]); return "THE DIFF"; },
+    fetch: async () => ({ ok: true, json: async () => ({ ok: true }) }),
+  });
+  const diff = await deps.getDiff({
+    prNumber: 1094, base: "main", headOid: HEAD_OID, headRefName: "feature/lm-dev-1090",
+  });
+  assert.equal(diff, "THE DIFF");
+  assert.equal(
+    commands.some((entry) => entry[0] === "gh" && entry[1] === "pr" && entry[2] === "diff"),
+    false,
+    "`gh pr diff` follows the branch, which the author can move after review",
+  );
+  const git = commands.find((entry) => entry[0] === "git" && entry[1] === "diff");
+  assert.ok(git, "the reviewed diff must come from `git diff`");
+  assert.ok(git.some((argument) => String(argument).endsWith(`...${HEAD_OID}`)), git.join(" "));
+});
+
+
+test("createGuardDeps reads the changed-file list from git name-status at the head commit", async () => {
+  const commands = [];
+  const deps = createGuardDeps({
+    gh: () => "",
+    exec: (file, args) => {
+      commands.push([file, ...args]);
+      if (file === "git" && args[0] === "diff") {
+        return "M\tapps/life-manager/lib/a.js\nR097\tapps/life-manager/lib/o.js\tapps/life-manager/lib/n.js\n";
+      }
+      return "";
+    },
+    fetch: async () => ({ ok: true, json: async () => ({ ok: true }) }),
+  });
+  const files = await deps.listChangedFiles({
+    base: "main", headOid: HEAD_OID, headRefName: "feature/lm-dev-1090",
+  });
+  assert.deepEqual(files, [
+    "apps/life-manager/lib/a.js",
+    "apps/life-manager/lib/o.js",
+    "apps/life-manager/lib/n.js",
+  ]);
+  const git = commands.find((entry) => entry[0] === "git" && entry[1] === "diff");
+  assert.ok(git.includes("--name-status"));
+  assert.ok(commands.some((entry) => entry[0] === "git" && entry[1] === "fetch"));
 });

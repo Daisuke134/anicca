@@ -17,6 +17,7 @@ const {
   createGuardDeps,
   createReviewCommandHook,
   guardLedgerPath,
+  resolveReviewCommandPaths,
   runMergeGuard,
 } = require("../lib/dev-merge-guard.js");
 
@@ -67,7 +68,12 @@ async function main() {
     deps.merge = async () => ({ ok: false, reason: "dry_run" });
   }
 
-  const result = await runMergeGuard({ prNumber: options.pr, deps });
+  // The reviewer is part of the guard. Whatever file `--review-cmd` actually runs is resolved by
+  // realpath here and refused at eligibility, so a PR cannot rewrite its own judge — the first
+  // half of the two-PR takeover chain dies before the second half is ever written.
+  const protectedPaths = resolveReviewCommandPaths(options.reviewCmd);
+
+  const result = await runMergeGuard({ prNumber: options.pr, deps, options: { protectedPaths } });
   process.stdout.write(`${JSON.stringify({
     verdict: result.verdict,
     pr: options.pr,
@@ -79,6 +85,9 @@ async function main() {
     deploy_id: result.deployId,
     health: result.health,
     rollback: result.rollback,
+    post_merge_error: result.postMergeError ?? null,
+    ledger_check_ok: result.ledgerCheck?.ok ?? null,
+    protected_paths: protectedPaths,
     run_id: result.runId,
     ledger: deps.ledgerPath,
   })}\n`);
