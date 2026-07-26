@@ -16,6 +16,7 @@
 const crypto = require("node:crypto");
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
+const { reflectAnswer } = require("./telegram-callback-visibility.js");
 const { getCalendar, getMail } = require("./transport/index.js");
 const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 const { newReplyToken } = require("./reply-token.js");
@@ -528,6 +529,18 @@ async function consumeTypedAsk(replyToken, answerValue, opts) {
   return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
 
+// CB-1 (§10.0-15 ①): after an answer is consumed, edit the tapped message into its answered state
+// (chosen label appended, keyboard removed). Best-effort — a failed edit never fails the answer.
+// Gated below on the same atomic consume / lookup that guards the write, so an unknown, replayed, or
+// cross-tenant callback can never mutate another chat's message.
+function reflectAskTap(opts, label) {
+  if (!opts.telegramToken || !opts.chatId || !opts.messageId) return Promise.resolve({ ok: false });
+  return (opts.reflectAnswer || reflectAnswer)({
+    token: opts.telegramToken, chatId: opts.chatId, messageId: opts.messageId,
+    messageText: opts.messageText, label, fetchImpl: opts.fetchImpl,
+  });
+}
+
 async function handleAskCallback(data, opts = {}) {
   const typed = String(data || "").match(/^ask:calendar_online:(online|offline):([A-Za-z0-9_-]+)$/);
   if (typed) {
@@ -540,6 +553,7 @@ async function handleAskCallback(data, opts = {}) {
     const consume = opts.consumeTyped || ((token, value) => consumeTypedAsk(token, value, opts));
     const hit = await consume(replyToken, answerValue);
     if (!hit || hit.uid !== opts.uid) return { ok: false, reason: "unknown, replayed, or cross-tenant callback" };
+    await reflectAskTap(opts, answerValue === "online" ? "オンライン" : "対面");
     if (answerValue === "offline" && opts.telegramToken) {
       const send = opts.sendMessage || tgSend;
       await send(opts.telegramToken, chatId, "場所はどこですか？住所か、お店・会社の名前を送ってください。");
@@ -556,6 +570,7 @@ async function handleAskCallback(data, opts = {}) {
     const text = /歯医者|歯科/.test(opts.summary || "")
       ? "住所か、歯医者さんの名前を教えてください。"
       : "場所はどこですか？住所か、お店・会社の名前を送ってください。";
+    await reflectAskTap(opts, "別の場所");
     const send = opts.sendMessage || tgSend;
     if (opts.telegramToken && opts.chatId) await send(opts.telegramToken, opts.chatId, text);
     return { ok: true, fallback: true, eventId };
@@ -566,6 +581,7 @@ async function handleAskCallback(data, opts = {}) {
   if (!hit || !hit.candidate) return { ok: false, reason: "candidate not found" };
   const patch = opts.patch || ((uid, id, location) => patchEvent(uid, id, { location }, opts.composioKey, opts.gmailAccountId));
   await patch(hit.uid, hit.eventId || eventId, hit.candidate);
+  await reflectAskTap(opts, "はい");
   if (hit.summary) {
     const remember = opts.remember || ((uid, summary, location) => rememberPlace(
       uid, placeKey(summary), location, opts.supaUrl, opts.supaKey));

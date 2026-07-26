@@ -35,6 +35,9 @@ const FINANCIAL_STRINGS = Object.freeze({
       bankButton: "銀行口座を登録",
       walletButton: "walletアドレスを登録",
       laterButton: "あとで",
+      // CB-1 (§10.0-15 ③): the visible reply to a second tap / already-registered destination.
+      // {rail} is filled with the registered rail's name. This copy is Dais-editable.
+      alreadyRegistered: "送金先は登録済みです（{rail}）。変更したい時は「送金先を変更」と送ってください。",
     }),
     monthly: Object.freeze({
       header: "💰 今月の収支報告です。",

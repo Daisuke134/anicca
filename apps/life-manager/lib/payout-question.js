@@ -23,10 +23,29 @@
 
 const { FINANCIAL_STRINGS } = require("./i18n.js");
 const { sendMessage } = require("./telegram.js");
+const { reflectAnswer } = require("./telegram-callback-visibility.js");
 
 const PAYOUT_RAILS = Object.freeze(["bank", "wallet"]);
 const PAYOUT_ANSWERS = Object.freeze(["bank", "wallet", "later"]);
 const PAYOUT_CALLBACK = /^payout:answer:(bank|wallet|later)$/;
+
+// How each rail is named when we tell the user it is already on file ({rail} in alreadyRegistered).
+const PAYOUT_RAIL_NOUNS = Object.freeze({ bank: "銀行口座", wallet: "wallet" });
+
+function alreadyRegisteredMessage(destination) {
+  const noun = PAYOUT_RAIL_NOUNS[destination && destination.type] || "登録済みの送金先";
+  return FINANCIAL_STRINGS.ja.payoutQuestion.alreadyRegistered.replace("{rail}", noun);
+}
+
+// CB-1 (§10.0-15 ①): best-effort edit of the tapped message into its answered state. Never throws,
+// never gates the persisted outcome — a failed edit degrades to "toast only".
+function reflectPayoutTap(opts, label, messageText) {
+  if (!opts.token || !opts.chatId || !opts.messageId) return Promise.resolve({ ok: false });
+  return (opts.reflectAnswer || reflectAnswer)({
+    token: opts.token, chatId: opts.chatId, messageId: opts.messageId,
+    messageText, label, fetchImpl: opts.fetchImpl,
+  });
+}
 
 function payoutQuestionMessage() {
   const copy = FINANCIAL_STRINGS.ja.payoutQuestion;
@@ -108,7 +127,12 @@ async function askPayoutQuestion(deps = {}) {
   const read = deps.readPayoutDestination || ((uid) => readPayoutDestination(uid, deps));
   const existing = await read(deps.uid);
   if (!existing) return { asked: false, reason: "lookup_failed" };
-  if (existing.destination) return { asked: false, reason: "already_answered" };
+  if (existing.destination) {
+    // CB-1 (§10.0-15 ③): the register tap on an already-answered destination must not be silent —
+    // the QUESTION is still asked once ever, but the tap gets a visible "already registered" reply.
+    await (deps.sendMessage || sendMessage)(deps.token, chatId, alreadyRegisteredMessage(existing.destination));
+    return { asked: false, reason: "already_answered" };
+  }
   const message = payoutQuestionMessage();
   const result = await (deps.sendMessage || sendMessage)(deps.token, chatId, message.text, message.extra);
   if (!result || !result.ok) return { asked: false, reason: "telegram_failed" };
@@ -119,8 +143,13 @@ async function handlePayoutCallback(data, opts = {}) {
   const match = PAYOUT_CALLBACK.exec(String(data || ""));
   if (!match) return { ignored: true };
   const [, answer] = match;
-  // ［あとで］ writes nothing: the gate stays honestly locked and the weekly announcement stays eligible.
-  if (answer === "later") return { handled: true, ok: true, answer, persisted: false };
+  const copy = FINANCIAL_STRINGS.ja.payoutQuestion;
+  // ［あとで］ writes nothing: the gate stays honestly locked and the weekly announcement stays
+  // eligible. CB-1 still makes the tap visible — → あとで on the message, keyboard gone.
+  if (answer === "later") {
+    await reflectPayoutTap(opts, copy.laterButton, opts.messageText);
+    return { handled: true, ok: true, answer, persisted: false };
+  }
   const chatId = String(opts.chatId || "");
   const actorId = String(opts.actorId || "");
   if (!opts.uid || !chatId || !actorId || actorId !== chatId) {
@@ -129,13 +158,29 @@ async function handlePayoutCallback(data, opts = {}) {
   const nowMs = opts.nowMs == null ? Date.now() : opts.nowMs;
   const save = opts.savePayoutAnswer || ((uid, rail, at) => savePayoutAnswer(uid, rail, at, opts));
   const destination = await save(opts.uid, answer, nowMs);
-  if (!destination) return { handled: true, ok: false, answer, reason: "persist_failed" };
+  if (!destination) {
+    // The compare-and-set claims no row both when the column is already filled (a re-tap) and when
+    // the database is unreachable. Only a READ that positively shows a destination may say
+    // "already registered" — an unknown must stay a plain failure, never a comforting lie (CB-1 ③).
+    const read = opts.readPayoutDestination || ((uid) => readPayoutDestination(uid, opts));
+    const existing = await read(opts.uid).catch(() => null);
+    if (existing && existing.destination) {
+      await (opts.sendMessage || sendMessage)(opts.token, chatId, alreadyRegisteredMessage(existing.destination));
+      // Strip the stale keyboard WITHOUT appending a label: the rail on file may not be this tap's.
+      await reflectPayoutTap(opts, "", "");
+      return { handled: true, ok: false, answer, reason: "already_answered" };
+    }
+    return { handled: true, ok: false, answer, reason: "persist_failed" };
+  }
+  // CB-1 ①: the persisted choice becomes visible on the question message itself.
+  await reflectPayoutTap(opts, answer === "bank" ? copy.bankButton : copy.walletButton, opts.messageText);
   return { handled: true, ok: true, answer, destination };
 }
 
 module.exports = {
   PAYOUT_RAILS,
   PAYOUT_ANSWERS,
+  alreadyRegisteredMessage,
   payoutQuestionMessage,
   payoutDestinationRecord,
   isPayoutDestinationUsable,

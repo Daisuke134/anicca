@@ -30,6 +30,7 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
   console.log = () => {};
 
   const sentMessages = [];
+  const edits = [];
   const patches = [];
   let storedDestination = null;
 
@@ -38,6 +39,9 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
     const method = String(init.method || "GET").toUpperCase();
     if (url.hostname === "api.telegram.org") {
       if (url.pathname.endsWith("/sendMessage")) sentMessages.push(JSON.parse(init.body || "{}"));
+      if (/\/(?:editMessageText|editMessageReplyMarkup)$/.test(url.pathname)) {
+        edits.push({ method: url.pathname.split("/").pop(), body: JSON.parse(init.body || "{}") });
+      }
       return response(200, { ok: true, result: { message_id: 1 } });
     }
     if (url.pathname === "/rest/v1/lm_users" && method === "GET") {
@@ -63,10 +67,10 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
     await new Promise((resolve) => productionServer.listen(0, "127.0.0.1", resolve));
     const origin = `http://127.0.0.1:${productionServer.address().port}`;
 
-    const post = (data, callbackId) => new Promise((resolve, reject) => {
+    const post = (data, callbackId, messageText) => new Promise((resolve, reject) => {
       const body = JSON.stringify({ callback_query: {
         id: callbackId, from: { id: 100 }, data,
-        message: { message_id: 246, chat: { id: 100 } },
+        message: { message_id: 246, chat: { id: 100 }, ...(messageText ? { text: messageText } : {}) },
       } });
       const request = http.request(`${origin}/telegram`, {
         method: "POST",
@@ -87,17 +91,29 @@ test("POST /telegram opens the payout question and stores the tapped answer", as
     assert.equal(question.reply_markup.inline_keyboard.flat().length, 3);
 
     // 2. The user taps a rail on that question.
-    assert.equal(await post("payout:answer:wallet", "cb-wallet"), 200);
+    assert.equal(await post("payout:answer:wallet", "cb-wallet", FINANCIAL_STRINGS.ja.payoutQuestion.text), 200);
     assert.equal(patches.length, 1, `exactly one write, got ${JSON.stringify(patches)}`);
     assert.match(patches[0].url, /uid=eq\.u1/);
     assert.match(patches[0].url, /payout_destination=is\.null/);
     assert.equal(patches[0].body.payout_destination.type, "wallet");
     assert.equal(storedDestination.type, "wallet");
+    // CB-1 (§10.0-15): the tap must leave a durable trace — the question message is edited with the
+    // chosen label and its keyboard removed. server.js must have passed messageId + text through.
+    assert.equal(edits.length, 1, `the answered question must be edited, got ${JSON.stringify(edits)}`);
+    assert.equal(edits[0].method, "editMessageText");
+    assert.equal(String(edits[0].body.message_id), "246");
+    assert.equal(edits[0].body.text,
+      `${FINANCIAL_STRINGS.ja.payoutQuestion.text}\n\n→ ${FINANCIAL_STRINGS.ja.payoutQuestion.walletButton}`);
+    assert.ok(!("reply_markup" in edits[0].body), "the keyboard must be gone from the answered message");
 
-    // 3. The question is never asked a second time once the column carries an answer.
+    // 3. The question is never asked a second time once the column carries an answer — but the tap
+    // still gets a visible "already registered" reply (CB-1: a second tap is never silent).
     const beforeReask = sentMessages.length;
     assert.equal(await post("discovery:register:payout", "cb-register-again"), 200);
-    assert.equal(sentMessages.length, beforeReask, "an answered payout question must never be re-asked");
+    assert.equal(sentMessages.length, beforeReask + 1, "the second tap must answer visibly");
+    const reply = sentMessages[sentMessages.length - 1];
+    assert.equal(reply.text, FINANCIAL_STRINGS.ja.payoutQuestion.alreadyRegistered.replace("{rail}", "wallet"));
+    assert.notEqual(reply.text, FINANCIAL_STRINGS.ja.payoutQuestion.text, "never the question again");
   } finally {
     console.log = originalLog;
     http.createServer = originalCreateServer;
