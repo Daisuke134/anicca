@@ -16192,3 +16192,12 @@
 {"ts":1785079099,"wake_id":"00MS1Y08E340EDA65355EB44EE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1785079296,"wake_id":"00MS1Y4GJF4B8CE1981CED4419","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1785079446,"wake_id":"00MS1Y7NWB26EE2EB7D5884B1C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785079603,"wake_id":"00MS1YB1L094C9F9A5154443C3","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785079670,"wake_id":"00MS1YCHBH773F669BEB4041BC","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785079738,"wake_id":"00MS1YDX6OBAD800AF378C4DC1","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785079805,"wake_id":"00MS1YFCTUD4B4226A1BCC4C59","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785079872,"wake_id":"00MS1YGSJRD016F3EE2ECD493E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"[earn] P1 guard: x402 (zero-capital) exempt from cumulative-net halt — shop stays open. [earn] x402 five-minute controller: {\"ts\":1785079889,\"keep\":[],\"explore\":[],\"drop\":[\"/image\",\"/llm\",\"/web-search"}
+{"ts":1785080010,"wake_id":"00MS1YJREM295A5595FF264EDE","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785080189,"wake_id":"00MS1YNLBTF568457A9425422C","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785080349,"wake_id":"00MS1YR0X5F306D7FF1F9D41CA","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785080476,"wake_id":"00MS1YTQR5E36CF40A85784090","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
