@@ -7,6 +7,7 @@ const {
   executeBooking,
   formatU8Identification,
   matchFieldKind,
+  readConfirmationSignal,
 } = require("./care-booking-executor.js");
 
 const USER = Object.freeze({ uid: "u1", name: "山田太郎", phone: "+819012345678", email: "y@example.com" });
@@ -345,4 +346,299 @@ test("a booking id handed back by the provider counts as confirmation", async ()
   });
   assert.equal(result.outcome, "booked");
   assert.equal(result.confirmation.booking_id, "BK-77");
+});
+
+// ─── review findings ────────────────────────────────────────────────────────────────────────────
+
+// 🔴 Finding 2: "2026-08-08T11:00" is not a moment in time — everything downstream (the form value,
+// the report sentence, the calendar entry) would each pick a different timezone for it.
+test("a requested slot with no timezone offset is refused before any browser session", async () => {
+  const cdp = fakeCdp();
+  const result = await executeBooking({
+    candidate: WEB_CANDIDATE, user: USER, slotPreference: { startIso: "2026-08-08T11:00" }, deps: { cdp },
+  });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "slot_timezone_missing");
+  assert.equal(result.submitted, false);
+  assert.equal(cdp.calls.length, 0, "no steel session for a slot we cannot pin to a real instant");
+});
+
+// 🔴 Finding 3: the readback text is up to 4000 chars of the provider's page — it echoes the name,
+// phone and email that were just typed in. The outcome keeps the identifiers, never the page.
+test("the confirmation keeps identifiers and drops the provider page text entirely", async () => {
+  const cdp = fakeCdp();
+  const result = await executeBooking({
+    candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp },
+  });
+  assert.deepEqual(result.confirmation, { number: "A1B2C3", booking_id: null, matched_signal: true });
+  assert.ok(!JSON.stringify(result).includes("ご予約を受け付けました"), "no page text anywhere in the outcome");
+});
+
+// 🔴 Finding 4: 「予約が完了できませんでした」 contains 「予約が完了」. An affirmative phrase with a
+// negation beside it is a REFUSAL, and reading it as a booking is the exact fabricated success 11d bans.
+test("a negated confirmation sentence is not a confirmation", () => {
+  assert.equal(readConfirmationSignal({ text: "予約が完了できませんでした。時間をおいてお試しください。" }).confirmed, false);
+  assert.equal(readConfirmationSignal({ text: "エラー：ご予約を受け付けませんでした" }).confirmed, false);
+  assert.equal(readConfirmationSignal({ text: "予約の確定に失敗しました。予約が完了していません。" }).confirmed, false);
+  assert.equal(readConfirmationSignal({ text: "ご予約を受け付けました。" }).confirmed, true);
+  assert.equal(readConfirmationSignal({ text: "reservation confirmed" }).confirmed, true);
+  assert.equal(readConfirmationSignal({ text: "booking could not be confirmed" }).confirmed, false);
+});
+
+test("a page that says the booking FAILED is possibly_booked, never booked", async () => {
+  const cdp = fakeCdp({
+    async readConfirmation(sessionId) {
+      this.calls.push(["readConfirmation", sessionId]);
+      return { text: "予約が完了できませんでした。お手数ですが再度お試しください。" };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "possibly_booked");
+  assert.equal(result.reason_code, "no_confirmation_signal");
+});
+
+// 🟡 Finding 10: a 予約番号 scraped off a login panel is not evidence that THIS submit booked anything.
+test("a 予約番号 scraped without any affirmative confirmation is not a booking", async () => {
+  const cdp = fakeCdp({
+    async readConfirmation(sessionId) {
+      this.calls.push(["readConfirmation", sessionId]);
+      return { text: "ログイン\n予約番号: A1B2C3 をお持ちの方はこちらから照会できます" };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "possibly_booked");
+  assert.equal(result.reason_code, "no_confirmation_signal");
+});
+
+test("a confirmation number the provider handed back structurally still counts", async () => {
+  const cdp = fakeCdp({
+    async readConfirmation(sessionId) {
+      this.calls.push(["readConfirmation", sessionId]);
+      return { text: "", confirmationNumber: "R-9" };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "booked");
+  assert.equal(result.confirmation.number, "R-9");
+});
+
+// 🔴 Finding 6: a submit control that was never clicked is ZERO submits — reporting it as
+// possibly_booked invents an uncertainty that does not exist and blocks the honest retry forever.
+test("a submit control that could not be clicked is an honest failure with zero submits", async () => {
+  const cdp = fakeCdp({
+    async submit(sessionId, selector) {
+      this.calls.push(["submit", sessionId, selector]);
+      throw new Error("page evaluate failed: Error: submit control not found");
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "submit_control_missing");
+  assert.equal(result.submitted, false, "the click was never dispatched");
+  assert.equal(kinds(cdp.calls, "releaseSession").length, 1);
+});
+
+// 🔴 Finding 7: without a load wait the readback reads the PRE-submit page — a stale form that shows
+// no confirmation, or worse a stale success banner from an earlier step.
+test("the confirmation is read only after the post-submit load has been awaited", async () => {
+  const order = [];
+  const cdp = fakeCdp({
+    async submit(sessionId, selector) { this.calls.push(["submit", sessionId, selector]); order.push("submit"); },
+    async waitForLoad(sessionId, timeoutMs) {
+      this.calls.push(["waitForLoad", sessionId, timeoutMs]);
+      order.push("waitForLoad");
+      return { loaded: true };
+    },
+    async readConfirmation(sessionId) {
+      this.calls.push(["readConfirmation", sessionId]);
+      order.push("readConfirmation");
+      return { text: "ご予約を受け付けました。予約番号: A1B2C3" };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.deepEqual(order, ["submit", "waitForLoad", "readConfirmation"]);
+  assert.equal(result.outcome, "booked");
+  const [, , timeoutMs] = kinds(cdp.calls, "waitForLoad")[0];
+  assert.ok(Number.isFinite(timeoutMs) && timeoutMs > 0, "the load wait is bounded");
+});
+
+test("a post-submit load that never lands is possibly_booked, and the stale page is never read", async () => {
+  const cdp = fakeCdp({
+    async waitForLoad(sessionId) {
+      this.calls.push(["waitForLoad", sessionId]);
+      throw new Error("CDP timeout: page load (15000ms)");
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "possibly_booked");
+  assert.equal(result.reason_code, "load_wait_timeout");
+  assert.equal(result.submitted, true);
+  assert.equal(kinds(cdp.calls, "readConfirmation").length, 0, "a stale page is never read as a confirmation");
+});
+
+// 🟡 Finding 11: the label text comes from the provider's page — untrusted input on its way to the
+// user's Telegram. It rides as a QUOTED, truncated, single-line fragment or not at all.
+test("untrusted page label text is quoted, truncated and stripped before it reaches the report", async () => {
+  const nasty = `保険証番号\nhttps://evil.example/steal?u=1 ${"あ".repeat(120)}`;
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      return {
+        submitSelector: "#submit",
+        fields: [
+          { selector: "#n", label: "お名前", name: "name", type: "text", required: true },
+          { selector: "#i", label: nasty, name: "insurance", type: "text", required: true },
+        ],
+      };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.doesNotMatch(result.reason, /https?:\/\//, "no URL survives into the message");
+  assert.doesNotMatch(result.reason, /\n/, "no newline survives into the message");
+  assert.match(result.reason, /「[^」]{1,41}」/, "the page's words are quoted as foreign text");
+  assert.ok(result.reason.length < 120, `the reason stays short, got ${result.reason.length}`);
+});
+
+// 🟡 Finding 12: U8 says the typed name is the AI's own identification. A field too short to hold it,
+// a カナ field, or a 姓/名 split cannot carry that identification — and truncating it would be an
+// impersonation of the user by omission.
+test("a name field too short for the U8 identification is an honest failure, never a truncation", async () => {
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      return {
+        submitSelector: "#submit",
+        fields: [{ selector: "#n", label: "お名前", name: "name", type: "text", required: true, maxLength: 10 }],
+      };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "identity_too_long_for_field");
+  assert.equal(kinds(cdp.calls, "fill").length, 0);
+  assert.equal(kinds(cdp.calls, "submit").length, 0);
+});
+
+test("a カナ name field cannot carry the delegation identification", async () => {
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      return {
+        submitSelector: "#submit",
+        fields: [{ selector: "#k", label: "お名前（フリガナ）", name: "name_kana", type: "text", required: true }],
+      };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "name_kana_unsupported");
+  assert.equal(kinds(cdp.calls, "submit").length, 0);
+});
+
+test("a 姓/名 split name field is refused rather than half-filled", async () => {
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      return {
+        submitSelector: "#submit",
+        fields: [
+          { selector: "#s", label: "お名前（姓）", name: "sei", type: "text", required: true },
+          { selector: "#m", label: "お名前（名）", name: "mei", type: "text", required: true },
+        ],
+      };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "name_split_unsupported");
+  assert.equal(kinds(cdp.calls, "fill").length, 0);
+});
+
+// 🟡 Finding 16 (executor half): a form the vocabulary maps NOTHING in must never be submitted —
+// an empty POST to a provider is a request we cannot describe, let alone report honestly.
+test("a form nothing maps into is never submitted", async () => {
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      return {
+        submitSelector: "#submit",
+        fields: [{ selector: "#q", label: "サイト内検索", name: "q", type: "search", required: false }],
+      };
+    },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "no_mappable_field");
+  assert.equal(kinds(cdp.calls, "submit").length, 0);
+});
+
+// 🟡 Finding 13: the scheduler abandons a tenant tick at 90s. Without its own shorter deadline the
+// booking can hold the single OSS steel session past that abandon and block every later booking.
+test("a hung page hits the executor's own deadline and the session is still released", async () => {
+  const cdp = fakeCdp({
+    async readForm(sessionId) {
+      this.calls.push(["readForm", sessionId]);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return { submitSelector: "#submit", fields: [] };
+    },
+  });
+  const result = await executeBooking({
+    candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp, deadlineMs: 25 },
+  });
+  assert.equal(result.outcome, "honest_failure");
+  assert.equal(result.reason_code, "booking_deadline_exceeded");
+  assert.equal(result.submitted, false);
+  assert.equal(kinds(cdp.calls, "releaseSession").length, 1, "the deadline still frees the single OSS session");
+});
+
+test("a deadline hit AFTER the submit is possibly_booked, never a clean failure", async () => {
+  const cdp = fakeCdp({
+    async readConfirmation(sessionId) {
+      this.calls.push(["readConfirmation", sessionId]);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return { text: "" };
+    },
+  });
+  const result = await executeBooking({
+    candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp, deadlineMs: 25 },
+  });
+  assert.equal(result.outcome, "possibly_booked");
+  assert.equal(result.reason_code, "booking_deadline_exceeded");
+  assert.equal(result.submitted, true);
+  assert.equal(kinds(cdp.calls, "releaseSession").length, 1);
+});
+
+// 🔴 Finding 5 (executor half): a createSession that threw AFTER the remote session existed hands the
+// id back on the error. The one OSS session must be released by that id, not leaked.
+test("a session created but never connected is still released by id", async () => {
+  const released = [];
+  const cdp = fakeCdp({
+    async createSession() {
+      this.calls.push(["createSession"]);
+      const error = new Error("connect ECONNREFUSED");
+      error.sessionId = "sess-orphan";
+      throw error;
+    },
+    async releaseSession(sessionId) { this.calls.push(["releaseSession", sessionId]); released.push(sessionId); },
+  });
+  const result = await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.equal(result.outcome, "honest_failure");
+  assert.deepEqual(released, ["sess-orphan"], "the orphaned session is released by the id the error carried");
+});
+
+test("a session the client already released itself is not released twice", async () => {
+  const released = [];
+  const cdp = fakeCdp({
+    async createSession() {
+      this.calls.push(["createSession"]);
+      const error = new Error("connect ECONNREFUSED");
+      error.sessionId = "sess-orphan";
+      error.sessionReleased = true;
+      throw error;
+    },
+    async releaseSession(sessionId) { this.calls.push(["releaseSession", sessionId]); released.push(sessionId); },
+  });
+  await executeBooking({ candidate: WEB_CANDIDATE, user: USER, slotPreference: SLOT, deps: { cdp } });
+  assert.deepEqual(released, []);
 });

@@ -8,7 +8,10 @@
 //
 // Three outcomes, three different shapes, and the difference between them is the whole point:
 //
-//   booked          → §9.11 事後報告 + a real calendar event + the booking on the scan row.
+//   booked          → §9.11 事後報告 + a real calendar event + the booking on the scan row. The
+//                     sentence 「カレンダーに入れてあります」 is rendered from the RESULT of that
+//                     write, never alongside it: no calendar, a refused write, or a slot with no
+//                     timezone all produce the sentence that says the entry could not be made.
 //   possibly_booked → an honest "I could not confirm it, and I did not resend" message.
 //                     NO calendar event: writing 木曜18:00 into someone's calendar off an
 //                     unconfirmed submit is exactly the fabricated success 11d was blocked on before.
@@ -30,29 +33,44 @@ function isoNaiveUTC(ms) {
   return new Date(ms).toISOString().slice(0, 19);
 }
 
+// A slot string with no UTC offset — "2026-08-08T11:00" — is NOT a moment in time. Date.parse reads
+// it in whatever timezone the SERVER happens to run in, and isoNaiveUTC then re-renders it as UTC, so
+// the hour the user reads in the message and the hour sitting in their calendar disagree by the
+// server's offset. Nine hours off is not a rounding error, it is a different appointment. No offset →
+// no calendar write, and the report says the entry could not be made.
+const OFFSET_ISO = /T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/i;
+function offsetAwareStartMs(iso) {
+  const value = String(iso || "");
+  if (!OFFSET_ISO.test(value)) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+// The readback text is up to 4000 characters of the provider's own page — which, on a confirmation
+// screen, is the name, phone number and email that were just typed into the form. lm_care_scan_log is
+// append-only, so anything that lands there lands forever: the row keeps the identifiers the provider
+// handed back and a boolean for whether a confirmation sentence matched, and never the page itself.
+function sanitizeConfirmation(confirmation) {
+  if (!confirmation || typeof confirmation !== "object") return null;
+  return {
+    number: confirmation.number || null,
+    booking_id: confirmation.booking_id || null,
+    matched_signal: confirmation.matched_signal === true,
+  };
+}
+
 async function runAftercare({ booking, candidate, candidates, careType, sinceDays, user, deps = {} } = {}) {
   if (!booking || !booking.outcome) return { status: "skipped", reason: "no-booking-outcome" };
   const logError = deps.logError || console.error;
   const booked = booking.outcome === "booked";
 
-  const message = formatCareBookingReport({
-    outcome: booking.outcome,
-    careType,
-    sinceDays,
-    providerName: candidate?.public_name || "",
-    usualProvider: candidate?.usual_provider === true,
-    slotIso: booking.booked_slot || null,
-    reservationUrl: candidate?.reservation_url || booking.reservation_url || "",
-    reason: booking.reason || "",
-    candidates: Array.isArray(candidates) ? candidates : (candidate ? [candidate] : []),
-  });
-
-  // The calendar event goes in BEFORE the message, so the sentence 「カレンダーに入れてあります」 is
-  // only ever sent after the write it describes was actually attempted and its result is known.
+  // The calendar write happens BEFORE the message is rendered, because the message CONTAINS a claim
+  // about that write. Rendering first and writing after is how 「カレンダーに入れてあります」 ends up
+  // in a user's Telegram with nothing in their calendar.
   let calendarEventCreated = false;
   if (booked && deps.calendar && booking.booked_slot) {
-    const startMs = Date.parse(booking.booked_slot);
-    if (Number.isFinite(startMs)) {
+    const startMs = offsetAwareStartMs(booking.booked_slot);
+    if (startMs !== null) {
       try {
         const created = await deps.calendar.createEvent(user?.uid, {
           summary: candidate?.public_name || "予約",
@@ -69,8 +87,23 @@ async function runAftercare({ booking, candidate, candidates, careType, sinceDay
         calendarEventCreated = false;
         logError(`[care] aftercare-calendar-failed uid=${user?.uid} ${String((error && error.message) || error)}`);
       }
+    } else {
+      logError(`[care] aftercare-calendar-skipped uid=${user?.uid} reason=slot_timezone_missing slot=${booking.booked_slot}`);
     }
   }
+
+  const message = formatCareBookingReport({
+    outcome: booking.outcome,
+    careType,
+    sinceDays,
+    providerName: candidate?.public_name || "",
+    usualProvider: candidate?.usual_provider === true,
+    slotIso: booking.booked_slot || null,
+    reservationUrl: candidate?.reservation_url || booking.reservation_url || "",
+    reason: booking.reason || "",
+    calendarEventCreated,
+    candidates: Array.isArray(candidates) ? candidates : (candidate ? [candidate] : []),
+  });
 
   let telegramMessageId = null;
   let status = "unreachable";
@@ -94,7 +127,7 @@ async function runAftercare({ booking, candidate, candidates, careType, sinceDay
     outcome: booking.outcome,
     provider_id: booking.provider_id || null,
     booked_slot: booking.booked_slot || null,
-    confirmation: booking.confirmation || null,
+    confirmation: sanitizeConfirmation(booking.confirmation),
     reason_code: booking.reason_code || null,
     telegram_message_id: telegramMessageId,
     calendar_event_created: calendarEventCreated,

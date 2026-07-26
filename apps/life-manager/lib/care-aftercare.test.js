@@ -67,7 +67,8 @@ test("a booked outcome sends the §9.11 事後報告 copy verbatim from i18n", a
     .replace("{careLabel}", PHYSICAL_STRINGS.ja.careLabels.clinic)
     .replace("{sinceLabel}", "4ヶ月")
     .replace("{providerName}", "丸の内内科クリニック")
-    .replace("{slotLabel}", "木曜18:00");
+    .replace("{slotLabel}", "木曜18:00")
+    .replace("{calendarLine}", PHYSICAL_STRINGS.ja.calendarAdded);
   assert.equal(deps.sent[0].text, expected);
   assert.equal(result.message, expected);
 });
@@ -89,7 +90,8 @@ test("the usual provider gets §9.11's いつものお店 shape", async () => {
   const expected = PHYSICAL_STRINGS.ja.bookedUsual
     .replace("{emoji}", PHYSICAL_STRINGS.ja.emoji.haircut)
     .replace("{sinceLabel}", "6週間")
-    .replace("{slotLabel}", "土曜11:00");
+    .replace("{slotLabel}", "土曜11:00")
+    .replace("{calendarLine}", PHYSICAL_STRINGS.ja.calendarAdded);
   assert.equal(deps.sent[0].text, expected);
 });
 
@@ -98,7 +100,7 @@ test("a booked outcome writes the calendar event and records the booking on the 
   await runAftercare({
     booking: {
       outcome: "booked", provider_id: "p1", booked_slot: "2026-08-06T18:00:00+09:00",
-      confirmation: { number: "A1B2C3", booking_id: null, text: "ご予約を受け付けました。" },
+      confirmation: { number: "A1B2C3", booking_id: null, matched_signal: true },
     },
     candidate: CANDIDATES[0], candidates: CANDIDATES, careType: "clinic", sinceDays: 122, user: USER, deps,
   });
@@ -114,7 +116,7 @@ test("a booked outcome writes the calendar event and records the booking on the 
     outcome: "booked",
     provider_id: "p1",
     booked_slot: "2026-08-06T18:00:00+09:00",
-    confirmation: { number: "A1B2C3", booking_id: null, text: "ご予約を受け付けました。" },
+    confirmation: { number: "A1B2C3", booking_id: null, matched_signal: true },
     reason_code: null,
     telegram_message_id: 901,
     calendar_event_created: true,
@@ -201,4 +203,71 @@ test("a failed calendar write is recorded as failed rather than claimed as done"
   });
   assert.equal(result.calendarEventCreated, false);
   assert.equal(deps.records[0].calendar_event_created, false);
+});
+
+// ─── review findings ────────────────────────────────────────────────────────────────────────────
+
+// 🔴 Finding 1: 「カレンダーに入れてあります」 is a claim about a write. It may appear ONLY when that
+// write actually succeeded; a failed or skipped write has to be said out loud, not gone quiet on.
+test("the booked copy claims the calendar entry only when the write succeeded", async () => {
+  const deps = fakeDeps({ calendar: { async createEvent() { return { successful: false }; } } });
+  await runAftercare({
+    booking: {
+      outcome: "booked", provider_id: "p1", booked_slot: "2026-08-06T18:00:00+09:00",
+      confirmation: { number: "A1B2C3", booking_id: null, matched_signal: true },
+    },
+    candidate: CANDIDATES[0], candidates: CANDIDATES, careType: "clinic", sinceDays: 122, user: USER, deps,
+  });
+  assert.doesNotMatch(deps.sent[0].text, /カレンダーに入れてあります/, "no calendar claim without a calendar write");
+  assert.match(deps.sent[0].text, /カレンダー[^。]*できませんでした/, "says the entry could not be made");
+});
+
+test("no calendar transport at all still never claims a calendar entry", async () => {
+  const deps = fakeDeps({ calendar: undefined });
+  const result = await runAftercare({
+    booking: {
+      outcome: "booked", provider_id: "p1", booked_slot: "2026-08-06T18:00:00+09:00",
+      confirmation: { number: "A1B2C3", booking_id: null, matched_signal: true },
+    },
+    candidate: CANDIDATES[0], candidates: CANDIDATES, careType: "clinic", sinceDays: 122, user: USER, deps,
+  });
+  assert.equal(result.calendarEventCreated, false);
+  assert.doesNotMatch(deps.sent[0].text, /カレンダーに入れてあります/);
+});
+
+// 🔴 Finding 2: "2026-08-08T11:00" carries no offset — Date.parse reads it in the SERVER's timezone
+// and the write below re-renders it as UTC, so the sentence and the calendar disagree by that offset.
+test("an offset-less booked_slot is never written to the calendar", async () => {
+  const deps = fakeDeps();
+  const result = await runAftercare({
+    booking: {
+      outcome: "booked", provider_id: "p1", booked_slot: "2026-08-08T11:00",
+      confirmation: { number: "A1B2C3", booking_id: null, matched_signal: true },
+    },
+    candidate: CANDIDATES[0], candidates: CANDIDATES, careType: "clinic", sinceDays: 122, user: USER, deps,
+  });
+  assert.equal(deps.events.length, 0, "a slot with no timezone is not a moment we can write");
+  assert.equal(result.calendarEventCreated, false);
+  assert.doesNotMatch(deps.sent[0].text, /カレンダーに入れてあります/);
+});
+
+// 🔴 Finding 3: the readback echoed up to 4000 chars of the provider's page — the user's own name,
+// phone and email among them. The scan row keeps the identifiers the provider handed back, never the
+// page text they were scraped out of.
+test("the recorded confirmation keeps identifiers only — never the provider page text", async () => {
+  const deps = fakeDeps();
+  await runAftercare({
+    booking: {
+      outcome: "booked", provider_id: "p1", booked_slot: "2026-08-06T18:00:00+09:00",
+      confirmation: {
+        number: "A1B2C3", booking_id: null, matched_signal: true,
+        text: "山田太郎 様 090-1234-5678 y@example.com のご予約を受け付けました",
+      },
+    },
+    candidate: CANDIDATES[0], candidates: CANDIDATES, careType: "clinic", sinceDays: 122, user: USER, deps,
+  });
+  assert.deepEqual(deps.records[0].confirmation, { number: "A1B2C3", booking_id: null, matched_signal: true });
+  const serialised = JSON.stringify(deps.records[0]);
+  assert.ok(!serialised.includes("090-1234-5678"), "no phone number on the scan row");
+  assert.ok(!serialised.includes("山田太郎"), "no personal name on the scan row");
 });

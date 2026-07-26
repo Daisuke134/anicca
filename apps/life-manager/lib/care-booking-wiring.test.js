@@ -187,3 +187,101 @@ test("no selected candidate: nothing to book, and it says so instead of picking 
   assert.equal(cdp.calls.length, 0);
   assert.equal(sent.length, 0);
 });
+
+// ─── review findings ────────────────────────────────────────────────────────────────────────────
+
+// A Supabase double that REMEMBERS rows across days: the cross-day double-booking bug is invisible to
+// a stateless double, because yesterday's booking lives on yesterday's row.
+function statefulSupa() {
+  const rows = [];
+  let nextId = 1;
+  const fetchImpl = async (url, opts = {}) => {
+    const method = (opts.method || "GET").toUpperCase();
+    const query = new URLSearchParams(String(url).split("?")[1] || "");
+    const uid = String(query.get("uid") || "").replace(/^eq\./, "");
+    const day = String(query.get("scan_day") || "").replace(/^eq\./, "");
+    if (method === "GET") {
+      if (day) {
+        const hit = rows.filter((r) => r.uid === uid && r.scan_day === day).map((r) => ({ id: r.id }));
+        return { ok: true, status: 200, json: async () => hit };
+      }
+      const history = rows
+        .filter((r) => r.uid === uid)
+        .sort((a, b) => (a.scan_day < b.scan_day ? 1 : -1))
+        .map((r) => ({ id: r.id, scan_day: r.scan_day, chain: r.chain || null }));
+      return { ok: true, status: 200, json: async () => history };
+    }
+    if (method === "POST") {
+      const row = JSON.parse(opts.body);
+      if (rows.some((r) => r.uid === row.uid && r.scan_day === row.scan_day)) {
+        return { ok: false, status: 409, json: async () => [], text: async () => "" };
+      }
+      rows.push({ ...row, id: nextId += 1 });
+      return { ok: true, status: 201, json: async () => [], text: async () => "" };
+    }
+    const patch = JSON.parse(opts.body);
+    for (const row of rows) if (row.uid === uid && row.scan_day === day) Object.assign(row, patch);
+    return { ok: true, status: 204, json: async () => [] };
+  };
+  return { rows, fetchImpl, rowFor: (scanDay) => rows.find((r) => r.scan_day === scanDay) };
+}
+
+// 🔴 Finding 8: the scan runs EVERY day and the overdue detection stays true until a new visit lands
+// on the calendar. Without reading prior rows, day 2 books the same haircut all over again.
+test("a booking recorded on a PRIOR day blocks a second booking for the same care", async () => {
+  const supa = statefulSupa();
+  const day1 = bookingDeps(supa, { bookingEnabled: true });
+  const first = await careUserOnce(USER, NOW, day1.deps);
+  assert.equal(first.bookingOutcome, "booked");
+  assert.equal(day1.sent.length, 1);
+
+  const day2 = bookingDeps(supa, { bookingEnabled: true });
+  const second = await careUserOnce(USER, NOW + DAY_MS, day2.deps);
+
+  assert.equal(second.status, "detected", "the detection itself still lands on day 2");
+  assert.equal(second.bookingOutcome, "already_booked_ref");
+  assert.equal(day2.cdp.calls.length, 0, "no second steel session");
+  assert.equal(day2.sent.length, 0, "no second 事後報告 for a booking already made");
+  assert.equal(day2.events.length, 0, "no second calendar event");
+
+  const booking = supa.rowFor("2026-07-27").chain.booking;
+  assert.equal(booking.outcome, "already_booked_ref");
+  assert.equal(booking.ref_scan_id, supa.rowFor("2026-07-26").id);
+});
+
+test("an unconfirmed (possibly_booked) prior day blocks the retry too — that is the double-booking case", async () => {
+  const supa = statefulSupa();
+  const day1 = bookingDeps(supa, {
+    bookingEnabled: true,
+    cdp: { ...fakeCdp(), async readConfirmation() { return { text: "送信中です…" }; } },
+  });
+  const first = await careUserOnce(USER, NOW, day1.deps);
+  assert.equal(first.bookingOutcome, "possibly_booked");
+
+  const day2 = bookingDeps(supa, { bookingEnabled: true });
+  const second = await careUserOnce(USER, NOW + DAY_MS, day2.deps);
+  assert.equal(second.bookingOutcome, "already_booked_ref");
+  assert.equal(day2.cdp.calls.length, 0);
+});
+
+test("a booking older than the dedup window no longer blocks a fresh one", async () => {
+  const supa = statefulSupa();
+  supa.rows.push({
+    id: 1, uid: USER.uid, scan_day: "2026-01-10",
+    chain: { category: "haircut", booking: { outcome: "booked", booked_slot: "2026-01-12T11:00:00+09:00" } },
+  });
+  const { deps } = bookingDeps(supa, { bookingEnabled: true });
+  const result = await careUserOnce(USER, NOW, deps);
+  assert.equal(result.bookingOutcome, "booked", "a months-old booking must not block the care forever");
+});
+
+test("a recent booking for a DIFFERENT care type does not block this one", async () => {
+  const supa = statefulSupa();
+  supa.rows.push({
+    id: 1, uid: USER.uid, scan_day: "2026-07-20",
+    chain: { category: "dental", booking: { outcome: "booked", booked_slot: "2026-08-01T10:00:00+09:00" } },
+  });
+  const { deps } = bookingDeps(supa, { bookingEnabled: true });
+  const result = await careUserOnce(USER, NOW, deps);
+  assert.equal(result.bookingOutcome, "booked");
+});

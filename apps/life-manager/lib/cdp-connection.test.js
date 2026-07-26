@@ -87,3 +87,51 @@ test("a closed socket rejects in-flight work rather than hanging", async () => {
   socket.emit("close");
   await pending;
 });
+
+// ─── review findings ────────────────────────────────────────────────────────────────────────────
+
+// 🟡 Finding 14: failAll used to RESOLVE the load waiters, so navigate() returned "loaded" on a socket
+// that had just died. A connection that is gone has not loaded anything.
+test("a dead socket rejects the navigate load wait instead of resolving it", async () => {
+  const socket = fakeSocket({ ...BASE_HANDLERS, "Page.navigate": { frameId: "F1" } });
+  const page = await connectCdp("ws://steel/", { WebSocket: function () { return socket; } });
+  const navigation = assert.rejects(() => page.navigate("https://x.example"), /closed/);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  socket.emit("close");
+  await navigation;
+});
+
+// 🟡 Finding 15 / 🔴 Finding 7: the load wait is bounded wherever it is awaited, and it is awaitable
+// on its own so the executor can wait for the POST-submit page before reading a confirmation off it.
+test("waitForLoad resolves when the load event fires", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  const page = await connectCdp("ws://steel/", { WebSocket: function () { return socket; } });
+  const wait = page.waitForLoad(500, { navigating: true });
+  socket.emit("message", JSON.stringify({ method: "Page.loadEventFired", params: {} }));
+  const outcome = await wait;
+  assert.equal(outcome.loaded, true);
+});
+
+test("waitForLoad times out on its own rather than hanging forever", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  const page = await connectCdp("ws://steel/", { WebSocket: function () { return socket; } });
+  await assert.rejects(() => page.waitForLoad(20, { navigating: true }), /timeout/i);
+});
+
+// An in-page (AJAX) submit never navigates. Waiting the full timeout for a load event that will never
+// come would burn the single OSS steel session, so a submit that started no navigation returns early
+// and says so — the caller reads the CURRENT dom, which is the right page in that case.
+test("waitForLoad returns early when nothing ever started navigating", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  const page = await connectCdp("ws://steel/", { WebSocket: function () { return socket; } });
+  const outcome = await page.waitForLoad(5000, { graceMs: 10 });
+  assert.deepEqual(outcome, { loaded: false, navigated: false });
+});
+
+test("a navigation that started but never loaded still times out", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  const page = await connectCdp("ws://steel/", { WebSocket: function () { return socket; } });
+  const wait = assert.rejects(() => page.waitForLoad(60, { graceMs: 10 }), /timeout/i);
+  socket.emit("message", JSON.stringify({ method: "Page.frameStartedLoading", params: { frameId: "F1" } }));
+  await wait;
+});

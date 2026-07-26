@@ -94,8 +94,14 @@ const DAILY_STRINGS = Object.freeze({
 // when booking is impossible, and an unverifiable submit must never be reported as a booking.
 const PHYSICAL_STRINGS = Object.freeze({
   ja: Object.freeze({
-    booked: "{emoji} 前回の{careLabel}から{sinceLabel}経っていたので、{providerName}を{slotLabel}で予約しました。カレンダーに入れてあります。\n（都合が悪ければ［変更する］）",
-    bookedUsual: "{emoji} そろそろ{sinceLabel}なので、いつものお店を{slotLabel}で取りました。カレンダーに入れてあります。\n（［変更する］）",
+    booked: "{emoji} 前回の{careLabel}から{sinceLabel}経っていたので、{providerName}を{slotLabel}で予約しました。{calendarLine}\n（都合が悪ければ［変更する］）",
+    bookedUsual: "{emoji} そろそろ{sinceLabel}なので、いつものお店を{slotLabel}で取りました。{calendarLine}\n（［変更する］）",
+    // 「カレンダーに入れてあります」 is a claim about a write that may not have happened (no calendar
+    // connected, the transport refused, an untimezoned slot we refuse to guess at). It is therefore
+    // its OWN sentence and the renderer picks which one to say — §9.5's 正直報告 covers the half of a
+    // report that failed just as much as it covers a booking that failed outright.
+    calendarAdded: "カレンダーに入れてあります。",
+    calendarMissing: "ただ、カレンダーへの登録はできませんでした。お手数ですがご自身で入れてください。",
     bookingFailed: "{emoji} そろそろ{careLabel}の時期なので予約を試しましたが、{reason}のため私では取れませんでした。候補はこちらです。\n{candidateLines}\nどれにするか教えてもらえれば、続きは私がやります。",
     bookingUncertain: "{emoji} {providerName}を{slotLabel}で申し込みましたが、予約できたかの確認が取れませんでした。二重予約になるので送り直していません。お手数ですが{reservationUrl}でご確認ください。",
     candidateLine: "・{publicName}（{routeLabel}）{officialUrl}",
@@ -153,6 +159,8 @@ function formatCareBookingReport(input = {}) {
       sinceLabel: elapsedLabel(input.sinceDays),
       providerName: input.providerName || "",
       slotLabel: slotLabel(input.slotIso),
+      // Strictly true-only: anything other than a proven write says the entry could not be made.
+      calendarLine: input.calendarEventCreated === true ? strings.calendarAdded : strings.calendarMissing,
     });
   }
   if (input.outcome === "possibly_booked") {

@@ -26,38 +26,114 @@
 
 const STEEL_BASE_URL = "http://steel-browser.railway.internal:3000";
 
-// The page-side probe. Runs in the provider's page and returns the same field descriptor shape
-// care-booking-executor.js reasons about: {selector, label, name, type, required}. The label is the
-// text a human reads — <label for>, a wrapping <label>, aria-label, or the placeholder — because
-// that is what the deterministic matcher matches on.
+// The page-side probe. Runs in the provider's page and returns the field descriptor shape
+// care-booking-executor.js reasons about: {selector, label, name, type, required, maxLength}. The
+// label is the text a human reads — <label for>, a wrapping <label>, aria-label, or the placeholder —
+// because that is what the deterministic matcher matches on.
+//
+// Deliberately selector-POOR: every query it makes is a plain tag list, and every refinement is done
+// in JS. That is not a style preference. A selector STRING that is composed separately from the
+// element it is meant to describe can silently stop describing it — the old submit fallback returned
+// 'form button[type="submit"], …' even when the control it had just found was a <button> with no
+// type, so the executor clicked whatever else matched, or nothing. Every selector below is a path
+// computed FROM the element that was found (cssPath), so it cannot drift from it.
 const READ_FORM_EXPRESSION = `(() => {
-  const form = document.querySelector("form") || document.body;
-  const nodes = [...form.querySelectorAll("input, select, textarea")];
-  const labelOf = (el) => {
-    if (el.id) {
-      const explicit = document.querySelector('label[for="' + CSS.escape(el.id) + '"]');
-      if (explicit && explicit.textContent.trim()) return explicit.textContent.trim();
+  // The booking vocabulary, kept in sync with KIND_PATTERNS in care-booking-executor.js. Used ONLY to
+  // score which form on the page is the booking form — the real matching still happens in the
+  // executor, where the LLM-assist seam lives.
+  const VOCAB = /メール|mail|e-?mail|電話|tel|phone|携帯|日時|希望日|予約日|来院日|date|time|氏名|名前|お名前|name/i;
+  const TYPED_KINDS = ["email", "tel", "date", "time", "datetime-local"];
+  const REQUIRED_MARK = /必須|required/i;
+  const SKIP_TYPES = ["hidden", "submit", "button", "image", "reset"];
+  const typeOf = (el) => String(el.type || el.getAttribute("type") || "").toLowerCase();
+
+  const cssPath = (el) => {
+    if (el.id) return "#" + CSS.escape(el.id);
+    const parts = [];
+    let node = el;
+    while (node && node.tagName && node.tagName.toLowerCase() !== "html") {
+      if (node.id) { parts.unshift("#" + CSS.escape(node.id)); break; }
+      let part = node.tagName.toLowerCase();
+      const parent = node.parentElement;
+      if (parent) {
+        const same = [...parent.children].filter((c) => c.tagName === node.tagName);
+        if (same.length > 1) part += ":nth-of-type(" + (same.indexOf(node) + 1) + ")";
+      }
+      parts.unshift(part);
+      node = parent;
     }
-    const wrapper = el.closest("label");
-    if (wrapper && wrapper.textContent.trim()) return wrapper.textContent.trim();
+    return parts.join(" > ");
+  };
+
+  const labels = [...document.querySelectorAll("label")];
+  const labelFor = (el) => (el.id ? labels.find((l) => (l.htmlFor || l.getAttribute("for") || "") === el.id) : null) || null;
+  const labelOf = (el) => {
+    const explicit = labelFor(el);
+    if (explicit && explicit.textContent.trim()) return explicit.textContent.trim();
+    let node = el.parentElement;
+    for (let depth = 0; node && depth < 4; depth += 1, node = node.parentElement) {
+      if (node.tagName.toLowerCase() === "label" && node.textContent.trim()) return node.textContent.trim();
+    }
     return (el.getAttribute("aria-label") || el.getAttribute("placeholder") || "").trim();
   };
-  const selectorOf = (el, i) => (el.id ? "#" + CSS.escape(el.id)
-    : el.name ? el.tagName.toLowerCase() + '[name="' + CSS.escape(el.name) + '"]'
-    : "__lm_field_" + i);
-  const fields = nodes
-    .filter((el) => !["hidden", "submit", "button", "image", "reset"].includes((el.type || "").toLowerCase()))
-    .map((el, i) => ({
-      selector: selectorOf(el, i),
+
+  // 必須 is almost never the HTML required attribute on a Japanese form — it is a ⟨span class="req"⟩
+  // in the label or a class on the row. A requirement we can SEE is a requirement, and treating it as
+  // one is what makes the "never submit a form whose required fields you cannot fill" rule bite.
+  const markedRequired = (el) => {
+    const explicit = labelFor(el);
+    if (explicit && (REQUIRED_MARK.test(explicit.textContent || "") || REQUIRED_MARK.test(explicit.className || ""))) return true;
+    let node = el.parentElement;
+    for (let depth = 0; node && depth < 3; depth += 1, node = node.parentElement) {
+      // Stop as soon as the container holds more than this one control: past that point the 必須 we
+      // would find belongs to somebody ELSE's field, and inventing a requirement is as dishonest as
+      // ignoring one.
+      if ([...node.querySelectorAll("input, select, textarea")].length > 1) break;
+      if (REQUIRED_MARK.test(node.textContent || "") || REQUIRED_MARK.test(node.className || "")) return true;
+    }
+    return false;
+  };
+
+  const describe = (el) => {
+    const tag = el.tagName.toLowerCase();
+    const max = Number(el.maxLength);
+    return {
+      selector: cssPath(el),
       label: labelOf(el),
-      name: el.name || null,
-      type: el.tagName.toLowerCase() === "textarea" ? "textarea"
-        : el.tagName.toLowerCase() === "select" ? "select"
-        : (el.type || "text").toLowerCase(),
-      required: el.required === true || el.getAttribute("aria-required") === "true",
-    }));
-  const submit = form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
-  return { submitSelector: submit ? (submit.id ? "#" + CSS.escape(submit.id) : 'form button[type="submit"], form input[type="submit"]') : null, fields };
+      name: el.name || el.getAttribute("name") || null,
+      type: tag === "textarea" ? "textarea" : tag === "select" ? "select" : (typeOf(el) || "text"),
+      required: el.required === true || el.getAttribute("aria-required") === "true" || markedRequired(el),
+      maxLength: Number.isFinite(max) && max > 0 ? max : null,
+    };
+  };
+
+  const fieldsOf = (scope) => [...scope.querySelectorAll("input, select, textarea")]
+    .filter((el) => !SKIP_TYPES.includes(typeOf(el)))
+    .map(describe);
+
+  const submitOf = (scope) => [...scope.querySelectorAll("button, input")].find((el) => {
+    const type = typeOf(el);
+    if (type === "submit") return true;
+    return el.tagName.toLowerCase() === "button" && !type;
+  }) || null;
+
+  // A provider page carries a site search box and a login panel alongside the booking form, and the
+  // FIRST <form> in the document is usually one of those. Picking it is a coin flip that ends as
+  // "no fields I can map" on a page that had a perfectly fillable booking form two forms down.
+  const scopes = document.forms && document.forms.length ? [...document.forms] : (document.body ? [document.body] : []);
+  let best = null;
+  for (const scope of scopes) {
+    const fields = fieldsOf(scope);
+    const score = fields.filter((f) => VOCAB.test((f.label || "") + " " + (f.name || "")) || TYPED_KINDS.includes(f.type)).length;
+    if (!best || score > best.score) best = { score, fields, submit: submitOf(scope) };
+  }
+  if (!best) return { submitSelector: null, fields: [], formsScanned: 0, mappedFieldCount: 0 };
+  return {
+    submitSelector: best.submit ? cssPath(best.submit) : null,
+    fields: best.fields,
+    formsScanned: scopes.length,
+    mappedFieldCount: best.score,
+  };
 })()`;
 
 const READBACK_EXPRESSION = `({ text: document.body ? document.body.innerText.slice(0, 4000) : "", url: location.href })`;
@@ -74,10 +150,16 @@ function fillExpression(selector, value) {
   })()`;
 }
 
+// The one page-side error that means "the click was PROVABLY never dispatched". care-booking-executor
+// keys its zero-submits honest_failure on exactly this text (SUBMIT_NEVER_DISPATCHED), so it is named
+// here rather than written inline: a paraphrase on this side would silently turn a clean failure into
+// a possibly_booked, which is the outcome that permanently blocks the honest retry.
+const SUBMIT_NOT_FOUND_MESSAGE = "submit control not found";
+
 function submitExpression(selector) {
   return `(() => {
     const el = document.querySelector(${JSON.stringify(selector)});
-    if (!el) throw new Error("submit control not found");
+    if (!el) throw new Error(${JSON.stringify(SUBMIT_NOT_FOUND_MESSAGE)});
     el.click();
     return true;
   })()`;
@@ -117,9 +199,22 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
         throw new Error(`steel session launch failed (${response ? response.status : "no response"})${body ? `: ${body.slice(0, 200)}` : ""}`);
       }
       const details = await readJson(response);
-      if (!details || !details.id || !details.websocketUrl) throw new Error("steel session response carried no CDP endpoint");
-      connection = await connect(details.websocketUrl);
-      return { id: details.id, websocketUrl: details.websocketUrl };
+      // The id is captured BEFORE the connect, because a connect that throws leaves a session running
+      // on the far side that nobody holds a handle to — and the OSS build has exactly one slot, so an
+      // orphan blocks every later booking for every user until the service restarts.
+      const createdId = details && details.id ? details.id : null;
+      try {
+        if (!createdId || !details.websocketUrl) throw new Error("steel session response carried no CDP endpoint");
+        connection = await connect(details.websocketUrl);
+      } catch (error) {
+        const failure = error instanceof Error ? error : new Error(String(error));
+        if (createdId) {
+          failure.sessionId = createdId;
+          failure.sessionReleased = await this.releaseSession(createdId).then(() => true, () => false);
+        }
+        throw failure;
+      }
+      return { id: createdId, websocketUrl: details.websocketUrl };
     },
     async navigate(_sessionId, url) {
       return (await page()).navigate(url);
@@ -136,22 +231,57 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
     async readConfirmation(_sessionId) {
       return (await page()).evaluate(READBACK_EXPRESSION);
     },
+    // The post-submit page load, bounded. Exposed here because only the executor knows WHEN a load is
+    // worth waiting for (right after the one click it is allowed to make).
+    async waitForLoad(_sessionId, timeoutMs) {
+      const open = await page();
+      if (typeof open.waitForLoad !== "function") return { loaded: false, navigated: false };
+      return open.waitForLoad(timeoutMs);
+    },
+    // POST /v1/sessions/release — frees whatever the single-session build is currently holding. The
+    // blunt instrument, for when we know a session exists but not which id it has.
+    async releaseAll() {
+      const open = connection;
+      connection = null;
+      if (open && typeof open.close === "function") {
+        try { await open.close(); } catch { /* the HTTP release below is what actually frees the slot */ }
+      }
+      const response = await doFetch(`${baseUrl}/v1/sessions/release`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      return Boolean(response && response.ok);
+    },
     async releaseSession(sessionId) {
       const open = connection;
       connection = null;
       if (open && typeof open.close === "function") {
         try { await open.close(); } catch { /* the HTTP release below is what actually frees the slot */ }
       }
-      const response = await doFetch(`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/release`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!response || !response.ok) {
-        throw new Error(`steel session release failed (${response ? response.status : "no response"})`);
+      let firstError = null;
+      try {
+        const response = await doFetch(`${baseUrl}/v1/sessions/${encodeURIComponent(sessionId)}/release`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (response && response.ok) return true;
+        firstError = new Error(`steel session release failed (${response ? response.status : "no response"})`);
+      } catch (error) {
+        firstError = error instanceof Error ? error : new Error(`steel session release failed: ${String(error)}`);
       }
-      return true;
+      // A session we failed to release by id still occupies the only slot there is. Release-ALL is
+      // safe precisely because the build is single-session: there is no other tenant's session to
+      // take down with it, and leaving the slot stuck is strictly worse than freeing it bluntly.
+      try {
+        const all = await doFetch(`${baseUrl}/v1/sessions/release`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (all && all.ok) return true;
+      } catch { /* fall through and report the original failure */ }
+      throw firstError;
     },
   };
 }
 
-module.exports = { makeSteelCdpClient, STEEL_BASE_URL, READ_FORM_EXPRESSION };
+module.exports = { makeSteelCdpClient, STEEL_BASE_URL, READ_FORM_EXPRESSION, SUBMIT_NOT_FOUND_MESSAGE };
