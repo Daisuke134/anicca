@@ -14,18 +14,34 @@ const NOW = Date.parse("2026-07-26T00:00:00Z");
 const DAY_MS = 86400000;
 const USER = { uid: "u-care", home_address: "東京都新宿区1-1-1", gmail_account_id: null };
 
-// A cadence the detector actually fires on: 40-day haircut rhythm, last visit 70 days ago
-// (70 > 1.5 × 40). The salon location repeats so care-anchors sees a usual provider, and a more
-// frequent office location exists so the work anchor derives from real workplace repetition
-// (WORK_MIN_OCCURRENCES) instead of the salon visits.
+// A cadence the detector actually fires on: 40±6-day haircut rhythm over FIVE visits (four gaps:
+// 40/34/46/40 → median 40, MAD 3), last visit 70 days ago (70 > 1.5 × 40). Five visits, not three:
+// CADENCE-1 requires ≥3 gaps plus a dispersion bound before a gap set counts as a cadence at all,
+// so a three-visit fixture would now shape observe_only and never reach the 11b chain. The salon
+// location repeats so care-anchors sees a usual provider, and a still more frequent office location
+// exists so the work anchor derives from real workplace repetition (WORK_MIN_OCCURRENCES).
+const HAIRCUT_DAYS_AGO = [230, 190, 156, 110, 70];
 function overdueHaircutHistory() {
   const office = (n) => ({ id: `of${n}`, summary: "チーム定例", location: "オフィス東京", startMs: NOW - n * 7 * DAY_MS, start: { dateTime: new Date(NOW - n * 7 * DAY_MS).toISOString() } });
+  const haircut = (daysAgo, i) => ({ id: `hc${i + 1}`, summary: "散髪", location: "サロンA 新宿", startMs: NOW - daysAgo * DAY_MS, start: { dateTime: new Date(NOW - daysAgo * DAY_MS).toISOString() } });
   return [
-    { id: "hc1", summary: "散髪", location: "サロンA 新宿", startMs: NOW - 150 * DAY_MS, start: { dateTime: new Date(NOW - 150 * DAY_MS).toISOString() } },
-    { id: "hc2", summary: "散髪", location: "サロンA 新宿", startMs: NOW - 110 * DAY_MS, start: { dateTime: new Date(NOW - 110 * DAY_MS).toISOString() } },
-    { id: "hc3", summary: "散髪", location: "サロンA 新宿", startMs: NOW - 70 * DAY_MS, start: { dateTime: new Date(NOW - 70 * DAY_MS).toISOString() } },
-    office(1), office(2), office(3), office(4),
+    ...HAIRCUT_DAYS_AGO.map(haircut),
+    office(1), office(2), office(3), office(4), office(5), office(6),
   ];
+}
+
+// The bimodal burst that produced the first production scan row (clinic, 9-day "cadence", 50 days
+// overdue) — gaps 47.0 / 5.7 / 8.5 / 419 / 3.2 days. Real detection, honest arithmetic, not a
+// cadence: CADENCE-1 shapes it observe_only.
+function burstClinicHistory() {
+  const gapDays = [47.02, 5.75, 8.52, 419.0, 3.25];
+  const offsets = [0];
+  for (const gap of gapDays) offsets.push(offsets[offsets.length - 1] + gap);
+  const span = offsets[offsets.length - 1];
+  return offsets.map((o, i) => {
+    const ms = NOW - (span - o + 58) * DAY_MS;
+    return { id: `cl${i}`, summary: "クリニック", location: "内科クリニック新宿", startMs: ms, start: { dateTime: new Date(ms).toISOString() } };
+  });
 }
 
 // Supabase double: GET returns existingRows, POST returns postStatus(+postBody), PATCH is recorded
@@ -148,6 +164,57 @@ test("real detection: the 11b chain runs in-process and the full result lands on
   assert.equal(chain.shortfall_reason, "only 1 of 3");
   // 11b privacy rule: the raw home address never rides into the scan log
   assert.ok(!JSON.stringify(supa.calls.patches[0].body).includes(USER.home_address));
+});
+
+// ── CADENCE-1 (spec §10 row CADENCE-1) ────────────────────────────────────────────────────────
+// The first production scan detected clinic / 9-day cadence / 50 days overdue from a bimodal
+// burst. The row was honest; acting on it would not have been. An observe-only detection must
+// still land on the append-only scan row (so the log never hides what was seen) while the 11b
+// chain — anchors, the paid Places search, evaluation — is not run at all.
+test("observe-only detection: the burst lands on the scan row and the 11b chain never runs", async () => {
+  const supa = fakeSupa();
+  let searches = 0; let evaluations = 0;
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => burstClinicHistory(),
+    mapsKey: "maps-key",
+    searchCareCandidates: async () => { searches += 1; return { definitions: [], shortfallReason: null }; },
+    evaluateCareCandidates: async () => { evaluations += 1; return { schema_version: 1, candidates: [], selected_provider_id: null }; },
+  }));
+  assert.equal(result.status, "observed", "seen, recorded, not acted on");
+  assert.deepEqual(result.observeOnly, ["clinic"]);
+  // the detection survives on the row, with its honest numbers AND its refusal
+  assert.equal(supa.calls.posts.length, 1);
+  const [detection] = supa.calls.posts[0].detections;
+  assert.equal(detection.care_type, "clinic");
+  assert.equal(detection.personal_interval_days, 9, "the honest median survives on the row");
+  // 58 days since the last visit − the 9-day median. (The exact production 50 is pinned against the
+  // verbatim event timestamps in care-classification-real-history.test.js; this fixture rebuilds the
+  // gaps from the measured day-lengths, so it lands one rounding step away.)
+  assert.equal(detection.overdue_days, 49);
+  assert.equal(detection.observe_only, true);
+  assert.equal(detection.decision_reason, "cadence-unstable");
+  // and nothing downstream ran — no anchors, no paid Places call, no chain PATCH
+  assert.equal(searches, 0, "an unstable cadence must never spend on a Places search");
+  assert.equal(evaluations, 0);
+  assert.equal(supa.calls.patches.length, 0, "no chain result to persist");
+});
+
+test("a mix of one actionable and one observe-only detection chains only the actionable one", async () => {
+  const supa = fakeSupa();
+  let searchedCategory = null;
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => [...burstClinicHistory(), ...overdueHaircutHistory()],
+    searchCareCandidates: async (args) => { searchedCategory = args.category; return { definitions: [], shortfallReason: null }; },
+  }));
+  assert.equal(result.status, "detected");
+  assert.equal(result.category, "haircut");
+  assert.equal(searchedCategory, "haircut", "the chain binds to the ACTIONABLE detection, never the observed one");
+  const detections = supa.calls.posts[0].detections;
+  assert.deepEqual(
+    Object.fromEntries(detections.map((d) => [d.care_type, d.observe_only])),
+    { clinic: true, haircut: false },
+    "both are on the row; only one is actionable",
+  );
 });
 
 test("chain failure is isolated: a throwing candidate search cannot lose the detection row", async () => {
