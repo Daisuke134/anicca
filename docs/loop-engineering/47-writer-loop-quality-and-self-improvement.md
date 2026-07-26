@@ -1067,8 +1067,9 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | # | 作業 | 依存 | done 条件（検証コマンドで判定） |
 |---|---|---|---|
 | ~~T1~~ | dead 検出に run dir 証拠を追加 | — | **DONE** `0c351d3`。dead 17→7、`reader-questions-ja.json` と `platform-dispatch.jsonl` は報告されず（実 run dir に存在＝model が書いている）、`self-improve-application.json` は報告される。契約テスト 23/23。「script が書かない」だけでは死の証明にならない、が教訓 |
-| **T2** | SkillOpt 実現可能性プローブ | — | `vendor/skillopt-writing/FEASIBILITY.md` に `skillopt-train` の実出力（成功でも失敗でも）が貼られている |
-| **T3** | **採否の判定**（本節の分岐点） | T2 | 下の 21.3 の基準で adopt / reject を spec に書く |
+| ~~T2~~ | SkillOpt 実現可能性プローブ | — | **DONE** `f671e04`。`vendor/skillopt-writing/FEASIBILITY.md` に成功と失敗の両方の実出力。1 epoch 完走（9 model calls / 14,169 tokens、ローカル proxy 経由）|
+| ~~T3~~ | 採否判定 | T2 | **DONE = ADOPT**。判定と根拠は §21.5 |
+
 | **T4** | `skills/writing-craft/` 抽出 | T3 | `CRAFT.md` + `formats/{x-post,article,longform}.md` が存在し、`article-daily.sh` が実際に読む。SkillOpt の `SLOW_UPDATE` 相当の**編集禁止領域**を明示 |
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
 | **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
@@ -1106,3 +1107,22 @@ loop が**人手なしで**次を1周する:
 6. 結果を Telegram に1通
 
 §20.8 で 1〜3 は実測済み。残るのは 4〜6。**4 が動いた日が、俺が skill を手で直さなくてよくなる日。**
+
+### 21.5 T3 の判定 — ADOPT（2026-07-27、判定者 = main）
+
+§21.3 に先に書いた4基準を、実測で1つずつ当てた。
+
+| # | 基準 | 判定 | 証拠 |
+|---|---|---|---|
+| 1 | `skillopt-train` が 1 epoch 完走 | **PASS** | exit 0、9 model calls、14,169 tokens、実 headline 生成。ただし **PyPI 0.2.0 では失敗**（`ValueError: Unsupported optimizer backend: 'openai_compatible'`）。git checkout では完走 |
+| 2 | ローカル proxy に向けられる | **PASS** | 上記 9 calls が CLIProxyAPI (127.0.0.1:8317) 経由 |
+| 3 | scorer を外部プロセスに差し替えられる | **PASS** | scorer は `writing/rollout.py` の `_score()` = **こちらのコード**。stub を `beat_rate.py` 呼び出しに置換するのは局所編集 |
+| 4 | 編集禁止領域が機能する | **PASS** | `skillopt/optimizer/skill.py` の `_PROTECTED_REGIONS` と `_is_in_protected_region`。コメントに「Step-level edits cannot target text inside any of these regions」。`<!-- SLOW_UPDATE_START -->` / `<!-- APPENDIX_START -->` の2対 |
+
+**判定: ADOPT。** optimizer は SkillOpt を使い、報酬（beat rate）と corpus だけ自前で供給する。自前 trainer は書かない。
+
+**基準1の版ずれは解消済み（実測）**: インストール済み 0.2.0 の `skillopt/model/backend_config.py` に `openai_compatible` が **0件**、新 checkout に **6件**。`~/src/SkillOpt` へ clone し `pip install -e` で venv に入れ直した。確認: `backend_config` の loaded from が `/Users/anicca/src/SkillOpt/...`、`openai_compatible present: True`。**以後 `~/.venvs/skillopt` は PyPI 版ではなく `~/src/SkillOpt` の editable install を指す。**
+
+**採用に伴う既知のコスト（基準外だが記録する）**: SkillOpt には env 登録の plugin 機構が無い。`scripts/train.py` の `_ENV_REGISTRY` は module 直書きの dict で、entry-point も環境変数も無い。upstream を fork せずに登録するには `run_train.py` のような monkeypatch wrapper が要る。失敗した run と成功した run の両方で同一に動いたので変数ではない。upstream の更新時に壊れうる箇所として T6 の実装で監視する。
+
+**棄却した選択肢の最強論拠**: 「自前 200 行 trainer を書けば monkeypatch も版ずれも要らない」。正しいが、捨てるものが大きい — 編集の独立性検査、`support_count`、failure 優先の merge、meta skill 記憶、lr scheduler、複数 epoch の slow update。これらは全部「1晩2行」を意味のある操作にするための機構で、自作すると必ず薄くなる。monkeypatch 1本の方が安い。
