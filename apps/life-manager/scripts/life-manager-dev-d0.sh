@@ -184,7 +184,14 @@ if [ -z "$PR_URL" ]; then
     --title "fix(life-manager): #$NUM $TITLE" \
     --body "Fixes #$NUM.
 
-Unattended canonical Life Manager D0 pass. Full app tests and every eval passed before this PR was opened. The loop does not merge or deploy.")"
+Unattended canonical Life Manager D0 pass. Full app tests and every eval passed before this PR was opened. The loop does not merge or deploy.
+
+[lm-dev-loop]
+
+That marker is machine-readable provenance, not decoration. The daily self-build pass
+(apps/life-manager/scripts/self-build-daily.js, LOOP_PR_MARKER) hands a PR to the unattended merge
+guard ONLY if this exact string is in the body. A branch name and an author login are conventions a
+human can satisfy by accident; this line is written by this script and by nothing else.")"
 fi
 if [ -z "$PR_URL" ]; then
   log "PR creation failed"

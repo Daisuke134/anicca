@@ -8,15 +8,17 @@
 //
 // One pass, in order:
 //
-//   1. list the open error-fix PRs the loop itself produced;
+//   1. list the open error-fix PRs the loop itself produced — its own branch prefix AND its own
+//      body marker, so a human's PR is never touched by unattended machinery;
 //   2. run the guard's OWN eligibility check over them, dry — no merge, no deploy, no writes —
 //      and pick the OLDEST that passes (oldest first, so a PR can never be starved by newer work);
 //   3. run the merge guard end to end on that one PR, under a wall-clock budget;
 //   4. append exactly one day row to $LM_SELFBUILD_LEDGER.
 //
-// A day with nothing to do still writes a row. The spec's done condition is "各日 issue/PR/no-op
-// 理由" — seven distinct days each carrying an honest outcome — so a silent day is indistinguishable
-// from a dead loop, and a loop that skips its ledger on quiet days can claim any streak it likes.
+// A day with nothing to do still writes a row. So does a day that could not read the backlog at
+// all. The spec's done condition is "各日 issue/PR/no-op 理由" — seven distinct days each carrying
+// an honest outcome — so a silent day is indistinguishable from a dead loop, and a loop that skips
+// its ledger on quiet days can claim any streak it likes.
 //
 // WHAT THIS FILE MAY NOT DECIDE. It picks the candidate; it never decides the outcome. Every gate
 // (review, blocked actions, tests, merge, deploy, rollback) lives in the guard, and the guard's own
@@ -25,6 +27,20 @@
 // rewrote the picker could point `--review-cmd` at a rubber stamp, and the guard would then dutifully
 // protect the rubber stamp instead. SELF_BUILD_PROTECTED_PATHS closes that door — those three files
 // change only through a human-merged PR.
+//
+// HOW THAT CLAIM IS ACTUALLY MADE TRUE, since a comment is not a mechanism: the paths are passed
+// to `deps.runGuard`, which puts them on the guard CLI's argv as repeated `--protect <path>`, and
+// the CLI unions them with the paths it resolves from `--review-cmd`. Until 2026-07-27 they were
+// accepted here and silently dropped by the spawn, so this paragraph described nothing.
+//
+// TWO MORE THINGS THIS FILE PROMISES, both of them mechanisms rather than intentions:
+//   * TOCTOU. The head oid the precheck judged travels to the guard as `--expect-head`, and the
+//     guard refuses at stage one if the branch has been force-pushed since. Everything decided
+//     here was decided about one specific commit.
+//   * The budget never interrupts a merge. When the wall clock runs out, the guard's progress file
+//     is consulted: pre-merge stages are killed, and a guard that has entered `merge` is waited
+//     on to completion. A kill landing mid-merge would leave main changed, unrecorded and
+//     un-rolled-back, which is worse than any overrun.
 //
 // This file contains no schedule wiring. Enabling launchd is an explicit operator step
 // (scripts/enable-self-build-launchd.sh), never something the loop does to itself.
@@ -40,6 +56,7 @@ const {
   evaluateEligibility,
   guardLedgerPath,
   guardLockPath,
+  readGuardProgress,
   readLedgerRows,
 } = require("./dev-merge-guard.js");
 
@@ -76,14 +93,28 @@ const NO_OP_REASONS = Object.freeze([
   "no_open_error_fix_pr",
   "no_eligible_pr",
   "guard_lock_held",
+  // `gh pr list` failed. Distinct from "no PRs", because a day with an unreadable backlog proved
+  // nothing about the backlog, and a loop that files the two under one reason is claiming to have
+  // looked when it could not.
+  "pr_list_unavailable",
+  // Not a reason: a sentinel for a reason nobody declared. See close().
+  "unrecognized_no_op_reason",
 ]);
 
 const SEVEN_DAYS = 7;
 
-// 20 minutes. The guard's own internal bounds (15 min fresh-deploy poll, 10 min health poll) fit
-// inside it; a run still going after 20 minutes is wedged, not slow, and an unattended runner must
-// not hold the lock until the next day's pass finds it "live".
-const DEFAULT_BUDGET_MS = 20 * 60 * 1000;
+// 45 minutes, and the arithmetic is the whole point. The guard's own post-merge bounds are a 10 min
+// health poll AND a 15 min deploy-freshness poll — 25 minutes AFTER the merge, before which sit
+// review (12 min budget) and the full test suite. The previous 20 minutes was therefore not a
+// generous bound but an impossible one: every successfully merging day would have been killed
+// mid-deploy and filed as a timeout, and the loop's only good outcome was the one it could never
+// reach. 45 leaves the guard's worst case room and still refuses to hold the lock into the next
+// day's pass. It is also NOT the merge safety mechanism — that is the merge-aware kill below.
+const DEFAULT_BUDGET_MS = 45 * 60 * 1000;
+
+// Once the guard announces this stage it has begun doing irreversible things, and the budget stops
+// being allowed to end it.
+const POINT_OF_NO_RETURN_STAGE = "merge";
 
 
 function selfBuildLedgerPath(env = process.env) {
@@ -103,26 +134,19 @@ function tokyoDay(date) {
 }
 
 
-function isPidAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    // EPERM means the process exists and belongs to somebody else — still alive.
-    return error.code === "EPERM";
-  }
-}
-
-
 // Read-only. The guard's acquireGuardLock is what actually steals a stale lock; this only tells the
 // day row WHY the takeover happened, and stops the pass from starting a second guard while a live
-// one is mid-merge. Deciding "stale" by age alone would let a slow-but-alive guard be trampled, so
-// a live PID is never called stale no matter how old the lock is.
+// one is mid-merge.
+//
+// Staleness is AGE ALONE, because that is exactly what acquireGuardLock uses, and the two must
+// agree. The old pidAlive veto made them disagree in the worst possible direction: a PID number
+// recycled by any unrelated process would make this function call a 3-hour-old lock "live" and
+// refuse the day, while the guard — had it been asked — would have stolen the lock and run. An
+// unattended loop wedged indefinitely by a coincidence of PID numbers is a worse failure than a
+// slow guard being displaced, and the guard's own O_EXCL claim is what actually decides the race.
 function inspectGuardLock(lockPath, options = {}) {
   const nowMs = (options.now ? options.now() : new Date()).getTime();
   const staleMs = options.staleMs ?? GUARD_LOCK_STALE_MS;
-  const alive = options.isPidAlive ?? isPidAlive;
 
   let raw;
   try {
@@ -134,13 +158,12 @@ function inspectGuardLock(lockPath, options = {}) {
   let holder = null;
   try { holder = JSON.parse(raw); } catch { holder = null; }
   const heldSinceMs = Number(holder?.acquired_at_ms);
-  // An unreadable/undated lock has no age we can trust. Treat it as infinitely old but still refuse
-  // to call it stale while its PID is alive.
+  // An unreadable/undated lock has no age we can trust; infinitely old is the honest reading, and
+  // it is what acquireGuardLock assumes too.
   const ageMs = Number.isFinite(heldSinceMs) ? nowMs - heldSinceMs : Infinity;
-  const ownerAlive = alive(Number(holder?.pid));
   return {
     held: true,
-    stale: ageMs >= staleMs && !ownerAlive,
+    stale: ageMs >= staleMs,
     ageMs: Number.isFinite(ageMs) ? ageMs : null,
     holder,
   };
@@ -167,7 +190,24 @@ function orderCandidates(list) {
 // whole day on a run that was never going to merge.
 async function pickEligiblePr({ deps, options = {} }) {
   const protectedPaths = options.protectedPaths || [...SELF_BUILD_PROTECTED_PATHS];
-  const candidates = orderCandidates(await deps.listErrorFixPrs());
+  let listed;
+  try {
+    listed = await deps.listErrorFixPrs();
+  } catch (error) {
+    // `gh pr list` failing is not "no PRs". A day that could not read the backlog proved nothing
+    // about the backlog, and letting the throw escape meant the day wrote NO ledger row at all —
+    // a broken gh looking exactly like a loop that never ran, which is the one thing the ledger
+    // exists to make impossible.
+    return {
+      prNumber: null,
+      pr: null,
+      eligibility: null,
+      skipped: [],
+      candidates: 0,
+      listError: String(error?.message || error),
+    };
+  }
+  const candidates = orderCandidates(listed);
   const skipped = [];
 
   for (const candidate of candidates) {
@@ -193,14 +233,32 @@ async function pickEligiblePr({ deps, options = {} }) {
     });
     // An unreadable file list is not an empty one — the guard says so at stage one and so does this.
     if (eligibility.ok && changedFiles !== null) {
-      return { prNumber: candidate.number, pr, eligibility, skipped, candidates: candidates.length };
+      return {
+        prNumber: candidate.number,
+        pr,
+        eligibility,
+        skipped,
+        candidates: candidates.length,
+        // The head THIS precheck judged. It travels to the guard so the guard can refuse a branch
+        // that was force-pushed in between: everything decided above was decided about this commit.
+        headOid: String(pr?.headRefOid || "") || null,
+        listError: null,
+      };
     }
     const reasons = [...eligibility.reasons];
     if (changedFiles === null) reasons.push("changed_files_unreadable");
     skipped.push({ pr: candidate.number, reasons });
   }
 
-  return { prNumber: null, pr: null, eligibility: null, skipped, candidates: candidates.length };
+  return {
+    prNumber: null,
+    pr: null,
+    eligibility: null,
+    skipped,
+    candidates: candidates.length,
+    headOid: null,
+    listError: null,
+  };
 }
 
 
@@ -280,6 +338,8 @@ async function runSelfBuildDay({ deps, options = {} }) {
   const budgetMs = options.budgetMs ?? DEFAULT_BUDGET_MS;
   const protectedPaths = options.protectedPaths || [...SELF_BUILD_PROTECTED_PATHS];
   const readGuardLedger = deps.readGuardLedger || (() => readLedgerRows(guardLedger));
+  const progressFile = options.progressFile ?? null;
+  const readProgress = deps.readGuardProgress || (() => readGuardProgress(progressFile));
 
   const day = {
     schema_version: 1,
@@ -294,7 +354,12 @@ async function runSelfBuildDay({ deps, options = {} }) {
     guard_verdict: null,
     guard_run_ref: null,
     no_op_reason: null,
+    no_op_reason_raw: null,
     recovered_stale_lock: false,
+    stolen_lock_holder: null,
+    budget_exceeded: false,
+    merge_in_flight: false,
+    cleanup_ran: false,
     candidates_considered: 0,
     skipped: [],
     error: null,
@@ -305,14 +370,26 @@ async function runSelfBuildDay({ deps, options = {} }) {
     day.finished_at = finished.toISOString();
     day.duration_ms = Math.max(0, finished.getTime() - startedAtMs);
     if (!SELF_BUILD_VERDICTS.includes(day.verdict)) day.verdict = "unrecognized_guard_verdict";
+    // A reason nobody declared is a BUG in this file, and the old code rewrote it to
+    // "no_eligible_pr" — the ledger quietly laundering a defect into the most ordinary-looking
+    // day there is. The sentinel cannot be mistaken for a real reason, and the raw value is kept
+    // beside it so whoever reads the row can see what the code actually tried to say.
     if (day.no_op_reason !== null && !NO_OP_REASONS.includes(day.no_op_reason)) {
-      day.no_op_reason = "no_eligible_pr";
+      day.no_op_reason_raw = day.no_op_reason;
+      day.no_op_reason = "unrecognized_no_op_reason";
     }
     return appendSelfBuildDay(ledgerPath, day);
   };
 
+  if (options.forceNoOpReason) {
+    // Test seam only: the normaliser above has to be exercisable without a fabricated bug.
+    day.no_op_reason = String(options.forceNoOpReason);
+    return close();
+  }
+
   const lock = inspectGuardLock(lockPath, { now, staleMs: options.lockStaleMs });
   day.recovered_stale_lock = lock.held && lock.stale;
+  if (day.recovered_stale_lock) day.stolen_lock_holder = lock.holder ?? null;
   if (lock.held && !lock.stale) {
     // Somebody else's guard is mid-run. Starting a second one would race a merge, so the day is
     // recorded as locked — a real, honest day, not a skipped one.
@@ -324,6 +401,12 @@ async function runSelfBuildDay({ deps, options = {} }) {
   const picked = await pickEligiblePr({ deps, options: { ...options, protectedPaths } });
   day.candidates_considered = picked.candidates;
   day.skipped = picked.skipped;
+  if (picked.listError) {
+    day.verdict = "no_op";
+    day.no_op_reason = "pr_list_unavailable";
+    day.error = picked.listError;
+    return close();
+  }
   if (picked.prNumber === null) {
     day.verdict = "no_op";
     day.no_op_reason = picked.candidates === 0 ? "no_open_error_fix_pr" : "no_eligible_pr";
@@ -331,9 +414,31 @@ async function runSelfBuildDay({ deps, options = {} }) {
   }
   day.pr = picked.prNumber;
 
+  // ---------------------------------------------------------------------------------------------
+  // The merge-aware kill.
+  //
+  // The budget exists so a wedged guard cannot hold the lock into tomorrow's pass. But the guard
+  // is killed by process GROUP, and a SIGTERM that lands between `git merge` and the guard's own
+  // ledger append leaves main merged, the day unrecorded, and no rollback attempted — the loop
+  // having changed production and lost the note saying so. So the budget expiring is a QUESTION,
+  // not a verdict: ask the guard's progress file which stage it is in.
+  //   * pre-merge  -> kill. Nothing irreversible has happened; the day is an honest timeout.
+  //   * merge, or anything after it -> do NOT signal. Wait, however long it takes, and report the
+  //     guard's real verdict. An overrun is recorded on the row (budget_exceeded) so a run that
+  //     took 90 minutes never looks like one that took 9.
+  // An unreadable progress file reads as pre-merge, which is the safe default: the guard writes it
+  // BEFORE touching git, so "no file" cannot mean "already merging".
+  // ---------------------------------------------------------------------------------------------
   const controller = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
+    day.budget_exceeded = true;
+    const progress = readProgress(progressFile);
+    const stagesBegun = progress?.stagesBegun ?? [];
+    if (stagesBegun.includes(POINT_OF_NO_RETURN_STAGE)) {
+      day.merge_in_flight = true;
+      return;
+    }
     timedOut = true;
     controller.abort(new Error("self_build_budget_exceeded"));
   }, budgetMs);
@@ -345,7 +450,9 @@ async function runSelfBuildDay({ deps, options = {} }) {
     guardResult = await deps.runGuard({
       prNumber: picked.prNumber,
       signal: controller.signal,
-      options: { protectedPaths },
+      // The header's claim, finally made true: these really do reach the guard's argv now.
+      // expectHead makes the picker's decision falsifiable — the guard refuses a head that moved.
+      options: { protectedPaths, expectHead: picked.headOid, progressFile },
     });
   } catch (error) {
     guardError = error;
@@ -354,6 +461,15 @@ async function runSelfBuildDay({ deps, options = {} }) {
   }
 
   if (timedOut) {
+    // The group kill reaps whatever the guard had spawned, including the `git worktree add` it
+    // uses to run the suite. A half-created worktree left registered would make tomorrow's pass
+    // fail at a stage that has nothing to do with tomorrow's PR, so it is pruned and said so.
+    try {
+      await deps.pruneWorktrees?.();
+      day.cleanup_ran = true;
+    } catch (error) {
+      day.error = `worktree_prune_failed: ${String(error?.message || error)}`;
+    }
     const partial = findPartialGuardRow(readGuardLedger(), picked.prNumber, startedAtMs);
     day.verdict = "timeout";
     day.guard_run_ref = partial?.run_id ?? guardResult?.runId ?? null;
@@ -390,6 +506,7 @@ module.exports = {
   DEFAULT_BUDGET_MS,
   GUARD_VERDICTS,
   NO_OP_REASONS,
+  POINT_OF_NO_RETURN_STAGE,
   SELF_BUILD_PROTECTED_PATHS,
   SELF_BUILD_VERDICTS,
   SEVEN_DAYS,

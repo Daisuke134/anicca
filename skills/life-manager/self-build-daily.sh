@@ -1,20 +1,33 @@
 #!/usr/bin/env bash
 # One bounded Life Manager SELF-BUILD pass (spec §10 row 10f, §9.3 DEV loop).
 #
-# This is the launchd entrypoint for `ai.anicca.life-manager-dev`. It does exactly one thing per
-# day: hand the oldest eligible loop-authored fix PR to the 10e merge guard, then report what
-# actually happened. It decides nothing about merging — every gate lives in the guard.
+# This is the launchd entrypoint for `ai.anicca.life-manager-selfbuild` — the CONSUMER. It does
+# exactly one thing per day: hand the oldest eligible loop-authored fix PR to the 10e merge guard,
+# then report what actually happened. It decides nothing about merging — every gate lives in the
+# guard. The PRODUCER (`ai.anicca.life-manager-dev`) is a different job with a different label.
 #
 # It mirrors life-manager-daily.sh: PATH first, recursion guard, env sourcing, one log file, one
 # honest Telegram report at the end. Differences are deliberate:
 #   * the report is sent whatever the outcome, INCLUDING a no-op day, because 10f's done condition
 #     is seven distinct days each carrying an honest outcome — a silent day looks like a dead loop;
-#   * the report is built from the ledger row the pass just wrote, never from a claim.
+#   * the report is built from the LAST LINE OF THE LEDGER, never from the CLI's stdout and never
+#     from a claim. Those differ in exactly the cases that matter: a pass that appended its row and
+#     then died before printing would otherwise report nothing, and a pass that printed a row it
+#     never managed to append would report a day that does not exist. The ledger is the evidence
+#     10f is measured by, so the ledger is what gets read.
 #
 # This script never loads, unloads or edits its own launchd job — a loop that can schedule itself
 # can also un-pause itself. Enabling the schedule is a separate, explicit operator step:
 #   apps/life-manager/scripts/enable-self-build-launchd.sh
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
+
+# The day boundary is Asia/Tokyo, and "seven distinct days" is the entire done condition. launchd's
+# StartCalendarInterval carries no time-zone field, so the SCHEDULE follows whatever the machine is
+# set to; re-asserting TZ here means that even if the machine's zone is changed months from now, or
+# the plist is edited, or this script is run by hand from some other context, the pass's own day
+# arithmetic cannot drift and start splitting or merging days.
+export TZ=Asia/Tokyo
+
 set -uo pipefail
 umask 077
 
@@ -31,8 +44,9 @@ NODE_BIN="${NODE_BIN:-$(command -v node || echo /opt/homebrew/bin/node)}"
 DAILY_CLI="$APP_DIR/scripts/self-build-daily.js"
 LOG="${LM_SELFBUILD_LOG:-$HOME/.openclaw/logs/life-manager-self-build.log}"
 TG_TARGET="${LM_SELFBUILD_TELEGRAM_TARGET:-8547730585}"
+LEDGER="${LM_SELFBUILD_LEDGER:-$HOME/.life-manager/state/self-build-days.jsonl}"
 mkdir -p "$(dirname "$LOG")"
-printf '=== life-manager self-build run %s ===\n' "$(date '+%F %T %Z')" >>"$LOG"
+printf '=== life-manager self-build run %s (TZ=%s) ===\n' "$(date '+%F %T %Z')" "$TZ" >>"$LOG"
 
 # Credentials for gh / railway / the reviewer CLI live here. `set +u` because a launchd environment
 # is not an interactive one and a dotenv file is allowed to reference unset variables.
@@ -60,36 +74,71 @@ RESULT="$("$NODE_BIN" "$DAILY_CLI" "${DAILY_ARGS[@]+"${DAILY_ARGS[@]}"}" 2>>"$LO
 RC=$?
 printf '%s\n' "$RESULT" >>"$LOG"
 
-# The report is rendered from the ledger row itself. If the row cannot be parsed, that IS the
-# report — a pass that cannot describe its own outcome must not go out looking like a success.
+# THE REPORT READS THE LEDGER, NOT THE STDOUT ABOVE. $RESULT is kept only to tell the reader which
+# exit code went with the day. If the last ledger line is missing, unparseable, or older than this
+# run, that IS the report — loudly — because a pass that cannot point at its own appended row has
+# not proven a day happened, whatever it printed.
 # shellcheck disable=SC2016  # the ${...} below are JS template literals, deliberately unexpanded
-REPORT="$(RESULT="$RESULT" RC="$RC" "$NODE_BIN" -e '
-const raw = String(process.env.RESULT || "").trim().split("\n").pop() || "";
+REPORT="$(LEDGER="$LEDGER" RC="$RC" "$NODE_BIN" -e '
+const fs = require("node:fs");
+const ledger = String(process.env.LEDGER || "");
+let line = "";
+try {
+  line = fs.readFileSync(ledger, "utf8").split("\n").filter((value) => value.trim()).pop() || "";
+} catch {
+  line = "";
+}
 let row = null;
-try { row = JSON.parse(raw); } catch {}
-if (!row || typeof row !== "object") {
+try { row = JSON.parse(line); } catch {}
+if (!row || typeof row !== "object" || !row.day) {
   process.stdout.write(
-    `⚠️ Life Manager self-build: the daily pass produced no readable ledger row `
-    + `(exit ${process.env.RC}). Nothing was merged. Check ~/.openclaw/logs/life-manager-self-build.log.`,
+    `⚠️ Life Manager self-build: NO LEDGER ROW. The daily pass exited ${process.env.RC} but the last`
+    + ` line of ${ledger} is not a readable day row, so no day was proven and nothing can be`
+    + ` reported about what the guard did. Check ~/.openclaw/logs/life-manager-self-build.log and`
+    + ` the dev-guard ledger by hand.`,
   );
 } else {
-  const streak = row.streak || {};
   const target = row.pr ? `PR #${row.pr}` : "no PR";
   const why = row.no_op_reason ? ` (${row.no_op_reason})` : "";
+  const raw = row.no_op_reason_raw ? ` [raw: ${row.no_op_reason_raw}]` : "";
   const guard = row.guard_run_ref ? `\nguard run: ${row.guard_run_ref}` : "";
   const err = row.error ? `\nerror: ${row.error}` : "";
   const stale = row.recovered_stale_lock ? "\nrecovered a stale guard lock (>30min)" : "";
+  const over = row.budget_exceeded
+    ? `\nover budget${row.merge_in_flight ? " — waited, because the merge had already begun" : ""}`
+    : "";
+  const cleanup = row.cleanup_ran ? "\nran git worktree prune after the kill" : "";
+  // A killed PRE-merge run cannot have merged. A timeout row still gets the loudest line in this
+  // report, because the ONE thing this pass cannot rule out by itself is a merge it did not see.
+  const danger = row.verdict === "timeout"
+    ? "\n⚠️ main may be merged & unverified — check dev-guard ledger now"
+    : "";
   const skipped = Array.isArray(row.skipped) && row.skipped.length
     ? `\nskipped: ${row.skipped.map((s) => `#${s.pr} [${s.reasons.join(",")}]`).join(" ")}`
     : "";
   process.stdout.write(
     `🤖 Life Manager self-build ${row.day}\n`
-    + `${target} -> ${row.verdict}${why}${guard}${stale}${err}${skipped}\n`
-    + `day ${streak.distinctDays || 0}/${streak.required || 7}`
-    + (streak.ready ? " — seven-day condition MET" : ` (${streak.remaining ?? "?"} to go)`),
+    + `${target} -> ${row.verdict}${why}${raw}${guard}${stale}${over}${cleanup}${err}${danger}${skipped}`,
   );
 }
 ')"
+
+# The seven-day readout comes from the CLI, which reads the same ledger — kept separate so a broken
+# streak calculation can never stop the day itself from being reported.
+# shellcheck disable=SC2016  # the ${...} below are JS template literals, deliberately unexpanded
+STREAK="$("$NODE_BIN" "$DAILY_CLI" --status 2>>"$LOG" | "$NODE_BIN" -e '
+const raw = require("node:fs").readFileSync(0, "utf8").trim().split("\n").pop() || "";
+let value = null;
+try { value = JSON.parse(raw); } catch {}
+const streak = value && value.streak ? value.streak : null;
+process.stdout.write(streak
+  ? `day ${streak.distinctDays || 0}/${streak.required || 7}`
+    + (streak.ready ? " — seven-day condition MET" : ` (${streak.remaining ?? "?"} to go)`)
+  : "day ?/7 — the streak could not be read");
+')"
+
+REPORT="$REPORT
+$STREAK"
 
 printf '%s\n' "$REPORT" >>"$LOG"
 openclaw message send --channel telegram --target "$TG_TARGET" \

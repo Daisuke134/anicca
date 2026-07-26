@@ -10,12 +10,16 @@
 // Prints ONE JSON object on stdout: the day row plus the seven-day readout. The launchd entrypoint
 // (skills/life-manager/self-build-daily.sh) reads that object and reports it to Telegram verbatim.
 //
-// The guard runs as a CHILD PROCESS, not in-process, for one reason: a 20-minute budget has to be
-// enforceable. An in-process guard stuck in a network read cannot be interrupted; a detached child
-// can have its whole process group killed. The child is `scripts/dev-merge-guard.js`, unchanged.
+// The guard runs as a CHILD PROCESS, not in-process, for one reason: the wall-clock budget has to
+// be enforceable. An in-process guard stuck in a network read cannot be interrupted; a detached
+// child can have its whole process group killed. The child is `scripts/dev-merge-guard.js`.
+//
+// That kill is MERGE-AWARE. The guard announces every stage it begins into a progress file, and a
+// guard that has entered the merge stage is never signalled — it is waited on. See lib/.
 //
 // This file installs no schedule. See scripts/enable-self-build-launchd.sh.
 
+const os = require("node:os");
 const path = require("node:path");
 const { execFileSync, spawn } = require("node:child_process");
 
@@ -35,14 +39,29 @@ const {
 } = require("../lib/self-build-daily.js");
 
 const APP_DIR = path.resolve(__dirname, "..");
+const REPO_DIR = path.resolve(APP_DIR, "../..");
 const REPO = "Daisuke134/life-manager";
 const GUARD_CLI = path.join(APP_DIR, "scripts/dev-merge-guard.js");
 const REVIEW_CLI = path.join(APP_DIR, "scripts/dev-adversary-review.js");
 
 // Only branches the loop itself produces. A hand-written branch is a human's PR and a human merges
 // it; the unattended path never touches work it did not create.
-const LOOP_BRANCH = /^(?:feature\/lm-dev-[1-9][0-9]*|fix\/[A-Za-z0-9][A-Za-z0-9._/-]*)$/;
+//
+// MEASURED, not guessed: scripts/life-manager-dev-d0.sh line ~110 is
+// `BRANCH="${LM_DEV_BRANCH:-feature/lm-dev-$NUM}"`, and that is the only branch the producer ever
+// creates. The old pattern also accepted `fix/<anything>`, which is every hand-shaped branch a
+// human has ever pushed to this repo — the unattended merger was one `fix/typo` away from merging
+// somebody's work in their sleep. The guard's own BRANCH_PATTERNS still allow `fix/…` because a
+// human may hand the guard such a PR deliberately; this picker, which chooses with nobody
+// watching, may not.
+const LOOP_BRANCH = /^feature\/lm-dev-[1-9][0-9]*$/;
 const LOOP_AUTHORS = new Set(["Daisuke134"]);
+
+// A branch name is a convention, not authorship: anyone with push access can create
+// `feature/lm-dev-9999`, and the author login is the same human either way, since the loop pushes
+// as Dais. So the producer stamps this marker into every PR body it opens, and nothing without it
+// is treated as loop-authored. Changing it means changing BOTH files, which is the point.
+const LOOP_PR_MARKER = "[lm-dev-loop]";
 
 
 function parseArgs(argv) {
@@ -71,11 +90,27 @@ function exec(file, args, execOptions = {}) {
 
 // One detached guard child, killable as a group. Resolves with the guard's own stdout JSON, or with
 // null when the run was aborted/unparseable — the caller then reads the guard ledger for the truth.
-function spawnGuard({ prNumber, signal, reviewCommand }) {
+//
+// Every argument below used to be dropped here. `options` arrived from runSelfBuildDay carrying
+// protectedPaths and went nowhere, so the library header's claim that the picker and the judge were
+// handed to the guard was simply untrue. They are on the argv now, and so is the head the picker
+// judged and the progress file the merge-aware kill reads.
+function spawnGuard({
+  prNumber,
+  signal,
+  reviewCommand,
+  protectedPaths = [],
+  expectHead = null,
+  progressFile = null,
+  guardCli = GUARD_CLI,
+}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [
-      GUARD_CLI, "--pr", String(prNumber), "--review-cmd", reviewCommand,
-    ], {
+    const args = [guardCli, "--pr", String(prNumber), "--review-cmd", reviewCommand];
+    for (const protectedPath of protectedPaths) args.push("--protect", String(protectedPath));
+    if (expectHead) args.push("--expect-head", String(expectHead));
+    if (progressFile) args.push("--progress-file", String(progressFile));
+
+    const child = spawn(process.execPath, args, {
       cwd: APP_DIR,
       detached: process.platform !== "win32",
       env: process.env,
@@ -123,20 +158,37 @@ function createSelfBuildDeps(io = {}) {
     listErrorFixPrs: async () => {
       const raw = gh([
         "pr", "list", "-R", REPO, "--state", "open", "--base", "main", "--limit", "100",
-        "--json", "number,createdAt,headRefName,author",
+        "--json", "number,createdAt,headRefName,author,body",
       ]);
       const list = JSON.parse(String(raw || "[]"));
       return list
         .filter((pr) => LOOP_BRANCH.test(String(pr?.headRefName || "")))
         .filter((pr) => LOOP_AUTHORS.has(String(pr?.author?.login || "")))
+        // Three independent signals, all required. Branch and author are conventions a human can
+        // satisfy by accident; the marker is written by the producer and nothing else.
+        .filter((pr) => String(pr?.body || "").includes(LOOP_PR_MARKER))
         .map((pr) => ({ number: Number(pr.number), createdAt: String(pr.createdAt) }));
     },
     getPullRequest: guardIo.getPullRequest,
     listChangedFiles: guardIo.listChangedFiles,
     alert: guardIo.alert,
     readGuardLedger: () => readLedgerRows(guardLedgerPath()),
+    // Only ever called after a pre-merge kill. `git worktree prune` deregisters worktrees whose
+    // directories the group kill left behind; it never removes a live one, so it is safe to run
+    // unconditionally on that path.
+    pruneWorktrees: io.pruneWorktrees || (async () => {
+      exec("git", ["-C", REPO_DIR, "worktree", "prune"]);
+      return { ok: true };
+    }),
     runGuard: io.runGuard
-      || (({ prNumber, signal }) => spawnGuard({ prNumber, signal, reviewCommand })),
+      || (({ prNumber, signal, options }) => spawnGuard({
+        prNumber,
+        signal,
+        reviewCommand,
+        protectedPaths: options?.protectedPaths ?? [],
+        expectHead: options?.expectHead ?? null,
+        progressFile: options?.progressFile ?? null,
+      })),
   };
 }
 
@@ -168,6 +220,8 @@ async function main() {
       guardLockPath: guardLockPath(guardLedgerPath()),
       budgetMs: Number.isFinite(options.budgetMs) ? options.budgetMs : DEFAULT_BUDGET_MS,
       protectedPaths: [...SELF_BUILD_PROTECTED_PATHS],
+      // Per-run, so a previous day's abandoned file can never be mistaken for today's merge.
+      progressFile: path.join(os.tmpdir(), `lm-self-build-progress-${process.pid}.json`),
     },
   });
 
@@ -193,4 +247,4 @@ if (require.main === module) {
 }
 
 
-module.exports = { LOOP_BRANCH, createSelfBuildDeps, parseArgs, spawnGuard };
+module.exports = { LOOP_BRANCH, LOOP_PR_MARKER, createSelfBuildDeps, parseArgs, spawnGuard };

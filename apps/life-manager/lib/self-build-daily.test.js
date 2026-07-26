@@ -13,6 +13,8 @@ const os = require("node:os");
 const path = require("node:path");
 
 const {
+  DEFAULT_BUDGET_MS,
+  NO_OP_REASONS,
   SELF_BUILD_VERDICTS,
   SELF_BUILD_PROTECTED_PATHS,
   selfBuildLedgerPath,
@@ -53,10 +55,13 @@ function eligiblePr(number, createdAt, overrides = {}) {
 
 function depsFor(prs, options = {}) {
   const byNumber = new Map(prs.map((pr) => [pr.number, pr]));
-  const calls = { guard: [], prechecked: [] };
+  const calls = { guard: [], prechecked: [], prunes: 0, guardOptions: [] };
   return {
     calls,
-    listErrorFixPrs: async () => prs.map((pr) => ({ number: pr.number, createdAt: pr.createdAt })),
+    readGuardProgress: options.readGuardProgress || (() => null),
+    pruneWorktrees: options.pruneWorktrees || (async () => { calls.prunes += 1; return { ok: true }; }),
+    listErrorFixPrs: options.listErrorFixPrs
+      || (async () => prs.map((pr) => ({ number: pr.number, createdAt: pr.createdAt }))),
     getPullRequest: async (number) => {
       calls.prechecked.push(number);
       return byNumber.get(number) ?? null;
@@ -65,8 +70,9 @@ function depsFor(prs, options = {}) {
       const pr = prs.find((entry) => entry.headRefOid === headOid) || prs[0];
       return (pr.files || []).map((entry) => entry.path);
     },
-    runGuard: options.runGuard || (async ({ prNumber }) => {
+    runGuard: options.runGuard || (async ({ prNumber, options: guardOptions }) => {
       calls.guard.push(prNumber);
+      calls.guardOptions.push(guardOptions || null);
       return { runId: `run-${prNumber}`, verdict: "stopped", stopReason: "review" };
     }),
     readGuardLedger: options.readGuardLedger || (() => []),
@@ -410,4 +416,159 @@ test("the ledger file is written 0600 — a day ledger is evidence, not world-re
     options: { ledgerPath, guardLockPath: path.join(dir, "guard.lock") },
   });
   assert.equal(fs.statSync(ledgerPath).mode & 0o777, 0o600);
+});
+
+
+// ---------------------------------------------------------------------------------------------
+// Review findings, 2026-07-27. Each test below names the finding it pins down.
+// ---------------------------------------------------------------------------------------------
+
+// FINDING 2a. The old 20-minute budget was arithmetically impossible: the guard's own post-merge
+// polling alone is 15 min (deploy freshness) + 10 min (health) = 25 min, so a healthy merge could
+// never finish inside the budget and every merging day would have been killed and filed as a
+// timeout. The budget must exceed the guard's own worst-case bound.
+test("the wall-clock budget is larger than the guard's own post-merge polling bound", () => {
+  assert.equal(DEFAULT_BUDGET_MS, 45 * 60 * 1000);
+  assert.ok(DEFAULT_BUDGET_MS > (15 + 10) * 60 * 1000, "a merging day must be able to finish");
+});
+
+
+// FINDING 2b. The kill was merge-blind: SIGTERM to the guard's process group could land between
+// `git merge` and the ledger append, leaving main merged, nothing recorded, and no rollback. Once
+// the merge stage has BEGUN the pass waits, however long it takes; only pre-merge stages are killed.
+test("once the guard has entered the merge stage the budget never kills it — it waits", async () => {
+  const dir = tempDir();
+  let aborted = false;
+  let resolveGuard;
+  const deps = depsFor([eligiblePr(1094, "2026-07-24T09:00:00Z")], {
+    readGuardProgress: () => ({ runId: "r1", stagesBegun: ["eligibility", "review", "blocked_actions", "tests", "merge"] }),
+    runGuard: ({ signal }) => new Promise((resolve) => {
+      resolveGuard = resolve;
+      signal.addEventListener("abort", () => { aborted = true; });
+      setTimeout(() => resolve({ runId: "r1", verdict: "merged_deployed" }), 60);
+    }),
+  });
+  const row = await runSelfBuildDay({
+    deps,
+    options: {
+      ledgerPath: path.join(dir, "days.jsonl"),
+      guardLockPath: path.join(dir, "guard.lock"),
+      budgetMs: 20,
+    },
+  });
+
+  assert.equal(typeof resolveGuard, "function");
+  assert.equal(aborted, false, "a guard past the merge point must NEVER be signalled");
+  assert.equal(row.verdict, "merged_deployed", "a post-merge wait ends in the guard's real verdict");
+  assert.equal(row.budget_exceeded, true, "the overrun is still recorded honestly");
+  assert.equal(row.merge_in_flight, true);
+});
+
+
+// FINDING 2c + 11. A pre-merge overrun is still killed, still filed as an honest timeout — and the
+// group kill reaps the guard's git children, so any half-created worktree is pruned and said so.
+test("a PRE-merge overrun is killed, filed as timeout, and the orphaned worktrees are pruned", async () => {
+  const dir = tempDir();
+  let aborted = false;
+  const deps = depsFor([eligiblePr(1094, "2026-07-24T09:00:00Z")], {
+    readGuardProgress: () => ({ runId: "r1", stagesBegun: ["eligibility", "review", "tests"] }),
+    runGuard: ({ signal }) => new Promise((resolve) => {
+      signal.addEventListener("abort", () => { aborted = true; resolve(null); });
+    }),
+    readGuardLedger: () => [],
+  });
+  const row = await runSelfBuildDay({
+    deps,
+    options: {
+      ledgerPath: path.join(dir, "days.jsonl"),
+      guardLockPath: path.join(dir, "guard.lock"),
+      budgetMs: 20,
+    },
+  });
+
+  assert.equal(aborted, true);
+  assert.equal(row.verdict, "timeout");
+  assert.equal(row.cleanup_ran, true, "a killed group leaves git children behind; prune and say so");
+  assert.equal(deps.calls.prunes, 1);
+});
+
+
+// FINDING 3a. protectedPaths was dead plumbing: the option was threaded into runSelfBuildDay and
+// then dropped on the floor by spawnGuard. The header claimed those three files were handed to the
+// guard on every run; they were not. They must reach the guard, and the head the PICKER saw must
+// travel with them so the guard can refuse a head that moved between precheck and run (TOCTOU).
+test("the picked head oid travels to the guard so a head that moved is refused", async () => {
+  const dir = tempDir();
+  const pr = eligiblePr(1094, "2026-07-24T09:00:00Z");
+  const deps = depsFor([pr]);
+  await runSelfBuildDay({
+    deps,
+    options: { ledgerPath: path.join(dir, "days.jsonl"), guardLockPath: path.join(dir, "guard.lock") },
+  });
+  const seen = deps.calls.guardOptions.at(-1);
+  assert.equal(seen.expectHead, pr.headRefOid, "the guard must be told which head was prechecked");
+  for (const file of SELF_BUILD_PROTECTED_PATHS) assert.ok(seen.protectedPaths.includes(file));
+});
+
+
+// FINDING 8. Staleness was decided by age AND a dead PID; the guard's own acquireGuardLock decides
+// by AGE ALONE. The disagreement meant this pass could refuse to start ("locked") on a lock the
+// guard would happily have stolen — an unattended loop wedged by a recycled PID number.
+test("lock staleness is age-only, matching the guard's own takeover rule", async () => {
+  const dir = tempDir();
+  const lockPath = path.join(dir, "guard.lock");
+  const now = new Date("2026-07-28T00:00:00.000Z");
+  // A LIVE pid (this process) on an old lock. The guard would steal it; so must this.
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: process.pid,
+    acquired_at_ms: now.getTime() - (GUARD_LOCK_STALE_MS + 60_000),
+  }), { mode: 0o600 });
+
+  const state = inspectGuardLock(lockPath, { now: () => now });
+  assert.equal(state.stale, true, "age alone decides, exactly as acquireGuardLock decides");
+
+  const row = await runSelfBuildDay({
+    deps: depsFor([eligiblePr(1094, "2026-07-24T09:00:00Z")], { now: () => now }),
+    options: { ledgerPath: path.join(dir, "days.jsonl"), guardLockPath: lockPath },
+  });
+  assert.equal(row.recovered_stale_lock, true);
+  assert.equal(row.stolen_lock_holder.pid, process.pid, "who was displaced is recorded");
+  assert.equal(row.pr, 1094);
+});
+
+
+// FINDING 9. `gh pr list` failing threw out of the pass, so the day wrote NO row at all — a broken
+// gh looked exactly like a day that never ran, which is the one thing the ledger exists to prevent.
+test("a PR listing that fails still writes a day row, with its own honest reason", async () => {
+  const dir = tempDir();
+  const ledgerPath = path.join(dir, "days.jsonl");
+  const row = await runSelfBuildDay({
+    deps: depsFor([], { listErrorFixPrs: async () => { throw new Error("gh: HTTP 503"); } }),
+    options: { ledgerPath, guardLockPath: path.join(dir, "guard.lock") },
+  });
+  assert.equal(row.verdict, "no_op");
+  assert.equal(row.no_op_reason, "pr_list_unavailable");
+  assert.match(String(row.error), /503/);
+  assert.equal(readSelfBuildDays(ledgerPath).length, 1);
+  assert.ok(NO_OP_REASONS.includes("pr_list_unavailable"));
+});
+
+
+// FINDING 10. An unrecognised no_op_reason was silently REWRITTEN to "no_eligible_pr" — the ledger
+// laundering a bug into the most plausible-looking normal day. A sentinel that cannot be mistaken
+// for a real reason is the only honest answer.
+test("an unrecognised no_op_reason becomes a loud sentinel, never a plausible one", async () => {
+  const dir = tempDir();
+  const row = await runSelfBuildDay({
+    deps: depsFor([]),
+    options: {
+      ledgerPath: path.join(dir, "days.jsonl"),
+      guardLockPath: path.join(dir, "guard.lock"),
+      // Force the close() normaliser to meet a reason it does not know.
+      forceNoOpReason: "something_nobody_declared",
+    },
+  });
+  assert.equal(row.no_op_reason, "unrecognized_no_op_reason");
+  assert.equal(row.no_op_reason_raw, "something_nobody_declared");
+  assert.notEqual(row.no_op_reason, "no_eligible_pr");
 });
