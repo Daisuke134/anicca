@@ -14,6 +14,8 @@ const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/ru
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
 const { careUserOnce } = require("./lib/care-daily-runtime.js");
+const { dietUserOnce } = require("./lib/diet-runtime.js");
+const { dietNudgeOnce } = require("./lib/diet-nudge.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
@@ -69,7 +71,10 @@ async function supaUsers() {
   const users = await r.json().catch(() => []);
   if (!Array.isArray(users) || users.length === 0) return [];
   const ids = users.map(u => u.uid).filter(Boolean).join(",");
-  const prefsResponse = await fetch(`${url}/rest/v1/lm_panel_preferences?uid=in.(${encodeURIComponent(ids)})&select=uid,call_enabled,notifications_enabled,daily_automation_enabled`, { headers: hdr });
+  // call_time_zone rides along because it is the ONLY per-user timezone column that exists anywhere
+  // in this schema (lm_users has none). The diet organ resolves each tenant's lunch window from it;
+  // without it every tenant would be asked on Tokyo's clock, and the organ chooses silence over that.
+  const prefsResponse = await fetch(`${url}/rest/v1/lm_panel_preferences?uid=in.(${encodeURIComponent(ids)})&select=uid,call_enabled,notifications_enabled,daily_automation_enabled,call_time_zone`, { headers: hdr });
   if (!prefsResponse.ok) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
   const preferenceRows = await prefsResponse.json().catch(() => null);
   if (!Array.isArray(preferenceRows)) return users.map(u => ({ ...u, call_enabled: false, notifications_enabled: false, daily_automation_enabled: false }));
@@ -201,6 +206,25 @@ const MENTAL_SEEDS = Object.freeze([
   "I release what I cannot control",
   "Today I choose to be kind to myself",
 ]);
+
+// H2: the diet trigger only asks whether an event is IN PROGRESS, so it needs starts and ends and
+// nothing else. An event with no end is given the same 1h assumption mentalDeps makes — a missing
+// end must not read as a zero-length event that suppresses nothing.
+function dietEvents(events) {
+  return (Array.isArray(events) ? events : []).map((event) => {
+    const startMs = Number(event.startMs);
+    const endMs = Number.isFinite(event.endMs) ? Number(event.endMs) : startMs + 60 * 60000;
+    return { startMs, endMs };
+  }).filter((event) => Number.isFinite(event.startMs) && event.endMs > event.startMs);
+}
+
+// The kill switch, spelled the way an operator under pressure actually spells it. `LM_DIET_ENABLED=0`
+// was the only accepted form, so `=false` and `=off` silently LEFT THE ORGAN ON — the exact moment
+// an off switch must not be pedantic is the moment someone is reaching for it.
+const DIET_OFF = /^(0|false|off|no)$/i;
+function dietEnabled() {
+  return !DIET_OFF.test(String(process.env.LM_DIET_ENABLED || "").trim());
+}
 
 function mentalDeps(u, events, deps = {}) {
   const supa = SUPA();
@@ -345,6 +369,49 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
         + `${care.chainError ? ` chain_err=${care.chainError}` : ""}`);
     }
   } catch (e) { console.error(`[care] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  // H2 ORG-diet: the diet organ rides the same 60s tick, LAST — after the time-critical wake dial and
+  // after care, because a Places lookup must never sit in front of a call. Both legs hold their own
+  // durable claim in lm_diet_log (UNIQUE (uid, day, kind)), so the 120-minute question window and the
+  // 30-minute nudge window each produce at most one message however many ticks pass through them.
+  //
+  // The gate defaults ON (spec H2), and `notifications_enabled` is honoured exactly as the late/mental
+  // siblings honour it — the diet organ is nothing but unsolicited messages, so the one switch a user
+  // has for "stop messaging me" must cover it. The two legs get SEPARATE try/catch blocks: they share
+  // a table but not a fate, and a Places outage in the nudge must not cost the day its question.
+  if (dietEnabled() && u.notifications_enabled !== false) {
+    let nudgeSentThisTick = false;
+    try {
+      // getLocationState is passed to BOTH diet legs exactly as mentalDeps passes it to MENTAL: one
+      // injected provider, one behaviour. Nothing supplies it in production today, so both organs
+      // read the constant "unknown" — the gate is wired, not live, and both files say so.
+      const nudge = await (deps.dietNudge || dietNudgeOnce)(u, now, {
+        calendarEvents: events, getLocationState: deps.getLocationState,
+      });
+      if (nudge && nudge.status === "nudged") {
+        nudgeSentThisTick = true;
+        console.log(`[diet-nudge] uid=${String(u.uid).slice(0, 12)} samples=${nudge.sampleCount}`
+          + ` fast=${nudge.fastCount} venue=${nudge.venue ? "yes" : "none"} tg_message_id=${nudge.telegramMessageId}`);
+      }
+    } catch (e) { console.error(`[diet-nudge] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+    // The two windows overlap (nudge 11:15-11:45, question 11:30-13:30), so on some ticks BOTH legs
+    // fire and the user gets two unsolicited messages zero seconds apart — the sermon the thresholds
+    // exist to prevent, delivered in one breath. The nudge keeps the tick because it is the
+    // time-critical one (it must land before lunch is decided); the question waits for the next tick,
+    // which costs 60 seconds out of its own 120-minute window, and only on a day a nudge went out.
+    if (!nudgeSentThisTick) {
+      try {
+        // NOT futureEvents: "is the user mid-meeting right now" is a question only the event that has
+        // ALREADY started can answer, and futureEvents drops exactly those. The MENTAL lookback the
+        // fetch above already carries is what makes the in-progress event visible here.
+        const diet = await (deps.diet || dietUserOnce)(u, now, {
+          events: dietEvents(events), getLocationState: deps.getLocationState,
+        });
+        if (diet && (diet.status === "asked" || diet.status === "send_failed")) {
+          console.log(`[diet] uid=${String(u.uid).slice(0, 12)} status=${diet.status} day=${diet.day}`);
+        }
+      } catch (e) { console.error(`[diet] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+    }
+  }
 }
 
 // forEachUserSafe: process each tenant in ISOLATION (HARD-4). A throw/rejection while handling one user is

@@ -143,4 +143,8 @@ async function searchCareCandidates({ category, anchors, apiKey, fetchImpl = fet
   return { definitions, shortfallReason };
 }
 
-module.exports = { searchCareCandidates, CATEGORY_KEYWORDS };
+// textSearch / geocodeAnchor are exported for REUSE, not for convenience: H2's lunch-alternative
+// lookup needs the same "resolve an anchor address, then search a keyword biased around it" pair,
+// and a second hand-rolled Places transport would be a second place to get the timeout, the
+// status check, and the never-throw contract subtly wrong.
+module.exports = { searchCareCandidates, CATEGORY_KEYWORDS, textSearch, geocodeAnchor };
