@@ -167,6 +167,7 @@ test("FIN-d: the bank rail does not trigger the wallet-address question", async 
 function pendingRow(overrides = {}) {
   return {
     uid: "u1",
+    telegram_chat_id: "7", // production rows always carry this (they are looked up by it)
     payout_destination: { type: "wallet", status: "awaiting_address", asked_at: new Date(NOW).toISOString() },
     ...overrides,
   };
@@ -349,4 +350,14 @@ test("FIN-d: change → new address → confirmed: the whole re-registration rou
   assert.equal(isPayoutDestinationUsable(stored), true);
   assert.equal(sent.length, 2);
   assert.equal(sent[1][2], FINANCIAL_STRINGS.ja.payoutAddress.confirmed.replace("{short}", "0x5aAe…eAed"));
+});
+
+test("a row whose telegram_chat_id names another chat is refused even with matching actor", async () => {
+  // Review finding: the money-bearing write must not trust an upstream row lookup blindly.
+  const deps = typedDeps();
+  const row = { uid: "u1", telegram_chat_id: "999", payout_destination: { type: "wallet", status: "awaiting_address" } };
+  const out = await handleTypedPayoutAddress(CHECKSUMMED, row, { ...deps, chatId: "7", actorId: "7" });
+  assert.equal(out.handled, true);
+  assert.equal(out.ok, false);
+  assert.equal(out.reason, "row_chat_mismatch"); // refusal precedes any I/O in the handler
 });

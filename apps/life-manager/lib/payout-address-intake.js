@@ -163,6 +163,11 @@ async function handleTypedPayoutAddress(text, row, deps = {}) {
   }
   if (!row.uid || !chatId || trimmed.startsWith("/")) return { handled: false };
   if (actorId !== chatId) return { handled: true, ok: false, reason: "scope_mismatch" };
+  // Defense in depth for a money-bearing write: the row handed to us must itself name this chat.
+  // A row-lookup bug upstream must fail here, not write an address onto someone else's account.
+  if (String(row.telegram_chat_id || "") !== String(chatId)) {
+    return { handled: true, ok: false, reason: "row_chat_mismatch" };
+  }
 
   const validated = validateWalletAddress(trimmed);
   if (!validated.ok) {
