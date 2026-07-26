@@ -498,22 +498,23 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
      「棚卸し + 提案 + 本人承認 + 実行は本人」で成立させ、rail が開いた時点で実行だけを引き継ぐ。
 11. **ElevenLabs は不要**（音声は edge-tts 経由の MPT ナレーションのみ）。実測: 我々の pipeline から ElevenLabs 呼び出しは 0。
    参照が残るのは MPT の設定サンプル内の provider 一覧のみ。**解約してよい**。
-12. **11c の cloud browser rail = Browserbase（2026-07-26 決定。8社比較 + live 実測 + 過去研究2件の合流。
-   Browserless は棄却 — Unit=30秒課金 + residential proxy 6 units/MB で予約 workload だと実質破綻）**。
-   - **★支払いは x402 ではなく通常 account（2026-07-26 Dais 裁定）★**: `x402.browserbase.com` の per-session USDC 販売
-     （$0.01/5min、Base/Solana、"No API keys, no accounts"）は 2026-07-26 に HTTP 402 応答まで live 実測済みだが、
-     「まだ tricky なことはしない」により当面使わない。11c 着手時に Dais が account を作成して
-     `BROWSERBASE_API_KEY` を渡す（env slot は旧 spec T66 から予約済み）。x402 は将来 rail として温存。
-     旧 ANICCA_LIFE_MANAGER_SPEC の T66（Browserbase + Stagehand, Tier 1）と 2026-05-23 の6ツール実測 memory の
-     決定に合流する — 新決定ではなく、既決の rail がようやく配線される。
-   - **multi-tenant 隔離** = Browserbase Contexts（user ごと1 Context、"uniquely encrypted at rest"）。
-     user A の salon ログインが B に混ざらないことは Context 分離で担保する。
-   - **JP IP は必要になるまで買わない**: 2026-07-26 実測で HPB トップは海外 DC IP でも 200 + 実コンテンツを返し、
-     Akamai/DataDome 系 marker 0件。geo-block の証拠が出た時だけ Tokyo proxy
-     （`proxies:[{geolocation:{city:"TOKYO",country:"JP"}}]`, $12/GB — 総額を支配する費目）を有効化する。
-   - **fallback**: 実予約フォームの submit が CDP fingerprint / ASN 判定で恒常ブロックされたら
-     `steel-dev/steel-browser`（Apache/MIT）を東京の VPS に self-host して JP 実回線 egress へ逃がす。同一 API 系で移行コスト小。
-   - **未検証の穴**（11c 着手初日に潰す）: 予約フォーム submit 段の bot 防御（トップページ 200 は答えではない）。
+12. **11c の cloud browser rail = steel-browser self-host on 既存 Railway（2026-07-26 夜 改訂。人間ゼロを最優先に再決定）**。
+   - 旧決定（Browserbase 通常 account）は「Dais が account を作る」人間依存を含んでいた。Dais 裁定「no human in loop」
+     に基づき再研究（Opus 5、実測付き）した結論: **`ghcr.io/steel-dev/steel-browser` を life-call と同じ Railway project に
+     別サービスとして立てる**。新規 account 作成ゼロ・credential 入力ゼロ・CLI 認証済みで人間の操作は一度も発生しない。
+   - 実測根拠: Railway 公式テンプレ `steelbrowser` 実在（GraphQL readback）/ `railway add --image` で非対話 provision 可能 /
+     `browse` CLI v0.8.0 は `--cdp <ws url>` で任意 CDP に接続可（Browserbase key 不要、--help 実測）/
+     Hobby plan RAM 48GB で Chromium 余裕。
+   - **分離の制約（正直に）**: OSS 版 steel は同時1セッション（`session.service.ts` の activeSession 単数、実コード確認）。
+     分離は「予約ジョブごとに fresh session + per-user sessionContext 注入」で担保し、同時実行はユーザー単位ジョブキュー
+     （同時1）で直列化。負荷が出たら replica ではなく**サービスを N 本**増やす（`railway add` 1コマンド）。
+     同時10件を超える規模でこの設計は作り直し — その時が Browserbase/steel cloud に金を払う時。
+   - **公開しない**: steel OSS は API 認証なし。public domain は付けず、private networking（`steel-browser.railway.internal:3000`）
+     のみで life-call から叩く。
+   - Browserbase x402（$0.01/5min、account 不要、402 実測済み）は wallet に USDC が入った時点の代替 rail として温存。
+     JP residential IP が必要と実証された場合の fallback も従来どおり（datacenter IP が原因なら基盤変更では解決しない点に注意）。
+   - 2026-07-26 実行: `railway add --service steel-browser --image ghcr.io/steel-dev/steel-browser`（HOST=:: / CDP_REDIRECT_PORT=9223）
+     を provision 済み。deploy 検証は 11c 実装時の private-network 疎通で行う。
 13. **9c の IG は先送り（2026-07-26 Dais 裁定）**。9c の当面の done = **TikTok に MPT 製の新規動画が毎日出続けること**。
     実測 2026-07-25: `lm-video-post` launchd が Postiz DIRECT_POST で `post_id=cms0bqgx40414pj0yftnc0b4r` を配信済み
     （`~/.openclaw/logs/lm-video-post-launchd.out.log`）。preview 承認ゲートも撤去（Dais 裁定: 承認不要）。
