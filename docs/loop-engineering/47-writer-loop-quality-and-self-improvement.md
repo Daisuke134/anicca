@@ -1121,6 +1121,10 @@ loop が**人手なしで**次を1周する:
 
 **判定: ADOPT。** optimizer は SkillOpt を使い、報酬（beat rate）と corpus だけ自前で供給する。自前 trainer は書かない。
 
+**独立再現（2026-07-27、main が自分で実行）**: executor の報告を鵜呑みにせず、editable install 済みの venv で `run_train.py --config configs/writing/default.yaml` を回した。1 epoch 完走、`calls=9`、`total tokens: 14,050`、model は `claude-haiku-4-5`（ローカル proxy 経由）、`Final test: 1.0000`、`skip=2`（stub scorer が常に満点なので学ぶ失敗が無い＝想定どおり）。PYTHONPATH の細工なしで通ることを確認。
+
+**T6 の必須条件（俺の最初の再実行が落ちた原因。夜間 job も同じ落ち方をする）**: `OPENAI_COMPATIBLE_BASE_URL=http://127.0.0.1:8317/v1` と `OPENAI_COMPATIBLE_API_KEY=<CLIProxyAPI の key>` を**環境に入れずに起動すると、既定の api.openai.com に飛んで `401 Incorrect API key provided: dummy` で全 retry を使い切る**。launchd から起動する夜間 trainer は環境変数を継承しないので、T7 の plist かラッパで明示的に渡すこと。渡し忘れは「静かに何も学ばない夜」になる。
+
 **基準1の版ずれは解消済み（実測）**: インストール済み 0.2.0 の `skillopt/model/backend_config.py` に `openai_compatible` が **0件**、新 checkout に **6件**。`~/src/SkillOpt` へ clone し `pip install -e` で venv に入れ直した。確認: `backend_config` の loaded from が `/Users/anicca/src/SkillOpt/...`、`openai_compatible present: True`。**以後 `~/.venvs/skillopt` は PyPI 版ではなく `~/src/SkillOpt` の editable install を指す。**
 
 **採用に伴う既知のコスト（基準外だが記録する）**: SkillOpt には env 登録の plugin 機構が無い。`scripts/train.py` の `_ENV_REGISTRY` は module 直書きの dict で、entry-point も環境変数も無い。upstream を fork せずに登録するには `run_train.py` のような monkeypatch wrapper が要る。失敗した run と成功した run の両方で同一に動いたので変数ではない。upstream の更新時に壊れうる箇所として T6 の実装で監視する。
