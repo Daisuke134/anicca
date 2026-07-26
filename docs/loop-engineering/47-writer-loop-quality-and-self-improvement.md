@@ -1075,7 +1075,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
 | **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
 | ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
-| **T7b** | Telegram 通知 | T6 | 毎晩1通: patch 内容 / beat rate 前後 / 採用か却下か |
+| ~~T7b~~ | Telegram 通知 | T6 | **DONE** `725774e`。`scripts/craft-train-notify.sh` を plist から training の後に呼ぶ。trainer とは別プロセス（通知の故障で学習を落とさない）。skipped / rejected / kept の3結末を区別し、**毎回 sha256 の前後**を載せる。採用ゼロなのにファイルが動いた・採用したのに不変、のどちらも WARNING を出す = gate が効いていない証拠。実 ledger と fixture 両方で描画を確認 |
 | **T15** | ja 供給増 | — | 学習に使える行が en 613 / **ja 43**。zenn だけでは1日48行。はてブ・Qiita・note を harvester に追加（別セッションの harvest が239本採れることを実証済み）|
 | **T8** | 22:30 の盲目解消を実機確認 | — | 次回発火で `no JA/EN quality baseline` が出ない（`~/.openclaw/logs/article-self-improve.err`） |
 | **T9** | 週次 judge 較正 | T5 | judge の選好と自投稿の実 engagement の相関が数値で出る |
