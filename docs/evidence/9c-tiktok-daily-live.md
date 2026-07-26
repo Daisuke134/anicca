@@ -42,3 +42,25 @@ unauthenticated, which satisfies the logged-out bar.
 
 - Self-improve ledger already shows `day=1 status=started` (2026-07-24). TikTok-only counts (§10.0-3).
 - The buddha post has real metrics to read: 161 views at ~18h age. Day-1 entry can be honest and non-zero.
+
+## 2026-07-26 update — the daily loop closed its own loop, IG included
+
+The 10:15 scheduled run failed exactly as the old gate designed: creative A04 had no per-video
+receipt. PR #1133 replaced the per-video requirement with a standing receipt recording the
+2026-07-26 ruling; `launchctl kickstart` re-fired the real launchd job, and the 10:47 run finished
+rc=0 with both legs published and read back:
+
+| leg | public URL | logged-out readback |
+|---|---|---|
+| TikTok | `tiktok.com/@anicca_buddha/video/7666647608156540168` | yt-dlp no-cookies: upload 2026-07-26, 34s, 85 views, fresh 謝罪文 script (different from 07-25's alarm script — content rotates daily) |
+| Instagram | `instagram.com/reel/DbPPpXCMjrf` | HTTP 200, 601KB real page, title carries the caption's first line |
+
+The Instagram leg deserves a correction on the record: the 07-25 spec text deferred IG believing
+the account was frozen and undesignated. Measurement says otherwise — the frozen account was the
+CloakBrowser-session one, while the configured LM accounts file
+(`~/.cloak/life-manager-instagram-accounts.json`) designates `anicca.affirms2` (status live,
+warming since 07-11), the instagrapi poster's tier-2 guard verifies it acts as exactly that handle,
+and the reel is publicly served. IG is live on the correct account; the deferral is obsolete.
+
+Daily continuity: 07-25 (`7666359498763750676`) and 07-26 (`7666647608156540168`) are consecutive
+automatic-pipeline TikTok posts with distinct scripts. 9c's bar — fresh MPT video daily — is met.
