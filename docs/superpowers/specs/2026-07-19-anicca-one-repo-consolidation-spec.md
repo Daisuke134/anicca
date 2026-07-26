@@ -548,24 +548,23 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**（2026-07-26 夜 更新）: 残り **7**（+crypto track 保留2）。今日 done = 9c・12c・13b・CB-1・13d-a、実装 merged = 11b・13c、恒久修理 = webhook self-heal（INC-3）・between_events 到達性・standing receipt・録音 pipeline 停止。**入力文法は完成**: tap は可視応答（CB-1、Dais 実 tap 実証）、typed は受領→検証→引用確認（13d-a、agent 単独 E2E）。次に動けるのは 9d 日次 verify / 11a 発火 / Dais の Browserbase account。
+**Current cursor**（2026-07-27 更新）: 実装弾は **11c+11d（走行中）→ 10e → 10f** の3発のみ。9d/11a は loop 自動進行。demo 態勢稼働中（下記）。crypto track は別 repo 合流待ち。rail 変更に注意: **11c は Browserbase ではなく steel self-host**（裁定12 改訂 2026-07-26 夜、account 不要・人間ゼロ）。
 
-**Live remaining to-do list (7, 順序 = 裁定17: 9 → 10 → 11 → 12 優先、crypto は別 track。2026-07-26 夜 更新)**:
+**Live remaining to-do list（2026-07-27 更新。順序 = 今動ける順 — 時間待ちを言い訳にしない）**:
 
-| # | ID | organ | 残っている実物 | blocker |
+| # | ID | organ | 残っている実物 | 状態 |
 |---|---|---|---|---|
-| 1 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger（Day 1 記帳済 2026-07-26） | 暦のみ — 毎日 10:00 JST に loop が自動追記、agent が日次 verify |
-| 1.5 | `CADENCE-1` | PHYSICAL | **検知の意味論 guard（2026-07-26 初回実 scan の教訓）**: 実測9日「周期」は bimodal burst（2025年3回集中→14ヶ月沈黙→2026年週2回）の median で、これで予約したら真の誤検知。detectUnmetCare に cadence 安定性条件（分散上限 or 期間 coverage）を追加し、burst 由来の検知は「観察のみ・行動しない」へ落とす。実履歴 pin test は #1149 で導入済み | **done (2026-07-26)**: #1151 merged — `judgeCadenceStability`（4+ visits AND (MAD≤0.5m OR 全gap∈[0.4m,2.5m])）。実 burst データは `observe_only:true / cadence-unstable` に降格し chain/Places/TG 一切走らない（実履歴 pin 更新は意図的、数値は不変で判定のみ変更）。安定周期（40±6日×5訪問）は actionable のまま。明示 intent は guard bypass。52/52 + eval 15/15 + suite exit 0。deploy 済み — 明日の scan から新判定 |
-| 2 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: haircut 34d/240d 周期、health 57d/445d — いずれも 1.5x 未満）。detector は実データで正常・誤検知0 |
-| 3 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装 #1132 merged: anchors × category、京都床屋排除、usual-first、1〜3件の正直 shortfall） | 11a の care category |
-| 4 | `11c` | PHYSICAL | Browserbase（通常 account = 裁定12）で実予約 or メール。不可なら候補提示 + 正直報告 | 11b実測 + **Dais の Browserbase account 作成（唯一の人間依存）** |
-| 5 | `11d` | PHYSICAL | §9.11 copy での実 TG + gcal 実 event | 11c の confirmed booking id |
-| 6 | `10e` | DEV | 実 error 由来 PR 1本（材料: open #1092/#1094/#1095）の無人 merge/deploy。guard = test/eval 100%・fresh adversary・path allowlist・rollback | 9d + 11系 done（裁定17で「全 atomic done」から緩和） |
-| 7 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復（launchd 再 enable） | 10e |
+| 1 | `11c+11d` | PHYSICAL | **steel-browser（裁定12改: self-host rail、稼働中）** 経由の予約 executor + §9.11 事後報告。二重予約禁止・honest_failure・U8 名乗り・`LM_BOOKING_ENABLED` gate（default off） | 🔄 builder 実装中（Opus 5、branch atomic/11cd-booking-executor） |
+| 2 | `10e` | DEV | 無人 merge/deploy の guard 機械の実装 + fixture 検証（実 error 由来 PR での無人実証は機械完成後。材料: open #1092/#1094/#1095） | 次の弾 — 11cd の次に builder 投入 |
+| 3 | `10f` | DEV | 7日 self-build 台帳 + stale/timeout 自己回復（launchd 再 enable） | 10e の機械が回り始めたら暦で貯まる |
+| 自動 | `9d` | MARKETING | 7日 ledger — Day 1 記帳済 2026-07-26、毎日 10:15 JST に loop が自動追記 | agent の作業対象外（並走） |
+| 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
-**crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先は 13d-a で `usable` 済み `0x6592…EDc7`、agent wallet 残高 0 実測・seed 未定）、`13c実測`（実収益行 — engine #1128 merged）。
+**crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
 
-**done 済みで表から外した row**: `13a`・`9f`・`9c`・`12c`・`13b`・`CB-1`（可視応答契約 — Dais 実 tap で production 実証）・`13d-a`（typed 受領文法 — agent 単独 E2E 全通、DB `usable`）。詳細 = 各 §10 行 + docs/evidence/。
+**DEMO 態勢（2026-07-27〜28）**: funnel 5欠陥を前夜に全修理（`docs/evidence/demo-ready-20260727.md`）— OAuth `?tg=` 保持 fix 配信済み、`LM_COMP_UNTIL=2026-07-28T15:00Z`（read-time comp、Stripe の paid 書込み不変、自動失効）、cache TTL 15分、admin alert 配線（Telnyx 残高警告含む）、nudge 30分 cooldown。
+
+**done 済みで表から外した row**: `13a`・`9f`・`9c`・`12c`・`13b`・`CB-1`・`13d-a`・`PHY-runtime`（#1147+#1149、care scan 毎日稼働）・`CADENCE-1`（#1151）。詳細 = 各 §10 行 + docs/evidence/。
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
