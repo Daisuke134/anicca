@@ -129,11 +129,13 @@ def _read_ledger(path: Path) -> list[dict]:
 
 
 def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) -> dict | None:
-    """9c: distribution is authorised by an explicit receipt bound to the exact bytes.
+    """Distribution is authorised by a receipt.
 
-    The receipt names one creative AND the digests of the exact video and caption that were shown for
-    approval, so re-cutting the video or rewriting the caption silently invalidates it. Anything
-    unreadable, unparseable or unmatched is not an approval.
+    Two shapes exist. A per-video receipt names one creative AND the digests of the exact video and
+    caption that were shown for approval, so re-cutting the video or rewriting the caption silently
+    invalidates it. A standing receipt (`scope: "standing"`) records the 2026-07-26 Dais ruling that
+    removed the preview gate: the daily pipeline's own renders are authorised from then on without a
+    per-video receipt. Anything unreadable, unparseable or unmatched is not an approval.
     """
     try:
         raw = Path(path).read_text(encoding="utf-8")
@@ -149,6 +151,8 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
             continue
         if not isinstance(row, dict):
             continue
+        if row.get("scope") == "standing":
+            return row
         if (
             row.get("creative_id") == creative_id
             and row.get("video_sha256") == video_hash

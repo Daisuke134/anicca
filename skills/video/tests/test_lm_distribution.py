@@ -252,6 +252,24 @@ class ApprovalGateTests(DistributionTests):
             self.run_distribution()
         self.assert_no_provider_was_touched()
 
+    def test_a_standing_receipt_authorizes_a_new_creative_without_a_per_video_receipt(self):
+        # 2026-07-26 Dais ruling (§10.0-13): the preview-approval gate is removed. A standing
+        # receipt recorded once authorizes the daily pipeline's own renders from then on.
+        self.approvals.write_text(
+            '{"scope":"standing","granted_by":"Dais","ruling":"2026-07-26 §10.0-13 approval gate removed"}\n',
+            encoding="utf-8",
+        )
+        result = self.run_distribution()
+        self.assertEqual(result["creative_id"], "A03")
+
+    def test_a_standing_row_with_the_wrong_scope_is_not_an_authorization(self):
+        self.approvals.write_text(
+            '{"scope":"someday","granted_by":"Dais"}\n', encoding="utf-8"
+        )
+        with self.assertRaises(lm_distribution.DistributionError):
+            self.run_distribution()
+        self.assert_no_provider_was_touched()
+
     def test_an_empty_approvals_file_refuses_and_touches_no_provider(self):
         self.approvals.write_text("", encoding="utf-8")
         with self.assertRaises(lm_distribution.DistributionError):
