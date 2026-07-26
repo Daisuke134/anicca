@@ -551,7 +551,7 @@ crypto rail と fiat rail の両方が開いた時点で初めて収益 organ �
 organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
 blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
 
-**Current cursor**（2026-07-27 03:00 更新）: **手書き atomic 全弾終了** — 11c+11d(#1156)・10e(#1158)・10f(#1163) すべて merged、self-build 両 loop 点火済み（producer + consumer、launchctl 実測）。残るは実測 leg のみ: 9d(Day 7 = 8/1頃)・10e/10f(実 error PR の無人実証 + 7日台帳 — 毎朝 04:10 に自動)・11a→11c 実弾(安定周期の検知日に gate on)・crypto track(別 repo)。**全部 loop が無人で貯める。**
+**Current cursor**（2026-07-27 03:20 更新）: 手書き atomic 全弾 merged + 両 self-build loop 点火済み。**NEXT HORIZON 稼働開始**: H2 diet organ = spec 確定・builder 実装中（Opus 5）。H4 precepts = spec 確定（builder は H2 の次）。H1 は裁定18で棄却。実測 leg（9d/self-build 台帳/11a実弾）は loop が無人蓄積中。
 
 **Live remaining to-do list（2026-07-27 更新。順序 = 今動ける順 — 時間待ちを言い訳にしない）**:
 
@@ -571,7 +571,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 |---|---|---|---|---|
 | H2 | `ORG-diet` | **spec 確定（2026-07-27、下記）**: ①観測 = 昼食 closed Q（11:30-13:30 JST の予定空白時のみ、週3回上限、4択 tap: 定食・野菜系/麺・丼/バーガー・ファスト/食べてない）②台帳 = `lm_diet_log` append-only ③介入 = 直近14日で fastfood 比率≥50% かつ標本≥4 の時だけ、昼直前の効く瞬間に1通（1/日上限、説教禁止・§9.11 文体、work anchor 近傍の代替を Places で1件添える）④copy は i18n（Dais 編集可）⑤MENTAL と同じ suppression（予定中・移動中は沈黙）⑥診断・カロリー計算はしない — 選択の記録と タイミングの提案のみ | Dais 口述 2026-07-26 | builder 投入中 |
 | H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
-| H4 | `ORG-precepts` | 五戒の就寝前自省 Q + 週次 ledger（MENTAL 拡張） | 同上 | H2 の後（同型） |
+| H4 | `ORG-precepts` | **spec 確定（2026-07-27）**: ①観測 = 就寝前 trigger（pre_sleep と同窓・実装済み機構に相乗り）に週次で closed Q 1問「今日、心に引っかかったことは?」5択 tap: ［嘘をついた］［きつく当たった］［時間を奪った/遅刻］［飲酒/衝動］［なし・穏やかだった］（五戒を日常語に翻訳、宗教語・罪の語彙は使わない）②台帳 = `lm_precepts_log` append-only ③介入 = 週次サマリ1通のみ（日曜夜）: 事実の鏡「今週は『きつく当たった』が2回。全部 木曜の連続MTG の後でした」— パターンと文脈を返すだけ、説教・評価・スコア化禁止 ④tap は CB-1 可視応答 ⑤MENTAL の 3通/日 cap に合算（別枠にしない）⑥copy は i18n Dais 編集可 | Dais 口述 2026-07-26（五戒・自省） | H2 merge 後に builder 投入 |
 | H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
 | H6 | `OPS-1` | Telnyx 残高 top-up 経路（実測 $20.86 ≈ 2日分。alert は配線済みだが補充は未設計 — 資金源は Dais 裁定要） | demo sweep D | **Dais の資金裁定待ち** |
 | H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 | crypto track（別 repo）と合流 |
