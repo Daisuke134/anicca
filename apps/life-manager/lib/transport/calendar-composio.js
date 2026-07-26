@@ -27,34 +27,53 @@ function makeComposioCalendar({ apiKey, recordCall } = {}) {
     await Promise.resolve(ledger(uid, tool)).catch(() => false);
     return result;
   };
+  // ONE page of Google Calendar items PLUS the cursor that unlocks the next. events.list returns at
+  // most `maxResults` items per page (250 by default, 2500 max) and sets data.nextPageToken whenever
+  // more remain — measured against this exact endpoint on 2026-07-26: a 548-day window came back as
+  // 250 + 250 + 203 with a live token on the first two pages, and the identical 703 events arrive in
+  // one call at maxResults=2500 with NO token. listEventsRaw used to drop that token on the floor,
+  // which left "the calendar holds 703 events" and "it holds 7000 and you were handed page one"
+  // indistinguishable to every caller. A caller that persists an append-only record
+  // (fetchCalendarHistory → lm_care_scan_log) cannot live with that ambiguity, so the cursor is now
+  // part of the transport contract.
+  // Error contract unchanged and shared with listEventsRaw: default (wake path) swallows every
+  // failure to an empty page — load-bearing, a transport blip must not crash the 60s tick — while
+  // strict (history path) THROWS, because "empty calendar" and "the read failed" must never merge.
+  const listEventsPage = async (uid, { timeMin, timeMax, maxResults, pageToken, strict } = {}) => {
+    const empty = { items: [], nextPageToken: null };
+    if (!key || !uid) {
+      if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
+      return empty;
+    }
+    const args = { calendarId: "primary", singleEvents: true, orderBy: "startTime", timeMin, timeMax };
+    if (maxResults) args.maxResults = maxResults;
+    if (pageToken) args.pageToken = pageToken;
+    let j;
+    try {
+      j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
+    } catch (e) {
+      if (strict) throw e;
+      return empty;
+    }
+    if (!j || !j.successful) {
+      if (strict) throw new Error(`calendar list failed: ${String((j && (j.error || j.message)) || "unsuccessful response")}`);
+      return empty;
+    }
+    const d = j.data || {};
+    return {
+      items: d.items || d.events || [],
+      nextPageToken: typeof d.nextPageToken === "string" && d.nextPageToken ? d.nextPageToken : null,
+    };
+  };
   return {
     kind: "composio",
     ready: () => !!key,
-    // Raw Google Calendar items (each consumer maps to its own shape) for [timeMin, timeMax] (ISO Z).
-    // Default (wake path): every failure swallows to [] — load-bearing there, a transport blip must
-    // not crash the 60s tick. strict (history path, fetchCalendarHistory): failure THROWS, because a
-    // caller that persists an append-only daily claim must distinguish "empty calendar" from "the
-    // read failed" — [] on failure would freeze a fabricated empty scan forever.
-    async listEventsRaw(uid, { timeMin, timeMax, maxResults, strict } = {}) {
-      if (!key || !uid) {
-        if (strict) throw new Error(`calendar transport not ready (missing ${key ? "uid" : "API key"})`);
-        return [];
-      }
-      const args = { calendarId: "primary", singleEvents: true, orderBy: "startTime", timeMin, timeMax };
-      if (maxResults) args.maxResults = maxResults;
-      let j;
-      try {
-        j = await execute("GOOGLECALENDAR_EVENTS_LIST", uid, args);
-      } catch (e) {
-        if (strict) throw e;
-        return [];
-      }
-      if (!j || !j.successful) {
-        if (strict) throw new Error(`calendar list failed: ${String((j && (j.error || j.message)) || "unsuccessful response")}`);
-        return [];
-      }
-      const d = j.data || {};
-      return d.items || d.events || [];
+    listEventsPage,
+    // Raw Google Calendar items (each consumer maps to its own shape) for [timeMin, timeMax] (ISO Z),
+    // FIRST page only — the wake path reads an 18-hour horizon and has never approached a page
+    // boundary. Callers that need provable completeness follow listEventsPage's cursor instead.
+    async listEventsRaw(uid, opts = {}) {
+      return (await listEventsPage(uid, opts)).items;
     },
     async createEvent(uid, args) {
       if (!key) return { successful: false };

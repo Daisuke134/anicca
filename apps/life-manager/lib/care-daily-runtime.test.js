@@ -188,6 +188,25 @@ test("transport failure through the REAL history reader → history_unavailable 
   assert.equal(supa.calls.posts.length, 0);
 });
 
+// A TRUNCATED history is the same class of lie as a failed one: the read "succeeded" but what came
+// back is not the user's history, and lm_care_scan_log is append-only, so persisting it would freeze
+// a fabricated cadence forever. Provable-incompleteness must land as history_unavailable too.
+test("truncated history (full page, no cursor to follow) → history_unavailable, NO claim row", async () => {
+  const supa = fakeSupa();
+  const bulk = [];
+  for (let i = 0; i < 2500; i += 1) {
+    bulk.push({ id: `b${i}`, summary: "予定", start: { dateTime: new Date(NOW - (2500 - i) * 3600000).toISOString() } });
+  }
+  const deps = baseDeps(supa, {
+    calendar: { kind: "fake", ready: () => true, async listEventsRaw() { return bulk; } },
+  });
+  delete deps.fetchCalendarHistory; // the real events.js reader must refuse to call this complete
+  const result = await careUserOnce(USER, NOW, deps);
+  assert.equal(result.status, "history_unavailable");
+  assert.match(result.error, /truncat/i);
+  assert.equal(supa.calls.posts.length, 0, "a provably-incomplete history must never claim the day");
+});
+
 // 🟡 Finding 2: only the duplicate-key race means "already scanned". A 500/503 from Supabase must
 // surface as a throw (the scheduler's catch logs it) — otherwise real outages masquerade as dedup.
 test("insert failure that is NOT the duplicate race throws — 500 is not 'already scanned'", async () => {
