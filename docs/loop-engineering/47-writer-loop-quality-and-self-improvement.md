@@ -1073,7 +1073,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | ~~T4~~ | `skills/writing-craft/` 抽出 | T3 | **DONE** `daa7368`。CRAFT.md 55行・adapter 14/15/18行、末尾に `SLOW_UPDATE` 保護ブロック、タイトル規則は参照1行のみ、`article-daily.sh` が実読み。契約テスト 10/10 |
 | ~~T4.5~~ | 台帳と scorer の接続 | T4 | **DONE** `daa7368`。`scripts/score-latest-run.sh` を `self-improve.sh` から呼ぶ。**発覚した穴**: `beat_rate.py` を呼ぶ caller がツリー内に1つも無く、日次台帳は書かれるだけで採点されない状態だった（学習しているように見えて何も測っていない）|
 | **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
-| **T6** | 夜間トレーナ | T3, T4, T5 | 1 epoch 回り、`CRAFT.md` の行が最大2件編集され、held-out beat rate が改善しなければ**自動で差し戻る**。採否どちらも log に残る |
+| ~~T6~~ | 夜間トレーナ | T3,T4,T5 | **DONE** `5d56e8e`。契約 15/15、dataset train 68 / val 16 / test 19（全 split に ja と en）、bare-title 18行を除外して残存 0、guard 発火時 `CRAFT.md` の sha256 不変（main が自分で実行して確認）。**学習が実際に効いたかは T5 の3 run 蓄積後**（本節の done は機構の完成であって、改善の証明ではない）|
 | ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
 | ~~T7b~~ | Telegram 通知 | T6 | **DONE** `725774e`。`scripts/craft-train-notify.sh` を plist から training の後に呼ぶ。trainer とは別プロセス（通知の故障で学習を落とさない）。skipped / rejected / kept の3結末を区別し、**毎回 sha256 の前後**を載せる。採用ゼロなのにファイルが動いた・採用したのに不変、のどちらも WARNING を出す = gate が効いていない証拠。実 ledger と fixture 両方で描画を確認 |
 | **T15** | ja 供給増 | — | 学習に使える行が en 613 / **ja 43**。zenn だけでは1日48行。はてブ・Qiita・note を harvester に追加（別セッションの harvest が239本採れることを実証済み）|
@@ -1202,3 +1202,29 @@ reason: "guard: only 0 scored run(s) ... need >= 3 -- refusing to gate on noisy 
 中身に関係なく「後ろ」を選んでいる。§19.3 が引用した arxiv 2305.17926 の位置バイアスが、論文の引用ではなく**この loop の judge で実測された**。両順序で判定し割れたら 0.5 とする `beat_rate.py` の設計は、これで自前の証拠を持つ。
 
 **一般法則**: 高頻度パスのコストを疑うのは正しい。だが「安くしても質は落ちないはず」は仮定であって測定ではない。仮定のまま本番に入れると、劣化したことに気付けないまま学習信号が濁る。**測れないなら入れない。**
+
+
+### 21.10 T6 完了時点の実測（main の独立検証、2026-07-27）
+
+executor の報告を鵜呑みにせず、同じコマンドを自分で叩いた結果:
+
+| 検査 | 実測 |
+|---|---|
+| 契約テスト | **15/15 PASS** |
+| dataset | train 68（ja 26 / en 42）、val 16（ja 8 / en 8）、test 19（ja 9 / en 10）、計 103 |
+| bare-title 残存 | **0**（`Claude Sonnet 5` 型を en 20字 / ja 12字 未満で除外、corpus 全体で 18行） |
+| guard 実行 | `rc=0`、`CRAFT.md` の sha256 が実行前後で不変（`9f126281…`） |
+| rebuild 経済性 | 初回 101 subject ≈ 65分 → split 削除後の再構築は **0 call**、filter 追加後の再構築は **10 call / 62秒** |
+
+**この時点で「自己改善の機構」は完成したが、「自己改善した」という証拠はまだ無い。** 台帳が1つも無いので guard が正しく学習を拒否している状態。改善の証明は `state/craft-train.jsonl` に `edits_accepted >= 1` と beat rate の改善が並ぶ行が出た時であり、それには T5（3 run 分の台帳）が要る。**機構の完成を改善の証明と混同しない。**
+
+### 21.11 今夜見つけた「繋がっていない鎖」2件（同じ失敗クラス）
+
+| # | 切れ目 | 症状 |
+|---|---|---|
+| 1 | `beat_rate.py` を呼ぶ caller がツリー内に存在しなかった | 台帳は毎日書かれ、誰も採点しない |
+| 2 | 台帳の書き先が `<run-dir>/`、読み先が `<run-dir>/gates/` | 台帳は書かれ、採点は「台帳を持つ run が無い」と正しく報告する |
+
+どちらも**全部の部品が健康に見えたまま何も学ばない**形。テストは通り、ログは正常、commit は綺麗。**部品の正しさは接続の正しさを含意しない。** 2 は 06:00 の初回 run の前に事前点検で捕まえた（走らせてから気付いていたら、台帳を1日分捨てていた）。
+
+一般法則: **新しい部品を足したら、その部品を「呼ぶ側」と「読む側」の実パスを1回は目で追う。** 契約テストは部品の内側しか守らない。
