@@ -1076,7 +1076,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | ~~T6~~ | 夜間トレーナ | T3,T4,T5 | **DONE** `5d56e8e`。契約 15/15、dataset train 68 / val 16 / test 19（全 split に ja と en）、bare-title 18行を除外して残存 0、guard 発火時 `CRAFT.md` の sha256 不変（main が自分で実行して確認）。**学習が実際に効いたかは T5 の3 run 蓄積後**（本節の done は機構の完成であって、改善の証明ではない）|
 | ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
 | ~~T7b~~ | Telegram 通知 | T6 | **DONE** `725774e`。`scripts/craft-train-notify.sh` を plist から training の後に呼ぶ。trainer とは別プロセス（通知の故障で学習を落とさない）。skipped / rejected / kept の3結末を区別し、**毎回 sha256 の前後**を載せる。採用ゼロなのにファイルが動いた・採用したのに不変、のどちらも WARNING を出す = gate が効いていない証拠。実 ledger と fixture 両方で描画を確認 |
-| **T15** | ja 供給増 | — | 学習に使える行が en 613 / **ja 43**。zenn だけでは1日48行。はてブ・Qiita・note を harvester に追加（別セッションの harvest が239本採れることを実証済み）|
+| ~~T15~~ | ja 供給増 | — | **DONE** `79d7e8a`。**ja eligible 43 → 200**（zenn 43 / qiita 100 / hatena 57）、corpus 1486 → 1835。契約 60/60。**note は見送り** — 9通りのエンドポイントが 404/403/405、`robots.txt` が `/api/*` を全 UA に禁止。偽のパスを作らず正直に2 source で止めた |
 | **T8** | 22:30 の盲目解消を実機確認 | — | 次回発火で `no JA/EN quality baseline` が出ない（`~/.openclaw/logs/article-self-improve.err`） |
 | **T9** | 週次 judge 較正 | T5 | judge の選好と自投稿の実 engagement の相関が数値で出る |
 | **T10** | 本文 slice・長文 slice | T6 | 各 format slice で非悪化 gate が通る |
