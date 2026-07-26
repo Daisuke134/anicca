@@ -31,15 +31,23 @@ function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {})
     kind: "gog",
     ready: () => !!acct,
     // Raw Google-Calendar-shaped items for [timeMin, timeMax]. gog --from/--to accept RFC3339 directly.
-    async listEventsRaw(_uid, { timeMin, timeMax, maxResults } = {}) {
-      if (!acct) return [];
+    // strict (history path): failure throws instead of masquerading as an empty calendar — see
+    // calendar-composio.js listEventsRaw for the rationale. Default (wake path) swallows to [].
+    async listEventsRaw(_uid, { timeMin, timeMax, maxResults, strict } = {}) {
+      if (!acct) {
+        if (strict) throw new Error("calendar transport not ready (missing gog account)");
+        return [];
+      }
       const args = ["calendar", "events", "list", "-j", "--all-pages", opt("--max", String(maxResults || 250))];
       if (timeMin) args.push(opt("--from", timeMin)); // ISO (RFC3339) — never flag-like
       if (timeMax) args.push(opt("--to", timeMax));
       try {
         const d = JSON.parse(exec(args));
         return Array.isArray(d) ? d : (d.events || d.items || []);
-      } catch { return []; }
+      } catch (e) {
+        if (strict) throw e;
+        return [];
+      }
     },
     // Accepts the same arg shape travel.js builds (Composio dialect) and translates to gog flags.
     async createEvent(_uid, args = {}) {
