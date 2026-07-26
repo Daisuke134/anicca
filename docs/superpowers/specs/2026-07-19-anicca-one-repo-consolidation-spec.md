@@ -569,7 +569,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 
 | # | ID | 中身 | 出典 | 状態 |
 |---|---|---|---|---|
-| H2 | `ORG-diet` | **spec 確定（2026-07-27、下記）**: ①観測 = 昼食 closed Q（11:30-13:30 JST の予定空白時のみ、週3回上限、4択 tap: 定食・野菜系/麺・丼/バーガー・ファスト/食べてない）②台帳 = `lm_diet_log` append-only ③介入 = 直近14日で fastfood 比率≥50% かつ標本≥4 の時だけ、昼直前の効く瞬間に1通（1/日上限、説教禁止・§9.11 文体、work anchor 近傍の代替を Places で1件添える）④copy は i18n（Dais 編集可）⑤MENTAL と同じ suppression（予定中・移動中は沈黙）⑥診断・カロリー計算はしない — 選択の記録と タイミングの提案のみ | Dais 口述 2026-07-26 | builder 投入中 |
+| H2 | `ORG-diet` | **spec 確定（2026-07-27、下記）**: ①観測 = 昼食 closed Q（11:30-13:30 JST の予定空白時のみ、週3回上限、4択 tap: 定食・野菜系/麺・丼/バーガー・ファスト/食べてない）②台帳 = `lm_diet_log` append-only ③介入 = 直近14日で fastfood 比率≥50% かつ標本≥4 の時だけ、昼直前の効く瞬間に1通（1/日上限、説教禁止・§9.11 文体、work anchor 近傍の代替を Places で1件添える）④copy は i18n（Dais 編集可）⑤MENTAL と同じ suppression（予定中・移動中は沈黙）⑥診断・カロリー計算はしない — 選択の記録と タイミングの提案のみ | Dais 口述 2026-07-26 | **実装済み・review 2🔴12🟡 修理中（PR #1170）**: 主要指摘 = 全tenant JST窓強制・「職場の近く」copy が home 近傍で嘘・TRUNCATE 穴・stale keyboard の誤日付回答・説教14日連続。fixer 走行中 |
 | H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
 | H4 | `ORG-precepts` | **spec 確定（2026-07-27）**: ①観測 = 就寝前 trigger（pre_sleep と同窓・実装済み機構に相乗り）に週次で closed Q 1問「今日、心に引っかかったことは?」5択 tap: ［嘘をついた］［きつく当たった］［時間を奪った/遅刻］［飲酒/衝動］［なし・穏やかだった］（五戒を日常語に翻訳、宗教語・罪の語彙は使わない）②台帳 = `lm_precepts_log` append-only ③介入 = 週次サマリ1通のみ（日曜夜）: 事実の鏡「今週は『きつく当たった』が2回。全部 木曜の連続MTG の後でした」— パターンと文脈を返すだけ、説教・評価・スコア化禁止 ④tap は CB-1 可視応答 ⑤MENTAL の 3通/日 cap に合算（別枠にしない）⑥copy は i18n Dais 編集可 | Dais 口述 2026-07-26（五戒・自省） | H2 merge 後に builder 投入 |
 | H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
