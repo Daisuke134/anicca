@@ -138,8 +138,17 @@ async function careUserOnce(u, nowMs, deps = {}) {
   if (!claimed) return { status: "already_scanned" };
   if (receipt.candidates.length === 0) return { status: "abstained" };
 
-  // 11b chain, in-process, on the first (only expected) detected category.
-  const category = receipt.candidates[0].care_type;
+  // CADENCE-1 gate (§10 row CADENCE-1). An observe_only detection was genuinely seen and is
+  // already on the row above — but its gaps are not a cadence, so "overdue" names no real debt.
+  // It must not spend a Places search, must not produce a chain, and must not count as a reason
+  // to act. Only actionable detections continue.
+  const actionable = receipt.candidates.filter((candidate) => !candidate.observe_only);
+  if (actionable.length === 0) {
+    return { status: "observed", observeOnly: receipt.candidates.map((c) => c.care_type) };
+  }
+
+  // 11b chain, in-process, on the first ACTIONABLE detected category.
+  const category = actionable[0].care_type;
   try {
     const careHistory = [];
     for (const source of sources) {
