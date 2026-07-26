@@ -931,3 +931,87 @@ mine は **対比的**に行う。同 source・同 topic の上位十分位 **�
 3. X と note の 1 投稿あたり engagement が週単位で上向く。
 
 (1) だけ上がって (2)(3) が横ばいなら、loop は自分の gate を gaming していて gate が間違っている。これは定義済みの失敗モードで、検出手段が (2) — (2) を置く理由そのもの。
+
+---
+
+## 20. 矛盾の棚卸しと、矛盾を loop 自身に掃除させる設計（2026-07-26）
+
+Dais 指示: 「skill を足しすぎて矛盾だらけ。矛盾したまま agent が直しても、どっちを選ぶかで意味が消える。矛盾の掃除自体を loop の中に入れろ」。正しい。矛盾のある規則集の上で最適化しても、勾配は規則の解釈ゆらぎに吸われる。
+
+### 20.1 実測した矛盾（この節が一覧の正本）
+
+| # | 級 | 側1 | 側2 | 衝突 | 証拠を持つ側 |
+|---|---|---|---|---|---|
+| **1** | 直接 | `article-daily.sh` STEP 4.5 | 同 STEP 4.6 / 4.7 | 4.5 は editorial-gate が rubric/reader/deslop/eval を「REPLACES」と宣言し1回+1改稿に制限。4.6/4.7 は rubric-judge.sh と reader-testing を最大3評価ずつ回せと命じる | 4.5（2026-07-25 の劣化実測を引用）。4.6/4.7 は証拠なし |
+| **2** | 死 | `self_improve_control.py:93` | 上の #1 | `_quality()` は `gates/rubric-judge-{ja,en}.json` だけを読む。#1 が 4.5 側に倒れるとこのファイルは生成されなくなり学習が盲目になる | — |
+| **3** | 漂流 | `article-daily.sh` STEP 3（是正前） | `reference/title-best-practices.md` §2 | 参照先の禁則2（徹底解説フレーミング禁止）が prompt 内で「見出しは具体的な発見・数字・結果を約束せよ」に変異。参照先にも実測にも存在しない | reference（実 engagement 付き） |
+| **4** | 直接 | `SKILL.md` playbook rule 1（是正前） | `reference` §1 First-person confessional | 全 self-reference 禁止 対 一人称告白型が実績パターン（dev.to 39 reactions） | reference |
+| **5** | 無根拠 | `SKILL.md:99` | `reference` §1 EN blunt declarative | 「抽象語での開幕禁止」。参照先は "The Myth of the Post-Documentation Era"(77 reactions) を手本に載せる | reference |
+| **6** | 無根拠 | `SKILL.md:215` | spec §1 問題#6 | about-us 定型に「毎週この検証を書いている」。頻度の実績主張であり、§1 #6 が嘘認定した同じクラス | §1 #6 |
+
+**#1 の帰結を実測した。** `state/runs/daily-2026-07-26/gates/article-gates.log` の集計:
+
+```
+5 script=render-verify-draft.sh
+5 script=reader-testing-gate.sh
+4 script=rubric-judge.sh
+2 script=identity-gate.sh
+2 script=conscience-gate.sh
+1 script=eval-gate.sh
+0 editorial-gate
+```
+
+editorial-gate は**一度も走っていない**。具体的な命令（4.6/4.7）が宣言（4.5）に勝った。つまり「judge を1本化して token を削る」是正は**死んだテキスト**のまま、旧4 judge が回り続けていた。矛盾を放置すると是正が無効化される、の実例。
+
+### 20.2 SkillOpt は矛盾を扱えるか（実コード確認）
+
+**部分的に持っている。** `skillopt/prompts/merge_failure.md` の merge guideline:
+
+- 「**Deduplicate**: keep the best-worded version of similar edits」
+- 「**Resolve conflicts**: if patches contradict on the same point, choose the one with stronger justification or synthesize both」
+- 編集 op に `delete` が第一級で存在する（`append|insert_after|replace|delete`）
+- `support_count` = その編集を独立に何本の分析が支持したか
+- `merge_final.md`: failure 由来の編集が success 由来より優先
+- `<!-- SLOW_UPDATE_START -->` / `<!-- SLOW_UPDATE_END -->` で**編集禁止領域**を宣言できる
+
+**持っていないもの（ここを自分で足す）:**
+
+| 不足 | 理由 |
+|---|---|
+| 既存文書の矛盾スキャン | conflict 解決は「今回生成した patch 同士」に限る。文書に元から埋まっている矛盾は見ない |
+| 複数ファイル横断 | 学習対象は skill 文書1本。うちの矛盾は reference / SKILL.md / prompt の**3ソース間**で起きる |
+| 証拠の有無による優先 | 「stronger justification」は LLM の主観。うちは「実測 engagement を引用しているか」で機械的に決められる |
+
+### 20.3 掃除を loop の中に入れる（4 規則）
+
+1. **正本は1ファイル。** タイトル規則は `reference/title-best-practices.md` だけ。他は「→参照」1行しか書けない。prompt が規則本文を持つのを禁止（#3 の再発防止）。
+2. **規則には出典欄を必須にする。** 実測 run / harvest 済み exemplar / 計測値のいずれかを引用できない規則は `unsourced` と印を付ける。印が付いた規則は次の学習で**削除候補の先頭**に並ぶ。
+3. **矛盾スキャンを毎晩回す。** 規則ファイル群が変化した時だけ実行。検出は3種:
+   - **直接衝突**: 同一対象に対し一方が禁止、他方が推奨（#1 #4 #5）
+   - **漂流**: 別ファイルの規則を言い換えたが語が厳しく変異（#3）。原文との差分で検出可能
+   - **死**: 参照先の gate/ファイルが生成されていない（#2）。run dir を見れば判る
+   出力は「どちらを消すか」ではなく**チケット**。決着は beat rate が付ける。
+4. **規則の予算。** 1本足すなら1本消す。総数を増やさない。SkillOpt の `delete` op と `learning_rate`（1晩2編集）がそのまま予算になる。
+
+### 20.4 §19.6 の進捗（2026-07-26 時点）
+
+| # | 作業 | 状態 |
+|---|---|---|
+| 19-1 | spec | **DONE** `3126b1e22` |
+| 19-2 | corpus harvester（title slice 先） | TODO ← 次 |
+| 19-3 | `writing-craft/` | TODO |
+| 19-4 | `skillopt/envs/writing/` | TODO |
+| 19-5 | `_quality()` 付け替え + #1 の矛盾解消 | TODO（#1 は本節で実測確定） |
+| 19-6 | 毎晩 `writer-craft-train` | TODO |
+| 19-7 | 週次 judge 較正 | TODO |
+| **20-1** | 却下台帳（P0）| **DONE** `d48a508`。`scripts/title_candidates.py` + contract test 5/5。規則語の却下理由と行番号なし却下を記録段階で拒否 |
+| **20-2** | prompt の独自タイトル規則を撤去し reference へ一本化 | **DONE** `d48a508` |
+| **20-3** | SKILL.md タイトル禁止行の削除・数字偏重の是正 | **DONE** `cc80f10` `6ee5f6a` |
+| 20-4 | 矛盾スキャナ実装（20.3 の3検出） | TODO |
+| 20-5 | 規則への出典欄追加 + unsourced 印 | TODO |
+
+### 20.5 副次の実測（同日）
+
+- 22:30 `ai.anicca.article-self-improve` は初発火で `self-improve pending: no JA/EN quality baseline is available` を出して rc=75 終了。#2 の帰結が実機で確認された。skill への書き込みは発生していない。
+- disk が 306Mi まで枯渇。原因は watched project root 配下の再生成可能 `node_modules` 1.2G に寿命所有者が無く、sentinel が `needs-dais` で停止していたこと。sentinel を「名前が再生成可能 **かつ** repo が git-ignore」で自動登録する方式に変更（`~/scripts` commit `7a7bb44`、偽 HOME で E2E 実測）。
+- dev.to は自分の下書きに `200 + published:false` を返すため 404 分岐が発火せず ambiguous に落ちていた。認証済み unpublished 一覧で確定するよう修正（`bf5dd61`）。
