@@ -549,7 +549,8 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | # | ID | organ | 残っている実物 | blocker |
 |---|---|---|---|---|
 | 1 | `CB-1` | UX | 裁定15の callback 可視応答契約（元 message 編集 + keyboard 撤去 + 再tap可視応答）を ask/payout/discovery 全 handler に実装 → deploy → agent が browser で実 tap readback（裁定16） | 実装中（builder 走行中） |
-| 2 | `13d` | FINANCIAL | wallet address 収集 closed Q → agent wallet → user wallet の on-chain 実 tx + 実 TG 報告 | CB-1（可視応答の上に載せる）+ wallet 残高 seed |
+| 2a | `13d-a` | FINANCIAL | **typed 入力の受領経路（2026-07-26 Dais 裁定: button では渡せない情報がある）**: manager が「walletアドレスを送ってください」と質問 → user が chat に**打ち込む** → server が受領 → EIP-55 checksum validate → `payout_destination` を `{address, status:"usable"}` へ更新 → 検証済み内容を引用した確認返信。不正 address は理由つきで可視 reject。bank 選択者には口座情報の同型 flow（ただし fiat rail 閉鎖中は収集だけ行い実行しない） | CB-1 deploy 済みであること |
+| 2b | `13d-b` | FINANCIAL | agent wallet → user wallet の on-chain 実 tx（spend-cap 内）+ §9.11 copy の実 TG 報告 | 13d-a の usable address + wallet 残高 seed |
 | 3 | `9d` | MARKETING | 7日分の URL/metric/翌日変更理由の実 ledger | 暦のみ（Day 1 記帳済 2026-07-26、毎日 10:00 JST に loop が自動追記） |
 | 4 | `11a` | PHYSICAL | 実 calendar/context から overdue care を **1件**実検知 | 現実世界（実測: 実履歴6件すべて 1.5x 未満で overdue 0件）。detector は実データで正常・誤検知0 |
 | 5 | `11b実測` | PHYSICAL | 実 category での実候補3件 + 生活圏 + 予約経路判定（実装は #1132 merged: anchors × category、京都床屋排除、usual-first） | 11a の care category |
