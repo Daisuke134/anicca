@@ -202,9 +202,13 @@ test("FIN-b: answering the question persists the chosen rail", async () => {
   const outcome = await handlePayoutCallback("payout:answer:wallet", {
     uid: "u1", chatId: "7", actorId: "7", nowMs: NOW,
     savePayoutAnswer: async (...args) => { writes.push(args); return payoutDestinationRecord("wallet", NOW); },
+    // 13d-a: a persisted wallet rail immediately asks for the address (covered in depth in
+    // payout-address-intake.test.js) — here it is stubbed so this test stays about the rail write.
+    askWalletAddress: async () => ({ asked: true }),
   });
   assert.deepEqual(outcome, {
     handled: true, ok: true, answer: "wallet", destination: payoutDestinationRecord("wallet", NOW),
+    addressAsk: { asked: true },
   });
   assert.deepEqual(writes, [["u1", "wallet", NOW]]);
 });

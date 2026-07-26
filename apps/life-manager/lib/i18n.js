@@ -39,6 +39,19 @@ const FINANCIAL_STRINGS = Object.freeze({
       // {rail} is filled with the registered rail's name. This copy is Dais-editable.
       alreadyRegistered: "送金先は登録済みです（{rail}）。変更したい時は「送金先を変更」と送ってください。",
     }),
+    // FIN-d (13d-a): the typed wallet-address intake. `ask` and `confirmed` are the 2026-07-26 ruling's
+    // copy (button では渡せない情報がある → the manager asks, the user TYPES). The reject/save-failed
+    // strings are new; like every FINANCIAL string here they are Dais-owned and Dais-editable — the
+    // implementation quotes them, it never invents copy inline. {short} = 0x6592…EDc7-style shortening.
+    payoutAddress: Object.freeze({
+      ask: "walletアドレスを1つ送ってください（Base, USDC）。例: 0x1234…abcd\nこれは収益の送金にだけ使います。",
+      confirmed: "✅ 登録しました: {short}（Base）\n利益が出た月はここへ送金します。変更は「送金先を変更」と送信。",
+      rejectedChecksum: "そのアドレスは checksum の検証に失敗しました（EIP-55）。walletからコピーし直して、もう一度送ってください。",
+      rejectedFormat: "walletアドレスとして読めませんでした。0xで始まる42文字のアドレスを、1つだけ送ってください。",
+      saveFailed: "保存を確認できませんでした。登録はまだ完了していません。少し待ってから、もう一度アドレスを送ってください。",
+      // The typed command that re-opens the intake — quoted verbatim in alreadyRegistered/confirmed above.
+      changeCommand: "送金先を変更",
+    }),
     monthly: Object.freeze({
       header: "💰 今月の収支報告です。",
       revenue: "・私のwalletでの収益: {revenue}",
