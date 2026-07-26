@@ -77,6 +77,107 @@ const DAILY_STRINGS = Object.freeze({
   }),
 });
 
+// 11d PHYSICAL 事後報告 — spec §9.11 PHYSICAL. **This copy is Dais-editable**（No-human-loop 例外3）:
+// edit the strings here and the implementation follows; the implementation never writes copy inline.
+//
+// Two deliberate departures from the §9.11 table, both in the direction of not lying:
+//   1. 「当日17:40にお電話します。」 is DROPPED. The same-day call is a separate 11d leg gated by
+//      lib/physical-aftercare.js (it needs a confirmed booking id AND a start time); promising a call
+//      this module does not schedule would be exactly the false success §9.5 forbids.
+//   2. 「オフィスから徒歩5分の」 is DROPPED. We do not measure walking distance anywhere in the
+//      pipeline, so stating one would be fabricated detail.
+// {emoji} is a placeholder because §9.11 only writes copy for dental (🦷) and haircut (💈); clinic is
+// a real 11a care type with no line in the bank, so its emoji is named here rather than invented at
+// the call site. `booked` is the 歯医者予約の事後報告 sentence; `bookedUsual` is the 散髪 sentence
+// (used whenever the chosen provider is the user's usual one — that is what 「いつものお店」 means).
+// `bookingFailed` / `bookingUncertain` have no §9.11 line at all: §9.5 demands 候補提示 + 正直報告
+// when booking is impossible, and an unverifiable submit must never be reported as a booking.
+const PHYSICAL_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    booked: "{emoji} 前回の{careLabel}から{sinceLabel}経っていたので、{providerName}を{slotLabel}で予約しました。カレンダーに入れてあります。\n（都合が悪ければ［変更する］）",
+    bookedUsual: "{emoji} そろそろ{sinceLabel}なので、いつものお店を{slotLabel}で取りました。カレンダーに入れてあります。\n（［変更する］）",
+    bookingFailed: "{emoji} そろそろ{careLabel}の時期なので予約を試しましたが、{reason}のため私では取れませんでした。候補はこちらです。\n{candidateLines}\nどれにするか教えてもらえれば、続きは私がやります。",
+    bookingUncertain: "{emoji} {providerName}を{slotLabel}で申し込みましたが、予約できたかの確認が取れませんでした。二重予約になるので送り直していません。お手数ですが{reservationUrl}でご確認ください。",
+    candidateLine: "・{publicName}（{routeLabel}）{officialUrl}",
+    careLabels: Object.freeze({ dental: "歯科検診", haircut: "散髪", clinic: "通院" }),
+    emoji: Object.freeze({ dental: "🦷", haircut: "💈", clinic: "🏥" }),
+    routeLabels: Object.freeze({
+      web: "ネット予約",
+      email: "メール予約",
+      walk_in: "予約不要",
+      phone_only: "電話のみ",
+      unavailable: "予約経路不明",
+    }),
+  }),
+});
+
+// Elapsed time in the units §9.11 speaks: 「4ヶ月」「6週間」「10日」. Deterministic thresholds, no
+// calendar arithmetic — the input is already a day count the detector measured.
+function elapsedLabel(days) {
+  const d = Math.max(0, Math.round(Number(days) || 0));
+  if (d >= 60) return `${Math.round(d / 30)}ヶ月`;
+  if (d >= 14) return `${Math.round(d / 7)}週間`;
+  return `${d}日`;
+}
+
+const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"];
+
+// 「木曜18:00」 from an ISO string, read in the string's OWN offset (the provider's local clock is the
+// clock the user will show up on). Returns "" for anything unparseable rather than a wrong time.
+function slotLabel(iso) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(iso || ""));
+  if (!match) return "";
+  const [, y, mo, d, hh, mm] = match;
+  const weekday = WEEKDAY_JA[new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d))).getUTCDay()];
+  return `${weekday}曜${hh}:${mm}`;
+}
+
+function fill(template, values) {
+  return String(template).replace(/\{(\w+)\}/g, (match, key) =>
+    (key in values ? String(values[key]) : match));
+}
+
+// The single renderer for every 11c booking outcome. `outcome` is the executor's own verdict, so a
+// possibly_booked can never accidentally render as a booking.
+function formatCareBookingReport(input = {}) {
+  const strings = PHYSICAL_STRINGS.ja;
+  const careType = String(input.careType || "");
+  const emoji = strings.emoji[careType] || "";
+  const careLabel = strings.careLabels[careType] || careType;
+
+  if (input.outcome === "booked") {
+    const usual = input.usualProvider === true;
+    return fill(usual ? strings.bookedUsual : strings.booked, {
+      emoji,
+      careLabel,
+      sinceLabel: elapsedLabel(input.sinceDays),
+      providerName: input.providerName || "",
+      slotLabel: slotLabel(input.slotIso),
+    });
+  }
+  if (input.outcome === "possibly_booked") {
+    return fill(strings.bookingUncertain, {
+      emoji,
+      providerName: input.providerName || "",
+      slotLabel: slotLabel(input.slotIso),
+      reservationUrl: input.reservationUrl || "",
+    });
+  }
+  const candidateLines = (Array.isArray(input.candidates) ? input.candidates : [])
+    .map((candidate) => fill(strings.candidateLine, {
+      publicName: candidate.public_name || "",
+      routeLabel: strings.routeLabels[candidate.reservation_route] || strings.routeLabels.unavailable,
+      officialUrl: candidate.official_url || "",
+    }))
+    .join("\n");
+  return fill(strings.bookingFailed, {
+    emoji,
+    careLabel,
+    reason: input.reason || "",
+    candidateLines,
+  });
+}
+
 function offsetMinutes(referenceIso) {
   if (/Z$/i.test(String(referenceIso || ""))) return 0;
   const match = /([+-])(\d{2}):(\d{2})$/.exec(String(referenceIso || ""));
@@ -123,4 +224,13 @@ function formatTravelAutofillMessage(report, nowMs = Date.now()) {
   return DAILY_STRINGS.ja.travelAutofill.replace(/\{(\w+)\}/g, (_match, key) => String(values[key]));
 }
 
-module.exports = { DAILY_STRINGS, DISCOVERY_STRINGS, FINANCIAL_STRINGS, formatTravelAutofillMessage };
+module.exports = {
+  DAILY_STRINGS,
+  DISCOVERY_STRINGS,
+  FINANCIAL_STRINGS,
+  PHYSICAL_STRINGS,
+  elapsedLabel,
+  formatCareBookingReport,
+  formatTravelAutofillMessage,
+  slotLabel,
+};

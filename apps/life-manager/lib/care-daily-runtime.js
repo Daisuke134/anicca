@@ -7,15 +7,25 @@
 // months of the user's OWN calendar history, and records what the detector saw. Abstention (no
 // candidates) is the honest common case and gets a row too. On a REAL detection the 11b chain runs
 // in-process — anchors → anchored candidate search → route evaluation — and the full result lands
-// on the same scan row. NO side effects here: no booking, no calendar writes, no messages of any
-// kind — 11c/11d own those. The product of this module is the self-executing detection+candidates
-// record.
+// on the same scan row.
+//
+// 11c/11d (booking + aftercare) hang off the END of that chain, BEHIND `LM_BOOKING_ENABLED=1`. With
+// the gate absent this module has exactly the side effects it always had: none — no browser session,
+// no Telegram, no calendar write. With the gate on, an ACTIONABLE detection (CADENCE-1: observe_only
+// detections never get this far) whose selected candidate has a web reservation route is booked by
+// care-booking-executor, and care-aftercare reports the outcome and records it under `chain.booking`.
+// The booking leg is isolated the way the chain leg is: it can never lose the detection row, which is
+// written and claimed before any of it runs.
 
 const { detectCalendarCare } = require("./care-detector-runtime.js");
 const { deriveAnchors } = require("./care-anchors.js");
 const { searchCareCandidates } = require("./care-candidate-search.js");
 const { evaluateCareCandidates } = require("./care-candidates.js");
 const { fetchCalendarHistory } = require("./events.js");
+const { executeBooking } = require("./care-booking-executor.js");
+const { runAftercare } = require("./care-aftercare.js");
+const { makeSteelCdpClient } = require("./steel-cdp-client.js");
+const { sendMessage } = require("./telegram.js");
 
 // The user's own words → the 11a care types (dental / haircut / clinic — the exact categories
 // care-candidate-search.js CATEGORY_KEYWORDS knows; no invented types). This is deterministic data
@@ -189,7 +199,76 @@ async function careUserOnce(u, nowMs, deps = {}) {
     // default). The detection row itself is safe either way: it landed before the chain ran.
     const persisted = await updateScanChain(u.uid, day, { chain }, supa, fetchImpl);
     if (!persisted) logError(`[care] chain-persist-failed uid=${u.uid} day=${day} category=${category}`);
-    return { status: "detected", category, selectedProviderId: evaluated.selected_provider_id };
+
+    // ── 11c/11d, behind the gate ────────────────────────────────────────────────────────────────
+    // The gate is checked BEFORE anything is constructed, so with LM_BOOKING_ENABLED absent not one
+    // steel call, Telegram send, or calendar write can occur — the 11a/11b behaviour is unchanged.
+    const bookingEnabled = deps.bookingEnabled !== undefined
+      ? Boolean(deps.bookingEnabled)
+      : process.env.LM_BOOKING_ENABLED === "1";
+    const selected = evaluated.candidates.find((c) => c.provider_id === evaluated.selected_provider_id) || null;
+    if (!bookingEnabled || !selected) {
+      return { status: "detected", category, selectedProviderId: evaluated.selected_provider_id };
+    }
+
+    const detection = actionable[0];
+    // Days since the last visit = the cadence plus how far past it we are. Both numbers are the
+    // detector's own arithmetic on real events; nothing here re-derives or rounds them differently.
+    const sinceDays = Number.isFinite(detection.personal_interval_days) && Number.isFinite(detection.overdue_days)
+      ? detection.personal_interval_days + detection.overdue_days
+      : detection.overdue_days;
+
+    let booking;
+    try {
+      booking = await executeBooking({
+        candidate: selected,
+        user: u,
+        // The slot POLICY (which datetime to request) is deliberately not invented here: picking a
+        // time needs the user's real availability, and a guessed 木曜18:00 would be a fabricated
+        // commitment. Absent an injected preference the executor honestly fails on the date field.
+        slotPreference: deps.slotPreference || null,
+        deps: { cdp: deps.cdp || makeSteelCdpClient() },
+      });
+    } catch (error) {
+      booking = {
+        schema_version: 1,
+        outcome: "honest_failure",
+        provider_id: selected.provider_id,
+        reservation_url: selected.reservation_url || null,
+        reason_code: "booking_executor_failed",
+        reason: `予約処理が途中で失敗しました（${String((error && error.message) || error)}）`,
+        submitted: false,
+      };
+    }
+
+    const aftercare = await runAftercare({
+      booking,
+      candidate: selected,
+      candidates: evaluated.candidates,
+      careType: category,
+      sinceDays,
+      user: u,
+      deps: {
+        sendMessage: deps.sendMessage || sendMessage,
+        telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+        calendar: deps.calendar,
+        logError,
+        // lm_care_scan_log's append-only trigger permits only chain / chain_error to be filled in
+        // after insert, so the booking rides INSIDE the chain jsonb — no new column, no migration.
+        recordBooking: (record) => updateScanChain(u.uid, day, { chain: { ...chain, booking: record } }, supa, fetchImpl),
+      },
+    }).catch((error) => {
+      logError(`[care] aftercare-failed uid=${u.uid} day=${day} ${String((error && error.message) || error)}`);
+      return { status: "failed" };
+    });
+
+    return {
+      status: "detected",
+      category,
+      selectedProviderId: evaluated.selected_provider_id,
+      bookingOutcome: booking.outcome,
+      aftercareStatus: aftercare.status,
+    };
   } catch (error) {
     const chainError = String((error && error.message) || error);
     const persisted = await updateScanChain(u.uid, day, { chain_error: chainError }, supa, fetchImpl).catch(() => false);
