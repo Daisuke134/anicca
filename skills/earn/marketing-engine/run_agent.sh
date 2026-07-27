@@ -25,7 +25,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 case "$TASK_CLASS" in
-  repeatable-agent|tool-agent|marketing-agent|high-value-agent) ;;
+  repeatable-agent|tool-agent|browser-lane-agent|marketing-agent|high-value-agent) ;;
   *) echo "run_agent.sh: invalid or missing --task-class" >&2; exit 2 ;;
 esac
 [ -n "$EVIDENCE_DIR" ] || { echo "run_agent.sh: missing --evidence-dir" >&2; exit 2; }
@@ -35,13 +35,27 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNNER="${AGENT_RUNNER_BIN:-$HOME/profitable-claude/skills/agent-runner/agent_runner.py}"
 SCHEMA="${SCHEMA:-$SCRIPT_DIR/schemas/loop_pass.schema.json}"
+
+# Read and vet the caller's prompt BEFORE anything else can fail, because the
+# FINAL CONTRACT appended below is ~180 chars: an empty caller prompt would
+# otherwise sail past the runner's own floor and buy a paid greeting. Loop
+# prompts are thousands of characters, so anything at this floor means the
+# caller built it wrong (unset variable, failed heredoc) and must not be paid
+# for. Floor matches agent_runner.MIN_PROMPT_CHARS on purpose.
+PROMPT_FILE="$(mktemp "${TMPDIR:-/tmp}/marketing-agent-prompt.XXXXXX")"
+trap 'rm -f "$PROMPT_FILE"' EXIT
+cat >"$PROMPT_FILE"
+MIN_PROMPT_CHARS="${RUN_AGENT_MIN_PROMPT_CHARS:-16}"
+PROMPT_CHARS="$(tr -d '[:space:]' <"$PROMPT_FILE" | wc -c | tr -d ' ')"
+if [ "$PROMPT_CHARS" -lt "$MIN_PROMPT_CHARS" ]; then
+  echo "run_agent.sh: refusing to spend on an empty/trivial prompt (${PROMPT_CHARS} chars < ${MIN_PROMPT_CHARS})" >&2
+  exit 2
+fi
+
 [ -f "$RUNNER" ] || { echo "run_agent.sh: runner not found: $RUNNER" >&2; exit 2; }
 [ -f "$SCHEMA" ] || { echo "run_agent.sh: schema not found: $SCHEMA" >&2; exit 2; }
 
 mkdir -p "$EVIDENCE_DIR"
-PROMPT_FILE="$(mktemp "${TMPDIR:-/tmp}/marketing-agent-prompt.XXXXXX")"
-trap 'rm -f "$PROMPT_FILE"' EXIT
-cat >"$PROMPT_FILE"
 cat >>"$PROMPT_FILE" <<'EOF'
 
 FINAL CONTRACT: after completing the bounded work, return only JSON that satisfies the supplied output schema. Never claim an action without concrete evidence in the evidence array.
