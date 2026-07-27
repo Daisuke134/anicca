@@ -16889,3 +16889,12 @@
 {"ts":1785171447,"wake_id":"00MS3GZKB43E094562370C4EF7","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1785171514,"wake_id":"00MS3H0ZWG9FC0019577014039","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1785171581,"wake_id":"00MS3H2FL3A71AFF075F824026","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171650,"wake_id":"00MS3H3WT8F33EB3E1D776462A","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171716,"wake_id":"00MS3H5CH64134D94A8F6B40A5","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171783,"wake_id":"00MS3H6RZB3C4E73F423B147D6","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171850,"wake_id":"00MS3H87RK261634B223C74F84","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171918,"wake_id":"00MS3H9O2TB3A806316F7D48AA","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785171985,"wake_id":"00MS3HB3OO7D0531C0939A4C6B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785172132,"wake_id":"00MS3HE90UCCB7108DEB164331","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785172361,"wake_id":"00MS3HJ5UV4D60B2F15DB5498B","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1785172493,"wake_id":"00MS3HLZQHE4DA7E1022E141F3","kind":"router_no_realized_action","sleep_s":120,"model":"auto","slot":null,"attemptsUsed":1,"profitable":false}
