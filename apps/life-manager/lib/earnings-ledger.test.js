@@ -157,6 +157,48 @@ test("the rollup sums the month exactly and keeps the transfer out of the net", 
   assert.equal(summary.counted_rows, 3);
 });
 
+test("an atomic pUSD balance stays exact through rollup and report rendering", () => {
+  const summary = rollUpMonth([], {
+    year: 2026,
+    month: 7,
+    timezone: "Asia/Tokyo",
+    walletAddress: WALLET,
+    balanceAtomic: "4422182",
+    balanceDecimals: 6,
+    explorerBaseUrl: "polygonscan.com",
+    currency: "USD",
+  });
+
+  assert.equal(summary.balance_minor, null);
+  assert.equal(summary.balance_atomic, "4422182");
+  assert.equal(summary.balance_decimals, 6);
+  assert.match(formatMonthlyReport(summary), /・私の残高: \$4\.422182/);
+  assert.match(formatMonthlyReport(summary), /polygonscan\.com\/address\/0x477E…62ad/);
+});
+
+test("the rollup accepts exactly one measured balance representation", () => {
+  const base = {
+    year: 2026, month: 7, timezone: "Asia/Tokyo", walletAddress: WALLET, currency: "USD",
+  };
+
+  assert.throws(() => rollUpMonth([], base), /balance/i);
+  assert.throws(() => rollUpMonth([], {
+    ...base, balanceMinor: 442, balanceAtomic: "4422182", balanceDecimals: 6,
+  }), /balance/i);
+  assert.throws(() => rollUpMonth([], {
+    ...base, balanceAtomic: "4422182",
+  }), /decimals/i);
+  assert.throws(() => rollUpMonth([], {
+    ...base, balanceAtomic: "4.422182", balanceDecimals: 6,
+  }), /atomic/i);
+  assert.throws(() => rollUpMonth([], {
+    ...base, balanceAtomic: "-1", balanceDecimals: 6,
+  }), /atomic|negative/i);
+  assert.throws(() => rollUpMonth([], {
+    ...base, balanceAtomic: "4422182", balanceDecimals: 37,
+  }), /decimals/i);
+});
+
 test("a losing month reports the loss — it is never clamped to zero the way the panel ratio clamps it", () => {
   let ledger = [];
   ledger = appendEarning(ledger, income({ entry_key: "a", amount_minor: 800 }));
