@@ -165,6 +165,8 @@ async function fetchCalendarHistory(uid, opts = {}) {
       id, summary: e.summary || "", location: e.location || null, startMs,
       endMs: Number.isFinite(endParsed) ? endParsed : null,
       start: e.start,
+      attendees: Array.isArray(e.attendees) ? e.attendees : [],
+      organizer: e.organizer && typeof e.organizer === "object" ? e.organizer : null,
     });
   }
   out.sort((a, b) => a.startMs - b.startMs);

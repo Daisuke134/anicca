@@ -1,0 +1,10 @@
+{"id":"R1-stable-overdue","personKey":"mother","label":"母","daysAgo":[150,120,90,60],"expected":{"count":1,"decision":"act","reason":null}}
+{"id":"R2-within-quarterly-cadence","personKey":"friend","label":"友人","daysAgo":[330,240,150,60],"expected":{"count":0}}
+{"id":"R3-no-history","personKey":"friend","label":"友人","daysAgo":[],"expected":{"count":0}}
+{"id":"R4-one-interaction","personKey":"friend","label":"友人","daysAgo":[200],"expected":{"count":0}}
+{"id":"R5-two-interactions","personKey":"friend","label":"友人","daysAgo":[300,100],"expected":{"count":0}}
+{"id":"R6-three-interactions-observe","personKey":"friend","label":"友人","daysAgo":[120,90,60],"expected":{"count":1,"decision":"observe","reason":"insufficient-gaps"}}
+{"id":"R7-burst-observe","personKey":"friend","label":"友人","daysAgo":[500,100,95,90,60],"expected":{"count":1,"decision":"observe","reason":"cadence-unstable"}}
+{"id":"R8-weekly-stable-overdue","personKey":"sibling","label":"きょうだい","daysAgo":[49,42,35,21],"expected":{"count":1,"decision":"act","reason":null}}
+{"id":"R9-exact-threshold-is-silent","personKey":"friend","label":"友人","daysAgo":[120,90,60,45],"expected":{"count":0}}
+{"id":"R10-no-fixed-cycle-imposed","personKey":"new","label":"知人","daysAgo":[365,10],"expected":{"count":0}}
