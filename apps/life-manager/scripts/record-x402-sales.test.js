@@ -11,6 +11,7 @@ const {
   TRANSFER_TOPIC,
   findLedgerPaths,
   processLedgers,
+  the402EvidenceClassifier,
 } = require("./record-x402-sales.js");
 
 const PAY_TO = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
@@ -97,6 +98,9 @@ test("an empty state directory is a healthy zero-row run with no RPC or write", 
     blocked_subcent: 0,
     recorded: 0,
     duplicates: 0,
+    sale_recorded: 0,
+    work_recorded: 0,
+    provenance_rejected: 0,
     transactions: [],
   });
   assert.equal(rpc.calls.length, 0);
@@ -128,6 +132,101 @@ test("a finalized exact USDC transfer is reverified and delegated once", async (
     "eth_getTransactionReceipt",
     "eth_getTransactionByHash",
   ]);
+});
+
+test("a proven The402 job is recorded through the work recipe, never the sale recipe", async () => {
+  const source = ledger([JSON.stringify(sale({
+    source_sale_id: "the402:settlement_42",
+    offer_id: "svc_research",
+  }))]);
+  const saleWrites = [];
+  const workWrites = [];
+  const result = await processLedgers({
+    ledgerPaths: [source.path],
+    selfWallets: [PAY_TO],
+    rpcCall: rpcFixture().rpcCall,
+    classifyRevenue: () => ({
+      kind: "work",
+      settlementId: "settlement_42",
+      jobId: "job_42",
+      postingId: "post_42",
+    }),
+    recordSale: async (row) => saleWrites.push(row),
+    recordWork: async (row, provenance) => {
+      workWrites.push({ row, provenance });
+      return { ok: true, duplicate: false, entry_key: `x402:${row.tx}:income` };
+    },
+  });
+
+  assert.equal(result.recorded, 1);
+  assert.equal(result.work_recorded, 1);
+  assert.equal(result.sale_recorded, 0);
+  assert.equal(result.provenance_rejected, 0);
+  assert.equal(saleWrites.length, 0);
+  assert.equal(workWrites.length, 1);
+  assert.equal(workWrites[0].provenance.jobId, "job_42");
+});
+
+test("ambiguous The402 provenance blocks both work and sale writes", async () => {
+  const source = ledger([JSON.stringify(sale())]);
+  let writes = 0;
+  const result = await processLedgers({
+    ledgerPaths: [source.path],
+    selfWallets: [PAY_TO],
+    rpcCall: rpcFixture().rpcCall,
+    classifyRevenue: () => ({ kind: "rejected", reason: "job_mismatch" }),
+    recordSale: async () => { writes += 1; },
+    recordWork: async () => { writes += 1; },
+  });
+
+  assert.equal(result.recorded, 0);
+  assert.equal(result.provenance_rejected, 1);
+  assert.equal(writes, 0);
+});
+
+test("The402 evidence is fetched once, bounded, and reused by the classifier", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "lm-the402-evidence-"));
+  const credentialsPath = join(dir, "credentials.json");
+  writeFileSync(credentialsPath, JSON.stringify({ api_key: "sk_test_agent_only_123" }));
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, apiKey: init.headers["X-API-Key"] });
+    if (url.endsWith("/v1/provider/earnings")) {
+      return Response.json({
+        recent_settlements: [{
+          settlement_id: "settlement_42",
+          status: "settled",
+          tx_hash: TX,
+          provider_amount_usd: "0.50",
+          service_id: "svc_research",
+        }],
+      });
+    }
+    return Response.json({ jobs: [] });
+  };
+  const classify = the402EvidenceClassifier({ fetchImpl, credentialsPath });
+  const row = sale({
+    source_sale_id: "the402:settlement_42",
+    offer_id: "svc_research",
+  });
+  const first = await classify(row);
+  const second = await classify(row);
+
+  assert.equal(first.kind, "sale");
+  assert.deepEqual(second, first);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((call) => call.apiKey === "sk_test_agent_only_123"));
+});
+
+test("The402 API or credential failure rejects provenance without throwing or writing", async () => {
+  const classify = the402EvidenceClassifier({
+    fetchImpl: async () => new Response("unavailable", { status: 503 }),
+    credentialsPath: join(tmpdir(), "missing-the402-credentials.json"),
+  });
+  assert.deepEqual(await classify(sale()), {
+    kind: "rejected",
+    reason: "provenance_unavailable",
+  });
 });
 
 test("malformed rows and fractional-cent sales never touch chain or database", async () => {

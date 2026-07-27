@@ -3,7 +3,12 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { saleLedgerEntry, recordX402Sale } = require("./x402-sale-ledger.js");
+const {
+  saleLedgerEntry,
+  workLedgerEntry,
+  recordX402Sale,
+  recordX402Work,
+} = require("./x402-sale-ledger.js");
 
 const PAY_TO = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 const PAYER = "0x1111111111111111111111111111111111111111";
@@ -81,6 +86,58 @@ test("the runtime validates first and delegates exactly one deterministic entry"
     duplicate: true,
     entry_key: `x402:${TX}:income`,
   });
+});
+
+test("a verified work settlement uses the shared tx dedup key and distinct work provenance", async () => {
+  const provenance = {
+    settlementId: "settlement_42",
+    jobId: "job_42",
+    postingId: "post_42",
+  };
+  const row = workLedgerEntry(sale({
+    source_sale_id: "the402:settlement_42",
+    offer_id: "svc_research",
+  }), boundary, provenance);
+
+  assert.equal(row.entry_key, `x402:${TX}:income`);
+  assert.equal(row.source, "x402_work");
+  assert.equal(row.meta.recipe, "work");
+  assert.equal(row.meta.job_id, "job_42");
+  assert.equal(row.meta.posting_id, "post_42");
+  assert.equal(row.meta.settlement_id, "settlement_42");
+
+  const calls = [];
+  const result = await recordX402Work(sale({
+    source_sale_id: "the402:settlement_42",
+    offer_id: "svc_research",
+  }), provenance, {
+    ...boundary,
+    recordEntry: async (entry) => {
+      calls.push(entry);
+      return { ok: true, duplicate: false, entry_key: entry.entry_key };
+    },
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].source, "x402_work");
+  assert.equal(result.entry_key, `x402:${TX}:income`);
+});
+
+test("work rows require The402 plus safe job provenance", () => {
+  assert.throws(() => workLedgerEntry(sale({ source: "x402-image" }), boundary, {
+    settlementId: "settlement_42",
+    jobId: "job_42",
+    postingId: "post_42",
+  }), /the402|work/i);
+  assert.throws(() => workLedgerEntry(sale(), boundary, {
+    settlementId: "../bad",
+    jobId: "job_42",
+    postingId: "post_42",
+  }), /settlement|provenance/i);
+  assert.throws(() => workLedgerEntry(sale(), boundary, {
+    settlementId: "settlement_42",
+    jobId: null,
+    postingId: null,
+  }), /job|posting|provenance/i);
 });
 
 test("source provenance, identifiers, and owned receiver are mandatory", () => {
