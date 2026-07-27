@@ -1,4 +1,4 @@
-# Crypto track handoff — Life Manager FINANCIAL organ（13c-PM完了・13c-SELL bridge稼働後）
+# Crypto track handoff — Life Manager FINANCIAL organ（13c-PM完了・13c-SELL/WORK bridge稼働後）
 
 宛先: crypto 側で「AI に wallet を持たせて稼がせる」を作っている agent。
 この文書1枚で、君の成果が Life Manager のどこに刺さるかが全部わかる。
@@ -17,15 +17,14 @@
 | agent wallet | `apps/life-manager/lib/agent-wallet.js` | **address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）**。鍵は mode 0600 の protected store、repo/log/git に 0 hit。残高 0 実測（2026-07-26）— **seed は未定、勝手に入金経路を作らない** |
 | 送金先（user 側） | `lm_users.payout_destination` | **実 DB row: `{"type":"wallet","status":"usable","address":"0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7","confirmed_at":"2026-07-26T11:27:08.300Z"}`** = `DAIS_CREATOR_ADDRESS`。EIP-55 検証済み。`isPayoutDestinationUsable()`（`lib/payout-question.js`）が true を返す唯一の形 |
 | 収集 UI | `lib/payout-question.js` + `lib/payout-address-intake.js` | closed Q → typed 入力 → 検証 → 引用確認。全部 CB-1 可視応答準拠 |
-| 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` + `lib/polymarket-cycle.js` + `lib/x402-sale-ledger.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup。**13c-PMのproduction実収支行は1件**: `financial_realized_loss=$3.15`。SELL bridgeはBase finalized receiptと正確なUSDC Transferを再検証し、self-payを拒否して自動記帳する。外部収入はまだ`$0.00` |
+| 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` + `lib/polymarket-cycle.js` + `lib/x402-sale-ledger.js` + `lib/the402-work-provenance.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup。**13c-PMのproduction実収支行は1件**: `financial_realized_loss=$3.15`。SELL/WORK bridgeはBase finalized receiptと正確なUSDC Transferを再検証し、The402 settlement+terminal jobが一意に揃う時だけ`x402_work`へ分離する。self-pay/曖昧provenanceは拒否。外部収入はまだ`$0.00` |
 
-## 次に刺す2点（13c-PM完了、13c-SELLは自動待機）
+## 次に刺す2点（13c-PM完了、13c-SELL/WORKは自動待機）
 
 ```
-13c-SELL: observer→settlement verifier→earnings-runtime bridgeは本番稼働済み
-          → colony外buyer累計$1の実着金待ち（非blocking、現在$0.00）
-13c-WORK: active cursor。同じexternal payer基準で外部依頼の実着金を記帳（SELLと別recipe）
-13d-b:  agent wallet → 0x6592…EDc7 への on-chain 実 tx（spend-cap 内）
+13c-SELL/WORK: observer→settlement verifier→provenance classifier→earnings-runtime bridgeは本番稼働済み
+          → colony外buyer/job累計$1の実着金待ち（非blocking、現在$0.00）
+13d-b:  active cursor。agent wallet → 登録済user walletへの on-chain 実 tx（spend-cap 内）
          + §9.11 逐語 copy での実 TG 報告
          前提: wallet に残高（君の収益 or 承認された seed）
 ```
@@ -37,6 +36,11 @@ production row 1件、再実行duplicate、月次損失報告、Polygon残高の
 13c-SELL bridge evidence:
 `docs/evidence/agent-economy/2026-07-27-x402-ledger-bridge.json`。
 launchd実発火exit 0、候補/verified/production rowはすべて0。これは接続の生存証明であり外部売上証明ではない。
+
+13c-WORK bridge evidence:
+`docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`。
+実入札2件は未採用。acquisition/provider/worker/settlement/accounting loopはliveだが、jobs/threads/settled/work rowはすべて0。
+これは自動仕事・分類接続の生存証明であり、仕事成功や外部収益の証明ではない。
 
 ## 統合の約束事（破ると reject される）
 
