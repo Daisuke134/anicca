@@ -1998,6 +1998,32 @@ ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなる
 
 **優先順位の根拠**: note は同世代比較で最も反応が取れている面（§21.35/§21.37）であり、そこが ambiguous で止まるのが最大の損失。devto は毎日1面を確実に落としており、原因が frontmatter という**局所的で直しやすい**箇所。x-article は2面ぶん。zenn/x-post は前段で止まっているため、まず何処で止まったかの特定が要る。
 
+### 21.47 note/ja の public asset readback を復旧（実測 17:18）
+
+**#1 は DONE。** `daily-2026-07-27` の既存公開ID `nccfebe2c85f6` を作り直さず、同一URLの強い receipt を復元した。
+
+根因はasset欠落ではなかった。07-27のheadlineは透明背景の縦長PNG（277×682）。Noteはこれを1280×670へ中央cropし、palette PNGへ変換していた。旧検証器はalphaを無視して透明部分の非表示RGBまでdHashへ入れたため、実際には同じ画像を横距離15として拒否した。表示どおり白背景へalpha合成すると横2・縦2になり、07-26の正常なcrop proofと同じ変換契約で証明できた。
+
+修正は2境界:
+
+1. `center_crop_content_proof` だけを表示alpha正規化する。通常assetの既存descriptor/hash契約は変えない。
+2. frozen `note/ja` の `public-asset-readback-failed` をbounded recoveryへ追加する。完全なlive receiptだけがstateを戻せ、弱い証拠や別errorは拒否する。
+
+実測:
+
+| Gate | Result |
+|---|---|
+| TDD RED | 透明部分のhidden RGBが異なるNote crop fixtureを旧実装が拒否 |
+| Focused | publication remote/resume 116 PASS |
+| Full Writer regression | `tests/art` 289 PASS |
+| Public readback | content / eyecatch / body media / identity 全て `true` |
+| Asset proof | eyecatch=`visual-center-crop-dhash` 横2・縦2、body=`visual-dhash` |
+| Receipt | state=`live`、ledger current-run live row=1、`reality_gate=PASS` |
+| Duplicate guard | `ai.anicca.article-resume` 実発火65回目 exit 0。公開一覧6件、先頭key、公開時刻が前後不変 |
+| Production commits | `8a00403` + `0c7ed3f`、`deploy/gig-speedy-reply-cutover` へpush済み |
+
+次は §22.6 #2 の devto/en frontmatter欠落だけを扱う。#6 の画像URL欠陥は、今回のNote根因とは別クラスだったため順序どおり保留する。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2224,7 +2250,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | # | 作業 | 損失順の理由 | done 条件 |
 |---:|---|---|---|
-| 1 | note/ja の `public-asset-readback-failed` | 現時点で最も反応が取れる面。暫定17倍には §21.38 のproducer世代混在 caveatがあるが、優先順位は変わらない | 同一runのnote public URLを再読し、期待identity、本文、全assetが一致。receipt=`live`。再実行で投稿0増分 |
+| 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
 | 2 | devto/en の frontmatter 欠落 | 毎日1面を確実に落とす。publication-state初期化後の局所欠陥 | canonical EN draftが初期化後もtitle/tags/canonical frontmatterを保持し、live URLのreadback PASS |
 | 3 | x-article ja/en の identity 不一致 | 2面ぶんを同時に失う | staged editorとpublic articleのtitle/body hashが期待artifactと一致。別記事ならpublish前quarantine。ja/en exact2 live |
 | 4 | zenn / x-post が `intent` のまま | 前段停止で到達すらしておらず、停止点が未知 | step traceで最初の未到達edgeを特定して修復。両面がreceipt+readback terminalへ到達 |
