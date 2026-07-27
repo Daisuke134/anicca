@@ -317,7 +317,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
 | 5 | 13c-SELL / 13c-WORK（AE-X4） | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | **partial / machinery live** — SELL/WORKを同じfinalized外部着金から別recipeへfail-closed分類して記帳するbridgeは本番稼働。実入札2件は未採用、外部実着金は`$0.00`で非blocking待機 |
 | 6 | 13d-b | Life Manager agent wallet→user walletの実送金 | reserve/spend-cap PASS、実tx、実TG receipt | **partial / machinery live** — PR #1188。verified profit・Base残高−`$35` reserve・transaction capの最小値だけを1 cent単位で送る。deterministic EIP-3009 nonce、専用loopback facilitator、Base receiptのexact USDC Transfer、tenant UID、記帳→TG順をfail-closed化。production launchd 2 run / exit 0、残高0・ledger 0で正直な`no_verified_surplus`、鍵/facilitator/tx/TGは未到達。実tx gateは収益またはspec承認seed着金後。evidence=`docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json` |
-| 7 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | **active cursor** |
+| 7 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | **active — daily 1/7、weekly 1/1、panel差0**。PR #1190/#1191/#1192。production TG message `297`/`298`、JSONB-stable hash 2/2、authenticated panelの整数7項目+hash/provider id差0。5分launchdはexit 0。残りは別日daily 6件の自動蓄積。evidence=`docs/evidence/agent-economy/2026-07-27-report-1-financial-rollup.json` |
 | 8 | SURVIVE-1 | agentが自分のcomputeまたはshelterを収益から払う | provider receipt + ledger expense + service継続 | pending、trailing surplus後 |
 | 9 | SCALE-1 | 黒字SELL/WORK recipeを増幅し月$100 net | 30日closed ledger、self-funded率≥100% | pending |
 | 10 | CHILD-1 | 独立wallet/runtimeのchildを黒字余剰でspawn | key/state非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
@@ -762,6 +762,10 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。H3/H5は§0.4.6の後に再開する。
 
 **Current cursor**: **REPORT-1（daily/weekly TGとpanelを同じledger rollupへ接続）**。
+共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
+provider message idは`297`/`298`、DB JSONB再読込後のcanonical hashは2/2一致。Railway production `life-call`はmain `09d060e94`をSUCCESSで稼働し、
+一時認証sessionで取得したpanelはdaily/weeklyともreceiptの整数7項目・hash・provider id・状態が差0だった。daily cadenceは1/7、weeklyは1/1で、
+REPORT-1をdoneとは書かない。残る別日daily 6件は既存launchdが自動蓄積する。
 13c-SELL/WORKのobserver→finalized settlement verifier→Life Manager earnings bridgeは5分周期で本番稼働し、
 colony外buyer/jobを待つ。The402は公開案件取得→入札→durable inbox→自動納品まで生き、仕事settlementとterminal jobを一意に突合できた時だけ`x402_work`へ記帳する。
 13d-bはverified surplus・`$35` reserve・transaction capを同時に守るBase USDC engineと5分launchdを本番へ置き、残高0/ledger 0で`no_verified_surplus` exit 0を実測した。
@@ -774,6 +778,7 @@ colony外buyer/jobを待つ。The402は公開案件取得→入札→durable inb
 
 | # | ID | organ | 残っている実物 | 状態 |
 |---|---|---|---|---|
+| 0 | `REPORT-1` | FINANCIAL | 別日daily receiptをあと6件蓄積 | **自動運転中**: daily 1/7、weekly 1/1、TG↔authenticated panel差0。`ai.anicca.life-manager-financial-report`が5分周期で稼働。手動forceで同一periodを水増ししない |
 | 1 | `11c+11d` | PHYSICAL | steel 予約 executor + §9.11 事後報告 | **実装 merged（#1156, 2026-07-27）**: adversary review 8🔴11🟡 全修理後に merge（cross-day 二重予約 guard・session leak fix・否定文誤読 fix・PII 非保存・load 待ち・75s deadline・U8 maxlength honest_failure 等）。1062/1062 + eval 7/7 100%。**gate `LM_BOOKING_ENABLED` は未設定 = off を実測確認** — 実予約の実弾（row の実測 leg）は actionable 検知が立った時に gate on で実施 |
 | 2 | `10e` | DEV | 無人 merge/deploy guard 機械 | **機械 merged（#1158, 2026-07-27）**: 8-stage pipeline、adversary review 5🔴8🟡 全修理（guard 自身+review-cmd の self-deny・review を test 実行より先・fail-open 封鎖・GraphQL rollback+revert-PR fallback・台帳 row 連鎖 hash・lockfile 排他・admin TG alert）。61/61 + suite exit 0。実 PR #1092/#1094 で live 検証（merge せず）。guard 自身の変更は loop で merge 不能（意図した設計、human PR 経由）。残る実測 leg = 実 error PR 1本の無人実証（10f 後） |
 | 3 | `10f` | DEV | self-build loop 復活 | **機械 merged + 点火済み（#1163, 2026-07-27 02:4x）**: review 21 findings 全修理（label 分離で producer 共存・merge-aware kill・reviewer の prompt-injection fence + 決定論 screen・最小 env/tool-less reviewer・protectedPaths/expect-head 実配線 等）。78/78 + suite 343 exit 0。launchd 実測: `ai.anicca.life-manager-selfbuild`（consumer, 04:10 JST）と `ai.anicca.life-manager-dev`（producer, 復活）両方 loaded。**残る実測 leg = 7日台帳の自動蓄積**（毎朝の ledger row が証拠。plist load は証拠ではない — row が証拠） |
@@ -783,7 +788,7 @@ colony外buyer/jobを待つ。The402は公開案件取得→入札→durable inb
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-active cursorは`REPORT-1`（daily/weekly TG + panel共通rollup）。送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
+active cursorは`REPORT-1`（daily 1/7、weekly 1/1、TG + authenticated panel差0、残りdaily 6件は自動蓄積）。送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
 

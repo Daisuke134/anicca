@@ -1,4 +1,4 @@
-# Crypto track handoff — Life Manager FINANCIAL organ（13d-b engine本番稼働後）
+# Crypto track handoff — Life Manager FINANCIAL organ（REPORT-1初回実receipt後）
 
 宛先: crypto 側で「AI に wallet を持たせて稼がせる」を作っている agent。
 この文書1枚で、君の成果が Life Manager のどこに刺さるかが全部わかる。
@@ -19,6 +19,7 @@
 | 収集 UI | `lib/payout-question.js` + `lib/payout-address-intake.js` | closed Q → typed 入力 → 検証 → 引用確認。全部 CB-1 可視応答準拠 |
 | 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` + `lib/polymarket-cycle.js` + `lib/x402-sale-ledger.js` + `lib/the402-work-provenance.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup。**13c-PMのproduction実収支行は1件**: `financial_realized_loss=$3.15`。SELL/WORK bridgeはBase finalized receiptと正確なUSDC Transferを再検証し、The402 settlement+terminal jobが一意に揃う時だけ`x402_work`へ分離する。self-pay/曖昧provenanceは拒否。外部収入はまだ`$0.00` |
 | user payout | `lib/payout-policy.js` + `lib/base-usdc-payout.js` + `lib/payout-runtime.js` + `scripts/run-agent-payout.js` | **PR #1188 / production launchd稼働**。verified profit・Base残高−`$35` reserve・transaction capの最小値だけを送る。deterministic EIP-3009 nonce、専用mainnet facilitator、exact receipt、tenant UID、記帳→TG順。production 2 run / exit 0、現残高0で`no_verified_surplus`、tx/TGは未実証 |
+| 共通収支report | `lib/financial-report-snapshot.js` + `lib/financial-report-runtime.js` + `lib/panel-api.js` + `lib/panel-presentation.js` | **PR #1190/#1191/#1192 / production launchd稼働**。daily/weekly TGとauthenticated panelは同じreceipt snapshotを表示。初回はdaily 1/7、weekly 1/1、数値差0、JSONB-stable hash 2/2。残るdaily 6件は自動蓄積 |
 
 ## 次に刺す2点（13d-b engine完了、実着金/実送金は自動待機）
 
@@ -26,7 +27,7 @@
 13c-SELL/WORK: observer→settlement verifier→provenance classifier→earnings-runtime bridgeは本番稼働済み
           → colony外buyer/job累計$1の実着金待ち（非blocking、現在$0.00）
 13d-b:  engineは本番稼働。実tx + §9.11 TGはwalletが$35 reserveを超えた最初のverified surplusで自動実証
-REPORT-1: active cursor。daily/weekly TGとpanelを同じledger rollupへ接続し、停止理由と分配可能額を同じ数字にする
+REPORT-1: active cursor。共通rollup・実TG・authenticated panel差0までlive。daily 1/7のため、別日daily 6件を既存launchdで自動蓄積
 ```
 
 13c-PM evidence:
@@ -46,6 +47,11 @@ launchd実発火exit 0、候補/verified/production rowはすべて0。これは
 `docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json`。
 production launchd 2 run / exit 0、USDC 0・ledger 0の独立readback、`no_verified_surplus`、facilitator未起動を記録。
 これは送金機械とゼロ状態の生存証明であり、実tx・実TG receiptの証明ではない。
+
+REPORT-1 evidence:
+`docs/evidence/agent-economy/2026-07-27-report-1-financial-rollup.json`。
+production daily/weekly TG receipt、PostgreSQL JSONB再読込後のcanonical hash、Railway deployment commit、authenticated panel差0を記録。
+weeklyは1/1、dailyは1/7なのでREPORT-1はactiveのまま。外部収入`$0.00`・Base USDC残高0も隠さない。
 
 ## 統合の約束事（破ると reject される）
 
