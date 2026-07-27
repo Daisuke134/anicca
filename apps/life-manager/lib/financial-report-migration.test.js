@@ -39,3 +39,13 @@ test("REPORT-1 receipts are RLS-protected and only service_role can mutate them"
   assert.match(SQL, /CREATE POLICY lm_financial_report_service_insert/i);
   assert.match(SQL, /CREATE POLICY lm_financial_report_service_update/i);
 });
+
+test("REPORT-1 aggregates high-volume API cost inside Postgres with tenant and half-open bounds", () => {
+  assert.match(SQL, /CREATE OR REPLACE FUNCTION public\.lm_financial_cost_totals/i);
+  assert.match(SQL, /WHERE lm_api_cost\.uid = p_uid/i);
+  assert.match(SQL, /ts >= p_period_start AND ts < p_period_end/i);
+  assert.match(SQL, /COALESCE\(sum\(est_usd\)/i);
+  assert.match(SQL, /SECURITY DEFINER\s+SET search_path = public, pg_temp/i);
+  assert.match(SQL, /REVOKE ALL ON FUNCTION public\.lm_financial_cost_totals\(text, timestamptz, timestamptz\)/i);
+  assert.match(SQL, /GRANT EXECUTE ON FUNCTION public\.lm_financial_cost_totals\(text, timestamptz, timestamptz\)\s+TO service_role/i);
+});

@@ -2,7 +2,11 @@
 
 const { createHash } = require("node:crypto");
 
-const { buildFinancialSnapshot, periodBounds } = require("./financial-report-snapshot.js");
+const {
+  buildFinancialSnapshot,
+  periodBounds,
+  usdMicrosFromDecimal,
+} = require("./financial-report-snapshot.js");
 const { FINANCIAL_STRINGS } = require("./i18n.js");
 const { readWalletLedger } = require("./payout-runtime.js");
 const { sendMessage } = require("./telegram.js");
@@ -81,6 +85,47 @@ async function readCostLedger(uid, opts = {}) {
     if (page.length < PAGE_SIZE) break;
   }
   return rows;
+}
+
+async function readFinancialCostTotals(uid, period, opts = {}) {
+  const tenantUid = String(uid == null ? "" : uid).trim();
+  if (!tenantUid) throw new Error("financial report tenant uid is required");
+  const periodStart = String(period && period.period_start || "");
+  const periodEnd = String(period && period.period_end || "");
+  if (!Number.isFinite(Date.parse(periodStart))
+    || !Number.isFinite(Date.parse(periodEnd))
+    || Date.parse(periodStart) >= Date.parse(periodEnd)) {
+    throw new Error("financial report cost period is invalid");
+  }
+  const { supaUrl, supaKey, fetchImpl } = credentials(opts);
+  const rows = await jsonRows(await fetchImpl(
+    `${supaUrl}/rest/v1/rpc/lm_financial_cost_totals`,
+    {
+      method: "POST",
+      headers: headers(supaKey),
+      body: JSON.stringify({
+        p_uid: tenantUid,
+        p_period_start: periodStart,
+        p_period_end: periodEnd,
+      }),
+    },
+  ), "financial report cost totals read");
+  if (rows.length !== 1) throw new Error("financial report cost totals returned an invalid row count");
+  const row = rows[0] || {};
+  const result = {
+    period_est_usd: String(row.period_est_usd == null ? "" : row.period_est_usd),
+    all_time_est_usd: String(row.all_time_est_usd == null ? "" : row.all_time_est_usd),
+    period_rows: Number(row.period_rows),
+    all_time_rows: Number(row.all_time_rows),
+  };
+  // Reuse the same conservative decimal parser that the pure snapshot uses.
+  usdMicrosFromDecimal(result.period_est_usd);
+  usdMicrosFromDecimal(result.all_time_est_usd);
+  if (!Number.isSafeInteger(result.period_rows) || result.period_rows < 0
+    || !Number.isSafeInteger(result.all_time_rows) || result.all_time_rows < 0) {
+    throw new Error("financial report cost totals returned invalid counts");
+  }
+  return result;
 }
 
 function receiptQuery(uid, kind, periodKey) {
@@ -297,13 +342,31 @@ async function runFinancialReport(request = {}, deps = {}) {
   }
 
   const readLedger = deps.readLedger || ((wallet) => readWalletLedger(wallet, deps));
-  const readCosts = deps.readCosts || ((targetUid) => readCostLedger(targetUid, deps));
   if (typeof deps.readBalance !== "function") {
     throw new Error("financial report runtime needs a measured Base balance reader");
   }
-  const [ledgerRows, costRows, onchainUsdcAtomic] = await Promise.all([
+  const [ledgerRows, costs, onchainUsdcAtomic] = await Promise.all([
     readLedger(tenant.agent_wallet_address),
-    readCosts(uid),
+    deps.readCosts
+      ? Promise.resolve(deps.readCosts(uid)).then((rows) => ({
+        periodRows: rows,
+        allTimeRows: rows,
+      }))
+      : readFinancialCostTotals(uid, bounds, deps).then((totals) => {
+        const aggregateAt = new Date(Date.parse(bounds.period_start) + 1).toISOString();
+        return {
+          periodRows: [{
+            ts: aggregateAt,
+            kind: "period_aggregate",
+            est_usd: totals.period_est_usd,
+          }],
+          allTimeRows: [{
+            ts: aggregateAt,
+            kind: "all_time_aggregate",
+            est_usd: totals.all_time_est_usd,
+          }],
+        };
+      }),
     deps.readBalance(tenant.agent_wallet_address),
   ]);
   const snapshot = buildFinancialSnapshot({
@@ -313,9 +376,9 @@ async function runFinancialReport(request = {}, deps = {}) {
     walletAddress: tenant.agent_wallet_address,
     onchainUsdcAtomic,
     earningsRows: ledgerRows,
-    costRows,
+    costRows: costs.periodRows,
     allTimeEarningsRows: ledgerRows,
-    allTimeCostRows: costRows,
+    allTimeCostRows: costs.allTimeRows,
     reserveAtomic: request.reserveAtomic,
   });
   const hash = snapshotHash(snapshot);
@@ -373,6 +436,7 @@ module.exports = {
   MAX_COST_ROWS,
   readFinancialTenant,
   readCostLedger,
+  readFinancialCostTotals,
   readFinancialReceipt,
   claimFinancialReceipt,
   markFinancialReceiptSent,
