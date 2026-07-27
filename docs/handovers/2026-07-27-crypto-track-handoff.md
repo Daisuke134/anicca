@@ -24,8 +24,9 @@
 ## 次に刺す2点（13d-b engine完了、実着金/実送金は自動待機）
 
 ```
-13c-SELL/WORK: observer→settlement verifier→provenance classifier→earnings-runtime bridgeは本番稼働済み
-          → colony外buyer/job累計$1の実着金待ち（非blocking、現在$0.00）
+13c-SELL-INGRESS: Railway sellerはmainnet自己支払$0.008を商品HTTP 200 + exact receiptまで実証
+          → 現行observerの入力外なので、route/price/payTo/tx candidateを既存verifierへ接続するのが次
+13c-SELL/WORK: 接続後、colony外buyer/job累計$1の実着金待ち（self-payは0、現在$0.00）
 13d-b:  engineは本番稼働。実tx + §9.11 TGはwalletが$35 reserveを超えた最初のverified surplusで自動実証
 REPORT-1: active cursor。共通rollup・実TG・authenticated panel差0までlive。daily 1/7のため、別日daily 6件を既存launchdで自動蓄積
 ```
@@ -37,6 +38,11 @@ production row 1件、再実行duplicate、月次損失報告、Polygon残高の
 13c-SELL bridge evidence:
 `docs/evidence/agent-economy/2026-07-27-x402-ledger-bridge.json`。
 launchd実発火exit 0、候補/verified/production rowはすべて0。これは接続の生存証明であり外部売上証明ではない。
+
+Railway x402 live-payment evidence:
+`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json`。
+8/8 paid routeの402、Franklin 2自己支払`$0.008`、商品HTTP 200、Base exact Transferを実証。self-payなので収益0。
+後続4 loopも実発火しcandidate/ledger 0を確認したため、次はRailway sale ingressの接続であり外部buyer待ちではない。
 
 13c-WORK bridge evidence:
 `docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`。
