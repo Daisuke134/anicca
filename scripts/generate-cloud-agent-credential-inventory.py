@@ -28,7 +28,7 @@ DEFAULT_OBJECTS = REPO / "docs" / "reference" / "cloud-agent-credential-objects.
 APPROVED_REVIEW_BASIS = "iteration_20_whole_change_approved"
 PENDING_REVIEW_BASIS = "independent_architecture_review_pending"
 PENDING_INDEPENDENT_REVIEW_BASIS = "pending_independent_credential_rebind_review"
-APPROVED_INDEPENDENT_REVIEW_BASIS = "todo2_334_rebind_independent_review_approved_v1"
+APPROVED_INDEPENDENT_REVIEW_BASIS = "todo2_392_rebind_independent_review_approved_v1"
 
 EDGE_FIELDS = (
     "loop_dependency_edge_id",
