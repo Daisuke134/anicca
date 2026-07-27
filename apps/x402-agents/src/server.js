@@ -9,6 +9,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { prisma } from './lib/prisma.js';
+import { listSettlementRecords, recordSettlement } from './lib/settlement-records.js';
 
 import buddhistCounselRouter from './routes/buddhistCounsel.js';
 import contextCompressorRouter from './routes/contextCompressor.js';
@@ -56,6 +57,18 @@ export async function createApp() {
     }
   });
 
+  // Public, read-only settlement feed. It contains only on-chain/public receipt
+  // fields and lets the independent Life Manager verifier re-check finalized
+  // Base receipts before any revenue is recorded.
+  app.get('/settlements', async (req, res) => {
+    try {
+      const settlements = await listSettlementRecords({ limit: Number(req.query.limit) || 100 });
+      return res.json({ settlements });
+    } catch {
+      return res.status(503).json({ error: 'Settlement feed unavailable' });
+    }
+  });
+
   // x402 initialization (fail-closed)
   let isX402Ready = false;
   const PAY_TO = process.env.X402_WALLET_ADDRESS;
@@ -76,6 +89,9 @@ export async function createApp() {
         : new HTTPFacilitatorClient({ url: 'https://x402.org/facilitator' });
       const server = new x402ResourceServer(facilitatorClient);
       server.register(network, new ExactEvmScheme());
+      server.onAfterSettle(async context => {
+        await recordSettlement(context);
+      });
 
       try {
         await server.initialize();

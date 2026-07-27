@@ -15,6 +15,7 @@ vi.mock('../lib/prisma.js', () => ({
     $disconnect: vi.fn().mockResolvedValue(undefined),
     agentAuditLog: {
       create: vi.fn().mockResolvedValue({ id: 'test-id' }),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   },
 }));
@@ -45,6 +46,7 @@ vi.mock('@x402/core/server', () => ({
   x402ResourceServer: vi.fn().mockImplementation(() => ({
     register: vi.fn(),
     initialize: vi.fn().mockResolvedValue(undefined),
+    onAfterSettle: vi.fn(),
   })),
   HTTPFacilitatorClient: vi.fn(),
 }));
@@ -92,6 +94,36 @@ describe('x402-agents server', () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(503);
     expect(res.body.status).toBe('error');
+  });
+
+  it('GET /settlements exposes a bounded public feed', async () => {
+    prisma.agentAuditLog.findMany.mockResolvedValueOnce([{
+      id: '11111111-1111-1111-1111-111111111111',
+      createdAt: new Date('2026-07-27T22:31:00.000Z'),
+      requestPayload: {
+        route: '/context-compressor',
+        method: 'POST',
+        scheme: 'exact',
+        network: 'eip155:8453',
+        asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        amount_atomic: '8000',
+        pay_to: '0x6592eb8ef820abc092e8c3474fb2042dffccedc7',
+      },
+      responsePayload: {
+        success: true,
+        transaction: '0xcf095a8703837e2a07026c97f009ed874a0e8e7759a282b4d24c4884151092f0',
+        payer: '0xe7747fd899d8987821bb4cb3d6adf22565f87ce9',
+      },
+    }]);
+    const { createApp } = await import('../server.js');
+    const app = await createApp();
+
+    const res = await request(app).get('/settlements?limit=500');
+
+    expect(res.status).toBe(200);
+    expect(res.body.settlements).toHaveLength(1);
+    expect(res.body.settlements[0].transaction).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(prisma.agentAuditLog.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
   });
 
   it('has trust proxy enabled', async () => {
