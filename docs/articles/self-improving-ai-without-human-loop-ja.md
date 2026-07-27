@@ -108,7 +108,67 @@ memoryへ残せば、AIは「自分なら考えそうな候補」を生成でき
 評価をholdoutへ分ける。権限を局所化する。これらは重みを一つも変えなくても、
 システム全体の成功率を上げます。
 
-## 4. 最新事例が示す「できること」と「残っている人間」
+## 4. Loop、Graph、Eval、Observabilityはどうつながるのか
+
+この四つは競合する流行語ではありません。自己改善システムの異なる器官です。
+
+| 概念 | 役割 | 身体にたとえると |
+|---|---|---|
+| Loop Engineering | 観測→実行→検証→状態更新を反復する | 心拍 |
+| Graph Engineering | 複数loopの順序、分岐、合流、vetoを決める | 神経回路 |
+| Eval Engineering | 変更後が本当に良いかを採点する | 制御信号 |
+| Agent Observability | Agentが何をして、何が起きたかを残す | 感覚器 |
+
+[Addy OsmaniのLoop Engineering](https://addyosmani.com/blog/loop-engineering/)は、
+人間が毎回Agentをpromptする代わりに、Agentをpromptするsystem自体を設計する
+ことだと説明します。
+
+しかし、一つのloopだけでは、インフラ障害、code regression、product feedback、
+safety eventを正しく処理し分けられません。そこでGraphが必要になります。
+[LangChainの整理](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph)
+では、nodeが仕事、edgeが次の遷移、全体がstate machineです。LoopはGraphに
+置き換わるのではなく、cycleを一つ持つ単純なGraphです。
+
+```text
+signal
+  -> classify
+     -> known outage: self-heal loop
+     -> code failure: reproduce -> eval -> fix -> canary
+     -> product idea: hypothesis -> experiment
+     -> safety event: immutable safety path
+```
+
+Observabilityは、このGraphへ事実を供給します。Logはevent、Metricは傾向、
+Traceはrun全体の経路、Spanは一つのtoolやLLM call、Receiptは外部世界で副作用が
+本当に成立したことを表します。
+
+[OpenTelemetry](https://opentelemetry.io/blog/2025/ai-agent-observability/)が
+指摘するように、非決定的なAgentではtelemetryはdebugだけでなくevalへのfeedback
+inputになります。ただし観測だけでは改善しません。
+
+```text
+execute
+-> trace
+-> failure cluster
+-> evidence issue
+-> regression eval
+-> isolated candidate
+-> baseline vs candidate
+-> holdout + canary
+-> promote or rollback
+```
+
+[LangChainのAutomated Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering)
+は、repoとtraceを読み、instruction、Docker environment、verifierからなる再現可能な
+evalを作る流れを示しています。ここで重要なのは、公開されたSkill自身も現在は
+user interviewとiterative approvalを推奨しており、価値関数まで完全無人で作れると
+は主張していないことです。
+
+完全な設計と指定された日本語事例の比較は、
+[Loop / Graph / Eval / Observability Engineering](../research/2026-07-28-loop-graph-eval-observability.md)
+へ保存しました。
+
+## 5. 最新事例が示す「できること」と「残っている人間」
 
 ### OpenAI: Agent-firstなソフトウェア開発
 
@@ -152,7 +212,7 @@ Polyglotを14.2%から30.7%へ改善しました。
 どちらも「自由な自己書換え」の証拠ではありません。編集対象を限定し、sandboxで
 候補を比較し、悪い変更を捨てられるようにした証拠です。
 
-## 5. 最大の問題は、賢さではなく採点方法である
+## 6. 最大の問題は、賢さではなく採点方法である
 
 自己改善AIは、与えられた評価を改善します。それが人間の本当の目的と一致して
 いるかは、別問題です。
@@ -185,7 +245,7 @@ Polyglotを14.2%から30.7%へ改善しました。
 構築できるverifierはすべて人間意図のproxyです。だから評価器を一つにせず、
 異なるfailure modeを持つ複数の証拠を重ねます。
 
-## 6. No-Human-Loopを実装する9層
+## 7. No-Human-Loopを実装する9層
 
 実装は、次の順番が安定します。
 
@@ -226,7 +286,7 @@ retry、routingはcandidate branch内だけで変更できます。
 
 これにより、承認待ちをなくしても、暴走時の半径を固定できます。
 
-## 7. 私たちのLife Managerで実測した現在地
+## 8. 私たちのLife Managerで実測した現在地
 
 理論を理解する最短の方法は、すでに動いているシステムへ適用することです。
 そこで、AniccaのWriter loopを実測しました。
@@ -245,6 +305,10 @@ experimentはなく、quality metricsもまだ1日分です。
 
 | すでにあるもの | 意味 |
 |---|---|
+| 複数のscheduler loop | wake、travel、ask、onboarding、discoveryを自動実行 |
+| single-writer制御 | RailwayとOpenClaw cronの二重実行を防ぐ |
+| tenant failure isolation | 一人の失敗で全利用者のtickを止めない |
+| daily preflight | 9依存をtimeout・failure taxonomy・証拠hash付きで検査 |
 | publication receipt | 実際に公開されたかを状態として残す |
 | protected paths | Agentが変更してよい範囲を制限する |
 | before/after SHA | どの変更が結果を起こしたか追跡する |
@@ -255,6 +319,12 @@ experimentはなく、quality metricsもまだ1日分です。
 一方で、self-improve用launchd設定が古いbranch名を固定し、現在のcheckoutと
 一致していないリスクも見つかりました。ここで「AIが自分を改善している」と
 発表してしまえば、活動と進歩を混同します。
+
+さらに、Telegram、X、App Store、Mixpanel、Singular、Sentry、API logを共通の
+trace/evidenceへ正規化し、failure clusterからGitHub Issueを作り、回帰eval、
+isolated fix、canary、mergeまでつなぐ改善Graphはまだありません。正確には、
+Life Managerは「自動で動く複数loop」を持つが、「自分のcodeを自分で改善する
+closed loop」はこれからです。
 
 正しい順序は次です。
 
@@ -274,7 +344,7 @@ retrievalだけ、tool descriptionだけ、導入文だけ、という一軸を�
 ベースラインと候補を同じ入力集合で走らせ、sealed holdoutと実公開結果の両方が
 改善した場合だけ昇格させます。
 
-## 8. Xの深掘りも、同じ思想でtool化した
+## 9. Xの深掘りも、同じ思想でtool化した
 
 今回の調査では、Xquik、x-tweet-fetcher、x-research-skill、x-cli、xurl、
 Firecrawlを比較しました。
@@ -299,7 +369,7 @@ Firecrawlを比較しました。
 結果件数、scroll数、完了／部分完了、停止理由をmachine-readableに返します。
 「たくさん取れた気がする」ではなく、何をもって深いとしたかを状態にしました。
 
-## 9. 研究室と会社で、同じ話をどう変えるか
+## 10. 研究室と会社で、同じ話をどう変えるか
 
 NAISTの研究室では、仮説、対照群、holdout、統計、再現性を中心に話します。
 「改善した」とする帰無仮説は何か、benchmark leakageはないか、別taskへ一般化
@@ -313,7 +383,7 @@ Agentをゼロにするのではなく、失敗の影響半径と回復時間を
 > 人間を一回ごとの承認から外す。  
 > その代わり、目的・証拠・権限・停止条件をコードにする。
 
-## 10. 最後に
+## 11. 最後に
 
 AIだけでソフトウェアを作る未来は、「人間が一切存在しない会社」から始まるの
 ではありません。

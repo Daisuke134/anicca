@@ -41,27 +41,28 @@ observe -> act -> verify -> learn
 自分のcodeやpromptを書き換えれば自己改善、という定義は弱すぎる。悪化する変更も
 自己編集だからである。改善には、同じ目的に対する比較可能な証拠が必要。
 
-## Slide 3 — Four words people mix together
+## Slide 3 — Six words people mix together
 
 ### 画面
 
-| Agent | Harness | Loop | Graph |
-|---|---|---|---|
-| decides/acts | supplies environment | repeats with state | coordinates loops |
+| Intent | Harness | Loop | Graph | Observability | Eval |
+|---|---|---|---|---|---|
+| direction | body | heartbeat | nervous system | senses | control signal |
 
 ### Visual
 
 ```text
-Graph
-└── Loop
-    └── Harness
-        └── Agent
+Intent
+  ↓
+Graph -> Loop -> Harness -> Agent
+  ↑                         ↓
+decision <- Eval <- Observability
 ```
 
 ### Speaker note
 
-Agentを賢くするだけでは長時間開発は安定しない。filesystem、Git、browser、
-memory、permission、stop conditionを含むHarnessが実効性能を決める。
+Agentを賢くするだけでは長時間開発は安定しない。Graphは複数loopを制御し、
+Observabilityが実行証拠を作り、Evalが次のedgeと昇格を決める。
 
 ## Slide 4 — One loop is not self-improvement
 
@@ -128,7 +129,63 @@ goal
 長期目標だけではAgentは採点方法を発明し、proxyを最適化する。目標を観測可能な
 契約へ分解する必要がある。
 
-## Slide 8 — The architecture
+## Slide 8 — Graph Engineering: loops do not disappear
+
+### 画面
+
+```text
+signal
+  -> classify
+     -> outage: self-heal loop
+     -> code failure: reproduce -> eval -> fix
+     -> idea: hypothesis -> experiment
+     -> safety: immutable path
+```
+
+### Speaker note
+
+Graph EngineeringはLoopの後継ではない。Loopはcycleを一つ持つGraphであり、
+Graphは複数loopの順序、分岐、合流、retry、vetoをstate machineとして定義する。
+GraphRAGやknowledge graphとは別のexecution graphである。
+
+## Slide 9 — Observability is the sensory system
+
+### 画面
+
+| Signal | What it proves |
+|---|---|
+| Metric | trend / SLO / cost |
+| Trace | end-to-end path |
+| Span | one LLM/tool/guardrail step |
+| State diff | what changed |
+| Receipt | real-world effect |
+
+### Speaker note
+
+観測は改善そのものではない。しかし、自分が何をして何が起きたかを見られない
+Agentは、自分の問題を発見できない。生ログを全部contextへ入れず、aggregate、
+failure cluster、代表trace、個別spanへ階層化する。
+
+## Slide 10 — Automated Eval Engineering
+
+### 画面
+
+```text
+repo + traces
+-> ability map
+-> task + environment + verifier
+-> baseline/candidate trials
+-> regression suite
+```
+
+### Speaker note
+
+最新のEval Engineering Skillはrepoとtraceから再現可能なevalを作る。ただし公式
+記事自身がuser interviewとiterative approvalを推奨する。完全無人化できるのは
+既知failure classとdeterministic outcomeから先であり、価値関数をゼロから発明する
+部分ではない。
+
+## Slide 11 — The architecture
 
 ### 画面
 
@@ -153,7 +210,7 @@ PROMOTE <-> ROLLBACK
 自己改善の対象と、自己編集させない対象を分ける。目的、禁止事項、spend cap、
 sealed answer、audit log、rollbackはimmutable。
 
-## Slide 9 — Promotion is a contract
+## Slide 12 — Promotion is a contract
 
 ### 画面
 
@@ -173,7 +230,7 @@ else: rollback
 Agentの「できました」はstateではない。receipt、SHA、test result、実環境の
 outcomeがstateを進める。
 
-## Slide 10 — OpenAI: humans moved to the control plane
+## Slide 13 — OpenAI: humans moved to the control plane
 
 ### 画面
 
@@ -186,7 +243,7 @@ outcomeがstateを進める。
 ポイントはhuman-freeという宣伝ではない。Agentが読めるrepository、機械可読な
 状態、短いfeedback loopを作り、人間を個別実装から環境設計へ移したこと。
 
-## Slide 11 — Bun: massive parallelism, not zero humans
+## Slide 14 — Bun: massive parallelism, not zero humans
 
 ### 画面
 
@@ -200,7 +257,7 @@ outcomeがstateを進める。
 大規模並列Agentの威力は本物。ただし人間がworkflowを監視しloopを編集した。
 「作業者ゼロ」ではなく「作業の抽象度が上がった」が正確。
 
-## Slide 12 — AHE: improving the harness itself
+## Slide 15 — AHE: improving the harness itself
 
 ### 画面
 
@@ -215,7 +272,7 @@ outcomeがstateを進める。
 自己改善を成立させたのは自由度ではなく、editable componentを明示し、
 各変更を予測と検証の組にしたこと。
 
-## Slide 13 — Tax AI: evidence must become an eval
+## Slide 16 — Tax AI: evidence must become an eval
 
 ### 画面
 
@@ -228,7 +285,7 @@ outcomeがstateを進める。
 実務ログがあるだけでは改善しない。失敗を再現可能なtaskへ変え、専門家のfeedbackと
 評価を接続する必要がある。
 
-## Slide 14 — The verifier fights back
+## Slide 17 — The verifier fights back
 
 ### 画面
 
@@ -249,23 +306,26 @@ Sources:
 [METR](https://metr.org/blog/2025-06-05-recent-reward-hacking/) ·
 [OpenAI](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 
-## Slide 15 — Hands-on: our Life Manager
+## Slide 18 — Hands-on: our Life Manager
 
 ### 画面
 
 | State | Measured now |
 |---|---:|
+| operational loops | wake / travel / ask / onboard / discovery |
+| preflight dependencies | 9, with timeout + evidence hash |
 | publication surfaces live | 6 / 8 |
 | active self-improve experiment | 0 |
-| quality history | 1 day |
-| exact8 gate | not yet |
+| issue→eval→fix→merge graph | not implemented |
 
 ### Speaker note
 
-ここで誇張しないことが重要。Aniccaにはreceipt、protected path、before/after SHA、
-holdout、7日評価、revertがある。しかし現時点で自己改善はactiveではない。
+ここで誇張しないことが重要。Life Managerにはsingle-writer、tenant failure
+isolation、durable throttle、preflight evidenceがある。Writerにはreceipt、
+protected path、SHA、holdout、revertがある。しかし現在は自己運転するloopであり、
+自分のcodeを改善するclosed graphはまだない。
 
-## Slide 16 — The honest next sequence
+## Slide 19 — The honest next sequence
 
 ### 画面
 
@@ -278,6 +338,8 @@ close exact8
  -> one-axis experiment
  -> canary
  -> promote/rollback
+ -> normalize all product signals
+ -> evidence issue -> eval -> fix -> merge graph
 ```
 
 ### Speaker note
@@ -285,7 +347,7 @@ close exact8
 複数軸を同時に変更しない。最初のcandidateはretrieval、tool description、導入文など
 一つに限定する。何が効いたかを帰属できるようにする。
 
-## Slide 17 — We built the research plane the same way
+## Slide 20 — We built the research plane the same way
 
 ### 画面
 
@@ -300,7 +362,7 @@ close exact8
 研究toolも「深く読める気がする」で選ばなかった。editor tabを保護し、完了／部分完了、
 停止理由をJSON化し、実際の指定Articleで全文性を検証した。
 
-## Slide 18 — Final takeaway
+## Slide 21 — Final takeaway
 
 ### 画面
 
@@ -318,7 +380,7 @@ Encode humans into goals, evidence, permissions, and rollback.**
 
 ## NAIST研究室版
 
-本編のSlides 9、12、14を各2分延長し、次を追加する。
+本編のSlides 12、15、17を各2分延長し、次を追加する。
 
 ### Research questions
 
@@ -336,7 +398,7 @@ operator intervention、publication survivorship bias。
 
 ## 社内版
 
-本編のSlides 8、9、15、16を各2分延長し、次を追加する。
+本編のSlides 11、12、18、19を各2分延長し、次を追加する。
 
 ### Operating contract
 
@@ -388,6 +450,11 @@ publish=official X API。現在の無償実装はSearch=CDP、known URL=FxTwitte
 13. [Bun in Rust](https://bun.com/blog/bun-in-rust)
 14. [LangChain — Continual learning for AI agents](https://www.langchain.com/blog/continual-learning-for-ai-agents)
 15. [X Articles API](https://docs.x.com/x-api/articles/introduction)
+16. [Addy Osmani — Loop Engineering](https://addyosmani.com/blog/loop-engineering/)
+17. [LangChain — 3 Years of Graph Engineering](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph)
+18. [LangChain — Towards Automating Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering)
+19. [OpenTelemetry — AI Agent Observability](https://opentelemetry.io/blog/2025/ai-agent-observability/)
+20. [Anthropic — Demystifying evals](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
 
 # Appendix C — Q&A
 
@@ -412,4 +479,3 @@ Harnessにする。
 ### 「最初に自動化すべき仕事は？」
 
 失敗が観測可能、合否が機械判定可能、rollback可能、影響半径が小さい反復作業。
-

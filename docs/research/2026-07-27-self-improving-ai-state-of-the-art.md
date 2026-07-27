@@ -1,7 +1,11 @@
 # 自己改善AI／No-Human-Loop開発：調査アーカイブ
 
-更新日: 2026-07-27  
+更新日: 2026-07-28  
 用途: 記事・NAIST研究室発表・社内発表の共通エビデンス
+
+Loop、Graph、Automated Eval、Observabilityの詳細とLife Managerの目標graphは
+[Loop / Graph / Eval / Observability Engineering](./2026-07-28-loop-graph-eval-observability.md)
+を正本とする。
 
 ## 0. エグゼクティブサマリー
 
@@ -37,6 +41,20 @@
 | Eval | 変更が目的に近づいたかを再現可能に判定する契約 | テスト件数 |
 | Self-improvement | 同一評価契約の下で、次の試行の成功率を上げること | 自分のコードを書き換えること |
 | No-human-loop | 事前定義した境界内で、承認待ちなしに終端まで進むこと | 人間の意図や責任が不要になること |
+
+この関係は流行語の時系列ではなく、制御系の階層として理解する。
+
+```text
+Intent = 何を目指すか
+Harness = 何を使い、何をしてよいか
+Loop = どう反復するか
+Graph = 複数loopをどう分岐・合流・停止させるか
+Observability = 実際に何が起きたか
+Eval = 次のedgeや昇格をどう決めるか
+```
+
+Graph EngineeringはLoop Engineeringの「次のブーム」ではあるが、技術的には
+Loopを含むstate machine設計である。GraphRAGやknowledge graphとは分ける。
 
 ## 2. 自己改善を構成する4つのループ
 
@@ -221,11 +239,27 @@ X投稿は研究テーマの発見には強いが、性能・安全性の最終�
 | 既存の良い制御 | protected paths、before/after SHA、JA/EN holdout、7日評価、完全revert |
 | P0リスク | self-improve plistが古いbranch名を固定し、現checkout/upstreamと不一致 |
 
+Life Manager本体にも、Writerとは別に次の運用基盤が実装済みである。
+
+| 実装済み | 証拠 |
+|---|---|
+| wake/travel/ask/onboarding/discoveryの周期loop | `apps/life-call/scheduler.js` |
+| RailwayとOpenClaw cronのsingle-writer制御 | `apps/life-call/lib/maybe-start-loops.js` |
+| tenant単位failure isolation、claim/release retry | `scheduler.js` |
+| discoveryのDB永続7日throttle | `apps/life-call/lib/feature-discovery.js` |
+| 9依存のpreflight、timeout、failure taxonomy、redaction | `apps/life-call/lib/daily-preflight.js` |
+| run correlation、hashed evidence、Telegram/email effect proof | final preflight report |
+
+一方で、共通trace ID、failure clustering、feedback normalization、evidence issue、
+自動eval生成、issue→PR→canary→mergeの改善graphは未実装である。
+
 ### 推論
 
-Aniccaはすでに「loopを作る前段」ではなく、event loopとpublication receiptが
-動き始めている。ただし現在は「8面を安定して完走する」ことが先であり、
-自己改善を開始済みと表現してはいけない。正しい順序は次である。
+Aniccaはすでに「loopを作る前段」ではなく、複数のevent loop、failure isolation、
+preflight evidence、publication receiptが動き始めている。ただしこれは
+「自己運転する機能」であり、「自分のコードを改善する製品」ではない。現在は
+「8面を安定して完走する」ことが先であり、自己改善を開始済みと表現してはいけない。
+正しい順序は次である。
 
 ```text
 exact8を閉じる
@@ -234,6 +268,20 @@ exact8を閉じる
 -> 一軸だけのcandidate experiment
 -> heldout + real publication canary
 -> promote/rollback
+```
+
+その後、Life Manager全体を次の改善graphへ接続する。
+
+```text
+Telegram / X / App Store / Mixpanel / Singular / Sentry / API logs
+-> normalize + redact + dedupe
+-> online eval + failure cluster
+-> evidence issue + reproduction
+-> regression eval
+-> isolated fix + baseline/candidate
+-> sealed holdout + canary
+-> merge or rollback
+-> signal-to-outcome lineage
 ```
 
 ## 11. 研究室と企業で変える部分
@@ -263,6 +311,11 @@ exact8を閉じる
 | OpenAI, coding evaluations | https://openai.com/index/separating-signal-from-noise-coding-evaluations/ | “~30% of SWE-bench Pro tasks are broken” |
 | Bun in Rust | https://bun.com/blog/bun-in-rust | “I monitored workflows” |
 | LangChain, Continual Learning | https://www.langchain.com/blog/continual-learning-for-ai-agents | “model, harness, and context” |
+| Addy Osmani, Loop Engineering | https://addyosmani.com/blog/loop-engineering/ | “replacing yourself as the person who prompts the agent” |
+| LangChain, Graph Engineering | https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph | “loops are simple graphs” |
+| LangChain, Eval Engineering | https://www.langchain.com/blog/towards-automating-eval-engineering | “mine traces -> identify a failure -> build an eval” |
+| OpenTelemetry, Agent Observability | https://opentelemetry.io/blog/2025/ai-agent-observability/ | telemetry is input for evaluation tools |
+| Anthropic, Demystifying evals | https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents | outcomeをagentのclaimより優先する |
 | X Articles API | https://docs.x.com/x-api/articles/introduction | “create draft long-form Articles” |
 | x-tweet-fetcher | https://github.com/ythx-101/x-tweet-fetcher | “no login, no API keys” |
 
