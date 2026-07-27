@@ -1962,3 +1962,36 @@ craft_train の n  非 null pair のみ数える → その item は分母に寄
 **修正案（実コードを読んで簡略化）**: 新しいフィールドは**不要**。`_rollout_one` の戻り値は既に `opponent_pairs` を含み、`craft_train._count_non_null_comparisons` はそこから非 null を数えている。したがって T26 は **`summary.json` の `test_soft` を信じず、`rollouts.json` から「非 null pair を1つ以上持つ item だけ」で平均を再計算する**だけになる。分子と分母が同じ集合になる。テストは「障害 item を含む batch で、再計算した平均が障害 item を除いた値と一致する」。当初『`scorable_pairs` を載せる』と書いたのは、戻り値を読まずに設計したため — **修正案すら、実装を読む前に書くと余計な部品が増える**。
 
 **この節の要点は修正案ではない**: 「消費者を全部数えろ」と書いた同じ節で数えずに断定した。**規則を書くことと規則に従うことは別の動作**で、書いた直後こそ従い忘れる。今夜の訂正はこれで8回目。
+
+### 21.46 初回の実運用 — 台帳は動き、公開は 2/8（実測 2026-07-27 08:33）
+
+**台帳（P0）は本番で機能した。T5 の1日目が成立。**
+
+```
+gates/title-candidates-ja.json   採用1 + 却下7、全件 cited_rule つき
+gates/title-candidates-en.json   採用1 + 却下7
+
+ja 採用   AIエージェントを放置したい人へ、「止まり方」を先に設計する方法
+ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなるわけではない
+          reference:47 | AIエージェントのループ設計を4段階で解説
+          reference:55 | Loop Engineering入門
+```
+
+**採用が読者名指し型で、計測レポート型ではない** — §20 の是正が実運用に出た。**却下理由が `reference/title-best-practices.md` を引用している**（`SKILL.md` ではない）ことも、§20.3 規則1（禁則の正本は reference だけ）が守られている証拠。
+
+**一方、公開は 2/8**:
+
+| 面 | 状態 | 理由 |
+|---|---|---|
+| note/ja | ambiguous | `public-asset-readback-failed` |
+| x-article/ja | unavailable | staged X editor rendered a different article identity |
+| x-article/en | unavailable | 同上 |
+| devto/en | unavailable | canonical EN draft lacked Dev.to title/tags frontmatter after publication-state init |
+| zenn-article/ja | intent | 未到達 |
+| x-post/ja | intent | 未到達 |
+
+**6件すべてコード側の欠陥**で、認証・アカウント・電話承認のような Dais にしかできないものは1つも無い。§13.1 の「毎日必ず publish」に対して、**面の6割が落ちている状態**。
+
+**note/ja の失敗は §21.32 と同じクラス**（公開物から資産を読み戻せない）。dev.to で相対パス画像と `.png` 欠落を特定したが、note にも同型の経路がある可能性が高い（未確認）。
+
+**優先順位の根拠**: note は同世代比較で最も反応が取れている面（§21.35/§21.37）であり、そこが ambiguous で止まるのが最大の損失。devto は毎日1面を確実に落としており、原因が frontmatter という**局所的で直しやすい**箇所。x-article は2面ぶん。zenn/x-post は前段で止まっているため、まず何処で止まったかの特定が要る。
