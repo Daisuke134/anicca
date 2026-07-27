@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "x402-gated AI agent API endpoints (paid via USDC)",
   "type": "module",
+  "engines": {
+    "node": ">=20.18.0"
+  },
   "main": "src/server.js",
   "scripts": {
     "start": "npx prisma generate && node src/server.js",
