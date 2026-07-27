@@ -60,11 +60,13 @@ function computePayout(input = {}) {
   const balanceAvailable = onchain > reserve ? onchain - reserve : 0n;
   let amount = surplusAtomic < balanceAvailable ? surplusAtomic : balanceAvailable;
   if (cap != null && cap < amount) amount = cap;
+  amount = (amount / ATOMIC_PER_USD_MINOR) * ATOMIC_PER_USD_MINOR;
 
   let reason = "ready";
   if (verifiedSurplus === 0n) reason = "no_verified_surplus";
   else if (balanceAvailable === 0n) reason = "reserve_floor";
   else if (cap === 0n) reason = "transaction_cap";
+  else if (amount === 0n) reason = "below_ledger_unit";
 
   return {
     amountAtomic: amount.toString(),

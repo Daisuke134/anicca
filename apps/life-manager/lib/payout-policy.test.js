@@ -95,6 +95,16 @@ test("a balance at or below the reserve produces an honest no-op", () => {
   assert.equal(result.reason, "reserve_floor");
 });
 
+test("sub-cent balance dust stays in the agent wallet because the append-only ledger records exact cents", () => {
+  const result = computePayout({
+    rows: [earning("financial_external_income", 10_000)],
+    walletAddress: WALLET,
+    onchainUsdcAtomic: "42000001",
+  });
+
+  assert.equal(result.amountAtomic, "7000000");
+});
+
 test("a caller may raise the survival reserve but may never silently lower it", () => {
   const raised = computePayout({
     rows: [earning("financial_external_income", 10_000)],
