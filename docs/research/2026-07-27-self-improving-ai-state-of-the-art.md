@@ -206,6 +206,9 @@ X投稿は研究テーマの発見には強いが、性能・安全性の最終�
 
 ### 証拠
 
+運用stateと昇格順序のSSOT:
+[Writer Loop Quality and Self-Improvement](../loop-engineering/47-writer-loop-quality-and-self-improvement.md)
+
 | 項目 | 実測した状態 |
 |---|---|
 | Writer publication | 8面中6面live。Zenn JAとX Article ENが未完 |
@@ -269,4 +272,3 @@ exact8を閉じる
 すでに価値関数まで安全に自己更新しており、公開情報だけが遅れている場合である。
 反証には、長期間の無人運用、sealed outcome、権限事故率、rollback率、外部監査を
 含む再現可能な証拠が必要である。
-

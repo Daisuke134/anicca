@@ -234,6 +234,9 @@ retry、routingはcandidate branch内だけで変更できます。
 現時点では8つのpublication surfaceのうち6つがliveで、Zenn JAとX Article ENが
 未完です。X short JAとX Article JAはliveですが、self-improvementのactive
 experimentはなく、quality metricsもまだ1日分です。
+このstateと昇格順序の正本は
+[Writer Loop Quality and Self-Improvement](../loop-engineering/47-writer-loop-quality-and-self-improvement.md)
+です。
 
 これは失敗ではありません。むしろ、自己改善を名乗る前に必要な「真実のstate」が
 見えています。
@@ -333,4 +336,3 @@ AIが何を証拠に前へ進み、どこで止まり、どう戻るかです。
 
 調査ノートと全ソース:
 [自己改善AI／No-Human-Loop開発：調査アーカイブ](../research/2026-07-27-self-improving-ai-state-of-the-art.md)
-
