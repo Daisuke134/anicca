@@ -151,7 +151,7 @@ bootstrap subsidy である。
 |---|---|---:|---|---|
 | Founder agent | `claude-sonnet-5`、launchd 稼働中 | Base 1.880000 USDC + 0.00000643 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。Claude が稼いだと確定できる額はまだ0 |
 | Franklin 1 | model router、launchd 稼働中 | Base 4.390800 USDC + 0.00059956 ETH、Solana 0.007937916 SOL | 2,255 model calls の記録費用 $22.623155。直近 x402 `externalCount=0` | **verified external net = $0.00**。残高は収益証拠ではない |
-| Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.042000 USDC、gas 0 | 直近 x402 `externalCount=0`、realized action なし | **verified external net = $0.00** |
+| Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.034000 USDC、gas 0 | Railway x402 mainnet E2Eで自己支払`$0.008`を実行。商品HTTP 200、Base receipt成功、seller差分`+$0.008`。colony内送金なのでrevenue 0 | **verified external net = $0.00** |
 | Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
 | Polymarket wallet | `0x904B…Eb74`、hourly decision/trade timer | open positions current value $7.9952 | closed 30 positionsの wallet-level realized PnL `+$2.006481`、open unrealized PnL `+$1.116700`、redeemable 0 | **wallet-level mark-to-market `+$3.123181`**。manual / agent run の帰属、gas/bridge/model costを含む完全netは未証明 |
 | Life Manager tenant agent | Base `0x477E…62ad`（canonical full addressはruntime config / handoff参照） | 0 USDC / 0 ETH | `lm_agent_earnings` 実 revenue row 0 | **earnings = $0.00** |
@@ -159,6 +159,13 @@ bootstrap subsidy である。
 `earn-watch.sh` は裸の `timeout` を `/opt/homebrew/bin/timeout 300` に直し、launchd相当PATHで exit 0 を実測した。
 ただし snapshot 時点は `pm_redeemable=0` で redeem 分岐を通っていない。証明できたのは command-not-found 即死が
 消えたことまでで、次の redeemable position で初めて redeem 成功を実証する。
+
+Railway `x402-agents` は Node 24 + 有効なfacilitator/LLM credentialで復旧し、8/8 paid routeがmainnet
+`402 Payment Required`を返す。Franklin 2から`POST /context-compressor`へ`$0.008`を実支払し、
+商品HTTP 200、Base tx `0xcf095a8703837e2a07026c97f009ed874a0e8e7759a282b4d24c4884151092f0`、
+買い手`-0.008` / seller`+0.008 USDC`を独立RPCで確認した。ただしself-payなのでexternal revenueは`$0.00`。
+さらに現行sale observerはこのRailway sellerを入力に持たず、後続loopはcandidate/ledgerとも0だった。
+証拠は `docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json`。
 
 | 観点 | As-Is | To-Be |
 |---|---|---|
@@ -315,12 +322,13 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | **done** — Modal `sb-34xzazUQKuoGKBFWeh1PQ6` の一時URLで3 route HTTP 200、heartbeat 2/2 JS+RPC PASS、Base/Solana/PM独立再読込の差分0。外部収入 `$0.00` / runtime `$0.015` / `funded` を明記。証拠は `anicha/specs/evidence/s20b-python-statement-sb-34xzazUQKuoGKBFWeh1PQ6*`。Quick Tunnelは一時的・開発用・SLA無し、lease 5分 |
 | 3 | 13c-PM | PMの次の1 cycleをtenant earnings ledgerへ `deployed/recovered/fee/PnL` で記帳 | on-chain/API evidence付き実row + 月次報告 | **done** — Tatiana cycleをproduction `lm_agent_earnings`へ実記帳。`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`、row readback 1件、再実行`duplicate=true`で二重計上0、Polygon実残高`$4.422182`から損失月報告を生成。外部収入主張は`$0.00`のまま。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
-| 5 | 13c-SELL / 13c-WORK（AE-X4） | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | **partial / machinery live** — SELL/WORKを同じfinalized外部着金から別recipeへfail-closed分類して記帳するbridgeは本番稼働。実入札2件は未採用、外部実着金は`$0.00`で非blocking待機 |
-| 6 | 13d-b | Life Manager agent wallet→user walletの実送金 | reserve/spend-cap PASS、実tx、実TG receipt | **partial / machinery live** — PR #1188。verified profit・Base残高−`$35` reserve・transaction capの最小値だけを1 cent単位で送る。deterministic EIP-3009 nonce、専用loopback facilitator、Base receiptのexact USDC Transfer、tenant UID、記帳→TG順をfail-closed化。production launchd 2 run / exit 0、残高0・ledger 0で正直な`no_verified_surplus`、鍵/facilitator/tx/TGは未到達。実tx gateは収益またはspec承認seed着金後。evidence=`docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json` |
-| 7 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | **active — daily 1/7、weekly 1/1、panel差0**。PR #1190/#1191/#1192。production TG message `297`/`298`、JSONB-stable hash 2/2、authenticated panelの整数7項目+hash/provider id差0。5分launchdはexit 0。残りは別日daily 6件の自動蓄積。evidence=`docs/evidence/agent-economy/2026-07-27-report-1-financial-rollup.json` |
-| 8 | SURVIVE-1 | agentが自分のcomputeまたはshelterを収益から払う | provider receipt + ledger expense + service継続 | pending、trailing surplus後 |
-| 9 | SCALE-1 | 黒字SELL/WORK recipeを増幅し月$100 net | 30日closed ledger、self-funded率≥100% | pending |
-| 10 | CHILD-1 | 独立wallet/runtimeのchildを黒字余剰でspawn | key/state非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
+| 5 | 13c-SELL-INGRESS | Railway sellerのsettled receiptを既存verifierへ接続 | route/price/payTo/txを持つdurable candidate、self-pay reject、external payer 1回記帳 | **next executable** — mainnet自己支払`$0.008`は商品HTTP 200 + exact USDC receiptまでPASSしたが、現行observerはRailway sellerを入力に持たず後続candidate/ledgerは0。evidence=`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
+| 6 | 13c-SELL / 13c-WORK（AE-X4） | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | **partial / machinery live** — SELL/WORKを同じfinalized外部着金から別recipeへfail-closed分類して記帳するbridgeは本番稼働。実入札2件は未採用、外部実着金は`$0.00`で非blocking待機 |
+| 7 | 13d-b | Life Manager agent wallet→user walletの実送金 | reserve/spend-cap PASS、実tx、実TG receipt | **partial / machinery live** — PR #1188。verified profit・Base残高−`$35` reserve・transaction capの最小値だけを1 cent単位で送る。deterministic EIP-3009 nonce、専用loopback facilitator、Base receiptのexact USDC Transfer、tenant UID、記帳→TG順をfail-closed化。production launchd 2 run / exit 0、残高0・ledger 0で正直な`no_verified_surplus`、鍵/facilitator/tx/TGは未到達。実tx gateは収益またはspec承認seed着金後。evidence=`docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json` |
+| 8 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | **active — daily 1/7、weekly 1/1、panel差0**。PR #1190/#1191/#1192。production TG message `297`/`298`、JSONB-stable hash 2/2、authenticated panelの整数7項目+hash/provider id差0。5分launchdはexit 0。残りは別日daily 6件の自動蓄積。evidence=`docs/evidence/agent-economy/2026-07-27-report-1-financial-rollup.json` |
+| 9 | SURVIVE-1 | agentが自分のcomputeまたはshelterを収益から払う | provider receipt + ledger expense + service継続 | pending、trailing surplus後 |
+| 10 | SCALE-1 | 黒字SELL/WORK recipeを増幅し月$100 net | 30日closed ledger、self-funded率≥100% | pending |
+| 11 | CHILD-1 | 独立wallet/runtimeのchildを黒字余剰でspawn | key/state非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
 
 Hummingbot は未着手であり、現在収益へ含めない。`$1k → $10k → $20k` は TODO ID にせず、
 SCALE-1を30日実証した後に実単価・conversion・marginから次の一段だけを起票する。

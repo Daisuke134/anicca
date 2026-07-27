@@ -1,0 +1,77 @@
+{
+  "schema": "anicca.agent-economy.x402-railway-live-payment.v1",
+  "observed_at": "2026-07-28T07:32:30+09:00",
+  "status": "live_payment_proven_self_payment_excluded_from_revenue",
+  "service": {
+    "url": "https://x402-agents-production.up.railway.app",
+    "railway_service": "x402-agents",
+    "deployment_id": "49ba0532-89ba-4bcb-b199-9e30acd929f7",
+    "runtime_node_major": 24,
+    "runtime_fix_pull_request": "https://github.com/Daisuke134/anicca-products/pull/373",
+    "runtime_fix_merge_commit": "2fa8f00159fcb593a8c9f2ffdb68c90f6e2e5a30",
+    "health_status": 200,
+    "paid_routes_challenged": 8,
+    "paid_routes_402": 8
+  },
+  "payment": {
+    "route": "POST /context-compressor",
+    "network": "eip155:8453",
+    "asset": "USDC",
+    "asset_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "amount_atomic": "8000",
+    "amount_usd": "0.008",
+    "http_status": 200,
+    "payment_response_success": true,
+    "transaction_hash": "0xcf095a8703837e2a07026c97f009ed874a0e8e7759a282b4d24c4884151092f0",
+    "receipt_status": "success",
+    "block_number": "49201080",
+    "confirmations_at_read": 8,
+    "buyer_balance_before_usdc": "0.042",
+    "buyer_balance_after_usdc": "0.034",
+    "buyer_delta_usdc": "-0.008",
+    "seller_balance_before_usdc": "0.605",
+    "seller_balance_after_usdc": "0.613",
+    "seller_delta_usdc": "0.008",
+    "exact_usdc_transfer_count": 1,
+    "product_response_proven": true
+  },
+  "classification": {
+    "buyer": "Franklin 2 colony wallet",
+    "seller": "Anicca-controlled x402 seller wallet",
+    "colony_external_payer": false,
+    "revenue_usd": "0.00",
+    "reason": "Both buyer and seller are controlled by the same colony. This is a payment-rail verification seed, not an external sale."
+  },
+  "post_payment_loops": {
+    "sale_observer": {
+      "observed_at": "2026-07-28T07:32:45.674+09:00",
+      "candidates_seen": 0,
+      "recorded": 0,
+      "errors": []
+    },
+    "settlement_recorder": {
+      "observed_at": "2026-07-28T07:32:40.983+09:00",
+      "candidates_seen": 0,
+      "verified": 0,
+      "recorded": 0,
+      "verified_external_revenue": false
+    },
+    "life_manager_bridge": {
+      "observed_at": "2026-07-28T07:32:41.054+09:00",
+      "ledgers_seen": 0,
+      "recorded": 0,
+      "transactions": []
+    },
+    "payout": {
+      "status": "noop",
+      "reason": "no_verified_surplus",
+      "amount_atomic": "0"
+    }
+  },
+  "next_gap": {
+    "id": "13c-SELL-INGRESS",
+    "problem": "The Railway seller payTo and settled receipt are not an input to the current local sale-observer sources, so even a future colony-external Railway buyer would not reach the earnings ledger.",
+    "done": "A Railway sale produces a durable candidate containing route, exact price, payTo and transaction hash; the existing finalized-chain verifier rejects colony self-pay, accepts one external payer exactly once, and the earnings ledger records the accepted sale."
+  },
+  "evidence_limit": "This proves one real mainnet x402 payment, product execution, and exact Base USDC settlement. It does not prove external demand or revenue. The payer is Franklin 2, so verified external income remains $0.00."
+}
