@@ -18,6 +18,7 @@ const { dietUserOnce } = require("./lib/diet-runtime.js");
 const { dietNudgeOnce } = require("./lib/diet-nudge.js");
 const { preceptsUserOnce } = require("./lib/precepts-runtime.js");
 const { preceptsMirrorOnce } = require("./lib/precepts-mirror.js");
+const { relationsUserOnce } = require("./lib/relations-runtime.js");
 const { readMentalSendState, recordMentalSend } = require("./lib/mental-send-log.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
@@ -233,6 +234,10 @@ function dietEnabled() {
 // organ ships and then quietly never runs, which is indistinguishable from not having shipped it.
 function preceptsEnabled() {
   return !ORGAN_OFF.test(String(process.env.LM_PRECEPTS_ENABLED || "").trim());
+}
+
+function relationsEnabled() {
+  return !ORGAN_OFF.test(String(process.env.LM_RELATIONS_ENABLED || "").trim());
 }
 
 function mentalDeps(u, events, deps = {}) {
@@ -457,6 +462,25 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
             + ` budgeted=${precepts.budgeted === true}`);
         }
       } catch (e) { console.error(`[precepts] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+    }
+  }
+  // H5 ORG-relations: one source-honest Calendar cadence scan in the early evening. The runtime
+  // owns durable scan/attempt claims and the shared MENTAL budget; this wrapper only isolates it.
+  if (relationsEnabled() && u.notifications_enabled !== false) {
+    try {
+      const relations = await (deps.relations || relationsUserOnce)(u, now, {
+        events: inProgressEvents(events),
+        getLocationState: deps.getLocationState,
+        apiKey: deps.apiKey,
+        calendar: deps.calendar,
+        gmailAccountId: u.gmail_account_id,
+      });
+      if (relations && relations.status === "suggested") {
+        console.log(`[relations] uid=${String(u.uid).slice(0, 12)} status=${relations.status}`
+          + ` tg_message_id=${relations.telegramMessageId} budgeted=${relations.budgeted === true}`);
+      }
+    } catch (e) {
+      console.error(`[relations] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
     }
   }
 }
