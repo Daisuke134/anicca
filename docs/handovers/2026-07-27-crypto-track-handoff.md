@@ -1,4 +1,4 @@
-# Crypto track handoff — Life Manager FINANCIAL organ（13c-PM完了・13c-SELL/WORK bridge稼働後）
+# Crypto track handoff — Life Manager FINANCIAL organ（13d-b engine本番稼働後）
 
 宛先: crypto 側で「AI に wallet を持たせて稼がせる」を作っている agent。
 この文書1枚で、君の成果が Life Manager のどこに刺さるかが全部わかる。
@@ -18,15 +18,15 @@
 | 送金先（user 側） | `lm_users.payout_destination` | **実 DB row: `{"type":"wallet","status":"usable","address":"0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7","confirmed_at":"2026-07-26T11:27:08.300Z"}`** = `DAIS_CREATOR_ADDRESS`。EIP-55 検証済み。`isPayoutDestinationUsable()`（`lib/payout-question.js`）が true を返す唯一の形 |
 | 収集 UI | `lib/payout-question.js` + `lib/payout-address-intake.js` | closed Q → typed 入力 → 検証 → 引用確認。全部 CB-1 可視応答準拠 |
 | 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` + `lib/polymarket-cycle.js` + `lib/x402-sale-ledger.js` + `lib/the402-work-provenance.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup。**13c-PMのproduction実収支行は1件**: `financial_realized_loss=$3.15`。SELL/WORK bridgeはBase finalized receiptと正確なUSDC Transferを再検証し、The402 settlement+terminal jobが一意に揃う時だけ`x402_work`へ分離する。self-pay/曖昧provenanceは拒否。外部収入はまだ`$0.00` |
+| user payout | `lib/payout-policy.js` + `lib/base-usdc-payout.js` + `lib/payout-runtime.js` + `scripts/run-agent-payout.js` | **PR #1188 / production launchd稼働**。verified profit・Base残高−`$35` reserve・transaction capの最小値だけを送る。deterministic EIP-3009 nonce、専用mainnet facilitator、exact receipt、tenant UID、記帳→TG順。production 2 run / exit 0、現残高0で`no_verified_surplus`、tx/TGは未実証 |
 
-## 次に刺す2点（13c-PM完了、13c-SELL/WORKは自動待機）
+## 次に刺す2点（13d-b engine完了、実着金/実送金は自動待機）
 
 ```
 13c-SELL/WORK: observer→settlement verifier→provenance classifier→earnings-runtime bridgeは本番稼働済み
           → colony外buyer/job累計$1の実着金待ち（非blocking、現在$0.00）
-13d-b:  active cursor。agent wallet → 登録済user walletへの on-chain 実 tx（spend-cap 内）
-         + §9.11 逐語 copy での実 TG 報告
-         前提: wallet に残高（君の収益 or 承認された seed）
+13d-b:  engineは本番稼働。実tx + §9.11 TGはwalletが$35 reserveを超えた最初のverified surplusで自動実証
+REPORT-1: active cursor。daily/weekly TGとpanelを同じledger rollupへ接続し、停止理由と分配可能額を同じ数字にする
 ```
 
 13c-PM evidence:
@@ -41,6 +41,11 @@ launchd実発火exit 0、候補/verified/production rowはすべて0。これは
 `docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`。
 実入札2件は未採用。acquisition/provider/worker/settlement/accounting loopはliveだが、jobs/threads/settled/work rowはすべて0。
 これは自動仕事・分類接続の生存証明であり、仕事成功や外部収益の証明ではない。
+
+13d-b payout evidence:
+`docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json`。
+production launchd 2 run / exit 0、USDC 0・ledger 0の独立readback、`no_verified_surplus`、facilitator未起動を記録。
+これは送金機械とゼロ状態の生存証明であり、実tx・実TG receiptの証明ではない。
 
 ## 統合の約束事（破ると reject される）
 

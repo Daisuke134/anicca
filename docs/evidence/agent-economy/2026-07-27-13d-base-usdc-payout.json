@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-07-27T14:40:36Z",
+  "feature": "13d-b",
+  "canonical_main_commit": "7d360129c9cf492914c4cd7028b18d9cf6f24d25",
+  "pull_request": "https://github.com/Daisuke134/life-manager/pull/1188",
+  "policy": {
+    "asset": "Circle USDC",
+    "network": "eip155:8453",
+    "default_reserve_atomic": "35000000",
+    "default_reserve_usd": "35.00",
+    "payout_formula": "min(verified external income - realized loss - fee - prior user transfer, on-chain USDC - reserve, optional transaction cap)",
+    "excluded_from_profit": [
+      "financial_self_funding",
+      "financial_deposit",
+      "financial_internal_move",
+      "financial_unverified"
+    ],
+    "ledger_unit": "exact USD cent",
+    "subcent_behavior": "dust remains in the agent wallet"
+  },
+  "safety_contract": {
+    "tenant_scope": "one explicit uid and the same row's telegram_chat_id plus usable wallet destination",
+    "key_gate": "protected key is opened only after policy returns a positive amount",
+    "authorization": "deterministic EIP-3009 nonce per tenant payout evidence",
+    "facilitator": "dedicated loopback port 8406; must advertise x402 v2 exact on eip155:8453",
+    "receipt": "Base chain id 8453, status 0x1, and exactly one matching Circle USDC Transfer",
+    "ledger_order": "financial_user_transfer is recorded after exact receipt verification and before Telegram",
+    "idempotency_key": "payout:<tx_hash>:transfer"
+  },
+  "verification": {
+    "focused_fin_payout": {
+      "tests": 144,
+      "pass": 144,
+      "fail": 0
+    },
+    "full_lib_suite": {
+      "tests": 1427,
+      "pass": 1421,
+      "fail": 5,
+      "cancelled": 1,
+      "new_test_delta": 29,
+      "new_failures": 0,
+      "baseline": {
+        "tests": 1398,
+        "pass": 1392,
+        "fail": 5,
+        "cancelled": 1
+      },
+      "pre_existing_failure_classes": [
+        "panel corrective review marker",
+        "missing Playwright Chromium",
+        "panel session corrective expectations",
+        "loaded host-state expectation"
+      ]
+    },
+    "plist_lint": "pass",
+    "shell_syntax": "pass",
+    "credential_value_scan": "0 hits"
+  },
+  "production": {
+    "launchd_label": "ai.anicca.life-manager-payout",
+    "interval_seconds": 300,
+    "runs_observed": 2,
+    "last_exit_code": 0,
+    "result": {
+      "status": "noop",
+      "reason": "no_verified_surplus",
+      "amount_atomic": "0",
+      "verified_surplus_minor": 0,
+      "reserve_atomic": "35000000"
+    },
+    "independent_readback": {
+      "agent_wallet": "0x477E…62ad",
+      "base_usdc_atomic": "0",
+      "earnings_ledger_rows": 0,
+      "earnings_minor_by_kind": {}
+    },
+    "facilitator_port_8406_after_noop": "stopped",
+    "chain_transaction_created": false,
+    "telegram_receipt_sent": false
+  },
+  "evidence_limit": "The payout machine, reserve gate, tenant scoping, signing contract, receipt verifier, ledger order, and production zero-state path are proven. A real user payout, transaction hash, and Telegram receipt remain unproven until verified external surplus or a spec-approved seed makes the agent wallet exceed the $35 reserve.",
+  "sources": [
+    {
+      "name": "Circle stablecoin-evm EIP3009.sol",
+      "url": "https://github.com/circlefin/stablecoin-evm/blob/master/contracts/v2/EIP3009.sol",
+      "core_quote": "transferWithAuthorization"
+    },
+    {
+      "name": "Coinbase x402 specification v2",
+      "url": "https://github.com/coinbase/x402/blob/main/specs/x402-specification-v2.md",
+      "core_quote": "/verify and /settle"
+    },
+    {
+      "name": "viem signTypedData",
+      "url": "https://viem.sh/docs/accounts/local/signTypedData",
+      "core_quote": "signTypedData"
+    },
+    {
+      "name": "Circle USDC contract addresses",
+      "url": "https://developers.circle.com/stablecoins/usdc-contract-addresses",
+      "core_quote": "Base"
+    }
+  ]
+}
