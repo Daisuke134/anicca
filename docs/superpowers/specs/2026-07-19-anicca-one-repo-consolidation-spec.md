@@ -311,7 +311,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 状態 |
 |---:|---|---|---|---|
-| 1 | S20b-b | 2軒目のPython runtimeがcanonical heartbeatをed25519署名 | 外部verifier PASS、natural heartbeat row | pending — `anicha/specs/00-SHELTER-INDEPENDENCE.md` |
+| 1 | S20b-b | 2軒目のPython runtimeがcanonical heartbeatをed25519署名 | 外部verifier PASS、natural heartbeat row | **done** — Modal `sb-0l4DnecMvMpXm4OzLLcFTn`、同一payerの2周期、JS verifier + RPC **2/2 PASS**。証拠は `anicha/specs/evidence/s20b-python-heartbeat-sb-0l4DnecMvMpXm4OzLLcFTn.jsonl` |
 | 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | pending — 記事の「2軒目で住める」の前提 |
 | 3 | 13c-PM | PMの次の1 cycleをtenant earnings ledgerへ `deployed/recovered/fee/PnL` で記帳 | on-chain/API evidence付き実row + 月次報告 | pending — 最優先の会計欠損 |
 | 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
@@ -746,7 +746,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。現在の順序は **S20b-b → S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b**。
+    保留条件は解消する。現在の順序は **S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -756,12 +756,12 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★現在の実行順の正本 = §0.4.6（S20b-b → S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b）。★**
+**★現在の実行順の正本 = §0.4.6（S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b）。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
 現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。H3/H5は§0.4.6の後に再開する。
 
-**Current cursor**: **S20b-b（2軒目Python heartbeat署名）**。次はS20b-c（決算書serve）、その後13c-PM。
+**Current cursor**: **S20b-c（2軒目Python決算書serve）**。その後13c-PM。
 これは§0.4.6のportfolio順をそのまま実行する。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 残るH5 relationsはagent economyの会計・自活証明が閉じるまでNEXT HORIZONに残す。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -777,7 +777,7 @@ fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだ
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
-S20b-b/cの後に `13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`13d-b`（on-chain実送金）。
+S20b-cの後に `13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`13d-b`（on-chain実送金）。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -790,7 +790,7 @@ S20b-b/cの後に `13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`
 | H5 | `ORG-relations` | **実装仕様**: 本人の Google Calendar から「timed + accepted external attendee がちょうど1人 + provider が displayName を実提供」の予定だけを1対1 interactionに変換。email は HMAC の入力にのみ使い、第三者の email/title/location/copy は出力・DB・logへ保存しない。本人の安定 cadence が4回以上あり、最終interactionが中央値の1.5倍を超えた時だけ、週1回上限で一方向の提案1通。MENTAL 3通/日 + 2h spacingを共有し、予定中・移動/位置不明・timezone不明では沈黙。Telegram bot が第三者chatを読めるとは主張せず、将来 source adapter 用のclosed schemaのみ保持 | 同上 | **done**: #1181 merged。focused 42/42、relations eval 10/10、全 eval 134/134。full suite 657/658（唯一の失敗はこのMacで実際にloadedな`ai.anicca.life-manager-dev`を「未load」と期待する既知host-state test）。migration 2本 + PostgREST reload + empty table readback済み。Railway `life-call` production exact SHA `62314317…` SUCCESS、health 200、loops起動。production runtime実弾は18か月 Calendar 711 events（timed 703 / external attendee 1人=18 / provider displayName有=0）を完走し、`lm_relations_log`へ実scan row `interaction_count=0,detections=[]`をappend、提案は正しく0でabstain |
 | H8 | `IG-LM` | LM 専用 Instagram 開設。**正直な制約: account 作成は agent の越えられない境界**（Dais の許可でも解除不可の platform 規則）。zero-human 選択肢はこの agent には無い。道は2つ: ①Dais が `ig-account-create` skill を1回実行（〜5分、実証済み手順）②当面 TikTok のみ（daily bar は充足中）。開設後の配線切替は agent がコード変更ゼロで実施 | Dais 口述 2026-07-27 | 保留 — ①か②の選択待ち（どちらでも損は小さい） |
 | H6 | `OPS-1` | ~~Telnyx 残高 top-up 経路~~ **解消（2026-07-27 実測）**: auto-recharge が既に有効 — `threshold $5 / recharge $20 / credit_paypal / enabled:true`（API readback）。残高は自己回復する。人間アクション不要。将来 user 数増で $20 では足りなくなったら amount 引き上げを提案する | demo sweep D | **done — 実測で非問題と判明** |
-| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — S20b-bから順に実行 |
+| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — S20b-cから順に実行 |
 
 **常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
 
