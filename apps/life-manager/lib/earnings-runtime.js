@@ -86,10 +86,30 @@ async function measureBalance(readBalanceMinor) {
 }
 
 async function generateMonthlyReport(request, opts = {}) {
-  const { year, month, timezone, walletAddress, readBalanceMinor, cause, plan, currency, locale } = request || {};
+  const {
+    year, month, timezone, walletAddress,
+    readBalanceMinor, readBalanceAtomic, balanceDecimals,
+    cause, plan, currency, locale,
+  } = request || {};
+  const hasMinorReader = readBalanceMinor != null;
+  const hasAtomicReader = readBalanceAtomic != null;
+  if (hasMinorReader && hasAtomicReader) {
+    throw new Error("supply exactly one measured wallet balance reader");
+  }
+  if (!hasMinorReader && !hasAtomicReader) {
+    throw new Error("a measured wallet balance reader is required");
+  }
+  if (hasAtomicReader && balanceDecimals == null) {
+    throw new Error("an atomic balance reader needs balance decimals");
+  }
   const rows = await readMonthRows({ year, month, timezone, walletAddress }, opts);
-  const balanceMinor = await measureBalance(readBalanceMinor);
-  const summary = rollUpMonth(rows, { year, month, timezone, walletAddress, balanceMinor, currency });
+  const measuredBalance = await measureBalance(hasMinorReader ? readBalanceMinor : readBalanceAtomic);
+  const balanceOptions = hasMinorReader
+    ? { balanceMinor: measuredBalance }
+    : { balanceAtomic: measuredBalance, balanceDecimals };
+  const summary = rollUpMonth(rows, {
+    year, month, timezone, walletAddress, currency, ...balanceOptions,
+  });
   return { summary, text: formatMonthlyReport(summary, { cause, plan, locale }) };
 }
 
