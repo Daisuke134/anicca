@@ -543,6 +543,12 @@ Final independent approval evidence: 最初のfresh read-only reviewerは一時a
 
 Completion claims MUST include fresh command output, remote commit hash, deployment commit hash, and real provider evidence IDs.
 
+### 6.6 Current parent refresh ledger
+
+Mac Miniのloopを停止せずlive scheduler metadataを再収集した結果、TODO #1 parentは334 rowから392 rowへ変化した。差分は追加63・削除5、source別はlaunchd 165 / OpenClaw cron 222 / Railway 1 / repository entrypoint 4。current sorted ID digestは`9f5479da29cb9159925166129606e6fa422b949faa6028d7267b961fba1209bb`。REDはtracked 334 rowに対してcurrent 392 contractが2 failure / 1 error、GREENはgenerator A=B、tracked byte exact、focused 5/5。削除5はinventoryからのabsenceであり、migration操作としてprocess停止・launchd bootout・plist削除を実行していない。
+
+このrefreshで旧334-parent digestにbindしたTODO #2〜#5 artifactはcurrent completion evidenceではなくなる。各artifactは392-parentへ再収集し、revision/privacy/secret gateとrequired reviewをfresh通過するまで`in_progress`へ戻す。旧approved artifactは履歴として保持し、current approvalへ流用しない。
+
 ## 7. Research decisions
 
 | Decision | Source | 核心の引用 |
@@ -569,11 +575,11 @@ state values: `pending | in_progress | code_done | done | blocked`。
 
 | # | Task | Done condition | State |
 |---|---|---|---|
-| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — focused review rejectをremediate。旧330 ID集合はcount 330＋canonical sorted SHA-256 digest、新規はexact 4 set、既存4 rowはexact state、removal/addition substitution fixtureはreject。fixture RED 1/1 failure、334-row update RED 2 failures→GREEN focused 5/5。live A=B=tracked byte exact、334 data / 335 physical（launchd 107 / OpenClaw 222 / Railway 1 / repo 4）、旧revisionからexact 4追加 / 0削除。self-test、Python syntax、TSV/doc default gitleaks、privacy boundaryがPASS |
-| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | done — external fresh reviewer `ok:true`, blocking 0、basis `todo2_334_rebind_independent_review_approved_v1`。builder manifestは`review_required / independent_architecture_review_pending`を維持し、separate artifactだけがexact approved role/basisと5 digestへbindする。parent digest `sha256:90113e58:00a49511:9a84159b:1baf1728:c883a52b:0239dd87:113d1f8a:939d1e7c`、460 edge（inactive 177 / none_observed 70 / observed 46 / policy_violation 87 / unverified 80）、54 credential object（loop-used 49 / catalog-only 5）、finding 1。normal generation tracked byte exact、synthetic pending normal fail-close / candidate-only、builder self-promotionとdigest mutationをreject |
-| 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | done — external fresh reviewer `ok:true / blockers:[]`、basis `todo3_independent_candidate_review_approved_v1`。builder manifest pendingを維持し、separate reviewだけがexact approved role/basis、manifest/parent/exact 4 source revisionへbindする。334 parent、2,004 category + 334 definition = 2,338 edge、127 object、category discovered 7 / unverified 1,997、unbound earn object 3。normal generation tracked exact、synthetic pending candidate-only/normal fail-close、builder自己承認・approved downgrade・stale 330 reviewをreject |
-| 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | done — fresh reviewer `ok:true / blockers:[]`、basis `todo4_independent_candidate_review_approved_v1`。builder manifest pending、separate reviewだけをexact approved tupleへ遷移。334 parent / 1,670 category + 7 binding = 1,677 edge / 12 object。normal generation tracked exact、synthetic pending candidate-only/normal fail-close、builder promotion/downgrade・stale binding・wallet allowをreject |
-| 5 | macOS依存を分類する | Linux可/要置換/廃止を全loopに付与 | pending |
+| 1 | 現行loop inventoryを作る | 全launchd/cron/entrypoint/ownerが1行ずつ存在 | done — liveを停止せず392 rowへrefresh。launchd 165 / OpenClaw 222 / Railway 1 / repo 4、追加63 / 削除5、current ID digest `9f5479da29cb9159925166129606e6fa422b949faa6028d7267b961fba1209bb`。392 contract RED 2 failure / 1 error→generator A=B・tracked byte exact・focused 5/5 GREEN。process stop / bootout / plist delete 0 |
+| 2 | loopごとのcredential inventoryを作る | secret値なしでprovider/scope/refを記録 | in_progress — 旧approved artifactは334-parent bind。392-parent再収集・secret/privacy gate・required review前はcurrent completionを主張しない |
+| 3 | loopごとのstate/artifact inventoryを作る | local path・size・retention・SSOTを記録 | in_progress — 旧approved artifactは334-parent bind。392×6 coverage再生成・revision/privacy gate・required review前はcurrent completionを主張しない |
+| 4 | loopごとのexternal side effect inventoryを作る | call/post/mail/render/walletを列挙 | in_progress — 旧approved artifactは334-parent bindかつZenn source revisionが更新済み。392×5再生成・revision/privacy gate・required review前はcurrent completionを主張しない |
+| 5 | macOS依存を分類する | Linux可/要置換/廃止を全loopに付与 | in_progress — 334-parent candidateはcurrent parentと不一致。392 opaque rowへ再bindし、focused/full/gitleaksをfresh GREENへ戻す |
 | 6 | workload classを確定する | 全loopが5 queueのどれかに所属 | pending |
 | 7 | DigitalOcean bridge Dropletを作る | key-only SSH + firewall + Tailscale実測 | pending |
 | 8 | bridgeへDocker runtimeを作る | pinned imageでhello health PASS | pending |
