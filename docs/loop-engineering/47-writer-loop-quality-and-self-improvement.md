@@ -2246,16 +2246,16 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 ### 22.6 残 TODO（唯一の現行正本、順序 = 損失の大きさ）
 
-前段の done 条件を満たさずに次へ進まない。#1 の調査中に #6 の根が同時に判明しても、#1 の public readback を PASS にしてから #2 へ進む。#6 の修正自体は順番まで保留する。
+前段の done 条件を満たさずに次へ進まない。後順位の欠陥が前順位の live/readback を物理的に妨げる場合だけ、前順位を閉じるための prerequisite として同時修正し、両方を別証拠で閉じる。#2 では public media 404 が Dev.to staging を止めたため #6 をこの例外で同時に閉じた。
 
 | # | 作業 | 損失順の理由 | done 条件 |
 |---:|---|---|---|
 | 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
-| 2 | devto/en の frontmatter 欠落 | 毎日1面を確実に落とす。publication-state初期化後の局所欠陥 | canonical EN draftが初期化後もtitle/tags/canonical frontmatterを保持し、live URLのreadback PASS |
+| 2 | **DONE** — devto/en の frontmatter 欠落 | immutable init 前に canonical EN の title/tags frontmatter を強制し、凍結済みrunは本文完全一致wrapperからmetadataだけを救済。Writer `65f139e` / `85b83ba` | run `daily-2026-07-27` の固定ID `4243074` をlaunchd loopが同一IDのまま公開。authenticated API/匿名HTMLでidentity・本文hash・headline/body media PASS、ledger live行exact1。[公開URL](https://dev.to/anicca_301094325e/if-you-want-ai-agents-to-run-unattended-design-how-they-stop-first-1n3m) |
 | 3 | x-article ja/en の identity 不一致 | 2面ぶんを同時に失う | staged editorとpublic articleのtitle/body hashが期待artifactと一致。別記事ならpublish前quarantine。ja/en exact2 live |
 | 4 | zenn / x-post が `intent` のまま | 前段停止で到達すらしておらず、停止点が未知 | step traceで最初の未到達edgeを特定して修復。両面がreceipt+readback terminalへ到達 |
 | 5 | `cta-gate.sh` を prompt に配線 | 公開修復後、扉の再消失を防ぐ | 全publishable artifactがgateを必ず通り、CTA欠落fixtureがpublish前FAIL、正しいCTAがPASS |
-| 6 | dev.to画像パス修正（相対→絶対、`.png` 欠落） | #1 と同根候補だが、影響を断定せず別receiptで閉じる | canonical/public本文の全画像URLが絶対URL、HTTP 200、拡張子/content-type一致。broken asset 0 |
+| 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | note 上位8本に扉を追加 | 反応済み在庫の上位3本に転換先が無い | 編集前backup、8本編集、公開API再読でdoor 3/8→8/8。URLと本文hashをledgerへ記録 |
 | 8 | 台帳3 run蓄積 | 今日が1日目。あと2日分は作らず待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
 | 9 | 22:30 の盲目解消を実機確認 | 次の実scheduleでしか確認できない | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
