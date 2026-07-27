@@ -12,6 +12,7 @@ const {
   readFinancialTenant,
   renderFinancialReport,
   runFinancialReport,
+  snapshotHash,
 } = require("./financial-report-runtime.js");
 
 const WALLET = "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
@@ -102,6 +103,25 @@ test("USD micros format without losing sub-cent measured cost", () => {
   assert.equal(formatUsdMicros("1000000"), "$1.00");
   assert.equal(formatUsdMicros("3001"), "$0.003001");
   assert.equal(formatUsdMicros("-3150000"), "-$3.15");
+});
+
+test("snapshot hash survives PostgreSQL jsonb object-key reordering", () => {
+  const beforePersistence = {
+    schema_version: 1,
+    kind: "weekly",
+    rail_pnl: [
+      { rail: "WORK", net_usd_micros: "10", gross_usd_micros: "20" },
+    ],
+  };
+  const afterJsonbReadback = {
+    kind: "weekly",
+    rail_pnl: [
+      { gross_usd_micros: "20", net_usd_micros: "10", rail: "WORK" },
+    ],
+    schema_version: 1,
+  };
+
+  assert.equal(snapshotHash(beforePersistence), snapshotHash(afterJsonbReadback));
 });
 
 test("a due report claims its immutable snapshot before Telegram and stores the provider receipt", async () => {
