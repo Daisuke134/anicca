@@ -100,7 +100,10 @@ closed.
 
 `generateMonthlyReport` gains the parallel
 `readBalanceAtomic + balanceDecimals` request path. Existing Base-USDC callers and
-copy remain unchanged.
+copy remain unchanged. The rollup also carries an explicit explorer hostname:
+Base callers default to `basescan.org`, while this Polygon cycle renders
+`polygonscan.com`; a chain-correct balance with a wrong explorer is not a
+verifiable report.
 
 ### Production command
 
