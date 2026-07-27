@@ -95,3 +95,44 @@ REVOKE ALL ON TABLE public.lm_financial_report_receipts
   FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.lm_financial_report_receipts
   TO service_role;
+
+-- lm_api_cost is intentionally high-volume. REPORT-1 must not pull every row
+-- through PostgREST on each five-minute tick, so PostgreSQL performs the exact
+-- tenant-scoped sums and returns only bounded aggregates.
+CREATE OR REPLACE FUNCTION public.lm_financial_cost_totals(
+  p_uid text,
+  p_period_start timestamptz,
+  p_period_end timestamptz
+) RETURNS TABLE (
+  period_est_usd numeric,
+  all_time_est_usd numeric,
+  period_rows bigint,
+  all_time_rows bigint
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT
+    COALESCE(sum(est_usd) FILTER (
+      WHERE ts >= p_period_start AND ts < p_period_end
+    ), 0)::numeric AS period_est_usd,
+    COALESCE(sum(est_usd) FILTER (
+      WHERE ts < p_period_end
+    ), 0)::numeric AS all_time_est_usd,
+    count(*) FILTER (
+      WHERE ts >= p_period_start AND ts < p_period_end
+    )::bigint AS period_rows,
+    count(*) FILTER (
+      WHERE ts < p_period_end
+    )::bigint AS all_time_rows
+  FROM public.lm_api_cost
+  WHERE lm_api_cost.uid = p_uid
+    AND p_period_start < p_period_end;
+$$;
+
+REVOKE ALL ON FUNCTION public.lm_financial_cost_totals(text, timestamptz, timestamptz)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.lm_financial_cost_totals(text, timestamptz, timestamptz)
+  TO service_role;

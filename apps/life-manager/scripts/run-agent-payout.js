@@ -15,7 +15,7 @@ const { getAddress } = require("viem");
 const { deriveAddress } = require("../lib/agent-wallet.js");
 const { BASE_USDC, settleBaseUsdc } = require("../lib/base-usdc-payout.js");
 const { usdMicrosFromDecimal } = require("../lib/financial-report-snapshot.js");
-const { readCostLedger } = require("../lib/financial-report-runtime.js");
+const { readFinancialCostTotals } = require("../lib/financial-report-runtime.js");
 const { runPayout } = require("../lib/payout-runtime.js");
 
 const DEFAULT_AGENT_WALLET = "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
@@ -163,15 +163,15 @@ async function main(argv = process.argv.slice(2), env = process.env, deps = {}) 
   const balanceReader = deps.readUsdcBalance || readUsdcBalance;
   const protectedReader = deps.readProtectedWallet || readProtectedWallet;
   const operatingCostReader = deps.readOperatingCostMinor || (async (uid) => {
-    const rows = await readCostLedger(uid, {
+    const totals = await readFinancialCostTotals(uid, {
+      period_start: "1970-01-01T00:00:00.000Z",
+      period_end: new Date().toISOString(),
+    }, {
       supaUrl: env.SUPABASE_URL,
       supaKey: env.SUPABASE_SERVICE_ROLE_KEY,
       fetchImpl,
     });
-    const micros = rows.reduce(
-      (sum, row) => sum + usdMicrosFromDecimal(row.est_usd == null ? "0" : row.est_usd),
-      0n,
-    );
+    const micros = usdMicrosFromDecimal(totals.all_time_est_usd);
     return Number((micros + 9_999n) / 10_000n);
   });
   const fetchImpl = deps.fetchImpl || globalThis.fetch;

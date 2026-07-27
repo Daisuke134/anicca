@@ -8,6 +8,7 @@ const {
   dueReportKinds,
   formatUsdMicros,
   readCostLedger,
+  readFinancialCostTotals,
   readFinancialTenant,
   renderFinancialReport,
   runFinancialReport,
@@ -272,4 +273,41 @@ test("cost ledger reads only one tenant and receipt claim uses database conflict
   assert.equal(calls[1].init.method, "POST");
   assert.equal(calls[1].init.headers.Prefer, "resolution=ignore-duplicates,return=representation");
   assert.deepEqual(claim, { claimed: false });
+});
+
+test("production cost aggregation is one tenant-scoped Postgres RPC rather than an unbounded row read", async () => {
+  const calls = [];
+  const fetchImpl = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return {
+      ok: true,
+      json: async () => [{
+        period_est_usd: "0.283027566666",
+        all_time_est_usd: "12.345678900001",
+        period_rows: 16,
+        all_time_rows: 12001,
+      }],
+    };
+  };
+  const result = await readFinancialCostTotals("u1", {
+    period_start: "2026-08-01T15:00:00.000Z",
+    period_end: "2026-08-02T11:05:00.000Z",
+  }, {
+    supaUrl: "https://db.example",
+    supaKey: "service",
+    fetchImpl,
+  });
+
+  assert.deepEqual(result, {
+    period_est_usd: "0.283027566666",
+    all_time_est_usd: "12.345678900001",
+    period_rows: 16,
+    all_time_rows: 12001,
+  });
+  assert.match(calls[0].url, /\/rpc\/lm_financial_cost_totals$/);
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    p_uid: "u1",
+    p_period_start: "2026-08-01T15:00:00.000Z",
+    p_period_end: "2026-08-02T11:05:00.000Z",
+  });
 });
