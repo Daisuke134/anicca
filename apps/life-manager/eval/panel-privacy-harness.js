@@ -64,6 +64,7 @@ function sourceUser(source, hostileValue) {
     calendar_provider: null,
     gmail_account_id: null,
     payout_destination: null,
+    agent_wallet_address: "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad",
   };
 }
 
@@ -109,17 +110,19 @@ function panelFetch(source, hostileValue) {
     if (url.pathname.endsWith("/lm_users")) return jsonResponse([user]);
     if (url.pathname.endsWith("/lm_wake_log")) return jsonResponse([]);
     if (url.pathname.endsWith("/lm_api_cost")) return jsonResponse([]);
-    if (url.pathname.endsWith("/lm_financial_ledger")) {
+    if (url.pathname.endsWith("/lm_agent_earnings")) {
       return jsonResponse([{
-        uid: SCOPE.uid,
-        ts: "2026-07-21T11:00:00.000Z",
-        kind: "provider-transfer",
-        amount: "10.00",
+        entry_key: "fixture-income",
+        occurred_at: "2026-07-21T11:00:00.000Z",
+        kind: "financial_external_income",
+        amount_minor: 1000,
         currency: "USD",
-        on_chain_url: source === "ledger-href" ? hostileValue : null,
-        provider_payload: source === "ledger-href" ? hostileValue : null,
+        tx_hash: null,
+        source: "x402_sale",
+        meta: { provider_payload: source === "ledger-href" ? hostileValue : null },
       }]);
     }
+    if (url.pathname.endsWith("/lm_financial_report_receipts")) return jsonResponse([]);
     if (url.pathname.endsWith("/lm_user_locations")) return jsonResponse([]);
     if (url.pathname.endsWith("/rpc/lm_panel_score_outcome_snapshot")) {
       assert.equal(init.method, "POST");

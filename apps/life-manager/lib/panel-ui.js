@@ -670,9 +670,41 @@ function renderPanelPage(options = {}) {
         && (item.link === null || displaySafeLink(item.link) === item.link);
     }
 
+    const financialReportMoneyFields = Object.freeze([
+      "gross_usd_micros", "realized_loss_usd_micros", "financial_fee_usd_micros",
+      "api_cost_usd_micros", "operating_net_usd_micros", "balance_usdc_atomic",
+      "distributable_usdc_atomic"
+    ]);
+
+    function validFinancialReport(report, kind) {
+      if (report === null) return true;
+      const keys = [
+        "period_key", "snapshot_hash", "telegram_message_id",
+        "gross_usd_micros", "realized_loss_usd_micros", "financial_fee_usd_micros",
+        "api_cost_usd_micros", "operating_net_usd_micros", "balance_usdc_atomic",
+        "distributable_usdc_atomic", "self_funded_bps", "stop_reason", "rail_pnl"
+      ];
+      return displayExactKeys(report, keys)
+        && (kind === "daily" ? /^\\d{4}-\\d{2}-\\d{2}$/.test(report.period_key) : /^\\d{4}-W\\d{2}$/.test(report.period_key))
+        && /^[0-9a-f]{64}$/.test(report.snapshot_hash)
+        && Number.isInteger(report.telegram_message_id)
+        && report.telegram_message_id > 0
+        && financialReportMoneyFields.every(function (field) {
+          return (field === "operating_net_usd_micros" ? /^-?\\d+$/ : /^\\d+$/).test(report[field]);
+        })
+        && (report.self_funded_bps === null || (Number.isInteger(report.self_funded_bps) && report.self_funded_bps >= 0))
+        && ["running", "negative_net", "no_external_income", "reserve_floor"].includes(report.stop_reason)
+        && Array.isArray(report.rail_pnl)
+        && report.rail_pnl.every(function (row) {
+          return displayExactKeys(row, ["rail", "net_usd_micros"])
+            && ["SELL", "WORK", "CAPITAL", "UNCLASSIFIED"].includes(row.rail)
+            && /^-?\\d+$/.test(row.net_usd_micros);
+        });
+    }
+
     function validateLedgerData(data) {
       if (
-        !displayExactKeys(data, ["api_cost", "financial"])
+        !displayExactKeys(data, ["api_cost", "financial", "reports"])
         || !displayExactKeys(data.api_cost, ["no_data", "total", "items"])
         || typeof data.api_cost.no_data !== "boolean"
         || !displaySafeText(data.api_cost.total, false)
@@ -682,6 +714,9 @@ function renderPanelPage(options = {}) {
         || typeof data.financial.no_data !== "boolean"
         || !Array.isArray(data.financial.items)
         || data.financial.items.some(function (item) { return !validLedgerItem(item); })
+        || !displayExactKeys(data.reports, ["daily", "weekly"])
+        || !validFinancialReport(data.reports.daily, "daily")
+        || !validFinancialReport(data.reports.weekly, "weekly")
       ) throw new Error("invalid ledger payload");
       return data;
     }
@@ -814,16 +849,39 @@ function renderPanelPage(options = {}) {
 
     function renderLedger(data) {
       validateLedgerData(data);
+      function money(value, signed) {
+        const amount = BigInt(value);
+        const negative = amount < 0n;
+        const absolute = negative ? -amount : amount;
+        const whole = absolute / 1000000n;
+        const fraction = String(absolute % 1000000n).padStart(6, "0");
+        const trimmed = fraction.replace(/0+$/, "");
+        const decimals = trimmed.length < 2 ? fraction.slice(0, 2) : trimmed;
+        const body = "$" + whole + "." + decimals;
+        return negative ? "-" + body : (signed ? "+" + body : body);
+      }
+      const stopLabels = { running: "稼働中", negative_net: "赤字", no_external_income: "外部収入なし", reserve_floor: "reserve floor" };
+      const reportCards = ["daily", "weekly"].map(function (kind) {
+        const report = data.reports[kind];
+        if (!report) return "";
+        if (kind === "daily") {
+          const cost = BigInt(report.realized_loss_usd_micros) + BigInt(report.financial_fee_usd_micros) + BigInt(report.api_cost_usd_micros);
+          return '<article class="ledger-item"><div><p>DAILY ' + escapeHtml(report.period_key) + '</p><p class="ledger-item-meta">Gross ' + escapeHtml(money(report.gross_usd_micros, true)) + ' · Cost ' + escapeHtml(money(String(cost), false)) + ' · ' + escapeHtml(stopLabels[report.stop_reason]) + '</p></div><p class="ledger-amount">' + escapeHtml(money(report.operating_net_usd_micros, true)) + '</p></article>';
+        }
+        const rails = report.rail_pnl.map(function (row) { return row.rail + " " + money(row.net_usd_micros, true); }).join(" · ");
+        const ratio = report.self_funded_bps === null ? "未計測" : (report.self_funded_bps / 100).toFixed(2) + "%";
+        return '<article class="ledger-item"><div><p>WEEKLY ' + escapeHtml(report.period_key) + '</p><p class="ledger-item-meta">' + escapeHtml(rails || "rail収支なし") + ' · Self-funded ' + escapeHtml(ratio) + '</p></div><p class="ledger-amount">分配可能 ' + escapeHtml(money(report.distributable_usdc_atomic, false)) + '</p></article>';
+      }).join("");
       const entries = data.financial.items.concat(data.api_cost.items);
       if (!entries.length) {
         const cost = data.api_cost.no_data ? "運用実費の記録もまだありません" : "運用実費（累計） " + data.api_cost.total;
-        return '<div class="ledger-empty"><h3>まだ収支の記録はありません</h3><p class="ledger-cost">' + escapeHtml(cost) + '</p></div>';
+        return reportCards + '<div class="ledger-empty"><h3>まだ収支の記録はありません</h3><p class="ledger-cost">' + escapeHtml(cost) + '</p></div>';
       }
       const rows = entries.map(function (entry) {
         const link = displaySafeLink(entry.link);
         return '<li class="ledger-item"><div><p>' + escapeHtml(entry.label) + '</p><p class="ledger-item-meta">' + escapeHtml(entry.date) + (link ? ' · <a class="ledger-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">外部記録で確認</a>' : "") + '</p></div><p class="ledger-amount">' + escapeHtml(entry.amount) + '</p></li>';
       }).join("");
-      return '<p class="ledger-cost">運用実費（累計） ' + escapeHtml(data.api_cost.total) + '</p><ul class="ledger-list">' + rows + '</ul>';
+      return reportCards + '<p class="ledger-cost">運用実費（累計） ' + escapeHtml(data.api_cost.total) + '</p><ul class="ledger-list">' + rows + '</ul>';
     }
 
     const gateLabels = Object.freeze({ location: "位置情報", payout: "送金先" });

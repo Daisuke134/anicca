@@ -1,6 +1,8 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { readFileSync } = require("node:fs");
+const { join } = require("node:path");
 const test = require("node:test");
 
 const { main, parseArgs, publicResult } = require("./run-financial-reports.js");
@@ -62,4 +64,27 @@ test("one report failure is bounded and does not prevent the other due check", a
   assert.equal(results[0].reason, "report_failed");
   assert.equal(results[1].status, "duplicate");
   assert.doesNotMatch(output.join(""), /secret provider detail/);
+});
+
+test("launchd report wiring is bounded, five-minute, and prints only safe status lines", () => {
+  const boot = readFileSync(join(__dirname, "financial-report-boot.sh"), "utf8");
+  const installer = readFileSync(join(__dirname, "install-financial-report-launchd.sh"), "utf8");
+  const plist = readFileSync(join(
+    __dirname,
+    "..",
+    "launchd",
+    "ai.anicca.life-manager-financial-report.plist.template",
+  ), "utf8");
+
+  assert.match(boot, /\/opt\/homebrew\/bin\/timeout 240 \/opt\/homebrew\/bin\/node/);
+  assert.doesNotMatch(boot, /(?:^|[;&|]\s*)timeout\s/);
+  assert.match(boot, /\.openclaw\/\.env/);
+  assert.match(plist, /<string>\/bin\/bash<\/string>/);
+  assert.match(plist, /<key>StartInterval<\/key>\s*<integer>300<\/integer>/);
+  assert.match(plist, /life-manager-financial-report\.out\.log/);
+  assert.match(installer, /plutil -lint/);
+  assert.match(installer, /launchctl bootstrap/);
+  assert.match(installer, /launchctl enable/);
+  assert.match(installer, /launchctl print[^|]+\|\s*\/usr\/bin\/grep/);
+  assert.doesNotMatch(installer, /launchctl print "\$DOMAIN\/\$LABEL"\s*$/m);
 });

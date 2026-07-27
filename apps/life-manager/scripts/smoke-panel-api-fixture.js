@@ -40,7 +40,7 @@ async function fixtureFetch(input, init = {}) {
     uid: "fixture-u1", ts: "2026-07-21T08:50:00.000Z",
     kind: "telnyx_call", quantity: 60, unit: "seconds", est_usd: 0.12,
   }]);
-  if (url.pathname.endsWith("/lm_financial_ledger")) return response({ code: "PGRST205" }, 404);
+  if (url.pathname.endsWith("/lm_financial_report_receipts")) return response([]);
   throw new Error(`unexpected fixture URL ${url}`);
 }
 
