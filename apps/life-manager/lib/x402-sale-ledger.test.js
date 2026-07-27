@@ -69,6 +69,21 @@ test("an exact-cent verified external sale maps to one deterministic public ledg
   assert.ok(Object.isFrozen(row));
 });
 
+test("a finalized Railway x402 sale uses the same external-sale ledger contract", () => {
+  const row = saleLedgerEntry(sale({
+    source: "x402-railway",
+    source_sale_id: "x402-railway:f738b171-fb73-48b0-b386-aa391def62f4",
+    offer_id: "/emotion-detector",
+    usdc: 0.01,
+    usdc_atomic: "10000",
+  }), boundary);
+
+  assert.equal(row.source, "x402_sale");
+  assert.equal(row.amount_minor, 1);
+  assert.equal(row.meta.marketplace, "x402-railway");
+  assert.equal(row.meta.offer_id, "/emotion-detector");
+});
+
 test("the runtime validates first and delegates exactly one deterministic entry", async () => {
   const calls = [];
   const result = await recordX402Sale(sale(), {

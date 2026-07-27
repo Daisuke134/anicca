@@ -4,7 +4,7 @@ const { toChecksumAddress } = require("./agent-wallet.js");
 const { normaliseEntry, usdMinorFromAtomic } = require("./earnings-ledger.js");
 const { recordEarnLoopRevenue } = require("./earnings-runtime.js");
 
-const ALLOWED_SOURCES = new Set(["x402-image", "the402", "clawmerchants"]);
+const ALLOWED_SOURCES = new Set(["x402-image", "x402-railway", "the402", "clawmerchants"]);
 const SOURCE_SALE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,191}$/;
 const OFFER_ID = /^[a-zA-Z0-9/][a-zA-Z0-9._:/-]{0,191}$/;
 const WORK_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
