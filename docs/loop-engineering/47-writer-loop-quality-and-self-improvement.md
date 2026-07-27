@@ -61,9 +61,9 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。順序の正本は**範囲で二分する**（2026-07-27 整理）: **公開エンジン**（X Post / book / OSS 境界 / E2E）の順序は **§18.8 E1→E8**、**craft trainer**（自己改善）の順序は **§21.2 T1→T10**。重なるのは §18.8 の E6 だけで、E6 の中身と順序は §21 が上書きする。
+旧導入順は完了または廃止。2026-07-27 08:33 までの履歴は §18.8 と §21.2 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.6**。Writer の公開経路を直した後、T13（OSS 境界）で Writer を共有 Marketing Loop の最初の channel pack に移す。
 
-TaskList の現在状態は §16.5 と §18.8 を正本とする。D1-D8 と P1-P3 は **DONE**。旧 P4 は配信集合・runtime 境界が変わるため §18 の E1-E8 へ移管する。残作業の順序と状態は §18.8 だけを更新する。
+§16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.6 だけを更新する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -183,7 +183,7 @@ launchctl unload "$P"; launchctl load "$P"
 **#8 のタスク** = ①ハードコード(アカウント名/telegram/email)を env 化 ②全platform自動signup を IG パターンで note/substack/zenn/X に展開 ③KYC/payout は loop が「あなたの銀行を1回繋いで」と依頼する導線。
 **「clone して勝手に全部」の単一コマンドは今は存在しない** — それを作るのが #8。KYC だけは各人1回の人間作業で正解、それ以外は自動化可能。
 
-## 12. 旧 TODO（履歴。現在の残TODO正本は §18.8）
+## 12. 旧 TODO（履歴。現行正本は §22.6）
 build は全 done(#1-6,9-14 完了)。残り:
 1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
 2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
@@ -476,7 +476,9 @@ healthy daily runの公開receiptは **MID exact5 + X Articles exact2 + X Post e
 | source tree | active `profitable-claude` と古い `~/.openclaw/skills/ai-entity-article-writer` copyが分岐。存在しない `~/.claude/...` symlink記述あり | tracked SSOT 1個 + repo外data dir 1個 + installされたlaunchd plist。skill discoveryに依存せずmanifestでcanonical promptを列挙 |
 | self improve |複数のdaily/weekly shellがあり、Sonnet直呼びと役割重複 | metrics collector、weekly experiment、promotion validatorの3責務だけ。Terra既定、Claude-only mappingあり |
 
-#### TO-BE folder tree（tracked SSOT + runtime data + LaunchAgents）
+#### Writer-first transitional tree（tracked SSOT + runtime data + LaunchAgents）
+
+これは Writer 単体を先に正常化するための移行 tree。共有 Marketing Loop の最終3層 tree は §22.3 が上書きし、T13 で移す。公開が 2/8 の間は移設しない。
 
 ```text
 profitable-claude/
@@ -808,7 +810,7 @@ paid subscription ¥500相当/月 ───────────────�
 
 ### 18.8 E1-E3 の完了 evidence（履歴）
 
-残作業の行（E4-E8）は §21.2 の T11-T14 と T6 に移した。**この節に残作業を書き足さない。**
+残作業の行（E4-E8）は当時 §21.2 の T11-T14 と T6 に移した。現在は §22.6 へ再計画済み。**この節に残作業を書き足さない。**
 
 | # | 状態 | 作業 | done evidence |
 |---|---|---|---|
@@ -911,7 +913,7 @@ mine は **対比的**に行う。同 source・同 topic の上位十分位 **�
 
 ### 19.6 done 条件
 
-廃止。done 条件は §21.2 の表に移した。§19 は設計の説明だけを持ち、進捗と順序は持たない。
+廃止。当時の done 条件は §21.2、現在の残順序は §22.6 に移した。§19 は設計の説明だけを持ち、進捗と順序は持たない。
 
 ### 19.7 成功の定義（「judge の点が上がった」は成功ではない）
 
@@ -984,7 +986,7 @@ editorial-gate は**一度も走っていない**。具体的な命令（4.6/4.7
 
 ### 20.4 §19.6 の進捗
 
-廃止。この表は §21.1（完了）と §21.2（残作業）に統合した。順序と状態は §21 だけを見る。
+廃止。この表は当時 §21.1（完了）と §21.2（残作業）に統合した。現在の順序と状態は §22.6 だけを見る。
 
 ### 20.5 副次の実測（同日）
 
@@ -1039,13 +1041,13 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 
 ---
 
-## 21. craft trainer の実行順序（2026-07-27。§19.6 と §20.4 の TODO 表を置換）
+## 21. craft trainer の実行履歴（2026-07-27 08:33 まで）
 
-**範囲**: 残作業の**全部**。craft trainer も公開エンジンも、残っている仕事はこの1つの表にしか書かない。§18.8 は E1-E3 の完了 evidence だけを持つ履歴になり、E4-E8 の残作業行は本節の T11-T14 に移設済み。2つの表を持つと必ず片方が古くなるので、表は1つだけにする。
+**範囲**: ここは `7a2308203` 時点までの履歴。現在の残作業は §22.6 に移設し、本節の未完了行は再計画の出自を残すための snapshot とする。
 
-**この節を更新する時の規則**: 状態は本節の表だけに書く。他節に進捗表を作らない。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
+**更新規則**: 本節の状態はもう更新しない。状態変更は §22.6 だけに書く。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
 
-Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節が **craft trainer の順序正本**。以後この表だけを更新する（公開エンジンは §18.8）。
+Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節は、その時点で craft trainer の順序正本だった履歴。現行は §22.6。
 
 ### 21.1 完了（証拠付き。再着手禁止）
 
@@ -1062,7 +1064,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | 矛盾スキャナ | `efac50a` `b5fb2b5` — direct 1205→20、drift 2→1、dead 19→17、歴史的事例 fixture 維持 |
 | disk 自動回収 | `~/scripts` `7a7bb44` — git-ignore された再生成可能ディレクトリを聞かずに回収 |
 
-### 21.2 残作業（この順。前段の done を満たさずに次へ行かない）
+### 21.2 当時の残作業 snapshot（現行順序ではない）
 
 | # | 作業 | 依存 | done 条件（検証コマンドで判定） |
 |---|---|---|---|
@@ -1142,13 +1144,13 @@ loop が**人手なしで**次を1周する:
 
 | 検査 | やり方 | 実測 |
 |---|---|---|
-| 排他的 SSOT 主張が複数ないか | `grep -c "唯一の…正本"` が 1 以下 | **0**（§20.6 の是正後） |
+| 排他的 SSOT の参照先が分岐していないか | SSOT を名乗る全記述の参照先を抽出し、unique target が1つ | **`§22.6` の1 target** |
 | 引用した commit が実在するか | 本文の `` `[0-9a-f]{7,40}` `` を全部集め、`git cat-file -e <sha>^{commit}` を profitable-claude / anicca-project / ~/scripts に当てる | 117件中115件が実在。残る2件は Zenn 公開用リポの commit で、本文にもそう明記されている（偽陽性） |
-| 進捗表が1つだけか | 残作業の表は §21.2 のみ。他節に表を作らない | §19.6 と §20.4 は参照1行に置換済み |
+| 現行進捗表が1つだけか | `現行正本` を名乗る表が §22.6 だけ | §21.2 は `snapshot` と明記、§19.6 と §20.4 は履歴参照 |
 
 **効かなかった検査（やらないと決めた）**: `rule_conflicts.py` を spec 本体に当てる。あれは規則ファイル（禁止と推奨が短文で並ぶ形）に合わせて較正してあり、1100行の設計文書に当てると主語が「pass, target, text」のような語になって使い物にならない。**道具を無理に使わない。** 規則ファイルには効くが spec には効かない、が正しい理解。
 
-**更新規則の再掲**: 状態は §21.2 の表だけに書く。1つの事実は1箇所にしか書かない。2箇所に書いた瞬間、片方が古くなる。
+**更新規則の再掲**: 状態は §22.6 の表だけに書く。1つの事実は1箇所にしか書かない。2箇所に書いた瞬間、片方が古くなる。
 
 ### 21.7 T6 の途中経過と、外部からの裏付け（2026-07-27）
 
@@ -1995,3 +1997,328 @@ ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなる
 **note/ja の失敗は §21.32 と同じクラス**（公開物から資産を読み戻せない）。dev.to で相対パス画像と `.png` 欠落を特定したが、note にも同型の経路がある可能性が高い（未確認）。
 
 **優先順位の根拠**: note は同世代比較で最も反応が取れている面（§21.35/§21.37）であり、そこが ambiguous で止まるのが最大の損失。devto は毎日1面を確実に落としており、原因が frontmatter という**局所的で直しやすい**箇所。x-article は2面ぶん。zenn/x-post は前段で止まっているため、まず何処で止まったかの特定が要る。
+
+---
+
+## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
+
+### 22.1 Overview（What / Why）
+
+**結論**: Writer Loop は独立製品ではない。あらゆる自社 product を売る **Shared Marketing Loop** の最初の channel pack とする。Honne、Larry、ReelClaw、Watercolor の launchd loop も、記事・X・SEO と同じ engine に後で接続する。
+
+ただし、**今は統合作業を始めない**。`7a2308203` の実測では公開が 2/8 であり、壊れた Writer を共有すると停止の blast radius も全 channel に広がる。順序は次の通り:
+
+1. §22.6 #1–#7 で Writer の公開経路を exact8 に戻す
+2. 3 run と実指標を蓄積し、Writer の learning/recovery が1周する
+3. T13（OSS 境界）で `profitable-claude/marketing/` の3層へ移す
+4. Life Manager を最初の product pack として接続する
+5. Honne / Larry / ReelClaw / Watercolor を video producer adapter として順次接続する
+6. Telegram を先に全 loop 共通の観測面にし、dashboard は receipt が安定した後に載せる
+
+**不変式**:
+
+> loop の違いは3つだけ: **報酬・対戦相手・weight file**。機械は1つ。
+
+source、artifact form、publisher は channel I/O adapter であり、学習機械を fork する理由ではない。product ごとに変わるのは offer / audience / CTA / attribution。channel ごとに変わるのは生成形式 / platform policy / publish/readback。engine の state machine、台帳、blame、矛盾 scan、experiment、keep/revert、recovery、Telegram は1実装だけ持つ。
+
+### 22.2 外部調査と採用判断（Firecrawl + `crwl` + `gh` 実読）
+
+| Source | 実物から確認したもの | この spec へ copy+tweak する判断 |
+|---|---|---|
+| [Orallexa `orchestrator.py`](https://github.com/alex-jb/orallexa-marketing-agent/blob/main/marketing_agent/orchestrator.py) | 核心の引用: “High-level orchestrator: project → posts → distribution.” | product input と platform distribution を orchestrator で分離する。生成器や publisher を product ごとに複製しない |
+| [Orallexa `multiproject.py`](https://github.com/alex-jb/orallexa-marketing-agent/blob/main/marketing_agent/multiproject.py) | 核心の引用: “Multi-project config — let the cron handle N projects in one pass.” | 1 engine が N products を読む。Life Manager、新規 iOS app、将来 product は config pack として追加する |
+| [Orallexa `platforms/base.py`](https://github.com/alex-jb/orallexa-marketing-agent/blob/main/marketing_agent/platforms/base.py) | 核心の引用: “All platform adapters implement this.” | platform ごとの差は adapter 契約へ閉じ込め、`validate / publish / readback / metrics` を共通 interface にする |
+| [Orallexa `bandit.py`](https://github.com/alex-jb/orallexa-marketing-agent/blob/main/marketing_agent/bandit.py) | 核心の引用: “Thompson sampling explores under-tried arms proportional to uncertainty.” | 1回の viral を永久ルールにせず、探索余地を残す。ただし reward は raw like で共通化せず product goal に束縛する |
+| [Orallexa `engagement.py`](https://github.com/alex-jb/orallexa-marketing-agent/blob/main/marketing_agent/engagement.py) | 核心の引用: “Feed back into Strategy Agent (which posts work?)” | publish で loop を閉じず、public metric を同じ artifact/run へ戻す |
+| [Postiz](https://github.com/gitroomhq/postiz-app) | 核心の引用: “Schedule all your social media posts” / “Measure your work with analytics.” | 多数 platform adapter と analytics の分離は採用。AGPL code は vendor/copy せず、interface の観察だけに留める |
+| [Self-Improving Agents survey repo](https://github.com/selfimproving-agent/awesome-Self-Improving-Agents) | 核心の引用: “Persistent updates to prompts, memory, tools, workflows, or full agent scaffolds.” | 「毎日生成する」だけを self-improve と呼ばない。次 run が読む永続 component が変わった時だけ改善と数える |
+| [Temporal: Understanding Temporal](https://docs.temporal.io/evaluate/understanding-temporal) | 核心の引用: “your application can pick up right where it left off” | self-heal は新規 run の再生成ではなく、checkpoint 済みの同一 run / artifact から resume する |
+| [OpenTelemetry Observability Primer](https://opentelemetry.io/docs/concepts/observability-primer/) | 核心の引用: “application code must emit signals such as traces, metrics, and logs.” | Telegram の最終文だけでなく、run trace・metric・state log を同じ `run_id` で相関させる |
+
+**採用しない最強の論拠**: 「全 channel は marketing だから prompt/CRAFT/reward まで1つにする」は管理が最も単純になる。しかし、記事の勝者を conversion ad の対戦相手にすると §21.13 の「対戦相手がニュースだった」を全領域で再現する。共有対象は機械であって、良さの定義ではない。
+
+**自分が間違うとしたら最有力の筋**: 3層へ移す時点で Writer の暗黙依存を engine contract に取りこぼし、「共有化」ではなく2本目の半壊 copyを作ること。したがって移設の gate は clean user E2E と旧 path 0件で判定する。
+
+### 22.3 3層 folder tree（T13 の移行先）
+
+tracked SSOT は `profitable-claude` repo に置く。OpenClaw home を code/config の正本にしない。runtime data は repo 外、scheduler は macOS native launchd のままにする。
+
+```text
+profitable-claude/
+└── marketing/
+    ├── engine/                               # Layer 1: 全 loop 共通。1実装だけ
+    │   ├── contracts/
+    │   │   ├── run.schema.json
+    │   │   ├── artifact.schema.json
+    │   │   ├── publication.schema.json       # intent → receipt → public readback
+    │   │   ├── metric.schema.json
+    │   │   └── experiment.schema.json
+    │   ├── orchestrator/                     # enqueue / checkpoint / resume / terminal
+    │   ├── ledger/                           # title/rejection/blame/contradiction
+    │   ├── recovery/                         # classify / retry / readback / quarantine
+    │   ├── learning/                         # compare / propose-one / held-out / keep-revert
+    │   ├── observability/                    # run trace + metric + log correlation
+    │   ├── notifications/telegram/           # durable outbox、全state transition
+    │   ├── runtime/                          # codex / claude adapter + circuit breaker
+    │   ├── deploy/launchd/
+    │   └── tests/{contract,fixture,e2e}/
+    │
+    ├── products/                             # Layer 2: 何を・誰に・何へ転換するか
+    │   ├── _template/
+    │   │   ├── product.toml                  # audience / pain / promise / proof / offer
+    │   │   ├── attribution.toml              # CTA destination + conversion event
+    │   │   ├── rewards.toml                  # primary / guardrail / observation windows
+    │   │   ├── opponents/                    # 実際に転換した同領域 assets
+    │   │   └── weights/                      # product × channel の学習済み重み
+    │   ├── life-manager/
+    │   ├── anicca-ios/
+    │   └── <next-product>/
+    │
+    └── channels/                             # Layer 3: form と platform I/O
+        ├── writing/                          # 最初に完成させる channel pack
+        │   ├── craft/                        # article 用 CRAFT。ads/video と共有しない
+        │   ├── forms/{article,x-post,x-article,book}/
+        │   ├── publishers/{note,zenn,devto,substack,x}/
+        │   ├── metrics/
+        │   └── tests/
+        ├── video/
+        │   ├── craft/                        # hook/retention/visual grammar
+        │   ├── producers/{honne,larry,reelclaw,watercolor}/
+        │   ├── publishers/{instagram,tiktok,youtube}/
+        │   ├── metrics/
+        │   └── tests/
+        └── <next-channel>/
+
+~/Library/Application Support/AniccaMarketing/
+├── runs/<run_id>/                            # manifest + immutable artifacts + step trace
+├── receipts/                                 # platform public proof
+├── metrics/                                  # raw snapshots。上書きしない
+├── experiments/                              # baseline / candidate / keep-revert
+├── blame/
+├── outbox/telegram/
+└── browser-profiles/
+
+~/Library/LaunchAgents/
+├── ai.anicca.marketing-discover.plist
+├── ai.anicca.marketing-runner.plist
+├── ai.anicca.marketing-metrics.plist
+├── ai.anicca.marketing-learn.plist
+└── ai.anicca.marketing-health.plist
+```
+
+**依存方向**:
+
+```text
+engine ← product pack
+engine ← channel pack
+product pack × channel pack → campaign run
+```
+
+`engine` は `life-manager`、`note`、`reelclaw` を import しない。registry が product/channel manifest を読み込む。channel 同士も import しない。cross-channel campaign は engine の run graph が artifact を渡す。
+
+### 22.4 共有するもの / 隔離するもの
+
+| 分類 | 共有 | DO NOT share |
+|---|---|---|
+| engine | durable state、idempotency、receipt/readback、retry、blame、矛盾 scanner、experiment、Telegram、cost cap | platform selector や product 固有 prompt |
+| product | audience、pain、promise、proof、offer、CTA、attribution | 他 product の conversion history、customer claim |
+| channel | form schema、craft、policy、publisher、metric collector | 別 form の禁則。X の投稿解剖を note/動画へ直輸入しない |
+| learning | compare → blame → 1変更 → held-out → canary → keep/revert の機械 | reward、opponent pool、weights |
+
+**reward contract**:
+
+| scope | primary reward | guardrail | opponent |
+|---|---|---|---|
+| Writer / article craft | 同一世代の qualified read と door click | false claim 0、public readback PASS | 同言語・同 form・同 audience で実際に読まれた記事 |
+| Product marketing | attributed activation / trial / paid conversion | refund、unsubscribe、complaint、spend cap | 同 product category で実際に転換した LP / ad / post |
+| Video craft | qualified hold / completion と attributed door click | policy strike 0、account health | 同 platform・同 duration class で実際に保持/転換した動画 |
+
+raw like/view は観測値であって全領域共通 reward ではない。reward が未取得なら `unknown` とし、0点に変換しない。§21.42–§21.45 の outage 汚染を全 channel で禁止する。
+
+### 22.5 Ideal Loop — self-improves and self-heals
+
+#### Main learning loop
+
+```text
+1 DISCOVER
+  platform/category/languageごとの実勝者を収集
+  source URL・取得時刻・公開metric・producer世代をreceipt化
+        ↓
+2 MODEL
+  product packのaudience/offer + channel craft + opponent corpusを読む
+  過去weightから複数variantを作る
+        ↓
+3 GATE
+  deterministic → quality → safety → policy
+  却下理由は正本行を引用し、採用/却下を全件ledgerへ書く
+        ↓
+4 PUBLISH
+  intentを先に永続化 → side effect → receipt → public readback
+  public readbackが無ければ成功にしない
+        ↓
+5 MEASURE
+  platform metric + CTA click + product conversionをrun/artifactへjoin
+  同一producer世代・同window・同formで比較
+        ↓
+6 LEARN
+  rewardを同scopeのopponentと比較 → losing rule/weightへblame
+  1 cycle 1変更だけ提案
+        ↓
+7 VERIFY
+  held-out product/language/form → canary → observation window
+  baseline超過ならkeep、未達/unknownならrevert
+        ↓
+8 PERSIST
+  対象scopeのweight/CRAFTだけ更新し、次runが必ず読む
+  experiment receiptとTelegramを残して1周
+        └──────────────────────────────→ 1
+```
+
+**self-improve の成立条件**: metric report を書くだけでは不成立。`experiment_id`、変更前後 hash、held-out 結果、keep/revert、次 run が読んだ weight hash の5点が揃って初めて1改善と数える。
+
+#### Recovery loop
+
+```text
+heartbeat / stale-state scan
+        ↓
+failure classifier
+  ├─ availability (timeout/429/browser down)
+  ├─ contract (frontmatter/schema/asset path)
+  ├─ identity (別記事/別account)
+  ├─ ambiguous side effect (response喪失)
+  ├─ quality (safeだが弱い)
+  └─ safety/policy
+        ↓
+policy
+  ├─ ambiguous → public readback first。再投稿しない
+  ├─ availability → bounded retry + backoff + circuit breaker
+  ├─ contract → same artifactをrepairしcheckpointからresume
+  ├─ identity → quarantine、期待identityとの一致後だけresume
+  ├─ quality → bounded candidate loop、best-safeをship
+  └─ safety → terminal quarantine。自動緩和しない
+        ↓
+receipt + state transition + Telegram outbox
+        ↓
+runnerが未完runの最初の非PASS stepだけ再開
+```
+
+**self-heal の成立条件**: 新しい記事/動画を作り直して古い run を捨てることではない。同一 `run_id`、同一 idempotency key、同一 artifact lineage で、最初の非PASS stepから terminal state まで進むこと。Temporal の durable execution を launchd + filesystem ledger で小さく再現する。
+
+**Telegram-first contract**:
+
+| event | 必須表示 |
+|---|---|
+| RUN_STARTED | product、channel、form、language、run_id |
+| STEP_FAILED | failure class、step、attempt、次回時刻 |
+| SELF_HEAL_STARTED / RESULT | repair対象、before/after hash、public readback |
+| PLATFORM_LIVE | public URL、identity、receipt hash |
+| METRICS_CAPTURED | window、raw metrics、reward status |
+| EXPERIMENT_KEEP / REVERT | opponent、delta、confidence、weight hash |
+| DAILY_SUMMARY | expected/live/pending/quarantined、cost、最古stuck age |
+
+dashboard はこの event/ledger を読む read-only projection とする。dashboard 独自 state、独自 metric、独自判断を持たせない。
+
+### 22.6 残 TODO（唯一の現行正本、順序 = 損失の大きさ）
+
+前段の done 条件を満たさずに次へ進まない。#1 の調査中に #6 の根が同時に判明しても、#1 の public readback を PASS にしてから #2 へ進む。#6 の修正自体は順番まで保留する。
+
+| # | 作業 | 損失順の理由 | done 条件 |
+|---:|---|---|---|
+| 1 | note/ja の `public-asset-readback-failed` | 現時点で最も反応が取れる面。暫定17倍には §21.38 のproducer世代混在 caveatがあるが、優先順位は変わらない | 同一runのnote public URLを再読し、期待identity、本文、全assetが一致。receipt=`live`。再実行で投稿0増分 |
+| 2 | devto/en の frontmatter 欠落 | 毎日1面を確実に落とす。publication-state初期化後の局所欠陥 | canonical EN draftが初期化後もtitle/tags/canonical frontmatterを保持し、live URLのreadback PASS |
+| 3 | x-article ja/en の identity 不一致 | 2面ぶんを同時に失う | staged editorとpublic articleのtitle/body hashが期待artifactと一致。別記事ならpublish前quarantine。ja/en exact2 live |
+| 4 | zenn / x-post が `intent` のまま | 前段停止で到達すらしておらず、停止点が未知 | step traceで最初の未到達edgeを特定して修復。両面がreceipt+readback terminalへ到達 |
+| 5 | `cta-gate.sh` を prompt に配線 | 公開修復後、扉の再消失を防ぐ | 全publishable artifactがgateを必ず通り、CTA欠落fixtureがpublish前FAIL、正しいCTAがPASS |
+| 6 | dev.to画像パス修正（相対→絶対、`.png` 欠落） | #1 と同根候補だが、影響を断定せず別receiptで閉じる | canonical/public本文の全画像URLが絶対URL、HTTP 200、拡張子/content-type一致。broken asset 0 |
+| 7 | note 上位8本に扉を追加 | 反応済み在庫の上位3本に転換先が無い | 編集前backup、8本編集、公開API再読でdoor 3/8→8/8。URLと本文hashをledgerへ記録 |
+| 8 | 台帳3 run蓄積 | 今日が1日目。あと2日分は作らず待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
+| 9 | 22:30 の盲目解消を実機確認 | 次の実scheduleでしか確認できない | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
+| 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
+| 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
+| 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
+
+**T13 / 共有化の着手条件**: #1–#7完了で Writer exact8 が3 consecutive run、#8–#10で1回以上の実 learning receipt、self-heal fixture 5種 PASS。その後に §22.3 へ移す。共有化は上表の順番へ割り込ませない。
+
+### 22.7 Acceptance Criteria
+
+| AC | done 条件 |
+|---|---|
+| AC22-1 Writer recovery | daily runが3回連続 exact8 live + public readback PASS。intent/draft/stagedを成功に数えず、再実行でside effect 0増分 |
+| AC22-2 Three-layer boundary | tracked codeは `engine / products / channels` の依存方向を守る。engine内のproduct名/channel名 hardcode 0、OpenClaw homeのcode SSOT 0 |
+| AC22-3 Multi-product | Life Managerとfixture productが同一engineを使い、reward/opponents/weightsだけを別scopeで保持。cross-product metric混入0 |
+| AC22-4 Multi-channel | writingとvideo fixtureが同一run/publication/metric/experiment schemaを返し、craft/policy/publisherは別pack |
+| AC22-5 Self-improvement | 1 experimentがbaseline→1変更→held-out→canary→keep/revert→次run weight hash確認まで人手なしで完了 |
+| AC22-6 Self-healing | timeout、process kill、ambiguous response、identity mismatch、broken assetの5 fixtureが同一runからresume。重複公開0、安全gate緩和0 |
+| AC22-7 Reward isolation | unknownを0へ変換せず、product×channel×form×languageのscope外データをopponent/rewardへjoinしない |
+| AC22-8 Observability | 全stepが同じrun_idでtrace/state/metricを持ち、stuck runを追加instrumentation無しで最初の非PASS stepまで特定可能 |
+| AC22-9 Telegram first | 必須eventがdurable outboxから送信され、send receipt欠落を再送。dashboard無しでも全runの現在地・失敗・回復・学習結果が分かる |
+| AC22-10 Clean migration | clean macOS userでinstall→launchd→実public E2E。旧Writer/OpenClaw pathへのread/write 0、secret/hardcoded home 0 |
+
+### 22.8 As-Is / To-Be
+
+| concern | AS-IS | TO-BE |
+|---|---|---|
+| ownership | Writer、Honne、Larry、ReelClaw、Watercolorが個別launchd loop | launchdは実行triggerのまま、全run contractと学習/recoveryは1 engine |
+| product | Writerの中にtopic/CTA/accountが混在 | product packがaudience/offer/CTA/reward/opponent/weightを所有 |
+| channel | form、craft、publisher、metricがWriter固有treeに同居 | writing/video channel packとして共通interfaceを実装 |
+| completion | publish intentやbrowser操作完了が成功に混入 | public identity+asset readback付きreceiptだけがsuccess |
+| learning | title trainerはあるが、他loopは静的prompt/独立metric | 同じexperiment machine。scope別reward/opponent/weightだけ差し替え |
+| recovery | shellごとのretry、前段停止で後段がintentのまま | checkpoint、failure class、policy、resume、quarantineをengine契約化 |
+| observation | 個別logを見に行く。dashboardは未着手 | まずTelegram event stream。後のdashboardはledgerのread-only projection |
+
+### 22.9 Test Matrix
+
+| # | To-Be | Test name / 実測 | Cover |
+|---:|---|---|---|
+| 1 | exact8 public recovery | `test_daily_exact8_public_readback_idempotent` + 実public 3 run | OK |
+| 2 | 3層依存 | `test_engine_has_no_product_or_channel_imports` | OK |
+| 3 | multi-product隔離 | `test_reward_opponent_weight_scope_isolation` | OK |
+| 4 | channel adapter契約 | `test_writing_and_video_fixture_contract_parity` | OK |
+| 5 | self-improve 1周 | `test_experiment_keep_and_revert_updates_next_run_hash` | OK |
+| 6 | crash resume | `test_resume_after_process_kill_from_first_nonpass_step` | OK |
+| 7 | ambiguous publish | `test_response_loss_reads_back_before_retry` | OK |
+| 8 | identity mismatch | `test_wrong_editor_identity_quarantines_before_publish` | OK |
+| 9 | asset recovery | `test_public_assets_absolute_200_and_content_type_match` | OK |
+| 10 | unknown reward | `test_unknown_reward_is_neither_loss_nor_clean` | OK |
+| 11 | Telegram outbox | `test_state_transition_and_outbox_event_are_atomic` | OK |
+| 12 | clean migration | clean user install +翌schedule+実URL readback | OK |
+
+| Item | Value |
+|---|---|
+| UI変更 | あり（外部platform browser publishと、後段のread-only dashboard） |
+| 結論 | Maestro: 不要（iOS UI変更ではない）。Playwright/実ブラウザ + public API/readback E2E: 必要 |
+
+### 22.10 Boundaries
+
+| In scope | Out of scope |
+|---|---|
+| Writer exact8の修復、shared engine contract、Life Manager product pack、Telegram、後続video adapter境界 | #1–#10より前のdashboard実装 |
+| launchd triggerの統合、durable filesystem state、clean-user install | OpenClawをscheduler/SSOTへ戻すこと |
+| 実metricに基づくscope別self-improve | rewardをlikes/viewsの1数値へ全channel共通化 |
+| prompt/weight/CRAFTのbounded keep-revert | production codeをLLMが無検証で自己書換え |
+| public readback付きpublish receipt | draft/staged/intentを公開成功と呼ぶこと |
+| article / X / note / video / IG / TikTok / YouTube adapter | platform policyを破るためのbot回避 |
+
+### 22.11 Execution Steps
+
+| Phase | 実行 | verify |
+|---:|---|---|
+| 1 | §22.6 #1から#7を順番に修復 | 各行のpublic readback done条件。exact8を3 consecutive run |
+| 2 | #8–#10を実scheduleで観測 | 3 run ledger、22:30 receipt、X metric/judge calibration |
+| 3 | Writer engine contractをfreeze | contract/fixture tests全PASS、旧暗黙依存一覧0 |
+| 4 | T13で§22.3へ移設 | clean user install、OpenClaw path access 0、old implementation 0 |
+| 5 | `products/life-manager` を接続 | product-scoped reward/opponent/weights、実CTA attribution |
+| 6 | video fixture→Honne→Larry→ReelClaw→Watercolorを1本ずつ接続 | 各producerが同一schema、独立craft/reward、既存launchdから実run |
+| 7 | Telegramを全loopへ広げる | outbox/send receipt、daily summary、stuck/self-healを実通知 |
+| 8 | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
+
+実装時の基本検証コマンド:
+
+```bash
+./marketing/engine/bin/marketing test contract
+./marketing/engine/bin/marketing health --all
+./marketing/engine/bin/marketing status --stuck
+launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
+./marketing/engine/bin/marketing verify-public --run <run_id>
+./marketing/engine/bin/marketing verify-experiment --experiment <experiment_id>
+```
