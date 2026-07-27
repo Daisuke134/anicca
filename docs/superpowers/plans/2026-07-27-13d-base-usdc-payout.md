@@ -203,4 +203,3 @@ node --test \
 - [ ] **Step 6: Inspect the diff for secrets and run the production CLI for the exact tenant without printing UID or destination**
 
 - [ ] **Step 7: Record the observed zero-or-transfer outcome, update the SSOT cursor, commit, push, merge, reinstall from canonical main, and rerun production verification**
-
