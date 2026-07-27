@@ -67,13 +67,17 @@ test("asks the transport for [now - historyMs, now] — a real look BACK, not fo
   assert.equal(capture.opts.timeMax, new Date(NOW).toISOString().replace(/\.\d{3}Z$/, "Z"));
 });
 
-test("default window is ~18 months of history (union of all transport calls)", async () => {
+test("default window is at least 10 years so stable annual/biennial checkup cadence remains observable", async () => {
   const capture = {};
   await fetchCalendarHistory("uid", { nowMs: NOW, calendar: fakeCalendar([], capture) });
   const spans = spansOf(capture);
   assert.equal(spans[0][0], NOW - CARE_HISTORY_MS, "oldest call starts at now - CARE_HISTORY_MS");
   assert.equal(spans[spans.length - 1][1], NOW, "newest call ends at now");
-  assert.ok(CARE_HISTORY_MS >= 540 * 86400000, "at least ~18 months back");
+  assert.ok(CARE_HISTORY_MS >= 3652 * 86400000, "at least ten years back");
+});
+
+test("complete-history hard cap admits 10,000 events before failing closed", () => {
+  assert.equal(HISTORY_MAX_EVENTS, 10000);
 });
 
 // 🔴 Completeness must be PROVEN, not guessed. The previous shape split the window into ≤3 ~183-day

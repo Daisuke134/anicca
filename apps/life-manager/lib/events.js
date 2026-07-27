@@ -80,8 +80,10 @@ async function fetchNextEvent(uid, opts = {}) {
 // future-only by contract (and rightly so — every wake/late consumer depends on it), which is the
 // same unreachable-rule disease 12c had: the one thing the care detector needs (past visits) is the
 // one thing that fetch can never return. This is a dedicated history read with its own contract
-// (mirrors the lookbackMs precedent above rather than stretching it to 18 months):
-//   - window = [now - historyMs, now], default ~18 months
+// (mirrors the lookbackMs precedent above rather than stretching the wake reader to ten years):
+//   - window = [now - historyMs, now], default ~10 years. Long-period checkups need four real
+//     visits before the existing cadence guard may act; a biennial cadence plus the 1.5× overdue
+//     threshold needs roughly nine years of evidence at action time.
 //   - all-day (date-only) events are KEPT — a barber visit logged all-day is still a visit
 //   - no interpretCalendarEvent filter — "no_call" is a call decision, not a history decision
 //   - the raw `start` object survives so detectCalendarCare can parse dateTime/date itself
@@ -104,9 +106,9 @@ async function fetchNextEvent(uid, opts = {}) {
 //         (no row, no daily claim, the next 60s tick retries), which is the honest answer: an
 //         incomplete history is a failed read wearing a success mask, and detectUnmetCare reads
 //         gaps — every event it never saw invents overdue days that did not happen.
-const CARE_HISTORY_MS = 548 * 86400000; // ~18 months
+const CARE_HISTORY_MS = 3653 * 86400000; // ~10 years, including leap-day headroom
 const HISTORY_PAGE_SIZE = 2500;   // Google events.list per-page maximum
-const HISTORY_MAX_EVENTS = 5000;  // hard cap: two full pages is far past any human 18-month calendar
+const HISTORY_MAX_EVENTS = 10000; // hard cap: four full pages; beyond this, never claim completeness
 
 // One window, walked to exhaustion. Returns raw transport items; every failure mode throws.
 async function readHistoryWindow(calendar, uid, timeMin, timeMax) {

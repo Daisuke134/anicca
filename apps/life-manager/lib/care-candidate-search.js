@@ -14,9 +14,12 @@ const TEXT_SEARCH_URL = "https://maps.googleapis.com/maps/api/place/textsearch/j
 const DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json";
 const MAX_CANDIDATES = 3;
 
-// Category → Japanese search keyword for the 11a care types
-// (care-detector eval phy-cases.jsonl: dental / haircut / clinic — no invented types).
+// Category → Japanese search keyword for the 11a care types. Checkups name the SERVICE, not merely
+// "clinic": otherwise an actionable gastric cadence could search and book an unrelated practice.
 const CATEGORY_KEYWORDS = Object.freeze({
+  gastric_screening: "胃がん検診 胃内視鏡",
+  colorectal_screening: "大腸がん検診 大腸内視鏡",
+  brain_dock: "脳ドック",
   dental: "歯科",
   haircut: "美容室",
   clinic: "クリニック",

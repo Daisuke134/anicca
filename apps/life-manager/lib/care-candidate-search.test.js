@@ -162,6 +162,30 @@ test("the query is bound to the detected category keyword — a haircut search n
   assert.ok(discoveryQueries.every((q) => !q.includes("歯科")), "haircut search must never query dental");
 });
 
+test("each checkup category uses its own service-bound Places query", async () => {
+  const expected = {
+    gastric_screening: "胃がん検診 胃内視鏡",
+    colorectal_screening: "大腸がん検診 大腸内視鏡",
+    brain_dock: "脳ドック",
+  };
+  for (const [category, keyword] of Object.entries(expected)) {
+    assert.equal(CATEGORY_KEYWORDS[category], keyword);
+    const { fetchImpl, queries } = makePlacesApi({
+      geocodes: { [HOME]: HOME_POINT },
+      searches: { [keyword]: [] },
+      details: {},
+    });
+    await searchCareCandidates({
+      category,
+      anchors: { home: HOME, work: null, usualProviders: [] },
+      apiKey: "test-key",
+      fetchImpl,
+    });
+    assert.deepEqual(queries.filter((q) => q !== HOME), [keyword],
+      `${category} must issue only its bound service query`);
+  }
+});
+
 test("an unknown category fails closed instead of searching for nothing", async () => {
   await assert.rejects(
     () => searchCareCandidates({
