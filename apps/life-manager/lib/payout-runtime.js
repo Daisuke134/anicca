@@ -155,11 +155,16 @@ async function runPayout(request = {}, deps = {}) {
   const rows = await readLedger(walletAddress);
   const readBalance = deps.readBalance;
   if (typeof readBalance !== "function") throw new Error("payout runtime needs an on-chain balance reader");
+  if (typeof deps.readOperatingCostMinor !== "function") {
+    throw new Error("payout runtime needs an operating cost reader");
+  }
   const onchainUsdcAtomic = await readBalance(walletAddress);
+  const operatingCostMinor = await deps.readOperatingCostMinor(uid);
   const policy = computePayout({
     rows,
     walletAddress,
     onchainUsdcAtomic,
+    operatingCostMinor,
     reserveAtomic: request.reserveAtomic,
     maxPayoutAtomic: request.maxPayoutAtomic,
   });

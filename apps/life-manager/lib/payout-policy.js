@@ -14,6 +14,14 @@ function integerAtomic(value, label) {
   return BigInt(raw);
 }
 
+function integerMinor(value, label) {
+  const raw = typeof value === "bigint"
+    ? value.toString()
+    : String(value == null ? "" : value).trim();
+  if (!/^\d+$/.test(raw)) throw new Error(`${label} must be an exact non-negative integer`);
+  return BigInt(raw);
+}
+
 function checksummedAddress(value) {
   const raw = String(value == null ? "" : value).trim();
   if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) throw new Error("walletAddress must be an Ethereum address");
@@ -35,6 +43,9 @@ function computePayout(input = {}) {
   const cap = input.maxPayoutAtomic == null
     ? null
     : integerAtomic(input.maxPayoutAtomic, "maxPayoutAtomic");
+  const operatingCost = input.operatingCostMinor == null
+    ? 0n
+    : integerMinor(input.operatingCostMinor, "operatingCostMinor");
 
   let gross = 0n;
   let costs = 0n;
@@ -55,9 +66,12 @@ function computePayout(input = {}) {
     }
   }
 
+  costs += operatingCost;
   const verifiedSurplus = gross > costs ? gross - costs : 0n;
   const surplusAtomic = verifiedSurplus * ATOMIC_PER_USD_MINOR;
-  const balanceAvailable = onchain > reserve ? onchain - reserve : 0n;
+  const operatingCostAtomic = operatingCost * ATOMIC_PER_USD_MINOR;
+  const protectedBalance = reserve + operatingCostAtomic;
+  const balanceAvailable = onchain > protectedBalance ? onchain - protectedBalance : 0n;
   let amount = surplusAtomic < balanceAvailable ? surplusAtomic : balanceAvailable;
   if (cap != null && cap < amount) amount = cap;
   amount = (amount / ATOMIC_PER_USD_MINOR) * ATOMIC_PER_USD_MINOR;

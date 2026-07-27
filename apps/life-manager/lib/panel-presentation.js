@@ -131,10 +131,81 @@ function ledgerItem(row, label) {
   const linkSource = row.link || row.on_chain_url || row.transaction_url || row.href || null;
   return {
     label,
-    date: safeDate(row.ts || row.date || row.created_at) || "日付不明",
+    date: safeDate(row.ts || row.occurred_at || row.date || row.created_at) || "日付不明",
     amount: financialAmount(row) || "金額不明",
     link: safeHttpsLink(linkSource),
   };
+}
+
+function financialLabel(row) {
+  const labels = {
+    financial_external_income: "外部収益",
+    financial_realized_loss: "実現損失",
+    financial_fee: "手数料",
+    financial_user_transfer: "ユーザー送金",
+    financial_self_funding: "自己資金",
+    financial_deposit: "入金",
+    financial_internal_move: "内部移動",
+    financial_unverified: "未検証",
+  };
+  return labels[record(row) ? row.kind : ""] || "収支";
+}
+
+const REPORT_MONEY_FIELDS = Object.freeze([
+  "gross_usd_micros",
+  "realized_loss_usd_micros",
+  "financial_fee_usd_micros",
+  "api_cost_usd_micros",
+  "operating_net_usd_micros",
+  "balance_usdc_atomic",
+  "distributable_usdc_atomic",
+]);
+
+function integerText(value, signed = false) {
+  return (signed ? /^-?\d+$/ : /^\d+$/).test(String(value == null ? "" : value));
+}
+
+function projectReportReceipt(receipt, expectedKind) {
+  if (!record(receipt)
+    || receipt.status !== "sent"
+    || receipt.report_kind !== expectedKind
+    || !/^[0-9a-f]{64}$/.test(String(receipt.snapshot_hash || ""))
+    || !Number.isInteger(Number(receipt.telegram_message_id))
+    || Number(receipt.telegram_message_id) <= 0
+    || !record(receipt.snapshot)
+    || receipt.snapshot.kind !== expectedKind
+    || receipt.snapshot.period_key !== receipt.period_key
+    || (expectedKind === "daily" && !/^\d{4}-\d{2}-\d{2}$/.test(receipt.period_key))
+    || (expectedKind === "weekly" && !/^\d{4}-W\d{2}$/.test(receipt.period_key))) {
+    fail("ledger");
+  }
+  for (const field of REPORT_MONEY_FIELDS) {
+    if (!integerText(receipt.snapshot[field], field === "operating_net_usd_micros")) fail("ledger");
+  }
+  if (receipt.snapshot.self_funded_bps !== null
+    && (!Number.isInteger(receipt.snapshot.self_funded_bps) || receipt.snapshot.self_funded_bps < 0)) {
+    fail("ledger");
+  }
+  if (!new Set(["running", "negative_net", "no_external_income", "reserve_floor"])
+    .has(receipt.snapshot.stop_reason)) fail("ledger");
+  const railPnl = Array.isArray(receipt.snapshot.rail_pnl) ? receipt.snapshot.rail_pnl : null;
+  if (!railPnl) fail("ledger");
+  const rails = railPnl.map((row) => {
+    if (!record(row)
+      || !new Set(["SELL", "WORK", "CAPITAL", "UNCLASSIFIED"]).has(row.rail)
+      || !integerText(row.net_usd_micros, true)) fail("ledger");
+    return { rail: row.rail, net_usd_micros: String(row.net_usd_micros) };
+  });
+  const projected = {
+    period_key: receipt.period_key,
+    snapshot_hash: receipt.snapshot_hash,
+    telegram_message_id: Number(receipt.telegram_message_id),
+  };
+  for (const field of REPORT_MONEY_FIELDS) projected[field] = String(receipt.snapshot[field]);
+  projected.self_funded_bps = receipt.snapshot.self_funded_bps;
+  projected.stop_reason = receipt.snapshot.stop_reason;
+  projected.rail_pnl = rails;
+  return projected;
 }
 
 function projectLedger(candidate) {
@@ -142,13 +213,21 @@ function projectLedger(candidate) {
     !record(candidate)
     || !Array.isArray(candidate.apiCostEntries)
     || !Array.isArray(candidate.financialEntries)
+    || !Array.isArray(candidate.reportReceipts)
   ) fail("ledger");
   const apiItems = candidate.apiCostEntries.map((row) => ledgerItem(row, "API利用料"));
-  const financialItems = candidate.financialEntries.map((row) => ledgerItem(row, "収支"));
+  const financialItems = candidate.financialEntries.map((row) => ledgerItem(row, financialLabel(row)));
   const total = candidate.apiCostEntries.reduce((sum, row) => {
     const amount = Number(record(row) ? row.est_usd : NaN);
     return Number.isFinite(amount) ? sum + amount : sum;
   }, 0);
+  const latest = { daily: null, weekly: null };
+  for (const receipt of candidate.reportReceipts) {
+    const kind = record(receipt) ? receipt.report_kind : "";
+    if ((kind === "daily" || kind === "weekly") && latest[kind] === null) {
+      latest[kind] = projectReportReceipt(receipt, kind);
+    }
+  }
   return {
     api_cost: {
       no_data: apiItems.length === 0,
@@ -159,6 +238,7 @@ function projectLedger(candidate) {
       no_data: financialItems.length === 0,
       items: financialItems,
     },
+    reports: latest,
   };
 }
 

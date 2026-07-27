@@ -51,6 +51,7 @@ function harness(overrides = {}) {
       events.push("read-balance");
       return "42000000";
     },
+    readOperatingCostMinor: async () => 0,
     readPrivateWallet: async () => {
       events.push("read-key");
       return { address: WALLET, privateKey: "11".repeat(32) };
@@ -173,6 +174,21 @@ test("zero surplus stops before the protected key, settlement, ledger write, and
     verifiedSurplusMinor: 0,
     reserveAtomic: "35000000",
   });
+});
+
+test("the live payout path reserves recorded operating cost before settlement", async () => {
+  const { deps } = harness({
+    readBalance: async () => "100000000",
+    readOperatingCostMinor: async () => 125,
+  });
+  const result = await runPayout({
+    uid: "u1",
+    walletAddress: WALLET,
+    nowMs: NOW,
+  }, deps);
+
+  assert.equal(result.status, "transferred");
+  assert.equal(result.amountAtomic, "63750000");
 });
 
 test("confirmed payout records the exact transfer before sending the §9.11 Telegram receipt", async () => {

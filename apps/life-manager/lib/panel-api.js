@@ -224,12 +224,28 @@ async function ledger(uid, opts) {
   const { rows: costs } = await readRows("lm_api_cost", {
     uid: `eq.${uid}`, select: "ts,kind,quantity,unit,est_usd,meta", order: "ts.desc",
   }, opts);
-  const financial = await readRows("lm_financial_ledger", {
-    uid: `eq.${uid}`, select: "*", order: "ts.desc",
-  }, opts, true);
+  const user = await readUser(uid, "agent_wallet_address", opts);
+  const wallet = user && String(user.agent_wallet_address || "");
+  let financialEntries = [];
+  if (wallet) {
+    const financial = await readRows("lm_agent_earnings", {
+      wallet_address: `eq.${wallet}`,
+      select: "entry_key,kind,amount_minor,currency,occurred_at,tx_hash,source,meta",
+      order: "occurred_at.desc,entry_key.desc",
+    }, opts);
+    financialEntries = financial.rows;
+  }
+  const { rows: reportReceipts } = await readRows("lm_financial_report_receipts", {
+    uid: `eq.${uid}`,
+    status: "eq.sent",
+    select: "report_kind,period_key,period_end,snapshot,snapshot_hash,status,telegram_message_id",
+    order: "period_end.desc",
+    limit: "20",
+  }, opts);
   return {
     apiCostEntries: costs,
-    financialEntries: financial.rows,
+    financialEntries,
+    reportReceipts,
   };
 }
 

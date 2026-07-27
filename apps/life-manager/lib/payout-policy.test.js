@@ -72,6 +72,25 @@ test("realized losses and fees reduce distributable profit without becoming nega
   assert.equal(result.reason, "no_verified_surplus");
 });
 
+test("recorded operating cost reduces verified surplus before a user payout", () => {
+  const result = computePayout({
+    rows: [earning("financial_external_income", 10_000)],
+    walletAddress: WALLET,
+    onchainUsdcAtomic: "100000000",
+    operatingCostMinor: 125,
+  });
+
+  assert.equal(result.verifiedSurplusMinor, 9875);
+  assert.equal(result.amountAtomic, "63750000");
+  assert.equal(result.reason, "ready");
+  assert.throws(() => computePayout({
+    rows: [earning("financial_external_income", 10_000)],
+    walletAddress: WALLET,
+    onchainUsdcAtomic: "100000000",
+    operatingCostMinor: "1.5",
+  }), /operatingCostMinor/i);
+});
+
 test("the explicit transaction cap is a third independent upper bound", () => {
   const result = computePayout({
     rows: [earning("financial_external_income", 10_000)],
