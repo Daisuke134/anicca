@@ -52,6 +52,11 @@ def _browser_ws():
     return d["webSocketDebuggerUrl"]
 
 
+def _read_only_target_params(url):
+    """CDP target parameters for scheduled observations that must not flash a window."""
+    return {"url": url, "hidden": True, "background": True}
+
+
 async def _call(method, params=None):
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         await ws.send(json.dumps({"id": 1, "method": method, "params": params or {}}))
@@ -96,7 +101,7 @@ async def _localstorage(op, data=None):
         origins = LS_ORIGINS if op == "read" else list((data or {}).keys())
         for origin in origins:
             try:
-                t = await call("Target.createTarget", {"url": origin})
+                t = await call("Target.createTarget", _read_only_target_params(origin))
                 tid = t["targetId"]
                 sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
                 await asyncio.sleep(2)
@@ -283,7 +288,7 @@ async def _keepalive(urls):
                     return msg.get("result", {})
 
         for url in urls:
-            t = await call("Target.createTarget", {"url": url})
+            t = await call("Target.createTarget", _read_only_target_params(url))
             tid = t["targetId"]
             sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
             await asyncio.sleep(4)  # let redirects/JS settle

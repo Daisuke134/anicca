@@ -64,3 +64,13 @@ def test_instagram_sessionid_on_wrong_domain_does_not_count():
     final = "https://www.instagram.com/"
     cookies = [_cookie("sessionid", ".some-other-site.com")]
     assert sv._logged_out_for(url, final, cookies) is True
+
+
+def test_read_only_targets_are_hidden_and_backgrounded():
+    """Scheduled dump/keepalive must never flash a user-visible browser tab."""
+    url = "https://coconala.com/mypage/dashboard"
+    assert sv._read_only_target_params(url) == {
+        "url": url,
+        "hidden": True,
+        "background": True,
+    }
