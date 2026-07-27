@@ -47,5 +47,25 @@
     },
     "accounting_formula": "realized_pnl_microusd = recovered_microusd - deployed_microusd - fee_microusd"
   },
-  "production_write": null
+  "production_write": {
+    "migration_http_status": 201,
+    "recorded_at": "2026-07-27T13:21:26.846608+00:00",
+    "entry_key": "polymarket:0x5ecd0d050ea3e753b787ad8ef3b023448b78d232ebe28b24b3d18bf878fb8b5d:loss",
+    "row_count": 1,
+    "kind": "financial_realized_loss",
+    "amount_minor": 315,
+    "first_write_duplicate": false,
+    "second_write_duplicate": true,
+    "second_run_counted_rows": 1,
+    "monthly_report": {
+      "gross_income_minor": 0,
+      "realized_loss_minor": 315,
+      "fee_minor": 0,
+      "net_minor": -315,
+      "balance_atomic": "4422182",
+      "balance_decimals": 6,
+      "text": "💰 今月の収支報告です。\n・収益: -$3.15（マイナスでした）\n・送金: なし（利益が出た月のみ送金します）\n・私の残高: $4.422182\n先月比の要因: 片側だけが約定し、勝ち側を持たずに解決したこと。来月の方針: 両脚成立を確認できないcycleを停止し、片側約定を即時解消すること。\n取引はすべてこちらで確認できます: polygonscan.com/address/0x904B…Eb74"
+    },
+    "external_income_claimed_usd": "0.00"
+  }
 }
