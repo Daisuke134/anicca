@@ -337,4 +337,6 @@ test("launchd wiring uses absolute executables, a bounded timeout, and five-minu
   assert.match(installer, /plutil -lint/);
   assert.match(installer, /launchctl bootstrap/);
   assert.match(installer, /launchctl enable/);
+  assert.match(installer, /launchctl print[^|]+\|\s*\/usr\/bin\/grep/);
+  assert.doesNotMatch(installer, /launchctl print "\$DOMAIN\/\$LABEL"\s*$/m);
 });

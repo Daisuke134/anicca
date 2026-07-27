@@ -17,4 +17,5 @@ sed -e "s|__HOME__|${HOME}|g" -e "s|__APP_DIR__|${APP_DIR}|g" "$TEMPLATE" > "$TE
 /bin/launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 /bin/launchctl bootstrap "$DOMAIN" "$TARGET"
 /bin/launchctl enable "$DOMAIN/$LABEL"
-/bin/launchctl print "$DOMAIN/$LABEL"
+/bin/launchctl print "$DOMAIN/$LABEL" \
+  | /usr/bin/grep -E '^[[:space:]]*(state =|last exit code =|run interval =)'
