@@ -73,7 +73,9 @@ TO-BE
                        Spaces / S3
                  video / audio / artifacts
 
- Mac Mini = development / emergency rollback only
+ Mac Mini = cutover中はlive shadow / rollback。
+            実行権移譲後もpowered-on observer / development用途。
+            cloud停止時だけfenced rollbackとして再昇格し、同時writerにはしない。
 ```
 
 ### 1.3 Core decision
@@ -83,6 +85,9 @@ TO-BE
 - 1 user = durable logical state。workerはevent発生時だけjobを処理する。
 - 現行Railway + Supabaseを維持し、既に存在するInngestをdurable orchestratorとして有効化する。
 - Daisの現行local loopは一時的にDigitalOcean Dropletへcontainer lift-and-shiftし、その後1本ずつproduct moduleへ置換する。
+- 移行単位はloop 1本であり、Mac Mini全体を停止しない。cloud workerをshadowで実測し、fencing leaseで外部side effectのwriterをcloudへ1本ずつ移し、Mac側は稼働したままread-only shadow / rollbackへ降格する。
+- browser agentはBrowser Use OSS plannerをSteelのCDP sessionへ接続する。既知site別scriptではなく、tenant intent・成功条件・許可された副作用を受け取り、navigate/read/click/type/upload/downloadの共通primitiveで実行する。未知siteをruntimeで発見・選択し、完了証跡または正直なblocked resultを返す。
+- Personal CEO opportunity loopはtenant自身のgoalから、本人がまだ名前を知らない機会を探索する。Dais tenantの「Life Managerを成長させる」goalはaccelerator・fundraising・distribution申請を許可対象にできるが、他tenantは本人のgoalだけを追い、Life Managerをmarketしない。
 - Claude Free/Pro/Max OAuthをSaaS backend認証に使わない。Anthropic API keyまたは承認済みcloud provider認証のみ使う。
 - autonomous tradingは本specのscopeに含めない。financial organはclip / affiliate / gig / product revenueとcost ledgerから開始する。
 
@@ -90,7 +95,7 @@ TO-BE
 
 | ID | Acceptance criterion | 実証 |
 |---|---|---|
-| AC-01 | Mac Miniを停止してもLife Managerのcalendar/call/Personal CEO/clip pipelineが継続する | Mac Mini停止後のstaging実E2E |
+| AC-01 | Mac Miniをpower offせず、対象loopのexternal-effect leaseをcloudへ移譲した後もcalendar/call/Personal CEO/clip pipelineが継続し、Mac側はread-only shadowとして稼働する | loop単位のlease移譲staging実E2E + Mac process/health実測 |
 | AC-02 | 1,000 tenantのlogical workflowを作成しても1,000常駐agent processを生成しない | process数・queue・DB実測 |
 | AC-03 | 同時active job数に応じてworkerが処理し、idle tenantはcomputeを保持しない | concurrency負荷試験 |
 | AC-04 | tenant Aからtenant Bのstate/artifact/credentialへ到達できない | cross-tenant negative E2E |
@@ -103,7 +108,12 @@ TO-BE
 | AC-11 | tenant月次budget超過時に新規agent/media/browser jobをfail-closedで止める | budget E2E |
 | AC-12 | DB・artifact・workflow stateをcold restoreし、未完jobを継続できる | clean environment restore |
 | AC-13 | production proxyがsubscription OAuthをDB制約と実行時認可の両方で拒否し、明示allowlist済みmachine/service authだけを使う | config/code/runtime scan + DB constraint + forbidden OAuth保存/呼出negative E2E |
-| AC-14 | Mac Mini上のproduction launchd対象が0になる | launchctl + cloud health実測 |
+| AC-14 | 全移行対象loopのactive writer authorityがcloudにあり、Mac Mini上の同loopはshadow/rollback状態で外部side effectを出さない | lease table + Mac/cloud event/ledger突合 |
+| AC-15 | 同一browser plannerがdomain固有selector/action sequenceなしで、実行時に選んだ未学習domainを含む予約・申請・問い合わせ・publishを完了または正直なblocked stateへ収束する | unseen-site 4-class real E2E + source scan |
+| AC-16 | tenant intentから本人が明示していない関連機会を発見し、公式source・deadline・fit evidenceを検証して、許可範囲内の申請またはdraftを作る | accelerator/opportunity discovery real E2E |
+| AC-17 | Dais tenantのLife Manager growth goalはLife Manager向け機会へ接続し、別tenantは本人のgoalだけを追いLife Managerをmarketしない | tenant A/B intent-isolation E2E |
+| AC-18 | CAPTCHA、KYC、法的宣誓、未許可fee、site block、必須事実不足を迂回せず、`human_boundary` または `site_blocked` と不足情報・証跡を返す | boundary matrix real E2E |
+| AC-19 | Mac/cloudの二重実行競合でも有効なfencing tokenを持つ1 writerだけが外部side effectを実行する | forced split-brain E2E |
 
 ## 3. As-Is / To-Be
 
@@ -116,7 +126,7 @@ TO-BE
 | agent state | local process / local transcript | tenant session reference + external durable state |
 | compute | Mac Mini常駐 | event-driven cloud worker |
 | media | local disk | Spaces/S3 + ephemeral scratch |
-| browser | local CloakBrowser | Steel 1 job = 1 tenant session/profile |
+| browser | local CloakBrowser +既知site別実行 | Steel tenant profile + 1 job = 1 session + general browser planner |
 | secrets | local envをprocessへ配布 | agent外credential proxy |
 | retry | shell/process単位 | step単位 + idempotency key |
 | observability | logs / JSONL / self-report | structured event + cost/outcome/evidence ledger |
@@ -180,7 +190,7 @@ agent session/container               credential proxy
 | `life-events` | calendar, wake, call, notification | shared deterministic worker | `tenant_id` |
 | `personal-ceo` | open-ended goal/action judgment | isolated agent session | `tenant_id` |
 | `media-cpu` | download, caption, FFmpeg/MPT render | ephemeral container | `tenant_id` |
-| `browser-write` | social login/post/publish | Steel session/profile | `tenant_id + account_id` |
+| `browser-action` | runtime discovery、予約、申請、問い合わせ、publish | Steel session/profile + general planner | `tenant_id + account_id` |
 | `financial-read` | revenue/cost aggregation | read-only worker | `tenant_id` |
 
 ### 3.5 Data contracts
@@ -210,6 +220,22 @@ lm_outcome_ledger
 lm_credential_refs
   id, tenant_id, account_id, provider, encrypted_ref, auth_kind,
   scopes, rotated_at, revoked_at
+
+lm_execution_leases
+  id, workflow_id, tenant_id, holder, fencing_token, mode,
+  acquired_at, expires_at, released_at
+
+lm_opportunities
+  id, tenant_id, intent_ref, source_url, title, kind, deadline,
+  fit_evidence, requirements, submission_policy, status, discovered_at
+
+lm_application_facts
+  id, tenant_id, opportunity_id, field, value_ref, evidence_ref,
+  freshness_at, verified_at
+
+lm_browser_profiles
+  id, tenant_id, account_id, steel_profile_ref, encrypted_auth_ref,
+  status, last_verified_at, revoked_at
 ```
 
 Constraints:
@@ -222,8 +248,48 @@ Constraints:
 - `lm_credential_refs.auth_kind` MUST be one of the explicit machine/service allowlist (`api_key`, `service_account`, `service_token`, `workload_identity`)。`subscription_oauth` はCHECK制約で保存を拒否する。
 - `lm_permissions` MUST have a unique active grant for `(tenant_id, tool, account_id, credential_ref, operation)` and a composite FK to the same tenant/account credential owner。cross-tenant/account grantはDBで表現できない。
 - `lm_jobs` ownershipとpermission/credential ownershipはproxy transaction内で同じ `tenant_id` に一致しなければならない。
+- `lm_execution_leases` はworkflowごとに未失効のwriterを1件だけ許し、external side effectは最新 `fencing_token` 以外をprovider call前に拒否する。
+- opportunity/applicationの全事実はtenant所有の `value_ref` と `evidence_ref` を持つ。agentが推測した値、別tenantの値、期限切れの値をsubmissionへ使わない。
+- web accountのpassword/cookie/sessionはtenant/account別 `lm_browser_profiles` の暗号化referenceとして保持し、Browser Use agentへ値を返さない。失効・challenge・追加認証は `human_boundary` とし、別accountや別tenantのprofileへfallbackしない。
 
-### 3.6 Credential/tool proxy authorization contract
+### 3.6 General browser and opportunity contract
+
+Browser jobは次の入力contractを使う。domain名、selector、固定action sequenceをjob contractへ埋め込まない。
+
+```text
+tenant_id, job_id, intent_ref, goal, success_criteria,
+allowed_effects, prohibited_effects, account_ref, deadline,
+budget, idempotency_key, fencing_token
+```
+
+plannerは次の共通段階をMUST実行する。
+
+1. tenant intentと期限から検索語・source候補を作り、公式sourceを含む複数候補を発見する。
+2. DOM / accessibility tree / screenshot / network-visible resultを観測し、現在状態から次の共通primitiveを選ぶ。
+3. `navigate | read | click | type | select | upload | download | back | wait` だけで操作する。
+4. final submit、send、book、publishの直前にpermission・budget・truth provenance・fencing tokenを再評価する。
+5. receipt、confirmation URL、provider ID、送信済みmessage IDのいずれかを取得して成功条件を検証し、ledgerへ保存する。
+6. 完了できない場合は `completed | no_match | site_blocked | human_boundary | failed` の1状態と、原因・不足情報・観測証跡を返す。
+
+domain固有policy metadataはdata-onlyとし、selector、action sequence、tenant個人情報を含めない。新しいsiteを使うためのcode deployを要求しない。「全siteで必ず成功する」とは定義しない。一般性は、未学習siteでも同じplanner/primitiveが実行し、成功または正直なblocked stateへ到達することで実証する。
+
+Opportunity loopは次の順序をMUST実行する。
+
+```text
+tenant intent / backlog / deadline
+        -> open-web + official-source discovery
+        -> fit / deadline / requirement verification
+        -> truthful application fact map
+        -> permission and boundary decision
+        -> browser submit or email send or evidence-backed draft
+        -> receipt + tenant report + next wake
+```
+
+product marketing loopはLife Manager自体の獲得・fundraisingだけを扱う。Personal CEO opportunity loopは各tenant自身のgoalだけを扱う。Dais tenantでLife Manager growthがactive intentの時だけ、YC等のaccelerator/fundraising applicationをDaisのopportunityとして扱う。別tenantのstartup・career・health・finance goalはそのtenantの機会へ接続し、Life Manager marketingへ流用しない。
+
+fee 0で法的宣誓・KYCを含まず、`application.submit` permissionがあり、全required fieldがfresh evidenceに結合した申請だけをautonomous submitする。条件を1つでも満たさない申請は送信せず、evidence-backed draftまたは `human_boundary` を作る。
+
+### 3.7 Credential/tool proxy authorization contract
 
 Agentからproxyへのrequestは次のfieldだけを受理する。
 
@@ -243,7 +309,7 @@ Proxyは次の順序をすべて同一のfail-closed decisionとして評価す�
 
 Proxyだけがcredentialをdecrypt/injectし、agent env・prompt・stdout・workflow payload/historyへraw secretを返さない。失敗responseはstable error codeとoperation IDだけを返し、provider response bodyやcredential valueを含めない。migrationはsubscription OAuth rowのinsert/updateをDB CHECKで拒否し、proxyも同じauth kindを明示拒否する。negative E2Eは、forbidden OAuth credentialの保存と、fixtureを直接seedした場合のinvokeの両方がprovider call前に失敗し、ledgerへdenyを1件だけ残すことを実証する。
 
-### 3.7 Control API
+### 3.8 Control API
 
 ```text
 POST /api/lm/workflows/:organ/start
@@ -277,7 +343,14 @@ All mutation endpoints MUST authenticate tenant ownership and return a stable op
 | 13 | cost/outcome ledger | `cloud_every_effect_has_ledger_row` | OK |
 | 14 | subscription OAuth ban | `cloud_subscription_oauth_insert_and_invoke_denied` | OK |
 | 15 | cold restore | `cloud_restore_resumes_pending_job` | OK |
-| 16 | Mac Mini independence | `cloud_e2e_with_mac_mini_offline` | OK |
+| 16 | non-destructive authority cutover | `cloud_cutover_keeps_mac_shadow_no_double_effect` | OK |
+| 17 | writer lease fencing | `cloud_writer_lease_rejects_stale_fencing_token` | OK |
+| 18 | unseen-site general browser | `cloud_browser_unseen_site_matrix_no_domain_code` | OK |
+| 19 | honest browser boundary | `cloud_browser_site_blocked_is_honest` | OK |
+| 20 | intent-driven opportunity discovery | `cloud_opportunity_discovers_unmentioned_accelerator_from_intent` | OK |
+| 21 | application truth provenance | `cloud_application_truth_provenance` | OK |
+| 22 | tenant-specific opportunity isolation | `cloud_dais_markets_lm_other_tenant_does_not` | OK |
+| 23 | application hard boundaries | `cloud_application_boundary_kyc_fee_attestation` | OK |
 
 ### 4.1 Real E2E scenarios
 
@@ -288,7 +361,10 @@ All mutation endpoints MUST authenticate tenant ownership and return a stable op
 | E2E-3 Clip | licensed source video + real staging social account | output object + published URL + cost row |
 | E2E-4 Isolation | tenant A/B fixtures | cross-tenant reads/writes all denied |
 | E2E-5 Recovery | kill worker after first durable step | retry resumes without duplicate post/call |
-| E2E-6 Cutover | Mac Mini offline | all cloud health and E2E checks pass |
+| E2E-6 Cutover | Mac側loopを稼働したままread-only shadowへ降格し、writer leaseをcloudへ移譲 | cloudだけが1 external effectを生成し、Mac process/health継続、duplicate 0 |
+| E2E-7 General browser | runtimeで選ぶ未学習siteを含む予約・accelerator申請・entity問い合わせ・publish | 同一planner/primitive、domain固有code 0、receiptまたは正直なblocked state |
+| E2E-8 Dais opportunity | `Life Managerを成長させる` intent + 迫るdeadline | 未明示acceleratorを公式sourceから発見し、truth provenance付きsubmit/draft + receipt |
+| E2E-9 Other tenant | 別tenantのstartup goal | 本人startupの機会だけを発見し、Life Manager marketing effect 0 |
 
 ### 4.2 UI E2E judgment
 
@@ -301,12 +377,13 @@ All mutation endpoints MUST authenticate tenant ownership and return a stable op
 
 ### 5.1 In scope
 
-- Daisの現行Claude-p / earn loopをMac Mini productionから撤去する。
+- Daisの現行Claude-p / earn loopのactive writer authorityをcloudへ移し、Mac Mini側を稼働したread-only shadow / fenced rollbackへ降格する。
 - Railway/Supabase/InngestをLife Manager control planeとして統合する。
 - Personal CEO、physical-life actions、clip/video earningをmulti-tenant module化する。
 - DigitalOcean Dropletをsingle-tenant migration bridgeとして使う。
 - mediaをobject storageへ移す。
-- browser writeをSteel tenant sessionへ移す。
+- browser actionをSteel tenant sessionとgeneral plannerへ移し、未知siteの発見・予約・申請・問い合わせ・publishを同じcontractで扱う。
+- tenant intentから未知のopportunityを発見し、truth provenance・permission・boundary gateを通して申請またはdraftへ接続する。
 - credential proxy、budget、pause、idempotency、ledger、restoreを実装する。
 
 ### 5.2 Out of scope / DO NOT
@@ -316,6 +393,11 @@ All mutation endpoints MUST authenticate tenant ownership and return a stable op
 - 1 tenantごとに常駐VM、Droplet、Daytona sandbox、Docker containerを予約しない。
 - current working Railway cloudを古い `Daisuke134/life-manager` repoへ移さない。
 - Mac Mini local media/stateをproduction SSOTとして残さない。
+- migration手順としてMac Miniをpower off、全loopをmass stop、launchdを一括bootoutしない。
+- Mac Miniとcloudへ同時にactive writer authorityを与えない。
+- 既知domain selector、固定URL router、site別action sequenceだけでgeneral browser完了を主張しない。
+- CAPTCHA、KYC、法的宣誓、未許可fee、site blockを迂回しない。
+- applicationのidentity、traction、revenue、metric、回答を推測・捏造しない。
 - browser credentialをagent prompt、env、stdout、workflow historyへ出さない。
 - Kubernetesを本scopeで導入しない。測定済みApp Platform/managed execution上限を超える時点で別specを作る。
 - medical/therapy判断を自律実行しない。wellness範囲を越えるactionはprofessional reviewなしでfinalizeしない。
@@ -332,7 +414,7 @@ Phase A  inventory + cloud bridge
    -> Phase E  media + Steel publishing
    -> Phase F  control panel
    -> Phase G  failure / isolation / restore hardening
-   -> Phase H  Mac Mini-off cutover
+   -> Phase H  per-loop shadow / canary / fenced authority cutover
 ```
 
 ### 6.2 Required verification commands
@@ -473,6 +555,13 @@ Completion claims MUST include fresh command output, remote commit hash, deploym
 | App Platform jobs bill only while running | DigitalOcean App Platform Pricing: https://docs.digitalocean.com/products/app-platform/details/pricing/ | “jobs are billed only when they run” |
 | autonomous consumer financial decisions require professional review | Anthropic Usage Policy: https://www.anthropic.com/legal/aup | “a qualified professional in that field must review” |
 | current product already chooses one multi-tenant backend | `2026-06-09-anicca-life-manager-fix-and-roadmap.md` §15 | “ONE multi-tenant backend” |
+| cutoverは旧環境を破壊せずtraffic/authorityを移す | AWS Blue/Green Deployments: https://docs.aws.amazon.com/ja_jp/whitepapers/latest/blue-green-deployments/welcome.html | “shifting traffic between two identical environments” |
+| goal-driven web agentはtaskからresultを返す | Browser Use Cloud Quickstart: https://docs.browser-use.com/introduction | “Give an agent a task and get the result.” |
+| Browser Use plannerは任意のremote browser CDPへ接続できる | Browser Use Remote Browser: https://docs.browser-use.com/open-source/customize/browser/remote | “You can pass in a CDP URL from any remote browser” |
+| browser sessionは隔離し認証stateを再利用できる | Playwright Authentication: https://playwright.dev/docs/auth | “Tests can load existing authenticated state.” |
+| browser認証stateはsecretとして隔離する | Playwright Authentication: https://playwright.dev/docs/auth | “The browser state file may contain sensitive cookies and headers” |
+| Steelはagent向けbrowser infrastructureを提供する | Steel repository: https://github.com/steel-dev/steel-browser | “automate the web without worrying about infrastructure” |
+| Browserlessはheadless browser runtimeでありgoal plannerではない | Browserless repository: https://github.com/browserless/browserless | “Deploy headless browsers in Docker.” |
 
 ## 8. Atomic TODO表 — 残作業の正本
 
@@ -492,9 +581,9 @@ state values: `pending | in_progress | code_done | done | blocked`。
 | 10 | bridgeのbackup/restoreを設定する | clean Dropletへrestore PASS | pending |
 | 11 | 1本目loopをcontainerizeする | Mac Miniと同じread-only判断結果 | pending |
 | 12 | 1本目loopをshadow runする | side effectなしで24h相当fixture一致 | pending |
-| 13 | 1本目loopをbridgeへcutoverする | cloud evidence green + local停止 | pending |
-| 14 | 残loopをbridgeへ移す | production local loop数0、product化前の一時配置完了 | pending |
-| 15 | cloud agent schema migrationを書く | 6 data contractsがadditive migration化 | pending |
+| 13 | 1本目loopのwriter authorityをbridgeへcutoverする | cloud evidence green、最新fencing tokenはcloudだけ、Mac loopは稼働read-only shadow、duplicate effect 0 | pending |
+| 14 | 残loopのwriter authorityをbridgeへ移す | 全対象loopでcloud writer + Mac shadow/rollback、mass stop 0、product化前の一時配置完了 | pending |
+| 15 | cloud agent schema migrationを書く | 10 data contractsがadditive migration化 | pending |
 | 16 | RLS policyを書く | tenant A/B negative SQL PASS | pending |
 | 17 | idempotency unique constraintを作る | duplicate insertがDBで拒否 | pending |
 | 18 | credential reference storageを作る | raw secret列なし、rotation/revoke可 | pending |
@@ -527,10 +616,18 @@ state values: `pending | in_progress | code_done | done | blocked`。
 | 45 | deterministic object keyを実装する | retryでduplicate object 0 | pending |
 | 46 | caption/subtitle stepを実装する | rendered outputで字幕実視認 | pending |
 | 47 | media quality/policy gateを実装する | invalid/unlicensed fixture拒否 | pending |
-| 48 | Steel tenant profileを作る | tenant別cookie storage分離 | pending |
-| 49 | 1 job = 1 browser sessionを実装する | session lifecycle/evidence実測 | pending |
-| 50 | browser publish toolをproxy配下に置く | agentがsocial credentialを見ない | pending |
-| 51 | staging social accountへ実投稿する | published URL + provider ID | pending |
+| 48 | Steel tenant profileを作る | tenant/account別cookie storage分離、auth stateをsecret store外へ出さない | pending |
+| 49 | general browser job contractとplannerを実装する | goal/success criteria/permissionから1 job = 1 sessionを作り、共通primitiveだけでplan→act→verify | pending |
+| 50 | browser action toolをproxy配下に置く | agentがcredentialを見ず、submit/send/book/publish直前にpermission/budget/fencing再認可 | pending |
+| 51 | unseen-site browser real E2Eを実行する | 予約・申請・問い合わせ・publishの4 class、runtime選択domain、domain固有selector/action code 0、receiptまたはhonest blocked state | pending |
+| 51a | execution lease / fencing schemaを作る | workflowごとにactive writer 1件、stale tokenのprovider call 0 | pending |
+| 51b | Mac/cloud shadow comparatorを作る | 同じeventの判断・planned effect差分をside effectなしで記録 | pending |
+| 51c | intent-driven opportunity schemaを作る | intent/source/deadline/fit/requirements/submission policyをtenant別保存 | pending |
+| 51d | open-web opportunity discoveryを作る | tenantが名前を挙げていない候補を公式source付きで発見 | pending |
+| 51e | application truth provenanceを作る | 全required fieldがfresh tenant evidenceに結合し、推測値0 | pending |
+| 51f | application permission/boundary gateを作る | fee/KYC/attestation/CAPTCHA/missing factはsubmit 0でdraftまたはhuman_boundary | pending |
+| 51g | Dais/other-tenant opportunity isolation E2Eを作る | DaisはLife Manager機会、別tenantは本人goalのみ、cross-marketing 0 | pending |
+| 51h | accelerator application real E2Eを実行する | deadline発見→公式要件検証→許可済みsubmitまたはevidence-backed draft→receipt/report | pending |
 | 52 | revenue attributionを接続する | webhookからrevenue row生成 | pending |
 | 53 | outcome ROIを計算する | verified outcome / costをtenant別表示 | pending |
 | 54 | negative ROI stop gateを作る | threshold超過後の新規job停止 | pending |
@@ -547,10 +644,10 @@ state values: `pending | in_progress | code_done | done | blocked`。
 | 65 | Personal CEO resume E2Eを作る | AC-09実測PASS | pending |
 | 66 | real clip E2Eを作る | AC-10実測PASS | pending |
 | 67 | cold restore E2Eを作る | AC-12実測PASS | pending |
-| 68 | Dais staging tenantをcutoverする | physical/CEO/clip 3 E2E green | pending |
-| 69 | Mac Mini offline E2Eを実行する | AC-01/16実測PASS | pending |
+| 68 | Dais staging tenantをcutoverする | physical/CEO/clip/general-browser/opportunityの5 E2E green | pending |
+| 69 | Mac Mini non-destructive authority E2Eを実行する | Mac loop/processを稼働したままAC-01/14/19実測PASS、duplicate effect 0 | pending |
 | 70 | production remote hashesを照合する | repo/deploy/runtime hash一致 | pending |
-| 71 | Mac Mini production jobsを停止する |対象launchd/cron 0、rollback手順あり | pending |
+| 71 | Mac Mini production side-effect authorityをrevokeする | 対象launchd/cronはshadow/rollbackで稼働可、active writer leaseはcloudのみ、復帰手順実測 | pending |
 | 72 | cloud statusをphone control panelへ統合する | phoneのみでhealth/cost/outcome確認可 | pending |
 | 73 | final independent adversarial reviewを行う | artifact-only reviewでblocking finding 0 | pending |
 | 74 | specの全rowを実証根拠付きdoneにする | pending/blocking row 0 | pending |
@@ -560,14 +657,16 @@ state values: `pending | in_progress | code_done | done | blocked`。
 以下をすべて満たした時だけ完了とする。
 
 ```text
-[ ] TODO #1-74 = done
-[ ] AC-01-14 = fresh real evidence green
-[ ] Test Matrix #1-16 = OK
+[ ] TODO #1-74 and #51a-51h = done
+[ ] AC-01-19 = fresh real evidence green
+[ ] Test Matrix #1-23 = OK
 [ ] gitleaks = 0 leaks
 [ ] tenant isolation negative E2E = green
 [ ] real calendar/call/clip evidence = green
 [ ] cold restore = green
-[ ] Mac Mini offline E2E = green
+[ ] Mac Mini powered-on shadow + cloud writer authority E2E = green
+[ ] unseen-site 4-class browser E2E = green
+[ ] intent discovery + application provenance + tenant isolation E2E = green
 [ ] remote repo head = deployment head = verified implementation commit
 [ ] independent artifact-only adversarial review = blocking finding 0
 ```
