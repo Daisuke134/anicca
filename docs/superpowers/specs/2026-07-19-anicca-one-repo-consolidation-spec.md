@@ -312,7 +312,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 順 | ID | atomic outcome | done evidence | 状態 |
 |---:|---|---|---|---|
 | 1 | S20b-b | 2軒目のPython runtimeがcanonical heartbeatをed25519署名 | 外部verifier PASS、natural heartbeat row | **done** — Modal `sb-0l4DnecMvMpXm4OzLLcFTn`、同一payerの2周期、JS verifier + RPC **2/2 PASS**。証拠は `anicha/specs/evidence/s20b-python-heartbeat-sb-0l4DnecMvMpXm4OzLLcFTn.jsonl` |
-| 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | pending — 記事の「2軒目で住める」の前提 |
+| 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | **done** — Modal `sb-34xzazUQKuoGKBFWeh1PQ6` の一時URLで3 route HTTP 200、heartbeat 2/2 JS+RPC PASS、Base/Solana/PM独立再読込の差分0。外部収入 `$0.00` / runtime `$0.015` / `funded` を明記。証拠は `anicha/specs/evidence/s20b-python-statement-sb-34xzazUQKuoGKBFWeh1PQ6*`。Quick Tunnelは一時的・開発用・SLA無し、lease 5分 |
 | 3 | 13c-PM | PMの次の1 cycleをtenant earnings ledgerへ `deployed/recovered/fee/PnL` で記帳 | on-chain/API evidence付き実row + 月次報告 | pending — 最優先の会計欠損 |
 | 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
 | 5 | AE-X4 | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | pending |
@@ -746,7 +746,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。現在の順序は **S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b**。
+    保留条件は解消する。現在の順序は **13c-PM → 実redeem待ち → AE-X4 → 13d-b**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -756,12 +756,12 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★現在の実行順の正本 = §0.4.6（S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b）。★**
+**★現在の実行順の正本 = §0.4.6（13c-PM → 実redeem待ち → AE-X4 → 13d-b）。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
 現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。H3/H5は§0.4.6の後に再開する。
 
-**Current cursor**: **S20b-c（2軒目Python決算書serve）**。その後13c-PM。
+**Current cursor**: **13c-PM（PMの次の1 cycleをtenant earnings ledgerへ記帳）**。
 これは§0.4.6のportfolio順をそのまま実行する。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 残るH5 relationsはagent economyの会計・自活証明が閉じるまでNEXT HORIZONに残す。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -777,7 +777,7 @@ fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだ
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
-S20b-cの後に `13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`13d-b`（on-chain実送金）。
+`13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`13d-b`（on-chain実送金）。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
