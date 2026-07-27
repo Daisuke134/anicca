@@ -563,7 +563,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | 自動 | `9d` | MARKETING | 7日 ledger — Day 1 記帳済 2026-07-26、毎日 10:15 JST に loop が自動追記 | agent の作業対象外（並走） |
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
-**crypto track（裁定17で別 repo と合流待ち、この repo では保留）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
+**crypto track（裁定17で別 repo と合流待ち、この repo では保留。担当 agent への handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md` — 正本パス・実 DB row・約束事すべて記載）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
 
@@ -573,6 +573,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | H3 | `ORG-checkup` | 検診 category 追加（胃/大腸/脳ドック等の周期を care detector へ） | 同上 | 11a 実弾の後 |
 | H4 | `ORG-precepts` | **spec 確定（2026-07-27）**: ①観測 = 就寝前 trigger（pre_sleep と同窓・実装済み機構に相乗り）に週次で closed Q 1問「今日、心に引っかかったことは?」5択 tap: ［嘘をついた］［きつく当たった］［時間を奪った/遅刻］［飲酒/衝動］［なし・穏やかだった］（五戒を日常語に翻訳、宗教語・罪の語彙は使わない）②台帳 = `lm_precepts_log` append-only ③介入 = 週次サマリ1通のみ（日曜夜）: 事実の鏡「今週は『きつく当たった』が2回。全部 木曜の連続MTG の後でした」— パターンと文脈を返すだけ、説教・評価・スコア化禁止 ④tap は CB-1 可視応答 ⑤MENTAL の 3通/日 cap に合算（別枠にしない）⑥copy は i18n Dais 編集可 | Dais 口述 2026-07-26（五戒・自省） | **done (2026-07-27)**: #1173 merged — builder が spec の自己矛盾（週1問×「今週2回」例文）を検出し鏡の窓を28日へ正直化。review 8 findings 全修理（深夜0時過ぎ tap は前夜の記録として受理・tz は callback に運搬・budget 失敗は両 leg 停止 latch・端の overclaim copy 修正）。1440/1440 exit 0。migration 2本適用 + readback 済み、deploy 済み。MENTAL cap 共有で3通/日は不変 |
 | H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
+| H8 | `IG-LM` | **Life Manager 専用 Instagram account の開設（2026-07-27 Dais 裁定: 現行の `anicca.affirms2` は affirmation persona であり LM ブランドの家ではない）**。開設は account 作成 = 人間の手（または Dais 自身が ig-account-create skill を実行）。開設後: `~/.cloak/life-manager-instagram-accounts.json` に handle を追加 → 配信側は同 file 参照のため**コード変更ゼロ**で切替 | Dais 口述 2026-07-27 | **🫵 account 開設のみ Dais** — 配信配線は開設当日に agent が実測込みで切替 |
 | H6 | `OPS-1` | Telnyx 残高 top-up 経路（実測 $20.86 ≈ 2日分。alert は配線済みだが補充は未設計 — 資金源は Dais 裁定要） | demo sweep D | **Dais の資金裁定待ち** |
 | H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 | crypto track（別 repo）と合流 |
 
