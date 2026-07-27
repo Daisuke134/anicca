@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-07-27T15:19:23Z",
+  "feature": "REPORT-1",
+  "canonical_main_commit": "09d060e9404c06d87159c4f1a057bcbf44799600",
+  "pull_requests": [
+    "https://github.com/Daisuke134/life-manager/pull/1190",
+    "https://github.com/Daisuke134/life-manager/pull/1191",
+    "https://github.com/Daisuke134/life-manager/pull/1192"
+  ],
+  "architecture": {
+    "money_ssot": "lm_agent_earnings",
+    "compute_cost_ssot": "lm_api_cost",
+    "tenant_binding": "lm_users.agent_wallet_address",
+    "delivery_receipts": "lm_financial_report_receipts",
+    "shared_projection": "financial-report-snapshot",
+    "scheduler": "ai.anicca.life-manager-financial-report",
+    "interval_seconds": 300,
+    "dedup_key": [
+      "uid",
+      "report_kind",
+      "period_key"
+    ]
+  },
+  "verification": {
+    "initial_report_and_panel_suite": {
+      "tests": 134,
+      "pass": 134,
+      "fail": 0
+    },
+    "postgres_cost_aggregation_suite": {
+      "tests": 56,
+      "pass": 56,
+      "fail": 0
+    },
+    "canonical_hash_suite": {
+      "tests": 23,
+      "pass": 23,
+      "fail": 0,
+      "red_observed": "the same nested JSON value with reordered object keys produced different hashes before the fix"
+    },
+    "full_life_manager_suite": {
+      "tests": 658,
+      "pass": 657,
+      "fail": 1,
+      "new_failures": 0,
+      "pre_existing_host_state_failure": "self-build-daily-runtime expects ai.anicca.life-manager-dev to be unloaded, but the production launchd job is loaded"
+    },
+    "syntax_and_diff_check": "pass",
+    "changed_path_secret_scan": "0 hits",
+    "package_audit_observation": "5 pre-existing dependency advisories; no audit-fix or unrelated dependency upgrade performed"
+  },
+  "production": {
+    "migration_applied": true,
+    "migration_http_status": 201,
+    "cost_aggregation_readback": {
+      "source_rows": 10433,
+      "source_rows_over_previous_limit": true,
+      "response_rows": 1,
+      "all_time_est_usd": "1.0374884833333333"
+    },
+    "launchd": {
+      "label": "ai.anicca.life-manager-financial-report",
+      "runs_observed": 3,
+      "last_exit_code": 0,
+      "normal_tick_result": "not_due"
+    },
+    "first_failed_attempt": {
+      "reason": "financial report cost ledger exceeds 10000 rows",
+      "telegram_side_effect": false,
+      "receipt_created": false,
+      "resolution": "tenant-scoped half-open SUM and count moved into lm_financial_cost_totals"
+    },
+    "receipts": [
+      {
+        "report_kind": "daily",
+        "period_key": "2026-07-28",
+        "timezone": "Asia/Tokyo",
+        "period_start": "2026-07-27T15:00:00+00:00",
+        "period_end": "2026-07-27T15:13:45.719+00:00",
+        "status": "sent",
+        "telegram_message_id": 297,
+        "snapshot_hash": "246393f1bf37fc20bb3128bf9b05e069dc37e3e041ce013c64a3c86fc5fd619a",
+        "snapshot": {
+          "gross_usd_micros": "0",
+          "realized_loss_usd_micros": "0",
+          "financial_fee_usd_micros": "0",
+          "api_cost_usd_micros": "0",
+          "operating_net_usd_micros": "0",
+          "balance_usdc_atomic": "0",
+          "distributable_usdc_atomic": "0",
+          "self_funded_bps": 0,
+          "self_funded_status": "non_positive_net",
+          "stop_reason": "no_external_income",
+          "rail_pnl": []
+        }
+      },
+      {
+        "report_kind": "weekly",
+        "period_key": "2026-W31",
+        "timezone": "Asia/Tokyo",
+        "period_start": "2026-07-26T15:00:00+00:00",
+        "period_end": "2026-07-27T15:13:45.719+00:00",
+        "status": "sent",
+        "telegram_message_id": 298,
+        "snapshot_hash": "960112aef6b5422ce65099815ded2df131fca6ae68bc0e8efb17327090fdb301",
+        "snapshot": {
+          "gross_usd_micros": "0",
+          "realized_loss_usd_micros": "0",
+          "financial_fee_usd_micros": "0",
+          "api_cost_usd_micros": "67954",
+          "operating_net_usd_micros": "-67954",
+          "balance_usdc_atomic": "0",
+          "distributable_usdc_atomic": "0",
+          "self_funded_bps": 0,
+          "self_funded_status": "non_positive_net",
+          "stop_reason": "negative_net",
+          "rail_pnl": []
+        }
+      }
+    ],
+    "canonical_hash_readback": {
+      "checked_receipts": 2,
+      "matches": 2,
+      "correction": "The two first receipts were sent before canonical hashing landed. Their snapshot bodies and Telegram messages were unchanged; only the derived snapshot_hash was recomputed."
+    },
+    "railway": {
+      "service": "life-call",
+      "environment": "production",
+      "deployment_status": "SUCCESS",
+      "deployment_commit": "09d060e9404c06d87159c4f1a057bcbf44799600"
+    },
+    "authenticated_panel_readback": {
+      "http_status": 200,
+      "temporary_session_revoked_after_check": true,
+      "daily_equals_receipt": true,
+      "weekly_equals_receipt": true,
+      "canonical_integer_fields_compared": 7,
+      "also_compared": [
+        "period_key",
+        "snapshot_hash",
+        "telegram_message_id",
+        "self_funded_bps",
+        "stop_reason"
+      ]
+    }
+  },
+  "cadence": {
+    "daily_distinct_periods_required": 7,
+    "daily_distinct_periods_observed": 1,
+    "weekly_receipts_required": 1,
+    "weekly_receipts_observed": 1,
+    "status": "active",
+    "remaining": "six distinct daily period receipts must arrive from the installed production launchd schedule"
+  },
+  "evidence_limit": "The common arithmetic, production scheduler, real Telegram delivery, durable provider receipts, canonical JSONB-stable hashes, and authenticated panel equality are proven for the first daily and weekly periods. REPORT-1 is not done until six more distinct daily period keys arrive. External income remains $0.00, the agent wallet balance is 0 USDC, and no self-funded operation or user payout is proven here.",
+  "sources": [
+    {
+      "name": "Telegram Bot API sendMessage",
+      "url": "https://core.telegram.org/bots/api#sendmessage",
+      "core_quote": "On success, the sent Message is returned."
+    },
+    {
+      "name": "PostgreSQL JSON Types",
+      "url": "https://www.postgresql.org/docs/current/datatype-json.html",
+      "core_quote": "jsonb does not preserve white space, does not preserve the order of object keys"
+    },
+    {
+      "name": "RFC 8785 JSON Canonicalization Scheme",
+      "url": "https://www.rfc-editor.org/rfc/rfc8785.html",
+      "core_quote": "deterministic property sorting"
+    },
+    {
+      "name": "PostgreSQL Constraints",
+      "url": "https://www.postgresql.org/docs/current/ddl-constraints.html",
+      "core_quote": "Adding a unique constraint will automatically create a unique B-tree index."
+    },
+    {
+      "name": "Supabase Row Level Security",
+      "url": "https://supabase.com/docs/guides/database/postgres/row-level-security",
+      "core_quote": "RLS must always be enabled on any tables stored in an exposed schema."
+    }
+  ]
+}
