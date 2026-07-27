@@ -273,6 +273,27 @@ test("drops id-less items and events starting after now — history holds only r
   assert.deepEqual(events.map((e) => e.id), ["ok"]);
 });
 
+test("history projection preserves attendee identity metadata for the relations adapter", async () => {
+  const attendees = [
+    { email: "owner@example.com", self: true, responseStatus: "accepted" },
+    { email: "mother@example.com", displayName: "母", responseStatus: "accepted" },
+  ];
+  const organizer = { email: "owner@example.com", self: true };
+  const [event] = await fetchCalendarHistory("uid", {
+    nowMs: NOW,
+    calendar: fakeCalendar([{
+      id: "one-to-one",
+      summary: "private title",
+      start: { dateTime: "2026-06-21T09:00:00Z" },
+      end: { dateTime: "2026-06-21T10:00:00Z" },
+      attendees,
+      organizer,
+    }]),
+  });
+  assert.deepEqual(event.attendees, attendees);
+  assert.deepEqual(event.organizer, organizer);
+});
+
 test("no uid → [] (mirrors fetchUpcomingEvents' guard)", async () => {
   assert.deepEqual(await fetchCalendarHistory("", { nowMs: NOW, calendar: fakeCalendar([{ id: "x" }]) }), []);
 });

@@ -232,6 +232,21 @@ const PRECEPTS_STRINGS = Object.freeze({
   }),
 });
 
+const RELATIONS_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    suggestion: "🌿 カレンダーでは、{name}との1対1の時間が{daysSince}日空いています。いつもの間隔は約{intervalDays}日でした。今週、10分だけ連絡する余白があります。",
+  }),
+});
+
+function formatRelationSuggestion(candidate) {
+  const values = {
+    name: String(candidate && candidate.label || ""),
+    daysSince: Math.max(0, Math.round(Number(candidate && candidate.daysSince) || 0)),
+    intervalDays: Math.max(0, Math.round(Number(candidate && candidate.personalIntervalDays) || 0)),
+  };
+  return RELATIONS_STRINGS.ja.suggestion.replace(/\{(\w+)\}/g, (_match, key) => String(values[key]));
+}
+
 // Elapsed time in the units §9.11 speaks: 「4ヶ月」「6週間」「10日」. Deterministic thresholds, no
 // calendar arithmetic — the input is already a day count the detector measured.
 function elapsedLabel(days) {
@@ -354,9 +369,11 @@ module.exports = {
   FINANCIAL_STRINGS,
   PHYSICAL_STRINGS,
   PRECEPTS_STRINGS,
+  RELATIONS_STRINGS,
   WEEKDAY_JA,
   elapsedLabel,
   formatCareBookingReport,
+  formatRelationSuggestion,
   formatTravelAutofillMessage,
   slotLabel,
 };
