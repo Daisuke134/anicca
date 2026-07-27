@@ -11,13 +11,19 @@ const { homedir } = require("node:os");
 const { basename, join, resolve } = require("node:path");
 const { pathToFileURL } = require("node:url");
 
-const { recordX402Sale, saleLedgerEntry } = require("../lib/x402-sale-ledger.js");
+const {
+  recordX402Sale,
+  recordX402Work,
+  saleLedgerEntry,
+} = require("../lib/x402-sale-ledger.js");
+const { classifyThe402Revenue } = require("../lib/the402-work-provenance.js");
 
 const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const DEFAULT_RPC = "https://mainnet.base.org";
 const MAX_LEDGER_BYTES = 4 * 1024 * 1024;
 const MAX_LINES = 10_000;
+const MAX_THE402_RESPONSE_BYTES = 2 * 1024 * 1024;
 const LEDGER_NAME = /^external-inflows-(0x[0-9a-fA-F]{40})\.jsonl$/;
 
 function normalizeAddress(value) {
@@ -113,11 +119,15 @@ async function processLedgers({
   selfWallets,
   rpcCall,
   recordSale = recordX402Sale,
+  recordWork = recordX402Work,
+  classifyRevenue = async () => ({ kind: "sale" }),
 }) {
   if (!Array.isArray(ledgerPaths)) throw new TypeError("ledgerPaths must be an array");
   if (!Array.isArray(selfWallets)) throw new TypeError("selfWallets must be an array");
   if (typeof rpcCall !== "function") throw new TypeError("rpcCall must be a function");
   if (typeof recordSale !== "function") throw new TypeError("recordSale must be a function");
+  if (typeof recordWork !== "function") throw new TypeError("recordWork must be a function");
+  if (typeof classifyRevenue !== "function") throw new TypeError("classifyRevenue must be a function");
 
   const result = {
     ledgers_seen: ledgerPaths.length,
@@ -127,6 +137,9 @@ async function processLedgers({
     blocked_subcent: 0,
     recorded: 0,
     duplicates: 0,
+    sale_recorded: 0,
+    work_recorded: 0,
+    provenance_rejected: 0,
     transactions: [],
   };
   const chainContext = { chainId: null, finalizedBlock: null };
@@ -169,13 +182,70 @@ async function processLedgers({
         result.chain_rejected += 1;
         continue;
       }
-      const write = await recordSale(row, boundary);
+      let provenance = { kind: "sale" };
+      if (row.source === "the402") {
+        try {
+          provenance = await classifyRevenue(row);
+        } catch {
+          provenance = { kind: "rejected", reason: "provenance_unavailable" };
+        }
+      }
+      if (!provenance || !["sale", "work"].includes(provenance.kind)) {
+        result.provenance_rejected += 1;
+        continue;
+      }
+      const write = provenance.kind === "work"
+        ? await recordWork(row, provenance, boundary)
+        : await recordSale(row, boundary);
       result.transactions.push(normalizeTx(row.tx));
       if (write && write.duplicate) result.duplicates += 1;
-      else result.recorded += 1;
+      else {
+        result.recorded += 1;
+        if (provenance.kind === "work") result.work_recorded += 1;
+        else result.sale_recorded += 1;
+      }
     }
   }
   return result;
+}
+
+function the402EvidenceClassifier({
+  fetchImpl,
+  credentialsPath = join(homedir(), ".anicca", "the402-credentials.json"),
+} = {}) {
+  if (typeof fetchImpl !== "function") throw new TypeError("The402 evidence needs fetch");
+  let evidencePromise = null;
+  return async (row) => {
+    if (!evidencePromise) {
+      evidencePromise = (async () => {
+        const credentials = JSON.parse(readFileSync(credentialsPath, "utf8"));
+        if (typeof credentials.api_key !== "string" || credentials.api_key.length < 16) {
+          throw new Error("invalid The402 credentials");
+        }
+        const get = async (path) => {
+          const response = await fetchImpl(`https://api.the402.ai${path}`, {
+            headers: { "X-API-Key": credentials.api_key },
+            signal: AbortSignal.timeout(30_000),
+          });
+          const text = await response.text();
+          if (!response.ok || Buffer.byteLength(text) > MAX_THE402_RESPONSE_BYTES) {
+            throw new Error("The402 evidence request failed");
+          }
+          return JSON.parse(text);
+        };
+        const [earnings, jobs] = await Promise.all([
+          get("/v1/provider/earnings"),
+          get("/v1/jobs"),
+        ]);
+        return { earnings, jobs };
+      })();
+    }
+    try {
+      return classifyThe402Revenue(row, await evidencePromise);
+    } catch {
+      return { kind: "rejected", reason: "provenance_unavailable" };
+    }
+  };
 }
 
 function args(argv) {
@@ -220,11 +290,18 @@ async function main(deps = {}, argv = process.argv.slice(2)) {
     : await import(pathToFileURL(resolve(selfWalletModule)).href);
   const fetchImpl = deps.fetchImpl || globalThis.fetch;
   const rpcCall = deps.rpcCall || rpcClient(fetchImpl, parsed.rpcUrl || process.env.BASE_RPC_URL || DEFAULT_RPC);
+  const classifyRevenue = deps.classifyRevenue || the402EvidenceClassifier({
+    fetchImpl,
+    credentialsPath: deps.the402CredentialsPath || process.env.THE402_CREDENTIALS_PATH
+      || join(homedir(), ".anicca", "the402-credentials.json"),
+  });
   const result = await processLedgers({
     ledgerPaths,
     selfWallets: imported.SELF_WALLETS,
     rpcCall,
     recordSale: deps.recordSale || recordX402Sale,
+    recordWork: deps.recordWork || recordX402Work,
+    classifyRevenue,
   });
   const output = { observed_at: new Date().toISOString(), ok: true, ...result };
   (deps.writeOutput || ((text) => process.stdout.write(text)))(`${JSON.stringify(output)}\n`);
@@ -245,5 +322,6 @@ module.exports = {
   findLedgerPaths,
   processLedgers,
   verifySaleOnBase,
+  the402EvidenceClassifier,
   main,
 };

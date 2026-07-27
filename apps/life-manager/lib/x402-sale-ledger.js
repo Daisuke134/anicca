@@ -7,6 +7,7 @@ const { recordEarnLoopRevenue } = require("./earnings-runtime.js");
 const ALLOWED_SOURCES = new Set(["x402-image", "the402", "clawmerchants"]);
 const SOURCE_SALE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,191}$/;
 const OFFER_ID = /^[a-zA-Z0-9/][a-zA-Z0-9._:/-]{0,191}$/;
+const WORK_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
 
 function fail(message) {
   throw new Error(message);
@@ -35,7 +36,7 @@ function ownedBoundary(values) {
   return set;
 }
 
-function saleLedgerEntry(input, options = {}) {
+function revenueLedgerEntry(input, options = {}, recipe = "sale", provenance = null) {
   if (!input || typeof input !== "object") fail("a verified x402 sale must be an object");
   if (!ALLOWED_SOURCES.has(input.source)) fail("x402 sale source is not allowed");
   const sourceSaleId = exactString(input.source_sale_id, "source sale id", SOURCE_SALE_ID);
@@ -63,6 +64,26 @@ function saleLedgerEntry(input, options = {}) {
   if (typeof input.observed_at !== "string" || Number.isNaN(occurredAt.getTime())) {
     fail("observed_at must be a timestamp");
   }
+  let workMeta = {};
+  if (recipe === "work") {
+    if (input.source !== "the402") fail("x402 work revenue must come from The402");
+    if (!provenance || typeof provenance !== "object") fail("work provenance is required");
+    const settlementId = exactString(provenance.settlementId, "settlement provenance", WORK_ID);
+    const jobId = provenance.jobId == null ? null : exactString(provenance.jobId, "job provenance", WORK_ID);
+    const postingId = provenance.postingId == null
+      ? null
+      : exactString(provenance.postingId, "posting provenance", WORK_ID);
+    if (!jobId && !postingId) fail("job or posting provenance is required");
+    if (sourceSaleId !== `the402:${settlementId}`) fail("settlement provenance does not match source sale id");
+    workMeta = {
+      recipe: "work",
+      settlement_id: settlementId,
+      job_id: jobId,
+      posting_id: postingId,
+    };
+  } else if (recipe !== "sale") {
+    fail("unknown x402 revenue recipe");
+  }
 
   const entry = normaliseEntry({
     entry_key: `x402:${tx}:income`,
@@ -72,7 +93,7 @@ function saleLedgerEntry(input, options = {}) {
     currency: "USD",
     occurred_at: occurredAt.toISOString(),
     tx_hash: tx,
-    source: "x402_sale",
+    source: recipe === "work" ? "x402_work" : "x402_sale",
     meta: {
       protocol: "x402",
       network: "eip155:8453",
@@ -85,9 +106,18 @@ function saleLedgerEntry(input, options = {}) {
       usdc_atomic: input.usdc_atomic,
       finalized: true,
       external: true,
+      ...workMeta,
     },
   });
   return entry;
+}
+
+function saleLedgerEntry(input, options = {}) {
+  return revenueLedgerEntry(input, options, "sale");
+}
+
+function workLedgerEntry(input, options = {}, provenance) {
+  return revenueLedgerEntry(input, options, "work", provenance);
 }
 
 async function recordX402Sale(input, options = {}) {
@@ -96,8 +126,16 @@ async function recordX402Sale(input, options = {}) {
   return recordEntry(entry);
 }
 
+async function recordX402Work(input, provenance, options = {}) {
+  const entry = workLedgerEntry(input, options, provenance);
+  const recordEntry = options.recordEntry || recordEarnLoopRevenue;
+  return recordEntry(entry);
+}
+
 module.exports = {
   ALLOWED_SOURCES,
   saleLedgerEntry,
+  workLedgerEntry,
   recordX402Sale,
+  recordX402Work,
 };
