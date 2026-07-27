@@ -61,7 +61,7 @@
     },
     "launchd": {
       "label": "ai.anicca.life-manager-financial-report",
-      "runs_observed": 3,
+      "runs_observed": 4,
       "last_exit_code": 0,
       "normal_tick_result": "not_due"
     },
@@ -123,6 +123,14 @@
       "checked_receipts": 2,
       "matches": 2,
       "correction": "The two first receipts were sent before canonical hashing landed. Their snapshot bodies and Telegram messages were unchanged; only the derived snapshot_hash was recomputed."
+    },
+    "duplicate_delivery_readback": {
+      "forced_reentry_results": [
+        "daily:duplicate:297",
+        "weekly:duplicate:298"
+      ],
+      "matching_receipts_after_reentry": 2,
+      "new_telegram_messages": 0
     },
     "railway": {
       "service": "life-call",
