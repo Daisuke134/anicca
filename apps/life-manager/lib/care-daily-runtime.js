@@ -3,7 +3,7 @@
 // The detector, anchors, candidate search, and evaluator all existed, were tested, and were called
 // by NOTHING in production — the same unreachable-rule disease 12c had. This module is the cure:
 // careUserOnce runs on the 60s tick, claims one real scan per user per UTC day durably in
-// lm_care_scan_log (no in-memory counters — restarts cannot double-scan or forget), reads ~18
+// lm_care_scan_log (no in-memory counters — restarts cannot double-scan or forget), reads ~10
 // months of the user's OWN calendar history, and records what the detector saw. Abstention (no
 // candidates) is the honest common case and gets a row too. On a REAL detection the 11b chain runs
 // in-process — anchors → anchored candidate search → route evaluation — and the full result lands
@@ -29,12 +29,21 @@ const { runAftercare } = require("./care-aftercare.js");
 const { makeSteelCdpClient } = require("./steel-cdp-client.js");
 const { sendMessage } = require("./telegram.js");
 
-// The user's own words → the 11a care types (dental / haircut / clinic — the exact categories
-// care-candidate-search.js CATEGORY_KEYWORDS knows; no invented types). This is deterministic data
+// The user's own words → the 11a care types (the exact categories care-candidate-search.js
+// CATEGORY_KEYWORDS knows; no invented types). This is deterministic data
 // linkage like careTag() in care-detector.js, not text inference: an event only counts as a care
-// visit when its title literally names the care. 健康診断/内科 fold into clinic — the 11a evidence
-// (2026-07-25 remeasure) grouped provider-side queries the same way.
+// visit when its title literally names the care. Specific checkups MUST precede generic clinic:
+// one visit is one category, and "胃内視鏡 クリニック" is not ordinary clinic cadence.
 const CARE_TYPE_KEYWORDS = Object.freeze({
+  gastric_screening: Object.freeze([
+    "胃がん検診", "胃検診", "胃ドック", "胃カメラ", "胃内視鏡",
+    "gastric screening", "stomach screening", "gastroscopy",
+  ]),
+  colorectal_screening: Object.freeze([
+    "大腸がん検診", "大腸検診", "大腸ドック", "大腸カメラ", "大腸内視鏡", "便潜血",
+    "colorectal screening", "colon screening", "colonoscopy",
+  ]),
+  brain_dock: Object.freeze(["脳ドック", "brain dock", "brain screening"]),
   dental: Object.freeze(["歯科", "歯医者", "デンタル", "dental", "dentist"]),
   haircut: Object.freeze(["散髪", "美容室", "美容院", "床屋", "理容", "ヘアサロン", "haircut", "barber"]),
   clinic: Object.freeze(["クリニック", "健康診断", "内科", "診療所", "clinic", "checkup"]),
@@ -154,7 +163,7 @@ async function careUserOnce(u, nowMs, deps = {}) {
   try {
     history = await (deps.fetchCalendarHistory || fetchCalendarHistory)(u.uid, {
       nowMs: now,
-      historyMs: deps.historyMs, // undefined → events.js CARE_HISTORY_MS (~18 months)
+      historyMs: deps.historyMs, // undefined → events.js CARE_HISTORY_MS (~10 years)
       apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
       calendar: deps.calendar,
       gmailAccountId: u.gmail_account_id,
