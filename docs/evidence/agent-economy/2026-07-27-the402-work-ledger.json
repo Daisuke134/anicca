@@ -1,0 +1,63 @@
+{
+  "task": "13c-WORK",
+  "claim": "The402 work acquisition, delivery, and fail-closed work-revenue accounting machinery is live; no external work income has occurred.",
+  "implementation": {
+    "pull_request": "https://github.com/Daisuke134/life-manager/pull/1186",
+    "merge_commit": "0321037dbc67f321b97505f1b5a830863b894a8d",
+    "ledger_sources": [
+      "x402_sale",
+      "x402_work"
+    ],
+    "shared_idempotency_key": "x402:<transaction_hash>:income"
+  },
+  "production_observation": {
+    "observed_at": "2026-07-27T14:07:48.985Z",
+    "launchd": {
+      "ai.anicca.the402-provider": "loaded",
+      "ai.anicca.the402-worker": "loaded",
+      "ai.anicca.x402-acquisition-controller": "last_exit_0",
+      "ai.anicca.x402-sale-observer": "last_exit_0",
+      "ai.anicca.x402-settlement-recorder": "last_exit_0",
+      "ai.anicca.life-manager-x402-ledger": "last_exit_0"
+    },
+    "marketplace": {
+      "historical_real_bids": 2,
+      "historical_bid_outcome": "expired_not_awarded",
+      "open_postings": 0,
+      "jobs": 0,
+      "threads": 0,
+      "settled_usd": 0,
+      "held_usd": 0,
+      "pending_usd": 0
+    },
+    "settlement_pipeline": {
+      "candidates_seen": 0,
+      "verified": 0,
+      "recorded": 0
+    },
+    "life_manager_bridge": {
+      "ledgers_seen": 0,
+      "lines_seen": 0,
+      "sale_recorded": 0,
+      "work_recorded": 0,
+      "provenance_rejected": 0,
+      "external_income_usd": 0
+    }
+  },
+  "verification": {
+    "focused_financial_x402_tests": {
+      "passed": 96,
+      "failed": 0
+    },
+    "full_suite": {
+      "passed": 657,
+      "failed": 1,
+      "known_unrelated_failure": "host-state test expects ai.anicca.life-manager-dev unloaded while the real job is loaded"
+    },
+    "shell_syntax": "pass",
+    "javascript_syntax": "pass",
+    "diff_check": "pass",
+    "trufflehog": "pass"
+  },
+  "evidence_limit": "The live machinery and two historical real bids are proven. No bid was awarded, no job_dispatch occurred, and no external USDC work payment exists, so work success and work revenue remain unproven until an outside requester awards and settles a job."
+}
