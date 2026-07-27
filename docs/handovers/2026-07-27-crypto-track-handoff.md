@@ -7,7 +7,7 @@
 
 | # | ファイル | 読む箇所 |
 |---|---|---|
-| 1 | `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` | §0.2 workstream 4（FINANCIAL 統合の完了条件）/ §9.8（crypto rail の法的立ち位置: AI が自分の wallet で稼ぐ。user 資産運用ではない）/ §9.11 FINANCIAL copy bank（月次報告・送金報告の逐語文面 — **君は文面を発明しない**）/ §10.0-10（CFO 裁定・fiat は閉鎖中）/ §10.0-12（x402 rail 温存の実測）/ §10.0-17（この track が別 repo 並行である裁定） |
+| 1 | `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` | §0.2 workstream 4（FINANCIAL 統合の完了条件）/ **§0.4（agent economy のlive残高・external収益・P&L・目標算式の唯一の正本）** / §9.8（crypto rail の法的立ち位置: AI が自分の wallet で稼ぐ。user 資産運用ではない）/ §9.11 FINANCIAL copy bank（月次報告・送金報告の逐語文面 — **君は文面を発明しない**）/ §10.0-10（CFO 裁定・fiat は閉鎖中）/ §10.0-12（x402 rail 温存の実測）/ §10.0-17（この track が別 repo 並行である裁定） |
 | 2 | `docs/evidence/13b-payout-question-round-trip.md` + `13d-a-typed-intake-live.md` | 送金先収集の実測経緯 |
 
 ## 既に本番で生きてるもの（再発明禁止）
@@ -40,4 +40,5 @@
 
 ## 質問があるとき
 
-spec の §10 live 表と Current cursor が常に最新（毎 atomic 更新）。矛盾を見つけたらそれは bug — issue にして。
+agent economy の金額・P&L・優先順は spec §0.4、product 全体の cursor は §10 が常に最新（毎 atomic 更新）。
+矛盾を見つけたらそれは bug — issue にして。

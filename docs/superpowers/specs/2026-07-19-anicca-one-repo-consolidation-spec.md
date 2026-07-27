@@ -94,7 +94,7 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 
 | 順 | Workstream | 完了条件 | 実行SSOT |
 |---|---|---|---|
-| 1 | **外部収益の原子を証明** | DIST-1/2 の発見面から colony 外 buyer が購入し、external inflow ≥ $1 を on-chain 検証。掲載・self-pay・内部送金では完了にしない | `2026-07-19-dist-1-monetizedmcp-fluora.md`、`docs/STATUS.md` の X4 |
+| 1 | **外部収益の原子を証明** | DIST-1/2 の発見面から colony 外 buyer が購入し、external inflow ≥ $1 を on-chain 検証。掲載・self-pay・内部送金では完了にしない | `2026-07-19-dist-1-monetizedmcp-fluora.md`、本spec §0.4 |
 | 2 | **SELL / WORK / CAPITAL を自律 earning loop 化** | x402販売とbounty/workが日次で外部着金を作り、得た余剰だけをrisk cap下でtrade/yieldへ回す。全railが収益・費用・損失・停止理由を同じ検証契約で記録 | `2026-07-18-bounty-loop-onchain-spec.md`、各earn skill spec |
 | 3 | **自分の家を払い、複製する** | agent自身の収益がmodel/compute/server/storageを継続的に上回る。独立wallet/runtimeを持つchildを1体spawnし、shared repoから学びを継承しても秘密鍵・資金・売上stateは共有しない | cloud hosting / installer / spawn の各spec。Life Manager cloud移行のatomic TODOは同移行specのみ |
 | 4 | **Life Manager FINANCIAL organへ統合** | tenant固有agent wallet→earning ledger→user送金を実txで通し、physical/mental/financial outcomeと同じcontrol planeでbudget・pause・evidenceを管理。self-funded比率に応じてsubscription負担を縮小 | 本spec §9/§10、cloud agent platform migration spec |
@@ -107,11 +107,223 @@ Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveが�
 | Topic | 正本 | 他文書の扱い |
 |---|---|---|
 | mission / product / repo / 4 workstream | 本spec | 一行参照のみ |
-| x402のlive状態・external収益 | `docs/STATUS.md` | 金額・X4状態を複製しない |
+| agent economy のlive残高・external収益・P&L・目標算式 | 本spec §0.4 | 他文書へ金額・X4状態・予測を複製せず、§0.4へ一行参照する |
 | MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
 | bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
 | multi-tenant cloud移行 | `2026-07-21-life-manager-cloud-agent-platform-migration-spec.md` | 74 atomic TODOを本specへ複製しない |
 | Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
+
+### 0.4 Agent Economy Earnings SSOT
+
+本節が、Claude / Codex / Franklin / Life Manager の「いくら稼いでいるか」「何を利益と数えるか」
+「$1k / $10k / $20k へ何が要るか」の**唯一の live 正本**である。残高を収益、回収元本を利益、
+subscription 売上を agent 自身の稼ぎとして扱わない。
+
+#### 0.4.1 Overview
+
+単一推奨は **SELL / WORK を先に黒字化し、CAPITAL は稼得済み余剰だけで行う**。crypto は人間の銀行・取引所
+credentialなしで初日から wallet を作り、受け取り、支払い、再投資できる rail である。ただし必要なのは
+「credential が無いこと」ではなく、**human credential が無く、agent 自身の private key が唯一の credential
+であること**。初期 USDC / SOL は bootstrap capital であって revenue ではない。
+
+Claude や Codex という model 自体は稼がない。wallet を持つ executor が model を判断器として呼び、
+外部 buyer / bounty / market から得た着金をその executor の ledger に帰属させた時だけ agent が稼いだと数える。
+Life Manager subscription は Anicca の company revenue であり、tenant agent へ配賦しても agent economy 上は
+bootstrap subsidy である。
+
+#### 0.4.2 Acceptance Criteria
+
+| ID | 完了条件 |
+|---|---|
+| AE-AC1 | revenue row は colony 外 payer、tx hash、chain、asset、gross、cost、net、agent wallet、source run を持ち、on-chain receipt と一致する |
+| AE-AC2 | seed、bridge、self-pay、colony 内送金、元本回収は revenue 0。trade は `deployed + recovered + fees + realized_pnl` を同一 cycle で持つ |
+| AE-AC3 | Claude / Codex / Franklin の model 名と wallet / executor を分離し、model 切替で過去収益の帰属を変えない |
+| AE-AC4 | Telegram は毎日「残高・当日gross・cost・net・停止理由」、毎週「rail別P&L・self-funded率・user分配可能額」を実データで報告する |
+| AE-AC5 | Life Manager は user seed を受け取った日から動けるが、「初日から利益」「$1k保証」と表示しない。未発生は `$0.00` と出す |
+| AE-AC6 | agent wallet が compute + shelter + reserve floor を払った後の verified surplus だけを user payout / CAPITAL / child seed に使う |
+| AE-AC7 | §0.4 の live snapshot を更新した変更だけが agent economy の現在値を変更でき、README / 記事 / handoff は本節を参照する |
+
+#### 0.4.3 As-Is / To-Be と現在の実測
+
+**実測 snapshot（2026-07-27 JST）**
+
+| executor | 現在の brain / loop | wallet残高 | earnings evidence | 判定 |
+|---|---|---:|---|---|
+| Founder agent | `claude-sonnet-5`、launchd 稼働中 | Base 1.880000 USDC + 0.00000643 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。Claude が稼いだと確定できる額はまだ0 |
+| Franklin 1 | model router、launchd 稼働中 | Base 4.390800 USDC + 0.00059956 ETH、Solana 0.007937916 SOL | 2,255 model calls の記録費用 $22.623155。直近 x402 `externalCount=0` | **verified external net = $0.00**。残高は収益証拠ではない |
+| Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.042000 USDC、gas 0 | 直近 x402 `externalCount=0`、realized action なし | **verified external net = $0.00** |
+| Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
+| Polymarket wallet | `0x904B…Eb74`、hourly decision/trade timer | open positions current value $7.9952 | closed 30 positionsの wallet-level realized PnL `+$2.006481`、open unrealized PnL `+$1.116700`、redeemable 0 | **wallet-level mark-to-market `+$3.123181`**。manual / agent run の帰属、gas/bridge/model costを含む完全netは未証明 |
+| Life Manager tenant agent | Base `0x477E…62ad`（canonical full addressはruntime config / handoff参照） | 0 USDC / 0 ETH | `lm_agent_earnings` 実 revenue row 0 | **earnings = $0.00** |
+
+`earn-watch.sh` は裸の `timeout` を `/opt/homebrew/bin/timeout 300` に直し、launchd相当PATHで exit 0 を実測した。
+ただし snapshot 時点は `pm_redeemable=0` で redeem 分岐を通っていない。証明できたのは command-not-found 即死が
+消えたことまでで、次の redeemable position で初めて redeem 成功を実証する。
+
+| 観点 | As-Is | To-Be |
+|---|---|---|
+| 起動 | 人間のsubscription / Mac / seed capitalが一部を負担 | user がUSDC/SOLを1回seed後、agent walletがcompute・cloud・gas reserveを払う |
+| 稼ぎ | loopは稼働するが、外部buyer 0。PMはwallet-level PnLのみ | SELL / WORKが日次外部着金、CAPITALは余剰のみ。同一ledgerでnetまで閉じる |
+| 報告 | wallet・earn ledger・model cost・PM APIが分離 | daily/weekly Telegramとpanelが同じledger snapshotを読む |
+| user payout | destination登録済み、tenant agent残高0 | reserve超過分だけagent wallet→user walletを実tx送金 |
+| 自活 | 月$35〜78のsurvival burnを外部収益が覆わない | trailing 30d net ≥ trailing 30d compute+shelter、かつreserve floor維持 |
+| scale | 収益0のagentを複製すると赤字を複製する | 黒字recipeだけをchildへ継承し、wallet / key / ledgerは独立 |
+
+**次の30日 estimate（予言ではなく、明示した仮定による算式）**
+
+| scenario | 仮定 | external earning contribution | 月burn | operating net |
+|---|---|---:|---:|---:|
+| worst | 外部購入0、full compute継続。trading capital lossはこの表の外で別途loss cap | $0 | $78 | **-$78** |
+| base | 現在の `externalCount=0` が続き、節約運転 | $0 | $46 | **-$46** |
+| best executable | 1¢ netの商品を外部10,000回販売、節約運転 | $100 | $46 | **+$54** |
+
+現在の証拠からの**単一予測は base**であり、Claude / Franklin / Codex が来月 $1,000 を稼ぐとは言えない。
+$1k / $10k / $20k は予測ではなく、下表の demand / margin / capital を満たした時の scale target とする。
+
+| 月net目標 | 1 callあたりnet 1¢ | 1 callあたりnet 10¢ | 月利1%をtradeだけで得る必要元本 | 月利3% | 月利10% |
+|---:|---:|---:|---:|---:|---:|
+| $1,000 | 100,000 calls | 10,000 calls | $100,000 | $33,334 | $10,000 |
+| $10,000 | 1,000,000 calls | 100,000 calls | $1,000,000 | $333,334 | $100,000 |
+| $20,000 | 2,000,000 calls | 200,000 calls | $2,000,000 | $666,667 | $200,000 |
+
+したがって小額seedからの最短路は trading の高利回りを仮定することではなく、外部需要のあるAPI / work productを
+crypto settlementで売ること。$10k / $20k は「credential不要だから自動的に届く額」ではなく、
+distribution・有料需要・単価・粗利をagentが作った後にだけ成立する。
+
+**Life Manager user experience**
+
+| moment | Telegram | panel | accounting |
+|---|---|---|---|
+| bootstrap | walletを自動生成しpublic addressと必要seed額を表示。userはUSDC/SOLを送るだけ | wallet / chain / spend cap / emergency pause | seed=`capital_in`、revenue 0 |
+| funded | confirmation後にsurvival floorを確保しSELL / WORKを開始 | allocation、active rails、次の支払日 | reserve、available、committedを分離 |
+| daily | 残高、今日のgross/cost/net、何を売ったか、止まった理由を1通 | tx evidence、rail別明細 | immutable rowsから生成 |
+| weekly | 週次P&L、self-funded率、来週の単一方針 | target progress、risk cap、payout可能額 | realizedとunrealizedを分離 |
+| surplus | 「reserve後に送れる額」を提示し、事前policy内なら自動送金 | user destination / receipt / pause | payoutはexpense、revenueではない |
+| deficit | 黙って賭けを増やさず、burn削減→SELL改善→停止の順 | runwayと停止理由 | lossを0にクランプしない |
+
+**理想 folder tree（agent economy部分）**
+
+```text
+life-manager/
+├── apps/
+│   └── life-manager/
+│       ├── financial/           # Telegram/panel UX、budget、pause、payout
+│       └── api/financial/       # tenant境界付き read/command endpoints
+├── packages/
+│   ├── engine/
+│   │   ├── runtime/             # provider-neutral agent runner
+│   │   ├── wallet/              # Base/Solana identity、署名、残高
+│   │   ├── earn/
+│   │   │   ├── sell/            # x402 API / MCP / digital goods
+│   │   │   ├── work/            # bounty / gig / delivery
+│   │   │   └── capital/         # trade / yield、surplus gate必須
+│   │   ├── accounting/          # journal、cycle P&L、rollup、provenance
+│   │   ├── survival/            # compute/shelter支払、runway、reserve floor
+│   │   ├── reporting/           # daily/weekly/monthly statement
+│   │   ├── policy/              # spend cap、loss cap、rail gates
+│   │   └── adapters/            # x402/PM/Nosana/Telegram/chain RPC
+│   ├── skills/
+│   │   ├── core/                # human credential不要
+│   │   └── gated/               # user委任/KYC/fiatが必要
+│   └── installer/               # wallet作成、seed案内、daemon/cloud bootstrap
+└── docs/
+    ├── superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
+    └── evidence/agent-economy/  # receipt/hash/snapshot。秘密鍵・PIIは禁止
+```
+
+**理想 end-to-end ASCII**
+
+```text
+ Human subscription ──> company revenue ───────────────┐
+ Human USDC/SOL seed ─> agent capital (revenue 0) ─┐   │ bootstrap only
+                                                    ▼   ▼
+                                             ┌─────────────────┐
+                                             │ TENANT AGENT     │
+                                             │ wallet + policy  │
+                                             └───────┬─────────┘
+                                                     │
+                         ┌───────────────────────────┼──────────────────────┐
+                         ▼                           ▼                      ▼
+                 SELL x402/API                WORK bounty             CAPITAL
+                 no human credential          wallet-native           surplus only
+                         └───────────────────────────┬──────────────────────┘
+                                                     ▼
+ external payer/market ── receipt ──> verifier ──> append-only ledger
+                                                     │
+                                  gross - direct cost - loss = verified net
+                                                     │
+                       ┌─────────────────────────────┼─────────────────────┐
+                       ▼                             ▼                     ▼
+              compute + cloud                reserve floor          user payout
+              shelter renewal                loss/runway            destination必要
+                       └───────────────┬─────────────┘
+                                       ▼
+                              self-funded ratio
+                                       │
+                    daily/weekly TG + panel evidence + next action
+                                       │
+                     profitable recipe only ──> independent child
+```
+
+#### 0.4.4 Test Matrix
+
+| test | input | PASS |
+|---|---|---|
+| seed classification | user→agent 10 USDC | balance +10、revenue +0 |
+| bridge classification | own EOA→own wallet | revenue +0、misattribution不可 |
+| x402 external sale | colony外payerのsettled tx | receipt一致、gross/cost/net row 1件、二重記帳0 |
+| PM cycle | deployed/recovered/feeの同一cycle | `realized_pnl = recovered - deployed - fee`、元本をearnにしない |
+| redeem | redeemable position 1件 | absolute timeoutでexit 0、receipt status 1、cycleへ紐付く |
+| model attribution | 同executorでClaude→Codex切替 | wallet/agent ledgerは継続、model usage costだけbrain別 |
+| loss month | revenue < cost | negative netをそのままTG/panelへ表示 |
+| payout | reserve超過、usable destination | spend-cap内tx 1件、user receipt、revenue増加0 |
+| tenant isolation | tenant A/B | wallet、destination、ledger、reportのcross-read/write 0 |
+| survival | compute/shelter請求 | agent walletから実支払、runway減少、renewal receipt |
+
+本変更はspecのみでiOS UIを変更しないため Maestro E2E は不要。実装時は Telegram 実往復、authenticated panel browser、
+Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする。
+
+#### 0.4.5 Boundaries
+
+| 境界 | 規則 |
+|---|---|
+| custody | agentごとに独立wallet。private keyをrepo / log / TG / panelへ出さない |
+| no-human-loop | human credential不要のCOREは自律実行。seed、user payout先、gated委任は別概念 |
+| money safety | survival floor未満、loss cap超過、provenance不明、ledger不整合ならCAPITALとpayoutをfail closed |
+| truth | balance、gross recovery、realized PnL、unrealized PnL、net profitを別表示 |
+| promise | 利益額・利回り・初日収益を保証しない。仕事開始と利益発生を同義にしない |
+| regulation | TradFi/KYC railを「credentialなし」に偽装しない。COREはwallet-native railに限定 |
+| source | live金額とtarget算式は本節だけ。他文書はリンクする |
+
+根拠（一次ソース）:
+- Coinbase Agentic Wallets — https://www.coinbase.com/developer-platform/discover/launches/agentic-wallets —
+  “They'll pay for their own compute and API access.” / agentが自分の資源を払う構成はwallet-native railで成立する。
+- Coinbase x402 Network Support — https://docs.cdp.coinbase.com/x402/network-support —
+  “the facilitator submits the transfer — no on-chain approval needed.” / human checkoutなしの支払いは可能だが、署名主体はagent walletである。
+- Polymarket Liquidity Rewards — https://docs.polymarket.com/programs/liquidity-rewards —
+  “Rewards are distributed directly to maker addresses daily at midnight UTC.” かつ minimum payoutは$1。rewardは需要・適格性・最低額に依存し、保証収益ではない。
+- 金融庁「暗号資産の利用者のみなさまへ」— https://www.fsa.go.jp/policy/virtual_currency/index.html —
+  「暗号資産の取引を行う場合は事業者から説明を受け、内容をよく理解してから行ってください。」/ 自律化しても価格・事業者リスクは消えない。
+
+#### 0.4.6 Execution Steps — portfolio priority
+
+実装詳細の正本は各repo/specに置き、ここにはagent economy全体の順序とdone evidenceだけを置く。
+
+| 順 | ID | atomic outcome | done evidence | 状態 |
+|---:|---|---|---|---|
+| 1 | S20b-b | 2軒目のPython runtimeがcanonical heartbeatをed25519署名 | 外部verifier PASS、natural heartbeat row | pending — `anicha/specs/00-SHELTER-INDEPENDENCE.md` |
+| 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | pending — 記事の「2軒目で住める」の前提 |
+| 3 | 13c-PM | PMの次の1 cycleをtenant earnings ledgerへ `deployed/recovered/fee/PnL` で記帳 | on-chain/API evidence付き実row + 月次報告 | pending — 最優先の会計欠損 |
+| 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
+| 5 | AE-X4 | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | pending |
+| 6 | 13d-b | Life Manager agent wallet→user walletの実送金 | reserve/spend-cap PASS、実tx、実TG receipt | pending、13c実row後 |
+| 7 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | pending |
+| 8 | SURVIVE-1 | agentが自分のcomputeまたはshelterを収益から払う | provider receipt + ledger expense + service継続 | pending、trailing surplus後 |
+| 9 | SCALE-1 | 黒字SELL/WORK recipeを増幅し月$100 net | 30日closed ledger、self-funded率≥100% | pending |
+| 10 | CHILD-1 | 独立wallet/runtimeのchildを黒字余剰でspawn | key/state非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
+
+Hummingbot は未着手であり、現在収益へ含めない。`$1k → $10k → $20k` は TODO ID にせず、
+SCALE-1を30日実証した後に実単価・conversion・marginから次の一段だけを起票する。
 
 ## 1. 決定: 名前と器
 
@@ -532,11 +744,10 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 16. **E2E 検証は Dais の手を借りず agent が browser（daily-driver CDP）で Dais の Telegram を実操作してよい
     （2026-07-26 Dais 裁定）**。ただし Dais の私的情報を要する回答（例: 予定がオンラインか対面か）は推測して
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
-17. **FINANCIAL の on-chain 実行系は後回し（2026-07-26 Dais 裁定）**。crypto の実送金・収益 rail は別 repo で
-    別 agent が並行作業中のため、この repo の優先順は **9 → 10 → 11 → 12 を先に完遂**する。13d-a（typed 入力
-    経路）は UX 配管として完遂してよいが、13d-b（on-chain 実 tx）と 13c実測（実収益行）は 9/10/11/12 完了後、
-    または別 repo の成果合流後に行う。これに伴い 10e の前提「他の remaining atomic が全て done」は
-    「9/11 系が done」へ緩和される。
+17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
+    13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
+    保留条件は解消する。現在の順序は **S20b-b → S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b**。
+    13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
     「cutover 後に anicca-products を archive」する計画は**撤回**。H1/LAND-1 は棄却。
@@ -545,13 +756,15 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★実行順の正本 = §9.8 の organ ship 順序（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV最終）。「今 unblock されている row から着手する」順序付けは誤り（2026-07-26 Dais 是正）★**
-理由: FINANCIAL は fiat rail（Stripe Link）が JP 未提供で外側が閉じており、稼ぐ側を先に積んでも user へ届かない。
-crypto rail と fiat rail の両方が開いた時点で初めて収益 organ が意味を持つので、FINANCIAL は DEV 自動化の直前に置く。
-organ の中の row 順（例 11a→11b→11c→11d）は依存順であり、blocked な row があっても organ ごと飛ばさない —
-blocked row はその場で blocker を記録し、同 organ 内の次 row へ進む。
+**★現在の実行順の正本 = §0.4.6（S20b-b → S20b-c → 13c-PM → 実redeem待ち → AE-X4 → 13d-b）。★**
+旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
+現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
+fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。H3/H5は§0.4.6の後に再開する。
 
-**Current cursor**: **H2 diet + H3 checkup + H4 precepts の3 organ done / cloud deploy 済み**。残る手書き弾は H5 relations。自動蓄積は 9d / self-build 台帳 / 11a scan / diet 初配信 / precepts 初配信。H6 Telnyx は auto-recharge 実測で解消。
+**Current cursor**: **S20b-b（2軒目Python heartbeat署名）**。次はS20b-c（決算書serve）、その後13c-PM。
+これは§0.4.6のportfolio順をそのまま実行する。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
+残るH5 relationsはagent economyの会計・自活証明が閉じるまでNEXT HORIZONに残す。
+9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
 
 **Live remaining to-do list（2026-07-27 更新。順序 = 今動ける順 — 時間待ちを言い訳にしない）**:
 
@@ -563,7 +776,9 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | 自動 | `9d` | MARKETING | 7日 ledger — Day 1 記帳済 2026-07-26、毎日 10:15 JST に loop が自動追記 | agent の作業対象外（並走） |
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
-**crypto track（裁定17で別 repo と合流待ち、この repo では保留。担当 agent への handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md` — 正本パス・実 DB row・約束事すべて記載）**: `13d-b`（on-chain 実送金 — 送金先 usable 済み `0x6592…EDc7`、agent wallet 残高 0）、`13c実測`（実収益行）。
+**crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
+S20b-b/cの後に `13c-PM`（実収益行）、次に実redeem待ち、AE-X4、`13d-b`（on-chain実送金）。
+送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
 
@@ -575,7 +790,7 @@ blocked row はその場で blocker を記録し、同 organ 内の次 row へ�
 | H5 | `ORG-relations` | 人の cadence（「母に42日電話してない」）検知 + 提案 | 同上 | H4 の後 |
 | H8 | `IG-LM` | LM 専用 Instagram 開設。**正直な制約: account 作成は agent の越えられない境界**（Dais の許可でも解除不可の platform 規則）。zero-human 選択肢はこの agent には無い。道は2つ: ①Dais が `ig-account-create` skill を1回実行（〜5分、実証済み手順）②当面 TikTok のみ（daily bar は充足中）。開設後の配線切替は agent がコード変更ゼロで実施 | Dais 口述 2026-07-27 | 保留 — ①か②の選択待ち（どちらでも損は小さい） |
 | H6 | `OPS-1` | ~~Telnyx 残高 top-up 経路~~ **解消（2026-07-27 実測）**: auto-recharge が既に有効 — `threshold $5 / recharge $20 / credit_paypal / enabled:true`（API readback）。残高は自己回復する。人間アクション不要。将来 user 数増で $20 では足りなくなったら amount 引き上げを提案する | demo sweep D | **done — 実測で非問題と判明** |
-| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 | crypto track（別 repo）と合流 |
+| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — S20b-bから順に実行 |
 
 **常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
 
