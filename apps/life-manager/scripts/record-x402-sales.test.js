@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const { mkdtempSync, writeFileSync } = require("node:fs");
+const { mkdtempSync, readFileSync, writeFileSync } = require("node:fs");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 const test = require("node:test");
@@ -219,4 +219,23 @@ test("ledger receiver is bound by its canonical external-inflows filename", asyn
 
   assert.equal(result.invalid, 1);
   assert.equal(writes, 0);
+});
+
+test("launchd wiring uses absolute executables, a bounded timeout, and five-minute cadence", () => {
+  const boot = readFileSync(join(__dirname, "x402-sale-ledger-boot.sh"), "utf8");
+  const installer = readFileSync(join(__dirname, "install-x402-sale-ledger-launchd.sh"), "utf8");
+  const plist = readFileSync(
+    join(__dirname, "..", "launchd", "ai.anicca.life-manager-x402-ledger.plist.template"),
+    "utf8",
+  );
+
+  assert.match(boot, /\/opt\/homebrew\/bin\/timeout 240 \/opt\/homebrew\/bin\/node/);
+  assert.doesNotMatch(boot, /(?:^|[;&|]\s*)timeout\s/);
+  assert.match(boot, /\.openclaw\/\.env/);
+  assert.match(plist, /<string>\/bin\/bash<\/string>/);
+  assert.match(plist, /<key>StartInterval<\/key>\s*<integer>300<\/integer>/);
+  assert.match(plist, /life-manager-x402-ledger\.out\.log/);
+  assert.match(installer, /plutil -lint/);
+  assert.match(installer, /launchctl bootstrap/);
+  assert.match(installer, /launchctl enable/);
 });
