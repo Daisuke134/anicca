@@ -68,6 +68,24 @@ const FINANCIAL_STRINGS = Object.freeze({
       transfer: "・送金: なし（利益が出た月のみ送金します）",
       outlook: "先月比の要因: {cause}。来月の方針: {plan}。",
     }),
+    reports: Object.freeze({
+      dailyHeader: "💰 今日のagent収支",
+      balance: "・残高: {balance}",
+      gross: "・Gross: {gross}",
+      cost: "・Cost: {cost}",
+      net: "・Net: {net}",
+      state: "・状態: {state}",
+      weeklyHeader: "💰 週次agent収支",
+      rail: "・{rail}: {net}",
+      selfFunded: "・Self-funded率: {ratio}",
+      distributable: "・User分配可能額: {amount}",
+      states: Object.freeze({
+        running: "稼働中",
+        negative_net: "赤字",
+        no_external_income: "外部収入なし",
+        reserve_floor: "reserve floor",
+      }),
+    }),
   }),
 });
 
