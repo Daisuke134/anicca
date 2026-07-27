@@ -53,7 +53,7 @@ export function settlementAuditData(context) {
 
   if (result?.success !== true
     || !ROUTE.test(route)
-    || method !== 'POST'
+    || !['GET', 'POST'].includes(method)
     || scheme !== 'exact'
     || !NETWORK.test(network)
     || !asset

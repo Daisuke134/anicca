@@ -37,6 +37,11 @@ vi.mock('../routes/focusCoach.js', () => makeMockRouter());
 vi.mock('../routes/habitDesigner.js', () => makeMockRouter());
 vi.mock('../routes/intentRouter.js', () => makeMockRouter());
 vi.mock('../routes/promptSanitizer.js', () => makeMockRouter());
+vi.mock('../routes/fundingRates.js', () => {
+  const r = express.Router();
+  r.get('/', (req, res) => res.json({ ok: true }));
+  return { default: r };
+});
 
 // Mock x402 packages
 vi.mock('@x402/express', () => ({
@@ -132,7 +137,7 @@ describe('x402-agents server', () => {
     expect(app.get('trust proxy')).toBe(1);
   });
 
-  it('mounts all 8 route endpoints', async () => {
+  it('mounts all 9 route endpoints', async () => {
     const { createApp } = await import('../server.js');
     const app = await createApp();
 
@@ -148,5 +153,7 @@ describe('x402-agents server', () => {
         .send({ text: 'test' });
       expect(res.status).not.toBe(404);
     }
+    const funding = await request(app).get('/funding-rates');
+    expect(funding.status).not.toBe(404);
   });
 });

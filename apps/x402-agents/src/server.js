@@ -19,6 +19,7 @@ import focusCoachRouter from './routes/focusCoach.js';
 import habitDesignerRouter from './routes/habitDesigner.js';
 import intentRouterRouter from './routes/intentRouter.js';
 import promptSanitizerRouter from './routes/promptSanitizer.js';
+import fundingRatesRouter from './routes/fundingRates.js';
 
 const REQUIRED_ENV = ['X402_WALLET_ADDRESS', 'OPENAI_API_KEY', 'DATABASE_URL'];
 
@@ -153,6 +154,12 @@ export async function createApp() {
                 mimeType: 'application/json',
                 extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
               },
+              'GET /funding-rates': {
+                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
+                description: 'Cross-exchange perpetual funding rates and top arbitrage divergences',
+                mimeType: 'application/json',
+                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
+              },
             },
             server,
             undefined,
@@ -184,6 +191,7 @@ export async function createApp() {
   app.use('/habit-designer', habitDesignerRouter);
   app.use('/intent-router', intentRouterRouter);
   app.use('/prompt-sanitizer', promptSanitizerRouter);
+  app.use('/funding-rates', fundingRatesRouter);
 
   return app;
 }

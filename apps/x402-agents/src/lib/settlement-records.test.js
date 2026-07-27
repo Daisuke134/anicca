@@ -63,6 +63,21 @@ describe('settlement records', () => {
     })).toBeNull();
   });
 
+  it('accepts a paid GET product without persisting query or payment headers', () => {
+    const data = settlementAuditData({
+      ...validContext,
+      transportContext: {
+        request: {
+          path: '/funding-rates',
+          method: 'GET',
+          paymentHeader: 'must-never-be-persisted',
+        },
+      },
+    });
+    expect(data.requestPayload).toMatchObject({ route: '/funding-rates', method: 'GET' });
+    expect(JSON.stringify(data)).not.toContain('must-never-be-persisted');
+  });
+
   it('does not turn a completed payment into an HTTP failure when audit persistence is unavailable', async () => {
     const prismaClient = {
       agentAuditLog: { create: vi.fn().mockRejectedValue(new Error('db unavailable')) },
