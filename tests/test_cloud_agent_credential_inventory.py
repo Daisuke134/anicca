@@ -79,6 +79,85 @@ class CredentialInventoryContractTests(unittest.TestCase):
         cls.generator = load_generator()
         cls.collector = load_collector()
 
+    def verified_openclaw_fixture(self, *, enabled: bool) -> tuple[
+        dict[str, str], dict, dict, dict, list[dict[str, str]]
+    ]:
+        parent = {
+            "inventory_id": "openclaw:verified-fixture",
+            "source_type": "openclaw_cron",
+            "entrypoint": "openclaw_gateway:agentTurn:agent=anicca",
+            "state": "enabled" if enabled else "disabled",
+        }
+        source_digest = "sha256:" + ":".join(["1" * 8] * 8)
+        config_digest = "sha256:" + ":".join(["2" * 8] * 8)
+        config_locator = "openclaw-cli:cron-list-safe-projection;job:verified-fixture"
+        observed = {
+            "parent_metadata_digest": self.generator.parent_metadata_digest(parent),
+            "source_revision_digest": source_digest,
+            "config_revision_digest": config_digest,
+            "source_evidence_locator": (
+                "openclaw:version;schema:"
+                + "sha256:" + ":".join(["3" * 8] * 8)
+            ),
+            "config_evidence_locator": config_locator,
+            "inspection_status": "verified",
+            "agent_alias": "agent:anicca",
+            "cron_metadata": {
+                "enabled": enabled,
+                "payload_kind": "agentTurn",
+                "model_ref": "deepseek/model",
+                "fallback_refs": [],
+                "fallbacks_inherited": False,
+                "tools_allow": [],
+                "tools_inherited": True,
+                "delivery_provider": "none",
+            },
+        }
+        observations = {
+            "parents": {parent["inventory_id"]: observed},
+            "agents": {"agent:anicca": {
+                "inspection_status": "verified",
+                "provider_chain": ["deepseek"],
+                "profiles": [{
+                    "alias": "sha256:aaaaaaaaaaaaaaaa",
+                    "provider": "deepseek",
+                    "type": "token",
+                }],
+            }},
+            "openclaw_audit": {"finding_counts": {}},
+        }
+        catalog = self.generator.build_credential_objects(
+            [parent], observations, {"parents": {}}
+        )
+        derived = self.generator.expected_openclaw_derived_references(
+            parent, observed, observations["agents"]["agent:anicca"],
+            catalog["credential_objects"],
+        )
+        reviewed = {
+            "parent_metadata_digest": observed["parent_metadata_digest"],
+            "source_revision_digest": source_digest,
+            "config_revision_digest": config_digest,
+            "source_evidence_locator": observed["source_evidence_locator"],
+            "config_evidence_locator": config_locator,
+            "decision": "dynamic_openclaw",
+            "decision_basis": "official_cli_safe_projection",
+            "evidence_locator": config_locator,
+            "job_evidence_locator": config_locator,
+            "derived_references": derived,
+            "references": [],
+        }
+        review = {"parents": {parent["inventory_id"]: reviewed}}
+        objects = self.generator.build_credential_objects(
+            [parent], observations, review
+        )
+        edges = self.generator.build_loop_dependency_edges(
+            [parent], observations, review, objects
+        )
+        self.generator.validate_loop_dependency_edges(
+            edges, {parent["inventory_id"]}, observations, objects, review
+        )
+        return parent, observations, review, objects, edges
+
     def test_tracked_inventory_exactly_matches_generator(self) -> None:
         parents = read_tsv(PARENT)
         observations = read_json(OBSERVATIONS)
@@ -763,38 +842,20 @@ class CredentialInventoryContractTests(unittest.TestCase):
             self.generator.build_loop_dependency_edges([parent], observations, review, objects)
 
     def test_full_generation_rejects_dynamic_openclaw_with_unverified_source(self) -> None:
-        observations = read_json(OBSERVATIONS)
-        review = read_json(REVIEW)
-        dynamic_id = next((
-            parent_id for parent_id, record in review["parents"].items()
-            if record["decision"] == "dynamic_openclaw"
-        ), None)
-        if dynamic_id is None:
-            self.skipTest("392-parent credential rebind is pending independent review")
-        observations["parents"][dynamic_id]["source_revision_digest"] = "unverified"
-        observations["parents"][dynamic_id]["source_evidence_locator"] = "unverified"
-        review["parents"][dynamic_id]["source_revision_digest"] = "unverified"
-        review["parents"][dynamic_id]["source_evidence_locator"] = "unverified"
-        review["review_status"] = "review_required"
-        review["review_basis"] = self.generator.PENDING_REVIEW_BASIS
-        review["approved_observation_digest"] = self.generator.canonical_digest(observations)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            observations_path = Path(temp_dir) / "observations.json"
-            review_path = Path(temp_dir) / "review.json"
-            output_path = Path(temp_dir) / "inventory.tsv"
-            observations_path.write_text(json.dumps(observations), encoding="utf-8")
-            review_path.write_text(json.dumps(review), encoding="utf-8")
-            with mock.patch.object(
-                sys,
-                "argv",
-                [
-                    str(GENERATOR), "--check", "--parent", str(PARENT),
-                    "--observations", str(observations_path),
-                    "--review", str(review_path), "--objects", str(OBJECTS),
-                    "--output", str(output_path),
-                ],
-            ), self.assertRaisesRegex(SystemExit, "OpenClaw revision binding mismatch"):
-                self.generator.main()
+        parent, observations, review, objects, _ = self.verified_openclaw_fixture(
+            enabled=True
+        )
+        parent_id = parent["inventory_id"]
+        observations["parents"][parent_id]["source_revision_digest"] = "unverified"
+        observations["parents"][parent_id]["source_evidence_locator"] = "unverified"
+        review["parents"][parent_id]["source_revision_digest"] = "unverified"
+        review["parents"][parent_id]["source_evidence_locator"] = "unverified"
+        with self.assertRaisesRegex(
+            SystemExit, "dynamic_openclaw requires verified evidence"
+        ):
+            self.generator.build_loop_dependency_edges(
+                [parent], observations, review, objects
+            )
 
     def test_full_generation_rejects_unbound_openclaw_top_revision_mutations(self) -> None:
         base_observations = read_json(OBSERVATIONS)
@@ -1115,34 +1176,38 @@ class CredentialInventoryContractTests(unittest.TestCase):
                     objects,
                 )
 
-        inactive = next((row for row in rows if row["dependency_status"] == "inactive"), None)
-        if inactive is None:
-            self.assertEqual("review_required", read_json(INDEPENDENT_REVIEW)["review_status"])
-            return
-        parent_id = inactive["inventory_id"]
+        parent, inactive_observations, inactive_review, inactive_objects, inactive_rows = (
+            self.verified_openclaw_fixture(enabled=False)
+        )
+        inactive = next(
+            row for row in inactive_rows if row["dependency_status"] == "inactive"
+        )
+        parent_id = parent["inventory_id"]
         with self.assertRaisesRegex(SystemExit, "inactive requires disabled live cron"):
             self.generator.validate_loop_dependency_edges(
                 [{**inactive, "loop_state": "enabled"}], {parent_id},
-                {"parents": {parent_id: observations["parents"][parent_id]}}, objects,
+                inactive_observations, inactive_objects, inactive_review,
             )
-        without_live_cron = json.loads(json.dumps(observations["parents"][parent_id]))
+        without_live_cron = json.loads(
+            json.dumps(inactive_observations["parents"][parent_id])
+        )
         without_live_cron.pop("cron_metadata", None)
         with self.assertRaisesRegex(SystemExit, "inactive requires disabled live cron"):
             self.generator.validate_loop_dependency_edges(
-                [inactive], {parent_id}, {"parents": {parent_id: without_live_cron}}, objects,
+                [inactive], {parent_id},
+                {"parents": {parent_id: without_live_cron}},
+                inactive_objects, inactive_review,
             )
 
     def test_openclaw_observed_edges_require_verified_live_cron_provenance(self) -> None:
-        observations = read_json(OBSERVATIONS)
-        objects = read_json(OBJECTS)
-        edge = next((
-            row for row in read_tsv(TRACKED)
-            if row["inventory_id"].startswith("openclaw:")
-            and row["dependency_status"] in {"observed", "policy_violation"}
-        ), None)
-        if edge is None:
-            self.skipTest("392-parent OpenClaw credential review is pending")
-        parent_id = edge["inventory_id"]
+        parent, observations, review, objects, edges = self.verified_openclaw_fixture(
+            enabled=True
+        )
+        edge = next(
+            row for row in edges
+            if row["dependency_status"] in {"observed", "policy_violation"}
+        )
+        parent_id = parent["inventory_id"]
         baseline = observations["parents"][parent_id]
 
         def without_cron(observation, candidate) -> None:
@@ -1176,21 +1241,20 @@ class CredentialInventoryContractTests(unittest.TestCase):
                 SystemExit, "OpenClaw observed edge requires verified live cron provenance"
             ):
                 self.generator.validate_loop_dependency_edges(
-                    [candidate], {parent_id}, {"parents": {parent_id: observation}}, objects,
+                    [candidate], {parent_id},
+                    {"parents": {parent_id: observation}},
+                    objects, review,
                 )
 
     def test_openclaw_observed_edge_requires_matching_reviewed_derived_reference(self) -> None:
-        observations = read_json(OBSERVATIONS)
-        review = read_json(REVIEW)
-        objects = read_json(OBJECTS)
-        edge = next((
-            row for row in read_tsv(TRACKED)
-            if row["inventory_id"].startswith("openclaw:")
-            and row["dependency_status"] in {"observed", "policy_violation"}
-        ), None)
-        if edge is None:
-            self.skipTest("392-parent OpenClaw credential review is pending")
-        parent_id = edge["inventory_id"]
+        parent, observations, review, objects, edges = self.verified_openclaw_fixture(
+            enabled=True
+        )
+        edge = next(
+            row for row in edges
+            if row["dependency_status"] in {"observed", "policy_violation"}
+        )
+        parent_id = parent["inventory_id"]
         reviewed_parent = review["parents"][parent_id]
         matching = next(
             reference for reference in reviewed_parent["derived_references"]
@@ -1284,18 +1348,11 @@ class CredentialInventoryContractTests(unittest.TestCase):
         self.assertEqual("unverified", rows[0]["dependency_status"])
 
     def test_openclaw_inactive_edge_requires_verified_review_provenance(self) -> None:
-        observations = read_json(OBSERVATIONS)
-        review = read_json(REVIEW)
-        objects = read_json(OBJECTS)
-        edge = next((
-            row for row in read_tsv(TRACKED)
-            if row["dependency_status"] == "inactive"
-            and review["parents"][row["inventory_id"]]["decision"] == "dynamic_openclaw"
-            and observations["parents"][row["inventory_id"]]["inspection_status"] == "verified"
-        ), None)
-        if edge is None:
-            self.skipTest("392-parent OpenClaw credential review is pending")
-        parent_id = edge["inventory_id"]
+        parent, observations, review, objects, edges = self.verified_openclaw_fixture(
+            enabled=False
+        )
+        edge = next(row for row in edges if row["dependency_status"] == "inactive")
+        parent_id = parent["inventory_id"]
         base_observation = observations["parents"][parent_id]
         base_review = review["parents"][parent_id]
 
@@ -3370,6 +3427,84 @@ class CredentialInventoryContractTests(unittest.TestCase):
                 if review["parents"][parent_id]["decision_basis"] == "independent_review_pending":
                     self.assertEqual("unverified", review["parents"][parent_id]["decision"])
 
+    def test_rebind_drops_new_and_every_revision_drift_to_pending_unverified(self) -> None:
+        parent_ids = (
+            "launchd:unchanged-fixture",
+            "launchd:parent-drift-fixture",
+            "launchd:source-drift-fixture",
+            "launchd:config-drift-fixture",
+            "launchd:new-fixture",
+        )
+        parents = [{
+            "inventory_id": parent_id,
+            "source_type": "launchd",
+            "entrypoint": "fixture-entrypoint",
+            "state": "loaded",
+            "evidence": "fixture-evidence",
+        } for parent_id in parent_ids]
+        source_digest = "sha256:" + ":".join(["1" * 8] * 8)
+        config_digest = "sha256:" + ":".join(["2" * 8] * 8)
+        observations = {
+            "schema_version": 1,
+            "parent_inventory_digest": self.generator.canonical_digest([
+                self.generator.parent_metadata_digest(parent) for parent in parents
+            ]),
+            "openclaw_revision": {
+                "version_digest": "unverified",
+                "schema_digest": "unverified",
+            },
+            "cron_lookup_failures": {},
+            "cron_absence_observations": {},
+            "parents": {},
+        }
+        prior_parents = {}
+        for parent in parents:
+            parent_id = parent["inventory_id"]
+            source_locator = "fixture-source:" + parent_id.removeprefix("launchd:")
+            observed = {
+                "parent_metadata_digest": self.generator.parent_metadata_digest(parent),
+                "source_revision_digest": source_digest,
+                "config_revision_digest": config_digest,
+                "source_evidence_locator": source_locator,
+                "config_evidence_locator": "fixture-config",
+                "inspection_status": "verified",
+            }
+            observations["parents"][parent_id] = observed
+            if parent_id == "launchd:new-fixture":
+                continue
+            prior_parents[parent_id] = {
+                "parent_metadata_digest": observed["parent_metadata_digest"],
+                "source_revision_digest": source_digest,
+                "config_revision_digest": config_digest,
+                "source_evidence_locator": source_locator,
+                "config_evidence_locator": "fixture-config",
+                "decision": "none",
+                "decision_basis": "complete_inspection_no_reference",
+                "evidence_locator": source_locator,
+                "references": [],
+            }
+        prior_parents["launchd:parent-drift-fixture"]["parent_metadata_digest"] = (
+            "sha256:" + ":".join(["4" * 8] * 8)
+        )
+        prior_parents["launchd:source-drift-fixture"]["source_revision_digest"] = (
+            "sha256:" + ":".join(["5" * 8] * 8)
+        )
+        prior_parents["launchd:config-drift-fixture"]["config_revision_digest"] = (
+            "sha256:" + ":".join(["6" * 8] * 8)
+        )
+
+        rebound = self.generator.build_pending_rebind_review_manifest(
+            parents, observations, {"parents": prior_parents}
+        )
+
+        self.assertEqual("none", rebound["parents"]["launchd:unchanged-fixture"]["decision"])
+        for parent_id in parent_ids[1:]:
+            with self.subTest(parent_id=parent_id):
+                record = rebound["parents"][parent_id]
+                self.assertEqual("unverified", record["decision"])
+                self.assertEqual("independent_review_pending", record["decision_basis"])
+                self.assertEqual([], record["references"])
+
     def test_tracked_stale_cron_parents_remain_unverified_without_explicit_absence(self) -> None:
         observations = read_json(OBSERVATIONS)
         review = read_json(REVIEW)
@@ -3490,9 +3625,23 @@ class CredentialInventoryContractTests(unittest.TestCase):
             self.assertNotIn("blob:", record["config_evidence_locator"])
 
     def test_targeted_gitleaks_gate_passes_artifacts_and_catches_runtime_fixture(self) -> None:
+        exact_artifacts = (
+            DOCUMENTATION, OBSERVATIONS, REVIEW, INDEPENDENT_REVIEW, OBJECTS, TRACKED,
+        )
+        for source in exact_artifacts:
+            clean_exact = subprocess.run(
+                [
+                    "gitleaks", "detect", "--no-git", "--redact",
+                    "--config", str(REPO / ".gitleaks-cloud-agent.toml"),
+                    "--source", str(source), "--no-banner",
+                ],
+                capture_output=True, text=True,
+            )
+            with self.subTest(source=source.name):
+                self.assertEqual(0, clean_exact.returncode, clean_exact.stderr)
         with tempfile.TemporaryDirectory() as temp_dir:
             target = Path(temp_dir)
-            for source in (OBSERVATIONS, REVIEW, OBJECTS, TRACKED):
+            for source in (OBSERVATIONS, REVIEW, INDEPENDENT_REVIEW, OBJECTS, TRACKED):
                 shutil.copy2(source, target / source.name)
             clean = subprocess.run(
                 ["gitleaks", "dir", str(target), "--config", str(REPO / ".gitleaks-cloud-agent.toml"), "--redact", "--no-banner"],
