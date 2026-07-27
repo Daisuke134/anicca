@@ -44,6 +44,19 @@ function burstClinicHistory() {
   });
 }
 
+function checkupHistory(careType, summary, dates) {
+  return dates.map((date, i) => {
+    const startMs = Date.parse(`${date}T09:00:00+09:00`);
+    return {
+      id: `${careType}-${i}`,
+      summary,
+      location: "新宿検診センター",
+      startMs,
+      start: { dateTime: new Date(startMs).toISOString() },
+    };
+  });
+}
+
 // Supabase double: GET returns existingRows, POST returns postStatus(+postBody), PATCH is recorded
 // (patchOk=false simulates a failed chain persist).
 function fakeSupa({ existingRows = [], postStatus = 201, postBody = "", patchOk = true } = {}) {
@@ -98,7 +111,7 @@ test("insert race (409) means another tick claimed today — stop, no chain", as
   assert.equal(chainRan, 0, "the loser of the race must not run the 11b chain");
 });
 
-test("history fetch window: the scan reads ~18 months of history at nowMs", async () => {
+test("history fetch window: the scan delegates to the 10-year events.js default at nowMs", async () => {
   const supa = fakeSupa();
   let seen = null;
   await careUserOnce(USER, NOW, baseDeps(supa, {
@@ -106,8 +119,7 @@ test("history fetch window: the scan reads ~18 months of history at nowMs", asyn
   }));
   assert.equal(seen.uid, USER.uid);
   assert.equal(seen.opts.nowMs, NOW);
-  assert.ok(!Number.isFinite(seen.opts.historyMs) || seen.opts.historyMs >= 540 * DAY_MS,
-    "history window must cover ~18 months (or defer to the events.js default)");
+  assert.equal(seen.opts.historyMs, undefined, "undefined delegates to the tested 10-year default");
 });
 
 test("abstention (the honest common case) records a scan row with empty detections", async () => {
@@ -164,6 +176,52 @@ test("real detection: the 11b chain runs in-process and the full result lands on
   assert.equal(chain.shortfall_reason, "only 1 of 3");
   // 11b privacy rule: the raw home address never rides into the scan log
   assert.ok(!JSON.stringify(supa.calls.patches[0].body).includes(USER.home_address));
+});
+
+test("actionable gastric checkup cadence reaches the existing 11b chain with its specific category", async () => {
+  const supa = fakeSupa();
+  let searched = null;
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => checkupHistory(
+      "gastric_screening",
+      "胃がん検診",
+      ["2020-01-01", "2021-01-01", "2022-01-01", "2023-01-01"],
+    ),
+    searchCareCandidates: async (args) => {
+      searched = args.category;
+      return { definitions: [], shortfallReason: "no bookable provider in anchors" };
+    },
+  }));
+  assert.equal(result.status, "detected");
+  assert.equal(result.category, "gastric_screening");
+  assert.equal(searched, "gastric_screening");
+  assert.equal(supa.calls.posts[0].detections[0].care_type, "gastric_screening");
+  assert.equal(supa.calls.posts[0].detections[0].observe_only, false);
+  assert.equal(supa.calls.patches[0].body.chain.category, "gastric_screening");
+});
+
+test("brain-dock with only two gaps is recorded observe-only and never spends on search", async () => {
+  const supa = fakeSupa();
+  let searches = 0;
+  const result = await careUserOnce(USER, NOW, baseDeps(supa, {
+    fetchCalendarHistory: async () => checkupHistory(
+      "brain_dock",
+      "脳ドック",
+      ["2020-01-01", "2021-01-01", "2022-01-01"],
+    ),
+    searchCareCandidates: async () => {
+      searches += 1;
+      return { definitions: [], shortfallReason: null };
+    },
+  }));
+  assert.equal(result.status, "observed");
+  assert.deepEqual(result.observeOnly, ["brain_dock"]);
+  assert.equal(searches, 0);
+  const [detection] = supa.calls.posts[0].detections;
+  assert.equal(detection.care_type, "brain_dock");
+  assert.equal(detection.observe_only, true);
+  assert.equal(detection.decision_reason, "insufficient-gaps");
+  assert.equal(supa.calls.patches.length, 0);
 });
 
 // ── CADENCE-1 (spec §10 row CADENCE-1) ────────────────────────────────────────────────────────
@@ -320,6 +378,25 @@ test("classifyCareHistory groups by care type on the user's own words; unrelated
   ]);
   const byType = Object.fromEntries(sources.map((s) => [s.careType, s.events.map((e) => e.id)]));
   assert.deepEqual(byType, { haircut: ["a"], dental: ["b"], clinic: ["d"] });
+});
+
+test("checkup titles classify into specific gastric, colorectal, and brain categories before generic clinic", () => {
+  const sources = classifyCareHistory([
+    { id: "g1", summary: "胃がん検診", startMs: 1 },
+    { id: "g2", summary: "胃内視鏡 さくらクリニック", startMs: 2 },
+    { id: "c1", summary: "大腸がん検診", startMs: 3 },
+    { id: "c2", summary: "大腸内視鏡 さくらクリニック", startMs: 4 },
+    { id: "b1", summary: "脳ドック", startMs: 5 },
+    { id: "b2", summary: "Brain screening", startMs: 6 },
+    { id: "n1", summary: "頭部MRIの研究MTG", startMs: 7 },
+    { id: "n2", summary: "胃にやさしいランチ", startMs: 8 },
+  ]);
+  const byType = Object.fromEntries(sources.map((s) => [s.careType, s.events.map((e) => e.id)]));
+  assert.deepEqual(byType, {
+    gastric_screening: ["g1", "g2"],
+    colorectal_screening: ["c1", "c2"],
+    brain_dock: ["b1", "b2"],
+  });
 });
 
 // 11c/11d gave this module a Telegram/calendar/browser surface, so the old source-grep purity check

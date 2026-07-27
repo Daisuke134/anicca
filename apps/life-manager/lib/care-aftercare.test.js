@@ -73,6 +73,26 @@ test("a booked outcome sends the §9.11 事後報告 copy verbatim from i18n", a
   assert.equal(result.message, expected);
 });
 
+test("checkup booking reports use human Japanese labels, never internal care_type names", () => {
+  const expectedLabels = {
+    gastric_screening: "胃がん検診",
+    colorectal_screening: "大腸がん検診",
+    brain_dock: "脳ドック",
+  };
+  for (const [careType, label] of Object.entries(expectedLabels)) {
+    const message = formatCareBookingReport({
+      outcome: "booked",
+      careType,
+      sinceDays: 365,
+      providerName: "検診センター",
+      slotIso: "2026-08-06T18:00:00+09:00",
+      calendarEventCreated: true,
+    });
+    assert.ok(message.includes(label), `${careType} must render as ${label}`);
+    assert.ok(!message.includes(careType), "internal care_type must never leak to the user");
+  }
+});
+
 test("the usual provider gets §9.11's いつものお店 shape", async () => {
   const deps = fakeDeps();
   await runAftercare({
