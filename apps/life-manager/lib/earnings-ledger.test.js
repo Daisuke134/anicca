@@ -165,6 +165,7 @@ test("an atomic pUSD balance stays exact through rollup and report rendering", (
     walletAddress: WALLET,
     balanceAtomic: "4422182",
     balanceDecimals: 6,
+    explorerBaseUrl: "polygonscan.com",
     currency: "USD",
   });
 
@@ -172,6 +173,7 @@ test("an atomic pUSD balance stays exact through rollup and report rendering", (
   assert.equal(summary.balance_atomic, "4422182");
   assert.equal(summary.balance_decimals, 6);
   assert.match(formatMonthlyReport(summary), /・私の残高: \$4\.422182/);
+  assert.match(formatMonthlyReport(summary), /polygonscan\.com\/address\/0x477E…62ad/);
 });
 
 test("the rollup accepts exactly one measured balance representation", () => {

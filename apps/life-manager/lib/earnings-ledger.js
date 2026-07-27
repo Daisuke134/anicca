@@ -235,9 +235,12 @@ function rollUpMonth(rows, options = {}) {
   const {
     year, month, timezone = "UTC", walletAddress,
     balanceMinor, balanceAtomic, balanceDecimals,
+    explorerBaseUrl = "basescan.org",
     currency: fallbackCurrency = "USD",
   } = options;
   const wallet = normaliseAddress(walletAddress);
+  const explorer = String(explorerBaseUrl == null ? "" : explorerBaseUrl).trim();
+  if (!/^[a-z0-9.-]+$/i.test(explorer)) fail("explorerBaseUrl must be a plain hostname");
   const hasMinor = balanceMinor != null;
   const hasAtomic = balanceAtomic != null;
   const hasDecimals = balanceDecimals != null;
@@ -298,6 +301,7 @@ function rollUpMonth(rows, options = {}) {
     balance_minor: minorBalance == null ? null : Number(minorBalance),
     balance_atomic: atomicBalance == null ? null : atomicBalance.atomic,
     balance_decimals: atomicBalance == null ? null : atomicBalance.decimals,
+    explorer_base_url: explorer,
     is_loss: net < 0n,
     counted_rows: counted,
     excluded_rows: excluded,
@@ -328,7 +332,10 @@ function formatMonthlyReport(summary, { cause, plan, locale = "ja" } = {}) {
   if (summary.currency !== "USD") fail(`the 9.11 monthly copy is written for the USD currency, not ${summary.currency}`);
 
   const address = abbreviateAddress(summary.wallet_address);
-  const verify = fill(strings.monthly.verify, { address });
+  const verify = fill(strings.monthly.verify, {
+    address,
+    explorer: summary.explorer_base_url || "basescan.org",
+  });
   const balanceValue = summary.balance_atomic == null
     ? formatUsdMinor(summary.balance_minor)
     : formatUsdAtomic(summary.balance_atomic, summary.balance_decimals);

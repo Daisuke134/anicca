@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "cycle_id": "polymarket:0x5ecd0d050ea3e753b787ad8ef3b023448b78d232ebe28b24b3d18bf878fb8b5d",
+  "wallet_address": "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74",
+  "condition_id": "0x5ecd0d050ea3e753b787ad8ef3b023448b78d232ebe28b24b3d18bf878fb8b5d",
+  "deployed_microusd": "3150000",
+  "recovered_microusd": "0",
+  "fee_microusd": "0",
+  "realized_pnl_microusd": "-3150000",
+  "occurred_at": "2026-07-27T04:05:43.000Z",
+  "trade_tx_hash": "0xe6bbfb7d610a774f4548af9393930e99039f0a33f6aaeae34d7fe1f240321659",
+  "redeem_tx_hash": "0xdfaf37b33da21da10ba0398ccbe4e853d8111e2867606a4c81b85acc454086ef",
+  "receipt_status": "0x1",
+  "evidence": {
+    "market_title": "The Memphis Classic, Qualification: Tatiana Prozorova vs Kennedy Drenser-Hagmann",
+    "public_activity_url": "https://data-api.polymarket.com/activity?user=0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74&market=0x5ecd0d050ea3e753b787ad8ef3b023448b78d232ebe28b24b3d18bf878fb8b5d",
+    "trade_activity": {
+      "type": "TRADE",
+      "size": "7",
+      "usdc_size": "3.15",
+      "price": "0.45",
+      "outcome": "Kennedy Drenser-Hagmann",
+      "timestamp": 1785115257
+    },
+    "redeem_activity": {
+      "type": "REDEEM",
+      "usdc_size": "0",
+      "outcome": "Tatiana Prozorova",
+      "timestamp": 1785125143
+    },
+    "authenticated_clob_trade": {
+      "status": "CONFIRMED",
+      "trader_side": "MAKER",
+      "fee_rate_bps": "0"
+    },
+    "polygon_receipt": {
+      "rpc_url": "https://polygon-bor-rpc.publicnode.com",
+      "status": "0x1",
+      "block_number": "0x56bbccc",
+      "gas_used": "0x53f59"
+    },
+    "pusd_contract": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
+    "pusd_decimals": 6,
+    "balance_observation": {
+      "observed_at": "2026-07-27T13:17:16Z",
+      "atomic": "4422182"
+    },
+    "accounting_formula": "realized_pnl_microusd = recovered_microusd - deployed_microusd - fee_microusd"
+  },
+  "production_write": null
+}
