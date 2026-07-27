@@ -214,6 +214,7 @@ async function main() {
         '/prompt-sanitizer': '5000',
         '/decision-clarifier': '8000',
         '/intent-router': '5000',
+        '/funding-rates': '10000',
       },
     },
   });

@@ -98,7 +98,7 @@ test('the402 adapter accepts only settled transactions for an allowlisted offer 
   }]);
 });
 
-test('Railway adapter emits only successful allowlisted mainnet settlements and strips payer claims', () => {
+test('Railway adapter emits allowlisted GET and POST mainnet settlements and strips payer claims', () => {
   const rows = [
     {
       id: 'f738b171-fb73-48b0-b386-aa391def62f4',
@@ -114,6 +114,19 @@ test('Railway adapter emits only successful allowlisted mainnet settlements and 
       payer: '0x2222222222222222222222222222222222222222',
       success: true,
       payment_header: 'must not persist',
+    },
+    {
+      id: '61ad32a4-2d70-42f2-bca4-8a9241acd720',
+      observed_at: '2026-07-28T04:30:00.000Z',
+      route: '/funding-rates',
+      method: 'GET',
+      scheme: 'exact',
+      network: 'eip155:8453',
+      asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+      amount_atomic: '10000',
+      pay_to: RAILWAY_PAY_TO,
+      transaction: `0x${'b'.repeat(64)}`,
+      success: true,
     },
     {
       id: 'wrong-amount',
@@ -132,16 +145,30 @@ test('Railway adapter emits only successful allowlisted mainnet settlements and 
 
   assert.deepEqual(normalizeRailwaySettlements(rows, {
     payTo: RAILWAY_PAY_TO,
-    allowedOffers: { '/intent-router': '5000' },
-  }), [{
-    source: 'x402-railway',
-    source_sale_id: 'x402-railway:f738b171-fb73-48b0-b386-aa391def62f4',
-    offer_id: '/intent-router',
-    tx: TX,
-    expected_pay_to: RAILWAY_PAY_TO.toLowerCase(),
-    expected_usdc_atomic: '5000',
-    observed_at: '2026-07-27T22:42:00.000Z',
-  }]);
+    allowedOffers: {
+      '/intent-router': '5000',
+      '/funding-rates': '10000',
+    },
+  }), [
+    {
+      source: 'x402-railway',
+      source_sale_id: 'x402-railway:f738b171-fb73-48b0-b386-aa391def62f4',
+      offer_id: '/intent-router',
+      tx: TX,
+      expected_pay_to: RAILWAY_PAY_TO.toLowerCase(),
+      expected_usdc_atomic: '5000',
+      observed_at: '2026-07-27T22:42:00.000Z',
+    },
+    {
+      source: 'x402-railway',
+      source_sale_id: 'x402-railway:61ad32a4-2d70-42f2-bca4-8a9241acd720',
+      offer_id: '/funding-rates',
+      tx: `0x${'b'.repeat(64)}`,
+      expected_pay_to: RAILWAY_PAY_TO.toLowerCase(),
+      expected_usdc_atomic: '10000',
+      observed_at: '2026-07-28T04:30:00.000Z',
+    },
+  ]);
 });
 
 test('candidate store is 0600, strips extra fields, and dedupes by sale ID and tx', () => {
