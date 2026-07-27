@@ -32,6 +32,7 @@ function makeFixture() {
         uid: "u1", call_language: "ja", wake_policy: "travel-only",
         calendar_provider: "composio_gcal", gmail_account_id: null,
         telegram_chat_id: "101", payout_destination: null,
+        agent_wallet_address: "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad",
       },
       location: {
         uid: "u1", latitude: 35.0, longitude: 139.0,
@@ -44,6 +45,42 @@ function makeFixture() {
       costs: [
         { uid: "u1", ts: "2026-07-21T08:50:00.000Z", kind: "telnyx_call", quantity: 60, unit: "seconds", est_usd: 0.12 },
         { uid: "u1", ts: "2026-07-21T09:00:00.000Z", kind: "gemini_audio", quantity: 1, unit: "call", est_usd: 0.3 },
+      ],
+      earnings: [
+        {
+          entry_key: "pm:loss", kind: "financial_realized_loss", amount_minor: 315,
+          currency: "USD", occurred_at: "2026-07-21T10:00:00.000Z",
+          tx_hash: null, source: "polymarket", meta: {},
+        },
+      ],
+      receipts: [
+        {
+          report_kind: "daily", period_key: "2026-07-21", status: "sent",
+          snapshot_hash: "a".repeat(64), telegram_message_id: 71,
+          period_end: "2026-07-21T11:00:00.000Z",
+          snapshot: {
+            kind: "daily", period_key: "2026-07-21",
+            gross_usd_micros: "0", realized_loss_usd_micros: "0",
+            financial_fee_usd_micros: "0", api_cost_usd_micros: "420000",
+            operating_net_usd_micros: "-420000", balance_usdc_atomic: "0",
+            distributable_usdc_atomic: "0", self_funded_bps: 0,
+            stop_reason: "no_external_income", rail_pnl: [],
+          },
+        },
+        {
+          report_kind: "weekly", period_key: "2026-W30", status: "sent",
+          snapshot_hash: "b".repeat(64), telegram_message_id: 72,
+          period_end: "2026-07-20T11:05:00.000Z",
+          snapshot: {
+            kind: "weekly", period_key: "2026-W30",
+            gross_usd_micros: "0", realized_loss_usd_micros: "3150000",
+            financial_fee_usd_micros: "0", api_cost_usd_micros: "0",
+            operating_net_usd_micros: "-3150000", balance_usdc_atomic: "0",
+            distributable_usdc_atomic: "0", self_funded_bps: 0,
+            stop_reason: "negative_net",
+            rail_pnl: [{ rail: "CAPITAL", net_usd_micros: "-3150000" }],
+          },
+        },
       ],
     },
     u2: {
@@ -81,7 +118,11 @@ function makeFixture() {
     if (url.pathname.endsWith("/lm_user_locations")) return jsonResponse(fixture ? [fixture.location] : []);
     if (url.pathname.endsWith("/lm_wake_log")) return jsonResponse(fixture ? fixture.wakes : []);
     if (url.pathname.endsWith("/lm_api_cost")) return jsonResponse(fixture ? fixture.costs : []);
-    if (url.pathname.endsWith("/lm_financial_ledger")) return jsonResponse({ code: "PGRST205" }, 404);
+    if (url.pathname.endsWith("/lm_agent_earnings")) {
+      const wallet = String(url.searchParams.get("wallet_address") || "").replace(/^eq\./, "");
+      return jsonResponse(wallet === byUid.u1.user.agent_wallet_address ? byUid.u1.earnings : []);
+    }
+    if (url.pathname.endsWith("/lm_financial_report_receipts")) return jsonResponse(fixture ? fixture.receipts : []);
     throw new Error(`unexpected fixture URL ${url}`);
   };
   const calendar = {
@@ -157,8 +198,9 @@ test("PANEL-8g scores use source outcomes and expose all four closed organs", as
   });
 });
 
-test("LM-33b ledger aggregates lm_api_cost and is honest when FIN ledger is absent", async () => {
-  await withApiServer(makeFixture(), async (base) => {
+test("REPORT-1 panel reads the real earnings table and the exact Telegram snapshots", async () => {
+  const fixture = makeFixture();
+  await withApiServer(fixture, async (base) => {
     const { response, body } = await getJson(base, "ledger");
     assert.equal(response.status, 200);
     assert.deepEqual(body, {
@@ -170,9 +212,50 @@ test("LM-33b ledger aggregates lm_api_cost and is honest when FIN ledger is abse
           { label: "API利用料", date: "2026-07-21", amount: "USD 0.30", link: null },
         ],
       },
-      financial: { no_data: true, items: [] },
+      financial: {
+        no_data: false,
+        items: [
+          { label: "実現損失", date: "2026-07-21", amount: "USD 3.15", link: null },
+        ],
+      },
+      reports: {
+        daily: {
+          period_key: "2026-07-21",
+          snapshot_hash: "a".repeat(64),
+          telegram_message_id: 71,
+          gross_usd_micros: "0",
+          realized_loss_usd_micros: "0",
+          financial_fee_usd_micros: "0",
+          api_cost_usd_micros: "420000",
+          operating_net_usd_micros: "-420000",
+          balance_usdc_atomic: "0",
+          distributable_usdc_atomic: "0",
+          self_funded_bps: 0,
+          stop_reason: "no_external_income",
+          rail_pnl: [],
+        },
+        weekly: {
+          period_key: "2026-W30",
+          snapshot_hash: "b".repeat(64),
+          telegram_message_id: 72,
+          gross_usd_micros: "0",
+          realized_loss_usd_micros: "3150000",
+          financial_fee_usd_micros: "0",
+          api_cost_usd_micros: "0",
+          operating_net_usd_micros: "-3150000",
+          balance_usdc_atomic: "0",
+          distributable_usdc_atomic: "0",
+          self_funded_bps: 0,
+          stop_reason: "negative_net",
+          rail_pnl: [{ rail: "CAPITAL", net_usd_micros: "-3150000" }],
+        },
+      },
     });
   });
+  const paths = fixture.calls.map((call) => call.url.pathname);
+  assert.equal(paths.includes("/rest/v1/lm_financial_ledger"), false);
+  assert.equal(paths.includes("/rest/v1/lm_agent_earnings"), true);
+  assert.equal(paths.includes("/rest/v1/lm_financial_report_receipts"), true);
 });
 
 test("LM-33b gates reuse LM-32 lock decisions and discovery copy", async () => {
@@ -245,7 +328,26 @@ test("LM-33b negative: request UID is ignored and every data source stays bound 
   });
   const dataReads = fixture.calls.filter(({ url }) => !url.pathname.endsWith("/lm_panel_sessions") && !url.pathname.includes("/rpc/"));
   assert.ok(dataReads.length > 0);
-  for (const { url } of dataReads) assert.equal(url.searchParams.get("uid"), "eq.u1", url.toString());
+  for (const { url } of dataReads) {
+    if (url.pathname.endsWith("/lm_agent_earnings")) {
+      assert.equal(
+        url.searchParams.get("wallet_address"),
+        `eq.${byUidWallet(fixture)}`,
+        url.toString(),
+      );
+    } else {
+      assert.equal(url.searchParams.get("uid"), "eq.u1", url.toString());
+    }
+  }
   assert.ok(fixture.calendarUids.length > 0);
   assert.ok(fixture.calendarUids.every((uid) => uid === "u1"));
 });
+
+function byUidWallet(fixture) {
+  const userRead = fixture.calls.find(({ url }) => (
+    url.pathname.endsWith("/lm_users")
+    && url.searchParams.get("select") === "agent_wallet_address"
+  ));
+  assert.ok(userRead);
+  return "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
+}
