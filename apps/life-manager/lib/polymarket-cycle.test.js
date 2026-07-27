@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { cycleLedgerEntries } = require("./polymarket-cycle.js");
+const { cycleLedgerEntries, recordPolymarketCycle } = require("./polymarket-cycle.js");
 
 const CONDITION = "0x5ecd0d050ea3e753b787ad8ef3b023448b78d232ebe28b24b3d18bf878fb8b5d";
 const WALLET = "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74";
@@ -129,4 +129,67 @@ test("invalid public evidence and nested secrets fail before a ledger row exists
   assert.throws(() => cycleLedgerEntries(cycle({
     evidence: { nested: { private_key: "do-not-store" } },
   })), /secret/i);
+});
+
+test("the runtime writes every derived row in deterministic order", async () => {
+  const calls = [];
+  const result = await recordPolymarketCycle(cycle({
+    deployed_microusd: "5000000",
+    recovered_microusd: "6000000",
+    fee_microusd: "10000",
+    realized_pnl_microusd: "990000",
+  }), {
+    recordEntry: async (entry) => {
+      calls.push(entry.entry_key);
+      return { ok: true, duplicate: calls.length === 1, entry_key: entry.entry_key };
+    },
+  });
+
+  assert.deepEqual(calls, [
+    `polymarket:${CONDITION}:income`,
+    `polymarket:${CONDITION}:fee`,
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(result.cycle_id, `polymarket:${CONDITION}`);
+  assert.equal(result.writes[0].duplicate, true, "an idempotent duplicate stays visible to the caller");
+});
+
+test("validation finishes before the runtime can make any database request", async () => {
+  let calls = 0;
+  await assert.rejects(() => recordPolymarketCycle(cycle({
+    realized_pnl_microusd: "-1",
+  }), {
+    recordEntry: async () => {
+      calls += 1;
+      return { ok: true };
+    },
+  }), /formula/i);
+  assert.equal(calls, 0);
+});
+
+test("a partial transport failure is surfaced and deterministic keys make retry repairable", async () => {
+  const profitable = cycle({
+    deployed_microusd: "5000000",
+    recovered_microusd: "6000000",
+    fee_microusd: "10000",
+    realized_pnl_microusd: "990000",
+  });
+  let firstCalls = 0;
+  await assert.rejects(() => recordPolymarketCycle(profitable, {
+    recordEntry: async () => {
+      firstCalls += 1;
+      if (firstCalls === 2) throw new Error("database unavailable");
+      return { ok: true, duplicate: false };
+    },
+  }), /database unavailable/);
+  assert.equal(firstCalls, 2);
+
+  const retried = await recordPolymarketCycle(profitable, {
+    recordEntry: async (entry) => ({
+      ok: true,
+      duplicate: entry.entry_key.endsWith(":income"),
+      entry_key: entry.entry_key,
+    }),
+  });
+  assert.deepEqual(retried.writes.map((write) => write.duplicate), [true, false]);
 });
