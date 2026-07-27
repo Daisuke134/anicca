@@ -1,0 +1,43 @@
+# Crypto track handoff — Life Manager FINANCIAL organ の残り2 leg（13c実測 / 13d-b）
+
+宛先: crypto 側で「AI に wallet を持たせて稼がせる」を作っている agent。
+この文書1枚で、君の成果が Life Manager のどこに刺さるかが全部わかる。
+
+## 正本（読む順）
+
+| # | ファイル | 読む箇所 |
+|---|---|---|
+| 1 | `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` | §0.2 workstream 4（FINANCIAL 統合の完了条件）/ §9.8（crypto rail の法的立ち位置: AI が自分の wallet で稼ぐ。user 資産運用ではない）/ §9.11 FINANCIAL copy bank（月次報告・送金報告の逐語文面 — **君は文面を発明しない**）/ §10.0-10（CFO 裁定・fiat は閉鎖中）/ §10.0-12（x402 rail 温存の実測）/ §10.0-17（この track が別 repo 並行である裁定） |
+| 2 | `docs/evidence/13b-payout-question-round-trip.md` + `13d-a-typed-intake-live.md` | 送金先収集の実測経緯 |
+
+## 既に本番で生きてるもの（再発明禁止）
+
+| 部品 | ファイル | 状態 |
+|---|---|---|
+| agent wallet | `apps/life-manager/lib/agent-wallet.js` | **address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）**。鍵は mode 0600 の protected store、repo/log/git に 0 hit。残高 0 実測（2026-07-26）— **seed は未定、勝手に入金経路を作らない** |
+| 送金先（user 側） | `lm_users.payout_destination` | **実 DB row: `{"type":"wallet","status":"usable","address":"0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7","confirmed_at":"2026-07-26T11:27:08.300Z"}`** = `DAIS_CREATOR_ADDRESS`。EIP-55 検証済み。`isPayoutDestinationUsable()`（`lib/payout-question.js`）が true を返す唯一の形 |
+| 収集 UI | `lib/payout-question.js` + `lib/payout-address-intake.js` | closed Q → typed 入力 → 検証 → 引用確認。全部 CB-1 可視応答準拠 |
+| 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup + §9.11 文面生成。**28+11+6 tests merged（#1128）。実収支行はまだ0行** — 君の earn loop が最初の行を書く |
+
+## 君の成果が刺さる2点（= 残り leg）
+
+```
+13c実測: 君の earn loop の実収益1件を earnings-runtime 経由で台帳に記帳
+         → 月次報告文が実データで生成される（engine は完成済み、行が無いだけ）
+13d-b:  agent wallet → 0x6592…EDc7 への on-chain 実 tx（spend-cap 内）
+         + §9.11 逐語 copy での実 TG 報告
+         前提: wallet に残高（君の収益 or 承認された seed）
+```
+
+## 統合の約束事（破ると reject される）
+
+1. 台帳はこの repo の `earnings-ledger` が正本 — 君の側に別台帳を立てない（記帳 API はここへ）
+2. user から取る個人情報は送金先1つだけ（既に取得済み）— 追加で何も要求しない
+3. 損失月も正直に報告（§9.11 に損失月の逐語 copy あり）
+4. tx は全部 basescan link つきで報告
+5. spend-cap = 残高。cap 超過の試行はコードで不能にする
+6. この repo への変更は PR + fresh adversary review 経由（無人 merge guard が path を制限してる — FINANCIAL 系 lib は allowlist 内）
+
+## 質問があるとき
+
+spec の §10 live 表と Current cursor が常に最新（毎 atomic 更新）。矛盾を見つけたらそれは bug — issue にして。
