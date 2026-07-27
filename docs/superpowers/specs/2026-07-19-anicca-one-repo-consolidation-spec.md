@@ -315,7 +315,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 2 | S20b-c | 同runtimeが秘密を含まない決算書をserve | live URL、allowlist test、Base/Solana/PM値一致 | **done** — Modal `sb-34xzazUQKuoGKBFWeh1PQ6` の一時URLで3 route HTTP 200、heartbeat 2/2 JS+RPC PASS、Base/Solana/PM独立再読込の差分0。外部収入 `$0.00` / runtime `$0.015` / `funded` を明記。証拠は `anicha/specs/evidence/s20b-python-statement-sb-34xzazUQKuoGKBFWeh1PQ6*`。Quick Tunnelは一時的・開発用・SLA無し、lease 5分 |
 | 3 | 13c-PM | PMの次の1 cycleをtenant earnings ledgerへ `deployed/recovered/fee/PnL` で記帳 | on-chain/API evidence付き実row + 月次報告 | **done** — Tatiana cycleをproduction `lm_agent_earnings`へ実記帳。`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`、row readback 1件、再実行`duplicate=true`で二重計上0、Polygon実残高`$4.422182`から損失月報告を生成。外部収入主張は`$0.00`のまま。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | 4 | REDEEM-1 | 次のredeemable発生時に修正済み`earn-watch.sh`経路を通す | branch通過log + tx receipt status 1 | waiting for real redeemable、dry-run禁止 |
-| 5 | 13c-SELL / 13c-WORK（AE-X4） | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | pending |
+| 5 | 13c-SELL / 13c-WORK（AE-X4） | colony外buyerから累計≥$1のSELL/WORK着金 | external payer + receipt + provenance、self-pay 0 | **partial** — SELLの自動会計bridgeは本番稼働、外部buyer実着金は`$0.00`で待機。WORKをactive cursorとして並走 |
 | 6 | 13d-b | Life Manager agent wallet→user walletの実送金 | reserve/spend-cap PASS、実tx、実TG receipt | pending、13c実row後 |
 | 7 | REPORT-1 | daily/weekly TGとpanelを同じledger rollupへ接続 | 7日連続daily + weekly 1通、数値差0 | pending |
 | 8 | SURVIVE-1 | agentが自分のcomputeまたはshelterを収益から払う | provider receipt + ledger expense + service継続 | pending、trailing surplus後 |
@@ -746,7 +746,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。現在の順序は **13c-PM（done）→ 実redeem待ち（非blocking）→ 13c-SELL / 13c-WORK（AE-X4）→ 13d-b**。
+    保留条件は解消する。現在の順序は **13c-PM（done）→ 実redeem待ち（非blocking）→ 13c-SELL（bridge稼働・外部buyer待ちを非blocking）/ 13c-WORK（active）→ 13d-b**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -756,12 +756,14 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★現在の実行順の正本 = §0.4.6（13c-PM done → 実redeem待ちは非blocking → 13c-SELL / 13c-WORK → 13d-b）。★**
+**★現在の実行順の正本 = §0.4.6（13c-PM done → 実redeem待ちと13c-SELL外部buyer待ちは非blocking → 13c-WORK → 13d-b）。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
 現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。H3/H5は§0.4.6の後に再開する。
 
-**Current cursor**: **13c-SELL（AE-X4の先行leg。colony外buyerからの実着金）**。
+**Current cursor**: **13c-WORK（AE-X4の第2 leg。外部依頼の実着金）**。
+13c-SELLのobserver→finalized settlement verifier→Life Manager earnings bridgeは5分周期で本番稼働し、
+colony外buyerを待つ。待機を作業停止理由にせず、同じexternal payer基準のWORK recipeへ進む。
 これは§0.4.6のportfolio順をそのまま実行する。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 残るH5 relationsはagent economyの会計・自活証明が閉じるまでNEXT HORIZONに残す。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -777,7 +779,8 @@ fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだ
 | 自動 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知 → 候補3件（chain 実証済み）。CADENCE-1 guard 稼働、burst は observe 蓄積 | 毎日の scan が自動判定 |
 
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
-`13c-PM`は実CAPITAL行でdone。実redeem待ちは非blockingで並走し、次は`13c-SELL`→`13c-WORK`（AE-X4）、その後`13d-b`（on-chain実送金）。
+`13c-PM`は実CAPITAL行でdone。`13c-SELL`はverified sale→earnings ledgerの本番bridgeが稼働し、
+外部buyerの累計`$1`を非blockingで待つ。active cursorは`13c-WORK`（AE-X4）、その後`13d-b`（on-chain実送金）。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -853,7 +856,7 @@ fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだ
 | 12c | MEN-c | 送信配線 + E2E: 実 schedule 由来 trigger 3種（予定前/合間/就寝前）で実 TG 着信 | 実 TG 3通のスクショ/メッセージ id | **done (2026-07-26)**: 3/3 実 TG 着信を production DB から読み戻し — pre_event=`260`(07-25 09:20Z), pre_sleep=`271`(07-25 13:30Z), between_events=`272`(07-25 18:49Z)。between_events は本番で構造的に発火不能だった（tick の calendar fetch が `timeMin=now` で「終わったイベント」を返せない）ため PR #1129 で lookback 35min を追加し、MENTAL のみ広い窓・他 consumer は strict-future をテストで固定。fix 後、実90分イベント終了の11秒後に発火（旧コードでは生成不能な row = deploy 生存証明を兼ねる）。テストイベント2件は削除済み(readback 0)。evidence=`docs/evidence/12c-mental-three-triggers-live.md` |
 | 13a | FIN-a | agent wallet 自己生成（§10.1 U7 Franklin 型。既存 wallet 流用禁止）+ 秘密鍵の安全保存 | 新 address 実在 + 残高 0 確認 + 鍵が repo/log に無い grep | **done (2026-07-25 実測)**: `lib/agent-wallet.js` を RED→GREEN で追加（9/9）。keccak256 は Node の SHA3-256 と別物のため監査済み `@noble/hashes` / `@noble/curves` を使用し、**公開 Ethereum テストベクタ2本でアドレス導出とEIP-55 checksum を照合**（自己整合ではなく外部基準）。曲線位数外・不正長・ゼロ鍵は拒否、entropy 不良は再試行せず失敗させる（弱鍵の隠蔽を防ぐ）。秘密鍵は入れ子まで再帰的に除去する `redactWallet` を通さないとログへ出せない。**実 wallet 生成**: address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）。on-chain 実読み取りで `eth_getBalance=0x0`、`eth_getTransactionCount=0x0`（未使用の新規アドレス）。鍵は `~/.cloak/life-manager-agent-wallet.json` に mode `0600` で保存し、**repo 0 hit / logs 0 hit / git history 0 hit** を grep で実証。test=770 PASS |
 | 13b | FIN-b | 送金先 closed Q（§9.11 FINANCIAL copy、初回1問のみ）+ 永続保存 | 実 TG で登録往復1回 + DB 実 row | **pending — 実装は RED→GREEN で完了、実 TG 往復と実 DB row は未実施（2026-07-25）**: discovery 告知の［登録する］は `handleDiscoveryCallback` が tap を ack して return するだけの **dead end** だった（実測）。`lib/payout-question.js` を RED→GREEN で追加（16/16）し、tap → §9.11 FINANCIAL closed Q（3択、自由入力なし）→ 回答を `lm_users.payout_destination` へ永続保存、まで配線。copy は `lib/i18n.js` に置き spec §9.11 と逐語一致を test で固定（copy は Dais 所有のため実装は新規文面を作らない）。**初回1問のみ**: 送信前に必ず column を read し、既に destination がある行は無送信。read 失敗は「未回答」ではなく `lookup_failed` として扱い、推測で再質問しない。**保存は CAS**（`payout_destination=is.null` + `Prefer: return=representation`）で書いた値を読み戻して照合し、DB に見えない書き込みは `persist_failed` として失敗を返す（成功報告しない）。［あとで］は無書き込みで gate は locked のまま。保存内容は rail 選択（`status=awaiting_details`）で、`isPayoutDestinationUsable()` は false を返すため 13c/13d が送金可能先と誤認できない（口座番号/wallet address の収集は 13c/13d の仕事）。12c の教訓に従い **production 配線も証明**: `server.js` を実起動して Telegram が送る callback 2種を POST し、§9.11 の質問が Bot API 経由で実送信され、回答が `lm_users` へ PATCH されることを contract test で実測。test=786 PASS（baseline 770 + 16）、eval 7種 100%（21/12/12/27/18/15/12）、panel-privacy PASS（api=177 browser=63 recipes=19 channels=9）。**残: 実 Telegram での往復1回と実 DB row は未実施** — この branch は fixture のみで検証し、実メッセージ送信・production data 変更は一切行っていない | **done (2026-07-26)**: 実 TG 往復1回 + DB 実 row — discovery［登録する］tap → §9.11 copy 逐語の質問が 02:17 JST に実着弾（callback が server に届いた = INC-3 修理の E2E 証明を兼ねる）→［walletアドレスを登録］tap（rail 選択は §9.8 由来: fiat 閉鎖中で wallet が唯一の live rail）→ production readback `{"type":"wallet","status":"awaiting_details","answered_at":"2026-07-26T05:18:30.952Z"}`。address 収集は 13d の初手。evidence=`docs/evidence/13b-payout-question-round-trip.md` |
-| 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | **partial — 13c-PM done、13c-SELL / 13c-WORK pending（production実測）**: 本番未適用だったappend-only migrationをManagement APIで適用（HTTP 201）。`polymarket-cycle.js`が6桁micro-USDのcycle envelopeを検証し、元本の回収を収益へ入れず、差額とfeeだけを既存kindへ導出する。Tatiana cycleは`deployed=3,150,000 / recovered=0 / fee=0 / realized=-3,150,000 micro-USD`で、production rowは`financial_realized_loss / amount_minor=315`。Public ActivityのBUY tx `0xe6bb…1659`、redeem tx `0xdfaf…86ef`、Polygon receipt `status=0x1`を保持し、readbackはexact 1 row。再実行は`duplicate=true`かつ月次`counted_rows=1`で二重計上0。Polygon pUSD `balanceOf=4,422,182`を端数維持して、`収益: -$3.15 / 残高: $4.422182 / polygonscan.com/address/0x904B…Eb74`を実生成。focused test 61/61 PASS。**証拠限界**: これは実CAPITAL cycleの会計接続を証明するが、外部収入は依然`$0.00`。SELL/WORKのcolony外payer実着金は未実証。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` | pending |
+| 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | **partial — 13c-PM done、13c-SELL bridge live / buyer gate open、13c-WORK active（production実測）**: PMはproduction `financial_realized_loss=$3.15`、duplicate 0、Polygon残高`$4.422182`から損失月報告を生成済み。SELLはPR #1184をmergeし、既存x402 sale evidenceをBase mainnetの`finalized` head・receipt `0x1`・USDC Transferのowned payTo/正確なatomic額・外部token sender・外部tx initiatorで再検証してから`financial_external_income`へ記帳するbridgeを追加。`ai.anicca.life-manager-x402-ledger`は300秒周期、実kickstartで`last exit=0`。同時にobserver/settlement/acquisitionを実発火し、候補/verified/recorded=`0/0/0`、production `source=x402_sale` readbackも0件。self-payは0、sub-centは丸めずblocked。focused 85/85 PASS、full 657/658（唯一は既知のloaded host-state test）。**証拠限界**: 自動会計接続の生存は証明したが、colony外buyer実着金は未実証で外部収入は`$0.00`。SELL累計`$1` gateを閉じず、待機を非blocking化してWORKへ進む。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json`,`docs/evidence/agent-economy/2026-07-27-x402-ledger-bridge.json` | pending |
 | 13d | FIN-d | 実送金 E2E: agent wallet → user wallet、spend-cap 内、tx 報告（§9.11 copy） | on-chain 実 tx hash + 実 TG 報告 | pending |
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。

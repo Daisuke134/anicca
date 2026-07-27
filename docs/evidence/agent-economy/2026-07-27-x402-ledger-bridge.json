@@ -1,0 +1,79 @@
+{
+  "schema": "anicca.agent-economy.x402-ledger-bridge.v1",
+  "observed_at": "2026-07-27T13:47:33.039Z",
+  "status": "ready_waiting_for_external_buyer",
+  "implementation": {
+    "pull_request": "https://github.com/Daisuke134/life-manager/pull/1184",
+    "merge_commit": "1cb8cb507f66638b82d19a3e4cc0f51f1ce78c42",
+    "adapter": "apps/life-manager/lib/x402-sale-ledger.js",
+    "recorder": "apps/life-manager/scripts/record-x402-sales.js",
+    "launchd_label": "ai.anicca.life-manager-x402-ledger",
+    "interval_seconds": 300,
+    "timeout_seconds": 240
+  },
+  "verification_contract": {
+    "network": "eip155:8453",
+    "block_tag": "finalized",
+    "receipt_status": "0x1",
+    "asset": "USDC",
+    "asset_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "exact_atomic_amount_required": true,
+    "owned_pay_to_required": true,
+    "external_token_sender_required": true,
+    "external_transaction_initiator_required": true,
+    "self_pay_counted_as_revenue": false,
+    "fractional_cent_policy": "blocked_without_rounding"
+  },
+  "live_pipeline": {
+    "sale_observer": {
+      "observed_at": "2026-07-27T13:46:54.375Z",
+      "candidates_seen": 0,
+      "recorded": 0,
+      "errors": []
+    },
+    "settlement_recorder": {
+      "observed_at": "2026-07-27T13:46:52.948Z",
+      "candidates_seen": 0,
+      "verified": 0,
+      "recorded": 0,
+      "verified_external_revenue": false
+    },
+    "acquisition_controller": {
+      "observed_at": "2026-07-27T13:46:53.291Z",
+      "action": "none",
+      "open_postings": 0,
+      "inbox_completed": 3
+    },
+    "life_manager_bridge": {
+      "observed_at": "2026-07-27T13:47:33.039Z",
+      "launchd_reported_runs": 4,
+      "successful_log_records": 2,
+      "last_exit_code": 0,
+      "ledgers_seen": 0,
+      "lines_seen": 0,
+      "recorded": 0,
+      "duplicates": 0,
+      "transactions": []
+    }
+  },
+  "production_readback": {
+    "table": "lm_agent_earnings",
+    "filter": "source=eq.x402_sale",
+    "row_count": 0,
+    "external_income_usd": "0.00"
+  },
+  "tests": {
+    "focused_passed": 85,
+    "focused_failed": 0,
+    "full_passed": 657,
+    "full_failed": 1,
+    "full_failure_scope": "pre-existing host-state assertion expects ai.anicca.life-manager-dev to be unloaded although the real job is loaded"
+  },
+  "evidence_limit": "This proves the automatic accounting connection is live and exits successfully. It does not prove an external sale: no colony-external buyer has paid, so the 13c-SELL cumulative $1 gate remains open and external income remains $0.00.",
+  "primary_sources": [
+    "https://github.com/coinbase/x402/blob/main/specs/x402-specification-v2.md",
+    "https://github.com/coinbase/x402/blob/main/specs/schemes/exact/scheme_exact_evm.md",
+    "https://github.com/base/docs/blob/master/docs/base-chain/api-reference/ethereum-json-rpc-api/eth_getBlockByNumber.mdx",
+    "https://github.com/circlefin/stablecoin-evm/blob/master/contracts/v2/FiatTokenV2_2.sol"
+  ]
+}
