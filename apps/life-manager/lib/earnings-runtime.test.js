@@ -150,6 +150,37 @@ test("the whole month becomes the 9.11 message, from real rows and a real balanc
   ].join("\n"));
 });
 
+test("the monthly runtime preserves a measured six-decimal pUSD balance", async () => {
+  const fetchImpl = fetchStub(() => ok([]));
+  const report = await generateMonthlyReport({
+    year: 2026, month: 7, timezone: "Asia/Tokyo", walletAddress: WALLET,
+    readBalanceAtomic: async () => "4422182",
+    balanceDecimals: 6,
+    explorerBaseUrl: "polygonscan.com",
+  }, { ...SUPA, fetchImpl });
+
+  assert.equal(report.summary.balance_minor, null);
+  assert.equal(report.summary.balance_atomic, "4422182");
+  assert.equal(report.summary.balance_decimals, 6);
+  assert.match(report.text, /・私の残高: \$4\.422182/);
+  assert.match(report.text, /polygonscan\.com\/address\/0x477E…62ad/);
+});
+
+test("the monthly runtime refuses ambiguous balance readers", async () => {
+  const fetchImpl = fetchStub(() => ok([]));
+  await assert.rejects(() => generateMonthlyReport({
+    year: 2026, month: 7, timezone: "Asia/Tokyo", walletAddress: WALLET,
+    readBalanceMinor: async () => 442,
+    readBalanceAtomic: async () => "4422182",
+    balanceDecimals: 6,
+  }, { ...SUPA, fetchImpl }), /balance/i);
+
+  await assert.rejects(() => generateMonthlyReport({
+    year: 2026, month: 7, timezone: "Asia/Tokyo", walletAddress: WALLET,
+    readBalanceAtomic: async () => "4422182",
+  }, { ...SUPA, fetchImpl }), /decimals/i);
+});
+
 test("a losing month still produces a report, with the loss copy", async () => {
   const rows = [
     { entry_key: "a", wallet_address: WALLET, kind: "financial_external_income", amount_minor: 800, currency: "USD", occurred_at: "2026-07-10T04:00:00.000Z" },

@@ -163,6 +163,23 @@ function formatUsdMinor(minor, { signed = false } = {}) {
   return signed ? `+${body}` : body;
 }
 
+function normaliseAtomicBalance(value, decimals) {
+  const raw = typeof value === "bigint" ? value.toString() : String(value == null ? "" : value).trim();
+  if (!/^\d+$/.test(raw)) fail(`balance atomic amount must be a non-negative integer, got ${JSON.stringify(value)}`);
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) {
+    fail("balance decimals must be a small non-negative integer");
+  }
+  return { atomic: BigInt(raw).toString(), decimals };
+}
+
+function formatUsdAtomic(atomic, decimals) {
+  const balance = normaliseAtomicBalance(atomic, decimals);
+  const padded = balance.atomic.padStart(balance.decimals + 1, "0");
+  const whole = balance.decimals === 0 ? padded : padded.slice(0, -balance.decimals);
+  const fraction = balance.decimals === 0 ? "" : `.${padded.slice(-balance.decimals)}`;
+  return `$${whole}${fraction}`;
+}
+
 // Spec 9.11 writes the address as 0x3EcC…8749: six leading characters, four trailing, checksum casing
 // intact so the abbreviation still matches what a block explorer shows.
 function abbreviateAddress(address) {
@@ -215,10 +232,29 @@ function monthBounds({ year, month, timezone = "UTC" } = {}) {
 }
 
 function rollUpMonth(rows, options = {}) {
-  const { year, month, timezone = "UTC", walletAddress, balanceMinor, currency: fallbackCurrency = "USD" } = options;
+  const {
+    year, month, timezone = "UTC", walletAddress,
+    balanceMinor, balanceAtomic, balanceDecimals,
+    explorerBaseUrl = "basescan.org",
+    currency: fallbackCurrency = "USD",
+  } = options;
   const wallet = normaliseAddress(walletAddress);
-  if (balanceMinor == null) fail("balanceMinor is required — a report without a measured balance is a guess");
-  const balance = normaliseMinor(balanceMinor);
+  const explorer = String(explorerBaseUrl == null ? "" : explorerBaseUrl).trim();
+  if (!/^[a-z0-9.-]+$/i.test(explorer)) fail("explorerBaseUrl must be a plain hostname");
+  const hasMinor = balanceMinor != null;
+  const hasAtomic = balanceAtomic != null;
+  const hasDecimals = balanceDecimals != null;
+  if (hasMinor && (hasAtomic || hasDecimals)) {
+    fail("supply exactly one measured balance representation, not both minor and atomic");
+  }
+  if (!hasMinor && !hasAtomic) {
+    fail("a measured balance is required — a report without one is a guess");
+  }
+  if (hasAtomic !== hasDecimals) {
+    fail("an atomic balance and its decimals are required together");
+  }
+  const minorBalance = hasMinor ? normaliseMinor(balanceMinor) : null;
+  const atomicBalance = hasAtomic ? normaliseAtomicBalance(balanceAtomic, balanceDecimals) : null;
   const { startMs, endMs } = monthBounds({ year, month, timezone });
 
   const totals = { financial_external_income: 0n, financial_realized_loss: 0n, financial_fee: 0n, financial_user_transfer: 0n };
@@ -262,7 +298,10 @@ function rollUpMonth(rows, options = {}) {
     fee_minor: Number(fee),
     user_transfer_minor: Number(transfer),
     net_minor: Number(net),
-    balance_minor: Number(balance),
+    balance_minor: minorBalance == null ? null : Number(minorBalance),
+    balance_atomic: atomicBalance == null ? null : atomicBalance.atomic,
+    balance_decimals: atomicBalance == null ? null : atomicBalance.decimals,
+    explorer_base_url: explorer,
     is_loss: net < 0n,
     counted_rows: counted,
     excluded_rows: excluded,
@@ -293,8 +332,14 @@ function formatMonthlyReport(summary, { cause, plan, locale = "ja" } = {}) {
   if (summary.currency !== "USD") fail(`the 9.11 monthly copy is written for the USD currency, not ${summary.currency}`);
 
   const address = abbreviateAddress(summary.wallet_address);
-  const verify = fill(strings.monthly.verify, { address });
-  const balance = fill(strings.monthly.balance, { balance: formatUsdMinor(summary.balance_minor) });
+  const verify = fill(strings.monthly.verify, {
+    address,
+    explorer: summary.explorer_base_url || "basescan.org",
+  });
+  const balanceValue = summary.balance_atomic == null
+    ? formatUsdMinor(summary.balance_minor)
+    : formatUsdAtomic(summary.balance_atomic, summary.balance_decimals);
+  const balance = fill(strings.monthly.balance, { balance: balanceValue });
 
   if (summary.is_loss) {
     // The loss copy states outright that nothing was sent. If something was, the copy would be a lie
@@ -336,6 +381,7 @@ module.exports = {
   appendEarning,
   usdMinorFromAtomic,
   formatUsdMinor,
+  formatUsdAtomic,
   abbreviateAddress,
   monthBounds,
   rollUpMonth,

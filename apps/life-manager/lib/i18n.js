@@ -61,7 +61,7 @@ const FINANCIAL_STRINGS = Object.freeze({
       transferNone: "・あなたへの送金: なし（利益が出た月のみ送金します）",
       cost: "・手数料・実費: {cost}",
       balance: "・私の残高: {balance}",
-      verify: "取引はすべてこちらで確認できます: basescan.org/address/{address}",
+      verify: "取引はすべてこちらで確認できます: {explorer}/address/{address}",
     }),
     monthlyLoss: Object.freeze({
       revenue: "・収益: {revenue}（マイナスでした）",
