@@ -84,7 +84,7 @@ export function normalizeRailwaySettlements(rows, {
       : null;
     if (!saleId || !tx || !timestamp || !route || !amount) return [];
     if (row?.success !== true
-      || row?.method !== 'POST'
+      || !['GET', 'POST'].includes(row?.method)
       || row?.scheme !== 'exact'
       || row?.network !== 'eip155:8453'
       || normalizeAddress(row?.asset) !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
