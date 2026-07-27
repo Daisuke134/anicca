@@ -55,6 +55,55 @@ export function normalizeImageSales(rows, {
   });
 }
 
+export function normalizeRailwaySettlements(rows, {
+  payTo,
+  allowedOffers,
+} = {}) {
+  const receiver = normalizeAddress(payTo);
+  if (!receiver) throw new TypeError('payTo must be a valid EVM address');
+  if (!allowedOffers || typeof allowedOffers !== 'object' || Array.isArray(allowedOffers)) {
+    throw new TypeError('allowedOffers must be an object');
+  }
+  const offers = new Map(Object.entries(allowedOffers).map(([route, atomic]) => {
+    const safeRoute = typeof route === 'string' && /^\/[a-z0-9][a-z0-9/_-]{0,126}$/.test(route)
+      ? route
+      : null;
+    const safeAtomic = typeof atomic === 'string' && /^[1-9]\d*$/.test(atomic) ? atomic : null;
+    if (!safeRoute || !safeAtomic) throw new TypeError('allowedOffers contains an invalid route or amount');
+    return [safeRoute, safeAtomic];
+  }));
+
+  return (Array.isArray(rows) ? rows : []).flatMap((row) => {
+    const saleId = normalizeIdentifier(row?.id);
+    const tx = normalizeTx(row?.transaction);
+    const timestamp = observedAt(row?.observed_at);
+    const rowPayTo = normalizeAddress(row?.pay_to);
+    const route = typeof row?.route === 'string' && offers.has(row.route) ? row.route : null;
+    const amount = typeof row?.amount_atomic === 'string' && /^\d+$/.test(row.amount_atomic)
+      ? row.amount_atomic.replace(/^0+(?=\d)/, '')
+      : null;
+    if (!saleId || !tx || !timestamp || !route || !amount) return [];
+    if (row?.success !== true
+      || row?.method !== 'POST'
+      || row?.scheme !== 'exact'
+      || row?.network !== 'eip155:8453'
+      || normalizeAddress(row?.asset) !== '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+      || rowPayTo !== receiver
+      || amount !== offers.get(route)) {
+      return [];
+    }
+    return [{
+      source: 'x402-railway',
+      source_sale_id: `x402-railway:${saleId}`,
+      offer_id: route,
+      tx,
+      expected_pay_to: receiver,
+      expected_usdc_atomic: amount,
+      observed_at: timestamp,
+    }];
+  });
+}
+
 export function normalizeClawMerchantSales(rows, {
   assetId,
   payTo,
@@ -158,7 +207,7 @@ export function normalizeThe402Sales(body, {
 }
 
 function safeCandidate(row) {
-  const source = ['x402-image', 'the402', 'clawmerchants'].includes(row?.source) ? row.source : null;
+  const source = ['x402-image', 'x402-railway', 'the402', 'clawmerchants'].includes(row?.source) ? row.source : null;
   const sourceSaleId = typeof row?.source_sale_id === 'string'
     && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,191}$/.test(row.source_sale_id)
     ? row.source_sale_id

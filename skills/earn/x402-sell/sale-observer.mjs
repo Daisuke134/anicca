@@ -9,6 +9,7 @@ import {
   appendUniqueSaleCandidates,
   normalizeClawMerchantSales,
   normalizeImageSales,
+  normalizeRailwaySettlements,
   normalizeThe402Sales,
 } from './lib/sale-observer.mjs';
 
@@ -18,6 +19,8 @@ const FRANKLIN2 = '0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9';
 const CLAUDE_P = '0x810F6D61F7606dEEE2657d3083E150a222Bc29C5';
 const THE402_PRODUCT_ID = 'prod_653429e9dd234895';
 const CLAW_ASSET_ID = '54a0fabf-a95a-47bd-b2cc-81f3189430cb';
+const RAILWAY_BASE_URL = 'https://x402-agents-production.up.railway.app';
+const RAILWAY_PAY_TO = '0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7';
 
 function unwrap(body) {
   return body?.data ?? body;
@@ -47,12 +50,14 @@ export async function pollSaleSources({
   imageSources = [],
   the402,
   claw,
+  railway,
 } = {}) {
   if (typeof fetchFn !== 'function') throw new TypeError('fetchFn must be a function');
   const candidates = [];
   const errors = [];
   const metrics = {
     image: { settled_candidates: 0 },
+    railway: { settlement_candidates: 0 },
     the402: {
       jobs: null,
       threads: null,
@@ -86,6 +91,21 @@ export async function pollSaleSources({
     }
   }
   metrics.image.settled_candidates = candidates.length;
+
+  if (railway) {
+    try {
+      const baseUrl = String(railway.baseUrl || '').replace(/\/+$/, '');
+      const body = await fetchJson(fetchFn, `${baseUrl}/settlements?limit=100`);
+      const railwayCandidates = normalizeRailwaySettlements(rows(body, 'settlements'), {
+        payTo: railway.payTo,
+        allowedOffers: railway.allowedOffers,
+      });
+      candidates.push(...railwayCandidates);
+      metrics.railway.settlement_candidates = railwayCandidates.length;
+    } catch {
+      errors.push({ source: 'x402-railway', code: 'poll_failed' });
+    }
+  }
 
   try {
     const [jobsBody, threadsBody, earningsBody, productBody] = await Promise.all([
@@ -182,6 +202,20 @@ async function main() {
       },
     },
     claw: { assetId: CLAW_ASSET_ID, payTo: FRANKLIN1, priceUsd: '0.03' },
+    railway: {
+      baseUrl: RAILWAY_BASE_URL,
+      payTo: RAILWAY_PAY_TO,
+      allowedOffers: {
+        '/context-compressor': '8000',
+        '/emotion-detector': '10000',
+        '/buddhist-counsel': '10000',
+        '/focus-coach': '10000',
+        '/habit-designer': '10000',
+        '/prompt-sanitizer': '5000',
+        '/decision-clarifier': '8000',
+        '/intent-router': '5000',
+      },
+    },
   });
   const store = join(stateRoot, 'state', 'x402-sale-candidates.jsonl');
   const write = appendUniqueSaleCandidates(store, result.candidates);

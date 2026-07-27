@@ -8,12 +8,15 @@ import {
   appendUniqueSaleCandidates,
   normalizeClawMerchantSales,
   normalizeImageSales,
+  normalizeRailwaySettlements,
   normalizeThe402Sales,
 } from '../lib/sale-observer.mjs';
 import { pollSaleSources } from '../sale-observer.mjs';
 
 const PAY_TO = '0x1111111111111111111111111111111111111111';
 const TX = `0x${'a'.repeat(64)}`;
+const RAILWAY_PAY_TO = '0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7';
+const RAILWAY_URL = 'https://x402-agents-production.up.railway.app';
 
 test('image adapter emits only a settled successful sale and strips unapproved fields', () => {
   const rows = [
@@ -95,6 +98,52 @@ test('the402 adapter accepts only settled transactions for an allowlisted offer 
   }]);
 });
 
+test('Railway adapter emits only successful allowlisted mainnet settlements and strips payer claims', () => {
+  const rows = [
+    {
+      id: 'f738b171-fb73-48b0-b386-aa391def62f4',
+      observed_at: '2026-07-27T22:42:00.000Z',
+      route: '/intent-router',
+      method: 'POST',
+      scheme: 'exact',
+      network: 'eip155:8453',
+      asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+      amount_atomic: '5000',
+      pay_to: RAILWAY_PAY_TO,
+      transaction: TX.toUpperCase(),
+      payer: '0x2222222222222222222222222222222222222222',
+      success: true,
+      payment_header: 'must not persist',
+    },
+    {
+      id: 'wrong-amount',
+      observed_at: '2026-07-27T22:42:01.000Z',
+      route: '/intent-router',
+      method: 'POST',
+      scheme: 'exact',
+      network: 'eip155:8453',
+      asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+      amount_atomic: '9999',
+      pay_to: RAILWAY_PAY_TO,
+      transaction: `0x${'b'.repeat(64)}`,
+      success: true,
+    },
+  ];
+
+  assert.deepEqual(normalizeRailwaySettlements(rows, {
+    payTo: RAILWAY_PAY_TO,
+    allowedOffers: { '/intent-router': '5000' },
+  }), [{
+    source: 'x402-railway',
+    source_sale_id: 'x402-railway:f738b171-fb73-48b0-b386-aa391def62f4',
+    offer_id: '/intent-router',
+    tx: TX,
+    expected_pay_to: RAILWAY_PAY_TO.toLowerCase(),
+    expected_usdc_atomic: '5000',
+    observed_at: '2026-07-27T22:42:00.000Z',
+  }]);
+});
+
 test('candidate store is 0600, strips extra fields, and dedupes by sale ID and tx', () => {
   const dir = mkdtempSync(join(tmpdir(), 'x402-sale-observer-'));
   const path = join(dir, 'sale-candidates.jsonl');
@@ -154,6 +203,19 @@ test('runner polls all live sources without sending the402 credentials to ClawMe
     [`https://api.the402.ai/v1/products/${productId}`, { data: { product_id: productId, total_purchases: 1 } }],
     [`https://clawmerchants.com/api/v1/assets/${assetId}`, { id: assetId, totalPurchases: 1, discoveryCount: 5 }],
     ['https://clawmerchants.com/api/v1/transactions?limit=100', { transactions: [{ id: 'cm-sale-1', assetId, amountUsdc: 0.03, status: 'delivered', txHash: `0x${'b'.repeat(64)}`, createdAt: '2026-07-23T02:30:00.000Z' }] }],
+    [`${RAILWAY_URL}/settlements?limit=100`, { settlements: [{
+      id: 'railway-sale-1',
+      observed_at: '2026-07-23T02:40:00.000Z',
+      route: '/intent-router',
+      method: 'POST',
+      scheme: 'exact',
+      network: 'eip155:8453',
+      asset: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+      amount_atomic: '5000',
+      pay_to: RAILWAY_PAY_TO,
+      transaction: `0x${'e'.repeat(64)}`,
+      success: true,
+    }] }],
   ]);
   const fetchFn = async (url, init = {}) => {
     calls.push({ url, headers: init.headers || {} });
@@ -176,13 +238,15 @@ test('runner polls all live sources without sending the402 credentials to ClawMe
     }],
     the402: { apiKey: 'the402-secret', payTo: PAY_TO, productId, allowedOffers: { [serviceId]: { minUsd: '0.50', maxUsd: '25' }, [productId]: { minUsd: '0.50', maxUsd: '0.50' } } },
     claw: { assetId, payTo: PAY_TO, priceUsd: '0.03' },
+    railway: { baseUrl: RAILWAY_URL, payTo: RAILWAY_PAY_TO, allowedOffers: { '/intent-router': '5000' } },
   });
 
-  assert.deepEqual(result.candidates.map((row) => row.source), ['x402-image', 'x402-image', 'the402', 'clawmerchants']);
+  assert.deepEqual(result.candidates.map((row) => row.source), ['x402-image', 'x402-image', 'x402-railway', 'the402', 'clawmerchants']);
   assert.equal(result.candidates[1].offer_id, '/base-usdc-balance');
   assert.equal(result.candidates[1].expected_usdc_atomic, '3000');
   assert.deepEqual(result.metrics, {
     image: { settled_candidates: 2 },
+    railway: { settlement_candidates: 1 },
     the402: { jobs: 0, threads: 0, settled_usd: 0.95, held_usd: 0, pending_usd: 0, product_purchases: 1, settlement_candidates: 1 },
     clawmerchants: { purchases: 1, discovery_count: 5, transaction_candidates: 1 },
   });
@@ -216,5 +280,6 @@ test('runner isolates a the402 outage and continues image and ClawMerchants poll
     jobs: null, threads: null, settled_usd: null, held_usd: null,
     pending_usd: null, product_purchases: null, settlement_candidates: 0,
   });
+  assert.deepEqual(result.metrics.railway, { settlement_candidates: 0 });
   assert.equal(JSON.stringify(result).includes('response body must not leak'), false);
 });
