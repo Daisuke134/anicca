@@ -1,6 +1,7 @@
 "use strict";
 
 const { createHash } = require("node:crypto");
+const canonicalize = require("canonicalize");
 
 const {
   buildFinancialSnapshot,
@@ -298,7 +299,11 @@ function renderFinancialReport(snapshot, locale = "ja") {
 }
 
 function snapshotHash(snapshot) {
-  return createHash("sha256").update(JSON.stringify(snapshot), "utf8").digest("hex");
+  const canonical = canonicalize(snapshot);
+  if (typeof canonical !== "string") {
+    throw new Error("financial report snapshot is not canonicalizable JSON");
+  }
+  return createHash("sha256").update(canonical, "utf8").digest("hex");
 }
 
 async function runFinancialReport(request = {}, deps = {}) {
