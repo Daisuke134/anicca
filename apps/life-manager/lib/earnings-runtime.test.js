@@ -156,12 +156,14 @@ test("the monthly runtime preserves a measured six-decimal pUSD balance", async 
     year: 2026, month: 7, timezone: "Asia/Tokyo", walletAddress: WALLET,
     readBalanceAtomic: async () => "4422182",
     balanceDecimals: 6,
+    explorerBaseUrl: "polygonscan.com",
   }, { ...SUPA, fetchImpl });
 
   assert.equal(report.summary.balance_minor, null);
   assert.equal(report.summary.balance_atomic, "4422182");
   assert.equal(report.summary.balance_decimals, 6);
   assert.match(report.text, /・私の残高: \$4\.422182/);
+  assert.match(report.text, /polygonscan\.com\/address\/0x477E…62ad/);
 });
 
 test("the monthly runtime refuses ambiguous balance readers", async () => {

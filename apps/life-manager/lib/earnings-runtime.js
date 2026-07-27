@@ -89,7 +89,7 @@ async function generateMonthlyReport(request, opts = {}) {
   const {
     year, month, timezone, walletAddress,
     readBalanceMinor, readBalanceAtomic, balanceDecimals,
-    cause, plan, currency, locale,
+    cause, plan, currency, locale, explorerBaseUrl,
   } = request || {};
   const hasMinorReader = readBalanceMinor != null;
   const hasAtomicReader = readBalanceAtomic != null;
@@ -108,7 +108,7 @@ async function generateMonthlyReport(request, opts = {}) {
     ? { balanceMinor: measuredBalance }
     : { balanceAtomic: measuredBalance, balanceDecimals };
   const summary = rollUpMonth(rows, {
-    year, month, timezone, walletAddress, currency, ...balanceOptions,
+    year, month, timezone, walletAddress, currency, explorerBaseUrl, ...balanceOptions,
   });
   return { summary, text: formatMonthlyReport(summary, { cause, plan, locale }) };
 }
