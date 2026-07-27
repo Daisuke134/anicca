@@ -57,3 +57,11 @@ test("the funding address found on 2026-07-12 can never be counted as revenue", 
     "0xf70da978… is funding routed through us (EOA holding >$3.1M), not a micro-payment buyer",
   );
 });
+
+test("the Railway seller wallet is colony-owned and can never be an external payer", () => {
+  const ours = addressesIn(SRC, "SELF_WALLETS");
+  assert.ok(
+    ours.has("0x6592eb8ef820abc092e8c3474fb2042dffccedc7"),
+    "the Railway seller and user payout destination is colony-controlled",
+  );
+});

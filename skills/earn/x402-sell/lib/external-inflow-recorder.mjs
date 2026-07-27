@@ -122,7 +122,7 @@ export async function collectVerifiedExternalInflows({
 }
 
 function normalizeSaleCandidate(row, allowedPayToSet) {
-  const source = ['x402-image', 'the402', 'clawmerchants'].includes(row?.source) ? row.source : null;
+  const source = ['x402-image', 'x402-railway', 'the402', 'clawmerchants'].includes(row?.source) ? row.source : null;
   const sourceSaleId = typeof row?.source_sale_id === 'string'
     && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,191}$/.test(row.source_sale_id)
     ? row.source_sale_id

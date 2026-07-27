@@ -15,6 +15,7 @@ export const SELF_WALLETS = [
   "0x904b50d2e214da947d83d6a2d32c4e3ffc17eb74", // claude-p
   "0x3eccad24794ca298d25378e9902a251322ea8749", // franklin1 (per-instance EVM)
   "0xe7747fd899d8987821bb4cb3d6adf22565f87ce9", // franklin2 (per-instance EVM)
+  "0x6592eb8ef820abc092e8c3474fb2042dffccedc7", // Railway x402 seller / user payout destination
   // Funding routed THROUGH us, never earned. Traced 2026-07-12 (record-earn.mjs:40-49): source of
   // both the two largest "earn" rows ever recorded ($22.97 tx 0x3b3eeee6…, $7.98 tx 0x41ead2f3…)
   // and franklin1's $6.4778 — a plain EOA (no contract code) holding >$3.1M USDC on Base, far too
