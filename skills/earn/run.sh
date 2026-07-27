@@ -291,8 +291,8 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
   # (serve-franklin1-boot.sh=8414, serve-franklin2-boot.sh=8413, serve-claude-p-boot.sh=8412).
   # X402_PORT always wins when the caller sets it explicitly.
   case "${ANICCA_HOME:-}" in
-    *".blockrun") X402_INSTANCE="franklin1"; X402_DEFAULT_PORT=8414 ;;
     *".franklin2-home"*) X402_INSTANCE="franklin2"; X402_DEFAULT_PORT=8413 ;;
+    *".blockrun") X402_INSTANCE="franklin1"; X402_DEFAULT_PORT=8414 ;;
     *".anicca-founder") X402_INSTANCE="claude-p"; X402_DEFAULT_PORT=8412 ;;
     # :8403 is held by the OLD spec-09 echo endpoint (ai.anicca.x402-endpoint launchd); unresolved
     # instances fall back to 8404 (system bug found 2026-06-22).
@@ -329,12 +329,13 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
     # The seller must OUTLIVE this wake: a plain `nohup ... &` child dies with the wake's process
     # group (run-skill.mjs execFile kills the group on timeout/next-wake), which is why sellers
     # never persisted (observed live 2026-07-14: booted during the wake, DOWN minutes later).
-    X402_PLIST="$HOME/Library/LaunchAgents/ai.anicca.x402-$X402_INSTANCE.plist"
-    if [ -n "$X402_INSTANCE" ] && [ -f "$X402_PLIST" ]; then
-      # A hand-made per-instance KeepAlive job already owns this port — kickstart IT rather than
-      # spawning a second, competing seller (the exact port-fight this rule exists to prevent).
-      echo "[earn] x402 port $XPORT down — kickstarting existing job ai.anicca.x402-$X402_INSTANCE"
-      launchctl kickstart -k "gui/$(id -u)/ai.anicca.x402-$X402_INSTANCE" 2>/dev/null || true
+    X402_LABEL="ai.anicca.x402-$X402_INSTANCE"
+    if [ -n "$X402_INSTANCE" ] \
+      && launchctl print "gui/$(id -u)/$X402_LABEL" >/dev/null 2>&1; then
+      # launchd's per-user namespace is the authority. Agent instances may override HOME, so a
+      # plist path under $HOME cannot prove that the host-level supervisor is absent.
+      echo "[earn] x402 port $XPORT down — kickstarting existing job $X402_LABEL"
+      launchctl kickstart -k "gui/$(id -u)/$X402_LABEL" 2>/dev/null || true
       sleep 3
     elif command -v launchctl >/dev/null 2>&1; then
       # No hand-made job for this instance/port yet: register a loop-owned launchd KeepAlive
