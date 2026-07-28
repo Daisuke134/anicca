@@ -22,5 +22,17 @@
       "https://github.com/moshcoder/moshcode/pull/61"
     ],
     "description": "Portable skillName fallback test fix"
+  },
+  {
+    "application_id": "7e636f57-4d5a-4f54-b6d2-31ba1a86c5bd",
+    "gig_id": "1eea7af1-3089-443c-9975-74212c53683f",
+    "amount_usd": 0.25,
+    "payment_currency": "sol",
+    "merchant_wallet_address": "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+    "category": "marketing",
+    "proof_urls": [
+      "https://pairux.com/@moshcoding"
+    ],
+    "description": "Subscribed to the requested PairUX channel"
   }
 ]
