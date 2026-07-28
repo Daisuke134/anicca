@@ -27,6 +27,26 @@ function pageUrl(page) {
   return String(page.url || "");
 }
 
+function replaceIdentity(value, agentEmail) {
+  const text = String(value || "");
+  if (!agentEmail) return text;
+  return text.split(agentEmail).join("the agent-owned email");
+}
+
+function publicPageUrl(page, agentEmail) {
+  const raw = replaceIdentity(pageUrl(page), agentEmail);
+  try {
+    const parsed = new URL(raw);
+    parsed.username = "";
+    parsed.password = "";
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+}
+
 function privateSession(session) {
   if (!session || !session.id || !PRIVATE_CDP.test(String(session.websocketUrl || ""))) {
     throw new Error("Stagehand requires a Railway-private Steel CDP session");
@@ -41,6 +61,7 @@ function makeStagehandSteelDriver(options = {}) {
   }
   const Stagehand = options.Stagehand || require("@browserbasehq/stagehand").Stagehand;
   const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
+  const agentEmail = String(options.agentEmail || process.env.LM_AGENT_BROWSER_EMAIL || "").trim();
   if (!apiKey) throw new Error("Stagehand Gemini API key unavailable");
   const sessions = new Map();
 
@@ -82,6 +103,9 @@ function makeStagehandSteelDriver(options = {}) {
         "Do not spend money, accept paid terms, perform KYC, bypass a login/challenge/CAPTCHA/2FA,",
         "or invent any personal value. Stop honestly if any of those are required.",
         "After the action, remain on the provider page that displays its result.",
+        agentEmail
+          ? `When the goal refers to the agent-owned email, use this exact runtime-only address: ${agentEmail}`
+          : "If the goal requires an email address, stop because no agent-owned address is available.",
       ].join("\n");
       let executionStarted = false;
       try {
@@ -95,13 +119,13 @@ function makeStagehandSteelDriver(options = {}) {
           "From the current provider page and the just-completed browsing path, identify the selected site, explain why it matched the delegated goal, and summarize the single action attempted.",
           selectionSchema,
         );
-        const selectedUrl = pageUrl(page);
+        const selectedUrl = publicPageUrl(page, agentEmail);
         const parsed = new URL(selectedUrl);
         return {
           selectedUrl,
           selectedOrigin: parsed.origin,
-          selectionReason: String(selection.selectionReason || "").slice(0, 500),
-          action: String(selection.actionSummary || "").slice(0, 500),
+          selectionReason: replaceIdentity(selection.selectionReason, agentEmail).slice(0, 500),
+          action: replaceIdentity(selection.actionSummary, agentEmail).slice(0, 500),
           sideEffectStarted: true,
         };
       } catch (error) {
@@ -119,8 +143,8 @@ function makeStagehandSteelDriver(options = {}) {
         "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
         receiptSchema,
       );
-      const status = String(extracted.status || "unknown").slice(0, 100);
-      const providerText = String(extracted.providerText || "").slice(0, 500);
+      const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
+      const providerText = replaceIdentity(extracted.providerText, agentEmail).slice(0, 500);
       const negated = /\b(?:failed|error|pending|verify|check email|not confirmed)\b|失敗|未完了|確認してください/i.test(
         `${status} ${providerText}`,
       );
@@ -128,7 +152,7 @@ function makeStagehandSteelDriver(options = {}) {
         confirmed: extracted.confirmed === true && !negated && providerText.length > 0,
         status,
         confirmationId: extracted.confirmationId ? String(extracted.confirmationId).slice(0, 200) : null,
-        currentUrl: pageUrl(open.page),
+        currentUrl: publicPageUrl(open.page, agentEmail),
       };
     },
 

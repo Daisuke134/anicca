@@ -62,6 +62,22 @@ test("no queued job constructs no browser and causes no side effect", async () =
   assert.deepEqual(result, { status: "idle" });
 });
 
+test("the worker injects agent-owned identity only when constructing the browser driver", async () => {
+  let driverOptions;
+  const deps = successfulDeps({
+    driver: undefined,
+    agentEmail: "browser-owner@example.test",
+    makeDriver(options) {
+      driverOptions = options;
+      return successfulDeps().driver;
+    },
+  });
+  const result = await runNextBrowserJob(deps);
+  assert.equal(result.status, "completed");
+  assert.equal(driverOptions.agentEmail, "browser-owner@example.test");
+  assert.doesNotMatch(JSON.stringify(result), /browser-owner@example\.test/i);
+});
+
 test("the loop has an overlap guard so a slow browser job cannot be claimed twice", async () => {
   let claims = 0;
   let resolveClaim;
