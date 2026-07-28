@@ -15,6 +15,7 @@ the same trick as Playwright's storageState ("reuse this state and start already
     python3 cdp_context_lease.py list
 """
 import asyncio
+import fcntl
 import json
 import os
 import sys
@@ -46,6 +47,11 @@ def _leases_path():
     return os.path.expanduser(
         os.environ.get("CLOAK_CONTEXT_LEASES_FILE", "~/.cloak/vault/leases.json")
     )
+
+
+def _operation_lock_path(target_id):
+    leases_dir = os.path.dirname(_leases_path())
+    return os.path.join(leases_dir, "operations", f"{target_id}.lock")
 
 
 def _page_ws(target_id):
@@ -135,11 +141,24 @@ def release(task):
     held = leases.pop(task, None)
     if not held:
         return {"ok": True, "note": f"{task} held no context"}
-    try:
-        asyncio.run(_calls([("Target.disposeBrowserContext", {"browserContextId": held["context_id"]})]))
-    except Exception as e:
-        _save(leases)
-        return {"ok": False, "reason": f"dispose failed: {e}", "released_from_ledger": task}
+    lock_path = _operation_lock_path(held["target_id"])
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    with open(lock_path, "a+", encoding="utf-8") as operation_lock:
+        fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
+        try:
+            asyncio.run(_calls([(
+                "Target.disposeBrowserContext",
+                {"browserContextId": held["context_id"]},
+            )]))
+        except Exception as e:
+            _save(leases)
+            return {
+                "ok": False,
+                "reason": f"dispose failed: {e}",
+                "released_from_ledger": task,
+            }
+        finally:
+            fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
     _save(leases)
     return {"ok": True, "released": task, "context_id": held["context_id"]}
 
