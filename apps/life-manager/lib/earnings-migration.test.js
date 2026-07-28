@@ -18,6 +18,10 @@ const ATOMIC_SQL = fs.readFileSync(
   path.join(__dirname, "../migrations/2026-07-28-lm-agent-earnings-atomic.sql"),
   "utf8",
 );
+const SOLANA_SQL = fs.readFileSync(
+  path.join(__dirname, "../migrations/2026-07-28-lm-agent-earnings-solana.sql"),
+  "utf8",
+);
 
 test("the table is created additively and never replaces anything", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_agent_earnings/i);
@@ -67,4 +71,15 @@ test("the additive precision migration stores exactly one exact amount represent
   assert.match(ATOMIC_SQL, /amount_minor IS NOT NULL AND amount_atomic IS NULL/i);
   assert.match(ATOMIC_SQL, /amount_minor IS NULL AND amount_atomic IS NOT NULL/i);
   assert.doesNotMatch(ATOMIC_SQL, /\b(UPDATE|DELETE FROM|DROP TABLE)\b/i);
+});
+
+test("the additive chain migration accepts EVM and Solana proofs without changing rows", () => {
+  assert.match(SOLANA_SQL, /DROP CONSTRAINT IF EXISTS lm_agent_earnings_wallet_address_check/i);
+  assert.match(SOLANA_SQL, /wallet_address ~ '\^0x\[0-9a-fA-F\]\{40\}\$'/i);
+  assert.match(SOLANA_SQL, /wallet_address ~ '\^\[1-9A-HJ-NP-Za-km-z\]\{32,44\}\$'/i);
+  assert.match(SOLANA_SQL, /tx_hash ~ '\^0x\[0-9a-fA-F\]\{64\}\$'/i);
+  assert.match(SOLANA_SQL, /tx_hash ~ '\^\[1-9A-HJ-NP-Za-km-z\]\{87,88\}\$'/i);
+  assert.match(SOLANA_SQL, /VALIDATE CONSTRAINT lm_agent_earnings_wallet_address_check/i);
+  assert.match(SOLANA_SQL, /VALIDATE CONSTRAINT lm_agent_earnings_tx_hash_check/i);
+  assert.doesNotMatch(SOLANA_SQL, /\b(UPDATE|DELETE FROM|DROP TABLE)\b/i);
 });

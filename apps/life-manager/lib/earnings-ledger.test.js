@@ -26,6 +26,8 @@ const {
 // The live agent wallet (FIN-a). Checksummed exactly as the chain knows it.
 const WALLET = "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
 const OTHER_WALLET = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf";
+const SOLANA_WALLET = "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf";
+const SOLANA_SIGNATURE = "4".repeat(88);
 
 function income(overrides = {}) {
   return {
@@ -140,6 +142,21 @@ test("a transaction hash, when present, has to look like one", () => {
   assert.throws(() => appendEarning([], income({ tx_hash: "0x123" })), /tx_hash/i);
   const ok = appendEarning([], income({ tx_hash: `0x${"a".repeat(64)}` }));
   assert.equal(ok[0].tx_hash, `0x${"a".repeat(64)}`);
+});
+
+test("a finalized Solana payout can be stored without weakening EVM validation", () => {
+  const row = normaliseEntry(income({
+    wallet_address: SOLANA_WALLET,
+    tx_hash: SOLANA_SIGNATURE,
+  }));
+
+  assert.equal(row.wallet_address, SOLANA_WALLET);
+  assert.equal(row.tx_hash, SOLANA_SIGNATURE);
+  assert.throws(() => normaliseEntry(income({ wallet_address: "0OIl-not-base58" })), /address/i);
+  assert.throws(() => normaliseEntry(income({
+    wallet_address: SOLANA_WALLET,
+    tx_hash: "O".repeat(88),
+  })), /tx_hash/i);
 });
 
 test("on-chain atomic units convert exactly or not at all — never rounded toward a nicer number", () => {
