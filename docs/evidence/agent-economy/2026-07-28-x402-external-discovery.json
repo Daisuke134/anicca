@@ -1,0 +1,33 @@
+{
+  "recorded_at": "2026-07-28T04:46:00Z",
+  "gate": "13c-SELL / 13c-WORK",
+  "origin": "https://x402-agents-production.up.railway.app",
+  "product_evidence": "anicca-products/docs/superpowers/evidence/2026-07-28-x402-external-discovery.json",
+  "product_prs": [
+    "https://github.com/Daisuke134/anicca-products/pull/376",
+    "https://github.com/Daisuke134/anicca-products/pull/377",
+    "https://github.com/Daisuke134/anicca-products/pull/378"
+  ],
+  "railway": {
+    "deployment_id": "c4126494-59d3-4853-8ec8-80a288132038",
+    "status": "SUCCESS",
+    "image_digest": "sha256:36cc39fa69a284687b39778c22c340eec8fe8820cc141ba4daf0a8a4608317c4"
+  },
+  "discovery": {
+    "openapi_paid_operations": 9,
+    "official_agentcash_resources": 9,
+    "official_agentcash_warnings": 0,
+    "x402scan_registered": 9,
+    "x402scan_failed": 0,
+    "x402scan_skipped": 0,
+    "x402scan_paid_search_transaction": "0x70e9284114f93c1d5976d29754821b7e5191894f07ced0908cf25ac2186bbe84",
+    "coinbase_bazaar_matching_resources": 2,
+    "payapi_market": "free listing submitted; marketplace review pending"
+  },
+  "revenue": {
+    "verified_external_usd": "0.00",
+    "gate_status": "OPEN",
+    "reason": "Catalog registration, self-seeding, and paid search verification are colony-funded acquisition activity, not colony-external revenue."
+  },
+  "next_machine_condition": "A colony-external finalized SELL or WORK receipt reaches the existing verifier and ledger exactly once; cumulative verified external receipts reach at least 1.00 USD."
+}
