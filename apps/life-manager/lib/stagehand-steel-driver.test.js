@@ -204,7 +204,7 @@ test("a listing/search page is never accepted as the selected provider action pa
   assert.match(calls[1], /open one specific candidate/i);
 });
 
-test("a runtime-supplied public HTTPS detail URL skips search and goes straight to CUA action", async () => {
+test("a runtime-supplied public HTTPS detail URL skips search and uses the general CUA action", async () => {
   const { driver, calls } = fixture();
   const session = await driver.openSession();
   await driver.discoverAndAct(session, {
@@ -216,16 +216,31 @@ test("a runtime-supplied public HTTPS detail URL skips search and goes straight 
     "https://www.google.com/",
     "https://fresh-events.example/ai/confirmed",
   ]);
+  const agents = calls.filter(([name]) => name === "agent");
+  assert.equal(agents.length, 1);
+  assert.equal(agents[0][1].mode, "cua");
+  const tasks = calls.filter(([name]) => name === "execute").map(([, task]) => task);
+  assert.equal(tasks.length, 1);
+  assert.match(tasks[0], /browser-owner@example\.test/i);
+  assert.match(tasks[0], /Browser Owner/i);
+  assert.match(tasks[0], /exactly one/i);
+  assert.equal(calls.filter(([name]) => name === "act").length, 0);
+});
+
+test("an explicit auth continuity readback navigates and reads without starting a provider action", async () => {
+  const { driver, calls } = fixture();
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/ai/confirmed with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  assert.equal(action.selectedUrl, "https://fresh-events.example/ai/confirmed");
+  assert.equal(action.sideEffectStarted, false);
+  assert.match(action.action, /authenticated provider page/i);
   assert.equal(calls.filter(([name]) => name === "agent").length, 0);
-  const acts = calls.filter(([name]) => name === "act");
-  assert.equal(acts.length, 8);
-  assert.match(acts[0][1], /open.*registration form/i);
-  assert.deepEqual(acts[1][2].variables, { agentName: "Browser Owner" });
-  assert.deepEqual(acts[2][2].variables, { agentEmail: "browser-owner@example.test" });
-  assert.match(acts[5][1], /Which best describes you.*AI Researcher/i);
-  assert.match(acts[6][1], /consent dropdown.*Register.*No.*do not consent/i);
-  assert.match(acts[7][1], /submit.*registration/i);
-  assert.deepEqual(calls.find(([name]) => name === "waitForTimeout"), ["waitForTimeout", 15_000]);
+  assert.equal(calls.filter(([name]) => name === "execute").length, 0);
+  assert.equal(calls.filter(([name]) => name === "act").length, 0);
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {

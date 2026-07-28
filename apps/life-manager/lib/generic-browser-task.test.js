@@ -15,6 +15,7 @@ const JOB = Object.freeze({
 const AUTH_JOB = Object.freeze({
   ...JOB,
   goal: "Open https://auth.example/account",
+  action_kind: "browser_auth_continuity_readback",
   requires_login: true,
   principal_kind: "user_provided",
 });
@@ -115,6 +116,25 @@ test("discovers an unregistered site, acts once, independently reads back, repor
       "finish",
     ],
   );
+});
+
+test("the durable action kind reaches the cloud driver without entering a trace or receipt", async () => {
+  let observed;
+  const { deps } = fixture({
+    discoverAndAct: async (_session, context) => {
+      observed = context.actionKind;
+      return {
+        selectedUrl: "https://auth.example/account",
+        selectedOrigin: "https://auth.example",
+        selectionReason: "explicit provider account page",
+        action: "read current authenticated provider page",
+        sideEffectStarted: false,
+      };
+    },
+  });
+  const result = await runGenericBrowserTask(AUTH_JOB, deps);
+  assert.equal(observed, "browser_auth_continuity_readback");
+  assert.doesNotMatch(JSON.stringify(result), /action_kind|actionKind/);
 });
 
 test("a login or challenge page becomes handoff_required, never completed", async () => {
