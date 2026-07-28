@@ -251,7 +251,7 @@
       "lease": null,
       "finalizer": {
         "kind": "verified_regenerable_remove",
-        "proof_path": "$HOME/.local/bin/camoufox"
+        "proof_path": "$HOME/.local/pipx/venvs/camoufox/bin/camoufox"
       }
     },
     {

@@ -68,6 +68,9 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
     assert by_id["camoufox-browser-cache"]["class"] == "regenerable_output"
     assert by_id["camoufox-browser-cache"]["finalizer"] == {
         "kind": "verified_regenerable_remove",
-        "proof_path": str(Path.home() / ".local/bin/camoufox"),
+        "proof_path": str(Path.home() / ".local/pipx/venvs/camoufox/bin/camoufox"),
     }
+    camoufox_proof = Path(by_id["camoufox-browser-cache"]["finalizer"]["proof_path"])
+    assert camoufox_proof.is_file()
+    assert not camoufox_proof.is_symlink()
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)
