@@ -131,6 +131,15 @@ restores the same provider state.
 | Steel release fails | Existing release-by-id then single-slot release-all fallback remains |
 | CAPTCHA/2FA/KYC/payment | No bypass and no completion claim |
 
+## Deferred minor / final review
+
+- Filter cookies whose finite `expires` timestamp is already in the past before
+  sealing or comparing an exported context. Chromium already discards those
+  cookies on import; filtering them earlier removes a harmless context-count
+  mismatch. This does not block auth continuity because provider authentication
+  is verified independently and the observed dropped item is not the
+  HttpOnly session cookie.
+
 ## Verification contract
 
 BROWSER-AUTH-1 is done only when all of the following are fresh evidence:
@@ -156,4 +165,3 @@ BROWSER-AUTH-1 is done only when all of the following are fresh evidence:
 | Steel `sessions.schema.ts` | https://github.com/steel-dev/steel-browser/blob/main/api/src/modules/sessions/sessions.schema.ts | `CreateSession` accepts `sessionContext`, `persist`, and `userDataDir` |
 | Steel `session.service.ts` | https://github.com/steel-dev/steel-browser/blob/main/api/src/services/session.service.ts | `persist === true` resolves to the service's fixed `user-data-dir` |
 | Steel context types | https://github.com/steel-dev/steel-browser/blob/main/api/src/services/context/types.ts | `SessionContextSchema` contains cookies and origin-scoped browser storage |
-

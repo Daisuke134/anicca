@@ -215,9 +215,7 @@ function makeStagehandSteelDriver(options = {}) {
         let selectedUrl;
         if (readOnlyAuth) {
           selectedUrl = publicPageUrl(page, agentEmail);
-          if (!isSpecificActionUrl(selectedUrl)) {
-            throw new Error("browser discovery did not reach a specific action page");
-          }
+          if (!selectedUrl) throw new Error("browser auth readback carried no public page");
           selection = {
             selectionReason: "Explicit authenticated provider readback URL.",
           };
@@ -251,6 +249,7 @@ function makeStagehandSteelDriver(options = {}) {
             ...selected,
             action: "Read current authenticated provider page.",
             sideEffectStarted: false,
+            readOnlyAuth: true,
           };
         }
 
@@ -296,20 +295,29 @@ function makeStagehandSteelDriver(options = {}) {
       }
     },
 
-    async readProviderReceipt(sessionInput) {
+    async readProviderReceipt(sessionInput, action = {}) {
       const session = privateSession(sessionInput);
       const open = sessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
+      const readOnlyAuth = action && action.readOnlyAuth === true;
       const extracted = await open.stagehand.extract(
-        [
-          "Read only the current provider-authored result page.",
-          "Report confirmed=true only when the page explicitly says the requested action succeeded.",
-          "Set activeRegistrationForm=true only when a visible registration form can still be submitted.",
-          "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
-          "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
-          "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
-          "Return its status, confirmation identifier if present, and a short provider status phrase.",
-        ].join(" "),
+        readOnlyAuth
+          ? [
+              "Read only the current authenticated provider continuity page.",
+              "Report confirmed=true only when provider-authored account or protected content is visible and no login, verification-code, OTP, or 2FA form is active.",
+              "Do not require registration, booking, purchase, or other action-success language for this read-only authentication check.",
+              "Set activeAuthenticationForm=true when any login or authentication form is active.",
+              "Return its authentication status and a short provider-authored content marker.",
+            ].join(" ")
+          : [
+              "Read only the current provider-authored result page.",
+              "Report confirmed=true only when the page explicitly says the requested action succeeded.",
+              "Set activeRegistrationForm=true only when a visible registration form can still be submitted.",
+              "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
+              "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
+              "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
+              "Return its status, confirmation identifier if present, and a short provider status phrase.",
+            ].join(" "),
         receiptSchema,
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
