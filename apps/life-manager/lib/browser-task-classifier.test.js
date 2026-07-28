@@ -114,6 +114,11 @@ test("the production classifier asks Gemini for strict JSON without putting its 
   assert.equal(seen[0].init.headers["x-goog-api-key"], "secret-key");
   const body = JSON.parse(seen[0].init.body);
   assert.equal(body.generationConfig.responseMimeType, "application/json");
+  assert.equal(
+    "additionalProperties" in body.generationConfig.responseSchema,
+    false,
+    "Gemini v1beta rejects additionalProperties with HTTP 400",
+  );
   assert.deepEqual(body.generationConfig.responseSchema.required.sort(), [
     "action_kind",
     "browser_required",
