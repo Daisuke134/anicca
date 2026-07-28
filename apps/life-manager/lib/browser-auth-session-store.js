@@ -153,7 +153,9 @@ function optionalTimestamp(value) {
 
 function authRecord(row, identity, context) {
   if (!row || typeof row !== "object" || row.uid !== identity.uid
-    || row.origin !== identity.origin || row.principal_kind !== identity.principalKind) {
+    || row.origin !== identity.origin || row.principal_kind !== identity.principalKind
+    || !/^[a-f0-9]{64}$/.test(String(row.context_sha256 || ""))
+    || row.key_version !== 1) {
     throw new Error("browser auth session row invalid");
   }
   return Object.freeze({
@@ -165,6 +167,8 @@ function authRecord(row, identity, context) {
     last_verified_at: row.last_verified_at || null,
     created_at: row.created_at || null,
     updated_at: row.updated_at || null,
+    context_sha256: row.context_sha256,
+    key_version: row.key_version,
     context,
   });
 }

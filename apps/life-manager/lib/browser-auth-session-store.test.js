@@ -72,6 +72,8 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
     },
   });
   assert.deepEqual(read.context, context);
+  assert.equal(read.context_sha256, sealed.context_sha256);
+  assert.equal(read.key_version, 1);
   assert.match(reads[0].sql, /WHERE uid = \$1 AND origin = \$2 AND principal_kind = \$3/i);
   assert.deepEqual(reads[0].params, ["u-one", "https://auth.example", "user_provided"]);
 
@@ -86,6 +88,8 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
   });
   assert.equal(saved.state, "active");
   assert.deepEqual(saved.context, context);
+  assert.equal(saved.context_sha256, sealed.context_sha256);
+  assert.equal(saved.key_version, 1);
   assert.match(writes[0].sql, /INSERT INTO public\.lm_browser_auth_sessions/i);
   assert.match(writes[0].sql, /ON CONFLICT \(uid, origin, principal_kind\) DO UPDATE/i);
   assert.doesNotMatch(JSON.stringify(writes[0].params), /tenant-one/);
