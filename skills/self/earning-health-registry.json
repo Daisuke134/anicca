@@ -1,6 +1,6 @@
 {
-  "$schema": "earning-health-registry v1",
-  "description": "Registry consumed by earning-health-allslots.sh (self-heal-allslots spec). One entry PER REQUIRED earn slot -- adding barren-earning detection to a new slot means adding one entry here (+ instrumenting that slot's own run.sh to emit {\"action\":\"skip\",\"reason\":\"...\"} lines on a genuine mechanism rejection), never copy-pasting a new *-healthcheck.sh. instrumented:false entries are DOCUMENTED GAPS (see gapNote) -- the script logs them as NOT-INSTRUMENTED, never fabricates an OK/BARREN verdict for data that does not exist.",
+  "$schema": "earning-health-registry v2",
+  "description": "One registry for required earning slots, their evidence probes, the existing trace-barren self-heal loop, and the four Life Manager portfolio rails. Every slot is instrumented. A healthy zero-demand rail remains operational; frozen and not-live are explicit states rather than instrumentation gaps.",
   "slots": [
     {
       "id": "earn/sol-trade",
@@ -8,7 +8,13 @@
       "traceFile": "sol-trade.trace.jsonl",
       "minRun": 20,
       "selfFixTarget": "sol-trade",
-      "escalateEveryHrs": 24
+      "escalateEveryHrs": 24,
+      "probe": {
+        "kind": "trace",
+        "tracePath": "skills/earn/state/sol-trade.trace.jsonl",
+        "killPath": "skills/earn/sol-trade/KILL",
+        "maxAgeSeconds": 10800
+      }
     },
     {
       "id": "earn/polymarket-trade",
@@ -16,61 +22,129 @@
       "traceFile": "pm-trade.trace.jsonl",
       "minRun": 20,
       "selfFixTarget": "pm-trade",
-      "escalateEveryHrs": 24
+      "escalateEveryHrs": 24,
+      "probe": {
+        "kind": "trace",
+        "tracePath": "skills/earn/state/pm-trade.trace.jsonl",
+        "killPath": "skills/earn/polymarket-trade/KILL",
+        "maxAgeSeconds": 10800
+      }
     },
     {
       "id": "economy/gig",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "gig",
       "escalateEveryHrs": 24,
-      "gapNote": "gig-core already has its own process-alive/heartbeat-STALE check (gig-healthcheck.sh); no per-wake {action,reason} mechanism-skip trace exists yet in gig-cli.sh/applied.jsonl/earnings.jsonl. Needs the STARTUP pass to append a stable skip/reason line on a genuine mechanism rejection (e.g. login/captcha failure) before this check can safely activate."
+      "probe": {
+        "kind": "heartbeat",
+        "heartbeatPath": "gig/.last-pass",
+        "sessionSocket": "/tmp/anicca-gig-tmux.sock",
+        "sessionName": "anicca-gig-core",
+        "launchdLabel": "ai.anicca.hf-gig-core-healthcheck",
+        "maxAgeSeconds": 5400
+      }
     },
     {
       "id": "hl_trade",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "hl-trade",
       "escalateEveryHrs": 24,
-      "gapNote": "hl_trade shares skills/earn/state/earn-ledger.jsonl (source=hl-trade) with every other skills/earn/run.sh strategy; its 'task' field is free text (hl-cooldown/hl-observe/hl-fund-skipped/...), not a stable {action,reason} pair, so is_fresh_but_barren cannot distinguish a genuine sustained WAIT/HOLD from a mechanism failure without per-strategy text-matching (brittle judgment, not deterministic bookkeeping). Needs run.sh's hl branch to tag mechanism-rejection paths with a dedicated action:skip,reason field."
+      "probe": {
+        "kind": "funded-account",
+        "adapter": "hyperliquid"
+      }
     },
     {
       "id": "x402_sell",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "x402-sell",
       "escalateEveryHrs": 24,
-      "gapNote": "x402_sell's run.sh branch only ever writes narrate lines (server-up heartbeat); '0 realized gain in N runs' is its EXPECTED steady state until a buyer appears (no bug to fix), so applying is_fresh_but_barren here without a genuine mechanism-vs-no-demand distinction would misdirect self-fix at a market problem, not a code problem. Needs an explicit mechanism-failure signal (e.g. server down / port bind failure) before wiring."
+      "probe": {
+        "kind": "http",
+        "url": "https://anicca-x402-discovery-production.up.railway.app/health",
+        "timeoutMs": 10000
+      }
     },
     {
       "id": "token_launch",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "token-launch",
       "escalateEveryHrs": 24,
-      "gapNote": "token_launch's run.sh branch only narrates deposit-address/no-launch-decision lines (model-gated, rarely invoked); no per-wake mechanism-rejection signal exists yet to distinguish 'model hasn't decided to launch' (healthy) from a mechanism bug."
+      "probe": {
+        "kind": "explicit",
+        "activationPath": "skills/earn/token-launch/LIVE"
+      }
     },
     {
       "id": "earn/clip",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "clip",
       "escalateEveryHrs": 24,
-      "gapNote": "clip-core already has its own process-alive/heartbeat-STALE check + give-up task_file marker (clip-healthcheck.sh); its outcome ledger (posts/payout-check) is activity-level, not a per-wake decision trace with a stable skip reason."
+      "probe": {
+        "kind": "heartbeat",
+        "heartbeatPath": ".openclaw/state/.clip-core-last-pass",
+        "sessionSocket": "/tmp/anicca-clip-tmux.sock",
+        "sessionName": "anicca-clip-core",
+        "launchdLabel": "ai.anicca.clip-core-healthcheck",
+        "maxAgeSeconds": 5400
+      }
     },
     {
       "id": "earn/video",
-      "instrumented": false,
+      "instrumented": true,
       "traceFile": null,
       "minRun": 20,
       "selfFixTarget": "video",
       "escalateEveryHrs": 24,
-      "gapNote": "video-core already has its own process-alive/heartbeat-STALE check + give-up task_file marker (video-healthcheck.sh); earn-video-ledger.jsonl records realized USDC per post, not a per-wake mechanism-skip trace."
+      "probe": {
+        "kind": "heartbeat",
+        "heartbeatPath": ".openclaw/state/.video-core-last-pass",
+        "sessionSocket": "/tmp/anicca-video-tmux.sock",
+        "sessionName": "anicca-video-core",
+        "launchdLabel": "ai.anicca.video-core-healthcheck",
+        "maxAgeSeconds": 21600
+      }
+    }
+  ],
+  "portfolios": [
+    {
+      "id": "PM",
+      "memberIds": [
+        "earn/polymarket-trade"
+      ]
+    },
+    {
+      "id": "x402",
+      "memberIds": [
+        "x402_sell"
+      ]
+    },
+    {
+      "id": "WORK",
+      "memberIds": [
+        "economy/gig",
+        "earn/clip",
+        "earn/video"
+      ]
+    },
+    {
+      "id": "CAPITAL",
+      "memberIds": [
+        "earn/polymarket-trade",
+        "earn/sol-trade",
+        "hl_trade",
+        "token_launch"
+      ]
     }
   ]
 }
