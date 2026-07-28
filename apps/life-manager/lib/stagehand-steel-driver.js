@@ -11,6 +11,7 @@ const PRIVATE_CDP = /^ws:\/\/steel-browser\.railway\.internal:8080(?:\/|$)/;
 const selectionSchema = z.object({
   selectedSiteName: z.string(),
   selectionReason: z.string(),
+  isSpecificActionPage: z.boolean(),
 });
 
 const actionSchema = z.object({
@@ -50,6 +51,17 @@ function publicPageUrl(page, agentEmail) {
   }
 }
 
+function isSpecificActionUrl(value) {
+  try {
+    const url = new URL(value);
+    if (/^(?:www\.)?(?:google|bing)\./i.test(url.hostname)) return false;
+    if (/^\/(?:d\/|search(?:\/|$)|discover(?:\/|$)|events?\/?$)/i.test(url.pathname)) return false;
+    return url.pathname.split("/").filter(Boolean).length >= 1;
+  } catch {
+    return false;
+  }
+}
+
 function privateSession(session) {
   if (!session || !session.id || !PRIVATE_CDP.test(String(session.websocketUrl || ""))) {
     throw new Error("Stagehand requires a Railway-private Steel CDP session");
@@ -65,6 +77,7 @@ function makeStagehandSteelDriver(options = {}) {
   const Stagehand = options.Stagehand || require("@browserbasehq/stagehand").Stagehand;
   const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
   const agentEmail = String(options.agentEmail || process.env.LM_AGENT_BROWSER_EMAIL || "").trim();
+  const agentName = String(options.agentName || process.env.LM_AGENT_BROWSER_NAME || "").trim();
   if (!apiKey) throw new Error("Stagehand Gemini API key unavailable");
   const sessions = new Map();
 
@@ -111,11 +124,22 @@ function makeStagehandSteelDriver(options = {}) {
           executionModel: MODEL,
         });
         await agent.execute(discoveryTask);
-        const selection = await stagehand.extract(
-          "From the current provider page and the just-completed browsing path, identify the selected site and explain why it matched the delegated goal.",
-          selectionSchema,
-        );
-        const selectedUrl = publicPageUrl(page, agentEmail);
+        let selection;
+        let selectedUrl;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          selection = await stagehand.extract(
+            "From the current page and browsing path, identify the selected site and explain why it matched the delegated goal. Set isSpecificActionPage=true only if this is one specific event/provider detail page where the requested action can be started; search results, directories, category pages, maps, and home pages are false.",
+            selectionSchema,
+          );
+          selectedUrl = publicPageUrl(page, agentEmail);
+          if (selection.isSpecificActionPage === true && isSpecificActionUrl(selectedUrl)) break;
+          if (attempt === 2) throw new Error("browser discovery did not reach a specific action page");
+          await agent.execute([
+            "You are still on a search, directory, category, or listing page.",
+            "Open one specific candidate's provider detail/action page now.",
+            "Do not submit, register, purchase, or perform the requested external action yet.",
+          ].join("\n"));
+        }
         const parsed = new URL(selectedUrl);
         const selected = {
           selectedUrl,
@@ -134,6 +158,9 @@ function makeStagehandSteelDriver(options = {}) {
           agentEmail
             ? `When the goal refers to the agent-owned email, use this exact runtime-only address: ${agentEmail}`
             : "If the goal requires an email address, stop because no agent-owned address is available.",
+          agentName
+            ? `When a name is required for the agent-owned identity, use this exact runtime-only name: ${agentName}`
+            : "If the goal requires a name, stop because no agent-owned name is available.",
         ].join("\n");
         executionStarted = true;
         if (typeof context.onActionStarted === "function") {
