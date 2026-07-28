@@ -81,6 +81,100 @@ test("attaches flattened to the page target and rides the sessionId on every lat
   assert.equal(evaluate.params.returnByValue, true);
 });
 
+test("an explicit provider URL wins over blank, devtools, and other public page targets", async () => {
+  const socket = fakeSocket({
+    ...BASE_HANDLERS,
+    "Target.getTargets": {
+      targetInfos: [
+        { targetId: "BLANK", type: "page", url: "about:blank" },
+        { targetId: "DEVTOOLS", type: "page", url: "devtools://devtools/bundled/inspector.html" },
+        { targetId: "OTHER", type: "page", url: "https://other.example/path" },
+        { targetId: "PROVIDER", type: "page", url: "https://provider.example/action" },
+      ],
+    },
+  });
+  const page = await connectCdp("ws://steel/", {
+    WebSocket: function () { return socket; },
+    targetUrl: "https://provider.example/action",
+  });
+  await page.close();
+
+  const attach = socket.sent.find((frame) => frame.method === "Target.attachToTarget");
+  assert.equal(attach.params.targetId, "PROVIDER");
+});
+
+test("an explicit provider URL rejects ambiguous, missing, and private page targets", async () => {
+  const ambiguous = fakeSocket({
+    ...BASE_HANDLERS,
+    "Target.getTargets": {
+      targetInfos: [
+        { targetId: "P1", type: "page", url: "https://provider.example/action" },
+        { targetId: "P2", type: "page", url: "https://provider.example/action" },
+      ],
+    },
+  });
+  await assert.rejects(
+    () => connectCdp("ws://steel/", {
+      WebSocket: function () { return ambiguous; },
+      targetUrl: "https://provider.example/action",
+    }),
+    /ambiguous/i,
+  );
+
+  const missing = fakeSocket({
+    ...BASE_HANDLERS,
+    "Target.getTargets": {
+      targetInfos: [{ targetId: "OTHER", type: "page", url: "https://other.example/path" }],
+    },
+  });
+  await assert.rejects(
+    () => connectCdp("ws://steel/", {
+      WebSocket: function () { return missing; },
+      targetUrl: "https://provider.example/action",
+    }),
+    /unavailable/i,
+  );
+
+  const privateTarget = fakeSocket(BASE_HANDLERS);
+  assert.throws(
+    () => connectCdp("ws://steel/", {
+      WebSocket: function () { return privateTarget; },
+      targetUrl: "http://steel-browser.railway.internal:8080/",
+    }),
+    /public HTTPS/i,
+  );
+});
+
+test("trusted pointer dispatch uses the exact selected provider target session", async () => {
+  const socket = fakeSocket({
+    ...BASE_HANDLERS,
+    "Target.getTargets": {
+      targetInfos: [
+        { targetId: "OTHER", type: "page", url: "https://other.example/path" },
+        { targetId: "PROVIDER", type: "page", url: "https://provider.example/action" },
+      ],
+    },
+    "Input.dispatchMouseEvent": {},
+  });
+  const page = await connectCdp("ws://steel/", {
+    WebSocket: function () { return socket; },
+    targetUrl: "https://provider.example/action",
+  });
+  await page.clickAt({ x: 321.5, y: 654.25 });
+
+  const pointer = socket.sent.filter((frame) => frame.method === "Input.dispatchMouseEvent");
+  assert.deepEqual(pointer.map((frame) => frame.params.type), [
+    "mouseMoved",
+    "mousePressed",
+    "mouseReleased",
+  ]);
+  assert.equal(pointer.every((frame) => frame.sessionId === "S1"), true);
+  assert.equal(pointer.every((frame) =>
+    frame.params.x === 321.5 && frame.params.y === 654.25), true);
+  assert.equal(pointer[1].params.button, "left");
+  assert.equal(pointer[2].params.button, "left");
+});
+
 test("a page-side exception throws instead of looking like undefined", async () => {
   const socket = fakeSocket({
     ...BASE_HANDLERS,
