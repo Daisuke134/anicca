@@ -491,8 +491,8 @@ event/時間依存gateが実測条件を満たした時だけ進め、収益・a
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **done** — 同一originの2 tenantを別context hash・seed/restore Steel sessionへ隔離し、wrong tenant/origin/principalはnone、全session release、synthetic rowはinactive。SauceDemoのprovider-published credentialをruntime-onlyでcloud loginし、fresh Steel restore→same-SHA `life-call` restart→durable `Products` readbackを完走（job=`29ed4b4d-ceae-43d6-a5ef-0c48773d6ee6`、Steel=`552d30ed-1bb0-4624-8cf4-d8a331796df1`、TG text/photo=`398/399`）。exact row expiry後はjob=`23cbf8bf-ed9b-4f9e-a162-eeb643289a00`が`handoff_required/login`、invalidated=true、TG=`400/401`、success claim 0。runtime secret scan 0、fresh post-AgentMail windowのlocal browser use 0。Lumaのemail-gated管理画面はpendingをauthenticatedへ偽装しない。expired non-auth analytics cookieのpre-filterだけdeferred minor。evidence=`docs/evidence/browser/2026-07-28-browser-auth-1.md` |
-| 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | **current Life Manager cursor** |
+| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **current Life Manager cursor — mandatory review fix round 1/5**。旧SauceDemo fixtureはagent-owned account実証として不採用。完全に新しいcloud-only evidence windowでproduction schema/key、2 tenant、`LM_AGENT_BROWSER_EMAIL`を使う実provider authenticated readback、same-SHA restart、expired handoff、Telegram、secret scan、Steel release、Mac loop不変を再実測する。finite expired cookieの保存前除外と`telegram_result_message_id` readbackもRED→GREENで修正する。完了まではdoneとしない。evidence=`docs/evidence/browser/2026-07-28-browser-auth-1.md` |
+| 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending — BROWSER-AUTH-1完了後 |
 | 4 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
 | 6 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
@@ -948,7 +948,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
     SHELTER-REPLACE-1とTASKMARKET-READBACK-1は実launchd検証まで完了する。現在のAgent Economy build cursorは
     **none**。AE-SLIDES-JP-1、AE-ARTICLE-JP-1、AE-PUBLICATION-AUDIT-1もdone。
-    Life Manager browser trackは別ownerの並走順として分離し、現在cursorは **BROWSER-MATRIX-1**。
+    Life Manager browser trackは別ownerの並走順として分離し、現在cursorは **BROWSER-AUTH-1**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -969,16 +969,16 @@ old running→new running + 3 routes/heartbeat検証→old state 2をmainnetで�
 TASKMARKET-READBACK-1も公式submit txを追加cost 0のappend-only訂正行へ結び、実launchd wake exit 0で完了した。
 21600秒の自然trigger、外部award、外部収益だけを自動成果gateとして観測する。
 
-**Current Life Manager browser cursor**: **BROWSER-MATRIX-1**。BROWSER-GEN-1は実Luma登録とprovider
-`You’re In`、TG evidence、Steel releaseまで完了し、BROWSER-AUTH-1も2 tenant隔離、same-SHA restart後の
-authenticated readback、expired handoff、全Steel release、runtime secret 0まで完了した。
+**Current Life Manager browser cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
+`You’re In`、TG evidence、Steel releaseまで完了した。BROWSER-AUTH-1はmandatory review fix round 1/5で、
+fixture代替を使わないagent-owned実providerのcloud-only証拠windowを再実行中である。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。
 そのceiling後の欠落はSHELTER-REPLACE-1で修復し、job `72zCpJEZ…U2YKN`がlive、3 routes HTTP 200、独立heartbeat verifier 3/3 PASSである。
 Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
 Agent Economyの今すぐ実装できる手動atomicは全件done。自動成果gateだけを継続監視する。
-Life Manager browser実装はBROWSER-MATRIX-1へ進む。
+Life Manager browser実装はBROWSER-AUTH-1を完了させてからBROWSER-MATRIX-1へ進む。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -1075,7 +1075,7 @@ fresh shelter balance 0.670368 NOS / 0.013662961 SOL。21600秒の自然trigger�
 SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk deckとarticleはpost-S22 live level 3へ更新し、
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager browser trackはBROWSER-GEN-1とBROWSER-AUTH-1がdone、BROWSER-MATRIX-1がcurrent。
+Life Manager browser trackはBROWSER-GEN-1がdone、BROWSER-AUTH-1がcurrent、BROWSER-MATRIX-1はpending。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -1095,7 +1095,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy build cursor**は
-`none`。**Life Manager browser cursor**は`BROWSER-MATRIX-1`。
+`none`。**Life Manager browser cursor**は`BROWSER-AUTH-1`。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1177,7 +1177,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager browser trackは同節の別表で`BROWSER-MATRIX-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager browser trackは同節の別表で`BROWSER-AUTH-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1272,7 +1272,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 2. `AE-PUBLICATION-AUDIT-1`はdone。監査時のlive level 2はSHELTER-REPLACE-1で更新されたため、publish bundleはlive level 3 / external revenue `$0.00`へ再生成・visual QA済み。
 3. `SHELTER-REPLACE-1`はmainnet handoverとanicha PR #7までdone。`TASKMARKET-READBACK-1`もPR #1246と実launchd wake exit 0でdone。既存task `0x7c3a…cbe8`は再購入・再提出せず、公式submit txをzero-cost append-only訂正行へexactly-once reconcileした。Agent Economy build cursorはnone。
 4. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
-5. Life Manager browser trackはBROWSER-GEN-1→BROWSER-AUTH-1までdone。残りはBROWSER-MATRIX-1（current）→BROWSER-RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1の順に実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
+5. Life Manager browser trackはBROWSER-GEN-1までdone。残りはBROWSER-AUTH-1（current）→BROWSER-MATRIX-1→BROWSER-RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1の順に実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
 6. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、各実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
 7. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
 8. Mac Franklin1 main loopはunloadedのまま。live Nosana job `72zCpJEZ…U2YKN`がfinal replacement codeで稼働する。21600秒の自然triggerはW5でreadbackし、Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。

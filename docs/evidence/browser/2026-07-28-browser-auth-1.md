@@ -2,13 +2,39 @@
 
 ## Verdict
 
-BROWSER-AUTH-1 is complete. Life Manager keeps browser authentication in an
-encrypted PostgreSQL row bound to one `uid + origin + principal_kind`, restores
-it only into a fresh Railway-private Steel session, survives a same-SHA
-`life-call` restart, and returns an honest login handoff after expiration.
+**Incomplete — mandatory review fix round 1/5 is current.** The prior
+SauceDemo fixture does not satisfy the agent-owned-account requirement, and the
+earlier evidence window included a local-browser preflight. None of the
+historical results below closes BROWSER-AUTH-1.
+
+Completion now requires one entirely new cloud-only evidence window that
+re-runs production schema/key readback, two-tenant isolation, an actual
+provider login using runtime-only `LM_AGENT_BROWSER_EMAIL`, authenticated
+provider readback before and after a same-SHA `life-call` restart, expiration
+handoff, Telegram delivery, secret scans, Steel live-session count zero, and
+unchanged Mac loops. Finite expired cookies must also be removed before
+seal/compare, and `readBrowserJob` must expose
+`telegram_result_message_id`.
 
 This evidence does not claim that one cookie works on every provider or that
 Life Manager bypasses CAPTCHA, OTP, KYC, payment, or provider risk controls.
+
+## Mandatory review fix round 1/5
+
+| Check | Fresh result |
+|---|---|
+| RED | `54` focused tests: `3` expected failures (finite expired cookie in scoped/store handoff; missing Telegram result projection) |
+| GREEN | same focused command: `54/54 PASS` |
+| Full Life Manager suite | `1572/1572 PASS` |
+| Deterministic eval | calendar=`21/21`, late=`12/12`, context=`12/12`, score=`27/27`, intent=`18/18`, mental=`15/15`, physical=`19/19`, relations=`10/10` |
+| Panel privacy eval | api=`177`, browser=`63`, recipes=`19`, channels=`9` |
+| SSOT | BROWSER-AUTH-1=`current/incomplete`; BROWSER-MATRIX-1=`pending` |
+
+The production change removes only cookies with a finite positive expiration
+at or before the current time. Future and session cookies remain. The filter is
+applied before exported context reaches durable storage; the store also applies
+it before sealing and on defensive open. `readBrowserJob` now projects the
+durable `telegram_result_message_id`.
 
 ## Production release and schema
 
@@ -70,7 +96,7 @@ released Steel sessions `67cc5c22-0cf9-4d2a-813f-13cb4bbf4f32` and
 was email-gated. Life Manager did not relabel that as authenticated success.
 This is a provider-policy limitation, not a transport/session-store failure.
 
-## Stable authenticated fixture: SauceDemo
+## Historical fixture (not completion evidence): SauceDemo
 
 SauceDemo is a public client-side authentication fixture whose credentials are
 published by the provider page. They were parsed at runtime and were never

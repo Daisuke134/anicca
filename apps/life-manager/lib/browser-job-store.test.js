@@ -6,6 +6,7 @@ const {
   buildBrowserJob,
   enqueueBrowserJob,
   claimBrowserJob,
+  readBrowserJob,
   appendBrowserTrace,
   finishBrowserJob,
 } = require("./browser-job-store.js");
@@ -91,6 +92,28 @@ test("claim uses the concurrency-safe RPC with a lease long enough for cloud dis
   assert.deepEqual(await claimBrowserJob({ query }), row);
   assert.match(seen[0].sql, /claim_lm_browser_job\(\$1\)/i);
   assert.deepEqual(seen[0].params, [480]);
+});
+
+test("read projects the durable Telegram result message id", async () => {
+  let sqlSeen = "";
+  const row = {
+    id: "job-1",
+    uid: "u-1",
+    status: "completed",
+    telegram_result_message_id: 77,
+  };
+  const result = await readBrowserJob("job-1", {
+    query: async (sql) => {
+      sqlSeen = sql;
+      if (!/telegram_result_message_id/i.test(sql)) {
+        return { rows: [{ id: row.id, uid: row.uid, status: row.status }] };
+      }
+      return { rows: [row] };
+    },
+  });
+
+  assert.match(sqlSeen, /telegram_result_message_id/i);
+  assert.equal(result.telegram_result_message_id, 77);
 });
 
 test("queue principal kind is a closed enum coupled to login dependence", () => {
