@@ -19,16 +19,19 @@
     "smoke:steel-cloud": "node scripts/steel-cloud-smoke.js"
   },
   "dependencies": {
+    "@browserbasehq/stagehand": "3.7.1",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.2.0",
     "canonicalize": "^1.0.8",
     "inngest": "^4.11.0",
     "pg": "8.22.0",
+    "playwright-core": "1.55.1",
     "stripe": "^22.2.3",
     "viem": "^2.52.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "3.25.76"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   }
 }
