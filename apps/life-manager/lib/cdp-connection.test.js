@@ -175,6 +175,35 @@ test("trusted pointer dispatch uses the exact selected provider target session",
   assert.equal(pointer[2].params.button, "left");
 });
 
+test("trusted text and key dispatch stay on the exact selected provider target session", async () => {
+  const socket = fakeSocket({
+    ...BASE_HANDLERS,
+    "Target.getTargets": {
+      targetInfos: [
+        { targetId: "OTHER", type: "page", url: "https://other.example/path" },
+        { targetId: "PROVIDER", type: "page", url: "https://provider.example/action" },
+      ],
+    },
+    "Input.insertText": {},
+    "Input.dispatchKeyEvent": {},
+  });
+  const page = await connectCdp("ws://steel/", {
+    WebSocket: function () { return socket; },
+    targetUrl: "https://provider.example/action",
+  });
+  await page.insertText("AI Researcher");
+  await page.pressKey({ key: "Enter", code: "Enter" });
+
+  const inserted = socket.sent.find((frame) => frame.method === "Input.insertText");
+  assert.equal(inserted.sessionId, "S1");
+  assert.deepEqual(inserted.params, { text: "AI Researcher" });
+  const keys = socket.sent.filter((frame) => frame.method === "Input.dispatchKeyEvent");
+  assert.deepEqual(keys.map((frame) => frame.params.type), ["keyDown", "keyUp"]);
+  assert.equal(keys.every((frame) => frame.sessionId === "S1"), true);
+  assert.equal(keys.every((frame) =>
+    frame.params.key === "Enter" && frame.params.code === "Enter"), true);
+});
+
 test("a page-side exception throws instead of looking like undefined", async () => {
   const socket = fakeSocket({
     ...BASE_HANDLERS,
