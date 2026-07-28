@@ -59,6 +59,28 @@ Matching Steel-side facts:
 | navigation | page URL became `https://example.com/` |
 | release | `POST /v1/sessions/45f297be-4d1b-4889-9edb-fd138b677009/release` HTTP 200 |
 
+## Post-merge production readback
+
+PR `#1198` merged as `3a8364a561ef773e42a6ca18e844c6b82eafac94`. Railway deployment `e400fa32-fa31-4eae-88fd-570b1e0034d7` reported `SUCCESS` with the exact same `commitHash`.
+
+The smoke command was then run from the newly deployed production image, not from the temporary pre-merge copy:
+
+```json
+{"started_at":"2026-07-28T03:18:34.193Z","target_url":"https://example.com/","steel_base_url":"http://steel-browser.railway.internal:8080","health":true,"session_id":"46f59beb-066b-4bce-9d60-8322959e1cda","websocket_scheme":"ws:","readback":{"final_url":"https://example.com/","marker_present":true},"released":true,"ok":true,"finished_at":"2026-07-28T03:18:36.185Z"}
+```
+
+Verification summary:
+
+| Check | Result |
+|---|---|
+| focused Steel/booking/smoke tests | 99/99 PASS |
+| deterministic evals | 134/134 PASS |
+| full Life Manager suite | 659/660 PASS; sole failure is the pre-existing host-state assertion that expects the actually-loaded `ai.anicca.life-manager-dev` job to be unloaded |
+| scoped gitleaks (`canonical/main..feature`) | 4 commits, no leaks |
+| TruffleHog PR check | PASS |
+
+The loaded Mac Mini job was not stopped to manufacture a green host-state test.
+
 ## Remaining boundary
 
 | Proven | Not yet proven |
