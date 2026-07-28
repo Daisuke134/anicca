@@ -21,6 +21,8 @@ def test_production_guard_has_one_cleanup_authority() -> None:
     guard = (ROOT / "scripts" / "emergency-disk-guard.sh").read_text(encoding="utf-8")
     assert 'if [ "$TEST_MODE" -eq 0 ]; then' in guard
     assert 'python3 "$CLEANUP_CONTROL" sweep' in guard
+    assert '--pressure-override' in guard
+    assert '--reclaim-target-bytes "$RECLAIM_TARGET_BYTES"' in guard
     assert (
         'if [ "$TEST_MODE" -eq 1 ] && [ "${EMERGENCY_GUARD_TEST_ENABLE_RECLAIM:-0}" = 1 ]; then'
         in guard

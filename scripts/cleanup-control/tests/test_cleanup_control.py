@@ -65,6 +65,8 @@ def run(
     candidates: list[Path] | None = None,
     cross_device: bool = True,
     create_quarantine: bool = True,
+    pressure_override: bool = False,
+    reclaim_target_bytes: int = 0,
 ):
     if create_quarantine:
         quarantine.mkdir(parents=True, exist_ok=True)
@@ -82,6 +84,8 @@ def run(
             ledger_path=ledger,
             now=now,
             candidates=candidates,
+            pressure_override=pressure_override,
+            reclaim_target_bytes=reclaim_target_bytes,
         )
 
 
@@ -204,6 +208,67 @@ def test_only_expired_over_quota_ephemeral_is_quarantined(tmp_path: Path) -> Non
     assert quarantined[0]["path"] == str(expired)
     assert Path(quarantined[0]["quarantine_path"]).exists()
     assert quarantined[0]["manifest_sha256"]
+
+
+def test_pressure_override_reclaims_fresh_closed_ephemeral_until_target(
+    tmp_path: Path,
+) -> None:
+    now = 10_000
+    first = tmp_path / "first-cache"
+    second = tmp_path / "second-cache"
+    for path in (first, second):
+        path.mkdir()
+        (path / "payload").write_bytes(b"x" * 128)
+    ledger = tmp_path / "ledger.jsonl"
+
+    with mock.patch.object(cleanup_control, "path_open_state", return_value="confirmed-closed"):
+        result = run(
+            write_manifest(tmp_path / "manifest.json", [entry(first), entry(second)]),
+            tmp_path / "q",
+            ledger,
+            now=now,
+            pressure_override=True,
+            reclaim_target_bytes=1,
+        )
+
+    assert result["quarantined"] == 1
+    assert not first.exists()
+    assert second.exists()
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert any(
+        event["path"] == str(second) and event["reason"] == "pressure_target_met"
+        for event in events
+    )
+
+
+@pytest.mark.parametrize(
+    ("open_state", "expected_reason"),
+    [("open", "open_path"), ("unknown", "lsof_error")],
+)
+def test_pressure_override_preserves_fresh_ephemeral_unless_confirmed_closed(
+    tmp_path: Path,
+    open_state: str,
+    expected_reason: str,
+) -> None:
+    now = 10_000
+    source = tmp_path / "fresh-cache"
+    source.mkdir()
+    (source / "payload").write_bytes(b"x" * 128)
+    ledger = tmp_path / "ledger.jsonl"
+
+    with mock.patch.object(cleanup_control, "path_open_state", return_value=open_state):
+        result = run(
+            write_manifest(tmp_path / "manifest.json", [entry(source)]),
+            tmp_path / "q",
+            ledger,
+            now=now,
+            pressure_override=True,
+            reclaim_target_bytes=1,
+        )
+
+    assert result["quarantined"] == 0
+    assert source.exists()
+    assert json.loads(ledger.read_text().splitlines()[-1])["reason"] == expected_reason
 
 
 def test_same_volume_quarantine_is_fail_closed(tmp_path: Path) -> None:

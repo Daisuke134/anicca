@@ -487,6 +487,7 @@ fi
 printf 'free_gb=%s threshold_gb=%s policy=%s observed_at=%s\n' \
   "$FREE" "$THRESHOLD_GB" "$POLICY_VERSION" "$(date -u '+%FT%TZ')" > "$BACKPRESSURE"
 log "LOW DISK: ${FREE}GB free (< ${THRESHOLD_GB}GB) — safe containment start"
+RECLAIM_TARGET_BYTES=$(( (THRESHOLD_GB - FREE) * 1073741824 ))
 
 # v1 is intentionally read-only. v2 has a deterministic 12-column header, so
 # rows from the legacy 8-column contract can never be mixed into this file.
@@ -505,7 +506,9 @@ if [ "$TEST_MODE" -eq 0 ]; then
     CLEANUP_SUMMARY=$(python3 "$CLEANUP_CONTROL" sweep \
       --manifest "$CLEANUP_MANIFEST" \
       --quarantine-root "$CLEANUP_QUARANTINE_ROOT" \
-      --ledger "$CLEANUP_LEDGER" 2>>"$LOG")
+      --ledger "$CLEANUP_LEDGER" \
+      --pressure-override \
+      --reclaim-target-bytes "$RECLAIM_TARGET_BYTES" 2>>"$LOG")
     CLEANUP_RC=$?
     if [ -n "$CLEANUP_SUMMARY" ]; then
       CLEANUP_COUNTS=$(printf '%s' "$CLEANUP_SUMMARY" | python3 -c \
