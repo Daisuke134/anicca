@@ -26,6 +26,7 @@ test("a linked paid user's natural-language task is classified, durably queued, 
       actionKind: "registration",
       locale: "en",
       requiresLogin: false,
+      principalKind: "none",
     }),
     enqueue: async (input) => {
       order.push(["enqueue", input]);
@@ -58,6 +59,7 @@ test("a duplicate Telegram delivery never creates or sends a second visible rece
       actionKind: "registration",
       locale: "en",
       requiresLogin: false,
+      principalKind: "none",
     }),
     enqueue: async () => ({ created: false, job: { id: "job-1", status: "queued" } }),
     sendMessage: async () => { sends += 1; },
@@ -83,4 +85,3 @@ test("non-tasks and users outside the linked paid boundary preserve the existing
     reason: "not_explicitly_actionable",
   });
 });
-

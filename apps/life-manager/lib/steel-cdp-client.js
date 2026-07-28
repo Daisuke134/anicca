@@ -25,6 +25,7 @@
 // leak by another name.
 
 const STEEL_BASE_URL = "http://steel-browser.railway.internal:8080";
+const { validateSessionContext } = require("./browser-auth-session-store.js");
 
 // The page-side probe. Runs in the provider's page and returns the field descriptor shape
 // care-booking-executor.js reasons about: {selector, label, name, type, required, maxLength}. The
@@ -183,14 +184,16 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
   }
 
   async function launch(options = {}) {
+    if (Object.hasOwn(options, "persist") || Object.hasOwn(options, "userDataDir")) {
+      throw new Error("persistent Steel profiles are forbidden");
+    }
     const response = await doFetch(`${baseUrl}/v1/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ blockAds: true, ...options }),
     });
     if (!response || !response.ok) {
-      const body = response && typeof response.text === "function" ? await response.text().catch(() => "") : "";
-      throw new Error(`steel session launch failed (${response ? response.status : "no response"})${body ? `: ${body.slice(0, 200)}` : ""}`);
+      throw new Error(`steel session launch failed (${response ? response.status : "no response"})`);
     }
     const details = await readJson(response);
     if (!details || !details.id || !details.websocketUrl) {
@@ -209,6 +212,20 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
     // private Steel session but deliberately does not attach the deterministic booking CDP client.
     async createRawSession(options = {}) {
       return launch(options);
+    },
+    async getSessionContext(sessionId) {
+      const id = typeof sessionId === "string" ? sessionId.trim() : "";
+      if (!id || id.length > 200) throw new Error("steel session id unavailable");
+      const response = await doFetch(
+        `${baseUrl}/v1/sessions/${encodeURIComponent(id)}/context`,
+        { method: "GET" },
+      );
+      if (!response || !response.ok) {
+        throw new Error(
+          `steel session context export failed (${response ? response.status : "no response"})`,
+        );
+      }
+      return validateSessionContext(await readJson(response));
     },
     async createSession(options = {}) {
       const details = await launch(options);

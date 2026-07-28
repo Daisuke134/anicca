@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS public.lm_browser_jobs (
   locale text NOT NULL CHECK (locale IN ('en', 'ja')),
   action_kind text NOT NULL CHECK (char_length(action_kind) BETWEEN 1 AND 100),
   requires_login boolean NOT NULL DEFAULT false,
+  principal_kind text NOT NULL CHECK (principal_kind IN ('none', 'agent_owned', 'user_provided')),
+  CHECK (
+    (requires_login = false AND principal_kind = 'none')
+    OR (requires_login = true AND principal_kind IN ('agent_owned', 'user_provided'))
+  ),
   status text NOT NULL CHECK (
     status IN ('queued', 'claimed', 'completed', 'possibly_completed', 'handoff_required', 'failed')
   ),
@@ -100,7 +105,9 @@ AS $$
 BEGIN
   IF p_stage NOT IN (
     'claimed', 'discovery', 'selected', 'action_started',
-    'action_observed', 'provider_readback', 'telegram_sent',
+    'action_observed', 'provider_readback',
+    'auth_context_loaded', 'auth_context_saved', 'auth_context_invalidated',
+    'telegram_sent',
     'evidence_sent', 'steel_released'
   ) THEN
     RAISE EXCEPTION 'invalid browser trace stage';

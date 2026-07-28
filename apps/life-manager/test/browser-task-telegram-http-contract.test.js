@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("node:http");
+const { buildBrowserJob } = require("../lib/browser-job-store.js");
 
 function response(status, body) {
   return {
@@ -28,6 +29,8 @@ test("real Telegram webhook classifies and durably queues natural language witho
   let queued;
   let steelCalls = 0;
   const sent = [];
+  let originalIntakeExports;
+  let intakePath;
   http.createServer = (handler) => {
     productionServer = originalCreateServer(handler);
     return productionServer;
@@ -45,6 +48,7 @@ test("real Telegram webhook classifies and durably queues natural language witho
             zero_cost: true,
             requires_kyc: false,
             requires_login: false,
+            principal_kind: "none",
             action_kind: "registration",
             goal: "Find and register the agent-owned email for a free public online AI event",
             locale: "en",
@@ -64,10 +68,6 @@ test("real Telegram webhook classifies and durably queues natural language witho
         paid: true,
       }]);
     }
-    if (url.pathname === "/rest/v1/lm_browser_jobs" && method === "POST") {
-      queued = JSON.parse(init.body);
-      return response(201, [{ id: "browser-job-1", ...queued }]);
-    }
     if (url.hostname.includes("steel-browser")) {
       steelCalls += 1;
       throw new Error("browser must not run inside Telegram webhook");
@@ -76,6 +76,18 @@ test("real Telegram webhook classifies and durably queues natural language witho
   };
 
   try {
+    intakePath = require.resolve("../lib/browser-task-intake.js");
+    originalIntakeExports = require(intakePath);
+    require.cache[intakePath].exports = {
+      ...originalIntakeExports,
+      handleBrowserTaskMessage: (input, deps) => originalIntakeExports.handleBrowserTaskMessage(input, {
+        ...deps,
+        enqueue: async (enqueueInput) => {
+          queued = buildBrowserJob(enqueueInput);
+          return { created: true, job: { id: "browser-job-1", ...queued } };
+        },
+      }),
+    };
     const serverPath = require.resolve("../server.js");
     delete require.cache[serverPath];
     require(serverPath);
@@ -113,12 +125,14 @@ test("real Telegram webhook classifies and durably queues natural language witho
     assert.equal(queued.uid, "u1");
     assert.equal(queued.telegram_message_id, "8101");
     assert.equal(queued.telegram_update_id, "7001");
+    assert.equal(queued.principal_kind, "none");
     assert.match(queued.prompt_hash, /^[a-f0-9]{64}$/);
     assert.equal(JSON.stringify(queued).includes("contact@aniccaai.com"), false);
     assert.equal(sent.length, 1);
     assert.match(sent[0].text, /browser-job-1/);
     assert.equal(steelCalls, 0);
   } finally {
+    if (intakePath && originalIntakeExports) require.cache[intakePath].exports = originalIntakeExports;
     delete process.env.LM_BROWSER_TASKS_ENABLED;
     http.createServer = originalCreateServer;
     global.fetch = originalFetch;
@@ -127,4 +141,3 @@ test("real Telegram webhook classifies and durably queues natural language witho
     }
   }
 });
-

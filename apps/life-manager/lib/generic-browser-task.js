@@ -14,6 +14,27 @@ function providerReceipt(value) {
   };
 }
 
+function authTraceMeta(release, outcome) {
+  const meta = {};
+  if (release && typeof release.origin === "string" && release.origin) {
+    meta.origin = release.origin.slice(0, 1000);
+  }
+  if (release && ["agent_owned", "user_provided"].includes(release.principal_kind)) {
+    meta.principal_kind = release.principal_kind;
+  }
+  const value = release && release[`auth_context_${outcome}`];
+  if (typeof value === "boolean") meta[outcome] = value;
+  if (outcome === "saved") {
+    if (release && /^[a-f0-9]{64}$/.test(String(release.context_sha256 || ""))) {
+      meta.context_sha256 = release.context_sha256;
+    }
+    if (release && Number.isSafeInteger(release.key_version) && release.key_version > 0) {
+      meta.key_version = release.key_version;
+    }
+  }
+  return meta;
+}
+
 function withTimeout(promise, timeoutMs, label) {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
   let timer;
@@ -71,6 +92,7 @@ async function runGenericBrowserTask(job, deps) {
     evidence_message_id: null,
     evidence_sha256: null,
     steel_released: false,
+    auth_marker_hash: job.auth_marker_hash || null,
   };
   let session = null;
   let evidence = null;
@@ -81,7 +103,12 @@ async function runGenericBrowserTask(job, deps) {
 
   await deps.appendTrace(job.id, "claimed", {});
   try {
-    session = await deps.openSession();
+    session = await deps.openSession({
+      uid: job.uid,
+      goal: job.goal,
+      requiresLogin: job.requires_login === true,
+      principalKind: job.principal_kind,
+    });
     result.session_id = String(session.id);
     await deps.appendTrace(job.id, "discovery", { session_id: result.session_id });
 
@@ -189,8 +216,23 @@ async function runGenericBrowserTask(job, deps) {
 
   if (session && session.id) {
     try {
-      const release = await deps.releaseSession(session.id);
+      const release = await deps.releaseSession(session.id, {
+        providerReceipt: result.provider_receipt,
+      });
       result.steel_released = Boolean(release && release.released);
+      if (release && typeof release.auth_context_loaded === "boolean") {
+        await deps.appendTrace(job.id, "auth_context_loaded", authTraceMeta(release, "loaded"));
+      }
+      if (result.provider_receipt.handoff_reason === "login"
+        && release && typeof release.auth_context_invalidated === "boolean") {
+        await deps.appendTrace(
+          job.id,
+          "auth_context_invalidated",
+          authTraceMeta(release, "invalidated"),
+        );
+      } else if (release && typeof release.auth_context_saved === "boolean") {
+        await deps.appendTrace(job.id, "auth_context_saved", authTraceMeta(release, "saved"));
+      }
     } catch {
       result.steel_released = false;
     } finally {
