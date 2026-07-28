@@ -2379,7 +2379,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 |---:|---|---|---|
 | 1 | DONE (`d752be2`) | Revenue / attribution contract | `product_id / run_id / artifact_id / variant_id / click_id`からimpression、engaged read、CTA click、activation、paidへjoinでき、reward hierarchyとunknown規則がschema/test/specで一致。7 contract tests + Writer全article suite 315 passed |
 | 2 | DONE (`1cde1a4`) | Product landing CTA | WriterのCTAは自社landing URLだけをconversion SSOTとし、product/run/artifact/variant/clickの5キー必須、run/artifact一致、artifact別click一意をpublication init前にfail-closed。Substack/note/GitHubはdistribution扱い。4 contract tests + Writer全article suite 319 passed |
-| 3 | TODO | Judge calibration | judge順位と同じartifactの実reward順位を比較し、`scorable / unknown / insufficient`件数を分離。missing exposure/conversionを0またはlossへ変換しない |
+| 3 | DONE (`091214a`) | Judge calibration | product/run/artifact/variantでjudgeとrewardをexact joinし、`scorable / unknown / insufficient`を分離。scorableだけで順位相関を計算し、missing receiptはinsufficient、重複receiptは拒否。2 contract tests + Writer全article suite 321 passed |
 | 4 | TODO | Title learning slice | title専用opponent/reward/weight。calibrated reward→blame→1変更→held-out非悪化を通す |
 | 5 | TODO | Article-body learning slice | article-body専用opponent/reward/weight。title結果を本文へ流用せず、engaged readと下流conversionでheld-out非悪化を通す |
 | 6 | TODO | Long-form / book learning slice | long-form専用opponent/reward/weight。purchase/completion/refund guardrailでheld-out非悪化を通す |
@@ -2441,7 +2441,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 1 | attribution join | `test_paid_event_joins_exact_product_run_artifact_variant_click` + `test_bare_owned_url_fails_but_attributed_product_landing_passes` + publication-boundary run/artifact/click tests | PASS (`d752be2`, `1cde1a4`) |
 | 2 | attribution isolation | `test_cross_product_or_variant_events_are_rejected` + `test_event_after_attribution_window_is_rejected` | PASS (`d752be2`) |
 | 3 | unknown reward | `test_window_status_preserves_open_as_unknown_until_closed` + `test_lineage_without_cta_click_is_insufficient` | PASS (`d752be2`) |
-| 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` | TODO |
+| 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` + `test_duplicate_reward_receipt_is_rejected` | PASS (`091214a`) |
 | 5 | slice isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` | TODO |
 | 6 | contradiction gate | `test_critical_rule_conflict_blocks_generation_and_learning_change` | TODO |
 | 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | TODO |
