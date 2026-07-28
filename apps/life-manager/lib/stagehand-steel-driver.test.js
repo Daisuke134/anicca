@@ -41,6 +41,9 @@ function fixture(fixtureOptions = {}) {
       if (/provider-authored result page/i.test(instruction) && fixtureOptions.receipt) {
         return fixtureOptions.receipt;
       }
+      if (/identify the selected site/i.test(instruction) && fixtureOptions.selection) {
+        return fixtureOptions.selection;
+      }
       return {
         confirmed: true,
         status: "registered",
@@ -241,6 +244,29 @@ test("an explicit auth continuity readback navigates and reads without starting 
   assert.equal(calls.filter(([name]) => name === "agent").length, 0);
   assert.equal(calls.filter(([name]) => name === "execute").length, 0);
   assert.equal(calls.filter(([name]) => name === "act").length, 0);
+});
+
+test("an explicit auth continuity readback does not apply the normal action-page LLM gate", async () => {
+  const { driver, calls } = fixture({
+    selection: {
+      selectedSiteName: "Secure Area",
+      selectionReason: "authenticated account page, not an event action page",
+      isSpecificActionPage: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/secure with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  assert.equal(action.selectedUrl, "https://fresh-events.example/ai/confirmed");
+  assert.equal(action.sideEffectStarted, false);
+  assert.equal(
+    calls.filter(([name, instruction]) =>
+      name === "extract" && /identify the selected site/i.test(instruction)).length,
+    0,
+  );
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {
