@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Web of Memory — Australian Spiders</title>
+  <style>
+    :root {
+      --ink: #f7f1df;
+      --muted: #c8c0ad;
+      --night: #101817;
+      --panel: #172321;
+      --panel-2: #20302d;
+      --line: #49605a;
+      --gold: #f6c85f;
+      --coral: #f27b66;
+      --mint: #82c9ad;
+      --shadow: 0 14px 34px rgba(0, 0, 0, .28);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      background: var(--night);
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 6%, rgba(130, 201, 173, .13), transparent 30rem),
+        radial-gradient(circle at 92% 22%, rgba(246, 200, 95, .1), transparent 28rem),
+        var(--night);
+      font-family: ui-rounded, "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    button {
+      min-height: 44px;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    .shell {
+      width: min(100% - 24px, 980px);
+      margin: 0 auto;
+      padding: 22px 0 34px;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--mint);
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 500;
+      line-height: .98;
+      letter-spacing: -.035em;
+    }
+
+    .intro {
+      max-width: 720px;
+      margin: 12px 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(120px, .65fr) minmax(0, 1fr);
+      gap: 8px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+
+    .player,
+    .round-status {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(23, 35, 33, .88);
+      box-shadow: var(--shadow);
+    }
+
+    .player {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      transition: border-color .2s ease, background .2s ease;
+    }
+
+    .player.active {
+      border-color: var(--gold);
+      background: #263329;
+    }
+
+    .name-wrap {
+      min-width: 0;
+    }
+
+    .name-wrap label {
+      display: block;
+      margin: 0 0 4px 2px;
+      color: var(--muted);
+      font-size: .66rem;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .name-wrap input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      padding: 0 9px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, .07);
+      font-weight: 750;
+    }
+
+    .name-wrap input::placeholder { color: #b8b09f; }
+
+    .score {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--night);
+      background: var(--gold);
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .round-status {
+      display: grid;
+      place-content: center;
+      min-height: 64px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .round-status strong {
+      color: var(--gold);
+      font-size: .88rem;
+    }
+
+    .round-status span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .72rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(5px, 1.5vw, 12px);
+      perspective: 1100px;
+    }
+
+    .card {
+      position: relative;
+      min-width: 0;
+      aspect-ratio: .78;
+      min-height: 70px;
+      border: 0;
+      border-radius: clamp(9px, 2vw, 16px);
+      padding: 0;
+      color: inherit;
+      background: transparent;
+      transform-style: preserve-3d;
+    }
+
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--line);
+      border-radius: inherit;
+      box-shadow: var(--shadow);
+      transform-style: preserve-3d;
+      transition: transform .42s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .card[aria-pressed="true"] .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card:disabled { cursor: default; }
+
+    .card:disabled .card-inner {
+      border-color: var(--mint);
+      box-shadow: 0 0 0 2px rgba(130, 201, 173, .18), var(--shadow);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: inherit;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .card-front {
+      background:
+        radial-gradient(circle at 50% 45%, rgba(246, 200, 95, .2), transparent 26%),
+        repeating-radial-gradient(circle at 50% 50%, transparent 0 13px, rgba(130, 201, 173, .08) 14px 15px),
+        linear-gradient(145deg, #263936, #14201f);
+    }
+
+    .card-front::before,
+    .card-front::after {
+      position: absolute;
+      content: "";
+      width: 120%;
+      height: 1px;
+      background: rgba(130, 201, 173, .17);
+    }
+
+    .card-front::before { transform: rotate(35deg); }
+    .card-front::after { transform: rotate(-35deg); }
+
+    .web-mark {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      width: clamp(32px, 7vw, 58px);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid rgba(246, 200, 95, .7);
+      border-radius: 50%;
+      color: var(--gold);
+      background: rgba(16, 24, 23, .7);
+      font-family: Georgia, serif;
+      font-size: clamp(1.2rem, 4vw, 2rem);
+    }
+
+    .card-back {
+      grid-template-rows: minmax(0, 1fr) auto;
+      padding: clamp(5px, 1.2vw, 10px);
+      background: #e5ddc9;
+      color: #15211f;
+      transform: rotateY(180deg);
+    }
+
+    .spider-art {
+      width: min(100%, 120px);
+      max-height: 100%;
+      filter: drop-shadow(0 5px 4px rgba(0, 0, 0, .25));
+    }
+
+    .species {
+      width: 100%;
+      padding-top: 4px;
+      border-top: 1px solid rgba(21, 33, 31, .2);
+      line-height: 1.05;
+      text-align: left;
+    }
+
+    .species strong {
+      display: block;
+      font-size: clamp(.58rem, 1.75vw, .88rem);
+    }
+
+    .species em {
+      display: block;
+      margin-top: 2px;
+      color: #44534f;
+      font-family: Georgia, serif;
+      font-size: clamp(.46rem, 1.38vw, .7rem);
+    }
+
+    .status-line {
+      min-height: 27px;
+      margin: 10px 2px 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .game-tools {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0 0;
+    }
+
+    .game-tools button {
+      min-height: 44px;
+      padding: 8px 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .note,
+    .credits {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: rgba(23, 35, 33, .72);
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.5;
+    }
+
+    .note {
+      margin: 15px 0 8px;
+      border-left: 4px solid var(--coral);
+    }
+
+    .credits { margin: 0; }
+    .credits strong { color: var(--ink); }
+
+    .game-over {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(6, 11, 10, .86);
+      backdrop-filter: blur(8px);
+    }
+
+    .game-over[hidden] { display: none; }
+
+    .result-card {
+      width: min(100%, 430px);
+      border: 1px solid var(--gold);
+      border-radius: 22px;
+      padding: 28px;
+      background: var(--panel);
+      box-shadow: 0 22px 80px rgba(0, 0, 0, .55);
+      text-align: center;
+    }
+
+    .result-card .mini {
+      color: var(--mint);
+      font-size: .7rem;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .result-card h2 {
+      margin: 7px 0 8px;
+      font-family: Georgia, serif;
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      font-weight: 500;
+    }
+
+    .result-card p {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+
+    .result-actions button {
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 9px;
+      color: var(--night);
+      background: var(--gold);
+      font-weight: 850;
+    }
+
+    .result-actions button + button {
+      color: var(--ink);
+      background: transparent;
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 12px, 980px); padding-top: 14px; }
+      .scoreboard { grid-template-columns: 1fr 1fr; }
+      .round-status { grid-column: 1 / -1; grid-row: 2; min-height: 48px; }
+      .player { padding: 6px; }
+      .name-wrap label { font-size: .58rem; }
+      .name-wrap input { padding: 0 6px; font-size: .78rem; }
+      .score { width: 40px; height: 40px; }
+      .card-back { padding: 4px; }
+      .status-line { font-size: .73rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <p class="eyebrow">Two players · one shared screen</p>
+    <h1>Web of Memory</h1>
+    <p class="intro">Find eight pairs of Australian spiders. A match earns one point and another turn. A miss passes play across the web.</p>
+
+    <section class="scoreboard" aria-label="Players and round status">
+      <article class="player active" data-testid="player-1-panel">
+        <div class="name-wrap">
+          <label for="player1">Player 1 name</label>
+          <input id="player1" data-testid="player-1-name" maxlength="18" placeholder="Player 1" autocomplete="off">
+        </div>
+        <span class="score" data-testid="player-1-score" aria-label="Player 1 score">0</span>
+      </article>
+
+      <div class="round-status" aria-live="polite">
+        <strong data-testid="turn">→ Player 1's turn</strong>
+        <span data-testid="progress">0 / 8 pairs</span>
+      </div>
+
+      <article class="player" data-testid="player-2-panel">
+        <div class="name-wrap">
+          <label for="player2">Player 2 name</label>
+          <input id="player2" data-testid="player-2-name" maxlength="18" placeholder="Player 2" autocomplete="off">
+        </div>
+        <span class="score" data-testid="player-2-score" aria-label="Player 2 score">0</span>
+      </article>
+    </section>
+
+    <section class="board" data-testid="board" aria-label="Memory card board"></section>
+    <p class="status-line" id="liveStatus" role="status" aria-live="polite">Choose any card to begin.</p>
+    <div class="game-tools">
+      <button type="button" data-testid="new-players">New Players</button>
+    </div>
+
+    <p class="note"><strong>Field note:</strong> Most spiders use venom to subdue prey, but medical significance varies greatly. This game is not an identification or medical guide. Do not handle unknown spiders; seek local medical advice after a concerning bite.</p>
+    <p class="credits"><strong>Image credits:</strong> All eight stylised spider illustrations are original inline SVG artwork created for this game. No external images, fonts, libraries, APIs, or network requests are used. Scientific labels follow commonly used Australian family, genus, and species names.</p>
+  </main>
+
+  <section class="game-over" data-testid="game-over" role="dialog" aria-modal="true" aria-labelledby="result" hidden>
+    <div class="result-card">
+      <span class="mini">All eight pairs found</span>
+      <h2 id="result" data-testid="result">A draw!</h2>
+      <p data-testid="final-score">4–4</p>
+      <div class="result-actions">
+        <button type="button" data-testid="play-again">Play Again</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const spiders = [
+        { id: "funnel-web", common: "Sydney funnel-web", scientific: "Atrax robustus", body: "#202c2b", mark: "#72847e", shape: "broad" },
+        { id: "redback", common: "Redback", scientific: "Latrodectus hasselti", body: "#151716", mark: "#d73232", shape: "round" },
+        { id: "mouse", common: "Mouse spider", scientific: "Missulena spp.", body: "#292b2c", mark: "#357da1", shape: "broad" },
+        { id: "white-tail", common: "White-tailed spider", scientific: "Lampona spp.", body: "#433c38", mark: "#f2eee0", shape: "long" },
+        { id: "black-house", common: "Black house spider", scientific: "Badumna insignis", body: "#292927", mark: "#b8a986", shape: "round" },
+        { id: "wolf", common: "Wolf spider", scientific: "Family Lycosidae", body: "#6c4d32", mark: "#d0b07b", shape: "broad" },
+        { id: "tarantula", common: "Australian tarantula", scientific: "Subfamily Selenocosmiinae", body: "#55382a", mark: "#d69b62", shape: "hairy" },
+        { id: "orb-weaver", common: "Garden orb-weaver", scientific: "Hortophora spp.", body: "#6e5030", mark: "#f0c75e", shape: "round" }
+      ];
+
+      const board = document.querySelector('[data-testid="board"]');
+      const playerInputs = [
+        document.querySelector('[data-testid="player-1-name"]'),
+        document.querySelector('[data-testid="player-2-name"]')
+      ];
+      const scoreEls = [
+        document.querySelector('[data-testid="player-1-score"]'),
+        document.querySelector('[data-testid="player-2-score"]')
+      ];
+      const panels = [
+        document.querySelector('[data-testid="player-1-panel"]'),
+        document.querySelector('[data-testid="player-2-panel"]')
+      ];
+      const turnEl = document.querySelector('[data-testid="turn"]');
+      const progressEl = document.querySelector('[data-testid="progress"]');
+      const liveStatus = document.querySelector("#liveStatus");
+      const gameOver = document.querySelector('[data-testid="game-over"]');
+      const resultEl = document.querySelector('[data-testid="result"]');
+      const finalScoreEl = document.querySelector('[data-testid="final-score"]');
+      const playAgain = document.querySelector('[data-testid="play-again"]');
+      const newPlayers = document.querySelector('[data-testid="new-players"]');
+
+      let deck = [];
+      let firstCard = null;
+      let secondCard = null;
+      let locked = false;
+      let currentPlayer = 0;
+      let scores = [0, 0];
+      let matches = 0;
+
+      function safeName(index) {
+        return playerInputs[index].value.trim() || `Player ${index + 1}`;
+      }
+
+      function shuffle(items) {
+        const copy = items.slice();
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function spiderSvg(spider) {
+        const abdomenRx = spider.shape === "long" ? 24 : spider.shape === "broad" ? 28 : 26;
+        const abdomenRy = spider.shape === "long" ? 36 : spider.shape === "broad" ? 27 : 31;
+        const hair = spider.shape === "hairy"
+          ? `<g stroke="${spider.mark}" opacity=".45" stroke-width="1">${Array.from({length: 11}, (_, i) => `<path d="M${46 + i * 5} ${57 + (i % 2) * 5}l${i % 2 ? 4 : -4} -8"/>`).join("")}</g>`
+          : "";
+        const marking = spider.id === "redback"
+          ? `<path d="M70 54l-8 15 8 9 8-9z" fill="${spider.mark}"/>`
+          : spider.id === "white-tail"
+            ? `<ellipse cx="70" cy="92" rx="8" ry="12" fill="${spider.mark}"/>`
+            : spider.id === "orb-weaver"
+              ? `<path d="M55 62h30M52 72h36M54 82h32" stroke="${spider.mark}" stroke-width="5" stroke-linecap="round"/>`
+              : `<path d="M56 67q14-15 28 0q-14 13-28 0z" fill="${spider.mark}" opacity=".8"/>`;
+
+        return `
+          <svg class="spider-art" viewBox="0 0 140 140" role="img" aria-label="Original stylised illustration of ${spider.common}">
+            <g fill="none" stroke="${spider.body}" stroke-width="${spider.shape === "hairy" ? 9 : 7}" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M58 60L38 43 17 36M55 68L33 61 10 62M55 76L31 81 12 97M59 84L42 101 28 121"/>
+              <path d="M82 60l20-17 21-7M85 68l22-7 23 1M85 76l24 5 19 16M81 84l17 17 14 20"/>
+            </g>
+            ${hair}
+            <ellipse cx="70" cy="76" rx="${abdomenRx}" ry="${abdomenRy}" fill="${spider.body}"/>
+            <ellipse cx="70" cy="43" rx="18" ry="16" fill="${spider.body}"/>
+            <circle cx="64" cy="39" r="2" fill="#f6c85f"/>
+            <circle cx="76" cy="39" r="2" fill="#f6c85f"/>
+            ${marking}
+          </svg>`;
+      }
+
+      function cardMarkup(spider, index) {
+        return `
+          <button class="card" type="button" data-testid="card" data-index="${index}" data-spider="${spider.id}" aria-label="Hidden spider card ${index + 1}" aria-pressed="false">
+            <span class="card-inner">
+              <span class="card-face card-front" aria-hidden="true"><span class="web-mark">?</span></span>
+              <span class="card-face card-back">
+                ${spiderSvg(spider)}
+                <span class="species"><strong>${spider.common}</strong><em>${spider.scientific}</em></span>
+              </span>
+            </span>
+          </button>`;
+      }
+
+      function updateHud() {
+        scoreEls[0].textContent = String(scores[0]);
+        scoreEls[1].textContent = String(scores[1]);
+        scoreEls[0].setAttribute("aria-label", `${safeName(0)} score ${scores[0]}`);
+        scoreEls[1].setAttribute("aria-label", `${safeName(1)} score ${scores[1]}`);
+        panels.forEach((panel, index) => panel.classList.toggle("active", index === currentPlayer));
+        turnEl.textContent = `→ ${safeName(currentPlayer)}'s turn`;
+        progressEl.textContent = `${matches} / 8 pairs`;
+      }
+
+      function reveal(card) {
+        card.setAttribute("aria-pressed", "true");
+        card.setAttribute("aria-label", `${card.querySelector(".species strong").textContent}, revealed`);
+      }
+
+      function conceal(card) {
+        card.setAttribute("aria-pressed", "false");
+        card.setAttribute("aria-label", `Hidden spider card ${Number(card.dataset.index) + 1}`);
+      }
+
+      function finishGame() {
+        locked = true;
+        const name0 = safeName(0);
+        const name1 = safeName(1);
+        if (scores[0] === scores[1]) resultEl.textContent = "It's a draw!";
+        else resultEl.textContent = `${scores[0] > scores[1] ? name0 : name1} wins!`;
+        finalScoreEl.textContent = `${name0} ${scores[0]} — ${scores[1]} ${name1}`;
+        gameOver.hidden = false;
+        playAgain.focus();
+      }
+
+      function resolveTurn() {
+        const isMatch = firstCard.dataset.spider === secondCard.dataset.spider;
+        if (isMatch) {
+          firstCard.disabled = true;
+          secondCard.disabled = true;
+          firstCard.setAttribute("aria-label", `${firstCard.querySelector(".species strong").textContent}, matched`);
+          secondCard.setAttribute("aria-label", `${secondCard.querySelector(".species strong").textContent}, matched`);
+          scores[currentPlayer] += 1;
+          matches += 1;
+          liveStatus.textContent = `Match. ${safeName(currentPlayer)} scores and plays again.`;
+          firstCard = null;
+          secondCard = null;
+          locked = false;
+          updateHud();
+          if (matches === 8) window.setTimeout(finishGame, 20);
+          return;
+        }
+
+        locked = true;
+        liveStatus.textContent = "Not a match. Cards will turn back, then play passes.";
+        window.setTimeout(() => {
+          conceal(firstCard);
+          conceal(secondCard);
+          firstCard = null;
+          secondCard = null;
+          currentPlayer = currentPlayer === 0 ? 1 : 0;
+          locked = false;
+          updateHud();
+          liveStatus.textContent = `${safeName(currentPlayer)} may choose a card.`;
+        }, 800);
+      }
+
+      function chooseCard(event) {
+        const card = event.currentTarget;
+        if (locked || card.disabled || card === firstCard || card.getAttribute("aria-pressed") === "true") return;
+        reveal(card);
+        if (!firstCard) {
+          firstCard = card;
+          liveStatus.textContent = `${card.querySelector(".species strong").textContent} revealed. Choose one more card.`;
+          return;
+        }
+        secondCard = card;
+        locked = true;
+        resolveTurn();
+      }
+
+      function resetGame({ clearNames = false } = {}) {
+        if (clearNames) playerInputs.forEach((input) => { input.value = ""; });
+        firstCard = null;
+        secondCard = null;
+        locked = false;
+        currentPlayer = 0;
+        scores = [0, 0];
+        matches = 0;
+        deck = shuffle(spiders.flatMap((spider) => [spider, { ...spider }]));
+        board.innerHTML = deck.map(cardMarkup).join("");
+        board.querySelectorAll(".card").forEach((card) => card.addEventListener("click", chooseCard));
+        gameOver.hidden = true;
+        liveStatus.textContent = "Choose any card to begin.";
+        updateHud();
+        if (clearNames) playerInputs[0].focus();
+      }
+
+      playerInputs.forEach((input) => input.addEventListener("input", updateHud));
+      playAgain.addEventListener("click", () => resetGame());
+      newPlayers.addEventListener("click", () => resetGame({ clearNames: true }));
+      resetGame();
+    })();
+  </script>
+</body>
+</html>
