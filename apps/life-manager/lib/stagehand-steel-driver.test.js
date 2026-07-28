@@ -340,6 +340,71 @@ test("provider-authored You're In is confirmed even when email verification is o
   assert.equal(receipt.handoffRequired, false);
 });
 
+test("Add to Calendar with optional management verification and no active form is confirmed", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "event_page_registration_pending",
+      confirmationId: null,
+      providerText: "Add to Calendar. Verify Email to manage your registration.",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, {
+    goal: "Open https://fresh-events.example/ai/confirmed",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const receipt = await driver.readProviderReceipt(session);
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffReason, null);
+});
+
+test("Add to Calendar does not confirm while a registration form is still active", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "event_page_registration_pending",
+      confirmationId: null,
+      providerText: "Add to Calendar. Verify Email to manage your registration.",
+      activeRegistrationForm: true,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, {
+    goal: "Open https://fresh-events.example/ai/confirmed",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const receipt = await driver.readProviderReceipt(session);
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, false);
+});
+
+test("active provider OTP form remains a structured 2FA handoff", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "verification required",
+      confirmationId: null,
+      providerText: "Add to Calendar. Enter the verification code to continue.",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: true,
+    },
+  });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, {
+    goal: "Open https://fresh-events.example/ai/confirmed",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const receipt = await driver.readProviderReceipt(session);
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "2fa");
+});
+
 test("login-dependent sessions restore only the exact tenant, origin, and principal context", async () => {
   const one = {
     cookies: [{ name: "sid", value: "tenant-one-cookie", domain: "auth.example", path: "/" }],
