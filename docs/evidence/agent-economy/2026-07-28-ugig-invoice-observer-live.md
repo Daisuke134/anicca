@@ -8,7 +8,11 @@ external gates become true:
 
 1. the buyer changes the application to `accepted`; and
 2. code work has every configured GitHub pull request merged, while art,
-   marketing, and other work has a public HTTPS proof URL.
+   marketing, and other work has a public HTTPS proof URL; and
+3. after uGig changes the application to `completed`, a `paid` invoice enters
+   revenue only when its `merchant_tx_hash` is independently `finalized` on
+   Solana, the configured recipient balance increased by at least the exact
+   `amount_crypto`, and the fee payer is not an owned wallet.
 
 The current application remains `pending`, so the live run truthfully performed
 zero invoice reads, zero pull-request reads, and zero mutations.
@@ -25,6 +29,8 @@ zero invoice reads, zero pull-request reads, and zero mutations.
 | delivery commit | `a0424042815523f438f85c333938af691a9741f8` |
 | observer PR | <https://github.com/Daisuke134/life-manager/pull/1217> |
 | merged Life Manager commit | `f4b52f75d92c91ccffb92316953a6c0b48b7f129` |
+| settlement PR | <https://github.com/Daisuke134/life-manager/pull/1221> |
+| settlement merge | `a9edfe883e9a367f5e595087f393f3f4c44047aa` |
 
 | Category | Gig / application | Cap | Public delivery |
 | --- | --- | --- | --- |
@@ -45,15 +51,18 @@ observer config because no accepted deliverable exists yet.
 
 | Check | Result |
 |---|---|
-| TDD RED | 2/2 test files failed because both implementation modules were absent |
-| focused GREEN | 9/9 |
-| Life Manager full suite | 659/659, plus the new 7/7 pretests |
+| TDD RED | completed/paid tests failed because the observer rejected `completed`, the settlement module was absent, and the DB constraints were EVM-only |
+| focused GREEN | observer, settlement, ledger, runtime, migration, and production-script suites all exit 0 |
+| Life Manager full suite | `npm test` exit 0 before merge |
 | shell syntax | PASS |
 | plist lint | PASS |
-| latest live uGig API run | `deliveries_seen=4`, `pending=4`, `invoice_created=0`, `paid=0` |
+| upstream contract readback | real route is `GET /api/gigs/[id]/invoice`; payment sync changes the application to `completed`; `merchant_tx_hash` is the payout to the worker wallet |
+| production DB migration | wallet/transaction constraints accept EVM or Solana and both read back `convalidated=true`; no ledger row is rewritten |
+| live mainnet adversarial probe | finalized tx `47aSEd…E1Ch` is rejected as `self-funded or has no external payer`; it is not revenue |
+| latest live uGig API run | `deliveries_seen=4`, `pending=4`, `invoice_created=0`, `paid=0`, `revenue_recorded=0` |
 | production launchd | `ai.anicca.life-manager-ugig-invoice-observer`, interval 300 seconds |
 | production first run | `runs=1`, `last exit code=0` |
-| production latest run | `runs=11`, `last exit code=0` |
+| production latest run | `runs=16`, `last exit code=0` |
 | existing Life Manager loops | eight existing labels remained loaded; none was stopped or replaced |
 
 Production stdout:
@@ -63,7 +72,22 @@ Production stdout:
 {"observed_at":"2026-07-28T08:56:27.311Z","deliveries_seen":2,"pending":2,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 {"observed_at":"2026-07-28T09:06:11.186Z","deliveries_seen":3,"pending":3,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 {"observed_at":"2026-07-28T09:34:02.789Z","deliveries_seen":4,"pending":4,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
+{"observed_at":"2026-07-28T09:55:05.299Z","deliveries_seen":4,"pending":4,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"revenue_recorded":0,"revenue_duplicates":0,"rejected":0,"invoices":[]}
 ```
+
+## Primary-source contract
+
+- [uGig gig invoice route](https://github.com/profullstack/ugig.net/blob/master/src/app/api/gigs/%5Bid%5D/invoice/route.ts):
+  “GET /api/gigs/[id]/invoice - Get invoices for a gig.”
+- [uGig CoinPay payment sync](https://github.com/profullstack/ugig.net/blob/master/src/lib/coinpay-payment-sync.ts):
+  a paid gig invoice updates its application to `status: "completed"` and
+  records `merchant_tx_hash`, `settlement_chain`, and `amount_crypto`.
+- [uGig payment receipt](https://github.com/profullstack/ugig.net/blob/master/src/lib/payments/receipt.ts):
+  `merchant_tx_hash` is “CoinPay forwarding those funds on to the recipient's
+  own wallet.”
+- [Solana `getSignatureStatuses`](https://solana.com/docs/rpc/http/getsignaturestatuses)
+  and [Solana `getTransaction`](https://solana.com/docs/rpc/http/gettransaction)
+  are the independent finalized-status and balance-delta witnesses.
 
 ## Safety and evidence limit
 
@@ -74,8 +98,10 @@ Production stdout:
   HTTPS proof fails closed.
 - Existing invoices are detected before checking merge state, making retries
   exactly-once.
-- Invoice status alone does not enter the earnings ledger. Only the later
-  independently verified external payment can advance 13c.
+- Invoice status alone does not enter the earnings ledger. The exact USD-micro
+  row is written with entry key `ugig:invoice:<id>:merchant-payout` only after
+  the independent Solana receipt passes; a retry is a database duplicate, not
+  new revenue.
 - This evidence proves the production acceptance-to-invoice machine is live. It
   does not prove buyer acceptance, invoice payment, or external revenue. Verified
   external revenue therefore remains `$0.00`.
