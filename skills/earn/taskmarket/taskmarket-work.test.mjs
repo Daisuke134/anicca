@@ -99,7 +99,7 @@ function squarePng(width = 1024, height = 1024) {
   return png;
 }
 
-test('runTaskMarketPass generates three files, submits once, requires readback, and records cost', async () => {
+test('runTaskMarketPass generates three files, submits once, retries bounded readback, and records cost', async () => {
   const root = mkdtempSync(join(tmpdir(), 'taskmarket-work-'));
   const ledger = join(root, 'earn-ledger.jsonl');
   const selected = task({
@@ -113,6 +113,7 @@ test('runTaskMarketPass generates three files, submits once, requires readback, 
   let submissionReads = 0;
   const submitCalls = [];
   const prompts = [];
+  const sleeps = [];
 
   const result = await runTaskMarketPass({
     action: 'execute',
@@ -122,9 +123,13 @@ test('runTaskMarketPass generates three files, submits once, requires readback, 
     now: NOW,
   }, {
     listTasks: async () => [selected],
-    listSubmissions: async () => (++submissionReads === 1
-      ? []
-      : [{ id: 'sub_taskmarket_1', taskId: selected.id }]),
+    listSubmissions: async () => {
+      submissionReads += 1;
+      return submissionReads < 4
+        ? []
+        : [{ id: 'sub_taskmarket_1', taskId: selected.id }];
+    },
+    sleep: async (ms) => { sleeps.push(ms); },
     loadWalletKey: () => '0x' + '1'.repeat(64),
     generateImage: async ({ prompt }) => {
       prompts.push(prompt);
@@ -151,6 +156,8 @@ test('runTaskMarketPass generates three files, submits once, requires readback, 
     costUsd: 0.065,
   });
   assert.equal(prompts.length, 1);
+  assert.equal(submissionReads, 4);
+  assert.deepEqual(sleeps, [1000, 1000]);
   assert.match(prompts[0], /Sak Tahn Waax/);
   assert.match(prompts[0], /260, 365, 584, 780/);
   assert.equal(submitCalls.length, 1);
@@ -209,9 +216,85 @@ test('runTaskMarketPass does not generate or submit an already-owned task', asyn
   assert.equal(submitted, false);
 });
 
-test('runTaskMarketPass fails closed when submit has no official readback', async () => {
+test('runTaskMarketPass reconciles an existing official submit tx exactly once without new image cost', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'taskmarket-work-reconcile-'));
+  const ledger = join(root, 'earn-ledger.jsonl');
+  const selected = task({ id: '0x' + 'd'.repeat(64) });
+  const submitTxHash = '0x' + 'e'.repeat(64);
+  await import('node:fs/promises').then(({ writeFile }) => writeFile(ledger, `${JSON.stringify({
+    ts: Math.floor(NOW / 1000),
+    wake: 'wake-original',
+    source: 'taskmarket_work_attempt',
+    task: selected.id,
+    earn_usdc: 0,
+    cost_usdc: 0.065,
+    net_usdc: -0.065,
+    submission_id: null,
+    model: 'openai/gpt-image-2',
+  })}\n`));
+  let generated = false;
+  let submitted = false;
+  const deps = {
+    listTasks: async () => [selected],
+    listSubmissions: async () => [{ taskId: selected.id, submitTxHash }],
+    loadWalletKey: () => '0x' + '1'.repeat(64),
+    generateImage: async () => { generated = true; },
+    downloadImage: async () => squarePng(),
+    submitTask: async () => { submitted = true; },
+  };
+
+  const first = await runTaskMarketPass({
+    action: 'execute',
+    aniccaHome: root,
+    earnLedgerPath: ledger,
+    wakeId: 'wake-reconcile-1',
+    now: NOW,
+  }, deps);
+  const second = await runTaskMarketPass({
+    action: 'execute',
+    taskId: selected.id,
+    aniccaHome: root,
+    earnLedgerPath: ledger,
+    wakeId: 'wake-reconcile-2',
+    now: NOW + 1,
+  }, deps);
+
+  assert.deepEqual(first, {
+    ok: true,
+    action: 'reconciled_submission',
+    taskId: selected.id,
+    submissionId: submitTxHash,
+    costUsd: 0,
+  });
+  assert.deepEqual(second, {
+    ok: true,
+    action: 'already_submitted',
+    taskId: selected.id,
+    submissionId: submitTxHash,
+    costUsd: 0,
+  });
+  assert.equal(generated, false);
+  assert.equal(submitted, false);
+  const rows = readFileSync(ledger, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[1], {
+    ts: Math.floor(NOW / 1000),
+    wake: 'wake-reconcile-1',
+    source: 'taskmarket_work_reconciliation',
+    task: selected.id,
+    earn_usdc: 0,
+    cost_usdc: 0,
+    net_usdc: 0,
+    submission_id: submitTxHash,
+    reconciles_wake: 'wake-original',
+  });
+});
+
+test('runTaskMarketPass fails closed after bounded retries when submit has no official readback', async () => {
   const root = mkdtempSync(join(tmpdir(), 'taskmarket-work-readback-'));
   const selected = task({ id: '0x' + 'c'.repeat(64) });
+  let submissionReads = 0;
+  const sleeps = [];
   await assert.rejects(
     runTaskMarketPass({
       action: 'execute',
@@ -221,7 +304,8 @@ test('runTaskMarketPass fails closed when submit has no official readback', asyn
       now: NOW,
     }, {
       listTasks: async () => [selected],
-      listSubmissions: async () => [],
+      listSubmissions: async () => { submissionReads += 1; return []; },
+      sleep: async (ms) => { sleeps.push(ms); },
       loadWalletKey: () => '0x' + '1'.repeat(64),
       generateImage: async () => ({
         url: 'https://cdn.blockrun.example/missing.png',
@@ -233,4 +317,6 @@ test('runTaskMarketPass fails closed when submit has no official readback', asyn
     }),
     /submission_readback_missing/,
   );
+  assert.equal(submissionReads, 6);
+  assert.deepEqual(sleeps, [1000, 1000, 1000, 1000]);
 });
