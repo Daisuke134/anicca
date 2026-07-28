@@ -164,9 +164,12 @@ bootstrap subsidy である。
 historical 1行を含む`3 rows / 3 unique tx`で、今回各txのcountは1。`ai.anicca.pm-decision-loop`は引き続き
 `[DRY]`の判断・Telegram報告用であり、実注文主体ではない。
 
-`earn-watch.sh` は裸の `timeout` を `/opt/homebrew/bin/timeout 300` に直し、実launchd発火で
-`payee_usdc=0.628 / pm_redeemable=0 / bazaar_rentabox=yes / exit 0`を実測した。ただし redeem 分岐を通っていない。
-証明できたのはcommand-not-found即死が消えたことまでで、次のredeemable positionで初めてredeem成功を実証する。
+`earn-watch.sh` は裸の `timeout` を `/opt/homebrew/bin/timeout 300` に直した後、実際に
+`pm_redeemable=2`のredeem分岐を通った。この実行で次の欠損が露出し、launchd PATHに無い裸の`node`が
+identity resolverを無出力にして、`redeem.py`は0-byte keyで失敗した。resolverも
+`/opt/homebrew/bin/node`へ直し、launchd相当のclean PATHで32-byte key解決と`bash -n`を実証した。
+ただし次周期では別の冗長経路により`pm_redeemable=0`へ戻っており、修正後の`earn-watch`自身による実txはまだ未実証。
+次のredeemable positionで実txとreceipt status 1まで確認してREDEEM-1を閉じる。
 
 Railway `x402-agents` は Node 24 + 有効なfacilitator/LLM credentialで復旧し、9/9 paid routeがmainnet
 `402 Payment Required`を返す。Franklin 2から`POST /context-compressor`へ`$0.008`を実支払し、
@@ -396,7 +399,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | ID | 自動待機 | 完了条件 |
 |---|---|---|
 | REPORT-1 | 別日dailyをあと6件蓄積 | daily 7/7、weekly 1/1、panel差0。同一periodを手動水増ししない |
-| REDEEM-1 | 次の`pm_redeemable>0` | 修正済み`earn-watch.sh`のredeem分岐、実tx、receipt status 1 |
+| REDEEM-1 | 次の`pm_redeemable>0` | absolute `node`/`timeout`済み`earn-watch.sh`のredeem分岐、実tx、receipt status 1 |
 | acquisition | x402/The402の外部posting/buyerを5分周期で探索 | external receiptが来た時だけ13c-SELL/WORKへ進む |
 | TaskMarket award | `ai.anicca.life-manager-taskmarket-ledger`が5分周期でsubmissionを現在状態から再照合 | external requesterのaward + finalized Base USDC Transfer一致時だけ6桁精度で13c-WORKへ記帳 |
 
