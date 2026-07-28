@@ -3,6 +3,7 @@
 const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
 const {
+  scopeSessionContextToOrigin,
   readBrowserAuthSession: defaultReadBrowserAuthSession,
   upsertBrowserAuthSession: defaultUpsertBrowserAuthSession,
   invalidateBrowserAuthSession: defaultInvalidateBrowserAuthSession,
@@ -145,7 +146,7 @@ function makeStagehandSteelDriver(options = {}) {
           };
           const record = await readBrowserAuthSession(identity);
           auth = { ...identity, loaded: Boolean(record) };
-          if (record) context = record.context;
+          if (record) context = scopeSessionContextToOrigin(record.context, identity.origin);
         }
       }
       const createOptions = { blockAds: true };

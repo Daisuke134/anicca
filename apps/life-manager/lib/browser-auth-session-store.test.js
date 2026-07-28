@@ -2,9 +2,12 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { createCipheriv, createHash } = require("node:crypto");
+const canonicalize = require("canonicalize");
 const {
   normalizeAuthOrigin,
   validateSessionContext,
+  scopeSessionContextToOrigin,
   sealBrowserContext,
   openBrowserContext,
   readBrowserAuthSession,
@@ -13,6 +16,110 @@ const {
 } = require("./browser-auth-session-store.js");
 
 const KEY_HEX = "11".repeat(32);
+
+function sealLegacyUnscopedContext({ uid, origin, principalKind, context }) {
+  const plaintext = canonicalize(context);
+  const iv = Buffer.alloc(12, 7);
+  const cipher = createCipheriv("aes-256-gcm", Buffer.from(KEY_HEX, "hex"), iv);
+  cipher.setAAD(Buffer.from(`${uid}\n${origin}\n${principalKind}\n1`, "utf8"));
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  return {
+    uid,
+    origin,
+    principal_kind: principalKind,
+    ciphertext: ciphertext.toString("base64url"),
+    iv: iv.toString("base64url"),
+    auth_tag: cipher.getAuthTag().toString("base64url"),
+    context_sha256: createHash("sha256").update(plaintext, "utf8").digest("hex"),
+    key_version: 1,
+  };
+}
+
+test("browser auth contexts are strictly scoped to the exact public HTTPS origin", () => {
+  const foreignCookies = [
+    ["sibling", "evilluma.com"],
+    ["public-tld", ".com"],
+    ["public-multilabel", ".co.uk"],
+    ["localhost", "localhost"],
+    ["private-ip", "127.0.0.1"],
+    ["private-name", ".internal"],
+    ["other-site", "example.org"],
+    ["suffix-trick", "luma.com.evil"],
+    ["prefix-trick", "evilluma.com"],
+    ["child-domain", "auth.app.luma.com"],
+    ["other-app", "other.luma.com"],
+    ["foreign-root", "google.com"],
+  ].map(([name, domain]) => ({
+    name,
+    value: `drop-${name}`,
+    domain,
+    path: "/",
+  }));
+  const scoped = scopeSessionContextToOrigin({
+    cookies: [
+      { name: "exact", value: "keep-exact", domain: "app.luma.com", path: "/", hostOnly: true },
+      { name: "parent", value: "keep-parent", domain: ".luma.com", path: "/account" },
+      ...foreignCookies,
+    ],
+    localStorage: {
+      "https://app.luma.com": { marker: "keep-local" },
+      "https://evilluma.com": { marker: "drop-sibling-local" },
+      "http://app.luma.com": { marker: "drop-http-local" },
+    },
+    sessionStorage: [
+      { origin: "https://app.luma.com", values: { marker: "keep-session" } },
+      { origin: "https://luma.com", values: { marker: "drop-parent-session" } },
+    ],
+    indexedDB: [
+      { origin: "https://app.luma.com", databases: [{ name: "keep-db" }] },
+      { origin: "https://app.luma.com/path", databases: [{ name: "drop-path-db" }] },
+      { origin: "https://evil.example", databases: [{ name: "drop-foreign-db" }] },
+    ],
+  }, "https://app.luma.com/path");
+
+  assert.deepEqual(scoped.cookies.map(({ name, domain, path }) => ({ name, domain, path })), [
+    { name: "exact", domain: "app.luma.com", path: "/" },
+    { name: "parent", domain: ".luma.com", path: "/account" },
+  ]);
+  assert.deepEqual(scoped.localStorage, {
+    "https://app.luma.com": { marker: "keep-local" },
+  });
+  assert.deepEqual(scoped.sessionStorage, [
+    { origin: "https://app.luma.com", values: { marker: "keep-session" } },
+  ]);
+  assert.deepEqual(scoped.indexedDB, [
+    { origin: "https://app.luma.com", databases: [{ name: "keep-db" }] },
+  ]);
+  assert.doesNotMatch(JSON.stringify(scoped), /drop-/);
+  assert.throws(() => scopeSessionContextToOrigin({
+    cookies: [{ name: "foreign", value: "drop-only", domain: "evilluma.com", path: "/" }],
+  }, "https://luma.com"), /browser auth context invalid/i);
+});
+
+test("browser auth defensive open removes cross-origin data from contaminated legacy rows", () => {
+  const legacy = sealLegacyUnscopedContext({
+    uid: "u-one",
+    origin: "https://luma.com",
+    principalKind: "user_provided",
+    context: {
+      cookies: [
+        { name: "allowed", value: "keep-cookie", domain: ".luma.com", path: "/" },
+        { name: "foreign", value: "drop-cookie", domain: ".google.com", path: "/" },
+      ],
+      localStorage: {
+        "https://luma.com": { marker: "keep-storage" },
+        "https://accounts.google.com": { marker: "drop-storage" },
+      },
+    },
+  });
+
+  const opened = openBrowserContext(legacy, KEY_HEX);
+  assert.deepEqual(opened, {
+    cookies: [{ name: "allowed", value: "keep-cookie", domain: ".luma.com", path: "/" }],
+    localStorage: { "https://luma.com": { marker: "keep-storage" } },
+  });
+  assert.doesNotMatch(JSON.stringify(opened), /drop-cookie|drop-storage/);
+});
 
 test("browser auth contexts are encrypted, tenant-bound, and do not expose plaintext", () => {
   const one = { cookies: [{ name: "session", value: "tenant-one", domain: "auth.example", path: "/" }] };
@@ -51,7 +158,20 @@ test("browser auth inputs fail closed to HTTPS origins, principal kinds, bounded
 });
 
 test("browser auth session persistence uses exact parameterized tenant rows and never sends plaintext to Postgres", async () => {
-  const context = { cookies: [{ name: "session", value: "tenant-one", domain: "auth.example", path: "/" }] };
+  const context = {
+    cookies: [
+      { name: "session", value: "tenant-one", domain: "auth.example", path: "/" },
+      { name: "foreign", value: "foreign-one", domain: "other.example", path: "/" },
+    ],
+    localStorage: {
+      "https://auth.example": { marker: "tenant-storage" },
+      "https://other.example": { marker: "foreign-storage" },
+    },
+  };
+  const scopedContext = {
+    cookies: [{ name: "session", value: "tenant-one", domain: "auth.example", path: "/" }],
+    localStorage: { "https://auth.example": { marker: "tenant-storage" } },
+  };
   const sealed = sealBrowserContext({
     uid: "u-one", origin: "https://auth.example", principalKind: "user_provided", context,
   }, KEY_HEX);
@@ -71,7 +191,7 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
       return { rows: [row] };
     },
   });
-  assert.deepEqual(read.context, context);
+  assert.deepEqual(read.context, scopedContext);
   assert.equal(read.context_sha256, sealed.context_sha256);
   assert.equal(read.key_version, 1);
   assert.match(reads[0].sql, /WHERE uid = \$1 AND origin = \$2 AND principal_kind = \$3/i);
@@ -87,12 +207,12 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
     },
   });
   assert.equal(saved.state, "active");
-  assert.deepEqual(saved.context, context);
+  assert.deepEqual(saved.context, scopedContext);
   assert.equal(saved.context_sha256, sealed.context_sha256);
   assert.equal(saved.key_version, 1);
   assert.match(writes[0].sql, /INSERT INTO public\.lm_browser_auth_sessions/i);
   assert.match(writes[0].sql, /ON CONFLICT \(uid, origin, principal_kind\) DO UPDATE/i);
-  assert.doesNotMatch(JSON.stringify(writes[0].params), /tenant-one/);
+  assert.doesNotMatch(JSON.stringify(writes[0].params), /tenant-one|tenant-storage|foreign-one|foreign-storage/);
 
   const invalidated = await invalidateBrowserAuthSession({
     uid: "u-one", origin: "https://auth.example", principalKind: "user_provided",
@@ -110,7 +230,7 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
 test("browser auth storage reads the design runtime key and ignores the retired environment name", async () => {
   const priorSessionKey = process.env.LM_BROWSER_SESSION_KEY;
   const priorRetiredKey = process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX;
-  const context = { sessionStorage: { current: "tenant-session" } };
+  const context = { sessionStorage: { "https://auth.example": { current: "tenant-session" } } };
   const sealed = sealBrowserContext({
     uid: "u-one", origin: "https://auth.example", principalKind: "user_provided", context,
   }, KEY_HEX);

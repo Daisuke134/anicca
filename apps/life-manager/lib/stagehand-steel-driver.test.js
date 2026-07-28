@@ -433,12 +433,24 @@ test("active provider OTP form remains a structured 2FA handoff", async () => {
 
 test("login-dependent sessions restore only the exact tenant, origin, and principal context", async () => {
   const one = {
-    cookies: [{ name: "sid", value: "tenant-one-cookie", domain: "auth.example", path: "/" }],
-    localStorage: { "https://auth.example": { marker: "tenant-one-storage" } },
+    cookies: [
+      { name: "sid", value: "tenant-one-cookie", domain: "auth.example", path: "/" },
+      { name: "foreign", value: "foreign-one-cookie", domain: "other.example", path: "/" },
+    ],
+    localStorage: {
+      "https://auth.example": { marker: "tenant-one-storage" },
+      "https://other.example": { marker: "foreign-one-storage" },
+    },
   };
   const two = {
-    cookies: [{ name: "sid", value: "tenant-two-cookie", domain: "auth.example", path: "/" }],
-    localStorage: { "https://auth.example": { marker: "tenant-two-storage" } },
+    cookies: [
+      { name: "sid", value: "tenant-two-cookie", domain: "auth.example", path: "/" },
+      { name: "foreign", value: "foreign-two-cookie", domain: "other.example", path: "/" },
+    ],
+    localStorage: {
+      "https://auth.example": { marker: "tenant-two-storage" },
+      "https://other.example": { marker: "foreign-two-storage" },
+    },
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: {
@@ -473,14 +485,26 @@ test("login-dependent sessions restore only the exact tenant, origin, and princi
     }],
   ]);
   assert.deepEqual(calls.filter(([name]) => name === "create").map(([, body]) => body), [
-    { blockAds: true, sessionContext: one },
-    { blockAds: true, sessionContext: two },
+    {
+      blockAds: true,
+      sessionContext: {
+        cookies: [one.cookies[0]],
+        localStorage: { "https://auth.example": { marker: "tenant-one-storage" } },
+      },
+    },
+    {
+      blockAds: true,
+      sessionContext: {
+        cookies: [two.cookies[0]],
+        localStorage: { "https://auth.example": { marker: "tenant-two-storage" } },
+      },
+    },
   ]);
   assert.equal(Object.hasOwn(calls[0][1], "persist"), false);
   assert.equal(Object.hasOwn(calls[0][1], "userDataDir"), false);
   assert.doesNotMatch(
     JSON.stringify([sessionOne, sessionTwo]),
-    /tenant-(?:one|two)-(?:cookie|storage)/,
+    /(?:tenant|foreign)-(?:one|two)-(?:cookie|storage)/,
     "raw context never enters the public session result",
   );
 });
