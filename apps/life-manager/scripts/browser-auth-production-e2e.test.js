@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { runBrowserAuthProductionE2E } from './browser-auth-production-e2e.js';
+import { makeProductionDeps, runBrowserAuthProductionE2E } from './browser-auth-production-e2e.js';
 
 const REQUIRED_ENV = {
   BROWSER_AUTH_PRODUCTION_ORIGIN: 'https://app.example.test',
@@ -88,6 +88,88 @@ function makeDeps({ mutateTerminal } = {}) {
   };
 }
 
+function makeProductionAdapterBoundaries() {
+  const sqlCalls = [];
+  let row = null;
+  const query = async (sql, params) => {
+    sqlCalls.push({ sql, params });
+    if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) {
+      row = {
+        id: 'job-production-adapter-1',
+        uid: params[0],
+        telegram_chat_id: params[1],
+        telegram_message_id: params[2],
+        telegram_update_id: params[3],
+        prompt_hash: params[4],
+        goal: params[5],
+        locale: params[6],
+        action_kind: params[7],
+        requires_login: params[8],
+        principal_kind: params[9],
+        auth_marker_hash: params[10],
+        status: params[11],
+        trace: [],
+      };
+      return { rows: [row] };
+    }
+    if (/claim_lm_browser_job_by_id/i.test(sql)) {
+      assert.equal(params[0], row.id);
+      assert.equal(row.status, 'queued');
+      row.status = 'claimed';
+      return { rows: [row] };
+    }
+    if (/append_lm_browser_job_trace/i.test(sql)) {
+      row.trace.push({ stage: params[1], meta: JSON.parse(params[2]) });
+      return { rows: [row] };
+    }
+    if (/finish_lm_browser_job/i.test(sql)) {
+      assert.equal(params[0], row.id);
+      assert.equal(row.status, 'claimed');
+      row.status = params[1];
+      row.receipt = JSON.parse(params[2]);
+      return { rows: [row] };
+    }
+    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public\.lm_browser_jobs/i.test(sql)) {
+      assert.equal(params[0], row.id);
+      return { rows: [row] };
+    }
+    throw new Error(`unexpected SQL: ${sql}`);
+  };
+  const driver = {
+    async openSession() { return { id: 'steel-production-adapter-1' }; },
+    async discoverAndAct() {
+      return {
+        selectedUrl: 'https://app.example.test/dashboard',
+        selectedOrigin: 'https://app.example.test',
+        selectionReason: 'existing provider page',
+        action: 'read authenticated state',
+        sideEffectStarted: false,
+      };
+    },
+    async readProviderReceipt() {
+      return { confirmed: false, status: 'login_required', handoffRequired: true, handoffReason: 'login' };
+    },
+    async captureEvidence() { return { bytes: Buffer.from('evidence') }; },
+    async releaseSession(_id, { providerReceipt }) {
+      assert.equal(providerReceipt.handoff_reason, 'login');
+      return {
+        released: true,
+        origin: 'https://app.example.test',
+        principal_kind: 'agent_owned',
+        auth_context_loaded: true,
+        auth_context_invalidated: true,
+      };
+    },
+  };
+  return {
+    sqlCalls,
+    query,
+    driver,
+    async sendMessage() { return { ok: true, result: { message_id: 11 } }; },
+    async sendPhoto() { return { ok: true, result: { message_id: 12 } }; },
+  };
+}
+
 function assertBoundedResult(result, mode) {
   assert.deepEqual(Object.keys(result).sort(), OUTPUT_KEYS.slice().sort());
   assert.equal(result.mode, mode);
@@ -148,6 +230,38 @@ test('CLI never reflects a secret-like unknown mode to stdout or stderr', () => 
   assert.equal(child.stdout, '');
   assert.equal(child.stderr, 'Unknown browser auth production E2E mode\n');
   assertNoSecrets(`${child.stdout}${child.stderr}`);
+});
+
+test('production adapter uses real durable store and browser-job runtime from claim through persisted terminal readback', async () => {
+  const boundaries = makeProductionAdapterBoundaries();
+  const deps = makeProductionDeps(REQUIRED_ENV, boundaries);
+  const markerHash = 'a'.repeat(64);
+  const queued = await deps.durableQueue.enqueue({
+    tenant: 'tenant-a', markerHash, origin: REQUIRED_ENV.BROWSER_AUTH_PRODUCTION_ORIGIN,
+  });
+  assert.deepEqual(queued, { id: 'job-production-adapter-1', auth_marker_hash: markerHash });
+
+  const execution = await deps.executor.run({ jobId: queued.id });
+  assert.equal(execution.trace_id, queued.id);
+  const terminal = await deps.durableQueue.read({ id: queued.id });
+
+  assert.equal(terminal.status, 'handoff_required');
+  assert.equal(terminal.auth_marker_hash, markerHash);
+  assert.equal(terminal.receipt.auth_marker_hash, markerHash);
+  assert.equal(terminal.receipt.provider_receipt.handoff_required, true);
+  assert.equal(terminal.receipt.steel_released, true);
+  assert.equal(terminal.receipt.evidence_message_id, '12');
+  assert.ok(terminal.trace.some((entry) => entry.stage === 'auth_context_invalidated' && entry.meta.invalidated === true));
+  const steps = boundaries.sqlCalls.map(({ sql }) => {
+    if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) return 'enqueue';
+    if (/claim_lm_browser_job_by_id/i.test(sql)) return 'claim';
+    if (/finish_lm_browser_job/i.test(sql)) return 'finish';
+    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public\.lm_browser_jobs/i.test(sql)) return 'read';
+    return 'trace';
+  });
+  assert.ok(steps.indexOf('enqueue') < steps.indexOf('claim'));
+  assert.ok(steps.indexOf('claim') < steps.indexOf('finish'));
+  assert.ok(steps.indexOf('finish') < steps.lastIndexOf('read'));
 });
 
 test('executes the durable claim → runtime → finish → terminal readback path before emitting hashes', async () => {

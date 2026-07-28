@@ -157,13 +157,14 @@ async function runBrowserAuthProductionE2E({ mode, env = process.env, deps } = {
   return Object.freeze(result);
 }
 
-function makeProductionDeps(env) {
+function makeProductionDeps(env, boundaries = {}) {
   const {
     enqueueBrowserJob,
     claimBrowserJobById,
     readBrowserJob,
   } = require("../lib/browser-job-store.js");
   const { runNextBrowserJob } = require("../lib/browser-job-runtime.js");
+  const storeOptions = typeof boundaries.query === "function" ? { query: boundaries.query } : {};
   let sequence = 0;
   const uidFor = (tenant) => tenant === "tenant-a"
     ? String(env.BROWSER_AUTH_TENANT_A_UID)
@@ -187,20 +188,25 @@ function makeProductionDeps(env) {
             principalKind: "agent_owned",
             authMarkerHash: markerHash,
           },
-        });
+        }, storeOptions);
         return {
           id: queued && queued.job && queued.job.id,
           auth_marker_hash: queued && queued.job && queued.job.auth_marker_hash,
         };
       },
       async read({ id }) {
-        return readBrowserJob(id);
+        return readBrowserJob(id, storeOptions);
       },
     },
     executor: {
       async run({ jobId }) {
         return runNextBrowserJob({
-          claimJob: () => claimBrowserJobById(jobId),
+          ...storeOptions,
+          ...(boundaries.driver ? { driver: boundaries.driver } : {}),
+          ...(boundaries.sendMessage ? { sendMessage: boundaries.sendMessage } : {}),
+          ...(boundaries.sendPhoto ? { sendPhoto: boundaries.sendPhoto } : {}),
+          telegramToken: env.LM_TELEGRAM_BOT_TOKEN,
+          claimJob: () => claimBrowserJobById(jobId, storeOptions),
         });
       },
     },
