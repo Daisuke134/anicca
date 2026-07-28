@@ -9,6 +9,7 @@ function fixture(fixtureOptions = {}) {
   let options;
   const page = {
     async goto(url) { calls.push(["goto", url]); },
+    async waitForTimeout(ms) { calls.push(["waitForTimeout", ms]); },
     async screenshot(options) {
       calls.push(["screenshot", options]);
       return Buffer.from("real-cloud-png");
@@ -196,6 +197,7 @@ test("a runtime-supplied public HTTPS detail URL skips search and goes straight 
   assert.match(acts[5][1], /Which best describes you.*AI Researcher/i);
   assert.match(acts[6][1], /consent dropdown.*Register.*No.*do not consent/i);
   assert.match(acts[7][1], /submit.*registration/i);
+  assert.deepEqual(calls.find(([name]) => name === "waitForTimeout"), ["waitForTimeout", 15_000]);
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {

@@ -243,6 +243,7 @@ function makeStagehandSteelDriver(options = {}) {
               );
             }
           }
+          await page.waitForTimeout(15_000);
         } else {
           await actionAgent.execute(actionTask);
         }
