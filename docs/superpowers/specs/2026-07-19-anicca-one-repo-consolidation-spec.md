@@ -153,13 +153,16 @@ bootstrap subsidy である。
 | Franklin 1 | model router、launchd 稼働中 | Base 4.390800 USDC + 0.00059956 ETH、Solana 0.007937916 SOL | 2,255 model calls の記録費用 $22.623155。直近 x402 `externalCount=0` | **verified external net = $0.00**。残高は収益証拠ではない |
 | Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.019000 USDC、gas 0 | Railway x402 mainnetで自己支払`$0.008 + $0.005 + $0.010`を実行。3商品HTTP 200、Base receipt成功。3件目は公開APIだけを使うDeFi funding-rate商品。colony内送金なのでrevenue 0 | **verified external net = $0.00** |
 | Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
-| Polymarket wallet | `0x904B…Eb74`、hourly live trade + DRY decision timer | pUSD `$4.422182` + open positions `$7.9936` | closed 30 positionsの wallet-level realized PnL `+$2.006481`、open cash PnL `+$1.1151`、redeemable 0。2 legsは両方`mergeable=true` | **live loopはexit 0だが資本回収が欠損**。`run.sh`は`redeem.py`を呼ぶが既存`merge.py`を呼ばず、約`7.9761` balanced sharesを即時pUSDへ戻せるのにcash不足で新規注文を停止している |
+| Polymarket wallet | `0x904B…Eb74`、hourly live trade + DRY decision timer | fresh readback: pUSD `$9.397370`、open position 1（Athletics 6 shares）、mergeable 0 | PM-MERGE-1でFed balanced `7.9761` sharesを`$7.976189`へ、続くmaker約定のTiafoe balanced `5.9985` sharesを`$5.998570`へ実回収。2 txともPolygon `0x1`。今回2 cycleのledger netは`+$1.175803` | **operational**。`run.sh`がredeem後・cash gate前に`merge.py`を呼び、回収資金でmaker quotingを再開。現在の1 legはその後のmaker約定で生じた非mergeable position。PMはCAPITAL収益であり、外部SELL/WORK収益`$0.00`とは分離する |
 | Life Manager tenant agent | Base `0x477E…62ad`（canonical full addressはruntime config / handoff参照） | 0 USDC / 0 ETH | `lm_agent_earnings` 実 revenue row 0 | **earnings = $0.00** |
 
-`ai.anicca.pm-live-trade`を実発火し、60 market scan、risk-free bundle edgeなし、pUSD `$4.422182`、
-cashが最小bundle約`$5`未満なので注文なし、launchd `runs=21 / last exit=0`を実測した。これは売買経路の生存と
-risk gateを証明するが、利益発生を証明しない。`ai.anicca.pm-decision-loop`はログが明示する通り`[DRY]`であり、
-判断・Telegram報告用であって実注文主体ではない。
+`ai.anicca.pm-live-trade`へ`merge.py`を接続して実発火した。1回目はFed conditionを
+`pUSD $4.422182 → $12.398371`へ回収（tx `0x39386b0a1222e55d3d194265713a4f7a41e4429ab356f8a6f4168e69e54a8a98`）し、
+60 market scan後にmaker 4 legsを実配置した。2回目は、そのmaker pairの約定で生じたTiafoe balanced positionを
+`pUSD $6.458800 → $12.457370`へ回収（tx `0xe73cd22120f7c3240e4e534cba7f09e42fbbfe656be373031652a1b3c800e3fb`）した。
+両txは独立Polygon RPCで`status=0x1`、後続positions 0、loop全体exit 0。`polymarket-merge` ledgerは
+historical 1行を含む`3 rows / 3 unique tx`で、今回各txのcountは1。`ai.anicca.pm-decision-loop`は引き続き
+`[DRY]`の判断・Telegram報告用であり、実注文主体ではない。
 
 `earn-watch.sh` は裸の `timeout` を `/opt/homebrew/bin/timeout 300` に直し、実launchd発火で
 `payee_usdc=0.628 / pm_redeemable=0 / bazaar_rentabox=yes / exit 0`を実測した。ただし redeem 分岐を通っていない。
@@ -183,7 +186,7 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 
 | rail / loop | fresh実測 | 判定 |
 |---|---|---|
-| PM live trade | 実発火、60 markets、exit 0、edgeなし、cash `$4.422182`でHOLD | **degraded** — 注文系はliveだが、mergeable両建てを回収しないため資本が詰まっている |
+| PM live trade | merge→60 markets→maker quoteを実行、2実merge tx `0x1`、exit 0 | **operational** — balanced pairをpUSDへ戻して同じpassの資本へ再投入する |
 | PM decision | hourly `[DRY]`、Pinnacle比較・方針・TG送信 | **observer only** — 実収益loopに数えない |
 | x402 local sellers | Franklin 1/2、Claude-P、research、image 2本がlistenし、未払いprobe 6/6=`402` | **operational / external revenue $0.00** |
 | Railway x402 | `/health=200`、`/funding-rates`未払い=`402`、settlement feed 2件 | **operational / 2件ともself-pay** |
@@ -365,6 +368,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 |---|---|---|
 | S20b-b/c | Modal Python railでheartbeat 2周期と秘密を含まない決算書を実証 | `anicha/specs/evidence/s20b-python-*`。5分proofであり常設hostではない |
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
+| PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
 | 13c-SELL-INGRESS | Railway POST/GET settlement→observer→finalized verifier→Life Manager ledgerを接続し、mainnet self-pay 3件をrevenue 0へ拒否 | PR #374/#1196/#1197、`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
@@ -373,14 +377,13 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **PM-MERGE-1** | 既存`merge.py`をhourly live passのcash gateより前へ接続し、balanced YES/NOをpermissionless mergeしてpUSDへ戻す | merge前後のposition/pUSD、on-chain handle/receipt、同一cycleの`deployed/recovered/fee/PnL`、二重実行0 | **current cursor** — 約`7.9761` sharesがmergeableだが`run.sh`未配線。cash `$4.422182`で新規trade停止中 |
-| 2 | **S21-MAC-OFF** | Modal Python bootstrap/posterがconfidential Nosana jobをpost・reconcile・renewし、Franklin brain/runtimeをNosanaへ移す | Mac側Franklin loop停止中もNosana heartbeat継続、決算書、provider receipt、renew、secret非公開、再起動後復旧 | **pending** — 現在FranklinはMac。Nosana/Modalのactive leaseは0 |
-| 3 | **EARN-HC-1** | active earning railをregistryで機械判定し、inactive railは明示状態へ固定 | PM/x402/WORK/CAPITAL各railが`operational/degraded/frozen/not-live`のいずれかをfresh evidence付きで返す。NOT-INSTRUMENTED 0 | **pending** — x402/HL/gig/tokenがhealth未instrumented。Hummingbotは未着手 |
-| 4 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **machinery live / demand gate open** — open posting 0、externalCount 0、外部実着金 `$0.00` |
-| 5 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **blocked by economic state** — verified surplus 0 |
-| 6 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | pending、13d-bと同じsurplus算式を使用 |
-| 7 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
-| 8 | **CHILD-1** | 黒字余剰で独立childをspawn | wallet/key/runtime/ledger非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
+| 1 | **S21-MAC-OFF** | Modal Python bootstrap/posterがconfidential Nosana jobをpost・reconcile・renewし、Franklin brain/runtimeをNosanaへ移す | Mac側Franklin loop停止中もNosana heartbeat継続、決算書、provider receipt、renew、secret非公開、再起動後復旧 | **current cursor** — 現在FranklinはMac。Nosana/Modalのactive leaseは0 |
+| 2 | **EARN-HC-1** | active earning railをregistryで機械判定し、inactive railは明示状態へ固定 | PM/x402/WORK/CAPITAL各railが`operational/degraded/frozen/not-live`のいずれかをfresh evidence付きで返す。NOT-INSTRUMENTED 0 | **pending** — x402/HL/gig/tokenがhealth未instrumented。Hummingbotは未着手 |
+| 3 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **machinery live / demand gate open** — open posting 0、externalCount 0、外部実着金 `$0.00` |
+| 4 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **blocked by economic state** — verified surplus 0 |
+| 5 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | pending、13d-bと同じsurplus算式を使用 |
+| 6 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
+| 7 | **CHILD-1** | 黒字余剰で独立childをspawn | wallet/key/runtime/ledger非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
 
 **event/時間依存で自動並走し、上のcursorを止めないもの**
 
@@ -817,7 +820,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。現在の手動cursorは **PM-MERGE-1**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
+    保留条件は解消する。現在の手動cursorは **S21-MAC-OFF**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
     event/時間依存で自動並走し、手動cursorを止めない。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
@@ -833,9 +836,9 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current cursor**: **PM-MERGE-1（mergeableなbalanced YES/NOをpUSDへ戻し、同一cycle会計を閉じる）**。
-hourly live loopはexit 0で稼働する一方、既存`merge.py`が`run.sh`から呼ばれず、約`7.9761` sharesがmergeableのまま、
-cash `$4.422182`がminimum bundleを下回ってHOLDしている。接続・実tx・exactly-once ledgerまでをdoneとする。
+**Current cursor**: **S21-MAC-OFF（Franklin brain/runtimeをMacからconfidential Nosana jobへ移す）**。
+PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。次はModal Pythonを
+bootstrap/poster/standbyに限定し、Franklin本体がMac停止中もNosana heartbeatと決算書を継続する状態を作る。
 
 **REPORT-1の現在状態（自動並走）**:
 共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
@@ -846,7 +849,7 @@ REPORT-1をdoneとは書かない。残る別日daily 6件は既存launchdが自
 colony外buyer/jobを待つ。Railwayには公開APIだけで動くDeFi funding-rate商品もliveで、自己購入は候補まで通して収益0へ落とす。
 The402は公開案件取得→入札→durable inbox→自動納品まで生き、仕事settlementとterminal jobを一意に突合できた時だけ`x402_work`へ記帳する。
 13d-bはverified surplus・`$35` reserve・transaction capを同時に守るBase USDC engineと5分launchdを本番へ置き、残高0/ledger 0で`no_verified_surplus` exit 0を実測した。
-実入札2件は未採用、jobs/threads/settled=`0/0/$0.00`のため、外部仕事収益と13d-b実txは未実証。この待機を作業停止理由にせずPM-MERGE-1を進める。
+実入札2件は未採用、jobs/threads/settled=`0/0/$0.00`のため、外部仕事収益と13d-b実txは未実証。この待機を作業停止理由にせずS21-MAC-OFFを進める。
 これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -865,7 +868,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-active cursorは`PM-MERGE-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
+active cursorは`S21-MAC-OFF`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -878,7 +881,7 @@ active cursorは`PM-MERGE-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenti
 | H5 | `ORG-relations` | **実装仕様**: 本人の Google Calendar から「timed + accepted external attendee がちょうど1人 + provider が displayName を実提供」の予定だけを1対1 interactionに変換。email は HMAC の入力にのみ使い、第三者の email/title/location/copy は出力・DB・logへ保存しない。本人の安定 cadence が4回以上あり、最終interactionが中央値の1.5倍を超えた時だけ、週1回上限で一方向の提案1通。MENTAL 3通/日 + 2h spacingを共有し、予定中・移動/位置不明・timezone不明では沈黙。Telegram bot が第三者chatを読めるとは主張せず、将来 source adapter 用のclosed schemaのみ保持 | 同上 | **done**: #1181 merged。focused 42/42、relations eval 10/10、全 eval 134/134。full suite 657/658（唯一の失敗はこのMacで実際にloadedな`ai.anicca.life-manager-dev`を「未load」と期待する既知host-state test）。migration 2本 + PostgREST reload + empty table readback済み。Railway `life-call` production exact SHA `62314317…` SUCCESS、health 200、loops起動。production runtime実弾は18か月 Calendar 711 events（timed 703 / external attendee 1人=18 / provider displayName有=0）を完走し、`lm_relations_log`へ実scan row `interaction_count=0,detections=[]`をappend、提案は正しく0でabstain |
 | H8 | `IG-LM` | LM 専用 Instagram 開設。**正直な制約: account 作成は agent の越えられない境界**（Dais の許可でも解除不可の platform 規則）。zero-human 選択肢はこの agent には無い。道は2つ: ①Dais が `ig-account-create` skill を1回実行（〜5分、実証済み手順）②当面 TikTok のみ（daily bar は充足中）。開設後の配線切替は agent がコード変更ゼロで実施 | Dais 口述 2026-07-27 | 保留 — ①か②の選択待ち（どちらでも損は小さい） |
 | H6 | `OPS-1` | ~~Telnyx 残高 top-up 経路~~ **解消（2026-07-27 実測）**: auto-recharge が既に有効 — `threshold $5 / recharge $20 / credit_paypal / enabled:true`（API readback）。残高は自己回復する。人間アクション不要。将来 user 数増で $20 では足りなくなったら amount 引き上げを提案する | demo sweep D | **done — 実測で非問題と判明** |
-| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — PM-MERGE-1から§0.4.6の順に実行 |
+| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — S21-MAC-OFFから§0.4.6の順に実行 |
 
 **常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
 
@@ -1037,7 +1040,7 @@ active cursorは`PM-MERGE-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenti
 
 ## 8. 次セッションへの引き継ぎ
 
-1. §0.4.6のcurrent cursor `PM-MERGE-1`を実装し、実merge receiptとexactly-once cycle会計まで閉じる。
-2. 次に`S21-MAC-OFF`でFranklin brain/runtimeをMacからconfidential Nosana jobへ移す。Modalはbootstrap/poster/standby railに限定する。
-3. 以後は§0.4.6の`EARN-HC-1`→外部`$1`→実payout→self-funded survival→scale→childの順だけを使う。
+1. §0.4.6のcurrent cursor `S21-MAC-OFF`でFranklin brain/runtimeをMacからconfidential Nosana jobへ移す。Modalはbootstrap/poster/standby railに限定する。
+2. 次に`EARN-HC-1`で全railのhealth状態を機械判定する。
+3. 以後は§0.4.6の外部`$1`→実payout→self-funded survival→scale→childの順だけを使う。
 4. REPORT-1、redeem、acquisition、Life Manager product側のevent/時間依存項目は自動並走し、手動cursorを止めない。
