@@ -42,6 +42,7 @@ function fixture(fixtureOptions = {}) {
         providerText: "Registration confirmed",
         selectedSiteName: "Fresh Events",
         selectionReason: "free, public, online, and relevant",
+        isSpecificActionPage: true,
         actionSummary: "registered browser-owner@example.test",
       };
     }
@@ -63,6 +64,7 @@ function fixture(fixtureOptions = {}) {
     Stagehand: FakeStagehand,
     apiKey: "gemini-key",
     agentEmail: "browser-owner@example.test",
+    agentName: "Browser Owner",
   });
   return { driver, calls, getOptions: () => options };
 }
@@ -96,9 +98,64 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
   assert.match(tasks[0], /compare at least two/i);
   assert.match(tasks[0], /do not perform/i);
   assert.match(tasks[1], /browser-owner@example\.test/i, "the runtime identity is available to the action phase");
+  assert.match(tasks[1], /Browser Owner/i, "the runtime-owned name is available to the action phase");
   assert.match(tasks[1], /exactly one/i);
   assert.doesNotMatch(tasks.join("\n"), /fresh-events\.example/i, "the target comes from discovery, never configuration");
   assert.doesNotMatch(JSON.stringify(action), /browser-owner@example\.test/i, "the identity never enters durable results");
+});
+
+test("a listing/search page is never accepted as the selected provider action page", async () => {
+  const calls = [];
+  let currentUrl = "https://events.example/search?q=ai";
+  let selectionReads = 0;
+  const page = {
+    async goto() {},
+    async screenshot() { return Buffer.from("png"); },
+    url() { return currentUrl; },
+  };
+  class FakeStagehand {
+    constructor() { this.context = { awaitActivePage: async () => page }; }
+    async init() {}
+    agent() {
+      return {
+        execute: async (task) => {
+          calls.push(task);
+          if (/open one specific candidate/i.test(task)) {
+            currentUrl = "https://events.example/e/ai-summit";
+          }
+        },
+      };
+    }
+    async extract(instruction) {
+      if (/identify the selected site/i.test(instruction)) {
+        selectionReads += 1;
+        return {
+          selectedSiteName: "AI Summit",
+          selectionReason: "free and online",
+          isSpecificActionPage: selectionReads > 1,
+        };
+      }
+      return { actionSummary: "registered" };
+    }
+  }
+  const driver = makeStagehandSteelDriver({
+    Stagehand: FakeStagehand,
+    apiKey: "key",
+    agentEmail: "owner@example.test",
+    agentName: "Browser Owner",
+    steelClient: {
+      baseUrl: "http://steel-browser.railway.internal:8080",
+      async createRawSession() {
+        return { id: "s", websocketUrl: "ws://steel-browser.railway.internal:8080/" };
+      },
+      async releaseSession() { return true; },
+    },
+  });
+  const session = await driver.openSession();
+  const result = await driver.discoverAndAct(session, { goal: "register" });
+  assert.equal(result.selectedUrl, "https://events.example/e/ai-summit");
+  assert.equal(selectionReads, 2);
+  assert.match(calls[1], /open one specific candidate/i);
 });
 
 test("provider success comes from a separate typed page readback, not agent narration", async () => {
