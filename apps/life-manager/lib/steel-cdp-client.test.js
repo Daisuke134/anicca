@@ -25,11 +25,11 @@ test("the private-networking base URL is the Railway internal service, never a p
 });
 
 test("createSession posts /v1/sessions and returns the CDP websocket url", async () => {
-  const fetchImpl = fakeFetch(() => ok({ id: "abc", websocketUrl: "ws://steel-browser.railway.internal:3000/", status: "live" }));
+  const fetchImpl = fakeFetch(() => ok({ id: "abc", websocketUrl: "ws://steel-browser.railway.internal:8080/", status: "live" }));
   const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
   const session = await client.createSession();
 
-  assert.deepEqual(session, { id: "abc", websocketUrl: "ws://steel-browser.railway.internal:3000/" });
+  assert.deepEqual(session, { id: "abc", websocketUrl: "ws://steel-browser.railway.internal:8080/" });
   assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:8080/v1/sessions");
   assert.equal(fetchImpl.calls[0].method, "POST");
 });

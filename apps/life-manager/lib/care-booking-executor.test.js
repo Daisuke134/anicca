@@ -27,7 +27,7 @@ function fakeCdp(overrides = {}) {
     calls,
     async createSession() {
       calls.push(["createSession"]);
-      return { id: "sess-1", websocketUrl: "ws://steel-browser.railway.internal:3000/" };
+      return { id: "sess-1", websocketUrl: "ws://steel-browser.railway.internal:8080/" };
     },
     async navigate(sessionId, url) { calls.push(["navigate", sessionId, url]); },
     async readForm(sessionId) {

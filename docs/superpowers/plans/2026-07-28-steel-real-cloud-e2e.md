@@ -33,7 +33,7 @@
 - Produces: `runSteelCloudSmoke({ client, targetUrl, marker, now }) -> Promise<evidence>`.
 - CLI: `npm run smoke:steel-cloud`, exit `0` only when health, real readback, marker match, and release all succeed.
 
-- [ ] **Step 1: Write the failing orchestration tests**
+- [x] **Step 1: Write the failing orchestration tests**
 
 Create tests that use a deterministic client double to assert:
 
@@ -49,7 +49,7 @@ assert.equal("text" in result.readback, false);
 
 Add a failure-path test where `readConfirmation()` throws and assert that `releaseSession()` still runs exactly once and the result is not successful.
 
-- [ ] **Step 2: Run the new test and verify RED**
+- [x] **Step 2: Run the new test and verify RED**
 
 Run:
 
@@ -60,7 +60,7 @@ node --test scripts/steel-cloud-smoke.test.js
 
 Expected: FAIL because `./steel-cloud-smoke.js` does not exist.
 
-- [ ] **Step 3: Add the minimal runner and package command**
+- [x] **Step 3: Add the minimal runner and package command**
 
 Implement `runSteelCloudSmoke` with:
 
@@ -74,7 +74,7 @@ const page = await client.readConfirmation(session.id);
 
 Return structural evidence containing timestamps, target/final URL, session id, websocket scheme, marker presence, `ok`, and `released`; do not include page text. Release in `finally`. Add `"smoke:steel-cloud": "node scripts/steel-cloud-smoke.js"` to `package.json`.
 
-- [ ] **Step 4: Run focused verification**
+- [x] **Step 4: Run focused verification**
 
 Run:
 
@@ -85,7 +85,7 @@ node --test scripts/steel-cloud-smoke.test.js lib/steel-cdp-client.test.js lib/c
 
 Expected: all tests PASS.
 
-- [ ] **Step 5: Run the real production E2E**
+- [x] **Step 5: Run the real production E2E**
 
 Copy the committed runner to a temporary path inside the production `life-call` container and execute it with `NODE_PATH=/app/node_modules`, requiring the deployed `/app/lib/steel-cdp-client.js`. The JSON result must prove:
 

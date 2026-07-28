@@ -17,7 +17,7 @@ function fakeClient(overrides = {}) {
       calls.push(["createSession", options]);
       return {
         id: "session-123",
-        websocketUrl: "ws://steel-browser.railway.internal:3000/v1/sessions/session-123",
+        websocketUrl: "ws://steel-browser.railway.internal:8080/",
       };
     },
     async navigate(sessionId, url) {
