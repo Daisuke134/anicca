@@ -65,4 +65,9 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "kind": "verified_regenerable_remove",
         "proof_path": str(Path.home() / "Projects/life-manager-main/package-lock.json"),
     }
+    assert by_id["camoufox-browser-cache"]["class"] == "regenerable_output"
+    assert by_id["camoufox-browser-cache"]["finalizer"] == {
+        "kind": "verified_regenerable_remove",
+        "proof_path": str(Path.home() / ".local/bin/camoufox"),
+    }
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)

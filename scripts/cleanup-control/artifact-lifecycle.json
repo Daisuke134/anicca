@@ -242,6 +242,19 @@
       }
     },
     {
+      "id": "camoufox-browser-cache",
+      "path": "$HOME/Library/Caches/camoufox",
+      "owner": "browser-fleet",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "$HOME/.local/bin/camoufox"
+      }
+    },
+    {
       "id": "kickama-cargo-target",
       "path": "$HOME/.openclaw/workspace/kickama-manifest-wizard/backend/target",
       "owner": "cargo",
