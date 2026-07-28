@@ -150,7 +150,7 @@ bootstrap subsidy である。
 | executor | 現在の brain / loop | wallet残高 | earnings evidence | 判定 |
 |---|---|---:|---|---|
 | Founder agent | `claude-sonnet-5`、launchd 稼働中 | Base 1.880000 USDC + 0.00000643 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。Claude が稼いだと確定できる額はまだ0 |
-| Franklin 1 | model router、launchd 稼働中 | Base 4.390800 USDC + 0.00059956 ETH、Solana 0.007937916 SOL | 2,255 model calls の記録費用 $22.623155。直近 x402 `externalCount=0` | **verified external net = $0.00**。残高は収益証拠ではない |
+| Franklin 1 | Mac main loop **unloaded**。Python survival runtimeはNosana job `DdUqQh8…WPS4`で稼働 | cloud Base 1.038 USDC、shelter 0.60408 NOS + 0.006269117 SOL（公開決算書snapshot） | heartbeat 4/4署名PASS、lease `600→2400s`、runtime cost `$0.0288967687`。直近 x402 external revenue `$0.00` | **Mac-off operational / verified external net = $0.00**。自活経路は成立、外部収益は未発生 |
 | Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.019000 USDC、gas 0 | Railway x402 mainnetで自己支払`$0.008 + $0.005 + $0.010`を実行。3商品HTTP 200、Base receipt成功。3件目は公開APIだけを使うDeFi funding-rate商品。colony内送金なのでrevenue 0 | **verified external net = $0.00** |
 | Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
 | Polymarket wallet | `0x904B…Eb74`、hourly live trade + DRY decision timer | fresh readback: pUSD `$9.397370`、open position 1（Athletics 6 shares）、mergeable 0 | PM-MERGE-1でFed balanced `7.9761` sharesを`$7.976189`へ、続くmaker約定のTiafoe balanced `5.9985` sharesを`$5.998570`へ実回収。2 txともPolygon `0x1`。今回2 cycleのledger netは`+$1.175803` | **operational**。`run.sh`がredeem後・cash gate前に`merge.py`を呼び、回収資金でmaker quotingを再開。現在の1 legはその後のmaker約定で生じた非mergeable position。PMはCAPITAL収益であり、外部SELL/WORK収益`$0.00`とは分離する |
@@ -200,8 +200,9 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 
 | 対象 | 現在地 | 実測単価 | 判定 |
 |---|---|---:|---|
-| Franklin 1/2 brain + earning executors | **Mac mini launchd** | Mac側の既存固定費 | 現在の本体。cloud-hostedとは書かない |
-| Nosana | active job 0。sub-walletの履歴jobは全て終了済み | live NVIDIA 3060 market `$0.04796/h`（約`$34.53/月`） | primary shelter候補。現在住んではいない |
+| Franklin 1 survival runtime | **Nosana active job `DdUqQh8…WPS4`**。Mac Franklin1 main loopはunloaded、Franklin2はrunning | live job `$0.043345153/h`。2400秒contractの公開cost `$0.0288967687` | Python heartbeat・決算書・自己renewがcloudで継続 |
+| Franklin 2 brain + earning executors | **Mac mini launchd** | Mac側の既存固定費 | Franklin2は意図どおりMacでrunning |
+| Nosana | active job 1、公開service 3 routes HTTP 200 | live job `$0.043345153/h`（約`$31.21/月`を単純換算） | current primary shelter。0.34 NOS move-out reserve + 0.005 SOL fee floorを維持 |
 | Modal via BlockRun x402 | 5分proof sandboxは期限切れ。active sandbox 0 | create `$0.012` + exec `$0.003` / 300秒 = 連続再作成換算`$0.18/h`（約`$129.60/月`） | bootstrap / standby候補。現在住んではいない |
 | Railway x402-agents | paid API seller | service hosting costはFranklin ledger未接続 | 商品runtimeでありFranklin brainではない |
 
@@ -373,7 +374,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | X402-DISCOVERY-1 | production 9商品のOpenAPIを単一catalog化し、x402scan登録・paid search、Coinbase Bazaar検索、PayAPI無料掲載申請まで外部発見経路を開通 | anicca-products PR #376/#377/#378、`docs/evidence/agent-economy/2026-07-28-x402-external-discovery.json`。外部売上ではない |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
-| S21-CLOUD-BOOTSTRAP（旧S21-MAC-OFF） | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin runtime/heartbeat/renewalをcloudで継続 | anicha PR #1 / merge `efbcc26f`。job `2iTbLb7K…`、初回list tx finalized、公開HTTP 200、heartbeat 14/14署名+RPC PASS、lease 600→1200秒、別Modal sandboxは同jobを再list 0でreconcile。既存Mac loopは停止せずrunningのまま |
+| S21-MAC-OFF | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin survival runtime/heartbeat/renewalをcloudで継続 | anicha evidence `specs/evidence/s21-modal-nosana-bootstrap-sb-wfum2N1044meGAswyc3zSC.json`。現行job `DdUqQh8…WPS4`、list tx `wHBwJ8…Qq4ZB` finalized、公開HTTP 200、heartbeat 4/4 PASS、lease 600→2400秒、別Modal sandboxは同jobを2回目listなしでreconcile。Mac Franklin1 main loopはunloaded、Franklin2はrunning |
 | EARN-HC-1 | 8 earning slotとPM/x402/WORK/CAPITALを単一registryから4状態で機械判定 | `docs/superpowers/evidence/earn-hc-1-live.json`。instrumented 8/8、NOT-INSTRUMENTED 0。live portfolioは4/4 operational、inactive slotはnot-live、安全停止SOLはfrozenとして明示 |
 
 **残作業の唯一の順序**
@@ -823,7 +824,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。S21 cloud bootstrapとEARN-HC-1は既存Mac loopを止めずに完了し、現在の手動cursorは **13c-SELL / 13c-WORK（外部$1）**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
+    保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了し、現在の手動cursorは **13c-SELL / 13c-WORK（外部$1）**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
     event/時間依存で自動並走し、手動cursorを止めない。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
@@ -841,8 +842,8 @@ fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだ
 
 **Current cursor**: **13c-SELL / 13c-WORK（colony外buyer/jobから累計$1のverified着金）**。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
-bootstrap/posterとNosana上のFranklin runtime・heartbeat・renewal・別sandbox復旧まで実測済み。既存Mac loopは破壊的に止めず、
-cloud側writer leaseで二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
+bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
+unloadedで、Franklin2はrunning。cloud job/APIをrestart ledgerとして二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 次は既存acquisition・x402・The402の実機械を使い、self-payを除外した外部payer receiptだけを累計する。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
@@ -1053,4 +1054,4 @@ active cursorは`13c-SELL / 13c-WORK`。REPORT-1（daily 1/7、weekly 1/1、TG +
 1. §0.4.6のcurrent cursor `13c-SELL / 13c-WORK`で、colony外payerから累計`$1`のverified着金を成立させる。
 2. 以後は§0.4.6の実payout→self-funded survival→scale→childの順だけを使う。
 3. REPORT-1、redeem、acquisition、Life Manager product側のevent/時間依存項目は自動並走し、手動cursorを止めない。
-4. S21の既存Mac loopは停止・unloadせず、後続loop migrationをwriter単位でshadow verifyしてからcloudへ移譲する。
+4. S21のMac Franklin1 main loopはunloadedを維持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2は別loopとしてrunningを維持する。
