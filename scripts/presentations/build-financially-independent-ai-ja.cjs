@@ -163,19 +163,19 @@ const slides = [
   {
     kicker: "LIVE SHELTER / 08",
     title: "自分のcloudを自分で払った",
-    footer: "Measured proof: 6h  |  Live readback: HTTP 503",
+    footer: "Mac OFF → verified successor  |  Live: HTTP 200",
     body: `
       <div class="runtime-loop">
         <div class="mac-off"><p>MAC</p><h2>OFF</h2></div>
         <div class="arrow huge"><p>→</p></div>
-        <div class="cloud-on historical"><p>NOSANA</p><h2>6H PROOF</h2><span><p>current service stopped</p></span></div>
+        <div class="cloud-on"><p>NOSANA</p><h2>LIVE</h2><span><p>verified successor</p></span></div>
         <div class="runtime-metrics">
-          <div><p>heartbeat</p><h2>130+</h2></div>
-          <div><p>statement cost</p><h2>$0.0939</h2></div>
-          <div><p>replacement</p><h2>OPEN</h2></div>
+          <div><p>routes</p><h2>3/3</h2></div>
+          <div><p>heartbeat verifier</p><h2>3/3</h2></div>
+          <div><p>handover</p><h2>DONE</h2></div>
         </div>
       </div>`,
-    notes: "Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。cloudから公開heartbeatと秘密を含まない決算書を出し、自分でrenewする状態を6時間実証しました。しかしlease ceiling後に次のjobを作らず、公開前監査ではserviceはHTTP 503です。住居を自分で維持する機械は実証しましたが、途切れず住み替える機械は未完成です。",
+    notes: "Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。6時間の生存証明に加え、後継jobを1件だけ作り、公開3 routeと署名heartbeatを検証してから旧jobを止める引っ越しもmainnetで実証しました。現在のserviceはHTTP 200です。ただし21600秒の自然triggerは未観測で、今回は同じproduction controllerを即時発火しました。原資もinternal bootstrapなので、外部収益による自給はまだです。",
   },
   {
     kicker: "LIFE MANAGER / 09",
@@ -202,8 +202,8 @@ const slides = [
       <div class="ladder">
         <div class="level done"><p>0</p><span><p>Human-paid</p></span></div>
         <div class="level done"><p>1</p><span><p>Wallet</p></span></div>
-        <div class="level current"><p>2</p><span><p>Self-pay<br>LIVE</p></span></div>
-        <div class="level historical"><p>3</p><span><p>Cloud survival<br>6h proof</p></span></div>
+        <div class="level done"><p>2</p><span><p>Self-pay</p></span></div>
+        <div class="level current"><p>3</p><span><p>Cloud survival<br>LIVE</p></span></div>
         <div class="level future"><p>4</p><span><p>External<br>self-funded</p></span></div>
         <div class="level future"><p>5</p><span><p>User payout</p></span></div>
         <div class="level future"><p>6</p><span><p>Child</p></span></div>
@@ -211,9 +211,9 @@ const slides = [
       <div class="truth-box">
         <p>VERIFIED EXTERNAL REVENUE</p>
         <h2>$0.00</h2>
-        <span><p>到達証拠 level 3 / live level 2 / level 4 未達</p></span>
+        <span><p>live level 3 / level 4 未達</p></span>
       </div>`,
-    notes: "到達証拠はlevel 3ですが、現在のlive statusはlevel 2です。Mac-offのheartbeatとrenewalは6時間動き、その後のreplacementがなく停止しました。verified external revenueも0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。",
+    notes: "現在のlive statusはlevel 3です。Mac-offのheartbeatとrenewalを6時間実証し、検証済みの後継jobへのhandoverもmainnetで完了しました。しかしverified external revenueは0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。",
   },
 ];
 

@@ -77,13 +77,13 @@
 
 ## Slide 8 — 自分のcloudを自分で払った
 
-- **Claim:** Mac-offの生存機械は6時間成立したが、lease ceiling後のreplacementは未実装。
-- **On-slide:** `6h proof: Mac OFF → Nosana ON` / `live readback: HTTP 503`
-- **Visual:** Macの電源OFFからNosana cloudへ、heartbeatと決算書を返したloop。現在停止をamberで表示。
-- **Evidence:** S21-MAC-OFF、Franklin 1 public statement。historical snapshot: heartbeat 130+、runtime cost `$0.093914498167`。publication readback: job state 2、running job 0、3 routes HTTP 503。
+- **Claim:** Mac-offの生存に加え、検証済み後継jobへのhandoverがmainnetで成立した。
+- **On-slide:** `Mac OFF → old job → verified successor` / `live readback: HTTP 200`
+- **Visual:** Mac OFFからNosana live jobへ矢印。右にroutes `3/3`、heartbeat verifier `3/3`、handover `DONE`。
+- **Evidence:** S21-MAC-OFF、SHELTER-REPLACE-1。final job `72zCpJEZ…U2YKN`、3 routes HTTP 200、独立verifier 3/3 PASS、旧job state 2、running job 1。
 - **Seconds:** 45
 - **Speaker notes:**
-  Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。cloudから公開heartbeatと秘密を含まない決算書を出し、自分でrenewする状態を6時間実証しました。しかしlease ceiling後に次のjobを作らず、公開前監査ではserviceはHTTP 503です。住居を自分で維持する機械は実証しましたが、途切れず住み替える機械は未完成です。
+  Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。6時間の生存証明に加え、後継jobを1件だけ作り、公開3 routeと署名heartbeatを検証してから旧jobを止める引っ越しもmainnetで実証しました。現在のserviceはHTTP 200です。ただし21600秒の自然triggerは未観測で、今回は同じproduction controllerを即時発火しました。原資もinternal bootstrapなので、外部収益による自給はまだです。
 
 ## Slide 9 — Life Managerとの統合
 
@@ -97,13 +97,13 @@
 
 ## Slide 10 — 何をもって「自立」と呼ぶか
 
-- **Claim:** level 3は6時間実証したが現在停止。live statusはlevel 2、level 4は未達。
+- **Claim:** live level 3。外部収益が生活費を覆うlevel 4は未達。
 - **On-slide:** `0 Human-paid → 1 Wallet → 2 Self-pay → 3 Cloud survival → 4 External self-funded → 5 User payout → 6 Child`
-- **Visual:** level 0〜6の横軸。current markerを2、3をhistorical proof、4以降をoutline表示。右下に `Verified external revenue: $0.00`。
+- **Visual:** level 0〜6の横軸。current markerを3、4以降をoutline表示。右下に `Verified external revenue: $0.00`。
 - **Evidence:** §0.4.3a financial independence ladder。
 - **Seconds:** 50
 - **Speaker notes:**
-  到達証拠はlevel 3ですが、現在のlive statusはlevel 2です。Mac-offのheartbeatとrenewalは6時間動き、その後のreplacementがなく停止しました。verified external revenueも0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。
+  現在のlive statusはlevel 3です。Mac-offのheartbeatとrenewalを6時間実証し、検証済みの後継jobへのhandoverもmainnetで完了しました。しかしverified external revenueは0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。
 
 ## Timing
 
