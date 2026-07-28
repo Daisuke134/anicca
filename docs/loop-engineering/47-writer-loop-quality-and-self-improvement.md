@@ -2382,7 +2382,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 3 | DONE (`091214a`) | Judge calibration | product/run/artifact/variantでjudgeとrewardをexact joinし、`scorable / unknown / insufficient`を分離。scorableだけで順位相関を計算し、missing receiptはinsufficient、重複receiptは拒否。2 contract tests + Writer全article suite 321 passed |
 | 4 | DONE (`dfa8327`) | Title learning slice | `title-corpus` opponent、`calibrated_conversion_rank` reward、repo外runtime `state/weights/title.json`を固定。scorable rewardだけをblameへ接続し、1 cycle 1 blamed ruleだけ変更、held-out同値以上ならatomic keep、悪化ならrevert、unknown/insufficientなら変更0。4 contract tests + Writer全article suite 325 passed |
 | 5 | DONE (`4eb8c64`) | Article-body learning slice | 共有bounded engineへ`article-body-corpus` opponent、`engaged_read_then_conversion` reward、repo外runtime `state/weights/article-body.json`を注入。scorableにはengaged readとdownstream conversionの両方を必須化し、title reward/weightを明示拒否。1 blamed change、unknown変更0、held-out悪化revert。3 body contract tests + title回帰、Writer全article suite 328 passed |
-| 6 | TODO | Long-form / book learning slice | long-form専用opponent/reward/weight。purchase/completion/refund guardrailでheld-out非悪化を通す |
+| 6 | DONE (`da48792`) | Long-form / book learning slice | 共有bounded engineへ`long-form-corpus` opponent、`purchase_completion_refund_guarded` reward、repo外runtime `state/weights/long-form.json`を注入。purchase/completion/refundを全て必須化し、refund guardrail超過はheld-out改善時もrevert。body reward/weightを拒否し、3 sliceの3組が全てdistinct。4 contract tests + Writer全article suite 332 passed |
 | 7 | TODO | Contradiction gate | 全active rule sourceを生成前・学習前にscan。critical conflict、drift、dead referenceをcanonical ownerへticket化し、critical 1件以上なら生成規則の追加・学習昇格を停止 |
 | 8 | TODO | Bounded learning controller | 1 cycle 1変更、before/after hash、held-out、canary、keep/revert、次run consumed hashをdurable receiptで一周。unknown/insufficientは変更0 |
 | 9 | TODO | Self-heal 5 fixture | timeout、process kill、ambiguous response、identity mismatch、broken assetを同一run/idempotency/artifact lineageからresume。duplicate side effect 0、安全gate緩和0 |
@@ -2444,7 +2444,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` + `test_duplicate_reward_receipt_is_rejected` | PASS (`091214a`) |
 | 5 | title slice | `test_keeps_one_blamed_title_change_when_heldout_does_not_regress` + unknown/revert/複数変更拒否 tests | PASS (`dfa8327`) |
 | 5a | title/body isolation | `test_body_rejects_title_reward_and_title_weight_file` | PASS (`4eb8c64`) |
-| 5b | title/body/long-form isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` | TODO |
+| 5b | title/body/long-form isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` + long-form refund/body rejection tests | PASS (`da48792`) |
 | 6 | contradiction gate | `test_critical_rule_conflict_blocks_generation_and_learning_change` | TODO |
 | 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | TODO |
 | 8 | self-improve revert | `test_heldout_loss_or_unknown_restores_before_hash` | TODO |
