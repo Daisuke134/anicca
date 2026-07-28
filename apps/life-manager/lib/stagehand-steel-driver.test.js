@@ -9,6 +9,10 @@ function fixture(fixtureOptions = {}) {
   let options;
   const page = {
     async goto(url) { calls.push(["goto", url]); },
+    async screenshot(options) {
+      calls.push(["screenshot", options]);
+      return Buffer.from("real-cloud-png");
+    },
     url() { return "https://fresh-events.example/ai/confirmed"; },
   };
   class FakeStagehand {
@@ -113,6 +117,19 @@ test("provider success comes from a separate typed page readback, not agent narr
     handoffRequired: false,
     handoffReason: null,
   });
+});
+
+test("evidence is a PNG captured from the connected Steel page before release", async () => {
+  const { driver, calls } = fixture();
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, { goal: "Find and register", locale: "en" });
+  const evidence = await driver.captureEvidence(session);
+  assert.equal(evidence.mimeType, "image/png");
+  assert.equal(evidence.bytes.toString(), "real-cloud-png");
+  assert.deepEqual(calls.find(([name]) => name === "screenshot"), [
+    "screenshot",
+    { type: "png", fullPage: true },
+  ]);
 });
 
 test("login, challenge, CAPTCHA, 2FA, or KYC readback requires handoff", async () => {

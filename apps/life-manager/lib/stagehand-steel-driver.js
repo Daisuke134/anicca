@@ -189,6 +189,16 @@ function makeStagehandSteelDriver(options = {}) {
       };
     },
 
+    async captureEvidence(sessionInput) {
+      const session = privateSession(sessionInput);
+      const open = sessions.get(String(session.id));
+      if (!open) throw new Error("Stagehand session unavailable for evidence capture");
+      return {
+        mimeType: "image/png",
+        bytes: await open.page.screenshot({ type: "png", fullPage: true }),
+      };
+    },
+
     async releaseSession(sessionId) {
       const id = String(sessionId || "");
       const open = sessions.get(id);

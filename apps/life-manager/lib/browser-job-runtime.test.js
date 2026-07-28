@@ -23,6 +23,7 @@ function successfulDeps(overrides = {}) {
     appendTrace: async (_id, stage) => { traces.push(stage); },
     finishJob: async () => true,
     sendMessage: async () => ({ ok: true, result: { message_id: 77 } }),
+    sendPhoto: async () => ({ ok: true, result: { message_id: 78 } }),
     telegramToken: "token",
     driver: {
       openSession: async () => ({ id: "s1", websocketUrl: "ws://steel-browser.railway.internal:8080/" }),
@@ -38,6 +39,10 @@ function successfulDeps(overrides = {}) {
         status: "registered",
         confirmationId: "r1",
         currentUrl: "https://fresh.example/done",
+      }),
+      captureEvidence: async () => ({
+        mimeType: "image/png",
+        bytes: Buffer.from("cloud-png"),
       }),
       releaseSession: async () => ({ released: true }),
     },

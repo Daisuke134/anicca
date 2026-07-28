@@ -1,5 +1,7 @@
 "use strict";
 
+const crypto = require("node:crypto");
+
 function providerReceipt(value) {
   return {
     confirmed: value && value.confirmed === true,
@@ -46,8 +48,10 @@ async function runGenericBrowserTask(job, deps) {
     "openSession",
     "discoverAndAct",
     "readProviderReceipt",
+    "captureEvidence",
     "releaseSession",
     "sendTelegram",
+    "sendTelegramEvidence",
     "finishJob",
   ]) {
     if (!deps || typeof deps[name] !== "function") throw new Error(`browser dependency missing: ${name}`);
@@ -63,9 +67,12 @@ async function runGenericBrowserTask(job, deps) {
     action: null,
     provider_receipt: providerReceipt(null),
     telegram_message_id: null,
+    evidence_message_id: null,
+    evidence_sha256: null,
     steel_released: false,
   };
   let session = null;
+  let evidence = null;
   let sideEffectStarted = false;
   let selectedRecorded = false;
   let actionStartedRecorded = false;
@@ -115,6 +122,15 @@ async function runGenericBrowserTask(job, deps) {
 
     result.provider_receipt = providerReceipt(await deps.readProviderReceipt(session, action));
     await deps.appendTrace(job.id, "provider_readback", result.provider_receipt);
+    try {
+      evidence = await deps.captureEvidence(session);
+      if (evidence && evidence.bytes) {
+        result.evidence_sha256 = crypto.createHash("sha256").update(evidence.bytes).digest("hex");
+      }
+    } catch {
+      evidence = null;
+      result.evidence_sha256 = null;
+    }
     result.status = result.provider_receipt.handoff_required
       ? "handoff_required"
       : result.provider_receipt.confirmed
@@ -132,6 +148,24 @@ async function runGenericBrowserTask(job, deps) {
     await deps.appendTrace(job.id, "telegram_sent", { message_id: result.telegram_message_id });
   } catch {
     result.telegram_message_id = null;
+  }
+
+  if (evidence && evidence.bytes) {
+    try {
+      const sent = await deps.sendTelegramEvidence(
+        job.telegram_chat_id,
+        evidence,
+        `Cloud browser provider screen\nTrace: ${result.trace_id}`,
+      );
+      const messageId = sent && sent.ok && sent.result && sent.result.message_id;
+      result.evidence_message_id = messageId == null ? null : String(messageId);
+    } catch {
+      result.evidence_message_id = null;
+    }
+    await deps.appendTrace(job.id, "evidence_sent", {
+      message_id: result.evidence_message_id,
+      sha256: result.evidence_sha256,
+    });
   }
 
   if (session && session.id) {
