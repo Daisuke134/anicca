@@ -230,10 +230,17 @@ function makeStagehandSteelDriver(options = {}) {
             ["For any marketing or data-sharing consent field, select the option that declines or does not consent. Fail if no decline option exists."],
             ["Submit this free registration now and remain on the provider result page."],
           ];
-          for (const [instruction, actOptions] of atomicActs) {
-            const acted = await stagehand.act(instruction, actOptions);
-            if (!acted || acted.success !== true) {
-              throw new Error(`browser atomic action failed: ${instruction}`);
+          for (let index = 0; index < atomicActs.length; index += 1) {
+            const [instruction, actOptions] = atomicActs[index];
+            try {
+              const acted = await stagehand.act(instruction, actOptions);
+              if (!acted || acted.success !== true) {
+                throw new Error(String((acted && acted.message) || "unsuccessful result"));
+              }
+            } catch (error) {
+              throw new Error(
+                `browser atomic action ${index + 1}/${atomicActs.length} failed: ${String(error && error.message || error).slice(0, 300)}`,
+              );
             }
           }
         } else {
