@@ -102,7 +102,7 @@ async function enqueueBrowserJob(input, opts = {}) {
 
 async function claimBrowserJob(opts = {}) {
   const { query } = database(opts);
-  const leaseSeconds = Number.isInteger(opts.leaseSeconds) ? opts.leaseSeconds : 180;
+  const leaseSeconds = Number.isInteger(opts.leaseSeconds) ? opts.leaseSeconds : 480;
   if (leaseSeconds < 30 || leaseSeconds > 900) throw new Error("browser job lease invalid");
   const claimed = (await query(
     "SELECT * FROM public.claim_lm_browser_job($1)",
