@@ -46,7 +46,11 @@ export async function createApp() {
 
   app.use(express.json());
 
-  const limiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
+  const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    skip: (req) => req.path === '/openapi.json' || req.path === '/favicon.ico',
+  });
   app.use(limiter);
 
   app.get('/openapi.json', (req, res) => {

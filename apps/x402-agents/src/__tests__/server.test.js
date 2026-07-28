@@ -159,6 +159,30 @@ describe('x402-agents server', () => {
     expect(favicon.body.toString('utf8')).toContain('<svg');
   });
 
+  it('keeps discovery metadata available when the paid API rate limit is exhausted', async () => {
+    const { createApp } = await import('../server.js');
+    const app = await createApp();
+
+    for (let requestNumber = 0; requestNumber < 30; requestNumber += 1) {
+      const paid = await request(app)
+        .post('/context-compressor')
+        .send({ text: `request-${requestNumber}` });
+      expect(paid.status).toBe(200);
+    }
+
+    const limitedPaid = await request(app)
+      .post('/context-compressor')
+      .send({ text: 'request-over-limit' });
+    expect(limitedPaid.status).toBe(429);
+
+    const spec = await request(app).get('/openapi.json');
+    expect(spec.status).toBe(200);
+    expect(spec.body.openapi).toBe('3.1.0');
+
+    const favicon = await request(app).get('/favicon.ico');
+    expect(favicon.status).toBe(200);
+  });
+
   it('has trust proxy enabled', async () => {
     const { createApp } = await import('../server.js');
     const app = await createApp();
