@@ -87,13 +87,16 @@ function safePublicHostname(hostname) {
     detectIp: true,
     detectSpecialUse: true,
   });
+  const publicRegistrable = parsed.isIcann === true && parsed.isPrivate !== true;
+  const privateRegistrableChild = parsed.isPrivate === true
+    && parsed.domain === hostname
+    && parsed.publicSuffix !== hostname;
   return Boolean(
     parsed.domain
-    && parsed.isIcann === true
     && parsed.isIp !== true
-    && parsed.isPrivate !== true
     && parsed.isSpecialUse !== true
     && parsed.publicSuffix !== hostname
+    && (publicRegistrable || privateRegistrableChild)
   );
 }
 
