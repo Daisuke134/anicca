@@ -2099,6 +2099,12 @@ Superpowers TDDで、現行upstreamとdivergeした旧branchを持つ実git fixt
 
 続けて本番checkoutの既存`config/loop-registry.json`変更が同期gateを止めることを実git fixtureでRED再現した。Writer外のtracked変更は保存したまま、`learned-playbook.md`だけをpathspec commitし、`skills/article-writer/`内の別変更は従来どおり拒否する境界へ修正した。Writer `9b651b6`。self-improve全12 test、upstream統合、beat-rate 19/19、rule-blame 20/20がPASSし、本番の実dirty checkoutでも`ensure_repo_synced()`=PASS。外部作業を消さず、学習commitへ混入させず、22:30も止めない。
 
+### 21.53 22:30のTelegram receipt経路を実装（実測 14:52）
+
+controllerはdurable JSONをstdoutと`state/learning/receipts/`へ書いていたが、Telegramを送るconsumerは存在しなかった。よって「metrics/score receiptとTelegramが同じrun_id」という#9のdone条件は、時刻を待っても成立不能だった。
+
+Superpowers TDDで、controller成功後に通知consumerが必ず呼ばれるwrapper契約と、実receipt→JA/EN beat-rate→durable outbox→messageIdのCLI契約をREDにした。Writer `03057af`で、controller receiptへ`metric_run_ids`を追加し、各runの`beat-rate-{ja,en}.json` identityを照合して`state/learning/notifications/<date>.json`をprepared→sentへatomic更新する。event identityは日付・run IDs・score・元receipt SHAで固定し、sent再実行は再送0。metric runなし、score identity不一致、dry-run、messageId欠落はrc75で完了を名乗らない。controller/notification 13/13、wrapper配線、upstream統合、beat-rate 19/19、rule-blame 20/20がPASSし、本番checkoutを同commitへfast-forwardした。残るのは22:30実送信のmessageIdと同run_idの実receiptだけである。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2333,7 +2339,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
 | 8 | 台帳3 run蓄積 | `daily-2026-07-27` と `daily-2026-07-28` の2 runを実生成済み。あと1日分は作らず実scheduleを待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
-| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | 実schedule初発火でEN/JA beat-rateは完走したが、binary gateを`editorial`軸へ変換後、許可軸一覧がその名前を捨ててrc75。Writer `fb39d97`でschemaを一致させた。12:14 preflightではtest末尾だけのcwd相対importをWriter `a933f75`で共通absolute pathへ直し、beat-rate 19/19・rule-blame 20/20 PASS。14:42には旧固定branchをWriter `892ede4`でruntime upstream導出へ修正し、続くtracked dirty停止もWriter `9b651b6`でWriter外変更を保存・隔離する境界へ修正。本番実dirty checkoutの同期gate PASS、実機再load済み。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
+| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | schema/cwd相対importをWriter `fb39d97` / `a933f75`で修正し、旧固定branchとtracked dirty停止をWriter `892ede4` / `9b651b6`でruntime upstream導出・Writer外変更隔離へ修正。本番同期gate PASS、実機再load済み。さらにTelegram consumer不在をWriter `03057af`でdurable・idempotentなrun-bound通知へ配線した。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
 | 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
 | 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
 | 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
