@@ -56,4 +56,13 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "kind": "verified_regenerable_remove",
         "proof_path": "/Applications/Claude.app/Contents/Resources/app.asar",
     }
+    assert by_id["life-manager-main-worktrees"]["class"] == "git_worktree_collection"
+    assert by_id["life-manager-main-worktrees"]["finalizer"] == {
+        "kind": "remote_recoverable_remove"
+    }
+    assert by_id["life-manager-main-node-modules"]["class"] == "regenerable_output"
+    assert by_id["life-manager-main-node-modules"]["finalizer"] == {
+        "kind": "verified_regenerable_remove",
+        "proof_path": str(Path.home() / "Projects/life-manager-main/package-lock.json"),
+    }
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)

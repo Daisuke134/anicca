@@ -50,6 +50,31 @@
       }
     },
     {
+      "id": "life-manager-main-worktrees",
+      "path": "$HOME/Projects/life-manager-main/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
+      "id": "life-manager-main-node-modules",
+      "path": "$HOME/Projects/life-manager-main/node_modules",
+      "owner": "node-runtime",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "$HOME/Projects/life-manager-main/package-lock.json"
+      }
+    },
+    {
       "id": "work-clones",
       "path": "$HOME/.cache/anicca-clones",
       "owner": "revenue-workers",
