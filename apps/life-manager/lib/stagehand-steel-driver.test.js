@@ -1093,6 +1093,37 @@ test("release exports context before Steel release, saves exact identity, and re
   );
 });
 
+test("release removes finite expired cookies before passing exported context to durable storage", async () => {
+  const exported = {
+    cookies: [
+      { name: "expired", value: "drop-expired-secret", domain: "auth.fixture.dev", path: "/", expires: 1 },
+      { name: "future", value: "keep-future-secret", domain: "auth.fixture.dev", path: "/", expires: 4102444800 },
+      { name: "session", value: "keep-session-secret", domain: "auth.fixture.dev", path: "/", expires: -1 },
+    ],
+  };
+  const { driver, authCalls } = fixture({
+    authRecords: { "u-one": { context: exported } },
+    exportContext: exported,
+    savedRecord: { context_sha256: "c".repeat(64), key_version: 1 },
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.fixture.dev/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+
+  await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: false, handoff_reason: null },
+  });
+
+  assert.deepEqual(authCalls[1][1].context.cookies.map(({ name }) => name), [
+    "future",
+    "session",
+  ]);
+  assert.doesNotMatch(JSON.stringify(authCalls[1][1].context), /drop-expired-secret/);
+});
+
 test("a provider login handoff invalidates only the exact row and still releases Steel", async () => {
   const context = {
     cookies: [{ name: "sid", value: "stale-cookie-secret", domain: "auth.fixture.dev", path: "/" }],

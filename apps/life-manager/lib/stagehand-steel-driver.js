@@ -553,7 +553,10 @@ function makeStagehandSteelDriver(options = {}) {
               principalKind: auth.principalKind,
             }) === true;
           } else {
-            const context = await steelClient.getSessionContext(id);
+            const context = scopeSessionContextToOrigin(
+              await steelClient.getSessionContext(id),
+              auth.origin,
+            );
             const saved = await upsertBrowserAuthSession({
               uid: auth.uid,
               origin: auth.origin,
