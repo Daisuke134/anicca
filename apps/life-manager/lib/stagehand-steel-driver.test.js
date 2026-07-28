@@ -193,7 +193,7 @@ test("a runtime-supplied public HTTPS detail URL skips search and goes straight 
   assert.match(acts[0][1], /open.*registration form/i);
   assert.deepEqual(acts[1][2].variables, { agentName: "Browser Owner" });
   assert.deepEqual(acts[2][2].variables, { agentEmail: "browser-owner@example.test" });
-  assert.match(acts[6][1], /marketing.*data-sharing.*declines/i);
+  assert.match(acts[6][1], /consent dropdown.*Register.*No.*do not consent/i);
   assert.match(acts[7][1], /submit.*registration/i);
 });
 
