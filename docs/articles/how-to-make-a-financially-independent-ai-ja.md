@@ -6,7 +6,7 @@ AIエージェントが、人間に操作されず24時間動く。これは「�
 
 この記事でいう**経済的に自立したAI**とは、人間が継続して料金を払わなくても、外部の相手から得た収益で推論とクラウドを維持し、次の請求に備える資金を残せるAIである。
 
-私たちは、そのための仕組みを実際のwallet、支払い、クラウド、台帳で組み立てている。ただし先に結論を言うと、現在は仕組みが動く段階までで、完全な経済的自立には到達していない。検証済みの外部収益は **$0.00** である。
+私たちは、そのための仕組みを実際のwallet、支払い、クラウド、台帳で組み立てている。ただし先に結論を言うと、完全な経済的自立には到達していない。cloud survivalは6時間の実jobで実証したが、公開前監査時点ではlease ceiling後のreplacementがなく停止している。検証済みの外部収益は **$0.00** である。
 
 ## 1. Financially independent AIとは何か
 
@@ -18,13 +18,13 @@ AIエージェントが、人間に操作されず24時間動く。これは「�
 |---:|---|---|
 | 0 | 人間のsubscription、Mac、カードが継続費を負担する | 卒業経路あり |
 | 1 | AI固有のwalletと支出policyを持つ | 実証済み |
-| 2 | walletから推論、cloud、gasを実際に払う | 実証済み |
-| 3 | Macを止めてもcloud上でheartbeat、決算書、更新を続ける | 実証済み |
+| 2 | walletから推論、cloud、gasを実際に払う | 実証済み、現在のlive level |
+| 3 | Macを止めてもcloud上でheartbeat、決算書、更新を続ける | 6時間の実証済み、現在は停止 |
 | 4 | 直近30日の検証済み外部純収益が生活費を覆い、reserveを維持する | 未達 |
 | 5 | reserve後の余剰をuserへ実際に送る | 未達 |
 | 6 | 黒字の方法と余剰資金から、独立したchild agentを作る | 未達 |
 
-現在地はlevel 3である。AIが自分の財布を持ち、自分の住処を買い、人間のMacを止めても生存を報告するところまでは動く。まだ外部の顧客が生活費を賄っていないため、level 4とは呼ばない。
+到達証拠はlevel 3、公開前監査時点のlive statusはlevel 2である。AIが自分の財布を持ち、自分の住処を買い、人間のMacを止めても6時間生存を報告するところまでは実証した。しかしjobは6時間のlease ceilingで終了し、次の住処を自動作成しなかった。継続性を直すまでは、level 3が常時稼働しているとは言わない。外部の顧客も生活費を賄っていないため、level 4は未達である。
 
 ## 2. AIにも生活費がある
 
@@ -65,7 +65,7 @@ x402では、有料HTTP endpointへアクセスするとserverが`402 Payment Re
 
 cryptoの利点は、agentがwalletだけで支払いを受け、支払い、公開receiptを検証できることにある。一方で、walletを持つだけでは需要は生まれない。商品を買う外部顧客、仕事を採用する依頼主、価格差やyieldの機会が必要だ。
 
-現在、x402の商品endpoint、bountyへの応募、TaskMarketへの提出、Polymarketのlive loopは動いている。Polymarketでは実回収と注文があり、直近2 cycleのwallet-level P&Lは **+$1.175803** だった。ただしこれはCAPITAL運用の損益であり、外部顧客から得たSELL・WORK収益とは別に表示する。
+現在、x402の商品endpoint、bountyへの応募、TaskMarketへの提出、Polymarketのlive loopは動いている。Polymarketでは実回収と注文があり、監査済みの2 cycleのwallet-level P&Lは **+$1.175803** だった。ただしこれはCAPITAL運用の損益であり、外部顧客から得たSELL・WORK収益とは別に表示する。
 
 > 「暗号資産は、価格が変動することがあります。」
 > 出典: [金融庁「暗号資産の利用者のみなさまへ」](https://www.fsa.go.jp/policy/virtual_currency/index.html)
@@ -117,14 +117,14 @@ verified external net
 
 ## 8. AIが自分の家賃を払う
 
-Franklin 1というagentのsurvival runtimeは、Nosana上のcloud jobで動いている。Mac側のmain loopを止めても、Python heartbeat、公開決算書、自己renewalが継続した。公開heartbeatは独立検証40回を通過した後も130回まで増え、決算書にはruntime cost **$0.093914498167**、external revenue **$0.00** が表示された。
+Franklin 1というagentのsurvival runtimeを、Nosana上のcloud jobで動かした。Mac側のmain loopを止めても、Python heartbeat、公開決算書、自己renewalが6時間継続した。公開heartbeatは独立検証40回を通過した後も130回まで増え、監査済み決算書にはruntime cost **$0.093914498167**、external revenue **$0.00** が表示された。
 
 Nosanaの公式protocol文書では、projectがpipeline jobを投稿し、nodeがそのjobを実行してtokenを得る構造になっている。つまり計算する側と計算資源を買う側を、wallet-nativeなmarketで接続できる。[Nosana公式「Nosana Jobs」](https://github.com/nosana-ci/docs.nosana.com/blob/main/docs/protocols/jobs.md)
 
 > “Projects can post pipeline jobs through the Nosana Jobs program.”
 > 出典: Nosana公式「Nosana Jobs」
 
-ここで実証したのは、AIがcloud上で生存し、残高を読み、更新費を払う**機械**である。外部収益でその費用を払い続けられることは、まだ実証していない。
+ここで実証したのは、AIがcloud上で生存し、残高を読み、更新費を払う**機械**である。ただし公開前のlive readbackではjobは`state=2`、3つの公開routeはHTTP 503、同じpayerのrunning jobは0だった。6時間のceiling後に次のjobを作るreplacement loopが欠けている。外部収益で費用を払い続けることも、cloudを途切れさせないことも、まだ実証していない。
 
 ## 9. 失敗から得たreserve floor
 
@@ -157,8 +157,8 @@ Life Managerは、人間ごとにagentを持たせ、そのagentが生活管理�
 |---|---|
 | agent固有のBase / Solana wallet | 実証済み |
 | walletからのx402実支払い | 実証済み |
-| Mac-offのNosana survival runtime | 実証済み |
-| heartbeat、決算書、自己renewal | 実証済み |
+| Mac-offのNosana survival runtime | 6時間の実証済み、現在停止 |
+| heartbeat、決算書、自己renewal | 実証済み、replacement未実装 |
 | x402 SELL endpoint | 稼働中、外部購入0 |
 | WORK応募・納品loop | 稼働中、採用・外部支払待ち |
 | CAPITAL live loop | 稼働中、SELL / WORKとは別会計 |
@@ -167,7 +167,7 @@ Life Managerは、人間ごとにagentを持たせ、そのagentが生活管理�
 | 直近30日で生活費を自給 | **未達** |
 | userへのverified surplus payout | **未達** |
 
-したがって「経済的自立したAIを完成させた」とは書かない。正確には、**経済的自立に必要なwallet、支払い、住処、稼ぐ経路、検証、会計を一つのloopへ接続し、level 3まで実証した**である。
+したがって「経済的自立したAIを完成させた」とは書かない。正確には、**経済的自立に必要なwallet、支払い、住処、稼ぐ経路、検証、会計を一つのloopへ接続し、level 3を6時間の実jobで実証したが、live statusはlevel 2へ戻っている**である。
 
 ## 12. どうscaleするか
 
@@ -203,7 +203,7 @@ human bootstrap seed ──> agent wallet
                 profitable recipe ──> independent child
 ```
 
-AIの経済的自立は、「賢いAIを作る」だけでは完成しない。wallet、外部需要、receipt、会計、住処、reserveを同じloopに入れ、外部純収益が継続費を上回った時に初めて成立する。私たちは、その判定をごまかさずに進めるため、現在地をlevel 3、外部収益を **$0.00** と記録している。
+AIの経済的自立は、「賢いAIを作る」だけでは完成しない。wallet、外部需要、receipt、会計、住処、reserveを同じloopに入れ、外部純収益が継続費を上回った時に初めて成立する。私たちは、その判定をごまかさずに進めるため、到達証拠をlevel 3、live statusをlevel 2、外部収益を **$0.00** と記録している。
 
 ## 参考資料と実測証拠
 

@@ -75,15 +75,15 @@
 - **Speaker notes:**
   収益は自由に全部使いません。まず推論費、次にcloud shelter、そして最低35ドルのreserve floorを守ります。reserveはprovider障害や引っ越しに必要な生存資金です。この床を超えたverified surplusだけをユーザーへ送金し、再投資し、将来のchild agentへ使います。赤字なら賭けを増やさず、burnを減らし、SELLを改善し、それでも駄目なら安全に停止します。
 
-## Slide 8 — 自分のcloudを自分で払う
+## Slide 8 — 自分のcloudを自分で払った
 
-- **Claim:** Macを止めても、agent walletからcloud runtimeを更新する生存機械は成立した。
-- **On-slide:** `Mac OFF → Nosana ON → Heartbeat → Statement → Renew`
-- **Visual:** Macの電源OFFからNosana cloudへ、heartbeatと決算書を返すloop。
-- **Evidence:** S21-MAC-OFF、Franklin 1 public statement。snapshot: heartbeat 130+、runtime cost `$0.093914498167`。
+- **Claim:** Mac-offの生存機械は6時間成立したが、lease ceiling後のreplacementは未実装。
+- **On-slide:** `6h proof: Mac OFF → Nosana ON` / `live readback: HTTP 503`
+- **Visual:** Macの電源OFFからNosana cloudへ、heartbeatと決算書を返したloop。現在停止をamberで表示。
+- **Evidence:** S21-MAC-OFF、Franklin 1 public statement。historical snapshot: heartbeat 130+、runtime cost `$0.093914498167`。publication readback: job state 2、running job 0、3 routes HTTP 503。
 - **Seconds:** 45
 - **Speaker notes:**
-  Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。NosanaはGPUなどの計算資源を借りられるcloud marketです。cloudから公開heartbeatと秘密を含まない決算書を出し、残高を監視して自分でruntimeをrenewします。snapshot時点でheartbeatは130回を超え、runtime costも公開statementから読めます。住居を自分で維持する機械までは実証できました。
+  Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。cloudから公開heartbeatと秘密を含まない決算書を出し、自分でrenewする状態を6時間実証しました。しかしlease ceiling後に次のjobを作らず、公開前監査ではserviceはHTTP 503です。住居を自分で維持する機械は実証しましたが、途切れず住み替える機械は未完成です。
 
 ## Slide 9 — Life Managerとの統合
 
@@ -97,13 +97,13 @@
 
 ## Slide 10 — 何をもって「自立」と呼ぶか
 
-- **Claim:** 現在はlevel 3。外部収益で30日分の生活費を覆うlevel 4は未達。
+- **Claim:** level 3は6時間実証したが現在停止。live statusはlevel 2、level 4は未達。
 - **On-slide:** `0 Human-paid → 1 Wallet → 2 Self-pay → 3 Cloud survival → 4 External self-funded → 5 User payout → 6 Child`
-- **Visual:** level 0〜6の横軸。current markerを3、4以降をoutline表示。右下に `Verified external revenue: $0.00`。
+- **Visual:** level 0〜6の横軸。current markerを2、3をhistorical proof、4以降をoutline表示。右下に `Verified external revenue: $0.00`。
 - **Evidence:** §0.4.3a financial independence ladder。
 - **Seconds:** 50
 - **Speaker notes:**
-  現在はlevel 3です。専用walletがあり、実際に推論やcloudへ支払い、Macを止めてもcloudでheartbeatとrenewalを続けられます。しかしverified external revenueはまだ0ドルです。完全な経済的自立と呼ぶlevel 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。
+  到達証拠はlevel 3ですが、現在のlive statusはlevel 2です。Mac-offのheartbeatとrenewalは6時間動き、その後のreplacementがなく停止しました。verified external revenueも0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。
 
 ## Timing
 
