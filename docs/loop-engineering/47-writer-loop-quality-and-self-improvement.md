@@ -2059,6 +2059,12 @@ focused verificationはpublication/resume 88件、Dev.to 11件、Substack retry 
 
 これにより`daily-2026-07-28`は6/8 live。残りは`x-article/en`の12:57:17 JST以降と、FIFO/rolling-window管理下の`zenn-article/ja`だけである。
 
+### 21.50 X Article EN / 22:30 self-improve 公開前検証（実測 12:14）
+
+X Article ENは固定edit URL `2081857959186055168`を実editorで再読した。immutable本文SHA-256=`c51dadad07469e849924b4417cf59da862288563bb8287bd91d21824ee01c57e`、headline SHA-256=`d4ee04dda634ef623f7aa5c124e7ae967679c1b7fe57aa24e78cc77ebda15bc2`、body image SHA-256=`76bfb7f0824214b2d9269f9db351d4b679f6d49a633edce5c9054f9c33c2ca11`はpublication-stateと一致した。editorの8区間を実スクリーンショットで読み、body image 3件、最大348px、650px超0、110px未満0でvisual gate PASS。12:57:17 JST前なので公開操作は行っていない。
+
+同じpreflightでself-improveのbeat-rate契約は19/19 PASS、rule-blame契約はjudge-outage fixtureだけ19/20となった。原因はproductionではなくtest末尾だけがcwd相対`"scripts"`をimport pathにしていたこと。全fixture共通のabsolute `SCRIPT_DIR`を使う`pyrun`へ統一し、rule-blame 20/20、beat-rate 19/19へ復旧した。Writer `a933f75`。22:30の実LaunchAgent発火によるmetrics/score receiptとTelegram確認は引き続き未完である。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2293,7 +2299,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
 | 8 | 台帳3 run蓄積 | `daily-2026-07-27` と `daily-2026-07-28` の2 runを実生成済み。あと1日分は作らず実scheduleを待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
-| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | 実schedule初発火でEN/JA beat-rateは完走したが、binary gateを`editorial`軸へ変換後、許可軸一覧がその名前を捨ててrc75。Writer `fb39d97`でschemaを一致させ、回帰12 tests PASS。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
+| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | 実schedule初発火でEN/JA beat-rateは完走したが、binary gateを`editorial`軸へ変換後、許可軸一覧がその名前を捨ててrc75。Writer `fb39d97`でschemaを一致させた。12:14 preflightではtest末尾だけのcwd相対importをWriter `a933f75`で共通absolute pathへ直し、beat-rate 19/19・rule-blame 20/20 PASS。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
 | 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
 | 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
 | 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
