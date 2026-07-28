@@ -35,7 +35,7 @@ function fixture() {
         providerText: "Registration confirmed",
         selectedSiteName: "Fresh Events",
         selectionReason: "free, public, online, and relevant",
-        actionSummary: "registered the agent-owned email",
+        actionSummary: "registered browser-owner@example.test",
       };
     }
     async close() { calls.push(["close"]); }
@@ -55,6 +55,7 @@ function fixture() {
     steelClient,
     Stagehand: FakeStagehand,
     apiKey: "gemini-key",
+    agentEmail: "browser-owner@example.test",
   });
   return { driver, calls, getOptions: () => options };
 }
@@ -85,7 +86,9 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
   const task = calls.find(([name]) => name === "execute")[1];
   assert.match(task, /search the live web/i);
   assert.match(task, /compare at least two/i);
+  assert.match(task, /browser-owner@example\.test/i, "the runtime identity is available to the browser agent");
   assert.doesNotMatch(task, /fresh-events\.example/i, "the target comes from discovery, never configuration");
+  assert.doesNotMatch(JSON.stringify(action), /browser-owner@example\.test/i, "the identity never enters durable results");
 });
 
 test("provider success comes from a separate typed page readback, not agent narration", async () => {
@@ -121,4 +124,3 @@ test("public or local browser endpoints are rejected before a browser is created
     }), /Railway-private Steel/i);
   }
 });
-

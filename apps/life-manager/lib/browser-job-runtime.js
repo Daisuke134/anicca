@@ -13,8 +13,10 @@ async function runNextBrowserJob(deps = {}) {
   const claim = deps.claimJob || (() => claimBrowserJob(deps));
   const job = await claim();
   if (!job) return { status: "idle" };
-  const driver = deps.driver || makeStagehandSteelDriver({
+  const makeDriver = deps.makeDriver || makeStagehandSteelDriver;
+  const driver = deps.driver || makeDriver({
     apiKey: deps.geminiKey || process.env.GEMINI_API_KEY,
+    agentEmail: deps.agentEmail || process.env.LM_AGENT_BROWSER_EMAIL,
   });
   const append = deps.appendTrace || ((id, stage, meta) => appendBrowserTrace(id, stage, meta, deps));
   const finish = deps.finishJob || ((id, result) => finishBrowserJob(id, result, deps));
