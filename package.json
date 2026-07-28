@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@blockrun/llm": "^2.13.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@solana/web3.js": "^1.98.4",
     "bs58": "5.0.0",
