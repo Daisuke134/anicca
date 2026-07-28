@@ -10,5 +10,17 @@
       "https://github.com/profullstack/aiornot.vote/pull/100"
     ],
     "description": "RSS enclosure MIME fix"
+  },
+  {
+    "application_id": "f8960763-2d63-4a49-b004-65d9f2c61f2c",
+    "gig_id": "d9778d45-f0fc-46c7-a85f-710e20d928e2",
+    "amount_usd": 0.25,
+    "payment_currency": "sol",
+    "merchant_wallet_address": "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+    "category": "code",
+    "pr_links": [
+      "https://github.com/moshcoder/moshcode/pull/61"
+    ],
+    "description": "Portable skillName fallback test fix"
   }
 ]

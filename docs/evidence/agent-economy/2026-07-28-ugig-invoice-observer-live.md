@@ -42,15 +42,17 @@ observer config because no accepted deliverable exists yet.
 | Life Manager full suite | 659/659, plus the new 7/7 pretests |
 | shell syntax | PASS |
 | plist lint | PASS |
-| live uGig API run | `deliveries_seen=1`, `pending=1`, `invoice_created=0`, `paid=0` |
+| latest live uGig API run | `deliveries_seen=2`, `pending=2`, `invoice_created=0`, `paid=0` |
 | production launchd | `ai.anicca.life-manager-ugig-invoice-observer`, interval 300 seconds |
 | production first run | `runs=1`, `last exit code=0` |
+| production latest run | `runs=3`, `last exit code=0` |
 | existing Life Manager loops | eight existing labels remained loaded; none was stopped or replaced |
 
 Production stdout:
 
 ```json
 {"observed_at":"2026-07-28T08:49:30.740Z","deliveries_seen":1,"pending":1,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
+{"observed_at":"2026-07-28T08:56:27.311Z","deliveries_seen":2,"pending":2,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 ```
 
 ## Safety and evidence limit
