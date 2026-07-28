@@ -34,5 +34,18 @@
       "https://pairux.com/@moshcoding"
     ],
     "description": "Subscribed to the requested PairUX channel"
+  },
+  {
+    "application_id": "85654162-eabb-457f-af0e-ce647e8de0e2",
+    "gig_id": "174bfd02-a741-4d37-bf94-8529222dfe6e",
+    "amount_usd": 20,
+    "payment_currency": "sol",
+    "merchant_wallet_address": "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+    "category": "art",
+    "proof_urls": [
+      "https://github.com/profullstack/nightcell7/pull/38",
+      "https://github.com/Daisuke134/nightcell7/blob/feat/hex-cover/docs/portfolio/hex-cover.md"
+    ],
+    "description": "Original modular hex-armour tactical cover and Babylon.js integration"
   }
 ]
