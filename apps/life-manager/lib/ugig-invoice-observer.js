@@ -54,6 +54,7 @@ async function observeUgigDeliveries({
   listInvoices,
   isPullRequestMerged,
   createInvoice,
+  processPaidInvoice,
 }) {
   if (!Array.isArray(deliveries)) throw new Error("deliveries must be an array");
   if (!Array.isArray(applications)) throw new Error("applications must be an array");
@@ -66,6 +67,8 @@ async function observeUgigDeliveries({
     invoiced: 0,
     invoice_created: 0,
     paid: 0,
+    revenue_recorded: 0,
+    revenue_duplicates: 0,
     rejected: 0,
     invoices: [],
   };
@@ -83,7 +86,7 @@ async function observeUgigDeliveries({
       result.pending += 1;
       continue;
     }
-    if (application.status !== "accepted") {
+    if (!["accepted", "completed"].includes(application.status)) {
       result.rejected += 1;
       continue;
     }
@@ -92,9 +95,27 @@ async function observeUgigDeliveries({
     const existing = invoices.find((invoice) => invoice?.application_id === delivery.application_id);
     if (existing) {
       result.invoiced += 1;
-      if (String(existing.status).toLowerCase() === "paid") result.paid += 1;
+      if (String(existing.status).toLowerCase() === "paid") {
+        if (typeof processPaidInvoice !== "function") {
+          throw new Error("a settlement processor is required for a paid invoice");
+        }
+        const settlement = await processPaidInvoice(delivery, existing, application);
+        if (!settlement || settlement.ok !== true) {
+          throw new Error("paid invoice settlement processor did not verify the payout");
+        }
+        result.paid += 1;
+        if (settlement.duplicate) result.revenue_duplicates += 1;
+        else result.revenue_recorded += 1;
+      } else if (application.status === "completed") {
+        result.rejected += 1;
+      }
       const id = invoiceId(existing);
       if (id) result.invoices.push(id);
+      continue;
+    }
+
+    if (application.status === "completed") {
+      result.rejected += 1;
       continue;
     }
 
