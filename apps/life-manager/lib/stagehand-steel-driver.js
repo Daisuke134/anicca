@@ -184,6 +184,9 @@ function makeStagehandSteelDriver(options = {}) {
       sessions.set(String(session.id), { stagehand, page });
       await page.goto(SEARCH_URL);
       const explicitUrl = explicitPublicHttpsUrl(goal);
+      const readOnlyAuth = Boolean(
+        explicitUrl && context.actionKind === "browser_auth_continuity_readback",
+      );
 
       const discoveryTask = [
         "Search the live web for websites that can satisfy this delegated goal:",
@@ -198,7 +201,7 @@ function makeStagehandSteelDriver(options = {}) {
             model: MODEL,
             executionModel: MODEL,
           });
-        const actionAgent = explicitUrl ? null : stagehand.agent({
+        const actionAgent = readOnlyAuth ? null : stagehand.agent({
             mode: "cua",
             model: AGENT_MODEL,
             systemPrompt: AGENT_SYSTEM_PROMPT,
@@ -230,6 +233,13 @@ function makeStagehandSteelDriver(options = {}) {
           selectionReason: replaceIdentity(selection.selectionReason, agentEmail).slice(0, 500),
         };
         if (typeof context.onSelected === "function") await context.onSelected(selected);
+        if (readOnlyAuth) {
+          return {
+            ...selected,
+            action: "Read current authenticated provider page.",
+            sideEffectStarted: false,
+          };
+        }
 
         const actionTask = [
           "On the currently selected provider page, perform exactly one reversible, zero-cost external action explicitly inside this delegated goal:",
@@ -255,34 +265,8 @@ function makeStagehandSteelDriver(options = {}) {
         if (typeof context.onActionStarted === "function") {
           await context.onActionStarted({ action: "one delegated zero-cost browser action" });
         }
-        if (explicitUrl) {
-          const atomicActs = [
-            ["Open the zero-cost registration form on this current event page. Do not navigate to a related or organizer website."],
-            ["Fill the required name field with %agentName%.", { variables: { agentName } }],
-            ["Fill the required email field with %agentEmail%.", { variables: { agentEmail } }],
-            ["Fill the required company or organization field with %agentCompany%.", { variables: { agentCompany: agentName } }],
-            ["Fill the required role or job title field with %agentRole%.", { variables: { agentRole: "AI agent" } }],
-            ["In the required dropdown labeled 'Which best describes you?', select 'AI Researcher'."],
-            ["In the required consent dropdown directly above the Register button, select the option meaning No / I do not consent. Fail if no decline option exists."],
-            ["Submit this free registration now and remain on the provider result page."],
-          ];
-          for (let index = 0; index < atomicActs.length; index += 1) {
-            const [instruction, actOptions] = atomicActs[index];
-            try {
-              const acted = await stagehand.act(instruction, actOptions);
-              if (!acted || acted.success !== true) {
-                throw new Error(String((acted && acted.message) || "unsuccessful result"));
-              }
-            } catch (error) {
-              throw new Error(
-                `browser atomic action ${index + 1}/${atomicActs.length} failed: ${String(error && error.message || error).slice(0, 300)}`,
-              );
-            }
-          }
-          await page.waitForTimeout(15_000);
-        } else {
-          await actionAgent.execute(actionTask);
-        }
+        await actionAgent.execute(actionTask);
+        if (explicitUrl) await page.waitForTimeout(15_000);
         const observation = await stagehand.extract(
           "Summarize the single delegated action attempted on the current provider page. Do not claim it succeeded.",
           actionSchema,

@@ -139,6 +139,7 @@ async function runGenericBrowserTask(job, deps) {
       goal: job.goal,
       locale: job.locale,
       uid: job.uid,
+      actionKind: job.action_kind,
       onSelected: recordSelected,
       onActionStarted: recordActionStarted,
     }), actionTimeoutMs, "browser action");
