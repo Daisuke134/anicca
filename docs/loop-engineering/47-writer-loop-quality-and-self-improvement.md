@@ -2024,6 +2024,27 @@ ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなる
 
 次は §22.6 #2 の devto/en frontmatter欠落だけを扱う。#6 の画像URL欠陥は、今回のNote根因とは別クラスだったため順序どおり保留する。
 
+### 21.48 `daily-2026-07-28` を 2/8 から 5/8 へ復旧（実測 09:09）
+
+前runの欠陥を閉じた直後の新runで、別の3停止点が同時に出た。immutable artifactや安定IDを作り直さず、各媒体の正本APIと公開readbackから根因を分離した。
+
+| 停止点 | 実測した根因 | 恒久修正 |
+|---|---|---|
+| Dev.to staging 422 | API本文は `Tag "machine-learning" contains non-alphanumeric or prohibited unicode characters`。frontmatter自体ではなく、Dev.toのtag制約に対する正規化欠落 | tagを英数字だけへ正規化して最大4件にする。Writer `4d3b7a4` |
+| Substack JA/EN staging 500 | frozen runには同一SHAの`body-diagram.png`があるのに、resume stagingがMermaid sourceをKrokiへ再送し500。immutable media契約違反 | managed runはpublication-stateの`media.body_assets[].path`をそのままuploadし、再renderしない。Writer `c83da3e` |
+| Substack EN preview | 画像不良ではなく共有CDP pageの`TargetClosedError`。単体実測は2画像・最大410pxでPASS | `TargetClosedError`だけfresh pageで最大3回再試行し、実画像高FAILは即停止。Writer `13dc5a4` |
+| Dev.to publish reconcile | PUT成功直後にdraft一覧から消え、public article APIへ現れるまでの伝播窓で`ambiguous`化 | PUT後に同一numeric IDの`published_at`を最大5回待ってから強いreceipt reconcile。live遷移時はstale errorを除去。Writer `04a3d17` |
+
+実公開証拠:
+
+| Pair | 固定target | 公開結果 |
+|---|---|---|
+| devto/en | `4248458` | [公開URL](https://dev.to/anicca_301094325e/the-judge-gave-my-headline-000-the-comparison-was-the-problem-1im6)、HTTP 200、authenticated identity・本文・headline/body media PASS。headline exact SHA、body dHash distance 8 |
+| substack/ja | `208760758` | [公開URL](https://aniccabuddha.substack.com/p/ai000)、本文・identity・2 mediaともexact SHA PASS |
+| substack/en | `208760780` | [公開URL](https://aniccabuddha.substack.com/p/the-judge-gave-my-headline-000-the)、HTTP 200、`send:false`、本文・identity・2 mediaともexact SHA PASS |
+
+focused verificationはpublication/resume 88件、Dev.to 11件、Substack retry 2件、既存Substack 13件がPASS。stateは5/8 live。残りは新規故障ではなく、`zenn-article/ja`のrolling window、`x-post/ja`の12:00 JST slot、`x-article/en`のJA公開+6時間（12:57:17 JST）という既存time gateだけである。09:09のauthoritative plannerは`pending_pairs`をこの3件、`eligible_pairs=[]`として返した。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2253,7 +2274,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
 | 2 | **DONE** — devto/en の frontmatter 欠落 | immutable init 前に canonical EN の title/tags frontmatter を強制し、凍結済みrunは本文完全一致wrapperからmetadataだけを救済。Writer `65f139e` / `85b83ba` | run `daily-2026-07-27` の固定ID `4243074` をlaunchd loopが同一IDのまま公開。authenticated API/匿名HTMLでidentity・本文hash・headline/body media PASS、ledger live行exact1。[公開URL](https://dev.to/anicca_301094325e/if-you-want-ai-agents-to-run-unattended-design-how-they-stop-first-1n3m) |
 | 3 | **DONE** — x-article ja/en の identity 不一致 | 固定editorのtitleをimmutable sourceへbindし、公開済み本文一致+media readback失敗だけをsame-ID repairへ変換。Xのcover適用によるtab差し替え後も同じedit URLだけを再取得する。Writer `37c20ce` / `11b824a` / `ab296f8` | JAは固定edit ID `2081491516254830592`→public ID `2081673442827608169`、ENは固定edit ID `2081491643371520000`→public ID `2081766277635543268` のままlive。両言語ともidentity・本文・cover/body media PASS、ledger live exact2。[JA](https://x.com/diceai0/article/2081673442827608169) / [EN](https://x.com/diceai0/article/2081766277635543268)。remote `published_at` はJA `09:29:59Z`、EN `15:38:52Z` で差368分53秒（許可360–370分内） |
-| 4 | **IN PROGRESS** — zenn / x-post が `intent` のまま | 初期化race修正後、別pairのrepair中に一時的な`ambiguous-target-or-reality` quarantineが残り、現在のworker-safe stateを再読しなかった。Writer `480b08f` / `95053f6`で、現在のplanが「Zennだけpending」と再証明できる場合に限りstale quarantineを自己解除。source欠落・`published:false`など真のpoisonは維持。X Postは既にlive | 実run `daily-2026-07-27` は5分workerで`quarantined → pending/waiting`へ自己回復し、error/quarantine時刻0。backlog先頭`daily-2026-07-26`は旧相対画像2本がCloudinary 400だったためZenn公式の`/images/<run>/<file>`へ同一slug修復（Zenn `4d8ca87`）。匿名`BODY_IMAGES_ALIVE=8 DEAD=0`、workerがexact8 receiptとTelegram message `4166`を記録して先頭をterminal化。次候補`daily-2026-07-27`と`daily-2026-07-28`にも本文asset参照が無い同型欠落を公開前に再現し、publication-stateと同一SHAの`/images/<run>/body-diagram.png`を接続（Zenn `b5c59a3` / `4104e20`）。対象runは次回window `2026-07-28T22:06:49.276+09:00`に同一artifact/slugをretryし、receipt後にDONE |
+| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させる | stale quarantineとZenn asset欠落は修正済み。新runのDev.to/Substack停止も§21.48で同一ID復旧し、`daily-2026-07-28`は5/8 live。残りはtime gateだけ | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry。`daily-2026-07-28`はZenn delegated、X Post 12:00 JST以降、X Article EN 12:57:17 JST以降に既存launchd workerが同一targetを公開する。両run exact8、public readback PASS、重複0でDONE |
 | 5 | **DONE** — `cta-gate.sh` を prompt とpublication initに配線 | 公開修復後、扉の再消失を防ぐ。prompt指示だけでなく、全publisher/workerが共有するimmutable package境界でfail-closed。Writer feature `dfb36d9`、live `027c258` | JA/EN/X Postの各1面だけCTAを欠く3 fixtureはすべてstate作成前FAIL、3面すべて正しいCTAなら各`gates/cta-*.json=PASS`後にinit成功。publication/resume関連137 tests PASS、live branchで同じcontract再実行PASS |
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
