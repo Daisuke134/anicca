@@ -147,6 +147,6 @@ Trigger the same launchd loop again. Require no new merge transaction, no additi
 
 Move `PM-MERGE-1` to the completed baseline, advance the current cursor to `S21-MAC-OFF`, replace pre-merge balances with verified post-merge values, and record the transaction hash and receipt evidence in the Life Manager spec.
 
-- [ ] **Step 7: Verify, commit, and push**
+- [x] **Step 7: Verify, commit, and push**
 
 Run `git diff --check`, the focused/full test commands, fresh live readbacks, and a stale-cursor search. Commit only task-owned files and push `main`.
