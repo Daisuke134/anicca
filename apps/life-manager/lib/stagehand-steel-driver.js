@@ -64,6 +64,42 @@ function isSpecificActionUrl(value) {
   }
 }
 
+function explicitPublicHttpsUrl(goal) {
+  const match = String(goal || "").match(/https?:\/\/[^\s<>"']+/i);
+  if (!match) return null;
+  const raw = match[0].replace(/[),.;!?]+$/, "");
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error("runtime target must be a public HTTPS URL");
+  }
+  const host = url.hostname.toLowerCase();
+  const octets = host.split(".").map(Number);
+  const privateIpv4 = octets.length === 4 && octets.every(Number.isInteger) && (
+    octets[0] === 10 ||
+    octets[0] === 127 ||
+    (octets[0] === 169 && octets[1] === 254) ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+    (octets[0] === 192 && octets[1] === 168)
+  );
+  if (
+    url.protocol !== "https:" ||
+    !host ||
+    host === "localhost" ||
+    host === "::1" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    privateIpv4
+  ) {
+    throw new Error("runtime target must be a public HTTPS URL");
+  }
+  url.username = "";
+  url.password = "";
+  url.hash = "";
+  return url.toString();
+}
+
 function privateSession(session) {
   if (!session || !session.id || !PRIVATE_CDP.test(String(session.websocketUrl || ""))) {
     throw new Error("Stagehand requires a Railway-private Steel CDP session");
@@ -111,6 +147,7 @@ function makeStagehandSteelDriver(options = {}) {
       const page = await stagehand.context.awaitActivePage();
       sessions.set(String(session.id), { stagehand, page });
       await page.goto(SEARCH_URL);
+      const explicitUrl = explicitPublicHttpsUrl(goal);
 
       const discoveryTask = [
         "Search the live web for websites that can satisfy this delegated goal:",
@@ -121,16 +158,17 @@ function makeStagehandSteelDriver(options = {}) {
       ].join("\n");
       let executionStarted = false;
       try {
-        const discoveryAgent = stagehand.agent({
-          model: MODEL,
-          executionModel: MODEL,
-        });
+        const discoveryAgent = explicitUrl ? null : stagehand.agent({
+            model: MODEL,
+            executionModel: MODEL,
+          });
         const actionAgent = stagehand.agent({
           mode: "cua",
           model: AGENT_MODEL,
           systemPrompt: AGENT_SYSTEM_PROMPT,
         });
-        await discoveryAgent.execute(discoveryTask);
+        if (explicitUrl) await page.goto(explicitUrl);
+        else await discoveryAgent.execute(discoveryTask);
         let selection;
         let selectedUrl;
         for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -140,7 +178,9 @@ function makeStagehandSteelDriver(options = {}) {
           );
           selectedUrl = publicPageUrl(page, agentEmail);
           if (selection.isSpecificActionPage === true && isSpecificActionUrl(selectedUrl)) break;
-          if (attempt === 2) throw new Error("browser discovery did not reach a specific action page");
+          if (explicitUrl || attempt === 2) {
+            throw new Error("browser discovery did not reach a specific action page");
+          }
           await discoveryAgent.execute([
             "You are still on a search, directory, category, or listing page.",
             "Open one specific candidate's provider detail/action page now.",
