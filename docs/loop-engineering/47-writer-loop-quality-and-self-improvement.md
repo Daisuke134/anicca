@@ -1,7 +1,26 @@
-# 47. Writer Loop — 記事品質の根本問題と self-improving loop 設計（2026-07-18 研究）
+# 47. Writer Loop — Money-first self-improving / self-healing loop
 
-対象 loop: `ai.anicca.article-daily`（+衛星 `article-self-improve` 等）。SSOT spec: `docs/superpowers/specs/2026-07-14-article-earn-loop-ssot.md`。
+対象 loop: `ai.anicca.article-daily`（+衛星 `article-self-improve` 等）。
 位置づけ: 「AI entity article writer」ではなく **Writer Loop** — あらゆる Claude が書いて稼げる汎用 loop。記事は最初の形態で、X 投稿（短文）・書籍（長文）へ拡張する。本質は同じ、出口と換金手段が違うだけ。
+
+## 0. 現行SSOT・優先順位・完了の定義
+
+**このファイルだけが Writer Loop の現行 spec / TODO / done 条件のSSOT。** `docs/`、`.cursor/`、`.claude/` 以下の他の article/writer 文書は、実装証拠・記事素材・過去設計の履歴であり、現行の優先順位や完了条件を定義しない。このファイル内でも §1–§21 は調査・実装・incident の履歴、**§22だけが現在の規範**。過去節と§22が衝突した場合は§22を採用する。
+
+**優先順位は money-first。** 完全な8面公開はchannel reliability指標であり、売上loopの実装を止める前提条件ではない。現在時刻では得られない3 run目、実engagement、7日conversion、次回scheduleは監視backlogへ置き、今日実装・fixture検証・launchd配線・pushできる作業を止めない。
+
+**この実装sessionの終了条件**は、実データが数日貯まることではない。次を満たせば機械は完成:
+
+1. run/artifact/variantからCTA click、activation、paidまでjoinできる
+2. judge較正がscorable / unknown / insufficientを分離する
+3. title / article-body / long-formが別opponent・reward・weightを持つ
+4. 生成前・学習前の矛盾scanがcritical conflictを止める
+5. 1変更→held-out→canary→keep/revert→次run hash消費をfixtureで一周する
+6. self-heal 5 failure classが同一runを重複0でresumeする
+7. launchdとTelegram durable receiptを実機確認する
+8. Writer code、test、このspecがremoteへpushされ、対象repoのHEAD/upstreamが一致する
+
+自然run・実売上が未到着なら `pending/insufficient` は正常状態であり、実装未完を意味しない。到着後は既存loopが自動観測し、証拠が十分な時だけ変更し、悪化/unknownならrevertまたは変更0にする。
 
 ## 1. 実測で確定した問題（Virtuals note 記事 `2026-07-17-virtuals-hanko-ja.md` 全文読了）
 
@@ -61,7 +80,7 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。2026-07-27 08:33 までの履歴は §18.8 と §21.2 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.6**。Writer の公開経路を直した後、T13（OSS 境界）で Writer を共有 Marketing Loop の最初の channel pack に移す。
+旧導入順は完了または廃止。履歴は §18.8 と §21.2 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.6**。公開面の完全性を待たず、money attributionとbounded learningを先に完成し、そのcontractを共有 Marketing Loop の最初の channel packへ移す。
 
 §16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.6 だけを更新する。
 
@@ -243,7 +262,7 @@ build は全 done(#1-6,9-14 完了)。残り:
 
 ## 14. 旧FULL TODO（履歴。順序の正本ではない）
 
-体制（Dais 裁定、現在の正本）: main Sol = plan/spec/独立検証、別 Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）。spec と TODO は発見のたびに更新し続ける。
+体制（当時の実装履歴。現行のowner/順序ではない）: main Sol = plan/spec/独立検証、別 Sol = 全実装（subagent + adversary one-shot、fresh 起動なので同モデルで可）。
 
 ### 今日（Layer 1 完成 = 初の全自動公開日）
 | # | owner | やること | 完了の証拠 |
@@ -420,7 +439,7 @@ fallback設計根拠: ソース [Claude Code CLI reference](https://code.claude.
 
 設計根拠: ソース [AWS Lambda Powertools idempotency utility](https://github.com/aws-powertools/powertools-lambda-python/blob/develop/docs/utilities/idempotency.md) / 核心の引用: “an operation does not cause additional side effects if it is called more than once with the same input parameters.” 同資料の “PutItem for locking and UpdateItem for completion” に合わせ、side effect前intentと完了receiptを分離する。ソース [Stripe Python README](https://github.com/stripe/stripe-python/blob/master/README.md) / 核心の引用: “Idempotency keys are automatically generated and added to requests ... to guarantee that retries are safe.” stable targetをpair別idempotency identityとして使う。ソース [Temporal Python SDK](https://github.com/temporalio/sdk-python/blob/main/README.md) / 核心の引用: “distributed, scalable, durable, and highly available orchestration engine”。再実行の判断をmodel記憶ではなくdurable stateへ置く。
 
-## 18. Writer Engine v2 — X Post 1/day・X Articles ja/en・月次book・native Codex/Claude（現在の正本）
+## 18. Writer Engine v2 — X Post 1/day・X Articles ja/en・月次book・native Codex/Claude（実装履歴、現行規範は§22）
 
 ### 18.1 Overview
 
@@ -1076,7 +1095,7 @@ Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ�
 | ~~T4.5~~ | 台帳と scorer の接続 | T4 | **DONE** `daa7368`。`scripts/score-latest-run.sh` を `self-improve.sh` から呼ぶ。**発覚した穴**: `beat_rate.py` を呼ぶ caller がツリー内に1つも無く、日次台帳は書かれるだけで採点されない状態だった（学習しているように見えて何も測っていない）|
 | ~~T22a~~ | トピック在庫の計器 | — | **DONE** `c2367f3`。`scripts/topic-supply.sh` を 22:30 の入口から呼ぶ（朝ではなく前夜＝丸一日の猶予）。実測 `{"queue":1,"raw_ideas_ready":0,"total":1,"floor":3,"ok":false}` で Telegram 警告。README のスキーマ行を除外（main の grep がこれで ready 1件と誤読した罠）|
 | ~~T22b~~ | トピックの実補充 | T22a | **DONE**。queue 1→4枚、`topic-supply.sh` が `{"queue":4,"total":4,"floor":3,"ok":true}` rc=0、`select-next-topic.sh` も rc=0 で既存カードを返す（順序を壊していない）|
-| **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（06:00 の run が毎日書く。待つだけ、実装なし） |
+| **T5** | 台帳の実データ蓄積 | T4 | `daily-*/gates/title-candidates-*.json` が **3 run 以上**存在（当時の自然観測項目。現行実装のblockerではない） |
 | ~~T6~~ | 夜間トレーナ | T3,T4,T5 | **DONE** `5d56e8e`。契約 15/15、dataset train 68 / val 16 / test 19（全 split に ja と en）、bare-title 18行を除外して残存 0、guard 発火時 `CRAFT.md` の sha256 不変（main が自分で実行して確認）。**学習が実際に効いたかは T5 の3 run 蓄積後**（本節の done は機構の完成であって、改善の証明ではない）|
 | ~~T7a~~ | launchd 配線 | T6 | **DONE** `28f1a71`。`ai.anicca.writer-craft-train` を 23:10（22:30 の採点後）に登録、`launchctl list` で確認。plist に秘密は無く、`craft-train.sh` が proxy key を設定ファイルから読み、無ければ dummy key で走らずに拒否する |
 | ~~T7b~~ | Telegram 通知 | T6 | **DONE** `725774e`。`scripts/craft-train-notify.sh` を plist から training の後に呼ぶ。trainer とは別プロセス（通知の故障で学習を落とさない）。skipped / rejected / kept の3結末を区別し、**毎回 sha256 の前後**を載せる。採用ゼロなのにファイルが動いた・採用したのに不変、のどちらも WARNING を出す = gate が効いていない証拠。実 ledger と fixture 両方で描画を確認 |
@@ -2117,20 +2136,25 @@ Superpowers systematic-debugging/TDDで、実launchd Pythonを使うreceipt vali
 
 ---
 
-## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
+## 22. Full picture — Money-first Writer / Shared Marketing Loop
 
 ### 22.1 Overview（What / Why）
 
 **結論**: Writer Loop は独立製品ではない。あらゆる自社 product を売る **Shared Marketing Loop** の最初の channel pack とする。Honne、Larry、ReelClaw、Watercolor の launchd loop も、記事・X・SEO と同じ engine に後で接続する。
 
-ただし、**今は統合作業を始めない**。`7a2308203` の実測では公開が 2/8 であり、壊れた Writer を共有すると停止の blast radius も全 channel に広がる。順序は次の通り:
+**exact8-firstは禁止。** Zennを含む全公開面の修復や数日間の自然観測はreliability/monitoring laneで継続するが、money loopの実装を止めない。実装laneは次の順序で同じsession内に完成・検証・pushする:
 
-1. §22.6 #1–#7 で Writer の公開経路を exact8 に戻す
-2. 3 run と実指標を蓄積し、Writer の learning/recovery が1周する
-3. T13（OSS 境界）で `profitable-claude/marketing/` の3層へ移す
-4. Life Manager を最初の product pack として接続する
-5. Honne / Larry / ReelClaw / Watercolor を video producer adapter として順次接続する
-6. Telegram を先に全 loop 共通の観測面にし、dashboard は receipt が安定した後に載せる
+1. revenue / attribution contract
+2. judge calibration
+3. title / article-body / long-form slice
+4. contradiction gate
+5. bounded learning keep/revert
+6. self-heal 5 fixtures
+7. launchd / Telegram / remote push verification
+
+実装laneが完成した後、自然run・engagement・conversionは既存LaunchAgentが継続観測する。十分な証拠が届けば学習し、届かなければ変更0で待つ。人間も実装sessionも待機しない。
+
+共有 engine への移設はWriterのmoney-based learning contractをfixtureで一周した後に行う。3日目・7日目の実測はproduction calibrationであり、engine contract実装の開始条件ではない。Life Managerを最初のproduct packとして接続し、その後Honne / Larry / ReelClaw / Watercolorをchannel adapterとして順次接続する。Telegramを先に共通観測面にし、dashboardはreceiptのread-only projectionとして後置する。
 
 **不変式**:
 
@@ -2244,11 +2268,23 @@ product pack × channel pack → campaign run
 
 **reward contract**:
 
+同じartifactで取得できる最も下流の証拠をprimary rewardにする。下流が未到着の時だけ上流を観測値として保持し、paid不明をclick 0やlossへ変換しない。
+
+```text
+paid conversion
+      > attributed activation / trial
+      > qualified CTA click
+      > engaged read / qualified hold
+      > impression
+```
+
 | scope | primary reward | guardrail | opponent |
 |---|---|---|---|
-| Writer / article craft | 同一世代の qualified read と door click | false claim 0、public readback PASS | 同言語・同 form・同 audience で実際に読まれた記事 |
-| Product marketing | attributed activation / trial / paid conversion | refund、unsubscribe、complaint、spend cap | 同 product category で実際に転換した LP / ad / post |
-| Video craft | qualified hold / completion と attributed door click | policy strike 0、account health | 同 platform・同 duration class で実際に保持/転換した動画 |
+| Writer / title | attributed paid/activation。未到着時だけqualified CTA clickを較正用leading signalにする | clickbait、false claim 0、public readback PASS | 同product・同言語・同form・同audienceの実投稿 |
+| Writer / article-body | attributed paid/activation + engaged read | evidence/safety/identity PASS、qualified clickを落とさない | 同product・同言語の本文 |
+| Writer / long-form | attributed paid purchase + completion | refund/complaint、evidence/safety/identity | 同product・同price classのbook/long-form |
+| Product marketing | attributed paid conversion、次にactivation/trial | refund、unsubscribe、complaint、spend cap | 同product categoryで実際に転換したLP / ad / post |
+| Video craft | attributed paid/activation、次にqualified hold / completion | policy strike 0、account health | 同platform・同duration classで実際に保持/転換した動画 |
 
 raw like/view は観測値であって全領域共通 reward ではない。reward が未取得なら `unknown` とし、0点に変換しない。§21.42–§21.45 の outage 汚染を全 channel で禁止する。
 
@@ -2335,51 +2371,66 @@ runnerが未完runの最初の非PASS stepだけ再開
 
 dashboard はこの event/ledger を読む read-only projection とする。dashboard 独自 state、独自 metric、独自判断を持たせない。
 
-### 22.6 残 TODO（唯一の現行正本、順序 = 損失の大きさ）
+### 22.6 残 TODO（唯一の現行正本、money-first）
 
-前段の done 条件を満たさずに次へ進まない。後順位の欠陥が前順位の live/readback を物理的に妨げる場合だけ、前順位を閉じるための prerequisite として同時修正し、両方を別証拠で閉じる。#2 では public media 404 が Dev.to staging を止めたため #6 をこの例外で同時に閉じた。
+以下は**いま実装・検証・pushして閉じる作業**。自然run、実engagement、7日conversion、platform公開窓は前提条件にしない。実データが無い分岐はfixtureで機械を検証し、productionでは`pending/insufficient`として変更0を保証する。
 
-| # | 作業 | 損失順の理由 | done 条件 |
+| # | 状態 | いま完了する作業 | done 条件 |
 |---:|---|---|---|
-| 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
-| 2 | **DONE** — devto/en の frontmatter 欠落 | immutable init 前に canonical EN の title/tags frontmatter を強制し、凍結済みrunは本文完全一致wrapperからmetadataだけを救済。Writer `65f139e` / `85b83ba` | run `daily-2026-07-27` の固定ID `4243074` をlaunchd loopが同一IDのまま公開。authenticated API/匿名HTMLでidentity・本文hash・headline/body media PASS、ledger live行exact1。[公開URL](https://dev.to/anicca_301094325e/if-you-want-ai-agents-to-run-unattended-design-how-they-stop-first-1n3m) |
-| 3 | **DONE** — x-article ja/en の identity 不一致 | 固定editorのtitleをimmutable sourceへbindし、公開済み本文一致+media readback失敗だけをsame-ID repairへ変換。Xのcover適用によるtab差し替え後も同じedit URLだけを再取得する。Writer `37c20ce` / `11b824a` / `ab296f8` | JAは固定edit ID `2081491516254830592`→public ID `2081673442827608169`、ENは固定edit ID `2081491643371520000`→public ID `2081766277635543268` のままlive。両言語ともidentity・本文・cover/body media PASS、ledger live exact2。[JA](https://x.com/diceai0/article/2081673442827608169) / [EN](https://x.com/diceai0/article/2081766277635543268)。remote `published_at` はJA `09:29:59Z`、EN `15:38:52Z` で差368分53秒（許可360–370分内） |
-| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させ、X EN時間経路を実測 | stale quarantine、Zenn asset、Dev.to/Substack、X Postは復旧済み。§21.51でX Article ENは同一targetからlive/readback PASSになり`daily-2026-07-28`は7/8。ただしJA差388分58秒で時間契約FAIL。ownerless lock recoveryとsingle-X-EN deterministic dispatchはWriter `d165a29`でTDD修復済み | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry、`daily-2026-07-28`もFIFOでZennをexact1公開。次runのX EN remote `published_at`差360–370分、public readback PASS、重複0でDONE |
-| 5 | **DONE** — `cta-gate.sh` を prompt とpublication initに配線 | 公開修復後、扉の再消失を防ぐ。prompt指示だけでなく、全publisher/workerが共有するimmutable package境界でfail-closed。Writer feature `dfb36d9`、live `027c258` | JA/EN/X Postの各1面だけCTAを欠く3 fixtureはすべてstate作成前FAIL、3面すべて正しいCTAなら各`gates/cta-*.json=PASS`後にinit成功。publication/resume関連137 tests PASS、live branchで同じcontract再実行PASS |
-| 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
-| 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
-| 8 | 台帳3 run蓄積 | `daily-2026-07-27` と `daily-2026-07-28` の2 runを実生成済み。あと1日分は作らず実scheduleを待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
-| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | schema/cwd相対importをWriter `fb39d97` / `a933f75`で修正し、旧固定branchとtracked dirty停止をWriter `892ede4` / `9b651b6`でruntime upstream導出・Writer外変更隔離へ修正。本番同期gate PASS、実機再load済み。さらにTelegram consumer不在をWriter `03057af`でdurable・idempotentなrun-bound通知へ配線した。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
-| 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない。週次監査のlaunchd Python/PATH故障はWriter `9f54f96`で修復し、実receipt + Telegram `messageId=4248`まで確認済み | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
-| 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
-| 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
+| 1 | TODO | Revenue / attribution contract | `product_id / run_id / artifact_id / variant_id / click_id`からimpression、engaged read、CTA click、activation、paidへjoinでき、reward hierarchyとunknown規則がschema/test/specで一致 |
+| 2 | TODO | Product landing CTA | WriterのCTAが計測可能な自社product landing URLを指し、run/artifact/variant attributionを失わない。Substackはdistributionであり最終conversion SSOTにしない |
+| 3 | TODO | Judge calibration | judge順位と同じartifactの実reward順位を比較し、`scorable / unknown / insufficient`件数を分離。missing exposure/conversionを0またはlossへ変換しない |
+| 4 | TODO | Title learning slice | title専用opponent/reward/weight。calibrated reward→blame→1変更→held-out非悪化を通す |
+| 5 | TODO | Article-body learning slice | article-body専用opponent/reward/weight。title結果を本文へ流用せず、engaged readと下流conversionでheld-out非悪化を通す |
+| 6 | TODO | Long-form / book learning slice | long-form専用opponent/reward/weight。purchase/completion/refund guardrailでheld-out非悪化を通す |
+| 7 | TODO | Contradiction gate | 全active rule sourceを生成前・学習前にscan。critical conflict、drift、dead referenceをcanonical ownerへticket化し、critical 1件以上なら生成規則の追加・学習昇格を停止 |
+| 8 | TODO | Bounded learning controller | 1 cycle 1変更、before/after hash、held-out、canary、keep/revert、次run consumed hashをdurable receiptで一周。unknown/insufficientは変更0 |
+| 9 | TODO | Self-heal 5 fixture | timeout、process kill、ambiguous response、identity mismatch、broken assetを同一run/idempotency/artifact lineageからresume。duplicate side effect 0、安全gate緩和0 |
+| 10 | TODO | Launchd + Telegram | measure→calibrate→learn→verify→notifyを既存launchdで発火。全eventをdurable outboxから送り、run_id、reward status、変更、keep/revert、weight hash、failure class、messageIdを確認 |
+| 11 | TODO | End-to-end fixture proof | collect→score→one change→held-out→canary→keep/revert→next-run hash consumptionをfixtureで完走。real metric未到着の対照fixtureは`insufficient`、変更0 |
+| 12 | TODO | Spec / code / test push | Writerとこのspecの対象変更をcommit/pushし、HEAD/upstream一致、対象tracked diff 0。意味のある変更ごとにpushし、session終了時に未pushを残さない |
 
-**T13 / 共有化の着手条件**: #1–#7完了で Writer exact8 が3 consecutive run、#8–#10で1回以上の実 learning receipt、self-heal fixture 5種 PASS。その後に §22.3 へ移す。共有化は上表の順番へ割り込ませない。
+**監視backlog（この実装sessionのblockerではない）**:
+
+| 監視項目 | owner | terminal evidence |
+|---|---|---|
+| 3 run目以降の自然台帳 | daily LaunchAgent | 異なるrun_idの候補・weight hash・artifact receipt |
+| 実impression / engagement / paid較正 | metrics/learn LaunchAgent | scorable数と実相関。insufficient中は変更0 |
+| 7日click→activation→paid | attribution worker | 同一click_id/product/runのwindow-closed receipt |
+| Zenn `daily-2026-07-27/28` | Zenn deferred worker | FIFO exact1 + public readback。money implementationを止めない |
+| 次run X EN 360–370分 | publication worker | remote `published_at`差、readback、duplicate 0 |
+| production learning receipt | self-improve LaunchAgent | 実rewardに基づくkeep/revertまたはinsufficient/変更0 |
+
+§21.47–§21.54のnote/Dev.to/X/CTA/週次audit修復は完了履歴であり、現行TODOへ戻さない。
 
 ### 22.7 Acceptance Criteria
 
 | AC | done 条件 |
 |---|---|
-| AC22-1 Writer recovery | daily runが3回連続 exact8 live + public readback PASS。intent/draft/stagedを成功に数えず、再実行でside effect 0増分 |
-| AC22-2 Three-layer boundary | tracked codeは `engine / products / channels` の依存方向を守る。engine内のproduct名/channel名 hardcode 0、OpenClaw homeのcode SSOT 0 |
-| AC22-3 Multi-product | Life Managerとfixture productが同一engineを使い、reward/opponents/weightsだけを別scopeで保持。cross-product metric混入0 |
-| AC22-4 Multi-channel | writingとvideo fixtureが同一run/publication/metric/experiment schemaを返し、craft/policy/publisherは別pack |
-| AC22-5 Self-improvement | 1 experimentがbaseline→1変更→held-out→canary→keep/revert→次run weight hash確認まで人手なしで完了 |
-| AC22-6 Self-healing | timeout、process kill、ambiguous response、identity mismatch、broken assetの5 fixtureが同一runからresume。重複公開0、安全gate緩和0 |
-| AC22-7 Reward isolation | unknownを0へ変換せず、product×channel×form×languageのscope外データをopponent/rewardへjoinしない |
-| AC22-8 Observability | 全stepが同じrun_idでtrace/state/metricを持ち、stuck runを追加instrumentation無しで最初の非PASS stepまで特定可能 |
-| AC22-9 Telegram first | 必須eventがdurable outboxから送信され、send receipt欠落を再送。dashboard無しでも全runの現在地・失敗・回復・学習結果が分かる |
-| AC22-10 Clean migration | clean macOS userでinstall→launchd→実public E2E。旧Writer/OpenClaw pathへのread/write 0、secret/hardcoded home 0 |
+| AC22-1 Money attribution | run/artifact/variantからclick→activation→paidを一意join。別product、別variant、window外eventの混入0 |
+| AC22-2 Reward semantics | paid→activation→qualified click→engaged read→impressionの順序を保持。missing/unknownを0、loss、cleanへ変換しない |
+| AC22-3 Judge calibration | scorable / unknown / insufficientを分離し、scorableだけでjudge順位と実reward順位を比較 |
+| AC22-4 Slice isolation | title / article-body / long-formが別opponent・reward・weightを持ち、cross-slice更新0 |
+| AC22-5 Contradiction safety | 全active rule sourceをscanし、critical conflict時の学習変更0。修復はcanonical ownerの1箇所だけ |
+| AC22-6 Self-improvement | baseline→1変更→held-out→canary→keep/revert→次run weight hash確認まで人手なしでfixture完走 |
+| AC22-7 Self-healing | timeout、process kill、ambiguous response、identity mismatch、broken assetの5 fixtureが同一runからresume。重複公開0、安全gate緩和0 |
+| AC22-8 No-data safety | real metric未到着fixtureでstatus=`insufficient`、weight/CRAFT hash不変、Telegram receiptあり |
+| AC22-9 Launchd / Telegram | measure→learn chainを既存LaunchAgentが発火し、durable outboxの実send receipt/messageIdを残す |
+| AC22-10 Persistence | keep時だけ対象weightをatomic更新し、次run manifestが同じafter hashを記録。revert時はbefore hashへ戻る |
+| AC22-11 Push integrity | Writer code/test/specの対象変更がremoteに存在し、HEAD/upstream一致、対象tracked diff 0 |
+| AC22-12 Reliability independence | Zenn/exact8/自然観測がpendingでもAC22-1–11のfixture検証と実装完了を妨げない |
 
 ### 22.8 As-Is / To-Be
 
 | concern | AS-IS | TO-BE |
 |---|---|---|
+| priority | exact8や自然観測を後続実装の開始条件にして停止 | money attributionと学習機械を先に完成。自然観測とplatform窓は非blocking監視lane |
 | ownership | Writer、Honne、Larry、ReelClaw、Watercolorが個別launchd loop | launchdは実行triggerのまま、全run contractと学習/recoveryは1 engine |
 | product | Writerの中にtopic/CTA/accountが混在 | product packがaudience/offer/CTA/reward/opponent/weightを所有 |
 | channel | form、craft、publisher、metricがWriter固有treeに同居 | writing/video channel packとして共通interfaceを実装 |
-| completion | publish intentやbrowser操作完了が成功に混入 | public identity+asset readback付きreceiptだけがsuccess |
-| learning | title trainerはあるが、他loopは静的prompt/独立metric | 同じexperiment machine。scope別reward/opponent/weightだけ差し替え |
+| publication completion | publish intentやbrowser操作完了が成功に混入 | public identity+asset readback付きreceiptだけがplatform success |
+| implementation completion | 実metricの到着までコード作業もpending扱い | no-data fixtureでinsufficient/変更0を証明すれば完成。実metricは後続calibration |
+| learning | title trainerはあるが、paid attribution・本文・長文・矛盾gateが分離未完 | 同じbounded experiment machine。slice別reward/opponent/weightだけ差し替え |
 | recovery | shellごとのretry、前段停止で後段がintentのまま | checkpoint、failure class、policy、resume、quarantineをengine契約化 |
 | observation | 個別logを見に行く。dashboardは未着手 | まずTelegram event stream。後のdashboardはledgerのread-only projection |
 
@@ -2387,18 +2438,22 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | # | To-Be | Test name / 実測 | Cover |
 |---:|---|---|---|
-| 1 | exact8 public recovery | `test_daily_exact8_public_readback_idempotent` + 実public 3 run | OK |
-| 2 | 3層依存 | `test_engine_has_no_product_or_channel_imports` | OK |
-| 3 | multi-product隔離 | `test_reward_opponent_weight_scope_isolation` | OK |
-| 4 | channel adapter契約 | `test_writing_and_video_fixture_contract_parity` | OK |
-| 5 | self-improve 1周 | `test_experiment_keep_and_revert_updates_next_run_hash` | OK |
-| 6 | crash resume | `test_resume_after_process_kill_from_first_nonpass_step` | OK |
-| 7 | ambiguous publish | `test_response_loss_reads_back_before_retry` | OK |
-| 8 | identity mismatch | `test_wrong_editor_identity_quarantines_before_publish` | OK |
-| 9 | asset recovery | `test_public_assets_absolute_200_and_content_type_match` | OK |
-| 10 | unknown reward | `test_unknown_reward_is_neither_loss_nor_clean` | OK |
-| 11 | Telegram outbox | `test_state_transition_and_outbox_event_are_atomic` | OK |
-| 12 | clean migration | clean user install +翌schedule+実URL readback | OK |
+| 1 | attribution join | `test_paid_event_joins_exact_product_run_artifact_variant_click` | TODO |
+| 2 | attribution isolation | `test_cross_product_and_window_events_are_rejected` | TODO |
+| 3 | unknown reward | `test_unknown_reward_is_neither_zero_loss_nor_clean` | TODO |
+| 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` | TODO |
+| 5 | slice isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` | TODO |
+| 6 | contradiction gate | `test_critical_rule_conflict_blocks_generation_and_learning_change` | TODO |
+| 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | TODO |
+| 8 | self-improve revert | `test_heldout_loss_or_unknown_restores_before_hash` | TODO |
+| 9 | no-data completion | `test_missing_real_metrics_emits_insufficient_and_changes_nothing` | TODO |
+| 10 | crash resume | `test_resume_after_process_kill_from_first_nonpass_step` | TODO |
+| 11 | ambiguous publish | `test_response_loss_reads_back_before_retry` | TODO |
+| 12 | identity mismatch | `test_wrong_editor_identity_quarantines_before_publish` | TODO |
+| 13 | asset recovery | `test_broken_asset_repairs_same_artifact_without_duplicate_publish` | TODO |
+| 14 | Telegram outbox | `test_state_transition_and_outbox_event_are_atomic` + 実messageId | TODO |
+| 15 | launchd chain | 実kickstartでmeasure→calibrate→learn→notify、terminal receipt | TODO |
+| 16 | push integrity | `git diff --check`、focused/full suite、HEAD/upstream、対象tracked diff | TODO |
 
 | Item | Value |
 |---|---|
@@ -2409,7 +2464,8 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | In scope | Out of scope |
 |---|---|
-| Writer exact8の修復、shared engine contract、Life Manager product pack、Telegram、後続video adapter境界 | #1–#10より前のdashboard実装 |
+| money attribution、judge calibration、title/body/long-form slice、矛盾gate、bounded learning、self-heal、launchd、Telegram | 実装を止めて3日目/7日目の自然データを待つこと |
+| shared engine contract、Life Manager product pack、後続video adapter境界 | Zenn/exact8をmoney機械より先に完了条件へ戻すこと |
 | launchd triggerの統合、durable filesystem state、clean-user install | OpenClawをscheduler/SSOTへ戻すこと |
 | 実metricに基づくscope別self-improve | rewardをlikes/viewsの1数値へ全channel共通化 |
 | prompt/weight/CRAFTのbounded keep-revert | production codeをLLMが無検証で自己書換え |
@@ -2420,14 +2476,17 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | Phase | 実行 | verify |
 |---:|---|---|
-| 1 | §22.6 #1から#7を順番に修復 | 各行のpublic readback done条件。exact8を3 consecutive run |
-| 2 | #8–#10を実scheduleで観測 | 3 run ledger、22:30 receipt、X metric/judge calibration |
-| 3 | Writer engine contractをfreeze | contract/fixture tests全PASS、旧暗黙依存一覧0 |
-| 4 | T13で§22.3へ移設 | clean user install、OpenClaw path access 0、old implementation 0 |
-| 5 | `products/life-manager` を接続 | product-scoped reward/opponent/weights、実CTA attribution |
-| 6 | video fixture→Honne→Larry→ReelClaw→Watercolorを1本ずつ接続 | 各producerが同一schema、独立craft/reward、既存launchdから実run |
-| 7 | Telegramを全loopへ広げる | outbox/send receipt、daily summary、stuck/self-healを実通知 |
-| 8 | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
+| 1 | §22.6 #1–3: revenue/attribution、product CTA、judge calibration | attribution isolation、scorable/unknown/insufficient contract |
+| 2 | §22.6 #4–6: title、article-body、long-form slice | slice別opponent/reward/weight、held-out非悪化 |
+| 3 | §22.6 #7–8: contradiction gate、bounded learning | critical conflict変更0、keep/revert、次run hash |
+| 4 | §22.6 #9: self-heal 5 fixture | 同一run resume、duplicate 0、安全gate緩和0 |
+| 5 | §22.6 #10–11: launchd/Telegram/E2E fixture | 実kickstart、messageId、no-data対照はinsufficient/変更0 |
+| 6 | §22.6 #12: spec/code/test push verification | commit/push、HEAD/upstream一致、対象tracked diff 0 |
+| 7 | §22.3へ共有engine contractを移設 | clean user fixture、product/channel/slice scope隔離 |
+| 8 | `products/life-manager` を接続 | product-scoped offer/CTA/reward/opponent/weights |
+| 9 | video fixture→Honne→Larry→ReelClaw→Watercolor | 同一engine schema、独立channel craft/reward |
+| 10 | 自然観測を継続 | 3 run、実engagement、7日paid、Zenn/X timingは監視backlogから自動terminal化 |
+| 11 | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
 
 実装時の基本検証コマンド:
 
