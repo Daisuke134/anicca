@@ -79,12 +79,13 @@ test("builds a conservative, exactly-once WORK row from the verified worker paym
     selfWallets: [WORKER],
     receiptBlock: 100,
   });
-  assert.equal(row.entry_key, `taskmarket:${TASK_ID}:${TX}:income`);
+  assert.equal(row.entry_key, `taskmarket:${TASK_ID}:${TX}:1:income`);
   assert.equal(row.kind, "financial_external_income");
-  assert.equal(row.amount_minor, 231);
+  assert.equal(row.amount_minor, null);
+  assert.equal(row.amount_atomic, "2312500");
+  assert.equal(row.amount_decimals, 6);
   assert.equal(row.source, "taskmarket_work");
   assert.equal(row.meta.usdc_atomic, "2312500");
-  assert.equal(row.meta.excluded_dust_atomic, "2500");
   assert.equal(row.meta.requester, REQUESTER.toLowerCase());
   assert.equal(row.meta.receipt_block, 100);
 });
@@ -101,7 +102,8 @@ test("requires internally consistent exact award amounts and settlement fields",
   const options = { workerAddress: WORKER, selfWallets: [WORKER], receiptBlock: 100 };
   assert.throws(() => taskMarketLedgerEntry(task(), award({ grossAmount: "2499999" }), options), /sum/);
   const subcent = award({ grossAmount: "197499", workerPayment: "9999" });
-  assert.throws(() => taskMarketLedgerEntry(task({ awards: [subcent] }), subcent, options), /one cent/);
+  const subcentRow = taskMarketLedgerEntry(task({ awards: [subcent] }), subcent, options);
+  assert.equal(subcentRow.amount_atomic, "9999");
   assert.throws(() => taskMarketLedgerEntry(task(), award({ settlementTxHash: "bad" }), options), /transaction/);
 });
 

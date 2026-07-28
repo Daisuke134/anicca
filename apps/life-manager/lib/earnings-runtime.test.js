@@ -55,6 +55,25 @@ test("a valid revenue row is posted to the earnings table with the wallet attach
   assert.equal(body.kind, "financial_external_income");
 });
 
+test("an exact atomic USDC revenue row is posted without a rounded minor amount", async () => {
+  const fetchImpl = fetchStub(() => ok(null));
+  await recordEarnLoopRevenue({
+    entry_key: "taskmarket:award:001",
+    wallet_address: WALLET,
+    kind: "financial_external_income",
+    amount_atomic: "2312500",
+    amount_decimals: 6,
+    currency: "USD",
+    occurred_at: "2026-07-25T04:00:00.000Z",
+    tx_hash: `0x${"d".repeat(64)}`,
+  }, { ...SUPA, fetchImpl });
+
+  const body = JSON.parse(fetchImpl.calls[0].init.body);
+  assert.equal(body.amount_minor, null);
+  assert.equal(body.amount_atomic, "2312500");
+  assert.equal(body.amount_decimals, 6);
+});
+
 test("an invalid row never reaches the database — it is refused before the request", async () => {
   const fetchImpl = fetchStub(() => ok(null));
   await assert.rejects(() => recordEarnLoopRevenue({

@@ -3,7 +3,7 @@
 const { createHash } = require("node:crypto");
 
 const { settleBaseUsdc } = require("./base-usdc-payout.js");
-const { normaliseEntry, formatUsdMinor } = require("./earnings-ledger.js");
+const { normaliseEntry, formatUsdMicros } = require("./earnings-ledger.js");
 const { recordEarnLoopRevenue } = require("./earnings-runtime.js");
 const { validateWalletAddress } = require("./payout-address-intake.js");
 const { computePayout, ATOMIC_PER_USD_MINOR } = require("./payout-policy.js");
@@ -99,7 +99,9 @@ function payoutIdFor(input = {}) {
       row.entry_key,
       row.wallet_address,
       row.kind,
-      String(row.amount_minor),
+      row.amount_minor == null
+        ? `${row.amount_atomic}@${row.amount_decimals}`
+        : String(row.amount_minor),
       row.currency,
       row.occurred_at,
       row.tx_hash || "",
@@ -118,13 +120,12 @@ function payoutIdFor(input = {}) {
 
 function payoutReceiptText(amountAtomic, txHash) {
   const raw = String(amountAtomic == null ? "" : amountAtomic).trim();
-  if (!/^\d+$/.test(raw) || BigInt(raw) <= 0n || BigInt(raw) % ATOMIC_PER_USD_MINOR !== 0n) {
-    throw new Error("payout receipt amount must be an exact positive cent");
+  if (!/^\d+$/.test(raw) || BigInt(raw) <= 0n) {
+    throw new Error("payout receipt amount must be an exact positive USDC atomic amount");
   }
   const tx = String(txHash == null ? "" : txHash).trim().toLowerCase();
   if (!/^0x[0-9a-f]{64}$/.test(tx)) throw new Error("payout receipt needs a transaction hash");
-  const minor = BigInt(raw) / ATOMIC_PER_USD_MINOR;
-  return `💸 ${formatUsdMinor(minor)}を登録済みのwalletに送金しました。tx: basescan.org/tx/${tx}\n` +
+  return `💸 ${formatUsdMicros(BigInt(raw))}を登録済みのwalletに送金しました。tx: basescan.org/tx/${tx}\n` +
     "着金まで数分かかることがあります。";
 }
 
@@ -210,12 +211,13 @@ async function runPayout(request = {}, deps = {}) {
     from: walletAddress,
     to: destination,
   });
-  const amountMinor = BigInt(receipt.amountAtomic) / ATOMIC_PER_USD_MINOR;
   const entry = {
     entry_key: `payout:${receipt.txHash}:transfer`,
     wallet_address: walletAddress,
     kind: "financial_user_transfer",
-    amount_minor: Number(amountMinor),
+    ...(BigInt(receipt.amountAtomic) % ATOMIC_PER_USD_MINOR === 0n
+      ? { amount_minor: Number(BigInt(receipt.amountAtomic) / ATOMIC_PER_USD_MINOR) }
+      : { amount_atomic: receipt.amountAtomic, amount_decimals: 6 }),
     currency: "USD",
     occurred_at: new Date(request.nowMs == null ? Date.now() : request.nowMs).toISOString(),
     tx_hash: receipt.txHash,

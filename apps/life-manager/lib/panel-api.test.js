@@ -135,7 +135,7 @@ function makeFixture() {
       }] : [{ id: "secret-u2", summary: "secret-u2", start: { dateTime: "2026-07-21T14:00:00.000Z" } }];
     },
   };
-  return { calls, calendarUids, fetchImpl, calendar };
+  return { calls, calendarUids, fetchImpl, calendar, byUid };
 }
 
 async function withApiServer(fixture, run) {
@@ -256,6 +256,35 @@ test("REPORT-1 panel reads the real earnings table and the exact Telegram snapsh
   assert.equal(paths.includes("/rest/v1/lm_financial_ledger"), false);
   assert.equal(paths.includes("/rest/v1/lm_agent_earnings"), true);
   assert.equal(paths.includes("/rest/v1/lm_financial_report_receipts"), true);
+});
+
+test("the authenticated ledger renders exact atomic USDC earnings without float rounding", async () => {
+  const fixture = makeFixture();
+  fixture.byUid.u1.earnings.unshift({
+    entry_key: "taskmarket:award",
+    kind: "financial_external_income",
+    amount_minor: null,
+    amount_atomic: "2312500",
+    amount_decimals: 6,
+    currency: "USD",
+    occurred_at: "2026-07-21T10:30:00.000Z",
+    tx_hash: `0x${"c".repeat(64)}`,
+    source: "taskmarket_work",
+    meta: {},
+  });
+  await withApiServer(fixture, async (base) => {
+    const { response, body } = await getJson(base, "ledger");
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.financial.items[0], {
+      label: "外部収益",
+      date: "2026-07-21",
+      amount: "USD 2.3125",
+      link: null,
+    });
+  });
+  const earningsCall = fixture.calls.find((call) =>
+    call.url.pathname.endsWith("/lm_agent_earnings"));
+  assert.match(earningsCall.url.searchParams.get("select"), /amount_atomic,amount_decimals/);
 });
 
 test("LM-33b gates reuse LM-32 lock decisions and discovery copy", async () => {

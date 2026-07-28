@@ -14,6 +14,10 @@ const SQL = fs.readFileSync(
   path.join(__dirname, "../migrations/2026-07-25-lm-agent-earnings.sql"),
   "utf8",
 );
+const ATOMIC_SQL = fs.readFileSync(
+  path.join(__dirname, "../migrations/2026-07-28-lm-agent-earnings-atomic.sql"),
+  "utf8",
+);
 
 test("the table is created additively and never replaces anything", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_agent_earnings/i);
@@ -52,4 +56,15 @@ test("the table is service-only and holds nothing secret", () => {
   assert.match(SQL, /ENABLE ROW LEVEL SECURITY/i);
   assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_agent_earnings FROM PUBLIC, anon, authenticated/i);
   assert.doesNotMatch(SQL, /\b(private_key|privatekey|mnemonic|seed|secret)\b/i);
+});
+
+test("the additive precision migration stores exactly one exact amount representation", () => {
+  assert.match(ATOMIC_SQL, /ADD COLUMN IF NOT EXISTS amount_atomic numeric/i);
+  assert.match(ATOMIC_SQL, /ADD COLUMN IF NOT EXISTS amount_decimals smallint/i);
+  assert.match(ATOMIC_SQL, /ALTER COLUMN amount_minor DROP NOT NULL/i);
+  assert.match(ATOMIC_SQL, /amount_atomic = trunc\(amount_atomic\)/i);
+  assert.match(ATOMIC_SQL, /amount_decimals BETWEEN 0 AND 6/i);
+  assert.match(ATOMIC_SQL, /amount_minor IS NOT NULL AND amount_atomic IS NULL/i);
+  assert.match(ATOMIC_SQL, /amount_minor IS NULL AND amount_atomic IS NOT NULL/i);
+  assert.doesNotMatch(ATOMIC_SQL, /\b(UPDATE|DELETE FROM|DROP TABLE)\b/i);
 });

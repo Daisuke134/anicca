@@ -33,6 +33,27 @@ test("verified profit pays only the balance above the $35 survival reserve", () 
   assert.deepEqual(result, {
     amountAtomic: "7000000",
     verifiedSurplusMinor: 8500,
+    verifiedSurplusAtomic: "85000000",
+    reason: "ready",
+    reserveAtomic: "35000000",
+  });
+});
+
+test("a fractional-cent USDC award remains distributable at atomic precision", () => {
+  const result = computePayout({
+    rows: [earning("financial_external_income", undefined, {
+      amount_atomic: "2312500",
+      amount_decimals: 6,
+      suffix: "taskmarket",
+    })],
+    walletAddress: WALLET,
+    onchainUsdcAtomic: "38000000",
+  });
+
+  assert.deepEqual(result, {
+    amountAtomic: "2312500",
+    verifiedSurplusMinor: null,
+    verifiedSurplusAtomic: "2312500",
     reason: "ready",
     reserveAtomic: "35000000",
   });
@@ -114,14 +135,14 @@ test("a balance at or below the reserve produces an honest no-op", () => {
   assert.equal(result.reason, "reserve_floor");
 });
 
-test("sub-cent balance dust stays in the agent wallet because the append-only ledger records exact cents", () => {
+test("atomic ledger precision lets distributable sub-cent balance move without rounding", () => {
   const result = computePayout({
     rows: [earning("financial_external_income", 10_000)],
     walletAddress: WALLET,
     onchainUsdcAtomic: "42000001",
   });
 
-  assert.equal(result.amountAtomic, "7000000");
+  assert.equal(result.amountAtomic, "7000001");
 });
 
 test("a caller may raise the survival reserve but may never silently lower it", () => {

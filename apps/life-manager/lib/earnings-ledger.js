@@ -43,6 +43,8 @@ const SECRET_KEYS = new Set([
 ]);
 
 const MAX_MINOR = BigInt(Number.MAX_SAFE_INTEGER);
+const USD_MICROS_PER_MINOR = 10_000n;
+const MAX_USD_MICROS = MAX_MINOR * USD_MICROS_PER_MINOR;
 
 function fail(message) {
   throw new Error(message);
@@ -87,6 +89,19 @@ function normaliseMinor(value) {
   return parsed;
 }
 
+function normaliseAtomicAmount(value, decimals) {
+  const raw = typeof value === "bigint"
+    ? value.toString()
+    : String(value == null ? "" : value).trim();
+  if (!/^\d+$/.test(raw)) fail(`amount_atomic must be a non-negative integer, got ${JSON.stringify(value)}`);
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 6) {
+    fail("amount_decimals must be an integer between 0 and 6 for exact USD micros");
+  }
+  const micros = BigInt(raw) * (10n ** BigInt(6 - decimals));
+  if (micros > MAX_USD_MICROS) fail("atomic amount is outside the supported range");
+  return { atomic: BigInt(raw).toString(), decimals };
+}
+
 function normaliseInstant(value) {
   const ms = Date.parse(String(value == null ? "" : value));
   if (!Number.isFinite(ms)) fail(`occurred_at is not a timestamp: ${JSON.stringify(value)}`);
@@ -103,11 +118,21 @@ function normaliseEntry(entry) {
   const currency = String(entry.currency == null ? "" : entry.currency).trim();
   if (!/^[A-Z]{3}$/.test(currency)) fail(`currency must be a three-letter ISO code, got ${JSON.stringify(entry.currency)}`);
 
+  const hasMinor = entry.amount_minor != null;
+  const hasAtomic = entry.amount_atomic != null || entry.amount_decimals != null;
+  if (hasMinor === hasAtomic) {
+    fail("an earning entry must supply exactly one amount representation");
+  }
+  const atomic = hasAtomic ? normaliseAtomicAmount(entry.amount_atomic, entry.amount_decimals) : null;
+  if (atomic && currency !== "USD") fail("atomic earnings currently require USD currency");
+
   const row = {
     entry_key: entryKey,
     wallet_address: normaliseAddress(entry.wallet_address),
     kind: entry.kind,
-    amount_minor: Number(normaliseMinor(entry.amount_minor)),
+    amount_minor: hasMinor ? Number(normaliseMinor(entry.amount_minor)) : null,
+    amount_atomic: atomic == null ? null : atomic.atomic,
+    amount_decimals: atomic == null ? null : atomic.decimals,
     currency,
     occurred_at: normaliseInstant(entry.occurred_at),
     tx_hash: null,
@@ -122,6 +147,13 @@ function normaliseEntry(entry) {
   }
 
   return Object.freeze(row);
+}
+
+function usdMicrosForEntry(entry) {
+  const row = entry && Object.isFrozen(entry) ? entry : normaliseEntry(entry);
+  if (row.amount_minor != null) return BigInt(row.amount_minor) * USD_MICROS_PER_MINOR;
+  if (row.currency !== "USD") fail("atomic earnings currently require USD currency");
+  return BigInt(row.amount_atomic) * (10n ** BigInt(6 - row.amount_decimals));
 }
 
 // Append-only in the same sense the table is: the caller gets a new array and the rows it already had
@@ -161,6 +193,25 @@ function formatUsdMinor(minor, { signed = false } = {}) {
   const body = `$${absolute / 100n}.${String(absolute % 100n).padStart(2, "0")}`;
   if (negative) return `-${body}`;
   return signed ? `+${body}` : body;
+}
+
+function formatUsdMicros(micros, { signed = false } = {}) {
+  const value = typeof micros === "bigint" ? micros : BigInt(String(micros));
+  const negative = value < 0n;
+  const absolute = negative ? -value : value;
+  const whole = absolute / 1_000_000n;
+  const rawFraction = String(absolute % 1_000_000n).padStart(6, "0");
+  const fraction = rawFraction.replace(/0+$/, "").padEnd(2, "0");
+  const body = `$${whole}.${fraction}`;
+  if (negative) return `-${body}`;
+  return signed ? `+${body}` : body;
+}
+
+function minorIfExact(micros) {
+  if (micros % USD_MICROS_PER_MINOR !== 0n) return null;
+  const minor = micros / USD_MICROS_PER_MINOR;
+  if (minor > MAX_MINOR || minor < -MAX_MINOR) fail("amount is outside the supported range");
+  return Number(minor);
 }
 
 function normaliseAtomicBalance(value, decimals) {
@@ -275,7 +326,7 @@ function rollUpMonth(rows, options = {}) {
     }
     counted += 1;
     currencies.add(row.currency);
-    totals[row.kind] += BigInt(row.amount_minor);
+    totals[row.kind] += usdMicrosForEntry(row);
   }
 
   if (currencies.size > 1) fail(`the month mixes more than one currency (${[...currencies].sort().join(", ")}) and cannot be summed`);
@@ -293,11 +344,16 @@ function rollUpMonth(rows, options = {}) {
     year, month, timezone, wallet_address: wallet, currency,
     period_start: new Date(startMs).toISOString(),
     period_end: new Date(endMs).toISOString(),
-    gross_income_minor: Number(gross),
-    realized_loss_minor: Number(loss),
-    fee_minor: Number(fee),
-    user_transfer_minor: Number(transfer),
-    net_minor: Number(net),
+    gross_income_minor: minorIfExact(gross),
+    realized_loss_minor: minorIfExact(loss),
+    fee_minor: minorIfExact(fee),
+    user_transfer_minor: minorIfExact(transfer),
+    net_minor: minorIfExact(net),
+    gross_usd_micros: gross.toString(),
+    realized_loss_usd_micros: loss.toString(),
+    fee_usd_micros: fee.toString(),
+    user_transfer_usd_micros: transfer.toString(),
+    net_usd_micros: net.toString(),
     balance_minor: minorBalance == null ? null : Number(minorBalance),
     balance_atomic: atomicBalance == null ? null : atomicBalance.atomic,
     balance_decimals: atomicBalance == null ? null : atomicBalance.decimals,
@@ -344,12 +400,12 @@ function formatMonthlyReport(summary, { cause, plan, locale = "ja" } = {}) {
   if (summary.is_loss) {
     // The loss copy states outright that nothing was sent. If something was, the copy would be a lie
     // and there is no verbatim line for that case — better to refuse than to improvise one.
-    if (summary.user_transfer_minor > 0) {
+    if (BigInt(summary.user_transfer_usd_micros) > 0n) {
       fail("a losing month recorded a user transfer; the 9.11 loss copy claims none was sent");
     }
     return [
       strings.monthly.header,
-      fill(strings.monthlyLoss.revenue, { revenue: formatUsdMinor(summary.net_minor) }),
+      fill(strings.monthlyLoss.revenue, { revenue: formatUsdMicros(summary.net_usd_micros) }),
       strings.monthlyLoss.transfer,
       balance,
       fill(strings.monthlyLoss.outlook, { cause: requireReasoning(cause, "cause"), plan: requireReasoning(plan, "plan") }),
@@ -357,18 +413,22 @@ function formatMonthlyReport(summary, { cause, plan, locale = "ja" } = {}) {
     ].join("\n");
   }
 
-  const transferLine = summary.user_transfer_minor > 0
-    ? fill(strings.monthly.transfer, { transfer: formatUsdMinor(summary.user_transfer_minor) })
+  const transferLine = BigInt(summary.user_transfer_usd_micros) > 0n
+    ? fill(strings.monthly.transfer, { transfer: formatUsdMicros(summary.user_transfer_usd_micros) })
     : strings.monthly.transferNone;
 
   return [
     strings.monthly.header,
-    fill(strings.monthly.revenue, { revenue: formatUsdMinor(summary.gross_income_minor, { signed: true }) }),
+    fill(strings.monthly.revenue, { revenue: formatUsdMicros(summary.gross_usd_micros, { signed: true }) }),
     transferLine,
     // A realized loss inside a profitable month has no line of its own in 9.11. It is shown here with
     // the fees rather than netted invisibly into the revenue figure, because money that left is money
     // the user should see leaving.
-    fill(strings.monthly.cost, { cost: formatUsdMinor(summary.fee_minor + summary.realized_loss_minor) }),
+    fill(strings.monthly.cost, {
+      cost: formatUsdMicros(
+        BigInt(summary.fee_usd_micros) + BigInt(summary.realized_loss_usd_micros),
+      ),
+    }),
     balance,
     verify,
   ].join("\n");
@@ -378,9 +438,11 @@ module.exports = {
   EARNING_KINDS,
   EXCLUDED_KINDS,
   normaliseEntry,
+  usdMicrosForEntry,
   appendEarning,
   usdMinorFromAtomic,
   formatUsdMinor,
+  formatUsdMicros,
   formatUsdAtomic,
   abbreviateAddress,
   monthBounds,

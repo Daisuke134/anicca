@@ -1,6 +1,6 @@
 "use strict";
 
-const { normaliseEntry } = require("./earnings-ledger.js");
+const { normaliseEntry, usdMicrosForEntry } = require("./earnings-ledger.js");
 const { toChecksumAddress } = require("./agent-wallet.js");
 
 const DEFAULT_RESERVE_ATOMIC = 35_000_000n;
@@ -57,7 +57,7 @@ function computePayout(input = {}) {
     if (row.currency !== "USD") {
       throw new Error("Base USDC payouts require USD ledger rows");
     }
-    const amount = BigInt(row.amount_minor);
+    const amount = usdMicrosForEntry(row);
     if (row.kind === "financial_external_income") gross += amount;
     if (row.kind === "financial_realized_loss"
       || row.kind === "financial_fee"
@@ -66,15 +66,14 @@ function computePayout(input = {}) {
     }
   }
 
-  costs += operatingCost;
+  costs += operatingCost * ATOMIC_PER_USD_MINOR;
   const verifiedSurplus = gross > costs ? gross - costs : 0n;
-  const surplusAtomic = verifiedSurplus * ATOMIC_PER_USD_MINOR;
+  const surplusAtomic = verifiedSurplus;
   const operatingCostAtomic = operatingCost * ATOMIC_PER_USD_MINOR;
   const protectedBalance = reserve + operatingCostAtomic;
   const balanceAvailable = onchain > protectedBalance ? onchain - protectedBalance : 0n;
   let amount = surplusAtomic < balanceAvailable ? surplusAtomic : balanceAvailable;
   if (cap != null && cap < amount) amount = cap;
-  amount = (amount / ATOMIC_PER_USD_MINOR) * ATOMIC_PER_USD_MINOR;
 
   let reason = "ready";
   if (verifiedSurplus === 0n) reason = "no_verified_surplus";
@@ -84,7 +83,10 @@ function computePayout(input = {}) {
 
   return {
     amountAtomic: amount.toString(),
-    verifiedSurplusMinor: Number(verifiedSurplus),
+    verifiedSurplusMinor: verifiedSurplus % ATOMIC_PER_USD_MINOR === 0n
+      ? Number(verifiedSurplus / ATOMIC_PER_USD_MINOR)
+      : null,
+    verifiedSurplusAtomic: verifiedSurplus.toString(),
     reason,
     reserveAtomic: reserve.toString(),
   };

@@ -7,7 +7,6 @@ const { recordEarnLoopRevenue } = require("./earnings-runtime.js");
 const BASE_CHAIN_ID = 8453;
 const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const ATOMIC_PER_CENT = 10_000n;
 
 function fail(message) {
   throw new Error(message);
@@ -68,7 +67,8 @@ function validateAward(task, award, options) {
   const payment = atomic(award.workerPayment, "worker payment");
   const fee = atomic(award.platformFee, "platform fee");
   if (payment + fee !== gross) fail("TaskMarket worker payment and fee must sum to gross");
-  if (payment < ATOMIC_PER_CENT) fail("TaskMarket worker payment must be at least one cent");
+  const rank = Number(award.rank);
+  if (!Number.isSafeInteger(rank) || rank < 1) fail("TaskMarket award rank must be positive");
   const settledAt = new Date(award.settledAt);
   if (typeof award.settledAt !== "string" || Number.isNaN(settledAt.getTime())) {
     fail("TaskMarket settledAt must be a timestamp");
@@ -83,7 +83,7 @@ function validateAward(task, award, options) {
   }
   return {
     worker, requester, taskId, tx, gross, payment, fee,
-    settledAt: settledAt.toISOString(),
+    rank, settledAt: settledAt.toISOString(),
   };
 }
 
@@ -92,13 +92,12 @@ function taskMarketLedgerEntry(task, award, options = {}) {
   if (!Number.isSafeInteger(options.receiptBlock) || options.receiptBlock < 0) {
     fail("receipt block must be a non-negative safe integer");
   }
-  const amountMinor = verified.payment / ATOMIC_PER_CENT;
-  const excludedDust = verified.payment % ATOMIC_PER_CENT;
   return normaliseEntry({
-    entry_key: `taskmarket:${verified.taskId}:${verified.tx}:income`,
+    entry_key: `taskmarket:${verified.taskId}:${verified.tx}:${verified.rank}:income`,
     wallet_address: toChecksumAddress(verified.worker.slice(2)),
     kind: "financial_external_income",
-    amount_minor: amountMinor,
+    amount_atomic: verified.payment.toString(),
+    amount_decimals: 6,
     currency: "USD",
     occurred_at: verified.settledAt,
     tx_hash: verified.tx,
@@ -114,7 +113,6 @@ function taskMarketLedgerEntry(task, award, options = {}) {
       gross_atomic: verified.gross.toString(),
       platform_fee_atomic: verified.fee.toString(),
       usdc_atomic: verified.payment.toString(),
-      excluded_dust_atomic: excludedDust.toString(),
       receipt_block: options.receiptBlock,
       finalized: true,
       external: true,

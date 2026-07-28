@@ -99,6 +99,30 @@ test("one snapshot sums verified revenue, losses, fees, API cost, and transfers 
   assert.equal(result.stop_reason, "running");
 });
 
+test("a fractional-cent TaskMarket award stays exact through snapshot and payout capacity", () => {
+  const result = snapshot({
+    onchainUsdcAtomic: "38000000",
+    earningsRows: [earning("financial_external_income", undefined, {
+      source: "taskmarket_work",
+      amount_atomic: "2312500",
+      amount_decimals: 6,
+      suffix: "taskmarket",
+    })],
+  });
+
+  assert.equal(result.gross_usd_micros, "2312500");
+  assert.equal(result.operating_net_usd_micros, "2312500");
+  assert.equal(result.distributable_usdc_atomic, "2312500");
+  assert.deepEqual(result.rail_pnl, [{
+    rail: "WORK",
+    gross_usd_micros: "2312500",
+    realized_loss_usd_micros: "0",
+    financial_fee_usd_micros: "0",
+    user_transfer_usd_micros: "0",
+    net_usd_micros: "2312500",
+  }]);
+});
+
 test("seed, self-funding, internal moves, unverified rows, and the period end never become gross", () => {
   const result = snapshot({
     earningsRows: [
