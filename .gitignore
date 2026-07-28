@@ -65,3 +65,4 @@ skills/earn/hl-trade/.venv/
 skills/earn/bounty/state/superteam-creds.json
 *.creds.json
 skills/earn/bounty/state/frantic-creds.json
+/taskmarket-deliveries/
