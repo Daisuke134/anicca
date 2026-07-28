@@ -55,6 +55,111 @@ test("createRawSession leaves the private Steel CDP endpoint unattached for Stag
   assert.equal(connectCalls, 0, "Stagehand, not the deterministic booking client, owns this CDP socket");
 });
 
+test("getSessionContext exports and validates the complete Steel browser context", async () => {
+  const context = {
+    cookies: [{
+      name: "sid",
+      value: "opaque",
+      domain: "auth.example",
+      path: "/",
+      secure: true,
+      httpOnly: true,
+    }],
+    localStorage: { "https://auth.example": { theme: "dark" } },
+    sessionStorage: {},
+    indexedDB: {},
+  };
+  const fetchImpl = fakeFetch(() => ok(context));
+  const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
+
+  assert.deepEqual(await client.getSessionContext("abc"), context);
+  assert.equal(
+    fetchImpl.calls[0].url,
+    "http://steel-browser.railway.internal:8080/v1/sessions/abc/context",
+  );
+  assert.equal(fetchImpl.calls[0].method, "GET");
+});
+
+test("getSessionContext fails closed for missing ids, unknown keys, oversized contexts, and Steel errors", async () => {
+  const missingFetch = fakeFetch(() => ok({}));
+  const missingClient = makeSteelCdpClient({ fetchImpl: missingFetch, connectCdp: async () => ({}) });
+  await assert.rejects(() => missingClient.getSessionContext(""), /session id/i);
+  assert.equal(missingFetch.calls.length, 0, "an invalid id never reaches Steel");
+
+  const unknownClient = makeSteelCdpClient({
+    fetchImpl: fakeFetch(() => ok({ cookies: [], accessTokens: {} })),
+    connectCdp: async () => ({}),
+  });
+  await assert.rejects(() => unknownClient.getSessionContext("abc"), /browser auth context invalid/i);
+
+  const oversizedClient = makeSteelCdpClient({
+    fetchImpl: fakeFetch(() => ok({
+      localStorage: { "https://auth.example": { payload: "x".repeat(1024 * 1024) } },
+    })),
+    connectCdp: async () => ({}),
+  });
+  await assert.rejects(() => oversizedClient.getSessionContext("abc"), /browser auth context invalid/i);
+
+  const responseSecret = "raw-cookie-value-must-not-leak";
+  const failedClient = makeSteelCdpClient({
+    fetchImpl: fakeFetch(() => ({
+      ok: false,
+      status: 502,
+      text: async () => responseSecret,
+    })),
+    connectCdp: async () => ({}),
+  });
+  const failure = await failedClient.getSessionContext("abc").then(() => null, (error) => error);
+  assert.match(String(failure && failure.message), /502/);
+  assert.doesNotMatch(String(failure && failure.message), new RegExp(responseSecret));
+});
+
+test("createRawSession injects only an explicitly supplied sessionContext", async () => {
+  const context = {
+    cookies: [{ name: "sid", value: "opaque", domain: "auth.example", path: "/" }],
+  };
+  const fetchImpl = fakeFetch(() => ok({
+    id: "raw-auth",
+    websocketUrl: "ws://steel-browser.railway.internal:8080/",
+    status: "live",
+  }));
+  const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
+
+  await client.createRawSession({ blockAds: true, sessionContext: context });
+
+  assert.deepEqual(fetchImpl.calls[0].body, { blockAds: true, sessionContext: context });
+  assert.equal(Object.hasOwn(fetchImpl.calls[0].body, "persist"), false);
+  assert.equal(Object.hasOwn(fetchImpl.calls[0].body, "userDataDir"), false);
+});
+
+test("createRawSession rejects shared-profile persistence options before calling Steel", async () => {
+  for (const forbidden of [{ persist: true }, { userDataDir: "/tmp/shared-profile" }]) {
+    const fetchImpl = fakeFetch(() => ok({}));
+    const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
+    await assert.rejects(() => client.createRawSession(forbidden), /persistent Steel profiles/i);
+    assert.equal(fetchImpl.calls.length, 0);
+  }
+});
+
+test("a failed context-bearing launch never echoes Steel response bodies", async () => {
+  const rawSecret = "reflected-cookie-secret";
+  const fetchImpl = fakeFetch(() => ({
+    ok: false,
+    status: 400,
+    text: async () => `invalid sessionContext value=${rawSecret}`,
+  }));
+  const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
+
+  const error = await client.createRawSession({
+    sessionContext: {
+      cookies: [{ name: "sid", value: rawSecret, domain: "auth.example", path: "/" }],
+    },
+  }).then(() => null, (failure) => failure);
+
+  assert.match(String(error && error.message), /400/);
+  assert.doesNotMatch(String(error && error.message), new RegExp(rawSecret));
+});
+
 test("releaseSession posts the verified per-session release route", async () => {
   const fetchImpl = fakeFetch(() => ok({ success: true }));
   const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });

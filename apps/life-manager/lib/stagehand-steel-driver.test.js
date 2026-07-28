@@ -6,6 +6,7 @@ const { makeStagehandSteelDriver } = require("./stagehand-steel-driver.js");
 
 function fixture(fixtureOptions = {}) {
   const calls = [];
+  const authCalls = [];
   let options;
   const page = {
     async goto(url) { calls.push(["goto", url]); },
@@ -55,14 +56,34 @@ function fixture(fixtureOptions = {}) {
   }
   const steelClient = {
     baseUrl: "http://steel-browser.railway.internal:8080",
-    async createRawSession() {
-      calls.push(["create"]);
-      return { id: "steel-1", websocketUrl: "ws://steel-browser.railway.internal:8080/" };
+    async createRawSession(createOptions) {
+      calls.push(["create", createOptions]);
+      const id = `steel-${calls.filter(([name]) => name === "create").length}`;
+      return { id, websocketUrl: "ws://steel-browser.railway.internal:8080/" };
+    },
+    async getSessionContext(id) {
+      calls.push(["getContext", id]);
+      if (fixtureOptions.exportError) throw fixtureOptions.exportError;
+      return fixtureOptions.exportContext || {};
     },
     async releaseSession(id) {
       calls.push(["release", id]);
       return true;
     },
+  };
+  const readBrowserAuthSession = async (input) => {
+    authCalls.push(["read", input]);
+    return fixtureOptions.authRecords && fixtureOptions.authRecords[input.uid] || null;
+  };
+  const upsertBrowserAuthSession = async (input) => {
+    authCalls.push(["upsert", input]);
+    if (fixtureOptions.saveError) throw fixtureOptions.saveError;
+    return fixtureOptions.savedRecord || {};
+  };
+  const invalidateBrowserAuthSession = async (input) => {
+    authCalls.push(["invalidate", input]);
+    if (fixtureOptions.invalidateError) throw fixtureOptions.invalidateError;
+    return true;
   };
   const driver = makeStagehandSteelDriver({
     steelClient,
@@ -70,8 +91,11 @@ function fixture(fixtureOptions = {}) {
     apiKey: "gemini-key",
     agentEmail: "browser-owner@example.test",
     agentName: "Browser Owner",
+    readBrowserAuthSession,
+    upsertBrowserAuthSession,
+    invalidateBrowserAuthSession,
   });
-  return { driver, calls, getOptions: () => options };
+  return { driver, calls, authCalls, getOptions: () => options };
 }
 
 test("Stagehand reasons over a Railway-private Steel session and discovers the target at runtime", async () => {
@@ -278,6 +302,217 @@ test("provider-authored You're In is confirmed even when email verification is o
   const receipt = await driver.readProviderReceipt(session);
   assert.equal(receipt.confirmed, true);
   assert.equal(receipt.handoffRequired, false);
+});
+
+test("login-dependent sessions restore only the exact tenant, origin, and principal context", async () => {
+  const one = {
+    cookies: [{ name: "sid", value: "tenant-one-cookie", domain: "auth.example", path: "/" }],
+    localStorage: { "https://auth.example": { marker: "tenant-one-storage" } },
+  };
+  const two = {
+    cookies: [{ name: "sid", value: "tenant-two-cookie", domain: "auth.example", path: "/" }],
+    localStorage: { "https://auth.example": { marker: "tenant-two-storage" } },
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: {
+      "u-one": { context: one },
+      "u-two": { context: two },
+    },
+  });
+
+  const sessionOne = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account?tab=profile",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+  const sessionTwo = await driver.openSession({
+    uid: "u-two",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+
+  assert.deepEqual(authCalls, [
+    ["read", {
+      uid: "u-one",
+      origin: "https://auth.example",
+      principalKind: "user_provided",
+    }],
+    ["read", {
+      uid: "u-two",
+      origin: "https://auth.example",
+      principalKind: "agent_owned",
+    }],
+  ]);
+  assert.deepEqual(calls.filter(([name]) => name === "create").map(([, body]) => body), [
+    { blockAds: true, sessionContext: one },
+    { blockAds: true, sessionContext: two },
+  ]);
+  assert.equal(Object.hasOwn(calls[0][1], "persist"), false);
+  assert.equal(Object.hasOwn(calls[0][1], "userDataDir"), false);
+  assert.doesNotMatch(
+    JSON.stringify([sessionOne, sessionTwo]),
+    /tenant-(?:one|two)-(?:cookie|storage)/,
+    "raw context never enters the public session result",
+  );
+});
+
+test("a discovery goal without an explicit URL never performs an auth lookup", async () => {
+  const { driver, calls, authCalls } = fixture();
+  await driver.openSession({
+    uid: "u-one",
+    goal: "Find a suitable free public AI event",
+    requiresLogin: false,
+    principalKind: "none",
+  });
+
+  assert.deepEqual(authCalls, []);
+  assert.deepEqual(calls.find(([name]) => name === "create")[1], { blockAds: true });
+});
+
+test("release exports context before Steel release, saves exact identity, and returns secret-free metadata", async () => {
+  const restored = {
+    cookies: [{ name: "sid", value: "restored-cookie-secret", domain: "auth.example", path: "/" }],
+  };
+  const exported = {
+    cookies: [{ name: "sid", value: "exported-cookie-secret", domain: "auth.example", path: "/" }],
+    localStorage: { "https://auth.example": { marker: "exported-storage-secret" } },
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: restored } },
+    exportContext: exported,
+    savedRecord: { context_sha256: "a".repeat(64), key_version: 1 },
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+  const action = await driver.discoverAndAct(session, {
+    goal: "Open https://auth.example/account",
+  });
+
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: false, handoff_reason: null },
+  });
+
+  assert.deepEqual(authCalls[1], ["upsert", {
+    uid: "u-one",
+    origin: "https://auth.example",
+    principalKind: "user_provided",
+    context: exported,
+  }]);
+  assert.ok(
+    calls.findIndex(([name]) => name === "getContext") <
+      calls.findIndex(([name]) => name === "release"),
+    "context export must finish before Steel is released",
+  );
+  assert.deepEqual(release, {
+    released: true,
+    origin: "https://auth.example",
+    principal_kind: "user_provided",
+    auth_context_loaded: true,
+    auth_context_saved: true,
+    auth_context_invalidated: false,
+    context_sha256: "a".repeat(64),
+    key_version: 1,
+  });
+  assert.doesNotMatch(
+    JSON.stringify({ action, release }),
+    /restored-cookie-secret|exported-cookie-secret|exported-storage-secret/,
+    "action output and release/trace metadata never contain browser auth material",
+  );
+});
+
+test("a provider login handoff invalidates only the exact row and still releases Steel", async () => {
+  const context = {
+    cookies: [{ name: "sid", value: "stale-cookie-secret", domain: "auth.example", path: "/" }],
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context } },
+    exportContext: context,
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: true, handoff_reason: "login" },
+  });
+
+  assert.deepEqual(authCalls[1], ["invalidate", {
+    uid: "u-one",
+    origin: "https://auth.example",
+    principalKind: "user_provided",
+  }]);
+  assert.equal(authCalls.some(([name]) => name === "upsert"), false);
+  assert.equal(calls.some(([name]) => name === "getContext"), false);
+  assert.deepEqual(calls.at(-1), ["release", session.id]);
+  assert.equal(release.auth_context_invalidated, true);
+  assert.equal(release.auth_context_saved, false);
+  assert.doesNotMatch(JSON.stringify(release), /stale-cookie-secret/);
+});
+
+test("context save failure preserves the prior row and Steel release remains unconditional", async () => {
+  const prior = {
+    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.example", path: "/" }],
+  };
+  const exported = {
+    sessionStorage: { "https://auth.example": { marker: "new-storage-secret" } },
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: prior } },
+    exportContext: exported,
+    saveError: new Error("database unavailable"),
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: false, handoff_reason: null },
+  });
+
+  assert.equal(authCalls.some(([name]) => name === "invalidate"), false, "the prior row is preserved");
+  assert.deepEqual(calls.at(-1), ["release", session.id]);
+  assert.equal(release.released, true);
+  assert.equal(release.auth_context_saved, false);
+  assert.equal(release.auth_context_invalidated, false);
+  assert.doesNotMatch(JSON.stringify(release), /prior-cookie-secret|new-storage-secret|database unavailable/);
+});
+
+test("context export failure still releases Steel and never mutates the prior row", async () => {
+  const prior = {
+    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.example", path: "/" }],
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: prior } },
+    exportError: new Error("context contained raw-cookie-secret"),
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: false, handoff_reason: null },
+  });
+
+  assert.equal(authCalls.some(([name]) => name === "upsert" || name === "invalidate"), false);
+  assert.deepEqual(calls.at(-1), ["release", session.id]);
+  assert.equal(release.released, true);
+  assert.equal(release.auth_context_saved, false);
+  assert.doesNotMatch(JSON.stringify(release), /prior-cookie-secret|raw-cookie-secret/);
 });
 
 test("release closes Stagehand before releasing the one Steel slot", async () => {
