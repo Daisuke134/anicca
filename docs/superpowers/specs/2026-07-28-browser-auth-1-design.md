@@ -132,9 +132,11 @@ whether the model's bounded, secret-safe protected-content marker is actually
 visible. Passwordless OTP detection first collects at most 100 visible inputs
 as non-value metadata only (`type`, `inputMode`, `autocomplete`, `maxLength`);
 a pure classifier recognizes one-time-code autocomplete, groups of four or
-more one-character numeric text inputs, and visible verification/security/
-one-time/OTP/enter-code/six-digit language. Input values never cross the page
-boundary. A positive receipt requires all of these simultaneously:
+more one-character numeric text inputs only when semantic OTP text is also
+visible, and verification/security/one-time/OTP/enter-code/six-digit language.
+Ordinary numeric cell groups never establish authentication by themselves.
+Input values never cross the page boundary. A positive receipt requires all of
+these simultaneously:
 
 - the typed extract reports authenticated continuity and supplies a marker;
 - the final origin is the requested origin;
