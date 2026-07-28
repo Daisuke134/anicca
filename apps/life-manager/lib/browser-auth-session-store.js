@@ -1,7 +1,9 @@
 "use strict";
 
 const { createCipheriv, createDecipheriv, createHash, randomBytes } = require("node:crypto");
+const { isIP } = require("node:net");
 const canonicalize = require("canonicalize");
+const { parse: parseDomain } = require("tldts");
 
 const MAX_CONTEXT_BYTES = 1024 * 1024;
 const AUTH_CONTEXT_KEYS = new Set(["cookies", "localStorage", "sessionStorage", "indexedDB"]);
@@ -22,7 +24,8 @@ function normalizeAuthOrigin(value) {
   if (typeof value !== "string") throw new Error("browser auth origin invalid");
   let parsed;
   try { parsed = new URL(value); } catch { throw new Error("browser auth origin invalid"); }
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.origin === "null") {
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.origin === "null"
+    || parsed.hostname.endsWith(".")) {
     throw new Error("browser auth origin invalid");
   }
   return parsed.origin;
@@ -62,6 +65,101 @@ function validateSessionContext(value) {
   return JSON.parse(canonical);
 }
 
+function cookieDomain(value) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase().replace(/^\.+/, "");
+  if (!normalized || normalized.endsWith(".") || /[:/@?#]/.test(normalized)) return null;
+  try {
+    const parsed = new URL(`https://${normalized}`);
+    return parsed.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function safePublicHostname(hostname) {
+  const ipCandidate = hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+  if (isIP(ipCandidate)) return false;
+  const parsed = parseDomain(hostname, {
+    allowPrivateDomains: true,
+    detectIp: true,
+    detectSpecialUse: true,
+  });
+  const publicRegistrable = parsed.isIcann === true && parsed.isPrivate !== true;
+  const privateRegistrableChild = parsed.isPrivate === true
+    && parsed.domain === hostname
+    && parsed.publicSuffix !== hostname;
+  return Boolean(
+    parsed.domain
+    && parsed.isIp !== true
+    && parsed.isSpecialUse !== true
+    && parsed.publicSuffix !== hostname
+    && (publicRegistrable || privateRegistrableChild)
+  );
+}
+
+function cookieAppliesToHostname(cookie, hostname) {
+  if (!cookie || typeof cookie !== "object" || Array.isArray(cookie)) return false;
+  if (Object.prototype.hasOwnProperty.call(cookie, "partitionKey")) return false;
+  const domain = cookieDomain(cookie.domain);
+  if (!domain || !safePublicHostname(hostname) || !safePublicHostname(domain)) return false;
+  if (domain === hostname) return true;
+  if (cookie.hostOnly !== false || !hostname.endsWith(`.${domain}`)) return false;
+  const target = parseDomain(hostname, {
+    allowPrivateDomains: true,
+    detectIp: true,
+    detectSpecialUse: true,
+  });
+  const candidate = parseDomain(domain, {
+    allowPrivateDomains: true,
+    detectIp: true,
+    detectSpecialUse: true,
+  });
+  return Boolean(
+    candidate.domain
+    && target.domain
+    && candidate.domain === target.domain
+    && candidate.publicSuffix !== domain
+    && candidate.isIp !== true
+    && candidate.isPrivate !== true
+    && candidate.isSpecialUse !== true
+  );
+}
+
+function scopeStorage(storage, origin) {
+  if (!storage || typeof storage !== "object" || Array.isArray(storage)
+    || Object.getPrototypeOf(storage) !== Object.prototype && Object.getPrototypeOf(storage) !== null) {
+    invalid();
+  }
+  return Object.prototype.hasOwnProperty.call(storage, origin)
+    ? { [origin]: storage[origin] }
+    : {};
+}
+
+function scopeSessionContextToOrigin(value, originValue) {
+  const origin = normalizeAuthOrigin(originValue);
+  const hostname = new URL(origin).hostname;
+  if (!safePublicHostname(hostname)) invalid();
+  const context = validateSessionContext(value);
+  const scoped = {};
+  if (Object.prototype.hasOwnProperty.call(context, "cookies")) {
+    if (!Array.isArray(context.cookies)) invalid();
+    scoped.cookies = context.cookies.filter((cookie) => cookieAppliesToHostname(cookie, hostname));
+  }
+  for (const key of ["localStorage", "sessionStorage", "indexedDB"]) {
+    if (Object.prototype.hasOwnProperty.call(context, key)) {
+      scoped[key] = scopeStorage(context[key], origin);
+    }
+  }
+  const hasData = Object.entries(scoped).some(([key, item]) => (
+    key === "cookies" ? item.length > 0 : Array.isArray(item) ? item.length > 0 : Object.keys(item).length > 0
+  ));
+  if (!hasData) invalid();
+  return validateSessionContext(scoped);
+}
+
 function principalKind(value) {
   if (!PRINCIPAL_KINDS.has(value)) invalid();
   return value;
@@ -87,7 +185,8 @@ function aad({ uid, origin, principalKind }) {
 
 function sealBrowserContext(input, keyHex) {
   const identity = authIdentity(input);
-  const plaintext = canonicalContext(input && input.context);
+  const context = scopeSessionContextToOrigin(input && input.context, identity.origin);
+  const plaintext = canonicalContext(context);
   const key = encryptionKey(keyHex);
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -122,7 +221,7 @@ function openBrowserContext(row, keyHex) {
     if (createHash("sha256").update(plaintext, "utf8").digest("hex") !== row.context_sha256) invalid();
     const context = JSON.parse(plaintext);
     if (canonicalContext(context) !== plaintext) invalid();
-    return context;
+    return scopeSessionContextToOrigin(context, identity.origin);
   } catch {
     invalid();
   }
@@ -190,7 +289,7 @@ async function readBrowserAuthSession(input, opts = {}) {
 
 async function upsertBrowserAuthSession(input, opts = {}) {
   const identity = authIdentity(input);
-  const context = validateSessionContext(input && input.context);
+  const context = scopeSessionContextToOrigin(input && input.context, identity.origin);
   const sealed = sealBrowserContext({ ...identity, context }, sessionKey(input, opts));
   const expiresAt = optionalTimestamp(input && input.expiresAt);
   const lastVerifiedAt = optionalTimestamp(input && input.lastVerifiedAt);
@@ -243,6 +342,7 @@ async function invalidateBrowserAuthSession(input, opts = {}) {
 module.exports = {
   normalizeAuthOrigin,
   validateSessionContext,
+  scopeSessionContextToOrigin,
   sealBrowserContext,
   openBrowserContext,
   readBrowserAuthSession,
