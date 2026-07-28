@@ -1,9 +1,11 @@
-import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+"use strict";
 
-import { makeProductionDeps, runBrowserAuthProductionE2E } from './browser-auth-production-e2e.js';
+const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
+const { test } = require("node:test");
+const path = require("node:path");
+
+const { makeProductionDeps, runBrowserAuthProductionE2E } = require("./browser-auth-production-e2e.js");
 
 const REQUIRED_ENV = {
   BROWSER_AUTH_PRODUCTION_ORIGIN: 'https://app.example.test',
@@ -223,7 +225,7 @@ test('rejects missing required environment variables by name only', async () => 
 test('CLI never reflects a secret-like unknown mode to stdout or stderr', () => {
   const child = spawnSync(
     process.execPath,
-    [fileURLToPath(new URL('./browser-auth-production-e2e.js', import.meta.url)), `unknown-${RAW_VALUES[2]}`],
+    [path.join(__dirname, "browser-auth-production-e2e.js"), `unknown-${RAW_VALUES[2]}`],
     { encoding: 'utf8', env: { ...process.env, ...REQUIRED_ENV } },
   );
   assert.equal(child.status, 1);

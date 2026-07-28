@@ -18,6 +18,12 @@ test("browser auth sessions are service-only, tenant-bound encrypted rows", () =
     assert.match(SQL, new RegExp(`${column}\\s+(?:text|integer)\\s+NOT NULL`, "i"));
   }
   assert.match(SQL, /ALTER TABLE public\.lm_browser_auth_sessions ENABLE ROW LEVEL SECURITY/i);
-  assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_browser_auth_sessions FROM PUBLIC, anon, authenticated/i);
+  assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_browser_auth_sessions FROM PUBLIC/i);
+  for (const role of ["anon", "authenticated", "service_role"]) {
+    assert.match(SQL, new RegExp(`FROM pg_roles WHERE rolname = '${role}'`, "i"));
+  }
+  assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_browser_auth_sessions FROM anon/i);
+  assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_browser_auth_sessions FROM authenticated/i);
+  assert.match(SQL, /GRANT SELECT, INSERT, UPDATE ON TABLE public\.lm_browser_auth_sessions TO service_role/i);
   assert.doesNotMatch(SQL, /CREATE POLICY|GRANT .* TO (?:anon|authenticated)/i);
 });

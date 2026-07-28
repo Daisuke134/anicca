@@ -13,6 +13,10 @@ const UPGRADE_SQL = fs.readFileSync(path.join(
   __dirname,
   "../migrations/2026-07-28-lm-browser-jobs-principal-kind.sql",
 ), "utf8");
+const AUTH_TRACE_SQL = fs.readFileSync(path.join(
+  __dirname,
+  "../migrations/2026-07-29-lm-browser-job-auth-trace.sql",
+), "utf8");
 
 test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt or credential", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
@@ -65,4 +69,16 @@ test("principal kind forward migration upgrades legacy browser jobs without chan
   assert.match(UPGRADE_SQL, /ALTER COLUMN principal_kind SET NOT NULL/i);
   assert.match(UPGRADE_SQL, /principal_kind IN \('none', 'agent_owned', 'user_provided'\)/i);
   assert.match(UPGRADE_SQL, /requires_login = false AND principal_kind = 'none'[\s\S]*requires_login = true AND principal_kind IN \('agent_owned', 'user_provided'\)/i);
+});
+
+test("auth trace forward migration upgrades the production trace allowlist", () => {
+  assert.match(AUTH_TRACE_SQL, /CREATE OR REPLACE FUNCTION public\.append_lm_browser_job_trace/i);
+  const authStages = [...AUTH_TRACE_SQL.matchAll(/'auth_context_[a-z_]+'/g)].map(([stage]) => stage);
+  assert.deepEqual(authStages, [
+    "'auth_context_loaded'",
+    "'auth_context_saved'",
+    "'auth_context_invalidated'",
+  ]);
+  assert.match(AUTH_TRACE_SQL, /octet_length\(COALESCE\(p_meta, '\{\}'::jsonb\)::text\) > 8192/i);
+  assert.match(AUTH_TRACE_SQL, /jsonb_array_length\(trace\) < 100/i);
 });

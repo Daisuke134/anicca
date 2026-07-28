@@ -20,5 +20,21 @@ CREATE TABLE IF NOT EXISTS public.lm_browser_auth_sessions (
 );
 
 ALTER TABLE public.lm_browser_auth_sessions ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.lm_browser_auth_sessions FROM PUBLIC, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE ON TABLE public.lm_browser_auth_sessions TO service_role;
+REVOKE ALL ON TABLE public.lm_browser_auth_sessions FROM PUBLIC;
+
+-- Railway's production PostgreSQL is not required to define Supabase's client
+-- roles. Keep the migration portable while preserving the same closed grants
+-- whenever those roles exist.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    EXECUTE 'REVOKE ALL ON TABLE public.lm_browser_auth_sessions FROM anon';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    EXECUTE 'REVOKE ALL ON TABLE public.lm_browser_auth_sessions FROM authenticated';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON TABLE public.lm_browser_auth_sessions TO service_role';
+  END IF;
+END
+$$;
