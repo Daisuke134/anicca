@@ -92,6 +92,7 @@ async function runGenericBrowserTask(job, deps) {
     evidence_message_id: null,
     evidence_sha256: null,
     steel_released: false,
+    auth_marker_hash: job.auth_marker_hash || null,
   };
   let session = null;
   let evidence = null;

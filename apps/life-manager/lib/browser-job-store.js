@@ -29,6 +29,13 @@ function nonEmpty(value, label, max = 1000) {
   return text;
 }
 
+function optionalMarkerHash(value) {
+  if (value == null) return null;
+  const hash = String(value).trim();
+  if (!/^[a-f0-9]{64}$/.test(hash)) throw new Error("browser auth marker hash invalid");
+  return hash;
+}
+
 let defaultPool;
 
 function database(opts = {}) {
@@ -55,6 +62,7 @@ function buildBrowserJob(input) {
   const locale = nonEmpty(classification.locale, "browser job locale", 8);
   if (!["en", "ja"].includes(locale)) throw new Error("browser job locale invalid");
   const principalKind = classification.principalKind;
+  const authMarkerHash = optionalMarkerHash(classification.authMarkerHash);
   if (!["none", "agent_owned", "user_provided"].includes(principalKind)
     || (classification.requiresLogin === true && principalKind === "none")
     || (classification.requiresLogin !== true && principalKind !== "none")) {
@@ -71,6 +79,7 @@ function buildBrowserJob(input) {
     action_kind: nonEmpty(classification.actionKind, "browser job action kind", 100),
     requires_login: classification.requiresLogin === true,
     principal_kind: principalKind,
+    auth_marker_hash: authMarkerHash,
     status: "queued",
     trace: [],
   });
@@ -82,8 +91,8 @@ async function enqueueBrowserJob(input, opts = {}) {
   const inserted = (await query(`
     INSERT INTO public.lm_browser_jobs (
       uid, telegram_chat_id, telegram_message_id, telegram_update_id,
-      prompt_hash, goal, locale, action_kind, requires_login, principal_kind, status
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      prompt_hash, goal, locale, action_kind, requires_login, principal_kind, auth_marker_hash, status
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     ON CONFLICT (uid, telegram_chat_id, telegram_message_id) DO NOTHING
     RETURNING *
   `, [
@@ -97,6 +106,7 @@ async function enqueueBrowserJob(input, opts = {}) {
     job.action_kind,
     job.requires_login,
     job.principal_kind,
+    job.auth_marker_hash,
     job.status,
   ])).rows;
   if (inserted.length === 1) return { created: true, job: inserted[0] };
@@ -121,6 +131,30 @@ async function claimBrowserJob(opts = {}) {
   )).rows;
   if (claimed.length > 1) throw new Error("browser job claim returned multiple rows");
   return claimed[0] || null;
+}
+
+async function claimBrowserJobById(jobId, opts = {}) {
+  const id = nonEmpty(jobId, "browser job id", 100);
+  const { query } = database(opts);
+  const leaseSeconds = Number.isInteger(opts.leaseSeconds) ? opts.leaseSeconds : 480;
+  if (leaseSeconds < 30 || leaseSeconds > 900) throw new Error("browser job lease invalid");
+  const claimed = (await query(
+    "SELECT * FROM public.claim_lm_browser_job_by_id($1, $2)",
+    [id, leaseSeconds],
+  )).rows;
+  if (claimed.length > 1) throw new Error("browser job claim returned multiple rows");
+  return claimed[0] || null;
+}
+
+async function readBrowserJob(jobId, opts = {}) {
+  const id = nonEmpty(jobId, "browser job id", 100);
+  const { query } = database(opts);
+  const rows = (await query(
+    "SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public.lm_browser_jobs WHERE id = $1 LIMIT 1",
+    [id],
+  )).rows;
+  if (rows.length > 1) throw new Error("browser job read returned multiple rows");
+  return rows[0] || null;
 }
 
 async function appendBrowserTrace(jobId, stage, meta, opts = {}) {
@@ -154,6 +188,7 @@ async function finishBrowserJob(jobId, terminal, opts = {}) {
     evidence_message_id: terminal.evidence_message_id || null,
     evidence_sha256: terminal.evidence_sha256 || null,
     steel_released: terminal.steel_released === true,
+    auth_marker_hash: optionalMarkerHash(terminal.auth_marker_hash),
   };
   if (Buffer.byteLength(JSON.stringify(receipt)) > 16_384) throw new Error("browser receipt too large");
   const { query } = database(opts);
@@ -169,6 +204,8 @@ module.exports = {
   buildBrowserJob,
   enqueueBrowserJob,
   claimBrowserJob,
+  claimBrowserJobById,
+  readBrowserJob,
   appendBrowserTrace,
   finishBrowserJob,
 };

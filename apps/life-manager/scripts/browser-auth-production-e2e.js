@@ -1,12 +1,13 @@
 "use strict";
 
-const { createHash } = require("node:crypto");
+const { createHash, randomBytes } = require("node:crypto");
 
 const MODES = new Set([
   "seed-two-tenant-contexts",
   "verify-two-tenant-contexts",
   "verify-expired-handoff",
 ]);
+const TERMINAL_STATUSES = new Set(["completed", "possibly_completed", "handoff_required", "failed"]);
 const OUTPUT_KEYS = [
   "mode",
   "tenant_count",
@@ -45,11 +46,12 @@ function originOf(value) {
   return parsed.origin;
 }
 
-function opaqueHash(value) {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+function markerHash() {
+  // The raw marker is intentionally ephemeral: only this digest crosses a module boundary.
+  return createHash("sha256").update(randomBytes(32)).digest("hex");
 }
 
-function requiredDependency(deps, group, method) {
+function dependency(deps, group, method) {
   if (!deps || !deps[group] || typeof deps[group][method] !== "function") {
     throw new Error("browser auth production dependency unavailable");
   }
@@ -62,31 +64,63 @@ function boundedId(value, kind) {
   return id;
 }
 
+function isMarkerHash(value) {
+  return /^[a-f0-9]{64}$/.test(String(value || ""));
+}
+
+function traceInvalidated(trace) {
+  return Array.isArray(trace) && trace.some((entry) =>
+    entry && entry.stage === "auth_context_invalidated" && entry.meta && entry.meta.invalidated === true,
+  );
+}
+
+function terminalEvidence(row, expected) {
+  if (!row || row.id !== expected.jobId || row.uid !== expected.uid || !TERMINAL_STATUSES.has(row.status)) {
+    throw new Error("browser auth terminal durable job unavailable");
+  }
+  const receipt = row.receipt;
+  const provider = receipt && receipt.provider_receipt;
+  if (!receipt || typeof receipt !== "object" || !provider || typeof provider !== "object") {
+    throw new Error("browser auth terminal provider receipt unavailable");
+  }
+  if (row.auth_marker_hash !== expected.markerHash || receipt.auth_marker_hash !== expected.markerHash) {
+    throw new Error("browser auth terminal marker hash is not tenant-bound or isolated");
+  }
+  if (!isMarkerHash(row.auth_marker_hash) || !isMarkerHash(receipt.auth_marker_hash)) {
+    throw new Error("browser auth terminal marker hash unavailable");
+  }
+  if (receipt.steel_released !== true) throw new Error("browser auth terminal Steel release unavailable");
+  const sessionId = boundedId(receipt.session_id, "Steel session id");
+  const evidenceId = boundedId(receipt.evidence_message_id, "Telegram evidence id");
+
+  if (expected.mode === "verify-expired-handoff") {
+    if (row.status !== "handoff_required"
+      || provider.handoff_required !== true
+      || provider.handoff_reason !== "login") {
+      throw new Error("browser auth structured provider login handoff unavailable");
+    }
+    if (!traceInvalidated(row.trace)) throw new Error("browser auth exact tenant invalidation unavailable");
+  }
+  return { sessionId, evidenceId, markerHash: row.auth_marker_hash };
+}
+
 async function runBrowserAuthProductionE2E({ mode, env = process.env, deps } = {}) {
-  if (!MODES.has(mode)) throw new ConfigurationError(`Unknown browser auth production E2E mode: ${String(mode)}`);
+  if (!MODES.has(mode)) throw new ConfigurationError("Unknown browser auth production E2E mode");
   requiredEnvironment(env);
   const origin = originOf(env.BROWSER_AUTH_PRODUCTION_ORIGIN);
-  const tenantInputs = [
+  const tenants = [
     { tenant: "tenant-a", uid: String(env.BROWSER_AUTH_TENANT_A_UID), principalKind: "agent_owned" },
     { tenant: "tenant-b", uid: String(env.BROWSER_AUTH_TENANT_B_UID), principalKind: "agent_owned" },
   ];
-  if (tenantInputs[0].uid === tenantInputs[1].uid) {
+  if (tenants[0].uid === tenants[1].uid) {
     throw new ConfigurationError("BROWSER_AUTH_TENANT_A_UID and BROWSER_AUTH_TENANT_B_UID must differ");
   }
-
-  const readTenantAuth = requiredDependency(deps, "authStore", "readTenantAuth");
-  const createSession = requiredDependency(deps, "steel", "createSession");
-  const createContext = requiredDependency(deps, "steel", "createContext");
-  const releaseSession = requiredDependency(deps, "steel", "releaseSession");
-  const enqueue = requiredDependency(deps, "durableQueue", "enqueue");
-  const readJob = requiredDependency(deps, "durableQueue", "read");
-  const execute = requiredDependency(deps, "runtime", "execute");
-  const readback = requiredDependency(deps, "provider", "readback");
-  const sendEvidence = requiredDependency(deps, "telegram", "sendEvidence");
-
+  const enqueue = dependency(deps, "durableQueue", "enqueue");
+  const read = dependency(deps, "durableQueue", "read");
+  const execute = dependency(deps, "executor", "run");
   const result = {
     mode,
-    tenant_count: tenantInputs.length,
+    tenant_count: tenants.length,
     origin,
     context_hashes: [],
     job_ids: [],
@@ -95,85 +129,49 @@ async function runBrowserAuthProductionE2E({ mode, env = process.env, deps } = {
     released: false,
   };
 
-  for (const tenantInput of tenantInputs) {
-    const auth = await readTenantAuth({ ...tenantInput, origin });
-    if (!auth || typeof auth !== "object") throw new Error("browser auth tenant record unavailable");
-    const session = await createSession({ ...tenantInput, origin, auth });
-    const sessionId = boundedId(session && session.id, "Steel session id");
-    let released = false;
-    try {
-      const context = await createContext({ ...tenantInput, origin, auth, sessionId });
-      const contextHash = opaqueHash(context);
-      const job = await enqueue({ ...tenantInput, origin, contextHash, sessionId });
-      const jobId = boundedId(job && job.id, "job id");
-      const durableJob = await readJob({ id: jobId });
-      if (!durableJob || String(durableJob.id || "") !== jobId) throw new Error("browser auth durable job readback unavailable");
-      const runtime = await execute({ ...tenantInput, origin, sessionId, jobId, mode });
-      const provider = await readback({ ...tenantInput, origin, sessionId, jobId, runtime });
-      if (!provider || typeof provider !== "object") throw new Error("browser auth provider readback unavailable");
-      if (mode === "verify-expired-handoff" && provider.handoffRequired !== true) {
-        throw new Error("browser auth expired handoff was not provider-confirmed");
-      }
-      if (mode === "verify-expired-handoff" && deps.authStore && typeof deps.authStore.invalidateTenantAuth === "function") {
-        await deps.authStore.invalidateTenantAuth({ ...tenantInput, origin });
-      }
-      const evidence = await sendEvidence({ ...tenantInput, origin, jobId, sessionId, contextHash, mode });
-      result.context_hashes.push(contextHash);
-      result.job_ids.push(jobId);
-      result.steel_session_ids.push(sessionId);
-      result.telegram_evidence_ids.push(boundedId(evidence && evidence.id, "Telegram evidence id"));
-    } finally {
-      const release = await releaseSession({ sessionId, tenant: tenantInput.tenant, origin });
-      released = Boolean(release && release.released);
-      if (!released) throw new Error("browser auth Steel release unavailable");
+  const generatedMarkerHashes = new Set();
+  for (const tenant of tenants) {
+    let hash;
+    do { hash = markerHash(); } while (generatedMarkerHashes.has(hash));
+    generatedMarkerHashes.add(hash);
+    const queued = await enqueue({ ...tenant, origin, markerHash: hash, mode });
+    const jobId = boundedId(queued && queued.id, "job id");
+    if (!queued || queued.auth_marker_hash !== hash) {
+      throw new Error("browser auth durable marker hash unavailable");
     }
-    if (!released) throw new Error("browser auth Steel session was not released");
+    const execution = await execute({ jobId });
+    if (execution && execution.trace_id != null && String(execution.trace_id) !== jobId) {
+      throw new Error("browser auth executor claimed an unexpected job");
+    }
+    const terminal = await read({ id: jobId });
+    const evidence = terminalEvidence(terminal, { ...tenant, mode, markerHash: hash, jobId });
+    result.context_hashes.push(evidence.markerHash);
+    result.job_ids.push(jobId);
+    result.steel_session_ids.push(evidence.sessionId);
+    result.telegram_evidence_ids.push(evidence.evidenceId);
   }
-
-  if (new Set(result.context_hashes).size !== tenantInputs.length) {
-    throw new Error("browser auth tenant contexts are not isolated");
+  if (new Set(result.context_hashes).size !== tenants.length) {
+    throw new Error("browser auth tenant marker hashes are not isolated");
   }
   result.released = true;
   return Object.freeze(result);
 }
 
 function makeProductionDeps(env) {
-  const { readBrowserAuthSession, invalidateBrowserAuthSession } = require("../lib/browser-auth-session-store.js");
-  const { makeSteelCdpClient } = require("../lib/steel-cdp-client.js");
-  const { enqueueBrowserJob } = require("../lib/browser-job-store.js");
-  const { sendMessage } = require("../lib/telegram.js");
-  const { Pool } = require("pg");
-  const steel = makeSteelCdpClient();
-  const pool = new Pool({ connectionString: env.LM_FEEDBACK_DATABASE_URL, max: 1 });
+  const {
+    enqueueBrowserJob,
+    claimBrowserJobById,
+    readBrowserJob,
+  } = require("../lib/browser-job-store.js");
+  const { runNextBrowserJob } = require("../lib/browser-job-runtime.js");
   let sequence = 0;
-
   const uidFor = (tenant) => tenant === "tenant-a"
     ? String(env.BROWSER_AUTH_TENANT_A_UID)
     : String(env.BROWSER_AUTH_TENANT_B_UID);
+
   return {
-    authStore: {
-      async readTenantAuth({ tenant, origin, principalKind }) {
-        const record = await readBrowserAuthSession({ uid: uidFor(tenant), origin, principalKind });
-        if (!record) throw new Error("browser auth session is absent or expired");
-        return record;
-      },
-      async invalidateTenantAuth({ tenant, origin, principalKind }) {
-        return invalidateBrowserAuthSession({ uid: uidFor(tenant), origin, principalKind });
-      },
-    },
-    steel: {
-      async createSession({ auth }) {
-        return steel.createSession({ sessionContext: auth.context });
-      },
-      async createContext({ sessionId }) {
-        return steel.getSessionContext(sessionId);
-      },
-      async releaseSession({ sessionId }) {
-        return { released: await steel.releaseSession(sessionId) };
-      },
-    },
     durableQueue: {
-      async enqueue({ tenant, origin, contextHash }) {
+      async enqueue({ tenant, markerHash, origin }) {
         const suffix = `${Date.now()}-${++sequence}`;
         const queued = await enqueueBrowserJob({
           uid: uidFor(tenant),
@@ -187,36 +185,23 @@ function makeProductionDeps(env) {
             actionKind: "browser_auth_continuity_readback",
             requiresLogin: true,
             principalKind: "agent_owned",
+            authMarkerHash: markerHash,
           },
         });
-        return { id: queued && queued.job && queued.job.id, contextHash };
+        return {
+          id: queued && queued.job && queued.job.id,
+          auth_marker_hash: queued && queued.job && queued.job.auth_marker_hash,
+        };
       },
       async read({ id }) {
-        const rows = (await pool.query("SELECT id FROM public.lm_browser_jobs WHERE id = $1 LIMIT 1", [id])).rows;
-        return rows[0] || null;
+        return readBrowserJob(id);
       },
     },
-    runtime: {
-      async execute({ sessionId, origin }) {
-        await steel.navigate(sessionId, origin);
-        return { sessionId };
-      },
-    },
-    provider: {
-      async readback({ sessionId }) {
-        const readback = await steel.readConfirmation(sessionId);
-        const body = String(readback && readback.text || "");
-        return { handoffRequired: /\b(?:login|log in|sign in)\b/i.test(body) };
-      },
-    },
-    telegram: {
-      async sendEvidence({ tenant, jobId, contextHash, mode }) {
-        const sent = await sendMessage(
-          env.LM_TELEGRAM_BOT_TOKEN,
-          env.BROWSER_AUTH_TELEGRAM_CHAT_ID,
-          `Browser auth verification: tenant=${tenant}; mode=${mode}; job=${jobId}; context=${contextHash}`,
-        );
-        return { id: sent && sent.ok === true && sent.result && sent.result.message_id };
+    executor: {
+      async run({ jobId }) {
+        return runNextBrowserJob({
+          claimJob: () => claimBrowserJobById(jobId),
+        });
       },
     },
   };

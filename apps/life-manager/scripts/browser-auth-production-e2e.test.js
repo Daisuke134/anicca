@@ -14,92 +14,75 @@ const REQUIRED_ENV = {
   LM_TELEGRAM_BOT_TOKEN: 'telegram-bot-token-secret',
   BROWSER_AUTH_TELEGRAM_CHAT_ID: '12345',
 };
-
 const RAW_VALUES = [
-  'tenant-a@example.test',
-  'tenant-b@example.test',
+  'opaque-tenant-marker-a',
+  'opaque-tenant-marker-b',
   'cookie-a-secret',
-  'cookie-b-secret',
   'provider-body-secret',
 ];
-
 const OUTPUT_KEYS = [
-  'mode',
-  'tenant_count',
-  'origin',
-  'context_hashes',
-  'job_ids',
-  'steel_session_ids',
-  'telegram_evidence_ids',
-  'released',
+  'mode', 'tenant_count', 'origin', 'context_hashes', 'job_ids',
+  'steel_session_ids', 'telegram_evidence_ids', 'released',
 ];
 
-function makeDeps() {
+function terminalFor({ id, markerHash, mode, tenant }) {
+  return {
+    id,
+    uid: tenant,
+    status: mode === 'verify-expired-handoff' ? 'handoff_required' : 'completed',
+    auth_marker_hash: markerHash,
+    receipt: {
+      auth_marker_hash: markerHash,
+      session_id: `steel-${tenant}`,
+      evidence_message_id: `telegram-${tenant}-${id}`,
+      steel_released: true,
+      provider_receipt: {
+        status: mode === 'verify-expired-handoff' ? 'login_required' : 'authenticated',
+        handoff_required: mode === 'verify-expired-handoff',
+        handoff_reason: mode === 'verify-expired-handoff' ? 'login' : null,
+      },
+    },
+    trace: mode === 'verify-expired-handoff'
+      ? [{ stage: 'auth_context_invalidated', meta: { invalidated: true } }]
+      : [{ stage: 'auth_context_loaded', meta: { loaded: true } }],
+  };
+}
+
+function makeDeps({ mutateTerminal } = {}) {
   const calls = [];
-  const markerA = 'opaque-tenant-marker-a';
-  const markerB = 'opaque-tenant-marker-b';
-  const contexts = new Map();
   const jobs = new Map();
   let sequence = 0;
-
   const call = (name, value) => {
     calls.push({ name, value });
     return value;
   };
-
   return {
     calls,
-    authStore: {
-      async readTenantAuth({ tenant }) {
-        return call('authStore.readTenantAuth', {
-          tenant,
-          email: tenant === 'tenant-a' ? RAW_VALUES[0] : RAW_VALUES[1],
-          cookie: tenant === 'tenant-a' ? RAW_VALUES[2] : RAW_VALUES[3],
-          marker: tenant === 'tenant-a' ? markerA : markerB,
-        });
-      },
-    },
-    steel: {
-      async createSession({ tenant }) {
-        return call('steel.createSession', { id: `steel-${tenant}` });
-      },
-      async createContext({ sessionId, auth }) {
-        const context = { id: `context-${sessionId}`, marker: auth.marker };
-        contexts.set(context.id, context);
-        return call('steel.createContext', context);
-      },
-      async releaseSession({ sessionId }) {
-        return call('steel.releaseSession', { id: sessionId, released: true });
-      },
-    },
     durableQueue: {
-      async enqueue({ tenant, contextHash }) {
+      async enqueue({ tenant, uid, markerHash, mode }) {
+        assert.equal(typeof markerHash, 'string');
+        assert.match(markerHash, /^[a-f0-9]{64}$/);
         const id = `job-${tenant}-${++sequence}`;
-        jobs.set(id, { id, tenant, contextHash });
-        return call('durableQueue.enqueue', { id });
+        jobs.set(id, { id, uid, tenant, mode, auth_marker_hash: markerHash, status: 'queued' });
+        return call('durableQueue.enqueue', { id, auth_marker_hash: markerHash });
       },
       async read({ id }) {
-        return call('durableQueue.read', jobs.get(id));
+        return call('durableQueue.read', jobs.get(id) || null);
       },
     },
-    runtime: {
-      async execute({ jobId, contextId }) {
-        return call('runtime.execute', { jobId, contextId, providerRequestId: `provider-${jobId}` });
-      },
-    },
-    provider: {
-      async readback({ providerRequestId, runtime }) {
-        return call('provider.readback', {
-          providerRequestId,
-          accepted: true,
-          handoffRequired: runtime.expiredLogin === true,
-          body: RAW_VALUES[4],
+    executor: {
+      async run({ jobId }) {
+        const job = jobs.get(jobId);
+        call('executor.claim', { id: jobId });
+        call('executor.execute', { id: jobId });
+        const terminal = terminalFor({
+          id: jobId,
+          markerHash: job.auth_marker_hash,
+          mode: job.mode,
+          tenant: job.tenant,
         });
-      },
-    },
-    telegram: {
-      async sendEvidence({ tenant, jobId }) {
-        return call('telegram.sendEvidence', { id: `telegram-${tenant}-${jobId}` });
+        jobs.set(jobId, mutateTerminal ? mutateTerminal(terminal, job) : terminal);
+        return call('executor.finish', { id: jobId });
       },
     },
   };
@@ -126,13 +109,17 @@ function assertNoSecrets(output) {
   for (const secret of RAW_VALUES) {
     assert.doesNotMatch(output, new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.doesNotMatch(output, /opaque-tenant-marker-[ab]/);
 }
 
-test('rejects an unknown mode', async () => {
+test('rejects an unknown mode without reflecting its value', async () => {
+  const mode = `unknown-${RAW_VALUES[2]}`;
   await assert.rejects(
-    runBrowserAuthProductionE2E({ mode: 'unknown', env: REQUIRED_ENV, deps: makeDeps() }),
-    /Unknown browser auth production E2E mode: unknown/,
+    runBrowserAuthProductionE2E({ mode, env: REQUIRED_ENV, deps: makeDeps() }),
+    (error) => {
+      assert.equal(error.message, 'Unknown browser auth production E2E mode');
+      assertNoSecrets(error.message);
+      return true;
+    },
   );
 });
 
@@ -140,7 +127,6 @@ test('rejects missing required environment variables by name only', async () => 
   const env = { ...REQUIRED_ENV };
   delete env.LM_BROWSER_SESSION_KEY;
   delete env.BROWSER_AUTH_TENANT_B_UID;
-
   await assert.rejects(
     runBrowserAuthProductionE2E({ mode: 'seed-two-tenant-contexts', env, deps: makeDeps() }),
     (error) => {
@@ -152,83 +138,101 @@ test('rejects missing required environment variables by name only', async () => 
   );
 });
 
-test('CLI writes no sensitive value to stdout or stderr when configuration is rejected', () => {
-  const env = {
-    ...process.env,
-    ...REQUIRED_ENV,
-    BROWSER_AUTH_TENANT_A_EMAIL: RAW_VALUES[0],
-    BROWSER_AUTH_TENANT_A_COOKIE: RAW_VALUES[2],
-    BROWSER_AUTH_PROVIDER_BODY: RAW_VALUES[4],
-  };
-  delete env.LM_BROWSER_SESSION_KEY;
+test('CLI never reflects a secret-like unknown mode to stdout or stderr', () => {
   const child = spawnSync(
     process.execPath,
-    [fileURLToPath(new URL('./browser-auth-production-e2e.js', import.meta.url)), 'seed-two-tenant-contexts'],
-    { encoding: 'utf8', env },
+    [fileURLToPath(new URL('./browser-auth-production-e2e.js', import.meta.url)), `unknown-${RAW_VALUES[2]}`],
+    { encoding: 'utf8', env: { ...process.env, ...REQUIRED_ENV } },
   );
-
   assert.equal(child.status, 1);
   assert.equal(child.stdout, '');
-  assert.match(child.stderr, /LM_BROWSER_SESSION_KEY/);
+  assert.equal(child.stderr, 'Unknown browser auth production E2E mode\n');
   assertNoSecrets(`${child.stdout}${child.stderr}`);
 });
 
-test('seeds two isolated tenant contexts with bounded, opaque output', async () => {
+test('executes the durable claim → runtime → finish → terminal readback path before emitting hashes', async () => {
   const deps = makeDeps();
   const result = await runBrowserAuthProductionE2E({
-    mode: 'seed-two-tenant-contexts',
-    env: REQUIRED_ENV,
-    deps,
+    mode: 'verify-two-tenant-contexts', env: REQUIRED_ENV, deps,
   });
 
-  assertBoundedResult(result, 'seed-two-tenant-contexts');
+  assertBoundedResult(result, 'verify-two-tenant-contexts');
   assert.deepEqual(
     deps.calls.map(({ name }) => name),
     [
-      'authStore.readTenantAuth', 'steel.createSession', 'steel.createContext', 'durableQueue.enqueue',
-      'durableQueue.read', 'runtime.execute', 'provider.readback', 'telegram.sendEvidence', 'steel.releaseSession',
-      'authStore.readTenantAuth', 'steel.createSession', 'steel.createContext', 'durableQueue.enqueue',
-      'durableQueue.read', 'runtime.execute', 'provider.readback', 'telegram.sendEvidence', 'steel.releaseSession',
+      'durableQueue.enqueue', 'executor.claim', 'executor.execute', 'executor.finish', 'durableQueue.read',
+      'durableQueue.enqueue', 'executor.claim', 'executor.execute', 'executor.finish', 'durableQueue.read',
     ],
   );
   assertNoSecrets(JSON.stringify(result));
 });
 
-test('verifies two tenants through durable runtime, provider readback, Telegram evidence, and release', async () => {
-  const deps = makeDeps();
-  const result = await runBrowserAuthProductionE2E({
-    mode: 'verify-two-tenant-contexts',
-    env: REQUIRED_ENV,
-    deps,
-  });
-
-  assertBoundedResult(result, 'verify-two-tenant-contexts');
-  const names = deps.calls.map(({ name }) => name);
-  for (const requiredCall of [
-    'authStore.readTenantAuth', 'steel.createSession', 'steel.createContext', 'durableQueue.enqueue',
-    'durableQueue.read', 'runtime.execute', 'provider.readback', 'telegram.sendEvidence', 'steel.releaseSession',
-  ]) assert.ok(names.includes(requiredCall), `expected ${requiredCall}`);
-  assert.ok(names.lastIndexOf('steel.releaseSession') > names.lastIndexOf('provider.readback'));
-  assertNoSecrets(JSON.stringify(result));
+test('rejects nonterminal jobs, missing provider receipts, and unreleased Steel rows', async () => {
+  const cases = [
+    ['nonterminal', (terminal) => ({ ...terminal, status: 'claimed' })],
+    ['missing receipt', (terminal) => ({ ...terminal, receipt: null })],
+    ['unreleased Steel', (terminal) => ({ ...terminal, receipt: { ...terminal.receipt, steel_released: false } })],
+  ];
+  for (const [label, mutateTerminal] of cases) {
+    await assert.rejects(
+      runBrowserAuthProductionE2E({
+        mode: 'verify-two-tenant-contexts', env: REQUIRED_ENV, deps: makeDeps({ mutateTerminal }),
+      }),
+      new RegExp(label === 'nonterminal' ? 'terminal' : label === 'missing receipt' ? 'provider receipt' : 'Steel release'),
+    );
+  }
 });
 
-test('handles an expired login by producing evidence only after provider readback and releasing Steel', async () => {
+test('rejects body-only login text and requires a structured expired handoff plus invalidation', async () => {
+  await assert.rejects(
+    runBrowserAuthProductionE2E({
+      mode: 'verify-expired-handoff',
+      env: REQUIRED_ENV,
+      deps: makeDeps({
+        mutateTerminal: (terminal) => ({
+          ...terminal,
+          receipt: {
+            ...terminal.receipt,
+            provider_receipt: { status: `login ${RAW_VALUES[3]}`, body: 'login', handoff_required: false },
+          },
+        }),
+      }),
+    }),
+    /structured provider login handoff/,
+  );
+  await assert.rejects(
+    runBrowserAuthProductionE2E({
+      mode: 'verify-expired-handoff',
+      env: REQUIRED_ENV,
+      deps: makeDeps({
+        mutateTerminal: (terminal) => ({ ...terminal, trace: [{ stage: 'auth_context_invalidated', meta: { invalidated: false } }] }),
+      }),
+    }),
+    /invalidation/,
+  );
+});
+
+test('rejects missing, same, or unbound durable terminal marker hashes', async () => {
+  const cases = [
+    ['missing', (terminal) => ({ ...terminal, auth_marker_hash: null })],
+    ['unbound', (terminal) => ({ ...terminal, receipt: { ...terminal.receipt, auth_marker_hash: 'f'.repeat(64) } })],
+    ['same', (terminal) => ({ ...terminal, auth_marker_hash: 'e'.repeat(64), receipt: { ...terminal.receipt, auth_marker_hash: 'e'.repeat(64) } })],
+  ];
+  for (const [label, mutateTerminal] of cases) {
+    await assert.rejects(
+      runBrowserAuthProductionE2E({
+        mode: 'verify-two-tenant-contexts', env: REQUIRED_ENV, deps: makeDeps({ mutateTerminal }),
+      }),
+      new RegExp(label === 'same' ? 'isolated' : 'marker hash'),
+    );
+  }
+});
+
+test('handles an expired login only after terminal provider readback, invalidation, evidence, and Steel release', async () => {
   const deps = makeDeps();
-  deps.runtime.execute = async ({ jobId, contextId }) => {
-    deps.calls.push({ name: 'runtime.execute', value: { jobId, contextId, expired: true } });
-    return { jobId, contextId, providerRequestId: `expired-${jobId}`, expiredLogin: true };
-  };
-
   const result = await runBrowserAuthProductionE2E({
-    mode: 'verify-expired-handoff',
-    env: REQUIRED_ENV,
-    deps,
+    mode: 'verify-expired-handoff', env: REQUIRED_ENV, deps,
   });
-
   assertBoundedResult(result, 'verify-expired-handoff');
-  const names = deps.calls.map(({ name }) => name);
-  assert.ok(names.includes('provider.readback'));
-  assert.ok(names.includes('telegram.sendEvidence'));
-  assert.ok(names.lastIndexOf('steel.releaseSession') > names.lastIndexOf('provider.readback'));
   assertNoSecrets(JSON.stringify(result));
 });
