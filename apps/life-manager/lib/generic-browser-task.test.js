@@ -22,8 +22,14 @@ function fixture(overrides = {}) {
       events.push({ stage: "open" });
       return { id: "steel-session-1", websocketUrl: "ws://steel-browser.railway.internal:8080/" };
     },
-    discoverAndAct: async () => {
+    discoverAndAct: async (_session, context) => {
       events.push({ stage: "driver_action" });
+      await context.onSelected({
+        selectedUrl: "https://events.example/ai",
+        selectedOrigin: "https://events.example",
+        selectionReason: "free, public, online, and matches the delegated request",
+      });
+      await context.onActionStarted({ action: "registered agent-owned email" });
       return {
         selectedUrl: "https://events.example/ai",
         selectedOrigin: "https://events.example",
@@ -76,6 +82,7 @@ test("discovers an unregistered site, acts once, independently reads back, repor
       "driver_action",
       "selected",
       "action_started",
+      "action_observed",
       "driver_readback",
       "provider_readback",
       "telegram",
@@ -85,6 +92,59 @@ test("discovers an unregistered site, acts once, independently reads back, repor
       "finish",
     ],
   );
+});
+
+test("a login or challenge page becomes handoff_required, never completed", async () => {
+  const { deps } = fixture({
+    readProviderReceipt: async () => ({
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      currentUrl: "https://events.example/login",
+      handoffRequired: true,
+      handoffReason: "login",
+    }),
+  });
+  const result = await runGenericBrowserTask(JOB, deps);
+  assert.equal(result.status, "handoff_required");
+  assert.equal(result.provider_receipt.handoff_required, true);
+  assert.equal(result.provider_receipt.handoff_reason, "login");
+});
+
+test("a timeout after browser execution starts is possibly_completed and releases Steel", async () => {
+  let releases = 0;
+  const { deps } = fixture({
+    actionTimeoutMs: 5,
+    discoverAndAct: async (_session, context) => {
+      await context.onActionStarted({ action: "delegated action" });
+      return new Promise(() => {});
+    },
+    releaseSession: async () => {
+      releases += 1;
+      return { released: true };
+    },
+  });
+  const result = await runGenericBrowserTask(JOB, deps);
+  assert.equal(result.status, "possibly_completed");
+  assert.equal(releases, 1);
+});
+
+test("Telegram rejection does not erase the provider receipt or skip release and finish", async () => {
+  let finished;
+  let releases = 0;
+  const { deps } = fixture({
+    sendTelegram: async () => { throw new Error("Telegram rejected"); },
+    releaseSession: async () => {
+      releases += 1;
+      return { released: true };
+    },
+    finishJob: async (_id, terminal) => { finished = terminal; },
+  });
+  const result = await runGenericBrowserTask(JOB, deps);
+  assert.equal(result.status, "completed");
+  assert.equal(result.telegram_message_id, null);
+  assert.equal(releases, 1);
+  assert.equal(finished.status, "completed");
 });
 
 test("a provider narration without independent confirmation is never completed", async () => {

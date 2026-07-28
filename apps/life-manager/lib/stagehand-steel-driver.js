@@ -11,6 +11,9 @@ const PRIVATE_CDP = /^ws:\/\/steel-browser\.railway\.internal:8080(?:\/|$)/;
 const selectionSchema = z.object({
   selectedSiteName: z.string(),
   selectionReason: z.string(),
+});
+
+const actionSchema = z.object({
   actionSummary: z.string(),
 });
 
@@ -94,38 +97,56 @@ function makeStagehandSteelDriver(options = {}) {
       sessions.set(String(session.id), { stagehand, page });
       await page.goto(SEARCH_URL);
 
-      const task = [
+      const discoveryTask = [
         "Search the live web for websites that can satisfy this delegated goal:",
         goal,
         "Compare at least two relevant live websites before selecting one.",
         "The selected website must come from this run's web discovery; do not assume a preconfigured site.",
-        "Perform exactly one reversible, zero-cost external action that is explicitly inside the goal.",
-        "Do not spend money, accept paid terms, perform KYC, bypass a login/challenge/CAPTCHA/2FA,",
-        "or invent any personal value. Stop honestly if any of those are required.",
-        "After the action, remain on the provider page that displays its result.",
-        agentEmail
-          ? `When the goal refers to the agent-owned email, use this exact runtime-only address: ${agentEmail}`
-          : "If the goal requires an email address, stop because no agent-owned address is available.",
+        "Navigate to the best matching provider page, but do not perform or submit the requested action yet.",
       ].join("\n");
       let executionStarted = false;
       try {
-        executionStarted = true;
         const agent = stagehand.agent({
           model: MODEL,
           executionModel: MODEL,
         });
-        await agent.execute(task);
+        await agent.execute(discoveryTask);
         const selection = await stagehand.extract(
-          "From the current provider page and the just-completed browsing path, identify the selected site, explain why it matched the delegated goal, and summarize the single action attempted.",
+          "From the current provider page and the just-completed browsing path, identify the selected site and explain why it matched the delegated goal.",
           selectionSchema,
         );
         const selectedUrl = publicPageUrl(page, agentEmail);
         const parsed = new URL(selectedUrl);
-        return {
+        const selected = {
           selectedUrl,
           selectedOrigin: parsed.origin,
           selectionReason: replaceIdentity(selection.selectionReason, agentEmail).slice(0, 500),
-          action: replaceIdentity(selection.actionSummary, agentEmail).slice(0, 500),
+        };
+        if (typeof context.onSelected === "function") await context.onSelected(selected);
+
+        const actionTask = [
+          "On the currently selected provider page, perform exactly one reversible, zero-cost external action explicitly inside this delegated goal:",
+          goal,
+          "Do not search for or switch to another provider.",
+          "Do not spend money, accept paid terms, perform KYC, bypass a login/challenge/CAPTCHA/2FA,",
+          "or invent any personal value. Stop honestly if any of those are required.",
+          "After the action, remain on the provider page that displays its result.",
+          agentEmail
+            ? `When the goal refers to the agent-owned email, use this exact runtime-only address: ${agentEmail}`
+            : "If the goal requires an email address, stop because no agent-owned address is available.",
+        ].join("\n");
+        executionStarted = true;
+        if (typeof context.onActionStarted === "function") {
+          await context.onActionStarted({ action: "one delegated zero-cost browser action" });
+        }
+        await agent.execute(actionTask);
+        const observation = await stagehand.extract(
+          "Summarize the single delegated action attempted on the current provider page. Do not claim it succeeded.",
+          actionSchema,
+        );
+        return {
+          ...selected,
+          action: replaceIdentity(observation.actionSummary, agentEmail).slice(0, 500),
           sideEffectStarted: true,
         };
       } catch (error) {
@@ -148,11 +169,23 @@ function makeStagehandSteelDriver(options = {}) {
       const negated = /\b(?:failed|error|pending|verify|check email|not confirmed)\b|失敗|未完了|確認してください/i.test(
         `${status} ${providerText}`,
       );
+      const handoffText = `${status} ${providerText}`;
+      const handoffReason = /\b(?:captcha|challenge)\b/i.test(handoffText)
+        ? "challenge"
+        : /\b(?:2fa|two-factor|one-time password|otp)\b/i.test(handoffText)
+          ? "2fa"
+          : /\bkyc\b|identity verification/i.test(handoffText)
+            ? "kyc"
+            : /\b(?:login|log in|sign in)\b/i.test(handoffText)
+              ? "login"
+              : null;
       return {
         confirmed: extracted.confirmed === true && !negated && providerText.length > 0,
         status,
         confirmationId: extracted.confirmationId ? String(extracted.confirmationId).slice(0, 200) : null,
         currentUrl: publicPageUrl(open.page, agentEmail),
+        handoffRequired: handoffReason != null,
+        handoffReason,
       };
     },
 
