@@ -30,6 +30,8 @@ const receiptSchema = z.object({
   status: z.string(),
   confirmationId: z.string().nullable(),
   providerText: z.string(),
+  activeRegistrationForm: z.boolean().optional(),
+  activeAuthenticationForm: z.boolean().optional(),
 });
 
 function pageUrl(page) {
@@ -288,19 +290,40 @@ function makeStagehandSteelDriver(options = {}) {
       const open = sessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
       const extracted = await open.stagehand.extract(
-        "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, payment, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
+        [
+          "Read only the current provider-authored result page.",
+          "Report confirmed=true only when the page explicitly says the requested action succeeded.",
+          "Set activeRegistrationForm=true only when a visible registration form can still be submitted.",
+          "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
+          "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
+          "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
+          "Return its status, confirmation identifier if present, and a short provider status phrase.",
+        ].join(" "),
         receiptSchema,
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
       const providerText = replaceIdentity(extracted.providerText, agentEmail).slice(0, 500);
       const handoffText = `${status} ${providerText}`;
+      const activeRegistrationForm = extracted.activeRegistrationForm === true;
+      const activeAuthenticationForm = extracted.activeAuthenticationForm === true;
       const explicitSuccess = /\b(?:you(?:'|’)re in|registration confirmed|registered|booking confirmed|rsvp confirmed|success)\b/i.test(
         providerText,
       );
-      const negated = /\b(?:failed|error|pending|not confirmed)\b|失敗|未完了/i.test(handoffText);
-      const blockingVerification = !explicitSuccess &&
+      const managementCompletion = /\badd to calendar\b/i.test(handoffText)
+        && /\bverify email\b/i.test(handoffText)
+        && !activeRegistrationForm
+        && !activeAuthenticationForm;
+      const strongCompletion = explicitSuccess || managementCompletion;
+      const hardFailure = /\b(?:failed|error|not confirmed)\b|失敗|未完了/i.test(handoffText);
+      const pendingWithoutCompletion = /\bpending\b/i.test(handoffText) && !strongCompletion;
+      const negated = hardFailure || pendingWithoutCompletion;
+      const blockingVerification = !strongCompletion &&
         /\b(?:verify|check email)\b|確認してください/i.test(handoffText);
-      const handoffReason = /\b(?:captcha|challenge)\b/i.test(handoffText)
+      const handoffReason = activeAuthenticationForm
+        ? /\b(?:2fa|two-factor|one-time password|otp|verification code)\b/i.test(handoffText)
+          ? "2fa"
+          : "login"
+        : /\b(?:captcha|challenge)\b/i.test(handoffText)
         ? "challenge"
         : /\b(?:2fa|two-factor|one-time password|otp)\b/i.test(handoffText)
           ? "2fa"
@@ -312,9 +335,11 @@ function makeStagehandSteelDriver(options = {}) {
                 ? "login"
                 : null;
       return {
-        confirmed: (extracted.confirmed === true || explicitSuccess) &&
+        confirmed: (extracted.confirmed === true || strongCompletion) &&
           !negated &&
           !blockingVerification &&
+          !activeRegistrationForm &&
+          !activeAuthenticationForm &&
           providerText.length > 0,
         status,
         confirmationId: extracted.confirmationId ? String(extracted.confirmationId).slice(0, 200) : null,
