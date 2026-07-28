@@ -394,9 +394,9 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | **current cursor** — 提出そのものは公式readback済み。残る欠損は単発readbackによる`submission_readback_missing`と`submission_id=null` |
-| 2 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | next — #1198でSteel health→session→実URL navigation→DOM→releaseは実測済みだが、planner/search/auth/action/provider readback/TGを束ねたfull E2Eは未実証 |
-| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | pending。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
+| 1 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | **parallel crypto-track** — handoff済み。提出そのものは公式readback済み。残る欠損は単発readbackによる`submission_readback_missing`と`submission_id=null`。browser実装cursorを止めない |
+| 2 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
+| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **current browser cursor**。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 6 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending。organの一部はRailwayだが全loopのcloud-only continuityは未実証 |
@@ -851,7 +851,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
-    現在の手動実装cursor **TASKMARKET-READBACK-1 → BROWSER-GEN-1** を止めない。
+    crypto trackの **TASKMARKET-READBACK-1** と、browser trackの現在cursor **BROWSER-AUTH-1** を止めない。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -866,13 +866,13 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 現在は収益・日数・自然検知を待って止まらず、汎用cloud browser full E2E→auth→matrix→recovery→全loop cloud continuityの
 順でsystem readinessを閉じる。fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current implementation cursor**: **TASKMARKET-READBACK-1**。既存提出を追加cost 0でterminal successへreconcileした直後に、
-**BROWSER-GEN-1（自然文→未知site選定→cloud実action→provider readback→TG trace）**へ進む。
+**Current browser implementation cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
+`You’re In`、TG evidence、Steel releaseまで完了した。TASKMARKET-READBACK-1はcrypto trackで並走する。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
 unloadedで、Franklin2はrunning。cloud job/APIをrestart ledgerとして二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
-手動実装はまずTASKMARKET-READBACK-1を閉じ、続けてBROWSER-GEN-1へ進む。
+手動browser実装はBROWSER-AUTH-1へ進む。TASKMARKET-READBACK-1はcrypto trackで閉じる。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -968,7 +968,7 @@ formal delivery confirmationを待つ。13d-bはverified surplus・`$35` reserve
 これはinternal treasury資金でありexternal revenueではないため、
 SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。現在の最初のactionableはTaskMarket readback reconciliationで、
 それを閉じた後は13c-SELL/WORKを外部payer/acceptance待ちの自動成果ゲートとして継続し、手動実装は
-BROWSER-GEN-1へ進む。これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
+BROWSER-GEN-1は実Luma登録でdoneとなり、browser trackはBROWSER-AUTH-1へ進む。これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
 
@@ -986,7 +986,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-**economic outcome gate**は`13c-SELL / 13c-WORK`、**implementation cursor**は`TASKMARKET-READBACK-1 → BROWSER-GEN-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
+**economic outcome gate**は`13c-SELL / 13c-WORK`、**browser implementation cursor**は`BROWSER-AUTH-1`。`TASKMARKET-READBACK-1`はcrypto trackで並走する。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -1067,7 +1067,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在の実装cursorは§0.4.6の`TASKMARKET-READBACK-1 → BROWSER-GEN-1`から始まるsystem-readiness表だけを正本とする。13c等のevent待ちは同節の自動成果ゲート表で追跡し、実装cursorを止めない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のbrowser実装cursorは§0.4.6の`BROWSER-AUTH-1`から続くsystem-readiness表だけを正本とする。`TASKMARKET-READBACK-1`はcrypto trackで並走し、13c等のevent待ちは同節の自動成果ゲート表で追跡してbrowser cursorを止めない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1158,9 +1158,9 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 
 ## 8. 次セッションへの引き継ぎ
 
-1. §0.4.6のcurrent implementation cursor `TASKMARKET-READBACK-1`として、TaskMarket submit後readbackのeventual consistencyを修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存`taskmarket_work_attempt` cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
-2. 続けてBROWSER-GEN-1で自然文→未知site→cloud実action→provider readback→TG traceを閉じる。
-3. BROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。現在loadedなMac loopは移行中に停止しない。
+1. crypto trackは`TASKMARKET-READBACK-1`として、既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存`taskmarket_work_attempt` cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
+2. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
+3. browser trackはBROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。現在loadedなMac loopは移行中に停止しない。
 4. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
 5. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
 6. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
