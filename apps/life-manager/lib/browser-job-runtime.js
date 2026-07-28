@@ -17,6 +17,7 @@ async function runNextBrowserJob(deps = {}) {
   const driver = deps.driver || makeDriver({
     apiKey: deps.geminiKey || process.env.GEMINI_API_KEY,
     agentEmail: deps.agentEmail || process.env.LM_AGENT_BROWSER_EMAIL,
+    agentName: deps.agentName || process.env.LM_AGENT_BROWSER_NAME,
   });
   const append = deps.appendTrace || ((id, stage, meta) => appendBrowserTrace(id, stage, meta, deps));
   const finish = deps.finishJob || ((id, result) => finishBrowserJob(id, result, deps));
