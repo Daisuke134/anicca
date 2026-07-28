@@ -227,7 +227,7 @@ function makeStagehandSteelDriver(options = {}) {
             ["Fill the required company or organization field with %agentCompany%.", { variables: { agentCompany: agentName } }],
             ["Fill the required role or job title field with %agentRole%.", { variables: { agentRole: "AI agent" } }],
             ["For the required attendee-description field, choose the truthful option closest to an AI agent; prefer Other when available."],
-            ["For any marketing or data-sharing consent field, select the option that declines or does not consent. Fail if no decline option exists."],
+            ["In the required consent dropdown directly above the Register button, select the option meaning No / I do not consent. Fail if no decline option exists."],
             ["Submit this free registration now and remain on the provider result page."],
           ];
           for (let index = 0; index < atomicActs.length; index += 1) {
