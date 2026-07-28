@@ -118,6 +118,32 @@ After a Railway redeploy, the process-local Stagehand map is empty, but the
 encrypted PostgreSQL row remains. The next job creates a new Steel session and
 restores the same provider state.
 
+### Read-only authentication receipt
+
+`browser_auth_continuity_readback` is a zero-action path: it creates no
+Stagehand agent and calls none of `agent`, `execute`, or `act`. The model's
+typed extract is auxiliary evidence, never the authentication oracle.
+
+Before a positive receipt, the driver independently revalidates that the final
+page is public HTTPS and has the exact origin of the explicit requested URL. It
+then evaluates only bounded booleans in the live DOM: visible password,
+one-time-code/authentication, challenge/CAPTCHA, KYC, and payment UI, plus
+whether the model's bounded, secret-safe protected-content marker is actually
+visible. A positive receipt requires all of these simultaneously:
+
+- the typed extract reports authenticated continuity and supplies a marker;
+- the final origin is the requested origin;
+- no URL, model, or DOM handoff/risk signal exists;
+- the safe marker is independently present in the DOM; and
+- `handoffReason === null`.
+
+Every other read-only outcome fails closed as a structured handoff. Its durable
+status is one closed value (`authenticated` or `<reason>_required`) and its
+confirmation identifier is always `null`; model-supplied status, identifiers,
+tokens, cookies, email addresses, URLs, and control characters never enter the
+receipt, result, or trace. The normal browser-action receipt contract is
+unchanged.
+
 ## Failure behavior
 
 | Failure | Required behavior |
@@ -130,6 +156,9 @@ restores the same provider state.
 | Context export fails | Preserve the prior valid row, report save failure, release Steel |
 | Steel release fails | Existing release-by-id then single-slot release-all fallback remains |
 | CAPTCHA/2FA/KYC/payment | No bypass and no completion claim |
+| Read-only model claims success on login/risk UI | Independent URL/DOM guard overrides it and returns handoff |
+| Read-only final page is unsafe or cross-origin | Reject as unverified; never emit a positive receipt |
+| Protected marker is absent from the live DOM | Reject as unverified; never trust the model alone |
 
 ## Deferred minor / final review
 
