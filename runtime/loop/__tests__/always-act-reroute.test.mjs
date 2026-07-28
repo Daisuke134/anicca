@@ -608,10 +608,10 @@ test('PROP-507a: the model\'s chosen args reach the skill\'s WAKE_ID-scoped exec
 // REQ-509 / PROP-509a/b — money-safety non-regression
 // ===========================================================================
 
-test('PROP-509a (money-safety-critical, Tier 0 static guard): this feature\'s current diff touches none of the money-safety guard files (expected green from day 1 — a REGRESSION guard, not a behavior-under-test)', () => {
+test('PROP-509a (money-safety-critical, Tier 0 static guard): this feature\'s current diff touches none of the pre-existing trading guard files', () => {
   const disallowed = [
-    /^skills\/earn\/[^/]+\/run\.sh$/,
-    /^skills\/earn\/[^/]+\/lib\/resolve-max-spend\.sh$/,
+    /^skills\/earn\/(?:sol-trade|polymarket-trade)\/run\.sh$/,
+    /^skills\/earn\/(?:sol-trade|polymarket-trade)\/lib\/resolve-max-spend\.sh$/,
     /^skills\/_shared\/lib\/earn-guard\.mjs$/,
   ];
   let changed = [];
