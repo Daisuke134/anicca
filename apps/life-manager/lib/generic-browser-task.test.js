@@ -206,6 +206,8 @@ test("a post-action failure is possibly_completed, is never retried, and still r
   assert.equal(result.status, "possibly_completed");
   assert.equal(actionCalls, 1);
   assert.equal(releases, 1);
+  assert.equal(result.evidence_message_id, "9002");
+  assert.match(result.evidence_sha256, /^[a-f0-9]{64}$/);
 });
 
 test("a pre-action failure is an honest failure and every opened Steel session is released", async () => {
