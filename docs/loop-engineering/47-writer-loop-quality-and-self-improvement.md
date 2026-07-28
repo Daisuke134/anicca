@@ -2459,6 +2459,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 17 | shared engine extraction | `test_shared_engine_contract.py` clean-user child process、path traversal拒否、schema、engine import isolation + Writer全suite | PASS（feature `f588202`、installed `e286345`、contract 4 / Writer 343 passed） |
 | 18 | Life Manager product pack | 実landing/Telegram/Stripe/onboarding正本からoffer、CTA、activation、paidを読込。3 writing sliceを別reward/opponent/seed/runtime weightへ解決し、既存runtime weightを再installで上書きしない | PASS（feature `f934075`、installed `e79da56`、Marketing 5 + Writer 343 = 348 passed） |
 | 19 | video producer adapters | fixture→Honne→Larry→ReelClaw→Watercolorを共通producer contractへ登録。form/craftは4本分離し、triggerは既存launchd label、artifactは`video/mp4`、publication receiptは共通schema。Life Managerのvideo reward/opponent/weightはproduct packに保持 | PASS（feature `3f66f57`、installed `9fe2030`、実`launchctl list`は4 producer全label present/missing 0、Marketing 8 + Writer 343 = 351 passed） |
+| 20 | observation auto-terminal | due前=`pending`、due後は証拠充足=`scorable`、不足=`insufficient + observed_value=null + no_change`。scope mismatch/重複evidenceはfail-closed、terminal receiptは再runで不変。native launchdが15分ごとにrepo外runtimeをscan | PASS（feature `f550b4b`、installed `14ce862`、Marketing 12 + Writer 343 = 355 passed。実`ai.anicca.marketing-metrics` runs=2、last exit=0、interval=900、初回summary全0） |
 
 | Item | Value |
 |---|---|
@@ -2490,8 +2491,8 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 7 | DONE (`f588202`; installed `e286345`) | §22.3へ共有engine contractを移設。5 JSON schema、manifest registry、canonical bounded learning/controller、writer互換shim | clean-user child process、product/channel/slice scope隔離、cross-product path拒否、旧generic実装0、contract 4件 + Writer 343件PASS |
 | 8 | DONE (`f934075`; installed `e79da56`) | `products/life-manager` を接続。実正本から`$20/mo` offer、landing→Telegram CTA、`tg_onboard_stage=done` activation、Stripe single-writerの`lm_users.paid=true`を固定。opponentは実conversion未観測のため`unknown` baseline。tracked weightはseedだけ、学習stateはrepo外で既存値をpreserve | product-scoped offer/CTA/reward/opponent/weights、Marketing 5件 + Writer 343件PASS |
 | 9 | DONE (`3f66f57`; installed `9fe2030`) | video fixture→Honne→Larry→ReelClaw→Watercolor。producerは既存のproduct-specific loopを消さず、共通adapter manifestでform/craft/launchd/artifact/receipt境界を宣言。productのoffer/CTA/reward/weightはproducerへ混入0 | 同一engine schema、4 craft別file、実launchd全label present、Marketing 8件 + Writer 343件PASS |
-| 10 | NEXT | 自然観測を継続 | 3 run、実engagement、7日paid、Zenn/X timingは監視backlogから自動terminal化 |
-| 11 | PENDING | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
+| 10 | DONE (`f550b4b`; installed `14ce862`) | 自然観測をdurable windowへ変換。実装sessionは待たず、native `ai.anicca.marketing-metrics`が15分ごとにdue itemを`scorable`または`insufficient/no_change`へ自動terminal化。3 run、実engagement、7日paid、Zenn/X timingは同じcontractで継続 | 実launchd runs=2 / exit=0 / interval=900。missingを0へ変換せず、terminal receipt idempotent、Marketing 12件 + Writer 343件PASS |
+| 11 | NEXT | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
 
 実装時の基本検証コマンド:
 
