@@ -2385,7 +2385,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 6 | DONE (`da48792`) | Long-form / book learning slice | 共有bounded engineへ`long-form-corpus` opponent、`purchase_completion_refund_guarded` reward、repo外runtime `state/weights/long-form.json`を注入。purchase/completion/refundを全て必須化し、refund guardrail超過はheld-out改善時もrevert。body reward/weightを拒否し、3 sliceの3組が全てdistinct。4 contract tests + Writer全article suite 332 passed |
 | 7 | DONE (`970e843`) | Contradiction gate | 既存`rule_conflicts.py`の全active source scanをdaily生成wrapperへ接続し、direct/drift/deadをcanonical-owner付きdurable ticket化。heuristic findingはreview、検証済みcriticalはblockに分離し、critical 1件またはscanner errorで生成と全slice学習変更をfail-closed。wrapper E2Eはmodel call 0・receipt・Telegram alertを確認。2 gate contract tests + Writer全article suite 335 passed |
 | 8 | DONE (`a112a71`) | Bounded learning controller | slice engineの1変更制約の外側にdurable controllerを追加。before/candidate/after SHA-256、held-out、canary、keep/revertをatomic receipt化し、canary失敗はbefore bytesへexact rollback。unknown/insufficientは同一hash・変更0。keep後は次runがpromoted hashを実読したconsumption receiptを必須化。2 controller contract tests + Writer全article suite 337 passed |
-| 9 | TODO | Self-heal 5 fixture | timeout、process kill、ambiguous response、identity mismatch、broken assetを同一run/idempotency/artifact lineageからresume。duplicate side effect 0、安全gate緩和0 |
+| 9 | DONE (`8303111`) | Self-heal 5 fixture | 実child processをresume claim直後にexit 9でkillし、fresh processから同一runを再読込。その後timeout/unknown effect、response loss、wrong authenticated identity、broken public asset→same-ID repairを同一fixtureで通過。run/draft/destination identity/safety `ALLOW`は不変、current-run ledger pair重複0。Writer全article suite 338 passed |
 | 10 | TODO | Launchd + Telegram | measure→calibrate→learn→verify→notifyを既存launchdで発火。全eventをdurable outboxから送り、run_id、reward status、変更、keep/revert、weight hash、failure class、messageIdを確認 |
 | 11 | TODO | End-to-end fixture proof | collect→score→one change→held-out→canary→keep/revert→next-run hash consumptionをfixtureで完走。real metric未到着の対照fixtureは`insufficient`、変更0 |
 | 12 | TODO | Spec / code / test push | Writerとこのspecの対象変更をcommit/pushし、HEAD/upstream一致、対象tracked diff 0。意味のある変更ごとにpushし、session終了時に未pushを残さない |
@@ -2449,10 +2449,10 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | PASS (`a112a71`) |
 | 8 | self-improve revert | `test_heldout_loss_or_unknown_restores_before_hash` | PASS (`a112a71`) |
 | 9 | no-data completion | `test_missing_real_metrics_emits_insufficient_and_changes_nothing` | TODO |
-| 10 | crash resume | `test_resume_after_process_kill_from_first_nonpass_step` | TODO |
-| 11 | ambiguous publish | `test_response_loss_reads_back_before_retry` | TODO |
-| 12 | identity mismatch | `test_wrong_editor_identity_quarantines_before_publish` | TODO |
-| 13 | asset recovery | `test_broken_asset_repairs_same_artifact_without_duplicate_publish` | TODO |
+| 10 | crash resume | `test_self_heal_five_failures_preserve_lineage_and_no_duplicate_effect`（claim後exit 9） | PASS (`8303111`) |
+| 11 | ambiguous publish | 同fixture（unknown effect→authenticated readback→same intent） | PASS (`8303111`) |
+| 12 | identity mismatch | 同fixture（attacker identity拒否、正identityだけthaw） | PASS (`8303111`) |
+| 13 | asset recovery | 同fixture（live-media-mismatch→same-ID repair、ledger重複0） | PASS (`8303111`) |
 | 14 | Telegram outbox | `test_state_transition_and_outbox_event_are_atomic` + 実messageId | TODO |
 | 15 | launchd chain | 実kickstartでmeasure→calibrate→learn→notify、terminal receipt | TODO |
 | 16 | push integrity | `git diff --check`、focused/full suite、HEAD/upstream、対象tracked diff | TODO |
