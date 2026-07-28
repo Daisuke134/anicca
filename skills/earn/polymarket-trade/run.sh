@@ -192,6 +192,18 @@ if [ -f "$SKILL_DIR/redeem.py" ]; then
   append_strategy_trace "redeem" "$REDEEM_OUT" "$REDEEM_RC"
 fi
 
+# STEP 0b — RECOVER BALANCED OPEN POSITIONS before any cash-gated strategy.
+# merge.py burns equal YES/NO shares from one condition back into pUSD. It owns
+# selection, approval, receipt verification, and ledger recording; this harness
+# only makes the existing recovery primitive reachable from every live pass.
+# Fail-soft like redeem: a temporary RPC/relayer failure is traced and retried
+# next wake without suppressing the independent earning strategies below.
+if [ -f "$SKILL_DIR/merge.py" ]; then
+  MERGE_OUT=$(timeout 200 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/merge.py" 2>&1); MERGE_RC=$?
+  echo "$MERGE_OUT" | tail -10
+  append_strategy_trace "merge" "$MERGE_OUT" "$MERGE_RC"
+fi
+
 # BASE STRATEGY #2 — risk-free bundle arbitrage scan (bundle_arb.py, EXISTING
 # working alpha, unchanged — do not reinvent). Self-gating: no-ops ("no
 # risk-free bundle arb ≥0.5% right now") when the market is efficient; buys
