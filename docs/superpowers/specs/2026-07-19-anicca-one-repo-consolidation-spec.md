@@ -149,7 +149,7 @@ bootstrap subsidy である。
 
 | executor | 現在の brain / loop | wallet残高 | earnings evidence | 判定 |
 |---|---|---:|---|---|
-| Founder agent | `claude-sonnet-5`、launchd 稼働中 | Base 1.880000 USDC + 0.00000643 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。Claude が稼いだと確定できる額はまだ0 |
+| Founder agent | `claude-sonnet-5`、`ai.anicca.agent-economy-loop` 稼働中。現在のfocused allowlistは`earn/taskmarket` | Base 1.700000 USDC + 0.00000611 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。TaskMarket GPT Image 2の実settlement cost `$0.065`を`taskmarket_work_attempt`として記帳。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。外部awardは未発生。TaskMarket原価は収益ではなくnet `-$0.065` |
 | Franklin 1 | Mac main loop **unloaded**。Python survival runtimeはNosana job `DdUqQh8…WPS4`で稼働 | cloud Base 1.038 USDC、公開statement readback 0.634800 NOS + 0.021591801 SOL | 独立検証40/40署名PASS後も公開heartbeatは130へ継続。公開決算書はruntime cost `$0.093914498167`、external revenue `$0.00` | **Mac-off operational / verified external net = $0.00**。自活・refill経路は成立、外部収益は未発生 |
 | Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.019000 USDC、gas 0 | Railway x402 mainnetで自己支払`$0.008 + $0.005 + $0.010`を実行。3商品HTTP 200、Base receipt成功。3件目は公開APIだけを使うDeFi funding-rate商品。colony内送金なのでrevenue 0 | **verified external net = $0.00** |
 | Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
@@ -196,6 +196,7 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 | x402 acquisition | launchd run 34 / exit 0。`openPostings=0`、inbox `completed=3`、experiment `externalCount=0` | **operational / demandなし** |
 | settlement→ledger | observer run 34、recorder run 34、ledger run 36、すべてexit 0。`2 seen / 0 verified / 0 recorded` | **operational** — self-payを収益へ混入させない |
 | WORK | The402 workerは実postingへbid 2件（`bid_ad4356885ad34346` / `bid_59943a1581de430d`）。Coconala talkroom `17943244`は回答送信済みでbuyer feedback/formal delivery待ち | **operational / acceptance・外部支払待ち** |
+| TaskMarket worker | PR #1222で`earn/taskmarket`をlive registryへ接続。実launchd wakeは`poll`成功後に`execute`を自律選択し、GPT Image 2をx402で`$0.065`実購入、3ファイルをtask `0x7c3a…cbe8`へ提出。公式CLIはowned submission `14`件とsubmit tx `0x47863b…2558`をreadback | **delivery operational / completion detector partial** — submit直後の単発readbackはeventual consistencyで`submission_readback_missing`、約2分後の公式readbackでは提出実在。次はbounded retryで同じsubmissionを再照合し、費用ledgerの`submission_id=null`をexactly-once reconcileする。award・着金は0 |
 | payout / report | 未適用だった`lm_financial_cost_totals` migrationをproduction Supabaseへ適用しRPC HTTP 200。PR #1209後のcanonical checkoutでdirect `viem` loadとpayout/TaskMarket 29/29 PASS、実loop再発火はexit 0 / `no_verified_surplus`、reserve=`$35`、新規stderr 0 | **operational / 支払可能利益なし** |
 | survival refill | `ai.anicca.citizen-refill`を毎時live化。0.203520 / 0.028800 / 0.057600 NOSをtreasury→shelterへ実送金。tx `5z6JUe…P6hyt` / `3egDbT…iTP8` / `5HGq79…WChCd` confirmed。自己renew継続後の公開statement readback 0.634800 NOS / 0.021591801 SOL | **operational machinery / external収益由来の支払証明は未発生** |
 | Sol trade | health registryが`FROZEN`（意図的KILL） | **inactive by policy** — workingとは数えない |
@@ -376,7 +377,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
 | 13c-SELL-INGRESS | Railway POST/GET settlement→observer→finalized verifier→Life Manager ledgerを接続し、mainnet self-pay 3件をrevenue 0へ拒否 | PR #374/#1196/#1197、`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
-| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳。その後worker残高を登録済みLife Manager walletへ自動handoffし、別のexternal revenueには数えない | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 32 / exit 0、discovery済み14 taskを`pending=14 / recorded=0`で正常待機し、handoffは`no_verified_award` no-op、worker残高0.001000 USDC不変。focused payout/TaskMarket 26/26、Life Manager full suite 659/659。evidence=`docs/evidence/agent-economy/2026-07-28-taskmarket-award-handoff.md`,`docs/evidence/agent-economy/2026-07-28-taskmarket-outcome-posters-wave.md` |
+| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳。その後worker残高を登録済みLife Manager walletへ自動handoffし、別のexternal revenueには数えない | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 56 / exit 0、直近`2026-07-28T10:10:58.244Z`も`tasks_seen=14 / pending=14 / recorded=0`で正常待機し、handoffは`no_verified_award` no-op、worker残高0.001000 USDC不変。focused payout/TaskMarket 26/26、Life Manager full suite 659/659。evidence=`docs/evidence/agent-economy/2026-07-28-taskmarket-award-handoff.md`,`docs/evidence/agent-economy/2026-07-28-taskmarket-outcome-posters-wave.md` |
 | UGIG-INVOICE-OBSERVER | uGigのdelivered applicationを5分再照合。codeはbuyer acceptance + 全PR merge、non-codeはacceptance + public proof後だけ上限固定invoiceをexactly-once発行。`completed`後はpaid invoiceのrecipient payoutをSolana RPCで独立finalized検証してからearnings ledgerへexactly-once記帳 | PR #1217/#1218/#1219/#1221。upstream実contractの単数`GET /api/gigs/[id]/invoice`と`completed`遷移へ一致。production DBのEVM/Solana constraintは`convalidated=true`。launchd run 16 / exit 0、live readbackは`deliveries_seen=4 / pending=4 / invoice_created=0 / paid=0 / revenue_recorded=0`。実mainnet self-funded txはrevenue 0へ拒否。focused/full PASS。evidence=`docs/evidence/agent-economy/2026-07-28-ugig-invoice-observer-live.md`,`docs/evidence/agent-economy/2026-07-28-ugig-pairux-subscription.md`,`docs/evidence/agent-economy/2026-07-28-ugig-nightcell7-hex-cover-application.md` |
 | X402-DISCOVERY-1 | production 9商品のOpenAPIを単一catalog化し、x402scan登録・paid search、Coinbase Bazaar検索、PayAPI無料掲載申請まで外部発見経路を開通 | anicca-products PR #376/#377/#378、`docs/evidence/agent-economy/2026-07-28-x402-external-discovery.json`。外部売上ではない |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。configの固定8405が専用8406を上書きする起動bugをRED→GREEN修理し、実release binaryの8406 `/health`・`/supported`でBase mainnet exact v2を確認。実user payout txは未完。evidence=`docs/evidence/agent-economy/2026-07-28-payout-facilitator-port.md` |
@@ -393,26 +394,30 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **current cursor** — #1198でSteel health→session→実URL navigation→DOM→releaseは実測済みだが、planner/search/auth/action/provider readback/TGを束ねたfull E2Eは未実証 |
-| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | pending。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
-| 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
-| 4 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
-| 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending。organの一部はRailwayだが全loopのcloud-only continuityは未実証 |
-| 6 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending。機械はあるが一連の実E2Eが未完 |
-| 7 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
+| 1 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | **current cursor** — 提出そのものは公式readback済み。残る欠損は単発readbackによる`submission_readback_missing`と`submission_id=null` |
+| 2 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | next — #1198でSteel health→session→実URL navigation→DOM→releaseは実測済みだが、planner/search/auth/action/provider readback/TGを束ねたfull E2Eは未実証 |
+| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | pending。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
+| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
+| 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 6 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending。organの一部はRailwayだが全loopのcloud-only continuityは未実証 |
+| 7 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending。機械はあるが一連の実E2Eが未完 |
+| 8 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
 | ID | 自動運転中のもの | 完了条件 |
 |---|---|---|
-| 13c-SELL / 13c-WORK | x402/The402 acquisition、TaskMarket 14 submission、uGig 5 application。observer/verifier/ledgerは5分周期 | colony外buyer/jobから累計≥`$1`、external payer + finalized receipt + provenance + ledger exactly-once。現在`$0.00` |
+| 13c-SELL / 13c-WORK | x402/The402 acquisition、TaskMarket 14 owned submission、uGig 5 application。observer/verifier/ledgerは5分周期 | colony外buyer/jobから累計≥`$1`、external payer + finalized receipt + provenance + ledger exactly-once。現在`$0.00` |
 | 13d-b-LIVE | payout engineは`no_verified_surplus`で安全待機 | verified surplusからagent wallet→user walletのBase実tx、ledger expense、§9.11 TG receipt |
 | SURVIVE-1 | 毎時refillとNosana renewalを継続 | verified external収益由来のprovider支払い、ledger expense、service継続、reserve floor |
 | SCALE-1 | 黒字recipe成立後に開始 | 30日closed ledgerで月`$100 net`、self-funded率≥100%、loss/cost込み |
 | CHILD-1 | SCALE-1後に開始 | 黒字余剰からwallet/key/runtime/ledger非共有child、heartbeat、自己支払receipt |
 | REPORT-1 | 別日dailyを自動蓄積 | daily 7/7、weekly 1/1、panel差0。同一periodを手動水増ししない |
 | REDEEM-1 | 次の`pm_redeemable>0`を`earn-watch.sh`が監視 | 実redeem tx、receipt status 1 |
-| 9d / 10f | marketing/self-build台帳を日次蓄積 | 各7日連続の独立run。待つ間に上の実装を進める |
+| TaskMarket award | `ai.anicca.life-manager-taskmarket-ledger`が5分周期でowned submission 14件を再照合。新task `0x7c3a…cbe8`もaward待ち | external requesterのaward + finalized Base USDC Transfer一致時だけ13c-WORKへ記帳し、Life Manager walletへhandoff |
+| uGig acceptance/invoice | `ai.anicca.life-manager-ugig-invoice-observer`が5分周期で5 applicationを再照合 | buyer acceptance + proof後のinvoiceとrecipient payoutをSolana finalized検証してexactly-once記帳 |
+| 9d | marketing台帳を日次蓄積 | 7日連続の独立run。待つ間に上の実装を進める |
+| 10f | final phaseまでloopをunloadしpause markerを保持 | 全active atomic完了後に再loadし、現在2/7から残り5 distinct real daysを蓄積 |
 | 11a→11c+11d | cadence scanを継続し、actionable検知時だけ予約する | 実検知→3候補→cloud provider予約または正直な不可報告→実TG/gcal。検知前の捏造禁止 |
 
 EARN-HC-1のlive readbackではPM/x402/WORK/CAPITALが4/4 operational。内訳はPM・x402・gigがoperational、
@@ -846,7 +851,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
-    現在の手動実装cursor **BROWSER-GEN-1** を止めない。
+    現在の手動実装cursor **TASKMARKET-READBACK-1 → BROWSER-GEN-1** を止めない。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -861,12 +866,13 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 現在は収益・日数・自然検知を待って止まらず、汎用cloud browser full E2E→auth→matrix→recovery→全loop cloud continuityの
 順でsystem readinessを閉じる。fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current implementation cursor**: **BROWSER-GEN-1（自然文→未知site選定→cloud実action→provider readback→TG trace）**。
+**Current implementation cursor**: **TASKMARKET-READBACK-1**。既存提出を追加cost 0でterminal successへreconcileした直後に、
+**BROWSER-GEN-1（自然文→未知site選定→cloud実action→provider readback→TG trace）**へ進む。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
 unloadedで、Franklin2はrunning。cloud job/APIをrestart ledgerとして二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
-手動実装は待たずにBROWSER-GEN-1へ進む。
+手動実装はまずTASKMARKET-READBACK-1を閉じ、続けてBROWSER-GEN-1へ進む。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -886,7 +892,7 @@ submission `3db02754-0f14-464c-96f9-bbbd5161c1ef`として実提出した。mani
 remote 5 filesのhash/size/MIMEはlocalと一致した。
 PR #1208/#1210でTaskMarket award→Base finalized receipt→6桁精度ledgerのfail-closed bridgeを追加し、
 production `ai.anicca.life-manager-taskmarket-ledger`を5分周期でloadした。最新readbackは
-`runs=32 / tasks_seen=14 / pending=14 / recorded=0 / exit 0 / stderr 0`、handoffは`no_verified_award` no-opで
+`runs=56 / tasks_seen=14 / pending=14 / recorded=0 / exit 0 / stderr 0`、handoffは`no_verified_award` no-opで
 worker残高`0.001000` USDC不変、daily/dev/report/payout/selfbuild/x402の
 既存loopは全てloadedのまま。公開済みの別TaskMarket実settlementをDB無書き込みでreplayし、exact USDC transferから
 6桁精度のin-memory rowを生成できた。v1はtroughの実測が弱く棄却し、v2はsection mean
@@ -902,7 +908,8 @@ agent account・email確認・Franklin cloud Solana payout wallet登録・applic
 別の`$2 SOL` Crawlproof testimonialにもAI narrationであることを明示して応募した。さらにmoshcodeのuppercase checkout test failureを
 再現・修理し、PR #61（focused 9/9、full 172 pass / 25 skip / 0 fail）と`$0.25 SOL` applicationを提出した。
 PairUX subscriptionも実ブラウザでsignup・email確認・購読・provider readbackまで完了し、`$0.25 SOL` applicationを提出した。
-続いてNIGHTCELL 7の実repoへオリジナルhex-armour GLBを生成・runtime配置し、全test・glTF validator・10視点実browser captureを通したPR #38と`$20 SOL/week` applicationを提出して外部attemptは累計19件。
+続いてNIGHTCELL 7の実repoへオリジナルhex-armour GLBを生成・runtime配置し、全test・glTF validator・10視点実browser captureを通したPR #38と`$20 SOL/week` applicationを提出した。
+rail間でbid/application/submissionの粒度が異なるため、これらを足した「外部attempt累計」は今後使わない。公式readbackはThe402 2 bid、Coconala 1 talkroom、uGig 5 application、TaskMarket 14 owned submissionとして別々に保持する。
 PR #1217でaccepted→全PR merged→exact capped invoiceの5分observerを追加し、production初回runは
 `deliveries_seen=1 / pending=1 / invoice_created=0 / paid=0 / exit 0`、2 delivery登録後の最新runは
 `deliveries_seen=2 / pending=2 / invoice_created=0 / paid=0 / exit 0`。PR #1218でnon-code deliveryもpublic proof付きで
@@ -928,6 +935,20 @@ square/OCR/3-file local↔remote SHA-256一致を確認した。各net rewardは
 proof submission=`801e15f9-9856-48af-8e82-0aeeda4818eb`、Base tx=`0x736437…53c79`はstatus `0x1`、
 remote hash一致。bootstrap/acquisition costは収益0、0.462500 USDC net bountyはawardまで未収益とする。
 
+最新の自律passとして、PR #1222/#1223/#1224で既存launchd agent economy loopから使える
+`earn/taskmarket` vertical sliceを追加した。agentは実wakeで`poll`→`execute`を自律選択し、
+依存配置不足による`ERR_MODULE_NOT_FOUND`とBlockRun GPT Image 2のHTTP 202 async jobを順に実測・修理した。
+最終passは`$0.065`のx402画像settlementを行い、
+task `0x7c3ab04d35a6b73f1421a9f7876077554f4650e22014188ff2d6d5075c95cbe8`へ
+`hero.png` / `concept-note.md` / `sources.md`を提出した。公式readbackはsubmit tx
+`0x47863bf6b297a73d89c1334e3904a556a28986e03d797cd0410ab2defc772558`、deliverable hash
+`0x3b289b1a0b5e614e1cf8ee8adf1a9621442f3b566184603eec40a2054a6864ec`、
+submittedAt=`2026-07-28T10:11:25.192Z`、owned submissions=`14`。Base USDCは
+`1.765000 → 1.700000`で実costと一致し、earn ledgerは`earn=0 / cost=0.065 / net=-0.065`を記録した。
+ただしsubmit直後の単発readbackはeventual consistencyに負け、wakeは`submission_readback_missing`で終了し、
+cost rowの`submission_id`はnullのまま。**提出成功は実証済みだがwork loopのterminal successは未実証**であり、
+次の修理は再購入・再提出せず、同じtaskの公式readbackをbounded retryして同じattemptをexactly-once reconcileすること。
+
 **REPORT-1の現在状態（自動並走）**:
 共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
 provider message idは`297`/`298`、DB JSONB再読込後のcanonical hashは2/2一致。Railway production `life-call`はmain `09d060e94`をSUCCESSで稼働し、
@@ -945,8 +966,9 @@ formal delivery confirmationを待つ。13d-bはverified surplus・`$35` reserve
 公開statement readbackは0.634800 NOS / 0.021591801 SOL、job APIの直近readbackはstate 1 / timeout 6600秒、
 公開heartbeatは130。
 これはinternal treasury資金でありexternal revenueではないため、
-SURVIVE-1 doneとは書かない。EARN-HC-1は完了し、13c-SELL/WORKは外部payer/acceptanceを待つ自動成果ゲートである。
-これらのevent待ちは§0.4.6どおりBROWSER-GEN-1から始まる手動実装cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
+SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。現在の最初のactionableはTaskMarket readback reconciliationで、
+それを閉じた後は13c-SELL/WORKを外部payer/acceptance待ちの自動成果ゲートとして継続し、手動実装は
+BROWSER-GEN-1へ進む。これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
 
@@ -957,14 +979,14 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 | `REPORT-1` | FINANCIAL | 別日daily receiptをあと6件蓄積 | **自動運転中**: daily 1/7、weekly 1/1、TG↔authenticated panel差0。`ai.anicca.life-manager-financial-report`が5分周期で稼働。手動forceで同一periodを水増ししない |
 | `11c+11d` | PHYSICAL | actionable検知が立った時の実予約receipt | **cloud browser基盤は実測済み**（#1198、Railway exact SHA `3a8364a56…` SUCCESS）: production `life-call`→Railway private Steel→実Chromium→実URL navigation/DOM readback→session releaseを同一sessionで完走し、deploy後の同梱smokeでも再現。`LM_BOOKING_ENABLED`は未設定/offのまま。残るdone条件はactionable検知後の実provider予約receipt + 11d実TG/gcalであり、検知前に捏造しない |
 | `10e` | DEV | 実error PR 1本の無人rollback/recovery実証 | **機械はmerged**（#1158）。event発生時に実証する |
-| `10f` | DEV | self-buildの7日連続ledger row | **loop稼働中**（#1163）。毎朝自動蓄積 |
+| `10f` | DEV | self-buildのdistinct 7日ledger row（現在2/7、残り5日） | **final phaseまで意図的paused**。`ai.anicca.life-manager-dev`はunloaded、pause marker保持。全active atomic完了後に再loadし、5 distinct real daysを蓄積する。同一日の手動runで水増ししない |
 | `9d` | MARKETING | 7日ledger | **自動蓄積中**。毎日10:15 JST |
 | `11a`→`11b実測` | PHYSICAL | 安定周期の実検知→候補3件 | **自動判定中**。CADENCE-1 guard稼働 |
 
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-**economic outcome gate**は`13c-SELL / 13c-WORK`、**implementation cursor**は`BROWSER-GEN-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
+**economic outcome gate**は`13c-SELL / 13c-WORK`、**implementation cursor**は`TASKMARKET-READBACK-1 → BROWSER-GEN-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -1040,12 +1062,12 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 | 12c | MEN-c | 送信配線 + E2E: 実 schedule 由来 trigger 3種（予定前/合間/就寝前）で実 TG 着信 | 実 TG 3通のスクショ/メッセージ id | **done (2026-07-26)**: 3/3 実 TG 着信を production DB から読み戻し — pre_event=`260`(07-25 09:20Z), pre_sleep=`271`(07-25 13:30Z), between_events=`272`(07-25 18:49Z)。between_events は本番で構造的に発火不能だった（tick の calendar fetch が `timeMin=now` で「終わったイベント」を返せない）ため PR #1129 で lookback 35min を追加し、MENTAL のみ広い窓・他 consumer は strict-future をテストで固定。fix 後、実90分イベント終了の11秒後に発火（旧コードでは生成不能な row = deploy 生存証明を兼ねる）。テストイベント2件は削除済み(readback 0)。evidence=`docs/evidence/12c-mental-three-triggers-live.md` |
 | 13a | FIN-a | agent wallet 自己生成（§10.1 U7 Franklin 型。既存 wallet 流用禁止）+ 秘密鍵の安全保存 | 新 address 実在 + 残高 0 確認 + 鍵が repo/log に無い grep | **done (2026-07-25 実測)**: `lib/agent-wallet.js` を RED→GREEN で追加（9/9）。keccak256 は Node の SHA3-256 と別物のため監査済み `@noble/hashes` / `@noble/curves` を使用し、**公開 Ethereum テストベクタ2本でアドレス導出とEIP-55 checksum を照合**（自己整合ではなく外部基準）。曲線位数外・不正長・ゼロ鍵は拒否、entropy 不良は再試行せず失敗させる（弱鍵の隠蔽を防ぐ）。秘密鍵は入れ子まで再帰的に除去する `redactWallet` を通さないとログへ出せない。**実 wallet 生成**: address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）。on-chain 実読み取りで `eth_getBalance=0x0`、`eth_getTransactionCount=0x0`（未使用の新規アドレス）。鍵は `~/.cloak/life-manager-agent-wallet.json` に mode `0600` で保存し、**repo 0 hit / logs 0 hit / git history 0 hit** を grep で実証。test=770 PASS |
 | 13b | FIN-b | 送金先 closed Q（§9.11 FINANCIAL copy、初回1問のみ）+ 永続保存 | 実 TG で登録往復1回 + DB 実 row | **pending — 実装は RED→GREEN で完了、実 TG 往復と実 DB row は未実施（2026-07-25）**: discovery 告知の［登録する］は `handleDiscoveryCallback` が tap を ack して return するだけの **dead end** だった（実測）。`lib/payout-question.js` を RED→GREEN で追加（16/16）し、tap → §9.11 FINANCIAL closed Q（3択、自由入力なし）→ 回答を `lm_users.payout_destination` へ永続保存、まで配線。copy は `lib/i18n.js` に置き spec §9.11 と逐語一致を test で固定（copy は Dais 所有のため実装は新規文面を作らない）。**初回1問のみ**: 送信前に必ず column を read し、既に destination がある行は無送信。read 失敗は「未回答」ではなく `lookup_failed` として扱い、推測で再質問しない。**保存は CAS**（`payout_destination=is.null` + `Prefer: return=representation`）で書いた値を読み戻して照合し、DB に見えない書き込みは `persist_failed` として失敗を返す（成功報告しない）。［あとで］は無書き込みで gate は locked のまま。保存内容は rail 選択（`status=awaiting_details`）で、`isPayoutDestinationUsable()` は false を返すため 13c/13d が送金可能先と誤認できない（口座番号/wallet address の収集は 13c/13d の仕事）。12c の教訓に従い **production 配線も証明**: `server.js` を実起動して Telegram が送る callback 2種を POST し、§9.11 の質問が Bot API 経由で実送信され、回答が `lm_users` へ PATCH されることを contract test で実測。test=786 PASS（baseline 770 + 16）、eval 7種 100%（21/12/12/27/18/15/12）、panel-privacy PASS（api=177 browser=63 recipes=19 channels=9）。**残: 実 Telegram での往復1回と実 DB row は未実施** — この branch は fixture のみで検証し、実メッセージ送信・production data 変更は一切行っていない | **done (2026-07-26)**: 実 TG 往復1回 + DB 実 row — discovery［登録する］tap → §9.11 copy 逐語の質問が 02:17 JST に実着弾（callback が server に届いた = INC-3 修理の E2E 証明を兼ねる）→［walletアドレスを登録］tap（rail 選択は §9.8 由来: fiat 閉鎖中で wallet が唯一の live rail）→ production readback `{"type":"wallet","status":"awaiting_details","answered_at":"2026-07-26T05:18:30.952Z"}`。address 収集は 13d の初手。evidence=`docs/evidence/13b-payout-question-round-trip.md` |
-| 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | **partial — PM実row done、SELL/WORK会計機械 live、外部$1 gate open**: PMはproduction `financial_realized_loss=$3.15`を記帳済み。SELLはBase mainnet finalized receiptとexact USDC Transferを再検証して`financial_external_income`へexactly-once記帳する。The402/TaskMarketもexternal settlementを一意に検証し、TaskMarket award後はLife Manager walletへ自動handoffする。TaskMarket 14件は`pending=14 / recorded=0`。uGigはcode/non-codeのdelivered applicationを5分再照合し、acceptance + merge/public proof後だけ上限固定invoiceをexactly-once発行、最新は`deliveries_seen=4 / pending=4 / invoice_created=0 / exit 0`。**証拠限界**: owned external jobの採用・実着金は未実証で外部収入は`$0.00`。累計`$1` gateは開けたまま13d-b engineへ接続済み。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json`,`docs/evidence/agent-economy/2026-07-27-x402-ledger-bridge.json`,`docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`,`docs/evidence/agent-economy/2026-07-28-taskmarket-revenue-bridge.md`,`docs/evidence/agent-economy/2026-07-28-taskmarket-award-handoff.md`,`docs/evidence/agent-economy/2026-07-28-ugig-invoice-observer-live.md`,`docs/evidence/agent-economy/2026-07-28-ugig-moshcode-portability-application.md`,`docs/evidence/agent-economy/2026-07-28-ugig-pairux-subscription.md`,`docs/evidence/agent-economy/2026-07-28-ugig-nightcell7-hex-cover-application.md` | pending |
+| 13c | FIN-c | engine 配線: earn loop の収益を wallet に記帳し月次集計（§9.8 crypto rail。損失月も正直報告） | 台帳に実収支行 + 月次報告文の生成実測 | **partial — PM実row done、SELL/WORK会計機械 live、外部$1 gate open**: PMはproduction `financial_realized_loss=$3.15`を記帳済み。SELLはBase mainnet finalized receiptとexact USDC Transferを再検証して`financial_external_income`へexactly-once記帳する。The402/TaskMarketもexternal settlementを一意に検証し、TaskMarket award後はLife Manager walletへ自動handoffする。TaskMarket公式CLIはowned submission 14件をreadbackし、新しい自律passの直接原価`$0.065`は`taskmarket_work_attempt`として記帳済み。ただしsubmit直後のeventual consistencyによりcost rowの`submission_id=null`なので、同じtask/txを再購入・再提出せずexactly-once reconcileする修理が残る。uGigはcode/non-codeのdelivered applicationを5分再照合し、acceptance + merge/public proof後だけ上限固定invoiceをexactly-once発行、最新は`deliveries_seen=4 / pending=4 / invoice_created=0 / exit 0`。**証拠限界**: owned external jobの採用・実着金は未実証で外部収入は`$0.00`。累計`$1` gateは開けたまま13d-b engineへ接続済み。evidence=`docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json`,`docs/evidence/agent-economy/2026-07-27-x402-ledger-bridge.json`,`docs/evidence/agent-economy/2026-07-27-the402-work-ledger.json`,`docs/evidence/agent-economy/2026-07-28-taskmarket-revenue-bridge.md`,`docs/evidence/agent-economy/2026-07-28-taskmarket-award-handoff.md`,`docs/evidence/agent-economy/2026-07-28-ugig-invoice-observer-live.md`,`docs/evidence/agent-economy/2026-07-28-ugig-moshcode-portability-application.md`,`docs/evidence/agent-economy/2026-07-28-ugig-pairux-subscription.md`,`docs/evidence/agent-economy/2026-07-28-ugig-nightcell7-hex-cover-application.md` | pending |
 | 13d | FIN-d | 実送金 E2E: agent wallet → user wallet、spend-cap 内、tx 報告（§9.11 copy） | on-chain 実 tx hash + 実 TG 報告 | **partial — engine live / real tx gate open**: PR #1188。`payout-policy`はverified external income−loss−fee−過去送金、Base USDC残高−`$35` reserve、transaction capの最小値を算出し、sub-cent dustはwalletへ残す。`base-usdc-payout`はdeterministic EIP-3009 nonce、self-host loopback `/verify`→`/settle`、chain 8453、receipt status 1、exact USDC Transfer 1件を要求。`payout-runtime`はexplicit tenant UID→同rowのusable wallet/TG→全ledger→balance→正時のみprotected key→settle→`financial_user_transfer`→§9.11 TGの順。production `ai.anicca.life-manager-payout` 5分周期、2 run / exit 0、独立readbackはUSDC 0・ledger 0、結果`no_verified_surplus`、facilitator停止、tx/TG 0。focused 144/144、fullは新規29件全pass（1421 pass / 既存5 fail+1 cancelled）。**証拠限界**: 実tx hash・実TG receiptは残高がreserveを超えていないため未実証。evidence=`docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json` |
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在の実装cursorは§0.4.6の`BROWSER-GEN-1`から始まるsystem-readiness表だけを正本とする。13c等のevent待ちは同節の自動成果ゲート表で追跡し、実装cursorを止めない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在の実装cursorは§0.4.6の`TASKMARKET-READBACK-1 → BROWSER-GEN-1`から始まるsystem-readiness表だけを正本とする。13c等のevent待ちは同節の自動成果ゲート表で追跡し、実装cursorを止めない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1136,8 +1158,9 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 
 ## 8. 次セッションへの引き継ぎ
 
-1. §0.4.6のcurrent implementation cursor `BROWSER-GEN-1`から順に、自然文→未知site→cloud実action→provider readback→TG traceを閉じる。
-2. 続けてBROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。現在loadedなMac loopは移行中に停止しない。
-3. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d/10f、11a→11c+11dは自動成果ゲートとして並走し、実装cursorを止めない。
-4. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
-5. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
+1. §0.4.6のcurrent implementation cursor `TASKMARKET-READBACK-1`として、TaskMarket submit後readbackのeventual consistencyを修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存`taskmarket_work_attempt` cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
+2. 続けてBROWSER-GEN-1で自然文→未知site→cloud実action→provider readback→TG traceを閉じる。
+3. BROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。現在loadedなMac loopは移行中に停止しない。
+4. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
+5. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
+6. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
