@@ -102,3 +102,33 @@ test("browser auth session persistence uses exact parameterized tenant rows and 
   assert.match(writes[1].sql, /UPDATE public\.lm_browser_auth_sessions/i);
   assert.deepEqual(writes[1].params, ["u-one", "https://auth.example", "user_provided"]);
 });
+
+test("browser auth storage reads the design runtime key and ignores the retired environment name", async () => {
+  const priorSessionKey = process.env.LM_BROWSER_SESSION_KEY;
+  const priorRetiredKey = process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX;
+  const context = { sessionStorage: { current: "tenant-session" } };
+  const sealed = sealBrowserContext({
+    uid: "u-one", origin: "https://auth.example", principalKind: "user_provided", context,
+  }, KEY_HEX);
+  try {
+    process.env.LM_BROWSER_SESSION_KEY = KEY_HEX;
+    process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX = "22".repeat(32);
+    const record = await readBrowserAuthSession({
+      uid: "u-one", origin: "https://auth.example", principalKind: "user_provided",
+    }, {
+      query: async () => ({ rows: [{
+        uid: "u-one",
+        origin: "https://auth.example",
+        principal_kind: "user_provided",
+        state: "active",
+        ...sealed,
+      }] }),
+    });
+    assert.deepEqual(record.context, context);
+  } finally {
+    if (priorSessionKey === undefined) delete process.env.LM_BROWSER_SESSION_KEY;
+    else process.env.LM_BROWSER_SESSION_KEY = priorSessionKey;
+    if (priorRetiredKey === undefined) delete process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX;
+    else process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX = priorRetiredKey;
+  }
+});

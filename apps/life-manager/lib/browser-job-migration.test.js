@@ -9,6 +9,10 @@ const SQL = fs.readFileSync(path.join(
   __dirname,
   "../migrations/2026-07-28-lm-browser-jobs.sql",
 ), "utf8");
+const UPGRADE_SQL = fs.readFileSync(path.join(
+  __dirname,
+  "../migrations/2026-07-28-lm-browser-jobs-principal-kind.sql",
+), "utf8");
 
 test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt or credential", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
@@ -43,4 +47,13 @@ test("trace and finish mutations are narrow functions inside the private Railway
   assert.match(SQL, /'action_observed'/i);
   assert.match(SQL, /'evidence_sent'/i);
   assert.doesNotMatch(SQL, /\bTO service_role\b|\bFROM PUBLIC, anon\b/i);
+});
+
+test("principal kind forward migration upgrades legacy browser jobs without changing historical login ownership", () => {
+  assert.match(UPGRADE_SQL, /ALTER TABLE public\.lm_browser_jobs\s+ADD COLUMN IF NOT EXISTS principal_kind text/i);
+  assert.match(UPGRADE_SQL, /WHEN requires_login THEN 'agent_owned'\s+ELSE 'none'/i);
+  assert.match(UPGRADE_SQL, /WHERE principal_kind IS NULL/i);
+  assert.match(UPGRADE_SQL, /ALTER COLUMN principal_kind SET NOT NULL/i);
+  assert.match(UPGRADE_SQL, /principal_kind IN \('none', 'agent_owned', 'user_provided'\)/i);
+  assert.match(UPGRADE_SQL, /requires_login = false AND principal_kind = 'none'[\s\S]*requires_login = true AND principal_kind IN \('agent_owned', 'user_provided'\)/i);
 });

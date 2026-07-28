@@ -140,7 +140,7 @@ function database(opts = {}) {
 }
 
 function sessionKey(input, opts) {
-  return input && input.keyHex || opts && opts.keyHex || process.env.LM_BROWSER_AUTH_CONTEXT_KEY_HEX;
+  return input && input.keyHex || opts && opts.keyHex || process.env.LM_BROWSER_SESSION_KEY;
 }
 
 function optionalTimestamp(value) {
