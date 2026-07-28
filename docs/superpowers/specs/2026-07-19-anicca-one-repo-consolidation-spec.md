@@ -370,6 +370,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
 | 13c-SELL-INGRESS | Railway POST/GET settlement→observer→finalized verifier→Life Manager ledgerを接続し、mainnet self-pay 3件をrevenue 0へ拒否 | PR #374/#1196/#1197、`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
+| X402-DISCOVERY-1 | production 9商品のOpenAPIを単一catalog化し、x402scan登録・paid search、Coinbase Bazaar検索、PayAPI無料掲載申請まで外部発見経路を開通 | anicca-products PR #376/#377/#378、`docs/evidence/agent-economy/2026-07-28-x402-external-discovery.json`。外部売上ではない |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
 | S21-CLOUD-BOOTSTRAP（旧S21-MAC-OFF） | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin runtime/heartbeat/renewalをcloudで継続 | anicha PR #1 / merge `efbcc26f`。job `2iTbLb7K…`、初回list tx finalized、公開HTTP 200、heartbeat 14/14署名+RPC PASS、lease 600→1200秒、別Modal sandboxは同jobを再list 0でreconcile。既存Mac loopは停止せずrunningのまま |
@@ -379,7 +380,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / machinery live / demand gate open** — open posting 0、externalCount 0、外部実着金 `$0.00` |
+| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / machinery + discovery live / demand gate open** — x402scan 9商品、Coinbase Bazaar 2商品を外部検索で確認、PayAPI審査中。open posting 0、externalCount 0、外部実着金 `$0.00` |
 | 2 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **blocked by economic state** — verified surplus 0 |
 | 3 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | pending、13d-bと同じsurplus算式を使用 |
 | 4 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
@@ -843,6 +844,10 @@ PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一�
 bootstrap/posterとNosana上のFranklin runtime・heartbeat・renewal・別sandbox復旧まで実測済み。既存Mac loopは破壊的に止めず、
 cloud側writer leaseで二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 次は既存acquisition・x402・The402の実機械を使い、self-payを除外した外部payer receiptだけを累計する。
+x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
+registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
+公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
+この発見可能性と確認用支払いは売上ではないため、外部収益は引き続き`$0.00`である。
 
 **REPORT-1の現在状態（自動並走）**:
 共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
