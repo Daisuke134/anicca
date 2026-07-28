@@ -1,5 +1,6 @@
 "use strict";
 
+const net = require("node:net");
 const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
 const {
@@ -87,23 +88,17 @@ function publicHttpsUrl(raw, options = {}) {
     throw new Error("runtime target must be a public HTTPS URL");
   }
   const host = url.hostname.toLowerCase();
-  const octets = host.split(".").map(Number);
-  const privateIpv4 = octets.length === 4 && octets.every(Number.isInteger) && (
-    octets[0] === 10 ||
-    octets[0] === 127 ||
-    (octets[0] === 169 && octets[1] === 254) ||
-    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
-    (octets[0] === 192 && octets[1] === 168)
-  );
+  const unbracketedHost = host.startsWith("[") && host.endsWith("]")
+    ? host.slice(1, -1)
+    : host;
   if (
     url.protocol !== "https:" ||
     !host ||
     (options.rejectCredentials === true && (url.username || url.password)) ||
     host === "localhost" ||
-    host === "::1" ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
-    privateIpv4
+    net.isIP(unbracketedHost) !== 0
   ) {
     throw new Error("runtime target must be a public HTTPS URL");
   }
@@ -124,6 +119,90 @@ function safeProtectedMarker(value, agentEmail) {
     return null;
   }
   return marker;
+}
+
+function collectReadOnlyDomSnapshot(input = {}, environment) {
+  const documentRef = environment && environment.document || document;
+  const getStyle = environment && environment.getComputedStyle
+    ? environment.getComputedStyle
+    : window.getComputedStyle.bind(window);
+  const visible = (element) => {
+    if (!element) return false;
+    const style = getStyle(element);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      Number.parseFloat(style.opacity) === 0
+    ) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+  const visibleMatches = (selector) =>
+    Array.from(documentRef.querySelectorAll(selector)).slice(0, 100).some(visible);
+  const bodyText = String(documentRef.body && documentRef.body.innerText || "").slice(0, 20_000);
+  const formText = Array.from(documentRef.querySelectorAll("form"))
+    .slice(0, 50)
+    .filter(visible)
+    .map((form) => String(form.innerText || "").slice(0, 1_000))
+    .join(" ");
+  const visibleText = `${bodyText} ${formText}`;
+  const inputs = Array.from(documentRef.querySelectorAll("input"))
+    .slice(0, 100)
+    .filter(visible)
+    .map((element) => ({
+      type: String(element.type || "").toLowerCase().slice(0, 20),
+      inputMode: String(element.inputMode || "").toLowerCase().slice(0, 20),
+      autocomplete: String(element.autocomplete || "").toLowerCase().slice(0, 40),
+      maxLength: Number.isInteger(element.maxLength)
+        ? Math.max(-1, Math.min(element.maxLength, 100))
+        : -1,
+    }));
+  return {
+    inputs,
+    textFlags: {
+      auth: /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(visibleText),
+      otp: /\b(?:verification code|security code|one[- ]time code|otp|enter (?:the )?(?:(?:six|6)[- ]digit )?code|(?:six|6)[- ]digit code)\b/i.test(visibleText),
+      captcha: visibleMatches(
+        'iframe[src*="captcha" i], [class*="captcha" i], [id*="captcha" i], [data-sitekey]',
+      ) || /\bcaptcha\b/i.test(visibleText),
+      challenge: /\b(?:security challenge|verify you are human|challenge required)\b/i.test(visibleText),
+      kyc: /\b(?:kyc|identity verification|verify your identity)\b/i.test(visibleText),
+      payment: /\b(?:payment required|checkout|credit card|card details|billing details)\b/i.test(visibleText),
+    },
+    markerPresent: bodyText.toLocaleLowerCase().includes(
+      String(input.marker || "").toLocaleLowerCase(),
+    ),
+  };
+}
+
+function classifyReadOnlyDomSnapshot(snapshot = {}) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const inputs = Array.isArray(source.inputs) ? source.inputs.slice(0, 100) : [];
+  const flags = typeof source.textFlags === "object" && source.textFlags
+    ? source.textFlags
+    : {};
+  const passwordVisible = inputs.some((input) => input && input.type === "password");
+  const oneTimeCodeVisible = inputs.some((input) =>
+    input && input.autocomplete === "one-time-code");
+  const singleDigitInputs = inputs.filter((input) =>
+    input &&
+    input.type === "text" &&
+    input.inputMode === "numeric" &&
+    input.maxLength === 1).length;
+  const otpVisible = oneTimeCodeVisible || singleDigitInputs >= 4 || flags.otp === true;
+  const captchaVisible = flags.captcha === true;
+  return {
+    passwordVisible,
+    otpVisible,
+    authVisible: passwordVisible || otpVisible || flags.auth === true,
+    challengeVisible: captchaVisible || flags.challenge === true,
+    captchaVisible,
+    kycVisible: flags.kyc === true,
+    paymentVisible: flags.payment === true,
+    markerPresent: source.markerPresent === true,
+  };
 }
 
 function privateSession(session) {
@@ -387,66 +466,12 @@ function makeStagehandSteelDriver(options = {}) {
         let dom = null;
         if (finalUrl && originMatches && marker) {
           try {
-            dom = await open.page.evaluate(({ marker: expectedMarker }) => {
-              const visible = (element) => {
-                if (!element) return false;
-                const style = window.getComputedStyle(element);
-                if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
-                  return false;
-                }
-                const rect = element.getBoundingClientRect();
-                return rect.width > 0 && rect.height > 0;
-              };
-              const visibleMatches = (selector) =>
-                Array.from(document.querySelectorAll(selector)).slice(0, 100).some(visible);
-              const bodyText = String(document.body && document.body.innerText || "").slice(0, 20_000);
-              const formText = Array.from(document.querySelectorAll("form"))
-                .slice(0, 50)
-                .filter(visible)
-                .map((form) => String(form.innerText || "").slice(0, 1_000))
-                .join(" ");
-              const visibleText = `${bodyText} ${formText}`;
-              const passwordVisible = visibleMatches('input[type="password"]');
-              const otpVisible = visibleMatches(
-                'input[autocomplete="one-time-code"], input[name*="otp" i], input[id*="otp" i], input[name*="verification-code" i], input[id*="verification-code" i]',
-              );
-              const authVisible = passwordVisible || otpVisible ||
-                /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(formText);
-              const captchaVisible = visibleMatches(
-                'iframe[src*="captcha" i], [class*="captcha" i], [id*="captcha" i], [data-sitekey]',
-              ) || /\bcaptcha\b/i.test(visibleText);
-              const challengeVisible = captchaVisible ||
-                /\b(?:security challenge|verify you are human|challenge required)\b/i.test(visibleText);
-              const kycVisible = /\b(?:kyc|identity verification|verify your identity)\b/i.test(visibleText);
-              const paymentVisible =
-                /\b(?:payment required|checkout|credit card|card details|billing details)\b/i.test(visibleText);
-              return {
-                passwordVisible,
-                otpVisible,
-                authVisible,
-                challengeVisible,
-                captchaVisible,
-                kycVisible,
-                paymentVisible,
-                markerPresent: bodyText.toLocaleLowerCase().includes(
-                  String(expectedMarker).toLocaleLowerCase(),
-                ),
-              };
-            }, { marker });
+            dom = await open.page.evaluate(collectReadOnlyDomSnapshot, { marker });
           } catch {
             dom = null;
           }
         }
-        const signals = {
-          passwordVisible: dom && dom.passwordVisible === true,
-          otpVisible: dom && dom.otpVisible === true,
-          authVisible: dom && dom.authVisible === true,
-          challengeVisible: dom && dom.challengeVisible === true,
-          captchaVisible: dom && dom.captchaVisible === true,
-          kycVisible: dom && dom.kycVisible === true,
-          paymentVisible: dom && dom.paymentVisible === true,
-          markerPresent: dom && dom.markerPresent === true,
-        };
+        const signals = classifyReadOnlyDomSnapshot(dom);
         const loginPath = Boolean(finalUrl && /\/(?:login|log-in|signin|sign-in)(?:\/|$)/i.test(
           finalUrl.pathname,
         ));
@@ -570,6 +595,8 @@ function makeStagehandSteelDriver(options = {}) {
 }
 
 module.exports = {
+  classifyReadOnlyDomSnapshot,
+  collectReadOnlyDomSnapshot,
   makeStagehandSteelDriver,
   MODEL,
   AGENT_MODEL,
