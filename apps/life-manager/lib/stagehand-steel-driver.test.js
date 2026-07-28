@@ -171,6 +171,45 @@ test("a listing/search page is never accepted as the selected provider action pa
   assert.match(calls[1], /open one specific candidate/i);
 });
 
+test("a runtime-supplied public HTTPS detail URL skips search and goes straight to CUA action", async () => {
+  const { driver, calls } = fixture();
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, {
+    goal: "Open https://fresh-events.example/ai/confirmed and register the agent-owned identity",
+  });
+
+  const gotos = calls.filter(([name]) => name === "goto").map(([, url]) => url);
+  assert.deepEqual(gotos, [
+    "https://www.google.com/",
+    "https://fresh-events.example/ai/confirmed",
+  ]);
+  const agents = calls.filter(([name]) => name === "agent").map(([, value]) => value);
+  assert.deepEqual(agents, [{
+    mode: "cua",
+    model: "google/gemini-2.5-computer-use-preview-10-2025",
+    systemPrompt: "Operate the remote cloud browser carefully. Use only truthful supplied identity data, never invent personal data, and stop at login, CAPTCHA, 2FA, KYC, or payment.",
+  }]);
+  const tasks = calls.filter(([name]) => name === "execute").map(([, task]) => task);
+  assert.equal(tasks.length, 1);
+  assert.match(tasks[0], /perform exactly one/i);
+});
+
+test("runtime URL shortcut rejects local and Railway-private destinations", async () => {
+  for (const unsafe of [
+    "http://localhost:8080/admin",
+    "https://steel-browser.railway.internal/admin",
+    "https://127.0.0.1/private",
+    "https://169.254.169.254/latest/meta-data",
+  ]) {
+    const { driver } = fixture();
+    const session = await driver.openSession();
+    await assert.rejects(
+      driver.discoverAndAct(session, { goal: `Open ${unsafe} and register` }),
+      /public HTTPS URL/i,
+    );
+  }
+});
+
 test("provider success comes from a separate typed page readback, not agent narration", async () => {
   const { driver } = fixture();
   const session = await driver.openSession();
