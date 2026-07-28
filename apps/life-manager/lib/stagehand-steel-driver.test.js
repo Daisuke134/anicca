@@ -15,7 +15,7 @@ function fixture(fixtureOptions = {}) {
       calls.push(["screenshot", options]);
       return Buffer.from("real-cloud-png");
     },
-    url() { return "https://fresh-events.example/ai/confirmed"; },
+    url() { return fixtureOptions.pageUrl || "https://fresh-events.example/ai/confirmed"; },
   };
   class FakeStagehand {
     constructor(value) {
@@ -38,6 +38,10 @@ function fixture(fixtureOptions = {}) {
     }
     async extract(instruction, _schema) {
       calls.push(["extract", instruction]);
+      if (/authenticated provider continuity page/i.test(instruction)
+        && fixtureOptions.authReceipt) {
+        return fixtureOptions.authReceipt;
+      }
       if (/provider-authored result page/i.test(instruction) && fixtureOptions.receipt) {
         return fixtureOptions.receipt;
       }
@@ -267,6 +271,63 @@ test("an explicit auth continuity readback does not apply the normal action-page
       name === "extract" && /identify the selected site/i.test(instruction)).length,
     0,
   );
+});
+
+test("auth continuity confirms provider content without requiring action-success language", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "unknown",
+      confirmationId: null,
+      providerText: "Products inventory",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+    authReceipt: {
+      confirmed: true,
+      status: "authenticated",
+      confirmationId: null,
+      providerText: "Products inventory",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/ai/confirmed with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.status, "authenticated");
+  assert.equal(receipt.handoffRequired, false);
+});
+
+test("auth continuity redirect to a root login page reaches structured login handoff", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/",
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Sign in to continue",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: true,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/account with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {
