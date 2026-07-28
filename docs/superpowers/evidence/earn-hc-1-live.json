@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "EARN-HC-1",
+  "generatedAt": "2026-07-28T04:14:15.772Z",
+  "result": "pass",
+  "contract": {
+    "finiteStates": [
+      "operational",
+      "degraded",
+      "frozen",
+      "not-live"
+    ],
+    "slotCount": 8,
+    "portfolioCount": 4,
+    "instrumentedCount": 8,
+    "notInstrumentedCount": 0
+  },
+  "slots": [
+    {
+      "id": "earn/sol-trade",
+      "state": "frozen",
+      "reason": "intentional_kill_switch",
+      "evidence": {
+        "traceExists": true
+      }
+    },
+    {
+      "id": "earn/polymarket-trade",
+      "state": "operational",
+      "reason": "fresh_trace",
+      "evidence": {
+        "traceAgeSeconds": 348.1406892089844,
+        "lastAction": "wait"
+      }
+    },
+    {
+      "id": "economy/gig",
+      "state": "operational",
+      "reason": "fresh_heartbeat",
+      "evidence": {
+        "heartbeatAgeSeconds": 3155.645616699219,
+        "enabled": true,
+        "alive": true
+      }
+    },
+    {
+      "id": "hl_trade",
+      "state": "not-live",
+      "reason": "unfunded",
+      "evidence": {
+        "balanceUsd": 0
+      }
+    },
+    {
+      "id": "x402_sell",
+      "state": "operational",
+      "reason": "http_ready",
+      "evidence": {
+        "httpStatus": 200
+      }
+    },
+    {
+      "id": "token_launch",
+      "state": "not-live",
+      "reason": "not_enabled",
+      "evidence": {
+        "enabled": false
+      }
+    },
+    {
+      "id": "earn/clip",
+      "state": "not-live",
+      "reason": "loop_not_enabled",
+      "evidence": {
+        "enabled": false,
+        "alive": false
+      }
+    },
+    {
+      "id": "earn/video",
+      "state": "not-live",
+      "reason": "loop_not_enabled",
+      "evidence": {
+        "enabled": false,
+        "alive": false
+      }
+    }
+  ],
+  "portfolios": [
+    {
+      "id": "PM",
+      "state": "operational",
+      "reason": "member_operational",
+      "members": {
+        "earn/polymarket-trade": "operational"
+      }
+    },
+    {
+      "id": "x402",
+      "state": "operational",
+      "reason": "member_operational",
+      "members": {
+        "x402_sell": "operational"
+      }
+    },
+    {
+      "id": "WORK",
+      "state": "operational",
+      "reason": "member_operational",
+      "members": {
+        "economy/gig": "operational",
+        "earn/clip": "not-live",
+        "earn/video": "not-live"
+      }
+    },
+    {
+      "id": "CAPITAL",
+      "state": "operational",
+      "reason": "member_operational",
+      "members": {
+        "earn/polymarket-trade": "operational",
+        "earn/sol-trade": "frozen",
+        "hl_trade": "not-live",
+        "token_launch": "not-live"
+      }
+    }
+  ],
+  "independentReadback": {
+    "polymarket": {
+      "traceMtime": "2026-07-28T04:08:27Z",
+      "lastAction": "wait",
+      "lastReason": "no-candidate-cleared-edge-confidence-gate",
+      "killPresent": false
+    },
+    "solana": {
+      "traceMtime": "2026-07-22T02:33:08Z",
+      "lastAction": "skip",
+      "lastReason": "kill-switch",
+      "killPresent": true
+    },
+    "gig": {
+      "heartbeatMtime": "2026-07-28T03:21:40Z",
+      "tmuxSession": "alive",
+      "healthcheckLaunchAgent": "loaded"
+    },
+    "x402": {
+      "httpStatus": 200,
+      "service": "x402-agents-lite"
+    },
+    "hyperliquid": {
+      "accountValueUsd": 0,
+      "withdrawableUsd": 0,
+      "openPositions": 0
+    },
+    "clip": {
+      "tmuxSession": "absent",
+      "healthcheckLaunchAgent": "unloaded"
+    },
+    "video": {
+      "tmuxSession": "absent",
+      "healthcheckLaunchAgent": "unloaded"
+    }
+  },
+  "verification": {
+    "nodeFocused": {
+      "passed": 12,
+      "failed": 0
+    },
+    "allSlotsShell": {
+      "passed": 43,
+      "failed": 0
+    },
+    "legacyEarningHealth": {
+      "passed": 18,
+      "failed": 0
+    },
+    "solTradeHealthcheck": {
+      "passed": 9,
+      "failed": 0
+    },
+    "jsonParse": "pass",
+    "diffCheck": "pass",
+    "secretScan": {
+      "scanner": "gitleaks",
+      "commitsScanned": 2,
+      "leaksFound": 0
+    },
+    "broaderSelfSuite": {
+      "status": "pre_existing_failures_outside_earn_hc_scope",
+      "baselineCommit": "2b50605f1f9beb5c93a3a5f716bf9afe0d58ac5d",
+      "baselineParity": true,
+      "failures": [
+        "test_cadence_deadline_check.sh: 3",
+        "test_verify_loops_audit_reddit_ban.sh: 1"
+      ]
+    }
+  },
+  "sources": [
+    {
+      "name": "Kubernetes readiness probes",
+      "url": "https://kubernetes.io/docs/concepts/configuration/liveness-readiness-startup-probes/",
+      "quote": "Readiness probes determine when a container is ready to accept traffic."
+    },
+    {
+      "name": "Kubernetes Pod conditions",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions",
+      "quote": "The status of that condition; applicable values are True, False, or Unknown."
+    }
+  ]
+}
