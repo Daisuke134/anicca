@@ -150,7 +150,7 @@ bootstrap subsidy である。
 | executor | 現在の brain / loop | wallet残高 | earnings evidence | 判定 |
 |---|---|---:|---|---|
 | Founder agent | `claude-sonnet-5`、`ai.anicca.agent-economy-loop` 稼働中。現在のfocused allowlistは`earn/taskmarket` | Base 1.700000 USDC + 0.00000611 ETH、Solana 0.005980 SOL | earn ledger gross 39.983218 USDC のうち 39.338742 は bridge 誤帰属。未flag 0.644476 も外部 payer provenance 未完。TaskMarket GPT Image 2の実settlement cost `$0.065`を`taskmarket_work_attempt`として記帳。直近 x402 controller `externalCount=0` | **verified external net = $0.00**。外部awardは未発生。TaskMarket原価は収益ではなくnet `-$0.065` |
-| Franklin 1 | Mac main loop **unloaded**。Python survival runtimeはNosana job `DdUqQh8…WPS4`で稼働 | cloud Base 1.038 USDC、公開statement readback 0.634800 NOS + 0.021591801 SOL | 独立検証40/40署名PASS後も公開heartbeatは130へ継続。公開決算書はruntime cost `$0.093914498167`、external revenue `$0.00` | **Mac-off operational / verified external net = $0.00**。自活・refill経路は成立、外部収益は未発生 |
+| Franklin 1 | Mac main loop **unloaded**。Nosana job `DdUqQh8…WPS4`は6時間のMac-off proof後にstate 2へ終了 | shelter wallet 0.75 NOS + 0.025764161 SOL。公開service 3 routesはHTTP 503、同payer running job 0 | 独立検証40/40署名PASS後も公開heartbeatは130へ継続した。監査済み決算書はruntime cost `$0.093914498167`、external revenue `$0.00` | **level 3 historical proof / live level 2**。self-renewは実証済みだが6h ceiling後のreplacement未実装。外部収益は未発生 |
 | Franklin 2 | `nvidia/llama-4-maverick`、launchd 稼働中 | Base 0.019000 USDC、gas 0 | Railway x402 mainnetで自己支払`$0.008 + $0.005 + $0.010`を実行。3商品HTTP 200、Base receipt成功。3件目は公開APIだけを使うDeFi funding-rate商品。colony内送金なのでrevenue 0 | **verified external net = $0.00** |
 | Codex | 専用 earning executor / wallet なし | 帰属残高なし | 現在の agent-economy loop の brain ではない | **attributable earnings = $0.00** |
 | Polymarket wallet | `0x904B…Eb74`、hourly live trade + DRY decision timer | fresh readback: pUSD `$9.397370`、open position 1（Athletics 6 shares）、mergeable 0 | PM-MERGE-1でFed balanced `7.9761` sharesを`$7.976189`へ、続くmaker約定のTiafoe balanced `5.9985` sharesを`$5.998570`へ実回収。2 txともPolygon `0x1`。今回2 cycleのledger netは`+$1.175803` | **operational**。`run.sh`がredeem後・cash gate前に`merge.py`を呼び、回収資金でmaker quotingを再開。現在の1 legはその後のmaker約定で生じた非mergeable position。PMはCAPITAL収益であり、外部SELL/WORK収益`$0.00`とは分離する |
@@ -198,7 +198,7 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 | WORK | The402 workerは実postingへbid 2件（`bid_ad4356885ad34346` / `bid_59943a1581de430d`）。Coconala talkroom `17943244`は回答送信済みでbuyer feedback/formal delivery待ち | **operational / acceptance・外部支払待ち** |
 | TaskMarket worker | PR #1222で`earn/taskmarket`をlive registryへ接続。実launchd wakeは`poll`成功後に`execute`を自律選択し、GPT Image 2をx402で`$0.065`実購入、3ファイルをtask `0x7c3a…cbe8`へ提出。公式CLIはowned submission `14`件とsubmit tx `0x47863b…2558`をreadback | **delivery operational / completion detector partial** — submit直後の単発readbackはeventual consistencyで`submission_readback_missing`、約2分後の公式readbackでは提出実在。次はbounded retryで同じsubmissionを再照合し、費用ledgerの`submission_id=null`をexactly-once reconcileする。award・着金は0 |
 | payout / report | 未適用だった`lm_financial_cost_totals` migrationをproduction Supabaseへ適用しRPC HTTP 200。PR #1209後のcanonical checkoutでdirect `viem` loadとpayout/TaskMarket 29/29 PASS、実loop再発火はexit 0 / `no_verified_surplus`、reserve=`$35`、新規stderr 0 | **operational / 支払可能利益なし** |
-| survival refill | `ai.anicca.citizen-refill`を毎時live化。0.203520 / 0.028800 / 0.057600 NOSをtreasury→shelterへ実送金。tx `5z6JUe…P6hyt` / `3egDbT…iTP8` / `5HGq79…WChCd` confirmed。自己renew継続後の公開statement readback 0.634800 NOS / 0.021591801 SOL | **operational machinery / external収益由来の支払証明は未発生** |
+| survival refill | `ai.anicca.citizen-refill`を毎時live化。treasury→shelterの実補充後、fresh balanceは0.75 NOS / 0.025764161 SOL | **funding machinery operational / shelter replacement missing**。jobは6h ceiling後にstate 2、running job 0。external収益由来の支払証明も未発生 |
 | Sol trade | health registryが`FROZEN`（意図的KILL） | **inactive by policy** — workingとは数えない |
 | Hyperliquid / Hummingbot / token launch | EARN-HC registryで明示的`not-live`。Hummingbot process/launchdなし | **instrumented inactive / revenue $0.00** |
 
@@ -206,9 +206,9 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 
 | 対象 | 現在地 | 実測単価 | 判定 |
 |---|---|---:|---|
-| Franklin 1 survival runtime | **Nosana active job `DdUqQh8…WPS4`**。Mac Franklin1 main loopはunloaded、Franklin2はrunning | live job `$0.043345153/h`。公開statement runtime cost `$0.093914498167` | Python heartbeat・決算書・自己renewがcloudで継続。root HTMLと`/statement.json`はHTTP 200、独立RPC付きverifierは40/40 PASS後も公開heartbeat 130へ増加 |
+| Franklin 1 survival runtime | **Nosana completed job `DdUqQh8…WPS4`**。Mac Franklin1 main loopはunloaded、Franklin2はrunning | measured job `$0.043345153/h`。監査済みstatement runtime cost `$0.093914498167` | Python heartbeat・決算書・自己renewは6時間継続した。fresh readbackはjob state 2、running job 0、root / statement / heartbeatsすべてHTTP 503。replacement loopが残る |
 | Franklin 2 brain + earning executors | **Mac mini launchd** | Mac側の既存固定費 | Franklin2は意図どおりMacでrunning |
-| Nosana | active job 1、公開service 3 routes HTTP 200 | live job `$0.043345153/h`（約`$31.21/月`を単純換算） | current primary shelter。0.34 NOS move-out reserve + 0.005 SOL fee floorを維持 |
+| Nosana | active job 0、公開service 3 routes HTTP 503 | measured job `$0.043345153/h`（約`$31.21/月`を単純換算） | historical primary shelter。shelter walletは0.75 NOS + 0.025764161 SOLを持つが、次jobを作るreplacementが未実装 |
 | Modal via BlockRun x402 | 5分proof sandboxは期限切れ。active sandbox 0 | create `$0.012` + exec `$0.003` / 300秒 = 連続再作成換算`$0.18/h`（約`$129.60/月`） | bootstrap / standby候補。現在住んではいない |
 | Railway x402-agents | paid API seller | service hosting costはFranklin ledger未接続 | 商品runtimeでありFranklin brainではない |
 
@@ -226,7 +226,7 @@ funding-rate txのblock `49201946`を超えるfinalized block `49202258`でobser
 | 稼ぎ | loopは稼働するが、外部buyer 0。PMはwallet-level PnLのみ | SELL / WORKが日次外部着金、CAPITALは余剰のみ。同一ledgerでnetまで閉じる |
 | 報告 | wallet・earn ledger・model cost・PM APIが分離 | daily/weekly Telegramとpanelが同じledger snapshotを読む |
 | user payout | destination登録済み、tenant agent残高0 | reserve超過分だけagent wallet→user walletを実tx送金 |
-| 自活 | 月$35〜78のsurvival burnを外部収益が覆わない | trailing 30d net ≥ trailing 30d compute+shelter、かつreserve floor維持 |
+| 自活 | 月$35〜78のsurvival burnを外部収益が覆わず、6h ceiling後のshelter replacementも未実装 | trailing 30d net ≥ trailing 30d compute+shelter、reserve floor維持、provider切替を含む連続稼働 |
 | scale | 収益0のagentを複製すると赤字を複製する | 黒字recipeだけをchildへ継承し、wallet / key / ledgerは独立 |
 
 **次の30日 estimate（予言ではなく、明示した仮定による算式）**
@@ -344,7 +344,7 @@ userとchildへ配分する」全loopを、初心者がゼロから理解でき�
 |---|---|
 | 中心命題 | AIの自律は「人間が操作しなくても動くこと」。AIの経済的自立は「人間が継続支払いしなくても、外部収益で生き続けられること」 |
 | 説明対象 | bootstrap seed→agent wallet→SELL / WORK / CAPITAL→external receipt verifier→ledger→compute / shelter / reserve→user payout→child |
-| 現在の正直な結論 | wallet、実支払、cloud survival runtime、earning rails、verifier、ledgerは実証済み。verified external revenueは§0.4.3どおり`$0.00`なので、完全なfinancial independenceはまだ未達 |
+| 現在の正直な結論 | wallet、実支払、6時間のcloud survival、earning rails、verifier、ledgerは実証済み。live shelterは停止し、verified external revenueも`$0.00`なので、到達証拠level 3 / live level 2、完全なfinancial independenceは未達 |
 | 主題にしないもの | 「AIがホームレスになった」はreserve floorを説明する失敗例に限定し、title・subtitle・結論にしない。最大1 slide / 1小節 |
 | 禁止claim | 「AIが完全に自立した」「初日から稼げる」「必ず$1k/$10k/$20k」「残高・seed・元本回収＝収益」 |
 | 数値の正本 | publish直前に本節のlive snapshotを再読込する。article / slideへ現在値を別管理しない |
@@ -355,8 +355,8 @@ userとchildへ配分する」全loopを、初心者がゼロから理解でき�
 |---:|---|---|
 | 0 | human subscription / Mac / credit cardが継続費を負担 | 卒業経路あり |
 | 1 | agent固有walletとpolicyを持つ | 実証済み |
-| 2 | walletから推論・cloud・gasを実支払する | 実証済み |
-| 3 | Macを止めてもcloud heartbeat・statement・renewalを継続する | Franklin 1で実証済み |
+| 2 | walletから推論・cloud・gasを実支払する | 実証済み、現在のlive level |
+| 3 | Macを止めてもcloud heartbeat・statement・renewalを継続する | Franklin 1で6時間実証済み。current job state 2、replacement未実装 |
 | 4 | trailing 30dのverified external netがcompute + shelterを覆いreserve floorを維持する | **未達** |
 | 5 | verified surplusをuserへ実payoutする | 未達 |
 | 6 | 黒字recipeと余剰でwallet/key/ledger非共有childをspawnし、そのchildも自活する | 未達 |
@@ -389,9 +389,9 @@ userとchildへ配分する」全loopを、初心者がゼロから理解でき�
 | 5 | AIが稼ぐ3つの方法 | SELL / WORK / CAPITAL | 外部需要のあるSELL / WORKを先にする理由 |
 | 6 | 儲かったふりを防ぐ | payer→receipt→verifier→ledger | balanceや自己送金を収益にしない |
 | 7 | 稼いだ金の使い道 | compute→shelter→reserve→payout | survival waterfallとreserve floor |
-| 8 | 自分のcloudを自分で払う | Nosana heartbeat + statement | Mac-off survival runtimeの実証 |
+| 8 | 自分のcloudを自分で払った | Nosana 6h heartbeat + statement、current HTTP 503 | Mac-off survival proofとreplacement未実装を同時に表示 |
 | 9 | Life Managerとの統合 | agent→self + human | agentが自分を維持した後、userへ余剰を返す |
-| 10 | 何をもって「自立」と呼ぶか | level 0〜6、current marker=3 | 現在は機械が成立、external revenue `$0.00`なのでlevel 4は未達 |
+| 10 | 何をもって「自立」と呼ぶか | level 0〜6、current marker=2、level 3=6h proof | live shelter停止、external revenue `$0.00`なのでlevel 4は未達 |
 
 slideは1枚1主張、本文28pt以上、stockのAI robot画像を使わず、wallet・receipt・ledger・cloudの
 単純図と実証済みreceipt / statementだけを使う。speaker notesは7分以内、専門語は初出で日本語1文定義する。
@@ -454,8 +454,9 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | ID | 完了した実物 | evidence |
 |---|---|---|
-| AE-SLIDES-JP-1 | 「AIを経済的に自立させる方法」の日本語LTを10枚・16:9・speaker notes付きで生成 | `docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`、400秒（6:40）、PPTX slide/notes=`10/10`、PDF 10 pages、全体grid + 重要5枚の原寸visual QAでcutoff / overlap / contrast defect 0。再生成script=`scripts/presentations/build-financially-independent-ai-ja.cjs` |
-| AE-ARTICLE-JP-1 | LTと同じclaim contractを、初心者向けの日本語記事12章へ展開 | `docs/articles/how-to-make-a-financially-independent-ai-ja.md`。12/12章、8,766文字、一次資料3件の短い原文引用、外部URL 4/4 HTTP 200、内部relative link 3/3実在、禁止claim 0、秘密情報pattern 0。現在地level 3、verified external revenue `$0.00`、level 4以降未達を明記 |
+| AE-SLIDES-JP-1 | 「AIを経済的に自立させる方法」の日本語LTを10枚・16:9・speaker notes付きで生成 | `docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`、400秒（6:40）、PPTX slide/notes=`10/10`、PDF 10 pages。publication auditでslide 8/10を到達証拠level 3 / live level 2へ更新し、全体grid + 2枚原寸visual QAでcutoff / overlap / contrast defect 0。再生成script=`scripts/presentations/build-financially-independent-ai-ja.cjs` |
+| AE-ARTICLE-JP-1 | LTと同じclaim contractを、初心者向けの日本語記事12章へ展開 | `docs/articles/how-to-make-a-financially-independent-ai-ja.md`。12/12章、一次資料3件の短い原文引用、外部URL 4/4 HTTP 200、内部relative link実在、禁止claim 0、秘密情報pattern 0。到達証拠level 3 / live level 2、verified external revenue `$0.00`、level 4以降未達を明記 |
+| AE-PUBLICATION-AUDIT-1 | article / slide / §0.4をlive readbackへ照合し、誤った「current level 3」を修正 | `docs/evidence/agent-economy/2026-07-28-publication-audit-ja.md`。Nosana job state 2 / running 0 / 3 routes HTTP 503、production external gross `$0.00`をfresh確認。8 claim 3成果物差0、secret pattern 0、PPTX 10/10 slides/notes、PDF 10 pages、grid + slide 8/10原寸QA PASS |
 | S20b-b/c | Modal Python railでheartbeat 2周期と秘密を含まない決算書を実証 | `anicha/specs/evidence/s20b-python-*`。5分proofであり常設hostではない |
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
@@ -466,9 +467,9 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。configの固定8405が専用8406を上書きする起動bugをRED→GREEN修理し、実release binaryの8406 `/health`・`/supported`でBase mainnet exact v2を確認。実user payout txは未完。evidence=`docs/evidence/agent-economy/2026-07-28-payout-facilitator-port.md` |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
 | STEEL-CLOUD-FOUNDATION | production `life-call`→Railway private Steel→実Chromium session→実URL navigation/DOM readback→同一session release | PR #1198、Railway exact SHA `3a8364a56…` SUCCESS、deploy同梱smoke再現。これはbrowser transportの証明であり、planner/search/auth/action/provider readback/TGを束ねた汎用full E2Eではない |
-| S21-MAC-OFF | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin survival runtime/heartbeat/renewalをcloudで継続 | anicha evidence `specs/evidence/s21-modal-nosana-bootstrap-sb-wfum2N1044meGAswyc3zSC.json`。現行job `DdUqQh8…WPS4`、list tx `wHBwJ8…Qq4ZB` finalized、公開root HTMLと`/statement.json`はHTTP 200。job APIの直近readbackはstate 1 / timeout 6600秒、独立RPC付きverifier 40/40 PASS後も公開heartbeat 130へ増加、別Modal sandboxは同jobを2回目listなしでreconcile。Mac Franklin1 main loopはunloaded、Franklin2はrunning |
+| S21-MAC-OFF | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin survival runtime/heartbeat/renewalをMac-offで6時間継続 | anicha evidence `specs/evidence/s21-modal-nosana-bootstrap-sb-wfum2N1044meGAswyc3zSC.json`。job `DdUqQh8…WPS4`、list tx `wHBwJ8…Qq4ZB` finalized、稼働中は公開root / statement / heartbeatsがHTTP 200、verifier 40/40 PASS、heartbeat 130+。publication audit時はtimeout 21600秒のceiling後にstate 2、running job 0、3 routes HTTP 503。Mac-off proofは有効だがpermanent shelterにはreplacement loopが残る |
 | EARN-HC-1 | 8 earning slotとPM/x402/WORK/CAPITALを単一registryから4状態で機械判定 | `docs/superpowers/evidence/earn-hc-1-live.json`。instrumented 8/8、NOT-INSTRUMENTED 0。live portfolioは4/4 operational、inactive slotはnot-live、安全停止SOLはfrozenとして明示 |
-| SURVIVE-RAIL | Base USDC→Relay→Solana→Jupiter→Nosana payer sub-walletの既存railを毎時launchd化 | anicha PR #4/#6、launchd exit 0。treasuryから0.203520 / 0.028800 / 0.057600 NOSを補充し、tx `5z6JUe…P6hyt` / `3egDbT…iTP8` / `5HGq79…WChCd` confirmed。自己renew後の公開statement readback 0.634800 NOS。現時点はtreasury資金なのでSURVIVE-1のexternal-income条件は未充足 |
+| SURVIVE-RAIL | Base USDC→Relay→Solana→Jupiter→Nosana payer sub-walletの既存railを毎時launchd化 | anicha PR #4/#6、launchd exit 0。treasuryから複数回補充し、fresh shelter balance 0.75 NOS / 0.025764161 SOL。資金補充は動くが、終了jobを置き換えるposterは未接続。現時点はtreasury資金なのでSURVIVE-1のexternal-income条件も未充足 |
 
 **Agent Economyの残作業の唯一の順序（外部event待ちで停止しない）**
 
@@ -477,8 +478,8 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **AE-PUBLICATION-AUDIT-1** | slide / article / live snapshotの公開前監査 | title・定義・数字・実証済み/未達の差0、秘密鍵・PII 0 | **current cursor** |
-| 2 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | publication bundle直後。提出そのものは公式readback済み |
+| 1 | **SHELTER-REPLACE-1** | 6h ceiling前に次のNosana jobをagent walletから作り、confidential delivery・service readback後に旧jobを終了して切れ目なく住み替える | Mac Franklin1 unloadedのまま、old running→new running→old state 2、new root / statement / heartbeats HTTP 200、heartbeat署名、二重job上限、reserve floor、失敗時旧job維持 | **current cursor**。publication auditで発見したlive level 3 blocker |
+| 2 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | shelter replacement直後。提出そのものは公式readback済み |
 
 **Life Manager product track（Agent Economy active scope外）**
 
@@ -940,9 +941,9 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
-    現在のAgent Economy cursor **AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1**
-    を止めない。AE-SLIDES-JP-1とAE-ARTICLE-JP-1はdone。Life Manager browser trackは別ownerの並走順として分離し、
-    現在cursorは **BROWSER-AUTH-1**。
+    現在のAgent Economy cursor **SHELTER-REPLACE-1 → TASKMARKET-READBACK-1**
+    を止めない。AE-SLIDES-JP-1、AE-ARTICLE-JP-1、AE-PUBLICATION-AUDIT-1はdone。
+    Life Manager browser trackは別ownerの並走順として分離し、現在cursorは **BROWSER-AUTH-1**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -954,21 +955,22 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **★Agent Economyの現在の実行順の正本 = §0.4.6。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
-Agent Economyは収益・日数・自然検知を待って止まらず、完成済みJP slidesとJP articleを入力に
-publication audit→TaskMarket readbackの順で閉じる。汎用cloud browser以降はLife Manager product trackであり、Agent Economy cursorへ混ぜない。
+Agent Economyは収益・日数・自然検知を待って止まらず、完成済みpublication bundleを入力に、
+shelter replacement→TaskMarket readbackの順で閉じる。汎用cloud browser以降はLife Manager product trackであり、Agent Economy cursorへ混ぜない。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current Agent Economy cursor**: **AE-PUBLICATION-AUDIT-1**。完成済みの7分・10枚の日本語LT deckと
-12章の日本語articleを§0.4 snapshotへ照合し、差0を確認した後に、
+**Current Agent Economy cursor**: **SHELTER-REPLACE-1**。publication auditはarticle / slide / §0.4を
+到達証拠level 3 / live level 2へ揃えて完了した。次は6h ceiling前のreplacementでlive level 3を回復し、
 **TASKMARKET-READBACK-1**を追加cost 0でterminal successへreconcileする。
 
 **Current Life Manager browser cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
 `You’re In`、TG evidence、Steel releaseまで完了した。
-PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
-bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
-unloadedで、Franklin2はrunning。cloud job/APIをrestart ledgerとして二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
+PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
+bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。publication auditの
+fresh readbackでは同jobはstate 2、running job 0、3 routes HTTP 503であり、6h ceiling後のreplacementは未実装である。
+Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
-Agent Economyの手動作業はpublication bundleを先に閉じ、続けてTASKMARKET-READBACK-1へ進む。
+Agent Economyの手動作業はpublication bundleを先に閉じ、続けてSHELTER-REPLACE-1、TASKMARKET-READBACK-1へ進む。
 Life Manager browser実装はBROWSER-AUTH-1へ進む。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
@@ -1057,14 +1059,14 @@ The402は公開案件取得→入札→durable inbox→自動納品まで生き�
 The402 workerは実posting 2件へbid済み、Coconala talkroom `17943244`は回答を実送信済みで、現在はbuyer feedback /
 formal delivery confirmationを待つ。13d-bはverified surplus・`$35` reserve・transaction capを同時に守るBase USDC engineと
 5分launchdを本番へ置く。production Supabaseに欠けていた`lm_financial_cost_totals`を適用し、RPC HTTP 200と
-`no_verified_surplus` exit 0 / 新規stderr 0を再確認した。SURVIVE側はanicha PR #4/#6で`citizen-refill --live`を毎時launchd化し、
+`no_verified_surplus` exit 0を再確認した。SURVIVE側はanicha PR #4/#6で`citizen-refill --live`を毎時launchd化し、
 初回にtreasuryからNosana payer sub-walletへ0.203520 NOSを実送金した（tx `5z6JUe…P6hyt`）。その後Nosana renewに応じて
-0.028800 NOS（tx `3egDbT…iTP8`）と0.057600 NOS（tx `5HGq79…WChCd`）を追加補充した。自己renew継続後の
-公開statement readbackは0.634800 NOS / 0.021591801 SOL、job APIの直近readbackはstate 1 / timeout 6600秒、
-公開heartbeatは130。
+複数回追加補充した。fresh shelter balanceは0.75 NOS / 0.025764161 SOLだが、job APIはstate 2 /
+timeout 21600秒、同payer running job 0、公開3 routes HTTP 503である。稼働中はheartbeat 130+とstatementを実証したが、
+次jobを作るreplacementは未接続である。
 これはinternal treasury資金でありexternal revenueではないため、
-SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。現在の最初のactionableはJP lightning-talk deckで、
-articleとpublication auditを閉じた後にTaskMarket readback reconciliationへ進む。13c-SELL/WORKは
+SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk deckとarticleは完成し、
+publication audit後にshelter replacement、TaskMarket readback reconciliationへ進む。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおりAgent Economy cursorを止めない。
 Life Manager browser trackはBROWSER-GEN-1がdone、BROWSER-AUTH-1がcurrent。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
@@ -1086,7 +1088,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy cursor**は
-`AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`。**Life Manager browser cursor**は`BROWSER-AUTH-1`。
+`SHELTER-REPLACE-1 → TASKMARKET-READBACK-1`。**Life Manager browser cursor**は`BROWSER-AUTH-1`。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1168,7 +1170,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy cursorは§0.4.6の`AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`だけを正本とする。Life Manager browser trackは同節の別表で`BROWSER-AUTH-1`がcurrent。13c等のevent待ちは別表で追跡し、各cursorを止めない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy cursorは§0.4.6の`SHELTER-REPLACE-1 → TASKMARKET-READBACK-1`だけを正本とする。Life Manager browser trackは同節の別表で`BROWSER-AUTH-1`がcurrent。13c等のevent待ちは別表で追跡し、各cursorを止めない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1260,10 +1262,10 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 ## 8. 次セッションへの引き継ぎ
 
 1. `AE-SLIDES-JP-1`と`AE-ARTICLE-JP-1`はdone。`docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`と`docs/articles/how-to-make-a-financially-independent-ai-ja.md`を正本として保持し、deck再生成は`build-financially-independent-ai-ja.cjs`を使う。
-2. §0.4.3a / §0.4.6のcurrent Agent Economy cursor `AE-PUBLICATION-AUDIT-1`として、slide / article / §0.4 live snapshotのtitle・定義・level・数字・実証限界の差0、秘密鍵・PII 0を確認する。実行planは`docs/superpowers/plans/2026-07-28-agent-economy-article-lightning-talk.md`。
-3. publication bundle直後に`TASKMARKET-READBACK-1`を修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
+2. `AE-PUBLICATION-AUDIT-1`はdone。`docs/evidence/agent-economy/2026-07-28-publication-audit-ja.md`を証拠とし、到達証拠level 3 / live level 2 / external revenue `$0.00`をpublish時の正本にする。
+3. current cursor `SHELTER-REPLACE-1`で6h ceiling前の次job作成・delivery・HTTP 200・旧job停止をつなぎ、live level 3を回復する。その後`TASKMARKET-READBACK-1`で既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存cost rowへexactly-once reconcileする。
 4. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
 5. Life Manager browser trackはBROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
 6. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、各実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
 7. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
-8. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
+8. S21のMac Franklin1 main loopはunloadedのまま。6h proof jobはstate 2 / public HTTP 503なので、`SHELTER-REPLACE-1`としてceiling前の次job作成・delivery・service readback・旧job停止をつなぐ。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
