@@ -16,6 +16,17 @@ const DELIVERY = {
   description: "RSS enclosure MIME fix",
 };
 
+const MARKETING_DELIVERY = {
+  application_id: "7e636f57-4d5a-4f54-b6d2-31ba1a86c5bd",
+  gig_id: "1eea7af1-3089-443c-9975-74212c53683f",
+  amount_usd: 0.25,
+  payment_currency: "sol",
+  merchant_wallet_address: "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+  category: "marketing",
+  proof_urls: ["https://pairux.com/@moshcoding"],
+  description: "Subscribed to the requested PairUX channel",
+};
+
 test("pending applications are observed without reading invoices or creating one", async () => {
   const result = await observeUgigDeliveries({
     deliveries: [DELIVERY],
@@ -109,6 +120,45 @@ test("an existing invoice is exactly-once and paid status is surfaced", async ()
   assert.deepEqual(result.invoices, ["invoice-paid"]);
 });
 
+test("accepted non-code delivery invoices without querying GitHub", async () => {
+  const creates = [];
+  const result = await observeUgigDeliveries({
+    deliveries: [MARKETING_DELIVERY],
+    applications: [{
+      id: MARKETING_DELIVERY.application_id,
+      gig_id: MARKETING_DELIVERY.gig_id,
+      status: "accepted",
+    }],
+    listInvoices: async () => [],
+    isPullRequestMerged: async () => {
+      throw new Error("non-code work has no GitHub merge gate");
+    },
+    createInvoice: async (gigId, payload) => {
+      creates.push({ gigId, payload });
+      return { id: "invoice-marketing", status: "sent" };
+    },
+  });
+
+  assert.equal(result.invoice_created, 1);
+  assert.deepEqual(creates, [{
+    gigId: MARKETING_DELIVERY.gig_id,
+    payload: {
+      application_id: MARKETING_DELIVERY.application_id,
+      amount: 0.25,
+      currency: "USD",
+      payment_currency: "sol",
+      merchant_wallet_address: MARKETING_DELIVERY.merchant_wallet_address,
+      notes: "Subscribed to the requested PairUX channel\nProof: https://pairux.com/@moshcoding",
+      category: "marketing",
+      items: [{
+        description: MARKETING_DELIVERY.description,
+        quantity: 1,
+        unit_price: 0.25,
+      }],
+    },
+  }]);
+});
+
 test("malformed delivery configuration fails closed", async () => {
   await assert.rejects(() => observeUgigDeliveries({
     deliveries: [{ ...DELIVERY, amount_usd: 0 }],
@@ -119,3 +169,12 @@ test("malformed delivery configuration fails closed", async () => {
   }), /amount_usd/);
 });
 
+test("non-code delivery without a public proof URL fails closed", async () => {
+  await assert.rejects(() => observeUgigDeliveries({
+    deliveries: [{ ...MARKETING_DELIVERY, proof_urls: [] }],
+    applications: [],
+    listInvoices: async () => [],
+    isPullRequestMerged: async () => true,
+    createInvoice: async () => ({}),
+  }), /proof_urls/);
+});
