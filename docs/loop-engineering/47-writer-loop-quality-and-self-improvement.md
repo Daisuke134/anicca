@@ -2378,7 +2378,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | # | 状態 | いま完了する作業 | done 条件 |
 |---:|---|---|---|
 | 1 | DONE (`d752be2`) | Revenue / attribution contract | `product_id / run_id / artifact_id / variant_id / click_id`からimpression、engaged read、CTA click、activation、paidへjoinでき、reward hierarchyとunknown規則がschema/test/specで一致。7 contract tests + Writer全article suite 315 passed |
-| 2 | TODO | Product landing CTA | WriterのCTAが計測可能な自社product landing URLを指し、run/artifact/variant attributionを失わない。Substackはdistributionであり最終conversion SSOTにしない |
+| 2 | DONE (`1cde1a4`) | Product landing CTA | WriterのCTAは自社landing URLだけをconversion SSOTとし、product/run/artifact/variant/clickの5キー必須、run/artifact一致、artifact別click一意をpublication init前にfail-closed。Substack/note/GitHubはdistribution扱い。4 contract tests + Writer全article suite 319 passed |
 | 3 | TODO | Judge calibration | judge順位と同じartifactの実reward順位を比較し、`scorable / unknown / insufficient`件数を分離。missing exposure/conversionを0またはlossへ変換しない |
 | 4 | TODO | Title learning slice | title専用opponent/reward/weight。calibrated reward→blame→1変更→held-out非悪化を通す |
 | 5 | TODO | Article-body learning slice | article-body専用opponent/reward/weight。title結果を本文へ流用せず、engaged readと下流conversionでheld-out非悪化を通す |
@@ -2407,7 +2407,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | AC | done 条件 |
 |---|---|
-| AC22-1 Money attribution | run/artifact/variantからclick→activation→paidを一意join。別product、別variant、window外eventの混入0 |
+| AC22-1 Money attribution | 自社product landing CTAがproduct/run/artifact/variant/clickを保持し、run/artifact一致とclick一意をpublication前に検証。click→activation→paidを一意joinし、別product、別variant、window外eventの混入0 |
 | AC22-2 Reward semantics | paid→activation→qualified click→engaged read→impressionの順序を保持。missing/unknownを0、loss、cleanへ変換しない |
 | AC22-3 Judge calibration | scorable / unknown / insufficientを分離し、scorableだけでjudge順位と実reward順位を比較 |
 | AC22-4 Slice isolation | title / article-body / long-formが別opponent・reward・weightを持ち、cross-slice更新0 |
@@ -2438,7 +2438,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 | # | To-Be | Test name / 実測 | Cover |
 |---:|---|---|---|
-| 1 | attribution join | `test_paid_event_joins_exact_product_run_artifact_variant_click` | PASS (`d752be2`) |
+| 1 | attribution join | `test_paid_event_joins_exact_product_run_artifact_variant_click` + `test_bare_owned_url_fails_but_attributed_product_landing_passes` + publication-boundary run/artifact/click tests | PASS (`d752be2`, `1cde1a4`) |
 | 2 | attribution isolation | `test_cross_product_or_variant_events_are_rejected` + `test_event_after_attribution_window_is_rejected` | PASS (`d752be2`) |
 | 3 | unknown reward | `test_window_status_preserves_open_as_unknown_until_closed` + `test_lineage_without_cta_click_is_insufficient` | PASS (`d752be2`) |
 | 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` | TODO |
