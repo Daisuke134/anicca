@@ -2045,6 +2045,20 @@ ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなる
 
 focused verificationはpublication/resume 88件、Dev.to 11件、Substack retry 2件、既存Substack 13件がPASS。11:40の公開窓前再検証でもX Post/schedule 28件、Zenn 3件、Zenn crash-resume、self-improve 12件がPASSし、実launchd resumeは`eligible_pairs=[] / WAIT / exit 0`で終了した。stateは5/8 live。残りは新規故障ではなく、`zenn-article/ja`のrolling window、`x-post/ja`の12:00 JST slot、`x-article/en`のJA公開+6時間（12:57:17 JST）という既存time gateだけである。
 
+### 21.49 `daily-2026-07-28` X Postを当日slotへexact1公開（実測 12:08）
+
+12:00 JST直後のauthoritative plannerが`eligible_pairs=["x-post/ja"]`を返したため、既存LaunchAgent `ai.anicca.article-resume`をkickstartした。公開主体は常設loopであり、別executorや手動投稿は使っていない。
+
+| 証拠 | 実測値 |
+|---|---|
+| Immutable artifact | SHA-256=`81122cbf7d432755cc3836f315f0fe197d6898c34f5c26e588b6599da419cc69`、destination identity=`diceai0`、stable target=`daily-2026-07-28` |
+| Public receipt | status ID=`2081938919709651441`、[公開URL](https://x.com/diceai0/status/2081938919709651441)、remote `published_at=2026-07-28T03:04:53.000Z` |
+| Authenticated readback | account timeline上のstatus ID・本文・identity・emoji・assetが全PASS。Xがimmutable linkの前へaria-hidden `http://`を描画するため、そのpresentation decorationだけを除くとartifact本文とexact一致 |
+| Response-loss fence | effect開始は`2026-07-28T03:04:53.353849Z`。pre-effect status IDs、assigned JST日、effect境界、status IDを同一journalへ固定し、`target-known`へ遷移 |
+| Duplicate guard | 初回reconcileの伝播中`ambiguous`では再投稿せず、authenticated timeline readbackから同一statusを回復。独立reconcile=`skip-live`、current-run ledger row=exact1、`reality_gate=PASS` |
+
+これにより`daily-2026-07-28`は6/8 live。残りは`x-article/en`の12:57:17 JST以降と、FIFO/rolling-window管理下の`zenn-article/ja`だけである。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2274,7 +2288,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
 | 2 | **DONE** — devto/en の frontmatter 欠落 | immutable init 前に canonical EN の title/tags frontmatter を強制し、凍結済みrunは本文完全一致wrapperからmetadataだけを救済。Writer `65f139e` / `85b83ba` | run `daily-2026-07-27` の固定ID `4243074` をlaunchd loopが同一IDのまま公開。authenticated API/匿名HTMLでidentity・本文hash・headline/body media PASS、ledger live行exact1。[公開URL](https://dev.to/anicca_301094325e/if-you-want-ai-agents-to-run-unattended-design-how-they-stop-first-1n3m) |
 | 3 | **DONE** — x-article ja/en の identity 不一致 | 固定editorのtitleをimmutable sourceへbindし、公開済み本文一致+media readback失敗だけをsame-ID repairへ変換。Xのcover適用によるtab差し替え後も同じedit URLだけを再取得する。Writer `37c20ce` / `11b824a` / `ab296f8` | JAは固定edit ID `2081491516254830592`→public ID `2081673442827608169`、ENは固定edit ID `2081491643371520000`→public ID `2081766277635543268` のままlive。両言語ともidentity・本文・cover/body media PASS、ledger live exact2。[JA](https://x.com/diceai0/article/2081673442827608169) / [EN](https://x.com/diceai0/article/2081766277635543268)。remote `published_at` はJA `09:29:59Z`、EN `15:38:52Z` で差368分53秒（許可360–370分内） |
-| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させる | stale quarantineとZenn asset欠落は修正済み。新runのDev.to/Substack停止も§21.48で同一ID復旧し、`daily-2026-07-28`は5/8 live。残りはtime gateだけ | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry。`daily-2026-07-28`はZenn delegated、X Post 12:00 JST以降、X Article EN 12:57:17 JST以降に既存launchd workerが同一targetを公開する。両run exact8、public readback PASS、重複0でDONE |
+| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させる | stale quarantineとZenn asset欠落は修正済み。新runのDev.to/Substack停止も§21.48で同一ID復旧し、X Postは§21.49で当日slot exact1を公開。`daily-2026-07-28`は6/8 live。残りはtime gateだけ | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry。`daily-2026-07-28`はZenn delegated、X Article ENを12:57:17 JST以降に既存launchd workerが同一targetで公開する。両run exact8、public readback PASS、重複0でDONE |
 | 5 | **DONE** — `cta-gate.sh` を prompt とpublication initに配線 | 公開修復後、扉の再消失を防ぐ。prompt指示だけでなく、全publisher/workerが共有するimmutable package境界でfail-closed。Writer feature `dfb36d9`、live `027c258` | JA/EN/X Postの各1面だけCTAを欠く3 fixtureはすべてstate作成前FAIL、3面すべて正しいCTAなら各`gates/cta-*.json=PASS`後にinit成功。publication/resume関連137 tests PASS、live branchで同じcontract再実行PASS |
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
