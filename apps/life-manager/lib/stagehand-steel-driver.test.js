@@ -91,11 +91,15 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
     modelName: "google/gemini-2.5-flash",
     apiKey: "gemini-key",
   });
-  assert.deepEqual(calls.find(([name]) => name === "agent")[1], {
+  const agents = calls.filter(([name]) => name === "agent").map(([, value]) => value);
+  assert.deepEqual(agents, [{
+    model: "google/gemini-2.5-flash",
+    executionModel: "google/gemini-2.5-flash",
+  }, {
     mode: "cua",
     model: "google/gemini-2.5-computer-use-preview-10-2025",
     systemPrompt: "Operate the remote cloud browser carefully. Use only truthful supplied identity data, never invent personal data, and stop at login, CAPTCHA, 2FA, KYC, or payment.",
-  });
+  }]);
   assert.match(calls.find(([name]) => name === "goto")[1], /^https:\/\/www\.google\.com\/$/);
   const tasks = calls.filter(([name]) => name === "execute").map(([, task]) => task);
   assert.equal(tasks.length, 2, "discovery/selection and the one action are separate phases");
