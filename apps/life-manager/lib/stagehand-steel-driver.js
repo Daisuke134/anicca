@@ -148,7 +148,16 @@ function makeStagehandSteelDriver(options = {}) {
       }
       const createOptions = { blockAds: true };
       if (context !== undefined) createOptions.sessionContext = context;
-      const session = privateSession(await steelClient.createRawSession(createOptions));
+      const created = await steelClient.createRawSession(createOptions);
+      let session;
+      try {
+        session = privateSession(created);
+      } catch (error) {
+        if (created && created.id) {
+          try { await steelClient.releaseSession(String(created.id)); } catch { /* preserve validation */ }
+        }
+        throw error;
+      }
       if (auth) authSessions.set(String(session.id), auth);
       return session;
     },
@@ -295,7 +304,7 @@ function makeStagehandSteelDriver(options = {}) {
       const open = sessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
       const extracted = await open.stagehand.extract(
-        "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
+        "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, payment, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
         receiptSchema,
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
@@ -313,9 +322,11 @@ function makeStagehandSteelDriver(options = {}) {
           ? "2fa"
           : /\bkyc\b|identity verification/i.test(handoffText)
             ? "kyc"
-            : /\b(?:login|log in|sign in)\b/i.test(handoffText)
-              ? "login"
-              : null;
+            : /\b(?:payment|purchase|checkout|credit card|card details|billing)\b|支払|決済|購入/i.test(handoffText)
+              ? "payment"
+              : /\b(?:login|log in|sign in)\b/i.test(handoffText)
+                ? "login"
+                : null;
       return {
         confirmed: (extracted.confirmed === true || explicitSuccess) &&
           !negated &&
@@ -355,9 +366,6 @@ function makeStagehandSteelDriver(options = {}) {
         const handoffReason = String(
           providerReceipt.handoff_reason || providerReceipt.handoffReason || "",
         ).toLowerCase();
-        const handoffRequired = providerReceipt.handoff_required === true ||
-          providerReceipt.handoffRequired === true ||
-          handoffReason.length > 0;
         try {
           if (handoffReason === "login") {
             authContextInvalidated = await invalidateBrowserAuthSession({
@@ -365,7 +373,7 @@ function makeStagehandSteelDriver(options = {}) {
               origin: auth.origin,
               principalKind: auth.principalKind,
             }) === true;
-          } else if (!handoffRequired) {
+          } else {
             const context = await steelClient.getSessionContext(id);
             const saved = await upsertBrowserAuthSession({
               uid: auth.uid,

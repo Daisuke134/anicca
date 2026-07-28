@@ -59,7 +59,11 @@ function fixture(fixtureOptions = {}) {
     async createRawSession(createOptions) {
       calls.push(["create", createOptions]);
       const id = `steel-${calls.filter(([name]) => name === "create").length}`;
-      return { id, websocketUrl: "ws://steel-browser.railway.internal:8080/" };
+      return {
+        id,
+        websocketUrl: fixtureOptions.websocketUrl ||
+          "ws://steel-browser.railway.internal:8080/",
+      };
     },
     async getSessionContext(id) {
       calls.push(["getContext", id]);
@@ -288,6 +292,23 @@ test("login, challenge, CAPTCHA, 2FA, or KYC readback requires handoff", async (
   assert.equal(receipt.handoffReason, "challenge");
 });
 
+test("provider payment requirements are classified as an honest payment handoff", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "Payment required",
+      confirmationId: null,
+      providerText: "Enter credit card details to continue",
+    },
+  });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, { goal: "Find and register", locale: "en" });
+  const receipt = await driver.readProviderReceipt(session);
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "payment");
+});
+
 test("provider-authored You're In is confirmed even when email verification is only for managing it", async () => {
   const { driver } = fixture({
     receipt: {
@@ -369,6 +390,17 @@ test("a discovery goal without an explicit URL never performs an auth lookup", a
 
   assert.deepEqual(authCalls, []);
   assert.deepEqual(calls.find(([name]) => name === "create")[1], { blockAds: true });
+});
+
+test("an invalid post-create CDP endpoint releases the exact opened Steel session", async () => {
+  const { driver, calls } = fixture({ websocketUrl: "ws://public-steel.example/ws" });
+
+  await assert.rejects(() => driver.openSession(), /Railway-private Steel/i);
+
+  assert.deepEqual(calls, [
+    ["create", { blockAds: true }],
+    ["release", "steel-1"],
+  ]);
 });
 
 test("release exports context before Steel release, saves exact identity, and returns secret-free metadata", async () => {
@@ -456,6 +488,48 @@ test("a provider login handoff invalidates only the exact row and still releases
   assert.equal(release.auth_context_invalidated, true);
   assert.equal(release.auth_context_saved, false);
   assert.doesNotMatch(JSON.stringify(release), /stale-cookie-secret/);
+});
+
+test("a non-login handoff exports and saves context without invalidating the row", async () => {
+  const restored = {
+    cookies: [{ name: "sid", value: "restored-challenge-secret", domain: "auth.example", path: "/" }],
+  };
+  const exported = {
+    sessionStorage: { "https://auth.example": { marker: "challenge-session-secret" } },
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: restored } },
+    exportContext: exported,
+    savedRecord: { context_sha256: "b".repeat(64), key_version: 1 },
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.example/account",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: true, handoff_reason: "challenge" },
+  });
+
+  assert.deepEqual(authCalls[1], ["upsert", {
+    uid: "u-one",
+    origin: "https://auth.example",
+    principalKind: "user_provided",
+    context: exported,
+  }]);
+  assert.equal(authCalls.some(([name]) => name === "invalidate"), false);
+  assert.ok(
+    calls.findIndex(([name]) => name === "getContext") <
+      calls.findIndex(([name]) => name === "release"),
+  );
+  assert.equal(release.auth_context_saved, true);
+  assert.equal(release.auth_context_invalidated, false);
+  assert.doesNotMatch(
+    JSON.stringify(release),
+    /restored-challenge-secret|challenge-session-secret/,
+  );
 });
 
 test("context save failure preserves the prior row and Steel release remains unconditional", async () => {
