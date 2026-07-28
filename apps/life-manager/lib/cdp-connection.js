@@ -30,9 +30,44 @@ const NAVIGATION_STARTED = new Set([
   "Page.frameNavigated",
 ]);
 
+function publicHttpsTargetUrl(value) {
+  let parsed;
+  try {
+    parsed = new URL(String(value || ""));
+  } catch {
+    throw new Error("CDP target URL must be a public HTTPS URL");
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  const octets = hostname.split(".").map(Number);
+  const privateIpv4 = octets.length === 4 && octets.every(Number.isInteger) && (
+    octets[0] === 10
+    || octets[0] === 127
+    || (octets[0] === 169 && octets[1] === 254)
+    || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+    || (octets[0] === 192 && octets[1] === 168)
+  );
+  if (
+    parsed.protocol !== "https:"
+    || !hostname
+    || parsed.username
+    || parsed.password
+    || hostname === "localhost"
+    || hostname === "::1"
+    || hostname.endsWith(".local")
+    || hostname.endsWith(".internal")
+    || privateIpv4
+  ) {
+    throw new Error("CDP target URL must be a public HTTPS URL");
+  }
+  return parsed.href;
+}
+
 function connectCdp(websocketUrl, options = {}) {
   const WebSocketImpl = options.WebSocket || require("ws");
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS;
+  const explicitTargetUrl = options.targetUrl == null
+    ? null
+    : publicHttpsTargetUrl(options.targetUrl);
   const parsedWebsocketUrl = new URL(websocketUrl);
   // Steel's root websocket is an HTTP proxy to Chrome's localhost CDP socket. Chrome rejects a
   // forwarded `Host: steel-browser.railway.internal` as DNS rebinding (HTTP 500), even though the
@@ -145,7 +180,22 @@ function connectCdp(websocketUrl, options = {}) {
     if (cdpSessionId) return cdpSessionId;
     await ready;
     const { targetInfos } = await send("Target.getTargets");
-    let target = (targetInfos || []).find((info) => info.type === "page");
+    let target;
+    if (explicitTargetUrl) {
+      const matches = (targetInfos || []).filter((info) => {
+        if (!info || info.type !== "page") return false;
+        try {
+          return publicHttpsTargetUrl(info.url) === explicitTargetUrl;
+        } catch {
+          return false;
+        }
+      });
+      if (matches.length === 0) throw new Error("explicit CDP provider target unavailable");
+      if (matches.length > 1) throw new Error("explicit CDP provider target ambiguous");
+      [target] = matches;
+    } else {
+      target = (targetInfos || []).find((info) => info.type === "page");
+    }
     if (!target) target = await send("Target.createTarget", { url: "about:blank" });
     const attached = await send("Target.attachToTarget", { targetId: target.targetId, flatten: true });
     cdpSessionId = attached.sessionId;
@@ -180,6 +230,34 @@ function connectCdp(websocketUrl, options = {}) {
           throw new Error(`page evaluate failed: ${(detail.exception && detail.exception.description) || detail.text || "unknown"}`);
         }
         return result && result.result ? result.result.value : undefined;
+      },
+      async clickAt(point) {
+        const x = Number(point && point.x);
+        const y = Number(point && point.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) {
+          throw new Error("trusted pointer coordinates unavailable");
+        }
+        await send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x,
+          y,
+        }, cdpSessionId);
+        await send("Input.dispatchMouseEvent", {
+          type: "mousePressed",
+          x,
+          y,
+          button: "left",
+          buttons: 1,
+          clickCount: 1,
+        }, cdpSessionId);
+        await send("Input.dispatchMouseEvent", {
+          type: "mouseReleased",
+          x,
+          y,
+          button: "left",
+          buttons: 0,
+          clickCount: 1,
+        }, cdpSessionId);
       },
       async close() {
         closed = true;
