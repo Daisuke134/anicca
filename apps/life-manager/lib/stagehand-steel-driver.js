@@ -226,7 +226,7 @@ function makeStagehandSteelDriver(options = {}) {
             ["Fill the required email field with %agentEmail%.", { variables: { agentEmail } }],
             ["Fill the required company or organization field with %agentCompany%.", { variables: { agentCompany: agentName } }],
             ["Fill the required role or job title field with %agentRole%.", { variables: { agentRole: "AI agent" } }],
-            ["For the required attendee-description field, choose the truthful option closest to an AI agent; prefer Other when available."],
+            ["In the required dropdown labeled 'Which best describes you?', select 'AI Researcher'."],
             ["In the required consent dropdown directly above the Register button, select the option meaning No / I do not consent. Fail if no decline option exists."],
             ["Submit this free registration now and remain on the provider result page."],
           ];
