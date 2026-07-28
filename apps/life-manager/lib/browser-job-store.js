@@ -13,8 +13,10 @@ const TRACE_STAGES = new Set([
   "discovery",
   "selected",
   "action_started",
+  "action_observed",
   "provider_readback",
   "telegram_sent",
+  "evidence_sent",
   "steel_released",
 ]);
 
@@ -24,33 +26,19 @@ function nonEmpty(value, label, max = 1000) {
   return text;
 }
 
-function credentials(opts = {}) {
-  const supaUrl = String(opts.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/, "");
-  const supaKey = opts.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const fetchImpl = opts.fetchImpl || globalThis.fetch;
-  if (!supaUrl || !supaKey || typeof fetchImpl !== "function") {
-    throw new Error("browser job store unavailable");
-  }
-  return { supaUrl, supaKey, fetchImpl };
-}
+let defaultPool;
 
-function headers(key, extra = {}) {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-    ...extra,
-  };
-}
-
-async function rows(response, label) {
-  if (!response || !response.ok) {
-    const status = response ? response.status : "no response";
-    throw new Error(`${label} failed (${status})`);
+function database(opts = {}) {
+  if (typeof opts.query === "function") return { query: opts.query };
+  const connectionString = String(
+    opts.connectionString || process.env.LM_FEEDBACK_DATABASE_URL || "",
+  ).trim();
+  if (!connectionString) throw new Error("browser job store unavailable");
+  if (!defaultPool) {
+    const Pool = opts.Pool || require("pg").Pool;
+    defaultPool = new Pool({ connectionString, max: 4 });
   }
-  const body = await response.json();
-  if (!Array.isArray(body)) throw new Error(`${label} returned non-array body`);
-  return body;
+  return { query: defaultPool.query.bind(defaultPool) };
 }
 
 function buildBrowserJob(input) {
@@ -80,37 +68,46 @@ function buildBrowserJob(input) {
 
 async function enqueueBrowserJob(input, opts = {}) {
   const job = buildBrowserJob(input);
-  const { supaUrl, supaKey, fetchImpl } = credentials(opts);
-  const inserted = await rows(await fetchImpl(`${supaUrl}/rest/v1/lm_browser_jobs`, {
-    method: "POST",
-    headers: headers(supaKey, {
-      Prefer: "resolution=ignore-duplicates,return=representation",
-    }),
-    body: JSON.stringify(job),
-  }), "browser job enqueue");
+  const { query } = database(opts);
+  const inserted = (await query(`
+    INSERT INTO public.lm_browser_jobs (
+      uid, telegram_chat_id, telegram_message_id, telegram_update_id,
+      prompt_hash, goal, locale, action_kind, requires_login, status
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    ON CONFLICT (uid, telegram_chat_id, telegram_message_id) DO NOTHING
+    RETURNING *
+  `, [
+    job.uid,
+    job.telegram_chat_id,
+    job.telegram_message_id,
+    job.telegram_update_id,
+    job.prompt_hash,
+    job.goal,
+    job.locale,
+    job.action_kind,
+    job.requires_login,
+    job.status,
+  ])).rows;
   if (inserted.length === 1) return { created: true, job: inserted[0] };
   if (inserted.length > 1) throw new Error("browser job enqueue returned multiple rows");
 
-  const query = `uid=eq.${encodeURIComponent(job.uid)}` +
-    `&telegram_chat_id=eq.${encodeURIComponent(job.telegram_chat_id)}` +
-    `&telegram_message_id=eq.${encodeURIComponent(job.telegram_message_id)}` +
-    "&select=*&limit=1";
-  const existing = await rows(await fetchImpl(`${supaUrl}/rest/v1/lm_browser_jobs?${query}`, {
-    headers: headers(supaKey),
-  }), "browser job duplicate read");
+  const existing = (await query(`
+    SELECT * FROM public.lm_browser_jobs
+    WHERE uid = $1 AND telegram_chat_id = $2 AND telegram_message_id = $3
+    LIMIT 1
+  `, [job.uid, job.telegram_chat_id, job.telegram_message_id])).rows;
   if (existing.length !== 1) throw new Error("browser job duplicate was not readable");
   return { created: false, job: existing[0] };
 }
 
 async function claimBrowserJob(opts = {}) {
-  const { supaUrl, supaKey, fetchImpl } = credentials(opts);
+  const { query } = database(opts);
   const leaseSeconds = Number.isInteger(opts.leaseSeconds) ? opts.leaseSeconds : 180;
   if (leaseSeconds < 30 || leaseSeconds > 900) throw new Error("browser job lease invalid");
-  const claimed = await rows(await fetchImpl(`${supaUrl}/rest/v1/rpc/claim_lm_browser_job`, {
-    method: "POST",
-    headers: headers(supaKey),
-    body: JSON.stringify({ p_lease_seconds: leaseSeconds }),
-  }), "browser job claim");
+  const claimed = (await query(
+    "SELECT * FROM public.claim_lm_browser_job($1)",
+    [leaseSeconds],
+  )).rows;
   if (claimed.length > 1) throw new Error("browser job claim returned multiple rows");
   return claimed[0] || null;
 }
@@ -120,12 +117,11 @@ async function appendBrowserTrace(jobId, stage, meta, opts = {}) {
   if (!TRACE_STAGES.has(stage)) throw new Error("browser trace stage invalid");
   const bounded = meta && typeof meta === "object" && !Array.isArray(meta) ? meta : {};
   if (Buffer.byteLength(JSON.stringify(bounded)) > 8192) throw new Error("browser trace metadata too large");
-  const { supaUrl, supaKey, fetchImpl } = credentials(opts);
-  const updated = await rows(await fetchImpl(`${supaUrl}/rest/v1/rpc/append_lm_browser_job_trace`, {
-    method: "POST",
-    headers: headers(supaKey),
-    body: JSON.stringify({ p_job_id: id, p_stage: stage, p_meta: bounded }),
-  }), "browser trace append");
+  const { query } = database(opts);
+  const updated = (await query(
+    "SELECT * FROM public.append_lm_browser_job_trace($1, $2, $3::jsonb)",
+    [id, stage, JSON.stringify(bounded)],
+  )).rows;
   if (updated.length !== 1) throw new Error("browser trace append lost job");
   return true;
 }
@@ -138,22 +134,22 @@ async function finishBrowserJob(jobId, terminal, opts = {}) {
     throw new Error("browser Telegram message id invalid");
   }
   const receipt = {
+    session_id: terminal.session_id || null,
     selected_url: terminal.selected_url || null,
+    selected_origin: terminal.selected_origin || null,
+    selection_reason: terminal.selection_reason || null,
+    action: terminal.action || null,
     provider_receipt: terminal.provider_receipt || null,
+    evidence_message_id: terminal.evidence_message_id || null,
+    evidence_sha256: terminal.evidence_sha256 || null,
     steel_released: terminal.steel_released === true,
   };
   if (Buffer.byteLength(JSON.stringify(receipt)) > 16_384) throw new Error("browser receipt too large");
-  const { supaUrl, supaKey, fetchImpl } = credentials(opts);
-  const updated = await rows(await fetchImpl(`${supaUrl}/rest/v1/rpc/finish_lm_browser_job`, {
-    method: "POST",
-    headers: headers(supaKey),
-    body: JSON.stringify({
-      p_job_id: id,
-      p_status: terminal.status,
-      p_receipt: receipt,
-      p_telegram_message_id: messageId,
-    }),
-  }), "browser job finish");
+  const { query } = database(opts);
+  const updated = (await query(
+    "SELECT * FROM public.finish_lm_browser_job($1, $2, $3::jsonb, $4)",
+    [id, terminal.status, JSON.stringify(receipt), messageId],
+  )).rows;
   if (updated.length !== 1) throw new Error("browser job finish lost claim");
   return true;
 }
@@ -165,4 +161,3 @@ module.exports = {
   appendBrowserTrace,
   finishBrowserJob,
 };
-

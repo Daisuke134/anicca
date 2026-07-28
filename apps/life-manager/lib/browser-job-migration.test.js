@@ -12,10 +12,11 @@ const SQL = fs.readFileSync(path.join(
 
 test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt or credential", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
-  assert.match(SQL, /uid text NOT NULL REFERENCES public\.lm_users\(uid\) ON DELETE CASCADE/i);
+  assert.match(SQL, /uid text NOT NULL/i);
   assert.match(SQL, /prompt_hash text NOT NULL/i);
   assert.match(SQL, /UNIQUE \(uid, telegram_chat_id, telegram_message_id\)/i);
   assert.doesNotMatch(SQL, /\braw_prompt\b|\bpassword\b|\bcookie\b|\bauth_token\b/i);
+  assert.doesNotMatch(SQL, /REFERENCES public\.lm_users/i, "the private Railway queue does not duplicate the Supabase user registry");
 });
 
 test("BROWSER-GEN-1 has closed terminal states and bounded trace/receipt JSON", () => {
@@ -32,14 +33,12 @@ test("claim is concurrency safe and only stale incomplete work can be reclaimed"
   assert.match(SQL, /SET status = 'claimed'/i);
 });
 
-test("trace and finish mutations are narrow security-definer RPCs restricted to service_role", () => {
+test("trace and finish mutations are narrow functions inside the private Railway database", () => {
   for (const fn of ["claim_lm_browser_job", "append_lm_browser_job_trace", "finish_lm_browser_job"]) {
     assert.match(SQL, new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}`, "i"));
-    assert.match(SQL, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}[\\s\\S]*FROM PUBLIC, anon, authenticated`, "i"));
-    assert.match(SQL, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}[\\s\\S]*TO service_role`, "i"));
   }
-  assert.match(SQL, /SECURITY DEFINER\s+SET search_path = public, pg_temp/i);
-  assert.match(SQL, /ALTER TABLE public\.lm_browser_jobs ENABLE ROW LEVEL SECURITY/i);
-  assert.match(SQL, /REVOKE ALL ON TABLE public\.lm_browser_jobs\s+FROM PUBLIC, anon, authenticated/i);
+  assert.match(SQL, /SET search_path = public, pg_temp/i);
+  assert.match(SQL, /'action_observed'/i);
+  assert.match(SQL, /'evidence_sent'/i);
+  assert.doesNotMatch(SQL, /\bTO service_role\b|\bFROM PUBLIC, anon\b/i);
 });
-

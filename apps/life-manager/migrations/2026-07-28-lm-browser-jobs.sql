@@ -1,10 +1,11 @@
--- BROWSER-GEN-1: durable, tenant-bound cloud browser queue and bounded receipts.
+-- BROWSER-GEN-1: durable, tenant-bound cloud browser queue in Railway-private Postgres.
 -- The raw Telegram prompt and all credentials are intentionally absent. The queue stores a hash
--- for provenance plus the classifier's bounded, execution-safe goal.
+-- for provenance plus the classifier's bounded, execution-safe goal. The authenticated tenant
+-- binding is established against Supabase before enqueue; this private queue stores only that uid.
 
 CREATE TABLE IF NOT EXISTS public.lm_browser_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  uid text NOT NULL REFERENCES public.lm_users(uid) ON DELETE CASCADE,
+  uid text NOT NULL,
   telegram_chat_id text NOT NULL CHECK (char_length(telegram_chat_id) BETWEEN 1 AND 100),
   telegram_message_id text NOT NULL CHECK (char_length(telegram_message_id) BETWEEN 1 AND 100),
   telegram_update_id text NOT NULL CHECK (char_length(telegram_update_id) BETWEEN 1 AND 100),
@@ -52,45 +53,10 @@ CREATE INDEX IF NOT EXISTS lm_browser_jobs_claim_idx
 CREATE INDEX IF NOT EXISTS lm_browser_jobs_tenant_recent_idx
   ON public.lm_browser_jobs (uid, created_at DESC);
 
-ALTER TABLE public.lm_browser_jobs ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'lm_browser_jobs'
-      AND policyname = 'lm_browser_jobs_service_select'
-  ) THEN
-    CREATE POLICY lm_browser_jobs_service_select
-      ON public.lm_browser_jobs FOR SELECT TO service_role USING (true);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'lm_browser_jobs'
-      AND policyname = 'lm_browser_jobs_service_insert'
-  ) THEN
-    CREATE POLICY lm_browser_jobs_service_insert
-      ON public.lm_browser_jobs FOR INSERT TO service_role WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'lm_browser_jobs'
-      AND policyname = 'lm_browser_jobs_service_update'
-  ) THEN
-    CREATE POLICY lm_browser_jobs_service_update
-      ON public.lm_browser_jobs FOR UPDATE TO service_role USING (true) WITH CHECK (true);
-  END IF;
-END
-$$;
-
-REVOKE ALL ON TABLE public.lm_browser_jobs FROM PUBLIC, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE ON TABLE public.lm_browser_jobs TO service_role;
-
 CREATE OR REPLACE FUNCTION public.claim_lm_browser_job(
   p_lease_seconds integer DEFAULT 180
 ) RETURNS SETOF public.lm_browser_jobs
 LANGUAGE plpgsql
-SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
@@ -123,24 +89,19 @@ BEGIN
 END
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_lm_browser_job(integer)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_lm_browser_job(integer)
-  TO service_role;
-
 CREATE OR REPLACE FUNCTION public.append_lm_browser_job_trace(
   p_job_id uuid,
   p_stage text,
   p_meta jsonb DEFAULT '{}'::jsonb
 ) RETURNS SETOF public.lm_browser_jobs
 LANGUAGE plpgsql
-SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF p_stage NOT IN (
     'claimed', 'discovery', 'selected', 'action_started',
-    'provider_readback', 'telegram_sent', 'steel_released'
+    'action_observed', 'provider_readback', 'telegram_sent',
+    'evidence_sent', 'steel_released'
   ) THEN
     RAISE EXCEPTION 'invalid browser trace stage';
   END IF;
@@ -163,11 +124,6 @@ BEGIN
 END
 $$;
 
-REVOKE ALL ON FUNCTION public.append_lm_browser_job_trace(uuid, text, jsonb)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.append_lm_browser_job_trace(uuid, text, jsonb)
-  TO service_role;
-
 CREATE OR REPLACE FUNCTION public.finish_lm_browser_job(
   p_job_id uuid,
   p_status text,
@@ -175,7 +131,6 @@ CREATE OR REPLACE FUNCTION public.finish_lm_browser_job(
   p_telegram_message_id bigint DEFAULT NULL
 ) RETURNS SETOF public.lm_browser_jobs
 LANGUAGE plpgsql
-SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
@@ -198,8 +153,3 @@ BEGIN
   RETURNING *;
 END
 $$;
-
-REVOKE ALL ON FUNCTION public.finish_lm_browser_job(uuid, text, jsonb, bigint)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.finish_lm_browser_job(uuid, text, jsonb, bigint)
-  TO service_role;
