@@ -230,7 +230,7 @@ async function ledger(uid, opts) {
   if (wallet) {
     const financial = await readRows("lm_agent_earnings", {
       wallet_address: `eq.${wallet}`,
-      select: "entry_key,kind,amount_minor,currency,occurred_at,tx_hash,source,meta",
+      select: "entry_key,kind,amount_minor,amount_atomic,amount_decimals,currency,occurred_at,tx_hash,source,meta",
       order: "occurred_at.desc,entry_key.desc",
     }, opts);
     financialEntries = financial.rows;

@@ -87,6 +87,39 @@ test("uid is mandatory and no broad tenant lookup is attempted", async () => {
   assert.deepEqual(events, []);
 });
 
+test("a fractional-cent USDC surplus settles and records without rounding", async () => {
+  const { deps } = harness({
+    rows: [{
+      entry_key: "taskmarket:award",
+      wallet_address: WALLET,
+      kind: "financial_external_income",
+      amount_minor: null,
+      amount_atomic: "2312500",
+      amount_decimals: 6,
+      currency: "USD",
+      occurred_at: "2026-07-27T10:00:00.000Z",
+    }],
+    readBalance: async () => "38000000",
+  });
+  let recorded = null;
+  deps.recordTransfer = async (entry) => {
+    recorded = entry;
+    return { ok: true, duplicate: false, entry };
+  };
+
+  const result = await runPayout({
+    uid: "u1",
+    walletAddress: WALLET,
+    nowMs: NOW,
+  }, deps);
+
+  assert.equal(result.amountAtomic, "2312500");
+  assert.equal(recorded.amount_minor, undefined);
+  assert.equal(recorded.amount_atomic, "2312500");
+  assert.equal(recorded.amount_decimals, 6);
+  assert.match(payoutReceiptText("2312500", TX), /\$2\.3125/);
+});
+
 test("production tenant lookup is one UID-scoped row with only the payout fields", async () => {
   const calls = [];
   const tenant = {
@@ -328,10 +361,12 @@ test("payout identity is stable across row order and changes when economic evide
   assert.match(first, /^tenant-[0-9a-f]{64}$/);
 });
 
-test("receipt copy accepts exact cents only and never displays a rounded transfer", () => {
+test("receipt copy displays exact USDC atomic amounts without rounding", () => {
   assert.equal(
     payoutReceiptText("7000000", TX),
     `💸 $7.00を登録済みのwalletに送金しました。tx: basescan.org/tx/${TX}\n着金まで数分かかることがあります。`,
   );
-  assert.throws(() => payoutReceiptText("7000001", TX), /cent/i);
+  assert.match(payoutReceiptText("7000001", TX), /\$7\.000001/);
+  assert.throws(() => payoutReceiptText("0", TX), /positive/i);
+  assert.throws(() => payoutReceiptText("7.1", TX), /atomic/i);
 });

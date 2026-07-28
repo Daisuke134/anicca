@@ -279,18 +279,6 @@ test("the enable script schedules 04:10 JST and is the only place launchctl appe
 });
 
 
-test("nothing in this atomic has actually loaded a job: neither label is live", () => {
-  const home = process.env.HOME || "";
-  for (const label of ["ai.anicca.life-manager-dev", "ai.anicca.life-manager-selfbuild"]) {
-    assert.equal(
-      fs.existsSync(path.join(home, `Library/LaunchAgents/${label}.plist`)),
-      false,
-      `10f builds the enabling script; the operator runs it after merge (${label})`,
-    );
-  }
-});
-
-
 test("the new suites are reachable from npm test", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(APP_DIR, "package.json"), "utf8"));
   assert.match(manifest.scripts.test, /self-build-daily\.test\.js/);

@@ -1,6 +1,6 @@
 "use strict";
 
-const { EXCLUDED_KINDS, normaliseEntry } = require("./earnings-ledger.js");
+const { EXCLUDED_KINDS, normaliseEntry, usdMicrosForEntry } = require("./earnings-ledger.js");
 const { computePayout } = require("./payout-policy.js");
 
 const MICROS_PER_MINOR = 10_000n;
@@ -131,6 +131,7 @@ function nonNegativeAtomic(value) {
 function railName(source) {
   if (source === "x402_sale") return "SELL";
   if (source === "x402_work") return "WORK";
+  if (source === "taskmarket_work") return "WORK";
   if (source === "polymarket") return "CAPITAL";
   return "UNCLASSIFIED";
 }
@@ -153,7 +154,7 @@ function aggregateEarnings(rows, { walletAddress, startMs, endMs }) {
       excluded += 1;
       continue;
     }
-    const amount = BigInt(row.amount_minor) * MICROS_PER_MINOR;
+    const amount = usdMicrosForEntry(row);
     const rail = railName(row.source);
     const item = rails.get(rail) || emptyMoney();
     if (row.kind === "financial_external_income") {
