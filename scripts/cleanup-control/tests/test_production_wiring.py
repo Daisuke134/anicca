@@ -48,4 +48,12 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "path": str(Path.home() / ".openclaw/state/playwright.lease"),
         "max_age_seconds": 300,
     }
+    assert by_id["claude-vm-bundle"]["path"] == str(
+        Path.home() / "Library/Application Support/Claude/vm_bundles/claudevm.bundle"
+    )
+    assert by_id["claude-vm-bundle"]["class"] == "regenerable_output"
+    assert by_id["claude-vm-bundle"]["finalizer"] == {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "/Applications/Claude.app/Contents/Resources/app.asar",
+    }
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)

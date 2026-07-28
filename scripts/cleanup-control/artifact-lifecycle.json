@@ -98,6 +98,19 @@
       }
     },
     {
+      "id": "claude-vm-bundle",
+      "path": "$HOME/Library/Application Support/Claude/vm_bundles/claudevm.bundle",
+      "owner": "claude-desktop",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "/Applications/Claude.app/Contents/Resources/app.asar"
+      }
+    },
+    {
       "id": "reelclaw-assets",
       "path": "$HOME/.openclaw/workspace/reelclaw-assets",
       "owner": "reelclaw",
