@@ -43,6 +43,8 @@ test("pending applications are observed without reading invoices or creating one
     invoiced: 0,
     invoice_created: 0,
     paid: 0,
+    revenue_recorded: 0,
+    revenue_duplicates: 0,
     rejected: 0,
     invoices: [],
   });
@@ -101,6 +103,7 @@ test("accepted merged work creates one exact capped invoice", async () => {
 
 test("an existing invoice is exactly-once and paid status is surfaced", async () => {
   let creates = 0;
+  const settlements = [];
   const result = await observeUgigDeliveries({
     deliveries: [DELIVERY],
     applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "accepted" }],
@@ -111,13 +114,77 @@ test("an existing invoice is exactly-once and paid status is surfaced", async ()
     }],
     isPullRequestMerged: async () => { throw new Error("existing invoice needs no PR query"); },
     createInvoice: async () => { creates += 1; },
+    processPaidInvoice: async (delivery, invoice, application) => {
+      settlements.push({ delivery, invoice, application });
+      return { ok: true, duplicate: false };
+    },
   });
 
   assert.equal(result.invoiced, 1);
   assert.equal(result.paid, 1);
+  assert.equal(result.revenue_recorded, 1);
+  assert.equal(result.revenue_duplicates, 0);
   assert.equal(result.invoice_created, 0);
   assert.equal(creates, 0);
+  assert.equal(settlements.length, 1);
+  assert.equal(settlements[0].delivery.application_id, DELIVERY.application_id);
   assert.deepEqual(result.invoices, ["invoice-paid"]);
+});
+
+test("a completed application still processes its paid invoice and never creates another", async () => {
+  let creates = 0;
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "completed" }],
+    listInvoices: async () => [{
+      id: "invoice-completed",
+      application_id: DELIVERY.application_id,
+      status: "paid",
+    }],
+    isPullRequestMerged: async () => { throw new Error("completed work needs no PR query"); },
+    createInvoice: async () => { creates += 1; },
+    processPaidInvoice: async () => ({ ok: true, duplicate: true }),
+  });
+
+  assert.equal(result.invoiced, 1);
+  assert.equal(result.paid, 1);
+  assert.equal(result.revenue_recorded, 0);
+  assert.equal(result.revenue_duplicates, 1);
+  assert.equal(creates, 0);
+});
+
+test("a paid invoice cannot be surfaced without an independent settlement processor", async () => {
+  await assert.rejects(() => observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "completed" }],
+    listInvoices: async () => [{
+      id: "invoice-unverified",
+      application_id: DELIVERY.application_id,
+      status: "paid",
+    }],
+    isPullRequestMerged: async () => true,
+    createInvoice: async () => ({}),
+  }), /settlement processor/i);
+});
+
+test("a completed application without a paid invoice fails closed without creating one", async () => {
+  let creates = 0;
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "completed" }],
+    listInvoices: async () => [{
+      id: "invoice-not-paid",
+      application_id: DELIVERY.application_id,
+      status: "sent",
+    }],
+    isPullRequestMerged: async () => true,
+    createInvoice: async () => { creates += 1; },
+    processPaidInvoice: async () => { throw new Error("must not process unpaid invoice"); },
+  });
+
+  assert.equal(result.rejected, 1);
+  assert.equal(result.paid, 0);
+  assert.equal(creates, 0);
 });
 
 test("accepted non-code delivery invoices without querying GitHub", async () => {

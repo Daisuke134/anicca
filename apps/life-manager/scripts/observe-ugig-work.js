@@ -4,6 +4,7 @@
 const { readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 const { observeUgigDeliveries } = require("../lib/ugig-invoice-observer.js");
+const { processUgigPaidInvoice } = require("../lib/ugig-solana-settlement.js");
 
 const MAX_RESPONSE_BYTES = 1_000_000;
 
@@ -31,6 +32,21 @@ async function fetchJson(fetchImpl, url, init = {}) {
   }
 }
 
+async function solanaRpcCall(fetchImpl, rpcUrl, method, params) {
+  const body = await fetchJson(fetchImpl, rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  if (body?.error) {
+    throw new Error(`Solana RPC ${method} failed (${body.error.code || "unknown"})`);
+  }
+  if (!Object.prototype.hasOwnProperty.call(body || {}, "result")) {
+    throw new Error(`Solana RPC ${method} returned no result`);
+  }
+  return body.result;
+}
+
 function githubPullApiUrl(link) {
   const parsed = new URL(link);
   const parts = parsed.pathname.split("/").filter(Boolean);
@@ -45,6 +61,8 @@ async function main(deps = {}) {
   const fetchImpl = deps.fetchImpl || globalThis.fetch;
   const apiBase = (deps.apiBase || process.env.UGIG_API_BASE || "https://ugig.net").replace(/\/$/, "");
   const apiKey = deps.apiKey || process.env.UGIG_API_KEY;
+  const solanaRpcUrl = deps.solanaRpcUrl || process.env.UGIG_SOLANA_RPC_URL ||
+    process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
   const deliveries = deps.deliveries || JSON.parse(readFileSync(
     resolve(deps.configPath || process.env.UGIG_DELIVERIES_CONFIG ||
       resolve(__dirname, "ugig-deliveries.json")),
@@ -65,7 +83,7 @@ async function main(deps = {}) {
     deliveries,
     applications,
     listInvoices: async (gigId) => {
-      const body = await fetchJson(fetchImpl, `${apiBase}/api/gigs/${gigId}/invoices`, { headers });
+      const body = await fetchJson(fetchImpl, `${apiBase}/api/gigs/${gigId}/invoice`, { headers });
       return unwrapList(body, ["invoices"]);
     },
     isPullRequestMerged: async (link) => {
@@ -87,6 +105,14 @@ async function main(deps = {}) {
         body: JSON.stringify(payload),
       },
     ),
+    processPaidInvoice: (delivery, invoice) => processUgigPaidInvoice(delivery, invoice, {
+      rpcCall: (method, params) => solanaRpcCall(fetchImpl, solanaRpcUrl, method, params),
+      recordEntry: deps.recordEntry,
+      supaUrl: deps.supaUrl,
+      supaKey: deps.supaKey,
+      fetchImpl,
+      ownedWalletAddresses: deliveries.map((item) => item.merchant_wallet_address),
+    }),
   });
 
   const output = { observed_at: now().toISOString(), ...result };
@@ -101,4 +127,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, fetchJson, githubPullApiUrl };
+module.exports = { main, fetchJson, githubPullApiUrl, solanaRpcCall };
