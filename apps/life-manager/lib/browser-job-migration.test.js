@@ -49,6 +49,15 @@ test("trace and finish mutations are narrow functions inside the private Railway
   assert.doesNotMatch(SQL, /\bTO service_role\b|\bFROM PUBLIC, anon\b/i);
 });
 
+test("trace RPC allowlist contains exactly the three auth lifecycle stages", () => {
+  const authStages = [...SQL.matchAll(/'auth_context_[a-z_]+'/g)].map(([stage]) => stage);
+  assert.deepEqual(authStages, [
+    "'auth_context_loaded'",
+    "'auth_context_saved'",
+    "'auth_context_invalidated'",
+  ]);
+});
+
 test("principal kind forward migration upgrades legacy browser jobs without changing historical login ownership", () => {
   assert.match(UPGRADE_SQL, /ALTER TABLE public\.lm_browser_jobs\s+ADD COLUMN IF NOT EXISTS principal_kind text/i);
   assert.match(UPGRADE_SQL, /WHEN requires_login THEN 'agent_owned'\s+ELSE 'none'/i);

@@ -105,7 +105,9 @@ AS $$
 BEGIN
   IF p_stage NOT IN (
     'claimed', 'discovery', 'selected', 'action_started',
-    'action_observed', 'provider_readback', 'telegram_sent',
+    'action_observed', 'provider_readback',
+    'auth_context_loaded', 'auth_context_saved', 'auth_context_invalidated',
+    'telegram_sent',
     'evidence_sent', 'steel_released'
   ) THEN
     RAISE EXCEPTION 'invalid browser trace stage';

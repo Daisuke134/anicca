@@ -142,3 +142,40 @@ test("trace append and terminal finish go through narrow RPCs", async () => {
   assert.equal(calls[1].params[3], 99);
   assert.match(calls[1].params[2], /evidence_sha256/);
 });
+
+test("trace append accepts exactly the three bounded auth lifecycle stages", async () => {
+  const calls = [];
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    return { rows: [{ ok: true }] };
+  };
+  for (const [stage, meta] of [
+    ["auth_context_loaded", {
+      origin: "https://auth.example",
+      principal_kind: "user_provided",
+      loaded: true,
+    }],
+    ["auth_context_saved", {
+      origin: "https://auth.example",
+      principal_kind: "user_provided",
+      saved: false,
+    }],
+    ["auth_context_invalidated", {
+      origin: "https://auth.example",
+      principal_kind: "user_provided",
+      invalidated: true,
+    }],
+  ]) {
+    await appendBrowserTrace("job-1", stage, meta, { query });
+  }
+
+  assert.deepEqual(calls.map((call) => call.params[1]), [
+    "auth_context_loaded",
+    "auth_context_saved",
+    "auth_context_invalidated",
+  ]);
+  await assert.rejects(
+    appendBrowserTrace("job-1", "auth_context_exported", {}, { query }),
+    /browser trace stage invalid/i,
+  );
+});
