@@ -128,6 +128,13 @@ function cookieAppliesToHostname(cookie, hostname) {
   );
 }
 
+function cookieIsExpired(cookie, nowMs = Date.now()) {
+  return typeof cookie.expires === "number"
+    && Number.isFinite(cookie.expires)
+    && cookie.expires > 0
+    && cookie.expires * 1000 <= nowMs;
+}
+
 function scopeStorage(storage, origin) {
   if (!storage || typeof storage !== "object" || Array.isArray(storage)
     || Object.getPrototypeOf(storage) !== Object.prototype && Object.getPrototypeOf(storage) !== null) {
@@ -146,7 +153,9 @@ function scopeSessionContextToOrigin(value, originValue) {
   const scoped = {};
   if (Object.prototype.hasOwnProperty.call(context, "cookies")) {
     if (!Array.isArray(context.cookies)) invalid();
-    scoped.cookies = context.cookies.filter((cookie) => cookieAppliesToHostname(cookie, hostname));
+    scoped.cookies = context.cookies.filter((cookie) => (
+      cookieAppliesToHostname(cookie, hostname) && !cookieIsExpired(cookie)
+    ));
   }
   for (const key of ["localStorage", "sessionStorage", "indexedDB"]) {
     if (Object.prototype.hasOwnProperty.call(context, key)) {
