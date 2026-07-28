@@ -384,7 +384,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / external event only** — discovery・acquisition・seller・bid・delivery・verifier・ledgerはlive。The402 bid 2件、Coconalaはbuyer feedback待ち、外部実着金 `$0.00` |
+| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / first external work submitted / award gate open** — discovery・acquisition・seller・bid・delivery・verifier・ledgerはlive。The402 bid 2件、Coconalaはbuyer feedback待ち。さらにDaydreams TaskMarketのescrow済み2.5 USDC実jobへ専用wallet/agentで成果物を提出。submission `aadbef70-…`、Base tx `0x87b511…` receipt status 1、remote artifact hash一致。競争bountyのwinner未選定なので外部実着金はまだ`$0.00`。evidence=`docs/evidence/agent-economy/2026-07-28-taskmarket-spider-submission.md` |
 | 2 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **external-economic-state待ち** — cost RPC復旧済み、engine exit 0、verified surplus 0 |
 | 3 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | **external-economic-state待ち** — 毎時refill railとNosana renewはlive。treasury→shelter実txは済んだがexternal収益由来ではないためdoneにしない |
 | 4 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
@@ -852,6 +852,11 @@ x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
 この発見可能性と確認用支払いは売上ではないため、外部収益は引き続き`$0.00`である。
+さらにDaydreams TaskMarketのescrow済み2.5 USDC実jobを発見し、専用Base wallet
+`0xd7Db94062AFec8a86F70250B931C77619acf8937`から検証済み`index.html`をlive提出した。
+submission=`aadbef70-3e8f-4fff-a918-1ff2d907a7db`、Base tx=`0x87b511ab9f6e2a1da867e657836715fe977b050b176c8c8606312fb1c8762e93`
+はreceipt status 1、marketplaceのremote SHA-256はlocalと一致した。ただし競争bountyのwinner未選定・USDC未着金なので、
+これはacquisition→deliveryの実証であって収益ではない。13cの外部収益は`$0.00`のまま保つ。
 
 **REPORT-1の現在状態（自動並走）**:
 共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
