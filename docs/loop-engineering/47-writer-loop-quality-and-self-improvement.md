@@ -80,7 +80,7 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。履歴は §18.8 と §21.2 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.6**。公開面の完全性を待たず、money attributionとbounded learningを先に完成し、そのcontractを共有 Marketing Loop の最初の channel packへ移す。
+旧導入順は完了または廃止。履歴は §18.8、§21.2、§22.6 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.11**。公開面の完全性を待たず、完成したWriter contractを共有 Marketing Loopへ順番に移す。
 
 §16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.6 だけを更新する。
 
@@ -2371,9 +2371,9 @@ runnerが未完runの最初の非PASS stepだけ再開
 
 dashboard はこの event/ledger を読む read-only projection とする。dashboard 独自 state、独自 metric、独自判断を持たせない。
 
-### 22.6 残 TODO（唯一の現行正本、money-first）
+### 22.6 Writer実装完了台帳（履歴）
 
-以下は**いま実装・検証・pushして閉じる作業**。自然run、実engagement、7日conversion、platform公開窓は前提条件にしない。実データが無い分岐はfixtureで機械を検証し、productionでは`pending/insufficient`として変更0を保証する。
+以下は完了済みWriter実装の証拠台帳。残TODOと現在順序は§22.11だけを正本とする。自然run、実engagement、7日conversion、platform公開窓は前提条件にしない。実データが無い分岐はfixtureで機械を検証し、productionでは`pending/insufficient`として変更0を保証する。
 
 | # | 状態 | いま完了する作業 | done 条件 |
 |---:|---|---|---|
@@ -2456,6 +2456,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 14 | Telegram outbox | `test_self_improve_notification_is_run_bound_and_idempotent` + missing-score insufficient fixture + 実`messageId=4263` | PASS (`c489b40`) |
 | 15 | launchd chain | 実kickstart runs=3、score receipt再利用、measure→learn→verify→durable notify | PASS (installed `00830d4`) |
 | 16 | push integrity | `git diff --check`、focused/full suite 343 passed、HEAD/upstream、対象tracked diff | PASS（本spec最終commit） |
+| 17 | shared engine extraction | `test_shared_engine_contract.py` clean-user child process、path traversal拒否、schema、engine import isolation + Writer全suite | PASS（feature `f588202`、installed `e286345`、contract 4 / Writer 343 passed） |
 
 | Item | Value |
 |---|---|
@@ -2476,19 +2477,19 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 ### 22.11 Execution Steps
 
-| Phase | 実行 | verify |
-|---:|---|---|
-| 1 | §22.6 #1–3: revenue/attribution、product CTA、judge calibration | attribution isolation、scorable/unknown/insufficient contract |
-| 2 | §22.6 #4–6: title、article-body、long-form slice | slice別opponent/reward/weight、held-out非悪化 |
-| 3 | §22.6 #7–8: contradiction gate、bounded learning | critical conflict変更0、keep/revert、次run hash |
-| 4 | §22.6 #9: self-heal 5 fixture | 同一run resume、duplicate 0、安全gate緩和0 |
-| 5 | §22.6 #10–11: launchd/Telegram/E2E fixture | 実kickstart、messageId、no-data対照はinsufficient/変更0 |
-| 6 | §22.6 #12: spec/code/test push verification | commit/push、HEAD/upstream一致、対象tracked diff 0 |
-| 7 | §22.3へ共有engine contractを移設 | clean user fixture、product/channel/slice scope隔離 |
-| 8 | `products/life-manager` を接続 | product-scoped offer/CTA/reward/opponent/weights |
-| 9 | video fixture→Honne→Larry→ReelClaw→Watercolor | 同一engine schema、独立channel craft/reward |
-| 10 | 自然観測を継続 | 3 run、実engagement、7日paid、Zenn/X timingは監視backlogから自動terminal化 |
-| 11 | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
+| Phase | 状態 | 実行 | verify |
+|---:|---|---|---|
+| 1 | DONE | §22.6 #1–3: revenue/attribution、product CTA、judge calibration | attribution isolation、scorable/unknown/insufficient contract |
+| 2 | DONE | §22.6 #4–6: title、article-body、long-form slice | slice別opponent/reward/weight、held-out非悪化 |
+| 3 | DONE | §22.6 #7–8: contradiction gate、bounded learning | critical conflict変更0、keep/revert、次run hash |
+| 4 | DONE | §22.6 #9: self-heal 5 fixture | 同一run resume、duplicate 0、安全gate緩和0 |
+| 5 | DONE | §22.6 #10–11: launchd/Telegram/E2E fixture | 実kickstart、messageId、no-data対照はinsufficient/変更0 |
+| 6 | DONE | §22.6 #12: spec/code/test push verification | commit/push、HEAD/upstream一致、対象tracked diff 0 |
+| 7 | DONE (`f588202`; installed `e286345`) | §22.3へ共有engine contractを移設。5 JSON schema、manifest registry、canonical bounded learning/controller、writer互換shim | clean-user child process、product/channel/slice scope隔離、cross-product path拒否、旧generic実装0、contract 4件 + Writer 343件PASS |
+| 8 | NEXT | `products/life-manager` を接続 | product-scoped offer/CTA/reward/opponent/weights |
+| 9 | PENDING | video fixture→Honne→Larry→ReelClaw→Watercolor | 同一engine schema、独立channel craft/reward |
+| 10 | PENDING | 自然観測を継続 | 3 run、実engagement、7日paid、Zenn/X timingは監視backlogから自動terminal化 |
+| 11 | PENDING | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
 
 実装時の基本検証コマンド:
 
