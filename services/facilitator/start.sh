@@ -38,13 +38,31 @@ PORT="${PORT:-8405}"
 BIN="$HERE/x402-rs/target/release/x402-facilitator"
 mkdir -p state
 
+case "$PORT" in
+  ''|*[!0-9]*) echo "PORT must be an integer between 1 and 65535" >&2; exit 1 ;;
+esac
+if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+  echo "PORT must be an integer between 1 and 65535" >&2
+  exit 1
+fi
+command -v jq >/dev/null 2>&1 || { echo "jq is required to build the runtime facilitator config" >&2; exit 1; }
+
+# x402-rs reads the bind port from CONFIG when that field is present, so merely
+# exporting PORT does not override the checked-in 8405. Build a per-port runtime
+# copy and leave the canonical chain config unchanged.
+RUNTIME_CONFIG="$HERE/state/config.${GIG_CHAIN}.${PORT}.json"
+RUNTIME_CONFIG_TMP="${RUNTIME_CONFIG}.tmp.$$"
+jq --argjson port "$PORT" '.port = $port' "$CONFIG_FILE" > "$RUNTIME_CONFIG_TMP"
+chmod 600 "$RUNTIME_CONFIG_TMP"
+mv "$RUNTIME_CONFIG_TMP" "$RUNTIME_CONFIG"
+
 if [ ! -x "$BIN" ]; then
   echo "building x402-facilitator (release, chain-eip155+chain-solana)..." >&2
   ( cd "$HERE/x402-rs" && cargo build --package x402-facilitator --features chain-eip155,chain-solana --release --locked )
 fi
 
 if ! curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-  CONFIG="$CONFIG_FILE" PORT="$PORT" RUST_LOG="${RUST_LOG:-info}" \
+  CONFIG="$RUNTIME_CONFIG" PORT="$PORT" RUST_LOG="${RUST_LOG:-info}" \
     nohup "$BIN" > state/facilitator.log 2>&1 &
   for i in $(seq 1 15); do sleep 1; curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 && break; done
 fi
@@ -53,6 +71,6 @@ curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 || { echo "facilitat
 echo "x402-rs facilitator live:"
 echo "  local : http://127.0.0.1:$PORT"
 echo "  chain : $CHAIN_LABEL"
-echo "  config: $CONFIG_FILE"
+echo "  config: $RUNTIME_CONFIG"
 echo "  signer: (see $SECRETS_ENV -> FACILITATOR_ADDRESS)"
 echo "  routes: /  /health  /supported  /verify  /settle"
