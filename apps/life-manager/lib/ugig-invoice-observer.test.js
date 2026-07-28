@@ -1,0 +1,121 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+
+const { observeUgigDeliveries } = require("./ugig-invoice-observer.js");
+
+const DELIVERY = {
+  application_id: "5e315cfd-33fc-433b-a5f0-3cfcdc27a9a4",
+  gig_id: "2b410cad-7cc9-44fd-b2f1-843d9eae6c24",
+  amount_usd: 1,
+  payment_currency: "sol",
+  merchant_wallet_address: "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+  category: "code",
+  pr_links: ["https://github.com/profullstack/aiornot.vote/pull/100"],
+  description: "RSS enclosure MIME fix",
+};
+
+test("pending applications are observed without reading invoices or creating one", async () => {
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "pending" }],
+    listInvoices: async () => { throw new Error("must not list invoices before acceptance"); },
+    isPullRequestMerged: async () => { throw new Error("must not query PR before acceptance"); },
+    createInvoice: async () => { throw new Error("must not create before acceptance"); },
+  });
+
+  assert.deepEqual(result, {
+    deliveries_seen: 1,
+    pending: 1,
+    waiting_for_merge: 0,
+    invoiced: 0,
+    invoice_created: 0,
+    paid: 0,
+    rejected: 0,
+    invoices: [],
+  });
+});
+
+test("accepted code work waits for every pull request to be merged", async () => {
+  let creates = 0;
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "accepted" }],
+    listInvoices: async () => [],
+    isPullRequestMerged: async () => false,
+    createInvoice: async () => { creates += 1; },
+  });
+
+  assert.equal(result.waiting_for_merge, 1);
+  assert.equal(result.invoice_created, 0);
+  assert.equal(creates, 0);
+});
+
+test("accepted merged work creates one exact capped invoice", async () => {
+  const creates = [];
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "accepted" }],
+    listInvoices: async () => [],
+    isPullRequestMerged: async () => true,
+    createInvoice: async (gigId, payload) => {
+      creates.push({ gigId, payload });
+      return { id: "invoice-1", status: "sent" };
+    },
+  });
+
+  assert.equal(result.invoice_created, 1);
+  assert.deepEqual(result.invoices, ["invoice-1"]);
+  assert.deepEqual(creates, [{
+    gigId: DELIVERY.gig_id,
+    payload: {
+      application_id: DELIVERY.application_id,
+      amount: 1,
+      currency: "USD",
+      payment_currency: "sol",
+      merchant_wallet_address: DELIVERY.merchant_wallet_address,
+      notes: DELIVERY.description,
+      category: "code",
+      pr_links: DELIVERY.pr_links,
+      items: [{
+        description: DELIVERY.description,
+        quantity: 1,
+        unit_price: 1,
+        link: DELIVERY.pr_links[0],
+      }],
+    },
+  }]);
+});
+
+test("an existing invoice is exactly-once and paid status is surfaced", async () => {
+  let creates = 0;
+  const result = await observeUgigDeliveries({
+    deliveries: [DELIVERY],
+    applications: [{ id: DELIVERY.application_id, gig_id: DELIVERY.gig_id, status: "accepted" }],
+    listInvoices: async () => [{
+      id: "invoice-paid",
+      application_id: DELIVERY.application_id,
+      status: "paid",
+    }],
+    isPullRequestMerged: async () => { throw new Error("existing invoice needs no PR query"); },
+    createInvoice: async () => { creates += 1; },
+  });
+
+  assert.equal(result.invoiced, 1);
+  assert.equal(result.paid, 1);
+  assert.equal(result.invoice_created, 0);
+  assert.equal(creates, 0);
+  assert.deepEqual(result.invoices, ["invoice-paid"]);
+});
+
+test("malformed delivery configuration fails closed", async () => {
+  await assert.rejects(() => observeUgigDeliveries({
+    deliveries: [{ ...DELIVERY, amount_usd: 0 }],
+    applications: [],
+    listInvoices: async () => [],
+    isPullRequestMerged: async () => true,
+    createInvoice: async () => ({}),
+  }), /amount_usd/);
+});
+
