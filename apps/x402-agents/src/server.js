@@ -9,6 +9,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { prisma } from './lib/prisma.js';
+import { buildOpenApiDocument, buildPaymentRoutes } from './lib/discovery.js';
 import { listSettlementRecords, recordSettlement } from './lib/settlement-records.js';
 
 import buddhistCounselRouter from './routes/buddhistCounsel.js';
@@ -47,6 +48,17 @@ export async function createApp() {
 
   const limiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
   app.use(limiter);
+
+  app.get('/openapi.json', (req, res) => {
+    const configuredOrigin = process.env.PUBLIC_ORIGIN;
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    return res.json(buildOpenApiDocument({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  app.get('/favicon.ico', (req, res) => {
+    res.type('image/svg+xml');
+    return res.send('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#111827"/><path d="M18 45 32 15l14 30h-8l-2.8-7H28.8L26 45Zm13.5-14h1L32 26Z" fill="#f9fafb"/></svg>');
+  });
 
   // Health check with DB verification
   app.get('/health', async (req, res) => {
@@ -105,62 +117,11 @@ export async function createApp() {
       if (isX402Ready) {
         app.use(
           paymentMiddleware(
-            {
-              'POST /context-compressor': {
-                accepts: { scheme: 'exact', price: '$0.008', network, payTo: PAY_TO },
-                description: 'Context compressor for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /emotion-detector': {
-                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
-                description: 'Emotion detection for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /buddhist-counsel': {
-                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
-                description: 'Buddhist counsel for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /focus-coach': {
-                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
-                description: 'Focus coach for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /habit-designer': {
-                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
-                description: 'Habit designer for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /prompt-sanitizer': {
-                accepts: { scheme: 'exact', price: '$0.005', network: 'eip155:8453', payTo: PAY_TO },
-                description: 'Prompt sanitizer for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /decision-clarifier': {
-                accepts: { scheme: 'exact', price: '$0.008', network, payTo: PAY_TO },
-                description: 'Decision clarifier for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'POST /intent-router': {
-                accepts: { scheme: 'exact', price: '$0.005', network, payTo: PAY_TO },
-                description: 'Intent router for AI agents',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-              'GET /funding-rates': {
-                accepts: { scheme: 'exact', price: '$0.01', network, payTo: PAY_TO },
-                description: 'Cross-exchange perpetual funding rates and top arbitrage divergences',
-                mimeType: 'application/json',
-                extensions: { ...declareDiscoveryExtension({ output: { example: {}, schema: { properties: {} } } }) },
-              },
-            },
+            buildPaymentRoutes({
+              payTo: PAY_TO,
+              network,
+              declareDiscoveryExtension,
+            }),
             server,
             undefined,
             undefined,
@@ -177,7 +138,7 @@ export async function createApp() {
   // Fail-closed guard: if x402 not ready, all API routes return 503
   if (!isX402Ready) {
     app.use((req, res, next) => {
-      if (req.path === '/health') return next();
+      if (req.path === '/health' || req.path === '/openapi.json' || req.path === '/favicon.ico') return next();
       return res.status(503).json({ error: 'Service unavailable: x402 payment system not initialized' });
     });
   }
