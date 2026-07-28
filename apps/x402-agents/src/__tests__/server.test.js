@@ -131,6 +131,34 @@ describe('x402-agents server', () => {
     expect(prisma.agentAuditLog.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
   });
 
+  it('GET /openapi.json is public even when the paid router is fail-closed', async () => {
+    delete process.env.X402_WALLET_ADDRESS;
+    const { createApp } = await import('../server.js');
+    const app = await createApp();
+
+    const spec = await request(app).get('/openapi.json');
+    expect(spec.status).toBe(200);
+    expect(spec.type).toMatch(/json/);
+    expect(spec.body.openapi).toBe('3.1.0');
+    expect(Object.keys(spec.body.paths)).toHaveLength(9);
+
+    const paid = await request(app)
+      .post('/context-compressor')
+      .send({ text: 'test' });
+    expect(paid.status).toBe(503);
+  });
+
+  it('GET /favicon.ico is a public image for discovery catalogs', async () => {
+    delete process.env.X402_WALLET_ADDRESS;
+    const { createApp } = await import('../server.js');
+    const app = await createApp();
+
+    const favicon = await request(app).get('/favicon.ico');
+    expect(favicon.status).toBe(200);
+    expect(favicon.type).toMatch(/^image\//);
+    expect(favicon.body.toString('utf8')).toContain('<svg');
+  });
+
   it('has trust proxy enabled', async () => {
     const { createApp } = await import('../server.js');
     const app = await createApp();
