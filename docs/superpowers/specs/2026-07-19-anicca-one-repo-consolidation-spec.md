@@ -373,17 +373,17 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
 | S21-CLOUD-BOOTSTRAP（旧S21-MAC-OFF） | Modal Pythonがconfidential Nosana jobを署名・post・deliveryし、Franklin runtime/heartbeat/renewalをcloudで継続 | anicha PR #1 / merge `efbcc26f`。job `2iTbLb7K…`、初回list tx finalized、公開HTTP 200、heartbeat 14/14署名+RPC PASS、lease 600→1200秒、別Modal sandboxは同jobを再list 0でreconcile。既存Mac loopは停止せずrunningのまま |
+| EARN-HC-1 | 8 earning slotとPM/x402/WORK/CAPITALを単一registryから4状態で機械判定 | `docs/superpowers/evidence/earn-hc-1-live.json`。instrumented 8/8、NOT-INSTRUMENTED 0。live portfolioは4/4 operational、inactive slotはnot-live、安全停止SOLはfrozenとして明示 |
 
 **残作業の唯一の順序**
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **EARN-HC-1** | active earning railをregistryで機械判定し、inactive railは明示状態へ固定 | PM/x402/WORK/CAPITAL各railが`operational/degraded/frozen/not-live`のいずれかをfresh evidence付きで返す。NOT-INSTRUMENTED 0 | **current cursor** — x402/HL/gig/tokenがhealth未instrumented。Hummingbotは未着手 |
-| 2 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **machinery live / demand gate open** — open posting 0、externalCount 0、外部実着金 `$0.00` |
-| 3 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **blocked by economic state** — verified surplus 0 |
-| 4 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | pending、13d-bと同じsurplus算式を使用 |
-| 5 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
-| 6 | **CHILD-1** | 黒字余剰で独立childをspawn | wallet/key/runtime/ledger非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
+| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / machinery live / demand gate open** — open posting 0、externalCount 0、外部実着金 `$0.00` |
+| 2 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **blocked by economic state** — verified surplus 0 |
+| 3 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | pending、13d-bと同じsurplus算式を使用 |
+| 4 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
+| 5 | **CHILD-1** | 黒字余剰で独立childをspawn | wallet/key/runtime/ledger非共有、heartbeat、自己支払receipt | pending、SCALE-1後 |
 
 **event/時間依存で自動並走し、上のcursorを止めないもの**
 
@@ -393,8 +393,10 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | REDEEM-1 | 次の`pm_redeemable>0` | 修正済み`earn-watch.sh`のredeem分岐、実tx、receipt status 1 |
 | acquisition | x402/The402の外部posting/buyerを5分周期で探索 | external receiptが来た時だけ13c-SELL/WORKへ進む |
 
-Sol tradeは850 pass / swap 0の結果から意図的KILLを維持し、working portfolioへ数えない。Hummingbot / Hyperliquid /
-token launchは未着手または未instrumentedであり、現在収益へ含めない。CAPITAL railの新規live-enableは
+EARN-HC-1のlive readbackではPM/x402/WORK/CAPITALが4/4 operational。内訳はPM・x402・gigがoperational、
+Sol tradeは850 pass / swap 0の結果から意図的KILLを維持してfrozen、Hyperliquid・token launch・clip・videoは
+明示的not-liveであり、現在収益へ含めない。instrumentedは8/8、NOT-INSTRUMENTEDは0。
+CAPITAL railの新規live-enableは
 `verified external net − survival reserve > 0`の後だけ行う。`$1k → $10k → $20k`はTODO IDにせず、
 SCALE-1を30日実証した後に実単価・conversion・marginから次の一段だけを起票する。
 
@@ -820,7 +822,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
 17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
-    保留条件は解消する。S21 cloud bootstrapは既存Mac loopを止めずに完了し、現在の手動cursorは **EARN-HC-1**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
+    保留条件は解消する。S21 cloud bootstrapとEARN-HC-1は既存Mac loopを止めずに完了し、現在の手動cursorは **13c-SELL / 13c-WORK（外部$1）**。実redeem、外部SELL/WORK着金、REPORT-1の別日receipt蓄積は
     event/時間依存で自動並走し、手動cursorを止めない。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
@@ -836,10 +838,11 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 現在はLife Manager側のwallet/ledger/payout配管が着地したため、agent economyの「稼いだ額を証明できない」欠損を先に閉じる。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current cursor**: **EARN-HC-1（全earning railのhealthをregistryで機械判定する）**。
+**Current cursor**: **13c-SELL / 13c-WORK（colony外buyer/jobから累計$1のverified着金）**。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
 bootstrap/posterとNosana上のFranklin runtime・heartbeat・renewal・別sandbox復旧まで実測済み。既存Mac loopは破壊的に止めず、
-cloud側writer leaseで二重bootstrapを抑止する。次はPM/x402/WORK/CAPITALのNOT-INSTRUMENTEDを0にする。
+cloud側writer leaseで二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
+次は既存acquisition・x402・The402の実機械を使い、self-payを除外した外部payer receiptだけを累計する。
 
 **REPORT-1の現在状態（自動並走）**:
 共通snapshot、tenant wallet binding、daily/weekly receipt、5分launchdをproductionへ置き、最初のdaily/weeklyをTelegramへ実送信した。
@@ -850,7 +853,8 @@ REPORT-1をdoneとは書かない。残る別日daily 6件は既存launchdが自
 colony外buyer/jobを待つ。Railwayには公開APIだけで動くDeFi funding-rate商品もliveで、自己購入は候補まで通して収益0へ落とす。
 The402は公開案件取得→入札→durable inbox→自動納品まで生き、仕事settlementとterminal jobを一意に突合できた時だけ`x402_work`へ記帳する。
 13d-bはverified surplus・`$35` reserve・transaction capを同時に守るBase USDC engineと5分launchdを本番へ置き、残高0/ledger 0で`no_verified_surplus` exit 0を実測した。
-実入札2件は未採用、jobs/threads/settled=`0/0/$0.00`のため、外部仕事収益と13d-b実txは未実証。この待機を作業停止理由にせずEARN-HC-1を進める。
+実入札2件は未採用、jobs/threads/settled=`0/0/$0.00`のため、外部仕事収益と13d-b実txは未実証。EARN-HC-1は完了し、
+現在は13c-SELL/WORKの外部payer獲得が手動cursorである。
 これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -869,7 +873,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-active cursorは`EARN-HC-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
+active cursorは`13c-SELL / 13c-WORK`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -882,7 +886,7 @@ active cursorは`EARN-HC-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authentic
 | H5 | `ORG-relations` | **実装仕様**: 本人の Google Calendar から「timed + accepted external attendee がちょうど1人 + provider が displayName を実提供」の予定だけを1対1 interactionに変換。email は HMAC の入力にのみ使い、第三者の email/title/location/copy は出力・DB・logへ保存しない。本人の安定 cadence が4回以上あり、最終interactionが中央値の1.5倍を超えた時だけ、週1回上限で一方向の提案1通。MENTAL 3通/日 + 2h spacingを共有し、予定中・移動/位置不明・timezone不明では沈黙。Telegram bot が第三者chatを読めるとは主張せず、将来 source adapter 用のclosed schemaのみ保持 | 同上 | **done**: #1181 merged。focused 42/42、relations eval 10/10、全 eval 134/134。full suite 657/658（唯一の失敗はこのMacで実際にloadedな`ai.anicca.life-manager-dev`を「未load」と期待する既知host-state test）。migration 2本 + PostgREST reload + empty table readback済み。Railway `life-call` production exact SHA `62314317…` SUCCESS、health 200、loops起動。production runtime実弾は18か月 Calendar 711 events（timed 703 / external attendee 1人=18 / provider displayName有=0）を完走し、`lm_relations_log`へ実scan row `interaction_count=0,detections=[]`をappend、提案は正しく0でabstain |
 | H8 | `IG-LM` | LM 専用 Instagram 開設。**正直な制約: account 作成は agent の越えられない境界**（Dais の許可でも解除不可の platform 規則）。zero-human 選択肢はこの agent には無い。道は2つ: ①Dais が `ig-account-create` skill を1回実行（〜5分、実証済み手順）②当面 TikTok のみ（daily bar は充足中）。開設後の配線切替は agent がコード変更ゼロで実施 | Dais 口述 2026-07-27 | 保留 — ①か②の選択待ち（どちらでも損は小さい） |
 | H6 | `OPS-1` | ~~Telnyx 残高 top-up 経路~~ **解消（2026-07-27 実測）**: auto-recharge が既に有効 — `threshold $5 / recharge $20 / credit_paypal / enabled:true`（API readback）。残高は自己回復する。人間アクション不要。将来 user 数増で $20 では足りなくなったら amount 引き上げを提案する | demo sweep D | **done — 実測で非問題と判明** |
-| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — EARN-HC-1から§0.4.6の順に実行 |
+| H7 | workstream 1-4 | 外部収益 ≥$1 → 自律 earning → 自活 → FINANCIAL 統合 | §0.2 / §0.4.6 | active — EARN-HC-1完了、13c-SELL/WORKがcurrent cursor |
 
 **常時稼働 inventory（誰も居なくても毎日回るもの / 回らないもの — 2026-07-27 実測）**:
 
@@ -1041,7 +1045,7 @@ active cursorは`EARN-HC-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authentic
 
 ## 8. 次セッションへの引き継ぎ
 
-1. §0.4.6のcurrent cursor `EARN-HC-1`で全railのhealth状態を機械判定し、NOT-INSTRUMENTEDを0にする。
-2. 以後は§0.4.6の外部`$1`→実payout→self-funded survival→scale→childの順だけを使う。
+1. §0.4.6のcurrent cursor `13c-SELL / 13c-WORK`で、colony外payerから累計`$1`のverified着金を成立させる。
+2. 以後は§0.4.6の実payout→self-funded survival→scale→childの順だけを使う。
 3. REPORT-1、redeem、acquisition、Life Manager product側のevent/時間依存項目は自動並走し、手動cursorを止めない。
 4. S21の既存Mac loopは停止・unloadせず、後続loop migrationをwriter単位でshadow verifyしてからcloudへ移譲する。

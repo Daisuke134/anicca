@@ -184,5 +184,32 @@ a "self-fix BLOCKER uses the safe 'unspecified' fallback cause (never an empty/b
 a "self-fix BLOCKER carries the STUBFIX_END terminator (whole structured message written, not truncated)" "$CAPTURED5" "STUBFIX_END"
 na "self-fix BLOCKER never contains the raw metachar-only reason verbatim (it was sanitized away)" "$CAPTURED5" "$ONLY_METACHARS_REASON"
 
-rm -rf "$D" "$D2" "$D3" "$D4" "$D5"
+echo "(F) registry v2 emits finite slot + portfolio states and zero NOT-INSTRUMENTED"
+D6="$(mktemp -d)"
+REGISTRY6="$D6/registry.json"
+cat > "$REGISTRY6" <<JSON
+{
+  "\$schema": "earning-health-registry v2",
+  "slots": [
+    {
+      "id": "token_launch",
+      "instrumented": true,
+      "traceFile": null,
+      "minRun": 20,
+      "selfFixTarget": "token-launch",
+      "escalateEveryHrs": 24,
+      "probe": {"kind":"explicit","activationPath":"skills/earn/token-launch/LIVE"}
+    }
+  ],
+  "portfolios": [{"id":"CAPITAL","memberIds":["token_launch"]}]
+}
+JSON
+OUT7="$(EARNHC_REGISTRY="$REGISTRY6" EARNHC_RUNTIME_ROOT="$D6/runtime" \
+        EARNHC_STATE_DIR="$D6/state" EARNHC_LOG="$D6/hc.log" \
+        bash "$SCRIPT" 2>&1; cat "$D6/hc.log" 2>/dev/null)"
+a "v2 slot state logged" "$OUT7" "SLOT token_launch NOT-LIVE reason=not_enabled"
+a "v2 portfolio state logged" "$OUT7" "PORTFOLIO CAPITAL NOT-LIVE reason=all_members_not_live"
+na "v2 registry contains no NOT-INSTRUMENTED result" "$OUT7" "NOT-INSTRUMENTED"
+
+rm -rf "$D" "$D2" "$D3" "$D4" "$D5" "$D6"
 echo "=== earning-health-allslots: $P passed $F failed ==="; [ "$F" = 0 ] && echo GREEN || exit 1
