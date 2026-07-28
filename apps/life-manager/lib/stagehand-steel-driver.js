@@ -2,6 +2,11 @@
 
 const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
+const {
+  readBrowserAuthSession: defaultReadBrowserAuthSession,
+  upsertBrowserAuthSession: defaultUpsertBrowserAuthSession,
+  invalidateBrowserAuthSession: defaultInvalidateBrowserAuthSession,
+} = require("./browser-auth-session-store.js");
 
 const MODEL = "google/gemini-2.5-flash";
 const AGENT_MODEL = "google/gemini-2.5-computer-use-preview-10-2025";
@@ -117,13 +122,44 @@ function makeStagehandSteelDriver(options = {}) {
   const agentEmail = String(options.agentEmail || process.env.LM_AGENT_BROWSER_EMAIL || "").trim();
   const agentName = String(options.agentName || process.env.LM_AGENT_BROWSER_NAME || "").trim();
   if (!apiKey) throw new Error("Stagehand Gemini API key unavailable");
+  const readBrowserAuthSession = options.readBrowserAuthSession || defaultReadBrowserAuthSession;
+  const upsertBrowserAuthSession = options.upsertBrowserAuthSession || defaultUpsertBrowserAuthSession;
+  const invalidateBrowserAuthSession =
+    options.invalidateBrowserAuthSession || defaultInvalidateBrowserAuthSession;
   const sessions = new Map();
+  const authSessions = new Map();
 
   return {
-    async openSession() {
-      return privateSession(await steelClient.createRawSession({
-        blockAds: true,
-      }));
+    async openSession(input = {}) {
+      let auth = null;
+      let context;
+      if (input && input.requiresLogin === true) {
+        const explicitUrl = explicitPublicHttpsUrl(input.goal);
+        if (explicitUrl) {
+          const identity = {
+            uid: input.uid,
+            origin: new URL(explicitUrl).origin,
+            principalKind: input.principalKind,
+          };
+          const record = await readBrowserAuthSession(identity);
+          auth = { ...identity, loaded: Boolean(record) };
+          if (record) context = record.context;
+        }
+      }
+      const createOptions = { blockAds: true };
+      if (context !== undefined) createOptions.sessionContext = context;
+      const created = await steelClient.createRawSession(createOptions);
+      let session;
+      try {
+        session = privateSession(created);
+      } catch (error) {
+        if (created && created.id) {
+          try { await steelClient.releaseSession(String(created.id)); } catch { /* preserve validation */ }
+        }
+        throw error;
+      }
+      if (auth) authSessions.set(String(session.id), auth);
+      return session;
     },
 
     async discoverAndAct(sessionInput, context = {}) {
@@ -268,7 +304,7 @@ function makeStagehandSteelDriver(options = {}) {
       const open = sessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
       const extracted = await open.stagehand.extract(
-        "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
+        "Read only the current provider-authored result page. Report confirmed=true only when the page explicitly says the requested action succeeded. A pending, check-email, error, login, challenge, payment, or ambiguous page is not confirmed. Return its status, confirmation identifier if present, and a short provider status phrase.",
         receiptSchema,
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
@@ -286,9 +322,11 @@ function makeStagehandSteelDriver(options = {}) {
           ? "2fa"
           : /\bkyc\b|identity verification/i.test(handoffText)
             ? "kyc"
-            : /\b(?:login|log in|sign in)\b/i.test(handoffText)
-              ? "login"
-              : null;
+            : /\b(?:payment|purchase|checkout|credit card|card details|billing)\b|支払|決済|購入/i.test(handoffText)
+              ? "payment"
+              : /\b(?:login|log in|sign in)\b/i.test(handoffText)
+                ? "login"
+                : null;
       return {
         confirmed: (extracted.confirmed === true || explicitSuccess) &&
           !negated &&
@@ -312,15 +350,69 @@ function makeStagehandSteelDriver(options = {}) {
       };
     },
 
-    async releaseSession(sessionId) {
+    async releaseSession(sessionId, releaseOptions = {}) {
       const id = String(sessionId || "");
       const open = sessions.get(id);
+      const auth = authSessions.get(id);
       sessions.delete(id);
+      authSessions.delete(id);
+
+      let authContextSaved = false;
+      let authContextInvalidated = false;
+      let contextSha256 = null;
+      let keyVersion = null;
+      if (auth) {
+        const providerReceipt = releaseOptions && releaseOptions.providerReceipt || {};
+        const handoffReason = String(
+          providerReceipt.handoff_reason || providerReceipt.handoffReason || "",
+        ).toLowerCase();
+        try {
+          if (handoffReason === "login") {
+            authContextInvalidated = await invalidateBrowserAuthSession({
+              uid: auth.uid,
+              origin: auth.origin,
+              principalKind: auth.principalKind,
+            }) === true;
+          } else {
+            const context = await steelClient.getSessionContext(id);
+            const saved = await upsertBrowserAuthSession({
+              uid: auth.uid,
+              origin: auth.origin,
+              principalKind: auth.principalKind,
+              context,
+            });
+            authContextSaved = true;
+            if (saved && /^[a-f0-9]{64}$/.test(String(saved.context_sha256 || ""))) {
+              contextSha256 = saved.context_sha256;
+            }
+            if (saved && Number.isSafeInteger(saved.key_version) && saved.key_version > 0) {
+              keyVersion = saved.key_version;
+            }
+          }
+        } catch {
+          authContextSaved = false;
+          authContextInvalidated = false;
+          contextSha256 = null;
+          keyVersion = null;
+        }
+      }
+
       if (open && open.stagehand && typeof open.stagehand.close === "function") {
         try { await open.stagehand.close(); } catch { /* Steel release below owns the real slot */ }
       }
       const released = await steelClient.releaseSession(id);
-      return { released: released === true };
+      const receipt = { released: released === true };
+      if (!auth) return receipt;
+      return {
+        ...receipt,
+        origin: auth.origin,
+        principal_kind: auth.principalKind,
+        auth_context_loaded: auth.loaded,
+        auth_context_saved: authContextSaved,
+        auth_context_invalidated: authContextInvalidated,
+        context_sha256: contextSha256,
+        key_version: keyVersion,
+      };
     },
   };
 }

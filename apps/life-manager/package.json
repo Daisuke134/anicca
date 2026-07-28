@@ -16,7 +16,8 @@
     "smoke:panel-api": "node scripts/smoke-panel-api-fixture.js",
     "smoke:panel-ui": "node scripts/smoke-panel-ui-fixture.js",
     "smoke:daily-preflight": "node scripts/daily-preflight.js",
-    "smoke:steel-cloud": "node scripts/steel-cloud-smoke.js"
+    "smoke:steel-cloud": "node scripts/steel-cloud-smoke.js",
+    "browser-auth:production-e2e": "node scripts/browser-auth-production-e2e.js"
   },
   "dependencies": {
     "@browserbasehq/stagehand": "3.7.1",

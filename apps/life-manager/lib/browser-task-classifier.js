@@ -8,6 +8,7 @@ const DECISION_KEYS = Object.freeze([
   "locale",
   "requires_kyc",
   "requires_login",
+  "principal_kind",
   "reversible",
   "zero_cost",
 ]);
@@ -23,6 +24,7 @@ const RESPONSE_SCHEMA = Object.freeze({
     zero_cost: { type: "boolean" },
     requires_kyc: { type: "boolean" },
     requires_login: { type: "boolean" },
+    principal_kind: { type: "string", enum: ["none", "agent_owned", "user_provided"] },
     action_kind: { type: "string" },
     goal: { type: "string" },
     locale: { type: "string", enum: ["en", "ja"] },
@@ -50,6 +52,9 @@ function validateBrowserDecision(value) {
   if (typeof value.action_kind !== "string" || !value.action_kind.trim() || value.action_kind.length > 100) invalid();
   if (typeof value.goal !== "string" || !value.goal.trim() || value.goal.length > 1000) invalid();
   if (!["en", "ja"].includes(value.locale)) invalid();
+  if (!['none', 'agent_owned', 'user_provided'].includes(value.principal_kind)) invalid();
+  if (value.requires_login === false && value.principal_kind !== "none") invalid();
+  if (value.requires_login === true && !["agent_owned", "user_provided"].includes(value.principal_kind)) invalid();
   return Object.freeze({ ...value, goal: value.goal.trim(), action_kind: value.action_kind.trim() });
 }
 
@@ -73,6 +78,7 @@ async function inferBrowserDecision(text, opts = {}) {
     "zero_cost=false for any payment, purchase, deposit, transfer, subscription charge, or financial commitment.",
     "requires_kyc=true for identity verification, government ID, regulated gig work, or financial onboarding.",
     "requires_login=true when the request explicitly depends on an existing authenticated account.",
+    "Set principal_kind=none when requires_login=false; otherwise use agent_owned or user_provided for the login session owner.",
     "Normalize goal into an execution instruction of at most 1000 characters.",
     "Replace email addresses, phone numbers, account names, passwords, tokens, and credentials with role labels.",
     `Message: ${JSON.stringify(String(text || "").slice(0, 5000))}`,
@@ -122,6 +128,7 @@ async function classifyBrowserTask(text, deps = {}) {
     actionKind: decision.action_kind,
     locale: decision.locale,
     requiresLogin: decision.requires_login,
+    principalKind: decision.principal_kind,
   };
 }
 

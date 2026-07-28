@@ -12,6 +12,13 @@ const JOB = Object.freeze({
   locale: "en",
 });
 
+const AUTH_JOB = Object.freeze({
+  ...JOB,
+  goal: "Open https://auth.example/account",
+  requires_login: true,
+  principal_kind: "user_provided",
+});
+
 test("default browser timeout covers live discovery plus CUA form interaction", () => {
   assert.equal(DEFAULT_ACTION_TIMEOUT_MS, 420_000);
 });
@@ -224,4 +231,104 @@ test("a pre-action failure is an honest failure and every opened Steel session i
   const result = await runGenericBrowserTask(JOB, deps);
   assert.equal(result.status, "failed");
   assert.equal(releases, 1);
+});
+
+test("an expired login context is invalidated, reported honestly, and Steel is released", async () => {
+  let telegramMessage = "";
+  let releases = 0;
+  const { deps, events } = fixture({
+    readProviderReceipt: async () => ({
+      confirmed: false,
+      status: "login required",
+      currentUrl: "https://auth.example/login",
+      handoffRequired: true,
+      handoffReason: "login",
+    }),
+    sendTelegram: async (_chatId, text) => {
+      telegramMessage = text;
+      return { ok: true, result: { message_id: 9001 } };
+    },
+    releaseSession: async (_id, options) => {
+      releases += 1;
+      assert.deepEqual(options, {
+        providerReceipt: {
+          confirmed: false,
+          status: "login required",
+          confirmation_id: null,
+          current_url: "https://auth.example/login",
+          handoff_required: true,
+          handoff_reason: "login",
+        },
+      });
+      return {
+        released: true,
+        origin: "https://auth.example",
+        principal_kind: "user_provided",
+        auth_context_loaded: true,
+        auth_context_saved: false,
+        auth_context_invalidated: true,
+        context_sha256: null,
+        key_version: null,
+      };
+    },
+  });
+
+  const result = await runGenericBrowserTask(AUTH_JOB, deps);
+
+  assert.equal(result.status, "handoff_required");
+  assert.equal(result.provider_receipt.handoff_reason, "login");
+  assert.match(telegramMessage, /needs a human-only step \(login\)/i);
+  assert.equal(releases, 1);
+  assert.equal(result.steel_released, true);
+  assert.deepEqual(
+    events.find((event) => event.stage === "auth_context_invalidated"),
+    {
+      stage: "auth_context_invalidated",
+      meta: {
+        origin: "https://auth.example",
+        principal_kind: "user_provided",
+        invalidated: true,
+      },
+    },
+  );
+});
+
+test("an auth context save failure preserves provider outcome and release without leaking its error", async () => {
+  const rawSaveError = "raw-export-save-error";
+  let releases = 0;
+  const { deps, events } = fixture({
+    releaseSession: async () => {
+      releases += 1;
+      return {
+        released: true,
+        origin: "https://auth.example",
+        principal_kind: "user_provided",
+        auth_context_loaded: true,
+        auth_context_saved: false,
+        auth_context_invalidated: false,
+        context_sha256: null,
+        key_version: null,
+        error: rawSaveError,
+      };
+    },
+  });
+
+  const result = await runGenericBrowserTask(AUTH_JOB, deps);
+
+  assert.equal(result.status, "completed");
+  assert.equal(result.provider_receipt.confirmed, true);
+  assert.equal(releases, 1);
+  assert.equal(result.steel_released, true);
+  assert.deepEqual(
+    events.find((event) => event.stage === "auth_context_saved"),
+    {
+      stage: "auth_context_saved",
+      meta: {
+        origin: "https://auth.example",
+        principal_kind: "user_provided",
+        saved: false,
+      },
+    },
+  );
+  assert.doesNotMatch(JSON.stringify({ result, events }), new RegExp(rawSaveError));
 });
