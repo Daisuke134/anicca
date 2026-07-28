@@ -121,12 +121,16 @@ function makeStagehandSteelDriver(options = {}) {
       ].join("\n");
       let executionStarted = false;
       try {
-        const agent = stagehand.agent({
+        const discoveryAgent = stagehand.agent({
+          model: MODEL,
+          executionModel: MODEL,
+        });
+        const actionAgent = stagehand.agent({
           mode: "cua",
           model: AGENT_MODEL,
           systemPrompt: AGENT_SYSTEM_PROMPT,
         });
-        await agent.execute(discoveryTask);
+        await discoveryAgent.execute(discoveryTask);
         let selection;
         let selectedUrl;
         for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -137,7 +141,7 @@ function makeStagehandSteelDriver(options = {}) {
           selectedUrl = publicPageUrl(page, agentEmail);
           if (selection.isSpecificActionPage === true && isSpecificActionUrl(selectedUrl)) break;
           if (attempt === 2) throw new Error("browser discovery did not reach a specific action page");
-          await agent.execute([
+          await discoveryAgent.execute([
             "You are still on a search, directory, category, or listing page.",
             "Open one specific candidate's provider detail/action page now.",
             "Do not submit, register, purchase, or perform the requested external action yet.",
@@ -175,7 +179,7 @@ function makeStagehandSteelDriver(options = {}) {
         if (typeof context.onActionStarted === "function") {
           await context.onActionStarted({ action: "one delegated zero-cost browser action" });
         }
-        await agent.execute(actionTask);
+        await actionAgent.execute(actionTask);
         const observation = await stagehand.extract(
           "Summarize the single delegated action attempted on the current provider page. Do not claim it succeeded.",
           actionSchema,

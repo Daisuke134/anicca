@@ -68,7 +68,7 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
   assert.match(calls[1].sql, /WHERE uid = \$1 AND telegram_chat_id = \$2 AND telegram_message_id = \$3/i);
 });
 
-test("claim uses the concurrency-safe RPC and returns only one bounded job row", async () => {
+test("claim uses the concurrency-safe RPC with a lease long enough for cloud discovery plus CUA", async () => {
   const seen = [];
   const row = {
     id: "job-1",
@@ -83,9 +83,9 @@ test("claim uses the concurrency-safe RPC and returns only one bounded job row",
     seen.push({ sql, params });
     return { rows: [row] };
   };
-  assert.deepEqual(await claimBrowserJob({ query, leaseSeconds: 180 }), row);
+  assert.deepEqual(await claimBrowserJob({ query }), row);
   assert.match(seen[0].sql, /claim_lm_browser_job\(\$1\)/i);
-  assert.deepEqual(seen[0].params, [180]);
+  assert.deepEqual(seen[0].params, [480]);
 });
 
 test("trace append and terminal finish go through narrow RPCs", async () => {

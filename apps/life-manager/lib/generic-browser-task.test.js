@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { runGenericBrowserTask } = require("./generic-browser-task.js");
+const { runGenericBrowserTask, DEFAULT_ACTION_TIMEOUT_MS } = require("./generic-browser-task.js");
 
 const JOB = Object.freeze({
   id: "job-1",
@@ -10,6 +10,10 @@ const JOB = Object.freeze({
   telegram_chat_id: "42",
   goal: "Find a suitable free public online AI event and register contact@aniccaai.com",
   locale: "en",
+});
+
+test("default browser timeout covers live discovery plus CUA form interaction", () => {
+  assert.equal(DEFAULT_ACTION_TIMEOUT_MS, 420_000);
 });
 
 function fixture(overrides = {}) {
