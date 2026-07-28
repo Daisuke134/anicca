@@ -103,7 +103,7 @@ Copy the committed runner to a temporary path inside the production `life-call` 
 
 Read back `steel-browser` logs for the matching session creation/navigation/release and store the bounded command output in the evidence document.
 
-- [ ] **Step 6: Advance the SSOT and commit**
+- [x] **Step 6: Advance the SSOT and commit**
 
 Update the live `11c+11d` row and the detailed `11c` row to distinguish:
 
