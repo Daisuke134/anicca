@@ -28,7 +28,7 @@
 ## Slide 3 — AIにも食費と家賃がある
 
 - **Claim:** AIの継続費は「思考」と「存在」に分かれる。
-- **On-slide:** `食費 = inference` / `家賃 = cloud runtime`
+- **On-slide:** `食費 = inference` / `家賃 = cloud runtime` / `実測 $35〜78 / 月`
 - **Visual:** 左に脳、右にcloud shelter。下にstorage / network / gasを小さく配置。
 - **Evidence:** §0.4.3のsurvival burn、Franklin runtime placement。
 - **Seconds:** 35
