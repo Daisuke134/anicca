@@ -51,6 +51,12 @@ function buildBrowserJob(input) {
   if (!classification || typeof classification !== "object") throw new Error("browser classification invalid");
   const locale = nonEmpty(classification.locale, "browser job locale", 8);
   if (!["en", "ja"].includes(locale)) throw new Error("browser job locale invalid");
+  const principalKind = classification.principalKind;
+  if (!["none", "agent_owned", "user_provided"].includes(principalKind)
+    || (classification.requiresLogin === true && principalKind === "none")
+    || (classification.requiresLogin !== true && principalKind !== "none")) {
+    throw new Error("browser job principal kind invalid");
+  }
   return Object.freeze({
     uid,
     telegram_chat_id: chatId,
@@ -61,6 +67,7 @@ function buildBrowserJob(input) {
     locale,
     action_kind: nonEmpty(classification.actionKind, "browser job action kind", 100),
     requires_login: classification.requiresLogin === true,
+    principal_kind: principalKind,
     status: "queued",
     trace: [],
   });
@@ -72,8 +79,8 @@ async function enqueueBrowserJob(input, opts = {}) {
   const inserted = (await query(`
     INSERT INTO public.lm_browser_jobs (
       uid, telegram_chat_id, telegram_message_id, telegram_update_id,
-      prompt_hash, goal, locale, action_kind, requires_login, status
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      prompt_hash, goal, locale, action_kind, requires_login, principal_kind, status
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     ON CONFLICT (uid, telegram_chat_id, telegram_message_id) DO NOTHING
     RETURNING *
   `, [
@@ -86,6 +93,7 @@ async function enqueueBrowserJob(input, opts = {}) {
     job.locale,
     job.action_kind,
     job.requires_login,
+    job.principal_kind,
     job.status,
   ])).rows;
   if (inserted.length === 1) return { created: true, job: inserted[0] };

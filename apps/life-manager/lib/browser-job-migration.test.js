@@ -14,6 +14,8 @@ test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt 
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
   assert.match(SQL, /uid text NOT NULL/i);
   assert.match(SQL, /prompt_hash text NOT NULL/i);
+  assert.match(SQL, /principal_kind text NOT NULL CHECK \(principal_kind IN \('none', 'agent_owned', 'user_provided'\)\)/i);
+  assert.match(SQL, /requires_login = false AND principal_kind = 'none'[\s\S]*requires_login = true AND principal_kind IN \('agent_owned', 'user_provided'\)/i);
   assert.match(SQL, /UNIQUE \(uid, telegram_chat_id, telegram_message_id\)/i);
   assert.doesNotMatch(SQL, /\braw_prompt\b|\bpassword\b|\bcookie\b|\bauth_token\b/i);
   assert.doesNotMatch(SQL, /REFERENCES public\.lm_users/i, "the private Railway queue does not duplicate the Supabase user registry");

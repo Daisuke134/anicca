@@ -16,6 +16,7 @@ function decision(overrides = {}) {
     zero_cost: true,
     requires_kyc: false,
     requires_login: false,
+    principal_kind: "none",
     action_kind: "registration",
     goal: "Find a free public online AI event and register contact@aniccaai.com",
     locale: "en",
@@ -89,6 +90,26 @@ test("financial outflow, KYC, irreversible action, and model schema drift fail c
   );
 });
 
+test("classifier binds login-dependent tasks to an explicit auth principal and rejects inconsistent choices", async () => {
+  const noLogin = await classifyBrowserTask("Please do the thing", {
+    infer: async () => decision({ requires_login: false, principal_kind: "none" }),
+  });
+  assert.equal(noLogin.principalKind, "none");
+
+  const userProvided = await classifyBrowserTask("Please do the thing", {
+    infer: async () => decision({ requires_login: true, principal_kind: "user_provided" }),
+  });
+  assert.equal(userProvided.requiresLogin, true);
+  assert.equal(userProvided.principalKind, "user_provided");
+
+  for (const invalid of [
+    decision({ requires_login: false, principal_kind: "agent_owned" }),
+    decision({ requires_login: true, principal_kind: "none" }),
+  ]) {
+    assert.throws(() => validateBrowserDecision(invalid), /browser decision schema invalid/i);
+  }
+});
+
 test("the production classifier asks Gemini for strict JSON without putting its key in the URL", async () => {
   const seen = [];
   const fetchImpl = async (url, init) => {
@@ -125,6 +146,7 @@ test("the production classifier asks Gemini for strict JSON without putting its 
     "explicit_request",
     "goal",
     "locale",
+    "principal_kind",
     "requires_kyc",
     "requires_login",
     "reversible",

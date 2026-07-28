@@ -23,6 +23,7 @@ test("a queued job is tenant-bound and hashes the raw prompt without persisting 
       actionKind: "registration",
       locale: "en",
       requiresLogin: false,
+      principalKind: "none",
     },
   });
   assert.equal(job.uid, "u-1");
@@ -31,6 +32,7 @@ test("a queued job is tenant-bound and hashes the raw prompt without persisting 
   assert.match(job.prompt_hash, /^[a-f0-9]{64}$/);
   assert.doesNotMatch(JSON.stringify(job), /super-secret-token/);
   assert.equal(job.status, "queued");
+  assert.equal(job.principal_kind, "none");
 });
 
 test("enqueue is idempotent on tenant and Telegram message and returns the existing job", async () => {
@@ -58,12 +60,14 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
       actionKind: "registration",
       locale: "en",
       requiresLogin: false,
+      principalKind: "none",
     },
   }, { query });
 
   assert.deepEqual(result, { created: false, job: existing });
   assert.equal(calls.length, 2);
   assert.match(calls[0].sql, /ON CONFLICT \(uid, telegram_chat_id, telegram_message_id\) DO NOTHING/i);
+  assert.match(calls[0].sql, /principal_kind/i);
   assert.equal(calls[0].params[0], "u-1");
   assert.match(calls[1].sql, /WHERE uid = \$1 AND telegram_chat_id = \$2 AND telegram_message_id = \$3/i);
 });
@@ -78,6 +82,7 @@ test("claim uses the concurrency-safe RPC with a lease long enough for cloud dis
     locale: "en",
     action_kind: "registration",
     requires_login: false,
+    principal_kind: "none",
   };
   const query = async (sql, params) => {
     seen.push({ sql, params });
@@ -86,6 +91,32 @@ test("claim uses the concurrency-safe RPC with a lease long enough for cloud dis
   assert.deepEqual(await claimBrowserJob({ query }), row);
   assert.match(seen[0].sql, /claim_lm_browser_job\(\$1\)/i);
   assert.deepEqual(seen[0].params, [480]);
+});
+
+test("queue principal kind is a closed enum coupled to login dependence", () => {
+  const input = {
+    uid: "u-1",
+    chatId: "42",
+    messageId: "91",
+    updateId: "7001",
+    rawPrompt: "Please open my account",
+    classification: {
+      goal: "Open the existing account page",
+      actionKind: "account_action",
+      locale: "en",
+      requiresLogin: true,
+      principalKind: "user_provided",
+    },
+  };
+  assert.equal(buildBrowserJob(input).principal_kind, "user_provided");
+  assert.throws(() => buildBrowserJob({
+    ...input,
+    classification: { ...input.classification, requiresLogin: false, principalKind: "user_provided" },
+  }), /browser job principal kind invalid/i);
+  assert.throws(() => buildBrowserJob({
+    ...input,
+    classification: { ...input.classification, requiresLogin: true, principalKind: "none" },
+  }), /browser job principal kind invalid/i);
 });
 
 test("trace append and terminal finish go through narrow RPCs", async () => {
