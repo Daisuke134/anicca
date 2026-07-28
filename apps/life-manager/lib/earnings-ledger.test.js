@@ -11,8 +11,11 @@ const test = require("node:test");
 
 const {
   EARNING_KINDS,
+  normaliseEntry,
+  usdMicrosForEntry,
   usdMinorFromAtomic,
   formatUsdMinor,
+  formatUsdMicros,
   abbreviateAddress,
   appendEarning,
   monthBounds,
@@ -86,6 +89,46 @@ test("amounts are integer minor units — a float is refused instead of being ro
   assert.throws(() => appendEarning([], income({ amount_minor: -1 })), /amount/i,
     "direction is carried by the kind, never by a negative amount");
   assert.equal(appendEarning([], income({ amount_minor: "12430" }))[0].amount_minor, 12430);
+});
+
+test("a USDC earning can be represented at exact six-decimal precision without rounding", () => {
+  const row = normaliseEntry(income({
+    amount_minor: undefined,
+    amount_atomic: "2312500",
+    amount_decimals: 6,
+  }));
+
+  assert.equal(row.amount_minor, null);
+  assert.equal(row.amount_atomic, "2312500");
+  assert.equal(row.amount_decimals, 6);
+  assert.equal(usdMicrosForEntry(row), 2312500n);
+  assert.equal(formatUsdMicros(usdMicrosForEntry(row), { signed: true }), "+$2.3125");
+  assert.throws(() => normaliseEntry(income({
+    amount_minor: 231,
+    amount_atomic: "2312500",
+    amount_decimals: 6,
+  })), /exactly one/i);
+});
+
+test("a monthly rollup preserves a fractional-cent USDC earning in its report", () => {
+  const ledger = appendEarning([], income({
+    amount_minor: undefined,
+    amount_atomic: "2312500",
+    amount_decimals: 6,
+  }));
+  const summary = rollUpMonth(ledger, {
+    year: 2026,
+    month: 7,
+    timezone: "Asia/Tokyo",
+    walletAddress: WALLET,
+    balanceAtomic: "2312500",
+    balanceDecimals: 6,
+  });
+
+  assert.equal(summary.gross_income_minor, null);
+  assert.equal(summary.gross_usd_micros, "2312500");
+  assert.equal(summary.net_usd_micros, "2312500");
+  assert.match(formatMonthlyReport(summary), /私のwalletでの収益: \+\$2\.3125/);
 });
 
 test("a private key can never enter the ledger, not even nested", () => {

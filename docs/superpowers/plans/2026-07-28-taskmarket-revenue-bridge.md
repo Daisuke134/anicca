@@ -11,7 +11,7 @@ self-award, or a non-final Base receipt must write zero rows.
 ## Task 1 — Pure award contract
 
 1. Add failing tests for completed/external/owned-worker requirements, exact
-   award fields, conservative sub-cent handling, stable entry keys, and
+   award fields, six-decimal USDC handling, stable entry keys, and
    self-award rejection.
 2. Implement `taskmarket-work-ledger.js`.
 3. Run the focused tests to green.
@@ -41,3 +41,14 @@ self-award, or a non-final Base receipt must write zero rows.
 2. Record live launchd state and exact zero-revenue boundary.
 3. When the requester awards work, independently verify the Base receipt,
    record exactly once, rerun for `duplicate=1`, and only then close 13c.
+
+## Task 5 — Exact ledger precision
+
+1. Add `amount_atomic` plus `amount_decimals` as an additive ledger
+   representation while preserving every existing integer-cent row.
+2. Aggregate reports, payout policy/runtime, and the authenticated panel in USD
+   micros so a `2312500` atomic USDC award remains `$2.3125` without rounding.
+3. Store TaskMarket `workerPayment` as six-decimal atomic USDC and include award
+   rank in the idempotency key.
+4. Apply and read back the additive production migration, then keep the live
+   open task at `recorded=0` until an independently finalized award exists.

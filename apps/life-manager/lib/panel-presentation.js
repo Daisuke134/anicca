@@ -117,6 +117,20 @@ function financialAmount(row) {
   const currency = typeof row.currency === "string" ? row.currency : "USD";
   if (row.amount != null) return formatCurrencyAmount(row.amount, currency);
   if (row.amount_minor != null) return formatCurrencyAmount(Number(row.amount_minor) / 100, currency);
+  if (
+    typeof row.amount_atomic === "string"
+    && /^\d+$/.test(row.amount_atomic)
+    && Number.isInteger(row.amount_decimals)
+    && row.amount_decimals >= 0
+    && row.amount_decimals <= 6
+    && /^[A-Z]{3}$/.test(currency)
+  ) {
+    const padded = row.amount_atomic.padStart(row.amount_decimals + 1, "0");
+    const whole = row.amount_decimals === 0 ? padded : padded.slice(0, -row.amount_decimals);
+    const rawFraction = row.amount_decimals === 0 ? "" : padded.slice(-row.amount_decimals);
+    const fraction = rawFraction.replace(/0+$/, "").padEnd(2, "0");
+    return `${currency} ${whole}.${fraction}`;
+  }
   if (row.est_usd != null) return formatCurrencyAmount(row.est_usd, "USD");
   return null;
 }
