@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const DEFAULT_ACTION_TIMEOUT_MS = 420_000;
 
 function providerReceipt(value) {
   return {
@@ -76,7 +77,7 @@ async function runGenericBrowserTask(job, deps) {
   let sideEffectStarted = false;
   let selectedRecorded = false;
   let actionStartedRecorded = false;
-  const actionTimeoutMs = Number(deps.actionTimeoutMs || 180_000);
+  const actionTimeoutMs = Number(deps.actionTimeoutMs || DEFAULT_ACTION_TIMEOUT_MS);
 
   await deps.appendTrace(job.id, "claimed", {});
   try {
@@ -185,4 +186,4 @@ async function runGenericBrowserTask(job, deps) {
   return result;
 }
 
-module.exports = { runGenericBrowserTask };
+module.exports = { runGenericBrowserTask, DEFAULT_ACTION_TIMEOUT_MS };
