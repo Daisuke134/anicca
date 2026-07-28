@@ -21,6 +21,10 @@ function fixture(fixtureOptions = {}) {
       this.context = { awaitActivePage: async () => page };
     }
     async init() { calls.push(["init"]); }
+    async act(instruction, actOptions) {
+      calls.push(["act", instruction, actOptions]);
+      return { success: true, message: "done", actionDescription: instruction, actions: [] };
+    }
     agent(value) {
       calls.push(["agent", value]);
       return {
@@ -183,15 +187,14 @@ test("a runtime-supplied public HTTPS detail URL skips search and goes straight 
     "https://www.google.com/",
     "https://fresh-events.example/ai/confirmed",
   ]);
-  const agents = calls.filter(([name]) => name === "agent").map(([, value]) => value);
-  assert.deepEqual(agents, [{
-    mode: "cua",
-    model: "google/gemini-2.5-computer-use-preview-10-2025",
-    systemPrompt: "Operate the remote cloud browser carefully. Use only truthful supplied identity data, never invent personal data, and stop at login, CAPTCHA, 2FA, KYC, or payment.",
-  }]);
-  const tasks = calls.filter(([name]) => name === "execute").map(([, task]) => task);
-  assert.equal(tasks.length, 1);
-  assert.match(tasks[0], /perform exactly one/i);
+  assert.equal(calls.filter(([name]) => name === "agent").length, 0);
+  const acts = calls.filter(([name]) => name === "act");
+  assert.equal(acts.length, 8);
+  assert.match(acts[0][1], /open.*registration form/i);
+  assert.deepEqual(acts[1][2].variables, { agentName: "Browser Owner" });
+  assert.deepEqual(acts[2][2].variables, { agentEmail: "browser-owner@example.test" });
+  assert.match(acts[6][1], /marketing.*data-sharing.*declines/i);
+  assert.match(acts[7][1], /submit.*registration/i);
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {
@@ -237,7 +240,7 @@ test("evidence is a PNG captured from the connected Steel page before release", 
   assert.equal(evidence.bytes.toString(), "real-cloud-png");
   assert.deepEqual(calls.find(([name]) => name === "screenshot"), [
     "screenshot",
-    { type: "png", fullPage: true },
+    { type: "png", fullPage: false },
   ]);
 });
 

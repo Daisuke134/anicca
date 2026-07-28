@@ -163,6 +163,15 @@ test("Telegram rejection does not erase the provider receipt or skip release and
   assert.equal(finished.status, "completed");
 });
 
+test("a Telegram photo API rejection records null, never the string false", async () => {
+  const { deps } = fixture({
+    sendTelegramEvidence: async () => ({ ok: false, description: "photo dimensions invalid" }),
+  });
+  const result = await runGenericBrowserTask(JOB, deps);
+  assert.equal(result.status, "completed");
+  assert.equal(result.evidence_message_id, null);
+});
+
 test("a provider narration without independent confirmation is never completed", async () => {
   const { deps } = fixture({
     readProviderReceipt: async () => ({
