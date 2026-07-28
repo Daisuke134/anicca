@@ -212,21 +212,31 @@ function makeStagehandSteelDriver(options = {}) {
         else await discoveryAgent.execute(discoveryTask);
         let selection;
         let selectedUrl;
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-          selection = await stagehand.extract(
-            "From the current page and browsing path, identify the selected site and explain why it matched the delegated goal. Set isSpecificActionPage=true only if this is one specific event/provider detail page where the requested action can be started; search results, directories, category pages, maps, and home pages are false.",
-            selectionSchema,
-          );
+        if (readOnlyAuth) {
           selectedUrl = publicPageUrl(page, agentEmail);
-          if (selection.isSpecificActionPage === true && isSpecificActionUrl(selectedUrl)) break;
-          if (explicitUrl || attempt === 2) {
+          if (!isSpecificActionUrl(selectedUrl)) {
             throw new Error("browser discovery did not reach a specific action page");
           }
-          await discoveryAgent.execute([
-            "You are still on a search, directory, category, or listing page.",
-            "Open one specific candidate's provider detail/action page now.",
-            "Do not submit, register, purchase, or perform the requested external action yet.",
-          ].join("\n"));
+          selection = {
+            selectionReason: "Explicit authenticated provider readback URL.",
+          };
+        } else {
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            selection = await stagehand.extract(
+              "From the current page and browsing path, identify the selected site and explain why it matched the delegated goal. Set isSpecificActionPage=true only if this is one specific event/provider detail page where the requested action can be started; search results, directories, category pages, maps, and home pages are false.",
+              selectionSchema,
+            );
+            selectedUrl = publicPageUrl(page, agentEmail);
+            if (selection.isSpecificActionPage === true && isSpecificActionUrl(selectedUrl)) break;
+            if (explicitUrl || attempt === 2) {
+              throw new Error("browser discovery did not reach a specific action page");
+            }
+            await discoveryAgent.execute([
+              "You are still on a search, directory, category, or listing page.",
+              "Open one specific candidate's provider detail/action page now.",
+              "Do not submit, register, purchase, or perform the requested external action yet.",
+            ].join("\n"));
+          }
         }
         const parsed = new URL(selectedUrl);
         const selected = {
