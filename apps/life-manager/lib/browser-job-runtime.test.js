@@ -72,6 +72,7 @@ test("the worker injects agent-owned identity only when constructing the browser
   const deps = successfulDeps({
     driver: undefined,
     agentEmail: "browser-owner@example.test",
+    agentName: "Browser Owner",
     makeDriver(options) {
       driverOptions = options;
       return successfulDeps().driver;
@@ -80,6 +81,7 @@ test("the worker injects agent-owned identity only when constructing the browser
   const result = await runNextBrowserJob(deps);
   assert.equal(result.status, "completed");
   assert.equal(driverOptions.agentEmail, "browser-owner@example.test");
+  assert.equal(driverOptions.agentName, "Browser Owner");
   assert.doesNotMatch(JSON.stringify(result), /browser-owner@example\.test/i);
 });
 
