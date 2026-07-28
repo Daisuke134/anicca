@@ -1,0 +1,14 @@
+[
+  {
+    "application_id": "5e315cfd-33fc-433b-a5f0-3cfcdc27a9a4",
+    "gig_id": "2b410cad-7cc9-44fd-b2f1-843d9eae6c24",
+    "amount_usd": 1,
+    "payment_currency": "sol",
+    "merchant_wallet_address": "71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf",
+    "category": "code",
+    "pr_links": [
+      "https://github.com/profullstack/aiornot.vote/pull/100"
+    ],
+    "description": "RSS enclosure MIME fix"
+  }
+]
