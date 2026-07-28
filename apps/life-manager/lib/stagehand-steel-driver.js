@@ -273,10 +273,13 @@ function makeStagehandSteelDriver(options = {}) {
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
       const providerText = replaceIdentity(extracted.providerText, agentEmail).slice(0, 500);
-      const negated = /\b(?:failed|error|pending|verify|check email|not confirmed)\b|失敗|未完了|確認してください/i.test(
-        `${status} ${providerText}`,
-      );
       const handoffText = `${status} ${providerText}`;
+      const explicitSuccess = /\b(?:you(?:'|’)re in|registration confirmed|registered|booking confirmed|rsvp confirmed|success)\b/i.test(
+        providerText,
+      );
+      const negated = /\b(?:failed|error|pending|not confirmed)\b|失敗|未完了/i.test(handoffText);
+      const blockingVerification = !explicitSuccess &&
+        /\b(?:verify|check email)\b|確認してください/i.test(handoffText);
       const handoffReason = /\b(?:captcha|challenge)\b/i.test(handoffText)
         ? "challenge"
         : /\b(?:2fa|two-factor|one-time password|otp)\b/i.test(handoffText)
@@ -287,7 +290,10 @@ function makeStagehandSteelDriver(options = {}) {
               ? "login"
               : null;
       return {
-        confirmed: extracted.confirmed === true && !negated && providerText.length > 0,
+        confirmed: (extracted.confirmed === true || explicitSuccess) &&
+          !negated &&
+          !blockingVerification &&
+          providerText.length > 0,
         status,
         confirmationId: extracted.confirmationId ? String(extracted.confirmationId).slice(0, 200) : null,
         currentUrl: publicPageUrl(open.page, agentEmail),

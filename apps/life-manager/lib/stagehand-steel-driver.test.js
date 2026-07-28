@@ -264,6 +264,22 @@ test("login, challenge, CAPTCHA, 2FA, or KYC readback requires handoff", async (
   assert.equal(receipt.handoffReason, "challenge");
 });
 
+test("provider-authored You're In is confirmed even when email verification is only for managing it", async () => {
+  const { driver } = fixture({
+    receipt: {
+      confirmed: false,
+      status: "confirmed",
+      confirmationId: null,
+      providerText: "You're In. Please verify your email to manage your registration and see more event details.",
+    },
+  });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, { goal: "Find and register", locale: "en" });
+  const receipt = await driver.readProviderReceipt(session);
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.handoffRequired, false);
+});
+
 test("release closes Stagehand before releasing the one Steel slot", async () => {
   const { driver, calls } = fixture();
   const session = await driver.openSession();
