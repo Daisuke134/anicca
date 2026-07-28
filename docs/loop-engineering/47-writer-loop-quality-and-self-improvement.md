@@ -2091,6 +2091,8 @@ RED fixtureを先に固定し、実publisher再実行ではtable 3枚とbody dia
 
 14:35の公開窓前fresh verificationでは、Zenn deferred 9 test（backlog、crash-resume、initialization race、isolated git、lock、poison continuation、push budget、retry、terminal）が全PASSし、22:30経路のbeat-rate 19/19、rule-blame 20/20もPASSした。時刻到来前に見えるコード上の停止点は0で、実公開と実schedule receiptだけを残す。
 
+18:34の継続監視では、実LaunchAgent `ai.anicca.article-zenn-retry` を手動発火してrun countが80→81、exit 0になった。`daily-2026-07-27`、`daily-2026-07-28`はいずれも同じ22:06:49.276 JSTの公開窓までintentを保持し、scan後のlock残留は0。Superpowers verification-before-completionでZenn deferred 9 test、self-improve upstream/Telegram 2 test、beat-rate 19/19、rule-blame 20/20をfresh再実行して全PASSした。これは公開成功の代替証拠ではないため#4/#9は閉じず、22:06以降の実public readbackと22:30の実receiptだけをdone判定に使う。
+
 ### 21.52 22:30 LaunchAgentの固定branchを時刻前に除去（実測 14:42）
 
 `ai.anicca.article-self-improve`は`ARTICLE_SOURCE_BRANCH=codex/writer-e1-incident-red`を固定していた。実runtime HEADは`deploy/gig-speedy-reply-cutover`と一致する一方、旧branchとは`346 ahead / 2 behind`で、controllerの`ensure_repo_synced()`が22:30に必ず拒否する状態だった。
