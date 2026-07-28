@@ -373,7 +373,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
 | 13c-SELL-INGRESS | Railway POST/GET settlement→observer→finalized verifier→Life Manager ledgerを接続し、mainnet self-pay 3件をrevenue 0へ拒否 | PR #374/#1196/#1197、`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
-| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳 | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 2 / exit 0 / stderr 0、現行open taskを`pending=1 / recorded=0`で正常待機。focused tests 10/10 |
+| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳 | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 3 / exit 0 / stderr 0、discovery済み3 taskを`pending=3 / recorded=0`で正常待機。focused financial/TaskMarket tests 107/107、Life Manager full suite green |
 | X402-DISCOVERY-1 | production 9商品のOpenAPIを単一catalog化し、x402scan登録・paid search、Coinbase Bazaar検索、PayAPI無料掲載申請まで外部発見経路を開通 | anicca-products PR #376/#377/#378、`docs/evidence/agent-economy/2026-07-28-x402-external-discovery.json`。外部売上ではない |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
@@ -385,7 +385,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / first external work submitted / award gate open** — discovery・acquisition・seller・bid・delivery・verifier・ledgerはlive。The402 bid 2件、Coconalaはbuyer feedback待ち。さらにDaydreams TaskMarketのescrow済み2.5 USDC実jobへ専用wallet/agentで成果物を提出。submission `aadbef70-…`、Base tx `0x87b511…` receipt status 1、remote artifact hash一致。live readbackはsubmission 21 / award 0 / wallet 0 USDC。5分recorderは`pending=1 / recorded=0`で待機しているため、外部実着金はまだ`$0.00`。evidence=`docs/evidence/agent-economy/2026-07-28-taskmarket-spider-submission.md` |
+| 1 | **13c-SELL / 13c-WORK（AE-X4）** | colony外buyer/jobから累計≥`$1`のverified着金 | external payer + finalized receipt + provenance + ledger exactly-once。self-pay 0 | **current cursor / first external work submitted / award gate open** — discovery・acquisition・seller・bid・delivery・verifier・ledgerはlive。The402 bid 2件、Coconalaはbuyer feedback待ち。さらにDaydreams TaskMarketのescrow済み2.5 USDC実jobへ専用wallet/agentで成果物を提出。submission `aadbef70-…`、Base tx `0x87b511…` receipt status 1、remote artifact hash一致。live readbackはsubmission 21 / award 0 / wallet 0 USDC。5分recorderはdiscovery済み3 taskを`pending=3 / recorded=0`で待機しているため、外部実着金はまだ`$0.00`。evidence=`docs/evidence/agent-economy/2026-07-28-taskmarket-spider-submission.md` |
 | 2 | **13d-b-LIVE** | verified surplusからLife Manager agent wallet→user walletへ実送金 | `$35` reserve/spend-cap PASS、Base実tx、ledger expense、§9.11 TG receipt | **external-economic-state待ち** — cost RPC復旧済み、engine exit 0、verified surplus 0 |
 | 3 | **SURVIVE-1** | agentがverified external収益からcomputeまたはshelterを払う | provider receipt + ledger expense + service継続 + reserve floor | **external-economic-state待ち** — 毎時refill railとNosana renewはlive。treasury→shelter実txは済んだがexternal収益由来ではないためdoneにしない |
 | 4 | **SCALE-1** | 黒字SELL/WORK recipeを増幅し月`$100 net`へ到達 | 30日closed ledger、self-funded率≥100%、loss/cost込み | pending |
@@ -859,8 +859,8 @@ registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込し
 submission=`aadbef70-3e8f-4fff-a918-1ff2d907a7db`、Base tx=`0x87b511ab9f6e2a1da867e657836715fe977b050b176c8c8606312fb1c8762e93`
 はreceipt status 1、marketplaceのremote SHA-256はlocalと一致した。ただし競争bountyのwinner未選定・USDC未着金なので、
 これはacquisition→deliveryの実証であって収益ではない。live readbackはsubmission count 21 / award count 0 /
-wallet balance 0 USDC。`ai.anicca.life-manager-taskmarket-ledger`は5分周期で現在状態を再照合し、production初回は
-`pending=1 / recorded=0 / exit 0 / stderr 0`。TaskMarketの2.3125 USDC net awardを丸めないため、
+wallet balance 0 USDC。`ai.anicca.life-manager-taskmarket-ledger`は5分周期で現在状態を再照合し、最新production readbackは
+`runs=3 / tasks_seen=3 / pending=3 / recorded=0 / exit 0 / stderr 0`。TaskMarketの2.3125 USDC net awardを丸めないため、
 production ledgerへ`amount_atomic/amount_decimals`をadditive適用し、外部requester + award + finalized Base USDC Transfer
 が一致した時だけ`taskmarket_work`としてexactly-once記帳する。13cの外部収益は`$0.00`のまま保つ。
 
