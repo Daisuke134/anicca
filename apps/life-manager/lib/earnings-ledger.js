@@ -45,6 +45,8 @@ const SECRET_KEYS = new Set([
 const MAX_MINOR = BigInt(Number.MAX_SAFE_INTEGER);
 const USD_MICROS_PER_MINOR = 10_000n;
 const MAX_USD_MICROS = MAX_MINOR * USD_MICROS_PER_MINOR;
+const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const SOLANA_SIGNATURE_RE = /^[1-9A-HJ-NP-Za-km-z]{87,88}$/;
 
 function fail(message) {
   throw new Error(message);
@@ -66,7 +68,8 @@ function assertNoSecret(value, depth = 0) {
 
 function normaliseAddress(value) {
   const raw = String(value == null ? "" : value).trim();
-  if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) fail(`wallet address is not an Ethereum address: ${raw.slice(0, 10)}`);
+  if (SOLANA_ADDRESS_RE.test(raw)) return raw;
+  if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) fail(`wallet address is not a supported chain address: ${raw.slice(0, 10)}`);
   const checksummed = toChecksumAddress(raw.slice(2).toLowerCase());
   // EIP-55 exists so a mistyped address is detectable. Accepting a lowercase address would throw that
   // away, and money sent to a nearly-right address is gone.
@@ -142,7 +145,9 @@ function normaliseEntry(entry) {
 
   if (entry.tx_hash != null && String(entry.tx_hash) !== "") {
     const hash = String(entry.tx_hash).trim();
-    if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) fail(`tx_hash is not a transaction hash: ${hash.slice(0, 12)}`);
+    if (!/^0x[0-9a-fA-F]{64}$/.test(hash) && !SOLANA_SIGNATURE_RE.test(hash)) {
+      fail(`tx_hash is not a supported transaction hash: ${hash.slice(0, 12)}`);
+    }
     row.tx_hash = hash;
   }
 
