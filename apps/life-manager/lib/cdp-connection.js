@@ -259,6 +259,37 @@ function connectCdp(websocketUrl, options = {}) {
           clickCount: 1,
         }, cdpSessionId);
       },
+      async insertText(text) {
+        const value = typeof text === "string" ? text : "";
+        if (!value || value.length > 1_000) {
+          throw new Error("trusted text unavailable");
+        }
+        await send("Input.insertText", { text: value }, cdpSessionId);
+      },
+      async pressKey(input) {
+        const key = String(input && input.key || "");
+        const code = String(input && input.code || "");
+        if (!key || !code || key.length > 40 || code.length > 40) {
+          throw new Error("trusted key unavailable");
+        }
+        const virtualKeyCode = key === "Enter" ? 13 : undefined;
+        const params = {
+          key,
+          code,
+          ...(virtualKeyCode ? {
+            windowsVirtualKeyCode: virtualKeyCode,
+            nativeVirtualKeyCode: virtualKeyCode,
+          } : {}),
+        };
+        await send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          ...params,
+        }, cdpSessionId);
+        await send("Input.dispatchKeyEvent", {
+          type: "keyUp",
+          ...params,
+        }, cdpSessionId);
+      },
       async close() {
         closed = true;
         try { socket.close(); } catch { /* already gone */ }
