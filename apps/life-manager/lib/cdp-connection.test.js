@@ -34,6 +34,36 @@ const BASE_HANDLERS = {
   "Runtime.enable": {},
 };
 
+test("uses a localhost Host header so Chrome accepts CDP proxied over Railway private DNS", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  let constructorArgs = null;
+  function WebSocket(websocketUrl, options) {
+    constructorArgs = { websocketUrl, options };
+    return socket;
+  }
+
+  const page = await connectCdp("ws://steel-browser.railway.internal:8080/", { WebSocket });
+  await page.close();
+
+  assert.equal(constructorArgs.websocketUrl, "ws://steel-browser.railway.internal:8080/");
+  assert.equal(constructorArgs.options.headers.Host, "localhost:8080");
+});
+
+test("does not rewrite the Host header for a non-Railway CDP endpoint", async () => {
+  const socket = fakeSocket(BASE_HANDLERS);
+  let constructorArgs = null;
+  function WebSocket(websocketUrl, options) {
+    constructorArgs = { websocketUrl, options };
+    return socket;
+  }
+
+  const page = await connectCdp("wss://connect.browser.example/session/123", { WebSocket });
+  await page.close();
+
+  assert.equal(constructorArgs.websocketUrl, "wss://connect.browser.example/session/123");
+  assert.equal(constructorArgs.options, undefined);
+});
+
 test("attaches flattened to the page target and rides the sessionId on every later call", async () => {
   const socket = fakeSocket({
     ...BASE_HANDLERS,

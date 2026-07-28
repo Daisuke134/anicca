@@ -3,7 +3,7 @@
 //
 // steel-browser runs as a SEPARATE Railway service in the same project as life-call. The OSS build
 // ships no API auth, so it has NO public domain: it is reachable only over Railway private
-// networking at steel-browser.railway.internal:3000. Nothing in this module may ever accept a
+// networking at steel-browser.railway.internal:8080. Nothing in this module may ever accept a
 // public base URL by default.
 //
 // ─── ROUTES (verified against source, not memory) ────────────────────────────────────────────────
@@ -24,7 +24,7 @@
 // and also tears down the CDP socket, because a live socket against a released session is the same
 // leak by another name.
 
-const STEEL_BASE_URL = "http://steel-browser.railway.internal:3000";
+const STEEL_BASE_URL = "http://steel-browser.railway.internal:8080";
 
 // The page-side probe. Runs in the provider's page and returns the field descriptor shape
 // care-booking-executor.js reasons about: {selector, label, name, type, required, maxLength}. The
