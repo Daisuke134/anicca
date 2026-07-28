@@ -173,7 +173,12 @@ function sourcesNote(task) {
 }
 
 function submissionId(row) {
-  return row?.id || row?.submissionId || row?.submission_id || null;
+  return row?.id
+    || row?.submissionId
+    || row?.submission_id
+    || row?.submitTxHash
+    || row?.submit_tx_hash
+    || null;
 }
 
 function taskIdOf(row) {
@@ -183,6 +188,69 @@ function taskIdOf(row) {
 async function appendEarnAttempt(path, row) {
   await mkdir(dirname(path), { recursive: true });
   await appendFile(path, `${JSON.stringify(row)}\n`, { mode: 0o600 });
+}
+
+async function readEarnAttempts(path) {
+  try {
+    return (await readFile(path, 'utf8'))
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        try { return JSON.parse(line); } catch { return null; }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function reconcileExistingSubmission({
+  earnLedgerPath,
+  taskId,
+  id,
+  wakeId,
+  now,
+}) {
+  if (!id) return false;
+  const rows = await readEarnAttempts(earnLedgerPath);
+  const alreadyReconciled = rows.some((row) =>
+    row?.source === 'taskmarket_work_reconciliation'
+    && row?.task === taskId
+    && row?.submission_id === id);
+  if (alreadyReconciled) return false;
+  const pending = rows.findLast((row) =>
+    row?.source === 'taskmarket_work_attempt'
+    && row?.task === taskId
+    && !row?.submission_id);
+  if (!pending) return false;
+  await appendEarnAttempt(earnLedgerPath, {
+    ts: Math.floor(now / 1000),
+    wake: wakeId,
+    source: 'taskmarket_work_reconciliation',
+    task: taskId,
+    earn_usdc: 0,
+    cost_usdc: 0,
+    net_usdc: 0,
+    submission_id: id,
+    reconciles_wake: pending.wake,
+  });
+  return true;
+}
+
+async function readBackSubmission({
+  listSubmissions,
+  taskId,
+  attempts,
+  delayMs,
+  sleep,
+}) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const rows = await listSubmissions();
+    const found = rows.find((row) => taskIdOf(row) === taskId);
+    if (submissionId(found)) return found;
+    if (attempt + 1 < attempts) await sleep(delayMs);
+  }
+  return null;
 }
 
 async function readSpend(path, day) {
@@ -237,6 +305,8 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     wakeId = process.env.WAKE_ID || `taskmarket-${Date.now()}`,
     now = Date.now(),
     maxImageCostUsd = MAX_IMAGE_COST_USD,
+    submissionReadbackAttempts = 5,
+    submissionReadbackDelayMs = 1000,
   } = options;
   if (!aniccaHome) throw new Error('ANICCA_HOME is required');
 
@@ -245,6 +315,7 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
   const loadWalletKey = deps.loadWalletKey || (() => loadEvmKey());
   const downloadImage = deps.downloadImage || defaultDownloadImage;
   const submitTask = deps.submitTask || defaultSubmitTask;
+  const sleep = deps.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const tasks = await listTasks();
   const submissions = await listSubmissions();
 
@@ -262,14 +333,44 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
   }
   if (action !== 'execute') throw new Error(`unsupported TaskMarket action: ${action}`);
 
+  for (const existing of submissions) {
+    const existingTaskId = taskIdOf(existing);
+    const id = submissionId(existing);
+    if (!existingTaskId || !id) continue;
+    const reconciled = await reconcileExistingSubmission({
+      earnLedgerPath,
+      taskId: existingTaskId,
+      id,
+      wakeId,
+      now,
+    });
+    if (reconciled) {
+      return {
+        ok: true,
+        action: 'reconciled_submission',
+        taskId: existingTaskId,
+        submissionId: id,
+        costUsd: 0,
+      };
+    }
+  }
+
   if (taskId) {
     const existing = submissions.find((row) => taskIdOf(row) === taskId);
     if (existing) {
+      const id = submissionId(existing);
+      const reconciled = await reconcileExistingSubmission({
+        earnLedgerPath,
+        taskId,
+        id,
+        wakeId,
+        now,
+      });
       return {
         ok: true,
-        action: 'already_submitted',
+        action: reconciled ? 'reconciled_submission' : 'already_submitted',
         taskId,
-        submissionId: submissionId(existing),
+        submissionId: id,
         costUsd: 0,
       };
     }
@@ -326,8 +427,13 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
   await writeFile(files[2], sourcesNote(selected), { mode: 0o600 });
   await submitTask(selected.id, files);
 
-  const readback = await listSubmissions();
-  const recorded = readback.find((row) => taskIdOf(row) === selected.id);
+  const recorded = await readBackSubmission({
+    listSubmissions,
+    taskId: selected.id,
+    attempts: submissionReadbackAttempts,
+    delayMs: submissionReadbackDelayMs,
+    sleep,
+  });
   const id = submissionId(recorded);
   const ledgerRow = {
     ts: Math.floor(now / 1000),
