@@ -138,6 +138,39 @@ def test_sweep_removes_only_clean_remote_recoverable_unused_worktree(
     assert reasons[str(open_path)] == "open_worktree"
 
 
+def test_sweep_supports_collection_outside_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    remote = tmp_path / "remote.git"
+    primary = tmp_path / "repo"
+    collection = tmp_path / "external-worktrees"
+    git(tmp_path, "init", "--bare", str(remote))
+    git(tmp_path, "clone", str(remote), str(primary))
+    git(primary, "config", "user.email", "cleanup@example.invalid")
+    git(primary, "config", "user.name", "Cleanup Test")
+    git(primary, "checkout", "-b", "main")
+    commit_file(primary, "base.txt", "base")
+    git(primary, "push", "-u", "origin", "main")
+
+    safe = add_worktree(primary, collection, "safe-external")
+    commit_file(safe, "safe.txt", "remote")
+    git(safe, "push", "-u", "origin", "safe-external")
+    monkeypatch.setattr(cleanup_control, "path_open_state", lambda _path: "confirmed-closed")
+
+    result = cleanup_control.sweep_worktree_collection(
+        collection_root=collection,
+        repository_root=primary,
+        ledger_path=tmp_path / "ledger.jsonl",
+        policy_version="cleanup-control-v1",
+        manifest_sha256="test-manifest",
+        now=1_000,
+    )
+
+    assert result["removed"] == 1
+    assert result["errors"] == 0
+    assert not safe.exists()
+
+
 def test_manifest_accepts_only_remote_recoverable_worktree_finalizer(tmp_path: Path) -> None:
     entry = {
         "id": "worktrees",
@@ -157,6 +190,18 @@ def test_manifest_accepts_only_remote_recoverable_worktree_finalizer(tmp_path: P
 
     _, _, entries = cleanup_control.load_manifest(manifest)
     assert entries[0]["class"] == "git_worktree_collection"
+
+    repository = tmp_path / "repo"
+    entry["finalizer"] = {
+        "kind": "remote_recoverable_remove",
+        "repository_path": str(repository),
+    }
+    manifest.write_text(
+        json.dumps({"policy_version": "cleanup-control-v1", "artifacts": [entry]}),
+        encoding="utf-8",
+    )
+    _, _, entries = cleanup_control.load_manifest(manifest)
+    assert entries[0]["finalizer"]["repository_path"] == str(repository)
 
     entry["finalizer"] = {"kind": "off_volume_quarantine"}
     manifest.write_text(

@@ -115,7 +115,7 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
             raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
         expected_finalizer = "off_volume_quarantine"
     elif artifact_class == WORKTREE_COLLECTION_CLASS:
-        if set(finalizer) != {"kind"}:
+        if set(finalizer) not in ({"kind"}, {"kind", "repository_path"}):
             raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
         expected_finalizer = "remote_recoverable_remove"
     elif artifact_class == REGENERABLE_OUTPUT_CLASS:
@@ -131,6 +131,10 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
             f"artifact {raw['id']} class {artifact_class} requires {expected_finalizer} finalizer"
         )
     normalized_finalizer = {"kind": expected_finalizer}
+    if artifact_class == WORKTREE_COLLECTION_CLASS and "repository_path" in finalizer:
+        normalized_finalizer["repository_path"] = str(
+            _normalized_path(finalizer["repository_path"])
+        )
     if artifact_class == REGENERABLE_OUTPUT_CLASS:
         normalized_finalizer["proof_path"] = str(_normalized_path(finalizer["proof_path"]))
     return {
@@ -406,13 +410,14 @@ def _du_bytes(path: Path) -> int:
 def sweep_worktree_collection(
     *,
     collection_root: Path,
+    repository_root: Path | None = None,
     ledger_path: Path,
     policy_version: str,
     manifest_sha256: str,
     now: int,
 ) -> dict[str, int]:
     result = {"removed": 0, "preserved": 0, "errors": 0, "bytes_removed": 0}
-    repo = collection_root.parent
+    repo = collection_root.parent if repository_root is None else repository_root
     fetch = _command("git", "fetch", "--prune", "origin", cwd=repo)
     if fetch.returncode != 0:
         event = _event_base(
@@ -740,8 +745,10 @@ def sweep(
             result["preserved"] += 1
             continue
         if entry["class"] == WORKTREE_COLLECTION_CLASS:
+            repository_path = entry["finalizer"].get("repository_path")
             collection = sweep_worktree_collection(
                 collection_root=target,
+                repository_root=Path(repository_path) if repository_path else None,
                 ledger_path=ledger_path,
                 policy_version=policy_version,
                 manifest_sha256=manifest_sha256,

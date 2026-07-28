@@ -62,6 +62,19 @@
       }
     },
     {
+      "id": "life-manager-external-worktrees",
+      "path": "$HOME/Projects/.worktrees/life-manager",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove",
+        "repository_path": "$HOME/Projects/life-manager-main"
+      }
+    },
+    {
       "id": "life-manager-main-node-modules",
       "path": "$HOME/Projects/life-manager-main/node_modules",
       "owner": "node-runtime",

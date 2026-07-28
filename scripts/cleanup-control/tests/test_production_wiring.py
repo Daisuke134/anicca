@@ -60,6 +60,10 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
     assert by_id["life-manager-main-worktrees"]["finalizer"] == {
         "kind": "remote_recoverable_remove"
     }
+    assert by_id["life-manager-external-worktrees"]["finalizer"] == {
+        "kind": "remote_recoverable_remove",
+        "repository_path": str(Path.home() / "Projects/life-manager-main"),
+    }
     assert by_id["life-manager-main-node-modules"]["class"] == "regenerable_output"
     assert by_id["life-manager-main-node-modules"]["finalizer"] == {
         "kind": "verified_regenerable_remove",
