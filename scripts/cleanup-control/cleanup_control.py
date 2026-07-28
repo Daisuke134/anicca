@@ -680,8 +680,11 @@ def sweep(
     ledger_path: Path,
     now: int | None = None,
     candidates: list[Path] | None = None,
+    pressure_override: bool = False,
+    reclaim_target_bytes: int = 0,
 ) -> dict[str, int | str]:
     now = int(time.time()) if now is None else int(now)
+    reclaim_target_bytes = max(0, int(reclaim_target_bytes))
     try:
         policy_version, manifest_sha256, entries = load_manifest(manifest_path)
     except ManifestError as exc:
@@ -735,6 +738,24 @@ def sweep(
             event = _event_base(
                 event="preserved",
                 reason="path_missing",
+                path=target,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            append_ledger(ledger_path, event)
+            result["preserved"] += 1
+            continue
+        if (
+            pressure_override
+            and entry["class"] == "ephemeral"
+            and reclaim_target_bytes > 0
+            and result["bytes_quarantined"] >= reclaim_target_bytes
+        ):
+            event = _event_base(
+                event="preserved",
+                reason="pressure_target_met",
                 path=target,
                 entry=entry,
                 policy_version=policy_version,
@@ -824,25 +845,38 @@ def sweep(
                 reason = f"artifact_unreadable:{type(exc).__name__}"
                 result["errors"] += 1
             else:
-                if newest > now - entry["ttl_seconds"]:
-                    reason = "ttl_not_expired"
-                elif size <= entry["quota_bytes"]:
+                if size <= entry["quota_bytes"]:
                     reason = "within_quota"
+                elif newest > now - entry["ttl_seconds"] and not pressure_override:
+                    reason = "ttl_not_expired"
                 else:
-                    moved, moved_bytes, reason = _quarantine(
-                        source=target,
-                        entry=entry,
-                        quarantine_root=quarantine_root,
-                        ledger_path=ledger_path,
-                        policy_version=policy_version,
-                        manifest_sha256=manifest_sha256,
-                        now=now,
+                    open_state = (
+                        path_open_state(target) if pressure_override else "confirmed-closed"
                     )
-                    if moved:
-                        result["quarantined"] += 1
-                        result["bytes_quarantined"] += moved_bytes
-                        continue
-                    result["errors"] += 1
+                    if open_state == "open":
+                        reason = "open_path"
+                    elif open_state != "confirmed-closed":
+                        reason = "lsof_error"
+                        result["errors"] += 1
+                    elif _lease_is_active(entry, now):
+                        reason = "revalidation_active_lease"
+                    elif pressure_override and path_open_state(target) != "confirmed-closed":
+                        reason = "revalidation_open_path"
+                    else:
+                        moved, moved_bytes, reason = _quarantine(
+                            source=target,
+                            entry=entry,
+                            quarantine_root=quarantine_root,
+                            ledger_path=ledger_path,
+                            policy_version=policy_version,
+                            manifest_sha256=manifest_sha256,
+                            now=now,
+                        )
+                        if moved:
+                            result["quarantined"] += 1
+                            result["bytes_quarantined"] += moved_bytes
+                            continue
+                        result["errors"] += 1
         event = _event_base(
             event="preserved",
             reason=reason,
@@ -855,7 +889,7 @@ def sweep(
         # Protected/leased roots can be very large. Exact byte measurement is
         # required for a move, but a preserve decision must remain bounded.
         event["bytes"] = 0
-        if reason.startswith(("quarantine_", "artifact_unreadable:")):
+        if reason.startswith(("quarantine_", "artifact_unreadable:")) or reason == "lsof_error":
             event["result"] = "error"
         append_ledger(ledger_path, event)
         result["preserved"] += 1
@@ -942,6 +976,8 @@ def _parser() -> argparse.ArgumentParser:
     sweep_parser.add_argument("--ledger", required=True, type=Path)
     sweep_parser.add_argument("--now", type=int)
     sweep_parser.add_argument("--candidate", action="append", type=Path)
+    sweep_parser.add_argument("--pressure-override", action="store_true")
+    sweep_parser.add_argument("--reclaim-target-bytes", type=int, default=0)
     restore_parser = subcommands.add_parser("restore")
     restore_parser.add_argument("--transaction-id", required=True)
     restore_parser.add_argument("--quarantine-root", required=True, type=Path)
@@ -958,6 +994,8 @@ def main(argv: list[str] | None = None) -> int:
             ledger_path=args.ledger,
             now=args.now,
             candidates=args.candidate,
+            pressure_override=args.pressure_override,
+            reclaim_target_bytes=args.reclaim_target_bytes,
         )
         print(json.dumps(result, sort_keys=True))
         return 0 if result["status"] == "ok" and result["errors"] == 0 else 3
