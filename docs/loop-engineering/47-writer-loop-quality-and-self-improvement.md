@@ -2210,7 +2210,7 @@ profitable-claude/
     │   │   ├── attribution.toml              # CTA destination + conversion event
     │   │   ├── rewards.toml                  # primary / guardrail / observation windows
     │   │   ├── opponents/                    # 実際に転換した同領域 assets
-    │   │   └── weights/                      # product × channel の学習済み重み
+    │   │   └── weights/                      # immutable bootstrap seed。学習済みstateはrepo外
     │   ├── life-manager/
     │   ├── anicca-ios/
     │   └── <next-product>/
@@ -2457,6 +2457,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 15 | launchd chain | 実kickstart runs=3、score receipt再利用、measure→learn→verify→durable notify | PASS (installed `00830d4`) |
 | 16 | push integrity | `git diff --check`、focused/full suite 343 passed、HEAD/upstream、対象tracked diff | PASS（本spec最終commit） |
 | 17 | shared engine extraction | `test_shared_engine_contract.py` clean-user child process、path traversal拒否、schema、engine import isolation + Writer全suite | PASS（feature `f588202`、installed `e286345`、contract 4 / Writer 343 passed） |
+| 18 | Life Manager product pack | 実landing/Telegram/Stripe/onboarding正本からoffer、CTA、activation、paidを読込。3 writing sliceを別reward/opponent/seed/runtime weightへ解決し、既存runtime weightを再installで上書きしない | PASS（feature `f934075`、installed `e79da56`、Marketing 5 + Writer 343 = 348 passed） |
 
 | Item | Value |
 |---|---|
@@ -2486,8 +2487,8 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 5 | DONE | §22.6 #10–11: launchd/Telegram/E2E fixture | 実kickstart、messageId、no-data対照はinsufficient/変更0 |
 | 6 | DONE | §22.6 #12: spec/code/test push verification | commit/push、HEAD/upstream一致、対象tracked diff 0 |
 | 7 | DONE (`f588202`; installed `e286345`) | §22.3へ共有engine contractを移設。5 JSON schema、manifest registry、canonical bounded learning/controller、writer互換shim | clean-user child process、product/channel/slice scope隔離、cross-product path拒否、旧generic実装0、contract 4件 + Writer 343件PASS |
-| 8 | NEXT | `products/life-manager` を接続 | product-scoped offer/CTA/reward/opponent/weights |
-| 9 | PENDING | video fixture→Honne→Larry→ReelClaw→Watercolor | 同一engine schema、独立channel craft/reward |
+| 8 | DONE (`f934075`; installed `e79da56`) | `products/life-manager` を接続。実正本から`$20/mo` offer、landing→Telegram CTA、`tg_onboard_stage=done` activation、Stripe single-writerの`lm_users.paid=true`を固定。opponentは実conversion未観測のため`unknown` baseline。tracked weightはseedだけ、学習stateはrepo外で既存値をpreserve | product-scoped offer/CTA/reward/opponent/weights、Marketing 5件 + Writer 343件PASS |
+| 9 | NEXT | video fixture→Honne→Larry→ReelClaw→Watercolor | 同一engine schema、独立channel craft/reward |
 | 10 | PENDING | 自然観測を継続 | 3 run、実engagement、7日paid、Zenn/X timingは監視backlogから自動terminal化 |
 | 11 | PENDING | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
 
