@@ -2065,6 +2065,26 @@ X Article ENは固定edit URL `2081857959186055168`を実editorで再読した�
 
 同じpreflightでself-improveのbeat-rate契約は19/19 PASS、rule-blame契約はjudge-outage fixtureだけ19/20となった。原因はproductionではなくtest末尾だけがcwd相対`"scripts"`をimport pathにしていたこと。全fixture共通のabsolute `SCRIPT_DIR`を使う`pyrun`へ統一し、rule-blame 20/20、beat-rate 19/19へ復旧した。Writer `a933f75`。22:30の実LaunchAgent発火によるmetrics/score receiptとTelegram確認は引き続き未完である。
 
+### 21.51 `daily-2026-07-28` X Article EN公開と時間契約FAIL（実測 13:27）
+
+固定edit URL `2081857959186055168`からENを公開し、本文・identity・cover・body diagram・table 3枚のauthenticated readbackは全PASSした。一方、JAからの実時間差は許可した360–370分を超えた。公開成功とschedule成功を同一視しない。
+
+| 証拠 | 実測値 |
+|---|---|
+| Public receipt | public ID=`2081959396951912713`、[公開URL](https://x.com/diceai0/article/2081959396951912713)、remote `published_at=2026-07-28T04:26:15.000Z` |
+| Immutable identity | stable target=`https://x.com/compose/articles/edit/2081857959186055168`、artifact SHA-256=`c51dadad07469e849924b4417cf59da862288563bb8287bd91d21824ee01c57e`、destination=`diceai0` |
+| Media readback | cover center-crop横/縦dHash distance=0/0、body diagram=2、table 3枚=0/2/2。`content_verified`、`cover_verified`、`body_media_verified`、`table_media_verified`は全true |
+| Duplicate guard | 独立reconcile=`skip-live / repaired:false`、current-run ledger live row=exact1、`reality_gate=PASS` |
+| Time contract | JA `2026-07-27T21:57:17Z`→EN `2026-07-28T04:26:15Z`=`388分58秒`。上限370分を`18分58秒`超過したためFAIL |
+
+停止点は3つだった。
+
+1. 13:00の自動tickと手動`kickstart -k`が重なり、実process不在のownerless `.article-daily.lockdir`が残った。process不在を実測後、空lockだけを回収して同じLaunchAgentを再開した。
+2. immutable draftのcanonical media envelopeをX repair adapterが末尾へ再追加し、同じbody diagramを別anchorで二重列挙した。canonical envelopeがある場合は派生mediaを追加せず、公開副作用前の`authorized/public_id=null/browser_evidenceなし`journalだけをfresh preflight後に再生成可能にした。Writer `7a4eb09` / `f86d3fe`。
+3. parserの`after_text` 80文字上限が長いMarkdown linkの閉じ`)`を切り、表示DOMに存在しないMarkdown文字列をanchorとして探した。閉じ`)`がなくても完全なlink labelを表示anchorへ変換する。Writer `8b978d0`。
+
+RED fixtureを先に固定し、X repair・stage media・exact8 scheduleの関連48 testsがPASSした。実publisher再実行ではtable 3枚とbody diagramを全て正しい表示anchorへ挿入し、同じeditor IDからexact1公開した。これにより`daily-2026-07-28`は7/8 liveで、残りはZennだけ。ただし本runは時間契約FAILのため「3 consecutive healthy run」には数えない。次run前にowner-aware lock recoveryと、10分window内にdeterministic publisher effectを開始できるdispatch budgetをTDDで固定する。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2294,7 +2314,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 1 | **DONE** — note/ja の `public-asset-readback-failed` | 透明PNGのNote cropで、検証器が非表示RGBを比較していた。§21.47 | 同一run `nccfebe2c85f6` のidentity・本文・eyecatch・body assetが一致。receipt=`live`、launchd再実行exit 0、公開0増分 |
 | 2 | **DONE** — devto/en の frontmatter 欠落 | immutable init 前に canonical EN の title/tags frontmatter を強制し、凍結済みrunは本文完全一致wrapperからmetadataだけを救済。Writer `65f139e` / `85b83ba` | run `daily-2026-07-27` の固定ID `4243074` をlaunchd loopが同一IDのまま公開。authenticated API/匿名HTMLでidentity・本文hash・headline/body media PASS、ledger live行exact1。[公開URL](https://dev.to/anicca_301094325e/if-you-want-ai-agents-to-run-unattended-design-how-they-stop-first-1n3m) |
 | 3 | **DONE** — x-article ja/en の identity 不一致 | 固定editorのtitleをimmutable sourceへbindし、公開済み本文一致+media readback失敗だけをsame-ID repairへ変換。Xのcover適用によるtab差し替え後も同じedit URLだけを再取得する。Writer `37c20ce` / `11b824a` / `ab296f8` | JAは固定edit ID `2081491516254830592`→public ID `2081673442827608169`、ENは固定edit ID `2081491643371520000`→public ID `2081766277635543268` のままlive。両言語ともidentity・本文・cover/body media PASS、ledger live exact2。[JA](https://x.com/diceai0/article/2081673442827608169) / [EN](https://x.com/diceai0/article/2081766277635543268)。remote `published_at` はJA `09:29:59Z`、EN `15:38:52Z` で差368分53秒（許可360–370分内） |
-| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させる | stale quarantineとZenn asset欠落は修正済み。新runのDev.to/Substack停止も§21.48で同一ID復旧し、X Postは§21.49で当日slot exact1を公開。`daily-2026-07-28`は6/8 live。残りはtime gateだけ | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry。`daily-2026-07-28`はZenn delegated、X Article ENを12:57:17 JST以降に既存launchd workerが同一targetで公開する。両run exact8、public readback PASS、重複0でDONE |
+| 4 | **IN PROGRESS** — 現行2 runをexact8へ到達させ、X EN時間経路を修復 | stale quarantine、Zenn asset、Dev.to/Substack、X Postは復旧済み。§21.51でX Article ENは同一targetからlive/readback PASSになり`daily-2026-07-28`は7/8。ただしJA差388分58秒で時間契約FAIL。ownerless lockとagent起動・runtime修復が10分windowを消費した | `daily-2026-07-27`は7/8でZennを`2026-07-28T22:06:49.276+09:00`に同一slug retry、`daily-2026-07-28`もFIFOでZennをexact1公開。加えてowner-aware lock recoveryとdeterministic dispatch budgetをTDD固定し、次runのX EN remote `published_at`差360–370分、public readback PASS、重複0でDONE |
 | 5 | **DONE** — `cta-gate.sh` を prompt とpublication initに配線 | 公開修復後、扉の再消失を防ぐ。prompt指示だけでなく、全publisher/workerが共有するimmutable package境界でfail-closed。Writer feature `dfb36d9`、live `027c258` | JA/EN/X Postの各1面だけCTAを欠く3 fixtureはすべてstate作成前FAIL、3面すべて正しいCTAなら各`gates/cta-*.json=PASS`後にinit成功。publication/resume関連137 tests PASS、live branchで同じcontract再実行PASS |
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
