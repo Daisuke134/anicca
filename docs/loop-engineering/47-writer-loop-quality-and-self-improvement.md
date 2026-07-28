@@ -2087,6 +2087,8 @@ RED fixtureを先に固定し、実publisher再実行ではtable 3枚とbody dia
 
 再発防止はWriter `d165a29`へpushした。`eligible_pairs=["x-article/en"]`のsingle-pair tickはgeneral model agentを起動せず、既存guarded `x_inplace_repair.py`を直接dispatchする。空のownerless lockは、他のdaily/resume/Zenn processが0かつlock内容も空のときだけ回収し、active/未知内容はfail-closedを維持する。bash構文とX repair・stage media・exact8 scheduleの関連49 testsがPASS。live後の実LaunchAgent再発火は`eligible_pairs=[] / WAIT / exit 0`、lock残留0、独立reconcile=`skip-live / repaired:false`で公開増分0だった。次runのremote `published_at`差360–370分を実測するまで時間契約自体は未完とする。
 
+13:36の独立再確認では、実LaunchAgent `ai.anicca.article-zenn-retry` を発火し、`daily-2026-07-27`、`daily-2026-07-28`の順に同じ`2026-07-28T22:06:49.276+09:00`まで`window closed / pending retained`を記録した。scanはexit 0、終了後のshared publication lockは不在。したがって現在のZenn停止点はworker故障やlock残留ではなく、公開側の24時間rolling windowだけである。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
