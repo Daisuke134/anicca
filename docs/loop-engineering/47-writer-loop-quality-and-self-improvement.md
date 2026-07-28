@@ -2043,7 +2043,7 @@ ja 却下   reference:55 | 自律型AIは、動かし続けるほど賢くなる
 | substack/ja | `208760758` | [公開URL](https://aniccabuddha.substack.com/p/ai000)、本文・identity・2 mediaともexact SHA PASS |
 | substack/en | `208760780` | [公開URL](https://aniccabuddha.substack.com/p/the-judge-gave-my-headline-000-the)、HTTP 200、`send:false`、本文・identity・2 mediaともexact SHA PASS |
 
-focused verificationはpublication/resume 88件、Dev.to 11件、Substack retry 2件、既存Substack 13件がPASS。stateは5/8 live。残りは新規故障ではなく、`zenn-article/ja`のrolling window、`x-post/ja`の12:00 JST slot、`x-article/en`のJA公開+6時間（12:57:17 JST）という既存time gateだけである。09:09のauthoritative plannerは`pending_pairs`をこの3件、`eligible_pairs=[]`として返した。
+focused verificationはpublication/resume 88件、Dev.to 11件、Substack retry 2件、既存Substack 13件がPASS。11:40の公開窓前再検証でもX Post/schedule 28件、Zenn 3件、Zenn crash-resume、self-improve 12件がPASSし、実launchd resumeは`eligible_pairs=[] / WAIT / exit 0`で終了した。stateは5/8 live。残りは新規故障ではなく、`zenn-article/ja`のrolling window、`x-post/ja`の12:00 JST slot、`x-article/en`のJA公開+6時間（12:57:17 JST）という既存time gateだけである。
 
 ---
 
