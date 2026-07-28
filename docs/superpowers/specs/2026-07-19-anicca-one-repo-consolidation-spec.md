@@ -376,7 +376,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
 | 13c-SELL-INGRESS | Railway POST/GET settlement→observer→finalized verifier→Life Manager ledgerを接続し、mainnet self-pay 3件をrevenue 0へ拒否 | PR #374/#1196/#1197、`docs/evidence/agent-economy/2026-07-28-x402-railway-live-payment.json` |
-| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳 | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 3 / exit 0 / stderr 0、discovery済み3 taskを`pending=3 / recorded=0`で正常待機。focused financial/TaskMarket tests 107/107、Life Manager full suite green |
+| TASKMARKET-LEDGER | TaskMarket submissionの現在状態を5分再照合し、外部award + finalized Base USDC Transferだけを6桁精度でexactly-once記帳 | production Supabaseへ`amount_atomic/amount_decimals` additive migration適用・schema readback。`ai.anicca.life-manager-taskmarket-ledger` run 5 / exit 0 / stderr 0、discovery済み3 taskを`pending=3 / recorded=0`で正常待機。focused exact-ledger/payout/TaskMarket tests 105/105、Life Manager full suite 659/659 |
 | X402-DISCOVERY-1 | production 9商品のOpenAPIを単一catalog化し、x402scan登録・paid search、Coinbase Bazaar検索、PayAPI無料掲載申請まで外部発見経路を開通 | anicca-products PR #376/#377/#378、`docs/evidence/agent-economy/2026-07-28-x402-external-discovery.json`。外部売上ではない |
 | 13d-b engine | reserve/spend-cap/receipt/TG順を守るBase USDC payout engineをproduction化 | 現在は`no_verified_surplus`。実txは未完 |
 | REPORT-1 machinery | daily/weekly Telegramとauthenticated panelを同じledger snapshotへ接続 | daily 1/7、weekly 1/1、panel差0 |
@@ -872,7 +872,7 @@ submission `3db02754-0f14-464c-96f9-bbbd5161c1ef`として実提出した。mani
 remote 5 filesのhash/size/MIMEはlocalと一致した。
 PR #1208/#1210でTaskMarket award→Base finalized receipt→6桁精度ledgerのfail-closed bridgeを追加し、
 production `ai.anicca.life-manager-taskmarket-ledger`を5分周期でloadした。最新readbackは
-`runs=3 / tasks_seen=3 / pending=3 / recorded=0 / exit 0 / stderr 0`、daily/dev/report/payout/selfbuild/x402の
+`runs=5 / tasks_seen=3 / pending=3 / recorded=0 / exit 0 / stderr 0`、daily/dev/report/payout/selfbuild/x402の
 既存loopは全てloadedのまま。公開済みの別TaskMarket実settlementをDB無書き込みでreplayし、exact USDC transferから
 6桁精度のin-memory rowを生成できた。v1はtroughの実測が弱く棄却し、v2はsection mean
 `peak1 -17.3 / trough -22.4 / peak2 -15.7 dB`、16秒loop境界jumpは内部diff p99未満、
