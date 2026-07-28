@@ -2,12 +2,13 @@
 
 ## Outcome
 
-Life Manager now observes its delivered uGig code application every five minutes
-and can issue the exact capped invoice without a human after both external gates
-become true:
+Life Manager now observes delivered uGig applications every five minutes and
+can issue an exact capped invoice without a human after the category-specific
+external gates become true:
 
 1. the buyer changes the application to `accepted`; and
-2. every configured GitHub pull request reports a non-null `merged_at`.
+2. code work has every configured GitHub pull request merged, while art,
+   marketing, and other work has a public HTTPS proof URL.
 
 The current application remains `pending`, so the live run truthfully performed
 zero invoice reads, zero pull-request reads, and zero mutations.
@@ -25,6 +26,13 @@ zero invoice reads, zero pull-request reads, and zero mutations.
 | observer PR | <https://github.com/Daisuke134/life-manager/pull/1217> |
 | merged Life Manager commit | `f4b52f75d92c91ccffb92316953a6c0b48b7f129` |
 
+| Category | Gig / application | Cap | Public delivery |
+| --- | --- | --- | --- |
+| code | `2b410cad…` / `5e315cfd…` | `$1` | [AIorNot.vote PR #100](https://github.com/profullstack/aiornot.vote/pull/100) |
+| code | `d9778d45…` / `f8960763…` | `$0.25` | [moshcode PR #61](https://github.com/moshcoder/moshcode/pull/61) |
+| marketing | `1eea7af1…` / `7e636f57…` | `$0.25` | [PairUX provider readback](https://pairux.com/@moshcoding) |
+| art | `174bfd02…` / `85654162…` | `$20` | [NIGHTCELL 7 PR #38](https://github.com/profullstack/nightcell7/pull/38) |
+
 The same authenticated readback also confirms the second live uGig acquisition
 attempt: Crawlproof testimonial gig
 `4cdf4cde-f845-4db4-9618-4994da483ab2`, application
@@ -38,14 +46,14 @@ observer config because no accepted deliverable exists yet.
 | Check | Result |
 |---|---|
 | TDD RED | 2/2 test files failed because both implementation modules were absent |
-| focused GREEN | 7/7 |
+| focused GREEN | 9/9 |
 | Life Manager full suite | 659/659, plus the new 7/7 pretests |
 | shell syntax | PASS |
 | plist lint | PASS |
-| latest live uGig API run | `deliveries_seen=3`, `pending=3`, `invoice_created=0`, `paid=0` |
+| latest live uGig API run | `deliveries_seen=4`, `pending=4`, `invoice_created=0`, `paid=0` |
 | production launchd | `ai.anicca.life-manager-ugig-invoice-observer`, interval 300 seconds |
 | production first run | `runs=1`, `last exit code=0` |
-| production latest run | `runs=5`, `last exit code=0` |
+| production latest run | `runs=11`, `last exit code=0` |
 | existing Life Manager loops | eight existing labels remained loaded; none was stopped or replaced |
 
 Production stdout:
@@ -54,6 +62,7 @@ Production stdout:
 {"observed_at":"2026-07-28T08:49:30.740Z","deliveries_seen":1,"pending":1,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 {"observed_at":"2026-07-28T08:56:27.311Z","deliveries_seen":2,"pending":2,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 {"observed_at":"2026-07-28T09:06:11.186Z","deliveries_seen":3,"pending":3,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
+{"observed_at":"2026-07-28T09:34:02.789Z","deliveries_seen":4,"pending":4,"waiting_for_merge":0,"invoiced":0,"invoice_created":0,"paid":0,"rejected":0,"invoices":[]}
 ```
 
 ## Safety and evidence limit
@@ -61,7 +70,8 @@ Production stdout:
 - The API key remains in a mode-0600 file outside the repository and is never
   printed.
 - A malformed UUID, non-positive amount, wrong rail, malformed Solana address,
-  non-code category, or non-GitHub PR URL fails closed.
+  unknown category, non-GitHub code PR, or non-code delivery without public
+  HTTPS proof fails closed.
 - Existing invoices are detected before checking merge state, making retries
   exactly-once.
 - Invoice status alone does not enter the earnings ledger. Only the later
