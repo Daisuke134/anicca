@@ -434,21 +434,21 @@ test("active provider OTP form remains a structured 2FA handoff", async () => {
 test("login-dependent sessions restore only the exact tenant, origin, and principal context", async () => {
   const one = {
     cookies: [
-      { name: "sid", value: "tenant-one-cookie", domain: "auth.example", path: "/" },
+      { name: "sid", value: "tenant-one-cookie", domain: "auth.fixture.dev", path: "/" },
       { name: "foreign", value: "foreign-one-cookie", domain: "other.example", path: "/" },
     ],
     localStorage: {
-      "https://auth.example": { marker: "tenant-one-storage" },
+      "https://auth.fixture.dev": { marker: "tenant-one-storage" },
       "https://other.example": { marker: "foreign-one-storage" },
     },
   };
   const two = {
     cookies: [
-      { name: "sid", value: "tenant-two-cookie", domain: "auth.example", path: "/" },
+      { name: "sid", value: "tenant-two-cookie", domain: "auth.fixture.dev", path: "/" },
       { name: "foreign", value: "foreign-two-cookie", domain: "other.example", path: "/" },
     ],
     localStorage: {
-      "https://auth.example": { marker: "tenant-two-storage" },
+      "https://auth.fixture.dev": { marker: "tenant-two-storage" },
       "https://other.example": { marker: "foreign-two-storage" },
     },
   };
@@ -461,13 +461,13 @@ test("login-dependent sessions restore only the exact tenant, origin, and princi
 
   const sessionOne = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account?tab=profile",
+    goal: "Open https://auth.fixture.dev/account?tab=profile",
     requiresLogin: true,
     principalKind: "user_provided",
   });
   const sessionTwo = await driver.openSession({
     uid: "u-two",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "agent_owned",
   });
@@ -475,12 +475,12 @@ test("login-dependent sessions restore only the exact tenant, origin, and princi
   assert.deepEqual(authCalls, [
     ["read", {
       uid: "u-one",
-      origin: "https://auth.example",
+      origin: "https://auth.fixture.dev",
       principalKind: "user_provided",
     }],
     ["read", {
       uid: "u-two",
-      origin: "https://auth.example",
+      origin: "https://auth.fixture.dev",
       principalKind: "agent_owned",
     }],
   ]);
@@ -489,14 +489,14 @@ test("login-dependent sessions restore only the exact tenant, origin, and princi
       blockAds: true,
       sessionContext: {
         cookies: [one.cookies[0]],
-        localStorage: { "https://auth.example": { marker: "tenant-one-storage" } },
+        localStorage: { "https://auth.fixture.dev": { marker: "tenant-one-storage" } },
       },
     },
     {
       blockAds: true,
       sessionContext: {
         cookies: [two.cookies[0]],
-        localStorage: { "https://auth.example": { marker: "tenant-two-storage" } },
+        localStorage: { "https://auth.fixture.dev": { marker: "tenant-two-storage" } },
       },
     },
   ]);
@@ -535,11 +535,11 @@ test("an invalid post-create CDP endpoint releases the exact opened Steel sessio
 
 test("release exports context before Steel release, saves exact identity, and returns secret-free metadata", async () => {
   const restored = {
-    cookies: [{ name: "sid", value: "restored-cookie-secret", domain: "auth.example", path: "/" }],
+    cookies: [{ name: "sid", value: "restored-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
   };
   const exported = {
-    cookies: [{ name: "sid", value: "exported-cookie-secret", domain: "auth.example", path: "/" }],
-    localStorage: { "https://auth.example": { marker: "exported-storage-secret" } },
+    cookies: [{ name: "sid", value: "exported-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
+    localStorage: { "https://auth.fixture.dev": { marker: "exported-storage-secret" } },
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: { "u-one": { context: restored } },
@@ -548,12 +548,12 @@ test("release exports context before Steel release, saves exact identity, and re
   });
   const session = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "user_provided",
   });
   const action = await driver.discoverAndAct(session, {
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
   });
 
   const release = await driver.releaseSession(session.id, {
@@ -562,7 +562,7 @@ test("release exports context before Steel release, saves exact identity, and re
 
   assert.deepEqual(authCalls[1], ["upsert", {
     uid: "u-one",
-    origin: "https://auth.example",
+    origin: "https://auth.fixture.dev",
     principalKind: "user_provided",
     context: exported,
   }]);
@@ -573,7 +573,7 @@ test("release exports context before Steel release, saves exact identity, and re
   );
   assert.deepEqual(release, {
     released: true,
-    origin: "https://auth.example",
+    origin: "https://auth.fixture.dev",
     principal_kind: "user_provided",
     auth_context_loaded: true,
     auth_context_saved: true,
@@ -590,7 +590,7 @@ test("release exports context before Steel release, saves exact identity, and re
 
 test("a provider login handoff invalidates only the exact row and still releases Steel", async () => {
   const context = {
-    cookies: [{ name: "sid", value: "stale-cookie-secret", domain: "auth.example", path: "/" }],
+    cookies: [{ name: "sid", value: "stale-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: { "u-one": { context } },
@@ -598,7 +598,7 @@ test("a provider login handoff invalidates only the exact row and still releases
   });
   const session = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "user_provided",
   });
@@ -609,7 +609,7 @@ test("a provider login handoff invalidates only the exact row and still releases
 
   assert.deepEqual(authCalls[1], ["invalidate", {
     uid: "u-one",
-    origin: "https://auth.example",
+    origin: "https://auth.fixture.dev",
     principalKind: "user_provided",
   }]);
   assert.equal(authCalls.some(([name]) => name === "upsert"), false);
@@ -622,10 +622,10 @@ test("a provider login handoff invalidates only the exact row and still releases
 
 test("a non-login handoff exports and saves context without invalidating the row", async () => {
   const restored = {
-    cookies: [{ name: "sid", value: "restored-challenge-secret", domain: "auth.example", path: "/" }],
+    cookies: [{ name: "sid", value: "restored-challenge-secret", domain: "auth.fixture.dev", path: "/" }],
   };
   const exported = {
-    sessionStorage: { "https://auth.example": { marker: "challenge-session-secret" } },
+    sessionStorage: { "https://auth.fixture.dev": { marker: "challenge-session-secret" } },
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: { "u-one": { context: restored } },
@@ -634,7 +634,7 @@ test("a non-login handoff exports and saves context without invalidating the row
   });
   const session = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "user_provided",
   });
@@ -645,7 +645,7 @@ test("a non-login handoff exports and saves context without invalidating the row
 
   assert.deepEqual(authCalls[1], ["upsert", {
     uid: "u-one",
-    origin: "https://auth.example",
+    origin: "https://auth.fixture.dev",
     principalKind: "user_provided",
     context: exported,
   }]);
@@ -664,10 +664,10 @@ test("a non-login handoff exports and saves context without invalidating the row
 
 test("context save failure preserves the prior row and Steel release remains unconditional", async () => {
   const prior = {
-    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.example", path: "/" }],
+    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
   };
   const exported = {
-    sessionStorage: { "https://auth.example": { marker: "new-storage-secret" } },
+    sessionStorage: { "https://auth.fixture.dev": { marker: "new-storage-secret" } },
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: { "u-one": { context: prior } },
@@ -676,7 +676,7 @@ test("context save failure preserves the prior row and Steel release remains unc
   });
   const session = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "agent_owned",
   });
@@ -695,7 +695,7 @@ test("context save failure preserves the prior row and Steel release remains unc
 
 test("context export failure still releases Steel and never mutates the prior row", async () => {
   const prior = {
-    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.example", path: "/" }],
+    cookies: [{ name: "sid", value: "prior-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
   };
   const { driver, calls, authCalls } = fixture({
     authRecords: { "u-one": { context: prior } },
@@ -703,7 +703,7 @@ test("context export failure still releases Steel and never mutates the prior ro
   });
   const session = await driver.openSession({
     uid: "u-one",
-    goal: "Open https://auth.example/account",
+    goal: "Open https://auth.fixture.dev/account",
     requiresLogin: true,
     principalKind: "user_provided",
   });
