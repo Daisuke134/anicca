@@ -140,6 +140,20 @@ async function runGenericBrowserTask(job, deps) {
   } catch (error) {
     sideEffectStarted = sideEffectStarted || Boolean(error && error.sideEffectStarted);
     result.status = sideEffectStarted ? "possibly_completed" : "failed";
+    console.error(
+      `[browser-task] job=${job.id} side_effect_started=${sideEffectStarted} error=${String(error && error.message || error).slice(0, 500)}`,
+    );
+    if (session && sideEffectStarted) {
+      try {
+        evidence = await deps.captureEvidence(session);
+        if (evidence && evidence.bytes) {
+          result.evidence_sha256 = crypto.createHash("sha256").update(evidence.bytes).digest("hex");
+        }
+      } catch {
+        evidence = null;
+        result.evidence_sha256 = null;
+      }
+    }
   }
 
   try {
