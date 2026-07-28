@@ -21,7 +21,7 @@ function fakeFetch(handler) {
 const ok = (json) => ({ ok: true, status: 200, json: async () => json, text: async () => JSON.stringify(json) });
 
 test("the private-networking base URL is the Railway internal service, never a public domain", () => {
-  assert.equal(STEEL_BASE_URL, "http://steel-browser.railway.internal:3000");
+  assert.equal(STEEL_BASE_URL, "http://steel-browser.railway.internal:8080");
 });
 
 test("createSession posts /v1/sessions and returns the CDP websocket url", async () => {
@@ -30,7 +30,7 @@ test("createSession posts /v1/sessions and returns the CDP websocket url", async
   const session = await client.createSession();
 
   assert.deepEqual(session, { id: "abc", websocketUrl: "ws://steel-browser.railway.internal:3000/" });
-  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:3000/v1/sessions");
+  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:8080/v1/sessions");
   assert.equal(fetchImpl.calls[0].method, "POST");
 });
 
@@ -38,7 +38,7 @@ test("releaseSession posts the verified per-session release route", async () => 
   const fetchImpl = fakeFetch(() => ok({ success: true }));
   const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
   await client.releaseSession("abc");
-  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:3000/v1/sessions/abc/release");
+  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:8080/v1/sessions/abc/release");
   assert.equal(fetchImpl.calls[0].method, "POST");
 });
 
@@ -52,7 +52,7 @@ test("health checks the verified /v1/health route", async () => {
   const fetchImpl = fakeFetch(() => ok({ status: "ok" }));
   const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });
   assert.equal(await client.health(), true);
-  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:3000/v1/health");
+  assert.equal(fetchImpl.calls[0].url, "http://steel-browser.railway.internal:8080/v1/health");
 });
 
 test("page work runs over the session's CDP connection and reads real form fields", async () => {
@@ -117,7 +117,7 @@ test("a per-session release failure falls back to the release-ALL route", async 
   await client.createSession();
   assert.equal(await client.releaseSession("abc"), true);
   assert.ok(
-    fetchImpl.calls.some((c) => c.url === "http://steel-browser.railway.internal:3000/v1/sessions/release"),
+    fetchImpl.calls.some((c) => c.url === "http://steel-browser.railway.internal:8080/v1/sessions/release"),
     "a stuck session blocks everyone, so release-all is the fallback",
   );
 });

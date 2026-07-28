@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Do not stop, restart, unload, or replace any Mac Mini launchd loop.
-- Do not expose Steel publicly; the default remains `http://steel-browser.railway.internal:3000`.
+- Do not expose Steel publicly; the measured default is `http://steel-browser.railway.internal:8080`.
 - A passing unit test is not E2E proof. Completion requires a real session, navigation, DOM readback, and successful release from production `life-call`.
 - The smoke target is read-only and configurable through `STEEL_SMOKE_URL`; default `https://example.com/`.
 - Never print page content or credentials. Emit bounded structural evidence only.

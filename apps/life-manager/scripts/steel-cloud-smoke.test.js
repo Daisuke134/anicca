@@ -8,7 +8,7 @@ function fakeClient(overrides = {}) {
   const calls = [];
   return {
     calls,
-    baseUrl: "http://steel-browser.railway.internal:3000",
+    baseUrl: "http://steel-browser.railway.internal:8080",
     async health() {
       calls.push(["health"]);
       return true;

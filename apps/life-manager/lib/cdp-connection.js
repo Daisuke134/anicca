@@ -33,7 +33,20 @@ const NAVIGATION_STARTED = new Set([
 function connectCdp(websocketUrl, options = {}) {
   const WebSocketImpl = options.WebSocket || require("ws");
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS;
-  const socket = new WebSocketImpl(websocketUrl);
+  const parsedWebsocketUrl = new URL(websocketUrl);
+  // Steel's root websocket is an HTTP proxy to Chrome's localhost CDP socket. Chrome rejects a
+  // forwarded `Host: steel-browser.railway.internal` as DNS rebinding (HTTP 500), even though the
+  // private-network TCP connection reached Steel correctly. Keep the real destination/SNI in the
+  // URL and rewrite ONLY the HTTP Host header at this verified Railway private boundary. Hosted CDP
+  // endpoints keep their normal Host header.
+  const websocketOptions = parsedWebsocketUrl.hostname.endsWith(".railway.internal")
+    ? {
+        headers: {
+          Host: `localhost:${parsedWebsocketUrl.port || (parsedWebsocketUrl.protocol === "wss:" ? "443" : "80")}`,
+        },
+      }
+    : undefined;
+  const socket = new WebSocketImpl(websocketUrl, websocketOptions);
 
   let nextId = 1;
   const pending = new Map();
