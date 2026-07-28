@@ -239,6 +239,19 @@
       }
     },
     {
+      "id": "orca-codex-marketplace-staging",
+      "path": "$HOME/Library/Application Support/orca/codex-runtime-home/home/.tmp/marketplaces/.staging",
+      "owner": "codex-marketplace-runtime",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "/Applications/Codex.app/Contents/Resources/codex"
+      }
+    },
+    {
       "id": "playwright-browser-cache",
       "path": "$HOME/Library/Caches/ms-playwright",
       "owner": "browser-fleet",

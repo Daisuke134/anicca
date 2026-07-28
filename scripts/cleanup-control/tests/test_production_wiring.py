@@ -74,6 +74,22 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "kind": "verified_regenerable_remove",
         "proof_path": str(Path.home() / ".local/pipx/venvs/camoufox/bin/camoufox"),
     }
+    assert by_id["orca-codex-marketplace-staging"] == {
+        "id": "orca-codex-marketplace-staging",
+        "path": str(
+            Path.home()
+            / "Library/Application Support/orca/codex-runtime-home/home/.tmp/marketplaces/.staging"
+        ),
+        "owner": "codex-marketplace-runtime",
+        "class": "regenerable_output",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "verified_regenerable_remove",
+            "proof_path": "/Applications/Codex.app/Contents/Resources/codex",
+        },
+    }
     camoufox_proof = Path(by_id["camoufox-browser-cache"]["finalizer"]["proof_path"])
     assert camoufox_proof.is_file()
     assert not camoufox_proof.is_symlink()
