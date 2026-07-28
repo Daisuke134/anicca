@@ -91,6 +91,11 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
     modelName: "google/gemini-2.5-flash",
     apiKey: "gemini-key",
   });
+  assert.deepEqual(calls.find(([name]) => name === "agent")[1], {
+    mode: "cua",
+    model: "google/gemini-2.5-computer-use-preview-10-2025",
+    systemPrompt: "Operate the remote cloud browser carefully. Use only truthful supplied identity data, never invent personal data, and stop at login, CAPTCHA, 2FA, KYC, or payment.",
+  });
   assert.match(calls.find(([name]) => name === "goto")[1], /^https:\/\/www\.google\.com\/$/);
   const tasks = calls.filter(([name]) => name === "execute").map(([, task]) => task);
   assert.equal(tasks.length, 2, "discovery/selection and the one action are separate phases");
@@ -99,6 +104,10 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
   assert.match(tasks[0], /do not perform/i);
   assert.match(tasks[1], /browser-owner@example\.test/i, "the runtime identity is available to the action phase");
   assert.match(tasks[1], /Browser Owner/i, "the runtime-owned name is available to the action phase");
+  assert.match(tasks[1], /company or organization.*Browser Owner/i);
+  assert.match(tasks[1], /role or job title.*AI agent/i);
+  assert.match(tasks[1], /optional social.*blank/i);
+  assert.match(tasks[1], /decline.*marketing.*data-sharing/i);
   assert.match(tasks[1], /exactly one/i);
   assert.doesNotMatch(tasks.join("\n"), /fresh-events\.example/i, "the target comes from discovery, never configuration");
   assert.doesNotMatch(JSON.stringify(action), /browser-owner@example\.test/i, "the identity never enters durable results");
