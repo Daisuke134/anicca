@@ -144,8 +144,10 @@ async function runGenericBrowserTask(job, deps) {
 
   try {
     const sent = await deps.sendTelegram(job.telegram_chat_id, telegramText(result));
-    const messageId = sent && sent.ok && sent.result && sent.result.message_id;
-    result.telegram_message_id = messageId == null ? null : String(messageId);
+    const messageId = sent && sent.ok === true && sent.result && sent.result.message_id;
+    result.telegram_message_id = Number.isSafeInteger(messageId) && messageId > 0
+      ? String(messageId)
+      : null;
     await deps.appendTrace(job.id, "telegram_sent", { message_id: result.telegram_message_id });
   } catch {
     result.telegram_message_id = null;
@@ -158,8 +160,10 @@ async function runGenericBrowserTask(job, deps) {
         evidence,
         `Cloud browser provider screen\nTrace: ${result.trace_id}`,
       );
-      const messageId = sent && sent.ok && sent.result && sent.result.message_id;
-      result.evidence_message_id = messageId == null ? null : String(messageId);
+      const messageId = sent && sent.ok === true && sent.result && sent.result.message_id;
+      result.evidence_message_id = Number.isSafeInteger(messageId) && messageId > 0
+        ? String(messageId)
+        : null;
     } catch {
       result.evidence_message_id = null;
     }
