@@ -76,6 +76,10 @@ function explicitPublicHttpsUrl(goal) {
   const match = String(goal || "").match(/https?:\/\/[^\s<>"']+/i);
   if (!match) return null;
   const raw = match[0].replace(/[),.;!?]+$/, "");
+  return publicHttpsUrl(raw).toString();
+}
+
+function publicHttpsUrl(raw, options = {}) {
   let url;
   try {
     url = new URL(raw);
@@ -94,6 +98,7 @@ function explicitPublicHttpsUrl(goal) {
   if (
     url.protocol !== "https:" ||
     !host ||
+    (options.rejectCredentials === true && (url.username || url.password)) ||
     host === "localhost" ||
     host === "::1" ||
     host.endsWith(".local") ||
@@ -105,7 +110,20 @@ function explicitPublicHttpsUrl(goal) {
   url.username = "";
   url.password = "";
   url.hash = "";
-  return url.toString();
+  return url;
+}
+
+function safeProtectedMarker(value, agentEmail) {
+  const marker = replaceIdentity(value, agentEmail).trim();
+  if (
+    marker.length < 2 ||
+    marker.length > 80 ||
+    /[\u0000-\u001f\u007f]/.test(marker) ||
+    /https?:\/\/|www\.|@|(?:token|cookie|password|secret|session|authorization)\s*[:=]/i.test(marker)
+  ) {
+    return null;
+  }
+  return marker;
 }
 
 function privateSession(session) {
@@ -250,6 +268,7 @@ function makeStagehandSteelDriver(options = {}) {
             action: "Read current authenticated provider page.",
             sideEffectStarted: false,
             readOnlyAuth: true,
+            readOnlyExpectedOrigin: new URL(explicitUrl).origin,
           };
         }
 
@@ -351,8 +370,113 @@ function makeStagehandSteelDriver(options = {}) {
             : /\b(?:payment|purchase|checkout|credit card|card details|billing)\b|支払|決済|購入/i.test(handoffText)
               ? "payment"
               : /\b(?:login|log in|sign in)\b/i.test(handoffText)
-                ? "login"
+              ? "login"
                 : null;
+      if (readOnlyAuth) {
+        const marker = safeProtectedMarker(extracted.providerText, agentEmail);
+        let finalUrl = null;
+        try {
+          finalUrl = publicHttpsUrl(pageUrl(open.page), { rejectCredentials: true });
+        } catch {
+          // An unsafe final page can never prove authenticated continuity.
+        }
+        const expectedOrigin = String(action.readOnlyExpectedOrigin || "");
+        const originMatches = Boolean(
+          finalUrl && expectedOrigin && finalUrl.origin === expectedOrigin,
+        );
+        let dom = null;
+        if (finalUrl && originMatches && marker) {
+          try {
+            dom = await open.page.evaluate(({ marker: expectedMarker }) => {
+              const visible = (element) => {
+                if (!element) return false;
+                const style = window.getComputedStyle(element);
+                if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                  return false;
+                }
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+              };
+              const visibleMatches = (selector) =>
+                Array.from(document.querySelectorAll(selector)).slice(0, 100).some(visible);
+              const bodyText = String(document.body && document.body.innerText || "").slice(0, 20_000);
+              const formText = Array.from(document.querySelectorAll("form"))
+                .slice(0, 50)
+                .filter(visible)
+                .map((form) => String(form.innerText || "").slice(0, 1_000))
+                .join(" ");
+              const visibleText = `${bodyText} ${formText}`;
+              const passwordVisible = visibleMatches('input[type="password"]');
+              const otpVisible = visibleMatches(
+                'input[autocomplete="one-time-code"], input[name*="otp" i], input[id*="otp" i], input[name*="verification-code" i], input[id*="verification-code" i]',
+              );
+              const authVisible = passwordVisible || otpVisible ||
+                /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(formText);
+              const captchaVisible = visibleMatches(
+                'iframe[src*="captcha" i], [class*="captcha" i], [id*="captcha" i], [data-sitekey]',
+              ) || /\bcaptcha\b/i.test(visibleText);
+              const challengeVisible = captchaVisible ||
+                /\b(?:security challenge|verify you are human|challenge required)\b/i.test(visibleText);
+              const kycVisible = /\b(?:kyc|identity verification|verify your identity)\b/i.test(visibleText);
+              const paymentVisible =
+                /\b(?:payment required|checkout|credit card|card details|billing details)\b/i.test(visibleText);
+              return {
+                passwordVisible,
+                otpVisible,
+                authVisible,
+                challengeVisible,
+                captchaVisible,
+                kycVisible,
+                paymentVisible,
+                markerPresent: bodyText.toLocaleLowerCase().includes(
+                  String(expectedMarker).toLocaleLowerCase(),
+                ),
+              };
+            }, { marker });
+          } catch {
+            dom = null;
+          }
+        }
+        const signals = {
+          passwordVisible: dom && dom.passwordVisible === true,
+          otpVisible: dom && dom.otpVisible === true,
+          authVisible: dom && dom.authVisible === true,
+          challengeVisible: dom && dom.challengeVisible === true,
+          captchaVisible: dom && dom.captchaVisible === true,
+          kycVisible: dom && dom.kycVisible === true,
+          paymentVisible: dom && dom.paymentVisible === true,
+          markerPresent: dom && dom.markerPresent === true,
+        };
+        const loginPath = Boolean(finalUrl && /\/(?:login|log-in|signin|sign-in)(?:\/|$)/i.test(
+          finalUrl.pathname,
+        ));
+        const independentReason = signals.paymentVisible
+          ? "payment"
+          : signals.kycVisible
+            ? "kyc"
+            : signals.challengeVisible || signals.captchaVisible
+              ? "challenge"
+              : signals.otpVisible
+                ? "2fa"
+                : signals.passwordVisible || signals.authVisible || loginPath
+                  ? "login"
+                  : null;
+        const readOnlyReason = handoffReason || independentReason ||
+          (!originMatches || !marker || !signals.markerPresent || extracted.confirmed !== true
+            ? "login"
+            : null);
+        const confirmed = readOnlyReason === null;
+        return {
+          confirmed,
+          status: confirmed
+            ? "authenticated"
+            : `${readOnlyReason || "login"}_required`,
+          confirmationId: null,
+          currentUrl: finalUrl && originMatches ? publicPageUrl(open.page, agentEmail) : null,
+          handoffRequired: readOnlyReason !== null,
+          handoffReason: readOnlyReason,
+        };
+      }
       return {
         confirmed: (extracted.confirmed === true || strongCompletion) &&
           !negated &&

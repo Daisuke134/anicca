@@ -15,6 +15,19 @@ function fixture(fixtureOptions = {}) {
       calls.push(["screenshot", options]);
       return Buffer.from("real-cloud-png");
     },
+    async evaluate(_callback, input) {
+      calls.push(["evaluate", input]);
+      return fixtureOptions.domGuard || {
+        passwordVisible: false,
+        otpVisible: false,
+        authVisible: false,
+        challengeVisible: false,
+        captchaVisible: false,
+        kycVisible: false,
+        paymentVisible: false,
+        markerPresent: true,
+      };
+    },
     url() { return fixtureOptions.pageUrl || "https://fresh-events.example/ai/confirmed"; },
   };
   class FakeStagehand {
@@ -328,6 +341,229 @@ test("auth continuity redirect to a root login page reaches structured login han
   assert.equal(receipt.confirmed, false);
   assert.equal(receipt.handoffRequired, true);
   assert.equal(receipt.handoffReason, "login");
+});
+
+test("auth continuity never confirms when the typed readback also reports an auth or risk handoff", async () => {
+  const cases = [
+    ["login", "Login required"],
+    ["challenge", "CAPTCHA challenge"],
+    ["challenge", "Security challenge"],
+    ["2fa", "Enter OTP"],
+    ["2fa", "Complete 2FA"],
+    ["kyc", "KYC identity verification"],
+    ["payment", "Payment required"],
+  ];
+
+  for (const [expectedReason, providerText] of cases) {
+    const { driver } = fixture({
+      authReceipt: {
+        confirmed: true,
+        status: "authenticated",
+        confirmationId: null,
+        providerText,
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/ai/confirmed with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, providerText);
+    assert.equal(receipt.handoffRequired, true, providerText);
+    assert.equal(receipt.handoffReason, expectedReason, providerText);
+  }
+});
+
+test("auth continuity rejects a lying model on a login URL or visible password and one-time-code forms", async () => {
+  const cases = [
+    {
+      pageUrl: "https://fresh-events.example/login",
+      domGuard: {
+        passwordVisible: false, otpVisible: false, authVisible: false,
+        challengeVisible: false, captchaVisible: false, kycVisible: false,
+        paymentVisible: false, markerPresent: true,
+      },
+      reason: "login",
+    },
+    {
+      pageUrl: "https://fresh-events.example/account",
+      domGuard: {
+        passwordVisible: true, otpVisible: false, authVisible: true,
+        challengeVisible: false, captchaVisible: false, kycVisible: false,
+        paymentVisible: false, markerPresent: true,
+      },
+      reason: "login",
+    },
+    {
+      pageUrl: "https://fresh-events.example/account",
+      domGuard: {
+        passwordVisible: false, otpVisible: true, authVisible: true,
+        challengeVisible: false, captchaVisible: false, kycVisible: false,
+        paymentVisible: false, markerPresent: true,
+      },
+      reason: "2fa",
+    },
+  ];
+
+  for (const value of cases) {
+    const { driver } = fixture({
+      ...value,
+      authReceipt: {
+        confirmed: true,
+        status: "authenticated",
+        confirmationId: null,
+        providerText: "Products",
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/account with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, value.reason);
+    assert.equal(receipt.handoffRequired, true, value.reason);
+    assert.equal(receipt.handoffReason, value.reason);
+  }
+});
+
+test("auth continuity rejects an unsafe or cross-origin final redirect", async () => {
+  for (const pageUrl of [
+    "http://fresh-events.example/account",
+    "https://127.0.0.1/account",
+    "https://attacker.example/account",
+  ]) {
+    const { driver } = fixture({
+      pageUrl,
+      authReceipt: {
+        confirmed: true,
+        status: "authenticated",
+        confirmationId: null,
+        providerText: "Products",
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/account with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, pageUrl);
+    assert.equal(receipt.handoffRequired, true, pageUrl);
+  }
+});
+
+test("auth continuity does not confirm an unknown page without the independently visible protected marker", async () => {
+  const { driver } = fixture({
+    domGuard: {
+      passwordVisible: false, otpVisible: false, authVisible: false,
+      challengeVisible: false, captchaVisible: false, kycVisible: false,
+      paymentVisible: false, markerPresent: false,
+    },
+    authReceipt: {
+      confirmed: true,
+      status: "unknown",
+      confirmationId: null,
+      providerText: "Products",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/ai/confirmed with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+});
+
+test("Sauce-style inventory confirms only with same-origin final URL, visible Products marker, and no auth or risk UI", async () => {
+  const { driver, calls } = fixture({
+    pageUrl: "https://fresh-events.example/inventory.html",
+    domGuard: {
+      passwordVisible: false, otpVisible: false, authVisible: false,
+      challengeVisible: false, captchaVisible: false, kycVisible: false,
+      paymentVisible: false, markerPresent: true,
+    },
+    authReceipt: {
+      confirmed: true,
+      status: "authenticated",
+      confirmationId: null,
+      providerText: "Products",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/inventory.html with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffReason, null);
+  assert.deepEqual(calls.filter(([name]) => name === "evaluate").map(([, input]) => input), [
+    { marker: "Products" },
+  ]);
+  assert.equal(calls.filter(([name]) => name === "agent").length, 0);
+  assert.equal(calls.filter(([name]) => name === "execute").length, 0);
+  assert.equal(calls.filter(([name]) => name === "act").length, 0);
+});
+
+test("auth continuity receipts close and scrub model-supplied status and confirmation identifiers", async () => {
+  const secrets = [
+    `token=${["tok", "fixture", "123456789"].join("-")}`,
+    "cookie=sid-cookie-secret",
+    "browser-owner@example.test",
+    "https://private.example/reset?token=url-secret",
+    "line-one\r\ninjected-trace",
+  ];
+  const { driver } = fixture({
+    authReceipt: {
+      confirmed: true,
+      status: secrets.join(" "),
+      confirmationId: secrets.join("|"),
+      providerText: "Products",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/ai/confirmed with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+  const durable = JSON.stringify({ result: action, receipt });
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.status, "authenticated");
+  assert.equal(receipt.confirmationId, null);
+  for (const secret of secrets) {
+    assert.equal(durable.includes(secret), false, secret);
+  }
+  assert.doesNotMatch(durable, /[\r\n]/);
 });
 
 test("runtime URL shortcut rejects local and Railway-private destinations", async () => {
