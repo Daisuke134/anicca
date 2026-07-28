@@ -81,6 +81,50 @@ test('generateImage buys exactly one 1024 square GPT Image 2 output under the qu
   assert.deepEqual(reservations, [0.065]);
 });
 
+test('generateImage follows a paid HTTP 202 job with the same signature until completed', async () => {
+  const calls = [];
+  const sleeps = [];
+  const fetchImpl = async (url, request) => {
+    calls.push({ url, request });
+    if (calls.length === 1) return challenge();
+    if (calls.length === 2) {
+      return new Response(JSON.stringify({
+        id: 'job_123',
+        status: 'queued',
+        poll_url: '/api/v1/images/generations/job_123',
+      }), { status: 202 });
+    }
+    if (calls.length === 3) {
+      return new Response(JSON.stringify({ status: 'in_progress' }), { status: 202 });
+    }
+    return new Response(JSON.stringify({
+      status: 'completed',
+      created: 1785230001,
+      data: [{ url: 'https://cdn.blockrun.example/async.png' }],
+    }), { status: 200 });
+  };
+
+  const result = await generateImage({
+    prompt: 'A radial cycle plate',
+    walletKey: '0x' + '1'.repeat(64),
+    fetchImpl,
+    createSignature: async () => 'signed-x402-payload',
+    reserveSpend: async () => {},
+    sleepImpl: async (ms) => sleeps.push(ms),
+    pollIntervalMs: 5_000,
+    maxPollDurationMs: 60_000,
+  });
+
+  assert.equal(result.url, 'https://cdn.blockrun.example/async.png');
+  assert.equal(result.costUsd, 0.065);
+  assert.equal(calls.length, 4);
+  assert.equal(calls[2].url, 'https://blockrun.ai/api/v1/images/generations/job_123');
+  assert.equal(calls[2].request.method, 'GET');
+  assert.equal(calls[2].request.headers['PAYMENT-SIGNATURE'], 'signed-x402-payload');
+  assert.equal(calls[2].request.headers['X-PAYMENT'], 'signed-x402-payload');
+  assert.deepEqual(sleeps, [5_000, 5_000]);
+});
+
 test('generateImage rejects an over-cap quote before signing or reserving spend', async () => {
   let signed = false;
   let reserved = false;
@@ -97,6 +141,26 @@ test('generateImage rejects an over-cap quote before signing or reserving spend'
   );
   assert.equal(signed, false);
   assert.equal(reserved, false);
+});
+
+test('generateImage rejects an async poll URL outside blockrun.ai', async () => {
+  let count = 0;
+  await assert.rejects(
+    generateImage({
+      prompt: 'x',
+      walletKey: '0x' + '1'.repeat(64),
+      fetchImpl: async () => (++count === 1
+        ? challenge()
+        : new Response(JSON.stringify({
+          status: 'queued',
+          poll_url: 'https://attacker.example/steal-signature',
+        }), { status: 202 })),
+      createSignature: async () => 'signed',
+      reserveSpend: async () => {},
+      sleepImpl: async () => {},
+    }),
+    /poll URL is not on blockrun\.ai/,
+  );
 });
 
 test('generateImage rejects a wrong network or token', async () => {

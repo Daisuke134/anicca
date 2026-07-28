@@ -43,13 +43,7 @@ async function defaultCreateSignature({ walletKey, details, required }) {
   );
 }
 
-async function imageResult(response, costUsd) {
-  let body;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error('image response is not JSON');
-  }
+function imageBodyResult(body, costUsd) {
   const url = body?.data?.[0]?.url;
   if (typeof url !== 'string' || !/^https:\/\//i.test(url) || body.data.length !== 1) {
     throw new Error('image response must contain one HTTPS image URL');
@@ -62,6 +56,64 @@ async function imageResult(response, costUsd) {
   };
 }
 
+async function responseJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    throw new Error('image response is not JSON');
+  }
+}
+
+async function imageResult(response, costUsd) {
+  return imageBodyResult(await responseJson(response), costUsd);
+}
+
+function blockrunPollUrl(raw) {
+  let url;
+  try {
+    url = new URL(String(raw || ''), 'https://blockrun.ai');
+  } catch {
+    throw new Error('image poll URL is invalid');
+  }
+  if (url.origin !== 'https://blockrun.ai' || !url.pathname.startsWith('/api/')) {
+    throw new Error('image poll URL is not on blockrun.ai');
+  }
+  return url.href;
+}
+
+async function pollImageJob({
+  pollUrl,
+  signature,
+  costUsd,
+  fetchImpl,
+  sleepImpl,
+  pollIntervalMs,
+  maxPollDurationMs,
+}) {
+  const url = blockrunPollUrl(pollUrl);
+  for (let elapsed = 0; elapsed < maxPollDurationMs; elapsed += pollIntervalMs) {
+    await sleepImpl(pollIntervalMs);
+    const response = await fetchImpl(url, {
+      method: 'GET',
+      headers: {
+        'PAYMENT-SIGNATURE': signature,
+        'X-PAYMENT': signature,
+        'User-Agent': USER_AGENT,
+      },
+    });
+    if (response.status === 202) continue;
+    const body = await responseJson(response);
+    if (!response.ok) throw new Error(`image poll returned HTTP ${response.status}`);
+    if (body?.status === 'failed') {
+      throw new Error(`image generation failed: ${String(body.error || 'unknown error')}`);
+    }
+    if (Array.isArray(body?.data)) return imageBodyResult(body, costUsd);
+    if (body?.status === 'queued' || body?.status === 'in_progress') continue;
+    throw new Error('image poll returned no terminal result');
+  }
+  throw new Error(`image generation poll timed out after ${maxPollDurationMs}ms`);
+}
+
 export async function generateImage({
   prompt,
   walletKey,
@@ -69,6 +121,9 @@ export async function generateImage({
   createSignature = defaultCreateSignature,
   reserveSpend = async () => {},
   maxQuoteUsd = 0.07,
+  sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  pollIntervalMs = 5_000,
+  maxPollDurationMs = 240_000,
 }) {
   if (typeof prompt !== 'string' || prompt.trim().length === 0 || prompt.length > 12_000) {
     throw new Error('image prompt must contain 1..12000 characters');
@@ -124,6 +179,18 @@ export async function generateImage({
       'PAYMENT-SIGNATURE': signature,
     },
   });
+  if (paid.status === 202) {
+    const accepted = await responseJson(paid);
+    return pollImageJob({
+      pollUrl: accepted?.poll_url,
+      signature,
+      costUsd: quote.amountUsd,
+      fetchImpl,
+      sleepImpl,
+      pollIntervalMs,
+      maxPollDurationMs,
+    });
+  }
   if (paid.status !== 200) {
     throw new Error(`paid image generation returned HTTP ${paid.status}`);
   }
