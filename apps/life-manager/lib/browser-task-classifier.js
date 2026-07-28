@@ -16,7 +16,6 @@ const RESERVED_MESSAGE = /^(?:\/|feedback\s*[:：]|フィードバック\s*[:：
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const RESPONSE_SCHEMA = Object.freeze({
   type: "object",
-  additionalProperties: false,
   properties: {
     browser_required: { type: "boolean" },
     explicit_request: { type: "boolean" },
