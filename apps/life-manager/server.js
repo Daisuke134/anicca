@@ -63,6 +63,8 @@ const { handlePayoutCallback } = require("./lib/payout-question.js");
 const { handleDietCallback } = require("./lib/diet-runtime.js");
 const { handlePreceptsCallback } = require("./lib/precepts-runtime.js");
 const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
+const { handleBrowserTaskMessage } = require("./lib/browser-task-intake.js");
+const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -567,6 +569,25 @@ const server = http.createServer((req, res) => {
             res.writeHead(200); res.end("ok");
             return;
           }
+          if (u.kind === "message" && u.text && process.env.LM_BROWSER_TASKS_ENABLED === "1") {
+            const browserTask = await handleBrowserTaskMessage({
+              text: u.text,
+              chatId: u.chatId,
+              messageId: u.messageId,
+              updateId: update.update_id,
+              user: row,
+            }, {
+              telegramToken: LM_TG_TOKEN,
+              geminiKey: GEMINI_KEY,
+              supaUrl: SUPA_URL,
+              supaKey: SUPA_KEY,
+            });
+            if (browserTask.handled) {
+              console.log(`[browser-task] queued=${browserTask.queued} job=${browserTask.jobId}`);
+              res.writeHead(200); res.end("ok");
+              return;
+            }
+          }
           if (u.isStart) {
             // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
             const profile = { first_name: u.firstName, last_name: u.lastName };
@@ -818,6 +839,10 @@ if (require.main === module) {
       startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
     });
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
+    const browserJobs = startBrowserJobLoop({
+      enabled: process.env.LM_BROWSER_TASKS_ENABLED === "1",
+    });
+    console.log(`[life-call] browser jobs ${browserJobs.enabled ? "ON (Railway private Steel)" : "OFF"}`);
     // INC-3: register our own webhook from our own env — registration and comparison are one value.
     selfHealWebhook(process.env).then((r) => {
       console.log(`[life-call] webhook self-heal: healed=${r.healed} ${r.reason}`);

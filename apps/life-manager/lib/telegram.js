@@ -19,6 +19,22 @@ async function tgCall(token, method, body) {
 const sendMessage = (token, chatId, text, extra) =>
   tgCall(token, "sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) });
 
+async function sendPhoto(token, chatId, bytes, caption) {
+  try {
+    const form = new FormData();
+    form.append("chat_id", String(chatId));
+    if (caption) form.append("caption", String(caption));
+    form.append("photo", new Blob([bytes], { type: "image/png" }), "cloud-browser-receipt.png");
+    const response = await fetch(`${TG(token)}/sendPhoto`, {
+      method: "POST",
+      body: form,
+    });
+    return await response.json();
+  } catch (error) {
+    return { ok: false, error: String(error) };
+  }
+}
+
 const getMe = (token) => tgCall(token, "getMe");
 
 // Register the webhook with a secret token Telegram echoes back in a header we verify on each update.
@@ -116,4 +132,4 @@ function startReply(chatId, base) {
   };
 }
 
-module.exports = { tgCall, sendMessage, getMe, setWebhook, answerCallbackQuery, isPanelCommand, isPanelDeepLink, parseUpdate, routeCallbackData, onboardLink, startReply };
+module.exports = { tgCall, sendMessage, sendPhoto, getMe, setWebhook, answerCallbackQuery, isPanelCommand, isPanelDeepLink, parseUpdate, routeCallbackData, onboardLink, startReply };
