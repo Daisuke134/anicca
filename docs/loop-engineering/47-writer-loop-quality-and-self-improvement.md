@@ -2097,6 +2097,8 @@ RED fixtureを先に固定し、実publisher再実行ではtable 3枚とbody dia
 
 Superpowers TDDで、現行upstreamとdivergeした旧branchを持つ実git fixtureを作り、LaunchAgent環境を読み込んだcontrollerが同期できることを契約化した。修正前は`learning source is not synchronized with upstream: ['1', '1']`でRED、固定branchをplistから除きruntime checkoutのorigin upstreamを導出させてGREEN。Writer `892ede4`。本番checkoutを同commitへfast-forwardしてplistを再install/bootstrapし、launchd環境に`ARTICLE_SOURCE_BRANCH`が無いこと、導出branch=`deploy/gig-speedy-reply-cutover`、production `ensure_repo_synced()`=PASS、22:30 calendar trigger保持を確認した。
 
+続けて本番checkoutの既存`config/loop-registry.json`変更が同期gateを止めることを実git fixtureでRED再現した。Writer外のtracked変更は保存したまま、`learned-playbook.md`だけをpathspec commitし、`skills/article-writer/`内の別変更は従来どおり拒否する境界へ修正した。Writer `9b651b6`。self-improve全12 test、upstream統合、beat-rate 19/19、rule-blame 20/20がPASSし、本番の実dirty checkoutでも`ensure_repo_synced()`=PASS。外部作業を消さず、学習commitへ混入させず、22:30も止めない。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2331,7 +2333,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 6 | **DONE** — dev.to画像パス修正（相対→絶対、`.png` 欠落） | Zenn記事staging依存を外し、init直後に immutable media だけを `images/<run_id>/` へcommit/push。Dev.toは404時に同じshared stagerを1回だけ自己回復。Writer `0a0db6b`、media `a9e4c7d` | authenticated Dev.to payloadの本文画像は拡張子付き絶対URL、raw headline/bodyはHTTP 200。公開proxy再読で2 assetともexact SHAまたはdHash 0、broken asset 0。既公開4本は§21.33のviews 0裁定どおり遡及変更なし |
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
 | 8 | 台帳3 run蓄積 | `daily-2026-07-27` と `daily-2026-07-28` の2 runを実生成済み。あと1日分は作らず実scheduleを待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
-| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | 実schedule初発火でEN/JA beat-rateは完走したが、binary gateを`editorial`軸へ変換後、許可軸一覧がその名前を捨ててrc75。Writer `fb39d97`でschemaを一致させた。12:14 preflightではtest末尾だけのcwd相対importをWriter `a933f75`で共通absolute pathへ直し、beat-rate 19/19・rule-blame 20/20 PASS。14:42にはLaunchAgentの旧固定branchがproduction同期gateを必ず止めることをRED再現し、Writer `892ede4`でruntime upstream導出へ修正・実機再load済み。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
+| 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | 実schedule初発火でEN/JA beat-rateは完走したが、binary gateを`editorial`軸へ変換後、許可軸一覧がその名前を捨ててrc75。Writer `fb39d97`でschemaを一致させた。12:14 preflightではtest末尾だけのcwd相対importをWriter `a933f75`で共通absolute pathへ直し、beat-rate 19/19・rule-blame 20/20 PASS。14:42には旧固定branchをWriter `892ede4`でruntime upstream導出へ修正し、続くtracked dirty停止もWriter `9b651b6`でWriter外変更を保存・隔離する境界へ修正。本番実dirty checkoutの同期gate PASS、実機再load済み。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
 | 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
 | 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
 | 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
