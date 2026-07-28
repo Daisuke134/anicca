@@ -1,6 +1,7 @@
 "use strict";
 
 const { createCipheriv, createDecipheriv, createHash, randomBytes } = require("node:crypto");
+const { isIP } = require("node:net");
 const canonicalize = require("canonicalize");
 const { parse: parseDomain } = require("tldts");
 
@@ -23,7 +24,8 @@ function normalizeAuthOrigin(value) {
   if (typeof value !== "string") throw new Error("browser auth origin invalid");
   let parsed;
   try { parsed = new URL(value); } catch { throw new Error("browser auth origin invalid"); }
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.origin === "null") {
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.origin === "null"
+    || parsed.hostname.endsWith(".")) {
     throw new Error("browser auth origin invalid");
   }
   return parsed.origin;
@@ -66,21 +68,42 @@ function validateSessionContext(value) {
 function cookieDomain(value) {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase().replace(/^\.+/, "");
-  if (!normalized || normalized.endsWith(".") || normalized.includes(":")) return null;
+  if (!normalized || normalized.endsWith(".") || /[:/@?#]/.test(normalized)) return null;
   try {
     const parsed = new URL(`https://${normalized}`);
-    return parsed.hostname === normalized ? normalized : null;
+    return parsed.hostname.toLowerCase();
   } catch {
     return null;
   }
 }
 
+function safePublicHostname(hostname) {
+  const ipCandidate = hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+  if (isIP(ipCandidate)) return false;
+  const parsed = parseDomain(hostname, {
+    allowPrivateDomains: true,
+    detectIp: true,
+    detectSpecialUse: true,
+  });
+  return Boolean(
+    parsed.domain
+    && parsed.isIcann === true
+    && parsed.isIp !== true
+    && parsed.isPrivate !== true
+    && parsed.isSpecialUse !== true
+    && parsed.publicSuffix !== hostname
+  );
+}
+
 function cookieAppliesToHostname(cookie, hostname) {
   if (!cookie || typeof cookie !== "object" || Array.isArray(cookie)) return false;
+  if (Object.prototype.hasOwnProperty.call(cookie, "partitionKey")) return false;
   const domain = cookieDomain(cookie.domain);
-  if (!domain) return false;
+  if (!domain || !safePublicHostname(hostname) || !safePublicHostname(domain)) return false;
   if (domain === hostname) return true;
-  if (cookie.hostOnly === true || !hostname.endsWith(`.${domain}`)) return false;
+  if (cookie.hostOnly !== false || !hostname.endsWith(`.${domain}`)) return false;
   const target = parseDomain(hostname, {
     allowPrivateDomains: true,
     detectIp: true,
@@ -102,18 +125,8 @@ function cookieAppliesToHostname(cookie, hostname) {
   );
 }
 
-function isExactStorageOrigin(value, origin) {
-  return typeof value === "string" && value.trim() === origin;
-}
-
 function scopeStorage(storage, origin) {
-  if (Array.isArray(storage)) {
-    return storage.filter((entry) => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
-      return isExactStorageOrigin(entry.origin === undefined ? entry.url : entry.origin, origin);
-    });
-  }
-  if (!storage || typeof storage !== "object"
+  if (!storage || typeof storage !== "object" || Array.isArray(storage)
     || Object.getPrototypeOf(storage) !== Object.prototype && Object.getPrototypeOf(storage) !== null) {
     invalid();
   }
@@ -125,6 +138,7 @@ function scopeStorage(storage, origin) {
 function scopeSessionContextToOrigin(value, originValue) {
   const origin = normalizeAuthOrigin(originValue);
   const hostname = new URL(origin).hostname;
+  if (!safePublicHostname(hostname)) invalid();
   const context = validateSessionContext(value);
   const scoped = {};
   if (Object.prototype.hasOwnProperty.call(context, "cookies")) {
