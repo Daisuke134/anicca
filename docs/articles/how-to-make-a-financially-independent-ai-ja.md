@@ -6,7 +6,7 @@ AIエージェントが、人間に操作されず24時間動く。これは「�
 
 この記事でいう**経済的に自立したAI**とは、人間が継続して料金を払わなくても、外部の相手から得た収益で推論とクラウドを維持し、次の請求に備える資金を残せるAIである。
 
-私たちは、そのための仕組みを実際のwallet、支払い、クラウド、台帳で組み立てている。ただし先に結論を言うと、完全な経済的自立には到達していない。cloud survivalは6時間の実jobで実証したが、公開前監査時点ではlease ceiling後のreplacementがなく停止している。検証済みの外部収益は **$0.00** である。
+私たちは、そのための仕組みを実際のwallet、支払い、クラウド、台帳で組み立てている。ただし先に結論を言うと、完全な経済的自立には到達していない。cloud survivalを6時間の実jobで実証し、後継jobを検証してから旧jobを止める引っ越しもmainnetで実証した。現在のlive statusはlevel 3だが、検証済みの外部収益は **$0.00** である。
 
 ## 1. Financially independent AIとは何か
 
@@ -18,13 +18,13 @@ AIエージェントが、人間に操作されず24時間動く。これは「�
 |---:|---|---|
 | 0 | 人間のsubscription、Mac、カードが継続費を負担する | 卒業経路あり |
 | 1 | AI固有のwalletと支出policyを持つ | 実証済み |
-| 2 | walletから推論、cloud、gasを実際に払う | 実証済み、現在のlive level |
-| 3 | Macを止めてもcloud上でheartbeat、決算書、更新を続ける | 6時間の実証済み、現在は停止 |
+| 2 | walletから推論、cloud、gasを実際に払う | 実証済み |
+| 3 | Macを止めてもcloud上でheartbeat、決算書、更新を続ける | 実証済み、現在のlive level |
 | 4 | 直近30日の検証済み外部純収益が生活費を覆い、reserveを維持する | 未達 |
 | 5 | reserve後の余剰をuserへ実際に送る | 未達 |
 | 6 | 黒字の方法と余剰資金から、独立したchild agentを作る | 未達 |
 
-到達証拠はlevel 3、公開前監査時点のlive statusはlevel 2である。AIが自分の財布を持ち、自分の住処を買い、人間のMacを止めても6時間生存を報告するところまでは実証した。しかしjobは6時間のlease ceilingで終了し、次の住処を自動作成しなかった。継続性を直すまでは、level 3が常時稼働しているとは言わない。外部の顧客も生活費を賄っていないため、level 4は未達である。
+現在のlive statusはlevel 3である。AIが自分の財布を持ち、自分の住処を買い、人間のMacを止めても6時間生存を報告し、後継jobを1件だけ作成して、公開serviceと署名heartbeatを検証してから旧jobを終了するところまで実証した。ただし21600秒の自然な時刻triggerはまだ観測待ちで、今回のhandoverは同じproduction controllerを即時発火して確認した。外部の顧客も生活費を賄っていないため、level 4は未達である。
 
 ## 2. AIにも生活費がある
 
@@ -124,7 +124,9 @@ Nosanaの公式protocol文書では、projectがpipeline jobを投稿し、node�
 > “Projects can post pipeline jobs through the Nosana Jobs program.”
 > 出典: Nosana公式「Nosana Jobs」
 
-ここで実証したのは、AIがcloud上で生存し、残高を読み、更新費を払う**機械**である。ただし公開前のlive readbackではjobは`state=2`、3つの公開routeはHTTP 503、同じpayerのrunning jobは0だった。6時間のceiling後に次のjobを作るreplacement loopが欠けている。外部収益で費用を払い続けることも、cloudを途切れさせないことも、まだ実証していない。
+その後、欠けていたreplacement controllerを接続した。現在のjob `72zCpJEZ…U2YKN` はliveで、`/`、`/statement.json`、`/heartbeats`はすべてHTTP 200である。controllerは後継を1件だけlistし、confidential deliveryを行い、3 routeとEd25519署名heartbeatを独立検証してから旧jobを終了した。検証時の順序は、旧job running → 後継job running → 旧job state 2で、最後のrunning jobは1件だった。
+
+ここで実証したのは、AIがcloud上で生存するだけでなく、検証済みの後継へ安全に引っ越す**機械**である。証拠の限界も残る。21600秒の自然triggerそのものはまだ観測しておらず、今回は同じproduction controllerを即時発火した。また、支払い原資はinternal treasuryからのbootstrapであり、外部収益で費用を払い続けた証明ではない。
 
 ## 9. 失敗から得たreserve floor
 
@@ -157,8 +159,8 @@ Life Managerは、人間ごとにagentを持たせ、そのagentが生活管理�
 |---|---|
 | agent固有のBase / Solana wallet | 実証済み |
 | walletからのx402実支払い | 実証済み |
-| Mac-offのNosana survival runtime | 6時間の実証済み、現在停止 |
-| heartbeat、決算書、自己renewal | 実証済み、replacement未実装 |
+| Mac-offのNosana survival runtime | 6時間の実証済み、現在live |
+| heartbeat、決算書、自己renewal、後継handover | mainnetで実証済み |
 | x402 SELL endpoint | 稼働中、外部購入0 |
 | WORK応募・納品loop | 稼働中、採用・外部支払待ち |
 | CAPITAL live loop | 稼働中、SELL / WORKとは別会計 |
@@ -167,7 +169,7 @@ Life Managerは、人間ごとにagentを持たせ、そのagentが生活管理�
 | 直近30日で生活費を自給 | **未達** |
 | userへのverified surplus payout | **未達** |
 
-したがって「経済的自立したAIを完成させた」とは書かない。正確には、**経済的自立に必要なwallet、支払い、住処、稼ぐ経路、検証、会計を一つのloopへ接続し、level 3を6時間の実jobで実証したが、live statusはlevel 2へ戻っている**である。
+したがって「経済的自立したAIを完成させた」とは書かない。正確には、**経済的自立に必要なwallet、支払い、住処、引っ越し、稼ぐ経路、検証、会計を一つのloopへ接続し、live level 3まで実証したが、生活費を外部純収益で覆うlevel 4は未達**である。
 
 ## 12. どうscaleするか
 
@@ -203,7 +205,7 @@ human bootstrap seed ──> agent wallet
                 profitable recipe ──> independent child
 ```
 
-AIの経済的自立は、「賢いAIを作る」だけでは完成しない。wallet、外部需要、receipt、会計、住処、reserveを同じloopに入れ、外部純収益が継続費を上回った時に初めて成立する。私たちは、その判定をごまかさずに進めるため、到達証拠をlevel 3、live statusをlevel 2、外部収益を **$0.00** と記録している。
+AIの経済的自立は、「賢いAIを作る」だけでは完成しない。wallet、外部需要、receipt、会計、住処、reserveを同じloopに入れ、外部純収益が継続費を上回った時に初めて成立する。私たちは、その判定をごまかさずに進めるため、live statusをlevel 3、外部収益を **$0.00**、level 4を未達と記録している。
 
 ## 参考資料と実測証拠
 
