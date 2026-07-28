@@ -2386,9 +2386,9 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 7 | DONE (`970e843`) | Contradiction gate | 既存`rule_conflicts.py`の全active source scanをdaily生成wrapperへ接続し、direct/drift/deadをcanonical-owner付きdurable ticket化。heuristic findingはreview、検証済みcriticalはblockに分離し、critical 1件またはscanner errorで生成と全slice学習変更をfail-closed。wrapper E2Eはmodel call 0・receipt・Telegram alertを確認。2 gate contract tests + Writer全article suite 335 passed |
 | 8 | DONE (`a112a71`) | Bounded learning controller | slice engineの1変更制約の外側にdurable controllerを追加。before/candidate/after SHA-256、held-out、canary、keep/revertをatomic receipt化し、canary失敗はbefore bytesへexact rollback。unknown/insufficientは同一hash・変更0。keep後は次runがpromoted hashを実読したconsumption receiptを必須化。2 controller contract tests + Writer全article suite 337 passed |
 | 9 | DONE (`8303111`) | Self-heal 5 fixture | 実child processをresume claim直後にexit 9でkillし、fresh processから同一runを再読込。その後timeout/unknown effect、response loss、wrong authenticated identity、broken public asset→same-ID repairを同一fixtureで通過。run/draft/destination identity/safety `ALLOW`は不変、current-run ledger pair重複0。Writer全article suite 338 passed |
-| 10 | TODO | Launchd + Telegram | measure→calibrate→learn→verify→notifyを既存launchdで発火。全eventをdurable outboxから送り、run_id、reward status、変更、keep/revert、weight hash、failure class、messageIdを確認 |
+| 10 | DONE (`f55e2c9`, `a3a09c4`, `0239d05`, `c489b40`; installed `00830d4`) | Launchd + Telegram | 既存`ai.anicca.article-self-improve`を実`launchctl kickstart`（runs=3）。measure→`REVIEW_REJECTED`（変更0）→verifyを実行。実機で発見したpytest broker registry汚染を同一state-root fence、既存score再実行120 callsをidentity/mtime idempotency、古いmetric runのmissing beat-rate通知停止を`insufficient`分離で修復。durable outboxはrun `daily-2026-07-26`、reward `insufficient`、decision `no_change`、weight hash、failure `verification_incomplete`を持ち、Telegram実`messageId=4263`を確認 |
 | 11 | DONE (`3ec8c49`) | End-to-end fixture proof | exact product/run/artifact/variantのjudgment+reward collect→calibrated rank score→blamed title 1変更→held-out→canary→keep→次run consumed hashを1 fixtureで完走。対照fixtureは全reward `unknown`からcalibration `insufficient`、before=after、変更0。統合fixtureが発見したcalibration出力のreward identity欠落も修正。Writer全article suite 340 passed |
-| 12 | TODO | Spec / code / test push | Writerとこのspecの対象変更をcommit/pushし、HEAD/upstream一致、対象tracked diff 0。意味のある変更ごとにpushし、session終了時に未pushを残さない |
+| 12 | DONE | Spec / code / test push | Writer featureは`c489b40`まで全変更push、実機branchは`00830d4`へmerge/push。Writer全article suite 343 passed、diff check通過。specは各項完了時に個別commit/pushし、本行の最終commitでHEAD/upstream一致・対象tracked diff 0を確認する |
 
 **監視backlog（この実装sessionのblockerではない）**:
 
@@ -2453,9 +2453,9 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 11 | ambiguous publish | 同fixture（unknown effect→authenticated readback→same intent） | PASS (`8303111`) |
 | 12 | identity mismatch | 同fixture（attacker identity拒否、正identityだけthaw） | PASS (`8303111`) |
 | 13 | asset recovery | 同fixture（live-media-mismatch→same-ID repair、ledger重複0） | PASS (`8303111`) |
-| 14 | Telegram outbox | `test_state_transition_and_outbox_event_are_atomic` + 実messageId | TODO |
-| 15 | launchd chain | 実kickstartでmeasure→calibrate→learn→notify、terminal receipt | TODO |
-| 16 | push integrity | `git diff --check`、focused/full suite、HEAD/upstream、対象tracked diff | TODO |
+| 14 | Telegram outbox | `test_self_improve_notification_is_run_bound_and_idempotent` + missing-score insufficient fixture + 実`messageId=4263` | PASS (`c489b40`) |
+| 15 | launchd chain | 実kickstart runs=3、score receipt再利用、measure→learn→verify→durable notify | PASS (installed `00830d4`) |
+| 16 | push integrity | `git diff --check`、focused/full suite 343 passed、HEAD/upstream、対象tracked diff | PASS（本spec最終commit） |
 
 | Item | Value |
 |---|---|
