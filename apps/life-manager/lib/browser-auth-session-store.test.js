@@ -101,6 +101,7 @@ test("browser auth contexts are strictly scoped to the exact public HTTPS origin
 test("browser auth rejects unsafe exact hosts, partitioned cookies, and ambiguous dotted domains", () => {
   for (const origin of [
     "https://github.io",
+    "https://herokuapp.com",
     "https://co.uk",
     "https://localhost",
     "https://127.0.0.1",
@@ -120,6 +121,22 @@ test("browser auth rejects unsafe exact hosts, partitioned cookies, and ambiguou
   }, "https://login.luma.com");
   assert.deepEqual(exact.cookies.map(({ name }) => name), ["normal"]);
   assert.doesNotMatch(JSON.stringify(exact), /drop-partition/);
+
+  for (const origin of ["https://foo.herokuapp.com", "https://app.github.io"]) {
+    const hostname = new URL(origin).hostname;
+    const privateChild = scopeSessionContextToOrigin({
+      cookies: [
+        { name: "exact-private-child", value: "keep-private-child", domain: hostname, path: "/" },
+        { name: "private-apex-parent", value: "drop-private-apex", domain: hostname.endsWith("herokuapp.com") ? "herokuapp.com" : "github.io", path: "/", hostOnly: false },
+      ],
+      localStorage: { [origin]: { marker: "keep-private-child-storage" } },
+    }, `${origin}/account`);
+    assert.deepEqual(privateChild, {
+      cookies: [{ name: "exact-private-child", value: "keep-private-child", domain: hostname, path: "/" }],
+      localStorage: { [origin]: { marker: "keep-private-child-storage" } },
+    });
+    assert.doesNotMatch(JSON.stringify(privateChild), /drop-private-apex/);
+  }
 
   assert.throws(() => normalizeAuthOrigin("https://luma.com./account"), /browser auth origin invalid/i);
   assert.throws(() => scopeSessionContextToOrigin({
