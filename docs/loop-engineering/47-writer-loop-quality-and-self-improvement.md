@@ -80,7 +80,7 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。履歴は §18.8、§21.2、§22.6 に残す。**現在の残 TODO と実行順序の唯一の正本は §22.11**。公開面の完全性を待たず、完成したWriter contractを共有 Marketing Loopへ順番に移す。
+旧導入順は完了または廃止。履歴は §18.8、§21.2、§22.6 に残す。**現行実装順序と完了状態の唯一の正本は §22.11**。Phase 7–11の実装TODOは全て完了し、自然run/engagement/paid/public timingだけをnative workerが継続観測する。
 
 §16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.6 だけを更新する。
 
@@ -2460,6 +2460,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 18 | Life Manager product pack | 実landing/Telegram/Stripe/onboarding正本からoffer、CTA、activation、paidを読込。3 writing sliceを別reward/opponent/seed/runtime weightへ解決し、既存runtime weightを再installで上書きしない | PASS（feature `f934075`、installed `e79da56`、Marketing 5 + Writer 343 = 348 passed） |
 | 19 | video producer adapters | fixture→Honne→Larry→ReelClaw→Watercolorを共通producer contractへ登録。form/craftは4本分離し、triggerは既存launchd label、artifactは`video/mp4`、publication receiptは共通schema。Life Managerのvideo reward/opponent/weightはproduct packに保持 | PASS（feature `3f66f57`、installed `9fe2030`、実`launchctl list`は4 producer全label present/missing 0、Marketing 8 + Writer 343 = 351 passed） |
 | 20 | observation auto-terminal | due前=`pending`、due後は証拠充足=`scorable`、不足=`insufficient + observed_value=null + no_change`。scope mismatch/重複evidenceはfail-closed、terminal receiptは再runで不変。native launchdが15分ごとにrepo外runtimeをscan | PASS（feature `f550b4b`、installed `14ce862`、Marketing 12 + Writer 343 = 355 passed。実`ai.anicca.marketing-metrics` runs=2、last exit=0、interval=900、初回summary全0） |
+| 21 | read-only dashboard | run/publication/metric/experiment/observationのallowlist fieldだけをbounded snapshot→standalone HTMLへ投影。source hash不変、secret/email/customer ID非表示、dashboard削除後もobservation terminalizer継続。metrics workerとは別LaunchAgent | PASS（feature `b7d05a1`、installed `3ee5364`、Marketing 15 + Writer 343 = 358 passed。実Chrome 1440px screenshot確認、実`ai.anicca.marketing-dashboard` runs=2 / exit=0 / interval=900、HTML 6,246 bytes、projection error 0） |
 
 | Item | Value |
 |---|---|
@@ -2492,7 +2493,9 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 8 | DONE (`f934075`; installed `e79da56`) | `products/life-manager` を接続。実正本から`$20/mo` offer、landing→Telegram CTA、`tg_onboard_stage=done` activation、Stripe single-writerの`lm_users.paid=true`を固定。opponentは実conversion未観測のため`unknown` baseline。tracked weightはseedだけ、学習stateはrepo外で既存値をpreserve | product-scoped offer/CTA/reward/opponent/weights、Marketing 5件 + Writer 343件PASS |
 | 9 | DONE (`3f66f57`; installed `9fe2030`) | video fixture→Honne→Larry→ReelClaw→Watercolor。producerは既存のproduct-specific loopを消さず、共通adapter manifestでform/craft/launchd/artifact/receipt境界を宣言。productのoffer/CTA/reward/weightはproducerへ混入0 | 同一engine schema、4 craft別file、実launchd全label present、Marketing 8件 + Writer 343件PASS |
 | 10 | DONE (`f550b4b`; installed `14ce862`) | 自然観測をdurable windowへ変換。実装sessionは待たず、native `ai.anicca.marketing-metrics`が15分ごとにdue itemを`scorable`または`insufficient/no_change`へ自動terminal化。3 run、実engagement、7日paid、Zenn/X timingは同じcontractで継続 | 実launchd runs=2 / exit=0 / interval=900。missingを0へ変換せず、terminal receipt idempotent、Marketing 12件 + Writer 343件PASS |
-| 11 | NEXT | dashboardをledger上に投影 | dashboard停止でもloop継続、dashboard独自state 0 |
+| 11 | DONE (`b7d05a1`; installed `3ee5364`) | dashboardをledger上にallowlist投影。黒い運用台帳UIをstandalone HTMLで生成し、秘密fieldを除外。専用LaunchAgentが15分ごとに再生成し、metrics/learn workerとはprocess/stateを共有しない | dashboard停止/削除でもobservation terminal化継続、source ledger hash不変、実Chrome表示、実launchd exit=0、Marketing 15件 + Writer 343件PASS |
+
+**現行実装TODO: 0。** §22.6の監視backlogは人間/実装sessionを待たせず、`ai.anicca.marketing-metrics`が証拠到着または期限到来で自動terminal化する。
 
 実装時の基本検証コマンド:
 
