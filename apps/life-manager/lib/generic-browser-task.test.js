@@ -80,9 +80,9 @@ test("discovers an unregistered site, acts once, independently reads back, repor
       "provider_readback",
       "telegram",
       "telegram_sent",
-      "finish",
       "release",
       "steel_released",
+      "finish",
     ],
   );
 });
@@ -138,4 +138,3 @@ test("a pre-action failure is an honest failure and every opened Steel session i
   assert.equal(result.status, "failed");
   assert.equal(releases, 1);
 });
-

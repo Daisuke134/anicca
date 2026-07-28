@@ -90,12 +90,12 @@ async function runGenericBrowserTask(job, deps) {
     result.telegram_message_id = null;
   }
 
-  await deps.finishJob(job.id, result);
-
   if (session && session.id) {
     try {
       const release = await deps.releaseSession(session.id);
       result.steel_released = Boolean(release && release.released);
+    } catch {
+      result.steel_released = false;
     } finally {
       await deps.appendTrace(job.id, "steel_released", {
         session_id: result.session_id,
@@ -103,6 +103,7 @@ async function runGenericBrowserTask(job, deps) {
       });
     }
   }
+  await deps.finishJob(job.id, result);
   return result;
 }
 
