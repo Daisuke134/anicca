@@ -92,7 +92,7 @@ Expected: 2 passed.
 
 Run the pytest-format files as one command and the two script-format tests separately. Expected: existing 76 pytest cases, 5 position cases, 7 verification cases, plus the 2 new wiring cases all pass.
 
-- [ ] **Step 4: Commit the isolated code change**
+- [x] **Step 4: Commit the isolated code change**
 
 ```bash
 git add \
@@ -112,15 +112,15 @@ git commit -m "fix(polymarket): recover balanced positions before trading"
 - Consumes: live wallet `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`, launchd `ai.anicca.pm-live-trade`.
 - Produces: Polygon transaction hash, status `0x1`, pUSD recovery, reduced/no mergeable balance, and exactly one `polymarket-merge` ledger row.
 
-- [ ] **Step 1: Capture pre-merge evidence**
+- [x] **Step 1: Capture pre-merge evidence**
 
 Read Polymarket positions, deposit-wallet pUSD, the current count of `polymarket-merge` ledger rows, and the deployed `run.sh` checksum.
 
-- [ ] **Step 2: Deploy the verified script**
+- [x] **Step 2: Deploy the verified script**
 
 Apply only the merge block to the canonical dirty checkout while preserving unrelated user changes, copy the resulting exact `run.sh` to the `.blockrun` runtime, and confirm the two checksums match.
 
-- [ ] **Step 3: Trigger the real existing launchd loop**
+- [x] **Step 3: Trigger the real existing launchd loop**
 
 ```bash
 launchctl kickstart -k "gui/$(id -u)/ai.anicca.pm-live-trade"
@@ -128,7 +128,7 @@ launchctl kickstart -k "gui/$(id -u)/ai.anicca.pm-live-trade"
 
 Wait for the job to exit and require `last exit code = 0`.
 
-- [ ] **Step 4: Independently verify the transaction**
+- [x] **Step 4: Independently verify the transaction**
 
 Require:
 
@@ -139,11 +139,11 @@ mergeable balanced quantity decreases to zero
 ledger contains exactly one row with the transaction hash
 ```
 
-- [ ] **Step 5: Prove idempotency**
+- [x] **Step 5: Prove idempotency**
 
 Trigger the same launchd loop again. Require no new merge transaction, no additional ledger row for the first transaction, and a trace/output stating there is no mergeable balanced condition.
 
-- [ ] **Step 6: Update the single source of truth**
+- [x] **Step 6: Update the single source of truth**
 
 Move `PM-MERGE-1` to the completed baseline, advance the current cursor to `S21-MAC-OFF`, replace pre-merge balances with verified post-merge values, and record the transaction hash and receipt evidence in the Life Manager spec.
 
