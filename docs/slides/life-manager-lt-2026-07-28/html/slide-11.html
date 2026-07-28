@@ -1,0 +1,81 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 1280px; height: 720px; overflow: hidden; }
+  body { font-family: Arial, sans-serif; background: #081018; color: #F7F4EA; }
+  .slide { position: relative; width: 1280px; height: 720px; overflow: hidden; background: #081018; }
+  h1,h2,h3,p { margin: 0; padding: 0; }
+  h1 { font-size: 68px; line-height: 1.08; letter-spacing: -1.5px; font-weight: 700; }
+  h2 { font-size: 48px; line-height: 1.14; letter-spacing: -0.8px; font-weight: 700; }
+  h3 { font-size: 25px; line-height: 1.25; font-weight: 700; }
+  p { font-size: 25px; line-height: 1.4; }
+  .kicker { font-size: 16px; line-height: 1; letter-spacing: 3px; font-weight: 700; color: #57D6C7; }
+  .muted { color: #A6B3BE; }
+  .small { font-size: 24px; line-height: 1.4; }
+  .tiny { font-size: 17px; line-height: 1.35; }
+  .accent { color: #57D6C7; }
+  .amber { color: #FFC857; }
+  .coral { color: #FF7A66; }
+  .green { color: #73D49C; }
+  .purple { color: #C89BFF; }
+  .title { position: absolute; left: 72px; top: 58px; width: 1136px; }
+  .title h2 { margin-top: 14px; }
+  .rule { position: absolute; left: 72px; right: 72px; top: 148px; height: 2px; background: #2A3A49; }
+  .footer { position: absolute; left: 72px; right: 72px; bottom: 28px; display: flex; justify-content: space-between; align-items: center; }
+  .footer p { font-size: 13px; line-height: 1; letter-spacing: 1.2px; color: #A6B3BE; }
+  .footer .num { color: #57D6C7; font-weight: 700; }
+  .card { background: #111C27; border: 1px solid #2A3A49; border-radius: 18px; padding: 24px; }
+  .chip { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid #2A3A49; padding: 8px 13px; }
+  .chip p { font-size: 14px; line-height: 1; font-weight: 700; }
+  .status-live { border-color: #73D49C; color: #73D49C; }
+  .status-next { border-color: #FFC857; color: #FFC857; }
+  .status-vision { border-color: #C89BFF; color: #C89BFF; }
+  .numCircle { width: 54px; height: 54px; border-radius: 50%; background: #57D6C7; display:flex; align-items:center; justify-content:center; }
+  .numCircle p { color: #081018; font-size: 23px; line-height: 1; font-weight: 700; }
+</style></head>
+  <body><section class="slide">
+      <div class="title"><p class="kicker">REMAINING ROADMAP</p><h2>残りは、上から<span class="amber">この順番</span></h2></div>
+      <div class="rule"></div>
+      <div style="position:absolute;left:72px;top:198px;width:1136px;height:400px;display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;">
+        
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #FFC857;">
+            <div style="width:102px;"><p class="tiny" style="color:#FFC857;font-weight:700;">NOW</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">8i</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">ONE-REPO</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">repo・product・deployを一本化</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #57D6C7;">
+            <div style="width:102px;"><p class="tiny" style="color:#57D6C7;font-weight:700;">NEXT</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">9b–9f</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">MARKETING</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">動画生成→配信→計測→改善</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #C89BFF;">
+            <div style="width:102px;"><p class="tiny" style="color:#C89BFF;font-weight:700;">03</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">10a–10f</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">DEV LOOP</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">feedback/error→PR→自動修復</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #57D6C7;">
+            <div style="width:102px;"><p class="tiny" style="color:#57D6C7;font-weight:700;">04</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">10g–10i</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">BRAIN</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">intent-aware context graph</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #73D49C;">
+            <div style="width:102px;"><p class="tiny" style="color:#73D49C;font-weight:700;">05</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">11a–11d</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">PHYSICAL</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">未ケア検知→候補→予約</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #C89BFF;">
+            <div style="width:102px;"><p class="tiny" style="color:#C89BFF;font-weight:700;">06</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">12a–12c</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">MENTAL</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">文脈駆動の介入</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #FFC857;">
+            <div style="width:102px;"><p class="tiny" style="color:#FFC857;font-weight:700;">07</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">13a–13d</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">FINANCIAL</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">wallet→収益→送金</p></div>
+          </div>
+          <div class="card" style="height:92px;padding:15px 18px;display:flex;align-items:center;border-left:6px solid #FF7A66;">
+            <div style="width:102px;"><p class="tiny" style="color:#FF7A66;font-weight:700;">GATE</p><p class="small" style="margin-top:7px;font-weight:700;white-space:nowrap;">8e / 8f</p></div>
+            <div style="width:145px;"><h3 style="font-size:20px;">CORE L3</h3></div>
+            <div style="flex:1;"><p class="small muted" style="font-size:18px;">inbox readback / real location</p></div>
+          </div>
+      </div>
+    <div class="footer"><p>LIFE MANAGER / LT</p><p class="num">11</p></div></section></body></html>
