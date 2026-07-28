@@ -2,19 +2,19 @@
 
 ## 30秒要約
 
-Life Manager は、カレンダー・場所・会話・本人の意図を理解し、財務・身体・精神の未処理を自律的に片付ける生活OSです。主UIは電話とTelegramで、Webは許可・停止・証拠を見るコントロールパネルです。私はこの開発を、ChatGPTのスマホアプリからMac mini上のCodexへ指示する形で進めています。
+Life Managerは、予定と場所を読み、必要な連絡や予約を先回りして片づけます。普段の連絡は電話とTelegram。Webは、許可を変えたり、止めたり、実行結果を確認したりするときに使います。開発の指示は、ChatGPTのiPhoneアプリからMac mini上のCodexへ出しています。
 
 ## 現在地
 
 | 区分 | 状態 | 根拠 |
 |---|---|---|
-| DAILY core | 本番実証済み | calendar / travel / call / Telegram / email の依存監査 |
-| 音声 | 本番実証済み | Telnyx + Gemini Live、実通話・録音 |
-| 個人パネル | 本番実証済み | canonical `/panel`、TG WebAppと通常browser |
-| 接続・設定 | 本番実証済み | panel/chatの双方向状態同期 |
-| organ score | 本番実証済み | outcome-based、対象0件は insufficient data |
-| UX/privacy | 本番実証済み | raw log・secret・内部名を画面から除外 |
-| 現行Codexスレッド | active | `Life Manager` スレッドが現在も実行中 |
+| 毎日の予定 | 本番で確認済み | カレンダー、移動、電話、Telegram、メール |
+| 電話 | 本番で確認済み | Telnyx + Gemini Live、実際の通話と録音 |
+| 個人パネル | 本番で確認済み | `/panel`、Telegram WebApp、通常のブラウザ |
+| 接続と設定 | 本番で確認済み | パネルとチャットで同じ状態を表示 |
+| 結果の集計 | 本番で確認済み | 4領域の結果を集計し、対象0件も区別 |
+| 画面の安全 | 本番で確認済み | ログ、秘密情報、内部名を画面から除外 |
+| 別のCodexスレッド | 稼働中 | Life Managerの続きを処理中 |
 
 ## 残TODO
 
@@ -22,14 +22,14 @@ Life Manager は、カレンダー・場所・会話・本人の意図を理解�
 
 | 順 | ID | 内容 |
 |---:|---|---|
-| 1 | 8i | ONE-REPO統合。`anicca-products`からcanonical `life-manager`へ正本・実装・deploymentを一本化 |
-| 2 | 9b–9f | MARKETING。動画生成、IG/TikTok配信、metric取得、self-improve、one-time X launch |
-| 3 | 10a–10f | DEV LOOP。feedback/errorをPII scrubし、issue→PR→merge→deploy→回復確認 |
-| 4 | 10g–10i | BRAIN。intent-aware context graphとproactive opportunity engine |
-| 5 | 11a–11d | PHYSICAL。未ケア検知、候補選定、cloud browser/email予約、事後報告 |
-| 6 | 12a–12c | MENTAL。schedule/location由来trigger、文面生成、実Telegram配信 |
-| 7 | 13a–13d | FINANCIAL。agent wallet、送金先登録、収益台帳、user walletへの実送金 |
-| gate | 8e / 8f | real inbox readbackとreal location inputが得られたらCORE L3をclose |
+| 1 | 8i | リポジトリ統合。`anicca-products`から`life-manager`へ正本、実装、配備先を一本化 |
+| 2 | 9b–9f | 集客。動画作成、InstagramとTikTokへの投稿、数値の取得、内容の修正、Xでの初回告知 |
+| 3 | 10a–10f | 開発の自動修復。不具合の個人情報を除き、issue作成、PR、merge、配備、回復確認まで進める |
+| 4 | 10g–10i | 判断。予定と本人の意図から、次に処理する用事を選ぶ |
+| 5 | 11a–11d | 健康。ケアの抜けを探し、候補を選び、ブラウザやメールで予約して報告 |
+| 6 | 12a–12c | 心。予定と場所に合わせて文面を作り、Telegramで送る |
+| 7 | 13a–13d | お金。AI用ウォレット、送金先登録、収益台帳、本人への実送金 |
+| 条件待ち | 8e / 8f | 実際の受信箱を読み返せて、位置情報を受け取れたら、本番確認を閉じる |
 
 ### 別のLife Managerスレッドのライブキュー
 
@@ -44,22 +44,22 @@ Life Manager は、カレンダー・場所・会話・本人の意図を理解�
 | ops | Telnyx残高を自動入金で自己回復 |
 | human boundary | Life Manager専用Instagramアカウント作成 |
 
-ライブキューは別branchまたは未push作業を含む可能性があるため、push済み正本の完了状態とは混同しません。
+この一覧には、別ブランチや未pushの作業も含みます。GitHubで確認できるまでは完了扱いにしません。
 
 ## 話す順番
 
-1. 人間の頭が生活のscheduler・operator・CFOになっている。
-2. Life Managerは頭脳と三臓器を持つ。
+1. 次の予定、出発時刻、予約、連絡を、ずっと気にしている。
+2. Life Managerには、健康、心、お金の用事を任せたい。
 3. スマホからMac mini上のCodexへ指示して開発している。
-4. DAILY coreと個人パネルは、実世界のreceiptまで確認済み。
-5. 次はrepo統合、marketing、self-build、brain、body、mind、financeの順。
-6. 最終的には、AIが自分のcomputeとcloudを払い、利用者負担を縮める。
+4. 毎日の予定と個人パネルは、本物の電話やメールまで確認済み。
+5. 次はリポジトリ統合、集客、自動修復、判断、健康、心、お金の順。
+6. 最後は、AIが自分のモデル代とサーバー代を払い、利用料を下げる。
 
 ## スライド設計の根拠
 
 | 原則 | 採用 |
 |---|---|
-| 1枚1メッセージ | 各スライドの見出しを結論文にした |
+| 1枚1メッセージ | 各スライドで伝える内容を1つに絞った |
 | 18pt以上 | 本文は原則18pt以上 |
 | 強いコントラスト | 暗背景 + オフホワイト、役割別アクセント |
 | 余白 | 1枚の情報量を抑え、カード間隔を統一 |
