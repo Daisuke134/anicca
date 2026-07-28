@@ -2107,6 +2107,14 @@ controllerはdurable JSONをstdoutと`state/learning/receipts/`へ書いてい�
 
 Superpowers TDDで、controller成功後に通知consumerが必ず呼ばれるwrapper契約と、実receipt→JA/EN beat-rate→durable outbox→messageIdのCLI契約をREDにした。Writer `03057af`で、controller receiptへ`metric_run_ids`を追加し、各runの`beat-rate-{ja,en}.json` identityを照合して`state/learning/notifications/<date>.json`をprepared→sentへatomic更新する。event identityは日付・run IDs・score・元receipt SHAで固定し、sent再実行は再送0。metric runなし、score identity不一致、dry-run、messageId欠落はrc75で完了を名乗らない。controller/notification 13/13、wrapper配線、upstream統合、beat-rate 19/19、rule-blame 20/20がPASSし、本番checkoutを同commitへfast-forwardした。残るのは22:30実送信のmessageIdと同run_idの実receiptだけである。
 
+### 21.54 公開窓待ちに週次実測を前倒しし、launchd runtimeを修復（実測 18:39–18:49）
+
+#4のZenn公開窓を待つ間に、既存LaunchAgent `ai.anicca.article-audit-7day` を初めて実発火した。1回目はlaunchdの`/usr/bin/python3`=3.9.6で、Python 3.10追加の`zip(..., strict=True)`をreceipt validatorが呼び`TypeError`。2回目は監査receiptまで進んだが、wrapperがlaunchd既定PATHのままbare `openclaw`を呼びrc75。どちらも週次計測を将来必ず止める実故障であり、待機ではなかった。
+
+Superpowers systematic-debugging/TDDで、実launchd Pythonを使うreceipt validator契約と、launchd既定PATHからwrapperを起動してHomebrew Python/OpenClawを解決する契約を先にRED化した。直前の`len(proofs) != len(expected)`によるexact-cardinality fail-closedを保持したままPython 3.9互換の`zip`へ変え、動作済み`self-improve.sh`と同じruntime PATHを`audit-7day.sh`へcopy+tweakした。Writer `9f54f96`。新2 test、CTA/publication 1、run completion/prune 2、Zenn deferred 9の計14 testがfresh PASS。
+
+3回目の実LaunchAgentは技術例外0で完走し、`state/learning/weekly-audit-2026-07-28.json`とTelegram `messageId=4248`を残した。監査判定自体は`FAIL`（対象5 run、failure 32）で、古いrunのexact8欠落、remote readback不一致、metrics snapshot欠落を検出したためexit 1は正しい。これで#10の計器は実機で動くが、#8の3 runとjudge/engagementのscorable分母はまだ無いため#10は閉じない。
+
 ---
 
 ## 22. Full picture — Writer-first Shared Marketing Loop（2026-07-27 決定）
@@ -2342,7 +2350,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 7 | **DONE** — note 上位8本に扉を追加 | 実行時の上位8本は新規記事との順位入替でdoor 2/8。編集前raw HTML・公開本文hash・title・tagsをruntime backupし、欠落6本だけ同一key更新 | 匿名`/api/v3/notes/{key}`再読でdoor 8/8、同一key/title/status live。価格¥500/¥1,000/¥300の3本は元public hashからpaywall境界を復元してCTAを無料側へ配置、membership本も`price=0,is_limited=true`保持。before/after hash・URL・設定は`state/note-cta-retrofit-2026-07-27/final-ledger.jsonl` |
 | 8 | 台帳3 run蓄積 | `daily-2026-07-27` と `daily-2026-07-28` の2 runを実生成済み。あと1日分は作らず実scheduleを待つ | `daily-*/gates/title-candidates-{ja,en}.json` が異なる3 runに存在し、全却下に正本行 citation |
 | 9 | **IN PROGRESS** — 22:30 の盲目解消を実機確認 | schema/cwd相対importをWriter `fb39d97` / `a933f75`で修正し、旧固定branchとtracked dirty停止をWriter `892ede4` / `9b651b6`でruntime upstream導出・Writer外変更隔離へ修正。本番同期gate PASS、実機再load済み。さらにTelegram consumer不在をWriter `03057af`でdurable・idempotentなrun-bound通知へ配線した。旧exact8 snapshotはgate自体が無いため捏造backfillせず、#4完了後の新metricsを待つ | 22:30実発火で `no JA/EN quality baseline` が0、metrics/score receiptとTelegramが同じrun_id |
-| 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
+| 10 | Xの実測 + 週次judge較正 | #8以前は相関の分母が足りない。週次監査のlaunchd Python/PATH故障はWriter `9f54f96`で修復し、実receipt + Telegram `messageId=4248`まで確認済み | judge preferenceと自投稿engagementの相関、scorable件数、unknown件数を分離して出す。§21.45 T26もここへ統合し、非scorable itemを平均の分子/分母双方から除外 |
 | 11 | 本文 slice・長文 slice | titleだけの改善を本文/長文へ誤一般化しない | article-bodyとbook/long-formに独立opponent、reward、weightを持ち、held-out非悪化gateがPASS |
 | 12 | 扉の宛先をsiteかSubstackか決定 | 1週間の同世代実測前はconversion比較ができない | 7日windowでclick→activation/paidを同一attribution契約で比較し、単一宛先を決定してproduct packへ固定 |
 
