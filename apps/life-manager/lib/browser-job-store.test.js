@@ -10,20 +10,6 @@ const {
   finishBrowserJob,
 } = require("./browser-job-store.js");
 
-const SUPA = Object.freeze({
-  supaUrl: "https://db.example",
-  supaKey: "service-key",
-});
-
-function response(status, body) {
-  return {
-    status,
-    ok: status >= 200 && status < 300,
-    async json() { return body; },
-    async text() { return JSON.stringify(body); },
-  };
-}
-
 test("a queued job is tenant-bound and hashes the raw prompt without persisting its secret", () => {
   const raw = "Register me. password=super-secret-token";
   const job = buildBrowserJob({
@@ -56,10 +42,10 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
     telegram_message_id: "91",
     status: "queued",
   };
-  const fetchImpl = async (url, init = {}) => {
-    calls.push({ url: String(url), init });
-    if (init.method === "POST") return response(201, []);
-    return response(200, [existing]);
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) return { rows: [] };
+    return { rows: [existing] };
   };
   const result = await enqueueBrowserJob({
     uid: "u-1",
@@ -73,14 +59,13 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
       locale: "en",
       requiresLogin: false,
     },
-  }, { ...SUPA, fetchImpl });
+  }, { query });
 
   assert.deepEqual(result, { created: false, job: existing });
   assert.equal(calls.length, 2);
-  assert.match(calls[0].url, /\/rest\/v1\/lm_browser_jobs$/);
-  assert.equal(calls[0].init.headers.Prefer, "resolution=ignore-duplicates,return=representation");
-  assert.match(calls[1].url, /uid=eq\.u-1/);
-  assert.match(calls[1].url, /telegram_message_id=eq\.91/);
+  assert.match(calls[0].sql, /ON CONFLICT \(uid, telegram_chat_id, telegram_message_id\) DO NOTHING/i);
+  assert.equal(calls[0].params[0], "u-1");
+  assert.match(calls[1].sql, /WHERE uid = \$1 AND telegram_chat_id = \$2 AND telegram_message_id = \$3/i);
 });
 
 test("claim uses the concurrency-safe RPC and returns only one bounded job row", async () => {
@@ -94,33 +79,35 @@ test("claim uses the concurrency-safe RPC and returns only one bounded job row",
     action_kind: "registration",
     requires_login: false,
   };
-  const fetchImpl = async (url, init) => {
-    seen.push({ url: String(url), init });
-    return response(200, [row]);
+  const query = async (sql, params) => {
+    seen.push({ sql, params });
+    return { rows: [row] };
   };
-  assert.deepEqual(await claimBrowserJob({ ...SUPA, fetchImpl, leaseSeconds: 180 }), row);
-  assert.match(seen[0].url, /\/rest\/v1\/rpc\/claim_lm_browser_job$/);
-  assert.deepEqual(JSON.parse(seen[0].init.body), { p_lease_seconds: 180 });
+  assert.deepEqual(await claimBrowserJob({ query, leaseSeconds: 180 }), row);
+  assert.match(seen[0].sql, /claim_lm_browser_job\(\$1\)/i);
+  assert.deepEqual(seen[0].params, [180]);
 });
 
 test("trace append and terminal finish go through narrow RPCs", async () => {
   const calls = [];
-  const fetchImpl = async (url, init) => {
-    calls.push({ url: String(url), body: JSON.parse(init.body) });
-    return response(200, [{ ok: true }]);
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    return { rows: [{ ok: true }] };
   };
-  await appendBrowserTrace("job-1", "selected", { origin: "https://example.com" }, { ...SUPA, fetchImpl });
+  await appendBrowserTrace("job-1", "selected", { origin: "https://example.com" }, { query });
   await finishBrowserJob("job-1", {
     status: "completed",
     selected_url: "https://example.com/event",
     provider_receipt: { confirmed: true, status: "registered", confirmation_id: "r1" },
     telegram_message_id: "99",
-  }, { ...SUPA, fetchImpl });
+    evidence_message_id: "100",
+    evidence_sha256: "a".repeat(64),
+  }, { query });
 
-  assert.match(calls[0].url, /append_lm_browser_job_trace$/);
-  assert.equal(calls[0].body.p_stage, "selected");
-  assert.match(calls[1].url, /finish_lm_browser_job$/);
-  assert.equal(calls[1].body.p_status, "completed");
-  assert.equal(calls[1].body.p_telegram_message_id, 99);
+  assert.match(calls[0].sql, /append_lm_browser_job_trace\(\$1, \$2, \$3::jsonb\)/i);
+  assert.equal(calls[0].params[1], "selected");
+  assert.match(calls[1].sql, /finish_lm_browser_job\(\$1, \$2, \$3::jsonb, \$4\)/i);
+  assert.equal(calls[1].params[1], "completed");
+  assert.equal(calls[1].params[3], 99);
+  assert.match(calls[1].params[2], /evidence_sha256/);
 });
-
