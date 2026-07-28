@@ -455,6 +455,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | ID | 完了した実物 | evidence |
 |---|---|---|
 | AE-SLIDES-JP-1 | 「AIを経済的に自立させる方法」の日本語LTを10枚・16:9・speaker notes付きで生成 | `docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`、400秒（6:40）、PPTX slide/notes=`10/10`、PDF 10 pages、全体grid + 重要5枚の原寸visual QAでcutoff / overlap / contrast defect 0。再生成script=`scripts/presentations/build-financially-independent-ai-ja.cjs` |
+| AE-ARTICLE-JP-1 | LTと同じclaim contractを、初心者向けの日本語記事12章へ展開 | `docs/articles/how-to-make-a-financially-independent-ai-ja.md`。12/12章、8,766文字、一次資料3件の短い原文引用、外部URL 4/4 HTTP 200、内部relative link 3/3実在、禁止claim 0、秘密情報pattern 0。現在地level 3、verified external revenue `$0.00`、level 4以降未達を明記 |
 | S20b-b/c | Modal Python railでheartbeat 2周期と秘密を含まない決算書を実証 | `anicha/specs/evidence/s20b-python-*`。5分proofであり常設hostではない |
 | 13c-PM | Tatiana cycleを`deployed=$3.15 / recovered=$0 / fee=$0 / P&L=-$3.15`としてproduction ledgerへexactly-once記帳 | `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json` |
 | PM-MERGE-1 | `run.sh`のredeem後・cash gate前へ既存`merge.py`を接続。2 live passでbalanced pairを回収し、maker quoteへ再投入 | commit `c1d6623e5`。tx `0x39386b…a8a98`は`7.9761` shares / recovered `$7.976189` / cost `$6.861041` / net `+$1.115148`、tx `0xe73cd2…0e3fb`は`5.9985` shares / recovered `$5.998570` / cost `$5.937915` / net `+$0.060655`。両方Polygon `0x1`、各merge直後positions 0、3 ledger rows = 3 unique tx |
@@ -476,9 +477,8 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **AE-ARTICLE-JP-1** | slideと同じevidence contractを12章の日本語articleへ展開する | cited source、実receipt、level 0〜6、`external revenue=$0.00`を含み、誇張0 | **current cursor** |
-| 2 | **AE-PUBLICATION-AUDIT-1** | slide / article / live snapshotの公開前監査 | title・定義・数字・実証済み/未達の差0、秘密鍵・PII 0 | article直後 |
-| 3 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | publication bundle直後。提出そのものは公式readback済み |
+| 1 | **AE-PUBLICATION-AUDIT-1** | slide / article / live snapshotの公開前監査 | title・定義・数字・実証済み/未達の差0、秘密鍵・PII 0 | **current cursor** |
+| 2 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | publication bundle直後。提出そのものは公式readback済み |
 
 **Life Manager product track（Agent Economy active scope外）**
 
@@ -940,8 +940,8 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
-    現在のAgent Economy cursor **AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1**
-    を止めない。AE-SLIDES-JP-1はdone。Life Manager browser trackは別ownerの並走順として分離する。
+    現在のAgent Economy cursor **AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1**
+    を止めない。AE-SLIDES-JP-1とAE-ARTICLE-JP-1はdone。Life Manager browser trackは別ownerの並走順として分離する。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -953,12 +953,12 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **★Agent Economyの現在の実行順の正本 = §0.4.6。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
-Agent Economyは収益・日数・自然検知を待って止まらず、完成済みJP slidesを入力に
-JP article→publication audit→TaskMarket readbackの順で閉じる。汎用cloud browser以降はLife Manager product trackであり、Agent Economy cursorへ混ぜない。
+Agent Economyは収益・日数・自然検知を待って止まらず、完成済みJP slidesとJP articleを入力に
+publication audit→TaskMarket readbackの順で閉じる。汎用cloud browser以降はLife Manager product trackであり、Agent Economy cursorへ混ぜない。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current Agent Economy cursor**: **AE-ARTICLE-JP-1**。完成済みの7分・10枚の日本語LT deckと同じclaim contractを
-12章へ展開し、**AE-PUBLICATION-AUDIT-1**で§0.4 snapshotとの差0を確認した後に、
+**Current Agent Economy cursor**: **AE-PUBLICATION-AUDIT-1**。完成済みの7分・10枚の日本語LT deckと
+12章の日本語articleを§0.4 snapshotへ照合し、差0を確認した後に、
 **TASKMARKET-READBACK-1**を追加cost 0でterminal successへreconcileする。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
@@ -1080,7 +1080,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy cursor**は
-`AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`。
+`AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1162,7 +1162,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy cursorは§0.4.6の`AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`だけを正本とする。Life Manager browser trackと13c等のevent待ちは同節の別表で追跡し、Agent Economy cursorを止めない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy cursorは§0.4.6の`AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`だけを正本とする。Life Manager browser trackと13c等のevent待ちは同節の別表で追跡し、Agent Economy cursorを止めない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1253,8 +1253,8 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 ## 8. 次セッションへの引き継ぎ
 
-1. `AE-SLIDES-JP-1`はdone。`docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`を正本として保持し、再生成は`build-financially-independent-ai-ja.cjs`を使う。
-2. §0.4.3a / §0.4.6のcurrent Agent Economy cursor `AE-ARTICLE-JP-1`として、deckと同じclaim contractを12章へ展開する。`AE-PUBLICATION-AUDIT-1`でslide / article / §0.4 live snapshotの差0、秘密鍵・PII 0を確認する。実行planは`docs/superpowers/plans/2026-07-28-agent-economy-article-lightning-talk.md`。
+1. `AE-SLIDES-JP-1`と`AE-ARTICLE-JP-1`はdone。`docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`と`docs/articles/how-to-make-a-financially-independent-ai-ja.md`を正本として保持し、deck再生成は`build-financially-independent-ai-ja.cjs`を使う。
+2. §0.4.3a / §0.4.6のcurrent Agent Economy cursor `AE-PUBLICATION-AUDIT-1`として、slide / article / §0.4 live snapshotのtitle・定義・level・数字・実証限界の差0、秘密鍵・PII 0を確認する。実行planは`docs/superpowers/plans/2026-07-28-agent-economy-article-lightning-talk.md`。
 3. publication bundle直後に`TASKMARKET-READBACK-1`を修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
 4. BROWSER-GEN→AUTH→MATRIX→RECOVERY→CLOUD-LOOPS→DEV-E2E→OPS-PANELはLife Manager product trackであり、Agent Economy active cursorへ混ぜない。
 5. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、Agent Economy cursorを止めない。10fはfinal phaseまでpausedを維持する。
