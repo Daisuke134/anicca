@@ -59,7 +59,7 @@ for s in reg.get("slots", []) or []:
         str(s.get("escalateEveryHrs", 24)),
         str(s.get("gapNote", "")).replace("\n", " ").replace("\t", " "),
     ]
-    print("\t".join(row))
+    print("\x1f".join(row))
 ' "$REGISTRY")"
 
 if printf '%s' "$ROWS" | grep -q '^__REGISTRY_PARSE_ERROR__'; then
@@ -67,7 +67,29 @@ if printf '%s' "$ROWS" | grep -q '^__REGISTRY_PARSE_ERROR__'; then
   exit 0
 fi
 
-while IFS=$'\t' read -r ID INSTR TRACEFILE MINRUN TARGET ESC_HRS GAPNOTE; do
+# Registry v2's finite state report is the portfolio-facing health contract. Keep the historical
+# trace-barren loop below as a second, narrower self-heal layer for trace-backed slots only.
+REGISTRY_SCHEMA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("$schema",""))' "$REGISTRY" 2>/dev/null)"
+if [ "$REGISTRY_SCHEMA" = "earning-health-registry v2" ]; then
+  if RAIL_JSON="$(EARNHC_REGISTRY="$REGISTRY" \
+      EARNHC_RUNTIME_ROOT="${EARNHC_RUNTIME_ROOT:-${ANICCA_HOME:-$SELF_DIR/../..}}" \
+      node "$SELF_DIR/earning-rail-health.mjs" 2>/dev/null)"; then
+    printf '%s' "$RAIL_JSON" | python3 -c '
+import json, sys
+report = json.load(sys.stdin)
+for row in report.get("slots", []):
+    print("SLOT {} {} reason={}".format(row.get("id"), str(row.get("state", "degraded")).upper(), row.get("reason", "probe_unavailable")))
+for row in report.get("portfolios", []):
+    print("PORTFOLIO {} {} reason={}".format(row.get("id"), str(row.get("state", "degraded")).upper(), row.get("reason", "probe_unavailable")))
+' | while IFS= read -r health_line; do
+      echo "$(date '+%F %T') $health_line" >> "$LOG"
+    done
+  else
+    echo "$(date '+%F %T') RAIL-HEALTH DEGRADED reason=report_failed" >> "$LOG"
+  fi
+fi
+
+while IFS=$'\x1f' read -r ID INSTR TRACEFILE MINRUN TARGET ESC_HRS GAPNOTE; do
   [ -z "$ID" ] && continue
 
   # REQ-AS-004: a non-instrumented slot is a DOCUMENTED gap, never a fabricated OK/BARREN verdict.
@@ -76,8 +98,11 @@ while IFS=$'\t' read -r ID INSTR TRACEFILE MINRUN TARGET ESC_HRS GAPNOTE; do
     continue
   fi
 
+  # Non-trace v2 probes are already represented by the finite state report above; the legacy
+  # barren predicate has no work to do for them.
+  [ -z "$TRACEFILE" ] && continue
   TRACE="$EARN_STATE_DIR/$TRACEFILE"
-  if [ -z "$TRACEFILE" ] || [ ! -f "$TRACE" ]; then
+  if [ ! -f "$TRACE" ]; then
     echo "$(date '+%F %T') $ID: no trace file at $TRACE -- nothing to check (not deployed/run here yet)" >> "$LOG"
     continue
   fi
