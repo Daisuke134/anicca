@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@blockrun/llm": "^2.13.0",
+    "viem": "^2.53.1"
+  }
+}

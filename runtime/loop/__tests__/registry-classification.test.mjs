@@ -24,16 +24,11 @@ const EXPECTED_CLASSIFICATION = {
   "self/spawn-child": { risk: "safe" },
   "self/issue-dev": { risk: "safe" },
   "self/coordinate": { risk: "safe" },
-  "economy/gig": { risk: "safe" },
   "economy/ubi": { risk: "safe" },
   "economy/lending": { risk: "safe" },
   "x402_sell": { risk: "safe" },
-  "earn/clip": { risk: "safe" },
-  "earn/clip-producer": { risk: "safe" },
-  "earn/video": { risk: "safe" },
+  "earn/taskmarket": { risk: "safe" },
   "yield": { risk: "capital" },
-  "hl_trade": { risk: "capital" },
-  "token_launch": { risk: "capital" },
   "earn/sol-trade": { risk: "capital" },
   "earn/polymarket-trade": { risk: "capital" },
 };
@@ -49,10 +44,10 @@ function liveSlotNamesOf(registry) {
   return Object.keys(slots).filter((name) => slots[name] && slots[name].status === "live");
 }
 
-test("PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (18)", async () => {
+test("PROP-201g: every currently-live registry.json slot matches the current classification table (13)", async () => {
   const registry = await loadRegistry();
   const live = liveSlotNamesOf(registry);
-  assert.equal(live.length, 18, `expected exactly 18 live slots per behavioral-spec.md's classification table, found ${live.length}: ${JSON.stringify(live)}`);
+  assert.equal(live.length, 13, `expected exactly 13 live slots per the current classification table, found ${live.length}: ${JSON.stringify(live)}`);
 });
 
 test("★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table", async () => {
