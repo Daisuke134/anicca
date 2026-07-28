@@ -162,20 +162,20 @@ const slides = [
   },
   {
     kicker: "LIVE SHELTER / 08",
-    title: "自分のcloudを自分で払う",
-    footer: "Franklin 1 / Nosana snapshot",
+    title: "自分のcloudを自分で払った",
+    footer: "Measured proof: 6h  |  Live readback: HTTP 503",
     body: `
       <div class="runtime-loop">
         <div class="mac-off"><p>MAC</p><h2>OFF</h2></div>
         <div class="arrow huge"><p>→</p></div>
-        <div class="cloud-on"><p>NOSANA</p><h2>ON</h2><span><p>Python survival runtime</p></span></div>
+        <div class="cloud-on historical"><p>NOSANA</p><h2>6H PROOF</h2><span><p>current service stopped</p></span></div>
         <div class="runtime-metrics">
           <div><p>heartbeat</p><h2>130+</h2></div>
           <div><p>statement cost</p><h2>$0.0939</h2></div>
-          <div><p>renewal</p><h2>SELF</h2></div>
+          <div><p>replacement</p><h2>OPEN</h2></div>
         </div>
       </div>`,
-    notes: "Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。NosanaはGPUなどの計算資源を借りられるcloud marketです。cloudから公開heartbeatと秘密を含まない決算書を出し、残高を監視して自分でruntimeをrenewします。snapshot時点でheartbeatは130回を超え、runtime costも公開statementから読めます。住居を自分で維持する機械までは実証できました。参考: https://explore.nosana.com/markets",
+    notes: "Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。cloudから公開heartbeatと秘密を含まない決算書を出し、自分でrenewする状態を6時間実証しました。しかしlease ceiling後に次のjobを作らず、公開前監査ではserviceはHTTP 503です。住居を自分で維持する機械は実証しましたが、途切れず住み替える機械は未完成です。",
   },
   {
     kicker: "LIFE MANAGER / 09",
@@ -202,8 +202,8 @@ const slides = [
       <div class="ladder">
         <div class="level done"><p>0</p><span><p>Human-paid</p></span></div>
         <div class="level done"><p>1</p><span><p>Wallet</p></span></div>
-        <div class="level done"><p>2</p><span><p>Self-pay</p></span></div>
-        <div class="level current"><p>3</p><span><p>Cloud survival</p></span></div>
+        <div class="level current"><p>2</p><span><p>Self-pay<br>LIVE</p></span></div>
+        <div class="level historical"><p>3</p><span><p>Cloud survival<br>6h proof</p></span></div>
         <div class="level future"><p>4</p><span><p>External<br>self-funded</p></span></div>
         <div class="level future"><p>5</p><span><p>User payout</p></span></div>
         <div class="level future"><p>6</p><span><p>Child</p></span></div>
@@ -211,9 +211,9 @@ const slides = [
       <div class="truth-box">
         <p>VERIFIED EXTERNAL REVENUE</p>
         <h2>$0.00</h2>
-        <span><p>現在は level 3。level 4 は未達。</p></span>
+        <span><p>到達証拠 level 3 / live level 2 / level 4 未達</p></span>
       </div>`,
-    notes: "現在はlevel 3です。専用walletがあり、実際に推論やcloudへ支払い、Macを止めてもcloudでheartbeatとrenewalを続けられます。しかしverified external revenueはまだ0ドルです。完全な経済的自立と呼ぶlevel 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。",
+    notes: "到達証拠はlevel 3ですが、現在のlive statusはlevel 2です。Mac-offのheartbeatとrenewalは6時間動き、その後のreplacementがなく停止しました。verified external revenueも0ドルです。level 4は、外部収益の30日netがcomputeとshelterを覆い、reserveを維持した時です。自律とは人が操作しなくても動くこと。経済的自立とは、人が払い続けなくても生きられることです。",
   },
 ];
 
@@ -227,8 +227,8 @@ const css = `
   .subtitle { color: ${C.mute}; font-size: 15pt; margin-top: 8pt; }
   .content { flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
   .footer { border-top: 1pt solid ${C.line}; padding-top: 7pt; color: ${C.mute}; font-size: 8.5pt; display: flex; justify-content: space-between; }
-  .footer p:first-child { width: 82%; }
-  .footer p:last-child { width: 15%; color: ${C.paper}; text-align: right; }
+  .footer p:first-child { width: 78%; }
+  .footer p:last-child { width: 12%; padding-right: 4pt; color: ${C.paper}; text-align: right; }
   .hero-flow { display:flex; align-items:center; justify-content:space-between; margin-top: 25pt; }
   .flow-node { width: 115pt; height: 95pt; border: 1.4pt solid ${C.line}; border-radius: 12pt; display:flex; flex-direction:column; align-items:center; justify-content:center; background:${C.panel}; }
   .flow-node > p { font-size: 24pt; font-weight:800; }
@@ -292,9 +292,11 @@ const css = `
   .mac-off, .cloud-on { height:128pt; padding:20pt; border-radius:14pt; display:flex; flex-direction:column; justify-content:center; }
   .mac-off { background:#291B1B; border:1.4pt solid ${C.red}; color:${C.red}; text-align:center; }
   .cloud-on { background:${C.greenDark}; border:1.4pt solid ${C.green}; }
+  .cloud-on.historical { background:${C.panel}; border-color:${C.amber}; }
   .mac-off p, .cloud-on > p { font-size:9pt; font-weight:700; }
   .mac-off h2, .cloud-on h2 { font-size:28pt; margin-top:8pt; }
   .cloud-on span p { color:${C.green}; font-size:9pt; margin-top:9pt; }
+  .cloud-on.historical h2, .cloud-on.historical span p { color:${C.amber}; }
   .runtime-metrics { display:flex; flex-direction:column; gap:7pt; }
   .runtime-metrics div { display:flex; align-items:center; justify-content:space-between; background:${C.panel}; padding:9pt 12pt; border-left:3pt solid ${C.blue}; }
   .runtime-metrics p { color:${C.mute}; font-size:8pt; } .runtime-metrics h2 { font-size:16pt; }
@@ -312,6 +314,7 @@ const css = `
   .level > p { font-size:22pt; font-weight:800; } .level span p { font-size:7.5pt; margin-top:8pt; }
   .level.done { background:${C.greenDark}; color:${C.green}; }
   .level.current { background:${C.green}; color:${C.ink}; transform:translateY(-7pt); box-shadow:0 4pt 12pt rgba(119,242,161,.25); }
+  .level.historical { background:${C.panel}; color:${C.amber}; border-color:${C.amber}; }
   .level.future { color:${C.mute}; border-style:dashed; }
   .truth-box { margin-top:19pt; display:flex; align-items:center; gap:18pt; background:${C.panel}; border-left:5pt solid ${C.amber}; padding:12pt 18pt; }
   .truth-box > p { font-size:9pt; color:${C.mute}; } .truth-box h2 { font-size:27pt; color:${C.amber}; }
