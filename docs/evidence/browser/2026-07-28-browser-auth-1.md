@@ -36,6 +36,48 @@ applied before exported context reaches durable storage; the store also applies
 it before sealing and on defensive open. `readBrowserJob` now projects the
 durable `telegram_result_message_id`.
 
+## Mandatory review fix round 2/5
+
+The new expired-only regression first failed in two places: a successfully
+decrypted stored row emitted only the generic invalid-context error, and
+`openSession` aborted before exact-row invalidation or Steel creation. The
+minimal correction preserves a typed expired-context signal only after
+decrypt/canonical validation. The driver then invalidates the exact
+`uid + origin + principal_kind` row once, opens one fresh Steel session without
+the unusable context, obtains the normal provider login handoff, performs no
+action, exports no context, skips duplicate invalidation, and releases that one
+Steel session.
+
+| Check | Fresh result |
+|---|---|
+| Expired-only RED | `49` tests: `2` expected failures |
+| Same command GREEN | `49/49 PASS` |
+| Expanded auth/runtime focused suite | `73/73 PASS` |
+| Full Life Manager suite | `1572/1572 PASS` |
+| Deterministic eval | calendar=`21/21`, late=`12/12`, context=`12/12`, score=`27/27`, intent=`18/18`, mental=`15/15`, physical=`19/19`, relations=`10/10` |
+| Panel privacy eval | api=`177`, browser=`63`, recipes=`19`, channels=`9` |
+
+The previous false schema result came from checking
+`lm_browser_jobs_login_principal_check`; the migration and live object are
+named `lm_browser_jobs_login_principal_kind_check`.
+
+| Live production object | exists | validated/type |
+|---|---:|---|
+| `lm_browser_auth_sessions_pkey` | `true` | `true / p` |
+| `lm_browser_auth_sessions_principal_kind_check` | `true` | `true / c` |
+| `lm_browser_auth_sessions_state_check` | `true` | `true / c` |
+| `lm_browser_jobs_principal_kind_check` | `true` | `true / c` |
+| `lm_browser_jobs_login_principal_kind_check` | `true` | `true / c` |
+| `lm_browser_jobs_auth_marker_hash_check` | `true` | `true / c` |
+| `lm_browser_jobs_telegram_result_message_id_check` | `true` | `true / c` |
+| `append_lm_browser_job_trace(uuid,text,jsonb)` | `true` | auth loaded/saved/invalidated=`true/true/true` |
+| `claim_lm_browser_job_by_id(uuid,integer)` | `true` | signature readback=`true` |
+| `finish_lm_browser_job(uuid,text,jsonb,bigint)` | `true` | signature readback=`true` |
+
+This round does not claim production cookie continuity, provider continuity, or
+a complete local-browser-zero window. Deploy and provider execution remain
+blocked on scoped re-review.
+
 ## Production release and schema
 
 | Evidence | Value |

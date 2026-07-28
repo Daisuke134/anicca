@@ -1124,6 +1124,90 @@ test("release removes finite expired cookies before passing exported context to 
   assert.doesNotMatch(JSON.stringify(authCalls[1][1].context), /drop-expired-secret/);
 });
 
+test("an expired-only restored row is invalidated once before a fresh no-context Steel login handoff", async () => {
+  const expired = {
+    cookies: [
+      {
+        name: "session",
+        value: "expired-cookie-secret",
+        domain: "auth.fixture.dev",
+        path: "/",
+        expires: 1,
+      },
+    ],
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: expired } },
+    pageUrl: "https://auth.fixture.dev/login",
+    domGuard: domSnapshot({ authVisible: true, markerPresent: false }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Sign in",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: true,
+    },
+  });
+
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.fixture.dev/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+  const action = await driver.discoverAndAct(session, {
+    goal: "Open https://auth.fixture.dev/account",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const receipt = await driver.readProviderReceipt(session, action);
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: {
+      confirmed: receipt.confirmed,
+      status: receipt.status,
+      confirmation_id: receipt.confirmationId,
+      current_url: receipt.currentUrl,
+      handoff_required: receipt.handoffRequired,
+      handoff_reason: receipt.handoffReason,
+    },
+  });
+
+  assert.equal(action.sideEffectStarted, false);
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
+  assert.deepEqual(calls.find(([name]) => name === "create"), ["create", { blockAds: true }]);
+  assert.equal(calls.filter(([name]) => name === "create").length, 1);
+  assert.equal(calls.filter(([name]) => name === "release").length, 1);
+  assert.equal(calls.some(([name]) => name === "getContext"), false);
+  assert.deepEqual(authCalls, [
+    ["read", {
+      uid: "u-one",
+      origin: "https://auth.fixture.dev",
+      principalKind: "agent_owned",
+    }],
+    ["invalidate", {
+      uid: "u-one",
+      origin: "https://auth.fixture.dev",
+      principalKind: "agent_owned",
+    }],
+  ]);
+  assert.deepEqual(release, {
+    released: true,
+    origin: "https://auth.fixture.dev",
+    principal_kind: "agent_owned",
+    auth_context_loaded: false,
+    auth_context_saved: false,
+    auth_context_invalidated: true,
+    context_sha256: null,
+    key_version: null,
+  });
+  assert.doesNotMatch(
+    JSON.stringify({ action, receipt, release }),
+    /expired-cookie-secret/,
+  );
+});
+
 test("a provider login handoff invalidates only the exact row and still releases Steel", async () => {
   const context = {
     cookies: [{ name: "sid", value: "stale-cookie-secret", domain: "auth.fixture.dev", path: "/" }],
