@@ -3,6 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { recoverTypedDataAddress } = require("viem");
+const manifest = require("../package.json");
 
 const {
   BASE_USDC,
@@ -15,6 +16,10 @@ const WALLET = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf";
 const DESTINATION = "0x6592AA47ccAC10031253551D3CC30fC64Ba7edc7";
 const TX = `0x${"a".repeat(64)}`;
 const NONCE = Buffer.alloc(32, 7);
+
+test("the payout runtime declares viem directly instead of relying on a hoisted package", () => {
+  assert.match(manifest.dependencies?.viem || "", /^\^2\./);
+});
 
 function response(status, body) {
   return {
