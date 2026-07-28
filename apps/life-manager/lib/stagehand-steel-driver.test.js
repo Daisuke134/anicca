@@ -2,7 +2,56 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { makeStagehandSteelDriver } = require("./stagehand-steel-driver.js");
+const {
+  classifyReadOnlyDomSnapshot,
+  collectReadOnlyDomSnapshot,
+  makeStagehandSteelDriver,
+} = require("./stagehand-steel-driver.js");
+
+function visibleElement(metadata = {}, innerText = "") {
+  return {
+    ...metadata,
+    innerText,
+    getBoundingClientRect() { return { width: 100, height: 24 }; },
+  };
+}
+
+function domEnvironment({ bodyText = "", inputs = [], forms = [] } = {}) {
+  return {
+    document: {
+      body: { innerText: bodyText },
+      querySelectorAll(selector) {
+        if (selector === "input") return inputs;
+        if (selector === "form") return forms;
+        return [];
+      },
+    },
+    getComputedStyle() {
+      return { display: "block", visibility: "visible", opacity: "1" };
+    },
+  };
+}
+
+function domSnapshot(overrides = {}) {
+  const inputs = [];
+  if (overrides.passwordVisible === true) {
+    inputs.push({ type: "password", inputMode: "", autocomplete: "", maxLength: -1 });
+  }
+  if (overrides.otpVisible === true) {
+    inputs.push({ type: "text", inputMode: "numeric", autocomplete: "one-time-code", maxLength: 6 });
+  }
+  return {
+    inputs,
+    textFlags: {
+      auth: overrides.authVisible === true,
+      challenge: overrides.challengeVisible === true,
+      captcha: overrides.captchaVisible === true,
+      kyc: overrides.kycVisible === true,
+      payment: overrides.paymentVisible === true,
+    },
+    markerPresent: overrides.markerPresent !== false,
+  };
+}
 
 function fixture(fixtureOptions = {}) {
   const calls = [];
@@ -15,18 +64,14 @@ function fixture(fixtureOptions = {}) {
       calls.push(["screenshot", options]);
       return Buffer.from("real-cloud-png");
     },
-    async evaluate(_callback, input) {
+    async evaluate(callback, input) {
       calls.push(["evaluate", input]);
-      return fixtureOptions.domGuard || {
-        passwordVisible: false,
-        otpVisible: false,
-        authVisible: false,
-        challengeVisible: false,
-        captchaVisible: false,
-        kycVisible: false,
-        paymentVisible: false,
-        markerPresent: true,
-      };
+      if (fixtureOptions.evaluateEnvironment) {
+        const result = await callback(input, fixtureOptions.evaluateEnvironment);
+        calls.push(["evaluateResult", result]);
+        return result;
+      }
+      return fixtureOptions.domGuard || domSnapshot();
     },
     url() { return fixtureOptions.pageUrl || "https://fresh-events.example/ai/confirmed"; },
   };
@@ -383,29 +428,29 @@ test("auth continuity rejects a lying model on a login URL or visible password a
   const cases = [
     {
       pageUrl: "https://fresh-events.example/login",
-      domGuard: {
+      domGuard: domSnapshot({
         passwordVisible: false, otpVisible: false, authVisible: false,
         challengeVisible: false, captchaVisible: false, kycVisible: false,
         paymentVisible: false, markerPresent: true,
-      },
+      }),
       reason: "login",
     },
     {
       pageUrl: "https://fresh-events.example/account",
-      domGuard: {
+      domGuard: domSnapshot({
         passwordVisible: true, otpVisible: false, authVisible: true,
         challengeVisible: false, captchaVisible: false, kycVisible: false,
         paymentVisible: false, markerPresent: true,
-      },
+      }),
       reason: "login",
     },
     {
       pageUrl: "https://fresh-events.example/account",
-      domGuard: {
+      domGuard: domSnapshot({
         passwordVisible: false, otpVisible: true, authVisible: true,
         challengeVisible: false, captchaVisible: false, kycVisible: false,
         paymentVisible: false, markerPresent: true,
-      },
+      }),
       reason: "2fa",
     },
   ];
@@ -434,6 +479,81 @@ test("auth continuity rejects a lying model on a login URL or visible password a
     assert.equal(receipt.handoffRequired, true, value.reason);
     assert.equal(receipt.handoffReason, value.reason);
   }
+});
+
+test("actual DOM collector and pure classifier detect a passwordless six-box verification code without collecting values", async () => {
+  const inputs = Array.from({ length: 6 }, (_unused, index) => visibleElement({
+    type: "text",
+    inputMode: "numeric",
+    autocomplete: "",
+    maxLength: 1,
+    value: `private-digit-${index}`,
+  }));
+  const evaluateEnvironment = domEnvironment({
+    bodyText: "Products\nVerification code\nEnter the six-digit security code",
+    inputs,
+  });
+  const { driver, calls } = fixture({
+    pageUrl: "https://fresh-events.example/account",
+    evaluateEnvironment,
+    authReceipt: {
+      confirmed: true,
+      status: "authenticated",
+      confirmationId: null,
+      providerText: "Products",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/account with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+  const snapshot = calls.find(([name]) => name === "evaluateResult")[1];
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "2fa");
+  assert.deepEqual(snapshot.inputs, Array.from({ length: 6 }, () => ({
+    type: "text",
+    inputMode: "numeric",
+    autocomplete: "",
+    maxLength: 1,
+  })));
+  assert.equal(JSON.stringify(snapshot).includes("private-digit"), false);
+});
+
+test("pure DOM classifier closes every passwordless OTP text and one-digit input pattern", () => {
+  for (const phrase of [
+    "Verification code",
+    "Security code",
+    "One-time code",
+    "OTP",
+    "Enter code",
+    "Enter the six-digit code",
+    "Enter the 6-digit code",
+  ]) {
+    const snapshot = collectReadOnlyDomSnapshot(
+      { marker: "Products" },
+      domEnvironment({ bodyText: `Products ${phrase}` }),
+    );
+    assert.equal(classifyReadOnlyDomSnapshot(snapshot).otpVisible, true, phrase);
+  }
+
+  const grouped = {
+    inputs: Array.from({ length: 6 }, () => ({
+      type: "text",
+      inputMode: "numeric",
+      autocomplete: "",
+      maxLength: 1,
+    })),
+    textFlags: {},
+    markerPresent: true,
+  };
+  assert.equal(classifyReadOnlyDomSnapshot(grouped).otpVisible, true);
 });
 
 test("auth continuity rejects an unsafe or cross-origin final redirect", async () => {
@@ -466,13 +586,73 @@ test("auth continuity rejects an unsafe or cross-origin final redirect", async (
   }
 });
 
+test("runtime URL shortcut rejects every literal IPv4 and IPv6 target while allowing a public hostname", async () => {
+  for (const unsafe of [
+    "https://0.0.0.0/account",
+    "https://127.0.0.1/account",
+    "https://[::1]/account",
+    "https://[fe80::1]/account",
+    "https://[::ffff:127.0.0.1]/account",
+  ]) {
+    const { driver } = fixture();
+    const session = await driver.openSession();
+    await assert.rejects(
+      driver.discoverAndAct(session, { goal: `Open ${unsafe}` }),
+      /public HTTPS URL/i,
+      unsafe,
+    );
+  }
+
+  const { driver } = fixture({ pageUrl: "https://fresh-events.example/account" });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Open https://fresh-events.example/account",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  assert.equal(action.selectedOrigin, "https://fresh-events.example");
+});
+
+test("auth continuity rejects every literal IPv4 and IPv6 final redirect before DOM evaluation", async () => {
+  for (const pageUrl of [
+    "https://0.0.0.0/account",
+    "https://127.0.0.1/account",
+    "https://[::1]/account",
+    "https://[fe80::1]/account",
+    "https://[::ffff:127.0.0.1]/account",
+  ]) {
+    const { driver, calls } = fixture({
+      pageUrl,
+      authReceipt: {
+        confirmed: true,
+        status: "authenticated",
+        confirmationId: null,
+        providerText: "Products",
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/account with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, pageUrl);
+    assert.equal(receipt.handoffRequired, true, pageUrl);
+    assert.equal(receipt.currentUrl, null, pageUrl);
+    assert.equal(calls.filter(([name]) => name === "evaluate").length, 0, pageUrl);
+  }
+});
+
 test("auth continuity does not confirm an unknown page without the independently visible protected marker", async () => {
   const { driver } = fixture({
-    domGuard: {
+    domGuard: domSnapshot({
       passwordVisible: false, otpVisible: false, authVisible: false,
       challengeVisible: false, captchaVisible: false, kycVisible: false,
       paymentVisible: false, markerPresent: false,
-    },
+    }),
     authReceipt: {
       confirmed: true,
       status: "unknown",
@@ -497,11 +677,11 @@ test("auth continuity does not confirm an unknown page without the independently
 test("Sauce-style inventory confirms only with same-origin final URL, visible Products marker, and no auth or risk UI", async () => {
   const { driver, calls } = fixture({
     pageUrl: "https://fresh-events.example/inventory.html",
-    domGuard: {
+    domGuard: domSnapshot({
       passwordVisible: false, otpVisible: false, authVisible: false,
       challengeVisible: false, captchaVisible: false, kycVisible: false,
       paymentVisible: false, markerPresent: true,
-    },
+    }),
     authReceipt: {
       confirmed: true,
       status: "authenticated",

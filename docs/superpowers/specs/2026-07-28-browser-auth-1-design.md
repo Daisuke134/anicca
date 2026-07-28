@@ -129,7 +129,12 @@ page is public HTTPS and has the exact origin of the explicit requested URL. It
 then evaluates only bounded booleans in the live DOM: visible password,
 one-time-code/authentication, challenge/CAPTCHA, KYC, and payment UI, plus
 whether the model's bounded, secret-safe protected-content marker is actually
-visible. A positive receipt requires all of these simultaneously:
+visible. Passwordless OTP detection first collects at most 100 visible inputs
+as non-value metadata only (`type`, `inputMode`, `autocomplete`, `maxLength`);
+a pure classifier recognizes one-time-code autocomplete, groups of four or
+more one-character numeric text inputs, and visible verification/security/
+one-time/OTP/enter-code/six-digit language. Input values never cross the page
+boundary. A positive receipt requires all of these simultaneously:
 
 - the typed extract reports authenticated continuity and supplies a marker;
 - the final origin is the requested origin;
@@ -158,6 +163,7 @@ unchanged.
 | CAPTCHA/2FA/KYC/payment | No bypass and no completion claim |
 | Read-only model claims success on login/risk UI | Independent URL/DOM guard overrides it and returns handoff |
 | Read-only final page is unsafe or cross-origin | Reject as unverified; never emit a positive receipt |
+| Explicit or final host is a literal IPv4/IPv6 address | Reject every literal, including IPv4-mapped IPv6 |
 | Protected marker is absent from the live DOM | Reject as unverified; never trust the model alone |
 
 ## Deferred minor / final review
