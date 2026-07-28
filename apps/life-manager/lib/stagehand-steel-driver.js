@@ -1,5 +1,6 @@
 "use strict";
 
+const net = require("node:net");
 const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
 const {
@@ -76,6 +77,10 @@ function explicitPublicHttpsUrl(goal) {
   const match = String(goal || "").match(/https?:\/\/[^\s<>"']+/i);
   if (!match) return null;
   const raw = match[0].replace(/[),.;!?]+$/, "");
+  return publicHttpsUrl(raw).toString();
+}
+
+function publicHttpsUrl(raw, options = {}) {
   let url;
   try {
     url = new URL(raw);
@@ -83,29 +88,123 @@ function explicitPublicHttpsUrl(goal) {
     throw new Error("runtime target must be a public HTTPS URL");
   }
   const host = url.hostname.toLowerCase();
-  const octets = host.split(".").map(Number);
-  const privateIpv4 = octets.length === 4 && octets.every(Number.isInteger) && (
-    octets[0] === 10 ||
-    octets[0] === 127 ||
-    (octets[0] === 169 && octets[1] === 254) ||
-    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
-    (octets[0] === 192 && octets[1] === 168)
-  );
+  const unbracketedHost = host.startsWith("[") && host.endsWith("]")
+    ? host.slice(1, -1)
+    : host;
   if (
     url.protocol !== "https:" ||
     !host ||
+    (options.rejectCredentials === true && (url.username || url.password)) ||
     host === "localhost" ||
-    host === "::1" ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
-    privateIpv4
+    net.isIP(unbracketedHost) !== 0
   ) {
     throw new Error("runtime target must be a public HTTPS URL");
   }
   url.username = "";
   url.password = "";
   url.hash = "";
-  return url.toString();
+  return url;
+}
+
+function safeProtectedMarker(value, agentEmail) {
+  const marker = replaceIdentity(value, agentEmail).trim();
+  if (
+    marker.length < 2 ||
+    marker.length > 80 ||
+    /[\u0000-\u001f\u007f]/.test(marker) ||
+    /https?:\/\/|www\.|@|(?:token|cookie|password|secret|session|authorization)\s*[:=]/i.test(marker)
+  ) {
+    return null;
+  }
+  return marker;
+}
+
+function collectReadOnlyDomSnapshot(input = {}, environment) {
+  const documentRef = environment && environment.document || document;
+  const getStyle = environment && environment.getComputedStyle
+    ? environment.getComputedStyle
+    : window.getComputedStyle.bind(window);
+  const visible = (element) => {
+    if (!element) return false;
+    const style = getStyle(element);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      Number.parseFloat(style.opacity) === 0
+    ) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+  const visibleMatches = (selector) =>
+    Array.from(documentRef.querySelectorAll(selector)).slice(0, 100).some(visible);
+  const bodyText = String(documentRef.body && documentRef.body.innerText || "").slice(0, 20_000);
+  const formText = Array.from(documentRef.querySelectorAll("form"))
+    .slice(0, 50)
+    .filter(visible)
+    .map((form) => String(form.innerText || "").slice(0, 1_000))
+    .join(" ");
+  const visibleText = `${bodyText} ${formText}`;
+  const inputs = Array.from(documentRef.querySelectorAll("input"))
+    .slice(0, 100)
+    .filter(visible)
+    .map((element) => ({
+      type: String(element.type || "").toLowerCase().slice(0, 20),
+      inputMode: String(element.inputMode || "").toLowerCase().slice(0, 20),
+      autocomplete: String(element.autocomplete || "").toLowerCase().slice(0, 40),
+      maxLength: Number.isInteger(element.maxLength)
+        ? Math.max(-1, Math.min(element.maxLength, 100))
+        : -1,
+    }));
+  return {
+    inputs,
+    textFlags: {
+      auth: /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(visibleText),
+      otp: /\b(?:verification code|security code|one[- ]time code|otp|enter (?:the )?(?:(?:six|6)[- ]digit )?code|(?:six|6)[- ]digit code)\b/i.test(visibleText),
+      captcha: visibleMatches(
+        'iframe[src*="captcha" i], [class*="captcha" i], [id*="captcha" i], [data-sitekey]',
+      ) || /\bcaptcha\b/i.test(visibleText),
+      challenge: /\b(?:security challenge|verify you are human|challenge required)\b/i.test(visibleText),
+      kyc: /\b(?:kyc|identity verification|verify your identity)\b/i.test(visibleText),
+      payment: /\b(?:payment required|checkout|credit card|card details|billing details)\b/i.test(visibleText),
+    },
+    markerPresent: bodyText.toLocaleLowerCase().includes(
+      String(input.marker || "").toLocaleLowerCase(),
+    ),
+  };
+}
+
+function classifyReadOnlyDomSnapshot(snapshot = {}) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const inputs = Array.isArray(source.inputs) ? source.inputs.slice(0, 100) : [];
+  const flags = typeof source.textFlags === "object" && source.textFlags
+    ? source.textFlags
+    : {};
+  const passwordVisible = inputs.some((input) => input && input.type === "password");
+  const oneTimeCodeVisible = inputs.some((input) =>
+    input && input.autocomplete === "one-time-code");
+  const singleDigitInputs = inputs.filter((input) =>
+    input &&
+    input.type === "text" &&
+    input.inputMode === "numeric" &&
+    input.maxLength === 1).length;
+  const otpVisible = oneTimeCodeVisible ||
+    (singleDigitInputs >= 4 && flags.otp === true) ||
+    flags.otp === true;
+  const captchaVisible = flags.captcha === true;
+  return {
+    passwordVisible,
+    otpVisible,
+    authVisible: passwordVisible || otpVisible || flags.auth === true,
+    challengeVisible: captchaVisible || flags.challenge === true,
+    captchaVisible,
+    kycVisible: flags.kyc === true,
+    paymentVisible: flags.payment === true,
+    markerPresent: source.markerPresent === true,
+  };
 }
 
 function privateSession(session) {
@@ -215,9 +314,7 @@ function makeStagehandSteelDriver(options = {}) {
         let selectedUrl;
         if (readOnlyAuth) {
           selectedUrl = publicPageUrl(page, agentEmail);
-          if (!isSpecificActionUrl(selectedUrl)) {
-            throw new Error("browser discovery did not reach a specific action page");
-          }
+          if (!selectedUrl) throw new Error("browser auth readback carried no public page");
           selection = {
             selectionReason: "Explicit authenticated provider readback URL.",
           };
@@ -251,6 +348,8 @@ function makeStagehandSteelDriver(options = {}) {
             ...selected,
             action: "Read current authenticated provider page.",
             sideEffectStarted: false,
+            readOnlyAuth: true,
+            readOnlyExpectedOrigin: new URL(explicitUrl).origin,
           };
         }
 
@@ -296,20 +395,29 @@ function makeStagehandSteelDriver(options = {}) {
       }
     },
 
-    async readProviderReceipt(sessionInput) {
+    async readProviderReceipt(sessionInput, action = {}) {
       const session = privateSession(sessionInput);
       const open = sessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
+      const readOnlyAuth = action && action.readOnlyAuth === true;
       const extracted = await open.stagehand.extract(
-        [
-          "Read only the current provider-authored result page.",
-          "Report confirmed=true only when the page explicitly says the requested action succeeded.",
-          "Set activeRegistrationForm=true only when a visible registration form can still be submitted.",
-          "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
-          "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
-          "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
-          "Return its status, confirmation identifier if present, and a short provider status phrase.",
-        ].join(" "),
+        readOnlyAuth
+          ? [
+              "Read only the current authenticated provider continuity page.",
+              "Report confirmed=true only when provider-authored account or protected content is visible and no login, verification-code, OTP, or 2FA form is active.",
+              "Do not require registration, booking, purchase, or other action-success language for this read-only authentication check.",
+              "Set activeAuthenticationForm=true when any login or authentication form is active.",
+              "Return its authentication status and a short provider-authored content marker.",
+            ].join(" ")
+          : [
+              "Read only the current provider-authored result page.",
+              "Report confirmed=true only when the page explicitly says the requested action succeeded.",
+              "Set activeRegistrationForm=true only when a visible registration form can still be submitted.",
+              "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
+              "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
+              "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
+              "Return its status, confirmation identifier if present, and a short provider status phrase.",
+            ].join(" "),
         receiptSchema,
       );
       const status = replaceIdentity(extracted.status || "unknown", agentEmail).slice(0, 100);
@@ -343,8 +451,59 @@ function makeStagehandSteelDriver(options = {}) {
             : /\b(?:payment|purchase|checkout|credit card|card details|billing)\b|支払|決済|購入/i.test(handoffText)
               ? "payment"
               : /\b(?:login|log in|sign in)\b/i.test(handoffText)
-                ? "login"
+              ? "login"
                 : null;
+      if (readOnlyAuth) {
+        const marker = safeProtectedMarker(extracted.providerText, agentEmail);
+        let finalUrl = null;
+        try {
+          finalUrl = publicHttpsUrl(pageUrl(open.page), { rejectCredentials: true });
+        } catch {
+          // An unsafe final page can never prove authenticated continuity.
+        }
+        const expectedOrigin = String(action.readOnlyExpectedOrigin || "");
+        const originMatches = Boolean(
+          finalUrl && expectedOrigin && finalUrl.origin === expectedOrigin,
+        );
+        let dom = null;
+        if (finalUrl && originMatches && marker) {
+          try {
+            dom = await open.page.evaluate(collectReadOnlyDomSnapshot, { marker });
+          } catch {
+            dom = null;
+          }
+        }
+        const signals = classifyReadOnlyDomSnapshot(dom);
+        const loginPath = Boolean(finalUrl && /\/(?:login|log-in|signin|sign-in)(?:\/|$)/i.test(
+          finalUrl.pathname,
+        ));
+        const independentReason = signals.paymentVisible
+          ? "payment"
+          : signals.kycVisible
+            ? "kyc"
+            : signals.challengeVisible || signals.captchaVisible
+              ? "challenge"
+              : signals.otpVisible
+                ? "2fa"
+                : signals.passwordVisible || signals.authVisible || loginPath
+                  ? "login"
+                  : null;
+        const readOnlyReason = handoffReason || independentReason ||
+          (!originMatches || !marker || !signals.markerPresent || extracted.confirmed !== true
+            ? "login"
+            : null);
+        const confirmed = readOnlyReason === null;
+        return {
+          confirmed,
+          status: confirmed
+            ? "authenticated"
+            : `${readOnlyReason || "login"}_required`,
+          confirmationId: null,
+          currentUrl: finalUrl && originMatches ? publicPageUrl(open.page, agentEmail) : null,
+          handoffRequired: readOnlyReason !== null,
+          handoffReason: readOnlyReason,
+        };
+      }
       return {
         confirmed: (extracted.confirmed === true || strongCompletion) &&
           !negated &&
@@ -438,6 +597,8 @@ function makeStagehandSteelDriver(options = {}) {
 }
 
 module.exports = {
+  classifyReadOnlyDomSnapshot,
+  collectReadOnlyDomSnapshot,
   makeStagehandSteelDriver,
   MODEL,
   AGENT_MODEL,
