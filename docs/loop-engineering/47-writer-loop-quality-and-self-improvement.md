@@ -2381,7 +2381,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 2 | DONE (`1cde1a4`) | Product landing CTA | WriterのCTAは自社landing URLだけをconversion SSOTとし、product/run/artifact/variant/clickの5キー必須、run/artifact一致、artifact別click一意をpublication init前にfail-closed。Substack/note/GitHubはdistribution扱い。4 contract tests + Writer全article suite 319 passed |
 | 3 | DONE (`091214a`) | Judge calibration | product/run/artifact/variantでjudgeとrewardをexact joinし、`scorable / unknown / insufficient`を分離。scorableだけで順位相関を計算し、missing receiptはinsufficient、重複receiptは拒否。2 contract tests + Writer全article suite 321 passed |
 | 4 | DONE (`dfa8327`) | Title learning slice | `title-corpus` opponent、`calibrated_conversion_rank` reward、repo外runtime `state/weights/title.json`を固定。scorable rewardだけをblameへ接続し、1 cycle 1 blamed ruleだけ変更、held-out同値以上ならatomic keep、悪化ならrevert、unknown/insufficientなら変更0。4 contract tests + Writer全article suite 325 passed |
-| 5 | TODO | Article-body learning slice | article-body専用opponent/reward/weight。title結果を本文へ流用せず、engaged readと下流conversionでheld-out非悪化を通す |
+| 5 | DONE (`4eb8c64`) | Article-body learning slice | 共有bounded engineへ`article-body-corpus` opponent、`engaged_read_then_conversion` reward、repo外runtime `state/weights/article-body.json`を注入。scorableにはengaged readとdownstream conversionの両方を必須化し、title reward/weightを明示拒否。1 blamed change、unknown変更0、held-out悪化revert。3 body contract tests + title回帰、Writer全article suite 328 passed |
 | 6 | TODO | Long-form / book learning slice | long-form専用opponent/reward/weight。purchase/completion/refund guardrailでheld-out非悪化を通す |
 | 7 | TODO | Contradiction gate | 全active rule sourceを生成前・学習前にscan。critical conflict、drift、dead referenceをcanonical ownerへticket化し、critical 1件以上なら生成規則の追加・学習昇格を停止 |
 | 8 | TODO | Bounded learning controller | 1 cycle 1変更、before/after hash、held-out、canary、keep/revert、次run consumed hashをdurable receiptで一周。unknown/insufficientは変更0 |
@@ -2443,7 +2443,8 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 3 | unknown reward | `test_window_status_preserves_open_as_unknown_until_closed` + `test_lineage_without_cta_click_is_insufficient` | PASS (`d752be2`) |
 | 4 | judge calibration | `test_calibration_reports_scorable_unknown_and_insufficient` + `test_duplicate_reward_receipt_is_rejected` | PASS (`091214a`) |
 | 5 | title slice | `test_keeps_one_blamed_title_change_when_heldout_does_not_regress` + unknown/revert/複数変更拒否 tests | PASS (`dfa8327`) |
-| 5a | cross-slice isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` | TODO |
+| 5a | title/body isolation | `test_body_rejects_title_reward_and_title_weight_file` | PASS (`4eb8c64`) |
+| 5b | title/body/long-form isolation | `test_title_body_longform_use_distinct_reward_opponent_weight` | TODO |
 | 6 | contradiction gate | `test_critical_rule_conflict_blocks_generation_and_learning_change` | TODO |
 | 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | TODO |
 | 8 | self-improve revert | `test_heldout_loss_or_unknown_restores_before_hash` | TODO |
