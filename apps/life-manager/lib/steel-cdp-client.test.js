@@ -34,6 +34,27 @@ test("createSession posts /v1/sessions and returns the CDP websocket url", async
   assert.equal(fetchImpl.calls[0].method, "POST");
 });
 
+test("createRawSession leaves the private Steel CDP endpoint unattached for Stagehand", async () => {
+  let connectCalls = 0;
+  const fetchImpl = fakeFetch(() => ok({
+    id: "raw-1",
+    websocketUrl: "ws://steel-browser.railway.internal:8080/",
+    status: "live",
+  }));
+  const client = makeSteelCdpClient({
+    fetchImpl,
+    connectCdp: async () => {
+      connectCalls += 1;
+      return {};
+    },
+  });
+  assert.deepEqual(await client.createRawSession(), {
+    id: "raw-1",
+    websocketUrl: "ws://steel-browser.railway.internal:8080/",
+  });
+  assert.equal(connectCalls, 0, "Stagehand, not the deterministic booking client, owns this CDP socket");
+});
+
 test("releaseSession posts the verified per-session release route", async () => {
   const fetchImpl = fakeFetch(() => ok({ success: true }));
   const client = makeSteelCdpClient({ fetchImpl, connectCdp: async () => ({}) });

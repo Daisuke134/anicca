@@ -182,29 +182,41 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
     return connection;
   }
 
+  async function launch(options = {}) {
+    const response = await doFetch(`${baseUrl}/v1/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blockAds: true, ...options }),
+    });
+    if (!response || !response.ok) {
+      const body = response && typeof response.text === "function" ? await response.text().catch(() => "") : "";
+      throw new Error(`steel session launch failed (${response ? response.status : "no response"})${body ? `: ${body.slice(0, 200)}` : ""}`);
+    }
+    const details = await readJson(response);
+    if (!details || !details.id || !details.websocketUrl) {
+      throw new Error("steel session response carried no CDP endpoint");
+    }
+    return { id: details.id, websocketUrl: details.websocketUrl };
+  }
+
   return {
     baseUrl,
     async health() {
       const response = await doFetch(`${baseUrl}/v1/health`);
       return Boolean(response && response.ok);
     },
+    // Stagehand owns the CDP connection for generic natural-language tasks. This creates the same
+    // private Steel session but deliberately does not attach the deterministic booking CDP client.
+    async createRawSession(options = {}) {
+      return launch(options);
+    },
     async createSession(options = {}) {
-      const response = await doFetch(`${baseUrl}/v1/sessions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockAds: true, ...options }),
-      });
-      if (!response || !response.ok) {
-        const body = response && typeof response.text === "function" ? await response.text().catch(() => "") : "";
-        throw new Error(`steel session launch failed (${response ? response.status : "no response"})${body ? `: ${body.slice(0, 200)}` : ""}`);
-      }
-      const details = await readJson(response);
+      const details = await launch(options);
       // The id is captured BEFORE the connect, because a connect that throws leaves a session running
       // on the far side that nobody holds a handle to — and the OSS build has exactly one slot, so an
       // orphan blocks every later booking for every user until the service restarts.
-      const createdId = details && details.id ? details.id : null;
+      const createdId = details.id;
       try {
-        if (!createdId || !details.websocketUrl) throw new Error("steel session response carried no CDP endpoint");
         connection = await connect(details.websocketUrl);
       } catch (error) {
         const failure = error instanceof Error ? error : new Error(String(error));
