@@ -107,8 +107,11 @@ test("launchd wiring adds a separate five-minute loop and never kills existing l
     "utf8",
   );
   assert.match(boot, /record-taskmarket-work\.js/);
+  assert.match(boot, /handoff-taskmarket-awards\.js/);
+  assert.match(boot, /mktemp/);
   assert.match(boot, /SCRIPT_DIR/);
-  assert.match(boot, /timeout 240/);
+  assert.match(boot, /timeout 180/);
+  assert.match(boot, /timeout 55/);
   assert.doesNotMatch(boot, /anicca\/apps\/life-manager/);
   assert.match(boot, /TASKMARKET_SELF_WALLETS_MODULE/);
   assert.match(installer, /ai\.anicca\.life-manager-taskmarket-ledger/);
