@@ -49,6 +49,68 @@ Steel already exposes both halves needed by Life Manager:
 Life Manager therefore remains the tenant-aware owner of encrypted state while
 Steel remains an ephemeral Chromium worker.
 
+### Mandatory correction: Steel must own an ephemeral profile per session
+
+The first production isolation run exposed an upstream Steel lifecycle flaw
+that invalidates the assumption that a non-persistent session is ephemeral.
+At upstream commit
+[`5880b48`](https://github.com/steel-dev/steel-browser/commit/5880b48c1af107219ff3d904edbb8f6b76bea9b6),
+`session.service.ts` selects the same fallback for every non-persistent
+session: `env.CHROME_USER_DATA_DIR || path.join(os.tmpdir(), "steel-chrome")`.
+`cdp.service.ts` also assigns that fallback to `defaultLaunchConfig`, and
+`endSession()` captures context, shuts down, then calls
+`launch(this.defaultLaunchConfig)`. Neither path deletes the profile. A new
+session can therefore inherit cookies and origin storage even when the caller
+sends an empty `sessionContext`.
+
+One real cloud reproduction created a nominally empty session after prior
+provider work and exported 69 cookies plus 753,649 bytes of unrelated
+localStorage. Restarting Steel made the next sample clean but did not fix the
+lifecycle, so that run is diagnostic evidence only and cannot satisfy the
+two-tenant gate.
+
+The selected correction is a small Apache-2.0 fork of Steel:
+
+1. preserve upstream behavior when a caller explicitly requests `persist` or
+   `userDataDir`; Life Manager sends neither;
+2. allocate an unpredictable temporary `user-data-dir` for every implicit
+   session and a distinct one for the idle browser;
+3. never reuse an idle or completed session directory for another session;
+4. capture `sessionContext` before browser shutdown;
+5. after shutdown, recursively delete only a directory allocated by this
+   lifecycle, using bounded retries for transient filesystem locks;
+6. apply the same owned-directory cleanup after launch failure; and
+7. fail closed if allocation or cleanup cannot establish the isolation
+   boundary.
+
+The fork is pinned from the cited upstream commit, built as an immutable image,
+and deployed only to Railway `steel-browser`. Life Manager continues to use the
+existing private HTTP/CDP contract and encrypted tenant-bound context store.
+
+#### Rejected alternatives
+
+| Alternative | Reason rejected |
+|---|---|
+| Restart Steel for every session | It hides the shared-profile bug by replacing the process, adds avoidable latency, and cannot scale as the browser rail gains concurrent workers. |
+| Have Life Manager send a unique `userDataDir` | The client cannot prove server-side deletion, so abandoned or failed sessions leak credentials to disk; it also exposes a server filesystem concern through the tenant API. |
+| Pivot to Browserless | Its current licensing/commercial boundary is a worse fit for a closed-source hosted product, while the required Steel fix is narrow and Apache-2.0 compatible. |
+
+#### Fork verification gate
+
+Before any agent-owned login proof resumes, fork tests must demonstrate:
+
+- two sequential implicit sessions at the same origin do not inherit cookie or
+  localStorage state;
+- an explicit `sessionContext` restores only the requested state;
+- release deletes the completed session's auto-owned directory;
+- launch failure deletes the allocated auto-owned directory; and
+- the relaunched idle browser uses a different directory from the completed
+  session.
+
+The patched Railway service must then reproduce those properties with real
+Chromium. Only a completely new cloud-only evidence window after that
+deployment may count toward BROWSER-AUTH-1.
+
 ## Components
 
 ### `browser-auth-session-store.js`

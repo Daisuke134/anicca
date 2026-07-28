@@ -2,7 +2,7 @@
 
 ## Verdict
 
-**Incomplete — mandatory review fix round 1/5 is current.** The prior
+**Incomplete — mandatory review fix round 4/5 is current.** The prior
 SauceDemo fixture does not satisfy the agent-owned-account requirement, and the
 earlier evidence window included a local-browser preflight. None of the
 historical results below closes BROWSER-AUTH-1.
@@ -77,6 +77,27 @@ named `lm_browser_jobs_login_principal_kind_check`.
 This round does not claim production cookie continuity, provider continuity, or
 a complete local-browser-zero window. Deploy and provider execution remain
 blocked on scoped re-review.
+
+## Mandatory review fix round 4/5
+
+The round-3 production run found that upstream Steel reuses one implicit Chrome
+profile across sequential sessions. An explicitly empty new session exported
+69 prior cookies and 753,649 bytes of unrelated localStorage. Restarting Steel
+cleared that sample but did not establish tenant isolation, so the round-3
+two-tenant result is withdrawn and no provider login was attempted.
+
+The accepted correction is the ephemeral per-session profile lifecycle in
+`docs/superpowers/specs/2026-07-28-browser-auth-1-design.md`. A pinned patched
+Steel image must pass fork tests and real-Chromium isolation/cleanup checks
+before a completely new cloud-only evidence window begins.
+
+## Mandatory review fix round 3/5
+
+The reviewed exact runtime SHA is
+`f0223dbb00f0e5a65621fcf16176315eb5f30764`. One entirely new cloud-only
+production evidence window must complete every remaining gate before this
+verdict or the SSOT advances. No SauceDemo/public fixture may substitute for
+the runtime-only agent-owned identity.
 
 ## Production release and schema
 

@@ -491,7 +491,7 @@ event/時間依存gateが実測条件を満たした時だけ進め、収益・a
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **current Life Manager cursor — mandatory review fix round 2/5**。旧SauceDemo fixtureはagent-owned account実証として不採用。完全に新しいcloud-only evidence windowでproduction schema/key、2 tenant、`LM_AGENT_BROWSER_EMAIL`を使う実provider authenticated readback、same-SHA restart、expired handoff、Telegram、secret scan、Steel release、Mac loop不変を再実測する。finite expired cookie除外、expired-only exact-row単回invalidation→fresh Steel login handoff、`telegram_result_message_id` readbackはRED→GREEN済み。実provider production continuityはscoped re-review後に再実測するため、完了まではdoneとしない。evidence=`docs/evidence/browser/2026-07-28-browser-auth-1.md` |
+| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **current Life Manager cursor — mandatory review fix round 4/5**。review済みLife Manager exact SHA=`f0223dbb00f0e5a65621fcf16176315eb5f30764`。upstream Steelがimplicit session間で固定Chrome profileを再利用するarchitectural flawをproductionで検出したため、round-3の2 tenant結果は撤回。Apache-2.0 forkでsessionごとのephemeral user-data-dir、release/launch-failure時のbounded cleanup、別idle dirをTDD実装し、pinned imageのreal Chromium検証後に完全に新しいcloud-only evidence windowで2 tenant、`LM_AGENT_BROWSER_EMAIL`実provider、same-SHA restart、expired handoff、Telegram、secret scan、Steel release、Mac loop不変を再実測する。全gate PASSまではdoneとしない。evidence=`docs/evidence/browser/2026-07-28-browser-auth-1.md` |
 | 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending — BROWSER-AUTH-1完了後 |
 | 4 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
@@ -970,8 +970,9 @@ TASKMARKET-READBACK-1も公式submit txを追加cost 0のappend-only訂正行へ
 21600秒の自然trigger、外部award、外部収益だけを自動成果gateとして観測する。
 
 **Current Life Manager browser cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
-`You’re In`、TG evidence、Steel releaseまで完了した。BROWSER-AUTH-1はmandatory review fix round 1/5で、
-fixture代替を使わないagent-owned実providerのcloud-only証拠windowを再実行中である。
+`You’re In`、TG evidence、Steel releaseまで完了した。BROWSER-AUTH-1はmandatory review fix round 4/5で、
+Steelの固定profile再利用をephemeral per-session lifecycleへ直した後、fixture代替を使わない
+agent-owned実providerのcloud-only証拠windowを再実行する。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。
 そのceiling後の欠落はSHELTER-REPLACE-1で修復し、job `72zCpJEZ…U2YKN`がlive、3 routes HTTP 200、独立heartbeat verifier 3/3 PASSである。
