@@ -1,0 +1,73 @@
+{
+  "recorded_at": "2026-07-28T04:45:00Z",
+  "goal": "Make the production x402 agent products externally discoverable without counting colony-funded verification payments as revenue.",
+  "origin": "https://x402-agents-production.up.railway.app",
+  "release": {
+    "discovery_pr": "https://github.com/Daisuke134/anicca-products/pull/376",
+    "discovery_merge_sha": "e1fe016aa8aa69f7ae71b0df5a30e1b38251a561",
+    "rate_limit_fix_pr": "https://github.com/Daisuke134/anicca-products/pull/377",
+    "rate_limit_fix_merge_sha": "ca9bb653677ff4c5869b950a274f85e4a8ed843f",
+    "railway_deployment_id": "c4126494-59d3-4853-8ec8-80a288132038",
+    "railway_status": "SUCCESS",
+    "railway_image_digest": "sha256:36cc39fa69a284687b39778c22c340eec8fe8820cc141ba4daf0a8a4608317c4",
+    "railway_commit_hash_field": null,
+    "railway_commit_hash_note": "This service is deployed by source upload, so Railway does not populate meta.commitHash. The merged GitHub SHA and deployed image digest are recorded separately."
+  },
+  "verification": {
+    "test_command": "cd apps/x402-agents && npm test -- --run",
+    "test_result": "11 files, 68 tests passed",
+    "health_status": 200,
+    "openapi_version": "3.1.0",
+    "paid_operations": 9,
+    "unauthenticated_challenges": "9 of 9 returned HTTP 402",
+    "settlement_feed_status": 200,
+    "openapi_stability": "35 consecutive HTTP 200 responses",
+    "openapi_after_31_paid_challenges": 200,
+    "favicon_after_31_paid_challenges": 200,
+    "official_agentcash_discovery": {
+      "ok": true,
+      "selected_stage": "openapi",
+      "resources": 9,
+      "warnings": []
+    }
+  },
+  "catalogs": {
+    "x402scan": {
+      "registration_status": 200,
+      "registered": 9,
+      "failed": 0,
+      "skipped": 0,
+      "source": "openapi",
+      "signer": "0x3EcCAD24794ca298D25378E9902A251322ea8749",
+      "paid_search_status": 200,
+      "paid_search_transaction": "0x70e9284114f93c1d5976d29754821b7e5191894f07ced0908cf25ac2186bbe84",
+      "paid_search_match": "https://x402-agents-production.up.railway.app/habit-designer"
+    },
+    "coinbase_bazaar": {
+      "search_method": "hybrid",
+      "partial_results": false,
+      "matching_resources": [
+        "https://x402-agents-production.up.railway.app/intent-router",
+        "https://x402-agents-production.up.railway.app/context-compressor"
+      ]
+    },
+    "payapi_market": {
+      "tier": "Free",
+      "submission": "Listing submitted",
+      "review_window_shown_by_marketplace": "within 24 hours",
+      "provider": "Anicca AI",
+      "contact": "contact@aniccaai.com",
+      "category": "Intelligence",
+      "endpoints": 9,
+      "tools": 9,
+      "price_min_usdc": "0.005",
+      "price_max_usdc": "0.01",
+      "payee": "0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7"
+    }
+  },
+  "revenue_gate": {
+    "colony_external_finalized_usd": "0",
+    "status": "OPEN",
+    "note": "Registration and catalog verification payments are acquisition expenses or colony-funded proofs. They are not external revenue."
+  }
+}
