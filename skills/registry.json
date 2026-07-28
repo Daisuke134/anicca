@@ -166,6 +166,19 @@
       "risk": "safe",
       "riskNote": "anicca-agent-economy REQ-201: its own registry summary says it best -- THE recurring $0-capital earner; runs/advertises a server, deploys no funds."
     },
+    "earn/taskmarket": {
+      "track": "A",
+      "dir": "skills/earn/taskmarket",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "owner": "agent-economy",
+      "spec": "docs/superpowers/specs/2026-07-28-taskmarket-work-loop-design.md",
+      "summary": "Earns external USDC by selecting one open, unstaked TaskMarket still-image bounty, buying exactly one GPT Image 2 render over x402, submitting the required files, and requiring official TaskMarket readback.",
+      "risk": "safe",
+      "toolDescription": "Runs one bounded external-work pass on the official TaskMarket board. It excludes closed, staked, unsupported, already-submitted, and uneconomic jobs; selects one supported still-image bounty; buys exactly one 1024x1024 GPT Image 2 render through BlockRun x402 under a $0.07 quote cap and a $0.14 daily cap; writes hero.png, concept-note.md, and sources.md; submits them with the official taskmarket CLI; then requires the submission to appear in official readback. Pick {\"action\":\"execute\"} when you want to perform and submit one real paid job. Pick {\"action\":\"poll\"} for a read-only inventory decision. No user credentials or human judgment are required.",
+      "argsExample": { "action": "execute" },
+      "riskNote": "Operational compute purchase, not speculative capital: no stake, position, or principal is deployed. The execution path is independently fail-closed on a $0.07 per-image quote cap, $0.14 daily spend cap, $0.25 Base-USDC float floor, 20x minimum net-reward/cost ratio, duplicate-submission check, and official post-submit readback."
+    },
     "token_launch": {
       "track": "A",
       "dir": "skills/earn",
