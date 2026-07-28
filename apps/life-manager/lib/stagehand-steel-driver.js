@@ -191,7 +191,9 @@ function classifyReadOnlyDomSnapshot(snapshot = {}) {
     input.type === "text" &&
     input.inputMode === "numeric" &&
     input.maxLength === 1).length;
-  const otpVisible = oneTimeCodeVisible || singleDigitInputs >= 4 || flags.otp === true;
+  const otpVisible = oneTimeCodeVisible ||
+    (singleDigitInputs >= 4 && flags.otp === true) ||
+    flags.otp === true;
   const captchaVisible = flags.captcha === true;
   return {
     passwordVisible,

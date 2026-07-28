@@ -550,10 +550,38 @@ test("pure DOM classifier closes every passwordless OTP text and one-digit input
       autocomplete: "",
       maxLength: 1,
     })),
-    textFlags: {},
+    textFlags: { otp: true },
     markerPresent: true,
   };
   assert.equal(classifyReadOnlyDomSnapshot(grouped).otpVisible, true);
+
+  assert.equal(classifyReadOnlyDomSnapshot({
+    inputs: [{
+      type: "text",
+      inputMode: "numeric",
+      autocomplete: "one-time-code",
+      maxLength: 6,
+    }],
+    textFlags: { otp: false },
+    markerPresent: true,
+  }).otpVisible, true);
+});
+
+test("ordinary one-digit numeric cell groups are not authentication without OTP semantics", () => {
+  for (const count of [4, 5, 6]) {
+    const signals = classifyReadOnlyDomSnapshot({
+      inputs: Array.from({ length: count }, () => ({
+        type: "text",
+        inputMode: "numeric",
+        autocomplete: "",
+        maxLength: 1,
+      })),
+      textFlags: { otp: false },
+      markerPresent: true,
+    });
+    assert.equal(signals.otpVisible, false, `${count} ordinary numeric cells`);
+    assert.equal(signals.authVisible, false, `${count} ordinary numeric cells`);
+  }
 });
 
 test("auth continuity rejects an unsafe or cross-origin final redirect", async () => {
