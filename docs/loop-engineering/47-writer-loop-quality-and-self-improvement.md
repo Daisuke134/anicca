@@ -2387,7 +2387,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 8 | DONE (`a112a71`) | Bounded learning controller | slice engineの1変更制約の外側にdurable controllerを追加。before/candidate/after SHA-256、held-out、canary、keep/revertをatomic receipt化し、canary失敗はbefore bytesへexact rollback。unknown/insufficientは同一hash・変更0。keep後は次runがpromoted hashを実読したconsumption receiptを必須化。2 controller contract tests + Writer全article suite 337 passed |
 | 9 | DONE (`8303111`) | Self-heal 5 fixture | 実child processをresume claim直後にexit 9でkillし、fresh processから同一runを再読込。その後timeout/unknown effect、response loss、wrong authenticated identity、broken public asset→same-ID repairを同一fixtureで通過。run/draft/destination identity/safety `ALLOW`は不変、current-run ledger pair重複0。Writer全article suite 338 passed |
 | 10 | TODO | Launchd + Telegram | measure→calibrate→learn→verify→notifyを既存launchdで発火。全eventをdurable outboxから送り、run_id、reward status、変更、keep/revert、weight hash、failure class、messageIdを確認 |
-| 11 | TODO | End-to-end fixture proof | collect→score→one change→held-out→canary→keep/revert→next-run hash consumptionをfixtureで完走。real metric未到着の対照fixtureは`insufficient`、変更0 |
+| 11 | DONE (`3ec8c49`) | End-to-end fixture proof | exact product/run/artifact/variantのjudgment+reward collect→calibrated rank score→blamed title 1変更→held-out→canary→keep→次run consumed hashを1 fixtureで完走。対照fixtureは全reward `unknown`からcalibration `insufficient`、before=after、変更0。統合fixtureが発見したcalibration出力のreward identity欠落も修正。Writer全article suite 340 passed |
 | 12 | TODO | Spec / code / test push | Writerとこのspecの対象変更をcommit/pushし、HEAD/upstream一致、対象tracked diff 0。意味のある変更ごとにpushし、session終了時に未pushを残さない |
 
 **監視backlog（この実装sessionのblockerではない）**:
@@ -2448,7 +2448,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 6 | contradiction gate | `test_critical_rule_conflict_blocks_generation_and_learning_change` + `test_wrapper_blocks_before_generation_on_critical_rule_conflict` + scanner-error fixture | PASS (`970e843`) |
 | 7 | self-improve keep | `test_heldout_gain_keeps_one_change_and_next_run_consumes_hash` | PASS (`a112a71`) |
 | 8 | self-improve revert | `test_heldout_loss_or_unknown_restores_before_hash` | PASS (`a112a71`) |
-| 9 | no-data completion | `test_missing_real_metrics_emits_insufficient_and_changes_nothing` | TODO |
+| 9 | no-data completion | `test_missing_real_metrics_is_insufficient_and_changes_nothing` | PASS (`3ec8c49`) |
 | 10 | crash resume | `test_self_heal_five_failures_preserve_lineage_and_no_duplicate_effect`（claim後exit 9） | PASS (`8303111`) |
 | 11 | ambiguous publish | 同fixture（unknown effect→authenticated readback→same intent） | PASS (`8303111`) |
 | 12 | identity mismatch | 同fixture（attacker identity拒否、正identityだけthaw） | PASS (`8303111`) |
