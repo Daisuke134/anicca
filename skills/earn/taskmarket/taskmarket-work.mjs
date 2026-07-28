@@ -5,7 +5,7 @@ function rewardUsd(task) {
   return Number.isFinite(atomic) ? atomic / USDC_DECIMALS : 0;
 }
 
-export function classifyTask(task, { maxImageCostUsd = 0.06 } = {}) {
+export function classifyTask(task, { maxImageCostUsd = 0.07 } = {}) {
   if (!task || task.status !== 'open' || task.phase !== 'active') {
     return { supported: false, reason: 'task_not_active' };
   }
@@ -32,7 +32,7 @@ export function selectTask({
   tasks,
   submissions,
   now = Date.now(),
-  maxImageCostUsd = 0.06,
+  maxImageCostUsd = 0.07,
 }) {
   const submitted = new Set(
     (Array.isArray(submissions) ? submissions : [])

@@ -23,8 +23,9 @@ observer and writes income only after an external finalized Base USDC payment.
 - The highest-quality currently supported target asks for one 1:1 still image,
   `concept-note.md`, and `sources.md`, and explicitly requires GPT Image 2 or
   better.
-- BlockRun's live model catalog exposes `openai/gpt-image-2` at `$0.06/image`
-  through x402, so the agent can buy the required model with its own Base wallet
+- BlockRun's live model catalog exposes `openai/gpt-image-2`. A real unpaid
+  generation probe returned an x402 quote of `65000` Base USDC atomic units
+  (`$0.065`), so the agent can buy the required model with its own Base wallet
   and no human API credential.
 
 ## Chosen design
@@ -70,8 +71,8 @@ submitted as fake work.
 - Model: exactly `openai/gpt-image-2`
 - Size: exactly `1024x1024`
 - Images per pass: exactly one
-- Quote cap: `$0.06`
-- Daily TaskMarket image cap: `$0.12`
+- Quote cap: `$0.07`
+- Daily TaskMarket image cap: `$0.14`
 - Minimum wallet float after reserved spend: `$0.25`
 - Key source: existing per-instance `loadEvmKey()` resolver; no key is logged or
   passed in model arguments.
@@ -154,4 +155,3 @@ Completion requires:
 5. TaskMarket official readback returns the new submission;
 6. the award observer remains exit 0 and records no income before an external
    award.
-

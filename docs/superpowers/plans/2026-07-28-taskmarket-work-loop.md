@@ -13,7 +13,7 @@
 - One wake submits at most one task.
 - Only active, unstaked, unsubmitted still-image tasks are supported.
 - Image model is exactly `openai/gpt-image-2`, size `1024x1024`.
-- Per-image quote cap is `$0.06`; daily cap is `$0.12`; post-reservation float floor is `$0.25`.
+- Per-image quote cap is `$0.07`; daily cap is `$0.14`; post-reservation float floor is `$0.25`.
 - No award is income until the existing finalized external-payment observer records it.
 - No private key appears in args, stdout, logs, artifacts, or repository files.
 - Official TaskMarket readback is the idempotency authority.
@@ -250,4 +250,3 @@ Require exit 0 and `recorded=0` unless an actual external award occurred.
 Record the exact task ID, model, x402 cost, submission ID, Base transaction,
 readback, and evidence limit. Never state that an award or profit exists
 before external settlement.
-
