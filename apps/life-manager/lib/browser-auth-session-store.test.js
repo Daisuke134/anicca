@@ -204,6 +204,30 @@ test("browser auth defensive open removes cross-origin data from contaminated le
   assert.doesNotMatch(JSON.stringify(opened), /drop-cookie|drop-storage/);
 });
 
+test("browser auth distinguishes an authenticated stored row whose only usable cookie expired", () => {
+  const expired = sealLegacyUnscopedContext({
+    uid: "u-one",
+    origin: "https://auth.fixture.dev",
+    principalKind: "agent_owned",
+    context: {
+      cookies: [
+        {
+          name: "session",
+          value: "expired-cookie-secret",
+          domain: "auth.fixture.dev",
+          path: "/",
+          expires: 1,
+        },
+      ],
+    },
+  });
+
+  assert.throws(
+    () => openBrowserContext(expired, KEY_HEX),
+    (error) => error && error.code === "BROWSER_AUTH_CONTEXT_EXPIRED",
+  );
+});
+
 test("browser auth contexts are encrypted, tenant-bound, and do not expose plaintext", () => {
   const one = { cookies: [{ name: "session", value: "tenant-one", domain: "auth.fixture.dev", path: "/" }] };
   const two = { cookies: [{ name: "session", value: "tenant-two", domain: "auth.fixture.dev", path: "/" }] };

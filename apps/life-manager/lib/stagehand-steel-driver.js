@@ -4,6 +4,7 @@ const net = require("node:net");
 const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
 const {
+  BROWSER_AUTH_CONTEXT_EXPIRED_CODE,
   scopeSessionContextToOrigin,
   readBrowserAuthSession: defaultReadBrowserAuthSession,
   upsertBrowserAuthSession: defaultUpsertBrowserAuthSession,
@@ -243,9 +244,24 @@ function makeStagehandSteelDriver(options = {}) {
             origin: new URL(explicitUrl).origin,
             principalKind: input.principalKind,
           };
-          const record = await readBrowserAuthSession(identity);
-          auth = { ...identity, loaded: Boolean(record) };
-          if (record) context = scopeSessionContextToOrigin(record.context, identity.origin);
+          try {
+            const record = await readBrowserAuthSession(identity);
+            auth = {
+              ...identity,
+              loaded: Boolean(record),
+              invalidationAttempted: false,
+              invalidated: false,
+            };
+            if (record) context = scopeSessionContextToOrigin(record.context, identity.origin);
+          } catch (error) {
+            if (!error || error.code !== BROWSER_AUTH_CONTEXT_EXPIRED_CODE) throw error;
+            auth = {
+              ...identity,
+              loaded: false,
+              invalidationAttempted: true,
+              invalidated: await invalidateBrowserAuthSession(identity) === true,
+            };
+          }
         }
       }
       const createOptions = { blockAds: true };
@@ -547,11 +563,13 @@ function makeStagehandSteelDriver(options = {}) {
         ).toLowerCase();
         try {
           if (handoffReason === "login") {
-            authContextInvalidated = await invalidateBrowserAuthSession({
-              uid: auth.uid,
-              origin: auth.origin,
-              principalKind: auth.principalKind,
-            }) === true;
+            authContextInvalidated = auth.invalidationAttempted === true
+              ? auth.invalidated === true
+              : await invalidateBrowserAuthSession({
+                uid: auth.uid,
+                origin: auth.origin,
+                principalKind: auth.principalKind,
+              }) === true;
           } else {
             const context = scopeSessionContextToOrigin(
               await steelClient.getSessionContext(id),
