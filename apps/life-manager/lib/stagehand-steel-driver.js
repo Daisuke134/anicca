@@ -162,11 +162,11 @@ function makeStagehandSteelDriver(options = {}) {
             model: MODEL,
             executionModel: MODEL,
           });
-        const actionAgent = stagehand.agent({
-          mode: "cua",
-          model: AGENT_MODEL,
-          systemPrompt: AGENT_SYSTEM_PROMPT,
-        });
+        const actionAgent = explicitUrl ? null : stagehand.agent({
+            mode: "cua",
+            model: AGENT_MODEL,
+            systemPrompt: AGENT_SYSTEM_PROMPT,
+          });
         if (explicitUrl) await page.goto(explicitUrl);
         else await discoveryAgent.execute(discoveryTask);
         let selection;
@@ -219,7 +219,26 @@ function makeStagehandSteelDriver(options = {}) {
         if (typeof context.onActionStarted === "function") {
           await context.onActionStarted({ action: "one delegated zero-cost browser action" });
         }
-        await actionAgent.execute(actionTask);
+        if (explicitUrl) {
+          const atomicActs = [
+            ["Open the zero-cost registration form on this current event page. Do not navigate to a related or organizer website."],
+            ["Fill the required name field with %agentName%.", { variables: { agentName } }],
+            ["Fill the required email field with %agentEmail%.", { variables: { agentEmail } }],
+            ["Fill the required company or organization field with %agentCompany%.", { variables: { agentCompany: agentName } }],
+            ["Fill the required role or job title field with %agentRole%.", { variables: { agentRole: "AI agent" } }],
+            ["For the required attendee-description field, choose the truthful option closest to an AI agent; prefer Other when available."],
+            ["For any marketing or data-sharing consent field, select the option that declines or does not consent. Fail if no decline option exists."],
+            ["Submit this free registration now and remain on the provider result page."],
+          ];
+          for (const [instruction, actOptions] of atomicActs) {
+            const acted = await stagehand.act(instruction, actOptions);
+            if (!acted || acted.success !== true) {
+              throw new Error(`browser atomic action failed: ${instruction}`);
+            }
+          }
+        } else {
+          await actionAgent.execute(actionTask);
+        }
         const observation = await stagehand.extract(
           "Summarize the single delegated action attempted on the current provider page. Do not claim it succeeded.",
           actionSchema,
@@ -275,7 +294,7 @@ function makeStagehandSteelDriver(options = {}) {
       if (!open) throw new Error("Stagehand session unavailable for evidence capture");
       return {
         mimeType: "image/png",
-        bytes: await open.page.screenshot({ type: "png", fullPage: true }),
+        bytes: await open.page.screenshot({ type: "png", fullPage: false }),
       };
     },
 
