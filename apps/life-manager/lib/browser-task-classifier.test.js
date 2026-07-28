@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   classifyBrowserTask,
+  inferBrowserDecision,
   validateBrowserDecision,
 } = require("./browser-task-classifier.js");
 
@@ -86,4 +87,42 @@ test("financial outflow, KYC, irreversible action, and model schema drift fail c
     () => validateBrowserDecision({ ...decision(), goal: "" }),
     /browser decision schema/i,
   );
+});
+
+test("the production classifier asks Gemini for strict JSON without putting its key in the URL", async () => {
+  const seen = [];
+  const fetchImpl = async (url, init) => {
+    seen.push({ url: String(url), init });
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          candidates: [{
+            content: { parts: [{ text: JSON.stringify(decision()) }] },
+          }],
+        };
+      },
+    };
+  };
+  assert.deepEqual(
+    await inferBrowserDecision("Please register me", { apiKey: "secret-key", fetchImpl }),
+    decision(),
+  );
+  assert.match(seen[0].url, /gemini-2\.5-flash:generateContent$/);
+  assert.doesNotMatch(seen[0].url, /secret-key/);
+  assert.equal(seen[0].init.headers["x-goog-api-key"], "secret-key");
+  const body = JSON.parse(seen[0].init.body);
+  assert.equal(body.generationConfig.responseMimeType, "application/json");
+  assert.deepEqual(body.generationConfig.responseSchema.required.sort(), [
+    "action_kind",
+    "browser_required",
+    "explicit_request",
+    "goal",
+    "locale",
+    "requires_kyc",
+    "requires_login",
+    "reversible",
+    "zero_cost",
+  ].sort());
 });
