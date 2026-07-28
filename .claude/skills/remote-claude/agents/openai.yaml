@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Claude"
+  short_description: "Start Claude Desktop sessions for phone control"
+  default_prompt: "Use $remote-claude to start and verify a Claude Desktop session that I can continue from my phone."
