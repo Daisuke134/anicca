@@ -47,6 +47,10 @@ function fixture(overrides = {}) {
         currentUrl: "https://events.example/ai/confirmed",
       };
     },
+    captureEvidence: async () => {
+      events.push({ stage: "driver_evidence" });
+      return { mimeType: "image/png", bytes: Buffer.from("cloud-png") };
+    },
     releaseSession: async (id) => {
       events.push({ stage: "release", id });
       return { released: true };
@@ -54,6 +58,10 @@ function fixture(overrides = {}) {
     sendTelegram: async (_chatId, text) => {
       events.push({ stage: "telegram", text });
       return { ok: true, result: { message_id: 9001 } };
+    },
+    sendTelegramEvidence: async (_chatId, evidence, caption) => {
+      events.push({ stage: "telegram_evidence", evidence, caption });
+      return { ok: true, result: { message_id: 9002 } };
     },
     finishJob: async (_id, terminal) => {
       events.push({ stage: "finish", terminal });
@@ -72,6 +80,7 @@ test("discovers an unregistered site, acts once, independently reads back, repor
   assert.equal(result.selected_url, "https://events.example/ai");
   assert.equal(result.provider_receipt.confirmation_id, "reg-123");
   assert.equal(result.telegram_message_id, "9001");
+  assert.equal(result.evidence_message_id, "9002");
   assert.equal(result.steel_released, true);
   assert.deepEqual(
     events.map((event) => event.stage),
@@ -85,8 +94,11 @@ test("discovers an unregistered site, acts once, independently reads back, repor
       "action_observed",
       "driver_readback",
       "provider_readback",
+      "driver_evidence",
       "telegram",
       "telegram_sent",
+      "telegram_evidence",
+      "evidence_sent",
       "release",
       "steel_released",
       "finish",

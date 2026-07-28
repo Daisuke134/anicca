@@ -7,7 +7,7 @@ const {
 } = require("./browser-job-store.js");
 const { runGenericBrowserTask } = require("./generic-browser-task.js");
 const { makeStagehandSteelDriver } = require("./stagehand-steel-driver.js");
-const { sendMessage } = require("./telegram.js");
+const { sendMessage, sendPhoto } = require("./telegram.js");
 
 async function runNextBrowserJob(deps = {}) {
   const claim = deps.claimJob || (() => claimBrowserJob(deps));
@@ -21,14 +21,18 @@ async function runNextBrowserJob(deps = {}) {
   const append = deps.appendTrace || ((id, stage, meta) => appendBrowserTrace(id, stage, meta, deps));
   const finish = deps.finishJob || ((id, result) => finishBrowserJob(id, result, deps));
   const send = deps.sendMessage || sendMessage;
+  const sendEvidence = deps.sendPhoto || sendPhoto;
   const telegramToken = deps.telegramToken || process.env.LM_TELEGRAM_BOT_TOKEN;
   return runGenericBrowserTask(job, {
     appendTrace: append,
     openSession: driver.openSession.bind(driver),
     discoverAndAct: driver.discoverAndAct.bind(driver),
     readProviderReceipt: driver.readProviderReceipt.bind(driver),
+    captureEvidence: driver.captureEvidence.bind(driver),
     releaseSession: driver.releaseSession.bind(driver),
     sendTelegram: (chatId, text) => send(telegramToken, chatId, text),
+    sendTelegramEvidence: (chatId, evidence, caption) =>
+      sendEvidence(telegramToken, chatId, evidence.bytes, caption),
     finishJob: finish,
   });
 }
