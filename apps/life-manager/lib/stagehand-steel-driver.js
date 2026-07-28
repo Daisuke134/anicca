@@ -4,6 +4,8 @@ const { z } = require("zod");
 const { makeSteelCdpClient, STEEL_BASE_URL } = require("./steel-cdp-client.js");
 
 const MODEL = "google/gemini-2.5-flash";
+const AGENT_MODEL = "google/gemini-2.5-computer-use-preview-10-2025";
+const AGENT_SYSTEM_PROMPT = "Operate the remote cloud browser carefully. Use only truthful supplied identity data, never invent personal data, and stop at login, CAPTCHA, 2FA, KYC, or payment.";
 const SEARCH_URL = "https://www.google.com/";
 const PRIVATE_STEEL = /^http:\/\/steel-browser\.railway\.internal:8080\/?$/;
 const PRIVATE_CDP = /^ws:\/\/steel-browser\.railway\.internal:8080(?:\/|$)/;
@@ -120,8 +122,9 @@ function makeStagehandSteelDriver(options = {}) {
       let executionStarted = false;
       try {
         const agent = stagehand.agent({
-          model: MODEL,
-          executionModel: MODEL,
+          mode: "cua",
+          model: AGENT_MODEL,
+          systemPrompt: AGENT_SYSTEM_PROMPT,
         });
         await agent.execute(discoveryTask);
         let selection;
@@ -161,6 +164,12 @@ function makeStagehandSteelDriver(options = {}) {
           agentName
             ? `When a name is required for the agent-owned identity, use this exact runtime-only name: ${agentName}`
             : "If the goal requires a name, stop because no agent-owned name is available.",
+          agentName
+            ? `When a required company or organization field refers to the agent-owned identity, use: ${agentName}`
+            : "If a company or organization is required, stop because none is available.",
+          "When a required role or job title refers to the agent-owned identity, use: AI agent",
+          "Leave optional social-profile fields blank.",
+          "Decline optional marketing or data-sharing consent. If the form requires consent and offers no decline/no choice, stop honestly.",
         ].join("\n");
         executionStarted = true;
         if (typeof context.onActionStarted === "function") {
@@ -242,5 +251,6 @@ function makeStagehandSteelDriver(options = {}) {
 module.exports = {
   makeStagehandSteelDriver,
   MODEL,
+  AGENT_MODEL,
   SEARCH_URL,
 };
