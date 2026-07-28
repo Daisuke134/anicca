@@ -8,13 +8,30 @@
 | Article | `docs/articles/how-to-make-a-financially-independent-ai-ja.md` |
 | Deck | `docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}` |
 | SSOT | `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §0.4 |
-| Verdict | **PASS after correction** |
-| Material correction | 到達証拠はlevel 3だが、live statusはlevel 2。Franklin 1の6h proof jobは終了し、現serviceはHTTP 503 |
+| Verdict | **SUPERSEDED by post-SHELTER-REPLACE refresh** |
+| Material correction | この監査時点のlevel 2判定は正しいが、SHELTER-REPLACE-1後のlive statusはlevel 3へ更新された |
 
 最初の照合では、article / deck / SSOTがFranklin 1を現在稼働中のlevel 3としていた。live readbackがこのclaimを否定したため、
-3成果物を「level 3を6時間実証 / live level 2 / replacement未実装」へ修正し、再監査した。
+3成果物を「level 3を6時間実証 / live level 2 / replacement未実装」へ修正し、再監査した。その後
+SHELTER-REPLACE-1がmainnet handoverを実証したため、この文書は当時の監査記録として保持し、
+現行claimは下のpost-replacement追補とSSOTを正本にする。
 
-## Claim cross-check
+## Post-SHELTER-REPLACE addendum
+
+| Readback | Current value |
+|---|---|
+| final job | `72zCpJEZ…U2YKN` |
+| same payer running jobs | `1` |
+| `/`, `/statement.json`, `/heartbeats` | HTTP `200 / 200 / 200` |
+| independent heartbeat verifier | `3/3 PASS` + RPC slot/blockhash一致 |
+| handover order | old running → successor running → old state 2 |
+| shelter balance snapshot | `0.670368 NOS / 0.013662961 SOL` |
+| verified external revenue | `$0.00` |
+
+したがって現行bundleは**live level 3 / level 4未達**へ再生成する。21600秒の自然triggerは未観測であり、
+同じproduction controllerを即時発火したmainnet handover proofと区別する。
+
+## Historical audit claim cross-check
 
 | Claim | Article | Deck | SSOT | Result |
 |---|---:|---:|---:|---|
@@ -30,7 +47,7 @@
 
 機械照合は全8 claimについてarticle / deck / SSOTの`true / true / true`、failure 0だった。
 
-## Fresh live evidence
+## Historical live evidence
 
 ### Franklin 1 / Nosana
 
@@ -77,12 +94,14 @@ production reportはwallet balanceをBase RPC、収益行をproduction `lm_agent
 | PPTX slides / notes | `10 / 10` |
 | PDF | `10 pages`, `720 × 405.014 pt` |
 | Timing | `400 seconds = 6:40` |
+| Post-replacement refresh | live level 3へ再生成、PPTX ZIP PASS、slides/notes `10/10`、PDF `10 pages` |
+| Post-replacement visual QA | 10枚grid + slide 8/10原寸、cutoff / overlap / contrast defect `0` |
 
 10枚のthumbnail gridを確認し、truth correctionを入れたslide 8とslide 10は1800 × 1013の原寸renderでも確認した。
 最初のslide 10 renderでは右下page numberのcutoffを検出し、footer幅を修正して再生成した。再renderでは
 cutoff / overlap / contrast defectは0だった。
 
-## Evidence limit
+## Historical evidence limit
 
 このauditは、financially independent AIの完成を証明しない。証明するのは次だけである。
 
@@ -91,5 +110,6 @@ cutoff / overlap / contrast defectは0だった。
 3. verified external revenueは`$0.00`
 4. level 4、user payout、self-funded childは未達
 
-次のbuildは`SHELTER-REPLACE-1`。6h ceiling前に次jobを作り、confidential delivery、HTTP 200、heartbeat署名を確認してから
-旧jobを終了する。失敗時は旧jobを維持し、二重job上限とreserve floorを守る。
+このEvidence limitは監査時点の記録である。SHELTER-REPLACE-1は後に完了し、次のbuildは
+`TASKMARKET-READBACK-1`である。既存提出を再購入・再提出せず、eventual consistencyをbounded retryして
+既存cost rowへexactly-once reconcileする。
