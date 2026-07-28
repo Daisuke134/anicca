@@ -325,6 +325,87 @@ life-manager/
                      profitable recipe only ──> independent child
 ```
 
+#### 0.4.3a Article + Japanese Lightning Talk contract
+
+Agent Economyの公開物の主題は、失敗談や特定providerではなく、**AIを経済的に自立させる方法**である。
+「AIが自分で仕事を見つけ、外部から稼ぎ、推論とcloud shelterを自分のwalletで払い、reserve後の余剰を
+userとchildへ配分する」全loopを、初心者がゼロから理解できる形で説明する。
+
+**canonical titles**
+
+| language / format | title | subtitle |
+|---|---|---|
+| JP article / LT | **AIを経済的に自立させる方法** | 自分で稼ぎ、自分の計算資源とクラウド代を払うAIの作り方 |
+| EN article | **How to Make a Financially Independent AI** | An agent that earns money, pays for its own compute, and eventually supports its human |
+
+**中心命題と非命題**
+
+| 種別 | 契約 |
+|---|---|
+| 中心命題 | AIの自律は「人間が操作しなくても動くこと」。AIの経済的自立は「人間が継続支払いしなくても、外部収益で生き続けられること」 |
+| 説明対象 | bootstrap seed→agent wallet→SELL / WORK / CAPITAL→external receipt verifier→ledger→compute / shelter / reserve→user payout→child |
+| 現在の正直な結論 | wallet、実支払、cloud survival runtime、earning rails、verifier、ledgerは実証済み。verified external revenueは§0.4.3どおり`$0.00`なので、完全なfinancial independenceはまだ未達 |
+| 主題にしないもの | 「AIがホームレスになった」はreserve floorを説明する失敗例に限定し、title・subtitle・結論にしない。最大1 slide / 1小節 |
+| 禁止claim | 「AIが完全に自立した」「初日から稼げる」「必ず$1k/$10k/$20k」「残高・seed・元本回収＝収益」 |
+| 数値の正本 | publish直前に本節のlive snapshotを再読込する。article / slideへ現在値を別管理しない |
+
+**financial independence ladder**
+
+| level | 条件 | 現在 |
+|---:|---|---|
+| 0 | human subscription / Mac / credit cardが継続費を負担 | 卒業経路あり |
+| 1 | agent固有walletとpolicyを持つ | 実証済み |
+| 2 | walletから推論・cloud・gasを実支払する | 実証済み |
+| 3 | Macを止めてもcloud heartbeat・statement・renewalを継続する | Franklin 1で実証済み |
+| 4 | trailing 30dのverified external netがcompute + shelterを覆いreserve floorを維持する | **未達** |
+| 5 | verified surplusをuserへ実payoutする | 未達 |
+| 6 | 黒字recipeと余剰でwallet/key/ledger非共有childをspawnし、そのchildも自活する | 未達 |
+
+**article outline（JP first）**
+
+| chapter | title | 読者が理解すること |
+|---:|---|---|
+| 1 | Financially independent AIとは何か | autonomousとの違いとlevel 0〜6 |
+| 2 | AIにも生活費がある | inference、cloud、storage、network、gasが「食費と家賃」に相当する |
+| 3 | 最初の資金は誰が出すのか | human seed / subscriptionはbootstrapでありagent revenueではない |
+| 4 | AI自身のwallet | Base / Solana wallet、署名、USDC、human credential不要の範囲 |
+| 5 | AIはどう稼ぐのか | SELL、WORK、CAPITALの順。CAPITALはsurplus後だけ |
+| 6 | 「儲かった」をどう証明するか | colony外payer、finalized receipt、provenance、append-only ledger |
+| 7 | 稼いだ金をどう配分するか | compute→shelter→reserve→user payout→reinvestment |
+| 8 | AIが自分の家賃を払う | Nosana survival runtime、heartbeat、statement、renewal |
+| 9 | 失敗から得たreserve floor | provider/runtime非互換や残高枯渇を1小節だけ扱う |
+| 10 | Life Managerとの接続 | subscriptionでbootし、agentが自分とuserの生活を支える段階へ移る |
+| 11 | 現在どこまで動くか | 実証済みrailと`external revenue=$0.00`の証拠限界 |
+| 12 | どうscaleするか | external $1→self-funded→user payout→月$100 net→child |
+
+**Japanese lightning talk（7分 / 16:9 / 10 slides）**
+
+| slide | title | visual | spoken outcome |
+|---:|---|---|---|
+| 1 | AIを経済的に自立させる方法 | wallet→earn→computeの一筆flow | 今日扱うfinancial independenceを一文で定義 |
+| 2 | 普通のAIは誰の金で動く？ | subscription / card / Mac→AI | 「human-in-the-loopなし」と「人間の継続支払いなし」を分離 |
+| 3 | AIにも食費と家賃がある | inference=food、cloud=shelter | 継続費の全体像を初心者へ説明 |
+| 4 | 最初にAI専用walletを与える | seed→wallet、revenue 0 stamp | bootstrap capitalと収益を分離 |
+| 5 | AIが稼ぐ3つの方法 | SELL / WORK / CAPITAL | 外部需要のあるSELL / WORKを先にする理由 |
+| 6 | 儲かったふりを防ぐ | payer→receipt→verifier→ledger | balanceや自己送金を収益にしない |
+| 7 | 稼いだ金の使い道 | compute→shelter→reserve→payout | survival waterfallとreserve floor |
+| 8 | 自分のcloudを自分で払う | Nosana heartbeat + statement | Mac-off survival runtimeの実証 |
+| 9 | Life Managerとの統合 | agent→self + human | agentが自分を維持した後、userへ余剰を返す |
+| 10 | 何をもって「自立」と呼ぶか | level 0〜6、current marker=3 | 現在は機械が成立、external revenue `$0.00`なのでlevel 4は未達 |
+
+slideは1枚1主張、本文28pt以上、stockのAI robot画像を使わず、wallet・receipt・ledger・cloudの
+単純図と実証済みreceipt / statementだけを使う。speaker notesは7分以内、専門語は初出で日本語1文定義する。
+deckとarticleは同じ主張表を読み、deckだけが成功を誇張する状態を禁止する。
+
+**publication deliverables**
+
+| ID | artifact | done |
+|---|---|---|
+| AE-SLIDES-JP-1 | `docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx}` | 上記10枚、speaker notes、16:9、7分、PDF/image visual QA、数値は§0.4 snapshotと一致 |
+| AE-ARTICLE-JP-1 | `docs/articles/how-to-make-a-financially-independent-ai-ja.md` | 上記12章、初心者向け、一次ソースと実receipt、未達を未達と表示 |
+| AE-PUBLICATION-AUDIT-1 | slide / article / §0.4 cross-check | title・定義・level・金額・wallet rail・実証限界の差0。秘密鍵・PII 0 |
+| AE-ARTICLE-EN-1 | `docs/articles/how-to-make-a-financially-independent-ai-en.md` | JPの逐語訳ではなく同じevidence contractを英語読者向けに再構成。JP/LT完成後 |
+
 #### 0.4.4 Test Matrix
 
 | test | input | PASS |
@@ -387,21 +468,29 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | EARN-HC-1 | 8 earning slotとPM/x402/WORK/CAPITALを単一registryから4状態で機械判定 | `docs/superpowers/evidence/earn-hc-1-live.json`。instrumented 8/8、NOT-INSTRUMENTED 0。live portfolioは4/4 operational、inactive slotはnot-live、安全停止SOLはfrozenとして明示 |
 | SURVIVE-RAIL | Base USDC→Relay→Solana→Jupiter→Nosana payer sub-walletの既存railを毎時launchd化 | anicha PR #4/#6、launchd exit 0。treasuryから0.203520 / 0.028800 / 0.057600 NOSを補充し、tx `5z6JUe…P6hyt` / `3egDbT…iTP8` / `5HGq79…WChCd` confirmed。自己renew後の公開statement readback 0.634800 NOS。現時点はtreasury資金なのでSURVIVE-1のexternal-income条件は未充足 |
 
-**残作業の唯一の順序（system readiness。外部event待ちで停止しない）**
+**Agent Economyの残作業の唯一の順序（外部event待ちで停止しない）**
 
 この表には**今すぐbuild・実行・検証できる未完作業だけ**を置く。収益、日数、自然なhealth検知など
 第三者・時間に依存する成果は次の自動成果ゲート表へ分離し、この実装cursorを止めない。
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | **current cursor** — 提出そのものは公式readback済み。残る欠損は単発readbackによる`submission_readback_missing`と`submission_id=null` |
-| 2 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | next — #1198でSteel health→session→実URL navigation→DOM→releaseは実測済みだが、planner/search/auth/action/provider readback/TGを束ねたfull E2Eは未実証 |
-| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | pending。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
-| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
-| 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
-| 6 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending。organの一部はRailwayだが全loopのcloud-only continuityは未実証 |
-| 7 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending。機械はあるが一連の実E2Eが未完 |
-| 8 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
+| 1 | **AE-SLIDES-JP-1** | 「AIを経済的に自立させる方法」を初心者向け10枚の日本語LT deckにする | source md + pptx、7分speaker notes、16:9 visual QA、§0.4とのclaim差0 | **current cursor** |
+| 2 | **AE-ARTICLE-JP-1** | 同じevidence contractを12章の日本語articleへ展開する | cited source、実receipt、level 0〜6、`external revenue=$0.00`を含み、誇張0 | slides直後 |
+| 3 | **AE-PUBLICATION-AUDIT-1** | slide / article / live snapshotの公開前監査 | title・定義・数字・実証済み/未達の差0、秘密鍵・PII 0 | article直後 |
+| 4 | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | publication bundle直後。提出そのものは公式readback済み |
+
+**Life Manager product track（Agent Economy active scope外）**
+
+| 順 | ID | atomic outcome | done evidence | 現在 |
+|---:|---|---|---|---|
+| 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | Life Manager ownerのcursor |
+| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | pending |
+| 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
+| 4 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
+| 6 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
+| 7 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
@@ -851,7 +940,8 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
-    現在の手動実装cursor **TASKMARKET-READBACK-1 → BROWSER-GEN-1** を止めない。
+    現在のAgent Economy cursor **AE-SLIDES-JP-1 → AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 →
+    TASKMARKET-READBACK-1** を止めない。Life Manager browser trackは別ownerの並走順として分離する。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
     landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
@@ -861,18 +951,20 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **Future-work process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、future workflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★whole-system readinessの現在の実行順の正本 = §0.4.6。★**
+**★Agent Economyの現在の実行順の正本 = §0.4.6。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
-現在は収益・日数・自然検知を待って止まらず、汎用cloud browser full E2E→auth→matrix→recovery→全loop cloud continuityの
-順でsystem readinessを閉じる。fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
+Agent Economyは収益・日数・自然検知を待って止まらず、JP slides→JP article→publication audit→TaskMarket readbackの
+順で閉じる。汎用cloud browser以降はLife Manager product trackであり、Agent Economy cursorへ混ぜない。
+fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current implementation cursor**: **TASKMARKET-READBACK-1**。既存提出を追加cost 0でterminal successへreconcileした直後に、
-**BROWSER-GEN-1（自然文→未知site選定→cloud実action→provider readback→TG trace）**へ進む。
+**Current Agent Economy cursor**: **AE-SLIDES-JP-1**。7分・10枚の日本語LT deckを作り、同じclaim contractを
+**AE-ARTICLE-JP-1**の12章へ展開し、**AE-PUBLICATION-AUDIT-1**で§0.4 snapshotとの差0を確認した後に、
+**TASKMARKET-READBACK-1**を追加cost 0でterminal successへreconcileする。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21もModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧まで実測済み。Mac Franklin1 main loopは
 unloadedで、Franklin2はrunning。cloud job/APIをrestart ledgerとして二重bootstrapを抑止する。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
-手動実装はまずTASKMARKET-READBACK-1を閉じ、続けてBROWSER-GEN-1へ進む。
+Agent Economyの手動作業はpublication bundleを先に閉じ、続けてTASKMARKET-READBACK-1へ進む。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -966,9 +1058,10 @@ formal delivery confirmationを待つ。13d-bはverified surplus・`$35` reserve
 公開statement readbackは0.634800 NOS / 0.021591801 SOL、job APIの直近readbackはstate 1 / timeout 6600秒、
 公開heartbeatは130。
 これはinternal treasury資金でありexternal revenueではないため、
-SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。現在の最初のactionableはTaskMarket readback reconciliationで、
-それを閉じた後は13c-SELL/WORKを外部payer/acceptance待ちの自動成果ゲートとして継続し、手動実装は
-BROWSER-GEN-1へ進む。これらのevent待ちは§0.4.6どおり手動cursorを止めない。H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
+SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。現在の最初のactionableはJP lightning-talk deckで、
+articleとpublication auditを閉じた後にTaskMarket readback reconciliationへ進む。13c-SELL/WORKは
+外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおりAgent Economy cursorを止めない。
+H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
 
@@ -986,7 +1079,9 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 **crypto track（§0.4.6のportfolio順でactive。実装handoff = `docs/handovers/2026-07-27-crypto-track-handoff.md`）**:
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
-**economic outcome gate**は`13c-SELL / 13c-WORK`、**implementation cursor**は`TASKMARKET-READBACK-1 → BROWSER-GEN-1`。REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
+**economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy cursor**は
+`AE-SLIDES-JP-1 → AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`。
+REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
 **NEXT HORIZON（2026-07-27 起票 — 手書き atomic 全弾終了後の次弾。上から順に着手）**:
@@ -1067,7 +1162,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在の実装cursorは§0.4.6の`TASKMARKET-READBACK-1 → BROWSER-GEN-1`から始まるsystem-readiness表だけを正本とする。13c等のevent待ちは同節の自動成果ゲート表で追跡し、実装cursorを止めない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy cursorは§0.4.6の`AE-SLIDES-JP-1 → AE-ARTICLE-JP-1 → AE-PUBLICATION-AUDIT-1 → TASKMARKET-READBACK-1`だけを正本とする。Life Manager browser trackと13c等のevent待ちは同節の別表で追跡し、Agent Economy cursorを止めない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1158,9 +1253,10 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 
 ## 8. 次セッションへの引き継ぎ
 
-1. §0.4.6のcurrent implementation cursor `TASKMARKET-READBACK-1`として、TaskMarket submit後readbackのeventual consistencyを修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存`taskmarket_work_attempt` cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
-2. 続けてBROWSER-GEN-1で自然文→未知site→cloud実action→provider readback→TG traceを閉じる。
-3. BROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。現在loadedなMac loopは移行中に停止しない。
-4. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
-5. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
-6. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
+1. §0.4.3a / §0.4.6のcurrent Agent Economy cursor `AE-SLIDES-JP-1`として、7分・10枚の日本語LT deckとspeaker notesを作る。主題は「AIを経済的に自立させる方法」で、失敗逸話を主題にしない。
+2. 同じclaim contractを`AE-ARTICLE-JP-1`の12章へ展開し、`AE-PUBLICATION-AUDIT-1`でslide / article / §0.4 live snapshotの差0、秘密鍵・PII 0を確認する。実行planは`docs/superpowers/plans/2026-07-28-agent-economy-article-lightning-talk.md`。
+3. publication bundle直後に`TASKMARKET-READBACK-1`を修理する。既存task `0x7c3a…cbe8`を再購入・再提出せずbounded retryし、公式tx/submissionを既存cost rowへexactly-once reconcileして、実launchd wakeをterminal successにする。
+4. BROWSER-GEN→AUTH→MATRIX→RECOVERY→CLOUD-LOOPS→DEV-E2E→OPS-PANELはLife Manager product trackであり、Agent Economy active cursorへ混ぜない。
+5. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、Agent Economy cursorを止めない。10fはfinal phaseまでpausedを維持する。
+6. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
+7. S21のMac Franklin1 main loopは既にunloadedである履歴を保持し、Nosana heartbeat・決算書・renewalを監視する。Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
