@@ -100,4 +100,4 @@ else:
         str(home / ".cargo/git"),
         str(home / ".cache"),
     ]
-    assert runtime_call[runtime_call.index("--min-cache-bytes") + 1] == "268435456"
+    assert runtime_call[runtime_call.index("--min-cache-bytes") + 1] == "67108864"
