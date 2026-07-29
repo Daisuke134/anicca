@@ -310,6 +310,58 @@ class LedgerTests(unittest.TestCase):
             )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
 
+    def test_workday_apply_choice_is_ready_for_navigation_but_not_for_claim(self):
+        fixture = (
+            Path(__file__).parent
+            / "fixtures"
+            / "ats"
+            / "workday-apply-choice-surface.json"
+        )
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        application_id = self.ledger.add_application(
+            "Example Workday Choice",
+            "AI Sales Engineer",
+            snapshot["url"],
+        )
+        self._ready(application_id)
+        with self.assertRaisesRegex(ValueError, "ATS snapshot is not claim-ready"):
+            self.ledger.claim_submission(
+                application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=fixture,
+                ats_snapshot_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
+    def test_workday_account_gate_is_ready_for_navigation_but_not_for_claim(self):
+        fixture = (
+            Path(__file__).parent
+            / "fixtures"
+            / "ats"
+            / "workday-create-account-surface.json"
+        )
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        application_id = self.ledger.add_application(
+            "Example Workday Account",
+            "AI Sales Engineer",
+            snapshot["url"],
+        )
+        self._ready(application_id)
+        with self.assertRaisesRegex(ValueError, "ATS snapshot is not claim-ready"):
+            self.ledger.claim_submission(
+                application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=fixture,
+                ats_snapshot_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
     def test_submitted_application_retains_exact_resume_for_reporting(self):
         parameters = inspect.signature(self.ledger.claim_submission).parameters
         self.assertIn("resume_path", parameters)

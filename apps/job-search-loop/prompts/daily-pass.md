@@ -66,13 +66,30 @@ PYTHONPATH=apps/job-search-loop \
 chmod 600 "<private_snapshot_path>" "<private_evaluation_path>"
 ```
 
-Continue only when the evaluation says `ready=true`. A `workday_job` surface proves
-that navigation recovered but is not claim-ready: click the ordinary `Apply`
-navigation control, recapture the resulting application form, and require a
-`workday_application` evaluation. Never treat an invisible reCAPTCHA frame alone as
-a visible challenge; never bypass or answer an actual CAPTCHA. If the evaluator
-fails, returns not ready, or the application form never appears, record
-`not_submitted` without claiming a slot.
+Continue browser progression only when the evaluation says `ready=true`; call
+`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance Workday
+one evaluated surface at a time:
+
+```text
+workday_job
+  → click the ordinary Apply navigation control
+  → recapture and reevaluate
+workday_apply_choice
+  → click Apply Manually
+  → recapture and reevaluate
+workday_account_create
+  → do not claim; use only a configured private Workday credential path
+workday_application
+  → claim only when the final submit-bearing form is present
+```
+
+Do not choose `Autofill with Resume` before resume routing, and do not improvise an
+account password or expose credentials in evidence. When the account gate has no
+configured private credential path, record that exact blocker, release/avoid the
+slot, and continue to other eligible jobs instead of ending discovery. Never treat
+an invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
+actual CAPTCHA. If the evaluator fails, returns not ready, or the application form
+never appears, record `not_submitted` without claiming a slot.
 
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the

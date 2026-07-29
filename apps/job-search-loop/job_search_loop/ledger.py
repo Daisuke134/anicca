@@ -267,7 +267,7 @@ class Ledger:
         if not snapshot_evaluation["ready"]:
             blockers = ",".join(snapshot_evaluation["blockers"])
             raise ValueError(f"ATS snapshot is not ready: {blockers}")
-        if snapshot_evaluation["surface"] == "workday_job":
+        if not snapshot_evaluation["claim_ready"]:
             raise ValueError("ATS snapshot is not claim-ready: application form not open")
         with self._transaction():
             application = self.connection.execute(

@@ -207,7 +207,10 @@ URLs, and user-facing control metadata. It returns:
 ```text
 provider: ashby | workday | generic
 ready: boolean
-surface: ashby_application | workday_job | workday_application | generic_application | none
+claim_ready: boolean
+surface: ashby_application | workday_job | workday_apply_choice |
+         workday_account_create | workday_application |
+         generic_application | none
 frame_index: integer | null
 wait_until: commit
 blockers: string[]
@@ -244,6 +247,65 @@ remains `submit_unknown`.
 
 Order 10 remains `in_progress` after 10A. It becomes `completed` only after one real,
 confirmed application per adapter is recorded without inferred legal answers.
+
+### 4.5 Workday surface progression
+
+`JOB-ATS-RESILIENCE-10B` separates browser progress from permission to reserve a
+submission slot. A real read-only flow on the public CrowdStrike Workday site exposed
+the following sequence:
+
+```text
+workday_job
+  → Apply
+  → workday_apply_choice
+  → Apply Manually
+  → workday_account_create
+  → authenticated application steps
+  → workday_application
+```
+
+| Decision | Source | Core quote |
+|---|---|---|
+| Model the Apply choice as a separate surface | [CrowdStrike Workday application](https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1) | “Autofill with Resume” / “Apply Manually” / “Use My Last Application” |
+| Model account creation as a separate, non-claimable surface | [CrowdStrike Workday Create Account](https://crowdstrike.wd5.myworkdayjobs.com/en-US/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1/apply/applyManually) | “Email Address” / “Password” / “Verify New Password” / “Create Account” |
+| Keep actions semantic and auto-waited | [Playwright locators](https://playwright.dev/docs/locators) | “We recommend prioritizing role locators to locate elements, as it is the closest way to how users and assistive technology perceive the page.” |
+
+`evaluate_snapshot` adds `claim_ready`. Its meaning is independent of `ready`:
+
+| Surface | `ready` | `claim_ready` | Next action |
+|---|---:|---:|---|
+| `workday_job` | true | false | Click `Apply` |
+| `workday_apply_choice` | true | false | Prefer `Apply Manually`; do not upload before material routing |
+| `workday_account_create` | true | false | Use only an approved private identity/credential path |
+| `workday_sign_in` | true | false | Use the existing private account; never expose credentials |
+| `workday_application` | true | true | Claim only on the final submit-bearing application surface |
+| `ashby_application` / `generic_application` | true | true | Existing claim rules apply |
+| `none` | false | false | Stop before claim |
+
+The Ledger accepts only `claim_ready=true`. It does not encode Workday-specific
+surface names; the evaluator owns that policy. This prevents future navigation-only
+surfaces from accidentally consuming quota.
+
+10B does not create a Workday account or answer application questions. The private
+profile currently contains no verified nationality, citizenship, visa, or work
+authorization scalar, so account/application side effects remain owned by the real
+loop after private facts exist. No legal value is inferred from name, residence,
+language, or employer.
+
+`JOB-ATS-RESILIENCE-10B` is complete when:
+
+1. sanitized real-shape Workday Apply-choice and Create-Account fixtures replay;
+2. both surfaces return `ready=true`, `claim_ready=false`;
+3. Ashby/generic application fixtures return `claim_ready=true`;
+4. Ledger rejects every ready-but-not-claimable surface without allocating a slot;
+5. the daily prompt follows the Workday progression and never treats account creation
+   as an application submission;
+6. a read-only existing-CDP replay reaches Create Account with zero input, account
+   creation, upload, claim, or submit side effects;
+7. all tests and CI pass.
+
+Order 10 remains `in_progress` after 10B. The real confirmed-application gate is
+unchanged.
 
 ## 5. State and side-effect contracts
 
@@ -475,7 +537,7 @@ row; its status changes in the same commit as implementation evidence.
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | `JOB-ATS-RESILIENCE-10A` merged in PR #1288 (`74e01f24b`): CI run `30446495346` green; 125 job-loop + 7 runner tests; real existing-CDP commit-first probe classified Ashby application and Workday job surfaces; private ledger-copy migration retained 3 applications/3 intents with integrity `ok`; order completes only after one real confirmed application per adapter |
+| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B locally verified with 131 job-loop + 7 runner tests and real existing-CDP job→choice→account replay (19/23/28 redacted controls, zero input/account/upload/claim/submit side effects); order completes only after one real confirmed application per adapter |
 | 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
 | 12 | Portable local OSS distribution | `pending` | Remove Dais-specific absolute paths; add BYO provider authentication, profile setup, macOS/Linux scheduling, private-state defaults, and an end-to-end install test |
 | 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |

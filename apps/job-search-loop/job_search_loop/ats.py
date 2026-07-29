@@ -63,6 +63,47 @@ def _is_apply_control(control: dict[str, Any]) -> bool:
     )
 
 
+def _has_exact_text(controls: list[dict[str, Any]], value: str) -> bool:
+    expected = value.casefold()
+    return any(_normalized(control.get("text")) == expected for control in controls)
+
+
+def _is_workday_apply_choice(controls: list[dict[str, Any]]) -> bool:
+    return all(
+        _has_exact_text(controls, text)
+        for text in (
+            "Autofill with Resume",
+            "Apply Manually",
+            "Use My Last Application",
+        )
+    )
+
+
+def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
+    combined = " ".join(_control_text(control) for control in controls)
+    password_count = sum(
+        _normalized(control.get("type")) == "password" for control in controls
+    )
+    has_consent = any(
+        _normalized(control.get("type")) == "checkbox" for control in controls
+    )
+    has_create_action = any(
+        _normalized(control.get("text")) == "create account"
+        and (
+            _normalized(control.get("role")) == "button"
+            or _normalized(control.get("tag")) == "button"
+        )
+        for control in controls
+    )
+    return (
+        "email address" in combined
+        and "verify new password" in combined
+        and password_count >= 2
+        and has_consent
+        and has_create_action
+    )
+
+
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ValueError("snapshot must be an object")
@@ -92,6 +133,7 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     base = {
         "provider": provider,
         "ready": False,
+        "claim_ready": False,
         "surface": "none",
         "frame_index": None,
         "wait_until": "commit",
@@ -107,6 +149,7 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             base.update(
                 {
                     "ready": True,
+                    "claim_ready": True,
                     "surface": (
                         "ashby_application"
                         if provider == "ashby"
@@ -120,17 +163,34 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                 }
             )
             return base
-        if provider == "workday" and any(
-            _is_apply_control(control) for control in controls
-        ):
-            base.update(
-                {
-                    "ready": True,
-                    "surface": "workday_job",
-                    "frame_index": frame_index,
-                }
-            )
-            return base
+        if provider == "workday":
+            if _is_workday_apply_choice(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_apply_choice",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if _is_workday_account_create(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_account_create",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if any(_is_apply_control(control) for control in controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_job",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
 
     base["blockers"] = ["application_surface_not_found"]
     return base

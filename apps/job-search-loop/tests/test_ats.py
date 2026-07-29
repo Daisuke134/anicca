@@ -32,6 +32,7 @@ class AtsReadinessTests(unittest.TestCase):
             {
                 "provider": "ashby",
                 "ready": True,
+                "claim_ready": True,
                 "surface": "ashby_application",
                 "frame_index": 0,
                 "wait_until": "commit",
@@ -56,6 +57,7 @@ class AtsReadinessTests(unittest.TestCase):
             {
                 "provider": "workday",
                 "ready": True,
+                "claim_ready": False,
                 "surface": "workday_job",
                 "frame_index": 0,
                 "wait_until": "commit",
@@ -69,6 +71,7 @@ class AtsReadinessTests(unittest.TestCase):
             {
                 "provider": "ashby",
                 "ready": False,
+                "claim_ready": False,
                 "surface": "none",
                 "frame_index": None,
                 "wait_until": "commit",
@@ -82,6 +85,7 @@ class AtsReadinessTests(unittest.TestCase):
         result = evaluate_snapshot(snapshot)
         self.assertFalse(result["ready"])
         self.assertEqual(result["blockers"], ["navigation_not_committed"])
+        self.assertFalse(result["claim_ready"])
 
     def test_malformed_snapshot_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "frames must be a non-empty list"):
@@ -93,6 +97,73 @@ class AtsReadinessTests(unittest.TestCase):
                     "frames": [],
                 }
             )
+
+    def test_workday_apply_choice_is_ready_but_not_claim_ready(self):
+        self.assertEqual(
+            evaluate_snapshot(load_fixture("workday-apply-choice-surface.json")),
+            {
+                "provider": "workday",
+                "ready": True,
+                "claim_ready": False,
+                "surface": "workday_apply_choice",
+                "frame_index": 0,
+                "wait_until": "commit",
+                "blockers": [],
+            },
+        )
+
+    def test_workday_create_account_is_ready_but_not_claim_ready(self):
+        self.assertEqual(
+            evaluate_snapshot(load_fixture("workday-create-account-surface.json")),
+            {
+                "provider": "workday",
+                "ready": True,
+                "claim_ready": False,
+                "surface": "workday_account_create",
+                "frame_index": 0,
+                "wait_until": "commit",
+                "blockers": [],
+            },
+        )
+
+    def test_workday_create_account_requires_two_password_controls(self):
+        snapshot = load_fixture("workday-create-account-surface.json")
+        controls = snapshot["frames"][0]["controls"]
+        password_indexes = [
+            index
+            for index, control in enumerate(controls)
+            if control.get("type") == "password"
+        ]
+        controls.pop(password_indexes[-1])
+        result = evaluate_snapshot(snapshot)
+        self.assertFalse(result["ready"])
+        self.assertFalse(result["claim_ready"])
+        self.assertEqual(result["surface"], "none")
+
+    def test_generic_application_surface_is_claim_ready(self):
+        snapshot = {
+            "version": 1,
+            "url": "https://careers.example.com/role",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://careers.example.com/role",
+                    "controls": [
+                        {"tag": "input", "type": "email"},
+                        {"tag": "input", "type": "file"},
+                        {
+                            "tag": "button",
+                            "type": "submit",
+                            "text": "Submit Application",
+                        },
+                    ],
+                }
+            ],
+        }
+        result = evaluate_snapshot(snapshot)
+        self.assertTrue(result["ready"])
+        self.assertTrue(result["claim_ready"])
+        self.assertEqual(result["surface"], "generic_application")
 
 
 if __name__ == "__main__":

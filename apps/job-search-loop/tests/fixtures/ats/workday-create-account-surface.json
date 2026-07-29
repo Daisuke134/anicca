@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+  "navigation_committed": true,
+  "frames": [
+    {
+      "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+      "controls": [
+        {"tag": "form", "type": null, "role": null, "label": null, "name": null, "text": "Email Address* Password* Verify New Password* Create Account"},
+        {"tag": "input", "type": "text", "role": null, "label": null, "name": "email", "text": ""},
+        {"tag": "input", "type": "password", "role": null, "label": null, "name": "password", "text": ""},
+        {"tag": "input", "type": "password", "role": null, "label": null, "name": "verifyPassword", "text": ""},
+        {"tag": "input", "type": "checkbox", "role": null, "label": null, "name": "consent", "text": ""},
+        {"tag": "button", "type": "submit", "role": "button", "label": null, "name": null, "text": "Create Account"},
+        {"tag": "button", "type": null, "role": "button", "label": null, "name": null, "text": "Sign In"}
+      ]
+    }
+  ]
+}
