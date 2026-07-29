@@ -80,9 +80,9 @@
 
 ## 5. 順序
 
-旧導入順は完了または廃止。履歴は §18.8、§21.2、§22.6 に残す。**現行実装順序と完了状態の唯一の正本は §22.11**。Phase 7–11の実装TODOは全て完了し、自然run/engagement/paid/public timingだけをnative workerが継続観測する。
+旧導入順は完了または廃止。履歴は §18.8、§21.2、§22.6、§22.11–§22.13 に残す。**現行実装順序と完了状態の唯一の正本は §22.14**。過去の「実装TODO: 0」と incident-time TODO は履歴であり、§22.14 と衝突したら §22.14 を採用する。
 
-§16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.6 だけを更新する。
+§16.5 と §18.8 は D1-D8、P1-P3、E1-E3 の完了 evidence を保持する履歴。残作業の順序と状態は §22.14 だけを更新する。
 
 ## 6. 実装状態（2026-07-18 夜 実測。builder 中断からの再開点）
 
@@ -202,7 +202,7 @@ launchctl unload "$P"; launchctl load "$P"
 **#8 のタスク** = ①ハードコード(アカウント名/telegram/email)を env 化 ②全platform自動signup を IG パターンで note/substack/zenn/X に展開 ③KYC/payout は loop が「あなたの銀行を1回繋いで」と依頼する導線。
 **「clone して勝手に全部」の単一コマンドは今は存在しない** — それを作るのが #8。KYC だけは各人1回の人間作業で正解、それ以外は自動化可能。
 
-## 12. 旧 TODO（履歴。現行正本は §22.6）
+## 12. 旧 TODO（履歴。現行正本は §22.14）
 build は全 done(#1-6,9-14 完了)。残り:
 1. **#7 ARM**(唯一の本筋) — 明朝 06:00 JST pass の品質を Dais が見て OK → 上記 arm コマンド実行 → 毎日全platform自動公開
 2. **#8 OSS 化** — Dais固有剥がし + 全platform自動signup + KYC導線(新セッション推奨、大仕事)
@@ -829,7 +829,7 @@ paid subscription ¥500相当/月 ───────────────�
 
 ### 18.8 E1-E3 の完了 evidence（履歴）
 
-残作業の行（E4-E8）は当時 §21.2 の T11-T14 と T6 に移した。現在は §22.6 へ再計画済み。**この節に残作業を書き足さない。**
+残作業の行（E4-E8）は当時 §21.2 の T11-T14 と T6 に移した。現在は §22.14 へ再計画済み。**この節に残作業を書き足さない。**
 
 | # | 状態 | 作業 | done evidence |
 |---|---|---|---|
@@ -932,7 +932,7 @@ mine は **対比的**に行う。同 source・同 topic の上位十分位 **�
 
 ### 19.6 done 条件
 
-廃止。当時の done 条件は §21.2、現在の残順序は §22.6 に移した。§19 は設計の説明だけを持ち、進捗と順序は持たない。
+廃止。当時の done 条件は §21.2、現在の残順序は §22.14 に移した。§19 は設計の説明だけを持ち、進捗と順序は持たない。
 
 ### 19.7 成功の定義（「judge の点が上がった」は成功ではない）
 
@@ -1005,7 +1005,7 @@ editorial-gate は**一度も走っていない**。具体的な命令（4.6/4.7
 
 ### 20.4 §19.6 の進捗
 
-廃止。この表は当時 §21.1（完了）と §21.2（残作業）に統合した。現在の順序と状態は §22.6 だけを見る。
+廃止。この表は当時 §21.1（完了）と §21.2（残作業）に統合した。現在の順序と状態は §22.14 だけを見る。
 
 ### 20.5 副次の実測（同日）
 
@@ -1062,11 +1062,11 @@ SKILL.md 全 1080 行 + reference 88 行 + prompt STEP 0-20 を通読した監�
 
 ## 21. craft trainer の実行履歴（2026-07-27 08:33 まで）
 
-**範囲**: ここは `7a2308203` 時点までの履歴。現在の残作業は §22.6 に移設し、本節の未完了行は再計画の出自を残すための snapshot とする。
+**範囲**: ここは `7a2308203` 時点までの履歴。現在の残作業は §22.14 に移設し、本節の未完了行は再計画の出自を残すための snapshot とする。
 
-**更新規則**: 本節の状態はもう更新しない。状態変更は §22.6 だけに書く。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
+**更新規則**: 本節の状態はもう更新しない。状態変更は §22.14 だけに書く。1つの事実は1箇所にしか書かない — 2箇所に書いた瞬間、片方が古くなり loop がどちらを信じるか判らなくなる（§20.6 の教訓）。
 
-Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節は、その時点で craft trainer の順序正本だった履歴。現行は §22.6。
+Dais 指示: 「計画してから作れ。vibe で作るな。順序を出せ」。§19-§20 で機構を作ったが、残りの順序と done 条件が書面化されていなかった。本節は、その時点で craft trainer の順序正本だった履歴。現行は §22.14。
 
 ### 21.1 完了（証拠付き。再着手禁止）
 
@@ -1165,7 +1165,7 @@ loop が**人手なしで**次を1周する:
 |---|---|---|
 | 排他的 SSOT の参照先が分岐していないか | SSOT を名乗る全記述の参照先を抽出し、unique target が1つ | **`§22.6` の1 target** |
 | 引用した commit が実在するか | 本文の `` `[0-9a-f]{7,40}` `` を全部集め、`git cat-file -e <sha>^{commit}` を profitable-claude / anicca-project / ~/scripts に当てる | 117件中115件が実在。残る2件は Zenn 公開用リポの commit で、本文にもそう明記されている（偽陽性） |
-| 現行進捗表が1つだけか | `現行正本` を名乗る表が §22.6 だけ | §21.2 は `snapshot` と明記、§19.6 と §20.4 は履歴参照 |
+| 現行進捗表が1つだけか | `現行正本` を名乗る表が §22.14 だけ | §21.2、§22.6、§22.11–§22.13 は履歴 |
 
 **効かなかった検査（やらないと決めた）**: `rule_conflicts.py` を spec 本体に当てる。あれは規則ファイル（禁止と推奨が短文で並ぶ形）に合わせて較正してあり、1100行の設計文書に当てると主語が「pass, target, text」のような語になって使い物にならない。**道具を無理に使わない。** 規則ファイルには効くが spec には効かない、が正しい理解。
 
@@ -2373,7 +2373,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 
 ### 22.6 Writer実装完了台帳（履歴）
 
-以下は完了済みWriter実装の証拠台帳。残TODOと現在順序は§22.11だけを正本とする。自然run、実engagement、7日conversion、platform公開窓は前提条件にしない。実データが無い分岐はfixtureで機械を検証し、productionでは`pending/insufficient`として変更0を保証する。
+以下は完了済みWriter実装の証拠台帳。残TODOと現在順序は§22.14だけを正本とする。自然run、実engagement、7日conversion、platform公開窓は前提条件にしない。実データが無い分岐はfixtureで機械を検証し、productionでは`pending/insufficient`として変更0を保証する。
 
 | # | 状態 | いま完了する作業 | done 条件 |
 |---:|---|---|---|
@@ -2495,7 +2495,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 10 | DONE (`f550b4b`; installed `14ce862`) | 自然観測をdurable windowへ変換。実装sessionは待たず、native `ai.anicca.marketing-metrics`が15分ごとにdue itemを`scorable`または`insufficient/no_change`へ自動terminal化。3 run、実engagement、7日paid、Zenn/X timingは同じcontractで継続 | 実launchd runs=2 / exit=0 / interval=900。missingを0へ変換せず、terminal receipt idempotent、Marketing 12件 + Writer 343件PASS |
 | 11 | DONE (`b7d05a1`; installed `3ee5364`) | dashboardをledger上にallowlist投影。黒い運用台帳UIをstandalone HTMLで生成し、秘密fieldを除外。専用LaunchAgentが15分ごとに再生成し、metrics/learn workerとはprocess/stateを共有しない | dashboard停止/削除でもobservation terminal化継続、source ledger hash不変、実Chrome表示、実launchd exit=0、Marketing 15件 + Writer 343件PASS |
 
-**この「実装TODO: 0」は 2026-07-29 の production incident で撤回する。現行の順序正本は §22.12。** §22.6の自然観測backlogは引き続き実装sessionを待たせず、`ai.anicca.marketing-metrics`が証拠到着または期限到来で自動terminal化する。ただし、日次生成そのものの中断回復は観測backlogではなく公開SLOの故障である。
+**この「実装TODO: 0」は 2026-07-29 の production incident で撤回する。§22.12 は incident-time の復旧順序を保存する履歴であり、現行の順序正本は §22.14。** §22.6の自然観測backlogは引き続き実装sessionを待たせず、`ai.anicca.marketing-metrics`が証拠到着または期限到来で自動terminal化する。ただし、日次生成そのものの中断回復は観測backlogではなく公開SLOの故障である。
 
 実装時の基本検証コマンド:
 
@@ -2508,7 +2508,7 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 ./marketing/engine/bin/marketing verify-experiment --experiment <experiment_id>
 ```
 
-### 22.12 2026-07-29 production incident と現行TODO
+### 22.12 2026-07-29 production incident と incident-time TODO（履歴。現行正本は §22.14）
 
 #### 実測した事実
 
@@ -2526,7 +2526,7 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 
 **根本原因は二段**: foreground agentが公開前に外部TERMを受けたことが直接原因。日次SLOを破った構造原因は、`interrupted-safe`を正しく保存したのに、そのstateを消費して同じdaily runへ再入する自動ownerがいないこと。fixtureで証明したself-healはpublication-state作成後の5 failureに限られ、pre-publication process deathをproduction wiringが覆っていなかった。
 
-#### 残TODO（損失順・唯一の現行順序）
+#### incident-time TODO（履歴。現在の実行順序には使わない）
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
@@ -2599,3 +2599,158 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 | no-human | reversible/bounded actionは自走。policy/safety/identity/支払の曖昧さはquarantineし、他channelを継続 |
 
 外部根拠は§22.2を正本とする。Temporalの “pick up right where it left off” を同一run resumeへ、Orallexaのmulti-project/platform adapter/banditをproduct pack・channel adapter・bounded explorationへ、OpenTelemetryのtrace/metric/logをrun ID相関へcopy+tweakする。
+
+### 22.14 Shared Self-Improving Engine / paid Writer correction（現行正本）
+
+#### 判断
+
+Writer の目的は「記事を毎日出す」ではなく、**文章で実売上を作り、その売上を使って次の戦略を改善すること**。ただし Writer 専用の自己改善器を増やさない。Writer は、全 marketing producer が共有する次の2 loopを最初に本番接続する vertical slice とする。
+
+```text
+                   DESIRED STATE / REWARD CONTRACT
+                product × channel × form × audience
+                               |
+             +-----------------+-----------------+
+             |                                   |
+             v                                   v
+   RELIABILITY / RECONCILE LOOP         STRATEGY / OPTIMIZE LOOP
+   actual != desired を直す             reward から次の戦略を変える
+             |                                   |
+ observe receipt/state                    harvest real outcomes
+             |                                   |
+ classify failure                         compare scoped opponents
+             |                                   |
+ retry/resume same run                    blame one cause
+             |                                   |
+ public readback                          propose one bounded edit
+             |                                   |
+ terminal receipt                         held-out + canary
+             |                                   |
+             +---------- event ledger -----------+
+                                                 |
+                                      PASS -> keep/version
+                                      FAIL -> revert
+                                                 |
+                                      next run consumes hash
+```
+
+| Loop | 変えてよいもの | 変えてはいけないもの | 周期 | done |
+|---|---|---|---|---|
+| reconcile | retry時刻、adapter action、checkpoint state | artifact identity、destination intent、戦略weight、安全gate | event駆動 / 分単位 | desired terminal stateのremote readback、またはhonest quarantine |
+| optimize | scoped strategy rule / demo / weightを1つ | engine invariant、別product/channel/formのstrategy、未観測reward | reward window close後 | held-out非悪化、canary PASS、次runがversion hashを消費 |
+
+この分離が必要な理由は、公開失敗を「新しい記事を書く」で学習してはいけず、品質不振を「同じpublishをretryする」だけでも改善できないため。self-heal は同一intentへ収束させ、self-improve は検証を通ったstrategyだけを次runへ昇格させる。
+
+#### 外部一次資料から採用する機械
+
+| Source | 核心の引用 | 採用 |
+|---|---|---|
+| [Kubernetes Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) | “Each controller tries to move the current cluster state closer to the desired state.” | すべてのloopを`desired_state - actual_state`のreconciliationとして実装する。promptの「最後までやれ」を回復機構の代わりにしない |
+| [Kubernetes Controllers 日本語版](https://kubernetes.io/ja/docs/concepts/architecture/controller/) | 「現在のクラスターの状態を望ましい状態に近づけるように動作します」 | 日本語検索でも同じcontroller patternを確認。specとactual receiptを分離する |
+| [Microsoft SkillOpt](https://github.com/microsoft/SkillOpt) | “rollout → reflect → aggregate → select → update → evaluate” | 実trajectoryから候補を作り、評価後だけstrategyを更新する |
+| [SkillOpt-Sleep](https://github.com/microsoft/SkillOpt/blob/main/docs/sleep/README.md) | “reflect → bounded edit → GATE on real held-out tasks” | 1回1変更、held-out gate、rejected edit保存を共通learning primitiveにする |
+| [DSPy Optimization](https://github.com/stanfordnlp/dspy/blob/main/docs/docs/learn/optimization/overview.md) | “Once you have a system and a way to evaluate it” | optimizerより先にtaskとmetricを固定し、trainとheld-outを分離する |
+| [Anthropic: Building Effective Agents](https://www.anthropic.com/research/building-effective-agents) | “gain ‘ground truth’ from the environment at each step” | model自己申告を成功にせず、tool/API/public readbackをstate transitionの根拠にする |
+| [Google people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content) | “first-hand expertise and a depth of knowledge” | 一次経験は品質証拠の1種として残すが、毎回SDKを実行する固定formにはしない |
+| [DeepMind: Specification gaming](https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/) | “satisfies the literal specification of an objective without achieving the intended outcome” | view/like、judge点、publish本数を売上の代理rewardとして単独最適化しない |
+
+**重要な制約**: 「最初は悪くても自動で必ず良くなる」は保証しない。正しいrewardが観測でき、探索が残り、held-out/canary/revertが機能する時だけ、悪化を抑えながら改善できる。rewardが間違っていれば自己改善器は間違いを高速化する。
+
+#### 収益化が止まっている実測原因
+
+| Surface | production evidence | 根因 | 新しいdesired state |
+|---|---|---|---|
+| note/ja | 最新2本 `nccfebe2c85f6` / `n2853a96eaf29` を `GET /api/v3/notes/{key}` で再読し、両方`price=0`、`status=published` | `article-daily.sh` STEP 12/13が公開済みnote 30本未満を`--free`へ固定 | 新規記事は全件`price=500`。`PAID_PUBLISHED verified=true`とpublic APIの`price=500`をreceiptにする |
+| Substack ja/en | 最新2本 `208760758` / `208760780` をpublic post APIで再読し、両方`audience="everyone"`。subscribe pageは`payments_state="enabled"` | draft payloadが`audience:"everyone"`固定。現行artifactにpaywall nodeを挿入するproduction contractも無い | JA/ENとも有用なfree preview + subscriber paywall。public readbackでpaywall/audienceとcheckout導線を証明する |
+| direct revenue | note sales ledgerは`2026-07-28`まで`revenue=0 / count=0` | 無料記事には購入イベントが発生しない | note sale count/gross、Substack paid subscriber/MRRをartifact lineageへjoin |
+| Substack measurement | dashboardの`-`を0へ変換せず`unknown`で保存 | collectorは正直だが、売上最適化のscorable rewardが無い | authenticated sourceからexplicit count/revenueを取得。取得不能はunknown/変更0 |
+
+つまり「信用が貯まるまで待っている」のではない。**コードが商品を無料に設定しているため売れない**。決済設定の存在と、有料artifactを実際に露出したreceiptは別物である。
+
+#### Money reward contract
+
+```text
+direct article money:
+  note paid purchase gross
+  + Substack new paid MRR / retained paid MRR
+
+downstream product money:
+  attributed product paid revenue
+  + retained revenue
+
+leading signals (calibration only):
+  qualified CTA click > engaged read > impression
+```
+
+| Rule | Contract |
+|---|---|
+| primary | 最も下流で観測できる実moneyをprimary rewardにする |
+| unknown | 未計測を0にしない。window closeまではunknown、閉じても証拠不足ならinsufficient/変更0 |
+| lineage | `product_id + run_id + artifact_id + variant_id + destination + published_at`でsale/subscriptionをjoin |
+| guardrail | refund、unsubscribe、complaint、false claim、identity/publication failureを別軸で保持。売上が出ても安全違反はkeepしない |
+| scope | reward/opponent/weightはproduct × channel × form × language別。engine codeだけ共有 |
+| exploration | best-so-farへ寄せるが未試行armを0にしない。1 saleを永久規則にしない |
+
+#### 題材は「SDKを試す」に固定しない
+
+現行の「queueが空なら何かを実行し、その報告記事を書く」は、first-hand evidenceを得やすい1つのformだが、topic selector全体ではない。sourceとformを分離する。
+
+```text
+TOPIC SOURCES
+customer pain / search demand / product proof / measured failure
+market winner / experiment / build log / timely event / explicit queue
+                              |
+                       evidence planner
+            browse | interview/data | run tool | existing proof
+                              |
+                         FORM ROUTER
+explainer | how-to | case study | comparison | field note | opinion | report
+                              |
+                        article artifact
+```
+
+| Invariant | Rule |
+|---|---|
+| reader value | 対象読者、解くjob、読後にできることを先に固定 |
+| evidence | 検証可能なsource、実データ、一次経験のいずれかを要求。不要なSDK実行は要求しない |
+| form choice | evidenceとreader jobに最も合うformを選ぶ。queue fallbackをreport formへ固定しない |
+| product link | 題材はproductのaudience/pain/proof/offerの少なくとも1つへ接続 |
+| anti-slop | 勝者全文と自稿全文を同じform/scopeで比較し、タイトルだけの模倣や他人の要約だけを学習にしない |
+
+#### 学びの永続化
+
+**chatはstateではない。** 次runを変える学びは、同じturnで次の順序により永続化する。
+
+```text
+verified evidence
+  -> this §22.14 evidence/TODO update
+  -> failing contract or fixture
+  -> bounded implementation
+  -> verification receipt
+  -> §22.14 state update
+  -> commit + push
+  -> chat report
+```
+
+推測はstrategyへ書かない。観測事実、採用判断、done条件を分離する。過去節と衝突する新判断を足す時は、旧箇所を履歴化し、現行正本へのpointerを同じcommitで直す。
+
+#### 残TODO（損失順・唯一の現行順序）
+
+| # | 状態 | 作業 | done |
+|---:|---|---|---|
+| 1 | TODO NOW | generic dual-loop contractをWriterのpaid-publication vertical sliceで固定 | desired/actual/receipt/reward/version schema、reconcileとoptimizeのmutation境界、fixture RED |
+| 2 | TODO NOW | noteを全新規記事¥500へ変更 | free-first branch 0、price/paywall boundary fixture、実API`price=500`、購入可能public readback |
+| 3 | TODO NOW | Substack JA/ENを有料購読へ接続 | useful free preview + paywallを同一artifactから生成し、draft/API/public readbackでsubscriber gateとcheckoutを証明 |
+| 4 | TODO NOW | pre-publication recoveryをgeneric reconcilerへ接続 | `interrupted-safe`→同一run/prompt resume、claim/cooldown/上限/outbox、duplicate 0 |
+| 5 | TODO NOW | macOS awk修復 + external TERM fixture | 実LaunchAgent stderr増分0、TERM→fresh process→same run publication init、duplicate artifact/topic/target 0 |
+| 6 | TODO NOW | 実Writer loopをkickstartしてpaid E2E verify | loop自身がnote ¥500とSubstack paid JA/ENを公開。stable ID、body/media、price/paywall、Telegram receiptをremoteで確認 |
+| 7 | TODO NOW | direct money collectorをscorableにする | note sale count/gross、Substack paid subscriber/MRRをexplicit valueまたはhonest unknownで記録 |
+| 8 | TODO NOW | exact8依存をlearning eligibilityから分離 | 成功pairは学習へ進み、失敗pairはreconcileへ残る。1面故障で全学習停止0 |
+| 9 | TODO NOW | full-body opponent/learner + flexible topic router | winner全文/self全文、同scope retrieval、source/form分離、1 scoped edit、held-out非悪化 |
+| 10 | TODO NOW | keep/revertを実next-run consumptionまで閉じる | canary PASSだけversion昇格、次run consumed hash一致、FAILはrevert |
+| 11 | AUTO-MONITOR | 実money/engagementでjudge・weightを較正 | scorableだけで相関・blame・変更。unknown/insufficientは変更0 |
+| 12 | AUTO-MONITOR | 3 healthy run / 7日attribution / retentionを蓄積 | native workerがwindow terminal化。実装sessionは待たない |
+| 13 | AFTER WRITER VERTICAL SLICE | 同じengineへHonne/Larry/ReelClaw/Watercolorと各product packを接続 | engine fork 0、producer固有craft/actionはadapter内、reward/opponent/weight scope隔離 |
+| 14 | LOW / MONEY-NONBLOCKING | Zenn backlogとX時刻契約 | money laneを止めず、FIFO exact1/public readback/時刻差をreconcilerが継続 |
+
+#1–#10は今日実装・fixture検証できるため、自然runや7日windowを待たない。#11–#12だけが時間経過でscorableになるproduction calibrationであり、native workerへ残してsessionを閉じる。
