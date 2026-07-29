@@ -10,7 +10,7 @@ const {
 } = require("./financial-report-snapshot.js");
 const { FINANCIAL_STRINGS } = require("./i18n.js");
 const { readWalletLedger } = require("./payout-runtime.js");
-const { sendMessage } = require("./telegram.js");
+const { hashChatId, sendMessage } = require("./telegram.js");
 
 const PAGE_SIZE = 1000;
 const MAX_COST_ROWS = 10_000;
@@ -306,6 +306,27 @@ function snapshotHash(snapshot) {
   return createHash("sha256").update(canonical, "utf8").digest("hex");
 }
 
+function latestTimestamp(rows, field, cutoff) {
+  const cutoffMs = Date.parse(cutoff);
+  let latest = null;
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const value = String(row && row[field] || "");
+    const at = Date.parse(value);
+    if (!Number.isFinite(at) || at > cutoffMs) continue;
+    if (latest == null || at > Date.parse(latest)) latest = new Date(at).toISOString();
+  }
+  return latest;
+}
+
+function sourceFreshness(snapshot, ledgerRows, costRows) {
+  return Object.freeze({
+    report_cutoff_at: snapshot.period_end,
+    earnings_latest_at: latestTimestamp(ledgerRows, "occurred_at", snapshot.period_end),
+    costs_latest_at: latestTimestamp(costRows, "ts", snapshot.period_end),
+    balance_observed_at: snapshot.period_end,
+  });
+}
+
 async function runFinancialReport(request = {}, deps = {}) {
   const uid = String(request.uid == null ? "" : request.uid).trim();
   const kind = String(request.kind == null ? "" : request.kind);
@@ -336,6 +357,9 @@ async function runFinancialReport(request = {}, deps = {}) {
   const readReceipt = deps.readReceipt || ((key) => readFinancialReceipt(key, deps));
   const existing = await readReceipt(identity);
   if (existing) {
+    const reportCutoff = String(
+      existing.period_end || (existing.snapshot && existing.snapshot.period_end) || "",
+    );
     return {
       status: existing.status === "sent" ? "duplicate" : existing.status,
       report_kind: kind,
@@ -343,6 +367,21 @@ async function runFinancialReport(request = {}, deps = {}) {
       ...(existing.telegram_message_id == null
         ? {}
         : { telegram_message_id: Number(existing.telegram_message_id) }),
+      ...(existing.snapshot_hash == null
+        ? {}
+        : { snapshot_hash: String(existing.snapshot_hash) }),
+      ...(existing.status === "sent"
+        ? {
+          chat_id_hash: hashChatId(tenant.telegram_chat_id),
+          sent_at: String(existing.sent_at),
+          source_freshness: {
+            report_cutoff_at: reportCutoff,
+            earnings_latest_at: null,
+            costs_latest_at: null,
+            balance_observed_at: null,
+          },
+        }
+        : {}),
     };
   }
 
@@ -433,6 +472,7 @@ async function runFinancialReport(request = {}, deps = {}) {
     telegram_message_id: messageId,
     snapshot,
     snapshot_hash: hash,
+    source_freshness: sourceFreshness(snapshot, ledgerRows, costs.periodRows),
   };
 }
 
@@ -450,5 +490,6 @@ module.exports = {
   formatUsdMicros,
   renderFinancialReport,
   snapshotHash,
+  sourceFreshness,
   runFinancialReport,
 };

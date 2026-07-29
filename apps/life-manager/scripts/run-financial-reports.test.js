@@ -66,7 +66,7 @@ test("one report failure is bounded and does not prevent the other due check", a
   assert.doesNotMatch(output.join(""), /secret provider detail/);
 });
 
-test("launchd report wiring is bounded, five-minute, and prints only safe status lines", () => {
+test("launchd report wiring is a bounded Life Manager enqueue entrypoint with no legacy secret load", () => {
   const boot = readFileSync(join(__dirname, "financial-report-boot.sh"), "utf8");
   const installer = readFileSync(join(__dirname, "install-financial-report-launchd.sh"), "utf8");
   const plist = readFileSync(join(
@@ -78,7 +78,9 @@ test("launchd report wiring is bounded, five-minute, and prints only safe status
 
   assert.match(boot, /\/opt\/homebrew\/bin\/timeout 240 \/opt\/homebrew\/bin\/node/);
   assert.doesNotMatch(boot, /(?:^|[;&|]\s*)timeout\s/);
-  assert.match(boot, /\.openclaw\/\.env/);
+  assert.match(boot, /report-job-adapter\.js/);
+  assert.match(boot, /\benqueue\b/);
+  assert.doesNotMatch(boot, /\.openclaw|source\s+|LM_TELEGRAM_BOT_TOKEN/);
   assert.match(plist, /<string>\/bin\/bash<\/string>/);
   assert.match(plist, /<key>StartInterval<\/key>\s*<integer>300<\/integer>/);
   assert.match(plist, /life-manager-financial-report\.out\.log/);

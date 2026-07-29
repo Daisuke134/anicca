@@ -242,6 +242,11 @@ passed with the Task 4 suite wired into `npm test`.
 - Modify: `apps/life-manager/lib/financial-report-runtime.js`
 - Modify: `apps/life-manager/lib/financial-report-runtime.test.js`
 - Modify: `apps/life-manager/scripts/financial-report-boot.sh`
+- Modify: `apps/life-manager/scripts/runtime-up.js`
+- Modify: `apps/life-manager/scripts/runtime-up.test.js`
+- Modify: `apps/life-manager/scripts/run-agent-payout.js`
+- Modify: `deploy/local/compose.yaml`
+- Create: `apps/life-manager/lib/base-usdc-balance.js`
 - Create: `apps/life-manager/lib/report-job-adapter.js`
 - Create: `apps/life-manager/lib/report-job-adapter.test.js`
 
@@ -249,26 +254,40 @@ passed with the Task 4 suite wired into `npm test`.
 - Consumes: tenant-scoped Telegram secret reference, existing financial snapshot inputs, runtime job.
 - Produces: a Telegram effect receipt with `chat_id_hash`, `message_id`, `snapshot_hash`, `sent_at`, and explicit source freshness.
 
-- [ ] **Step 1: Write equivalence and secret-denial tests**
+- [x] **Step 1: Write equivalence and secret-denial tests**
 
 Fixture the existing report inputs and assert the new adapter produces the same snapshot hash and rendered body without reading `~/.openclaw/.env`.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test lib/report-job-adapter.test.js lib/financial-report-runtime.test.js
 ```
 
-- [ ] **Step 3: Route reports through runtime jobs**
+- [x] **Step 3: Route reports through runtime jobs**
 
 The boot script becomes a compatibility entrypoint that enqueues a Life Manager job. It must not own cadence or load secrets from a legacy path.
 
-- [ ] **Step 4: Trigger one real local report**
+- [x] **Step 4: Trigger one real local report**
 
 Use the real local scheduler, not a substitute executor. Verify the Telegram message ID, snapshot hash, and receipt row.
 
-- [ ] **Step 5: Commit with the real receipt reference**
+- [x] **Step 5: Commit with the real receipt reference**
+
+**Verification:** the adapter preserves the existing rendered body and
+canonical snapshot hash, carries only immutable input/secret references, and
+stores `chat_id_hash` instead of a raw Telegram chat identifier. The real
+local scheduler/worker path sent Telegram `message_id=432` from runtime job
+`financial-report:c33330ee5e9389330e943bc38b46c3ebee65f83a63aa40a989550bccbf9bfc16`
+with snapshot hash
+`875512db42a415864a5bea7804722aa47ed158a11b12c5b11f4bbaa65c44e856`.
+Restarting the worker kept the real-send receipt count exactly `1 → 1`.
+Existing daily/weekly effects were reconciled by provider message ID without
+resend. The proof stack was stopped and the installed legacy LaunchAgent
+remained loaded with `runs=403`, `last exit code=0`; scheduler cutover remains
+for Task 7 after seven expected replacement runs. Evidence:
+`docs/evidence/runtime/2026-07-29-local-financial-report-job.md`.
 
 ### Task 6: Migrate every retained loop through adapters
 
