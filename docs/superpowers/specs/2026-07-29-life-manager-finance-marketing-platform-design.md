@@ -11,19 +11,21 @@ Life Manager becomes the single control plane for personal health and autonomous
 income loops. Financial health ships first. The first income loop migrated is a
 general mobile-app marketing loop, proven with Anicca iOS and Honne AI.
 
-The selected architecture is hybrid:
+The selected architecture is cloud-only and multi-tenant:
 
 | Plane | Runtime | Responsibility |
 |---|---|---|
 | Control plane | Life Manager on Railway | accounts, products, schedules, job leases, ledgers, attribution, experiments, reports, panel, Telegram |
-| Cloud worker | Railway worker service | API-safe collection, report assembly, short generation tasks, webhook handling |
-| Local worker | signed `life-manager worker` process | browser sessions, video rendering, local credentials, App Store signing, platform actions that cannot safely run in cloud |
+| Worker plane | Horizontally scalable cloud workers | API collection, isolated browser sessions, media rendering, posting, metric collection, learning, report generation |
 | Data plane | PostgreSQL | immutable events, materialized financial snapshots, content lineage, metrics, experiments, job state |
-| Secrets | encrypted cloud vault or OS keychain | connector credentials; never stored in prompts, job payloads, logs, or Git |
+| Object plane | S3-compatible storage | generated media, immutable evidence, exports, and signed legacy archives |
+| Secrets | encrypted tenant-scoped cloud vault | connector credentials and browser-session material; never stored in prompts, job payloads, logs, or Git |
 
 OpenClaw, Profitable Claude, and repository-specific launchd jobs are migration
 sources, not runtime dependencies. They remain intact until parity and cutover
-evidence pass. No repository is deleted during the first migration.
+evidence pass. A temporary Mac bridge may mirror legacy effects during
+migration, but it is not part of the target system or completion state. No
+repository is deleted during the first migration.
 
 ## 2. Goal and non-goals
 
@@ -47,6 +49,11 @@ evidence pass. No repository is deleted during the first migration.
    attribution, metrics, and learned weights.
 7. A new user can connect a product and run the same engine without Anicca
    names, paths, accounts, or credentials.
+8. Powering off the Mac Mini does not interrupt any production loop; no
+   production job requires launchd, a local browser profile, a local keychain,
+   or a `/Users/...` path.
+9. Worker capacity scales horizontally with tenant demand and enforces
+   per-tenant quotas, rate limits, concurrency limits, and fair scheduling.
 
 ### Non-goals for the first release
 
@@ -92,7 +99,7 @@ machine-maintenance job.
 | Capafy core | 08:10 daily | `/Users/anicca/anicca` | Active |
 | Capafy goal/marketing | 09:00, 11:20, 16:00 | `/Users/anicca/anicca` | Active; latest marketing rows show zero engagement |
 | Clipping | Every 86,400 seconds | `/Users/anicca/anicca` | Active; latest recorded asset was below quality floor |
-| Writer | enqueue 06:00, daily learn 22:30, craft train 23:10, resume every five minutes | Profitable Claude plus local writer CLI | Active |
+| Writer/article | craft train and article resume/daily/learning jobs are loaded; standalone writer daily/learn plists exist but are not currently loaded | Profitable Claude plus local writer CLI | Mixed; loaded jobs include successes and failures |
 | Shared marketing metrics | Every 15 minutes | Profitable Claude engine | Runs successfully but has no production ledgers to observe |
 | Shared marketing dashboard | Every 15 minutes | Profitable Claude engine | Runs successfully but projects an empty runtime |
 | Life Manager financial report | Every five minutes; send gates at 20:00 daily and Sunday 20:05 weekly | Separate `life-manager-main` checkout and `~/.openclaw/.env` | Active; still local and OpenClaw-env-dependent |
@@ -131,9 +138,10 @@ or whole-business financial-health report.
 
 | Approach | Strength | Fatal weakness | Decision |
 |---|---|---|---|
-| Railway-only monolith | Simple deployment and multi-user SaaS | Browser sessions, local creative assets, rendering, and Apple signing material do not fit safely or cheaply | Rejected |
+| Railway-only monolith | Simple deployment and multi-user SaaS | API, scheduler, browser, rendering, and posting contend for one failure and scaling boundary | Rejected |
 | Local-only profitable harness | Reuses current sessions and assets | No reliable 24/7 control plane, weak multi-tenancy, poor commercial onboarding | Rejected |
-| Hybrid control plane + interchangeable workers | Cloud reliability with local capability; same contracts in both modes | Requires a real job protocol and connector boundary | Selected |
+| Permanent hybrid cloud + customer/local workers | Can reuse local sessions and hardware | A Mac/user device remains a production dependency and cannot serve thousands of tenants reliably | Rejected as final architecture; allowed only as a migration bridge |
+| Cloud-native control plane + specialized worker pools | No customer machine dependency; independent scaling and tenant isolation | Requires cloud browser/session migration, a credential vault, and workload-specific workers | Selected |
 
 ## 6. Target architecture
 
@@ -146,15 +154,21 @@ Webhooks ───────────────┘          │
                                    ├── report projector
                                    └── experiment controller
                                             │
-                         lease / heartbeat / receipt
-                              ┌─────────────┴─────────────┐
-                              │                           │
-                     Railway cloud worker        Local Life Manager worker
-                     API collectors              browser sessions
-                     webhook processing          video/image rendering
-                     report generation           local credentials/keychain
-                     light LLM tasks              platform posting adapters
+                              lease / heartbeat / receipt
+          ┌───────────────────┼────────────────────┬─────────────────────┐
+          │                   │                    │                     │
+     API workers       Browser workers       Media workers       Effect workers
+     source sync       isolated tenant       FFmpeg/Remotion     publish/platform
+     webhooks          profiles + 2FA        image/video         reconciliation
+          └───────────────────┼────────────────────┴─────────────────────┘
+                              │
+                  object storage + tenant secret vault
 ```
+
+Railway hosts the initial control plane and worker services. The contracts are
+provider-neutral so a saturated pool can later move to Kubernetes, ECS, or a
+specialized browser/render provider without changing product or ledger logic.
+There is no local execution mode in the commercial product.
 
 ### 6.1 Canonical repository layout
 
@@ -192,7 +206,8 @@ Every action is a durable job:
 | `tenant_id` | owner boundary |
 | `loop_id` | finance, marketing, writer, gig, or another registered loop |
 | `capability` | collect, research, generate, render, publish, observe, learn, report |
-| `execution_class` | cloud, local, or either |
+| `worker_pool` | api, browser, media, publish, observe, learn, or report |
+| `resource_class` | cpu/memory/gpu/browser requirements used for cloud placement |
 | `input_refs` | immutable database/blob references, never embedded secrets |
 | `lease_owner`, `lease_until` | single-writer worker claim |
 | `attempt`, `max_attempts` | bounded retry |
@@ -204,7 +219,19 @@ Workers advertise capabilities and heartbeat. The scheduler never knows
 whether the implementation is Claude, Codex, Hermes, deterministic code, or a
 future OpenClaw adapter.
 
-### 6.3 Connector contract
+### 6.3 Multi-tenant execution rules
+
+| Concern | Required behavior |
+|---|---|
+| Isolation | every job, object, secret, browser profile, artifact, and receipt carries `tenant_id`; authorization fails closed |
+| Fairness | tenant queues use weighted fair scheduling; one tenant cannot consume every worker |
+| Limits | per-tenant publish, browser, rendering, spend, and connector rate limits |
+| Idempotency | scheduler retries may create attempts, never duplicate external effects |
+| Browser state | encrypted, tenant-scoped cloud profiles; ephemeral execution containers; no shared cookies |
+| Scaling | each worker pool scales independently from queue depth and job age |
+| Recovery | leases expire; another eligible cloud worker reconciles before retrying an unknown effect |
+
+### 6.4 Connector contract
 
 Every source implements:
 
@@ -223,7 +250,7 @@ Initial connectors:
 | Mobile apps | App Store Connect Analytics/Sales, RevenueCat webhooks and API, Mixpanel |
 | Web products | Stripe |
 | Autonomous income | uGig, Capafy, clipping affiliate, writer, x402, bounty |
-| Distribution | TikTok, Instagram, YouTube, X through OAuth/API where available and a local browser adapter where necessary |
+| Distribution | TikTok, Instagram, YouTube, X through OAuth/API where available and isolated cloud-browser adapters where necessary |
 
 An unavailable connector returns `unavailable` with its last successful
 snapshot. It never returns a fabricated zero.
@@ -300,6 +327,80 @@ Delivery policy:
 | Mental health | Separate daily message in a later release |
 
 The daily message stays concise. Details open the authenticated panel.
+
+### 7.4 Telegram UI/UX
+
+Telegram is the daily command surface; the web panel is the detailed system of
+record. The bot sends one scheduled digest per health domain plus
+exception-only alerts, rather than narrating every background job.
+
+```text
+┌──────────────────────────────────────────────┐
+│ LIFE MANAGER · FINANCIAL HEALTH              │
+│ Wed, Jul 29 · data through 19:58 JST         │
+├──────────────────────────────────────────────┤
+│ HEALTH SCORE  72 / 100        ▲ 4 today      │
+│ Net worth     ¥12,340,000     ▲ ¥31,400      │
+│ Cash runway   14.2 months     Healthy        │
+│ MRR           $1,240          ▲ $84 MTD      │
+├──────────────────────────────────────────────┤
+│ TODAY                 MONTH                  │
+│ Income   ¥42,100       ¥611,300              │
+│ Costs    ¥11,900       ¥203,800              │
+│ Profit   ¥30,200       ¥407,500              │
+├──────────────────────────────────────────────┤
+│ BUSINESSES                                   │
+│ Life Manager      ¥18,400  MRR $620          │
+│ Anicca iOS         ¥7,900  38 installs       │
+│ Honne AI            ¥3,100  21 installs       │
+│ Gig / Capafy       ¥10,800                    │
+│ Crypto / x402       ¥1,900                    │
+├──────────────────────────────────────────────┤
+│ NEEDS ATTENTION                              │
+│ ⚠ App Store data is 26h old                  │
+│ ↓ Honne install→trial fell 18% vs 7d base    │
+├──────────────────────────────────────────────┤
+│ LIFE MANAGER DID                             │
+│ ✓ Published 8 creatives                      │
+│ ✓ Kept hook H-17 after 72h canary            │
+│ ↩ Reverted format F-04                       │
+├──────────────────────────────────────────────┤
+│ [Open dashboard] [Explain changes]           │
+│ [Mobile apps]   [Fix connection]             │
+└──────────────────────────────────────────────┘
+```
+
+Conversation flow:
+
+```text
+/start
+  → Create tenant
+  → Connect money sources
+  → Add products/businesses
+  → Connect App Store + RevenueCat + channels
+  → Choose timezone/report times
+  → First reconciled snapshot
+
+Scheduled digest
+  → scan health and exceptions in under 30 seconds
+  → tap a problem or business
+  → receive a compact drill-down
+  → open the authenticated web panel for ledger/experiment detail
+
+Exception alert
+  → state what changed, financial impact, and evidence
+  → offer only safe actions: explain, retry sync, pause loop, open panel
+  → money movement or expanded public broadcast requires its own authorization
+```
+
+Default delivery:
+
+| Time | Message | Interaction |
+|---|---|---|
+| 08:00 | Physical Health | sleep/activity/recovery summary and one action |
+| 20:00 | Financial Health | net worth, income, business P&L, mobile funnel, actions, data health |
+| 21:00 | Mental Health | mood/stress/attention summary and reflection |
+| Immediate | Material exception only | source failure, payment failure, abnormal revenue/spend, blocked effect |
 
 ## 8. Self-improving mobile marketing loop
 
@@ -483,20 +584,14 @@ bottleneck. Anicca and Honne never share learned weights.
 The UI exposes receipts, not agent narration. A green state requires a real
 publication URL or verified metric row.
 
-### 10.6 Connections and modes
-
-Onboarding offers:
-
-| Mode | Suitable for |
-|---|---|
-| Cloud | API/OAuth connectors and hosted reports |
-| Local | credentials stay in OS keychain; machine must be online |
-| Hybrid | cloud reporting with local browser/render worker |
+### 10.6 Connections
 
 Users connect App Store Connect with an API key, RevenueCat with a project
 credential or OAuth when available, social platforms with OAuth/session
 adapters, and banking through Moneytree LINK. Raw passwords are not a product
-interface.
+interface. Every connector and loop runs in the Life Manager cloud. Users
+authorize accounts in the web app; they do not install a worker or keep a
+computer online.
 
 ## 11. Failure handling
 
@@ -519,7 +614,7 @@ The order below is the program source of truth.
 |---:|---|---|
 | 1 | Freeze and export current scheduler inventory | machine-readable OpenClaw and launchd inventory with owner, cadence, command, state, latest receipt |
 | 2 | Define canonical IDs and ledgers | tenant/product/business/campaign/artifact/publication/source-event schemas with migrations and contract tests |
-| 3 | Implement leased job protocol | enqueue, claim, heartbeat, retry, dead-letter, receipt, local/cloud capability routing |
+| 3 | Implement leased job protocol | enqueue, claim, heartbeat, retry, dead-letter, receipt, worker-pool routing |
 | 4 | Ship financial connector framework | source cursor, freshness, original currency, FX provenance, unavailable-state tests |
 | 5 | Migrate current agent-economy financial report | existing x402/TaskMarket/USDC report emitted from Life Manager cloud path |
 | 6 | Add Moneytree personal balance sheet | OAuth/connector ingestion, transfer-safe ledger, bank balance in panel and Telegram |
@@ -534,17 +629,20 @@ The order below is the program source of truth.
 | 15 | Build viral-format intake | source receipts, format DNA, rights metadata, product-fit scoring |
 | 16 | Enforce variation gates | duplicate hook, semantic similarity, format share, locale, proof, visual/transcript checks |
 | 17 | Activate bounded self-improvement | one-rule blame, challenger, canary, keep/revert, next-run consumption proof |
-| 18 | Build local worker package | installer, keychain integration, capability registration, heartbeat, update path |
-| 19 | Shadow legacy schedules | new jobs observe and render without duplicate publishing; compare receipts |
-| 20 | Canary real publishing | one Anicca account and one Honne account publish through Life Manager |
-| 21 | Cut over all Anicca/Honne marketing | disable corresponding legacy launchd/OpenClaw entries only after parity |
-| 22 | OpenClaw-off verification | gateway stopped through seven daily cycles, reboot test, no runtime path references |
-| 23 | Archive legacy code | signed manifest and rollback bundle; no deletion until retention window passes |
-| 24 | Multi-tenant commercial onboarding | cloud/local/hybrid setup, billing, quotas, connector health, export/delete controls |
-| 25 | Migrate writer, clipping, Capafy, gig, bounty | each becomes a registered loop using the same job/ledger/report contracts |
-| 26 | Add physical and mental health reports | separate daily messages and dashboard sections |
-| 27 | Design the mobile-app development loop | feedback/metrics-driven app iteration, then generalized creation and release |
-| 28 | Generalize web-app development loop | reuse product, finance, marketing, and worker contracts |
+| 18 | Build specialized cloud worker pools | API, isolated browser, media, publish, observe, learn, and report pools with tenant-scoped secrets |
+| 19 | Add multi-tenant fairness and autoscaling | quotas, weighted scheduling, rate limits, queue-depth scaling, noisy-neighbor tests |
+| 20 | Migrate browser profiles and media assets | encrypted cloud profiles, 2FA recovery flow, object storage, zero local-path dependency |
+| 21 | Shadow legacy schedules | cloud jobs observe and render without duplicate publishing; compare receipts |
+| 22 | Canary real publishing | one Anicca account and one Honne account publish through Life Manager cloud |
+| 23 | Cut over all Anicca/Honne marketing | disable corresponding legacy launchd/OpenClaw entries only after parity |
+| 24 | Mac/OpenClaw-off verification | Mac powered off through seven daily cycles, cloud restart test, no local/OpenClaw runtime references |
+| 25 | Archive legacy code | signed manifest and rollback bundle; no deletion until retention window passes |
+| 26 | Multi-tenant commercial onboarding | billing, quotas, connector health, cloud session authorization, export/delete controls |
+| 27 | Scale and isolation test | synthetic 1,000-tenant workload; fair scheduling, credential isolation, effect idempotency, recovery evidence |
+| 28 | Migrate writer, clipping, Capafy, gig, bounty | each becomes a registered cloud loop using the same job/ledger/report contracts |
+| 29 | Add physical and mental health reports | separate daily messages and dashboard sections |
+| 30 | Design the mobile-app development loop | feedback/metrics-driven app iteration, then generalized creation and release |
+| 31 | Generalize web-app development loop | reuse product, finance, marketing, and worker contracts |
 
 ## 13. Cutover gates
 
@@ -554,9 +652,9 @@ No legacy job is disabled until:
 2. At least one real publication per selected account is reconciled to a
    platform URL.
 3. Financial panel and Telegram share a snapshot hash.
-4. Restart and machine reboot do not create duplicates.
+4. Cloud worker restart and deployment do not create duplicates.
 5. OpenClaw dependency scan is empty for migrated runtime paths.
-6. Forced OpenClaw shutdown does not interrupt the migrated path.
+6. Forced OpenClaw shutdown and a powered-off Mac do not interrupt the migrated path.
 7. Rollback restores the prior scheduler state from a signed inventory.
 
 ## 14. Security and commercial constraints
@@ -589,8 +687,7 @@ No legacy job is disabled until:
 | Check | Result |
 |---|---|
 | Placeholder scan | No unresolved implementation placeholders |
-| Internal consistency | Railway enqueues bounded jobs; leased workers own long effects; Telegram/panel are projections of PostgreSQL |
+| Internal consistency | Railway enqueues bounded jobs; specialized cloud workers own long effects; Telegram/panel are projections of PostgreSQL |
 | Scope | Program is decomposed; the first implementation cycle ends at Financial Health, followed by the Anicca/Honne marketing cycle |
-| Ambiguity | OpenClaw is disabled only after gates; no repository deletion is part of the first cutover |
+| Ambiguity | The target has zero local execution; a Mac bridge is migration-only; OpenClaw is disabled only after gates |
 | Evidence honesty | Current ASC snapshots are marked inconsistent; current RevenueCat numbers are project-level |
-
