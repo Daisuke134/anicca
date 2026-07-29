@@ -17268,3 +17268,10 @@
 {"ts":1785349416,"wake_id":"00MS6EY2KGB72E38A73946452F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785349561,"wake_id":"00MS6F16I0929CBB0D3F314D64","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785349706,"wake_id":"00MS6F49SJ293C198617854626","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785349851,"wake_id":"00MS6F7DPI4F965DE83A38461D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785349992,"wake_id":"00MS6FAF163AA8F53C30A84877","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785350133,"wake_id":"00MS6FDFC369B7E86382894B65","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785350275,"wake_id":"00MS6FGH6C1EF0CFBF0E354A9B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana high APY liquid staking platforms low fee yield opportunities [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake "}
+{"ts":1785350401,"wake_id":"00MS6FJ6OSCAC4141FA4364B3C","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platforms paying USDC per task [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced "}
+{"ts":1785350529,"wake_id":"00MS6FLWQ164FE703E3FEA4DCD","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785350667,"wake_id":"00MS6FOVLCE2AD8BD1E26C48BA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay-per-use compute APIs marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for "}
