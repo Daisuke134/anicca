@@ -211,10 +211,12 @@ function authenticatedSnapshotExpression() {
 
 async function requestLumaEmailLogin(page, email) {
   const input = page.locator('input[type="email"]').first();
-  await input.waitFor({ state: "visible", timeout: 15_000 });
+  if (await input.isVisible() !== true) {
+    throw new LumaBootstrapError("Luma authentication unavailable");
+  }
   await input.fill(email);
   const submit = page.locator('button[type="submit"]').first();
-  await submit.click({ timeout: 15_000 });
+  await submit.click();
   if (typeof page.waitForTimeout === "function") await page.waitForTimeout(2_000);
   return true;
 }
