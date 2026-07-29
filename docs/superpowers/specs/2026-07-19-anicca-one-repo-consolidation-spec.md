@@ -600,7 +600,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
 | 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | Portable Runtime仕様Order 0へ吸収されたhistorical alias。`OSS-SECURITY-BASELINE-1`、`REPO-V0-RETIRE-1`、`AE-X402-SOURCE-CONSOLIDATE-1`はdone。次のprogram subcursorは`BROWSER-AUTH-1`。8iはweb product移植を閉じたが、full OSS self-contained proofと他legacy source退役は未完 |
-| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
+| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **in progress / implementation green, production proof pending**。現行main上で受動的`Sign in and security`文言と実認証controlを分離し、期限切れcookie除去・expired-only rowのexact invalidation・Telegram result idのdurable readbackを実装。2-tenant gateと単一の実provider account proofを混同しない`verify-provider-context`も追加し、focused 73/73 PASS。旧PR #1256と`anicca-products`の修正は正本ではなく履歴参照のみ。実Luma production queueの再実証まではdoneにしない |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
@@ -1406,8 +1406,8 @@ Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
 Agent Economyのproduct queueは§0.4.6の2番以降だが、Portable Runtime release gateを追い越さない。
 Franklin continuityはnonblocking referenceとして並行監視する。
-Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化した後、
-BROWSER-AUTH-1をproduction queueの実Luma proofから再開する。既存Telegram chatと恒久realtime `/panel` の
+Life Managerはrequired browser auth修正をcanonical main上へ一本化し、
+BROWSER-AUTH-1をproduction queueの実Luma proofまで継続する。既存Telegram chatと恒久realtime `/panel` の
 契約は§9.4/§9.9へ統一済みであり、新規chat UI taskは置かない。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
@@ -1507,7 +1507,7 @@ SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk 
 2026-07-29 snapshotに対してstaleなのでAE-PUBLICATION-REFRESH-1で再生成する。
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1がcurrent、BROWSER-AUTH-1が次。
+Life Manager product trackはBROWSER-GEN-1とOSS-MERGE-1がdone、BROWSER-AUTH-1がcurrent。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
