@@ -940,15 +940,14 @@ migration contract passes 1/1, ledger regression passes 22/22, and dependency
 audit is zero. PR #1295 merged as `4d5c60b9…`; Railway source/root/commit,
 deployment `cee9598d…` SUCCESS, nine paid gates, settlement target exactly1,
 ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read back.
-`OSS-MERGE-1` PR #1268 is mergeable and its exact remote commit
-`edea1e06b…` passes a clean fresh clone, 647/647 app tests, all eight evals,
-panel privacy, the seven-source manifest, and the single canonical runner
-contract. Merged-main exact SHA readback is its final gate; then the next
-program subcursor is `BROWSER-AUTH-1`.
+`OSS-MERGE-1` PR #1268 is merged as canonical `8d47689d3…`; that exact `main`
+commit passes a clean fresh clone, 647/647 app tests, all eight evals, panel
+privacy, the seven-source manifest, and the single canonical runner contract.
+The current program subcursor is `BROWSER-AUTH-1`.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
-| 0 | Finish single-repository consolidation | **done for the bounded security/v0/x402 source slice** — exact evidence is in the three repository evidence files. Browser/parity/cloud/remaining-legacy gates continue under their own ordered rows; no production service depends on the old x402 source |
+| 0 | Finish single-repository consolidation | **done** — PR #1268 merged as `8d47689d3…`; exact-main fresh clone, source manifest, single runner, security boundary, v0 archive, and x402 source cutover are verified. Browser/parity/cloud/remaining-legacy gates continue under their own ordered rows |
 | 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
@@ -995,7 +994,6 @@ runtime-migration work is active:
 
 | Now | Work | Why it is still missing | Done evidence |
 |---:|---|---|---|
-| 0 | Close OSS-MERGE-1 on canonical main | v0 retirement and x402 source cutover are complete; PR #1268 is mergeable and its remote head is fully verified, but merged-main exact SHA readback is not yet recorded | merge PR #1268, rerun/read back exact main SHA, six security jobs green, and update `docs/evidence/oss/oss-merge-1.md` |
 | 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner |
 | 2 | Decide every legacy job and freeze new legacy writes | inventory without disposition cannot drive a safe cutover | each job has a Life Manager owner, target adapter, effect class, verification command, and rollback action |
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
