@@ -812,7 +812,7 @@ healthyの判定は通知回数やagent activityではなく、MENTALは有効�
 | 予約代行(PHYSICAL) | 生活圏 + 委任 | 候補提示のみ | 予約して報告（§9.5） |
 | core収益(FINANCIAL) | なし | agent-owned crypto walletでx402/permissionless SELL・WORKだけを実行 | 同左。user credentialを要求しない |
 | fiat payout(FINANCIAL) | 振込先口座または対応payout connector | crypto wallet送金のみ | verified surplusを許可済み口座へ送る |
-| fiat earning / Capafy等(FINANCIAL) | providerが要求するbank/KYC/税務identity + userの明示委任 | boxを出さずcrypto/core railを継続 | jurisdiction/provider規約で許されるrailだけ実行。bank accountだけでKYCを迂回しない |
+| fiat earning / Capafy等(FINANCIAL) | providerが要求するbank/KYC/税務identity + userの明示委任 | fiat railを実行可能として案内せずcrypto/core railを継続 | jurisdiction/provider規約で許されるrailだけ実行。bank accountだけでKYCを迂回しない |
 | product management | code host/deploy/store/analyticsの必要scope | 汎用product managerはinactive。Dais固有productを仮定しない | 接続された任意productをissue→build→deploy→growthまで管理 |
 
 - **feature discovery**: 未解錠 feature は TG chat で定期的に知らせる（例:「位置情報を共有すると遅刻連絡が全自動になる」）。
