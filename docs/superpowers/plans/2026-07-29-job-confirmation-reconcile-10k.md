@@ -40,7 +40,21 @@ event/idempotency practices; the implementation copies those principles.
 - [x] Run the existing resume delivery after reconciliation so the exact PDF is
   sent once through Telegram.
 - [x] Run all 174 job-loop and 10 runner tests plus OSS verification.
-- [ ] Update the design spec, push, pass all GitHub checks, merge, sync the
+- [x] Update the design spec, push, pass all GitHub checks, merge, sync the
   canonical checkout, and kick the existing inbox LaunchAgent.
-- [ ] Prove the live no-receipt pass is healthy and records no false promotion;
+- [x] Prove the live no-receipt pass is healthy and records no false promotion;
   keep the real Ashby promotion gate waiting for an external confirmation.
+
+## Closeout
+
+PR #1352 merged as `852d18a14` after all six checks in CI run
+`30464923726` passed. The post-merge inbox LaunchAgent advanced run 24→25 and
+exited 0. It deterministically inspected one broad Gmail candidate, recorded
+zero reconciliation receipts, launched no provider, delivered no Telegram
+document, and left the three-thread seen checkpoint and 12-row Telegram outbox
+unchanged. Application counts remained 2 submitted / 1 submit-unknown /
+2 not-submitted; `summary.v1.json` refreshed to 2026-07-30 and both integrity
+checks remained `ok`.
+
+Live receipt:
+[`2026-07-30-order10k-live.json`](../../evidence/job-search-loop/2026-07-30-order10k-live.json).
