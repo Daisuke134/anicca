@@ -12,11 +12,17 @@ const {
   completeJob,
   failJob,
   resolveReconciliation,
+  recordUnknownReconciliation,
+  MAX_UNKNOWN_RECONCILE_RESULTS,
 } = require("./runtime-job-store.js");
 
 const MIGRATION = fs.readFileSync(path.join(
   __dirname,
   "../migrations/20260729_runtime_jobs.sql",
+), "utf8");
+const AGING_MIGRATION = fs.readFileSync(path.join(
+  __dirname,
+  "../migrations/20260730_runtime_reconcile_unknown_aging.sql",
 ), "utf8");
 
 function sampleJob(overrides = {}) {
@@ -157,6 +163,87 @@ test("heartbeat, completion, failure, and reconciliation are tenant and attempt 
   assert.equal(calls[2].params[5], true);
   assert.match(calls[3].sql, /resolve_lm_runtime_effect/i);
   assert.equal(calls[3].params[3], "absent");
+});
+
+test("collision error names the mismatched fields so operators can diagnose slot-lineage drift", async () => {
+  // S-1: the existing publish effect was enqueued with different lineage (for example the
+  // same creative re-planned at a new slot). The error must say WHAT differs.
+  const existing = {
+    job_id: "job-001",
+    tenant_id: "tenant-a",
+    loop_id: "marketing.anicca.slideshow",
+    capability: "content.publish",
+    effect_class: "publish",
+    effect_key: "tiktok:anicca:asset-001",
+    input_refs: {
+      product_ref: "product:anicca",
+      asset_ref: "object:sha256:abc",
+      slot_ref: "slot:2026-07-30T12:30:00.000Z",
+    },
+    max_attempts: 3,
+    status: "queued",
+  };
+  const query = async (sql) => (
+    /INSERT INTO public\.lm_runtime_jobs/i.test(sql) ? { rows: [] } : { rows: [existing] }
+  );
+
+  await assert.rejects(
+    enqueueJob(sampleJob({ loopId: "marketing.anicca.slideshow" }), { query }),
+    (error) => {
+      assert.match(error.message, /runtime job id collision/);
+      assert.match(error.message, /input_refs/);
+      assert.match(error.message, /lineage|slot/i);
+      return true;
+    },
+  );
+});
+
+test("unknown reconcile aging uses one narrow RPC with the bounded constant", async () => {
+  assert.equal(MAX_UNKNOWN_RECONCILE_RESULTS, 5);
+  const calls = [];
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    return {
+      rows: [{
+        job_id: "job-001", tenant_id: "tenant-a", attempt: 1,
+        status: "reconciling", reconcile_attempts: 1,
+      }],
+    };
+  };
+
+  const row = await recordUnknownReconciliation({
+    tenantId: "tenant-a",
+    jobId: "job-001",
+    attempt: 1,
+    maxUnknownResults: MAX_UNKNOWN_RECONCILE_RESULTS,
+  }, { query });
+
+  assert.equal(row.status, "reconciling");
+  assert.match(calls[0].sql, /age_lm_runtime_reconciliation\(\$1, \$2, \$3, \$4\)/i);
+  assert.deepEqual(calls[0].params, ["tenant-a", "job-001", 1, 5]);
+
+  await assert.rejects(recordUnknownReconciliation({
+    tenantId: "tenant-a",
+    jobId: "job-001",
+    attempt: 1,
+    maxUnknownResults: 0,
+  }, { query }), /unknown limit/i);
+  await assert.rejects(recordUnknownReconciliation({
+    tenantId: "tenant-a",
+    jobId: "job-001",
+    attempt: 1,
+  }, { query: async () => ({ rows: [] }) }), /lost job/i);
+});
+
+test("aging migration adds a durable unknown counter that dead-letters exhausted reconciliation", () => {
+  assert.match(AGING_MIGRATION, /ADD COLUMN IF NOT EXISTS reconcile_attempts/i);
+  assert.match(AGING_MIGRATION, /age_lm_runtime_reconciliation/i);
+  assert.match(AGING_MIGRATION, /RECONCILE_UNKNOWN_EXHAUSTED/);
+  assert.match(AGING_MIGRATION, /dead_letter/);
+  // Resolution (present or absent) resets the counter so a later reconciliation
+  // lifecycle starts its own aging window.
+  assert.match(AGING_MIGRATION, /reconcile_attempts = 0/);
+  assert.match(AGING_MIGRATION, /status = 'reconciling'/);
 });
 
 test("migration enforces atomic claim, bounded retry, unique effects, and immutable receipts", () => {

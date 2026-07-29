@@ -322,8 +322,19 @@ function defaultLedgerPath(tenantId, productId, paths) {
 // Base allowlist for the distribution subprocess plus every LM_* variable
 // distribute.py reads (LM_DISTRIBUTION_LEDGER, LM_DISTRIBUTION_APPROVALS,
 // LM_INSTAGRAM_HANDLE, LM_INSTAGRAM_ACCOUNTS, LM_TIKTOK_INTEGRATION,
-// LM_TIKTOK_DIRECT_MIGRATION). Never the full parent environment.
-const SUBPROCESS_ENV_KEYS = ["PATH", "HOME", "LANG", "LC_ALL", "TMPDIR"];
+// LM_TIKTOK_DIRECT_MIGRATION), and the non-LM_ variables the real chain reads:
+// INSTAGRAPI_PYTHON (instagram_video.sh interpreter override) and CDP_HOST/CDP_PORT
+// (skills/earn/marketing-engine/poster.py:44,50,509). Never the full parent environment.
+const SUBPROCESS_ENV_KEYS = [
+  "PATH",
+  "HOME",
+  "LANG",
+  "LC_ALL",
+  "TMPDIR",
+  "INSTAGRAPI_PYTHON",
+  "CDP_HOST",
+  "CDP_PORT",
+];
 
 function subprocessEnv(postizToken) {
   const env = {};
