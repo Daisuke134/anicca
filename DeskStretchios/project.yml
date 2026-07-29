@@ -8,7 +8,7 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "3"
 packages:
   RevenueCat:
     url: https://github.com/RevenueCat/purchases-ios.git
@@ -25,8 +25,10 @@ targets:
       base:
         INFOPLIST_FILE: DeskStretch/Resources/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.deskstretch
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: TM3HR9L4R6
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: S5U8UH3JLJ
+        CODE_SIGN_IDENTITY: Apple Distribution
+        PROVISIONING_PROFILE_SPECIFIER: DeskStretch AppStore 1785338755
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
       - package: RevenueCat
