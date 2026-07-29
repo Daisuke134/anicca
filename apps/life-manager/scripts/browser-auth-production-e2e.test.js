@@ -46,6 +46,7 @@ function terminalFor({ id, markerHash, mode, tenant }) {
       steel_released: true,
       provider_receipt: {
         status: mode === 'verify-expired-handoff' ? 'login_required' : 'authenticated',
+        confirmed: mode !== 'verify-expired-handoff',
         handoff_required: mode === 'verify-expired-handoff',
         handoff_reason: mode === 'verify-expired-handoff' ? 'login' : null,
       },
@@ -318,6 +319,31 @@ test('verifies one real provider context without requiring a second provider acc
     ],
   );
   assertNoSecrets(JSON.stringify(result));
+});
+
+test('provider verification rejects a released but unauthenticated terminal job', async () => {
+  await assert.rejects(
+    runBrowserAuthProductionE2E({
+      mode: 'verify-provider-context',
+      env: { ...REQUIRED_ENV, BROWSER_AUTH_TENANT_B_UID: undefined },
+      deps: makeDeps({
+        mutateTerminal: (terminal) => ({
+          ...terminal,
+          status: 'handoff_required',
+          receipt: {
+            ...terminal.receipt,
+            provider_receipt: {
+              status: 'login_required',
+              confirmed: false,
+              handoff_required: true,
+              handoff_reason: 'login',
+            },
+          },
+        }),
+      }),
+    }),
+    /authenticated provider readback/,
+  );
 });
 
 test('rejects nonterminal jobs, missing provider receipts, and unreleased Steel rows', async () => {
