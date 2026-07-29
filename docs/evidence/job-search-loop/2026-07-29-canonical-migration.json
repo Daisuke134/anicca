@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "deliverable": "JOB-CANONICAL-MERGE-1",
+  "canonical_repository": "https://github.com/Daisuke134/life-manager.git",
+  "tested_implementation_commit": "03367475f0dd744fe9a05de325ed60889051cb01",
+  "pull_request": {
+    "number": 1273,
+    "head_commit": "f70590b54fe72586a87c9fea3a526ca4b45de6ca",
+    "security_scan_run": 30444708546,
+    "checks": {
+      "shell_syntax": "passed",
+      "pii_changed_files": "passed",
+      "python_syntax_and_unittest": "passed",
+      "gitleaks_changed_commits": "passed",
+      "trufflehog": "passed"
+    }
+  },
+  "provenance": {
+    "job_loop_commit": "d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987",
+    "agent_runner_commit": "191b205c03ae37d32b0125da4a1892924d585205",
+    "framework_commit": "82a60300b65e3f9357c6b8910dbdbdab2241f7e1"
+  },
+  "tests": {
+    "legacy_job_loop": {
+      "count": 107,
+      "status": "passed"
+    },
+    "canonical_job_loop": {
+      "count": 114,
+      "status": "passed"
+    },
+    "canonical_agent_runner": {
+      "count": 7,
+      "status": "passed"
+    }
+  },
+  "launchd": {
+    "daily": {
+      "program_suffix": "apps/job-search-loop/scripts/run-daily.sh",
+      "schedule": {
+        "hour_jst": 8,
+        "minute": 30
+      },
+      "runs_after_fix": 2,
+      "last_exit_code": 0,
+      "latest_status": "budget_blocked"
+    },
+    "inbox": {
+      "program_suffix": "apps/job-search-loop/scripts/run-inbox.sh",
+      "interval_seconds": 900,
+      "runs_after_fix": 2,
+      "last_exit_code": 0,
+      "latest_status": "no_new_recruiting_email"
+    }
+  },
+  "private_state": {
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "telegram_outbox_integrity": "ok",
+    "application_counts_before": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "application_counts_after": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "telegram_sent_count_before": 7,
+    "telegram_sent_count_after": 7
+  },
+  "cutover_repair": {
+    "first_daily_exit_code": 75,
+    "durable_reason": "budget_blocked",
+    "application_side_effect": false,
+    "telegram_side_effect": false,
+    "repair": "quota gate now precedes browser initialization; durable budget denial is an honest completed pass",
+    "rollback_plists_preserved": true,
+    "rollback_exercised": false,
+    "fix_forward_reason": "failure occurred before application or Telegram side effects and the runtime checkout was repaired in place"
+  },
+  "privacy": {
+    "contains_candidate_contact_data": false,
+    "contains_message_or_application_ids": false,
+    "contains_credentials": false
+  }
+}
