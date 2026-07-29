@@ -92,7 +92,7 @@ test("cloud magic-link login saves only a confirmed Luma context and returns saf
     released: true,
   });
   assert.deepEqual(calls[0], ["openBrowser"]);
-  assert.deepEqual(calls[1], ["requestMagicLink", ENV.LM_AGENTMAIL_INBOX_ID]);
+  assert.deepEqual(calls[1], ["requestMagicLink", ENV.LM_AGENT_BROWSER_EMAIL]);
   assert.deepEqual(calls[2], ["readMagicLink", { afterMs: 1_800_000_000_000 }]);
   assert.deepEqual(calls[3], ["openMagicLink", "https://luma.com/auth/magic-link-token"]);
   assert.deepEqual(calls[4], ["inspectAuthenticated"]);
@@ -112,6 +112,22 @@ test("cloud magic-link login saves only a confirmed Luma context and returns saf
     JSON.stringify(result),
     /agent@example|browser-agent@example|magic-link-token|private-cookie/,
   );
+});
+
+test("agent-owned login identity is independent from the mailbox polling transport", async () => {
+  const { calls, deps } = fixture();
+
+  await runLumaBootstrap({
+    env: {
+      ...ENV,
+      LM_AGENT_BROWSER_EMAIL: "browser-owner@example.test",
+      LM_AGENTMAIL_INBOX_ID: "otp-transport@agentmail.example",
+    },
+    deps,
+  });
+
+  assert.deepEqual(calls[1], ["requestMagicLink", "browser-owner@example.test"]);
+  assert.deepEqual(calls[2], ["readMagicLink", { afterMs: 1_800_000_000_000 }]);
 });
 
 test("unsafe link or missing authenticated marker fails closed without saving and still releases", async () => {
@@ -211,13 +227,13 @@ test("Luma login request deterministically fills and submits the measured email 
     },
   };
 
-  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENTMAIL_INBOX_ID), true);
+  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENT_BROWSER_EMAIL), true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], "evaluate");
   assert.match(calls[0][1], /input\[type="email"\]/);
   assert.match(calls[0][1], /button\[type="submit"\]/);
   assert.match(calls[0][1], /dispatchEvent/);
-  assert.match(calls[0][1], /browser-agent@example\.test/);
+  assert.match(calls[0][1], /agent@example\.test/);
 });
 
 test("Luma email challenge accepts only a six-digit code from a Luma-shaped message", () => {

@@ -90,7 +90,8 @@ function confirmedLumaAuth(value) {
 
 async function runLumaBootstrap({ env = process.env, deps } = {}) {
   const uid = required(env && env.BROWSER_AUTH_TENANT_A_UID);
-  const email = required(env && env.LM_AGENTMAIL_INBOX_ID);
+  const email = required(env && env.LM_AGENT_BROWSER_EMAIL)
+    || required(env && env.LM_AGENTMAIL_INBOX_ID);
   if (
     !uid
     || !/^[^@\s]+@[^@\s]+$/.test(email)
