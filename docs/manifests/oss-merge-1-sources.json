@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "canonical_repository": "https://github.com/Daisuke134/life-manager.git",
+  "policy": {
+    "runtime_dependency": "Every active runtime dependency is tracked in this repository or installed from a pinned public source.",
+    "private_state": "Credentials, personal profiles, receipts, logs, and live state are never source inputs.",
+    "import_rule": "Only committed reusable source and portable tests are absorbed; local working-tree state is excluded."
+  },
+  "sources": [
+    {
+      "id": "life-manager",
+      "repository": "https://github.com/Daisuke134/life-manager.git",
+      "commit": "3aaf13ce1ed9581b1a4db0e92c760003d7bfda9b",
+      "disposition": "canonical",
+      "scope": "Base tree for the self-contained public repository."
+    },
+    {
+      "id": "anicca-products",
+      "repository": "https://github.com/Daisuke134/anicca-products.git",
+      "commit": "0f6870df44fe160b83aec58803a63c2d7b5e21d7",
+      "additional_commits": [
+        "94485827497d6f0194f82f8f0c4f334427fa66d5"
+      ],
+      "disposition": "inspected",
+      "scope": "Reusable cloud-browser implementation and tests are absorbed by commit, while legacy specification state is excluded."
+    },
+    {
+      "id": "profitable-claude",
+      "repository": "https://github.com/Daisuke134/profitable-claude.git",
+      "commit": "7f1a32897978b74013a9f09982f6179b9cc0d230",
+      "disposition": "absorbed",
+      "scope": "The shared agent runner, context packet, token ledger, and portable fail-closed tests are vendored under skills/agent-runner.",
+      "excluded": [
+        "Personal provider account configuration",
+        "Developer-local candidate workspace",
+        "Tests coupled to the source repository's legacy directory layout"
+      ],
+      "upstream_sha256": {
+        "skills/agent-runner/agent_runner.py": "ea32d3446d0efb9eccb3046e87cf9e99c7190edcf0b659e270a37aae689824ae"
+      }
+    },
+    {
+      "id": "anicca-dais",
+      "repository": "Daisuke134/anicca-dais (private source-state repository; not a runtime dependency)",
+      "commit": "d42e1da7ed455214cafd8ebbcc998bb17e865a71",
+      "disposition": "classified-not-imported",
+      "scope": "Personal OpenClaw configuration, credentials, memory, and live state remain outside the OSS product."
+    }
+  ]
+}
