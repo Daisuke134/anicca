@@ -2739,7 +2739,7 @@ verified evidence
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
 | 1 | DONE (`590627c`) | generic dual-loop contractをWriterのpaid-publication vertical sliceで固定 | note `desired=¥500 / actual=free`をmachine-readable差分化。reconcileはadapter/checkpoint/retryだけ、optimizerはscorable reward後のstrategy demo/rule/weight exact1だけを許可。新3 schemaを実fixtureで検証、RED 3→focused 3 PASS→Marketing全18 PASS |
-| 2 | TODO NOW | noteを全新規記事¥500へ変更 | free-first branch 0、price/paywall boundary fixture、実API`price=500`、購入可能public readback |
+| 2 | IMPLEMENTED (`75c63ca`); LIVE VERIFY #6 | noteを全新規記事¥500へ変更 | executable desired-stateはone-time purchase / JPY / ¥500 / paywall必須。daily armed promptのfree branch 0、固定`--price 500`、API_VERIFY要求。TDD RED 2→policy 2 PASS、note focused 6 PASS、daily contract全PASS、Marketing 18 PASS。実API`price=500`と購入可能public readbackは#6で閉じる |
 | 3 | TODO NOW | Substack JA/ENを有料購読へ接続 | useful free preview + paywallを同一artifactから生成し、draft/API/public readbackでsubscriber gateとcheckoutを証明 |
 | 4 | TODO NOW | pre-publication recoveryをgeneric reconcilerへ接続 | `interrupted-safe`→同一run/prompt resume、claim/cooldown/上限/outbox、duplicate 0 |
 | 5 | TODO NOW | macOS awk修復 + external TERM fixture | 実LaunchAgent stderr増分0、TERM→fresh process→same run publication init、duplicate artifact/topic/target 0 |
