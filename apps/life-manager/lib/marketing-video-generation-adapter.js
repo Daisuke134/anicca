@@ -409,7 +409,7 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
       fs.mkdirSync(workspace, { recursive: true, mode: 0o700 });
       const copyPath = path.join(
         workspace,
-        `${job.job_id.replace(/[^A-Za-z0-9._-]/g, "_")}.copy.json`,
+        `${job.job_id.replace(/[^A-Za-z0-9._-]/g, "_")}.copy.txt`,
       );
       const hashtags = pack.hashtags.map((value) => `#${value}`).join(" ");
       const publishCopy = hashtags
