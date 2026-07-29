@@ -127,4 +127,17 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
     camoufox_proof = Path(by_id["camoufox-browser-cache"]["finalizer"]["proof_path"])
     assert camoufox_proof.is_file()
     assert not camoufox_proof.is_symlink()
+    assert by_id["tmp-anicca-clones"] == {
+        "id": "tmp-anicca-clones",
+        "path": "/tmp",
+        "owner": "agent-temp-clones",
+        "class": "git_clone_collection",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "remote_recoverable_remove",
+            "child_name_prefix": "anicca-",
+        },
+    }
     assert all(set(entry) >= {"owner", "class", "ttl_seconds", "quota_bytes", "lease", "finalizer"} for entry in entries)

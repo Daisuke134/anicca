@@ -414,6 +414,19 @@
       "finalizer": {
         "kind": "off_volume_quarantine"
       }
+    },
+    {
+      "id": "tmp-anicca-clones",
+      "path": "/tmp",
+      "owner": "agent-temp-clones",
+      "class": "git_clone_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove",
+        "child_name_prefix": "anicca-"
+      }
     }
   ]
 }

@@ -47,10 +47,12 @@ PROTECTED_CLASSES = {
 }
 WORKTREE_COLLECTION_CLASS = "git_worktree_collection"
 REGENERABLE_OUTPUT_CLASS = "regenerable_output"
+GIT_CLONE_COLLECTION_CLASS = "git_clone_collection"
 ALLOWED_CLASSES = PROTECTED_CLASSES | {
     "ephemeral",
     WORKTREE_COLLECTION_CLASS,
     REGENERABLE_OUTPUT_CLASS,
+    GIT_CLONE_COLLECTION_CLASS,
 }
 TX_RE = re.compile(r"^[0-9a-f]{32}$")
 DISCOVERABLE_OUTPUT_PROOFS = {
@@ -142,6 +144,10 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
         if set(finalizer) != {"kind", "proof_path"}:
             raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
         expected_finalizer = "verified_regenerable_remove"
+    elif artifact_class == GIT_CLONE_COLLECTION_CLASS:
+        if set(finalizer) != {"kind", "child_name_prefix"}:
+            raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
+        expected_finalizer = "remote_recoverable_remove"
     else:
         if set(finalizer) != {"kind"}:
             raise ManifestError(f"artifact {raw['id']} finalizer schema is invalid")
@@ -157,6 +163,11 @@ def _validate_entry(raw: Any) -> dict[str, Any]:
         )
     if artifact_class == REGENERABLE_OUTPUT_CLASS:
         normalized_finalizer["proof_path"] = str(_normalized_path(finalizer["proof_path"]))
+    if artifact_class == GIT_CLONE_COLLECTION_CLASS:
+        prefix = finalizer["child_name_prefix"]
+        if not isinstance(prefix, str) or not prefix.strip():
+            raise ManifestError(f"artifact {raw['id']} child_name_prefix must be non-empty")
+        normalized_finalizer["child_name_prefix"] = prefix
     return {
         "id": raw["id"],
         "path": str(path),
@@ -744,6 +755,145 @@ def sweep_worktree_collection(
     return result
 
 
+def _inspect_git_clone(path: Path) -> tuple[str, str, list[str]]:
+    if not path.is_dir() or path.is_symlink() or not (path / ".git").exists():
+        return "not_a_git_repository", "", []
+    head_result = _command("git", "rev-parse", "HEAD", cwd=path)
+    if head_result.returncode != 0:
+        return "git_state_unreadable", "", []
+    head = head_result.stdout.strip()
+    status = _command(
+        "git", "status", "--porcelain=v1", "--untracked-files=all", cwd=path
+    )
+    if status.returncode != 0:
+        return "git_state_unreadable", head, []
+    if status.stdout.strip():
+        return "dirty_clone", head, []
+    fetch = _command("git", "fetch", "--all", "--prune", cwd=path)
+    if fetch.returncode != 0:
+        return "remote_fetch_failed", head, []
+    refs_result = _command("git", "branch", "-r", "--contains", head, cwd=path)
+    if refs_result.returncode != 0:
+        return "remote_state_unreadable", head, []
+    refs = [
+        line.strip().removeprefix("* ")
+        for line in refs_result.stdout.splitlines()
+        if line.strip() and " -> " not in line
+    ]
+    if not refs:
+        return "head_not_on_remote", head, refs
+    open_state = path_open_state(path)
+    if open_state == "open":
+        return "open_clone", head, refs
+    if open_state != "confirmed-closed":
+        return "lsof_error", head, refs
+    return "eligible", head, refs
+
+
+def sweep_git_clone_collection(
+    *,
+    collection_root: Path,
+    child_name_prefix: str,
+    ledger_path: Path,
+    policy_version: str,
+    manifest_sha256: str,
+    now: int,
+) -> dict[str, int]:
+    result = {"removed": 0, "preserved": 0, "errors": 0, "bytes_removed": 0}
+    if not collection_root.is_dir():
+        # collection_root itself may legitimately be a symlink (macOS /tmp ->
+        # /private/tmp); only reject it if it does not resolve to a directory.
+        return result
+    entry = {"owner": "agent-temp-clones", "class": GIT_CLONE_COLLECTION_CLASS}
+    children = sorted(
+        (
+            child
+            for child in collection_root.iterdir()
+            if child.name.startswith(child_name_prefix)
+        ),
+        key=lambda item: item.name,
+    )
+    error_reasons = {
+        "git_state_unreadable",
+        "remote_fetch_failed",
+        "remote_state_unreadable",
+        "lsof_error",
+    }
+    for path in children:
+        reason, head, refs = _inspect_git_clone(path)
+        if reason != "eligible":
+            event = _event_base(
+                event="preserved",
+                reason=reason,
+                path=path,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            event.update({"head": head or None, "remote_refs": refs})
+            if reason in error_reasons:
+                event["result"] = "error"
+                result["errors"] += 1
+            append_ledger(ledger_path, event)
+            result["preserved"] += 1
+            continue
+        try:
+            before = _du_bytes(path)
+        except (OSError, ValueError):
+            before = 0
+        recheck_reason, recheck_head, recheck_refs = _inspect_git_clone(path)
+        if recheck_reason != "eligible" or recheck_head != head:
+            event = _event_base(
+                event="preserved",
+                reason=f"revalidation_{recheck_reason}",
+                path=path,
+                entry=entry,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            event.update({"head": recheck_head or None, "remote_refs": recheck_refs})
+            append_ledger(ledger_path, event)
+            result["preserved"] += 1
+            continue
+        try:
+            _remove_source(path)
+            removal_ok = not path.exists() and not path.is_symlink()
+        except OSError:
+            removal_ok = False
+        if not removal_ok:
+            event_name = "failed"
+            event_reason = "clone_remove_failed"
+            event_result = "error"
+            result["errors"] += 1
+        else:
+            event_name = "removed"
+            event_reason = "remote_recoverable_clone"
+            event_result = "success"
+            result["removed"] += 1
+            result["bytes_removed"] += before
+        event = _event_base(
+            event=event_name,
+            reason=event_reason,
+            path=path,
+            entry=entry,
+            policy_version=policy_version,
+            manifest_sha256=manifest_sha256,
+            now=now,
+        )
+        event.update(
+            {
+                "result": event_result,
+                "bytes": before,
+                "head": head,
+                "remote_refs": refs,
+            }
+        )
+        append_ledger(ledger_path, event)
+    return result
+
+
 def _quarantine(
     *,
     source: Path,
@@ -1008,6 +1158,20 @@ def sweep(
             result["bytes_quarantined"] += collection["bytes_removed"]
             result["preserved"] += collection["preserved"]
             result["errors"] += collection["errors"]
+            continue
+        if entry["class"] == GIT_CLONE_COLLECTION_CLASS:
+            clone_collection = sweep_git_clone_collection(
+                collection_root=target,
+                child_name_prefix=entry["finalizer"]["child_name_prefix"],
+                ledger_path=ledger_path,
+                policy_version=policy_version,
+                manifest_sha256=manifest_sha256,
+                now=now,
+            )
+            result["quarantined"] += clone_collection["removed"]
+            result["bytes_quarantined"] += clone_collection["bytes_removed"]
+            result["preserved"] += clone_collection["preserved"]
+            result["errors"] += clone_collection["errors"]
             continue
         if entry["class"] == REGENERABLE_OUTPUT_CLASS:
             proof = Path(entry["finalizer"]["proof_path"])
