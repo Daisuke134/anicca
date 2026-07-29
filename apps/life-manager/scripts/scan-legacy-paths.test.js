@@ -24,6 +24,8 @@ const LEGACY_STATE_LINE = 'STATE="${HOME}/' + ".open" + 'claw/state/example"';
 const LEGACY_ANICCA_HOME_LINE = 'DIR="${HOME}/' + "anicca" + '/skills/earn/x402-sell/state"';
 const LEGACY_ANICCA_TILDE_LINE = "DIR=~/" + "anicca" + "/skills/earn/x402-sell/state";
 const LEGACY_ANICCA_OSS_LINE = 'START="${HOME}/' + "anicca" + '-oss/services/facilitator/start.sh"';
+const LEGACY_ANICCA_ABS_LINE = 'DIR="/Users/dais/' + "anicca" + '/skills/earn/x402-sell/state"';
+const LEGACY_ANICCA_ABS_OSS_LINE = 'START="/Users/dais/' + "anicca" + '-oss/services/facilitator/start.sh"';
 
 function plantedRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-legacy-scan-"));
@@ -70,6 +72,28 @@ test("the scanner detects legacy anicca code-root references (HOME, tilde, oss)"
       [path.join("src", "boot.sh"), 2],
       [path.join("src", "boot.sh"), 3],
       [path.join("src", "boot.sh"), 4],
+    ],
+  );
+});
+
+test("the scanner detects absolute /Users literals of the legacy anicca code roots", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n${LEGACY_ANICCA_ABS_LINE}\n${LEGACY_ANICCA_ABS_OSS_LINE}\n`,
+  );
+  // The username segment and the products monorepo are NOT legacy code roots:
+  // /Users/<any>/anicca-project/ (even under an anicca username) must not match.
+  fs.writeFileSync(
+    path.join(root, "src", "benign.sh"),
+    'A="/Users/operator/anicca-project/apps/life-manager"\nB="/Users/dais/anicca-project/x"\n',
+  );
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => [violation.file, violation.line, violation.pattern]),
+    [
+      [path.join("src", "boot.sh"), 2, "legacy-anicca-home-root"],
+      [path.join("src", "boot.sh"), 3, "legacy-oss-code-root"],
     ],
   );
 });

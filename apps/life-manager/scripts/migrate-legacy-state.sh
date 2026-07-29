@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # migrate-legacy-state.sh — copy legacy Life Manager state into the portable
-# data root. COPY ONLY: the legacy loop remains the owner of its store until the
+# data root.
+#
+# RUN ONLY when the fail-loud guard instructs (post-pull); running before the
+# cutover creates a stale copy.
+#
+# COPY ONLY: the legacy loop remains the owner of its store until the
 # Order 14 cutover, so this script never moves, deletes, or rewrites a source
 # file, and never overwrites a destination file the new loop already owns.
 #
@@ -51,7 +56,7 @@ for name in lm-video life-manager-dev; do
     src_size="$(file_size "$source_file")"
     dst_size="$(file_size "$target")"
     if [ "$dst_size" -lt "$src_size" ]; then
-      printf 'size mismatch after copy: %s (%s bytes) vs %s (%s bytes)\n' \
+      printf '%s (%s bytes) is smaller than legacy %s (%s bytes): destination is stale or partial (legacy grew since migration or copy was interrupted); inspect and remove destination before re-running\n' \
         "$target" "$dst_size" "$source_file" "$src_size" >&2
       exit 1
     fi
