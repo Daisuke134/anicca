@@ -122,12 +122,22 @@ and rollback evidence pass.
 |---|---|
 | New financial connectors and the full Financial Health dashboard | Preserve and migrate the existing report first; expand it only after local and cloud runtime parity |
 | New marketing formats or autonomous self-improvement | Migrate current posting behavior first; activate learning only after publication and metric receipts survive local/cloud parity |
-| Autonomous mobile-app creation and App Store submission | Prove growth of existing apps before generalizing the development loop |
+| Autonomous mobile-app creation and App Store submission | Prove growth of existing apps before generalizing the development loop; the isolated Shipaton pilot below may validate portable contracts but cannot change runtime ownership |
 | Physical- and mental-health expansion | Preserve currently retained health behavior; new automation follows runtime migration |
 | Deleting OpenClaw or legacy repositories | Do not delete history. `life-manager-v0` is archived after its dedicated import/equivalence gate; other runtime sources are disabled and archived only after shadow, canary, restart, and dependency tests |
 | Trading with user funds | Financial health is read-only reporting; execution requires a separate risk and authorization spec |
 | Accepting raw Apple IDs or passwords | App Store Connect API keys and delegated authorization are safer and automation-compatible |
 | Claiming guaranteed `$10k MRR` | `$10k MRR` is a measurable target with explicit assumptions, not a promise |
+
+### Bounded Shipaton pilot exception
+
+The [Mobile App Profit Loop design](./2026-07-29-life-manager-mobile-app-profit-loop-design.md)
+authorizes a time-bounded, isolated Shipaton pilot before Order 26. It may use
+existing standalone build, test, App Store Connect, RevenueCat, analytics, and
+marketing tools to ship one evidence-selected new app and emit portable
+receipts. It cannot modify or duplicate the Life Manager scheduler, write to
+production platform ledgers, become a hosted feature, or change migration
+ownership. Proven contracts enter the platform only through Order 37.
 
 ## 3. Evidence: current state
 
@@ -965,13 +975,15 @@ Current Order 0 subcursor:
 | 34 | Build viral-format intake and variation gates | source/right receipts, format DNA, duplicate hooks, semantic similarity, format concentration, proof, locale, and visual/transcript gates |
 | 35 | Activate bounded self-improvement | one-rule blame, challenger, canary, keep/revert, and next-run consumption proof work for Anicca and Honne separately |
 | 36 | Add Physical and Mental Health | separate daily messages, dashboard sections, source freshness, risk policy, and one-action interventions |
-| 37 | Design and build mobile-app development loop | metrics and feedback drive bounded app iteration before generalized creation/release |
+| 37 | Port and build the [Mobile App Profit Loop](./2026-07-29-life-manager-mobile-app-profit-loop-design.md) | validated pilot metrics and feedback drive bounded app iteration before generalized creation/release, without a duplicate scheduler |
 | 38 | Generalize web-app development loop | reuse portable runtime, product, finance, marketing, experiment, and deployment contracts |
 
 ### 12.1 Remaining work from the measured state
 
 The numbered program above remains the SSOT. Until Order 26 passes, only
-runtime-migration work is active:
+runtime-migration work is active inside the production Life Manager runtime.
+The bounded Shipaton pilot is the only exception and remains isolated under
+the constraints above:
 
 | Now | Work | Why it is still missing | Done evidence |
 |---:|---|---|---|
