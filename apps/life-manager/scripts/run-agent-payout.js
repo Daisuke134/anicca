@@ -10,10 +10,9 @@ const { execFile } = require("node:child_process");
 const { homedir } = require("node:os");
 const { join } = require("node:path");
 const { promisify } = require("node:util");
-const { getAddress } = require("viem");
-
 const { deriveAddress } = require("../lib/agent-wallet.js");
-const { BASE_USDC, settleBaseUsdc } = require("../lib/base-usdc-payout.js");
+const { settleBaseUsdc } = require("../lib/base-usdc-payout.js");
+const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
 const { usdMicrosFromDecimal } = require("../lib/financial-report-snapshot.js");
 const { readFinancialCostTotals } = require("../lib/financial-report-runtime.js");
 const { runPayout } = require("../lib/payout-runtime.js");
@@ -59,31 +58,6 @@ async function readProtectedWallet(path = DEFAULT_WALLET_PATH) {
     throw new Error("protected wallet private key does not derive the stored address");
   }
   return { address, privateKey };
-}
-
-async function readUsdcBalance(walletAddress, opts = {}) {
-  const address = getAddress(String(walletAddress || ""));
-  const rpcUrl = opts.rpcUrl || DEFAULT_RPC_URL;
-  const fetchImpl = opts.fetchImpl || globalThis.fetch;
-  if (typeof fetchImpl !== "function") throw new Error("Base balance reader needs fetch");
-  const response = await fetchImpl(rpcUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "eth_call",
-      params: [{
-        to: BASE_USDC,
-        data: `0x70a08231${address.slice(2).toLowerCase().padStart(64, "0")}`,
-      }, "latest"],
-    }),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || body.error || !/^0x[0-9a-f]+$/i.test(String(body.result || ""))) {
-    throw new Error(`Base USDC balance read failed (${response.status})`);
-  }
-  return BigInt(body.result).toString();
 }
 
 async function facilitatorProfile(facilitatorUrl, fetchImpl) {

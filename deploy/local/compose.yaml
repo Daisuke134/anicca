@@ -109,6 +109,10 @@ services:
       LM_DEPLOYMENT_ROLE: scheduler
       LM_SCHEDULER_OWNER: local-primary
       LM_SCHEDULER_LEASE_KEY: primary
+      LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
+      LM_FINANCIAL_REPORT_FORCE_ON_START: ${LM_FINANCIAL_REPORT_FORCE_ON_START:-}
+      LM_FINANCIAL_REPORT_POLL_MS: ${LM_FINANCIAL_REPORT_POLL_MS:-300000}
+      LM_TELEGRAM_TOKEN_REF: ${LM_TELEGRAM_TOKEN_REF:-secret://telegram/bot-token}
       LIFE_RUN_LOOPS: "true"
       PORT: "8788"
     volumes:
@@ -132,8 +136,13 @@ services:
     environment:
       <<: *runtime-environment
       LM_DEPLOYMENT_ROLE: worker
-      LM_WORKER_ID: local-runtime-noop
-      LM_WORKER_CAPABILITIES: runtime.noop
+      LM_WORKER_ID: local-runtime-worker
+      LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop}
+      LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
+      LM_TELEGRAM_BOT_TOKEN: ${LM_TELEGRAM_BOT_TOKEN:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      BASE_RPC_URL: ${BASE_RPC_URL:-https://mainnet.base.org}
       LM_WORKER_HEALTH_PORT: "8790"
       LIFE_RUN_LOOPS: "false"
     volumes:

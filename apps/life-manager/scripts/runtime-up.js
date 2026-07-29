@@ -164,6 +164,102 @@ function createHealthServer(port, state) {
   return server;
 }
 
+function createScopedEnvironmentSecretProvider(env = process.env) {
+  const { createSecretProvider } = require("../lib/secret-provider.js");
+  const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+  const bindings = new Map([
+    ["secret://telegram/bot-token", "LM_TELEGRAM_BOT_TOKEN"],
+  ]);
+  return createSecretProvider({
+    mode: "local",
+    keychain: {
+      async get(requestTenantId, ref) {
+        if (requestTenantId !== tenantId) {
+          throw new Error("environment secret tenant scope mismatch");
+        }
+        const envName = bindings.get(ref);
+        if (!envName) throw new Error("environment secret reference is not declared");
+        return requiredEnv(env, envName);
+      },
+      async health() {
+        return { ok: true };
+      },
+    },
+  });
+}
+
+async function executeCapabilityJob(job, services) {
+  const {
+    workerId,
+    handlers = {},
+    completeJob,
+    failJob,
+    storeOptions,
+  } = services;
+  const identity = {
+    tenantId: job.tenant_id,
+    jobId: job.job_id,
+    attempt: job.attempt,
+    workerId,
+  };
+  if (job.effect_class === "none") {
+    await completeJob({
+      ...identity,
+      receipt: {
+        kind: "runtime_noop",
+        worker_id: workerId,
+        completed_at: new Date().toISOString(),
+      },
+    }, storeOptions);
+    return;
+  }
+  const handler = handlers[job.capability];
+  if (typeof handler !== "function") {
+    await failJob({
+      ...identity,
+      errorCode: "CAPABILITY_ADAPTER_UNAVAILABLE",
+      unknownEffect: true,
+    }, storeOptions);
+    return;
+  }
+  try {
+    const execution = await handler(job);
+    if (!execution || !execution.receipt) {
+      throw new Error("capability adapter returned no receipt");
+    }
+    await completeJob({
+      ...identity,
+      receipt: execution.receipt,
+    }, storeOptions);
+  } catch (error) {
+    await failJob({
+      ...identity,
+      errorCode: "CAPABILITY_EXECUTION_FAILED",
+      unknownEffect: error && error.unknownEffect === true,
+    }, storeOptions);
+  }
+}
+
+function createWorkerHandlers(env, capabilities) {
+  const handlers = {};
+  if (capabilities.includes("report.financial.telegram")) {
+    const { executeFinancialReportJob } = require("../lib/report-job-adapter.js");
+    const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
+    const secretProvider = createScopedEnvironmentSecretProvider(env);
+    handlers["report.financial.telegram"] = (job) => executeFinancialReportJob(job, {
+      secretProvider,
+      supaUrl: requiredEnv(env, "SUPABASE_URL"),
+      supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
+      fetchImpl: globalThis.fetch,
+      readBalance: (walletAddress) => readUsdcBalance(walletAddress, {
+        rpcUrl: String(env.BASE_RPC_URL || "https://mainnet.base.org"),
+        fetchImpl: globalThis.fetch,
+      }),
+    });
+  }
+  return handlers;
+}
+
 async function runCapabilityWorker(env = process.env) {
   const { Pool } = require("pg");
   const {
@@ -180,6 +276,7 @@ async function runCapabilityWorker(env = process.env) {
   const workerId = String(env.LM_WORKER_ID || os.hostname()).trim();
   const pool = new Pool({ connectionString, max: 2 });
   const opts = { query: pool.query.bind(pool) };
+  const handlers = createWorkerHandlers(env, capabilities);
   const state = {
     role: "worker",
     workerId,
@@ -203,28 +300,13 @@ async function runCapabilityWorker(env = process.env) {
         leaseSeconds: 60,
       }, opts);
       for (const job of jobs) {
-        if (job.effect_class === "none") {
-          await completeJob({
-            tenantId: job.tenant_id,
-            jobId: job.job_id,
-            attempt: job.attempt,
-            workerId,
-            receipt: {
-              kind: "runtime_noop",
-              worker_id: workerId,
-              completed_at: new Date().toISOString(),
-            },
-          }, opts);
-        } else {
-          await failJob({
-            tenantId: job.tenant_id,
-            jobId: job.job_id,
-            attempt: job.attempt,
-            workerId,
-            errorCode: "CAPABILITY_ADAPTER_UNAVAILABLE",
-            unknownEffect: true,
-          }, opts);
-        }
+        await executeCapabilityJob(job, {
+          workerId,
+          handlers,
+          completeJob,
+          failJob,
+          storeOptions: opts,
+        });
       }
       state.ready = true;
       state.error = null;
@@ -264,6 +346,34 @@ async function runSchedulerOwner(env = process.env) {
     throw new Error("scheduler owner lease is already held");
   }
 
+  const financialTenant = String(env.LM_RUNTIME_TENANT_ID || "").trim();
+  const financialIntervalMs = Number(env.LM_FINANCIAL_REPORT_POLL_MS || 300000);
+  let forceOnNextFinancialEnqueue = String(
+    env.LM_FINANCIAL_REPORT_FORCE_ON_START || "",
+  ).trim();
+  let financialTimer;
+  async function enqueueFinancialReports() {
+    if (!financialTenant) return;
+    const { enqueueJob } = require("../lib/runtime-job-store.js");
+    const { enqueueFinancialReportJobs } = require("../lib/report-job-adapter.js");
+    const slotMs = Math.floor(Date.now() / financialIntervalMs) * financialIntervalMs;
+    const args = ["enqueue", "--uid", financialTenant];
+    const force = forceOnNextFinancialEnqueue;
+    if (force) args.push("--force", force);
+    forceOnNextFinancialEnqueue = "";
+    await enqueueFinancialReportJobs(args, env, {
+      nowMs: slotMs,
+      enqueueJob: (input) => enqueueJob(input, { query: pool.query.bind(pool) }),
+      stdout: { write() {} },
+    });
+  }
+  await enqueueFinancialReports();
+  if (financialTenant) {
+    financialTimer = setInterval(() => {
+      enqueueFinancialReports().catch(() => {});
+    }, financialIntervalMs);
+  }
+
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
     env: {
@@ -291,6 +401,7 @@ async function runSchedulerOwner(env = process.env) {
     if (stopping) return;
     stopping = true;
     clearInterval(renew);
+    if (financialTimer) clearInterval(financialTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(
@@ -330,6 +441,8 @@ module.exports = {
   validateComposeModel,
   runRuntimeUp,
   buildSchedulerHolderToken,
+  createScopedEnvironmentSecretProvider,
+  executeCapabilityJob,
   runCapabilityWorker,
   runSchedulerOwner,
 };
