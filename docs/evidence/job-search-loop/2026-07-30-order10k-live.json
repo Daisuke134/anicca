@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "deliverable": "JOB-CONFIRMATION-RECONCILE-10K",
+  "observed_at": "2026-07-30T00:19:48+09:00",
+  "implementation": {
+    "pull_request": 1352,
+    "merge_sha": "852d18a141f9fab0f7b76a979bf57209859bc00a",
+    "head_sha": "b8c4b9defcfc9632a1232ec950cbfc7829a8cf89",
+    "ci_run_id": 30464923726,
+    "ci_conclusion": "success",
+    "checks_passed": 6,
+    "job_loop_tests_passed": 174,
+    "agent_runner_tests_passed": 10,
+    "oss_boundary": "pass"
+  },
+  "launchd": {
+    "label": "ai.anicca.job-search-inbox",
+    "runs_before": 24,
+    "runs_after": 25,
+    "state_after": "not running",
+    "last_exit_code": 0,
+    "evidence_run_id": "inbox-20260730-001832"
+  },
+  "reconciliation": {
+    "checked_threads": 1,
+    "reconciled_count": 0,
+    "blocked_statuses": [
+      "no_exact_uncertain_application"
+    ],
+    "confirmation_receipts_after": 0,
+    "provider_attempt_artifacts_present": false,
+    "inbox_status": "no_new_recruiting_email",
+    "new_recruiting_count": 0
+  },
+  "application_counts": {
+    "before": {
+      "not_submitted": 2,
+      "submit_unknown": 1,
+      "submitted": 2
+    },
+    "after": {
+      "not_submitted": 2,
+      "submit_unknown": 1,
+      "submitted": 2
+    }
+  },
+  "side_effects": {
+    "resume_deliveries": 0,
+    "telegram_outbox_rows_before": 12,
+    "telegram_outbox_rows_after": 12,
+    "telegram_outbox_mtime_unchanged": true,
+    "seen_thread_count": 3,
+    "seen_checkpoint_mtime_unchanged": true
+  },
+  "projection": {
+    "path": "~/.local/state/anicca/job-search/summary.v1.json",
+    "mode": "0600",
+    "day": "2026-07-30",
+    "confirmed_adapters": [],
+    "required_adapters": [
+      "ashby",
+      "workday"
+    ],
+    "complete": false
+  },
+  "health": {
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "daily_last_exit_code": 0,
+    "inbox_last_exit_code": 0
+  },
+  "finding": "The merged inbox path failed closed on the real non-matching Gmail candidate without a provider call, state promotion, seen acknowledgement, or Telegram side effect. A real BJAK confirmation remains external and absent."
+}
