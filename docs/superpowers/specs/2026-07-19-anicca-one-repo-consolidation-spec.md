@@ -718,10 +718,41 @@ production実測でも`handoff_required`が12件死蔵している。これは�
 外部BPは一致して「**詰まったlive sessionそのものをuserへ渡す**」を答えにしている。self-host Steelには
 その部品が既に存在するため、SaaS移行は不要である。
 
+###### 1.5 MANAGER, NOT ASSISTANT（本契約の最上位制約）
+
+Life Managerは**assistantではなくmanagerである**。managerは許可を求めない。**自分で判断して実行し、事後に報告する**。
+よってhandoffは「userに仕事を頼む窓口」では**ない**。handoffの対象は
+**本人が物理的に所持/所有していなければ通過できないgateだけ**（本人の2FA端末、本人のidentity、
+本人の生体認証、本人名義のKYC）であり、その目的は**一度で解錠して以後永久にhumanを外すこと**である。
+
+| 禁止（assistant的挙動） | 正（manager的挙動） |
+|---|---|
+| 「やっていいですか?」「代わりにやりますか?」 | 判断して実行し、事後にreceiptを出す |
+| 予約先・時間帯・文面・料金の選択をuserへ投げる | capability/context/policyから自分で決める。本人しか知り得ない事実だけclosed Qにする |
+| 詰まるたびにhandoffを出す | まずagent-owned accountで迂回、次に保存済みcontextを復元、それでも通れない時だけ**そのoriginで1回** |
+| 同一originで毎回解錠を頼む | 解錠1回でcontextを恒久化し、以後human 0 |
+| handoff待ちの間に他が止まる | handoff中も他のjob/loopは止めずに進む |
+
+これは新規則ではなく既存canonicalの適用である: 「名乗りは`manager`であって`assistant`ではない（HARD。全copyに適用）
+… assistantは**受動**——呼ばれてから動く。managerは**能動**——呼ばれる前に動かす … **この1語の違いが製品の定義そのもの**」、
+および「委任済みscope内では、行動してから報告する。許可を求めない。」。
+`§9`の「chat outputは3種類だけ（①事後report ②本人しか決められないclosed Q ③本人操作が物理的に必要なhandoff）」
+と同一規律であり、本契約はその③の実装である。①②を増やす口実にしてはならない。
+
+**measurable MUST**: handoffは「新規origin または 失効あたり最大1回」。
+**同一tenant×同一originで2回目のhandoffが出たら設計failure**として扱い、context保存/延命の欠陥として直す。
+
+出典（manager規律の外部根拠）: Anthropic computer use tool docs —
+https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool —
+確認を求める対象を`"decisions that might result in meaningful real-world consequences and any tasks
+requiring affirmative consent, such as accepting cookies, completing financial transactions, or agreeing
+to terms of service"`に限定している。routineな判断・選択はagent側が持つ。
+
 ###### 2. Acceptance Criteria
 
 | # | MUST |
 |---:|---|
+| 0 | handoffはmanager規律に従い、**物理的に本人しか通過できないgateだけ**へ発行する。判断・選択・文面・料金・時間帯をuserへ投げる用途に使ってはならない。handoff中も他job/loopは停止しない |
 | 1 | `handoff_required`になったjobは、同一のlive Steel sessionを解錠できる**限時・tenant scoped**なaccess surfaceをTelegramへ配布する。session破棄後や期限後は無効になる |
 | 2 | userの実操作（pointer/keyboard）が同一sessionのbrowserへ到達したことをtrace/`live-details`でreadbackする。読み取り専用viewだけではPASSにしない |
 | 3 | userが解錠を終えたことをmodel narrationでなく**observable condition**（protected element / URL / provider marker）で検知し、bounded deadlineで打ち切る |
