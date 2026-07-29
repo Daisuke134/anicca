@@ -48,6 +48,7 @@ PROTECTED_CLASSES = {
 WORKTREE_COLLECTION_CLASS = "git_worktree_collection"
 REGENERABLE_OUTPUT_CLASS = "regenerable_output"
 GIT_CLONE_COLLECTION_CLASS = "git_clone_collection"
+WORKTREE_RECLAIM_GRACE_SECONDS = 24 * 60 * 60
 ALLOWED_CLASSES = PROTECTED_CLASSES | {
     "ephemeral",
     WORKTREE_COLLECTION_CLASS,
@@ -333,6 +334,7 @@ def worktree_reclaim_decision(
     is_clean: bool,
     remote_contains_head: bool,
     open_state: str,
+    age_seconds: int,
 ) -> str:
     if is_current:
         return "current_worktree"
@@ -346,6 +348,8 @@ def worktree_reclaim_decision(
         return "open_worktree"
     if open_state != "confirmed-closed":
         return "lsof_error"
+    if age_seconds < WORKTREE_RECLAIM_GRACE_SECONDS:
+        return "recent_worktree"
     return "eligible"
 
 
@@ -399,9 +403,12 @@ def _inside(path: Path, root: Path) -> bool:
     return path != root
 
 
-def _inspect_worktree(repo: Path, path: Path, locked: bool) -> tuple[str, str, list[str]]:
+def _inspect_worktree(
+    repo: Path, path: Path, locked: bool, now: int | None = None
+) -> tuple[str, str, list[str]]:
     if not path.is_dir():
         return "path_missing", "", []
+    now = int(time.time()) if now is None else int(now)
     cwd = Path.cwd().resolve()
     resolved = path.resolve()
     head_result = _command("git", "rev-parse", "HEAD", cwd=path)
@@ -427,6 +434,7 @@ def _inspect_worktree(repo: Path, path: Path, locked: bool) -> tuple[str, str, l
         is_clean=not bool(status.stdout),
         remote_contains_head=bool(refs),
         open_state=path_open_state(path),
+        age_seconds=max(0, now - int(path.stat().st_ctime)),
     )
     return reason, head, refs
 
@@ -796,7 +804,7 @@ def sweep_worktree_collection(
             continue
         entry = {"owner": "git-worktrees", "class": WORKTREE_COLLECTION_CLASS}
         locked = bool(record.get("locked"))
-        reason, head, refs = _inspect_worktree(repo, path, locked)
+        reason, head, refs = _inspect_worktree(repo, path, locked, now)
         if reason != "eligible":
             event = _event_base(
                 event="preserved",
@@ -818,7 +826,9 @@ def sweep_worktree_collection(
             before = _du_bytes(path)
         except (OSError, ValueError):
             before = 0
-        recheck_reason, recheck_head, recheck_refs = _inspect_worktree(repo, path, locked)
+        recheck_reason, recheck_head, recheck_refs = _inspect_worktree(
+            repo, path, locked, now
+        )
         if recheck_reason != "eligible" or recheck_head != head:
             event = _event_base(
                 event="preserved",

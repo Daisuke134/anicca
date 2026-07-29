@@ -41,6 +41,7 @@ def test_worktree_policy_requires_every_safety_invariant() -> None:
         "is_clean": True,
         "remote_contains_head": True,
         "open_state": "confirmed-closed",
+        "age_seconds": cleanup_control.WORKTREE_RECLAIM_GRACE_SECONDS,
     }
     assert cleanup_control.worktree_reclaim_decision(**base) == "eligible"
 
@@ -65,6 +66,10 @@ def test_worktree_policy_requires_every_safety_invariant() -> None:
     values = dict(base)
     values["open_state"] = "error"
     assert cleanup_control.worktree_reclaim_decision(**values) == "lsof_error"
+
+    values = dict(base)
+    values["age_seconds"] = cleanup_control.WORKTREE_RECLAIM_GRACE_SECONDS - 1
+    assert cleanup_control.worktree_reclaim_decision(**values) == "recent_worktree"
 
 
 def test_missing_registered_worktree_is_preserved_instead_of_crashing(tmp_path: Path) -> None:
@@ -118,7 +123,9 @@ def test_sweep_removes_only_clean_remote_recoverable_unused_worktree(
         ledger_path=ledger,
         policy_version="cleanup-control-v1",
         manifest_sha256="test-manifest",
-        now=1_000,
+        now=int(safe.stat().st_ctime)
+        + cleanup_control.WORKTREE_RECLAIM_GRACE_SECONDS
+        + 1,
     )
 
     assert result["removed"] == 1
@@ -136,6 +143,42 @@ def test_sweep_removes_only_clean_remote_recoverable_unused_worktree(
     assert reasons[str(unpushed)] == "head_not_on_remote"
     assert reasons[str(locked)] == "locked_worktree"
     assert reasons[str(open_path)] == "open_worktree"
+
+
+def test_sweep_preserves_newly_created_remote_recoverable_worktree_during_grace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    remote = tmp_path / "remote.git"
+    primary = tmp_path / "repo"
+    collection = primary / ".worktrees"
+    git(tmp_path, "init", "--bare", str(remote))
+    git(tmp_path, "clone", str(remote), str(primary))
+    git(primary, "config", "user.email", "cleanup@example.invalid")
+    git(primary, "config", "user.name", "Cleanup Test")
+    git(primary, "checkout", "-b", "main")
+    commit_file(primary, "base.txt", "base")
+    git(primary, "push", "-u", "origin", "main")
+
+    fresh = add_worktree(primary, collection, "fresh")
+    git(fresh, "push", "-u", "origin", "fresh")
+    monkeypatch.setattr(cleanup_control, "path_open_state", lambda _path: "confirmed-closed")
+    created_at = int(fresh.stat().st_ctime)
+    ledger = tmp_path / "ledger.jsonl"
+
+    result = cleanup_control.sweep_worktree_collection(
+        collection_root=collection,
+        ledger_path=ledger,
+        policy_version="cleanup-control-v1",
+        manifest_sha256="test-manifest",
+        now=created_at + 60,
+    )
+
+    assert result["removed"] == 0
+    assert result["errors"] == 0
+    assert fresh.exists()
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    event = next(item for item in events if item["path"] == str(fresh))
+    assert event["reason"] == "recent_worktree"
 
 
 def test_sweep_supports_collection_outside_repository(
@@ -163,7 +206,9 @@ def test_sweep_supports_collection_outside_repository(
         ledger_path=tmp_path / "ledger.jsonl",
         policy_version="cleanup-control-v1",
         manifest_sha256="test-manifest",
-        now=1_000,
+        now=int(safe.stat().st_ctime)
+        + cleanup_control.WORKTREE_RECLAIM_GRACE_SECONDS
+        + 1,
     )
 
     assert result["removed"] == 1
@@ -199,7 +244,9 @@ def test_sweep_accepts_clean_worktree_recoverable_from_non_origin_remote(
         ledger_path=tmp_path / "ledger.jsonl",
         policy_version="cleanup-control-v1",
         manifest_sha256="test-manifest",
-        now=1_000,
+        now=int(safe.stat().st_ctime)
+        + cleanup_control.WORKTREE_RECLAIM_GRACE_SECONDS
+        + 1,
     )
 
     assert result["removed"] == 1
