@@ -14,6 +14,7 @@ const {
 const ENV = {
   BROWSER_AUTH_TENANT_A_UID: "tenant-a",
   LM_AGENT_BROWSER_EMAIL: "agent@example.test",
+  LM_AGENTMAIL_INBOX_ID: "browser-agent@example.test",
 };
 
 function fixture(overrides = {}) {
@@ -89,7 +90,7 @@ test("cloud magic-link login saves only a confirmed Luma context and returns saf
     released: true,
   });
   assert.deepEqual(calls[0], ["openBrowser"]);
-  assert.deepEqual(calls[1], ["requestMagicLink", ENV.LM_AGENT_BROWSER_EMAIL]);
+  assert.deepEqual(calls[1], ["requestMagicLink", ENV.LM_AGENTMAIL_INBOX_ID]);
   assert.deepEqual(calls[2], ["readMagicLink", { afterMs: 1_800_000_000_000 }]);
   assert.deepEqual(calls[3], ["openMagicLink", "https://luma.com/auth/magic-link-token"]);
   assert.deepEqual(calls[4], ["inspectAuthenticated"]);
@@ -105,7 +106,10 @@ test("cloud magic-link login saves only a confirmed Luma context and returns saf
     },
   }]);
   assert.deepEqual(calls.at(-1), ["release"]);
-  assert.doesNotMatch(JSON.stringify(result), /agent@example|magic-link-token|private-cookie/);
+  assert.doesNotMatch(
+    JSON.stringify(result),
+    /agent@example|browser-agent@example|magic-link-token|private-cookie/,
+  );
 });
 
 test("unsafe link or missing authenticated marker fails closed without saving and still releases", async () => {
@@ -137,7 +141,11 @@ test("missing runtime identity fails before opening Steel", async () => {
 
   await assert.rejects(
     runLumaBootstrap({
-      env: { BROWSER_AUTH_TENANT_A_UID: "", LM_AGENT_BROWSER_EMAIL: "" },
+      env: {
+        BROWSER_AUTH_TENANT_A_UID: "",
+        LM_AGENT_BROWSER_EMAIL: "",
+        LM_AGENTMAIL_INBOX_ID: "",
+      },
       deps,
     }),
     /Luma bootstrap configuration unavailable/,
@@ -192,11 +200,11 @@ test("Luma login request deterministically fills and submits the measured email 
     async waitForTimeout(ms) { calls.push(["waitForTimeout", ms]); },
   };
 
-  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENT_BROWSER_EMAIL), true);
+  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENTMAIL_INBOX_ID), true);
   assert.deepEqual(calls, [
     ["locator", "input[type=\"email\"]"],
     ["isVisible"],
-    ["fill", ENV.LM_AGENT_BROWSER_EMAIL],
+    ["fill", ENV.LM_AGENTMAIL_INBOX_ID],
     ["locator", "button[type=\"submit\"]"],
     ["click"],
     ["waitForTimeout", 2_000],
