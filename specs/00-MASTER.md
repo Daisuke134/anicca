@@ -1,6 +1,8 @@
-# 00 — MASTER (SSOT, locked 2026-06-11)
+# 00 — MASTER (superseded historical snapshot, locked 2026-06-11)
 
-This is the single source of truth for Anicca's architecture + roadmap. Detail lives in 02-24; this file holds the LOCKED decisions and the end-to-end TODO. If anything elsewhere contradicts this, this wins.
+> **Not the live SSOT.** The current mission, product, repository boundary, execution order, and remaining TODO live in [`../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md). This file preserves the locked 2026-06-11 architecture snapshot; its roadmap and decisions do not override the live spec.
+
+This was the single source of truth for Anicca's architecture + roadmap at the time. Detail lives in 02-24; this file preserves the locked decisions and the then-current end-to-end TODO.
 
 ## Mission
 The first self-funding AI: earns more than it spends, with no human in the loop. OSS the body so any AI can fund + scale itself, free from human agency. Reduce suffering (Buddhist AGI). Life-management is an optional sub-feature; **earning is the main thing**.
@@ -15,7 +17,7 @@ The first self-funding AI: earns more than it spends, with no human in the loop.
    - TERMINAL = local BYOK self-host only (git clone + install.sh).
 5. **Reports = multi-channel.** Primary web dashboard + delivered wherever the user is: mail, Telegram, LINE, iMessage, Messenger. Start web+mail, add channels.
 6. **Economic thesis (the differentiator):** subs are first revenue (like Polsia $40-50/mo). The separation = the user gets back MORE than they pay (the agent earns for them). When the agent self-funds its compute, the sub auto-cancels → free.
-7. **SSOT for specs = `~/anicca/specs/`.** ~/.openclaw/docs (master source material) consolidates here; ~/anicca-project/docs/superpowers/specs = dev working notes.
+7. **Historical location decision:** specs were consolidated under `~/anicca/specs/`. This is superseded by the live SSOT linked above.
 
 ## Architecture (cloud-native colony)
 ```

@@ -551,14 +551,14 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **OSS-MERGE-1** | `profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current Life Manager cursor**。8iはweb product移植を閉じたが、full OSS self-contained proofと旧repo/folderのrequired-code吸収は未完 |
+| 2 | **OSS-MERGE-1** | `life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current Life Manager cursor**。8iはweb product移植を閉じたが、`life-manager-v0`を含む旧sourceのfull OSS self-contained proofとrequired-code吸収は未完 |
 | 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
 | 7 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
 | 8 | **LIFE-OUTCOMES-1** | cloud常設loopがchatをprimary push surfaceとして、MENTAL・PHYSICAL・FINANCIALの各1 journeyを本人のcontext/capabilityに合わせてobserve→decide→act→verify→reportまで閉じる | MENTAL=実context triggerと過剰通知0、PHYSICAL=実need→予約/実施follow-through、FINANCIAL=利用可能railを自律実行してverified receiptまたは正直なno-income/blocked report。3 journeyとも実mobile TG message id、provider/ledger readback、同じeventのrealtime panel readback一致 | pending。収益額や通院時期など外部event待ちは実装cursorを止めず、controlled real journeyと正直な未達を分離する |
-| 9 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `anicca-products`は他productだけ、`profitable-claude`はhistorical redirect/archive、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending |
+| 9 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `life-manager-v0`はrequired code/runtime reference 0を確認してarchive + canonical redirect、`anicca-products`は他productだけ、`profitable-claude`はhistorical redirect/archive、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending |
 | 10 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
 | 11 | **OPS-PANEL-1** | 既存の恒久 `/panel` を、全loop・browser trace・action receipt・失敗理由・次回実行が常時見えるrealtime overview/controlへ完成する | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示、chatへ送ったreceiptと同じevent id。routine report/ask/actionは既存mobile chatで完結し、panelはいつでも全体像を確認できる | pending |
 
@@ -686,10 +686,11 @@ renameの設計正本→`2026-07-23-life-manager-repository-rename-design.md`。
 | Surface | 現在 | 境界 |
 |---|---|---|
 | canonical Life Manager repo | `Daisuke134/life-manager`、repository ID `1248111245`、public/unarchived。`apps/life-manager`と本specが存在 | Life Manager product、agent-economy接続、同productのSSOT/deployment sourceを保持 |
+| legacy v0 repo | `Daisuke134/life-manager-v0`、repository ID `1273052304`、public/unarchived。旧standalone treeで、canonicalのmonorepo構成・本spec・現行workflowを持たない | **migration input / historical referenceだけ**。新規code・spec・issue・release・deployを置かない。`OSS-MERGE-1`でrequired code 0を証明し、`LEGACY-RETIRE-1`でarchive + canonical redirectへ閉じる |
 | sibling products repo | `Daisuke134/anicca-products`、public/unarchived。旧`apps/life-call` copyと一部active branchが残る | 他productだけを保持。Life Manager code/branch/deploy sourceを残さない |
 | old OSS repo | `Daisuke134/profitable-claude`、private/unarchived、独立tree | 必要code/historyを吸収後、runtime dependency 0のhistorical redirectにする |
 | private OpenClaw repo | `Daisuke134/anicca-dais`、private/unarchived、個人config/state/logと再利用可能skillが混在 | reusable code/testだけを吸収。secret/state/logはexternal runtime dataへ分離し、Life Managerからrepo参照0 |
-| local execution | 複数のlinked worktreeと旧local folderが存在 | fresh `life-manager` clone 1つだけでlocal OSSを実行。他checkout 0でも全必須test/buildが通る |
+| local execution | 複数のlinked worktreeと旧local folderが存在。現Macではbasename `life-manager`がlegacy `life-manager-v0`を、`life-manager-main`がcanonicalを追跡しており、名前と実体が逆転 | migration中の実行元はremote URLで判定し、basenameで判定しない。最終的にfresh canonical `life-manager` clone 1つだけでlocal OSSを実行し、他checkout 0でも全必須test/buildが通る |
 
 repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiveはhistorical evidenceであり、
 後続の裁定18で`anicca-products`をunarchiveした。しかし完全self-contained OSSの判定は未完である。
@@ -704,8 +705,62 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 | OSS-3 | secret/stateはrepoではなくdocumented external input | `.env.example`、schema/migration、volume/secret-manager adapter、onboarding、redaction test。secret/PII scan 0 |
 | OSS-4 | optional providerが無くてもcoreは起動する | connector capability readbackと正直なunavailable。missing sibling repoによるmodule/file error 0 |
 | OSS-5 | canonicalだけでbuild/test/deploy/releaseできる | install、focused/full/eval、local E2E、cloud E2E、SBOM/license/secret scan、exact deploy SHAが全PASS |
-| OSS-6 | legacy sourceにLife Managerのactive branch/deploy責務を残さない | `anicca-products`/`profitable-claude`/`anicca-dais`からLife Manager workflow・deploy・required codeを除去またはredirectし、canonical readback一致 |
+| OSS-6 | legacy sourceにLife Managerのactive branch/deploy責務を残さない | `life-manager-v0`/`anicca-products`/`profitable-claude`/`anicca-dais`からLife Manager workflow・deploy・required codeを除去またはredirectし、canonical readback一致 |
 | OSS-7 | public treeにDais固有identity/product/dataを埋め込まない | name/email/phone/domain/home path/product id/credential/browser profile/private fixtureの実値0。generic placeholderまたはsynthetic fixtureだけ。Anicca/Honne等はtenant workspaceのexternal product referenceとしてのみ出現 |
+
+### 2.3 Repository SSOT cutover contract
+
+#### As-Is
+
+- GitHubには`Daisuke134/life-manager`と`Daisuke134/life-manager-v0`がpublic/unarchivedで存在する。
+- active launchdのLife Manager code pathはcanonical checkoutを参照する一方、Telegram等の一部runtimeは
+  external runtime stateから実行され、完全self-contained化は未完である。
+- local folder名だけを見るとlegacyをcanonicalと誤認できる。
+
+#### To-Be
+
+`https://github.com/Daisuke134/life-manager`だけをLife Managerのcode、spec、issue、release、workflow、
+deploy sourceとする。`life-manager-v0`はmigration inputとして読み取りだけにし、required code 0とruntime reference 0の
+evidence後にarchiveしてcanonical URLへredirectする。linked worktree、database、secret manager、wallet、ledger、log、
+browser profileは同じrepoの作業面またはexternal runtime stateであり、第二のsource repoにはしない。
+
+#### Requirements
+
+| ID | Requirement |
+|---|---|
+| REPO-SSOT-1 | 新規Life Manager変更のremoteはrepository ID `1248111245`だけにする |
+| REPO-SSOT-2 | `life-manager-v0`へ新規commit、issue、release、workflow、deployを作らない |
+| REPO-SSOT-3 | v0をarchiveする前にsource/target manifest、license/history provenance、required code 0、runtime reference 0、rollback pathを保存する |
+| REPO-SSOT-4 | local/cloudはcanonicalの同じcommitから動き、runtime stateだけをdocumented external inputとして注入する |
+| REPO-SSOT-5 | 入口文書は本specをlive SSOTとして一行参照し、旧`specs/00-MASTER.md`をlive roadmapとして参照しない |
+
+#### Acceptance Criteria
+
+| ID | Given | When | Then |
+|---|---|---|---|
+| REPO-AC-1 | fresh machineに他checkoutがない | canonicalをcloneしてinstall/test/local E2Eを実行 | sibling/legacy path参照0でPASSする |
+| REPO-AC-2 | canonicalとv0のdefault branchをscanする | required source/workflow/spec/deployを比較 | unique required artifactはcanonicalだけに存在し、v0 required codeは0 |
+| REPO-AC-3 | local/cloud scheduler inventoryを取得する | executableとgit remoteをresolveする | active Life Manager source remoteはcanonical 1件、v0参照0 |
+| REPO-AC-4 | README/spec入口をscanする | live SSOT表記を列挙する | mission/product/repo/TODOのlive SSOTは本spec1件、旧masterはhistorical表示 |
+| REPO-AC-5 | AC-1〜4がPASSする | `life-manager-v0`をarchiveしてREADME redirectを読む | canonical URLへ到達し、production downtime/loop gap/rollback欠落が0 |
+
+#### Test Matrix
+
+| Layer | Command / observation | PASS |
+|---|---|---|
+| GitHub identity | `gh repo view`でname/id/default branch/archiveをreadback | canonical ID=`1248111245`、v0 ID=`1273052304`、役割が§2.1と一致 |
+| Source dependency | tracked file、workflow、launchd、deploy configのremote/path scan | canonical外のrequired source 0 |
+| Fresh clone | clean VM/containerでinstall + focused/full/eval + local E2E | other checkout 0のまま全PASS |
+| Cloud parity | deployment commit/runtime versionとlocal receiptを比較 | exact SHA/version一致 |
+| Docs | README、`specs/`、`docs/superpowers/specs/`のSSOT claim scan | contradictory live SSOT claim 0 |
+
+#### Boundaries / Execution / E2E judgment
+
+private key、credential、個人memory、ledger、log、browser profileをGitへ集約することは「one repo」に含めない。
+これらをrepoへ移す変更はFAILである。実行順は **`OSS-MERGE-1` → `BROWSER-AUTH-1` →
+`LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` → `LEGACY-RETIRE-1`** とし、稼働loopはparity証明前に止めない。
+`life-manager-v0`をarchiveした事実だけではdoneにしない。REPO-AC-1〜5の全PASSと、canonical exact SHAから
+local/cloud E2Eが動き、Telegram/panel/provider receiptまで同じevent IDでreadbackできた時だけrepository consolidationをdoneとする。
 
 ## 3. 決定: レーンは1つ（2026-07-20 Dais 是正 — 旧「2レーン表」は誤りだったので消して書き直し）
 
