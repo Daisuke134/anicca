@@ -32,6 +32,7 @@ OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high",
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
 DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
+CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems",))
 # Smallest prompt that could plausibly express a bounded task. Kept low on
 # purpose: this is a floor against empty/degenerate transport, not a style
 # rule. Callers that legitimately want a stricter floor set
@@ -73,6 +74,26 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def codex_output_schema(schema: Any, result_path: Path) -> Path:
+    """Write the provider subset without weakening deterministic validation."""
+
+    def compatible(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: compatible(item)
+                for key, item in value.items()
+                if key not in CODEX_UNSUPPORTED_SCHEMA_KEYWORDS
+            }
+        if isinstance(value, list):
+            return [compatible(item) for item in value]
+        return value
+
+    prefix = result_path.name.removesuffix(".result.json")
+    path = result_path.with_name(f"{prefix}.codex-output-schema.json")
+    atomic_json(path, compatible(schema))
+    return path
 
 
 def _token(value: Any) -> int | None:
@@ -745,6 +766,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
     model = candidate["model"]
     effort = candidate.get("effort", "medium")
     if provider == "codex":
+        provider_schema_path = codex_output_schema(schema, result_path)
         command = [
             executable, "exec", "--ephemeral", "--model", model,
             "-c", f'model_reasoning_effort="{effort}"',
@@ -775,7 +797,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 command.extend(["--disable", feature])
         command.extend([
             "--ignore-user-config", "--json",
-            "--output-schema", str(args.schema), "-o", str(result_path),
+            "--output-schema", str(provider_schema_path), "-o", str(result_path),
         ])
         if args.task_class in ("composition-agent", "diagnostic-agent"):
             command.extend(["--sandbox", "read-only"])
