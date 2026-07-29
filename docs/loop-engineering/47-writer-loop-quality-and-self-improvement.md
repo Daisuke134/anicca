@@ -2761,16 +2761,16 @@ verified evidence
 | 状態 | 作業 | 証拠 |
 |---|---|---|
 | DONE (`3edd5e7`; runtime installed `3edd5e7`) | editorial formの矛盾を修復 | queue cardをvoice/genre selectorから外し、topic source / evidence plan / editorial formを独立化。`topic-route.json`を正本に explainer / how-to / case-study / comparison / field-note / opinion / report を選び、直近2 runと同じformの3連続目をreceipt履歴から機械拒否。一人称はreader jobと検証済みevidenceに最適なformだけ許可。旧`lane A = first-person récit` / 全記事一人称規則を削除。TDD RED 2→router 6 PASS、daily contract全PASS、critical contradiction 0。article Python回帰は367 PASS / 10既存FAILで、変更前HEADを隔離再実行して同じ10FAILを確認。LaunchAgentとcanonical skill symlinkはいずれもinstalled scriptを参照し、tracked blob hash一致 |
+| DONE (`49a316f`; runtime installed `49a316f`) | editorial/reader FAILをquality self-healへ接続 | current SHA-256付きeditorial/reader/identity receiptを要求。初回FAILは`quality_self_heal.py`が別editorial form + 別outlineへexact1 rerouteし、同じformの表面修正はPASSでもfreeze拒否。2回目FAILは`block_freeze`でpublication-state作成0。conscience ALLOW後のquality terminalはeditorial/reader/identity/safety exact4 PASSを同一artifact hashへbindし、`publication_resume.py init --require-quality`が欠落・stale・非PASSを不可逆境界前に拒否。TDD RED 5→self-heal 5 PASS、focused 98 PASS、article Python 372 PASS（既知fixture fileを除外）、daily contract全PASS、critical contradiction 0、runtime tracked blob一致 |
 
 ##### A. TODO NOW — 今すぐ実装する
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | OPEN / P0 QUALITY | editorial/reader FAILをquality self-healへ接続 | bounded revise後もFAILなら同じ弱いformを公開せず、別form・別outline候補へ戻る。有料面はeditorial PASS、reader PASS、truth/identity PASSの同一artifact receiptが揃うまでpublishしない |
-| 2 | OPEN / P0 REGRESSION | production complaintを回帰fixture化 | 今日のtitle/body、`editorial-ja=FAIL`、reader unanswered 2件をfixtureにし、旧promptではRED、新contractでは別form候補生成またはpublish BLOCKを証明 |
-| 3 | OPEN / P1 RELIABILITY | x-post/ja lengthをfreeze前にgate | 280字以内だけimmutable artifact化。今日の362字intentは本文を後編集せず`invalid_pre_freeze_length`でterminal分類 |
-| 4 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
-| 5 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
+| 1 | OPEN / P0 REGRESSION | production complaintを回帰fixture化 | 今日のtitle/body、`editorial-ja=FAIL`、reader unanswered 2件をfixtureにし、旧promptではRED、新contractでは別form候補生成またはpublish BLOCKを証明 |
+| 2 | OPEN / P1 RELIABILITY | x-post/ja lengthをfreeze前にgate | 280字以内だけimmutable artifact化。今日の362字intentは本文を後編集せず`invalid_pre_freeze_length`でterminal分類 |
+| 3 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
+| 4 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
 
 ##### B. VERIFY ONLY — 実装済み、次の実runで証明する
 
