@@ -17,8 +17,9 @@ Configure automatic Remote Control once, then create sessions without disturbing
 
 2. Run `/config`, search for `Remote Control`, select **Enable Remote Control for all sessions**, and set it to `true`.
 3. Require the literal confirmation `Enabled Remote Control for all sessions`.
-4. Exit that session and start a fresh normal `claude` session without `--remote-control`.
-5. Verify that the fresh session enters `/rc connecting…` automatically. Send one real message and confirm the session remains live. Do not infer success from the saved preference alone.
+4. Check a fresh login shell for `CLAUDE_CODE_OAUTH_TOKEN`. If it is globally exported, stop exporting it to interactive shells or unset it after the secrets block. Keep the underlying shared secret intact for jobs that explicitly source it.
+5. Exit that session and start a fresh normal `claude` session from a fresh login shell, without `env -u`, `--remote-control`, or `/rc`.
+6. Verify that the fresh session enters `/rc connecting…` automatically. Send one real message and confirm the session remains live. Do not infer success from the saved preference alone.
 
 This removes the need to type `/rc` for each future interactive session. It does not start Claude Code by itself after logout or reboot. For phone-originated sessions while no interactive process exists, use Claude's official server mode under a supervised service:
 
@@ -105,6 +106,7 @@ Use this when `/remote-control` says the current login token is limited to infer
 |---|---|---|
 | Fresh normal session shows `/rc connecting…` | Global automatic setting is taking effect | Send one real message and verify the connected session |
 | Preference says `true` but a fresh session never connects | Saved setting or authentication is ineffective | Reopen `/config`, verify the value, check full-scope auth, then retry with a fresh process |
+| A fresh login shell exports `CLAUDE_CODE_OAUTH_TOKEN` | Long-lived inference token can override the full-scope login for every future session | Preserve the secret at its source, but stop globally exporting it to interactive shells; verify a fresh login shell reports it unset |
 | `Remote Control requires an active session` | No active query exists | Send one real message, wait for completion or an explicit API response, retry |
 | `OAuth access token has expired` | CLI authentication is stale | Import the transcript into authenticated Desktop, then retry there |
 | `Remote Control requires a full-scope login token` | A setup token or `CLAUDE_CODE_OAUTH_TOKEN` is overriding interactive OAuth | Run full-scope reauthentication, then start the child process with `env -u CLAUDE_CODE_OAUTH_TOKEN` |
