@@ -1,1 +1,48 @@
-{"name":"anicca-x402-endpoint","private":true,"type":"module","version":"0.1.0","dependencies":{"@coinbase/cdp-sdk":"^1.51.2","@x402/core":"^2.15.0","@x402/evm":"^2.15.0","@x402/express":"^2.15.0","express":"^5.2.1","viem":"^2.52.2","x402-express":"^1.2.0","x402-fetch":"^1.2.0"}}
+{
+  "name": "x402-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "x402-gated AI agent API endpoints (paid via USDC)",
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "npx prisma generate && node src/server.js",
+    "dev": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "x402",
+    "ai-agents",
+    "anicca"
+  ],
+  "author": "ANICCA",
+  "license": "MIT",
+  "overrides": {
+    "axios": "^1.18.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@coinbase/x402": "^2.1.0",
+    "@prisma/client": "5.22.0",
+    "@x402/core": "^2.20.0",
+    "@x402/evm": "^2.20.0",
+    "@x402/express": "^2.20.0",
+    "@x402/extensions": "^2.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.16.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "openai": "^6.17.0",
+    "prisma": "5.22.0",
+    "zod": "^3.25.67"
+  }
+}

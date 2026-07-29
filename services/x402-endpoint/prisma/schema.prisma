@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// This service intentionally owns only the table it reads and writes.
+// The shared database schema remains owned by the canonical Life Manager backend.
+model AgentAuditLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType       String   @map("event_type") @db.VarChar(50)
+  agentPostId     String?  @db.Uuid @map("agent_post_id")
+  platform        String?  @db.VarChar(50)
+  requestPayload  Json?    @db.JsonB @map("request_payload")
+  responsePayload Json?    @db.JsonB @map("response_payload")
+  executedBy      String?  @db.VarChar(100) @map("executed_by")
+  durationMs      Int?     @map("duration_ms")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventType])
+  @@index([createdAt(sort: Desc)])
+  @@index([agentPostId])
+  @@map("agent_audit_logs")
+}
