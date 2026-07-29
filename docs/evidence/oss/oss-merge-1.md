@@ -2,13 +2,12 @@
 
 ## Verified outcome
 
-The remote `feature/oss-merge-1` tree is self-contained at verified commit
-`edea1e06b461959ccecd37284b92bb3624fcd0c7`. PR #1268 is mergeable; canonical
-`main` readback remains the last close gate.
+Canonical `main` is self-contained at merge commit
+`8d47689d3b3fa023c4128dd02042fffb2fe74f04`. PR #1268 is merged.
 
 | Gate | Evidence |
 |---|---|
-| Fresh remote clone | shallow clone of exact remote commit `edea1e06b…`; clean before and after |
+| Fresh remote clone | shallow clone of canonical `main` at exact commit `8d47689d3…`; clean before and after |
 | Root install | `npm ci` PASS |
 | OSS boundary | 11/11 contract tests and `npm run verify:oss` PASS; seven required source classes present; Gitlinks, external source roots, duplicate runner, unclassified manifest drift 0 |
 | Isolated installer | `LIFE_MANAGER_HOME=<temp>/runtime LIFE_MANAGER_INSTALL_DAEMON=0 ./install.sh` PASS; `.env` created/preserved; LaunchAgents 0 |
@@ -18,6 +17,7 @@ The remote `feature/oss-merge-1` tree is self-contained at verified commit
 | Single runtime engine | `runtime/agent-runner` 9/9; marketing wiring 10/10; job loop 152/152; second runner 0 |
 | Browser auth focused | 84/84 PASS on the integrated tree |
 | Current-tree privacy | tracked PII-shape scan 0; Python security manifest 13/13; `gitleaks dir` 0 |
+| Canonical security CI | exact-main run `30452626666`; OSS boundary, gitleaks full history, TruffleHog filesystem/history, PII shapes, Python, and Shell all PASS |
 | Language/runtime checks | all tracked shell and Python source parses |
 
 The repository's older shared history still triggers the pre-existing history-mode gitleaks scan.
@@ -29,7 +29,7 @@ branch tree and a depth-one distributable clone.
 No loaded Mac loop was unloaded, restarted, or moved during this atomic. Runtime state, credentials,
 logs, generated media, and user destinations remain external to the repository. This proof does not
 claim `BROWSER-AUTH-1`: real Luma encrypted-session restore through the production cloud queue is the
-next cursor after the merged-main readback.
+current cursor.
 
 The two historical RevenueCat credentials recorded in
 `docs/evidence/oss/oss-security-baseline-1.md` remain an external Anicca iOS/API
