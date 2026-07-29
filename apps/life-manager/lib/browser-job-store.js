@@ -150,7 +150,7 @@ async function readBrowserJob(jobId, opts = {}) {
   const id = nonEmpty(jobId, "browser job id", 100);
   const { query } = database(opts);
   const rows = (await query(
-    "SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public.lm_browser_jobs WHERE id = $1 LIMIT 1",
+    "SELECT id, uid, status, auth_marker_hash, receipt, trace, telegram_result_message_id FROM public.lm_browser_jobs WHERE id = $1 LIMIT 1",
     [id],
   )).rows;
   if (rows.length > 1) throw new Error("browser job read returned multiple rows");

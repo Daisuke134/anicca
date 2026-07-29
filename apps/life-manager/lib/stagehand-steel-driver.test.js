@@ -16,13 +16,24 @@ function visibleElement(metadata = {}, innerText = "") {
   };
 }
 
-function domEnvironment({ bodyText = "", inputs = [], forms = [] } = {}) {
+function domEnvironment({
+  bodyText = "",
+  inputs = [],
+  forms = [],
+  authActions = [],
+} = {}) {
   return {
     document: {
       body: { innerText: bodyText },
       querySelectorAll(selector) {
         if (selector === "input") return inputs;
         if (selector === "form") return forms;
+        if (
+          selector.includes('input[type="submit"]') &&
+          selector.includes('[role="button"]')
+        ) {
+          return authActions;
+        }
         return [];
       },
     },
@@ -407,7 +418,7 @@ test("auth continuity never confirms when the typed readback also reports an aut
         confirmationId: null,
         providerText,
         activeRegistrationForm: false,
-        activeAuthenticationForm: false,
+        activeAuthenticationForm: expectedReason === "login",
       },
     });
     const session = await driver.openSession();
@@ -582,6 +593,212 @@ test("ordinary one-digit numeric cell groups are not authentication without OTP 
     assert.equal(signals.otpVisible, false, `${count} ordinary numeric cells`);
     assert.equal(signals.authVisible, false, `${count} ordinary numeric cells`);
   }
+});
+
+test("protected account settings copy mentioning sign-in is not an active auth form", () => {
+  const snapshot = collectReadOnlyDomSnapshot(
+    { marker: "Account Settings" },
+    domEnvironment({
+      bodyText: [
+        "Account Settings",
+        "Sign in and security",
+        "Connected apps",
+      ].join("\n"),
+      inputs: [
+        visibleElement({
+          type: "text",
+          inputMode: "",
+          autocomplete: "name",
+          maxLength: 100,
+        }),
+      ],
+    }),
+  );
+
+  const signals = classifyReadOnlyDomSnapshot(snapshot);
+
+  assert.equal(signals.markerPresent, true);
+  assert.equal(signals.passwordVisible, false);
+  assert.equal(signals.otpVisible, false);
+  assert.equal(signals.authVisible, false);
+});
+
+test("sign-in copy with a visible email control remains active authentication", () => {
+  const snapshot = collectReadOnlyDomSnapshot(
+    { marker: "Sign in" },
+    domEnvironment({
+      bodyText: "Sign in to continue",
+      inputs: [
+        visibleElement({
+          type: "email",
+          inputMode: "email",
+          autocomplete: "username",
+          maxLength: 200,
+        }),
+      ],
+    }),
+  );
+
+  assert.equal(classifyReadOnlyDomSnapshot(snapshot).authVisible, true);
+});
+
+test("visible passwordless sign-in actions remain active authentication", () => {
+  for (const action of [
+    visibleElement({
+      tagName: "BUTTON",
+      getAttribute() { return null; },
+    }, "Continue with Google"),
+    visibleElement({
+      tagName: "A",
+      href: "https://fresh-events.example/signin",
+      getAttribute(name) {
+        return name === "href" ? "/signin" : null;
+      },
+    }, "Access account"),
+    visibleElement({
+      tagName: "FORM",
+      action: "https://fresh-events.example/login",
+      getAttribute(name) {
+        return name === "action" ? "/login" : null;
+      },
+    }),
+  ]) {
+    const snapshot = collectReadOnlyDomSnapshot(
+      { marker: "Account" },
+      domEnvironment({
+        bodyText: "Account",
+        authActions: [action],
+      }),
+    );
+
+    assert.equal(snapshot.authActionVisible, true);
+    assert.equal(classifyReadOnlyDomSnapshot(snapshot).authVisible, true);
+  }
+});
+
+test("Sign in and security settings links are passive account copy", () => {
+  const snapshot = collectReadOnlyDomSnapshot(
+    { marker: "Account Settings" },
+    domEnvironment({
+      bodyText: "Account Settings. Sign in and security.",
+      authActions: [
+        visibleElement({
+          tagName: "A",
+          href: "https://fresh-events.example/settings/security",
+          getAttribute(name) {
+            return name === "href" ? "/settings/security" : null;
+          },
+        }, "Sign in and security"),
+      ],
+    }),
+  );
+
+  assert.equal(snapshot.authActionVisible, false);
+  assert.equal(classifyReadOnlyDomSnapshot(snapshot).authVisible, false);
+});
+
+test("account settings security copy cannot create a login handoff without active auth controls", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Account Settings. Sign-in & security.",
+      inputs: [
+        visibleElement({
+          type: "text",
+          inputMode: "",
+          autocomplete: "name",
+          maxLength: 100,
+        }),
+      ],
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Account Settings. Sign-in & security.",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffReason, null);
+});
+
+test("failed or verification-pending provider readback cannot be promoted by passive login copy", async () => {
+  for (const providerText of [
+    "Account Settings. Sign in. Failed.",
+    "Account Settings. Sign in. Check your email.",
+    "Account Settings. Sign in. Email verification required.",
+    "Account Settings. Sign in. Confirm your email.",
+  ]) {
+    const { driver } = fixture({
+      pageUrl: "https://fresh-events.example/settings",
+      evaluateEnvironment: domEnvironment({ bodyText: providerText }),
+      authReceipt: {
+        confirmed: false,
+        status: "login required",
+        confirmationId: null,
+        providerText,
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, providerText);
+    assert.equal(receipt.handoffRequired, true, providerText);
+    assert.equal(receipt.handoffReason, "login", providerText);
+  }
+});
+
+test("passwordless sign-in actions cannot be promoted by passive account copy", async () => {
+  const providerText = "Account Settings. Sign in.";
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: providerText,
+      authActions: [
+        visibleElement({
+          tagName: "BUTTON",
+          getAttribute() { return null; },
+        }, "Continue with Google"),
+      ],
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText,
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
 });
 
 test("auth continuity rejects an unsafe or cross-origin final redirect", async () => {
@@ -1090,6 +1307,121 @@ test("release exports context before Steel release, saves exact identity, and re
     JSON.stringify({ action, release }),
     /restored-cookie-secret|exported-cookie-secret|exported-storage-secret/,
     "action output and release/trace metadata never contain browser auth material",
+  );
+});
+
+test("release removes finite expired cookies before passing exported context to durable storage", async () => {
+  const exported = {
+    cookies: [
+      { name: "expired", value: "drop-expired-secret", domain: "auth.fixture.dev", path: "/", expires: 1 },
+      { name: "future", value: "keep-future-secret", domain: "auth.fixture.dev", path: "/", expires: 4102444800 },
+      { name: "session", value: "keep-session-secret", domain: "auth.fixture.dev", path: "/", expires: -1 },
+    ],
+  };
+  const { driver, authCalls } = fixture({
+    authRecords: { "u-one": { context: exported } },
+    exportContext: exported,
+    savedRecord: { context_sha256: "c".repeat(64), key_version: 1 },
+  });
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.fixture.dev/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+
+  await driver.releaseSession(session.id, {
+    providerReceipt: { handoff_required: false, handoff_reason: null },
+  });
+
+  assert.deepEqual(authCalls[1][1].context.cookies.map(({ name }) => name), [
+    "future",
+    "session",
+  ]);
+  assert.doesNotMatch(JSON.stringify(authCalls[1][1].context), /drop-expired-secret/);
+});
+
+test("an expired-only restored row is invalidated once before a fresh no-context Steel login handoff", async () => {
+  const expired = {
+    cookies: [
+      {
+        name: "session",
+        value: "expired-cookie-secret",
+        domain: "auth.fixture.dev",
+        path: "/",
+        expires: 1,
+      },
+    ],
+  };
+  const { driver, calls, authCalls } = fixture({
+    authRecords: { "u-one": { context: expired } },
+    pageUrl: "https://auth.fixture.dev/login",
+    domGuard: domSnapshot({ authVisible: true, markerPresent: false }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Sign in",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: true,
+    },
+  });
+
+  const session = await driver.openSession({
+    uid: "u-one",
+    goal: "Open https://auth.fixture.dev/account",
+    requiresLogin: true,
+    principalKind: "agent_owned",
+  });
+  const action = await driver.discoverAndAct(session, {
+    goal: "Open https://auth.fixture.dev/account",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const receipt = await driver.readProviderReceipt(session, action);
+  const release = await driver.releaseSession(session.id, {
+    providerReceipt: {
+      confirmed: receipt.confirmed,
+      status: receipt.status,
+      confirmation_id: receipt.confirmationId,
+      current_url: receipt.currentUrl,
+      handoff_required: receipt.handoffRequired,
+      handoff_reason: receipt.handoffReason,
+    },
+  });
+
+  assert.equal(action.sideEffectStarted, false);
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
+  assert.deepEqual(calls.find(([name]) => name === "create"), ["create", { blockAds: true }]);
+  assert.equal(calls.filter(([name]) => name === "create").length, 1);
+  assert.equal(calls.filter(([name]) => name === "release").length, 1);
+  assert.equal(calls.some(([name]) => name === "getContext"), false);
+  assert.deepEqual(authCalls, [
+    ["read", {
+      uid: "u-one",
+      origin: "https://auth.fixture.dev",
+      principalKind: "agent_owned",
+    }],
+    ["invalidate", {
+      uid: "u-one",
+      origin: "https://auth.fixture.dev",
+      principalKind: "agent_owned",
+    }],
+  ]);
+  assert.deepEqual(release, {
+    released: true,
+    origin: "https://auth.fixture.dev",
+    principal_kind: "agent_owned",
+    auth_context_loaded: false,
+    auth_context_saved: false,
+    auth_context_invalidated: true,
+    context_sha256: null,
+    key_version: null,
+  });
+  assert.doesNotMatch(
+    JSON.stringify({ action, receipt, release }),
+    /expired-cookie-secret/,
   );
 });
 

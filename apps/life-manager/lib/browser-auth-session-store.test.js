@@ -98,6 +98,24 @@ test("browser auth contexts are strictly scoped to the exact public HTTPS origin
   }, "https://luma.com"), /browser auth context invalid/i);
 });
 
+test("browser auth removes only finite expired cookies before sealing and comparing contexts", () => {
+  const scoped = scopeSessionContextToOrigin({
+    cookies: [
+      { name: "expired", value: "drop-expired", domain: "auth.fixture.dev", path: "/", expires: 1 },
+      { name: "future", value: "keep-future", domain: "auth.fixture.dev", path: "/", expires: 4102444800 },
+      { name: "session", value: "keep-session", domain: "auth.fixture.dev", path: "/", expires: -1 },
+      { name: "no-expiry", value: "keep-no-expiry", domain: "auth.fixture.dev", path: "/" },
+    ],
+  }, "https://auth.fixture.dev/account");
+
+  assert.deepEqual(scoped.cookies.map(({ name }) => name), [
+    "future",
+    "session",
+    "no-expiry",
+  ]);
+  assert.doesNotMatch(JSON.stringify(scoped), /drop-expired/);
+});
+
 test("browser auth rejects unsafe exact hosts, partitioned cookies, and ambiguous dotted domains", () => {
   for (const origin of [
     "https://github.io",
@@ -184,6 +202,30 @@ test("browser auth defensive open removes cross-origin data from contaminated le
     localStorage: { "https://luma.com": { marker: "keep-storage" } },
   });
   assert.doesNotMatch(JSON.stringify(opened), /drop-cookie|drop-storage/);
+});
+
+test("browser auth distinguishes an authenticated stored row whose only usable cookie expired", () => {
+  const expired = sealLegacyUnscopedContext({
+    uid: "u-one",
+    origin: "https://auth.fixture.dev",
+    principalKind: "agent_owned",
+    context: {
+      cookies: [
+        {
+          name: "session",
+          value: "expired-cookie-secret",
+          domain: "auth.fixture.dev",
+          path: "/",
+          expires: 1,
+        },
+      ],
+    },
+  });
+
+  assert.throws(
+    () => openBrowserContext(expired, KEY_HEX),
+    (error) => error && error.code === "BROWSER_AUTH_CONTEXT_EXPIRED",
+  );
 });
 
 test("browser auth contexts are encrypted, tenant-bound, and do not expose plaintext", () => {
