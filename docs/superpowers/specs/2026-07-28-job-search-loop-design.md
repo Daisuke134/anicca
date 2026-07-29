@@ -417,6 +417,34 @@ refreshed to 2026-07-30 and both ledger/preparation integrity checks remained
 `ok`. This proves fail-closed production wiring but does not fabricate the still
 absent BJAK receipt.
 
+### 4.5.4 Message-level Gmail checkpoint
+
+`JOB-INBOX-MESSAGE-CHECKPOINT-10L` fixes a follow-up loss mode in the recurring
+inbox. The original checkpoint stored a processed Gmail thread ID forever, but a
+thread is a conversation container and later recruiter, assessment or interview
+messages retain that same thread ID.
+
+| Decision | Source | Core quote |
+|---|---|---|
+| Dedupe the immutable message rather than its conversation | [Gmail API — Message](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages) | “The immutable ID of the message.” |
+| Expand a thread into its individual members | [Gmail API — Thread](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.threads) | “A collection of messages representing a conversation.” / “The list of messages in the thread.” |
+| Bootstrap current state before consuming later deltas | [Gmail API — Synchronize clients](https://developers.google.com/workspace/gmail/api/guides/sync) | “Full synchronization is required the first time” and partial synchronization returns history newer than `startHistoryId`. |
+
+The deterministic scan now expands each bounded recruiting thread through sanitized,
+untrusted-content-wrapped Gmail reads. Candidate evidence contains only immutable
+message/thread mappings. A result may acknowledge only message IDs that are an exact
+subset of that scan, and its thread IDs must equal the unique mapped threads in
+first-message order. Omitted messages retry; a later message in an acknowledged
+thread remains visible.
+
+The private v1 checkpoint migrates using its existing file mtime. Messages in the
+three legacy threads at or before that boundary become bootstrap message IDs while
+the legacy boundary remains recorded for old messages not present in the 14-day
+window. A real-Gmail shadow full sync produced 3 bootstrap messages, 0 candidates,
+and a mode-0600 v2 checkpoint with all three legacy boundaries preserved. Production
+state was not mutated. The full 176 job-loop and 10 runner suites, OSS boundary,
+PII scan and shell syntax pass.
+
 
 ### 4.6 Portable local installation
 

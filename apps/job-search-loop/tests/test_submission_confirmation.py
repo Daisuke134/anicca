@@ -250,8 +250,8 @@ class SubmissionConfirmationTests(unittest.TestCase):
             self.assertEqual(
                 json.loads(
                     (root / "inbox-seen.json").read_text(encoding="utf-8")
-                )["thread_ids"],
-                ["gmail-thread-2"],
+                ),
+                {"version": 2, "message_ids": ["gmail-message-2"]},
             )
 
     def test_spoofed_sender_cannot_promote_or_acknowledge_thread(self):

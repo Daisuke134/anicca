@@ -221,10 +221,15 @@ class WorkdayVerificationTests(unittest.TestCase):
         self.assertIn("verifications", schema["required"])
         self.assertIn("verifications", schema["properties"])
         self.assertIn("processed_thread_ids", schema["required"])
+        self.assertIn("processed_message_ids", schema["required"])
         self.assertTrue(
             schema["properties"]["processed_thread_ids"]["uniqueItems"]
         )
+        self.assertTrue(
+            schema["properties"]["processed_message_ids"]["uniqueItems"]
+        )
         self.assertIn("processed_thread_ids", prompt)
+        self.assertIn("processed_message_ids", prompt)
 
 
 if __name__ == "__main__":
