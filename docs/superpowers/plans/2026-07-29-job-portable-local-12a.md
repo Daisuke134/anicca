@@ -76,18 +76,18 @@ provider name from the private receipt.
 - Create: `apps/job-search-loop/systemd/ai.anicca.job-search-inbox.timer`
 - Modify: `apps/job-search-loop/tests/test_canonical_runtime.py`
 
-- [ ] **Step 1: Add RED rendered-unit tests**
+- [x] **Step 1: Add RED rendered-unit tests**
 
   Assert absolute ExecStart paths, daily/inbox schedules, persistent daily catch-up,
   and no `/Users/anicca` or legacy checkout names.
 
-- [ ] **Step 2: Implement systemd renderer and dispatcher**
+- [x] **Step 2: Implement systemd renderer and dispatcher**
 
   Render private user units, validate them when `systemd-analyze` exists, then call
   only `systemctl --user daemon-reload` and `enable --now` for the two timers.
   `none` performs setup without scheduler side effects.
 
-- [ ] **Step 3: Verify fake scheduler adapters**
+- [x] **Step 3: Verify fake scheduler adapters**
 
   Exercise Darwin and Linux dispatch with fake launchctl/systemctl adapters and
   assert the exact activation calls.
