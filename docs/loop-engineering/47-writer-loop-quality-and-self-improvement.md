@@ -2784,7 +2784,7 @@ verified evidence
 
 | # | 状態 | 検証 | done |
 |---:|---|---|---|
-| 1 | BLOCKED BY A3 | paid publicationの次run再現性 | quality terminal PASS後のfresh runでnote ¥500 + Substack JA/EN paid exact3をpublic readback PASS。same-ID recovery、duplicate 0 |
+| 1 | BLOCKED BY A5 | paid publicationの次run再現性 | quality terminal PASS後のfresh runでnote ¥500 + Substack JA/EN paid exact3をpublic readback PASS。same-ID recovery、duplicate 0 |
 
 ##### C. AUTO-MONITOR — 実装sessionは待たない
 
