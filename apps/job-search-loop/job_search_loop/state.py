@@ -16,6 +16,7 @@ TRANSITIONS = {
     "submit_claimed": frozenset(
         {"submitted", "submit_unknown", "not_submitted"}
     ),
+    "not_submitted": frozenset({"submit_claimed", "rejected"}),
     "submitted": frozenset(
         {
             "recruiter_contact",
