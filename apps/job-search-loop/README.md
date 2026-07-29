@@ -1,9 +1,9 @@
 # Anicca Job Search Loop
 
-Anicca Job Search Loop is a bounded, evidence-first job application system for
-Daisuke Narita. It discovers and ranks Applied AI / agent roles, submits at most two
-verified applications per Japan day, monitors recruiter mail, prepares interviews,
-and reports every material state change to Telegram.
+Anicca Job Search Loop is a bounded, evidence-first job application system for a
+verified private candidate profile. It discovers and ranks suitable roles, submits at
+most two verified applications per Japan day, monitors recruiter mail, prepares
+interviews, and reports every material state change to Telegram.
 
 ## Operating contract
 
@@ -80,6 +80,36 @@ zsh scripts/install-launchd.sh
 zsh scripts/healthcheck.sh
 ```
 
+### Portable local install
+
+Authenticate one supported subscription CLI without copying its credentials into
+this repository:
+
+```bash
+codex login
+# or: claude auth login
+```
+
+Then import a valid private profile and install the user scheduler for the detected
+platform:
+
+```bash
+zsh scripts/install-local.sh \
+  --profile /absolute/path/to/profile.json \
+  --provider auto \
+  --scheduler auto
+```
+
+`auto` selects an authenticated Codex CLI first, then Claude CLI. The receipt stores
+only `codex` or `claude-direct`; OAuth tokens and provider auth files remain owned by
+their CLI. macOS installs LaunchAgents; Linux installs systemd user services and
+timers. Use `--scheduler none` for a manual/test install without scheduler side
+effects.
+
+The installer follows XDG config/state/data roots, rejects relative XDG overrides,
+creates private directories as `0700`, and writes the profile and receipt as `0600`.
+It never overwrites an existing profile unless `--replace-profile` is explicit.
+
 Do not start a second daily executor. To trigger the deployed loop, kick the existing
 LaunchAgent and inspect the generated evidence:
 
@@ -150,4 +180,4 @@ and hashed private logs. Submission follows
 | Safe experiments | One source, role-family, resume-emphasis, message or threshold variable changes at a time; replay must preserve truth and hard filters |
 | Promotion gate | Baseline stays active until both arms have at least 10 resolved applications and the Wilson 95% intervals support improvement |
 | Self-healing | launchd restarts, browser ownership evidence, multi-provider discovery, fenced side effects, bounded recovery and content-addressed report correction |
-| Not yet complete | Persistent experiment assignment/outcome promotion, adapter-specific Ashby/Workday fixtures, portable installer and Life Manager Career UI |
+| Not yet complete | Persistent experiment outcome promotion, real confirmed adapter samples, release packaging/guided profile authoring, and Life Manager Career UI |

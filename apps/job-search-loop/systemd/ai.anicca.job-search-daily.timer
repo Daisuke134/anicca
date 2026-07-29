@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Anicca job search daily at 08:30 Japan time
+
+[Timer]
+OnCalendar=*-*-* 08:30:00 Asia/Tokyo
+Persistent=true
+Unit=ai.anicca.job-search-daily.service
+
+[Install]
+WantedBy=timers.target
