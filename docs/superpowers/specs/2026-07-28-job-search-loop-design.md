@@ -446,22 +446,20 @@ state was not mutated. The full 176 job-loop and 10 runner suites, OSS boundary,
 PII scan and shell syntax pass.
 
 10L merged in PR #1355 (`162b4750c`, CI `30466877218`), where all seven
-reported checks passed. Code completion and live completion remain separate:
-the production LaunchAgents still execute the canonical checkout at
-`b0ea0f458`, before the 10L merge. The 2026-07-30 live checkpoint is therefore
-still private mode `0600` v1 with 3 thread IDs and 0 message IDs.
+reported checks passed. The production rollout initially remained on canonical
+checkout `b0ea0f458` and checkpoint v1. The exact failed provider attempt then
+proved prompt transport was already correct and isolated the remaining blocker:
+Codex returned HTTP 400 `invalid_json_schema` because `uniqueItems` was not
+permitted for `processed_thread_ids`. An older global stderr line about
+`--prompt-stdin` was unrelated to that attempt.
 
-The same live inspection found the daily LaunchAgent idle after exit 0, while
-the inbox LaunchAgent was idle after exit 1. The exact latest provider attempt
-started Codex but returned HTTP 400 `invalid_json_schema`: `uniqueItems` is not
-permitted for `processed_thread_ids`. It produced no result and left the
-selected provider unset. Both the live and current `run-inbox.sh` already use
-`--prompt-stdin`; an older global stderr line about that flag was not the
-current attempt and is not the root cause. The deterministic scan repeatedly
-finds one new recruiting candidate, but the unsupported provider schema blocks
-the result before acknowledgement. The ledger remains integrity `ok` at
-2 submitted / 1 submit-unknown / 2 not-submitted, and the mode-0600 projection
-still reports Ashby confirmed=0 and Workday confirmed=0.
+After 10M merged, the canonical checkout fast-forwarded to descendant
+`384d03a39`. A forced existing Inbox LaunchAgent run advanced its counter to 5
+and exited 0. It atomically migrated the private mode-0600 production checkpoint
+from v1 to v2 with 3 immutable message IDs and all 3 legacy thread boundaries,
+found 0 new candidates and replayed 0 historical messages. The application
+ledger remained integrity `ok` at 2 submitted / 1 submit-unknown /
+2 not-submitted, and interview-preparation integrity remained `ok`.
 
 10L live closeout is complete only when all of the following are evidenced:
 
@@ -473,6 +471,12 @@ still reports Ashby confirmed=0 and Workday confirmed=0.
 5. a later message in any already-seen thread remains eligible for processing;
 6. ledger and interview-preparation integrity remain `ok`, and the closeout
    evidence is merged into this specification.
+
+Conditions 1–4 and 6 are now complete. Condition 5 is implemented and covered by
+deterministic tests, but remains `implemented_waiting_external_e2e` until a real
+later recruiter message arrives in one of the already-seen production threads.
+That external wait does not block the independent confirmed-application work in
+Order 10.
 
 ### 4.5.5 Provider schema compatibility
 
@@ -499,6 +503,21 @@ the provider-facing constrained-generation hint is narrowed.
 4. focused, full, PII, OSS-boundary and shell checks pass;
 5. a real inbox LaunchAgent run returns a schema-valid result or another truthful
    terminal state, then migrates the production checkpoint without replay.
+
+10M is complete. PR #1359 merged as `384d03a39` after all checks passed in CI
+run `30471441379`; 176 job-loop tests and 11 runner tests pass. A real bounded
+Codex diagnostic used `gpt-5.6-terra`, exited 0 on its first attempt and produced
+a result that passed the original local schema. Its private mode-0600 provider
+copy contained no `uniqueItems`, while the committed Inbox schema retained both
+strict occurrences. The provider reported 10,894 charged tokens for this
+diagnostic.
+
+The post-merge Inbox LaunchAgent run did not invoke a provider because the v2
+bootstrap correctly produced no new candidate. It returned the truthful
+`no_new_recruiting_email` state, preserved all 3 legacy boundaries, replayed no
+message and left all application/Telegram counts unchanged. The runner
+diagnostic plus this real scheduled run jointly prove provider compatibility and
+production migration without fabricating a recruiting email.
 
 
 ### 4.6 Portable local installation
@@ -831,11 +850,12 @@ four-organ scoring model.
 This table is the dependency-order SSOT. Execution proceeds from the first
 non-completed row whose prerequisites are currently actionable. A
 `waiting_private_input` or `implemented_waiting_external_e2e` row remains ordered,
-but it does not block an independent runtime repair. The current execution pointer
-is Order 10's 10M provider-schema compatibility fix, which is required to close the
-10L live rollout because the inbox LaunchAgent is failing. After that repair, the
-loop resumes evidence collection while Orders 8 and 9 wait for their respective
-external facts.
+but it does not block independent evidence collection. 10M and the actionable
+10L production rollout are complete. The current execution pointer is therefore
+Order 10's real confirmed-application gate: continue the daily loop until at
+least one truthful confirmed submission exists for both Ashby and Workday.
+Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait
+for their respective private fact or external message.
 
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
@@ -849,7 +869,7 @@ external facts.
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B merged in PR #1291/#1293 with real existing-CDP job→choice→account replay. 10C merged in PR #1306 (`34002214a`, CI `30451149945`): definite pre-click failures safely reopen with fresh evidence/new fences; the real ledger migrated with integrity `ok`, unchanged 2 submitted / 1 not-submitted applications, 3 attempts and 1 retryable. 10D merged in PR #1310 (`10dafba7a`, CI `30452160572`): strong per-tenant private credentials and secret-free receipts; the real CrowdStrike tenant created once then reused without rotation. 10E merged in PR #1316 (`828c4d7b1`, CI `30453061715`): deterministic inbox detection accepts exactly one HTTPS activation URL from `@myworkday.com` only when its exact host is already credentialed, stores only its hash, and fences navigation at most once; 161 job-loop + 7 runner tests pass. Live daily 6→7 and inbox 13→15 both exited 0; no new verification email arrived, historical seen mail was not reopened, and healthcheck integrity remained `ok`. The daily retry safely moved BJAK from definite pre-click failure to terminal `submit_unknown` after a real submit click lacked confirmation, with Telegram report ACK 4414. 10F merged in PR #1322 (`b17f838cd`, CI `30454763988`) with 163 job-loop + 9 runner tests: a pre-navigation `claimed` row is a 900-second lease and may recover with a new fence after a crash, while the old fence fails and every state at or after `navigation_started` remains terminal. Live inbox 15→16 exited 0 with no new mail or false-positive historical replay; integrity remained `ok`. 10G merged in PR #1326 (`aa81e7dff`, CI `30455795192`) with 165 job-loop + 9 runner tests: only schema-valid processed thread IDs that are an exact subset of the current scan are atomically acknowledged; unknown, duplicate, count-mismatched, missing-result, and omitted IDs remain unacknowledged for retry. Live inbox 16→17 exited 0, no-work left the mode-0600 three-thread seen checkpoint unchanged, and integrity remained `ok`. 10H merged in PR #1331 (`6bc07d1ce`, CI `30456681640`) with 166 job-loop + 9 runner tests: only runner exit 75 paired with the current `budget_blocked` summary becomes a healthy scheduled wait before any result resolution or seen acknowledgement; every other failure propagates. Live inbox 17→18 exited 0 and left seen-state mtime unchanged; integrity remained `ok`. Live daily catch-up 7→9 then completed with exit 0 and Telegram ACKs 4421/4425: no confirmed submission, one new BJAK AI Finance Agent stayed `not_submitted` before click because nationality is absent and its explicit three-year minimum is unmet; ledger is integrity `ok` at 2 submitted / 1 submit-unknown / 1 not-submitted. 10I merged in PR #1346 (`96adde721`, CI `30460492034`) with 168+9 tests; live daily 9→10 exited 0, Telegram 4429 reported zero submissions/two truthful pre-submit blocks, and the mode-0600 projection shows generic submitted=2, Ashby confirmed=0, Workday confirmed=0. The run proved the old reservation could admit a provider charge above the daily cap. 10J merged in PR #1350 (`e3bc44685`, CI `30462362148`) with 168+10 tests; live daily 10→11 exited 0 before provider selection, wrote exactly one blocked full-pass reservation and no attempt/settlement artifacts, kept counts at 2 submitted / 1 submit-unknown / 2 not-submitted, and passed both integrity checks. 10K merged in PR #1352 (`852d18a14`, CI `30464923726`) with 174+10 tests; live inbox 24→25 exited 0, checked one real Gmail candidate, made zero false promotions, launched no provider, changed neither seen checkpoint nor 12-row Telegram outbox, refreshed the projection to 2026-07-30, and passed both integrity checks. 10L merged in PR #1355 (`162b4750c`, CI `30466877218`) with 176+10 tests and seven passing PR checks; its real-Gmail shadow migration passed, but production remains on checkpoint v1 because the live checkout predates 10L. The latest live attempt proved prompt transport is correct and instead failed on Codex rejecting `uniqueItems`; 10M (§4.5.5) is the current compatibility fix. First close 10M and the 10L live rollout, then continue until one real confirmed application exists for both Ashby and Workday |
+| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B merged in PR #1291/#1293 with real existing-CDP job→choice→account replay. 10C merged in PR #1306 (`34002214a`, CI `30451149945`): definite pre-click failures safely reopen with fresh evidence/new fences; the real ledger migrated with integrity `ok`, unchanged 2 submitted / 1 not-submitted applications, 3 attempts and 1 retryable. 10D merged in PR #1310 (`10dafba7a`, CI `30452160572`): strong per-tenant private credentials and secret-free receipts; the real CrowdStrike tenant created once then reused without rotation. 10E merged in PR #1316 (`828c4d7b1`, CI `30453061715`): deterministic inbox detection accepts exactly one HTTPS activation URL from `@myworkday.com` only when its exact host is already credentialed, stores only its hash, and fences navigation at most once; 161 job-loop + 7 runner tests pass. Live daily 6→7 and inbox 13→15 both exited 0; no new verification email arrived, historical seen mail was not reopened, and healthcheck integrity remained `ok`. The daily retry safely moved BJAK from definite pre-click failure to terminal `submit_unknown` after a real submit click lacked confirmation, with Telegram report ACK 4414. 10F merged in PR #1322 (`b17f838cd`, CI `30454763988`) with 163 job-loop + 9 runner tests: a pre-navigation `claimed` row is a 900-second lease and may recover with a new fence after a crash, while the old fence fails and every state at or after `navigation_started` remains terminal. Live inbox 15→16 exited 0 with no new mail or false-positive historical replay; integrity remained `ok`. 10G merged in PR #1326 (`aa81e7dff`, CI `30455795192`) with 165 job-loop + 9 runner tests: only schema-valid processed thread IDs that are an exact subset of the current scan are atomically acknowledged; unknown, duplicate, count-mismatched, missing-result, and omitted IDs remain unacknowledged for retry. Live inbox 16→17 exited 0, no-work left the mode-0600 three-thread seen checkpoint unchanged, and integrity remained `ok`. 10H merged in PR #1331 (`6bc07d1ce`, CI `30456681640`) with 166 job-loop + 9 runner tests: only runner exit 75 paired with the current `budget_blocked` summary becomes a healthy scheduled wait before any result resolution or seen acknowledgement; every other failure propagates. Live inbox 17→18 exited 0 and left seen-state mtime unchanged; integrity remained `ok`. Live daily catch-up 7→9 then completed with exit 0 and Telegram ACKs 4421/4425: no confirmed submission, one new BJAK AI Finance Agent stayed `not_submitted` before click because nationality is absent and its explicit three-year minimum is unmet; ledger is integrity `ok` at 2 submitted / 1 submit-unknown / 1 not-submitted. 10I merged in PR #1346 (`96adde721`, CI `30460492034`) with 168+9 tests; live daily 9→10 exited 0, Telegram 4429 reported zero submissions/two truthful pre-submit blocks, and the mode-0600 projection shows generic submitted=2, Ashby confirmed=0, Workday confirmed=0. The run proved the old reservation could admit a provider charge above the daily cap. 10J merged in PR #1350 (`e3bc44685`, CI `30462362148`) with 168+10 tests; live daily 10→11 exited 0 before provider selection, wrote exactly one blocked full-pass reservation and no attempt/settlement artifacts, kept counts at 2 submitted / 1 submit-unknown / 2 not-submitted, and passed both integrity checks. 10K merged in PR #1352 (`852d18a14`, CI `30464923726`) with 174+10 tests; live inbox 24→25 exited 0, checked one real Gmail candidate, made zero false promotions, launched no provider, changed neither seen checkpoint nor 12-row Telegram outbox, refreshed the projection to 2026-07-30, and passed both integrity checks. 10L merged in PR #1355 (`162b4750c`, CI `30466877218`) with 176+10 tests and seven passing checks. 10M merged in PR #1359 (`384d03a39`, CI `30471441379`) with 176+11 tests: Codex receives a private compatible schema copy while the original strict schema still validates the result. A real first-attempt `gpt-5.6-terra` diagnostic returned schema-valid output; canonical production then advanced Inbox run 5 with exit 0 and migrated checkpoint v1→v2 with 3 bootstrap message IDs, 3 legacy boundaries and no replay. Ledger/preparation integrity stayed `ok`; counts remain 2 submitted / 1 submit-unknown / 2 not-submitted, Ashby confirmed=0 and Workday confirmed=0. Continue until one real confirmed application exists for both Ashby and Workday; 10L's real same-thread future-message proof remains an independent external wait |
 | 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
 | 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |
