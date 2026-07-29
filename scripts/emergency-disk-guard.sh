@@ -525,7 +525,7 @@ reclaim_docker_garbage() {
   [ -n "$DOCKER_BIN" ] && [ -x "$DOCKER_BIN" ] || return 0
   "$COLIMA_BIN" status >/dev/null 2>&1 || return 0
   before=$(free_gb)
-  if ! "$DOCKER_BIN" image prune -f >>"$LOG" 2>&1; then
+  if ! "$DOCKER_BIN" image prune -a -f >>"$LOG" 2>&1; then
     append_decision docker preserve dangling-image-prune-failed
     return 0
   fi
