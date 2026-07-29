@@ -11,6 +11,7 @@ const CAPABILITY = "report.financial.telegram";
 const LOOP_ID = "financial.report";
 const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i;
 const REPORT_KINDS = new Set(["daily", "weekly"]);
+const HASH = /^[0-9a-f]{64}$/;
 
 function requiredText(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -184,6 +185,102 @@ async function executeFinancialReportJob(job, deps = {}) {
   };
 }
 
+function validIso(value) {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function validFreshness(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  for (const key of [
+    "report_cutoff_at",
+    "earnings_latest_at",
+    "costs_latest_at",
+    "balance_observed_at",
+  ]) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) return false;
+    if (value[key] !== null && !validIso(value[key])) return false;
+  }
+  return value.report_cutoff_at !== null;
+}
+
+function verifyFinancialReportReceipt(receipt) {
+  if (
+    !receipt
+    || typeof receipt !== "object"
+    || Array.isArray(receipt)
+    || receipt.schema_version !== 1
+    || receipt.kind !== "telegram_financial_report"
+  ) {
+    return false;
+  }
+  if (["sent", "duplicate"].includes(receipt.status)) {
+    return Number.isInteger(receipt.message_id)
+      && receipt.message_id > 0
+      && HASH.test(String(receipt.chat_id_hash || ""))
+      && HASH.test(String(receipt.snapshot_hash || ""))
+      && validIso(receipt.sent_at)
+      && validFreshness(receipt.source_freshness);
+  }
+  return receipt.status === "skipped"
+    && REPORT_KINDS.has(receipt.report_kind);
+}
+
+function safeFinancialReportSummary(receipt) {
+  if (!verifyFinancialReportReceipt(receipt)) {
+    throw new Error("financial report receipt verification failed");
+  }
+  if (["sent", "duplicate"].includes(receipt.status)) {
+    return {
+      status: receipt.status,
+      message_id: receipt.message_id,
+      snapshot_hash: receipt.snapshot_hash,
+      sent_at: receipt.sent_at,
+      source_freshness: receipt.source_freshness,
+    };
+  }
+  return {
+    status: receipt.status,
+    report_kind: receipt.report_kind,
+    period_key: receipt.period_key || null,
+  };
+}
+
+function createFinancialReportLoopAdapter(deps = {}) {
+  return Object.freeze({
+    async plan(context = {}) {
+      const kinds = context.kind == null ? ["daily", "weekly"] : [context.kind];
+      return kinds.map((kind) => buildFinancialReportJob({
+        ...context,
+        kind,
+      }));
+    },
+    execute(job, services = {}) {
+      return executeFinancialReportJob(job, { ...deps, ...services });
+    },
+    async reconcile(effect) {
+      if (typeof deps.inspectEffect !== "function") return { state: "unknown" };
+      const proof = await deps.inspectEffect(effect);
+      if (!proof || !["present", "absent", "unknown"].includes(proof.state)) {
+        throw new Error("financial report reconciliation proof invalid");
+      }
+      if (proof.state === "unknown") return { state: "unknown" };
+      if (
+        !proof.receipt
+        || typeof proof.receipt !== "object"
+        || Array.isArray(proof.receipt)
+      ) {
+        throw new Error("financial report reconciliation receipt invalid");
+      }
+      if (proof.state === "present" && !verifyFinancialReportReceipt(proof.receipt)) {
+        throw new Error("financial report reconciliation receipt verification failed");
+      }
+      return proof;
+    },
+    verify: verifyFinancialReportReceipt,
+    report: safeFinancialReportSummary,
+  });
+}
+
 function parseEnqueueArgs(argv) {
   const args = Array.isArray(argv) ? argv : [];
   if (args[0] !== "enqueue") throw new Error("usage: report-job-adapter.js enqueue --uid <tenant>");
@@ -251,6 +348,9 @@ module.exports = {
   parseFinancialReportRef,
   buildFinancialReportJob,
   executeFinancialReportJob,
+  verifyFinancialReportReceipt,
+  safeFinancialReportSummary,
+  createFinancialReportLoopAdapter,
   parseEnqueueArgs,
   enqueueFinancialReportJobs,
 };
