@@ -119,6 +119,10 @@
 
   Update this plan and the SSOT spec, write redacted evidence, commit, and push.
 
-- [ ] **Step 4: Merge through GitHub**
+- [ ] **Step 4: Merge through GitHub and verify live**
 
   Create a PR to `main`, wait for all five CI gates, squash merge, update the canonical checkout, kickstart the existing daily/inbox LaunchAgents, and verify both exit zero plus ledger integrity.
+
+  Implementation merged through PR #1291 after CI run `30447613983` passed every
+  required gate. Merge commit: `1ff642fd6347aa4ddb506a3588f221ee8146b271`.
+  Canonical-checkout reflection and forced daily/inbox verification remain.
