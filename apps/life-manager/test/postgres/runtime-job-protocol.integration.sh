@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION="$ROOT_DIR/migrations/20260729_runtime_jobs.sql"
+AGING_MIGRATION="$ROOT_DIR/migrations/20260730_runtime_reconcile_unknown_aging.sql"
 TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/runtime-job-pg.XXXXXX")"
 DB_NAME="runtime_job_test"
 DOCKER_NAME="runtime-job-pg-$$"
@@ -33,6 +34,7 @@ pg_isready -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DB_NAME" >/dev/null
 
 PSQL=(psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DB_NAME")
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
+"${PSQL[@]}" -f "$AGING_MIGRATION" >/dev/null
 
 scalar() {
   "${PSQL[@]}" -Atqc "$1"
@@ -160,6 +162,36 @@ insert_job \
   WHERE job_id = 'expired-effect';" >/dev/null
 [[ "$(scalar "SELECT count(*) FROM public.claim_lm_runtime_jobs('message-worker-b', ARRAY['integration.expired-effect'], 'tenant-a', 1, 60);")" == "0" ]]
 [[ "$(scalar "SELECT status FROM public.lm_runtime_jobs WHERE job_id='expired-effect';")" == "reconciling" ]]
+
+# Unknown-aging: 4 unknown reconcile results keep the effect quarantined; the 5th
+# dead-letters it with RECONCILE_UNKNOWN_EXHAUSTED, and resolution resets the counter.
+insert_job \
+  "unknown-aging" \
+  "integration.unknown-aging" \
+  "publish" \
+  "instagram:tenant-a:unknown-aging"
+[[ "$(scalar "SELECT attempt FROM public.claim_lm_runtime_jobs('aging-worker', ARRAY['integration.unknown-aging'], 'tenant-a', 1, 60);")" == "1" ]]
+[[ "$(scalar "SELECT status FROM public.fail_lm_runtime_job('tenant-a', 'unknown-aging', 1, 'aging-worker', 'PROVIDER_TIMEOUT', true);")" == "reconciling" ]]
+for _ in 1 2 3 4; do
+  [[ "$(scalar "SELECT status FROM public.age_lm_runtime_reconciliation('tenant-a', 'unknown-aging', 1, 5);")" == "reconciling" ]]
+done
+[[ "$(scalar "SELECT reconcile_attempts FROM public.lm_runtime_jobs WHERE job_id='unknown-aging';")" == "4" ]]
+[[ "$(scalar "SELECT status FROM public.age_lm_runtime_reconciliation('tenant-a', 'unknown-aging', 1, 5);")" == "dead_letter" ]]
+[[ "$(scalar "SELECT last_error_code FROM public.lm_runtime_jobs WHERE job_id='unknown-aging';")" == "RECONCILE_UNKNOWN_EXHAUSTED" ]]
+[[ "$(scalar "SELECT count(*) FROM public.lm_runtime_job_receipts WHERE job_id='unknown-aging' AND outcome='failed';")" == "1" ]]
+[[ "$(scalar "SELECT count(*) FROM public.age_lm_runtime_reconciliation('tenant-a', 'unknown-aging', 1, 5);")" == "0" ]]
+
+insert_job \
+  "unknown-aging-reset" \
+  "integration.unknown-aging-reset" \
+  "publish" \
+  "instagram:tenant-a:unknown-aging-reset"
+[[ "$(scalar "SELECT attempt FROM public.claim_lm_runtime_jobs('aging-worker', ARRAY['integration.unknown-aging-reset'], 'tenant-a', 1, 60);")" == "1" ]]
+[[ "$(scalar "SELECT status FROM public.fail_lm_runtime_job('tenant-a', 'unknown-aging-reset', 1, 'aging-worker', 'PROVIDER_TIMEOUT', true);")" == "reconciling" ]]
+[[ "$(scalar "SELECT status FROM public.age_lm_runtime_reconciliation('tenant-a', 'unknown-aging-reset', 1, 5);")" == "reconciling" ]]
+[[ "$(scalar "SELECT status FROM public.resolve_lm_runtime_effect('tenant-a', 'unknown-aging-reset', 1, 'absent', '{\"lookup\":\"provider_not_found\"}'::jsonb);")" == "queued" ]]
+[[ "$(scalar "SELECT reconcile_attempts FROM public.lm_runtime_jobs WHERE job_id='unknown-aging-reset';")" == "0" ]]
+printf '%s\n' 'runtime job postgres unknown-aging dead-letter + reset: ok'
 
 if "${PSQL[@]}" -c "
   UPDATE public.lm_runtime_job_receipts

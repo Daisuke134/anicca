@@ -77,14 +77,14 @@ class DistributionTests(unittest.TestCase):
         )
         return ig, tt
 
-    def run_distribution(self, **overrides):
+    def build_config(self, **overrides):
         ig, tt = self.adapters(
             ig_outcome=overrides.pop("ig_outcome", "published"),
             tt_state=overrides.pop("tt_state", "PUBLISHED"),
             tt_extra=overrides.pop("tt_extra", None),
         )
         env = dict(os.environ, CALLS=str(self.calls))
-        config = lm_distribution.DistributionConfig(
+        return lm_distribution.DistributionConfig(
             creative_id="A03",
             video=self.video,
             caption=self.caption,
@@ -101,7 +101,9 @@ class DistributionTests(unittest.TestCase):
             env=env,
             **overrides,
         )
-        return lm_distribution.distribute(config)
+
+    def run_distribution(self, **overrides):
+        return lm_distribution.distribute(self.build_config(**overrides))
 
     def test_both_adapters_receive_the_exact_same_video_and_caption(self):
         result = self.run_distribution()
@@ -219,6 +221,108 @@ class DistributionTests(unittest.TestCase):
         with self.assertRaises(lm_distribution.DistributionError):
             self.run_distribution()
         self.assertFalse(self.calls.exists())
+
+    def test_ledger_rows_carry_full_publication_lineage(self):
+        """FIX 1: a reconciled receipt must recover format/form/locale/slot from the ledger."""
+        self.run_distribution(
+            format_id="reelclaw",
+            form="relationship-confession",
+            locale="ja",
+            slot="2026-07-30T12:30:00.000Z",
+        )
+        rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            self.assertEqual(row["format_id"], "reelclaw")
+            self.assertEqual(row["form"], "relationship-confession")
+            self.assertEqual(row["locale"], "ja")
+            self.assertEqual(row["slot"], "2026-07-30T12:30:00.000Z")
+
+    def test_cli_accepts_and_records_lineage_flags(self):
+        """FIX 1: the adapter passes lineage on the CLI; distribute.py must accept and record it."""
+        import subprocess
+        import sys
+
+        ig, tt = self.adapters()
+        proc = subprocess.run(
+            [
+                sys.executable, str(MODULE_PATH),
+                "--creative-id", "A03", "--platform", "instagram",
+                "--video", str(self.video), "--caption-file", str(self.caption),
+                "--ledger", str(self.ledger), "--approvals", str(self.approvals),
+                "--instagram-adapter", str(ig), "--tiktok-adapter", str(tt),
+                "--instagram-handle", "anicca.affirms2",
+                "--instagram-accounts", str(self.root / "accounts.json"),
+                "--format-id", "reelclaw", "--form", "relationship-confession",
+                "--locale", "ja", "--slot", "2026-07-30T12:30:00.000Z",
+            ],
+            capture_output=True,
+            text=True,
+            env=dict(os.environ, CALLS=str(self.calls)),
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(rows[0]["format_id"], "reelclaw")
+        self.assertEqual(rows[0]["form"], "relationship-confession")
+        self.assertEqual(rows[0]["locale"], "ja")
+        self.assertEqual(rows[0]["slot"], "2026-07-30T12:30:00.000Z")
+
+    def test_legacy_ledger_rows_without_lineage_still_short_circuit(self):
+        """Backward compat: the reader must tolerate old-format rows missing lineage fields."""
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        self.ledger.write_text(
+            json.dumps(
+                {
+                    "platform": "instagram",
+                    "status": "published",
+                    "creative_id": "A03",
+                    "video_sha256": video_hash,
+                    "caption_sha256": caption_hash,
+                    "public_url": "https://www.instagram.com/reel/LEGACY/",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        result = self.run_distribution()
+        calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+        self.assertEqual([row["platform"] for row in calls], ["tiktok"])
+        self.assertEqual(result["instagram_url"], "https://www.instagram.com/reel/LEGACY/")
+
+    def test_short_circuit_propagates_the_ledger_rows_provider_reconciled(self):
+        """W-1: an existing ledger row short-circuits with ITS provider_reconciled, never a fabricated True."""
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        base = {
+            "platform": "instagram",
+            "status": "published",
+            "creative_id": "A03",
+            "video_sha256": video_hash,
+            "caption_sha256": caption_hash,
+            "public_url": "https://www.instagram.com/reel/EXISTING/",
+            "provider_reconciled": False,
+        }
+        self.ledger.write_text(json.dumps(base) + "\n", encoding="utf-8")
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], False)
+        self.assertFalse(self.calls.exists(), "short-circuit must not run any adapter")
+
+        reconciled = dict(
+            base,
+            public_url="https://www.instagram.com/reel/RECON/",
+            provider_reconciled=True,
+        )
+        self.ledger.write_text(
+            json.dumps(base) + "\n" + json.dumps(reconciled) + "\n", encoding="utf-8"
+        )
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], True)
+
+        legacy = {k: v for k, v in base.items() if k != "provider_reconciled"}
+        self.ledger.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], False)
 
     def test_caption_is_deterministically_derived_from_the_selected_bank_row(self):
         bank = self.root / "bank.jsonl"

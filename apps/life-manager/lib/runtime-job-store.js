@@ -3,6 +3,9 @@
 const { isDeepStrictEqual } = require("node:util");
 
 const EFFECT_CLASSES = new Set(["none", "publish", "message", "money"]);
+// After this many consecutive unknown reconcile results a reconciling job dead-letters
+// (migrations/20260730_runtime_reconcile_unknown_aging.sql) instead of looping forever.
+const MAX_UNKNOWN_RECONCILE_RESULTS = 5;
 const REFERENCE_KEY = /_(?:ref|refs)$/;
 let defaultPool;
 
@@ -91,8 +94,16 @@ function assertSameJob(existing, expected) {
     "input_refs",
     "max_attempts",
   ];
-  const same = fields.every((field) => isDeepStrictEqual(existing[field], expected[field]));
-  if (!same) throw new Error("runtime job id collision");
+  const mismatched = fields.filter((field) => (
+    !isDeepStrictEqual(existing[field], expected[field])
+  ));
+  if (mismatched.length === 0) return;
+  throw new Error(
+    "runtime job id collision: a job with this job_id already exists with different "
+    + mismatched.join(", ")
+    + "; for publish effects this usually means the same creative/platform effect was "
+    + "re-planned with different slot lineage, and the existing effect row wins",
+  );
 }
 
 async function enqueueJob(input, opts = {}) {
@@ -122,7 +133,11 @@ async function enqueueJob(input, opts = {}) {
     WHERE job_id = $1 AND tenant_id = $2
     LIMIT 1
   `, [job.job_id, job.tenant_id])).rows;
-  if (existing.length !== 1) throw new Error("runtime job id collision");
+  if (existing.length !== 1) {
+    throw new Error(
+      "runtime job id collision: this job_id already exists but is not visible to this tenant",
+    );
+  }
   assertSameJob(existing[0], job);
   return { created: false, job: existing[0] };
 }
@@ -240,6 +255,23 @@ async function resolveReconciliation(input, opts = {}) {
   );
 }
 
+async function recordUnknownReconciliation(input, opts = {}) {
+  const id = identity(input, false);
+  const maxUnknown = input.maxUnknownResults == null
+    ? MAX_UNKNOWN_RECONCILE_RESULTS
+    : input.maxUnknownResults;
+  if (!Number.isInteger(maxUnknown) || maxUnknown < 1 || maxUnknown > 20) {
+    throw new Error("runtime unknown limit invalid");
+  }
+  const { query } = database(opts);
+  return oneRow(
+    query,
+    "SELECT * FROM public.age_lm_runtime_reconciliation($1, $2, $3, $4)",
+    [id.tenantId, id.jobId, id.attempt, maxUnknown],
+    "runtime reconciliation lost job",
+  );
+}
+
 async function closeRuntimeJobStore() {
   const pool = defaultPool;
   defaultPool = undefined;
@@ -254,5 +286,7 @@ module.exports = {
   completeJob,
   failJob,
   resolveReconciliation,
+  recordUnknownReconciliation,
   closeRuntimeJobStore,
+  MAX_UNKNOWN_RECONCILE_RESULTS,
 };

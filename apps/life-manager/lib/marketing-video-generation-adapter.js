@@ -409,13 +409,13 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
       fs.mkdirSync(workspace, { recursive: true, mode: 0o700 });
       const copyPath = path.join(
         workspace,
-        `${job.job_id.replace(/[^A-Za-z0-9._-]/g, "_")}.copy.json`,
+        `${job.job_id.replace(/[^A-Za-z0-9._-]/g, "_")}.copy.txt`,
       );
-      fs.writeFileSync(copyPath, `${JSON.stringify({
-        title: pack.title,
-        caption: hook.text,
-        hashtags: pack.hashtags,
-      })}\n`, { mode: 0o600 });
+      const hashtags = pack.hashtags.map((value) => `#${value}`).join(" ");
+      const publishCopy = hashtags
+        ? `${hook.text}\n\n${hashtags}\n`
+        : `${hook.text}\n`;
+      fs.writeFileSync(copyPath, publishCopy, { mode: 0o600 });
       fs.chmodSync(copyPath, 0o600);
       const copy = objectStore.import(copyPath);
       const hookSha256 = crypto.createHash("sha256").update(hook.text).digest("hex");
