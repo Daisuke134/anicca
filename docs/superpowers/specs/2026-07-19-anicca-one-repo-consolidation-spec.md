@@ -70,8 +70,8 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
  │ travel     booking           habits/sleep     wallet + ledger    │
  │ calls      follow-through    suffering↓       earn/pay/distribute│
  │                                                                  │
- │ phone/TG = ambient action + report                               │
- │ web/mobile panel = permission / pause / budget / evidence        │
+ │ mobile chat = primary UI: report / ask / command / capability    │
+ │ phone = urgent embodied intervention; panel = rare audit/control │
  └──────────────────────────────┬───────────────────────────────────┘
                                 │
               local OSS or cloud subscription bootstraps runtime
@@ -250,45 +250,47 @@ $1k / $10k / $20k は予測ではなく、下表の demand / margin / capital �
 crypto settlementで売ること。$10k / $20k は「credential不要だから自動的に届く額」ではなく、
 distribution・有料需要・単価・粗利をagentが作った後にだけ成立する。
 
-**Life Manager user experience**
+**Life Manager user experience（mobile chat primary）**
 
-| moment | Telegram | panel | accounting |
+| moment | mobile chat（Telegram primary、他chat adapter可） | panel（rare audit/control） | accounting |
 |---|---|---|---|
-| bootstrap | walletを自動生成しpublic addressと必要seed額を表示。userはUSDC/SOLを送るだけ | wallet / chain / spend cap / emergency pause | seed=`capital_in`、revenue 0 |
-| funded | confirmation後にsurvival floorを確保しSELL / WORKを開始 | allocation、active rails、次の支払日 | reserve、available、committedを分離 |
-| daily | 残高、今日のgross/cost/net、何を売ったか、止まった理由を1通 | tx evidence、rail別明細 | immutable rowsから生成 |
-| weekly | 週次P&L、self-funded率、来週の単一方針 | target progress、risk cap、payout可能額 | realizedとunrealizedを分離 |
-| surplus | 「reserve後に送れる額」を提示し、事前policy内なら自動送金 | user destination / receipt / pause | payoutはexpense、revenueではない |
-| deficit | 黙って賭けを増やさず、burn削減→SELL改善→停止の順 | runwayと停止理由 | lossを0にクランプしない |
+| bootstrap | agent walletを自動生成し、現在使えるcapability boxだけを表示。未接続railは週次feature discoveryへ回す | connector・scope・spend capの監査時だけ開く | seed=`capital_in`、revenue 0 |
+| funded | confirmation後にsurvival floorを確保しSELL / WORKを開始 | allocationとpolicyの詳細確認 | reserve、available、committedを分離 |
+| daily | 残高、今日のgross/cost/net、何を売ったか、止まった理由を1通で完結 | tx evidenceの深掘り時だけ開く | immutable rowsから生成 |
+| weekly | 週次P&L、self-funded率、来週の単一方針をchatへreport | target/riskの監査時だけ開く | realizedとunrealizedを分離 |
+| surplus | 事前policy内なら自動送金し、receiptをchatへreport | destination/receipt/pauseの詳細 | payoutはexpense、revenueではない |
+| deficit | 黙って賭けを増やさず、burn削減→SELL改善→停止をchatへ正直にreport | runwayと停止理由の詳細 | lossを0にクランプしない |
 
-**理想 folder tree（agent economy部分）**
+**理想 folder tree（Life Manager product/runtime）**
 
 ```text
 life-manager/
 ├── apps/
 │   └── life-manager/
-│       ├── financial/           # Telegram/panel UX、budget、pause、payout
-│       └── api/financial/       # tenant境界付き read/command endpoints
-├── packages/
-│   ├── engine/
-│   │   ├── runtime/             # provider-neutral agent runner
-│   │   ├── wallet/              # Base/Solana identity、署名、残高
-│   │   ├── earn/
-│   │   │   ├── sell/            # x402 API / MCP / digital goods
-│   │   │   ├── work/            # bounty / gig / delivery
-│   │   │   └── capital/         # trade / yield、surplus gate必須
-│   │   ├── accounting/          # journal、cycle P&L、rollup、provenance
-│   │   ├── survival/            # compute/shelter支払、runway、reserve floor
-│   │   ├── reporting/           # daily/weekly/monthly statement
-│   │   ├── policy/              # spend cap、loss cap、rail gates
-│   │   └── adapters/            # x402/PM/Nosana/Telegram/chain RPC
-│   ├── skills/
-│   │   ├── core/                # human credential不要
-│   │   └── gated/               # user委任/KYC/fiatが必要
-│   └── installer/               # wallet作成、seed案内、daemon/cloud bootstrap
+│       ├── chat/                # mobile chat blocks、closed Q、receipt
+│       ├── panel/               # rare audit/control surface
+│       ├── api/                 # tenant境界付きcommand/read endpoints
+│       ├── worker/              # cloud executor
+│       └── migrations/
+├── runtime/
+│   ├── agent/                   # provider-neutral planner/executor
+│   ├── browser/                 # Steel/CDP
+│   ├── loops/                   # recurring autonomous work
+│   ├── wallet/                  # Base/Solana identity、署名、残高
+│   ├── ledger/                  # journal、P&L、provenance
+│   ├── policy/                  # consent、spend/loss cap、rail gates
+│   └── reporting/               # chat-first daily/weekly/monthly
+├── skills/
+│   ├── core/                    # human credential不要
+│   ├── gated/                   # user委任/KYC/fiatが必要
+│   └── registry.json
+├── adapters/                    # chat/browser/bank/code host/deploy/app store
+├── install.sh
+├── start-local.sh
+├── tests/
 └── docs/
     ├── superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
-    └── evidence/agent-economy/  # receipt/hash/snapshot。秘密鍵・PIIは禁止
+    └── evidence/                # receipt/hash/snapshot。秘密鍵・PIIは禁止
 ```
 
 **理想 end-to-end ASCII**
@@ -320,7 +322,7 @@ life-manager/
                                        ▼
                               self-funded ratio
                                        │
-                    daily/weekly TG + panel evidence + next action
+                    daily/weekly mobile-chat report + optional panel evidence
                                        │
                      profitable recipe only ──> independent child
 ```
@@ -492,14 +494,16 @@ event/時間依存gateが実測条件を満たした時だけ進め、収益・a
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
 | 2 | **OSS-MERGE-1** | `profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current Life Manager cursor**。8iはweb product移植を閉じたが、full OSS self-contained proofと旧repo/folderのrequired-code吸収は未完 |
-| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
-| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
-| 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
-| 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
-| 7 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
-| 8 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `anicca-products`は他productだけ、`profitable-claude`はhistorical redirect/archive、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending |
-| 9 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
-| 10 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
+| 3 | **CHAT-CAPABILITY-1** | mobile Telegram chatをprimary product surfaceに固定し、userが委任・接続したcapabilityだけから可変box、質問、command、事後reportを生成する。日常journeyはpanelを開かずchat内で完結 | 実mobile Telegramでonboarding→可変box→natural-language command→closed Q→実action receipt→setting変更を完走。credential 0 userはcrypto/coreだけ、bank/KYC/connector委任userは許可済みfiat/work/product railだけを表示。別tenant box混入0、空/偽box 0、panel必須step 0 | pending。固定dashboardを全userへ出す旧解釈を廃止し、§9.4/§9.6/§9.9を正本化 |
+| 4 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1→CHAT-CAPABILITY-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
+| 5 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
+| 6 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 7 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
+| 8 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
+| 9 | **LIFE-OUTCOMES-1** | cloud常設loopがchatをprimary surfaceとして、MENTAL・PHYSICAL・FINANCIALの各1 journeyを本人のcontext/capabilityに合わせてobserve→decide→act→verify→reportまで閉じる | MENTAL=実context triggerと過剰通知0、PHYSICAL=実need→予約/実施follow-through、FINANCIAL=利用可能railを自律実行してverified receiptまたは正直なno-income/blocked report。3 journeyとも実mobile TG message id、provider/ledger readback、panelを開く必須step 0 | pending。収益額や通院時期など外部event待ちは実装cursorを止めず、controlled real journeyと正直な未達を分離する |
+| 10 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `anicca-products`は他productだけ、`profitable-claude`はhistorical redirect/archive、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending |
+| 11 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
+| 12 | **OPS-PANEL-1** | rarely-opened Life Manager panelから全loop・browser trace・action receipt・失敗理由・次回実行を監査・停止できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示。routine report/ask/actionはmobile chatで完結しpanel必須step 0 | pending |
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
@@ -529,7 +533,7 @@ SCALE-1を30日実証した後に実単価・conversion・marginから次の一�
 
 | 問い | 決定 | 理由 |
 |---|---|---|
-| public monorepo / product 名 | **Life Manager**（canonical GitHub slug=`life-manager`、web app が顔） | 全productと公開作業場所を1つの名前へ統一する。collision-safe renameは§10 `8c.R`、whole-product consolidationは§10 `8i`が正本 |
+| public monorepo / product 名 | **Life Manager**（canonical GitHub slug=`life-manager`、mobile chat が顔） | 利用者は主にスマホの既存chat appから使う。web appはrare audit/control surfaceであり、日常journeyの必須入口にしない。collision-safe renameは§10 `8c.R`、whole-product consolidationは§10 `8i`が正本 |
 | product / AI / agent / mission 名 | **Life Manager** | ユーザー向け名称・意思決定主体・runtime・通知・API・marketingを1つの名前へ統一 |
 | company 名 | **Anicca** | 会社・開発元を示す場合だけ使用し、製品・AI・agent・mission名には使わない |
 | OSS 配布物名 | **Life Manager**（canonical `life-manager` repoそのもの） | local self-hostとcloud web appを同じsource treeから出荷する。別repo・別folderをcloneしないと動かない構造は禁止 |
@@ -561,7 +565,9 @@ logs、browser profile、provider state、生成物。これらは「別repoにc
 external runtime stateとしてvolume/secret manager/databaseへ注入する。clone直後に存在しなくてもinstaller/onboardingが
 作成または接続でき、未接続connectorは正直にunavailableとなる。
 
-aniccaios、landing、mobile、Life Manager以外のappはLife Managerの実行依存ではないため移植対象外とする。
+aniccaios、Honne、landing、mobile、その他のuser固有product本体はLife Managerの実行依存ではないため移植対象外とする。
+公開productであってもLife Manager repoへ同梱せず、各product repoをgeneric code-host/deploy/app-store connectorから
+tenant workspaceへ接続する。Life Manager repoに置くのは任意productを管理するschema、adapter、skill、synthetic exampleだけ。
 `anicca-products`が他productのrepoとして残ってもよいが、Life Managerのbuild/runtime/deployはそこを一切参照しない。
 
 根拠（引用）:
@@ -602,6 +608,7 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 | OSS-4 | optional providerが無くてもcoreは起動する | connector capability readbackと正直なunavailable。missing sibling repoによるmodule/file error 0 |
 | OSS-5 | canonicalだけでbuild/test/deploy/releaseできる | install、focused/full/eval、local E2E、cloud E2E、SBOM/license/secret scan、exact deploy SHAが全PASS |
 | OSS-6 | legacy sourceにLife Managerのactive branch/deploy責務を残さない | `anicca-products`/`profitable-claude`/`anicca-dais`からLife Manager workflow・deploy・required codeを除去またはredirectし、canonical readback一致 |
+| OSS-7 | public treeにDais固有identity/product/dataを埋め込まない | name/email/phone/domain/home path/product id/credential/browser profile/private fixtureの実値0。generic placeholderまたはsynthetic fixtureだけ。Anicca/Honne等はtenant workspaceのexternal product referenceとしてのみ出現 |
 
 ## 3. 決定: レーンは1つ（2026-07-20 Dais 是正 — 旧「2レーン表」は誤りだったので消して書き直し）
 
@@ -649,7 +656,7 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 | P | brick | 中身 | 着手 |
 |---|---|---|---|
 | P0 | **loop 検証**（走行中） | capafy/clip 14日 full-verify（capafy spec §12.6）。手を出さず loop に回させ、event 時のみ介入 | 今〜08-02 |
-| P1 | **Life Manager web app** | 次セッションから唯一の実装対象。public monorepo `life-manager` でwhole productを開発（= 統合作業を別 project 化しない）。LIFE-AUTO（mail/telegram 仕分け）もこの中の機能 | 次セッション |
+| P1 | **Life Manager product（mobile chat primary / web panel secondary）** | public monorepo `life-manager` でwhole productを開発（= 統合作業を別project化しない）。LIFE-AUTO、chat capability、rare audit panelも同じruntimeのsurface | current product track |
 | P2 | **臓器接続** | 必要なengine/loopsをcanonical `runtime/`・`skills/`へ吸収しLife Managerのfinancial organとして配線 | P1 の中盤 |
 | P3 | **self-contained OSS release** | public `life-manager` fresh cloneだけでinstall/local E2E/cloud parityを実証し、14日loop verifyを継続 | OSS-MERGE-1→LOCAL-CLOUD-PARITY-1 |
 
@@ -712,9 +719,67 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 
 ### 9.4 UX 原則
 
-- **ambient first**: 主 UI は電話 + TG（向こうから来る）。web app = control panel（timeline / 3 organ スコア / 収益台帳 / 設定）。
-- 質問は closed question を最小回数（credential 取得も含む）。
-- 全体像 ASCII（architecture / UI / life-change）はこの spec と同日の session log 正本。
+- **mobile chat first**: primary product surfaceはスマホのTelegram chat。将来のWhatsApp等も同じchat contractへ接続する。
+  onboarding、自然言語command、closed question、本人操作handoff、action receipt、daily/weekly report、設定変更まで
+  chat内で完結する。専用mobile app、PC、panel常用を前提にしない。
+- **phoneはUIではなく介入channel**: 起床・出発等、文字通知だけでは行動に移せない高緊急momentにだけ本人へcallする。
+  通常command/report/質問の正本はchatであり、電話履歴もchatへreceiptを返す。
+- **panelはrare audit/control**: ledger、trace、connection、budget、pause、security revokeを深掘りする時だけ開く。
+  panelを開かないuserでも全routine journeyを完了でき、chatとpanelは同じuser-scoped command/action/ledgerを読む。
+- **capability-driven boxes**: 全userへ同じ固定cardを出さない。実際に委任されたcontext、connector、credential、
+  jurisdiction/KYC、provider availability、policyからcapability inventoryを計算し、`active / action_required /
+  unavailable / hidden`を決める。chatには`active`と今必要な`action_required`だけを短いbox/inline buttonとして出す。
+  未接続機能は週1以下のfeature discovery、利用不能機能は偽boxを出さない。
+- **chat outputは3種類だけ**: ①事後report ②本人しか決められないclosed Q ③本人操作が物理的に必要なhandoff。
+  raw log、内部TODO、常時dashboard、自由入力formの連打をchatへ流さない。
+- 質問は closed question を最小回数（credential取得も含む）。回答はcontext graphへ保存し同じ質問を繰り返さない。
+
+**ideal mobile Telegram UI**
+
+```text
+┌──────────────────────────────┐
+│ Life Manager              ●  │
+├──────────────────────────────┤
+│ すべて動いています。          │
+│                              │
+│ TODAY                        │
+│ ✓ 予定と移動を調整            │
+│ ✓ 歯科予約を確定              │
+│ ● 収益機会を実行中            │
+│                              │
+│ YOUR ACTIVE CAPABILITIES     │
+│ [心と習慣] [身体と予約]        │
+│ [Crypto収益]                 │
+│ [Products: 2]                │
+│                              │
+│ NEEDS YOU: 1                 │
+│ Googleの再認証が必要          │
+│ [接続する] [今はしない]       │
+│                              │
+│ 「来週の健康診断を取って」     │
+│                         送信↑ │
+└──────────────────────────────┘
+```
+
+boxはuserごとに可変である。connectorなしuserはcore/cryptoだけ、bank・KYC・product repo・calendar・health context等を
+委任したuserは該当boxだけが解錠される。Anicca/HonneはDais tenantの`Products` box内のexternal referenceであり、
+public UIの固定labelではない。
+
+### 9.4.1 Life outcome loops — mental / physical / financial healthをどう変えるか
+
+Life Managerは「健康スコアを見せるdashboard」ではなく、各organで
+`observe → decide → act → verify → mobile-chat report → learn`を回して人間の認知負荷と未実行を減らす。
+診断・治療・投資利益を保証せず、本人が委任した範囲の実生活actionと検証済みoutcomeだけを扱う。
+
+| organ | observe | decide | act | verify / learn | 人間の生活で消える仕事 |
+|---|---|---|---|---|---|
+| **MENTAL** | schedule、sleep/habit pattern、直前event、本人の訂正、孤立signal | 介入すべきmomentか、送らない方がよいか、必要なら専門支援handoffかを判定 | contextに合う短いaffirmation、休憩/就寝/散歩/連絡等の小action、過剰通知抑制 | delivery、button/action、訂正、suppressionをoutcome化し次回timing/copyへ反映 | 「今の自分に必要な一歩を考える」「悪化してから助けを探す」「通知を管理する」 |
+| **PHYSICAL** | calendar、location、本人が与えたhealth need/周期、食事・睡眠・運動context、過去予約 | overdue need、生活圏、空き時間、移動負荷、委任scopeを判定 | clinic/checkup/haircut等の検索・予約、calendar・移動・当日call・aftercare。医療判断はしない | provider confirmation、実施/変更、calendar、follow-throughを読み、未確認を成功扱いしない | 「行かなきゃを覚える」「店を探す」「予約する」「移動とリマインドを組む」 |
+| **FINANCIAL** | agent wallet、ledger、利用可能connector、userのproduct/skill、bank/KYC gate、market demand | credential不要railを既定に、期待net・risk・spend cap・法的gateで実行可否を選ぶ | x402/crypto SELL・WORK、許可済みgig/product growth、invoice/collection、surplus payout。user資産の無断運用はしない | external payer/provider/on-chain/bank receiptとcost/lossを照合し、利益/未収/損失を分離して次のrail配分へ反映 | 「仕事を探す」「応募・販売・請求を繰り返す」「収支を集計する」「着金を確認する」 |
+
+healthyの判定は通知回数やagent activityではなく、MENTALは有効介入とsuppression、PHYSICALはconfirmed booking/
+実施follow-through、FINANCIALはverified external netと安全なpayoutで行う。結果が無い日は何も捏造せず、
+「実行中」「blocked理由」「収益0」をchatへ正直にreportする。
 
 ### 9.5 自律原則: REPORT, DON'T ASK（2026-07-20 Dais 裁定。全 organ の不変条件）
 
@@ -736,10 +801,15 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 | 遅刻連絡(chikoku renraku) v2 | **TG real-time location 共有** | 機能 OFF（質問で代替しない） | 現在地→会場の所要時間を常時計算 → 間に合わない確定時点で「◯分遅刻見込み」を自動メール。**本人には何も聞かない** |
 | travel autofill 高精度 | home/職場の住所 | 駅名等から推定 | 実住所起点で分単位 |
 | 予約代行(PHYSICAL) | 生活圏 + 委任 | 候補提示のみ | 予約して報告（§9.5） |
-| fiat 送金(FINANCIAL) | 振込先口座のみ（最小） | crypto wallet 送金のみ | 稼ぎを口座直行 |
+| core収益(FINANCIAL) | なし | agent-owned crypto walletでx402/permissionless SELL・WORKだけを実行 | 同左。user credentialを要求しない |
+| fiat payout(FINANCIAL) | 振込先口座または対応payout connector | crypto wallet送金のみ | verified surplusを許可済み口座へ送る |
+| fiat earning / Capafy等(FINANCIAL) | providerが要求するbank/KYC/税務identity + userの明示委任 | boxを出さずcrypto/core railを継続 | jurisdiction/provider規約で許されるrailだけ実行。bank accountだけでKYCを迂回しない |
+| product management | code host/deploy/store/analyticsの必要scope | 汎用product managerはinactive。Dais固有productを仮定しない | 接続された任意productをissue→build→deploy→growthまで管理 |
 
 - **feature discovery**: 未解錠 feature は TG chat で定期的に知らせる（例:「位置情報を共有すると遅刻連絡が全自動になる」）。
   頻度は鬱陶しくない範囲（週1程度、解錠済みは告知しない）。
+- bank account、KYC、product repo、health contextはcapabilityであって全user必須onboardingではない。未提供userを
+  incomplete扱いせず、持っているcapabilityだけで最善のloopを継続する。
 
 ### 9.7 calendar 解釈 edge case matrix（closed question engine の仕様種）
 
@@ -761,20 +831,29 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 - **順序 = DAILY core再出荷 → MARKETING自走 → intent-aware BRAIN → PHYSICAL → MENTAL → FINANCIAL → DEV自動化を最終phase**。DEV-a〜dの既存部品は保持するが、auto-merge/deployとdaily self-buildは他atomicがdoneになるまで停止し、完成したシステムを最後に自動化する。
 - FINANCIAL の中心 = **anicca の crypto rail（wallet-as-identity、human credential ゼロ、human loop ゼロ）**。
   グレーでない: 「AI が自分の wallet で稼ぐ」であり、投資助言でも user 資産運用でもない。
-- gig/KYC 系 fiat 手法は「そのまま置く」が優先しない（法的にグレー寄り + human credential 要）。
-- user から取る credential は**送金先だけ**（銀行口座 or 取引所アドレス）。免許証等は絶対に求めない。
+- gig/KYC/銀行口座を要するfiat手法は全userの既定にせず、userが明示的にそのcapabilityを委任し、
+  provider/jurisdiction条件を満たす場合だけGATEDとして解錠する。Capafy等は該当userだけの可変boxであり、
+  bank account未提供userには存在しない機能として扱う。
+- userから取る情報は**解錠するcapabilityに必要な最小限だけ**。payoutだけなら送金先のみ。
+  KYC railを本人が選んだ場合もLife Managerが本人確認を迂回・代行せず、provider hosted flowへhandoffし、
+  identity documentをLife Manager repo/log/chatへ保存しない。
 
 ### 9.9 control panel（web app）確定仕様の骨子
 
-- 役割 = **個人専用の鏡 + control center**。日常の依頼・自動実行・事後報告は電話/TGが主だが、panelは単なるread-only pageではない。connection、権限、organ別automation、通知、call言語/時間帯、委任を本人が確認・接続・切断・ON/OFFできるdashboardとする。見るもの:
+- 役割 = **rarely-opened個人専用の鏡 + audit/control center**。日常の依頼・質問・自動実行・事後報告は
+  mobile chatだけで完結し、panel閲覧をcompletion条件にしない。panelは詳細証拠を見たい時、connection/権限、
+  organ別automation、通知、call言語/時間帯、委任、budget、pause/revokeを監査・変更するsecondary surfaceとする。見るもの:
   ①今日の timeline（解釈済み calendar + call 実績✅）②3 organ スコア（財務=稼ぎ/送金、身体=予約/未通院、精神=傾聴/就寝）
   ③FINANCIAL 台帳（agent wallet 残高・user への送金履歴、on-chain link）④context gates 状態（何が解錠済みか + 解錠方法）
   ⑤設定（call 言語・時間帯・委任の付与/剥奪）
-- gate 状態画面が feature discovery の Web 側入口（TG 告知と同内容）。
-- **入口は2つ、backend actionは1つ**: ①chatで「Gmailをつないで」「callを止めて」等の自然言語intentを送る ②`/panel` dashboardのconnection card/toggleを操作する。どちらも同じuser-scoped command handlerを通り、同じ状態へ収束する。OAuth/OS permission等の本人操作が必要な時だけ、botはinline WebApp buttonまたはclickable single-use URLを1本送る。対応clientではbuttonから開き、非対応clientではURLを送る。
-- **`/panel` は全user共通で本人がbookmarkして日常利用する唯一の恒久canonical URL**。panel認証に期限付き・単回・user別URLを作らない。TG `/panel` はURLがexact canonical `/panel`の `web_app` buttonを返し、Telegram Mini Appの署名済み`initData`をURLでなくPOST bodyからserver検証して、個人別のrotating HttpOnly sessionへ交換する。通常browserで未認証の同じ`/panel`を開いた場合もURLは変えず、画面内の短命one-time device codeを本人bot chatへ入力してsessionを結ぶ。codeはURL/query/path/referrer/historyへ入れない。sessionは明示logout、uid↔telegram_chat_id再紐付け、security revoke、browser storage消去までrotation/refreshし、固定24時間expiryを設けない。永久bearer tokenもtemporary panel linkも禁止。
+- feature discoveryの主入口はchatの可変capability box。panelのgate画面は同じ状態の詳細監査であり、別の機能catalogを持たない。
+- **primary入口はchat、secondary入口はpanel、backend actionは1つ**: ①chatで「Gmailをつないで」「callを止めて」等の自然言語intentまたはinline buttonを送る ②必要な人だけ`/panel`のconnection card/toggleを操作する。どちらも同じuser-scoped command handlerを通り、同じ状態へ収束する。OAuth/OS permission等の本人操作が必要な時だけ、botはinline WebApp buttonまたはclickable URLを1本送る。
+- **`/panel` は全user共通でbookmark可能な唯一の恒久canonical URLだが、日常利用は要求しない**。panel認証に期限付き・単回・user別URLを作らない。TG `/panel` はURLがexact canonical `/panel`の `web_app` buttonを返し、Telegram Mini Appの署名済み`initData`をURLでなくPOST bodyからserver検証して、個人別のrotating HttpOnly sessionへ交換する。通常browserで未認証の同じ`/panel`を開いた場合もURLは変えず、画面内の短命one-time device codeを本人bot chatへ入力してsessionを結ぶ。codeはURL/query/path/referrer/historyへ入れない。sessionは明示logout、uid↔telegram_chat_id再紐付け、security revoke、browser storage消去までrotation/refreshし、固定24時間expiryを設けない。永久bearer tokenもtemporary panel linkも禁止。
 - **personalization/tenant isolationはHARD**: HttpOnly sessionの`uid + telegram_chat_id`を唯一のscopeとし、timeline、score、context、connection、gate、setting、ledger、actionを全query/mutationでそのuserへ束縛する。connection状態・文脈・推奨action・toggle値をglobal定数、Dais専用値、fixture、別user rowから表示しない。静的label/copyだけ共有可。同じ画面構造でも内容と可能なactionはuserごとに変わる。
-- connection cardはcalendar / Telegram / location / call / email / wallet等を実provider/gate状態から `connected / action required / unavailable / error` で表示し、可能な時だけ `Connect / Reconnect / Disconnect / Turn on / Turn off` をclickableにする。未提供・scope不足・課金gateは偽のConnect成功にせず、理由と次に必要な本人操作を正直に表示する。
+- chat boxとpanel connection cardは同じcapability inventoryを読み、calendar / Telegram / location / call /
+  email / wallet / bank / KYC work / products等を実provider/gate状態から `connected / action required /
+  unavailable / hidden / error` で表示する。chatはactive/action_requiredだけ、panelは監査用に全状態を表示する。
+  未提供・scope不足・課金/KYC gateは偽のConnect成功にせず、理由と次に必要な本人操作を正直に表示する。
 - panel auth materialはURLに0件。Telegram `initData`はHMAC、`auth_date` freshness、exact bot/user/chat binding、one-time replay claimをserverで検証する。通常browserのdevice codeはhash-only保存、短命、one-time、exact browser challenge + Telegram actor + tenant bindingとし、成功後は同じ`/panel`をreloadして個人dashboardを表示する。forged/stale/replayed/cross-user authはsession/DB/provider mutation 0。旧`?t=` token URLはsession交換せずqueryを除去してcanonical loginへ戻す。
 - **score はbackend activityの件数ではなく、user outcomeを説明できる値**:
   - DAILY = rolling 7日。denominatorはtravel/call/lateのいずれかが必要な対象予定、numeratorはその予定に必要な全handlingが成功またはcontext上不要と確定した予定。call/API/log row数、同一予定への再試行、通知数は加点しない。
@@ -1013,7 +1092,8 @@ Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
 Agent Economyの今すぐ実装できる手動atomicは全件done。自動成果gateだけを継続監視する。
 Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化した後、
-BROWSER-AUTH-1をproduction queueの実Luma proofから再開する。
+CHAT-CAPABILITY-1でmobile chat primaryと可変capability boxを閉じ、BROWSER-AUTH-1をproduction queueの
+実Luma proofから再開する。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -1110,7 +1190,7 @@ fresh shelter balance 0.670368 NOS / 0.013662961 SOL。21600秒の自然trigger�
 SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk deckとarticleはpost-S22 live level 3へ更新し、
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1がcurrent、BROWSER-AUTH-1が次。
+Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1がcurrent、CHAT-CAPABILITY-1が次。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -1268,7 +1348,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 | U2 | 無応答 fallback は自動で sendLateNotice 到達（scheduler.js:178-181/late-notice.js:29-34,89-106）。**ただし T-0 行の生成に T-5 で AMD=human（実際に出る）が必須**。TG message_id は保存されない実装 → 証拠 = 受信メールの Message-ID。E2E 手順は TaskList #1 に焼き込み済み |
 | U3 | call_language=en 実測確認（Supabase 実 row）。順1の whisper 英語判定は妥当 |
 | U4 | prod webhook allowed_updates=["message","callback_query"]。**edited_message 無し → LM-30 で追加必須**（live location は edited_message で届く） |
-| U5 | control panel認証 = **全user共通の恒久・bookmark可能なexact canonical `/panel` + 個人別durable rotating session**。temporary/single-use/user-specific panel URLは禁止。TG bot `/panel` はexact canonical URLの`web_app` buttonだけを返し、serverはPOSTされたTelegram `initData`のHMAC・auth_date・bot/user/chat・one-time replayを検証してsessionへ交換。通常browserの未認証`/panel`は同じpage内にhash-only短命device codeを出し、本人がbot chatへcodeを入力すると同じbrowser challengeへsessionを結ぶ。code/token/user idはURL/query/path/referrer/history/logへ0件。旧`?t=`は交換せずcanonical loginへ戻す。sessionはlogout・uid/chat再紐付け・security revoke・storage消去までrotation/refresh。panelとchatは同じuser-scoped connection/setting commandを使う |
+| U5 | control panel認証 = **全user共通の恒久・bookmark可能なexact canonical `/panel` + 個人別durable rotating session**。ただしprimary product surfaceはmobile chatで、panel常用やpanel閲覧をroutine completion条件にしない。temporary/single-use/user-specific panel URLは禁止。TG bot `/panel` はexact canonical URLの`web_app` buttonだけを返し、serverはPOSTされたTelegram `initData`のHMAC・auth_date・bot/user/chat・one-time replayを検証してsessionへ交換。通常browserの未認証`/panel`は同じpage内にhash-only短命device codeを出し、本人がbot chatへcodeを入力すると同じbrowser challengeへsessionを結ぶ。code/token/user idはURL/query/path/referrer/history/logへ0件。旧`?t=`は交換せずcanonical loginへ戻す。sessionはlogout・uid/chat再紐付け・security revoke・storage消去までrotation/refresh。panelとchatは同じuser-scoped connection/setting command/capability inventoryを使う |
 | U6 | MoneyPrinterTurbo 流用可（Mac mini 依存充足、$0/本、3-15分/本）。**既存 faceless-money-factory の代替レンダラーとしてのみ**（全置換しない）。順9 spec に採用 |
 | U7 | FIN の agent wallet = **LM agent が新規自己生成**（§4 Franklin 型が既に答え。既存 automaton/Franklin wallet 流用しない）。spend-cap = 残高 |
 | U8 | 対外メールの名乗り = `Life Manager（AI secretary, acting for <user>）`、本人を装わない・初文で委任明示・機微情報は項目別同意・本人回答要求時は転送。Clara 実例準拠。順11 spec に採用 |
@@ -1299,8 +1379,8 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 | Item | Value |
 |---|---|
-| UI変更 | あり（panel score/timeline/UX） |
-| 結論 | Maestro: 不要（web panelのため）。authenticated real-browser E2E + mobile/desktop visual QA + semantic assertionが必要 |
+| UI変更 | あり（mobile chat capability boxes/report/closed Qがprimary、panelはsecondary audit/control） |
+| 結論 | 専用mobile appは作らないためMaestro不要。実mobile Telegram E2Eをprimary、authenticated panel browser E2Eをsecondary regressionとし、capability/tenant semantic assertionが必要 |
 | 外部side-effect | 実call、実TG、実email、実calendar、実IG/TT/X URL、実web予約、実on-chain tx。各atomicで指定した実物だけがPASS |
 | 定常運用 | launchd/gateway cronの実run、model/exit/cost ledger、streak ledger、self-healを確認。Fable/Daisの手動継続操作はFAIL |
 
@@ -1310,7 +1390,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 2. `AE-PUBLICATION-AUDIT-1`はdone。監査時のlive level 2はSHELTER-REPLACE-1で更新されたため、publish bundleはlive level 3 / external revenue `$0.00`へ再生成・visual QA済み。
 3. `SHELTER-REPLACE-1`はmainnet handoverとanicha PR #7までdone。`TASKMARKET-READBACK-1`もPR #1246と実launchd wake exit 0でdone。既存task `0x7c3a…cbe8`は再購入・再提出せず、公式submit txをzero-cost append-only訂正行へexactly-once reconcileした。Agent Economy build cursorはnone。
 4. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
-5. Life Manager product trackはOSS-MERGE-1→BROWSER-AUTH-1→BROWSER-MATRIX-1→BROWSER-RECOVERY-1→LOCAL-CLOUD-PARITY-1→CLOUD-LOOPS-1→LEGACY-RETIRE-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
+5. Life Manager product trackはOSS-MERGE-1→CHAT-CAPABILITY-1→BROWSER-AUTH-1→BROWSER-MATRIX-1→BROWSER-RECOVERY-1→LOCAL-CLOUD-PARITY-1→CLOUD-LOOPS-1→LIFE-OUTCOMES-1→LEGACY-RETIRE-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。primary surfaceはmobile chat、panelはrare audit/control。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
 6. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、各実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
 7. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
 8. Mac Franklin1 main loopはunloadedのまま。live Nosana job `72zCpJEZ…U2YKN`がfinal replacement codeで稼働する。21600秒の自然triggerはW5でreadbackし、Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
