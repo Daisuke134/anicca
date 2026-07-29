@@ -8,23 +8,37 @@
 # declare a slot", never "edit install.sh". (Foundation collision-prevention.)
 #
 # What this does:
-#   1. Verify system deps (git, jq, node, python3)
-#   2. Scaffold the runtime root ($ANICCA_HOME) + .env from template (never overwrite)
-#   3. Sync skills/_shared (if present)
-#   4. Sync EVERY slot from skills/registry.json into the runtime body
-#   5. Print "what's next" (fuel key + first wake)
+#   1. Verify system deps (git, jq, node, npm, python3, rsync)
+#   2. Install frozen repository dependencies from lockfiles
+#   3. Scaffold the runtime root ($LIFE_MANAGER_HOME) + .env (never overwrite)
+#   4. Sync skills/_shared and EVERY declared slot into the runtime body
+#   5. Optionally register the host daemon
+#   6. Print "what's next" (fuel key + first wake)
 #
 # What this does NOT do:
 #   - Ask for API keys / private keys (handled out of band — see .env.example)
 #   - Broadcast any on-chain tx or start earning (the automaton loop does that)
-#   - Touch anything outside $ANICCA_HOME
+#   - Touch anything outside $LIFE_MANAGER_HOME when daemon registration is disabled
 
 set -euo pipefail
 trap 'echo "[install] FAILED on line $LINENO. nothing destructive — re-run is safe."' ERR
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
+LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}}"
+ANICCA_HOME="$LIFE_MANAGER_HOME"
+export LIFE_MANAGER_HOME ANICCA_HOME
+LIFE_MANAGER_INSTALL_DAEMON="${LIFE_MANAGER_INSTALL_DAEMON:-1}"
+LIFE_MANAGER_INSTALL_DEPS="${LIFE_MANAGER_INSTALL_DEPS:-1}"
 REGISTRY="$REPO_ROOT/skills/registry.json"
+
+case "$LIFE_MANAGER_INSTALL_DAEMON" in 0|1) ;; *)
+  echo "[install] LIFE_MANAGER_INSTALL_DAEMON must be 0 or 1" >&2
+  exit 2
+esac
+case "$LIFE_MANAGER_INSTALL_DEPS" in 0|1) ;; *)
+  echo "[install] LIFE_MANAGER_INSTALL_DEPS must be 0 or 1" >&2
+  exit 2
+esac
 
 cyan(){ printf "\033[36m%s\033[0m\n" "$*"; }
 green(){ printf "\033[32m%s\033[0m\n" "$*"; }
@@ -34,31 +48,35 @@ red(){ printf "\033[31m%s\033[0m\n" "$*"; }
 cyan "================================================================"
 cyan "  Life Manager install — self-host automaton body"
 cyan "  Repo root  : $REPO_ROOT"
-cyan "  Runtime    : $ANICCA_HOME"
+cyan "  Runtime    : $LIFE_MANAGER_HOME"
 cyan "  Registry   : $REGISTRY"
 cyan "================================================================"
 echo
 
 # ─── 1. system deps ────────────────────────────────────────────────────
-cyan "[1/5] checking system deps…"
-for bin in git jq; do
+cyan "[1/6] checking system deps…"
+for bin in git jq node npm python3 rsync; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     red "  ✗ $bin missing — install it first then re-run."
     exit 2
   fi
   green "  ✓ $bin"
 done
-for bin in node python3; do
-  if command -v "$bin" >/dev/null 2>&1; then
-    green "  ✓ $bin"
-  else
-    yellow "  ⚠ $bin not in PATH — some slots (life/* need node, report needs python3) will be inert until installed."
-  fi
-done
 echo
 
-# ─── 2. runtime root + env ─────────────────────────────────────────────
-cyan "[2/5] preparing runtime root…"
+# ─── 2. frozen dependencies ────────────────────────────────────────────
+cyan "[2/6] installing frozen dependencies…"
+if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
+  (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
+  (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
+  green "  ✓ root + apps/life-manager npm lockfiles installed"
+else
+  yellow "  • dependency install disabled by LIFE_MANAGER_INSTALL_DEPS=0"
+fi
+echo
+
+# ─── 3. runtime root + env ─────────────────────────────────────────────
+cyan "[3/6] preparing runtime root…"
 mkdir -p "$ANICCA_HOME"/{skills,state,identity,logs}
 green "  ✓ $ANICCA_HOME"
 
@@ -94,8 +112,8 @@ else
 fi
 echo
 
-# ─── 3. shared lib ─────────────────────────────────────────────────────
-cyan "[3/5] syncing _shared lib…"
+# ─── 4. shared lib ─────────────────────────────────────────────────────
+cyan "[4/6] syncing _shared lib…"
 if [ -d "$REPO_ROOT/skills/_shared" ]; then
   mkdir -p "$ANICCA_HOME/skills/_shared"
   rsync -a --delete --exclude='state/' --exclude='__pycache__/' \
@@ -106,8 +124,8 @@ else
 fi
 echo
 
-# ─── 4. registry-driven slot sync ──────────────────────────────────────
-cyan "[4/5] syncing skills from registry…"
+# ─── 4.1. registry-driven slot sync ────────────────────────────────────
+cyan "[4.1/6] syncing skills from registry…"
 if [ ! -f "$REGISTRY" ]; then
   red "  ✗ registry not found at $REGISTRY — cannot sync slots."
   exit 3
@@ -142,27 +160,31 @@ echo
 green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
 echo
 
-# ─── 4.5. supervised, self-updating daemon (Life Manager stands on its own) ──
-cyan "[4.5] installing self-running daemon (KeepAlive + self-update)..."
-chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
-if [ "$(uname)" = "Darwin" ]; then
-  PLIST="$HOME/Library/LaunchAgents/com.anicca.daemon.plist"
-  mkdir -p "$HOME/Library/LaunchAgents"
-  sed -e "s#__REPO__#$REPO_ROOT#g" -e "s#__ANICCA_HOME__#$ANICCA_HOME#g" -e "s#__HOME__#$HOME#g" \
-    "$REPO_ROOT/runtime/com.anicca.daemon.plist.template" > "$PLIST"
-  launchctl unload "$PLIST" 2>/dev/null || true
-  if launchctl load -w "$PLIST" 2>/dev/null; then
-    green "  ✓ launchd daemon loaded (com.anicca.daemon) — Life Manager runs itself, restarts on crash, survives reboot, self-updates from the mother."
+# ─── 5. supervised, self-updating daemon (optional host mutation) ──────
+cyan "[5/6] daemon registration…"
+if [ "$LIFE_MANAGER_INSTALL_DAEMON" = "1" ]; then
+  chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
+  if [ "$(uname)" = "Darwin" ]; then
+    PLIST="$HOME/Library/LaunchAgents/com.anicca.daemon.plist"
+    mkdir -p "$HOME/Library/LaunchAgents"
+    sed -e "s#__REPO__#$REPO_ROOT#g" -e "s#__ANICCA_HOME__#$ANICCA_HOME#g" -e "s#__HOME__#$HOME#g" \
+      "$REPO_ROOT/runtime/com.anicca.daemon.plist.template" > "$PLIST"
+    launchctl unload "$PLIST" 2>/dev/null || true
+    if launchctl load -w "$PLIST" 2>/dev/null; then
+      green "  ✓ launchd daemon loaded (com.anicca.daemon)"
+    else
+      cyan "  ! launchctl load failed; load it yourself: launchctl load -w $PLIST"
+    fi
   else
-    cyan "  ! launchctl load failed; load it yourself: launchctl load -w $PLIST"
+    green "  Linux/cloud: run runtime/anicca-daemon.sh under systemd or Docker restart=always."
   fi
 else
-  green "  Linux/cloud: run runtime/anicca-daemon.sh under systemd (Restart=always) or Docker (restart: always) — see skills/self/spawn/scripts/cloud-init.sh."
+  green "  ✓ disabled (LIFE_MANAGER_INSTALL_DAEMON=0); no LaunchAgent/system service changed"
 fi
 echo
 
-# ─── 5. summary ────────────────────────────────────────────────────────
-cyan "[5/5] done."
+# ─── 6. summary ────────────────────────────────────────────────────────
+cyan "[6/6] done."
 echo
 green "What's next:"
 cat <<EOM
