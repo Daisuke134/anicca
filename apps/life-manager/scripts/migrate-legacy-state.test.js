@@ -94,5 +94,6 @@ test("a size mismatch on readback fails loudly", () => {
   fs.writeFileSync(path.join(dest, "call.mp3"), Buffer.alloc(3, 1));
   const result = runMigration(legacyRoot, dataRoot);
   assert.equal(result.status, 1, result.stdout + result.stderr);
-  assert.match(result.stderr, /size mismatch/i);
+  assert.match(result.stderr, /destination is stale or partial/i);
+  assert.match(result.stderr, /inspect and remove destination before re-running/i);
 });

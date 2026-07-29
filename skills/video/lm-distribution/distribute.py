@@ -385,6 +385,21 @@ def distribute(config: DistributionConfig) -> dict:
     }
 
 
+def _lm_video_state_root() -> Path:
+    """Portable lm-video state root: LM_DATA_DIR when set (absolute only,
+    mirroring resolveDataRoot in apps/life-manager/lib/runtime-paths.js and
+    default_video_root in skills/video/daily-lm-video/generate.py), else
+    <home>/.local/state/life-manager."""
+    override = os.environ.get("LM_DATA_DIR", "").strip()
+    if override:
+        if not Path(override).is_absolute():
+            raise SystemExit("LM_DATA_DIR must be an absolute path")
+        data_root = Path(override)
+    else:
+        data_root = Path.home() / ".local/state/life-manager"
+    return data_root / "state" / "lm-video"
+
+
 def default_tiktok_adapter(here: Path, env: Mapping[str, str]) -> Path:
     if env.get("LM_TIKTOK_DIRECT_MIGRATION") == "1":
         return Path(here) / "tiktok_direct.mjs"
@@ -406,7 +421,11 @@ def main() -> int:
     parser.add_argument(
         "--ledger",
         type=Path,
-        default=Path(os.environ.get("LM_DISTRIBUTION_LEDGER", "~/.local/state/life-manager/state/lm-video/distribution.jsonl")).expanduser(),
+        default=(
+            Path(os.environ["LM_DISTRIBUTION_LEDGER"]).expanduser()
+            if os.environ.get("LM_DISTRIBUTION_LEDGER")
+            else _lm_video_state_root() / "distribution.jsonl"
+        ),
     )
     parser.add_argument(
         "--instagram-adapter",
@@ -435,12 +454,11 @@ def main() -> int:
     parser.add_argument(
         "--approvals",
         type=Path,
-        default=Path(
-            os.environ.get(
-                "LM_DISTRIBUTION_APPROVALS",
-                "~/.local/state/life-manager/state/lm-video/distribution-approvals.jsonl",
-            )
-        ).expanduser(),
+        default=(
+            Path(os.environ["LM_DISTRIBUTION_APPROVALS"]).expanduser()
+            if os.environ.get("LM_DISTRIBUTION_APPROVALS")
+            else _lm_video_state_root() / "distribution-approvals.jsonl"
+        ),
     )
     parser.add_argument(
         "--tiktok-integration",
@@ -454,7 +472,7 @@ def main() -> int:
 
     caption = args.caption_file
     if caption is None:
-        caption = Path("~/.local/state/life-manager/state/lm-video/captions").expanduser() / f"{args.creative_id}.txt"
+        caption = _lm_video_state_root() / "captions" / f"{args.creative_id}.txt"
         render_caption(args.bank, args.creative_id, caption)
     config = DistributionConfig(
             creative_id=args.creative_id,

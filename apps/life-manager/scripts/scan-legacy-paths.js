@@ -66,10 +66,15 @@ const RETIRED_CHECKOUT_TOKEN = "profitable" + "-claude";
 const V0_TREE_TOKEN = "life-manager" + "-v0";
 // Legacy anicca code roots, mirroring hasLegacyAniccaRoot in
 // lib/runtime-paths.js: the home-rooted anicca checkout (via $HOME, ${HOME},
-// or tilde) and the anicca "-oss" checkout. "anicca" as a username or as part
-// of another name (the products monorepo) does not match.
+// tilde, or an absolute /Users|/home/<user> literal — the checkout segment,
+// never the username segment) and the anicca "-oss" checkout. "anicca" as a
+// username or as part of another name (the products monorepo) does not match.
 const ANICCA_ROOT_TOKEN = "ani" + "cca";
 const ANICCA_OSS_TOKEN = ANICCA_ROOT_TOKEN + "-oss";
+// Absolute home-dir literal: /Users/<user> or /home/<user>. The username
+// segment itself is exempt (hasLegacyAniccaRoot's isUsername), so the legacy
+// checkout must appear as the NEXT segment.
+const ABS_HOME_PREFIX = "/(?:Users|home)/[^/\\s\"']+";
 const PATTERNS = [
   {
     id: "openclaw-path",
@@ -79,7 +84,9 @@ const PATTERNS = [
   { id: V0_TREE_TOKEN, regex: new RegExp(V0_TREE_TOKEN) },
   {
     id: "legacy-anicca-home-root",
-    regex: new RegExp("(?:\\$\\{?HOME\\}?|~)/" + ANICCA_ROOT_TOKEN + "/"),
+    regex: new RegExp(
+      "(?:\\$\\{?HOME\\}?|~|" + ABS_HOME_PREFIX + ")/" + ANICCA_ROOT_TOKEN + "/",
+    ),
   },
   { id: "legacy-oss-code-root", regex: new RegExp(ANICCA_OSS_TOKEN + "\\b") },
 ];

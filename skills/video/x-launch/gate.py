@@ -5,8 +5,24 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import re
+
+
+def _lm_video_state_root() -> Path:
+    """Portable lm-video state root: LM_DATA_DIR when set (absolute only,
+    mirroring resolveDataRoot in apps/life-manager/lib/runtime-paths.js and
+    default_video_root in skills/video/daily-lm-video/generate.py), else
+    <home>/.local/state/life-manager."""
+    override = os.environ.get("LM_DATA_DIR", "").strip()
+    if override:
+        if not Path(override).is_absolute():
+            raise SystemExit("LM_DATA_DIR must be an absolute path")
+        data_root = Path(override)
+    else:
+        data_root = Path.home() / ".local/state/life-manager"
+    return data_root / "state" / "lm-video"
 
 
 REQUIRED_ROWS = ("8e", "8f", "9b", "9c", "9d", "9e")
@@ -94,7 +110,7 @@ def main() -> int:
     parser.add_argument(
         "--ledger",
         type=Path,
-        default=Path("~/.local/state/life-manager/state/lm-video/x-launch.jsonl").expanduser(),
+        default=_lm_video_state_root() / "x-launch.jsonl",
     )
     args = parser.parse_args()
     print(json.dumps(run(args.spec, args.ledger), separators=(",", ":")))
