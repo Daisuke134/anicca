@@ -107,15 +107,15 @@
 - Consumes: local test outputs and the existing-CDP read-only Workday flow.
 - Produces: redacted durable evidence and an updated order-10 status.
 
-- [ ] **Step 1: Replay the real Workday progression**
+- [x] **Step 1: Replay the real Workday progression**
 
   Connect to the existing CDP owner, navigate with commit, click Apply, capture choice metadata, click Apply Manually, wait for Create Account semantic controls, capture metadata, and close only the created page.
 
-- [ ] **Step 2: Verify no side effects and full health**
+- [x] **Step 2: Verify no side effects and full health**
 
   Confirm zero field fills, accounts, uploads, claims, and submits; run focused/full tests, runner tests, JSON parsing, `git diff --check`, and job-loop healthcheck.
 
-- [ ] **Step 3: Record evidence and push**
+- [x] **Step 3: Record evidence and push**
 
   Update this plan and the SSOT spec, write redacted evidence, commit, and push.
 
