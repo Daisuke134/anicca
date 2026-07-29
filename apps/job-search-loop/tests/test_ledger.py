@@ -138,6 +138,62 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 0)
 
+    def test_not_submitted_reopens_with_new_fence_and_attempt_history(self):
+        self._ready()
+        first = self._claim(
+            self.ledger, self.application_id, "2026-07-28", "hash-before"
+        )
+        self.ledger.complete_submission(
+            first.intent_id, first.fence, "not_submitted"
+        )
+
+        retryable = self.ledger.retryable_applications()
+        self.assertEqual(
+            retryable,
+            [
+                {
+                    "application_id": self.application_id,
+                    "company": "Example",
+                    "title": "AI Engineer",
+                    "canonical_url": "https://jobs.example.com/42",
+                    "intent_id": first.intent_id,
+                    "fence": 1,
+                }
+            ],
+        )
+
+        second = self._claim(
+            self.ledger, self.application_id, "2026-07-29", "hash-after"
+        )
+        self.assertIsNotNone(second)
+        self.assertEqual(second.intent_id, first.intent_id)
+        self.assertEqual(second.fence, first.fence + 1)
+        self.assertEqual(self.ledger.current_state(self.application_id), "submit_claimed")
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 1)
+        self.assertEqual(self.ledger.retryable_applications(), [])
+
+        with self.assertRaises(FenceError):
+            self.ledger.complete_submission(
+                first.intent_id, first.fence, "submitted"
+            )
+
+        attempts = self.ledger.submission_attempts(self.application_id)
+        self.assertEqual(
+            [(row["fence"], row["payload_hash"], row["status"]) for row in attempts],
+            [
+                (1, "hash-before", "not_submitted"),
+                (2, "hash-after", "submit_claimed"),
+            ],
+        )
+
+        self.ledger.complete_submission(
+            second.intent_id, second.fence, "submitted"
+        )
+        self.assertEqual(
+            [(row["fence"], row["status"]) for row in self.ledger.submission_attempts(self.application_id)],
+            [(1, "not_submitted"), (2, "submitted")],
+        )
+
     def test_stale_fence_cannot_complete(self):
         self._ready()
         intent = self._claim(
@@ -160,6 +216,37 @@ class LedgerTests(unittest.TestCase):
             self._claim(
                 self.ledger, self.application_id, "2026-07-29", "new-hash"
             )
+        )
+
+    def test_submitted_is_not_retried(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-07-28", "hash"
+        )
+        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        self.assertIsNone(
+            self._claim(
+                self.ledger, self.application_id, "2026-07-29", "new-hash"
+            )
+        )
+        self.assertEqual(self.ledger.retryable_applications(), [])
+
+    def test_existing_intent_is_backfilled_into_attempt_history(self):
+        self._ready()
+        intent = self._claim(
+            self.ledger, self.application_id, "2026-07-28", "legacy-hash"
+        )
+        self.ledger.complete_submission(
+            intent.intent_id, intent.fence, "not_submitted"
+        )
+        self.ledger.connection.execute("DROP TABLE submission_attempts")
+        self.ledger.close()
+
+        self.ledger = Ledger(self.db)
+        attempts = self.ledger.submission_attempts(self.application_id)
+        self.assertEqual(
+            [(row["fence"], row["payload_hash"], row["status"]) for row in attempts],
+            [(1, "legacy-hash", "not_submitted")],
         )
 
     def test_concurrent_claims_never_exceed_two(self):

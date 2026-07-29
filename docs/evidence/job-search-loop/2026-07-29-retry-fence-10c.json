@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10C",
+  "status": "implementation_verified_pending_ci",
+  "observed_at": "2026-07-29T12:19:08Z",
+  "branch": "feat/job-retry-fence-10c",
+  "implementation_commit": "217f57d14d1b2a9bcf9633d46bc560de032681a4",
+  "pull_request": {
+    "number": 1306,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1306",
+    "ci_run": null,
+    "merge_commit": null
+  },
+  "red_test": {
+    "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_ledger.py -v",
+    "result": "failed as expected",
+    "failure": "Ledger.retryable_applications was absent"
+  },
+  "tests": {
+    "focused": {
+      "ran": 20,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 152,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 7,
+      "failures": 0
+    }
+  },
+  "contract": {
+    "retryable_outcome": "not_submitted",
+    "terminal_outcomes": [
+      "submitted",
+      "submit_unknown"
+    ],
+    "reopen_identity": "same intent_id",
+    "reopen_fence": "previous fence plus one",
+    "fresh_evidence_required": [
+      "resume path and SHA-256",
+      "claim-ready ATS snapshot path and SHA-256",
+      "payload hash",
+      "current-day slot"
+    ],
+    "stale_fence_completion": "rejected",
+    "attempt_history": "append-only primary key (intent_id, fence)"
+  },
+  "canonical_ledger_copy_migration": {
+    "source_mutated": false,
+    "integrity": "ok",
+    "applications": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "backfilled_attempts": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "retryable_count": 1
+  },
+  "research_transport": {
+    "queries": [
+      "retryable pre-submit failure idempotency fence token state machine",
+      "SQLite transactional retry intent increment fencing token",
+      "送信前 失敗 再試行 冪等性 フェンシングトークン"
+    ],
+    "firecrawl_result": "agent-owned configured token rejected as invalid",
+    "fallback": "direct retrieval of known official documentation"
+  },
+  "sources": [
+    {
+      "name": "SQLite transactions",
+      "url": "https://sqlite.org/lang_transaction.html",
+      "quote": "No reads or writes occur except within a transaction."
+    },
+    {
+      "name": "SQLite UPSERT",
+      "url": "https://sqlite.org/lang_upsert.html",
+      "quote": "UPSERT is a clause added to INSERT that causes the INSERT to behave as an UPDATE or a no-op."
+    },
+    {
+      "name": "Amazon Builders' Library — Making retries safe with idempotent APIs",
+      "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+      "quote": "An important consideration is that the process that combines recording the idempotent operation needs to be an all or nothing or atomic process."
+    }
+  ],
+  "remaining_order_10_gate": "One real confirmed Ashby application and one real confirmed Workday application, with no inferred legal answers."
+}

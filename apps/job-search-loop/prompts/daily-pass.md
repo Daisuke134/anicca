@@ -120,6 +120,18 @@ and job-URL-matches that snapshot; a claim without all four evidence values is
 invalid. Only then use an isolated
 Playwright/CloakBrowser context with user-facing locators. Use exactly one matching
 resume per application and include its hash in the intent.
+
+Before fresh discovery, call `Ledger.retryable_applications()`. A durable
+`not_submitted` row means the prior attempt definitely stopped before the submit
+click; recheck its recorded blocker against the current private profile and current
+official posting. If the blocker is resolved and the role is still eligible, route
+the resume again, capture fresh claim-ready ATS evidence, and call
+`claim_submission` normally. The Ledger atomically reuses the intent id, increments
+the fence, preserves append-only attempt history, and allocates a current-day slot.
+If the blocker remains, report it once and continue discovery. Never reopen
+`submit_unknown` or `submitted`, and never reuse an old resume hash, ATS snapshot,
+payload, or fence.
+
 For Product, GTM, Partnerships, and Customer Success roles, generate the application
 message through `job_search_loop.application_messages.build_application_message`.
 The role reason must have a quoted job-page source span, and the resulting message
