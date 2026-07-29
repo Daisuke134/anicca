@@ -1,5 +1,6 @@
 import hashlib
 import inspect
+import json
 import tempfile
 import threading
 import unittest
@@ -30,12 +31,62 @@ class LedgerTests(unittest.TestCase):
         self.ledger.transition(target, "materials_ready")
 
     def _claim(self, ledger, application_id, japan_day, payload_hash):
+        row = ledger.connection.execute(
+            "SELECT canonical_url FROM applications WHERE id = ?",
+            (application_id,),
+        ).fetchone()
+        snapshot = Path(self.tempdir.name) / f"ats-{application_id}.json"
+        snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": str(row["canonical_url"]),
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": str(row["canonical_url"]),
+                            "controls": [
+                                {
+                                    "tag": "input",
+                                    "type": "email",
+                                    "role": None,
+                                    "label": "Email",
+                                    "name": "email",
+                                    "text": "",
+                                },
+                                {
+                                    "tag": "input",
+                                    "type": "file",
+                                    "role": None,
+                                    "label": "Resume",
+                                    "name": "resume",
+                                    "text": "",
+                                },
+                                {
+                                    "tag": "button",
+                                    "type": "submit",
+                                    "role": "button",
+                                    "label": None,
+                                    "name": "submit",
+                                    "text": "Submit Application",
+                                },
+                            ],
+                        }
+                    ],
+                },
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        snapshot_sha256 = hashlib.sha256(snapshot.read_bytes()).hexdigest()
         return ledger.claim_submission(
             application_id,
             japan_day,
             payload_hash,
             resume_path=self.resume,
             resume_sha256=self.resume_sha256,
+            ats_snapshot_path=snapshot,
+            ats_snapshot_sha256=snapshot_sha256,
         )
 
     def test_duplicate_job_returns_same_application(self):
@@ -149,10 +200,122 @@ class LedgerTests(unittest.TestCase):
         self.ledger = Ledger(self.db)
         self.assertEqual(sum(value is not None for value in results), 2)
 
+    def test_snapshot_hash_mismatch_cannot_claim_or_consume_slot(self):
+        self._ready()
+        with self.assertRaisesRegex(ValueError, "ATS snapshot SHA-256"):
+            self.ledger.claim_submission(
+                self.application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=Path(self.tempdir.name) / "missing.json",
+                ats_snapshot_sha256="0" * 64,
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
+    def test_non_ready_snapshot_cannot_claim_or_consume_slot(self):
+        self._ready()
+        snapshot = Path(self.tempdir.name) / "not-ready.json"
+        snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": "https://jobs.example.com/42",
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": "https://jobs.example.com/42",
+                            "controls": [],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "ATS snapshot is not ready"):
+            self.ledger.claim_submission(
+                self.application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=snapshot,
+                ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
+    def test_snapshot_for_another_job_cannot_claim_or_consume_slot(self):
+        self._ready()
+        snapshot = Path(self.tempdir.name) / "wrong-job.json"
+        snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": "https://jobs.example.com/another-job",
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": "https://jobs.example.com/another-job",
+                            "controls": [
+                                {"tag": "input", "type": "email"},
+                                {"tag": "input", "type": "file"},
+                                {
+                                    "tag": "button",
+                                    "type": "submit",
+                                    "text": "Submit Application",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "ATS snapshot URL"):
+            self.ledger.claim_submission(
+                self.application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=snapshot,
+                ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
+    def test_workday_job_surface_is_ready_for_navigation_but_not_for_claim(self):
+        fixture = (
+            Path(__file__).parent
+            / "fixtures"
+            / "ats"
+            / "workday-job-surface.json"
+        )
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        application_id = self.ledger.add_application(
+            "Example Workday",
+            "AI Sales Engineer",
+            snapshot["url"],
+        )
+        self._ready(application_id)
+        with self.assertRaisesRegex(ValueError, "ATS snapshot is not claim-ready"):
+            self.ledger.claim_submission(
+                application_id,
+                "2026-07-29",
+                "payload",
+                resume_path=self.resume,
+                resume_sha256=self.resume_sha256,
+                ats_snapshot_path=fixture,
+                ats_snapshot_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
+            )
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
+
     def test_submitted_application_retains_exact_resume_for_reporting(self):
         parameters = inspect.signature(self.ledger.claim_submission).parameters
         self.assertIn("resume_path", parameters)
         self.assertIn("resume_sha256", parameters)
+        self.assertIn("ats_snapshot_path", parameters)
+        self.assertIn("ats_snapshot_sha256", parameters)
         reports = getattr(self.ledger, "submitted_resume_reports", None)
         self.assertIsNotNone(reports)
 
@@ -160,13 +323,43 @@ class LedgerTests(unittest.TestCase):
         resume.write_bytes(b"%PDF-1.4\nverified resume\n")
         resume_sha256 = hashlib.sha256(resume.read_bytes()).hexdigest()
         self._ready()
+        ats_snapshot = Path(self.tempdir.name) / f"ats-{self.application_id}.json"
+        ats_snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": "https://jobs.example.com/42",
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": "https://jobs.example.com/42",
+                            "controls": [
+                                {"tag": "input", "type": "email"},
+                                {"tag": "input", "type": "file"},
+                                {
+                                    "tag": "button",
+                                    "type": "submit",
+                                    "text": "Submit Application",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        ats_sha256 = hashlib.sha256(ats_snapshot.read_bytes()).hexdigest()
         intent = self.ledger.claim_submission(
             self.application_id,
             "2026-07-29",
             "payload-hash",
             resume_path=resume,
             resume_sha256=resume_sha256,
+            ats_snapshot_path=ats_snapshot,
+            ats_snapshot_sha256=ats_sha256,
         )
+        self.assertEqual(intent.ats_snapshot_path, str(ats_snapshot.resolve()))
+        self.assertEqual(intent.ats_snapshot_sha256, ats_sha256)
         self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
 
         self.assertEqual(

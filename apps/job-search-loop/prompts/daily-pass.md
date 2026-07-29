@@ -37,6 +37,43 @@ career pages and ATS listings directly. A provider outage is not an application
 blocker. Only after both the multi-source command and browser fallback return no
 verified eligible posting may the pass report `no_eligible_job_found`.
 
+For every employer ATS navigation, do not wait for `domcontentloaded` or
+`networkidle`. Use the existing CDP page and:
+
+```python
+await page.goto(job_url, wait_until="commit", timeout=45_000)
+```
+
+Then use Playwright user-facing locators and their auto-waiting to wait up to 20
+seconds for an application surface. Inspect the main frame first, followed by every
+attached frame. Do not use generated CSS classes or arbitrary sleeps. Persist a
+redacted version-1 snapshot beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, mode 0600,
+with only:
+
+```text
+url, navigation_committed, frames[].url,
+frames[].controls[].{tag,type,role,label,name,text}
+```
+
+Control metadata may describe labels and visible button text, but never entered
+values, cookies, tokens, addresses, phone numbers, email values, or free-text
+answers. Evaluate the exact snapshot before any ledger claim:
+
+```bash
+PYTHONPATH=apps/job-search-loop \
+/opt/homebrew/bin/python3 -m job_search_loop.ats \
+  --snapshot "<private_snapshot_path>" >"<private_evaluation_path>"
+chmod 600 "<private_snapshot_path>" "<private_evaluation_path>"
+```
+
+Continue only when the evaluation says `ready=true`. A `workday_job` surface proves
+that navigation recovered but is not claim-ready: click the ordinary `Apply`
+navigation control, recapture the resulting application form, and require a
+`workday_application` evaluation. Never treat an invisible reCAPTCHA frame alone as
+a visible challenge; never bypass or answer an actual CAPTCHA. If the evaluator
+fails, returns not ready, or the application form never appears, record
+`not_submitted` without claiming a slot.
+
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the
 role family, and run:
@@ -60,7 +97,10 @@ Then use the Python Ledger API in `job_search_loop.ledger` to:
 add the application, transition qualified then materials_ready, hash the canonical
 job/material/answer payload, and claim a daily slot. Pass the exact selected resume
 from the helper's `resume_path` and its verified `resume_sha256` to
-`claim_submission`; a claim without both is invalid. Only then use an isolated
+`claim_submission`, together with the exact ATS snapshot path and its SHA-256 as
+`ats_snapshot_path` and `ats_snapshot_sha256`. The Ledger rereads, hashes, evaluates,
+and job-URL-matches that snapshot; a claim without all four evidence values is
+invalid. Only then use an isolated
 Playwright/CloakBrowser context with user-facing locators. Use exactly one matching
 resume per application and include its hash in the intent.
 For Product, GTM, Partnerships, and Customer Success roles, generate the application

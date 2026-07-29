@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "url": "https://jobs.ashbyhq.com/example/00000000-0000-0000-0000-000000000000/application",
+  "navigation_committed": true,
+  "frames": [
+    {
+      "url": "https://jobs.ashbyhq.com/example/00000000-0000-0000-0000-000000000000/application",
+      "controls": [
+        {"tag": "button", "type": null, "role": "button", "label": null, "name": null, "text": "Back"}
+      ]
+    }
+  ]
+}
