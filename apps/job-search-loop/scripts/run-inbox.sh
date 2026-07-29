@@ -12,6 +12,7 @@ PROMPT="$EVIDENCE/prompt.md"
 PREP_DATABASE="$JOB_SEARCH_STATE_ROOT/interview-prep.sqlite3"
 OUTBOX_DATABASE="$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"
 PREP_STATUS="$EVIDENCE/prep-status.json"
+TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 GMAIL_ACCOUNT="${JOB_SEARCH_GMAIL_ACCOUNT:-}"
 
 if [[ -z "$GMAIL_ACCOUNT" ]]; then
@@ -26,6 +27,22 @@ chmod 700 \
   "$EVIDENCE" \
   "$JOB_SEARCH_STATE_ROOT/logs"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+  --account "$GMAIL_ACCOUNT" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --seen "$SEEN_STATE" \
+  --output "$EVIDENCE/submission-confirmations.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --outbox "$TELEGRAM_OUTBOX" \
+  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+  --output "$EVIDENCE/resume-deliver-reconciled.json"
+JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --day "$JAPAN_DAY" \
+  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \

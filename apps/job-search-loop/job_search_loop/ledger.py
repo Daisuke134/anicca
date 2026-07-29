@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -103,6 +104,15 @@ class Ledger:
                 created_at TEXT NOT NULL,
                 completed_at TEXT,
                 PRIMARY KEY (intent_id, fence)
+            );
+            CREATE TABLE IF NOT EXISTS submission_confirmations (
+                message_id TEXT PRIMARY KEY,
+                thread_id TEXT NOT NULL,
+                intent_id TEXT NOT NULL UNIQUE
+                    REFERENCES submit_intents(intent_id),
+                evidence_sha256 TEXT NOT NULL,
+                received_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
             );
             """
         )
@@ -570,6 +580,171 @@ class Ledger:
                     """,
                     (row["japan_day"], row["slot"], row["application_id"]),
                 )
+
+    def reconcile_submission_confirmation(
+        self,
+        *,
+        intent_id: str,
+        message_id: str,
+        thread_id: str,
+        evidence_sha256: str,
+        received_at: str,
+    ) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", message_id):
+            raise ValueError("invalid Gmail message ID")
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", thread_id):
+            raise ValueError("invalid Gmail thread ID")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("invalid confirmation evidence hash")
+        try:
+            received = datetime.fromisoformat(received_at)
+        except ValueError as error:
+            raise ValueError("received_at must be RFC3339") from error
+        if received.tzinfo is None:
+            raise ValueError("received_at must include a timezone")
+
+        with self._transaction():
+            existing_message = self.connection.execute(
+                """
+                SELECT thread_id, intent_id, evidence_sha256, received_at
+                FROM submission_confirmations
+                WHERE message_id = ?
+                """,
+                (message_id,),
+            ).fetchone()
+            if existing_message is not None:
+                expected = (
+                    thread_id,
+                    intent_id,
+                    evidence_sha256,
+                    received_at,
+                )
+                actual = (
+                    str(existing_message["thread_id"]),
+                    str(existing_message["intent_id"]),
+                    str(existing_message["evidence_sha256"]),
+                    str(existing_message["received_at"]),
+                )
+                if actual != expected:
+                    raise FenceError(
+                        "Gmail message ID is already bound to different evidence"
+                    )
+                return "duplicate"
+
+            existing_intent = self.connection.execute(
+                """
+                SELECT message_id
+                FROM submission_confirmations
+                WHERE intent_id = ?
+                """,
+                (intent_id,),
+            ).fetchone()
+            if existing_intent is not None:
+                raise FenceError(
+                    "submission intent already has a different confirmation"
+                )
+
+            row = self.connection.execute(
+                """
+                SELECT
+                  submit_intents.*,
+                  applications.current_state
+                FROM submit_intents
+                JOIN applications
+                  ON applications.id = submit_intents.application_id
+                WHERE submit_intents.intent_id = ?
+                """,
+                (intent_id,),
+            ).fetchone()
+            if row is None:
+                raise FenceError("submission intent does not exist")
+            if (
+                str(row["status"]) != "submit_unknown"
+                or str(row["current_state"]) != "submit_unknown"
+            ):
+                raise FenceError(
+                    "only a submit_unknown application can be reconciled"
+                )
+            intent_created = datetime.fromisoformat(str(row["created_at"]))
+            if received < intent_created:
+                raise FenceError("confirmation predates the submission intent")
+
+            created_at = _now()
+            self.connection.execute(
+                """
+                INSERT INTO submission_confirmations
+                  (message_id, thread_id, intent_id, evidence_sha256,
+                   received_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    message_id,
+                    thread_id,
+                    intent_id,
+                    evidence_sha256,
+                    received_at,
+                    created_at,
+                ),
+            )
+            intent_update = self.connection.execute(
+                """
+                UPDATE submit_intents
+                SET status = 'submitted'
+                WHERE intent_id = ? AND status = 'submit_unknown'
+                """,
+                (intent_id,),
+            )
+            attempt_update = self.connection.execute(
+                """
+                UPDATE submission_attempts
+                SET status = 'submitted'
+                WHERE intent_id = ? AND fence = ? AND status = 'submit_unknown'
+                """,
+                (intent_id, int(row["fence"])),
+            )
+            slot_update = self.connection.execute(
+                """
+                UPDATE daily_slots
+                SET status = 'submitted'
+                WHERE japan_day = ? AND slot = ? AND application_id = ?
+                  AND status = 'submit_unknown'
+                """,
+                (
+                    str(row["japan_day"]),
+                    int(row["slot"]),
+                    str(row["application_id"]),
+                ),
+            )
+            if (
+                intent_update.rowcount != 1
+                or attempt_update.rowcount != 1
+                or slot_update.rowcount != 1
+            ):
+                raise FenceError("submission confirmation state is inconsistent")
+            application_id = str(row["application_id"])
+            application_update = self.connection.execute(
+                """
+                UPDATE applications
+                SET current_state = 'submitted'
+                WHERE id = ? AND current_state = 'submit_unknown'
+                """,
+                (application_id,),
+            )
+            if application_update.rowcount != 1:
+                raise FenceError("application confirmation state is inconsistent")
+            self._append_event(
+                application_id,
+                "submit_unknown",
+                "submitted",
+                {
+                    "intent_id": intent_id,
+                    "message_id": message_id,
+                    "thread_id": thread_id,
+                    "evidence_sha256": evidence_sha256,
+                    "received_at": received_at,
+                },
+            )
+            return "reconciled"
 
     def submitted_resume_reports(self) -> list[dict[str, str]]:
         rows = self.connection.execute(
