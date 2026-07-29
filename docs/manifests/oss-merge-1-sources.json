@@ -19,10 +19,12 @@
       "repository": "https://github.com/Daisuke134/anicca-products.git",
       "commit": "0f6870df44fe160b83aec58803a63c2d7b5e21d7",
       "additional_commits": [
+        "418e0a188eea8f5caa20841d3727a087f8731144",
+        "f0223dbb00f0e5a65621fcf16176315eb5f30764",
         "94485827497d6f0194f82f8f0c4f334427fa66d5"
       ],
-      "disposition": "inspected",
-      "scope": "Reusable cloud-browser implementation and tests are absorbed by commit, while legacy specification state is excluded."
+      "disposition": "absorbed",
+      "scope": "Reusable cloud-browser auth implementation and tests are absorbed by commit, while stale branch-specific specification and evidence state is excluded."
     },
     {
       "id": "profitable-claude",
