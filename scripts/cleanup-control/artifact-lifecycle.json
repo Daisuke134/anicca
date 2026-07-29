@@ -50,6 +50,18 @@
       }
     },
     {
+      "id": "anicca-project-claude-worktrees",
+      "path": "$HOME/anicca-project/.claude/worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
       "id": "life-manager-main-worktrees",
       "path": "$HOME/Projects/life-manager-main/.worktrees",
       "owner": "git-worktrees",
