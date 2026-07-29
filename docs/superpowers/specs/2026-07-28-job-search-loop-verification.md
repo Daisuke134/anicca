@@ -62,3 +62,6 @@ The post-repair forced passes preserve the application counts at
 interview-prep, and Telegram-outbox integrity are all `ok`. The redacted machine
 receipt is
 `docs/evidence/job-search-loop/2026-07-29-canonical-migration.json`.
+
+PR #1273 passes shell syntax, changed-file PII, Python syntax/unittest,
+changed-commit gitleaks, and TruffleHog in Security Scan run `30444708546`.

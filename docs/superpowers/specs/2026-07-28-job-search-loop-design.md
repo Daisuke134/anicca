@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28  
 **Owner:** Daisuke Narita  
-**Status:** Phase 1 live from the legacy checkout; `JOB-CANONICAL-MERGE-1` in progress
+**Status:** Phase 1 live from the canonical Life Manager checkout; `JOB-CANONICAL-MERGE-1` completed
 **Done when:** `Daisuke134/life-manager` is the only versioned source of the local job-search runtime and can discover, qualify, tailor, and submit up to two eligible applications per Japan day; reconcile Gmail; create interview calendar events and preparation packs; send an at-most-once Telegram report; and promote only evidence-backed strategy changes.
 
 ## 1. Outcome
@@ -397,7 +397,7 @@ row; its status changes in the same commit as implementation evidence.
 
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
-| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `in_progress` | Plan commit `04684a309`; imported legacy baseline is 107 tests; canonical RED/GREEN established; first canonical bootstrap exposed daily exit 75 on a durably evidenced budget denial; two runtime-order RED tests now prove quota-before-browser and honest budget-block completion; live re-cutover receipts pending |
+| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
 | 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
 | 2 | Role-specific application messages for Product, GTM, Partnerships and Customer Success | `completed` | Four strict templates; real-profile generation; fact/source validation; 59 tests |
 | 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |

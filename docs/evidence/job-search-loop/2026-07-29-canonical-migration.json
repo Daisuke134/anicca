@@ -3,6 +3,18 @@
   "deliverable": "JOB-CANONICAL-MERGE-1",
   "canonical_repository": "https://github.com/Daisuke134/life-manager.git",
   "tested_implementation_commit": "03367475f0dd744fe9a05de325ed60889051cb01",
+  "pull_request": {
+    "number": 1273,
+    "head_commit": "f70590b54fe72586a87c9fea3a526ca4b45de6ca",
+    "security_scan_run": 30444708546,
+    "checks": {
+      "shell_syntax": "passed",
+      "pii_changed_files": "passed",
+      "python_syntax_and_unittest": "passed",
+      "gitleaks_changed_commits": "passed",
+      "trufflehog": "passed"
+    }
+  },
   "provenance": {
     "job_loop_commit": "d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987",
     "agent_runner_commit": "191b205c03ae37d32b0125da4a1892924d585205",
