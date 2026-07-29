@@ -1,10 +1,22 @@
 # Life Manager Builds Life Manager
 
-Status: implementation-ready architecture  
+Status: target architecture; Self-Builder runtime is not implemented
 Scope: Life Managerが自分の実行データから問題と改善機会を発見し、Issue、eval、
-code change、PR、canary、merge、outcome測定まで進める自己開発システム  
+code change、PR、canary、merge、outcome測定まで進める自己開発システム
 Theory SSOT:
 [Loop / Graph / Eval / Observability Engineering](../research/2026-07-28-loop-graph-eval-observability.md)
+
+### Status truth
+
+この文書のstate machine、tool stack、auto-merge contractは**実装目標**であり、
+現在のproduction動作を表すものではない。現在確認できるのは、Life Managerの
+Inngest durable functions、既存eval/test、tenant isolation、provider receipt、
+product/error signalである。`LM-SB-01`〜`LM-SB-13`はすべて未実装であり、
+「Life Managerがすでに自分をbuildしている」とは表現しない。
+
+本資料でいうNo-Human-Loopは、immutable policyで許可された低risk classにおける
+**human-free execution**を指す。目的、禁止事項、secret、sealed holdout、
+promotion policy、audit historyまで人間不要という意味ではない。
 
 ## 0. Goal
 
@@ -72,18 +84,18 @@ Product processへGitHub merge credentialを渡さない。Productが壊れて�
 Graph EngineeringのためにLangGraphを追加しない。Life Managerがすでに使うInngestを
 durable control graphとし、LLM workerはそのnodeとして呼ぶ。
 
-| Layer | Selected tool | Responsibility |
-|---|---|---|
-| Instrumentation standard | OpenTelemetry SDK + Collector | trace/span/metric/logの共通schemaとexport |
-| Agent trace/eval UI | Langfuse | LLM/tool trace、session、score、dataset、experiment |
-| Durable graph | Inngest | event、step state、retry、concurrency、resume |
-| Product outcome | Mixpanel + Postgres | funnel、retention、task success、effect receipt |
-| Error plane | Sentry | exception、release regression、alert |
-| Improvement authority | Postgres | signal、cluster、issue state、lease、audit |
-| Visible work state | GitHub Issues / PRs | evidence packet、diff、lineage |
-| Deterministic gates | GitHub Actions + existing test runners | build、unit、integration、E2E、policy |
-| Coding workers | Codex Terra / Sol | triage、reproduction、implementation |
-| Portable agent eval | existing Node evals first; Harbor later | containerized cross-agent taskが必要な時だけ導入 |
+| Layer | Selected tool | Current status | Responsibility |
+|---|---|---|---|
+| Instrumentation standard | OpenTelemetry SDK + Collector | target。transitive packageはあるが共通instrumentation未確認 | trace/span/metric/logの共通schemaとexport |
+| Agent trace/eval UI | Langfuse | target。未導入 | LLM/tool trace、session、score、dataset、experiment |
+| Durable graph | Inngest | existing。6 durable functionsとtestあり | event、step state、retry、concurrency、resume |
+| Product outcome | Mixpanel + Postgres | existing signal、Self-Builder接続はtarget | funnel、retention、task success、effect receipt |
+| Error plane | Sentry | target。repo内導入未確認 | exception、release regression、alert |
+| Improvement authority | Postgres | target schema未実装 | signal、cluster、issue state、lease、audit |
+| Visible work state | GitHub Issues / PRs | target projection未実装 | evidence packet、diff、lineage |
+| Deterministic gates | GitHub Actions + existing test runners | test runners existing、promotion gateはtarget | build、unit、integration、E2E、policy |
+| Coding workers | Codex Terra / Sol | available、dispatcher未実装 | triage、reproduction、implementation |
+| Portable agent eval | existing Node evals first; Harbor later | Node evals existing、Harborは非導入 | containerized cross-agent taskが必要な時だけ導入 |
 
 ソース: [Inngest](https://github.com/inngest/inngest) /
 核心の引用: “Steps ... can run for months and recover from failures.”
@@ -554,6 +566,8 @@ shadow control planeでreplayし、旧Promoterが昇格判定する。
 | Asset | Reuse |
 |---|---|
 | `apps/life-call/scheduler.js` | loop/node instrumentation point |
+| `apps/life-call/inngest/functions.js` | 6 durable functionsのexisting graph |
+| `apps/life-call/test/inngest.test.js` | Inngest route、retry、tenant dispatchのcontract |
 | `forEachUserSafe` | tenant failure isolation |
 | claim/release wake ledger | idempotency pattern |
 | `apps/life-call/lib/feature-discovery.js` | durable throttle pattern |
@@ -561,7 +575,7 @@ shadow control planeでreplayし、旧Promoterが昇格判定する。
 | mobile nudge feedback | product outcome input |
 | in-app feedback log | explicit user signal |
 | agent feedback route | external platform signal |
-| existing OTel packages | instrumentation dependency starting point |
+| transitive OTel packages | direct dependency・bootstrapではない。標準化のstarting pointだけ |
 | Writer receipts/holdout/revert | promotion pattern |
 
 ### Measured gaps
@@ -569,7 +583,7 @@ shadow control planeでreplayし、旧Promoterが昇格判定する。
 | Gap | First implementation |
 |---|---|
 | Runtimeに共通trace fieldがない | `apps/life-call/lib/telemetry/` |
-| OTel packagesはあるが明示instrumentationが見えない | bootstrap + semantic attributes |
+| OTelはdirect dependency・bootstrap・共通attributeがない | SDK/Collector bootstrap + semantic attributes |
 | Feedbackが各routeに分散 | signal adapter |
 | Failure cluster storeがない | self-builder schema |
 | GitHub Issue/PR/merge runtime pathがない | issue projector + worker dispatcher |
@@ -657,7 +671,36 @@ Triggerはevent-firstとする。新しいsignal、CI failure、deployment outco
 
 「commit数」「Issue数」「Agent稼働時間」を成功metricにしない。活動量は改善ではない。
 
-## 18. Best / Base / Worst
+## 18. Public narrative contract
+
+記事、発表、demoは同じ一件のfailureを追う。
+
+```text
+wake callがprovider timeoutで届かない
+-> OpenTelemetry trace + effect receipt
+-> redacted failure cluster
+-> reproduction eval（baseline FAIL）
+-> evidence付きGitHub Issue
+-> Solがisolated worktreeで最小修正
+-> independent Checker + sealed holdout
+-> low-risk canary
+-> outcome改善ならpromote、悪化ならrollback
+-> learning receipt
+```
+
+説明順は`Observability -> Eval -> Graph -> Loop`とする。これは実行順でもある。
+概念の列挙やmodel比較から始めない。最初にfailureとユーザー影響を見せ、四つの
+engineeringをそのfailureを直す器官として導入する。
+
+| Public claim | Allowed wording |
+|---|---|
+| 現在 | Life Managerにはdurable product loopsと検証資産がある |
+| 今回の設計 | Self-Builderのtarget architectureと実装順を確定した |
+| まだ言わない | Life Managerがproductionで自分のcodeを自動mergeしている |
+| 最初のdemo | synthetic provider timeoutをIssue→candidate→Checkerまで通す |
+| 最初のlive enable | `LM-SB-13`のdone条件を満たした低risk allowlistだけ |
+
+## 19. Best / Base / Worst
 
 | Scenario | Expected result |
 |---|---|

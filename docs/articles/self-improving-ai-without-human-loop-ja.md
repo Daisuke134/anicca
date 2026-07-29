@@ -1,412 +1,359 @@
-# 人間をループから外す前に、AIの「止まり方」を設計する
+# Life Manager Builds Life Manager
 
-## 2026年の自己改善AIと、ソフトウェア開発を無人化する実装論
+## AIが自分の失敗を観測し、Evalを作り、自分を修正するまで
 
-AIが自分でコードを書き、自分でテストし、失敗すれば直し、また実行する。
-そのまま放っておけば、翌朝には昨日より賢いシステムになっている。
+午前7時。Life Managerはユーザーを起こすはずだった。
 
-これは、もう完全な空想ではありません。同時に、世間で語られるほど簡単でも
-ありません。
+Schedulerは動いた。AIも「起こした」と判断した。ところがproviderはtimeoutし、
+電話は鳴らなかった。普通のシステムなら、ここでSentryにerrorが残り、誰かが
+dashboardを見て、Issueを書き、再現し、修正し、reviewし、deployする。
 
-2026年の最前線を調べ、実際に私たちのLife Managerの運用へ当てはめて分かった
-ことは、かなり明快です。
+私たちが作りたいのは、その一連の仕事をLife Manager自身が行うシステムである。
 
-> 自己編集は自己改善ではない。  
-> 人間の承認を消すことは、ガバナンスを消すことではない。
+```text
+失敗を観測する
+-> 同じ失敗を集める
+-> 再現Evalを作る
+-> Issueにする
+-> 隔離環境で直す
+-> 別のCheckerが採点する
+-> 小さく本番へ出す
+-> 悪化なら戻す
+-> 学びを次のrunへ残す
+```
 
-本当に作るべきものは、自由に自分を書き換えるAIではありません。固定された
-目的と権限の中で、実行履歴から失敗を見つけ、隔離された場所で変更候補を作り、
-改善を実証した候補だけを昇格させるシステムです。
+ただし、これはAIへGitHub tokenを渡して永遠に走らせる話ではない。
 
-OpenAIは、この役割分担を短く
-[“Humans steer. Agents execute.”](https://openai.com/index/harness-engineering/)
-と表現しています。人間をなくすのではなく、人間を毎回の実行から制御面へ
-移すのです。
+> 自己編集は自己改善ではない。
+>
+> 自己改善とは、変更後が以前より良いと反証可能な証拠で示すことだ。
 
-## 1. 「AIに作らせる」と「自己改善AIを作る」は違う
+この記事では、Loop Engineering、Graph Engineering、Automated Eval
+Engineering、Agent Observabilityを、一件の失敗が自己修復される流れとして
+説明する。そして、その考え方をLife Managerの実装へ落とす。
 
-一回のpromptでコードを書かせても、それは生成です。失敗するまで再実行しても、
-それは自律実行です。次の試行で使う方策を変更し、その変更が以前より良いと
-独立した評価で確認されて、初めて自己改善になります。
+## 1. 四つのEngineeringは、同じシステムの四つの器官である
 
-この違いを理解するには、Agent、Harness、Loop、Graphを分けると整理できます。
+四つの言葉は競合するframeworkではない。
 
-| 概念 | 役割 |
+| Engineering | 問い | Life Managerでの役割 |
+|---|---|---|
+| Observability | 何が起きたか | callが鳴らなかった経路と外部結果を残す |
+| Eval | 直ったとどう判定するか | timeoutを再現し、候補だけが通る試験を作る |
+| Graph | 次に何をするか | retry、修正、quarantine、rollbackへ分岐する |
+| Loop | どう継続するか | 観測から学習receiptまでを繰り返す |
+
+説明順も実装順も、**Observability → Eval → Graph → Loop**である。観測できない
+失敗から正しいEvalは作れず、EvalのないGraphは「動いた」ことしか判定できず、
+停止条件のないLoopは活動を増やすだけだからだ。
+
+ソース: [OpenTelemetry — AI Agent Observability](https://opentelemetry.io/blog/2025/ai-agent-observability/)
+核心の引用: “telemetry is also used as a feedback loop to continuously learn from and improve the quality of the agent”
+
+ソース: [LangChain — Towards Automating Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering)
+核心の引用: “mine traces -> identify a failure -> build an eval -> improve the agent -> rerun”
+
+## 2. Observabilityはdashboardではなく、自己改善の感覚器である
+
+通常のlogだけでは、「API callは成功したが、ユーザーの電話は鳴らなかった」という
+失敗を捉えられない。Agentには少なくとも四種類の証拠が必要になる。
+
+| Evidence | 分かること |
 |---|---|
-| Agent | 次の行動を決め、toolを使って状態を変える |
-| Harness | Agentに環境、記憶、権限、停止条件を与える |
-| Loop | 観測→判断→実行→検証→状態更新を繰り返す |
-| Graph | 複数のloopの依存、分岐、昇格条件を制御する |
+| Log | providerが何を返したか |
+| Metric | timeout率が増えているか |
+| Trace / Span | schedulerからproviderまでどの経路を通ったか |
+| Effect receipt | 現実世界で電話・投稿・通知が成立したか |
 
-[LangChainのAgent Harness解説](https://www.langchain.com/blog/the-anatomy-of-an-agent-harness)
-が強調するように、filesystem、shell、Git、browser、memoryは単なる便利toolでは
-ありません。Agentが長時間の仕事を継続し、失敗を戻し、別の試行を比較するための
-外部認知機構です。
-
-そして、一つのAgent loopだけでは足りません。
+Life Managerでは、一つのrunを同じ`trace_id`でつなぐ。
 
 ```text
-Agent loop:
-  observe -> plan -> act -> inspect
-
-Verification loop:
-  candidate -> test -> diagnose -> repair
-
-Event loop:
-  schedule -> run -> publish -> receipt -> retry
-
-Self-improvement loop:
-  mine failures -> propose change -> isolated trial
-  -> baseline vs candidate -> canary -> promote/rollback
+schedule.claim
+  -> context.load
+  -> policy.decide
+  -> provider.call
+  -> effect.verify
+  -> outcome.observe
 ```
 
-自己改善の本体は最後のloopです。変更した事実ではなく、変更後の成功率が上がった
-という反証可能な証拠が必要です。
+ここで重要なのは、LLMの文章を全部保存することではない。必要なのは、
+`release × graph_version × model × tool × failure_class`で比較できる共通schemaで
+ある。OpenTelemetryを共通形式にし、失敗と安全eventはfull trace、正常runはtail
+sampling、raw promptやhealth・calendar・locationはdefault export禁止にする。
 
-## 2. 人間が日々やっている仕事は、大きく二つある
+ソース: [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
+核心の引用: “define a common set of (semantic) attributes”
 
-私たちが普段行う改善作業を分けると、二種類になります。
+ソース: [OpenTelemetry — Tail Sampling](https://github.com/open-telemetry/opentelemetry.io/blob/main/content/ja/blog/2022/tail-sampling/index.md)
+核心の引用: 「必要なのは、適切にサンプリングされたデータです。」
 
-一つ目は、すでに存在する成果物の改善です。エラーログ、CSVに書かれた精度、
-GitHub Actionsのfailure、Slackへ届いた実行結果、ユーザー行動などを見て、
-問題を発見し、原因を特定し、修正します。
+## 3. Automated Eval Engineeringは「AIに採点させること」ではない
 
-二つ目は、まだどのログにも書かれていない新しいアイデアです。頭の中の暗黙知、
-ふとした違和感、将来こうしたいという意図から、新しい機能や研究課題を作ります。
-
-| 人間の仕事 | AIが自動化するloop | 現在の実現度 |
-|---|---|---|
-| 観測できる失敗から既存機能を直す | trace→failure→patch→eval→promote | 高い |
-| 暗黙知から新しい価値を考える | goal/context→candidate→experiment→outcome | 候補生成は高い。価値判断は未解決 |
-
-最初の仕事は自己改善AIと非常に相性が良いです。観測でき、正解条件を作りやすい
-からです。二つ目も、思いついたこと、選んだ理由、却下した理由、長期目標を
-memoryへ残せば、AIは「自分なら考えそうな候補」を生成できます。
-
-しかし、ここには重要な境界があります。
-
-アイデア生成の自動化は、アイデアの価値の自動化ではありません。長期目標は探索の
-方向を与えますが、何が本当に望ましいかのground truthにはなりません。実世界の
-ユーザー行動、収益、研究結果、安全性のような外部結果がなければ、AIは私たちの
-過去の言葉を上手に模倣するだけです。
-
-## 3. 自己改善されるのはモデルだけではない
-
-[LangChainの継続学習の整理](https://www.langchain.com/blog/continual-learning-for-ai-agents)
-では、学習面をmodel、harness、contextの三つに分けています。
-
-| 層 | 変えるもの | 実務での例 |
-|---|---|---|
-| Model | 重み、fine-tuning data | task特化モデル、安全性学習 |
-| Harness | prompt、skill、tool、routing、retry | coding agentの実行方式 |
-| Context | memory、retrieval、成功例、失敗知識 | 過去の判断と実験結果の再利用 |
-
-「自己改善」と聞くと、多くの人はモデルが自分の重みを書き換える姿を想像します。
-しかし、今すぐ安全に改善しやすいのはharnessとcontextです。
-
-検索を深くする。toolのdescriptionを明確にする。失敗した経路をmemoryへ残す。
-評価をholdoutへ分ける。権限を局所化する。これらは重みを一つも変えなくても、
-システム全体の成功率を上げます。
-
-## 4. Loop、Graph、Eval、Observabilityはどうつながるのか
-
-この四つは競合する流行語ではありません。自己改善システムの異なる器官です。
-
-| 概念 | 役割 | 身体にたとえると |
-|---|---|---|
-| Loop Engineering | 観測→実行→検証→状態更新を反復する | 心拍 |
-| Graph Engineering | 複数loopの順序、分岐、合流、vetoを決める | 神経回路 |
-| Eval Engineering | 変更後が本当に良いかを採点する | 制御信号 |
-| Agent Observability | Agentが何をして、何が起きたかを残す | 感覚器 |
-
-[Addy OsmaniのLoop Engineering](https://addyosmani.com/blog/loop-engineering/)は、
-人間が毎回Agentをpromptする代わりに、Agentをpromptするsystem自体を設計する
-ことだと説明します。
-
-しかし、一つのloopだけでは、インフラ障害、code regression、product feedback、
-safety eventを正しく処理し分けられません。そこでGraphが必要になります。
-[LangChainの整理](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph)
-では、nodeが仕事、edgeが次の遷移、全体がstate machineです。LoopはGraphに
-置き換わるのではなく、cycleを一つ持つ単純なGraphです。
+Automated Eval Engineeringとは、production traceに残った失敗を、
+何度でも再実行できる採点契約へ変える工程である。
 
 ```text
-signal
-  -> classify
-     -> known outage: self-heal loop
-     -> code failure: reproduce -> eval -> fix -> canary
-     -> product idea: hypothesis -> experiment
-     -> safety event: immutable safety path
+timeout trace
+-> PIIとsecretを除去
+-> tool/state contractを抽出
+-> fixtureを作る
+-> 現行版が期待した理由でFAILすることを確認
+-> graderとholdoutをsealする
+-> eval_idだけをMakerへ渡す
 ```
 
-Observabilityは、このGraphへ事実を供給します。Logはevent、Metricは傾向、
-Traceはrun全体の経路、Spanは一つのtoolやLLM call、Receiptは外部世界で副作用が
-本当に成立したことを表します。
+一つのEvalは、`instruction + environment + fixture + verifier`で構成する。
+Life Managerでは既存のNode evalを最初のformatに使う。Harborのようなportable
+benchmark harnessは、複数Agent間でcontainerized taskを交換する必要が出てから
+追加する。
 
-[OpenTelemetry](https://opentelemetry.io/blog/2025/ai-agent-observability/)が
-指摘するように、非決定的なAgentではtelemetryはdebugだけでなくevalへのfeedback
-inputになります。ただし観測だけでは改善しません。
+評価は一層にしない。
+
+| Gate | 防ぐ失敗 |
+|---|---|
+| Reproduction | そもそも問題を再現していない |
+| Unit / Integration | 局所code・DB/API contractの退化 |
+| Real E2E | mockでは成功したが外部効果がない |
+| Sealed holdout | visible testへの過適合 |
+| Security / Policy | 成功のために権限やsecret境界を破る |
+| Cost / Latency | 品質以外の退化 |
+| Canary outcome | codeは正しいがユーザー価値が悪化する |
+
+LLM judgeはsemantic qualityの補助に使えるが、唯一のpromotion gateにはしない。
+Makerはsealed answerを読めず、Checkerはcandidateを書き換えられない。
+
+ソース: [Automated Harness Engineering](https://arxiv.org/abs/2604.25850)
+核心の引用: “every edit becomes a falsifiable contract”
+
+## 4. Graph Engineeringは、Loopを本番で壊れない状態機械にする
+
+「3時間ごとにAgentを起動する」だけではGraph Engineeringではない。
+Timerはtriggerでしかなく、Graphは次の三つを定義する。
+
+1. 現在どのstateにいるか
+2. どの証拠があれば次へ進めるか
+3. 失敗時にどこへ戻るか
 
 ```text
-execute
--> trace
--> failure cluster
--> evidence issue
--> regression eval
--> isolated candidate
--> baseline vs candidate
--> holdout + canary
+OBSERVED
+-> CLUSTERED
+-> TRIAGED
+-> REPRODUCED
+-> EVAL_READY
+-> CLAIMED
+-> IMPLEMENTED
+-> VERIFIED
+-> PR_OPEN
+-> CANARY
+-> PROMOTED
+-> MEASURED
+-> LEARNING_RECORDED
+```
+
+Makerが「done」と言ってもstateは進まない。`candidate_commit_sha`とtest receiptが
+揃った時だけ`IMPLEMENTED`になる。Workerが途中で死ねばlease expiry後に再開し、
+同じ失敗が3回続けば`CIRCUIT_OPEN`、禁止pathへ触れれば`QUARANTINED`、
+canaryが悪化すれば`ROLLED_BACK`になる。
+
+Life ManagerはすでにInngestを使っているため、Graph Engineeringのためだけに
+LangGraphを追加しない。Inngestをdurable graphとし、LLMはnodeとして呼ぶ。
+
+ソース: [LangChain — 3 Years of Graph Engineering](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph)
+核心の引用: “loops are simple graphs”
+
+ソース: [Inngest](https://github.com/inngest/inngest)
+核心の引用: “Steps ... can run for months and recover from failures.”
+
+## 5. Loop Engineeringは、人間のpromptをsystemへ置き換える
+
+Loop Engineeringの本質は、Agentを長時間回すことではない。人間が毎回行っていた
+「仕事を見つける、渡す、検証する、状態を残す、次を決める」を外部systemへ
+移すことである。
+
+```text
+observe
+-> diagnose
+-> evaluate
+-> change
+-> verify
 -> promote or rollback
+-> measure
+-> learn
+-> observe again
 ```
 
-[LangChainのAutomated Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering)
-は、repoとtraceを読み、instruction、Docker environment、verifierからなる再現可能な
-evalを作る流れを示しています。ここで重要なのは、公開されたSkill自身も現在は
-user interviewとiterative approvalを推奨しており、価値関数まで完全無人で作れると
-は主張していないことです。
+Loopが閉じる条件は、PRがmergeされたことではない。実際の失敗率、task completion、
+retention、cost、latencyが予測した方向へ動き、learning receiptが残った時である。
 
-完全な設計と指定された日本語事例の比較は、
-[Loop / Graph / Eval / Observability Engineering](../research/2026-07-28-loop-graph-eval-observability.md)
-へ保存しました。
+ソース: [Addy Osmani — Loop Engineering](https://addyosmani.com/blog/loop-engineering/)
+核心の引用: “Loop engineering is replacing yourself as the person who prompts the agent.”
 
-## 5. 最新事例が示す「できること」と「残っている人間」
+ソース: [Colony Builds Colony](https://runcolony.com/blog/colony-builds-colony/)
+核心の引用: “This isn’t a closed loop.”
 
-### OpenAI: Agent-firstなソフトウェア開発
+## 6. Life Managerは「内側」と「外側」の両方で自分を作る
 
-[OpenAIのHarness Engineering](https://openai.com/index/harness-engineering/)は、
-Agentが理解しやすいrepository、機械可読な状態、短いfeedback loopを整備する
-ことで、開発の大部分をAgentへ移す方向を示しています。
+自己改善loopをLife Manager本体の中だけに置くと、本体が壊れた時に修理者も壊れる。
+外側だけに置くと、ユーザーに何が起きたかを十分に観測できない。
 
-重要なのは、魔法のmodelを待ったことではありません。Agentが迷わない地図と、
-失敗をすぐ見つける検証系を作ったことです。
-
-### Bun: 大量AgentによるRust移行
-
-[BunのRust移行](https://bun.com/blog/bun-in-rust)では、64のAgent、約50の
-workflow、11日、約100万assertionという規模が報告されています。これは並列化の
-力を示す強い事例です。
-
-同時に、記事には人間がworkflowを監視し、loopを編集していたことも書かれて
-います。Agentの数が増えても、人間の仕事はゼロになったのではなく、個々のコード
-作業から制御系の設計へ移りました。
-
-### Tax AI: 実務の失敗を改善課題へ変える
-
-[OpenAIとTax AIの事例](https://openai.com/index/building-self-improving-tax-agents-with-codex/)
-では、約7,000件の税務処理を扱い、6週間でfield completionが25%から86%へ改善した
-と報告されています。
-
-ここで注目すべきは、現場の証拠が自動的に良いcoding taskになるわけではない、
-という点です。失敗を再現可能な課題と評価へ変換する工程が必要でした。つまり、
-「ログを読むAI」よりも「ログを反証可能な契約へ変えるAI」が重要です。
-
-### Automated Harness EngineeringとDarwin Gödel Machine
-
-[Automated Harness Engineering](https://arxiv.org/abs/2604.25850)は、
-Harnessの編集面を明示し、各変更を検証可能な契約として扱うことで、
-Terminal-Bench 2を10反復で69.7から77.0へ改善したと報告しています。
-
-[Darwin Gödel Machine](https://arxiv.org/abs/2505.22954)も、Agentが自身の
-code changeを提案し、各変更を経験的に検証する形で、SWE-benchを20%から50%、
-Polyglotを14.2%から30.7%へ改善しました。
-
-どちらも「自由な自己書換え」の証拠ではありません。編集対象を限定し、sandboxで
-候補を比較し、悪い変更を捨てられるようにした証拠です。
-
-## 6. 最大の問題は、賢さではなく採点方法である
-
-自己改善AIは、与えられた評価を改善します。それが人間の本当の目的と一致して
-いるかは、別問題です。
-
-[SpecBench](https://arxiv.org/abs/2605.21384)は、visible test suiteが不完全な
-仕様であり、公開テストでは成功してもholdoutでは失敗することを示します。
-[METRのreward hacking報告](https://metr.org/blog/2025-06-05-recent-reward-hacking/)
-では、Agentがtest、scorer、referenceの穴を利用する事例が観測されています。
-
-さらにOpenAIは、benchmark汚染や壊れたtaskの問題から
-[SWE-bench Verifiedを主要評価から外し](https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/)、
-[SWE-bench Proの約30%が壊れているとの推定](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
-も示しています。
-
-つまり、test passは意図の達成ではありません。
-
-安全な昇格には、最低でも次が必要です。
-
-| 評価面 | 役割 |
-|---|---|
-| visible tests | Agentが局所修正を進める |
-| sealed holdout | 採点方法への過適合を検出する |
-| real E2E | 実環境で本当に効果が起きたかを見る |
-| security/policy | 成功のために禁止事項を破っていないかを見る |
-| cost/latency | 品質以外の退化を検出する |
-| canary | 小さな実トラフィックで確認する |
-| rollback | 悪化時に自動で元へ戻す |
-
-[Verification Horizon](https://arxiv.org/abs/2606.26300)が指摘する通り、
-構築できるverifierはすべて人間意図のproxyです。だから評価器を一つにせず、
-異なるfailure modeを持つ複数の証拠を重ねます。
-
-## 7. No-Human-Loopを実装する9層
-
-実装は、次の順番が安定します。
+したがって二つのplaneへ分ける。
 
 ```text
-1. Immutable constitution
-   goal / prohibitions / budget / permissions / done condition
-
-2. Append-only traces
-   input / action / output / cost / latency / receipt
-
-3. Failure miner
-   repeated failure / drift / anomaly / unmet outcome
-
-4. Candidate generator
-   one hypothesis / one editable axis / expected delta
-
-5. Isolated execution
-   worktree / sandbox / scoped credentials
-
-6. Evaluation
-   visible + sealed + E2E + security + cost
-
-7. Canary
-   bounded users / bounded time / bounded spend
-
-8. Promotion or rollback
-   atomic state change / reversible artifact
-
-9. Learning receipt
-   what changed / why / evidence / next trigger
+┌──────────── Product Plane ────────────┐
+│ Life Manager                          │
+│ wake / travel / ask / writer / API    │
+│    └─ trace + metric + effect receipt │
+└─────────────────┬─────────────────────┘
+                  │ redacted, append-only
+                  ▼
+┌────── Self-Builder Control Plane ─────┐
+│ Collector -> Clusterer -> Triage      │
+│ -> Eval Builder -> Maker -> Checker   │
+│ -> Canary -> Promoter -> Auditor      │
+└─────────────────┬─────────────────────┘
+                  ▼
+       GitHub / Postgres / Deploy
 ```
 
-最も大切なのは、何を変更できないかを先に決めることです。
+Product Planeは観測するが、merge credentialを持たない。Makerは隔離worktreeで
+codeを書けるが、production secretとsealed holdoutを読めない。PromoterはLLMでは
+なくmachine-readable policyで判断する。
 
-目的、禁止事項、spend cap、secret、sealed answer、audit log、rollback経路は
-自己編集させません。Prompt、skill、retrieval、tool description、局所code、
-retry、routingはcandidate branch内だけで変更できます。
+ソース: [OWASP Agent Observability Standard](https://github.com/OWASP/www-project-agent-observability-standard)
+核心の引用: “inspectable, traceable and instrumentable”
 
-これにより、承認待ちをなくしても、暴走時の半径を固定できます。
+## 7. 全ユーザーを監視するのか
 
-## 8. 私たちのLife Managerで実測した現在地
+答えは「全runから軽量なsystem evidenceを取り、必要なtraceだけを深く見る」である。
+「全ユーザーの内容を読む」か「自分のaccountだけを見る」かの二択ではない。
 
-理論を理解する最短の方法は、すでに動いているシステムへ適用することです。
-そこで、AniccaのWriter loopを実測しました。
-
-現時点では8つのpublication surfaceのうち6つがliveで、Zenn JAとX Article ENが
-未完です。X short JAとX Article JAはliveですが、self-improvementのactive
-experimentはなく、quality metricsもまだ1日分です。
-このstateと昇格順序の正本は
-[Writer Loop Quality and Self-Improvement](../loop-engineering/47-writer-loop-quality-and-self-improvement.md)
-です。
-
-これは失敗ではありません。むしろ、自己改善を名乗る前に必要な「真実のstate」が
-見えています。
-
-すでに良い基盤もあります。
-
-| すでにあるもの | 意味 |
+| 対象 | 方針 |
 |---|---|
-| 複数のscheduler loop | wake、travel、ask、onboarding、discoveryを自動実行 |
-| single-writer制御 | RailwayとOpenClaw cronの二重実行を防ぐ |
-| tenant failure isolation | 一人の失敗で全利用者のtickを止めない |
-| daily preflight | 9依存をtimeout・failure taxonomy・証拠hash付きで検査 |
-| publication receipt | 実際に公開されたかを状態として残す |
-| protected paths | Agentが変更してよい範囲を制限する |
-| before/after SHA | どの変更が結果を起こしたか追跡する |
-| JA/EN holdout | 一方だけへの過適合を避ける |
-| 7日評価 | 一回の成功で昇格しない |
-| complete revert | 失敗時に戻せる |
+| success/error、latency、cost、version | 全run |
+| state transition、effect receipt、policy decision | 全run |
+| failure、timeout、安全event | redacted full trace |
+| 正常な成功run | tail sampling |
+| raw Telegram、calendar、health、location、prompt | default export禁止 |
+| tenant identity | stable pseudonymous hash |
 
-一方で、self-improve用launchd設定が古いbranch名を固定し、現在のcheckoutと
-一致していないリスクも見つかりました。ここで「AIが自分を改善している」と
-発表してしまえば、活動と進歩を混同します。
+Self-Builderへ渡すのはcluster、aggregate、redacted exemplarである。個人の生活本文を
+改善Agentへ丸ごと読ませない。
 
-さらに、Telegram、X、App Store、Mixpanel、Singular、Sentry、API logを共通の
-trace/evidenceへ正規化し、failure clusterからGitHub Issueを作り、回帰eval、
-isolated fix、canary、mergeまでつなぐ改善Graphはまだありません。正確には、
-Life Managerは「自動で動く複数loop」を持つが、「自分のcodeを自分で改善する
-closed loop」はこれからです。
+## 8. 採用するtool stack
 
-具体的なstate machine、権限分離、Issue/Eval契約、自動merge条件は
-[Life Manager Builds Life Manager](../loop-engineering/51-life-manager-builds-life-manager.md)
-を実装正本とします。
+新しいframeworkを増やすこと自体を目的にしない。既存資産を中心に役割を一つずつ
+割り当てる。
 
-正しい順序は次です。
+| Layer | Tool | 状態 |
+|---|---|---|
+| Telemetry standard | OpenTelemetry SDK + Collector | target |
+| Agent trace / eval UI | Langfuse | target |
+| Durable graph | Inngest | existing |
+| Product outcome | Mixpanel + Postgres | signal existing |
+| Error plane | Sentry | target |
+| Improvement authority | Postgres | target schema |
+| Work state | GitHub Issues / PRs | target projection |
+| Hard gates | GitHub Actions + Node eval/test | tests existing |
+| Workers | Codex Terra / Sol | available、dispatcher target |
+
+LangfuseはLLM/tool trace、score、dataset、experimentを見る面に限定し、
+Self-Builderのauthoritative stateはPostgresに置く。
+
+ソース: [Langfuse](https://github.com/langfuse/langfuse)
+核心の引用: “develop, monitor, evaluate, and debug AI applications.”
+
+## 9. 現在あるものと、まだないもの
+
+ここを混ぜると、発表全体が宣伝になる。
+
+| 現在ある | まだない |
+|---|---|
+| 6つのInngest durable functions | 共通OpenTelemetry trace envelope |
+| tenant failure isolation | failure cluster store |
+| Node evalと大量のcontract test | traceからreproduction Evalを作るfactory |
+| provider receiptとproduct signal | evidence付きIssue projector |
+| GitHub Actionsとprotected branch | Maker / independent Checker dispatcher |
+| Writerのholdout・receipt・revert pattern | canary→auto-merge→outcome lineage |
+
+したがって正しい表現は、
+
+> Life Managerには自己改善の部品がある。
+>
+> Self-Builderのarchitectureと実装順は確定した。
+>
+> productionで自分のcodeを自動mergeするclosed loopは、まだ完成していない。
+
+である。
+
+## 10. 最初のデモは、一件のsynthetic failureでよい
+
+最初から全feedback、全metric、全codeをつながない。最初のvertical sliceは、
+provider timeoutという既知の低risk failureだけに限定する。
 
 ```text
-8面すべての実公開を安定化
--> stale branch/stateを修復
--> exact8を3回
--> learning receiptを1件
--> self-heal fixtureを5件
--> 一軸candidate experiment
--> holdout + real publication canary
--> promote/rollback
+synthetic timeout
+-> OTel trace
+-> one failure cluster
+-> baseline FAIL reproduction eval
+-> one GitHub Issue
+-> one isolated PR
+-> independent Checker PASS
+-> simulated canary
+-> learning receipt
 ```
 
-私たちの次の研究対象は「何でも自己改善するAI」ではありません。たとえば
-retrievalだけ、tool descriptionだけ、導入文だけ、という一軸を選びます。
-ベースラインと候補を同じ入力集合で走らせ、sealed holdoutと実公開結果の両方が
-改善した場合だけ昇格させます。
+デモのdone条件は「AgentがPRを作った」ではない。
 
-## 9. Xの深掘りも、同じ思想でtool化した
-
-今回の調査では、Xquik、x-tweet-fetcher、x-research-skill、x-cli、xurl、
-Firecrawlを比較しました。
-
-結論は、一つの万能toolを選ばないことでした。
-
-| 仕事 | 最適な面 |
+| Done evidence | 条件 |
 |---|---|
-| 大量検索、cursor、reply、quote | Xquik。現在は課金不要の認証済みbrowser検索 |
-| 既知のpostとX Article全文 | x-tweet-fetcher/FxTwitter |
-| 本物のX Article公開 | 公式X Articles API / xurl。現在は既存Writer publisher |
+| Dedupe | 同じsignalを2回送ってもIssueは1件 |
+| Reproduction | baselineが期待したfailureで落ちる |
+| Isolation | Makerはallowlisted pathだけを変更 |
+| Independence | Checkerはclean checkoutで採点 |
+| Safety | deliberate bad candidateは拒否 |
+| Recovery | Worker kill後もlease expiryで再開 |
+| Lineage | signal→Issue→SHA→eval→decisionを再構成 |
 
-[x-tweet-fetcher](https://github.com/ythx-101/x-tweet-fetcher)をcommit固定し、
-指定された6本のX Articleを取得したところ、6本すべてで全文取得に成功しました。
-本文長は4,074〜15,256文字でした。一方、FirecrawlでsampleしたX Articleは、
-3本中1本だけが全文でした。
+この一本が通れば、次にfeedback、Sentry、Mixpanel、Writer receiptへsourceを増やす。
 
-認証済みbrowser検索では、8 scrollで20件の一意status URLを取得し、開かれていた
-2つのX Article editor tabが変化していないことも前後で検証しました。
+## 11. No-Human-Loopの正確な意味
 
-このtool自体も、小さなNo-Human-Loop設計です。保護対象のeditorを絶対に選ばず、
-結果件数、scroll数、完了／部分完了、停止理由をmachine-readableに返します。
-「たくさん取れた気がする」ではなく、何をもって深いとしたかを状態にしました。
+低riskかつrollback可能な変更では、Issue、修正、検証、canary、merge、測定から
+人間の承認を外せる。
 
-## 10. 研究室と会社で、同じ話をどう変えるか
+しかし、目的、禁止事項、secret、sealed holdout、promotion policy、audit logまで
+Self-Builderへ編集させると、AIが問題、解答、採点、昇格を一人で所有する。
+それでは改善を独立に判定できない。
 
-NAISTの研究室では、仮説、対照群、holdout、統計、再現性を中心に話します。
-「改善した」とする帰無仮説は何か、benchmark leakageはないか、別taskへ一般化
-するかを問います。
+私たちが目指すのは、
 
-会社では、権限、費用、監査、SLA、canary、rollbackを中心に話します。失敗する
-Agentをゼロにするのではなく、失敗の影響半径と回復時間を設計します。
+> No human in the execution loop.
+>
+> Human intent encoded in goals, evidence, permissions, and rollback.
 
-両方に共通するメッセージは同じです。
+である。人間を毎回の承認から外し、人間の意図を制御面へ固定する。
 
-> 人間を一回ごとの承認から外す。  
-> その代わり、目的・証拠・権限・停止条件をコードにする。
+## 12. 結論
 
-## 11. 最後に
+自己改善AIの最小単位は、modelではなく、証拠で閉じるloopである。
 
-AIだけでソフトウェアを作る未来は、「人間が一切存在しない会社」から始まるの
-ではありません。
+Observabilityが失敗を見つける。Evalが「直った」を定義する。Graphが安全な順序と
+失敗経路を決める。Loopが実世界のoutcomeまで測り、次の改善へ戻す。
 
-まず、人間が毎日見ていたログをAgentが読みます。人間が繰り返していた修正を、
-隔離環境で試します。人間が頭の中で行っていた合否判定を、複数の評価契約へ
-変えます。そして、人間は一件ずつ承認する仕事から、目的、境界、評価器を設計する
-仕事へ移ります。
+Life Manager Builds Life Managerは、未来の標語ではない。一件の電話失敗を、
+再現可能なEvalと小さな修正へ変え、悪い候補を捨て、良い候補だけを昇格させる
+engineering problemである。
 
-自己改善AIの本当の単位は、モデルではなくloopです。
+最初に作るべきものは、AIの「もっと考える力」ではない。
 
-優れたloopは、速く動くだけではありません。失敗を観測し、悪い変更を捨て、
-良い変更だけを昇格させ、自分が間違っていたら元へ戻れます。
+**何を証拠に前へ進み、どこで止まり、どう戻るか。**
 
-だから最初に作るべきものは、AIの「もっと考える力」ではありません。
-
-AIが何を証拠に前へ進み、どこで止まり、どう戻るかです。
+その答えをcodeにした時、Life Managerは初めてLife Managerをbuildし始める。
 
 ---
 
-調査ノートと全ソース:
-[自己改善AI／No-Human-Loop開発：調査アーカイブ](../research/2026-07-27-self-improving-ai-state-of-the-art.md)
+実装正本:
+[Life Manager Builds Life Manager](../loop-engineering/51-life-manager-builds-life-manager.md)
+
+理論・事例・全ソース:
+[Loop / Graph / Eval / Observability Engineering](../research/2026-07-28-loop-graph-eval-observability.md)

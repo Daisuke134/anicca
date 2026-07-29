@@ -1,7 +1,7 @@
 # Loop / Graph / Eval / Observability Engineering：自己改善AIの実装地図
 
-更新日: 2026-07-28  
-用途: Life Manager設計、NAIST研究室発表、社内発表、記事の共通正本  
+更新日: 2026-07-28
+用途: Life Manager設計、NAIST研究室発表、社内発表、記事の共通正本
 調査範囲: 指定されたGitHub・Zenn 7件、公式engineering記事、論文、X上の議論、Life Manager実装
 
 ## 0. 30秒で分かる結論
@@ -111,11 +111,16 @@ repo surfaceを読む
   -> prompt/model/tool/skill/hook/data/serviceを写像
   -> traceから要求・error・誤state changeを採掘
   -> 能力候補を提案
-  -> Harbor taskを作成
-     instruction + Docker environment + verifier
+  -> 再現可能なeval contractを作成
+     instruction + environment + fixture + verifier
   -> trajectory / artifact / reward / errorを記録
   -> model/prompt/tool/agent versionを交換して再実行
 ```
+
+Life Managerでは既存Node evalを最初のcontract formatに使う。Harborは、
+containerized cross-agent taskの移植性が必要になった時だけ追加する。Automated
+Eval EngineeringはHarborというtool名ではなく、production failureを再実行可能な
+採点契約へ変える工程を指す。
 
 最終形は次のloopである。
 

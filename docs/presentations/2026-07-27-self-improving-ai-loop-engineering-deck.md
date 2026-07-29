@@ -1,481 +1,515 @@
-# Self-Improving AI without a Human Approval Loop
+# Life Manager Builds Life Manager
 
-## 発表スライド原稿 — NAIST研究室／社内共通コア
+発表スライド正本。研究室／社内共通18枚、20分。
 
-想定時間: 35分 + Q&A 15分  
-基本構成: 18枚 + appendix  
-話す言語: 日本語、固有概念は英語併記
+記事正本:
+[AIが自分の失敗を観測し、Evalを作り、自分を修正するまで](../articles/self-improving-ai-without-human-loop-ja.md)
 
-## Slide 1 — Title
+PowerPoint:
+[life-manager-builds-life-manager.pptx](./life-manager-builds-life-manager.pptx)
 
-### 画面
+再生成:
+`NODE_PATH=/opt/homebrew/lib/node_modules node docs/presentations/build-self-improving-ai-deck.js`
 
-**Self-Improving AI without a Human Approval Loop**
+## Presentation contract
 
-人間をループから外す前に、AIの「止まり方」を設計する
-
-### Visual
-
-中央に小さなloop:
-
-```text
-observe -> act -> verify -> learn
-              ^             |
-              +-------------+
-```
-
-### Speaker note
-
-今日の問いは「AIにコードを書かせる方法」ではない。人間が毎回承認しなくても、
-システムが改善を続けられる条件は何か、である。
-
-## Slide 2 — The uncomfortable thesis
-
-### 画面
-
-> Self-editing ≠ Self-improvement  
-> No approval ≠ No governance
-
-### Speaker note
-
-自分のcodeやpromptを書き換えれば自己改善、という定義は弱すぎる。悪化する変更も
-自己編集だからである。改善には、同じ目的に対する比較可能な証拠が必要。
-
-## Slide 3 — Six words people mix together
-
-### 画面
-
-| Intent | Harness | Loop | Graph | Observability | Eval |
-|---|---|---|---|---|---|
-| direction | body | heartbeat | nervous system | senses | control signal |
-
-### Visual
-
-```text
-Intent
-  ↓
-Graph -> Loop -> Harness -> Agent
-  ↑                         ↓
-decision <- Eval <- Observability
-```
-
-### Speaker note
-
-Agentを賢くするだけでは長時間開発は安定しない。Graphは複数loopを制御し、
-Observabilityが実行証拠を作り、Evalが次のedgeと昇格を決める。
-
-## Slide 4 — One loop is not self-improvement
-
-### 画面
-
-```text
-L1 Agent:        observe -> act -> inspect
-L2 Verification: candidate -> test -> repair
-L3 Event:        trigger -> run -> receipt -> retry
-L4 Improvement:  traces -> change -> compare -> promote/rollback
-```
-
-### Speaker note
-
-L1は自律実行。L2は修復。L3は運用。次回の方策を変え、L4でbaselineより良いと
-検証して初めて自己改善。
-
-## Slide 5 — What can actually learn?
-
-### 画面
-
-| Model | Harness | Context |
-|---|---|---|
-| weights | prompts/tools/routing | memory/retrieval/examples |
-| expensive/risky | practical today | practical today |
-
-### Speaker note
-
-重みを変えなくても、tool、retrieval、memory、evalを改善すればシステム能力は
-上がる。現場ではHarnessとContextから始める。
-
-## Slide 6 — Two kinds of human work
-
-### 画面
-
-```text
-A. Existing evidence                 B. Tacit ideas
-logs / CSV / traces / failures       intention / taste / future
-              |                               |
-      exploitation loop                 candidate generation
-```
-
-### Speaker note
-
-ユーザーの原案をそのまま中心に置く。Aは観測と評価を形式化しやすく、高い確度で
-自動化できる。Bは候補生成を自動化できるが、価値判断には外部outcomeが要る。
-
-## Slide 7 — A goal is not a verifier
-
-### 画面
-
-**“Build the best life manager” is a direction, not a done condition.**
-
-```text
-goal
-  -> measurable outcome
-  -> constraints
-  -> holdout
-  -> stop / rollback
-```
-
-### Speaker note
-
-長期目標だけではAgentは採点方法を発明し、proxyを最適化する。目標を観測可能な
-契約へ分解する必要がある。
-
-## Slide 8 — Graph Engineering: loops do not disappear
-
-### 画面
-
-```text
-signal
-  -> classify
-     -> outage: self-heal loop
-     -> code failure: reproduce -> eval -> fix
-     -> idea: hypothesis -> experiment
-     -> safety: immutable path
-```
-
-### Speaker note
-
-Graph EngineeringはLoopの後継ではない。Loopはcycleを一つ持つGraphであり、
-Graphは複数loopの順序、分岐、合流、retry、vetoをstate machineとして定義する。
-GraphRAGやknowledge graphとは別のexecution graphである。
-
-## Slide 9 — Observability is the sensory system
-
-### 画面
-
-| Signal | What it proves |
+| Item | Decision |
 |---|---|
-| Metric | trend / SLO / cost |
-| Trace | end-to-end path |
-| Span | one LLM/tool/guardrail step |
-| State diff | what changed |
-| Receipt | real-world effect |
+| One story | wake callがprovider timeoutで届かない |
+| One thesis | self-editing is not self-improvement |
+| Explanation order | Observability → Eval → Graph → Loop |
+| Current truth | durable product loopsはexisting、Self-Builderはtarget |
+| Demo | synthetic timeoutをIssue→Eval→candidate→Checkerへ通す |
+| Claim boundary | human-free execution、immutable governance |
+
+---
+
+## Slide 1 — Life Manager Builds Life Manager
+
+### 画面
+
+**AIが自分の失敗を観測し、Evalを作り、自分を修正するまで**
+
+Observability → Eval → Graph → Loop
+
+### Visual
+
+暗い制御室。中央に一本の循環線。四つのnodeだけを表示する。
 
 ### Speaker note
 
-観測は改善そのものではない。しかし、自分が何をして何が起きたかを見られない
-Agentは、自分の問題を発見できない。生ログを全部contextへ入れず、aggregate、
-failure cluster、代表trace、個別spanへ階層化する。
+今日は「AIにcodeを書かせる方法」ではなく、Life Managerが自分の失敗から
+自分を直すsystemをどう作るかを、一件の失敗だけで説明する。
 
-## Slide 10 — Automated Eval Engineering
+---
+
+## Slide 2 — 午前7時、電話は鳴らなかった
 
 ### 画面
 
 ```text
-repo + traces
--> ability map
--> task + environment + verifier
--> baseline/candidate trials
--> regression suite
+Scheduler: DONE
+Agent:     "wake call sent"
+Provider:  TIMEOUT
+User:      no call
 ```
+
+**System activity ≠ real-world effect**
+
+### Visual
+
+左にgreenのinternal DONE、右にredのsilent phone。中央のreceiptが欠落。
 
 ### Speaker note
 
-最新のEval Engineering Skillはrepoとtraceから再現可能なevalを作る。ただし公式
-記事自身がuser interviewとiterative approvalを推奨する。完全無人化できるのは
-既知failure classとdeterministic outcomeから先であり、価値関数をゼロから発明する
-部分ではない。
+Agentの自己申告やAPI responseではなく、外部効果のreceiptが必要。これが
+Self-Builderへ入る最初のevidenceになる。
 
-## Slide 11 — The architecture
+---
+
+## Slide 3 — 自己編集は自己改善ではない
 
 ### 画面
 
 ```text
-IMMUTABLE CONSTITUTION
-          |
-APPEND-ONLY TRACES
-          |
-FAILURE MINER + IDEA MINER
-          |
-CANDIDATE IN SANDBOX
-          |
-VISIBLE + SEALED + E2E + SECURITY + COST
-          |
-CANARY
-          |
-PROMOTE <-> ROLLBACK
+code changed                      = self-editing
+task completed                    = autonomy
+candidate beats baseline safely   = self-improvement
 ```
+
+**変更ではなく、改善の証拠が必要。**
 
 ### Speaker note
 
-自己改善の対象と、自己編集させない対象を分ける。目的、禁止事項、spend cap、
-sealed answer、audit log、rollbackはimmutable。
+PR数、commit数、Agent稼働時間を成功metricにしない。以前より良く、別の面で
+悪化せず、戻せることを示して初めて改善と呼ぶ。
 
-## Slide 12 — Promotion is a contract
+---
+
+## Slide 4 — 四つは同じ身体の器官
+
+### 画面
+
+| Organ | Job |
+|---|---|
+| Observability | 感じる |
+| Eval | 採点する |
+| Graph | 分岐する |
+| Loop | 継続する |
+
+### Visual
+
+四つの円を左から右へ。色はcyan、amber、violet、green。
+
+### Speaker note
+
+用語を別々に覚えない。失敗を感じ、直ったか採点し、安全な経路を選び、
+実世界の結果まで繰り返す一つのsystemとして理解する。
+
+---
+
+## Slide 5 — Observabilityは感覚器
+
+### 画面
+
+```text
+schedule.claim
+ -> context.load
+ -> provider.call
+ -> effect.verify
+ -> outcome.observe
+```
+
+Log · Metric · Trace · Effect receipt
+
+### Visual
+
+一本のtrace waterfall。`effect.verify`だけ赤。
+
+### Speaker note
+
+OpenTelemetryの共通schemaでrunをつなぐ。Agent telemetryはdebugだけでなく、
+evalを作り改善するfeedback inputになる。
+
+### Source
+
+[OpenTelemetry](https://opentelemetry.io/blog/2025/ai-agent-observability/):
+“telemetry is also used as a feedback loop”
+
+---
+
+## Slide 6 — 何千人分をどう観測するか
+
+### 画面
+
+| 全run | 深く保持 | 原則出さない |
+|---|---|---|
+| error / latency / cost | failures / safety | raw prompt |
+| version / receipt | redacted exemplar | health / location |
+| state transition | bounded debug | calendar / Telegram |
+
+**Aggregate everyone. Read nobody by default.**
+
+### Visual
+
+大量の薄い点がaggregateへ集まり、少数のred traceだけdrill-down。
+
+### Speaker note
+
+全ユーザーの内容を読むのではない。全runから軽量なsystem evidenceを取り、
+失敗だけをredactして深掘る。tenant identityはpseudonymous hash。
+
+---
+
+## Slide 7 — Automated Eval Engineeringは試験工場
+
+### 画面
+
+```text
+trace
+ -> redact
+ -> fixture
+ -> baseline FAIL
+ -> seal grader
+ -> eval_id
+```
+
+**Production failure becomes a falsifiable contract.**
+
+### Visual
+
+赤いtraceがamberのtest cardへ変わる。
+
+### Speaker note
+
+AIに感想を採点させる話ではない。失敗を何度でも再現できる
+instruction + environment + fixture + verifierへ変える。
+
+### Source
+
+[LangChain](https://www.langchain.com/blog/towards-automating-eval-engineering):
+“mine traces -> identify a failure -> build an eval”
+
+---
+
+## Slide 8 — 一つの点数では昇格しない
+
+### 画面
+
+```text
+Reproduction
+  + Unit / Integration
+  + Real E2E
+  + Sealed holdout
+  + Security / Policy
+  + Cost / Latency
+  + Canary outcome
+```
+
+### Visual
+
+七つのgate。candidateが全gateを通って初めてgreenになる。
+
+### Speaker note
+
+Makerはsealed answerを読めない。Checkerはcandidateを書き換えない。LLM judgeは
+semantic補助であり、唯一のpromotion gateではない。
+
+---
+
+## Slide 9 — Graph Engineeringは状態と証拠
+
+### 画面
+
+```text
+OBSERVED -> CLUSTERED -> REPRODUCED -> EVAL_READY
+-> IMPLEMENTED -> VERIFIED -> CANARY -> MEASURED
+```
+
+Failure: RETRY_WAIT · QUARANTINED · ROLLED_BACK · CIRCUIT_OPEN
+
+### Visual
+
+main pathをviolet、failure pathをcoralで描く。
+
+### Speaker note
+
+Timerはtriggerでしかない。Graphは現在state、次へ進むreceipt、失敗時の戻り先を
+定義する。Makerの「done」ではstateは進まない。
+
+### Source
+
+[LangChain](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph):
+“loops are simple graphs”
+
+---
+
+## Slide 10 — Loop Engineeringはpromptする人を置き換える
+
+### 画面
+
+```text
+observe -> diagnose -> evaluate -> change
+-> verify -> promote/rollback -> measure -> learn
+```
+
+**The loop closes at outcome, not at merge.**
+
+### Visual
+
+Slide 9のgraphを円環で囲み、`measure -> observe`を太くする。
+
+### Speaker note
+
+人間が仕事を見つけ、渡し、確認し、次を決めていた部分をsystemにする。
+PR mergeではなく、実metricとlearning receiptまで戻ってloopが閉じる。
+
+### Source
+
+[Addy Osmani](https://addyosmani.com/blog/loop-engineering/):
+“replacing yourself as the person who prompts the agent”
+
+---
+
+## Slide 11 — 内側で観測し、外側で修正する
+
+### 画面
+
+```text
+PRODUCT PLANE
+Life Manager -> trace / metric / receipt
+                       |
+                       v
+CONTROL PLANE
+Collector -> Eval Builder -> Maker -> Checker -> Promoter
+```
+
+### Visual
+
+上下二層。credential境界を太い線で分ける。
+
+### Speaker note
+
+Productがmerge tokenを持たない。Self-Builderが壊れてもLife Managerは動き、
+Life Managerが壊れても外側のSelf-Builderが修理できる。
+
+---
+
+## Slide 12 — 採用tool stack
+
+### 画面
+
+| Layer | Tool |
+|---|---|
+| Telemetry | OpenTelemetry |
+| Trace / Eval UI | Langfuse |
+| Durable Graph | Inngest |
+| Authority | Postgres |
+| Work / Gates | GitHub |
+| Outcomes | Mixpanel + Sentry |
+| Workers | Codex Terra / Sol |
+
+### Visual
+
+中央にPostgres、周囲を役割別toolが囲む。tool logoより役割名を大きくする。
+
+### Speaker note
+
+GraphのためにLangGraphを追加しない。Life Managerがすでに使うInngestを再利用。
+Node evalを先に使い、Harborはportable container taskが必要になってから。
+
+---
+
+## Slide 13 — 現在あるもの
+
+### 画面
+
+**Existing**
+
+- 6 Inngest durable functions
+- tenant failure isolation
+- Node eval / contract tests
+- provider receipts / product signals
+- GitHub Actions / protected branches
+- Writer holdout / revert patterns
+
+### Visual
+
+六つのexisting blockをgreen outlineで表示。
+
+### Speaker note
+
+Life Managerはゼロからではない。product loop、durability、isolation、eval、
+receipt、rollback patternはある。ここまではcodeで確認できる現在地。
+
+---
+
+## Slide 14 — まだないもの
+
+### 画面
+
+**Target**
+
+- common OTel trace envelope
+- failure cluster store
+- automated reproduction Eval factory
+- evidence Issue projector
+- Maker / independent Checker dispatcher
+- canary → outcome lineage
+
+### Visual
+
+Slide 13と同じ六blockをdashed amberで表示。
+
+### Speaker note
+
+ここを隠さない。現時点で「Life Managerが自分のcodeをproductionへ自動mergeして
+いる」とは言わない。architectureと実装順が確定した段階。
+
+---
+
+## Slide 15 — 最初のvertical slice
+
+### 画面
+
+```text
+synthetic provider timeout
+-> one trace
+-> one cluster
+-> one failing eval
+-> one Issue
+-> one isolated PR
+-> one independent verdict
+-> one learning receipt
+```
+
+### Visual
+
+一件の赤いfailureが右端でgreen receiptへ変わる。
+
+### Speaker note
+
+全sourceを一度につながない。この一本でdedupe、reproduction、isolation、
+independent verification、recovery、lineageをE2E実証する。
+
+---
+
+## Slide 16 — 自動mergeは契約
 
 ### 画面
 
 ```yaml
-promote_if:
-  visible_delta: "> 0"
-  sealed_delta: ">= 0"
-  real_e2e: pass
-  policy_regression: false
-  cost_delta: "<= 10%"
-  canary_error: "<= baseline"
-else: rollback
+allowlisted_low_risk: true
+baseline: fail
+candidate: pass
+sealed_holdout_delta: ">= 0"
+security_regression: false
+sensitive_path: false
+rollback_ready: true
 ```
 
-### Speaker note
+**Else: quarantine, never “ask the same agent.”**
 
-Agentの「できました」はstateではない。receipt、SHA、test result、実環境の
-outcomeがstateを進める。
+### Visual
 
-## Slide 13 — OpenAI: humans moved to the control plane
-
-### 画面
-
-> “Humans steer. Agents execute.”
-
-[OpenAI — Harness engineering](https://openai.com/index/harness-engineering/)
+左にmachine-readable policy、右にgreen merge / coral quarantineの二分岐。
 
 ### Speaker note
 
-ポイントはhuman-freeという宣伝ではない。Agentが読めるrepository、機械可読な
-状態、短いfeedback loopを作り、人間を個別実装から環境設計へ移したこと。
+最初の対象はlocalized bug、bounded retry、parser、observability、testだけ。
+auth、billing、migration、permission、SAFE-T、secretは自動mergeしない。
 
-## Slide 14 — Bun: massive parallelism, not zero humans
+---
 
-### 画面
-
-| 64 agents | ~50 workflows | 11 days | ~1M assertions |
-|---:|---:|---:|---:|
-
-[Bun — Bun's new crash-free, leak-free Redis client](https://bun.com/blog/bun-in-rust)
-
-### Speaker note
-
-大規模並列Agentの威力は本物。ただし人間がworkflowを監視しloopを編集した。
-「作業者ゼロ」ではなく「作業の抽象度が上がった」が正確。
-
-## Slide 15 — AHE: improving the harness itself
+## Slide 17 — No Human Loopの境界
 
 ### 画面
 
-**Terminal-Bench 2: 69.7 → 77.0 in 10 iterations**
+**Remove humans from execution.**
 
-> “every edit becomes a falsifiable contract”
+**Encode humans into goals, evidence, permissions, and rollback.**
 
-[Automated Harness Engineering](https://arxiv.org/abs/2604.25850)
-
-### Speaker note
-
-自己改善を成立させたのは自由度ではなく、editable componentを明示し、
-各変更を予測と検証の組にしたこと。
-
-## Slide 16 — Tax AI: evidence must become an eval
-
-### 画面
-
-**7,000 returns / 6 weeks / 25% → 86% field completion**
-
-[OpenAI — Building self-improving tax agents](https://openai.com/index/building-self-improving-tax-agents-with-codex/)
-
-### Speaker note
-
-実務ログがあるだけでは改善しない。失敗を再現可能なtaskへ変え、専門家のfeedbackと
-評価を接続する必要がある。
-
-## Slide 17 — The verifier fights back
-
-### 画面
-
-| Failure | Evidence |
+| Mutable | Immutable |
 |---|---|
-| visible-test overfit | SpecBench |
-| reward hacking | METR |
-| benchmark contamination | OpenAI |
-| goal drift | AIES |
+| prompt / tool / local code | goal / policy |
+| routing / retry | secret / sealed holdout |
+| worker config | promoter / audit history |
+
+### Visual
+
+左に可変の明るい領域、右にimmutable kernel。
 
 ### Speaker note
 
-Agentは目的ではなく評価器を最適化する。公開test一つでは不十分。sealed holdout、
-real E2E、security、cost、canaryを重ねる。
+目的や採点器まで自由に自己編集すると、問題・解答・採点・昇格が同じ主体になる。
+私たちのNo-Human-Loopはbounded human-free executionである。
 
-Sources:
-[SpecBench](https://arxiv.org/abs/2605.21384) ·
-[METR](https://metr.org/blog/2025-06-05-recent-reward-hacking/) ·
-[OpenAI](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
+---
 
-## Slide 18 — Hands-on: our Life Manager
+## Slide 18 — 最後に
 
 ### 画面
 
-| State | Measured now |
-|---|---:|
-| operational loops | wake / travel / ask / onboard / discovery |
-| preflight dependencies | 9, with timeout + evidence hash |
-| publication surfaces live | 6 / 8 |
-| active self-improve experiment | 0 |
-| issue→eval→fix→merge graph | not implemented |
+**Self-improving AI is not a model.**
 
-### Speaker note
-
-ここで誇張しないことが重要。Life Managerにはsingle-writer、tenant failure
-isolation、durable throttle、preflight evidenceがある。Writerにはreceipt、
-protected path、SHA、holdout、revertがある。しかし現在は自己運転するloopであり、
-自分のcodeを改善するclosed graphはまだない。
-
-## Slide 19 — The honest next sequence
-
-### 画面
+**It is a loop that can prove it got better.**
 
 ```text
-close exact8
- -> repair stale branch/state
- -> 3 exact8 runs
- -> 1 learning receipt
- -> 5 self-heal fixtures
- -> one-axis experiment
- -> canary
- -> promote/rollback
- -> normalize all product signals
- -> evidence issue -> eval -> fix -> merge graph
+Observe honestly.
+Evaluate independently.
+Promote reversibly.
+Learn from outcomes.
 ```
 
-### Speaker note
+### Visual
 
-複数軸を同時に変更しない。最初のcandidateはretrieval、tool description、導入文など
-一つに限定する。何が効いたかを帰属できるようにする。
-
-## Slide 20 — We built the research plane the same way
-
-### 画面
-
-| Need | Adapter | Live result |
-|---|---|---:|
-| X search | safe authenticated CDP | 20 unique / 8 scrolls |
-| X Article full text | pinned x-tweet-fetcher | 6 / 6 complete |
-| Web archive | Firecrawl | all supplied URLs attempted |
+四つの色が一つの閉じた円になる。
 
 ### Speaker note
 
-研究toolも「深く読める気がする」で選ばなかった。editor tabを保護し、完了／部分完了、
-停止理由をJSON化し、実際の指定Articleで全文性を検証した。
-
-## Slide 21 — Final takeaway
-
-### 画面
-
-**Remove humans from execution.  
-Encode humans into goals, evidence, permissions, and rollback.**
-
-### Speaker note
-
-自己改善AIの単位はmodelではなくloop。優れたloopは速いだけでなく、悪い変更を
-捨て、自分が間違っていたら戻れる。
+最初に強くするのはAIの思考時間ではない。何を証拠に前へ進み、どこで止まり、
+どう戻るかをcodeにする。その時、Life ManagerはLife Managerをbuildし始める。
 
 ---
 
 # Audience adaptation
 
-## NAIST研究室版
+| Audience | 追加する論点 | 削る論点 |
+|---|---|---|
+| NAIST研究室 | holdout、false positive、causal outcome、再現性、threats to validity | tool導入手順 |
+| 社内 | risk allowlist、SLA、cost per promoted fix、rollback、privacy | benchmark史 |
 
-本編のSlides 12、15、17を各2分延長し、次を追加する。
+# Demo runbook
 
-### Research questions
+| Time | Action | Evidence shown |
+|---|---|---|
+| 0:00 | synthetic timeoutを2回送る | trace exact2 |
+| 0:30 | clusterを見る | cluster exact1 |
+| 1:00 | baseline evalを実行 | expected FAIL |
+| 1:30 | Issueとcandidate SHAを見る | lineage |
+| 2:00 | Checkerを実行 | PASS / policy receipts |
+| 2:30 | bad candidateを流す | automatic reject |
+| 3:00 | learning receiptを見る | end-to-end closure |
 
-| RQ | 測定 |
+# Source pack
+
+| Source | Core quote |
 |---|---|
-| RQ1: Harness更新は未知taskへ一般化するか | sealed cross-domain holdout |
-| RQ2: 一軸変更は多軸変更より因果帰属しやすいか | ablation |
-| RQ3: verifier diversityはreward hackingを減らすか | exploit success rate |
-| RQ4: learning receiptは再発率を下げるか | recurrence / 30 runs |
+| [OpenTelemetry — Agent Observability](https://opentelemetry.io/blog/2025/ai-agent-observability/) | “telemetry is also used as a feedback loop” |
+| [LangChain — Automated Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering) | “mine traces -> identify a failure -> build an eval” |
+| [LangChain — Graph Engineering](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph) | “loops are simple graphs” |
+| [Addy Osmani — Loop Engineering](https://addyosmani.com/blog/loop-engineering/) | “replacing yourself as the person who prompts the agent” |
+| [Inngest](https://github.com/inngest/inngest) | “Steps ... can run for months and recover from failures.” |
+| [Langfuse](https://github.com/langfuse/langfuse) | “develop, monitor, evaluate, and debug AI applications.” |
+| [OWASP Agent Observability Standard](https://github.com/OWASP/www-project-agent-observability-standard) | “inspectable, traceable and instrumentable” |
+| [Colony Builds Colony](https://runcolony.com/blog/colony-builds-colony/) | “This isn’t a closed loop.” |
 
-### Threats to validity
+# Q&A
 
-benchmark contamination、small sample、non-stationary model、X source bias、
-operator intervention、publication survivorship bias。
-
-## 社内版
-
-本編のSlides 11、12、18、19を各2分延長し、次を追加する。
-
-### Operating contract
-
-| Control | Company question |
+| Question | Answer |
 |---|---|
-| Scope | 何を変更できるか |
-| Budget | 1日／1実験でいくら使えるか |
-| Permission | どの外部副作用まで自動か |
-| Evidence | 何が起きれば完了か |
-| Canary | 何%の顧客へ出すか |
-| Rollback | 何分で元へ戻せるか |
-| Audit | 誰が後から説明できるか |
-
-### Business decision
-
-最初のproduction対象は「失敗が観測可能、正解が機械判定可能、rollback可能、
-影響半径が小さい」業務に限定する。
-
----
-
-# Appendix A — X tool decision
-
-| Tool | Deep search | Full Article | Replies/quotes | Publish |
-|---|---:|---:|---:|---:|
-| Xquik | ◎ | ◎ | ◎ | △ Note Tweet |
-| x-tweet-fetcher | × | ◎ | ○ known thread | × |
-| x-research-skill | ○ recent | × | ○ | × |
-| x-cli | ○ archive | × | △ | ○ post |
-| xurl / X API | ◎ paid | ◎ API object | ◎ | ◎ true Article |
-| Firecrawl | △ | △ inconsistent | × | × |
-
-単一推奨: 三面分離。Search=Xquik、known URL=x-tweet-fetcher、
-publish=official X API。現在の無償実装はSearch=CDP、known URL=FxTwitter。
-
-# Appendix B — Source pack
-
-1. [OpenAI — Harness engineering](https://openai.com/index/harness-engineering/)
-2. [LangChain — The Art of Loop Engineering](https://www.langchain.com/blog/the-art-of-loop-engineering)
-3. [LangChain — Anatomy of an Agent Harness](https://www.langchain.com/blog/the-anatomy-of-an-agent-harness)
-4. [OpenAI — Practical guide to building agents](https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/)
-5. [Anthropic — Harness design for long-running apps](https://www.anthropic.com/engineering/harness-design-long-running-apps)
-6. [Automated Harness Engineering](https://arxiv.org/abs/2604.25850)
-7. [Darwin Gödel Machine](https://arxiv.org/abs/2505.22954)
-8. [Continual Harness](https://arxiv.org/abs/2605.09998)
-9. [SpecBench](https://arxiv.org/abs/2605.21384)
-10. [Verification Horizon](https://arxiv.org/abs/2606.26300)
-11. [METR — Recent reward hacking](https://metr.org/blog/2025-06-05-recent-reward-hacking/)
-12. [OpenAI — Self-improving Tax AI](https://openai.com/index/building-self-improving-tax-agents-with-codex/)
-13. [Bun in Rust](https://bun.com/blog/bun-in-rust)
-14. [LangChain — Continual learning for AI agents](https://www.langchain.com/blog/continual-learning-for-ai-agents)
-15. [X Articles API](https://docs.x.com/x-api/articles/introduction)
-16. [Addy Osmani — Loop Engineering](https://addyosmani.com/blog/loop-engineering/)
-17. [LangChain — 3 Years of Graph Engineering](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph)
-18. [LangChain — Towards Automating Eval Engineering](https://www.langchain.com/blog/towards-automating-eval-engineering)
-19. [OpenTelemetry — AI Agent Observability](https://opentelemetry.io/blog/2025/ai-agent-observability/)
-20. [Anthropic — Demystifying evals](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
-
-# Appendix C — Q&A
-
-### 「本当に人間ゼロにできますか？」
-
-境界付き実行では可能。目的設定、評価器の妥当性、権限設計まで人間不要という
-一般的証拠はない。正確にはhuman-free execution。
-
-### 「目標を一つ与えれば、勝手に発明しませんか？」
-
-候補は生成できる。ただし外部outcomeがなければ価値ではなく自己模倣を最適化する。
-
-### 「テストが全部通れば昇格でよいですか？」
-
-不可。visible test、sealed holdout、real E2E、security、cost、canaryを分離する。
-
-### 「どのモデルが一番重要ですか？」
-
-モデル差より先に、状態、tool、eval、rollbackを機械可読にする。モデル交換可能な
-Harnessにする。
-
-### 「最初に自動化すべき仕事は？」
-
-失敗が観測可能、合否が機械判定可能、rollback可能、影響半径が小さい反復作業。
+| 本当に人間ゼロか | low-risk executionから人間承認を外す。目的・policy・sealed eval・auditはimmutable |
+| Cronとの違いは | Cronはtrigger。Graphはstate、receipt、分岐、resume、rollbackを持つ |
+| Observability toolを入れれば改善するか | しない。traceをEvalとpromotion decisionへ変換して初めてloopになる |
+| LLM judgeだけでよいか | だめ。deterministic、sealed、E2E、security、cost、outcomeを重ねる |
+| 最初に何を作るか | synthetic provider timeoutの一つのvertical slice |
