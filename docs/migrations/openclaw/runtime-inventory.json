@@ -5832,12 +5832,15 @@
         "PATH"
       ],
       "parse_error": null,
-      "disposition": "unclassified",
-      "owner": null,
-      "target_adapter": null,
-      "effect_class": null,
-      "verify_command": null,
-      "rollback_action": null
+      "disposition": "migrate",
+      "owner": "life-manager-runtime",
+      "target_adapter": "marketing-video-generation",
+      "supporting_adapters": [
+        "marketing-platform-observation"
+      ],
+      "effect_class": "publish",
+      "verify_command": "cd apps/life-manager && npm run test:runtime-adapters",
+      "rollback_action": "Keep ai.anicca.reelclaw-honne-ja loaded at 12:30 and 21:30 until seven expected Life Manager generation and per-platform publication cycles reconcile; never enable both scheduler owners for the same slot"
     },
     {
       "legacy_id": "ai.anicca.reelclaw-honne-ja-fresh",
@@ -10695,7 +10698,7 @@
       "canonical_life_manager": 8
     },
     "enabled_or_loaded": 269,
-    "unclassified": 397,
+    "unclassified": 396,
     "parse_errors": 2
   }
 }
