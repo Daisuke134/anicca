@@ -153,6 +153,8 @@ test("an already-sent period exits before ledger, chain, or Telegram reads", asy
       status: "sent",
       telegram_message_id: 123,
       snapshot_hash: "a".repeat(64),
+      sent_at: "2026-08-02T11:05:01.000Z",
+      period_end: "2026-08-02T11:05:00.000Z",
     }),
   }));
 
@@ -162,6 +164,15 @@ test("an already-sent period exits before ledger, chain, or Telegram reads", asy
     report_kind: "daily",
     period_key: "2026-08-02",
     telegram_message_id: 123,
+    snapshot_hash: "a".repeat(64),
+    chat_id_hash: "eaeb9111b1c6744278e803977dbf25fbdac6a9b6d32244ec91fc0c8266a7f65b",
+    sent_at: "2026-08-02T11:05:01.000Z",
+    source_freshness: {
+      report_cutoff_at: "2026-08-02T11:05:00.000Z",
+      earnings_latest_at: null,
+      costs_latest_at: null,
+      balance_observed_at: null,
+    },
   });
 });
 
