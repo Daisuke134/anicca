@@ -173,7 +173,7 @@ e68d578b4e66fa4186926b4d6294b44d1120cd551fb344718f0cfb059b26805d  apps/life-call
 153f8d964429df3e88382614a64f0961bdcf5b64ad61b8882beee82196b0ceb5  apps/life-call/skill-life-manager/openclaw/crons.test.js  ->  apps/life-manager/skill-life-manager/openclaw/crons.test.js
 66a5c65b614dfdea76c8dcc43af6fbb2ce484b1facb537238549a9781a99773c  apps/life-call/skill-life-manager/openclaw/register-crons.sh  ->  apps/life-manager/skill-life-manager/openclaw/register-crons.sh
 cf03d4b18deadfed6fb227b4ce4097d1bfc31f1a084c90819a08730387f083bc  apps/life-call/skill-life-manager/scripts/ask.js  ->  apps/life-manager/skill-life-manager/scripts/ask.js
-8f85674d67a9eed6979581449f07012042891a8222686c8a68b0fb3953b5a1e4  apps/life-call/skill-life-manager/scripts/scaffold.test.js  ->  apps/life-manager/skill-life-manager/scripts/scaffold.test.js
+8f85674d67a9eed6979581449f<redacted-phone>a8222686c8a68b0fb3953b5a1e4  apps/life-call/skill-life-manager/scripts/scaffold.test.js  ->  apps/life-manager/skill-life-manager/scripts/scaffold.test.js
 172aea0e575aa0520f82a21cccbf9ad8bcd6b809f140a77f1c4f5592438d3553  apps/life-call/skill-life-manager/scripts/tick.js  ->  apps/life-manager/skill-life-manager/scripts/tick.js
 745ec8f1f14b4f5e815a225b9d79a99ed5825eebc79aa4fe4bad09beea280b6f  apps/life-call/skill-life-manager/scripts/travel.js  ->  apps/life-manager/skill-life-manager/scripts/travel.js
 32f268bd3357f6d773cce1b85e3446668d4de64644dc2a71120f2cdcb6a5929e  apps/life-call/test-support/core8d-cli-loader.cjs  ->  apps/life-manager/test-support/core8d-cli-loader.cjs

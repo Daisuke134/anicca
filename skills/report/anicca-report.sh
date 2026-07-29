@@ -25,8 +25,8 @@ REVENUE TODAY \$$REV
 DID $DID
 NEXT $NEXT"
 SENT_VIA_COMPOSIO=0
-REPORT_TO="${ANICCA_REPORT_TO:?ANICCA_REPORT_TO is required}"
-if [ -n "${COMPOSIO_API_KEY:-}" ] && [ -n "${ANICCA_REPORT_USER_ID:-}" ] && command -v node >/dev/null 2>&1; then
+REPORT_TO="${ANICCA_REPORT_TO:-${GOG_ACCOUNT:-}}"
+if [ -n "${COMPOSIO_API_KEY:-}" ] && [ -n "${ANICCA_REPORT_USER_ID:-}" ] && [ -n "$REPORT_TO" ] && command -v node >/dev/null 2>&1; then
   if ANICCA_REPORT_TO="$REPORT_TO" \
      node "$(dirname "$0")/lib/send-report.mjs" "$SUBJECT" "$EMAILBODY" >>/var/log/anicca-report.log 2>&1; then
     SENT_VIA_COMPOSIO=1
@@ -38,8 +38,9 @@ if [ "$SENT_VIA_COMPOSIO" = 0 ]; then
   MAIL_JSON=$(MAIL_TO="$REPORT_TO" MAIL_USDC="$USDC" MAIL_ETH="$ETH" MAIL_REV="$REV" MAIL_DID="$DID" MAIL_NEXT="$NEXT" python3 - <<'PY'
 import json, os
 e = os.environ
+recipients = [address for address in [e.get('MAIL_TO'), 'contact@aniccaai.com'] if address]
 print(json.dumps({
-    'to': [address for address in os.environ['MAIL_TO'].split(',') if address],
+    'to': list(dict.fromkeys(recipients)),
     'subject': 'Anicca wake net $' + e['MAIL_USDC'],
     'text': ('NET WORTH $' + e['MAIL_USDC'] + ' USDC (+' + e['MAIL_ETH'] + ' ETH)\n'
              'REVENUE TODAY $' + e['MAIL_REV'] + '\n'

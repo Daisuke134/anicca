@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10B",
+  "status": "live_verified",
+  "observed_at": "2026-07-29T11:34:26Z",
+  "branch": "feat/job-workday-surface-10b",
+  "implementation_commit": "9cef58dc165bd318af3e936123920099a1384382",
+  "pull_request": {
+    "number": 1291,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1291",
+    "ci_run": 30447613983,
+    "merge_commit": "1ff642fd6347aa4ddb506a3588f221ee8146b271"
+  },
+  "closeout_pull_request": {
+    "number": 1293,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1293",
+    "ci_run": 30447851606,
+    "merge_commit": "2e75c7206220da6cbb51c6c0a5038d5a0542c05f"
+  },
+  "tests": {
+    "job_loop": {
+      "ran": 131,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 7,
+      "failures": 0
+    }
+  },
+  "live_existing_cdp_replay": {
+    "browser_owner": "ai.anicca.job-search-daily",
+    "public_source": "https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1",
+    "surfaces": [
+      {
+        "surface": "workday_job",
+        "title": "Regional Sales Engineer - AIDR",
+        "frame_count": 1,
+        "redacted_control_count": 19,
+        "ready": true,
+        "claim_ready": false
+      },
+      {
+        "surface": "workday_apply_choice",
+        "title": "Regional Sales Engineer - AIDR",
+        "frame_count": 2,
+        "redacted_control_count": 23,
+        "ready": true,
+        "claim_ready": false
+      },
+      {
+        "surface": "workday_account_create",
+        "title": "Create Account",
+        "frame_count": 1,
+        "redacted_control_count": 28,
+        "ready": true,
+        "claim_ready": false
+      }
+    ],
+    "side_effects": {
+      "field_fills": 0,
+      "account_creations": 0,
+      "uploads": 0,
+      "ledger_claims": 0,
+      "submits": 0
+    }
+  },
+  "private_fact_gate": {
+    "profile_path_committed": false,
+    "verified_nationality_scalar_present": false,
+    "verified_citizenship_scalar_present": false,
+    "verified_visa_scalar_present": false,
+    "verified_work_authorization_scalar_present": false,
+    "inference_used": false
+  },
+  "runtime_health": {
+    "canonical_commit": "2e75c7206220da6cbb51c6c0a5038d5a0542c05f",
+    "daily_runs": 4,
+    "daily_last_exit": 0,
+    "daily_status": "budget_blocked",
+    "inbox_runs": 8,
+    "inbox_last_exit": 0,
+    "inbox_status": "no_new_recruiting_email",
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "submitted": 2,
+    "not_submitted": 1
+  },
+  "sources": [
+    {
+      "name": "CrowdStrike Workday application choice",
+      "url": "https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1",
+      "quote": "Autofill with Resume / Apply Manually / Use My Last Application"
+    },
+    {
+      "name": "CrowdStrike Workday Create Account",
+      "url": "https://crowdstrike.wd5.myworkdayjobs.com/en-US/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1/apply/applyManually",
+      "quote": "Email Address / Password / Verify New Password / Create Account"
+    },
+    {
+      "name": "Playwright locators",
+      "url": "https://playwright.dev/docs/locators",
+      "quote": "We recommend prioritizing role locators to locate elements, as it is the closest way to how users and assistive technology perceive the page."
+    }
+  ],
+  "remaining_order_10_gate": "One real confirmed Ashby application and one real confirmed Workday application, with no inferred legal answers."
+}

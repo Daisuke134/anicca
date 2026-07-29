@@ -107,12 +107,32 @@ test("argv-injection: flag-like option VALUE is glued (--location=-x), not a sep
   assert.ok(!calls[0].includes("--foo")); // no bare --foo token
 });
 
-test("no account → empty/false (never throws)", async () => {
-  const cal = makeGogCalendar({ account: "" }), mail = makeGogMail({ account: "" });
-  assert.deepEqual(await cal.listEventsRaw("u", {}), []);
-  assert.equal((await cal.createEvent("u", {})).successful, false);
-  assert.equal(await mail.send("a@b.com", "s", "b"), false);
-  assert.deepEqual(await mail.listInbox({}), []);
+test("an explicit empty account stays fail-closed even when the host has GOG_ACCOUNT", async () => {
+  const prior = process.env.GOG_ACCOUNT;
+  process.env.GOG_ACCOUNT = "host-account-must-not-leak@example.invalid";
+  try {
+    let calls = 0;
+    const run = (args) => {
+      calls++;
+      return args[0] === "calendar" ? '[{"id":"host-data-leaked"}]' : '{"id":"host-mail-sent"}';
+    };
+    const cal = makeGogCalendar({ account: "", run }), mail = makeGogMail({ account: "", run });
+    assert.deepEqual(await cal.listEventsRaw("u", {}), []);
+    assert.equal((await cal.createEvent("u", {})).successful, false);
+    assert.equal(await mail.send("a@b.com", "s", "b"), false);
+    assert.deepEqual(await mail.listInbox({}), []);
+    assert.equal(calls, 0);
+
+    const hostCalendar = getCalendar({ kind: "gog" });
+    const emptyCalendar = getCalendar({ kind: "gog", account: "" });
+    assert.equal(hostCalendar.ready(), true);
+    assert.equal(emptyCalendar.ready(), false);
+    assert.notEqual(emptyCalendar, hostCalendar);
+    assert.equal(getMail({ kind: "gog", account: "" }).ready(), false);
+  } finally {
+    if (prior === undefined) delete process.env.GOG_ACCOUNT;
+    else process.env.GOG_ACCOUNT = prior;
+  }
 });
 
 test("getCalendar/getMail throw on unknown LIFE_TRANSPORT (no silent default)", () => {

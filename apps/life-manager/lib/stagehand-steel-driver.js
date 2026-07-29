@@ -242,9 +242,6 @@ function classifyReadOnlyDomSnapshot(snapshot = {}) {
   return {
     passwordVisible,
     otpVisible,
-    // Account/security settings commonly contain explanatory "sign in"
-    // copy alongside ordinary profile controls. Text alone is not an active
-    // authentication form; an auth-relevant control or login URL is.
     authVisible: passwordVisible || otpVisible ||
       source.authActionVisible === true ||
       (flags.auth === true && emailVisible),

@@ -5,6 +5,7 @@ const { createHash, randomBytes } = require("node:crypto");
 const MODES = new Set([
   "seed-two-tenant-contexts",
   "verify-two-tenant-contexts",
+  "verify-provider-context",
   "verify-expired-handoff",
 ]);
 const TERMINAL_STATUSES = new Set(["completed", "possibly_completed", "handoff_required", "failed"]);
@@ -21,7 +22,6 @@ const OUTPUT_KEYS = [
 const REQUIRED_ENV = [
   "BROWSER_AUTH_PRODUCTION_ORIGIN",
   "BROWSER_AUTH_TENANT_A_UID",
-  "BROWSER_AUTH_TENANT_B_UID",
   "LM_BROWSER_SESSION_KEY",
   "LM_FEEDBACK_DATABASE_URL",
   "LM_TELEGRAM_BOT_TOKEN",
@@ -30,8 +30,11 @@ const REQUIRED_ENV = [
 
 class ConfigurationError extends Error {}
 
-function requiredEnvironment(env) {
-  const missing = REQUIRED_ENV.filter((name) => !String(env && env[name] || "").trim());
+function requiredEnvironment(env, mode) {
+  const names = mode === "verify-provider-context"
+    ? REQUIRED_ENV
+    : [...REQUIRED_ENV, "BROWSER_AUTH_TENANT_B_UID"];
+  const missing = names.filter((name) => !String(env && env[name] || "").trim());
   if (missing.length) {
     throw new ConfigurationError(`Missing required environment variables: ${missing.join(", ")}`);
   }
@@ -106,13 +109,19 @@ function terminalEvidence(row, expected) {
 
 async function runBrowserAuthProductionE2E({ mode, env = process.env, deps } = {}) {
   if (!MODES.has(mode)) throw new ConfigurationError("Unknown browser auth production E2E mode");
-  requiredEnvironment(env);
+  requiredEnvironment(env, mode);
   const origin = originOf(env.BROWSER_AUTH_PRODUCTION_ORIGIN);
   const tenants = [
     { tenant: "tenant-a", uid: String(env.BROWSER_AUTH_TENANT_A_UID), principalKind: "agent_owned" },
-    { tenant: "tenant-b", uid: String(env.BROWSER_AUTH_TENANT_B_UID), principalKind: "agent_owned" },
   ];
-  if (tenants[0].uid === tenants[1].uid) {
+  if (mode !== "verify-provider-context") {
+    tenants.push({
+      tenant: "tenant-b",
+      uid: String(env.BROWSER_AUTH_TENANT_B_UID),
+      principalKind: "agent_owned",
+    });
+  }
+  if (tenants.length === 2 && tenants[0].uid === tenants[1].uid) {
     throw new ConfigurationError("BROWSER_AUTH_TENANT_A_UID and BROWSER_AUTH_TENANT_B_UID must differ");
   }
   const enqueue = dependency(deps, "durableQueue", "enqueue");

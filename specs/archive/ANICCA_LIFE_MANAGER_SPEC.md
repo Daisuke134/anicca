@@ -53,7 +53,7 @@ Anicca は 以下 全部 自分で持つ:
 
 | 資源 | 旧 (Dais 依存) | 新 (Anicca 自前) |
 |---|---|---|
-| email | `redacted@example.invalid` (Dais) | `anicca-ops@<own-domain>` (Anicca が SignUp) |
+| email | `person@example.com` (Dais) | `anicca-ops@<own-domain>` (Anicca が SignUp) |
 | 銀行 | Dais MUFG | Bitget wallet (Base USDC) + 自社 Visa debit (Bitget Card) |
 | Twilio | Dais の trial | Anicca 自前 Twilio account (Bitget Visa debit で課金) |
 | Gemini API | Dais の AI Studio | Anicca 自前 Google Cloud (= 自前 gmail) |
@@ -100,11 +100,11 @@ Anicca が EKYC / 物理 写真 / 在留カード提示 / 銀行 ID 確認 等 �
 
 | 用途 | 使う email |
 |---|---|
-| Dais の gcal 読む / Dais 宛 mail 読む / Dais の遅刻謝罪 mail 送る | `redacted@example.invalid` (Dais own) — これは Dais の人生管理なので OK |
+| Dais の gcal 読む / Dais 宛 mail 読む / Dais の遅刻謝罪 mail 送る | `person@example.com` (Dais own) — これは Dais の人生管理なので OK |
 | Anicca 自身が Lancers / Coconala / Capafy / GitHub / Twilio 登録 | `anicca-ops-jp@<own-domain>` (Anicca own、別 account) |
 | Anicca が business 送受信 | 同 own |
 
-**現状違反**: Anicca が Lancers 応募で `redacted@example.invalid` 使用 → Dais の意志 violation で禁止。Phase P2 で 完全分離。
+**現状違反**: Anicca が Lancers 応募で `person@example.com` 使用 → Dais の意志 violation で禁止。Phase P2 で 完全分離。
 
 ### 0.6 ★★★ HARD RULE: GCAL DISCIPLINE (skill ではなく rule) ★★★
 
@@ -356,7 +356,7 @@ directions ───┘   state/run.log
   },
   "contact": {
     "phone": "+81xxxxxxxx",
-    "personalEmail": "redacted@example.invalid"
+    "personalEmail": "person@example.com"
   },
   "location": {
     "homeLat": 35.67988,
@@ -653,7 +653,7 @@ def decide(event, current_loc, last_loc, now):
 
 ```python
 gog gmail send \
-  --account redacted@example.invalid \
+  --account person@example.com \
   --to {stakeholder_email} \
   --subject "本日の遅刻のお知らせ" \
   --body-file - << EOF
@@ -761,13 +761,13 @@ EOF
 
 | step | when | check |
 |---|---|---|
-| **(1)** test event 作成 (gog cal create) | now | gcal に `🧪 lateness-test (Anicca E2E)` 21:30-22:00 location=JR信濃町駅 attendees=redacted@example.invalid |
+| **(1)** test event 作成 (gog cal create) | now | gcal に `🧪 lateness-test (Anicca E2E)` 21:30-22:00 location=JR信濃町駅 attendees=person@example.com |
 | **(2)** travel event 自動挿入 (期待) | now + 1 min | gcal に `🚆 移動: 自宅→信濃町駅` 21:18-21:23 自動 create |
 | **(3)** `calendar-event-call` cron fire | 21:25 (5 min cron) | depart call 鳴る (Dais phone) |
 | **(4)** Dais 動かず | 21:30+ | event.start 過ぎても home stay |
 | **(5)** `lateness-guard` fire | 21:38 (8,23,38,53 cron) | `late_flow` decide |
 | **(6)** relentless call | 21:38, 21:41, 21:44 | 3 分毎 |
-| **(7)** 遅刻 mail send | 21:38 | redacted@example.invalid 受信、本文 = 「本日の遅刻のお知らせ … 約 8 分 遅刻 … 申し訳ございません」 (event名なし、名前なし、お待ちください なし) |
+| **(7)** 遅刻 mail send | 21:38 | person@example.com 受信、本文 = 「本日の遅刻のお知らせ … 約 8 分 遅刻 … 申し訳ございません」 (event名なし、名前なし、お待ちください なし) |
 | **(8)** Dais 動く (Mac mini 周り walk) | 21:50 | OwnTracks vel>2 → hangup |
 
 verification commands:
@@ -1011,7 +1011,7 @@ skills/anicca-booking/state/
 |---|---|---|
 | **P0 seed** | Dais が 1回限り Anicca Bitget wallet に $50-200 送る | wallet 残高 > $50 |
 | **P1 earn** | Anicca が heartbeat で Lancers/Coconala/bankr-x402/jutaku 等で 月 $50+ 稼ぐ | 月収 > 月コスト (まず月 $20 で OK) |
-| **P2 own email** | Anicca 自前 gmail 取得 (`anicca-ops-jp@gmail.com` etc) — phone SMS 認証は **Dais の Twilio number 1回使用 → 取得後 自前番号 ported in** | own gmail で send/recv OK |
+| **P2 own email** | Anicca 自前 gmail 取得 (`person@example.com` etc) — phone SMS 認証は **Dais の Twilio number 1回使用 → 取得後 自前番号 ported in** | own gmail で send/recv OK |
 | **P3 own VPS** | Hetzner CCX13 (¥4,500/月 程度) を 自前 Visa debit (Bitget Card 経由) で 契約 | VPS 上で heartbeat 稼働 |
 | **P4 own Twilio** | Twilio sub-account を Anicca 自前 email + 自前カードで作成、自前 phone number 取得 | 自前 number で test call |
 | **P5 own API keys** | Gemini / Google Maps / Firecrawl / Postiz を 自前 email + 自前カードで sub | 全 key Anicca 名義 |
@@ -1025,7 +1025,7 @@ skills/anicca-booking/state/
 
 | service | 現状 | Anicca 自前化 障害 | Mitigation | Phase |
 |---|---|---|---|---|
-| **gmail** | Dais の `redacted@example.invalid` 共用 | Google が phone SMS 認証 要求 | Dais Twilio number 1回 使う or hire-human で SMS 仲介 | P2 |
+| **gmail** | Dais の `person@example.com` 共用 | Google が phone SMS 認証 要求 | Dais Twilio number 1回 使う or hire-human で SMS 仲介 | P2 |
 | **Bitget wallet** | ★既に Anicca own (passphrase `Keiodaisuke`) | sign-up に EKYC, 既終了 | done | done |
 | **Bitget Visa card** | Dais 用 | EKYC 要 | hire-human or Anicca が virtual card 系 (Privacy.com / Revolut Business) を 自前 LLC 名義で発行 | P6 |
 | **Twilio** | Dais trial | クレカ + 番号 sub. 国 JP 場合 ID 確認 | 自前 LLC + Visa debit で sub。番号取得は US (+1) なら ID 緩い | P4 |
@@ -2375,7 +2375,7 @@ Step 2: 観測:
   ・Bland.ai relentless call → Dais pickup
   ・移動 simulate (Dais home stay) → 5min 後 再 call
   ・event start 23:30 過ぎ + 場所 not @ 信濃町 → late_flow fire
-  ・renraku-mail to redacted@example.invalid (test 宛、安全)
+  ・renraku-mail to person@example.com (test 宛、安全)
   ・mail 受信 verify: 「本日の遅刻のお知らせ … 申し訳ございません」(event名/名前/お待ち下さい なし)
 Step 3: 失敗時 fix → retest
 ```
@@ -2497,7 +2497,7 @@ heartbeat 1h cycle で:
 | B4 | Dais 動かなければ 16:20, 16:25 cycle で 再 call | tail call_history.json |
 | B5 | 移動検知 (vel>2 OR loc 変化) で hangup | OwnTracks /loc/latest 確認 |
 | B6 | 17:00 cycle: event start, location=浅草 → silent | OK |
-| B7 | (もし Dais 17:05 home 居れば) → late_flow → renraku-mail to redacted@example.invalid (test) | gmail inbox 確認 「本日の遅刻のお知らせ」「申し訳ございません」「event名/名前/お待ち下さい なし」 |
+| B7 | (もし Dais 17:05 home 居れば) → late_flow → renraku-mail to person@example.com (test) | gmail inbox 確認 「本日の遅刻のお知らせ」「申し訳ございません」「event名/名前/お待ち下さい なし」 |
 | B8 | 失敗あれば fix → retest | iterative |
 
 ### 37.3 PHASE C: Anicca alone (heartbeat 経由 自走, 翌日以降)

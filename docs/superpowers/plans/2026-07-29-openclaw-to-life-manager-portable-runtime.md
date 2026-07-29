@@ -22,7 +22,7 @@
 
 ---
 
-### Task 1: Freeze the complete runtime inventory and disposition
+### Task 1: Freeze the complete runtime inventory
 
 **Files:**
 - Modify: `skills/self/openclaw-migrate/migration_gate.py`
@@ -33,13 +33,14 @@
 
 **Interfaces:**
 - Consumes: OpenClaw cron JSON export, `~/Library/LaunchAgents/*.plist`, canonical repository root, known legacy roots.
-- Produces: `inventoryLegacyJobs({ cronRows, launchAgents, repositoryRoot }) -> { jobs, summary }`, where each job has `legacy_id`, `scheduler`, `command`, `cadence`, `enabled`, `loaded`, `latest_receipt`, `disposition`, `owner`, `target_adapter`, `effect_class`, `verify_command`, and `rollback_action`.
+- Produces: `inventoryLegacyJobs({ cronRows, launchAgents, loadedLabels }) -> { jobs, summary }`, where each job has `legacy_id`, `scheduler`, redacted `command`, `command_fingerprint`, `source_boundary`, `cadence`, `enabled`, `loaded`, `latest_receipt`, and initially unclassified migration fields.
+- Privacy: committed inventory replaces usernames, emails, chat/phone identifiers, connector account IDs, tokens, keys, passwords, and secret URL query parameters with non-reversible redaction markers.
 
-- [ ] **Step 1: Extend the migration-gate test**
+- [x] **Step 1: Extend the migration-gate test**
 
-Add cases proving that only `migrate`, `replace`, and `retire` are valid dispositions and that `migrate` requires a non-empty owner, target adapter, verification command, and rollback action.
+Add cases proving that only `migrate`, `replace`, and `retire` are valid final dispositions and that a final disposition requires owner, effect class, verification command, and rollback action. The inventory stage may emit `unclassified`; every retained row must be classified before Task 6 migrates its scheduler ownership. Task 2 does not mutate schedulers.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -50,17 +51,17 @@ node --test apps/life-manager/scripts/inventory-legacy-jobs.test.js
 
 Expected: the Python test fails on the new disposition API and Node reports the inventory module is missing.
 
-- [ ] **Step 3: Implement inventory normalization and validation**
+- [x] **Step 3: Implement inventory normalization and validation**
 
 Implement pure normalization in `inventory-legacy-jobs.js`; keep plist reading and OpenClaw export capture in the CLI entrypoint. Historical jobs remain present even when disabled so the manifest is auditable.
 
-- [ ] **Step 4: Capture the real machine inventory**
+- [x] **Step 4: Capture the real machine inventory**
 
-Run the new script against the actual cron export and LaunchAgents directory. Reject output if any enabled or loaded row has no disposition or owner.
+Run the new script against the actual cron export and LaunchAgents directory. Preserve enabled, disabled, loaded, and unloaded rows. Record the exact `unclassified` count as the input to Task 2; do not guess a disposition and do not mutate a scheduler.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
-Run both focused tests, validate `runtime-inventory.json` with `jq empty`, then commit only the five scoped files.
+Run both focused tests, validate `runtime-inventory.json` with `jq empty`, scan the committed file for unredacted private identifiers, then commit only the scoped files.
 
 ### Task 2: Establish Life Manager-owned runtime paths and secrets
 
@@ -69,41 +70,42 @@ Run both focused tests, validate `runtime-inventory.json` with `jq empty`, then 
 - Create: `apps/life-manager/lib/runtime-paths.test.js`
 - Create: `apps/life-manager/lib/secret-provider.js`
 - Create: `apps/life-manager/lib/secret-provider.test.js`
-- Modify: `apps/life-manager/.env.example`
+- Create: `apps/life-manager/.env.example`
 
 **Interfaces:**
 - Consumes: `LM_MODE=local|cloud`, `LM_DATA_DIR`, `LM_CACHE_DIR`, local keychain adapter, cloud vault adapter.
 - Produces: `resolveRuntimePaths(env) -> { dataDir, cacheDir, objectDir, receiptDir, logDir }` and `createSecretProvider({ mode, keychain, vault }) -> { get(tenantId, ref), health() }`.
 
-- [ ] **Step 1: Write path-denial tests**
+- [x] **Step 1: Write path-denial tests**
 
 Tests must reject resolved paths beneath `.openclaw`, `profitable-claude`, `anicca`, or `life-manager-v0`; relative paths and an unset mode also fail closed.
 
-- [ ] **Step 2: Write secret-boundary tests**
+- [x] **Step 2: Write secret-boundary tests**
 
 Assert that job payloads contain secret references only, local mode delegates to keychain, cloud mode delegates to the tenant vault, and neither provider logs secret values.
 
-- [ ] **Step 3: Run tests and verify RED**
+- [x] **Step 3: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test lib/runtime-paths.test.js lib/secret-provider.test.js
 ```
 
-- [ ] **Step 4: Implement the minimal providers**
+- [x] **Step 4: Implement the minimal providers**
 
 Do not import legacy `.env` files. Existing environment variables may be used only by a one-time migration command that writes references into the new provider.
 
-- [ ] **Step 5: Run GREEN, scan dependencies, and commit**
+- [x] **Step 5: Run GREEN, scan dependencies, and commit**
 
 Run the two tests plus:
 
 ```bash
-rg -n '\.openclaw|profitable-claude|/Users/operator/anicca|life-manager-v0' \
+rg -n '(require|import|readFile|writeFile|exec|spawn).*(\.openclaw|profitable-claude|/Users/[^/]+/anicca|life-manager-v0)' \
   apps/life-manager/lib/runtime-paths.js apps/life-manager/lib/secret-provider.js
 ```
 
-Expected: no runtime dependency match.
+Expected: no runtime dependency match. Legacy names may appear only in
+`runtime-paths.js` deny-list validation and its behavior tests.
 
 ### Task 3: Add the durable generic job and receipt protocol
 
@@ -113,64 +115,90 @@ Expected: no runtime dependency match.
 - Create: `apps/life-manager/lib/runtime-job-store.test.js`
 - Create: `apps/life-manager/lib/effect-reconciler.js`
 - Create: `apps/life-manager/lib/effect-reconciler.test.js`
+- Create: `apps/life-manager/test/postgres/runtime-job-protocol.integration.sh`
+- Modify: `apps/life-manager/package.json`
 
 **Interfaces:**
 - Consumes: PostgreSQL client and jobs containing `job_id`, `tenant_id`, `loop_id`, `capability`, `effect_class`, `input_refs`, `max_attempts`.
 - Produces: `enqueueJob`, `claimJobs`, `heartbeatJob`, `completeJob`, `failJob`, `reconcileUnknownEffect`, and immutable receipt rows keyed by `job_id + attempt`.
 
-- [ ] **Step 1: Write contract tests**
+- [x] **Step 1: Write contract tests**
 
 Cover idempotent enqueue, capability filtering, lease expiry, one claimant, bounded retry, dead-letter, tenant scoping, immutable receipts, and unknown-effect reconciliation.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test lib/runtime-job-store.test.js lib/effect-reconciler.test.js
 ```
 
-- [ ] **Step 3: Add the SQL schema**
+- [x] **Step 3: Add the SQL schema**
 
 Use unique constraints for `job_id` and external-effect idempotency keys. Claims use one atomic `UPDATE ... WHERE ... RETURNING`; do not use PostgreSQL advisory locks through a connection pool.
 
-- [ ] **Step 4: Implement store and reconciler**
+- [x] **Step 4: Implement store and reconciler**
 
 `publish`, `message`, and `money` effects enter `reconciling` after an unknown response. They may retry only when the adapter proves the first attempt did not occur.
 
-- [ ] **Step 5: Verify restart semantics and commit**
+- [x] **Step 5: Verify restart semantics and commit**
 
 Run the focused tests twice against the same temporary database and prove the second pass creates no duplicate receipt or effect.
+
+**Verification:** focused contract suite passed twice (`9/9` each);
+the disposable PostgreSQL 18 gate passed two idempotent enqueue passes plus
+tenant isolation, one-claimant concurrency, non-effect lease recovery,
+bounded retry/dead-letter, external-effect quarantine/reconciliation, and
+receipt immutability. A regression test first exposed and then closed the
+commit-acknowledgement gap: repeating the same provider proof now returns the
+same receipt outcome without creating another receipt. The complete
+`apps/life-manager` test command passed with the new suite wired into `npm test`.
+
+**Implementation basis:**
+- [PostgreSQL `SELECT`](https://www.postgresql.org/docs/current/sql-select.html):
+  “SKIP LOCKED” can avoid lock contention for multiple consumers of a
+  queue-like table.
+- [PostgreSQL `INSERT`](https://www.postgresql.org/docs/current/sql-insert.html):
+  `ON CONFLICT DO UPDATE` guarantees an atomic insert-or-update outcome under
+  concurrency.
+- [PostgreSQL `RETURNING`](https://www.postgresql.org/docs/current/dml-returning.html):
+  `RETURNING` avoids a second query to identify modified rows reliably.
 
 ### Task 4: Build the reproducible local deployment
 
 **Files:**
 - Create: `deploy/local/compose.yaml`
 - Create: `deploy/local/.env.example`
+- Create: `apps/life-manager/Dockerfile.runtime`
+- Create: `apps/life-manager/.dockerignore`
+- Create: `apps/life-manager/migrations/20260729_runtime_scheduler_lease.sql`
 - Create: `apps/life-manager/scripts/runtime-up.js`
 - Create: `apps/life-manager/scripts/runtime-up.test.js`
 - Modify: `apps/life-manager/lib/maybe-start-loops.js`
 - Modify: `apps/life-manager/lib/maybe-start-loops.test.js`
+- Modify: `apps/life-manager/package.json`
+- Modify: `apps/life-manager/package-lock.json`
 
 **Interfaces:**
 - Consumes: one Life Manager release and local runtime configuration.
 - Produces: `life-manager runtime up --mode local`, starting API/panel, scheduler, PostgreSQL, object storage, and capability workers with a single scheduler owner.
 
-- [ ] **Step 1: Write topology and single-writer tests**
+- [x] **Step 1: Write topology and single-writer tests**
 
 Assert that the Compose model contains health checks, persistent database/object volumes, distinct scheduler and worker services, and one scheduler-owner identity.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test scripts/runtime-up.test.js lib/maybe-start-loops.test.js
 ```
 
-- [ ] **Step 3: Implement the local bundle**
+- [x] **Step 3: Implement the local bundle**
 
 Replace the existing OpenClaw-owner wording in `maybe-start-loops.js` with deployment-owner semantics. OpenClaw is not a supported owner or fallback.
 
-- [ ] **Step 4: Start the real local stack**
+- [x] **Step 4: Start the real local stack**
 
 ```bash
 docker compose -f deploy/local/compose.yaml up -d --build
@@ -179,9 +207,33 @@ docker compose -f deploy/local/compose.yaml ps
 
 Expected: all required services report healthy and the scheduler has exactly one owner lease.
 
-- [ ] **Step 5: Restart verification and commit**
+- [x] **Step 5: Restart verification and commit**
 
 Restart scheduler and workers during queued work; verify leases recover and no duplicate external effect is emitted.
+
+**Verification:** the focused topology/single-writer suite passed `17/17`.
+The rendered Compose JSON had one scheduler service with owner
+`local-primary`, one capability worker, health checks, and three persistent
+volumes. The real Colima/Docker stack built and brought PostgreSQL 18, the
+migration job, MinIO, API/panel, scheduler, and worker up without any legacy
+directory mounted. API, PostgreSQL, MinIO, scheduler, and worker reported
+healthy. Restarting worker and scheduler changed the process-unique scheduler
+holder token while the active database lease remained exactly
+`1:local-primary:true`. A no-effect smoke job remained `completed:1:1`; an
+unknown external-effect job remained `reconciling:1:0` across restart, proving
+no blind retry and no duplicate receipt. The runtime image excludes repository
+tests and legacy boot scripts. The complete `apps/life-manager` test command
+passed with the Task 4 suite wired into `npm test`.
+
+**Implementation basis:**
+- [Docker Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/):
+  Compose waits for dependencies marked `service_healthy`, while
+  `service_completed_successfully` gates one-shot migrations.
+- [Docker volumes](https://docs.docker.com/engine/storage/volumes/):
+  volumes persist data beyond an individual container lifecycle.
+- [Docker Compose healthcheck](https://docs.docker.com/reference/compose-file/services/#healthcheck):
+  service health is declared in the Compose model and used by dependency
+  conditions.
 
 ### Task 5: Move Telegram and the current financial report first
 

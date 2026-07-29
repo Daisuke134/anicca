@@ -66,7 +66,7 @@ cfo.status 関係なく **P2 必ず実行**。 HUNGRY なら 全 P2 (a-c) 連発
 - TAKA: 営業代行 1400件 = 提案質で1位
 - Mika: LP デザイン ¥10-30万 × 200件 = 累計
 
-**全 signup は Google OAuth (redacted@example.invalid) 一択**。 LANCERS_PASSWORD 等 は 使わない 方針 (env から 撤去対象)。
+**全 signup は Google OAuth (person@example.com) 一択**。 LANCERS_PASSWORD 等 は 使わない 方針 (env から 撤去対象)。
 
 ## 3. 7 パーツ精密提案文 (採用率 25%・1次source 一致)
 

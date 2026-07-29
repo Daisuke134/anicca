@@ -1,0 +1,62 @@
+[
+  {
+    "name": "tokyo_ai",
+    "company": "Fintech A",
+    "title": "Applied AI Engineer",
+    "url": "https://boards.greenhouse.io/a/jobs/1",
+    "location": "Tokyo, Japan (Hybrid)",
+    "japan_eligible": true,
+    "compensation_min_jpy": 9000000,
+    "clearance_required": false,
+    "skills": ["agents", "databricks", "salesforce"],
+    "domains": ["enterprise_ai", "fintech"]
+  },
+  {
+    "name": "global_remote",
+    "company": "Crypto B",
+    "title": "Agentic AI Product Engineer",
+    "url": "https://jobs.ashbyhq.com/b/2",
+    "location": "Remote worldwide",
+    "japan_eligible": true,
+    "compensation_min_jpy": null,
+    "clearance_required": false,
+    "skills": ["agents", "consumer", "swift"],
+    "domains": ["crypto", "consumer_ai"]
+  },
+  {
+    "name": "us_only",
+    "company": "US C",
+    "title": "Generative AI Engineer",
+    "url": "https://jobs.lever.co/c/3",
+    "location": "Remote US only",
+    "japan_eligible": false,
+    "compensation_min_jpy": 15000000,
+    "clearance_required": false,
+    "skills": ["agents"],
+    "domains": ["enterprise_ai"]
+  },
+  {
+    "name": "clearance",
+    "company": "Defense D",
+    "title": "AI Engineer",
+    "url": "https://jobs.example.com/4",
+    "location": "Remote",
+    "japan_eligible": true,
+    "compensation_min_jpy": 12000000,
+    "clearance_required": true,
+    "skills": ["agents"],
+    "domains": ["enterprise_ai"]
+  },
+  {
+    "name": "low_pay",
+    "company": "E",
+    "title": "AI Engineer",
+    "url": "https://jobs.example.com/5",
+    "location": "Tokyo",
+    "japan_eligible": true,
+    "compensation_min_jpy": 5000000,
+    "clearance_required": false,
+    "skills": ["agents"],
+    "domains": ["enterprise_ai"]
+  }
+]
