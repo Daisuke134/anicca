@@ -323,6 +323,32 @@ async function completeLumaName(page, name) {
   })()`);
 }
 
+async function dismissLumaPasskey(page) {
+  return page.evaluate(`(() => {
+    const button = Array.from(document.querySelectorAll("button")).find(
+      (element) => String(element.innerText || "").trim() === "Not Now"
+    );
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+}
+
+async function completeLumaPostAuth(page, name, sleep) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let handled = false;
+    if (await completeLumaName(page, name)) {
+      handled = true;
+      await sleep(3_000);
+    }
+    if (await dismissLumaPasskey(page)) {
+      handled = true;
+      await sleep(3_000);
+    }
+    if (!handled) return;
+  }
+}
+
 function makeProductionDeps(env = process.env, boundaries = {}) {
   const { makeSteelCdpClient } = require("../lib/steel-cdp-client.js");
   const { connectCdp: defaultConnectCdp } = require("../lib/cdp-connection.js");
@@ -356,7 +382,7 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
             if (/^luma-code:\d{6}$/.test(challenge)) {
               await submitLumaCode(page, challenge.slice("luma-code:".length));
               await sleep(3_000);
-              if (await completeLumaName(page, agentName)) await sleep(3_000);
+              await completeLumaPostAuth(page, agentName, sleep);
               return;
             }
             await page.navigate(challenge);
@@ -479,6 +505,8 @@ async function main() {
 if (require.main === module) main();
 
 module.exports = {
+  completeLumaPostAuth,
+  dismissLumaPasskey,
   extractLumaCode,
   extractMagicLink,
   makeProductionDeps,
