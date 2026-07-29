@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-ORDER10-LIVE-CATCHUP",
+  "status": "completed_no_confirmed_submission",
+  "observed_at": "2026-07-29T13:56:28Z",
+  "canonical_commit": "6f96542c8f1de5925a372cb6aaaa15ac61bdf27a",
+  "launchd": {
+    "label": "ai.anicca.job-search-daily",
+    "runs_before": 7,
+    "runs_after": 9,
+    "last_exit_code": 0
+  },
+  "passes": [
+    {
+      "run_id": "daily-20260729-224239",
+      "status": "success",
+      "started_at": "2026-07-29T13:42:40.778660+00:00",
+      "finished_at": "2026-07-29T13:46:17.776118+00:00",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "charged_tokens": 65757,
+      "submitted": [],
+      "submit_unknown": [],
+      "blocked": [
+        "BJAK Applied AI Engineer application surface was not found; no slot or submit click.",
+        "Cohere, Neural Concept, and CrowdStrike postings had explicit minimum requirements not established by the verified profile."
+      ],
+      "telegram_report_message_id": "4421"
+    },
+    {
+      "run_id": "daily-20260729-224653",
+      "status": "success",
+      "started_at": "2026-07-29T13:46:55.000907+00:00",
+      "finished_at": "2026-07-29T13:55:37.270928+00:00",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "charged_tokens": 93938,
+      "submitted": [],
+      "reported_existing_submit_unknown": [
+        "BJAK Applied AI Engineer"
+      ],
+      "new_not_submitted": [
+        {
+          "company": "BJAK",
+          "role": "Applied AI Engineer - AI Finance Agent",
+          "url": "https://jobs.ashbyhq.com/bjakcareer/bdaca888-9ed5-402f-bd73-48ae269da06e/application",
+          "blockers": [
+            "required nationality is absent from the verified private profile",
+            "explicit three-year engineering minimum is not established"
+          ],
+          "submit_click": false
+        }
+      ],
+      "telegram_report_message_id": "4425"
+    }
+  ],
+  "budget": {
+    "daily_consumed_after_tokens": 231212,
+    "daily_limit_tokens": 262144,
+    "additional_forced_pass_authorized": false
+  },
+  "ledger": {
+    "integrity": "ok",
+    "application_counts": {
+      "submitted": 2,
+      "submit_unknown": 1,
+      "not_submitted": 1
+    }
+  },
+  "interview_prep_integrity": "ok",
+  "workday": {
+    "new_account_created": false,
+    "new_verification_email_received": false,
+    "reason": "The evaluated CrowdStrike posting was rejected on explicit minimum requirements before account creation."
+  },
+  "remaining_order_10_gate": "A future scheduled pass must find an actually eligible Workday role, create and verify its candidate account through the fenced inbox path, reach claim-ready, and receive authoritative submission confirmation."
+}
