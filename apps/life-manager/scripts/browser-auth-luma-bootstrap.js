@@ -3,7 +3,6 @@
 const LUMA_ORIGIN = "https://luma.com";
 const LUMA_LOGIN_URL = "https://luma.com/signin";
 const AGENTMAIL_API = "https://api.agentmail.to/v0";
-const MODEL = "google/gemini-2.5-flash";
 const AUTH_MARKERS = new Map([
   ["create event", "create_event"],
   ["my events", "my_events"],
@@ -215,30 +214,36 @@ function authenticatedSnapshotExpression() {
 }
 
 async function requestLumaEmailLogin(page, email) {
-  const input = page.locator('input[type="email"]').first();
-  if (await input.isVisible() !== true) {
+  if (!page || typeof page.evaluate !== "function") {
     throw new LumaBootstrapError("Luma authentication unavailable");
   }
-  await input.fill(email);
-  const submit = page.locator('button[type="submit"]').first();
-  await submit.click();
-  if (typeof page.waitForTimeout === "function") await page.waitForTimeout(2_000);
+  const submitted = await page.evaluate(`(() => {
+    const input = document.querySelector('input[type="email"]');
+    const submit = document.querySelector('button[type="submit"]');
+    if (!input || !submit) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (!descriptor || typeof descriptor.set !== "function") return false;
+    descriptor.set.call(input, ${JSON.stringify(email)});
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    submit.click();
+    return true;
+  })()`);
+  if (submitted !== true) throw new LumaBootstrapError("Luma authentication unavailable");
   return true;
 }
 
 function makeProductionDeps(env = process.env, boundaries = {}) {
-  const { Stagehand } = boundaries.Stagehand
-    ? { Stagehand: boundaries.Stagehand }
-    : require("@browserbasehq/stagehand");
   const { makeSteelCdpClient } = require("../lib/steel-cdp-client.js");
+  const { connectCdp: defaultConnectCdp } = require("../lib/cdp-connection.js");
   const { upsertBrowserAuthSession } = require("../lib/browser-auth-session-store.js");
   const steel = boundaries.steel || makeSteelCdpClient();
+  const connectCdp = boundaries.connectCdp || defaultConnectCdp;
   const fetchImpl = boundaries.fetchImpl || globalThis.fetch;
   const sleep = boundaries.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
-  const apiKey = required(env.GEMINI_API_KEY);
   const agentMailKey = required(env.LM_AGENTMAIL_API_KEY);
   const inbox = required(env.LM_AGENTMAIL_INBOX_ID);
-  if (!apiKey || !agentMailKey || !inbox) {
+  if (!agentMailKey || !inbox) {
     throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
   }
 
@@ -246,28 +251,19 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
     now: () => Date.now(),
     async openBrowser() {
       const session = await steel.createRawSession({ blockAds: true });
-      const stagehand = new Stagehand({
-        env: "LOCAL",
-        disablePino: true,
-        verbose: 0,
-        localBrowserLaunchOptions: {
-          cdpUrl: session.websocketUrl,
-          cdpHeaders: { Host: "localhost:8080" },
-        },
-        model: { modelName: MODEL, apiKey },
-      });
+      let page;
       try {
-        await stagehand.init();
-        const page = await stagehand.context.awaitActivePage();
+        page = await connectCdp(session.websocketUrl, { timeoutMs: 30_000 });
         return {
           sessionId: String(session.id),
           async requestMagicLink(email) {
-            await page.goto(LUMA_LOGIN_URL);
+            await page.navigate(LUMA_LOGIN_URL);
             await requestLumaEmailLogin(page, email);
+            await sleep(2_000);
           },
           async openMagicLink(link) {
-            await page.goto(link);
-            if (typeof page.waitForTimeout === "function") await page.waitForTimeout(3_000);
+            await page.navigate(link);
+            await sleep(3_000);
           },
           async inspectAuthenticated() {
             return page.evaluate(authenticatedSnapshotExpression());
@@ -276,12 +272,14 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
             return steel.getSessionContext(String(session.id));
           },
           async release() {
-            try { await stagehand.close(); } catch { /* Steel owns the actual cloud slot. */ }
+            try { await page.close(); } catch { /* Steel owns the actual cloud slot. */ }
             return steel.releaseSession(String(session.id));
           },
         };
       } catch (error) {
-        try { await stagehand.close(); } catch {}
+        if (page) {
+          try { await page.close(); } catch {}
+        }
         try { await steel.releaseSession(String(session.id)); } catch {}
         throw error;
       }
