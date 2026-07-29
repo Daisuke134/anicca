@@ -4,12 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.local/state/life-manager/.env}"
 
-if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-fi
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/load-env-file.sh"
+lm_load_env_file "$ENV_FILE"
 
 export TASKMARKET_WORKER_ADDRESS="${TASKMARKET_WORKER_ADDRESS:-0xd7Db94062AFec8a86F70250B931C77619acf8937}"
 export TASKMARKET_SELF_WALLETS_MODULE="${TASKMARKET_SELF_WALLETS_MODULE:-${HOME}/anicca/skills/earn/x402-sell/lib/self-wallets.mjs}"

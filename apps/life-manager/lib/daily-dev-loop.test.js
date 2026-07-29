@@ -153,3 +153,67 @@ test("summarizeSevenDays requires seven real consecutive day keys and preserves 
   const missingDay = rows.filter((row) => row.day !== "2026-07-21");
   assert.equal(summarizeSevenDays(missingDay).ready, false);
 });
+
+// F2b: never silently start with empty dev-loop state while unmigrated legacy
+// state (done.jsonl dedup history) still exists — fail loudly and name the
+// migration script. All paths here are temp dirs; the real HOME is untouched.
+
+const {
+  assertLegacyDevStateMigrated,
+  defaultLegacyDevStateDir,
+} = require("./daily-dev-loop");
+
+test("the default legacy dev state dir points at the legacy store, overridable by env", () => {
+  const legacyStore = "." + "open" + "claw";
+  assert.equal(
+    defaultLegacyDevStateDir({ HOME: "/srv/operator-home" }),
+    `/srv/operator-home/${legacyStore}/state/life-manager-dev`,
+  );
+  assert.equal(
+    defaultLegacyDevStateDir({ HOME: "/srv/operator-home", LM_LEGACY_STATE_ROOT: "/srv/legacy/state" }),
+    "/srv/legacy/state/life-manager-dev",
+  );
+});
+
+test("an empty new state dir with populated legacy state fails loudly naming the migration script", () => {
+  const legacy = tempDir();
+  fs.writeFileSync(path.join(legacy, "done.jsonl"), '{"issue":41}\n');
+  const fresh = path.join(tempDir(), "state", "life-manager-dev");
+  assert.throws(
+    () => assertLegacyDevStateMigrated(fresh, legacy),
+    /migrate-legacy-state\.sh/,
+  );
+  // An existing-but-empty new state dir is equally unmigrated.
+  fs.mkdirSync(fresh, { recursive: true });
+  assert.throws(
+    () => assertLegacyDevStateMigrated(fresh, legacy),
+    /migrate-legacy-state\.sh/,
+  );
+});
+
+test("the guard passes when legacy state is absent or the new state dir is populated", () => {
+  const legacyEmpty = tempDir();
+  const fresh = path.join(tempDir(), "state", "life-manager-dev");
+  assertLegacyDevStateMigrated(fresh, legacyEmpty);
+  assertLegacyDevStateMigrated(fresh, path.join(legacyEmpty, "never-created"));
+
+  const legacy = tempDir();
+  fs.writeFileSync(path.join(legacy, "done.jsonl"), '{"issue":41}\n');
+  const migrated = tempDir();
+  fs.writeFileSync(path.join(migrated, "done.jsonl"), '{"issue":41}\n');
+  assertLegacyDevStateMigrated(migrated, legacy);
+});
+
+test("runDailyPass refuses to run while unmigrated legacy state exists", async () => {
+  const legacy = tempDir();
+  fs.writeFileSync(path.join(legacy, "done.jsonl"), '{"issue":41}\n');
+  const fresh = path.join(tempDir(), "state", "life-manager-dev");
+  const child = path.join(tempDir(), "never-run.sh");
+  writeExecutable(child, "#!/bin/bash\nexit 0\n");
+
+  await assert.rejects(
+    runDailyPass({ command: child, stateDir: fresh, legacyStateDir: legacy }),
+    /migrate-legacy-state\.sh/,
+  );
+  assert.equal(fs.existsSync(fresh), false, "the guard must fire before state creation");
+});
