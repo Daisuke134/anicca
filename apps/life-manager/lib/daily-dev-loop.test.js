@@ -9,6 +9,7 @@ const path = require("node:path");
 const {
   acquireExclusiveLock,
   appendLedgerEntry,
+  defaultStateDir,
   runDailyPass,
   summarizeSevenDays,
 } = require("./daily-dev-loop");
@@ -20,6 +21,19 @@ function tempDir() {
 function writeExecutable(file, source) {
   fs.writeFileSync(file, source, { mode: 0o700 });
 }
+
+test("the default state dir lives beneath the Life Manager data root, never a legacy root", () => {
+  assert.equal(
+    defaultStateDir({ HOME: "/srv/operator-home" }),
+    "/srv/operator-home/.local/state/life-manager/state/life-manager-dev",
+  );
+  assert.equal(
+    defaultStateDir({ LM_DATA_DIR: "/var/lib/life-manager" }),
+    "/var/lib/life-manager/state/life-manager-dev",
+  );
+  const legacyToken = "." + "open" + "claw";
+  assert.ok(!defaultStateDir({ HOME: "/srv/operator-home" }).includes(legacyToken));
+});
 
 test("appendLedgerEntry writes one closed-schema JSONL record without arbitrary fields", () => {
   const dir = tempDir();
