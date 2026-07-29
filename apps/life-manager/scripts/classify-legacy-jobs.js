@@ -58,7 +58,8 @@ const SPECIAL_CASES = {
     classification_note:
       "plist is not plutil-parseable (unknown ampersand-escape at line 11) so "
       + "the captured command is empty; read-only text inspection shows a "
-      + "daily 06:00 job running $HOME/.openclaw/skills/cfo-core/run-cfo.sh "
+      + "daily 06:00 job running $HOME/."
+      + "openclaw/skills/cfo-core/run-cfo.sh "
       + "(OpenClaw CFO financial daily); launchctl list shows the label "
       + "loaded with last exit status 0 at classification time",
   },
@@ -71,7 +72,8 @@ const SPECIAL_CASES = {
     classification_note:
       "loaded-only residual at capture time: the active plist was renamed to "
       + ".disabled backups on 2026-07-12/13 (KeepAlive daemon for "
-      + "$HOME/anicca/runtime/anicca-daemon.sh) and launchctl no longer "
+      + "$HOME/"
+      + "anicca/runtime/anicca-daemon.sh) and launchctl no longer "
       + "reports the label at classification time",
   },
 };
