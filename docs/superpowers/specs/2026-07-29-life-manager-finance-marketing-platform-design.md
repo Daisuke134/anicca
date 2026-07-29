@@ -121,6 +121,14 @@ machine-maintenance job.
 | Shared marketing dashboard | Every 15 minutes | Profitable Claude engine | Runs successfully but projects an empty runtime |
 | Life Manager financial report | Every five minutes; send gates at 20:00 daily and Sunday 20:05 weekly | Separate `life-manager-main` checkout and `~/.openclaw/.env` | Active; still local and OpenClaw-env-dependent |
 
+Immediate Life Manager marketing routing measured during this design update:
+
+| Route | Scheduler identity | TikTok integration before | TikTok integration after | State |
+|---|---|---|---|---|
+| Current Life Manager IG + TikTok daily pass | launchd `ai.anicca.life-manager-daily`, 10:15 JST | `cmp9txjdp01c8oh0yb6dhlarr` (`@anicca_buddha`) | `cmpc6cr6g00d8lg0yfythzz9f` (`@anicca.comedy`) | Default changed under a RED→GREEN account-routing test; no post was fired during the configuration change |
+| Retired OpenClaw wrappers | `6ad526a5-7f2a-4738-930b-89c158acf10d` and `a7e6095c-1472-4408-ae04-e20598b66cbf` | `cmpc6cr6g00d8lg0yfythzz9f` | n/a | Both are classified `disabled` |
+| Retired recording-based successor | launchd `ai.anicca.lm-video-post` | `cmpc6cr6g00d8lg0yfythzz9f` | n/a | Service is not loaded, active plist is absent, and control-plane desired state is `disabled` |
+
 The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
 reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
 currently exposes no active jobs and no next wake, these are treated as stale
@@ -150,6 +158,8 @@ or whole-business financial-health report.
 | [Railway Cron Jobs](https://docs.railway.com/reference/cron-jobs) | “Services configured as cron jobs are expected to execute a task, and terminate as soon as that task is finished.” | Railway cron only enqueues bounded jobs; long rendering, browser, and learning work runs in leased workers |
 | [Telegram Bot API](https://core.telegram.org/bots/api) | “The Bot API is an HTTP-based interface” | Telegram is a delivery surface, not the financial source of truth |
 | [Moneytree LINK](https://docs.link.getmoneytree.com/docs) | Moneytree LINK exposes standardized financial data after user authorization and uses OAuth 2.0 Authorization Code Grant with PKCE | Production users connect through Moneytree LINK/OAuth; raw bank credentials never enter Life Manager |
+| [Postiz Post Analytics](https://docs.postiz.com/public-api/analytics/post) | “Get analytics data for a specific published post.” | Keep Postiz during migration and collect post-level metrics by provider post ID instead of scraping immediately after publication |
+| [Microsoft SkillOpt](https://microsoft.github.io/SkillOpt/) | “SkillOpt makes the skill document itself the optimization target.” | Skill changes use scored rollout evidence, bounded edits, and a held-out keep/revert gate; production skills are never rewritten unconditionally |
 
 ## 5. Alternatives considered
 
@@ -563,17 +573,55 @@ spam.
 ### 8.1 Loop
 
 ```text
-Observe market
-  → extract viral format DNA
-  → generate diverse candidates
-  → quality + policy gates
-  → publish with lineage
-  → collect 2h / 24h / 72h / 7d metrics
-  → attribute installs / trials / paid revenue
-  → blame one bounded rule
-  → challenger canary
-  → keep or revert
-  → next run proves it consumed the new weight
+                           LIFE MANAGER SHARED MARKETING ENGINE
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ Tenant → Product pack → Audience/account → Goal                                 │
+│                       Anicca JA/EN | Honne JA/EN                                │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 1. OBSERVE                                                                      │
+│ Market/source URLs → viral-format DNA → rights/source receipt → format library  │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 2. PROPOSE                                                                      │
+│ Planner selects a portfolio; it does not force one producer forever             │
+│ Larry slides | ReelClaw UGC+demo | Remotion | MoneyPrinterTurbo | future packs  │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 3. PRODUCE + GATE                                                               │
+│ Distinct hook/format/scene/CTA → duplicate + proof + locale + policy + QA gates │
+│ artifact_id + source_id + skill_version + product_id + account_id are immutable │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 4. PUBLISH                                                                      │
+│ Postiz first → IG / TikTok / YouTube → provider post_id → exact public URL      │
+│ Later replace each Postiz adapter independently without changing the contracts  │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 5. OBSERVE AT THE RIGHT HORIZON                                                 │
+│ 2h delivery/hold | 24h engagement | 72h install/activation | 7–35d paid/retain  │
+│ Postiz/platform + App Store Connect + RevenueCat + product analytics            │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 6. REWARD + LEARN                                                               │
+│ revenue/retention > paid > trial > activated install > click > watch > view     │
+│ One blamed rule → bounded SkillOpt edit → challenger → held-out/canary gate     │
+│ keep or revert + rejected-edit memory + next-run consumption proof              │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 │
+                 ┌───────────────┴────────────────┐
+                 v                                v
+      Telegram: raw public URLs + result    Panel: read-only receipts,
+      + app/revenue delta + source health   funnels, learning and failures
+                 │                                │
+                 └───────────────┬────────────────┘
+                                 └──────────────────────────────→ next generation
 ```
 
 ### 8.2 What is shared and what is isolated
@@ -737,14 +785,15 @@ bottleneck. Anicca and Honne never share learned weights.
 
 | Area | User sees |
 |---|---|
+| Content | published artifact thumbnail/title plus the raw TikTok, Instagram, or YouTube URL |
 | Queue | planned, rendering, scheduled, published, observing |
 | Format library | source, format DNA, product fit, recent usage, performance |
-| Experiments | control, challenger, reward, horizon, confidence/evidence |
-| Learning | changed rule, blame evidence, canary, keep/revert, consumption proof |
+| Learning audit | changed rule, blame evidence, canary, keep/revert, consumption proof; read-only and autonomous |
 | Accounts | platform health, last successful post, rate/quality limits |
 
-The UI exposes receipts, not agent narration. A green state requires a real
-publication URL or verified metric row.
+There are no user-facing experiment buttons and no public artifact page. The UI
+exposes receipts, not agent narration. A green state requires a real platform
+URL or verified metric row.
 
 ### 10.6 Connections and deployment
 
@@ -795,7 +844,7 @@ OpenClaw-independent and running under Life Manager locally.
 | 6 | Move secrets out of OpenClaw | every retained connector reads OS keychain/encrypted Life Manager vault references; `~/.openclaw/.env` is inaccessible in tests |
 | 7 | Implement durable local scheduler and job protocol | enqueue, claim, heartbeat, retry, dead-letter, idempotency, effect reconciliation, and receipts pass restart tests |
 | 8 | Extract reusable Profitable Claude contracts | registry, schemas, learner, canary, terminalizer, and dashboard logic run from Life Manager packages |
-| 9 | Migrate Telegram command/report delivery | Life Manager owns bot routing, tenant mapping, digest schedules, buttons, receipts, and anti-spam policy |
+| 9 | Migrate Telegram command/report delivery | Life Manager owns bot routing, tenant mapping, digest schedules, raw public URLs, receipts, and anti-spam policy; no experiment buttons or public artifact page |
 | 10 | Migrate existing financial-report loop | current x402/TaskMarket/USDC daily and weekly outputs run locally from Life Manager with matching snapshot hashes |
 | 11 | Migrate Larry/ReelClaw Anicca and Honne | all retained slideshow/video generation, rendering, posting, schedules, assets, and sessions run through Life Manager jobs |
 | 12 | Migrate Capafy, clipping, writer, gig, bounty, and other income loops | every retained income job produces a Life Manager receipt and no legacy-path read |
@@ -825,6 +874,23 @@ OpenClaw-independent and running under Life Manager locally.
 | 36 | Add Physical and Mental Health | separate daily messages, dashboard sections, source freshness, risk policy, and one-action interventions |
 | 37 | Design and build mobile-app development loop | metrics and feedback drive bounded app iteration before generalized creation/release |
 | 38 | Generalize web-app development loop | reuse portable runtime, product, finance, marketing, experiment, and deployment contracts |
+
+### 12.1 Remaining TODO from the measured state
+
+The numbered program above remains the SSOT. The next executable slices are:
+
+| Now | Work | Why it is still missing | Done evidence |
+|---:|---|---|---|
+| 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner |
+| 2 | Move Life Manager daily runtime paths into the monorepo data root | the current daily path still reads `~/anicca`, `~/profitable-claude`, `~/.openclaw`, and `~/.cloak` | dependency test passes while `~/.openclaw` is denied |
+| 3 | Vendor the shared marketing runner/contracts into Life Manager | Life Manager still calls `~/anicca/skills/earn/marketing-engine/run_agent.sh`; Profitable Claude's contracts are not the live system | Life Manager owns the runner, schemas, receipts, controller, and learner |
+| 4 | Make the current LM IG/TikTok pass reliable before migrating other loops | the 2026-07-29 10:15 pass exited at distribution and the current learner reads metrics immediately, producing false zeroes | one manually triggered bounded pass publishes to both intended accounts, returns raw URLs, and later collectors fill non-fabricated horizons |
+| 5 | Replace immediate public scraping with scheduled Postiz/platform collectors | current self-improvement records zero immediately after publishing and lacks shares, watch time, completion, clicks, installs, and revenue | provider post ID is observed at 2h/24h/72h/7d with explicit unavailable fields |
+| 6 | Join App Store Connect, RevenueCat, and product analytics per app | current reward is combined IG+TikTok views only | every publication traces to Anicca or Honne install, activation, trial, paid, proceeds, and retention where data permits |
+| 7 | Replace fixed rotation with a real bounded learner | current code merely rotates the 16-row bank and says “change hook and scene”; it does not edit or promote a skill | one-rule blame, bounded SkillOpt edit, held-out/canary keep-or-revert, rejected memory, and next-run consumption proof |
+| 8 | Migrate Larry and ReelClaw as producer adapters | their schedules, assets, state, and posting code still span OpenClaw and Profitable Claude | Anicca/Honne product packs call the same artifact/publication/metric/reward contracts |
+| 9 | Migrate Capafy, clipping, writer, gig, bounty, finance, and remaining retained loops | schedulers and ledgers remain scattered | all effects have Life Manager tenant/job/receipt lineage and zero legacy-path reads |
+| 10 | Prove local OpenClaw independence, then add cloud workers | cloud cutover before local independence would preserve hidden dependencies | seven local cycles with OpenClaw denied, then parity shadow and seven cloud cycles with the Mac powered off |
 
 ## 13. Cutover gates
 
