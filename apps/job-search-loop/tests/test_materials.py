@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import importlib
+import shutil
 from pathlib import Path
 
 from job_search_loop.materials import (
@@ -138,6 +139,7 @@ class MaterialTests(unittest.TestCase):
         self.assertNotIn("sales quota", html.casefold())
         self.assertNotIn("people management", html.casefold())
 
+    @unittest.skipUnless(shutil.which("weasyprint"), "weasyprint is required")
     def test_business_resume_renders_one_private_ats_page(self):
         facts = [
             ("muit_agent_crm", "MUIT deployed AI agents into a bank CRM."),
@@ -233,6 +235,7 @@ class MaterialTests(unittest.TestCase):
         self.assertIn("日本初", items[4]["text"])
         self.assertNotIn("主導", items[4]["text"])
 
+    @unittest.skipUnless(shutil.which("weasyprint"), "weasyprint is required")
     def test_japanese_resume_renders_one_private_ats_page(self):
         materials = importlib.import_module("job_search_loop.materials")
         render_japanese = getattr(materials, "render_japanese", None)
