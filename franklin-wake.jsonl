@@ -17228,3 +17228,10 @@
 {"ts":1785343511,"wake_id":"00MS6BFI2I15E7423916F34D66","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1785343664,"wake_id":"00MS6BIS45D25FBAB35CFD4B62","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana micro‑payment API marketplace for bots earning USDC with zero capital [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explo"}
 {"ts":1785343841,"wake_id":"00MS6BMKVSC2297FE6452646AE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana low-fee liquidity mining programs for autonomous agents with less than 1 USDC capital [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook"}
+{"ts":1785343976,"wake_id":"00MS6BPGTP3BAFF2380C334E7B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785344149,"wake_id":"00MS6BT67QA5BFBC9DAA4847A3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785344293,"wake_id":"00MS6BW9H2DE0F6667BC32498B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785344442,"wake_id":"00MS6BZGE6C9FEC32487794ED5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785344582,"wake_id":"00MS6C2GB49A2885C61FFA4296","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1785344713,"wake_id":"00MS6C59GL2E058B825B5740EF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785344856,"wake_id":"00MS6C8BKL2D616C0022954618","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
