@@ -94,10 +94,42 @@ def load_session():
     return cl
 
 
+def _sessionid_from_browser():
+    """ブラウザの Cookie ストアから sessionid を自動で拾う（Chrome → Safari → Firefox）。
+
+    macOS では初回に「Chrome Safe Storage へのアクセス」のキーチェーン許可が 1 回出る。
+    「常に許可」を押せば以後は出ない。
+    """
+    try:
+        import browser_cookie3
+    except ImportError:
+        return None
+    for name, loader in (
+        ("Chrome", browser_cookie3.chrome),
+        ("Safari", browser_cookie3.safari),
+        ("Firefox", browser_cookie3.firefox),
+    ):
+        try:
+            jar = loader(domain_name="instagram.com")
+        except Exception:
+            continue
+        for c in jar:
+            if c.name == "sessionid" and c.value and len(c.value) > 30:
+                log(f"{name} から sessionid を自動取得した")
+                return c.value
+    return None
+
+
 def cmd_login_sessionid():
-    """ブラウザの sessionid を移植する。壊れている login エンドポイントを通らない。"""
-    log("Chrome の DevTools → Application → Cookies → instagram.com → sessionid をコピー")
-    sessionid = getpass.getpass("sessionid を貼り付け（画面には表示されません）: ").strip()
+    """ブラウザの sessionid を移植する。壊れている login エンドポイントを通らない。
+
+    まずブラウザの Cookie から自動取得を試み、拾えなければ手貼りにフォールバック。
+    """
+    sessionid = _sessionid_from_browser()
+    if not sessionid:
+        log("自動取得できなかった。手動で貼り付ける:")
+        log("Chrome の DevTools → Application → Cookies → instagram.com → sessionid をコピー")
+        sessionid = getpass.getpass("sessionid を貼り付け（画面には表示されません）: ").strip()
     if len(sessionid) < 30 or not sessionid[:1].isdigit():
         die("sessionid の形式が違う（`数字%3A...` の形をそのまま貼る）")
 

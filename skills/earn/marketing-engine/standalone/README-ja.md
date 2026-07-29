@@ -24,18 +24,19 @@ IG に怪しまれて悪化する。
 壊れているログイン API を通らずに済む。
 
 ```bash
-pip install -U instagrapi
+pip3 install -U instagrapi browser_cookie3
 python3 ig_local_post.py --login-sessionid
 ```
 
-sessionid の取り方（Chrome）:
+Chrome（または Safari / Firefox）で instagram.com にログインしてあれば、
+**sessionid はスクリプトが Cookie から自動で拾う**。手作業なし。
+macOS は初回だけ「Chrome Safe Storage へのアクセス」許可が出るので「常に許可」を押す。
 
-1. Chrome で instagram.com にいつも通りログインする
-2. 表示 → 開発／管理 → デベロッパーツール
-3. **Application** タブ → 左の **Cookies** → `https://www.instagram.com`
-4. `sessionid` の Value をコピー（`数字%3A...` という形）
+自動で拾えなかった時だけ手貼りにフォールバックする:
+Chrome → デベロッパーツール → Application → Cookies → `https://www.instagram.com` →
+`sessionid` の Value（`数字%3A...` の形）を貼る。
 
-貼り付けると `session.json` が作られる。以降はこれを使い回す。
+成功すると `session.json` が作られる。以降はこれを使い回す。
 
 > sessionid はパスワードと同じ強さの資格情報。人に送らない・コミットしない。
 > スクリプトは画面に表示せず、`session.json` を 600 で保存する。
