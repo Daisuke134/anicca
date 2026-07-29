@@ -110,7 +110,7 @@ Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveが�
 | agent economy のlive残高・external収益・P&L・目標算式 | 本spec §0.4 | 他文書へ金額・X4状態・予測を複製せず、§0.4へ一行参照する |
 | MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
 | bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
-| multi-tenant cloud移行 | `2026-07-21-life-manager-cloud-agent-platform-migration-spec.md` | 74 atomic TODOを本specへ複製しない |
+| self-contained OSS / multi-tenant cloud移行 | 本spec §0.4.6 `OSS-MERGE-1`→`LOCAL-CLOUD-PARITY-1`→`CLOUD-LOOPS-1`→`LEGACY-RETIRE-1` | 存在しない旧migration spec参照は廃止。現在の順序とdone条件を§0.4.6/§2.2に一本化 |
 | Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
 
 ### 0.4 Agent Economy Earnings SSOT
@@ -491,12 +491,15 @@ event/時間依存gateが実測条件を満たした時だけ進め、収益・a
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0、再起動前後のauthenticated readback、失効時は正直な再認証handoff | **current Life Manager cursor**。cookieをDC IPへ移すだけではchallengeが起こり得るため、siteごとの実sessionで測る |
-| 3 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
-| 4 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
-| 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
-| 6 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
-| 7 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
+| 2 | **OSS-MERGE-1** | `profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current Life Manager cursor**。8iはweb product移植を閉じたが、full OSS self-contained proofと旧repo/folderのrequired-code吸収は未完 |
+| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
+| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
+| 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
+| 7 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
+| 8 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `anicca-products`は他productだけ、`profitable-claude`はhistorical redirect/archive、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending |
+| 9 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
+| 10 | **OPS-PANEL-1** | Life Manager Web appから全loop・browser trace・action receipt・失敗理由・次回実行を確認できる | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示 | pending |
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
@@ -529,46 +532,76 @@ SCALE-1を30日実証した後に実単価・conversion・marginから次の一�
 | public monorepo / product 名 | **Life Manager**（canonical GitHub slug=`life-manager`、web app が顔） | 全productと公開作業場所を1つの名前へ統一する。collision-safe renameは§10 `8c.R`、whole-product consolidationは§10 `8i`が正本 |
 | product / AI / agent / mission 名 | **Life Manager** | ユーザー向け名称・意思決定主体・runtime・通知・API・marketingを1つの名前へ統一 |
 | company 名 | **Anicca** | 会社・開発元を示す場合だけ使用し、製品・AI・agent・mission名には使わない |
-| OSS 配布物名 | **profitable-claude**（read-only mirror） | 「Claude を黒字にする」は説明力最強の配布名。repo を分けず mirror として自動生成 |
+| OSS 配布物名 | **Life Manager**（canonical `life-manager` repoそのもの） | local self-hostとcloud web appを同じsource treeから出荷する。別repo・別folderをcloneしないと動かない構造は禁止 |
 
-## 2. 決定: 単一 public monorepo `life-manager`（Turborepo 標準構造）
+## 2. 決定: 単一 public monorepo `life-manager`（local OSS / cloud web共通）
 
 ```
-life-manager/               ← 唯一の公開作業場所（phone/cloud の Claude Code は 1 session = 1 repo が公式制約）
+life-manager/               ← 唯一のLife Manager source / build / release場所
   apps/
-    life-manager/           ← THE product（現 anicca-products/apps/life-call + ~/Projects/life-manager を収斂。
-                               必要な API はこの app 内に持つ — 別 api app は作らない）
-  packages/
-    engine/                 ← marketing engine + earn loops（現 ~/anicca/skills/earn）= 稼ぐ臓器
-    skills/                 ← skill 群。core（wallet だけで動く）と gated/（user context 必須 = experimental）を dir で分離
-    installer/              ← one-command install + onboard + daemon 登録（§4）
-  docs/                     ← specs / STATUS（SSOT。現 anicca-project/docs を吸収）
+    life-manager/           ← web app / API / tenant runtime / Railway deployment
+  runtime/                  ← agent loop / scheduler / compute / ledger / self-heal
+  skills/                   ← life organs + browser + earn + self-development
+  install.sh                ← one-command local OSS install
+  start-local.sh            ← local runtime entrypoint
+  docs/                     ← specs / STATUS / public evidence
 ```
 
-**持ち込まないもの**: aniccaiosとanicca-productsのLife Manager以外の全app。これらは
-`anicca-products`に残し、repo自体はarchiveしない。Life Manager側へ運ぶのはproductと、そのproductが所有するengine/skills/SSOTだけ。
+`packages/engine` / `packages/installer`を新しい抽象として作ること自体をdone条件にしない。現在のcanonical treeである
+`runtime/`、`skills/`、`install.sh`、`start-local.sh`を正本とし、別repoからcopyして初めて動く部分だけをこのtreeへ吸収する。
+
+**完全mergeの意味**: Life Managerを実行・build・test・deployするために必要な公開可能code、prompt、skill、schema、
+migration、installer、test、infra config、docsはすべてこのrepoに存在する。fresh machineは
+`git clone Daisuke134/life-manager`の1回だけでlocal OSSを起動でき、cloudも同じcommitからdeployできる。
+`anicca-products`、`profitable-claude`、`anicca-dais`、`~/anicca`、`~/.openclaw`、その他のlocal checkoutを
+source dependency・copy source・scheduler本体として要求してはならない。
+
+**repoへ持ち込まないもの**: credentials、wallet private key、OAuth/session、個人memory、runtime ledger、
+logs、browser profile、provider state、生成物。これらは「別repoにcodeを置く」のではなく、documented schemaを持つ
+external runtime stateとしてvolume/secret manager/databaseへ注入する。clone直後に存在しなくてもinstaller/onboardingが
+作成または接続でき、未接続connectorは正直にunavailableとなる。
+
+aniccaios、landing、mobile、Life Manager以外のappはLife Managerの実行依存ではないため移植対象外とする。
+`anicca-products`が他productのrepoとして残ってもよいが、Life Managerのbuild/runtime/deployはそこを一切参照しない。
 
 根拠（引用）:
 - monorepo.tools: polyrepo の対価は「チーム自治」— 1人開発では無価値。「Atomic commits across projects」が monorepo 筆頭利点。
 - Claude Code 公式: 「`--cloud` works with a single repository at a time.」→ phone 開発で repo が割れてると atomic 変更が物理不可。
 - 実例: n8n / Plausible = 単一 public monorepo で cloud 版も同 repo。product 単位では全員 monorepo（gh 実測）。
 
-OSS 境界は「repo を分ける」でなく **splitsh-lite / CI mirror で read-only public repo を自動生成**（Laravel/Symfony が10年運用。
-`illuminate/support` は「[READ ONLY] Subtree split of …」）。profitable-claude は `packages/engine + installer` の mirror になる。
+OSS配布の正本はpublic `life-manager`そのものとする。`profitable-claude`は必要codeとhistory provenanceを
+Life Managerへ吸収した後、README redirect付きのhistorical repoへ移行できるが、mirrorの生成・存続を
+Life Managerのbuild/runtime/release条件にしない。
 
-repo境界: anicca-products → landing/mobile/他製品の恒久の家としてpublic/unarchivedを維持 ／ repository ID `1248111245` の現`anicca` → final `life-manager` ／
-repository ID `1273052304` の現`life-manager` → `life-manager-v0`として履歴/content importとequivalence実証までpublic/unarchivedで保持 ／ **~/.openclaw = project ではなく私的 infra**（cron/秘匿 state。repo 統合の対象外、徐々に縮小）。renameの唯一の設計正本→`2026-07-23-life-manager-repository-rename-design.md`。
+repo境界: `life-manager` = 唯一のLife Manager code/release正本 ／ `anicca-products` = 他productのみ ／
+`profitable-claude` = 吸収後はhistorical redirect ／ `anicca-dais`と`~/.openclaw` = migration中だけのprivate source/runtime state。
+後者から一般化可能なcode/skill/testはLife Managerへ吸収し、個人stateだけをexternal runtime dataとして残す。
+renameの設計正本→`2026-07-23-life-manager-repository-rename-design.md`。
 
 ### 2.1 現在の repo 実測と恒久境界
 
 | Surface | 現在 | 境界 |
 |---|---|---|
 | canonical Life Manager repo | `Daisuke134/life-manager`、repository ID `1248111245`、public/unarchived。`apps/life-manager`と本specが存在 | Life Manager product、agent-economy接続、同productのSSOT/deployment sourceを保持 |
-| sibling products repo | `Daisuke134/anicca-products`、repository ID `1245528469`、public/unarchived（GitHub API再読込） | landing/mobile/他製品の恒久の家。Life Manager productをここへ戻さず、repoをarchiveしない |
-| local execution | `/Users/operator/Projects/life-manager-main`はcanonical `life-manager`の作業tree | Life Managerの新規product workと本spec更新はここだけへcommit/push |
+| sibling products repo | `Daisuke134/anicca-products`、public/unarchived。旧`apps/life-call` copyと一部active branchが残る | 他productだけを保持。Life Manager code/branch/deploy sourceを残さない |
+| old OSS repo | `Daisuke134/profitable-claude`、private/unarchived、独立tree | 必要code/historyを吸収後、runtime dependency 0のhistorical redirectにする |
+| private OpenClaw repo | `Daisuke134/anicca-dais`、private/unarchived、個人config/state/logと再利用可能skillが混在 | reusable code/testだけを吸収。secret/state/logはexternal runtime dataへ分離し、Life Managerからrepo参照0 |
+| local execution | 複数のlinked worktreeと旧local folderが存在 | fresh `life-manager` clone 1つだけでlocal OSSを実行。他checkout 0でも全必須test/buildが通る |
 
 repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiveはhistorical evidenceであり、
-後続の裁定18で`anicca-products`をunarchiveして恒久のsibling repoとした。現在の残作業は§0.4.6を正本とする。
+後続の裁定18で`anicca-products`をunarchiveした。しかし完全self-contained OSSの判定は未完である。
+現在の残作業と順序は§0.4.6を正本とする。
+
+### 2.2 Self-contained OSS / cloud invariants
+
+| ID | 不変条件 | 機械的done証拠 |
+|---|---|---|
+| OSS-1 | fresh clone以外のrepo/folderをsourceとして読まない | clean VM/containerでother checkout 0、absolute home path・private git URL・submodule・symlink escape・runtime copy 0 |
+| OSS-2 | localとcloudは同じcommit・engine・skillsを使う | local receiptとcloud receiptに同じgit SHA/runtime version。別実装・手動copy 0 |
+| OSS-3 | secret/stateはrepoではなくdocumented external input | `.env.example`、schema/migration、volume/secret-manager adapter、onboarding、redaction test。secret/PII scan 0 |
+| OSS-4 | optional providerが無くてもcoreは起動する | connector capability readbackと正直なunavailable。missing sibling repoによるmodule/file error 0 |
+| OSS-5 | canonicalだけでbuild/test/deploy/releaseできる | install、focused/full/eval、local E2E、cloud E2E、SBOM/license/secret scan、exact deploy SHAが全PASS |
+| OSS-6 | legacy sourceにLife Managerのactive branch/deploy責務を残さない | `anicca-products`/`profitable-claude`/`anicca-dais`からLife Manager workflow・deploy・required codeを除去またはredirectし、canonical readback一致 |
 
 ## 3. 決定: レーンは1つ（2026-07-20 Dais 是正 — 旧「2レーン表」は誤りだったので消して書き直し）
 
@@ -591,17 +624,17 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 
 | tier | 人間から要るもの | skill 実例 | 置き場所 |
 |---|---|---|---|
-| **CORE** | **何も要らない**（wallet が identity、human loop ゼロ、human credential ゼロ） | clip/IG marketing（account は agent 自作）、SOL/HL/PM trade、x402 稼ぎ | `packages/skills/core/` — anicca が磨いてきた本体。OSS の顔 |
-| **GATED (bootstrap)** | **起動時に human credential 1回**（以後 human loop 無し） | capafy（Dais の銀行口座で payout）、gig work（KYC）、Postiz 型 SaaS 全般 | `packages/skills/gated/` — experimental。credential を与えられた AI だけが使う |
+| **CORE** | **何も要らない**（wallet が identity、human loop ゼロ、human credential ゼロ） | clip/IG marketing（account は agent 自作）、SOL/HL/PM trade、x402 稼ぎ | canonical `skills/` registryのCORE slot。OSS の顔 |
+| **GATED (bootstrap)** | **起動時に human credential 1回**（以後 human loop 無し） | capafy（Dais の銀行口座で payout）、gig work（KYC）、Postiz 型 SaaS 全般 | canonical `skills/` registryのgated slot。credential を与えられた AI だけが使う |
 | **GATED (delegation)** | **user の生活 context の委任**（calendar/mail/telegram/口座） | Life Manager 系 skill、LIFE-AUTO | 同じく `gated/`。委任された AI だけが使う |
 
-- **profitable-claude の中身は実はほぼ GATED**（capafy=口座、gig=KYC）— OSS の看板にするのは CORE 群。
-  mirror（§4）の既定公開範囲 = core + installer。gated は「experimental」と明示して公開可否を P3 で個別判断。
+- **旧profitable-claudeの中身は実はほぼ GATED**（capafy=口座、gig=KYC）。再利用するcodeはcanonical `skills/`へ
+  provenance付きで吸収し、CORE/GATEDのcapability metadataで分離する。別repoを実行時にclone/importしない。
 - 走行中の capafy loop は GATED の実験としてそのまま続行（14日 verify の価値は変わらない — engine 自体は CORE と共通）。
 
 ## 4. OSS one-command（P3 の設計。研究済み blueprint）
 
-`curl -fsSL https://profitable-claude.…/install.sh | bash` →
+`git clone https://github.com/Daisuke134/life-manager && cd life-manager && ./install.sh` →
 1. `command -v` で依存検出 → user-owned install（sudo 回避。ollama/openclaw 型）
 2. first-run wizard: 既存 credential を read-only 自動検出 → 足りない **1個だけ**質問（Claude sub 接続）→ 実 completion 1発で検証してから保存（openclaw wizard 型）
 3. agent が **wallet を自己生成**して表示（Franklin 型。signup/カード/電話ゼロ）
@@ -617,22 +650,23 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 |---|---|---|---|
 | P0 | **loop 検証**（走行中） | capafy/clip 14日 full-verify（capafy spec §12.6）。手を出さず loop に回させ、event 時のみ介入 | 今〜08-02 |
 | P1 | **Life Manager web app** | 次セッションから唯一の実装対象。public monorepo `life-manager` でwhole productを開発（= 統合作業を別 project 化しない）。LIFE-AUTO（mail/telegram 仕分け）もこの中の機能 | 次セッション |
-| P2 | **臓器接続** | engine/loops を packages/ へ移し Life Manager の financial organ として配線（§3 PRODUCT lane） | P1 の中盤 |
-| P3 | **OSS 公開** | installer + mirror 生成 → 14日 verify 通過後に profitable-claude 公開 | 08-02 以降 |
+| P2 | **臓器接続** | 必要なengine/loopsをcanonical `runtime/`・`skills/`へ吸収しLife Managerのfinancial organとして配線 | P1 の中盤 |
+| P3 | **self-contained OSS release** | public `life-manager` fresh cloneだけでinstall/local E2E/cloud parityを実証し、14日loop verifyを継続 | OSS-MERGE-1→LOCAL-CLOUD-PARITY-1 |
 
 ## 6. 棄却案と最強の反論・自分が間違うなら
 
 - **現状維持（repo 分散）**: 最強論拠 = 移行コスト・稼働 loop を触る危険。棄却理由 = phone 開発の 1-repo 制約(一次ソース)と注意分散が致命。
-- **OSS を手動別 repo 維持（旧 #12 案）**: 棄却 = drift の温床（mirror 自動生成が実証済み標準）。
+- **OSS を別repo/mirrorとして維持**: 棄却 = source of truthが増え、local/cloud parityとfresh clone証明を複雑化する。public `life-manager`を直接配る。
 - **旧「repo 名 = life-manager を棄却」の裁定**: 上書きして **採用**。whole productとpublic monorepoを同じ`Life Manager`にすると、利用者・contributor・local cloneのidentityが1つになる。AniccaはAI経済自立と苦しみを減らすagent/mission名として保持できるため、missionを失わない。collision-safe根拠と実行順→`2026-07-23-life-manager-repository-rename-design.md`。
-- **俺が間違うとしたら最有力**: 「full-public monorepo」。IG 自動化 recipe は公開すると platform 対策で腐る/ToS グレー。
-  mitigation: mirror の filter で公開粒度を制御（recipe 詳細 dir を mirror から除外する選択肢を P3 で判断）。
+- **俺が間違うとしたら最有力**: 「full-public monorepo」。provider automation recipeを公開するとplatform対策で腐る/ToSグレー。
+  mitigation: secretやprivate stateを隠すのではなく、公開できないrecipeをoptional external provider adapterとして分離し、
+  coreのclone/build/runtimeを壊さない。非公開repoを必須dependencyにはしない。
 
 ## 7. best / base / worst
 
-- **best**: 07-21 両 account day3 生存 → 08-02 14日 verify → 8月中 OSS 公開 + Life Manager に financial organ、以後 1 repo で phone 開発。
-- **base**: account もう1周作り直し → OSS は 8月末。P1 (Life Manager) は影響なしで進む。
-- **worst**: IG recipe が構造的に死ぬ → engine の IG adapter を捨て、PRODUCT lane（user 委任型）を主軸化。mission は不変、稼ぎ口だけ差し替え。
+- **best**: OSS-MERGE-1でrequired codeを全吸収し、fresh clone local/cloud parityとbrowser matrixを1回で閉じる。
+- **base**: provider adapterごとにstate/config境界を修正しながら段階移行する。旧runtimeはshadowのまま止めない。
+- **worst**: 一部provider recipeを公開できない。そのadapterだけoptional/unavailableにし、core OSSと他organを止めない。
 
 ## 9. PRODUCT VISION 詳細（2026-07-20 Dais 口述の正本化。§0 mission の具体形）
 
@@ -652,10 +686,10 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
 - **PHYSICAL organ**: schedule + 場所から「歯医者/散髪 等に行っていない」を検知 → 生活圏（自宅/職場の近く。都心勤務なら職場寄り）
   で候補を選び予約を代行。全 schedule と居場所を知っているからこそ正しい場所・時間に入れられる。
 - **MENTAL organ**: 傾聴 call・習慣/就寝 nudge・孤独対策。suffering/clinging を減らす方向。
-- **FINANCIAL organ**: agent が自分の wallet を持ち `packages/engine`（earn loops = anicca で磨いてきた稼ぐ力）で自ら稼ぐ。
+- **FINANCIAL organ**: agent が自分の wallet を持ちcanonical `runtime/` + `skills/`のearn loopsで自ら稼ぐ。
   - crypto: agent wallet で稼ぐ → user の wallet へ送金。
   - fiat: user が closed question（最小回数）で渡した credential の範囲で稼ぎ、user の銀行口座へ直行。
-  - = §3 CORE skills + profitable-claude がそのまま Life Manager の financial organ になる（§2 統合の意味）。
+  - = §3 CORE skillsと旧profitable-claudeから吸収したverified codeがLife Managerのfinancial organになる。外部repo参照は0。
 
 ### 9.2 MARKETING loop（毎日 video、self-improving）
 
@@ -663,7 +697,7 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8i`時点のarchiv
   money-printer-turbo 型の video 生成 loop を流用）。
 - **初回preview gate**: MPT rendererの実MP4をDaisへ先に提示し、明示承認されるまでIG/TikTok配信をhard lockする。承認はrenderer品質を確定するbootstrap 1回だけ。承認後はhuman loopなしで毎日1本生成し、同じexact video+captionを両platformへ配信する。
 - 配信: **IG/TikTokともPostizを正本経路にする**。既存account/channelを再利用し、IG connectorのprovider readbackとTikTok channel id `cmp9txjdp01c8oh0yb6dhlarr`を確認してからunlockする。TikTok自前scriptへの移行は中止し、直接browser uploadを定常runtimeにしない。
-- **全 marketing loop 共通の self-improve 契約を copy+adapt**: 毎 pass で ①外部 best practice/trend 検索 ②自分の views/watch-time/completion/click/signup を決定論的に取得 ③勝ち型/負け型を lessons + creative ledger に記帳 ④次videoの hook/scene/punchline を変更 ⑤fresh evaluator gate を通す。runtime library を別repoから共有せず、`profitable-claude` 内で self-contained にする。
+- **全 marketing loop 共通の self-improve 契約を copy+adapt**: 毎 pass で ①外部 best practice/trend 検索 ②自分の views/watch-time/completion/click/signup を決定論的に取得 ③勝ち型/負け型を lessons + creative ledger に記帳 ④次videoの hook/scene/punchline を変更 ⑤fresh evaluator gate を通す。runtime libraryはcanonical `life-manager`内でself-containedにする。
 - runtime: launchd の1 passは fresh/ephemeral agent context。長寿命tmux会話を継続しない。primary model = `gpt-5.6-luna`、`gpt-5.6-sol` は実装・難しい自己修理時のfallback。model/timeout/exit code/token cost を ledger に記録し、内部失敗を `exit 0` に変換しない。
 - self-improve: 伸びた動画の型を学習して次の生成に反映。launchd 常設・毎日・人手ゼロ。生成・投稿・計測・改善のどれかが欠けた pass は streak に数えない。
 - done = 7日連続、毎日1本、人手ゼロで IG+TT に実投稿（投稿 URL で実測）。
@@ -929,11 +963,11 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     実測 2026-07-25: `lm-video-post` launchd が Postiz DIRECT_POST で `post_id=cms0bqgx40414pj0yftnc0b4r` を配信済み
     （`~/.openclaw/logs/lm-video-post-launchd.out.log`）。preview 承認ゲートも撤去（Dais 裁定: 承認不要）。
     IG は新規アカウント作成（warm-up なし = 裁定9）を Dais が行える時に再開する。
-14. **marketing engine は共有資産（2026-07-26 Dais 方向づけ。実行はまだしない）**。
-    `~/anicca/skills/earn/marketing-engine`（run_agent.sh → profitable-claude/skills/agent-runner、provider-agnostic routing）
-    は Life Manager 専用ではなく、capafy loop・reelclaw・larry が同じ engine に乗る。
+14. **marketing engine はcanonical共有資産**。
+    旧`~/anicca/skills/earn/marketing-engine`と旧`profitable-claude/skills/agent-runner`の必要codeを
+    `life-manager/skills/`へ吸収し、capafy loop・reelclaw・larryもcanonical engineに乗る。
     9d の self-improve（metrics → winner/loser → 翌日変更）は**全 loop 共通の必須規約**であり、Life Manager だけの機能にしない。
-    openclaw の marketing 系 cron はこの repo へ移管する（裁定4「openclaw から離脱」の具体化）。**移管作業は指示があるまで着手しない**。
+    OpenClawのmarketing系cron定義もcanonicalへ移管し、旧folderをsource dependencyにしない。
 15. **全 inline button は tap に見える応答を返す（2026-07-26 Dais 裁定 = 「押しても何も起きない」は欠陥）**。
     実測: ask（オンライン/対面・yes）と payout（bank/wallet/later）の全 callback が DB write + toast のみで、
     chat に恒久の視覚応答を残さず、元 message の keyboard も残置される。契約: ①tap された選択を元 message に
@@ -948,11 +982,12 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
     SHELTER-REPLACE-1とTASKMARKET-READBACK-1は実launchd検証まで完了する。現在のAgent Economy build cursorは
     **none**。AE-SLIDES-JP-1、AE-ARTICLE-JP-1、AE-PUBLICATION-AUDIT-1もdone。
-    Life Manager browser trackは別ownerの並走順として分離し、現在cursorは **BROWSER-AUTH-1**。
+    Life Manager product trackは別ownerの並走順として分離し、現在cursorは **OSS-MERGE-1**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
-18. **landing は移設しない（2026-07-27 Dais 裁定）**。life-manager repo に移すのは Life Manager 製品そのものだけ。
-    landing・mobile app・他製品は anicca-products に残す — 二 repo 分担は意図した設計であり、§2.1 の
-    「cutover 後に anicca-products を archive」する計画は**撤回**。H1/LAND-1 は棄却。
+18. **完全mergeはLife Managerのdependency closureを対象にする**。landing・mobile app・他製品そのものは
+    `anicca-products`に残してよい。ただしLife Managerが使う共有code/config/testがそこにあればcanonicalへ吸収し、
+    old `apps/life-call`・active Life Manager branch・deploy responsibilityを残さない。
+    `anicca-products`の存続とLife Managerのself-contained性は両立する。
 
 
 
@@ -969,7 +1004,7 @@ old running→new running + 3 routes/heartbeat検証→old state 2をmainnetで�
 TASKMARKET-READBACK-1も公式submit txを追加cost 0のappend-only訂正行へ結び、実launchd wake exit 0で完了した。
 21600秒の自然trigger、外部award、外部収益だけを自動成果gateとして観測する。
 
-**Current Life Manager browser cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
+**Current Life Manager product cursor**: **OSS-MERGE-1**。BROWSER-GEN-1は実Luma登録とprovider
 `You’re In`、TG evidence、Steel releaseまで完了した。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。
@@ -977,7 +1012,8 @@ bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal�
 Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
 Agent Economyの今すぐ実装できる手動atomicは全件done。自動成果gateだけを継続監視する。
-Life Manager browser実装はBROWSER-AUTH-1へ進む。
+Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化した後、
+BROWSER-AUTH-1をproduction queueの実Luma proofから再開する。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
 公開検索で確認し、PayAPI Marketのfree tierへ9 endpoints / 9 toolsを申請済み（審査中）。
@@ -1074,7 +1110,7 @@ fresh shelter balance 0.670368 NOS / 0.013662961 SOL。21600秒の自然trigger�
 SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk deckとarticleはpost-S22 live level 3へ更新し、
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager browser trackはBROWSER-GEN-1がdone、BROWSER-AUTH-1がcurrent。
+Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1がcurrent、BROWSER-AUTH-1が次。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -1094,7 +1130,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy build cursor**は
-`none`。**Life Manager browser cursor**は`BROWSER-AUTH-1`。
+`none`。**Life Manager product cursor**は`OSS-MERGE-1`。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1176,7 +1212,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager browser trackは同節の別表で`BROWSER-AUTH-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager product trackは同節の別表で`OSS-MERGE-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1184,7 +1220,10 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
   2. **gate の意味を限定**: 前phase green が block するのは次phaseの **merge/prod 反映**。spec・eval RED・isolated worktree内の準備は並行してよい。
   3. **待ち時間の既定動作 = 次の独立atomicのspec/eval準備**。「待ってます」報告で停止しない。Dais への連絡は (a)1回の必要窓 (b)全完了報告 (c)真の停止点のみ。
 
-### 10.0 出荷ラン実況（live状態。詳細は各§10行）
+### 10.0 出荷ラン実況（historical append-only log。現在状態ではない）
+
+以下の「現在」「次」は各記録時点の逐次logであり、後続行によりsupersedeされる。現在のcursor・残TODO・順序には使わない。
+現在状態の唯一の正本は§0.4.6、repo/runtime境界の正本は§2.1-2.2である。
 
 - **CORE 8e/8fは各3手法FAIL後の明示resume条件待ち、PANEL 8g/8hはdone、次は8i REPO-CONSOLIDATE**: 8eはcontrolled inbox readback auth、8fはreal location input境界の独立原因が見つかるまで第4手法を禁止。8g/8hのproduction L3は各正本行を参照。repo実測でcanonical `life-manager`にwhole product/SSOTが未移行と判明したため、次の独立atomicは8i。
 - **PANEL 8gはproduction L3までdone**: 後続release `8159dbbe2`でRailway build/image/instance停止条件が解消済みであることを再測定し、追加deployなしでexact deployed sourceを使用。migrationをtransactional適用後、security/readback、Dais本人authenticated `/panel`、API=DB=独立oracle、desktop/mobile、eval 100%、fresh reviewを全てPASS。
@@ -1271,7 +1310,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 2. `AE-PUBLICATION-AUDIT-1`はdone。監査時のlive level 2はSHELTER-REPLACE-1で更新されたため、publish bundleはlive level 3 / external revenue `$0.00`へ再生成・visual QA済み。
 3. `SHELTER-REPLACE-1`はmainnet handoverとanicha PR #7までdone。`TASKMARKET-READBACK-1`もPR #1246と実launchd wake exit 0でdone。既存task `0x7c3a…cbe8`は再購入・再提出せず、公式submit txをzero-cost append-only訂正行へexactly-once reconcileした。Agent Economy build cursorはnone。
 4. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
-5. Life Manager browser trackはBROWSER-AUTH-1→MATRIX-1→RECOVERY-1→CLOUD-LOOPS-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
+5. Life Manager product trackはOSS-MERGE-1→BROWSER-AUTH-1→BROWSER-MATRIX-1→BROWSER-RECOVERY-1→LOCAL-CLOUD-PARITY-1→CLOUD-LOOPS-1→LEGACY-RETIRE-1→DEV-E2E-1→OPS-PANEL-1を順番どおり実装・実測する。Agent Economy active cursorへ混ぜず、現在loadedなMac loopは移行中に停止しない。
 6. 13c外部$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、各実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
 7. 外部着金後は既にliveのpayoutと毎時survival refillを発火し、実payout→external-income由来survival→scale→childの成果順を使う。
 8. Mac Franklin1 main loopはunloadedのまま。live Nosana job `72zCpJEZ…U2YKN`がfinal replacement codeで稼働する。21600秒の自然triggerはW5でreadbackし、Franklin2とその他の現在loadedなMac loopは移行中もrunningを維持する。
