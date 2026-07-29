@@ -154,10 +154,10 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - [x] Run Gitleaks and legacy-path scans over every added tracked file.
 - [x] Record exact commit, test counts, plist schedules, launchd exit status,
   ledger integrity, and redacted runtime receipt IDs in the spec.
-- [ ] Change backlog order 0 to `completed` only after every acceptance
+- [x] Change backlog order 0 to `completed` only after every acceptance
   criterion is evidenced.
-- [ ] Fetch, commit, push the feature branch, merge through the repository's
-  normal GitHub path, and confirm the remote canonical commit contains the
-  implementation.
-- [ ] Keep the runtime checkout and legacy rollback inputs until at least the
+- [x] Fetch, commit, push the feature branch, pass all five PR checks, merge
+  PR #1273 through the repository's normal GitHub path, and confirm remote main
+  contains the implementation.
+- [x] Retain the runtime checkout and legacy rollback inputs until at least the
   next naturally scheduled daily and inbox executions are healthy.
