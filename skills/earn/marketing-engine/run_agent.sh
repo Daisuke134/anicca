@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared provider-agnostic boundary for revenue-loop judgment work.
-# Consumers choose only a task class; provider/model routing lives in agent-runner/config.json.
+# Consumers choose only a task class; provider/model routing lives in
+# skills/agent-runner/config.example.json (or AGENT_RUNNER_CONFIG).
 set -euo pipefail
 
 TASK_CLASS=""
@@ -33,7 +34,8 @@ esac
 [ -n "$LOOP" ] || { echo "run_agent.sh: missing --loop" >&2; exit 2; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RUNNER="${AGENT_RUNNER_BIN:-$HOME/profitable-claude/skills/agent-runner/agent_runner.py}"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+RUNNER="${AGENT_RUNNER_BIN:-$REPO_ROOT/skills/agent-runner/agent_runner.py}"
 SCHEMA="${SCHEMA:-$SCRIPT_DIR/schemas/loop_pass.schema.json}"
 
 # Read and vet the caller's prompt BEFORE anything else can fail, because the

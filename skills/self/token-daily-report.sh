@@ -3,6 +3,8 @@
 # Wake → report → die (single-shot; no persistent session).
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+USAGE_REPORT="${AGENT_USAGE_REPORT_BIN:-$SCRIPT_DIR/../agent-runner/usage_report.py}"
 
 YESTERDAY=$(TZ=Asia/Tokyo date -v-1d +%Y%m%d)
 YESTERDAY_ISO=$(TZ=Asia/Tokyo date -v-1d +%F)
@@ -27,7 +29,7 @@ SUMMARY=$(echo "$JSON" | jq -r --arg day "$YESTERDAY_ISO" '
   end' 2>/dev/null)
 [ -z "$SUMMARY" ] && SUMMARY="token日報の生成に失敗(jq/ccusage要確認)"
 
-LOOP_JSON=$(python3 "$HOME/profitable-claude/bin/agent_usage_report.py" \
+LOOP_JSON=$(python3 "$USAGE_REPORT" \
   --date "$YESTERDAY_ISO" --format json 2>/dev/null || echo '{}')
 LOOP_SUMMARY=$(echo "$LOOP_JSON" | jq -r '
   if (.totals.attempts // 0) == 0 then

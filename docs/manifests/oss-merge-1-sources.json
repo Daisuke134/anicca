@@ -28,8 +28,11 @@
       "id": "profitable-claude",
       "repository": "https://github.com/Daisuke134/profitable-claude.git",
       "commit": "7f1a32897978b74013a9f09982f6179b9cc0d230",
+      "additional_commits": [
+        "fd7d82dea3b1bc62e7d232754f9a93d4db8200e6"
+      ],
       "disposition": "absorbed",
-      "scope": "The shared agent runner, context packet, token ledger, and portable fail-closed tests are vendored under skills/agent-runner.",
+      "scope": "The shared agent runner, context packet, token ledger, usage reporter, and portable fail-closed tests are vendored under skills/agent-runner.",
       "excluded": [
         "Personal provider account configuration",
         "Developer-local candidate workspace",
