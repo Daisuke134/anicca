@@ -6,6 +6,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 
 const {
+  completeLumaPostAuth,
   extractLumaCode,
   requestLumaEmailLogin,
   resolveBootstrapEnv,
@@ -270,4 +271,23 @@ test("Luma code entry uses all six measured numeric inputs even when they have n
   assert.match(calls[0], /document\.querySelectorAll\('input'\)/);
   assert.match(calls[0], /input\.inputMode === "numeric"/);
   assert.doesNotMatch(calls[0], /first\.closest\('form'\)/);
+});
+
+test("Luma post-auth completes the measured profile and passkey dialogs", async () => {
+  const evaluations = [true, true, false, false];
+  const expressions = [];
+  const sleeps = [];
+  const page = {
+    async evaluate(expression) {
+      expressions.push(expression);
+      return evaluations.shift();
+    },
+  };
+
+  await completeLumaPostAuth(page, "Life Manager", async (ms) => sleeps.push(ms));
+
+  assert.equal(expressions.length, 4);
+  assert.match(expressions[0], /placeholder="Your Name"/);
+  assert.match(expressions[1], /Not Now/);
+  assert.deepEqual(sleeps, [3_000, 3_000]);
 });
