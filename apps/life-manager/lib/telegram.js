@@ -1,10 +1,17 @@
 // lib/telegram.js — Life Manager Telegram bot helpers (raw Bot API, no SDK dependency).
 //
-// Uses LM_TELEGRAM_BOT_TOKEN — the DEDICATED Life Manager bot (created by Dais via @BotFather),
-// distinct from OpenClaw's personal @AniccaLifeBot. Webhook updates land on life-call POST /telegram.
+// The caller supplies a tenant-scoped bot token. Webhook updates land on life-call POST /telegram.
 "use strict";
 
+const { createHash } = require("node:crypto");
+
 const TG = (token) => `https://api.telegram.org/bot${token}`;
+
+function hashChatId(chatId) {
+  const value = String(chatId == null ? "" : chatId).trim();
+  if (!value) throw new Error("Telegram chat id is required");
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 async function tgCall(token, method, body) {
   try {
@@ -132,4 +139,18 @@ function startReply(chatId, base) {
   };
 }
 
-module.exports = { tgCall, sendMessage, sendPhoto, getMe, setWebhook, answerCallbackQuery, isPanelCommand, isPanelDeepLink, parseUpdate, routeCallbackData, onboardLink, startReply };
+module.exports = {
+  tgCall,
+  sendMessage,
+  sendPhoto,
+  getMe,
+  setWebhook,
+  answerCallbackQuery,
+  hashChatId,
+  isPanelCommand,
+  isPanelDeepLink,
+  parseUpdate,
+  routeCallbackData,
+  onboardLink,
+  startReply,
+};
