@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
+from .ats import evaluate_snapshot
 from .state import canonical_job_id, canonical_url, validate_transition
 
 
@@ -26,6 +27,8 @@ class SubmitIntent:
     payload_hash: str
     resume_path: str
     resume_sha256: str
+    ats_snapshot_path: str
+    ats_snapshot_sha256: str
     japan_day: str
     slot: int
 
@@ -70,6 +73,8 @@ class Ledger:
                 payload_hash TEXT NOT NULL,
                 resume_path TEXT,
                 resume_sha256 TEXT,
+                ats_snapshot_path TEXT,
+                ats_snapshot_sha256 TEXT,
                 japan_day TEXT NOT NULL,
                 slot INTEGER NOT NULL,
                 status TEXT NOT NULL,
@@ -96,6 +101,14 @@ class Ledger:
         if "resume_sha256" not in intent_columns:
             self.connection.execute(
                 "ALTER TABLE submit_intents ADD COLUMN resume_sha256 TEXT"
+            )
+        if "ats_snapshot_path" not in intent_columns:
+            self.connection.execute(
+                "ALTER TABLE submit_intents ADD COLUMN ats_snapshot_path TEXT"
+            )
+        if "ats_snapshot_sha256" not in intent_columns:
+            self.connection.execute(
+                "ALTER TABLE submit_intents ADD COLUMN ats_snapshot_sha256 TEXT"
             )
         if self.path.exists():
             os.chmod(self.path, 0o600)
@@ -228,6 +241,8 @@ class Ledger:
         *,
         resume_path: Path,
         resume_sha256: str,
+        ats_snapshot_path: Path,
+        ats_snapshot_sha256: str,
     ) -> SubmitIntent | None:
         resolved_resume = Path(resume_path).expanduser().resolve()
         if not resolved_resume.is_file():
@@ -235,7 +250,34 @@ class Ledger:
         actual_resume_sha256 = hashlib.sha256(resolved_resume.read_bytes()).hexdigest()
         if actual_resume_sha256 != resume_sha256:
             raise ValueError("resume SHA-256 does not match the selected file")
+        resolved_snapshot = Path(ats_snapshot_path).expanduser().resolve()
+        if not resolved_snapshot.is_file():
+            raise ValueError(
+                f"ATS snapshot SHA-256 cannot be verified: not a file: {resolved_snapshot}"
+            )
+        snapshot_bytes = resolved_snapshot.read_bytes()
+        actual_snapshot_sha256 = hashlib.sha256(snapshot_bytes).hexdigest()
+        if actual_snapshot_sha256 != ats_snapshot_sha256:
+            raise ValueError("ATS snapshot SHA-256 does not match the selected file")
+        try:
+            snapshot = json.loads(snapshot_bytes)
+            snapshot_evaluation = evaluate_snapshot(snapshot)
+        except (json.JSONDecodeError, ValueError) as error:
+            raise ValueError(f"ATS snapshot is invalid: {error}") from error
+        if not snapshot_evaluation["ready"]:
+            blockers = ",".join(snapshot_evaluation["blockers"])
+            raise ValueError(f"ATS snapshot is not ready: {blockers}")
+        if snapshot_evaluation["surface"] == "workday_job":
+            raise ValueError("ATS snapshot is not claim-ready: application form not open")
         with self._transaction():
+            application = self.connection.execute(
+                "SELECT canonical_url FROM applications WHERE id = ?",
+                (application_id,),
+            ).fetchone()
+            if application is None:
+                raise KeyError(application_id)
+            if canonical_url(snapshot["url"]) != str(application["canonical_url"]):
+                raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
                 "SELECT intent_id FROM submit_intents WHERE application_id = ?",
                 (application_id,),
@@ -261,6 +303,8 @@ class Ledger:
                 payload_hash=payload_hash,
                 resume_path=str(resolved_resume),
                 resume_sha256=resume_sha256,
+                ats_snapshot_path=str(resolved_snapshot),
+                ats_snapshot_sha256=ats_snapshot_sha256,
                 japan_day=japan_day,
                 slot=slot,
             )
@@ -275,8 +319,9 @@ class Ledger:
                 """
                 INSERT INTO submit_intents
                   (intent_id, application_id, fence, payload_hash, resume_path,
-                   resume_sha256, japan_day, slot, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
+                   resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+                   japan_day, slot, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
                 """,
                 (
                     intent.intent_id,
@@ -285,6 +330,8 @@ class Ledger:
                     intent.payload_hash,
                     intent.resume_path,
                     intent.resume_sha256,
+                    intent.ats_snapshot_path,
+                    intent.ats_snapshot_sha256,
                     intent.japan_day,
                     intent.slot,
                     _now(),
@@ -298,6 +345,7 @@ class Ledger:
                     "fence": intent.fence,
                     "payload_hash": payload_hash,
                     "resume_sha256": resume_sha256,
+                    "ats_snapshot_sha256": ats_snapshot_sha256,
                 },
             )
             return intent

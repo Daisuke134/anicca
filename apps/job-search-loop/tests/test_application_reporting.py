@@ -84,12 +84,42 @@ print(json.dumps({"messageId": "901"}))
             )
             ledger.transition(application_id, "qualified")
             ledger.transition(application_id, "materials_ready")
+            ats_snapshot = root / "ats-snapshot.json"
+            ats_snapshot.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "url": "https://jobs.example/dream",
+                        "navigation_committed": True,
+                        "frames": [
+                            {
+                                "url": "https://jobs.example/dream",
+                                "controls": [
+                                    {"tag": "input", "type": "email"},
+                                    {"tag": "input", "type": "file"},
+                                    {
+                                        "tag": "button",
+                                        "type": "submit",
+                                        "text": "Submit Application",
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            ats_snapshot_sha256 = hashlib.sha256(
+                ats_snapshot.read_bytes()
+            ).hexdigest()
             intent = ledger.claim_submission(
                 application_id,
                 "2026-07-29",
                 "payload",
                 resume_path=resume,
                 resume_sha256=resume_sha256,
+                ats_snapshot_path=ats_snapshot,
+                ats_snapshot_sha256=ats_snapshot_sha256,
             )
             ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
             ledger.close()

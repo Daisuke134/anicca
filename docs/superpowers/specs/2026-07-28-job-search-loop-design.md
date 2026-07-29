@@ -224,10 +224,12 @@ A visible CAPTCHA or identity challenge still follows the existing fail-closed
 policy.
 
 Ashby readiness requires the main-frame application controls, including email,
-resume upload, and `Submit Application`. Workday readiness accepts either a job
-surface with an `Apply` control or the post-click application surface. A committed
-page with no recognized surface remains `not_submitted`; a click with ambiguous
-outcome remains `submit_unknown`.
+resume upload, and `Submit Application`. Workday navigation readiness accepts either
+a job surface with an `Apply` control or the post-click application surface, but
+`workday_job` is not claim-ready: the executor must click the ordinary Apply
+navigation control and recapture the application form first. A committed page with
+no recognized surface remains `not_submitted`; a click with ambiguous outcome
+remains `submit_unknown`.
 
 `JOB-ATS-RESILIENCE-10A` is complete when:
 
