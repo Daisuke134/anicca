@@ -45,9 +45,25 @@ source was recovered from the merged `anicca-products` history:
 | Secret pattern scan | 0 |
 | `git diff --check` | PASS |
 
-The production cutover and post-cutover route/ledger/downtime readbacks are
-recorded below after the canonical commit is deployed.
-
 ## Post-cutover readback
 
-Pending canonical merge and Railway source cutover.
+| Check | Result |
+|---|---|
+| Canonical PR | [#1295](https://github.com/Daisuke134/life-manager/pull/1295), exact-five security checks GREEN |
+| Merge commit | `4d5c60b93921cbb6038c91e0142980204c01e211` |
+| Railway source | `Daisuke134/life-manager` |
+| Railway trigger | `Daisuke134/life-manager`, branch `main`, trigger `1a44aa21-8f65-498b-b28c-eb75c6a47c58` |
+| Railway root/config | `services/x402-endpoint`, `/services/x402-endpoint/railway.toml` |
+| Deployment | `cee9598d-e33d-4288-8eeb-fb9117d2be31`, `SUCCESS`, exact merge commit |
+| Runtime manifest | Nixpacks, `/health`, `npx prisma generate && node src/server.js` |
+| Paid route gate | all eight POST tools and `GET /funding-rates` returned HTTP 402 without payment |
+| Public routes | `/health`, `/openapi.json`, `/settlements` returned HTTP 200 |
+| Settlement observer | three public finalized rows; external funding-rate sale tx `0x1181e8c15039a9d83fb4b9b7c047178d9a652c84fe8bb2e6eba743d9d6233779` present exactly once |
+| Life Manager ledger tests | 22/22 PASS after fresh `npm ci` |
+| Real ledger loop | existing `ai.anicca.life-manager-x402-ledger` run count 403→404, exit 0; verified sale remained exactly one row (`recorded=0`, `duplicates=1`, `chain_rejected=0`) |
+| Cutover availability | 251 consecutive `/health` samples from `2026-07-29T11:42:13Z` through `11:47:01Z`: HTTP 200 = 251, non-200 = 0 |
+| Old source dependency | Railway service source, deployment trigger, root, config, and latest deployment contain zero `anicca.ai` dependency |
+
+The source migration is complete. This proves reproducible canonical ownership
+of the already-running seller; it does not claim a new external sale occurred
+during this cutover.

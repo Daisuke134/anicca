@@ -921,21 +921,20 @@ cloud migration work does not begin until every retained loop is demonstrably
 OpenClaw-independent and running under Life Manager locally.
 
 Current Order 0 subcursor:
-`AE-X402-SOURCE-CONSOLIDATE-1`. `OSS-SECURITY-BASELINE-1` merged in PR
+`BROWSER-AUTH-1`. `OSS-SECURITY-BASELINE-1` merged in PR
 #1274 with all exact-five security checks green. `REPO-V0-RETIRE-1` then
 completed 35/35 disposition, issue transfer, redirect, archive, and
 runtime-reference-zero. Evidence:
 `docs/evidence/security/2026-07-29-oss-security-baseline.md` and
 `docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md`.
-The x402 nine-route seller is now present in canonical
-`services/x402-endpoint`; historical and canonical suites pass 68/68, the
-migration contract passes 1/1, and dependency audit is zero. Order 0 remains
-open until the canonical commit is merged and Railway source/root/commit plus
-post-cutover E2E are read back.
+The x402 nine-route seller is now canonical and deployed from merge commit
+`4d5c60b9…`: 9/9 paid gates, settlement observer, ledger regression/real loop,
+251/251 health samples, and old-source dependency zero all pass. Evidence:
+`docs/evidence/repository/2026-07-29-x402-source-consolidation.md`.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
-| 0 | Finish single-repository consolidation | **in progress** — security baseline and v0 retirement are done. The `x402-agents` code migration is GREEN in canonical, while production still points at `anicca.ai`; source cutover and post-cutover E2E are next. Browser/parity/cloud/remaining-legacy gates follow |
+| 0 | Finish single-repository consolidation | **in progress** — security baseline, v0 retirement, and canonical `x402-agents` cutover are done. Current substep is `BROWSER-AUTH-1`; parity/cloud/remaining-legacy gates follow |
 | 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
