@@ -171,6 +171,42 @@ def test_sweep_supports_collection_outside_repository(
     assert not safe.exists()
 
 
+def test_sweep_accepts_clean_worktree_recoverable_from_non_origin_remote(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    origin = tmp_path / "origin.git"
+    canonical = tmp_path / "canonical.git"
+    primary = tmp_path / "repo"
+    collection = primary / ".worktrees"
+    git(tmp_path, "init", "--bare", str(origin))
+    git(tmp_path, "init", "--bare", str(canonical))
+    git(tmp_path, "clone", str(origin), str(primary))
+    git(primary, "config", "user.email", "cleanup@example.invalid")
+    git(primary, "config", "user.name", "Cleanup Test")
+    git(primary, "checkout", "-b", "main")
+    commit_file(primary, "base.txt", "base")
+    git(primary, "push", "-u", "origin", "main")
+    git(primary, "remote", "add", "canonical", str(canonical))
+    git(primary, "push", "canonical", "main")
+
+    safe = add_worktree(primary, collection, "safe-canonical")
+    commit_file(safe, "safe.txt", "remote")
+    git(safe, "push", "-u", "canonical", "safe-canonical")
+    monkeypatch.setattr(cleanup_control, "path_open_state", lambda _path: "confirmed-closed")
+
+    result = cleanup_control.sweep_worktree_collection(
+        collection_root=collection,
+        ledger_path=tmp_path / "ledger.jsonl",
+        policy_version="cleanup-control-v1",
+        manifest_sha256="test-manifest",
+        now=1_000,
+    )
+
+    assert result["removed"] == 1
+    assert result["errors"] == 0
+    assert not safe.exists()
+
+
 def test_manifest_accepts_only_remote_recoverable_worktree_finalizer(tmp_path: Path) -> None:
     entry = {
         "id": "worktrees",

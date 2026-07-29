@@ -53,6 +53,26 @@ ALLOWED_CLASSES = PROTECTED_CLASSES | {
     REGENERABLE_OUTPUT_CLASS,
 }
 TX_RE = re.compile(r"^[0-9a-f]{32}$")
+DISCOVERABLE_OUTPUT_PROOFS = {
+    "node_modules": (
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lock",
+        "bun.lockb",
+    ),
+    ".venv": ("uv.lock", "poetry.lock", "requirements.txt", "pyproject.toml"),
+    "target": ("Cargo.lock",),
+    ".next": (
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lock",
+        "bun.lockb",
+    ),
+}
+PROTECTED_DISCOVERY_PARTS = {".claude", ".codex", ".git", "memory", "state"}
+BROWSER_CACHE_TOKENS = {"ms-playwright", "camoufox", "chromium", "chrome"}
 
 
 class ManifestError(ValueError):
@@ -336,7 +356,7 @@ def path_open_state(path: Path) -> str:
     if not executable.is_file():
         return "error"
     result = _command(str(executable), "+D", str(path), cwd=path.parent)
-    if result.returncode == 0:
+    if result.returncode == 0 or result.stdout.strip():
         return "open"
     if result.returncode == 1 and not result.stdout and not result.stderr:
         return "confirmed-closed"
@@ -386,9 +406,9 @@ def _inspect_worktree(repo: Path, path: Path, locked: bool) -> tuple[str, str, l
     if refs_result.returncode != 0:
         return "remote_state_unreadable", head, []
     refs = [
-        line.strip()
+        line.strip().removeprefix("* ")
         for line in refs_result.stdout.splitlines()
-        if line.strip().removeprefix("* ").startswith("origin/")
+        if line.strip() and " -> " not in line
     ]
     reason = worktree_reclaim_decision(
         is_current=resolved == cwd or resolved in cwd.parents,
@@ -407,6 +427,160 @@ def _du_bytes(path: Path) -> int:
     return int(result.stdout.split()[0]) * 1024
 
 
+def _regeneration_proof(path: Path) -> Path | None:
+    for name in DISCOVERABLE_OUTPUT_PROOFS.get(path.name, ()):
+        proof = path.parent / name
+        if proof.is_file() and not proof.is_symlink():
+            return proof
+    return None
+
+
+def _is_git_ignored(path: Path) -> bool:
+    result = _command(
+        "git",
+        "check-ignore",
+        "-q",
+        "--",
+        str(path),
+        cwd=path.parent,
+    )
+    return result.returncode == 0
+
+
+def discover_regenerable_outputs(roots: list[Path]) -> list[dict[str, Any]]:
+    discovered: list[dict[str, Any]] = []
+    seen: set[Path] = set()
+    for raw_root in sorted(roots, key=str):
+        root = Path(os.path.normpath(str(raw_root.expanduser())))
+        if (
+            not root.is_absolute()
+            or not root.is_dir()
+            or root.is_symlink()
+            or any(part in PROTECTED_DISCOVERY_PARTS for part in root.parts)
+        ):
+            continue
+        for directory, child_dirs, _ in os.walk(root, topdown=True, followlinks=False):
+            parent = Path(directory)
+            child_dirs[:] = sorted(
+                name
+                for name in child_dirs
+                if name not in PROTECTED_DISCOVERY_PARTS
+            )
+            for name in tuple(child_dirs):
+                if name not in DISCOVERABLE_OUTPUT_PROOFS:
+                    continue
+                candidate = parent / name
+                child_dirs.remove(name)
+                if candidate in seen or candidate.is_symlink():
+                    continue
+                proof = _regeneration_proof(candidate)
+                if proof is None or not _is_git_ignored(candidate):
+                    continue
+                seen.add(candidate)
+                digest = hashlib.sha256(str(candidate).encode("utf-8")).hexdigest()[:20]
+                discovered.append(
+                    {
+                        "id": f"discovered-build-output-{digest}",
+                        "path": str(candidate),
+                        "owner": "cleanup-discovery",
+                        "class": REGENERABLE_OUTPUT_CLASS,
+                        "ttl_seconds": None,
+                        "quota_bytes": 0,
+                        "lease": None,
+                        "finalizer": {
+                            "kind": "verified_regenerable_remove",
+                            "proof_path": str(proof),
+                        },
+                    }
+                )
+    return sorted(discovered, key=lambda item: item["path"])
+
+
+def discover_ephemeral_caches(
+    roots: list[Path],
+    *,
+    minimum_bytes: int,
+) -> list[dict[str, Any]]:
+    discovered: list[dict[str, Any]] = []
+    for raw_root in sorted(roots, key=str):
+        root = Path(os.path.normpath(str(raw_root.expanduser())))
+        if (
+            not root.is_absolute()
+            or not root.is_dir()
+            or root.is_symlink()
+            or any(part in PROTECTED_DISCOVERY_PARTS for part in root.parts)
+        ):
+            continue
+        for candidate in sorted(root.iterdir(), key=lambda item: str(item)):
+            if (
+                not candidate.is_dir()
+                or candidate.is_symlink()
+                or any(token in candidate.name.lower() for token in BROWSER_CACHE_TOKENS)
+            ):
+                continue
+            try:
+                size = _du_bytes(candidate)
+            except (OSError, ValueError):
+                continue
+            if size < minimum_bytes:
+                continue
+            digest = hashlib.sha256(str(candidate).encode("utf-8")).hexdigest()[:20]
+            discovered.append(
+                {
+                    "id": f"discovered-cache-{digest}",
+                    "path": str(candidate),
+                    "owner": "cleanup-discovery",
+                    "class": "ephemeral",
+                    "ttl_seconds": 604800,
+                    "quota_bytes": 0,
+                    "lease": None,
+                    "finalizer": {"kind": "off_volume_quarantine"},
+                }
+            )
+    return discovered
+
+
+def build_runtime_manifest(
+    *,
+    manifest_path: Path,
+    output_path: Path,
+    roots: list[Path],
+    cache_roots: list[Path],
+    minimum_cache_bytes: int,
+) -> dict[str, int | str]:
+    policy_version, _, base_entries = load_manifest(manifest_path)
+    existing_paths = {entry["path"] for entry in base_entries}
+    discovered = [
+        entry
+        for entry in [
+            *discover_regenerable_outputs(roots),
+            *discover_ephemeral_caches(
+                cache_roots,
+                minimum_bytes=max(1, int(minimum_cache_bytes)),
+            ),
+        ]
+        if entry["path"] not in existing_paths
+    ]
+    discovered.sort(key=lambda item: item["path"])
+    payload = {
+        "policy_version": policy_version,
+        "artifacts": [*base_entries, *discovered],
+    }
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output_path.with_name(f".{output_path.name}.{os.getpid()}.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temporary.chmod(0o600)
+    os.replace(temporary, output_path)
+    return {
+        "status": "ok",
+        "discovered": len(discovered),
+        "output": str(output_path),
+    }
+
+
 def sweep_worktree_collection(
     *,
     collection_root: Path,
@@ -418,7 +592,7 @@ def sweep_worktree_collection(
 ) -> dict[str, int]:
     result = {"removed": 0, "preserved": 0, "errors": 0, "bytes_removed": 0}
     repo = collection_root.parent if repository_root is None else repository_root
-    fetch = _command("git", "fetch", "--prune", "origin", cwd=repo)
+    fetch = _command("git", "fetch", "--all", "--prune", cwd=repo)
     if fetch.returncode != 0:
         event = _event_base(
             event="preserved",
@@ -978,6 +1152,16 @@ def _parser() -> argparse.ArgumentParser:
     sweep_parser.add_argument("--candidate", action="append", type=Path)
     sweep_parser.add_argument("--pressure-override", action="store_true")
     sweep_parser.add_argument("--reclaim-target-bytes", type=int, default=0)
+    runtime_manifest_parser = subcommands.add_parser("runtime-manifest")
+    runtime_manifest_parser.add_argument("--manifest", required=True, type=Path)
+    runtime_manifest_parser.add_argument("--output", required=True, type=Path)
+    runtime_manifest_parser.add_argument("--root", action="append", required=True, type=Path)
+    runtime_manifest_parser.add_argument("--cache-root", action="append", default=[], type=Path)
+    runtime_manifest_parser.add_argument(
+        "--min-cache-bytes",
+        type=int,
+        default=1073741824,
+    )
     restore_parser = subcommands.add_parser("restore")
     restore_parser.add_argument("--transaction-id", required=True)
     restore_parser.add_argument("--quarantine-root", required=True, type=Path)
@@ -999,6 +1183,24 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps(result, sort_keys=True))
         return 0 if result["status"] == "ok" and result["errors"] == 0 else 3
+    if args.command == "runtime-manifest":
+        try:
+            result = build_runtime_manifest(
+                manifest_path=args.manifest,
+                output_path=args.output,
+                roots=args.root,
+                cache_roots=args.cache_root,
+                minimum_cache_bytes=args.min_cache_bytes,
+            )
+        except ManifestError as exc:
+            result = {
+                "status": "manifest_error",
+                "discovered": 0,
+                "output": str(args.output),
+                "error": str(exc),
+            }
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result["status"] == "ok" else 3
     result = restore(
         transaction_id=args.transaction_id,
         quarantine_root=args.quarantine_root,
