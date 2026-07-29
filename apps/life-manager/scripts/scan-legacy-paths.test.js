@@ -13,9 +13,17 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const { scanLegacyPaths, ALLOWLIST, SCAN_ROOTS } = require("./scan-legacy-paths.js");
+const {
+  scanLegacyPaths,
+  verifyAllowlist,
+  ALLOWLIST,
+  SCAN_ROOTS,
+} = require("./scan-legacy-paths.js");
 
 const LEGACY_STATE_LINE = 'STATE="${HOME}/' + ".open" + 'claw/state/example"';
+const LEGACY_ANICCA_HOME_LINE = 'DIR="${HOME}/' + "anicca" + '/skills/earn/x402-sell/state"';
+const LEGACY_ANICCA_TILDE_LINE = "DIR=~/" + "anicca" + "/skills/earn/x402-sell/state";
+const LEGACY_ANICCA_OSS_LINE = 'START="${HOME}/' + "anicca" + '-oss/services/facilitator/start.sh"';
 
 function plantedRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-legacy-scan-"));
@@ -42,6 +50,28 @@ test("the scanner detects a planted legacy path reference (it is not vacuous)", 
   assert.equal(result.violations.length, 1);
   assert.equal(result.violations[0].file, path.join("src", "boot.sh"));
   assert.equal(result.violations[0].line, 2);
+});
+
+test("the scanner detects legacy anicca code-root references (HOME, tilde, oss)", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n${LEGACY_ANICCA_HOME_LINE}\n${LEGACY_ANICCA_TILDE_LINE}\n${LEGACY_ANICCA_OSS_LINE}\n`,
+  );
+  // "anicca" as a plain word, username, or product path is NOT a code root.
+  fs.writeFileSync(
+    path.join(root, "src", "benign.sh"),
+    'A="/Users/operator/anicca-project/x"\nB="run the anicca product"\n',
+  );
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => [violation.file, violation.line]),
+    [
+      [path.join("src", "boot.sh"), 2],
+      [path.join("src", "boot.sh"), 3],
+      [path.join("src", "boot.sh"), 4],
+    ],
+  );
 });
 
 test("the allowlist is pinned to exact file plus line content, not blanket files", () => {
@@ -77,8 +107,55 @@ test("the scan scope covers the runtime roots the Life Manager actually loads", 
     "skills/video/lm-distribution",
     "skills/tools/telegram-user",
     "skills/life-manager",
+    "skills/earn/marketing-engine",
     "runtime",
   ]) {
     assert.ok(SCAN_ROOTS.includes(scanRoot), `missing scan root: ${scanRoot}`);
   }
+});
+
+test("tracked pre-Order-12 allowlist entries name an owning Order and pin an exact line", () => {
+  const tracked = ALLOWLIST.filter((entry) => entry.order);
+  assert.ok(tracked.length >= 5, `expected the x402/taskmarket/payout holes to be tracked, saw ${tracked.length}`);
+  for (const entry of tracked) {
+    assert.match(entry.order, /^Order \d+$/, JSON.stringify(entry));
+    assert.ok(Number.isInteger(entry.line) && entry.line > 0, JSON.stringify(entry));
+  }
+  const trackedFiles = tracked.map((entry) => entry.file);
+  for (const expected of [
+    "apps/life-manager/scripts/x402-sale-ledger-boot.sh",
+    "apps/life-manager/scripts/taskmarket-work-ledger-boot.sh",
+    "apps/life-manager/scripts/payout-boot.sh",
+    "apps/life-manager/scripts/run-agent-payout.js",
+  ]) {
+    assert.ok(trackedFiles.includes(expected), `missing tracked allowlist file: ${expected}`);
+  }
+});
+
+test("every allowlist entry is alive: it matches a current pattern-bearing line", () => {
+  assert.deepEqual(
+    verifyAllowlist(),
+    [],
+    "stale or moved allowlist entries must be re-pinned or removed",
+  );
+});
+
+test("an allowlisted line that moves or changes fails verification", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n# moved down one line\n${LEGACY_ANICCA_OSS_LINE}\n`,
+  );
+  const allowlist = [
+    // Pinned to line 2, but the line now lives at line 3: must be reported.
+    { file: path.join("src", "boot.sh"), line: 2, lineIncludes: "START=", reason: "x", order: "Order 12" },
+    // Content no longer present anywhere: must be reported.
+    { file: path.join("src", "boot.sh"), lineIncludes: "DELETED_CONTENT=", reason: "x" },
+  ];
+  const issues = verifyAllowlist({ root, allowlist });
+  assert.equal(issues.length, 2, JSON.stringify(issues));
+  // And the scanner must NOT honor the mispinned entry: the moved line is a violation.
+  const scan = scanLegacyPaths({ root, roots: ["src"], allowlist });
+  assert.equal(scan.violations.length, 1);
+  assert.equal(scan.violations[0].line, 3);
 });

@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { resolveDataRoot } = require("./runtime-paths");
@@ -195,8 +196,43 @@ function defaultStateDir(env = process.env) {
   return path.join(resolveDataRoot(env), "state", "life-manager-dev");
 }
 
+// Named ONLY to detect unmigrated state and refuse to run (fail-loud guard);
+// the dev loop never reads the legacy store. LEGACY_DEV_STORE = ".openclaw".
+const LEGACY_DEV_STORE = ".openclaw";
+function defaultLegacyDevStateDir(env = process.env) {
+  const legacyStateRoot = String(env.LM_LEGACY_STATE_ROOT || "").trim()
+    || path.join(String(env.HOME || "").trim() || os.homedir(), LEGACY_DEV_STORE, "state");
+  return path.join(legacyStateRoot, "life-manager-dev");
+}
+
+function hasEntries(dir) {
+  try {
+    return fs.readdirSync(dir).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// F2b: silently starting with an empty state dir while the legacy dev-loop
+// state (done.jsonl dedup history) still exists would re-select completed
+// issues. Fail loudly and name the migration script instead.
+function assertLegacyDevStateMigrated(stateDir, legacyStateDir) {
+  if (!hasEntries(legacyStateDir)) return;
+  if (hasEntries(stateDir)) return;
+  throw new Error(
+    `daily-dev-loop: state dir ${stateDir} is empty but unmigrated legacy dev-loop state exists at `
+    + `${legacyStateDir}; run apps/life-manager/scripts/migrate-legacy-state.sh `
+    + "(copy-only, the legacy store stays intact) before this loop",
+  );
+}
+
 async function runDailyPass(options = {}) {
   const stateDir = options.stateDir || defaultStateDir(process.env);
+  // Guard the default path always; an explicit stateDir is guarded only when
+  // the caller also names the legacy dir (tests use temp dirs, never real HOME).
+  const legacyStateDir = options.legacyStateDir
+    ?? (options.stateDir ? null : defaultLegacyDevStateDir(process.env));
+  if (legacyStateDir) assertLegacyDevStateMigrated(stateDir, legacyStateDir);
   const command = options.command
     || path.join(__dirname, "../scripts/life-manager-dev-d0.sh");
   const timeoutMs = options.timeoutMs ?? 25 * 60 * 1000;
@@ -303,6 +339,8 @@ function summarizeSevenDays(entries) {
 module.exports = {
   acquireExclusiveLock,
   appendLedgerEntry,
+  assertLegacyDevStateMigrated,
+  defaultLegacyDevStateDir,
   defaultStateDir,
   runDailyPass,
   summarizeSevenDays,
