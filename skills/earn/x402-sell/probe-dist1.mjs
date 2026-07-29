@@ -3,13 +3,15 @@
 // endpoint with the official MCP client: tools/list, price-listing, payment-methods, and a
 // make-purchase WITHOUT payment (must forward to serve-v2, get 402, surface it gracefully).
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const SERVE_PORT = 8499;
 const MCP_PORT = 8081;
 const PAYTO = "0x3EcCAD24794ca298D25378E9902A251322ea8749"; // franklin1 (probe only)
-const DIR = "/Users/operator/anicca/skills/earn/x402-sell";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 const kids = [];
 function launch(name, file, env) {

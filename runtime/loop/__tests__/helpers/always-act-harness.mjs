@@ -13,7 +13,7 @@
 //
 // Test-Money Safety Rule (behavioral-spec.md sec5 / verification-architecture.md): every wallet used
 // here is a FRESH, randomly generated, unfunded keypair (Keypair.generate()) — never Franklin's real
-// production secret at /Users/operator/.blockrun, never any real network/RPC/x402 call. Skill execution
+// production secret at /home/life-manager/.blockrun, never any real network/RPC/x402 call. Skill execution
 // is always a mock script under a tmp ANICCA_HOME, never a real skills/*/run.sh.
 
 import { promises as fsp } from 'node:fs';

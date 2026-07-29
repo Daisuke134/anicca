@@ -1,6 +1,6 @@
 // node:test — _shared/lib/load-instance-env.sh: the ONE shared implementation of the
 // ANICCA_HOME-preservation fix (anicca-spawn-identity-resolution-fix, 2026-07-09). Every skill
-// run.sh that needs shared per-user secrets ($HOME/.hermes/.env, $HOME/.openclaw/.env) sources THIS
+// run.sh that needs shared per-user secrets ($HOME/.hermes/.env, $HOME/.local/state/life-manager/.env) sources THIS
 // file instead of hand-copying the preamble — this is the direct, root-level regression test for that
 // one implementation, independent of which caller sources it.
 import { test } from "node:test";
@@ -25,7 +25,7 @@ function runHelperAndPrintEnv(env) {
   return spawnSync("bash", ["-c", script], { env, encoding: "utf8" });
 }
 
-test("load-instance-env.sh preserves the caller's ANICCA_HOME across $HOME/.openclaw/.env sourcing", () => {
+test("load-instance-env.sh preserves the caller's ANICCA_HOME across $HOME/.local/state/life-manager/.env sourcing", () => {
   const home = tmpDir();
   const callerAniccaHome = path.join(home, ".blockrun");
   fs.mkdirSync(callerAniccaHome, { recursive: true });

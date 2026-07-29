@@ -171,14 +171,14 @@ test('impl-review iteration-3 FIND-002 fix — match-matrix simulation: applies 
 
   // Real deployed --home values (from ai.anicca.franklin-loop.plist / ai.anicca.franklin2-loop.plist,
   // as confirmed in iteration-1/2 notes.md).
-  const HOME_FRANKLIN = '/Users/operator/.blockrun';
-  const HOME_FRANKLIN2 = '/Users/operator/.franklin2-home/.blockrun';
-  const SCRIPT = 'node /Users/operator/anicca/runtime/dashboard/telemetry-post-franklin.mjs';
+  const HOME_FRANKLIN = '/home/life-manager/.blockrun';
+  const HOME_FRANKLIN2 = '/home/life-manager/.franklin2-home/.blockrun';
+  const SCRIPT = 'node __REPO_ROOT__/runtime/dashboard/telemetry-post-franklin.mjs';
   // skills/earn/sol-trade/run.sh:161's actual flagless, short-lived (`timeout 20`) one-shot
   // invocation — the argv pkill -f would actually see, ending at the identical script-path
   // substring with NO --home marker at all (FIND-001 iter3: this is the caller the now-removed
   // legacy sweep used to cross-kill on every restart).
-  const SOL_TRADE_ONE_SHOT = 'node /Users/operator/anicca/skills/earn/sol-trade/../../../runtime/dashboard/telemetry-post-franklin.mjs';
+  const SOL_TRADE_ONE_SHOT = 'node __REPO_ROOT__/skills/earn/sol-trade/../../../runtime/dashboard/telemetry-post-franklin.mjs';
 
   const argv = {
     franklin_new: `${SCRIPT} --home ${HOME_FRANKLIN}`,

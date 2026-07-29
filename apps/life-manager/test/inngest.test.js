@@ -137,8 +137,8 @@ test("sweep-wake handler fans out when LIFE_RUN_LOOPS=false — FIND-003", async
   const { makeSweepWakeHandler } = require("../inngest/functions.js");
 
   const fakeUsers = [
-    { uid: "uid-aaa", phone: "+819001111111" },
-    { uid: "uid-bbb", phone: "+819002222222" },
+    { uid: "uid-aaa", phone: "+447700900111" },
+    { uid: "uid-bbb", phone: "+447700900222" },
   ];
   const handler = makeSweepWakeHandler(
     async () => fakeUsers,
@@ -164,7 +164,7 @@ test("sweep-wake fans out ONLY { uid } not full user row — FIND-004", async ()
   const { makeSweepWakeHandler } = require("../inngest/functions.js");
 
   const fakeUsers = [
-    { uid: "uid-pii-1", phone: "+819001234567", home_address: "secret address", access_token: "tok123" },
+    { uid: "uid-pii-1", phone: "+447700900333", home_address: "secret address", access_token: "tok123" },
   ];
   const handler = makeSweepWakeHandler(
     async () => fakeUsers,
@@ -186,7 +186,7 @@ test("sweep-travel fans out ONLY { uid } — FIND-004", async () => {
   const { makeSweepTravelHandler } = require("../inngest/functions.js");
 
   const fakeUsers = [
-    { uid: "uid-pii-2", phone: "+819009999999", home_address: "private" },
+    { uid: "uid-pii-2", phone: "+447700900444", home_address: "private" },
   ];
   const handler = makeSweepTravelHandler(
     async () => fakeUsers,
@@ -204,7 +204,7 @@ test("sweep-ask fans out ONLY { uid } — FIND-004", async () => {
   const { makeSweepAskHandler } = require("../inngest/functions.js");
 
   const fakeUsers = [
-    { uid: "uid-pii-3", phone: "+819001112222" },
+    { uid: "uid-pii-3", phone: "+447700900555" },
   ];
   const handler = makeSweepAskHandler(
     async () => fakeUsers,

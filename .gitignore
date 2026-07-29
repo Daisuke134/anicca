@@ -38,6 +38,13 @@ skills/*/pdfs/
 skills/*/queue/
 skills/*/state/
 skills/*/*/state/
+skills/*/*/logs/
+skills/*/*/reviews/*/output/
+skills/*/*/evidence/**/*.log
+skills/*/*/evidence/**/promotion_verdict.json
+skills/*/*/evidence/**/pytest_output*.txt
+skills/*/*/evidence/**/real_run_*
+skills/*/*/evidence/**/observe_ledger_summary.json
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 skills/*/state/wallet.encrypted
 skills/earn/polymarket-trade/*.log
@@ -69,3 +76,5 @@ skills/earn/bounty/state/superteam-creds.json
 *.creds.json
 skills/earn/bounty/state/frantic-creds.json
 /taskmarket-deliveries/
+# Per-account Capafy listing artwork; generated outside the OSS runtime.
+skills/capafy-autopublish/assets/

@@ -34,16 +34,25 @@ import json
 import os
 import sys
 import urllib.request
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LEDGER = os.path.join(HERE, "state", "capafy-earn-ledger.jsonl")
-CONFIG = os.path.expanduser(
-    "~/.openclaw/skills/capafy-autopublish/vendor/capafy-publisher/config.json"
+STATE_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_STATE_HOME",
+    Path.home() / ".local/state/life-manager",
+)).expanduser()
+LEDGER = str(STATE_HOME / "state/capafy-earn-ledger.jsonl")
+CONFIG = os.environ.get(
+    "CAPAFY_PUBLISHER_CONFIG",
+    str(STATE_HOME / "credentials/capafy-publisher.json"),
 )
 API = "https://api.capafy.ai"
 
 
 def _token() -> str:
+    token = os.environ.get("CAPAFY_ACCESS_TOKEN") or os.environ.get("CAPAFY_TOKEN")
+    if token:
+        return token
     try:
         return json.load(open(CONFIG)).get("access_token", "") or ""
     except Exception:

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # VSDD oracle for akt-treasury.sh. STATIC invariants + BEHAVIORAL runs against a fake `akash` CLI that models the REAL
 # settlement TRAPS the live run exposed:
 #  (a) EPOCH DELAY — an executed mint credits uact only AFTER several polls (not instantly); so the poll LOOP must
@@ -7,7 +10,7 @@
 #      canceled record); fenced by the STATIC `absent "records[-1]"` check below, not a runtime fake branch.
 # A CANCELED mint never credits uact. Exit 0=PASS.
 set -uo pipefail
-D="/Users/operator/anicca/skills/self/spawn/scripts"; S="$D/akt-treasury.sh"
+D="$LIFE_MANAGER_REPO/skills/self/spawn/scripts"; S="$D/akt-treasury.sh"
 src="$(sed 's/#.*//' "$S")"; fails=0
 have(){   grep -qE "$1" <<<"$src" || { echo "  - FAIL missing [$1] — $2"; fails=$((fails+1)); }; }
 absent(){ grep -qE "$1" <<<"$src" && { echo "  - FAIL present [$1] — $2"; fails=$((fails+1)); }; true; }

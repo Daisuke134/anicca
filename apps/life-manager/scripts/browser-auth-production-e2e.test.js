@@ -11,7 +11,7 @@ const REQUIRED_ENV = {
   BROWSER_AUTH_PRODUCTION_ORIGIN: 'https://app.example.test',
   BROWSER_AUTH_TENANT_A_UID: 'tenant-a',
   BROWSER_AUTH_TENANT_B_UID: 'tenant-b',
-  LM_BROWSER_SESSION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+  LM_BROWSER_SESSION_KEY: Buffer.alloc(32, 7).toString("hex"),
   LM_FEEDBACK_DATABASE_URL: 'postgresql://user:password@db.example.test/life_manager',
   LM_TELEGRAM_BOT_TOKEN: 'telegram-bot-token-secret',
   BROWSER_AUTH_TELEGRAM_CHAT_ID: '12345',

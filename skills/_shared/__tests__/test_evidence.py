@@ -16,7 +16,7 @@ from lib.lessons import validate_evidence_id  # FAIL until 2b
         ("https://coconala.com/mypage/messages/abc-123-def", "url"),
         ("CN_PAYOUT_2026_07_01_98765", "payout_id"),
         ("STRIPE_po_3ABCDEF", "payout_id"),
-        ("/Users/operator/gig/screenshots/2026-07-01-evidence.png", "file"),
+        ("/home/life-manager/gig/screenshots/2026-07-01-evidence.png", "file"),
         ("/var/log/something.log", "file"),
     ],
 )

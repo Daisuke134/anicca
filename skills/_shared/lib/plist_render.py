@@ -8,10 +8,11 @@ from __future__ import annotations
 import hashlib
 import re
 import sys
+from pathlib import Path
 from typing import Optional
 
-# REQ-A2 pin (FIND-001 fix): the OSS framework repo, NOT anicca-project.
-CANONICAL_ANICCA_HOME = "/Users/operator/anicca"
+# REQ-A2: resolve the checked-out OSS framework repo, independent of username or install path.
+CANONICAL_ANICCA_HOME = str(Path(__file__).resolve().parents[3])
 
 _SLOT_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
 

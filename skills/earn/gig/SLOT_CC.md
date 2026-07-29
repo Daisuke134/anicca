@@ -35,9 +35,9 @@ Improve step cadence: `strategy.improve_cadence_passes` (default 4 = every ~4h).
 
 ## How to run / register
 ```bash
-bash ~/anicca/skills/earn/gig/gig-cli.sh          # start the core (idempotent)
+bash $LIFE_MANAGER_REPO/skills/earn/gig/gig-cli.sh          # start the core (idempotent)
 cp launchd/*.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/ai.anicca.gig-*.plist
-bash ~/anicca/skills/earn/gig/monitor.sh          # status
+bash $LIFE_MANAGER_REPO/skills/earn/gig/monitor.sh          # status
 ```
 
 ## Verification status (Coconala loop)

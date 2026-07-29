@@ -10,7 +10,7 @@
 // Nothing is hardcoded to one country: events are seeded in UTC (Google displays them in the user's
 // own zone) and the home address is read from the user's lm_users row.
 //
-// Run: node scripts/e2e-ask.js   (env from ~/.openclaw/.env must be exported)
+// Run: node scripts/e2e-ask.js   (env from ~/.local/state/life-manager/.env must be exported)
 "use strict";
 const { agentResolveLocation, agentMatchReply } = require("../lib/ask.js");
 

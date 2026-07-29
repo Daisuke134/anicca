@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // REQ-307's own "wake-cycle scheduler's real identity" correction (sprint-2, contract-review round 2,
-// resolves FIND-004): the real body ~/anicca/skills/self/spawn/run.sh's production wrapper invokes on
+// resolves FIND-004): the real body __REPO_ROOT__/skills/self/spawn/run.sh's production wrapper invokes on
 // every wake. Reads real, freshly-computed colony state and calls decideColonySpawn() (REQ-102,
 // ../lib/treasury-gate.mjs) then, only if eligible:true, calls executeSpawnAttempt() (REQ-307,
 // ../lib/spawn-orchestrator.mjs) -- replacing run.sh's OLD lib/spawn-decision.js-based gate and

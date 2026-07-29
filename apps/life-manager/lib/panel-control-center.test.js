@@ -10,7 +10,7 @@ const { handlePanelApiRequest, composioCalendarDisconnect, composioCalendarStart
 
 function fixtureStore() {
   const users = new Map([
-    ["u-a", { uid: "u-a", name: "Aiko", telegram_chat_id: "101", phone: "+81000000001", call_language: "ja", wake_policy: "travel-only", calendar_provider: "composio_gcal", gmail_account_id: null, payout_destination: null }],
+    ["u-a", { uid: "u-a", name: "Aiko", telegram_chat_id: "101", phone: "+447700900101", call_language: "ja", wake_policy: "travel-only", calendar_provider: "composio_gcal", gmail_account_id: null, payout_destination: null }],
     ["u-b", { uid: "u-b", name: "Ben", telegram_chat_id: "202", phone: null, call_language: "en", wake_policy: "all-events", calendar_provider: null, gmail_account_id: "stale", payout_destination: { type: "wallet" } }],
   ]);
   const preferences = new Map([

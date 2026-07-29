@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # clip_daily.sh — CLEAN HONEST daily clip poster (v44). No LLM LEARN/MEASURE/REFLECT (fabrication source removed).
 # Reflexion: Actor = producer.sh + run.sh, Evaluator = clip-metrics, Self-Reflection = reflection.jsonl).
 # Each judgment step is a separate bounded shared-runner call with a short focused prompt
@@ -7,7 +10,7 @@
 # ~/clips/{reflection.jsonl,playbook.json,clip-metrics.jsonl}.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-C="$HOME/anicca/skills/earn/clip"
+C="$LIFE_MANAGER_REPO/skills/earn/clip"
 MARKETING_ENGINE_DIR="$C/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
@@ -22,11 +25,11 @@ log(){ echo "$(date '+%F %T') clip_daily: $*" >&2; }
 
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
-  local out="$HOME/.openclaw/logs/clip-step-last.out"
-  local evidence="$HOME/.openclaw/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
-  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" | \
+  local out="$HOME/.local/state/life-manager/logs/clip-step-last.out"
+  local evidence="$HOME/.local/state/life-manager/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
+  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" | \
     "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" --loop clip \
-      >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+      >"$out" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"

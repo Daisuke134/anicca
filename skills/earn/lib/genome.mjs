@@ -19,8 +19,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Canonical baseline lives IN the OSS repo itself (`~/anicca/skills/earn/baseline-genome.json`),
-// propagated to every instance body by the EXISTING daemon rsync (`~/anicca/skills -> body`,
+// Canonical baseline lives IN the OSS repo itself (`__REPO_ROOT__/skills/earn/baseline-genome.json`),
+// propagated to every instance body by the EXISTING daemon rsync (`__REPO_ROOT__/skills -> body`,
 // spec §2.4) — no new propagation wiring needed here.
 export const CANONICAL_BASELINE_PATH = path.join(__dirname, "..", "baseline-genome.json");
 

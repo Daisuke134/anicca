@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # VSDD oracle for founder-loop.sh (G1.1-B). One no-human wake: STATE-restore → record-earn (the ONLY ledger writer)
 # → goal-check on the REAL ledger → atomic STATE.md. Fences INV-H1..6.
 set -uo pipefail
-H="/Users/operator/anicca/skills/self/founder-loop/founder-loop.sh"
+H="$LIFE_MANAGER_REPO/skills/self/founder-loop/founder-loop.sh"
 FW="0x810f6d61f7606deee2657d3083e150a222bc29c5"
 EXT="0x1111111111111111111111111111111111111111"
 A3="0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"

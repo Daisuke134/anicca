@@ -54,7 +54,7 @@ find_promote_tab() { # find_promote_tab <port> -> prints tab id (empty if truly 
   # Relaunch here instead (idempotent: launch_promote_browser.py no-ops if the port is already
   # bound) and retry once after it boots + restores the persisted login session.
   if ! curl -sS --max-time 3 "http://localhost:$port/json/version" >/dev/null 2>&1; then
-    nohup /Users/operator/.openclaw/skills/_shared/venv-cloak/bin/python3 \
+    nohup $LIFE_MANAGER_REPO/skills/_shared/venv-cloak/bin/python3 \
       "$HOME/.claude/skills/promote-fun-login/scripts/launch_promote_browser.py" \
       >/tmp/promote-browser.log 2>&1 &
     disown

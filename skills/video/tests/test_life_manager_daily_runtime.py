@@ -29,7 +29,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
             data["ProgramArguments"],
             [
                 "/bin/bash",
-                "/Users/operator/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh",
+                "/home/life-manager/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh",
             ],
         )
         self.assertEqual(data["StartCalendarInterval"], {"Hour": 10, "Minute": 15})

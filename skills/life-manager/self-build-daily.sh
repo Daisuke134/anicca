@@ -42,22 +42,25 @@ REPO_ROOT="${LM_SELFBUILD_REPO:-$(cd "$HERE/../.." && pwd)}"
 APP_DIR="$REPO_ROOT/apps/life-manager"
 NODE_BIN="${NODE_BIN:-$(command -v node || echo /opt/homebrew/bin/node)}"
 DAILY_CLI="$APP_DIR/scripts/self-build-daily.js"
-LOG="${LM_SELFBUILD_LOG:-$HOME/.openclaw/logs/life-manager-self-build.log}"
-TG_TARGET="${LM_SELFBUILD_TELEGRAM_TARGET:-0000000000}"
-LEDGER="${LM_SELFBUILD_LEDGER:-$HOME/.life-manager/state/self-build-days.jsonl}"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+ENV_FILE="${LIFE_MANAGER_ENV_FILE:-$LIFE_MANAGER_STATE_HOME/.env}"
+LOG="${LM_SELFBUILD_LOG:-$LIFE_MANAGER_STATE_HOME/logs/life-manager-self-build.log}"
+LEDGER="${LM_SELFBUILD_LEDGER:-$LIFE_MANAGER_STATE_HOME/state/self-build-days.jsonl}"
 mkdir -p "$(dirname "$LOG")"
 printf '=== life-manager self-build run %s (TZ=%s) ===\n' "$(date '+%F %T %Z')" "$TZ" >>"$LOG"
 
 # Credentials for gh / railway / the reviewer CLI live here. `set +u` because a launchd environment
 # is not an interactive one and a dotenv file is allowed to reference unset variables.
-if [ -f "$HOME/.openclaw/.env" ]; then
+if [ -f "$ENV_FILE" ]; then
   set +u
   set -a
   # shellcheck disable=SC1091
-  . "$HOME/.openclaw/.env"
+  . "$ENV_FILE"
   set +a
   set -u
 fi
+
+TG_TARGET="${LM_SELFBUILD_TELEGRAM_TARGET:?LM_SELFBUILD_TELEGRAM_TARGET is required}"
 
 if [ ! -d "$APP_DIR/node_modules/pg" ]; then
   (cd "$APP_DIR" && npm ci --silent) >>"$LOG" 2>&1 || printf 'dependency install failed\n' >>"$LOG"
@@ -79,7 +82,7 @@ printf '%s\n' "$RESULT" >>"$LOG"
 # run, that IS the report — loudly — because a pass that cannot point at its own appended row has
 # not proven a day happened, whatever it printed.
 # shellcheck disable=SC2016  # the ${...} below are JS template literals, deliberately unexpanded
-REPORT="$(LEDGER="$LEDGER" RC="$RC" "$NODE_BIN" -e '
+REPORT="$(LEDGER="$LEDGER" LOG_PATH="$LOG" RC="$RC" "$NODE_BIN" -e '
 const fs = require("node:fs");
 const ledger = String(process.env.LEDGER || "");
 let line = "";
@@ -94,7 +97,7 @@ if (!row || typeof row !== "object" || !row.day) {
   process.stdout.write(
     `⚠️ Life Manager self-build: NO LEDGER ROW. The daily pass exited ${process.env.RC} but the last`
     + ` line of ${ledger} is not a readable day row, so no day was proven and nothing can be`
-    + ` reported about what the guard did. Check ~/.openclaw/logs/life-manager-self-build.log and`
+    + ` reported about what the guard did. Check ${process.env.LOG_PATH || "the configured log"} and`
     + ` the dev-guard ledger by hand.`,
   );
 } else {
@@ -146,7 +149,7 @@ openclaw message send --channel telegram --target "$TG_TARGET" \
 
 printf '=== life-manager self-build done rc=%s %s ===\n' "$RC" "$(date '+%F %T %Z')" >>"$LOG"
 if [ "$RC" -eq 0 ]; then
-  mkdir -p "$HOME/.openclaw/state"
-  touch "$HOME/.openclaw/state/.life-manager-self-build-last-pass"
+  mkdir -p "$LIFE_MANAGER_STATE_HOME/state"
+  touch "$LIFE_MANAGER_STATE_HOME/state/.life-manager-self-build-last-pass"
 fi
 exit "$RC"

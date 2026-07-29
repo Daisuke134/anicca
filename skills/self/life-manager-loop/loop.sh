@@ -7,8 +7,8 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIR="${LM_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
-set -a; . ~/.openclaw/.env 2>/dev/null; set +a
-REQ="${LM_REQ:-$HOME/.openclaw/state/life-manager-loop-selfheal-request.json}"
+set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
+REQ="${LM_REQ:-$HOME/.local/state/life-manager/state/life-manager-loop-selfheal-request.json}"
 fetch(){ local name="$1" url="$2"; shift 2
   if [ "${LM_TEST:-}" = "1" ] && [ -n "${LM_FIXTURE:-}" ]; then cat "$LM_FIXTURE/$name.json" 2>/dev/null || echo '{}'; return 0; fi
   curl -s --max-time 20 "$@" "$url" 2>/dev/null; }
@@ -68,4 +68,4 @@ echo "[life-manager-loop] MRR=\$$LM_MRR | heal=${HEAL:-none} | $STATUS"
 # The healthcheck contract is "liveness + stuck-detection only" (revenue truth = verify-loops.sh), so
 # liveness must mean "the loop executed its measurable core this pass", NOT "an open-ended money task
 # fully completed". Skip under test mode so the real prod heartbeat is never touched by test-loop.sh.
-[ "${LM_TEST:-}" = "1" ] || { mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.life-manager-loop-last-pass" 2>/dev/null; } || true
+[ "${LM_TEST:-}" = "1" ] || { mkdir -p "$HOME/.local/state/life-manager/state" && touch "$HOME/.local/state/life-manager/state/.life-manager-loop-last-pass" 2>/dev/null; } || true

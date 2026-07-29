@@ -50,7 +50,7 @@ RESULT="${3:-unknown}"
 EARNED="${4:-0}"
 EVIDENCE_URL="${5:-none}"
 
-LOG="$HOME/.openclaw/logs/loop-report.log"
+LOG="$HOME/.local/state/life-manager/logs/loop-report.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null
 
 # REQ-LV-003: evidence gate — an empty or bare-"none" evidence_url is rejected before anything is
@@ -60,10 +60,10 @@ if ! lr_valid_evidence "$EVIDENCE_URL"; then
   exit 1
 fi
 
-# REQ-LV-001: self-resolve AGENTMAIL_API_KEY from ~/.openclaw/.env before deciding NO-OP (the
+# REQ-LV-001: self-resolve AGENTMAIL_API_KEY from $HOME/.local/state/life-manager/.env before deciding NO-OP (the
 # caller is no longer required to have pre-sourced it).
-if [ -z "${AGENTMAIL_API_KEY:-}" ] && [ -f "$HOME/.openclaw/.env" ]; then
-  set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+if [ -z "${AGENTMAIL_API_KEY:-}" ] && [ -f "$HOME/.local/state/life-manager/.env" ]; then
+  set -a; . "$HOME/.local/state/life-manager/.env" 2>/dev/null || true; set +a
 fi
 
 # Credential not given, even after self-resolve -> silently no-op (Dais: do not report if not
@@ -73,7 +73,7 @@ if [ -z "${AGENTMAIL_API_KEY:-}" ]; then
   exit 0
 fi
 
-TO_ADDR="${LOOP_REPORT_TO:-redacted@example.invalid}"
+TO_ADDR="${LOOP_REPORT_TO:?LOOP_REPORT_TO is required}"
 SUBJECT="Anicca loop report: $LOOP_NAME"
 BODY="LOOP $LOOP_NAME
 DID $DID

@@ -279,9 +279,9 @@ test("calendar completion hook also runs on immediate /start or text resume", as
 });
 
 test("normalizePhone: valid forms", () => {
-  assert.equal(normalizePhone("+818012345678"), "+818012345678");
+  assert.equal(normalizePhone("+44 7700 900123"), "+447700900123");
   assert.equal(normalizePhone("08012345678"), "+8012345678");
-  assert.equal(normalizePhone("+1 (415) 555-2671"), "+14155552671");
+  assert.equal(normalizePhone("+44 (20) 7946-0958"), "+442079460958");
 });
 test("normalizePhone: junk → null", () => {
   assert.equal(normalizePhone("hello"), null);

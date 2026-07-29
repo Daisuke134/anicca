@@ -12,7 +12,7 @@ USAGE
 
 If the account needs NO phone verification (1st/2nd channel), Phase A creates the channel directly.
 
-LEARNINGS baked in (run→learn→fix, 2026-06-29, on redacted@example.invalid):
+LEARNINGS baked in from a real configured Google account:
   • Logged out → YouTube bounces to accounts.google.com; 2FA = "tap Yes on phone" (human, once).
     We detect this and report NOT_SIGNED_IN rather than failing silently.
   • 3rd+ channel pops "上級者向け機能を利用する" → 認証 → youtube.com/verify (phone, 1 number = 2/yr).

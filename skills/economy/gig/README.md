@@ -238,7 +238,7 @@ Franklin's own MCP loader (`@blockrun/franklin`, `dist/mcp/config.js`) reads
 `~/.blockrun/mcp.json`'s `"mcpServers"` map at startup — add this entry (do not edit the live file from
 this worktree; this is the exact snippet to apply, AFTER the gig subsystem has been deployed to
 `~/.blockrun/skills/economy/gig/` per WITNESS-RUNBOOK.md — the path here must point at that deployed
-copy, not this worktree or the un-populated main `~/anicca` checkout):
+copy, not this worktree or the un-populated main `the canonical checkout` checkout):
 
 ```json
 {
@@ -246,12 +246,12 @@ copy, not this worktree or the un-populated main `~/anicca` checkout):
     "anicca-gig": {
       "transport": "stdio",
       "command": "/opt/homebrew/bin/node",
-      "args": ["/Users/operator/.blockrun/skills/economy/gig/mcp-server.mjs"],
+      "args": ["/home/life-manager/.blockrun/skills/economy/gig/mcp-server.mjs"],
       "env": {
         "GIG_ESCROW_ADDRESS": "0x...",
         "GIG_ESCROW_PRIVATE_KEY": "0x...",
         "GIG_FACILITATOR_URL": "http://127.0.0.1:8405",
-        "GIG_STATE_PATH": "/Users/operator/.anicca-signing/gig-board/state/gigs.json",
+        "GIG_STATE_PATH": "/home/life-manager/.anicca-signing/gig-board/state/gigs.json",
         "GIG_CHAIN": "base-sepolia"
       }
     }

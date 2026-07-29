@@ -4,7 +4,7 @@
 # and that probe must live inside the clip_pass.sh concurrency guard.
 #
 # T resolves via `git rev-parse --show-toplevel` (worktree-relative, matching this test dir's
-# own sibling tests' DIR convention) rather than a hardcoded $HOME/anicca — a hardcoded absolute
+# own sibling tests' DIR convention) rather than a hardcoded $LIFE_MANAGER_REPO — a hardcoded absolute
 # path would test the PRIMARY checkout's copy of the script, not the one this branch/worktree
 # actually edits, giving a false PASS/FAIL unrelated to this change.
 set -u

@@ -12,10 +12,10 @@ import { execFileSync } from "node:child_process";
 import { CITIZENS_REGISTRY_PATH, COORDINATOR_HOME } from "../registry-path.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// skills/self/spawn/lib/__tests__ -> up 4 levels -> the ~/anicca repo root
+// skills/self/spawn/lib/__tests__ -> up 4 levels -> the the canonical checkout repo root
 const REPO_ROOT = path.resolve(__dirname, "../../../../..");
 
-test("PROP-105k structural: CITIZENS_REGISTRY_PATH resolves outside the ~/anicca git working tree", () => {
+test("PROP-105k structural: CITIZENS_REGISTRY_PATH resolves outside the the canonical checkout git working tree", () => {
   assert.ok(
     !CITIZENS_REGISTRY_PATH.startsWith(REPO_ROOT + path.sep),
     `CITIZENS_REGISTRY_PATH (${CITIZENS_REGISTRY_PATH}) must not live inside the git working tree (${REPO_ROOT})`
@@ -46,7 +46,7 @@ test("PROP-105m Tier 2 (live, no mock): COORDINATOR_HOME genuinely tracks the re
   }
 });
 
-test("PROP-105k Tier 2 (live, no mock, scoped to worktree add|remove — see sprint-1 report for the git-checkout/pull scope note): a real `git worktree add`/`git worktree remove` cycle on ~/anicca leaves a fixture record in the durable registry byte-identical", () => {
+test("PROP-105k Tier 2 (live, no mock, scoped to worktree add|remove — see sprint-1 report for the git-checkout/pull scope note): a real `git worktree add`/`git worktree remove` cycle on the canonical checkout leaves a fixture record in the durable registry byte-identical", () => {
   const dir = path.dirname(CITIZENS_REGISTRY_PATH);
   fs.mkdirSync(dir, { recursive: true });
   const fixtureContent = JSON.stringify([{ id: "sprint1-red-phase-fixture-" + Date.now() }]);

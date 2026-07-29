@@ -246,7 +246,7 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
 
 # ---- IO ----
 def get_location():
-    """Read latest Telegram Live Location fix from ~/.openclaw/state/location/<user_id>.json.
+    """Read latest Telegram Live Location fix from ~/.local/state/life-manager/state/location/<user_id>.json.
 
     Bot writes one file per user (key = telegram user id). If multiple files exist
     we take the freshest. None = no Live Location sharing active → upstream calls
@@ -412,7 +412,7 @@ def place_lateness_call(ctx):
 
     Source of the dial-out endpoint:
       1. ANICCA_PHONE_DIALOUT_URL env var (preferred — set by launchd / cron config)
-      2. ~/.openclaw/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
+      2. ~/.local/state/life-manager/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
       3. http://127.0.0.1:7860/dialout (local default during dev)
     """
     # Pre-flight: skip a doomed call (Twilio robotic "application error") when Gemini Live is down.
@@ -454,7 +454,9 @@ def _build_anicca_voice_prompt(ctx: str, name: str) -> str:
     """
     base_dir = Path.home() / ".openclaw" / "state" / "location"  # GPS
     guide_dir = Path.home() / ".openclaw" / "state" / "guide"    # itinerary (separated 2026-06-09)
-    uid = os.environ.get("DAIS_TELEGRAM_USER_ID", "0000000000")
+    uid = os.environ.get("LIFE_MANAGER_TELEGRAM_USER_ID") or os.environ.get("DAIS_TELEGRAM_USER_ID")
+    if not uid:
+        raise RuntimeError("LIFE_MANAGER_TELEGRAM_USER_ID is required")
     parts = [
         f"你 は アニッチャ、 {name}さん の 男友達。 電話 中。",
         "声 = 落ち着いた 男 (Charon)。 1ターン 1-2文 だけ。",

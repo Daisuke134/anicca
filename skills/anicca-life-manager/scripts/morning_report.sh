@@ -7,7 +7,7 @@
 # sequence has fully run).
 
 set -uo pipefail
-ANICCA_HOME="${ANICCA_HOME:-$HOME/.openclaw}"
+ANICCA_HOME="${ANICCA_HOME:-${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}}"
 RUN_LOG="$ANICCA_HOME/skills/anicca-life-manager/state/run.log"
 set -a; source "$ANICCA_HOME/.env" 2>/dev/null; set +a
 

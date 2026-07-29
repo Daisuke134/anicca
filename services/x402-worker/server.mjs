@@ -134,7 +134,7 @@ const server = http.createServer(async (req, res) => {
         title: "anicca-x402 paid echo",
         version: "1.0.0",
         description: "Pay 0.001 USDC on Base (EIP-3009) to receive a signed 200. Inbound agent-economy endpoint operated by Anicca.",
-        contact: { email: "redacted@example.invalid" },
+        contact: { email: process.env.LIFE_MANAGER_CONTACT_EMAIL || "contact@aniccaai.com" },
       },
       servers: [{ url: url.origin }],
       paths: {

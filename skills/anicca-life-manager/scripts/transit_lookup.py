@@ -2,7 +2,7 @@
 """transit_lookup — geocode destination + transitous /api/v2/plan = itinerary.
 
 Used by realtime_guide and lateness_check. Works identically in:
-  - Anicca local (= mac mini, ~/.openclaw, this script invoked direct)
+  - Anicca local (= mac mini, ~/.local/state/life-manager, this script invoked direct)
   - Anicca cloud (= Daytona sandbox per paying user, same script in $ANICCA_HOME)
 
 BP cite:
@@ -61,7 +61,7 @@ def _firecrawl_search_address(query: str, *, key: str) -> str | None:
     or None if nothing matches. Pattern: optional 〒xxx-xxxx + 都道府県 + suffix.
 
     Works in BOTH:
-      - LOCAL  (mac mini): same FIRECRAWL_API_KEY in ~/.openclaw/.env
+      - LOCAL  (mac mini): same FIRECRAWL_API_KEY in ~/.local/state/life-manager/.env
       - CLOUD  (Daytona sandbox per user): same env, no CLI dependency
     """
     url = "https://api.firecrawl.dev/v1/search"

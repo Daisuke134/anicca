@@ -104,6 +104,26 @@ test("active local-source paths and generated runtime copies fail without echoin
   const root = createFixture();
   const privateLiteral = "/Users/example/private-source-with-token-shaped-value";
   write(root, "apps/life-manager/private.js", `export const source = "${privateLiteral}";\n`);
+  write(
+    root,
+    "apps/life-manager/legacy.js",
+    'export const source = "$HOME/anicca/skills/legacy-runner.js";\n',
+  );
+  write(
+    root,
+    "apps/life-manager/fixed.js",
+    'export const source = "/opt/life-manager/skills/fixed-runner.js";\n',
+  );
+  write(
+    root,
+    "runtime/wrapped.sh",
+    'REPO="${LIFE_MANAGER_REPO:-$HOME/anicca}"\n',
+  );
+  write(
+    root,
+    "runtime/fixed-env.sh",
+    'REPO="${LIFE_MANAGER_REPO:-/opt/life-manager}"\n',
+  );
   write(root, "apps/life-manager/state/session.json", '{"runtime":true}\n');
   git(root, "add", ".");
 
@@ -113,12 +133,40 @@ test("active local-source paths and generated runtime copies fail without echoin
   assert.deepEqual(
     result.payload.violations.map(({ code, path }) => [code, path]),
     [
+      ["forbidden_source_root", "apps/life-manager/fixed.js"],
+      ["forbidden_source_root", "apps/life-manager/legacy.js"],
       ["forbidden_source_root", "apps/life-manager/private.js"],
       ["runtime_copy", "apps/life-manager/state/session.json"],
+      ["forbidden_source_root", "runtime/fixed-env.sh"],
+      ["forbidden_source_root", "runtime/wrapped.sh"],
     ],
   );
   assert.equal(result.stdout.includes(privateLiteral), false);
   assert.equal(result.stderr.includes(privateLiteral), false);
+});
+
+test("personal mail and messaging destinations fail closed without echoing their values", () => {
+  const root = createFixture();
+  const privateMail = "owner.person+alerts" + "@gmail.com";
+  const privateChat = ["12345", "6789"].join("");
+  write(
+    root,
+    "runtime/personal-defaults.sh",
+    `MAIL_TO="${privateMail}"\nopenclaw message send --target ${privateChat} --message ok\n`,
+  );
+  git(root, "add", ".");
+
+  const result = verify(root);
+
+  assert.equal(result.status, 1);
+  assert.deepEqual(
+    result.payload.violations.map(({ code, path }) => [code, path]),
+    [["personal_runtime_default", "runtime/personal-defaults.sh"]],
+  );
+  assert.equal(result.stdout.includes(privateMail), false);
+  assert.equal(result.stderr.includes(privateMail), false);
+  assert.equal(result.stdout.includes(privateChat), false);
+  assert.equal(result.stderr.includes(privateChat), false);
 });
 
 test("source provenance is closed over all four inspected repositories", () => {
@@ -145,4 +193,19 @@ test("source provenance is closed over all four inspected repositories", () => {
       ["manifest_source_missing", "profitable-claude"],
     ],
   );
+});
+
+test("declared third-party runtime adapters may document their own runtime home", () => {
+  const root = createFixture();
+  write(
+    root,
+    "skills/capafy-autopublish/vendor/runtime-adapter.py",
+    'OPENCLAW_HOME = "~/.openclaw"\n',
+  );
+  git(root, "add", ".");
+
+  const result = verify(root);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.payload, { ok: true, violations: [] });
 });

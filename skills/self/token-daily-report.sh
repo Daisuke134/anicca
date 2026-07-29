@@ -44,7 +44,8 @@ LOOP_SUMMARY=$(echo "$LOOP_JSON" | jq -r '
 TMUX_COUNT=$(ps aux | grep -c '[t]mux -S /tmp/anicca-.*\.sock' || true)
 ZOMBIES=$(ps -axo etime=,command= | grep '[t]mux -S /tmp/anicca-selffix' | awk '$1 ~ /-/ {c++} END {print c+0}')
 
-openclaw message send --channel telegram --target 0000000000 \
+openclaw message send --channel telegram \
+  --target "${TOKEN_REPORT_TELEGRAM_TARGET:-${TELEGRAM_ALERT_CHAT_ID:?TOKEN_REPORT_TELEGRAM_TARGET or TELEGRAM_ALERT_CHAT_ID is required}}" \
   -m "📊 token日報 $(TZ=Asia/Tokyo date +%m/%d)
 $SUMMARY
 $LOOP_SUMMARY

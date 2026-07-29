@@ -440,7 +440,7 @@ Instead it patches the upstream default. Round 4 will:
 
 ```
 url: https://console.cloud.google.com/apis/credentials?pli=1&project=gen-lang-client-0072731773
-account: Daisuke Narita (redacted@example.invalid)  ← already logged in via camofox profile
+account: Example User (user@example.com)  ← already logged in via camofox profile
 status: "Action Required: One or more projects enabled with Gemini API..."
 ```
 
@@ -462,7 +462,7 @@ fresh URL: https://auth.deeplake.ai/activate?user_code=SRNZ-FKCZ
 → fix-hivemind.sh template will:
 1. `URL=$(hivemind status 2>&1 | grep -oE 'https://auth.deeplake.ai/activate\?user_code=[A-Z0-9-]+')`
 2. camofox open URL with userId=anicca / sessionKey=hivemind-login
-3. snapshot → if "Choose an account" → click redacted@example.invalid
+3. snapshot → if "Choose an account" → click user@example.com
 4. else if "Continue with Google" → click → Google session auto-recognize
 5. else if Codex-style "Sign in to Deeplake" consent → click Continue
 6. wait 6s, verify ~/.deeplake/auth.json populated OR `hivemind status` returns "logged in: yes"
@@ -638,7 +638,7 @@ sleep 5
 # 3. Snapshot + decide first action
 SNAP=$(curl -sS "$CAMOFOX/tabs/$TAB/snapshot?userId=$UID_&sessionKey=$SK" | jq -r .snapshot)
 
-if echo "$SNAP" | grep -q "redacted@example.invalid"; then
+if echo "$SNAP" | grep -q "user@example.com"; then
   # Account chooser — click Daisuke ref
   REF=$(echo "$SNAP" | grep -oE "Select account[^[]*\[e[0-9]+\]" | grep -oE "e[0-9]+" | head -1)
   curl -sS -X POST "$CAMOFOX/tabs/$TAB/click" -H 'Content-Type: application/json' \

@@ -10,12 +10,12 @@ from lib.manifest import skill_writes_own_manifest  # FAIL until 2b
 # Python AST attack corpus — skill at /path/to/skill/run.py. skill_writes_own_manifest()
 # is pure string/AST analysis (no filesystem access — see lib/manifest.py), so this can be
 # any skill-shaped path; it does not need to resolve to a real directory.
-SKILL_DIR = "/Users/operator/anicca/skills/example-skill"
+SKILL_DIR = "__REPO_ROOT__/skills/example-skill"
 
 
 def test_direct_literal_write_detected():
     src = (
-        "with open('/Users/operator/anicca/skills/example-skill/manifest.json', 'w') as f:\n"
+        "with open('__REPO_ROOT__/skills/example-skill/manifest.json', 'w') as f:\n"
         "    f.write('{}')\n"
     )
     assert skill_writes_own_manifest(src, SKILL_DIR) is True

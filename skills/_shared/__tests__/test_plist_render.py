@@ -4,6 +4,7 @@ PURE helpers: validate_slot, render_plist, plist_digest, parse_loaded_plist_path
 Cross-platform — no launchctl, no disk. Phase 2a RED for install-proactive-plist.
 """
 from __future__ import annotations
+from pathlib import Path
 import pytest
 
 # These imports must FAIL during RED phase (= module doesn't exist yet)
@@ -45,9 +46,9 @@ class TestRenderPlist:
     def test_render_returns_xml_with_required_keys(self):
         out = render_plist(
             slot="gig",
-            anicca_home="/Users/operator/anicca",
-            log_dir="/Users/operator/.openclaw/logs",
-            plist_path="/Users/operator/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
+            anicca_home=CANONICAL_ANICCA_HOME,
+            log_dir="/tmp/life-manager/logs",
+            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
         )
         # REQ-A2a: Label, StartInterval, RunAtLoad
         assert "<string>ai.anicca.gig-proactive</string>" in out
@@ -55,19 +56,19 @@ class TestRenderPlist:
         assert "<key>RunAtLoad</key>" in out and "<false/>" in out
         # REQ-A2: ProgramArguments
         assert "<string>/bin/bash</string>" in out
-        assert "<string>/Users/operator/anicca/skills/_shared/proactive-loop.sh</string>" in out
+        assert f"<string>{CANONICAL_ANICCA_HOME}/skills/_shared/proactive-loop.sh</string>" in out
         assert "<string>gig</string>" in out
         # REQ-A3: literal absolute paths, NOT $HOME tokens
-        assert "<string>/Users/operator/.openclaw/logs/gig-proactive.out</string>" in out
-        assert "<string>/Users/operator/.openclaw/logs/gig-proactive.err</string>" in out
+        assert "<string>/tmp/life-manager/logs/gig-proactive.out</string>" in out
+        assert "<string>/tmp/life-manager/logs/gig-proactive.err</string>" in out
 
     def test_render_NEVER_emits_HOME_token(self):
         # PROP-A1: $HOME does not expand in launchd plists.
         out = render_plist(
             slot="gig",
-            anicca_home="/Users/operator/anicca",
-            log_dir="/Users/operator/.openclaw/logs",
-            plist_path="/Users/operator/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
+            anicca_home=CANONICAL_ANICCA_HOME,
+            log_dir="/tmp/life-manager/logs",
+            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
         )
         assert "$HOME" not in out
         assert "${HOME}" not in out
@@ -78,25 +79,25 @@ class TestRenderPlist:
         with pytest.raises(SlotValidationError):
             render_plist(
                 slot="gig; rm -rf /",
-                anicca_home="/Users/operator/anicca",
-                log_dir="/Users/operator/.openclaw/logs",
-                plist_path="/Users/operator/Library/LaunchAgents/x.plist",
+                anicca_home=CANONICAL_ANICCA_HOME,
+                log_dir="/tmp/life-manager/logs",
+                plist_path="/home/life-manager/Library/LaunchAgents/x.plist",
             )
 
     def test_render_is_deterministic_for_same_inputs(self):
         # PROP-B1: idempotent — same inputs → byte-identical output
         kwargs = dict(
             slot="clip",
-            anicca_home="/Users/operator/anicca",
-            log_dir="/Users/operator/.openclaw/logs",
-            plist_path="/Users/operator/Library/LaunchAgents/ai.anicca.clip-proactive.plist",
+            anicca_home=CANONICAL_ANICCA_HOME,
+            log_dir="/tmp/life-manager/logs",
+            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.clip-proactive.plist",
         )
         assert render_plist(**kwargs) == render_plist(**kwargs)
 
     def test_render_differs_when_slot_differs(self):
         kwargs = dict(
-            anicca_home="/Users/operator/anicca",
-            log_dir="/Users/operator/.openclaw/logs",
+            anicca_home=CANONICAL_ANICCA_HOME,
+            log_dir="/tmp/life-manager/logs",
         )
         a = render_plist(slot="gig", plist_path="/x/a.plist", **kwargs)
         b = render_plist(slot="clip", plist_path="/x/b.plist", **kwargs)
@@ -127,29 +128,28 @@ class TestParseLoadedPlistPath:
         sample = """
 ai.anicca.gig-proactive = {
 	active count = 0
-	path = /Users/operator/Library/LaunchAgents/ai.anicca.gig-proactive.plist
+	path = /home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist
 	state = waiting
 }
 """.strip()
         assert parse_loaded_plist_path(sample) == \
-            "/Users/operator/Library/LaunchAgents/ai.anicca.gig-proactive.plist"
+            "/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist"
 
     def test_returns_none_when_no_path_line(self):
         sample = "ai.anicca.x = { active count = 0 }"
         assert parse_loaded_plist_path(sample) is None
 
     def test_handles_path_with_spaces(self):
-        sample = "\tpath = /Users/operator/My Folder/ai.anicca.gig-proactive.plist"
+        sample = "\tpath = /home/life-manager/My Folder/ai.anicca.gig-proactive.plist"
         assert parse_loaded_plist_path(sample) == \
-            "/Users/operator/My Folder/ai.anicca.gig-proactive.plist"
+            "/home/life-manager/My Folder/ai.anicca.gig-proactive.plist"
 
     def test_trims_trailing_whitespace(self):
-        sample = "\tpath = /Users/operator/x.plist   \n"
-        assert parse_loaded_plist_path(sample) == "/Users/operator/x.plist"
+        sample = "\tpath = /home/life-manager/x.plist   \n"
+        assert parse_loaded_plist_path(sample) == "/home/life-manager/x.plist"
 
 
 # ─── REQ-A2 pin: canonical anicca home constant ────────────────────
 class TestCanonicalHome:
     def test_pin_is_anicca_oss_repo_not_products(self):
-        # The OSS framework repo (= ~/anicca) NOT anicca-project (= ~/anicca-project).
-        assert CANONICAL_ANICCA_HOME == "/Users/operator/anicca"
+        assert CANONICAL_ANICCA_HOME == str(Path(__file__).resolve().parents[3])

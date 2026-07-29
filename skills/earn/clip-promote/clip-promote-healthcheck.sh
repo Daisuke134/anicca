@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (native installer, not homebrew)
 # clip-promote-healthcheck.sh — OS-level supervisor (launchd, every 5min). If the always-on
 # clip-promote-core tmux session is dead, restart it. Ported verbatim (v5 pattern) from
@@ -19,9 +22,9 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOM
 # slack (same "≈2x the driving interval" ratio clip/gig use at their own cadence).
 set -uo pipefail
 SOCK="/tmp/anicca-clip-promote-tmux.sock"; SESSION="anicca-clip-promote-core"
-HB="$HOME/.openclaw/state/.clip-promote-core-last-pass"; START="$HOME/.openclaw/state/.clip-promote-core-last-start"; STALE_MIN=250
-LOG="$HOME/.openclaw/logs/clip-promote-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
-RESTART_LOG="$HOME/.openclaw/state/.clip-promote-core-restart-log"
+HB="$HOME/.local/state/life-manager/state/.clip-promote-core-last-pass"; START="$HOME/.local/state/life-manager/state/.clip-promote-core-last-start"; STALE_MIN=250
+LOG="$HOME/.local/state/life-manager/logs/clip-promote-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+RESTART_LOG="$HOME/.local/state/life-manager/state/.clip-promote-core-restart-log"
 
 # FIND-033 (2026-07-10, life-manager-loop 3-day outage; see healthcheck-lib.sh for the full
 # writeup): under low free disk, macOS can't grow its swapfile and every fresh fork()/exec() on the
@@ -32,8 +35,8 @@ RESTART_LOG="$HOME/.openclaw/state/.clip-promote-core-restart-log"
 # same signature (instant DEAD-after-restart, recurring for hours) since at least 2026-07-06.
 # Source just the disk-reclaim helper (function defs only, no top-level side effects) so a restart
 # always gets a real chance to fork.
-# shellcheck source=/Users/operator/anicca/skills/self/healthcheck-lib.sh
-source "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null || true
+# shellcheck source=$LIFE_MANAGER_REPO/skills/self/healthcheck-lib.sh
+source "$LIFE_MANAGER_REPO/skills/self/healthcheck-lib.sh" 2>/dev/null || true
 
 LOCK_DIR="/tmp/.clip-promote-healthcheck.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -42,7 +45,7 @@ fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 
 restart() {
-  mkdir -p "$HOME/.openclaw/state"
+  mkdir -p "$HOME/.local/state/life-manager/state"
   local now; now=$(date +%s)
   local count=0
   if [ -f "$RESTART_LOG" ]; then
@@ -57,7 +60,7 @@ restart() {
     # wakes (next internal cron tick), its STARTUP prompt tells it to read this file and
     # diagnose/fix itself (or file a self/issue-dev issue if it can't). No human, no Opus, no
     # dev-Claude-Code session reads this — only the loop itself.
-    local task_file="$HOME/.openclaw/state/.clip-promote-core-selfheal-request.json"
+    local task_file="$HOME/.local/state/life-manager/state/.clip-promote-core-selfheal-request.json"
     if [ ! -f "$task_file" ] || [ "$(( $(date +%s) - $(stat -f %m "$task_file" 2>/dev/null || echo 0) ))" -gt 3600 ]; then
       printf '{"loop":"clip-promote","ts":"%s","reason":"%s","restarts_last_60min":%d,"note":"healthcheck gave up restarting this loop after repeated failures. Read this on your next wake: diagnose the root cause yourself (check logs, run the failing command manually), fix the code if you can, verify the fix works, then delete this file. If you cannot fix it yourself, invoke self/issue-dev to file a GitHub issue on the mother repo instead."}\n' \
         "$(date -u +%FT%TZ)" "${1:-unknown}" "$count" > "$task_file" 2>/dev/null
@@ -71,7 +74,7 @@ restart() {
   command -v hc_reap_stale_cozempic_guards >/dev/null 2>&1 && hc_reap_stale_cozempic_guards
   sleep 1
   echo "$(date '+%F %T') ${1:-clip-promote-core DEAD} → restarting" >> "$LOG"
-  bash "$HOME/anicca/skills/earn/clip-promote/clip-promote-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$LIFE_MANAGER_REPO/skills/earn/clip-promote/clip-promote-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 HB_MTIME="$(stat -f %m "$HB" 2>/dev/null || echo 0)"

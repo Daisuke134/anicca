@@ -1,7 +1,7 @@
 // VCSDD RED->GREEN: SOL earnings-gate attribution + promotion wiring (franklin-sol-evolvable-edge,
 // REQ-012b/013/014/015/015b). REUSES evolve.mjs's evaluatePromotion/promote verbatim (never
 // reimplemented) -- PROP-014/PROP-015b assert import-identity. This test NEVER touches the real
-// ~/anicca repo, the real earn-ledger, or places any real order; git operations run in a temp repo.
+// the canonical checkout repo, the real earn-ledger, or places any real order; git operations run in a temp repo.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -283,7 +283,7 @@ test("PROP-013: fast-check randomized mixed ledger only counts the valid (sol-tr
 
 // --- FIND-002 (impl-review iteration-1): runEvolveSol orchestration + CLI entrypoint -----------
 // Mirrors evolve.test.mjs's own runEvolve E2E fixtures shape, using SOL's field names/genome
-// shapes. NEVER touches the real ~/anicca repo or real earn-ledger.jsonl -- every git op runs in a
+// shapes. NEVER touches the real the canonical checkout repo or real earn-ledger.jsonl -- every git op runs in a
 // fresh temp repo (initGitRepo), every ledger/trace path is a fresh temp file.
 test("FIND-002 E2E PROMOTE: mutant B beats baseline A (0), has >=K=3 chain-verified confirmed swaps -> promoted, canonical baseline written + committed", async () => {
   const repo = tmpDir("sol-evolve-e2e-promote-");

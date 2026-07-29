@@ -64,6 +64,6 @@ A successful launch routes a slice of every swap fee to your treasury, denominat
 
 ## Cross-references
 
-- spec `~/anicca/docs/superpowers/specs/2026-06-20-anicca-earn-roadmap.md` §3 (4) — token as one of the four earn pillars.
-- spec `~/anicca/docs/superpowers/specs/2026-06-21-anicca-type1-type2-mutual-aid-design.md` §3 — token sits inside the earn engine, not as a separate strategy.
+- spec `$LIFE_MANAGER_REPO/docs/superpowers/specs/2026-06-20-anicca-earn-roadmap.md` §3 (4) — token as one of the four earn pillars.
+- spec `$LIFE_MANAGER_REPO/docs/superpowers/specs/2026-06-21-anicca-type1-type2-mutual-aid-design.md` §3 — token sits inside the earn engine, not as a separate strategy.
 - docs `https://launchpad.moltx.io/skill.md` — canonical API spec (poll for changes).

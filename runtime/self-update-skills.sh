@@ -5,7 +5,8 @@
 # only on crash. Calling this each wake caps the fix-propagation delay at one wake interval.
 # Same commands, same excludes as anicca-daemon.sh step 1/1b; safe no-op when REPO==ANICCA_HOME.
 set -u
-REPO="${ANICCA_REPO:-$HOME/anicca}"
+REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}}"
+[ -n "$REPO" ] || { echo "Life Manager repository could not be resolved" >&2; exit 2; }
 ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # rsync ONLY — no git fetch here. The observed staleness was local repo→body divergence; pulling
 # the remote every wake would add a network call + seconds to EVERY wake (and flake time-sensitive

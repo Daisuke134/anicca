@@ -202,7 +202,7 @@ test("filterOwnWalletRows applied to rows parsed from a fixture ledger never mut
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "ledger-uniqueness-fixture-"));
   const fixture = path.join(dir, "earn-ledger.jsonl");
   // Shape mirrors the real contaminated file: own-wallet rows + foreign (SHARED-list) wallet
-  // rows + walletless narrate rows — built here, NEVER read from /Users/operator/.anicca-founder.
+  // rows + walletless narrate rows — built here, NEVER read from /home/life-manager/.anicca-founder.
   await appendLedger(fixture, deriveLine({ wallet: FOUNDER_WALLET, source: "x402-serve", task: "up", earn_usdc: 0, cost_usdc: 0, wake: "w1" }));
   await appendLedger(fixture, deriveLine({ wallet: AUTOMATON_PRE_ROTATION, source: "hl-trade", task: "hl-close ETH", earn_usdc: 0.0006, cost_usdc: 0, wake: "w2" }));
   await appendLedger(fixture, deriveLine({ source: "cook", task: "explore", earn_usdc: 0, cost_usdc: 0, wake: "w3" }));

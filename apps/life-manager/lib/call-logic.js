@@ -6,7 +6,7 @@
 // Gemini) plus the exact wire-message shapes. Those are the pure functions below.
 //
 // This module has ZERO I/O — no network, no env. The skill entrypoint
-// (~/anicca/skills/life/call/call.js) wires these into the Twilio + Gemini sockets.
+// (__REPO_ROOT__/skills/life/call/call.js) wires these into the Twilio + Gemini sockets.
 // Pattern mirrors telemetry-verify.js / travel-logic.js (node:test, CommonJS).
 //
 // Standards / sources:

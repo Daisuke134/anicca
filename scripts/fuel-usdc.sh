@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # fuel-usdc.sh — Phase 1 fuel option (3): create a USDC wallet, show a QR
-# code for the user, wait for funding, write the address to ~/.openclaw/.env.
+# code for the user, wait for funding, write the address to $HOME/.local/state/life-manager/.env.
 #
 # Invoked by the external coding agent (per docs/INSTALL_BOOTSTRAP.md
 # step 3.2) when the user picks fuel choice (3).
 #
 # Requirements:
 #   - cdp CLI (Coinbase AgentKit) installed and in PATH
-#   - CDP_API_KEY_NAME + CDP_API_KEY_PRIVATE present in ~/.openclaw/.env
+#   - CDP_API_KEY_NAME + CDP_API_KEY_PRIVATE present in $HOME/.local/state/life-manager/.env
 #   - qrencode (= optional; falls back to text-only address display)
 #
 # What it does:
@@ -19,7 +19,7 @@
 
 set -uo pipefail
 
-ANICCA_HOME="${ANICCA_HOME:-$HOME/.openclaw}"
+ANICCA_HOME="${ANICCA_HOME:-$HOME/.local/state/life-manager}"
 ENV_FILE="$ANICCA_HOME/.env"
 WALLET_STATE="$ANICCA_HOME/state/fuel-usdc-wallet.json"
 MIN_USD="${FUEL_MIN_USD:-10}"

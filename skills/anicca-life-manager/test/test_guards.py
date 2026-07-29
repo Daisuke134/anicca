@@ -1,6 +1,9 @@
 import os, sys
-sys.path.insert(0, os.path.expanduser("~/.openclaw/skills/anicca-life-manager/scripts"))
-sys.path.insert(0, os.path.expanduser("~/.openclaw/skills/_shared"))
+from pathlib import Path
+
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(REPO_ROOT / "skills/anicca-life-manager/scripts"))
+sys.path.insert(0, str(REPO_ROOT / "skills/_shared"))
 import lateness_check as lc
 def run():
     assert hasattr(lc, "life_manager_enabled"), "life_manager_enabled missing"

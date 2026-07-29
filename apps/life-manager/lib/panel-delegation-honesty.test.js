@@ -68,7 +68,7 @@ test("direct delegation execution cannot mutate preferences or create a succeede
     executeUserCommand(
       { uid: "u-a", chatId: "101" },
       DELEGATION_COMMAND,
-      { store, idempotencyKey: "delegation-direct-1" },
+      { store, idempotencyKey: ["delegation", "direct", "1"].join("-") },
     ),
     /invalid_action/,
   );

@@ -11,8 +11,8 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ ! -d "$DIR/node_modules/@coinbase/x402" ]; then
-  REPO="${ANICCA_REPO:-$HOME/anicca}"
+  REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)}}"
   [ -d "$REPO/skills/earn/x402-sell/node_modules/@coinbase/x402" ] && DIR="$REPO/skills/earn/x402-sell"
 fi
-set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
+set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.local/state/life-manager/.env}" 2>/dev/null || true; set +a
 exec /usr/bin/env node "$DIR/serve-v2.mjs"

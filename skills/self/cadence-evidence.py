@@ -18,11 +18,13 @@ import json
 import os
 import sys
 import zoneinfo
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cadence import cadence_met, streak  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[2]))
 CONTRACTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cadence-contracts.json")
 STREAK_WINDOW_DAYS = 14  # how far back streak() looks; matches this codebase's other rolling-window conventions
 
@@ -113,7 +115,7 @@ def _event_dates_from_ts_rows(rows, ts_field="ts"):
 # ---------------------------------------------------------------------------
 
 def _clip_ledger_path():
-    return os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.openclaw/state/clip-earn-ledger.jsonl")
+    return os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/life-manager/state/clip-earn-ledger.jsonl")
 
 
 def _video_metrics_path():
@@ -145,8 +147,8 @@ def _gig_listings_path():
 
 
 # Local literal copy of funnel.py's won/paid status vocabulary (REQ-GFV-022) — copied, not
-# cross-repo-imported, since funnel.py lives in ~/profitable-claude/ while this module lives in
-# ~/anicca/; documented as intentionally mirroring funnel.py's vocabulary so the two stay in
+# cross-repo-imported, since funnel.py lives in __REPO_ROOT__/ while this module lives in
+# __REPO_ROOT__/; documented as intentionally mirroring funnel.py's vocabulary so the two stay in
 # lockstep if either changes.
 _GIG_WON_STATUSES = {"受注", "成約"}
 _GIG_PAID_STATUSES = {"検収完了", "支払"}
@@ -327,8 +329,8 @@ def _video_row_exists_event_dates():
 
 
 def _bounty_funnel_path():
-    return os.environ.get("BOUNTY_FUNNEL_PATH") or os.path.expanduser(
-        "~/profitable-claude/skills/human-funded/bounty/state/bounty-funnel.jsonl")
+    return os.environ.get("BOUNTY_FUNNEL_PATH") or str(
+        REPO_ROOT / "skills/human-funded/bounty/state/bounty-funnel.jsonl")
 
 
 def _bounty_funnel_rows():
@@ -369,11 +371,13 @@ def _founder_loop_marker_jst_date():
 
 
 def _pm_earner_log_path():
-    return os.environ.get("PM_EARNER_LOG_PATH") or os.path.expanduser("~/anicca/skills/earn/polymarket-trade/earner.log")
+    return os.environ.get("PM_EARNER_LOG_PATH") or str(
+        REPO_ROOT / "skills/earn/polymarket-trade/earner.log")
 
 
 def _pm_earner_ledger_path():
-    return os.environ.get("PM_EARNER_LEDGER_PATH") or os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl")
+    return os.environ.get("PM_EARNER_LEDGER_PATH") or str(
+        REPO_ROOT / "skills/earn/state/earn-ledger.jsonl")
 
 
 def _pm_earner_earner_log_epoch():

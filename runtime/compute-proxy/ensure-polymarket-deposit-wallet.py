@@ -11,7 +11,7 @@ This is GASLESS (Polymarket's relayer pays; the EOA only SIGNS) and IDEMPOTENT
 (calling it again just re-authenticates; it does not redeploy an existing wallet).
 No funds are moved or required — this only grants the ADDRESS the instance can
 later fund (with pUSD / bridged USDC) to actually trade. See
-~/anicca/skills/earn/polymarket-trade/SKILL.md for the funding + trading recipe.
+__REPO_ROOT__/skills/earn/polymarket-trade/SKILL.md for the funding + trading recipe.
 
 Prints ONE line of JSON to stdout: {"eoa", "deposit_wallet", "deployed"}.
 All diagnostics go to stderr. Never prints the private key.

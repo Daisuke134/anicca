@@ -9,8 +9,8 @@ every 15 min, 24h/day. During the operator's quiet hours (`profile.alarm.quietHo
 ..`quietHoursEnd`, currently `23:30–05:30` JST) the meeting scanner has no reason to
 run — it just burns a DeepSeek call + a `gog calendar` round-trip each fire (~24/night).
 
-**Fix:** `~/.openclaw/skills/anicca-meeting-attendant/scripts/check-and-spawn.sh` now
-sources the canonical guard `~/.openclaw/skills/_shared/quiet-hours-guard.sh`
+**Fix:** `$LIFE_MANAGER_REPO/skills/anicca-meeting-attendant/scripts/check-and-spawn.sh` now
+sources the canonical guard `$LIFE_MANAGER_REPO/skills/_shared/quiet-hours-guard.sh`
 immediately after `set -euo pipefail`, before env-load and the `gog` call. The guard
 reads the live profile window and `exit 0` silently when `datetime.now()` (host TZ =
 Asia/Tokyo) falls inside it. No new quiet-hours logic was added — single source of truth.

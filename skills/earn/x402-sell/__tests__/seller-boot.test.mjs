@@ -6,7 +6,7 @@
 // (correctly: node_modules is 635M, and copying it into every instance home would fill the disk). So
 // ANICCA_HOME/skills/earn/x402-sell has serve.mjs but no dependencies, and node died instantly:
 //   Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@coinbase/x402' imported from
-//   /Users/operator/.anicca-founder/skills/earn/x402-sell/serve.mjs
+//   /home/life-manager/.anicca-founder/skills/earn/x402-sell/serve.mjs
 // Measured fallout: ai.anicca.x402-seller-8412/8413/8414 all at `last exit code = 1`, runs=213/168/213.
 // No agent has ever booted its own seller; the only live sellers were hand-written boot scripts that
 // exec the repo copy. serve.mjs is byte-identical in both places (diff -q), so the ONLY thing missing
@@ -89,19 +89,18 @@ test("prefers its own directory when the dependencies are present there", async 
   assert.equal(stdout.trim(), "HOME", "a self-sufficient instance dir must not be redirected");
 });
 
-test("falls back to $HOME/anicca when ANICCA_REPO is unset", async () => {
-  // Measured 2026-07-16: ai.anicca.agent-economy-loop's plist has no ANICCA_REPO key, so the
-  // fallback is the live path for claude-p, not a theoretical one.
+test("uses LIFE_MANAGER_REPO when ANICCA_REPO is unset", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "seller-boot-"));
   const home = path.join(tmp, "home");
   const homeSeller = await sellerDir(home, { withDeps: false, bootScript: true });
-  await sellerDir(path.join(home, "anicca"), { withDeps: true, bootScript: false });
+  const repo = path.join(tmp, "repo");
+  await sellerDir(repo, { withDeps: true, bootScript: false });
 
   const { stdout } = await run(path.join(homeSeller, "seller-boot.sh"), [], {
-    env: bootEnv({ HOME: home }),
+    env: bootEnv({ HOME: home, LIFE_MANAGER_REPO: repo }),
   });
 
-  assert.equal(stdout.trim(), "REPO", "must use $HOME/anicca when ANICCA_REPO is absent");
+  assert.equal(stdout.trim(), "REPO", "must use LIFE_MANAGER_REPO when ANICCA_REPO is absent");
 });
 
 test("still execs its own copy when no dependencies exist anywhere", async () => {
