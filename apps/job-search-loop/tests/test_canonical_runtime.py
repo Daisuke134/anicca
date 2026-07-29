@@ -12,6 +12,37 @@ REPO_ROOT = APP_ROOT.parents[1]
 
 
 class CanonicalRuntimeTests(unittest.TestCase):
+    @staticmethod
+    def _valid_portable_profile(path: Path) -> None:
+        path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "candidate": {"name": "Scheduler Candidate"},
+                    "facts": [
+                        {
+                            "id": "fact-1",
+                            "claim": "Verified portable fact.",
+                            "evidence": "Synthetic test source",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _fake_authenticated_codex(directory: Path) -> Path:
+        executable = directory / "codex"
+        executable.write_text(
+            "#!/bin/sh\n"
+            'test "$1" = "login" && test "$2" = "status" && exit 0\n'
+            "exit 1\n",
+            encoding="utf-8",
+        )
+        executable.chmod(0o700)
+        return executable
+
     def _run_daily_with_fake_python(self, root: Path, slot_count: int, runner_rc: int):
         fake_python = root / "fake-python"
         calls = root / "python-calls.jsonl"
@@ -254,6 +285,122 @@ raise SystemExit(0)
             )
             self.assertNotIn("anicca-job-search-loop", result.stdout)
             self.assertNotIn("profitable-claude", result.stdout)
+
+    def test_systemd_installer_renders_private_user_units_and_enables_timers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            calls = root / "systemctl-calls.jsonl"
+            fake_systemctl = root / "systemctl"
+            fake_systemctl.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"$*\" >> {calls}\n",
+                encoding="utf-8",
+            )
+            fake_systemctl.chmod(0o700)
+            env = {
+                **os.environ,
+                "HOME": str(root / "home"),
+                "XDG_CONFIG_HOME": str(root / "config"),
+                "XDG_STATE_HOME": str(root / "state"),
+                "XDG_DATA_HOME": str(root / "data"),
+                "JOB_SEARCH_SYSTEMCTL": str(fake_systemctl),
+                "JOB_SEARCH_SKIP_SYSTEMD_ANALYZE": "1",
+            }
+
+            result = subprocess.run(
+                ["/bin/zsh", str(APP_ROOT / "scripts" / "install-systemd.sh")],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            unit_dir = root / "config" / "systemd" / "user"
+            daily_service = (
+                unit_dir / "ai.anicca.job-search-daily.service"
+            ).read_text(encoding="utf-8")
+            daily_timer = (
+                unit_dir / "ai.anicca.job-search-daily.timer"
+            ).read_text(encoding="utf-8")
+            inbox_timer = (
+                unit_dir / "ai.anicca.job-search-inbox.timer"
+            ).read_text(encoding="utf-8")
+            self.assertIn(
+                str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
+            )
+            self.assertIn(str(REPO_ROOT), daily_service)
+            self.assertIn("OnCalendar=*-*-* 08:30:00 Asia/Tokyo", daily_timer)
+            self.assertIn("Persistent=true", daily_timer)
+            self.assertIn("OnUnitActiveSec=15min", inbox_timer)
+            encoded = "\n".join(
+                path.read_text(encoding="utf-8") for path in unit_dir.iterdir()
+            )
+            self.assertNotIn("__JOB_SEARCH_", encoded)
+            self.assertNotIn("profitable-claude", encoded)
+            self.assertNotIn("anicca-job-search-loop", encoded)
+            recorded = calls.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(recorded[0], "--user daemon-reload")
+            self.assertEqual(
+                recorded[1],
+                "--user enable --now ai.anicca.job-search-daily.timer "
+                "ai.anicca.job-search-inbox.timer",
+            )
+
+    def test_portable_installer_dispatches_to_launchd_with_fake_adapter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "profile.json"
+            self._valid_portable_profile(source)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            self._fake_authenticated_codex(bin_dir)
+            calls = root / "launchctl-calls.jsonl"
+            launchctl = bin_dir / "launchctl"
+            launchctl.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"$*\" >> {calls}\n",
+                encoding="utf-8",
+            )
+            launchctl.chmod(0o700)
+            plutil = bin_dir / "plutil"
+            plutil.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            plutil.chmod(0o700)
+            env = {
+                **os.environ,
+                "HOME": str(root / "home"),
+                "XDG_CONFIG_HOME": str(root / "config"),
+                "XDG_STATE_HOME": str(root / "state"),
+                "XDG_DATA_HOME": str(root / "data"),
+                "PATH": f"{bin_dir}:/usr/bin:/bin",
+                "PYTHONPATH": str(APP_ROOT),
+                "JOB_SEARCH_PLATFORM": "Darwin",
+                "JOB_SEARCH_SKIP_BOOTSTRAP": "1",
+                "JOB_SEARCH_LAUNCHCTL": str(launchctl),
+                "JOB_SEARCH_PLUTIL": str(plutil),
+                "JOB_SEARCH_LAUNCH_AGENT_DIR": str(root / "LaunchAgents"),
+            }
+
+            result = subprocess.run(
+                [
+                    "/bin/zsh",
+                    str(APP_ROOT / "scripts" / "install-local.sh"),
+                    "--profile",
+                    str(source),
+                    "--provider",
+                    "codex",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            recorded = calls.read_text(encoding="utf-8")
+            self.assertIn("bootstrap gui/", recorded)
+            receipt = json.loads(result.stdout)
+            self.assertEqual(receipt["scheduler"], "launchd")
 
 
 if __name__ == "__main__":
