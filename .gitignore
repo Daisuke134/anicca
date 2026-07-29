@@ -61,6 +61,9 @@ workspace/ugc-library/**/*.mp4
 services/x402-worker/state/
 services/x402-endpoint/node_modules/
 services/facilitator/state/
+# Retired local submodule checkout paths; runtime never reads these.
+/services/facilitator/x402-rs/
+/services/inbox-zero/
 skills/earn/hl-trade/.venv/
 skills/earn/bounty/state/superteam-creds.json
 *.creds.json

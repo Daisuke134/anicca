@@ -1,8 +1,9 @@
 # services/facilitator — self-host x402 gasless-settlement facilitator
 
 SPEC.md §3 P2.1 の実装。Anicca colony の gig マーケットプレイスが gasless に決済する
-心臓部。`x402-rs/x402-rs`（Apache-2.0, v2.0.1）を submodule で vendor し、自己鍵 +
-公開 RPC のみで動かす — Coinbase/CDP アカウントは一切不要（human-zero）。
+心臓部。`x402-rs/x402-rs`（Apache-2.0）の固定commitを、archive SHA-256検証後に
+cacheでbuildし、自己鍵 + 公開 RPC のみで動かす — Coinbase/CDP アカウントは
+一切不要（human-zero）。由来と固定値は [THIRD_PARTY.md](./THIRD_PARTY.md) が正本。
 
 ## 何をするか
 
@@ -14,17 +15,20 @@ gas を肩代わりして on-chain 提出。買い手は gas を1円も持たな
 
 ```bash
 cd services/facilitator
-git submodule update --init   # x402-rs 本体を取得（初回のみ）
-./start.sh                    # idempotent: 既にビルド済みならそのまま起動、無ければ cargo build
+./start.sh  # 固定archiveを検証・cache buildして起動。cache hitはnetwork不要
 ```
 
 `start.sh` は以下を行う:
 1. `~/.anicca-signing/x402-facilitator/.env`（gitignore、chmod 600、repo 外）から
    `FACILITATOR_PRIVATE_KEY` を読む。無ければエラーで止まる。
-2. `x402-rs/target/release/x402-facilitator` が無ければ
+2. `fetch-x402-rs.sh` が固定commit archiveのSHA-256と展開treeを検証し、
+   `${XDG_CACHE_HOME:-$HOME/.cache}/life-manager/x402-rs/` で
    `cargo build --package x402-facilitator --features chain-eip155,chain-solana --release --locked`
-   でビルド（585 crates、初回 ~1.5分）。
+   を実行する。検証済みcacheはnetworkなしで再利用する。
 3. `config.json` を渡して起動（デフォルト `127.0.0.1:8405`）。`/health` が200を返すまで待つ。
+
+開発時に既存のsource treeを明示する場合だけ `X402_RS_ROOT=/path/to/x402-rs`
+を使える。未指定時に別repoや隣接folderを探索することはない。
 
 ## 鍵（絶対に repo にコミットしない）
 
