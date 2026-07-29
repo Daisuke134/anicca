@@ -200,6 +200,19 @@ def load_credentials(store_path: Path, job_url: str) -> dict[str, str]:
     return _account(value, tenant)
 
 
+def known_tenants(store_path: Path) -> list[str]:
+    store_path = Path(store_path).expanduser().resolve()
+    store = _read_store(store_path)
+    tenants: list[str] = []
+    for tenant, value in store["accounts"].items():
+        if not isinstance(tenant, str):
+            raise WorkdayCredentialError("Workday credential tenant is invalid")
+        canonical = tenant_key(f"https://{tenant}/")
+        _account(value, canonical)
+        tenants.append(canonical)
+    return sorted(tenants)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-url", required=True)

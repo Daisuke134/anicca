@@ -10,6 +10,7 @@ from pathlib import Path
 from job_search_loop.workday_credentials import (
     WorkdayCredentialError,
     ensure_credentials,
+    known_tenants,
     load_credentials,
     tenant_key,
 )
@@ -95,6 +96,10 @@ class WorkdayCredentialTests(unittest.TestCase):
         account = load_credentials(self.store, WORKDAY_URL)
         self.assertEqual(account["application_email"], "candidate@example.com")
         self.assertEqual(account["password"], "Strong-Workday-Password-9!")
+        self.assertEqual(
+            known_tenants(self.store),
+            ["crowdstrike.wd5.myworkdayjobs.com"],
+        )
 
     def test_existing_tenant_is_reused_without_rotation(self):
         ensure_credentials(
