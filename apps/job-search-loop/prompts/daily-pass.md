@@ -78,14 +78,31 @@ workday_apply_choice
   → click Apply Manually
   → recapture and reevaluate
 workday_account_create
-  → do not claim; use only a configured private Workday credential path
+  → do not claim; provision/reuse the tenant's private credential, then create
+    the account and recapture/reevaluate
 workday_application
   → claim only when the final submit-bearing form is present
 ```
 
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
-account password or expose credentials in evidence. When the account gate has no
-configured private credential path, record that exact blocker, release/avoid the
+account password or expose credentials in evidence. At a verified
+`workday_account_create` surface, run:
+
+```bash
+PYTHONPATH=apps/job-search-loop \
+/opt/homebrew/bin/python3 -m job_search_loop.workday_credentials \
+  --job-url "<current_official_workday_url>" \
+  --profile-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json" \
+  --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json"
+```
+
+The secret-free receipt identifies the tenant and credential path. In the same
+browser process, call `job_search_loop.workday_credentials.load_credentials` and
+use the returned values only as `fill()` inputs for the email, password, and verify
+password controls; check the required consent and click the user-facing
+`Create Account` action. Never log, print, snapshot, report, or interpolate either
+value into a command. Recapture and reevaluate after the transition. If provisioning
+or account creation fails, record the exact non-secret blocker, release/avoid the
 slot, and continue to other eligible jobs instead of ending discovery. Never treat
 an invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
 actual CAPTCHA. If the evaluator fails, returns not ready, or the application form
