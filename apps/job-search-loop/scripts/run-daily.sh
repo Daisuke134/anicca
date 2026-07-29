@@ -22,6 +22,13 @@ export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
   --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
   --output "$EVIDENCE/resume-deliver-before.json"
 JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+refresh_summary() {
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+    --day "$JAPAN_DAY" \
+    --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+}
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
 from pathlib import Path
@@ -43,6 +50,7 @@ if [[ "$SLOT_COUNT" -ge "2" ]]; then
     '{status:$status,japan_day:$japan_day,slot_count:$slot_count}' \
     >"$EVIDENCE/summary.json"
   chmod 600 "$EVIDENCE/summary.json"
+  refresh_summary
   exit 0
 fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
@@ -66,6 +74,7 @@ set +e
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then
+  refresh_summary
   if [[ "$RUNNER_RC" -eq 75 ]] \
     && "$JOB_SEARCH_JQ" -e '.status == "budget_blocked"' \
       "$EVIDENCE/summary.json" >/dev/null 2>&1; then
@@ -78,3 +87,4 @@ fi
   --outbox "$TELEGRAM_OUTBOX" \
   --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
   --output "$EVIDENCE/resume-deliver-after.json"
+refresh_summary
