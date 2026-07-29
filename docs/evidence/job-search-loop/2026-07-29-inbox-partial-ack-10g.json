@@ -1,16 +1,18 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10G",
-  "status": "implementation_verified_pending_ci",
-  "observed_at": "2026-07-29T13:22:19Z",
+  "status": "live_verified_waiting_mixed_real_batch",
+  "observed_at": "2026-07-29T13:26:58Z",
   "branch": "feat/job-inbox-partial-ack-10g",
   "red_commit": "97791a20e",
   "implementation_commit": "9f67eebfe",
   "pull_request": {
-    "number": null,
-    "url": null,
-    "ci_run": null,
-    "merge_commit": null
+    "number": 1326,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1326",
+    "ci_run": 30455795192,
+    "required_checks_passed": 7,
+    "merge_commit": "aa81e7dffe5fca3bfd27c4f73e0aed81cc564399",
+    "canonical_commit": "aa81e7dffe5fca3bfd27c4f73e0aed81cc564399"
   },
   "red_test": {
     "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_operations.py apps/job-search-loop/tests/test_launchd.py apps/job-search-loop/tests/test_workday_verification.py -v",
@@ -58,6 +60,29 @@
     "missing_result": "The shell exits before acknowledgement.",
     "transient_tool_failure": "The executor omits that thread ID, so it is retried.",
     "terminal_safety_block": "The executor may include the ID only after the block/report is durable."
+  },
+  "live_reflection": {
+    "inbox_launchd": {
+      "runs_before": 16,
+      "runs_after": 17,
+      "last_exit_code": 0,
+      "new_recruiting_email_count": 0,
+      "pending_interview_prep_count": 0
+    },
+    "seen_state": {
+      "mode": "0600",
+      "seen_count": 3,
+      "modified_by_no_work_pass": false
+    },
+    "healthcheck": {
+      "ledger_integrity": "ok",
+      "interview_prep_integrity": "ok",
+      "application_counts": {
+        "submitted": 2,
+        "submit_unknown": 1
+      },
+      "inbox_freshness_status": "no_new_recruiting_email"
+    }
   },
   "research_transport": {
     "queries": [

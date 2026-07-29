@@ -49,8 +49,14 @@ and `unittest`.
 
 ## Task 3 — GitHub and live reflection
 
-- [ ] Push, pass all CI, merge, and fast-forward canonical.
-- [ ] Kickstart only the existing inbox launchd job and verify exit zero,
+- [x] Push, pass all CI, merge, and fast-forward canonical.
+- [x] Kickstart only the existing inbox launchd job and verify exit zero,
   integrity, and no false-positive processing.
-- [ ] Update SSOT evidence; keep real partial-message E2E pending until a real
+- [x] Update SSOT evidence; keep real partial-message E2E pending until a real
   pass contains multiple candidate threads with mixed outcomes.
+
+Live result: PR #1326 merged as `aa81e7dff` after all seven required checks
+passed in run `30455795192`. The canonical inbox advanced 16→17 with exit 0,
+kept its mode-0600 three-thread seen checkpoint unchanged on the no-work path,
+and reported no new recruiting email. Ledger and interview-prep integrity remain
+`ok`.
