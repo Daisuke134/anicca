@@ -16,6 +16,13 @@ from job_search_loop.summary import build_summary
 class OperationsTests(unittest.TestCase):
     def test_inbox_classification(self):
         self.assertEqual(
+            classify_message(
+                "Verify your candidate account",
+                "Click this link to confirm your email address.",
+            ),
+            "account_verification",
+        )
+        self.assertEqual(
             classify_message("Interview invitation", "Choose a time with our recruiter"),
             "interview",
         )
@@ -49,9 +56,17 @@ class OperationsTests(unittest.TestCase):
                 "subject": "A third-party OAuth application was added",
                 "from": "GitHub <noreply@github.com>",
             },
+            {
+                "id": "workday-verification",
+                "subject": "Verify your candidate account",
+                "from": "ASML People Services <asml@myworkday.com>",
+            },
         ]
         selected = select_new_recruiting_threads(threads, {"already-seen"})
-        self.assertEqual([row["id"] for row in selected], ["new-interview"])
+        self.assertEqual(
+            [row["id"] for row in selected],
+            ["new-interview", "workday-verification"],
+        )
 
     def test_seen_thread_checkpoint_is_private_and_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -10,6 +10,8 @@ from typing import Any
 
 
 STRONG_RECRUITING_TERMS = (
+    "verify your candidate account",
+    "confirm your email address",
     "application received",
     "application status",
     "interview invitation",
@@ -44,6 +46,7 @@ RECRUITING_SENDER_TERMS = (
     "greenhouse.io",
     "lever.co",
     "myworkdayjobs.com",
+    "myworkday.com",
 )
 WEAK_RECRUITING_TERMS = (
     "application",
@@ -60,6 +63,10 @@ THREAD_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 def classify_message(subject: str, body: str) -> str:
     text = f"{subject}\n{body}".casefold()
     rules = (
+        (
+            "account_verification",
+            ("verify your candidate account", "confirm your email address"),
+        ),
         ("offer", ("offer letter", "pleased to offer")),
         ("interview", ("interview", "choose a time", "schedule a call")),
         ("assessment", ("assessment", "coding challenge", "take-home")),
@@ -134,7 +141,7 @@ def _gmail_threads(account: str) -> list[dict[str, Any]]:
     query = (
         "newer_than:14d "
         "(application OR applied OR assessment OR interview OR offer OR recruiter "
-        "OR 応募 OR 選考 OR 面接 OR 採用 OR エントリー)"
+        "OR candidate OR verify OR 応募 OR 選考 OR 面接 OR 採用 OR エントリー)"
     )
     completed = subprocess.run(
         [

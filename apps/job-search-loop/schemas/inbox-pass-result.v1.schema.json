@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "processed_threads", "calendar_events", "replies", "assessments", "prep_packs", "reports"],
+  "required": ["status", "processed_threads", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
   "properties": {
     "status": {"type": "string"},
     "processed_threads": {"type": "integer"},
@@ -58,6 +58,22 @@
           "interview_key": {"type": "string"},
           "status": {
             "enum": ["pending_generation", "generated", "sent", "delivery_unknown"]
+          }
+        }
+      }
+    },
+    "verifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message_id", "tenant", "url_sha256", "status"],
+        "properties": {
+          "message_id": {"type": "string"},
+          "tenant": {"type": "string"},
+          "url_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "status": {
+            "enum": ["opened", "navigation_unknown", "blocked", "duplicate"]
           }
         }
       }
