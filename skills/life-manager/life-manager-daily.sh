@@ -20,12 +20,16 @@ RUN_AGENT="${RUN_AGENT_BIN:-$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_
 VIDEO_GENERATOR="${LM_VIDEO_GENERATOR:-$HERE/../video/daily-lm-video/generate.py}"
 VIDEO_DISTRIBUTOR="${LM_VIDEO_DISTRIBUTOR:-$HERE/../video/lm-distribution/distribute.py}"
 MARKETING_SELF_IMPROVER="${LM_MARKETING_SELF_IMPROVER:-$HERE/../video/lm-self-improve/daily.py}"
-LOG="${LM_DAILY_LOG:-$HOME/.local/state/life-manager/logs/life-manager-daily.log}"
-RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.local/state/life-manager/state/lm-video/daily-run-ledger.jsonl}"
-USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.local/state/life-manager/state/lm-video/agent-usage.jsonl}"
+# One data root shared with the argless generate.py defaults (LM_DATA_DIR,
+# falling back to ~/.local/state/life-manager); ledgers live at
+# <data root>/state/lm-video — the single lm-video path convention.
+LM_DATA_ROOT="${LM_DATA_DIR:-$HOME/.local/state/life-manager}"
+LOG="${LM_DAILY_LOG:-$LM_DATA_ROOT/logs/life-manager-daily.log}"
+RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$LM_DATA_ROOT/state/lm-video/daily-run-ledger.jsonl}"
+USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$LM_DATA_ROOT/state/lm-video/agent-usage.jsonl}"
 MARKETING_LEDGER="${LM_MARKETING_LEDGER:-$LIFE_MANAGER_REPO/skills/life-manager/state/marketing-actions.jsonl}"
 BANK_PATH="$(cd "$HERE/../video/daily-lm-video" && pwd)/creative-bank.jsonl"
-ROTATION_STATE="${LM_VIDEO_STATE:-$HOME/.local/state/life-manager/state/lm-video/daily-render-state.jsonl}"
+ROTATION_STATE="${LM_VIDEO_STATE:-$LM_DATA_ROOT/state/lm-video/daily-render-state.jsonl}"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$RUN_LEDGER")" "$(dirname "$USAGE_LEDGER")"
 printf '=== life-manager-daily run %s ===\n' "$(date '+%F %T %Z')" >>"$LOG"
 
@@ -95,11 +99,11 @@ Do not mutate either file. Return the required final schema JSON
 immediately after those bounded checks, with concrete evidence for codec, dimensions, audio,
 duration, decode exit, creative id, and output path."
 else
-  if [ -f "$HOME/.local/state/life-manager/.env" ]; then
+  if [ -f "$LM_DATA_ROOT/.env" ]; then
     set +u
     set -a
     # shellcheck disable=SC1091
-    . "$HOME/.local/state/life-manager/.env"
+    . "$LM_DATA_ROOT/.env"
     set +a
     set -u
   fi
@@ -201,7 +205,7 @@ $LM_SELF_IMPROVE_REASON. This append-only measurement is already complete. Do no
 backfill, or duplicate metrics."
 fi
 
-EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.local/state/life-manager/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
+EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$LM_DATA_ROOT/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
 export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
 # 9b requires Luna and forbids the retired Claude/CLIProxy fallback. marketing-agent selects
 # gpt-5.6-luna; provider pinning makes a Luna failure visible instead of switching providers.
@@ -277,7 +281,7 @@ PY
 
 printf '=== life-manager-daily done rc=%s %s ===\n' "$EFFECTIVE_RC" "$(date '+%F %T %Z')" >>"$LOG"
 if [ "$EFFECTIVE_RC" -eq 0 ]; then
-  mkdir -p "$HOME/.local/state/life-manager/state"
-  touch "$HOME/.local/state/life-manager/state/.life-manager-core-last-pass"
+  mkdir -p "$LM_DATA_ROOT/state"
+  touch "$LM_DATA_ROOT/state/.life-manager-core-last-pass"
 fi
 exit "$EFFECTIVE_RC"

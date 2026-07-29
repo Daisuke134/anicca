@@ -220,18 +220,60 @@ def render(args, row, output):
             partial.unlink(missing_ok=True)
 
 
+def default_video_root():
+    # Defaults live beneath the portable Life Manager data root (LM_DATA_DIR,
+    # falling back to <home>/.local/state/life-manager), never a legacy root.
+    # The <data root>/state/lm-video layout is the single convention shared with
+    # skills/life-manager/life-manager-daily.sh and the dev-loop state dir.
+    data_root = Path(os.environ.get("LM_DATA_DIR") or Path.home() / ".local/state/life-manager")
+    return data_root / "state" / "lm-video"
+
+
+def legacy_video_state_root():
+    # Named ONLY to detect unmigrated state and refuse to run (fail-loud guard);
+    # this generator never reads the legacy store.
+    legacy_state = Path(os.environ.get("LM_LEGACY_STATE_ROOT") or Path.home() / ".openclaw/state")
+    return legacy_state / "lm-video"
+
+
+def guard_unmigrated_legacy_state(args):
+    """Fail loudly when a default-rooted state/input is absent but its legacy
+    counterpart still exists: silently starting empty (or silently reading the
+    legacy path) would lose the rotation history and recordings."""
+    video_root = default_video_root()
+    legacy_root = legacy_video_state_root()
+    for label, new_path in (
+        ("rotation state", args.state),
+        ("call audio", args.call_audio),
+        ("Whisper ASS", args.whisper_ass),
+    ):
+        new_path = Path(new_path)
+        try:
+            relative = new_path.relative_to(video_root)
+        except ValueError:
+            continue
+        legacy_path = legacy_root / relative
+        if not new_path.exists() and legacy_path.exists():
+            raise SystemExit(
+                f"unmigrated legacy state: {label} is missing at {new_path} but still exists at "
+                f"{legacy_path}; run apps/life-manager/scripts/migrate-legacy-state.sh "
+                "(copy-only, the legacy store stays intact) and re-run"
+            )
+
+
 def parser():
     here = Path(__file__).resolve().parent
     home = Path.home()
     m1_dir = home / "anicca-project/.claude/sol-orders/out/m1"
     parse = argparse.ArgumentParser()
     parse.add_argument("--bank", type=Path, default=Path(os.environ.get("LM_VIDEO_BANK", here / "creative-bank.jsonl")))
-    parse.add_argument("--state", type=Path, default=Path(os.environ.get("LM_VIDEO_STATE", home / ".openclaw/state/lm-video/daily-render-state.jsonl")))
-    parse.add_argument("--output-dir", type=Path, default=Path(os.environ.get("LM_VIDEO_OUTPUT_DIR", home / ".openclaw/state/lm-video/daily-renders")))
-    parse.add_argument("--call-audio", type=Path, default=Path(os.environ.get("LM_VIDEO_CALL_AUDIO", home / ".openclaw/state/lm-video/recordings/2026-07-19T23-40-35-932b3fad-2a99-49ca-8250-3a49e682ce92.mp3")))
+    video_root = default_video_root()
+    parse.add_argument("--state", type=Path, default=Path(os.environ.get("LM_VIDEO_STATE", video_root / "daily-render-state.jsonl")))
+    parse.add_argument("--output-dir", type=Path, default=Path(os.environ.get("LM_VIDEO_OUTPUT_DIR", video_root / "daily-renders")))
+    parse.add_argument("--call-audio", type=Path, default=Path(os.environ.get("LM_VIDEO_CALL_AUDIO", video_root / "recordings/2026-07-19T23-40-35-932b3fad-2a99-49ca-8250-3a49e682ce92.mp3")))
     parse.add_argument("--stock", type=Path, default=Path(os.environ.get("LM_VIDEO_STOCK", home / "anicca-project/.claude/skills/faceless-money-factory/assets/broll-library/lib_money_5.mp4")))
     parse.add_argument("--telegram-proof", type=Path, default=Path(os.environ.get("LM_VIDEO_TELEGRAM_PROOF", m1_dir / "telegram-real-message-3393-crop.png")))
-    parse.add_argument("--whisper-ass", type=Path, default=Path(os.environ.get("LM_VIDEO_WHISPER_ASS", home / ".openclaw/state/lm-video/2026-07-20/2026-07-19T23-40-35-932b3fad-2a99-49ca-8250-3a49e682ce92.ass")))
+    parse.add_argument("--whisper-ass", type=Path, default=Path(os.environ.get("LM_VIDEO_WHISPER_ASS", video_root / "2026-07-20/2026-07-19T23-40-35-932b3fad-2a99-49ca-8250-3a49e682ce92.ass")))
     parse.add_argument("--ffmpeg-bin", default=os.environ.get("LM_VIDEO_FFMPEG", "ffmpeg"))
     parse.add_argument("--ffprobe-bin", default=os.environ.get("LM_VIDEO_FFPROBE", "ffprobe"))
     parse.add_argument("--duration", type=float, default=float(os.environ.get("LM_VIDEO_DURATION", "34.656")))
@@ -241,6 +283,7 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    guard_unmigrated_legacy_state(args)
     rows = load_bank(args.bank)
     valid_ids = {row["id"] for row in rows}
     lock_path = Path(str(args.state) + ".lock")

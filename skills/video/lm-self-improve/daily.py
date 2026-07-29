@@ -19,6 +19,21 @@ class SelfImproveError(RuntimeError):
     pass
 
 
+def _lm_video_state_root() -> Path:
+    """Portable lm-video state root: LM_DATA_DIR when set (absolute only,
+    mirroring resolveDataRoot in apps/life-manager/lib/runtime-paths.js and
+    default_video_root in skills/video/daily-lm-video/generate.py), else
+    <home>/.local/state/life-manager."""
+    override = os.environ.get("LM_DATA_DIR", "").strip()
+    if override:
+        if not Path(override).is_absolute():
+            raise SystemExit("LM_DATA_DIR must be an absolute path")
+        data_root = Path(override)
+    else:
+        data_root = Path.home() / ".local/state/life-manager"
+    return data_root / "state" / "lm-video"
+
+
 def _read_jsonl(path: Path) -> list[dict]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -231,12 +246,12 @@ def main() -> int:
     parser.add_argument(
         "--distribution-ledger",
         type=Path,
-        default=Path("~/.local/state/life-manager/state/lm-video/distribution.jsonl").expanduser(),
+        default=_lm_video_state_root() / "distribution.jsonl",
     )
     parser.add_argument(
         "--self-improve-ledger",
         type=Path,
-        default=Path("~/.local/state/life-manager/state/lm-video/self-improve.jsonl").expanduser(),
+        default=_lm_video_state_root() / "self-improve.jsonl",
     )
     parser.add_argument(
         "--bank",

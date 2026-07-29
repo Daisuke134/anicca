@@ -2,14 +2,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${HOME}/.openclaw/.env"
+ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.local/state/life-manager/.env}"
 
-if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-fi
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/load-env-file.sh"
+lm_load_env_file "$ENV_FILE"
 
 export AGENT_WALLET_ADDRESS="${AGENT_WALLET_ADDRESS:-0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad}"
 export LM_AGENT_WALLET_PATH="${LM_AGENT_WALLET_PATH:-${HOME}/.cloak/life-manager-agent-wallet.json}"

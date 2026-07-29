@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { resolveRuntimePaths } = require("./runtime-paths.js");
+const { resolveDataRoot, resolveRuntimePaths } = require("./runtime-paths.js");
 
 test("resolves local runtime directories beneath Life Manager-owned absolute roots", () => {
   const env = {
@@ -92,6 +92,32 @@ test("rejects legacy execution roots and traversal into them", () => {
       candidate,
     );
   }
+});
+
+test("resolveDataRoot prefers LM_DATA_DIR and falls back to the portable state root", () => {
+  assert.equal(
+    resolveDataRoot({ LM_DATA_DIR: "/var/lib/life-manager" }),
+    "/var/lib/life-manager",
+  );
+  assert.equal(
+    resolveDataRoot({ HOME: "/Users/operator" }),
+    "/Users/operator/.local/state/life-manager",
+  );
+});
+
+test("resolveDataRoot fails closed on relative overrides and legacy roots", () => {
+  assert.throws(
+    () => resolveDataRoot({ LM_DATA_DIR: "state" }),
+    /absolute/i,
+  );
+  assert.throws(
+    () => resolveDataRoot({ LM_DATA_DIR: "/Users/operator/.openclaw/state" }),
+    /legacy runtime root/i,
+  );
+  assert.throws(
+    () => resolveDataRoot({ HOME: "/srv/anicca" }),
+    /legacy runtime root/i,
+  );
 });
 
 test("allows a username named anicca when the runtime is outside the legacy anicca repository", () => {
