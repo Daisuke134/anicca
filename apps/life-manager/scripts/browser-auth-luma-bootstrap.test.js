@@ -10,6 +10,7 @@ const {
   requestLumaEmailLogin,
   resolveBootstrapEnv,
   runLumaBootstrap,
+  submitLumaCode,
 } = require("./browser-auth-luma-bootstrap.js");
 
 const ENV = {
@@ -252,4 +253,21 @@ test("Luma email challenge accepts only a six-digit code from a Luma-shaped mess
     subject: "Your sign-in code",
     text: "Use 12345 to sign in.",
   }), null);
+});
+
+test("Luma code entry uses all six measured numeric inputs even when they have no form", async () => {
+  const calls = [];
+  const page = {
+    async evaluate(expression) {
+      calls.push(expression);
+      return true;
+    },
+  };
+
+  await submitLumaCode(page, "123456");
+
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /document\.querySelectorAll\('input'\)/);
+  assert.match(calls[0], /input\.inputMode === "numeric"/);
+  assert.doesNotMatch(calls[0], /first\.closest\('form'\)/);
 });

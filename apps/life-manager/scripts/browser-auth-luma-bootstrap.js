@@ -285,8 +285,7 @@ async function submitLumaCode(page, code) {
   const completed = await page.evaluate(`(async () => {
     const first = document.querySelector('input[autocomplete="one-time-code"]');
     if (!first) return false;
-    const scope = first.closest('form') || first.parentElement?.parentElement || document;
-    const inputs = Array.from(scope.querySelectorAll('input')).filter((input) =>
+    const inputs = Array.from(document.querySelectorAll('input')).filter((input) =>
       input === first || input.maxLength === 1 || input.inputMode === "numeric");
     if (inputs.length < 6) return false;
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
@@ -487,4 +486,5 @@ module.exports = {
   resolveBootstrapEnv,
   runLumaBootstrap,
   safeLumaMagicLink,
+  submitLumaCode,
 };
