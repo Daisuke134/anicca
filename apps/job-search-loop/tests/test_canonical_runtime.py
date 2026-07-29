@@ -12,6 +12,88 @@ REPO_ROOT = APP_ROOT.parents[1]
 
 
 class CanonicalRuntimeTests(unittest.TestCase):
+    def _run_daily_with_fake_python(self, root: Path, slot_count: int, runner_rc: int):
+        fake_python = root / "fake-python"
+        calls = root / "python-calls.jsonl"
+        fake_python.write_text(
+            """#!/usr/bin/env python3
+import json
+import pathlib
+import sys
+
+calls = pathlib.Path(__file__).with_name("python-calls.jsonl")
+with calls.open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(sys.argv[1:]) + "\\n")
+if sys.argv[1:2] == ["-"]:
+    print(%d)
+    raise SystemExit(0)
+if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
+    evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
+    evidence.mkdir(parents=True, exist_ok=True)
+    (evidence / "summary.json").write_text(
+        json.dumps({"status": "budget_blocked"}) + "\\n",
+        encoding="utf-8",
+    )
+    raise SystemExit(%d)
+raise SystemExit(0)
+"""
+            % (slot_count, runner_rc),
+            encoding="utf-8",
+        )
+        fake_python.chmod(0o700)
+        env = {
+            **os.environ,
+            "HOME": str(root / "home"),
+            "XDG_CONFIG_HOME": str(root / "config"),
+            "XDG_DATA_HOME": str(root / "data"),
+            "JOB_SEARCH_STATE_ROOT": str(root / "state"),
+            "JOB_SEARCH_PYTHON": str(fake_python),
+            "JOB_SEARCH_TELEGRAM_MEDIA": str(root / "media"),
+        }
+        result = subprocess.run(
+            ["/bin/zsh", str(APP_ROOT / "scripts" / "run-daily.sh")],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        recorded = [
+            json.loads(line)
+            for line in calls.read_text(encoding="utf-8").splitlines()
+        ]
+        return result, recorded
+
+    def test_daily_full_quota_exits_without_browser_or_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 2, 99)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            encoded = json.dumps(calls)
+            self.assertNotIn("job_search_loop.browser_owner", encoded)
+            self.assertNotIn("agent_runner.py", encoded)
+            summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
+            self.assertEqual(len(summaries), 1)
+            self.assertEqual(
+                json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
+                "daily_quota_reached",
+            )
+
+    def test_daily_budget_block_is_an_honest_completed_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 0, 75)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("job_search_loop.browser_owner", json.dumps(calls))
+            self.assertIn("agent_runner.py", json.dumps(calls))
+            summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
+            self.assertEqual(len(summaries), 1)
+            self.assertEqual(
+                json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
+                "budget_blocked",
+            )
+
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))

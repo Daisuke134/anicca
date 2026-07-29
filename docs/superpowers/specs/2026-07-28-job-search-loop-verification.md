@@ -50,3 +50,9 @@ fresh daily/inbox evidence.
 | Runner configuration | Four job-loop task classes; no personal account, absolute user path, candidate profile, or gig route |
 | Legacy source scan | No legacy checkout or private Gmail path in `apps/job-search-loop` or `runtime/agent-runner` |
 | Live cutover | Pending canonical commit and shadow healthcheck |
+
+The first canonical bootstrap found one scheduler-ordering defect without creating
+an application side effect: the daily runner returned `EX_TEMPFAIL` after its
+durable token ledger reported `budget_blocked`. Two integration tests reproduce
+the failure. The repaired contract exits zero for that honest terminal state and
+also proves a full daily quota never initializes the browser or model.
