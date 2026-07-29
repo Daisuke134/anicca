@@ -2,6 +2,7 @@
 
 const DECISION_KEYS = Object.freeze([
   "action_kind",
+  "binding_commitment",
   "browser_required",
   "explicit_request",
   "goal",
@@ -11,6 +12,14 @@ const DECISION_KEYS = Object.freeze([
   "principal_kind",
   "reversible",
   "zero_cost",
+]);
+const ACTION_KINDS = Object.freeze([
+  "registration",
+  "booking",
+  "inquiry",
+  "application",
+  "authenticated_readback",
+  "other",
 ]);
 
 const RESERVED_MESSAGE = /^(?:\/|feedback\s*[:：]|フィードバック\s*[:：])/i;
@@ -23,9 +32,10 @@ const RESPONSE_SCHEMA = Object.freeze({
     reversible: { type: "boolean" },
     zero_cost: { type: "boolean" },
     requires_kyc: { type: "boolean" },
+    binding_commitment: { type: "boolean" },
     requires_login: { type: "boolean" },
     principal_kind: { type: "string", enum: ["none", "agent_owned", "user_provided"] },
-    action_kind: { type: "string" },
+    action_kind: { type: "string", enum: ACTION_KINDS },
     goal: { type: "string" },
     locale: { type: "string", enum: ["en", "ja"] },
   },
@@ -45,11 +55,12 @@ function validateBrowserDecision(value) {
     "reversible",
     "zero_cost",
     "requires_kyc",
+    "binding_commitment",
     "requires_login",
   ]) {
     if (typeof value[key] !== "boolean") invalid();
   }
-  if (typeof value.action_kind !== "string" || !value.action_kind.trim() || value.action_kind.length > 100) invalid();
+  if (!ACTION_KINDS.includes(value.action_kind)) invalid();
   if (typeof value.goal !== "string" || !value.goal.trim() || value.goal.length > 1000) invalid();
   if (!["en", "ja"].includes(value.locale)) invalid();
   if (!['none', 'agent_owned', 'user_provided'].includes(value.principal_kind)) invalid();
@@ -62,7 +73,10 @@ function rejectionReason(decision) {
   if (!decision.explicit_request || !decision.browser_required) return "not_explicitly_actionable";
   if (!decision.zero_cost) return "financial_or_paid_action";
   if (decision.requires_kyc) return "kyc_or_identity_gate";
-  if (!decision.reversible) return "irreversible_action";
+  if (decision.binding_commitment) return "binding_or_legal_commitment";
+  if (!decision.reversible && !["inquiry", "application"].includes(decision.action_kind)) {
+    return "irreversible_action";
+  }
   return null;
 }
 
@@ -77,6 +91,8 @@ async function inferBrowserDecision(text, opts = {}) {
     "reversible=true only when the action can be safely undone or abandoned.",
     "zero_cost=false for any payment, purchase, deposit, transfer, subscription charge, or financial commitment.",
     "requires_kyc=true for identity verification, government ID, regulated gig work, or financial onboarding.",
+    "binding_commitment=true for contracts, paid terms, legal attestations, regulated submissions, or factual claims not present in supplied context.",
+    `action_kind must be exactly one of: ${ACTION_KINDS.join(", ")}.`,
     "requires_login=true when the request explicitly depends on an existing authenticated account.",
     "Set principal_kind=none when requires_login=false; otherwise use agent_owned or user_provided for the login session owner.",
     "Normalize goal into an execution instruction of at most 1000 characters.",

@@ -15,6 +15,7 @@ function decision(overrides = {}) {
     reversible: true,
     zero_cost: true,
     requires_kyc: false,
+    binding_commitment: false,
     requires_login: false,
     principal_kind: "none",
     action_kind: "registration",
@@ -70,6 +71,7 @@ test("financial outflow, KYC, irreversible action, and model schema drift fail c
   const cases = [
     [decision({ zero_cost: false }), "financial_or_paid_action"],
     [decision({ requires_kyc: true }), "kyc_or_identity_gate"],
+    [decision({ binding_commitment: true }), "binding_or_legal_commitment"],
     [decision({ reversible: false }), "irreversible_action"],
     [decision({ explicit_request: false }), "not_explicitly_actionable"],
   ];
@@ -88,6 +90,36 @@ test("financial outflow, KYC, irreversible action, and model schema drift fail c
     () => validateBrowserDecision({ ...decision(), goal: "" }),
     /browser decision schema/i,
   );
+});
+
+test("explicit non-binding inquiry and application actions may be irreversible but remain zero-cost", async () => {
+  for (const action_kind of ["inquiry", "application"]) {
+    const result = await classifyBrowserTask("Please send this controlled form now", {
+      infer: async () => decision({
+        action_kind,
+        reversible: false,
+        binding_commitment: false,
+      }),
+    });
+    assert.equal(result.accepted, true);
+    assert.equal(result.actionKind, action_kind);
+  }
+});
+
+test("binding inquiry or application claims fail closed even when explicitly requested", async () => {
+  for (const action_kind of ["inquiry", "application"]) {
+    const result = await classifyBrowserTask("Please submit this legal claim now", {
+      infer: async () => decision({
+        action_kind,
+        reversible: false,
+        binding_commitment: true,
+      }),
+    });
+    assert.deepEqual(result, {
+      accepted: false,
+      reason: "binding_or_legal_commitment",
+    });
+  }
 });
 
 test("classifier binds login-dependent tasks to an explicit auth principal and rejects inconsistent choices", async () => {
@@ -143,6 +175,7 @@ test("the production classifier asks Gemini for strict JSON without putting its 
   assert.deepEqual(body.generationConfig.responseSchema.required.sort(), [
     "action_kind",
     "browser_required",
+    "binding_commitment",
     "explicit_request",
     "goal",
     "locale",
