@@ -2769,7 +2769,7 @@ verified evidence
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
+| 1 | RUNNING / P1 DISTRIBUTION (`895e113`, `2a5d7f2`, `0552d38`) | X Article JA/ENを復旧 | JA/EN saved editor URLはauthenticated `diceai0`と一致。JAは同一editorからpublic ID `2082446903372079538`を作成済みだが、public readbackがcanonical最終CTA exact1欠落を検出したためsuccess未記録。全 preceding block + title + identity + mediaが一致し最終measurable CTAだけ欠ける時だけ`live-content-mismatch`→same-ID `repair-required`へ昇格し、public IDをjournalへ継承するbounded repairを実装。plannerもrecoverable ambiguous JAを自動選択。JA CTA same-ID repairとENのJA remote timestamp +6h公開がpublic readback PASSでdone。別記事・login wall・一般content mismatchはsuccessにしない |
 | 2 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
 
 ##### B. VERIFY ONLY — 実装済み、次の実runで証明する
