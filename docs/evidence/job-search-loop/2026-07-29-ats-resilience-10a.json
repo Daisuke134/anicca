@@ -1,10 +1,16 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10A",
-  "status": "verified_local_pending_ci_merge",
-  "observed_at": "2026-07-29T11:07:52Z",
+  "status": "merged",
+  "observed_at": "2026-07-29T11:12:28Z",
   "branch": "feat/job-ats-resilience-1",
   "implementation_commit": "a848c558bfe9ccdc4ab4c013d43bb0af9ca3c3e1",
+  "pull_request": {
+    "number": 1288,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1288",
+    "ci_run": 30446495346,
+    "merge_commit": "74e01f24b2340db0a404b67e475528ab59338b29"
+  },
   "tests": {
     "job_loop": {
       "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest discover -s apps/job-search-loop/tests -p test_*.py",
