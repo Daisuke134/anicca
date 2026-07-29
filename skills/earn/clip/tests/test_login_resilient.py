@@ -65,6 +65,7 @@ class TestTier1NeverRelogins(unittest.TestCase):
             cl = mock.MagicMock()
             cl.load_settings = mock.MagicMock()
             cl.get_timeline_feed = mock.MagicMock(return_value={})  # tier1 verifies clean
+            cl.account_info.return_value = mock.MagicMock(username="h")
             cl.login = mock.MagicMock()  # password login — must NEVER be called
 
             res = {"handle": "h", "outcome": "failed"}
@@ -86,6 +87,7 @@ class TestTier1NeverRelogins(unittest.TestCase):
             cl = mock.MagicMock()
             cl.load_settings = mock.MagicMock()
             cl.get_timeline_feed = mock.MagicMock(return_value={})  # tier1 verifies clean
+            cl.account_info.return_value = mock.MagicMock(username="h")
             cl.dump_settings = mock.MagicMock()
             cl.login = mock.MagicMock()  # password login — must NEVER be called
 
@@ -95,6 +97,35 @@ class TestTier1NeverRelogins(unittest.TestCase):
             self.assertTrue(ok)
             cl.login.assert_not_called()
             cl.dump_settings.assert_called_once_with(settings_path)
+
+    def test_alive_session_with_wrong_authenticated_identity_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_path = os.path.join(tmp, "instagrapi-h.json")
+            with open(settings_path, "w") as f:
+                json.dump({"uuids": {}}, f)
+            accounts_path = _write_accounts(tmp, "h", session_owner="instagrapi")
+
+            cl = mock.MagicMock()
+            cl.load_settings = mock.MagicMock()
+            cl.get_timeline_feed = mock.MagicMock(return_value={})
+            cl.account_info.return_value = mock.MagicMock(username="wrong")
+            cl.dump_settings = mock.MagicMock()
+            cl.login = mock.MagicMock()
+
+            res = {"handle": "h", "outcome": "failed"}
+            ok = ip.login_resilient(
+                cl,
+                "h",
+                9222,
+                res,
+                settings_path=settings_path,
+                accounts_path=accounts_path,
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("identity mismatch", res["error"])
+            cl.dump_settings.assert_not_called()
+            cl.login.assert_not_called()
 
     def test_dead_session_with_existing_settings_refuses_password_relogin(self):
         # v23 core finding: a saved session that died is NOT a green light for password login —
@@ -121,8 +152,7 @@ class TestTier1NeverRelogins(unittest.TestCase):
 
 
 class TestBloksNeverResuscitated(unittest.TestCase):
-    """Guarantee 2: bloks ChallengeRequired at any tier marks the account poisoned and never
-    retries login on it (v23/v24 — the account is dead, only self-heal replaces it)."""
+    """Guarantee 2: ChallengeRequired quarantines the account and never retries private-API login."""
 
     def test_tier1_bloks_marks_poisoned_no_retry(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -143,7 +173,8 @@ class TestBloksNeverResuscitated(unittest.TestCase):
             self.assertTrue(res.get("poisoned"))
             cl.login.assert_not_called()
 
-            accounts = json.load(open(accounts_path))
+            with open(accounts_path, encoding="utf-8") as source:
+                accounts = json.load(source)
             self.assertEqual(accounts[0]["status"], "poisoned_manual_backup")
             self.assertIn("poisoned_reason", accounts[0])
 
@@ -167,12 +198,21 @@ class TestBloksNeverResuscitated(unittest.TestCase):
                      "~/.cloak/.last-pwlogin-h": os.path.join(tmp, ".last-pwlogin-h"),
                      "~/.cloak/ig-h.json": creds_path,
                  }.get(p, os.path.expanduser(p))):
-                ok = ip.login_resilient(cl, "h", 9222, res, settings_path=settings_path, accounts_path=accounts_path)
+                ok = ip.login_resilient(
+                    cl,
+                    "h",
+                    9222,
+                    res,
+                    settings_path=settings_path,
+                    accounts_path=accounts_path,
+                    profile_state_dir=tmp,
+                )
 
             self.assertFalse(ok)
             self.assertTrue(res.get("poisoned"))
             cl.dump_settings.assert_not_called()
-            accounts = json.load(open(accounts_path))
+            with open(accounts_path, encoding="utf-8") as source:
+                accounts = json.load(source)
             self.assertEqual(accounts[0]["status"], "poisoned_manual_backup")
 
 
