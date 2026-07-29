@@ -8,8 +8,25 @@ const AUTH_MARKERS = new Map([
   ["my events", "my_events"],
   ["manage events", "manage_events"],
 ]);
+const BOOTSTRAP_FAILURE_CODES = new Set([
+  "CONFIG",
+  "OPEN_STEEL",
+  "SUBMIT_EMAIL",
+  "POLL_EMAIL",
+  "COMPLETE_CHALLENGE",
+  "VERIFY_AUTH",
+  "EXPORT_CONTEXT",
+  "SAVE_CONTEXT",
+  "RELEASE",
+]);
 
-class LumaBootstrapError extends Error {}
+class LumaBootstrapError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = "LumaBootstrapError";
+    if (BOOTSTRAP_FAILURE_CODES.has(code)) this.code = code;
+  }
+}
 
 function required(value) {
   return String(value || "").trim();
@@ -80,20 +97,21 @@ async function runLumaBootstrap({ env = process.env, deps } = {}) {
     || !deps
     || typeof deps.openBrowser !== "function"
   ) {
-    throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
+    throw new LumaBootstrapError("Luma bootstrap configuration unavailable", "CONFIG");
   }
   if (
     typeof deps.now !== "function"
     || typeof deps.readMagicLink !== "function"
     || typeof deps.saveContext !== "function"
   ) {
-    throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
+    throw new LumaBootstrapError("Luma bootstrap configuration unavailable", "CONFIG");
   }
 
   const afterMs = deps.now();
   let browser;
   let sessionId;
   let released = false;
+  let stage = "OPEN_STEEL";
   try {
     browser = await deps.openBrowser();
     if (
@@ -105,20 +123,27 @@ async function runLumaBootstrap({ env = process.env, deps } = {}) {
       || typeof browser.exportContext !== "function"
       || typeof browser.release !== "function"
     ) {
-      throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
+      throw new LumaBootstrapError("Luma bootstrap configuration unavailable", "OPEN_STEEL");
     }
     sessionId = required(browser.sessionId);
+    stage = "SUBMIT_EMAIL";
     await browser.requestMagicLink(email);
+    stage = "POLL_EMAIL";
     const challenge = safeLumaAuthChallenge(await deps.readMagicLink({ afterMs }));
+    stage = "COMPLETE_CHALLENGE";
     await browser.openMagicLink(challenge);
+    stage = "VERIFY_AUTH";
     const auth = confirmedLumaAuth(await browser.inspectAuthenticated());
+    stage = "EXPORT_CONTEXT";
     const context = await browser.exportContext();
+    stage = "SAVE_CONTEXT";
     const saved = await deps.saveContext({
       uid,
       origin: LUMA_ORIGIN,
       principalKind: "agent_owned",
       context,
     });
+    stage = "RELEASE";
     released = await browser.release() === true;
     browser = null;
     if (
@@ -141,8 +166,8 @@ async function runLumaBootstrap({ env = process.env, deps } = {}) {
       released,
     });
   } catch (error) {
-    if (error instanceof LumaBootstrapError) throw error;
-    throw new LumaBootstrapError("Luma authentication unavailable");
+    if (error instanceof LumaBootstrapError && error.code) throw error;
+    throw new LumaBootstrapError("Luma authentication unavailable", stage);
   } finally {
     if (browser && typeof browser.release === "function") {
       try { await browser.release(); } catch { /* the safe generic failure above remains authoritative */ }
@@ -438,8 +463,11 @@ async function main() {
     const deps = makeProductionDeps(env);
     const result = await runLumaBootstrap({ env, deps });
     process.stdout.write(`${JSON.stringify(result)}\n`);
-  } catch {
-    process.stderr.write("Luma authentication unavailable\n");
+  } catch (error) {
+    const code = BOOTSTRAP_FAILURE_CODES.has(error && error.code)
+      ? error.code
+      : "CONFIG";
+    process.stderr.write(`Luma authentication unavailable [${code}]\n`);
     process.exitCode = 1;
   } finally {
     if (pool) {
