@@ -62,7 +62,15 @@ and never copies its values into evidence or Telegram.
 
 - [x] Provision the current CrowdStrike tenant in the real private config root.
 - [x] Verify mode, redacted receipt, stable second-call reuse, and no repo secret.
-- [ ] Push, pass all CI gates, merge, fast-forward canonical, and kickstart only
+- [x] Push, pass all CI gates, merge, fast-forward canonical, and kickstart only
   the existing launchd jobs.
-- [ ] Update SSOT spec and redacted evidence; keep Order 10 `in_progress` until
+- [x] Update SSOT spec and redacted evidence; keep Order 10 `in_progress` until
   confirmed real Ashby and Workday submissions exist.
+
+PR #1310 passed all five GitHub CI gates in run `30452160572` and
+squash-merged as `10dafba7ac183a64f11fdd667e676f17df9eeff0`.
+Canonical fast-forwarded to that commit, re-read the private CrowdStrike tenant
+as `created=false`, and retained 0700/0600 modes. Existing launchd jobs were
+kickstarted rather than duplicated: daily advanced 5→6 and inbox 12→13, both
+exited zero; the daily budget gate remained honest and ledger integrity stayed
+`ok`.
