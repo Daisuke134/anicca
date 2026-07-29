@@ -49,8 +49,13 @@ its `created_at`.
 
 ## Task 3 — GitHub and live reflection
 
-- [ ] Push, pass all CI, merge, and fast-forward canonical.
-- [ ] Kickstart only the existing inbox launchd job and verify exit zero,
+- [x] Push, pass all CI, merge, and fast-forward canonical.
+- [x] Kickstart only the existing inbox launchd job and verify exit zero,
   integrity, and no false-positive processing.
-- [ ] Update SSOT evidence. Keep the real Workday activation E2E pending until
+- [x] Update SSOT evidence. Keep the real Workday activation E2E pending until
   a new verification email arrives.
+
+Live result: PR #1322 merged as `b17f838cd` after all seven required checks
+passed in run `30454763988`. The canonical inbox advanced 15→16 with exit 0,
+found no new recruiting email, and did not create a verification row or reopen
+historical mail. Ledger and interview-prep integrity remain `ok`.
