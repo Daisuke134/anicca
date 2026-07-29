@@ -1,6 +1,7 @@
 "use strict";
 
 const RECONCILED_EFFECTS = new Set(["publish", "message", "money"]);
+const { MAX_UNKNOWN_RECONCILE_RESULTS } = require("./runtime-job-store.js");
 
 async function reconcileUnknownEffect(job, dependencies = {}) {
   if (!job || job.status !== "reconciling") {
@@ -14,7 +15,11 @@ async function reconcileUnknownEffect(job, dependencies = {}) {
   if (!adapter || typeof adapter.inspectEffect !== "function") {
     throw new Error("runtime reconciliation adapter invalid");
   }
-  if (!store || typeof store.resolveReconciliation !== "function") {
+  if (
+    !store
+    || typeof store.resolveReconciliation !== "function"
+    || typeof store.recordUnknownReconciliation !== "function"
+  ) {
     throw new Error("runtime reconciliation store invalid");
   }
 
@@ -30,6 +35,18 @@ async function reconcileUnknownEffect(job, dependencies = {}) {
     throw new Error("runtime adapter proof invalid");
   }
   if (proof.state === "unknown") {
+    // Unknown ages: the store durably counts consecutive unknown results and, at
+    // MAX_UNKNOWN_RECONCILE_RESULTS, dead-letters the job for operator review instead
+    // of leaving it in an infinite quarantine. Retry is still never permitted here.
+    const aged = await store.recordUnknownReconciliation({
+      tenantId: job.tenant_id,
+      jobId: job.job_id,
+      attempt: job.attempt,
+      maxUnknownResults: MAX_UNKNOWN_RECONCILE_RESULTS,
+    });
+    if (aged && aged.status === "dead_letter") {
+      return { status: "dead_letter", decision: "unknown_exhausted" };
+    }
     return { status: "reconciling", decision: "unknown" };
   }
   if (!proof.receipt || typeof proof.receipt !== "object" || Array.isArray(proof.receipt)) {
@@ -45,4 +62,4 @@ async function reconcileUnknownEffect(job, dependencies = {}) {
   });
 }
 
-module.exports = { reconcileUnknownEffect };
+module.exports = { reconcileUnknownEffect, MAX_UNKNOWN_RECONCILE_RESULTS };

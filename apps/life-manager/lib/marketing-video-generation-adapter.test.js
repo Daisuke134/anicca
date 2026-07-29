@@ -69,7 +69,7 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
     form: "relationship-confession",
     locale: "ja",
     title: "Honne — 言いたいこと、翻訳します",
-    hashtags: [],
+    hashtags: ["honne", "恋愛"],
     hooks: [
       {
         id: "HJA-001",
@@ -140,12 +140,16 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
     "sha256",
     result.receipt.copy_sha256,
   );
-  assert.deepEqual(JSON.parse(fs.readFileSync(copyPath, "utf8")), {
-    title: "Honne — 言いたいこと、翻訳します",
-    caption: "second hook",
-    hashtags: [],
-  });
+  assert.equal(
+    fs.readFileSync(copyPath, "utf8"),
+    "second hook\n\n#honne #恋愛\n",
+  );
   assert.equal(fs.statSync(copyPath).mode & 0o777, 0o600);
+  // The generated copy is plain caption text, so its workspace file is .copy.txt (not .copy.json).
+  const workspace = path.join(root, "tenants", "tenant-a", "marketing", "video-generation");
+  const workspaceFiles = fs.readdirSync(workspace);
+  assert.ok(workspaceFiles.some((name) => name.endsWith(".copy.txt")));
+  assert.ok(!workspaceFiles.some((name) => name.endsWith(".copy.json")));
   assert.equal(verifyMarketingVideoGenerationReceipt(result.receipt), true);
 });
 
