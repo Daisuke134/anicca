@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "deliverable": "JOB-ATS-RESILIENCE-10I",
+  "observed_at": "2026-07-29T23:32:49+09:00",
+  "implementation": {
+    "pull_request": 1346,
+    "merge_sha": "96adde7219da970e3c26abebbb30c5bdb9371962",
+    "head_sha": "d136f159f7c713c576bbd366b91ca91632531f70",
+    "ci_run_id": 30460492034,
+    "ci_conclusion": "success",
+    "checks_passed": 6,
+    "job_loop_tests_passed": 168,
+    "agent_runner_tests_passed": 9,
+    "oss_boundary": "pass"
+  },
+  "launchd": {
+    "label": "ai.anicca.job-search-daily",
+    "runs_before": 9,
+    "runs_after": 10,
+    "state_after": "not running",
+    "last_exit_code": 0,
+    "evidence_run_id": "daily-20260729-232418"
+  },
+  "pass_result": {
+    "status": "completed",
+    "submitted": [],
+    "submit_unknown": [],
+    "blocked": [
+      "BJAK Applied AI Engineer: explicit 3-year minimum is not verified by the candidate profile.",
+      "Sierra Software Engineer, Agent: required work-authorization and visa-sponsorship answers are not verified; no legal answer was inferred."
+    ],
+    "telegram_report_message_id": "4429"
+  },
+  "projection": {
+    "path": "~/.local/state/anicca/job-search/summary.v1.json",
+    "mode": "0600",
+    "value": {
+      "version": 1,
+      "day": "2026-07-29",
+      "counts": {
+        "not_submitted": 2,
+        "submit_unknown": 1,
+        "submitted": 2
+      },
+      "model_route": "unconfigured",
+      "ats_progress": {
+        "required_adapters": [
+          "ashby",
+          "workday"
+        ],
+        "confirmed_adapters": [],
+        "complete": false,
+        "adapters": {
+          "ashby": {
+            "not_submitted": 2,
+            "submit_unknown": 1
+          },
+          "generic": {
+            "submitted": 2
+          }
+        }
+      }
+    }
+  },
+  "health": {
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "daily_last_exit_code": 0,
+    "inbox_last_exit_code": 0
+  },
+  "budget_observation": {
+    "daily_limit_tokens": 262144,
+    "daily_consumed_before_tokens": 231212,
+    "reservation_tokens": 24576,
+    "provider_reported_charge_tokens": 93420,
+    "daily_consumed_after_tokens": 324632,
+    "finding": "Admission used a reservation smaller than the possible provider-reported charge, so the post-run total exceeded the configured daily limit. The next pass fails closed, but a strict pre-spend cap still needs a separate fix."
+  }
+}
