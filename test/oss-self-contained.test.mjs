@@ -169,6 +169,25 @@ test("personal mail and messaging destinations fail closed without echoing their
   assert.equal(result.stderr.includes(privateChat), false);
 });
 
+test("legacy-path and personal-destination fixtures in test files do not count as runtime dependencies", () => {
+  const root = createFixture();
+  write(
+    root,
+    "apps/life-manager/runtime-paths.test.js",
+    [
+      'const forbidden = "/Users/operator/.openclaw/state";',
+      'const personal = "openclaw message send --target 123456789";',
+      "",
+    ].join("\n"),
+  );
+  git(root, "add", ".");
+
+  const result = verify(root);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.payload, { ok: true, violations: [] });
+});
+
 test("source provenance is closed over all four inspected repositories", () => {
   const root = createFixture();
   write(

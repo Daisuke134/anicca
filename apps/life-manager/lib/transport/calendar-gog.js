@@ -18,7 +18,7 @@ const opt = (flag, value) => `${flag}=${value}`;
 
 function makeGogCalendar({ bin, account, keyring, calId = "primary", run } = {}) {
   const gogBin = bin || process.env.GOG_BIN || "gog";
-  const acct = account || process.env.GOG_ACCOUNT || "";
+  const acct = account !== undefined ? account : (process.env.GOG_ACCOUNT || "");
   const keyringPwd = keyring != null ? keyring : (process.env.GOG_KEYRING_PASSWORD || "");
   // every gog call appends --account; gog flags are order-independent (verified gog 0.17.0).
   const exec = run || ((args, timeout = 60000) =>

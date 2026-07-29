@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Anicca job search recruiter inbox every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Unit=ai.anicca.job-search-inbox.service
+
+[Install]
+WantedBy=timers.target

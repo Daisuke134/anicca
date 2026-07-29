@@ -366,7 +366,7 @@ async def on_text(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
         if "@" not in txt:
             await msg.reply_text(
                 "That doesn't look like an email. Paste the Google "
-                "account you used (e.g. user@example.com), or reply "
+                "account you used (e.g. person@example.com), or reply "
                 "'skip' to do this later."
             )
             return

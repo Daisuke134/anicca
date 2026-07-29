@@ -9,7 +9,7 @@ const { careUserOnce } = require("./care-daily-runtime.js");
 
 const NOW = Date.parse("2026-07-26T00:00:00Z");
 const DAY_MS = 86400000;
-const USER = { uid: "u-care", name: "Example User", phone: "+447700900123", email: "y@example.com", telegram_chat_id: 4242, home_address: "Example address" };
+const USER = { uid: "u-care", name: "山田太郎", phone: "+810000000000", email: "y@example.com", telegram_chat_id: 4242, home_address: "東京都新宿区1-1-1" };
 
 // Same stable-cadence fixture the 11a/11b runtime tests use: 5 visits, gaps 40/34/46/40, 70 days
 // since the last one — CADENCE-1 rates this actionable, so the chain (and now the booking) may run.

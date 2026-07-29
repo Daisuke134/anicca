@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.env
+coverage
+test
+eval
+**/*.test.js
+scripts/*
+!scripts/runtime-up.js
+!scripts/browser-auth-production-e2e.js

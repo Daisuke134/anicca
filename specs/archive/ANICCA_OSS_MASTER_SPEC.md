@@ -1334,7 +1334,7 @@ Stripe Connect platform 登録 (= Dais を Anicca 運営者 として 名義):
 | 2 | git history 全 commit scan | `trufflehog git --no-update file://. --json \| wc -l` = 0 |
 | 3 | gitleaks scan | `gitleaks detect --no-banner --redact -v` = "no leaks found" |
 | 4 | .env grep | `grep -RIn "sk-\\|sk_live\\|AKIA\\|BotFather\\|0x[0-9a-fA-F]\\{40\\}" . --include="*.{py,js,sh,md,toml,json}"` = 個人 key ヒット 0 |
-| 5 | Dais 個人情報 grep | `grep -RIn "Daisuke Narita\\|keiodaisuke@gmail.com\\|+818046270314\\|Keiodaisuke\\|MUIT" . --exclude-dir=.git` = 0 (= 残ってたら redact) |
+| 5 | Dais 個人情報 grep | `grep -RIn "Daisuke Narita\\|person@example.com\\|<redacted-phone>\\|Keiodaisuke\\|MUIT" . --exclude-dir=.git` = 0 (= 残ってたら redact) |
 | 6 | identity/credentials/ | `ls anicca-oss/identity/credentials/ 2>/dev/null` = 空 or 存在 しない |
 | 7 | .gitignore | `~/.openclaw` `.env` `state/` `secrets/` `*.png` `*.jpg` 全部 入ってる |
 | 8 | LICENSE = MIT | `head -1 LICENSE` = "MIT License" |

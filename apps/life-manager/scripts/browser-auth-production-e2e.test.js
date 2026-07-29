@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const { spawnSync } = require("node:child_process");
+const { readFileSync } = require("node:fs");
 const { test } = require("node:test");
 const path = require("node:path");
 
@@ -11,7 +12,7 @@ const REQUIRED_ENV = {
   BROWSER_AUTH_PRODUCTION_ORIGIN: 'https://app.example.test',
   BROWSER_AUTH_TENANT_A_UID: 'tenant-a',
   BROWSER_AUTH_TENANT_B_UID: 'tenant-b',
-  LM_BROWSER_SESSION_KEY: Buffer.alloc(32, 7).toString("hex"),
+  LM_BROWSER_SESSION_KEY: 'ab'.repeat(32),
   LM_FEEDBACK_DATABASE_URL: 'postgresql://user:password@db.example.test/life_manager',
   LM_TELEGRAM_BOT_TOKEN: 'telegram-bot-token-secret',
   BROWSER_AUTH_TELEGRAM_CHAT_ID: '12345',
@@ -26,6 +27,11 @@ const OUTPUT_KEYS = [
   'mode', 'tenant_count', 'origin', 'context_hashes', 'job_ids',
   'steel_session_ids', 'telegram_evidence_ids', 'released',
 ];
+
+test('runtime image allowlists the browser auth production entrypoint', () => {
+  const dockerignore = readFileSync(path.join(__dirname, '..', '.dockerignore'), 'utf8');
+  assert.match(dockerignore, /^!scripts\/browser-auth-production-e2e\.js$/m);
+});
 
 function terminalFor({ id, markerHash, mode, tenant }) {
   return {
@@ -278,6 +284,37 @@ test('executes the durable claim → runtime → finish → terminal readback pa
     [
       'durableQueue.enqueue', 'executor.claim', 'executor.execute', 'executor.finish', 'durableQueue.read',
       'durableQueue.enqueue', 'executor.claim', 'executor.execute', 'executor.finish', 'durableQueue.read',
+    ],
+  );
+  assertNoSecrets(JSON.stringify(result));
+});
+
+test('verifies one real provider context without requiring a second provider account', async () => {
+  const env = { ...REQUIRED_ENV };
+  delete env.BROWSER_AUTH_TENANT_B_UID;
+  const deps = makeDeps();
+
+  const result = await runBrowserAuthProductionE2E({
+    mode: 'verify-provider-context',
+    env,
+    deps,
+  });
+
+  assert.equal(result.mode, 'verify-provider-context');
+  assert.equal(result.tenant_count, 1);
+  assert.equal(result.context_hashes.length, 1);
+  assert.equal(result.job_ids.length, 1);
+  assert.equal(result.steel_session_ids.length, 1);
+  assert.equal(result.telegram_evidence_ids.length, 1);
+  assert.equal(result.released, true);
+  assert.deepEqual(
+    deps.calls.map(({ name }) => name),
+    [
+      'durableQueue.enqueue',
+      'executor.claim',
+      'executor.execute',
+      'executor.finish',
+      'durableQueue.read',
     ],
   );
   assertNoSecrets(JSON.stringify(result));

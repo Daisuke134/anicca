@@ -8,7 +8,7 @@ Coconala account + KYC + bank link (a setup fact, not a runtime step).
 |---|---|
 | login lapsed | core re-logs in via「Googleでログイン」on the daily-driver (stored Daisuke session) |
 | CAPTCHA | CapSolver (Turnstile/hCaptcha) per tier-a-bypass |
-| OTP / verification mail | `gog gmail` auto-read (`LIFE_MANAGER_GMAIL_ACCOUNT`) |
+| OTP / verification mail | `gog gmail` auto-read (person@example.com) |
 | 応募 (apply) | model drives CDP :9222 per scripts/coconala/APPLY_RUNBOOK.md (real-mouse datepicker, setFileInputFiles attach, 投稿前モーダル) — no human click |
 | talk-room reply / 納品 / 評価 | model acts on the live DOM each cron pass |
 | a blocker | "A blocker is NOT a stop" — the core tries the autonomous path + reports; it never asks a human |

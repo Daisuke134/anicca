@@ -1,0 +1,8 @@
+[project]
+name = "anicca-job-search-loop"
+version = "0.1.0"
+requires-python = ">=3.12"
+description = "Fenced autonomous job-search loop"
+
+[tool.unittest]
+start-directory = "tests"

@@ -9,7 +9,7 @@
     "languages": ["ja", "en"],
     "homeAddress": "Your home address",
     "homeLatLon": [35.0000, 139.0000],
-    "phone": "+810000000000",
+    "phone": "<country-code><number>",
     "googleAccount": "you@example.com",
     "goals": {
       "northStar": "One sentence describing what you want your life to be in 5 years",
@@ -59,14 +59,14 @@
     "personalEmail": "you@example.com",
     "workEmail": "you@your-company.com",
     "businessEmail": "contact@your-domain.com",
-    "phone": "+810000000000",
+    "phone": "<country-code><number>",
     "_note_phone": "Use only ONE primary phone. Legacy/retired numbers are forbidden in signatures."
   },
   "business": {
     "name": "Your Business Name",
     "website": "https://your-business.com",
     "contactEmail": "contact@your-business.com",
-    "contactPhone": "+810000000000",
+    "contactPhone": "<country-code><number>",
     "address": "Business address",
     "country": "Country"
   },

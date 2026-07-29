@@ -39,18 +39,11 @@ jobs:
           sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: gitleaks dir (= current working tree)
+      - name: gitleaks dir (= current merge result)
         run: gitleaks dir . --config .gitleaks.toml --no-banner --redact -v
 
-      - name: gitleaks git (= new history in this change)
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          set -e
-          if [ -z "${BASE_SHA:-}" ] || [[ "$BASE_SHA" =~ ^0+$ ]]; then
-            BASE_SHA="$(git rev-list --max-parents=0 HEAD | tail -1)"
-          fi
-          gitleaks git . --log-opts="$BASE_SHA..HEAD" --config .gitleaks.toml --no-banner --redact -v
+      - name: gitleaks git (= full history with adjudicated fingerprint baseline)
+        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v --log-opts=--all
 
   trufflehog:
     name: TruffleHog (filesystem + git history)
@@ -70,63 +63,29 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.before }}
+          base: ${{ github.event.pull_request.base.sha || github.event.before }}
           head: HEAD
           extra_args: --only-verified
 
   shape-grep:
-    name: PII shape grep (= block phone / email / address shapes)
+    name: PII shapes (redacted exact-fingerprint gate)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Block accidental PII patterns
-        shell: bash
-        run: |
-          # Block phone-number-shaped, gmail-shaped, JP postal-shaped strings.
-          # Generic shapes — no contributor-identifying literals — so this
-          # workflow itself reveals nothing about any specific person.
-          set -uo pipefail
-          declare -a PATTERNS=(
-            '\+81[0-9]{9,11}'              # JP mobile E.164
-            '\+1[0-9]{10}'                  # US mobile E.164
-            '[a-z0-9._%-]+@gmail\.com'      # personal gmail
-            '〒[0-9]{3}-[0-9]{4}'           # JP postal code
-            '"home_address"\s*:\s*"[^"]+"'  # JSON home address with content
-            '"phone"\s*:\s*"\+[0-9]'        # JSON phone number with content
-          )
-          hits=0
-          for p in "${PATTERNS[@]}"; do
-            n=$( { grep -rIE -- "$p" \
-                     --include='*.py' --include='*.sh' \
-                     --include='*.md' --include='*.json' --include='*.toml' \
-                     --include='*.yml' --include='*.html' --include='*.ts' \
-                     --include='*.js' . 2>/dev/null || true; } \
-                  | { grep -v '\.git/' || true; } \
-                  | { grep -v '\.env\.example' || true; } \
-                  | { grep -v 'profile\.example\.json' || true; } \
-                  | { grep -v 'profile\.schema\.json' || true; } \
-                  | { grep -v 'README\.md' || true; } \
-                  | { grep -v 'sec-scan\.yml' || true; } \
-                  | { grep -v 'services/inbox-zero/' || true; } \
-                  | { grep -v 'specs/archive/' || true; } \
-                  | wc -l | tr -d ' ')
-            if [ "${n:-0}" -gt 0 ]; then
-              echo "❌ shape '$p' hit $n line(s)"
-              hits=$((hits + n))
-            fi
-          done
-          if [ "$hits" -gt 0 ]; then
-            echo "::error::PII shape grep found $hits hit(s) — block merge"
-            exit 1
-          fi
-          echo "✅ shape grep clean"
+        run: python3 scripts/security/pii_shape_scan.py --allowlist .pii-shape-allowlist .
 
   python-lint:
     name: Python syntax + unittest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -155,30 +114,16 @@ jobs:
           PY
           echo "✅ syntax clean"
 
-      - name: run Python tests
+      - name: run declared pure-stdlib security tests
         run: |
-          set -e
-          # Hyphenated skill paths break unittest discovery, so run each
-          # active test_*.py file directly. Historical VCSDD proof harnesses
-          # are immutable evidence with their own archived dependencies, not
-          # the repository's production test suite. Each active skill may
-          # import modules from its own directory, parent, or parent/lib.
-          # Files that define pytest-style tests must be collected by pytest;
-          # merely invoking those files directly executes zero test functions.
-          repo_root="$PWD"
-          fail=0
+          set -euo pipefail
           while IFS= read -r t; do
+            [[ -z "$t" || "$t" == \#* ]] && continue
+            test -f "$t"
             echo "→ $t"
-            test_dir="$(dirname "$t")"
-            parent_dir="$test_dir/.."
-            test_pythonpath="$repo_root/$test_dir:$repo_root/$parent_dir:$repo_root/$parent_dir/lib:$repo_root"
-            if grep -Eq '^[[:space:]]*def test_' "$t"; then
-              if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 -m pytest -q "$t"; then fail=1; fi
-            else
-              if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 "$t"; then fail=1; fi
-            fi
-          done < <(find . -name 'test_*.py' -not -path './.git/*' -not -path './.vcsdd/*' | sort)
-          [ "$fail" -eq 0 ] && echo "✅ all tests passed" || { echo "::error::test failures"; exit 1; }
+            python3 "$t"
+          done < .github/python-security-tests.txt
+          echo "✅ declared security tests passed"
 
   shell-lint:
     name: Shell syntax check

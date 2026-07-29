@@ -71,6 +71,12 @@ function isVerifiedVendorPath(path) {
   return VERIFIED_VENDOR_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
+function isTestFixturePath(path) {
+  const basename = path.slice(path.lastIndexOf("/") + 1);
+  return /(?:^|[._-])tests?(?:[._-]|$)/iu.test(basename)
+    || /(^|\/)(?:__tests__|test|tests|fixtures)(\/|$)/u.test(path);
+}
+
 function isWithinRoot(root, candidate) {
   const rel = relative(root, candidate);
   return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel));
@@ -177,7 +183,9 @@ export function verifyRepository(inputRoot) {
     }
     const bytes = readFileSync(absolute);
     const isFirstPartyText =
-      !isVerifiedVendorPath(entry.path) && looksTextual(entry.path, bytes);
+      !isVerifiedVendorPath(entry.path)
+      && !isTestFixturePath(entry.path)
+      && looksTextual(entry.path, bytes);
     const text = isFirstPartyText ? bytes.toString("utf8") : "";
     if (isFirstPartyText && sourceRootViolation(text)) {
       violations.push({

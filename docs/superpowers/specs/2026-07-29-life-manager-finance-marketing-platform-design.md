@@ -33,7 +33,7 @@ Repository identity is not inferred from a local directory name:
 | Role | GitHub identity | Local state | Rule |
 |---|---|---|---|
 | **Only active SSOT** | [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), repository ID `1248111245` | canonical checkout is currently `/Users/anicca/Projects/life-manager-main` | all new code, specs, plans, issues, CI, deployment config, schedules, and release evidence live here |
-| Legacy import source | [`Daisuke134/life-manager-v0`](https://github.com/Daisuke134/life-manager-v0), repository ID `1273052304` | misleadingly cloned at `/Users/anicca/Projects/life-manager` | no new work, runtime, scheduler, CI, or deployment may target it; classify and import its unique behavior, prove equivalence, then archive it read-only |
+| Legacy historical source | [`Daisuke134/life-manager-v0`](https://github.com/Daisuke134/life-manager-v0), repository ID `1273052304` | archived read-only; any old local clone is non-runtime | no new work, runtime, scheduler, CI, or deployment may target it; 35/35 disposition, issue transfer, redirect, archive, and runtime-reference-zero gate are complete |
 | Temporary worktrees | branches whose Git common directory is the canonical repository | multiple paths may exist during bounded work | a worktree is not another repository or SSOT; merge or retire it when its task closes |
 
 The selected architecture is portable local/cloud with cloud as the default
@@ -136,12 +136,13 @@ and rollback evidence pass.
 | System | Measured state | Consequence |
 |---|---|---|
 | Canonical GitHub repository | `Daisuke134/life-manager`, repository ID `1248111245`, public/unarchived, default branch `main`; 3,241 tracked files in the measured checkout | This is the only write/deploy/spec target |
-| Legacy GitHub repository | `Daisuke134/life-manager-v0`, repository ID `1273052304`, public/unarchived, default branch `main`; 35 tracked files, 31 at paths absent from the canonical checkout | It is an import source, not an alternative implementation; each unique behavior needs an import/supersede/retire decision before archival |
+| Legacy GitHub repository | `Daisuke134/life-manager-v0`, repository ID `1273052304`, public/archived, default branch `main`; 35 tracked files, open issue/PR・workflow/webhook/deployment 0 | Retirement complete: 35/35 disposition, missing required behavior 0, canonical redirect exactly1, active runtime reference 0 |
 | Local repository naming | canonical repo is cloned as `life-manager-main`; the directory named `life-manager` actually points to `life-manager-v0` | Directory names are unsafe identifiers; use remote URL plus repository ID until the legacy clone is quarantined and the canonical checkout is normalized |
 | Live Life Manager launchd paths | measured Life Manager daily, dev, financial, payout, self-build, TaskMarket, uGig, and x402 jobs point to `/Users/anicca/Projects/life-manager-main`; none point to `life-manager-v0` | Runtime already selects the canonical repository, but remains local and path-bound |
 | Local OpenClaw gateway | Running as `ai.openclaw.gateway` | OpenClaw is still running |
-| OpenClaw scheduler | Store reports 316 jobs; 92 are marked enabled; `nextWakeAtMs` is null and `cron list` returns zero jobs | Configured entries are not evidence of active scheduling |
-| macOS launchd | Marketing, writing, finance, gig, Capafy, and other jobs are loaded and producing current logs | launchd is the actual scheduler for the observed loops |
+| OpenClaw scheduler | Read-only capture contains 222 stored jobs; 92 are marked enabled | Stored/enabled is not proof of current execution; each row remains unclassified until Task 2 assigns a verified disposition |
+| macOS launchd | Read-only capture contains 176 user LaunchAgent plist files and one additional relevant loaded-only label; 161 plist-backed labels are currently loaded. The loaded CFO plist cannot be parsed by `plutil`, and `com.anicca.daemon` has no user LaunchAgent plist; both are preserved as explicit parse errors | launchd is the actual scheduler for many observed loops; malformed or loaded-only rows must not be silently dropped or changed |
+| Unified runtime inventory | `docs/migrations/openclaw/runtime-inventory.json` contains all 399 captured OpenClaw and relevant LaunchAgent rows; 269 are enabled or loaded; commands and private identifiers are redacted | Task 1 is read-only evidence. All 399 dispositions remain `unclassified` for Task 2; no scheduler change is authorized by the inventory |
 | Profitable Claude marketing engine | Registry, schemas, bounded learning, canary keep/revert, observation terminalizer, and dashboard exist | Reuse these contracts |
 | Marketing runtime store | About 20 KB; dashboard and logs only; no run, publication, metric, experiment, or observation ledgers | The production feedback loop is not closed |
 | Life Manager Railway | `/health` returns 200 from `life-call-production.up.railway.app` | A functioning cloud control plane already exists |
@@ -919,10 +920,25 @@ The order below is the program source of truth. Milestone A is a hard gate:
 cloud migration work does not begin until every retained loop is demonstrably
 OpenClaw-independent and running under Life Manager locally.
 
+Order 0 consolidation completed:
+`AE-X402-SOURCE-CONSOLIDATE-1`. `OSS-SECURITY-BASELINE-1` merged in PR
+#1274 with all exact-five security checks green. `REPO-V0-RETIRE-1` then
+completed 35/35 disposition, issue transfer, redirect, archive, and
+runtime-reference-zero. Evidence:
+`docs/evidence/security/2026-07-29-oss-security-baseline.md` and
+`docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md`.
+The x402 nine-route seller is present in canonical
+`services/x402-endpoint`; historical and canonical suites pass 68/68, the
+migration contract passes 1/1, ledger regression passes 22/22, and dependency
+audit is zero. PR #1295 merged as `4d5c60b9…`; Railway source/root/commit,
+deployment `cee9598d…` SUCCESS, nine paid gates, settlement target exactly1,
+ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read back. The next program subcursor is
+`BROWSER-AUTH-1`.
+
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
-| 0 | Finish single-repository consolidation | this spec and its plans exist only in `Daisuke134/life-manager`; all 35 `life-manager-v0` files have an `import`, `superseded`, or `retire` disposition; retained behavior has canonical tests; GitHub/CI/Railway/scheduler reference guard passes; `life-manager-v0` is archived read-only; no runtime uses its local clone |
-| 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers all 316 OpenClaw store rows, every enabled row, relevant launchd labels, command, cadence, environment source, latest receipt |
+| 0 | Finish single-repository consolidation | **done for the bounded security/v0/x402 source slice** — exact evidence is in the three repository evidence files. Browser/parity/cloud/remaining-legacy gates continue under their own ordered rows; no production service depends on the old x402 source |
+| 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
 | 4 | Create Life Manager local deployment | one command starts API, panel, scheduler, PostgreSQL, object adapter, and workers without OpenClaw |

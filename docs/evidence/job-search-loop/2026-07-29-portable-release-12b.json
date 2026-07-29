@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "task": "JOB-PORTABLE-RELEASE-12B",
+  "status": "live_verified",
+  "observed_at": "2026-07-29T12:04:57Z",
+  "branch": "feat/job-portable-release-12b",
+  "implementation_commits": [
+    "7ab941237",
+    "4d080089e"
+  ],
+  "pull_request": {
+    "number": 1302,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1302",
+    "ci_run": 30449915191,
+    "merge_commit": "a58f18388910021b38112538ffd4b63b5bd3d47a"
+  },
+  "profile_authoring": {
+    "interactive": "pass",
+    "answers_json": "pass",
+    "production_validator_reused": true,
+    "application_email_required": true,
+    "minimum_verified_facts": 1,
+    "placeholder_rejected": true,
+    "existing_profile_requires_replace": true,
+    "output_directory_mode": "0700",
+    "output_profile_mode": "0600",
+    "inferred_legal_facts": 0
+  },
+  "release_artifact": {
+    "version": "0.1.0-12b-main",
+    "commit": "a58f18388910021b38112538ffd4b63b5bd3d47a",
+    "entry_count": 105,
+    "sha256": "f334202afbadc1cdc8efdea1d0ed3002d84d619037a341f4f1a33bfc99892cb8",
+    "same_commit_rebuild_byte_identical": true,
+    "normalized_uid_gid": 0,
+    "normalized_mtime": 0,
+    "executable_modes_retained": true,
+    "contains_release_builder": true,
+    "contains_profile_setup": true,
+    "contains_private_state": false,
+    "contains_candidate_profile": false
+  },
+  "extracted_artifact_e2e": {
+    "merge_commit_artifact": true,
+    "checksum_verified_before_extract": true,
+    "clean_home": true,
+    "synthetic_profile_authored_with_bundled_cli": true,
+    "provider": "codex",
+    "provider_adapter": "fake authenticated executable",
+    "scheduler": "none",
+    "scheduler_side_effects": 0,
+    "install_exit": 0,
+    "profile_mode": "0600",
+    "receipt_mode": "0600"
+  },
+  "live_existing_loop": {
+    "canonical_commit": "a58f18388910021b38112538ffd4b63b5bd3d47a",
+    "schedulers_reinstalled": false,
+    "daily_last_exit": 0,
+    "inbox_last_exit": 0,
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "submitted": 2,
+    "not_submitted": 1
+  },
+  "tests": {
+    "job_loop": {
+      "ran": 149,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 7,
+      "failures": 0
+    },
+    "shell_syntax": "pass",
+    "json_parse": "pass",
+    "diff_check": "pass"
+  },
+  "sources": [
+    {
+      "name": "Git archive",
+      "url": "https://git-scm.com/docs/git-archive",
+      "quote": "Creates an archive of the specified format containing the tree structure for the named tree."
+    },
+    {
+      "name": "Reproducible Builds archive metadata",
+      "url": "https://reproducible-builds.org/docs/archives/",
+      "quote": "Most archive formats record metadata that will capture details about the build environment if no care is taken."
+    },
+    {
+      "name": "Python argparse",
+      "url": "https://docs.python.org/3/library/argparse.html",
+      "quote": "The argparse module makes it easy to write user-friendly command-line interfaces."
+    }
+  ],
+  "remaining_order_12_gate": null
+}

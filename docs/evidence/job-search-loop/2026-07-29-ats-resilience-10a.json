@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10A",
+  "status": "merged",
+  "observed_at": "2026-07-29T11:12:28Z",
+  "branch": "feat/job-ats-resilience-1",
+  "implementation_commit": "a848c558bfe9ccdc4ab4c013d43bb0af9ca3c3e1",
+  "pull_request": {
+    "number": 1288,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1288",
+    "ci_run": 30446495346,
+    "merge_commit": "74e01f24b2340db0a404b67e475528ab59338b29"
+  },
+  "tests": {
+    "job_loop": {
+      "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest discover -s apps/job-search-loop/tests -p test_*.py",
+      "ran": 125,
+      "failures": 0
+    },
+    "agent_runner": {
+      "command": "PYTHONPATH=runtime/agent-runner python3 -m unittest discover -s runtime/agent-runner/tests -p test_*.py",
+      "ran": 7,
+      "failures": 0
+    }
+  },
+  "live_existing_cdp_probe": {
+    "browser_owner": "ai.anicca.job-search-daily",
+    "side_effects": {
+      "filled_fields": 0,
+      "uploads": 0,
+      "submit_clicks": 0,
+      "ledger_claims": 0
+    },
+    "ashby": {
+      "navigation_committed": true,
+      "title": "Applied AI Engineer @ Bjak",
+      "frame_count": 2,
+      "redacted_control_count": 51,
+      "evaluation": {
+        "provider": "ashby",
+        "ready": true,
+        "surface": "ashby_application",
+        "frame_index": 0,
+        "wait_until": "commit",
+        "blockers": []
+      }
+    },
+    "workday": {
+      "navigation_committed": true,
+      "title": "Regional Sales Engineer - AIDR",
+      "frame_count": 1,
+      "redacted_control_count": 19,
+      "evaluation": {
+        "provider": "workday",
+        "ready": true,
+        "surface": "workday_job",
+        "frame_index": 0,
+        "wait_until": "commit",
+        "blockers": []
+      },
+      "claim_ready": false
+    }
+  },
+  "private_ledger_copy_migration": {
+    "source_mutated": false,
+    "integrity": "ok",
+    "applications_before_and_after": 3,
+    "submit_intents_before_and_after": 3,
+    "new_columns": [
+      "ats_snapshot_path",
+      "ats_snapshot_sha256"
+    ]
+  },
+  "runtime_health": {
+    "daily_last_exit": 0,
+    "inbox_last_exit": 0,
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "submitted": 2,
+    "not_submitted": 1
+  },
+  "provider_fallback_observation": {
+    "crawl4ai": "failed because its Playwright browser binary was unavailable",
+    "firecrawl_http_status": 402,
+    "final_research_transport": "direct HTTPS retrieval from known official Playwright URLs"
+  },
+  "sources": [
+    {
+      "name": "Playwright locators",
+      "url": "https://playwright.dev/docs/locators",
+      "quote": "To make tests resilient, we recommend prioritizing user-facing attributes and explicit contracts such as page.getByRole()."
+    },
+    {
+      "name": "Playwright actionability",
+      "url": "https://playwright.dev/docs/actionability",
+      "quote": "It auto-waits for all the relevant checks to pass and only then performs the requested action."
+    },
+    {
+      "name": "Playwright frames",
+      "url": "https://playwright.dev/docs/frames",
+      "quote": "Each page has a main frame and page-level interactions (like click) are assumed to operate in the main frame."
+    }
+  ],
+  "remaining_order_10_gate": "One real confirmed Ashby application and one real confirmed Workday application, with no inferred legal answers."
+}

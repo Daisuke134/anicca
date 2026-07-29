@@ -9,7 +9,7 @@ migration_gate.py does not exist yet -> ImportError -> RED.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from migration_gate import channel_migration_eligible  # RED: does not exist yet
+from migration_gate import channel_migration_eligible, job_disposition_valid
 
 P = 0
 F = 0
@@ -34,6 +34,34 @@ chk("has_verification_tool=False -> NOT eligible (excluded, no unconditional mig
 # truthy in Python — a naive `if has_verification_tool:` implementation would wrongly pass this).
 chk("has_verification_tool=None -> NOT eligible (missing/undetermined must not default to eligible)",
     channel_migration_eligible(None), False)
+
+valid_migrate = {
+    "disposition": "migrate",
+    "owner": "life-manager",
+    "target_adapter": "marketing.publish",
+    "effect_class": "publish",
+    "verify_command": "node verify-publication.js",
+    "rollback_action": "restore legacy scheduler owner",
+}
+chk("complete migrate disposition -> valid",
+    job_disposition_valid(valid_migrate), True)
+chk("unclassified disposition -> invalid",
+    job_disposition_valid({**valid_migrate, "disposition": "unclassified"}), False)
+chk("migrate without target adapter -> invalid",
+    job_disposition_valid({**valid_migrate, "target_adapter": ""}), False)
+chk("migrate without verification -> invalid",
+    job_disposition_valid({**valid_migrate, "verify_command": ""}), False)
+chk("retire may omit target adapter but still needs verification and rollback -> valid",
+    job_disposition_valid({
+        "disposition": "retire",
+        "owner": "life-manager",
+        "target_adapter": "",
+        "effect_class": "maintenance",
+        "verify_command": "node verify-job-absent.js",
+        "rollback_action": "restore signed scheduler entry",
+    }), True)
+chk("unknown effect class -> invalid",
+    job_disposition_valid({**valid_migrate, "effect_class": "magic"}), False)
 
 print(f"=== test_migration_gate: {P} passed {F} failed ===")
 sys.exit(0 if F == 0 else 1)

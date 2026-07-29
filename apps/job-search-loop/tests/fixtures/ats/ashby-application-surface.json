@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "url": "https://jobs.ashbyhq.com/example/00000000-0000-0000-0000-000000000000/application",
+  "navigation_committed": true,
+  "frames": [
+    {
+      "url": "https://jobs.ashbyhq.com/example/00000000-0000-0000-0000-000000000000/application",
+      "controls": [
+        {"tag": "input", "type": "file", "role": null, "label": "Resume", "name": null, "text": ""},
+        {"tag": "input", "type": "text", "role": null, "label": "Name", "name": "_systemfield_name", "text": ""},
+        {"tag": "input", "type": "email", "role": null, "label": "Email", "name": "_systemfield_email", "text": ""},
+        {"tag": "button", "type": null, "role": "button", "label": null, "name": null, "text": "Submit Application"}
+      ]
+    },
+    {
+      "url": "https://www.recaptcha.net/recaptcha/api2/anchor",
+      "controls": []
+    }
+  ]
+}

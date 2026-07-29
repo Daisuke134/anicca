@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "url": "https://example.wd5.myworkdayjobs.com/careers/job/Japan-Tokyo/example",
+  "navigation_committed": true,
+  "frames": [
+    {
+      "url": "https://example.wd5.myworkdayjobs.com/careers/job/Japan-Tokyo/example",
+      "controls": [
+        {"tag": "button", "type": null, "role": "button", "label": null, "name": null, "text": "Accept Cookies"},
+        {"tag": "a", "type": null, "role": "link", "label": null, "name": null, "text": "Apply"}
+      ]
+    }
+  ]
+}
