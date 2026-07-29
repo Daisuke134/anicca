@@ -33,13 +33,21 @@ Mac / Windowsホストは次を満たすようにする。
 
 | 設定 | 目的 |
 |---|---|
-| 停電後の自動電源復旧 | 電源が戻ったら端末を起動する |
+| 停電後の自動電源復旧 | 対応モデルとOSで`Start up when power is connected: Always`を使う |
 | スリープ無効 | Remoteホストをオンラインに保つ |
 | ChatGPT/Codex Desktopをログイン項目へ追加 | OSログイン後にアプリを自動起動する |
 | ユーザーセッションへログイン | Desktop、資格情報、Computer Useを利用可能にする |
 | UPS | 短い停電で端末を落とさない |
 
 Desktopアプリはユーザーセッション上で動くため、再起動後にログイン画面で止まるとRemoteは復旧しない。無人復旧を優先して自動ログインを使う場合は、物理アクセスとディスク暗号化のリスクを別途評価する。
+
+#### Mac miniの電源復旧設定
+
+`pmset autorestart 1`または`Restart After Power Failure: On`は、停電前にMacが起動していた場合の条件付き復旧。電源接続時にMacの直前の状態を問わず起動する`Start up when power is connected: Always`とは異なる。
+
+Mac mini 2024以降ではmacOS 26.5以降へ更新し、`System Settings → Energy → Start up when power is connected → Always`を選ぶ。Appleは、手動で電源を切断・再接続して検証する場合、電源ユニットを放電させるため約30秒空けるよう案内している。
+
+完全無人運用では`Always`に加えてUPSを使う。UPSは短い停電でMacを落とさず、`Always`は長い停電でMacが停止した場合の復旧を担当する。
 
 ### Codex Desktopを監視して再起動する
 
@@ -163,7 +171,7 @@ claude remote-control \
 | 対象 | 状態 |
 |---|---|
 | Claude | `com.anicca.claude-remote-control`が`launchd`で稼働。`RunAtLoad=true`、`KeepAlive=true`、接続済み |
-| Mac電源 | AC接続時スリープ無効、停電復旧後の自動起動有効 |
+| Mac電源 | AC接続時スリープ無効。`Restart After Power Failure: On`だが、`Always`ではなく過去に未復旧の実績がある |
 | macOSログイン | FileVault無効、自動ログインユーザー`anicca`設定済み |
 | Codex | ChatGPT/Codex DesktopがRemoteホストとしてすでにオンライン。macOSログイン項目へ登録済み |
 | Codex watchdog | `com.anicca.codex-remote-watchdog`が60秒間隔でDesktopを監視し、停止時に再起動 |
@@ -171,6 +179,8 @@ claude remote-control \
 | Codex standalone CLI | `~/.codex/packages/standalone/current/codex`へ導入済み |
 
 このMacでは、Codex DesktopをRemoteの正本にし、CLI daemonを重複起動しない。
+
+このMacはM4 Mac miniで`Always`の対応機種だが、macOS 15.6のため設定項目を利用できない。macOS 26.6への更新候補が表示されている。物理操作なしの停電復旧を確実化するには、26.6へ更新後に`Always`を設定し、実際の電源断・30秒待機・電源復旧テストを行う。
 
 ## 検証
 
@@ -192,3 +202,4 @@ claude remote-control \
 - OpenAI, [Remote connections](https://learn.chatgpt.com/docs/remote-connections.md)
 - OpenAI, [Codex CLI command reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-remote-control)
 - Anthropic, [Continue local sessions from any device with Remote Control](https://code.claude.com/docs/en/remote-control)
+- Apple, [Turn on a Mac mini, Mac Studio, or iMac without pressing its power button](https://support.apple.com/en-us/125517)
