@@ -519,6 +519,29 @@ quiesce_idle_colima() {
   fi
 }
 
+reclaim_docker_garbage() {
+  local before after delta
+  [ -n "$COLIMA_BIN" ] && [ -x "$COLIMA_BIN" ] || return 0
+  [ -n "$DOCKER_BIN" ] && [ -x "$DOCKER_BIN" ] || return 0
+  "$COLIMA_BIN" status >/dev/null 2>&1 || return 0
+  before=$(free_gb)
+  if ! "$DOCKER_BIN" image prune -f >>"$LOG" 2>&1; then
+    append_decision docker preserve dangling-image-prune-failed
+    return 0
+  fi
+  if ! "$COLIMA_BIN" ssh -- sudo fstrim -a >>"$LOG" 2>&1; then
+    append_decision colima preserve vm-fstrim-failed
+    return 0
+  fi
+  append_decision docker cleanup unreferenced-images-pruned-and-vm-trimmed
+  after=$(free_gb)
+  if [ "$after" -gt "$before" ]; then
+    delta=$(( (after - before) * 1073741824 ))
+    RECLAIM_ELIGIBLE=$((RECLAIM_ELIGIBLE + 1))
+    RECLAIMED_TOTAL=$((RECLAIMED_TOTAL + delta))
+  fi
+}
+
 cleanup_orphan_heartbeats
 
 FREE=$(free_gb)
@@ -600,6 +623,8 @@ if [ "$TEST_MODE" -eq 0 ]; then
     fi
   fi
 fi
+
+reclaim_docker_garbage
 
 # Legacy direct-reclaim behavior is reachable only in the isolated guard test
 # harness. Production deletion authority belongs exclusively to cleanup_control.py.
