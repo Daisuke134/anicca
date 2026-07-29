@@ -1,15 +1,15 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10C",
-  "status": "implementation_verified_pending_ci",
-  "observed_at": "2026-07-29T12:19:08Z",
+  "status": "live_verified",
+  "observed_at": "2026-07-29T12:23:50Z",
   "branch": "feat/job-retry-fence-10c",
   "implementation_commit": "217f57d14d1b2a9bcf9633d46bc560de032681a4",
   "pull_request": {
     "number": 1306,
     "url": "https://github.com/Daisuke134/life-manager/pull/1306",
-    "ci_run": null,
-    "merge_commit": null
+    "ci_run": 30451149945,
+    "merge_commit": "34002214a85d5a37068e3eee38a06f32ec4a5033"
   },
   "red_test": {
     "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_ledger.py -v",
@@ -59,6 +59,34 @@
       "not_submitted": 1
     },
     "retryable_count": 1
+  },
+  "live_canonical_reflection": {
+    "canonical_commit": "34002214a85d5a37068e3eee38a06f32ec4a5033",
+    "pre_migration_backup_created": true,
+    "application_counts_unchanged": true,
+    "ledger_integrity": "ok",
+    "applications": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "attempts": {
+      "submitted": 2,
+      "not_submitted": 1
+    },
+    "retryable_count": 1,
+    "daily_launchd": {
+      "runs_before": 4,
+      "runs_after": 5,
+      "last_exit": 0,
+      "latest_status": "budget_blocked"
+    },
+    "inbox_launchd": {
+      "runs_before": 10,
+      "runs_after": 12,
+      "last_exit": 0,
+      "latest_status": "no_new_recruiting_email"
+    },
+    "interview_prep_integrity": "ok"
   },
   "research_transport": {
     "queries": [
