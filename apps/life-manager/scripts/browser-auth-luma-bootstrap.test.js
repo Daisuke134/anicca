@@ -5,7 +5,10 @@ const { readFileSync } = require("node:fs");
 const path = require("node:path");
 const { test } = require("node:test");
 
-const { runLumaBootstrap } = require("./browser-auth-luma-bootstrap.js");
+const {
+  resolveBootstrapEnv,
+  runLumaBootstrap,
+} = require("./browser-auth-luma-bootstrap.js");
 
 const ENV = {
   BROWSER_AUTH_TENANT_A_UID: "tenant-a",
@@ -140,4 +143,31 @@ test("missing runtime identity fails before opening Steel", async () => {
   );
 
   assert.deepEqual(calls, []);
+});
+
+test("production CLI resolves exactly one existing agent-owned Luma tenant without exposing it", async () => {
+  const queries = [];
+  const resolved = await resolveBootstrapEnv({
+    env: { LM_AGENT_BROWSER_EMAIL: ENV.LM_AGENT_BROWSER_EMAIL },
+    query: async (sql, params) => {
+      queries.push([sql, params]);
+      return { rows: [{ uid: "tenant-from-db" }] };
+    },
+  });
+
+  assert.equal(resolved.BROWSER_AUTH_TENANT_A_UID, "tenant-from-db");
+  assert.equal(queries.length, 1);
+  assert.match(queries[0][0], /origin = \$1/);
+  assert.match(queries[0][0], /principal_kind = 'agent_owned'/);
+  assert.deepEqual(queries[0][1], ["https://luma.com"]);
+
+  for (const rows of [[], [{ uid: "a" }, { uid: "b" }]]) {
+    await assert.rejects(
+      resolveBootstrapEnv({
+        env: { LM_AGENT_BROWSER_EMAIL: ENV.LM_AGENT_BROWSER_EMAIL },
+        query: async () => ({ rows }),
+      }),
+      /Luma bootstrap configuration unavailable/,
+    );
+  }
 });
