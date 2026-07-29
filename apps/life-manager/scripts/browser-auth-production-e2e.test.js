@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const { spawnSync } = require("node:child_process");
+const { readFileSync } = require("node:fs");
 const { test } = require("node:test");
 const path = require("node:path");
 
@@ -26,6 +27,11 @@ const OUTPUT_KEYS = [
   'mode', 'tenant_count', 'origin', 'context_hashes', 'job_ids',
   'steel_session_ids', 'telegram_evidence_ids', 'released',
 ];
+
+test('runtime image allowlists the browser auth production entrypoint', () => {
+  const dockerignore = readFileSync(path.join(__dirname, '..', '.dockerignore'), 'utf8');
+  assert.match(dockerignore, /^!scripts\/browser-auth-production-e2e\.js$/m);
+});
 
 function terminalFor({ id, markerHash, mode, tenant }) {
   return {
