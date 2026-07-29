@@ -1,16 +1,18 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10F",
-  "status": "implementation_verified_pending_ci",
-  "observed_at": "2026-07-29T13:10:00Z",
+  "status": "live_verified_waiting_external_email",
+  "observed_at": "2026-07-29T13:12:30Z",
   "branch": "feat/job-workday-verification-lease-10f",
   "red_commit": "496b5574b",
   "implementation_commit": "10b86723f",
   "pull_request": {
-    "number": null,
-    "url": null,
-    "ci_run": null,
-    "merge_commit": null
+    "number": 1322,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1322",
+    "ci_run": 30454763988,
+    "required_checks_passed": 7,
+    "merge_commit": "b17f838cd2001cf00b504422716456ed92663ec9",
+    "canonical_commit": "b17f838cd2001cf00b504422716456ed92663ec9"
   },
   "red_test": {
     "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_workday_verification.py -v",
@@ -57,6 +59,28 @@
     "legacy_claim_recovery_tested": true,
     "real_database_exists": false,
     "real_database_reason": "No new matching Workday verification email has arrived yet."
+  },
+  "live_reflection": {
+    "inbox_launchd": {
+      "runs_before": 15,
+      "runs_after": 16,
+      "last_exit_code": 0,
+      "new_recruiting_email_count": 0,
+      "pending_interview_prep_count": 0
+    },
+    "workday_verification_db": {
+      "exists": false,
+      "reason": "No new matching Workday verification email arrived; the loop did not fabricate a row or reopen historical seen mail."
+    },
+    "healthcheck": {
+      "ledger_integrity": "ok",
+      "interview_prep_integrity": "ok",
+      "application_counts": {
+        "submitted": 2,
+        "submit_unknown": 1
+      },
+      "inbox_freshness_status": "no_new_recruiting_email"
+    }
   },
   "research_transport": {
     "queries": [
