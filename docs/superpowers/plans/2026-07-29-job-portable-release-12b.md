@@ -90,6 +90,13 @@ zsh, Git, `unittest`.
 
 - [x] **Step 2: Record redacted evidence and mark Order 12 locally verified**
 
-- [ ] **Step 3: Push, pass every PR CI gate, and squash merge**
+- [x] **Step 3: Push, pass every PR CI gate, and squash merge**
 
-- [ ] **Step 4: Fast-forward canonical checkout and verify live health**
+- [x] **Step 4: Fast-forward canonical checkout and verify live health**
+
+  PR #1302 passed CI run `30449915191` and squash-merged as `a58f1838`.
+  The merge commit rebuilt to a 105-entry artifact with SHA-256
+  `f334202afbadc1cdc8efdea1d0ed3002d84d619037a341f4f1a33bfc99892cb8`;
+  its extracted clean-HOME tests passed. The canonical checkout was fast-forwarded
+  without reinstalling schedulers, and the existing daily/inbox healthcheck remained
+  exit zero with both SQLite integrity checks `ok`.
