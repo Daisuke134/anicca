@@ -2738,7 +2738,7 @@ verified evidence
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | TODO NOW | generic dual-loop contractをWriterのpaid-publication vertical sliceで固定 | desired/actual/receipt/reward/version schema、reconcileとoptimizeのmutation境界、fixture RED |
+| 1 | DONE (`590627c`) | generic dual-loop contractをWriterのpaid-publication vertical sliceで固定 | note `desired=¥500 / actual=free`をmachine-readable差分化。reconcileはadapter/checkpoint/retryだけ、optimizerはscorable reward後のstrategy demo/rule/weight exact1だけを許可。新3 schemaを実fixtureで検証、RED 3→focused 3 PASS→Marketing全18 PASS |
 | 2 | TODO NOW | noteを全新規記事¥500へ変更 | free-first branch 0、price/paywall boundary fixture、実API`price=500`、購入可能public readback |
 | 3 | TODO NOW | Substack JA/ENを有料購読へ接続 | useful free preview + paywallを同一artifactから生成し、draft/API/public readbackでsubscriber gateとcheckoutを証明 |
 | 4 | TODO NOW | pre-publication recoveryをgeneric reconcilerへ接続 | `interrupted-safe`→同一run/prompt resume、claim/cooldown/上限/outbox、duplicate 0 |
