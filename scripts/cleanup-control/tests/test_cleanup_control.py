@@ -232,6 +232,58 @@ def test_runtime_manifest_discovers_only_ignored_proven_regenerable_outputs(
     ) + "\n"
 
 
+def test_runtime_manifest_discovers_exact_chrome_code_sign_clone_children(
+    tmp_path: Path,
+) -> None:
+    scan_root = tmp_path / "empty-root"
+    scan_root.mkdir()
+    code_sign_root = tmp_path / "X"
+    clone_collection = code_sign_root / "com.google.Chrome.code_sign_clone"
+    active = clone_collection / "code_sign_clone.active"
+    stale = clone_collection / "code_sign_clone.stale"
+    unrelated = clone_collection / "not-a-code-sign-clone"
+    for candidate in (active, stale, unrelated):
+        candidate.mkdir(parents=True)
+        (candidate / "payload").write_bytes(b"x" * 128)
+    symlinked = clone_collection / "code_sign_clone.symlink"
+    symlinked.symlink_to(stale, target_is_directory=True)
+
+    chrome_proof = tmp_path / "Google Chrome"
+    chrome_proof.write_bytes(b"executable")
+    base = write_manifest(tmp_path / "base.json", [])
+    runtime = tmp_path / "runtime.json"
+    command = [
+        sys.executable,
+        str(MODULE_PATH),
+        "runtime-manifest",
+        "--manifest",
+        str(base),
+        "--output",
+        str(runtime),
+        "--root",
+        str(scan_root),
+        "--code-sign-clone-root",
+        str(code_sign_root),
+        "--chrome-code-sign-proof",
+        str(chrome_proof),
+    ]
+
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["discovered"] == 2
+    artifacts = json.loads(runtime.read_text(encoding="utf-8"))["artifacts"]
+    assert [artifact["path"] for artifact in artifacts] == [str(active), str(stale)]
+    assert {artifact["owner"] for artifact in artifacts} == {"macos-code-sign-clone"}
+    assert {artifact["class"] for artifact in artifacts} == {"regenerable_output"}
+    assert {
+        artifact["finalizer"]["proof_path"]
+        for artifact in artifacts
+    } == {str(chrome_proof)}
+    assert str(unrelated) not in {artifact["path"] for artifact in artifacts}
+    assert str(symlinked) not in {artifact["path"] for artifact in artifacts}
+
+
 def test_runtime_manifest_discovers_only_verified_published_runs(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     repository.mkdir()

@@ -507,6 +507,57 @@ def discover_regenerable_outputs(roots: list[Path]) -> list[dict[str, Any]]:
     return sorted(discovered, key=lambda item: item["path"])
 
 
+def discover_chrome_code_sign_clones(
+    roots: list[Path],
+    *,
+    proof_path: Path,
+) -> list[dict[str, Any]]:
+    proof = Path(os.path.normpath(str(proof_path.expanduser())))
+    if (
+        not proof.is_absolute()
+        or not proof.is_file()
+        or proof.is_symlink()
+    ):
+        return []
+
+    discovered: list[dict[str, Any]] = []
+    seen: set[Path] = set()
+    for raw_root in sorted(roots, key=str):
+        root = Path(os.path.normpath(str(raw_root.expanduser())))
+        collection = root / "com.google.Chrome.code_sign_clone"
+        if (
+            not root.is_absolute()
+            or not collection.is_dir()
+            or collection.is_symlink()
+        ):
+            continue
+        for candidate in sorted(collection.glob("code_sign_clone.*"), key=str):
+            if (
+                candidate in seen
+                or not candidate.is_dir()
+                or candidate.is_symlink()
+            ):
+                continue
+            seen.add(candidate)
+            digest = hashlib.sha256(str(candidate).encode("utf-8")).hexdigest()[:20]
+            discovered.append(
+                {
+                    "id": f"chrome-code-sign-clone-{digest}",
+                    "path": str(candidate),
+                    "owner": "macos-code-sign-clone",
+                    "class": REGENERABLE_OUTPUT_CLASS,
+                    "ttl_seconds": None,
+                    "quota_bytes": 0,
+                    "lease": None,
+                    "finalizer": {
+                        "kind": "verified_regenerable_remove",
+                        "proof_path": str(proof),
+                    },
+                }
+            )
+    return discovered
+
+
 def discover_published_runs(roots: list[Path]) -> list[dict[str, Any]]:
     discovered: list[dict[str, Any]] = []
     required_proof_fields = ("postId", "postedAt", "integration", "method")
@@ -612,6 +663,10 @@ def build_runtime_manifest(
     cache_roots: list[Path],
     minimum_cache_bytes: int,
     published_run_roots: list[Path] | None = None,
+    code_sign_clone_roots: list[Path] | None = None,
+    chrome_code_sign_proof: Path = Path(
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    ),
 ) -> dict[str, int | str]:
     policy_version, _, base_entries = load_manifest(manifest_path)
     existing_paths = {entry["path"] for entry in base_entries}
@@ -620,6 +675,10 @@ def build_runtime_manifest(
         for entry in [
             *discover_regenerable_outputs(roots),
             *discover_published_runs(published_run_roots or []),
+            *discover_chrome_code_sign_clones(
+                code_sign_clone_roots or [],
+                proof_path=chrome_code_sign_proof,
+            ),
             *discover_ephemeral_caches(
                 cache_roots,
                 minimum_bytes=max(1, int(minimum_cache_bytes)),
@@ -1383,6 +1442,17 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
     )
     runtime_manifest_parser.add_argument(
+        "--code-sign-clone-root",
+        action="append",
+        default=[],
+        type=Path,
+    )
+    runtime_manifest_parser.add_argument(
+        "--chrome-code-sign-proof",
+        type=Path,
+        default=Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+    )
+    runtime_manifest_parser.add_argument(
         "--min-cache-bytes",
         type=int,
         default=1073741824,
@@ -1417,6 +1487,8 @@ def main(argv: list[str] | None = None) -> int:
                 cache_roots=args.cache_root,
                 minimum_cache_bytes=args.min_cache_bytes,
                 published_run_roots=args.published_run_root,
+                code_sign_clone_roots=args.code_sign_clone_root,
+                chrome_code_sign_proof=args.chrome_code_sign_proof,
             )
         except ManifestError as exc:
             result = {

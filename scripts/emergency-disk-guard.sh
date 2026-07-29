@@ -7,6 +7,7 @@ export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 POLICY_VERSION="cleanup-control-v1"
 HOME_DIR="${EMERGENCY_GUARD_TEST_HOME:-$HOME}"
 USER_TEMP_ROOT="${EMERGENCY_GUARD_TEST_TEMP_ROOT:-$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)}"
+USER_CODE_SIGN_ROOT="${EMERGENCY_GUARD_TEST_CODE_SIGN_ROOT:-$(dirname "${USER_TEMP_ROOT%/}")/X}"
 STATE_DIR="$HOME_DIR/.openclaw/state"
 LEASE_DIR="$STATE_DIR/gig-workers"
 LOG_DIR="$HOME_DIR/.openclaw/logs"
@@ -555,6 +556,7 @@ if [ "$TEST_MODE" -eq 0 ]; then
       --root "$HOME_DIR/gig" \
       --root "$HOME_DIR/anicca" \
       --published-run-root "$HOME_DIR/.openclaw/workspace/runs" \
+      --code-sign-clone-root "$USER_CODE_SIGN_ROOT" \
       --cache-root "$HOME_DIR/Library/Caches" \
       --cache-root "$HOME_DIR/.npm" \
       --cache-root "$HOME_DIR/.cargo/registry" \
