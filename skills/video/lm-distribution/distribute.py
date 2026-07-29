@@ -379,7 +379,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--tiktok-integration",
-        default=os.environ.get("LM_TIKTOK_INTEGRATION", "cmp9txjdp01c8oh0yb6dhlarr"),
+        default=os.environ.get("LM_TIKTOK_INTEGRATION", "cmpc6cr6g00d8lg0yfythzz9f"),
     )
     args = parser.parse_args()
 
