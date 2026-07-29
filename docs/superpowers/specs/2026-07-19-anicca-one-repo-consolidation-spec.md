@@ -658,8 +658,8 @@ ownership証明にはならない。BROWSER-MATRIX-1は、Life Manager自身の�
 
 | # | To-Be | Test / evidence | Cover |
 |---:|---|---|---|
-| 1 | verifierはenqueue-only | `browser-matrix-production-e2e.test.js`: executor/claim dependencyを受け取らず、poll前にbrowser action 0 | pending |
-| 2 | resident loop ownership | production queue traceにresident claim、verifier processからdirect execution 0 | pending |
+| 1 | verifierはenqueue-only | `browser-matrix-production-e2e.test.js`: executor/claim dependencyを受け取らず、poll前にbrowser action 0 | **done** — PR #1361 merge `569cf748e…`、harness 9/9 + source-scan 0参照、Railway `7ea230f6…` SUCCESS at exact SHA、boot log browser jobs ON。詳細 `docs/evidence/browser/2026-07-30-browser-matrix-1.md` §1 |
+| 2 | resident loop ownership | production queue traceにresident claim、verifier processからdirect execution 0 | **mechanics live-proven** — production probe job `8cdd6942…` を enqueue-only で投入し resident loop が+5sでclaim、direct execution 0、Steel release true、fail-closed受領（同 evidence §2）。実provider 3 legでの再証明はrow 3-5と同時 |
 | 3 | booking | 実provider booking record + durable receipt + TG evidence + Steel release | pending |
 | 4 | inquiry | 実provider inquiry record + durable receipt + TG evidence + Steel release | pending |
 | 5 | application | 実provider application record + durable receipt + TG evidence + Steel release | pending |
