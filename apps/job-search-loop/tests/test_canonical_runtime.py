@@ -218,6 +218,10 @@ raise SystemExit(0)
                 "JOB_SEARCH_SKIP_BOOTSTRAP": "1",
                 "JOB_SEARCH_SKIP_LAUNCHCTL": "1",
             }
+            fake_plutil = private_root / "plutil"
+            fake_plutil.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            fake_plutil.chmod(0o700)
+            env["JOB_SEARCH_PLUTIL"] = str(fake_plutil)
             result = subprocess.run(
                 ["/bin/zsh", str(APP_ROOT / "scripts" / "install-launchd.sh")],
                 check=False,
