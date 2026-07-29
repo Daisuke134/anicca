@@ -24,6 +24,12 @@ const HASH = /^[0-9a-f]{64}$/;
 const EFFECT_KEY = /^marketing:life-manager:(instagram|tiktok):([A-Za-z0-9._-]+):([0-9a-f]{64}):([0-9a-f]{64})$/;
 const INSTAGRAM_URL = /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/;
 const TIKTOK_URL = /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/;
+const PROVIDER_POST_ID = /^[A-Za-z0-9._:-]{1,200}$/;
+const PROVIDER_ROUTES = new Set([
+  "instagram_file_script",
+  "postiz",
+  "direct_browser",
+]);
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -189,6 +195,14 @@ function validDistributionResult(result, contract) {
     && urlPattern.test(String(result.public_url || ""));
 }
 
+function validProviderJoinKeys(result) {
+  return Boolean(
+    result
+    && PROVIDER_POST_ID.test(String(result.provider_post_id || ""))
+    && PROVIDER_ROUTES.has(result.provider_route),
+  );
+}
+
 function validIso(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
@@ -205,6 +219,16 @@ function verifyMarketingDailyReceipt(receipt) {
     && (
       receipt.provider_reconciled === undefined
       || typeof receipt.provider_reconciled === "boolean"
+    )
+    && (
+      (
+        receipt.provider_post_id === undefined
+        && receipt.provider_route === undefined
+      )
+      || (
+        PROVIDER_POST_ID.test(String(receipt.provider_post_id || ""))
+        && PROVIDER_ROUTES.has(receipt.provider_route)
+      )
     )
     && /^[A-Za-z0-9._-]+$/.test(String(receipt.creative_id || ""))
     && HASH.test(String(receipt.video_sha256 || ""))
@@ -227,6 +251,8 @@ function safeMarketingDailySummary(receipt) {
     creative_id: receipt.creative_id,
     platform: receipt.platform,
     public_url: receipt.public_url,
+    provider_post_id: receipt.provider_post_id || null,
+    provider_route: receipt.provider_route || null,
     provider_reconciled: receipt.provider_reconciled === true,
     video_sha256: receipt.video_sha256,
     caption_sha256: receipt.caption_sha256,
@@ -341,6 +367,11 @@ async function executeMarketingDailyJob(job, deps = {}) {
     error.unknownEffect = true;
     throw error;
   }
+  if (!validProviderJoinKeys(result)) {
+    const error = new Error("marketing daily provider metric join keys are missing");
+    error.unknownEffect = true;
+    throw error;
+  }
   return {
     receipt: {
       schema_version: 1,
@@ -351,6 +382,8 @@ async function executeMarketingDailyJob(job, deps = {}) {
       video_sha256: contract.videoSha256,
       caption_sha256: contract.captionSha256,
       public_url: result.public_url,
+      provider_post_id: result.provider_post_id,
+      provider_route: result.provider_route,
       provider_reconciled: result.provider_reconciled === true,
       published_at: services.now(),
     },
@@ -383,6 +416,13 @@ function receiptFromRows(rows, contract, now) {
   const published = matching.filter((row) => pattern.test(String(row.public_url || ""))).at(-1);
   if (!published) return { state: "absent" };
   const publishedAt = validIso(published.ts) ? published.ts : now();
+  const provider = (
+    PROVIDER_POST_ID.test(String(published.provider_id || ""))
+    && PROVIDER_ROUTES.has(published.route)
+  ) ? {
+      provider_post_id: published.provider_id,
+      provider_route: published.route,
+    } : {};
   return {
     state: "present",
     receipt: {
@@ -394,6 +434,7 @@ function receiptFromRows(rows, contract, now) {
       video_sha256: contract.videoSha256,
       caption_sha256: contract.captionSha256,
       public_url: published.public_url,
+      ...provider,
       provider_reconciled: true,
       published_at: publishedAt,
     },

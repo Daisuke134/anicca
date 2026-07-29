@@ -30,6 +30,16 @@
       ],
       "module_ref": "lib/marketing-daily-generation-adapter.js",
       "factory_export": "createMarketingDailyGenerationLoopAdapter"
+    },
+    {
+      "adapter_id": "marketing-platform-observation",
+      "loop_id": "marketing.observation",
+      "capability": "marketing.observation.collect",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/marketing-observation-adapter.js",
+      "factory_export": "createMarketingObservationLoopAdapter"
     }
   ]
 }
