@@ -1,11 +1,16 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "processed_threads", "processed_thread_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
+  "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
   "properties": {
     "status": {"type": "string"},
     "processed_threads": {"type": "integer"},
     "processed_thread_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+    },
+    "processed_message_ids": {
       "type": "array",
       "uniqueItems": true,
       "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}

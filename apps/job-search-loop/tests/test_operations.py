@@ -7,8 +7,9 @@ from pathlib import Path
 from job_search_loop.calendar_sync import event_key, prep_windows
 from job_search_loop.inbox import (
     classify_message,
-    mark_processed_threads,
+    mark_processed_messages,
     mark_threads_seen,
+    select_new_recruiting_messages,
     select_new_recruiting_threads,
 )
 from job_search_loop.outbox import DeliveryUncertain, Outbox
@@ -81,18 +82,91 @@ class OperationsTests(unittest.TestCase):
                 ["thread-1", "thread-2"],
             )
 
-    def test_partial_result_acknowledges_only_processed_candidate_threads(self):
+    def test_new_message_in_legacy_seen_thread_is_not_dropped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "seen.json"
+            state.write_text(
+                json.dumps({"version": 1, "thread_ids": ["thread-1"]}),
+                encoding="utf-8",
+            )
+            state.chmod(0o600)
+            __import__("os").utime(state, (1000, 1000))
+            payload = {
+                "thread": {
+                    "id": "thread-1",
+                    "messages": [
+                        {
+                            "id": "message-old",
+                            "threadId": "thread-1",
+                            "internalDate": 900_000,
+                            "headers": {
+                                "subject": "Application received",
+                                "from": "jobs@example.com",
+                            },
+                            "body": "Thank you for applying.",
+                        },
+                        {
+                            "id": "message-new",
+                            "threadId": "thread-1",
+                            "internalDate": 1_100_000,
+                            "headers": {
+                                "subject": "Interview invitation",
+                                "from": "jobs@example.com",
+                            },
+                            "body": "Choose a time.",
+                        },
+                    ],
+                }
+            }
+
+            selected = select_new_recruiting_messages(
+                threads=[
+                    {
+                        "id": "thread-1",
+                        "subject": "Interview invitation",
+                        "from": "jobs@example.com",
+                    }
+                ],
+                state_path=state,
+                thread_loader=lambda thread_id: payload,
+            )
+
+            self.assertEqual(selected["thread_ids"], ["thread-1"])
+            self.assertEqual(selected["message_ids"], ["message-new"])
+            self.assertEqual(
+                selected["messages"],
+                [{"message_id": "message-new", "thread_id": "thread-1"}],
+            )
+            self.assertEqual(
+                selected["bootstrap_message_ids"], ["message-old"]
+            )
+
+    def test_message_ack_migrates_bootstrap_and_preserves_future_thread_mail(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             candidates = root / "candidates.json"
             result = root / "result.json"
-            seen = root / "seen.json"
+            state = root / "seen.json"
+            state.write_text(
+                json.dumps({"version": 1, "thread_ids": ["thread-1"]}),
+                encoding="utf-8",
+            )
+            legacy_cutoff = state.stat().st_mtime
             candidates.write_text(
                 json.dumps(
                     {
-                        "version": 1,
-                        "new_count": 2,
-                        "thread_ids": ["thread-1", "thread-2"],
+                        "version": 2,
+                        "new_count": 1,
+                        "thread_ids": ["thread-1"],
+                        "message_ids": ["message-new"],
+                        "messages": [
+                            {
+                                "message_id": "message-new",
+                                "thread_id": "thread-1",
+                            }
+                        ],
+                        "bootstrap_message_ids": ["message-old"],
                     }
                 ),
                 encoding="utf-8",
@@ -102,19 +176,74 @@ class OperationsTests(unittest.TestCase):
                     {
                         "processed_threads": 1,
                         "processed_thread_ids": ["thread-1"],
+                        "processed_message_ids": ["message-new"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                mark_processed_messages(state, candidates, result),
+                ["message-new"],
+            )
+            self.assertEqual(
+                json.loads(state.read_text(encoding="utf-8")),
+                {
+                    "version": 2,
+                    "message_ids": ["message-new", "message-old"],
+                    "legacy_thread_ids": ["thread-1"],
+                    "legacy_cutoff_epoch": legacy_cutoff,
+                },
+            )
+            self.assertEqual(state.stat().st_mode & 0o777, 0o600)
+
+    def test_partial_result_acknowledges_only_processed_candidate_messages(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidates = root / "candidates.json"
+            result = root / "result.json"
+            seen = root / "seen.json"
+            candidates.write_text(
+                json.dumps(
+                    {
+                        "version": 2,
+                        "new_count": 2,
+                        "thread_ids": ["thread-1", "thread-2"],
+                        "message_ids": ["message-1", "message-2"],
+                        "messages": [
+                            {
+                                "message_id": "message-1",
+                                "thread_id": "thread-1",
+                            },
+                            {
+                                "message_id": "message-2",
+                                "thread_id": "thread-2",
+                            },
+                        ],
+                        "bootstrap_message_ids": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result.write_text(
+                json.dumps(
+                    {
+                        "processed_threads": 1,
+                        "processed_thread_ids": ["thread-1"],
+                        "processed_message_ids": ["message-1"],
                     }
                 ),
                 encoding="utf-8",
             )
             self.assertEqual(
-                mark_processed_threads(seen, candidates, result),
-                ["thread-1"],
+                mark_processed_messages(seen, candidates, result),
+                ["message-1"],
             )
             self.assertEqual(load_seen := json.loads(seen.read_text()), {
-                "version": 1,
-                "thread_ids": ["thread-1"],
+                "version": 2,
+                "message_ids": ["message-1"],
             })
-            self.assertNotIn("thread-2", load_seen["thread_ids"])
+            self.assertNotIn("message-2", load_seen["message_ids"])
             self.assertEqual(seen.stat().st_mode & 0o777, 0o600)
 
     def test_partial_result_unknown_or_mismatched_ids_acknowledges_nothing(self):
@@ -125,9 +254,21 @@ class OperationsTests(unittest.TestCase):
             candidates.write_text(
                 json.dumps(
                     {
-                        "version": 1,
+                        "version": 2,
                         "new_count": 2,
                         "thread_ids": ["thread-1", "thread-2"],
+                        "message_ids": ["message-1", "message-2"],
+                        "messages": [
+                            {
+                                "message_id": "message-1",
+                                "thread_id": "thread-1",
+                            },
+                            {
+                                "message_id": "message-2",
+                                "thread_id": "thread-2",
+                            },
+                        ],
+                        "bootstrap_message_ids": [],
                     }
                 ),
                 encoding="utf-8",
@@ -136,20 +277,28 @@ class OperationsTests(unittest.TestCase):
                 {
                     "processed_threads": 1,
                     "processed_thread_ids": ["unknown-thread"],
+                    "processed_message_ids": ["message-1"],
                 },
                 {
                     "processed_threads": 2,
                     "processed_thread_ids": ["thread-1"],
+                    "processed_message_ids": ["message-1"],
                 },
                 {
-                    "processed_threads": 2,
-                    "processed_thread_ids": ["thread-1", "thread-1"],
+                    "processed_threads": 1,
+                    "processed_thread_ids": ["thread-2"],
+                    "processed_message_ids": ["message-1"],
+                },
+                {
+                    "processed_threads": 1,
+                    "processed_thread_ids": ["thread-1"],
+                    "processed_message_ids": ["unknown-message"],
                 },
             ):
                 result = root / "result.json"
                 result.write_text(json.dumps(payload), encoding="utf-8")
                 with self.subTest(payload=payload), self.assertRaises(ValueError):
-                    mark_processed_threads(seen, candidates, result)
+                    mark_processed_messages(seen, candidates, result)
                 self.assertFalse(seen.exists())
 
     def test_calendar_key_and_prep_windows_are_stable(self):

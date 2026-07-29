@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "deliverable": "JOB-INBOX-MESSAGE-CHECKPOINT-10L",
+  "observed_at": "2026-07-30T00:37:46+09:00",
+  "verification": {
+    "job_loop_tests_passed": 176,
+    "agent_runner_tests_passed": 10,
+    "oss_boundary": "pass",
+    "pii_shape_scan": "pass",
+    "shell_syntax": "pass"
+  },
+  "production_audit": {
+    "legacy_thread_count": 3,
+    "current_message_count": 3,
+    "messages_newer_than_checkpoint": 0
+  },
+  "shadow_full_sync": {
+    "gmail_source": "real_private_account",
+    "checkpoint_source": "production_copy",
+    "candidate_messages": 0,
+    "candidate_threads": 0,
+    "bootstrap_messages": 3,
+    "checkpoint_version_after": 2,
+    "checkpoint_messages_after": 3,
+    "legacy_threads_preserved": 3,
+    "legacy_cutoff_preserved": true,
+    "checkpoint_mode": "0600",
+    "production_state_mutated": false
+  },
+  "finding": "The message-level scanner migrated all three historical one-message threads in a private copy without replay, while its contract keeps any later message in those same thread IDs observable."
+}
