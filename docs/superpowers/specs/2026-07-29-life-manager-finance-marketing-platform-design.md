@@ -927,10 +927,15 @@ completed 35/35 disposition, issue transfer, redirect, archive, and
 runtime-reference-zero. Evidence:
 `docs/evidence/security/2026-07-29-oss-security-baseline.md` and
 `docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md`.
+The x402 nine-route seller is now present in canonical
+`services/x402-endpoint`; historical and canonical suites pass 68/68, the
+migration contract passes 1/1, and dependency audit is zero. Order 0 remains
+open until the canonical commit is merged and Railway source/root/commit plus
+post-cutover E2E are read back.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
-| 0 | Finish single-repository consolidation | **in progress** — security baseline and v0 retirement are done. Current substep consolidates `x402-agents` from `anicca.ai`; browser/parity/cloud/remaining-legacy gates follow. v0 evidence: 35/35 disposition, canonical focused 116/116, archived read-only, runtime reference 0 |
+| 0 | Finish single-repository consolidation | **in progress** — security baseline and v0 retirement are done. The `x402-agents` code migration is GREEN in canonical, while production still points at `anicca.ai`; source cutover and post-cutover E2E are next. Browser/parity/cloud/remaining-legacy gates follow |
 | 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
