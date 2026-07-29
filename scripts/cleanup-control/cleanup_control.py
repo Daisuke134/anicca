@@ -863,6 +863,18 @@ def sweep_worktree_collection(
             }
         )
         append_ledger(ledger_path, event)
+    standalone = sweep_git_clone_collection(
+        collection_root=collection_root,
+        child_name_prefix="",
+        ledger_path=ledger_path,
+        policy_version=policy_version,
+        manifest_sha256=manifest_sha256,
+        now=now,
+        owner="git-worktrees",
+        standalone_only=True,
+    )
+    for key in result:
+        result[key] += standalone[key]
     return result
 
 
@@ -909,18 +921,21 @@ def sweep_git_clone_collection(
     policy_version: str,
     manifest_sha256: str,
     now: int,
+    owner: str = "agent-temp-clones",
+    standalone_only: bool = False,
 ) -> dict[str, int]:
     result = {"removed": 0, "preserved": 0, "errors": 0, "bytes_removed": 0}
     if not collection_root.is_dir():
         # collection_root itself may legitimately be a symlink (macOS /tmp ->
         # /private/tmp); only reject it if it does not resolve to a directory.
         return result
-    entry = {"owner": "agent-temp-clones", "class": GIT_CLONE_COLLECTION_CLASS}
+    entry = {"owner": owner, "class": GIT_CLONE_COLLECTION_CLASS}
     children = sorted(
         (
             child
             for child in collection_root.iterdir()
             if child.name.startswith(child_name_prefix)
+            and (not standalone_only or (child / ".git").is_dir())
         ),
         key=lambda item: item.name,
     )
