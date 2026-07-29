@@ -1,6 +1,8 @@
 import json
+import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from job_search_loop.workday_credentials import ensure_credentials
@@ -134,6 +136,77 @@ class WorkdayVerificationTests(unittest.TestCase):
         finally:
             store.close()
         self.assertEqual(self.database.stat().st_mode & 0o777, 0o600)
+
+    def test_expired_pre_navigation_claim_is_reclaimed_with_a_new_fence(self):
+        target = self._extract()
+        store = VerificationStore(self.database)
+        first_at = datetime(2026, 7, 29, 0, 0, tzinfo=timezone.utc)
+        try:
+            first = store.claim(target, now=first_at)
+            self.assertIsNotNone(first)
+            self.assertIsNone(
+                store.claim(target, now=first_at + timedelta(seconds=899))
+            )
+            second = store.claim(
+                target,
+                now=first_at + timedelta(seconds=900),
+            )
+            self.assertIsNotNone(second)
+            self.assertNotEqual(first, second)
+            with self.assertRaises(VerificationError):
+                store.mark_navigation_started(target.event_key, first)
+            store.mark_navigation_started(target.event_key, second)
+            self.assertIsNone(
+                store.claim(target, now=first_at + timedelta(days=30))
+            )
+        finally:
+            store.close()
+
+    def test_legacy_claim_without_claimed_at_recovers_from_created_at(self):
+        target = self._extract()
+        self.database.parent.mkdir(parents=True)
+        connection = sqlite3.connect(self.database)
+        connection.execute(
+            """
+            CREATE TABLE workday_verifications (
+              event_key TEXT PRIMARY KEY,
+              message_id TEXT NOT NULL,
+              tenant TEXT NOT NULL,
+              url_sha256 TEXT NOT NULL,
+              status TEXT NOT NULL,
+              fence TEXT,
+              created_at TEXT NOT NULL,
+              completed_at TEXT
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO workday_verifications
+              (event_key,message_id,tenant,url_sha256,status,fence,created_at)
+            VALUES (?, ?, ?, ?, 'claimed', 'legacy-fence', ?)
+            """,
+            (
+                target.event_key,
+                target.message_id,
+                target.tenant,
+                target.url_sha256,
+                datetime(2026, 7, 29, 0, 0, tzinfo=timezone.utc).isoformat(),
+            ),
+        )
+        connection.commit()
+        connection.close()
+
+        store = VerificationStore(self.database)
+        try:
+            reclaimed = store.claim(
+                target,
+                now=datetime(2026, 7, 29, 0, 15, tzinfo=timezone.utc),
+            )
+            self.assertIsNotNone(reclaimed)
+            self.assertNotEqual(reclaimed, "legacy-fence")
+        finally:
+            store.close()
 
     def test_prompt_and_schema_require_verification_results(self):
         root = Path(__file__).parents[1]
