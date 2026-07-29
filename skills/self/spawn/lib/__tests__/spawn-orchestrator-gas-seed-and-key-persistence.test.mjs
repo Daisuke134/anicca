@@ -55,7 +55,7 @@ function happyDeps(dir, overrides = {}) {
     // write a REAL shelter-cost.jsonl row under the actual production resolveStateDir().
     shelterCostFile: path.join(dir, "shelter-cost.jsonl"),
     checkHomeDistinct: async () => ({ ok: true, homeDir: path.join(dir, "child-home") }),
-    generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" }),
+    generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xplaceholderchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => "akash",
     generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: "childsolanafixturekey" }),
@@ -77,7 +77,7 @@ function happyDeps(dir, overrides = {}) {
 test("defaultPersistChildWallet: happy path -- writes {address,privateKey} (camelCase, matching resolve-identity.mjs) to childHomeDir/.automaton/wallet.json at mode 0600", () => {
   const dir = tmpDir();
   const childHomeDir = path.join(dir, "child-home");
-  const evmWallet = { address: "0xChildFixtureAddr0000000000000000000001", privateKey: "0xchildfixturekey" };
+  const evmWallet = { address: "0xChildFixtureAddr0000000000000000000001", privateKey: "0xplaceholderchildfixturekey" };
   const result = defaultPersistChildWallet({ childHomeDir, evmWallet });
   assert.equal(result.ok, true);
   const walletPath = path.join(childHomeDir, ".automaton", "wallet.json");
@@ -95,7 +95,7 @@ test("defaultPersistChildWallet: a write failure (childHomeDir's parent segment 
   const blockerFile = path.join(dir, "not-a-directory");
   fs.writeFileSync(blockerFile, "x");
   const childHomeDir = path.join(blockerFile, "child-home");
-  const evmWallet = { address: "0xChildFixtureAddr0000000000000000000002", privateKey: "0xchildfixturekey2" };
+  const evmWallet = { address: "0xChildFixtureAddr0000000000000000000002", privateKey: "0xplaceholderchildfixturekey2" };
   const result = defaultPersistChildWallet({ childHomeDir, evmWallet });
   assert.equal(result.ok, false);
   assert.match(result.error, /child wallet\.json persistence failed/);
@@ -113,7 +113,7 @@ test("defaultSeedChild: happy path -- resolves the parent's own key, writes a sn
   const result = defaultSeedChild(
     { childAddress: "0xChildAddrFixture000000000000000000001", amountUsdc: 1, parentWalletAddress: DRIVING_CITIZEN_WALLET },
     {
-      resolveParentPrivateKey: () => "0xparentfixturekey",
+      resolveParentPrivateKey: () => "0xplaceholderparentfixturekey",
       runSeedChild: (childAddr, amount, walletJsonPath) => {
         seenArgs = { childAddr, amount, walletJsonPath };
         seenFileDuringCall = JSON.parse(fs.readFileSync(walletJsonPath, "utf8"));
@@ -126,7 +126,7 @@ test("defaultSeedChild: happy path -- resolves the parent's own key, writes a sn
   assert.equal(seenArgs.childAddr, "0xChildAddrFixture000000000000000000001");
   assert.equal(seenArgs.amount, 1);
   assert.deepEqual(Object.keys(seenFileDuringCall).sort(), ["address", "private_key"]);
-  assert.equal(seenFileDuringCall.private_key, "0xparentfixturekey");
+  assert.equal(seenFileDuringCall.private_key, "0xplaceholderparentfixturekey");
   assert.equal(seenFileDuringCall.address, DRIVING_CITIZEN_WALLET);
   assert.equal(fs.existsSync(seenArgs.walletJsonPath), false, "the transient parent-wallet temp file must be shredded/removed after the attempt");
 });
@@ -136,7 +136,7 @@ test("defaultSeedChild: the transient temp file is 600-perm while it briefly exi
   defaultSeedChild(
     { childAddress: "0xChildAddrFixture000000000000000000002", amountUsdc: 1, parentWalletAddress: DRIVING_CITIZEN_WALLET },
     {
-      resolveParentPrivateKey: () => "0xparentfixturekey2",
+      resolveParentPrivateKey: () => "0xplaceholderparentfixturekey2",
       runSeedChild: (childAddr, amount, walletJsonPath) => {
         seenMode = fs.statSync(walletJsonPath).mode & 0o777;
         return "0xseedtxfixture2";
@@ -165,7 +165,7 @@ test("defaultSeedChild: seed-child.py's own real failure (exit 1, e.g. tx revert
   const result = defaultSeedChild(
     { childAddress: "0xChildAddrFixture000000000000000000004", amountUsdc: 1, parentWalletAddress: DRIVING_CITIZEN_WALLET },
     {
-      resolveParentPrivateKey: () => "0xparentfixturekey4",
+      resolveParentPrivateKey: () => "0xplaceholderparentfixturekey4",
       runSeedChild: (childAddr, amount, walletJsonPath) => {
         seenPath = walletJsonPath;
         const e = new Error("Command failed");
@@ -184,7 +184,7 @@ test("defaultSeedChild: seed-child.py's own documented PENDING (exit 2, receipt 
   const result = defaultSeedChild(
     { childAddress: "0xChildAddrFixture000000000000000000005", amountUsdc: 1, parentWalletAddress: DRIVING_CITIZEN_WALLET },
     {
-      resolveParentPrivateKey: () => "0xparentfixturekey5",
+      resolveParentPrivateKey: () => "0xplaceholderparentfixturekey5",
       runSeedChild: () => {
         const e = new Error("Command failed");
         e.status = 2;
@@ -202,7 +202,7 @@ test("defaultSeedChild: seed-child.py prints no tx hash at all -> ok:false, neve
   const result = defaultSeedChild(
     { childAddress: "0xChildAddrFixture000000000000000000006", amountUsdc: 1, parentWalletAddress: DRIVING_CITIZEN_WALLET },
     {
-      resolveParentPrivateKey: () => "0xparentfixturekey6",
+      resolveParentPrivateKey: () => "0xplaceholderparentfixturekey6",
       runSeedChild: () => "   \n",
     }
   );
@@ -267,7 +267,7 @@ test("executeSpawnAttempt: persistChildWallet is invoked with step-1's own homeD
   assert.equal(result.status, "active");
   assert.equal(seen.childHomeDir, path.join(dir, "child-home"));
   assert.equal(seen.evmWallet.address, "0xChildEvmFixture0000000000000000000000001");
-  assert.equal(seen.evmWallet.privateKey, "0xchildevmfixturekey");
+  assert.equal(seen.evmWallet.privateKey, "0xplaceholderchildevmfixturekey");
 });
 
 test("executeSpawnAttempt: seedChild's childAddress is step-2's own generated address and amountUsdc is IDENTICAL (by construction) to the eventual active row's seed_usdc field (resolves FIND-007a)", async () => {

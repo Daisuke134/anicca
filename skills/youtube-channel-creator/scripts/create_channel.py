@@ -5,14 +5,14 @@ verification YouTube demands once the account already has channels. Battle-teste
 
 USAGE
   # Phase A — start: drives create → (advanced-features gate) → phone-verify step1 → sends SMS, exits.
-  create_channel.py --name "Money Blueprint" --handle "moneyblueprintdaily" [--phone 08046270314]
+  create_channel.py --name "Money Blueprint" --handle "moneyblueprintdaily" [--phone "$DAIS_PHONE"]
       → on success of step1 prints {"needs_code": true, ...}; an SMS is sent to <phone>.
   # Phase B — finish: enter the 6-digit SMS code, then create the channel (+ optional profile desc).
   create_channel.py --name "Money Blueprint" --handle "moneyblueprintdaily" --code 123456 [--desc "..."]
 
 If the account needs NO phone verification (1st/2nd channel), Phase A creates the channel directly.
 
-LEARNINGS baked in (run→learn→fix, 2026-06-29, on redacted@example.invalid):
+LEARNINGS baked in (run→learn→fix, 2026-06-29, on person@example.com):
   • Logged out → YouTube bounces to accounts.google.com; 2FA = "tap Yes on phone" (human, once).
     We detect this and report NOT_SIGNED_IN rather than failing silently.
   • 3rd+ channel pops "上級者向け機能を利用する" → 認証 → youtube.com/verify (phone, 1 number = 2/yr).
@@ -105,7 +105,7 @@ def fill_and_create(pg, a, out):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True); ap.add_argument("--handle", required=True)
-    ap.add_argument("--phone", default=os.environ.get("DAIS_PHONE", "08046270314"))
+    ap.add_argument("--phone", default=os.environ.get("DAIS_PHONE"))
     ap.add_argument("--code", default=None); ap.add_argument("--desc", default=None)
     a = ap.parse_args()
     out = {"name": a.name, "handle": a.handle, "created": False}
@@ -130,6 +130,10 @@ def main():
             if a.code:  # already verified but gate re-shown — retry dialog
                 res = open_create_dialog(pg, ctx, a, out)
             else:
+                if not a.phone:
+                    out["error"] = "PHONE_REQUIRED (--phone or DAIS_PHONE)"
+                    print(json.dumps(out))
+                    return
                 phone_verify_step1(pg, ctx, a.phone, out); print(json.dumps(out)); return
         if res != "dialog":
             out["error"] = out.get("error","create dialog did not open"); out["shot"]=shot(pg,"yt_no_dialog"); print(json.dumps(out)); return

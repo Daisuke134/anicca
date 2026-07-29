@@ -78,4 +78,28 @@ else
 fi
 rm -rf "$FAKE_HOME_NO_KEY"
 
+echo "--- Tier2: recipient comes from runtime configuration, never source PII ---"
+FAKE_HOME_RECIPIENT="$(mktemp -d)"
+FAKE_BIN="$FAKE_HOME_RECIPIENT/bin"
+mkdir -p "$FAKE_HOME_RECIPIENT/.openclaw/logs" "$FAKE_BIN"
+cat >"$FAKE_BIN/curl" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >"$FAKE_CURL_ARGS"
+printf '{"ok":true}\nHTTP_STATUS:200\n'
+SH
+chmod +x "$FAKE_BIN/curl"
+FAKE_CURL_ARGS="$FAKE_HOME_RECIPIENT/curl.args" \
+  PATH="$FAKE_BIN:$PATH" \
+  HOME="$FAKE_HOME_RECIPIENT" \
+  AGENTMAIL_API_KEY="test-fake-key-not-real" \
+  GOG_ACCOUNT="owner@example.com" \
+  env -u LOOP_REPORT_TO \
+  bash "$A" test-loop "did" success 0 "none: reason" >/dev/null 2>&1
+if grep -q "owner@example.com" "$FAKE_HOME_RECIPIENT/curl.args" 2>/dev/null; then
+  ok "GOG_ACCOUNT supplies the fallback recipient"
+else
+  fail "fallback recipient must come from GOG_ACCOUNT"
+fi
+rm -rf "$FAKE_HOME_RECIPIENT"
+
 echo "=== test-loop-report: $P passed $F failed ==="; [ "$F" = 0 ] && echo GREEN || exit 1
