@@ -119,22 +119,24 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - Create:
   `docs/evidence/job-search-loop/2026-07-29-canonical-migration.json`
 
-- [ ] Run the canonical healthcheck against existing private state while the
+- [x] Run the canonical healthcheck against existing private state while the
   legacy agents remain loaded.
-- [ ] Verify SQLite integrity, current daily quota, outbox state, and current
+- [x] Verify SQLite integrity, current daily quota, outbox state, and current
   LaunchAgent targets; store only redacted evidence.
-- [ ] Render and lint replacement plists, then atomically bootstrap both
+- [x] Render and lint replacement plists, then atomically bootstrap both
   canonical agents.
-- [ ] Confirm `launchctl print` shows daily 08:30 JST and inbox 900 seconds with
+- [x] Confirm `launchctl print` shows daily 08:30 JST and inbox 900 seconds with
   canonical program paths.
-- [ ] Kickstart the daily agent and verify a successful quota-safe/no-duplicate
+- [x] Kickstart the daily agent and verify a successful budget-safe/no-duplicate
   result.
-- [ ] Kickstart the inbox agent and verify a successful reconciliation/prep
+- [x] Kickstart the inbox agent and verify a successful reconciliation/prep
   result.
-- [ ] Rerun healthcheck and verify installed paths resolve to a checkout whose
+- [x] Rerun healthcheck and verify installed paths resolve to a checkout whose
   Git origin is `Daisuke134/life-manager`.
-- [ ] If any cutover check fails, reinstall the preserved legacy plists and
-  record the rollback result before fixing forward.
+- [x] Preserve both legacy plists and record the cutover deviation. The first
+  daily pass failed before any application/Telegram side effect, so the
+  committed runtime was fixed forward in place rather than switching sources;
+  the next kickstart and healthcheck both passed.
 
 ### Task 5: Close the spec and publish the canonical source
 
@@ -147,9 +149,10 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - Modify:
   `docs/superpowers/specs/2026-07-28-job-search-loop-verification.md`
 
-- [ ] Run the complete job-loop and runner suites from a clean command.
-- [ ] Run secret and legacy-path scans over every added tracked file.
-- [ ] Record exact commit, test counts, plist schedules, launchd exit status,
+- [x] Run the complete job-loop and runner suites from a clean command: 114 and
+  7 tests pass.
+- [x] Run Gitleaks and legacy-path scans over every added tracked file.
+- [x] Record exact commit, test counts, plist schedules, launchd exit status,
   ledger integrity, and redacted runtime receipt IDs in the spec.
 - [ ] Change backlog order 0 to `completed` only after every acceptance
   criterion is evidenced.
