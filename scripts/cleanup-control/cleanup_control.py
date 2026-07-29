@@ -496,6 +496,59 @@ def discover_regenerable_outputs(roots: list[Path]) -> list[dict[str, Any]]:
     return sorted(discovered, key=lambda item: item["path"])
 
 
+def discover_published_runs(roots: list[Path]) -> list[dict[str, Any]]:
+    discovered: list[dict[str, Any]] = []
+    required_proof_fields = ("postId", "postedAt", "integration", "method")
+    for raw_root in sorted(roots, key=str):
+        root = Path(os.path.normpath(str(raw_root.expanduser())))
+        if not root.is_absolute() or not root.is_dir() or root.is_symlink():
+            continue
+        for candidate in sorted(root.iterdir(), key=lambda item: str(item)):
+            if not candidate.is_dir() or candidate.is_symlink():
+                continue
+            proof = candidate / "reel-meta.json"
+            output = candidate / "reel-final.mp4"
+            if (
+                not proof.is_file()
+                or proof.is_symlink()
+                or not output.is_file()
+                or output.is_symlink()
+            ):
+                continue
+            try:
+                metadata = json.loads(proof.read_text(encoding="utf-8"))
+                output_bytes = output.stat().st_size
+            except (OSError, json.JSONDecodeError):
+                continue
+            if (
+                not isinstance(metadata, dict)
+                or output_bytes <= 0
+                or any(
+                    not isinstance(metadata.get(field), str)
+                    or not metadata[field].strip()
+                    for field in required_proof_fields
+                )
+            ):
+                continue
+            digest = hashlib.sha256(str(candidate).encode("utf-8")).hexdigest()[:20]
+            discovered.append(
+                {
+                    "id": f"published-run-{digest}",
+                    "path": str(candidate),
+                    "owner": "reelclaw",
+                    "class": REGENERABLE_OUTPUT_CLASS,
+                    "ttl_seconds": None,
+                    "quota_bytes": 0,
+                    "lease": None,
+                    "finalizer": {
+                        "kind": "verified_regenerable_remove",
+                        "proof_path": str(proof),
+                    },
+                }
+            )
+    return discovered
+
+
 def discover_ephemeral_caches(
     roots: list[Path],
     *,
@@ -547,6 +600,7 @@ def build_runtime_manifest(
     roots: list[Path],
     cache_roots: list[Path],
     minimum_cache_bytes: int,
+    published_run_roots: list[Path] | None = None,
 ) -> dict[str, int | str]:
     policy_version, _, base_entries = load_manifest(manifest_path)
     existing_paths = {entry["path"] for entry in base_entries}
@@ -554,6 +608,7 @@ def build_runtime_manifest(
         entry
         for entry in [
             *discover_regenerable_outputs(roots),
+            *discover_published_runs(published_run_roots or []),
             *discover_ephemeral_caches(
                 cache_roots,
                 minimum_bytes=max(1, int(minimum_cache_bytes)),
@@ -1158,6 +1213,12 @@ def _parser() -> argparse.ArgumentParser:
     runtime_manifest_parser.add_argument("--root", action="append", required=True, type=Path)
     runtime_manifest_parser.add_argument("--cache-root", action="append", default=[], type=Path)
     runtime_manifest_parser.add_argument(
+        "--published-run-root",
+        action="append",
+        default=[],
+        type=Path,
+    )
+    runtime_manifest_parser.add_argument(
         "--min-cache-bytes",
         type=int,
         default=1073741824,
@@ -1191,6 +1252,7 @@ def main(argv: list[str] | None = None) -> int:
                 roots=args.root,
                 cache_roots=args.cache_root,
                 minimum_cache_bytes=args.min_cache_bytes,
+                published_run_roots=args.published_run_root,
             )
         except ManifestError as exc:
             result = {

@@ -553,6 +553,7 @@ if [ "$TEST_MODE" -eq 0 ]; then
       --root "$HOME_DIR/anicca-project/apps" \
       --root "$HOME_DIR/gig" \
       --root "$HOME_DIR/anicca" \
+      --published-run-root "$HOME_DIR/.openclaw/workspace/runs" \
       --cache-root "$HOME_DIR/Library/Caches" \
       --cache-root "$HOME_DIR/.npm" \
       --cache-root "$HOME_DIR/.cargo/registry" \

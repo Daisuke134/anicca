@@ -232,6 +232,85 @@ def test_runtime_manifest_discovers_only_ignored_proven_regenerable_outputs(
     ) + "\n"
 
 
+def test_runtime_manifest_discovers_only_verified_published_runs(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    runs = tmp_path / "runs"
+    runs.mkdir()
+
+    published = runs / "published"
+    published.mkdir()
+    proof = published / "reel-meta.json"
+    proof.write_text(
+        json.dumps(
+            {
+                "postId": "post-123",
+                "postedAt": "2026-07-19T11:05:22.000Z",
+                "integration": "integration-456",
+                "method": "DIRECT_POST",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (published / "reel-final.mp4").write_bytes(b"published-video")
+
+    malformed = runs / "malformed"
+    malformed.mkdir()
+    (malformed / "reel-meta.json").write_text('{"postId":""}', encoding="utf-8")
+    (malformed / "reel-final.mp4").write_bytes(b"keep")
+
+    symlinked_proof = runs / "symlinked-proof"
+    symlinked_proof.mkdir()
+    (symlinked_proof / "reel-meta.json").symlink_to(proof)
+    (symlinked_proof / "reel-final.mp4").write_bytes(b"keep")
+
+    missing_output = runs / "missing-output"
+    missing_output.mkdir()
+    (missing_output / "reel-meta.json").write_text(proof.read_text(encoding="utf-8"), encoding="utf-8")
+
+    empty_output = runs / "empty-output"
+    empty_output.mkdir()
+    (empty_output / "reel-meta.json").write_text(proof.read_text(encoding="utf-8"), encoding="utf-8")
+    (empty_output / "reel-final.mp4").touch()
+
+    base = write_manifest(tmp_path / "base.json", [])
+    runtime = tmp_path / "runtime.json"
+    command = [
+        sys.executable,
+        str(MODULE_PATH),
+        "runtime-manifest",
+        "--manifest",
+        str(base),
+        "--output",
+        str(runtime),
+        "--root",
+        str(repository),
+        "--published-run-root",
+        str(runs),
+    ]
+
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["discovered"] == 1
+
+    generated = json.loads(runtime.read_text(encoding="utf-8"))
+    assert generated["artifacts"] == [
+        {
+            "class": "regenerable_output",
+            "finalizer": {
+                "kind": "verified_regenerable_remove",
+                "proof_path": str(proof),
+            },
+            "id": generated["artifacts"][0]["id"],
+            "lease": None,
+            "owner": "reelclaw",
+            "path": str(published),
+            "quota_bytes": 0,
+            "ttl_seconds": None,
+        }
+    ]
+
+
 @pytest.mark.parametrize("mode", ["missing", "corrupt", "missing-field"])
 def test_manifest_failure_is_fail_closed(tmp_path: Path, mode: str) -> None:
     source = tmp_path / "cache"

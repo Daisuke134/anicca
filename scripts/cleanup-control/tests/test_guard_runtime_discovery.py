@@ -100,4 +100,10 @@ else:
         str(home / ".cargo/git"),
         str(home / ".cache"),
     ]
+    published_run_roots = [
+        runtime_call[index + 1]
+        for index, value in enumerate(runtime_call)
+        if value == "--published-run-root"
+    ]
+    assert published_run_roots == [str(home / ".openclaw/workspace/runs")]
     assert runtime_call[runtime_call.index("--min-cache-bytes") + 1] == "67108864"
