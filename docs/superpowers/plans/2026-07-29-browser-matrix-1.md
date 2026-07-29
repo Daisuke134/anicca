@@ -159,7 +159,7 @@ node scripts/verify-oss-self-contained.mjs
 npm run test:oss
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/life-manager/lib/stagehand-steel-driver.js apps/life-manager/lib/stagehand-steel-driver.test.js docs/manifests/oss-merge-1-sources.json
@@ -190,14 +190,14 @@ git commit -m "feat(browser): verify booking message and application receipts"
 }
 ```
 
-- [ ] **Step 1: Write failing harness tests**
+- [x] **Step 1: Write failing harness tests**
 
 Assert exact three-category coverage, distinct public origins, completed durable
 rows, nonempty provider confirmation, Telegram evidence ID, receipt SHA-256,
 and `steel_released=true`. Assert that missing URL, duplicate origin, non-HTTPS
 URL, `possibly_completed`, or a raw email/credential field fails closed.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -208,14 +208,14 @@ node --test scripts/browser-matrix-production-e2e.test.js
 
 Expected: module not found.
 
-- [ ] **Step 3: Implement the harness**
+- [x] **Step 3: Implement the harness**
 
 Follow `browser-auth-production-e2e.js`: enqueue one exact job by ID, claim that
 job only, execute through `runNextBrowserJob`, reread the terminal durable row,
 hash the bounded provider receipt, and return IDs/hashes only. Runtime goals use
 agent-owned name/email role labels and contain no secret value.
 
-- [ ] **Step 4: Run harness tests and the browser suite**
+- [x] **Step 4: Run harness tests and the browser suite**
 
 Run:
 
