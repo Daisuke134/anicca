@@ -39,6 +39,12 @@ function safeLumaMagicLink(value) {
   return url.toString();
 }
 
+function safeLumaAuthChallenge(value) {
+  const raw = String(value || "");
+  if (/^luma-code:\d{6}$/.test(raw)) return raw;
+  return safeLumaMagicLink(raw);
+}
+
 function confirmedLumaAuth(value) {
   if (!value || value.confirmed !== true || !AUTH_MARKERS.has(
     String(value.marker || "").replaceAll("_", " ").toLowerCase(),
@@ -103,8 +109,8 @@ async function runLumaBootstrap({ env = process.env, deps } = {}) {
     }
     sessionId = required(browser.sessionId);
     await browser.requestMagicLink(email);
-    const link = safeLumaMagicLink(await deps.readMagicLink({ afterMs }));
-    await browser.openMagicLink(link);
+    const challenge = safeLumaAuthChallenge(await deps.readMagicLink({ afterMs }));
+    await browser.openMagicLink(challenge);
     const auth = confirmedLumaAuth(await browser.inspectAuthenticated());
     const context = await browser.exportContext();
     const saved = await deps.saveContext({
@@ -170,6 +176,21 @@ function extractMagicLink(message) {
   return null;
 }
 
+function extractLumaCode(message) {
+  const source = [
+    message && message.from,
+    message && message.subject,
+    message && message.preview,
+    message && message.html,
+    message && message.text,
+    message && message.extracted_html,
+    message && message.extracted_text,
+  ].filter(Boolean).join("\n");
+  if (!/(?:luma|lu\.ma)/i.test(source)) return null;
+  const match = source.match(/(?:^|\D)(\d{6})(?:\D|$)/);
+  return match ? match[1] : null;
+}
+
 function timestampMs(message) {
   const value = Date.parse(String(message && (message.timestamp || message.created_at) || ""));
   return Number.isFinite(value) ? value : 0;
@@ -217,7 +238,7 @@ async function requestLumaEmailLogin(page, email) {
   if (!page || typeof page.evaluate !== "function") {
     throw new LumaBootstrapError("Luma authentication unavailable");
   }
-  const submitted = await page.evaluate(`(() => {
+  const submitted = await page.evaluate(`(async () => {
     const input = document.querySelector('input[type="email"]');
     const submit = document.querySelector('button[type="submit"]');
     if (!input || !submit) return false;
@@ -226,11 +247,55 @@ async function requestLumaEmailLogin(page, email) {
     descriptor.set.call(input, ${JSON.stringify(email)});
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 250));
     submit.click();
     return true;
   })()`);
   if (submitted !== true) throw new LumaBootstrapError("Luma authentication unavailable");
   return true;
+}
+
+async function submitLumaCode(page, code) {
+  const completed = await page.evaluate(`(async () => {
+    const first = document.querySelector('input[autocomplete="one-time-code"]');
+    if (!first) return false;
+    const scope = first.closest('form') || first.parentElement?.parentElement || document;
+    const inputs = Array.from(scope.querySelectorAll('input')).filter((input) =>
+      input === first || input.maxLength === 1 || input.inputMode === "numeric");
+    if (inputs.length < 6) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (!descriptor || typeof descriptor.set !== "function") return false;
+    const digits = ${JSON.stringify(code)}.split("");
+    for (let index = 0; index < 6; index += 1) {
+      descriptor.set.call(inputs[index], digits[index]);
+      inputs[index].dispatchEvent(new Event("input", { bubbles: true }));
+      inputs[index].dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return true;
+  })()`);
+  if (completed !== true) throw new LumaBootstrapError("Luma authentication unavailable");
+}
+
+async function completeLumaName(page, name) {
+  return page.evaluate(`(async () => {
+    const input = document.querySelector(
+      'input[name="name"], input[type="name"], input[placeholder="Your Name"]'
+    );
+    if (!input) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (!descriptor || typeof descriptor.set !== "function") return false;
+    descriptor.set.call(input, ${JSON.stringify(name)});
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const form = input.closest("form");
+    const submit = form?.querySelector('button[type="submit"]')
+      || document.querySelector('button[type="submit"]');
+    if (!submit) return false;
+    submit.click();
+    return true;
+  })()`);
 }
 
 function makeProductionDeps(env = process.env, boundaries = {}) {
@@ -243,7 +308,8 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
   const sleep = boundaries.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const agentMailKey = required(env.LM_AGENTMAIL_API_KEY);
   const inbox = required(env.LM_AGENTMAIL_INBOX_ID);
-  if (!agentMailKey || !inbox) {
+  const agentName = required(env.LM_AGENT_BROWSER_NAME);
+  if (!agentMailKey || !inbox || !agentName) {
     throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
   }
 
@@ -261,8 +327,14 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
             await requestLumaEmailLogin(page, email);
             await sleep(2_000);
           },
-          async openMagicLink(link) {
-            await page.navigate(link);
+          async openMagicLink(challenge) {
+            if (/^luma-code:\d{6}$/.test(challenge)) {
+              await submitLumaCode(page, challenge.slice("luma-code:".length));
+              await sleep(3_000);
+              if (await completeLumaName(page, agentName)) await sleep(3_000);
+              return;
+            }
+            await page.navigate(challenge);
             await sleep(3_000);
           },
           async inspectAuthenticated() {
@@ -305,8 +377,16 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
               { headers: { Authorization: `Bearer ${agentMailKey}` } },
             );
             if (!detailResponse || !detailResponse.ok) continue;
-            const link = extractMagicLink(await detailResponse.json().catch(() => ({})));
+            const detail = await detailResponse.json().catch(() => ({}));
+            const link = extractMagicLink(detail);
             if (link) return link;
+            const code = extractLumaCode({
+              ...detail,
+              from: message.from,
+              subject: message.subject,
+              preview: message.preview,
+            });
+            if (code) return `luma-code:${code}`;
           }
         }
         await sleep(3_000);
@@ -371,6 +451,7 @@ async function main() {
 if (require.main === module) main();
 
 module.exports = {
+  extractLumaCode,
   extractMagicLink,
   makeProductionDeps,
   requestLumaEmailLogin,
