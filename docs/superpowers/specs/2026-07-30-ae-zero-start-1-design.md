@@ -110,6 +110,17 @@ Clone of the `report-job-adapter.js` shape:
   (shared `skills/earn/x402-sell/lib/self-wallets.mjs` set) are likewise
   `financial_deposit`, never revenue.
 - No inflow = quiet receipt (`checked, none`), not an error.
+- Amount encoding (no invented conversions): Base USDC and Solana USDC-SPL
+  inflows → `amount_atomic` + decimals 6, currency `USD` (the ledger's
+  atomic gate requires USD, `lib/earnings-ledger.js:128`). Native SOL
+  inflows → `amount_minor` = lamports, currency `SOL`,
+  `meta {unit:"lamports", decimals:9}` — never converted to USD via a price
+  feed inside the ledger. Entry keys: `inflow:base:<txhash>`,
+  `inflow:solana:<sig>`, `inflow:solana-sol:<sig>`.
+- Cursor persistence: the watch cursor lives in the job's own durable
+  receipt (`next_cursor`, read back from the last completed receipt),
+  following the existing `runtime-up.js` history-readback pattern. No new
+  cursor table.
 
 ### 4.6 Worker registration
 
