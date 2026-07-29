@@ -64,9 +64,20 @@ export ANICCA_BUDGET_DAY_TZ="Asia/Tokyo"
   --loop job-search \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   <"$PROMPT"
+RESULT_PATH=$("$JOB_SEARCH_JQ" -er \
+  '.result_path | select(type == "string" and length > 0)' \
+  "$EVIDENCE/summary.json")
+case "$RESULT_PATH" in
+  "$EVIDENCE"/attempt-*.result.json) ;;
+  *)
+    echo "inbox result path escaped current evidence directory" >&2
+    exit 2
+    ;;
+esac
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
   --state "$SEEN_STATE" \
-  --input "$CANDIDATES"
+  --input "$CANDIDATES" \
+  --result "$RESULT_PATH"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \

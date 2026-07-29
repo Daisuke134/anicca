@@ -137,6 +137,55 @@ def mark_threads_seen(path: Path, thread_ids: list[str]) -> None:
     _write_private_json(path, {"version": 1, "thread_ids": merged})
 
 
+def _read_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as error:
+        raise ValueError(f"{label} JSON is unavailable") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} JSON must be an object")
+    return value
+
+
+def _validated_thread_ids(value: Any, label: str) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be an array")
+    thread_ids = [str(thread_id) for thread_id in value]
+    if (
+        len(thread_ids) != len(set(thread_ids))
+        or any(not THREAD_ID_PATTERN.fullmatch(thread_id) for thread_id in thread_ids)
+    ):
+        raise ValueError(f"{label} contains invalid or duplicate Gmail thread IDs")
+    return thread_ids
+
+
+def mark_processed_threads(
+    state_path: Path,
+    candidates_path: Path,
+    result_path: Path,
+) -> list[str]:
+    candidates = _read_json_object(candidates_path, "candidate")
+    result = _read_json_object(result_path, "result")
+    candidate_ids = _validated_thread_ids(
+        candidates.get("thread_ids"), "candidate thread_ids"
+    )
+    processed_ids = _validated_thread_ids(
+        result.get("processed_thread_ids"), "processed_thread_ids"
+    )
+    processed_count = result.get("processed_threads")
+    if (
+        isinstance(processed_count, bool)
+        or not isinstance(processed_count, int)
+        or processed_count != len(processed_ids)
+    ):
+        raise ValueError("processed_threads does not match processed_thread_ids")
+    if not set(processed_ids).issubset(candidate_ids):
+        raise ValueError("processed_thread_ids contains an unscanned Gmail thread")
+    if processed_ids:
+        mark_threads_seen(state_path, processed_ids)
+    return processed_ids
+
+
 def _gmail_threads(account: str) -> list[dict[str, Any]]:
     query = (
         "newer_than:14d "
@@ -217,6 +266,7 @@ def main() -> int:
     mark_parser = subparsers.add_parser("mark")
     mark_parser.add_argument("--state", type=Path, required=True)
     mark_parser.add_argument("--input", type=Path, required=True)
+    mark_parser.add_argument("--result", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "scan":
         result = scan(
@@ -229,8 +279,16 @@ def main() -> int:
         )
         print(json.dumps(result))
         return 0
-    value = json.loads(args.input.read_text(encoding="utf-8"))
-    mark_threads_seen(args.state, [str(row) for row in value["thread_ids"]])
+    acknowledged = mark_processed_threads(args.state, args.input, args.result)
+    print(
+        json.dumps(
+            {
+                "version": 1,
+                "acknowledged_count": len(acknowledged),
+                "thread_ids": acknowledged,
+            }
+        )
+    )
     return 0
 
 
