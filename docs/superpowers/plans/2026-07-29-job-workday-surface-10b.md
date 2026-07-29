@@ -30,11 +30,11 @@
 - Consumes: existing version-1 redacted snapshots.
 - Produces: evaluator output with `claim_ready: bool` and surfaces `workday_apply_choice` / `workday_account_create`.
 
-- [ ] **Step 1: Add failing literal replay tests**
+- [x] **Step 1: Add failing literal replay tests**
 
   Add real-shape sanitized fixtures. Assert exact outputs for the choice and account surfaces, update existing Ashby/Workday expectations with literal `claim_ready` values, and assert a missing password-verification control does not classify as account creation.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
   ```bash
   PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_ats.py -v
@@ -42,15 +42,15 @@
 
   Expected: failures because `claim_ready` and both new surfaces are absent.
 
-- [ ] **Step 3: Implement the minimal evaluator extension**
+- [x] **Step 3: Implement the minimal evaluator extension**
 
   Detect the three-choice modal by visible semantic text; detect Create Account by email, two password inputs, consent checkbox, and Create Account action. Return `claim_ready=true` only for `ashby_application`, `workday_application`, or `generic_application`.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
   Run the focused ATS tests and mutate each required control to confirm the corresponding fixture fails closed.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   ```bash
   git add apps/job-search-loop/job_search_loop/ats.py apps/job-search-loop/tests

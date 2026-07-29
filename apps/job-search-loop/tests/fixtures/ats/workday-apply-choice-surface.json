@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "url": "https://example.wd5.myworkdayjobs.com/careers/job/Japan-Tokyo/example",
+  "navigation_committed": true,
+  "frames": [
+    {
+      "url": "https://example.wd5.myworkdayjobs.com/careers/job/Japan-Tokyo/example",
+      "controls": [
+        {"tag": "a", "type": null, "role": "button", "label": null, "name": null, "text": "Apply"},
+        {"tag": "button", "type": null, "role": "button", "label": "Close", "name": null, "text": ""},
+        {"tag": "a", "type": null, "role": "button", "label": null, "name": null, "text": "Autofill with Resume"},
+        {"tag": "a", "type": null, "role": "button", "label": null, "name": null, "text": "Apply Manually"},
+        {"tag": "a", "type": null, "role": "button", "label": null, "name": null, "text": "Use My Last Application"}
+      ]
+    }
+  ]
+}
