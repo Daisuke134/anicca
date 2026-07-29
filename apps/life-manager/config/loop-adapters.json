@@ -10,6 +10,16 @@
       ],
       "module_ref": "lib/report-job-adapter.js",
       "factory_export": "createFinancialReportLoopAdapter"
+    },
+    {
+      "adapter_id": "marketing-life-manager-daily",
+      "loop_id": "marketing.life-manager.daily",
+      "capability": "marketing.life-manager.daily.publish",
+      "effect_classes": [
+        "publish"
+      ],
+      "module_ref": "lib/marketing-daily-adapter.js",
+      "factory_export": "createMarketingDailyLoopAdapter"
     }
   ]
 }

@@ -78,9 +78,40 @@ def find_post(response, post_id: str) -> dict:
         return {"state": "UNKNOWN", "post_url": None}
     state = match.get("state") or "UNKNOWN"
     url = match.get("releaseURL") or match.get("releaseUrl")
+    if state == "PUBLISHED" and isinstance(url, str):
+        profile = re.fullmatch(r"(https://www\.tiktok\.com/@[^/]+)/?", url)
+        release_id = str(match.get("releaseId") or "")
+        video_id = re.search(r"(?:^|\.)((?:[0-9]){10,})$", release_id)
+        if profile and video_id:
+            url = f"{profile.group(1)}/video/{video_id.group(1)}"
     if state == "PUBLISHED" and (not isinstance(url, str) or not url.startswith("https://")):
         raise PostizError("Postiz marked PUBLISHED without a public release URL")
     return {"state": state, "post_url": url if isinstance(url, str) else None}
+
+
+def find_existing_post(response, *, integration: str, caption: str) -> dict | None:
+    posts = response.get("posts", []) if isinstance(response, dict) else response
+    if not isinstance(posts, list):
+        raise PostizError("Postiz list response has no posts array")
+    for row in reversed(posts):
+        if not isinstance(row, dict):
+            continue
+        row_integration = row.get("integration")
+        integration_id = (
+            row_integration.get("id") if isinstance(row_integration, dict) else row.get("integrationId")
+        )
+        if integration_id != integration or _normalized(str(row.get("content") or "")) != _normalized(caption):
+            continue
+        post_id = row.get("id")
+        if not isinstance(post_id, str) or not post_id:
+            continue
+        state = find_post([row], post_id)
+        if state["state"] == "PUBLISHED" and re.fullmatch(
+            r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?",
+            state.get("post_url") or "",
+        ):
+            return {"post_id": post_id, **state, "reconciled": True}
+    return None
 
 
 def _normalized(value: str) -> str:
@@ -198,6 +229,22 @@ def read_publish_state(post_id: str, api_key: str) -> dict:
     return find_post(_request_json(request), post_id)
 
 
+def read_recent_posts(api_key: str, hours: int = 6):
+    now = datetime.now(timezone.utc)
+    query = urllib.parse.urlencode(
+        {
+            "startDate": (now - timedelta(hours=hours)).isoformat().replace("+00:00", "Z"),
+            "endDate": (now + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+            "limit": "100",
+        }
+    )
+    request = urllib.request.Request(
+        f"{BASE_URL}/posts?{query}",
+        headers={"Authorization": api_key},
+    )
+    return _request_json(request)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--video", type=Path, required=True)
@@ -214,6 +261,15 @@ def main() -> int:
     caption = args.caption_file.read_text(encoding="utf-8").strip()
     if not caption:
         raise PostizError("caption is empty")
+
+    existing = find_existing_post(
+        read_recent_posts(api_key),
+        integration=args.integration,
+        caption=caption,
+    )
+    if existing:
+        print(json.dumps(existing, ensure_ascii=False, separators=(",", ":")))
+        return 0
 
     posted_after = int(time.time())
     upload_id, upload_path = upload_video(args.video, api_key)

@@ -11,6 +11,7 @@ const REQUIRED_SERVICES = [
   "postgres",
   "object-store",
   "migrate",
+  "runtime-init",
   "api",
   "scheduler",
   "worker",
@@ -169,6 +170,7 @@ function createScopedEnvironmentSecretProvider(env = process.env) {
   const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
   const bindings = new Map([
     ["secret://telegram/bot-token", "LM_TELEGRAM_BOT_TOKEN"],
+    ["secret://postiz/api-key", "LM_POSTIZ_API_KEY"],
   ]);
   return createSecretProvider({
     mode: "local",
@@ -255,6 +257,46 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         rpcUrl: String(env.BASE_RPC_URL || "https://mainnet.base.org"),
         fetchImpl: globalThis.fetch,
       }),
+    };
+  }
+  if (capabilities.includes("marketing.life-manager.daily.publish")) {
+    const secretProvider = createScopedEnvironmentSecretProvider(env);
+    const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+    const dataDir = path.resolve(requiredEnv(env, "LM_DATA_DIR"));
+    const runtimeOwnedPath = (name) => {
+      const resolved = path.resolve(requiredEnv(env, name));
+      if (resolved !== dataDir && !resolved.startsWith(`${dataDir}${path.sep}`)) {
+        throw new Error(`${name} must be beneath LM_DATA_DIR`);
+      }
+      return resolved;
+    };
+    servicesByAdapter["marketing-life-manager-daily"] = {
+      secretProvider,
+      profileProvider: {
+        async get(requestTenantId, ref) {
+          if (requestTenantId !== tenantId || ref !== "profile://instagram/life-manager") {
+            throw new Error("Instagram profile tenant scope mismatch");
+          }
+          return {
+            handle: requiredEnv(env, "LM_INSTAGRAM_HANDLE"),
+            accountsPath: runtimeOwnedPath("LM_INSTAGRAM_ACCOUNTS_PATH"),
+            settingsPath: runtimeOwnedPath("LM_INSTAGRAM_SETTINGS_PATH"),
+            credentialsPath: runtimeOwnedPath("LM_INSTAGRAM_CREDENTIALS_PATH"),
+            stateDir: runtimeOwnedPath("LM_INSTAGRAM_PROFILE_STATE_DIR"),
+          };
+        },
+      },
+      integrationProvider: {
+        async get(requestTenantId, ref) {
+          if (
+            requestTenantId !== tenantId
+            || ref !== "integration://postiz/tiktok/life-manager"
+          ) {
+            throw new Error("TikTok integration tenant scope mismatch");
+          }
+          return requiredEnv(env, "LM_TIKTOK_INTEGRATION");
+        },
+      },
     };
   }
   const createRegistry = dependencies.createRegistry || (

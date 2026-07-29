@@ -93,6 +93,9 @@ class DistributionTests(unittest.TestCase):
             tiktok_adapter=tt,
             instagram_handle="anicca.affirms2",
             instagram_accounts=self.root / "accounts.json",
+            instagram_settings=self.root / "settings.json",
+            instagram_credentials=self.root / "credentials.json",
+            instagram_profile_state=self.root / "profile-state",
             tiktok_integration="cmp9txjdp01c8oh0yb6dhlarr",
             approvals=overrides.pop("approvals", self.approvals),
             env=env,
@@ -107,6 +110,7 @@ class DistributionTests(unittest.TestCase):
         for call in calls:
             self.assertIn(str(self.video), call["argv"])
             self.assertIn(str(self.caption), call["argv"])
+        self.assertIn(str(self.root / "settings.json"), calls[0]["argv"])
         self.assertEqual(result["creative_id"], "A03")
 
     def test_ledger_binds_both_public_urls_to_identical_hash_contract(self):

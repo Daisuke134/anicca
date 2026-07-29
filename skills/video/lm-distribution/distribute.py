@@ -30,6 +30,9 @@ class DistributionConfig:
         tiktok_adapter: Path,
         instagram_handle: str,
         instagram_accounts: Path,
+        instagram_settings: Path | None,
+        instagram_credentials: Path | None,
+        instagram_profile_state: Path | None,
         tiktok_integration: str,
         approvals: Path,
         env: Mapping[str, str] | None = None,
@@ -42,6 +45,15 @@ class DistributionConfig:
         self.tiktok_adapter = Path(tiktok_adapter)
         self.instagram_handle = instagram_handle
         self.instagram_accounts = Path(instagram_accounts)
+        self.instagram_settings = (
+            Path(instagram_settings) if instagram_settings is not None else None
+        )
+        self.instagram_credentials = (
+            Path(instagram_credentials) if instagram_credentials is not None else None
+        )
+        self.instagram_profile_state = (
+            Path(instagram_profile_state) if instagram_profile_state is not None else None
+        )
         self.tiktok_integration = tiktok_integration
         self.approvals = Path(approvals)
         self.env = dict(env or os.environ)
@@ -217,6 +229,7 @@ def _append_success(
     provider_cost = adapter_result.get("provider_cost_usd")
     logged_out = adapter_result.get("logged_out_readback")
     migration_date = adapter_result.get("migration_date")
+    provider_reconciled = adapter_result.get("reconciled") is True
     if route == "direct_browser" and not (
         provider_cost == 0
         and logged_out is True
@@ -239,6 +252,7 @@ def _append_success(
         "provider_cost_usd": provider_cost,
         "logged_out_readback": logged_out,
         "migration_date": migration_date,
+        "provider_reconciled": provider_reconciled,
     }
     config.ledger.parent.mkdir(parents=True, exist_ok=True)
     with config.ledger.open("a", encoding="utf-8") as handle:
@@ -247,7 +261,9 @@ def _append_success(
     return row
 
 
-def distribute(config: DistributionConfig) -> dict:
+def distribute_platform(config: DistributionConfig, platform: str) -> dict:
+    if platform not in {"instagram", "tiktok"}:
+        raise DistributionError("platform must be instagram or tiktok")
     video_hash, caption_hash = _validate(config)
     # Fail closed BEFORE any adapter runs: without an approval for these exact bytes nothing is posted.
     approval = _approved(config.approvals, config.creative_id, video_hash, caption_hash)
@@ -257,10 +273,19 @@ def distribute(config: DistributionConfig) -> dict:
         )
     rows = _read_ledger(config.ledger)
 
-    instagram = _existing(rows, "instagram", config.creative_id, video_hash, caption_hash)
-    if not instagram:
-        result = _run_json(
-            [
+    existing = _existing(rows, platform, config.creative_id, video_hash, caption_hash)
+    if existing:
+        return {
+            "creative_id": config.creative_id,
+            "video_sha256": video_hash,
+            "caption_sha256": caption_hash,
+            "platform": platform,
+            "public_url": existing["public_url"],
+            "provider_reconciled": True,
+        }
+
+    if platform == "instagram":
+        instagram_argv = [
                 str(config.instagram_adapter),
                 "--video",
                 str(config.video),
@@ -270,14 +295,19 @@ def distribute(config: DistributionConfig) -> dict:
                 config.instagram_handle,
                 "--accounts-path",
                 str(config.instagram_accounts),
-                "--live",
-            ],
-            config.env,
-        )
+        ]
+        if config.instagram_settings is not None:
+            instagram_argv.extend(["--settings-path", str(config.instagram_settings)])
+        if config.instagram_credentials is not None:
+            instagram_argv.extend(["--credentials-path", str(config.instagram_credentials)])
+        if config.instagram_profile_state is not None:
+            instagram_argv.extend(["--profile-state-dir", str(config.instagram_profile_state)])
+        instagram_argv.append("--live")
+        result = _run_json(instagram_argv, config.env)
         instagram_url = result.get("post_url")
         if result.get("outcome") != "published" or not _valid_public_url("instagram", instagram_url):
             raise DistributionError("Instagram did not return a published public URL")
-        instagram = _append_success(
+        published = _append_success(
             config,
             platform="instagram",
             public_url=instagram_url,
@@ -286,10 +316,7 @@ def distribute(config: DistributionConfig) -> dict:
             provider_id=result.get("code"),
             adapter_result=result,
         )
-
-    rows = _read_ledger(config.ledger)
-    tiktok = _existing(rows, "tiktok", config.creative_id, video_hash, caption_hash)
-    if not tiktok:
+    else:
         result = _run_json(
             [
                 str(config.tiktok_adapter),
@@ -305,7 +332,7 @@ def distribute(config: DistributionConfig) -> dict:
         tiktok_url = result.get("post_url")
         if result.get("state") != "PUBLISHED" or not _valid_public_url("tiktok", tiktok_url):
             raise DistributionError("TikTok did not return a PUBLISHED public URL")
-        tiktok = _append_success(
+        published = _append_success(
             config,
             platform="tiktok",
             public_url=tiktok_url,
@@ -319,6 +346,20 @@ def distribute(config: DistributionConfig) -> dict:
         "creative_id": config.creative_id,
         "video_sha256": video_hash,
         "caption_sha256": caption_hash,
+        "platform": platform,
+        "public_url": published["public_url"],
+        "provider_reconciled": published.get("provider_reconciled") is True,
+    }
+
+
+def distribute(config: DistributionConfig) -> dict:
+    instagram = distribute_platform(config, "instagram")
+    tiktok = distribute_platform(config, "tiktok")
+
+    return {
+        "creative_id": config.creative_id,
+        "video_sha256": instagram["video_sha256"],
+        "caption_sha256": instagram["caption_sha256"],
         "instagram_url": instagram["public_url"],
         "tiktok_url": tiktok["public_url"],
     }
@@ -334,6 +375,7 @@ def main() -> int:
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser()
     parser.add_argument("--creative-id", required=True)
+    parser.add_argument("--platform", choices=("instagram", "tiktok", "both"), default="both")
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--caption-file", type=Path)
     parser.add_argument(
@@ -367,6 +409,9 @@ def main() -> int:
             )
         ).expanduser(),
     )
+    parser.add_argument("--instagram-settings", type=Path)
+    parser.add_argument("--instagram-credentials", type=Path)
+    parser.add_argument("--instagram-profile-state", type=Path)
     parser.add_argument(
         "--approvals",
         type=Path,
@@ -387,8 +432,7 @@ def main() -> int:
     if caption is None:
         caption = Path("~/.local/state/life-manager/state/lm-video/captions").expanduser() / f"{args.creative_id}.txt"
         render_caption(args.bank, args.creative_id, caption)
-    result = distribute(
-        DistributionConfig(
+    config = DistributionConfig(
             creative_id=args.creative_id,
             video=args.video,
             caption=caption,
@@ -397,9 +441,16 @@ def main() -> int:
             tiktok_adapter=args.tiktok_adapter,
             instagram_handle=args.instagram_handle,
             instagram_accounts=args.instagram_accounts,
+            instagram_settings=args.instagram_settings,
+            instagram_credentials=args.instagram_credentials,
+            instagram_profile_state=args.instagram_profile_state,
             tiktok_integration=args.tiktok_integration,
             approvals=args.approvals,
         )
+    result = (
+        distribute(config)
+        if args.platform == "both"
+        else distribute_platform(config, args.platform)
     )
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
