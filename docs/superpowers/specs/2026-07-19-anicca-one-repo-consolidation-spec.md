@@ -23,7 +23,7 @@ Railway、Nosana、local OSS、external providerへ同じcanonical commitからd
 | Surface | fresh readback | 現在判断 |
 |---|---|---|
 | canonical | GitHub APIは`Daisuke134/life-manager`、ID `1248111245`、default `main`、public/unarchived。Railway production `life-call` sourceも同repo、root=`apps/life-manager` | **唯一のSSOT** |
-| canonical security baseline | PR #1267のfresh scanで、PR差分の本specはsecret/PII shape 0。一方、repo全履歴gitleaksは850 finding、現tree PII shape scanは63行、Python jobはmissing test dependencyと既存expectationでFAIL。TruffleHogはPASS | raw secretをspecへ複製しない。実credentialのrotation/revocation、findingのreal/false-positive裁定、allowlist、CI dependency/expectation修復を行い、fresh scan greenまでOSS安全完了を主張しない |
+| canonical security baseline | PR #1268のcompleted run `30437476922`はOSS boundary / gitleaks / TruffleHog / PII / Python / Shellの6 jobが全PASS。current treeはgitleaks 0、PII shape 0、Python 153/153。全履歴gitleaks 1,628件は全件分類済みで未分類0。provider実測でFirecrawl / Vibecode / Exaをrotation/revocationし、Anthropic / ElevenLabs / Slack / Google Cloud / Sourcegraphは失効を確認。RevenueCatのhistorical secret 2本だけがなおactive | raw secretをspecへ複製しない。RevenueCat replacementをlocal/Railwayへ無停止で入れて実API readback後に旧2本を失効し、final headの6 CI jobがgreenになるまでOSS安全完了を主張しない。実測の正本は`docs/evidence/oss/oss-security-baseline-1.md` |
 | renamed legacy MVP | GitHub APIは`Daisuke134/life-manager-v0`、ID `1273052304`、default `main`、public/unarchived。35 tracked files / 184,580 bytes、open issue 11、open PR 0、production deployment source 0。READMEのinstall先は既にcanonical `life-manager` | 35-file behavior/history map→11 issue裁定→redirect-only README→archive。missing required behaviorだけをcanonicalへ実装し、旧codeを無条件に再importしない。削除・history rewriteはしない |
 | remaining source scatter | Railway production `x402-agents` sourceはまだ`Daisuke134/anicca.ai` | seller code/evidenceを本repo `services/x402-endpoint`へ吸収し、同serviceのsourceをcanonicalへ切り替えるまでone-repo完了ではない |
 
@@ -850,7 +850,7 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 
 | 順 | ID | 現在 | done |
 |---:|---|---|---|
-| 1 | `OSS-SECURITY-BASELINE-1` | PR #1267の本spec差分はsecret/PII shape 0、TruffleHog PASS。一方、repo全履歴gitleaks 850 finding、現tree PII shape 63行、Python jobはmissing dependencyと既存expectationでFAIL | raw値を出さずfindingをreal/false-positiveへ全裁定。real credentialは全rotation/revocation、false positiveは根拠付きallowlist。Python jobへdeclared dependencyを入れ、現spec期待値へ更新。fresh PRでgitleaks / PII / TruffleHog / Python / Shell exact5 PASS |
+| 1 | `OSS-SECURITY-BASELINE-1` | current tree gitleaks 0 / PII shape 0、TruffleHog verified 0、Python 153/153、PR #1268 completed run `30437476922`の6 jobは全PASS。full-history 1,628件は未分類0。Firecrawl / Vibecode / Exaは新runtime確認後に旧key失効、他5 providerも失効確認。残るactive historical credentialはRevenueCat secret 2本のみ | RevenueCat replacementをlocal/Railwayへ無停止で入れ、各consumerの実API readback後に旧2本を失効。provider rejection、fresh current/history scan、final PR headのOSS / gitleaks / TruffleHog / PII / Python / Shell exact6 PASSを`docs/evidence/oss/oss-security-baseline-1.md`へ固定 |
 | 2 | `REPO-V0-RETIRE-1` | active runtimeはcanonical exact1だがv0はpublic/unarchived、35 files、open issue 11 | §2.1.1のTODO NOW 1→4を閉じ、VERIFY AFTERをPASS |
 
 #### Boundaries / Execution / E2E judgment
