@@ -225,7 +225,7 @@ node --test scripts/browser-matrix-production-e2e.test.js
 npm run test:browser-auth
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/life-manager/scripts/browser-matrix-production-e2e.js apps/life-manager/scripts/browser-matrix-production-e2e.test.js apps/life-manager/package.json
