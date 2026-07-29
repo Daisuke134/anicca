@@ -39,7 +39,21 @@ evidence; no personal account was used.
   exit 75, `attempt_count=0`, daily-budget reason, and no provider marker.
 - [x] Preserve actual-token settlement and all crash/fallback accounting tests.
 - [x] Run all 168 job-loop and 10 agent-runner tests plus OSS verification.
-- [ ] Update the design spec, push, pass all GitHub checks, merge, sync the
+- [x] Update the design spec, push, pass all GitHub checks, merge, sync the
   canonical checkout, and kick the existing daily LaunchAgent.
-- [ ] Prove the post-merge live pass blocks before provider launch and leaves
+- [x] Prove the post-merge live pass blocks before provider launch and leaves
   the usage ledger unchanged apart from one blocked reservation receipt.
+
+## Closeout
+
+PR #1350 merged as `e3bc44685` after all six checks in CI run
+`30462362148` passed. The post-merge daily LaunchAgent advanced from run 10 to
+11 and exited 0. Its durable summary records `budget_blocked`,
+`attempt_count=0`, no selected provider or model, and a 98,304-token blocked
+reservation against 324,632 tokens already consumed. The evidence directory
+contains no attempt, stdout, stderr, result, or settlement artifact. The budget
+ledger grew by exactly one blocked reservation row and application counts
+remained 2 submitted / 1 submit-unknown / 2 not-submitted.
+
+Receipt:
+[`2026-07-29-order10j-budget-admission.json`](../../evidence/job-search-loop/2026-07-29-order10j-budget-admission.json).
