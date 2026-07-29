@@ -114,8 +114,13 @@ provider name from the private receipt.
 
   Update the plan/spec/README, write durable evidence, commit, and push.
 
-- [ ] **Step 4: Merge and reflect canonical main**
+- [x] **Step 4: Merge and reflect canonical main**
 
   Create a PR, wait for every CI gate, squash merge, fast-forward the canonical
   checkout, and rerun the existing live healthcheck without reinstalling or
   duplicating LaunchAgents.
+
+  PR #1296 passed CI run `30448931948` and squash-merged as `06df513a`.
+  The canonical checkout was fast-forwarded to that commit without reinstalling
+  schedulers. Existing daily/inbox LaunchAgents remained exit zero; ledger and
+  interview-prep integrity remained `ok` with 2 submitted and 1 not-submitted rows.
