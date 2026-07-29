@@ -197,9 +197,26 @@ function collectReadOnlyDomSnapshot(input = {}, environment) {
         ));
       return loginDestination || exactAuthAction;
     });
+  const protectedActionVisible = Array.from(documentRef.querySelectorAll(
+    'button, a[href], [role="button"], input[type="submit"], input[type="button"]',
+  ))
+    .slice(0, 100)
+    .filter(visible)
+    .some((element) => {
+      const label = String(
+        element.innerText ||
+        element.getAttribute?.("aria-label") ||
+        element.value ||
+        "",
+      ).replace(/\s+/g, " ").trim();
+      return /^(?:(?:create|new|add|manage|edit)\s+[a-z0-9][a-z0-9 &_-]{0,60}|dashboard|account|profile|settings|my\s+[a-z0-9][a-z0-9 &_-]{0,60}|sign out|log out|ログアウト)$/i.test(
+        label,
+      );
+    });
   return {
     inputs,
     authActionVisible,
+    protectedActionVisible,
     textFlags: {
       auth: /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(visibleText),
       otp: /\b(?:verification code|security code|one[- ]time code|otp|enter (?:the )?(?:(?:six|6)[- ]digit )?code|(?:six|6)[- ]digit code)\b/i.test(visibleText),
@@ -250,6 +267,7 @@ function classifyReadOnlyDomSnapshot(snapshot = {}) {
     kycVisible: flags.kyc === true,
     paymentVisible: flags.payment === true,
     markerPresent: source.markerPresent === true,
+    protectedActionVisible: source.protectedActionVisible === true,
   };
 }
 
@@ -459,6 +477,7 @@ function makeStagehandSteelDriver(options = {}) {
     async readProviderReceipt(sessionInput, action = {}) {
       const session = privateSession(sessionInput);
       const open = sessions.get(String(session.id));
+      const restoredAuth = authSessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
       const readOnlyAuth = action && action.readOnlyAuth === true;
       const extracted = await open.stagehand.extract(
@@ -569,12 +588,22 @@ function makeStagehandSteelDriver(options = {}) {
           signals.markerPresent &&
           !negated &&
           !blockingVerification;
+        const restoredProtectedContent =
+          restoredAuth && restoredAuth.loaded === true &&
+          independentReason === null &&
+          originMatches &&
+          signals.protectedActionVisible &&
+          !negated &&
+          !blockingVerification;
         const modelConfirmed =
           extracted.confirmed === true ||
           passiveLoginCopy ||
-          independentProtectedContent;
+          independentProtectedContent ||
+          restoredProtectedContent;
         const readOnlyReason = modelHandoffReason || independentReason ||
-          (!originMatches || !marker || !signals.markerPresent || !modelConfirmed
+          (!originMatches ||
+          (!(marker && signals.markerPresent) && !restoredProtectedContent) ||
+          !modelConfirmed
             ? "login"
             : null);
         const confirmed = readOnlyReason === null;
