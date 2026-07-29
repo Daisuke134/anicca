@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "deliverable": "JOB-CONFIRMATION-RECONCILE-10K",
+  "observed_at": "2026-07-30T00:14:04+09:00",
+  "verification": {
+    "job_loop_tests_passed": 174,
+    "agent_runner_tests_passed": 10,
+    "oss_boundary": "pass",
+    "pii_shape_scan": "pass",
+    "shell_syntax": "pass"
+  },
+  "shadow_e2e": {
+    "gmail_source": "real_private_account",
+    "ledger_source": "sqlite_backup",
+    "checked_threads": 1,
+    "reconciled_count": 0,
+    "blocked_statuses": [
+      "no_exact_uncertain_application"
+    ],
+    "counts_before": {
+      "not_submitted": 2,
+      "submit_unknown": 1,
+      "submitted": 2
+    },
+    "counts_after": {
+      "not_submitted": 2,
+      "submit_unknown": 1,
+      "submitted": 2
+    },
+    "ledger_integrity": "ok",
+    "production_state_mutated": false
+  },
+  "finding": "The deterministic late-confirmation path parsed the real Gmail transport and rejected the only broad candidate because it did not exactly match the uncertain application. No false promotion or production mutation occurred."
+}
