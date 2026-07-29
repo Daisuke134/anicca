@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "templates": {
+    "product": {
+      "fact_ids": [
+        "muit_agent_crm",
+        "mufg",
+        "anicca_consumer",
+        "life_manager"
+      ],
+      "bridge": "I connect regulated-enterprise constraints with hands-on product building and user-focused iteration.",
+      "closing": "I would welcome the opportunity to discuss how this enterprise-and-consumer perspective can help your product team turn AI capabilities into reliable user value."
+    },
+    "gtm": {
+      "fact_ids": [
+        "mufg",
+        "muit_rm_summary",
+        "a10_marketing",
+        "anicca_consumer"
+      ],
+      "bridge": "I translate technical AI capabilities into customer workflows, adoption stories, and measurable growth.",
+      "closing": "I would welcome the opportunity to discuss how I can help your go-to-market teams connect credible AI delivery with customer outcomes."
+    },
+    "partnerships": {
+      "fact_ids": [
+        "mufg",
+        "muit_agent_crm",
+        "iclr",
+        "a10_marketing"
+      ],
+      "bridge": "I work across technical, regulated-enterprise, research, and growth contexts and can make complex AI work legible to different stakeholders.",
+      "closing": "I would welcome the opportunity to discuss how I can support partnerships that require both technical depth and business execution."
+    },
+    "customer_success": {
+      "fact_ids": [
+        "muit_rm_summary",
+        "muit_genie_logs",
+        "agent_club",
+        "anicca_consumer"
+      ],
+      "bridge": "I combine workflow discovery, evidence-based iteration, enablement, and hands-on product experience to help users adopt AI effectively.",
+      "closing": "I would welcome the opportunity to discuss how I can guide customers from AI use-case definition through durable adoption."
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "timeout_seconds": 900,
+  "providers": {
+    "codex": {
+      "executable": "codex",
+      "automation_home": "~/.local/state/anicca/codex-runner",
+      "auth_file": "~/.codex/auth.json",
+      "ssl_cert_file": "/etc/ssl/cert.pem",
+      "project_doc_max_bytes": 0,
+      "disabled_skills": [
+        "imagegen",
+        "openai-docs",
+        "plugin-creator",
+        "skill-creator",
+        "skill-installer"
+      ],
+      "disabled_features": [
+        "apps",
+        "auth_elicitation",
+        "browser_use",
+        "browser_use_external",
+        "browser_use_full_cdp_access",
+        "computer_use",
+        "goals",
+        "hooks",
+        "image_generation",
+        "in_app_browser",
+        "multi_agent",
+        "plugins",
+        "remote_plugin",
+        "tool_call_mcp_elicitation",
+        "tool_suggest",
+        "workspace_dependencies"
+      ],
+      "capabilities": {
+        "structured_json": true,
+        "tools": true,
+        "browser": false
+      },
+      "cost_tier": "subscription",
+      "quota": {
+        "source": "provider"
+      }
+    },
+    "claude-direct": {
+      "executable": "claude",
+      "executable_fallbacks": [
+        "~/.local/bin/claude"
+      ],
+      "capabilities": {
+        "structured_json": true,
+        "tools": true,
+        "browser": true
+      },
+      "cost_tier": "subscription",
+      "quota": {
+        "source": "provider"
+      }
+    }
+  },
+  "task_classes": {
+    "composition-agent": {
+      "route": "terra-medium-bounded",
+      "token_reservation": 16384,
+      "candidates": [
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-terra",
+          "effort": "medium"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "sonnet"
+        }
+      ]
+    },
+    "repeatable-agent": {
+      "route": "luna-medium-decision",
+      "token_reservation": 32768,
+      "timeout_seconds": 90,
+      "candidates": [
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-luna",
+          "effort": "medium"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "sonnet"
+        }
+      ]
+    },
+    "browser-lane-agent": {
+      "route": "terra-medium-bounded",
+      "token_reservation": 24576,
+      "timeout_seconds": 900,
+      "candidates": [
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-terra",
+          "effort": "medium"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "sonnet"
+        }
+      ]
+    },
+    "high-value-agent": {
+      "route": "luna-medium-decision",
+      "token_reservation": 65536,
+      "timeout_seconds": 900,
+      "candidates": [
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-luna",
+          "effort": "medium"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "sonnet"
+        }
+      ]
+    }
+  }
+}

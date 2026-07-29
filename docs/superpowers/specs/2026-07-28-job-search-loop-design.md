@@ -1,0 +1,429 @@
+# Autonomous Job Search Loop Design
+
+**Date:** 2026-07-28  
+**Owner:** Daisuke Narita  
+**Status:** Phase 1 live from the canonical Life Manager checkout; `JOB-CANONICAL-MERGE-1` completed
+**Done when:** `Daisuke134/life-manager` is the only versioned source of the local job-search runtime and can discover, qualify, tailor, and submit up to two eligible applications per Japan day; reconcile Gmail; create interview calendar events and preparation packs; send an at-most-once Telegram report; and promote only evidence-backed strategy changes.
+
+## 1. Outcome
+
+Build a local-first job application operating system around the useful parts of
+`MadsLorentzen/ai-job-search`, without treating job descriptions as instructions and
+without fabricating candidate claims.
+
+The loop optimizes for interviews, not raw submission count:
+
+| Objective | Rule |
+|---|---|
+| Daily application target | 2 unique, eligible, high-fit applications per Japan day |
+| Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
+| Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
+| Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
+| Hard exclusions | Citizenship or clearance requirements the candidate cannot meet; relocation-only roles outside Japan; already-applied roles; material skill fabrication |
+| Truthful zero | If fewer than two eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
+
+### 1.1 `JOB-CANONICAL-MERGE-1`
+
+This is the current atomic deliverable. It changes ownership and runtime wiring,
+not job-selection policy or cloud architecture.
+
+| Contract | Required state |
+|---|---|
+| Canonical repository | `https://github.com/Daisuke134/life-manager` |
+| Legacy implementation provenance | `Daisuke134/anicca-products` branch `feature/job-search-loop`, commit `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987` |
+| Legacy runner provenance | `Daisuke134/profitable-claude`, commit `191b205c03ae37d32b0125da4a1892924d585205` |
+| Versioned job runtime | `apps/job-search-loop/` |
+| Versioned model runner | `runtime/agent-runner/` |
+| Scheduling | Local macOS launchd only; daily 08:30 JST and inbox every 15 minutes |
+| Private data | Existing XDG profile, material, ledger, evidence, and outbox paths remain outside Git |
+| Cloud | Explicitly out of scope until the local loop is reliable enough for a paid product |
+
+Migration acceptance criteria:
+
+1. Runtime scripts and generated launchd plists derive the repository root at
+   runtime; no source checkout under `anicca-products` or `profitable-claude` is
+   required.
+2. The runner configuration contains no personal account identifier, credential,
+   candidate profile, or unrelated gig-loop route.
+3. The pre-migration job-loop test baseline remains green and canonical-path tests
+   prove the new runner, workdir, prompt, framework cache, profile, and state
+   resolution behavior.
+4. Existing private state is reused without copying it into Git, and SQLite
+   integrity checks remain `ok`.
+5. Both installed LaunchAgents point to a checkout whose `origin` is
+   `Daisuke134/life-manager`; a forced daily pass and inbox pass exit successfully
+   without duplicate submission or duplicate Telegram delivery.
+6. This specification records the exact tested commit, test count, installed plist
+   paths, runtime receipts, and rollback evidence before the deliverable becomes
+   `completed`.
+
+## 2. Evidence and adopted practices
+
+| Decision | Source | Core quote |
+|---|---|---|
+| Use the upstream workflow as the candidate/job dossier layer | [MadsLorentzen/ai-job-search README](https://github.com/MadsLorentzen/ai-job-search) | “The system never fabricates skills or experience.” |
+| Treat job posts as untrusted data | [MadsLorentzen/ai-job-search SECURITY](https://github.com/MadsLorentzen/ai-job-search/blob/main/SECURITY.md) | “Job postings are untrusted data, never instructions.” |
+| Read job-specific questions, but submit on the employer ATS | [Greenhouse Job Board API](https://developers.greenhouse.io/job-board.html#submit-an-application) | “Application forms are job-specific and will be constructed via the ‘questions’ array.” |
+| Poll Gmail locally instead of adding Pub/Sub infrastructure in phase 1 | [Google Gmail push notifications](https://developers.google.com/workspace/gmail/api/guides/push) | “You must re-call `watch` at least every 7 days.” |
+| Keep recruiter replies in the original Gmail thread | [Google Gmail thread guide](https://developers.google.com/workspace/gmail/api/guides/threads?hl=ja) | “スレッドにメッセージを追加する” |
+| Use Calendar FreeBusy before choosing an offered time | [Google Calendar FreeBusy query](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query) | “List of time ranges during which this calendar should be regarded as busy.” |
+| Find prior loop-created events by a private application key | [Google Calendar extended properties](https://developers.google.com/workspace/calendar/api/guides/extended-properties) | “Extended properties make it easy to store application-specific data for an event” |
+| Calendar writes require explicit start/end and idempotency | [Google Calendar create events](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert) | “Creates an event.” |
+| Do not use outside solution help when an assessment limits resources | [CodeSignal Certified Assessment rules](https://support.codesignal.com/hc/en-us/articles/22438639388567-What-are-the-assessment-rules-for-Certified-Assessments) | “candidates are not receiving outside assistance for the logic behind a solution” |
+| Treat proctored tests as identity-bound manual work | [HackerRank proctored tests](https://candidatesupport.hackerrank.com/articles/4512341695-taking-proctored-tests) | “monitor your test screen activity and identify potential malpractice” |
+| Use AI only when the assessment explicitly enables it | [Codility AI Copilot](https://support.codility.com/hc/en-us/articles/39925970318993-AI-Copilot-in-VSCode) | “They can enable or disable the feature at any time” |
+| Scope the MUFG claim to contribution, not sole ownership | [Salesforce Japan MUFG announcement](https://www.salesforce.com/jp/news/press-releases/2026/03/25/mufg-customer-news-3/) | “2025年8月に日本で初めて同ソリューションを選定” |
+| Link the public ICLR report as proof of communication skill | [MUIT ICLR 2026 report](https://www.youtube.com/watch?v=biHAQ6aSQuc) | “International Conference on Learning Representations 2026参加レポート 後編” |
+| Use the correct public product portfolio URL | [Dais’s products](https://aniccaai.com/dais) | “Dais’s products” |
+| Treat customer-facing AI roles as technical-business targets | [Productboard AI Customer Success Manager](https://www.productboard.com/careers/open-positions/ai-customer-success-manager/am9icG9zdDqqRtrsE0AKy8Jnu_ClB4B2/) | “work directly with product and engineering teams” |
+
+The Greenhouse application submission API is employer-authenticated. The applicant
+loop therefore uses public APIs/pages for discovery and question inspection, then
+performs the actual side effect through the company-hosted ATS form in an isolated
+browser profile.
+
+## 3. Candidate truth ledger
+
+The private profile is the sole source of candidate claims. Every resume bullet,
+cover-letter claim, and form answer stores a `fact_id` reference. Missing facts remain
+missing; the model may improve wording but may not infer dates, headcount, ownership,
+compensation, work authorization, or quantitative impact.
+
+| Fact ID | Approved claim | Evidence class |
+|---|---|---|
+| `muit_role_2025` | MUIT / Mitsubishi UFJ Information Technology, 2025-04–present | user statement |
+| `muit_agent_crm` | Works on deploying agents into a bank CRM environment | user statement |
+| `muit_genie_logs` | Automated analysis of agent output logs with Databricks Genie Code | user statement |
+| `muit_rm_summary` | Prompt-tuned agents that summarize company information for relationship managers | user statement |
+| `mufg_agentforce` | Contributed to MUFG’s Japan-first Agentforce for Financial Services deployment; never claim sole ownership | user statement + Salesforce public announcement |
+| `iclr_2026` | Attended ICLR 2026 in Rio, shared learnings internally, and appeared in the public MUIT paper-report video | user statement + public video |
+| `naist_2024_2026` | NAIST, 2024-04–2026-04; EEG and machine-learning research on mind-wandering detection | user statement + existing resumes |
+| `atr_research` | Conducted and presented mind-wandering research at ATR | user statement + existing resumes |
+| `agent_club` | Founded a weekly lab/graduate-school session on Claude Code, Codex, Cursor, and AI-agent research workflows | user statement |
+| `anicca_consumer` | Built Swift/iOS consumer products and worked on consumer growth; Anicca reached USD 100 MRR | user statement; metric is candidate-asserted |
+| `life_manager` | Builds Life Manager, a consumer agent for financial, physical, and mental health workflows | user statement + public product page |
+| `a10_marketing` | Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition | existing English resume |
+| `languages` | TOEFL iBT 96, Duolingo English Test 140, Spanish DELE B1 | existing English resume |
+
+Private contact fields, legal answers, phone number, address, work authorization,
+demographics, and generated application materials are never committed. Runtime paths:
+
+```text
+~/.config/anicca/job-search/profile.json
+~/.local/state/anicca/job-search/
+~/.local/share/anicca/job-search/materials/
+```
+
+## 4. Architecture
+
+```text
+launchd
+  ├─ daily-pass (08:30 JST, catch-up on wake)
+  │    ├─ discover: company ATS + public search
+  │    ├─ normalize/dedupe
+  │    ├─ qualify and rank
+  │    ├─ detect official posting language
+  │    │    ├─ Japanese → Japanese AI resume
+  │    │    └─ English → engineering/business English resume
+  │    ├─ tailor from truth ledger
+  │    ├─ browser claim/fence/submit
+  │    ├─ Telegram exact submitted-resume PDF
+  │    └─ Telegram daily report
+  └─ inbox-pass (every 15 minutes)
+       ├─ Gmail reconcile
+       ├─ stage/outcome transition
+       ├─ Calendar idempotent insert/update
+       ├─ 3-day and 1-day prep packs
+       └─ Telegram event report
+
+immutable JSONL evidence → materialized SQLite state → Life Manager summary contract
+```
+
+### 4.1 Repository and runtime split
+
+| Area | Location | Responsibility |
+|---|---|---|
+| Versioned implementation | `apps/job-search-loop/` | deterministic core, adapters, prompts, schemas, tests, launchd templates |
+| Versioned model runner | `runtime/agent-runner/` | provider routing, schema validation, bounded fallback, token budget |
+| Upstream framework | pinned fork/checkout under `~/.local/share/anicca/job-search/framework` | candidate profile, job dossier, tailoring conventions |
+| Private runtime state | `~/.local/state/anicca/job-search` | ledger, traces, evidence, locks, outbox |
+| Private materials | `~/.local/share/anicca/job-search/materials` | master resume, tailored resumes, cover letters, prep packs |
+| Future Life Manager bridge | versioned `summary.v1.json` schema | read-only career-organ summary; no phase-1 panel mutation |
+
+### 4.2 Model routing
+
+Deterministic code owns filtering, idempotency, transitions, and side effects.
+The canonical `runtime/agent-runner` owns model execution:
+
+| Task | Route |
+|---|---|
+| Job extraction, scoring explanation, tailoring | `composition-agent` → GPT-5.6 Terra medium, Claude fallback |
+| Repeated inbox classification | `repeatable-agent` → GPT-5.6 Luna medium, Claude fallback |
+| Browser ATS completion | `browser-lane-agent` → GPT-5.6 Terra medium, Claude fallback |
+| Weekly strategy experiment | `high-value-agent` → GPT-5.6 Luna medium, Claude fallback |
+
+All model outputs must validate against JSON Schema. A valid but schema-invalid response
+fails closed and does not silently switch providers.
+
+### 4.3 Browser policy
+
+- Use a dedicated CloakBrowser profile and CDP port, separate from gig work.
+- Search engines and LinkedIn may provide leads; submissions occur on the employer ATS.
+- Never bypass CAPTCHA, misrepresent identity, invent form answers, or accept legal terms
+  that are not ordinary application acknowledgements.
+- Before a submit click, persist an immutable intent containing canonical job URL,
+  company, title, material hashes, answer hashes, and a fencing token.
+- After the click, record one of `submitted`, `submit_unknown`, or `not_submitted`.
+- `submit_unknown` is never automatically retried. Inbox confirmation or authoritative
+  ATS reread may resolve it.
+
+## 5. State and side-effect contracts
+
+### 5.1 Application state machine
+
+```text
+discovered
+  → qualified | rejected
+qualified
+  → materials_ready | rejected
+materials_ready
+  → submit_claimed
+submit_claimed
+  → submitted | submit_unknown | not_submitted
+submitted
+  → recruiter_contact | screening | assessment | interview | rejected | withdrawn | offer
+```
+
+Transitions append events; they do not rewrite history. The materialized state is
+rebuildable from the event log. Canonical identity is:
+
+```text
+sha256(normalized_company + normalized_title + canonical_job_url)
+```
+
+### 5.2 Daily quota
+
+The daily pass claims at most `2 - confirmed_submissions_today`. A second launch,
+crash recovery, or model retry sees the prior claim and cannot exceed two confirmed
+submissions. `submit_unknown` consumes a temporary quota slot until reconciled to
+avoid duplicate applications.
+
+### 5.3 Gmail and Calendar
+
+The authenticated, privately configured `gog` account is the phase-1 Gmail and
+Calendar transport. The inbox cursor records Gmail message/thread IDs and query
+watermarks. Classifications are `confirmation`, `recruiter`, `assessment`,
+`interview`, `rejection`, `offer`, or `irrelevant`.
+
+An interview event key is derived from Gmail thread ID plus normalized start time.
+Calendar writes use that key plus a stable hashed thread key in private metadata and
+are reread before retry. Only recruiter-provided candidates with explicit timezone,
+start, end, and source span are eligible. FreeBusy selects the earliest
+non-conflicting candidate. The event is created before the threaded confirmation is
+sent; a changed time updates the existing event rather than creating another. The
+same confirmation path registers a private preparation job before sending the email.
+
+The 15-minute inbox loop checks prep delivery before its no-work exit, so a due pack
+is delivered even when Gmail has no new message. A pending generation job forces the
+composition pass even without new mail. Generated packs are stored with their
+SHA-256, and Telegram delivery uses one stable outbox key per interview and delivery
+window.
+
+Prep behavior:
+
+| Time to interview | Action |
+|---|---|
+| More than 3 days | Generate and send a 3-day plan when the threshold is crossed |
+| 1–3 days | Generate 3-day pack immediately, then 1-day refresh |
+| Less than 1 day | Generate one immediate condensed pack |
+
+Every pack includes role/company thesis, likely interviewer interests from public
+evidence, five candidate stories grounded in `fact_id`s, technical/domain questions,
+questions to ask, and logistics.
+
+### 5.4 Assessments and take-homes
+
+Every assessment manifest retains the Gmail IDs, HTTPS source, timezone-aware
+deadline, deadline source span, rules source span, assessment type, proctoring flag,
+and deterministic AI-policy classification. Only unproctored take-homes and business
+cases whose quoted rules explicitly allow AI enter autonomous execution. Proctored,
+live, explicitly prohibited, and unspecified-policy work remains behind a manual
+integrity gate.
+
+Allowed work runs in a private workspace through macOS `sandbox-exec`: network and
+home reads are denied, writes are limited to the workspace, the environment is
+sanitized, execution is time-bounded, and stdout/stderr are stored mode 0600 with
+SHA-256 hashes. The durable state machine is:
+
+```text
+detected → prepared → executing → verified
+                     ↘ execution_failed → executing
+verified → submit_claimed → submit_started → submitted
+                                         ↘ submit_unknown
+```
+
+`submit_started` and `submit_unknown` are terminal for automatic retry. Only an
+authoritative employer receipt can produce `submitted`.
+
+### 5.5 Telegram delivery
+
+Copy the proven gig-loop outbox contract: `pending → claimed → send_started → sent`,
+with unique event keys, lease fencing, payload hashes, and no blind retry from
+`send_started`. Daily reports show discovered, qualified, submitted, unknown,
+responses, interviews, errors, selected model route, and links to each applied role.
+
+## 6. Ranking
+
+The deterministic score is 0–100:
+
+| Dimension | Weight |
+|---|---:|
+| AI/agent role and demonstrated skill match | 30 |
+| Enterprise/financial-services/Databricks/Salesforce leverage | 20 |
+| Consumer AI/product/Swift/growth leverage | 15 |
+| Location and Japan-remote feasibility | 15 |
+| Compensation | 10 |
+| Mission interest: AI, fintech, crypto, consumer agents | 10 |
+
+Rules:
+
+- `75+`: eligible for autonomous application.
+- `65–74`: retain for weekly review/learning, do not auto-submit.
+- `<65`: reject.
+- Unknown compensation earns neutral points; known compensation below the hard floor
+  is rejected.
+- A model may explain a score but cannot change deterministic hard filters.
+
+## 7. Resume and material policy
+
+The default English resume is one ATS-friendly page, single column, text-first:
+
+1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
+   consumer AI products.
+2. MUIT experience with scoped Agentforce, Databricks, CRM, and RM-agent bullets.
+3. Anicca/Life Manager product and growth experience.
+4. NAIST/ATR research and weekly agent-practice community leadership.
+5. Selected public communication: ICLR 2026 MUIT report link.
+6. Education, languages, and selected earlier growth work.
+
+Each tailored resume changes ordering and emphasis, not facts. PDFs are rendered and
+text-extracted in verification so ATS-visible text is checked before submission.
+
+The technical-business variant is also one ATS-friendly page. It keeps the same truth
+ledger while changing the headline and order to emphasize regulated-enterprise
+delivery, translating AI capabilities into user workflows, stakeholder alignment,
+product ownership, customer adoption, GTM/growth, and public communication. It must
+not invent formal PM, sales quota, people-management, or revenue ownership.
+
+The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
+covering MUIT/MUFG, Databricks, Agentforce, Anicca/Life Manager, NAIST/ATR,
+agent-community leadership, ICLR communication, growth, education, and languages.
+The complete official posting text, not a person's name or presumed nationality,
+determines language: primarily Japanese postings use the Japanese PDF; English
+postings use the engineering or technical-business English PDF. The router returns
+the only permitted path and SHA-256 for the submission intent and Telegram receipt.
+
+## 8. Self-improvement harness
+
+The loop improves one bounded strategy variable per weekly generation:
+
+| Input | Measurement |
+|---|---|
+| Discovery source | qualified and submitted jobs per source |
+| Role family | recruiter response and interview conversion |
+| Resume emphasis | response rate by material variant |
+| Cover-letter structure | response rate where letters are optional/required |
+| Score threshold | eligible yield without hard-filter violations |
+
+Promotion protocol:
+
+1. Preserve generation config, prompts, model route, material hashes, and outcomes.
+2. Propose one change with a falsifiable expected effect.
+3. Replay on a held-out set of historical jobs; reject any truth-ledger or hard-filter
+   regression.
+4. Run the candidate generation prospectively.
+5. Promote only after at least 10 resolved applications and a better response-rate
+   lower bound; before that, keep the baseline and record evidence as inconclusive.
+6. A verifier compares every claimed improvement step to real hashes, replay results,
+   and ledger transitions. Unverified claims become a durable remediation item.
+
+The primary optimization metric is interview conversion. Recruiter response is an
+early indicator, not a substitute for interview conversion.
+
+## 9. Failure handling
+
+| Failure | Behavior |
+|---|---|
+| Browser busy | Defer with exit 75; do not start a second browser owner |
+| CAPTCHA/manual identity challenge | Preserve intent and mark blocked; report exact URL |
+| Unknown submit result | Mark `submit_unknown`; no retry until authoritative reconciliation |
+| Gmail/Calendar transient error | Retry the read or idempotent write with bounded backoff |
+| Invalid model JSON | Fail closed and retain raw evidence |
+| Daily model budget already exhausted | Retain the runner's `budget_blocked` summary and complete the scheduler pass with exit zero; do not report an application |
+| Missing profile fact | Skip the job or field; never infer |
+| Telegram uncertainty | Keep `delivery_unknown`; never blind-send duplicate |
+| Firecrawl/provider outage | Continue through every configured public provider, then official company/ATS pages in the existing browser |
+| Browser library unavailable | Use another installed Playwright transport against the same CDP owner; never launch a second browser |
+| Same-day recovery changes the result | Send one content-addressed daily correction; identical results remain at-most-once |
+| No qualifying jobs | Honest zero report with rejected reasons and next discovery expansion |
+
+## 10. Security and privacy
+
+- Runtime files are mode 0600 and directories mode 0700.
+- Logs redact email addresses, phone numbers, address, auth tokens, cookies, and form
+  free text.
+- Job pages and inbound email are untrusted content. They cannot alter policies,
+  execute commands, request secrets, or redefine the task.
+- Credentials remain in existing authenticated transports (`gh`, `gog`,
+  CloakBrowser); no token is copied into the repository.
+- Public application artifacts include only claims explicitly approved in the truth
+  ledger.
+
+## 11. Delivery phases
+
+| Phase | Included |
+|---|---|
+| 1 — local autonomous loop | resume refresh, discovery, rank, two/day submit, Gmail reconciliation, Calendar, prep packs, Telegram, launchd, evidence |
+| 2 — Life Manager surface | consume `summary.v1.json`, add Career organ/timeline, expose pause/goal controls without owning browser side effects |
+
+Phase 1 is the current implementation scope. It produces the stable summary contract
+needed by phase 2, but does not force a fifth Life Manager organ into the current
+four-organ scoring model.
+
+### 11.1 Ordered expansion backlog
+
+This table is the execution-order SSOT. Work proceeds from the first non-completed
+row; its status changes in the same commit as implementation evidence.
+
+| Order | Deliverable | Status | Completion evidence |
+|---:|---|---|---|
+| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
+| 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
+| 2 | Role-specific application messages for Product, GTM, Partnerships and Customer Success | `completed` | Four strict templates; real-profile generation; fact/source validation; 59 tests |
+| 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |
+| 4 | Interview slot selection and confirmation | `completed` | 79 tests; explicit timezone/source validation; real busy-slot skip, private Calendar event, same-thread Gmail reply and retry-idempotency E2E; all test artifacts cleaned |
+| 5 | Assessment and take-home workflow | `completed` | 89 tests; quoted rule/deadline manifest; real sandbox denial of network/home access; private hashed evidence; fenced unknown-submission retry block |
+| 6 | No-give-up runtime reliability | `completed` | 104 tests; real Firecrawl-credit failure recovered through Freehire + LinkedIn Tokyo/Remote with 30 usable candidates; real daily owner connected to Chrome CDP and inspected official ATS pages; Node Playwright failure fell through to installed Python Playwright; Inbox prompt transport exits successfully; exact submitted-resume path/hash delivery is enforced; historical material aliases recovered the exact LayerX and Ex-ture PDFs and real Telegram document ACKs 4378/4379; same-day corrected report ACK 4377 |
+| 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
+| 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
+| 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
+| 10 | ATS resilience for Ashby, Workday and other blocked forms | `pending` | Replay fixtures plus one real confirmed application per adapter |
+| 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
+| 12 | Portable local OSS distribution | `pending` | Remove Dais-specific absolute paths; add BYO provider authentication, profile setup, macOS/Linux scheduling, private-state defaults, and an end-to-end install test |
+| 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |
+
+## 12. Verification
+
+Completion requires:
+
+1. Unit and integration tests for normalization, hard filters, scoring, quotas,
+   transitions, claims, Gmail classification, Calendar idempotency, Telegram outbox,
+   and self-improvement promotion.
+2. Resume PDF render plus extracted-text verification.
+3. LaunchAgent validation and a forced catch-up run.
+4. Real Gmail read and Calendar test-event create/reread/delete in the authenticated
+   account.
+5. Real Telegram delivery with outbox evidence.
+6. Real browser evidence for the first eligible ATS application. The final report
+   distinguishes `submitted`, `submit_unknown`, and `blocked`; dry-run output does not
+   count as completion.
