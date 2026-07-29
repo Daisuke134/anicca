@@ -96,6 +96,15 @@ function terminalEvidence(row, expected) {
   const sessionId = boundedId(receipt.session_id, "Steel session id");
   const evidenceId = boundedId(receipt.evidence_message_id, "Telegram evidence id");
 
+  if (expected.mode === "verify-provider-context" || expected.mode === "verify-two-tenant-contexts") {
+    if (row.status !== "completed"
+      || provider.status !== "authenticated"
+      || provider.confirmed !== true
+      || provider.handoff_required !== false
+      || provider.handoff_reason != null) {
+      throw new Error("browser auth authenticated provider readback unavailable");
+    }
+  }
   if (expected.mode === "verify-expired-handoff") {
     if (row.status !== "handoff_required"
       || provider.handoff_required !== true
