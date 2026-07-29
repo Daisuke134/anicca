@@ -86,9 +86,9 @@ zsh, Git, `unittest`.
 - Modify: this plan
 - Create: `docs/evidence/job-search-loop/2026-07-29-portable-release-12b.json`
 
-- [ ] **Step 1: Run all focused/full/syntax/JSON checks**
+- [x] **Step 1: Run all focused/full/syntax/JSON checks**
 
-- [ ] **Step 2: Record redacted evidence and mark Order 12 locally verified**
+- [x] **Step 2: Record redacted evidence and mark Order 12 locally verified**
 
 - [ ] **Step 3: Push, pass every PR CI gate, and squash merge**
 
