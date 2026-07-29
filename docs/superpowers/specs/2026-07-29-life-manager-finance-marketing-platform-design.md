@@ -920,22 +920,24 @@ The order below is the program source of truth. Milestone A is a hard gate:
 cloud migration work does not begin until every retained loop is demonstrably
 OpenClaw-independent and running under Life Manager locally.
 
-Current Order 0 subcursor:
+Order 0 consolidation completed:
 `AE-X402-SOURCE-CONSOLIDATE-1`. `OSS-SECURITY-BASELINE-1` merged in PR
 #1274 with all exact-five security checks green. `REPO-V0-RETIRE-1` then
 completed 35/35 disposition, issue transfer, redirect, archive, and
 runtime-reference-zero. Evidence:
 `docs/evidence/security/2026-07-29-oss-security-baseline.md` and
 `docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md`.
-The x402 nine-route seller is now present in canonical
+The x402 nine-route seller is present in canonical
 `services/x402-endpoint`; historical and canonical suites pass 68/68, the
-migration contract passes 1/1, and dependency audit is zero. Order 0 remains
-open until the canonical commit is merged and Railway source/root/commit plus
-post-cutover E2E are read back.
+migration contract passes 1/1, ledger regression passes 22/22, and dependency
+audit is zero. PR #1295 merged as `4d5c60b9…`; Railway source/root/commit,
+deployment `1062874a…` SUCCESS, nine paid gates, settlement feed, exact-five,
+and zero observed cutover 5xx are read back. The next program subcursor is
+`BROWSER-AUTH-1`.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
-| 0 | Finish single-repository consolidation | **in progress** — security baseline and v0 retirement are done. The `x402-agents` code migration is GREEN in canonical, while production still points at `anicca.ai`; source cutover and post-cutover E2E are next. Browser/parity/cloud/remaining-legacy gates follow |
+| 0 | Finish single-repository consolidation | **done for the bounded security/v0/x402 source slice** — exact evidence is in the three repository evidence files. Browser/parity/cloud/remaining-legacy gates continue under their own ordered rows; no production service depends on the old x402 source |
 | 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
