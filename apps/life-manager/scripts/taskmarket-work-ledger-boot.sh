@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.openclaw/.env}"
+ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.local/state/life-manager/.env}"
 
 if [[ -f "$ENV_FILE" ]]; then
   set -a

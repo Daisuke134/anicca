@@ -27,8 +27,8 @@
   <key>RunAtLoad</key>
   <false/>
   <key>StandardOutPath</key>
-  <string>__HOME__/.openclaw/logs/life-manager-dev.out.log</string>
+  <string>__HOME__/.local/state/life-manager/logs/life-manager-dev.out.log</string>
   <key>StandardErrorPath</key>
-  <string>__HOME__/.openclaw/logs/life-manager-dev.err.log</string>
+  <string>__HOME__/.local/state/life-manager/logs/life-manager-dev.err.log</string>
 </dict>
 </plist>

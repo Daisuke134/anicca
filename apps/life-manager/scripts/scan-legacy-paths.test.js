@@ -1,0 +1,84 @@
+"use strict";
+
+// Order 5 exit evidence: the Life Manager runtime source contains no
+// non-allowlisted reference to a legacy runtime root. Scope and allowlist are
+// defined in scan-legacy-paths.js (see its header): apps/life-manager plus the
+// skills the runtime actually spawns (daily-lm-video, lm-distribution,
+// telegram-user, life-manager) plus runtime/. Legacy tokens in this test are
+// assembled from fragments so the test file itself stays scan-neutral.
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+const { scanLegacyPaths, ALLOWLIST, SCAN_ROOTS } = require("./scan-legacy-paths.js");
+
+const LEGACY_STATE_LINE = 'STATE="${HOME}/' + ".open" + 'claw/state/example"';
+
+function plantedRepo() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-legacy-scan-"));
+  fs.mkdirSync(path.join(root, "src"), { recursive: true });
+  return root;
+}
+
+test("the Life Manager runtime scope has zero non-allowlisted legacy path references", () => {
+  const result = scanLegacyPaths();
+  assert.ok(result.scannedFiles > 200, `expected a real scan, saw ${result.scannedFiles} files`);
+  assert.deepEqual(
+    result.violations,
+    [],
+    `legacy path references found:\n${result.violations
+      .map((violation) => `${violation.file}:${violation.line} ${violation.text}`)
+      .join("\n")}`,
+  );
+});
+
+test("the scanner detects a planted legacy path reference (it is not vacuous)", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(path.join(root, "src", "boot.sh"), `#!/bin/bash\n${LEGACY_STATE_LINE}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].file, path.join("src", "boot.sh"));
+  assert.equal(result.violations[0].line, 2);
+});
+
+test("the allowlist is pinned to exact file plus line content, not blanket files", () => {
+  for (const entry of ALLOWLIST) {
+    assert.ok(entry.file && entry.lineIncludes && entry.reason, JSON.stringify(entry));
+  }
+  const root = plantedRepo();
+  // Same line content as an allowlisted denial line, but in a different file:
+  // it must still be flagged.
+  const allowedLine = `const LEGACY_SEGMENT = /${"\\.open" + "claw"}/;`;
+  fs.writeFileSync(path.join(root, "src", "other-module.js"), `${allowedLine}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.equal(result.violations.length, 1);
+});
+
+test("test files and fixtures are excluded while runtime sources are scanned", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(path.join(root, "src", "module.test.js"), `${LEGACY_STATE_LINE}\n`);
+  fs.mkdirSync(path.join(root, "src", "tests"));
+  fs.writeFileSync(path.join(root, "src", "tests", "helper.sh"), `${LEGACY_STATE_LINE}\n`);
+  fs.writeFileSync(path.join(root, "src", "module.js"), `${LEGACY_STATE_LINE}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => violation.file),
+    [path.join("src", "module.js")],
+  );
+});
+
+test("the scan scope covers the runtime roots the Life Manager actually loads", () => {
+  for (const scanRoot of [
+    "apps/life-manager",
+    "skills/video/daily-lm-video",
+    "skills/video/lm-distribution",
+    "skills/tools/telegram-user",
+    "skills/life-manager",
+    "runtime",
+  ]) {
+    assert.ok(SCAN_ROOTS.includes(scanRoot), `missing scan root: ${scanRoot}`);
+  }
+});

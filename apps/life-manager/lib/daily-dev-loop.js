@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { resolveDataRoot } = require("./runtime-paths");
 
 const OUTCOMES = new Set(["pr_open", "no_op", "failed", "timed_out"]);
 const REASONS = new Set([
@@ -188,9 +189,14 @@ function waitForChild(command, env, timeoutMs, killGraceMs) {
   });
 }
 
+// Default dev-loop state lives beneath the portable Life Manager data root,
+// matching the directory install-life-manager-dev-launchd.sh creates.
+function defaultStateDir(env = process.env) {
+  return path.join(resolveDataRoot(env), "state", "life-manager-dev");
+}
+
 async function runDailyPass(options = {}) {
-  const stateDir = options.stateDir
-    || path.join(process.env.HOME, ".openclaw/state/life-manager-dev");
+  const stateDir = options.stateDir || defaultStateDir(process.env);
   const command = options.command
     || path.join(__dirname, "../scripts/life-manager-dev-d0.sh");
   const timeoutMs = options.timeoutMs ?? 25 * 60 * 1000;
@@ -297,6 +303,7 @@ function summarizeSevenDays(entries) {
 module.exports = {
   acquireExclusiveLock,
   appendLedgerEntry,
+  defaultStateDir,
   runDailyPass,
   summarizeSevenDays,
 };
