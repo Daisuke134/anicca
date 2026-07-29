@@ -272,6 +272,11 @@ that Codex session or the Mac when the tenant uses cloud mode.
 
 ### 6.1 Canonical repository layout
 
+This section is the only SSOT for the program-wide repository layout. The
+Agent Economy ownership overlay, wallet/payment-provider boundaries, live
+earnings attribution, and financial-independence stages are owned by
+[`2026-07-19-anicca-one-repo-consolidation-spec.md`](./2026-07-19-anicca-one-repo-consolidation-spec.md).
+
 The repository boundary is exact:
 
 ```text
@@ -432,9 +437,14 @@ deployment.
 
 ### 7.3 Telegram financial report
 
+Agent Economy revenue attribution and live amounts MUST come from
+[`2026-07-19-anicca-one-repo-consolidation-spec.md` §0.4](./2026-07-19-anicca-one-repo-consolidation-spec.md#04-agent-economy-earnings-ssot).
+Unverified income, self-pay, seed capital, and principal recovery MUST NOT be
+rendered as revenue; unavailable amounts render as `$0.00` or `unavailable`.
+
 Daily report time defaults to 20:00 in the user's timezone, after the existing
-financial-report convention. A morning delivery preference can be added per
-tenant.
+financial-report convention. Each tenant can configure a different report
+time; no second scheduler or report contract is created.
 
 ```text
 FINANCIAL HEALTH · 2026-07-29
@@ -489,7 +499,8 @@ exception-only alerts, rather than narrating every background job.
    │
    ├─ identity + tenant
    ├─ choose Local or Cloud
-   ├─ connect Finance / Health / Products
+   ├─ create Base/Solana public addresses and start zero-balance crypto core
+   ├─ connect additional Finance / Health / Products capabilities when needed
    ├─ choose timezone + report times
    └─ first source-health check
              │
@@ -497,10 +508,10 @@ exception-only alerts, rather than narrating every background job.
  ┌──────────────────────────────────────────────────────────┐
  │ LIFE MANAGER · TODAY                                     │
  ├──────────────────────────────────────────────────────────┤
- │ Financial   72 ▲4   ¥30,200 profit today                 │
- │ Physical    64 ▼3   sleep is the limiting factor         │
- │ Mental      78 ▲6   focus recovered                      │
- │ Income      59 ▲2   2 loops growing · 1 blocked          │
+ │ Financial   —        no verified change yet              │
+ │ Physical    —        no verified change yet              │
+ │ Mental      —        no verified change yet              │
+ │ Income      gross $0.00 · cost $0.00 · net $0.00         │
  ├──────────────────────────────────────────────────────────┤
  │ Next report: Financial Health at 20:00 JST               │
  │ Runtime: Cloud · healthy · Mac not required              │
