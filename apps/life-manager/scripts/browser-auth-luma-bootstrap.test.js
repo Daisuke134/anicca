@@ -183,30 +183,18 @@ test("production CLI resolves exactly one existing agent-owned Luma tenant witho
 
 test("Luma login request deterministically fills and submits the measured email form", async () => {
   const calls = [];
-  const email = {
-    first() { return this; },
-    async isVisible() { calls.push(["isVisible"]); return true; },
-    async fill(value) { calls.push(["fill", value]); },
-  };
-  const submit = {
-    first() { return this; },
-    async click() { calls.push(["click"]); },
-  };
   const page = {
-    locator(selector) {
-      calls.push(["locator", selector]);
-      return selector === "button[type=\"submit\"]" ? submit : email;
+    async evaluate(expression) {
+      calls.push(["evaluate", expression]);
+      return true;
     },
-    async waitForTimeout(ms) { calls.push(["waitForTimeout", ms]); },
   };
 
   assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENTMAIL_INBOX_ID), true);
-  assert.deepEqual(calls, [
-    ["locator", "input[type=\"email\"]"],
-    ["isVisible"],
-    ["fill", ENV.LM_AGENTMAIL_INBOX_ID],
-    ["locator", "button[type=\"submit\"]"],
-    ["click"],
-    ["waitForTimeout", 2_000],
-  ]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], "evaluate");
+  assert.match(calls[0][1], /input\[type="email"\]/);
+  assert.match(calls[0][1], /button\[type="submit"\]/);
+  assert.match(calls[0][1], /dispatchEvent/);
+  assert.match(calls[0][1], /browser-agent@example\.test/);
 });
