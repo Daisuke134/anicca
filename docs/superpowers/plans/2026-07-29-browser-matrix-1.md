@@ -1,5 +1,10 @@
 # BROWSER-MATRIX-1 Implementation Plan
 
+> Live status、execution ownership、credential裁定、done条件のSSOTは
+> `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §0.4.6a。
+> 本planの旧「harnessが対象jobをdirect claim/executeする」手順は無効であり、verifierはenqueue-only +
+> terminal poll、execution ownerはresident production browser loopだけとする。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Prove that the canonical Life Manager production planner/executor can complete booking, inquiry/message, and application actions on three unrelated live providers without site adapters or a Mac browser.
@@ -208,12 +213,14 @@ node --test scripts/browser-matrix-production-e2e.test.js
 
 Expected: module not found.
 
-- [x] **Step 3: Implement the harness**
+- [x] **Step 3: Implement the first harness checkpoint（historical / superseded）**
 
-Follow `browser-auth-production-e2e.js`: enqueue one exact job by ID, claim that
-job only, execute through `runNextBrowserJob`, reread the terminal durable row,
-hash the bounded provider receipt, and return IDs/hashes only. Runtime goals use
-agent-owned name/email role labels and contain no secret value.
+The merged checkpoint followed `browser-auth-production-e2e.js`: it enqueues one
+exact job by ID, claims that job directly, executes through
+`runNextBrowserJob`, rereads the terminal durable row, hashes the bounded
+provider receipt, and returns IDs/hashes only. This proves the generic cloud
+executor contract but does not prove resident-loop ownership, so it MUST NOT be
+used for Task 4 live acceptance.
 
 - [x] **Step 4: Run harness tests and the browser suite**
 
@@ -232,36 +239,80 @@ git add apps/life-manager/scripts/browser-matrix-production-e2e.js apps/life-man
 git commit -m "test(browser): add durable production action matrix"
 ```
 
+### Task 3a: Correct verification ownership before live actions
+
+- [x] **Step 1: Write RED ownership tests**
+
+Require production deps to expose enqueue/read/poll boundaries only. Assert no
+`claimBrowserJobById`, `runNextBrowserJob`, driver, or executor call is possible
+from the verifier.
+
+- [x] **Step 2: Replace direct execution with bounded terminal polling**
+
+After enqueue, poll durable rows until all three are terminal or the bounded
+deadline expires. The already-running production browser loop is the only
+component allowed to claim and execute them.
+
+- [x] **Step 3: Verify and deploy**
+
+Run the focused browser suite, full app suite, OSS boundary, required security
+CI, merge, and verify the exact Railway deployment SHA and
+`browser jobs ON (Railway private Steel)` boot log before Task 4.
+
+Evidence (2026-07-30): PR #1361 merged as canonical main
+`569cf748e23d3a1de880791a3f6ad79ed621f0a5`. RED first (8 fail/1 pass), then
+harness tests 9/9, `test:browser-auth` 47/47, full `npm test` chain exit 0,
+OSS boundary PASS, security CI 7/7. Railway `life-call` deployment
+`7ea230f6-f8f4-41f6-8310-b6ae324d1d52` `SUCCESS` at the exact merge SHA with
+boot log `[life-call] browser jobs ON (Railway private Steel)`. The verifier
+module no longer references `browser-job-runtime`, `claimBrowserJobById`, or
+any executor; deps are `durableQueue.enqueue`/`durableQueue.read` plus an
+injectable clock, with poll bounds
+`BROWSER_MATRIX_POLL_TIMEOUT_MS`/`BROWSER_MATRIX_POLL_INTERVAL_MS`.
+
 ### Task 4: Execute the three real provider actions in production
 
 **Files:**
-- Create: `docs/evidence/browser/2026-07-29-browser-matrix-1.md`
+- Create: `docs/evidence/browser/2026-07-30-browser-matrix-1.md`
 
 **Interfaces:**
-- Consumes: agent-owned controlled Cal.com booking page, Tally inquiry form,
-  and Google Forms application form; final deployed harness
+- Consumes: three controlled responder URLs (booking / inquiry / application)
+  on distinct public origins, established per spec §0.4.6a As-Is/To-Be without
+  pre-created admin UI logins; final deployed harness
 - Produces: three provider-side stored records plus queue, Steel, Telegram, and
   release evidence
 
-- [ ] **Step 1: Provision controlled provider assets**
+- [ ] **Step 1: Establish controlled responder URLs without pre-created admin logins**
 
-Use the agent-owned identity to create:
+SUPERSEDED WORDING (2026-07-30): the earlier "create Cal.com + Tally + Google
+Forms accounts first" instruction is void — spec §0.4.6a As-Is/To-Be already
+rejected "admin UI loginを3 provider全てで先に作る案" and requires readback via
+"confirmation email、webhook、API、owner response tableのうちsecretを出さず独立
+照合できるsurface". Follow the spec:
 
-1. a zero-cost cancellable Cal.com event slot,
-2. a Tally inquiry form whose owner response table is readable,
-3. a Google Forms application with no legal attestation or sensitive fields.
-
-Do not store account credentials or public response-edit tokens in Git.
+1. Prefer surfaces reachable from credentials/context the tenant already has
+   (e.g. the connected Google account) over any new provider account.
+2. Any fixture that does require creation is produced by the resident cloud
+   loop itself (enqueued job with tenant-bound auth context) or by a
+   server-side API call — never by a local/Mac browser (§0.4.6a MUST 6:
+   local/Mac browser side effect 0).
+3. Actions stay zero-cost, cancellable, non-binding; no nuisance to
+   uncontrolled third parties; three distinct public HTTPS origins.
+4. Do not store account credentials, URL tokens, or response-edit tokens in
+   Git; controlled URLs live only in runtime secrets.
 
 - [ ] **Step 2: Deploy exact canonical code**
 
 Push the implementation PR, require all security checks, merge, and verify
 Railway `life-call` reports `SUCCESS` at the exact merge SHA before running.
 
-- [ ] **Step 3: Run one durable production job per provider**
+- [ ] **Step 3: Enqueue one durable production job per provider**
 
-Invoke the harness inside the deployed Railway `life-call` container. Each job
-must use Railway-private Steel, not a local browser.
+Invoke the harness inside the deployed Railway `life-call` container. The
+harness MUST enqueue and bounded-poll only. It MUST NOT call
+`claimBrowserJobById`, `runNextBrowserJob`, a driver, or an executor. The
+already-running production browser loop must claim each job and use
+Railway-private Steel, not a local browser.
 
 - [ ] **Step 4: Independently read provider-side records**
 
@@ -272,8 +323,8 @@ job receipt; do not print form contents or identity data.
 - [ ] **Step 5: Verify cleanup and leak boundaries**
 
 Assert three distinct Steel IDs, `released=3/3`, no open controlled sessions,
-and zero OTP/email/cookie/authorization/raw-context patterns in bounded
-production logs.
+resident-loop claim 3/3, verifier direct execution 0, and zero
+OTP/email/cookie/authorization/raw-context patterns in bounded production logs.
 
 - [ ] **Step 6: Write evidence and commit**
 
@@ -285,7 +336,7 @@ provider-side readback booleans, and release booleans.
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`
-- Modify: `docs/evidence/browser/2026-07-29-browser-matrix-1.md`
+- Modify: `docs/evidence/browser/2026-07-30-browser-matrix-1.md`
 
 **Interfaces:**
 - Consumes: Task 4 exact evidence

@@ -36,6 +36,21 @@ const OUTPUT_KEYS = Object.freeze([
   "provider_receipt_hashes",
   "released",
 ]);
+// Mirrors TERMINAL_STATUSES in ../lib/browser-job-store.js; only "completed" passes.
+const TERMINAL_STATUSES = Object.freeze([
+  "completed",
+  "possibly_completed",
+  "handoff_required",
+  "failed",
+]);
+const POLL_ENV = Object.freeze({
+  timeoutMs: "BROWSER_MATRIX_POLL_TIMEOUT_MS",
+  intervalMs: "BROWSER_MATRIX_POLL_INTERVAL_MS",
+});
+const DEFAULT_POLL_TIMEOUT_MS = 900_000;
+const MAX_POLL_TIMEOUT_MS = 3_600_000;
+const DEFAULT_POLL_INTERVAL_MS = 5_000;
+const MAX_POLL_INTERVAL_MS = 60_000;
 
 class ConfigurationError extends Error {}
 
@@ -73,11 +88,49 @@ function publicTarget(raw) {
   return value;
 }
 
+function boundedMilliseconds(env, key, fallback, max) {
+  const name = POLL_ENV[key];
+  const raw = String(env && env[name] || "").trim();
+  if (!raw) return fallback;
+  if (!/^[0-9]{1,9}$/.test(raw)) {
+    throw new ConfigurationError(`browser matrix poll setting ${name} must be a positive integer of milliseconds`);
+  }
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || value > max) {
+    throw new ConfigurationError(`browser matrix poll setting ${name} must be between 1 and ${max} milliseconds`);
+  }
+  return value;
+}
+
+function pollSettings(env) {
+  const timeoutMs = boundedMilliseconds(env, "timeoutMs", DEFAULT_POLL_TIMEOUT_MS, MAX_POLL_TIMEOUT_MS);
+  const intervalMs = boundedMilliseconds(env, "intervalMs", DEFAULT_POLL_INTERVAL_MS, MAX_POLL_INTERVAL_MS);
+  if (intervalMs > timeoutMs) {
+    throw new ConfigurationError(
+      `browser matrix poll setting ${POLL_ENV.intervalMs} must not exceed ${POLL_ENV.timeoutMs}`,
+    );
+  }
+  return Object.freeze({ timeoutMs, intervalMs, attempts: Math.ceil(timeoutMs / intervalMs) + 1 });
+}
+
 function dependency(deps, group, method) {
   if (!deps || !deps[group] || typeof deps[group][method] !== "function") {
     throw new Error("browser matrix production E2E failed");
   }
   return deps[group][method].bind(deps[group]);
+}
+
+function optionalDependency(deps, group, method, fallback) {
+  const holder = deps && Object.prototype.hasOwnProperty.call(deps, group) ? deps[group] : null;
+  if (holder && typeof holder[method] === "function") return holder[method].bind(holder);
+  return fallback;
+}
+
+function defaultSleep(ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    if (timer && typeof timer.unref === "function") timer.unref();
+  });
 }
 
 function boundedId(value) {
@@ -135,6 +188,29 @@ function terminalEvidence(row, expected) {
   };
 }
 
+function isTerminal(row) {
+  return Boolean(row) && TERMINAL_STATUSES.includes(String(row.status || ""));
+}
+
+// The resident production browser loop is the only claimer: this verifier only waits.
+async function pollTerminalRows(read, jobIds, poll) {
+  const rows = new Array(jobIds.length).fill(null);
+  const startedAt = poll.now();
+  for (let attempt = 0; attempt < poll.attempts; attempt += 1) {
+    let pending = 0;
+    for (const [index, jobId] of jobIds.entries()) {
+      if (rows[index]) continue;
+      const row = await read({ id: jobId });
+      if (isTerminal(row)) rows[index] = row;
+      else pending += 1;
+    }
+    if (!pending) return rows;
+    if (poll.now() - startedAt >= poll.timeoutMs) break;
+    await poll.sleep(poll.intervalMs);
+  }
+  throw new Error("browser matrix production E2E failed");
+}
+
 async function runBrowserMatrixProductionE2E({ env = process.env, deps } = {}) {
   requiredEnvironment(env);
   const targets = CATEGORIES.map((category) => ({
@@ -145,9 +221,14 @@ async function runBrowserMatrixProductionE2E({ env = process.env, deps } = {}) {
   if (new Set(origins).size !== CATEGORIES.length) {
     throw new ConfigurationError("browser matrix targets must use distinct provider origins");
   }
+  const settings = pollSettings(env);
   const enqueue = dependency(deps, "durableQueue", "enqueue");
   const read = dependency(deps, "durableQueue", "read");
-  const execute = dependency(deps, "executor", "run");
+  const poll = {
+    ...settings,
+    sleep: optionalDependency(deps, "clock", "sleep", defaultSleep),
+    now: optionalDependency(deps, "clock", "now", () => Date.now()),
+  };
   const uid = String(env.BROWSER_MATRIX_TENANT_UID);
   const result = {
     categories: [...CATEGORIES],
@@ -159,19 +240,17 @@ async function runBrowserMatrixProductionE2E({ env = process.env, deps } = {}) {
     released: false,
   };
 
-  for (const [index, target] of targets.entries()) {
+  for (const target of targets) {
     const queued = await enqueue({ ...target, uid });
-    const jobId = boundedId(queued && queued.id);
-    const execution = await execute({ jobId });
-    if (execution && execution.trace_id != null && String(execution.trace_id) !== jobId) {
-      throw new Error("browser matrix production E2E failed");
-    }
-    const evidence = terminalEvidence(await read({ id: jobId }), {
-      jobId,
+    result.job_ids.push(boundedId(queued && queued.id));
+  }
+  const rows = await pollTerminalRows(read, result.job_ids, poll);
+  for (const [index, row] of rows.entries()) {
+    const evidence = terminalEvidence(row, {
+      jobId: result.job_ids[index],
       uid,
       origin: origins[index],
     });
-    result.job_ids.push(jobId);
     result.provider_origins.push(origins[index]);
     result.steel_session_ids.push(evidence.sessionId);
     result.telegram_evidence_ids.push(evidence.evidenceId);
@@ -198,12 +277,7 @@ function goalFor(category, url) {
 }
 
 function makeProductionDeps(env, boundaries = {}) {
-  const {
-    enqueueBrowserJob,
-    claimBrowserJobById,
-    readBrowserJob,
-  } = require("../lib/browser-job-store.js");
-  const { runNextBrowserJob } = require("../lib/browser-job-runtime.js");
+  const { enqueueBrowserJob, readBrowserJob } = require("../lib/browser-job-store.js");
   const storeOptions = typeof boundaries.query === "function" ? { query: boundaries.query } : {};
   let sequence = 0;
   return {
@@ -230,17 +304,9 @@ function makeProductionDeps(env, boundaries = {}) {
         return readBrowserJob(id, storeOptions);
       },
     },
-    executor: {
-      async run({ jobId }) {
-        return runNextBrowserJob({
-          ...storeOptions,
-          ...(boundaries.driver ? { driver: boundaries.driver } : {}),
-          ...(boundaries.sendMessage ? { sendMessage: boundaries.sendMessage } : {}),
-          ...(boundaries.sendPhoto ? { sendPhoto: boundaries.sendPhoto } : {}),
-          telegramToken: env.LM_TELEGRAM_BOT_TOKEN,
-          claimJob: () => claimBrowserJobById(jobId, storeOptions),
-        });
-      },
+    clock: {
+      sleep: defaultSleep,
+      now: () => Date.now(),
     },
   };
 }
