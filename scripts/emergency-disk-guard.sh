@@ -525,7 +525,10 @@ reclaim_docker_garbage() {
   [ -n "$DOCKER_BIN" ] && [ -x "$DOCKER_BIN" ] || return 0
   "$COLIMA_BIN" status >/dev/null 2>&1 || return 0
   before=$(free_gb)
-  if ! "$DOCKER_BIN" image prune -a -f >>"$LOG" 2>&1; then
+  # Tagged validator/runtime images are executable dependencies, not garbage.
+  # Prune dangling layers only; `-a` removes every unused tagged image and
+  # previously deleted openclaw-sandbox between healthcheck and the next pass.
+  if ! "$DOCKER_BIN" image prune -f >>"$LOG" 2>&1; then
     append_decision docker preserve dangling-image-prune-failed
     return 0
   fi
@@ -533,7 +536,7 @@ reclaim_docker_garbage() {
     append_decision colima preserve vm-fstrim-failed
     return 0
   fi
-  append_decision docker cleanup unreferenced-images-pruned-and-vm-trimmed
+  append_decision docker cleanup dangling-images-pruned-and-vm-trimmed
   after=$(free_gb)
   if [ "$after" -gt "$before" ]; then
     delta=$(( (after - before) * 1073741824 ))

@@ -129,7 +129,10 @@ exit 0
     assert result.returncode == 3
     recorded = calls.read_text(encoding="utf-8").splitlines()
     assert recorded == [
-        "docker image prune -a -f",
+        "docker image prune -f",
         "colima ssh -- sudo fstrim -a",
     ]
-    assert all("volume" not in call and "system prune" not in call for call in recorded)
+    assert all(
+        "volume" not in call and "system prune" not in call and "prune -a" not in call
+        for call in recorded
+    )
