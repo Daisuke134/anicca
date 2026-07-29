@@ -39,11 +39,18 @@ jobs:
           sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: gitleaks detect (= working tree)
-        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact -v
+      - name: gitleaks dir (= current working tree)
+        run: gitleaks dir . --config .gitleaks.toml --no-banner --redact -v
 
-      - name: gitleaks git (= history)
-        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v
+      - name: gitleaks git (= new history in this change)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -e
+          if [ -z "${BASE_SHA:-}" ] || [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            BASE_SHA="$(git rev-list --max-parents=0 HEAD | tail -1)"
+          fi
+          gitleaks git . --log-opts="$BASE_SHA..HEAD" --config .gitleaks.toml --no-banner --redact -v
 
   trufflehog:
     name: TruffleHog (filesystem + git history)
@@ -124,14 +131,31 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: install exact test dependencies
+        run: python3 -m pip install --disable-pip-version-check -r requirements-ci.txt
+
       - name: ast.parse every .py
         run: |
           set -e
-          find . -name '*.py' -not -path './.git/*' \
-            -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+
+          excluded = {".git", "node_modules", ".venv", "venv"}
+          failures = []
+          for path in Path(".").rglob("*.py"):
+              if excluded.intersection(path.parts):
+                  continue
+              try:
+                  ast.parse(path.read_text(encoding="utf-8"))
+              except (SyntaxError, UnicodeDecodeError) as exc:
+                  failures.append(f"{path}: {exc}")
+          if failures:
+              raise SystemExit("\n".join(failures))
+          PY
           echo "✅ syntax clean"
 
-      - name: run pure-stdlib tests
+      - name: run Python tests
         run: |
           set -e
           # Hyphenated skill paths break unittest discovery, so run each
@@ -139,6 +163,8 @@ jobs:
           # are immutable evidence with their own archived dependencies, not
           # the repository's production test suite. Each active skill may
           # import modules from its own directory, parent, or parent/lib.
+          # Files that define pytest-style tests must be collected by pytest;
+          # merely invoking those files directly executes zero test functions.
           repo_root="$PWD"
           fail=0
           while IFS= read -r t; do
@@ -146,7 +172,11 @@ jobs:
             test_dir="$(dirname "$t")"
             parent_dir="$test_dir/.."
             test_pythonpath="$repo_root/$test_dir:$repo_root/$parent_dir:$repo_root/$parent_dir/lib:$repo_root"
-            if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 "$t"; then fail=1; fi
+            if grep -Eq '^[[:space:]]*def test_' "$t"; then
+              if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 -m pytest -q "$t"; then fail=1; fi
+            else
+              if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 "$t"; then fail=1; fi
+            fi
           done < <(find . -name 'test_*.py' -not -path './.git/*' -not -path './.vcsdd/*' | sort)
           [ "$fail" -eq 0 ] && echo "✅ all tests passed" || { echo "::error::test failures"; exit 1; }
 

@@ -60,11 +60,14 @@ def test_risk_adjusted_score_is_invariant_to_uniform_positive_leverage():
 
 def test_leverage_only_candidate_does_not_beat_baseline_on_real_fixture(tmp_path):
     """End-to-end (not just the pure-math proof above): a candidate whose ONLY EVOLVE-BLOCK change
-    is `base_stake: 5.0 -> 20.0` (identical min_edge/min_confidence thresholds -> identical trade
-    selection every window) must score IDENTICALLY to baseline's own risk-adjusted combined_score
-    on the real committed fixture, and therefore must NOT beat_baseline (a tie never beats,
+    scales both `base_stake: 5.0 -> 10.0` and `max_stake: 12.0 -> 24.0` uniformly (identical
+    selection and clipping geometry every window) must score IDENTICALLY to baseline's own
+    risk-adjusted combined_score and therefore must NOT beat_baseline (a tie never beats,
     EDGE-2)."""
-    leverage_code = patched_baseline_code(('config.get("base_stake", 5.0)', 'config.get("base_stake", 20.0)'))
+    leverage_code = patched_baseline_code(
+        ('config.get("base_stake", 5.0)', 'config.get("base_stake", 10.0)'),
+        ('config.get("max_stake", 12.0)', 'config.get("max_stake", 24.0)'),
+    )
     leverage_path = write_candidate_with_fixtures(tmp_path, leverage_code)
 
     baseline_stage2 = evaluator.evaluate_stage2(evaluator.BASELINE_PATH)
@@ -82,8 +85,8 @@ def test_genuine_selection_change_beats_baseline_where_leverage_could_not(tmp_pa
     not just any code change."""
     baseline_code = read_baseline_code()
     selection_code = patched_baseline_code(
-        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
-        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.26)'),
+        ('config.get("max_stake", 12.0)', 'config.get("max_stake", 10.0)'),
     )
     assert selection_code != baseline_code
     selection_path = write_candidate_with_fixtures(tmp_path, selection_code)

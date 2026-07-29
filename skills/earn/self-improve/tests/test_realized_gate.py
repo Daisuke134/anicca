@@ -138,13 +138,13 @@ def test_data_realism_gap_never_fires_when_insufficient_regardless_of_other_inpu
 
 
 def _eligible_assessment(tmp_path):
-    # Same edit as test_adversary_disapprove.py::_good_candidate — a genuine adaptive-sizing-
-    # emphasis change against the committed baseline that clears every deterministic gate.
+    # Same edit as test_adversary_disapprove.py::_good_candidate — a genuine selection change
+    # against the committed baseline that clears every deterministic gate.
     from lib import promote_gate
 
     code = patched_baseline_code(
-        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
-        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.26)'),
+        ('config.get("max_stake", 12.0)', 'config.get("max_stake", 10.0)'),
     )
     candidate_path = write_candidate_with_fixtures(tmp_path, code)
     assessment = promote_gate.assess_candidate(candidate_path)
