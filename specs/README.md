@@ -1,13 +1,19 @@
-# `anicca-oss/specs/` — single source of truth
+# `specs/` — historical architecture reference
 
-All architectural decisions for Anicca v3 (NHOSS) live in this folder. The
-mission is one line:
+> **SUPERSEDED AS LIVE SSOT.** The current mission, product, repository boundary,
+> execution order, and remaining TODO live only in
+> [`../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
+> Files in this directory remain immutable decision history or layer-specific
+> reference and cannot override that live spec.
+
+These files record the Anicca v3 (NHOSS) architecture considered at the time. The
+historical mission was:
 
 > **★ Anicca reduces human suffering without humans in the loop. ★**
 
 | File | Status | What it is |
 |---|---|---|
-| [`00-MASTER.md`](./00-MASTER.md) | ★ AUTHORITATIVE (locked 2026-06-11) | The current architecture. Engine = **Conway automaton** (ReAct loop + heartbeat daemon), run in local-mode; compute = **ClawRouter / BlockRun** USDC x402; native primitives = wallet / x402 / spawn_child / constitution. Read this first. |
+| [`00-MASTER.md`](./00-MASTER.md) | SUPERSEDED MASTER (locked snapshot 2026-06-11) | Historical architecture snapshot. Engine = **Conway automaton** (ReAct loop + heartbeat daemon), run in local-mode; compute = **ClawRouter / BlockRun** USDC x402; native primitives = wallet / x402 / spawn_child / constitution. Do not use its roadmap as the current TODO. |
 | [`01-EARN-AND-UBI.md`](./01-EARN-AND-UBI.md) | DEEP-DIVE | WHERE money comes from (5 spouts) + WHERE it goes (3 sinks) + HOW UBI reaches recipients (4 channels). |
 | [`02-IMITATE-AND-COOK.md`](./02-IMITATE-AND-COOK.md) | DEEP-DIVE | HOW Anicca decides what to do. Imitation instinct + cook loop. |
 | [`03-SELF-AWARE-EVAL.md`](./03-SELF-AWARE-EVAL.md) | ★ DEEP-DIVE | ★ The meta-awareness layer (= L2d). 5+1 survival conditions, 3-place eval loop, L1-L5 fix-the-fix doctrine. **Without this, the other three specs fail.** |
@@ -26,9 +32,9 @@ mission is one line:
 | [`../control-room/`](../control-room/) | ★ OPERATIONAL LAYER (= sibling to specs/, **not** a spec file) | Shann-style control room scaffold for Anicca v3.4. 10 specialist profile docs (inventory / docker / env-map / runbook / backup / soul each = 60 files) + shared/{architecture,commands,security} + api-keys-sop + orchestrator-and-fleet-skills + templates for new-profile + new-instance. Zero raw secrets, zero PII. Specs answer **what / why**; control-room answers **how-to-run**. See per-profile config that spec 07 § 2.6 references. |
 | `archive/` | historical | Pre-v3 specs (`ANICCA_AUTONOMY_SPEC.md`, `ANICCA_OSS_MASTER_SPEC.md`, `SELF_HEALING_SPEC.md`, etc.). Superseded but kept for context. Also: post-v3 archive moves (`CONWAY_RUNTIME_DEEPDIVE.md` 2026-06-02, `VIRTUALS_PROTOCOL_PLAN.md` 2026-06-02) per 07-HERMES-PIVOT.md. |
 
-## Reading order for a new implementer
+## Reading order for historical implementation context
 
-1. `00-MASTER.md` § 0 (Mission), § 1 (Architecture), § 8 (Naming), § 6 (Constitution) — the big picture.
+1. Read the [live SSOT](../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) first, then use `00-MASTER.md` only to understand the historical baseline.
 2. The deep-dive for the layer you're touching:
    - Touching revenue / UBI? → `01-EARN-AND-UBI.md`.
    - Touching the cook loop / imitation strategy? → `02-IMITATE-AND-COOK.md`.
@@ -36,22 +42,17 @@ mission is one line:
    - Flipping the repo public, doing leak audit, or grandma E2E install? → `04-PUBLIC-RELEASE-PREP.md`.
    - Touching how/where Anicca is deployed? → `05-SERVER-NATIVE-DEPLOY.md`.
    - Touching multi-step / multi-day project tracking? → `06-PROJECT-TRACKING-HEARTBEAT.md`.
-   - Touching the runtime substrate or wallet? → `00-MASTER.md` (automaton, current) + `16-RUNTIME-CODE-TRUTH.md` (the source-level comparison). `07-HERMES-PIVOT.md` is the superseded Hermes proposal, history only.
+   - Investigating the historical runtime substrate or wallet decision? → `00-MASTER.md` (historical automaton baseline) + `16-RUNTIME-CODE-TRUTH.md` (the same-era source comparison). `07-HERMES-PIVOT.md` is the superseded Hermes proposal.
    - Operating the fleet day-to-day (restart a profile / rotate a key / spawn a new instance)? → `../control-room/`.
-3. `00-MASTER.md` § 9 (Migration plan) for which sub-agent owns which file.
-4. `00-MASTER.md` § 12 (Verification gates) before claiming "done".
+3. Use `00-MASTER.md` § 9 and § 12 only to interpret historical implementation evidence. Current ownership, migration order, and verification gates come from the live SSOT.
 
 ## Editing rules
 
-1. **One source of truth.** If a value (model name, port, threshold, channel
-   name) appears in both `00-MASTER.md` and a deep-dive, the master wins.
-   Deep-dives say "see § N of 00-MASTER.md" rather than restate.
-2. **Never silently delete a section.** Move reversed decisions to `archive/`
-   with a date and a one-line reason.
-3. **Date every change at the top of `00-MASTER.md`.** Bump the version.
-4. **A new top-level spec belongs as a section of 00-MASTER unless it's
-   100+ lines of self-contained doctrine.** 01, 02, 03, 04, 05 all cleared
-   that bar. The next one needs to clear it too.
-5. **The mission line is hardcoded.** If a future spec change reads as
-   "Anicca's mission is now to [X]", and [X] is not "reduce human suffering
-   without humans in the loop", the change is wrong.
+1. **One live source of truth.** If this directory conflicts with the
+   [live SSOT](../docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md),
+   the live SSOT wins. Within this historical snapshot, `00-MASTER.md` wins over
+   its same-era deep-dives.
+2. **Do not add current decisions or TODO here.** Add them to the live SSOT and
+   link to the exact historical evidence instead.
+3. **Never silently rewrite history.** Corrections must state what was
+   superseded and route readers to the live decision.

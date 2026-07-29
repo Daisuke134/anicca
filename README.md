@@ -7,6 +7,8 @@
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
+**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The live mission, repository boundary, execution order, and remaining TODO are maintained in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
+
 ---
 
 ## Why this exists
