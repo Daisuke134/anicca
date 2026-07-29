@@ -110,6 +110,34 @@ The installer follows XDG config/state/data roots, rejects relative XDG override
 creates private directories as `0700`, and writes the profile and receipt as `0600`.
 It never overwrites an existing profile unless `--replace-profile` is explicit.
 
+For guided authoring, create the active private profile first:
+
+```bash
+zsh scripts/setup-profile.sh
+```
+
+The prompts require an application email and at least one explicit claim/evidence
+pair. They do not infer nationality, visa, work authorization, or any other legal
+fact. For repeatable provisioning, pass a production-shaped JSON file with
+`--answers /absolute/path/to/answers.json`. Placeholder values and implicit
+overwrites fail closed.
+
+### Reproducible release artifact
+
+Build a commit-pinned archive and SHA-256 sidecar:
+
+```bash
+zsh scripts/build-release.sh \
+  --output-dir /absolute/path/to/dist \
+  --version 0.1.0
+shasum -a 256 -c /absolute/path/to/dist/anicca-job-search-0.1.0.tar.gz.sha256
+```
+
+The archive contains only the job-loop application, the bounded agent runner, and
+`RELEASE.json`. It contains no candidate profile, credential, SQLite state, evidence,
+or logs. After verification and extraction, run the bundled `setup-profile.sh`, then
+`install-local.sh` from the extracted directory.
+
 Do not start a second daily executor. To trigger the deployed loop, kick the existing
 LaunchAgent and inspect the generated evidence:
 

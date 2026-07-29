@@ -377,6 +377,48 @@ Sources:
 Order 12 remains `in_progress` after 12A. Distribution packaging, a guided profile
 authoring UI, and a clean-machine install from a release artifact remain.
 
+`JOB-PORTABLE-RELEASE-12B` closes those remaining Order 12 gates. The guided setup
+accepts either terminal prompts or a versioned answers JSON, copies no prior
+candidate, rejects placeholder values, validates through the production profile
+contract, and atomically writes one mode-`0600` profile. Legal or work-authorization
+facts exist only when the user explicitly supplies their claim and evidence; the
+wizard never derives them from name, residence, language, or employer.
+
+Release artifacts are built from one Git commit, not the mutable working tree. They
+contain only `apps/job-search-loop`, `runtime/agent-runner`, and a generated
+`RELEASE.json`. Archive entries have sorted paths, normalized owner/group/time
+metadata, and retained executable bits. Each `.tar.gz` is accompanied by a
+SHA-256 file whose digest is verified before extraction in the clean-HOME E2E.
+
+Sources:
+
+- Git `archive`, https://git-scm.com/docs/git-archive:
+  “Creates an archive of the specified format containing the tree structure for the
+  named tree.”
+- Reproducible Builds archive metadata,
+  https://reproducible-builds.org/docs/archives/:
+  “Most archive formats record metadata that will capture details about the build
+  environment if no care is taken.”
+- Python `argparse`, https://docs.python.org/3/library/argparse.html:
+  “The argparse module makes it easy to write user-friendly command-line
+  interfaces.”
+
+`JOB-PORTABLE-RELEASE-12B` is complete when:
+
+1. interactive and answers-file profile setup both produce a production-valid,
+   private profile without placeholder or inferred facts;
+2. existing profiles fail closed unless explicit replacement is supplied;
+3. two builds of the same commit/version have the same SHA-256;
+4. an archive inventory contains the two required runtime roots, generated release
+   metadata, no private state, and no Daisuke profile;
+5. the checksum is verified, the archive is extracted into a clean temporary
+   machine root, and its bundled `install-local.sh --scheduler none` succeeds with
+   a fake authenticated provider;
+6. focused, full, and CI suites pass.
+
+Order 12 becomes `completed` after 12B evidence is merged and reflected in the
+canonical checkout.
+
 ## 5. State and side-effect contracts
 
 ### 5.1 Application state machine
@@ -609,7 +651,7 @@ row; its status changes in the same commit as implementation evidence.
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
 | 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B merged in PR #1291 (`1ff642fd`, CI `30447613983`) and closeout PR #1293, then live-verified at canonical `2e75c720` (daily/inbox runs 4/8, exits 0, ledger integrity `ok`) with 131 job-loop + 7 runner tests and real existing-CDP job→choice→account replay (19/23/28 redacted controls, zero input/account/upload/claim/submit side effects); order completes only after one real confirmed application per adapter |
 | 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
-| 12 | Portable local OSS distribution | `in_progress` | 12A merged in PR #1296 (`06df513a`, CI `30448931948`) and canonical/live-health verified without reinstalling schedulers: user profile import with overwrite fence, BYO Codex→Claude auth preflight without credential copying, private XDG roots, launchd/systemd user scheduling, clean-HOME no-scheduler E2E, fake scheduler activation, 140 job-loop + 7 runner tests; packaging, guided profile authoring and release-artifact install remain |
+| 12 | Portable local OSS distribution | `in_progress` | 12A merged in PR #1296; 12B locally verified with guided interactive/JSON profile authoring, placeholder/overwrite/legal-inference fences, reproducible commit-tree tar.gz + SHA-256 (105 entries at implementation commit `4d080089e`), extracted-artifact clean-HOME install, 149 job-loop + 7 runner tests; completes after 12B CI/merge and canonical reflection |
 | 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |
 
 ## 12. Verification

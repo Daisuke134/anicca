@@ -148,7 +148,11 @@ def install(
     data_dir = roots["data"] / "anicca" / "job-search"
     profile_path = config_dir / "profile.json"
     install_path = config_dir / "install.json"
-    if profile_path.exists() and not replace_profile:
+    source_is_active = (
+        profile_path.exists()
+        and profile_source.resolve() == profile_path.resolve()
+    )
+    if profile_path.exists() and not replace_profile and not source_is_active:
         raise SetupError(
             f"private profile already exists: {profile_path}; "
             "use --replace-profile to replace it"
@@ -156,10 +160,13 @@ def install(
 
     for directory in (config_dir, state_dir, data_dir):
         _private_dir(directory)
-    encoded_profile = (
-        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    ).encode("utf-8")
-    _atomic_private_write(profile_path, encoded_profile)
+    if not source_is_active:
+        encoded_profile = (
+            json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        ).encode("utf-8")
+        _atomic_private_write(profile_path, encoded_profile)
+    else:
+        os.chmod(profile_path, 0o600)
     receipt = {
         "version": 1,
         "provider": selected_provider,
