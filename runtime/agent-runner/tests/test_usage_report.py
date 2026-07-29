@@ -15,7 +15,7 @@ def load_module():
     return module
 
 
-class UsageReportTest(unittest.TestCase):
+class CanonicalUsageReportTest(unittest.TestCase):
     def setUp(self):
         self.report = load_module()
 

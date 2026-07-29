@@ -20,12 +20,15 @@ from pathlib import Path
 
 REPO_SHARED = Path(__file__).resolve().parents[2] / "_shared"
 sys.path.insert(0, str(REPO_SHARED))
-sys.path.append(str(Path.home() / ".openclaw" / "skills" / "_shared"))
 import anicca_profile as prof  # noqa: E402
 
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
 ENV_PATH = Path(os.environ.get(
     "LIFE_MANAGER_ENV_FILE",
-    Path.home() / ".openclaw" / ".env",
+    str(ANICCA_HOME / ".env"),
 ))
 ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
 

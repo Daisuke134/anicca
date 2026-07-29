@@ -24,7 +24,10 @@ from typing import Any
 
 JST = timezone(timedelta(hours=9))
 
-ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(Path.home() / ".openclaw")))
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
 ENV_PATH = ANICCA_HOME / ".env"
 
 # Load env (.env file) for GOOGLE_API_KEY etc.

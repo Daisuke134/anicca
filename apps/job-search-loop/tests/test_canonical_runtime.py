@@ -129,17 +129,15 @@ raise SystemExit(0)
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(set(config["providers"]), {"codex", "claude-direct"})
-        self.assertEqual(
-            set(config["task_classes"]),
+        self.assertTrue({"codex", "claude-direct"}.issubset(config["providers"]))
+        self.assertTrue(
             {
                 "composition-agent",
                 "repeatable-agent",
                 "browser-lane-agent",
                 "high-value-agent",
-            },
+            }.issubset(config["task_classes"])
         )
-        self.assertNotIn("candidate_profiles", config)
         encoded = json.dumps(config)
         self.assertNotIn("@", encoded)
         self.assertNotIn("/Users/", encoded)

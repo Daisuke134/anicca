@@ -22,12 +22,18 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[2]
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
+sys.path.insert(0, str(REPO_ROOT / "skills" / "_shared"))
 import anicca_profile as prof  # noqa: E402
 
 JST = timezone(timedelta(hours=9))
 HOME = prof.home_address()
-LOCATION_STATE_DIR = Path.home() / ".openclaw" / "state" / "location"
+LOCATION_STATE_DIR = ANICCA_HOME / "state" / "location"
 LOCATION_FRESH_MIN = int(os.environ.get("LATE_LOCATION_FRESH_MIN", "45"))
 
 # Routine event summaries that always happen AT HOME — kept in sync with
@@ -126,7 +132,8 @@ HORIZON_H = int(os.environ.get("LATE_HORIZON_H", "168"))     # look-ahead window
 # fallback. This keeps API cost flat (~$1/day) when horizon grew from 18 h
 # to 168 h, and 5-day-out transit timetables aren't reliable anyway.
 PRECOMPUTE_H = int(os.environ.get("LATE_PRECOMPUTE_H", "12"))
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
+ENV_PATH = Path(os.environ.get("LIFE_MANAGER_ENV_FILE", str(ANICCA_HOME / ".env")))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
 JST_RE = re.compile(r"出発[:：]\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|\d{1,2}:\d{2})")
 
 

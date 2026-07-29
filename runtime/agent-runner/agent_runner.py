@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 OPENCLAW_WRITE_TOOLS = frozenset(("write", "file_write", "edit", "apply_patch", "exec"))
 OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high", "xhigh", "adaptive", "max"))
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
-DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "anicca" / "telemetry" / "agent-usage.jsonl"
+DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
 # Smallest prompt that could plausibly express a bounded task. Kept low on
 # purpose: this is a floor against empty/degenerate transport, not a style
@@ -962,7 +962,7 @@ def run() -> int:
             raise ValueError("enabled token budgets and task reservation must be positive")
         budget_ledger = TokenBudgetLedger(Path(os.environ.get(
             "ANICCA_TOKEN_BUDGET_LEDGER",
-            Path.home() / ".local" / "state" / "anicca" / "telemetry" / "token-budget.jsonl",
+            Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "token-budget.jsonl",
         )))
         budget_day = budget_day_for(
             datetime.now(timezone.utc),

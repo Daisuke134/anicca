@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "canonical_repository": "https://github.com/Daisuke134/life-manager.git",
   "policy": {
     "runtime_dependency": "Every active runtime dependency is tracked in this repository or installed from a pinned public source.",
@@ -15,6 +15,24 @@
       "scope": "Base tree for the self-contained public repository."
     },
     {
+      "id": "life-manager-v0",
+      "repository": "https://github.com/Daisuke134/life-manager-v0.git",
+      "commit": "210adead08afbb5a19902b5b107fcf0601fad387",
+      "license": "MIT",
+      "disposition": "retired-historical",
+      "scope": "All 35 legacy files are classified; required behavior missing from canonical is zero. The repository is redirect-only and archived.",
+      "evidence": "docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md"
+    },
+    {
+      "id": "anicca.ai",
+      "repository": "Daisuke134/anicca.ai (retired deployment source; repository unavailable)",
+      "commit": null,
+      "license": "repository unavailable; recovered seller source is covered by canonical MIT",
+      "disposition": "deployment-source-retired",
+      "scope": "The x402 seller source is recovered through reviewed anicca-products history and runs from canonical services/x402-endpoint. Active source, trigger, and deployment dependencies on anicca.ai are zero.",
+      "evidence": "docs/evidence/repository/2026-07-29-x402-source-consolidation.md"
+    },
+    {
       "id": "anicca-products",
       "repository": "https://github.com/Daisuke134/anicca-products.git",
       "commit": "0f6870df44fe160b83aec58803a63c2d7b5e21d7",
@@ -24,7 +42,16 @@
         "94485827497d6f0194f82f8f0c4f334427fa66d5"
       ],
       "disposition": "absorbed",
-      "scope": "Reusable cloud-browser auth implementation and tests are absorbed by commit, while stale branch-specific specification and evidence state is excluded."
+      "license": "MIT",
+      "scope": "Reusable cloud-browser auth implementation and tests are absorbed by commit, while stale branch-specific specification and evidence state is excluded.",
+      "absorbed_files": [
+        {"source": "apps/life-manager/lib/browser-auth-session-store.js", "target": "apps/life-manager/lib/browser-auth-session-store.js", "sha256": "ccbe7d017fa981eae089f3a8866d6bbf5b094f684e961b213c74845c230fdedf"},
+        {"source": "apps/life-manager/lib/browser-auth-session-store.test.js", "target": "apps/life-manager/lib/browser-auth-session-store.test.js", "sha256": "135ab2dcb487650bd09ff161b3cefe76ec943dc95dbfff9e009d1b4cfc12cbf4"},
+        {"source": "apps/life-manager/lib/browser-job-store.js", "target": "apps/life-manager/lib/browser-job-store.js", "sha256": "ec502c503e912f59f29afc083b9d8a59c8d2c9c97a11b727757bf91dbf5a8e7d"},
+        {"source": "apps/life-manager/lib/browser-job-store.test.js", "target": "apps/life-manager/lib/browser-job-store.test.js", "sha256": "ba2b9d138d3ee8486d8975eab42862595383a67046300137d2b9d05a8d90e098"},
+        {"source": "apps/life-manager/lib/stagehand-steel-driver.js", "target": "apps/life-manager/lib/stagehand-steel-driver.js", "sha256": "a5474c5e3bdfc27e336c5109f1673d075c7e1ce22326b614ff73189b1baeae8e"},
+        {"source": "apps/life-manager/lib/stagehand-steel-driver.test.js", "target": "apps/life-manager/lib/stagehand-steel-driver.test.js", "sha256": "834ebb6a0506b041e79bb10438306ddbc43d01db89d00597afaaa718b1a8fc79"}
+      ]
     },
     {
       "id": "profitable-claude",
@@ -34,7 +61,8 @@
         "fd7d82dea3b1bc62e7d232754f9a93d4db8200e6"
       ],
       "disposition": "absorbed",
-      "scope": "The shared agent runner, context packet, token ledger, usage reporter, and portable fail-closed tests are vendored under skills/agent-runner.",
+      "license": "MIT",
+      "scope": "The shared runner, context packet, token ledger, usage reporter, and fail-closed tests are consolidated under the single canonical runtime/agent-runner engine.",
       "excluded": [
         "Personal provider account configuration",
         "Developer-local candidate workspace",
@@ -42,14 +70,39 @@
       ],
       "upstream_sha256": {
         "skills/agent-runner/agent_runner.py": "ea32d3446d0efb9eccb3046e87cf9e99c7190edcf0b659e270a37aae689824ae"
-      }
+      },
+      "absorbed_files": [
+        {"source": "skills/agent-runner/agent_runner.py", "target": "runtime/agent-runner/agent_runner.py", "sha256": "d1b0d6d0e14fd969cc9963ba43545f7d5148675c30ed14925c078d3aaeec9b55"},
+        {"source": "skills/agent-runner/config.json", "target": "runtime/agent-runner/config.json", "sha256": "68ef65132ca490ac21bc5877b0bb0ef824b375eacafa4ee9c20058d73368a6f7"},
+        {"source": "skills/agent-runner/context_packet.py", "target": "runtime/agent-runner/context_packet.py", "sha256": "4e2c17ac3b29eb6d7428f1006f30c5e7b6261de347ec913508b8e292cd6a0d0e"},
+        {"source": "skills/agent-runner/token_budget.py", "target": "runtime/agent-runner/token_budget.py", "sha256": "f25a4dc2c22506d4847a90693e3171f03e0e63edf5506f4d67174574b51fbc4e"},
+        {"source": "skills/agent-runner/usage_report.py", "target": "runtime/agent-runner/usage_report.py", "sha256": "a58e26ef7f8c53bfacac4c276dca5afc7d479fdeb14d10cd03389eb0e77ea0a1"},
+        {"source": "skills/agent-runner/tests/test_prompt_fail_closed.py", "target": "runtime/agent-runner/tests/test_prompt_fail_closed.py", "sha256": "175961a8f6dee55de540cbb5691b0da4746f09bebc8226d56acaf788e2811209"},
+        {"source": "skills/agent-runner/tests/test_token_budget.py", "target": "runtime/agent-runner/tests/test_token_budget.py", "sha256": "868f1af984ab27eda8af462b6a121c339ed93e826a742ee65d840c87d3b459e0"},
+        {"source": "skills/agent-runner/tests/test_usage_report.py", "target": "runtime/agent-runner/tests/test_usage_report.py", "sha256": "f10b1ca746093386acd1a45d0b0d0eae3e0603938ac90df8da2d34799fb88295"}
+      ]
     },
     {
       "id": "anicca-dais",
       "repository": "Daisuke134/anicca-dais (private source-state repository; not a runtime dependency)",
       "commit": "d42e1da7ed455214cafd8ebbcc998bb17e865a71",
       "disposition": "portable-source-absorbed",
-      "scope": "Portable booking, Capafy automation, browser fallback, and shared policy source are absorbed. Personal configuration, credentials, account identifiers, memory, generated listing artwork, and live state remain outside the OSS product."
+      "license": "first-party MIT; vendored Capafy source classified separately",
+      "scope": "Portable booking, Capafy automation, browser fallback, and shared policy source are absorbed. Personal configuration, credentials, account identifiers, memory, generated listing artwork, and live state remain outside the OSS product.",
+      "absorbed_roots": [
+        {"source": "skills/anicca-booking", "target": "skills/anicca-booking", "files": 5, "inventory_sha256": "ef3c1ee66f5fa311ef75e34fe1f7e6b8cf4f273ffd7617297b22c04ca6b2defd"},
+        {"source": "skills/capafy-autopublish", "target": "skills/capafy-autopublish", "files": 387, "inventory_sha256": "036ac0c1216e9b361a7a1532d13ce2deee27771c77ee4665f4f0605cab6795e6"},
+        {"source": "skills/_shared", "target": "skills/_shared", "files": 125, "inventory_sha256": "b977d8ba7e73d0212af7a097a7c4bbe52ab70e3d2b63a2d891a50c7fcc80f77c"},
+        {"source": "skills/anicca-life-manager", "target": "skills/anicca-life-manager", "files": 16, "inventory_sha256": "9c5cf9ec890477d6282bde87389946aad7c0928bffe750eec4a8ccffa8b9cfb5"}
+      ]
+    },
+    {
+      "id": "local-source-folders",
+      "repository": "committed local source inventory only; no absolute path retained",
+      "commit": "b91f7890aac72952510916fd4ccf111569652211",
+      "license": "classified by the originating repository entry above",
+      "disposition": "classified-no-runtime-dependency",
+      "scope": "Committed reusable source is represented by pinned commits and target inventories. Dirty working state, credentials, memory, logs, generated media, and developer-local paths are excluded; canonical runtime resolves no sibling checkout."
     }
   ],
   "third_party_sources": [

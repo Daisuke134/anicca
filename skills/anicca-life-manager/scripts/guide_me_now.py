@@ -23,8 +23,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # own scripts dir (sel
 import lateness_check as lc
 import gcal_departures as gd
 
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
-URL_FILE = Path.home() / ".openclaw" / "workspace" / "imokenet" / "state" / "public_url.txt"
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
+ENV_PATH = Path(os.environ.get("LIFE_MANAGER_ENV_FILE", str(ANICCA_HOME / ".env")))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
+URL_FILE = Path(os.environ.get(
+    "LIFE_MANAGER_CALL_BRIDGE_URL_FILE",
+    str(ANICCA_HOME / "state" / "call-bridge" / "public_url.txt"),
+))
 
 
 def env(n, d=""):

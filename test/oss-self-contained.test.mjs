@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -10,9 +10,12 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VERIFIER = join(REPO_ROOT, "scripts", "verify-oss-self-contained.mjs");
 const REQUIRED_SOURCES = [
   "life-manager",
+  "life-manager-v0",
+  "anicca.ai",
   "anicca-products",
   "profitable-claude",
   "anicca-dais",
+  "local-source-folders",
 ];
 
 function git(root, ...args) {
@@ -34,7 +37,8 @@ function createFixture() {
   git(root, "init", "-q");
   git(root, "config", "user.email", "fixture@example.com");
   git(root, "config", "user.name", "Fixture");
-  write(root, "skills/agent-runner/agent_runner.py", "print('fixture')\n");
+  write(root, "runtime/agent-runner/agent_runner.py", "print('fixture')\n");
+  write(root, "skills/.gitkeep", "");
   write(
     root,
     "docs/manifests/oss-merge-1-sources.json",
@@ -169,11 +173,11 @@ test("personal mail and messaging destinations fail closed without echoing their
   assert.equal(result.stderr.includes(privateChat), false);
 });
 
-test("legacy-path and personal-destination fixtures in test files do not count as runtime dependencies", () => {
+test("explicit verifier fixtures do not count as runtime dependencies", () => {
   const root = createFixture();
   write(
     root,
-    "apps/life-manager/runtime-paths.test.js",
+    "apps/life-manager/lib/runtime-paths.test.js",
     [
       'const forbidden = "/Users/operator/.openclaw/state";',
       'const personal = "openclaw message send --target 123456789";',
@@ -188,7 +192,47 @@ test("legacy-path and personal-destination fixtures in test files do not count a
   assert.deepEqual(result.payload, { ok: true, violations: [] });
 });
 
-test("source provenance is closed over all four inspected repositories", () => {
+test("unlisted test files and constructed home paths cannot hide active legacy dependencies", () => {
+  const root = createFixture();
+  write(
+    root,
+    "skills/example/runtime-dependency.test.py",
+    'from pathlib import Path\nROOT = Path.home() / ".openclaw" / "skills"\n',
+  );
+  write(
+    root,
+    "skills/example/runtime.py",
+    'from pathlib import Path\nROOT = Path.home() / ".openclaw" / "state"\n',
+  );
+  git(root, "add", ".");
+
+  const result = verify(root);
+
+  assert.equal(result.status, 1);
+  assert.deepEqual(
+    result.payload.violations.map(({ code, path }) => [code, path]),
+    [
+      ["forbidden_source_root", "skills/example/runtime-dependency.test.py"],
+      ["forbidden_source_root", "skills/example/runtime.py"],
+    ],
+  );
+});
+
+test("a second agent runner fails the single canonical engine contract", () => {
+  const root = createFixture();
+  write(root, "skills/agent-runner/agent_runner.py", "print('duplicate')\n");
+  git(root, "add", ".");
+
+  const result = verify(root);
+
+  assert.equal(result.status, 1);
+  assert.deepEqual(
+    result.payload.violations.map(({ code, path }) => [code, path]),
+    [["duplicate_runner", "skills/agent-runner/agent_runner.py"]],
+  );
+});
+
+test("source provenance is closed over every inspected repository and local source inventory", () => {
   const root = createFixture();
   write(
     root,
@@ -209,9 +253,43 @@ test("source provenance is closed over all four inspected repositories", () => {
     [
       ["manifest_source_missing", "anicca-dais"],
       ["manifest_source_missing", "anicca-products"],
+      ["manifest_source_missing", "anicca.ai"],
+      ["manifest_source_missing", "life-manager-v0"],
+      ["manifest_source_missing", "local-source-folders"],
       ["manifest_source_missing", "profitable-claude"],
     ],
   );
+});
+
+test("absorbed source mappings fail closed when the canonical target hash drifts", () => {
+  const root = createFixture();
+  const manifestPath = "docs/manifests/oss-merge-1-sources.json";
+  const manifest = JSON.parse(execFileSync("git", ["show", `:${manifestPath}`], {
+    cwd: root, encoding: "utf8",
+  }));
+  const source = manifest.sources.find(({ id }) => id === "anicca-products");
+  source.disposition = "absorbed";
+  source.absorbed_files = [{
+    source: "upstream/portable.js",
+    target: "apps/life-manager/index.js",
+    sha256: "0".repeat(64),
+  }];
+  write(root, manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  git(root, "add", manifestPath);
+
+  const result = verify(root);
+
+  assert.equal(result.status, 1);
+  assert.deepEqual(
+    result.payload.violations.map(({ code, path }) => [code, path]),
+    [["manifest_hash_mismatch", "apps/life-manager/index.js"]],
+  );
+});
+
+test("fresh-clone verification defaults to canonical main, never a feature branch", () => {
+  const source = readFileSync(join(REPO_ROOT, "scripts", "verify-fresh-clone.sh"), "utf8");
+  assert.match(source, /LIFE_MANAGER_VERIFY_REF:-main/u);
+  assert.doesNotMatch(source, /LIFE_MANAGER_VERIFY_REF:-feature\//u);
 });
 
 test("declared third-party runtime adapters may document their own runtime home", () => {

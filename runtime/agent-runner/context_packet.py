@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic bounded context packets shared by repository loop adapters."""
+"""Deterministic bounded context packets shared by Life Manager loop adapters."""
 
 from __future__ import annotations
 
