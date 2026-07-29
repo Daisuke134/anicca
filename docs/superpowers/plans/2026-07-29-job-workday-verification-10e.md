@@ -64,8 +64,15 @@ Anything at or after `navigation_started` is never blindly retried.
 
 ## Task 3 — GitHub and live no-mail reflection
 
-- [ ] Push, pass all CI, merge, and fast-forward canonical.
-- [ ] Kickstart only the existing inbox/daily launchd jobs and verify exit zero,
+- [x] Push, pass all CI, merge, and fast-forward canonical.
+- [x] Kickstart only the existing inbox/daily launchd jobs and verify exit zero,
   integrity, and no false-positive processing of historical seen mail.
-- [ ] Update SSOT spec/evidence. Keep real account creation and verification E2E
+- [x] Update SSOT spec/evidence. Keep real account creation and verification E2E
   pending until the new CrowdStrike email actually arrives.
+
+Live result: PR #1316 merged as `828c4d7b1` after all seven required checks
+passed in run `30453061715`. Daily advanced 6→7 and inbox 13→15 with exit 0;
+the inbox timer overlapped the manual kick and both deterministic passes found
+zero new recruiting messages. The private verification DB remains absent
+because no new matching Workday email arrived, while historical seen mail was
+not reopened. Healthcheck reports ledger and interview-prep integrity `ok`.
