@@ -9,7 +9,8 @@ const {
   upsertBrowserAuthSession,
 } = require("../lib/browser-auth-session-store.js");
 
-const E2E_ORIGIN = "https://example.com";
+const E2E_ORIGIN = "https://auth.aniccaai.com";
+const E2E_COOKIE_DOMAIN = "auth.aniccaai.com";
 const PRINCIPAL_KIND = "agent_owned";
 const COOKIE_NAME = "browser_auth_e2e";
 const UID_PREFIX = "browser-auth-e2e-";
@@ -202,7 +203,7 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
           cookies: [{
             name: COOKIE_NAME,
             value: marker,
-            domain: "example.com",
+            domain: E2E_COOKIE_DOMAIN,
             path: "/",
             hostOnly: true,
             secure: true,
