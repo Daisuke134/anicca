@@ -921,9 +921,9 @@ cloud migration work does not begin until every retained loop is demonstrably
 OpenClaw-independent and running under Life Manager locally.
 
 Current Order 0 subcursor:
-`OSS-SECURITY-BASELINE-1` is locally complete and PR #1274 is re-running the
-exact five security checks. After that merge, the next substep is
-`REPO-V0-RETIRE-1`, followed by `AE-X402-SOURCE-CONSOLIDATE-1`. Evidence:
+`REPO-V0-RETIRE-1`. The preceding `OSS-SECURITY-BASELINE-1` merged in PR
+#1274 with all exact-five security checks green. The following substep is
+`AE-X402-SOURCE-CONSOLIDATE-1`. Evidence:
 `docs/evidence/security/2026-07-29-oss-security-baseline.md`.
 
 | Order | Deliverable | Exit evidence |

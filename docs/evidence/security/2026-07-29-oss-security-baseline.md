@@ -75,10 +75,8 @@ Railway documents that public networking exposes a service to the internet:
 “Public networking allows you to expose your Railway services to the
 internet.” The database no longer has a public TCP proxy.
 
-## Evidence boundary
+## Completion
 
-The local implementation gates are green except for the final all-shell parse,
-which is run with the complete exact-five local verification immediately
-before push. Completion still requires the fresh pull request to report
-gitleaks, PII, TruffleHog, Python, and Shell all green. Until then,
-`OSS-SECURITY-BASELINE-1` is not marked done.
+PR #1274 merged after gitleaks, PII, TruffleHog, Python, and Shell all
+reported green on the merged head. `OSS-SECURITY-BASELINE-1` is complete.
+The ordered program cursor advances to `REPO-V0-RETIRE-1`.
