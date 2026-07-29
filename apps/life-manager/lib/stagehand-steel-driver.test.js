@@ -989,6 +989,63 @@ test("same-origin protected content confirms when the model is conservative but 
   assert.equal(receipt.handoffReason, null);
 });
 
+test("a loaded encrypted context plus a visible protected action closes a nondeterministic invented model marker", async () => {
+  const options = {
+    pageUrl: "https://auth.fixture.dev/account",
+    authRecords: {
+      "u-one": {
+        context: {
+          cookies: [{
+            name: "sid",
+            value: "restored-cookie-secret",
+            domain: "auth.fixture.dev",
+            path: "/",
+          }],
+        },
+      },
+    },
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Create Workspace",
+      authActions: [visibleElement({}, "Create Workspace")],
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "unauthenticated",
+      confirmationId: null,
+      providerText: "Fixture Workspace",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  };
+
+  const loaded = fixture(options);
+  const loadedSession = await loaded.driver.openSession({
+    uid: "u-one",
+    goal: "Read https://auth.fixture.dev/account",
+    requiresLogin: true,
+    principalKind: "user_provided",
+  });
+  const loadedAction = await loaded.driver.discoverAndAct(loadedSession, {
+    goal: "Read https://auth.fixture.dev/account",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const loadedReceipt = await loaded.driver.readProviderReceipt(loadedSession, loadedAction);
+
+  assert.equal(loadedReceipt.confirmed, true);
+  assert.equal(loadedReceipt.handoffRequired, false);
+
+  const fresh = fixture(options);
+  const freshSession = await fresh.driver.openSession();
+  const freshAction = await fresh.driver.discoverAndAct(freshSession, {
+    goal: "Read https://auth.fixture.dev/account",
+    actionKind: "browser_auth_continuity_readback",
+  });
+  const freshReceipt = await fresh.driver.readProviderReceipt(freshSession, freshAction);
+
+  assert.equal(freshReceipt.confirmed, false);
+  assert.equal(freshReceipt.handoffRequired, true);
+});
+
 test("account settings security copy cannot create a login handoff without active auth controls", async () => {
   const { driver } = fixture({
     pageUrl: "https://fresh-events.example/settings",
