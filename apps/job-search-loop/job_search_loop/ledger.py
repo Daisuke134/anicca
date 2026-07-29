@@ -262,6 +262,32 @@ class Ledger:
             for row in rows
         ]
 
+    def application_summary_rows(self) -> list[dict[str, str | None]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+              applications.canonical_url,
+              applications.current_state,
+              submit_intents.status AS submission_state
+            FROM applications
+            LEFT JOIN submit_intents
+              ON submit_intents.application_id = applications.id
+            ORDER BY applications.created_at, applications.rowid
+            """
+        ).fetchall()
+        return [
+            {
+                "canonical_url": str(row["canonical_url"]),
+                "current_state": str(row["current_state"]),
+                "submission_state": (
+                    str(row["submission_state"])
+                    if row["submission_state"] is not None
+                    else None
+                ),
+            }
+            for row in rows
+        ]
+
     def retryable_applications(self) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             """

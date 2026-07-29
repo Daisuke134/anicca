@@ -58,6 +58,9 @@ with calls.open("a", encoding="utf-8") as handle:
 if sys.argv[1:2] == ["-"]:
     print(%d)
     raise SystemExit(0)
+if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
+    from job_search_loop.summary import main
+    raise SystemExit(main(sys.argv[3:]))
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
@@ -109,6 +112,9 @@ raise SystemExit(0)
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
                 "daily_quota_reached",
             )
+            projection = root / "state" / "summary.v1.json"
+            self.assertTrue(projection.is_file())
+            self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
 
     def test_daily_budget_block_is_an_honest_completed_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -124,6 +130,25 @@ raise SystemExit(0)
                 json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
                 "budget_blocked",
             )
+            projection = root / "state" / "summary.v1.json"
+            self.assertTrue(projection.is_file())
+            self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
+
+    def test_daily_success_refreshes_durable_summary_projection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 0, 0)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            projection = root / "state" / "summary.v1.json"
+            self.assertTrue(projection.is_file())
+            self.assertEqual(
+                json.loads(projection.read_text(encoding="utf-8"))["day"],
+                __import__("datetime").datetime.now(
+                    __import__("zoneinfo").ZoneInfo("Asia/Tokyo")
+                ).date().isoformat(),
+            )
+            self.assertIn("job_search_loop.summary", json.dumps(calls))
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
