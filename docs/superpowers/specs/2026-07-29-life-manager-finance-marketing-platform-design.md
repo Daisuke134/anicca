@@ -931,8 +931,8 @@ The x402 nine-route seller is present in canonical
 `services/x402-endpoint`; historical and canonical suites pass 68/68, the
 migration contract passes 1/1, ledger regression passes 22/22, and dependency
 audit is zero. PR #1295 merged as `4d5c60b9…`; Railway source/root/commit,
-deployment `1062874a…` SUCCESS, nine paid gates, settlement feed, exact-five,
-and zero observed cutover 5xx are read back. The next program subcursor is
+deployment `cee9598d…` SUCCESS, nine paid gates, settlement target exactly1,
+ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read back. The next program subcursor is
 `BROWSER-AUTH-1`.
 
 | Order | Deliverable | Exit evidence |
