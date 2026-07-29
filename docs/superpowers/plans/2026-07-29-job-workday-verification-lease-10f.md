@@ -40,11 +40,12 @@ its `created_at`.
 
 ## Task 2 — GREEN: durable lease and migration
 
-- [ ] Add a `claimed_at` migration and a 900-second default lease.
-- [ ] Reclaim only expired `claimed` rows inside `BEGIN IMMEDIATE`.
-- [ ] Keep all at/after-navigation states terminal.
-- [ ] Document the executor contract in the inbox prompt.
-- [ ] Run focused and full suites.
+- [x] Add a `claimed_at` migration and a 900-second default lease.
+- [x] Reclaim only expired `claimed` rows inside `BEGIN IMMEDIATE`.
+- [x] Keep all at/after-navigation states terminal.
+- [x] Document the executor contract in the inbox prompt.
+- [x] Run focused and full suites: 6 focused, 163 job-loop, and 9 runner
+  tests pass; Python compile and diff checks pass.
 
 ## Task 3 — GitHub and live reflection
 

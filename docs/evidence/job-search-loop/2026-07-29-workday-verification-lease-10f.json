@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10F",
+  "status": "implementation_verified_pending_ci",
+  "observed_at": "2026-07-29T13:10:00Z",
+  "branch": "feat/job-workday-verification-lease-10f",
+  "red_commit": "f6578a29d",
+  "implementation_commit": "6102f4afc",
+  "pull_request": {
+    "number": null,
+    "url": null,
+    "ci_run": null,
+    "merge_commit": null
+  },
+  "red_test": {
+    "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_workday_verification.py -v",
+    "result": "failed as expected",
+    "failures": [
+      "VerificationStore.claim rejected the injected now argument in the expiry test",
+      "VerificationStore.claim rejected the injected now argument in the legacy migration test"
+    ]
+  },
+  "tests": {
+    "focused": {
+      "ran": 6,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 163,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 9,
+      "failures": 0
+    },
+    "python_compile": "pass",
+    "git_diff_check": "pass"
+  },
+  "contract": {
+    "retryable_state": "claimed",
+    "default_lease_seconds": 900,
+    "lease_anchor": "claimed_at, falling back to created_at for legacy rows",
+    "reclaim_transaction": "BEGIN IMMEDIATE",
+    "reclaim_changes_fence": true,
+    "old_fence_rejected": true,
+    "terminal_states": [
+      "navigation_started",
+      "opened",
+      "navigation_unknown"
+    ],
+    "terminal_states_expire": false,
+    "activation_url_persisted": false,
+    "activation_token_persisted": false
+  },
+  "migration": {
+    "strategy": "PRAGMA table_info followed by ALTER TABLE ADD COLUMN claimed_at",
+    "legacy_claim_recovery_tested": true,
+    "real_database_exists": false,
+    "real_database_reason": "No new matching Workday verification email has arrived yet."
+  },
+  "research_transport": {
+    "queries": [
+      "durable lease reclaim expired claim before side effect idempotency",
+      "visibility timeout retry worker crash before processing official documentation",
+      "期限切れ リース 再取得 冪等性 ワーカー クラッシュ 副作用 前"
+    ],
+    "firecrawl_result": "agent-owned configured token rejected as invalid",
+    "crawl4ai_result": "installed Playwright browser revision was unavailable",
+    "fallback": "direct read-only retrieval of official documentation and upstream source"
+  },
+  "sources": [
+    {
+      "name": "Amazon SQS visibility timeout",
+      "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html",
+      "quote": "If you don't delete it before the timeout expires, the message becomes visible again in the queue and can be retrieved by another consumer."
+    },
+    {
+      "name": "Celery Redis visibility timeout",
+      "url": "https://docs.celeryq.dev/en/latest/getting-started/backends-and-brokers/redis.html#visibility-timeout",
+      "quote": "The visibility timeout defines the number of seconds to wait for the worker to acknowledge the task before the message is redelivered."
+    },
+    {
+      "name": "Kubernetes Leases",
+      "url": "https://kubernetes.io/docs/concepts/architecture/leases/",
+      "quote": "The Kubernetes control plane uses the time stamp of this field to determine the availability of this Node."
+    }
+  ],
+  "remaining_order_10_gate": "Receive a new real Workday verification email, exercise the lease-fenced activation path, reach a claim-ready application, and obtain a confirmed submission without inferred legal answers."
+}
