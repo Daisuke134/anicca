@@ -16,6 +16,7 @@ OPS_LEDGER="$STATE_DIR/emergency-disk-guard-ops-v2.tsv"
 CLEANUP_LEDGER="${CLEANUP_CONTROL_LEDGER:-$STATE_DIR/cleanup-control-ledger.jsonl}"
 CLEANUP_CONTROL="${CLEANUP_CONTROL_PATH:-$HOME_DIR/anicca-project/scripts/cleanup-control/cleanup_control.py}"
 CLEANUP_MANIFEST="${CLEANUP_CONTROL_MANIFEST:-$HOME_DIR/anicca-project/scripts/cleanup-control/artifact-lifecycle.json}"
+CLEANUP_RUNTIME_MANIFEST="${CLEANUP_CONTROL_RUNTIME_MANIFEST:-$STATE_DIR/cleanup-runtime-manifest.json}"
 CLEANUP_QUARANTINE_ROOT="${CLEANUP_CONTROL_QUARANTINE_ROOT:-/Volumes/AniccaQuarantine/anicca-cleanup}"
 BACKPRESSURE="$STATE_DIR/disk-pressure.block"
 ALERT="$STATE_DIR/disk-pressure.alert"
@@ -503,8 +504,33 @@ if [ "$TEST_MODE" -eq 0 ]; then
   if [ ! -f "$CLEANUP_CONTROL" ]; then
     append_decision "$CLEANUP_CONTROL" failure cleanup-control-missing
   else
-    CLEANUP_SUMMARY=$(python3 "$CLEANUP_CONTROL" sweep \
+    CLEANUP_MANIFEST_FOR_SWEEP="$CLEANUP_MANIFEST"
+    RUNTIME_MANIFEST_SUMMARY=$(python3 "$CLEANUP_CONTROL" runtime-manifest \
       --manifest "$CLEANUP_MANIFEST" \
+      --output "$CLEANUP_RUNTIME_MANIFEST" \
+      --root "$HOME_DIR/anicca-project/.worktrees" \
+      --root "$HOME_DIR/profitable-claude/.worktrees" \
+      --root "$HOME_DIR/.openclaw/.worktrees" \
+      --root "$HOME_DIR/anicca-project/work" \
+      --root "$HOME_DIR/.openclaw/external" \
+      --root "$HOME_DIR/anicca-project/apps" \
+      --root "$HOME_DIR/gig" \
+      --root "$HOME_DIR/anicca" \
+      --cache-root "$HOME_DIR/Library/Caches" \
+      --cache-root "$HOME_DIR/.npm" \
+      --cache-root "$HOME_DIR/.cargo/registry" \
+      --cache-root "$HOME_DIR/.cargo/git" \
+      --min-cache-bytes 268435456 2>>"$LOG")
+    RUNTIME_MANIFEST_RC=$?
+    if [ "$RUNTIME_MANIFEST_RC" -eq 0 ] && [ -s "$CLEANUP_RUNTIME_MANIFEST" ]; then
+      CLEANUP_MANIFEST_FOR_SWEEP="$CLEANUP_RUNTIME_MANIFEST"
+      log "runtime manifest ready: $RUNTIME_MANIFEST_SUMMARY"
+    else
+      append_decision cleanup-control failure "runtime-manifest-rc-$RUNTIME_MANIFEST_RC"
+      log "runtime manifest failed rc=$RUNTIME_MANIFEST_RC; using base manifest"
+    fi
+    CLEANUP_SUMMARY=$(python3 "$CLEANUP_CONTROL" sweep \
+      --manifest "$CLEANUP_MANIFEST_FOR_SWEEP" \
       --quarantine-root "$CLEANUP_QUARANTINE_ROOT" \
       --ledger "$CLEANUP_LEDGER" \
       --pressure-override \

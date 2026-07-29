@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from unittest import mock
@@ -15,6 +17,18 @@ SPEC = importlib.util.spec_from_file_location("cleanup_control", MODULE_PATH)
 assert SPEC and SPEC.loader
 cleanup_control = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(cleanup_control)
+
+
+def test_path_open_state_treats_nonempty_lsof_output_as_open() -> None:
+    result = subprocess.CompletedProcess(
+        args=["lsof"],
+        returncode=1,
+        stdout="COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\nCodexBar 1 user 4u REG 1,1 1 1 /tmp/cache/db\n",
+        stderr="",
+    )
+
+    with mock.patch.object(cleanup_control, "_command", return_value=result):
+        assert cleanup_control.path_open_state(Path("/tmp/cache")) == "open"
 
 
 def entry(
@@ -87,6 +101,135 @@ def run(
             pressure_override=pressure_override,
             reclaim_target_bytes=reclaim_target_bytes,
         )
+
+
+def test_runtime_manifest_discovers_only_ignored_proven_regenerable_outputs(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    subprocess.run(
+        ["git", "init", "-q", str(repository)],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    (repository / ".gitignore").write_text(
+        "node_modules/\n.venv/\n!unignored/\n!unignored/node_modules/\n",
+        encoding="utf-8",
+    )
+    (repository / "package-lock.json").write_text('{"lockfileVersion":3}\n', encoding="utf-8")
+    eligible = repository / "node_modules"
+    eligible.mkdir()
+    (eligible / "payload").write_bytes(b"x" * 128)
+
+    no_proof = repository / "work" / "node_modules"
+    no_proof.mkdir(parents=True)
+    (no_proof / "payload").write_bytes(b"keep")
+
+    unignored = repository / "unignored" / "node_modules"
+    unignored.mkdir(parents=True)
+    (unignored.parent / "package-lock.json").write_text(
+        '{"lockfileVersion":3}\n',
+        encoding="utf-8",
+    )
+    (unignored / "payload").write_bytes(b"keep")
+
+    protected = repository / ".claude" / "private" / "node_modules"
+    protected.mkdir(parents=True)
+    (protected.parent / "package-lock.json").write_text(
+        '{"lockfileVersion":3}\n',
+        encoding="utf-8",
+    )
+    (protected / "payload").write_bytes(b"keep")
+
+    base = write_manifest(tmp_path / "base.json", [])
+    before = base.read_bytes()
+    runtime = tmp_path / "runtime.json"
+    cache_root = tmp_path / "Caches"
+    pnpm_cache = cache_root / "pnpm"
+    pnpm_cache.mkdir(parents=True)
+    (pnpm_cache / "payload").write_bytes(b"x" * 128)
+    browser_cache = cache_root / "camoufox"
+    browser_cache.mkdir()
+    (browser_cache / "payload").write_bytes(b"keep")
+    command = [
+        sys.executable,
+        str(MODULE_PATH),
+        "runtime-manifest",
+        "--manifest",
+        str(base),
+        "--output",
+        str(runtime),
+        "--root",
+        str(repository),
+        "--cache-root",
+        str(cache_root),
+        "--min-cache-bytes",
+        "1",
+    ]
+
+    first = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert first.returncode == 0, first.stderr
+    assert json.loads(first.stdout) == {
+        "discovered": 2,
+        "output": str(runtime),
+        "status": "ok",
+    }
+    assert base.read_bytes() == before
+
+    generated = json.loads(runtime.read_text(encoding="utf-8"))
+    build_outputs = [
+        item
+        for item in generated["artifacts"]
+        if item["owner"] == "cleanup-discovery"
+        and item["class"] == "regenerable_output"
+    ]
+    assert build_outputs == [
+        {
+            "class": "regenerable_output",
+            "finalizer": {
+                "kind": "verified_regenerable_remove",
+                "proof_path": str(repository / "package-lock.json"),
+            },
+            "id": build_outputs[0]["id"],
+            "lease": None,
+            "owner": "cleanup-discovery",
+            "path": str(eligible),
+            "quota_bytes": 0,
+            "ttl_seconds": None,
+        }
+    ]
+    cache_outputs = [
+        item
+        for item in generated["artifacts"]
+        if item["owner"] == "cleanup-discovery" and item["class"] == "ephemeral"
+    ]
+    assert cache_outputs == [
+        {
+            "class": "ephemeral",
+            "finalizer": {"kind": "off_volume_quarantine"},
+            "id": cache_outputs[0]["id"],
+            "lease": None,
+            "owner": "cleanup-discovery",
+            "path": str(pnpm_cache),
+            "quota_bytes": 0,
+            "ttl_seconds": 604800,
+        }
+    ]
+    assert str(browser_cache) not in {item["path"] for item in generated["artifacts"]}
+    assert str(no_proof) not in {item["path"] for item in generated["artifacts"]}
+    assert str(unignored) not in {item["path"] for item in generated["artifacts"]}
+    assert str(protected) not in {item["path"] for item in generated["artifacts"]}
+
+    second = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert second.returncode == 0, second.stderr
+    assert runtime.read_text(encoding="utf-8") == json.dumps(
+        generated,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    ) + "\n"
 
 
 @pytest.mark.parametrize("mode", ["missing", "corrupt", "missing-field"])
