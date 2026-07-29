@@ -58,8 +58,8 @@ counts as confirmed.
 - [x] Implement the minimal ledger read, summary builder/writer/CLI, and runner
   wiring.
 - [x] Run focused tests, then all 168 job-loop and 9 agent-runner tests.
-- [ ] Update the design spec and record live projection evidence without
+- [x] Update the design spec and record live projection evidence without
   changing Order 10 to completed.
-- [ ] Push, wait for all required GitHub checks, merge, fast-forward the
+- [x] Push, wait for all required GitHub checks, merge, fast-forward the
   canonical worktree, kick the existing launchd loop, and verify the live
   projection and scheduler health.
