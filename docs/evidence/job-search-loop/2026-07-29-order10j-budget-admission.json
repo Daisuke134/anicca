@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "deliverable": "JOB-BUDGET-HARD-CAP-10J",
+  "observed_at": "2026-07-29T23:47:27+09:00",
+  "implementation": {
+    "pull_request": 1350,
+    "merge_sha": "e3bc44685d8a7a39c7ce21f312ae6a099596c83c",
+    "head_sha": "f40c6e5cdd907037a923bd808bbd423ee9ea42b9",
+    "ci_run_id": 30462362148,
+    "ci_conclusion": "success",
+    "checks_passed": 6,
+    "job_loop_tests_passed": 168,
+    "agent_runner_tests_passed": 10,
+    "oss_boundary": "pass"
+  },
+  "launchd": {
+    "label": "ai.anicca.job-search-daily",
+    "runs_before": 10,
+    "runs_after": 11,
+    "state_after": "not running",
+    "last_exit_code": 0,
+    "evidence_run_id": "daily-20260729-234726"
+  },
+  "budget_admission": {
+    "status": "budget_blocked",
+    "reason": "loop_daily_token_budget_exceeded",
+    "daily_limit_tokens": 262144,
+    "daily_consumed_tokens": 324632,
+    "reservation_tokens": 98304,
+    "pass_limit_tokens": 98304,
+    "attempt_count": 0,
+    "selected_provider": null,
+    "selected_model": null,
+    "budget_ledger_rows_before": 8,
+    "budget_ledger_rows_after": 9,
+    "added_rows": [
+      "blocked_reservation"
+    ],
+    "settlement_added": false,
+    "provider_attempt_artifacts_present": false
+  },
+  "projection": {
+    "path": "~/.local/state/anicca/job-search/summary.v1.json",
+    "mode": "0600",
+    "counts": {
+      "not_submitted": 2,
+      "submit_unknown": 1,
+      "submitted": 2
+    },
+    "confirmed_adapters": [],
+    "required_adapters": [
+      "ashby",
+      "workday"
+    ],
+    "complete": false
+  },
+  "health": {
+    "ledger_integrity": "ok",
+    "interview_prep_integrity": "ok",
+    "daily_last_exit_code": 0,
+    "inbox_last_exit_code": 0
+  },
+  "finding": "The merged runner failed closed before provider launch when the remaining daily allowance could not cover the configured full-pass maximum. No paid attempt or settlement occurred, and application state was unchanged."
+}
