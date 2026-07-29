@@ -72,11 +72,13 @@ dashboard-only visual assertion.
 | RevenueCat historical secret A | Authenticated as a valid V2-only secret | Rotation pending | Still authenticates | **OPEN** |
 | RevenueCat historical secret B | `/v2/projects` returned `200` | Rotation pending | Still authenticates | **OPEN** |
 
-The RevenueCat production variable currently points at a V2-only key while the
-consumer calls an API v1 endpoint. The provider returns its explicit
-“incompatible with RevenueCat API V1” error, so this is both a leak-remediation
-item and a real runtime compatibility defect. The replacement must be installed
-and proven on every consumer before either old key is revoked.
+The RevenueCat production consumer is the `Anicca/API` service only. Its
+`fetchCustomerEntitlements`, `deleteSubscriber`, customer creation, balance, and
+virtual-currency transaction calls all use `/v2/projects/...`; the other checked
+production services contain no `REVENUECAT_*` secret. The replacement must
+therefore be a V2 key with only the read/write permissions required by those
+operations, and it must be installed and proven on that consumer before either
+old key is revoked.
 
 ## External security basis
 
@@ -99,10 +101,9 @@ This atomic becomes complete only after all rows below pass:
 
 | Order | Required proof | Current |
 |---:|---|---|
-| 1 | Create least-privilege replacement RevenueCat keys from the authenticated project | Blocked by provider password-reset rate limit (`429`) |
+| 1 | Create least-privilege V2 replacement RevenueCat keys from the authenticated project | Blocked by provider password-reset rate limit (`429`); an account-access request was sent by replying to RevenueCat's official reset email |
 | 2 | Update local and Railway consumers without stopping existing Mac loops | Pending |
 | 3 | Real API readback succeeds through each replacement consumer | Pending |
 | 4 | Revoke both historical RevenueCat secrets and observe provider rejection | Pending |
 | 5 | Re-run history/current-tree scans and the full PR workflow from the final commit | Pending |
 | 6 | Update the canonical spec from `current` to `verified`, commit, push, and read back green CI | Pending |
-
