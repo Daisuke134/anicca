@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "adapters": [
+    {
+      "adapter_id": "financial-report-telegram",
+      "loop_id": "financial.report",
+      "capability": "report.financial.telegram",
+      "effect_classes": [
+        "message"
+      ],
+      "module_ref": "lib/report-job-adapter.js",
+      "factory_export": "createFinancialReportLoopAdapter"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ const {
   buildSchedulerHolderToken,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
+  createWorkerHandlers,
 } = require("./runtime-up.js");
 
 const ROOT = path.join(__dirname, "../../..");
@@ -231,4 +232,37 @@ test("environment secret provider is tenant-scoped and resolves only declared re
     provider.get("tenant-a", "secret://telegram/raw-token"),
     /reference/i,
   );
+});
+
+test("worker handlers are routed through the configured loop adapter registry", async () => {
+  const calls = [];
+  const handlers = createWorkerHandlers(
+    { LM_RUNTIME_TENANT_ID: "tenant-a" },
+    ["fixture.execute"],
+    {
+      createRegistry({ servicesByAdapter }) {
+        calls.push({ kind: "registry", servicesByAdapter });
+        return {
+          hasCapability: (capability) => capability === "fixture.execute",
+          getByCapability: () => ({
+            execute: async (job) => {
+              calls.push({ kind: "execute", job });
+              return { receipt: { kind: "fixture" } };
+            },
+          }),
+        };
+      },
+    },
+  );
+
+  assert.equal(typeof handlers["fixture.execute"], "function");
+  assert.deepEqual(
+    await handlers["fixture.execute"]({ job_id: "job-a" }),
+    { receipt: { kind: "fixture" } },
+  );
+  assert.equal(calls[0].kind, "registry");
+  assert.deepEqual(calls[1], {
+    kind: "execute",
+    job: { job_id: "job-a" },
+  });
 });
