@@ -36,9 +36,32 @@ mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 # ── BROWSER ISOLATION (same lease system clip uses): take our own isolated context on :9222 so
 #    capafy never churns against clip/gig/Dais tabs on the shared daily-driver (churn = poison). ──
 BROWSER_SCRIPTS="$SCRIPT_DIR/../../browser/scripts"
+PROVISION_BROWSER="$SCRIPT_DIR/../../browser/ensure_provision_browser.sh"
+PROVISION_IDENTITY="${MKT_PROVISION_BROWSER_IDENTITY:-instagram:capafy-provision}"
+BROWSER_GUARD="${AI_BROWSER_GUARD:-$HOME/.config/ai/bin/browser-guard.sh}"
+ALERT_FILE="$HOME/.openclaw/state/.${INSTANCE}-ig-marketing-ALERT"
 CAPAFY_LEASE="capafy-$$"; export CAPAFY_LEASE
-trap 'python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" release "$CAPAFY_LEASE" >/dev/null 2>&1' EXIT
+PROVISION_LEASED="no"
+cleanup() {
+  python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" release "$CAPAFY_LEASE" >/dev/null 2>&1
+  [ "$PROVISION_LEASED" = "yes" ] && bash "$BROWSER_GUARD" release "$PROVISION_IDENTITY" >/dev/null 2>&1
+  return 0
+}
+trap cleanup EXIT
 python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" acquire "$CAPAFY_LEASE" >/dev/null 2>&1 || true
+# ── LOUD FAILURE (fixes the 11-day silence 2026-07-19..07-30) ─────────────────────────────────────
+# The old script wrote a provision_failed row and exited 0, so launchd, the logs and every dashboard
+# reported a clean pass while the loop had in fact posted nothing for 11 days. A pass that could not
+# do its job must SAY SO in its exit code, because rc=0 is the only thing an unattended supervisor
+# reads. The telemetry row stays (it is useful history); the lie about rc does not.
+alert_and_die() {
+  local reason="$1"
+  printf '%s %s\n' "$(date '+%F %T %Z')" "$reason" >>"$ALERT_FILE"
+  echo "ALERT: $reason" >>"$LOG"
+  bash "$SCRIPT_DIR/../../_shared/send-telegram.sh" \
+    "🚨 ${INSTANCE} IG marketing BLOCKED: ${reason} (pass exited non-zero; see $LOG)" >>"$LOG" 2>&1 || true
+  exit 1
+}
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 echo "account_state=$ACCOUNTS_FILE active_handle=${IG_HANDLE:-none} active_port=${IG_PORT:-none} provision_needed=$PROVISION_NEEDED reason=${PROVISION_REASON:-none}" >>"$LOG"
 if [ "${CAPAFY_IG_PROBE_ONLY:-0}" = "1" ]; then
@@ -89,15 +112,32 @@ then
   exit 0
 fi
 
+# ── PROVISIONING BROWSER (dynamic port, actually launched) ────────────────────────────────────────
+# A port is not a browser. The previous version passed a hardcoded IG_PROVISION_PORT=9332 that no
+# process in any skill ever listened on, so the agent correctly refused at preflight every single day.
+# Now the dedicated CloakBrowser is really launched (own clean profile, own launchd owner, port handed
+# out by the kernel and read back from DevToolsActivePort) and the port is only known at runtime.
+PROVISION_PORT=""
+if [ "$PROVISION_NEEDED" = "yes" ]; then
+  PROVISION_CDP_URL="$(bash "$PROVISION_BROWSER" "$PROVISION_IDENTITY" 2>>"$LOG")" \
+    || alert_and_die "provision browser unavailable for identity $PROVISION_IDENTITY"
+  PROVISION_LEASED="yes"
+  PROVISION_PORT="${PROVISION_CDP_URL##*:}"
+  case "$PROVISION_PORT" in ''|*[!0-9]*) alert_and_die "provision browser returned no usable port ('$PROVISION_CDP_URL')" ;; esac
+  echo "provision browser ready identity=$PROVISION_IDENTITY cdp=$PROVISION_CDP_URL port=$PROVISION_PORT" >>"$LOG"
+fi
+
+PROVISION_PROMPT="no provisioning this pass (provision_needed=no)"
+if [ "$PROVISION_NEEDED" = "yes" ]; then
 PROVISION_PROMPT="$(
   IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS_FILE" \
   IG_PROVISION_HANDLE_PREFIX="${MKT_HANDLE_PREFIX:-capafy}" \
   IG_PROVISION_INSTANCE="${MKT_INSTANCE:-capafy}" \
   IG_PROVISION_GMAIL_PLUS_TAG_PREFIX="${MKT_GMAIL_PLUS_TAG_PREFIX:-capafy}" \
   IG_PROVISION_BIO_TEXT="${MKT_BIO_TEXT:-one-line Claude-skills bio, NO link}" \
-  IG_PROVISION_PORT="9332" \
+  IG_PROVISION_PORT="$PROVISION_PORT" \
   IG_PROVISION_CONTEXT_ID="$CAPAFY_LEASE" \
-  IG_PROVISION_BROWSER_INSTRUCTIONS="Launch and use the dedicated CloakBrowser profile on :9332 for context '$CAPAFY_LEASE'. Never use or log in through the raw shared :9222 browser." \
+  IG_PROVISION_BROWSER_INSTRUCTIONS="The dedicated CloakBrowser for identity '$PROVISION_IDENTITY' is ALREADY RUNNING and leased for you at $PROVISION_CDP_URL (profile ~/.cloak/profiles/capafy-mkt-provision, port assigned dynamically at launch). Do NOT launch a browser yourself and do NOT look for any other port: attach to $PROVISION_CDP_URL and do all signup there. Never use or log in through the shared daily-driver browser (identity interactive:dais) or the gig browser (identity coconala:kosuke)." \
   IG_PROVISION_PROFILE_PREFIX="${MKT_PROFILE_PREFIX:-capafy-mkt}" \
   IG_PROVISION_COOKED_MARKER="$COOKED_MARKER" \
   IG_PROVISION_REASON="${PROVISION_REASON:-none}" \
@@ -105,7 +145,9 @@ PROVISION_PROMPT="$(
   IG_PROVISION_LAST_PASS_MARKER="$LAST_PASS_MARKER" \
   IG_PROVISION_TELEGRAM_TARGET="8547730585" \
   render_ig_provision_prompt
-)"
+)" || alert_and_die "provision prompt render failed (isolation preflight refused port=$PROVISION_PORT context=$CAPAFY_LEASE)"
+[ -n "$PROVISION_PROMPT" ] || alert_and_die "provision prompt rendered empty — refusing to run a provisioning pass with no instructions"
+fi
 
 PROMPT='You are the Anicca Capafy IG-marketing loop (headless; goal = drive Capafy skill subscribers via Instagram Reels; revenue → Dais bank; human NOT in loop). Triggered by launchd (ai.anicca.capafy-ig-marketing-daily). Active account SSOT is '"$ACCOUNTS_FILE"'; resolved handle='"${IG_HANDLE:-none}"', port='"${IG_PORT:-none}"'. NEVER use a Dais-personal account. The bash caller passed MODE='"${MODE_FLAG:-DRY}"'. If MODE=DRY, do not publish. Only MODE=--live may publish.
 
@@ -144,4 +186,19 @@ printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
 RC=$?
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$LAST_PASS_MARKER" 2>/dev/null || true
+
+# ── OUTCOME GATE ──────────────────────────────────────────────────────────────────────────────────
+# The agent can finish with status=ok while having accomplished nothing (measured: 8 consecutive
+# "ok" passes whose only action was appending a provision_failed row). So the SHELL, not the agent,
+# decides whether this pass succeeded, by re-reading the state the pass was supposed to change.
+if [ "$PROVISION_NEEDED" = "yes" ]; then
+  NEW_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
+  if [ -z "$NEW_HANDLE" ]; then
+    alert_and_die "provisioning pass produced no usable ready/warming account (reason=${PROVISION_REASON:-none}, agent rc=$RC) — see $EVIDENCE_DIR"
+  fi
+  echo "provisioning succeeded: active handle now $NEW_HANDLE" >>"$LOG"
+  rm -f "$ALERT_FILE" 2>/dev/null || true
+fi
+[ "$RC" -eq 0 ] || alert_and_die "agent runner exited rc=$RC — see $EVIDENCE_DIR"
+rm -f "$ALERT_FILE" 2>/dev/null || true
 exit 0
