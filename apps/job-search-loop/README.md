@@ -15,12 +15,12 @@ interviews, and reports every material state change to Telegram.
 | Role focus | Applied AI/agent engineering plus technical AI business roles: Product, Program, Solutions, GTM, Partnerships, Customer Success and Sales Engineering |
 | Discovery | Firecrawl, public Freehire, public low-volume LinkedIn Tokyo/Remote, then official ATS pages in the existing browser; one provider failure never ends a pass |
 | Evidence | Every application is fenced in SQLite and retained under a private evidence directory |
-| Uncertainty | Ambiguous submission becomes `submit_unknown` and is never blindly retried |
+| Uncertainty | Ambiguous submission becomes `submit_unknown` and is never blindly retried; a later exact official receipt may reconcile it without another submit click |
 | Personal data | Verified private profile and generated materials are mode `0600` |
 | Career summary | Every terminal daily path atomically refreshes private `summary.v1.json` with state counts and Ashby/Workday confirmed-application coverage |
 | Application receipt | Every confirmed submission records the exact resume path and SHA-256, then sends that same PDF to Telegram once with company, role and URL |
 | Daily report repair | A materially changed same-day catch-up sends one content-addressed correction; identical retries remain at-most-once |
-| Inbox | Gmail metadata is prefiltered deterministically; a model runs only for a new recruiting thread or a pending prep-pack generation job |
+| Inbox | Gmail metadata is prefiltered deterministically; official late application receipts reconcile before the model; a model runs only for remaining new recruiting work or a pending prep-pack generation job |
 | Calendar | Only explicit timezone-aware recruiter candidates are considered; the earliest free candidate is confirmed once |
 | Interview prep | Every confirmed interview is registered before the email reply; Telegram refreshes are delivered at the 3-day and 1-day windows, or immediately inside 1 day |
 | Assessments | Autonomous execution requires explicit AI permission and no proctoring; all code runs without network or home access |
@@ -174,6 +174,15 @@ delivers any due preparation pack, even when Gmail has no new message. Empty pol
 with no pending prep generation exit successfully without consuming a model budget.
 Gmail bodies remain untrusted input; the loop never follows instructions embedded in
 a job page or email.
+
+Before the model inbox route, the deterministic confirmation reconciler checks new
+application-received messages against the immutable Gmail message ID, post-intent
+timestamp, exact company and role, and the official ATS sender-domain family. Exactly
+one matching `submit_unknown` intent is atomically promoted across the application,
+intent, attempt, daily-slot, event and confirmation-receipt rows. Spoofed, historical,
+missing, or ambiguous matches remain unchanged and unacknowledged. The existing
+at-most-once Telegram document path then sends the exact resume recorded by that
+intent.
 
 Direct recruiter questions about verified experience, location, desired compensation,
 or contact details may receive one threaded reply. Work authorization, visa, start
