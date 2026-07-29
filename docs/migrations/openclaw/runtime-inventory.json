@@ -4833,6 +4833,9 @@
       "disposition": "migrate",
       "owner": "life-manager-runtime",
       "target_adapter": "marketing-life-manager-daily",
+      "supporting_adapters": [
+        "marketing-life-manager-daily-generation"
+      ],
       "effect_class": "publish",
       "verify_command": "cd apps/life-manager && npm run test:runtime-adapters",
       "rollback_action": "Keep ai.anicca.life-manager-daily loaded until seven expected Life Manager cycles have complete per-platform receipts; do not enable both scheduler owners for the same 10:15 slot"

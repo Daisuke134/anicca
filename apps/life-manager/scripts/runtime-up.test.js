@@ -9,6 +9,7 @@ const {
   validateComposeModel,
   runRuntimeUp,
   buildSchedulerHolderToken,
+  marketingGenerationDueDate,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
@@ -186,6 +187,21 @@ test("scheduler holder token changes on every process start even in the same con
   );
 });
 
+test("daily marketing generation becomes due at 10:15 JST and never before", () => {
+  assert.equal(
+    marketingGenerationDueDate(Date.parse("2026-07-30T01:14:59.000Z")),
+    null,
+  );
+  assert.equal(
+    marketingGenerationDueDate(Date.parse("2026-07-30T01:15:00.000Z")),
+    "2026-07-30",
+  );
+  assert.equal(
+    marketingGenerationDueDate(Date.parse("2026-07-30T14:59:00.000Z")),
+    "2026-07-30",
+  );
+});
+
 test("capability worker completes a registered financial report with only its safe receipt", async () => {
   const calls = [];
   const job = {
@@ -217,6 +233,30 @@ test("capability worker completes a registered financial report with only its sa
     message_id: 44,
     snapshot_hash: "a".repeat(64),
   });
+});
+
+test("a registered no-effect capability executes its adapter instead of becoming a runtime noop", async () => {
+  const calls = [];
+  await executeCapabilityJob({
+    tenant_id: "tenant-a",
+    job_id: "generation-a",
+    attempt: 1,
+    capability: "marketing.life-manager.daily.generate",
+    effect_class: "none",
+  }, {
+    workerId: "worker-a",
+    handlers: {
+      "marketing.life-manager.daily.generate": async () => ({
+        receipt: { kind: "marketing_daily_generation", status: "rendered" },
+      }),
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].kind, "complete");
+  assert.equal(calls[0].input.receipt.kind, "marketing_daily_generation");
 });
 
 test("environment secret provider is tenant-scoped and resolves only declared refs", async () => {

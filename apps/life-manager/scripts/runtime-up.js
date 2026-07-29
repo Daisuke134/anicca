@@ -145,6 +145,24 @@ function buildSchedulerHolderToken(
   return `${ownerId}:${hostname}:${uuidFactory()}`;
 }
 
+function marketingGenerationDueDate(nowMs, timeZone = "Asia/Tokyo") {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value]),
+  );
+  const hour = Number(parts.hour);
+  const minute = Number(parts.minute);
+  if (hour < 10 || (hour === 10 && minute < 15)) return null;
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function createHealthServer(port, state) {
   const server = http.createServer((request, response) => {
     if (request.url !== "/health") {
@@ -204,19 +222,19 @@ async function executeCapabilityJob(job, services) {
     attempt: job.attempt,
     workerId,
   };
-  if (job.effect_class === "none") {
-    await completeJob({
-      ...identity,
-      receipt: {
-        kind: "runtime_noop",
-        worker_id: workerId,
-        completed_at: new Date().toISOString(),
-      },
-    }, storeOptions);
-    return;
-  }
   const handler = handlers[job.capability];
   if (typeof handler !== "function") {
+    if (job.effect_class === "none") {
+      await completeJob({
+        ...identity,
+        receipt: {
+          kind: "runtime_noop",
+          worker_id: workerId,
+          completed_at: new Date().toISOString(),
+        },
+      }, storeOptions);
+      return;
+    }
     await failJob({
       ...identity,
       errorCode: "CAPABILITY_ADAPTER_UNAVAILABLE",
@@ -299,6 +317,12 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       },
     };
   }
+  if (capabilities.includes("marketing.life-manager.daily.generate")) {
+    servicesByAdapter["marketing-life-manager-daily-generation"] = {
+      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+      pythonBin: String(env.PYTHON_BIN || "python3"),
+    };
+  }
   const createRegistry = dependencies.createRegistry || (
     require("../lib/loop-adapter-registry.js").createConfiguredLoopAdapterRegistry
   );
@@ -348,7 +372,7 @@ async function runCapabilityWorker(env = process.env) {
         workerId,
         capabilities,
         limit: 1,
-        leaseSeconds: 60,
+        leaseSeconds: Number(env.LM_WORKER_LEASE_SECONDS || 300),
       }, opts);
       for (const job of jobs) {
         await executeCapabilityJob(job, {
@@ -425,6 +449,51 @@ async function runSchedulerOwner(env = process.env) {
     }, financialIntervalMs);
   }
 
+  const marketingGenerationEnabled = String(
+    env.LM_MARKETING_GENERATION_ENABLED || "false",
+  ).trim().toLowerCase() === "true";
+  const marketingGenerationPollMs = Number(
+    env.LM_MARKETING_GENERATION_POLL_MS || 60000,
+  );
+  let marketingGenerationTimer;
+  async function enqueueMarketingGeneration() {
+    if (!marketingGenerationEnabled) return;
+    const date = marketingGenerationDueDate(
+      Date.now(),
+      String(env.LM_MARKETING_GENERATION_TIME_ZONE || "Asia/Tokyo"),
+    );
+    if (!date) return;
+    const { enqueueJob } = require("../lib/runtime-job-store.js");
+    const {
+      buildMarketingDailyGenerationJob,
+    } = require("../lib/marketing-daily-generation-adapter.js");
+    const job = buildMarketingDailyGenerationJob({
+      tenantId: requiredEnv(env, "LM_RUNTIME_TENANT_ID"),
+      date,
+      bankRef: requiredEnv(env, "LM_MARKETING_GENERATION_BANK_REF"),
+      callAudioRef: requiredEnv(env, "LM_MARKETING_GENERATION_CALL_AUDIO_REF"),
+      stockRef: requiredEnv(env, "LM_MARKETING_GENERATION_STOCK_REF"),
+      telegramProofRef: requiredEnv(env, "LM_MARKETING_GENERATION_TELEGRAM_PROOF_REF"),
+      whisperAssRef: requiredEnv(env, "LM_MARKETING_GENERATION_WHISPER_ASS_REF"),
+    });
+    await enqueueJob({
+      jobId: job.job_id,
+      tenantId: job.tenant_id,
+      loopId: job.loop_id,
+      capability: job.capability,
+      effectClass: job.effect_class,
+      effectKey: job.effect_key,
+      inputRefs: job.input_refs,
+      maxAttempts: job.max_attempts,
+    }, { query: pool.query.bind(pool) });
+  }
+  await enqueueMarketingGeneration();
+  if (marketingGenerationEnabled) {
+    marketingGenerationTimer = setInterval(() => {
+      enqueueMarketingGeneration().catch(() => {});
+    }, marketingGenerationPollMs);
+  }
+
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
     env: {
@@ -453,6 +522,7 @@ async function runSchedulerOwner(env = process.env) {
     stopping = true;
     clearInterval(renew);
     if (financialTimer) clearInterval(financialTimer);
+    if (marketingGenerationTimer) clearInterval(marketingGenerationTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(
@@ -492,6 +562,7 @@ module.exports = {
   validateComposeModel,
   runRuntimeUp,
   buildSchedulerHolderToken,
+  marketingGenerationDueDate,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
   executeCapabilityJob,
