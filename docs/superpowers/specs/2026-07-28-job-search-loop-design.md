@@ -343,6 +343,27 @@ from 231,212 to 324,632 against a 262,144 configured limit. The next pass blocks
 but strict pre-spend enforcement remains a numbered follow-up rather than being
 misreported as solved by 10I.
 
+### 4.5.2 Conservative pre-spend budget admission
+
+`JOB-BUDGET-HARD-CAP-10J` fixes the budget defect observed by the 10I live pass.
+The ledger already blocks when `daily_consumed + reservation > daily_limit` and
+truthfully replaces a reservation with provider-reported usage at settlement. The
+defect was the caller's 24,576-token task estimate: it was not an upper bound for a
+browser pass whose configured limit was 98,304.
+
+| Decision | Source | Core quote |
+|---|---|---|
+| Use the live overrun as the regression fixture | [`2026-07-29-order10i-live-summary.json`](../../evidence/job-search-loop/2026-07-29-order10i-live-summary.json) | “Admission used a reservation smaller than the possible provider-reported charge” |
+| Reserve before the external side effect | [AlgoPay SDK](https://github.com/Algodev-Studio/algopay-sdk/blob/fd95a38b156ad1fcb6eda31c02896dd66498503a/python/src/algopay/client.py) | `reservation_tokens = await guards_chain.reserve(context)` |
+| Treat a reservation as secured capacity | [Stripe manual capture](https://docs.stripe.com/payments/place-a-hold-on-a-payment-method) | “決済のオーソリにより、顧客の支払い方法で金額が確保されて保証されます。” |
+
+When token budgeting is enabled, each provider attempt now reserves the full
+configured per-pass limit before launch. The smaller task-class reservation remains
+an unbudgeted planning estimate. Settlement still replaces the hold with actual
+provider-reported charge, but a later fallback cannot launch unless the remaining
+pass and daily pools can again cover the full pass maximum. This intentionally
+prefers a hard pre-spend stop over an unbounded fallback.
+
 ### 4.6 Portable local installation
 
 `JOB-PORTABLE-LOCAL-12A` is the first Order 12 increment. It turns the checked-out
