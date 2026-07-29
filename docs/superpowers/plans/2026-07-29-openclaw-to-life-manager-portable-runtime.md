@@ -115,33 +115,54 @@ Expected: no runtime dependency match. Legacy names may appear only in
 - Create: `apps/life-manager/lib/runtime-job-store.test.js`
 - Create: `apps/life-manager/lib/effect-reconciler.js`
 - Create: `apps/life-manager/lib/effect-reconciler.test.js`
+- Create: `apps/life-manager/test/postgres/runtime-job-protocol.integration.sh`
+- Modify: `apps/life-manager/package.json`
 
 **Interfaces:**
 - Consumes: PostgreSQL client and jobs containing `job_id`, `tenant_id`, `loop_id`, `capability`, `effect_class`, `input_refs`, `max_attempts`.
 - Produces: `enqueueJob`, `claimJobs`, `heartbeatJob`, `completeJob`, `failJob`, `reconcileUnknownEffect`, and immutable receipt rows keyed by `job_id + attempt`.
 
-- [ ] **Step 1: Write contract tests**
+- [x] **Step 1: Write contract tests**
 
 Cover idempotent enqueue, capability filtering, lease expiry, one claimant, bounded retry, dead-letter, tenant scoping, immutable receipts, and unknown-effect reconciliation.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test lib/runtime-job-store.test.js lib/effect-reconciler.test.js
 ```
 
-- [ ] **Step 3: Add the SQL schema**
+- [x] **Step 3: Add the SQL schema**
 
 Use unique constraints for `job_id` and external-effect idempotency keys. Claims use one atomic `UPDATE ... WHERE ... RETURNING`; do not use PostgreSQL advisory locks through a connection pool.
 
-- [ ] **Step 4: Implement store and reconciler**
+- [x] **Step 4: Implement store and reconciler**
 
 `publish`, `message`, and `money` effects enter `reconciling` after an unknown response. They may retry only when the adapter proves the first attempt did not occur.
 
-- [ ] **Step 5: Verify restart semantics and commit**
+- [x] **Step 5: Verify restart semantics and commit**
 
 Run the focused tests twice against the same temporary database and prove the second pass creates no duplicate receipt or effect.
+
+**Verification:** focused contract suite passed twice (`9/9` each);
+the disposable PostgreSQL 18 gate passed two idempotent enqueue passes plus
+tenant isolation, one-claimant concurrency, non-effect lease recovery,
+bounded retry/dead-letter, external-effect quarantine/reconciliation, and
+receipt immutability. A regression test first exposed and then closed the
+commit-acknowledgement gap: repeating the same provider proof now returns the
+same receipt outcome without creating another receipt. The complete
+`apps/life-manager` test command passed with the new suite wired into `npm test`.
+
+**Implementation basis:**
+- [PostgreSQL `SELECT`](https://www.postgresql.org/docs/current/sql-select.html):
+  “SKIP LOCKED” can avoid lock contention for multiple consumers of a
+  queue-like table.
+- [PostgreSQL `INSERT`](https://www.postgresql.org/docs/current/sql-insert.html):
+  `ON CONFLICT DO UPDATE` guarantees an atomic insert-or-update outcome under
+  concurrency.
+- [PostgreSQL `RETURNING`](https://www.postgresql.org/docs/current/dml-returning.html):
+  `RETURNING` avoids a second query to identify modified rows reliably.
 
 ### Task 4: Build the reproducible local deployment
 
