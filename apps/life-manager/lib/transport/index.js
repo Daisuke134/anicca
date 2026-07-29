@@ -47,7 +47,7 @@ function getCalendar(opts = {}) {
   if ((process.env.LM_CAL_CACHE || "").toLowerCase() === "off") return inner;
 
   const identity = kind === "gog"
-    ? [kind, opts.account || process.env.GOG_ACCOUNT || "", opts.bin || process.env.GOG_BIN || "gog", opts.calId || "primary"]
+    ? [kind, opts.account !== undefined ? opts.account : (process.env.GOG_ACCOUNT || ""), opts.bin || process.env.GOG_BIN || "gog", opts.calId || "primary"]
     : kind === "unipile"
       ? [kind, unipileOpts.accountId || "", unipileOpts.token || "", unipileOpts.dsn || ""]
       : [kind, opts.apiKey || process.env.COMPOSIO_API_KEY || ""];
