@@ -2,25 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>method</key>
-	<string>app-store-connect</string>
-
-	<key>teamID</key>
-	<string>S5U8UH3JLJ</string>
-
-	<key>signingStyle</key>
-	<string>automatic</string>
-
-	<key>uploadSymbols</key>
-	<true/>
-
-	<key>stripSwiftSymbols</key>
-	<true/>
-
-	<key>generateAppStoreInformation</key>
-	<true/>
-
 	<key>destination</key>
 	<string>export</string>
+	<key>generateAppStoreInformation</key>
+	<true/>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.aniccafactory.deskstretch</key>
+		<string>DeskStretch AppStore 1785338755</string>
+	</dict>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>teamID</key>
+	<string>S5U8UH3JLJ</string>
+	<key>uploadSymbols</key>
+	<true/>
 </dict>
 </plist>
