@@ -121,6 +121,7 @@ Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveが�
 | MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
 | bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
 | self-contained OSS / multi-tenant cloud移行 | 本spec §0.4.6 `OSS-MERGE-1`→`LOCAL-CLOUD-PARITY-1`→`CLOUD-LOOPS-1`→`LEGACY-RETIRE-1` | 存在しない旧migration spec参照は廃止。現在の順序とdone条件を§0.4.6/§2.2に一本化 |
+| runtime / payment provider / ideal folder tree | 本spec §0.4a / §2 | BlockRun・Franklin・x402・signerの役割やtreeを他節へ複製せず参照する |
 | Life Manager product build | 本spec §9/§10 | cloud migration infra TODOと混ぜない |
 
 ### 0.4 Agent Economy Earnings SSOT
@@ -128,6 +129,53 @@ Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveが�
 本節が、Claude / Codex / Franklin / Life Manager の「いくら稼いでいるか」「何を利益と数えるか」
 「$1k / $10k / $20k へ何が要るか」の**唯一の live 正本**である。残高を収益、回収元本を利益、
 subscription 売上を agent 自身の稼ぎとして扱わない。
+
+### 0.4a Runtime / payment provider decision — x402をcore、BlockRunを交換可能adapterにする
+
+**単一決定**: Life Manager自身がidentity、tenant wallet、signer policy、ledger、earning、spawnを所有する。
+支払protocolのcoreはvendor-neutralなx402公式SDKとし、BlockRunはmodel・data・sandbox等をwalletで買う
+`provider adapter`の1つとして使う。Franklinは本番依存でも別productでもなく、同じ契約を実環境で破壊検証する
+reference citizen / benchmarkである。
+
+| Layer | 採用 | 採用しないもの |
+|---|---|---|
+| identity / custody | Life Managerのtenant別wallet + signer reference。localはOS権限付きfile、cloudはtenant隔離signer/KMS | Franklin wallet、BlockRunのglobal walletをtenant identityに流用 |
+| payment protocol | `@x402/core` + EVM/SVM schemeをtenant signerごとに生成。policy/hookでcap・receipt・ledgerを強制 | 特定gatewayだけが理解するpayment実装をcoreに埋め込む |
+| paid intelligence | `adapters/providers/blockrun/`からBlockRun endpointを呼ぶ。free/local modelと他x402 providerへfallback | BlockRun停止時にLife Manager全体が停止するsingle-vendor構造 |
+| local OSS convenience | 1 user = 1 isolated runtimeではBlockRun CLI / ClawRouterを任意利用可 | BlockRun CLIのprivate key返却APIをLife Manager domainへ漏らす |
+| multi-tenant cloud | Life Manager-owned signerを公式x402 clientへ注入し、providerには署名済みpayloadだけを送る | `~/.blockrun/.session`共有、dot-directory wallet自動scan、envへtenant秘密鍵を常駐 |
+| earning / accounting | Life Manager Earning OSがSELL / WORK / CAPITAL、external verifier、ledger、payoutを所有 | BlockRunのcost logをLife Manager収益台帳の正本にする |
+| Franklin | Level 3までのcloud survival、wallet spend、replacementを再現する非blocking reference track | Life Manager出荷やself-spawnの必須runtime |
+
+**BlockRun CLI fit判定**:
+
+- **良いfit**: local単一user、walletからAI model/data/sandboxを買う、quote、per-call/daily/monthly cap、実費log。
+- **悪いfit**: multi-tenant custody。`packages/core/src/wallet.ts`は`WalletInfo`にprivate keyを含み、
+  `~/.*/wallet.json`を走査し、`~/.blockrun/.session`を単一正本にする。`BLOCKRUN_HOME`でprocess単位隔離は可能だが、
+  tenant cloudの恒久custody境界にはしない。
+- **coreにより良いfit**: x402 Foundation公式client。network/schemeごとにclientを登録し、payment policy、
+  before/after hook、signer注入を提供するため、tenant境界・spend cap・exactly-once receiptをLife Manager側で強制できる。
+
+Life Manager provider contractは全adapterで同じ5操作に固定する:
+
+```text
+capabilities() → quote(request) → execute(request, signerRef, policy)
+                                → verify(receipt) → health()
+```
+
+`execute`は`tenant_id / agent_id / wallet_address / signer_ref / budget_policy / idempotency_key`を必須入力とし、
+adapterがwallet探索・生成・選択をしてはならない。provider responseは候補証拠であり、on-chain receiptと
+Life Manager ledgerの一致をもって支払完了にする。
+
+根拠（一次ソース）:
+- x402 Foundation — https://github.com/x402-foundation/x402 —
+  “It will never force reliance on a single party.” / protocol coreを特定providerへ固定しない。
+- x402 client source — https://github.com/x402-foundation/x402/blob/main/typescript/packages/core/src/client/x402Client.ts —
+  “Policies are applied in order before the selector chooses the final option.” / tenant policyを支払payload作成前に強制できる。
+- BlockRun core wallet source — https://github.com/BlockRunAI/blockrun-cli/blob/master/packages/core/src/wallet.ts —
+  “Wallet reading — the single source of truth.” / local単一walletの利点でありmulti-tenant cloudの境界には不足。
+- BlockRun CLI x402 source — https://github.com/BlockRunAI/blockrun-cli/blob/master/packages/cli/src/commands/x402.ts —
+  “Safety ceiling: refuse to auto-pay quotes above this” / quote・cap付きlocal購買adapterとして再利用価値がある。
 
 #### 0.4.1 Overview
 
@@ -280,39 +328,7 @@ distribution・有料需要・単価・粗利をagentが作った後にだけ成
 | surplus | 事前policy内なら自動送金し、receiptをchatへreport | destination/receipt/pauseを即時反映 | payoutはexpense、revenueではない |
 | deficit | 黙って賭けを増やさず、burn削減→SELL改善→停止をchatへ正直にreport | runwayと停止理由を即時反映 | lossを0にクランプしない |
 
-**理想 folder tree（Life Manager product/runtime）**
-
-```text
-life-manager/
-├── apps/
-│   └── life-manager/
-│       ├── chat/                # existing Telegram handlers、reports、closed Q
-│       ├── panel/               # permanent realtime overview/control
-│       ├── api/                 # tenant境界付きcommand/read endpoints
-│       ├── worker/              # cloud executor
-│       └── migrations/
-├── runtime/
-│   ├── agent/                   # provider-neutral planner/executor
-│   ├── browser/                 # Steel/CDP
-│   ├── loops/                   # recurring autonomous work
-│   ├── wallet/                  # Base/Solana identity、署名、残高
-│   ├── ledger/                  # journal、P&L、provenance
-│   ├── policy/                  # consent、spend/loss cap、rail gates
-│   ├── reporting/               # chat-first daily/weekly/monthly
-│   └── citizens/
-│       └── franklin/            # reference citizen。別productではない
-├── skills/
-│   ├── core/                    # human credential不要
-│   ├── gated/                   # user委任/KYC/fiatが必要
-│   └── registry.json
-├── adapters/                    # chat/browser/bank/code host/deploy/app store
-├── install.sh
-├── start-local.sh
-├── tests/
-└── docs/
-    ├── superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md
-    └── evidence/                # receipt/hash/snapshot。秘密鍵・PIIは禁止
-```
+**理想 folder treeの正本 → §2。** Franklin専用runtime treeを作らず、reference evidenceだけを保持する。
 
 **理想 end-to-end ASCII**
 
@@ -521,10 +537,11 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 1 | **AE-ZERO-START-1** | Life Manager tenant作成時にBase/Solana walletを生成し、公開address・残高`$0.00`・開始railを既存Telegramへ自動report。seedなしでx402 SELL / fee-free WORK / incoming-payment watchを開始 | tenant A/Bのwallet/key/ledger交差0、private keyのDB/repo/log/TG 0、実TG address+explorer link、残高0の実worker wake、入金なしでも`started`。任意入金は`capital_in/revenue 0` | **current**。現13aは単一local wallet、TGはuser payout先質問だけで、per-tenant agent address通知は未実装 |
 | 2 | **AE-X402-TENANT-ROUTING-1** | x402 offerごとの`payTo`をtenant agent walletへ束縛し、seller・offer・payer・receipt・tenant ledgerを一意に結ぶ | tenant A商品をcolony外buyerが購入→A wallet着金→A ledger 1行、B wallet/ledger 0。self-pay/internal transferはrevenue 0 | pending。最初のexternal sale `$0.01`は現seller `0x6592…`へ着金し、tenant `0x477E…`へ帰属できない |
 | 3 | **AE-CLOUD-CUSTODY-1** | cloudでtenant別signerを隔離し、DBにはpublic address/key reference/policyだけを保存 | plaintext private keyのSupabase/repo/log/trace 0、tenant A/B cross-sign 0、spend/loss cap fail closed、rotation/recovery receipt | pending |
-| 4 | **AE-PUBLICATION-REFRESH-1** | article/slideを同じlive snapshotへ更新してwebsiteへpublish | `$0.01`/Franklin `$0.00`/running 0/highest proven 3の差0、PPTX/PDF visual QA、public article URL HTTP 200 | pending。GitHub sourceはpublicだがwebsite routeは404 |
-| 5 | **FRANKLIN-CONTINUITY-1** | `G8uw…`終了後にchainが止まった原因を閉じ、reserve floorを破らず次jobへ継続する | running→successor running→old state 2を2回連続、Telegram/ledgerにcost・funding source・停止理由、外部収益とbootstrapを分離 | pending。current Nosana running 0 |
-| ~~6~~ | **SHELTER-REPLACE-1** | 6h ceiling前に次のNosana jobをagent walletから作り、confidential delivery・service readback後に旧jobを終了して切れ目なく住み替える | Mac Franklin1 unloadedのまま、old running→new running→old state 2、new root / statement / heartbeats HTTP 200、heartbeat署名、二重job上限、reserve floor、失敗時旧job維持 | ✅ controller handoverと`72zCp…→G8uw…`の自然triggerをmainnet実証。1回の能力証明であり永久継続の証明ではない |
-| ~~7~~ | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | ✅ PR #1246、実wake exit 0、cost 0、訂正行1、owned count不変 |
+| 4 | **AE-PROVIDER-ADAPTER-1** | x402公式clientをcoreにし、BlockRunをwallet非所有のoptional provider adapterとして接続。local CLI modeとcloud tenant signer modeを分離 | BlockRun有/無で同じrequest contract、provider fallback、quote/cap/receipt/health、tenant A/B signer交差0、BlockRun停止時もfree/local coreとSELL/WORK/watchが継続 | pending。現compute-proxyはClawRouter/BlockRunを使うが、tenant signerとprovider購買の境界が未分離 |
+| 5 | **AE-PUBLICATION-REFRESH-1** | article/slideを同じlive snapshotへ更新してwebsiteへpublish | `$0.01`/Franklin `$0.00`/running 0/highest proven 3の差0、PPTX/PDF visual QA、public article URL HTTP 200 | pending。GitHub sourceはpublicだがwebsite routeは404 |
+| 6 | **FRANKLIN-CONTINUITY-1** | reference benchmarkとして`G8uw…`終了後にchainが止まった原因を閉じ、reserve floorを破らず次jobへ継続する | running→successor running→old state 2を2回連続、Telegram/ledgerにcost・funding source・停止理由、外部収益とbootstrapを分離 | pending / **nonblocking reference track**。current Nosana running 0で、Life Manager product出荷条件にはしない |
+| ~~7~~ | **SHELTER-REPLACE-1** | 6h ceiling前に次のNosana jobをagent walletから作り、confidential delivery・service readback後に旧jobを終了して切れ目なく住み替える | Mac Franklin1 unloadedのまま、old running→new running→old state 2、new root / statement / heartbeats HTTP 200、heartbeat署名、二重job上限、reserve floor、失敗時旧job維持 | ✅ controller handoverと`72zCp…→G8uw…`の自然triggerをmainnet実証。1回の能力証明であり永久継続の証明ではない |
+| ~~8~~ | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | ✅ PR #1246、実wake exit 0、cost 0、訂正行1、owned count不変 |
 
 **Current Agent Economy build cursor: AE-ZERO-START-1.** 外部eventを待たず、上表を番号順に進める。
 収益・award・buyer発生は下の自動成果gateで観測し、実装cursorを止めない。
@@ -583,16 +600,56 @@ SCALE-1を30日実証した後に実単価・conversion・marginから次の一�
 ```
 life-manager/               ← 唯一のLife Manager source / build / release場所
   apps/
-    life-manager/           ← web app / API / tenant runtime / Railway deployment
-  runtime/                  ← agent loop / scheduler / compute / ledger / self-heal
-  skills/                   ← life organs + browser + earn + self-development
+    life-manager/           ← product control plane / Railway deployment
+      server.js             ← chat・panel・APIの同一tenant-scoped入口
+      lib/
+        agent-wallet.js     ← address生成・redaction。cloud signerの秘密鍵は保持しない
+        earnings-ledger.js  ← revenue / cost / loss / capital / payoutの正本
+        telegram*.js        ← command / closed Q / action receipt / report
+        panel*.js           ← 同じcommand・ledgerのrealtime audit/control view
+      scripts/              ← report / observer / payout worker entrypoints
+      migrations/           ← tenant / wallet ref / ledger / receipt / policy schema
+      public/               ← `/panel` presentation。secret・raw provider log 0
+      test/ + eval/         ← tenant isolation / privacy / semantic outcome E2E
+  runtime/
+    loop/                   ← decide→act→verify→ledger→report
+    compute-proxy/          ← free/local/frontier model routing
+    providers/              ← provider-neutral execution contract
+    signer/                 ← local file signer / cloud KMS signer interface
+    monitor/                ← survival / runway / provider health / self-heal
+  adapters/
+    providers/
+      blockrun/             ← model/data/sandbox購買。optional、wallet非所有
+      x402-direct/          ← x402公式client + tenant signer
+      nosana/               ← optional shelter/job runtime
+    state/
+      supabase/             ← durable tenant/ledger/receipt adapter
+    hosting/
+      railway/              ← control plane deploy/readback
+  skills/
+    life-manager/           ← DAILY / PHYSICAL / MENTAL orchestration
+    earn/                   ← SELL / WORK / CAPITAL
+    economy/                ← market/gig discovery・delivery・settlement
+    self/
+      spawn/                ← surplus-gated independent child
+      self-improve/         ← generalized lesson promotion
+    ubi/                    ← verified-surplus distributionのみ
+  services/
+    x402-endpoint/          ← seller/resource server
+    facilitator/            ← optional self-hosted settlement
   install.sh                ← one-command local OSS install
   start-local.sh            ← local runtime entrypoint
-  docs/                     ← specs / STATUS / public evidence
+  docs/
+    superpowers/specs/      ← decision / TODO SSOT
+    evidence/               ← redacted receipt / verification
+    articles/ + presentations/
 ```
 
-`packages/engine` / `packages/installer`を新しい抽象として作ること自体をdone条件にしない。現在のcanonical treeである
-`runtime/`、`skills/`、`install.sh`、`start-local.sh`を正本とし、別repoからcopyして初めて動く部分だけをこのtreeへ吸収する。
+これは**目標境界**であり、folder移動だけをdoneにしない。既存の`apps/life-manager/lib`、
+`runtime/compute-proxy`、`skills/earn`、`services/x402-endpoint`を動かしたまま、変更対象の責務から
+`adapters/providers/*`と`runtime/signer/*`へ段階分離する。`packages/engine` / `packages/installer`を新しい抽象として
+作ること自体をdone条件にせず、現在のcanonical `runtime/`、`skills/`、`install.sh`、`start-local.sh`を正本とする。
+Franklin source treeやBlockRun CLIをvendor copyせず、公開contractを通すadapterだけを保持する。
 
 **完全mergeの意味**: Life Managerを実行・build・test・deployするために必要な公開可能code、prompt、skill、schema、
 migration、installer、test、infra config、docsはすべてこのrepoに存在する。fresh machineは
@@ -799,6 +856,45 @@ Life Manager: [恒久のリアルタイム全体画面を開く]
 credential/connectorなしuserはcore/cryptoだけを実行し、bank・KYC・product repo・calendar・health context等を
 委任したuserは該当actionだけが実行可能になる。この違いは新しいbox catalogではなく、既存chatのcommand結果・質問・
 reportとpanelのstateへ反映する。Anicca/HonneはDais tenantのexternal product referenceであり、public UIの固定labelではない。
+
+**ideal outcome UX — userはagent infrastructureを管理しない**
+
+```text
+[signup]
+   └→ tenant identity + Base/Solana public addressを自動生成
+       └→ 残高 $0.00で free brain / SELL / fee-free WORK / incoming watch開始
+           └→ chatへ「開始したこと・公開address・現在$0」を1通だけreport
+               └→ external receiptごとに gross / cost / net / tx を事後report
+                   └→ SELF-FUNDED（compute + hosting + reserveを自己負担）
+                       └→ SURPLUS（user payout / agent BI）
+                           └→ SPAWN ELIGIBLE（独立childを作れる）
+```
+
+userへ`BlockRun`、`x402 facilitator`、`Railway`、`Nosana`等のprovider選択を要求しない。Life Managerが
+capability、価格、health、privacy policyから選び、panelの「実行基盤」詳細で後から監査可能にする。
+provider名をchatへ出すのは、支払receipt、障害、本人操作が必要な時だけである。
+
+**panelの情報階層（mobile first）**
+
+| 優先 | surface | 表示 |
+|---:|---|---|
+| 1 | `Today` | 次にLife Managerがすること、完了した生活outcome、本人対応が必要な1件だけ |
+| 2 | `Health` | FINANCIAL / PHYSICAL / MENTALを活動量でなくoutcomeと理由で表示 |
+| 3 | `Financial Agent` | earned today/month、compute、hosting、loss、net、runway、reserve、self-funded ratio、payout、explorer |
+| 4 | `Autonomy` | `BOOTSTRAPPED → EARNING → COST-COVERING → SELF-FUNDED → SURPLUS → SPAWN-ELIGIBLE`と次gate |
+| 5 | `Privacy & Control` | data locality、connector scope、budget、pause、revoke、key rotation。private key表示/exportは別の強い本人確認 |
+| 6 | `Fleet / Wisdom` | childごとの独立wallet/runtime/P&Lと、共有した一般化lesson。個人raw dataは表示も送信もしない |
+
+**one wisdom / many sovereign instances**: 世界全体で共有するのはversioned recipe、test、失敗class、
+匿名化されたoutcome統計だけである。各Life Managerの会話、calendar、health record、位置、wallet key、ledgerは
+tenant private vaultに残す。個人最適化には最小限の個人contextが必要だが、global wisdom layerは誰のdataかを知らず、
+cloudへ送る必要があるrequestも目的限定・短命・no-log contractにする。
+
+根拠（一次ソース）:
+- Apple Private Cloud Compute — https://security.apple.com/blog/private-cloud-compute/ —
+  “personal data leaves no trace in the PCC system.” / cloud個人処理を目的限定・非保持にする。
+- NIST Privacy Framework — https://www.nist.gov/privacy-framework —
+  “improve individuals’ privacy through enterprise risk management” / privacyをcopyではなくrisk・control・evidenceとして扱う。
 
 **existing Telegram reporting contract**
 
@@ -1130,7 +1226,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 **★Agent Economyの現在の実行順の正本 = §0.4.6。★**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
 Agent Economyは収益・日数・自然検知を待って止まらず、zero-start tenant wallet、tenant x402 routing、
-cloud custody、publication refresh、Franklin continuityを番号順に閉じる。汎用cloud browser以降は
+cloud custody、provider adapter、publication refreshを番号順に閉じ、Franklin continuityはnonblocking referenceとして追う。汎用cloud browser以降は
 Life Manager product trackであり、Agent Economy cursorへ混ぜない。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
@@ -1147,7 +1243,8 @@ bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal�
 fresh Nosana APIはrunning 0である。
 Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
-Agent Economyの今すぐ実装できるatomicは§0.4.6の5件。AE-ZERO-START-1から順に実装し、自動成果gateも並行監視する。
+Agent Economyの今すぐ実装できるatomicは§0.4.6の6件。product blocking 5件をAE-ZERO-START-1から順に実装し、
+Franklin continuityはnonblocking referenceとして並行監視する。
 Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化した後、
 BROWSER-AUTH-1をproduction queueの実Luma proofから再開する。既存Telegram chatと恒久realtime `/panel` の
 契約は§9.4/§9.9へ統一済みであり、新規chat UI taskは置かない。
