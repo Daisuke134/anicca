@@ -281,6 +281,8 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
             "caption_sha256": caption_hash,
             "platform": platform,
             "public_url": existing["public_url"],
+            "provider_post_id": existing.get("provider_id"),
+            "provider_route": existing.get("route"),
             "provider_reconciled": True,
         }
 
@@ -348,6 +350,8 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
         "caption_sha256": caption_hash,
         "platform": platform,
         "public_url": published["public_url"],
+        "provider_post_id": published.get("provider_id"),
+        "provider_route": published.get("route"),
         "provider_reconciled": published.get("provider_reconciled") is True,
     }
 

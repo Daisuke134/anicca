@@ -66,7 +66,7 @@ class DistributionTests(unittest.TestCase):
             "#!/usr/bin/env python3\n"
             "import json,os,sys\n"
             "open(os.environ['CALLS'],'a').write(json.dumps({'platform':'instagram','argv':sys.argv[1:]})+'\\n')\n"
-            f"print(json.dumps({{'outcome':'{ig_outcome}','post_url':'https://www.instagram.com/reel/IGREAL/'}}))\n",
+            f"print(json.dumps({{'outcome':'{ig_outcome}','post_url':'https://www.instagram.com/reel/IGREAL/','code':'IGREAL'}}))\n",
         )
         tt = executable(
             self.root / "tt.py",
@@ -122,6 +122,13 @@ class DistributionTests(unittest.TestCase):
         expected_caption = hashlib.sha256(self.caption.read_bytes()).hexdigest()
         self.assertEqual({row["caption_sha256"] for row in rows}, {expected_caption})
         self.assertTrue(all(row["public_url"].startswith("https://") for row in rows))
+        self.assertEqual(
+            {(row["platform"], row["provider_id"], row["route"]) for row in rows},
+            {
+                ("instagram", "IGREAL", "instagram_file_script"),
+                ("tiktok", "postiz-real", "postiz"),
+            },
+        )
 
     def test_instagram_non_publish_fails_closed_and_tiktok_is_not_called(self):
         with self.assertRaises(lm_distribution.DistributionError):

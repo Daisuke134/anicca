@@ -20,6 +20,9 @@ const {
 const {
   CAPABILITY: MARKETING_GENERATION_CAPABILITY,
 } = require("./marketing-daily-generation-adapter.js");
+const {
+  CAPABILITY: MARKETING_OBSERVATION_CAPABILITY,
+} = require("./marketing-observation-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -139,7 +142,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 3);
+  assert.equal(manifest.adapters.length, 4);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -151,6 +154,11 @@ test("committed manifest is portable and registers the financial report first", 
   assert.equal(
     manifest.adapters[2].adapter_id,
     "marketing-life-manager-daily-generation",
+  );
+  assert.equal(manifest.adapters[3].capability, MARKETING_OBSERVATION_CAPABILITY);
+  assert.equal(
+    manifest.adapters[3].adapter_id,
+    "marketing-platform-observation",
   );
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
@@ -190,6 +198,7 @@ test("Life Manager daily marketing inventory row is owned without disabling its 
   assert.equal(row.target_adapter, "marketing-life-manager-daily");
   assert.deepEqual(row.supporting_adapters, [
     "marketing-life-manager-daily-generation",
+    "marketing-platform-observation",
   ]);
   assert.equal(row.effect_class, "publish");
   assert.match(row.verify_command, /test:runtime-adapters/);
@@ -229,6 +238,17 @@ test("configured registry loads the portable Life Manager daily generation adapt
     appRoot: path.join(__dirname, ".."),
   });
   const adapter = registry.getByCapability(MARKETING_GENERATION_CAPABILITY);
+
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry loads the portable marketing observation adapter", () => {
+  const registry = createConfiguredLoopAdapterRegistry({
+    appRoot: path.join(__dirname, ".."),
+  });
+  const adapter = registry.getByCapability(MARKETING_OBSERVATION_CAPABILITY);
 
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");
