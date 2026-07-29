@@ -9,6 +9,8 @@ const {
   validateComposeModel,
   runRuntimeUp,
   buildSchedulerHolderToken,
+  executeCapabilityJob,
+  createScopedEnvironmentSecretProvider,
 } = require("./runtime-up.js");
 
 const ROOT = path.join(__dirname, "../../..");
@@ -113,6 +115,16 @@ test("committed local compose is self-contained and never references a legacy ru
   assert.match(compose, /^  object-data:/m);
   assert.match(compose, /^  runtime-data:/m);
   assert.match(compose, /LM_SCHEDULER_OWNER: local-primary/);
+  assert.match(compose, /LM_RUNTIME_TENANT_ID: \$\{LM_RUNTIME_TENANT_ID:-\}/);
+  assert.match(
+    compose,
+    /LM_FINANCIAL_REPORT_POLL_MS: \$\{LM_FINANCIAL_REPORT_POLL_MS:-300000\}/,
+  );
+  assert.match(
+    compose,
+    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop\}/,
+  );
+  assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
   assert.doesNotMatch(
     compose,
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/anicca/i,
@@ -165,5 +177,58 @@ test("scheduler holder token changes on every process start even in the same con
   assert.equal(
     buildSchedulerHolderToken("local-primary", "same-container", randomUUID),
     "local-primary:same-container:start-b",
+  );
+});
+
+test("capability worker completes a registered financial report with only its safe receipt", async () => {
+  const calls = [];
+  const job = {
+    tenant_id: "tenant-a",
+    job_id: "job-a",
+    attempt: 1,
+    capability: "report.financial.telegram",
+    effect_class: "message",
+  };
+  await executeCapabilityJob(job, {
+    workerId: "worker-a",
+    handlers: {
+      "report.financial.telegram": async () => ({
+        receipt: {
+          kind: "telegram_financial_report",
+          message_id: 44,
+          snapshot_hash: "a".repeat(64),
+        },
+      }),
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].kind, "complete");
+  assert.deepEqual(calls[0].input.receipt, {
+    kind: "telegram_financial_report",
+    message_id: 44,
+    snapshot_hash: "a".repeat(64),
+  });
+});
+
+test("environment secret provider is tenant-scoped and resolves only declared refs", async () => {
+  const provider = createScopedEnvironmentSecretProvider({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_TELEGRAM_BOT_TOKEN: "private-token",
+  });
+
+  assert.equal(
+    await provider.get("tenant-a", "secret://telegram/bot-token"),
+    "private-token",
+  );
+  await assert.rejects(
+    provider.get("tenant-b", "secret://telegram/bot-token"),
+    /tenant/i,
+  );
+  await assert.rejects(
+    provider.get("tenant-a", "secret://telegram/raw-token"),
+    /reference/i,
   );
 });
