@@ -31,11 +31,11 @@
 - Consumes: snapshot object with `version`, `url`, `navigation_committed`, and ordered `frames[].controls[]`.
 - Produces: `detect_provider(url: str) -> str` and `evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]`.
 
-- [ ] **Step 1: Write failing provider and fixture replay tests**
+- [x] **Step 1: Write failing provider and fixture replay tests**
 
   Add literal expectations showing that Ashby and Workday hostnames classify correctly, both real surface fixtures return `ready=true` with `wait_until=commit`, and the committed empty fixture returns `ready=false`.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
   Run:
 
@@ -45,15 +45,15 @@
 
   Expected: import failure because `job_search_loop.ats` does not exist.
 
-- [ ] **Step 3: Implement the minimal evaluator**
+- [x] **Step 3: Implement the minimal evaluator**
 
   Implement hostname suffix matching, strict snapshot shape checks, normalized control text, main-frame-first scanning, Ashby application readiness, Workday job/application readiness, and JSON CLI input/output. Return blockers instead of raising for a structurally valid but unusable page; raise `ValueError` for malformed snapshots.
 
-- [ ] **Step 4: Verify GREEN and mutation boundaries**
+- [x] **Step 4: Verify GREEN and mutation boundaries**
 
   Run the Task 1 test command. Confirm the tests fail if `navigation_committed` is ignored, if Ashby no longer requires email/resume/submit, or if Workday no longer requires an Apply/application control.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   ```bash
   git add apps/job-search-loop/job_search_loop/ats.py apps/job-search-loop/tests
@@ -74,11 +74,11 @@
 - Consumes: the evaluator from Task 1 and the existing CDP owner evidence path.
 - Produces: a mode-0600 ATS snapshot and `Ledger.claim_submission(..., ats_snapshot_path: Path, ats_snapshot_sha256: str)` that independently hashes and evaluates it.
 
-- [ ] **Step 1: Write failing submission-boundary tests**
+- [x] **Step 1: Write failing submission-boundary tests**
 
   Extend the Ledger tests with literal ready evidence. Verify a claim succeeds only for a matching ready snapshot, while a missing file, hash mismatch, non-ready snapshot, and snapshot URL for another job all fail before a daily slot is allocated.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
   Run:
 
@@ -88,11 +88,11 @@
 
   Confirm failure because `claim_submission` does not accept or validate ATS snapshot evidence.
 
-- [ ] **Step 3: Add the minimal deterministic and live contracts**
+- [x] **Step 3: Add the minimal deterministic and live contracts**
 
   Add the two required evidence arguments and columns, perform file/hash/readiness/job-URL validation inside the existing immediate transaction boundary, and retain the evidence path/hash on the intent. Update existing test claim helpers with literal ready snapshots. Then replace the generic prompt navigation instruction with the exact sequence: connect to the existing CDP owner, navigate with `wait_until=commit`, capture ordered frame/control metadata, persist mode 0600, run `python -m job_search_loop.ats`, require `ready=true`, pass snapshot path/hash to the claim, and preserve all existing CAPTCHA/legal-fact/unknown-submit rules.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
   Run the focused ATS test and the complete job-loop suite:
 
@@ -101,7 +101,7 @@
   PYTHONPATH=apps/job-search-loop python3 -m unittest discover -s apps/job-search-loop/tests -p 'test_*.py'
   ```
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   ```bash
   git add apps/job-search-loop/prompts/daily-pass.md apps/job-search-loop/tests/test_ats.py
@@ -120,15 +120,15 @@
 - Consumes: focused/full test outputs and a read-only existing-CDP probe.
 - Produces: redacted evidence that distinguishes 10A completion from full order-10 completion.
 
-- [ ] **Step 1: Run a read-only real-CDP probe**
+- [x] **Step 1: Run a read-only real-CDP probe**
 
   Against the existing browser owner, open one new page per public ATS URL, navigate with `wait_until=commit`, capture only provider, title, frame count, and normalized control kinds, then close only those pages. Do not fill or submit.
 
-- [ ] **Step 2: Run fresh verification**
+- [x] **Step 2: Run fresh verification**
 
   Run focused ATS tests, the 114-test baseline plus new tests, `scripts/healthcheck.sh`, JSON parsing for every new fixture/evidence file, and `git diff --check`.
 
-- [ ] **Step 3: Update state**
+- [x] **Step 3: Update state**
 
   Mark every completed plan checkbox. Keep backlog order 10 as `in_progress`, and record the exact test count, live probe result, branch head, and CI run in the evidence file.
 
