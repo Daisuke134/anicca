@@ -1,0 +1,185 @@
+"use strict";
+
+// Order 5 exit evidence: the Life Manager runtime source contains no
+// non-allowlisted reference to a legacy runtime root. Scope and allowlist are
+// defined in scan-legacy-paths.js (see its header): apps/life-manager plus the
+// skills the runtime actually spawns (daily-lm-video, lm-distribution,
+// telegram-user, life-manager) plus runtime/. Legacy tokens in this test are
+// assembled from fragments so the test file itself stays scan-neutral.
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+const {
+  scanLegacyPaths,
+  verifyAllowlist,
+  ALLOWLIST,
+  SCAN_ROOTS,
+} = require("./scan-legacy-paths.js");
+
+const LEGACY_STATE_LINE = 'STATE="${HOME}/' + ".open" + 'claw/state/example"';
+const LEGACY_ANICCA_HOME_LINE = 'DIR="${HOME}/' + "anicca" + '/skills/earn/x402-sell/state"';
+const LEGACY_ANICCA_TILDE_LINE = "DIR=~/" + "anicca" + "/skills/earn/x402-sell/state";
+const LEGACY_ANICCA_OSS_LINE = 'START="${HOME}/' + "anicca" + '-oss/services/facilitator/start.sh"';
+const LEGACY_ANICCA_ABS_LINE = 'DIR="/Users/dais/' + "anicca" + '/skills/earn/x402-sell/state"';
+const LEGACY_ANICCA_ABS_OSS_LINE = 'START="/Users/dais/' + "anicca" + '-oss/services/facilitator/start.sh"';
+
+function plantedRepo() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-legacy-scan-"));
+  fs.mkdirSync(path.join(root, "src"), { recursive: true });
+  return root;
+}
+
+test("the Life Manager runtime scope has zero non-allowlisted legacy path references", () => {
+  const result = scanLegacyPaths();
+  assert.ok(result.scannedFiles > 200, `expected a real scan, saw ${result.scannedFiles} files`);
+  assert.deepEqual(
+    result.violations,
+    [],
+    `legacy path references found:\n${result.violations
+      .map((violation) => `${violation.file}:${violation.line} ${violation.text}`)
+      .join("\n")}`,
+  );
+});
+
+test("the scanner detects a planted legacy path reference (it is not vacuous)", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(path.join(root, "src", "boot.sh"), `#!/bin/bash\n${LEGACY_STATE_LINE}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].file, path.join("src", "boot.sh"));
+  assert.equal(result.violations[0].line, 2);
+});
+
+test("the scanner detects legacy anicca code-root references (HOME, tilde, oss)", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n${LEGACY_ANICCA_HOME_LINE}\n${LEGACY_ANICCA_TILDE_LINE}\n${LEGACY_ANICCA_OSS_LINE}\n`,
+  );
+  // "anicca" as a plain word, username, or product path is NOT a code root.
+  fs.writeFileSync(
+    path.join(root, "src", "benign.sh"),
+    'A="/Users/operator/anicca-project/x"\nB="run the anicca product"\n',
+  );
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => [violation.file, violation.line]),
+    [
+      [path.join("src", "boot.sh"), 2],
+      [path.join("src", "boot.sh"), 3],
+      [path.join("src", "boot.sh"), 4],
+    ],
+  );
+});
+
+test("the scanner detects absolute /Users literals of the legacy anicca code roots", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n${LEGACY_ANICCA_ABS_LINE}\n${LEGACY_ANICCA_ABS_OSS_LINE}\n`,
+  );
+  // The username segment and the products monorepo are NOT legacy code roots:
+  // /Users/<any>/anicca-project/ (even under an anicca username) must not match.
+  fs.writeFileSync(
+    path.join(root, "src", "benign.sh"),
+    'A="/Users/operator/anicca-project/apps/life-manager"\nB="/Users/dais/anicca-project/x"\n',
+  );
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => [violation.file, violation.line, violation.pattern]),
+    [
+      [path.join("src", "boot.sh"), 2, "legacy-anicca-home-root"],
+      [path.join("src", "boot.sh"), 3, "legacy-oss-code-root"],
+    ],
+  );
+});
+
+test("the allowlist is pinned to exact file plus line content, not blanket files", () => {
+  for (const entry of ALLOWLIST) {
+    assert.ok(entry.file && entry.lineIncludes && entry.reason, JSON.stringify(entry));
+  }
+  const root = plantedRepo();
+  // Same line content as an allowlisted denial line, but in a different file:
+  // it must still be flagged.
+  const allowedLine = `const LEGACY_SEGMENT = /${"\\.open" + "claw"}/;`;
+  fs.writeFileSync(path.join(root, "src", "other-module.js"), `${allowedLine}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.equal(result.violations.length, 1);
+});
+
+test("test files and fixtures are excluded while runtime sources are scanned", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(path.join(root, "src", "module.test.js"), `${LEGACY_STATE_LINE}\n`);
+  fs.mkdirSync(path.join(root, "src", "tests"));
+  fs.writeFileSync(path.join(root, "src", "tests", "helper.sh"), `${LEGACY_STATE_LINE}\n`);
+  fs.writeFileSync(path.join(root, "src", "module.js"), `${LEGACY_STATE_LINE}\n`);
+  const result = scanLegacyPaths({ root, roots: ["src"] });
+  assert.deepEqual(
+    result.violations.map((violation) => violation.file),
+    [path.join("src", "module.js")],
+  );
+});
+
+test("the scan scope covers the runtime roots the Life Manager actually loads", () => {
+  for (const scanRoot of [
+    "apps/life-manager",
+    "skills/video/daily-lm-video",
+    "skills/video/lm-distribution",
+    "skills/tools/telegram-user",
+    "skills/life-manager",
+    "skills/earn/marketing-engine",
+    "runtime",
+  ]) {
+    assert.ok(SCAN_ROOTS.includes(scanRoot), `missing scan root: ${scanRoot}`);
+  }
+});
+
+test("tracked pre-Order-12 allowlist entries name an owning Order and pin an exact line", () => {
+  const tracked = ALLOWLIST.filter((entry) => entry.order);
+  assert.ok(tracked.length >= 5, `expected the x402/taskmarket/payout holes to be tracked, saw ${tracked.length}`);
+  for (const entry of tracked) {
+    assert.match(entry.order, /^Order \d+$/, JSON.stringify(entry));
+    assert.ok(Number.isInteger(entry.line) && entry.line > 0, JSON.stringify(entry));
+  }
+  const trackedFiles = tracked.map((entry) => entry.file);
+  for (const expected of [
+    "apps/life-manager/scripts/x402-sale-ledger-boot.sh",
+    "apps/life-manager/scripts/taskmarket-work-ledger-boot.sh",
+    "apps/life-manager/scripts/payout-boot.sh",
+    "apps/life-manager/scripts/run-agent-payout.js",
+  ]) {
+    assert.ok(trackedFiles.includes(expected), `missing tracked allowlist file: ${expected}`);
+  }
+});
+
+test("every allowlist entry is alive: it matches a current pattern-bearing line", () => {
+  assert.deepEqual(
+    verifyAllowlist(),
+    [],
+    "stale or moved allowlist entries must be re-pinned or removed",
+  );
+});
+
+test("an allowlisted line that moves or changes fails verification", () => {
+  const root = plantedRepo();
+  fs.writeFileSync(
+    path.join(root, "src", "boot.sh"),
+    `#!/bin/bash\n# moved down one line\n${LEGACY_ANICCA_OSS_LINE}\n`,
+  );
+  const allowlist = [
+    // Pinned to line 2, but the line now lives at line 3: must be reported.
+    { file: path.join("src", "boot.sh"), line: 2, lineIncludes: "START=", reason: "x", order: "Order 12" },
+    // Content no longer present anywhere: must be reported.
+    { file: path.join("src", "boot.sh"), lineIncludes: "DELETED_CONTENT=", reason: "x" },
+  ];
+  const issues = verifyAllowlist({ root, allowlist });
+  assert.equal(issues.length, 2, JSON.stringify(issues));
+  // And the scanner must NOT honor the mispinned entry: the moved line is a violation.
+  const scan = scanLegacyPaths({ root, roots: ["src"], allowlist });
+  assert.equal(scan.violations.length, 1);
+  assert.equal(scan.violations[0].line, 3);
+});

@@ -1,5 +1,6 @@
 "use strict";
 
+const os = require("node:os");
 const path = require("node:path");
 
 const MODES = new Set(["local", "cloud"]);
@@ -26,6 +27,27 @@ function absoluteRoot(env, name) {
   return resolved;
 }
 
+// The portable Life Manager data root: LM_DATA_DIR when set, otherwise the
+// XDG-style default the launchd installers already create
+// (<home>/.local/state/life-manager). Never a legacy runtime root.
+function resolveDataRoot(env = {}) {
+  const override = String(env.LM_DATA_DIR || "").trim();
+  let resolved;
+  if (override) {
+    if (!path.isAbsolute(override)) {
+      throw new Error("LM_DATA_DIR must be an absolute path");
+    }
+    resolved = path.resolve(override);
+  } else {
+    const home = String(env.HOME || "").trim() || os.homedir();
+    resolved = path.resolve(home, ".local", "state", "life-manager");
+  }
+  if (LEGACY_SEGMENT.test(resolved) || hasLegacyAniccaRoot(resolved)) {
+    throw new Error("Life Manager data root resolves beneath a forbidden legacy runtime root");
+  }
+  return resolved;
+}
+
 function resolveRuntimePaths(env = {}) {
   const mode = String(env.LM_MODE || "").trim();
   if (!MODES.has(mode)) {
@@ -42,4 +64,4 @@ function resolveRuntimePaths(env = {}) {
   };
 }
 
-module.exports = { resolveRuntimePaths };
+module.exports = { resolveDataRoot, resolveRuntimePaths };

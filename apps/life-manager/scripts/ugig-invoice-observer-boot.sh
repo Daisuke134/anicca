@@ -2,15 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.openclaw/.env}"
+ENV_FILE="${LIFE_MANAGER_ENV_FILE:-${HOME}/.local/state/life-manager/.env}"
 UGIG_API_KEY_FILE="${UGIG_API_KEY_FILE:-${HOME}/.config/life-manager/credentials/ugig-api-key}"
 
-if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-fi
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/load-env-file.sh"
+lm_load_env_file "$ENV_FILE"
 
 if [[ ! -r "$UGIG_API_KEY_FILE" ]]; then
   echo "UGIG_API_KEY_FILE is not readable" >&2

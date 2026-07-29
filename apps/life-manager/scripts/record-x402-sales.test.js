@@ -330,7 +330,8 @@ test("launchd wiring uses absolute executables, a bounded timeout, and five-minu
 
   assert.match(boot, /\/opt\/homebrew\/bin\/timeout 240 \/opt\/homebrew\/bin\/node/);
   assert.doesNotMatch(boot, /(?:^|[;&|]\s*)timeout\s/);
-  assert.match(boot, /\.openclaw\/\.env/);
+  assert.match(boot, /LIFE_MANAGER_ENV_FILE:-\$\{HOME\}\/\.local\/state\/life-manager\/\.env/);
+  assert.doesNotMatch(boot, /\.openclaw/);
   assert.match(plist, /<string>\/bin\/bash<\/string>/);
   assert.match(plist, /<key>StartInterval<\/key>\s*<integer>300<\/integer>/);
   assert.match(plist, /life-manager-x402-ledger\.out\.log/);

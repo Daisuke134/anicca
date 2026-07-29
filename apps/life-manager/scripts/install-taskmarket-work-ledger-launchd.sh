@@ -9,7 +9,7 @@ DOMAIN="gui/$(id -u)"
 TEMP="$(mktemp "${TMPDIR:-/tmp}/life-manager-taskmarket-ledger.plist.XXXXXX")"
 
 trap 'rm -f "$TEMP"' EXIT
-mkdir -p "${HOME}/Library/LaunchAgents" "${HOME}/.openclaw/logs"
+mkdir -p "${HOME}/Library/LaunchAgents" "${HOME}/.local/state/life-manager/logs"
 sed -e "s|__APP_DIR__|${APP_DIR}|g" -e "s|__HOME__|${HOME}|g" "$TEMPLATE" > "$TEMP"
 plutil -lint "$TEMP"
 install -m 600 "$TEMP" "$TARGET"
