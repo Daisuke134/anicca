@@ -220,6 +220,74 @@ class DistributionTests(unittest.TestCase):
             self.run_distribution()
         self.assertFalse(self.calls.exists())
 
+    def test_ledger_rows_carry_full_publication_lineage(self):
+        """FIX 1: a reconciled receipt must recover format/form/locale/slot from the ledger."""
+        self.run_distribution(
+            format_id="reelclaw",
+            form="relationship-confession",
+            locale="ja",
+            slot="2026-07-30T12:30:00.000Z",
+        )
+        rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            self.assertEqual(row["format_id"], "reelclaw")
+            self.assertEqual(row["form"], "relationship-confession")
+            self.assertEqual(row["locale"], "ja")
+            self.assertEqual(row["slot"], "2026-07-30T12:30:00.000Z")
+
+    def test_cli_accepts_and_records_lineage_flags(self):
+        """FIX 1: the adapter passes lineage on the CLI; distribute.py must accept and record it."""
+        import subprocess
+        import sys
+
+        ig, tt = self.adapters()
+        proc = subprocess.run(
+            [
+                sys.executable, str(MODULE_PATH),
+                "--creative-id", "A03", "--platform", "instagram",
+                "--video", str(self.video), "--caption-file", str(self.caption),
+                "--ledger", str(self.ledger), "--approvals", str(self.approvals),
+                "--instagram-adapter", str(ig), "--tiktok-adapter", str(tt),
+                "--instagram-handle", "anicca.affirms2",
+                "--instagram-accounts", str(self.root / "accounts.json"),
+                "--format-id", "reelclaw", "--form", "relationship-confession",
+                "--locale", "ja", "--slot", "2026-07-30T12:30:00.000Z",
+            ],
+            capture_output=True,
+            text=True,
+            env=dict(os.environ, CALLS=str(self.calls)),
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        rows = [json.loads(line) for line in self.ledger.read_text().splitlines()]
+        self.assertEqual(rows[0]["format_id"], "reelclaw")
+        self.assertEqual(rows[0]["form"], "relationship-confession")
+        self.assertEqual(rows[0]["locale"], "ja")
+        self.assertEqual(rows[0]["slot"], "2026-07-30T12:30:00.000Z")
+
+    def test_legacy_ledger_rows_without_lineage_still_short_circuit(self):
+        """Backward compat: the reader must tolerate old-format rows missing lineage fields."""
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        self.ledger.write_text(
+            json.dumps(
+                {
+                    "platform": "instagram",
+                    "status": "published",
+                    "creative_id": "A03",
+                    "video_sha256": video_hash,
+                    "caption_sha256": caption_hash,
+                    "public_url": "https://www.instagram.com/reel/LEGACY/",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        result = self.run_distribution()
+        calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+        self.assertEqual([row["platform"] for row in calls], ["tiktok"])
+        self.assertEqual(result["instagram_url"], "https://www.instagram.com/reel/LEGACY/")
+
     def test_caption_is_deterministically_derived_from_the_selected_bank_row(self):
         bank = self.root / "bank.jsonl"
         bank.write_text(

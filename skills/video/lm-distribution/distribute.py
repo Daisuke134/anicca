@@ -36,6 +36,10 @@ class DistributionConfig:
         tiktok_integration: str,
         approvals: Path,
         env: Mapping[str, str] | None = None,
+        format_id: str = "",
+        form: str = "",
+        locale: str = "",
+        slot: str = "",
     ):
         self.creative_id = creative_id
         self.video = Path(video)
@@ -57,6 +61,10 @@ class DistributionConfig:
         self.tiktok_integration = tiktok_integration
         self.approvals = Path(approvals)
         self.env = dict(env or os.environ)
+        self.format_id = format_id
+        self.form = form
+        self.locale = locale
+        self.slot = slot
 
 
 def render_caption(bank: Path, creative_id: str, output: Path) -> Path:
@@ -253,6 +261,12 @@ def _append_success(
         "logged_out_readback": logged_out,
         "migration_date": migration_date,
         "provider_reconciled": provider_reconciled,
+        # Publication lineage: without these fields a ledger-reconciled receipt cannot
+        # pass the adapter's own verification (FIX 1).
+        "format_id": config.format_id,
+        "form": config.form,
+        "locale": config.locale,
+        "slot": config.slot,
     }
     config.ledger.parent.mkdir(parents=True, exist_ok=True)
     with config.ledger.open("a", encoding="utf-8") as handle:
@@ -430,6 +444,10 @@ def main() -> int:
         "--tiktok-integration",
         default=os.environ.get("LM_TIKTOK_INTEGRATION", "cmpc6cr6g00d8lg0yfythzz9f"),
     )
+    parser.add_argument("--format-id", default="")
+    parser.add_argument("--form", default="")
+    parser.add_argument("--locale", default="")
+    parser.add_argument("--slot", default="")
     args = parser.parse_args()
 
     caption = args.caption_file
@@ -450,6 +468,10 @@ def main() -> int:
             instagram_profile_state=args.instagram_profile_state,
             tiktok_integration=args.tiktok_integration,
             approvals=args.approvals,
+            format_id=args.format_id,
+            form=args.form,
+            locale=args.locale,
+            slot=args.slot,
         )
     result = (
         distribute(config)

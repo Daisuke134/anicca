@@ -151,8 +151,13 @@ function buildMarketingVideoPublicationJob(input = {}) {
     tiktok_integration_ref: tiktokIntegrationRef,
   };
 
+  // job_id and effect_key must agree: the database enforces UNIQUE (tenant_id, effect_key)
+  // while enqueue only dedupes on job_id, so the same effect identity (same bytes + caption
+  // + platform = one effect forever) must always derive the same job_id. Slot is lineage
+  // carried in input_refs, never identity.
+  const effectKey = `marketing:video:${productId}:${platform}:${creativeId}:${videoHash}:${captionHash}`;
   const digest = crypto.createHash("sha256")
-    .update(JSON.stringify({ tenant_id: tenantId, input_refs: inputRefs }))
+    .update(JSON.stringify({ tenant_id: tenantId, effect_key: effectKey }))
     .digest("hex");
 
   return buildRuntimeJob({
@@ -161,7 +166,7 @@ function buildMarketingVideoPublicationJob(input = {}) {
     loopId: LOOP_ID,
     capability: CAPABILITY,
     effectClass: "publish",
-    effectKey: `marketing:video:${productId}:${platform}:${creativeId}:${videoHash}:${captionHash}`,
+    effectKey,
     inputRefs,
     maxAttempts: 3,
   });
@@ -314,6 +319,24 @@ function defaultLedgerPath(tenantId, productId, paths) {
   );
 }
 
+// Base allowlist for the distribution subprocess plus every LM_* variable
+// distribute.py reads (LM_DISTRIBUTION_LEDGER, LM_DISTRIBUTION_APPROVALS,
+// LM_INSTAGRAM_HANDLE, LM_INSTAGRAM_ACCOUNTS, LM_TIKTOK_INTEGRATION,
+// LM_TIKTOK_DIRECT_MIGRATION). Never the full parent environment.
+const SUBPROCESS_ENV_KEYS = ["PATH", "HOME", "LANG", "LC_ALL", "TMPDIR"];
+
+function subprocessEnv(postizToken) {
+  const env = {};
+  for (const key of SUBPROCESS_ENV_KEYS) {
+    if (process.env[key] !== undefined) env[key] = process.env[key];
+  }
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith("LM_")) env[key] = process.env[key];
+  }
+  env.POSTIZ_API_KEY = postizToken;
+  return env;
+}
+
 function runDistributionProcess(input) {
   const repoRoot = path.resolve(__dirname, "../../..");
   const script = path.join(repoRoot, "skills/video/lm-distribution/distribute.py");
@@ -321,6 +344,10 @@ function runDistributionProcess(input) {
     script,
     "--creative-id", input.creativeId,
     "--platform", input.platform,
+    "--format-id", input.formatId,
+    "--form", input.form,
+    "--locale", input.locale,
+    "--slot", input.slot,
     "--video", input.videoPath,
     "--caption-file", input.captionPath,
     "--ledger", input.ledgerPath,
@@ -333,10 +360,7 @@ function runDistributionProcess(input) {
     "--tiktok-integration", input.tiktokIntegration,
   ], {
     cwd: repoRoot,
-    env: {
-      ...process.env,
-      POSTIZ_API_KEY: input.postizToken,
-    },
+    env: subprocessEnv(input.postizToken),
     encoding: "utf8",
     timeout: 20 * 60 * 1000,
     maxBuffer: 4 * 1024 * 1024,
@@ -433,6 +457,7 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       formatId: contract.formatId,
       form: contract.form,
       locale: contract.locale,
+      slot: contract.slot,
       creativeId: contract.creativeId,
       platform: contract.platform,
       videoPath,
@@ -448,8 +473,9 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       tiktokIntegration,
     });
   } catch (error) {
-    if (error && typeof error === "object") error.unknownEffect = true;
-    throw error;
+    // Wrap instead of mutating the foreign error object.
+    const message = error && error.message ? error.message : String(error);
+    throw Object.assign(new Error(message, { cause: error }), { unknownEffect: true });
   }
   const urlPattern = contract.platform === "instagram" ? INSTAGRAM_URL : TIKTOK_URL;
   const validResult = Boolean(
@@ -522,7 +548,17 @@ function receiptFromRows(rows, contract, now) {
   ));
   const pattern = contract.platform === "instagram" ? INSTAGRAM_URL : TIKTOK_URL;
   const published = matching.filter((row) => pattern.test(String(row.public_url || ""))).at(-1);
-  if (!published) return { state: "absent" };
+  if (!published) {
+    // effect-reconciler.js requires a receipt object for the absent decision.
+    return {
+      state: "absent",
+      receipt: {
+        lookup: "ledger_no_published_row",
+        platform: contract.platform,
+        creative_id: contract.creativeId,
+      },
+    };
+  }
   const publishedAt = validIso(published.ts) ? published.ts : now();
   const provider = (
     PROVIDER_POST_ID.test(String(published.provider_id || ""))
@@ -531,27 +567,32 @@ function receiptFromRows(rows, contract, now) {
       provider_post_id: published.provider_id,
       provider_route: published.route,
     } : {};
-  return {
-    state: "present",
-    receipt: {
-      schema_version: 1,
-      kind: "marketing_video_distribution",
-      status: "published",
-      product_id: contract.productId,
-      format_id: published.format_id || "",
-      form: published.form || "",
-      locale: published.locale || "",
-      slot: published.slot || "",
-      creative_id: contract.creativeId,
-      platform: contract.platform,
-      video_sha256: contract.videoSha256,
-      caption_sha256: contract.captionSha256,
-      public_url: published.public_url,
-      ...provider,
-      provider_reconciled: true,
-      published_at: publishedAt,
-    },
+  const receipt = {
+    schema_version: 1,
+    kind: "marketing_video_distribution",
+    status: "published",
+    product_id: contract.productId,
+    format_id: published.format_id,
+    form: published.form,
+    locale: published.locale,
+    slot: published.slot,
+    creative_id: contract.creativeId,
+    platform: contract.platform,
+    video_sha256: contract.videoSha256,
+    caption_sha256: contract.captionSha256,
+    public_url: published.public_url,
+    ...provider,
+    provider_reconciled: published.provider_reconciled === true,
+    published_at: publishedAt,
   };
+  if (!verifyMarketingVideoPublicationReceipt(receipt)) {
+    // A published row matched but cannot be reconstructed into a verifiable receipt
+    // (legacy shadow rows without lineage): the effect may be real, so neither
+    // "present" (would certify an unverifiable receipt) nor "absent" (would
+    // authorize retrying an already-performed publish) is honest.
+    return { state: "unknown" };
+  }
+  return { state: "present", receipt };
 }
 
 function createMarketingVideoPublicationLoopAdapter(deps = {}) {
@@ -589,6 +630,7 @@ module.exports = {
   buildMarketingVideoPublicationJob,
   createMarketingVideoPublicationLoopAdapter,
   executeMarketingVideoPublicationJob,
+  runDistributionProcess,
   safeMarketingVideoPublicationSummary,
   verifyMarketingVideoPublicationReceipt,
 };

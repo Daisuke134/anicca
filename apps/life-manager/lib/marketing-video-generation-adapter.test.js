@@ -145,6 +145,11 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
     "second hook\n\n#honne #恋愛\n",
   );
   assert.equal(fs.statSync(copyPath).mode & 0o777, 0o600);
+  // The generated copy is plain caption text, so its workspace file is .copy.txt (not .copy.json).
+  const workspace = path.join(root, "tenants", "tenant-a", "marketing", "video-generation");
+  const workspaceFiles = fs.readdirSync(workspace);
+  assert.ok(workspaceFiles.some((name) => name.endsWith(".copy.txt")));
+  assert.ok(!workspaceFiles.some((name) => name.endsWith(".copy.json")));
   assert.equal(verifyMarketingVideoGenerationReceipt(result.receipt), true);
 });
 

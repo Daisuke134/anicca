@@ -1,6 +1,9 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
 
 const {
@@ -122,10 +125,65 @@ test("repeated chain scans enqueue the same deterministic jobs and depend on sto
   assert.equal(calls.length, 4);
 });
 
-test("providers are called zero additional times when the chain is replayed after real execution", async () => {
+// Fake durable store mirroring apps/life-manager/lib/runtime-job-store.js semantics AND the
+// database rule UNIQUE (tenant_id, effect_key) from migrations/20260729_runtime_jobs.sql:33.
+function createFakeRuntimeJobStore() {
+  const rows = new Map();
+  const toJob = (row) => ({
+    job_id: row.jobId,
+    tenant_id: row.tenantId,
+    loop_id: row.loopId,
+    capability: row.capability,
+    effect_class: row.effectClass,
+    effect_key: row.effectKey,
+    input_refs: row.inputRefs,
+    max_attempts: row.maxAttempts,
+    status: row.status,
+  });
+  return {
+    rows,
+    async enqueueJob(input) {
+      for (const row of rows.values()) {
+        if (
+          row.tenantId === input.tenantId
+          && row.effectKey === input.effectKey
+          && row.jobId !== input.jobId
+        ) {
+          throw new Error(
+            'duplicate key value violates unique constraint "lm_runtime_jobs_tenant_id_effect_key_key"',
+          );
+        }
+      }
+      const existing = rows.get(input.jobId);
+      if (existing) {
+        if (
+          existing.effectKey !== input.effectKey
+          || JSON.stringify(existing.inputRefs) !== JSON.stringify(input.inputRefs)
+        ) {
+          throw new Error("runtime job id collision");
+        }
+        return { created: false, job: toJob(existing) };
+      }
+      rows.set(input.jobId, { ...input, status: "queued" });
+      return { created: true, job: toJob(rows.get(input.jobId)) };
+    },
+    claim() {
+      const claimed = [...rows.values()].filter((row) => row.status === "queued");
+      for (const row of claimed) row.status = "running";
+      return claimed.map(toJob);
+    },
+    complete(jobId, receipt) {
+      const row = rows.get(jobId);
+      if (!row || row.status !== "running") throw new Error("fake store lease lost");
+      row.status = "completed";
+      row.receipt = receipt;
+    },
+  };
+}
+
+function countingAdapter(providerCalls, ledgerDir) {
   const { createMarketingVideoPublicationLoopAdapter } = require("./marketing-video-publication-adapter.js");
-  const providerCalls = [];
-  const adapter = createMarketingVideoPublicationLoopAdapter({
+  return createMarketingVideoPublicationLoopAdapter({
     objectStore: { resolve: (ref) => `/objects/${ref.slice(-64)}` },
     profileProvider: {
       get: async () => ({
@@ -138,7 +196,7 @@ test("providers are called zero additional times when the chain is replayed afte
     },
     secretProvider: { get: async () => "token" },
     integrationProvider: { get: async () => "integration" },
-    ledgerPath: () => "/tmp/never-read-because-mocked.jsonl",
+    ledgerPath: () => path.join(ledgerDir, "distribution.jsonl"),
     async runDistribution(input) {
       providerCalls.push(input);
       return {
@@ -155,19 +213,76 @@ test("providers are called zero additional times when the chain is replayed afte
       };
     },
   });
+}
 
-  const jobs = buildVideoPublicationJobsFromGeneration(generationReceipt(), options());
-  const receipts = await Promise.all(jobs.map((job) => adapter.execute(job)));
-  assert.equal(providerCalls.length, 2);
-  assert.ok(receipts.every(({ receipt }) => adapter.verify(receipt)));
+test("claim, execute, complete, then replay drives zero additional provider executions", async () => {
+  const store = createFakeRuntimeJobStore();
+  const providerCalls = [];
+  const ledgerDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-video-chain-e2e-"));
+  const adapter = countingAdapter(providerCalls, ledgerDir);
 
-  // Replaying execution with a distribution stub that must never be called again proves
-  // the caller is expected to short-circuit on an already-published effect_key/job_id.
-  const alreadyPublishedCallCount = providerCalls.length;
-  const jobsReplay = buildVideoPublicationJobsFromGeneration(generationReceipt(), options());
-  assert.deepEqual(
-    jobsReplay.map((job) => job.job_id),
-    jobs.map((job) => job.job_id),
+  const first = await enqueueVideoGenerationPublications(
+    generationReceipt(),
+    options(),
+    { enqueueJob: store.enqueueJob },
   );
-  assert.equal(providerCalls.length, alreadyPublishedCallCount);
+  assert.deepEqual(first.map((item) => item.created), [true, true]);
+
+  const claimed = store.claim();
+  assert.equal(claimed.length, 2);
+  for (const claimedJob of claimed) {
+    const { receipt } = await adapter.execute(claimedJob);
+    assert.equal(adapter.verify(receipt), true);
+    store.complete(claimedJob.job_id, receipt);
+  }
+  assert.equal(providerCalls.length, 2);
+
+  // Replay the whole chain: re-enqueue is deduped, nothing is claimable, and the
+  // provider is never executed again.
+  const second = await enqueueVideoGenerationPublications(
+    generationReceipt(),
+    options(),
+    { enqueueJob: store.enqueueJob },
+  );
+  assert.deepEqual(second.map((item) => item.created), [false, false]);
+  assert.equal(store.claim().length, 0);
+  assert.equal(providerCalls.length, 2);
+  assert.equal(
+    [...store.rows.values()].filter((row) => row.status === "completed").length,
+    2,
+  );
+});
+
+test("re-enqueueing the same artifact at a different slot cannot create a second publish effect", async () => {
+  const store = createFakeRuntimeJobStore();
+  const providerCalls = [];
+  const ledgerDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-video-chain-slot-"));
+  const adapter = countingAdapter(providerCalls, ledgerDir);
+
+  const first = await enqueueVideoGenerationPublications(
+    generationReceipt(),
+    options(),
+    { enqueueJob: store.enqueueJob },
+  );
+  assert.deepEqual(first.map((item) => item.created), [true, true]);
+
+  // Same bytes+caption+platform at a NEW slot: identity agrees (same job_id and
+  // effect_key), so the store surfaces a controlled collision instead of a raw
+  // (tenant_id, effect_key) unique-constraint exception — and never a second post.
+  await assert.rejects(
+    enqueueVideoGenerationPublications(
+      generationReceipt({ slot: "2026-07-31T09:00:00.000Z" }),
+      options(),
+      { enqueueJob: store.enqueueJob },
+    ),
+    /runtime job id collision/,
+  );
+  assert.equal(store.rows.size, 2);
+
+  for (const claimedJob of store.claim()) {
+    const { receipt } = await adapter.execute(claimedJob);
+    store.complete(claimedJob.job_id, receipt);
+  }
+  assert.equal(providerCalls.length, 2);
+  assert.equal(store.claim().length, 0);
 });
