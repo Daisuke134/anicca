@@ -197,6 +197,37 @@ class LocalSetupTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "codex")
 
+    def test_install_local_none_is_a_clean_home_end_to_end(self):
+        self._write_executable(
+            "codex",
+            'test "$1" = "login" && test "$2" = "status"',
+        )
+
+        result = subprocess.run(
+            [
+                "/bin/zsh",
+                str(APP_ROOT / "scripts" / "install-local.sh"),
+                "--profile",
+                str(self.profile),
+                "--provider",
+                "auto",
+                "--scheduler",
+                "none",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=self._env(),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual(receipt["provider"], "codex")
+        self.assertEqual(receipt["scheduler"], "none")
+        self.assertTrue(Path(receipt["profile_path"]).is_file())
+        self.assertFalse((self.home / "Library" / "LaunchAgents").exists())
+        self.assertFalse((self.config / "systemd" / "user").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

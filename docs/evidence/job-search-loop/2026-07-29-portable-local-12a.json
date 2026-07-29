@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "task": "JOB-PORTABLE-LOCAL-12A",
+  "status": "verified_local_pending_ci_merge",
+  "observed_at": "2026-07-29T11:47:07Z",
+  "branch": "feat/job-portable-installer-12a",
+  "implementation_commits": [
+    "fe260b255",
+    "6ef5f6ac3",
+    "371a0c1e6"
+  ],
+  "tests": {
+    "focused_setup_and_scheduler": {
+      "ran": 15,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 140,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 7,
+      "failures": 0
+    },
+    "shell_syntax": "pass",
+    "json_parse": "pass",
+    "diff_check": "pass"
+  },
+  "clean_home_e2e": {
+    "profile_source": "synthetic verified fixture",
+    "provider_request": "auto",
+    "selected_provider": "codex",
+    "scheduler": "none",
+    "external_scheduler_side_effects": 0,
+    "config_directory_mode": "0700",
+    "state_directory_mode": "0700",
+    "data_directory_mode": "0700",
+    "profile_mode": "0600",
+    "receipt_mode": "0600",
+    "existing_profile_preserved_without_replace": true
+  },
+  "provider_preflight": {
+    "codex_command": "codex login status",
+    "claude_command": "claude auth status",
+    "auto_order": [
+      "codex",
+      "claude-direct"
+    ],
+    "credentials_copied": false,
+    "missing_auth_fails_before_profile_write": true
+  },
+  "scheduler_replay": {
+    "launchd": {
+      "adapter": "fake launchctl",
+      "rendered": true,
+      "activated": true
+    },
+    "systemd": {
+      "adapter": "fake systemctl",
+      "rendered_services": 2,
+      "rendered_timers": 2,
+      "daily_schedule": "*-*-* 08:30:00 Asia/Tokyo",
+      "daily_persistent": true,
+      "inbox_interval": "15min",
+      "activated": true
+    }
+  },
+  "live_existing_loop": {
+    "reinstalled": false,
+    "duplicate_scheduler_created": false,
+    "reason": "12A verification used isolated roots and fake scheduler adapters"
+  },
+  "sources": [
+    {
+      "name": "XDG Base Directory Specification",
+      "url": "https://specifications.freedesktop.org/basedir-spec/latest/",
+      "quote": "There is a single base directory relative to which user-specific state data should be written."
+    },
+    {
+      "name": "systemd.timer",
+      "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html",
+      "quote": "For each timer file, a matching unit file must exist, describing the unit to activate when the timer elapses."
+    },
+    {
+      "name": "Apple Daemons and Services Programming Guide",
+      "url": "https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html",
+      "quote": "In general, a daemon should not care whether a user is logged in, and user agents should be used to provide per-user functionality."
+    }
+  ],
+  "remaining_order_12": [
+    "release artifact packaging",
+    "guided profile authoring",
+    "clean-machine install from a release artifact"
+  ]
+}

@@ -100,17 +100,17 @@ provider name from the private receipt.
 - Modify: this plan
 - Create: `docs/evidence/job-search-loop/2026-07-29-portable-local-12a.json`
 
-- [ ] **Step 1: Run a clean-HOME E2E**
+- [x] **Step 1: Run a clean-HOME E2E**
 
   Use a temporary valid synthetic profile, fake authenticated provider, explicit
   `none` scheduler, and verify paths, modes, receipt, and overwrite protection.
 
-- [ ] **Step 2: Run full verification**
+- [x] **Step 2: Run full verification**
 
   Run focused tests, full job-loop tests, agent-runner tests, shell syntax,
   `git diff --check`, and JSON parsing.
 
-- [ ] **Step 3: Record redacted evidence and push**
+- [x] **Step 3: Record redacted evidence and push**
 
   Update the plan/spec/README, write durable evidence, commit, and push.
 
