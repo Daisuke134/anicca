@@ -187,6 +187,35 @@ async function listGenerationReceipts(pool, options) {
   return result.rows.map((row) => row.receipt);
 }
 
+async function listObservablePublicationReceipts(pool, options) {
+  const tenantId = String(options && options.tenantId || "").trim();
+  const after = String(options && options.after || "").trim();
+  if (!tenantId || !Number.isFinite(Date.parse(after))) {
+    throw new Error("marketing observation chain scan boundary is invalid");
+  }
+  const result = await pool.query(`
+    SELECT j.job_id, r.receipt
+    FROM public.lm_runtime_job_receipts r
+    JOIN public.lm_runtime_jobs j
+      ON j.job_id = r.job_id
+      AND j.tenant_id = r.tenant_id
+    WHERE j.tenant_id = $1
+      AND j.capability = 'marketing.life-manager.daily.publish'
+      AND r.outcome = 'completed'
+      AND r.created_at >= $2::timestamptz
+      AND r.receipt->>'kind' = 'marketing_daily_distribution'
+      AND r.receipt->>'status' = 'published'
+      AND COALESCE(r.receipt->>'provider_post_id', '') <> ''
+      AND COALESCE(r.receipt->>'provider_route', '') <> ''
+    ORDER BY r.created_at DESC
+    LIMIT 100
+  `, [tenantId, after]);
+  return result.rows.map((row) => ({
+    job_id: row.job_id,
+    receipt: row.receipt,
+  }));
+}
+
 function createHealthServer(port, state) {
   const server = http.createServer((request, response) => {
     if (request.url !== "/health") {
@@ -347,6 +376,95 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       pythonBin: String(env.PYTHON_BIN || "python3"),
     };
   }
+  if (capabilities.includes("marketing.observation.collect")) {
+    const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+    const query = dependencies.query;
+    if (typeof query !== "function") {
+      throw new Error("marketing observation receipt store is unavailable");
+    }
+    const fetchImpl = dependencies.fetchImpl || globalThis.fetch;
+    const secretProvider = createScopedEnvironmentSecretProvider(env);
+    const {
+      normalizePostizMetrics,
+    } = require("../lib/marketing-observation-adapter.js");
+    const unavailablePlatform = () => ({
+      views: { status: "unavailable", value: null, reason: "metric_not_supported" },
+      likes: { status: "unavailable", value: null, reason: "metric_not_supported" },
+      comments: { status: "unavailable", value: null, reason: "metric_not_supported" },
+      shares: { status: "unavailable", value: null, reason: "metric_not_supported" },
+    });
+    servicesByAdapter["marketing-platform-observation"] = {
+      receiptProvider: {
+        async get(requestTenantId, ref) {
+          const match = /^runtime-receipt:\/\/(marketing-daily:[0-9a-f]{64})$/.exec(
+            String(ref || ""),
+          );
+          if (requestTenantId !== tenantId || !match) {
+            throw new Error("marketing observation receipt scope mismatch");
+          }
+          const rows = (await query(`
+            SELECT r.receipt
+            FROM public.lm_runtime_job_receipts r
+            JOIN public.lm_runtime_jobs j
+              ON j.job_id = r.job_id
+              AND j.tenant_id = r.tenant_id
+            WHERE r.tenant_id = $1
+              AND r.job_id = $2
+              AND r.outcome = 'completed'
+              AND j.capability = 'marketing.life-manager.daily.publish'
+            ORDER BY r.attempt DESC
+            LIMIT 1
+          `, [requestTenantId, match[1]])).rows;
+          if (rows.length !== 1) {
+            throw new Error("marketing publication receipt is unavailable");
+          }
+          return rows[0].receipt;
+        },
+      },
+      platformMetricProvider: {
+        async collect({ publication, window }) {
+          if (publication.provider_route !== "postiz") {
+            return unavailablePlatform();
+          }
+          const token = await secretProvider.get(
+            tenantId,
+            "secret://postiz/api-key",
+          );
+          const days = { "2h": 1, "24h": 1, "72h": 3, "7d": 7 }[window];
+          const response = await fetchImpl(
+            `https://api.postiz.com/public/v1/analytics/post/${
+              encodeURIComponent(publication.provider_post_id)
+            }?date=${days}`,
+            {
+              headers: { Authorization: token },
+              signal: AbortSignal.timeout(30_000),
+            },
+          );
+          if (!response || response.ok !== true) {
+            throw new Error("Postiz metric request failed");
+          }
+          return normalizePostizMetrics(await response.json());
+        },
+      },
+      productMetricProvider: {
+        async collect() {
+          const value = {
+            status: "unavailable",
+            value: null,
+            reason: "attribution_not_configured",
+          };
+          return {
+            installs: { ...value },
+            activations: { ...value },
+            trials: { ...value },
+            paid: { ...value },
+            proceeds_minor: { ...value },
+          };
+        },
+      },
+      now: dependencies.now || (() => new Date().toISOString()),
+    };
+  }
   const createRegistry = dependencies.createRegistry || (
     require("../lib/loop-adapter-registry.js").createConfiguredLoopAdapterRegistry
   );
@@ -375,7 +493,9 @@ async function runCapabilityWorker(env = process.env) {
   const workerId = String(env.LM_WORKER_ID || os.hostname()).trim();
   const pool = new Pool({ connectionString, max: 2 });
   const opts = { query: pool.query.bind(pool) };
-  const handlers = createWorkerHandlers(env, capabilities);
+  const handlers = createWorkerHandlers(env, capabilities, {
+    query: opts.query,
+  });
   const state = {
     role: "worker",
     workerId,
@@ -559,6 +679,50 @@ async function runSchedulerOwner(env = process.env) {
     }, publicationChainPollMs);
   }
 
+  const observationEnabled = String(
+    env.LM_MARKETING_OBSERVATION_ENABLED || "false",
+  ).trim().toLowerCase() === "true";
+  const observationPollMs = Number(
+    env.LM_MARKETING_OBSERVATION_POLL_MS || 60000,
+  );
+  let observationTimer;
+  let observationActive = false;
+  async function enqueuePublicationObservations() {
+    if (!observationEnabled || observationActive) return;
+    observationActive = true;
+    try {
+      const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+      const publications = await listObservablePublicationReceipts(pool, {
+        tenantId,
+        after: requiredEnv(env, "LM_MARKETING_OBSERVATION_AFTER"),
+      });
+      const {
+        enqueueDueObservations,
+      } = require("../lib/marketing-observation-chain.js");
+      const { enqueueJob } = require("../lib/runtime-job-store.js");
+      const nowMs = Date.now();
+      for (const publication of publications) {
+        await enqueueDueObservations(publication, {
+          tenantId,
+          productId: requiredEnv(env, "LM_MARKETING_OBSERVATION_PRODUCT_ID"),
+          nowMs,
+        }, {
+          enqueueJob: (input) => enqueueJob(input, {
+            query: pool.query.bind(pool),
+          }),
+        });
+      }
+    } finally {
+      observationActive = false;
+    }
+  }
+  await enqueuePublicationObservations();
+  if (observationEnabled) {
+    observationTimer = setInterval(() => {
+      enqueuePublicationObservations().catch(() => {});
+    }, observationPollMs);
+  }
+
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
     env: {
@@ -589,6 +753,7 @@ async function runSchedulerOwner(env = process.env) {
     if (financialTimer) clearInterval(financialTimer);
     if (marketingGenerationTimer) clearInterval(marketingGenerationTimer);
     if (publicationChainTimer) clearInterval(publicationChainTimer);
+    if (observationTimer) clearInterval(observationTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(
@@ -630,6 +795,7 @@ module.exports = {
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
   listGenerationReceipts,
+  listObservablePublicationReceipts,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
   executeCapabilityJob,

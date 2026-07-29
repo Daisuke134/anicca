@@ -11,10 +11,14 @@ const {
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
   listGenerationReceipts,
+  listObservablePublicationReceipts,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
 } = require("./runtime-up.js");
+const {
+  buildMarketingObservationJob,
+} = require("../lib/marketing-observation-adapter.js");
 
 const ROOT = path.join(__dirname, "../../..");
 const COMPOSE_PATH = path.join(ROOT, "deploy/local/compose.yaml");
@@ -138,6 +142,14 @@ test("committed local compose is self-contained and never references a legacy ru
   );
   assert.match(
     compose,
+    /LM_MARKETING_OBSERVATION_ENABLED: \$\{LM_MARKETING_OBSERVATION_ENABLED:-false\}/,
+  );
+  assert.match(
+    compose,
+    /LM_MARKETING_OBSERVATION_PRODUCT_ID: \$\{LM_MARKETING_OBSERVATION_PRODUCT_ID:-\}/,
+  );
+  assert.match(
+    compose,
     /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop\}/,
   );
   assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
@@ -229,6 +241,41 @@ test("publication chain scans only one tenant and an explicit non-backfill windo
   assert.match(calls[0].sql, /r\.outcome = 'completed'/);
   assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
   assert.match(calls[0].sql, /LIMIT 100/);
+  assert.deepEqual(calls[0].params, [
+    "tenant-a",
+    "2026-08-01T00:00:00.000Z",
+  ]);
+});
+
+test("observation chain scans only observable publication receipts in one tenant window", async () => {
+  const calls = [];
+  const pool = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      return {
+        rows: [{
+          job_id: `marketing-daily:${"c".repeat(64)}`,
+          receipt: { kind: "marketing_daily_distribution" },
+        }],
+      };
+    },
+  };
+  const rows = await listObservablePublicationReceipts(pool, {
+    tenantId: "tenant-a",
+    after: "2026-08-01T00:00:00.000Z",
+  });
+
+  assert.equal(rows.length, 1);
+  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
+  assert.match(
+    calls[0].sql,
+    /j\.capability = 'marketing\.life-manager\.daily\.publish'/,
+  );
+  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
+  assert.match(calls[0].sql, /provider_post_id/);
+  assert.match(calls[0].sql, /provider_route/);
+  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
+  assert.match(calls[0].sql, /ORDER BY r\.created_at DESC/);
   assert.deepEqual(calls[0].params, [
     "tenant-a",
     "2026-08-01T00:00:00.000Z",
@@ -343,4 +390,70 @@ test("worker handlers are routed through the configured loop adapter registry", 
     kind: "execute",
     job: { job_id: "job-a" },
   });
+});
+
+test("marketing observation worker reads one tenant receipt and preserves empty analytics as unavailable", async () => {
+  const publicationJobId = `marketing-daily:${"a".repeat(64)}`;
+  const calls = [];
+  const handlers = createWorkerHandlers(
+    {
+      LM_RUNTIME_TENANT_ID: "tenant-a",
+      LM_POSTIZ_API_KEY: "private-postiz-token",
+    },
+    ["marketing.observation.collect"],
+    {
+      async query(sql, params) {
+        calls.push({ kind: "query", sql, params });
+        return {
+          rows: [{
+            receipt: {
+              schema_version: 1,
+              kind: "marketing_daily_distribution",
+              status: "published",
+              creative_id: "B01",
+              platform: "tiktok",
+              video_sha256: "b".repeat(64),
+              caption_sha256: "c".repeat(64),
+              public_url: "https://www.tiktok.com/@life_manager/video/7999999999999999999",
+              provider_post_id: "postiz-post-B01",
+              provider_route: "postiz",
+              provider_reconciled: false,
+              published_at: "2026-07-29T12:00:00.000Z",
+            },
+          }],
+        };
+      },
+      async fetchImpl(url, options) {
+        calls.push({
+          kind: "fetch",
+          url,
+          authorizationPresent: options.headers.Authorization.length > 0,
+        });
+        return {
+          ok: true,
+          async json() {
+            return [];
+          },
+        };
+      },
+      now: () => "2026-07-29T14:01:00.000Z",
+    },
+  );
+  const execution = await handlers["marketing.observation.collect"](
+    buildMarketingObservationJob({
+      tenantId: "tenant-a",
+      productId: "life-manager",
+      publicationJobId,
+      window: "2h",
+    }),
+  );
+
+  assert.equal(execution.receipt.status, "insufficient");
+  assert.equal(execution.receipt.metrics.platform.views.value, null);
+  assert.equal(execution.receipt.metrics.product.installs.value, null);
+  assert.equal(calls.filter((call) => call.kind === "query").length, 1);
+  assert.equal(calls.filter((call) => call.kind === "fetch").length, 1);
+  assert.match(calls.find((call) => call.kind === "fetch").url, /analytics\/post\/postiz-post-B01/);
+  assert.equal(calls.find((call) => call.kind === "fetch").authorizationPresent, true);
+  assert.doesNotMatch(JSON.stringify(execution), /private-postiz-token/);
 });
