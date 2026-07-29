@@ -54,6 +54,46 @@ class PostizVideoTests(unittest.TestCase):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.find_post([{"id": "p", "state": "PUBLISHED"}], "p")
 
+    def test_find_post_derives_exact_video_url_from_profile_url_and_release_id(self):
+        row = {
+            "id": "post-1",
+            "state": "PUBLISHED",
+            "releaseURL": "https://www.tiktok.com/@life.manager",
+            "releaseId": "v_pub_file~v2-1.7999999999999999999",
+        }
+        self.assertEqual(
+            postiz_video.find_post([row], "post-1"),
+            {
+                "state": "PUBLISHED",
+                "post_url": "https://www.tiktok.com/@life.manager/video/7999999999999999999",
+            },
+        )
+
+    def test_exact_recent_provider_effect_reconciles_before_upload(self):
+        rows = {
+            "posts": [{
+                "id": "post-1",
+                "state": "PUBLISHED",
+                "content": "Exact caption\n#line",
+                "integration": {"id": "integration-1"},
+                "releaseURL": "https://www.tiktok.com/@life",
+                "releaseId": "v_pub_file~v2-1.7999999999999999999",
+            }],
+        }
+        self.assertEqual(
+            postiz_video.find_existing_post(
+                rows,
+                integration="integration-1",
+                caption="Exact caption\n#line",
+            ),
+            {
+                "post_id": "post-1",
+                "state": "PUBLISHED",
+                "post_url": "https://www.tiktok.com/@life/video/7999999999999999999",
+                "reconciled": True,
+            },
+        )
+
     def test_profile_release_url_resolves_to_matching_recent_video(self):
         payload = {
             "entries": [

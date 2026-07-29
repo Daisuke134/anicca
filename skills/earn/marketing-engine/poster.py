@@ -51,11 +51,12 @@ def cdp_http_url(port, path):
     return f"http://{host}:{port}{path}"
 
 
-def make_gmail_handler(handle):
+def make_gmail_handler(handle, credentials_path=None):
     # instagrapi calls this on an email challenge; auto-read the 6-digit code from the
     # account's gmail plus-address inbox via `gog gmail`. Never prints the code.
     def handler(username=None, choice=None):
-        creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
+        path = credentials_path or C(f"~/.cloak/ig-{handle}.json")
+        creds = json.load(open(path))
         base = creds["email"].split("+")[0] + "@gmail.com"
         end = time.time() + 180
         while time.time() < end:
@@ -171,7 +172,16 @@ def gentle_ping(cl):
         return True
 
 
-def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=None):
+def login_resilient(
+    cl,
+    handle,
+    port,
+    res,
+    settings_path=None,
+    accounts_path=None,
+    credentials_path=None,
+    profile_state_dir=None,
+):
     # Self-healing login so the loop never needs a human to log in again. Order matters (v22/v23/
     # v24 — see module docstring):
     #   1) reuse the saved instagrapi session (device+cookies) — the "golden session". NEVER falls
@@ -243,13 +253,16 @@ def login_resilient(cl, handle, port, res, settings_path=None, accounts_path=Non
         # Observed 2026-07-16: two tier3 logins within minutes both "succeeded" then got revoked
         # mid-use (LoginRequired during clip_upload). At most ONE password attempt per 24h, and
         # only for an account that has never had a saved session (settings_existed is False here).
-        stamp = C(f"~/.cloak/.last-pwlogin-{handle}")
+        stamp = os.path.join(
+            profile_state_dir or C("~/.cloak"),
+            f".last-pwlogin-{handle}",
+        )
         last = os.path.getmtime(stamp) if os.path.exists(stamp) else 0
         if time.time() - last < 24 * 3600:
             res["error"] = "tier3 password login on 24h cooldown — refusing to hammer IG login (3a)"
             return False
         open(stamp, "w").write(str(int(time.time())))  # stamp BEFORE the attempt: failures count too
-        creds = json.load(open(C(f"~/.cloak/ig-{handle}.json")))
+        creds = json.load(open(credentials_path or C(f"~/.cloak/ig-{handle}.json")))
         cl.login(creds["username"], credential_password(creds))
         cl.dump_settings(settings)
         return True
@@ -334,7 +347,15 @@ def keepalive_main(handle, settings_path=None, accounts_path=None, client_factor
     return res
 
 
-def verify_only_main(handle, port, settings_path=None, accounts_path=None, client_factory=None):
+def verify_only_main(
+    handle,
+    port,
+    settings_path=None,
+    accounts_path=None,
+    credentials_path=None,
+    profile_state_dir=None,
+    client_factory=None,
+):
     # SHARED-1 (INV-3): read-only replacement for post_reel.py's browser-DOM --verify-only mode —
     # returns the account's current reel/post hrefs via the instagrapi private API (no browser DOM
     # read needed). Used by self_heal.py and earn/video/run.sh to reconcile a possibly-landed post
@@ -347,8 +368,17 @@ def verify_only_main(handle, port, settings_path=None, accounts_path=None, clien
     cl = client_factory()
     cl.delay_range = [1, 3]
     apply_proxy(cl, handle, res, accounts_path)
-    cl.challenge_code_handler = make_gmail_handler(handle)
-    if not login_resilient(cl, handle, port, res, settings_path, accounts_path):
+    cl.challenge_code_handler = make_gmail_handler(handle, credentials_path)
+    if not login_resilient(
+        cl,
+        handle,
+        port,
+        res,
+        settings_path,
+        accounts_path,
+        credentials_path,
+        profile_state_dir,
+    ):
         return res
     try:
         medias = cl.user_medias(cl.user_id, amount=12)
@@ -394,6 +424,9 @@ def main():
     ap.add_argument("--handle", required=True)
     ap.add_argument("--port", default=os.environ.get("CDP_PORT", "9222"))
     ap.add_argument("--accounts-path", help="account state JSON; defaults to ~/.cloak/clip-accounts.json")
+    ap.add_argument("--settings-path", help="saved instagrapi session supplied by the tenant profile")
+    ap.add_argument("--credentials-path", help="tenant-scoped Instagram credential record")
+    ap.add_argument("--profile-state-dir", help="tenant-scoped mutable Instagram profile state")
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--keepalive", action="store_true",
                      help="read-only golden-session probe; no post, never logs in")
@@ -402,9 +435,20 @@ def main():
     a = ap.parse_args()
     accounts_path = a.accounts_path or C("~/.cloak/clip-accounts.json")
     if a.keepalive:
-        print(json.dumps(keepalive_main(a.handle, accounts_path=accounts_path), ensure_ascii=False)); return
+        print(json.dumps(keepalive_main(
+            a.handle,
+            settings_path=a.settings_path,
+            accounts_path=accounts_path,
+        ), ensure_ascii=False)); return
     if a.verify_only:
-        print(json.dumps(verify_only_main(a.handle, a.port, accounts_path=accounts_path), ensure_ascii=False)); return
+        print(json.dumps(verify_only_main(
+            a.handle,
+            a.port,
+            settings_path=a.settings_path,
+            accounts_path=accounts_path,
+            credentials_path=a.credentials_path,
+            profile_state_dir=a.profile_state_dir,
+        ), ensure_ascii=False)); return
     # ★ FREEZE GATE (fail-closed for posting; Dais 2026-07-17 "1 loop = 1 acc" ruling): a handle whose
     #   supplied account-state status starts with "frozen" must never be POSTED to from ANY path -- the
     #   production run.sh chain and one-off diagnostic scripts alike (pass45's post_reel_diag.py posted
@@ -435,10 +479,19 @@ def main():
         cl = Client()
         cl.delay_range = [1, 3]
         apply_proxy(cl, a.handle, res, accounts_path)
-        cl.challenge_code_handler = make_gmail_handler(a.handle)
+        cl.challenge_code_handler = make_gmail_handler(a.handle, a.credentials_path)
         # ★ ACCOUNT GUARD (fail-closed): the session is loaded from instagrapi-<handle>.json (tier 1/3)
         #   or verified cl.username==handle (tier 2), so we can only ever act as the right account. ★
-        if not login_resilient(cl, a.handle, a.port, res, accounts_path=accounts_path):
+        if not login_resilient(
+            cl,
+            a.handle,
+            a.port,
+            res,
+            settings_path=a.settings_path,
+            accounts_path=accounts_path,
+            credentials_path=a.credentials_path,
+            profile_state_dir=a.profile_state_dir,
+        ):
             print(json.dumps(res, ensure_ascii=False)); return
 
         if not a.live:

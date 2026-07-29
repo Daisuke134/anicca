@@ -4830,12 +4830,12 @@
       },
       "environment_keys": [],
       "parse_error": null,
-      "disposition": "unclassified",
-      "owner": null,
-      "target_adapter": null,
-      "effect_class": null,
-      "verify_command": null,
-      "rollback_action": null
+      "disposition": "migrate",
+      "owner": "life-manager-runtime",
+      "target_adapter": "marketing-life-manager-daily",
+      "effect_class": "publish",
+      "verify_command": "cd apps/life-manager && npm run test:runtime-adapters",
+      "rollback_action": "Keep ai.anicca.life-manager-daily loaded until seven expected Life Manager cycles have complete per-platform receipts; do not enable both scheduler owners for the same 10:15 slot"
     },
     {
       "legacy_id": "ai.anicca.life-manager-dev",
@@ -10691,7 +10691,7 @@
       "canonical_life_manager": 8
     },
     "enabled_or_loaded": 269,
-    "unclassified": 398,
+    "unclassified": 397,
     "parse_errors": 2
   }
 }

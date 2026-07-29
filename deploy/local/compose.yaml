@@ -13,8 +13,8 @@ x-runtime-environment: &runtime-environment
   MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-life_manager_local_only}
 
 x-runtime-build: &runtime-build
-  context: ../../apps/life-manager
-  dockerfile: Dockerfile.runtime
+  context: ../..
+  dockerfile: apps/life-manager/Dockerfile.runtime
 
 x-runtime-dependencies: &runtime-dependencies
   postgres:
@@ -22,6 +22,8 @@ x-runtime-dependencies: &runtime-dependencies
   object-store:
     condition: service_healthy
   migrate:
+    condition: service_completed_successfully
+  runtime-init:
     condition: service_completed_successfully
 
 services:
@@ -74,6 +76,24 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: "no"
+
+  runtime-init:
+    image: life-manager-local-runtime:dev
+    pull_policy: never
+    user: root
+    command:
+      - sh
+      - -ec
+      - >
+        mkdir -p /var/lib/life-manager/data /var/lib/life-manager/cache
+        /var/lib/life-manager/receipts /var/lib/life-manager/logs;
+        chown -R node:node /var/lib/life-manager
+    volumes:
+      - runtime-data:/var/lib/life-manager
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     restart: "no"
 
   api:
@@ -140,6 +160,13 @@ services:
       LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop}
       LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
       LM_TELEGRAM_BOT_TOKEN: ${LM_TELEGRAM_BOT_TOKEN:-}
+      LM_POSTIZ_API_KEY: ${LM_POSTIZ_API_KEY:-}
+      LM_INSTAGRAM_HANDLE: ${LM_INSTAGRAM_HANDLE:-}
+      LM_INSTAGRAM_ACCOUNTS_PATH: ${LM_INSTAGRAM_ACCOUNTS_PATH:-}
+      LM_INSTAGRAM_SETTINGS_PATH: ${LM_INSTAGRAM_SETTINGS_PATH:-}
+      LM_INSTAGRAM_CREDENTIALS_PATH: ${LM_INSTAGRAM_CREDENTIALS_PATH:-}
+      LM_INSTAGRAM_PROFILE_STATE_DIR: ${LM_INSTAGRAM_PROFILE_STATE_DIR:-}
+      LM_TIKTOK_INTEGRATION: ${LM_TIKTOK_INTEGRATION:-}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       BASE_RPC_URL: ${BASE_RPC_URL:-https://mainnet.base.org}

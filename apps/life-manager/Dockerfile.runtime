@@ -1,9 +1,17 @@
 FROM node:20.19-alpine
 
-WORKDIR /app
-COPY package.json package-lock.json ./
+RUN apk add --no-cache ffmpeg python3 py3-pip \
+  && python3 -m venv /opt/lm-python \
+  && /opt/lm-python/bin/pip install --no-cache-dir \
+    instagrapi==2.18.7 websocket-client==1.9.0
+
+ENV PATH="/opt/lm-python/bin:${PATH}"
+WORKDIR /app/apps/life-manager
+COPY apps/life-manager/package.json apps/life-manager/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
-COPY . .
+COPY apps/life-manager ./
+COPY skills/video /app/skills/video
+COPY skills/earn/marketing-engine /app/skills/earn/marketing-engine
 
 USER node
 EXPOSE 8788 8790

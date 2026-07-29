@@ -43,6 +43,10 @@ function validModel() {
         environment: {},
         depends_on: { postgres: { condition: "service_healthy" } },
       },
+      "runtime-init": {
+        environment: {},
+        depends_on: { migrate: { condition: "service_completed_successfully" } },
+      },
       api: healthyService({
         LM_DEPLOYMENT_ROLE: "api",
         LIFE_RUN_LOOPS: "false",
@@ -103,6 +107,7 @@ test("committed local compose is self-contained and never references a legacy ru
     "postgres",
     "object-store",
     "migrate",
+    "runtime-init",
     "api",
     "scheduler",
     "worker",
