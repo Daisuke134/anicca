@@ -157,6 +157,35 @@ distribution.
 | ASO App Store Screenshots skill | Deterministic screenshot composition followed by bounded visual enhancement | Generating text, device geometry, and every screenshot pixel nondeterministically |
 | TrustMRR / Flippa / Apple app transfer | Verified revenue package, diligence artifacts, original source, and transfer readiness | Building clones or assuming every app should be sold |
 
+### 5.1 Adjudication from the 2026-07-29 deep code hunt (adopt vs copy vs build)
+
+Two deep GitHub hunts (code actually read, not README-only) produced this
+binding adjudication. "Build" is only allowed where the hunt confirmed no
+mature solution exists.
+
+| Loop part | Best existing solution | Stars / activity | Verdict |
+|---|---|---|---|
+| ASC 2FA automation | `asc`-bundled `scripts/get-apple-2fa-code.scpt` — polls macOS FollowUpUI accessibility tree for the 6-digit code, auto-clicks trust dialogs | rorkai/App-Store-Connect-CLI 5,337★, daily commits | ADOPT — direct answer to the `WAITING_FOR_HUMAN` gate that killed all 7 factory apps |
+| App Privacy declarations | `asc web privacy catalog/pull/plan/apply/publish` (web-session ops absent from the public API) | same | ADOPT — direct answer to the desk-stretch blocker |
+| Review submission / beta localizations | `asc` API + `asc web review` | same | ADOPT (fix call order only) |
+| fastlane spaceauth for metadata | Session lifetime "1 day to 1 month, region-dependent" per official docs | 40k★ | REJECT for metadata/web ops; keep fastlane for binary build/upload only |
+| Build-loop hardening | umputun/ralphex — fresh session per task, staged review pipeline, completed-plan archival | 1,402★, active | COPY-PATTERN into ralph.sh |
+| Whole-factory OSS | None exists (all candidates 0–1★ scaffolds) | — | BUILD justified (verified) |
+| CFO / budget / mission contracts | None exists. Skeleton = Temporal openai_agents manager pattern + adenhq/hive DAG/persistent-memory design (10.8k★) | — | BUILD justified (verified) |
+| ASO skills | Eronred/aso-skills 1,685★ — already installed locally (aso-audit etc.) | active | ADOPTED — pull updates only |
+| ASO keyword scoring | facundoolano/aso traffic/difficulty formulas | 854★ (stale code) | COPY-PATTERN (formulas only) |
+| App Store data | facundoolano/app-store-scraper | 1,399★ | ADOPT |
+| Apple Search Ads client | phiture/searchads_api (agency-grade full client) | 61★, active | ADOPT |
+| TikTok posting | wkaisertexas/tiktok-uploader — cookie-injection auth, merges with CloakBrowser daily-driver | 756★, active | ADOPT |
+| Vertical video generation | MoneyPrinterTurbo | 100k★ | ADOPT (generation side) |
+| Per-post attribution on iOS | No OSS exists. Practical path = App Store custom product pages with distinct links | — | BUILD thin + one E2E measurement to make it fact |
+| App Review reply automation | No mature OSS for App Store | — | BUILD thin (asc review API + LLM) |
+| Paywall A/B | No OSS; local `paywall-ab` skill already equals or exceeds | — | USE existing |
+| Exit / sale automation | Nothing exists | — | BUILD later |
+
+Unverified items to be closed by T1 execution: real-device run of
+`get-apple-2fa-code.scpt`; actual `asc web` session lifetime.
+
 ## 6. System boundary
 
 ### 6.1 Pilot boundary
@@ -574,39 +603,51 @@ Order 37.
 ## 15. Implementation slices
 
 These are design slices, not authorization to implement before review.
+Slice IDs use the S prefix so they can never be confused with the §16
+execution order (T prefix); the former shared P numbering was a defect,
+fixed 2026-07-29.
 
 | Slice | Scope | Done evidence |
 |---|---|---|
-| P0 — Truth and Anicca canary | Product registry, observations, review issues, costs, and one bounded existing-app decision | no missing metric is treated as zero; one exact rejection or funnel decision is reproducible |
-| P1 — Opportunity selection | Source receipts, disqualifiers, RICE, unique/native/distribution gates | exactly one new app selected without manual preference override |
-| P2 — Builder adapter | Map mobileapp-builder phases into durable jobs and receipts | clean worktree produces a tested native build from an approved spec |
-| P3 — Release/review loop | RevenueCat, fastlane/ASC, preflight, review message classification, repair/resubmit | one TestFlight/App Review transition and one simulated message fixture pass; live effects are receipt-backed |
-| P4 — Shipaton app | Product-specific build, store assets, privacy, accessibility, purchase, public release | public eligible store URL and complete Devpost asset pack |
-| P5 — Measured improvement | Attribution, bottleneck decision, one product and one marketing experiment | keep/revert decisions and contribution-profit snapshot |
-| P6 — CFO allocation | Global/business/mission/call envelopes, policy engine, usage settlement, and resource leases | a replayable CFO decision cannot exceed hard caps and reconciles actual token/API/Mac/cash use |
-| P7 — Portfolio/exit | Double-down/hold/retire/sell policy and transfer pack | decision replay and diligence package pass |
-| Order 37 port | Import proven contracts into the canonical Life Manager runtime | no duplicate scheduler; local/cloud job contracts and tenant boundaries pass |
+| S0 — Truth and Anicca canary | Product registry, observations, review issues, costs, and one bounded existing-app decision | no missing metric is treated as zero; one exact rejection or funnel decision is reproducible |
+| S1 — Opportunity selection | Source receipts, disqualifiers, RICE, unique/native/distribution gates | exactly one new app selected without manual preference override |
+| S2 — Builder adapter | Map mobileapp-builder phases into durable jobs and receipts | clean worktree produces a tested native build from an approved spec |
+| S3 — Release/review loop | RevenueCat, fastlane/ASC, preflight, review message classification, repair/resubmit | one TestFlight/App Review transition and one simulated message fixture pass; live effects are receipt-backed |
+| S4 — Shipaton app | Product-specific build, store assets, privacy, accessibility, purchase, public release | public eligible store URL and complete Devpost asset pack |
+| S5 — Measured improvement | Attribution, bottleneck decision, one product and one marketing experiment | keep/revert decisions and contribution-profit snapshot |
+| S6 — CFO allocation | Global/business/mission/call envelopes, policy engine, usage settlement, and resource leases | a replayable CFO decision cannot exceed hard caps and reconciles actual token/API/Mac/cash use |
+| S7 — Portfolio/exit | Double-down/hold/retire/sell policy and transfer pack | decision replay and diligence package pass |
+| S8 — Order 37 port | Import proven contracts into the canonical Life Manager runtime | no duplicate scheduler; local/cloud job contracts and tenant boundaries pass |
 
 ## 16. Remaining TODO — execution SSOT
 
-This table is the authoritative implementation order. Design work does not
-mark runtime work complete.
+This table is the authoritative implementation order (T prefix; §15 design
+slices use S). Dates are JST and align with the Shipaton window
+(ship 2026-08-01 → 09-30 23:45 PDT; updates to previously released apps do
+not qualify; multiple entries allowed; apps still in review are ineligible).
+Reordered 2026-07-29 after the deep code hunt (§5.1): the shipping leg is
+repaired by adopting `asc web` + the bundled 2FA script instead of building
+new automation, and Mode B (iterate) is proven on Anicca before Mode A
+(build-new) ships the Shipaton entry.
 
-| Order | Status | Work | Done evidence |
-|---:|---|---|---|
-| D0 | Complete | Research prior art, choose profit-loop entry, define CFO hierarchy, Product Cell, multi-agent roles, budgets, resource leases, and exit loop | this committed design and cited source set |
-| P0 | Pending | Build read-only Product Registry and Product Cell snapshot for Anicca | one versioned snapshot reconciles repo, bundle/store IDs, release/review state, connectors, metrics availability, and costs |
-| P1 | Pending | Connect first-party observations | ASC, RevenueCat, analytics, crashes, reviews, acquisition, refunds, and model/API cost produce typed observations; unavailable is distinct from zero |
-| P2 | Pending | Implement Mission, Budget Envelope, AgentRunUsage, PolicyDecision, and ResourceLease contracts | schema/contract tests cover caps, expiry, idempotency, settlement, and lease release |
-| P3 | Pending | Implement durable workflow skeleton and specialist agents-as-tools | one local mission survives restart, records usage, retries only retryable failures, and terminates at its stop rule |
-| P4 | Pending | Run the Anicca canary | exact current review/funnel bottleneck produces one bounded change, real verification, release/review receipt, measurement, and keep/revert decision |
-| P5 | Pending | Implement market/UX intelligence adapters | App Store search/reviews/releases, TikTok evidence, Mobbin patterns, and public screenshots produce a cited Opportunity Evidence Pack |
-| P6 | Pending | Select one Shipaton app | one candidate passes pain, willingness-to-pay, native advantage, distribution, uniqueness, scope, and rules-snapshot gates |
-| P7 | Pending | Connect mobileapp-builder, QA, RevenueCat, ASC, and review recovery | approved spec reaches tested native build, TestFlight, App Review, rejection repair if needed, and public eligible URL |
-| P8 | Pending | Connect the existing marketing loop and experiment controller | one attributed marketing mission reaches keep/revert with settled acquisition cost |
-| P9 | Pending | Implement global CFO allocation | CFO compares Mobile with other Life Manager businesses and issues a hard-capped envelope from reconciled evidence |
-| P10 | Pending | Implement Exit Agent and transfer package | hold/sell decision, Acquire-ready diligence pack, Apple eligibility check, and credential/legal handoff checklist pass |
-| P11 | Pending | Port proven contracts into Order 37 | canonical runtime owns scheduling and ledgers; no duplicate scheduler or truth source remains |
+| Order | Window (JST) | Status | Work | Done evidence |
+|---:|---|---|---|---|
+| D0 | done | Complete | Research prior art, choose profit-loop entry, define CFO hierarchy, Product Cell, multi-agent roles, budgets, resource leases, and exit loop | this committed design and cited source set |
+| D1 | done | Complete | Deep code hunt; adjudicate adopt/copy/build (§5.1); resolve §15/§16 numbering collision | §5.1 table committed |
+| T1 | 07-30–31 | Pending | Repair the shipping leg by adoption: run `asc web auth login` + `get-apple-2fa-code.scpt` once for real; run `asc web privacy apply` and beta-app-localizations in correct order on one dead factory app | the app passes privacy + localization and reaches review submission with zero human 2FA entry |
+| T2 | 07-31 | Pending | Push that dead app to public release (pipeline live-fire; deliberately outside the Shipaton window, never a Shipaton entry) | public App Store URL opens |
+| T3 | 08-01 | Pending | Fetch Shipaton Official Rules; adjudicate AI-generated and multi-entry clauses; install a rules-watch job | written eligibility verdict + watch job firing |
+| T4 | 08-01–05 | Pending | Build read-only Product Registry + Product Cell snapshot and connect first-party observations (ASC, RevenueCat, analytics, crashes, reviews, refunds, model/API cost) — Anicca first | one versioned snapshot with real data; unavailable distinct from zero |
+| T5 | 08-03–08 | Pending | Prove Mode B (iterate) on Anicca: bottleneck → one hypothesis → one bounded change → re-release → measure → keep/revert; port ralphex patterns (fresh session per task, completed-plan archival) into ralph.sh | one full iteration receipt chain |
+| T6 | 08-05–08 | Pending | Implement SELECT gate + market-evidence adapters (app-store-scraper, TikTok evidence, Mobbin) with the marketing veto: no distribution evidence, no build | three cited candidates ranked; gate rejects at least one |
+| T7 | 08-08–20 | Pending | Mode A: ship the gate-winning new app as Shipaton entry #1 (mobileapp-builder → greenlight → RevenueCat IAP → asc → review recovery) | in-window public URL + one live RevenueCat purchase |
+| T8 | 08-20–09-24 | Pending | Connect the marketing loop under Mission contracts: tiktok-uploader + MoneyPrinterTurbo posting, ASO (installed skills + scraper), searchads_api, paywall-ab/screenshot-ab; product and marketing experiments settle in the same contribution-profit ledger | one attributed marketing mission reaches keep/revert with settled acquisition cost |
+| T9 | slack | Pending | Repeat Mode A for entries #2/#3 if envelope allows | additional in-window public URLs |
+| T10 | 09-24–30 | Pending | Demo videos + Devpost submission for all entries | submission confirmation |
+| T11 | 10-01+ | Pending | Implement global CFO allocation (Mission/BudgetEnvelope/AgentRunUsage/PolicyDecision/ResourceLease contracts + settlement) | replayable CFO decision cannot exceed hard caps and reconciles actual token/API/Mac/cash use |
+| T12 | 10-01+ | Pending | Implement Exit Agent and transfer package | hold/sell decision, Acquire-ready diligence pack, Apple eligibility check, credential/legal handoff checklist pass |
+| T13 | 10-01+ | Pending | Thin attribution layer: App Store custom product pages with distinct links, one E2E measurement | "post → install → purchase" chain measured on a real post |
+| T14 | 10-01+ | Pending | Port proven contracts into Order 37 (canonical Life Manager runtime; local/cloud split; tenant boundaries) | canonical runtime owns scheduling and ledgers; no duplicate scheduler or truth source remains |
 
 ## 17. Sources
 
