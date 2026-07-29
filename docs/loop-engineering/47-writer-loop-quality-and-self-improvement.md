@@ -2495,7 +2495,7 @@ dashboard はこの event/ledger を読む read-only projection とする。dash
 | 10 | DONE (`f550b4b`; installed `14ce862`) | 自然観測をdurable windowへ変換。実装sessionは待たず、native `ai.anicca.marketing-metrics`が15分ごとにdue itemを`scorable`または`insufficient/no_change`へ自動terminal化。3 run、実engagement、7日paid、Zenn/X timingは同じcontractで継続 | 実launchd runs=2 / exit=0 / interval=900。missingを0へ変換せず、terminal receipt idempotent、Marketing 12件 + Writer 343件PASS |
 | 11 | DONE (`b7d05a1`; installed `3ee5364`) | dashboardをledger上にallowlist投影。黒い運用台帳UIをstandalone HTMLで生成し、秘密fieldを除外。専用LaunchAgentが15分ごとに再生成し、metrics/learn workerとはprocess/stateを共有しない | dashboard停止/削除でもobservation terminal化継続、source ledger hash不変、実Chrome表示、実launchd exit=0、Marketing 15件 + Writer 343件PASS |
 
-**現行実装TODO: 0。** §22.6の監視backlogは人間/実装sessionを待たせず、`ai.anicca.marketing-metrics`が証拠到着または期限到来で自動terminal化する。
+**この「実装TODO: 0」は 2026-07-29 の production incident で撤回する。現行の順序正本は §22.12。** §22.6の自然観測backlogは引き続き実装sessionを待たせず、`ai.anicca.marketing-metrics`が証拠到着または期限到来で自動terminal化する。ただし、日次生成そのものの中断回復は観測backlogではなく公開SLOの故障である。
 
 実装時の基本検証コマンド:
 
@@ -2507,3 +2507,95 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 ./marketing/engine/bin/marketing verify-public --run <run_id>
 ./marketing/engine/bin/marketing verify-experiment --experiment <experiment_id>
 ```
+
+### 22.12 2026-07-29 production incident と現行TODO
+
+#### 実測した事実
+
+| Boundary | Evidence | Verdict |
+|---|---|---|
+| schedule | `ai.anicca.article-daily` は06:00 JST、`runs=2` | 発火済み。scheduler未発火ではない |
+| foreground run | `daily-2026-07-29` は `21:00:05Z` に開始、`21:25:04Z` に `SIGTERM / rc=143` | 1,499秒後に外部中断 |
+| generation | JA/EN本文、headline、body diagram、X post、quality gate途中結果を `interrupted-generation/.../attempt-1` へhash付き退避 | 記事生成は進んだが公開境界前 |
+| publication | `gates/publication-state.json` は不存在、`articles.jsonl` の当該run行0、live reality-PASS 0 | stable target登録も公開副作用も0 |
+| public readback | note最新は07-28 06:53 JST、Dev.to最新は07-28 08:59 JST、Substack最新は07-28 09:04 JST、Zenn最新は07-28 22:08 JST | 07-29公開0と一致 |
+| start control | `article_daily_start_control.py` は現在 `resume-generation / same-jst-day-prepublication-interruption` | 同一runの安全な再生成が可能 |
+| pending worker | `article_pending.py` は `*/gates/publication-state.json` のあるrunだけを列挙 | publication-state作成前の中断を拾わない |
+| resume runtime | macOS `/usr/bin/awk` が `article-resume-pending.sh` の複数行group式でsyntax error | 5分workerにも独立した実機故障あり |
+| TERM発生源 | launchd unified logは06:25:04の`service inactive`だけを記録。Writer source/model runnerに1,500秒timeoutは無い | 直接のsignal送信元は未特定。推測でCodex制限と断定しない |
+
+**根本原因は二段**: foreground agentが公開前に外部TERMを受けたことが直接原因。日次SLOを破った構造原因は、`interrupted-safe`を正しく保存したのに、そのstateを消費して同じdaily runへ再入する自動ownerがいないこと。fixtureで証明したself-healはpublication-state作成後の5 failureに限られ、pre-publication process deathをproduction wiringが覆っていなかった。
+
+#### 残TODO（損失順・唯一の現行順序）
+
+| # | 状態 | 作業 | done |
+|---:|---|---|---|
+| 1 | TODO NOW | `daily-2026-07-29`をimmutable prompt・同一run IDから再開し、独立platformを止めずに公開 | public readback付きlive receiptを1面以上、最終exact8または各pairのhonest pending receipt。新規run/重複target 0 |
+| 2 | TODO NOW | pre-publication recovery ownerを配線 | `interrupted-safe`検出→同一daily wrapperの`resume-generation`を自動kickstart。claim、cooldown、上限、Telegramをdurable state化 |
+| 3 | TODO NOW | `article-resume-pending.sh`のmacOS awk syntaxを修復 | 実LaunchAgent tickでstderr増分0、ownerless lock/active owner両fixture PASS |
+| 4 | TODO NOW | 外部TERM fault fixtureを追加 | generation中にchildへTERM→archive→fresh process→同一prompt/run resume→publication init。duplicate artifact/topic/target 0 |
+| 5 | VERIFY NEXT NATURAL RUN | 次の06:00実runで耐久性を確認 | 25分超でも生存、またはTERM後に人手なしresume。public receiptとTelegram、同日run ID exact1 |
+| 6 | AUTO-MONITOR | 実impression / engagement / paidでjudge・title/body/long-formを較正 | `scorable`だけで相関・keep/revert。`unknown/insufficient`は変更0 |
+| 7 | AUTO-MONITOR | 7日click→activation→paid attributionを閉じる | 同一product/run/artifact/variant/clickのwindow-closed receipt |
+| 8 | AUTO-MONITOR | 3 independent healthy runを蓄積 | 異なるrun ID 3本で公開SLO、weight consumption、duplicate 0 |
+| 9 | LOW / MONEY-NONBLOCKING | Zenn backlogとX時刻契約 | FIFO exact1、public readback、X JA→EN remote差360–370分 |
+| 10 | AFTER REAL DATA | CTA/offer/channel配分を実paid rewardで最適化 | raw view/likeではなくpaid→activation→qualified clickの順でwinner決定 |
+
+「自然データ待ち」は #6–#10 を実装停止理由にしない。#1–#4は今直せるproduction reliabilityであり、待機項目ではない。
+
+### 22.13 Any-product → $10k MRR の no-human Writer loop
+
+**結論**: 現在の機械は「$10k MRRを保証する機械」ではない。保証できるのは、任意productの仮説を毎日配信し、公開・計測・改善・復旧を人手なしで回すこと。$10k到達は、offerに需要があり、unit economicsとchannel capacityが成立した時だけ結果として起こる。売上未観測を0点や成功へ変換しない。
+
+```text
+ product pack
+ audience + pain + promise + proof + offer + price
+ landing CTA + activation event + paid event + churn event
+                         |
+                         v
+ [real winner discovery] ---> opponent corpus (same product/channel/form)
+                         |
+                         v
+ [N variants: title / hook / body / CTA / form]
+                         |
+       safety + identity + contradiction + quality gates
+                         |
+                         v
+ [publish exact intent] -> [public body/media readback receipt]
+                         |                  |
+                  failure|                  v
+                         +--> checkpoint -> resume same run/id
+                                            |
+                                            v
+ impression -> engaged read -> CTA click -> activation -> paid -> retained
+     unknown stays unknown            exact lineage join          |
+                                            |                      |
+                                            +---------- reward <---+
+                                                       |
+                                      judge calibration + blame
+                                                       |
+                             change exactly one scoped weight/rule
+                                                       |
+                              held-out non-regression + bounded canary
+                                      | PASS              | FAIL
+                                      v                   v
+                                    KEEP                REVERT
+                                      |
+                       next run proves consumed weight hash
+                                      |
+                              Telegram + read-only dashboard
+```
+
+| Money contract | Formula / rule |
+|---|---|
+| target paid base | `required_active_paid = 10,000 / monthly_price_usd` |
+| Life Manager at $20/mo | `500 active paid = $10,000 MRR` |
+| traffic requirement | `required_qualified_visits = required_new_paid / observed_visit_to_paid_rate`。観測前にconversion rateを捏造しない |
+| churn replacement | `new_paid_per_month >= churned_paid + net_growth_needed` |
+| channel allocation | artifact単位のpaid/activation rewardで配分。view/likeだけのviralは売上winnerにしない |
+| exploration | winnerへ集中しつつ、未試行variantをゼロにしない。1回の外れ値を永久ルールにしない |
+| self-improve | reward・opponent・weightはproduct/channel/slice別。engineだけ共有 |
+| self-heal | 同一run、同一artifact hash、同一destination intentから再開。新記事を作って失敗を隠さない |
+| no-human | reversible/bounded actionは自走。policy/safety/identity/支払の曖昧さはquarantineし、他channelを継続 |
+
+外部根拠は§22.2を正本とする。Temporalの “pick up right where it left off” を同一run resumeへ、Orallexaのmulti-project/platform adapter/banditをproduct pack・channel adapter・bounded explorationへ、OpenTelemetryのtrace/metric/logをrun ID相関へcopy+tweakする。
