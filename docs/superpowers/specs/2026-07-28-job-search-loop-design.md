@@ -377,6 +377,48 @@ Sources:
 Order 12 remains `in_progress` after 12A. Distribution packaging, a guided profile
 authoring UI, and a clean-machine install from a release artifact remain.
 
+`JOB-PORTABLE-RELEASE-12B` closes those remaining Order 12 gates. The guided setup
+accepts either terminal prompts or a versioned answers JSON, copies no prior
+candidate, rejects placeholder values, validates through the production profile
+contract, and atomically writes one mode-`0600` profile. Legal or work-authorization
+facts exist only when the user explicitly supplies their claim and evidence; the
+wizard never derives them from name, residence, language, or employer.
+
+Release artifacts are built from one Git commit, not the mutable working tree. They
+contain only `apps/job-search-loop`, `runtime/agent-runner`, and a generated
+`RELEASE.json`. Archive entries have sorted paths, normalized owner/group/time
+metadata, and retained executable bits. Each `.tar.gz` is accompanied by a
+SHA-256 file whose digest is verified before extraction in the clean-HOME E2E.
+
+Sources:
+
+- Git `archive`, https://git-scm.com/docs/git-archive:
+  “Creates an archive of the specified format containing the tree structure for the
+  named tree.”
+- Reproducible Builds archive metadata,
+  https://reproducible-builds.org/docs/archives/:
+  “Most archive formats record metadata that will capture details about the build
+  environment if no care is taken.”
+- Python `argparse`, https://docs.python.org/3/library/argparse.html:
+  “The argparse module makes it easy to write user-friendly command-line
+  interfaces.”
+
+`JOB-PORTABLE-RELEASE-12B` is complete when:
+
+1. interactive and answers-file profile setup both produce a production-valid,
+   private profile without placeholder or inferred facts;
+2. existing profiles fail closed unless explicit replacement is supplied;
+3. two builds of the same commit/version have the same SHA-256;
+4. an archive inventory contains the two required runtime roots, generated release
+   metadata, no private state, and no Daisuke profile;
+5. the checksum is verified, the archive is extracted into a clean temporary
+   machine root, and its bundled `install-local.sh --scheduler none` succeeds with
+   a fake authenticated provider;
+6. focused, full, and CI suites pass.
+
+Order 12 becomes `completed` after 12B evidence is merged and reflected in the
+canonical checkout.
+
 ## 5. State and side-effect contracts
 
 ### 5.1 Application state machine
