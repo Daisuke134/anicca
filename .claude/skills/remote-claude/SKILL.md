@@ -1,11 +1,30 @@
 ---
 name: remote-claude
-description: Start or resume a local Claude Code session in Claude Desktop, seed it with a real message, enable Remote Control, and verify that it is reachable from Claude on a phone or browser. Use when the user asks to open Claude Desktop remotely, continue a Mac Claude session from a phone, create a phone-accessible Claude session, or troubleshoot Claude Code Remote Control.
+description: Enable Remote Control for every Claude Code session, start or resume a local session in Claude Desktop, seed it with a real message, and verify phone access. Use when the user asks to make all Claude sessions phone-accessible, open Claude Desktop remotely, continue a Mac Claude session from a phone, create a phone-accessible Claude session, or troubleshoot Claude Code Remote Control.
 ---
 
 # Remote Claude
 
-Create the session without disturbing unrelated Claude chats. Treat “Desktop session opened” and “Remote Control enabled” as separate states and verify both.
+Configure automatic Remote Control once, then create sessions without disturbing unrelated Claude chats. Treat “automatic setting enabled,” “Desktop session opened,” and “Remote Control connected” as separate states and verify all applicable states.
+
+## One-time automatic setup
+
+1. Start an authenticated interactive Claude Code session with any shell-level setup token removed only for that child:
+
+   ```bash
+   env -u CLAUDE_CODE_OAUTH_TOKEN script -q /dev/null claude
+   ```
+
+2. Run `/config`, search for `Remote Control`, select **Enable Remote Control for all sessions**, and set it to `true`.
+3. Require the literal confirmation `Enabled Remote Control for all sessions`.
+4. Exit that session and start a fresh normal `claude` session without `--remote-control`.
+5. Verify that the fresh session enters `/rc connecting…` automatically. Send one real message and confirm the session remains live. Do not infer success from the saved preference alone.
+
+This removes the need to type `/rc` for each future interactive session. It does not start Claude Code by itself after logout or reboot. For phone-originated sessions while no interactive process exists, use Claude's official server mode under a supervised service:
+
+```bash
+claude remote-control --name "Mac mini"
+```
 
 ## Workflow
 
@@ -30,7 +49,7 @@ Create the session without disturbing unrelated Claude chats. Treat “Desktop s
    - `LocalSessions.setFocusedSession: sessionId=...`
    - `[CCD] Session ... warmed successfully`
 
-5. Send `/remote-control` in the warmed session. Verify a success log containing `Remote control enabled` and a bridge session URL or equivalent positive Remote Control state. Do not infer success from the command being typed.
+5. When the automatic setting is enabled, verify the new session connects without sending `/remote-control`. If automatic connection fails, use `/remote-control` only as recovery and diagnose the saved setting or authentication.
 
 6. Leave Claude Desktop and the backing session running. Tell the user to open Claude on their phone with the same account and select the active Code session.
 
@@ -38,13 +57,19 @@ Create the session without disturbing unrelated Claude chats. Treat “Desktop s
 
 Use this when Desktop GUI automation cannot focus or type into the composer.
 
-1. Start a real interactive Remote Control session in a PTY. `script` is important when the calling harness does not expose a true TTY:
+1. Start a normal interactive session in a PTY. The global setting should attach Remote Control automatically. `script` is important when the calling harness does not expose a true TTY:
 
    ```bash
-   env -u CLAUDE_CODE_OAUTH_TOKEN script -q /dev/null claude --remote-control=Phone-Remote
+   env -u CLAUDE_CODE_OAUTH_TOKEN script -q /dev/null claude
    ```
 
    A shell-level `CLAUDE_CODE_OAUTH_TOKEN` overrides the full-scope interactive login. Long-lived setup tokens support inference but cannot enable Remote Control, so remove that variable only for this child process; do not delete or print its stored value.
+
+   If the automatic preference is unavailable or broken, recover with:
+
+   ```bash
+   env -u CLAUDE_CODE_OAUTH_TOKEN script -q /dev/null claude --remote-control "Phone-Remote"
+   ```
 
 2. Send a seed message such as `hello` through the PTY and keep the process alive.
 
@@ -78,6 +103,8 @@ Use this when `/remote-control` says the current login token is limited to infer
 
 | Evidence | Meaning | Action |
 |---|---|---|
+| Fresh normal session shows `/rc connecting…` | Global automatic setting is taking effect | Send one real message and verify the connected session |
+| Preference says `true` but a fresh session never connects | Saved setting or authentication is ineffective | Reopen `/config`, verify the value, check full-scope auth, then retry with a fresh process |
 | `Remote Control requires an active session` | No active query exists | Send one real message, wait for completion or an explicit API response, retry |
 | `OAuth access token has expired` | CLI authentication is stale | Import the transcript into authenticated Desktop, then retry there |
 | `Remote Control requires a full-scope login token` | A setup token or `CLAUDE_CODE_OAUTH_TOKEN` is overriding interactive OAuth | Run full-scope reauthentication, then start the child process with `env -u CLAUDE_CODE_OAUTH_TOKEN` |
