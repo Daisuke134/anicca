@@ -18,13 +18,21 @@ import sys
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
+REPO_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(REPO_SHARED))
+sys.path.append(str(Path.home() / ".openclaw" / "skills" / "_shared"))
 import anicca_profile as prof  # noqa: E402
 
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
+ENV_PATH = Path(os.environ.get(
+    "LIFE_MANAGER_ENV_FILE",
+    Path.home() / ".openclaw" / ".env",
+))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
 
 
 def env(name, default=""):
+    if name in os.environ:
+        return os.environ[name]
     m = re.search(rf"^{name}=(.*)$", ENV, re.M)
     return (m.group(1).strip().strip('"').strip("'") if m else default)
 

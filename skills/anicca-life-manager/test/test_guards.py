@@ -1,5 +1,6 @@
 import os, sys
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(REPO_ROOT / "skills/anicca-life-manager/scripts"))
@@ -11,6 +12,8 @@ def run():
     assert lc.life_manager_enabled({"lifeManager": {"enabled": True}}) is True
     assert lc.life_manager_enabled({}) is True
     assert lc.RELENTLESS_MAX_DEFAULT == 3, f"retry cap should be 3, got {getattr(lc,'RELENTLESS_MAX_DEFAULT','MISSING')}"
+    with mock.patch.dict(os.environ, {"LIFE_MANAGER_TEST_VALUE": "runtime-injected"}, clear=False):
+        assert lc.env("LIFE_MANAGER_TEST_VALUE") == "runtime-injected"
     print("PASS")
 run()
 
@@ -20,5 +23,7 @@ def run_renraku():
     assert renraku.auto_send_allowed({}) is False
     assert renraku.auto_send_allowed({"lateness": {"autoSendMail": True}}) is True
     assert renraku.auto_send_allowed({"lateness": {"autoSendMail": False}}) is False
+    with mock.patch.dict(os.environ, {"LIFE_MANAGER_TEST_VALUE": "runtime-injected"}, clear=False):
+        assert renraku.env("LIFE_MANAGER_TEST_VALUE") == "runtime-injected"
     print("PASS renraku")
 run_renraku()

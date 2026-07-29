@@ -28,7 +28,11 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 JST = timezone(timedelta(hours=9))
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
+ENV_PATH = Path(os.environ.get(
+    "LIFE_MANAGER_ENV_FILE",
+    Path.home() / ".openclaw" / ".env",
+))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
 URL_FILE = Path.home() / ".openclaw" / "workspace" / "imokenet" / "state" / "public_url.txt"
 DEPART_SCRIPT = Path.home() / ".openclaw" / "skills" / "anicca-life-manager" / "scripts" / "gcal_departures.py"
 LOCATION_STATE_DIR = Path.home() / ".openclaw" / "state" / "location"
@@ -91,12 +95,19 @@ def resolve_event_destination(event):
     return None, "unknown"
 
 # Home base + all personal data come from the per-user profile (OSS-general).
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
+# The repository-local adapter is canonical; the old OpenClaw path remains only
+# as a migration fallback while loaded legacy loops are kept running.
+REPO_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(REPO_SHARED))
+sys.path.append(str(Path.home() / ".openclaw" / "skills" / "_shared"))
 import anicca_profile as prof  # noqa: E402
 
-_hlat, _hlon = prof.home_latlon()
-HOME_LAT = float(os.environ.get("LATE_HOME_LAT") or _hlat)
-HOME_LON = float(os.environ.get("LATE_HOME_LON") or _hlon)
+try:
+    _hlat, _hlon = prof.home_latlon()
+except (FileNotFoundError, json.JSONDecodeError, TypeError, ValueError):
+    _hlat, _hlon = None, None
+HOME_LAT = float(os.environ.get("LATE_HOME_LAT") or _hlat) if (os.environ.get("LATE_HOME_LAT") or _hlat) is not None else None
+HOME_LON = float(os.environ.get("LATE_HOME_LON") or _hlon) if (os.environ.get("LATE_HOME_LON") or _hlon) is not None else None
 HOME_RADIUS_M = float(os.environ.get("LATE_HOME_RADIUS_M", "300"))
 LEAD_MIN = int(os.environ.get("LATE_LEAD_MIN", "8"))         # call ~this far before the real leave time
 NUDGE_MIN = int(os.environ.get("LATE_NUDGE_MIN", "20"))      # gentle Slack nudge this far before
@@ -115,6 +126,8 @@ def life_manager_enabled(profile: dict) -> bool:
 
 
 def env(name, default=""):
+    if name in os.environ:
+        return os.environ[name]
     m = re.search(rf"^{name}=(.*)$", ENV, re.M)
     return (m.group(1).strip().strip('"').strip("'") if m else default)
 
