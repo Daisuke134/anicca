@@ -1,16 +1,18 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10H",
-  "status": "implementation_verified_pending_ci",
-  "observed_at": "2026-07-29T13:33:34Z",
+  "status": "live_verified_waiting_real_budget_event",
+  "observed_at": "2026-07-29T13:38:14Z",
   "branch": "fix/job-inbox-budget-retry-10h",
   "red_commit": "ff7bd4036",
   "implementation_commit": "24c5b7f96",
   "pull_request": {
-    "number": null,
-    "url": null,
-    "ci_run": null,
-    "merge_commit": null
+    "number": 1331,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1331",
+    "ci_run": 30456681640,
+    "required_checks_passed": 7,
+    "merge_commit": "6bc07d1cec9d4df06ccb049f808d2dc25c3183bc",
+    "canonical_commit": "6bc07d1cec9d4df06ccb049f808d2dc25c3183bc"
   },
   "red_test": {
     "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_launchd.py -v",
@@ -47,6 +49,26 @@
   "implementation_source": {
     "copied_pattern": "apps/job-search-loop/scripts/run-daily.sh",
     "reason": "The canonical daily launchd driver already treats only a verified budget-blocked summary as a healthy scheduled wait."
+  },
+  "live_reflection": {
+    "inbox_launchd": {
+      "runs_before": 17,
+      "runs_after": 18,
+      "last_exit_code": 0,
+      "new_recruiting_email_count": 0,
+      "pending_interview_prep_count": 0
+    },
+    "seen_state": {
+      "mtime_before": 1785309047,
+      "mtime_after": 1785309047,
+      "modified": false
+    },
+    "healthcheck": {
+      "ledger_integrity": "ok",
+      "interview_prep_integrity": "ok",
+      "inbox_freshness_status": "no_new_recruiting_email"
+    },
+    "budget_event_fabricated": false
   },
   "research_transport": {
     "queries": [
