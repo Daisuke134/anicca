@@ -34,10 +34,11 @@ propagates. Perform this check before resolving a result or marking any thread.
 
 ## Task 2 — GREEN
 
-- [ ] Apply the daily driver's exact bounded runner pattern to inbox.
-- [ ] Preserve all candidates as unseen on budget exhaustion.
-- [ ] Propagate every unverified/non-budget runner failure.
-- [ ] Run focused and full suites.
+- [x] Apply the daily driver's exact bounded runner pattern to inbox.
+- [x] Preserve all candidates as unseen on budget exhaustion.
+- [x] Propagate every unverified/non-budget runner failure.
+- [x] Run focused and full suites: 6 focused, 166 job-loop, and 9 runner
+  tests pass; shell syntax and diff checks pass.
 
 ## Task 3 — GitHub and live reflection
 
