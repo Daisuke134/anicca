@@ -18,7 +18,9 @@ class TokenDailyReportContractTest(unittest.TestCase):
 
     def test_report_includes_loop_attributed_runner_telemetry(self):
         text = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("agent_usage_report.py", text)
+        self.assertIn("usage_report.py", text)
+        self.assertIn("AGENT_USAGE_REPORT_BIN", text)
+        self.assertNotIn("profitable-claude", text)
         self.assertIn('--date "$YESTERDAY_ISO"', text)
         self.assertIn("loop別runner実測", text)
 

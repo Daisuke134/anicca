@@ -27,7 +27,7 @@ from pathlib import Path
 ENGINE = Path(__file__).resolve().parent
 RUN_AGENT = ENGINE / "run_agent.sh"
 CAPAFY = ENGINE.parents[1] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
-CONFIG = Path.home() / "profitable-claude" / "skills" / "agent-runner" / "config.json"
+CONFIG = ENGINE.parents[2] / "skills" / "agent-runner" / "config.example.json"
 
 MIN_TIMEOUT_SECONDS = 900
 

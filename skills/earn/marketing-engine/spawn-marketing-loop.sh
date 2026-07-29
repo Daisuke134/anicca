@@ -29,6 +29,7 @@ fi
 ENGINE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST_DIR="$ENGINE_DIR/manifests"
 MANIFEST="$MANIFEST_DIR/${SLUG}.manifest.sh"
+LIFE_MANAGER_STATE_DIR="${LIFE_MANAGER_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
 
 if [ -f "$MANIFEST" ]; then
   echo "spawn-marketing-loop.sh: manifest already exists, refusing to overwrite: $MANIFEST" >&2
@@ -66,7 +67,7 @@ MKT_PRODUCT_SOURCE=<one line: what to enumerate/sell>
 MKT_BIO_LINK=<a URL if the description gave one, else empty>
 MKT_CADENCE_HOUR=<an integer 0-23; default 16 if unsure>'
 
-  EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/marketing-spawn-${SLUG}/$(date +%s)-$$"
+  EVIDENCE_DIR="$LIFE_MANAGER_STATE_DIR/agent-runner-evidence/marketing-spawn-${SLUG}/$(date +%s)-$$"
   JUDGMENT_JSON="$(printf '%s\n' "$PROMPT" | "$ENGINE_DIR/run_agent.sh" \
     --task-class repeatable-agent \
     --schema "$ENGINE_DIR/schemas/manifest_judgment.schema.json" \
