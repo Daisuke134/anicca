@@ -8,13 +8,16 @@
 **Primary outcome:** every retained loop runs from Life Manager with zero
 OpenClaw dependency, first locally and then from the same runtime in the cloud.
 
-**Current implementation cursor:** the portable local foundation and bounded
-financial-report job adapter are proven. A Life Manager-owned local scheduler
-and worker sent real Telegram `message_id=432`, persisted the immutable
-snapshot/effect receipt, and survived a worker restart without resend. The
-legacy LaunchAgent remains active until the seven-expected-run shadow gate.
-Next: migrate the remaining Telegram command surface and retained loop
-adapters; do not cut over scheduler ownership yet.
+**Current implementation cursor:** the portable local foundation, bounded
+financial-report job adapter, and shared loop-adapter registry are proven. A
+Life Manager-owned local scheduler and worker sent real Telegram
+`message_id=432`, persisted the immutable snapshot/effect receipt, and survived
+a worker restart without resend. Every registered adapter must now implement
+`plan`, `execute`, `reconcile`, `verify`, and `report`; registry configuration
+rejects legacy paths and credential-bearing fields. The legacy LaunchAgent
+remains active until the seven-expected-run shadow gate. Next: migrate the
+existing Life Manager daily loop, then Larry/ReelClaw; do not cut over
+scheduler ownership yet.
 
 ## 1. Executive decision
 

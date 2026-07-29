@@ -4891,12 +4891,12 @@
         "PATH"
       ],
       "parse_error": null,
-      "disposition": "unclassified",
-      "owner": null,
-      "target_adapter": null,
-      "effect_class": null,
-      "verify_command": null,
-      "rollback_action": null
+      "disposition": "migrate",
+      "owner": "life-manager-runtime",
+      "target_adapter": "financial-report-telegram",
+      "effect_class": "message",
+      "verify_command": "cd apps/life-manager && npm run test:runtime-adapters",
+      "rollback_action": "Keep ai.anicca.life-manager-financial-report loaded until seven expected replacement receipts; if replacement parity fails, remove report.financial.telegram from the replacement worker capability set and continue the legacy LaunchAgent."
     },
     {
       "legacy_id": "ai.anicca.life-manager-payout",
@@ -10691,7 +10691,7 @@
       "canonical_life_manager": 8
     },
     "enabled_or_loaded": 269,
-    "unclassified": 399,
+    "unclassified": 398,
     "parse_errors": 2
   }
 }
