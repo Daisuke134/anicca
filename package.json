@@ -1,4 +1,10 @@
 {
+  "name": "life-manager",
+  "private": true,
+  "scripts": {
+    "test:oss": "node --test test/oss-self-contained.test.mjs",
+    "verify:oss": "node scripts/verify-oss-self-contained.mjs"
+  },
   "dependencies": {
     "@blockrun/llm": "^2.13.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
