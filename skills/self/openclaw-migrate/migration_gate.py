@@ -10,3 +10,28 @@ wrong here)."""
 
 def channel_migration_eligible(has_verification_tool):
     return has_verification_tool is True
+
+
+FINAL_DISPOSITIONS = frozenset({"migrate", "replace", "retire"})
+EFFECT_CLASSES = frozenset({"read", "draft", "publish", "message", "money", "maintenance"})
+
+
+def _nonempty(record, key):
+    return isinstance(record.get(key), str) and bool(record[key].strip())
+
+
+def job_disposition_valid(record):
+    """Return True only for a complete, executable final migration decision."""
+    if not isinstance(record, dict):
+        return False
+    disposition = record.get("disposition")
+    if disposition not in FINAL_DISPOSITIONS:
+        return False
+    if record.get("effect_class") not in EFFECT_CLASSES:
+        return False
+    for key in ("owner", "verify_command", "rollback_action"):
+        if not _nonempty(record, key):
+            return False
+    if disposition in {"migrate", "replace"} and not _nonempty(record, "target_adapter"):
+        return False
+    return True
