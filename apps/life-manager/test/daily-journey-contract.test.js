@@ -96,7 +96,7 @@ test("CORE 8e drives the production DAILY journey with provider-ordered reportin
   const user = {
     uid: "controlled-user",
     name: "Controlled User",
-    phone: "+81000000000",
+    phone: "+810000000000",
     home_address: null,
     telegram_chat_id: "controlled-chat",
     wake_policy: "all-events",

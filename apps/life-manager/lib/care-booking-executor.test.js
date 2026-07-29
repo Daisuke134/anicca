@@ -10,7 +10,7 @@ const {
   readConfirmationSignal,
 } = require("./care-booking-executor.js");
 
-const USER = Object.freeze({ uid: "u1", name: "山田太郎", phone: "+819012345678", email: "y@example.com" });
+const USER = Object.freeze({ uid: "u1", name: "山田太郎", phone: "+810000000000", email: "y@example.com" });
 const WEB_CANDIDATE = Object.freeze({
   provider_id: "places/ChIJexample",
   public_name: "丸の内内科クリニック",
@@ -91,7 +91,7 @@ test("happy path: fills U8 name, submits once, reads the confirmation back, rele
   const filled = kinds(cdp.calls, "fill").map(([, , selector, value]) => [selector, value]);
   assert.deepEqual(filled, [
     ["#n", "Life Manager（AI secretary, acting for 山田太郎）"],
-    ["#t", "+819012345678"],
+    ["#t", "+810000000000"],
     ["#e", "y@example.com"],
     ["#d", "2026-08-06T18:00"],
   ]);

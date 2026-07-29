@@ -5,14 +5,14 @@ import { buildGmailSend } from "../composio-gmail.mjs";
 
 test("buildGmailSend produces the GMAIL_SEND_EMAIL execute payload with user_id + arguments", () => {
   const { slug, body } = buildGmailSend({
-    to: "keiodaisuke@gmail.com",
+    to: "person@example.com",
     subject: "Anicca wake net $0",
     body: "NET WORTH $0\nREVENUE $0",
     userId: "genesis",
   });
   assert.equal(slug, "GMAIL_SEND_EMAIL");
   assert.equal(body.user_id, "genesis");
-  assert.equal(body.arguments.recipient_email, "keiodaisuke@gmail.com");
+  assert.equal(body.arguments.recipient_email, "person@example.com");
   assert.equal(body.arguments.subject, "Anicca wake net $0");
   assert.equal(body.arguments.body, "NET WORTH $0\nREVENUE $0");
   assert.equal(body.arguments.is_html, false);

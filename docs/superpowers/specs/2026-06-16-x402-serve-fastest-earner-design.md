@@ -1,7 +1,7 @@
 # x402-serve: fastest genuine real-USDC earner — design spec
 
 Date: 2026-06-16
-Author: Daisuke Sato <keiodaisuke@gmail.com>
+Author: Daisuke Sato <person@example.com>
 Status: executing
 
 ## Goal

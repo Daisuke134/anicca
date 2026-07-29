@@ -73,7 +73,11 @@ if [ -z "${AGENTMAIL_API_KEY:-}" ]; then
   exit 0
 fi
 
-TO_ADDR="${LOOP_REPORT_TO:-keiodaisuke@gmail.com}"
+TO_ADDR="${LOOP_REPORT_TO:-${GOG_ACCOUNT:-}}"
+if [ -z "$TO_ADDR" ]; then
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) loop=$LOOP_NAME NO-OP (report recipient unset)" >> "$LOG" 2>/dev/null
+  exit 0
+fi
 SUBJECT="Anicca loop report: $LOOP_NAME"
 BODY="LOOP $LOOP_NAME
 DID $DID

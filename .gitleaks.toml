@@ -28,6 +28,8 @@ regexTarget = "match"
 regexes = [
   '''0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913''',
   '''0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48''',
+  '''0x41f97480aA37844482Af7c8537A92092a7A72EC2''',
+  '''0x4D97DCd97eC945f40cF65F87097ACe5EA0476045''',
 ]
 stopwords = [
   "token_contract",

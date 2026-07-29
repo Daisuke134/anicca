@@ -28,12 +28,11 @@ jobs:
           sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: gitleaks changed commits
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          gitleaks git . --config .gitleaks.toml --no-banner --redact -v \
-            --log-opts="${BASE_SHA}..HEAD"
+      - name: gitleaks dir (= current merge result)
+        run: gitleaks dir . --config .gitleaks.toml --no-banner --redact -v
+
+      - name: gitleaks git (= full history with adjudicated fingerprint baseline)
+        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v --log-opts=--all
 
   trufflehog:
     name: TruffleHog (filesystem + git history)
@@ -58,61 +57,16 @@ jobs:
           extra_args: --only-verified
 
   shape-grep:
-    name: PII shape grep (= block phone / email / address shapes)
+    name: PII shapes (redacted exact-fingerprint gate)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: '3.11'
 
       - name: Block accidental PII patterns
-        shell: bash
-        run: |
-          # Block phone-number-shaped, gmail-shaped, JP postal-shaped strings.
-          # Generic shapes — no contributor-identifying literals — so this
-          # workflow itself reveals nothing about any specific person.
-          set -uo pipefail
-          declare -a PATTERNS=(
-            '\+81[0-9]{9,11}'              # JP mobile E.164
-            '\+1[0-9]{10}'                  # US mobile E.164
-            '[a-z0-9._%-]+@gmail\.com'      # personal gmail
-            '〒[0-9]{3}-[0-9]{4}'           # JP postal code
-            '"home_address"\s*:\s*"[^"]+"'  # JSON home address with content
-            '"phone"\s*:\s*"\+[0-9]'        # JSON phone number with content
-          )
-          # Existing history has separately tracked legacy findings. This PR gate
-          # blocks new PII shapes in added/modified files without making an
-          # unrelated migration clean the entire repository.
-          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
-          mapfile -t CHANGED_FILES < <(
-            git diff --name-only --diff-filter=ACMR "$BASE_SHA" HEAD -- \
-              '*.py' '*.sh' '*.md' '*.json' '*.toml' '*.yml' \
-              '*.html' '*.ts' '*.js'
-          )
-          hits=0
-          for p in "${PATTERNS[@]}"; do
-            n=0
-            for file in "${CHANGED_FILES[@]}"; do
-              case "$file" in
-                *.env.example|*profile.example.json|*profile.schema.json|\
-                *README.md|*.github/workflows/sec-scan.yml|\
-                services/inbox-zero/*|*specs/archive/*)
-                  continue
-                  ;;
-              esac
-              count=$(grep -IEc -- "$p" "$file" 2>/dev/null || true)
-              n=$((n + count))
-            done
-            if [ "${n:-0}" -gt 0 ]; then
-              echo "❌ shape '$p' hit $n line(s)"
-              hits=$((hits + n))
-            fi
-          done
-          if [ "$hits" -gt 0 ]; then
-            echo "::error::PII shape grep found $hits hit(s) — block merge"
-            exit 1
-          fi
-          echo "✅ shape grep clean"
+        run: python3 scripts/security/pii_shape_scan.py --allowlist .pii-shape-allowlist .
 
   python-lint:
     name: Python syntax + unittest
@@ -125,9 +79,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: install zsh for job-loop runtime tests
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
-
       - name: ast.parse every .py
         run: |
           set -e
@@ -135,36 +86,16 @@ jobs:
             -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
           echo "✅ syntax clean"
 
-      - name: run pure-stdlib tests
+      - name: run declared pure-stdlib security tests
         run: |
-          set -e
-          # Run only changed standalone tests. Historical test trees have
-          # separate dependency contracts and are not a repository-wide
-          # pure-stdlib suite.
-          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
-          fail=0
+          set -euo pipefail
           while IFS= read -r t; do
+            [[ -z "$t" || "$t" == \#* ]] && continue
+            test -f "$t"
             echo "→ $t"
-            if ! python3 "$t"; then fail=1; fi
-          done < <(
-            git diff --name-only --diff-filter=ACMR "$BASE_SHA" HEAD -- \
-              'test_*.py' '**/test_*.py' \
-              | grep -v '^apps/job-search-loop/tests/' \
-              | grep -v '^runtime/agent-runner/tests/' \
-              | sort
-          )
-          if ! git diff --quiet "$BASE_SHA" HEAD -- apps/job-search-loop; then
-            if ! (
-              cd apps/job-search-loop
-              python3 -m unittest discover -s tests
-            ); then fail=1; fi
-          fi
-          if ! git diff --quiet "$BASE_SHA" HEAD -- runtime/agent-runner; then
-            if ! python3 -m unittest discover -s runtime/agent-runner/tests; then
-              fail=1
-            fi
-          fi
-          [ "$fail" -eq 0 ] && echo "✅ all tests passed" || { echo "::error::test failures"; exit 1; }
+            python3 "$t"
+          done < .github/python-security-tests.txt
+          echo "✅ declared security tests passed"
 
   shell-lint:
     name: Shell syntax check

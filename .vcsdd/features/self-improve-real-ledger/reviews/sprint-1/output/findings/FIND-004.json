@@ -7,7 +7,7 @@
   "evidence": {
     "filePath": ".git/logs/refs/heads/feature/self-improve-real-ledger-harden",
     "lineRange": "1",
-    "snippet": "0000000000000000000000000000000000000000 51ec62f94453864cbd07e5ef2e4a068e2ae173f0 Daisuke Sato <keiodaisuke@gmail.com> 1783639989 +0900\tbranch: Created from HEAD"
+    "snippet": "0000000000000000000000000000000000000000 51ec62f94453864cbd07e5ef2e4a068e2ae173f0 Daisuke Sato <person@example.com> 1783639989 +0900\tbranch: Created from HEAD"
   },
   "routeToPhase": "6",
   "notes": "This does NOT indicate any code-correctness defect -- every source file this review re-verified (lib/ledger_reader.py, lib/gate_math.py, lib/promote_gate.py, lib/promote_gate_run.py, lib/promotion_history.py, lib/scope_guard.py, evaluator.py, and the test files) reads correctly and matches its documented behavior. The defect is purely evidentiary/procedural: the claim 'already deployed at merge commit 9804f75' and 'SAFE_TO_DEPLOY' in the existing criteria-evaluation.md rests on Phase-5/6 artifacts that this repo's own git history does not show as ever committed. Remediation is mechanical and low-risk: `git add -A && git commit -m \"harden(self-improve-real-ledger): phase 5 hardening + phase 6 convergence artifacts\" && git push` (or merge the harden branch's working-tree state back into main and push), from this exact checkout, BEFORE Phase 6 is marked 'complete' in state.json. Until that commit+push happens, this feature's Phase 5/6 evidence is not part of the repo's persistent, auditable history that VCSDD (and this project's own CLAUDE.md, '会話は揮発、file は不揮発') depends on."

@@ -39,7 +39,7 @@ function readLedgerRows(file) {
 }
 
 const DRIVING_CITIZEN_WALLET = "0xParentWalletFixtureAbc0000000000000001";
-const CHILD_EVM_WALLET = { address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" };
+const CHILD_EVM_WALLET = { address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xplaceholderchildevmfixturekey" };
 
 function baseParams(overrides = {}) {
   return { initialSkills: [], drivingCitizenWallet: DRIVING_CITIZEN_WALLET, nowMs: 1_800_000_000_000, ...overrides };

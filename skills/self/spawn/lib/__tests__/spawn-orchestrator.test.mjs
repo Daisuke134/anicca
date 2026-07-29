@@ -72,7 +72,7 @@ function happyDeps(dir, overrides = {}) {
     // write a REAL shelter-cost.jsonl row under the actual production resolveStateDir().
     shelterCostFile: path.join(dir, "shelter-cost.jsonl"),
     checkHomeDistinct: async () => ({ ok: true, homeDir: path.join(dir, "child-home") }),
-    generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" }),
+    generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xplaceholderchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => "akash",
     generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: "childsolanafixturekey" }),
@@ -533,7 +533,7 @@ test("REQ-204 call-site: registerIdentity is invoked with the step-2-generated c
   });
   const result = await executeSpawnAttempt(baseParams(), deps);
   assert.equal(result.status, "active");
-  assert.equal(seenPrivateKey, "0xchildevmfixturekey", "REQ-204 must sign with the SAME child key REQ-201 generated in step 2, never a re-derived/second key");
+  assert.equal(seenPrivateKey, "0xplaceholderchildevmfixturekey", "REQ-204 must sign with the SAME child key REQ-201 generated in step 2, never a re-derived/second key");
   const rows = readLedgerRows(deps.ledgerFile).filter((r) => r.child_id === result.childId);
   assert.equal(rows[0].agent_id, "42424");
   assert.equal(rows[0].agent_evm_address, "0xChildEvmFixture0000000000000000000000001");

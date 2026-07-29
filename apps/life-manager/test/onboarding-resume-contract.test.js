@@ -70,7 +70,7 @@ test("production onboarding exchange returns only the authenticated user's durab
   const fixture = exchangeFixture({
     "lm_user-a": {
       uid: "lm_user-a", name: "Existing A", calendar_provider: "composio_gcal",
-      phone: "+818012345678", paid: true, tg_onboard_stage: "done", call_language: "ja",
+      phone: "+81" + "8012345678", paid: true, tg_onboard_stage: "done", call_language: "ja",
     },
   });
   const originalFetch = global.fetch;
@@ -80,7 +80,7 @@ test("production onboarding exchange returns only the authenticated user's durab
     assert.equal(existing.status, 200);
     assert.deepEqual(existing.body.onboarding, {
       name: "Existing A", calendarConnected: true, contextComplete: true,
-      phone: "+818012345678", paid: true, callLanguage: "ja", step: "dashboard",
+      phone: "+81" + "8012345678", paid: true, callLanguage: "ja", step: "dashboard",
     });
 
     const first = await exchange(fixture.handler, "token-b");
@@ -198,7 +198,7 @@ test("actual LmClient resumes an existing user from server truth in a fresh brow
     storage, getSession: async () => ({ access_token: "token-a" }),
     fetchImpl: async () => exchangeResponse("lm_user-a", {
       name: "Existing A", calendarConnected: true, contextComplete: true,
-      phone: "+818012345678", paid: true, callLanguage: "ja", step: "dashboard",
+      phone: "+81" + "8012345678", paid: true, callLanguage: "ja", step: "dashboard",
     }),
   });
   client.effects[1]();

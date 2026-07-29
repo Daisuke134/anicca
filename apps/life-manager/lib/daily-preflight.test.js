@@ -39,7 +39,7 @@ function productionLikeEnv() {
     SUPABASE_URL: "https://project.supabase.co",
     SUPABASE_SERVICE_ROLE_KEY: "supabase-secret-key",
     TELNYX_API_KEY: "telnyx-secret-key",
-    TELNYX_PHONE_NUMBER: "+15551234567",
+    TELNYX_PHONE_NUMBER: "+12025550100",
     TELNYX_CONNECTION_ID: "call-control-123",
     RESEND_API_KEY: "resend-secret-key",
     LM_MAIL_FROM: "Life Manager <hello@aniccaai.com>",
@@ -75,7 +75,7 @@ function successfulFetch(url, options = {}) {
     return Promise.resolve(jsonResponse({ data: { balance: "3.25", currency: "USD" } }));
   }
   if (target.includes("/v2/phone_numbers?")) {
-    return Promise.resolve(jsonResponse({ data: [{ phone_number: "+15551234567", status: "active", connection_id: "call-control-123" }] }));
+    return Promise.resolve(jsonResponse({ data: [{ phone_number: "+12025550100", status: "active", connection_id: "call-control-123" }] }));
   }
   if (target.endsWith("/v2/call_control_applications/call-control-123")) {
     return Promise.resolve(jsonResponse({
@@ -168,7 +168,7 @@ test("manifest covers every required DAILY runtime dependency and real adapters 
     assert.equal(serialized.includes(secret), false, `must redact ${secret}`);
   }
   assert.equal(serialized.includes("hello@aniccaai.com"), false);
-  assert.equal(serialized.includes("+15551234567"), false);
+  assert.equal(serialized.includes("+12025550100"), false);
   assert.equal(requests.some(({ url }) => /\/emails$|\/v2\/calls$|sendMessage|CREATE_EVENT|PATCH_EVENT/.test(url)), false);
   assert.deepEqual(
     requests.filter(({ method }) => method === "POST").map(({ url }) => new URL(url).pathname).sort(),
@@ -224,7 +224,7 @@ test("thrown provider errors expose only a classification, never raw messages or
   const report = await runPreflight({
     checks: [{
       name: "health",
-      run: async () => { throw new Error("Bearer super-secret hello@example.com +15551234567"); },
+      run: async () => { throw new Error("Bearer super-secret hello@example.com +12025550100"); },
     }],
     timeoutMs: 100,
   });
@@ -378,7 +378,7 @@ test("call: production PUBLIC_WSS /ws, non-placeholder LM_CALL_SECRET, and bridg
   const telnyxFetch = async (url) => {
     const target = String(url);
     if (target.endsWith("/v2/balance")) return jsonResponse({ data: { balance: "3.25", currency: "USD" } });
-    if (target.includes("/v2/phone_numbers?")) return jsonResponse({ data: [{ phone_number: "+15551234567", status: "active", connection_id: "call-control-123" }] });
+    if (target.includes("/v2/phone_numbers?")) return jsonResponse({ data: [{ phone_number: "+12025550100", status: "active", connection_id: "call-control-123" }] });
     if (target.endsWith("/v2/call_control_applications/call-control-123")) return jsonResponse({ data: {
       id: "call-control-123", active: true,
       webhook_event_url: "https://life-call.example.test/telnyx-events",
@@ -429,7 +429,7 @@ test("call: production PUBLIC_WSS /ws, non-placeholder LM_CALL_SECRET, and bridg
 test("call: each Telnyx binding and auth gate mismatch fails nonzero", async (t) => {
   const env = productionLikeEnv();
   const cases = [
-    ["number_connection", (url, body) => url.includes("/phone_numbers?") ? { data: [{ phone_number: "+15551234567", status: "active", connection_id: "wrong" }] } : body],
+    ["number_connection", (url, body) => url.includes("/phone_numbers?") ? { data: [{ phone_number: "+12025550100", status: "active", connection_id: "wrong" }] } : body],
     ["application_id", (url, body) => url.includes("/call_control_applications/") ? { data: { ...body.data, id: "wrong" } } : body],
     ["profile", (url, body) => url.includes("/outbound_voice_profiles/") ? { data: { ...body.data, enabled: false } } : body],
     ["webhook", (url, body) => url.includes("/call_control_applications/") ? { data: { ...body.data, webhook_event_url: "https://wrong.example/telnyx-events" } } : body],
@@ -518,12 +518,12 @@ test("evidence sanitizer redacts query values, phones, email, IDs, provider keys
     contact: "person@example.test",
     identifiers: "chat 123456789 user_id=987654321",
     bearer: "Bearer provider-secret",
-    provider: { message: "api_key=sk_live_abcdefghijklmnop token=tg_abcdefghijklmnop" },
+    provider: { message: "api_key=sk_live_placeholder token=tg_placeholder" },
   };
   const serialized = JSON.stringify(sanitizeEvidence(raw));
   for (const forbidden of [
     "query-secret", "99887766", "090-1234-5678", "+81 90 1234 5678", "person@example.test",
-    "123456789", "987654321", "provider-secret", "sk_live_abcdefghijklmnop", "tg_abcdefghijklmnop",
+    "123456789", "987654321", "provider-secret", "sk_live_placeholder", "tg_placeholder",
     "opaquePanelTokenAbcd1234", "providerSecretValue",
   ]) assert.equal(serialized.includes(forbidden), false, `leaked ${forbidden}`);
 });
