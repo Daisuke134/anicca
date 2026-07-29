@@ -468,7 +468,8 @@ function makeStagehandSteelDriver(options = {}) {
               "Report confirmed=true only when provider-authored account or protected content is visible and no login, verification-code, OTP, or 2FA form is active.",
               "Do not require registration, booking, purchase, or other action-success language for this read-only authentication check.",
               "Set activeAuthenticationForm=true when any login or authentication form is active.",
-              "Return its authentication status and a short provider-authored content marker.",
+              "Return its authentication status and, as providerText, copy one exact contiguous visible phrase of 2-80 characters from the page.",
+              "Do not summarize, combine, prefix, suffix, or paraphrase that visible phrase.",
             ].join(" ")
           : [
               "Read only the current provider-authored result page.",
