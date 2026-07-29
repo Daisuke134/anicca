@@ -396,7 +396,7 @@ row; its status changes in the same commit as implementation evidence.
 
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
-| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `in_progress` | Design and implementation plan committed; legacy baseline is 107 tests; canonical RED/GREEN, live launchd cutover, and runtime receipts pending |
+| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `in_progress` | Plan commit `04684a309`; imported legacy baseline is 107 tests in 4.916s; canonical RED was 2 expected path/installer failures plus adapter default failure; GREEN is 112 job-loop tests in 3.273s and 7 runner tests in 0.465s; source scan finds no legacy checkout or private Gmail path; live launchd cutover and receipts pending |
 | 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
 | 2 | Role-specific application messages for Product, GTM, Partnerships and Customer Success | `completed` | Four strict templates; real-profile generation; fact/source validation; 59 tests |
 | 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |
