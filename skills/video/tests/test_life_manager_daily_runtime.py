@@ -29,7 +29,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
             data["ProgramArguments"],
             [
                 "/bin/bash",
-                "/home/life-manager/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh",
+                "__HOME__/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh",
             ],
         )
         self.assertEqual(data["StartCalendarInterval"], {"Hour": 10, "Minute": 15})
@@ -128,13 +128,17 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(row["marginal_cost_usd"], 0)
         self.assertEqual(row["cost_tier"], "subscription")
         self.assertEqual((root / "daily-runs.jsonl").stat().st_mode & 0o777, 0o600)
-        self.assertTrue((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+        self.assertTrue(
+            (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
+        )
 
     def test_generator_failure_propagates_exact_nonzero_without_runner(self):
         result, root = self.run_daily(generator_rc=17)
         self.assertEqual(result.returncode, 17)
         self.assertFalse((root / "args").exists())
-        self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+        self.assertFalse(
+            (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
+        )
 
     def test_recursive_invocation_fails_before_generator_or_runner(self):
         result, root = self.run_daily()
@@ -154,7 +158,7 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(recursive.returncode, 73)
         self.assertFalse((root / "recursive-args").exists())
 
-    def test_generation_only_mode_keeps_distribution_locked_for_9c(self):
+    def test_generation_only_mode_keeps_distribution_locked(self):
         result, root = self.run_daily()
         env = os.environ.copy()
         env.update(
@@ -178,7 +182,10 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertIn("ffprobe", prompt)
         self.assertIn("full decode", prompt)
         self.assertIn(str(ROOT / "skills/video/daily-lm-video/creative-bank.jsonl"), prompt)
-        self.assertIn(str(root / "home/.openclaw/state/lm-video/daily-render-state.jsonl"), prompt)
+        self.assertIn(
+            str(root / "home/.local/state/life-manager/state/lm-video/daily-render-state.jsonl"),
+            prompt,
+        )
         self.assertIn("Do not search", prompt)
         self.assertFalse((root / "generation-only-distributor-args").exists())
         self.assertFalse((root / "generation-only-self-improver-args").exists())
@@ -188,14 +195,18 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
         self.assertEqual(result.returncode, 29)
         self.assertTrue((root / "distributor-args").exists())
         self.assertFalse((root / "args").exists())
-        self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+        self.assertFalse(
+            (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
+        )
 
     def test_self_improver_failure_propagates_without_invoking_agent(self):
         result, root = self.run_daily(self_improver_rc=31)
         self.assertEqual(result.returncode, 31)
         self.assertTrue((root / "self-improver-args").exists())
         self.assertFalse((root / "args").exists())
-        self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+        self.assertFalse(
+            (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
+        )
 
     def test_runner_failure_and_timeout_propagate_and_do_not_touch_success_marker(self):
         for runner_rc in (23, 124):
@@ -205,7 +216,9 @@ class LifeManagerDailyRuntimeTest(unittest.TestCase):
                 row = json.loads((root / "daily-runs.jsonl").read_text(encoding="utf-8"))
                 self.assertEqual(row["status"], "failed")
                 self.assertEqual(row["exit_code"], runner_rc)
-                self.assertFalse((root / "home/.openclaw/state/.life-manager-core-last-pass").exists())
+                self.assertFalse(
+                    (root / "home/.local/state/life-manager/state/.life-manager-core-last-pass").exists()
+                )
 
 
 if __name__ == "__main__":

@@ -135,12 +135,19 @@ jobs:
         run: |
           set -e
           # Hyphenated skill paths break unittest discovery, so run each
-          # test_*.py file directly.
+          # active test_*.py file directly. Historical VCSDD proof harnesses
+          # are immutable evidence with their own archived dependencies, not
+          # the repository's production test suite. Each active skill may
+          # import modules from its own directory, parent, or parent/lib.
+          repo_root="$PWD"
           fail=0
           while IFS= read -r t; do
             echo "→ $t"
-            if ! python3 "$t"; then fail=1; fi
-          done < <(find . -name 'test_*.py' -not -path './.git/*' | sort)
+            test_dir="$(dirname "$t")"
+            parent_dir="$test_dir/.."
+            test_pythonpath="$repo_root/$test_dir:$repo_root/$parent_dir:$repo_root/$parent_dir/lib:$repo_root"
+            if ! PYTHONPATH="$test_pythonpath${PYTHONPATH:+:$PYTHONPATH}" python3 "$t"; then fail=1; fi
+          done < <(find . -name 'test_*.py' -not -path './.git/*' -not -path './.vcsdd/*' | sort)
           [ "$fail" -eq 0 ] && echo "✅ all tests passed" || { echo "::error::test failures"; exit 1; }
 
   shell-lint:

@@ -45,7 +45,10 @@ CANONICAL_10 = [
     "pm-earner-loop", "founder-loop", "capafy-loop", "reddit-loop", "life-manager-loop",
 ]
 
-m = re.search(r'for L in ([\w\- ]+); do r="\$HOME/\.openclaw/state/\.self-fix-\$L\.result"', verify_loops_src)
+m = re.search(
+    r'for L in ([\w\- ]+); do r="\$HOME/\.local/state/life-manager/state/\.self-fix-\$L\.result"',
+    verify_loops_src,
+)
 chk("verify-loops.sh: self-fix marker loop line found (script structure unchanged)",
     m is not None, True)
 if m:
