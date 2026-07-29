@@ -189,4 +189,4 @@ def test_realized_summary_window_excludes_rows_outside_ts_range(tmp_path):
 
 
 def test_realized_summary_default_path_points_at_the_real_earn_ledger_location():
-    assert ledger_reader.DEFAULT_LEDGER_PATH.endswith("anicca/skills/earn/state/earn-ledger.jsonl")
+    assert ledger_reader.DEFAULT_LEDGER_PATH.endswith("skills/earn/state/earn-ledger.jsonl")

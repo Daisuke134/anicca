@@ -29,19 +29,26 @@
 #      load_settings()->set_settings()->init(), which restores the uuids already saved in the
 #      settings file. We never call cl.set_uuids() with newly generated values.
 import argparse, datetime, json, os, sys, re, time, subprocess, urllib.request
-sys.path.insert(0, os.path.expanduser("~/.claude/skills/ig-account-create/scripts"))
-import cdp  # noqa: E402
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+from instagram_credentials import credential_password  # noqa: E402
 from websocket import create_connection  # noqa: E402
 from instagrapi.exceptions import ChallengeRequired, LoginRequired  # noqa: E402
 
 C = os.path.expanduser
 
 
-def credential_password(creds):
-    value = creds.get("pw") or creds.get("password")
-    if not isinstance(value, str) or not value:
-        raise ValueError("Instagram credential file has no password")
-    return value
+def page_ws(target_id, port):
+    """Return the page CDP endpoint without relying on a home-directory adapter."""
+    host = os.environ.get("CDP_HOST", "localhost")
+    return f"ws://{host}:{port}/devtools/page/{target_id}"
+
+
+def cdp_http_url(port, path):
+    """Return a browser HTTP endpoint for local or private-cloud CDP."""
+    host = os.environ.get("CDP_HOST", "localhost")
+    return f"http://{host}:{port}{path}"
 
 
 def make_gmail_handler(handle):
@@ -361,9 +368,9 @@ def verify_only_main(handle, port, settings_path=None, accounts_path=None, clien
 
 
 def get_sessionid(port):
-    tabs = json.load(urllib.request.urlopen(f"http://localhost:{port}/json/list"))
+    tabs = json.load(urllib.request.urlopen(cdp_http_url(port, "/json/list")))
     tid = next(t["id"] for t in tabs if t.get("type") == "page" and "instagram.com" in (t.get("url") or ""))
-    ws = create_connection(cdp.page_ws(tid), timeout=20, suppress_origin=True, max_size=None)
+    ws = create_connection(page_ws(tid, port), timeout=20, suppress_origin=True, max_size=None)
     ws.send(json.dumps({"id": 1, "method": "Network.enable"}))
     ws.send(json.dumps({"id": 2, "method": "Network.getAllCookies"}))
     sid = None
