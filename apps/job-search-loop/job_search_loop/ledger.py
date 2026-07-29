@@ -88,6 +88,22 @@ class Ledger:
                 status TEXT NOT NULL,
                 PRIMARY KEY (japan_day, slot)
             );
+            CREATE TABLE IF NOT EXISTS submission_attempts (
+                intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
+                fence INTEGER NOT NULL,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                payload_hash TEXT NOT NULL,
+                resume_path TEXT,
+                resume_sha256 TEXT,
+                ats_snapshot_path TEXT,
+                ats_snapshot_sha256 TEXT,
+                japan_day TEXT NOT NULL,
+                slot INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                completed_at TEXT,
+                PRIMARY KEY (intent_id, fence)
+            );
             """
         )
         intent_columns = {
@@ -110,6 +126,19 @@ class Ledger:
             self.connection.execute(
                 "ALTER TABLE submit_intents ADD COLUMN ats_snapshot_sha256 TEXT"
             )
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO submission_attempts
+              (intent_id, fence, application_id, payload_hash, resume_path,
+               resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+               japan_day, slot, status, created_at, completed_at)
+            SELECT
+              intent_id, fence, application_id, payload_hash, resume_path,
+              resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+              japan_day, slot, status, created_at, completed_at
+            FROM submit_intents
+            """
+        )
         if self.path.exists():
             os.chmod(self.path, 0o600)
 
@@ -233,6 +262,66 @@ class Ledger:
             for row in rows
         ]
 
+    def retryable_applications(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+              applications.id AS application_id,
+              applications.company,
+              applications.title,
+              applications.canonical_url,
+              submit_intents.intent_id,
+              submit_intents.fence
+            FROM submit_intents
+            JOIN applications ON applications.id = submit_intents.application_id
+            WHERE submit_intents.status = 'not_submitted'
+              AND applications.current_state = 'not_submitted'
+            ORDER BY submit_intents.completed_at, submit_intents.rowid
+            """
+        ).fetchall()
+        return [
+            {
+                "application_id": str(row["application_id"]),
+                "company": str(row["company"]),
+                "title": str(row["title"]),
+                "canonical_url": str(row["canonical_url"]),
+                "intent_id": str(row["intent_id"]),
+                "fence": int(row["fence"]),
+            }
+            for row in rows
+        ]
+
+    def submission_attempts(self, application_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+              intent_id, fence, payload_hash, resume_path, resume_sha256,
+              ats_snapshot_path, ats_snapshot_sha256, japan_day, slot,
+              status, created_at, completed_at
+            FROM submission_attempts
+            WHERE application_id = ?
+            ORDER BY fence
+            """,
+            (application_id,),
+        ).fetchall()
+        return [
+            {
+                "intent_id": str(row["intent_id"]),
+                "fence": int(row["fence"]),
+                "payload_hash": str(row["payload_hash"]),
+                "resume_path": row["resume_path"],
+                "resume_sha256": row["resume_sha256"],
+                "ats_snapshot_path": row["ats_snapshot_path"],
+                "ats_snapshot_sha256": row["ats_snapshot_sha256"],
+                "japan_day": str(row["japan_day"]),
+                "slot": int(row["slot"]),
+                "status": str(row["status"]),
+                "created_at": str(row["created_at"]),
+                "completed_at": row["completed_at"],
+            }
+            for row in rows
+        ]
+
     def claim_submission(
         self,
         application_id: str,
@@ -279,12 +368,18 @@ class Ledger:
             if canonical_url(snapshot["url"]) != str(application["canonical_url"]):
                 raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
-                "SELECT intent_id FROM submit_intents WHERE application_id = ?",
+                "SELECT * FROM submit_intents WHERE application_id = ?",
                 (application_id,),
             ).fetchone()
-            if existing:
+            current_state = self.current_state(application_id)
+            reopening = (
+                existing is not None
+                and str(existing["status"]) == "not_submitted"
+                and current_state == "not_submitted"
+            )
+            if existing is not None and not reopening:
                 return None
-            if self.current_state(application_id) != "materials_ready":
+            if existing is None and current_state != "materials_ready":
                 return None
             used = {
                 int(row["slot"])
@@ -296,10 +391,13 @@ class Ledger:
             slot = next((candidate for candidate in (1, 2) if candidate not in used), None)
             if slot is None:
                 return None
+            claimed_at = _now()
             intent = SubmitIntent(
-                intent_id=uuid.uuid4().hex,
+                intent_id=(
+                    str(existing["intent_id"]) if reopening else uuid.uuid4().hex
+                ),
                 application_id=application_id,
-                fence=1,
+                fence=(int(existing["fence"]) + 1 if reopening else 1),
                 payload_hash=payload_hash,
                 resume_path=str(resolved_resume),
                 resume_sha256=resume_sha256,
@@ -315,18 +413,66 @@ class Ledger:
                 """,
                 (japan_day, slot, application_id),
             )
+            if reopening:
+                self.connection.execute(
+                    """
+                    UPDATE submit_intents
+                    SET fence = ?, payload_hash = ?, resume_path = ?,
+                        resume_sha256 = ?, ats_snapshot_path = ?,
+                        ats_snapshot_sha256 = ?, japan_day = ?, slot = ?,
+                        status = 'submit_claimed', created_at = ?,
+                        completed_at = NULL
+                    WHERE intent_id = ? AND fence = ? AND status = 'not_submitted'
+                    """,
+                    (
+                        intent.fence,
+                        intent.payload_hash,
+                        intent.resume_path,
+                        intent.resume_sha256,
+                        intent.ats_snapshot_path,
+                        intent.ats_snapshot_sha256,
+                        intent.japan_day,
+                        intent.slot,
+                        claimed_at,
+                        intent.intent_id,
+                        int(existing["fence"]),
+                    ),
+                )
+            else:
+                self.connection.execute(
+                    """
+                    INSERT INTO submit_intents
+                      (intent_id, application_id, fence, payload_hash, resume_path,
+                       resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
+                       japan_day, slot, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
+                    """,
+                    (
+                        intent.intent_id,
+                        intent.application_id,
+                        intent.fence,
+                        intent.payload_hash,
+                        intent.resume_path,
+                        intent.resume_sha256,
+                        intent.ats_snapshot_path,
+                        intent.ats_snapshot_sha256,
+                        intent.japan_day,
+                        intent.slot,
+                        claimed_at,
+                    ),
+                )
             self.connection.execute(
                 """
-                INSERT INTO submit_intents
-                  (intent_id, application_id, fence, payload_hash, resume_path,
+                INSERT INTO submission_attempts
+                  (intent_id, fence, application_id, payload_hash, resume_path,
                    resume_sha256, ats_snapshot_path, ats_snapshot_sha256,
                    japan_day, slot, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submit_claimed', ?)
                 """,
                 (
                     intent.intent_id,
-                    intent.application_id,
                     intent.fence,
+                    intent.application_id,
                     intent.payload_hash,
                     intent.resume_path,
                     intent.resume_sha256,
@@ -334,7 +480,7 @@ class Ledger:
                     intent.ats_snapshot_sha256,
                     intent.japan_day,
                     intent.slot,
-                    _now(),
+                    claimed_at,
                 ),
             )
             self._transition_in_transaction(
@@ -363,12 +509,20 @@ class Ledger:
                 raise FenceError("submission fence does not match")
             if row["status"] != "submit_claimed":
                 raise FenceError("submission intent is already completed")
+            completed_at = _now()
             self.connection.execute(
                 """
                 UPDATE submit_intents SET status = ?, completed_at = ?
                 WHERE intent_id = ? AND fence = ?
                 """,
-                (outcome, _now(), intent_id, fence),
+                (outcome, completed_at, intent_id, fence),
+            )
+            self.connection.execute(
+                """
+                UPDATE submission_attempts SET status = ?, completed_at = ?
+                WHERE intent_id = ? AND fence = ?
+                """,
+                (outcome, completed_at, intent_id, fence),
             )
             self.connection.execute(
                 """
