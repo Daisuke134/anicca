@@ -42,6 +42,24 @@ class LaunchdTests(unittest.TestCase):
             script.index('if [[ "$NEW_COUNT"'),
         )
 
+    def test_inbox_budget_exhaustion_is_clean_retry_before_ack(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-inbox.sh").read_text(encoding="utf-8")
+        self.assertIn("set +e", script)
+        self.assertIn("RUNNER_RC=$?", script)
+        self.assertIn("set -e", script)
+        self.assertIn('[[ "$RUNNER_RC" -eq 75 ]]', script)
+        self.assertIn('.status == "budget_blocked"', script)
+        self.assertIn('exit "$RUNNER_RC"', script)
+        self.assertLess(
+            script.index('.status == "budget_blocked"'),
+            script.index("RESULT_PATH="),
+        )
+        self.assertLess(
+            script.index('.status == "budget_blocked"'),
+            script.index("job_search_loop.inbox mark"),
+        )
+
     def test_daily_shell_skips_model_when_submission_quota_is_full(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")

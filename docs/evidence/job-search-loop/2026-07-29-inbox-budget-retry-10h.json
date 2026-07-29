@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10H",
+  "status": "implementation_verified_pending_ci",
+  "observed_at": "2026-07-29T13:33:34Z",
+  "branch": "fix/job-inbox-budget-retry-10h",
+  "red_commit": "ff7bd4036",
+  "implementation_commit": "24c5b7f96",
+  "pull_request": {
+    "number": null,
+    "url": null,
+    "ci_run": null,
+    "merge_commit": null
+  },
+  "red_test": {
+    "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_launchd.py -v",
+    "result": "failed as expected",
+    "failure": "run-inbox lacked the bounded set +e runner boundary and verified budget-blocked branch"
+  },
+  "tests": {
+    "focused": {
+      "ran": 6,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 166,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 9,
+      "failures": 0
+    },
+    "shell_syntax": "pass",
+    "git_diff_check": "pass"
+  },
+  "contract": {
+    "temporary_exit_code": 75,
+    "required_summary_status": "budget_blocked",
+    "verified_budget_blocked_exit_code": 0,
+    "unverified_exit_75_propagated": true,
+    "other_nonzero_exit_propagated": true,
+    "fail_fast_restored_immediately": true,
+    "budget_check_before_result_resolution": true,
+    "budget_check_before_seen_acknowledgement": true,
+    "candidate_threads_acknowledged_on_budget_block": 0
+  },
+  "implementation_source": {
+    "copied_pattern": "apps/job-search-loop/scripts/run-daily.sh",
+    "reason": "The canonical daily launchd driver already treats only a verified budget-blocked summary as a healthy scheduled wait."
+  },
+  "research_transport": {
+    "queries": [
+      "temporary resource exhaustion scheduled worker retry without acknowledgement best practice",
+      "HTTP 429 Retry-After official RFC temporary rate limit",
+      "一時的 リソース 上限 定期ジョブ 再試行 未処理 メッセージ ACK しない"
+    ],
+    "firecrawl_result": "agent-owned configured token rejected as invalid",
+    "fallback": "direct read-only retrieval of RFC, local system manual, and official RabbitMQ source"
+  },
+  "sources": [
+    {
+      "name": "sysexits(3)",
+      "url": "https://man.freebsd.org/cgi/man.cgi?query=sysexits&sektion=3",
+      "quote": "EX_TEMPFAIL (75) Temporary failure, indicating something that is not really an error."
+    },
+    {
+      "name": "RFC 6585 section 4",
+      "url": "https://www.rfc-editor.org/rfc/rfc6585#section-4",
+      "quote": "The 429 status code indicates that the user has sent too many requests in a given amount of time."
+    },
+    {
+      "name": "RabbitMQ Reliability Guide",
+      "url": "https://www.rabbitmq.com/docs/reliability",
+      "quote": "A consuming application should not acknowledge messages until it has done whatever it needs to do"
+    }
+  ],
+  "remaining_order_10_gate": "Receive and process a new real Workday verification email, reach a claim-ready application, and obtain a confirmed submission without inferred legal answers."
+}
