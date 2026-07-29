@@ -561,8 +561,17 @@ function makeStagehandSteelDriver(options = {}) {
           !negated &&
           !blockingVerification;
         const modelHandoffReason = passiveLoginCopy ? null : handoffReason;
+        const independentProtectedContent =
+          independentReason === null &&
+          originMatches &&
+          Boolean(marker) &&
+          signals.markerPresent &&
+          !negated &&
+          !blockingVerification;
         const modelConfirmed =
-          extracted.confirmed === true || passiveLoginCopy;
+          extracted.confirmed === true ||
+          passiveLoginCopy ||
+          independentProtectedContent;
         const readOnlyReason = modelHandoffReason || independentReason ||
           (!originMatches || !marker || !signals.markerPresent || !modelConfirmed
             ? "login"

@@ -955,6 +955,35 @@ test("Sauce-style inventory confirms only with same-origin final URL, visible Pr
   assert.equal(calls.filter(([name]) => name === "act").length, 0);
 });
 
+test("same-origin protected content confirms when the model is conservative but independent DOM auth guards are clear", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/home",
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Create Event. No Upcoming Events.",
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "unknown",
+      confirmationId: null,
+      providerText: "Create Event",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.status, "authenticated");
+  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffReason, null);
+});
+
 test("account settings security copy cannot create a login handoff without active auth controls", async () => {
   const { driver } = fixture({
     pageUrl: "https://fresh-events.example/settings",
