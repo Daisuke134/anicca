@@ -17235,3 +17235,10 @@
 {"ts":1785344582,"wake_id":"00MS6C2GB49A2885C61FFA4296","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1785344713,"wake_id":"00MS6C59GL2E058B825B5740EF","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785344856,"wake_id":"00MS6C8BKL2D616C0022954618","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785344995,"wake_id":"00MS6CBAYOE48D68D961864663","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785345148,"wake_id":"00MS6CEKX94EA9115E816343A6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785345287,"wake_id":"00MS6CHKAD1A8BFF21FC104E5A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785345436,"wake_id":"00MS6CKRIO63F21681794F4D9B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785345577,"wake_id":"00MS6CNS3H21DD312327944E30","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain micro-lending protocol for autonomous agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candida"}
+{"ts":1785345717,"wake_id":"00MS6CQRSZ934F7FE47F524C8B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785345860,"wake_id":"00MS6CTUU3E1E297B38BC046F3","kind":"narrate","sleep_s":120,"model":"auto"}
