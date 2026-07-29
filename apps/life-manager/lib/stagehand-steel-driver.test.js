@@ -343,7 +343,7 @@ test("an explicit auth continuity readback does not apply the normal action-page
 });
 
 test("auth continuity confirms provider content without requiring action-success language", async () => {
-  const { driver } = fixture({
+  const { driver, calls } = fixture({
     receipt: {
       confirmed: false,
       status: "unknown",
@@ -372,6 +372,11 @@ test("auth continuity confirms provider content without requiring action-success
   assert.equal(receipt.confirmed, true);
   assert.equal(receipt.status, "authenticated");
   assert.equal(receipt.handoffRequired, false);
+  const prompt = calls.find(([name, instruction]) =>
+    name === "extract" && /authenticated provider continuity page/i.test(instruction));
+  assert.ok(prompt);
+  assert.match(prompt[1], /exact contiguous visible phrase/i);
+  assert.match(prompt[1], /do not .*paraphrase/i);
 });
 
 test("auth continuity redirect to a root login page reaches structured login handoff", async () => {
