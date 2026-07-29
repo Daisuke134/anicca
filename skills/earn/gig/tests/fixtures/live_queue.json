@@ -1,0 +1,38 @@
+{
+  "captured_at": "2026-07-21T19:45:00+09:00",
+  "orders": [
+    {
+      "contract_id": "offer:6216643",
+      "request_id": "5138597",
+      "talkroom_id": "17963099",
+      "buyer": "Fkimura",
+      "title": "Python OpenCV board PoC",
+      "price_jpy": 65000,
+      "delivery_date": "2026-07-21",
+      "status": "paid",
+      "buyer_feedback_pending_artifact": true
+    },
+    {
+      "contract_id": "direct-offer:6198868",
+      "talkroom_id": "17943244",
+      "buyer": "jibieaian",
+      "title": "SNS operations",
+      "price_jpy": 40000,
+      "delivery_date": "2026-08-14",
+      "status": "paid",
+      "buyer_feedback_pending_artifact": true
+    },
+    {
+      "contract_id": "talkroom:18011694",
+      "request_id": "5167108",
+      "talkroom_id": "18011694",
+      "buyer": "sunai267",
+      "title": "Minecraft addon repair",
+      "price_jpy": 17000,
+      "delivery_date": "2026-07-23",
+      "status": "paid",
+      "buyer_feedback_pending_artifact": true
+    }
+  ],
+  "quotes": []
+}

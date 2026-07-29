@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reasoning", "verdict", "failure_reason", "impossible_task", "reached_captcha"],
+  "properties": {
+    "reasoning": {"type": "string"},
+    "verdict": {"type": "boolean"},
+    "failure_reason": {"type": "string"},
+    "impossible_task": {"type": "boolean"},
+    "reached_captcha": {"type": "boolean"}
+  }
+}

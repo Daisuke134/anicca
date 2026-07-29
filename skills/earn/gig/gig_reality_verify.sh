@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude lives in ~/.local/bin (npm global), matching self-fix.sh
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # gig_reality_verify.sh — the reality-verifier runner for the gig loop (feature gig-reality-verify,
 # 増分2b: docs/loop-engineering/26-gig-loop-asis-tobe-plan.md §8, BP §2/§7 of
 # docs/loop-engineering/25-browser-use-verify-selfimprove-bp.md). Called by auditor.sh AFTER its
 # existing deterministic verdict, so the gig loop is judged not just by "did files change" but by
 # "does the REAL Coconala screen match what the core claimed" — a FRESH, report-independent
-# `claude -p` spawn (no memory of the gig core's session) does the actual judging via gig_judge.py's
-# report-skeptical prompt, navigating :9222 (via the DETERMINISTIC cdp_nav_snapshot.py helper —
-# behavioral-spec REQ-006) and reading the real DOM/screenshots itself.
+# a fresh bounded tool-agent through the common runner does the judging via gig_judge.py's
+# report-skeptical prompt, navigating the dedicated Gig CDP runtime in owned hidden targets
+# (via the DETERMINISTIC cdp_nav_snapshot.py helper —
+# behavioral-spec REQ-006) and reading the real rendered DOM evidence itself.
 #
 # Fresh-adversary fix round (FIND-002/003, REQ-007/008): this script NEVER accepts the judge's
 # self-reported verdict:true on faith — it generates a STABLE pass_id BEFORE spawning the judge,
@@ -27,10 +25,11 @@ set -uo pipefail
 
 G="$HOME/gig"
 AUDIT_REALITY="$G/audit-reality.jsonl"
-SELFHEAL="$HOME/.local/state/life-manager/state/.gig-core-selfheal-request.json"
+SELFHEAL="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
 PY="$(command -v python3 || echo /opt/homebrew/bin/python3)"
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNNER="$HOME/profitable-claude/skills/agent-runner/agent_runner.py"
+JUDGE_SCHEMA_FILE="$SELF_DIR/schemas/gig_reality_verdict.schema.json"
 TRAJECTORY_ROOT="$G/trajectory"
 N="${1:-5}"
 TIMEOUT_SECS=1200   # cap the fresh judge spawn — never block auditor.sh forever (behavioral-spec REQ-004 edge case).
@@ -131,6 +130,15 @@ fi
 # The SAME pass_id is embedded in the prompt and used later by the evidence gate — the judge never
 # chooses its own pass_id, so all its navigation-helper captures land under one known directory.
 PASS_ID="realityverify-$(date +%s)-$$"
+export ANICCA_BUDGET_SCOPE_ID="$PASS_ID"
+export ANICCA_PASS_TOKEN_BUDGET="${GIG_AUDIT_TOKEN_BUDGET:-32768}"
+export ANICCA_LOOP_DAILY_TOKEN_BUDGET="${GIG_DAILY_TOKEN_BUDGET:-262144}"
+# Own daily pool. Sharing the loop's pool meant this 262144 limit was evaluated
+# against the revenue pass's millions, so the auditor never got a model call
+# after the first pass of the day. Its own peak spend is 86,940/day (07-26).
+export ANICCA_BUDGET_DAILY_SCOPE="${GIG_BUDGET_DAILY_SCOPE:-gig-auditor}"
+export ANICCA_BUDGET_REQUIRED="${ANICCA_BUDGET_REQUIRED:-1}"
+export ANICCA_TOKEN_BUDGET_LEDGER="${GIG_TOKEN_BUDGET_LEDGER:-$HOME/.local/state/anicca/telemetry/token-budget.jsonl}"
 RUN_START=$(date +%s)
 echo "$(date '+%F %T') gig_reality_verify: pass_id=$PASS_ID run_start=$RUN_START" >&2
 
@@ -166,15 +174,17 @@ if [ -z "$PROMPT" ]; then
   exit 1
 fi
 
-# ─── 3.5 CDP :9222 mutex (gig L1-d) — acquire BEFORE the browser-driving judge spawn so the ────
-# verifier never navigates the shared daily-driver tab while the core's :27 pass is mid-応募/フォーム
-# 入力 (and vice versa). Steps 1-3 above are file-only (no browser); the judge spawn below is what
-# drives :9222. If the core holds the lock and does not release within the wait window, DEFER this
+# ─── 3.5 Dedicated Gig CDP mutex (gig L1-d) — acquire BEFORE browser verification ───────────────
+# The verifier and core share one dedicated Gig runtime. Even though read-only verification now
+# uses owned hidden targets, serialize it against application/form mutations. Steps 1-3 are
+# file-only. If the core holds the lock and does not release within the wait window, DEFER this
 # round: record note=deferred_cdp_busy, do NOT spawn, do NOT write a selfheal-request (a deferral is
 # not a reality failure). The lock auto-steals a stale holder (crashed core) via cdp_lock.sh.
+# Runtime path is anchored to this script's directory.
+# shellcheck disable=SC1091
 source "$SELF_DIR/scripts/cdp_lock.sh"
 if ! cdp_lock_acquire "reality-verifier" 120; then
-  echo "$(date '+%F %T') gig_reality_verify: :9222 busy (core driving) — deferring this round" >&2
+  echo "$(date '+%F %T') gig_reality_verify: Gig CDP busy (core driving) — deferring this round" >&2
   ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':None,'note':'deferred_cdp_busy','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
   echo "$ROW" >> "$AUDIT_REALITY"
   echo "$ROW"
@@ -185,14 +195,16 @@ trap 'cdp_lock_release' EXIT
 # ─── 3.6 CDP HEALTH GUARD (2026-07-13 fix) — ensure the daily-driver is actually alive before ────
 # spawning the judge. cdp_daily_driver_guard.sh already existed (root-caused the starved-accept-queue
 # failure mode) but had ZERO callers anywhere in the codebase — the mutex above only arbitrates WHO
-# drives :9222, it never checks whether the browser process is even up. Root cause of the
+# drives the dedicated runtime, it never checks whether the browser process is even up. Root cause of the
 # evidence_captured=0/"connection refused" reality_verify_failed rounds (audit-reality.jsonl
 # ts=1783896511): the daily-driver Chromium died (WindowServer port death) and nothing ever noticed
 # or relaunched it, so every subsequent judge spawn burned its full 600s timeout hitting a dead port.
 # We hold the CDP lock at this point (exclusive), so it is safe to kill+relaunch here.
+# Runtime path is anchored to this script's directory.
+# shellcheck disable=SC1091
 source "$SELF_DIR/scripts/cdp_daily_driver_guard.sh"
 if ! cdp_guard_ensure_healthy 6 45; then
-  echo "$(date '+%F %T') gig_reality_verify: CDP :9222 unreachable even after guard relaunch attempt — recording infra failure, not spawning judge" >&2
+  echo "$(date '+%F %T') gig_reality_verify: Gig CDP unreachable even after guard relaunch attempt — recording infra failure, not spawning judge" >&2
   ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'cdp_daily_driver_down_after_guard_relaunch','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
   echo "$ROW" >> "$AUDIT_REALITY"
   "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','failure_reason':'cdp_daily_driver_down_after_guard_relaunch','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
@@ -205,9 +217,10 @@ fi
 # session had dropped, every ground-truth URL redirected to /login, and a logged-out verifier
 # recorded verdict=false — accusing a healthy loop of lying. We hold the CDP lock here (exclusive)
 # and the browser is up, so restore the banked login first, then confirm it took.
-VAULT="$LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py"
+VAULT="$HOME/anicca/skills/browser/scripts/session_vault.py"
 "$PY" "$VAULT" restore >/dev/null 2>&1 || true
-KA=$("$PY" "$VAULT" keepalive "https://coconala.com/mypage/dashboard" 2>/dev/null || echo '{}')
+KA=$("$PY" "$SELF_DIR/scripts/cdp_nav_snapshot.py" probe-session \
+  --url "https://coconala.com/mypage/dashboard" 2>/dev/null || echo '{}')
 LOGGED_OUT=$("$PY" -c "import json,sys; print('1' if json.loads(sys.argv[1]).get('logged_out') else '0')" "$KA" 2>/dev/null || echo 0)
 if [ "$LOGGED_OUT" = "1" ]; then
   echo "$(date '+%F %T') gig_reality_verify: still logged out after vault restore — DEFER (not a lie)" >&2
@@ -217,14 +230,10 @@ if [ "$LOGGED_OUT" = "1" ]; then
   exit 0
 fi
 
-# ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
-# env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
-# idiom) when available, falling back to the local CLIProxyAPI (see CLIPROXY_KEY below) since
-# launchd cannot refresh the subscription OAuth token headlessly (keychain locked; observed killing
-# this verifier 2026-07-16/17). --dangerously-skip-permissions + --add-dir "$HOME": the
-# judge must freely drive CDP :9222 (browser) and call cdp_nav_snapshot.py under $HOME without
-# prompts — this is a non-interactive, autonomous fresh spawn (adversary-daily.sh `claude -p` idiom,
-# adapted). The judge is instructed (gig_judge prompt) to use the DETERMINISTIC nav helper with
+# ─── 4. Spawn a fresh, report-independent judge through the common runner ───────────────────────
+# The judge calls cdp_nav_snapshot.py against the dedicated Gig CDP runtime without interactive input.
+# Provider/model/effort remain in runner config. The prompt instructs the judge to use the
+# deterministic nav helper with
 # PASS_ID for every ground-truth URL — enforced independently by step 5's evidence gate, not trusted.
 #
 # --json-schema (2026-07-15 fix, incident realityverify-1784108700-56675): previously ran with plain
@@ -241,26 +250,36 @@ fi
 # it. --json-schema makes the CLI itself enforce structured output on the judge's FINAL answer
 # (verified live: interim Bash/browser tool calls still run normally, only the concluding response is
 # schema-shaped) — this removes the failure mode at the source instead of catching it after the fact.
-JUDGE_SCHEMA='{"type":"object","properties":{"reasoning":{"type":"string"},"verdict":{"type":"boolean"},"failure_reason":{"type":"string"},"impossible_task":{"type":"boolean"},"reached_captcha":{"type":"boolean"}},"required":["verdict"]}'
-
-# Auth: launchd cannot refresh the subscription OAuth token headlessly (keychain locked;
-# killed this loop on 2026-07-16/17). Route through the local CLIProxyAPI (:8317) whose creds
-# are plain files and refresh headlessly; fall back to subscription auth if the key file is absent.
-CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-if [ -n "$CLIPROXY_KEY" ]; then
-  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-fi
-
-echo "$(date '+%F %T') gig_reality_verify: spawning fresh claude -p judge (timeout ${TIMEOUT_SECS}s)" >&2
-JUDGE_RAW=$(env -u ANTHROPIC_API_KEY timeout "$TIMEOUT_SECS" \
-  "$CLAUDE" -p "$PROMPT" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
-  --json-schema "$JUDGE_SCHEMA" --output-format text \
-  2>>"$G/.reality-verify.err.log")
+mkdir -p "$TRAJECTORY_ROOT/$PASS_ID"
+JUDGE_PROMPT_FILE="$TRAJECTORY_ROOT/$PASS_ID/judge.prompt.txt"
+RUNNER_EVIDENCE="$TRAJECTORY_ROOT/$PASS_ID/agent-runner"
+printf '%s' "$PROMPT" > "$JUDGE_PROMPT_FILE"
+echo "$(date '+%F %T') gig_reality_verify: spawning bounded tool-agent judge through common runner" >&2
+RUNNER_SUMMARY=$(python3 "$RUNNER" --task-class tool-agent --prompt-file "$JUDGE_PROMPT_FILE" \
+  --schema "$JUDGE_SCHEMA_FILE" --evidence-dir "$RUNNER_EVIDENCE" \
+  --task-label gig-reality-judge --loop gig --workdir "$HOME" < /dev/null 2>>"$G/.reality-verify.err.log")
 JUDGE_RC=$?
+if [ "$JUDGE_RC" -eq 75 ]; then
+  BUDGET_REASON=$(printf '%s' "$RUNNER_SUMMARY" | "$PY" -c \
+    'import json,sys; print((json.load(sys.stdin).get("budget") or {}).get("reason") or "token_budget_exceeded")' \
+    2>/dev/null || echo token_budget_exceeded)
+  echo "$(date '+%F %T') gig_reality_verify: judge skipped by token circuit breaker ($BUDGET_REASON)" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':None,'note':'budget_blocked','failure_reason':'$BUDGET_REASON','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  echo "$ROW"
+  exit 0
+fi
+RESULT_PATH=$(printf '%s' "$RUNNER_SUMMARY" | "$PY" -c 'import json,sys; print(json.load(sys.stdin).get("result_path") or "")' 2>/dev/null || true)
+if [ -n "$RESULT_PATH" ] && [ -f "$RESULT_PATH" ]; then
+  JUDGE_RAW=$(cat "$RESULT_PATH")
+else
+  JUDGE_RAW=""
+  if [ -f "$RUNNER_EVIDENCE/attempts.jsonl" ] && tail -1 "$RUNNER_EVIDENCE/attempts.jsonl" | "$PY" -c 'import json,sys; raise SystemExit(0 if json.load(sys.stdin).get("timed_out") else 1)' 2>/dev/null; then
+    JUDGE_RC=124
+  fi
+fi
 # always persist the raw judge response for post-mortem — previously nothing was kept when parsing
 # failed, which is why this incident had to be root-caused blind (no raw text survived).
-mkdir -p "$TRAJECTORY_ROOT/$PASS_ID"
 printf '%s' "$JUDGE_RAW" > "$TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt" 2>/dev/null || true
 
 if [ "$JUDGE_RC" -eq 124 ]; then
@@ -272,10 +291,38 @@ if [ "$JUDGE_RC" -eq 124 ]; then
   exit 0
 fi
 
+# ─── 4.5 ABNORMAL-EXIT GUARD (2026-07-19 self-fix, incident realityverify-1784457900-26730 /
+# -1784461504-62154 / -1784465105-99788): three consecutive rounds recorded verdict=false with
+# failure_reason "unparseable_judge_output: no JSON object found in judge output" AND an empty
+# ($TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt = 0 bytes) judge response in only 19-45s -- far too fast
+# for the judge to have actually navigated the 4 ground-truth URLs (legitimate rounds take 400-900s+,
+# see the TIMEOUT_SECS history above). Root-caused live: `vm_stat`/`sysctl vm.swapusage` at incident
+# time showed ~67MB free RAM and 727MB free swap (23.8/24.5GB swap used, disk at 2.7GB free) with 89
+# concurrent agent processes already running on this host -- a manual reproduction of the exact
+# same spawn was jetsam SIGKILLed (rc=137) by macOS before emitting any
+# output. This is host memory/resource exhaustion, NOT the judge disagreeing with the gig core's
+# claims -- gig_reality_gate.py has no way to tell "judge never ran" apart from "judge ran and
+# refused to follow the JSON-schema instruction", so it was mis-classifying starvation as
+# kind=claim_mismatch and unconditionally spawning another self-fix agent every hour, deepening
+# the resource exhaustion it gets blamed for.
+# Detect it deterministically here (before the gate ever sees it) via the same signal used above for
+# timeout: JUDGE_RC nonzero-and-not-124 (128+signal for a kill, e.g. 137=SIGKILL/139=SIGSEGV) combined
+# with a genuinely empty judge_raw.txt -- both true only when the process never got to run, not when
+# it ran and produced bad prose (that case still has RC=0 and falls through to the real gate below).
+JUDGE_RAW_BYTES=$(wc -c < "$TRAJECTORY_ROOT/$PASS_ID/judge_raw.txt" 2>/dev/null | tr -d ' ')
+if [ "$JUDGE_RC" -ne 0 ] && [ "${JUDGE_RAW_BYTES:-0}" -eq 0 ]; then
+  echo "$(date '+%F %T') gig_reality_verify: fresh judge exited abnormally (rc=$JUDGE_RC, zero-byte output) -- treating as host resource exhaustion, NOT a claim/reality mismatch" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'judge_process_killed_rc$JUDGE_RC','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','kind':'judge_process_killed','failure_reason':'fresh judge process exited abnormally (rc=$JUDGE_RC) with zero output -- likely host memory/swap exhaustion (see vm_stat/vm.swapusage), not a code bug','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
+  echo "$ROW"
+  exit 0
+fi
+
 # ─── 5. Deterministic evidence gate (REQ-007, FIND-002 fix) — NEVER accept verdict on faith alone ─
 # gig_reality_gate.py parses the judge's JSON, then counts the REAL trajectory rows this pass_id
 # captured (ts >= RUN_START) and applies gig_judge.gate_verdict: an unbacked verdict:true (fewer
-# fresh screenshots than ground-truth URLs) is downgraded to false. This is pure bash/python over the
+# fresh evidence rows than ground-truth URLs) is downgraded to false. This is pure bash/python over the
 # real trajectory file — no LLM is asked to grade itself a second time.
 PARSED_ROW=$("$PY" "$SELF_DIR/scripts/gig_reality_gate.py" "$JUDGE_RAW" "$PASS_ID" "$REQUIRED_COUNT" "$RUN_START" "$TRAJECTORY_ROOT" "$CLAIMS_COUNT" 2>>"$G/.reality-verify.err.log")
 if [ -z "$PARSED_ROW" ]; then

@@ -81,6 +81,8 @@ chk("prompt embeds the SAME pass_id passed in (stable across the run, REQ-008)",
     PASS_ID in prompt1)
 chk("prompt warns that skipping the nav helper causes rejection (ties REQ-006 to REQ-007's gate)",
     any(w in low for w in ["reject", "will not be accepted", "gate", "verified independently"]))
+chk("prompt requires hidden helper navigation for claim-specific pages too",
+    "do not navigate freely" in low and "claim-specific" in low)
 
 # ─── REQ-009: claims are wrapped in <untrusted_claim> delimiters (prompt-injection mitigation) ──
 chk("prompt wraps claim content in <untrusted_claim> delimiters", "<untrusted_claim>" in prompt1 and "</untrusted_claim>" in prompt1)
@@ -132,7 +134,7 @@ gated_no_evidence = gig_judge.gate_verdict(true_jr, evidence_count=0, required_c
 chk("gate_verdict: verdict:true + 0 evidence (required 3) -> downgraded to false",
     gated_no_evidence.verdict is False)
 chk("gate_verdict: downgraded result carries a failure_reason explaining why",
-    bool(gated_no_evidence.failure_reason) and "screenshot" in gated_no_evidence.failure_reason.lower())
+    bool(gated_no_evidence.failure_reason) and "evidence" in gated_no_evidence.failure_reason.lower())
 
 # partial evidence (still short) -> still downgraded
 gated_partial = gig_judge.gate_verdict(true_jr, evidence_count=1, required_count=3)

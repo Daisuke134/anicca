@@ -20,6 +20,7 @@ Prints the png path on success, or ERROR:<reason> on failure (never raises — c
 abort a pass).
 """
 import asyncio, base64, json, os, sys, subprocess, time, urllib.request
+from urllib.parse import urlparse
 
 try:
     import websockets
@@ -27,11 +28,27 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "websockets", "-q"], capture_output=True)
     import websockets
 
-CDP = "http://localhost:9222"
+def _cdp_base():
+    # No silent default. The old fallback was http://127.0.0.1:9222, which on this host
+    # is a proxy onto the SAME browser as gig production :9223 -- the 2026-07-26
+    # collision. Whenever the env is set (gig_pass.sh exports :9223) nothing changes;
+    # when it is missing we now fail loudly instead of quietly attaching to whatever
+    # answers on the interactive port.
+    base = os.environ.get("CLOAK_CDP_BASE_URL")
+    if not base:
+        raise RuntimeError(
+            "CLOAK_CDP_BASE_URL is unset. Lease a browser first: "
+            "~/.config/ai/bin/browser-guard.sh acquire <identity> "
+            "(identities in ~/.config/ai/registry/browsers.toml). "
+            "Refusing to guess a CDP port."
+        )
+    return base.rstrip("/")
 
 
 def get_tab():
-    data = json.loads(urllib.request.urlopen(f"{CDP}/json/list", timeout=8).read())
+    data = json.loads(
+        urllib.request.urlopen(f"{_cdp_base()}/json/list", timeout=8).read()
+    )
     # prefer a coconala page tab; else the first page tab
     pages = [t for t in data if t.get("type") == "page"]
     for t in pages:
@@ -45,7 +62,7 @@ def get_tab():
 async def _connect():
     tab = get_tab()
     return await websockets.connect(
-        f"ws://localhost:9222/devtools/page/{tab}",
+        f"ws://{urlparse(_cdp_base()).netloc}/devtools/page/{tab}",
         ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024,
     )
 

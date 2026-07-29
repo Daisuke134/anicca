@@ -127,12 +127,10 @@ test('lessons.jsonl validator: accepts a valid row', () => {
   assert.ok(r.ok, r.msg);
 });
 
-// FIND-004 fix: test that the ACTUAL gig-cli.sh cron prompt references the dedup key (requestId+outcome)
-// rather than a self-defined tautological helper (the old test only proved its own logic, not the shipped code).
-test('gig-cli.sh cron prompt: shared-lessons dedup explicitly checks requestId+outcome before gh issue create', () => {
+test('gig-cli.sh delegates scheduling to the OS-owned pass LaunchAgent', () => {
   const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/shared-lessons\.jsonl/.test(code), 'shared-lessons.jsonl not referenced in cron prompt');
-  assert.ok(/requestId.*outcome|outcome.*requestId/i.test(code), 'dedup key (requestId+outcome) not mentioned in cron prompt');
+  assert.ok(/OS-owned LaunchAgent/.test(code), 'OS scheduler ownership is not documented');
+  assert.ok(!/CronCreate|claude\s+-p|codex\s+exec|--model(?:=|\s+)sonnet/i.test(code), 'legacy provider cron remains in gig-cli');
 });
 
 // ─── 3. No-fake-earn guard (earnings.jsonl) ──────────────────────────────────
@@ -177,50 +175,37 @@ test('no-fake-earn: valid 支払 row counts as earned', () => {
   assert.ok(isValidEarnRow(r), 'valid 支払 row must count');
 });
 
-// ─── 4. gig-cli.sh: all 5 behavior markers present ──────────────────────────
-test('gig-cli.sh: NURTURE ALL marker present in cron prompt', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/NURTURE ALL/i.test(code), 'NURTURE ALL missing from cron prompt');
+// ─── 4. delivery-first pass retains bounded lower-priority behaviors ─────────
+test('gig_pass.sh: delivery queue precedes all lower-priority agent steps', () => {
+  const code = fs.readFileSync(path.join(DIR, 'gig_pass.sh'), 'utf8');
+  const queue = code.indexOf('TOP_CLASS=');
+  for (const marker of ['step "LEARN"', 'step "B0"', 'step "PROFILE"', 'step "B1"', 'step "B2"']) {
+    const index = code.indexOf(marker);
+    assert.ok(index > queue, `${marker} does not follow deterministic queue gate`);
+  }
+  assert.ok(code.includes('repeatable-agent') && code.includes('tool-agent'), 'task-class routing missing');
 });
 
-test('gig-cli.sh: APPLY BROADLY marker present in cron prompt', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/APPLY BROADLY/i.test(code), 'APPLY BROADLY missing');
+test('gig_pass.sh: passprep runs after paid queue gate and before lower-priority work', () => {
+  const code = fs.readFileSync(path.join(DIR, 'gig_pass.sh'), 'utf8');
+  const gate = code.indexOf('case "$TOP_CLASS"');
+  const prep = code.indexOf('passprep.py');
+  const learn = code.indexOf('step "LEARN"');
+  assert.ok(gate >= 0 && prep > gate && prep < learn, 'passprep must run after delivery gate and before LEARN');
 });
 
-test('gig-cli.sh: lessons.jsonl referenced in cron prompt', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/lessons\.jsonl/.test(code), 'lessons.jsonl missing');
+test('gig_pass.sh: successful pass restores self-improve verifier before success markers', () => {
+  const code = fs.readFileSync(path.join(DIR, 'gig_pass.sh'), 'utf8');
+  const verifier = code.indexOf('gig_selfimprove_verify.sh');
+  const finalize = code.indexOf('if ! finalize_success', verifier);
+  assert.ok(verifier >= 0 && finalize > verifier, 'self-improve verification must precede atomic success finalize');
 });
 
-test('gig-cli.sh: IMPROVE STEP marker present in cron prompt', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/IMPROVE STEP/i.test(code), 'IMPROVE STEP missing');
-});
-
-test('gig-cli.sh: [gig-lesson] GitHub issue posting present', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/\[gig-lesson\]/.test(code), '[gig-lesson] label missing');
-});
-
-test('gig-cli.sh: strategy.json bootstrap path present', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/strategy\.default\.json/.test(code), 'strategy.default.json bootstrap path missing');
-});
-
-test('gig-cli.sh: improve_cadence_passes or modulo cadence referenced', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/improve_cadence_passes/.test(code), 'improve_cadence_passes cadence gate missing');
-});
-
-test('gig-cli.sh: shared-lessons.jsonl dedup referenced', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/shared-lessons\.jsonl/.test(code), 'shared-lessons.jsonl dedup missing');
-});
-
-// FIND-009 fix: require the explicit phrase — remove the '2>/dev/null' escape hatch
-// (2>/dev/null only suppresses errors, it does NOT prove the prompt instructs graceful continuation)
-test('gig-cli.sh: gh failure must not abort pass (explicit graceful degradation phrase required)', () => {
-  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  assert.ok(/gh fail|log a warning and continue|never abort/i.test(code), 'graceful gh degradation missing');
+test('gig_pass.sh retains NURTURE/APPLY/lessons/strategy/shared-lessons behavior contracts', () => {
+  const code = fs.readFileSync(path.join(DIR, 'gig_pass.sh'), 'utf8');
+  for (const marker of ['NURTURE ALL', 'APPLY BROADLY', 'lessons.jsonl', 'strategy.json', 'shared-lessons.jsonl']) {
+    assert.ok(code.includes(marker), `${marker} behavior contract missing`);
+  }
+  assert.match(code, /requestId.*outcome|outcome.*requestId/i, 'shared lesson dedupe key missing');
+  assert.match(code, /gh fail|log a warning and continue|never abort/i, 'shared lesson failure degradation missing');
 });

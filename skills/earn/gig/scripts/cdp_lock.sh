@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
 # cdp_lock.sh — shared advisory lock so the gig CORE (:27 pass) and the reality-VERIFIER
 # (:45 auditor spawn) never drive the :9222 daily-driver tab at the SAME time (gig L1-d).
 #
@@ -12,7 +9,7 @@ export LIFE_MANAGER_REPO
 # daily-driver-tab rule forbids): whoever holds the lock drives; the other waits or defers.
 #
 # Usage (source this file, then call the functions):
-#   source $LIFE_MANAGER_REPO/skills/earn/gig/scripts/cdp_lock.sh
+#   source ~/profitable-claude/skills/gig-work/scripts/cdp_lock.sh
 #   if cdp_lock_acquire "core" 120; then  # owner label, max wait secs
 #       ...drive :9222...
 #       cdp_lock_release
@@ -28,7 +25,13 @@ CDP_LOCK_DIR="${CDP_LOCK_DIR:-$HOME/gig/.cdp-9222.lock}"
 CDP_LOCK_STALE_SECS="${CDP_LOCK_STALE_SECS:-1500}"
 
 _cdp_lock_mtime() {
-  stat -f %m "$CDP_LOCK_DIR/meta" 2>/dev/null || stat -c %Y "$CDP_LOCK_DIR/meta" 2>/dev/null || echo 0
+  # A holder killed between mkdir and metadata write still leaves a reclaimable
+  # lock.  Fall back to the directory mtime so crash recovery is bounded.
+  stat -f %m "$CDP_LOCK_DIR/meta" 2>/dev/null \
+    || stat -c %Y "$CDP_LOCK_DIR/meta" 2>/dev/null \
+    || stat -f %m "$CDP_LOCK_DIR" 2>/dev/null \
+    || stat -c %Y "$CDP_LOCK_DIR" 2>/dev/null \
+    || echo 0
 }
 
 cdp_lock_acquire() {

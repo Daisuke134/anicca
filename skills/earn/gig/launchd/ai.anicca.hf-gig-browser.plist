@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ai.anicca.hf-gig-browser</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/profitable-claude/skills/gig-work/scripts/launch_gig_browser.sh</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Interactive</string>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>WorkingDirectory</key><string>/Users/anicca</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key><string>/Users/anicca</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>GIG_BROWSER_PORT</key><string>9223</string>
+    <key>GIG_BROWSER_PROFILE</key><string>/Users/anicca/.cloak/profiles/gig-daily-driver</string>
+    <key>GIG_BROWSER_FINGERPRINT</key><string>80136</string>
+  </dict>
+  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-browser-launchd.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-browser-launchd.err.log</string>
+</dict>
+</plist>

@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # gig-healthcheck.sh — launchd supervisor (5min). Two failure modes, both self-heal:
 #   (1) DEAD: the tmux core died → restart it.
-#   (2) STALE: the core is alive but the in-session :27 cron stopped firing (no pass in >90 min) →
-#       restart it (a fresh start re-runs one pass + re-registers the cron). This closes the
-#       continuity gap where the session lives but the internal scheduler silently stopped, so the
-#       loop never wakes to reply to a buyer / catch a 仮払い. Heartbeat = ~/gig/.last-pass, touched
-#       by the core at the start of every pass (see gig-cli.sh cron prompt).
+#   (2) STALE: the provider-free core supervisor stopped heartbeating. The OS-owned
+#       ai.anicca.hf-gig-pass LaunchAgent schedules actual passes at Minute=27.
 set -uo pipefail
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
-HB="$HOME/gig/.last-pass"; STALE_MIN=90
-LOG="$HOME/.local/state/life-manager/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+HB="$HOME/gig/.gig-core-heartbeat"; STALE_MIN=5
+LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/gig/.restart-log"
+DOCKER_DISK_PRESSURE_FLAG="${GIG_DOCKER_DISK_PRESSURE_FLAG:-$HOME/.openclaw/state/disk-pressure.block}"
 restart(){
   # backoff: max 5 restarts per 60min window (prevent subscription drain under persistent failure)
   mkdir -p "$HOME/gig"
@@ -31,35 +26,74 @@ restart(){
   fi
   echo "$now" >> "$RESTART_LOG"
   echo "$(date '+%F %T') $1 → restarting" >> "$LOG"
-  bash "$LIFE_MANAGER_REPO/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$HOME/profitable-claude/skills/gig-work/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
+
+# Docker sandbox self-heal (observed live 2026-07-25: colima down killed paid-work
+# validation for 14 straight passes, then a recreated VM lost the sandbox image).
+# Daemon down → colima start. Image missing → rebuild from the official openclaw recipe.
+docker_selfheal() {
+  local docker_bin pressure_active=0 pressure_free_gb=""
+  if [ -e "$DOCKER_DISK_PRESSURE_FLAG" ]; then
+    pressure_active=1
+    pressure_free_gb=$(awk '{
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^free_gb=[0-9]+$/) {
+          sub(/^free_gb=/, "", $i)
+          print $i
+          exit
+        }
+      }
+    }' "$DOCKER_DISK_PRESSURE_FLAG" 2>/dev/null || true)
+    case "$pressure_free_gb" in
+      ''|*[!0-9]*)
+        echo "$(date '+%F %T') disk pressure active — preserving stopped Docker runtime (free space unreadable)" >> "$LOG"
+        return
+        ;;
+    esac
+    if [ "$pressure_free_gb" -lt "${GIG_DOCKER_MIN_REBUILD_FREE_GB:-5}" ]; then
+      echo "$(date '+%F %T') disk pressure active — preserving stopped Docker runtime (${pressure_free_gb}GB free)" >> "$LOG"
+      return
+    fi
+  fi
+  docker_bin=$(command -v docker || true)
+  [ -n "$docker_bin" ] || { echo "$(date '+%F %T') docker binary missing — cannot self-heal sandbox" >> "$LOG"; return; }
+  if ! "$docker_bin" info > /dev/null 2>&1; then
+    if [ "$pressure_active" -eq 1 ]; then
+      echo "$(date '+%F %T') disk pressure active — preserving stopped Docker runtime (${pressure_free_gb}GB free)" >> "$LOG"
+      return
+    fi
+    echo "$(date '+%F %T') docker daemon DOWN → colima start" >> "$LOG"
+    colima start >> "$LOG" 2>&1 || { echo "$(date '+%F %T') colima start FAILED" >> "$LOG"; return; }
+  fi
+  if ! "$docker_bin" image inspect openclaw-sandbox:bookworm-slim > /dev/null 2>&1; then
+    echo "$(date '+%F %T') sandbox image missing → rebuilding" >> "$LOG"
+    "$docker_bin" build -t openclaw-sandbox:bookworm-slim - >> "$LOG" 2>&1 <<'DOCKERFILE' || echo "$(date '+%F %T') sandbox image rebuild FAILED" >> "$LOG"
+FROM debian:bookworm-slim
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  bash ca-certificates curl git jq python3 ripgrep \
+  && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --shell /bin/bash sandbox
+USER sandbox
+WORKDIR /home/sandbox
+CMD ["sleep", "infinity"]
+DOCKERFILE
+  fi
+}
+docker_selfheal
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "gig-core DEAD"
 elif [ ! -f "$HB" ] || [ "$HB" -ot "$HOME/gig/.last-start" ]; then
-  # .last-pass is created ONLY by a COMPLETED pass (NOT at startup — startup seeds .last-start).
-  # So a missing OR stale-from-a-PRIOR-session .last-pass right after boot is normal; give a grace
-  # window since .last-start before treating "never completed a pass" as a failure (else we'd kill
-  # the core mid-first-pass = restart loop). The `-ot .last-start` half of this condition closes a
-  # real incident (2026-07-11 gig-cadence self-fix): after a multi-day outage left .last-pass dated
-  # 2026-07-08, a freshly-restarted, genuinely-working session was judged STALE on every single tick
-  # (.last-pass's absolute age was always >=90min) and got killed every ~5min before any pass could
-  # ever run long enough to touch .last-pass and break the cycle — an unrecoverable restart loop that
-  # would have silently reproduced this same cadence miss every day going forward. Comparing against
-  # .last-start (this session's own boot time, always fresh on restart) instead of trusting an
-  # ancient .last-pass left over from a session that no longer exists is the fix; once a pass
-  # completes, .last-pass becomes newer than .last-start and this branch stops applying, falling
-  # through to the real staleness check below (which still correctly catches an in-session cron that
-  # silently dies mid-lifetime, since in that case .last-pass stays NEWER than the old .last-start).
   START_AGE="$(( ($(date +%s) - $(stat -f %m "$HOME/gig/.last-start" 2>/dev/null || echo 0)) / 60 ))"
   if [ "$START_AGE" -ge "$STALE_MIN" ]; then
-    restart "gig-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+    restart "gig-core ALIVE but supervisor heartbeat missing for >=${START_AGE}min"
   else
-    echo "$(date '+%F %T') gig-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+    echo "$(date '+%F %T') gig-core ALIVE (supervisor heartbeat pending, ${START_AGE}min since start)" >> "$LOG"
   fi
 elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || echo 0)) / 60 ))" -ge "$STALE_MIN" ]; then
-  # FIND-005: -ge to match auditor's >=90 threshold exactly
-  restart "gig-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
+  restart "gig-core STALE (no supervisor heartbeat in >=${STALE_MIN}min)"
 else
   echo "$(date '+%F %T') gig-core ALIVE+fresh" >> "$LOG"
 fi

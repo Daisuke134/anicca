@@ -22,7 +22,7 @@ set -uo pipefail
 CDP_PORT="${CDP_DAILY_DRIVER_PORT:-9222}"
 CDP_PROFILE="${CDP_DAILY_DRIVER_PROFILE:-$HOME/.cloak/profiles/daily-driver}"
 CDP_GUARD_LOCK="${CDP_GUARD_LOCK:-$HOME/gig/.cdp-guard.lock}"
-CDP_GUARD_LOG="${CDP_GUARD_LOG:-$HOME/.local/state/life-manager/logs/cdp-daily-driver-guard.log}"
+CDP_GUARD_LOG="${CDP_GUARD_LOG:-$HOME/.openclaw/logs/cdp-daily-driver-guard.log}"
 mkdir -p "$(dirname "$CDP_GUARD_LOG")" 2>/dev/null || true
 
 _cdp_guard_log() { echo "$(date '+%F %T') cdp_guard: $*" >> "$CDP_GUARD_LOG"; }

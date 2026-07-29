@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ai.anicca.hf-gig-auditor</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/gig-work/auditor.sh</string></array>
+  <key>StartCalendarInterval</key><dict><key>Minute</key><integer>45</integer></dict>
+  <key>EnvironmentVariables</key><dict>
+    <key>HOME</key><string>/Users/anicca</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>GIG_AUDIT_TOKEN_BUDGET</key><string>32768</string>
+    <key>GIG_DAILY_TOKEN_BUDGET</key><string>262144</string>
+    <key>GIG_BUDGET_DAILY_SCOPE</key><string>gig-auditor</string>
+    <key>ANICCA_BUDGET_REQUIRED</key><string>1</string>
+    <key>CLOAK_BROWSER_OWNER</key><string>gig-auditor</string>
+    <key>CLOAK_BROWSER_LAUNCHD_LABEL</key><string>ai.anicca.hf-gig-browser</string>
+    <key>CLOAK_CDP_BASE_URL</key><string>http://127.0.0.1:9223</string>
+    <key>CDP_DAILY_DRIVER_PORT</key><string>9223</string>
+    <key>CDP_DAILY_DRIVER_PROFILE</key><string>/Users/anicca/.cloak/profiles/gig-daily-driver</string>
+    <key>CDP_GUARD_LOCK</key><string>/Users/anicca/gig/.cdp-gig-guard.lock</string>
+    <key>CDP_GUARD_LOG</key><string>/Users/anicca/.openclaw/logs/cdp-gig-browser-guard.log</string>
+    <key>CDP_LOCK_DIR</key><string>/Users/anicca/gig/.cdp-gig.lock</string>
+    <key>CLOAK_CONTEXT_LEASES_FILE</key><string>/Users/anicca/.cloak/vault/gig-leases.json</string>
+    <key>CLOAK_TARGET_OWNERS_FILE</key><string>/Users/anicca/.cloak/vault/gig-target-owners.json</string>
+    <key>CLOAK_SESSION_VAULT_FILE</key><string>/Users/anicca/.cloak/vault/gig-daily-driver/auth-state.json</string>
+    <key>SESSION_VAULT_PORT</key><string>9223</string>
+    <key>SESSION_VAULT_DIR</key><string>/Users/anicca/.cloak/vault/gig-daily-driver</string>
+    <key>GIG_CDP_HEALTH_URL</key><string>http://127.0.0.1:9223/json/version</string>
+  </dict>
+  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-auditor.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-auditor.err.log</string>
+</dict>
+</plist>

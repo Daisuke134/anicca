@@ -11,7 +11,9 @@ mtdc account (Dais Google login、 KYC+MUFG 済) で request 5121769 (PowerPoint
 
 ## 手順 (= /offers/add/{requestId})
 1. request 開く: coconala.com/requests/{id}
-2. 緑「応募する」 を ★ 実マウス click (Input.dispatchMouseEvent 座標) ★ → /offers/add/{id} へ (= 404 が出たら未ログイン。 Google再login)
+2. 緑「応募する」はクリックしない。Vue event 経由は実測で無反応になることがあるため、同じ lease の ws を使い、code-owned helper で正規 route `/offers/add/{id}` を直接開く:
+   `python3 ~/profitable-claude/skills/gig-work/scripts/cdp_nav_snapshot.py open-application --ws "$WS" --request-id "$REQUEST_ID" --screenshot "$EVIDENCE_DIR/gig-${PASS_ID##*-}-B2-${REQUEST_ID}-form.png" --evidence "$EVIDENCE_DIR/gig-${PASS_ID##*-}-B2-${REQUEST_ID}-form.json"`
+   `ok=true` かつ `form_verified=true`（提案内容・価格・納品予定日・確認するの4 control）を確認してから入力へ進む。404/login/field欠落は応募成功ではない。
 3. 提案内容 textarea `data[Offer][content]` = ★ 募集要件を満たす提案 ★ (自己紹介のみ禁止)。 React setter (HTMLTextAreaElement value setter + input/change event) で OK
 4. 提案金額 `data[Offer][price]` = setter で数値 (最低 4,000 円〜)
 5. ★ 納品予定日 (必須) = datepicker を **実マウス click** で: 日付欄 click → ▶ で対象月 → 日を実click ★。
@@ -20,9 +22,11 @@ mtdc account (Dais Google login、 KYC+MUFG 済) で request 5121769 (PowerPoint
    - 「ファイルを添付する」(クリップ) を ★ 実マウス click ★ → その後 CDP `DOM.setFileInputFiles({backendNodeId or nodeId, files:[path]})` で input にセット → ファイル名 chip が表示されれば成功
    - ❗ synthetic change event だけだと Vue が拾わない。 実click + setFileInputFiles の併用で chip 表示を確認
    - 合計 100MB まで、 5 枠。 .pptx (本体) を ファイル1 に
-7. 「確認する」 を click → ★ validation エラー(ピンク帯「入力情報を確認して下さい」)が出たら 必須未入力 (大抵 date の commit 漏れ) → 5 をやり直し ★
-8. 確認ページ (応募する のみ・確認するは消える) → 「応募する」 click → ★ 最終モーダル「投稿前にご確認ください」★ → モーダル内「応募する」 を click = 真の提出
-9. ★ E2E verify ★: request の tab title が「応募内容を確認する | ココナラ」 に変化 (= 応募済の時のみ) + 応募人数 +1 + mypage/offers に表示。 /json の title だけでも applied 確認可
+7. ★ 入力後は確認・応募ボタンを手動で押さない ★。同じ leased ws を渡して code-owned helper を実行:
+   `python3 ~/profitable-claude/skills/gig-work/scripts/cdp_nav_snapshot.py submit-application --ws "$WS" --request-id "$REQUEST_ID" --screenshot "$EVIDENCE_ROOT/gig-$PASS_ID-B2-${REQUEST_ID}-submitted.png" --evidence "$EVIDENCE_DIR/gig-${PASS_ID##*-}-B2-${REQUEST_ID}-submitted.json"`
+   helper が「確認する」→確認ページ「応募する」→最終モーダル `js_ignite-submit`「応募する」を実マウスで順に押す。validation error、ボタン消失、別URLは失敗。
+8. ★ E2E verify ★: `/mypage/job_matching/applied/offers` への遷移と画面内「応募しました」を両方確認した時だけ `ok=true, submit_verified=true, applied_page_verified=true`。その後にだけ submitted.png を作る。モーダルのスクショを submitted と命名してはいけない。
+9. 親passも独立して応募履歴を再読し、台帳の `applied_page_verified=true` を付ける。helper証跡・親readback・台帳の3点が揃って初めて実応募。
 
 ## 成果物品質 (= 競合プロに勝つ、 vcsdd で実証)
 - ★ PPTX/資料は 公式 `pptx` skill (html2pptx: HTML/CSS設計→.pptx) を使う。 raw python-pptx は地味/低品質で負ける ★

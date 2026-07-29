@@ -1,7 +1,13 @@
 {
   "version": 2,
   "updated_ts": "2026-07-12T00:00:00Z",
-  "max_apply_per_pass": 12,
+  "max_apply_per_pass": 7,
+  "listing_weekly_target": 2,
+  "apply_skip_thresholds": {
+    "max_applicants": 30,
+    "min_contracted_to_skip": 1,
+    "min_budget_jpy": 3000
+  },
   "improve_cadence_passes": 4,
   "priority_categories": [
     "PPT/スライド",

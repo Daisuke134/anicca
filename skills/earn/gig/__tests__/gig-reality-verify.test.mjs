@@ -36,19 +36,31 @@ test('gig_reality_verify.sh: reads all three claim jsonl sources', () => {
   }
 });
 
-test('gig_reality_verify.sh: spawns a FRESH claude -p (report-independent, non-interactive)', () => {
+test('gig_reality_verify.sh: uses the bounded tool judge route through common runner', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
-  assert.ok(/claude\s+-p\b/.test(src), 'does not spawn `claude -p`');
-  assert.ok(src.includes('--dangerously-skip-permissions'), 'missing --dangerously-skip-permissions');
-  assert.ok(src.includes('--add-dir'), 'missing --add-dir (browser/CDP + home file access)');
-  assert.ok(/env\s+-u\s+ANTHROPIC_API_KEY/.test(src), 'missing env -u ANTHROPIC_API_KEY (subscription session, not API billing)');
+  assert.ok(src.includes('agent_runner.py'), 'does not invoke common runner');
+  assert.ok(/--task-class\s+tool-agent/.test(src), 'judge is not routed as bounded tool-agent');
+  assert.ok(!/--task-class\s+high-value-agent/.test(src), 'read-only audit must not use high-value route');
+  assert.ok(!/--model\s+|sonnet|"\$CLAUDE"/i.test(src), 'provider/model leaked into business script');
 });
 
-test('gig_reality_verify.sh: caps the fresh spawn with a timeout (no infinite hang)', () => {
+test('auditor.sh: expensive reality judge is cadence-gated to six hours', () => {
+  const src = fs.readFileSync(AUDITOR_SH, 'utf8');
+  assert.match(src, /REALITY_VERIFY_INTERVAL_SECS=.*21600/, 'missing six-hour reality cadence');
+  assert.ok(src.includes('.reality-verify-last-start'), 'missing durable cadence marker');
+});
+
+test('gig_reality_verify.sh: consumes runner timeout evidence', () => {
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
-  // accepts a literal-seconds timeout (`timeout 600 ...`) OR a timeout-seconds variable
-  // (`timeout "$TIMEOUT_SECS" ...` where TIMEOUT_SECS=<int> is set earlier in the script).
-  assert.ok(/\btimeout\s+("?\$\w+"?|\d+)\b/.test(src), 'no `timeout <seconds>` guard around the claude -p spawn');
+  assert.ok(src.includes('attempts.jsonl') && src.includes('timed_out'), 'runner timeout evidence not consumed');
+});
+
+test('gig_reality_verify.sh: shares the Gig daily token breaker and handles exit 75', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(src.includes('ANICCA_BUDGET_SCOPE_ID="$PASS_ID"'), 'audit budget scope missing');
+  assert.ok(src.includes('GIG_DAILY_TOKEN_BUDGET:-262144'), 'shared daily budget missing');
+  assert.match(src, /JUDGE_RC"\s+-eq\s+75/, 'budget circuit exit is not handled');
+  assert.ok(src.includes('budget_blocked'), 'budget stop reason is not persisted');
 });
 
 test('gig_reality_verify.sh: writes audit-reality.jsonl', () => {
@@ -109,10 +121,8 @@ test('gig_reality_verify.sh: generates a STABLE pass_id BEFORE spawning the judg
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
   assert.ok(/PASS_ID=/.test(src), 'no PASS_ID variable generated');
   const passIdIdx = src.indexOf('PASS_ID=');
-  // match the ACTUAL invocation line ("$CLAUDE" -p ...), not any comment/doc text that merely
-  // mentions "claude -p" (this file's header comments do, well before PASS_ID is generated).
-  const spawnIdx = src.search(/"\$CLAUDE"\s+-p\b/);
-  assert.ok(passIdIdx !== -1 && spawnIdx !== -1 && passIdIdx < spawnIdx, 'PASS_ID must be generated BEFORE the claude -p spawn');
+  const spawnIdx = src.search(/python3\s+"\$RUNNER"/);
+  assert.ok(passIdIdx !== -1 && spawnIdx !== -1 && passIdIdx < spawnIdx, 'PASS_ID must be generated BEFORE runner spawn');
 });
 
 test('gig_reality_verify.sh: embeds the pass_id into the prompt (build_verifier_prompt call)', () => {

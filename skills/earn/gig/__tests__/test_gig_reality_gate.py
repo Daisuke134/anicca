@@ -60,7 +60,7 @@ try:
     chk("verdict:true + empty trajectory dir -> gated row is NOT verdict:true (rejected as unbacked)",
         row.get("verdict") is False)
     chk("gated row explains WHY (evidence-missing failure_reason)",
-        "screenshot" in (row.get("failure_reason") or "").lower())
+        "evidence" in (row.get("failure_reason") or "").lower())
     chk("gated row reports evidence_captured == 0", row.get("evidence_captured") == 0)
 
     # ─── trajectory dir exists but has ZERO rows for this run (file present, empty) ────────────────

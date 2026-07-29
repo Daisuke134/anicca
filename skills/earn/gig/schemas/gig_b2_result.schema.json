@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "summary",
+    "evidence",
+    "eligible_count",
+    "applications",
+    "current_b2"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "ok"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "eligible_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "applications": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "bucket",
+          "category",
+          "title",
+          "price_jpy",
+          "deliver_date",
+          "url",
+          "compensation_type",
+          "weekly_days",
+          "weekly_hours_min",
+          "weekly_hours_max"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bucket": {
+            "type": "string",
+            "enum": [
+              "single",
+              "retainer"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "price_jpy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "deliver_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "compensation_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "hourly",
+              "monthly",
+              null
+            ]
+          },
+          "weekly_days": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "weekly_hours_min": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "weekly_hours_max": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "current_b2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context_path",
+        "context_sha256",
+        "marketplace_url",
+        "marketplace_screenshot_path",
+        "marketplace_live_dom_path",
+        "inspected_requests",
+        "search_sources"
+      ],
+      "properties": {
+        "context_path": {
+          "type": "string"
+        },
+        "context_sha256": {
+          "type": "string"
+        },
+        "marketplace_url": {
+          "type": "string"
+        },
+        "marketplace_screenshot_path": {
+          "type": "string"
+        },
+        "marketplace_live_dom_path": {
+          "type": "string"
+        },
+        "inspected_requests": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request_id",
+              "bucket",
+              "url",
+              "applicants",
+              "contracted",
+              "budget_max_jpy",
+              "compensation_type",
+              "compensation_min_jpy",
+              "compensation_max_jpy",
+              "weekly_days",
+              "weekly_hours_min",
+              "weekly_hours_max",
+              "remote",
+              "synchronous_interview_required",
+              "human_identity_required",
+              "accepting_applications",
+              "outcome",
+              "reason"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string"
+              },
+              "bucket": {
+                "type": "string",
+                "enum": [
+                  "single",
+                  "retainer"
+                ]
+              },
+              "url": {
+                "type": "string"
+              },
+              "applicants": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "contracted": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "budget_max_jpy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "compensation_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "hourly",
+                  "monthly",
+                  null
+                ]
+              },
+              "compensation_min_jpy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "compensation_max_jpy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "weekly_days": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "weekly_hours_min": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "weekly_hours_max": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "remote": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "synchronous_interview_required": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "human_identity_required": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "accepting_applications": {
+                "type": "boolean"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "eligible",
+                  "ineligible"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "search_sources": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "url",
+              "screenshot_path",
+              "live_dom_path",
+              "inspected_count",
+              "has_next",
+              "exhausted"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "screenshot_path": {
+                "type": "string"
+              },
+              "live_dom_path": {
+                "type": "string"
+              },
+              "inspected_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "has_next": {
+                "type": "boolean"
+              },
+              "exhausted": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "title": "gig B2 (apply lane) step result"
+}
