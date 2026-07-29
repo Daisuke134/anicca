@@ -302,13 +302,19 @@ for Task 7 after seven expected replacement runs. Evidence:
 - Consumes: `loop_id`, tenant/product configuration, immutable input refs, secret refs.
 - Produces: adapters implementing `plan(context)`, `execute(job, services)`, `reconcile(effect)`, `verify(receipt)`, and `report(receipt)`.
 
-- [ ] **Step 1: Write registry contract tests**
+- [x] **Step 1: Write registry contract tests**
 
 Reject adapters that omit reconciliation or machine verification. Forbid product credentials and absolute user paths in registry configuration.
 
-- [ ] **Step 2: Implement the registry**
+- [x] **Step 2: Implement the registry**
 
 Register the report adapter first, then migrate in this order: Life Manager daily, Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, finance, then remaining retained jobs.
+
+The registry and the first registration are implemented in
+`apps/life-manager/lib/loop-adapter-registry.js` and
+`apps/life-manager/config/loop-adapters.json`. The worker resolves the
+financial-report implementation through this registry. The next adapter is the
+existing Life Manager daily loop; no legacy scheduler is disabled yet.
 
 - [ ] **Step 3: Migrate one adapter at a time**
 

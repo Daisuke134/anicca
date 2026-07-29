@@ -240,13 +240,13 @@ async function executeCapabilityJob(job, services) {
   }
 }
 
-function createWorkerHandlers(env, capabilities) {
+function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const handlers = {};
+  const servicesByAdapter = {};
   if (capabilities.includes("report.financial.telegram")) {
-    const { executeFinancialReportJob } = require("../lib/report-job-adapter.js");
     const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
     const secretProvider = createScopedEnvironmentSecretProvider(env);
-    handlers["report.financial.telegram"] = (job) => executeFinancialReportJob(job, {
+    servicesByAdapter["financial-report-telegram"] = {
       secretProvider,
       supaUrl: requiredEnv(env, "SUPABASE_URL"),
       supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
@@ -255,7 +255,16 @@ function createWorkerHandlers(env, capabilities) {
         rpcUrl: String(env.BASE_RPC_URL || "https://mainnet.base.org"),
         fetchImpl: globalThis.fetch,
       }),
-    });
+    };
+  }
+  const createRegistry = dependencies.createRegistry || (
+    require("../lib/loop-adapter-registry.js").createConfiguredLoopAdapterRegistry
+  );
+  const registry = createRegistry({ servicesByAdapter });
+  for (const capability of capabilities) {
+    if (!registry.hasCapability(capability)) continue;
+    const adapter = registry.getByCapability(capability);
+    handlers[capability] = (job) => adapter.execute(job);
   }
   return handlers;
 }
@@ -442,6 +451,7 @@ module.exports = {
   runRuntimeUp,
   buildSchedulerHolderToken,
   createScopedEnvironmentSecretProvider,
+  createWorkerHandlers,
   executeCapabilityJob,
   runCapabilityWorker,
   runSchedulerOwner,
