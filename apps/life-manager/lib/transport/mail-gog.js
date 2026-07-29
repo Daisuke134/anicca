@@ -31,7 +31,7 @@ function parseReceiptInterval(value) {
 
 function makeGogMail({ bin, account, keyring, run, execFileSyncImpl = execFileSync } = {}) {
   const gogBin = bin || process.env.GOG_BIN || "gog";
-  const acct = account || process.env.GOG_ACCOUNT || "";
+  const acct = account !== undefined ? account : (process.env.GOG_ACCOUNT || "");
   const keyringPwd = keyring != null ? keyring : (process.env.GOG_KEYRING_PASSWORD || "");
   const injected = run || (execFileSyncImpl !== execFileSync && ((args, timeout = 15000) =>
     execFileSyncImpl(gogBin, [...args, "--account", acct], {
