@@ -17303,3 +17303,10 @@
 {"ts":1785354355,"wake_id":"00MS6HVXCD58D3A3C4E663493B","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
 {"ts":1785354482,"wake_id":"00MS6HYNB2F4E9AB5A612A460B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785354625,"wake_id":"00MS6I1PHUCE3F8691854C4D52","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785354768,"wake_id":"00MS6I4RS8CA43A04D47A64707","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785354911,"wake_id":"00MS6I7UASD8F18FB7D2464B62","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785355050,"wake_id":"00MS6IATHFF3DFD63E5A084204","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API for NFT minting marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for "}
+{"ts":1785355185,"wake_id":"00MS6IDQ01F4E4D9794F0F42BA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana AI inference paid API marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the"}
+{"ts":1785355324,"wake_id":"00MS6IGPA9616D9E99CBE24502","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785355466,"wake_id":"00MS6IJQA85CE19905FBB04344","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785355604,"wake_id":"00MS6IMOUQ2B1CE3D4470D44B6","kind":"narrate","sleep_s":120,"model":"auto"}
