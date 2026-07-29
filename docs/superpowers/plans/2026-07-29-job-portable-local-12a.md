@@ -25,18 +25,18 @@ provider name from the private receipt.
 - Create: `apps/job-search-loop/tests/test_local_setup.py`
 - Modify: `apps/job-search-loop/tests/test_canonical_runtime.py`
 
-- [ ] **Step 1: Add RED profile/XDG tests**
+- [x] **Step 1: Add RED profile/XDG tests**
 
   Require absolute XDG roots, a valid user-supplied profile, exact private modes,
   atomic receipt creation, and no implicit overwrite.
 
-- [ ] **Step 2: Add RED provider tests**
+- [x] **Step 2: Add RED provider tests**
 
   Fake authenticated/unauthenticated Codex and Claude executables. Verify
   deterministic `auto` selection and fail-closed missing auth without reading or
   copying credentials.
 
-- [ ] **Step 3: Add RED runtime selection test**
+- [x] **Step 3: Add RED runtime selection test**
 
   Source `runtime-paths.sh` against the generated receipt and require
   `AGENT_RUNNER_PROVIDER` to equal the selected provider.
@@ -47,17 +47,17 @@ provider name from the private receipt.
 - Create: `apps/job-search-loop/job_search_loop/local_setup.py`
 - Modify: `apps/job-search-loop/scripts/runtime-paths.sh`
 
-- [ ] **Step 1: Implement the smallest GREEN Python module**
+- [x] **Step 1: Implement the smallest GREEN Python module**
 
   Validate through the existing `validate_profile`, copy atomically, enforce modes,
   run provider-owned status commands, and write a redacted receipt.
 
-- [ ] **Step 2: Load only the provider name at runtime**
+- [x] **Step 2: Load only the provider name at runtime**
 
   Read `install.json` with the existing Python interpreter. Reject unexpected
   provider names and never source the file as shell.
 
-- [ ] **Step 3: Run focused tests**
+- [x] **Step 3: Run focused tests**
 
   ```bash
   PYTHONPATH=apps/job-search-loop python3 -m unittest \
