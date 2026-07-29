@@ -27,6 +27,9 @@ class TestKeepaliveMain(unittest.TestCase):
         self.fake_client.dump_settings = mock.MagicMock()
         self.fake_client.get_timeline_feed = mock.MagicMock(return_value={})
         self.fake_client.sync_launcher = mock.MagicMock(return_value={})
+        self.fake_client.account_info = mock.MagicMock(
+            return_value=mock.MagicMock(username="h")
+        )
 
     def test_keepalive_main_no_settings_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -43,7 +46,74 @@ class TestKeepaliveMain(unittest.TestCase):
             self.assertTrue(res["alive"])
             self.assertTrue(res["feed_ok"])
             self.assertTrue(res["ping_ok"])
+            self.assertTrue(res["identity_ok"])
             self.fake_client.dump_settings.assert_called_once_with(settings)
+
+    def test_keepalive_main_exact_identity_atomically_recovers_poisoned_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = os.path.join(tmp, "s.json")
+            accounts = os.path.join(tmp, "accounts.json")
+            with open(settings, "w") as f:
+                f.write("{}")
+            with open(accounts, "w") as f:
+                json.dump([
+                    {
+                        "handle": "h",
+                        "status": "poisoned_manual_backup",
+                        "session_owner": "instagrapi",
+                        "poisoned_reason": "old challenge",
+                        "poisoned_at": "2026-07-29T01:16Z",
+                    },
+                    {"handle": "other", "status": "ready"},
+                ], f)
+            os.chmod(accounts, 0o600)
+
+            res = ip.keepalive_main(
+                "h",
+                settings_path=settings,
+                accounts_path=accounts,
+                client_factory=lambda: self.fake_client,
+            )
+
+            with open(accounts, encoding="utf-8") as source:
+                rows = json.load(source)
+            self.assertTrue(res["alive"])
+            self.assertTrue(res["recovered"])
+            self.assertEqual(rows[0]["status"], "ready")
+            self.assertEqual(rows[0]["session_owner"], "instagrapi")
+            self.assertNotIn("poisoned_reason", rows[0])
+            self.assertNotIn("poisoned_at", rows[0])
+            self.assertRegex(rows[0]["recovered_at"], r"^\d{4}-\d{2}-\d{2}T")
+            self.assertEqual(rows[1], {"handle": "other", "status": "ready"})
+            self.assertEqual(os.stat(accounts).st_mode & 0o777, 0o600)
+
+    def test_keepalive_main_identity_mismatch_never_recovers_or_dumps(self):
+        self.fake_client.account_info.return_value = mock.MagicMock(username="wrong")
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = os.path.join(tmp, "s.json")
+            accounts = os.path.join(tmp, "accounts.json")
+            with open(settings, "w") as f:
+                f.write("{}")
+            original = [{
+                "handle": "h",
+                "status": "poisoned_manual_backup",
+                "poisoned_reason": "old challenge",
+            }]
+            with open(accounts, "w") as f:
+                json.dump(original, f)
+
+            res = ip.keepalive_main(
+                "h",
+                settings_path=settings,
+                accounts_path=accounts,
+                client_factory=lambda: self.fake_client,
+            )
+
+            self.assertFalse(res["alive"])
+            self.assertFalse(res["identity_ok"])
+            with open(accounts, encoding="utf-8") as source:
+                self.assertEqual(json.load(source), original)
+            self.fake_client.dump_settings.assert_not_called()
 
     def test_keepalive_main_login_required_never_relogins(self):
         from instagrapi.exceptions import LoginRequired
@@ -73,7 +143,11 @@ class TestKeepaliveMain(unittest.TestCase):
                 client_factory=lambda: self.fake_client)
             self.assertFalse(res["alive"])
             self.assertTrue(res["poisoned"])
-            self.assertEqual(json.load(open(accounts))[0]["status"], "poisoned_manual_backup")
+            with open(accounts, encoding="utf-8") as source:
+                self.assertEqual(
+                    json.load(source)[0]["status"],
+                    "poisoned_manual_backup",
+                )
             self.fake_client.login.assert_not_called()
 
 

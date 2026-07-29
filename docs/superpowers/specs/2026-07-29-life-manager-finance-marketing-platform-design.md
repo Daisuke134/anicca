@@ -15,10 +15,11 @@ local scheduler and worker sent real Telegram `message_id=432`, persisted the
 immutable snapshot/effect receipt, and survived a worker restart without
 resend. The daily marketing path owns immutable generation inputs, a verified
 render receipt, and deterministic independent Instagram/TikTok jobs. The chain
-defaults off while the legacy LaunchAgent remains active. Next: repair the
-Instagram tenant profile, collect attributed platform/app metrics, and migrate
-Larry/ReelClaw without cutting over scheduler ownership before the
-seven-expected-run gate.
+defaults off while the legacy LaunchAgent remains active. The Life Manager-owned
+Instagram profile is now recovered with exact-account, feed, launcher, and
+read-only Reel-list proof; the legacy source profile remains untouched. Next:
+collect attributed platform/app metrics and migrate Larry/ReelClaw without
+cutting over scheduler ownership before the seven-expected-run gate.
 
 ## 1. Executive decision
 
@@ -245,10 +246,9 @@ portable without enabling a competing scheduler:
   duplicate daily publication.
 - This closes portable asset/state/render ownership for this one loop.
   Publication chaining, metric attribution, winner/challenger learning,
-  next-run consumption, Telegram marketing reporting, the poisoned Instagram
-  tenant profile, and seven-cycle shadow evidence remain open. Autonomous
-  learning still remains frozen until the runtime migration gates permit
-  Orders 32–35.
+  next-run consumption, Telegram marketing reporting, and seven-cycle shadow
+  evidence remain open. Autonomous learning still remains frozen until the
+  runtime migration gates permit Orders 32–35.
 
 The third slice closes the durable generation→publication handoff without
 creating a competing external effect:
@@ -270,6 +270,30 @@ creating a competing external effect:
   `ai.anicca.life-manager-daily` LaunchAgent remains loaded
   (`runs=1`, `last exit code=1`). This is a handoff/idempotency proof, not a
   cutover or a claim that Instagram is repaired.
+
+The fourth slice repairs the Life Manager-owned Instagram profile without
+posting or modifying the legacy source:
+
+- Browser authorization reached Instagram home after dismissing the provider's
+  automated-behavior warning, and the authenticated profile link was exactly
+  `/anicca.affirms2/`. No different logged-in browser account was accepted as
+  evidence.
+- The Life Manager-owned saved session then passed a read-only feed probe,
+  launcher probe, and `account_info` identity check for `anicca.affirms2`.
+  Recovery atomically changed only that tenant profile row from
+  `poisoned_manual_backup` to `ready`, removed the poison fields, preserved file
+  mode `0600`, and recorded `recovered_at`.
+- A subsequent read-only verification returned `ok=true`, 12 Reels, including
+  `/anicca.affirms2/reel/DbPPpXCMjrf/` and
+  `/anicca.affirms2/reel/DbKkdfjsaTZ/`. This proves session and account parity;
+  it does not claim a new publication.
+- A mismatched authenticated username now fails closed: it cannot refresh the
+  saved settings or recover the profile. A `ChallengeRequired` remains a
+  quarantine event; the private API never retries a password login.
+- The legacy `~/.cloak` account row remains
+  `poisoned_manual_backup`, the publication chain remains disabled, and
+  `ai.anicca.life-manager-daily` remains loaded. No external post or scheduler
+  cutover occurred in this slice.
 
 The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
 reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
@@ -301,6 +325,7 @@ or whole-business financial-health report.
 | [Telegram Bot API](https://core.telegram.org/bots/api) | “The Bot API is an HTTP-based interface” | Telegram is a delivery surface, not the financial source of truth |
 | [Moneytree LINK](https://docs.link.getmoneytree.com/docs) | Moneytree LINK exposes standardized financial data after user authorization and uses OAuth 2.0 Authorization Code Grant with PKCE | Production users connect through Moneytree LINK/OAuth; raw bank credentials never enter Life Manager |
 | [Postiz Post Analytics](https://docs.postiz.com/public-api/analytics/post) | “Get analytics data for a specific published post.” | Keep Postiz during migration and collect post-level metrics by provider post ID instead of scraping immediately after publication |
+| [instagrapi best practices](https://github.com/subzeroid/instagrapi/blob/master/docs/usage-guide/best-practices.md) | “Use the settings file next time” after one successful login and verification | Reuse a saved device/session; quarantine challenges instead of hammering password login, and require exact provider identity before recovery |
 | [Microsoft SkillOpt](https://microsoft.github.io/SkillOpt/) | “SkillOpt makes the skill document itself the optimization target.” | Skill changes use scored rollout evidence, bounded edits, and a held-out keep/revert gate; production skills are never rewritten unconditionally |
 | [GitHub repository archival](https://docs.github.com/en/repositories/archiving-a-github-repository/archiving-repositories) | “You can archive a repository to make it read-only for all users and indicate that it's no longer actively maintained.” | Preserve `life-manager-v0` history without permitting new writes, but only after its unique-content manifest and equivalence gate pass |
 | [Stripe subscriptions](https://docs.stripe.com/billing/subscriptions/overview) | “Subscriptions require coordination between your site and Stripe” | Cloud scheduling and worker access follow durable webhook-derived entitlement; a client redirect or checkout page never grants access by itself |
@@ -1078,7 +1103,7 @@ runtime-migration work is active:
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env; remaining command routing and seven-run shadow stay open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
-| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, and an idempotent generation→Instagram/TikTok durable-job chain; its IG profile is still poisoned, the chain remains disabled during shadowing, and metrics/learning plus other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
+| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, and a read-only verified Life Manager-owned IG profile; the chain remains disabled during shadowing, no new IG publication receipt exists yet, and metrics/learning plus other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
 | 8 | Package the supported local option | a working checkout is not yet a reproducible self-hosted product | clean-machine install, upgrade, backup/restore, health check, and uninstall verification pass |
 | 9 | Deploy the same release to cloud | current Railway service does not yet own every retained loop or worker class | API, scheduler, and worker pools run the same contracts and release hashes as local |
