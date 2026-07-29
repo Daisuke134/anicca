@@ -24,7 +24,7 @@ Method: TDD (RED → GREEN → REFACTOR) per task. Commit + push after each task
 - HTTP/contract tests in existing style (`test/payout-question-http-contract.test.js` as reference for TG-surface testing).
 
 ## Task 5 — Inflow watch adapter
-- `apps/life-manager/lib/wallet-inflow-job-adapter.js` per spec §4.5: Base eth_getLogs + Solana getSignaturesForAddress, persisted cursor, `capital_in` rows via `lib/earnings-runtime.js` writer with `entry_key: inflow:<chain>:<tx>`.
+- `apps/life-manager/lib/wallet-inflow-job-adapter.js` per spec §4.5: Base eth_getLogs + Solana getSignaturesForAddress, persisted cursor, `financial_deposit` rows (semantic label `capital_class: capital_in` in receipt) via `lib/earnings-runtime.js` writer with `entry_key: inflow:<chain>:<tx>`.
 - Tests: exactly-once, duplicate replay refused, revenue totals unchanged, quiet no-inflow receipt.
 
 ## Task 6 — Wiring

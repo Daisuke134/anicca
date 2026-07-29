@@ -99,11 +99,15 @@ Clone of the `report-job-adapter.js` shape:
 - Solana: `getSignaturesForAddress` polling (same as
   `scripts/observe-ugig-work.js:35,64`), bounded + cursor.
 - Every confirmed inflow → `lm_agent_earnings` row with
-  `kind: capital_in` (already in `EXCLUDED_KINDS`,
-  `lib/earnings-ledger.js:37`), `entry_key: inflow:<chain>:<tx>` for
-  exactly-once, revenue 0. Self/colony wallets (shared
-  `skills/earn/x402-sell/lib/self-wallets.mjs` set) are still `capital_in`,
-  never revenue.
+  `kind: financial_deposit` (the ledger-vocabulary implementation of the
+  program-SSOT concept "capital_in"; member of `EXCLUDED_KINDS`,
+  `lib/earnings-ledger.js:25-39`, so revenue stays 0). The receipt carries
+  `capital_class: "capital_in"` as the semantic label. `capital_in` is NOT
+  a ledger kind — `normaliseEntry` and the DB CHECK
+  (`migrations/2026-07-25-lm-agent-earnings.sql`) both reject it.
+  `entry_key: inflow:<chain>:<tx>` for exactly-once. Self/colony wallets
+  (shared `skills/earn/x402-sell/lib/self-wallets.mjs` set) are likewise
+  `financial_deposit`, never revenue.
 - No inflow = quiet receipt (`checked, none`), not an error.
 
 ### 4.6 Worker registration
@@ -136,7 +140,7 @@ already wake on schedule; if a host trigger is required, one label
 | 3 | Zero-start adapter: fresh tenant → wallets + DB row + TG payload (mock transport) + receipt; second run = no-op (idempotent); no-chat → `blocked_no_chat` | unit + contract |
 | 4 | Tenant isolation: tenants A and B provisioned → distinct addresses, distinct key files, distinct key refs, ledger rows disjoint; extend `test/tenant-isolation.test.js` | contract |
 | 5 | Redaction: grep receipts/TG/DB writes for secret patterns = 0 | unit |
-| 6 | Inflow watch: mocked RPC inflow → exactly-once `capital_in` row, revenue total unchanged; duplicate tx replay → refused; no inflow → quiet receipt | unit |
+| 6 | Inflow watch: mocked RPC inflow → exactly-once `financial_deposit` row (`capital_class: capital_in` receipt label), revenue total unchanged; duplicate tx replay → refused; no inflow → quiet receipt | unit |
 | 7 | Focused money slice + full `npm test` suite green | regression |
 
 ## 7. E2E verification (live, by Fable after merge)
