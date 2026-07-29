@@ -6,6 +6,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 
 const {
+  requestLumaEmailLogin,
   resolveBootstrapEnv,
   runLumaBootstrap,
 } = require("./browser-auth-luma-bootstrap.js");
@@ -170,4 +171,38 @@ test("production CLI resolves exactly one existing agent-owned Luma tenant witho
       /Luma bootstrap configuration unavailable/,
     );
   }
+});
+
+test("Luma login request deterministically fills and submits the measured email form", async () => {
+  const calls = [];
+  const email = {
+    first() { return this; },
+    async waitFor(input) { calls.push(["waitFor", input]); },
+    async fill(value) { calls.push(["fill", value]); },
+  };
+  const submit = {
+    first() { return this; },
+    async click(input) { calls.push(["click", input]); },
+  };
+  const page = {
+    locator(selector) {
+      calls.push(["locator", selector]);
+      return email;
+    },
+    getByRole(role, input) {
+      calls.push(["getByRole", role, String(input.name)]);
+      return submit;
+    },
+    async waitForTimeout(ms) { calls.push(["waitForTimeout", ms]); },
+  };
+
+  assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENT_BROWSER_EMAIL), true);
+  assert.deepEqual(calls, [
+    ["locator", "input[type=\"email\"]"],
+    ["waitFor", { state: "visible", timeout: 15_000 }],
+    ["fill", ENV.LM_AGENT_BROWSER_EMAIL],
+    ["getByRole", "button", "/continue with email/i"],
+    ["click", { timeout: 15_000 }],
+    ["waitForTimeout", 2_000],
+  ]);
 });
