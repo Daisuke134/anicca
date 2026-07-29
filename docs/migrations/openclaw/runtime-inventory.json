@@ -4834,7 +4834,8 @@
       "owner": "life-manager-runtime",
       "target_adapter": "marketing-life-manager-daily",
       "supporting_adapters": [
-        "marketing-life-manager-daily-generation"
+        "marketing-life-manager-daily-generation",
+        "marketing-platform-observation"
       ],
       "effect_class": "publish",
       "verify_command": "cd apps/life-manager && npm run test:runtime-adapters",

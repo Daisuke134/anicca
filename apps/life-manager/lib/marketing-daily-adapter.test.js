@@ -118,6 +118,8 @@ test("adapter resolves tenant-scoped refs and emits exact clickable public URLs"
         caption_sha256: CAPTION_HASH,
         platform: "tiktok",
         public_url: TT_URL,
+        provider_post_id: "postiz-post-B01",
+        provider_route: "postiz",
         provider_reconciled: false,
       };
     },
@@ -134,6 +136,8 @@ test("adapter resolves tenant-scoped refs and emits exact clickable public URLs"
     video_sha256: VIDEO_HASH,
     caption_sha256: CAPTION_HASH,
     public_url: TT_URL,
+    provider_post_id: "postiz-post-B01",
+    provider_route: "postiz",
     provider_reconciled: false,
     published_at: "2026-07-29T14:00:00.000Z",
   });
@@ -169,6 +173,38 @@ test("adapter rejects a provider result whose hashes or public URLs do not match
   await assert.rejects(executeMarketingDailyJob(job(), deps), /result contract/i);
 });
 
+test("a new publication without provider metric join keys fails closed", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-marketing-provider-"));
+  const deps = {
+    objectStore: { resolve: (ref) => `/objects/${ref.slice(-64)}` },
+    profileProvider: {
+      get: async () => ({
+        handle: "life_manager",
+        accountsPath: "/profiles/accounts.json",
+        settingsPath: "/profiles/settings.json",
+        credentialsPath: "/profiles/credentials.json",
+        stateDir: "/profiles/state",
+      }),
+    },
+    secretProvider: { get: async () => "token" },
+    integrationProvider: { get: async () => "integration" },
+    ledgerPath: () => path.join(root, "distribution.jsonl"),
+    runDistribution: async () => ({
+      creative_id: "B01",
+      video_sha256: VIDEO_HASH,
+      caption_sha256: CAPTION_HASH,
+      platform: "tiktok",
+      public_url: TT_URL,
+      provider_reconciled: false,
+    }),
+  };
+
+  await assert.rejects(
+    executeMarketingDailyJob(job(), deps),
+    /provider metric join keys/i,
+  );
+});
+
 test("each platform reconciles independently by the exact hash pair", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-marketing-ledger-"));
   const ledger = path.join(root, "distribution.jsonl");
@@ -195,6 +231,8 @@ test("each platform reconciles independently by the exact hash pair", async () =
     ...base,
     platform: "tiktok",
     public_url: TT_URL,
+    provider_id: "postiz-post-B01",
+    route: "postiz",
     provider_reconciled: true,
   })}\n`);
   const complete = await adapter.reconcile({
@@ -208,6 +246,8 @@ test("each platform reconciles independently by the exact hash pair", async () =
     creative_id: "B01",
     platform: "tiktok",
     public_url: TT_URL,
+    provider_post_id: "postiz-post-B01",
+    provider_route: "postiz",
     provider_reconciled: true,
     video_sha256: VIDEO_HASH,
     caption_sha256: CAPTION_HASH,
@@ -233,6 +273,8 @@ test("accepts an immutable pre-reconciliation receipt and reports it conservativ
     creative_id: "B01",
     platform: "tiktok",
     public_url: TT_URL,
+    provider_post_id: null,
+    provider_route: null,
     provider_reconciled: false,
     video_sha256: VIDEO_HASH,
     caption_sha256: CAPTION_HASH,

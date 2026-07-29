@@ -17,9 +17,13 @@ resend. The daily marketing path owns immutable generation inputs, a verified
 render receipt, and deterministic independent Instagram/TikTok jobs. The chain
 defaults off while the legacy LaunchAgent remains active. The Life Manager-owned
 Instagram profile is now recovered with exact-account, feed, launcher, and
-read-only Reel-list proof; the legacy source profile remains untouched. Next:
-collect attributed platform/app metrics and migrate Larry/ReelClaw without
-cutting over scheduler ownership before the seven-expected-run gate.
+read-only Reel-list proof; the legacy source profile remains untouched. New
+publication receipts preserve provider metric join keys, and a generic
+per-publication 2h/24h/72h/7d observation adapter plus deterministic scheduler
+fanout is proven with missing metrics retained as unavailable. The observation
+schedule defaults off while the legacy owner remains active. Next: migrate
+Larry/ReelClaw through these contracts, add product attribution, and do not cut
+over scheduler ownership before the seven-expected-run gate.
 
 ## 1. Executive decision
 
@@ -295,6 +299,41 @@ posting or modifying the legacy source:
   `ai.anicca.life-manager-daily` remains loaded. No external post or scheduler
   cutover occurred in this slice.
 
+The fifth slice establishes truthful publication measurement without activating
+a competing scheduler or claiming unavailable data as zero:
+
+- Every new distribution result carries the provider's post ID and route into
+  the immutable publication receipt. Historical receipts remain verifiable but
+  cannot be observed unless those join keys already exist; immutable history is
+  never rewritten.
+- Each publication is observed independently. Deterministic, reference-only
+  jobs are created only when its 2h, 24h, 72h, or 7d window is due. Repeated
+  scheduler scans rely on the durable job ID for idempotency and cannot create
+  duplicate observations.
+- An isolated PostgreSQL proof scanned one completed publication receipt,
+  created four due observation jobs on the first pass and zero on the second
+  (`true,true,true,true` then `false,false,false,false`). A real worker claim
+  completed all four controlled-empty observations as `insufficient` with
+  `views=null` and `reward.effect=no_change`; the proof database was then
+  removed.
+- The observation receipt preserves product, creative, platform, clickable
+  public URL, provider ID/route, video/caption hashes, exact window timestamps,
+  platform metrics, product metrics, and reward eligibility. A measured zero is
+  valid; a missing, delayed, unsupported, or unattributed metric remains
+  `value=null` with a controlled reason.
+- Postiz's per-post analytics route is wired for views, likes, comments, and
+  shares. The current product-metric provider truthfully reports
+  `attribution_not_configured` until App Store Connect, RevenueCat/product
+  analytics, and proceeds sources are added.
+- A read-only check of the real B01 TikTok post could not obtain metrics:
+  TikTok blocked the direct downloader from the current IP, and Postiz returned
+  an empty analytics array. Therefore B01's current measured state is
+  unavailable, not zero, and it causes no learning change.
+- `LM_MARKETING_OBSERVATION_ENABLED` defaults to `false` and requires an
+  explicit tenant, product, cutoff, and worker capability. The existing
+  LaunchAgent is unchanged; no post, message, credential mutation, or scheduler
+  cutover occurred in this slice.
+
 The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
 reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
 currently exposes no active jobs and no next wake, these are treated as stale
@@ -325,6 +364,7 @@ or whole-business financial-health report.
 | [Telegram Bot API](https://core.telegram.org/bots/api) | “The Bot API is an HTTP-based interface” | Telegram is a delivery surface, not the financial source of truth |
 | [Moneytree LINK](https://docs.link.getmoneytree.com/docs) | Moneytree LINK exposes standardized financial data after user authorization and uses OAuth 2.0 Authorization Code Grant with PKCE | Production users connect through Moneytree LINK/OAuth; raw bank credentials never enter Life Manager |
 | [Postiz Post Analytics](https://docs.postiz.com/public-api/analytics/post) | “Get analytics data for a specific published post.” | Keep Postiz during migration and collect post-level metrics by provider post ID instead of scraping immediately after publication |
+| [Postiz public analytics controller](https://github.com/gitroomhq/postiz-app/blob/39516ab97fab8de49c00300a617bd39e0c325c77/apps/backend/src/public-api/routes/v1/public.integrations.controller.ts) | The public controller delegates `GET /analytics/post/:postId` to `checkPostAnalytics(postId, date)` | Treat provider post ID as a required future receipt join key and keep the observation window explicit |
 | [instagrapi best practices](https://github.com/subzeroid/instagrapi/blob/master/docs/usage-guide/best-practices.md) | “Use the settings file next time” after one successful login and verification | Reuse a saved device/session; quarantine challenges instead of hammering password login, and require exact provider identity before recovery |
 | [Microsoft SkillOpt](https://microsoft.github.io/SkillOpt/) | “SkillOpt makes the skill document itself the optimization target.” | Skill changes use scored rollout evidence, bounded edits, and a held-out keep/revert gate; production skills are never rewritten unconditionally |
 | [GitHub repository archival](https://docs.github.com/en/repositories/archiving-a-github-repository/archiving-repositories) | “You can archive a repository to make it read-only for all users and indicate that it's no longer actively maintained.” | Preserve `life-manager-v0` history without permitting new writes, but only after its unique-content manifest and equivalence gate pass |
@@ -1103,7 +1143,7 @@ runtime-migration work is active:
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env; remaining command routing and seven-run shadow stay open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
-| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, and a read-only verified Life Manager-owned IG profile; the chain remains disabled during shadowing, no new IG publication receipt exists yet, and metrics/learning plus other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
+| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. The chain and observation scheduler remain disabled during shadowing; B01 analytics are currently unavailable, product attribution and bounded learning are not wired, no new IG publication receipt exists, and other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
 | 8 | Package the supported local option | a working checkout is not yet a reproducible self-hosted product | clean-machine install, upgrade, backup/restore, health check, and uninstall verification pass |
 | 9 | Deploy the same release to cloud | current Railway service does not yet own every retained loop or worker class | API, scheduler, and worker pools run the same contracts and release hashes as local |
