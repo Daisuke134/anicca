@@ -77,14 +77,14 @@ class DistributionTests(unittest.TestCase):
         )
         return ig, tt
 
-    def run_distribution(self, **overrides):
+    def build_config(self, **overrides):
         ig, tt = self.adapters(
             ig_outcome=overrides.pop("ig_outcome", "published"),
             tt_state=overrides.pop("tt_state", "PUBLISHED"),
             tt_extra=overrides.pop("tt_extra", None),
         )
         env = dict(os.environ, CALLS=str(self.calls))
-        config = lm_distribution.DistributionConfig(
+        return lm_distribution.DistributionConfig(
             creative_id="A03",
             video=self.video,
             caption=self.caption,
@@ -101,7 +101,9 @@ class DistributionTests(unittest.TestCase):
             env=env,
             **overrides,
         )
-        return lm_distribution.distribute(config)
+
+    def run_distribution(self, **overrides):
+        return lm_distribution.distribute(self.build_config(**overrides))
 
     def test_both_adapters_receive_the_exact_same_video_and_caption(self):
         result = self.run_distribution()
@@ -287,6 +289,40 @@ class DistributionTests(unittest.TestCase):
         calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
         self.assertEqual([row["platform"] for row in calls], ["tiktok"])
         self.assertEqual(result["instagram_url"], "https://www.instagram.com/reel/LEGACY/")
+
+    def test_short_circuit_propagates_the_ledger_rows_provider_reconciled(self):
+        """W-1: an existing ledger row short-circuits with ITS provider_reconciled, never a fabricated True."""
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        base = {
+            "platform": "instagram",
+            "status": "published",
+            "creative_id": "A03",
+            "video_sha256": video_hash,
+            "caption_sha256": caption_hash,
+            "public_url": "https://www.instagram.com/reel/EXISTING/",
+            "provider_reconciled": False,
+        }
+        self.ledger.write_text(json.dumps(base) + "\n", encoding="utf-8")
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], False)
+        self.assertFalse(self.calls.exists(), "short-circuit must not run any adapter")
+
+        reconciled = dict(
+            base,
+            public_url="https://www.instagram.com/reel/RECON/",
+            provider_reconciled=True,
+        )
+        self.ledger.write_text(
+            json.dumps(base) + "\n" + json.dumps(reconciled) + "\n", encoding="utf-8"
+        )
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], True)
+
+        legacy = {k: v for k, v in base.items() if k != "provider_reconciled"}
+        self.ledger.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+        result = lm_distribution.distribute_platform(self.build_config(), "instagram")
+        self.assertIs(result["provider_reconciled"], False)
 
     def test_caption_is_deterministically_derived_from_the_selected_bank_row(self):
         bank = self.root / "bank.jsonl"

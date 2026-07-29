@@ -39,16 +39,26 @@ function buildVideoPublicationJobsFromGeneration(receipt, options = {}) {
 async function enqueueVideoGenerationPublications(receipt, options = {}, deps = {}) {
   const enqueueJob = deps.enqueueJob || durableEnqueueJob;
   const jobs = buildVideoPublicationJobsFromGeneration(receipt, options);
-  return Promise.all(jobs.map((job) => enqueueJob({
-    jobId: job.job_id,
-    tenantId: job.tenant_id,
-    loopId: job.loop_id,
-    capability: job.capability,
-    effectClass: job.effect_class,
-    effectKey: job.effect_key,
-    inputRefs: job.input_refs,
-    maxAttempts: job.max_attempts,
-  }, deps.storeOptions || {})));
+  // Fanout contract: runtime-job-store.js exposes single-statement enqueues only (no
+  // multi-row transaction), so fanout is sequential and fail-fast — the first enqueue
+  // failure stops every subsequent platform enqueue in this scan. Jobs already enqueued
+  // by THIS scan before the failure remain enqueued: they are deterministic and
+  // idempotent, so the next successful scan converges on the same complete set without
+  // duplicate effects.
+  const results = [];
+  for (const job of jobs) {
+    results.push(await enqueueJob({
+      jobId: job.job_id,
+      tenantId: job.tenant_id,
+      loopId: job.loop_id,
+      capability: job.capability,
+      effectClass: job.effect_class,
+      effectKey: job.effect_key,
+      inputRefs: job.input_refs,
+      maxAttempts: job.max_attempts,
+    }, deps.storeOptions || {}));
+  }
+  return results;
 }
 
 module.exports = {

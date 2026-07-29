@@ -253,6 +253,48 @@ test("claim, execute, complete, then replay drives zero additional provider exec
   );
 });
 
+test("an Instagram enqueue collision fails fast: TikTok is not enqueued in the same scan", async () => {
+  // W-4: fanout must not be non-atomic. Seed the store with ONLY the Instagram job from a
+  // prior slot, so this scan's Instagram enqueue collides (same identity, different slot
+  // lineage) — the TikTok enqueue must then never be attempted.
+  const store = createFakeRuntimeJobStore();
+  const [instagramJob] = buildVideoPublicationJobsFromGeneration(
+    generationReceipt(),
+    options(),
+  );
+  await store.enqueueJob({
+    jobId: instagramJob.job_id,
+    tenantId: instagramJob.tenant_id,
+    loopId: instagramJob.loop_id,
+    capability: instagramJob.capability,
+    effectClass: instagramJob.effect_class,
+    effectKey: instagramJob.effect_key,
+    inputRefs: instagramJob.input_refs,
+    maxAttempts: instagramJob.max_attempts,
+  });
+
+  const calls = [];
+  const enqueueJob = async (input) => {
+    calls.push(input);
+    return store.enqueueJob(input);
+  };
+
+  await assert.rejects(
+    enqueueVideoGenerationPublications(
+      generationReceipt({ slot: "2026-07-31T09:00:00.000Z" }),
+      options(),
+      { enqueueJob },
+    ),
+    /runtime job id collision/,
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].inputRefs.platform_ref, "platform://instagram");
+  assert.equal(store.rows.size, 1);
+  assert.ok([...store.rows.values()].every((row) => (
+    row.inputRefs.platform_ref !== "platform://tiktok"
+  )));
+});
+
 test("re-enqueueing the same artifact at a different slot cannot create a second publish effect", async () => {
   const store = createFakeRuntimeJobStore();
   const providerCalls = [];

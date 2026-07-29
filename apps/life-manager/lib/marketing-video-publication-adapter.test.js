@@ -352,6 +352,11 @@ test("distribution subprocess receives an allowlisted environment, not the full 
   );
   process.env.LM_FAKE_FLAG = "1";
   process.env.SECRET_CANARY = "leak-me";
+  // Non-LM_ variables the real distribution chain reads: instagram_video.sh honors
+  // INSTAGRAPI_PYTHON, and skills/earn/marketing-engine/poster.py reads CDP_HOST/CDP_PORT.
+  process.env.INSTAGRAPI_PYTHON = "/opt/venv/bin/python3";
+  process.env.CDP_HOST = "127.0.0.1";
+  process.env.CDP_PORT = "9222";
   try {
     const result = runDistributionProcess({
       python: stub,
@@ -376,10 +381,16 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     assert.equal(result.postiz, "provider-token");
     assert.ok(result.env_keys.includes("PATH"));
     assert.ok(result.env_keys.includes("LM_FAKE_FLAG"));
+    assert.ok(result.env_keys.includes("INSTAGRAPI_PYTHON"));
+    assert.ok(result.env_keys.includes("CDP_HOST"));
+    assert.ok(result.env_keys.includes("CDP_PORT"));
     assert.ok(!result.env_keys.includes("SECRET_CANARY"));
   } finally {
     delete process.env.LM_FAKE_FLAG;
     delete process.env.SECRET_CANARY;
+    delete process.env.INSTAGRAPI_PYTHON;
+    delete process.env.CDP_HOST;
+    delete process.env.CDP_PORT;
   }
 });
 
