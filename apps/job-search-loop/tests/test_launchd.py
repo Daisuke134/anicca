@@ -24,6 +24,8 @@ class LaunchdTests(unittest.TestCase):
             script,
         )
         self.assertIn("job_search_loop.inbox mark", script)
+        self.assertIn(".result_path", script)
+        self.assertIn('--result "$RESULT_PATH"', script)
 
     def test_inbox_shell_processes_due_preps_without_new_email(self):
         root = Path(__file__).parents[1]

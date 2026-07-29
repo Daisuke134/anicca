@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -6,6 +7,7 @@ from pathlib import Path
 from job_search_loop.calendar_sync import event_key, prep_windows
 from job_search_loop.inbox import (
     classify_message,
+    mark_processed_threads,
     mark_threads_seen,
     select_new_recruiting_threads,
 )
@@ -78,6 +80,77 @@ class OperationsTests(unittest.TestCase):
                 __import__("json").loads(path.read_text(encoding="utf-8"))["thread_ids"],
                 ["thread-1", "thread-2"],
             )
+
+    def test_partial_result_acknowledges_only_processed_candidate_threads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidates = root / "candidates.json"
+            result = root / "result.json"
+            seen = root / "seen.json"
+            candidates.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "new_count": 2,
+                        "thread_ids": ["thread-1", "thread-2"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result.write_text(
+                json.dumps(
+                    {
+                        "processed_threads": 1,
+                        "processed_thread_ids": ["thread-1"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                mark_processed_threads(seen, candidates, result),
+                ["thread-1"],
+            )
+            self.assertEqual(load_seen := json.loads(seen.read_text()), {
+                "version": 1,
+                "thread_ids": ["thread-1"],
+            })
+            self.assertNotIn("thread-2", load_seen["thread_ids"])
+            self.assertEqual(seen.stat().st_mode & 0o777, 0o600)
+
+    def test_partial_result_unknown_or_mismatched_ids_acknowledges_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidates = root / "candidates.json"
+            seen = root / "seen.json"
+            candidates.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "new_count": 2,
+                        "thread_ids": ["thread-1", "thread-2"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            for payload in (
+                {
+                    "processed_threads": 1,
+                    "processed_thread_ids": ["unknown-thread"],
+                },
+                {
+                    "processed_threads": 2,
+                    "processed_thread_ids": ["thread-1"],
+                },
+                {
+                    "processed_threads": 2,
+                    "processed_thread_ids": ["thread-1", "thread-1"],
+                },
+            ):
+                result = root / "result.json"
+                result.write_text(json.dumps(payload), encoding="utf-8")
+                with self.subTest(payload=payload), self.assertRaises(ValueError):
+                    mark_processed_threads(seen, candidates, result)
+                self.assertFalse(seen.exists())
 
     def test_calendar_key_and_prep_windows_are_stable(self):
         start = datetime(2026, 8, 5, 1, 0, tzinfo=timezone.utc)
