@@ -135,7 +135,7 @@ claude remote-control \
 |---|---|
 | Claude | `com.anicca.claude-remote-control`が`launchd`で稼働。`RunAtLoad=true`、`KeepAlive=true`、接続済み |
 | Mac電源 | AC接続時スリープ無効、停電復旧後の自動起動有効 |
-| Codex | ChatGPT/Codex DesktopがRemoteホストとしてすでにオンライン |
+| Codex | ChatGPT/Codex DesktopがRemoteホストとしてすでにオンライン。macOSログイン項目へ登録済み |
 | Codex CLI daemon | Desktopと重複して`409 Remote app server already online`になるため停止 |
 | Codex standalone CLI | `~/.codex/packages/standalone/current/codex`へ導入済み |
 
