@@ -55,8 +55,8 @@ AFTER="$(git -C "$CLONE" status --porcelain --untracked-files=all)"
   exit 1
 }
 
-APP_TESTS="$(grep -E 'ℹ tests [0-9]+' "$LOG" | tail -2 | head -1 | awk '{print $3}')"
-APP_PASS="$(grep -E 'ℹ pass [0-9]+' "$LOG" | tail -2 | head -1 | awk '{print $3}')"
+APP_TESTS="$(awk '$1 == "ℹ" && $2 == "tests" && $3 > max { max = $3 } END { print max }' "$LOG")"
+APP_PASS="$(awk '$1 == "ℹ" && $2 == "pass" && $3 > max { max = $3 } END { print max }' "$LOG")"
 PANEL_TESTS="$(grep -E 'ℹ tests [0-9]+' "$LOG" | tail -1 | awk '{print $3}')"
 printf 'FRESH_CLONE_PASS commit=%s app_tests=%s app_pass=%s panel_tests=%s runtime=%s\n' \
   "$COMMIT" "${APP_TESTS:-unknown}" "${APP_PASS:-unknown}" "${PANEL_TESTS:-unknown}" "$RUNTIME"
