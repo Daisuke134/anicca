@@ -30,6 +30,8 @@ ULTRA_GB="${EMERGENCY_GUARD_ULTRA_GB:-3}"
 TEST_MODE=0
 [ -n "${EMERGENCY_GUARD_TEST_PROCESS_FIXTURE:-}" ] && TEST_MODE=1
 DRY_RUN="${EMERGENCY_GUARD_DRY_RUN:-0}"
+COLIMA_BIN="${EMERGENCY_GUARD_COLIMA_BIN:-$(command -v colima 2>/dev/null || true)}"
+DOCKER_BIN="${EMERGENCY_GUARD_DOCKER_BIN:-$(command -v docker 2>/dev/null || true)}"
 RECLAIM_SEQ=0
 RECLAIM_ELIGIBLE=0
 RECLAIMED_TOTAL=0
@@ -476,6 +478,40 @@ evaluate_gig_workers() {
   done
 }
 
+quiesce_idle_colima() {
+  local containers rechecked
+  [ -n "$COLIMA_BIN" ] && [ -x "$COLIMA_BIN" ] || return 0
+  [ -n "$DOCKER_BIN" ] && [ -x "$DOCKER_BIN" ] || return 0
+  "$COLIMA_BIN" status >/dev/null 2>&1 || return 0
+
+  containers=$("$DOCKER_BIN" ps -aq 2>>"$LOG") || {
+    append_decision colima preserve docker-state-unreadable
+    return 0
+  }
+  if [ -n "$containers" ]; then
+    append_decision colima preserve containers-present
+    return 0
+  fi
+
+  # Revalidate immediately before the reversible stop. A VM with any running
+  # or stopped container is preserved; only an empty runtime may release its
+  # virtiofs handles so the strict open-path checks can make progress.
+  rechecked=$("$DOCKER_BIN" ps -aq 2>>"$LOG") || {
+    append_decision colima preserve docker-revalidation-unreadable
+    return 0
+  }
+  if [ -n "$rechecked" ]; then
+    append_decision colima preserve containers-appeared-during-revalidation
+    return 0
+  fi
+  if "$COLIMA_BIN" stop >>"$LOG" 2>&1; then
+    append_decision colima cleanup idle-empty-runtime-stopped
+    log "idle Colima stopped; released virtiofs handles before reclaim"
+  else
+    append_decision colima preserve idle-runtime-stop-failed
+  fi
+}
+
 cleanup_orphan_heartbeats
 
 FREE=$(free_gb)
@@ -489,6 +525,7 @@ printf 'free_gb=%s threshold_gb=%s policy=%s observed_at=%s\n' \
   "$FREE" "$THRESHOLD_GB" "$POLICY_VERSION" "$(date -u '+%FT%TZ')" > "$BACKPRESSURE"
 log "LOW DISK: ${FREE}GB free (< ${THRESHOLD_GB}GB) — safe containment start"
 RECLAIM_TARGET_BYTES=$(( (THRESHOLD_GB - FREE) * 1073741824 ))
+quiesce_idle_colima
 
 # v1 is intentionally read-only. v2 has a deterministic 12-column header, so
 # rows from the legacy 8-column contract can never be mixed into this file.
