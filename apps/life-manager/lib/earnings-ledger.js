@@ -442,6 +442,10 @@ function formatMonthlyReport(summary, { cause, plan, locale = "ja" } = {}) {
 module.exports = {
   EARNING_KINDS,
   EXCLUDED_KINDS,
+  // Exported for AE-ZERO-START-1 §5.2: the same deep scan has to guard every receipt and Telegram
+  // payload the wallet adapters emit, not just ledger rows. One implementation, so a secret field that
+  // is caught on the way into the ledger is caught on the way into a message too.
+  assertNoSecret,
   normaliseEntry,
   usdMicrosForEntry,
   appendEarning,
