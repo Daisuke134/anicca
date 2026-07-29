@@ -134,6 +134,19 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
             "proof_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         },
     }
+    assert by_id["actions-runner-diagnostics"] == {
+        "id": "actions-runner-diagnostics",
+        "path": str(Path.home() / "actions-runner/_diag"),
+        "owner": "github-actions-runner",
+        "class": "regenerable_output",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "verified_regenerable_remove",
+            "proof_path": str(Path.home() / "actions-runner/bin/Runner.Listener"),
+        },
+    }
     assert by_id["orca-codex-marketplace-staging"] == {
         "id": "orca-codex-marketplace-staging",
         "path": str(

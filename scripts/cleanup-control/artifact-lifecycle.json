@@ -98,6 +98,19 @@
       }
     },
     {
+      "id": "actions-runner-diagnostics",
+      "path": "$HOME/actions-runner/_diag",
+      "owner": "github-actions-runner",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "$HOME/actions-runner/bin/Runner.Listener"
+      }
+    },
+    {
       "id": "anicca-rtdash-worktrees",
       "path": "$HOME/anicca-rtdash/.worktrees",
       "owner": "git-worktrees",
