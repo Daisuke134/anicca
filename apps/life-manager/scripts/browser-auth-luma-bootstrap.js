@@ -4,7 +4,6 @@ const LUMA_ORIGIN = "https://luma.com";
 const LUMA_LOGIN_URL = "https://luma.com/signin";
 const AGENTMAIL_API = "https://api.agentmail.to/v0";
 const MODEL = "google/gemini-2.5-flash";
-const AGENT_MODEL = "google/gemini-2.5-computer-use-preview-10-2025";
 const AUTH_MARKERS = new Map([
   ["create event", "create_event"],
   ["my events", "my_events"],
@@ -210,6 +209,16 @@ function authenticatedSnapshotExpression() {
   })()`;
 }
 
+async function requestLumaEmailLogin(page, email) {
+  const input = page.locator('input[type="email"]').first();
+  await input.waitFor({ state: "visible", timeout: 15_000 });
+  await input.fill(email);
+  const submit = page.getByRole("button", { name: /continue with email/i }).first();
+  await submit.click({ timeout: 15_000 });
+  if (typeof page.waitForTimeout === "function") await page.waitForTimeout(2_000);
+  return true;
+}
+
 function makeProductionDeps(env = process.env, boundaries = {}) {
   const { Stagehand } = boundaries.Stagehand
     ? { Stagehand: boundaries.Stagehand }
@@ -247,16 +256,7 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
           sessionId: String(session.id),
           async requestMagicLink(email) {
             await page.goto(LUMA_LOGIN_URL);
-            const agent = stagehand.agent({
-              mode: "cua",
-              model: AGENT_MODEL,
-              systemPrompt: "Operate only the visible Luma sign-in page. Use the supplied agent-owned email exactly. Request an email magic link, never use a social login, and stop after the page confirms the email was sent.",
-            });
-            await agent.execute([
-              "Request a Luma email magic sign-in link for this agent-owned address:",
-              email,
-              "Do not navigate away after the site confirms it sent the email.",
-            ].join("\n"));
+            await requestLumaEmailLogin(page, email);
           },
           async openMagicLink(link) {
             await page.goto(link);
@@ -368,6 +368,7 @@ if (require.main === module) main();
 module.exports = {
   extractMagicLink,
   makeProductionDeps,
+  requestLumaEmailLogin,
   resolveBootstrapEnv,
   runLumaBootstrap,
   safeLumaMagicLink,
