@@ -313,6 +313,50 @@ async function executeCapabilityJob(job, services) {
   }
 }
 
+function baseRpcUrl(env) {
+  return String(env.BASE_RPC_URL || "https://mainnet.base.org");
+}
+
+function solanaRpcUrl(env) {
+  return String(env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com");
+}
+
+// One bounded JSON-RPC caller for both chains. A JSON-RPC `error` body is a failure, not an empty
+// result — treating it as "nothing found" is how an unmeasured zero gets published as fact.
+async function jsonRpcCall(rpcUrl, method, params) {
+  const response = await globalThis.fetch(rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response || !response.ok) {
+    throw new Error(`${method} failed (${response ? response.status : "no response"})`);
+  }
+  const body = await response.json();
+  if (body && body.error) throw new Error(`${method} failed (${body.error.code || "unknown"})`);
+  if (!body || !Object.prototype.hasOwnProperty.call(body, "result")) {
+    throw new Error(`${method} returned no result`);
+  }
+  return body.result;
+}
+
+// The colony's own EVM wallets, shared with skills/earn/x402-sell so no judge drifts its own copy. This
+// only labels an inflow (every inflow is capital either way), so an unavailable list becomes `null` —
+// "unknown" — rather than a guessed "external".
+function loadSelfWalletSet(env) {
+  const configured = String(env.LM_SELF_WALLETS || "").trim();
+  if (configured) {
+    return new Set(configured.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+  }
+  try {
+    const { SELF_WALLET_SET } = require("../../../skills/earn/x402-sell/lib/self-wallets.mjs");
+    return SELF_WALLET_SET instanceof Set ? SELF_WALLET_SET : null;
+  } catch {
+    return null;
+  }
+}
+
 function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const handlers = {};
   const servicesByAdapter = {};
@@ -328,6 +372,66 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         rpcUrl: String(env.BASE_RPC_URL || "https://mainnet.base.org"),
         fetchImpl: globalThis.fetch,
       }),
+    };
+  }
+  if (capabilities.includes("wallet.zero-start")) {
+    // AE-ZERO-START-1 §4.4. LM_DATA_ROOT is passed through as the env the custody module resolves its
+    // 0600 key files under; no key material passes through this wiring.
+    const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
+    const { readSolBalance } = require("../lib/solana-balance.js");
+    servicesByAdapter["tenant-zero-start"] = {
+      secretProvider: createScopedEnvironmentSecretProvider(env),
+      supaUrl: requiredEnv(env, "SUPABASE_URL"),
+      supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
+      fetchImpl: globalThis.fetch,
+      env,
+      readBaseBalance: (address) => readUsdcBalance(address, {
+        rpcUrl: baseRpcUrl(env),
+        fetchImpl: globalThis.fetch,
+      }),
+      readSolanaBalance: (address) => readSolBalance(address, {
+        rpcUrl: solanaRpcUrl(env),
+        fetchImpl: globalThis.fetch,
+      }),
+    };
+  }
+  if (capabilities.includes("wallet.inflow.watch")) {
+    // AE-ZERO-START-1 §4.5. The cursor is read back from this capability's own last completed receipt —
+    // the same receipt-as-state pattern the marketing video history provider below uses.
+    const { readZeroStartTenant } = require("../lib/zero-start-job-adapter.js");
+    const { CAPABILITY: INFLOW_CAPABILITY } = require("../lib/wallet-inflow-job-adapter.js");
+    const query = dependencies.query;
+    if (typeof query !== "function") {
+      throw new Error("wallet inflow cursor store is unavailable");
+    }
+    const supaUrl = requiredEnv(env, "SUPABASE_URL");
+    const supaKey = requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY");
+    servicesByAdapter["tenant-wallet-inflow"] = {
+      supaUrl,
+      supaKey,
+      fetchImpl: globalThis.fetch,
+      readTenant: (uid) => readZeroStartTenant(uid, { supaUrl, supaKey, fetchImpl: globalThis.fetch }),
+      baseRpc: (method, params) => jsonRpcCall(baseRpcUrl(env), method, params),
+      solanaRpc: (method, params) => jsonRpcCall(solanaRpcUrl(env), method, params),
+      selfWallets: loadSelfWalletSet(env),
+      async readCursor({ tenantId }) {
+        const result = await query(`
+          SELECT r.receipt
+          FROM public.lm_runtime_job_receipts r
+          JOIN public.lm_runtime_jobs j
+            ON j.job_id = r.job_id
+            AND j.tenant_id = r.tenant_id
+          WHERE r.tenant_id = $1
+            AND j.capability = $2
+            AND r.outcome = 'completed'
+            AND r.receipt->>'kind' = 'tenant_wallet_inflow'
+            AND r.receipt ? 'next_cursor'
+          ORDER BY r.created_at DESC
+          LIMIT 1
+        `, [tenantId, INFLOW_CAPABILITY]);
+        const receipt = result.rows.length === 1 ? result.rows[0].receipt : null;
+        return receipt ? receipt.next_cursor : null;
+      },
     };
   }
   if (capabilities.includes("marketing.life-manager.daily.publish")) {
@@ -639,6 +743,33 @@ async function runSchedulerOwner(env = process.env) {
     }, financialIntervalMs);
   }
 
+  // AE-ZERO-START-1 §4.4 — the ONLY enqueue point for zero-start, and the recurring driver for the
+  // inflow watch. lm-onboard.js cannot enqueue: the runtime queue is this local Postgres, which a
+  // Netlify function has no path to. Idempotent by construction (job_id/effect_key = zero-start:<uid>),
+  // so running it every five minutes cannot produce a second message for a tenant.
+  const walletSweepEnabled = String(env.LM_WALLET_SWEEP_ENABLED || "true").trim().toLowerCase() !== "false";
+  const walletSweepIntervalMs = Number(env.LM_WALLET_SWEEP_POLL_MS || 300000);
+  let walletSweepTimer;
+  async function sweepWallets() {
+    const { sweepWalletJobs } = require("../lib/wallet-sweep.js");
+    const { enqueueJob } = require("../lib/runtime-job-store.js");
+    const slotMs = Math.floor(Date.now() / walletSweepIntervalMs) * walletSweepIntervalMs;
+    await sweepWalletJobs({
+      supaUrl: requiredEnv(env, "SUPABASE_URL"),
+      supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
+      fetchImpl: globalThis.fetch,
+      nowMs: slotMs,
+      telegramTokenRef: String(env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token"),
+      enqueueJob: (input) => enqueueJob(input, { query: pool.query.bind(pool) }),
+    });
+  }
+  if (walletSweepEnabled) {
+    await sweepWallets().catch(() => {});
+    walletSweepTimer = setInterval(() => {
+      sweepWallets().catch(() => {});
+    }, walletSweepIntervalMs);
+  }
+
   const marketingGenerationEnabled = String(
     env.LM_MARKETING_GENERATION_ENABLED || "false",
   ).trim().toLowerCase() === "true";
@@ -797,6 +928,7 @@ async function runSchedulerOwner(env = process.env) {
     stopping = true;
     clearInterval(renew);
     if (financialTimer) clearInterval(financialTimer);
+    if (walletSweepTimer) clearInterval(walletSweepTimer);
     if (marketingGenerationTimer) clearInterval(marketingGenerationTimer);
     if (publicationChainTimer) clearInterval(publicationChainTimer);
     if (observationTimer) clearInterval(observationTimer);

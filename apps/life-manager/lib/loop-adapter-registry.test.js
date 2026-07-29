@@ -145,7 +145,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 5);
+  assert.equal(manifest.adapters.length, 7);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -171,6 +171,13 @@ test("committed manifest is portable and registers the financial report first", 
     manifest.adapters[4].adapter_id,
     "marketing-video-generation",
   );
+  // AE-ZERO-START-1 appended, so every index above keeps its meaning.
+  assert.equal(manifest.adapters[5].capability, "wallet.zero-start");
+  assert.equal(manifest.adapters[5].adapter_id, "tenant-zero-start");
+  assert.deepEqual(manifest.adapters[5].effect_classes, ["message"]);
+  assert.equal(manifest.adapters[6].capability, "wallet.inflow.watch");
+  assert.equal(manifest.adapters[6].adapter_id, "tenant-wallet-inflow");
+  assert.deepEqual(manifest.adapters[6].effect_classes, ["none"]);
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,

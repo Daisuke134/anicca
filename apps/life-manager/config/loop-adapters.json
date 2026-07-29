@@ -50,6 +50,26 @@
       ],
       "module_ref": "lib/marketing-video-generation-adapter.js",
       "factory_export": "createMarketingVideoGenerationLoopAdapter"
+    },
+    {
+      "adapter_id": "tenant-zero-start",
+      "loop_id": "agent.zero-start",
+      "capability": "wallet.zero-start",
+      "effect_classes": [
+        "message"
+      ],
+      "module_ref": "lib/zero-start-job-adapter.js",
+      "factory_export": "createZeroStartLoopAdapter"
+    },
+    {
+      "adapter_id": "tenant-wallet-inflow",
+      "loop_id": "agent.inflow.watch",
+      "capability": "wallet.inflow.watch",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/wallet-inflow-job-adapter.js",
+      "factory_export": "createWalletInflowLoopAdapter"
     }
   ]
 }
