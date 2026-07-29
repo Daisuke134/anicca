@@ -13,9 +13,12 @@ Gmail message ID, subject, sender, body, and the private credential store at
 HTTPS `/activate/<token>` URL whose exact host already exists in that store.
 Initialize `VerificationStore` at
 `~/.local/state/anicca/job-search/workday-verifications.sqlite3` and call `claim`.
-If it returns no fence, report `duplicate` without opening anything. Otherwise
-connect Playwright to the existing CDP endpoint, open one new page in the default
-context, call `mark_navigation_started` immediately before
+The claim is a 900-second pre-navigation lease: a later inbox pass may replace
+an expired `claimed` fence after a crash, but it can never reclaim
+`navigation_started`, `opened`, or `navigation_unknown`. If `claim` returns no
+fence, report `duplicate` without opening anything. Otherwise connect Playwright
+to the existing CDP endpoint, open one new page in the default context, call
+`mark_navigation_started` immediately before
 `page.goto(target.verification_url, wait_until="commit")`, and never print or
 snapshot the URL. Mark `opened` only when the resulting page remains on the exact
 tenant and visibly confirms verification or exposes a candidate sign-in/application

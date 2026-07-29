@@ -7,7 +7,7 @@ import re
 import sqlite3
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parseaddr
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -21,10 +21,29 @@ class VerificationError(RuntimeError):
 
 MESSAGE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 URL_PATTERN = re.compile(r"https?://[^\s<>\"']+")
+DEFAULT_CLAIM_LEASE_SECONDS = 900
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _claim_time(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(timezone.utc)
+    if value.tzinfo is None:
+        raise VerificationError("claim time must be timezone-aware")
+    return value.astimezone(timezone.utc)
+
+
+def _stored_time(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as error:
+        raise VerificationError("stored Workday claim time is invalid") from error
+    if parsed.tzinfo is None:
+        raise VerificationError("stored Workday claim time lacks timezone")
+    return parsed.astimezone(timezone.utc)
 
 
 @dataclass(frozen=True)
@@ -147,16 +166,37 @@ class VerificationStore:
               status TEXT NOT NULL,
               fence TEXT,
               created_at TEXT NOT NULL,
+              claimed_at TEXT,
               completed_at TEXT
             )
             """
         )
+        columns = {
+            str(row[1])
+            for row in self.connection.execute(
+                "PRAGMA table_info(workday_verifications)"
+            )
+        }
+        if "claimed_at" not in columns:
+            self.connection.execute(
+                "ALTER TABLE workday_verifications ADD COLUMN claimed_at TEXT"
+            )
         os.chmod(self.path, 0o600)
 
     def close(self) -> None:
         self.connection.close()
 
-    def claim(self, target: VerificationTarget) -> str | None:
+    def claim(
+        self,
+        target: VerificationTarget,
+        *,
+        now: datetime | None = None,
+        lease_seconds: int = DEFAULT_CLAIM_LEASE_SECONDS,
+    ) -> str | None:
+        if lease_seconds <= 0:
+            raise VerificationError("claim lease must be positive")
+        claimed_at = _claim_time(now)
+        claimed_at_text = claimed_at.isoformat()
         self.connection.execute("BEGIN IMMEDIATE")
         try:
             self.connection.execute(
@@ -170,23 +210,47 @@ class VerificationStore:
                     target.message_id,
                     target.tenant,
                     target.url_sha256,
-                    _now(),
+                    claimed_at_text,
                 ),
             )
             row = self.connection.execute(
-                "SELECT status FROM workday_verifications WHERE event_key = ?",
+                """
+                SELECT status,fence,created_at,claimed_at
+                FROM workday_verifications WHERE event_key = ?
+                """,
                 (target.event_key,),
             ).fetchone()
-            if row is None or row[0] != "pending":
+            if row is None:
+                self.connection.commit()
+                return None
+            status, old_fence, created_at, prior_claimed_at = row
+            if status == "claimed":
+                lease_anchor = _stored_time(prior_claimed_at or created_at)
+                if claimed_at - lease_anchor < timedelta(seconds=lease_seconds):
+                    self.connection.commit()
+                    return None
+                fence = uuid.uuid4().hex
+                changed = self.connection.execute(
+                    """
+                    UPDATE workday_verifications
+                    SET fence=?,claimed_at=?,completed_at=NULL
+                    WHERE event_key=? AND status='claimed' AND fence=?
+                    """,
+                    (fence, claimed_at_text, target.event_key, old_fence),
+                ).rowcount
+                self.connection.commit()
+                return fence if changed == 1 else None
+            if status != "pending":
                 self.connection.commit()
                 return None
             fence = uuid.uuid4().hex
             changed = self.connection.execute(
                 """
-                UPDATE workday_verifications SET status='claimed',fence=?
+                UPDATE workday_verifications
+                SET status='claimed',fence=?,claimed_at=?
                 WHERE event_key=? AND status='pending'
                 """,
-                (fence, target.event_key),
+                (fence, claimed_at_text, target.event_key),
             ).rowcount
             self.connection.commit()
             return fence if changed == 1 else None
