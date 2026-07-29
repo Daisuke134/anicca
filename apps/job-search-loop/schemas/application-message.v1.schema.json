@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "role_family",
+    "company",
+    "role",
+    "body",
+    "fact_ids",
+    "job_source_span"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "role_family": {
+      "enum": [
+        "product",
+        "gtm",
+        "partnerships",
+        "customer_success"
+      ]
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2500
+    },
+    "fact_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "job_source_span": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  }
+}

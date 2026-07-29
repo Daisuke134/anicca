@@ -45,16 +45,17 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - Modify:
   `docs/superpowers/specs/2026-07-28-job-search-loop-design.md`
 
-- [ ] Import the exact tracked tree from legacy commit
+- [x] Import the exact tracked tree from legacy commit
   `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987`.
-- [ ] Preserve and run the legacy baseline; expected result is 107 passing tests.
-- [ ] Add behavior tests that install plists into a temporary home and assert
+- [x] Preserve and run the legacy baseline: 107 tests pass in 4.916 seconds.
+- [x] Add behavior tests that install plists into a temporary home and assert
   both programs resolve inside a Life Manager checkout.
-- [ ] Add a behavior test that runs each shell entrypoint far enough to capture
+- [x] Add a behavior test that resolves each shell entrypoint's shared runtime
+  contract and proves
   the runner/workdir arguments and proves neither legacy checkout is required.
-- [ ] Run only the new tests and observe failure caused by hard-coded legacy
+- [x] Run only the new tests and observe failure caused by hard-coded legacy
   paths.
-- [ ] Update the spec backlog evidence with the RED command and failure.
+- [x] Update the spec backlog evidence with the RED command and failure.
 
 ### Task 2: Vendor the minimal model runner
 
@@ -68,16 +69,16 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - Modify: `apps/job-search-loop/job_search_loop/agent_runner.py`
 - Modify: `apps/job-search-loop/tests/test_agent_runner.py`
 
-- [ ] Import runner behavior from profitable-claude commit
+- [x] Import runner behavior from profitable-claude commit
   `191b205c03ae37d32b0125da4a1892924d585205`.
-- [ ] Reduce the configuration to job-loop task classes and provider routes;
+- [x] Reduce the configuration to job-loop task classes and provider routes;
   remove personal account fields and unrelated candidate profiles.
-- [ ] Run the imported runner tests before adaptation and record any correct
-  failure caused by the minimized config.
-- [ ] Make the job-loop adapter resolve the in-repository runner by default
+- [x] Run the imported runner tests before adaptation and record the two
+  expected failures caused by the legacy tests omitting required `daily_scope`.
+- [x] Make the job-loop adapter resolve the in-repository runner by default
   while retaining explicit dependency injection for tests.
-- [ ] Run runner and adapter tests to GREEN.
-- [ ] Update the spec with file provenance and test evidence.
+- [x] Run runner and adapter tests to GREEN.
+- [x] Update the spec with file provenance and test evidence.
 
 ### Task 3: Make runtime and launchd paths canonical and portable
 
@@ -95,16 +96,17 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
 - Modify: `apps/job-search-loop/README.md`
 - Modify: path and launchd tests under `apps/job-search-loop/tests/`
 
-- [ ] Derive repository paths from each script location and derive private
+- [x] Derive repository paths from each script location and derive private
   paths from XDG variables with current paths as defaults.
-- [ ] Replace checked-in absolute launchd files with renderable templates and
+- [x] Replace checked-in absolute launchd files with renderable templates and
   make the installer support temporary `HOME` and `DESTDIR`-style test roots.
-- [ ] Stop sourcing the complete OpenClaw env; import only the allowlisted
+- [x] Stop sourcing the complete OpenClaw env; import only the allowlisted
   transport/provider variables required by the loop.
-- [ ] Keep the upstream framework as a pinned, replaceable cache under the
+- [x] Keep the upstream framework as a pinned, replaceable cache under the
   private data root.
-- [ ] Run the new canonical runtime tests to GREEN.
-- [ ] Run all job-loop and runner tests fresh.
+- [x] Run the new canonical runtime tests to GREEN.
+- [x] Run all job-loop and runner tests fresh: 112 job-loop tests and 7 runner
+  tests pass.
 
 ### Task 4: Shadow-verify and cut over the real local loop
 

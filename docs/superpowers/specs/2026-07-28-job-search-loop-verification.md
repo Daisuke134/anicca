@@ -27,7 +27,7 @@ Private application IDs, contact data, form payloads, and screenshots stay under
 ## Verification commands
 
 ```bash
-cd /Users/anicca/anicca-job-search-loop/apps/job-search-loop
+cd /path/to/life-manager/apps/job-search-loop
 python3 -m unittest discover -s tests -v
 zsh -n scripts/run-daily.sh scripts/run-inbox.sh scripts/healthcheck.sh
 plutil -lint launchd/*.plist
@@ -37,3 +37,16 @@ zsh scripts/healthcheck.sh
 The healthcheck verifies both installed schedulers, SQLite
 `PRAGMA integrity_check`, private file permissions, application state counts, and
 fresh daily/inbox evidence.
+
+## `JOB-CANONICAL-MERGE-1` verification
+
+| Check | Current evidence |
+|---|---|
+| Legacy behavior baseline | 107 tests pass in 4.916 seconds from legacy commit `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987` |
+| Canonical job runtime | 112 tests pass in 3.273 seconds |
+| Canonical model runner | 7 tests pass in 0.465 seconds |
+| Path behavior | Temporary XDG roots and launchd destination resolve only inside the Life Manager checkout |
+| Private env behavior | The loader reads only the requested key and does not execute unrelated dotenv lines |
+| Runner configuration | Four job-loop task classes; no personal account, absolute user path, candidate profile, or gig route |
+| Legacy source scan | No legacy checkout or private Gmail path in `apps/job-search-loop` or `runtime/agent-runner` |
+| Live cutover | Pending canonical commit and shadow healthcheck |

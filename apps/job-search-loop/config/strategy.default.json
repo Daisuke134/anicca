@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "daily_target": 2,
+  "auto_apply_threshold": 75,
+  "compensation_floor_jpy": 5500000,
+  "compensation_target_jpy": 7000000,
+  "role_families": [
+    "applied_ai",
+    "agent_engineer",
+    "genai_engineer",
+    "ai_product_engineer",
+    "ai_solutions",
+    "ai_consulting",
+    "ai_product_management",
+    "technical_program_management",
+    "ai_business_development",
+    "ai_partnerships",
+    "technical_account_management",
+    "ai_customer_success",
+    "ai_sales_engineering"
+  ],
+  "preferred_domains": [
+    "enterprise_ai",
+    "fintech",
+    "crypto",
+    "consumer_ai"
+  ]
+}

@@ -1,0 +1,1 @@
+{"type":"object","required":["outcome","evidence_url","intent_id","fence"]}
