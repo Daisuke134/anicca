@@ -314,14 +314,52 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
   };
 }
 
+async function resolveBootstrapEnv({ env = process.env, query } = {}) {
+  const suppliedUid = required(env && env.BROWSER_AUTH_TENANT_A_UID);
+  if (suppliedUid) return { ...env, BROWSER_AUTH_TENANT_A_UID: suppliedUid };
+  if (typeof query !== "function") {
+    throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
+  }
+  const result = await query(`
+    SELECT DISTINCT uid
+    FROM public.lm_browser_auth_sessions
+    WHERE origin = $1
+      AND principal_kind = 'agent_owned'
+    ORDER BY uid
+    LIMIT 2
+  `, [LUMA_ORIGIN]);
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  if (rows.length !== 1 || !required(rows[0] && rows[0].uid)) {
+    throw new LumaBootstrapError("Luma bootstrap configuration unavailable");
+  }
+  return { ...env, BROWSER_AUTH_TENANT_A_UID: required(rows[0].uid) };
+}
+
 async function main() {
+  let pool;
   try {
-    const deps = makeProductionDeps(process.env);
-    const result = await runLumaBootstrap({ env: process.env, deps });
+    let env = process.env;
+    if (!required(env.BROWSER_AUTH_TENANT_A_UID)) {
+      const { Pool } = require("pg");
+      pool = new Pool({
+        connectionString: required(env.LM_FEEDBACK_DATABASE_URL),
+        max: 1,
+      });
+      env = await resolveBootstrapEnv({
+        env,
+        query: pool.query.bind(pool),
+      });
+    }
+    const deps = makeProductionDeps(env);
+    const result = await runLumaBootstrap({ env, deps });
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } catch {
     process.stderr.write("Luma authentication unavailable\n");
     process.exitCode = 1;
+  } finally {
+    if (pool) {
+      try { await pool.end(); } catch {}
+    }
   }
 }
 
@@ -330,6 +368,7 @@ if (require.main === module) main();
 module.exports = {
   extractMagicLink,
   makeProductionDeps,
+  resolveBootstrapEnv,
   runLumaBootstrap,
   safeLumaMagicLink,
 };
