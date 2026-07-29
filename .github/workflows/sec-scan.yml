@@ -11,6 +11,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  oss-boundary:
+    name: OSS self-contained boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify canonical checkout has no external source dependency
+        run: node scripts/verify-oss-self-contained.mjs
+
   gitleaks:
     name: gitleaks
     runs-on: ubuntu-latest
