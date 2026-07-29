@@ -69,26 +69,26 @@
 - Consumes: evaluator `claim_ready`.
 - Produces: a Ledger claim boundary that rejects all `claim_ready=false` snapshots and a browser contract that advances Workday one semantic surface at a time.
 
-- [ ] **Step 1: Add a failing ready-but-not-claimable Ledger table test**
+- [x] **Step 1: Add a failing ready-but-not-claimable Ledger table test**
 
   Replay `workday_job`, `workday_apply_choice`, and `workday_account_create`; assert each raises `ATS snapshot is not claim-ready` and leaves the daily slot count at zero.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
   Run the focused Ledger test. Expected: the new choice/account fixtures are accepted or produce the old provider-specific behavior.
 
-- [ ] **Step 3: Implement the minimal claim and prompt changes**
+- [x] **Step 3: Implement the minimal claim and prompt changes**
 
   Replace the Workday surface-name special case with `if not snapshot_evaluation["claim_ready"]`. Update the prompt to click Apply, prefer Apply Manually, recapture/evaluate after every surface transition, and stop at account create/sign-in unless the private credential path is present.
 
-- [ ] **Step 4: Verify GREEN and the full suite**
+- [x] **Step 4: Verify GREEN and the full suite**
 
   ```bash
   PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_ledger.py -v
   PYTHONPATH=apps/job-search-loop python3 -m unittest discover -s apps/job-search-loop/tests -p 'test_*.py'
   ```
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   ```bash
   git add apps/job-search-loop/job_search_loop/ledger.py apps/job-search-loop/prompts/daily-pass.md apps/job-search-loop/tests/test_ledger.py

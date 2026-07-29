@@ -207,7 +207,10 @@ URLs, and user-facing control metadata. It returns:
 ```text
 provider: ashby | workday | generic
 ready: boolean
-surface: ashby_application | workday_job | workday_application | generic_application | none
+claim_ready: boolean
+surface: ashby_application | workday_job | workday_apply_choice |
+         workday_account_create | workday_application |
+         generic_application | none
 frame_index: integer | null
 wait_until: commit
 blockers: string[]
