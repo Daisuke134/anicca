@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.env
+coverage
+test
+eval
+**/*.test.js
+scripts/*
+!scripts/runtime-up.js

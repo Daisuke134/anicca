@@ -1,0 +1,156 @@
+name: life-manager-local
+
+x-runtime-environment: &runtime-environment
+  LM_MODE: local
+  LM_RUNTIME_DATABASE_URL: postgresql://life_manager:life_manager_local@postgres:5432/life_manager
+  LM_DATA_DIR: /var/lib/life-manager/data
+  LM_CACHE_DIR: /var/lib/life-manager/cache
+  LM_OBJECT_DIR: /var/lib/life-manager/objects
+  LM_RECEIPT_DIR: /var/lib/life-manager/receipts
+  LM_LOG_DIR: /var/lib/life-manager/logs
+  MINIO_ENDPOINT: http://object-store:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-life_manager_local}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-life_manager_local_only}
+
+x-runtime-build: &runtime-build
+  context: ../../apps/life-manager
+  dockerfile: Dockerfile.runtime
+
+x-runtime-dependencies: &runtime-dependencies
+  postgres:
+    condition: service_healthy
+  object-store:
+    condition: service_healthy
+  migrate:
+    condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: life_manager
+      POSTGRES_USER: life_manager
+      POSTGRES_PASSWORD: life_manager_local
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U life_manager -d life_manager"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  object-store:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-life_manager_local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-life_manager_local_only}
+    ports:
+      - "${LM_LOCAL_MINIO_PORT:-19000}:9000"
+      - "${LM_LOCAL_MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - object-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    image: postgres:18-alpine
+    environment:
+      DATABASE_URL: postgresql://life_manager:life_manager_local@postgres:5432/life_manager
+    volumes:
+      - ../../apps/life-manager/migrations:/migrations:ro
+    command:
+      - sh
+      - -ec
+      - >
+        psql "$$DATABASE_URL" -v ON_ERROR_STOP=1
+        -f /migrations/20260729_runtime_jobs.sql
+        -f /migrations/20260729_runtime_scheduler_lease.sql
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: life-manager-local-runtime:dev
+    build: *runtime-build
+    environment:
+      <<: *runtime-environment
+      LM_DEPLOYMENT_ROLE: api
+      LIFE_RUN_LOOPS: "false"
+      PORT: "8788"
+    ports:
+      - "${LM_LOCAL_API_PORT:-18788}:8788"
+    volumes:
+      - runtime-data:/var/lib/life-manager
+    depends_on: *runtime-dependencies
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:8788/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  scheduler:
+    image: life-manager-local-runtime:dev
+    pull_policy: never
+    command: ["node", "scripts/runtime-up.js", "internal-scheduler"]
+    environment:
+      <<: *runtime-environment
+      LM_DEPLOYMENT_ROLE: scheduler
+      LM_SCHEDULER_OWNER: local-primary
+      LM_SCHEDULER_LEASE_KEY: primary
+      LIFE_RUN_LOOPS: "true"
+      PORT: "8788"
+    volumes:
+      - runtime-data:/var/lib/life-manager
+    depends_on: *runtime-dependencies
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:8788/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  worker:
+    image: life-manager-local-runtime:dev
+    pull_policy: never
+    command: ["node", "scripts/runtime-up.js", "internal-worker"]
+    environment:
+      <<: *runtime-environment
+      LM_DEPLOYMENT_ROLE: worker
+      LM_WORKER_ID: local-runtime-noop
+      LM_WORKER_CAPABILITIES: runtime.noop
+      LM_WORKER_HEALTH_PORT: "8790"
+      LIFE_RUN_LOOPS: "false"
+    volumes:
+      - runtime-data:/var/lib/life-manager
+    depends_on: *runtime-dependencies
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:8790/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  object-data:
+  runtime-data:
