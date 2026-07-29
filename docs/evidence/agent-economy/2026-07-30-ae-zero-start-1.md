@@ -1,0 +1,223 @@
+# AE-ZERO-START-1 — Evidence
+
+**Status: DRAFT — offline evidence complete, live E2E PENDING.**
+Spec: `docs/superpowers/specs/2026-07-30-ae-zero-start-1-design.md`
+Plan: `docs/superpowers/plans/2026-07-30-ae-zero-start-1.md`
+Branch: `feature/ae-zero-start-1` · Worktree: `~/anicca-project/.worktrees/ae-zero-start-1`
+Implementation: Opus 5 subagent, 2026-07-30. Live E2E (§7): Fable, after merge.
+
+Everything under "Offline evidence" was produced by commands actually run in the
+implementation session and the output is quoted verbatim. Everything under
+"Live E2E" is **not done** and is left empty on purpose — a filled-in value there
+without a real run would be exactly the fabricated evidence this slice exists to
+make impossible.
+
+---
+
+## 1. What shipped
+
+| # | Component | File |
+|---|---|---|
+| 1 | Solana agent wallet (ed25519, base58) | `apps/life-manager/lib/agent-wallet-solana.js` |
+| 2 | Tenant wallet columns + anti-plaintext-key CHECKs | `apps/life-manager/migrations/2026-07-30-lm-tenant-agent-wallets.sql` |
+| 3 | Per-tenant 0600 key custody | `apps/life-manager/lib/tenant-wallet-store.js` |
+| 4 | Zero-start job adapter (`wallet.zero-start`) | `apps/life-manager/lib/zero-start-job-adapter.js` |
+| 4b | Measured Solana balance reader | `apps/life-manager/lib/solana-balance.js` |
+| 5 | Inflow watch adapter (`wallet.inflow.watch`) | `apps/life-manager/lib/wallet-inflow-job-adapter.js` |
+| 6 | Self-heal sweep (the only enqueue point) | `apps/life-manager/lib/wallet-sweep.js` |
+| 6b | Capability registration | `apps/life-manager/config/loop-adapters.json`, `apps/life-manager/scripts/runtime-up.js` |
+
+Commits (`1f1c458cb..de7348024`), oldest first:
+
+```
+9773c0893 docs: AE-ZERO-START-1 implementation plan
+a12b7174a docs(spec): AE-ZERO-START-1 inflow kind = financial_deposit
+b1f28b844 feat(life-manager): Solana agent wallet module for AE-ZERO-START-1
+db6661358 feat(life-manager): tenant agent wallet columns with schema-enforced no-plaintext-key
+ec17fe7e8 feat(life-manager): per-tenant 0600 wallet custody with non-clobbering atomic writes
+3e9244f59 docs(spec): atomic write = tmp+fsync+link(2), not rename
+7f002e02f feat(life-manager): wallet.zero-start adapter + measured Solana balance reader
+31639604c docs(spec): inflow amount encoding + receipt-based cursor
+0d4f3e47b feat(life-manager): wallet.inflow.watch adapter records inflows as capital, revenue 0
+515b835ae docs(spec): zero-start enqueue = self-heal sweep only
+de7348024 feat(life-manager): register wallet capabilities and the self-heal sweep
+```
+
+---
+
+## 2. Offline evidence (RUN, verbatim)
+
+Node `v25.6.1`, run from `apps/life-manager`.
+
+### 2.1 Full suite — `npm test`
+
+```
+NPM_TEST_EXIT=0
+tests=1824 pass=1824 fail=0
+```
+
+46 `node --test` segments, zero segments with a nonzero `ℹ fail`. `npm test`
+chains with `&&`, so exit 0 means every segment ran and passed.
+
+### 2.2 Focused money slice — `npm run test:money-slice`
+
+```
+ℹ tests 238
+ℹ pass 238
+ℹ fail 0
+```
+
+The money segment previously inlined in the `test` script is now the named
+`test:money-slice` script (one source of truth, called from `test`). Baseline
+before this slice was 132 tests; the 106 added are listed in §2.4.
+
+### 2.3 Other suites touched
+
+| Suite | Result |
+|---|---|
+| `npm run test:runtime-up` | `tests 26 / pass 26 / fail 0` |
+| `npm run test:runtime-adapters` | `tests 76 / pass 76 / fail 0` |
+| `node --test test/tenant-isolation.test.js` | `tests 12 / pass 12 / fail 0` (9 pre-existing + 3 new wallet isolation) |
+
+### 2.4 New test files
+
+| File | Tests |
+|---|---|
+| `lib/agent-wallet-solana.test.js` | 13 |
+| `lib/agent-wallet-migration.test.js` | 8 |
+| `lib/tenant-wallet-store.test.js` | 18 |
+| `lib/solana-balance.test.js` | 9 |
+| `lib/zero-start-job-adapter.test.js` | 18 |
+| `lib/wallet-inflow-job-adapter.test.js` | 22 |
+| `lib/wallet-sweep.test.js` | 11 |
+| `lib/wallet-capability-wiring.test.js` | 7 |
+| `test/postgres/tenant-agent-wallets.integration.sh` | 15 engine-level refusals |
+| **Total** | **106 unit/contract + 1 integration script** |
+
+### 2.5 §5.3 proven by the engine, not by text matching
+
+`npm run test:tenant-agent-wallets:postgres` — real PostgreSQL 18 (docker
+`postgres:18-alpine`), migration applied twice to prove idempotence:
+
+```
+tenant-agent-wallets: PASS mode=docker provisioned_tenants=2 refusals=15 key_material_rows=0
+```
+
+The 15 refusals the database actually performed: a raw `0x` EVM private key as a
+key ref; a bare 64-hex key; a base58 Solana secret key; a private key smuggled
+inside a well-formed `secret://` ref (both rails); a filesystem path; a bare path
+with no scheme; a scheme with no path; an EVM address in the Solana column; a
+base58-illegal address; an over-long address; a Solana address in the EVM column
+(REPORT-1's CHECK still working); and three cross-tenant claims (tenant-b trying
+to take tenant-a's Solana address, base key ref, and Solana key ref).
+
+### 2.6 Secret scan
+
+`gitleaks detect --log-opts 1f1c458cb..HEAD`:
+
+```
+11 commits scanned.
+scanned ~214638 bytes (214.64 KB) in 119ms
+no leaks found
+```
+
+`gitleaks protect --staged` was also run and clean before each of the six
+implementation commits. Test fixtures use the published RFC 8032 §7.1 ed25519
+vectors and published Ethereum private-key-1/2 vectors, marked as such in the
+files; no 88-character base58 secret literal exists anywhere in the repo (the
+Solana test builds it at run time from the hex vector).
+
+### 2.7 Invariant → where it is proven
+
+| Spec invariant | Proven by |
+|---|---|
+| §5.1 keys never in DB/receipt/TG/log/error | `agent-wallet-solana.test.js` (non-enumerable secret, static error messages), `tenant-wallet-store.test.js` ("no thrown error carries key material into a log"), `zero-start-job-adapter.test.js` ("nothing secret reaches the message, the receipt, or the database columns") |
+| §5.2 `assertNoSecret` on every receipt + TG payload | applied in both adapters; asserted in both adapter test files |
+| §5.3 DB rejects key-shaped strings | `test/postgres/tenant-agent-wallets.integration.sh` (real engine, 15 refusals) + `agent-wallet-migration.test.js` (predicate pinned, every regex behaviour-tested) |
+| §5.4 key collision hard-stops, never overwrites | `tenant-wallet-store.test.js` ("a key file that disagrees with the database hard-stops and is never overwritten", "a database address with no key file hard-stops") |
+| §5.5 gitleaks/PII gates green | §2.6 |
+| "a `$0.00` that was not measured is a lie" | `zero-start-job-adapter.test.js` ("a balance that could not be measured stops the message"), `solana-balance.test.js` (8 unclean-answer cases all throw; a JSON-rounded lamport value is refused) |
+| never fabricates a send | `zero-start-job-adapter.test.js` (`BLOCKED_NO_CHAT`; provider answer with no `message_id` is a failure; refusal retryable vs dead transport reconciled) |
+| inflow exactly-once, revenue 0 | `wallet-inflow-job-adapter.test.js` (replayed window refuses the second write; kind asserted against the real `rollUpMonth`: `counted_rows 0`, `excluded_rows 1`, `net_usd_micros "0"`) |
+| tenant A/B cross-contamination 0 | `test/tenant-isolation.test.js` (3 new tests, two real tenants), `tenant-wallet-store.test.js`, plus DB-level partial unique indexes |
+
+---
+
+## 3. Live E2E — PENDING-E2E (Fable, after merge)
+
+None of the following has been run. **Do not fill any of these in from
+inference — each line needs a real observation.** Spec §7 is the checklist.
+
+### 3.1 PENDING-E2E — two real test tenants provisioned on the live local runtime
+
+- tenant A uid: _pending_
+- tenant B uid: _pending_
+- provisioning wake receipt (`lm_runtime_job_receipts`, `kind=tenant_zero_start`): _pending_
+
+### 3.2 PENDING-E2E — real Telegram message per tenant
+
+| tenant | `message_id` | Base address | Solana address | measured Base USDC | measured SOL |
+|---|---|---|---|---|---|
+| A | _pending_ | _pending_ | _pending_ | _pending_ | _pending_ |
+| B | _pending_ | _pending_ | _pending_ | _pending_ | _pending_ |
+
+Explorer links must be present in the delivered message body
+(`https://basescan.org/address/<base>`, `https://solscan.io/account/<solana>`).
+
+### 3.3 PENDING-E2E — a real worker wake at balance 0 emitting `started`
+
+- scheduler/`launchctl` evidence: _pending_
+- receipt `status`: _pending_ (must be `started`)
+- receipt `started_rails`: _pending_ (must be exactly the three §4.4 rails)
+
+### 3.4 PENDING-E2E — a real inflow recorded exactly once
+
+- tx hash of the tiny real USDC transfer to tenant A's Base address: _pending_
+- `lm_agent_earnings` rows for A with `entry_key = inflow:base:<tx>`: _pending_ (must be exactly 1)
+- rows for B: _pending_ (must be 0)
+- `kind`: _pending_ (must be `financial_deposit`)
+- revenue totals before/after: _pending_ (must be identical)
+- second wake over the same window: _pending_ (must report `duplicates: 1, recorded: 0`)
+
+### 3.5 PENDING-E2E — key file modes on the live host
+
+- `stat` of `${LM_DATA_ROOT:-~/.anicca}/wallets/<uid>/base.json`: _pending_ (must be `600`)
+- `stat` of `.../solana.json`: _pending_ (must be `600`)
+- `stat` of the tenant directory: _pending_ (must be `700`)
+
+### 3.6 PENDING-E2E — live secret scan
+
+- scan of the live DB rows + delivered TG payloads for key material: _pending_ (must be 0)
+
+### 3.7 PENDING-E2E — SSOT row
+
+- `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` §0.4.6 row 2
+  updated to done with pointers to this file: _pending_
+
+---
+
+## 4. Decisions recorded during implementation
+
+Each was measured, escalated to the planner, and folded back into the spec — none
+was improvised.
+
+| Finding | Resolution | Spec commit |
+|---|---|---|
+| `capital_in` is not a ledger kind (`normaliseEntry` and the table CHECK both reject it) | ledger kind `financial_deposit` (already in `EXCLUDED_KINDS`), `capital_class: "capital_in"` as the receipt label | `a12b7174a` |
+| `rename(2)` overwrites, so it cannot satisfy "refused if pre-existing" | atomic write is tmp + fsync + `link(2)` + unlink(tmp); `link` fails `EEXIST` | `3e9244f59` |
+| `amount_atomic` rows are hard-gated to `currency === "USD"`, so lamports cannot be recorded atomically; converting them needs a price feed | native SOL recorded as `amount_minor` lamports with `currency "SOL"` and `meta {unit, decimals}`; no conversion invented | `31639604c` |
+| no cursor table exists and §4.1 adds none | cursor persisted in the job's own receipt (`next_cursor`) and read back from the last completed receipt — the pattern `runtime-up.js` already uses for marketing video history | `31639604c` |
+| `lm-onboard.js` cannot enqueue: the runtime queue is the local Postgres (`LM_RUNTIME_DATABASE_URL`), the migration has no GRANT/RLS, and no Netlify function references it | enqueue is the self-heal sweep only; `lm-onboard.js` left untouched, and a wiring test fails if anyone adds queue access to it | `515b835ae` |
+
+Two placement choices, spec-neutral and noted for review: the Solana balance
+reader is its own file (`lib/solana-balance.js`) mirroring the existing EVM split
+of `agent-wallet.js` / `base-usdc-balance.js`, which keeps the module that
+handles secret material free of network calls; and USDC amounts print at full
+six-decimal precision when they are not a whole number of cents (`$1.234567`)
+rather than being rounded in either direction, while exact cents render `$1.23`
+and zero renders `$0.00`.
+
+One pre-existing test was updated: `lib/loop-adapter-registry.test.js` pinned
+`manifest.adapters.length === 5` with positional index assertions, so the two new
+adapters were **appended** (indices 0-4 keep their meaning), the length bumped to
+7, and positional assertions added for indices 5-6.
