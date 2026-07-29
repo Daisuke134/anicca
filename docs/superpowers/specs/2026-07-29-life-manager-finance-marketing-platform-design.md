@@ -21,9 +21,14 @@ read-only Reel-list proof; the legacy source profile remains untouched. New
 publication receipts preserve provider metric join keys, and a generic
 per-publication 2h/24h/72h/7d observation adapter plus deterministic scheduler
 fanout is proven with missing metrics retained as unavailable. The observation
-schedule defaults off while the legacy owner remains active. Next: migrate
-Larry/ReelClaw through these contracts, add product attribution, and do not cut
-over scheduler ownership before the seven-expected-run gate.
+schedule defaults off while the legacy owner remains active. The first generic
+ReelClaw generation slice now imports Honne JA's 24 hooks and four MP4s into
+Life Manager ownership, executes a durable tenant-scoped no-effect job, selects
+`HJA-007` from imported plus receipt history, and emits immutable video/copy
+lineage without reading a legacy path at runtime. The working Honne launchd
+owner is unchanged. Next: connect generic publication and scheduling in
+shadow mode, migrate the remaining Larry/ReelClaw products, add product
+attribution, and do not cut over ownership before the seven-expected-run gate.
 
 ## 1. Executive decision
 
@@ -159,7 +164,7 @@ and rollback evidence pass.
 | Local OpenClaw gateway | Running as `ai.openclaw.gateway` | OpenClaw is still running |
 | OpenClaw scheduler | Read-only capture contains 222 stored jobs; 92 are marked enabled | Stored/enabled is not proof of current execution; each row remains unclassified until Task 2 assigns a verified disposition |
 | macOS launchd | Read-only capture contains 176 user LaunchAgent plist files and one additional relevant loaded-only label; 161 plist-backed labels are currently loaded. The loaded CFO plist cannot be parsed by `plutil`, and `com.anicca.daemon` has no user LaunchAgent plist; both are preserved as explicit parse errors | launchd is the actual scheduler for many observed loops; malformed or loaded-only rows must not be silently dropped or changed |
-| Unified runtime inventory | `docs/migrations/openclaw/runtime-inventory.json` contains all 399 captured OpenClaw and relevant LaunchAgent rows; 269 are enabled or loaded; commands and private identifiers are redacted | Task 1 is read-only evidence. All 399 dispositions remain `unclassified` for Task 2; no scheduler change is authorized by the inventory |
+| Unified runtime inventory | `docs/migrations/openclaw/runtime-inventory.json` contains all 399 captured OpenClaw and relevant LaunchAgent rows; 269 are enabled or loaded; commands and private identifiers are redacted | Three measured slices are assigned to Life Manager adapters and 396 dispositions remain `unclassified`; no scheduler change is authorized by the inventory |
 | Profitable Claude marketing engine | Registry, schemas, bounded learning, canary keep/revert, observation terminalizer, and dashboard exist | Reuse these contracts |
 | Marketing runtime store | About 20 KB; dashboard and logs only; no run, publication, metric, experiment, or observation ledgers | The production feedback loop is not closed |
 | Life Manager Railway | `/health` returns 200 from `life-call-production.up.railway.app` | A functioning cloud control plane already exists |
@@ -333,6 +338,32 @@ a competing scheduler or claiming unavailable data as zero:
   explicit tenant, product, cutoff, and worker capability. The existing
   LaunchAgent is unchanged; no post, message, credential mutation, or scheduler
   cutover occurred in this slice.
+
+The sixth slice begins the shared Larry/ReelClaw producer migration with the
+measured working Honne JA path and no external effect:
+
+- The one-time importer copied 24 Honne JA hooks and four verified MP4 files
+  into the Life Manager data root and immutable object store. Its runtime
+  manifest contains only tenant/product/format/locale IDs and
+  `object://sha256/...` refs; generation never reads `~/.openclaw` or
+  Profitable Claude.
+- The generic `marketing.video.generate` adapter is product-, format-, locale-,
+  and tenant-scoped. It chooses the least-recent active hook from the imported
+  prior-use state plus durable Life Manager receipts and rotates media
+  deterministically by schedule slot.
+- An isolated PostgreSQL worker proof enqueued one Honne JA job, completed one
+  immutable `marketing_video_artifact` receipt, selected `HJA-007`, and emitted
+  content-addressed video and copy refs. Re-enqueue returned `created=false`;
+  the database remained at one job and one receipt.
+- This adapter is a no-effect producer. It did not call Postiz, Instagram,
+  TikTok, or YouTube. The existing `ai.anicca.reelclaw-honne-ja` LaunchAgent
+  remains loaded at 12:30 and 21:30. Its current launchctl process counters
+  were reset by a later service reload (`runs=0`, never exited); the schedule
+  and legacy owner remain intact and were not cut over by this slice.
+- Measured Larry and Anicca ReelClaw paths are not silently promoted: their
+  current logs include missing media/hook/API inputs and non-zero exits. Each
+  gets its own repair, import, shadow, and seven-expected-run proof after the
+  working Honne slice.
 
 The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
 reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
@@ -1087,7 +1118,8 @@ ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read bac
 `OSS-MERGE-1` PR #1268 is merged as canonical `8d47689d3…`; that exact `main`
 commit passes a clean fresh clone, 647/647 app tests, all eight evals, panel
 privacy, the seven-source manifest, and the single canonical runner contract.
-The current program subcursor is `BROWSER-AUTH-1`.
+The current migration subcursor is the generic Honne JA
+`marketing.video.generate` shadow slice under Order 11.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
@@ -1143,7 +1175,7 @@ runtime-migration work is active:
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env; remaining command routing and seven-run shadow stay open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
-| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. The chain and observation scheduler remain disabled during shadowing; B01 analytics are currently unavailable, product attribution and bounded learning are not wired, no new IG publication receipt exists, and other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
+| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. Honne JA now also has a generic Life Manager-owned 24-hook/four-media producer with a completed durable `HJA-007` shadow receipt and idempotent replay. Generic video publication/scheduling, product attribution, bounded learning, the remaining broken Larry/ReelClaw slices, and all other loops remain open; all new fanout stays disabled during shadowing | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
 | 8 | Package the supported local option | a working checkout is not yet a reproducible self-hosted product | clean-machine install, upgrade, backup/restore, health check, and uninstall verification pass |
 | 9 | Deploy the same release to cloud | current Railway service does not yet own every retained loop or worker class | API, scheduler, and worker pools run the same contracts and release hashes as local |

@@ -40,6 +40,16 @@
       ],
       "module_ref": "lib/marketing-observation-adapter.js",
       "factory_export": "createMarketingObservationLoopAdapter"
+    },
+    {
+      "adapter_id": "marketing-video-generation",
+      "loop_id": "marketing.video.generate",
+      "capability": "marketing.video.generate",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/marketing-video-generation-adapter.js",
+      "factory_export": "createMarketingVideoGenerationLoopAdapter"
     }
   ]
 }

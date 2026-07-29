@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const {
   parseRuntimeCommand,
@@ -19,6 +20,12 @@ const {
 const {
   buildMarketingObservationJob,
 } = require("../lib/marketing-observation-adapter.js");
+const {
+  buildMarketingVideoGenerationJob,
+} = require("../lib/marketing-video-generation-adapter.js");
+const {
+  importContentObject,
+} = require("../lib/content-object-store.js");
 
 const ROOT = path.join(__dirname, "../../..");
 const COMPOSE_PATH = path.join(ROOT, "deploy/local/compose.yaml");
@@ -456,4 +463,61 @@ test("marketing observation worker reads one tenant receipt and preserves empty 
   assert.match(calls.find((call) => call.kind === "fetch").url, /analytics\/post\/postiz-post-B01/);
   assert.equal(calls.find((call) => call.kind === "fetch").authorizationPresent, true);
   assert.doesNotMatch(JSON.stringify(execution), /private-postiz-token/);
+});
+
+test("marketing video worker selects from tenant-scoped durable history and Life Manager objects", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-video-"));
+  const objectDir = path.join(root, "objects");
+  const packPath = path.join(root, "pack.json");
+  const mediaPath = path.join(root, "v1.mp4");
+  fs.writeFileSync(packPath, `${JSON.stringify({
+    schema_version: 1,
+    product_id: "honne-ai",
+    format_id: "reelclaw",
+    form: "relationship-confession",
+    locale: "ja",
+    title: "Honne",
+    hashtags: [],
+    hooks: [
+      { id: "HJA-001", text: "first", status: "active", prior_used_at: null },
+    ],
+  })}\n`);
+  fs.writeFileSync(mediaPath, Buffer.from("0000ftyp-video"));
+  const pack = importContentObject(packPath, { objectDir });
+  const media = importContentObject(mediaPath, { objectDir });
+  const calls = [];
+  const handlers = createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: root,
+  }, ["marketing.video.generate"], {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      return { rows: [] };
+    },
+    now: () => "2026-07-30T12:30:01.000Z",
+  });
+  const execution = await handlers["marketing.video.generate"](
+    buildMarketingVideoGenerationJob({
+      tenantId: "tenant-a",
+      productId: "honne-ai",
+      formatId: "reelclaw",
+      locale: "ja",
+      slot: "2026-07-30T12:30:00.000Z",
+      packRef: pack.ref,
+      mediaRefs: [media.ref],
+    }),
+  );
+
+  assert.equal(execution.receipt.kind, "marketing_video_artifact");
+  assert.equal(execution.receipt.hook_id, "HJA-001");
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /tenant_id = \$1/);
+  assert.match(calls[0].sql, /capability = 'marketing\.video\.generate'/);
+  assert.match(calls[0].sql, /receipt->>'product_id' = \$2/);
+  assert.deepEqual(calls[0].params, [
+    "tenant-a",
+    "honne-ai",
+    "reelclaw",
+    "ja",
+  ]);
 });
