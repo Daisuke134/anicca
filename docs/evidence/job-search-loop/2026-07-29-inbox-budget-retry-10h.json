@@ -4,8 +4,8 @@
   "status": "implementation_verified_pending_ci",
   "observed_at": "2026-07-29T13:33:34Z",
   "branch": "fix/job-inbox-budget-retry-10h",
-  "red_commit": "c8db3e411",
-  "implementation_commit": "e57e39815",
+  "red_commit": "ff7bd4036",
+  "implementation_commit": "24c5b7f96",
   "pull_request": {
     "number": null,
     "url": null,
