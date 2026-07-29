@@ -8,6 +8,11 @@ POLICY_VERSION="cleanup-control-v1"
 HOME_DIR="${EMERGENCY_GUARD_TEST_HOME:-$HOME}"
 USER_TEMP_ROOT="${EMERGENCY_GUARD_TEST_TEMP_ROOT:-$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)}"
 USER_CODE_SIGN_ROOT="${EMERGENCY_GUARD_TEST_CODE_SIGN_ROOT:-$(dirname "${USER_TEMP_ROOT%/}")/X}"
+PNPM_BIN="$(command -v pnpm 2>/dev/null || true)"
+PNPM_PROOF=""
+if [ -n "$PNPM_BIN" ]; then
+  PNPM_PROOF="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$PNPM_BIN" 2>/dev/null || true)"
+fi
 STATE_DIR="$HOME_DIR/.openclaw/state"
 LEASE_DIR="$STATE_DIR/gig-workers"
 LOG_DIR="$HOME_DIR/.openclaw/logs"
@@ -557,6 +562,8 @@ if [ "$TEST_MODE" -eq 0 ]; then
       --root "$HOME_DIR/anicca" \
       --published-run-root "$HOME_DIR/.openclaw/workspace/runs" \
       --code-sign-clone-root "$USER_CODE_SIGN_ROOT" \
+      --pnpm-store-root "$HOME_DIR/Library/pnpm/store" \
+      --pnpm-proof "$PNPM_PROOF" \
       --cache-root "$HOME_DIR/Library/Caches" \
       --cache-root "$HOME_DIR/.npm" \
       --cache-root "$HOME_DIR/.cargo/registry" \

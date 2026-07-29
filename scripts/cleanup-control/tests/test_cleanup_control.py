@@ -284,6 +284,55 @@ def test_runtime_manifest_discovers_exact_chrome_code_sign_clone_children(
     assert str(symlinked) not in {artifact["path"] for artifact in artifacts}
 
 
+def test_runtime_manifest_discovers_exact_pnpm_store_versions(tmp_path: Path) -> None:
+    scan_root = tmp_path / "empty-root"
+    scan_root.mkdir()
+    store_root = tmp_path / "pnpm" / "store"
+    current = store_root / "v10"
+    previous = store_root / "v9"
+    unrelated = store_root / "metadata"
+    for candidate in (current, previous, unrelated):
+        candidate.mkdir(parents=True)
+        (candidate / "payload").write_bytes(b"x" * 128)
+    symlinked = store_root / "v11"
+    symlinked.symlink_to(current, target_is_directory=True)
+
+    pnpm_proof = tmp_path / "pnpm.cjs"
+    pnpm_proof.write_bytes(b"executable")
+    base = write_manifest(tmp_path / "base.json", [])
+    runtime = tmp_path / "runtime.json"
+    command = [
+        sys.executable,
+        str(MODULE_PATH),
+        "runtime-manifest",
+        "--manifest",
+        str(base),
+        "--output",
+        str(runtime),
+        "--root",
+        str(scan_root),
+        "--pnpm-store-root",
+        str(store_root),
+        "--pnpm-proof",
+        str(pnpm_proof),
+    ]
+
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["discovered"] == 2
+    artifacts = json.loads(runtime.read_text(encoding="utf-8"))["artifacts"]
+    assert [artifact["path"] for artifact in artifacts] == [str(current), str(previous)]
+    assert {artifact["owner"] for artifact in artifacts} == {"pnpm-store"}
+    assert {artifact["class"] for artifact in artifacts} == {"regenerable_output"}
+    assert {
+        artifact["finalizer"]["proof_path"]
+        for artifact in artifacts
+    } == {str(pnpm_proof)}
+    assert str(unrelated) not in {artifact["path"] for artifact in artifacts}
+    assert str(symlinked) not in {artifact["path"] for artifact in artifacts}
+
+
 def test_runtime_manifest_discovers_only_verified_published_runs(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     repository.mkdir()

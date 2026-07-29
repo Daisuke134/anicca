@@ -558,6 +558,52 @@ def discover_chrome_code_sign_clones(
     return discovered
 
 
+def discover_pnpm_store_versions(
+    roots: list[Path],
+    *,
+    proof_path: Path,
+) -> list[dict[str, Any]]:
+    proof = Path(os.path.normpath(str(proof_path.expanduser())))
+    if (
+        not proof.is_absolute()
+        or not proof.is_file()
+        or proof.is_symlink()
+    ):
+        return []
+
+    discovered: list[dict[str, Any]] = []
+    seen: set[Path] = set()
+    for raw_root in sorted(roots, key=str):
+        root = Path(os.path.normpath(str(raw_root.expanduser())))
+        if not root.is_absolute() or not root.is_dir() or root.is_symlink():
+            continue
+        for candidate in sorted(root.glob("v[0-9]*"), key=str):
+            if (
+                candidate in seen
+                or not candidate.is_dir()
+                or candidate.is_symlink()
+            ):
+                continue
+            seen.add(candidate)
+            digest = hashlib.sha256(str(candidate).encode("utf-8")).hexdigest()[:20]
+            discovered.append(
+                {
+                    "id": f"pnpm-store-{digest}",
+                    "path": str(candidate),
+                    "owner": "pnpm-store",
+                    "class": REGENERABLE_OUTPUT_CLASS,
+                    "ttl_seconds": None,
+                    "quota_bytes": 0,
+                    "lease": None,
+                    "finalizer": {
+                        "kind": "verified_regenerable_remove",
+                        "proof_path": str(proof),
+                    },
+                }
+            )
+    return discovered
+
+
 def discover_published_runs(roots: list[Path]) -> list[dict[str, Any]]:
     discovered: list[dict[str, Any]] = []
     required_proof_fields = ("postId", "postedAt", "integration", "method")
@@ -667,6 +713,8 @@ def build_runtime_manifest(
     chrome_code_sign_proof: Path = Path(
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     ),
+    pnpm_store_roots: list[Path] | None = None,
+    pnpm_proof: Path = Path("/opt/homebrew/lib/node_modules/pnpm/bin/pnpm.cjs"),
 ) -> dict[str, int | str]:
     policy_version, _, base_entries = load_manifest(manifest_path)
     existing_paths = {entry["path"] for entry in base_entries}
@@ -678,6 +726,10 @@ def build_runtime_manifest(
             *discover_chrome_code_sign_clones(
                 code_sign_clone_roots or [],
                 proof_path=chrome_code_sign_proof,
+            ),
+            *discover_pnpm_store_versions(
+                pnpm_store_roots or [],
+                proof_path=pnpm_proof,
             ),
             *discover_ephemeral_caches(
                 cache_roots,
@@ -1453,6 +1505,17 @@ def _parser() -> argparse.ArgumentParser:
         default=Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
     )
     runtime_manifest_parser.add_argument(
+        "--pnpm-store-root",
+        action="append",
+        default=[],
+        type=Path,
+    )
+    runtime_manifest_parser.add_argument(
+        "--pnpm-proof",
+        type=Path,
+        default=Path("/opt/homebrew/lib/node_modules/pnpm/bin/pnpm.cjs"),
+    )
+    runtime_manifest_parser.add_argument(
         "--min-cache-bytes",
         type=int,
         default=1073741824,
@@ -1489,6 +1552,8 @@ def main(argv: list[str] | None = None) -> int:
                 published_run_roots=args.published_run_root,
                 code_sign_clone_roots=args.code_sign_clone_root,
                 chrome_code_sign_proof=args.chrome_code_sign_proof,
+                pnpm_store_roots=args.pnpm_store_root,
+                pnpm_proof=args.pnpm_proof,
             )
         except ManifestError as exc:
             result = {

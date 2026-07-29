@@ -114,4 +114,10 @@ else:
         if value == "--code-sign-clone-root"
     ]
     assert code_sign_clone_roots == [str(home / "X")]
+    pnpm_store_roots = [
+        runtime_call[index + 1]
+        for index, value in enumerate(runtime_call)
+        if value == "--pnpm-store-root"
+    ]
+    assert pnpm_store_roots == [str(home / "Library/pnpm/store")]
     assert runtime_call[runtime_call.index("--min-cache-bytes") + 1] == "67108864"
