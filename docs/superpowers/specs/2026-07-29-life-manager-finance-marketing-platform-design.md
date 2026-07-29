@@ -9,15 +9,16 @@
 OpenClaw dependency, first locally and then from the same runtime in the cloud.
 
 **Current implementation cursor:** the portable local foundation, bounded
-financial-report job adapter, and shared loop-adapter registry are proven. A
-Life Manager-owned local scheduler and worker sent real Telegram
-`message_id=432`, persisted the immutable snapshot/effect receipt, and survived
-a worker restart without resend. Every registered adapter must now implement
-`plan`, `execute`, `reconcile`, `verify`, and `report`; registry configuration
-rejects legacy paths and credential-bearing fields. The legacy LaunchAgent
-remains active until the seven-expected-run shadow gate. Next: migrate the
-existing Life Manager daily loop, then Larry/ReelClaw; do not cut over
-scheduler ownership yet.
+financial-report job adapter, shared loop-adapter registry, and the first Life
+Manager daily generation→publication chain are proven. A Life Manager-owned
+local scheduler and worker sent real Telegram `message_id=432`, persisted the
+immutable snapshot/effect receipt, and survived a worker restart without
+resend. The daily marketing path owns immutable generation inputs, a verified
+render receipt, and deterministic independent Instagram/TikTok jobs. The chain
+defaults off while the legacy LaunchAgent remains active. Next: repair the
+Instagram tenant profile, collect attributed platform/app metrics, and migrate
+Larry/ReelClaw without cutting over scheduler ownership before the
+seven-expected-run gate.
 
 ## 1. Executive decision
 
@@ -248,6 +249,27 @@ portable without enabling a competing scheduler:
   tenant profile, and seven-cycle shadow evidence remain open. Autonomous
   learning still remains frozen until the runtime migration gates permit
   Orders 32–35.
+
+The third slice closes the durable generation→publication handoff without
+creating a competing external effect:
+
+- The scheduler scans only one explicit tenant and receipts created on or
+  after an explicit cutoff. It accepts only completed, verified
+  `marketing_daily_generation` receipts and fans each receipt out into
+  independent Instagram and TikTok publication jobs.
+- An isolated PostgreSQL proof completed generation attempt 1, found exactly
+  one immutable receipt, and created exactly two queued publication jobs:
+  Instagram 1 and TikTok 1. Replaying the same scan returned
+  `created=false,false`; the database still contained three total jobs
+  (generation 1 plus publication 2) and one generation receipt.
+- The proof database was dropped after verification. The live local database
+  contains zero A03 publication jobs, so this slice made no provider call and
+  created no duplicate post.
+- `LM_MARKETING_PUBLICATION_CHAIN_ENABLED` defaults to `false`, historical
+  backfill has no implicit default, and the legacy
+  `ai.anicca.life-manager-daily` LaunchAgent remains loaded
+  (`runs=1`, `last exit code=1`). This is a handoff/idempotency proof, not a
+  cutover or a claim that Instagram is repaired.
 
 The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
 reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
@@ -1056,7 +1078,7 @@ runtime-migration work is active:
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env; remaining command routing and seven-run shadow stay open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
-| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, including a fixed visible-hook render, but its IG profile is poisoned and publication chaining/metrics/learning plus other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
+| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, and an idempotent generation→Instagram/TikTok durable-job chain; its IG profile is still poisoned, the chain remains disabled during shadowing, and metrics/learning plus other loops remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
 | 8 | Package the supported local option | a working checkout is not yet a reproducible self-hosted product | clean-machine install, upgrade, backup/restore, health check, and uninstall verification pass |
 | 9 | Deploy the same release to cloud | current Railway service does not yet own every retained loop or worker class | API, scheduler, and worker pools run the same contracts and release hashes as local |

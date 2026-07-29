@@ -10,6 +10,7 @@ const {
   runRuntimeUp,
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
+  listGenerationReceipts,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
@@ -129,6 +130,14 @@ test("committed local compose is self-contained and never references a legacy ru
   );
   assert.match(
     compose,
+    /LM_MARKETING_PUBLICATION_CHAIN_ENABLED: \$\{LM_MARKETING_PUBLICATION_CHAIN_ENABLED:-false\}/,
+  );
+  assert.match(
+    compose,
+    /LM_MARKETING_PUBLICATION_CHAIN_AFTER: \$\{LM_MARKETING_PUBLICATION_CHAIN_AFTER:-\}/,
+  );
+  assert.match(
+    compose,
     /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop\}/,
   );
   assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
@@ -200,6 +209,30 @@ test("daily marketing generation becomes due at 10:15 JST and never before", () 
     marketingGenerationDueDate(Date.parse("2026-07-30T14:59:00.000Z")),
     "2026-07-30",
   );
+});
+
+test("publication chain scans only one tenant and an explicit non-backfill window", async () => {
+  const calls = [];
+  const pool = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      return { rows: [{ receipt: { kind: "marketing_daily_generation" } }] };
+    },
+  };
+  const rows = await listGenerationReceipts(pool, {
+    tenantId: "tenant-a",
+    after: "2026-08-01T00:00:00.000Z",
+  });
+
+  assert.deepEqual(rows, [{ kind: "marketing_daily_generation" }]);
+  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
+  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
+  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
+  assert.match(calls[0].sql, /LIMIT 100/);
+  assert.deepEqual(calls[0].params, [
+    "tenant-a",
+    "2026-08-01T00:00:00.000Z",
+  ]);
 });
 
 test("capability worker completes a registered financial report with only its safe receipt", async () => {
