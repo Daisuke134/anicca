@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10E",
+  "status": "implementation_verified_pending_ci",
+  "observed_at": "2026-07-29T12:46:19Z",
+  "branch": "feat/job-workday-verification-10e",
+  "implementation_commit": "91ecf920db0808982d0a164cbec9427c9693b046",
+  "pull_request": {
+    "number": 1316,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1316",
+    "ci_run": null,
+    "merge_commit": null
+  },
+  "red_test": {
+    "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_operations.py apps/job-search-loop/tests/test_workday_credentials.py apps/job-search-loop/tests/test_workday_verification.py -v",
+    "result": "failed as expected",
+    "failures": [
+      "account verification classified as irrelevant",
+      "verification thread omitted by deterministic prefilter",
+      "known_tenants absent",
+      "workday_verification module absent"
+    ]
+  },
+  "tests": {
+    "focused": {
+      "ran": 15,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 161,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 7,
+      "failures": 0
+    }
+  },
+  "contract": {
+    "trusted_sender_domain": "myworkday.com",
+    "required_scheme": "https",
+    "embedded_url_credentials_allowed": false,
+    "required_host_match": "exact private credential-store tenant",
+    "required_path_shape": "/.../activate/<token>",
+    "valid_url_count": 1,
+    "persisted_url": false,
+    "persisted_url_hash": true,
+    "navigation_states": [
+      "claimed",
+      "navigation_started",
+      "opened",
+      "navigation_unknown"
+    ],
+    "retry_after_navigation_started": false,
+    "receipt_contains_token": false
+  },
+  "real_email_shape": {
+    "source": "authenticated read-only Gmail history",
+    "message_id_committed": false,
+    "sender_shape": "tenant label at myworkday.com",
+    "subject": "Verify your candidate account",
+    "link_shape": "exact Workday tenant /site/activate/<redacted>",
+    "activation_url_or_token_persisted": false
+  },
+  "side_effects": {
+    "gmail_messages_modified": 0,
+    "activation_links_opened": 0,
+    "browser_pages_created": 0,
+    "ledger_claims": 0,
+    "applications_submitted": 0
+  },
+  "research_transport": {
+    "queries": [
+      "Workday verify candidate account activation email link",
+      "secure email verification link allowlist exactly once",
+      "Workday 候補者 アカウント 確認 メール 有効化 リンク"
+    ],
+    "firecrawl_result": "agent-owned configured token rejected as invalid",
+    "fallbacks": [
+      "authenticated Gmail read",
+      "direct official Python documentation",
+      "direct OWASP cheat sheet",
+      "existing Amazon Builders' Library source"
+    ]
+  },
+  "sources": [
+    {
+      "name": "Python URL parsing security",
+      "url": "https://docs.python.org/3/library/urllib.parse.html#url-parsing-security",
+      "quote": "The urlsplit() and urlparse() APIs do not perform validation of inputs."
+    },
+    {
+      "name": "OWASP Unvalidated Redirects and Forwards",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html",
+      "quote": "Sanitize input by creating a list of trusted URLs."
+    },
+    {
+      "name": "Amazon Builders' Library — Making retries safe with idempotent APIs",
+      "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+      "quote": "An idempotent operation is one where a request can be retransmitted or retried with no additional side effects."
+    }
+  ],
+  "remaining_order_10_gate": "Create the real CrowdStrike tenant account on an eligible daily pass, verify the new email through the fenced inbox path, reach a claim-ready application, and obtain a confirmed submission without inferred legal answers."
+}
