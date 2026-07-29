@@ -26,22 +26,22 @@ zsh, Git, `unittest`.
 - Modify: `apps/job-search-loop/job_search_loop/local_setup.py`
 - Modify: `apps/job-search-loop/tests/test_local_setup.py`
 
-- [ ] **Step 1: Add RED answers/interactive tests**
+- [x] **Step 1: Add RED answers/interactive tests**
 
   Require production validation, exact input preservation, placeholder rejection,
   mode `0600`, parent mode `0700`, and overwrite refusal.
 
-- [ ] **Step 2: Implement the smallest GREEN authoring module**
+- [x] **Step 2: Implement the smallest GREEN authoring module**
 
   Support terminal prompts and `--answers`; never infer legal facts and never read
   another candidate profile.
 
-- [ ] **Step 3: Reuse an already-active profile safely**
+- [x] **Step 3: Reuse an already-active profile safely**
 
   Permit the installer to validate and preserve a source profile that is already the
   destination, while retaining the different-source overwrite fence.
 
-- [ ] **Step 4: Run focused tests and push**
+- [x] **Step 4: Run focused tests and push**
 
 ### Task 2: Reproducible release builder
 
