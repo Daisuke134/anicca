@@ -131,7 +131,7 @@ function makeProductionAdapterBoundaries() {
       row.receipt = JSON.parse(params[2]);
       return { rows: [row] };
     }
-    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public\.lm_browser_jobs/i.test(sql)) {
+    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace, telegram_result_message_id FROM public\.lm_browser_jobs/i.test(sql)) {
       assert.equal(params[0], row.id);
       return { rows: [row] };
     }
@@ -258,7 +258,7 @@ test('production adapter uses real durable store and browser-job runtime from cl
     if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) return 'enqueue';
     if (/claim_lm_browser_job_by_id/i.test(sql)) return 'claim';
     if (/finish_lm_browser_job/i.test(sql)) return 'finish';
-    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace FROM public\.lm_browser_jobs/i.test(sql)) return 'read';
+    if (/SELECT id, uid, status, auth_marker_hash, receipt, trace, telegram_result_message_id FROM public\.lm_browser_jobs/i.test(sql)) return 'read';
     return 'trace';
   });
   assert.ok(steps.indexOf('enqueue') < steps.indexOf('claim'));
