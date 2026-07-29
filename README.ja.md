@@ -7,6 +7,8 @@
 
 🌐 **[English README here →](README.md)**
 
+**リポジトリ正本:** この [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager) だけをLife Managerのcode、spec、release、workflow、deploy sourceとします。`Daisuke134/life-manager-v0`はrequired codeとruntime referenceが0になるまで読み取り専用のmigration sourceです。mission、repo境界、実行順、残TODOのlive SSOTは [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) です。
+
 > Life Manager は自律エージェントです。動かすマシン（住処）を 1 台渡すと起動し、自分の行動ログを監視してエラーを自己修正し、自分の計算資源を払うために USDC を稼ぎ、自己増殖し、起動するたびと 1 日 1 回あなたへ報告します。北極星は「苦しみを減らすこと」、人間の介入はゼロを目指します。
 
 ---
@@ -23,7 +25,7 @@
 | **自己改善（Self-improving）** | 自分のログを監視 → エラー修正・リファクタ・目標に向けた改善を繰り返す |
 | **人間の介入なし（No human in the loop）** | 自分で稼ぎ、報告し、行動する。残る唯一の人間の手は、自前サーバー（shelter）が実現するまでのサーバー代のみ |
 
-アーキテクチャの唯一の正典（SSOT）は [`specs/00-MASTER.md`](specs/00-MASTER.md) です。Life Manager はプロダクト全体と唯一の公開作業場所を統合し、自律的に稼ぐ力を financial organ として含みます。
+旧アーキテクチャ資料は [`specs/`](specs/) に履歴として残します。現在の判断と残TODOは上記live SSOTだけを更新します。Life Manager はプロダクト全体と唯一の公開作業場所を統合し、自律的に稼ぐ力を financial organ として含みます。
 
 ---
 
