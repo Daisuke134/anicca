@@ -816,7 +816,7 @@ repo rename `8c.R`とproduct migration `8i`は完了済み。`8c.R`の双方unar
 
 - **現状維持（repo 分散）**: 最強論拠 = 移行コスト・稼働 loop を触る危険。棄却理由 = phone 開発の 1-repo 制約(一次ソース)と注意分散が致命。
 - **OSS を別repo/mirrorとして維持**: 棄却 = source of truthが増え、local/cloud parityとfresh clone証明を複雑化する。public `life-manager`を直接配る。
-- **旧「repo 名 = life-manager を棄却」の裁定**: 上書きして **採用**。whole productとpublic monorepoを同じ`Life Manager`にすると、利用者・contributor・local cloneのidentityが1つになる。AniccaはAI経済自立と苦しみを減らすagent/mission名として保持できるため、missionを失わない。collision-safe根拠と実行順→`2026-07-23-life-manager-repository-rename-design.md`。
+- **旧「repo 名 = life-manager を棄却」の裁定**: 上書きして **採用**。whole productとpublic monorepoを同じ`Life Manager`にすると、利用者・contributor・local cloneのidentityが1つになる。AniccaはAI経済自立と苦しみを減らすagent/mission名として保持できるため、missionを失わない。現行identity・collision後の境界・retirement順序は§0.0と§2.1だけを正本とする。
 - **俺が間違うとしたら最有力**: 「full-public monorepo」。provider automation recipeを公開するとplatform対策で腐る/ToSグレー。
   mitigation: secretやprivate stateを隠すのではなく、公開できないrecipeをoptional external provider adapterとして分離し、
   coreのclone/build/runtimeを壊さない。非公開repoを必須dependencyにはしない。
