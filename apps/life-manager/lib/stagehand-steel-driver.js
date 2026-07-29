@@ -433,11 +433,11 @@ function makeStagehandSteelDriver(options = {}) {
         }
 
         const actionTask = [
-          "On the currently selected provider page, perform exactly one reversible, zero-cost external action explicitly inside this delegated goal:",
+          "On the currently selected provider page, perform exactly one explicit, zero-cost, non-binding external action inside this delegated goal:",
           goal,
           "Do not search for or switch to another provider.",
-          "Do not spend money, accept paid terms, perform KYC, bypass a login/challenge/CAPTCHA/2FA,",
-          "or invent any personal value. Stop honestly if any of those are required.",
+          "Do not spend money, accept paid terms, enter a contract, make a legal attestation, perform KYC, bypass a login/challenge/CAPTCHA/2FA,",
+          "or invent any personal value or factual claim. Stop honestly if any of those are required.",
           "After the action, remain on the provider page that displays its result.",
           agentEmail
             ? `When the goal refers to the agent-owned email, use this exact runtime-only address: ${agentEmail}`
@@ -497,7 +497,7 @@ function makeStagehandSteelDriver(options = {}) {
               "Set activeAuthenticationForm=true only when a visible login, verification-code, OTP, or 2FA form is active.",
               "An Add to Calendar completion control with no active registration/authentication form may coexist with optional email verification used only to manage an already-completed registration.",
               "A pending, check-email, error, login, challenge, payment, active registration form, or active authentication form is otherwise not confirmed.",
-              "Return its status, confirmation identifier if present, and a short provider status phrase.",
+              "Return its status, confirmation identifier if present, and copy a short exact provider-authored status phrase. Do not infer success from the attempted action.",
             ].join(" "),
         receiptSchema,
       );
@@ -509,12 +509,21 @@ function makeStagehandSteelDriver(options = {}) {
       const explicitSuccess = /\b(?:you(?:'|’)re in|registration confirmed|registered|booking confirmed|rsvp confirmed|success)\b/i.test(
         providerText,
       );
+      const terminalActionCompletion = [
+        /\b(?:booking|appointment|reservation)\s+confirmed\b/i,
+        /\b(?:message|inquiry|request)\s+(?:sent|received)\b/i,
+        /\breceived your (?:inquiry|application|submission|request)\b/i,
+        /\b(?:application|submission)\s+(?:submitted|received)\b/i,
+        /\bthank you for (?:contacting|your (?:inquiry|application|submission))\b/i,
+      ].some((pattern) => pattern.test(providerText));
       const managementCompletion = /\badd to calendar\b/i.test(handoffText)
         && /\bverify email\b/i.test(handoffText)
         && !activeRegistrationForm
         && !activeAuthenticationForm;
-      const strongCompletion = explicitSuccess || managementCompletion;
-      const hardFailure = /\b(?:failed|error|not confirmed)\b|失敗|未完了/i.test(handoffText);
+      const strongCompletion = explicitSuccess || terminalActionCompletion || managementCompletion;
+      const hardFailure = /\b(?:failed|error|not confirmed|not sent|not submitted|not received|unsuccessful|rejected|declined)\b|失敗|未完了/i.test(
+        handoffText,
+      );
       const pendingWithoutCompletion = /\bpending\b/i.test(handoffText) && !strongCompletion;
       const negated = hardFailure || pendingWithoutCompletion;
       const blockingVerification = !strongCompletion &&
