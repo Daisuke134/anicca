@@ -10,3 +10,4 @@ scripts/*
 !scripts/browser-auth-production-e2e.js
 !scripts/browser-auth-luma-bootstrap.js
 !scripts/browser-auth-tenant-isolation-e2e.js
+!scripts/browser-matrix-tally-bootstrap.js
