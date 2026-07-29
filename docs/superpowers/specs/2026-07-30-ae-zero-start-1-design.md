@@ -60,7 +60,8 @@ scale with tenants, contradicts portable runtime).
 
 - Per-tenant key files under `${LM_DATA_ROOT:-~/.anicca}/wallets/<uid>/base.json`
   and `.../solana.json`, mode exactly `0600`, written atomically
-  (`tmp+rename`), refused if pre-existing (idempotent: pre-existing file +
+  and non-clobbering (`tmp+fsync+link(2)`; link fails `EEXIST` — rename(2)
+  would silently overwrite), refused if pre-existing (idempotent: pre-existing file +
   matching DB address = already provisioned, skip).
 - DB stores public addresses + `secret://lm-agent-wallet/<uid>/base` style
   references only, resolved through the existing secret provider seam
