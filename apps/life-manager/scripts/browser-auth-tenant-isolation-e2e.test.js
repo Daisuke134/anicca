@@ -117,11 +117,13 @@ test("two encrypted tenant contexts survive fresh-process reads without cross-re
 test("a failed cross-tenant boundary still removes both controlled rows and closes the database", async () => {
   const { calls, deps } = fixture({ crossRead: false });
 
-  await assert.rejects(
-    runBrowserAuthTenantIsolationE2E({ deps }),
-    /tenant isolation unavailable/,
+  const failure = await runBrowserAuthTenantIsolationE2E({ deps }).then(
+    () => null,
+    (error) => error,
   );
 
+  assert.equal(failure.message, "browser auth tenant isolation unavailable");
+  assert.equal(failure.code, "CROSS_READ");
   assert.equal(calls.filter(([name]) => name === "cleanup").length, 1);
   assert.equal(calls.find(([name]) => name === "cleanup")[1], 2);
   assert.deepEqual(calls.at(-1), ["close"]);
