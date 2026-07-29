@@ -36,6 +36,10 @@ const PORTABLE_RUNTIME_FILES = new Set([
   ".gitkeep",
 ]);
 
+const VERIFIED_VENDOR_ROOTS = [
+  "skills/capafy-autopublish/vendor",
+];
+
 function git(root, args, encoding = "utf8") {
   return execFileSync("git", args, {
     cwd: root,
@@ -63,6 +67,10 @@ function isActivePath(path) {
   return ACTIVE_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
+function isVerifiedVendorPath(path) {
+  return VERIFIED_VENDOR_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
 function isWithinRoot(root, candidate) {
   const rel = relative(root, candidate);
   return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel));
@@ -71,10 +79,21 @@ function isWithinRoot(root, candidate) {
 function sourceRootViolation(text) {
   const forbidden = [
     /\/Users\/[^/\s"'`]+/u,
-    /\/home\/[^/\s"'`]+\/(?:profitable-claude|anicca-project|anicca-dais|\.openclaw)(?:\/|$)/u,
-    /(?:~|\$HOME)\/profitable-claude(?:\/|$)/u,
-    /(?:~|\$HOME)\/anicca-project(?:\/|$)/u,
-    /(?:~|\$HOME)\/\.openclaw(?:\/|$)/u,
+    /\/home\/[^/\s"'`]+\/(?:profitable-claude|anicca(?:-oss|-project)?|anicca-dais|\.openclaw)(?=[/}\s"'`]|$)/u,
+    /(?:~|\$HOME)\/anicca(?:-oss)?(?=[/}\s"'`]|$)/u,
+    /(?:~|\$HOME)\/profitable-claude(?=[/}\s"'`]|$)/u,
+    /(?:~|\$HOME)\/anicca-project(?=[/}\s"'`]|$)/u,
+    /(?:~|\$HOME)\/\.openclaw(?=[/}\s"'`]|$)/u,
+    /\/opt\/life-manager(?=[/}\s"'`]|$)/u,
+  ];
+  return forbidden.some((pattern) => pattern.test(text));
+}
+
+function personalRuntimeDefaultViolation(text) {
+  const forbidden = [
+    /--target(?:=|\s+)(?:"|')?\d{6,}/u,
+    /(?:TELEGRAM|CHAT)[A-Z0-9_]*(?:=|:-)(?:"|')?\d{6,}/u,
+    /\b(?!(?:you|user|example)@)[A-Za-z0-9._%+-]+@gmail\.com\b/iu,
   ];
   return forbidden.some((pattern) => pattern.test(text));
 }
@@ -157,11 +176,21 @@ export function verifyRepository(inputRoot) {
       continue;
     }
     const bytes = readFileSync(absolute);
-    if (looksTextual(entry.path, bytes) && sourceRootViolation(bytes.toString("utf8"))) {
+    const isFirstPartyText =
+      !isVerifiedVendorPath(entry.path) && looksTextual(entry.path, bytes);
+    const text = isFirstPartyText ? bytes.toString("utf8") : "";
+    if (isFirstPartyText && sourceRootViolation(text)) {
       violations.push({
         code: "forbidden_source_root",
         path: entry.path,
         detail: "active source depends on a developer-local root",
+      });
+    }
+    if (isFirstPartyText && personalRuntimeDefaultViolation(text)) {
+      violations.push({
+        code: "personal_runtime_default",
+        path: entry.path,
+        detail: "active source embeds a user's messaging or mail destination",
       });
     }
   }

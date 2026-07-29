@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # Unit tests for the clip-promote slot harness: (1) discover emits a valid one-line JSON + exit 0;
 # (2) the portable watchdog trips to 124 on a blocking step (REQ-9); (3) FIND-301 — the SAME PII env
 # var that makes a direct record.mjs call THROW is stripped by `env -i`, so the RECORD subprocess records.
 set -u
-SK="$HOME/anicca/skills/earn/clip-promote"
+SK="$LIFE_MANAGER_REPO/skills/earn/clip-promote"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 NODE=/opt/homebrew/bin/node; [ -x "$NODE" ] || NODE=node
 PASS=0; FAIL=0

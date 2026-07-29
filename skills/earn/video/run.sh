@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # earn/video — faceless-video earn SLOT entrypoint for the ONE loop (run-skill.mjs spawns this).
 # Does EXACTLY ONE bounded state-machine transition per wake (idempotent), prints a one-line JSON
 # result on stdout, exit 0. Slot contract: no human, 5-gate + record-earn (real USDC only), bounded.
 # The whole faceless-video lifecycle (create→warmup→affiliate-link@day7→post→record) is loop-driven;
 # EVERY step incl. the affiliate link is a transition here — never a manual後工程.
 set -uo pipefail
-SK="$HOME/anicca/skills/earn/video"; PY=/opt/homebrew/bin/python3
+SK="$LIFE_MANAGER_REPO/skills/earn/video"; PY=/opt/homebrew/bin/python3
 # SHARED-1: the free VERIFIED posting path is poster.py (earn/marketing-engine), not the retired
 # post_reel.py web composer (structural dead end, IG silently drops automated web posts). It needs
 # the instagrapi package, so it always runs under this dedicated venv (self-healed below, shared
@@ -14,9 +17,9 @@ INSTA_VENV="$HOME/.cache/instagrapi-venv"
 INSTA_PY="$INSTA_VENV/bin/python"
 export PATH="$HOME/.local/bin:$PATH"
 # Delegates to the shared helper (anicca-spawn-identity-resolution-fix REQ-003/FIND-001) instead of
-# sourcing $HOME/.openclaw/.env directly under `set -a`, which would otherwise clobber this caller's
+# sourcing $HOME/.local/state/life-manager/.env directly under `set -a`, which would otherwise clobber this caller's
 # per-instance ANICCA_HOME with the automaton's own.
-. "$HOME/anicca/skills/_shared/lib/load-instance-env.sh"
+. "$LIFE_MANAGER_REPO/skills/_shared/lib/load-instance-env.sh"
 TIMEOUT="${SKILL_TIMEOUT_S:-900}"
 DRY="${EARN_VIDEO_DRY:-0}"
 HANDLE="${EARN_VIDEO_HANDLE:-money_blueprintdaily}"
@@ -142,7 +145,7 @@ print('1' if ok else '0')" 2>/dev/null)
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
     VFYBUD=$(( TIMEOUT / 10 )); GENBUD=$(( TIMEOUT * 4 / 10 )); POSTBUD=$(( TIMEOUT * 3 / 10 ))   # ★ FIND-604: sum=0.8×TIMEOUT, headroom for glue/writes so kills are exceptional, not the norm ★
-    PR="$HOME/anicca/skills/earn/marketing-engine/poster.py"
+    PR="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
     IG_PORT=9222
     if [ ! -x "$INSTA_PY" ]; then
       /opt/homebrew/bin/python3 -m venv "$INSTA_VENV" >/tmp/ev-insta-venv.log 2>&1

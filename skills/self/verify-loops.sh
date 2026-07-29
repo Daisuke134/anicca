@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # verify-loops.sh — proves the 3 loops produce REAL side-effects (not just ALIVE). Anti-fake: reads only observable
 # artifacts AND, when an artifact records a URL, actually CURLS it to confirm the thing is live (FIND-007) — so a
 # fabricated log line cannot pass. Never trusts a loop's STATE self-claim.
@@ -18,17 +21,17 @@ liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
 
 echo "=== LOOP REAL-SIDE-EFFECT VERIFICATION ($(date '+%F %H:%M')) ==="
 # 1 CAPAFY: a skill actually published + the newest listing URL actually live
-PUB="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
+PUB="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/published.jsonl"
 echo "[capafy]  published: $(count "$PUB") skills | newest-line: $(fresh "$PUB") | live-check: $(liveurl "$PUB")"
 echo "          → PASS only if count grows daily AND newest listing URL is LIVE"
 # 2 REDDIT: a real post made + its URL live + an account exists
-ACC="$HOME/.cloak/reddit-accounts.json"; POSTS="$HOME/anicca/skills/self/reddit-loop/state/posts.jsonl"
+ACC="$HOME/.cloak/reddit-accounts.json"; POSTS="$LIFE_MANAGER_REPO/skills/self/reddit-loop/state/posts.jsonl"
 NACC=0; [ -f "$ACC" ] && NACC="$(python3 -c "import json;d=json.load(open('$ACC'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
 echo "[reddit]  accounts: $NACC | posts: $(count "$POSTS") | newest-post: $(fresh "$POSTS") | live-check: $(liveurl "$POSTS")"
 echo "          → PASS only if posts.jsonl grows AND newest comment URL is LIVE"
 # 3 LM: improving (fresh pass + report) — revenue truth is Stripe (separate), no daily artifact to curl
-LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
-echo "[lm]      last-pass: $(fresh "$LMHB") | reports: $(grep -c 'loop=life-manager' "$HOME/.openclaw/logs/loop-report.log" 2>/dev/null||echo 0)"
+LMHB="$HOME/.local/state/life-manager/state/.life-manager-loop-last-pass"
+echo "[lm]      last-pass: $(fresh "$LMHB") | reports: $(grep -c 'loop=life-manager' "$HOME/.local/state/life-manager/logs/loop-report.log" 2>/dev/null||echo 0)"
 echo "          → PASS only if a fresh pass + a real recorded funnel change (revenue via Stripe verify)"
 # --- REQ-LV-040/104: Cadence Contract loops (clip/affiliate/video/gig/bounty/pm-earner/
 # founder-loop, + clip-promote's own independent status). REPLACES the old fresh()/stale_hrs()
@@ -36,7 +39,7 @@ echo "          → PASS only if a fresh pass + a real recorded funnel change (r
 # fresh() unchanged (REQ-LV-104, out of this feature's scope). "did today's contracted cadence
 # actually happen" (cadence.py, pure) rather than "is the artifact recent" (the old fresh() bug
 # class G1 caught: a loop that ran once and then died could still read as healthy).
-SELF_DIR="${VERIFY_LOOPS_SELF_DIR:-$HOME/anicca/skills/self}"
+SELF_DIR="${VERIFY_LOOPS_SELF_DIR:-$LIFE_MANAGER_REPO/skills/self}"
 cadence_line() {
   local loop="$1"
   python3 "$SELF_DIR/cadence-evidence.py" status "$loop" 2>/dev/null \
@@ -52,8 +55,8 @@ echo "[pm-earner]   $(cadence_line pm-earner)"
 echo "[founder-loop] $(cadence_line founder-loop)"
 # clip-promote: independent status (REQ-LV-120), NOT a Cadence Contract — no fixed posting
 # cadence exists for campaign-dependent promote.fun payouts.
-CLIP_PROMOTE_LEDGER="${EARN_LEDGER:-$HOME/.openclaw/state/clip-earn-ledger.jsonl}"
-CLIP_PROMOTE_STATUS_MJS="${VERIFY_LOOPS_CLIP_PROMOTE_STATUS_MJS:-$HOME/anicca/skills/earn/clip-promote/clip-promote-status.mjs}"
+CLIP_PROMOTE_LEDGER="${EARN_LEDGER:-$HOME/.local/state/life-manager/state/clip-earn-ledger.jsonl}"
+CLIP_PROMOTE_STATUS_MJS="${VERIFY_LOOPS_CLIP_PROMOTE_STATUS_MJS:-$LIFE_MANAGER_REPO/skills/earn/clip-promote/clip-promote-status.mjs}"
 clip_promote_line() {
   TODAY_JST="$(TZ=Asia/Tokyo date +%F)" node --input-type=module -e "
 import { clipPromoteStatus } from '$CLIP_PROMOTE_STATUS_MJS';
@@ -74,5 +77,5 @@ echo "--- self-fix result markers (autonomous fixes) ---"
 # exhausted, #995) was silently invisible in every report. All 10 Cadence Contract + non-cadence
 # loops self-fix.sh drives are listed here now (never a subset — a marker file simply won't exist
 # for a loop that hasn't been escalated yet, which is itself honest information).
-for L in clip-loop affiliate-loop video-loop gig-loop bounty-loop pm-earner-loop founder-loop capafy-loop reddit-loop life-manager-loop; do r="$HOME/.openclaw/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
-echo "--- loop-report tail (real executions) ---"; tail -4 "$HOME/.openclaw/logs/loop-report.log" 2>/dev/null
+for L in clip-loop affiliate-loop video-loop gig-loop bounty-loop pm-earner-loop founder-loop capafy-loop reddit-loop life-manager-loop; do r="$HOME/.local/state/life-manager/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
+echo "--- loop-report tail (real executions) ---"; tail -4 "$HOME/.local/state/life-manager/logs/loop-report.log" 2>/dev/null

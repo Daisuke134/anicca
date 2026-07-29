@@ -16,7 +16,7 @@ Wave 1 is dry-run-only and runs autonomously. No human reads, eyeballs, or taps 
 3. Type `GOOGLE_LOGIN_EMAIL`, Enter, type `GOOGLE_LOGIN_PASSWORD`, Enter.
 4. If a 2-step challenge appears:
    - `GOOGLE_TOTP_SECRET` present → `oathtool --totp -b "$GOOGLE_TOTP_SECRET"` → type code.
-   - Else → `hermes chat -q --model <mini>` reads the latest 2-step email at `keiodaisuke@gmail.com` and returns the 6-digit code → type code.
+   - Else → `hermes chat -q --model <mini>` reads the latest 2-step email at `user@example.com` and returns the 6-digit code → type code.
 5. Re-probe cookie. If present → exit 0.
 
 ## Hard-block (only — HARD RULE #-2)

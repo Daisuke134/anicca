@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # VSDD oracle for record-earn.mjs (G1.1-A2, external-inflow model). THE GOAL: an earning is ONLY external USDC credited
 # to the founder wallet (from ∉ my wallets), summed by block cursor — a self-transfer can NEVER fabricate an earning.
 # Plus all sprint-1..5 anti-fake invariants (seam-gating, wallet pin, ledger realpath, env-independent prod root,
 # fail-closed, atomic cursor advance).
 set -uo pipefail
-M="/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs"
+M="$LIFE_MANAGER_REPO/skills/self/founder-loop/record-earn.mjs"
 FW="0x810f6d61f7606deee2657d3083e150a222bc29c5"
 A3="0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"   # automaton = MY wallet (internal)
 EXT="0x1111111111111111111111111111111111111111" # external payer
@@ -21,7 +24,7 @@ for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_CURSOR FOUNDER_BLO
 done
 ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: cursor written atomically (renameSync)"
 ok "$(grep -q 'realpathSync(FOUNDER_DIR)' <<<"$src" && echo 1 || echo 0)" "STATIC: ledger realpath symlink-deref — INV-3"
-ok "$(grep -qF ': "/Users/anicca/.anicca-founder"' <<<"$src" && echo 1 || echo 0)" "STATIC: prod root is an env-independent literal — FIND-401"
+ok "$(grep -qF ': "$HOME/.anicca-founder"' <<<"$src" && echo 1 || echo 0)" "STATIC: prod root is an env-independent literal — FIND-401"
 ok "$(grep -q 'MY_WALLETS' <<<"$src" && echo 1 || echo 0)" "STATIC: external-payer check (MY_WALLETS) present — INV-7"
 
 # ---------- BEHAVIORAL ----------
@@ -62,7 +65,7 @@ ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-1 pin: non-expected wallet reject
 
 # 8. INV-3 dashboard render path rejected
 T="$(mkdir_dir "$FW")"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_LEDGER=/Users/anicca/anicca/runtime/dashboard/earn.jsonl FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_LEDGER=$LIFE_MANAGER_REPO/runtime/dashboard/earn.jsonl FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-3: runtime/dashboard ledger rejected (rc=$rc)"
 
 # 9. INV-3 symlink escape rejected

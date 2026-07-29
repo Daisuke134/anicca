@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.verify-loops-audit</string>
-  <key>ProgramArguments</key><array><string>/bin/bash</string><string>/Users/anicca/anicca/skills/self/verify-loops-audit.sh</string></array>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/self/verify-loops-audit.sh</string></array>
   <key>StartInterval</key><integer>21600</integer><key>ThrottleInterval</key><integer>300</integer>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/verify-loops-audit.out.log</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/verify-loops-audit.err.log</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/verify-loops-audit.out.log</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/verify-loops-audit.err.log</string>
 </dict></plist>

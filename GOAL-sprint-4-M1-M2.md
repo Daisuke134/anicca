@@ -14,7 +14,7 @@ Done = ALL of:
 - `jq 'select(.roi_jpy_realized > 0)' ~/loops/gig/roi.jsonl` returns ≥1 row AND `jq 'select(.status | test("検収|支払|paid|completed"))' ~/gig/earnings.jsonl` returns a matching row.
 - Fresh-context `vcsdd:vcsdd-adversary` PASS on final integrated dispatcher, 0 new findings, 5/5 dims green.
 - Grep guards: 0 hits for `hashlib\.sha256.*pubkey|tmux\s+kill|kill-session|kill-server|--stop|is_dormant\s*\(` in dispatcher; 0 for `os\.system\(|shell=True|osascript|telegram|slack|twilio|sudo|SecKeychain|Touch-ID` in any new file.
-- Email report via Resend to daisukenarita53@gmail.com, subject `Anicca sprint-4 M1+M2 complete — first real ¥`, body: ledger delta, adversary trajectories, pytest count, row hashes, sprint-5 handoff.
+- Email report via Resend to recipient@example.com, subject `Anicca sprint-4 M1+M2 complete — first real ¥`, body: ledger delta, adversary trajectories, pytest count, row hashes, sprint-5 handoff.
 
 Hard constraints:
 - INV-1 / INV-P1: proactive-loop NEVER restarts a healthy tmux core; restart only when Issue.kind == "tmux_dead".

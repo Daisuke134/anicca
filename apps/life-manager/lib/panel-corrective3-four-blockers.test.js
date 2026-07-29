@@ -42,7 +42,7 @@ function controlCenterFixture() {
     async assertCurrentScope(scope) { return scope.uid === "browser-u1" && scope.chatId === "101"; },
     async readUser() {
       return {
-        uid: "browser-u1", name: "Browser User", telegram_chat_id: "101", phone: "+81000000000",
+        uid: "browser-u1", name: "Browser User", telegram_chat_id: "101", phone: "+447700900102",
         calendar_provider: null, payout_destination: null, call_language: state.call_language,
         wake_policy: state.wake_policy,
       };

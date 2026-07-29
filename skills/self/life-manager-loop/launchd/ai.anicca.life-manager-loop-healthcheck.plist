@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.life-manager-loop-healthcheck</string>
-  <key>ProgramArguments</key><array><string>/bin/bash</string><string>/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh</string></array>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh</string></array>
   <key>StartInterval</key><integer>300</integer><key>ThrottleInterval</key><integer>60</integer>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/life-manager-loop-launchd.out.log</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/life-manager-loop-launchd.err.log</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/life-manager-loop-launchd.out.log</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/life-manager-loop-launchd.err.log</string>
 </dict></plist>

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
 #
 # This is the "zero parent intervention" implementation: instead of a human tracking the
@@ -12,14 +15,14 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 PY=/opt/homebrew/bin/python3
-STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
+STATE="$HOME/.local/state/life-manager/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
-DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
-EARN_LEDGER="$HOME/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
-KEY_GATE="$HOME/.openclaw/skills/capafy-autopublish/scripts/key_health_gate.sh"
-IG_SCRIPT="$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
-ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$HOME/anicca/skills/earn/capafy-marketing/account_state.sh}"
+DAILY_LOG="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log"
+EARN_LEDGER="$LIFE_MANAGER_REPO/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
+KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
+IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
+ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/account_state.sh}"
 # shellcheck source=account_state.sh
 . "$ACCOUNT_STATE_HELPER"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
@@ -32,8 +35,8 @@ WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
-INSTA_POSTER="$HOME/anicca/skills/earn/marketing-engine/poster.py"
-COOKED_MARKER="$HOME/.openclaw/state/.capafy-ig-account-cooked"
+INSTA_POSTER="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
+COOKED_MARKER="$HOME/.local/state/life-manager/state/.capafy-ig-account-cooked"
 # Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
 # MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
 WARMUP_DAYS_REQUIRED=3
@@ -55,8 +58,8 @@ write_ig_plist() {
   <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
   <key>RunAtLoad</key><false/>
-  <key>StandardOutPath</key><string>$HOME/.openclaw/logs/capafy-ig-marketing-daily.out</string>
-  <key>StandardErrorPath</key><string>$HOME/.openclaw/logs/capafy-ig-marketing-daily.err</string>
+  <key>StandardOutPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.out</string>
+  <key>StandardErrorPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.err</string>
 </dict></plist>
 PLIST
 }
@@ -88,7 +91,7 @@ elif [ ! -x "$INSTA_PY" ]; then
   VERIFY_JSON='{"ok":false,"error":"instagrapi venv missing"}'
   VERIFY_RC=2
 else
-  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.openclaw/logs/capafy-goal-monitor.err.log")"
+  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor.err.log")"
   VERIFY_RC=$?
 fi
 ACCOUNT_COOKED="$($PY - "$VERIFY_JSON" <<'PY' 2>/dev/null
@@ -237,7 +240,9 @@ RC=$?
 BODY="$(cat /tmp/capafy_goal_monitor_body.txt 2>/dev/null)"
 # telegram daily report (best-effort; never blocks the monitor)
 if [ -n "$BODY" ]; then
-  openclaw message send --channel telegram --target 8547730585 --message "$BODY" --json >/dev/null 2>&1 || true
+  openclaw message send --channel telegram \
+    --target "${CAPAFY_TELEGRAM_TARGET:-${TELEGRAM_ALERT_CHAT_ID:?CAPAFY_TELEGRAM_TARGET or TELEGRAM_ALERT_CHAT_ID is required}}" \
+    --message "$BODY" --json >/dev/null 2>&1 || true
 fi
 cat /tmp/capafy_goal_monitor.json 2>/dev/null
 exit 0

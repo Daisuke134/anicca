@@ -5,7 +5,7 @@
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ ! -d "$DIR/node_modules/@x402/extensions" ]; then
-  REPO="${ANICCA_REPO:-$HOME/anicca}"
+  REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null)}}"
   [ -d "$REPO/skills/earn/x402-sell/node_modules/@x402/extensions" ] \
     && DIR="$REPO/skills/earn/x402-sell"
 fi

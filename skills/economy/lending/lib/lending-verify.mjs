@@ -1,6 +1,6 @@
 // economy/lending/lib/lending-verify.mjs — effectful, EVM-JSON-RPC-backed repayment verification
 // (REQ-108) and provisional-disbursement reconciliation (REQ-106). Reuses record-earn.mjs's own
-// already-hardened pattern (~/anicca/skills/self/founder-loop/record-earn.mjs lines 56, 65-72, 82-88):
+// already-hardened pattern (__REPO_ROOT__/skills/self/founder-loop/record-earn.mjs lines 56, 65-72, 82-88):
 // finalized-block-only scanning discipline, TRANSFER_TOPIC match, exact zero-padded-address equality —
 // LITERALLY reused for the `to` side (that file's own FIND-704 fix), and EXTENDED, as a new sound
 // application, to the `from` side (that file's own `from` topic is an unchecked substring — resolves

@@ -149,7 +149,7 @@ ground-truth URLs below using the DETERMINISTIC navigation helper — do NOT nav
 Bash/CDP calls. For EACH ground-truth URL below, call this exact script once, using pass_id "{pass_id}"
 (the SAME pass_id for every call this round) and seq 01, 02, 03... in the SAME order as the URLs are
 listed:
-  python3 ~/anicca/skills/earn/gig/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
+  python3 __REPO_ROOT__/skills/earn/gig/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
 This performs a real Page.navigate, waits for the page to finish loading, captures a screenshot, and
 appends a trajectory row under ~/gig/trajectory/{pass_id}/. The caller INDEPENDENTLY (deterministically,
 without trusting your report) verifies these trajectory rows exist before your verdict is accepted — a

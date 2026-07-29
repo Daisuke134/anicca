@@ -171,7 +171,7 @@ export function promote(genome, { canonicalPath = CANONICAL_BASELINE_PATH, cwd }
   const id = computeGenomeId(genome);
   fs.writeFileSync(canonicalPath, JSON.stringify(genome, null, 2) + "\n");
   git(["add", "--", canonicalPath], repoRoot);
-  // Path-scoped commit (repo-safety): `~/anicca` is a shared checkout other processes may also be
+  // Path-scoped commit (repo-safety): `the canonical checkout` is a shared checkout other processes may also be
   // touching concurrently (observed live — unrelated healthcheck scripts sitting modified in the
   // working tree). `git commit -- <path>` commits ONLY changes to that pathspec regardless of
   // what else happens to be staged, so a promotion can never sweep unrelated changes into its

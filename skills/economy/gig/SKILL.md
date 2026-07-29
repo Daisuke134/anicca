@@ -73,7 +73,7 @@ ETH (not gasless) and only needs doing once per wallet, ever.
 
 **Franklin**: reachable via MCP the moment its `~/.blockrun/mcp.json` lists this server (`@blockrun/franklin`'s own
 `dist/mcp/config.js` MCP loader reads that file at startup). Snippet — pick the variant matching whether
-`feature/agent-economy` has been merged to `~/anicca`'s `main` yet:
+`feature/agent-economy` has been merged to `$LIFE_MANAGER_REPO`'s `main` yet:
 
 ```jsonc
 // Variant A — AFTER merge to main (skills/economy/gig lives at the normal repo path)
@@ -82,7 +82,7 @@ ETH (not gasless) and only needs doing once per wallet, ever.
     "anicca-gig": {
       "transport": "stdio",
       "command": "node",
-      "args": ["/Users/anicca/anicca/skills/economy/gig/mcp-server.mjs"]
+      "args": ["$LIFE_MANAGER_REPO/skills/economy/gig/mcp-server.mjs"]
     }
   }
 }
@@ -95,7 +95,7 @@ ETH (not gasless) and only needs doing once per wallet, ever.
     "anicca-gig": {
       "transport": "stdio",
       "command": "node",
-      "args": ["/Users/anicca/anicca/.worktrees/agent-economy/skills/economy/gig/mcp-server.mjs"]
+      "args": ["$LIFE_MANAGER_REPO/.worktrees/agent-economy/skills/economy/gig/mcp-server.mjs"]
     }
   }
 }

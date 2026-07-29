@@ -1,4 +1,7 @@
 #!/bin/bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # launchd tick (every 30 min): bank the logins, then warm the server-side sessions so they
 # expire less often. Human-zero — reports only, never asks anyone to log in.
 #
@@ -8,10 +11,10 @@
 # but the CDP/web session itself rots). port/profile come from clip-accounts.json — never
 # hardcode them here, that file is the single source of truth for the account roster.
 set -uo pipefail
-V="$HOME/anicca/skills/browser/scripts/session_vault.py"
+V="$LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py"
 ACCOUNTS="$HOME/.cloak/clip-accounts.json"
 log(){ echo "$(date '+%F %T') session_vault_tick: $*" >&2; }
-. "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || true
+. "$LIFE_MANAGER_REPO/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || true
 
 # ── daily-driver (:9222) — unchanged behavior ──
 log "daily-driver: dump"
@@ -56,7 +59,7 @@ fi
 # itself enforces a 6h cooldown marker, so calling it unconditionally here on every tick is safe:
 # it silently no-ops (skipped:true) unless x.com is actually dead AND the cooldown has expired.
 if printf '%s' "$DEAD" | grep -q "x.com"; then
-  set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
+  set -a; . "$HOME/.local/state/life-manager/.env" 2>/dev/null; set +a
   log "x.com dead -> attempting relogin_x (rate-limited to 1/6h)"
   RELOGIN_OUT="$(python3 "$V" relogin_x || true)"
   echo "$RELOGIN_OUT"
@@ -137,7 +140,7 @@ else
   # These are EXCLUDED from browser warming above (a parallel web session is the churn vector,
   # v22) — instead their golden instagrapi session gets a read-only two-stage keepalive probe
   # (v24 #12: get_timeline_feed + launcher/sync ping, never logs in, poisons on bloks).
-  IG_POST="$HOME/anicca/skills/earn/marketing-engine/poster.py"
+  IG_POST="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
   jq -r '.[] | select((.session_owner // "") == "instagrapi" and (.status=="ready" or .status=="warming" or .status=="provisioned_pending_live_post")) | .handle' "$ACCOUNTS" |
   while IFS= read -r handle; do
     [ -z "$handle" ] && continue

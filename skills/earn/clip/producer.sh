@@ -15,7 +15,7 @@ set -uo pipefail
 # FIX-2 (2026-07-14): the encode scripts (pipeline/burn_captions/verify_clip/export_camofox_cookies)
 # used to live in ~/.claude/skills/earn-clip-rewards/scripts, which was moved to skills.disabled-2026-07-13
 # during floor-reduction → producer broke (no new clips since 07-11). Now they live HERE, next to
-# producer.sh in the canonical earner repo (~/anicca), so the path can never be broken by a skill disable.
+# producer.sh in the canonical earner repo (the canonical checkout), so the path can never be broken by a skill disable.
 SKILLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts"
 ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator"
 PY="$ENGINE/.venv/bin/python"

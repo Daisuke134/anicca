@@ -11,7 +11,7 @@ already proven live; bank/M-Pesa rails are account-gated (see SKILL.md / tasks #
 | JP bank 振込 | ⏳ code-ready | `gmo-furikomi.mjs` + `bank-payout-watcher.mjs` | gated on 法人/個人口座 (#51/#52/#53) |
 | M-Pesa mobile money | ⏳ verified rail | `kotani-payout.mjs` (TODO) | gated on Kotani onboarding (#37) |
 
-## Prereqs (env, never committed — ~/.openclaw/.env)
+## Prereqs (env, never committed — ~/.local/state/life-manager/.env)
 - `BLOCKRUN_WALLET_KEY` (or the anicca wallet private key) — funds the on-chain sends, own wallet only.
 - `CROSSMINT_API_KEY` + `CROSSMINT_CLIENT_KEY` — email-wallet rail.
 - A funded Base USDC balance in anicca's wallet (check before demo).
@@ -20,7 +20,7 @@ already proven live; bank/M-Pesa rails are account-gated (see SKILL.md / tasks #
 
 ## Demo A — on-chain wallet payout (fastest, fully autonomous)
 ```bash
-cd ~/anicca/skills/ubi
+cd $LIFE_MANAGER_REPO/skills/ubi
 # 1. confirm balance (before)
 node -e "import('../_shared/lib/usdc.mjs').then(m=>m.usdcBalance(process.env.ANICCA_WALLET)).then(console.log)"
 # 2. send a small real UBI to a demo recipient (anicca's own key signs; no human)
@@ -35,7 +35,7 @@ node -e "import('../_shared/lib/usdc.mjs').then(m=>m.usdcBalance(process.env.ANI
 ```bash
 # Recipient supplies only an email. Crossmint mints a custodial USDC wallet tied to that email and
 # funds it; the recipient later claims/withdraws. Trigger via the watcher path:
-cd ~/anicca/skills/ubi
+cd $LIFE_MANAGER_REPO/skills/ubi
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... CROSSMINT_API_KEY=... \
   node ubi-payout-watcher.mjs            # processes queued email recipients once
 # VERIFY: the recipient's email receives the Crossmint claim link; Crossmint console shows the USDC

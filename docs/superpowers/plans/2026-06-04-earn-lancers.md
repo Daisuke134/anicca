@@ -6,7 +6,7 @@
 
 **Goal (revised — scaffolding only):** Port the proven in-house Lancers earner (= the only existing skill that already submitted real ¥1万 proposals through `propose_confirm → propose_finish`) into the Hermes skills format at `anicca-oss/skills/anicca-earn-lancers/`, wire it to ONE daily Hermes cron, drive Camofox (`:9377`) with Google-login-canonical session for the apply flow autonomously, and prove a `--dry-run` end-to-end with 3 scored gigs WITHOUT submitting. **This plan does NOT close `#325`** — closing `#325` requires real submitted proposals + CFO bank deposit evidence, both produced by the Wave 2 follow-on plan (Task 13).
 
-**Architecture:** `anicca-earn-bounty` (already in `anicca-oss/skills/`) is the structural template — `SKILL.md` + `scripts/{run,scan,select,solve,submit}.sh` + `state/` + `data/` + `.gitignore`. We mirror that layout exactly. The actual apply logic ports verbatim from `~/.openclaw/skills/_archive/hybrid-v1/cfo-earner-lancers/scripts/run.sh` (= "Vue hidden-field set" pattern that proved out on JID `5550526/5550727/5550692` and got URLs `https://www.lancers.jp/work/propose_finish/<JID>`). Camofox is consumed strictly through its REST `:9377` per `~/.openclaw/skills/camofox-browser/SKILL.md` — no playwright, no Selenium. Login is Google OAuth via Camofox (HARD RULE: camofox > cloak > agent-browser); the Lancers session is the alias account `keiodaisuke+anicca@gmail.com` with `LANCERS_PASSWORD` (the one HARD-RULE-documented Google-login exception, already in `~/.openclaw/.env`). Hermes cron is invoked via `hermes cron create` with `--no-agent --script` (= cheap, no LLM per fire) per `hermes cron create --help` v0.12.0 — the scoring/templating LLM is invoked *inside* the script via `hermes chat -q` with `--model` pinned to a mini model (HARD RULE "OpenClaw cron は mini 主軸").
+**Architecture:** `anicca-earn-bounty` (already in `anicca-oss/skills/`) is the structural template — `SKILL.md` + `scripts/{run,scan,select,solve,submit}.sh` + `state/` + `data/` + `.gitignore`. We mirror that layout exactly. The actual apply logic ports verbatim from `~/.openclaw/skills/_archive/hybrid-v1/cfo-earner-lancers/scripts/run.sh` (= "Vue hidden-field set" pattern that proved out on JID `5550526/5550727/5550692` and got URLs `https://www.lancers.jp/work/propose_finish/<JID>`). Camofox is consumed strictly through its REST `:9377` per `~/.openclaw/skills/camofox-browser/SKILL.md` — no playwright, no Selenium. Login is Google OAuth via Camofox (HARD RULE: camofox > cloak > agent-browser); the Lancers session is the alias account `user+anicca@example.com` with `LANCERS_PASSWORD` (the one HARD-RULE-documented Google-login exception, already in `~/.openclaw/.env`). Hermes cron is invoked via `hermes cron create` with `--no-agent --script` (= cheap, no LLM per fire) per `hermes cron create --help` v0.12.0 — the scoring/templating LLM is invoked *inside* the script via `hermes chat -q` with `--model` pinned to a mini model (HARD RULE "OpenClaw cron は mini 主軸").
 
 **Tech Stack:** Hermes Agent v0.12.0+ (already booted by sister plan `2026-06-04-hermes-genesis-boot.md`) · Camofox REST `http://localhost:9377` (process already running, verified `/health` → `ok:true browserConnected:true`) · `bash` · `curl` · `jq` (`/opt/homebrew/bin/jq`) · `python3` (stdlib only — `json`, `urllib.parse`, `re`) · `git` · `~/.openclaw/.env` (read-only, never echoed) · existing in-house code (port-from path: `~/.openclaw/skills/_archive/hybrid-v1/cfo-earner-lancers/scripts/run.sh`, 246 lines, the proven version).
 
@@ -66,7 +66,7 @@ anicca-oss/                                              (this repo, committed)
 ~/.openclaw/.env                                         (read-only, NEVER echoed)
   GOOGLE_LOGIN_EMAIL=…             ← canonical Google identity (HARD RULE)
   GOOGLE_LOGIN_PASSWORD=…
-  LANCERS_EMAIL=keiodaisuke+anicca@gmail.com   ← documented HARD-RULE exception
+  LANCERS_EMAIL=user+anicca@example.com   ← documented HARD-RULE exception
   LANCERS_USERNAME=…
   LANCERS_PASSWORD=…
 ```
@@ -116,7 +116,7 @@ Run:
 grep -q "^GOOGLE_TOTP_SECRET=" /Users/anicca/.openclaw/.env 2>/dev/null \
   && echo "TOTP_AVAILABLE" || echo "TOTP_ABSENT (gog-gmail auto-read fallback will be used)"
 ```
-Expected: either line is acceptable. If absent, `login-check.sh` auto-reads the 2FA code from `keiodaisuke@gmail.com` via the existing gog-gmail MCP (no human in loop). If a real CAPTCHA element renders (= `iframe[src*="recaptcha"]` or `iframe[src*="hcaptcha"]` in the snapshot) — and ONLY then — record the exact rendered HTML and stop; that is the only HARD RULE #-2 genuine hard-block.
+Expected: either line is acceptable. If absent, `login-check.sh` auto-reads the 2FA code from `user@example.com` via the existing gog-gmail MCP (no human in loop). If a real CAPTCHA element renders (= `iframe[src*="recaptcha"]` or `iframe[src*="hcaptcha"]` in the snapshot) — and ONLY then — record the exact rendered HTML and stop; that is the only HARD RULE #-2 genuine hard-block.
 
 ---
 
@@ -870,7 +870,7 @@ Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/login-check.
 #   (a) If a TOTP challenge renders, use GOOGLE_TOTP_SECRET (Authy/OTP env) to
 #       compute the 6-digit code with `oathtool --totp -b "$GOOGLE_TOTP_SECRET"`
 #       and type it; OR
-#   (b) read the latest 2-step verification email at keiodaisuke@gmail.com
+#   (b) read the latest 2-step verification email at user@example.com
 #       via the gog-gmail MCP and type the code.
 # No "Dais reviews", no "tap on phone", no human eyeball — the agent drives.
 #
@@ -1007,12 +1007,12 @@ print(m.group(1) if m else "")
     fi
   fi
   #  - gog-gmail auto-read fallback path (no TOTP env)
-  #  Polls keiodaisuke@gmail.com for "Google" subject in the last 60s via
+  #  Polls user@example.com for "Google" subject in the last 60s via
   #  `hermes chat -q --skill gog-gmail "fetch latest Google 2-step code"`.
   #  The mini model returns the 6-digit code, which we then type.
   if [ -z "${GOOGLE_TOTP_SECRET:-}" ]; then
     GCODE=$(hermes chat -q --model "${LANCERS_SCORE_MODEL:-gpt-5.2-mini}" \
-      "Read the most recent email in keiodaisuke@gmail.com (last 90s) with subject containing 'Google' or '確認コード' or '2-step verification'. Reply with ONLY the 6-digit verification code, no prose. If none found, reply NONE." 2>/dev/null | tr -d ' \n\r' || true)
+      "Read the most recent email in user@example.com (last 90s) with subject containing 'Google' or '確認コード' or '2-step verification'. Reply with ONLY the 6-digit verification code, no prose. If none found, reply NONE." 2>/dev/null | tr -d ' \n\r' || true)
     if printf '%s' "$GCODE" | grep -Eq '^[0-9]{6}$'; then
       SNAP2=$(cf_snapshot "$TAB")
       G_REF=$(printf '%s' "$SNAP2" | "$PYTHON" -c '
@@ -1422,7 +1422,7 @@ Wave 1 is dry-run-only and runs autonomously. No human reads, eyeballs, or taps 
 3. Type `GOOGLE_LOGIN_EMAIL`, Enter, type `GOOGLE_LOGIN_PASSWORD`, Enter.
 4. If a 2-step challenge appears:
    - `GOOGLE_TOTP_SECRET` present → `oathtool --totp -b "$GOOGLE_TOTP_SECRET"` → type code.
-   - Else → `hermes chat -q --model <mini>` reads the latest 2-step email at `keiodaisuke@gmail.com` and returns the 6-digit code → type code.
+   - Else → `hermes chat -q --model <mini>` reads the latest 2-step email at `user@example.com` and returns the 6-digit code → type code.
 5. Re-probe cookie. If present → exit 0.
 
 ## Hard-block (only — HARD RULE #-2)
@@ -1607,7 +1607,7 @@ git push
 - `specs/16-RUNTIME-CODE-TRUTH.md` § 17 ("ONE RUNTIME = Hermes ... Camofox or Nous-Portal browser ... earn = Camofox → Lancers/Coconala gig apply+deliver") = the file structure and `_lib.sh` enforce "Camofox via REST :9377, no second browser". Hermes cron `--no-agent` + `hermes chat --model gpt-5.2-mini` inside the script keep the substrate decision intact.
 - CLAUDE.md HARD RULE #-2 "no human-loop excuses": ZERO human touchpoints in Wave 1 or Wave 2. `login-check.sh` runs Google login autonomously via `GOOGLE_LOGIN_EMAIL`+`GOOGLE_LOGIN_PASSWORD` env, with autonomous 2FA via `GOOGLE_TOTP_SECRET` (if present) OR `hermes chat -q --model <mini>` reading the gog-gmail mailbox. The ONLY recognized hard-block is a real CAPTCHA iframe (`recaptcha`/`hcaptcha`/`turnstile`) or a financial-broadcast prompt — both record the verbatim snapshot to `~/.hermes/state/earn-lancers-login-hardblock.json` without closing the earn task. No "Dais reviews", no "tap on phone", no "eyeball before pulling trigger" language remains anywhere in this plan or its child runbook/Wave 2 plan (codex round 2 X3).
 - HARD RULE browser order (camofox > cloak > agent-browser): the skill imports ONLY `:9377` (camofox). `cloakbrowser` / `agent-browser` are not referenced anywhere in the new files.
-- HARD RULE "Google login forever, `keiodaisuke@gmail.com` canonical, Lancers uses `keiodaisuke+anicca@gmail.com` + `LANCERS_PASSWORD`": `_lib.sh` reads env vars by their canonical names; `login-check.sh` Step 1 uses Google OAuth as the first path and only falls back to LANCERS_EMAIL+PASSWORD if the Google button is missing. No password is hard-coded; `redact()` masks values in any log line.
+- HARD RULE "Google login forever, `user@example.com` canonical, Lancers uses `user+anicca@example.com` + `LANCERS_PASSWORD`": `_lib.sh` reads env vars by their canonical names; `login-check.sh` Step 1 uses Google OAuth as the first path and only falls back to LANCERS_EMAIL+PASSWORD if the Google button is missing. No password is hard-coded; `redact()` masks values in any log line.
 - HARD RULE "OpenClaw cron は mini 主軸": cron uses `--no-agent` (zero LLM per fire); the only LLM inside the script is `hermes chat --model gpt-5.2-mini` for 3 scoring calls/day. The mini model name is overridable via `LANCERS_SCORE_MODEL` for cheaper alternatives (`deepseek-v4-flash`, `kimi-k2.6-mini`).
 
 **Placeholder scan:** none. Every step has the full file content, full command, and the exact expected output. The two values that the implementer fills (the cron schedule string `0 10 * * *` if Dais wants a different hour; the runbook's `--max-budget-jpy 1000` ceiling) are explicit numeric defaults with rationale, not TODOs.

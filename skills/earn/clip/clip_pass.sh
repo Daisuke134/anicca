@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # clip_pass.sh — ONE clip pass as a Reflexion prompt-chain (copied from gig_pass.sh; NeurIPS 2023
 # Reflexion: Actor = producer.sh + run.sh, Evaluator = clip-metrics, Self-Reflection = reflection.jsonl).
 # Each LLM step is a SEPARATE bounded claude sub-call with a short focused prompt + --no-session-persistence
@@ -7,7 +10,7 @@
 # ~/clips/{reflection.jsonl,playbook.json,clip-metrics.jsonl}.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-C="$HOME/anicca/skills/earn/clip"
+C="$LIFE_MANAGER_REPO/skills/earn/clip"
 CLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETING_ENGINE_DIR="$CLIP_SCRIPT_DIR/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
@@ -41,9 +44,9 @@ step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   # stdout is captured per-step (claude CLI prints errors to STDOUT, not stderr — observed
   # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
-  local out="$HOME/.openclaw/logs/clip-step-last.out"
+  local out="$HOME/.local/state/life-manager/logs/clip-step-last.out"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 env -u ANTHROPIC_API_KEY timeout "$timeout_seconds" "$CLAUDE" --model "$STEP_MODEL" --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG = the active clip account in ~/.cloak/clip-accounts.json, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+    -p "You are the Anicca clip earn-core (IG = the active clip account in ~/.cloak/clip-accounts.json, niche = AI / money / wealth). set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"
@@ -65,7 +68,7 @@ step "LEARN" "STEP LEARN (cold-start bible = docs/loop-engineering/47-cold-start
 # ── AFF-FIND (MON-5: find the affiliate/product to promote → offer.json → caption link) ──
 # Only runs when there is no fresh offer yet (finding an offer is not needed every pass).
 if [ ! -s "$STATE/offer.json" ]; then
-  step "AFF-FIND" "STEP AFF-FIND (MON-5): pick the affiliate/product this @aiclipsvault (niche AI/money/wealth) will promote, so we can monetize. Prefer, in order: (1) our OWN products (100%% margin, no signup) — the Anicca app or life manager, if a public link exists; (2) an INSTANT-signup high-commission affiliate: Digistore24 (2-min signup, no interview) or ClickBank, browse the marketplace, pick ONE offer that (a) matches AI/money/wealth, (b) has high commission (recurring SaaS 20-40%%/mo or 50-75%% RevShare digital), (c) is globally available. Use the AI's own email keiodaisuke+aiclips1@gmail.com for any signup (auto-read OTP via 'gog gmail'). Get the real affiliate LINK. Write ~/clips/offer.json = {network, offer_name, affiliate_link, commission, niche, joined:<true|false>, note}. If signup is blocked (captcha/verification you cannot pass this pass), still record the chosen offer + what is needed with joined:false. Be honest; do not invent a link."
+  step "AFF-FIND" "STEP AFF-FIND (MON-5): pick the affiliate/product this account will promote, so we can monetize. Prefer, in order: (1) the user's own products when a public link exists; (2) an instant-signup high-commission affiliate, after checking current terms. Use the runtime-configured LIFE_MANAGER_AFFILIATE_EMAIL for signup and read its OTP through the configured mail connector. Get the real affiliate link. Write the offer to the configured Life Manager state home with {network, offer_name, affiliate_link, commission, niche, joined, note}. If signup is blocked, record the chosen offer and exact blocker with joined:false. Never invent a link."
 fi
 
 # ── WARM (deterministic bookkeeping, not an LLM step: fresh accounts (status=="warming" in
@@ -120,7 +123,7 @@ if [ -z "$BIO_HANDLE" ]; then
   log "BIO: skip — no active handle"
 elif [ -x "$INSTA_PY" ]; then
   log "BIO: bio_step.py $BIO_HANDLE"
-  "$INSTA_PY" "$C/scripts/bio_step.py" --handle "$BIO_HANDLE" 2>>"$HOME/.openclaw/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
+  "$INSTA_PY" "$C/scripts/bio_step.py" --handle "$BIO_HANDLE" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
 else
   log "BIO: skip — instagrapi venv not present at $INSTA_PY"
 fi

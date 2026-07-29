@@ -15,8 +15,8 @@ import json, os, subprocess, sys, time
 
 CDP = os.path.expanduser("~/.agents/skills/ig-account-create/scripts/cdp.py")
 PY = "/opt/homebrew/bin/python3"
-IGLEDGER = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-ledger.jsonl")
-METRICS = os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-metrics.jsonl")
+IGLEDGER = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl")
+METRICS = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-metrics.jsonl")
 
 READ_JS = r'''(() => {
   const a=document.querySelector('article'); if(!a) return '{}';

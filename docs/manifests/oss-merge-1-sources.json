@@ -48,8 +48,28 @@
       "id": "anicca-dais",
       "repository": "Daisuke134/anicca-dais (private source-state repository; not a runtime dependency)",
       "commit": "d42e1da7ed455214cafd8ebbcc998bb17e865a71",
-      "disposition": "classified-not-imported",
-      "scope": "Personal OpenClaw configuration, credentials, memory, and live state remain outside the OSS product."
+      "disposition": "portable-source-absorbed",
+      "scope": "Portable booking, Capafy automation, browser fallback, and shared policy source are absorbed. Personal configuration, credentials, account identifiers, memory, generated listing artwork, and live state remain outside the OSS product."
+    }
+  ],
+  "third_party_sources": [
+    {
+      "id": "capafy-skills",
+      "repository": "https://github.com/Capafy/Capafy-skills.git",
+      "upstream_commit": "085c3679d09cf34928e02b1262a1a4fb77f92999",
+      "vendored_version": "0.8.6-with-portable-runtime-fixes",
+      "license": "MIT",
+      "disposition": "vendored",
+      "scope": "MIT Capafy publisher and user client source under skills/capafy-autopublish/vendor, based on upstream 0.8.6 plus the private source repository's reviewed portability fixes; runtime tokens and config files are excluded."
+    },
+    {
+      "id": "camofox-browser",
+      "repository": "https://github.com/jo-inc/camofox-browser.git",
+      "commit": "8b5b0959adfadadae38ecce9d7eed706ab102bf1",
+      "archive_sha256": "7cf8ad48696b676e066d85bf98895fea58d033daf6cfda2a3727b63464a08830",
+      "license": "MIT",
+      "disposition": "pinned-cache-install",
+      "scope": "Optional anti-bot fallback fetched and checksum-verified by skills/camofox-browser/fetch.sh."
     }
   ]
 }

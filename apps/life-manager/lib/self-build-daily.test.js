@@ -88,8 +88,8 @@ test("the day ledger path honours $LM_SELFBUILD_LEDGER and otherwise defaults un
     "/tmp/x.jsonl",
   );
   assert.equal(
-    selfBuildLedgerPath({ HOME: "/Users/anicca" }),
-    "/Users/anicca/.life-manager/state/self-build-days.jsonl",
+    selfBuildLedgerPath({ HOME: "/home/life-manager" }),
+    "/home/life-manager/.life-manager/state/self-build-days.jsonl",
   );
 });
 

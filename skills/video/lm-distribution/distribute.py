@@ -344,7 +344,7 @@ def main() -> int:
     parser.add_argument(
         "--ledger",
         type=Path,
-        default=Path(os.environ.get("LM_DISTRIBUTION_LEDGER", "~/.openclaw/state/lm-video/distribution.jsonl")).expanduser(),
+        default=Path(os.environ.get("LM_DISTRIBUTION_LEDGER", "~/.local/state/life-manager/state/lm-video/distribution.jsonl")).expanduser(),
     )
     parser.add_argument(
         "--instagram-adapter",
@@ -373,7 +373,7 @@ def main() -> int:
         default=Path(
             os.environ.get(
                 "LM_DISTRIBUTION_APPROVALS",
-                "~/.openclaw/state/lm-video/distribution-approvals.jsonl",
+                "~/.local/state/life-manager/state/lm-video/distribution-approvals.jsonl",
             )
         ).expanduser(),
     )
@@ -385,7 +385,7 @@ def main() -> int:
 
     caption = args.caption_file
     if caption is None:
-        caption = Path("~/.openclaw/state/lm-video/captions").expanduser() / f"{args.creative_id}.txt"
+        caption = Path("~/.local/state/life-manager/state/lm-video/captions").expanduser() / f"{args.creative_id}.txt"
         render_caption(args.bank, args.creative_id, caption)
     result = distribute(
         DistributionConfig(

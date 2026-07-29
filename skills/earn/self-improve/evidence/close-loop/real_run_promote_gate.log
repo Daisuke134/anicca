@@ -1,1 +1,0 @@
-2026-07-07T17:21:46Z NOT ELIGIBLE for adversary review (no LLM call made): deterministic gate not cleared before adversary review: scope_guard_ok=True (scope-guard-pass), stage1_pass=True, stage2_pass=False, tripwire_clear=True

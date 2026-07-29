@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // pm-reconcile.mjs — wire wallet-anchored reconcile for the Polymarket earner (TASKLIST #2).
 //
-// pm's ledger (~/anicca/skills/earn/state/earn-ledger.jsonl, where redeem.py appends) only ever got
+// pm's ledger (__REPO_ROOT__/skills/earn/state/earn-ledger.jsonl, where redeem.py appends) only ever got
 // WIN rows; buys and $0-resolve losses were never recorded, so the ledger disagreed with the real
 // pUSD wallet. This runs at the END of every pm pass (run_earner.sh): it reads the REAL on-chain
 // pUSD balance of the deposit wallet and books the drift as a wallet-scoped `reconcile` line, so

@@ -7,7 +7,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh</string>
+    <string>__HOME__/Projects/life-manager-main/skills/life-manager/life-manager-daily.sh</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
@@ -19,8 +19,8 @@
   <key>ProcessType</key>
   <string>Background</string>
   <key>StandardOutPath</key>
-  <string>/Users/anicca/.openclaw/logs/life-manager-daily.out</string>
+  <string>__LIFE_MANAGER_HOME__/logs/life-manager-daily.out</string>
   <key>StandardErrorPath</key>
-  <string>/Users/anicca/.openclaw/logs/life-manager-daily.err</string>
+  <string>__LIFE_MANAGER_HOME__/logs/life-manager-daily.err</string>
 </dict>
 </plist>

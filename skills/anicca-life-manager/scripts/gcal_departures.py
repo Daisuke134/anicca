@@ -152,7 +152,7 @@ def current_origin():
     """Travel origin = user's live Telegram Live Location.
     Returns (origin_str, kind) — kind ∈ {'telegram_fresh', 'home_fallback'}.
 
-    Telegram bot writes ~/.openclaw/state/location/<user_id>.json every 1-5s
+    Telegram bot writes ~/.local/state/life-manager/state/location/<user_id>.json every 1-5s
     while user is sharing Live Location. >LOCATION_FRESH_MIN stale or no file
     → fall back to HOME (caller is informed via the returned kind so it can
     flag the LLM)."""

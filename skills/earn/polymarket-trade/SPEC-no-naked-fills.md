@@ -1,7 +1,7 @@
 # SPEC: pm-no-naked-fills（A = sim-to-real 漏れ止め / §9 R2 / map M7+M2）
 
 ## 開発環境
-- worktree: `~/anicca/.worktrees/pm-no-naked/`、branch `feature/pm-no-naked-fills`
+- worktree: `$LIFE_MANAGER_REPO/.worktrees/pm-no-naked/`、branch `feature/pm-no-naked-fills`
 - 触るファイル境界（これ以外を変更しない）:
   - `skills/earn/polymarket-trade/positions.py`（per-token 保有を返すよう拡張）
   - `skills/earn/polymarket-trade/market_maker.py`（naked 検知→flatten を pass 冒頭に）

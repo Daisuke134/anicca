@@ -31,6 +31,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 import requests
 
@@ -44,7 +45,8 @@ from lib.kill_switch import is_killed  # noqa: E402
 from lib.ledger import append_ledger, build_row, read_ledger  # noqa: E402
 
 CONFIG = json.load(open(os.path.join(HERE, "config.json")))
-LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/funding-ledger.jsonl")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/funding-ledger.jsonl")
 AGENT_HOME = os.environ.get(
     "PM_TRADE_AGENT_HOME", os.path.expanduser("~/.anicca-founder/agents/polymarket-agent")
 )

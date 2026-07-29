@@ -25,8 +25,9 @@ REVENUE TODAY \$$REV
 DID $DID
 NEXT $NEXT"
 SENT_VIA_COMPOSIO=0
+REPORT_TO="${ANICCA_REPORT_TO:?ANICCA_REPORT_TO is required}"
 if [ -n "${COMPOSIO_API_KEY:-}" ] && [ -n "${ANICCA_REPORT_USER_ID:-}" ] && command -v node >/dev/null 2>&1; then
-  if ANICCA_REPORT_TO="${ANICCA_REPORT_TO:-keiodaisuke@gmail.com}" \
+  if ANICCA_REPORT_TO="$REPORT_TO" \
      node "$(dirname "$0")/lib/send-report.mjs" "$SUBJECT" "$EMAILBODY" >>/var/log/anicca-report.log 2>&1; then
     SENT_VIA_COMPOSIO=1
   fi
@@ -34,11 +35,11 @@ fi
 if [ "$SENT_VIA_COMPOSIO" = 0 ]; then
   # Fallback: AgentMail. Use heredoc + env vars to avoid quoting issues with {dict} literals
   # inside nested $("...") — some shells (dash/POSIX) brace-expand {'k':v,...} at comma boundaries.
-  MAIL_JSON=$(MAIL_USDC="$USDC" MAIL_ETH="$ETH" MAIL_REV="$REV" MAIL_DID="$DID" MAIL_NEXT="$NEXT" python3 - <<'PY'
+  MAIL_JSON=$(MAIL_TO="$REPORT_TO" MAIL_USDC="$USDC" MAIL_ETH="$ETH" MAIL_REV="$REV" MAIL_DID="$DID" MAIL_NEXT="$NEXT" python3 - <<'PY'
 import json, os
 e = os.environ
 print(json.dumps({
-    'to': ['keiodaisuke@gmail.com', 'contact@aniccaai.com'],
+    'to': [address for address in os.environ['MAIL_TO'].split(',') if address],
     'subject': 'Anicca wake net $' + e['MAIL_USDC'],
     'text': ('NET WORTH $' + e['MAIL_USDC'] + ' USDC (+' + e['MAIL_ETH'] + ' ETH)\n'
              'REVENUE TODAY $' + e['MAIL_REV'] + '\n'

@@ -6,7 +6,7 @@ re-encode, or a gate regression) by re-probing the local artifact AND attempting
 IG's own delivered metadata via yt-dlp.
 
 Read-only against the ledger and posted/ directory; APPEND-only against
-~/.openclaw/state/clip-metrics.jsonl. Never edits or deletes anything. Idempotent: a
+~/.local/state/life-manager/state/clip-metrics.jsonl. Never edits or deletes anything. Idempotent: a
 post_url already present in clip-metrics.jsonl is skipped on re-run.
 
 Correspondence caveat (read before changing the pairing logic): the ledger's

@@ -4,11 +4,11 @@
   <key>Label</key><string>ai.anicca.founder-x402-serve</string>
   <key>ProgramArguments</key><array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/anicca/skills/self/founder-loop/host/founder-serve.sh</string>
+    <string>__REPO_ROOT__/skills/self/founder-loop/host/founder-serve.sh</string>
   </array>
   <key>EnvironmentVariables</key><dict>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-    <key>HOME</key><string>/Users/anicca</string>
+    <key>HOME</key><string>__HOME__</string>
   </dict>
   <key>KeepAlive</key><true/>
   <key>RunAtLoad</key><true/>

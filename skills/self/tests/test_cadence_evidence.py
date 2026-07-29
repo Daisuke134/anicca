@@ -6,7 +6,7 @@ correctly reads REAL temp fixture files — via the module's own test-only env v
 (EARN_LEDGER/AFFILIATE_METRICS_PATH/EARN_VIDEO_METRICS_PATH/GIG_FUNNEL_PATH/BOUNTY_FUNNEL_PATH/
 FOUNDER_STATE_MD_PATH/PM_EARNER_LOG_PATH/PM_EARNER_LEDGER_PATH — the same
 EARN_LEDGER/FOUNDER_DIR/FOUNDER_TEST pattern this codebase already uses elsewhere) — never touches
-production paths (~/.cloak, ~/gig, ~/.anicca-founder, ~/anicca/skills/earn/...).
+production paths (~/.cloak, ~/gig, ~/.anicca-founder, __REPO_ROOT__/skills/earn/...).
 """
 import datetime
 import importlib.util

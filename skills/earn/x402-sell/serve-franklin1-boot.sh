@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # serve-franklin1-boot.sh — KeepAlive launchd boot of franklin1's (~/.blockrun) x402 seller on :8414.
 # Same recipe as serve-claude-p-boot.sh/serve-mainnet-boot.sh/serve-franklin2-boot.sh (x402-sell/
 # SKILL.md), a fourth replication: same serve.mjs/primitives.mjs, franklin1's OWN payTo
@@ -21,10 +24,10 @@
 # so the fix is just pointing this seller's advertised URL at that node instead of running a second,
 # broken tunnel of its own.
 set -u
-DIR=/Users/anicca/anicca/skills/earn/x402-sell
+DIR=$LIFE_MANAGER_REPO/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as the other boot scripts) — never echoed
-set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
-# .openclaw/.env injects ANICCA_HOME=~/.openclaw + BLOCKRUN_WALLET_KEY=0xB9dd (machine-legacy), which
+set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null || true; set +a
+# .openclaw/.env injects ANICCA_HOME=$HOME/.local/state/life-manager + BLOCKRUN_WALLET_KEY=0xB9dd (machine-legacy), which
 # made the resale route pay the upstream (Exa) from 0xB9dd instead of franklin1 (measured 2026-07-18:
 # franklin1 got the sale, 0xB9dd paid Exa — wrong wallet). This store IS franklin1: force its identity
 # so resolve-identity() derives franklin1's own key (0x3EcCAD24) for upstream payments + float guard.

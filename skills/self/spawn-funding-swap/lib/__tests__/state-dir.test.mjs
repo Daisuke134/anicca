@@ -15,32 +15,32 @@ import { resolveSwapStateDir } from "../resolve-swap-state-dir.mjs";
 import { createLedgerStore } from "../ledger-store.mjs";
 
 test("REQ-008/FIND-002: resolveSwapStateDir returns a concrete, non-empty string when SPAWN_FUNDING_SWAP_STATE_DIR is unset (never undefined)", () => {
-  const env = { HOME: "/Users/fixture-home" }; // no SPAWN_FUNDING_SWAP_STATE_DIR, no ANICCA_STATE_DIR
+  const env = { HOME: "/home/life-manager" }; // no SPAWN_FUNDING_SWAP_STATE_DIR, no ANICCA_STATE_DIR
   const dir = resolveSwapStateDir({ env });
   assert.equal(typeof dir, "string");
   assert.ok(dir.length > 0);
 });
 
 test("REQ-008/FIND-002: the unset-env default is never /tmp-rooted (inherits resolveStateDir()'s own durable-state guard)", () => {
-  const dir = resolveSwapStateDir({ env: { HOME: "/Users/fixture-home" } });
+  const dir = resolveSwapStateDir({ env: { HOME: "/home/life-manager" } });
   assert.ok(!/^\/(private\/)?tmp(\/|$)/.test(dir), `default must never be /tmp-rooted, got "${dir}"`);
 });
 
 test("REQ-008/FIND-002: an explicitly set SPAWN_FUNDING_SWAP_STATE_DIR is still honored verbatim (override behavior unchanged)", () => {
   const dir = resolveSwapStateDir({
-    env: { SPAWN_FUNDING_SWAP_STATE_DIR: "/Users/fixture-home/custom-swap-state" },
+    env: { SPAWN_FUNDING_SWAP_STATE_DIR: "/home/life-manager/custom-swap-state" },
   });
-  assert.equal(dir, "/Users/fixture-home/custom-swap-state");
+  assert.equal(dir, "/home/life-manager/custom-swap-state");
 });
 
 test("REQ-008/FIND-002: unset SPAWN_FUNDING_SWAP_STATE_DIR resolves to a 'spawn-funding-swap' subdirectory of the shared colony state dir (reused convention, not invented)", () => {
-  const dir = resolveSwapStateDir({ env: { HOME: "/Users/fixture-home" } });
+  const dir = resolveSwapStateDir({ env: { HOME: "/home/life-manager" } });
   assert.equal(path.basename(dir), "spawn-funding-swap");
   assert.equal(path.basename(path.dirname(dir)), "state");
 });
 
 test("REQ-008/FIND-002: constructing the REAL createLedgerStore with the resolved default never throws -- the exact production crash site (ledger-store.mjs:37's path.join) is proven safe", () => {
-  const stateDir = resolveSwapStateDir({ env: { HOME: "/Users/fixture-home" } });
+  const stateDir = resolveSwapStateDir({ env: { HOME: "/home/life-manager" } });
   assert.doesNotThrow(() => {
     const store = createLedgerStore({ stateDir });
     assert.equal(typeof store.withLock, "function");

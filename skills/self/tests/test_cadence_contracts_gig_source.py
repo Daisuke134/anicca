@@ -1,6 +1,6 @@
 """test_cadence_contracts_gig_source.py — RED (Phase 2a, feature gig-feasibility-volume).
 PROP-031 / REQ-GFV-023 (rewritten, spec-review iteration-2 BLOCKING-1 fix) — static file check:
-`~/anicca/skills/self/cadence-contracts.json`'s `gig` entry, post-change, has `kind == "row-exists"`
+`__REPO_ROOT__/skills/self/cadence-contracts.json`'s `gig` entry, post-change, has `kind == "row-exists"`
 (UNCHANGED — this REVERSES iteration-1's `increment` design after iteration-2 found it would be
 structurally always-false against production reality) and an updated `source` string referencing
 `applied.jsonl`/`listings.jsonl` (no longer `gig-funnel.jsonl`); every OTHER loop's entry
@@ -43,7 +43,7 @@ chk("gig.source references listings.jsonl", "listings.jsonl" in gig.get("source"
 UNCHANGED_BASELINE = {
     "clip": {
         "kind": "row-exists", "cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo",
-        "source": "CLIP_LEDGER ($EARN_LEDGER or ~/.openclaw/state/clip-earn-ledger.jsonl)",
+        "source": "CLIP_LEDGER ($EARN_LEDGER or ~/.local/state/life-manager/state/clip-earn-ledger.jsonl)",
     },
     "affiliate": {
         "kind": "row-exists", "cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo",

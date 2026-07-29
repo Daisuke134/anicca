@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # healthcheck-lib.sh — ONE shared supervisor used by every loop's healthcheck (FIND-011). Detects, in order:
 # (a) DEAD session, (b) STUCK-asking-a-human interactive prompt (FIND-001), (c) STALE liveness heartbeat, (d)
 # running-but-producing-NOTHING output staleness (FIND-009). Recovers by restart w/ backoff; on give-up it calls
@@ -158,8 +161,8 @@ hc_run() {
   local LOOP="$HC_LOOP" SOCK="$HC_SOCK" SESSION="$HC_SESSION" HB="$HC_HB" START="$HC_START"
   local STALE_MIN="$HC_STALE_MIN" CLI="$HC_CLI" OUTPUT="${HC_OUTPUT:-}" OUT_STALE_HRS="${HC_OUTPUT_STALE_HRS:-30}"
   local SELFFIX_HINT="${HC_SELFFIX_HINT:-loop produces no real output}"
-  local STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
-  local LOG="$HOME/.openclaw/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+  local STATE="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE"
+  local LOG="$HOME/.local/state/life-manager/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
   local RESTART_LOG="$STATE/.$LOOP-restart-log"
   local now; now=$(date +%s)
 
@@ -186,7 +189,7 @@ hc_run() {
 
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
     echo "$(date '+%F %T') give-up → self-fix.sh $LOOP" >> "$LOG"
-    bash "$HOME/anicca/skills/self/self-fix.sh" "$LOOP" "$1" >> "$LOG" 2>&1 || echo "$(date '+%F %T') self-fix launch failed" >> "$LOG"
+    bash "$LIFE_MANAGER_REPO/skills/self/self-fix.sh" "$LOOP" "$1" >> "$LOG" 2>&1 || echo "$(date '+%F %T') self-fix launch failed" >> "$LOG"
   }
   _restart() {  # backoff: >=5 restarts/60min → escalate to self-fix instead of thrashing
     local reason="$1" count=0 ts

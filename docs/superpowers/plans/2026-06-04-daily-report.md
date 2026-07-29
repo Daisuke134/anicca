@@ -6,7 +6,7 @@
 
 **Architecture decision — DO NOT REUSE the OpenClaw skill via symlink.** Three reasons (all verified):
 
-1. The legacy skill (`~/.openclaw/skills/anicca-report/scripts/report.py`) sends via `gog gmail send` from Dais's personal Gmail (`keiodaisuke@gmail.com`). That is Dais's identity, not Anicca's. CLAUDE.md (2026-06-03 `feedback_anicca_speaks_as_herself`) + memory `identity_anicca_login_accounts` say Anicca presents AS HERSELF from her sovereign inbox `anicca-genesis@agentmail.to`. Symlinking the legacy script would keep the send-from-Dais behavior — wrong identity.
+1. The legacy skill (`~/.openclaw/skills/anicca-report/scripts/report.py`) sends via `gog gmail send` from Dais's personal Gmail (`user@example.com`). That is Dais's identity, not Anicca's. CLAUDE.md (2026-06-03 `feedback_anicca_speaks_as_herself`) + memory `identity_anicca_login_accounts` say Anicca presents AS HERSELF from her sovereign inbox `anicca-genesis@agentmail.to`. Symlinking the legacy script would keep the send-from-Dais behavior — wrong identity.
 2. The launch pitch row ⑤d says **"daily email arrives"**. Spec 00-MASTER line 141 says `#231 ✓ LIVE / #330` — meaning #231 (OpenClaw side) is the legacy reference and #330 (this task) is the Hermes-native rebuild. The pitch lives in the Hermes/anicca-oss runtime; the email must originate from Anicca's own inbox or the pitch is false.
 3. The OpenClaw skill costs $0 (no LLM) but is also slop (= fixed template). HARD RULE 0.19 USEFUL_CONTENT_SPEC requires the email be USEFUL = bookmark-able. We add ONE small Hermes LLM hop (≤300 tokens, budget ≤ $0.01) to convert the raw cfo+heartbeat+friction probe into 3 substantive bullets. The deterministic header (numbers, status, runway) stays template-rendered so the email never silently fails on LLM outages — fallback to header-only is graceful.
 
@@ -215,7 +215,7 @@ for KEY in AGENTMAIL_API_KEY AGENTMAIL_INBOX_ID; do
 done
 # default recipient = the inbox itself + Dais
 if ! grep -q '^ANICCA_REPORT_TO=' /Users/anicca/.hermes/.env 2>/dev/null; then
-  printf 'ANICCA_REPORT_TO=%s\n' 'keiodaisuke@gmail.com,anicca-genesis@agentmail.to' >> /Users/anicca/.hermes/.env
+  printf 'ANICCA_REPORT_TO=%s\n' 'user@example.com,anicca-genesis@agentmail.to' >> /Users/anicca/.hermes/.env
   echo "appended ANICCA_REPORT_TO"
 fi
 chmod 600 /Users/anicca/.hermes/.env
@@ -871,7 +871,7 @@ Run:
 /Users/anicca/anicca-oss/skills/daily-report/.venv/bin/python \
   /Users/anicca/anicca-oss/skills/daily-report/scripts/send.py --dry-run
 ```
-Expected: prints a single JSON line with `"ok": true`, `"error": "dry-run"`, `"recipients": ["keiodaisuke@gmail.com", "anicca-genesis@agentmail.to"]`, `"subject"` non-empty, `"body_chars" > 200`.
+Expected: prints a single JSON line with `"ok": true`, `"error": "dry-run"`, `"recipients": ["user@example.com", "anicca-genesis@agentmail.to"]`, `"subject"` non-empty, `"body_chars" > 200`.
 
 ---
 

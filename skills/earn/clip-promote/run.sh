@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # earn/clip-promote — promote.fun USDC-Solana per-view clipping SLOT entrypoint (run-skill.mjs spawns
 # this each wake). Does EXACTLY ONE bounded state-machine transition per wake (idempotent), prints ONE
 # structured JSON line on stdout, exit 0. NO HUMAN: captcha→CapSolver, OTP→gog gmail, login→stored creds.
@@ -11,9 +14,9 @@
 set -uo pipefail
 
 # The browser is shared with the other money loops: heal it, restore the logins, collect stray tabs.
-bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+bash "$LIFE_MANAGER_REPO/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
 
-SK="$HOME/anicca/skills/earn/clip-promote"
+SK="$LIFE_MANAGER_REPO/skills/earn/clip-promote"
 PY=/opt/homebrew/bin/python3
 NODE=/opt/homebrew/bin/node
 [ -x "$NODE" ] || NODE=node
@@ -22,10 +25,10 @@ NODE=/opt/homebrew/bin/node
 # instagrapi-based poster -- shares the same self-healed venv as earn/clip and earn/video.
 INSTA_VENV="$HOME/.cache/instagrapi-venv"
 INSTA_PY="$INSTA_VENV/bin/python"
-INSTA_POSTER="$HOME/anicca/skills/earn/marketing-engine/poster.py"
+INSTA_POSTER="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
 
 # env (own-identity only; PII is NOT scrubbed by the harness — we keep it out of the RECORD subprocess).
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+set -a; . "$HOME/.local/state/life-manager/.env" 2>/dev/null || true; set +a
 
 EARN_MODE="${EARN_MODE:-discover}"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
@@ -33,7 +36,7 @@ STEP_DEADLINE_S="${STEP_DEADLINE_S:-120}"
 SOLANA_RPC_URL="${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}"
 WALLET="${CLIP_WALLET_SOLANA:-xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H}"
 STATE="${CLIP_PROMOTE_STATE:-$HOME/.cloak/clip-promote-state.json}"
-LEDGER="${EARN_LEDGER:-$HOME/.openclaw/state/clip-earn-ledger.jsonl}"
+LEDGER="${EARN_LEDGER:-$HOME/.local/state/life-manager/state/clip-earn-ledger.jsonl}"
 ACCTS="${CLIP_ACCOUNTS:-$HOME/.cloak/clip-accounts.json}"
 CDP_DIR="${CDP_DIR:-$HOME/.claude/skills/ig-account-create/scripts}"
 mkdir -p "$(dirname "$STATE")" "$(dirname "$LEDGER")" 2>/dev/null || true
@@ -157,7 +160,7 @@ json.dump(d,open(p,'w'))" 2>/dev/null
       emit "clip:no-usable-source-video (campaign $SLUG has no auto-extractable YouTube link)"; exit 0
     fi
     PRODUCER_RC=0
-    ANICCA_INSTANCE=clip-promote run_step "$STEP_DEADLINE_S" bash "$HOME/anicca/skills/earn/clip/producer.sh" --url "$SRC_URL" >/tmp/clip-promote-producer.log 2>&1 || PRODUCER_RC=$?
+    ANICCA_INSTANCE=clip-promote run_step "$STEP_DEADLINE_S" bash "$LIFE_MANAGER_REPO/skills/earn/clip/producer.sh" --url "$SRC_URL" >/tmp/clip-promote-producer.log 2>&1 || PRODUCER_RC=$?
     blocked_or "clip-produce" "$PRODUCER_RC" "clip:produce-failed (see /tmp/clip-promote-producer.log)"
     if ! ls "$HOME/clips/queue-clip-promote"/*.mp4 >/dev/null 2>&1; then
       emit "clip:producer-ran-but-no-clip-in-queue (see /tmp/clip-promote-producer.log)"; exit 0

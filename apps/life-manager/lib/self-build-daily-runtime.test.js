@@ -247,11 +247,13 @@ test("the review prompt demands the exact JSON contract and a fresh adversarial 
 // ---------------------------------------------------------------------------------------------
 // launchd. This atomic SHIPS the enabling script and does NOT run it.
 // ---------------------------------------------------------------------------------------------
-test("the launchd entrypoint sources env, logs, and reports the day to Dais's Telegram", () => {
+test("the launchd entrypoint sources the portable state env, logs, and reports to the configured Telegram chat", () => {
   const source = fs.readFileSync(ENTRYPOINT, "utf8");
   assert.match(source, /openclaw message send/);
-  assert.match(source, /8547730585/);
-  assert.match(source, /\.openclaw\/\.env/);
+  assert.match(source, /LM_SELFBUILD_TELEGRAM_TARGET:\?/);
+  assert.doesNotMatch(source, /LM_SELFBUILD_TELEGRAM_TARGET:-\d{6,}/);
+  assert.match(source, /HOME\/\.local\/state\/life-manager/);
+  assert.match(source, /ENV_FILE=.*LIFE_MANAGER_STATE_HOME\/\.env/);
   assert.match(source, /self-build-daily\.js/);
   assert.match(source, /LOG=/);
 });
@@ -582,7 +584,7 @@ test("an injection-suspected diff FAILS with reason injection_suspected without 
 
 // ---------------------------------------------------------------------------------------------
 // FINDING 5. The reviewer inherited the operator's entire environment — every API key in
-// ~/.openclaw/.env, every MCP server, every tool. A judge holding the keys to the kingdom is not a
+// ~/.local/state/life-manager/.env, every MCP server, every tool. A judge holding the keys to the kingdom is not a
 // judge, it is a second operator. Minimal env, no MCP, no tools.
 // ---------------------------------------------------------------------------------------------
 test("the reviewer is spawned with a minimal environment carrying no secrets", () => {
@@ -591,7 +593,7 @@ test("the reviewer is spawned with a minimal environment carrying no secrets", (
     diff: "diff --git a/x b/x\n+const a = 1;\n",
     env: {
       PATH: "/usr/bin:/bin",
-      HOME: "/Users/anicca",
+      HOME: "/home/life-manager",
       ANTHROPIC_API_KEY: "sk-should-never-travel",
       GH_TOKEN: "ghp_should-never-travel",
       RAILWAY_TOKEN: "rw_should-never-travel",

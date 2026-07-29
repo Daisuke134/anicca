@@ -207,8 +207,8 @@ test("test-support Telegram mirror requires fake exec before any sidecar invocat
   const result = await collect();
   assert.equal(botCalls, 2);
   assert.deepEqual(invocations.map(({ file, args }) => ({ file, args })), [
-    { file: "/Users/anicca/.cache/telegram-user-venv/bin/python", args: ["/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py", "send", "@LifeBot", invocations[0].args[3]] },
-    { file: "/Users/anicca/.cache/telegram-user-venv/bin/python", args: ["/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py", "read", "@LifeBot", "20"] },
+    { file: "/home/life-manager/.cache/telegram-user-venv/bin/python", args: [require("node:path").resolve(__dirname, "../../../skills/tools/telegram-user/tg_user.py"), "send", "@LifeBot", invocations[0].args[3]] },
+    { file: "/home/life-manager/.cache/telegram-user-venv/bin/python", args: [require("node:path").resolve(__dirname, "../../../skills/tools/telegram-user/tg_user.py"), "read", "@LifeBot", "20"] },
   ]);
   assert.match(invocations[0].args[3], /^\/panel core8d_[a-f0-9]{24}$/);
   assert.equal(invocations.every(({ options }) => options.shell !== true), true);

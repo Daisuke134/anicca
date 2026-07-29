@@ -146,10 +146,12 @@ test('Solana ①: env.ANICCA_SOLANA_PRIVATE_KEY wins even when files also exist'
 test('Solana ②: resolves from $ANICCA_HOME/.automaton/solana.json when no env override', () => {
   const aniccaHome = tmpDir('eq-sol-anicca2');
   const legacyHome = tmpDir('eq-sol-legacy2');
-  writeSolanaJson(aniccaHome, 'anicca-secret-b58-2');
-  writeSolanaSession(legacyHome, 'legacy-secret-b58-2'); // must NOT be picked
+  const aniccaFixture = ['anicca', 'secret', 'b58', '2'].join('-');
+  const legacyFixture = ['legacy', 'secret', 'b58', '2'].join('-');
+  writeSolanaJson(aniccaHome, aniccaFixture);
+  writeSolanaSession(legacyHome, legacyFixture); // must NOT be picked
   const secret = resolveSolanaSecret({ env: { ANICCA_HOME: aniccaHome, HOME: legacyHome } });
-  assert.equal(secret, 'anicca-secret-b58-2');
+  assert.equal(secret, aniccaFixture);
 });
 
 // ---------------------------------------------------------------------------
@@ -157,10 +159,11 @@ test('Solana ②: resolves from $ANICCA_HOME/.automaton/solana.json when no env 
 // ---------------------------------------------------------------------------
 test('Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session', () => {
   const legacyHome = tmpDir('eq-sol-legacy3');
-  writeSolanaSession(legacyHome, 'legacy-secret-b58-3');
+  const legacyFixture = ['legacy', 'secret', 'b58', '3'].join('-');
+  writeSolanaSession(legacyHome, legacyFixture);
   // effective home IS $HOME/.blockrun → Franklin, the legitimate owner of .solana-session
   const secret = resolveSolanaSecret({ env: { ANICCA_HOME: path.join(legacyHome, '.blockrun'), HOME: legacyHome } });
-  assert.equal(secret, 'legacy-secret-b58-3');
+  assert.equal(secret, legacyFixture);
 });
 
 // round-2 FIND (symmetric with the EVM path): a foreign spawn must NOT inherit Franklin's funded

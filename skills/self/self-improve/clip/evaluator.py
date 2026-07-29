@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """clip/evaluator.py — clip loop evaluator (REQ-LV-110), copy+tweak of
-~/anicca/skills/earn/self-improve/evaluator.py's evaluate_stage1 pattern for the clip loop's own
+__REPO_ROOT__/skills/earn/self-improve/evaluator.py's evaluate_stage1 pattern for the clip loop's own
 metrics ledger (CLIP_LEDGER). combined_score = mean views/reel (48h window, computed by the
 caller when it builds the ledger rows it hands in) + payout USDC (design spec's EDD table) MINUS
 a small quality penalty for posted clips recorded below the resolution/bitrate floor in
@@ -20,11 +20,11 @@ if _LIB_DIR not in sys.path:
 from ledger_metrics import evaluate_stage1_generic  # noqa: E402
 
 # Small additive penalty per posted clip recorded below the quality floor (see
-# ~/anicca/skills/earn/clip/verify_posted_quality.py for how below_floor rows are produced).
+# __REPO_ROOT__/skills/earn/clip/verify_posted_quality.py for how below_floor rows are produced).
 # Kept small and additive so it never dominates the existing view/earn weights -- it nudges
 # scoring, it does not override it.
 QUALITY_PENALTY_PER_ROW = 50.0
-DEFAULT_METRICS_PATH = os.path.expanduser("~/.openclaw/state/clip-metrics.jsonl")
+DEFAULT_METRICS_PATH = os.path.expanduser("~/.local/state/life-manager/state/clip-metrics.jsonl")
 
 
 def _count_below_floor(metrics_path):

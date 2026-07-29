@@ -19,7 +19,7 @@ import { earnSkillRelPath } from "../../../../../runtime/loop/earn-slot.mjs";
 import { liveSlotNames } from "../../../../../runtime/loop/prompt.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../../../"); // ~/anicca
+const REPO_ROOT = path.resolve(__dirname, "../../../../../"); // the canonical checkout
 const RUN_SH_PATH = path.resolve(__dirname, "../../run.sh");
 const WAKE_GATE_PATH = path.resolve(__dirname, "../../scripts/wake-gate.mjs");
 const REGISTRY_PATH = path.resolve(__dirname, "../../../../registry.json");
@@ -54,7 +54,7 @@ test("run.sh exists, is executable, and structurally mirrors self/spawn/run.sh's
   assert.match(sharedHelperCode, /set -a/, "the shared helper must load env under set -a");
   assert.match(sharedHelperCode, /set \+a/, "the shared helper must close the env-load block with set +a");
   assert.match(sharedHelperCode, /\.hermes\/\.env/, "the shared helper must best-effort source ~/.hermes/.env");
-  assert.match(sharedHelperCode, /\.openclaw\/\.env/, "the shared helper must best-effort source ~/.openclaw/.env");
+  assert.match(sharedHelperCode, /\.openclaw\/\.env/, "the shared helper must best-effort source ~/.local/state/life-manager/.env");
   assert.match(code, /exec\s+"\$NODE"\s+"\$SKILL_DIR\/scripts\/wake-gate\.mjs"\s+"\$@"/, "run.sh's own final line must exec scripts/wake-gate.mjs, handing off ALL real work");
   assert.ok(
     !/balanceUsd|surplusUsd|isBorrowerEligible|computeLenderAvailableUsd|decideLoan/.test(code),

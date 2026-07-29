@@ -19,14 +19,14 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # the repo this runs from (a dev checkout, or an ANICCA_HOME-rsynced deployment such as Franklin's
 # ~/.blockrun) checks ITS OWN adjacent registry/trace/state — never a different instance's
 # hardcoded absolute path baked into shared OSS code. self-fix.sh's OWN bookkeeping paths
-# ($HOME/.openclaw/{state,logs}) remain a documented graduation gap — see
+# ($HOME/.local/state/life-manager/{state,logs}) remain a documented graduation gap — see
 # .vcsdd/features/self-heal-allslots/specs/behavioral-spec.md REQ-AS-006 / CHANGELOG.md.
 set -uo pipefail
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REGISTRY="${EARNHC_REGISTRY:-$SELF_DIR/earning-health-registry.json}"
 EARN_STATE_DIR="${EARNHC_EARN_STATE_DIR:-$SELF_DIR/../earn/state}"
-STATE_DIR="${EARNHC_STATE_DIR:-$HOME/.openclaw/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
-LOG="${EARNHC_LOG:-$HOME/.openclaw/logs/earning-health-allslots.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+STATE_DIR="${EARNHC_STATE_DIR:-$HOME/.local/state/life-manager/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
+LOG="${EARNHC_LOG:-$HOME/.local/state/life-manager/logs/earning-health-allslots.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 # FIND-005 test seam (mirrors self-fix.sh's own SELF_FIX_DRYRUN seam): lets a test point the
 # self-fix invocation at a stub script that records its raw args, so the sanitization boundary can
 # be proven end-to-end without needing self-fix.sh itself to echo its BLOCKER (which it doesn't,

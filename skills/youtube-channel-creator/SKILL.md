@@ -6,12 +6,12 @@ description: Create a YouTube Brand-Account channel under the existing Google lo
 # YouTube Channel Creator
 
 Create a YouTube **Brand-Account** channel by driving Dais's already-logged-in CloakBrowser (daily-driver,
-CDP `http://localhost:9222`). A Brand Account is a channel managed UNDER the existing Google login
-(keiodaisuke@gmail.com) — **NO new Google credential is created**, no re-login, no bot block.
+CDP `http://localhost:9222`). A Brand Account is managed under the runtime-configured existing
+Google login (`LIFE_MANAGER_EMAIL_ACCOUNT`) — **NO new Google credential is created**.
 
 ## Usage (2-phase — phone verification is now INTEGRATED)
 ```bash
-PY=~/.openclaw/skills/_shared/venv-cloak/bin/python3
+PY=$LIFE_MANAGER_REPO/skills/_shared/venv-cloak/bin/python3
 SK=~/.claude/skills/youtube-channel-creator/scripts/create_channel.py
 # Phase A — start. If a 3rd+ channel needs phone verification, this sends the SMS and exits
 #           with {"needs_code": true} (SMS → --phone, default 08046270314). If no verification
@@ -33,7 +33,7 @@ verified working up to step 2/2.)
 ## The flow (what the script does)
 1. `goto youtube.com/channel_switcher` → click "チャンネルを作成" (Create a channel).
 2. A dialog "チャンネルのプロフィール" opens with 2 text inputs (名前 / Name, ハンドル / Handle) + a
-   "チャンネルを作成" button. It's a Brand Account linked to keiodaisuke@gmail.com.
+   "チャンネルを作成" button. It is linked to the configured Google account.
 3. Fill name + handle, click create, wait, screenshot.
 
 ## ★ GOTCHAS (each cost a round-trip — follow exactly) ★

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # test_healthcheck_stale_fallback.sh — Task #18 (2026-07-05). Verifies the STALE-detection
 # marker-reseed fix in earn-loop healthcheck.sh files. Root cause fixed: a missing
 # .{name}-core-last-start marker used to fall back to either "now" (STALE detection
@@ -20,9 +23,9 @@ ANICCA_HOME="$(cd "$HERE/../../.." && pwd)"   # .../anicca/skills/_shared/__test
 PASS=0; FAIL=0
 
 TARGETS=(
-  "clip:$ANICCA_HOME/skills/earn/clip/clip-healthcheck.sh:/tmp/anicca-clip-tmux.sock:anicca-clip-core:\$HOME/.openclaw/state/.clip-core-last-pass:\$HOME/.openclaw/state/.clip-core-last-start:\$HOME/.openclaw/logs/clip-core-healthcheck.log:\$HOME/.openclaw/state/.clip-core-restart-log:/tmp/.clip-healthcheck.lock:bash \"\$HOME/anicca/skills/earn/clip/clip-cli.sh\" --restart"
-  "clip-promote:$ANICCA_HOME/skills/earn/clip-promote/clip-promote-healthcheck.sh:/tmp/anicca-clip-promote-tmux.sock:anicca-clip-promote-core:\$HOME/.openclaw/state/.clip-promote-core-last-pass:\$HOME/.openclaw/state/.clip-promote-core-last-start:\$HOME/.openclaw/logs/clip-promote-core-healthcheck.log:\$HOME/.openclaw/state/.clip-promote-core-restart-log:/tmp/.clip-promote-healthcheck.lock:bash \"\$HOME/anicca/skills/earn/clip-promote/clip-promote-cli.sh\" --restart"
-  "video:$ANICCA_HOME/skills/earn/video/video-healthcheck.sh:/tmp/anicca-video-tmux.sock:anicca-video-core:\$HOME/.openclaw/state/.video-core-last-pass:\$HOME/.openclaw/state/.video-core-last-start:\$HOME/.openclaw/logs/video-core-healthcheck.log:\$HOME/.openclaw/state/.video-core-restart-log:/tmp/.video-healthcheck.lock:bash \"\$HOME/anicca/skills/earn/video/video-cli.sh\" --restart"
+  "clip:$ANICCA_HOME/skills/earn/clip/clip-healthcheck.sh:/tmp/anicca-clip-tmux.sock:anicca-clip-core:\$HOME/.local/state/life-manager/state/.clip-core-last-pass:\$HOME/.local/state/life-manager/state/.clip-core-last-start:\$HOME/.local/state/life-manager/logs/clip-core-healthcheck.log:\$HOME/.local/state/life-manager/state/.clip-core-restart-log:/tmp/.clip-healthcheck.lock:bash \"\$LIFE_MANAGER_REPO/skills/earn/clip/clip-cli.sh\" --restart"
+  "clip-promote:$ANICCA_HOME/skills/earn/clip-promote/clip-promote-healthcheck.sh:/tmp/anicca-clip-promote-tmux.sock:anicca-clip-promote-core:\$HOME/.local/state/life-manager/state/.clip-promote-core-last-pass:\$HOME/.local/state/life-manager/state/.clip-promote-core-last-start:\$HOME/.local/state/life-manager/logs/clip-promote-core-healthcheck.log:\$HOME/.local/state/life-manager/state/.clip-promote-core-restart-log:/tmp/.clip-promote-healthcheck.lock:bash \"\$LIFE_MANAGER_REPO/skills/earn/clip-promote/clip-promote-cli.sh\" --restart"
+  "video:$ANICCA_HOME/skills/earn/video/video-healthcheck.sh:/tmp/anicca-video-tmux.sock:anicca-video-core:\$HOME/.local/state/life-manager/state/.video-core-last-pass:\$HOME/.local/state/life-manager/state/.video-core-last-start:\$HOME/.local/state/life-manager/logs/video-core-healthcheck.log:\$HOME/.local/state/life-manager/state/.video-core-restart-log:/tmp/.video-healthcheck.lock:bash \"\$LIFE_MANAGER_REPO/skills/earn/video/video-cli.sh\" --restart"
 )
 
 check() { # $1=desc $2=cond(0/1) $3=name

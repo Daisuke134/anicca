@@ -46,6 +46,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 _REAL_STDOUT = sys.stdout  # capture BEFORE any import that might print
 
@@ -55,7 +56,8 @@ def _emit(obj: dict) -> None:
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-POLYMARKET_TRADE_DIR = os.path.expanduser("~/anicca/skills/earn/polymarket-trade")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+POLYMARKET_TRADE_DIR = str(REPO_ROOT / "skills/earn/polymarket-trade")
 sys.path.insert(0, HERE)
 sys.path.insert(0, POLYMARKET_TRADE_DIR)  # reuse client_for/is_registered/relayer_auth, no dup
 
@@ -66,7 +68,7 @@ from lib.kill_switch import is_killed  # noqa: E402
 from lib.ledger import append_ledger, build_row, read_ledger  # noqa: E402
 
 CONFIG = json.load(open(os.path.join(HERE, "config.json")))
-LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/funding-ledger.jsonl")
+LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/funding-ledger.jsonl")
 AGENT_HOME = os.environ.get("PM_TRADE_AGENT_HOME", os.path.expanduser("~/.anicca-founder/agents/polymarket-agent"))
 POLYGON_RPC = os.environ.get("POLYGON_RPC_URL", CONFIG["rpc"]["polygon"])
 

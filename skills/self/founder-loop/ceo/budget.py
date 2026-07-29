@@ -3,7 +3,7 @@ Token/USD budget hard-stop gate (fail-open when config is missing) + soft-warn/h
 dedup + cost-event bookkeeping, split into a UTC calendar-month aggregation (hard-stop gate,
 REQ-CEO-022/023) and a JST Monday-Sunday week aggregation (bandit reward denominator, REQ-CEO-010/014).
 
-B12 (REQ-CEO-021): pm-earner has no `~/anicca/skills/earn/polymarket-trade/` pass-end reporting hook
+B12 (REQ-CEO-021): pm-earner has no `__REPO_ROOT__/skills/earn/polymarket-trade/` pass-end reporting hook
 (Ground truth in behavioral-spec.md, confirmed by grep), so it never appears in `ceo-cost-events.jsonl`
 -- the aggregation functions below simply never produce a "pm-earner" key (no zero-fill branch is
 needed, callers use dict.get(loop, 0.0))."""

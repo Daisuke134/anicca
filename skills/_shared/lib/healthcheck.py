@@ -1,7 +1,7 @@
 """healthcheck — pure self-heal classifier + extractors.
 
 Implements PROP-A-classify, PROP-A-oauth, PROP-A-hook-allowlist (all required:true).
-Spec: ~/anicca/.vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md Group A.
+Spec: __REPO_ROOT__/.vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md Group A.
 """
 from __future__ import annotations
 

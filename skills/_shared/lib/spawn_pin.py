@@ -1,7 +1,7 @@
 """spawn_pin — spawn-surface immutability (REQ-E5 v7, NO HUMAN).
 
 PROP-E5-spawn-pin (required:true, Tier 1 integration). v7 trust anchor =
-anicca-bot ed25519 pubkey shipped at ~/anicca/skills/_shared/anicca-bot.pub
+anicca-bot ed25519 pubkey shipped at __REPO_ROOT__/skills/_shared/anicca-bot.pub
 (NOT macOS Keychain Touch ID — ROUND-5-001 fix).
 
 Closes ROUND-2-002 + ROUND-3-001 + ROUND-3-002 + ROUND-5-001.
@@ -41,7 +41,7 @@ class VerifyResult:
 @dataclass
 class SpawnSurfaceState:
     """Fixture-side state container. In production, the equivalent is read
-    from disk + the `~/anicca/skills/_shared/` filesystem itself.
+    from disk + the `__REPO_ROOT__/skills/_shared/` filesystem itself.
     """
     root_dir: Path
     trust_anchor_readable: bool = True

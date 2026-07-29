@@ -17,7 +17,7 @@ money/crypto IG. Rejected fiat-only programs (Wise/Robinhood/Credit Karma).
 ## What was built
 | Piece | File | Contract |
 |---|---|---|
-| Affiliate account | `~/.cloak/changenow-partner.json` (chmod 600) | email keiodaisuke+changenow@gmail.com, api_key, referral_link, payout_wallet=0x810f |
+| Affiliate account | `~/.cloak/changenow-partner.json` (chmod 600) | email user+changenow@example.com, api_key, referral_link, payout_wallet=0x810f |
 | Bio link wiring | `~/.openclaw/.env` `MONEY_AFFILIATE_URL` | slot reads it → S2 installs in IG bio post-warmup (verified S2 DRY) |
 | On-chain detector | `skills/earn/video/onchain.py` | read-only Base RPC; `confirm_usdc_inflow(entry,recipient,rpc)` + `scan_inflows` + `detect()` |
 | record gate | `record_earn.py` | pure schema gate; default `verify_onchain`=False (fail-closed); `onchain_check` injectable |

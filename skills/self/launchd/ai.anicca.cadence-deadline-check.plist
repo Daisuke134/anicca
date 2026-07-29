@@ -7,7 +7,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/anicca/anicca/skills/self/cadence-deadline-check.sh</string>
+        <string>__REPO_ROOT__/skills/self/cadence-deadline-check.sh</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
@@ -19,8 +19,8 @@
     <key>RunAtLoad</key>
     <false/>
     <key>StandardErrorPath</key>
-    <string>/Users/anicca/.openclaw/logs/cadence-deadline-check-launchd.err.log</string>
+    <string>__LIFE_MANAGER_HOME__/logs/cadence-deadline-check-launchd.err.log</string>
     <key>StandardOutPath</key>
-    <string>/Users/anicca/.openclaw/logs/cadence-deadline-check-launchd.out.log</string>
+    <string>__LIFE_MANAGER_HOME__/logs/cadence-deadline-check-launchd.out.log</string>
 </dict>
 </plist>

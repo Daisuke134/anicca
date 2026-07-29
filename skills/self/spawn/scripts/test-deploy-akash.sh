@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # VSDD oracle for B1 deploy-akash.sh. STATIC invariants (grep, comments stripped) + BEHAVIORAL runs against a
 # FAITHFUL fake provider-services that emits REAL Cosmos-SDK shapes (dseq as an event attribute, bids with
 # state/price, lease state=active) so a real parse bug is CAUGHT — plus fail-closed cases. Exit 0=PASS, 1=FAIL.
 # Spec: anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md
 set -uo pipefail
-D="/Users/anicca/anicca/skills/self/spawn/scripts"
+D="$LIFE_MANAGER_REPO/skills/self/spawn/scripts"
 S="$D/deploy-akash.sh"
 src="$(sed 's/#.*//' "$S")"           # comments stripped — INV checks are about ACTIVE CODE
 fails=0

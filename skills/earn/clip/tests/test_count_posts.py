@@ -4,7 +4,7 @@
 REQ-009: monitor.sh's posts-recorded count must be URL-deduplicated with a null-guard
 on both old and new format ledger lines — never a raw line count. Tested against a
 FROZEN fixture (tests/fixtures/ledger-2026-07-03-snapshot.jsonl), never the live,
-ever-growing ~/.openclaw/state/clip-earn-ledger.jsonl (iteration-3 FIND-001).
+ever-growing ~/.local/state/life-manager/state/clip-earn-ledger.jsonl (iteration-3 FIND-001).
 
 count_posts.py does not exist yet — this test MUST FAIL (ImportError) until Phase 2b.
 """

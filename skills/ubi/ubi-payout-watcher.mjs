@@ -5,7 +5,7 @@
 //   - method=email  : create (or get) their Crossmint email-owned wallet, send there
 // On success: status->'paid', tx + payout address written into notes. Idempotent.
 //
-// Env (from ~/.openclaw/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+// Env (from ~/.local/state/life-manager/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
 //   BLOCKRUN_WALLET_KEY (execute-ubi), CROSSMINT_API_KEY (email wallets),
 //   UBI_STIPEND_BASE (default 100000 = $0.10), UBI_PERTX_CAP_BASE (default = STIPEND_BASE),
 //   UBI_REALIZED_THRESHOLD_USD (default 1).
@@ -122,7 +122,9 @@ async function aniccaUsdcBase() {
 function yourTurnEmail(email, method, usd) {
   // "your turn" email — best-effort, never blocks payout.
   try {
-    execFileSync('gog', ['gmail', 'send', '--account', 'keiodaisuke@gmail.com', '--to', email,
+    const account = process.env.LIFE_MANAGER_EMAIL_ACCOUNT;
+    if (!account) throw new Error("LIFE_MANAGER_EMAIL_ACCOUNT is required");
+    execFileSync('gog', ['gmail', 'send', '--account', account, '--to', email,
       '--subject', "Your basic income arrived",
       '--body', `Anicca just sent you $${usd} (USDC on Base). ${method === 'email'
         ? 'Sign in at https://aniccaai.com/income/wallet with this email to see and use it.'

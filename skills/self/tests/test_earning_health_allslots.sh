@@ -2,7 +2,7 @@
 # test_earning_health_allslots.sh — registry-driven wiring proof for earning-health-allslots.sh
 # (REQ-AS-001..005, self-heal-allslots spec). Generalizes test_sol_trade_healthcheck.sh's proof
 # pattern across MULTIPLE slots read from a temp registry — never touches the real
-# skills/self/earning-health-registry.json or live ~/.openclaw state. All paths overridden to an
+# skills/self/earning-health-registry.json or live external runtime state. All paths overridden to an
 # isolated tmpdir (read-only-on-live-state rule).
 set -uo pipefail; P=0; F=0
 H="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"     # skills/self/tests
