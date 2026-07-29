@@ -28,11 +28,12 @@ jobs:
           sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: gitleaks detect (= working tree)
-        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact -v
-
-      - name: gitleaks git (= history)
-        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v
+      - name: gitleaks changed commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          gitleaks git . --config .gitleaks.toml --no-banner --redact -v \
+            --log-opts="${BASE_SHA}..HEAD"
 
   trufflehog:
     name: TruffleHog (filesystem + git history)
@@ -52,7 +53,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.before }}
+          base: ${{ github.event.pull_request.base.sha || github.event.before }}
           head: HEAD
           extra_args: --only-verified
 
