@@ -1,11 +1,13 @@
 # SHA-256(rule NUL repo-relative-path NUL value), never the raw matched value.
 # Every entry below is a synthetic test/eval fixture. The path binding makes
 # copying the same phone-shaped value into production or another file fail.
+01050a03e38ac243dd6b43f127a942d08de99e0f7ec146a73cc73b029d348260 # jp_national_mobile apps/job-search-loop/tests/test_recruiter_reply.py
 0d9b36de8f98746477a6a395c050c008520e91354f781fc220ab750518bcdd2a # jp_national_mobile apps/life-manager/lib/telegram-onboard.test.js
 1b5dc79d9c9587b6896d20a03a866b66d13ab314425a6c0d98aeaba52fe33d52 # jp_e164 apps/life-manager/lib/panel-corrective3-four-blockers.test.js
 23d77a82da4df54d4490422548c788e830945841a8b50ab315d381aeb760d120 # jp_e164 apps/life-manager/lib/care-booking-executor.test.js
 2801cfca4f64fb9bdf37ebfe526618884366b27c4da010a1adc3d32951d224d0 # jp_e164 apps/life-manager/test/daily-journey-contract.test.js
 56e952f4b8cc35b054927cf8cc40aba4ed771979a85fd20957e93df9656991f8 # jp_e164 apps/life-manager/lib/care-booking-wiring.test.js
+7784a59c967ef5d39b893008648d80953e199e8407122b7fb605f52f0b83f1fb # jp_national_mobile apps/job-search-loop/tests/test_materials.py
 9312b4a0a6518a79fcf297ee79b36adffd7838c5ce51dc0af2b1d821c22bf23d # jp_e164 apps/life-manager/lib/panel-control-center.test.js
 9bbce9e4bd020c7ea376b4a7c5bfb1ebaf82d89e922645723dc7281423ff0d07 # us_e164 apps/life-manager/lib/daily-preflight.test.js
 a4b85fb7aa3550037d03f8dc316c6af8dbab0bb2997c8712c4b413a0ba4e3721 # jp_e164 apps/life-manager/eval/run-context-onboarding-discovery-eval.js

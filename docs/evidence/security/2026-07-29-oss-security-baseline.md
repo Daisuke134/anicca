@@ -9,7 +9,7 @@ the CI output, and both allowlists.
 |---|---|---|
 | gitleaks current tree | `gitleaks detect` was labeled as a working-tree scan, but in gitleaks 8.30.1 it is the deprecated alias of `git` history scanning | use `gitleaks dir .` for the merge result |
 | gitleaks history | the repo has a large pre-baseline history; failing every run on already-adjudicated immutable findings does not distinguish a new leak | scan every ref with `gitleaks git ... --log-opts=--all` and ignore only exact finding fingerprints |
-| PII | broad path exclusions hid both fixtures and genuine personal values and printed only aggregate counts | redact values, fingerprint `rule + repo-relative path + value`, and permit only 12 exact synthetic phone fixtures |
+| PII | broad path exclusions hid both fixtures and genuine personal values and printed only aggregate counts | redact values, fingerprint `rule + repo-relative path + value`, and permit only 14 exact synthetic phone fixtures |
 | Python | the security workflow called every `test_*.py` directly and mislabeled all of them pure-stdlib | retain AST parsing for every Python file and execute only the explicit security-test manifest |
 | X launch gate | the test still expected `9c` to be open after the canonical spec recorded `9c` done | update the live-spec expectation; `9d` remains the only blocker |
 
@@ -67,7 +67,7 @@ Operational scripts resolve the account from runtime `GOG_ACCOUNT`; the
 YouTube helper resolves the phone from `DAIS_PHONE` or `--phone` and fails
 closed only when provider verification actually requires it.
 
-The 12 retained matches are synthetic test/eval phone fixtures. Each is bound
+The 14 retained matches are synthetic test/eval phone fixtures. Each is bound
 to its exact rule, repository path, and value by SHA-256. Moving the same value
 to another file, changing it, or adding a new match fails CI. Scanner output
 contains only path, line, and rule.
