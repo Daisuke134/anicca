@@ -42,7 +42,12 @@ propagates. Perform this check before resolving a result or marking any thread.
 
 ## Task 3 — GitHub and live reflection
 
-- [ ] Push, pass all CI, merge, and fast-forward canonical.
-- [ ] Verify the existing inbox launchd job remains healthy without fabricating
+- [x] Push, pass all CI, merge, and fast-forward canonical.
+- [x] Verify the existing inbox launchd job remains healthy without fabricating
   a budget-blocked live event or touching seen state.
-- [ ] Update SSOT evidence.
+- [x] Update SSOT evidence.
+
+Live result: PR #1331 merged as `6bc07d1ce` after all seven required checks
+passed in run `30456681640`. The canonical inbox advanced 17→18 with exit 0,
+found no new recruiting email, and left the seen-state mtime unchanged. Ledger
+and interview-prep integrity remain `ok`; no synthetic budget event was created.
