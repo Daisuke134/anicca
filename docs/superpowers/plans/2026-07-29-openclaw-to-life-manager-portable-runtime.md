@@ -22,7 +22,7 @@
 
 ---
 
-### Task 1: Freeze the complete runtime inventory and disposition
+### Task 1: Freeze the complete runtime inventory
 
 **Files:**
 - Modify: `skills/self/openclaw-migrate/migration_gate.py`
@@ -33,13 +33,14 @@
 
 **Interfaces:**
 - Consumes: OpenClaw cron JSON export, `~/Library/LaunchAgents/*.plist`, canonical repository root, known legacy roots.
-- Produces: `inventoryLegacyJobs({ cronRows, launchAgents, repositoryRoot }) -> { jobs, summary }`, where each job has `legacy_id`, `scheduler`, `command`, `cadence`, `enabled`, `loaded`, `latest_receipt`, `disposition`, `owner`, `target_adapter`, `effect_class`, `verify_command`, and `rollback_action`.
+- Produces: `inventoryLegacyJobs({ cronRows, launchAgents, loadedLabels }) -> { jobs, summary }`, where each job has `legacy_id`, `scheduler`, redacted `command`, `command_fingerprint`, `source_boundary`, `cadence`, `enabled`, `loaded`, `latest_receipt`, and initially unclassified migration fields.
+- Privacy: committed inventory replaces usernames, emails, chat/phone identifiers, connector account IDs, tokens, keys, passwords, and secret URL query parameters with non-reversible redaction markers.
 
-- [ ] **Step 1: Extend the migration-gate test**
+- [x] **Step 1: Extend the migration-gate test**
 
-Add cases proving that only `migrate`, `replace`, and `retire` are valid dispositions and that `migrate` requires a non-empty owner, target adapter, verification command, and rollback action.
+Add cases proving that only `migrate`, `replace`, and `retire` are valid final dispositions and that a final disposition requires owner, effect class, verification command, and rollback action. The inventory stage may emit `unclassified`; Task 2 closes those rows without mutating schedulers.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -50,17 +51,17 @@ node --test apps/life-manager/scripts/inventory-legacy-jobs.test.js
 
 Expected: the Python test fails on the new disposition API and Node reports the inventory module is missing.
 
-- [ ] **Step 3: Implement inventory normalization and validation**
+- [x] **Step 3: Implement inventory normalization and validation**
 
 Implement pure normalization in `inventory-legacy-jobs.js`; keep plist reading and OpenClaw export capture in the CLI entrypoint. Historical jobs remain present even when disabled so the manifest is auditable.
 
-- [ ] **Step 4: Capture the real machine inventory**
+- [x] **Step 4: Capture the real machine inventory**
 
-Run the new script against the actual cron export and LaunchAgents directory. Reject output if any enabled or loaded row has no disposition or owner.
+Run the new script against the actual cron export and LaunchAgents directory. Preserve enabled, disabled, loaded, and unloaded rows. Record the exact `unclassified` count as the input to Task 2; do not guess a disposition and do not mutate a scheduler.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [x] **Step 5: Verify GREEN and commit**
 
-Run both focused tests, validate `runtime-inventory.json` with `jq empty`, then commit only the five scoped files.
+Run both focused tests, validate `runtime-inventory.json` with `jq empty`, scan the committed file for unredacted private identifiers, then commit only the scoped files.
 
 ### Task 2: Establish Life Manager-owned runtime paths and secrets
 

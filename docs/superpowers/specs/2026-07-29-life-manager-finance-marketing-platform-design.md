@@ -140,8 +140,9 @@ and rollback evidence pass.
 | Local repository naming | canonical repo is cloned as `life-manager-main`; the directory named `life-manager` actually points to `life-manager-v0` | Directory names are unsafe identifiers; use remote URL plus repository ID until the legacy clone is quarantined and the canonical checkout is normalized |
 | Live Life Manager launchd paths | measured Life Manager daily, dev, financial, payout, self-build, TaskMarket, uGig, and x402 jobs point to `/Users/operator/Projects/life-manager-main`; none point to `life-manager-v0` | Runtime already selects the canonical repository, but remains local and path-bound |
 | Local OpenClaw gateway | Running as `ai.openclaw.gateway` | OpenClaw is still running |
-| OpenClaw scheduler | Store reports 316 jobs; 92 are marked enabled; `nextWakeAtMs` is null and `cron list` returns zero jobs | Configured entries are not evidence of active scheduling |
-| macOS launchd | Marketing, writing, finance, gig, Capafy, and other jobs are loaded and producing current logs | launchd is the actual scheduler for the observed loops |
+| OpenClaw scheduler | Read-only capture contains 222 stored jobs; 92 are marked enabled | Stored/enabled is not proof of current execution; each row remains unclassified until Task 2 assigns a verified disposition |
+| macOS launchd | Read-only capture contains 176 user LaunchAgent plist files and one additional relevant loaded-only label; 161 plist-backed labels are currently loaded. The loaded CFO plist cannot be parsed by `plutil`, and `com.anicca.daemon` has no user LaunchAgent plist; both are preserved as explicit parse errors | launchd is the actual scheduler for many observed loops; malformed or loaded-only rows must not be silently dropped or changed |
+| Unified runtime inventory | `docs/migrations/openclaw/runtime-inventory.json` contains all 399 captured OpenClaw and relevant LaunchAgent rows; 269 are enabled or loaded; commands and private identifiers are redacted | Task 1 is read-only evidence. All 399 dispositions remain `unclassified` for Task 2; no scheduler change is authorized by the inventory |
 | Profitable Claude marketing engine | Registry, schemas, bounded learning, canary keep/revert, observation terminalizer, and dashboard exist | Reuse these contracts |
 | Marketing runtime store | About 20 KB; dashboard and logs only; no run, publication, metric, experiment, or observation ledgers | The production feedback loop is not closed |
 | Life Manager Railway | `/health` returns 200 from `life-call-production.up.railway.app` | A functioning cloud control plane already exists |
@@ -922,7 +923,7 @@ OpenClaw-independent and running under Life Manager locally.
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
 | 0 | Finish single-repository consolidation | this spec and its plans exist only in `Daisuke134/life-manager`; all 35 `life-manager-v0` files have an `import`, `superseded`, or `retire` disposition; retained behavior has canonical tests; GitHub/CI/Railway/scheduler reference guard passes; `life-manager-v0` is archived read-only; no runtime uses its local clone |
-| 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers all 316 OpenClaw store rows, every enabled row, relevant launchd labels, command, cadence, environment source, latest receipt |
+| 1 | Freeze all scheduler/runtime inventory | machine-readable inventory covers every captured OpenClaw store row and user LaunchAgent, including disabled, unloaded, and parse-error rows, with redacted command, cadence, source boundary, load state, and latest available receipt |
 | 2 | Decide every legacy job | each row is marked `migrate`, `replace`, or `retire` with Life Manager owner and rollback action; no unowned enabled/loaded job |
 | 3 | Define portable domain contracts | tenant/product/business/loop/job/artifact/publication/source-event/receipt schemas and adapter interfaces pass contract tests |
 | 4 | Create Life Manager local deployment | one command starts API, panel, scheduler, PostgreSQL, object adapter, and workers without OpenClaw |
