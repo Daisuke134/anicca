@@ -14,6 +14,9 @@ const {
   CAPABILITY: FINANCIAL_REPORT_CAPABILITY,
   createFinancialReportLoopAdapter,
 } = require("./report-job-adapter.js");
+const {
+  CAPABILITY: MARKETING_DAILY_CAPABILITY,
+} = require("./marketing-daily-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -133,12 +136,14 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 1);
+  assert.equal(manifest.adapters.length, 2);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
   );
   assert.equal(manifest.adapters[0].adapter_id, "financial-report-telegram");
+  assert.equal(manifest.adapters[1].capability, MARKETING_DAILY_CAPABILITY);
+  assert.equal(manifest.adapters[1].adapter_id, "marketing-life-manager-daily");
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,
@@ -163,6 +168,24 @@ test("financial report inventory row is owned while its legacy rollback remains 
   assert.equal(inventory.summary.unclassified, unclassified);
 });
 
+test("Life Manager daily marketing inventory row is owned without disabling its rollback", () => {
+  const inventory = JSON.parse(fs.readFileSync(INVENTORY_PATH, "utf8"));
+  const row = inventory.jobs.find(
+    (job) => job.legacy_id === "ai.anicca.life-manager-daily",
+  );
+  const unclassified = inventory.jobs.filter(
+    (job) => job.disposition === "unclassified",
+  ).length;
+
+  assert.equal(row.disposition, "migrate");
+  assert.equal(row.owner, "life-manager-runtime");
+  assert.equal(row.target_adapter, "marketing-life-manager-daily");
+  assert.equal(row.effect_class, "publish");
+  assert.match(row.verify_command, /test:runtime-adapters/);
+  assert.match(row.rollback_action, /Keep .* loaded until seven expected/i);
+  assert.equal(inventory.summary.unclassified, unclassified);
+});
+
 test("configured registry loads the committed financial adapter implementation", () => {
   const registry = createConfiguredLoopAdapterRegistry({
     appRoot: path.join(__dirname, ".."),
@@ -173,6 +196,17 @@ test("configured registry loads the committed financial adapter implementation",
     },
   });
   const adapter = registry.getByCapability(FINANCIAL_REPORT_CAPABILITY);
+
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry loads the portable Life Manager daily marketing adapter", () => {
+  const registry = createConfiguredLoopAdapterRegistry({
+    appRoot: path.join(__dirname, ".."),
+  });
+  const adapter = registry.getByCapability(MARKETING_DAILY_CAPABILITY);
 
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");
