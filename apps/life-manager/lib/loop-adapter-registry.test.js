@@ -17,6 +17,9 @@ const {
 const {
   CAPABILITY: MARKETING_DAILY_CAPABILITY,
 } = require("./marketing-daily-adapter.js");
+const {
+  CAPABILITY: MARKETING_GENERATION_CAPABILITY,
+} = require("./marketing-daily-generation-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -136,7 +139,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 2);
+  assert.equal(manifest.adapters.length, 3);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -144,6 +147,11 @@ test("committed manifest is portable and registers the financial report first", 
   assert.equal(manifest.adapters[0].adapter_id, "financial-report-telegram");
   assert.equal(manifest.adapters[1].capability, MARKETING_DAILY_CAPABILITY);
   assert.equal(manifest.adapters[1].adapter_id, "marketing-life-manager-daily");
+  assert.equal(manifest.adapters[2].capability, MARKETING_GENERATION_CAPABILITY);
+  assert.equal(
+    manifest.adapters[2].adapter_id,
+    "marketing-life-manager-daily-generation",
+  );
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,
@@ -180,6 +188,9 @@ test("Life Manager daily marketing inventory row is owned without disabling its 
   assert.equal(row.disposition, "migrate");
   assert.equal(row.owner, "life-manager-runtime");
   assert.equal(row.target_adapter, "marketing-life-manager-daily");
+  assert.deepEqual(row.supporting_adapters, [
+    "marketing-life-manager-daily-generation",
+  ]);
   assert.equal(row.effect_class, "publish");
   assert.match(row.verify_command, /test:runtime-adapters/);
   assert.match(row.rollback_action, /Keep .* loaded until seven expected/i);
@@ -207,6 +218,17 @@ test("configured registry loads the portable Life Manager daily marketing adapte
     appRoot: path.join(__dirname, ".."),
   });
   const adapter = registry.getByCapability(MARKETING_DAILY_CAPABILITY);
+
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry loads the portable Life Manager daily generation adapter", () => {
+  const registry = createConfiguredLoopAdapterRegistry({
+    appRoot: path.join(__dirname, ".."),
+  });
+  const adapter = registry.getByCapability(MARKETING_GENERATION_CAPABILITY);
 
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");

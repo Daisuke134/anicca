@@ -91,9 +91,9 @@ WrapStyle: 1
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Label,Arial,35,&H00B8F7DA,&H000000FF,&H0011161F,&HA0000000,1,0,0,0,100,100,2,0,1,2,0,8,60,60,110,1
-Style: Main,Arial,64,&H00FFFFFF,&H000000FF,&H0011161F,&HC0000000,1,0,0,0,100,100,0,0,1,5,0,5,70,70,0,1
-Style: Small,Arial,38,&H00E2E8F0,&H000000FF,&H0011161F,&HA0000000,1,0,0,0,100,100,0,0,1,3,0,8,65,65,150,1
+Style: Label,Noto Sans CJK JP,35,&H00B8F7DA,&H000000FF,&H0011161F,&HA0000000,1,0,0,0,100,100,2,0,1,2,0,8,60,60,110,1
+Style: Main,Noto Sans CJK JP,64,&H00FFFFFF,&H000000FF,&H0011161F,&HC0000000,1,0,0,0,100,100,0,0,1,5,0,5,70,70,0,1
+Style: Small,Noto Sans CJK JP,38,&H00E2E8F0,&H000000FF,&H0011161F,&HA0000000,1,0,0,0,100,100,0,0,1,3,0,8,65,65,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

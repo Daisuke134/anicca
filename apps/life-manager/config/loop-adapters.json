@@ -20,6 +20,16 @@
       ],
       "module_ref": "lib/marketing-daily-adapter.js",
       "factory_export": "createMarketingDailyLoopAdapter"
+    },
+    {
+      "adapter_id": "marketing-life-manager-daily-generation",
+      "loop_id": "marketing.life-manager.daily.generate",
+      "capability": "marketing.life-manager.daily.generate",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/marketing-daily-generation-adapter.js",
+      "factory_export": "createMarketingDailyGenerationLoopAdapter"
     }
   ]
 }

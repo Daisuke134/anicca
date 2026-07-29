@@ -1,6 +1,6 @@
 FROM node:20.19-alpine
 
-RUN apk add --no-cache ffmpeg python3 py3-pip \
+RUN apk add --no-cache ffmpeg fontconfig font-noto font-noto-cjk python3 py3-pip \
   && python3 -m venv /opt/lm-python \
   && /opt/lm-python/bin/pip install --no-cache-dir \
     instagrapi==2.18.7 websocket-client==1.9.0

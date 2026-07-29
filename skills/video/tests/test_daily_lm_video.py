@@ -144,6 +144,22 @@ class DailyLmVideoTest(unittest.TestCase):
             self.assertNotIn("OLD CREATIVE", derived)
             self.assertIn("0:00:10.00,0:00:12.00", derived)
 
+    def test_creative_overlay_uses_the_cjk_font_packaged_in_the_runtime_image(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "creative.ass"
+            self.module.write_creative_ass(
+                output,
+                self.module.load_bank(BANK)[0],
+                34.656,
+            )
+            rendered = output.read_text(encoding="utf-8")
+            self.assertIn("Noto Sans CJK JP", rendered)
+            dockerfile = (HERE.parents[2] / "apps/life-manager/Dockerfile.runtime").read_text(
+                encoding="utf-8",
+            )
+            self.assertIn("fontconfig", dockerfile)
+            self.assertIn("font-noto-cjk", dockerfile)
+
     def test_validation_rejects_video_longer_than_forty_seconds(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
