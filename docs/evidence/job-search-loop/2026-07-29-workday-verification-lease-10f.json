@@ -4,8 +4,8 @@
   "status": "implementation_verified_pending_ci",
   "observed_at": "2026-07-29T13:10:00Z",
   "branch": "feat/job-workday-verification-lease-10f",
-  "red_commit": "f6578a29d",
-  "implementation_commit": "6102f4afc",
+  "red_commit": "496b5574b",
+  "implementation_commit": "10b86723f",
   "pull_request": {
     "number": null,
     "url": null,
