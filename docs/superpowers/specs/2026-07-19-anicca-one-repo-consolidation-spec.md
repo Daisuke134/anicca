@@ -493,8 +493,8 @@ event/時間依存gateが実測条件を満たした時だけ進め、収益・a
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **OSS-MERGE-1** | `profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current Life Manager cursor**。8iはweb product移植を閉じたが、full OSS self-contained proofと旧repo/folderのrequired-code吸収は未完 |
-| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
+| ~~2~~ | **OSS-MERGE-1** | `profitable-claude`、`anicca-dais`、`anicca-products`、既存local foldersをmanifest化し、Life Managerに必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、current branch treeのsecret/PII/generated artifact 0。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **done** — canonical commit `1d3f57982`をremoteからdepth-one fresh cloneし、root/app `npm ci`、isolated daemon-off install、OSS verifier、app 669/669、panel 14/14、全deterministic eval、panel privacy、clone cleanを実測。current-tree PII/gitleaks 0、Gitlink 0。過去のshared historyはrewriteしておらず、履歴secret 0の主張はしない。evidence=`docs/evidence/oss/oss-merge-1.md` |
+| 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **current Life Manager cursor**。SauceDemoのpositive/expiry proofは実Luma queue proofを代替しない。browser-auth branchとfollow-upはcanonicalへ吸収済み。残るdone条件は実Lumaのproduction queueでauthenticated identity/action/provider readbackを通し、失効時handoffも同じrailで証明すること |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
@@ -1071,7 +1071,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
     SHELTER-REPLACE-1とTASKMARKET-READBACK-1は実launchd検証まで完了する。現在のAgent Economy build cursorは
     **none**。AE-SLIDES-JP-1、AE-ARTICLE-JP-1、AE-PUBLICATION-AUDIT-1もdone。
-    Life Manager product trackは別ownerの並走順として分離し、現在cursorは **OSS-MERGE-1**。
+    Life Manager product trackは別ownerの並走順として分離し、現在cursorは **BROWSER-AUTH-1**。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
 18. **完全mergeはLife Managerのdependency closureを対象にする**。landing・mobile app・他製品そのものは
     `anicca-products`に残してよい。ただしLife Managerが使う共有code/config/testがそこにあればcanonicalへ吸収し、
@@ -1093,7 +1093,7 @@ old running→new running + 3 routes/heartbeat検証→old state 2をmainnetで�
 TASKMARKET-READBACK-1も公式submit txを追加cost 0のappend-only訂正行へ結び、実launchd wake exit 0で完了した。
 21600秒の自然trigger、外部award、外部収益だけを自動成果gateとして観測する。
 
-**Current Life Manager product cursor**: **OSS-MERGE-1**。BROWSER-GEN-1は実Luma登録とprovider
+**Current Life Manager product cursor**: **BROWSER-AUTH-1**。BROWSER-GEN-1は実Luma登録とprovider
 `You’re In`、TG evidence、Steel releaseまで完了した。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。
@@ -1101,8 +1101,8 @@ bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal�
 Mac Franklin1 main loopはunloaded、Franklin2はrunning。EARN-HC-1は8 slot/4 portfolioを有限状態で実測し、NOT-INSTRUMENTED 0で閉じた。
 既存acquisition・x402・The402は自動成果ゲートとして継続し、self-payを除外した外部payer receiptだけを累計する。
 Agent Economyの今すぐ実装できる手動atomicは全件done。自動成果gateだけを継続監視する。
-Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化した後、
-BROWSER-AUTH-1をproduction queueの実Luma proofから再開する。既存Telegram chatと恒久realtime `/panel` の
+Life ManagerはOSS-MERGE-1でrequired codeとlatest browser branchをcanonicalへ一本化済みであり、
+BROWSER-AUTH-1をproduction queueの実Luma proofから実行する。既存Telegram chatと恒久realtime `/panel` の
 契約は§9.4/§9.9へ統一済みであり、新規chat UI taskは置かない。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
 registered/failed/skipped=`9/0/0`、paid searchで実resource URLを再読込した。Coinbase Bazaarでも2 routeを
@@ -1200,7 +1200,7 @@ fresh shelter balance 0.670368 NOS / 0.013662961 SOL。21600秒の自然trigger�
 SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk deckとarticleはpost-S22 live level 3へ更新し、
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1がcurrent、BROWSER-AUTH-1が次。
+Life Manager product trackはBROWSER-GEN-1とOSS-MERGE-1がdone、BROWSER-AUTH-1がcurrent。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
@@ -1220,7 +1220,7 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 外部buyer/jobの累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy build cursor**は
-`none`。**Life Manager product cursor**は`OSS-MERGE-1`。
+`none`。**Life Manager product cursor**は`BROWSER-AUTH-1`。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1302,7 +1302,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager product trackは同節の別表で`OSS-MERGE-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済みで、現在のAgent Economy build cursorは§0.4.6どおり`none`。Life Manager product trackは同節の別表で`BROWSER-AUTH-1`がcurrent。13c等のevent待ちは別表で追跡し、成果を捏造しない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
