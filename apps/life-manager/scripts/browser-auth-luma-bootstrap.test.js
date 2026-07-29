@@ -177,12 +177,12 @@ test("Luma login request deterministically fills and submits the measured email 
   const calls = [];
   const email = {
     first() { return this; },
-    async waitFor(input) { calls.push(["waitFor", input]); },
+    async isVisible() { calls.push(["isVisible"]); return true; },
     async fill(value) { calls.push(["fill", value]); },
   };
   const submit = {
     first() { return this; },
-    async click(input) { calls.push(["click", input]); },
+    async click() { calls.push(["click"]); },
   };
   const page = {
     locator(selector) {
@@ -195,10 +195,10 @@ test("Luma login request deterministically fills and submits the measured email 
   assert.equal(await requestLumaEmailLogin(page, ENV.LM_AGENT_BROWSER_EMAIL), true);
   assert.deepEqual(calls, [
     ["locator", "input[type=\"email\"]"],
-    ["waitFor", { state: "visible", timeout: 15_000 }],
+    ["isVisible"],
     ["fill", ENV.LM_AGENT_BROWSER_EMAIL],
     ["locator", "button[type=\"submit\"]"],
-    ["click", { timeout: 15_000 }],
+    ["click"],
     ["waitForTimeout", 2_000],
   ]);
 });
