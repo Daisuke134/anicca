@@ -49,8 +49,8 @@
         {"source": "apps/life-manager/lib/browser-auth-session-store.test.js", "target": "apps/life-manager/lib/browser-auth-session-store.test.js", "sha256": "135ab2dcb487650bd09ff161b3cefe76ec943dc95dbfff9e009d1b4cfc12cbf4"},
         {"source": "apps/life-manager/lib/browser-job-store.js", "target": "apps/life-manager/lib/browser-job-store.js", "sha256": "ec502c503e912f59f29afc083b9d8a59c8d2c9c97a11b727757bf91dbf5a8e7d"},
         {"source": "apps/life-manager/lib/browser-job-store.test.js", "target": "apps/life-manager/lib/browser-job-store.test.js", "sha256": "ba2b9d138d3ee8486d8975eab42862595383a67046300137d2b9d05a8d90e098"},
-        {"source": "apps/life-manager/lib/stagehand-steel-driver.js", "target": "apps/life-manager/lib/stagehand-steel-driver.js", "sha256": "4d6712062e5a215f31dd16492d5515e833d6ec5bd89656869803da8aee9e89f8"},
-        {"source": "apps/life-manager/lib/stagehand-steel-driver.test.js", "target": "apps/life-manager/lib/stagehand-steel-driver.test.js", "sha256": "c53ba4e7bd528452a5329c328bb1c46c85d689b3cf1e440cf57125565aea48bc"}
+        {"source": "apps/life-manager/lib/stagehand-steel-driver.js", "target": "apps/life-manager/lib/stagehand-steel-driver.js", "sha256": "e11eedf10c69977886042ef4e7442666c0a9633f63eecc17f546ee30d54de5f1"},
+        {"source": "apps/life-manager/lib/stagehand-steel-driver.test.js", "target": "apps/life-manager/lib/stagehand-steel-driver.test.js", "sha256": "221047b05fa5a760e86fca676be3a0dfc62e84e536e5e7db356648b738170e0d"}
       ]
     },
     {

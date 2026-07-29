@@ -221,6 +221,8 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
   assert.match(tasks[1], /role or job title.*AI agent/i);
   assert.match(tasks[1], /optional social.*blank/i);
   assert.match(tasks[1], /decline.*marketing.*data-sharing/i);
+  assert.match(tasks[1], /non-binding/i);
+  assert.match(tasks[1], /legal attestation/i);
   assert.match(tasks[1], /exactly one/i);
   assert.doesNotMatch(tasks.join("\n"), /fresh-events\.example/i, "the target comes from discovery, never configuration");
   assert.doesNotMatch(JSON.stringify(action), /browser-owner@example\.test/i, "the identity never enters durable results");
@@ -1273,6 +1275,92 @@ test("provider success comes from a separate typed page readback, not agent narr
     handoffRequired: false,
     handoffReason: null,
   });
+});
+
+test("explicit provider-authored booking message and application receipts are confirmed", async () => {
+  const cases = [
+    ["Booking confirmed", "booking_confirmed"],
+    ["Appointment confirmed", "appointment_confirmed"],
+    ["Reservation confirmed", "reservation_confirmed"],
+    ["Message sent", "message_sent"],
+    ["We received your inquiry", "inquiry_received"],
+    ["Application submitted", "application_submitted"],
+    ["Submission received", "submission_received"],
+    ["Thank you for contacting us", "contact_received"],
+    ["Thank you for your application", "application_received"],
+  ];
+
+  for (const [providerText, status] of cases) {
+    const { driver } = fixture({
+      receipt: {
+        confirmed: false,
+        status,
+        confirmationId: "provider-77",
+        providerText,
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Open https://fresh-events.example/action and submit the controlled action",
+      locale: "en",
+    });
+    const receipt = await driver.readProviderReceipt(session, action);
+    assert.equal(receipt.confirmed, true, providerText);
+  }
+});
+
+test("negated pending or still-active provider forms never become completed", async () => {
+  const cases = [
+    {
+      providerText: "Application not submitted",
+      status: "not_submitted",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+    {
+      providerText: "Message failed",
+      status: "failed",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+    {
+      providerText: "Application pending",
+      status: "pending",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+    {
+      providerText: "Application submitted",
+      status: "application_submitted",
+      activeRegistrationForm: true,
+      activeAuthenticationForm: false,
+    },
+    {
+      providerText: "Message sent",
+      status: "message_sent",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: true,
+    },
+  ];
+
+  for (const value of cases) {
+    const { driver } = fixture({
+      receipt: {
+        confirmed: true,
+        confirmationId: null,
+        ...value,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Open https://fresh-events.example/action and submit the controlled action",
+      locale: "en",
+    });
+    const receipt = await driver.readProviderReceipt(session, action);
+    assert.equal(receipt.confirmed, false, value.providerText);
+  }
 });
 
 test("evidence is a PNG captured from the connected Steel page before release", async () => {
