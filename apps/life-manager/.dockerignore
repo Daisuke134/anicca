@@ -8,3 +8,4 @@ eval
 scripts/*
 !scripts/runtime-up.js
 !scripts/browser-auth-production-e2e.js
+!scripts/browser-auth-luma-bootstrap.js
