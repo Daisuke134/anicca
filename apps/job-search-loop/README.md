@@ -20,7 +20,7 @@ interviews, and reports every material state change to Telegram.
 | Career summary | Every terminal daily path atomically refreshes private `summary.v1.json` with state counts and Ashby/Workday confirmed-application coverage |
 | Application receipt | Every confirmed submission records the exact resume path and SHA-256, then sends that same PDF to Telegram once with company, role and URL |
 | Daily report repair | A materially changed same-day catch-up sends one content-addressed correction; identical retries remain at-most-once |
-| Inbox | Gmail metadata is prefiltered deterministically; official late application receipts reconcile before the model; a model runs only for remaining new recruiting work or a pending prep-pack generation job |
+| Inbox | Gmail threads expand to immutable unseen message IDs; official late application receipts reconcile before the model; a model runs only for remaining new recruiting messages or a pending prep-pack generation job |
 | Calendar | Only explicit timezone-aware recruiter candidates are considered; the earliest free candidate is confirmed once |
 | Interview prep | Every confirmed interview is registered before the email reply; Telegram refreshes are delivered at the 3-day and 1-day windows, or immediately inside 1 day |
 | Assessments | Autonomous execution requires explicit AI permission and no proctoring; all code runs without network or home access |
@@ -183,6 +183,14 @@ intent, attempt, daily-slot, event and confirmation-receipt rows. Spoofed, histo
 missing, or ambiguous matches remain unchanged and unacknowledged. The existing
 at-most-once Telegram document path then sends the exact resume recorded by that
 intent.
+
+The durable inbox checkpoint is message-level, not conversation-level. A Gmail thread
+is only a container: each unseen immutable message ID is independently eligible, and
+only exact message IDs whose work reaches a durable result are acknowledged. The
+legacy thread checkpoint migrates using its filesystem mtime, recording messages at
+or before that boundary as bootstrap history while keeping later messages in the
+same thread visible. This prevents both historical replay and lost recruiter
+follow-ups.
 
 Direct recruiter questions about verified experience, location, desired compensation,
 or contact details may receive one threaded reply. Work authorization, visa, start

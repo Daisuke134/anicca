@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from .inbox import load_seen_threads, mark_threads_seen
+from .inbox import mark_messages_seen, message_is_seen
 from .ledger import FenceError, Ledger
 
 
@@ -172,18 +172,16 @@ def reconcile_confirmation_threads(
     thread_loader: Callable[[str], dict[str, Any]],
     seen_state: Path,
 ) -> dict[str, Any]:
-    seen = load_seen_threads(seen_state)
     ledger = Ledger(ledger_path)
     reconciled: list[dict[str, str]] = []
     blocked: list[dict[str, str]] = []
     checked_threads = 0
-    seen_after_success: list[str] = []
+    seen_messages_after_success: list[str] = []
     try:
         for thread in threads:
             thread_id = str(thread.get("id") or "")
             if (
-                thread_id in seen
-                or not re.fullmatch(r"[A-Za-z0-9_-]+", thread_id)
+                not re.fullmatch(r"[A-Za-z0-9_-]+", thread_id)
                 or not _looks_like_confirmation_summary(thread)
             ):
                 continue
@@ -196,12 +194,21 @@ def reconcile_confirmation_threads(
             )
             if not isinstance(messages, list):
                 messages = []
-            thread_reconciled = False
             for raw_message in messages:
                 if not isinstance(raw_message, dict):
                     continue
                 message = _message_from_payload(raw_message)
                 if message is None or message["thread_id"] != thread_id:
+                    continue
+                received_epoch = datetime.fromisoformat(
+                    message["received_at"]
+                ).timestamp()
+                if message_is_seen(
+                    seen_state,
+                    message_id=message["message_id"],
+                    thread_id=thread_id,
+                    received_epoch=received_epoch,
+                ):
                     continue
                 candidates = [
                     candidate
@@ -248,13 +255,11 @@ def reconcile_confirmation_threads(
                         "status": status,
                     }
                 )
-                thread_reconciled = True
-            if thread_reconciled:
-                seen_after_success.append(thread_id)
+                seen_messages_after_success.append(message["message_id"])
     finally:
         ledger.close()
-    if seen_after_success:
-        mark_threads_seen(seen_state, seen_after_success)
+    if seen_messages_after_success:
+        mark_messages_seen(seen_state, seen_messages_after_success)
     return {
         "version": 1,
         "checked_threads": checked_threads,
