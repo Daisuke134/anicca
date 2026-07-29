@@ -8,6 +8,7 @@ const { parse: parseDomain } = require("tldts");
 const MAX_CONTEXT_BYTES = 1024 * 1024;
 const AUTH_CONTEXT_KEYS = new Set(["cookies", "localStorage", "sessionStorage", "indexedDB"]);
 const PRINCIPAL_KINDS = new Set(["agent_owned", "user_provided"]);
+const BROWSER_AUTH_CONTEXT_EXPIRED_CODE = "BROWSER_AUTH_CONTEXT_EXPIRED";
 let defaultPool;
 
 function invalid() {
@@ -128,6 +129,19 @@ function cookieAppliesToHostname(cookie, hostname) {
   );
 }
 
+function cookieIsExpired(cookie, nowMs = Date.now()) {
+  return typeof cookie.expires === "number"
+    && Number.isFinite(cookie.expires)
+    && cookie.expires > 0
+    && cookie.expires * 1000 <= nowMs;
+}
+
+function expired() {
+  const error = new Error("browser auth context expired");
+  error.code = BROWSER_AUTH_CONTEXT_EXPIRED_CODE;
+  throw error;
+}
+
 function scopeStorage(storage, origin) {
   if (!storage || typeof storage !== "object" || Array.isArray(storage)
     || Object.getPrototypeOf(storage) !== Object.prototype && Object.getPrototypeOf(storage) !== null) {
@@ -144,9 +158,11 @@ function scopeSessionContextToOrigin(value, originValue) {
   if (!safePublicHostname(hostname)) invalid();
   const context = validateSessionContext(value);
   const scoped = {};
+  let applicableCookies = [];
   if (Object.prototype.hasOwnProperty.call(context, "cookies")) {
     if (!Array.isArray(context.cookies)) invalid();
-    scoped.cookies = context.cookies.filter((cookie) => cookieAppliesToHostname(cookie, hostname));
+    applicableCookies = context.cookies.filter((cookie) => cookieAppliesToHostname(cookie, hostname));
+    scoped.cookies = applicableCookies.filter((cookie) => !cookieIsExpired(cookie));
   }
   for (const key of ["localStorage", "sessionStorage", "indexedDB"]) {
     if (Object.prototype.hasOwnProperty.call(context, key)) {
@@ -156,7 +172,12 @@ function scopeSessionContextToOrigin(value, originValue) {
   const hasData = Object.entries(scoped).some(([key, item]) => (
     key === "cookies" ? item.length > 0 : Array.isArray(item) ? item.length > 0 : Object.keys(item).length > 0
   ));
-  if (!hasData) invalid();
+  if (!hasData) {
+    if (applicableCookies.length > 0 && applicableCookies.every((cookie) => cookieIsExpired(cookie))) {
+      expired();
+    }
+    invalid();
+  }
   return validateSessionContext(scoped);
 }
 
@@ -222,7 +243,8 @@ function openBrowserContext(row, keyHex) {
     const context = JSON.parse(plaintext);
     if (canonicalContext(context) !== plaintext) invalid();
     return scopeSessionContextToOrigin(context, identity.origin);
-  } catch {
+  } catch (error) {
+    if (error && error.code === BROWSER_AUTH_CONTEXT_EXPIRED_CODE) throw error;
     invalid();
   }
 }
@@ -340,6 +362,7 @@ async function invalidateBrowserAuthSession(input, opts = {}) {
 }
 
 module.exports = {
+  BROWSER_AUTH_CONTEXT_EXPIRED_CODE,
   normalizeAuthOrigin,
   validateSessionContext,
   scopeSessionContextToOrigin,
