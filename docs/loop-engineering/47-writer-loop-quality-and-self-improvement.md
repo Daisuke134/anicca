@@ -2136,11 +2136,15 @@ Superpowers systematic-debugging/TDDで、実launchd Pythonを使うreceipt vali
 
 ---
 
-## 22. Full picture — Money-first Writer / Shared Marketing Loop
+## 22. Full picture — Money-first Standalone Writer / Reusable Loop Contracts
 
 ### 22.1 Overview（What / Why）
 
-**結論**: Writer Loop は独立製品ではない。あらゆる自社 product を売る **Shared Marketing Loop** の最初の channel pack とする。Honne、Larry、ReelClaw、Watercolor の launchd loop も、記事・X・SEO と同じ engine に後で接続する。
+**結論**: Writer Loop は、note買い切り・Substack購読・long-form販売で直接売上を作る**独立した収益製品**である。
+Life Managerや他productについて書く場合は、audience / pain / proof / offer / CTAを任意inputとして受け取るが、
+Writerをproduct marketingのscheduler・reward・runtime配下へ統合しない。共有してよいのはrun schema、
+receipt/readback、bounded experiment、keep/revertの低レベル契約だけであり、Writerのcraft、opponent、reward、
+publication cadence、学習stateはWriterが所有する。
 
 **exact8-firstは禁止。** Zennを含む全公開面の修復や数日間の自然観測はreliability/monitoring laneで継続するが、money loopの実装を止めない。実装laneは次の順序で同じsession内に完成・検証・pushする:
 
@@ -2154,13 +2158,19 @@ Superpowers systematic-debugging/TDDで、実launchd Pythonを使うreceipt vali
 
 実装laneが完成した後、自然run・engagement・conversionは既存LaunchAgentが継続観測する。十分な証拠が届けば学習し、届かなければ変更0で待つ。人間も実装sessionも待機しない。
 
-共有 engine への移設はWriterのmoney-based learning contractをfixtureで一周した後に行う。3日目・7日目の実測はproduction calibrationであり、engine contract実装の開始条件ではない。Life Managerを最初のproduct packとして接続し、その後Honne / Larry / ReelClaw / Watercolorをchannel adapterとして順次接続する。Telegramを先に共通観測面にし、dashboardはreceiptのread-only projectionとして後置する。
+generic contract extractionとLife Manager product input fixtureは実装済みだが、それは運用統合を意味しない。
+Writerは独立loopのまま必要なproduct inputだけを読む。Honne / Larry / ReelClaw / Watercolorは各producer固有loopを維持し、
+Writerのprompt/CRAFT/reward/weightを共有しない。3日目・7日目の実測はproduction calibrationであり、
+実装sessionの開始条件にせず、Telegram/dashboardはledgerのread-only projectionとして扱う。
 
 **不変式**:
 
-> loop の違いは3つだけ: **報酬・対戦相手・weight file**。機械は1つ。
+> 再利用するのは**契約**、収益loopの所有者は1つずつ。Writerとproduct marketingを1つの報酬へ混ぜない。
 
-source、artifact form、publisher は channel I/O adapter であり、学習機械を fork する理由ではない。product ごとに変わるのは offer / audience / CTA / attribution。channel ごとに変わるのは生成形式 / platform policy / publish/readback。engine の state machine、台帳、blame、矛盾 scan、experiment、keep/revert、recovery、Telegram は1実装だけ持つ。
+source、artifact form、publisherはWriter内部のI/O adapterである。productごとに変わるoffer / audience / CTA /
+attributionはrun inputとしてscopeし、Writer直接売上とproduct paid conversionを同じprimary rewardへ合算しない。
+共有libraryはWriterをmarketing subsystemへ変えず、各loopは自分のstate machine owner、scheduler、craft、
+opponent、reward、weightを明示する。
 
 ### 22.2 外部調査と採用判断（Firecrawl + `crwl` + `gh` 実読）
 
@@ -2176,18 +2186,20 @@ source、artifact form、publisher は channel I/O adapter であり、学習機
 | [Temporal: Understanding Temporal](https://docs.temporal.io/evaluate/understanding-temporal) | 核心の引用: “your application can pick up right where it left off” | self-heal は新規 run の再生成ではなく、checkpoint 済みの同一 run / artifact から resume する |
 | [OpenTelemetry Observability Primer](https://opentelemetry.io/docs/concepts/observability-primer/) | 核心の引用: “application code must emit signals such as traces, metrics, and logs.” | Telegram の最終文だけでなく、run trace・metric・state log を同じ `run_id` で相関させる |
 
-**採用しない最強の論拠**: 「全 channel は marketing だから prompt/CRAFT/reward まで1つにする」は管理が最も単純になる。しかし、記事の勝者を conversion ad の対戦相手にすると §21.13 の「対戦相手がニュースだった」を全領域で再現する。共有対象は機械であって、良さの定義ではない。
+**採用しない最強の論拠**: 「全 channel は marketing だから prompt/CRAFT/reward まで1つにする」は管理が最も単純になる。しかし、記事の勝者を conversion ad の対戦相手にすると §21.13 の「対戦相手がニュースだった」を全領域で再現する。共有対象は低レベル契約であって、loopの所有権や良さの定義ではない。
 
-**自分が間違うとしたら最有力の筋**: 3層へ移す時点で Writer の暗黙依存を engine contract に取りこぼし、「共有化」ではなく2本目の半壊 copyを作ること。したがって移設の gate は clean user E2E と旧 path 0件で判定する。
+**自分が間違うとしたら最有力の筋**: standalone境界を強くしすぎてreceipt/readback/experimentの同型実装を複製すること。したがって共有libraryは許可するが、scheduler、primary reward、CRAFT、opponent、weightのowner分離をcontract testで固定する。
 
-### 22.3 3層 folder tree（T13 の移行先）
+### 22.3 3層 folder tree（実装済みlibrary配置。運用統合を意味しない）
 
-tracked SSOT は `profitable-claude` repo に置く。OpenClaw home を code/config の正本にしない。runtime data は repo 外、scheduler は macOS native launchd のままにする。
+以下は実装済みgeneric libraryの物理配置である。directory名`marketing`はWriterのproduct ownershipを定義しない。
+Writerのtracked SSOTは`profitable-claude/skills/article-writer`、runtime dataはrepo外、schedulerはWriter固有の
+macOS native launchdとする。OpenClaw homeをcode/configの正本にしない。
 
 ```text
 profitable-claude/
 └── marketing/
-    ├── engine/                               # Layer 1: 全 loop 共通。1実装だけ
+    ├── engine/                               # Layer 1: 再利用可能なschema/primitive
     │   ├── contracts/
     │   │   ├── run.schema.json
     │   │   ├── artifact.schema.json
@@ -2247,24 +2259,25 @@ profitable-claude/
 └── ai.anicca.marketing-health.plist
 ```
 
-**依存方向**:
+**library依存方向**:
 
 ```text
 engine ← product pack
 engine ← channel pack
-product pack × channel pack → campaign run
+product pack × channel pack → scoped library input
 ```
 
-`engine` は `life-manager`、`note`、`reelclaw` を import しない。registry が product/channel manifest を読み込む。channel 同士も import しない。cross-channel campaign は engine の run graph が artifact を渡す。
+`engine`は`life-manager`、`note`、`reelclaw`をimportしない。registryが明示的に渡されたmanifestだけを読む。
+Writerはこのlibraryを利用しても独立runのownerであり、cross-channel campaignへ自動参加しない。
 
 ### 22.4 共有するもの / 隔離するもの
 
 | 分類 | 共有 | DO NOT share |
 |---|---|---|
-| engine | durable state、idempotency、receipt/readback、retry、blame、矛盾 scanner、experiment、Telegram、cost cap | platform selector や product 固有 prompt |
+| library | schema、idempotency、receipt/readback、bounded retry、experiment/keep-revert primitive | scheduler、primary reward、CRAFT、opponent、weight、product固有prompt |
 | product | audience、pain、promise、proof、offer、CTA、attribution | 他 product の conversion history、customer claim |
 | channel | form schema、craft、policy、publisher、metric collector | 別 form の禁則。X の投稿解剖を note/動画へ直輸入しない |
-| learning | compare → blame → 1変更 → held-out → canary → keep/revert の機械 | reward、opponent pool、weights |
+| learning primitive | compare → blame → 1変更 → held-out → canary → keep/revert の手順 | loop owner、reward、opponent pool、weights |
 
 **reward contract**:
 
@@ -2594,7 +2607,7 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 | churn replacement | `new_paid_per_month >= churned_paid + net_growth_needed` |
 | channel allocation | artifact単位のpaid/activation rewardで配分。view/likeだけのviralは売上winnerにしない |
 | exploration | winnerへ集中しつつ、未試行variantをゼロにしない。1回の外れ値を永久ルールにしない |
-| self-improve | reward・opponent・weightはproduct/channel/slice別。engineだけ共有 |
+| self-improve | reward・opponent・weight・scheduler ownerはloop別。schemaとbounded keep/revert primitiveだけ再利用可能 |
 | self-heal | 同一run、同一artifact hash、同一destination intentから再開。新記事を作って失敗を隠さない |
 | no-human | reversible/bounded actionは自走。policy/safety/identity/支払の曖昧さはquarantineし、他channelを継続 |
 
@@ -2604,7 +2617,12 @@ launchctl kickstart -k gui/$(id -u)/ai.anicca.marketing-runner
 
 #### 判断
 
-Writer の目的は「記事を毎日出す」ではなく、**文章で実売上を作り、その売上を使って次の戦略を改善すること**。ただし Writer 専用の自己改善器を増やさない。Writer は、全 marketing producer が共有する次の2 loopを最初に本番接続する vertical slice とする。
+Writer の目的は「記事を毎日出す」ではなく、**文章そのものの実売上を作り、その売上を使って次の戦略を改善すること**。
+Writerは独立した収益loopとして次の2 loopを所有する。Life Managerについて書くrunはcanonical product truthをinputにできるが、
+`direct_writer_revenue`と`life_manager_paid_conversion`のどちらをprimary objectiveにするかをrun開始時にexact1で固定し、
+両rewardを合算しない。Life Manager repoのactive/legacy境界は
+[canonical one-repo spec](https://github.com/Daisuke134/life-manager/blob/main/docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md#21-現在の-repo-実測と恒久境界)
+だけを正本とし、本specへ複製しない。
 
 ```text
                    DESIRED STATE / REWARD CONTRACT
@@ -2736,6 +2754,39 @@ verified evidence
 
 #### 残TODO（損失順・唯一の現行順序）
 
+実装作業、実装済み機械の実run検証、時間窓の自動観測を同じ`pending`へ混ぜない。
+
+##### A. TODO NOW — 今すぐ実装する
+
+| # | 状態 | 作業 | done |
+|---:|---|---|---|
+| 1 | OPEN / P0 QUALITY | editorial formの矛盾を修復 | `lane A = first-person récit`強制を削除。topic source / evidence plan / editorial formを独立選択し、explainer / how-to / case-study / comparison / field-note / opinion / reportの連続偏りを制限。「試してみた」または一人称は読者jobに最適な時だけ許可 |
+| 2 | OPEN / P0 QUALITY | editorial/reader FAILをquality self-healへ接続 | bounded revise後もFAILなら同じ弱いformを公開せず、別form・別outline候補へ戻る。有料面はeditorial PASS、reader PASS、truth/identity PASSの同一artifact receiptが揃うまでpublishしない |
+| 3 | OPEN / P0 REGRESSION | production complaintを回帰fixture化 | 今日のtitle/body、`editorial-ja=FAIL`、reader unanswered 2件をfixtureにし、旧promptではRED、新contractでは別form候補生成またはpublish BLOCKを証明 |
+| 4 | OPEN / P1 RELIABILITY | x-post/ja lengthをfreeze前にgate | 280字以内だけimmutable artifact化。今日の362字intentは本文を後編集せず`invalid_pre_freeze_length`でterminal分類 |
+| 5 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
+| 6 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
+
+##### B. VERIFY ONLY — 実装済み、次の実runで証明する
+
+| # | 状態 | 検証 | done |
+|---:|---|---|---|
+| 1 | READY TO VERIFY | 新topic routerとstrategy consumption | fresh runに`topic-route.json`と`strategy-consumption.json`が存在し、source/evidence/formが独立、activeなしはbaseline hash、旧first-person固定0 |
+| 2 | READY TO VERIFY | paid publicationの次run再現性 | note ¥500 + Substack JA/EN paid exact3が新しいrun IDでpublic readback PASS。same-ID recovery、duplicate 0 |
+
+##### C. AUTO-MONITOR — 実装sessionは待たない
+
+| # | 状態 | 観測 | done |
+|---:|---|---|---|
+| 1 | AUTO-MONITOR | 実money/engagementでjudge・weightを較正 | scorableだけで相関・blame・変更。unknown/insufficientは変更0 |
+| 2 | AUTO-MONITOR | 3 healthy run / 7日attribution / retention | native workerがwindow terminal化。実装sessionは待たない |
+| 3 | LOW / MONEY-NONBLOCKING | Zenn backlogとX時刻契約 | money laneを止めず、FIFO exact1/public readback/時刻差をreconcilerが継続 |
+
+Writerはstandalone revenue loopであり、Honne/Larry/ReelClaw/Watercolorとの運用mergeは残TODOに含めない。
+generic schema/libraryの再利用は完了履歴として保持するが、producer間でscheduler、CRAFT、reward、opponent、weightを共有しない。
+
+#### 旧台帳（履歴。現在の残TODOではない）
+
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
 | 1 | DONE (`590627c`) | generic dual-loop contractをWriterのpaid-publication vertical sliceで固定 | note `desired=¥500 / actual=free`をmachine-readable差分化。reconcileはadapter/checkpoint/retryだけ、optimizerはscorable reward後のstrategy demo/rule/weight exact1だけを許可。新3 schemaを実fixtureで検証、RED 3→focused 3 PASS→Marketing全18 PASS |
@@ -2750,7 +2801,7 @@ verified evidence
 | 10 | DONE (`82e9cf3`) | keep/revertを実next-run consumptionまで閉じる | bounded learnerはheld-out非悪化かつcanary PASSの時だけactive version manifestをatomic昇格。canary FAIL/unknownはweightをpreimageへ戻し既存active pointerを不変保持。daily wrapperはmodel開始前に全active weight bytesをmanifest hashと照合し、`gates/strategy-consumption.json`へrun ID/version/hashを保存。activeなしは明示baseline、hash driftは生成前BLOCK。TDD RED（active pointer/strategy runtime/daily配線なし）→focused 7 PASS、learning+Marketing 45 PASS、daily contract全PASS |
 | 11 | AUTO-MONITOR | 実money/engagementでjudge・weightを較正 | scorableだけで相関・blame・変更。unknown/insufficientは変更0 |
 | 12 | AUTO-MONITOR | 3 healthy run / 7日attribution / retentionを蓄積 | native workerがwindow terminal化。実装sessionは待たない |
-| 13 | AFTER WRITER VERTICAL SLICE | 同じengineへHonne/Larry/ReelClaw/Watercolorと各product packを接続 | engine fork 0、producer固有craft/actionはadapter内、reward/opponent/weight scope隔離 |
+| 13 | SUPERSEDED BY CURRENT §22.14 | 旧案: Honne/Larry/ReelClaw/Watercolorとproduct packを同じ運用engineへ接続 | 現行判断では実施しない。generic library履歴だけ保持し、各producerとWriterのscheduler/CRAFT/reward/opponent/weight ownerを分離 |
 | 14 | LOW / MONEY-NONBLOCKING | Zenn backlogとX時刻契約 | money laneを止めず、FIFO exact1/public readback/時刻差をreconcilerが継続 |
 
-#1–#10は今日実装・fixture検証できるため、自然runや7日windowを待たない。#11–#12だけが時間経過でscorableになるproduction calibrationであり、native workerへ残してsessionを閉じる。
+この旧台帳の#1–#10という番号と状態は履歴であり、現在の実行順序には使わない。現行順序は直上A/B/Cだけを読む。
