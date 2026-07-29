@@ -920,6 +920,12 @@ The order below is the program source of truth. Milestone A is a hard gate:
 cloud migration work does not begin until every retained loop is demonstrably
 OpenClaw-independent and running under Life Manager locally.
 
+Current Order 0 subcursor:
+`REPO-V0-RETIRE-1`. The preceding `OSS-SECURITY-BASELINE-1` merged in PR
+#1274 with all exact-five security checks green. The following substep is
+`AE-X402-SOURCE-CONSOLIDATE-1`. Evidence:
+`docs/evidence/security/2026-07-29-oss-security-baseline.md`.
+
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
 | 0 | Finish single-repository consolidation | this spec and its plans exist only in `Daisuke134/life-manager`; all 35 `life-manager-v0` files have an `import`, `superseded`, or `retire` disposition; retained behavior has canonical tests; GitHub/CI/Railway/scheduler reference guard passes; `life-manager-v0` is archived read-only; no runtime uses its local clone |

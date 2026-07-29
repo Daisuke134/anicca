@@ -851,7 +851,7 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 
 | 順 | ID | 現在 | done |
 |---:|---|---|---|
-| ~~1~~ | `OSS-SECURITY-BASELINE-1` | **done**。848 findingを847 exact fingerprintへ裁定し、旧provider credentialは全invalid、期限切れlocalhost keyはcurrent tree 0。PIIは14 synthetic fixtureだけをpath-bound fingerprint許可。誤った全Python test直実行を13-test明示manifestへ交換し、X gate期待値を現specへ同期。local gitleaks current/all-ref、PII、Python、AST、shell、reportがPASS | PR #1274でgitleaks / PII / TruffleHog / Python / Shell exact5 green。evidence=`docs/evidence/security/2026-07-29-oss-security-baseline.md` |
+| ~~1~~ | `OSS-SECURITY-BASELINE-1` | **done**。gitleaks current 0 / 全10,455 commit 0、PII 0、Python security contract 12/12、TruffleHog filesystem verified 0。全履歴で新たに確認した同一Railway Postgres endpoint 7件は、`trust→scram-sha-256`、password rotation、consumer internal route化、public TCP proxy削除を実施し、旧/誤password拒否、全5 deployment SUCCESS、公開health 4/4 HTTP 200、全履歴Postgres verified 0まで再実証。evidence=`docs/evidence/security/2026-07-29-oss-security-baseline.md` | PR #1274でgitleaks / PII / TruffleHog / Python / Shell exact5 green後にmerge |
 | 2 | `REPO-V0-RETIRE-1` | active runtimeはcanonical exact1だがv0はpublic/unarchived、35 files、open issue 11 | §2.1.1のTODO NOW 1→4を閉じ、VERIFY AFTERをPASS |
 
 #### Boundaries / Execution / E2E judgment
