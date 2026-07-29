@@ -58,8 +58,17 @@ Markdown runtime contract.
 ## Task 3 — Real migration, state, and GitHub
 
 - [x] Exercise the canonical ledger through a copied migration first.
-- [ ] Fast-forward canonical only through GitHub PR after all CI gates pass.
-- [ ] Verify live database integrity, unchanged application counts, and the
+- [x] Fast-forward canonical only through GitHub PR after all CI gates pass.
+- [x] Verify live database integrity, unchanged application counts, and the
   existing launchd schedules/exits.
-- [ ] Update the SSOT spec and redacted evidence with exact commits, CI, and
+- [x] Update the SSOT spec and redacted evidence with exact commits, CI, and
   runtime measurements.
+
+PR #1306 passed all five GitHub CI gates in run `30451149945` and squash-merged
+as `34002214a85d5a37068e3eee38a06f32ec4a5033`. The canonical checkout
+fast-forwarded to that commit. After an online private backup, the real ledger
+migrated with unchanged 2 submitted / 1 not-submitted application counts,
+three backfilled attempts, one retryable application, and integrity `ok`.
+Existing launchd jobs were kickstarted rather than duplicated: daily advanced
+4→5 and inbox 10→12, both exited zero; the honest terminal statuses were
+`budget_blocked` and `no_new_recruiting_email`.
