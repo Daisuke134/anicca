@@ -6,6 +6,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 
 const {
+  extractLumaCode,
   requestLumaEmailLogin,
   resolveBootstrapEnv,
   runLumaBootstrap,
@@ -197,4 +198,22 @@ test("Luma login request deterministically fills and submits the measured email 
   assert.match(calls[0][1], /button\[type="submit"\]/);
   assert.match(calls[0][1], /dispatchEvent/);
   assert.match(calls[0][1], /browser-agent@example\.test/);
+});
+
+test("Luma email challenge accepts only a six-digit code from a Luma-shaped message", () => {
+  assert.equal(extractLumaCode({
+    from: "Luma <login@lu.ma>",
+    subject: "Your sign-in code",
+    text: "Use 123456 to sign in.",
+  }), "123456");
+  assert.equal(extractLumaCode({
+    from: "attacker@example.test",
+    subject: "Your sign-in code",
+    text: "Use 123456 to sign in.",
+  }), null);
+  assert.equal(extractLumaCode({
+    from: "Luma <login@lu.ma>",
+    subject: "Your sign-in code",
+    text: "Use 12345 to sign in.",
+  }), null);
 });
