@@ -8,6 +8,14 @@
 **Primary outcome:** every retained loop runs from Life Manager with zero
 OpenClaw dependency, first locally and then from the same runtime in the cloud.
 
+**Current implementation cursor:** the portable local foundation and bounded
+financial-report job adapter are proven. A Life Manager-owned local scheduler
+and worker sent real Telegram `message_id=432`, persisted the immutable
+snapshot/effect receipt, and survived a worker restart without resend. The
+legacy LaunchAgent remains active until the seven-expected-run shadow gate.
+Next: migrate the remaining Telegram command surface and retained loop
+adapters; do not cut over scheduler ownership yet.
+
 ## 1. Executive decision
 
 Life Manager becomes the single control plane for personal health and autonomous
@@ -147,7 +155,7 @@ and rollback evidence pass.
 | Marketing runtime store | About 20 KB; dashboard and logs only; no run, publication, metric, experiment, or observation ledgers | The production feedback loop is not closed |
 | Life Manager Railway | `/health` returns 200 from `life-call-production.up.railway.app` | A functioning cloud control plane already exists |
 | Life Manager panel | Timeline, connection, score, gate, API cost, and limited financial-ledger projections exist | Extend; do not build a second dashboard |
-| Financial report loop | launchd checks every five minutes, sends daily after 20:00 JST and weekly Sunday after 20:05 JST | Scheduling works locally but is not cloud-owned |
+| Financial report loop | the legacy launchd loop remains active; the Life Manager local scheduler/job/worker path separately sent real Telegram `message_id=432` with immutable snapshot/effect receipt and restart count `1 → 1` | Report execution is OpenClaw-independent and shadow-ready; scheduler ownership is intentionally not cut over until seven expected runs |
 | Financial report scope | x402/TaskMarket/USDC earnings, fees, losses, API costs, payout reserve | Bank, App Store, RevenueCat, Stripe, broader crypto, and business P&L are absent |
 | RevenueCat | One project, seven app/store entries; current project overview is `$20 MRR`, five active subscriptions, zero trials | Baseline is tiny and currently not reliably split per product |
 | Moneytree connector | One connected Japanese bank account is readable | Bank balance can seed the personal balance sheet; account identifiers must stay private |
@@ -170,7 +178,7 @@ machine-maintenance job.
 | Writer/article | craft train and article resume/daily/learning jobs are loaded; standalone writer daily/learn plists exist but are not currently loaded | Profitable Claude plus local writer CLI | Mixed; loaded jobs include successes and failures |
 | Shared marketing metrics | Every 15 minutes | Profitable Claude engine | Runs successfully but has no production ledgers to observe |
 | Shared marketing dashboard | Every 15 minutes | Profitable Claude engine | Runs successfully but projects an empty runtime |
-| Life Manager financial report | Every five minutes; send gates at 20:00 daily and Sunday 20:05 weekly | Canonical `life-manager` checkout currently named `life-manager-main`, plus `~/.openclaw/.env` | Active; still local and OpenClaw-env-dependent |
+| Life Manager financial report | Every five minutes; send gates at 20:00 daily and Sunday 20:05 weekly | Legacy launchd still reads its historical environment; replacement uses Life Manager PostgreSQL jobs and tenant secret refs | Replacement real-send proof complete (`message_id=432`); legacy remains active only for shadow/cutover safety |
 
 Immediate Life Manager marketing routing measured during this design update:
 
@@ -988,7 +996,7 @@ runtime-migration work is active:
 | 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner |
 | 2 | Decide every legacy job and freeze new legacy writes | inventory without disposition cannot drive a safe cutover | each job has a Life Manager owner, target adapter, effect class, verification command, and rollback action |
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
-| 4 | Migrate Telegram and the current financial report | they are the command/report surfaces needed to observe every later migration | local Life Manager sends the same real report and receipts with no OpenClaw process or env read |
+| 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env; remaining command routing and seven-run shadow stay open |
 | 5 | Import shared execution contracts needed by retained loops | marketing and income loops still execute through Profitable Claude and legacy paths | Life Manager owns the minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
 | 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | code, schedules, state, sessions, and effects remain scattered | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
