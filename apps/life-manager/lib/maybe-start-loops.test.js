@@ -1,4 +1,4 @@
-// maybe-start-loops.test.js — B3: the voice-daemon single-writer gate.
+// Deployment-role single-writer gate. The legacy boolean remains a safe transition switch.
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
@@ -16,34 +16,68 @@ function counters() {
   return { c, starters };
 }
 
-test("default (unset) → all 5 loops start once (Railway behaviour unchanged)", () => {
+test("default standalone process keeps the current Railway behavior during migration", () => {
   const { c, starters } = counters();
   const r = maybeStartLoops({}, starters);
   assert.strictEqual(r.started, true);
   assert.deepStrictEqual(c, { startScheduler: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
 });
 
-test('LIFE_RUN_LOOPS="true" → all 5 loops start', () => {
+test("the scheduler deployment starts all loops only with an explicit owner", () => {
   const { c, starters } = counters();
-  const r = maybeStartLoops({ LIFE_RUN_LOOPS: "true" }, starters);
+  const r = maybeStartLoops({
+    LM_DEPLOYMENT_ROLE: "scheduler",
+    LM_SCHEDULER_OWNER: "local-primary",
+    LIFE_RUN_LOOPS: "true",
+  }, starters);
   assert.strictEqual(r.started, true);
+  assert.equal(r.owner, "local-primary");
   assert.deepStrictEqual(c, { startScheduler: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
 });
 
 for (const off of ["false", "FALSE", " False ", "0", "off"]) {
-  test(`LIFE_RUN_LOOPS=${JSON.stringify(off)} → voice daemon, NO loops start`, () => {
+  test(`LIFE_RUN_LOOPS=${JSON.stringify(off)} remains a safe transition stop`, () => {
     const { c, starters } = counters();
     const r = maybeStartLoops({ LIFE_RUN_LOOPS: off }, starters);
     assert.strictEqual(r.started, false, "started=false");
-    assert.match(r.reason, /single-writer|cron/i, "reason explains cron owns loops");
+    assert.match(r.reason, /disabled|deployment/i);
+    assert.doesNotMatch(r.reason, /openclaw/i);
     assert.deepStrictEqual(c, { startScheduler: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 },
       "ZERO loops started when off — single writer");
   });
 }
 
-test("an unrelated value (e.g. 'yes') is treated as ON (fail-safe to running, not silent-off)", () => {
+for (const role of ["api", "worker"]) {
+  test(`${role} deployment never owns scheduler loops`, () => {
+    const { c, starters } = counters();
+    const r = maybeStartLoops({
+      LM_DEPLOYMENT_ROLE: role,
+      LIFE_RUN_LOOPS: "true",
+    }, starters);
+    assert.strictEqual(r.started, false);
+    assert.match(r.reason, new RegExp(role));
+    assert.deepStrictEqual(c, counters().c);
+  });
+}
+
+test("scheduler deployment without an owner fails closed", () => {
   const { c, starters } = counters();
-  const r = maybeStartLoops({ LIFE_RUN_LOOPS: "yes" }, starters);
-  assert.strictEqual(r.started, true, "only explicit false/0/off disables — avoids accidental silent no-wake");
-  assert.strictEqual(c.startScheduler, 1);
+  const r = maybeStartLoops({
+    LM_DEPLOYMENT_ROLE: "scheduler",
+    LIFE_RUN_LOOPS: "true",
+  }, starters);
+  assert.strictEqual(r.started, false);
+  assert.match(r.reason, /owner.*required/i);
+  assert.deepStrictEqual(c, counters().c);
+});
+
+test("OpenClaw is not a supported deployment owner or fallback", () => {
+  const { c, starters } = counters();
+  const r = maybeStartLoops({
+    LM_DEPLOYMENT_ROLE: "openclaw",
+    LIFE_RUN_LOOPS: "true",
+  }, starters);
+  assert.strictEqual(r.started, false);
+  assert.match(r.reason, /unsupported deployment role/i);
+  assert.deepStrictEqual(c, counters().c);
 });

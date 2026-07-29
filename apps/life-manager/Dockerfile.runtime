@@ -1,0 +1,10 @@
+FROM node:20.19-alpine
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY . .
+
+USER node
+EXPOSE 8788 8790
+CMD ["node", "server.js"]
