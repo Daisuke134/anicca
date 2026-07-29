@@ -29,7 +29,7 @@ Method: TDD (RED → GREEN → REFACTOR) per task. Commit + push after each task
 
 ## Task 6 — Wiring
 - Register both capabilities in `scripts/runtime-up.js` handler map (follow `:264-335` pattern exactly).
-- Enqueue on tenant creation: `apps/landing/netlify/functions/lm-onboard.js` flow enqueues `wallet.zero-start` (no key material in the function) + scheduler self-heal sweep for rows missing wallet columns.
+- Enqueue = self-heal sweep only (spec §4.4 updated): scheduler sweep enqueues `wallet.zero-start` for `lm_users` rows missing wallet columns. `lm-onboard.js` untouched — runtime queue is in local Postgres, unreachable and un-exposable from Netlify without a new public write surface.
 - Extend `test/tenant-isolation.test.js` with wallet isolation assertions.
 
 ## Task 7 — Regression + evidence prep

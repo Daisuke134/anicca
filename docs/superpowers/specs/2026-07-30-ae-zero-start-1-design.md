@@ -86,9 +86,16 @@ Clone of the `report-job-adapter.js` shape:
   `fee-free WORK`, `incoming-payment watch`). No promises of income; if the
   tenant has no linked chat yet, the job records `blocked_no_chat` honestly
   and retries on next wake (never fabricates a send).
-- Enqueue point: tenant creation path (`lm-onboard.js` flow) enqueues the
-  job; the adapter itself also self-heals — a scheduler sweep enqueues
-  `wallet.zero-start` for any `lm_users` row missing wallet columns.
+- Enqueue point: **self-heal sweep only**. A scheduler sweep inside
+  life-manager enqueues `wallet.zero-start` for any `lm_users` row missing
+  wallet columns. `lm-onboard.js` stays untouched: the runtime job queue
+  lives in the local Postgres (`LM_RUNTIME_DATABASE_URL`,
+  `lib/runtime-job-store.js:46-58`), not Supabase — a Netlify function has
+  no network path to it, and exposing `lm_runtime_jobs` via PostgREST would
+  put the queue's write surface on the public internet. The sweep is
+  idempotent by construction (`job_id`/`effect_key` = `zero-start:<uid>`)
+  and also heals pre-existing tenants and lost enqueues. Cost: a new tenant
+  is provisioned on the first sweep after signup instead of synchronously.
 
 ### 4.5 Inflow watch adapter — `apps/life-manager/lib/wallet-inflow-job-adapter.js`
 
