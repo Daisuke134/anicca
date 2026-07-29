@@ -25,6 +25,10 @@ and reports every material state change to Telegram.
 | Assessments | Autonomous execution requires explicit AI permission and no proctoring; all code runs without network or home access |
 | Self-improvement | One-field experiments require 10 resolved samples per arm, zero replay violations, and non-overlapping Wilson 95% intervals |
 
+Runtime dependency ordering follows
+[`rules/runtime-ordering.md`](rules/runtime-ordering.md): deterministic recovery,
+quota, and policy gates run before browser/model initialization.
+
 ## Runtime
 
 | Component | Schedule | Route |
