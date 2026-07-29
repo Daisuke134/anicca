@@ -67,6 +67,33 @@ Product processへGitHub merge credentialを渡さない。Productが壊れて�
 | [LangChain Graph Engineering](https://www.langchain.com/blog/3-years-of-graph-engineering-with-langgraph) | “loops are simple graphs” | 複数loopをstate machineとして統治 |
 | [Colony Builds Colony](https://runcolony.com/blog/colony-builds-colony/) | “This isn’t a closed loop.” | 人間が残る箇所を隠さず、bounded autonomyから始める |
 
+### Concrete tool stack
+
+Graph EngineeringのためにLangGraphを追加しない。Life Managerがすでに使うInngestを
+durable control graphとし、LLM workerはそのnodeとして呼ぶ。
+
+| Layer | Selected tool | Responsibility |
+|---|---|---|
+| Instrumentation standard | OpenTelemetry SDK + Collector | trace/span/metric/logの共通schemaとexport |
+| Agent trace/eval UI | Langfuse | LLM/tool trace、session、score、dataset、experiment |
+| Durable graph | Inngest | event、step state、retry、concurrency、resume |
+| Product outcome | Mixpanel + Postgres | funnel、retention、task success、effect receipt |
+| Error plane | Sentry | exception、release regression、alert |
+| Improvement authority | Postgres | signal、cluster、issue state、lease、audit |
+| Visible work state | GitHub Issues / PRs | evidence packet、diff、lineage |
+| Deterministic gates | GitHub Actions + existing test runners | build、unit、integration、E2E、policy |
+| Coding workers | Codex Terra / Sol | triage、reproduction、implementation |
+| Portable agent eval | existing Node evals first; Harbor later | containerized cross-agent taskが必要な時だけ導入 |
+
+ソース: [Inngest](https://github.com/inngest/inngest) /
+核心の引用: “Steps ... can run for months and recover from failures.”
+
+ソース: [Langfuse](https://github.com/langfuse/langfuse) /
+核心の引用: “develop, monitor, evaluate, and debug AI applications.”
+
+ソース: [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) /
+核心の引用: “define a common set of (semantic) attributes.”
+
 ## 2. Trust boundary
 
 Life Managerが自分の全構成を自由に編集する設計にはしない。
@@ -229,6 +256,31 @@ L4 raw        : restricted, redacted, retention-limited
 ```
 
 Agentへ渡すcontextはL0→L3をdrill-downする。全raw logをcontextへ入れない。
+
+### 5.4 Multi-tenant collection policy
+
+「全ユーザーを読む」か「自分だけを見る」かの二択にしない。全runから軽量な
+system evidenceを取り、full contentは必要なtraceだけに限定する。
+
+| Data | Collection |
+|---|---|
+| success/error counter、latency、cost、release、model/tool version | 全run |
+| effect receipt、state transition、policy decision | 全run |
+| failure、timeout、security/safety trace | full traceを保持 |
+| normal successful trace | tail sampling |
+| raw prompt、Telegram、calendar、location、health data | default export禁止 |
+| tenant identity | stable pseudonymous hash |
+| tenant-specific debug | bounded window、purpose、access log付き |
+
+集計単位は個人名ではなく、`release × graph_version × model × tool × failure_class`
+とする。改善Agentにはclusterとredacted exemplarを渡し、任意ユーザーの日常本文を
+読ませない。
+
+ソース: [OpenTelemetry AI Agent Observability](https://github.com/open-telemetry/opentelemetry.io/blob/main/content/ja/blog/2025/ai-agent-observability/index.md) /
+核心の引用: 「テレメトリーは、評価ツールのインプットとして使用する」
+
+ソース: [OpenTelemetry Tail Sampling](https://github.com/open-telemetry/opentelemetry.io/blob/main/content/ja/blog/2022/tail-sampling/index.md) /
+核心の引用: 「必要なのは、適切にサンプリングされたデータです。」
 
 ## 6. Data model
 
@@ -626,4 +678,3 @@ ground truthがなくなるためである。resume、audit、credential isolati
 自分が間違うとしたら最有力の筋は、Postgres authorityとGitHub projectionの二重状態が
 運用負荷を増やし、GitHub-native durable workflowだけで十分な規模に留まる場合である。
 この反証は、reconciliation failure率とstate recovery時間を実測して判断する。
-
