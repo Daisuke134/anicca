@@ -1,6 +1,0 @@
-[submodule "services/inbox-zero"]
-	path = services/inbox-zero
-	url = https://github.com/elie222/inbox-zero.git
-[submodule "services/facilitator/x402-rs"]
-	path = services/facilitator/x402-rs
-	url = https://github.com/x402-rs/x402-rs.git

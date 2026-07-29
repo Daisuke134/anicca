@@ -8,7 +8,7 @@ config, a board-state-sharing fix, ABI/comment corrections) are already committe
 
 ## SECURITY UPDATE (2026-07-07, read before acting on the recon below)
 
-automaton's wallet key leaked (~/.anicca-founder/agents/polymarket-agent/.env + ~/.openclaw/.env) and was
+automaton's wallet key leaked (~/.anicca-founder/agents/polymarket-agent/.env + ~/.local/state/life-manager/.env) and was
 rotated: `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` -> `0xB9dd3B67921B354c656523d6851537988F31DD56`
 (old wallet's balance moved on-chain to the new one). The gas/USDC recon table in §"Who actually needs a
 gas seed" below (and in MAINNET.md) is PRE-ROTATION and describes the OLD, now-retired address — it is
@@ -22,7 +22,7 @@ abandoned, not de-registered (no burn/transfer function in this registry's ABI).
 ## 0. READ THIS FIRST — a finding that changes the blast-radius picture
 
 **The facilitator that is live RIGHT NOW is running out of THIS WORKTREE, not a separate deployed
-body.** `ps -p 94412` shows `/Users/anicca/anicca/.worktrees/agent-economy/services/facilitator/x402-rs/
+body.** `ps -p 94412` shows `$LIFE_MANAGER_REPO/.worktrees/agent-economy/services/facilitator/x402-rs/
 target/release/x402-facilitator`, cwd = this worktree's `services/facilitator/`. It was started manually
 (no launchd job owns it — `ai.anicca.gig-proactive` is an unrelated self-improvement "slot" loop, not
 this marketplace) at 2026-07-07 00:03, and its log shows it settled 4 real testnet txs around 18:40-
@@ -54,7 +54,7 @@ I did not touch PID 94412 at any point in this prep (verified `/health` before a
 | `skills/economy/gig/mcp-server.mjs` | `identity_register` tool description no longer hardcodes "Base Sepolia" (now says "this board's active network, GIG_CHAIN env var"). |
 | `services/facilitator/config.mainnet.json` | **new file** — mainnet variant (`eip155:8453`, `https://mainnet.base.org`), same shape as `config.json`, port unchanged (8405). |
 | `services/facilitator/start.sh` | `GIG_CHAIN=base ./start.sh` now selects `config.mainnet.json` + prints the right chain label; default (unset) behavior is byte-for-byte identical to before (`config.json`, testnet). Still idempotent — running it while a facilitator already answers `/health` on that port is a no-op, so this could not have disturbed PID 94412. |
-| `skills/economy/gig/README.md` | corrected the MCP wiring snippet (it pointed at `~/anicca/skills/economy/gig/mcp-server.mjs`, a path that doesn't exist in the main checkout — see §0) to the real deployed-body path, added the full `env` block, and documented the `GIG_STATE_PATH`-must-exist-before-config-load gotcha (§4). |
+| `skills/economy/gig/README.md` | corrected the MCP wiring snippet (it pointed at `$LIFE_MANAGER_REPO/skills/economy/gig/mcp-server.mjs`, a path that doesn't exist in the main checkout — see §0) to the real deployed-body path, added the full `env` block, and documented the `GIG_STATE_PATH`-must-exist-before-config-load gotcha (§4). |
 
 **Test suite: 40/40 still green after every change** (`cd skills/economy/gig && npm test`) — no test
 hardcodes a chain constant directly; all mock `pay`/`verifyIdentityFn` via dependency injection.
@@ -146,23 +146,23 @@ import("viem").then(async (v) => {
 
 `skills/economy/gig/` is fully self-contained: its own `package.json`/`package-lock.json` and its own
 `node_modules/` (94MB, **zero native `.node` binaries** — confirmed via `find`, so a plain directory copy
-is safe on this same arm64 Mac Mini, no rebuild needed). The top-level `~/anicca` checkout's own
+is safe on this same arm64 Mac Mini, no rebuild needed). The top-level `$LIFE_MANAGER_REPO` checkout's own
 `node_modules` **does not currently exist** (root `package.json` declares `viem` but `npm install` was
 never run there) — so do NOT rely on `~/.anicca/node_modules` (a dangling symlink to
-`/Users/anicca/anicca/node_modules`, confirmed non-existent) or `~/.blockrun/node_modules` (same symlink)
+`$LIFE_MANAGER_REPO/node_modules`, confirmed non-existent) or `~/.blockrun/node_modules` (same symlink)
 for this skill's deps. Copy the self-contained directory whole.
 
 ```bash
 # automaton — run.sh path only needs viem (mcp-server.mjs/zod/@modelcontextprotocol/sdk unused by run.sh)
 mkdir -p ~/.anicca/skills/economy
 rsync -a --exclude='state/gigs.json' --exclude='state/locks/' \
-  /Users/anicca/anicca/.worktrees/agent-economy/skills/economy/gig/ \
+  $LIFE_MANAGER_REPO/.worktrees/agent-economy/skills/economy/gig/ \
   ~/.anicca/skills/economy/gig/
 
 # Franklin — mcp-server.mjs needs viem + zod + @modelcontextprotocol/sdk (all already in node_modules/)
 mkdir -p ~/.blockrun/skills/economy
 rsync -a --exclude='state/gigs.json' --exclude='state/locks/' \
-  /Users/anicca/anicca/.worktrees/agent-economy/skills/economy/gig/ \
+  $LIFE_MANAGER_REPO/.worktrees/agent-economy/skills/economy/gig/ \
   ~/.blockrun/skills/economy/gig/
 ```
 
@@ -184,7 +184,7 @@ mkdir -p "$(dirname "$SHARED_STATE")"
 [ -f "$SHARED_STATE" ] || echo '{"nextId":1,"gigs":{}}' > "$SHARED_STATE"
 ```
 
-- **automaton**: add `GIG_STATE_PATH=/Users/anicca/.anicca-signing/gig-board/state/gigs.json` (and
+- **automaton**: add `GIG_STATE_PATH=/home/life-manager/.anicca-signing/gig-board/state/gigs.json` (and
   `GIG_CHAIN=base` when going live) to `~/.anicca-signing/gig-board/.env` — `run.sh` already `source`s
   this file (`set -a; source "$GIG_ENV"; set +a`), so nothing else changes.
 - **Franklin**: set both directly in `~/.blockrun/mcp.json`'s `env` block (Franklin's MCP loader does
@@ -223,7 +223,7 @@ python3 -c "from eth_account import Account; import secrets; k='0x'+secrets.toke
 # write it to ~/.anicca-signing/x402-facilitator-mainnet/.env as FACILITATOR_PRIVATE_KEY=... / FACILITATOR_ADDRESS=...
 # seed that FACILITATOR_ADDRESS per §3 before first real settle
 
-cd /Users/anicca/anicca/.worktrees/agent-economy/services/facilitator   # or wherever it's migrated to, see §0
+cd $LIFE_MANAGER_REPO/.worktrees/agent-economy/services/facilitator   # or wherever it's migrated to, see §0
 SECRETS_ENV=~/.anicca-signing/x402-facilitator-mainnet/.env GIG_CHAIN=base PORT=8407 ./start.sh
 ```
 

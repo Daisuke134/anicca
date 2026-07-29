@@ -94,7 +94,7 @@ def main() -> int:
     parser.add_argument(
         "--ledger",
         type=Path,
-        default=Path("~/.openclaw/state/lm-video/x-launch.jsonl").expanduser(),
+        default=Path("~/.local/state/life-manager/state/lm-video/x-launch.jsonl").expanduser(),
     )
     args = parser.parse_args()
     print(json.dumps(run(args.spec, args.ledger), separators=(",", ":")))

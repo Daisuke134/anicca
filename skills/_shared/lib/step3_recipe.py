@@ -220,7 +220,7 @@ def default_restart_cmd_map(anicca_home: str) -> dict:
 
     sprint-3 shipped gig only; gig (+ affiliate/bounty) is now isolated to the
     private profitable-claude repo (2026-07-06, .vcsdd/features/anicca-agent-economy
-    SPEC.md §3 P0) and is no longer a self-funded slot in ~/anicca, so its entry is
+    SPEC.md §3 P0) and is no longer a self-funded slot in the canonical checkout, so its entry is
     gone. Empty until a self-funded earn slot migrates to proactive-loop restart.
     """
     return {}

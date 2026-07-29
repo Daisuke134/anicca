@@ -17,7 +17,7 @@ const opt = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i
 function die(m) { console.error("record-earn: " + m); process.exit(1); }
 
 // FIND-401: prod root is an env-independent absolute literal; only test may relocate it.
-const FOUNDER_DIR = TEST ? (process.env.FOUNDER_DIR || path.join(process.env.HOME || os.homedir(), ".anicca-founder")) : "/Users/anicca/.anicca-founder";
+const FOUNDER_DIR = TEST ? (process.env.FOUNDER_DIR || path.join(process.env.HOME || os.homedir(), ".anicca-founder")) : "/home/life-manager/.anicca-founder";
 const STATE = path.join(FOUNDER_DIR, "state");
 const WALLET_JSON = path.join(FOUNDER_DIR, "wallet.json");
 const CURSOR_FILE = path.join(STATE, "block-cursor.txt");

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude lives in ~/.local/bin (npm global), matching self-fix.sh
 # gig_reality_verify.sh — the reality-verifier runner for the gig loop (feature gig-reality-verify,
 # 増分2b: docs/loop-engineering/26-gig-loop-asis-tobe-plan.md §8, BP §2/§7 of
@@ -24,7 +27,7 @@ set -uo pipefail
 
 G="$HOME/gig"
 AUDIT_REALITY="$G/audit-reality.jsonl"
-SELFHEAL="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
+SELFHEAL="$HOME/.local/state/life-manager/state/.gig-core-selfheal-request.json"
 PY="$(command -v python3 || echo /opt/homebrew/bin/python3)"
 CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -202,7 +205,7 @@ fi
 # session had dropped, every ground-truth URL redirected to /login, and a logged-out verifier
 # recorded verdict=false — accusing a healthy loop of lying. We hold the CDP lock here (exclusive)
 # and the browser is up, so restore the banked login first, then confirm it took.
-VAULT="$HOME/anicca/skills/browser/scripts/session_vault.py"
+VAULT="$LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py"
 "$PY" "$VAULT" restore >/dev/null 2>&1 || true
 KA=$("$PY" "$VAULT" keepalive "https://coconala.com/mypage/dashboard" 2>/dev/null || echo '{}')
 LOGGED_OUT=$("$PY" -c "import json,sys; print('1' if json.loads(sys.argv[1]).get('logged_out') else '0')" "$KA" 2>/dev/null || echo 0)

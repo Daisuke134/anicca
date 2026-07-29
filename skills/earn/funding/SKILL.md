@@ -1,6 +1,6 @@
 # funding — claude-p's surplus PM capital -> Franklin, mechanically (no judgment here)
 
-> Spec of record: `~/anicca-project/docs/loop-engineering/11-parent-funding-loop.md` §2
+> Spec of record: `$LIFE_MANAGER_REPO/docs/loop-engineering/11-parent-funding-loop.md` §2
 > (send mechanism) + §3 (money-safety rails). This skill implements ONLY the mechanism
 > (withdraw -> bridge -> send) plus its safety rails. It does **not** decide WHEN or
 > HOW MUCH to fund -- that OBSERVE/DECIDE judgment belongs to the agent running the parent
@@ -123,7 +123,7 @@ simulate money that a prior dry step didn't actually send.
 | Reserve protection (never starve pm-earner) | `lib/caps.py` (`reserve_protected_amount`), `config.json: reserve_usd` | `withdraw.py` never proposes withdrawing below the configured reserve. |
 | On-chain confirmation before recording success, crash-safe | `lib/erc20.py` (`eth_tx_confirmed_success`), `lib/solana_rpc.py` (`confirmed_success`) | Independently queries the chain (`eth_getTransactionReceipt` / `getSignatureStatuses`) for a real terminal status -- never trusts an SDK/CLI "success" return alone. Every real broadcast (unwrap, transfer, bridge tx, spl-token transfer) is recorded as a `"pending"` ledger row IMMEDIATELY after broadcast, BEFORE the confirmation wait/poll call -- the confirmation call itself is wrapped in try/except, so a transient RPC failure between broadcast and confirmation can never leave a real transfer completely unlogged (money-safety review Finding A, 2026-07-08). On confirmed success the row is followed by a `"sent"` row (or `"failed"` if the receipt shows a revert); if the confirmation RPC call itself raises, the `pending` row is left as-is for manual reconciliation. |
 | Kill-switch | `lib/kill_switch.py` | `touch KILL` in this directory pauses all three scripts (same convention as `polymarket-trade`'s own `KILL`). `rm KILL` resumes. |
-| Ledger (audit trail) | `lib/ledger.py` | Every decision (`sent`/`pending`/`failed`/`skipped`/`dry`) appended to `~/anicca/skills/earn/state/funding-ledger.jsonl`. |
+| Ledger (audit trail) | `lib/ledger.py` | Every decision (`sent`/`pending`/`failed`/`skipped`/`dry`) appended to `$LIFE_MANAGER_REPO/skills/earn/state/funding-ledger.jsonl`. |
 | No touching reserves/other wallets | `config.json: known_addresses` | Every address this skill ever reads from or writes to is a named constant checked against the config, never derived from an untrusted display string. |
 
 ## Config (`config.json`)
@@ -139,7 +139,7 @@ and Franklin's real needs become clearer -- they are intentionally conservative.
 Pure logic only (no network, no real keys) -- `lib/caps.py`, `lib/identity.py`,
 `lib/ledger.py`:
 ```
-cd ~/anicca/skills/earn/funding
+cd $LIFE_MANAGER_REPO/skills/earn/funding
 python3 -m pytest tests -v      # 33 tests, all pure/offline
 ```
 

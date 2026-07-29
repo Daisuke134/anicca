@@ -60,7 +60,7 @@ if command -v gh >/dev/null 2>&1; then
 
 **Problem:** $PROBLEM
 
-**Where to look:** the mother repo (~/anicca) skills/earn + runtime/loop. Fix the MOTHER so every
+**Where to look:** the mother repo (the canonical checkout) skills/earn + runtime/loop. Fix the MOTHER so every
 anicca inherits it (executors run from the synced body). Verify with a real on-chain wake after.
 
 _Filed by self/issue-dev — anicca flagging its own bug for the colony to fix (Symphony/Sutando pattern)._"

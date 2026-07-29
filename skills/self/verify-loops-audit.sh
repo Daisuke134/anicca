@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # verify-loops-audit.sh — INDEPENDENT scheduled auditor (FIND-016). launchd runs this every 6h. It (1) runs the
 # real-side-effect verifier, (2) sends the honest scorecard to the report channel so no-op loops become visible
 # (covers life-manager, which has no daily artifact for its own healthcheck), and (3) escalates any loop whose REAL
 # output artifact is stale to an autonomous self-fix — grounded in the artifact, never a self-graded marker.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
-SELF="${VERIFY_LOOPS_SELF_DIR:-$HOME/anicca/skills/self}"; now=$(date +%s)
+SELF="${VERIFY_LOOPS_SELF_DIR:-$LIFE_MANAGER_REPO/skills/self}"; now=$(date +%s)
 OUT="$(bash "$SELF/verify-loops.sh" 2>&1)"
-LOG="$HOME/.openclaw/logs/verify-loops-audit.log"; mkdir -p "$(dirname "$LOG")"
+LOG="$HOME/.local/state/life-manager/logs/verify-loops-audit.log"; mkdir -p "$(dirname "$LOG")"
 printf '=== %s ===\n%s\n' "$(date '+%F %T')" "$OUT" >> "$LOG"
 
 stale_hrs(){ [ -f "$1" ] || { echo 99999; return; }; echo $(( (now-$(stat -f %m "$1" 2>/dev/null||echo 0))/3600 )); }
@@ -72,9 +75,9 @@ reddit_account_banned(){ local user="$1"; [ -n "$user" ] || { echo "NO-USER"; re
     echo "OK($code) u/$user"
   fi
 }
-CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
+CAP="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/published.jsonl"
 POSTS="$SELF/reddit-loop/state/posts.jsonl"
-LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
+LMHB="$HOME/.local/state/life-manager/state/.life-manager-loop-last-pass"
 
 # capafy_live_verdict (self-fix 2026-07-19): consult the daily loop's OWN server-truth verdict
 # (inventory_status.py, added 2026-07-08 specifically to tell healthy-idle DRAINED/CAP_FULL apart
@@ -86,7 +89,7 @@ LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 # never wired into THIS separate 6h audit script). Empty/unreadable verdict (script missing or
 # errors, e.g. under test) fails OPEN to the old behavior (escalate) so a real break is never
 # silently swallowed.
-INV_SCRIPT="$HOME/.openclaw/skills/capafy-autopublish/scripts/inventory_status.py"
+INV_SCRIPT="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/inventory_status.py"
 CAPAFY_VERDICT=""
 [ -f "$INV_SCRIPT" ] && CAPAFY_VERDICT="$(python3 "$INV_SCRIPT" 2>/dev/null | grep -o '^VERDICT=[A-Z_]*' | cut -d= -f2)"
 
@@ -157,7 +160,7 @@ done
 # went live. Detect the mismatch directly against the real ledger: if the newest 'daily_loop done'
 # log line claims PUBLISHED but published.jsonl gained zero new row today (JST) whose own status
 # shows a genuinely live listing (contains "status=4" or "online"), the label is lying.
-CAPLOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
+CAPLOG="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log"
 if [ -f "$CAPLOG" ]; then
   CAP_LAST_DONE="$(grep -E 'daily_loop done' "$CAPLOG" 2>/dev/null | tail -1)"
   case "$CAP_LAST_DONE" in
@@ -199,7 +202,7 @@ if [ "$LMH" -ge 26 ] 2>/dev/null; then LM_NOTE=" | ⚠ LM last-pass STALE ${LMH}
 # --- REQ-LV-102/103/104: Cadence Contract escalation + scorecard for the 7 contract loops. This
 # REPLACES the old fresh()/stale_hrs() judgment for these 7 loops ONLY — capafy/reddit/lm (above)
 # keep stale_hrs()/self-fix unchanged (REQ-LV-104, out of this feature's scope).
-STATE_DIR="$HOME/.openclaw/state"; mkdir -p "$STATE_DIR"
+STATE_DIR="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE_DIR"
 TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
 CADENCE_LOOPS="clip affiliate video gig bounty pm-earner founder-loop"
 CADENCE_SCORECARD=""

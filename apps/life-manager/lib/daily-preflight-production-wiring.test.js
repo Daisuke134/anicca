@@ -64,8 +64,8 @@ test("closed production wiring uses only preinstalled fakes and sends each trans
   assert.equal(fetchCalls.filter(url => url.endsWith("/getWebhookInfo")).length, 1);
   assert.equal(execCalls.filter(call => call.args[1] === "send").length, 1);
   assert.equal(execCalls.filter(call => call.args[1] === "read").length, 1);
-  assert.equal(execCalls.every(call => call.file === "/Users/anicca/.cache/telegram-user-venv/bin/python"), true);
-  assert.equal(execCalls.every(call => call.args[0] === "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py"), true);
+  assert.equal(execCalls.every(call => call.file === "/home/life-manager/.cache/telegram-user-venv/bin/python"), true);
+  assert.equal(execCalls.every(call => call.args[0] === require("node:path").resolve(__dirname, "../../../skills/tools/telegram-user/tg_user.py")), true);
   assert.match(execCalls.find(call => call.args[1] === "send").args[3], /^\/panel core8d_[a-f0-9]{24}$/);
   assert.doesNotMatch(JSON.stringify(result), /discard me|fixture-token|fixture-key/);
 });

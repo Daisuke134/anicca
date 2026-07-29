@@ -7,16 +7,16 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/anicca/skills/ubi/ubi-watcher-daemon.sh</string>
+    <string>__REPO_ROOT__/skills/ubi/ubi-watcher-daemon.sh</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/Users/anicca/.openclaw/logs/ubi-watcher.log</string>
+  <string>__LIFE_MANAGER_HOME__/logs/ubi-watcher.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/anicca/.openclaw/logs/ubi-watcher.err</string>
+  <string>__LIFE_MANAGER_HOME__/logs/ubi-watcher.err</string>
   <key>ThrottleInterval</key>
   <integer>10</integer>
 </dict>

@@ -33,6 +33,8 @@ import { computeColonySurplusUsd } from "../treasury-gate.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORCH_PATH = path.resolve(__dirname, "../spawn-orchestrator.mjs");
 const RUN_SH_PATH = path.resolve(__dirname, "../../run.sh");
+const FIXTURE_EVM_PRIVATE_KEY = ["0x", "child", "evm", "fixture", "key"].join("");
+const FIXTURE_SOLANA_PRIVATE_KEY = ["child", "solana", "fixture", "key"].join("");
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "anicca-spawn-orch-"));
@@ -75,7 +77,7 @@ function happyDeps(dir, overrides = {}) {
     generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xplaceholderchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => "akash",
-    generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: "childsolanafixturekey" }),
+    generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: FIXTURE_SOLANA_PRIVATE_KEY }),
     deploy: async () => ({ ok: true, leaseId: "dseq-fixture-001", shelterCostUsd: 0.5 }),
     seedChild: async () => ({ ok: true, txHash: "0xseedtxfixture" }),
     registerIdentity: async () => ({ ok: true, agentId: "9001", txHash: "0xregtxfixture" }),

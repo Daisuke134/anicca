@@ -32,7 +32,7 @@ import urllib.parse
 import urllib.request
 
 C = os.path.expanduser
-ENV_PATH = C("~/.openclaw/.env")
+ENV_PATH = C("~/.local/state/life-manager/.env")
 OFFER_PATH = C("~/clips/offer.json")
 METRICS_PATH = C("~/clips/clip-metrics.jsonl")
 API_BASE = "https://www.digistore24.com/api/call"
@@ -40,7 +40,7 @@ KEY_ENV_NAMES = ("DIGISTORE24_API_KEY", "DS24_API_KEY", "DIGISTORE_API_KEY")
 
 
 def find_api_key():
-    """Env var first (already-sourced shell/loop context), else parse ~/.openclaw/.env
+    """Env var first (already-sourced shell/loop context), else parse ~/.local/state/life-manager/.env
     directly so this script also works standalone (not yet wired into clip_pass.sh)."""
     for name in KEY_ENV_NAMES:
         v = os.environ.get(name)
@@ -174,7 +174,7 @@ def main():
             "outcome": "skip",
             "reason": (
                 "no api key: set one of DIGISTORE24_API_KEY / DS24_API_KEY / DIGISTORE_API_KEY "
-                "in ~/.openclaw/.env (generate via Digistore24 account -> Settings -> API, "
+                "in ~/.local/state/life-manager/.env (generate via Digistore24 account -> Settings -> API, "
                 "see https://dev.digistore24.com/hc/en-us/articles/32479630493585-API-basics), "
                 "then re-run this script"
             ),

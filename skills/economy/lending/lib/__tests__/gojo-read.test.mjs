@@ -3,7 +3,7 @@
 // failing assertion (module not found). GREEN = implement to make all pass.
 //
 // readGojoLogRows(gojoLogPath) is a plain, SYNCHRONOUS fs.readFileSync + line-split + JSON.parse
-// reader over economy/ubi's own existing ~/anicca/skills/economy/ubi/state/gojo-log.jsonl — the SAME
+// reader over economy/ubi's own existing __REPO_ROOT__/skills/economy/ubi/state/gojo-log.jsonl — the SAME
 // shape run.sh itself already writes: {ts, recipient, recipient_wallet, surplus_above_reserve_usd,
 // decision: {amount_usd, reason}, executed}. This module is READ-ONLY — it must NEVER write to that
 // file (ubi.js/run.sh own it exclusively); it also never touches ledger.js (that module is this

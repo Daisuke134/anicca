@@ -22,9 +22,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # own scripts dir (sel
 import lateness_check as lc  # decide(), haversine_m(), slack
 import gcal_departures as gd  # directions_travel_min(dest, origin)
 
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
-URL_FILE = Path.home() / ".openclaw" / "workspace" / "imokenet" / "state" / "public_url.txt"
-STATE = Path(__file__).resolve().parent.parent / "state" / "saas_sent.json"
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
+ENV_PATH = Path(os.environ.get("LIFE_MANAGER_ENV_FILE", str(ANICCA_HOME / ".env")))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
+URL_FILE = Path(os.environ.get(
+    "LIFE_MANAGER_CALL_BRIDGE_URL_FILE",
+    str(ANICCA_HOME / "state" / "call-bridge" / "public_url.txt"),
+))
+STATE = ANICCA_HOME / "state" / "saas-lateness" / "sent.json"
 ARRIVE_EARLY = 5
 
 

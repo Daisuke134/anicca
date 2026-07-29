@@ -7,24 +7,24 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/bin/bash</string>
-		<string>/Users/anicca/anicca/skills/self/earning-health-allslots.sh</string>
+		<string>__REPO_ROOT__/skills/self/earning-health-allslots.sh</string>
 	</array>
 	<key>EnvironmentVariables</key>
 	<dict>
 		<key>HOME</key>
-		<string>/Users/anicca</string>
+		<string>__HOME__</string>
 		<key>EARNHC_REGISTRY</key>
-		<string>/Users/anicca/anicca/skills/self/earning-health-registry.json</string>
+		<string>__REPO_ROOT__/skills/self/earning-health-registry.json</string>
 		<key>EARNHC_EARN_STATE_DIR</key>
-		<string>/Users/anicca/.blockrun/skills/earn/state</string>
+		<string>__HOME__/.blockrun/skills/earn/state</string>
 	</dict>
 	<key>StartInterval</key>
 	<integer>300</integer>
 	<key>ThrottleInterval</key>
 	<integer>60</integer>
 	<key>StandardOutPath</key>
-	<string>/Users/anicca/.openclaw/logs/earning-health-allslots-launchd.out.log</string>
+	<string>__LIFE_MANAGER_HOME__/logs/earning-health-allslots-launchd.out.log</string>
 	<key>StandardErrorPath</key>
-	<string>/Users/anicca/.openclaw/logs/earning-health-allslots-launchd.err.log</string>
+	<string>__LIFE_MANAGER_HOME__/logs/earning-health-allslots-launchd.err.log</string>
 </dict>
 </plist>

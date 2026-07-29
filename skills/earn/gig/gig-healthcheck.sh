@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # gig-healthcheck.sh — launchd supervisor (5min). Two failure modes, both self-heal:
 #   (1) DEAD: the tmux core died → restart it.
@@ -10,7 +13,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 set -uo pipefail
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
 HB="$HOME/gig/.last-pass"; STALE_MIN=90
-LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+LOG="$HOME/.local/state/life-manager/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/gig/.restart-log"
 restart(){
   # backoff: max 5 restarts per 60min window (prevent subscription drain under persistent failure)
@@ -28,7 +31,7 @@ restart(){
   fi
   echo "$now" >> "$RESTART_LOG"
   echo "$(date '+%F %T') $1 → restarting" >> "$LOG"
-  bash "$HOME/anicca/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$LIFE_MANAGER_REPO/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then

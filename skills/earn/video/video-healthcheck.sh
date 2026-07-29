@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # video-healthcheck.sh — OS-level supervisor (launchd, every 5min). If the always-on video-core
 # tmux session is dead, restart it. Cloned from clip-healthcheck.sh so video is a real loop too.
@@ -12,9 +15,9 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # via clip-healthcheck.sh). video cron runs every 4h, so STALE_MIN=360 (6h, 1.5x cadence).
 set -uo pipefail
 SOCK="/tmp/anicca-video-tmux.sock"; SESSION="anicca-video-core"
-HB="$HOME/.openclaw/state/.video-core-last-pass"; START="$HOME/.openclaw/state/.video-core-last-start"; STALE_MIN=360
-LOG="$HOME/.openclaw/logs/video-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
-RESTART_LOG="$HOME/.openclaw/state/.video-core-restart-log"
+HB="$HOME/.local/state/life-manager/state/.video-core-last-pass"; START="$HOME/.local/state/life-manager/state/.video-core-last-start"; STALE_MIN=360
+LOG="$HOME/.local/state/life-manager/logs/video-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+RESTART_LOG="$HOME/.local/state/life-manager/state/.video-core-restart-log"
 
 LOCK_DIR="/tmp/.video-healthcheck.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -23,7 +26,7 @@ fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 
 restart() {
-  mkdir -p "$HOME/.openclaw/state"
+  mkdir -p "$HOME/.local/state/life-manager/state"
   local now; now=$(date +%s)
   local count=0
   if [ -f "$RESTART_LOG" ]; then
@@ -33,7 +36,7 @@ restart() {
   fi
   if [ "$count" -ge 5 ]; then
     echo "$(date '+%F %T') backoff: $count restarts in last 60min — not restarting" >> "$LOG"
-    local task_file="$HOME/.openclaw/state/.video-core-selfheal-request.json"
+    local task_file="$HOME/.local/state/life-manager/state/.video-core-selfheal-request.json"
     if [ ! -f "$task_file" ] || [ "$(( $(date +%s) - $(stat -f %m "$task_file" 2>/dev/null || echo 0) ))" -gt 3600 ]; then
       printf '{"loop":"video","ts":"%s","reason":"%s","restarts_last_60min":%d,"note":"healthcheck gave up restarting this loop after repeated failures. Read this on your next wake: diagnose the root cause yourself, fix the code if you can, verify the fix works, then delete this file. If you cannot fix it yourself, invoke self/issue-dev to file a GitHub issue on the mother repo instead."}\n' \
         "$(date -u +%FT%TZ)" "${1:-unknown}" "$count" > "$task_file" 2>/dev/null
@@ -45,7 +48,7 @@ restart() {
   pkill -f "tmux -S $SOCK new-session" 2>/dev/null || true
   sleep 1
   echo "$(date '+%F %T') ${1:-video-core DEAD} → restarting" >> "$LOG"
-  bash "$HOME/anicca/skills/earn/video/video-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$LIFE_MANAGER_REPO/skills/earn/video/video-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then

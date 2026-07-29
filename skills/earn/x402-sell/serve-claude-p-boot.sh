@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # serve-claude-p-boot.sh — KeepAlive launchd boot of the claude-p x402 seller on :8412.
 # Replication test of the x402-sell recipe (SKILL.md) for a SECOND instance on this machine:
 # same serve.mjs/primitives.mjs, different payTo (claude-p's own wallet, receiving-only, no key
 # needed here) and a second Tailscale Funnel https port (8443 -> 8412) so the CDP Bazaar crawler
 # gets an explicit https resource distinct from the founder seller on :8411/443.
 set -u
-DIR=/Users/anicca/anicca/skills/earn/x402-sell
+DIR=$LIFE_MANAGER_REPO/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as serve-mainnet-boot.sh) — never echoed
-set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a
+set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null || true; set +a
 # NON-DISCRIMINATION (2026-07-19): claude-p runs the SAME concentrated v2 store as franklin —
 # same tool, same rail, measure external equally. Force this instance's identity so resale can
 # resolve a key (the .env injects a machine-legacy home/key; this store IS claude-p).

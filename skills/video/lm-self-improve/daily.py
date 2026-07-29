@@ -231,12 +231,12 @@ def main() -> int:
     parser.add_argument(
         "--distribution-ledger",
         type=Path,
-        default=Path("~/.openclaw/state/lm-video/distribution.jsonl").expanduser(),
+        default=Path("~/.local/state/life-manager/state/lm-video/distribution.jsonl").expanduser(),
     )
     parser.add_argument(
         "--self-improve-ledger",
         type=Path,
-        default=Path("~/.openclaw/state/lm-video/self-improve.jsonl").expanduser(),
+        default=Path("~/.local/state/life-manager/state/lm-video/self-improve.jsonl").expanduser(),
     )
     parser.add_argument(
         "--bank",

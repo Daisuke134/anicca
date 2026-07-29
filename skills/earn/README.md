@@ -45,7 +45,7 @@ mint a GATE-0 "profit" — only genuinely external revenue counts. This is enfor
 
 ## Verify a wake (fresh evidence, not a claim)
 ```bash
-cd ~/anicca/skills/earn
+cd $LIFE_MANAGER_REPO/skills/earn
 tail -1 state/earn-ledger.jsonl                  # the recorded wake
 # net_usdc>0 AND a tx hash -> open https://basescan.org/tx/<hash> -> Status: Success
 EARN_MODE=discover bash run.sh                   # safe dry wake (no tx) -> NARRATE, exit 0 (discover is the default MODE)

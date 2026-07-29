@@ -1,4 +1,7 @@
 #!/bin/bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # promote_gate.sh — close-loop Gap 3: REQ-RH4 step 3, the per-candidate promotion adversary.
 #
 # Thin shell entrypoint (mirrors run_evolve.sh's own absolute-path/minimal-PATH conventions — no
@@ -6,7 +9,7 @@
 # real work: deterministic pre-checks (scope_guard/stage1/stage2/trip-wire, via
 # lib/promote_gate.py — unit-tested, no LLM cost), and — ONLY for a candidate that clears all of
 # those — a real, fresh, headless `claude --model opus` adversary call (exactly the
-# ~/anicca/skills/self/self-fix.sh pattern: --model opus --dangerously-skip-permissions, here as a
+# $LIFE_MANAGER_REPO/skills/self/self-fix.sh pattern: --model opus --dangerously-skip-permissions, here as a
 # synchronous `--print` call rather than a detached tmux session, since promote_gate.sh needs the
 # verdict back before deciding whether to promote — no human anywhere in this path).
 #

@@ -20,12 +20,12 @@ from lib import promote_gate
 
 def _good_candidate(tmp_path):
     # Literals updated 2026-07-08 (commit a6f608c promoted a new committed baseline — see
-    # test_baseline_beat.py's module docstring for the full re-derivation): edge_weight/conf_weight
+    # test_baseline_beat.py's module docstring for the full re-derivation): a stricter min_edge
     # is a genuine adaptive-sizing-emphasis change against the NEW baseline, beating it on the real
     # risk-adjusted metric with a still-positive worst OOS window.
     code = patched_baseline_code(
-        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
-        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.26)'),
+        ('config.get("max_stake", 12.0)', 'config.get("max_stake", 10.0)'),
     )
     return code, write_candidate_with_fixtures(tmp_path, code)
 
@@ -34,11 +34,11 @@ def _regressing_candidate(tmp_path):
     # Literals updated 2026-07-08 (commit a6f608c) — see test_heldout_regress.py's module
     # docstring: loosens all five of the new baseline's selection filters near-to-nothing.
     code = patched_baseline_code(
-        ('config.get("min_edge", 0.18)', 'config.get("min_edge", 0.01)'),
-        ('config.get("min_confidence", 7.0)', 'config.get("min_confidence", 0.0)'),
-        ('config.get("min_combined", 1.5)', 'config.get("min_combined", 0.0)'),
-        ('config.get("max_price", 0.85)', 'config.get("max_price", 1.0)'),
-        ('config.get("min_liquidity", 0.4)', 'config.get("min_liquidity", 0.0)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.01)'),
+        ('config.get("min_confidence", 7.5)', 'config.get("min_confidence", 0.0)'),
+        ('config.get("min_combined", 2.0)', 'config.get("min_combined", 0.0)'),
+        ('config.get("max_price", 0.88)', 'config.get("max_price", 1.0)'),
+        ('config.get("min_liquidity", 800.0)', 'config.get("min_liquidity", 1.0)'),
     )
     return code, write_candidate_with_fixtures(tmp_path, code)
 

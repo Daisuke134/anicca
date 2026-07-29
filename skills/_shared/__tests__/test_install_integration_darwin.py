@@ -184,7 +184,7 @@ def test_injection_guard_no_side_effect():
         "injection guard MUST NOT touch LaunchAgents dir"
 
 
-# ─── PROP-A1: rendered plist on disk has literal /Users/... paths ──
+# ─── PROP-A1: rendered plist on disk has literal user-home paths ──
 def test_rendered_plist_contains_literal_absolute_paths(probe_slot):
     subprocess.run(["bash", str(INSTALL_SH), probe_slot], capture_output=True, timeout=15, check=True)
     body = _plist_path(probe_slot).read_text()
@@ -192,8 +192,9 @@ def test_rendered_plist_contains_literal_absolute_paths(probe_slot):
     assert "${HOME}" not in body
     assert "~/" not in body
     # Must reference the canonical anicca repo
-    assert "/Users/anicca/anicca/skills/_shared/proactive-loop.sh" in body
-    assert f"/Users/anicca/.openclaw/logs/{probe_slot}-proactive.out" in body
+    repo_root = Path(__file__).resolve().parents[3]
+    assert f"{repo_root}/skills/_shared/proactive-loop.sh" in body
+    assert str(Path.home() / f".local/state/life-manager/logs/{probe_slot}-proactive.out") in body
 
 
 # ─── PROP-E1: load-identity check for any sibling job at all times ─

@@ -11,7 +11,7 @@ import { resolveStateDir } from "./state-path.js";
 export const COORDINATOR_HOME = os.homedir();
 
 // REUSES resolveStateDir({env, home}) unmodified — the SAME mechanism run.sh already uses for
-// children.jsonl's own durable location — never a literal path inside the ~/anicca git working tree.
+// children.jsonl's own durable location — never a literal path inside the the canonical checkout git working tree.
 // Computed inside a try/catch so that resolveStateDir's own fail-closed throw (e.g. HOME resolves
 // under /tmp) never blocks importing THIS module for an unrelated purpose (e.g. reading
 // COORDINATOR_HOME alone) — a real caller that then tries to use `undefined` as a filesystem path

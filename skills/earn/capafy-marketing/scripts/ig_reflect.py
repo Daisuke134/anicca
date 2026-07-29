@@ -14,13 +14,13 @@ from urllib.parse import urlsplit, urlunsplit
 LEDGER = Path(
     os.environ.get(
         "CAPAFY_IG_LEDGER",
-        os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-ledger.jsonl"),
+        os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl"),
     )
 )
 METRICS = Path(
     os.environ.get(
         "CAPAFY_IG_METRICS",
-        os.path.expanduser("~/.openclaw/state/capafy-marketing-ig-metrics.jsonl"),
+        os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-metrics.jsonl"),
     )
 )
 OUTPUT = Path(

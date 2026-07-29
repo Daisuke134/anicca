@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # founder-tunnel.sh — KeepAlive launchd: a cloudflared quick tunnel for the FOUNDER seller (:8410), persisting the
-# live public URL to the founder's OWN state file (NOT the shared ~/.openclaw one) so the loop + the listing read it.
+# live public URL to the founder's OWN state file (NOT the shared $HOME/.local/state/life-manager one) so the loop + the listing read it.
 set -u
 PORT=8410
-URL_FILE="/Users/anicca/.anicca-founder/state/seller-url.txt"
+URL_FILE="$HOME/.anicca-founder/state/seller-url.txt"
 TLOG="/tmp/founder-x402-tunnel.log"
 mkdir -p "$(dirname "$URL_FILE")"
 # wait for the founder seller to be healthy on :8410 before tunnelling

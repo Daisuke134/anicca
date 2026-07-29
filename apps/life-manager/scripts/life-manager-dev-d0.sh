@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # One canonical unattended developer pass:
 # privacy-safe feedback -> lm:type:self-heal issue -> fresh agent -> tests/evals -> PR.
 set -uo pipefail
@@ -8,10 +11,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$HERE/.." && pwd)"
 REPO="Daisuke134/life-manager"
 PROJECT="${LM_DEV_PROJECT:-$HOME/Projects/life-manager-main}"
-RUN_AGENT="${LM_DEV_RUN_AGENT:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
-STATE="${LM_DEV_STATE_DIR:-$HOME/.openclaw/state/life-manager-dev}"
+RUN_AGENT="${LM_DEV_RUN_AGENT:-$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh}"
+STATE="${LM_DEV_STATE_DIR:-$HOME/.local/state/life-manager/state/life-manager-dev}"
 DONE="$STATE/done.jsonl"
-LOG_DIR="${LM_DEV_LOG_DIR:-$HOME/.openclaw/logs}"
+LOG_DIR="${LM_DEV_LOG_DIR:-$HOME/.local/state/life-manager/logs}"
 LOCK_DIR="${LM_DEV_LOCK_DIR:-/tmp/anicca-life-manager-dev-d0.lock.d}"
 RESULT_PATH="${LM_DEV_RESULT_PATH:-}"
 mkdir -p "$STATE" "$LOG_DIR"
@@ -134,7 +137,7 @@ fi
 
 PROMPT="You are the fresh Life Manager D0 implementation agent. Fix GitHub issue #$NUM in this canonical Daisuke134/life-manager worktree. Title: $TITLE. Privacy-safe body: $BODY. Work only inside apps/life-manager. Use test-driven development: add a failing regression test first, verify RED, implement the smallest fix, then run focused tests. Preserve every existing test and privacy invariant. Do not touch docs, specs, CI, secrets, production providers, or any path outside apps/life-manager. Commit the complete apps/life-manager change on branch $BRANCH with a message referencing #$NUM. Do not push, open a PR, merge, or deploy; the caller performs those steps after independent full test/eval gates."
 AGENT_OUT="$LOG_DIR/life-manager-dev-agent-last.out"
-EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/life-manager-dev-$NUM/$(date +%s)-$$"
+EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/life-manager-dev-$NUM/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-class high-value-agent \
   --evidence-dir "$EVIDENCE_DIR" \
@@ -202,7 +205,8 @@ fi
 
 record "$NUM" "$PR_URL" "pr_open"
 write_result "pr_open" "pr_created" "$NUM" "$PR_URL"
-openclaw message send --channel telegram --target 8547730585 \
+openclaw message send --channel telegram \
+  --target "${LM_DEV_TELEGRAM_TARGET:?LM_DEV_TELEGRAM_TARGET is required}" \
   --message "🤖 Life Manager dev loop: issue #$NUM → $PR_URL (tests/evals green, not merged)" \
   --json >> "$LOG_DIR/life-manager-dev.out.log" 2>&1 || log "Telegram report failed"
 

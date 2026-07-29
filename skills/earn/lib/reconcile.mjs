@@ -13,7 +13,7 @@
 // reporting) DO include it so losses count.
 //
 // WALLET-SCOPED (#2): a single ledger file can hold rows from more than one wallet (e.g. pm's
-// ~/anicca/skills/earn/state/earn-ledger.jsonl carries both 0x904b pm rows and stray contaminant
+// __REPO_ROOT__/skills/earn/state/earn-ledger.jsonl carries both 0x904b pm rows and stray contaminant
 // rows). When `ownWallet` is given, snapshot + earn-since are computed ONLY over rows whose wallet
 // matches it (case-insensitive) — otherwise another wallet's rows would corrupt this wallet's drift
 // math. Omit `ownWallet` for a single-wallet file (backward-compatible, unfiltered).

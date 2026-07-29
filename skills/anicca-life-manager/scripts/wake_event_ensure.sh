@@ -8,11 +8,11 @@
 # Uses _shared/lib/gcal-policy.sh (HARD RULE #19) for insertion.
 set -uo pipefail
 
-SHARED_LIB="$HOME/.openclaw/skills/_shared/lib"
-PROFILE="$HOME/.openclaw/identity/profile.json"
+SHARED_LIB="$LIFE_MANAGER_REPO/skills/_shared/lib"
+PROFILE="$HOME/.local/state/life-manager/identity/profile.json"
 
-[ -f "$HOME/.openclaw/.env" ] && set -a && . "$HOME/.openclaw/.env" && set +a
-: "${GOG_ACCOUNT:?GOG_ACCOUNT not set — populate ~/.openclaw/.env first}"
+[ -f "$HOME/.local/state/life-manager/.env" ] && set -a && . "$HOME/.local/state/life-manager/.env" && set +a
+: "${GOG_ACCOUNT:?GOG_ACCOUNT not set — populate $HOME/.local/state/life-manager/.env first}"
 
 WAKE_HORIZON_DAYS="${WAKE_HORIZON_DAYS:-7}"
 

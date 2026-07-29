@@ -1,6 +1,6 @@
 """PROP-P1 + Q3 + Q3d + Q3e + Q5 + Q6 — quota_tracker (sprint-2).
 
-Spec: ~/anicca/.vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md
+Spec: __REPO_ROOT__/.vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md
 """
 from __future__ import annotations
 

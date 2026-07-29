@@ -10,7 +10,7 @@ LABEL="ai.anicca.life-manager-dev"
 TEMP="$(mktemp "${TMPDIR:-/tmp}/life-manager-dev.plist.XXXXXX")"
 trap 'rm -f "$TEMP"' EXIT
 
-mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.openclaw/logs" "$HOME/.openclaw/state/life-manager-dev"
+mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.local/state/life-manager/logs" "$HOME/.local/state/life-manager/state/life-manager-dev"
 sed "s|__HOME__|$HOME|g" "$TEMPLATE" > "$TEMP"
 plutil -lint "$TEMP"
 install -m 600 "$TEMP" "$TARGET"

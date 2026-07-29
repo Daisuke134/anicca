@@ -1,7 +1,7 @@
 """test_loop_evaluators.py — RED (Phase 2a, feature claude-p-loop-verification).
 PROP-LV-023 / REQ-LV-110 — per-loop evaluators (clip/affiliate/video/gig/bounty), each a
-`~/anicca/skills/self/self-improve/<loop>/evaluator.py` copy+tweaked from
-`~/anicca/skills/earn/self-improve/evaluator.py`'s pattern: `evaluate_stage1(ledger_path) -> dict`
+`__REPO_ROOT__/skills/self/self-improve/<loop>/evaluator.py` copy+tweaked from
+`__REPO_ROOT__/skills/earn/self-improve/evaluator.py`'s pattern: `evaluate_stage1(ledger_path) -> dict`
 with a `combined_score` key. Two invariants tested per loop (Tier1, no I/O beyond reading the
 read-only fixture, no LLM judge — Verifier's Law):
   1. DETERMINISM — same fixture in -> byte-identical combined_score out, twice.
@@ -10,7 +10,7 @@ read-only fixture, no LLM judge — Verifier's Law):
      via source-text grep (matches earn/self-improve/evaluator.py's own documented sandbox
      contract: "NEVER imports any order-execution module").
 
-None of the 5 `~/anicca/skills/self/self-improve/<loop>/evaluator.py` files exist yet ->
+None of the 5 `__REPO_ROOT__/skills/self/self-improve/<loop>/evaluator.py` files exist yet ->
 ImportError for every loop -> RED.
 """
 import sys, os, json, tempfile, importlib

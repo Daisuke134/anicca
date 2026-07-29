@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# gig_daily_report.sh — daily gig loop digest to Dais's Telegram (8547730585), same channel as
+# gig_daily_report.sh — daily gig loop digest to the configured Telegram chat, same channel as
 # OpenClaw reports. Reads the gig ledgers (honest ¥, no fake) and sends via `openclaw message send`.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 set -uo pipefail
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
-CHAT="${GIG_REPORT_CHAT:-8547730585}"
+set -a; . "$HOME/.local/state/life-manager/.env" 2>/dev/null; set +a
+CHAT="${GIG_REPORT_CHAT:-${TELEGRAM_ALERT_CHAT_ID:?GIG_REPORT_CHAT or TELEGRAM_ALERT_CHAT_ID is required}}"
 MSG=$(python3 - <<'PY'
 import json,os,datetime
 G=os.path.expanduser("~/gig")

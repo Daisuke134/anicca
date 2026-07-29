@@ -16,7 +16,7 @@ State separation:
   STATE_DIR/guide_state_<user_id>.json     - current step + last pings (NEW)
 
 Works in:
-  - Anicca local (= mac mini, ~/.openclaw, launchd ai.anicca.realtime-guide)
+  - Life Manager local (= user-owned host, portable state root)
   - Anicca cloud (= Daytona sandbox per user, same script + per-sandbox state)
 
 BP cite:
@@ -42,7 +42,10 @@ from typing import Any
 
 JST = timezone(timedelta(hours=9))
 
-ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(Path.home() / ".openclaw")))
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
 STATE_DIR = ANICCA_HOME / "state" / "location"   # GPS only (<uid>.json) — never write guide files here
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 # itinerary_*.json + guide_state_*.json live in a SEPARATE dir so they never

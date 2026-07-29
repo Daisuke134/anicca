@@ -11,7 +11,7 @@ CDP `http://localhost:9222`). A Brand Account is a channel managed UNDER the exi
 
 ## Usage (2-phase — phone verification is now INTEGRATED)
 ```bash
-PY=~/.openclaw/skills/_shared/venv-cloak/bin/python3
+PY=$LIFE_MANAGER_REPO/skills/_shared/venv-cloak/bin/python3
 SK=~/.claude/skills/youtube-channel-creator/scripts/create_channel.py
 # Phase A — start. If a 3rd+ channel needs phone verification, this sends the SMS and exits
 #           with {"needs_code": true} (SMS → --phone, default <phone-number>). If no verification

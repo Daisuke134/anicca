@@ -35,7 +35,6 @@ else
 fi
 
 PORT="${PORT:-8405}"
-BIN="$HERE/x402-rs/target/release/x402-facilitator"
 mkdir -p state
 
 case "$PORT" in
@@ -47,6 +46,36 @@ if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
 fi
 command -v jq >/dev/null 2>&1 || { echo "jq is required to build the runtime facilitator config" >&2; exit 1; }
 
+if [ -n "${X402_RS_ROOT:-}" ]; then
+  [ -f "$X402_RS_ROOT/Cargo.lock" ] || {
+    echo "X402_RS_ROOT must contain the pinned x402-rs source tree" >&2
+    exit 1
+  }
+  BIN="$X402_RS_ROOT/target/release/x402-facilitator"
+  if [ ! -x "$BIN" ]; then
+    command -v cargo >/dev/null 2>&1 || {
+      echo "cargo is required to build X402_RS_ROOT" >&2
+      exit 1
+    }
+    echo "building x402-facilitator from explicit X402_RS_ROOT" >&2
+    (
+      cd "$X402_RS_ROOT"
+      cargo build \
+        --package x402-facilitator \
+        --features chain-eip155,chain-solana \
+        --release \
+        --locked
+    )
+  fi
+else
+  [ -x "$HERE/fetch-x402-rs.sh" ] || {
+    echo "missing executable $HERE/fetch-x402-rs.sh" >&2
+    exit 1
+  }
+  BIN="$("$HERE/fetch-x402-rs.sh")" || exit $?
+fi
+[ -x "$BIN" ] || { echo "x402-facilitator executable unavailable" >&2; exit 1; }
+
 # x402-rs reads the bind port from CONFIG when that field is present, so merely
 # exporting PORT does not override the checked-in 8405. Build a per-port runtime
 # copy and leave the canonical chain config unchanged.
@@ -55,11 +84,6 @@ RUNTIME_CONFIG_TMP="${RUNTIME_CONFIG}.tmp.$$"
 jq --argjson port "$PORT" '.port = $port' "$CONFIG_FILE" > "$RUNTIME_CONFIG_TMP"
 chmod 600 "$RUNTIME_CONFIG_TMP"
 mv "$RUNTIME_CONFIG_TMP" "$RUNTIME_CONFIG"
-
-if [ ! -x "$BIN" ]; then
-  echo "building x402-facilitator (release, chain-eip155+chain-solana)..." >&2
-  ( cd "$HERE/x402-rs" && cargo build --package x402-facilitator --features chain-eip155,chain-solana --release --locked )
-fi
 
 if ! curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
   CONFIG="$RUNTIME_CONFIG" PORT="$PORT" RUST_LOG="${RUST_LOG:-info}" \

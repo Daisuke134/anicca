@@ -7,7 +7,7 @@ Traces to behavioral-spec.md REQ-EV2/EV3/EV4/RH4, EDGE-5 (a single lucky window 
 produce a false promotion); verification-architecture.md PROP-SI-EV3/RH4.
 
 The "regressing" candidate hardcodes LOOSE thresholds directly in its EVOLVE-BLOCK defaults
-(min_edge~0.01, min_confidence=0.0, min_combined=0.0, max_price=1.0, min_liquidity=0.0 — bets on
+(min_edge~0.01, min_confidence=0.0, min_combined=0.0, max_price=1.0, min_liquidity=1.0 — bets on
 almost every historical row, all five of the committed baseline's own selection filters loosened
 to near-nothing).
 
@@ -34,11 +34,11 @@ from lib import gate_math, scope_guard
 
 def _regressing_candidate_code() -> str:
     return patched_baseline_code(
-        ('config.get("min_edge", 0.18)', 'config.get("min_edge", 0.01)'),
-        ('config.get("min_confidence", 7.0)', 'config.get("min_confidence", 0.0)'),
-        ('config.get("min_combined", 1.5)', 'config.get("min_combined", 0.0)'),
-        ('config.get("max_price", 0.85)', 'config.get("max_price", 1.0)'),
-        ('config.get("min_liquidity", 0.4)', 'config.get("min_liquidity", 0.0)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.01)'),
+        ('config.get("min_confidence", 7.5)', 'config.get("min_confidence", 0.0)'),
+        ('config.get("min_combined", 2.0)', 'config.get("min_combined", 0.0)'),
+        ('config.get("max_price", 0.88)', 'config.get("max_price", 1.0)'),
+        ('config.get("min_liquidity", 800.0)', 'config.get("min_liquidity", 1.0)'),
     )
 
 

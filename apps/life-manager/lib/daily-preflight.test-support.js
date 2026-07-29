@@ -2,9 +2,12 @@
 
 // Tests only: production CLI and production modules never import this collector-DI harness.
 const crypto = require("node:crypto");
+const path = require("node:path");
 const { validateAndBuildFinalReport, validateSerializedFinalReportShape,
   validateEmailProof, validateTelegramProof } = require("./daily-preflight.js");
 const { validateEmailObservation, validateTelegramObservation } = require("./daily-preflight-collectors.js");
+const REPO_ROOT = process.env.LIFE_MANAGER_REPO || path.resolve(__dirname, "../../..");
+const TELEGRAM_SIDECAR = path.join(REPO_ROOT, "skills/tools/telegram-user/tg_user.py");
 
 function failure(code) { return new Error(code); }
 function baseUrl(env) {
@@ -23,8 +26,8 @@ function createTelegramCollector({ env = {}, botCall, mtprotoSend, mtprotoRead, 
   });
   const sidecar = async args => {
     if (typeof execFileImpl !== "function") throw failure("test_transport_fake_required");
-    const { stdout } = await execFileImpl("/Users/anicca/.cache/telegram-user-venv/bin/python",
-      ["/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py", ...args],
+    const { stdout } = await execFileImpl("/home/life-manager/.cache/telegram-user-venv/bin/python",
+      [TELEGRAM_SIDECAR, ...args],
       { timeout: 15000, maxBuffer: 1024 * 1024, encoding: "utf8" });
     return JSON.parse(stdout);
   };

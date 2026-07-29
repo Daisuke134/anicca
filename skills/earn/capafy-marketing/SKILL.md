@@ -35,7 +35,7 @@ select_listing.py         # B1: pick an online listing (rotation/dedup), emit {a
 
 Deterministic TOOL, no LLM. Reads seller `GET /agent/agents` (no buyer token; 200-verified,
 21 online / 26 total), keeps `agentStatus=="online"`, and picks the listing promoted
-least-recently (rotation + dedup) via `~/.openclaw/state/capafy-marketing-rotation.jsonl`.
+least-recently (rotation + dedup) via `~/.local/state/life-manager/state/capafy-marketing-rotation.jsonl`.
 Emits `{ok, agent_id, name, desc, sales, rating, url, online_pool}`. URL = `https://capafy.ai/agent/<id>`.
 Verified 2026-07-18: 3 consecutive runs picked 3 different online listings (rotation works).
 
@@ -62,7 +62,7 @@ insert root (no link) → addButton → insert reply (`Try the skill here: <UTM 
 → read back the two /status/ URLs.
 
 ```bash
-set -a; . ~/.openclaw/.env; set +a
+set -a; . ~/.local/state/life-manager/.env; set +a
 # DRY (fills the thread, does NOT post — proves the flow):
 python3 scripts/x_post_browser.py --url "<listing url>" --tweet "<native, no link>" --reply "Try the skill here:"
 # LIVE (posts the thread as @aniccaen):
@@ -76,7 +76,7 @@ root=status/2078252761314115657, reply=status/2078252762740195344.
 
 **@aniccaen cadence rules** (it is shared with article-daily/x-publish): 1 Capafy thread/day max; do
 NOT post near an existing article post (space by hours); each post is time-stamped in
-`~/.openclaw/state/capafy-marketing-rotation.jsonl`. Do NOT overwrite the profile Website (already set);
+`~/.local/state/life-manager/state/capafy-marketing-rotation.jsonl`. Do NOT overwrite the profile Website (already set);
 the reply URL is the primary CTA.
 
 ## B5 historical Postiz poster (`scripts/x_post.py` is not implemented here)
@@ -95,7 +95,7 @@ A multi-element Postiz `value` array IS a native X self-thread (`value[0]`=root,
 writes `--tweet`; the script only does the Postiz posting + ledger. Copy is input, not invented here.
 
 ```bash
-set -a; . ~/.openclaw/.env; set +a      # POSTIZ_API_KEY + POSTIZ_X_INTEGRATION_ID
+set -a; . ~/.local/state/life-manager/.env; set +a      # POSTIZ_API_KEY + POSTIZ_X_INTEGRATION_ID
 # DRAFT (default) — creates a real Postiz draft, publishes NOTHING to the live feed (E2E test):
 python3 scripts/x_post.py --url "<capafy listing url>" --tweet "<native value tweet, no link>" --reply "Try the skill here:"
 # LIVE (production cron only) — type:now, publishes to X:
@@ -104,7 +104,7 @@ python3 scripts/x_post.py --url "<url>" --tweet "<...>" --live
 
 - Guardrails: rejects a native tweet that contains a link or exceeds 280 chars.
 - Output: one clean JSON line on stdout `{ok, mode, listing_url, tagged_url, post_id, release_url}`.
-- Ledger: appends to `~/.openclaw/state/capafy-marketing-x-ledger.jsonl` (atomic).
+- Ledger: appends to `~/.local/state/life-manager/state/capafy-marketing-x-ledger.jsonl` (atomic).
 ### ★ BLOCKER — Postiz strips all URLs (verified live 2026-07-18, 5 tests) ★
 The root native tweet publishes correctly, but **Postiz removes every URL from tweet content**,
 so the self-reply link never reaches X. Verified across text+url reply / url-only reply /
@@ -114,7 +114,7 @@ live tweet on X has no link. This is a Postiz-rail limitation, NOT a code bug an
 account link-stripping (the URL is gone before it reaches X).
 
 Also corrected: the Postiz integration named アニッチャ (`cmm6d7m5..`) posts to **@diceai0**,
-NOT @aniccaxxx as `~/.openclaw/skills/x-poster/SKILL.md` claims.
+NOT @aniccaxxx as `$LIFE_MANAGER_REPO/skills/x-poster/SKILL.md` claims.
 
 **Fix path (needs a rail decision by lead):**
 1. Browser-direct — drive X compose on CloakBrowser :9222 to post root + reply-with-link
@@ -149,7 +149,7 @@ Capafy listing with the Instagram bio UTM parameters. `/go-stats` returns cumula
 counts. Immediately after `ig_metrics.py`, the daily caller runs
 `scripts/pull_attribution.py` non-fatally; it joins those counts to the current
 `GET /agent/agents` sales snapshot and appends at most one dated row per day to
-`~/.openclaw/state/capafy-attribution.jsonl`.
+`~/.local/state/life-manager/state/capafy-attribution.jsonl`.
 
 ## Dependencies / open items
 - Capafy listing URL resolution + rotation = B1 (selector). Capafy user token `CAPAFY_ACCESS_TOKEN`

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # cadence-deadline-check.sh — REQ-LV-102 (F-ITER3-1 fix): the "21:00 JST — did today's Cadence
 # Contract get met" escalation, extracted into its OWN script so it can be triggered by a
 # StartCalendarInterval (Hour=21, Minute=5, JST) launchd job — guaranteed to fire once a day at a
@@ -12,9 +15,9 @@
 # claims the marker).
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
-SELF="${VERIFY_LOOPS_SELF_DIR:-$HOME/anicca/skills/self}"
-STATE_DIR="$HOME/.openclaw/state"; mkdir -p "$STATE_DIR"
-LOG="$HOME/.openclaw/logs/cadence-deadline-check.log"; mkdir -p "$(dirname "$LOG")"
+SELF="${VERIFY_LOOPS_SELF_DIR:-$LIFE_MANAGER_REPO/skills/self}"
+STATE_DIR="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE_DIR"
+LOG="$HOME/.local/state/life-manager/logs/cadence-deadline-check.log"; mkdir -p "$(dirname "$LOG")"
 TODAY_JST="${CADENCE_DEADLINE_TODAY_JST_OVERRIDE:-$(TZ=Asia/Tokyo date +%F)}"
 # Test-only override seam (mirrors this codebase's own EARN_LEDGER/FOUNDER_TEST convention) so a
 # test can exercise both the before-21:00 no-op path and the escalation path deterministically,

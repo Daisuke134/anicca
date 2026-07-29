@@ -143,12 +143,12 @@ test('FIND-003: an unreadable declaredConfig takes priority even when the actual
 // explicitly overrides ANICCA_BRAIN reports a spurious drift that isn't real. ──────────────────────────
 
 test('real-fleet fix: neither side explicitly sets ANICCA_BRAIN (both observed AND declared omit the key) -> both resolve to the SAME inherited codeDefault -> PASS, not a spurious declared="proxy"/actual=undefined drift', () => {
-  const drift = detectBrainDrift('com.anicca.daemon', { ANICCA_HOME: '/Users/anicca/.anicca' }, { ANICCA_HOME: '/Users/anicca/.anicca' });
+  const drift = detectBrainDrift('com.anicca.daemon', { ANICCA_HOME: '/home/life-manager/.anicca' }, { ANICCA_HOME: '/home/life-manager/.anicca' });
   assert.deepEqual(drift, [], 'neither side named ANICCA_BRAIN at all -> both inherit the identical codeDefault -> no real drift');
 });
 
 test('real-fleet fix: observed env IS successfully read (not null) but happens to omit the key, while declared EXPLICITLY sets a non-default value -> still reports a real drift (this fix must not become a new silent-PASS hole)', () => {
-  const drift = detectBrainDrift('ai.anicca.agent-economy-loop', { ANICCA_BRAIN: 'claude-p' }, { ANICCA_HOME: '/Users/anicca/.anicca-founder' });
+  const drift = detectBrainDrift('ai.anicca.agent-economy-loop', { ANICCA_BRAIN: 'claude-p' }, { ANICCA_HOME: '/home/life-manager/.anicca-founder' });
   assert.equal(drift.length, 1);
   assert.equal(drift[0].declared, 'claude-p');
   assert.equal(drift[0].actual, 'proxy', 'the observed side with the key absent inherits codeDefault, which still differs from the explicit declared claude-p -> real drift correctly reported');
@@ -291,11 +291,11 @@ test('PROP-010: unobservable-copy entries are never merged/collapsed into an emp
 test('parsePlistEnvironmentVariables: extracts EnvironmentVariables dict from a plutil-json-shaped string', () => {
   const jsonText = JSON.stringify({
     Label: 'ai.anicca.agent-economy-loop',
-    EnvironmentVariables: { ANICCA_BRAIN: 'claude-p', ANICCA_HOME: '/Users/anicca/.anicca-founder' },
+    EnvironmentVariables: { ANICCA_BRAIN: 'claude-p', ANICCA_HOME: '/home/life-manager/.anicca-founder' },
   });
   assert.deepEqual(parsePlistEnvironmentVariables(jsonText), {
     ANICCA_BRAIN: 'claude-p',
-    ANICCA_HOME: '/Users/anicca/.anicca-founder',
+    ANICCA_HOME: '/home/life-manager/.anicca-founder',
   });
 });
 
@@ -354,24 +354,24 @@ test('NFR-Security/FIND-002 end-to-end: detectBrainDrift built on top of the all
 
 test('PROP-019: parseIndexLoopProcesses extracts {pid, aniccaHome, xpcServiceName} from 3 ps-fixture lines containing runtime/loop/index.mjs', () => {
   const psLines = [
-    '94249 /usr/local/bin/node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/Users/anicca/.anicca-founder XPC_SERVICE_NAME=ai.anicca.agent-economy-loop',
-    '79192 /usr/local/bin/node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/Users/anicca/.blockrun XPC_SERVICE_NAME=ai.anicca.franklin-loop',
-    '86698 /usr/local/bin/node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/Users/anicca/.franklin2-home/.blockrun XPC_SERVICE_NAME=ai.anicca.franklin2-loop',
-    '12345 /usr/local/bin/node /Users/anicca/anicca/runtime/dashboard/index.mjs SOME_OTHER=1', // must be filtered out (not index-loop)
+    '94249 /usr/local/bin/node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/home/life-manager/.anicca-founder XPC_SERVICE_NAME=ai.anicca.agent-economy-loop',
+    '79192 /usr/local/bin/node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/home/life-manager/.blockrun XPC_SERVICE_NAME=ai.anicca.franklin-loop',
+    '86698 /usr/local/bin/node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/home/life-manager/.franklin2-home/.blockrun XPC_SERVICE_NAME=ai.anicca.franklin2-loop',
+    '12345 /usr/local/bin/node __REPO_ROOT__/runtime/dashboard/index.mjs SOME_OTHER=1', // must be filtered out (not index-loop)
   ];
   const found = parseIndexLoopProcesses(psLines);
   assert.equal(found.length, 3, 'only the 3 lines whose command contains runtime/loop/index.mjs must be returned');
   const byPid = Object.fromEntries(found.map((f) => [f.pid, f]));
-  assert.deepEqual(byPid[94249], { pid: 94249, aniccaHome: '/Users/anicca/.anicca-founder', xpcServiceName: 'ai.anicca.agent-economy-loop' });
-  assert.deepEqual(byPid[86698], { pid: 86698, aniccaHome: '/Users/anicca/.franklin2-home/.blockrun', xpcServiceName: 'ai.anicca.franklin2-loop' });
+  assert.deepEqual(byPid[94249], { pid: 94249, aniccaHome: '/home/life-manager/.anicca-founder', xpcServiceName: 'ai.anicca.agent-economy-loop' });
+  assert.deepEqual(byPid[86698], { pid: 86698, aniccaHome: '/home/life-manager/.franklin2-home/.blockrun', xpcServiceName: 'ai.anicca.franklin2-loop' });
 });
 
 test('PROP-019: adding a 4th index.mjs line to the SAME fixture yields 4 results with NO code change (no static list to update)', () => {
   const psLines = [
-    '94249 node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/a XPC_SERVICE_NAME=ai.anicca.a',
-    '79192 node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/b XPC_SERVICE_NAME=ai.anicca.b',
-    '86698 node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/c XPC_SERVICE_NAME=ai.anicca.c',
-    '99999 node /Users/anicca/anicca/runtime/loop/index.mjs ANICCA_HOME=/d XPC_SERVICE_NAME=ai.anicca.d',
+    '94249 node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/a XPC_SERVICE_NAME=ai.anicca.a',
+    '79192 node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/b XPC_SERVICE_NAME=ai.anicca.b',
+    '86698 node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/c XPC_SERVICE_NAME=ai.anicca.c',
+    '99999 node __REPO_ROOT__/runtime/loop/index.mjs ANICCA_HOME=/d XPC_SERVICE_NAME=ai.anicca.d',
   ];
   const found = parseIndexLoopProcesses(psLines);
   assert.equal(found.length, 4, 'a 4th never-before-seen instance must be discovered purely by enumeration, not a maintained list');
@@ -379,7 +379,7 @@ test('PROP-019: adding a 4th index.mjs line to the SAME fixture yields 4 results
 
 test('REQ-010 edge case: an index.mjs process line missing ANICCA_HOME or XPC_SERVICE_NAME reports null for that field rather than being silently dropped from the result set', () => {
   const psLines = [
-    '55555 node /Users/anicca/anicca/runtime/loop/index.mjs XPC_SERVICE_NAME=ai.anicca.orphan', // no ANICCA_HOME
+    '55555 node __REPO_ROOT__/runtime/loop/index.mjs XPC_SERVICE_NAME=ai.anicca.orphan', // no ANICCA_HOME
   ];
   const found = parseIndexLoopProcesses(psLines);
   assert.equal(found.length, 1, 'the process must still be discovered (not dropped), even though ANICCA_HOME is missing');

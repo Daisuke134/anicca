@@ -1,4 +1,7 @@
 #!/bin/bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # claude-p-mainloop.sh — claude-p's autonomous MAIN loop runner (human-funded builder/monitor of
 # the Anicca colony). Fired on a recurring schedule by
 # ~/Library/LaunchAgents/ai.anicca.claude-p-mainloop.plist (StartInterval, RunAtLoad=false — this
@@ -22,13 +25,13 @@
 set -u
 
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKDIR="$HOME/anicca-project"
-LOG_DIR="$HOME/.openclaw/logs"
+WORKDIR="$LIFE_MANAGER_REPO"
+LOG_DIR="$HOME/.local/state/life-manager/logs"
 mkdir -p "$LOG_DIR"
 LOG_OUT="$LOG_DIR/claude-p-mainloop.out.log"
 LOG_ERR="$LOG_DIR/claude-p-mainloop.err.log"
 
-STATE_DIR="$HOME/.openclaw/state"
+STATE_DIR="$HOME/.local/state/life-manager/state"
 mkdir -p "$STATE_DIR"
 PIDFILE="$STATE_DIR/claude-p-mainloop.pid"
 

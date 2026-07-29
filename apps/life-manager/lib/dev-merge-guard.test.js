@@ -391,8 +391,8 @@ test("stage records form a verifiable signature chain", () => {
 test("the ledger path honours LM_DEV_GUARD_LEDGER and otherwise lands in the state dir", () => {
   assert.equal(guardLedgerPath({ LM_DEV_GUARD_LEDGER: "/tmp/x.jsonl" }), "/tmp/x.jsonl");
   assert.equal(
-    guardLedgerPath({ HOME: "/Users/fixture" }),
-    "/Users/fixture/.life-manager/state/dev-guard-runs.jsonl",
+    guardLedgerPath({ HOME: "/home/life-manager" }),
+    "/home/life-manager/.life-manager/state/dev-guard-runs.jsonl",
   );
 });
 

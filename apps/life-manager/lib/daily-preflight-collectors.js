@@ -2,13 +2,15 @@
 
 const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
+const path = require("node:path");
 const { promisify } = require("node:util");
 const { resendSend } = require("./mail-resend.js");
 const { makeGogMail } = require("./transport/mail-gog.js");
 
 const execFileAsync = promisify(execFile);
-const PYTHON = "/Users/anicca/.cache/telegram-user-venv/bin/python";
-const SIDECAR = "/Users/anicca/anicca/skills/tools/telegram-user/tg_user.py";
+const PYTHON = "/home/life-manager/.cache/telegram-user-venv/bin/python";
+const REPO_ROOT = process.env.LIFE_MANAGER_REPO || path.resolve(__dirname, "../../..");
+const SIDECAR = path.join(REPO_ROOT, "skills/tools/telegram-user/tg_user.py");
 const REQUIRED_UPDATES = Object.freeze(["message", "edited_message", "callback_query"]);
 const MAX_AGE_MS = 15 * 60 * 1000;
 const PROVIDER_TIMEOUT_MS = 15000;

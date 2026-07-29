@@ -68,7 +68,7 @@ Sources (quoted, no guessing):
     confirmed empirically after the tx (pUSD balance check), not assumed here.
 
 Ledger: results are appended via the CANONICAL earn-ledger writer
-(`~/anicca/skills/earn/lib/record.mjs`) — this file does not reimplement the
+(`__REPO_ROOT__/skills/earn/lib/record.mjs`) — this file does not reimplement the
 GATE-0 classifier or the malice-guard; it only derives the {earn,cost,tx,status}
 facts and hands them to the existing writer.
 
@@ -81,6 +81,7 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 DATA_API = "https://data-api.polymarket.com"
 
@@ -103,9 +104,10 @@ AGENT_ENV = os.path.expanduser(
         "PM_TRADE_AGENT_ENV", "~/.anicca-founder/agents/polymarket-agent/.env"
     )
 )
-LEDGER_RECORD_JS = os.path.expanduser("~/anicca/skills/earn/lib/record.mjs")
-LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl")
-EARN_GUARD_JS = os.path.expanduser("~/anicca/skills/_shared/lib/earn-guard.mjs")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+LEDGER_RECORD_JS = str(REPO_ROOT / "skills/earn/lib/record.mjs")
+LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/earn-ledger.jsonl")
+EARN_GUARD_JS = str(REPO_ROOT / "skills/_shared/lib/earn-guard.mjs")
 # P1 (spec §3/§4): the SAME kill-switch file run.sh (the trading entrypoint, same dir as this
 # script) already checks at the top of every pass — writing it here means a cumulative-net
 # HALT stops the NEXT trading pass with zero changes to run.sh itself.

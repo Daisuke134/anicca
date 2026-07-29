@@ -14,11 +14,11 @@ The copy is NOT written here (that is the agent's judgment, per the skill's desi
 This tool only selects + resolves the URL + does bookkeeping.
 """
 import json, os, subprocess, sys, time
+from pathlib import Path
 
-CAPAFY_HTTP = os.path.expanduser(
-    "~/.openclaw/skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py"
-)
-ROTATION = os.path.expanduser("~/.openclaw/state/capafy-marketing-rotation.jsonl")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
+CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
+ROTATION = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-rotation.jsonl")
 LISTING_URL_FMT = "https://capafy.ai/agent/{agent_id}"
 
 

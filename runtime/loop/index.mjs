@@ -112,7 +112,7 @@ try {
 let isProfitable;
 {
   // S2 FIX (2026-06-22): the earn skill (+ its node_modules) lives in ANICCA_HOME (synced by the daemon),
-  // NOT in the code repo — the old repoRoot path resolved to ~/anicca/skills/earn/lib/ledger.mjs which
+  // NOT in the code repo — the old repoRoot path resolved to __REPO_ROOT__/skills/earn/lib/ledger.mjs which
   // does not exist there → ERR_MODULE_NOT_FOUND → isProfitable=()=>false on EVERY boot, so no wake could
   // ever be classified profitable. Resolve from ANICCA_HOME first (where the file + viem actually are),
   // fall back to the code repo for dev.
@@ -248,7 +248,7 @@ async function deriveSolanaAddress(env) {
 
 // Franklin's own body always runs with ANICCA_HOME literally === $HOME/.blockrun (the same real
 // deployment topology wallet-address-solana.test.mjs's own live test verifies against
-// /Users/anicca/.blockrun). This is a CHEAP, structural fast-path — not a substitute for the real
+// /home/life-manager/.blockrun). This is a CHEAP, structural fast-path — not a substitute for the real
 // crypto derivation below (which still always runs whenever this holds) — that lets every OTHER
 // instance in the fleet (automaton, any future instance) whose ANICCA_HOME is structurally NOT
 // $HOME/.blockrun skip the (real, subprocess-spawning) identity derivation entirely on every wake,
@@ -389,7 +389,7 @@ while (!shuttingDown) {
   // franklin-ledger-push (P2) REQ-701..709: best-effort, default-OFF (LEDGER_PUBLISH_ENABLED)
   // publish of BOTH this instance's ledger evidence sources (state/ledger.jsonl wake bookkeeping AND
   // skills/earn/state/earn-ledger.jsonl money evidence -- impl-review iter2 FIND-001) into the
-  // ~/anicca repo. publishLedgerCycle() itself never throws (its own REQ-703 contract) -- this
+  // __REPO_ROOT__ repo. publishLedgerCycle() itself never throws (its own REQ-703 contract) -- this
   // try/catch is deliberate defense-in-depth so a ledger-publish regression can NEVER take the wake
   // loop down with it.
   try {

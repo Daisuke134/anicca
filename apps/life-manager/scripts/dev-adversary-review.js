@@ -105,7 +105,7 @@ const REVIEW_ARGS = Object.freeze([
 
 // The reviewer needs exactly two things from the operator's environment: a PATH to find its own
 // runtime, and a HOME to find its own credentials. It does NOT need $GH_TOKEN, $RAILWAY_TOKEN,
-// $ANTHROPIC_API_KEY, or anything else ~/.openclaw/.env exports into the daily pass. A judge
+// $ANTHROPIC_API_KEY, or anything else ~/.local/state/life-manager/.env exports into the daily pass. A judge
 // holding the keys to the kingdom is not a judge; and a prompt-injected judge holding them is an
 // exfiltration channel with a JSON contract.
 const REVIEW_ENV_ALLOWLIST = Object.freeze(["PATH", "HOME"]);

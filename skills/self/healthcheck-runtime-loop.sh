@@ -28,7 +28,7 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG="$HOME/.openclaw/logs/healthcheck-runtime-loop.log"; mkdir -p "$(dirname "$LOG")"
+LOG="$HOME/.local/state/life-manager/logs/healthcheck-runtime-loop.log"; mkdir -p "$(dirname "$LOG")"
 now=$(date +%s)
 
 # grep -q would SIGPIPE launchctl under pipefail → spurious empty result (same fix as colony-status.sh).

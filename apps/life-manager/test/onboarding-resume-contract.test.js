@@ -70,7 +70,7 @@ test("production onboarding exchange returns only the authenticated user's durab
   const fixture = exchangeFixture({
     "lm_user-a": {
       uid: "lm_user-a", name: "Existing A", calendar_provider: "composio_gcal",
-      phone: "+81" + "8012345678", paid: true, tg_onboard_stage: "done", call_language: "ja",
+      phone: "+44" + "7700900123", paid: true, tg_onboard_stage: "done", call_language: "ja",
     },
   });
   const originalFetch = global.fetch;
@@ -80,7 +80,7 @@ test("production onboarding exchange returns only the authenticated user's durab
     assert.equal(existing.status, 200);
     assert.deepEqual(existing.body.onboarding, {
       name: "Existing A", calendarConnected: true, contextComplete: true,
-      phone: "+81" + "8012345678", paid: true, callLanguage: "ja", step: "dashboard",
+      phone: "+44" + "7700900123", paid: true, callLanguage: "ja", step: "dashboard",
     });
 
     const first = await exchange(fixture.handler, "token-b");
@@ -198,7 +198,7 @@ test("actual LmClient resumes an existing user from server truth in a fresh brow
     storage, getSession: async () => ({ access_token: "token-a" }),
     fetchImpl: async () => exchangeResponse("lm_user-a", {
       name: "Existing A", calendarConnected: true, contextComplete: true,
-      phone: "+81" + "8012345678", paid: true, callLanguage: "ja", step: "dashboard",
+      phone: "+44" + "7700900123", paid: true, callLanguage: "ja", step: "dashboard",
     }),
   });
   client.effects[1]();
@@ -206,7 +206,7 @@ test("actual LmClient resumes an existing user from server truth in a fresh brow
   assert.equal(client.latest(0, "login"), "dashboard");
   assert.equal(client.latest(3, ""), "Existing A");
   assert.equal(client.latest(7, "idle"), "connected");
-  assert.equal(client.latest(6, ""), "8012345678");
+  assert.equal(client.latest(6, ""), "7700900123");
 });
 
 test("actual LmClient does not inherit another user's global browser state", async () => {

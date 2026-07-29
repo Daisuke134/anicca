@@ -7,7 +7,7 @@
 # per-cron `openclaw cron logs` round-trip is needed in the common case.
 #
 # Disabling is NOT done here — it's a deliberate, log-reviewed action gated by
-# ~/.openclaw/state/cron-protect.txt. This script only reports.
+# $HOME/.local/state/life-manager/state/cron-protect.txt. This script only reports.
 #
 # Usage:  bash scripts/cron-cleanup-report.sh
 set -euo pipefail
@@ -22,7 +22,7 @@ trap 'rm -f "$TMP"' EXIT
 # this pass — the task caps triage at the first batch.
 openclaw cron list --all --json >"$TMP" 2>/dev/null
 
-PROTECT="$HOME/.openclaw/state/cron-protect.txt"
+PROTECT="$HOME/.local/state/life-manager/state/cron-protect.txt"
 
 CRON_TRIAGE_OUT="$OUT" PROTECT_FILE="$PROTECT" python3 - "$TMP" <<'PY'
 import json, os, re, sys

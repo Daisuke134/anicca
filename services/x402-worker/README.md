@@ -39,7 +39,7 @@ mock buyer-signed 200 with `buyer==from`, replay rejected `nonce_replay`).
 
 ## Deploy (needs a Cloudflare account + API token)
 ```bash
-# token in ~/.hermes/.env or ~/.openclaw/.env as CLOUDFLARE_API_TOKEN (+ optional CLOUDFLARE_ACCOUNT_ID)
+# token in ~/.hermes/.env or ~/.local/state/life-manager/.env as CLOUDFLARE_API_TOKEN (+ optional CLOUDFLARE_ACCOUNT_ID)
 ./deploy.sh                  # creates NONCE_KV, patches wrangler.toml, wrangler deploy
 ./list-on-agentic-market.sh  # validate + confirm Bazaar discovery (agentic.market auto-indexes; no POST registry)
 BASE_URL=<deployed-url> bash tests/test_x402_cloud_e2e.sh   # E2E against the real edge

@@ -74,8 +74,8 @@ connector costs establish a sustainable floor.
 The migration order is mandatory:
 
 ```text
-two writable Life Manager repositories
-  → one active canonical repository (`Daisuke134/life-manager`)
+archived historical `life-manager-v0` + one writable canonical repository
+  → self-contained canonical repository (`Daisuke134/life-manager`)
   → OpenClaw-dependent local
   → Life Manager-owned local
   → portable local/cloud parity
@@ -156,10 +156,14 @@ and rollback evidence pass.
 | Life Manager Railway | `/health` returns 200 from `life-call-production.up.railway.app` | A functioning cloud control plane already exists |
 | Life Manager panel | Timeline, connection, score, gate, API cost, and limited financial-ledger projections exist | Extend; do not build a second dashboard |
 | Financial report loop | the legacy launchd loop remains active; the Life Manager local scheduler/job/worker path separately sent real Telegram `message_id=432` with immutable snapshot/effect receipt and restart count `1 → 1` | Report execution is OpenClaw-independent and shadow-ready; scheduler ownership is intentionally not cut over until seven expected runs |
-| Financial report scope | x402/TaskMarket/USDC earnings, fees, losses, API costs, payout reserve | Bank, App Store, RevenueCat, Stripe, broader crypto, and business P&L are absent |
-| RevenueCat | One project, seven app/store entries; current project overview is `$20 MRR`, five active subscriptions, zero trials | Baseline is tiny and currently not reliably split per product |
+| Financial report scope | x402/TaskMarket/USDC earnings, fees, losses, API costs, payout reserve | Bank, App Store, Stripe, broader crypto, and business P&L are absent |
 | Moneytree connector | One connected Japanese bank account is readable | Bank balance can seed the personal balance sheet; account identifiers must stay private |
 | Historical Anicca metrics | 299 seven-day downloads on 2026-05-15; subsequent snapshot showed zero due to ASC collection failure; historical trial start rate about 3.5–3.8% | Data quality must be first-class; zero and unavailable cannot be conflated |
+
+RevenueCat administration and credential operations belong to the separate
+Anicca iOS/API product boundary. They are not a Life Manager connector, metric
+source, implementation cursor, or completion gate. Hosted Life Manager
+entitlement remains Stripe-based.
 
 ### 3.2 Marketing jobs actually loaded in launchd
 
@@ -213,7 +217,6 @@ or whole-business financial-health report.
 | Source | Core statement | Design consequence |
 |---|---|---|
 | [Apple Analytics Reports](https://developer.apple.com/documentation/analytics-reports) | “Apple does not generate reports until you create a valid Analytics Report Request.” | Connector setup creates the request once, then polls and downloads all segments; missing requests are an explicit setup state |
-| [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks) | “We recommend that apps defer processing until after the response has been sent.” | Webhook endpoint authenticates, stores an inbox row, returns quickly, then processes idempotently in a worker |
 | [Railway Cron Jobs](https://docs.railway.com/reference/cron-jobs) | “Services configured as cron jobs are expected to execute a task, and terminate as soon as that task is finished.” | Railway cron only enqueues bounded jobs; long rendering, browser, and learning work runs in leased workers |
 | [The Twelve-Factor App: Codebase](https://12factor.net/codebase) | “One codebase tracked in revision control, many deploys” | Local and cloud use the same source and release artifact; deployment configuration changes, business logic does not |
 | [Telegram Bot API](https://core.telegram.org/bots/api) | “The Bot API is an HTTP-based interface” | Telegram is a delivery surface, not the financial source of truth |
@@ -266,7 +269,7 @@ or whole-business financial-health report.
        │ finance │ mobile marketing │ writer │ gig │ Capafy   │
        └──────────────────────────┬────────────────────────────┘
                                   ▼
-       App Store · RevenueCat · Moneytree · Stripe · social platforms
+       App Store · Moneytree · Stripe · social platforms
                                   │
                                   ▼
                     receipts → metrics → decisions
@@ -326,12 +329,10 @@ docs/
 ```
 
 `life-manager-v0` files are not copied blindly into a second top-level product.
-Its 31 path-unique files are mapped behavior-by-behavior to canonical owners;
-each is marked `import`, `superseded`, or `retire`, with provenance and a test.
-After the manifest passes, the GitHub repository is archived and the misleading
-local clone is quarantined. The canonical checkout may then be normalized from
-`life-manager-main` to `life-manager`, but runtime jobs must use installed
-release/data roots rather than depend on either absolute checkout name.
+All 35 tracked files are classified behavior-by-behavior; missing required
+behavior is zero, the README is redirect-only, and the repository is archived.
+Local checkout names are never runtime inputs: jobs use installed release/data
+roots rather than either absolute checkout name.
 
 The actual implementation follows existing repository conventions instead of
 forcing this exact folder shape where it would create churn. Responsibility
@@ -409,7 +410,7 @@ Initial connectors:
 | Domain | Connectors |
 |---|---|
 | Cash and net worth | Moneytree LINK, manual balance, exchange/wallet read-only APIs |
-| Mobile apps | App Store Connect Analytics/Sales, RevenueCat webhooks and API, Mixpanel |
+| Mobile apps | App Store Connect Analytics/Sales, Mixpanel, and product-pack metric inputs |
 | Web products | Stripe |
 | Autonomous income | uGig, Capafy, clipping affiliate, writer, x402, bounty |
 | Distribution | TikTok, Instagram, YouTube, X through OAuth/API where available and isolated cloud-browser adapters where necessary |
@@ -476,7 +477,7 @@ Anicca: installs N · trials N · paid N · MRR $N
 Honne:  installs N · trials N · paid N · MRR $N
 
 Data health
-Moneytree fresh · RevenueCat fresh · ASC delayed 1d
+Moneytree fresh · product metrics fresh · ASC delayed 1d
 
 Action taken
 Promoted hook rule H-17 after 72h canary; paused format F-04.
@@ -629,7 +630,7 @@ Conversation flow:
   → Create tenant
   → Connect money sources
   → Add products/businesses
-  → Connect App Store + RevenueCat + channels
+  → Connect App Store + channels
   → Choose timezone/report times
   → First reconciled snapshot
 
@@ -699,7 +700,7 @@ spam.
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ 5. OBSERVE AT THE RIGHT HORIZON                                                 │
 │ 2h delivery/hold | 24h engagement | 72h install/activation | 7–35d paid/retain  │
-│ Postiz/platform + App Store Connect + RevenueCat + product analytics            │
+│ Postiz/platform + App Store Connect + product analytics                         │
 └────────────────────────────────┬────────────────────────────────────────────────┘
                                  v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -780,10 +781,9 @@ producers become adapters behind the same artifact/publication contracts.
 
 ## 9. `$10k MRR` operating model
 
-Current measured RevenueCat overview is `$20 MRR` and five active
-subscriptions across the shared project. Because product-level allocation is
-not yet reliable, the plan does not pretend that Anicca or Honne owns a
-specific share.
+No verified product-level subscription baseline is imported into Life Manager.
+The plan therefore treats the figures below as target mechanics, never as a
+claim about Anicca or Honne revenue.
 
 Twelve-month scenarios:
 
@@ -891,10 +891,9 @@ URL or verified metric row.
 
 ### 10.6 Connections and deployment
 
-Users connect App Store Connect with an API key, RevenueCat with a project
-credential or OAuth when available, social platforms with OAuth/session
-adapters, and banking through Moneytree LINK. Raw passwords are not a product
-interface.
+Users connect App Store Connect with an API key, social platforms with
+OAuth/session adapters, and banking through Moneytree LINK. Raw passwords are
+not a product interface.
 
 | Mode | User experience | Availability |
 |---|---|---|
@@ -940,8 +939,12 @@ The x402 nine-route seller is present in canonical
 migration contract passes 1/1, ledger regression passes 22/22, and dependency
 audit is zero. PR #1295 merged as `4d5c60b9…`; Railway source/root/commit,
 deployment `cee9598d…` SUCCESS, nine paid gates, settlement target exactly1,
-ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read back. The next program subcursor is
-`BROWSER-AUTH-1`.
+ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read back.
+`OSS-MERGE-1` PR #1268 is mergeable and its exact remote commit
+`edea1e06b…` passes a clean fresh clone, 647/647 app tests, all eight evals,
+panel privacy, the seven-source manifest, and the single canonical runner
+contract. Merged-main exact SHA readback is its final gate; then the next
+program subcursor is `BROWSER-AUTH-1`.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
@@ -973,7 +976,7 @@ ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read bac
 | 25 | Ship monthly cloud subscription | phone/web signup, Stripe monthly entitlement, cloud connector authorization, quotas, source health, export/delete, cancellation, and self-host option |
 | 26 | Prove 1,000-tenant scale and recovery | synthetic workload demonstrates fair scheduling, credential isolation, idempotent effects, worker loss recovery, and bounded queue age |
 | 27 | Add financial connector framework | cursors, freshness, original currency, FX provenance, transfer handling, and explicit unavailable states |
-| 28 | Add Moneytree, RevenueCat, and App Store Connect | bank balance plus per-product installs, trials, paid, churn, proceeds, and connector health |
+| 28 | Add Moneytree and App Store Connect | bank balance plus per-product installs, proceeds, and connector health; subscription metrics arrive only through a product-pack input owned outside Life Manager |
 | 29 | Add Stripe and read-only crypto/investment assets | net worth and business P&L reconcile across supported sources |
 | 30 | Ship Financial Health UI and Telegram | panel and Telegram render the same snapshot hash with daily, weekly, monthly, and exception receipts |
 | 31 | Create Anicca and Honne product packs | independent JA/EN offers, attribution, rewards, weights, accounts, and forbidden claims |
@@ -992,7 +995,7 @@ runtime-migration work is active:
 
 | Now | Work | Why it is still missing | Done evidence |
 |---:|---|---|---|
-| 0 | Finish canonical repo cutover | GitHub still has two writable Life Manager repositories; v0 has 31 path-unique files; the canonical local checkout is still named `life-manager-main`; this platform spec previously lived outside the canonical repo | signed v0 disposition/equivalence manifest passes, no live/deploy refs point to v0, v0 README/description identify the successor, v0 is archived, canonical checkout naming is normalized without absolute-path runtime dependency |
+| 0 | Close OSS-MERGE-1 on canonical main | v0 retirement and x402 source cutover are complete; PR #1268 is mergeable and its remote head is fully verified, but merged-main exact SHA readback is not yet recorded | merge PR #1268, rerun/read back exact main SHA, six security jobs green, and update `docs/evidence/oss/oss-merge-1.md` |
 | 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner |
 | 2 | Decide every legacy job and freeze new legacy writes | inventory without disposition cannot drive a safe cutover | each job has a Life Manager owner, target adapter, effect class, verification command, and rollback action |
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
@@ -1065,4 +1068,4 @@ Cloud becomes Dais's scheduler owner only after:
 | Internal consistency | One portable core and job protocol run in local and cloud deployments; Telegram/panel are projections of the same PostgreSQL-ledger contracts |
 | Scope | Program is decomposed into OpenClaw independence, supported local packaging, cloud deployment and SaaS scale, then financial/growth closure and later health/development loops |
 | Ambiguity | Local is a supported full deployment; cloud is Dais's eventual default; cloud never requires a local worker; OpenClaw is neither adapter nor fallback |
-| Evidence honesty | Current ASC snapshots are marked inconsistent; current RevenueCat numbers are project-level |
+| Evidence honesty | Current ASC snapshots are marked inconsistent; unavailable product metrics never become zero |
