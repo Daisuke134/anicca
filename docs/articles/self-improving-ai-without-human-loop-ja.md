@@ -326,6 +326,10 @@ isolated fix、canary、mergeまでつなぐ改善Graphはまだありません�
 Life Managerは「自動で動く複数loop」を持つが、「自分のcodeを自分で改善する
 closed loop」はこれからです。
 
+具体的なstate machine、権限分離、Issue/Eval契約、自動merge条件は
+[Life Manager Builds Life Manager](../loop-engineering/51-life-manager-builds-life-manager.md)
+を実装正本とします。
+
 正しい順序は次です。
 
 ```text

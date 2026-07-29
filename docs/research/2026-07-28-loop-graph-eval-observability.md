@@ -369,6 +369,9 @@ observability receiptを持つが、自己開発graphはまだ設計段階**で�
 
 ### 6.3 目標graph
 
+Life Manager向けの実装正本:
+[Life Manager Builds Life Manager](../loop-engineering/51-life-manager-builds-life-manager.md)
+
 ```text
 Telegram feedback ─┐
 X replies/comments ─┤
@@ -452,4 +455,3 @@ reward hackingとgoal driftを検出できないためである。
 | [AHE](https://arxiv.org/abs/2604.25850) | 各editを次roundで反証可能な契約にする |
 | [Anthropic — Managed Agents](https://www.anthropic.com/engineering/scaling-managed-agents) | brain、hands、append-only sessionを分離する |
 | [Colony builds Colony](https://runcolony.com/blog/colony-builds-colony/) | bounded issue-to-merge happy pathと、その人間境界 |
-
