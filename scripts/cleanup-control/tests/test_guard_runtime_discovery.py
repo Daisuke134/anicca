@@ -56,6 +56,7 @@ else:
             "CLEANUP_CONTROL_LEDGER": str(tmp_path / "ledger.jsonl"),
             "CLEANUP_CONTROL_RUNTIME_MANIFEST": str(runtime_manifest),
             "CLEANUP_CONTROL_QUARANTINE_ROOT": str(tmp_path / "quarantine"),
+            "EMERGENCY_GUARD_TEST_TEMP_ROOT": str(home / "tmp"),
         }
     )
 
@@ -99,6 +100,7 @@ else:
         str(home / ".cargo/registry"),
         str(home / ".cargo/git"),
         str(home / ".cache"),
+        str(home / "tmp"),
     ]
     published_run_roots = [
         runtime_call[index + 1]

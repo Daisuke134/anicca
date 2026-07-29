@@ -6,6 +6,7 @@ export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
 POLICY_VERSION="cleanup-control-v1"
 HOME_DIR="${EMERGENCY_GUARD_TEST_HOME:-$HOME}"
+USER_TEMP_ROOT="${EMERGENCY_GUARD_TEST_TEMP_ROOT:-$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)}"
 STATE_DIR="$HOME_DIR/.openclaw/state"
 LEASE_DIR="$STATE_DIR/gig-workers"
 LOG_DIR="$HOME_DIR/.openclaw/logs"
@@ -559,6 +560,7 @@ if [ "$TEST_MODE" -eq 0 ]; then
       --cache-root "$HOME_DIR/.cargo/registry" \
       --cache-root "$HOME_DIR/.cargo/git" \
       --cache-root "$HOME_DIR/.cache" \
+      --cache-root "$USER_TEMP_ROOT" \
       --min-cache-bytes 67108864 2>>"$LOG")
     RUNTIME_MANIFEST_RC=$?
     if [ "$RUNTIME_MANIFEST_RC" -eq 0 ] && [ -s "$CLEANUP_RUNTIME_MANIFEST" ]; then
