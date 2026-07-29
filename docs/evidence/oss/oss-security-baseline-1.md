@@ -2,14 +2,16 @@
 
 ## Verdict
 
-**IN PROGRESS.** The distributable tree and all six PR gates are clean. Every
+**VERIFIED for the Life Manager repository boundary.** The distributable tree
+and all six PR gates are clean. Every
 historical finding has been classified without placing a raw credential in this
 file. Firecrawl, Vibecode, Exa, Anthropic, ElevenLabs, Slack, Google Cloud, and
 Sourcegraph no longer leave a known active historical credential.
 
-RevenueCat is the only open credential boundary. Two historical secret keys
-still authenticate, so this atomic is not complete and the repository-retirement
-cursor must not advance.
+An external Anicca iOS/API incident remains open: two historical RevenueCat
+secret keys still authenticate. RevenueCat is not a Life Manager connector,
+metric source, implementation cursor, or repository-retirement gate. The facts
+and required external-owner remediation remain visible below.
 
 No loaded Mac loop was stopped, restarted, or moved while credentials were
 investigated or rotated.
@@ -95,9 +97,10 @@ Vibecode's official CLI README identifies the account API-key page and the
 authenticated `vibecode-cli user` command used for the before/after proof:
 <https://github.com/vibecode/vibecode-cli/blob/main/README.md>.
 
-## Remaining close condition
+## External Anicca iOS/API incident close condition
 
-This atomic becomes complete only after all rows below pass:
+The Life Manager repository baseline is already verified. The external incident
+closes only after all rows below pass:
 
 | Order | Required proof | Current |
 |---:|---|---|
