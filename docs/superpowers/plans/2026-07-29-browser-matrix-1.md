@@ -276,20 +276,30 @@ injectable clock, with poll bounds
 - Create: `docs/evidence/browser/2026-07-30-browser-matrix-1.md`
 
 **Interfaces:**
-- Consumes: agent-owned controlled Cal.com booking page, Tally inquiry form,
-  and Google Forms application form; final deployed harness
+- Consumes: three controlled responder URLs (booking / inquiry / application)
+  on distinct public origins, established per spec §0.4.6a As-Is/To-Be without
+  pre-created admin UI logins; final deployed harness
 - Produces: three provider-side stored records plus queue, Steel, Telegram, and
   release evidence
 
-- [ ] **Step 1: Provision controlled provider assets**
+- [ ] **Step 1: Establish controlled responder URLs without pre-created admin logins**
 
-Use the agent-owned identity to create:
+SUPERSEDED WORDING (2026-07-30): the earlier "create Cal.com + Tally + Google
+Forms accounts first" instruction is void — spec §0.4.6a As-Is/To-Be already
+rejected "admin UI loginを3 provider全てで先に作る案" and requires readback via
+"confirmation email、webhook、API、owner response tableのうちsecretを出さず独立
+照合できるsurface". Follow the spec:
 
-1. a zero-cost cancellable Cal.com event slot,
-2. a Tally inquiry form whose owner response table is readable,
-3. a Google Forms application with no legal attestation or sensitive fields.
-
-Do not store account credentials or public response-edit tokens in Git.
+1. Prefer surfaces reachable from credentials/context the tenant already has
+   (e.g. the connected Google account) over any new provider account.
+2. Any fixture that does require creation is produced by the resident cloud
+   loop itself (enqueued job with tenant-bound auth context) or by a
+   server-side API call — never by a local/Mac browser (§0.4.6a MUST 6:
+   local/Mac browser side effect 0).
+3. Actions stay zero-cost, cancellable, non-binding; no nuisance to
+   uncontrolled third parties; three distinct public HTTPS origins.
+4. Do not store account credentials, URL tokens, or response-edit tokens in
+   Git; controlled URLs live only in runtime secrets.
 
 - [ ] **Step 2: Deploy exact canonical code**
 
