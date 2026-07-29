@@ -51,7 +51,7 @@ function stageMessage(stage, chatId, base, gmailConnectUrl, profileName) {
     case "calendar":
       return { text: "👋 <b>Welcome to Life Manager!</b>\n\nConnect your Google Calendar (10 sec). Tap below, sign in, then come back here.", extra: urlButton("📅 Connect Calendar") };
     case "phone":
-      return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code>+818012345678</code> — I'll call you before events.", extra: undefined };
+      return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code><country-code><number></code> — I'll call you before events.", extra: undefined };
     case "pay":
       return { text: "✅ <b>Phone saved!</b>\n\nSubscribe ($20/mo) and I'll take it from here.", extra: urlButton("⭐ Subscribe") };
     case "gmail": {
@@ -159,7 +159,7 @@ async function handleOnboardingText(chatId, text, row, opts) {
   if (stage === "phone") {
     const phone = normalizePhone(text);
     if (!phone) {
-      await sendMessage(opts.token, chatId, "That doesn't look like a phone number. Please type it with the country code, e.g. <code>+818012345678</code>.");
+      await sendMessage(opts.token, chatId, "That doesn't look like a phone number. Please type it with the country code, e.g. <code><country-code><number></code>.");
       return "bad-phone";
     }
     await saveField(row.uid, { phone }, opts.supaUrl, opts.supaKey);

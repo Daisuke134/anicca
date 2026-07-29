@@ -157,7 +157,7 @@ async function evaluateJourney() {
       token: "tg-token", base: "https://aniccaai.com", supaUrl: "https://fixture.invalid", supaKey: "service",
       linkedRows: async () => [{
         uid: "u1", telegram_chat_id: "100", name: "Existing", calendar_provider: "composio_gcal",
-        phone: "+81123456789", paid: true, gmail_account_id: "mail-1", gmail_skipped: false,
+        phone: "+810000000000", paid: true, gmail_account_id: "mail-1", gmail_skipped: false,
         tg_onboard_stage: "done",
       }],
       sendStage: async (...args) => existingOnboardingMessages.push(args),

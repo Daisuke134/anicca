@@ -23,7 +23,7 @@ Railway、Nosana、local OSS、external providerへ同じcanonical commitからd
 | Surface | fresh readback | 現在判断 |
 |---|---|---|
 | canonical | GitHub APIは`Daisuke134/life-manager`、ID `1248111245`、default `main`、public/unarchived。Railway production `life-call` sourceも同repo、root=`apps/life-manager` | **唯一のSSOT** |
-| canonical security baseline | PR #1267のfresh scanで、PR差分の本specはsecret/PII shape 0。一方、repo全履歴gitleaksは850 finding、現tree PII shape scanは63行、Python jobはmissing test dependencyと既存expectationでFAIL。TruffleHogはPASS | raw secretをspecへ複製しない。実credentialのrotation/revocation、findingのreal/false-positive裁定、allowlist、CI dependency/expectation修復を行い、fresh scan greenまでOSS安全完了を主張しない |
+| canonical security baseline | 全ref fresh scanは848 finding / 847 fingerprint。provider型はGCP=HTTP 400、Stripe=401、Slack=`invalid_auth`、旧EXA/Firecrawl=401。private keyはcurrent treeに無い期限切れself-signed localhost証明書。現tree gitleaks/PII（14 exact synthetic fixture fingerprint）、全ref exact-fingerprint baseline、Python manifest 13、全Python AST、全shell syntax、report 16はlocal PASS。`origin/main` rebase後の追加fixtureもfail-closed gateで検出・裁定済み | **done** — PR #1274でgitleaks / PII / TruffleHog / Python / Shell exact5が全green。raw値なしの全裁定・root cause・job時間は`docs/evidence/security/2026-07-29-oss-security-baseline.md` |
 | renamed legacy MVP | GitHub APIは`Daisuke134/life-manager-v0`、ID `1273052304`、default `main`、public/unarchived。35 tracked files / 184,580 bytes、open issue 11、open PR 0、production deployment source 0。READMEのinstall先は既にcanonical `life-manager` | 35-file behavior/history map→11 issue裁定→redirect-only README→archive。missing required behaviorだけをcanonicalへ実装し、旧codeを無条件に再importしない。削除・history rewriteはしない |
 | remaining source scatter | Railway production `x402-agents` sourceはまだ`Daisuke134/anicca.ai` | seller code/evidenceを本repo `services/x402-endpoint`へ吸収し、同serviceのsourceをcanonicalへ切り替えるまでone-repo完了ではない |
 
@@ -587,7 +587,8 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | ~~9~~ | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | ✅ PR #1246、実wake exit 0、cost 0、訂正行1、owned count不変 |
 
 **Program cursor: Portable Runtime仕様の実行順を参照。**
-**Current Agent Economy-compatible migration slice: AE-X402-SOURCE-CONSOLIDATE-1（Order 0内）。**
+**Current Agent Economy-compatible migration slice: REPO-V0-RETIRE-1（Order 0内）。**
+前slice `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone。その後に`AE-X402-SOURCE-CONSOLIDATE-1`。
 **Next Agent Economy product feature after the portable-runtime release gates: AE-ZERO-START-1。**
 外部eventを待たず、program gateを守って上表を番号順に進める。
 収益・award・buyer発生は下の自動成果gateで観測し、実装cursorを止めない。
@@ -850,7 +851,7 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 
 | 順 | ID | 現在 | done |
 |---:|---|---|---|
-| 1 | `OSS-SECURITY-BASELINE-1` | PR #1267の本spec差分はsecret/PII shape 0、TruffleHog PASS。一方、repo全履歴gitleaks 850 finding、現tree PII shape 63行、Python jobはmissing dependencyと既存expectationでFAIL | raw値を出さずfindingをreal/false-positiveへ全裁定。real credentialは全rotation/revocation、false positiveは根拠付きallowlist。Python jobへdeclared dependencyを入れ、現spec期待値へ更新。fresh PRでgitleaks / PII / TruffleHog / Python / Shell exact5 PASS |
+| ~~1~~ | `OSS-SECURITY-BASELINE-1` | **done**。848 findingを847 exact fingerprintへ裁定し、旧provider credentialは全invalid、期限切れlocalhost keyはcurrent tree 0。PIIは14 synthetic fixtureだけをpath-bound fingerprint許可。誤った全Python test直実行を13-test明示manifestへ交換し、X gate期待値を現specへ同期。local gitleaks current/all-ref、PII、Python、AST、shell、reportがPASS | PR #1274でgitleaks / PII / TruffleHog / Python / Shell exact5 green。evidence=`docs/evidence/security/2026-07-29-oss-security-baseline.md` |
 | 2 | `REPO-V0-RETIRE-1` | active runtimeはcanonical exact1だがv0はpublic/unarchived、35 files、open issue 11 | §2.1.1のTODO NOW 1→4を閉じ、VERIFY AFTERをPASS |
 
 #### Boundaries / Execution / E2E judgment
@@ -1366,7 +1367,8 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
     SHELTER-REPLACE-1とTASKMARKET-READBACK-1は実launchd検証まで完了した。その後、最初のexternal x402 sale
     `$0.01`とFranklin running 0を実測した。現在のAgent Economy-compatible migration sliceは§0.4.6どおり、
-    Portable Runtime Order 0内の**AE-X402-SOURCE-CONSOLIDATE-1**である。
+    Portable Runtime Order 0内の**REPO-V0-RETIRE-1**である。前slice
+    `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone、その後`AE-X402-SOURCE-CONSOLIDATE-1`へ進む。
     AE-SLIDES-JP-1、AE-ARTICLE-JP-1のartifactは存在するが、AE-PUBLICATION-AUDIT-1はlive snapshot更新のためreopenする。
     Life Manager program trackのcursorはPortable Runtime仕様だけを参照する。
     13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
@@ -1387,7 +1389,8 @@ Life Manager product trackであり、Agent Economy cursorへ混ぜない。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
 **Program cursor**: Portable Runtime仕様の実行順を参照。
-**Current Agent Economy-compatible migration slice**: **AE-X402-SOURCE-CONSOLIDATE-1（Order 0内）**。SHELTER-REPLACE-1は
+**Current Agent Economy-compatible migration slice**: **REPO-V0-RETIRE-1（Order 0内）**。
+前slice `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone、その後`AE-X402-SOURCE-CONSOLIDATE-1`。SHELTER-REPLACE-1は
 old running→new running + 3 routes/heartbeat検証→old state 2と、`72zCp…→G8uw…`の自然triggerまでmainnetで実証した。
 ただし`G8uw…`後はNosana running 0なので、継続level 3とは書かない。TASKMARKET-READBACK-1は完了した。
 external sale `$0.01`はAgent Economy seller railの証明であり、Franklin/tenant earningsは`$0.00`。
@@ -1523,7 +1526,8 @@ H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明�
 `13c-PM`は実CAPITAL行でdone。`13c-SELL/WORK`はverified external inflow→earnings ledgerの本番bridgeが稼働し、
 最初のcolony外buyer `$0.01`を記帳済みで、累計`$1`と13d-b実txを非blockingで待つ。13d-b engineはproduction `no_verified_surplus`まで実証し、
 **economic outcome gate**は`13c-SELL / 13c-WORK`、**Agent Economy-compatible migration slice**は
-Order 0内の`AE-X402-SOURCE-CONSOLIDATE-1`。**Life Manager product cursor**はPortable Runtime仕様を参照する。
+Order 0内の`REPO-V0-RETIRE-1`。前slice `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone、
+その後`AE-X402-SOURCE-CONSOLIDATE-1`。**Life Manager product cursor**はPortable Runtime仕様を参照する。
 REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄積する。
 送金先はusable、agent wallet残高は0。live金額はhandoffへ複製せず§0.4.3を正本とする。
 
@@ -1608,7 +1612,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済み。現在のprogram cursorはPortable Runtime仕様を正本とし、Agent Economyが現在実行するmigration sliceはOrder 0内の`AE-X402-SOURCE-CONSOLIDATE-1`。13c等のevent待ちは別表で追跡し、成果を捏造しない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済み。現在のprogram cursorはPortable Runtime仕様を正本とし、Agent Economyが現在実行するmigration sliceはOrder 0内の`REPO-V0-RETIRE-1`。前slice `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone、その後`AE-X402-SOURCE-CONSOLIDATE-1`へ進む。13c等のevent待ちは別表で追跡し、成果を捏造しない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
@@ -1704,7 +1708,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 1. `AE-SLIDES-JP-1`と`AE-ARTICLE-JP-1`のartifactは存在するがlive snapshotに対してstale。`docs/presentations/how-to-make-a-financially-independent-ai-ja.{md,pptx,pdf}`と`docs/articles/how-to-make-a-financially-independent-ai-ja.md`へAgent Economy `$0.01`、Franklin `$0.00`、Nosana running 0、highest proven level 3を反映し、deck再生成は`build-financially-independent-ai-ja.cjs`を使う。
 2. `AE-PUBLICATION-AUDIT-1`は2026-07-29 state changeでreopen。GitHub sourceはpublicだがGitHub Pages候補routeはHTTP 404で、website publishは未完。
-3. `SHELTER-REPLACE-1`はmainnet handoverと自然`72zCp…→G8uw…`まで実証済み。ただし`G8uw…`後にchainが止まりcurrent running 0なので、永久継続とは書かない。`TASKMARKET-READBACK-1`はdone。現在のAgent Economy-compatible migration sliceはOrder 0内の`AE-X402-SOURCE-CONSOLIDATE-1`、次のproduct featureはportable-runtime release gates後の`AE-ZERO-START-1`。
+3. `SHELTER-REPLACE-1`はmainnet handoverと自然`72zCp…→G8uw…`まで実証済み。ただし`G8uw…`後にchainが止まりcurrent running 0なので、永久継続とは書かない。`TASKMARKET-READBACK-1`はdone。現在のAgent Economy-compatible migration sliceはOrder 0内の`REPO-V0-RETIRE-1`で、前slice `OSS-SECURITY-BASELINE-1`はPR #1274 exact5 greenでdone、その後`AE-X402-SOURCE-CONSOLIDATE-1`。次のproduct featureはportable-runtime release gates後の`AE-ZERO-START-1`。
 4. BROWSER-GEN-1は実Luma登録、provider `You’re In`、TG evidence、Steel releaseまでdone。
 5. Life Manager program trackはPortable Runtime仕様の実行順だけを正本とする。既存mobile chatは重要な変化をpushし、恒久realtime `/panel` は同じledgerの全体像を常時表示する。Agent Economy product queueはprogram release gateを追い越さず、現在loadedなMac loopはmigration中に停止しない。
 6. 13cは最初のexternal x402 sale `$0.01`をexactly-once記帳済み。累計$1、13d実payout、SURVIVE、REPORT、redeem、9d、TaskMarket award、uGig acceptance、11a→11c+11dは自動成果ゲートとして並走し、各実装cursorを止めない。10fはfinal phaseまでpausedを維持する。
