@@ -41,6 +41,35 @@ Mac / Windowsホストは次を満たすようにする。
 
 Desktopアプリはユーザーセッション上で動くため、再起動後にログイン画面で止まるとRemoteは復旧しない。無人復旧を優先して自動ログインを使う場合は、物理アクセスとディスク暗号化のリスクを別途評価する。
 
+### Codex Desktopを監視して再起動する
+
+このMacでは`~/Library/LaunchAgents/com.anicca.codex-remote-watchdog.plist`を使う。`RunAtLoad=true`、`StartInterval=60`とし、次の判定を60秒ごとに実行する。
+
+```bash
+/usr/bin/pgrep -f '/Applications/Codex.app/Contents/MacOS/ChatGPT' \
+  >/dev/null || /usr/bin/open -a Codex
+```
+
+LaunchAgentを読み込む。
+
+```bash
+launchctl bootstrap \
+  "gui/$(id -u)" \
+  "$HOME/Library/LaunchAgents/com.anicca.codex-remote-watchdog.plist"
+
+launchctl kickstart \
+  "gui/$(id -u)/com.anicca.codex-remote-watchdog"
+```
+
+状態を確認する。
+
+```bash
+launchctl print \
+  "gui/$(id -u)/com.anicca.codex-remote-watchdog"
+```
+
+watchdogはCodex Desktopが停止している場合だけアプリを開く。Codex DesktopのRemoteホストとCLI daemonを重複起動しない。
+
 ### Codex CLIのRemote Control daemon
 
 Codex CLIには実験的なRemote Control daemonがある。
@@ -135,7 +164,9 @@ claude remote-control \
 |---|---|
 | Claude | `com.anicca.claude-remote-control`が`launchd`で稼働。`RunAtLoad=true`、`KeepAlive=true`、接続済み |
 | Mac電源 | AC接続時スリープ無効、停電復旧後の自動起動有効 |
+| macOSログイン | FileVault無効、自動ログインユーザー`anicca`設定済み |
 | Codex | ChatGPT/Codex DesktopがRemoteホストとしてすでにオンライン。macOSログイン項目へ登録済み |
+| Codex watchdog | `com.anicca.codex-remote-watchdog`が60秒間隔でDesktopを監視し、停止時に再起動 |
 | Codex CLI daemon | Desktopと重複して`409 Remote app server already online`になるため停止 |
 | Codex standalone CLI | `~/.codex/packages/standalone/current/codex`へ導入済み |
 
