@@ -283,6 +283,37 @@ test('executes the durable claim → runtime → finish → terminal readback pa
   assertNoSecrets(JSON.stringify(result));
 });
 
+test('verifies one real provider context without requiring a second provider account', async () => {
+  const env = { ...REQUIRED_ENV };
+  delete env.BROWSER_AUTH_TENANT_B_UID;
+  const deps = makeDeps();
+
+  const result = await runBrowserAuthProductionE2E({
+    mode: 'verify-provider-context',
+    env,
+    deps,
+  });
+
+  assert.equal(result.mode, 'verify-provider-context');
+  assert.equal(result.tenant_count, 1);
+  assert.equal(result.context_hashes.length, 1);
+  assert.equal(result.job_ids.length, 1);
+  assert.equal(result.steel_session_ids.length, 1);
+  assert.equal(result.telegram_evidence_ids.length, 1);
+  assert.equal(result.released, true);
+  assert.deepEqual(
+    deps.calls.map(({ name }) => name),
+    [
+      'durableQueue.enqueue',
+      'executor.claim',
+      'executor.execute',
+      'executor.finish',
+      'durableQueue.read',
+    ],
+  );
+  assertNoSecrets(JSON.stringify(result));
+});
+
 test('rejects nonterminal jobs, missing provider receipts, and unreleased Steel rows', async () => {
   const cases = [
     ['nonterminal', (terminal) => ({ ...terminal, status: 'claimed' })],
