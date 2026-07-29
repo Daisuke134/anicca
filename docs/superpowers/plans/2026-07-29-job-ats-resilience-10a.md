@@ -132,7 +132,7 @@
 
   Mark every completed plan checkbox. Keep backlog order 10 as `in_progress`, and record the exact test count, live probe result, branch head, and CI run in the evidence file.
 
-- [ ] **Step 4: Commit, push, and merge**
+- [x] **Step 4: Commit, push, and merge**
 
   ```bash
   git add docs
