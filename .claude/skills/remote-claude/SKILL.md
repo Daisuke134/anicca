@@ -27,6 +27,23 @@ This removes the need to type `/rc` for each future interactive session. It does
 claude remote-control --name "Mac mini"
 ```
 
+## Batch session spawning
+
+Use this when the user asks to spin up multiple phone-accessible Claude sessions.
+
+1. Interpret “some,” “a few,” or an omitted count as 5. Honor an explicit count from 1 through 10.
+2. Start the requested sessions concurrently from fresh login shells. Give each a stable unique name such as `Phone-Remote-1` through `Phone-Remote-N`:
+
+   ```bash
+   script -q /dev/null claude --name "Phone-Remote-1"
+   ```
+
+3. Require every process to show automatic `/rc connecting…`; do not type `/rc`.
+4. Send a unique harmless seed message to every session and require a real response from each.
+5. Resolve and report each local session UUID from its JSONL, then leave all requested processes alive.
+6. Do not assign concurrent write tasks to sessions sharing one working directory. Use separate worktrees for concurrent implementation.
+7. For more than 10 sessions, prefer one official `claude remote-control` server with an explicit `--capacity` and `--spawn=worktree` instead of many unmanaged PTYs.
+
 ## Workflow
 
 1. Confirm Claude Desktop is running:
