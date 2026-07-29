@@ -31,8 +31,12 @@ program cursorはPortable Runtime仕様の実行順を正本とする。Order 0�
 **`OSS-SECURITY-BASELINE-1` → `REPO-V0-RETIRE-1` →
 `AE-X402-SOURCE-CONSOLIDATE-1`** は全てdone。`BROWSER-AUTH-1`も実Lumaの認証・暗号化保存・
 別process/Steel復元・production queue・再起動継続・失効handoffまでdone。現在のprogram subcursorは
-`BROWSER-MATRIX-1`であり、zero-start以降の新しいfinance機能はPortable Runtimeのlocal/cloud release
-gateを追い越さない。
+`BROWSER-MATRIX-1`である。generic matrix実装はPR #1348、merge
+`ab71c1514b10ae1a74b770bf7ad8d1cf12dc6c38`、Railway deployment
+`1fdf8320-0086-4620-820b-a94e4ebdb08b` SUCCESSまで反映済みである。ただし実provider 3系統は未実行であり、
+現行verification harnessがenqueue後に対象jobをdirect claimするため、resident cloud loopの実行主体証明にも未到達である。
+直近atomicは§0.4.6aのloop ownership是正であり、zero-start以降の新しいfinance機能はPortable Runtimeの
+local/cloud release gateを追い越さない。
 historical §10 row `8c.R`の「双方unarchived」はrename直後の保全条件であり、現在のrepo境界・退役判断には使わない。
 
 根拠（一次ソース）:
@@ -602,7 +606,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
 | 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **done**。PR #1268、canonical merge `8d47689d3…`。exact main fresh cloneでroot/app install、647/647、8 eval、panel privacy、checkout clean。source 7系統、single `runtime/agent-runner`、legacy path検知、gitleaks/PII 0。evidence=`docs/evidence/oss/oss-merge-1.md`。外部Anicca iOS/APIのRevenueCat incidentはLife Manager cursorを止めない |
 | ~~3~~ | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **done**。実LumaでOTP/profile/passkeyを通過し`/home`のprotected `Create Event`をreadback、encrypted context save→別Steel/別process→production durable queue→exact-image restart後もauthenticated readback。最終PR #1344、merge=`e075fb305…`、deployment=`173c819d…` SUCCESS、instance=`253cd9d2188f`、job=`84d9df6e…`、Steel=`f0d5ae91…`、TG=`474`、release=true。expired rowはjob=`e071f4c1…`で`handoff_required/login`、2-tenant wrong tenant/origin/principal read 0、全session release、最終production logのOTP/cookie/auth/raw-context pattern 0。focused=`53/53 + 23/23`。evidence=`docs/evidence/browser/2026-07-29-browser-auth-1.md` |
-| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | **in progress / current cursor**。BROWSER-AUTH-1で一般auth substrateは実証済み。次は同じproduction planner/executorを予約・問い合わせ/メール・申請の3系統へ通し、各実side effect・provider readback・TG receipt・Steel releaseを揃える |
+| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。resident cloud loop自身がdurable queueからclaimし、verification harnessはenqueue/pollだけを行う。site adapter固有成功またはharnessからのdirect executor callだけではPASSにしない | **in progress / current cursor**。generic classifier/receipt/harnessはPR #1348、merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESS、focused 89/89、full app、OSS 11/11、required CI全green。production boot logはLife Manager loops ONおよび`browser jobs ON (Railway private Steel)`を示し、runtime secret群も存在確認済み（値は非出力）。未完は①harnessのdirect `claimBrowserJobById`/`runNextBrowserJob`を除去してenqueue-only + terminal pollへ変える、②予約・問い合わせ・申請の実side effect、③各provider readback・TG receipt・Steel release 3/3。詳細と唯一の受入契約は§0.4.6a |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
 | 6 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
 | 7 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
@@ -610,6 +614,94 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 9 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `life-manager-v0`はrequired code/runtime reference 0を確認してcanonical redirect/archive、`profitable-claude`もhistorical redirect/archive、`anicca-products`は他productだけ、`anicca.ai`はLife Manager deployment source 0、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending。`life-manager-v0`のbounded archiveは先行`REPO-V0-RETIRE-1`で閉じる |
 | 10 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
 | 11 | **OPS-PANEL-1** | 既存の恒久 `/panel` を、全loop・browser trace・action receipt・失敗理由・次回実行が常時見えるrealtime overview/controlへ完成する | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示、chatへ送ったreceiptと同じevent id。routine report/ask/actionは既存mobile chatで完結し、panelはいつでも全体像を確認できる | pending |
+
+##### 0.4.6a BROWSER-MATRIX-1 current execution contract
+
+###### 1. Overview（What / Why）
+
+Life Manager本体のbrowser task経路は、mobile Telegram自然文→production classifier→durable
+`lm_browser_jobs` queue→2秒周期のresident `startBrowserJobLoop`→Stagehand planner/CUA→Railway-private
+Steel→provider readback→Telegram receipt→session releaseである。production boot logはLife Manager loops ONと
+`browser jobs ON (Railway private Steel)`を実測済みである。
+
+PR #1348のmatrix harnessはgeneric action contractをproductionへ載せたが、enqueue直後に
+`claimBrowserJobById`と`runNextBrowserJob`を呼ぶため、cloud内の同じexecutorを使っていてもresident loopの
+ownership証明にはならない。BROWSER-MATRIX-1は、Life Manager自身の常駐loopがjobを自然claimし、検証側が結果を
+観測するだけの形へ直した後、予約・問い合わせ・申請の実provider 3系統を完走した時だけdoneになる。
+
+###### 2. Acceptance Criteria
+
+| # | MUST |
+|---:|---|
+| 1 | production verification harnessは3 jobをdurable queueへenqueueした後、executor、claim function、browser driverを直接呼ばず、terminal rowをbounded pollする |
+| 2 | resident production workerが各jobをclaimしたことをqueue trace/claim metadataとproduction logでreadbackする |
+| 3 | booking、inquiry、applicationを異なる3 provider originで各1件だけ実行し、provider側の新規保存recordを独立readbackする |
+| 4 | 各jobでprovider receipt、同じeventのTelegram evidence message ID、distinct Steel session ID、`steel_released=true`を揃える |
+| 5 | 3 provider recordと3 durable receiptをbounded IDまたはSHA-256で対応付け、raw form内容、email、OTP、cookie、authorization、session contextをevidenceへ出さない |
+| 6 | local/Mac browser side effectは0。Macでloadedな既存loopはLOCAL-CLOUD-PARITY-1/CLOUD-LOOPS-1完了前に停止しない |
+| 7 | timeout、challenge、login失効、KYC、payment、法的同意へ遭遇したjobは成功と偽らずhandoff/blocked receiptを残す。これはBROWSER-MATRIX-1の3成功recordを代替しない |
+| 8 | 3/3通過後だけ本表をdoneへ上書きし、BROWSER-RECOVERY-1をcurrentへ進める |
+
+###### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| product runtime | Telegram intakeはdurable queueへenqueueし、resident browser loopが2秒周期でclaimする。productionでON | 変更しない。これを唯一のexecution ownerにする |
+| matrix verifier | enqueue後に対象jobをdirect claimし、同processからexecutorを呼ぶ | enqueue-only。DB terminal rowをpollし、resident loopのclaim/readbackだけを受理する |
+| genericity | classifier、Stagehand/Steel driver、provider receipt vocabularyはbooking/inquiry/applicationへ一般化済み | provider/site固有adapterなしで異なる3 originを完走する |
+| public action identity | agent-owned email/nameはRailway runtime secretに存在し、値はrepo/logへ出さない | login不要のpublic responder surfaceではidentity fieldだけを使用する |
+| authenticated action | BROWSER-AUTH-1のtenant-bound encrypted auth contextをfresh Steel sessionへ注入できる | user/agentが一度認証したcontextをtenant別に復元し、失効時だけ再認証/handoffする |
+| provider fixture | controlled provider assetの準備とLife Managerの利用者向けactionを混同していた | fixture準備はone-time test setup。routine action pathへadmin loginやaccount作成を入れない |
+| provider readback | admin UI loginを3 provider全てで先に作る案だった | confirmation email、webhook、API、owner response tableのうちsecretを出さず独立照合できるsurfaceを使う |
+
+###### 4. Test Matrix
+
+| # | To-Be | Test / evidence | Cover |
+|---:|---|---|---|
+| 1 | verifierはenqueue-only | `browser-matrix-production-e2e.test.js`: executor/claim dependencyを受け取らず、poll前にbrowser action 0 | pending |
+| 2 | resident loop ownership | production queue traceにresident claim、verifier processからdirect execution 0 | pending |
+| 3 | booking | 実provider booking record + durable receipt + TG evidence + Steel release | pending |
+| 4 | inquiry | 実provider inquiry record + durable receipt + TG evidence + Steel release | pending |
+| 5 | application | 実provider application record + durable receipt + TG evidence + Steel release | pending |
+| 6 | secret/tenant boundary | bounded production log scan 0 finding、wrong tenant/origin/principal read 0 | pending |
+| 7 | cleanup | distinct Steel ID 3/3、released 3/3、controlled open session 0 | pending |
+
+###### 5. Boundaries / Credential decision
+
+| Decision | MUST / DO NOT |
+|---|---|
+| core browser | self-hosted Railway-private Steel + StagehandをMUSTとする。Browserbase/Steel Cloud accountをcore dependencyにしない |
+| auth persistence | BROWSER-AUTH-1で実証したtenant-bound encrypted Steel auth context（cookie/localStorage snapshot）をMUSTとする |
+| raw credential | password/OTP/cookie/auth contextをLLM prompt、Git、DB平文、trace、Telegramへ入れてはならない |
+| Steel hosted vault/profile | hosted API向けcredentials vault/profileをself-host OSSに存在すると仮定しない。現self-host routeはactions/sessions/CDP/files/logsであり、tenant vault/profile routeを提供しない |
+| login-free task | booking/inquiry/applicationのpublic responder actionへ不要なadmin loginを追加しない |
+| account bootstrap | agent-owned accountのOTP/magic linkはagent inboxで処理する。user-owned OAuth/2FA/KYC/3DSはplatformが要求した時だけ最小handoffし、以後のloopはhuman 0で継続する |
+| fixture | controlled asset以外の第三者へnuisance booking/message/applicationを送らない |
+
+根拠:
+
+- Steel self-host README — https://github.com/steel-dev/steel-browser — self-host可能なbrowser API、session/cookie/localStorage管理、CDP/Playwright接続を提供する。
+- Steel self-host route source — https://github.com/steel-dev/steel-browser/blob/main/api/src/steel-browser-plugin.ts — self-host pluginがactions/sessions/CDP/files/logs routeを登録する。
+- Steel auth-context cookbook — https://github.com/steel-dev/steel-cookbook/tree/main/examples/auth-context-ts — live sessionからcontextを取得し、fresh sessionの`sessionContext`へ復元する。
+- Steel credentials/profile cookbook — https://github.com/steel-dev/steel-cookbook/tree/main/examples/credentials-ts / https://github.com/steel-dev/steel-cookbook/tree/main/examples/profiles-ts — hosted API keyを使うvault/profile方式であり、core self-host routeとは別物である。
+- Stagehand browser docs — https://github.com/browserbase/stagehand/blob/main/packages/docs/v3/configuration/browser.mdx — cloud managedとlocal/self-managed browserの両environmentを持つ。
+- Browserbase auth guide — https://github.com/browserbase/docs/blob/main/guides/authentication.mdx — anti-bot対策に加え、2FA等でremote control/handoffが必要になる境界を示す。
+
+###### 6. Execution Steps
+
+| 順 | Action | Done |
+|---:|---|---|
+| 1 | Superpowers TDDでmatrix harnessをenqueue-only + bounded terminal pollへ変更し、direct claim/executor dependencyを削除 | unit testとsource scanでdirect execution 0 |
+| 2 | required CIを全greenにし、canonical mainへmerge、Railway exact merge SHA SUCCESSとbrowser loop ONをreadback | merge/deploy/log evidence |
+| 3 | zero-cost/cancellable booking、non-binding inquiry、non-binding applicationのcontrolled responder URLをruntime secretとして設定 | GitにURL token/owner credential 0 |
+| 4 | production harnessは3 jobをenqueueし、resident loopがclaim/executeする間terminal rowをpollする | resident claim 3/3 |
+| 5 | provider保存record、durable receipt、TG evidence、Steel release、secret scanを独立照合する | §2の8条件全PASS |
+| 6 | `docs/evidence/browser/2026-07-30-browser-matrix-1.md`へbounded evidenceを書き、BROWSER-MATRIX-1=done、BROWSER-RECOVERY-1=currentへ更新する | stale current claim 0 |
+
+| E2E judgment | Value |
+|---|---|
+| UI変更 | なし |
+| 結論 | Maestro不要。production Telegram、durable DB、provider、Railway-private Steel、Telegram receiptを跨ぐbackend/provider E2EをMUSTとする |
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
@@ -1416,7 +1508,10 @@ OTP/profile/passkeyを通過し、`/home`のprotected actionをreadbackした。
 `handoff_required/login`、2-tenant wrong tenant/origin/principal read 0、secret pattern 0、全session releaseまで
 BROWSER-AUTH-1を閉じた。詳細は§0.4.6と
 `docs/evidence/browser/2026-07-29-browser-auth-1.md`を正本とする。現在は同じgeneric planner/executorを
-予約・問い合わせ/メール・申請の3系統へ通すBROWSER-MATRIX-1を進める。
+予約・問い合わせ/メール・申請の3系統へ通すBROWSER-MATRIX-1を進める。generic matrix codeはPR #1348、
+merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESSまで反映済みである。直近は§0.4.6aどおり、
+verification harnessのdirect claimを除去し、resident production loopだけをexecution ownerにしてから実provider
+3系統をenqueue/pollする。
 既存Telegram chatと恒久realtime `/panel` の
 契約は§9.4/§9.9へ統一済みであり、新規chat UI taskは置かない。
 x402商品はproductionの9 paid routeを単一OpenAPI catalogから公開し、x402scanの署名登録で
@@ -1518,7 +1613,8 @@ SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk 
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
 Life Manager product trackはBROWSER-GEN-1、OSS-MERGE-1、BROWSER-AUTH-1がdone。
-現在はBROWSER-MATRIX-1（予約・問い合わせ/メール・申請の3系統の実provider receipt）がcurrent。
+現在はBROWSER-MATRIX-1がcurrent。generic codeのmerge/deployはdone、resident-loop ownership是正と
+予約・問い合わせ/メール・申請の実provider receipt 3/3はpendingであり、§0.4.6aを唯一の受入契約とする。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
