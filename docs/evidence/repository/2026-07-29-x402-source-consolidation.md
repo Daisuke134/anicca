@@ -45,9 +45,26 @@ source was recovered from the merged `anicca-products` history:
 | Secret pattern scan | 0 |
 | `git diff --check` | PASS |
 
-The production cutover and post-cutover route/ledger/downtime readbacks are
-recorded below after the canonical commit is deployed.
-
 ## Post-cutover readback
 
-Pending canonical merge and Railway source cutover.
+PR [#1295](https://github.com/Daisuke134/life-manager/pull/1295) merged as
+`4d5c60b93921cbb6038c91e0142980204c01e211`. Its pull-request run and the
+post-merge `main` run both passed the exact five security jobs.
+
+| Check | Result |
+|---|---|
+| Railway source | `Daisuke134/life-manager`, branch `main` |
+| Root / config | `services/x402-endpoint` / `/services/x402-endpoint/railway.toml` |
+| Deployment | `1062874a-1f9b-4338-bf63-f89b319006ef`, `SUCCESS`, exact commit `4d5c60b93921cbb6038c91e0142980204c01e211` |
+| Runtime initialization | Prisma client generated; x402 initialized on `eip155:8453`; payment middleware active |
+| Health / discovery | HTTP 200 / HTTP 200 with exactly nine operations |
+| Paid-route gate | all eight POST routes and `GET /funding-rates` returned HTTP 402 without payment |
+| Settlement observer | HTTP 200; three bounded public records; all matched the closed public receipt schema |
+| Ledger regression | `x402-sale-ledger` plus production observer tests 22/22 PASS |
+| Old source dependency | Railway source/config contains no `Daisuke134/anicca.ai` dependency |
+| Observed downtime | zero: five `/health` requests were HTTP 200 and Railway recorded no 5xx during the cutover window |
+
+The cutover created overlapping builds because both source connection and the
+explicit from-source deployment targeted the same commit. Railway retained the
+newest healthy deployment and removed the superseded builds; only one
+production deployment remains active.
