@@ -187,11 +187,7 @@ test("Luma login request deterministically fills and submits the measured email 
   const page = {
     locator(selector) {
       calls.push(["locator", selector]);
-      return email;
-    },
-    getByRole(role, input) {
-      calls.push(["getByRole", role, String(input.name)]);
-      return submit;
+      return selector === "button[type=\"submit\"]" ? submit : email;
     },
     async waitForTimeout(ms) { calls.push(["waitForTimeout", ms]); },
   };
@@ -201,7 +197,7 @@ test("Luma login request deterministically fills and submits the measured email 
     ["locator", "input[type=\"email\"]"],
     ["waitFor", { state: "visible", timeout: 15_000 }],
     ["fill", ENV.LM_AGENT_BROWSER_EMAIL],
-    ["getByRole", "button", "/continue with email/i"],
+    ["locator", "button[type=\"submit\"]"],
     ["click", { timeout: 15_000 }],
     ["waitForTimeout", 2_000],
   ]);
