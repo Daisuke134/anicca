@@ -14,8 +14,24 @@ const PRINCIPAL_KIND = "agent_owned";
 const COOKIE_NAME = "browser_auth_e2e";
 const UID_PREFIX = "browser-auth-e2e-";
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
+const FAILURE_CODES = new Set([
+  "CONFIG",
+  "STALE_CLEANUP",
+  "UPSERT",
+  "FRESH_READ",
+  "CROSS_READ",
+  "CIPHERTEXT",
+  "CLEANUP",
+  "POST_CLEANUP",
+]);
 
-class TenantIsolationError extends Error {}
+class TenantIsolationError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = "TenantIsolationError";
+    if (FAILURE_CODES.has(code)) this.code = code;
+  }
+}
 
 function markerHash(value) {
   return createHash("sha256").update(String(value || ""), "utf8").digest("hex");
@@ -55,7 +71,7 @@ function requireDeps(deps) {
     "close",
   ];
   if (!deps || methods.some((method) => typeof deps[method] !== "function")) {
-    throw new TenantIsolationError("browser auth tenant isolation unavailable");
+    throw new TenantIsolationError("browser auth tenant isolation unavailable", "CONFIG");
   }
 }
 
@@ -63,24 +79,27 @@ async function runBrowserAuthTenantIsolationE2E({ deps } = {}) {
   requireDeps(deps);
   let identities = [];
   let cleaned = false;
+  let stage = "STALE_CLEANUP";
   try {
     await deps.removeStale();
     identities = deps.identities();
     if (!validIdentities(identities)) {
-      throw new TenantIsolationError("browser auth tenant isolation unavailable");
+      throw new TenantIsolationError("browser auth tenant isolation unavailable", "CONFIG");
     }
 
     const saved = [];
+    stage = "UPSERT";
     for (const identity of identities) {
       const result = await deps.upsert(identity);
       const contextHash = String(result && result.contextHash || "");
       if (!HASH_PATTERN.test(contextHash)) {
-        throw new TenantIsolationError("browser auth tenant isolation unavailable");
+        throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
       }
       saved.push({ ...identity, contextHash });
     }
 
     const freshReads = [];
+    stage = "FRESH_READ";
     for (const identity of saved) {
       const read = await deps.readFresh({ uid: identity.uid });
       if (
@@ -90,31 +109,35 @@ async function runBrowserAuthTenantIsolationE2E({ deps } = {}) {
         || !HASH_PATTERN.test(String(read.contextHash || ""))
         || !HASH_PATTERN.test(String(read.markerHash || ""))
       ) {
-        throw new TenantIsolationError("browser auth tenant isolation unavailable");
+        throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
       }
       freshReads.push(read);
     }
 
+    stage = "CROSS_READ";
     const crossReadResults = await Promise.all([
       deps.crossReadFails({ sourceUid: saved[0].uid, targetUid: saved[1].uid }),
       deps.crossReadFails({ sourceUid: saved[1].uid, targetUid: saved[0].uid }),
     ]);
     if (crossReadResults.some((result) => result !== true)) {
-      throw new TenantIsolationError("browser auth tenant isolation unavailable");
+      throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
     }
 
+    stage = "CIPHERTEXT";
     const plaintextHits = await deps.ciphertextPlaintextHits({
       uids: saved.map(({ uid }) => uid),
       markers: saved.map(({ marker }) => marker),
     });
     if (plaintextHits !== 0 || new Set(saved.map(({ contextHash }) => contextHash)).size !== 2) {
-      throw new TenantIsolationError("browser auth tenant isolation unavailable");
+      throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
     }
 
+    stage = "CLEANUP";
     const cleanupCount = await deps.cleanup({ uids: saved.map(({ uid }) => uid) });
+    stage = "POST_CLEANUP";
     const postCleanupRows = await deps.count({ uids: saved.map(({ uid }) => uid) });
     if (cleanupCount !== 2 || postCleanupRows !== 0) {
-      throw new TenantIsolationError("browser auth tenant isolation unavailable");
+      throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
     }
     cleaned = true;
 
@@ -129,8 +152,9 @@ async function runBrowserAuthTenantIsolationE2E({ deps } = {}) {
       cleanup_count: cleanupCount,
       post_cleanup_rows: postCleanupRows,
     });
-  } catch {
-    throw new TenantIsolationError("browser auth tenant isolation unavailable");
+  } catch (error) {
+    if (error instanceof TenantIsolationError && error.code) throw error;
+    throw new TenantIsolationError("browser auth tenant isolation unavailable", stage);
   } finally {
     if (!cleaned && identities.length === 2) {
       try { await deps.cleanup({ uids: identities.map(({ uid }) => uid) }); } catch {}
@@ -143,7 +167,7 @@ function makeProductionDeps(env = process.env, boundaries = {}) {
   const keyHex = String(env.LM_BROWSER_SESSION_KEY || "").trim();
   const connectionString = String(env.LM_FEEDBACK_DATABASE_URL || "").trim();
   if (!HASH_PATTERN.test(keyHex) || !connectionString) {
-    throw new TenantIsolationError("browser auth tenant isolation unavailable");
+    throw new TenantIsolationError("browser auth tenant isolation unavailable", "CONFIG");
   }
 
   let ownedPool;
@@ -295,8 +319,9 @@ async function main() {
       deps: makeProductionDeps(process.env),
     });
     process.stdout.write(`${JSON.stringify(result)}\n`);
-  } catch {
-    process.stderr.write("browser auth tenant isolation unavailable\n");
+  } catch (error) {
+    const code = FAILURE_CODES.has(error && error.code) ? error.code : "CONFIG";
+    process.stderr.write(`browser auth tenant isolation unavailable [${code}]\n`);
     process.exitCode = 1;
   }
 }
