@@ -8,7 +8,7 @@ tx from the returned instructions (solders) -> submit to a Solana RPC -> poll re
 /intents/status until the USDC fill lands on Base in anicca's wallet (0xB9dd3B67... since the
 2026-07-07 key rotation; was 0xa3CDd4... before that).
 
-Env (~/.openclaw/.env): ANICCA_SOLANA_KEY (base58 secret), SOLANA_RPC (optional).
+Env (~/.local/state/life-manager/.env): ANICCA_SOLANA_KEY (base58 secret), SOLANA_RPC (optional).
 Run: python3 sol-to-usdc.py            # swaps the full SOL balance (minus rent/fee buffer)
      python3 sol-to-usdc.py --lamports 50000000   # swap a fixed amount
 
@@ -32,7 +32,7 @@ from solders.address_lookup_table_account import AddressLookupTableAccount
 # Reusable swap skill: recipient + signing key are env-configurable so ANY wallet (Anicca's, a test
 # wallet, a child's) can bridge SOL -> USDC(Base). Defaults to Anicca's wallet for backward compat.
 # NOTE (2026-07-07 security rotation): the OLD default 0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21 was
-# a wallet whose private key leaked (~/.anicca-founder/agents/polymarket-agent/.env + ~/.openclaw/.env).
+# a wallet whose private key leaked (~/.anicca-founder/agents/polymarket-agent/.env + ~/.local/state/life-manager/.env).
 # This daemon runs unattended every 60s (sol-funding-daemon.sh) with NO SWAP_RECIPIENT env override set
 # anywhere, so this hardcoded default is the ACTUAL operative recipient -- fixed to the rotated address.
 ANICCA_BASE = os.environ.get("SWAP_RECIPIENT", "0xb9dd3b67921b354c656523d6851537988f31dd56").lower()

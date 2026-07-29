@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # auditor.sh — INDEPENDENT verification that the gig loop self-runs (master-spec AUDITOR, gig-scoped).
 # Runs via its OWN launchd (hourly at :45, offset from the core's :27 cron), so it observes the loop
@@ -77,8 +80,8 @@ fi
 # Sonnet with browser+Bash+Edit that diagnoses the root cause, fixes the code, and commits — no human).
 # Then remove the request so it dispatches exactly once per discrepancy. self-fix.sh self-guards
 # against duplicate/hung fixers, so a second hourly run while a fixer is live is a safe no-op.
-SELFHEAL_REQ="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
-SELF_FIX="$HOME/anicca/skills/self/self-fix.sh"
+SELFHEAL_REQ="$HOME/.local/state/life-manager/state/.gig-core-selfheal-request.json"
+SELF_FIX="$LIFE_MANAGER_REPO/skills/self/self-fix.sh"
 # AUTH-WALL COOLDOWN (2026-07-13 self-fix, gh#1015): kind=auth_wall means the reality-verifier hit a
 # login wall (reached_captcha=true) -- an external/session precondition (Coconala logged out, iPhone
 # Bluetooth 2FA relay down), NOT a code bug. Before this fix, every hourly audit pass respawned a full

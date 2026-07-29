@@ -192,7 +192,7 @@ if [ ! -x "$INSTA_PY" ]; then
     || emit "instagrapi venv self-heal FAILED (see /tmp/clip-insta-pip.log)"
 fi
 # instagrapi poster has its own fail-closed account-guard (cl.username == handle) + logged-out reality gate.
-RES="$(CDP_PORT="$PORT" "$INSTA_PY" "${CLIP_POSTER_OVERRIDE:-$INSTA_POSTER}" --video "$CLIP" --caption-file "$TMPCAP" --handle "$HANDLE" --live 2>>"$HOME/.openclaw/logs/clip-insta-poster.err.log" | tail -1)"
+RES="$(CDP_PORT="$PORT" "$INSTA_PY" "${CLIP_POSTER_OVERRIDE:-$INSTA_POSTER}" --video "$CLIP" --caption-file "$TMPCAP" --handle "$HANDLE" --live 2>>"$HOME/.local/state/life-manager/logs/clip-insta-poster.err.log" | tail -1)"
 # NOTE (2 real bugs caught while writing PROP-005's test, both fixed here): (1) json.dumps' DEFAULT
 # separators include a space after each comma (e.g. `["a", "b"]`), which corrupts whitespace-based
 # field-splitting. (2) bash `read`'s default whitespace IFS COLLAPSES consecutive separators, so an

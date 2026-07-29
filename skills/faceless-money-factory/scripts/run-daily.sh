@@ -12,8 +12,9 @@ SCRIPT_FILE="${1:?script_file required — the agent writes the fresh script fir
 LANG_CODE="${2:-en}"
 DRAFT_ONLY="${DRAFT_ONLY:-1}"
 export PATH="$HOME/.local/bin:$PATH"
-_AH="${ANICCA_HOME:-}"; set -a; [ -f "$HOME/.hermes/.env" ] && . "$HOME/.hermes/.env"; [ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"; [ -n "$_AH" ] && ANICCA_HOME="$_AH"; unset _AH; set +a   # for edge-tts proxy / gog keyring only
-export GOG_KEYRING_PASSWORD="${GOG_KEYRING_PASSWORD:-shizen1234}"
+_AH="${ANICCA_HOME:-}"; set -a; [ -f "$HOME/.hermes/.env" ] && . "$HOME/.hermes/.env"; [ -f "$HOME/.local/state/life-manager/.env" ] && . "$HOME/.local/state/life-manager/.env"; [ -n "$_AH" ] && ANICCA_HOME="$_AH"; unset _AH; set +a   # for edge-tts proxy / gog keyring only
+: "${GOG_KEYRING_PASSWORD:?GOG_KEYRING_PASSWORD is required}"
+export GOG_KEYRING_PASSWORD
 SK="$HOME/.claude/skills/faceless-money-factory"; S="$SK/scripts"
 [ -d "$S" ] || SK="$(cd "$(dirname "$0")/.." && pwd)"; S="$SK/scripts"
 OUT="$SK/state/renders"; mkdir -p "$OUT"

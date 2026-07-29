@@ -52,7 +52,7 @@ fix this required -> `WITNESS-RUNBOOK.md` §2. Option (a) (deploy our own) is no
 | identity | address | Base mainnet ETH | Base mainnet USDC |
 |---|---|---|---|
 | automaton (real address given in the brief) | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` | `0.0001456 ETH` (thin — a handful of L2 txs at most) | `$0.5948` |
-| Franklin's own auto-derived EVM identity (see recon report — `~/.blockrun/.automaton/wallet.json`, resolvable via `resolve-identity.mjs` since `ANICCA_HOME=/Users/operator/.blockrun` for the `franklin-loop` launchd job) | `0x3EcCAD24794ca298D25378E9902A251322ea8749` | `0 ETH` | `$0` |
+| Franklin's own auto-derived EVM identity (see recon report — `~/.blockrun/.automaton/wallet.json`, resolvable via `resolve-identity.mjs` since `ANICCA_HOME=/home/life-manager/.blockrun` for the `franklin-loop` launchd job) | `0x3EcCAD24794ca298D25378E9902A251322ea8749` | `0 ETH` | `$0` |
 
 Franklin's real, funded wallet (`8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`) is **Solana**, not
 EVM/Base — this board only speaks EVM/Base, so Franklin's SOL balance is not directly usable here at all;

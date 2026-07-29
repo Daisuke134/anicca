@@ -4,7 +4,7 @@ implementation). parse_ytdlp_json(json_text) -> {view_count:int|None, like_count
 string/dict parsing only — NEVER fabricates a value; malformed/missing -> None, never a crash.
 
 Shared home (skills/_shared/lib/) because both video (REQ-LV-012/013, this repo) and affiliate
-(REQ-LV-014, ~/profitable-claude repo) call the identical function per spec's "重複実装しない".
+(REQ-LV-014, the former private implementation) call the identical function per spec's "重複実装しない".
 
 ytdlp_parse.py does not exist yet -> ImportError -> RED.
 """

@@ -599,7 +599,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | Portable Runtime仕様Order 0へ吸収されたhistorical alias。`OSS-SECURITY-BASELINE-1`、`REPO-V0-RETIRE-1`、`AE-X402-SOURCE-CONSOLIDATE-1`はdone。次のprogram subcursorは`BROWSER-AUTH-1`。8iはweb product移植を閉じたが、full OSS self-contained proofと他legacy source退役は未完 |
+| 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **implementation/proof complete; main merge pending**。PR #1268はmergeable。remote `edea1e06b…`のfresh cloneでroot/app install、647/647、8 eval、panel privacy、checkout clean。source 7系統、single `runtime/agent-runner`、legacy path検知、gitleaks/PII 0を実証。merge後のmain exact SHA readbackでdoneへ移す。外部Anicca iOS/APIのRevenueCat incidentはLife Manager cursorを止めない |
 | 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **in progress / implementation green, production proof pending**。現行main上で受動的`Sign in and security`文言と実認証controlを分離し、期限切れcookie除去・expired-only rowのexact invalidation・Telegram result idのdurable readbackを実装。2-tenant gateと単一の実provider account proofを混同しない`verify-provider-context`を追加し、runtime imageへproduction entrypointを明示allowlist。focused 74/74 PASS。旧PR #1256と`anicca-products`の修正は正本ではなく履歴参照のみ。実Luma production queueの再実証まではdoneにしない |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
@@ -1396,7 +1396,9 @@ old running→new running + 3 routes/heartbeat検証→old state 2と、`72zCp�
 ただし`G8uw…`後はNosana running 0なので、継続level 3とは書かない。TASKMARKET-READBACK-1は完了した。
 external sale `$0.01`はAgent Economy seller railの証明であり、Franklin/tenant earningsは`$0.00`。
 
-**Life Manager product cursor**: Portable Runtime仕様のcurrent releaseを参照。BROWSER-GEN-1は実Luma登録とprovider
+**Life Manager product cursor**: Portable Runtime仕様Order 0の
+**OSS-MERGE-1 merged-main readback**。完了直後のproduct cursorは**BROWSER-AUTH-1**。
+BROWSER-GEN-1は実Luma登録とprovider
 `You’re In`、TG evidence、Steel releaseまで完了した。
 PM-MERGE-1は実tx・独立receipt・pUSD回収・再投資・tx単位ledger一意性まで完了した。S21はModal Pythonの
 bootstrap/posterとNosana上のFranklin survival runtime・heartbeat・renewal・別sandbox復旧を6時間実測した。
@@ -1507,7 +1509,8 @@ SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk 
 2026-07-29 snapshotに対してstaleなのでAE-PUBLICATION-REFRESH-1で再生成する。
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
-Life Manager product trackはBROWSER-GEN-1とOSS-MERGE-1がdone、BROWSER-AUTH-1がcurrent。
+Life Manager product trackはBROWSER-GEN-1がdone、OSS-MERGE-1はfinal merge/readback、
+BROWSER-AUTH-1はimplementation greenでproduction proof pending。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。

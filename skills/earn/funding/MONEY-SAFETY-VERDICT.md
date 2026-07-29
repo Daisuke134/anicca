@@ -1,7 +1,7 @@
-# Money-Safety Adversary Verdict — `~/anicca/skills/earn/funding/` (origin/main 568fecb)
+# Money-Safety Adversary Verdict — `$LIFE_MANAGER_REPO/skills/earn/funding/` (origin/main 568fecb)
 
 Fresh-context, disk-only, read-only review. No money moved, no code edited. Reviewed against
-`~/anicca-project/docs/loop-engineering/11-parent-funding-loop.md` §2 (mechanism) + §3
+`$LIFE_MANAGER_REPO/docs/loop-engineering/11-parent-funding-loop.md` §2 (mechanism) + §3
 (money-safety rails). Cross-checked contract addresses / function signatures / API shapes
 against live official docs (Polymarket docs, relay.link docs) via `firecrawl scrape`, and
 against the actually-installed `polymarket` SDK source
@@ -162,7 +162,7 @@ docs (see §1). No address-swap risk found in config.
 
 ## 9. tests/ — **PASS, genuinely tests real logic (not gamed)**
 
-Ran the actual suite (`/Users/operator/.local/bin/python3 -m pytest tests -v`, system Python, no
+Ran the actual suite (`/home/life-manager/.local/bin/python3 -m pytest tests -v`, system Python, no
 network, no real keys — `Keypair()` generates fresh random test keys, `tmp_path` fixtures for
 files):
 

@@ -28,10 +28,23 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 JST = timezone(timedelta(hours=9))
-ENV = (Path.home() / ".openclaw" / ".env").read_text()
-URL_FILE = Path.home() / ".openclaw" / "workspace" / "imokenet" / "state" / "public_url.txt"
-DEPART_SCRIPT = Path.home() / ".openclaw" / "skills" / "anicca-life-manager" / "scripts" / "gcal_departures.py"
-LOCATION_STATE_DIR = Path.home() / ".openclaw" / "state" / "location"
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[2]
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
+ENV_PATH = Path(os.environ.get(
+    "LIFE_MANAGER_ENV_FILE",
+    str(ANICCA_HOME / ".env"),
+))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
+URL_FILE = Path(os.environ.get(
+    "LIFE_MANAGER_CALL_BRIDGE_URL_FILE",
+    str(ANICCA_HOME / "state" / "call-bridge" / "public_url.txt"),
+))
+DEPART_SCRIPT = SCRIPT_DIR / "gcal_departures.py"
+LOCATION_STATE_DIR = ANICCA_HOME / "state" / "location"
 
 # Routine event summaries that always happen at home — when gcal location is empty,
 # auto-resolve to profile.identity.homeAddress instead of letting the LLM fabricate
@@ -91,12 +104,18 @@ def resolve_event_destination(event):
     return None, "unknown"
 
 # Home base + all personal data come from the per-user profile (OSS-general).
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
+# The repository-local adapter is canonical; the old OpenClaw path remains only
+# as a migration fallback while loaded legacy loops are kept running.
+REPO_SHARED = Path(__file__).resolve().parents[2] / "_shared"
+sys.path.insert(0, str(REPO_SHARED))
 import anicca_profile as prof  # noqa: E402
 
-_hlat, _hlon = prof.home_latlon()
-HOME_LAT = float(os.environ.get("LATE_HOME_LAT") or _hlat)
-HOME_LON = float(os.environ.get("LATE_HOME_LON") or _hlon)
+try:
+    _hlat, _hlon = prof.home_latlon()
+except (FileNotFoundError, json.JSONDecodeError, TypeError, ValueError):
+    _hlat, _hlon = None, None
+HOME_LAT = float(os.environ.get("LATE_HOME_LAT") or _hlat) if (os.environ.get("LATE_HOME_LAT") or _hlat) is not None else None
+HOME_LON = float(os.environ.get("LATE_HOME_LON") or _hlon) if (os.environ.get("LATE_HOME_LON") or _hlon) is not None else None
 HOME_RADIUS_M = float(os.environ.get("LATE_HOME_RADIUS_M", "300"))
 LEAD_MIN = int(os.environ.get("LATE_LEAD_MIN", "8"))         # call ~this far before the real leave time
 NUDGE_MIN = int(os.environ.get("LATE_NUDGE_MIN", "20"))      # gentle Slack nudge this far before
@@ -115,6 +134,8 @@ def life_manager_enabled(profile: dict) -> bool:
 
 
 def env(name, default=""):
+    if name in os.environ:
+        return os.environ[name]
     m = re.search(rf"^{name}=(.*)$", ENV, re.M)
     return (m.group(1).strip().strip('"').strip("'") if m else default)
 
@@ -246,7 +267,7 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
 
 # ---- IO ----
 def get_location():
-    """Read latest Telegram Live Location fix from ~/.openclaw/state/location/<user_id>.json.
+    """Read latest Telegram Live Location fix from ~/.local/state/life-manager/state/location/<user_id>.json.
 
     Bot writes one file per user (key = telegram user id). If multiple files exist
     we take the freshest. None = no Live Location sharing active → upstream calls
@@ -412,7 +433,7 @@ def place_lateness_call(ctx):
 
     Source of the dial-out endpoint:
       1. ANICCA_PHONE_DIALOUT_URL env var (preferred — set by launchd / cron config)
-      2. ~/.openclaw/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
+      2. ~/.local/state/life-manager/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
       3. http://127.0.0.1:7860/dialout (local default during dev)
     """
     # Pre-flight: skip a doomed call (Twilio robotic "application error") when Gemini Live is down.
@@ -430,7 +451,7 @@ def place_lateness_call(ctx):
     # Build Gemini Live system_instruction with location + route awareness.
     # sutando /call expects {to, message}; message is passed verbatim as the
     # Gemini Live system_instruction (= "purpose" param in TwiML chain).
-    message = _build_anicca_voice_prompt(ctx, prof.name() or "Dais")
+    message = _build_anicca_voice_prompt(ctx, prof.name() or "the user")
     body = json.dumps({"to": to, "message": message}).encode()
     req = urllib.request.Request(
         f"{base}/call",  # sutando phone-conversation endpoint (BP: conversation-server.ts:1359)
@@ -452,9 +473,11 @@ def _build_anicca_voice_prompt(ctx: str, name: str) -> str:
 
     Reads live GPS + active itinerary, builds a tight Japanese persona.
     """
-    base_dir = Path.home() / ".openclaw" / "state" / "location"  # GPS
-    guide_dir = Path.home() / ".openclaw" / "state" / "guide"    # itinerary (separated 2026-06-09)
-    uid = os.environ.get("DAIS_TELEGRAM_USER_ID", "0000000000")
+    base_dir = ANICCA_HOME / "state" / "location"  # GPS
+    guide_dir = ANICCA_HOME / "state" / "guide"    # itinerary
+    uid = os.environ.get("LIFE_MANAGER_TELEGRAM_USER_ID") or os.environ.get("DAIS_TELEGRAM_USER_ID")
+    if not uid:
+        raise RuntimeError("LIFE_MANAGER_TELEGRAM_USER_ID is required")
     parts = [
         f"你 は アニッチャ、 {name}さん の 男友達。 電話 中。",
         "声 = 落ち着いた 男 (Charon)。 1ターン 1-2文 だけ。",

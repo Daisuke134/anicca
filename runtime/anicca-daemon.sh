@@ -23,7 +23,8 @@
 # OS-level persistence (survives reboots/logout) and keeps every Anicca in sync with the mother.
 set -uo pipefail
 
-REPO="${ANICCA_REPO:-$HOME/anicca}"
+REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}}"
+[ -n "$REPO" ] || { echo "Life Manager repository could not be resolved" >&2; exit 2; }
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 INSTANCE="${ANICCA_INSTANCE:-clawrouter}"
 # franklin-loop-revival REQ-004(a)/(c): PORT resolves to ClawRouter's 8402 for EVERY instance,
@@ -105,7 +106,7 @@ else
     # ClawRouter is :8402-only (no port split). So it MUST run on the OpenClaw instance's OWN wallet —
     # OpenClaw's many 'auto' (paid) crons then drain OpenClaw's wallet, not this self-paying anicca.
     # This loop pins a FREE model, so it costs $0 regardless of which wallet ClawRouter holds.
-    local KEY; KEY=$(grep -E '^BLOCKRUN_WALLET_KEY=' "$HOME/.openclaw/.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ')
+    local KEY; KEY=$(grep -E '^BLOCKRUN_WALLET_KEY=' "$HOME/.local/state/life-manager/.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ')
     # #28: gated per-instance key (resolve-identity.mjs: EFFECTIVE_HOME first, legacy ONLY for the
     # rightful owner, foreign spawn -> empty). Never inline-read the shared $HOME/.automaton/wallet.json
     # — that let a foreign spawn pay ClawRouter's x402 compute from ANOTHER instance's REAL money.

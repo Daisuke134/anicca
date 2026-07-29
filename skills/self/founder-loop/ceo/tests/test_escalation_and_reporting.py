@@ -71,8 +71,8 @@ chk("build_ceo_report_args: company_score=15.0 (>0) -> result='success'", args_e
 args_zero = build_ceo_report_args(company_score=0.0, actions_summary="none", verification_summary="beats_previous_week=false, rollback_fired=false")
 chk("build_ceo_report_args: company_score<=0 -> result='queue-empty' (mirrors founderReportArgs pattern)", args_zero["result"], "queue-empty")
 
-pointer = build_evidence_pointer("/Users/operator/.anicca-founder/state/ceo-verification.jsonl", "2026-06-29")
-chk_true("build_evidence_pointer: non-empty roster -> includes the real file path", "/Users/operator/.anicca-founder/state/ceo-verification.jsonl" in pointer)
+pointer = build_evidence_pointer("/home/life-manager/.anicca-founder/state/ceo-verification.jsonl", "2026-06-29")
+chk_true("build_evidence_pointer: non-empty roster -> includes the real file path", "/home/life-manager/.anicca-founder/state/ceo-verification.jsonl" in pointer)
 chk_true("build_evidence_pointer: non-empty roster -> includes the week_start pointer value", "2026-06-29" in pointer)
 chk_true("build_evidence_pointer: non-empty roster -> is NOT the bare 'none' string alone", pointer != "none")
 

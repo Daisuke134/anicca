@@ -16,7 +16,7 @@
 const path = require("path");
 const http = require("http");
 
-const LIB = path.join(__dirname, "call-logic.js");  // consolidated into ~/anicca/skills/life/call/lib
+const LIB = path.join(__dirname, "call-logic.js");  // consolidated into __REPO_ROOT__/skills/life/call/lib
 const {
   LIVE_MODEL,
   geminiLiveWsUrl,

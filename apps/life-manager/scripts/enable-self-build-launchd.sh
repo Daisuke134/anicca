@@ -49,7 +49,7 @@ PRODUCER_LABEL="ai.anicca.life-manager-dev"
 AGENTS="$HOME/Library/LaunchAgents"
 ACTIVE="$AGENTS/$LABEL.plist"
 PRODUCER_PARKED="$AGENTS/$PRODUCER_LABEL.plist.disabled"
-PAUSE_MARKER="$HOME/.openclaw/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE"
+PAUSE_MARKER="$HOME/.local/state/life-manager/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE"
 DOMAIN="gui/$(id -u)"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -213,9 +213,9 @@ cat > "$ACTIVE" <<PLIST
   <key>RunAtLoad</key>
   <false/>
   <key>StandardOutPath</key>
-  <string>$HOME/.openclaw/logs/life-manager-self-build.out.log</string>
+  <string>$HOME/.local/state/life-manager/logs/life-manager-self-build.out.log</string>
   <key>StandardErrorPath</key>
-  <string>$HOME/.openclaw/logs/life-manager-self-build.err.log</string>
+  <string>$HOME/.local/state/life-manager/logs/life-manager-self-build.err.log</string>
 </dict>
 </plist>
 PLIST

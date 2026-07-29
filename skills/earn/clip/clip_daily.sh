@@ -1,48 +1,35 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # clip_daily.sh — CLEAN HONEST daily clip poster (v44). No LLM LEARN/MEASURE/REFLECT (fabrication source removed).
 # Reflexion: Actor = producer.sh + run.sh, Evaluator = clip-metrics, Self-Reflection = reflection.jsonl).
-# Each LLM step is a SEPARATE bounded claude sub-call with a short focused prompt + --no-session-persistence
+# Each judgment step is a separate bounded shared-runner call with a short focused prompt
 # (never bricks disk). PRODUCE + POST are deterministic (producer.sh makes a 1080x1920 clip; run.sh posts
 # via instagrapi + reports to Telegram, respecting the cadence gate). State passes between steps through
 # ~/clips/{reflection.jsonl,playbook.json,clip-metrics.jsonl}.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-C="$HOME/anicca/skills/earn/clip"
+C="$LIFE_MANAGER_REPO/skills/earn/clip"
 MARKETING_ENGINE_DIR="$C/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
 . "$MARKETING_ENGINE_DIR/provision_prompt.sh"
 # shellcheck source=../marketing-engine/account_state.sh
 . "$MARKETING_ENGINE_DIR/account_state.sh"
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
+RUN_AGENT="$MARKETING_ENGINE_DIR/run_agent.sh"
 STATE="$HOME/clips"
 mkdir -p "$STATE"
 source "$C/_instance_paths.sh"   # resolves CLIP_ACCTS (respects ANICCA_INSTANCE, same as run.sh)
 PY="/opt/homebrew/bin/python3"
 log(){ echo "$(date '+%F %T') clip_daily: $*" >&2; }
 
-# focused sub-call: run ONE step as its own bounded agent. --no-session-persistence + SKIP_PROMPT_HISTORY
-# = write no transcript (the disk-brick source). env -u ANTHROPIC_API_KEY = subscription login.
-# Auth: launchd cannot refresh the subscription OAuth token (keychain is only unlocked in an
-# interactive session — observed 2026-07-16: every step died rc=1 "OAuth session expired and could
-# not be refreshed"). Route sub-calls through the local CLIProxyAPI (:8317) instead, whose creds
-# are plain files (~/.cli-proxy-api/) and refresh headlessly. Falls back to subscription auth if
-# the key file is missing. Verified in a clean env (env -i ... RC=0) 2026-07-16.
-CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-STEP_MODEL="sonnet"
-if [ -n "$CLIPROXY_KEY" ]; then
-  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-  STEP_MODEL="claude-sonnet-5"   # proxy needs the explicit model id, not the "sonnet" alias
-fi
-
 step(){ # $1=label  $2=prompt
-  local timeout_seconds="${3:-900}"
   log "STEP $1 start"
-  # stdout is captured per-step (claude CLI prints errors to STDOUT, not stderr — observed
-  # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
-  local out="$HOME/.openclaw/logs/clip-step-last.out"
-  CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 env -u ANTHROPIC_API_KEY timeout "$timeout_seconds" "$CLAUDE" --model "$STEP_MODEL" --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+  local out="$HOME/.local/state/life-manager/logs/clip-step-last.out"
+  local evidence="$HOME/.local/state/life-manager/state/agent-runner-evidence/clip-daily/$(date +%s)-$$-$1"
+  printf '%s\n' "You are the Anicca clip earn-core (IG @aiclipsvault, niche = AI / money / wealth). set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" | \
+    "$RUN_AGENT" --task-class tool-agent --evidence-dir "$evidence" --task-label "clip-daily-$1" --loop clip \
+      >"$out" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"

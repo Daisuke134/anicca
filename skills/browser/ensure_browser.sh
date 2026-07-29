@@ -12,7 +12,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 
 CDP="http://127.0.0.1:9222"
 PROFILE="$HOME/.cloak/profiles/daily-driver"
-LOG="$HOME/.openclaw/logs/cdp-daily-driver-guard.log"
+LOG="$HOME/.local/state/life-manager/logs/cdp-daily-driver-guard.log"
 
 alive() { curl -s --max-time 4 "$CDP/json/version" >/dev/null 2>&1; }
 

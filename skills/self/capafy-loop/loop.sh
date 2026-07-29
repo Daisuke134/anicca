@@ -9,14 +9,14 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIR="${CAPAFY_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
-set -a; . ~/.openclaw/.env 2>/dev/null; set +a
-REQ="${CAPAFY_REQ:-$HOME/.openclaw/state/capafy-loop-selfheal-request.json}"
-LP="${CAPAFY_LOGFILE:-$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log}"
+set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
+REQ="${CAPAFY_REQ:-$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json}"
+LP="${CAPAFY_LOGFILE:-$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log}"
 fetch(){ local name="$1" url="$2"; shift 2
   if [ "${CAPAFY_TEST:-}" = "1" ] && [ -n "${CAPAFY_FIXTURE:-}" ]; then cat "$CAPAFY_FIXTURE/$name.json" 2>/dev/null || echo '{}'; return 0; fi
   curl -s --max-time 20 "$@" "$url" 2>/dev/null; }
 HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
-CAP_TOK="$(python3 -c "import json;print(json.load(open('$HOME/.openclaw/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
+CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
 
 # auth
 [ "$(printf '%s' "$(fetch cap_acct https://api.capafy.ai/agent/account -H "Authorization: Bearer $CAP_TOK")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code','x'))" 2>/dev/null||echo x)" = "0" ] || add_heal "CAPAFY-AUTH-DOWN → re-login (login-init→gog OTP→login-verify)"

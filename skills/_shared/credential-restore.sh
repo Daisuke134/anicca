@@ -13,7 +13,7 @@ mkdir -p "$(dirname "$LOG")"
 # Sprint-2 cycle 2 wires the real 8-step camofox + Gmail OTP flow:
 #  (i) launch camofox with ~/.cloak/profiles/anicca-login
 #  (ii) navigate to $ANICCA_OAUTH_URL
-#  (iii) fill GOOGLE_LOGIN_EMAIL + GOOGLE_LOGIN_PASSWORD from ~/.openclaw/.env
+#  (iii) fill GOOGLE_LOGIN_EMAIL + GOOGLE_LOGIN_PASSWORD from $HOME/.local/state/life-manager/.env
 #  (iv) read OTP via gog gmail (subject contains "Claude"|"Anthropic")
 #  (v) capture redirected callback URL with code=...
 #  (vi) tmux send-keys "$code" Enter into slot pane

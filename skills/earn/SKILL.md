@@ -7,7 +7,7 @@ description: Anicca earn skill (GATE-0). The automaton loop calls run.sh each wa
 
 Spec: `docs/superpowers/specs/anicca/patches/A-earn-gate0.patch.md` (26 A3 / 27 A-earn).
 
-Canonical runtime home: `~/anicca/skills/earn/` (this dir is the committed source of truth,
+Canonical runtime home: `$LIFE_MANAGER_REPO/skills/earn/` (this dir is the committed source of truth,
 shipped via the anicca-products repo so the contract lands on main/aniccaai.com; the runtime
 syncs it into the agent body). The registry slot `earn` flips `declared -> live` once a real
 profitable wake is verified on-chain.

@@ -26,6 +26,22 @@ import poster as ip  # noqa: E402
 from instagrapi.exceptions import ChallengeRequired, LoginRequired, RateLimitError  # noqa: E402
 
 
+class TestPortableCdpEndpoint(unittest.TestCase):
+    def test_page_ws_uses_requested_port_without_home_directory_adapter(self):
+        with mock.patch.dict(os.environ, {"CDP_HOST": "steel-browser.internal"}):
+            self.assertEqual(
+                ip.page_ws("target-123", 9876),
+                "ws://steel-browser.internal:9876/devtools/page/target-123",
+            )
+
+    def test_http_endpoint_uses_same_configurable_cloud_host(self):
+        with mock.patch.dict(os.environ, {"CDP_HOST": "steel-browser.internal"}):
+            self.assertEqual(
+                ip.cdp_http_url(9876, "/json/list"),
+                "http://steel-browser.internal:9876/json/list",
+            )
+
+
 def _write_accounts(tmpdir, handle, session_owner=None, status="ready"):
     path = os.path.join(tmpdir, "clip-accounts.json")
     entry = {"handle": handle, "status": status}

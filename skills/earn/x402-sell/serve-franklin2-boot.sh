@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # serve-franklin2-boot.sh — KeepAlive launchd boot of franklin2's x402 seller on :8413.
 # Same recipe as serve-claude-p-boot.sh/serve-mainnet-boot.sh (x402-sell/SKILL.md), a third
 # instance replication: same serve.mjs/primitives.mjs, franklin2's OWN payTo (receiving-only,
@@ -14,9 +17,9 @@
 # reason; franklin2 had an inflow-watcher (ai.anicca.x402-inflow-watch-franklin2) expecting a
 # seller to exist, but no seller-boot job was ever created. This completes that pattern.
 set -u
-DIR=/Users/operator/anicca/skills/earn/x402-sell
+DIR=$LIFE_MANAGER_REPO/skills/earn/x402-sell
 # load CDP facilitator creds (existing account, same as the other two boot scripts) — never echoed
-set -a; . /Users/operator/.openclaw/.env 2>/dev/null || true; set +a
+set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null || true; set +a
 # force franklin2's identity (see serve-franklin1-boot.sh: .openclaw/.env injects the wrong home+key)
 export ANICCA_HOME="$HOME/.franklin2-home/.blockrun"
 unset BLOCKRUN_WALLET_KEY

@@ -13,7 +13,7 @@ HOUR="${MKT_CADENCE_HOUR:-16}"
 ENGINE="$ENGINE_DIR/../capafy-marketing/capafy-ig-marketing-daily.sh"
 LABEL="ai.anicca.${PRODUCT}-ig-marketing-daily"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
-LOG="$HOME/.openclaw/logs/${PRODUCT}-ig-marketing-daily.log"
+LOG="$HOME/.local/state/life-manager/logs/${PRODUCT}-ig-marketing-daily.log"
 cat > "$PLIST" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

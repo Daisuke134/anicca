@@ -9,9 +9,8 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-CAPAFY_HTTP = os.path.expanduser(
-    "~/.openclaw/skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py"
-)
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
+CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
 OUTPUT_FILE = Path(__file__).resolve().parents[1] / "site" / "index.html"
 GO_URL_FMT = "/go/{agent_id}"
 

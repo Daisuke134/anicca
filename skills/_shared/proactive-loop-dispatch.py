@@ -131,7 +131,13 @@ def main() -> int:
         if issues:
             top = issues[0]
             recipe = select_fix_recipe(top)
-            anicca_home = os.environ.get("ANICCA_HOME", "/Users/operator/anicca")
+            anicca_home = os.environ.get(
+                "ANICCA_HOME",
+                os.environ.get(
+                    "LIFE_MANAGER_STATE_HOME",
+                    str(Path.home() / ".local/state/life-manager"),
+                ),
+            )
             cmd_map = default_restart_cmd_map(anicca_home)
             r = execute_recipe(
                 recipe=recipe, issue_kind=top.kind, slot=slot,

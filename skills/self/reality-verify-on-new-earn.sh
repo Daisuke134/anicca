@@ -14,7 +14,7 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SPAWN="$HERE/reality-verify-spawn.sh"
-CURSOR_DIR="$HOME/.openclaw/state"; mkdir -p "$CURSOR_DIR" 2>/dev/null || true
+CURSOR_DIR="$HOME/.local/state/life-manager/state"; mkdir -p "$CURSOR_DIR" 2>/dev/null || true
 DRYRUN="${REALITY_VERIFY_ON_EARN_DRYRUN:-}"
 
 # (loop-name : GATE-0 earn ledger) — where each instance's external:true rows land. A missing file is

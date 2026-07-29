@@ -1,7 +1,7 @@
 // VCSDD anicca-agent-spawn, sprint-2, Phase 2a (RED). REQ-202/CRIT-207 -- a brand-new
 // scripts/gen-solana-wallet.sh (confirmed genuinely absent from the codebase this sprint's own Phase 1a
 // research -- no such file, and no @nosana/cli-adjacent auto-keygen wrapper, exists anywhere under
-// ~/anicca today, per contracts/sprint-2.md's own CRIT-207). This script does not exist yet -- every
+// the canonical checkout today, per contracts/sprint-2.md's own CRIT-207). This script does not exist yet -- every
 // test below is expected to fail (execFileSync throws ENOENT) until it is implemented in Phase 2b/2c.
 // Mirrors gen-wallet.sh's OWN generation discipline exactly (fresh entropy, {address, private_key,
 // public_key}-shaped JSON to stdout, 600-perm caller-redirected file, never logged) and REQ-201's own

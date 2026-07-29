@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import zoneinfo
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -52,6 +53,7 @@ import weekly_report  # noqa: E402
 from ledger_metrics import load_ledger_rows  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
 
 
 def _state_dir() -> str:
@@ -59,8 +61,8 @@ def _state_dir() -> str:
 
 
 def _cadence_contracts_path() -> str:
-    return os.environ.get("CEO_CADENCE_CONTRACTS") or os.path.expanduser(
-        "~/anicca/skills/self/cadence-contracts.json"
+    return os.environ.get("CEO_CADENCE_CONTRACTS") or str(
+        REPO_ROOT / "skills/self/cadence-contracts.json"
     )
 
 

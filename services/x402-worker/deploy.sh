@@ -2,7 +2,7 @@
 # Deploy the x402-cloud Worker to Cloudflare.
 #
 # Reads CLOUDFLARE_API_TOKEN (+ optional CLOUDFLARE_ACCOUNT_ID) from ~/.hermes/.env,
-# falling back to ~/.openclaw/.env. Creates the NONCE_KV namespace if needed, patches its
+# falling back to $HOME/.local/state/life-manager/.env. Creates the NONCE_KV namespace if needed, patches its
 # id into wrangler.toml, runs `wrangler deploy`, and writes the deployed URL to
 # ~/.hermes/state/x402-cloud-deploy.json.
 #
@@ -19,11 +19,11 @@ load_env() { # file key
   [ -n "$v" ] && printf '%s' "$v"
 }
 
-CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(load_env "$HOME/.hermes/.env" CLOUDFLARE_API_TOKEN || load_env "$HOME/.openclaw/.env" CLOUDFLARE_API_TOKEN || true)}"
-CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-$(load_env "$HOME/.hermes/.env" CLOUDFLARE_ACCOUNT_ID || load_env "$HOME/.openclaw/.env" CLOUDFLARE_ACCOUNT_ID || true)}"
+CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(load_env "$HOME/.hermes/.env" CLOUDFLARE_API_TOKEN || load_env "$HOME/.local/state/life-manager/.env" CLOUDFLARE_API_TOKEN || true)}"
+CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-$(load_env "$HOME/.hermes/.env" CLOUDFLARE_ACCOUNT_ID || load_env "$HOME/.local/state/life-manager/.env" CLOUDFLARE_ACCOUNT_ID || true)}"
 
 if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-  echo "ERROR: CLOUDFLARE_API_TOKEN missing in ~/.hermes/.env and ~/.openclaw/.env." >&2
+  echo "ERROR: CLOUDFLARE_API_TOKEN missing in ~/.hermes/.env and $HOME/.local/state/life-manager/.env." >&2
   echo "Provision via camofox autonomous signup at cloudflare.com (HARD RULE #-1), then re-run." >&2
   exit 2
 fi

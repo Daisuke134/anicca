@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # One bounded Life Manager marketing pass. The launchd job, account, rotation and posting
 # route predate 9b; only the creative renderer and agent runtime contract change here.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
@@ -13,16 +16,16 @@ export LM_DAILY_ACTIVE=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${PYTHON_BIN:-$(command -v python3 || echo /opt/homebrew/bin/python3)}"
-RUN_AGENT="${RUN_AGENT_BIN:-$HOME/anicca/skills/earn/marketing-engine/run_agent.sh}"
+RUN_AGENT="${RUN_AGENT_BIN:-$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh}"
 VIDEO_GENERATOR="${LM_VIDEO_GENERATOR:-$HERE/../video/daily-lm-video/generate.py}"
 VIDEO_DISTRIBUTOR="${LM_VIDEO_DISTRIBUTOR:-$HERE/../video/lm-distribution/distribute.py}"
 MARKETING_SELF_IMPROVER="${LM_MARKETING_SELF_IMPROVER:-$HERE/../video/lm-self-improve/daily.py}"
-LOG="${LM_DAILY_LOG:-$HOME/.openclaw/logs/life-manager-daily.log}"
-RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.openclaw/state/lm-video/daily-run-ledger.jsonl}"
-USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.openclaw/state/lm-video/agent-usage.jsonl}"
-MARKETING_LEDGER="${LM_MARKETING_LEDGER:-$HOME/profitable-claude/skills/life-manager/state/marketing-actions.jsonl}"
+LOG="${LM_DAILY_LOG:-$HOME/.local/state/life-manager/logs/life-manager-daily.log}"
+RUN_LEDGER="${LM_DAILY_RUN_LEDGER:-$HOME/.local/state/life-manager/state/lm-video/daily-run-ledger.jsonl}"
+USAGE_LEDGER="${LM_DAILY_USAGE_LEDGER:-$HOME/.local/state/life-manager/state/lm-video/agent-usage.jsonl}"
+MARKETING_LEDGER="${LM_MARKETING_LEDGER:-$LIFE_MANAGER_REPO/skills/life-manager/state/marketing-actions.jsonl}"
 BANK_PATH="$(cd "$HERE/../video/daily-lm-video" && pwd)/creative-bank.jsonl"
-ROTATION_STATE="${LM_VIDEO_STATE:-$HOME/.openclaw/state/lm-video/daily-render-state.jsonl}"
+ROTATION_STATE="${LM_VIDEO_STATE:-$HOME/.local/state/life-manager/state/lm-video/daily-render-state.jsonl}"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$RUN_LEDGER")" "$(dirname "$USAGE_LEDGER")"
 printf '=== life-manager-daily run %s ===\n' "$(date '+%F %T %Z')" >>"$LOG"
 
@@ -92,11 +95,11 @@ Do not mutate either file. Return the required final schema JSON
 immediately after those bounded checks, with concrete evidence for codec, dimensions, audio,
 duration, decode exit, creative id, and output path."
 else
-  if [ -f "$HOME/.openclaw/.env" ]; then
+  if [ -f "$HOME/.local/state/life-manager/.env" ]; then
     set +u
     set -a
     # shellcheck disable=SC1091
-    . "$HOME/.openclaw/.env"
+    . "$HOME/.local/state/life-manager/.env"
     set +a
     set -u
   fi
@@ -198,7 +201,7 @@ $LM_SELF_IMPROVE_REASON. This append-only measurement is already complete. Do no
 backfill, or duplicate metrics."
 fi
 
-EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.openclaw/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
+EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$HOME/.local/state/life-manager/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
 export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
 # 9b requires Luna and forbids the retired Claude/CLIProxy fallback. marketing-agent selects
 # gpt-5.6-luna; provider pinning makes a Luna failure visible instead of switching providers.
@@ -274,7 +277,7 @@ PY
 
 printf '=== life-manager-daily done rc=%s %s ===\n' "$EFFECTIVE_RC" "$(date '+%F %T %Z')" >>"$LOG"
 if [ "$EFFECTIVE_RC" -eq 0 ]; then
-  mkdir -p "$HOME/.openclaw/state"
-  touch "$HOME/.openclaw/state/.life-manager-core-last-pass"
+  mkdir -p "$HOME/.local/state/life-manager/state"
+  touch "$HOME/.local/state/life-manager/state/.life-manager-core-last-pass"
 fi
 exit "$EFFECTIVE_RC"

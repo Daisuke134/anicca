@@ -17,21 +17,23 @@ import os
 import sys
 import tempfile
 import zoneinfo
+from pathlib import Path
 
 SELF_IMPROVE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(SELF_IMPROVE_DIR, "lib"))
 from weekly_compare import beats_previous_week  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
 
 LEDGER_PATH_FOR_LOOP = {
-    "clip": lambda: os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.openclaw/state/clip-earn-ledger.jsonl"),
+    "clip": lambda: os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/life-manager/state/clip-earn-ledger.jsonl"),
     "affiliate": lambda: os.environ.get("AFFILIATE_METRICS_PATH") or os.path.expanduser("~/.cloak/affiliate-metrics.jsonl"),
     "video": lambda: os.environ.get("EARN_VIDEO_METRICS_PATH") or os.path.expanduser(
         f"~/.cloak/earn-video-metrics-{os.environ.get('EARN_VIDEO_HANDLE', 'money_blueprintdaily')}.jsonl"),
     "gig": lambda: os.environ.get("GIG_FUNNEL_PATH") or os.path.expanduser("~/gig/gig-funnel.jsonl"),
-    "bounty": lambda: os.environ.get("BOUNTY_FUNNEL_PATH") or os.path.expanduser(
-        "~/profitable-claude/skills/human-funded/bounty/state/bounty-funnel.jsonl"),
+    "bounty": lambda: os.environ.get("BOUNTY_FUNNEL_PATH") or str(
+        REPO_ROOT / "skills/human-funded/bounty/state/bounty-funnel.jsonl"),
 }
 
 

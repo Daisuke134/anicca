@@ -955,6 +955,165 @@ test("Sauce-style inventory confirms only with same-origin final URL, visible Pr
   assert.equal(calls.filter(([name]) => name === "act").length, 0);
 });
 
+test("account settings security copy cannot create a login handoff without active auth controls", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Account Settings. Sign-in & security.",
+      inputs: [
+        visibleElement({
+          type: "text",
+          inputMode: "",
+          autocomplete: "name",
+          maxLength: 100,
+        }),
+      ],
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Account Settings. Sign-in & security.",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, true);
+  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffReason, null);
+});
+
+test("failed provider readback cannot be promoted by a same-origin visible marker", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Account Settings",
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "failed",
+      confirmationId: null,
+      providerText: "Account Settings",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+});
+
+test("verification-pending login copy cannot be promoted by a same-origin visible marker", async () => {
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: "Account Settings. Sign in. Check email to continue.",
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText: "Account Settings. Sign in. Check email to continue.",
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
+});
+
+test("passwordless sign-in actions cannot be promoted by passive account copy", async () => {
+  const providerText = "Account Settings. Sign in.";
+  const { driver } = fixture({
+    pageUrl: "https://fresh-events.example/settings",
+    evaluateEnvironment: domEnvironment({
+      bodyText: providerText,
+      authActions: [
+        visibleElement({
+          tagName: "BUTTON",
+          getAttribute() { return null; },
+        }, "Continue with Google"),
+      ],
+    }),
+    authReceipt: {
+      confirmed: false,
+      status: "login required",
+      confirmationId: null,
+      providerText,
+      activeRegistrationForm: false,
+      activeAuthenticationForm: false,
+    },
+  });
+  const session = await driver.openSession();
+  const action = await driver.discoverAndAct(session, {
+    goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+    actionKind: "browser_auth_continuity_readback",
+  });
+
+  const receipt = await driver.readProviderReceipt(session, action);
+
+  assert.equal(receipt.confirmed, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "login");
+});
+
+test("all email-verification pending phrases block passive login-copy promotion", async () => {
+  for (const phrase of [
+    "Check your email",
+    "Email verification required",
+    "Confirm your email",
+  ]) {
+    const providerText = `Account Settings. Sign in. ${phrase}.`;
+    const { driver } = fixture({
+      pageUrl: "https://fresh-events.example/settings",
+      evaluateEnvironment: domEnvironment({ bodyText: providerText }),
+      authReceipt: {
+        confirmed: false,
+        status: "login required",
+        confirmationId: null,
+        providerText,
+        activeRegistrationForm: false,
+        activeAuthenticationForm: false,
+      },
+    });
+    const session = await driver.openSession();
+    const action = await driver.discoverAndAct(session, {
+      goal: "Read https://fresh-events.example/settings with the existing authenticated session",
+      actionKind: "browser_auth_continuity_readback",
+    });
+
+    const receipt = await driver.readProviderReceipt(session, action);
+
+    assert.equal(receipt.confirmed, false, phrase);
+    assert.equal(receipt.handoffRequired, true, phrase);
+    assert.equal(receipt.handoffReason, "login", phrase);
+  }
+});
+
 test("auth continuity receipts close and scrub model-supplied status and confirmation identifiers", async () => {
   const secrets = [
     `token=${["tok", "fixture", "123456789"].join("-")}`,

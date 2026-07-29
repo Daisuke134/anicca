@@ -14,9 +14,8 @@ Close-loop revision (2026-07-08, Gap 2): `combined_score` for stage2/promotion i
 Sharpe-like risk-adjusted metric (`gate_math.risk_adjusted_score`), not raw mean OOS net USD — see
 evaluator.py's module docstring. The "better candidate" here changed from the prior revision's
 `min_edge: 0.15 -> 0.24` (which is now the FROZEN BASELINE ITSELF — see next paragraph) to
-`edge_weight: 0.25 -> 0.4` + `conf_weight: 0.45 -> 0.1`, a genuine adaptive-sizing-emphasis change
-(shifts the stake-scaling multiplier to weight the edge signal over the confidence signal), not a
-leverage/stake-size-only change.
+`min_edge: 0.25 -> 0.26` + `max_stake: 12 -> 10`, a genuine selection and risk-cap change
+against the current promoted baseline, not a leverage/stake-size-only change.
 
 REAL PROMOTION (2026-07-08, commit a6f608c, capable-improver run): the openevolve-discovered
 candidate that raised `min_edge`/`min_confidence`/added liquidity+price+horizon+combined-signal
@@ -27,9 +26,9 @@ risk-adjusted score (~3.21, not ~1.26) than the earlier revision's simple thresh
 Every literal/number below was re-derived directly off the REAL evaluator/fixture against this NEW
 committed baseline (not invented, not carried over from the pre-promotion revision): baseline's
 stage2 risk-adjusted score is ~3.208 (mean ~4.218, std ~1.315, worst OOS ~+2.375); the
-`edge_weight=0.4, conf_weight=0.1` candidate's risk-adjusted score is ~3.595 (mean ~4.328 UP, std
-~1.204 DOWN, worst OOS ~+2.651, still positive) — a genuine, if now more marginal, Pareto
-improvement over an already-good baseline, not a variance trick. A pure-leverage variant of
+That candidate's current risk-adjusted score is higher with mean up, spread down, and a positive
+worst window — a genuine Pareto improvement over an already-good baseline, not a variance trick.
+A pure-leverage variant of
 baseline (same thresholds, base_stake scaled 5.0 -> 20.0) is verified elsewhere
 (test_risk_adjusted_fitness.py) to score IDENTICALLY to baseline under this metric, proving
 leverage alone cannot pass this test.
@@ -41,8 +40,8 @@ from lib import gate_math, scope_guard
 
 def _better_candidate_code() -> str:
     return patched_baseline_code(
-        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
-        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+        ('config.get("min_edge", 0.25)', 'config.get("min_edge", 0.26)'),
+        ('config.get("max_stake", 12.0)', 'config.get("max_stake", 10.0)'),
     )
 
 

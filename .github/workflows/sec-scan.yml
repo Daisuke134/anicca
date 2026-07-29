@@ -11,6 +11,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  oss-boundary:
+    name: OSS self-contained boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify canonical checkout has no external source dependency
+        run: node scripts/verify-oss-self-contained.mjs
+
   gitleaks:
     name: gitleaks
     runs-on: ubuntu-latest
@@ -79,11 +90,28 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: install exact test dependencies
+        run: python3 -m pip install --disable-pip-version-check -r requirements-ci.txt
+
       - name: ast.parse every .py
         run: |
           set -e
-          find . -name '*.py' -not -path './.git/*' \
-            -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+
+          excluded = {".git", "node_modules", ".venv", "venv"}
+          failures = []
+          for path in Path(".").rglob("*.py"):
+              if excluded.intersection(path.parts):
+                  continue
+              try:
+                  ast.parse(path.read_text(encoding="utf-8"))
+              except (SyntaxError, UnicodeDecodeError) as exc:
+                  failures.append(f"{path}: {exc}")
+          if failures:
+              raise SystemExit("\n".join(failures))
+          PY
           echo "✅ syntax clean"
 
       - name: run declared pure-stdlib security tests

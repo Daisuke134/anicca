@@ -1,7 +1,7 @@
 # Autonomous Job Search Loop Design
 
-**Date:** 2026-07-28  
-**Owner:** Daisuke Narita  
+**Date:** 2026-07-28
+**Owner:** Daisuke Narita
 **Status:** Phase 1 live from the canonical Life Manager checkout; `JOB-CANONICAL-MERGE-1` completed
 **Done when:** `Daisuke134/life-manager` is the only versioned source of the local job-search runtime and can discover, qualify, tailor, and submit up to two eligible applications per Japan day; reconcile Gmail; create interview calendar events and preparation packs; send an at-most-once Telegram report; and promote only evidence-backed strategy changes.
 

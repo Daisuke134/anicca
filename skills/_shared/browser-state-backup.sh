@@ -37,7 +37,7 @@ set -uo pipefail
 CLOAK_DIR="$HOME/.cloak"
 PROFILES_DIR="$CLOAK_DIR/profiles"
 BACKUP_ROOT="$CLOAK_DIR/state-backups"
-LOG="$HOME/.openclaw/logs/browser-state-backup.log"
+LOG="$HOME/.local/state/life-manager/logs/browser-state-backup.log"
 KEEP_GENERATIONS=7
 mkdir -p "$BACKUP_ROOT" "$(dirname "$LOG")"
 chmod 700 "$BACKUP_ROOT" 2>/dev/null || true

@@ -64,7 +64,7 @@ print(json.dumps({'open_positions': open_count, 'value_usd': round(value, 6), 'u
 # (claude-p's proxy body, wallet 0x810f). This script previously reported the wrong loop's status.
 A3_BAL=$(erc20 "$BASE" "$BUSDC" "$A3CDD4_ADDR")
 A3_LOOP=$(loop_status anicca.daemon)
-A3_OUT=/Users/operator/.automaton/state/telemetry.json
+A3_OUT=$HOME/.automaton/state/telemetry.json
 mkdir -p "$(dirname "$A3_OUT")"
 python3 -c "
 import json
@@ -87,7 +87,7 @@ echo "wrote $A3_OUT"
 FR_SOL=$(sol "$FRANKLIN_ADDR")
 FR_USDC=$(solusdc "$FRANKLIN_ADDR")
 FR_LOOP=$(loop_status franklin-loop)
-FR_OUT=/Users/operator/.blockrun/state/telemetry.json
+FR_OUT=$HOME/.blockrun/state/telemetry.json
 mkdir -p "$(dirname "$FR_OUT")"
 python3 -c "
 import json
@@ -112,7 +112,7 @@ CP_BAL=$(erc20 "$POLY" "$PUSD" "$CLAUDEP_ADDR")
 CP_LOOP=$(loop_status pm-earner)
 CP_PM_JSON=$(pm_positions_json "$CLAUDEP_ADDR")
 [ -z "$CP_PM_JSON" ] && CP_PM_JSON='{"open_positions": 0, "value_usd": 0, "unrealized_pnl_usd": 0}'
-CP_OUT=/Users/operator/.anicca-founder/state/telemetry.json
+CP_OUT=$HOME/.anicca-founder/state/telemetry.json
 mkdir -p "$(dirname "$CP_OUT")"
 python3 -c "
 import json

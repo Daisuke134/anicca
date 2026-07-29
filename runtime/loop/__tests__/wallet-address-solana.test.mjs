@@ -26,7 +26,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MODULE_PATH = path.resolve(__dirname, '../../wallet-address-solana.mjs');
 
 // Franklin's real, live production wallet — behavioral-spec.md Context, verified 2026-07 top-up.
-const FRANKLIN_REAL_HOME = '/Users/operator/.blockrun';
+const FRANKLIN_REAL_HOME = '/home/life-manager/.blockrun';
 const FRANKLIN_REAL_ADDR = '8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9';
 
 function tmpDir(prefix) {
@@ -52,10 +52,10 @@ function runHelper(env) {
 // ---------------------------------------------------------------------------
 // REQ-001 acceptance criterion #1 + PROP-005: one live invocation against Franklin's REAL home.
 // ---------------------------------------------------------------------------
-test('PROP-005 (live): ANICCA_HOME=/Users/operator/.blockrun ANICCA_INSTANCE=franklin prints EXACTLY Franklin\'s real address and nothing else on stdout', () => {
+test('PROP-005 (live): ANICCA_HOME=/home/life-manager/.blockrun ANICCA_INSTANCE=franklin prints EXACTLY Franklin\'s real address and nothing else on stdout', () => {
   const result = runHelper({
     PATH: process.env.PATH,
-    HOME: '/Users/operator',
+    HOME: '/home/life-manager',
     ANICCA_HOME: FRANKLIN_REAL_HOME,
     ANICCA_INSTANCE: 'franklin',
   });

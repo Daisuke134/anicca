@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # money-total.sh — thin aggregator (NOT a loop). Reads the two money loops' STATE.md and reports total
 # real monthly revenue vs Dais's monthly spend. Never re-computes; just sums the two already-verified
 # real numbers. Anti-fake: if either loop reports NA/READ-FAILED, the TOTAL is untrustworthy (NA), never
 # a masked partial. Seam: MT_CAPAFY_STATE / MT_LM_STATE / MT_SPEND for tests.
 set -uo pipefail
-CAP_ST="${MT_CAPAFY_STATE:-$HOME/anicca/skills/self/capafy-loop/state/STATE.md}"
-LM_ST="${MT_LM_STATE:-$HOME/anicca/skills/self/life-manager-loop/state/STATE.md}"
+CAP_ST="${MT_CAPAFY_STATE:-$LIFE_MANAGER_REPO/skills/self/capafy-loop/state/STATE.md}"
+LM_ST="${MT_LM_STATE:-$LIFE_MANAGER_REPO/skills/self/life-manager-loop/state/STATE.md}"
 SPEND="${MT_SPEND:-200}"
 val(){ grep -E "^$2:" "$1" 2>/dev/null | awk '{print $2}' | tail -1; }
 CAP="$(val "$CAP_ST" capafy_monthly_payout_usd)"; CAP="${CAP:-MISSING}"

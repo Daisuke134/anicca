@@ -7,15 +7,15 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/bin/bash</string>
-		<string>/Users/operator/anicca/skills/self/founder-loop/founder-loop.sh</string>
+		<string>__REPO_ROOT__/skills/self/founder-loop/founder-loop.sh</string>
 	</array>
 	<key>StartInterval</key>
 	<integer>1800</integer>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardOutPath</key>
-	<string>/Users/operator/.openclaw/logs/founder-loop-cadence.out.log</string>
+	<string>__LIFE_MANAGER_HOME__/logs/founder-loop-cadence.out.log</string>
 	<key>StandardErrorPath</key>
-	<string>/Users/operator/.openclaw/logs/founder-loop-cadence.err.log</string>
+	<string>__LIFE_MANAGER_HOME__/logs/founder-loop-cadence.err.log</string>
 </dict>
 </plist>

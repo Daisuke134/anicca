@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # clip_pass.sh — ONE clip pass as a Reflexion prompt-chain (copied from gig_pass.sh; NeurIPS 2023
 # Reflexion: Actor = producer.sh + run.sh, Evaluator = clip-metrics, Self-Reflection = reflection.jsonl).
 # Each LLM step is a SEPARATE bounded claude sub-call with a short focused prompt + --no-session-persistence
@@ -7,7 +10,7 @@
 # ~/clips/{reflection.jsonl,playbook.json,clip-metrics.jsonl}.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-C="$HOME/anicca/skills/earn/clip"
+C="$LIFE_MANAGER_REPO/skills/earn/clip"
 CLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETING_ENGINE_DIR="$CLIP_SCRIPT_DIR/../marketing-engine"
 # shellcheck source=../marketing-engine/provision_prompt.sh
@@ -41,9 +44,9 @@ step(){ # $1=label  $2=prompt
   log "STEP $1 start"
   # stdout is captured per-step (claude CLI prints errors to STDOUT, not stderr — observed
   # 2026-07-16: rc=1 with an empty stderr log) and its tail is surfaced on failure.
-  local out="$HOME/.openclaw/logs/clip-step-last.out"
+  local out="$HOME/.local/state/life-manager/logs/clip-step-last.out"
   CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 env -u ANTHROPIC_API_KEY timeout "$timeout_seconds" "$CLAUDE" --model "$STEP_MODEL" --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
-    -p "You are the Anicca clip earn-core (IG = the active clip account in ~/.cloak/clip-accounts.json, niche = AI / money / wealth). set -a; . ~/.openclaw/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.openclaw/logs/clip-steps.err.log"
+    -p "You are the Anicca clip earn-core (IG = the active clip account in ~/.cloak/clip-accounts.json, niche = AI / money / wealth). set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a. Do EXACTLY this ONE step, fully, then stop. $2" >"$out" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log"
   local rc=$?
   [ "$rc" -ne 0 ] && log "STEP $1 FAIL stdout-tail: $(tail -c 800 "$out" 2>/dev/null | tr '\n' ' ')"
   log "STEP $1 done (rc=$rc)"
@@ -120,7 +123,7 @@ if [ -z "$BIO_HANDLE" ]; then
   log "BIO: skip — no active handle"
 elif [ -x "$INSTA_PY" ]; then
   log "BIO: bio_step.py $BIO_HANDLE"
-  "$INSTA_PY" "$C/scripts/bio_step.py" --handle "$BIO_HANDLE" 2>>"$HOME/.openclaw/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
+  "$INSTA_PY" "$C/scripts/bio_step.py" --handle "$BIO_HANDLE" 2>>"$HOME/.local/state/life-manager/logs/clip-steps.err.log" | while IFS= read -r line; do log "  $line"; done
 else
   log "BIO: skip — instagrapi venv not present at $INSTA_PY"
 fi

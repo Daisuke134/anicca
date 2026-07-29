@@ -5,8 +5,8 @@ description: Anicca earn slot — promote.fun USDC-Solana per-view clipping. The
 
 # earn/clip-promote — promote.fun USDC-Solana clip earning (no human, no Claude in the loop)
 
-Spec (SSOT): `~/anicca-project/.vcsdd/features/promote-fun-clip-earn/specs/spec.md` (REV 4, Phase 1c PASS 5/5)
-+ `~/anicca-project/docs/superpowers/specs/2026-06-28-claude-earn-skills-spec.md`.
+Spec (SSOT): `$LIFE_MANAGER_REPO/.vcsdd/features/promote-fun-clip-earn/specs/spec.md` (REV 4, Phase 1c PASS 5/5)
++ `$LIFE_MANAGER_REPO/docs/superpowers/specs/2026-06-28-claude-earn-skills-spec.md`.
 
 ## What it does
 The automaton loop invokes `run.sh` each wake. `decide(state, now)` (PURE, `decide.py`) returns ONE bounded
@@ -67,8 +67,8 @@ Env: `SOLANA_RPC_URL`, `CLIP_WALLET_SOLANA`, `CLIP_PROMOTE_STATE`, `EARN_LEDGER`
 
 ## Verify (independent)
 ```bash
-node --test ~/anicca/skills/_shared/lib/__tests__/*.test.js          # 45/45 (ledger Solana + solana-verify + guard)
-node --test ~/anicca/skills/earn/lib/__tests__/*.test.*             # 42/42 (incl record-solana round-trip)
+node --test $LIFE_MANAGER_REPO/skills/_shared/lib/__tests__/*.test.js          # 45/45 (ledger Solana + solana-verify + guard)
+node --test $LIFE_MANAGER_REPO/skills/earn/lib/__tests__/*.test.*             # 42/42 (incl record-solana round-trip)
 node --test tests/test_record_payout.mjs                            # 4/4  (DONE gate: recorded/unconfirmed/zero/dup)
 python3 tests/test_decide.py                                        # 8/8  (pure state machine)
 bash tests/test_run.sh                                              # 4/4  (discover + watchdog + FIND-301 env -i)

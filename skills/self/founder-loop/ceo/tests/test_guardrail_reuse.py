@@ -1,6 +1,6 @@
 """test_guardrail_reuse.py — RED (Phase 2a, feature claude-p-ceo-loop).
 REQ-CEO-031: fleet-size-increase gating MUST call the EXISTING
-~/anicca/skills/self/loop-scale/guardrails.py::scale_eligible/cooldown_ok/fleet_at_capacity
+__REPO_ROOT__/skills/self/loop-scale/guardrails.py::scale_eligible/cooldown_ok/fleet_at_capacity
 functions (already implemented+tested for task #13-adjacent work) rather than re-implementing the
 3-condition AND. This is a source-level reuse check (Tier2, grep-style) -- not a re-test of
 guardrails.py's own logic (that's already covered by test-healthcheck-lib.sh's siblings; this

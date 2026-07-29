@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
+
+RUN_AGENT="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh"
+if [ "${AGENT_WIRING_PROBE_ONLY:-0}" = "1" ]; then
+  printf '{"task_class":"high-value-agent","runner":"%s"}\n' "$RUN_AGENT"
+  exit 0
+fi
 
 # The browser is shared with the other money loops: heal it, restore the logins, collect stray tabs.
-bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+bash "$LIFE_MANAGER_REPO/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (npm global install, not homebrew)
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
 # code/automation blocker it cannot fix in-pass, it (or a healthcheck) calls this to spawn a detached, full-power
-# Sonnet claude that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
+# high-value agent that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
 # → writes a result marker. That is how the loops self-improve their own code without babysitting.
 # Usage: self-fix.sh <loop-name> "<blocker + concrete fix hint>"
 set -uo pipefail
@@ -31,9 +40,8 @@ if [ "${1:-}" = "--should-continue" ]; then sf_should_continue "${2:-}" "${3:-}"
 # anti-fake verifier reads. Idempotent: strip a trailing -loop then re-add it.
 LOOP="${1:?loop name}"; LOOP="${LOOP%-loop}-loop"; BLOCKER="${2:?blocker+hint}"
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"; SESSION="anicca-selffix-$LOOP"
-CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
-STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
-LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
+STATE="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE"
+LOG="$HOME/.local/state/life-manager/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
 # FIND-028 test seam: print the normalized identity + derived paths and exit BEFORE any tmux/side-effect.
@@ -62,12 +70,12 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
     echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, generating + pane ADVANCED → real progress, continue" >> "$LOG"; echo "self-fix[$LOOP] still progressing (${age_min}min)"; exit 0
   fi
   echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, pane frozen/idle (prev=$prev cur=$cur) → hung → kill+respawn" >> "$LOG"; rm -f "$PANEHASH"
-  tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
+  tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; sleep 1
 fi
 
 # FIND-035 (A6, 2026-07-18): RESULT-MARKER BACKOFF. The has-session guard above only prevents a
-# CONCURRENT second fixer — it does NOT stop the every-6h auditor from re-spawning a FRESH full-power
-# Sonnet each cycle when the underlying condition PERSISTS but is NOT a code bug: e.g. published.jsonl
+# CONCURRENT second fixer — it does NOT stop the every-6h auditor from re-spawning a FRESH high-value
+# agent each cycle when the underlying condition PERSISTS but is NOT a code bug: e.g. published.jsonl
 # is legitimately stale >30h because inventory is drained (nothing to publish), or a prior fixer
 # already concluded this is a genuine external blocker. Without backoff this burned one Sonnet every
 # 6h forever for a non-bug (the "verify-loops-audit reflex-spawns self-fix" landmine, capafy 2026-07).
@@ -89,33 +97,35 @@ fi
 # 40+ spawns over 24h, none completed). Reclaim only 100%-regenerable package-manager caches; see
 # hc_reclaim_disk_if_low in healthcheck-lib.sh for the full rationale and the excluded (approval-needed) paths.
 # shellcheck source=healthcheck-lib.sh
-. "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
+. "$LIFE_MANAGER_REPO/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
 
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
 printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
-TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a full-power Sonnet dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
+TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a high-value autonomous dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
 DO, in order:
 (0) CHECK FOR PRIOR DIAGNOSIS FIRST (2026-07-13 fix — a prior self-fix spawn burned 400-1400min re-discovering an already-known external blocker from scratch): before any expensive live reproduction, search for an existing diagnosis of THIS exact blocker — tail the loop's own lessons/audit files under its state dir (e.g. ~/gig/lessons.jsonl, ~/gig/audit.jsonl) for recent matching entries, and run 'gh issue list -R Daisuke134/anicca --label gig-lesson --search \"<keyword from the blocker>\"' to find prior write-ups. If a recent (last ~24h) prior diagnosis already concluded this is a genuine external/physical blocker (e.g. a real-world device state, a third-party account lock needing a human's physical action, an outage) — do ONE cheap, fast confirmation that the same condition still holds (a single live check, not a repeat of the full multi-hour investigation), then write FAIL citing the existing issue/lesson instead of re-running the whole diagnosis. Only do a full fresh investigation when no matching prior diagnosis exists or the prior one looks stale/resolved.
 (1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks).
 (2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
 (3) VERIFY with a REAL side-effect — an actually-published skill URL you then curl and see live / a real posted comment URL / the tool actually succeeding once end-to-end. A patch that only compiles is NOT done. No dry runs, no fake success, no 'should work'.
-(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under ~/.openclaw (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under ~/anicca (remote = anicca, public). Never commit ~/.openclaw runtime state or secrets.
+(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under $HOME/.local/state/life-manager (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under $LIFE_MANAGER_REPO (remote = anicca, public). Never commit $HOME/.local/state/life-manager runtime state or secrets.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
 TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
+PROMPT_FILE="$STATE/.self-fix-$LOOP.prompt"
+EVIDENCE_DIR="$STATE/agent-runner-evidence/self-fix-$LOOP/$(date +%s)-$$"
+printf '%s\n' "$TASK" > "$PROMPT_FILE"
 
-# Auth: launchd/tmux cannot refresh the subscription OAuth token headlessly (keychain locked) —
-# same fallback already proven live by gig-cli.sh / gig_reality_verify.sh — route through the
-# local CLIProxyAPI (:8317) whose creds are plain files and refresh headlessly; fall back to
-# subscription auth if the key file is absent.
-CLIPROXY_KEY="$(cat "$HOME/.cli-proxy-api-key" 2>/dev/null || true)"
-if [ -n "$CLIPROXY_KEY" ]; then
-  export ANTHROPIC_BASE_URL="http://127.0.0.1:8317"
-  export ANTHROPIC_AUTH_TOKEN="$CLIPROXY_KEY"
-fi
-
-tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"
+# Keep the historical detached tmux lifecycle, but delegate provider/model selection to the
+# shared task-class runner. Shell-escape every interpolated value before tmux evaluates the command.
+printf -v RUN_AGENT_Q '%q' "$RUN_AGENT"
+printf -v EVIDENCE_DIR_Q '%q' "$EVIDENCE_DIR"
+printf -v TASK_LABEL_Q '%q' "self-fix-$LOOP"
+printf -v LOOP_Q '%q' "$LOOP"
+printf -v PROMPT_FILE_Q '%q' "$PROMPT_FILE"
+printf -v LOG_Q '%q' "$LOG"
+tmux -S "$SOCK" new-session -d -s "$SESSION" \
+  "exec /bin/bash $RUN_AGENT_Q --task-class high-value-agent --evidence-dir $EVIDENCE_DIR_Q --task-label $TASK_LABEL_Q --loop $LOOP_Q < $PROMPT_FILE_Q >> $LOG_Q 2>&1"
 date +%s > "$STARTMARK"
-echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (sonnet): ${BLOCKER:0:90}" >> "$LOG"
-echo "self-fix[$LOOP] spawned (sonnet, detached). result→$RESULT log→$LOG"
+echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (high-value-agent): ${BLOCKER:0:90}" >> "$LOG"
+echo "self-fix[$LOOP] spawned (high-value-agent, detached). result→$RESULT log→$LOG evidence→$EVIDENCE_DIR"

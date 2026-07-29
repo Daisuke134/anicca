@@ -1,7 +1,7 @@
 // VSDD RED->GREEN + synthetic-ledger E2E (spec §4.2): realized P&L takes days to accumulate on
 // real Polymarket redeems, so the promote/no-promote gate is proven here against a CRAFTED
 // (synthetic) earn-ledger + pm-trade trace, isolated to a temp dir/temp git repo — this test
-// NEVER touches the real ~/anicca repo, the real earn-ledger, or places any real order.
+// NEVER touches the real the canonical checkout repo, the real earn-ledger, or places any real order.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -188,7 +188,7 @@ test("promote() writes the canonical baseline-genome.json AND git-commits it", (
 
 // LOW-SEV fix (adversary, repo safety): promote() must NEVER sweep unrelated staged/working-tree
 // changes into its commit on a shared checkout. Simulates exactly the observed real scenario
-// (another process's edit sitting staged in ~/anicca while a promotion runs).
+// (another process's edit sitting staged in the canonical checkout while a promotion runs).
 test("promote() is path-scoped: an unrelated STAGED file is never swept into the promotion commit", () => {
   const repo = tmpDir("evolve-promote-pathscope-");
   initGitRepo(repo);
@@ -202,7 +202,7 @@ test("promote() is path-scoped: an unrelated STAGED file is never swept into the
   });
 
   // Simulate a concurrent, unrelated process staging a change to a DIFFERENT file right before
-  // promote() runs (exactly what was observed live on the shared ~/anicca checkout).
+  // promote() runs (exactly what was observed live on the shared the canonical checkout checkout).
   fs.writeFileSync(unrelatedPath, "modified by an unrelated concurrent process\n");
   execFileSync("git", ["add", unrelatedPath], { cwd: repo });
 

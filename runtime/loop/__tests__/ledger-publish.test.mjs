@@ -6,7 +6,7 @@
 // each source's cursor directly against the actual, just-synced destination file's line count. The
 // effectful-shell tests below use REAL git (mirrors skills/earn/lib/__tests__/evolve.test.mjs's own
 // established real-git-in-tmp-dir precedent) against a `file://` BARE-repo fixture created fresh per
-// test. NO test in this file ever touches the real ~/anicca repo, a real remote, or the network --
+// test. NO test in this file ever touches the real the canonical checkout repo, a real remote, or the network --
 // every "origin" is a throwaway bare repo under os.tmpdir(). Pure-core tests run with zero I/O; for
 // the non-fatality/setup-failure paths an injected mock `git` is still used (no real git needed).
 import { test } from 'node:test';
@@ -61,7 +61,7 @@ function makeEarnLines(n, offset = 0) {
 }
 
 // Bare "origin" repo + a "shared checkout" cloned from it (mirrors this repo's own real topology:
-// `repoRoot` here plays the role of `~/anicca`'s shared checkout; ledger-publish.mjs reads ONLY
+// `repoRoot` here plays the role of `the canonical checkout`'s shared checkout; ledger-publish.mjs reads ONLY
 // `git remote get-url origin` from it and never anything else).
 function setupOrigin(dir) {
   const originDir = path.join(dir, 'origin.git');

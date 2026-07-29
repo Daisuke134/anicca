@@ -34,7 +34,7 @@ const ONE_CITIZEN = [
     walletAddress: { evm: "0xB9dd3B67921B354c656523d6851537988F31DD56" },
     fuel: { provider: "clawrouter-own-wallet" },
     humanDependencies: [],
-    homeDir: "/Users/operator/.anicca",
+    homeDir: "/home/life-manager/.anicca",
     coLocatedWithCoordinator: true,
   },
 ];
@@ -256,7 +256,7 @@ const DUPLICATED_CITIZEN = [
     walletAddress: { evm: "0xB9dd3B67921B354c656523d6851537988F31DD56" },
     fuel: { provider: "clawrouter-own-wallet" },
     humanDependencies: [],
-    homeDir: "/Users/operator/.anicca",
+    homeDir: "/home/life-manager/.anicca",
     coLocatedWithCoordinator: true,
   },
   // The SAME citizen, id-duplicated -- the exact on-disk shape a crash-window re-drive produces.
@@ -266,7 +266,7 @@ const DUPLICATED_CITIZEN = [
     walletAddress: { evm: "0xB9dd3B67921B354c656523d6851537988F31DD56" },
     fuel: { provider: "clawrouter-own-wallet" },
     humanDependencies: [],
-    homeDir: "/Users/operator/.anicca",
+    homeDir: "/home/life-manager/.anicca",
     coLocatedWithCoordinator: true,
   },
 ];

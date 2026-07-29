@@ -30,6 +30,9 @@ render_ig_provision_prompt() {
   local telegram_target="${IG_PROVISION_TELEGRAM_TARGET:-}"
   local isolated_port="${IG_PROVISION_PORT:?IG_PROVISION_PORT is required}"
   local context_id="${IG_PROVISION_CONTEXT_ID:?IG_PROVISION_CONTEXT_ID is required}"
+  local gmail_account="${LIFE_MANAGER_GMAIL_ACCOUNT:?LIFE_MANAGER_GMAIL_ACCOUNT is required}"
+  local gmail_local="${gmail_account%@*}"
+  local gmail_domain="${gmail_account#*@}"
   require_ig_isolated_context "$isolated_port" "$context_id" || return
 
   cat <<EOF

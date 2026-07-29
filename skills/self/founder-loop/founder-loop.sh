@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RECORD="$HERE/record-earn.mjs"
 
 # prod root is env-independent; tests relocate via FOUNDER_TEST + FOUNDER_DIR (mirrors record-earn's FIND-401 fix).
-if [ "${FOUNDER_TEST:-}" = "1" ] && [ -n "${FOUNDER_DIR:-}" ]; then DIR="$FOUNDER_DIR"; else DIR="/Users/operator/.anicca-founder"; fi
+if [ "${FOUNDER_TEST:-}" = "1" ] && [ -n "${FOUNDER_DIR:-}" ]; then DIR="$FOUNDER_DIR"; else DIR="$HOME/.anicca-founder"; fi
 STATE_MD="$DIR/STATE.md"
 # FIND-901: FOUNDER_LEDGER is a TEST-only seam, mirroring record-earn. In prod the goal-check reads the env-INDEPENDENT
 # ledger path, so no env var can point it at an attacker-controlled file full of fake earnings.

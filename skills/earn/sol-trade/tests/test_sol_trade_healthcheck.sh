@@ -3,7 +3,7 @@
 # -> self-fix escalated (SELF_FIX_DRYRUN=1 seam, no real tmux/claude spawn, no real state touched);
 # healthy trace -> no escalation; and a second BARREN check within the escalation window does not
 # spam a second self-fix call. All state/log/trace paths are overridden to an isolated tmpdir so this
-# test never reads or writes real ~/.openclaw or ~/.blockrun state (read-only-on-live-state rule).
+# test never reads or writes real external runtime state (read-only-on-live-state rule).
 set -uo pipefail; P=0; F=0
 H="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"          # skills/earn/sol-trade/tests
 SKILL_DIR="$(cd "$H/.." && pwd)"                            # skills/earn/sol-trade

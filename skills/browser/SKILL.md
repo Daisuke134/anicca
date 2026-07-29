@@ -19,8 +19,8 @@ guard that fired once and gave up.
 ## Call this first, every pass
 
 ```bash
-bash ~/anicca/skills/browser/ensure_browser.sh          # ALIVE | RECOVERED | FAILED
-python3 ~/anicca/skills/browser/scripts/cdp_tab_gc.py   # close the tabs the last pass left behind
+bash $LIFE_MANAGER_REPO/skills/browser/ensure_browser.sh          # ALIVE | RECOVERED | FAILED
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_tab_gc.py   # close the tabs the last pass left behind
 ```
 
 If `ensure_browser.sh` prints `FAILED`, do **not** hang or retry forever — skip the browser steps,
@@ -36,11 +36,11 @@ run whatever file-only work the pass can still do, and report the failure honest
 | `scripts/scout.py` | Articles teach theory; the deepest signal is on the actual winning pages. Every improve cycle should LOOK at who is already winning (top sellers, viral clips, best-selling apps) and copy what they do. Fetches winner pages (public via `crwl`, or logged-in via CDP) and returns their content for the loop's model to learn from. `python3 scripts/scout.py '{"urls":[...],"mode":"public\|browser"}'` |
 
 ```bash
-python3 ~/anicca/skills/browser/scripts/session_vault.py dump      # snapshot logins (cookies + localStorage)
-python3 ~/anicca/skills/browser/scripts/session_vault.py restore   # push them back into the browser
-python3 ~/anicca/skills/browser/scripts/session_vault.py status    # how many cookies, which origins, how old
-python3 ~/anicca/skills/browser/scripts/session_vault.py keepalive https://coconala.com/mypage/dashboard  # warm + detect logout
-python3 ~/anicca/skills/browser/scripts/session_vault.py totp @coconala   # fresh 2FA code from stored secret
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py dump      # snapshot logins (cookies + localStorage)
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py restore   # push them back into the browser
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py status    # how many cookies, which origins, how old
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py keepalive https://coconala.com/mypage/dashboard  # warm + detect logout
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/session_vault.py totp @coconala   # fresh 2FA code from stored secret
 ```
 
 Run `dump` right after any fresh login, so that login is banked forever.
@@ -84,10 +84,10 @@ through filling, and neither could tell. Take a context instead: CDP `Target.cre
 reach into it.
 
 ```bash
-LEASE=$(python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
+LEASE=$(python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
 WS=$(echo "$LEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["ws"])') # drive this tab
 # ... do the work over $WS ...
-python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
+python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
 ```
 
 A fresh context starts logged out, so `acquire` seeds it from the vault's cookies — verified live:

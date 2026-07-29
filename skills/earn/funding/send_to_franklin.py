@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -40,7 +41,8 @@ from lib.solana_cli import spl_transfer  # noqa: E402
 from lib.solana_rpc import confirmed_success, spl_token_balance_units  # noqa: E402
 
 CONFIG = json.load(open(os.path.join(HERE, "config.json")))
-LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/funding-ledger.jsonl")
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/funding-ledger.jsonl")
 FOUNDER_SOLANA_WALLET_JSON = os.environ.get(
     "FOUNDER_SOLANA_WALLET_JSON", os.path.expanduser("~/.anicca-founder/solana-wallet.json")
 )

@@ -5,13 +5,13 @@
 // subprocess chain): run.sh's own env-loading preamble does
 //   set -a
 //   [ -f "$HOME/.hermes/.env" ]   && . "$HOME/.hermes/.env"
-//   [ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
+//   [ -f "$HOME/.local/state/life-manager/.env" ] && . "$HOME/.local/state/life-manager/.env"
 //   set +a
 // -- `$HOME` is the real, SHARED macOS home (all instances on one machine run as the same OS user),
-// not per-instance. `$HOME/.openclaw/.env` is the OpenClaw automaton's own shared secrets file and
-// always sets its OWN `ANICCA_HOME` (e.g. `/Users/operator/.openclaw`). `set -a` (allexport) means
+// not per-instance. `$HOME/.local/state/life-manager/.env` is the OpenClaw automaton's own shared secrets file and
+// always sets its OWN `ANICCA_HOME` (e.g. `~/.local/state/life-manager`). `set -a` (allexport) means
 // sourcing that file's `ANICCA_HOME=...` assignment silently overwrote the CALLER's correct
-// per-instance `ANICCA_HOME` (e.g. Franklin's `/Users/operator/.blockrun`, inherited correctly from the
+// per-instance `ANICCA_HOME` (e.g. Franklin's `/home/life-manager/.blockrun`, inherited correctly from the
 // launchd plist through index.mjs's buildSkillEnv) with the automaton's — so
 // resolve-identity.mjs's resolveEvmPrivateKey/resolveSolanaSecret then looked in the WRONG home,
 // found no wallet file there, and fail-closed exactly as designed (the resolvers themselves were
@@ -54,12 +54,12 @@ function makeFakeNodeBin(dir) {
   return binDir;
 }
 
-test("run.sh preserves the CALLER's ANICCA_HOME across $HOME/.openclaw/.env sourcing (regression for the 2026-07-08 drivingCitizenWallet incident)", () => {
+test("run.sh preserves the CALLER's ANICCA_HOME across $HOME/.local/state/life-manager/.env sourcing (regression for the 2026-07-08 drivingCitizenWallet incident)", () => {
   const home = tmpDir();
   const callerAniccaHome = path.join(home, ".blockrun"); // the per-instance identity run.sh is invoked with (mirrors Franklin's real ANICCA_HOME)
   fs.mkdirSync(callerAniccaHome, { recursive: true });
 
-  // Fixture mirrors the REAL ~/.openclaw/.env: it is a SHARED secrets file that always defines its
+  // Fixture mirrors the REAL ~/.local/state/life-manager/.env: it is a SHARED secrets file that always defines its
   // OWN ANICCA_HOME (the automaton's home) plus unrelated shared secrets (e.g. Akash signing key).
   const openclawDir = path.join(home, ".openclaw");
   fs.mkdirSync(openclawDir, { recursive: true });
@@ -84,17 +84,17 @@ test("run.sh preserves the CALLER's ANICCA_HOME across $HOME/.openclaw/.env sour
   assert.match(
     out,
     new RegExp(`^ANICCA_HOME=${callerAniccaHome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"),
-    `ANICCA_HOME must survive as the caller's ${callerAniccaHome}, not be clobbered by $HOME/.openclaw/.env's own ANICCA_HOME. Got:\n${out}`
+    `ANICCA_HOME must survive as the caller's ${callerAniccaHome}, not be clobbered by $HOME/.local/state/life-manager/.env's own ANICCA_HOME. Got:\n${out}`
   );
-  // The whole point of sourcing $HOME/.openclaw/.env is shared secrets (Akash key, etc.) -- confirm
+  // The whole point of sourcing $HOME/.local/state/life-manager/.env is shared secrets (Akash key, etc.) -- confirm
   // the fix didn't throw that baby out with the bathwater.
-  assert.match(out, /^AKASH_KEY_NAME=test-akash-key$/m, `shared secrets from $HOME/.openclaw/.env must still flow through. Got:\n${out}`);
+  assert.match(out, /^AKASH_KEY_NAME=test-akash-key$/m, `shared secrets from $HOME/.local/state/life-manager/.env must still flow through. Got:\n${out}`);
 
   fs.rmSync(home, { recursive: true, force: true });
 });
 
 // FIND-001 (fresh-adversary review, iteration 1): the original test only exercised a conflicting
-// ANICCA_HOME coming from $HOME/.openclaw/.env. run.sh sources $HOME/.hermes/.env FIRST, with the
+// ANICCA_HOME coming from $HOME/.local/state/life-manager/.env. run.sh sources $HOME/.hermes/.env FIRST, with the
 // identical `set -a` mechanism -- a conflict originating there was never independently exercised.
 // This test proves the fix protects against EITHER shared file, not just the one that happens to be
 // populated on this particular machine today.

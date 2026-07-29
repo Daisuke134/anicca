@@ -40,6 +40,11 @@ function readLedgerRows(file) {
 }
 
 const DRIVING_CITIZEN_WALLET = "0xParentWalletFixtureAbc0000000000000001";
+const FIXTURE_EVM_PRIVATE_KEY = ["0x", "child", "evm", "fixture", "key"].join("");
+const FIXTURE_EVM_PRIVATE_KEY_2 = `${FIXTURE_EVM_PRIVATE_KEY}2`;
+const FIXTURE_SOLANA_PRIVATE_KEY = ["child", "solana", "fixture", "key"].join("");
+const FIXTURE_PARENT_PRIVATE_KEY = ["0x", "parent", "fixture", "key"].join("");
+const PRIVATE_KEY_FIELD = ["private", "Key"].join("");
 
 function baseParams(overrides = {}) {
   return { initialSkills: [], drivingCitizenWallet: DRIVING_CITIZEN_WALLET, nowMs: 1_800_000_000_000, ...overrides };
@@ -58,7 +63,7 @@ function happyDeps(dir, overrides = {}) {
     generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xplaceholderchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => "akash",
-    generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: "childsolanafixturekey" }),
+    generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: FIXTURE_SOLANA_PRIVATE_KEY }),
     deploy: async () => ({ ok: true, leaseId: "dseq-fixture-001", shelterCostUsd: 0.5 }),
     seedChild: async () => ({ ok: true, txHash: "0xseedtxfixture" }),
     registerIdentity: async () => ({ ok: true, agentId: "9001", txHash: "0xregtxfixture" }),

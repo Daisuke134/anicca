@@ -33,7 +33,7 @@ chk_valid "'none:x' minimal reason -> accept"        "none:x"            0
 chk_valid "real URL -> accept"                       "https://www.instagram.com/reel/ABC123/" 0
 
 echo "--- Tier2: REQ-LV-003 evidence gate (empty/bare-none -> exit 1, REJECTED in log) ---"
-LOG="$HOME/.openclaw/logs/loop-report.log"
+LOG="$HOME/.local/state/life-manager/logs/loop-report.log"
 gate_case(){
   local name="$1" evidence="$2" want_rc="$3"
   : > "$LOG" 2>/dev/null || mkdir -p "$(dirname "$LOG")"

@@ -32,8 +32,8 @@ SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SELF_DIR="${SOL_TRADE_HC_SELF_DIR:-$SKILL_DIR/../../self}"
 TRACE="${SOL_TRADE_HC_TRACE:-$SKILL_DIR/../state/sol-trade.trace.jsonl}"
 MIN_RUN="${SOL_TRADE_HC_MIN_RUN:-20}"
-STATE_DIR="${SOL_TRADE_HC_STATE_DIR:-$HOME/.openclaw/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
-LOG="${SOL_TRADE_HC_LOG:-$HOME/.openclaw/logs/sol-trade-healthcheck.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+STATE_DIR="${SOL_TRADE_HC_STATE_DIR:-$HOME/.local/state/life-manager/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
+LOG="${SOL_TRADE_HC_LOG:-$HOME/.local/state/life-manager/logs/sol-trade-healthcheck.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 ESCALATE_EVERY_HRS="${SOL_TRADE_HC_ESCALATE_EVERY_HRS:-24}"
 
 if [ ! -f "$TRACE" ]; then

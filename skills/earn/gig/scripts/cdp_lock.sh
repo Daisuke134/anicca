@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 # cdp_lock.sh — shared advisory lock so the gig CORE (:27 pass) and the reality-VERIFIER
 # (:45 auditor spawn) never drive the :9222 daily-driver tab at the SAME time (gig L1-d).
 #
@@ -9,7 +12,7 @@
 # daily-driver-tab rule forbids): whoever holds the lock drives; the other waits or defers.
 #
 # Usage (source this file, then call the functions):
-#   source ~/anicca/skills/earn/gig/scripts/cdp_lock.sh
+#   source $LIFE_MANAGER_REPO/skills/earn/gig/scripts/cdp_lock.sh
 #   if cdp_lock_acquire "core" 120; then  # owner label, max wait secs
 #       ...drive :9222...
 #       cdp_lock_release

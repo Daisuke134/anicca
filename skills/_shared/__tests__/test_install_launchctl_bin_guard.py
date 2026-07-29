@@ -1,5 +1,5 @@
 """FIND-2-001 fix verify: LAUNCHCTL_BIN override is path-restricted to a temp
-root and logs to stderr when active. Reject /usr/local/, /opt/, /Users/<x>/bin
+root and logs to stderr when active. Reject unmanaged system/user bin folders.
 (any production-looking path)."""
 from __future__ import annotations
 import os

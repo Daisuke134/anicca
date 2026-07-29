@@ -18,9 +18,13 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$SANDBOX/x402-rs/target/release"
+mkdir -p "$TEST_ROOT/home/.anicca-signing/x402-facilitator"
 cp "$SOURCE_DIR/start.sh" "$SANDBOX/start.sh"
 cp "$SOURCE_DIR/tests/fake-facilitator.mjs" \
   "$SANDBOX/x402-rs/target/release/x402-facilitator"
+printf '# fixture lock\n' > "$SANDBOX/x402-rs/Cargo.lock"
+printf 'FACILITATOR_PRIVATE_KEY=fixture-only\nFACILITATOR_ADDRESS=0x0000000000000000000000000000000000000001\n' \
+  > "$TEST_ROOT/home/.anicca-signing/x402-facilitator/.env"
 chmod +x "$SANDBOX/start.sh" "$SANDBOX/x402-rs/target/release/x402-facilitator"
 
 jq -n \
@@ -31,6 +35,8 @@ cp "$SANDBOX/config.mainnet.json" "$SANDBOX/config.json"
 BEFORE_HASH="$(shasum -a 256 "$SANDBOX/config.mainnet.json" | awk '{print $1}')"
 
 FAKE_FACILITATOR_PID_FILE="$PID_FILE" \
+  HOME="$TEST_ROOT/home" \
+  X402_RS_ROOT="$SANDBOX/x402-rs" \
   GIG_CHAIN=base \
   PORT="$REQUESTED_PORT" \
   /bin/bash "$SANDBOX/start.sh" >/dev/null

@@ -8,7 +8,7 @@
 // endpoint (getTransactionReceipt / eth_getBlockByNumber("finalized") / eth_getLogs), reusing
 // record-earn.mjs's own already-hardened TRANSFER_TOPIC-match + exact-zero-padded-address-equality +
 // finalized-block-only pattern (lines 56, 65-72, 82-88 of
-// ~/anicca/skills/self/founder-loop/record-earn.mjs), NOT escrow.mjs (which contains no Transfer-log
+// __REPO_ROOT__/skills/self/founder-loop/record-earn.mjs), NOT escrow.mjs (which contains no Transfer-log
 // parsing at all). Rather than mocking a module, these tests spin up a tiny REAL local HTTP JSON-RPC
 // server (node:http) and pass its URL as `rpcUrl` — the SAME "real fetch/HTTP round-trip, just
 // pointed at localhost instead of mainnet.base.org" style already used to test record-earn.mjs's own

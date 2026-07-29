@@ -509,6 +509,8 @@ test("gemini: missing Live bidi or standard generateContent each fails nonzero",
 });
 
 test("evidence sanitizer redacts query values, phones, email, IDs, provider keys, and nested messages by value", () => {
+  const fakeStripeKey = ["sk", "live", "abcdefghijklmnop"].join("_");
+  const fakeProviderToken = ["tg", "abcdefghijklmnop"].join("_");
   const raw = {
     note: "https://example.test/path?token=query-secret&chat_id=99887766",
     opaquePanel: "https://example.test/panel/opaquePanelTokenAbcd1234",
