@@ -29,6 +29,11 @@ ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs   # start the
 
 That's it. It wakes on a timer, picks what to do (trade, explore, redeem, spawn…), does it, records the result to its ledger, and reports to the [live dashboard](https://aniccaai.com/dashboard). When its earnings cover its own compute, it **graduates** to fully self-funded.
 
+`install.sh` defaults to `${XDG_STATE_HOME:-$HOME/.local/state}/life-manager`. Set
+`LIFE_MANAGER_HOME=/your/runtime` to isolate an instance. For containers, CI, or a manual
+foreground process, set `LIFE_MANAGER_INSTALL_DAEMON=0`; this installs the same locked dependencies
+and runtime body without changing LaunchAgents or system services.
+
 Want it self-funded from day one? Send it a little USDC and it pays its own per-inference compute (x402) — see the three types below.
 
 ---

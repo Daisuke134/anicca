@@ -40,6 +40,11 @@ cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm 
 
 これで 2 つが起動します。(1) `http://127.0.0.1:8402/v1` の OpenAI 互換 **自己決済コンピュートプロキシ**（自前 wallet＝自動生成・人間の鍵では決してない、から毎推論を USDC で自己決済）と、(2) **Life Managerのループ**（[`runtime/loop/`](runtime/loop/)＝think → act → observe → persist の ReAct ループ＋heartbeat）。ループは毎 wake、ClawRouter の **`auto`** ルーター（モデルをハードコードせず、ClawRouter がツール呼び出しを検知して tool-calling 可能なモデルへ自動ルート＋wallet から課金）でプロキシに問い合わせ、ツール（例：`earn` スキル）を選んで実行し、`$ANICCA_HOME/state/ledger.jsonl` に 1 行追記します。wallet が空なら **無料モデル（$0）**、USDC を送れば frontier モデル。
 
+`install.sh` の runtime 既定値は `${XDG_STATE_HOME:-$HOME/.local/state}/life-manager`
+です。複数 instance は `LIFE_MANAGER_HOME=/任意のruntime` で分離できます。container・CI・
+foreground 実行では `LIFE_MANAGER_INSTALL_DAEMON=0` を指定すると、lockfile 固定の依存と
+同じ runtime body を導入しつつ LaunchAgent / system service を変更しません。
+
 > 別の頭脳を使いたい場合は `ANICCA_BRAIN=claude-p` で同じループを Claude Code（`claude -p`、例：Sonnet）で駆動できます（既存ハーネスの上でLife Managerを動かす用途）。既定は `proxy`（自己資金の道）。他の OpenAI 互換ループも `OPENAI_BASE_URL` に向ければ動きます。
 
 Life Managerが実行する各能力は [`skills/registry.json`](skills/registry.json) にスロットとして宣言され、`install.sh` が `~/.anicca/skills/` に同期します。予約済みスロットを有効化するには、実装をそのディレクトリに置いて `status` を `live` にするだけ（`install.sh` の編集は不要）。
