@@ -228,6 +228,37 @@ class LocalSetupTests(unittest.TestCase):
         self.assertFalse((self.home / "Library" / "LaunchAgents").exists())
         self.assertFalse((self.config / "systemd" / "user").exists())
 
+    def test_installer_preserves_profile_when_source_is_active_destination(self):
+        self._write_executable(
+            "codex",
+            'test "$1" = "login" && test "$2" = "status"',
+        )
+        active = self.config / "anicca" / "job-search" / "profile.json"
+        active.parent.mkdir(parents=True)
+        active.write_bytes(self.profile.read_bytes())
+        active.chmod(0o600)
+        before = active.read_bytes()
+
+        result = subprocess.run(
+            [
+                "/bin/zsh",
+                str(APP_ROOT / "scripts" / "install-local.sh"),
+                "--profile",
+                str(active),
+                "--provider",
+                "codex",
+                "--scheduler",
+                "none",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=self._env(),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(active.read_bytes(), before)
+
 
 if __name__ == "__main__":
     unittest.main()
