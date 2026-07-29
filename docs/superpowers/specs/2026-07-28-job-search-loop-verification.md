@@ -43,16 +43,22 @@ fresh daily/inbox evidence.
 | Check | Current evidence |
 |---|---|
 | Legacy behavior baseline | 107 tests pass in 4.916 seconds from legacy commit `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987` |
-| Canonical job runtime | 112 tests pass in 3.273 seconds |
-| Canonical model runner | 7 tests pass in 0.465 seconds |
+| Canonical job runtime | 114 tests pass after adding live-cutover regression coverage |
+| Canonical model runner | 7 tests pass |
 | Path behavior | Temporary XDG roots and launchd destination resolve only inside the Life Manager checkout |
 | Private env behavior | The loader reads only the requested key and does not execute unrelated dotenv lines |
 | Runner configuration | Four job-loop task classes; no personal account, absolute user path, candidate profile, or gig route |
 | Legacy source scan | No legacy checkout or private Gmail path in `apps/job-search-loop` or `runtime/agent-runner` |
-| Live cutover | Pending canonical commit and shadow healthcheck |
+| Live cutover | Both installed programs resolve under the Life Manager checkout; daily is 08:30 JST, inbox is 900 seconds, both last exit codes are 0 |
 
 The first canonical bootstrap found one scheduler-ordering defect without creating
 an application side effect: the daily runner returned `EX_TEMPFAIL` after its
 durable token ledger reported `budget_blocked`. Two integration tests reproduce
 the failure. The repaired contract exits zero for that honest terminal state and
 also proves a full daily quota never initializes the browser or model.
+
+The post-repair forced passes preserve the application counts at
+`submitted=2, not_submitted=1` and the Telegram sent count at 7. Ledger,
+interview-prep, and Telegram-outbox integrity are all `ok`. The redacted machine
+receipt is
+`docs/evidence/job-search-loop/2026-07-29-canonical-migration.json`.
