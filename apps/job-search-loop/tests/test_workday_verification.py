@@ -220,6 +220,11 @@ class WorkdayVerificationTests(unittest.TestCase):
         self.assertIn("mark_navigation_started", prompt)
         self.assertIn("verifications", schema["required"])
         self.assertIn("verifications", schema["properties"])
+        self.assertIn("processed_thread_ids", schema["required"])
+        self.assertTrue(
+            schema["properties"]["processed_thread_ids"]["uniqueItems"]
+        )
+        self.assertIn("processed_thread_ids", prompt)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "task": "JOB-ATS-RESILIENCE-10G",
+  "status": "implementation_verified_pending_ci",
+  "observed_at": "2026-07-29T13:22:19Z",
+  "branch": "feat/job-inbox-partial-ack-10g",
+  "red_commit": "97791a20e",
+  "implementation_commit": "9f67eebfe",
+  "pull_request": {
+    "number": null,
+    "url": null,
+    "ci_run": null,
+    "merge_commit": null
+  },
+  "red_test": {
+    "command": "PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_operations.py apps/job-search-loop/tests/test_launchd.py apps/job-search-loop/tests/test_workday_verification.py -v",
+    "result": "failed as expected",
+    "failures": [
+      "mark_processed_threads was absent",
+      "run-inbox did not resolve the fresh runner result path",
+      "result schema did not require processed_thread_ids"
+    ]
+  },
+  "tests": {
+    "focused": {
+      "ran": 19,
+      "failures": 0
+    },
+    "job_loop": {
+      "ran": 165,
+      "failures": 0
+    },
+    "agent_runner": {
+      "ran": 9,
+      "failures": 0
+    },
+    "shell_syntax": "pass",
+    "schema_json": "pass",
+    "python_compile": "pass",
+    "git_diff_check": "pass"
+  },
+  "contract": {
+    "result_field": "processed_thread_ids",
+    "ids_unique": true,
+    "ids_must_match_pattern": "^[A-Za-z0-9_-]+$",
+    "ids_must_be_scanned_candidates": true,
+    "processed_threads_must_equal_id_count": true,
+    "unknown_id_acknowledged": false,
+    "duplicate_id_acknowledged": false,
+    "unprocessed_candidate_acknowledged": false,
+    "missing_or_invalid_result_acknowledged": false,
+    "seen_state_write": "atomic mode 0600",
+    "result_path_scope": "current evidence directory only"
+  },
+  "failure_recovery": {
+    "partial_success": "Only durable processed IDs are marked seen; omitted candidates reappear on the next 15-minute scan.",
+    "runner_failure": "The shell exits before acknowledgement.",
+    "missing_result": "The shell exits before acknowledgement.",
+    "transient_tool_failure": "The executor omits that thread ID, so it is retried.",
+    "terminal_safety_block": "The executor may include the ID only after the block/report is durable."
+  },
+  "research_transport": {
+    "queries": [
+      "SQS partial batch response retry only failed messages official",
+      "acknowledge message only after successful processing official pubsub",
+      "部分バッチ応答 失敗 メッセージ 再試行 SQS Lambda"
+    ],
+    "firecrawl_result": "agent-owned configured token rejected as invalid",
+    "fallback": "direct read-only retrieval of official documentation and upstream source"
+  },
+  "sources": [
+    {
+      "name": "AWS Lambda partial batch responses",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-errorhandling.html",
+      "quote": "return partial batch responses to make only the failed messages visible again"
+    },
+    {
+      "name": "Google Pub/Sub exactly-once delivery",
+      "url": "https://cloud.google.com/pubsub/docs/exactly-once-delivery",
+      "quote": "No redelivery occurs after the message is successfully acknowledged."
+    },
+    {
+      "name": "RabbitMQ Reliability Guide",
+      "url": "https://www.rabbitmq.com/docs/reliability",
+      "quote": "A consuming application should not acknowledge messages until it has done whatever it needs to do"
+    }
+  ],
+  "remaining_order_10_gate": "Receive and process a new real Workday verification email, reach a claim-ready application, and obtain a confirmed submission without inferred legal answers."
+}
