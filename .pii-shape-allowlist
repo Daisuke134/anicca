@@ -12,6 +12,5 @@
 9bbce9e4bd020c7ea376b4a7c5bfb1ebaf82d89e922645723dc7281423ff0d07 # us_e164 apps/life-manager/lib/daily-preflight.test.js
 a4b85fb7aa3550037d03f8dc316c6af8dbab0bb2997c8712c4b413a0ba4e3721 # jp_e164 apps/life-manager/eval/run-context-onboarding-discovery-eval.js
 d38e7a4ff1fbfe108146c0100a00a7ec0296c07625e6f4ca1024c82eaaf5b65e # jp_e164 apps/life-manager/scripts/smoke-panel-ui-fixture.js
-d973e597f5d75fb6ae9ddd6a0c3f77ca6e450e2c82f0fb6ecb368c3deac13627 # us_e164 apps/life-manager/lib/telegram-onboard.test.js
 fc924bc33f464c09e48de77a34236b468512b477fb54b7f0cdc0773db91a4203 # jp_e164 apps/life-manager/test/inngest.test.js
 fe32de0a38126bab0ccde01b40c940f69037b51f6ffc3db39f5d278e05441552 # jp_e164 apps/life-manager/lib/telegram-onboard.test.js
