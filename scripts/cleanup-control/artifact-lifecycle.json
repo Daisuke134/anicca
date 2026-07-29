@@ -281,6 +281,32 @@
       }
     },
     {
+      "id": "chrome-on-device-model-cache",
+      "path": "$HOME/Library/Application Support/Google/Chrome/OptGuideOnDeviceModel",
+      "owner": "browser-fleet",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      }
+    },
+    {
+      "id": "google-updater-download-cache",
+      "path": "$HOME/Library/Application Support/Google/GoogleUpdater/crx_cache",
+      "owner": "browser-fleet",
+      "class": "regenerable_output",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "verified_regenerable_remove",
+        "proof_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      }
+    },
+    {
       "id": "kickama-cargo-target",
       "path": "$HOME/.openclaw/workspace/kickama-manifest-wizard/backend/target",
       "owner": "cargo",

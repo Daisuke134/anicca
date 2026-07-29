@@ -76,6 +76,38 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "kind": "verified_regenerable_remove",
         "proof_path": str(Path.home() / ".local/pipx/venvs/camoufox/bin/camoufox"),
     }
+    assert by_id["chrome-on-device-model-cache"] == {
+        "id": "chrome-on-device-model-cache",
+        "path": str(
+            Path.home()
+            / "Library/Application Support/Google/Chrome/OptGuideOnDeviceModel"
+        ),
+        "owner": "browser-fleet",
+        "class": "regenerable_output",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "verified_regenerable_remove",
+            "proof_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        },
+    }
+    assert by_id["google-updater-download-cache"] == {
+        "id": "google-updater-download-cache",
+        "path": str(
+            Path.home()
+            / "Library/Application Support/Google/GoogleUpdater/crx_cache"
+        ),
+        "owner": "browser-fleet",
+        "class": "regenerable_output",
+        "ttl_seconds": None,
+        "quota_bytes": 0,
+        "lease": None,
+        "finalizer": {
+            "kind": "verified_regenerable_remove",
+            "proof_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        },
+    }
     assert by_id["orca-codex-marketplace-staging"] == {
         "id": "orca-codex-marketplace-staging",
         "path": str(
