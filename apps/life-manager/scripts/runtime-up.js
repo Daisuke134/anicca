@@ -376,6 +376,52 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       pythonBin: String(env.PYTHON_BIN || "python3"),
     };
   }
+  if (capabilities.includes("marketing.video.generate")) {
+    const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+    const query = dependencies.query;
+    if (typeof query !== "function") {
+      throw new Error("marketing video generation receipt store is unavailable");
+    }
+    servicesByAdapter["marketing-video-generation"] = {
+      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+      historyProvider: {
+        async list(request) {
+          if (
+            !request
+            || request.tenantId !== tenantId
+            || !request.productId
+            || !request.formatId
+            || !request.locale
+          ) {
+            throw new Error("marketing video generation history scope mismatch");
+          }
+          const result = await query(`
+            SELECT r.receipt
+            FROM public.lm_runtime_job_receipts r
+            JOIN public.lm_runtime_jobs j
+              ON j.job_id = r.job_id
+              AND j.tenant_id = r.tenant_id
+            WHERE r.tenant_id = $1
+              AND j.capability = 'marketing.video.generate'
+              AND r.outcome = 'completed'
+              AND r.receipt->>'kind' = 'marketing_video_artifact'
+              AND r.receipt->>'product_id' = $2
+              AND r.receipt->>'format_id' = $3
+              AND r.receipt->>'locale' = $4
+            ORDER BY r.created_at ASC
+            LIMIT 500
+          `, [
+            tenantId,
+            request.productId,
+            request.formatId,
+            request.locale,
+          ]);
+          return result.rows.map((row) => row.receipt);
+        },
+      },
+      now: dependencies.now || (() => new Date().toISOString()),
+    };
+  }
   if (capabilities.includes("marketing.observation.collect")) {
     const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
     const query = dependencies.query;

@@ -240,6 +240,12 @@ async function resolveReconciliation(input, opts = {}) {
   );
 }
 
+async function closeRuntimeJobStore() {
+  const pool = defaultPool;
+  defaultPool = undefined;
+  if (pool) await pool.end();
+}
+
 module.exports = {
   buildRuntimeJob,
   enqueueJob,
@@ -248,4 +254,5 @@ module.exports = {
   completeJob,
   failJob,
   resolveReconciliation,
+  closeRuntimeJobStore,
 };

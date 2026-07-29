@@ -23,6 +23,9 @@ const {
 const {
   CAPABILITY: MARKETING_OBSERVATION_CAPABILITY,
 } = require("./marketing-observation-adapter.js");
+const {
+  CAPABILITY: MARKETING_VIDEO_GENERATION_CAPABILITY,
+} = require("./marketing-video-generation-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -142,7 +145,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 4);
+  assert.equal(manifest.adapters.length, 5);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -159,6 +162,14 @@ test("committed manifest is portable and registers the financial report first", 
   assert.equal(
     manifest.adapters[3].adapter_id,
     "marketing-platform-observation",
+  );
+  assert.equal(
+    manifest.adapters[4].capability,
+    MARKETING_VIDEO_GENERATION_CAPABILITY,
+  );
+  assert.equal(
+    manifest.adapters[4].adapter_id,
+    "marketing-video-generation",
   );
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
@@ -206,6 +217,27 @@ test("Life Manager daily marketing inventory row is owned without disabling its 
   assert.equal(inventory.summary.unclassified, unclassified);
 });
 
+test("Honne JA ReelClaw is assigned to the shared video adapter without cutting over launchd", () => {
+  const inventory = JSON.parse(fs.readFileSync(INVENTORY_PATH, "utf8"));
+  const row = inventory.jobs.find(
+    (job) => job.legacy_id === "ai.anicca.reelclaw-honne-ja",
+  );
+  const unclassified = inventory.jobs.filter(
+    (job) => job.disposition === "unclassified",
+  ).length;
+
+  assert.equal(row.disposition, "migrate");
+  assert.equal(row.owner, "life-manager-runtime");
+  assert.equal(row.target_adapter, "marketing-video-generation");
+  assert.deepEqual(row.supporting_adapters, [
+    "marketing-platform-observation",
+  ]);
+  assert.equal(row.effect_class, "publish");
+  assert.match(row.verify_command, /test:runtime-adapters/);
+  assert.match(row.rollback_action, /Keep .* loaded .* seven expected/i);
+  assert.equal(inventory.summary.unclassified, unclassified);
+});
+
 test("configured registry loads the committed financial adapter implementation", () => {
   const registry = createConfiguredLoopAdapterRegistry({
     appRoot: path.join(__dirname, ".."),
@@ -249,6 +281,17 @@ test("configured registry loads the portable marketing observation adapter", () 
     appRoot: path.join(__dirname, ".."),
   });
   const adapter = registry.getByCapability(MARKETING_OBSERVATION_CAPABILITY);
+
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry loads the generic marketing video generation adapter", () => {
+  const registry = createConfiguredLoopAdapterRegistry({
+    appRoot: path.join(__dirname, ".."),
+  });
+  const adapter = registry.getByCapability(MARKETING_VIDEO_GENERATION_CAPABILITY);
 
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");
