@@ -40,11 +40,12 @@ and `unittest`.
 
 ## Task 2 — GREEN: result-bound acknowledgement
 
-- [ ] Implement strict candidate/result validation and atomic partial mark.
-- [ ] Add `processed_thread_ids` to prompt and result schema.
-- [ ] Resolve only the current runner result in `run-inbox.sh`.
-- [ ] Keep runner failure and missing result fail-closed.
-- [ ] Run focused and full suites.
+- [x] Implement strict candidate/result validation and atomic partial mark.
+- [x] Add `processed_thread_ids` to prompt and result schema.
+- [x] Resolve only the current runner result in `run-inbox.sh`.
+- [x] Keep runner failure and missing result fail-closed.
+- [x] Run focused and full suites: 19 focused, 165 job-loop, and 9 runner
+  tests pass; shell syntax, schema JSON, Python compile, and diff checks pass.
 
 ## Task 3 — GitHub and live reflection
 
