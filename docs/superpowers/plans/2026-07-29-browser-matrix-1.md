@@ -241,23 +241,34 @@ git commit -m "test(browser): add durable production action matrix"
 
 ### Task 3a: Correct verification ownership before live actions
 
-- [ ] **Step 1: Write RED ownership tests**
+- [x] **Step 1: Write RED ownership tests**
 
 Require production deps to expose enqueue/read/poll boundaries only. Assert no
 `claimBrowserJobById`, `runNextBrowserJob`, driver, or executor call is possible
 from the verifier.
 
-- [ ] **Step 2: Replace direct execution with bounded terminal polling**
+- [x] **Step 2: Replace direct execution with bounded terminal polling**
 
 After enqueue, poll durable rows until all three are terminal or the bounded
 deadline expires. The already-running production browser loop is the only
 component allowed to claim and execute them.
 
-- [ ] **Step 3: Verify and deploy**
+- [x] **Step 3: Verify and deploy**
 
 Run the focused browser suite, full app suite, OSS boundary, required security
 CI, merge, and verify the exact Railway deployment SHA and
 `browser jobs ON (Railway private Steel)` boot log before Task 4.
+
+Evidence (2026-07-30): PR #1361 merged as canonical main
+`569cf748e23d3a1de880791a3f6ad79ed621f0a5`. RED first (8 fail/1 pass), then
+harness tests 9/9, `test:browser-auth` 47/47, full `npm test` chain exit 0,
+OSS boundary PASS, security CI 7/7. Railway `life-call` deployment
+`7ea230f6-f8f4-41f6-8310-b6ae324d1d52` `SUCCESS` at the exact merge SHA with
+boot log `[life-call] browser jobs ON (Railway private Steel)`. The verifier
+module no longer references `browser-job-runtime`, `claimBrowserJobById`, or
+any executor; deps are `durableQueue.enqueue`/`durableQueue.read` plus an
+injectable clock, with poll bounds
+`BROWSER_MATRIX_POLL_TIMEOUT_MS`/`BROWSER_MATRIX_POLL_INTERVAL_MS`.
 
 ### Task 4: Execute the three real provider actions in production
 
