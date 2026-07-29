@@ -31,7 +31,10 @@ from telegram.ext import (
     filters,
 )
 
-ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(Path.home() / ".openclaw")))
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
 ENV_PATH = ANICCA_HOME / ".env"
 PROFILE_PATH = ANICCA_HOME / "identity" / "profile.json"
 ONBOARDING_STATE_PATH = ANICCA_HOME / "state" / "onboarding.json"

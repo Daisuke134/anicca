@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SOURCE_REPO="${LIFE_MANAGER_VERIFY_REPO:-https://github.com/Daisuke134/life-manager.git}"
-REF="${LIFE_MANAGER_VERIFY_REF:-feature/oss-merge-1}"
+REF="${LIFE_MANAGER_VERIFY_REF:-main}"
 VERIFY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/life-manager-fresh-clone.XXXXXX")"
 CLONE="$VERIFY_ROOT/checkout"
 RUNTIME="$VERIFY_ROOT/runtime"

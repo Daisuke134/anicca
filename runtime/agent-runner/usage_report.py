@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render per-loop daily provider usage from the append-only runner ledger."""
+"""Render Life Manager per-loop usage from the append-only runner ledger."""
 
 from __future__ import annotations
 

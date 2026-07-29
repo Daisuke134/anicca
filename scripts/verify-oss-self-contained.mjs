@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   readFileSync,
@@ -12,9 +13,12 @@ import { pathToFileURL } from "node:url";
 
 const REQUIRED_SOURCES = [
   "life-manager",
+  "life-manager-v0",
+  "anicca.ai",
   "anicca-products",
   "profitable-claude",
   "anicca-dais",
+  "local-source-folders",
 ];
 
 const ACTIVE_ROOTS = [
@@ -71,11 +75,11 @@ function isVerifiedVendorPath(path) {
   return VERIFIED_VENDOR_ROOTS.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
-function isTestFixturePath(path) {
-  const basename = path.slice(path.lastIndexOf("/") + 1);
-  return /(?:^|[._-])tests?(?:[._-]|$)/iu.test(basename)
-    || /(^|\/)(?:__tests__|test|tests|fixtures)(\/|$)/u.test(path);
-}
+const LEGACY_LITERAL_FIXTURES = new Set([
+  "apps/life-manager/lib/runtime-paths.test.js",
+  "apps/life-manager/scripts/inventory-legacy-jobs.test.js",
+  "skills/earn/hl-trade/tests/test_reconcile.py",
+]);
 
 function isWithinRoot(root, candidate) {
   const rel = relative(root, candidate);
@@ -90,6 +94,7 @@ function sourceRootViolation(text) {
     /(?:~|\$HOME)\/profitable-claude(?=[/}\s"'`]|$)/u,
     /(?:~|\$HOME)\/anicca-project(?=[/}\s"'`]|$)/u,
     /(?:~|\$HOME)\/\.openclaw(?=[/}\s"'`]|$)/u,
+    /Path\.home\(\)\s*\/\s*["']\.openclaw["']/u,
     /\/opt\/life-manager(?=[/}\s"'`]|$)/u,
   ];
   return forbidden.some((pattern) => pattern.test(text));
@@ -121,7 +126,11 @@ function generatedArtifact(path) {
   return GENERATED_EXTENSIONS.has(extension);
 }
 
-function readManifest(root, violations) {
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function readManifest(root, violations, entries) {
   const manifestPath = "docs/manifests/oss-merge-1-sources.json";
   const absolute = resolve(root, manifestPath);
   if (!existsSync(absolute)) {
@@ -143,6 +152,56 @@ function readManifest(root, violations) {
   for (const id of REQUIRED_SOURCES) {
     if (!ids.has(id)) {
       violations.push({ code: "manifest_source_missing", path: id, detail: "source not classified" });
+    }
+  }
+  for (const source of Array.isArray(manifest.sources) ? manifest.sources : []) {
+    const absorbedFiles = Array.isArray(source && source.absorbed_files) ? source.absorbed_files : [];
+    const absorbedRoots = Array.isArray(source && source.absorbed_roots) ? source.absorbed_roots : [];
+    if (source && source.disposition === "absorbed" && absorbedFiles.length === 0) {
+      violations.push({
+        code: "manifest_mapping_missing",
+        path: String(source.id || "unknown"),
+        detail: "absorbed source has no target mapping",
+      });
+    }
+    for (const mapping of absorbedFiles) {
+      const target = mapping && typeof mapping.target === "string" ? mapping.target : "";
+      const absoluteTarget = resolve(root, target);
+      if (!target || !isWithinRoot(root, absoluteTarget) || !existsSync(absoluteTarget)) {
+        violations.push({
+          code: "manifest_target_missing",
+          path: target || String(source.id || "unknown"),
+          detail: "absorbed target is absent or outside checkout",
+        });
+        continue;
+      }
+      if (!/^[0-9a-f]{64}$/u.test(String(mapping.sha256 || ""))
+        || sha256(readFileSync(absoluteTarget)) !== mapping.sha256) {
+        violations.push({
+          code: "manifest_hash_mismatch",
+          path: target,
+          detail: "absorbed target differs from classified digest",
+        });
+      }
+    }
+    for (const mapping of absorbedRoots) {
+      const target = mapping && typeof mapping.target === "string" ? mapping.target : "";
+      const rootEntries = entries
+        .filter((entry) => entry.mode !== "120000" && entry.mode !== "160000")
+        .filter((entry) => entry.path === target || entry.path.startsWith(`${target}/`))
+        .filter((entry) => existsSync(resolve(root, entry.path)))
+        .sort((left, right) => left.path.localeCompare(right.path));
+      const inventory = rootEntries.map((entry) =>
+        `${sha256(readFileSync(resolve(root, entry.path)))}  ${entry.path}\n`).join("");
+      if (!target || rootEntries.length !== Number(mapping.files)
+        || !/^[0-9a-f]{64}$/u.test(String(mapping.inventory_sha256 || ""))
+        || sha256(inventory) !== mapping.inventory_sha256) {
+        violations.push({
+          code: "manifest_inventory_mismatch",
+          path: target || String(source.id || "unknown"),
+          detail: "absorbed root differs from classified inventory",
+        });
+      }
     }
   }
 }
@@ -184,7 +243,7 @@ export function verifyRepository(inputRoot) {
     const bytes = readFileSync(absolute);
     const isFirstPartyText =
       !isVerifiedVendorPath(entry.path)
-      && !isTestFixturePath(entry.path)
+      && !LEGACY_LITERAL_FIXTURES.has(entry.path)
       && looksTextual(entry.path, bytes);
     const text = isFirstPartyText ? bytes.toString("utf8") : "";
     if (isFirstPartyText && sourceRootViolation(text)) {
@@ -203,12 +262,20 @@ export function verifyRepository(inputRoot) {
     }
   }
 
-  const runnerPath = "skills/agent-runner/agent_runner.py";
+  const runnerPath = "runtime/agent-runner/agent_runner.py";
   if (!existsSync(resolve(root, runnerPath))) {
     violations.push({ code: "required_file_missing", path: runnerPath, detail: "canonical runner absent" });
   }
+  const duplicateRunnerPath = "skills/agent-runner/agent_runner.py";
+  if (existsSync(resolve(root, duplicateRunnerPath))) {
+    violations.push({
+      code: "duplicate_runner",
+      path: duplicateRunnerPath,
+      detail: "second agent runner diverges from canonical runtime engine",
+    });
+  }
 
-  readManifest(root, violations);
+  readManifest(root, violations, entries);
   violations.sort((left, right) =>
     left.path.localeCompare(right.path) || left.code.localeCompare(right.code));
   return { ok: violations.length === 0, violations };

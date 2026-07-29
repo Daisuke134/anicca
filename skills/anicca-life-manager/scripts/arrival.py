@@ -19,8 +19,14 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
-sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "anicca-life-manager" / "scripts"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[2]
+LIFE_MANAGER_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
+))
+ANICCA_HOME = Path(os.environ.get("ANICCA_HOME", str(LIFE_MANAGER_HOME)))
+sys.path.insert(0, str(REPO_ROOT / "skills" / "_shared"))
+sys.path.insert(0, str(SCRIPT_DIR))
 import anicca_profile as prof  # noqa: E402
 
 # Reuse the same resolver + radius logic as the lateness pipeline.
@@ -30,9 +36,9 @@ from lateness_check import (    # noqa: E402
 )
 
 JST = timezone(timedelta(hours=9))
-HOME = Path.home() / ".openclaw"
-ENV = (HOME / ".env").read_text()
-STATE_FILE = Path(__file__).resolve().parent.parent / "state" / "notified.json"
+ENV_PATH = Path(os.environ.get("LIFE_MANAGER_ENV_FILE", str(ANICCA_HOME / ".env")))
+ENV = ENV_PATH.read_text() if ENV_PATH.is_file() else ""
+STATE_FILE = ANICCA_HOME / "state" / "arrival" / "notified.json"
 HORIZON_HOURS = int(os.environ.get("ARRIVAL_HORIZON_HOURS", "4"))
 STATE_RETENTION_DAYS = int(os.environ.get("ARRIVAL_STATE_RETENTION_DAYS", "30"))
 
