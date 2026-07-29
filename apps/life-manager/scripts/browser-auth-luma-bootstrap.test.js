@@ -24,6 +24,7 @@ function fixture(overrides = {}) {
     sessionId: "steel-session-1",
     async requestMagicLink(email) {
       calls.push(["requestMagicLink", email]);
+      if (overrides.requestError) throw overrides.requestError;
     },
     async openMagicLink(link) {
       calls.push(["openMagicLink", link]);
@@ -135,6 +136,25 @@ test("unsafe link or missing authenticated marker fails closed without saving an
     assert.equal(calls.some(([name]) => name === "saveContext"), false);
     assert.deepEqual(calls.at(-1), ["release"]);
   }
+});
+
+test("bootstrap exposes only a fixed failure stage and still releases the cloud browser", async () => {
+  const { calls, deps } = fixture({
+    requestError: new Error("provider response contained private diagnostics"),
+  });
+
+  const failure = await runLumaBootstrap({ env: ENV, deps }).then(
+    () => null,
+    (error) => error,
+  );
+
+  assert.equal(failure.message, "Luma authentication unavailable");
+  assert.equal(failure.code, "SUBMIT_EMAIL");
+  assert.doesNotMatch(
+    `${failure.message} ${failure.code}`,
+    /private diagnostics|agent@example|browser-agent@example/,
+  );
+  assert.deepEqual(calls.at(-1), ["release"]);
 });
 
 test("missing runtime identity fails before opening Steel", async () => {
