@@ -177,6 +177,67 @@ fails closed and does not silently switch providers.
 - `submit_unknown` is never automatically retried. Inbox confirmation or authoritative
   ATS reread may resolve it.
 
+### 4.4 ATS resilience contract
+
+The first ATS resilience increment is `JOB-ATS-RESILIENCE-10A`. It fixes the
+observed failure class where an Ashby page committed and rendered its application
+surface, but waiting for `domcontentloaded` timed out and the loop stopped before
+inspecting fields. A read-only probe against the existing CDP owner confirmed that
+both the BJAK Ashby application and a Tokyo Workday posting expose their required
+user-facing controls after navigation commit.
+
+| Decision | Source | Core quote |
+|---|---|---|
+| Navigate to commit, then wait for a semantic application surface | [Playwright actionability](https://playwright.dev/docs/actionability) | “It auto-waits for all the relevant checks to pass and only then performs the requested action.” |
+| Prefer role, label, and visible-text evidence over generated CSS classes | [Playwright locators](https://playwright.dev/docs/locators) | “To make tests resilient, we recommend prioritizing user-facing attributes and explicit contracts such as page.getByRole().” |
+| Inspect every attached frame while keeping main-frame controls first | [Playwright frames](https://playwright.dev/docs/frames) | “Each page has a main frame and page-level interactions … are assumed to operate in the main frame.” |
+
+Three approaches were considered:
+
+| Approach | Decision | Reason |
+|---|---|---|
+| Deterministic ATS classifier + snapshot evaluator + replay fixtures | Adopt | Converts browser observations into a testable contract without owning the submit side effect |
+| Prompt-only navigation advice | Reject | Cannot prove the regression would be caught or that the agent used the advice |
+| Fully hard-coded form filler per ATS | Defer | Brittle before legal answers are complete and before real per-adapter fixtures establish the stable surface |
+
+`job_search_loop.ats` owns only provider detection and pre-submit readiness. It
+accepts a versioned, redacted snapshot containing navigation-commit state, frame
+URLs, and user-facing control metadata. It returns:
+
+```text
+provider: ashby | workday | generic
+ready: boolean
+surface: ashby_application | workday_job | workday_application | generic_application | none
+frame_index: integer | null
+wait_until: commit
+blockers: string[]
+```
+
+The evaluator never clicks, fills, uploads, claims a ledger slot, or interprets a
+CAPTCHA. An invisible reCAPTCHA frame is recorded but is not itself proof of a
+visible challenge. The browser executor must persist the snapshot mode 0600, run the
+evaluator, and continue only when `ready=true`. A visible CAPTCHA or identity
+challenge still follows the existing fail-closed policy.
+
+Ashby readiness requires the main-frame application controls, including email,
+resume upload, and `Submit Application`. Workday readiness accepts either a job
+surface with an `Apply` control or the post-click application surface. A committed
+page with no recognized surface remains `not_submitted`; a click with ambiguous
+outcome remains `submit_unknown`.
+
+`JOB-ATS-RESILIENCE-10A` is complete when:
+
+1. sanitized Ashby and Workday snapshots replay through the same production
+   evaluator;
+2. the former Ashby timeout shape (`navigation_committed=true`) evaluates ready
+   without requiring `domcontentloaded`;
+3. missing controls and malformed snapshots fail closed;
+4. the daily browser prompt requires the evaluator before a submission claim;
+5. the full job-loop suite remains green.
+
+Order 10 remains `in_progress` after 10A. It becomes `completed` only after one real,
+confirmed application per adapter is recorded without inferred legal answers.
+
 ## 5. State and side-effect contracts
 
 ### 5.1 Application state machine
@@ -407,7 +468,7 @@ row; its status changes in the same commit as implementation evidence.
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | ATS resilience for Ashby, Workday and other blocked forms | `pending` | Replay fixtures plus one real confirmed application per adapter |
+| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | `JOB-ATS-RESILIENCE-10A`: deterministic commit-first readiness contract and sanitized Ashby/Workday replay fixtures; order completes only after one real confirmed application per adapter |
 | 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
 | 12 | Portable local OSS distribution | `pending` | Remove Dais-specific absolute paths; add BYO provider authentication, profile setup, macOS/Linux scheduling, private-state defaults, and an end-to-end install test |
 | 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |
