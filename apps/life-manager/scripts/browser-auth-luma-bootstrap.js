@@ -213,7 +213,7 @@ async function requestLumaEmailLogin(page, email) {
   const input = page.locator('input[type="email"]').first();
   await input.waitFor({ state: "visible", timeout: 15_000 });
   await input.fill(email);
-  const submit = page.getByRole("button", { name: /continue with email/i }).first();
+  const submit = page.locator('button[type="submit"]').first();
   await submit.click({ timeout: 15_000 });
   if (typeof page.waitForTimeout === "function") await page.waitForTimeout(2_000);
   return true;
