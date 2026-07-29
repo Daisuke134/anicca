@@ -520,6 +520,7 @@ if [ "$TEST_MODE" -eq 0 ]; then
       --cache-root "$HOME_DIR/.npm" \
       --cache-root "$HOME_DIR/.cargo/registry" \
       --cache-root "$HOME_DIR/.cargo/git" \
+      --cache-root "$HOME_DIR/.cache" \
       --min-cache-bytes 268435456 2>>"$LOG")
     RUNTIME_MANIFEST_RC=$?
     if [ "$RUNTIME_MANIFEST_RC" -eq 0 ] && [ -s "$CLEANUP_RUNTIME_MANIFEST" ]; then
