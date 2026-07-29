@@ -165,6 +165,10 @@ class AssessmentWorkflowTests(unittest.TestCase):
                 store.claim_submission(assessment_id)
             store.close()
 
+    @unittest.skipUnless(
+        Path("/usr/bin/sandbox-exec").is_file(),
+        "macOS sandbox-exec is required",
+    )
     def test_isolated_runner_writes_hashed_private_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -189,6 +193,10 @@ class AssessmentWorkflowTests(unittest.TestCase):
             self.assertEqual(output.read_text(encoding="utf-8").strip(), "verified fixture")
             store.close()
 
+    @unittest.skipUnless(
+        Path("/usr/bin/sandbox-exec").is_file(),
+        "macOS sandbox-exec is required",
+    )
     def test_isolated_runner_denies_home_secret_and_network(self):
         private_parent = Path.home() / ".local/state/anicca/job-search"
         private_parent.mkdir(parents=True, exist_ok=True, mode=0o700)
