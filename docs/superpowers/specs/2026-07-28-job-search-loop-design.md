@@ -307,6 +307,76 @@ language, or employer.
 Order 10 remains `in_progress` after 10B. The real confirmed-application gate is
 unchanged.
 
+### 4.6 Portable local installation
+
+`JOB-PORTABLE-LOCAL-12A` is the first Order 12 increment. It turns the checked-out
+application into a user-owned local install without copying Daisuke's profile,
+credentials, or absolute paths.
+
+The install contract is:
+
+```text
+verified user-supplied profile
+  → private XDG config/state/data roots
+  → authenticated BYO subscription provider selection
+  → platform scheduler render
+  → scheduler activation
+  → deterministic install receipt
+```
+
+Private configuration follows the XDG Base Directory Specification. Relative XDG
+overrides fail closed instead of being interpreted relative to an arbitrary launch
+directory. Directories are mode `0700`; copied profiles and install receipts are mode
+`0600`. Existing profiles are never overwritten unless the operator supplies the
+explicit replacement flag.
+
+Provider authentication stays provider-owned. The installer checks `codex login
+status` and `claude auth status`; it records only the selected provider name and never
+copies OAuth tokens, API keys, or provider auth files. `auto` chooses the first
+authenticated provider in deterministic order (`codex`, then `claude-direct`).
+Runtime entrypoints export that selection through `AGENT_RUNNER_PROVIDER`.
+
+Scheduler ownership is platform-specific but application semantics stay shared:
+
+| Platform | User scheduler | Daily | Inbox |
+|---|---|---|---|
+| macOS | launchd LaunchAgents | 08:30 Asia/Tokyo | every 15 minutes |
+| Linux | systemd user timers | 08:30 Asia/Tokyo, persistent | every 15 minutes |
+
+The portable installer accepts an explicit `none` scheduler for test/local manual
+runs. Platform auto-detection supports only Darwin and Linux and fails closed on
+unknown systems.
+
+Sources:
+
+- XDG Base Directory Specification,
+  https://specifications.freedesktop.org/basedir-spec/latest/:
+  “There is a single base directory relative to which user-specific state data
+  should be written.”
+- systemd.timer,
+  https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html:
+  “For each timer file, a matching unit file must exist, describing the unit to
+  activate when the timer elapses.”
+- Apple Daemons and Services Programming Guide,
+  https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html:
+  “In general, a daemon should not care whether a user is logged in, and user
+  agents should be used to provide per-user functionality.”
+
+`JOB-PORTABLE-LOCAL-12A` is complete when:
+
+1. a clean temporary HOME installs from a user-supplied valid profile;
+2. provider preflight accepts authenticated Codex or Claude and rejects missing auth;
+3. private XDG roots and files have exact `0700`/`0600` modes;
+4. macOS plists and Linux user service/timer units contain only rendered checkout
+   and private-state paths;
+5. a second install preserves the profile unless replacement is explicit;
+6. scheduler commands are verified through fake launchctl/systemctl adapters and a
+   `none` E2E install executes without external side effects;
+7. focused, full, and CI suites pass.
+
+Order 12 remains `in_progress` after 12A. Distribution packaging, a guided profile
+authoring UI, and a clean-machine install from a release artifact remain.
+
 ## 5. State and side-effect contracts
 
 ### 5.1 Application state machine
@@ -539,7 +609,7 @@ row; its status changes in the same commit as implementation evidence.
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
 | 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B merged in PR #1291 (`1ff642fd`, CI `30447613983`) and closeout PR #1293, then live-verified at canonical `2e75c720` (daily/inbox runs 4/8, exits 0, ledger integrity `ok`) with 131 job-loop + 7 runner tests and real existing-CDP job→choice→account replay (19/23/28 redacted controls, zero input/account/upload/claim/submit side effects); order completes only after one real confirmed application per adapter |
 | 11 | Dream Job objective and evidence-backed strategy promotion | `waiting_samples` | Deliver one verified best-fit lead per day; persist role/source/message experiment assignment and outcomes; promote one-field changes only after at least 10 resolved applications per arm and Wilson-interval proof |
-| 12 | Portable local OSS distribution | `pending` | Remove Dais-specific absolute paths; add BYO provider authentication, profile setup, macOS/Linux scheduling, private-state defaults, and an end-to-end install test |
+| 12 | Portable local OSS distribution | `in_progress` | 12A contract fixed: verified profile import, BYO Codex/Claude auth preflight, XDG private roots, launchd/systemd user scheduling and clean-HOME E2E; packaging, guided profile authoring and release-artifact install remain after 12A |
 | 13 | Life Manager Career organ | `pending` | Career timeline, dream-job goal, learning evidence and pause/resume controls consuming `summary.v1.json` |
 
 ## 12. Verification
