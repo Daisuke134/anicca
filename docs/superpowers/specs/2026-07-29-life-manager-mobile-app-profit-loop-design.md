@@ -1,6 +1,6 @@
 # Life Manager Mobile App Profit Loop — Design
 
-**Status:** Design review
+**Status:** Design updated; pending written-spec review
 
 **Owner:** Life Manager
 
@@ -8,13 +8,18 @@
 
 **Pilot window:** RevenueCat Shipaton 2026
 
-**Implementation gate:** This design must be reviewed before implementation begins.
+**Implementation gate:** This written design must be reviewed before the
+implementation plan begins.
 
 ## 1. Decision
 
 Build a **Mobile App Profit Loop** inside the Life Manager architecture, but
 enter Shipaton with **one new consumer mobile app selected by evidence**, not
 with the factory itself and not with the already-released Anicca app.
+
+The Mobile App Profit Loop is one business unit beneath a **global Life Manager
+CFO Agent**. The CFO allocates limited token, API, cash, and Mac capacity across
+all Life Manager businesses. It is not a mobile-only portfolio governor.
 
 The system is the durable product. The selected consumer app is the Shipaton
 proof that the system can find a real problem, build a high-quality native
@@ -44,6 +49,11 @@ The Shipaton pilot is done only when all of the following are true:
    or experiment rollback.
 7. The reusable contracts can be ported into Life Manager Order 37 without
    creating a second scheduler or a second source of truth.
+8. Every mission has a hard token, API, cash, elapsed-time, and scarce-resource
+   budget, and its actual usage settles back into the global CFO ledger.
+9. Product continuity survives process and model restarts because product
+   state lives in a durable Product Cell rather than in an always-running LLM
+   conversation.
 
 ## 2. Shipaton facts and operating dates
 
@@ -136,6 +146,15 @@ distribution.
 | Maestro and XCTest | Repeatable critical-path and native behavior verification | Screenshot-only success claims |
 | RICE | Reach, impact, confidence, and effort ranking based on measured evidence | Invented scores without source receipts |
 | Lean Build–Measure–Learn | Smallest experiment that tests the current bottleneck | Fixed daily feature churn |
+| OpenAI Agents SDK | Manager-controlled agents-as-tools, structured outputs, traces, run usage, and bounded specialist calls | Free-form agent chat as the durable state store |
+| OpenAI Financial Research Manager | Plan, parallel research, specialist tools, independent verification, one bounded revision, and fail-closed output | Allowing an unverified CFO narrative to authorize spend |
+| LangGraph supervisor pattern | Hierarchical supervisors and tool-based delegation with controlled context | A peer-to-peer swarm with no accountable manager |
+| Temporal OpenAI Agents samples | Durable workflows, retries, signals, queries, cancellation, and deterministic gates around agent calls | Keeping one LLM process alive forever |
+| Temporal Resource Pool | Serialized access to Xcode, simulators, repositories, browser profiles, and App Store mutations | Unbounded parallel jobs competing for the same machine or account |
+| Nodenester AppFactory | `observe → prioritize → act → learn`, opportunity scanning, review mining, build, test, and submission adapters | Its app-count capacity trigger and RevenueCat project-list call as a profit allocator |
+| App Store Scraper MCP | Store search, details, keyword competition, reviews, pricing, screenshots, and version history | Treating scraped estimates as first-party revenue truth |
+| Mobbin official MCP | Production screen and multi-step flow research | Copying proprietary screens, assets, or brand expression |
+| ASO App Store Screenshots skill | Deterministic screenshot composition followed by bounded visual enhancement | Generating text, device geometry, and every screenshot pixel nondeterministically |
 | TrustMRR / Flippa / Apple app transfer | Verified revenue package, diligence artifacts, original source, and transfer readiness | Building clones or assuming every app should be sold |
 
 ## 6. System boundary
@@ -162,30 +181,111 @@ runtime after the runtime/cloud migration gate passes.
 
 ### 6.2 Components
 
+```text
+Life Manager CFO Agent
+├── Treasury / Policy Engine
+│   ├── global revenue, cost, cash, token, API, and compute ledger
+│   ├── hard spend and capacity caps
+│   └── signed Business Budget Envelopes
+├── Mobile Studio Manager
+│   ├── Market Intelligence Agent
+│   ├── Product Strategist Agent
+│   ├── UX Research Agent
+│   ├── Build Agent
+│   ├── QA / App Review Agent
+│   ├── Release Agent
+│   ├── Growth / Monetization Agent
+│   └── Exit Agent
+├── Web Business Manager
+├── Marketing Business Manager
+└── future Business Managers
+```
+
+The CFO is the accountable top-level manager. It does not write application
+code, operate Xcode, publish content, or mutate App Store state. It issues a
+bounded budget envelope to a Business Manager, receives verified settlement
+evidence, and decides whether to continue, reduce, pause, or reallocate.
+
+The Mobile Studio Manager owns mobile business outcomes. Specialist agents are
+shared, replaceable workers exposed as tools. They do not chat freely with one
+another and they do not remain resident per app. The manager composes them
+inside a deterministic workflow and receives typed outputs.
+
+Each app owns one durable **Product Cell** containing identity, source,
+connectors, releases, metrics, costs, hypotheses, experiments, review state,
+budget history, and exit readiness. A temporary Product Lead is instantiated
+for one mission, reads only the relevant Product Cell snapshot, invokes
+specialists, writes verified results, and terminates.
+
 | Component | Responsibility | Durable output |
 |---|---|---|
-| Product Registry | Identity, repository, bundle ID, store IDs, category, stage, owners, connectors, and policy | `Product` |
+| Global CFO Agent | Compare all Life Manager businesses and authorize bounded capital/capacity allocation | `CfoDecision`, `BusinessBudgetEnvelope` |
+| Treasury / Policy Engine | Enforce hard cash, token, API, time, credential, effect, and capacity limits independently of LLM output | `BudgetClaim`, `BudgetSettlement`, `PolicyDecision` |
+| Mobile Studio Manager | Select the best eligible mobile mission and coordinate specialists as tools | `MobileMissionDecision`, `Mission` |
+| Product Registry / Product Cell Store | Preserve per-app identity, state, evidence, learning, budgets, and exit readiness | `Product`, `ProductCellSnapshot` |
 | Opportunity Engine | Gather pain, competitor, review-gap, willingness-to-pay, native-advantage, and distribution evidence; calculate RICE | `OpportunityEvidence`, `OpportunityDecision` |
+| Market Intelligence Agent | Search App Store rankings, competitors, reviews, pricing, screenshots, releases, TikTok signals, and public demand evidence | `MarketEvidencePack` |
+| UX Research Agent | Query Mobbin screens/flows and public screenshots; extract interaction patterns without copying assets | `UxPatternPack` |
+| Product Strategist Agent | Turn current bottleneck and evidence into one falsifiable mission with economics and rollback | `MissionProposal` |
 | Build/Release Adapter | Call mobileapp-builder phases, Xcode, tests, fastlane, and App Store Connect | `BuildReceipt`, `Release` |
-| Review Interpreter | Read exact App Review messages, classify guideline and affected artifact, propose the smallest tested repair | `ReviewIssue`, `ReviewResponseReceipt` |
+| QA / App Review Agent | Verify critical flows; read exact review messages; classify and test the smallest repair | `VerificationReceipt`, `ReviewIssue`, `ReviewResponseReceipt` |
+| Growth / Monetization Agent | Design one attributed acquisition, onboarding, paywall, pricing, or retention experiment | `Experiment`, `PublicationReceipt`, `AcquisitionObservation` |
 | Observation/Attribution | Reconcile App Store, RevenueCat, product analytics, marketing, refunds, and costs without converting missing data to zero | `MetricObservation`, `AttributionSnapshot` |
-| Bottleneck Decisioner | Select the highest-leverage current constraint and one bounded experiment | `Decision` |
-| Experiment Controller | Assign, ship, monitor, and keep/revert one product or marketing change | `Experiment`, `ExperimentDecision` |
-| Marketing Adapter | Supply content/distribution receipts and attributed acquisition observations | `PublicationReceipt`, `AcquisitionObservation` |
-| Portfolio Allocator | Double down, hold, retire, or sell based on contribution profit, learning value, and capacity | `PortfolioDecision` |
-| Exit Packager | Produce verified revenue, source, IP, dependency, operations, transfer, and diligence artifacts | `AssetTransferPack` |
+| Experiment Controller | Assign, ship, monitor, and keep/revert one product or marketing change | `ExperimentDecision` |
+| Resource Pool | Lease repositories, Xcode builders, simulators, browser profiles, and external mutation scopes | `ResourceLease` |
+| Exit Agent / Packager | Compare hold and sale value; prepare verified revenue, IP, dependency, operations, listing, and transfer artifacts | `ExitDecision`, `AssetTransferPack` |
+| Durable Workflow Engine | Persist state, retries, signals, cancellation, timeouts, and receipts around bounded agent calls | `WorkflowRun`, `AgentRunUsage` |
 
-The decisioner never edits source code directly. It creates a bounded job with
-an acceptance test, effect class, budget, timeout, rollback, and evidence
-requirements. Existing builders and workers execute it.
+No LLM decision directly spends money or mutates production. It creates a
+typed proposal. The deterministic policy engine validates the proposal,
+claims a budget and required leases, then dispatches an existing worker. Every
+effect has an acceptance test, timeout, rollback, idempotency key, and receipt.
+
+### 6.3 Budget hierarchy
+
+| Level | Owner | Constraint |
+|---|---|---|
+| Global weekly envelope | CFO + Treasury policy | Total token, API, cash, Mac time, and external-effect cap across Life Manager |
+| Business envelope | Business Manager | Maximum allocation for Mobile, Web, Marketing, or another business |
+| Mission envelope | Product Lead | Maximum spend and duration for one measurable business hypothesis |
+| Agent-call envelope | Workflow engine | Per-call model, token, tool, retry, and elapsed-time limit |
+
+The CFO ranks eligible missions using evidence-backed expected incremental
+contribution profit, confidence, total mission cost, downside, strategic
+learning value, and scarce-resource opportunity cost. Missing inputs remain
+unknown and cannot be replaced by invented numbers. Hard caps always outrank
+an LLM recommendation.
+
+### 6.4 Concurrency and ownership
+
+| Resource | Ownership rule |
+|---|---|
+| Product Cell | Many readers; one active state-changing mission |
+| Git repository/worktree | One write lease per product mission |
+| Xcode builder | Capacity-limited lease based on measured Mac resources |
+| Simulator/device | One exclusive lease per device |
+| App Store Connect | One app-scoped mutation lease |
+| RevenueCat catalog | One project-scoped mutation lease |
+| Browser profile | One credential/profile mutation lease |
+| Experiment surface | One primary experiment per funnel stage unless interaction is explicitly designed |
+
+Research may fan out in parallel. Mutations remain serialized at the narrowest
+safe resource boundary. Emergency crash, billing, privacy, security, or App
+Review work preempts growth and new-build jobs.
 
 ## 7. Durable data contracts
 
 | Entity | Required fields |
 |---|---|
+| `Business` | stable ID, manager, revenue/cost sources, policy, current envelope, status |
+| `BusinessBudgetEnvelope` | business ID, period, cash/token/API/Mac caps, allowed effects, expiry, issuer, signature |
 | `Product` | stable ID, name, repository ID, bundle ID, App Store ID, category, stage, creation source, connector refs, policy state |
+| `ProductCellSnapshot` | product ID, version, lifecycle state, release/review state, current bottleneck, metrics, costs, hypotheses, experiments, budget history, learning, exit readiness |
 | `OpportunityEvidence` | query, source URL, captured time, evidence type, market/problem statement, raw excerpt hash, freshness, confidence |
 | `OpportunityDecision` | candidate IDs, RICE inputs, willingness-to-pay evidence, native advantage, distribution evidence, disqualifiers, winner, rationale |
+| `Mission` | business/product ID, objective, hypothesis, expected contribution movement, evidence refs, success/stop gates, budget, effects, leases, timeout, rollback |
+| `AgentRunUsage` | mission ID, agent role, model/provider, requests, input/output tokens, tool/API use, elapsed time, estimated and settled cost |
+| `ResourceLease` | resource type/ID, mission holder, acquisition/expiry, heartbeat, release receipt |
 | `Release` | product ID, Git commit, semantic version, build number, artifact hash, test receipt refs, ASC state, public URL, rollback |
 | `ReviewIssue` | exact ASC message ref, guideline, affected version, classification, repair hypothesis, test, response, resolution |
 | `Experiment` | hypothesis, bottleneck metric, eligibility, variant, budget, start/stop gates, guardrails, rollback |
@@ -193,35 +293,89 @@ requirements. Existing builders and workers execute it.
 | `Decision` | observation refs, alternatives, selected action, expected metric movement, budget, expiry, rollback |
 | `CostLedger` | product ID, acquisition, model/API, infrastructure, Apple allocation, tools, refunds, attributable operations |
 | `ProfitSnapshot` | proceeds, refunds, variable costs, allocated costs, contribution profit, observation window, reconciliation state |
+| `CfoDecision` | compared business/mission IDs, evidence refs, envelope changes, selected allocation, rejected alternatives, expiry, policy receipt |
+| `ExitDecision` | product ID, hold-value evidence, sale-value evidence, transfer eligibility, recommendation, constraints, expiry |
 | `AssetTransferPack` | source/IP manifest, revenue verification, dependency bill, credentials transfer map, operational runbook, Apple transfer checklist |
 
-Every record is product-scoped. "Unavailable," "stale," and "zero" are
-different states. A decision cannot use a metric whose denominator, window, or
-source is absent.
+Every record is business-scoped and, when applicable, product-scoped.
+"Unavailable," "stale," and "zero" are different states. A decision cannot
+use a metric whose denominator, window, or source is absent.
 
 ## 8. The operating loops
 
-### 8.1 Product loop
+### 8.1 Global CFO loop
 
 ```text
-discover evidence
-  → qualify and rank
-  → select one opportunity
-  → specify and build
-  → test on simulator/device
-  → TestFlight
-  → App Review
-      ↳ rejected → read exact message → classify → test repair → resubmit
-  → public release
-  → observe acquisition, activation, monetization, retention, refunds, cost
-  → identify one bottleneck
-  → run one bounded experiment
-  → keep or revert
-  → double down, hold, retire, or package for sale
-  → repeat
+collect verified revenue, cost, token, API, capacity, and risk observations
+  → settle completed Business and Product missions
+  → reject stale, unreconciled, or policy-ineligible proposals
+  → compare eligible missions across all businesses
+  → issue signed Business Budget Envelopes
+  → Business Managers execute bounded missions
+  → verify effects and settle actual cost/outcome
+  → continue, reduce, pause, reallocate, or exit
+  → repeat weekly; interrupt immediately for material risk
 ```
 
-### 8.2 Improvement loop
+The CFO is an agent-assisted decision layer over a deterministic treasury
+policy engine. The policy engine, not the model, is the final authority on
+hard spend and effect limits.
+
+### 8.2 Mobile Studio loop
+
+```text
+observe every Product Cell and new-market evidence
+  → classify urgent review/billing/crash/privacy work
+  → compare iterate / market / build-new / hold / retire / sell missions
+  → request a Mobile Business Budget Envelope from the CFO
+  → select one bounded mission
+  → claim product and resource leases
+  → execute the typed specialist DAG
+  → verify, release, market, or package
+  → measure the declared success metric and guardrails
+  → settle incremental contribution profit and total cost
+  → update the Product Cell
+  → submit the next evidence-backed proposal
+```
+
+The initial WIP is one new-app build slot and one live-product experiment
+slot. This is a starting capacity policy, not a permanent portfolio size.
+Capacity increases only after resource use, review quality, attribution,
+retention, refunds, and contribution profit remain controlled.
+
+### 8.3 Per-product mission loop
+
+```text
+load immutable Product Cell snapshot
+  → instantiate temporary Product Lead
+  → parallel evidence collection where independent
+  → propose one falsifiable mission
+  → independent evidence/policy verification
+  → claim budget and resource leases
+  → build/test/release/market through deterministic adapters
+  → rejected or failed
+      ↳ read exact evidence → classify → smallest tested repair → retry within cap
+  → observe until the declared stop rule
+  → keep / revert / inconclusive
+  → write receipts and a new Product Cell version
+  → terminate Product Lead
+```
+
+An app has durable ownership without a resident LLM. The Product Cell is the
+memory; the workflow is the process; the temporary Product Lead is the
+mission-scoped reasoner.
+
+### 8.4 Timing
+
+| Trigger | Loop |
+|---|---|
+| Event-driven | Crash, billing failure, privacy/security issue, rejection, review message, failed release |
+| Daily | Refresh metrics/reviews, detect anomalies, advance active workflow, enforce expiries |
+| Weekly | CFO settlement and cross-business envelope allocation |
+| Experiment stop rule | Keep, revert, or mark inconclusive |
+| Monthly | Continue, park, rebuild, retire, or exit review |
+
+### 8.5 System-improvement loop
 
 The outer loop improves the system only after the product loop yields repeated
 evidence:
@@ -372,9 +526,9 @@ The schedule freezes feature scope if the app is not in App Review by August
 15. Reliability, purchase, privacy, review recovery, and distribution outrank
 new features.
 
-## 13. Portfolio and sale policy
+## 13. CFO portfolio and sale policy
 
-The portfolio allocator may choose:
+The global CFO may choose:
 
 | Decision | Condition |
 |---|---|
@@ -383,10 +537,16 @@ The portfolio allocator may choose:
 | Retire | Repeated failed value/retention evidence, no credible repair, and low strategic learning value |
 | Sell | Stable transferable revenue, clean original IP, low founder-specific dependency, complete operations and Apple-transfer package, and sale value exceeds expected hold value |
 
-TrustMRR and Flippa are optional exit adapters. Apple app-transfer eligibility,
-source ownership, verified revenue, dependencies, credentials, and operational
-history must be checked before listing. The loop never clones a sold app or
-submits reskins.
+Acquire is the primary general mobile-business marketplace adapter;
+TrustMRR and Flippa remain optional adapters. The Exit Agent automates
+valuation evidence, diligence, listing drafts, buyer qualification, transfer
+readiness, and progress tracking. Apple Account Holder authentication, 2FA,
+recipient acceptance, and final legal signatures remain explicit credential
+or legal boundaries.
+
+Apple app-transfer eligibility, source ownership, verified revenue,
+dependencies, credentials, and operational history must be checked before
+listing. The loop never clones a sold app or submits reskins.
 
 ## 14. Expected outcomes and falsification
 
@@ -423,10 +583,32 @@ These are design slices, not authorization to implement before review.
 | P3 — Release/review loop | RevenueCat, fastlane/ASC, preflight, review message classification, repair/resubmit | one TestFlight/App Review transition and one simulated message fixture pass; live effects are receipt-backed |
 | P4 — Shipaton app | Product-specific build, store assets, privacy, accessibility, purchase, public release | public eligible store URL and complete Devpost asset pack |
 | P5 — Measured improvement | Attribution, bottleneck decision, one product and one marketing experiment | keep/revert decisions and contribution-profit snapshot |
-| P6 — Portfolio/exit | Double-down/hold/retire/sell policy and transfer pack | decision replay and diligence package pass |
+| P6 — CFO allocation | Global/business/mission/call envelopes, policy engine, usage settlement, and resource leases | a replayable CFO decision cannot exceed hard caps and reconciles actual token/API/Mac/cash use |
+| P7 — Portfolio/exit | Double-down/hold/retire/sell policy and transfer pack | decision replay and diligence package pass |
 | Order 37 port | Import proven contracts into the canonical Life Manager runtime | no duplicate scheduler; local/cloud job contracts and tenant boundaries pass |
 
-## 16. Sources
+## 16. Remaining TODO — execution SSOT
+
+This table is the authoritative implementation order. Design work does not
+mark runtime work complete.
+
+| Order | Status | Work | Done evidence |
+|---:|---|---|---|
+| D0 | Complete | Research prior art, choose profit-loop entry, define CFO hierarchy, Product Cell, multi-agent roles, budgets, resource leases, and exit loop | this committed design and cited source set |
+| P0 | Pending | Build read-only Product Registry and Product Cell snapshot for Anicca | one versioned snapshot reconciles repo, bundle/store IDs, release/review state, connectors, metrics availability, and costs |
+| P1 | Pending | Connect first-party observations | ASC, RevenueCat, analytics, crashes, reviews, acquisition, refunds, and model/API cost produce typed observations; unavailable is distinct from zero |
+| P2 | Pending | Implement Mission, Budget Envelope, AgentRunUsage, PolicyDecision, and ResourceLease contracts | schema/contract tests cover caps, expiry, idempotency, settlement, and lease release |
+| P3 | Pending | Implement durable workflow skeleton and specialist agents-as-tools | one local mission survives restart, records usage, retries only retryable failures, and terminates at its stop rule |
+| P4 | Pending | Run the Anicca canary | exact current review/funnel bottleneck produces one bounded change, real verification, release/review receipt, measurement, and keep/revert decision |
+| P5 | Pending | Implement market/UX intelligence adapters | App Store search/reviews/releases, TikTok evidence, Mobbin patterns, and public screenshots produce a cited Opportunity Evidence Pack |
+| P6 | Pending | Select one Shipaton app | one candidate passes pain, willingness-to-pay, native advantage, distribution, uniqueness, scope, and rules-snapshot gates |
+| P7 | Pending | Connect mobileapp-builder, QA, RevenueCat, ASC, and review recovery | approved spec reaches tested native build, TestFlight, App Review, rejection repair if needed, and public eligible URL |
+| P8 | Pending | Connect the existing marketing loop and experiment controller | one attributed marketing mission reaches keep/revert with settled acquisition cost |
+| P9 | Pending | Implement global CFO allocation | CFO compares Mobile with other Life Manager businesses and issues a hard-capped envelope from reconciled evidence |
+| P10 | Pending | Implement Exit Agent and transfer package | hold/sell decision, Acquire-ready diligence pack, Apple eligibility check, and credential/legal handoff checklist pass |
+| P11 | Pending | Port proven contracts into Order 37 | canonical runtime owns scheduling and ledgers; no duplicate scheduler or truth source remains |
+
+## 17. Sources
 
 | Source | Core evidence |
 |---|---|
@@ -443,23 +625,40 @@ These are design slices, not authorization to implement before review.
 | [RevenueCat — App portfolio vs. single app](https://www.revenuecat.com/blog/growth/app-portfolio-vs-single-app) | Portfolio risk diversification trades against focus and technical debt |
 | [Intercom — RICE prioritization](https://www.intercom.com/blog/rice-simple-prioritization-for-product-managers/) | RICE uses reach, impact, confidence, and effort |
 | [Lean Startup — Validated learning](https://lean.st/principles/validated-learning/) | Learning must be demonstrated through real behavior, not output volume |
+| [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) | “Agents as tools / Handoffs: Delegating to other agents for specific tasks” |
+| [OpenAI Financial Research Manager](https://github.com/openai/openai-agents-python/blob/main/examples/financial_research_agent/manager.py) | Deterministic plan, parallel search, specialist tools, evidence verification, one revision, and fail-closed completion |
+| [OpenAI Agents SDK context](https://github.com/openai/openai-agents-python/blob/main/docs/context.md) | Local context is not sent to the LLM; usage and serializable run state remain runtime concerns |
+| [LangGraph Supervisor](https://github.com/langchain-ai/langgraph-supervisor-py) | The project recommends the “supervisor pattern directly via tools” for most cases |
+| [Temporal OpenAI Agents samples](https://github.com/temporalio/samples-python/tree/main/openai_agents) | Temporal workflows provide orchestration/state while Agents SDK provides bounded agent/tool interaction |
+| [Temporal Resource Pool](https://github.com/temporalio/samples-python/tree/main/resource_pool) | The sample serializes access to scarce resources across long-lived workflows |
+| [Nodenester AppFactory](https://github.com/Nodenester/AppFactory) | Existing prior art for `observe → prioritize → act → learn`, market discovery, build, test, and submit |
+| [App Store Scraper](https://github.com/facundoolano/app-store-scraper) | MIT implementation for app search, rankings, details, reviews, ratings, screenshots, and version history |
+| [AppReply App Store MCP](https://github.com/appreply-co/mcp-appstore) | Agent tools for app search, keyword competition, app details, review analysis, and pricing |
+| [Apple App Reviews Scraper](https://github.com/glennfang/apple-app-reviews-scraper) | MIT review ingestion with delay and backoff for larger evidence sets |
+| [Mobbin official MCP](https://github.com/mobbin/mobbin-mcp-server) | Official remote MCP for real-world mobile and web screen/flow references |
+| [ASO App Store Screenshots](https://github.com/adamlyttleapps/claude-skill-aso-appstore-screenshots) | Deterministic scaffold plus bounded enhancement for App Store assets |
 | [Daisuke134/mobileapp-builder](https://github.com/Daisuke134/mobileapp-builder) | Existing native iOS build-to-submission baseline |
 | [bes-dev/etnamute](https://github.com/bes-dev/etnamute) | Open lifecycle for spec, build, improve, fix, test, market, and release |
 | [fastlane](https://github.com/fastlane/fastlane) | Open-source mobile build and release automation |
 | [AppFlight](https://appflight.dev/) | Direct commercial proof that native AI build/submission/rejection automation is already a product category |
 | [Factory App](https://factoryapp.dev/) | Quality-gated app factory prior art centered on single-shot generation |
 | [Apple — Initiate an app transfer](https://developer.apple.com/help/app-store-connect/transfer-an-app/initiate-an-app-transfer) | App transfer requires preserving relevant app and business records |
+| [Apple — App transfer criteria](https://developer.apple.com/help/app-store-connect/transfer-an-app/app-transfer-criteria) | A transferable app must have at least one released App Store version and meet account, status, and product constraints |
+| [Acquire — Mobile apps for sale](https://acquire.com/mobile-apps-for-sale/) | Buyers evaluate rankings, DAU, session length, subscription retention, update history, stack, and dependencies |
 | [TrustMRR FAQ](https://trustmrr.com/faq) | RevenueCat/Superwall revenue can be verified for marketplace listings |
 | [Flippa — What apps can be sold](https://support.flippa.com/hc/en-us/articles/360000682816) | Original source is required; clones and reskins are not accepted |
 
-## 17. Self-review
+## 18. Self-review
 
 | Check | Result |
 |---|---|
 | Decision | One recommendation: profit loop as the engine, one evidence-selected new consumer app as the Shipaton entry |
-| Scope | The pilot proves only choose, build, ship, measure, and improve; generalized SaaS and multi-product scheduling remain Order 37 |
+| Scope | The pilot proves one vertical mobile loop; the CFO contracts are global, while Web and other Business Managers remain outside this implementation |
+| Agent ownership | Durable Product Cells and workflows preserve continuity; no resident LLM is required per app |
+| Budget safety | Global, business, mission, and call envelopes plus resource leases prevent free-form overspend and conflicting mutations |
 | Apple safety | Originality, quality, privacy, review-request timing, exact rejection reading, and WIP limits are explicit |
 | Economics | Contribution profit, retention, refunds, attribution, and variable cost outrank app count and vanity metrics |
 | Evidence honesty | Prize totals retain source-specific scopes; pending Official Rules are explicit; no Codex hardware prize is claimed; old Anicca rejection evidence is not presented as current |
 | Runtime consistency | The pilot cannot alter schedulers or production ledgers before Order 26; porting occurs through Order 37 |
-| Placeholder scan | No unresolved implementation placeholders |
+| TODO consistency | Section 16 is the sole ordered execution list; only design/research is complete |
+| Placeholder scan | No unresolved design placeholders; all runtime work is explicitly marked Pending |
