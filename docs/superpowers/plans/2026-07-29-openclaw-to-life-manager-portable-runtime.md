@@ -169,31 +169,36 @@ same receipt outcome without creating another receipt. The complete
 **Files:**
 - Create: `deploy/local/compose.yaml`
 - Create: `deploy/local/.env.example`
+- Create: `apps/life-manager/Dockerfile.runtime`
+- Create: `apps/life-manager/.dockerignore`
+- Create: `apps/life-manager/migrations/20260729_runtime_scheduler_lease.sql`
 - Create: `apps/life-manager/scripts/runtime-up.js`
 - Create: `apps/life-manager/scripts/runtime-up.test.js`
 - Modify: `apps/life-manager/lib/maybe-start-loops.js`
 - Modify: `apps/life-manager/lib/maybe-start-loops.test.js`
+- Modify: `apps/life-manager/package.json`
+- Modify: `apps/life-manager/package-lock.json`
 
 **Interfaces:**
 - Consumes: one Life Manager release and local runtime configuration.
 - Produces: `life-manager runtime up --mode local`, starting API/panel, scheduler, PostgreSQL, object storage, and capability workers with a single scheduler owner.
 
-- [ ] **Step 1: Write topology and single-writer tests**
+- [x] **Step 1: Write topology and single-writer tests**
 
 Assert that the Compose model contains health checks, persistent database/object volumes, distinct scheduler and worker services, and one scheduler-owner identity.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test scripts/runtime-up.test.js lib/maybe-start-loops.test.js
 ```
 
-- [ ] **Step 3: Implement the local bundle**
+- [x] **Step 3: Implement the local bundle**
 
 Replace the existing OpenClaw-owner wording in `maybe-start-loops.js` with deployment-owner semantics. OpenClaw is not a supported owner or fallback.
 
-- [ ] **Step 4: Start the real local stack**
+- [x] **Step 4: Start the real local stack**
 
 ```bash
 docker compose -f deploy/local/compose.yaml up -d --build
@@ -202,9 +207,33 @@ docker compose -f deploy/local/compose.yaml ps
 
 Expected: all required services report healthy and the scheduler has exactly one owner lease.
 
-- [ ] **Step 5: Restart verification and commit**
+- [x] **Step 5: Restart verification and commit**
 
 Restart scheduler and workers during queued work; verify leases recover and no duplicate external effect is emitted.
+
+**Verification:** the focused topology/single-writer suite passed `17/17`.
+The rendered Compose JSON had one scheduler service with owner
+`local-primary`, one capability worker, health checks, and three persistent
+volumes. The real Colima/Docker stack built and brought PostgreSQL 18, the
+migration job, MinIO, API/panel, scheduler, and worker up without any legacy
+directory mounted. API, PostgreSQL, MinIO, scheduler, and worker reported
+healthy. Restarting worker and scheduler changed the process-unique scheduler
+holder token while the active database lease remained exactly
+`1:local-primary:true`. A no-effect smoke job remained `completed:1:1`; an
+unknown external-effect job remained `reconciling:1:0` across restart, proving
+no blind retry and no duplicate receipt. The runtime image excludes repository
+tests and legacy boot scripts. The complete `apps/life-manager` test command
+passed with the Task 4 suite wired into `npm test`.
+
+**Implementation basis:**
+- [Docker Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/):
+  Compose waits for dependencies marked `service_healthy`, while
+  `service_completed_successfully` gates one-shot migrations.
+- [Docker volumes](https://docs.docker.com/engine/storage/volumes/):
+  volumes persist data beyond an individual container lifecycle.
+- [Docker Compose healthcheck](https://docs.docker.com/reference/compose-file/services/#healthcheck):
+  service health is declared in the Compose model and used by dependency
+  conditions.
 
 ### Task 5: Move Telegram and the current financial report first
 
