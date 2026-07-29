@@ -75,7 +75,7 @@ attestations, regulated submissions, or claims not present in supplied context.
 
 Run the Step 2 command. Expected: all classifier tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/life-manager/lib/browser-task-classifier.js apps/life-manager/lib/browser-task-classifier.test.js
@@ -94,7 +94,7 @@ git commit -m "feat(browser): classify non-binding communication actions"
 - Produces: `confirmed=true` only for provider-authored terminal booking,
   inquiry/message, or application receipt with no active action/auth form
 
-- [ ] **Step 1: Write failing receipt tests**
+- [x] **Step 1: Write failing receipt tests**
 
 Add table-driven cases for:
 
@@ -111,7 +111,7 @@ Add table-driven cases for:
 For each, assert `confirmed=true`. Add negated/pending variants (`not submitted`,
 `message failed`, active form, login form) and assert `confirmed=false`.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -122,7 +122,7 @@ node --test lib/stagehand-steel-driver.test.js
 
 Expected: inquiry/application success phrases are not confirmed.
 
-- [ ] **Step 3: Implement a category-neutral terminal vocabulary**
+- [x] **Step 3: Implement a category-neutral terminal vocabulary**
 
 Extend `strongCompletion` only with explicit terminal phrases:
 
@@ -138,7 +138,7 @@ active authentication form, KYC, payment, and challenge checks dominant.
 Update the Stagehand readback prompt to copy a short exact provider phrase and
 never infer success from the action narration.
 
-- [ ] **Step 4: Verify driver plus browser-auth regression**
+- [x] **Step 4: Verify driver plus browser-auth regression**
 
 Run:
 
@@ -149,7 +149,7 @@ node --test lib/stagehand-steel-driver.test.js scripts/browser-auth-luma-bootstr
 
 Expected: all tests pass and authenticated-continuity behavior is unchanged.
 
-- [ ] **Step 5: Refresh exact OSS manifest hashes and verify**
+- [x] **Step 5: Refresh exact OSS manifest hashes and verify**
 
 Run `shasum -a 256` for the modified driver and test, update their two entries
 in `docs/manifests/oss-merge-1-sources.json`, then run:
