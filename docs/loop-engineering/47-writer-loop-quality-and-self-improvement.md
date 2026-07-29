@@ -2756,16 +2756,21 @@ verified evidence
 
 実装作業、実装済み機械の実run検証、時間窓の自動観測を同じ`pending`へ混ぜない。
 
+##### A0. 今回完了
+
+| 状態 | 作業 | 証拠 |
+|---|---|---|
+| DONE (`3edd5e7`; runtime installed `3edd5e7`) | editorial formの矛盾を修復 | queue cardをvoice/genre selectorから外し、topic source / evidence plan / editorial formを独立化。`topic-route.json`を正本に explainer / how-to / case-study / comparison / field-note / opinion / report を選び、直近2 runと同じformの3連続目をreceipt履歴から機械拒否。一人称はreader jobと検証済みevidenceに最適なformだけ許可。旧`lane A = first-person récit` / 全記事一人称規則を削除。TDD RED 2→router 6 PASS、daily contract全PASS、critical contradiction 0。article Python回帰は367 PASS / 10既存FAILで、変更前HEADを隔離再実行して同じ10FAILを確認。LaunchAgentとcanonical skill symlinkはいずれもinstalled scriptを参照し、tracked blob hash一致 |
+
 ##### A. TODO NOW — 今すぐ実装する
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | OPEN / P0 QUALITY | editorial formの矛盾を修復 | `lane A = first-person récit`強制を削除。topic source / evidence plan / editorial formを独立選択し、explainer / how-to / case-study / comparison / field-note / opinion / reportの連続偏りを制限。「試してみた」または一人称は読者jobに最適な時だけ許可 |
-| 2 | OPEN / P0 QUALITY | editorial/reader FAILをquality self-healへ接続 | bounded revise後もFAILなら同じ弱いformを公開せず、別form・別outline候補へ戻る。有料面はeditorial PASS、reader PASS、truth/identity PASSの同一artifact receiptが揃うまでpublishしない |
-| 3 | OPEN / P0 REGRESSION | production complaintを回帰fixture化 | 今日のtitle/body、`editorial-ja=FAIL`、reader unanswered 2件をfixtureにし、旧promptではRED、新contractでは別form候補生成またはpublish BLOCKを証明 |
-| 4 | OPEN / P1 RELIABILITY | x-post/ja lengthをfreeze前にgate | 280字以内だけimmutable artifact化。今日の362字intentは本文を後編集せず`invalid_pre_freeze_length`でterminal分類 |
-| 5 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
-| 6 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
+| 1 | OPEN / P0 QUALITY | editorial/reader FAILをquality self-healへ接続 | bounded revise後もFAILなら同じ弱いformを公開せず、別form・別outline候補へ戻る。有料面はeditorial PASS、reader PASS、truth/identity PASSの同一artifact receiptが揃うまでpublishしない |
+| 2 | OPEN / P0 REGRESSION | production complaintを回帰fixture化 | 今日のtitle/body、`editorial-ja=FAIL`、reader unanswered 2件をfixtureにし、旧promptではRED、新contractでは別form候補生成またはpublish BLOCKを証明 |
+| 3 | OPEN / P1 RELIABILITY | x-post/ja lengthをfreeze前にgate | 280字以内だけimmutable artifact化。今日の362字intentは本文を後編集せず`invalid_pre_freeze_length`でterminal分類 |
+| 4 | OPEN / P1 DISTRIBUTION | X Article JA/ENを復旧 | 正しいaccount/editor/article identityで2面ともpublic readback PASS。別記事・login wallはsuccessにしない |
+| 5 | OPEN / P2 DISTRIBUTION | Dev.to ENを復旧 | canonical frontmatter、dispatcher、public identity/readbackが同じartifact hashでPASS |
 
 ##### B. VERIFY ONLY — 実装済み、次の実runで証明する
 
