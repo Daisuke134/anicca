@@ -49,6 +49,22 @@ def test_production_manifest_is_valid_and_protects_known_incident_roots() -> Non
         "lease": None,
         "finalizer": {"kind": "remote_recoverable_remove"},
     }
+    for artifact_id, relative_path in {
+        "projects-anicca-products-worktrees": "Projects/anicca-products/.worktrees",
+        "ugig-nightcell7-worktrees": "Projects/ugig-nightcell7/.worktrees",
+        "anicha-worktrees": "Projects/anicha/.worktrees",
+        "anicca-rtdash-worktrees": "anicca-rtdash/.worktrees",
+    }.items():
+        assert by_id[artifact_id] == {
+            "id": artifact_id,
+            "path": str(Path.home() / relative_path),
+            "owner": "git-worktrees",
+            "class": "git_worktree_collection",
+            "ttl_seconds": None,
+            "quota_bytes": 0,
+            "lease": None,
+            "finalizer": {"kind": "remote_recoverable_remove"},
+        }
     assert by_id["kickama-cargo-target"]["class"] == "regenerable_output"
     assert by_id["kickama-cargo-target"]["finalizer"]["kind"] == "verified_regenerable_remove"
     assert by_id["playwright-browser-cache"]["class"] == "regenerable_output"

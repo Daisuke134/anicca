@@ -62,6 +62,54 @@
       }
     },
     {
+      "id": "projects-anicca-products-worktrees",
+      "path": "$HOME/Projects/anicca-products/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
+      "id": "ugig-nightcell7-worktrees",
+      "path": "$HOME/Projects/ugig-nightcell7/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
+      "id": "anicha-worktrees",
+      "path": "$HOME/Projects/anicha/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
+      "id": "anicca-rtdash-worktrees",
+      "path": "$HOME/anicca-rtdash/.worktrees",
+      "owner": "git-worktrees",
+      "class": "git_worktree_collection",
+      "ttl_seconds": null,
+      "quota_bytes": 0,
+      "lease": null,
+      "finalizer": {
+        "kind": "remote_recoverable_remove"
+      }
+    },
+    {
       "id": "life-manager-main-worktrees",
       "path": "$HOME/Projects/life-manager-main/.worktrees",
       "owner": "git-worktrees",
