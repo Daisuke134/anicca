@@ -19,11 +19,12 @@ Railway、Nosana、local OSS、external providerへ同じcanonical commitからd
 | Surface | fresh readback | 現在判断 |
 |---|---|---|
 | canonical | GitHub APIは`Daisuke134/life-manager`、ID `1248111245`、default `main`、public/unarchived。Railway production `life-call` sourceも同repo、root=`apps/life-manager` | **唯一のSSOT** |
+| canonical security baseline | PR #1267のfresh scanで、PR差分の本specはsecret/PII shape 0。一方、repo全履歴gitleaksは850 finding、現tree PII shape scanは63行、Python jobはmissing test dependencyと既存expectationでFAIL。TruffleHogはPASS | raw secretをspecへ複製しない。実credentialのrotation/revocation、findingのreal/false-positive裁定、allowlist、CI dependency/expectation修復を行い、fresh scan greenまでOSS安全完了を主張しない |
 | renamed legacy MVP | GitHub APIは`Daisuke134/life-manager-v0`、ID `1273052304`、default `main`、public/unarchived。35 tracked files / 184,580 bytes、open issue 11、open PR 0、production deployment source 0。READMEのinstall先は既にcanonical `life-manager` | 35-file behavior/history map→11 issue裁定→redirect-only README→archive。missing required behaviorだけをcanonicalへ実装し、旧codeを無条件に再importしない。削除・history rewriteはしない |
 | remaining source scatter | Railway production `x402-agents` sourceはまだ`Daisuke134/anicca.ai` | seller code/evidenceを本repo `services/x402-endpoint`へ吸収し、同serviceのsourceをcanonicalへ切り替えるまでone-repo完了ではない |
 
-現在の単一program cursorは **`OSS-MERGE-1 / REPO-V0-RETIRE-1`**。その次に
-**`AE-X402-SOURCE-CONSOLIDATE-1`**を閉じ、以後のAgent Economy実装をcanonicalだけで進める。
+現在の単一program cursorは **`OSS-MERGE-1 / OSS-SECURITY-BASELINE-1`**。その次に
+**`REPO-V0-RETIRE-1` → `AE-X402-SOURCE-CONSOLIDATE-1`**を閉じ、以後のAgent Economy実装をcanonicalだけで進める。
 historical §10 row `8c.R`の「双方unarchived」はrename直後の保全条件であり、現在のrepo境界・退役判断には使わない。
 
 根拠（一次ソース）:
@@ -561,12 +562,12 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 
 この表には**今すぐbuild・実行・検証できる未完作業だけ**を置く。収益、日数、自然なhealth検知など
 第三者・時間に依存する成果は次の自動成果ゲート表へ分離し、この実装cursorを止めない。
-ただしrepo sourceを再分散させないため、§0.0の`REPO-V0-RETIRE-1`→`AE-X402-SOURCE-CONSOLIDATE-1`を
+ただしrepo sourceを再分散させないため、§0.0の`OSS-SECURITY-BASELINE-1`→`REPO-V0-RETIRE-1`→`AE-X402-SOURCE-CONSOLIDATE-1`を
 先に閉じる。下表はその後のAgent Economy内順序である。
 
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
-| 1 | **AE-X402-SOURCE-CONSOLIDATE-1** | Railway `x402-agents`のrequired seller code/config/test/evidenceをcanonical `services/x402-endpoint`へ吸収し、production service sourceを`Daisuke134/life-manager`へ切替 | source repo/root/commit readback、全paid route・external sale observer・ledger回帰、secret/PII 0、old `anicca.ai` source dependency 0、downtime 0 | **next after REPO-V0-RETIRE-1**。production sourceは現在`Daisuke134/anicca.ai` |
+| 1 | **AE-X402-SOURCE-CONSOLIDATE-1** | Railway `x402-agents`のrequired seller code/config/test/evidenceをcanonical `services/x402-endpoint`へ吸収し、production service sourceを`Daisuke134/life-manager`へ切替 | source repo/root/commit readback、全paid route・external sale observer・ledger回帰、secret/PII 0、old `anicca.ai` source dependency 0、downtime 0 | **next after OSS-SECURITY-BASELINE-1 / REPO-V0-RETIRE-1**。production sourceは現在`Daisuke134/anicca.ai` |
 | 2 | **AE-ZERO-START-1** | Life Manager tenant作成時にBase/Solana walletを生成し、公開address・残高`$0.00`・開始railを既存Telegramへ自動report。seedなしでx402 SELL / fee-free WORK / incoming-payment watchを開始 | tenant A/Bのwallet/key/ledger交差0、private keyのDB/repo/log/TG 0、実TG address+explorer link、残高0の実worker wake、入金なしでも`started`。任意入金は`capital_in/revenue 0` | pending。現13aは単一local wallet、TGはuser payout先質問だけで、per-tenant agent address通知は未実装 |
 | 3 | **AE-X402-TENANT-ROUTING-1** | canonical x402 offerごとの`payTo`をtenant agent walletへ束縛し、seller・offer・payer・receipt・tenant ledgerを一意に結ぶ | tenant A商品をcolony外buyerが購入→A wallet着金→A ledger 1行、B wallet/ledger 0。self-pay/internal transferはrevenue 0 | pending。最初のexternal sale `$0.01`は現seller `0x6592…`へ着金し、tenant `0x477E…`へ帰属できない |
 | 4 | **AE-CLOUD-CUSTODY-1** | cloudでtenant別signerを隔離し、DBにはpublic address/key reference/policyだけを保存 | plaintext private keyのSupabase/repo/log/trace 0、tenant A/B cross-sign 0、spend/loss cap fail closed、rotation/recovery receipt | pending |
@@ -576,7 +577,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | ~~8~~ | **SHELTER-REPLACE-1** | 6h ceiling前に次のNosana jobをagent walletから作り、confidential delivery・service readback後に旧jobを終了して切れ目なく住み替える | Mac Franklin1 unloadedのまま、old running→new running→old state 2、new root / statement / heartbeats HTTP 200、heartbeat署名、二重job上限、reserve floor、失敗時旧job維持 | ✅ controller handoverと`72zCp…→G8uw…`の自然triggerをmainnet実証。1回の能力証明であり永久継続の証明ではない |
 | ~~9~~ | **TASKMARKET-READBACK-1** | submit直後のeventual consistencyをbounded retryし、既存提出を再購入・再提出せずterminal successへ閉じる | task `0x7c3a…cbe8`の公式submit tx/submission readback、既存`taskmarket_work_attempt` cost rowへのexactly-once reconciliation、追加画像cost 0、実launchd wake exit 0 | ✅ PR #1246、実wake exit 0、cost 0、訂正行1、owned count不変 |
 
-**Current program build cursor: OSS-MERGE-1 / REPO-V0-RETIRE-1.**
+**Current program build cursor: OSS-MERGE-1 / OSS-SECURITY-BASELINE-1.**
 **Current Agent Economy cursor: AE-X402-SOURCE-CONSOLIDATE-1（repo gateの次）。**
 外部eventを待たず、§0.0のrepo gate→上表を番号順に進める。
 収益・award・buyer発生は下の自動成果gateで観測し、実装cursorを止めない。
@@ -586,7 +587,7 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 順 | ID | atomic outcome | done evidence | 現在 |
 |---:|---|---|---|---|
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
-| 2 | **OSS-MERGE-1 / REPO-V0-RETIRE-1** | `life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化し、必要な公開可能code/skills/tests/docs/configをcanonicalへ吸収する。private stateは§2.2のexternal inputへ分離する | source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、open issue 11の裁定、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current program cursor**。最初のbounded substepは`REPO-V0-RETIRE-1`、次が`AE-X402-SOURCE-CONSOLIDATE-1`。8iはweb product移植を閉じたが、full OSS self-contained proofと旧source退役は未完 |
+| 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、open issue 11の裁定、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **current program cursor**。bounded substepは`OSS-SECURITY-BASELINE-1`→`REPO-V0-RETIRE-1`→`AE-X402-SOURCE-CONSOLIDATE-1`。8iはweb product移植を閉じたが、full OSS self-contained proofと旧source退役は未完 |
 | 3 | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **partial / OSS-MERGE-1後に再開**。SauceDemoのpositive/expiry proofはあるが実Lumaのqueue proofを代替しない。実Lumaはdirect S1/S2 restoreがPASS、production queue S3はauthenticated pageを`handoff_required/login`へ誤分類。canonical PR #1256=`0f6870df`はopen、追加fix=`944858274`は旧`anicca-products` branchに残るため、まずcanonicalへ一本化する |
 | 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。site adapter固有成功だけではPASSにしない | pending |
 | 5 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
@@ -812,11 +813,18 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 | Cloud parity | deployment commit/runtime versionとlocal receiptを比較 | exact SHA/version一致 |
 | Docs | README、`specs/`、`docs/superpowers/specs/`のSSOT claim scan | contradictory live SSOT claim 0 |
 
+#### Current verification debt（作業。verifiedと混ぜない）
+
+| 順 | ID | 現在 | done |
+|---:|---|---|---|
+| 1 | `OSS-SECURITY-BASELINE-1` | PR #1267の本spec差分はsecret/PII shape 0、TruffleHog PASS。一方、repo全履歴gitleaks 850 finding、現tree PII shape 63行、Python jobはmissing dependencyと既存expectationでFAIL | raw値を出さずfindingをreal/false-positiveへ全裁定。real credentialは全rotation/revocation、false positiveは根拠付きallowlist。Python jobへdeclared dependencyを入れ、現spec期待値へ更新。fresh PRでgitleaks / PII / TruffleHog / Python / Shell exact5 PASS |
+| 2 | `REPO-V0-RETIRE-1` | active runtimeはcanonical exact1だがv0はpublic/unarchived、35 files、open issue 11 | §2.1.1のTODO NOW 1→4を閉じ、VERIFY AFTERをPASS |
+
 #### Boundaries / Execution / E2E judgment
 
 private key、credential、個人memory、ledger、log、browser profileをGitへ集約することは「one repo」に含めない。
 これらをrepoへ移す変更はFAILである。実行順は
-**`OSS-MERGE-1 / REPO-V0-RETIRE-1` → `AE-X402-SOURCE-CONSOLIDATE-1` → `BROWSER-AUTH-1` →
+**`OSS-SECURITY-BASELINE-1` → `REPO-V0-RETIRE-1` → `AE-X402-SOURCE-CONSOLIDATE-1` → `BROWSER-AUTH-1` →
 `LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` → `LEGACY-RETIRE-1`** とし、稼働loopはparity証明前に止めない。
 `life-manager-v0`をarchiveした事実だけではdoneにしない。REPO-AC-1〜6の全PASSと、canonical exact SHAから
 local/cloud E2Eが動き、Telegram/panel/provider receiptまで同じevent IDでreadbackできた時だけrepository consolidationをdoneとする。
@@ -1344,7 +1352,7 @@ cloud custody、provider adapter、publication refreshを番号順に閉じ、Fr
 Life Manager product trackであり、Agent Economy cursorへ混ぜない。
 fiat rail（Stripe Link）はJP未提供のまま使わず、CORE crypto railだけを対象にする。
 
-**Current program build cursor**: **OSS-MERGE-1 / REPO-V0-RETIRE-1**。
+**Current program build cursor**: **OSS-MERGE-1 / OSS-SECURITY-BASELINE-1**。
 **Current Agent Economy cursor**: **AE-X402-SOURCE-CONSOLIDATE-1（repo gateの次）**。SHELTER-REPLACE-1は
 old running→new running + 3 routes/heartbeat検証→old state 2と、`72zCp…→G8uw…`の自然triggerまでmainnetで実証した。
 ただし`G8uw…`後はNosana running 0なので、継続level 3とは書かない。TASKMARKET-READBACK-1は完了した。
@@ -1566,7 +1574,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 
 - **今後の実装方式 = Superpowers**: Fable/main sessionはvision整理・spec・plan・read-only調査/裁定・final check、fresh workerはisolated worktreeでTDD build・execute・verify・spec実測更新・対象限定commit/pushを行う。reviewは`requesting-code-review`、完了主張は`verification-before-completion`、branch終端は`finishing-a-development-branch`に従う。既存VCSDD記録はhistorical evidenceとしてのみ読む。
 - search、artifact-only review、複数surfaceの独立調査はsubagentへ分離してよい。builderはfresh Sol instanceにし、Fableのcontextを実装ログで圧迫しない。
-- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済み。現在のprogram cursorは§0.0/§0.4.6どおり`OSS-MERGE-1 / REPO-V0-RETIRE-1`、次のAgent Economy cursorは`AE-X402-SOURCE-CONSOLIDATE-1`。13c等のevent待ちは別表で追跡し、成果を捏造しない。
+- **履歴上のorgan実装順 = ①CORE 8d-h → ②ONE-REPO 8i → ③MARKETING 9b-e → ④one-time X launch 9f → ⑤DEV 10a-f → ⑥BRAIN 10g-i → ⑦BODY 11a-d → ⑧MIND 12a-c → ⑨FINANCE 13a-d**。この履歴順は終了済み。現在のprogram cursorは§0.0/§0.4.6どおり`OSS-MERGE-1 / OSS-SECURITY-BASELINE-1`、次は`REPO-V0-RETIRE-1`、その次のAgent Economy cursorは`AE-X402-SOURCE-CONSOLIDATE-1`。13c等のevent待ちは別表で追跡し、成果を捏造しない。
 - **cloud browser不変条件**: `10i`、`11b`、`11c`などのweb調査・予約・外部操作はVPS/cloud browser jobで実行し、local Mac/browserを定常schedulerや永続sessionの前提にしない。localは開発・一時debugだけ。CAPTCHA/OAuth/3DSは本人handoffを明示し、完了後は同じcloud jobがprovider readbackから再開する。MENTALは予約を作らず、cloud gatewayのschedule/location triggerからTGを送る。
 - 初期buildのFable final checkが終わった後、marketing/dev/organ定常loopにFable/Daisを入れない。loop自身が日次実行・self-heal・self-improve・報告を行う。
 - **★NO-STALL 規約★**: 前回の停滞真因 = E2E が「Dais が call に出る」依存で、そこで全体を止めて Dais を呼び続けた。是正3行:
