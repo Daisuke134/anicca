@@ -38,7 +38,7 @@
 
 - [x] **Step 1: Extend the migration-gate test**
 
-Add cases proving that only `migrate`, `replace`, and `retire` are valid final dispositions and that a final disposition requires owner, effect class, verification command, and rollback action. The inventory stage may emit `unclassified`; Task 2 closes those rows without mutating schedulers.
+Add cases proving that only `migrate`, `replace`, and `retire` are valid final dispositions and that a final disposition requires owner, effect class, verification command, and rollback action. The inventory stage may emit `unclassified`; every retained row must be classified before Task 6 migrates its scheduler ownership. Task 2 does not mutate schedulers.
 
 - [x] **Step 2: Run the focused tests and verify RED**
 
@@ -70,41 +70,42 @@ Run both focused tests, validate `runtime-inventory.json` with `jq empty`, scan 
 - Create: `apps/life-manager/lib/runtime-paths.test.js`
 - Create: `apps/life-manager/lib/secret-provider.js`
 - Create: `apps/life-manager/lib/secret-provider.test.js`
-- Modify: `apps/life-manager/.env.example`
+- Create: `apps/life-manager/.env.example`
 
 **Interfaces:**
 - Consumes: `LM_MODE=local|cloud`, `LM_DATA_DIR`, `LM_CACHE_DIR`, local keychain adapter, cloud vault adapter.
 - Produces: `resolveRuntimePaths(env) -> { dataDir, cacheDir, objectDir, receiptDir, logDir }` and `createSecretProvider({ mode, keychain, vault }) -> { get(tenantId, ref), health() }`.
 
-- [ ] **Step 1: Write path-denial tests**
+- [x] **Step 1: Write path-denial tests**
 
 Tests must reject resolved paths beneath `.openclaw`, `profitable-claude`, `anicca`, or `life-manager-v0`; relative paths and an unset mode also fail closed.
 
-- [ ] **Step 2: Write secret-boundary tests**
+- [x] **Step 2: Write secret-boundary tests**
 
 Assert that job payloads contain secret references only, local mode delegates to keychain, cloud mode delegates to the tenant vault, and neither provider logs secret values.
 
-- [ ] **Step 3: Run tests and verify RED**
+- [x] **Step 3: Run tests and verify RED**
 
 ```bash
 cd apps/life-manager
 node --test lib/runtime-paths.test.js lib/secret-provider.test.js
 ```
 
-- [ ] **Step 4: Implement the minimal providers**
+- [x] **Step 4: Implement the minimal providers**
 
 Do not import legacy `.env` files. Existing environment variables may be used only by a one-time migration command that writes references into the new provider.
 
-- [ ] **Step 5: Run GREEN, scan dependencies, and commit**
+- [x] **Step 5: Run GREEN, scan dependencies, and commit**
 
 Run the two tests plus:
 
 ```bash
-rg -n '\.openclaw|profitable-claude|/Users/anicca/anicca|life-manager-v0' \
+rg -n '(require|import|readFile|writeFile|exec|spawn).*(\.openclaw|profitable-claude|/Users/[^/]+/anicca|life-manager-v0)' \
   apps/life-manager/lib/runtime-paths.js apps/life-manager/lib/secret-provider.js
 ```
 
-Expected: no runtime dependency match.
+Expected: no runtime dependency match. Legacy names may appear only in
+`runtime-paths.js` deny-list validation and its behavior tests.
 
 ### Task 3: Add the durable generic job and receipt protocol
 
