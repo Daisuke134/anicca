@@ -1,10 +1,16 @@
 {
   "version": 1,
   "task": "JOB-ATS-RESILIENCE-10B",
-  "status": "verified_local_pending_ci_merge",
-  "observed_at": "2026-07-29T11:25:50Z",
+  "status": "merged_pending_live_verification",
+  "observed_at": "2026-07-29T11:29:27Z",
   "branch": "feat/job-workday-surface-10b",
   "implementation_commit": "9cef58dc165bd318af3e936123920099a1384382",
+  "pull_request": {
+    "number": 1291,
+    "url": "https://github.com/Daisuke134/life-manager/pull/1291",
+    "ci_run": 30447613983,
+    "merge_commit": "1ff642fd6347aa4ddb506a3588f221ee8146b271"
+  },
   "tests": {
     "job_loop": {
       "ran": 131,
