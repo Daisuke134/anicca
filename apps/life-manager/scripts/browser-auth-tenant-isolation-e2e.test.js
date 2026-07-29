@@ -6,6 +6,7 @@ const path = require("node:path");
 const { test } = require("node:test");
 
 const {
+  makeProductionDeps,
   runBrowserAuthTenantIsolationE2E,
 } = require("./browser-auth-tenant-isolation-e2e.js");
 
@@ -76,6 +77,41 @@ test("runtime image allowlists the tenant isolation production entrypoint", () =
   assert.match(dockerignore, /^!scripts\/browser-auth-tenant-isolation-e2e\.js$/m);
 });
 
+test("production probe uses an owned non-reserved origin accepted by the browser auth boundary", async () => {
+  const writes = [];
+  const deps = makeProductionDeps({
+    LM_BROWSER_SESSION_KEY: "1".repeat(64),
+    LM_FEEDBACK_DATABASE_URL: "postgres://fixture.invalid/life_manager",
+  }, {
+    query: async (sql, params) => {
+      writes.push({ sql, params });
+      return {
+        rows: [{
+          uid: params[0],
+          origin: params[1],
+          principal_kind: params[2],
+          ciphertext: params[3],
+          iv: params[4],
+          auth_tag: params[5],
+          context_sha256: params[6],
+          key_version: params[7],
+          state: "active",
+        }],
+        rowCount: 1,
+      };
+    },
+  });
+
+  const saved = await deps.upsert({
+    uid: RAW.uidA,
+    marker: RAW.markerA,
+  });
+
+  assert.match(saved.contextHash, /^[a-f0-9]{64}$/);
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].params[1], "https://auth.aniccaai.com");
+});
+
 test("two encrypted tenant contexts survive fresh-process reads without cross-read or plaintext leakage", async () => {
   const { calls, deps } = fixture();
 
@@ -83,7 +119,7 @@ test("two encrypted tenant contexts survive fresh-process reads without cross-re
 
   assert.deepEqual(result, {
     tenant_count: 2,
-    origin: "https://example.com",
+    origin: "https://auth.aniccaai.com",
     context_hashes: ["3".repeat(64), "4".repeat(64)],
     fresh_process_reads: 2,
     distinct_contexts: true,
