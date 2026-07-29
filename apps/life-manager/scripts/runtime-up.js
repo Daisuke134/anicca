@@ -163,6 +163,30 @@ function marketingGenerationDueDate(nowMs, timeZone = "Asia/Tokyo") {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+async function listGenerationReceipts(pool, options) {
+  const tenantId = String(options && options.tenantId || "").trim();
+  const after = String(options && options.after || "").trim();
+  if (!tenantId || !Number.isFinite(Date.parse(after))) {
+    throw new Error("marketing publication chain scan boundary is invalid");
+  }
+  const result = await pool.query(`
+    SELECT r.receipt
+    FROM public.lm_runtime_job_receipts r
+    JOIN public.lm_runtime_jobs j
+      ON j.job_id = r.job_id
+      AND j.tenant_id = r.tenant_id
+    WHERE j.tenant_id = $1
+      AND j.capability = 'marketing.life-manager.daily.generate'
+      AND r.outcome = 'completed'
+      AND r.created_at >= $2::timestamptz
+      AND r.receipt->>'kind' = 'marketing_daily_generation'
+      AND r.receipt->>'status' = 'rendered'
+    ORDER BY r.created_at ASC
+    LIMIT 100
+  `, [tenantId, after]);
+  return result.rows.map((row) => row.receipt);
+}
+
 function createHealthServer(port, state) {
   const server = http.createServer((request, response) => {
     if (request.url !== "/health") {
@@ -494,6 +518,47 @@ async function runSchedulerOwner(env = process.env) {
     }, marketingGenerationPollMs);
   }
 
+  const publicationChainEnabled = String(
+    env.LM_MARKETING_PUBLICATION_CHAIN_ENABLED || "false",
+  ).trim().toLowerCase() === "true";
+  const publicationChainPollMs = Number(
+    env.LM_MARKETING_PUBLICATION_CHAIN_POLL_MS || 60000,
+  );
+  let publicationChainTimer;
+  let publicationChainActive = false;
+  async function enqueueGeneratedPublications() {
+    if (!publicationChainEnabled || publicationChainActive) return;
+    publicationChainActive = true;
+    try {
+      const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+      const after = requiredEnv(env, "LM_MARKETING_PUBLICATION_CHAIN_AFTER");
+      const receipts = await listGenerationReceipts(pool, { tenantId, after });
+      const {
+        enqueueGenerationPublications,
+      } = require("../lib/marketing-publication-chain.js");
+      const { enqueueJob } = require("../lib/runtime-job-store.js");
+      for (const receipt of receipts) {
+        await enqueueGenerationPublications(receipt, {
+          tenantId,
+          captionRef: requiredEnv(env, "LM_MARKETING_PUBLICATION_CHAIN_CAPTION_REF"),
+          approvalRef: requiredEnv(env, "LM_MARKETING_PUBLICATION_CHAIN_APPROVAL_REF"),
+        }, {
+          enqueueJob: (input) => enqueueJob(input, {
+            query: pool.query.bind(pool),
+          }),
+        });
+      }
+    } finally {
+      publicationChainActive = false;
+    }
+  }
+  await enqueueGeneratedPublications();
+  if (publicationChainEnabled) {
+    publicationChainTimer = setInterval(() => {
+      enqueueGeneratedPublications().catch(() => {});
+    }, publicationChainPollMs);
+  }
+
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
     env: {
@@ -523,6 +588,7 @@ async function runSchedulerOwner(env = process.env) {
     clearInterval(renew);
     if (financialTimer) clearInterval(financialTimer);
     if (marketingGenerationTimer) clearInterval(marketingGenerationTimer);
+    if (publicationChainTimer) clearInterval(publicationChainTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(
@@ -563,6 +629,7 @@ module.exports = {
   runRuntimeUp,
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
+  listGenerationReceipts,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
   executeCapabilityJob,
