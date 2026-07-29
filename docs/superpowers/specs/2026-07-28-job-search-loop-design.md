@@ -216,8 +216,12 @@ blockers: string[]
 The evaluator never clicks, fills, uploads, claims a ledger slot, or interprets a
 CAPTCHA. An invisible reCAPTCHA frame is recorded but is not itself proof of a
 visible challenge. The browser executor must persist the snapshot mode 0600, run the
-evaluator, and continue only when `ready=true`. A visible CAPTCHA or identity
-challenge still follows the existing fail-closed policy.
+evaluator, and continue only when `ready=true`. `Ledger.claim_submission` requires
+the exact snapshot path and SHA-256, rereads the file, verifies the hash, reruns the
+production evaluator, and confirms that its canonical URL matches the application.
+The model cannot satisfy this boundary by merely claiming readiness in its output.
+A visible CAPTCHA or identity challenge still follows the existing fail-closed
+policy.
 
 Ashby readiness requires the main-frame application controls, including email,
 resume upload, and `Submit Application`. Workday readiness accepts either a job
@@ -232,8 +236,9 @@ outcome remains `submit_unknown`.
 2. the former Ashby timeout shape (`navigation_committed=true`) evaluates ready
    without requiring `domcontentloaded`;
 3. missing controls and malformed snapshots fail closed;
-4. the daily browser prompt requires the evaluator before a submission claim;
-5. the full job-loop suite remains green.
+4. a missing, changed, non-ready, or wrong-job snapshot cannot claim a submission;
+5. the daily browser prompt passes the verified snapshot path/hash to the claim;
+6. the full job-loop suite remains green.
 
 Order 10 remains `in_progress` after 10A. It becomes `completed` only after one real,
 confirmed application per adapter is recorded without inferred legal answers.

@@ -64,24 +64,33 @@
 ### Task 2: Require the evaluator in the live browser contract
 
 **Files:**
+- Modify: `apps/job-search-loop/job_search_loop/ledger.py`
 - Modify: `apps/job-search-loop/prompts/daily-pass.md`
 - Test: `apps/job-search-loop/tests/test_ats.py`
+- Test: `apps/job-search-loop/tests/test_ledger.py`
+- Test: `apps/job-search-loop/tests/test_application_reporting.py`
 
 **Interfaces:**
 - Consumes: the evaluator from Task 1 and the existing CDP owner evidence path.
-- Produces: a mode-0600 ATS snapshot and evaluator result before `Ledger.claim_submission`.
+- Produces: a mode-0600 ATS snapshot and `Ledger.claim_submission(..., ats_snapshot_path: Path, ats_snapshot_sha256: str)` that independently hashes and evaluates it.
 
-- [ ] **Step 1: Write a failing consumer-behavior test**
+- [ ] **Step 1: Write failing submission-boundary tests**
 
-  Run a controlled prompt-contract helper that must produce the exact pre-submit sequence: connect to the existing CDP owner, navigate with `wait_until=commit`, capture ordered frame/control metadata, persist mode 0600, run `python -m job_search_loop.ats`, require `ready=true`, then claim the ledger slot.
+  Extend the Ledger tests with literal ready evidence. Verify a claim succeeds only for a matching ready snapshot, while a missing file, hash mismatch, non-ready snapshot, and snapshot URL for another job all fail before a daily slot is allocated.
 
 - [ ] **Step 2: Verify RED**
 
-  Run the Task 1 test command and confirm failure because the current daily prompt does not expose the 10A contract.
+  Run:
 
-- [ ] **Step 3: Add the minimal live prompt contract**
+  ```bash
+  PYTHONPATH=apps/job-search-loop python3 -m unittest apps/job-search-loop/tests/test_ledger.py -v
+  ```
 
-  Replace the generic navigation instruction with the exact 10A sequence. Preserve the existing immutable intent, fencing, CAPTCHA, legal-fact, and `submit_unknown` rules.
+  Confirm failure because `claim_submission` does not accept or validate ATS snapshot evidence.
+
+- [ ] **Step 3: Add the minimal deterministic and live contracts**
+
+  Add the two required evidence arguments and columns, perform file/hash/readiness/job-URL validation inside the existing immediate transaction boundary, and retain the evidence path/hash on the intent. Update existing test claim helpers with literal ready snapshots. Then replace the generic prompt navigation instruction with the exact sequence: connect to the existing CDP owner, navigate with `wait_until=commit`, capture ordered frame/control metadata, persist mode 0600, run `python -m job_search_loop.ats`, require `ready=true`, pass snapshot path/hash to the claim, and preserve all existing CAPTCHA/legal-fact/unknown-submit rules.
 
 - [ ] **Step 4: Verify GREEN**
 
