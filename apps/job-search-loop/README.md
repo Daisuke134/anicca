@@ -17,6 +17,7 @@ interviews, and reports every material state change to Telegram.
 | Evidence | Every application is fenced in SQLite and retained under a private evidence directory |
 | Uncertainty | Ambiguous submission becomes `submit_unknown` and is never blindly retried |
 | Personal data | Verified private profile and generated materials are mode `0600` |
+| Career summary | Every terminal daily path atomically refreshes private `summary.v1.json` with state counts and Ashby/Workday confirmed-application coverage |
 | Application receipt | Every confirmed submission records the exact resume path and SHA-256, then sends that same PDF to Telegram once with company, role and URL |
 | Daily report repair | A materially changed same-day catch-up sends one content-addressed correction; identical retries remain at-most-once |
 | Inbox | Gmail metadata is prefiltered deterministically; a model runs only for a new recruiting thread or a pending prep-pack generation job |
@@ -53,6 +54,7 @@ unlimited loop.
 | Private profile | `~/.config/anicca/job-search/profile.json` |
 | Strategy | `config/strategy.default.json` |
 | Ledger | `~/.local/state/anicca/job-search/ledger.sqlite3` |
+| Life Manager read projection | `~/.local/state/anicca/job-search/summary.v1.json` |
 | Interview prep state | `~/.local/state/anicca/job-search/interview-prep.sqlite3` |
 | Evidence | `~/.local/state/anicca/job-search/evidence/` |
 | Materials | `~/.local/share/anicca/job-search/materials/` |
