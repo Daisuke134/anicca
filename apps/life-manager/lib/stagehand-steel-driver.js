@@ -160,8 +160,46 @@ function collectReadOnlyDomSnapshot(input = {}, environment) {
         ? Math.max(-1, Math.min(element.maxLength, 100))
         : -1,
     }));
+  const authActionVisible = Array.from(documentRef.querySelectorAll(
+    'button, a[href], [role="button"], input[type="submit"], input[type="button"], form[action]',
+  ))
+    .slice(0, 100)
+    .filter(visible)
+    .some((element) => {
+      const attribute = (name) => {
+        try {
+          return String(element.getAttribute?.(name) || "");
+        } catch {
+          return "";
+        }
+      };
+      const labelCandidates = Array.from(new Set([
+        element.innerText,
+        attribute("aria-label"),
+        attribute("title"),
+        ["submit", "button"].includes(String(element.type || "").toLowerCase())
+          ? element.value
+          : "",
+      ].map((value) => String(value || "").replace(/\s+/g, " ").trim())
+        .filter(Boolean)));
+      const destination = [
+        attribute("href"),
+        attribute("action"),
+        element.href,
+        element.action,
+      ].filter(Boolean).join(" ");
+      const loginDestination =
+        /(?:^|\/)(?:login|log-in|signin|sign-in)(?:[/?#]|$)/i.test(destination);
+      const exactAuthAction = labelCandidates.some((candidate) =>
+        !/\b(?:security|settings)\b/i.test(candidate) &&
+        /^(?:(?:sign\s*in|log\s*in|login)(?:\s+with\s+(?:google|apple|microsoft|github|facebook|sso|email))?|continue\s+with\s+(?:google|apple|microsoft|github|facebook|sso|email)|email\s+me\s+(?:a\s+)?(?:link|magic\s+link)|magic\s+link|send\s+(?:me\s+)?(?:a\s+)?(?:code|magic\s+link|sign[- ]?in\s+link))$/i.test(
+          candidate,
+        ));
+      return loginDestination || exactAuthAction;
+    });
   return {
     inputs,
+    authActionVisible,
     textFlags: {
       auth: /\b(?:log\s*in|sign\s*in|authenticate|authentication required)\b/i.test(visibleText),
       otp: /\b(?:verification code|security code|one[- ]time code|otp|enter (?:the )?(?:(?:six|6)[- ]digit )?code|(?:six|6)[- ]digit code)\b/i.test(visibleText),
@@ -185,6 +223,11 @@ function classifyReadOnlyDomSnapshot(snapshot = {}) {
     ? source.textFlags
     : {};
   const passwordVisible = inputs.some((input) => input && input.type === "password");
+  const emailVisible = inputs.some((input) =>
+    input &&
+    (input.type === "email" ||
+      input.autocomplete === "email" ||
+      input.autocomplete === "username"));
   const oneTimeCodeVisible = inputs.some((input) =>
     input && input.autocomplete === "one-time-code");
   const singleDigitInputs = inputs.filter((input) =>
@@ -199,7 +242,12 @@ function classifyReadOnlyDomSnapshot(snapshot = {}) {
   return {
     passwordVisible,
     otpVisible,
-    authVisible: passwordVisible || otpVisible || flags.auth === true,
+    // Account/security settings commonly contain explanatory "sign in"
+    // copy alongside ordinary profile controls. Text alone is not an active
+    // authentication form; an auth-relevant control or login URL is.
+    authVisible: passwordVisible || otpVisible ||
+      source.authActionVisible === true ||
+      (flags.auth === true && emailVisible),
     challengeVisible: captchaVisible || flags.challenge === true,
     captchaVisible,
     kycVisible: flags.kyc === true,
@@ -453,7 +501,9 @@ function makeStagehandSteelDriver(options = {}) {
       const pendingWithoutCompletion = /\bpending\b/i.test(handoffText) && !strongCompletion;
       const negated = hardFailure || pendingWithoutCompletion;
       const blockingVerification = !strongCompletion &&
-        /\b(?:verify|check email)\b|確認してください/i.test(handoffText);
+        /\b(?:verify|check(?:\s+your)?\s+email|email\s+verification(?:\s+required)?|confirm\s+your\s+email)\b|確認してください/i.test(
+          handoffText,
+        );
       const handoffReason = activeAuthenticationForm
         ? /\b(?:2fa|two-factor|one-time password|otp|verification code)\b/i.test(handoffText)
           ? "2fa"
@@ -504,8 +554,20 @@ function makeStagehandSteelDriver(options = {}) {
                 : signals.passwordVisible || signals.authVisible || loginPath
                   ? "login"
                   : null;
-        const readOnlyReason = handoffReason || independentReason ||
-          (!originMatches || !marker || !signals.markerPresent || extracted.confirmed !== true
+        const passiveLoginCopy =
+          handoffReason === "login" &&
+          activeAuthenticationForm !== true &&
+          independentReason === null &&
+          originMatches &&
+          Boolean(marker) &&
+          signals.markerPresent &&
+          !negated &&
+          !blockingVerification;
+        const modelHandoffReason = passiveLoginCopy ? null : handoffReason;
+        const modelConfirmed =
+          extracted.confirmed === true || passiveLoginCopy;
+        const readOnlyReason = modelHandoffReason || independentReason ||
+          (!originMatches || !marker || !signals.markerPresent || !modelConfirmed
             ? "login"
             : null);
         const confirmed = readOnlyReason === null;
