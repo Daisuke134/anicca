@@ -50,17 +50,17 @@ zsh, Git, `unittest`.
 - Create: `apps/job-search-loop/scripts/build-release.sh`
 - Create: `apps/job-search-loop/tests/test_release.py`
 
-- [ ] **Step 1: Add RED archive tests**
+- [x] **Step 1: Add RED archive tests**
 
   Require deterministic digest, normalized metadata, correct executable modes,
   bounded inventory, release metadata, and SHA-256 sidecar.
 
-- [ ] **Step 2: Implement commit-tree packaging**
+- [x] **Step 2: Implement commit-tree packaging**
 
   Read tracked blobs and modes from a requested Git tree, sort every entry, normalize
   archive metadata, and refuse dirty/private paths by construction.
 
-- [ ] **Step 3: Verify same-commit reproducibility**
+- [x] **Step 3: Verify same-commit reproducibility**
 
   Build twice into different directories and require byte-identical archives.
 
@@ -70,11 +70,11 @@ zsh, Git, `unittest`.
 - Modify: `apps/job-search-loop/tests/test_release.py`
 - Modify: `apps/job-search-loop/README.md`
 
-- [ ] **Step 1: Verify checksum and extract**
+- [x] **Step 1: Verify checksum and extract**
 
-- [ ] **Step 2: Author a synthetic profile inside a clean root**
+- [x] **Step 2: Author a synthetic profile inside a clean root**
 
-- [ ] **Step 3: Run bundled `install-local.sh --scheduler none`**
+- [x] **Step 3: Run bundled `install-local.sh --scheduler none`**
 
   Use only the extracted artifact plus fake authenticated Codex and isolated absolute
   XDG roots. Assert private modes and provider receipt.
