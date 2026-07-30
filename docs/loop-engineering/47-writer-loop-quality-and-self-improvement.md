@@ -3706,3 +3706,57 @@ KDP Select 全著者の月間合計が $67M なので、書籍だけで $10M/月
 
 **順序の鉄則**: 番号を飛ばさない。#0 は他の全てに優先する（漏洩は不可逆）。
 #13 は #12 の GATE 通過後。#17 は #12 が scorable になるまで着手しない。#18 は #12 と #13 の両方が済んでから。
+
+## 29. 実行記録 — #0 PII gate（2026-07-30。実装完了 / live 反映の宛先を訂正）
+
+### 29.1 完了分（自分で実測、subagent の自己申告は不採用）
+
+実装先 = `profitable-claude` の worktree `feature/writer-pii-identity-gate`（base = `origin/fix/writer-editorial-form-self-heal` の `b8c0837`）。
+
+| 成果物 | 内容 |
+|---|---|
+| `skills/writer-engine/gates/safety/pii_scan.py` | blocklist（env `WRITER_PII_BLOCKLIST` / `WRITER_PII_BLOCKLIST_FILE` から読む。repo に平文で置かない）+ パターン（email / Luhn付きカード / 電話 / 〒住所 / `github.com/<blocklisted handle>`）。NFKC 正規化で全角回避を潰す |
+| `publishers/publisher_core.py` | `pii_gate()` / `pii_readback_gate()` を `publish()` 3箇所 + `stage_x_article` + `commit_x_article` + Dev.to readback に配線 |
+| `publishers/publication_remote.py:828` | `authoritative_probe()` が verified readback を返す前に公開本文を再 scan |
+| `tests/integration/test_e7_pii_gate.py` | 41 tests |
+
+| 検証（自分で実行したコマンドと実出力） | 結果 |
+|---|---|
+| 新テスト単体 | `41 passed in 0.32s` |
+| 全 suite（変更後） | `46 failed, 527 passed` |
+| 全 suite（`b8c0837` を一時 worktree で実行した baseline） | `46 failed, 486 passed` |
+| 失敗 node-id 集合の `diff` | **IDENTICAL**（回帰0、pii 起因の失敗0、純増 +41） |
+| blocklist ヒット | `https://github.com/<handle>/anicca` → `['pii.blocklist.github-handle','pii.blocklist.literal']` |
+| blocklist 未設定 | `PIIConfigError` で停止（fail-open しない） |
+| redaction | 生の識別子を出さない |
+| fail-closed のコード確認 | `publisher_core.py:75-82` — `PIIRefused` も `except Exception` も `PublishRefused` に変換。例外が transport に届く経路なし |
+| diff 内の個人識別子 | `grep -icE` → **0**（fixture は架空） |
+| live runtime 汚染 | `find ~/.local/lib/writer-engine -newermt '-3 hours'` → **0 files** |
+
+副作用として test が live ledger に 13 行書いた残骸（fixture データのみ）を確認し削除済み。
+
+### 29.2 ★宛先の訂正★ — 実際に公開しているのは writer-engine ではない
+
+| store | 最終活動 | 判定 |
+|---|---|---|
+| `~/.local/lib/writer-engine`（新エンジン） | runs の最新が **daily-2026-07-23** | **今は公開していない** |
+| `~/profitable-claude/skills/article-writer/`（旧パイプライン、worktree ではない実体 checkout、branch `fix/writer-note-resume-circuit`） | `state/articles.jsonl` の最終行が **2026-07-30T09:15:36Z**、`article-resume-pending.sh` が稼働中 | ★**これが本番**★ |
+
+writer-engine の live install は source より 50 commits / 43 files / +6,908 行 古い（`a1f267ae` = 2026-07-23）。
+つまり **writer-engine に gate を入れても、今日公開されている記事には一切かからない**。
+
+| 旧パイプラインの公開スクリプト | `publish-note.sh` / `post-zenn.py` / `publish-devto.sh` / `publish-substack-managed.py` / `x-publish/` / `x-post/` |
+|---|---|
+| secret の読み元 | `~/.openclaw/.env`（`WRITER_SECRETS_FILE` の既定）→ blocklist もここに置く |
+
+### 29.3 #0 の残作業（順序厳守。逆順にすると稼働 loop を止める）
+
+| 順 | 作業 | 理由 |
+|---:|---|---|
+| 1 | `~/.openclaw/.env` に `WRITER_PII_BLOCKLIST` を設定 | 先に gate を入れると fail-closed で全公開が停止する |
+| 2 | 稼働中 run（`article-resume-pending.sh`）の終了を待つ | 走行中スクリプトを書き換えない |
+| 3 | `pii_scan.py` を旧パイプラインへ移植し、各 publish スクリプトの直前に挿入 | 実装と 41 テストはそのまま再利用可能 |
+| 4 | 実 artifact を通して block / pass を自分の目で確認 | 自己申告を done にしない |
+
+writer-engine 側の gate（29.1）は将来の本番昇格時にそのまま効く。**二重に持つこと自体は無駄ではない**が、
+「どちらが本番か」を state の最終活動で毎回確認してから触る。
