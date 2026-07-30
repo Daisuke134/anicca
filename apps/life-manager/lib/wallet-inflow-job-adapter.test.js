@@ -283,6 +283,47 @@ test("it asks for USDC Transfer logs addressed to this tenant and nobody else", 
   );
 });
 
+// §10 MAJOR-4 — hostile payloads. The RPC's filter is a request, not a guarantee: a buggy, cached,
+// load-balanced or malicious node can return logs that do not match it. Every fact that decides an amount
+// or an owner is re-derived from the payload.
+test("§10 MAJOR-4: a log the RPC returned but did not match the filter is dropped", async () => {
+  const otherTenantTopic = `0x${"9".repeat(24)}${"ab".repeat(20).slice(0, 40)}`;
+  const hostile = [
+    // Addressed to somebody else entirely — the defect that would book another tenant's money.
+    { ...transferLog({ block: 1101, tx: `0x${"1".repeat(64)}` }), topics: [TRANSFER_TOPIC, `0x${"0".repeat(24)}${PAYER.slice(2)}`, otherTenantTopic] },
+    // Right recipient, wrong event: an Approval carries an allowance in `data`, not a transfer.
+    { ...transferLog({ block: 1102, tx: `0x${"2".repeat(64)}` }), topics: [`0x${"8".repeat(64)}`, `0x${"0".repeat(24)}${PAYER.slice(2)}`, `0x${BASE_ADDRESS.slice(2).toLowerCase().padStart(64, "0")}`] },
+    // Right topics, wrong token contract: anyone can deploy a token and emit a Transfer.
+    { ...transferLog({ block: 1103, tx: `0x${"3".repeat(64)}` }), address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" },
+    // Truncated topics: there is no recipient to check.
+    { ...transferLog({ block: 1104, tx: `0x${"4".repeat(64)}` }), topics: [TRANSFER_TOPIC, `0x${"0".repeat(24)}${PAYER.slice(2)}`] },
+    // A real one, so the test proves discrimination rather than blanket rejection.
+    transferLog({ block: 1105, tx: `0x${"5".repeat(64)}`, amount: 777n }),
+  ];
+  const h = harness({ logs: hostile });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 1, "exactly one of the five logs is this tenant's USDC transfer");
+  assert.equal(h.recorded[0].amount_atomic, "777");
+  assert.equal(receipt.entries.length, 1);
+  assert.ok(receipt.entries[0].entry_key.includes("5".repeat(64)));
+});
+
+test("§10 MAJOR-4: case differences in a returned topic still match, and still only for this tenant", async () => {
+  // Nodes are inconsistent about hex casing; a case-sensitive comparison would silently drop real money.
+  const upper = transferLog({ block: 1100, amount: 500n });
+  upper.topics = [
+    TRANSFER_TOPIC.toUpperCase().replace("0X", "0x"),
+    upper.topics[1],
+    `0x${BASE_ADDRESS.slice(2).toUpperCase().padStart(64, "0")}`,
+  ];
+  upper.address = BASE_USDC.toUpperCase().replace("0X", "0x");
+  const h = harness({ logs: [upper] });
+  await executeWalletInflowJob(job(), h.deps);
+  assert.equal(h.recorded.length, 1);
+  assert.equal(h.recorded[0].amount_atomic, "500");
+});
+
 test("an inflow from a wallet the colony controls is still capital, and is labelled as such", async () => {
   // Every inflow is capital_in regardless of sender, so the self/external split cannot change revenue.
   // It is recorded as a label so a reader can tell a real buyer from our own money moving.

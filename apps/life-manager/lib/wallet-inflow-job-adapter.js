@@ -92,6 +92,12 @@ function buildWalletInflowJob(input = {}) {
   });
 }
 
+// Nodes are inconsistent about hex casing, so every comparison is made on a lowered copy. A
+// case-sensitive compare here would silently drop real money.
+function lower(value) {
+  return String(value == null ? "" : value).trim().toLowerCase();
+}
+
 function topicAddress(address) {
   return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
 }
@@ -155,11 +161,24 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
     logs.push(...page);
   }
 
+  const recipientTopic = topicAddress(address);
   const ordered = logs
+    // §10 MAJOR-4 — re-derive, never trust. `eth_getLogs` filters are a REQUEST; a buggy, cached,
+    // load-balanced or hostile node can answer with logs that do not match them, and this writes to an
+    // append-only money ledger. So the token contract, the event signature and above all the RECIPIENT
+    // are read back out of the payload and compared, and anything that does not match is dropped.
+    .filter((log) => (
+      Boolean(log)
+      && Array.isArray(log.topics)
+      && log.topics.length >= 3
+      && lower(log.address) === lower(BASE_USDC)
+      && lower(log.topics[0]) === lower(TRANSFER_TOPIC)
+      && lower(log.topics[2]) === recipientTopic
+    ))
     .map((log) => ({
       tx: String(log.transactionHash || ""),
       block: hexNumber(log.blockNumber, "Base log block"),
-      from: fromTopic(log.topics && log.topics[1]),
+      from: fromTopic(log.topics[1]),
       atomic: BigInt(String(log.data || "0x0")).toString(),
     }))
     .filter((log) => EVM_TX.test(log.tx) && log.atomic !== "0")
