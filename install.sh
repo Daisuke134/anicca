@@ -160,6 +160,20 @@ echo
 green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
 echo
 
+# ─── 4.2. Gig local state contract ────────────────────────────────────
+# The root registry sync installs earn/gig's source. Prepare its private state
+# boundary on every install, but do not register marketplace schedulers here:
+# D5-E performs that production cutover explicitly after controlled parity.
+cyan "[4.2/6] preparing Gig local runtime…"
+GIG_LOCAL_INSTALLER="$REPO_ROOT/skills/earn/gig/install-local.sh"
+if [ -f "$GIG_LOCAL_INSTALLER" ]; then
+  bash "$GIG_LOCAL_INSTALLER" --scheduler none --no-enable >/dev/null
+  green "  ✓ Gig state adopted/prepared (services remain disabled)"
+else
+  yellow "  • Gig local installer not present — skipping."
+fi
+echo
+
 # ─── 5. supervised, self-updating daemon (optional host mutation) ──────
 cyan "[5/6] daemon registration…"
 if [ "$LIFE_MANAGER_INSTALL_DAEMON" = "1" ]; then

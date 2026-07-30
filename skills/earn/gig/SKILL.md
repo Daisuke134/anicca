@@ -31,7 +31,7 @@ reporting, recovery, and improvement never wait for a human.
 ## Migration status
 
 D5-A places the complete tracked source and tests in this canonical slot.
-D5-B makes every engine and browser path repository-relative, D5-C installs the
-local services and adopts state, and D5-D/E verify parity before production
-cutover. Do not run this checkout as production until those gates are complete.
-
+D5-B makes every engine and browser path repository-relative. D5-C provides the
+idempotent macOS/Linux local installer and adopts existing state without
+copying it. D5-D/E verify parity before production cutover. Do not run this
+checkout as production until those gates are complete.

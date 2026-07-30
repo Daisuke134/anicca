@@ -39,7 +39,7 @@ def test_all_browser_drivers_share_one_dedicated_gig_runtime():
         assert environment["CLOAK_BROWSER_LAUNCHD_LABEL"] == (
             "ai.anicca.hf-gig-browser"
         )
-        assert environment["CDP_LOCK_DIR"] == "__HOME__/gig/.cdp-gig.lock"
+        assert environment["CDP_LOCK_DIR"] == "__GIG_STATE_DIR__/.cdp-gig.lock"
 
 
 def test_gig_browser_has_a_launchd_keepalive_owner():

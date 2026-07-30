@@ -97,3 +97,11 @@ test("Python path resolver matches the shell contract in an isolated HOME", () =
     join(isolatedHome, ".local/state/life-manager/.env"),
   ]);
 });
+
+test("Life Manager earn/gig bridge consumes the installed state contract", () => {
+  const source = readFileSync(join(GIG, "run.sh"), "utf8");
+  assert.equal(source.includes('source "$HERE/scripts/gig_paths.sh"'), true);
+  assert.equal(source.includes('"$GIG_STATE_DIR"'), true);
+  assert.equal(source.includes('expanduser("~/gig")'), false);
+  assert.equal(source.includes("/opt/homebrew/bin/python3"), false);
+});

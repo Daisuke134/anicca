@@ -18,9 +18,9 @@
     <key>CLOAK_CDP_BASE_URL</key><string>http://127.0.0.1:9223</string>
     <key>CDP_DAILY_DRIVER_PORT</key><string>9223</string>
     <key>CDP_DAILY_DRIVER_PROFILE</key><string>__HOME__/.cloak/profiles/gig-daily-driver</string>
-    <key>CDP_GUARD_LOCK</key><string>__HOME__/gig/.cdp-gig-guard.lock</string>
+    <key>CDP_GUARD_LOCK</key><string>__GIG_STATE_DIR__/.cdp-gig-guard.lock</string>
     <key>CDP_GUARD_LOG</key><string>__LIFE_MANAGER_HOME__/logs/cdp-gig-browser-guard.log</string>
-    <key>CDP_LOCK_DIR</key><string>__HOME__/gig/.cdp-gig.lock</string>
+    <key>CDP_LOCK_DIR</key><string>__GIG_STATE_DIR__/.cdp-gig.lock</string>
     <key>CLOAK_CONTEXT_LEASES_FILE</key><string>__HOME__/.cloak/vault/gig-leases.json</string>
     <key>CLOAK_TARGET_OWNERS_FILE</key><string>__HOME__/.cloak/vault/gig-target-owners.json</string>
     <key>CLOAK_SESSION_VAULT_FILE</key><string>__HOME__/.cloak/vault/gig-daily-driver/auth-state.json</string>
