@@ -2887,3 +2887,149 @@ generic schema/libraryの再利用は完了履歴として保持するが、prod
 | 14 | LOW / MONEY-NONBLOCKING | Zenn backlogとX時刻契約 | money laneを止めず、FIFO exact1/public readback/時刻差をreconcilerが継続 |
 
 この旧台帳の#1–#10という番号と状態は履歴であり、現在の実行順序には使わない。現行順序は直上A/B/Cだけを読む。
+
+## 23. Money-first correction — 「良い記事を書くloop」から「売れる仕組みを毎日学ぶloop」へ（2026-07-30 外部一次調査 + 実測診断）
+
+本節は §22.13/§22.14 の reward 契約を否定しない。§22 が「moneyをprimary rewardにする」と決めた一方で、
+**実装は今日まで money を1バイトも観測していない**という実測差分を埋める。以下の測定はすべて 2026-07-30 に実行した。
+
+### 23.1 実測診断（推測なし）
+
+| 観測 | コマンド / 場所 | 結果 | 意味 |
+|---|---|---|---|
+| engineに収益コードが存在しない | `grep -rl 'revenue\|sales\|stripe\|gumroad' --include='*.py' --include='*.sh' ~/.local/lib/writer-engine` | **0 files** | 公開機械であって収益機械ではない |
+| state DBに収益・計測tableがない | `sqlite3 ~/.local/share/writer-engine/state.sqlite3 ".tables"` | `daily_runs / publication_attempts / publication_receipts / telegram_outbox / x_post_*` のみ。metrics/sales/attribution table **無し** | 「何本出したか」しか残らない |
+| Telegram通知が生イベントdump | `notifications/telegram-outbox.py:38` | `message = f"[{event_id}] {args.event_type} {payload_json}"` | Daisが受け取るのは「投稿した」だけ。金額・view・engagementは1つも入らない |
+| 宛先がplatform 1アカウント固定 | `config/destinations.example.toml` | note/zenn/substack/x/devto 各1 account | niche別ポートフォリオが構造上作れない |
+| 計測スクリプトは旧skill側に孤立 | `profitable-claude/skills/article-writer/scripts/measure-sales.py`, `scripts/_shared/measure-funnel.py` | 実在（daily-driver CDPでnote売上管理・Substack dashboardを読む）が、writer-engineから呼ばれていない | 資産はある。配線が無い |
+
+結論: 収益が出ていない主因は「文章の質」でも「信用の蓄積待ち」でもない。**売る物・売り場・計測・帰属が1つも実装されていない**。
+
+### 23.2 外部一次資料（2026-07-30 収集。数字はすべて出典付き）
+
+| # | Source | 核心の引用 | Writer loopへの含意 |
+|---|---|---|---|
+| S1 | [beehiiv, The State of Paid Newsletters 2026](https://www.beehiiv.com/blog/the-state-of-paid-newsletters-2026) | “The median paid conversion rate across beehiiv is 0.62%. For every 1,000 subscribers, about 6 are paying.” / “top 10% in finance and investing hit 18-20%” | niche選択の期待値差は **約30倍**。同じ文章力でも niche を外すと数学的に到達不能 |
+| S2 | 同上 | “Investing newsletters charge $27/month, nearly 4x as much as a typical travel newsletter ($7)... A single stock tip can justify the subscription price in one email.” / “A publication with 500 subscribers charges roughly the same as one with 100,000+” | 価格は読者のROIで決まり、購読者数では決まらない |
+| S3 | 同上 | AI vertical churn **13.33%/mo**（全vertical最悪）, Sports conv **1.93%** / churn **7.76%** | 「AI系の解説記事」は最も解約される題材。現行の題材選択と正面衝突 |
+| S4 | 同上 | “The median creator sets up a paid subscription tier 45 days after creating their newsletter” | 有料化を遅らせない。ただし有料化 ≠ 全記事paywall |
+| S5 | [note membership](https://membership.lp-note.com) | 「会員数 1,248万人：2026年5月末時点」/「収益を得た人 20万人：2025年3月末時点」 | note全アカウントのうち収益到達は **約1.6%**。note単体を主収益源にする設計は期待値が低い |
+| S6 | X: [@soham_nayak04](https://x.com/soham_nayak04/status/2082061389833871426) | “150,000 have ever received a payout... Total paid out since July 2023: $45 million... $300 per creator. Lifetime, not monthly.” | platform rev-share の中央値はほぼ0。X収益化を主軸にしない |
+| S7 | X: [@ecomchigga](https://x.com/ecomchigga/status/2082557547387437060) | “every niche on this list sounds stupid... that's why nobody's there”（$380–$8,910/mo のmicro product 7例、配布先は既存のsubreddit/FBグループ） | **最速で最初の1ドルが出る形は「狭いnicheの少額デジタル商品 × 既存コミュニティへの配布」**。自前オーディエンス不要 |
+| S8 | X: [@denk_tweets](https://x.com/denk_tweets/status/2080302717898219914)（beehiiv CEO） | “this newsletter for magicians makes nearly six-figures a year... thousands of paid members: unlocks the full archive of 300+ premium articles” | 構造は「無料の定期便 + 有料アーカイブ」。1本ずつのpaywallではない |
+| S9 | [Kit](https://kit.com/resources/blog/how-creators-earn-revenue-newsletter-sponsorships) | “Eli Weiss... landed his first sponsor for $1,000 before he sent his first newsletter” | 収益は購読者数の後にしか来ない、という前提が誤り |
+| S10 | [Ghost, referral programs](https://ghost.org/resources/newsletter-referral-programs/) | “Morning Brew famously grew from 100,000 subscribers to 1.5 million in 18 months” | 2026の初期配布は アルゴリズム露出ではなく 相互推薦 + 紹介 |
+| S11 | [beehiiv Recommendations](https://www.beehiiv.com/features/recommendations) | 相互推薦がplatformの中核機能 | 「良い記事を出せば見つかる」は配布戦略ではない |
+| S12 | [platoba/smart-links](https://github.com/platoba/smart-links) | 送信先URLを検知してaffiliate paramを注入し、click毎にgeo/device/referrerを記録 | click計測 + 収益リンク化の実装をcopyする |
+| S13 | [IncomeStreamSurfer/chatgptassistantautoblogger](https://github.com/IncomeStreamSurfer/chatgptassistantautoblogger) (460★) | 商品カタログ/内部リンク表をretrieval contextとして与え、記事生成時点で売り物と内部リンクを埋め込む | 「書いてからCTAを付ける」のではなく **offerをcontextに入れて書く** |
+| S14 | [antiwork/gumroad-cli](https://github.com/antiwork/gumroad-cli) / [rmarescu/gumroad-mcp](https://github.com/rmarescu/gumroad-mcp) | 公式CLI + MCPで sales取得・offer code発行が自動化可能 | 商品側の操作もno-humanで回せる |
+| S15 | Stripe `client_reference_id`（[docs.stripe.com/api/checkout/sessions/object](https://docs.stripe.com/api/checkout/sessions/object)、実運用repo多数） | Checkout Session作成時に任意IDを載せ、`checkout.session.completed`で回収できる | **記事→ドルの帰属はStripe側1フィールドで足りる**。独自redirectorは不要 |
+| S16 | [forem/forem `api/v1/articles/me.json.jbuilder`](https://github.com/forem/forem) | `page_views_count`, `public_reactions_count`, `comments_count` を公式APIで返す | dev.toは唯一、公式APIで記事別viewが取れる |
+| S17 | note `/api/v3/notes/{key}`（public）+ `/api/v2/stats/reading_rate`・`/api/v2/stats/read_history`（cookie） | note dashboard自身が叩くJSON | daily-driverのログイン済みsessionでそのまま取得可能 |
+| S18 | [DeepMind, Specification gaming](https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/) | “satisfies the literal specification of an objective without achieving the intended outcome” | view/公開本数/judge点を金の代理にしない（§22.14と同一） |
+
+**gh実測での不在**: 「記事のperformance→実収益で次の題材を選び直すloop」「記事本文に合う商品を選定するmatcher」「content→checkoutの自動化」はOSSに存在しない（15検索×3カテゴリで0件）。
+配布(Postiz)・click計測(smart-links)・商品操作(gumroad-cli)はcopy、**その間の糊だけが自作対象**。
+
+### 23.3 到達可能性の算数（願望ではなく式）
+
+```text
+required_paid_subs = target_MRR / price
+required_free_subs = required_paid_subs / conversion_rate
+```
+
+| シナリオ | conversion | price | $10k MRRに必要な無料読者 | 出典 |
+|---|---|---|---|---|
+| 中央値niche | 0.62% | $10/mo | **約1,600,000人** | S1 |
+| 買い手意図niche 上位decile | 18.69% | $27/mo | **約2,000人** | S1 + S2 |
+
+同じ文章量で必要読者が **800倍** 変わる。したがって loop が毎日最適化すべき第1変数は文章ではなく
+**niche × offer × 配布先**。これが「how to make money with writing」を毎日検索させる理由の定量的根拠。
+
+### 23.4 設計変更（loopへの埋め込み）
+
+```text
+       ┌──────────────── J1 money-scan (daily 06:00) ─────────────────┐
+       │ X + gh + web を「どう金にしたか」で検索                        │
+       │ → mechanism / number / source を money-playbook.jsonl へ      │
+       │ → 既知と重複しない知見のみ 1件、strategy候補として提案         │
+       └───────────────────────────┬──────────────────────────────────┘
+                                   ↓ (held-out + canary は §22.14 の既存gate)
+   ┌─── J2 offer layer ────┐   ┌─── J5 niche portfolio ───┐
+   │ niche毎に商品1つ       │   │ 1 account = 1 niche       │
+   │ Stripe Payment Link /  │   │ 自前credential + vault    │
+   │ Gumroad product        │   │ 独立reward/weight         │
+   │ client_reference_id =  │   └───────────┬──────────────┘
+   │  artifact_id           │               │
+   └───────────┬────────────┘               │
+               ↓                             ↓
+        記事生成時に offer を context へ投入（S13）
+               ↓
+        公開 = 無料の配布資産（paywallは archive 側 S8）
+               ↓
+        既存コミュニティへ配布（S7/S10/S11）
+               ↓
+   ┌─── J3 metrics collector (daily) ───────────────────────┐
+   │ devto API / note api/v2/stats / Zenn api / Substack     │
+   │ /api/v1/publication / X analytics(daily-driver)         │
+   │ + Stripe sales + Gumroad sales                          │
+   │ → metrics_snapshot, sales_event, attribution_join       │
+   │ 取得不能は unknown。0に変換しない                        │
+   └───────────────────────┬─────────────────────────────────┘
+                           ↓
+   ┌─── J4 daily money report → Telegram ───────────────────┐
+   │ 金額 → funnel → 何を変えたか → 次の実験                  │
+   └────────────────────────────────────────────────────────┘
+```
+
+| Job | 周期 | done条件 |
+|---|---|---|
+| J1 money-scan | 毎日 | 出典付き知見が `money-playbook.jsonl` に追記され、重複0。提案は1件のみ。既存held-out gateを通らない限り weight変更0 |
+| J2 offer layer | 1回 + niche追加毎 | 実在するcheckout URLが生成され、`client_reference_id=<artifact_id>` を載せたtest決済が1件Stripeに着地する |
+| J3 metrics collector | 毎日 | 各platformの数値が status(scorable/unknown) 付きで保存され、sales と artifact_id でjoinできる |
+| J4 money report | 毎日 固定時刻 | Telegramに金額入りの人間可読レポートが届く。生JSON dumpではない |
+| J5 niche portfolio | niche毎 | account作成が no-human で完了し、credentialがvaultに入り、reward/weightが他nicheと混ざらない |
+
+### 23.5 Telegram daily money report の契約（形式を固定する）
+
+```text
+💰 2026-07-30 Writer
+Revenue today:    ¥0    (MTD ¥0)
+  note            ¥0    sales 0
+  Substack        $0    paid subs 0 (Δ0)
+  Stripe/product  $0    checkout 0 / paid 0
+Funnel (24h):
+  impressions  X 1,240 | note 33 | devto 210 | zenn unknown
+  CTA clicks   7        CVR 0.00%
+Published: ja/note ✅  ja/x-article ✅  en/substack ✅  zenn ❌(unavailable)
+Changed today: title-weight v7 → v8 (held-out PASS, canary PASS)
+Next experiment: niche=個人事業主の請求書, offer=¥1,500 template, 配布=r/JapanFinance
+Blocked: none
+```
+
+| Rule | 契約 |
+|---|---|
+| 先頭は必ず金額 | 公開本数を先頭に置かない（S18の代理指標最適化を防ぐ） |
+| unknown は unknown と書く | 取得失敗を0と書かない |
+| 「何を変えたか」を毎日1行 | 変更0の日は「変更なし（理由）」と書く |
+| 次の実験を毎日1行 | 実験が無い日は loop が停滞している証拠として出す |
+
+### 23.6 順序（期待損失の大きい順）
+
+| # | 作業 | 理由 |
+|---|---|---|
+| 1 | J3 metrics + sales schema と収集（既存 measure-sales.py / measure-funnel.py をengineへ配線） | 見えない物は改善できない。資産が既にある |
+| 2 | J4 money report（形式固定） | Daisが毎日「いくら」を受け取る。以後の判断が全部これに乗る |
+| 3 | J2 offer layer（Stripe Payment Link + client_reference_id、記事contextへ投入） | 売る物が無ければ収益は構造的に0 |
+| 4 | J1 money-scan（毎日の収益化知見検索 + 1件提案） | niche/offerの探索を自動化。既存held-out gateに接続するだけ |
+| 5 | J5 niche portfolio（1 account = 1 niche、自前credential） | 3が動いてから複製する。先に増やすと失敗を並列化するだけ |
+| 6 | 現行の全paywall方針を「無料の定期便 + 有料アーカイブ」へ変更（S8） | 1本ずつのpaywallは配布とcompoundを両方殺す |
+
+### 23.7 正直な限界
+
+| 項目 | 状態 |
+|---|---|
+| 10M MRRの保証 | **無い**。保証できるのは「金の観測 → 1変更 → held-out/canary → keep/revert」が毎日回ること（§22.13と同一） |
+| 自前credentialでの入金 | Stripe/Gumroadは法人・本人確認が要る。**agent自身の入金導線は現状 crypto (USDC) が唯一の自前rail**。法人rail経由はDais名義に依存する。ここは検索では解けない構造的制約 |
+| 複数アカウント運用の可否 | X/note/Substackが1人複数アカウントをどう扱うかは **UNVERIFIED**（X検索で実データ0件）。1 platform 1 niche から始め、凍結兆候を停止条件にする |
+| 題材の入替 | S3よりAI題材はchurn最悪。ただし「AI × 買い手意図の狭いniche」は未検証であり、捨てるのではなく買い手意図軸で選び直す |
