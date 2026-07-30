@@ -4,33 +4,26 @@
 // Thin CLI over lib/outbound-runtime.js. It loads a pack config, resolves the pack's provider
 // stages, and runs one pass.
 //
-// Task #1 ships the engine and its gates only, so the providers still refuse with
-// NOT_IMPLEMENTED. Running this today therefore produces an HONEST failure in the trace ledger
-// and an honest failure line in Telegram — not a fake success. TODO #7 wires Luma in and this
-// entrypoint starts producing real results without changing.
+// The `events` pack is wired to the real Luma provider (TODO #7): it discovers from Luma's public
+// discover feed, hydrates each candidate's event page so freeness can be proven, screens for
+// free / in-person / in-region / open, and — when the pack config turns `auto_rsvp` on — RSVPs
+// through the leased CloakBrowser and puts the result through the evidence gate.
+//
+// `funders` and `jobs` are still unwired and say so. Their stages return a named refusal, so the
+// pass produces an HONEST failure in the trace ledger and an honest failure line in Telegram
+// rather than a fake success.
 "use strict";
 
 const { runOutboundPass } = require("../lib/outbound-runtime.js");
 const { loadPackConfig, PACKS } = require("../lib/outbound-config.js");
-const luma = require("../lib/providers/luma.js");
+const { buildStages: buildEventStages } = require("../lib/outbound-events-stages.js");
 
-// Stage wiring per pack. Every stage here is still a stub; the pipeline turns a refusal into a
-// failed result rather than an unhandled crash.
-function stagesFor(pack) {
+function stagesFor(pack, deps = {}) {
   const notWired = (stage) => async () => ({
     ok: false,
     reason: `${stage}_not_wired_for_${pack}`,
   });
-  if (pack === "events") {
-    return {
-      discover: luma.discoverEvents,
-      qualify: notWired("qualify"),
-      act: luma.rsvp,
-      evidence: notWired("evidence"),
-      track: notWired("track"),
-      learn: notWired("learn"),
-    };
-  }
+  if (pack === "events") return buildEventStages(deps);
   return {
     discover: notWired("discover"),
     qualify: notWired("qualify"),

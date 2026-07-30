@@ -284,19 +284,22 @@ test("a denylisted candidate is blocked deterministically before QUALIFY judges 
 
 test("the pass reports a stage that refuses (NOT_IMPLEMENTED) as failed, not as success", async () => {
   const home = tempHome();
-  const { discoverEvents } = require("./providers/luma.js");
+  // A still-unimplemented provider, on purpose: luma was implemented in TODO #7 and calling its
+  // discover here would reach out to the live site from a unit test. cloakbrowser is the stub that
+  // remains, and the property under test is about ANY refusing stage, not about Luma.
+  const { openPage } = require("./providers/cloakbrowser.js");
   const base = stagesThatSucceed([], "/nope.png");
   const pass = await runOutboundPass({
     pack: "events",
     config: config(),
-    stages: { ...base, discover: discoverEvents },
+    stages: { ...base, discover: openPage },
     homeDir: home,
     nowMs: NOW,
     telegram: { token: "", chatId: "" },
   });
   assert.equal(pass.status, "completed");
   assert.equal(pass.results[0].status, "failed");
-  assert.match(pass.results[0].reason, /discover_threw: NOT_IMPLEMENTED: luma\.discoverEvents/);
+  assert.match(pass.results[0].reason, /discover_threw: NOT_IMPLEMENTED: cloakbrowser\.openPage/);
   assert.equal(readTrace(home, "events")[0].outcome, "failed");
 });
 

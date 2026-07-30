@@ -1,0 +1,19 @@
+{
+ "_note": "REAL Luma confirmation message captured 2026-07-31 via `gog gmail get --json`, structurally verbatim. The guest key and the operator mailbox are REDACTED (g-FY990FCQqV0J6XY -> g-REDACTEDGUESTKEY, real address -> operator@example.com) because a guest key is a live ticket credential and must not live in git.",
+ "message": {
+  "id": "19fb3c3c704429cf",
+  "internalDate": "1785427379000"
+ },
+ "headers": {
+  "bcc": "",
+  "cc": "",
+  "date": "Thu, 30 Jul 2026 16:02:59 +0000",
+  "from": "AIAU <aiau@calendar.luma-mail.com>",
+  "in_reply_to": "",
+  "message_id": "<0101019fb3c3c509-f2028c69-a81e-449b-ac85-bda3254e64d7-000000@us-west-2.amazonses.com>",
+  "references": "",
+  "subject": "Codex Meetup Tokyo #2の参加登録が承認されました",
+  "to": "operator@example.com"
+ },
+ "body": "0 - 22:00 JST\r\n場所: In Person\r\nTicket: Standard - 無料\r\n\r\nイベントページ: https://luma.com/p9kfepcf?pk=g-REDACTEDGUESTKEY\r\nマイチケット: https://luma.com/e/ticket/evt-eXObzZdL57cxXnG?pk=g-REDACTEDGUESTKEY\r\n\r\n東京の注目イベントです。すべてのイベント一覧は都市ページ: https:\n…\ncom/tokyo?utm_source=luma-emailをご覧ください。\r\n\r\nLumaアプリをダウンロード — チケットへのアクセスやスムーズなチェックイン、イベントの最新情報・お知らせの受信、会場への道順確認が便利にできます。\r\nhttps://luma.com/ios?utm_source=email\r\nhttps://luma.com/android?utm_source=em"
+}

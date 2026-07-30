@@ -13,6 +13,14 @@
   "sources": [
     "luma"
   ],
+  "city": "tokyo",
+  "regions": [
+    "Tokyo"
+  ],
+  "hydrate_limit": 12,
+  "polite_delay_ms": 1000,
+  "auto_rsvp": false,
+  "auto_rsvp_note": "OFF until TODO #10 lands the model's QUALIFY judgment. The deterministic screen can prove free / in-person / in-region / open; it cannot judge whether an event is worth attending, and a loop that registers for everything free in Tokyo is a nuisance, not an agent. While this is false the daily pass discovers, screens and reports, and scripts/outbound-luma-rsvp.js is what actually registers.",
   "template_variant": "v1-baseline",
-  "notes": "v1 is Luma only. The Luma account is contact@aniccaai.com = Anicca-owned. LT (speaking) slots outrank plain attendance; that judgment is made by the model reading the event body, never by a regex."
+  "notes": "v1 is Luma only. Confirmation mail lands in the operator mailbox (LM_OUTBOUND_EMAIL); the identity is read from the environment, never committed here. LT (speaking) slots outrank plain attendance; that judgment is made by the model reading the event body, never by a regex."
 }

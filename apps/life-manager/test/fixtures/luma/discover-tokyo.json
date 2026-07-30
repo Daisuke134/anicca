@@ -1,0 +1,397 @@
+{
+ "entries": [
+  {
+   "api_id": "evt-5GCH6i22k6xPKMT",
+   "event": {
+    "api_id": "evt-5GCH6i22k6xPKMT",
+    "calendar_api_id": "cal-dGH3l7FqAQ9VWSJ",
+    "cover_url": "https://images.lumacdn.com/uploads/as/4cdb3dcb-5c9d-4ced-a8f6-d865217840ea.png",
+    "end_at": "2026-07-31T12:30:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "Cursor Tokyo AI Meetup",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T09:30:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "cursor-tokyoai-0731",
+    "user_api_id": "usr-ixbePrig0S1IIpl",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "mode": "obfuscated",
+     "city": "Chiyoda City",
+     "city_state": "Chiyoda City, Japan",
+     "sublocality": "7",
+     "country": "Japan",
+     "country_code": "JP",
+     "region": "Tokyo",
+     "region_short": "Tokyo"
+    },
+    "geo_address_visibility": "guests-only",
+    "waitlist_enabled": true,
+    "waitlist_status": "active"
+   },
+   "start_at": "2026-07-31T09:30:00.000Z",
+   "ticket_info": {
+    "price": null,
+    "is_free": false,
+    "max_price": null,
+    "is_sold_out": true,
+    "spots_remaining": 0,
+    "is_near_capacity": false,
+    "require_approval": true
+   },
+   "registration_availability": "waitlist"
+  },
+  {
+   "api_id": "evt-QZDGGQijiEJgm5A",
+   "event": {
+    "api_id": "evt-QZDGGQijiEJgm5A",
+    "calendar_api_id": "cal-9o9mQMV2GlLussj",
+    "cover_url": "https://images.lumacdn.com/uploads/mm/97de6a8e-b567-42c3-989d-d5f034c2ac74.gif",
+    "end_at": "2026-07-31T12:30:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "新生CryptoBeerブランドローンチイベント",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T10:30:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "3mn5f2jr",
+    "user_api_id": "usr-ZDTpEI2HnCjosYp",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "city": "Shibuya",
+     "type": "google",
+     "region": "Tokyo",
+     "address": "Kanpai Stand SHIBUYA",
+     "country": "Japan",
+     "place_id": "ChIJ7_Og9KOLGGARac-9_2NYDXQ",
+     "localized": {
+      "ja": {
+       "city": "渋谷区",
+       "region": "東京都",
+       "address": "カンパイスタンド SHIBUYA",
+       "country": "日本",
+       "city_state": "日本渋谷区",
+       "sublocality": "２",
+       "full_address": "カンパイスタンド SHIBUYA, Hokkoku, Bldg B1, ３丁目-２-1 渋谷 渋谷区 東京都 150-0002 日本",
+       "region_short": "東京都",
+       "short_address": "Hokkoku, Bldg B1, ３丁目-２-１ 渋谷 渋谷区"
+      }
+     },
+     "city_state": "Shibuya, Japan",
+     "description": "",
+     "sublocality": "2",
+     "country_code": "JP",
+     "full_address": "Kanpai Stand SHIBUYA, Hokkoku, Bldg B1, 3-chōme-2-1 Shibuya, Tokyo 150-0002, Japan",
+     "region_short": "Tokyo",
+     "short_address": "Hokkoku, Bldg B1, 3-chōme-2-1 Shibuya",
+     "apple_maps_place_id": null,
+     "mode": "shown"
+    },
+    "geo_address_visibility": "public",
+    "waitlist_enabled": true,
+    "waitlist_status": "active"
+   },
+   "start_at": "2026-07-31T10:30:00.000Z",
+   "ticket_info": {
+    "price": null,
+    "is_free": true,
+    "max_price": null,
+    "is_sold_out": true,
+    "spots_remaining": 0,
+    "is_near_capacity": false,
+    "require_approval": false
+   },
+   "registration_availability": "waitlist"
+  },
+  {
+   "api_id": "evt-znFN3O8b8p6I3kz",
+   "event": {
+    "api_id": "evt-znFN3O8b8p6I3kz",
+    "calendar_api_id": "cal-qvZZKAKLklgNGZT",
+    "cover_url": "https://images.lumacdn.com/uploads/3j/4740141f-18fa-4ff8-a06c-1d4f9329d7c6.png",
+    "end_at": "2026-07-31T20:00:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "Thir(s)ty One FINAL EVENT \"THE PARTY HOTEL\"",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T11:00:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "s3a5nqdu",
+    "user_api_id": "usr-vNxba4cpUtPb76S",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "city": "Chuo City",
+     "type": "google",
+     "region": "Tokyo",
+     "address": "BnA WALL - Art Hotel in Tokyo",
+     "country": "Japan",
+     "place_id": "ChIJ23_08sCJGGARSEtOicnbEHk",
+     "localized": {
+      "ja": {
+       "city": "中央区",
+       "region": "東京都",
+       "address": "BnA_WALL - Art Hotel in Tokyo",
+       "country": "日本",
+       "city_state": "日本中央区",
+       "sublocality": "１",
+       "full_address": "BnA_WALL - Art Hotel in Tokyo, 日本、〒103-0011 東京都中央区日本橋大伝馬町１−１",
+       "region_short": "東京都",
+       "short_address": "中央区日本橋大伝馬町１−１"
+      }
+     },
+     "city_state": "Chuo City, Japan",
+     "description": "",
+     "sublocality": "1",
+     "country_code": "JP",
+     "full_address": "BnA WALL - Art Hotel in Tokyo, 1-1 Nihonbashiōdenmachō, Chuo City, Tokyo 103-0011, Japan",
+     "region_short": "Tokyo",
+     "short_address": "1-1 Nihonbashiōdenmachō, Chuo City",
+     "apple_maps_place_id": "I788E78F0BD91883F",
+     "mode": "shown"
+    },
+    "geo_address_visibility": "public",
+    "waitlist_enabled": false,
+    "waitlist_status": "disabled"
+   },
+   "start_at": "2026-07-31T11:00:00.000Z",
+   "ticket_info": {
+    "price": {
+     "cents": 4000,
+     "currency": "jpy",
+     "is_flexible": false
+    },
+    "is_free": false,
+    "max_price": {
+     "cents": 5000,
+     "currency": "jpy"
+    },
+    "is_sold_out": false,
+    "spots_remaining": null,
+    "is_near_capacity": false,
+    "require_approval": false
+   },
+   "registration_availability": "open"
+  },
+  {
+   "api_id": "evt-gM692jtgWT00m7P",
+   "event": {
+    "api_id": "evt-gM692jtgWT00m7P",
+    "calendar_api_id": "cal-vLNEjjY9JH1XPSA",
+    "cover_url": "https://images.lumacdn.com/uploads/e0/c1ec21c0-56de-4901-8017-2e237ff5fdac.png",
+    "end_at": "2026-07-31T17:00:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "Shipaton 2026 Countdown Party in Tokyo",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T13:00:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "shipaton-countdown-2026",
+    "user_api_id": "usr-kZIhecV27ZlYvOC",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "city": "Shibuya",
+     "type": "google",
+     "region": "Tokyo",
+     "address": "CÉ LA VI TOKYO",
+     "country": "Japan",
+     "place_id": "ChIJgzpnLVCLGGARSJNqhxqG27U",
+     "localized": {
+      "ja": {
+       "city": "渋谷区",
+       "region": "東京都",
+       "address": "CÉ LA VI TOKYO",
+       "country": "日本",
+       "city_state": "日本渋谷区",
+       "sublocality": "２",
+       "full_address": "CÉ LA VI TOKYO, 日本、〒150-0043 東京都渋谷区道玄坂１丁目２−３ 東急プラザ渋谷17階 ＆18階",
+       "region_short": "東京都",
+       "short_address": "渋谷区道玄坂１丁目２−３ 東急プラザ渋谷17階 ＆18階"
+      }
+     },
+     "city_state": "Shibuya, Japan",
+     "description": "1-2-3 Dogenzaka, Shibuya-ku, Tokyo, Tokyu Plaza Shibuya 18th floors",
+     "sublocality": "2",
+     "country_code": "JP",
+     "full_address": "CÉ LA VI TOKYO, Japan, 〒150-0043 Tokyo, Shibuya, Dōgenzaka, 1-chōme−2−３ 東急プラザ渋谷17階 ＆18階",
+     "region_short": "Tokyo",
+     "short_address": "Shibuya, Dōgenzaka, 1-chōme−2−3 東急プラザ渋谷17階 ＆18階",
+     "apple_maps_place_id": "I9ED6C9018DF46B38",
+     "mode": "shown"
+    },
+    "geo_address_visibility": "public",
+    "waitlist_enabled": false,
+    "waitlist_status": "disabled"
+   },
+   "start_at": "2026-07-31T13:00:00.000Z",
+   "ticket_info": {
+    "price": null,
+    "is_free": false,
+    "max_price": null,
+    "is_sold_out": true,
+    "spots_remaining": 0,
+    "is_near_capacity": false,
+    "require_approval": false
+   },
+   "registration_availability": "sold-out"
+  },
+  {
+   "api_id": "evt-5XYD5jHi9dqX7zH",
+   "event": {
+    "api_id": "evt-5XYD5jHi9dqX7zH",
+    "calendar_api_id": "cal-lHtV0axmzJNppA6",
+    "cover_url": "https://images.lumacdn.com/api-uploads/0e/81bf0363-649d-4d9d-8461-aaa862ada237.png",
+    "end_at": "2026-08-01T00:30:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "🥣Acai Morning Run in Shibuya🏃",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T22:00:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "iiyon-27gm",
+    "user_api_id": "usr-TU3FbLG1TvWwQuQ",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "city": "Shibuya",
+     "type": "google",
+     "region": "Tokyo",
+     "address": "Aubrey House Shibuya Jinnan",
+     "country": "Japan",
+     "place_id": "ChIJMS5VldKLGGAR0b-2scy1T9g",
+     "localized": {
+      "ja": {
+       "city": "渋谷区",
+       "region": "東京都",
+       "address": "Aubrey House 渋谷神南店",
+       "country": "日本",
+       "city_state": "日本渋谷区",
+       "sublocality": "１３",
+       "full_address": "Aubrey House 渋谷神南店, 日本、〒150-0041 東京都渋谷区神南１丁目１３−４ フレームインボックス 2F",
+       "region_short": "東京都",
+       "short_address": "渋谷区神南１丁目１３−４ フレームインボックス 2F"
+      }
+     },
+     "city_state": "Shibuya, Japan",
+     "description": "",
+     "sublocality": "13",
+     "country_code": "JP",
+     "full_address": "Aubrey House Shibuya Jinnan, Japan, 〒150-0041 Tokyo, Shibuya, Jinnan, 1-chōme−13−４ フレームインボックス 2F",
+     "region_short": "Tokyo",
+     "short_address": "Shibuya, Jinnan, 1-chōme−13−4 フレームインボックス 2F",
+     "apple_maps_place_id": "ID0452A6F7F073556",
+     "mode": "shown"
+    },
+    "geo_address_visibility": "public",
+    "waitlist_enabled": true,
+    "waitlist_status": "enabled"
+   },
+   "start_at": "2026-07-31T22:00:00.000Z",
+   "ticket_info": {
+    "price": {
+     "cents": 2500,
+     "currency": "jpy",
+     "is_flexible": false
+    },
+    "is_free": false,
+    "max_price": null,
+    "is_sold_out": true,
+    "spots_remaining": 0,
+    "is_near_capacity": false,
+    "require_approval": false
+   },
+   "registration_availability": "waitlist"
+  },
+  {
+   "api_id": "evt-PKds2h6RBKk78NZ",
+   "event": {
+    "api_id": "evt-PKds2h6RBKk78NZ",
+    "calendar_api_id": "cal-w4n6XsdaL9w7n1f",
+    "cover_url": "https://images.lumacdn.com/uploads/k9/281006c0-314d-4dfd-b076-5848344f6145.png",
+    "end_at": "2026-08-01T01:00:00.000Z",
+    "event_type": "independent",
+    "hide_rsvp": false,
+    "location_type": "offline",
+    "name": "Morning Run & Coffee Connect in Yoyogi Park 🌿👟",
+    "recurrence_id": null,
+    "start_at": "2026-07-31T23:00:00.000Z",
+    "timezone": "Asia/Tokyo",
+    "url": "qk48hvdb",
+    "user_api_id": "usr-shgCKKF26hh1yGN",
+    "visibility": "public",
+    "virtual_info": {
+     "has_access": false
+    },
+    "geo_address_info": {
+     "city": "Shibuya",
+     "type": "google",
+     "region": "Tokyo",
+     "address": "Yoyogi Park Clock Tower",
+     "country": "Japan",
+     "place_id": "ChIJD1M2GbCMGGARmUFziof73JM",
+     "localized": {
+      "ja": {
+       "city": "渋谷区",
+       "region": "東京都",
+       "address": "原宿門前時計塔",
+       "country": "日本",
+       "city_state": "日本渋谷区",
+       "sublocality": "２",
+       "full_address": "原宿門前時計塔, 日本、〒151-0052 東京都渋谷区代々木神園町２−１",
+       "region_short": "東京都",
+       "short_address": "渋谷区代々木神園町２−１"
+      }
+     },
+     "city_state": "Shibuya, Japan",
+     "description": "",
+     "sublocality": "2",
+     "country_code": "JP",
+     "full_address": "Yoyogi Park Clock Tower, 2-1 Yoyogikamizonochō, Shibuya, Tokyo 151-0052, Japan",
+     "region_short": "Tokyo",
+     "short_address": "2-1 Yoyogikamizonochō, Shibuya",
+     "place_coordinate": {
+      "latitude": 35.6690816,
+      "longitude": 139.7007898
+     },
+     "apple_maps_place_id": "I6708F38B087CD149",
+     "mode": "shown"
+    },
+    "geo_address_visibility": "public",
+    "waitlist_enabled": false,
+    "waitlist_status": "disabled"
+   },
+   "start_at": "2026-07-31T23:00:00.000Z",
+   "ticket_info": {
+    "price": null,
+    "is_free": false,
+    "max_price": null,
+    "is_sold_out": false,
+    "spots_remaining": 17,
+    "is_near_capacity": false,
+    "require_approval": true
+   },
+   "registration_availability": "open"
+  }
+ ],
+ "has_more": false,
+ "next_cursor": "eyJzdiI6IjIwMjYtMTAtMDMgMDE6MzA6MDArMDAiLCJmYiI6ImV2dC05SENIUzA1RWN3R3dEc0oifQ"
+}
