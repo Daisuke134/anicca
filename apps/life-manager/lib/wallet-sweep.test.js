@@ -70,20 +70,18 @@ function harness(rows, overrides = {}) {
   return { deps, enqueued };
 }
 
-test("a row that is missing any wallet column needs provisioning", () => {
-  assert.equal(needsZeroStart(bare("tenant-a")), true);
-  assert.equal(needsZeroStart(provisioned("tenant-a")), false);
-  for (const column of [
-    "agent_wallet_address",
-    "agent_wallet_solana_address",
-    "agent_wallet_key_ref",
-    "agent_wallet_solana_key_ref",
-    "agent_wallet_created_at",
-  ]) {
-    const partial = { ...provisioned("tenant-a"), [column]: null };
-    assert.equal(needsZeroStart(partial), true, `a missing ${column} is not provisioned`);
-    assert.equal(needsZeroStart({ ...provisioned("tenant-a"), [column]: "   " }), true, "blank is not a value");
-  }
+test("§11.5: needing a zero-start means no ANNOUNCEMENT, not missing wallet columns", () => {
+  // The measured §9.2 defect: wallets are published BEFORE the chat check, so a failure after provisioning
+  // left a real funded-capable address with the tenant never told — and `needsZeroStart` said false because
+  // the columns were full. Announcement, not provisioning, is the thing that has to be true.
+  const announced = new Set(["told"]);
+  assert.equal(needsZeroStart(bare("tenant-a"), { announced }), true);
+  assert.equal(needsZeroStart(provisioned("tenant-a"), { announced }), true, "provisioned but never told");
+  assert.equal(needsZeroStart(provisioned("told"), { announced }), false);
+  assert.equal(needsZeroStart(bare("told"), { announced }), false, "already told, nothing more to announce");
+  // With no announcement record at all, every tenant needs one.
+  assert.equal(needsZeroStart(provisioned("tenant-a")), true);
+  assert.equal(needsZeroStart(null, { announced }), false);
 });
 
 test("a brand new tenant is swept into exactly the job the adapter defines", async () => {
@@ -109,8 +107,11 @@ test("a brand new tenant is swept into exactly the job the adapter defines", asy
   });
 });
 
-test("an already provisioned tenant is watched, not re-provisioned", async () => {
-  const h = harness([provisioned("tenant-a")]);
+test("an already ANNOUNCED tenant is watched, not re-provisioned", async () => {
+  // §11.5: full wallet columns are no longer the signal — a completed `started` receipt is.
+  const h = harness([provisioned("tenant-a")], {
+    deps: { readAnnouncedTenants: async () => new Set(["tenant-a"]) },
+  });
   const result = await sweepWalletJobs(h.deps);
 
   assert.equal(result.zero_start.length, 0);
@@ -193,6 +194,7 @@ test("the plan is a pure function of the rows, so it can be reasoned about witho
   const plan = planWalletSweep([bare("tenant-a"), provisioned("tenant-b")], {
     nowMs: NOW_MS,
     telegramTokenRef: TOKEN_REF,
+    announced: new Set(["tenant-b"]),
   });
   assert.deepEqual(plan.zeroStart.map((job) => job.tenant_id), ["tenant-a"]);
   assert.deepEqual(plan.inflow.map((job) => job.tenant_id), ["tenant-b"]);
@@ -369,4 +371,194 @@ test("§9.3: the tenant read pages past the first 500 rows", async () => {
   });
   assert.ok(bounded.length < huge.length, "the read must stay bounded");
   assert.equal(bounded.length % 500, 0);
+});
+
+// §11 — provisioning is unconditional, announcing is conditional, waiting is free.
+//
+// The schema forces this shape: probe-4 status re-activation preserving `attempt` is the ONLY reap
+// PostgreSQL permits, and `max_attempts` is CHECK-capped at 20, so a job row has a lifetime budget of 20
+// runs and can never be replaced. If waiting for a Telegram link burned that budget, a tenant who links on
+// day 30 could never be told. So the gate is on RE-ACTIVATION, not on the enqueue.
+
+function chatless(uid) {
+  return { ...bare(uid), telegram_chat_id: null };
+}
+
+function withChat(uid, row) {
+  return { ...(row || bare(uid)), telegram_chat_id: "555000111" };
+}
+
+// A stand-in for the runtime queue that enforces exactly the constraints the real schema does.
+function queue() {
+  const jobs = new Map();
+  const announced = new Set();
+  return {
+    jobs,
+    announced,
+    async enqueueJob(input) {
+      const existing = jobs.get(input.jobId);
+      if (existing) return { created: false, job: { ...existing } };
+      // A fresh row starts queued with a budget, exactly like lm_runtime_jobs defaults.
+      jobs.set(input.jobId, { ...input, status: "queued", attempt: 0 });
+      return { created: true, job: { ...jobs.get(input.jobId) } };
+    },
+    async reapZeroStartJob({ tenantId }) {
+      const jobId = `zero-start:${tenantId}`;
+      const row = jobs.get(jobId);
+      if (!row) return { reaped: false, reason: "absent" };
+      if (!["completed", "dead_letter"].includes(row.status)) return { reaped: false, reason: "active" };
+      if (row.attempt >= row.maxAttempts) return { reaped: false, reason: "exhausted" };
+      // probe-4: status back to queued, attempt UNTOUCHED (a reset collides with the receipt PK).
+      row.status = "queued";
+      return { reaped: true, reason: "reactivated" };
+    },
+    async readAnnouncedTenants() {
+      return new Set(announced);
+    },
+    // Simulates a worker claiming and running the job.
+    run(tenantId, outcome) {
+      const row = jobs.get(`zero-start:${tenantId}`);
+      if (!row || row.status !== "queued") return null;
+      row.attempt += 1;
+      row.status = "completed";
+      if (outcome === "started") announced.add(tenantId);
+      return row.attempt;
+    },
+  };
+}
+
+async function sweepWith(q, rows, extra = {}) {
+  return sweepWalletJobs({
+    nowMs: NOW_MS,
+    telegramTokenRef: TOKEN_REF,
+    listTenants: async () => rows,
+    enqueueJob: q.enqueueJob,
+    reapZeroStartJob: q.reapZeroStartJob,
+    readAnnouncedTenants: q.readAnnouncedTenants,
+    ...extra,
+  });
+}
+
+test("§11.1: a chatless tenant IS still provisioned — AC5 does not depend on Telegram", async () => {
+  const q = queue();
+  const result = await sweepWith(q, [chatless("tenant-a")]);
+  assert.equal(result.zero_start.length, 1, "wallet generation must not wait on a messaging channel");
+  assert.equal(result.zero_start[0].created, true);
+});
+
+test("§11.3: a chatless tenant consumes exactly ONE attempt across many sweeps", async () => {
+  // The whole point. If waiting burned attempts, 20 sweeps (100 minutes) would exhaust the row forever.
+  const q = queue();
+  const rows = [chatless("tenant-a")];
+  await sweepWith(q, rows);
+  assert.equal(q.run("tenant-a", "blocked_no_chat"), 1);
+
+  const awaiting = [];
+  for (let pass = 0; pass < 40; pass++) {
+    const result = await sweepWith(q, rows);
+    awaiting.push(...result.awaiting_chat);
+  }
+  const row = q.jobs.get("zero-start:tenant-a");
+  assert.equal(row.attempt, 1, "40 further sweeps must not have spent a single extra attempt");
+  assert.equal(row.status, "completed", "a tenant with no chat is left terminal, not requeued");
+  // §11.6: reported as awaiting, which is NOT the same as failed.
+  assert.equal(awaiting.length, 40);
+  assert.equal(awaiting[0].uid, "tenant-a");
+  assert.equal(awaiting[0].reason, "awaiting_chat_link");
+});
+
+test("§11.3: the same tenant IS announced once a chat is linked much later", async () => {
+  const q = queue();
+  await sweepWith(q, [chatless("tenant-a")]);
+  q.run("tenant-a", "blocked_no_chat");
+  for (let pass = 0; pass < 30; pass++) await sweepWith(q, [chatless("tenant-a")]);
+
+  // Day 30: the tenant finally links Telegram.
+  const linked = [withChat("tenant-a", provisioned("tenant-a"))];
+  const result = await sweepWith(q, linked);
+  assert.equal(result.reactivated.length, 1, "the blocking condition cleared, so the row is re-activated");
+  assert.equal(result.reactivated[0].uid, "tenant-a");
+  assert.equal(q.jobs.get("zero-start:tenant-a").status, "queued");
+
+  assert.equal(q.run("tenant-a", "started"), 2, "announcing costs the second attempt, not the twenty-first");
+  assert.equal(q.announced.has("tenant-a"), true);
+
+  // And once announced, the tenant is never re-activated again.
+  const after = await sweepWith(q, linked);
+  assert.deepEqual(after.zero_start, []);
+  assert.deepEqual(after.reactivated, []);
+  assert.deepEqual(after.awaiting_chat, []);
+});
+
+test("§11.4: the MAJOR-5 race — a chat unlinked between the read and the run — heals", async () => {
+  // The sweep saw a chat, so it enqueued; by the time the worker ran, the chat was gone and the job
+  // completed blocked. Nothing may be stuck: the next sweep that sees a chat must re-activate it.
+  const q = queue();
+  await sweepWith(q, [withChat("tenant-a")]);
+  q.run("tenant-a", "blocked_no_chat");
+  assert.equal(q.jobs.get("zero-start:tenant-a").attempt, 1);
+
+  const result = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.equal(result.reactivated.length, 1);
+  assert.equal(q.run("tenant-a", "started"), 2);
+  assert.equal(q.announced.has("tenant-a"), true);
+});
+
+test("§11.4: a transient failure with a chat present heals on the next sweep", async () => {
+  const q = queue();
+  await sweepWith(q, [withChat("tenant-a")]);
+  // RPC down / Telegram 5xx: the worker exhausts its retries and the row dead-letters.
+  const row = q.jobs.get("zero-start:tenant-a");
+  row.attempt = 3;
+  row.status = "dead_letter";
+
+  const result = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.equal(result.reactivated.length, 1);
+  assert.equal(q.jobs.get("zero-start:tenant-a").status, "queued");
+  assert.equal(q.jobs.get("zero-start:tenant-a").attempt, 3, "attempt is preserved — a reset breaks the receipt PK");
+});
+
+test("§11.6: an exhausted row is REPORTED for operator attention, never silently dropped", async () => {
+  const q = queue();
+  await sweepWith(q, [withChat("tenant-a")]);
+  const row = q.jobs.get("zero-start:tenant-a");
+  row.attempt = 20;
+  row.maxAttempts = 20;
+  row.status = "dead_letter";
+
+  const result = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.deepEqual(result.reactivated, []);
+  assert.equal(result.exhausted.length, 1);
+  assert.equal(result.exhausted[0].uid, "tenant-a");
+  assert.equal(result.exhausted[0].reason, "attempts_exhausted");
+  // §11.6: awaiting-a-chat and out-of-budget must be distinguishable in the output. They are separate
+  // buckets with separate reasons, so an operator can act on the second without wading through the first.
+  assert.deepEqual(result.awaiting_chat, [], "this tenant HAS a chat — it is out of budget, not waiting");
+  assert.notEqual(result.exhausted[0].reason, "awaiting_chat_link");
+  assert.ok(Array.isArray(result.awaiting_chat) && Array.isArray(result.exhausted));
+});
+
+test("§11.3: a row still running or queued is never re-activated underneath the worker", async () => {
+  const q = queue();
+  await sweepWith(q, [withChat("tenant-a")]);
+  assert.equal(q.jobs.get("zero-start:tenant-a").status, "queued");
+  const result = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.deepEqual(result.reactivated, [], "an active row must be left alone");
+  assert.deepEqual(result.exhausted, []);
+
+  q.jobs.get("zero-start:tenant-a").status = "running";
+  const during = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.deepEqual(during.reactivated, []);
+});
+
+test("§11: an announced tenant is never enqueued, re-activated, or reported again", async () => {
+  const q = queue();
+  q.announced.add("tenant-a");
+  const result = await sweepWith(q, [withChat("tenant-a", provisioned("tenant-a"))]);
+  assert.deepEqual(result.zero_start, []);
+  assert.deepEqual(result.reactivated, []);
+  assert.deepEqual(result.awaiting_chat, []);
+  assert.deepEqual(result.exhausted, []);
+  // The inflow watch keeps running for it, though — that is what it was provisioned for.
+  assert.equal(result.inflow.length, 1);
 });

@@ -48,11 +48,22 @@ function usableTenantId(row) {
   return uid && TENANT_ID.test(uid) ? uid : null;
 }
 
-// Missing ANY of the five columns the migration added. A row with addresses but no key refs is not
-// provisioned: the addresses would be unusable because nothing could resolve their keys.
-function needsZeroStart(row) {
-  if (!row) return false;
-  return WALLET_COLUMNS.some((column) => text(row[column]) === "");
+// §11.5 — the signal is the ANNOUNCEMENT, not the wallet columns.
+//
+// Wallets are published to `lm_users` BEFORE the chat check, so a failure after provisioning used to leave
+// a real funded-capable address with the tenant never told — and a column-based check said "provisioned,
+// nothing to do", making it unrecoverable. What has to be true is that the tenant was TOLD. Provisioning is
+// idempotent (`ensureWallets` hard-stops on a file/DB disagreement), so re-running a provisioned tenant is
+// safe and heals the announcement.
+function needsZeroStart(row, options = {}) {
+  const uid = usableTenantId(row);
+  if (!uid) return false;
+  const announced = options.announced;
+  return !(announced instanceof Set && announced.has(uid));
+}
+
+function hasLinkedChat(row) {
+  return text(row && row.telegram_chat_id) !== "";
 }
 
 // Watchable as soon as EITHER rail exists. A Base address that can already receive money must be watched
@@ -163,12 +174,32 @@ async function sweepWalletJobs(opts = {}) {
     : () => listWalletSweepTenants(opts);
   const enqueue = opts.enqueueJob || ((input) => enqueueJob(input, opts.storeOptions || {}));
   const rows = await listTenants();
+  const announced = typeof opts.readAnnouncedTenants === "function"
+    ? await opts.readAnnouncedTenants()
+    : new Set();
   const watchedAt = typeof opts.readInflowWatchedAt === "function"
     ? await opts.readInflowWatchedAt()
     : new Map();
-  const plan = planWalletSweep(rows, { ...opts, watchedAt });
+  const plan = planWalletSweep(rows, { ...opts, announced, watchedAt });
 
-  const results = { zero_start: [], inflow: [], failed: [], skipped: plan.skipped, truncated: plan.truncated };
+  const results = {
+    zero_start: [],
+    inflow: [],
+    // §11.6: these three are deliberately SEPARATE. "Waiting for a chat link" is a normal state a tenant
+    // can sit in for a month; "out of attempts" needs a human. Collapsing them would hide the second.
+    reactivated: [],
+    awaiting_chat: [],
+    exhausted: [],
+    failed: [],
+    skipped: plan.skipped,
+    truncated: plan.truncated,
+  };
+  const rowsByUid = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const uid = usableTenantId(row);
+    if (uid) rowsByUid.set(uid, row);
+  }
+
   for (const [key, jobs] of [["zero_start", plan.zeroStart], ["inflow", plan.inflow]]) {
     for (const job of jobs) {
       try {
@@ -183,6 +214,25 @@ async function sweepWalletJobs(opts = {}) {
           maxAttempts: job.max_attempts,
         });
         results[key].push({ uid: job.tenant_id, job_id: job.job_id, created: queued.created === true });
+
+        // §11.3 — the row already exists and is not a fresh enqueue, so the only way to give this tenant
+        // another run is to re-activate it. That is gated on the BLOCKING CONDITION having cleared, never on
+        // the clock: a tenant with no chat linked must consume zero attempts for an unbounded time, because
+        // the schema caps a row at 20 lifetime runs and it can never be replaced.
+        if (key !== "zero_start" || queued.created === true) continue;
+        if (typeof opts.reapZeroStartJob !== "function") continue;
+        const row = rowsByUid.get(job.tenant_id);
+        if (!hasLinkedChat(row)) {
+          results.awaiting_chat.push({ uid: job.tenant_id, reason: "awaiting_chat_link" });
+          continue;
+        }
+        const reaped = await opts.reapZeroStartJob({ tenantId: job.tenant_id });
+        if (reaped && reaped.reaped === true) {
+          results.reactivated.push({ uid: job.tenant_id, reason: reaped.reason || "reactivated" });
+        } else if (reaped && reaped.reason === "exhausted") {
+          // Never silently dropped: this tenant will never be told unless a human intervenes.
+          results.exhausted.push({ uid: job.tenant_id, reason: "attempts_exhausted" });
+        }
       } catch (error) {
         // Contained, not swallowed: the rest of the sweep continues and the failure is reported so a
         // permanently broken tenant is visible instead of silently never being provisioned.
@@ -202,6 +252,7 @@ module.exports = {
   MAX_TENANTS_PER_SWEEP,
   MAX_TENANT_ROWS,
   TENANT_READ_PAGE,
+  hasLinkedChat,
   isWatchable,
   listWalletSweepTenants,
   needsZeroStart,

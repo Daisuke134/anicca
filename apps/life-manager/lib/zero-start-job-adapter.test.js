@@ -227,24 +227,57 @@ test("a balance that could not be measured stops the message — no unmeasured $
   }
 });
 
-test("a tenant with no linked chat is recorded as blocked and retried, never faked", async () => {
+test("§11.2 MAJOR-5: no linked chat is a DEFERRED OUTCOME, not a failure", async () => {
+  // It used to throw. Throwing burned one of the job row's 20 lifetime attempts per wake, and the schema
+  // permits neither replacing the row nor resetting its attempt — so a tenant who linked Telegram after 20
+  // sweeps could never be told. Completing with a real blocked receipt costs one attempt total.
   const h = harness({ rows: { "tenant-a": { uid: "tenant-a", telegram_chat_id: null } } });
-  await assert.rejects(
-    () => executeZeroStartJob(job(), h.deps),
-    (error) => {
-      assert.equal(error.code, "BLOCKED_NO_CHAT");
-      assert.equal(error.blocked, true);
-      // Not an unknown effect: nothing was dispatched, so the runtime must simply re-queue the job.
-      assert.notEqual(error.unknownEffect, true);
-      return true;
-    },
-  );
+  const { receipt, result } = await executeZeroStartJob(job(), h.deps);
+
+  assert.equal(receipt.status, "blocked_no_chat");
+  assert.equal(receipt.reason, "no_linked_chat");
+  assert.equal(result.status, "blocked_no_chat");
+  assert.equal(verifyZeroStartReceipt(receipt), true, "a blocked receipt is real evidence and must verify");
+  assert.equal(safeZeroStartSummary(receipt).status, "blocked_no_chat");
+
+  // Nothing was sent and nothing was claimed to have been sent.
   assert.equal(h.sent.length, 0);
-  // The wallets are still provisioned and recorded, so the addresses exist and the inflow watch can run.
+  assert.equal(receipt.message_id, undefined);
+  assert.equal(receipt.chat_id_hash, undefined);
+  assert.equal(receipt.sent_at, undefined);
+
+  // §11.1: the wallets ARE provisioned and published, so AC5 holds and the inflow watch can start.
   assert.equal(h.patched.length, 1);
+  assert.equal(receipt.base.address.startsWith("0x"), true);
+  assert.ok(receipt.solana.address.length >= 32);
   const paths = tenantWalletPaths("tenant-a", h.env);
   assert.equal(fs.existsSync(paths.base), true);
   assert.equal(fs.existsSync(paths.solana), true);
+});
+
+test("§11.2: a blocked receipt can never masquerade as an announcement", async () => {
+  // The sweep decides whether to re-activate by looking for `status=started`. A blocked receipt that
+  // carried a message id, or claimed `started`, would make the tenant look announced forever.
+  const h = harness({ rows: { "tenant-a": { uid: "tenant-a", telegram_chat_id: "" } } });
+  const { receipt } = await executeZeroStartJob(job(), h.deps);
+  assert.notEqual(receipt.status, "started");
+
+  for (const [label, mutate] of [
+    ["a claimed message id", (r) => { r.message_id = 7; }],
+    ["a claimed chat hash", (r) => { r.chat_id_hash = "a".repeat(64); }],
+    ["a claimed send time", (r) => { r.sent_at = "2026-07-30T09:00:00.000Z"; }],
+    ["started with no evidence", (r) => { r.status = "started"; }],
+  ]) {
+    const forged = JSON.parse(JSON.stringify(receipt));
+    mutate(forged);
+    assert.equal(verifyZeroStartReceipt(forged), false, `${label} must not verify`);
+  }
+});
+
+test("§11.2: a chatless wake measures nothing and calls no chain — waiting must be cheap", async () => {
+  const h = harness({ rows: { "tenant-a": { uid: "tenant-a", telegram_chat_id: null } } });
+  await executeZeroStartJob(job(), h.deps);
+  assert.deepEqual(h.measured, [], "a tenant we cannot message needs no RPC round trip");
 });
 
 test("a second wake reuses the same wallets instead of minting new ones", async () => {

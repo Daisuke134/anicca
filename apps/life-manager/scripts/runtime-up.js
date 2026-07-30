@@ -796,6 +796,7 @@ async function runSchedulerOwner(env = process.env) {
     const { enqueueJob } = require("../lib/runtime-job-store.js");
     const slotMs = Math.floor(Date.now() / walletSweepIntervalMs) * walletSweepIntervalMs;
     const { CAPABILITY: INFLOW_CAPABILITY } = require("../lib/wallet-inflow-job-adapter.js");
+    const { CAPABILITY: ZERO_START_CAPABILITY } = require("../lib/zero-start-job-adapter.js");
     await sweepWalletJobs({
       supaUrl: requiredEnv(env, "SUPABASE_URL"),
       supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
@@ -803,6 +804,56 @@ async function runSchedulerOwner(env = process.env) {
       nowMs: slotMs,
       telegramTokenRef: String(env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token"),
       enqueueJob: (input) => enqueueJob(input, { query: pool.query.bind(pool) }),
+      // §11.5 — the signal for "needs a zero-start" is a completed ANNOUNCEMENT, not the wallet columns.
+      // Wallets are published before the chat check, so a column-based test called a provisioned-but-never
+      // -announced tenant done and left it unrecoverable.
+      async readAnnouncedTenants() {
+        const result = await pool.query(`
+          SELECT DISTINCT r.tenant_id
+          FROM public.lm_runtime_job_receipts r
+          JOIN public.lm_runtime_jobs j
+            ON j.job_id = r.job_id
+            AND j.tenant_id = r.tenant_id
+          WHERE j.capability = $1
+            AND r.outcome = 'completed'
+            AND r.receipt->>'kind' = 'tenant_zero_start'
+            AND r.receipt->>'status' = 'started'
+        `, [ZERO_START_CAPABILITY]);
+        return new Set(result.rows.map((row) => row.tenant_id));
+      },
+      // §11.3 — the ONLY reap PostgreSQL permits. Measured: a generation-suffixed job_id violates
+      // UNIQUE (tenant_id, effect_key); DELETE violates the receipts FK and then the immutability trigger;
+      // resetting `attempt` collides with the receipt PK (job_id, attempt). So the row goes back to
+      // 'queued' with `attempt` UNTOUCHED, which the next claim increments — every receipt is preserved.
+      // Only terminal rows, and only while budget remains; an exhausted row is reported, never rewritten.
+      async reapZeroStartJob({ tenantId }) {
+        const jobId = `zero-start:${tenantId}`;
+        const current = await pool.query(
+          "SELECT status, attempt, max_attempts FROM public.lm_runtime_jobs WHERE tenant_id = $1 AND job_id = $2",
+          [tenantId, jobId],
+        );
+        if (current.rows.length !== 1) return { reaped: false, reason: "absent" };
+        const row = current.rows[0];
+        if (!["completed", "dead_letter"].includes(row.status)) return { reaped: false, reason: "active" };
+        if (Number(row.attempt) >= Number(row.max_attempts)) return { reaped: false, reason: "exhausted" };
+        const reactivated = await pool.query(`
+          UPDATE public.lm_runtime_jobs
+          SET status = 'queued',
+              completed_at = NULL,
+              lease_owner = NULL,
+              lease_expires_at = NULL,
+              available_at = clock_timestamp(),
+              updated_at = clock_timestamp()
+          WHERE tenant_id = $1
+            AND job_id = $2
+            AND status IN ('completed', 'dead_letter')
+            AND attempt < max_attempts
+          RETURNING job_id
+        `, [tenantId, jobId]);
+        return reactivated.rows.length === 1
+          ? { reaped: true, reason: "reactivated" }
+          : { reaped: false, reason: "race" };
+      },
       // §9.3: the inflow watch never drains, so the per-pass cap must be spent on the least recently
       // watched tenants. Derived from the watch's own completed receipts — no new column, and a tenant
       // that has never been watched simply has no row here, which sorts it first.

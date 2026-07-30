@@ -247,3 +247,28 @@ test("§10 MINOR-11: the tenant keychain is kept on purpose and says so honestly
   // It is still real, tested code — kept, not commented out.
   assert.equal(typeof require("./tenant-wallet-store.js").createTenantWalletKeychain, "function");
 });
+
+test("§11.5: the scheduler decides by ANNOUNCEMENT receipts, not by wallet columns", () => {
+  assert.match(RUNTIME_UP, /readAnnouncedTenants/);
+  assert.match(RUNTIME_UP, /r\.receipt->>'status' = 'started'/);
+  assert.match(RUNTIME_UP, /r\.receipt->>'kind' = 'tenant_zero_start'/);
+  // A blocked receipt must NOT count as an announcement, so the status filter is load-bearing.
+  assert.ok(!/receipt->>'status' = 'blocked_no_chat'/.test(RUNTIME_UP));
+});
+
+test("§11.3: the reap is status re-activation preserving attempt — the only one the schema allows", () => {
+  // Measured in real PostgreSQL 18: a generation-suffixed job_id violates UNIQUE (tenant_id, effect_key);
+  // DELETE violates the receipts FK and then the immutability trigger; resetting attempt collides with the
+  // receipt PK (job_id, attempt). These assertions pin the surviving option so a future edit cannot
+  // silently reintroduce one of the impossible ones.
+  assert.match(RUNTIME_UP, /SET status = 'queued'/);
+  assert.match(RUNTIME_UP, /AND attempt < max_attempts/);
+  assert.match(RUNTIME_UP, /AND status IN \('completed', 'dead_letter'\)/);
+  // Never touches attempt, never deletes, never widens the budget.
+  const reap = RUNTIME_UP.slice(RUNTIME_UP.indexOf("async reapZeroStartJob"), RUNTIME_UP.indexOf("async readInflowWatchedAt"));
+  assert.ok(!/attempt\s*=/.test(reap), "attempt must be preserved, not reset");
+  assert.ok(!/DELETE/i.test(reap), "a DELETE is refused by the receipts foreign key");
+  assert.ok(!/max_attempts\s*=/.test(reap), "max_attempts is CHECK-capped at 20 and must not be rewritten");
+  // And it reports exhaustion instead of forcing a run it has no budget for.
+  assert.match(reap, /reason: "exhausted"/);
+});

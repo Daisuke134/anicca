@@ -263,14 +263,35 @@ async function executeZeroStartJob(job, deps = {}) {
   ));
   if (changed) await patchTenant(uid, { ...wallets.columns });
 
-  // 3. A chat we do not have is not a chat we can message. Honest stop, cheap retry.
+  // 3. §11.2 MAJOR-5 — a chat we do not have is a DEFERRED OUTCOME, not a failure.
+  //
+  // Throwing here used to burn one of the job row's 20 lifetime attempts on every wake, and the schema
+  // permits neither replacing the row (UNIQUE (tenant_id, effect_key)) nor resetting `attempt` (the receipt
+  // PK collides), so a tenant who linked Telegram after 20 sweeps could NEVER be told. Completing with a
+  // real blocked receipt costs one attempt in total; the sweep re-activates the row only once the chat
+  // actually appears, so waiting is free and unbounded.
+  //
+  // The wallets above are already provisioned and published, so AC5 holds and the inflow watch is already
+  // running for this tenant — being unreachable by Telegram never delays the money rails.
   const chatId = String(row.telegram_chat_id == null ? "" : row.telegram_chat_id).trim();
   if (!chatId) {
-    throw coded(
-      "zero-start has no linked Telegram chat for this tenant yet",
-      "BLOCKED_NO_CHAT",
-      { blocked: true, wallet_status: wallets.status },
-    );
+    const receipt = {
+      schema_version: 1,
+      kind: RECEIPT_KIND,
+      status: "blocked_no_chat",
+      reason: "no_linked_chat",
+      blocked_at: nowIso,
+      wallet_status: wallets.status,
+      // Public identity only, and deliberately no message_id / chat_id_hash / sent_at: a blocked receipt
+      // that carried those would make the tenant look announced to the sweep, forever.
+      base: { chain: "base", address: wallets.base.address },
+      solana: { chain: "solana", address: wallets.solana.address },
+    };
+    assertNoSecret(receipt);
+    return {
+      receipt,
+      result: { status: "blocked_no_chat", uid, wallet_status: wallets.status },
+    };
   }
 
   // 4. Measure both chains for real.
@@ -341,10 +362,22 @@ function verifyZeroStartReceipt(receipt) {
     || Array.isArray(receipt)
     || receipt.schema_version !== 1
     || receipt.kind !== RECEIPT_KIND
-    || receipt.status !== "started"
   ) {
     return false;
   }
+  // §11.2: a blocked receipt is real, durable evidence — but it must be unable to look like an
+  // announcement, because `status === "started"` is exactly what the sweep trusts.
+  if (receipt.status === "blocked_no_chat") {
+    return receipt.reason === "no_linked_chat"
+      && validIso(receipt.blocked_at)
+      && ["created", "existing"].includes(receipt.wallet_status)
+      && Boolean(receipt.base) && EVM_ADDRESS.test(String(receipt.base.address || ""))
+      && Boolean(receipt.solana) && isSolanaAddress(String(receipt.solana.address || ""))
+      && receipt.message_id === undefined
+      && receipt.chat_id_hash === undefined
+      && receipt.sent_at === undefined;
+  }
+  if (receipt.status !== "started") return false;
   return Number.isInteger(receipt.message_id)
     && receipt.message_id > 0
     && HASH.test(String(receipt.chat_id_hash || ""))
@@ -362,6 +395,16 @@ function verifyZeroStartReceipt(receipt) {
 function safeZeroStartSummary(receipt) {
   if (!verifyZeroStartReceipt(receipt)) {
     throw new Error("zero-start receipt verification failed");
+  }
+  if (receipt.status === "blocked_no_chat") {
+    return {
+      status: receipt.status,
+      reason: receipt.reason,
+      blocked_at: receipt.blocked_at,
+      wallet_status: receipt.wallet_status,
+      base_address: receipt.base.address,
+      solana_address: receipt.solana.address,
+    };
   }
   return {
     status: receipt.status,
