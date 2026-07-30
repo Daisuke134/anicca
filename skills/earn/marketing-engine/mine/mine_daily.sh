@@ -115,7 +115,10 @@ import json, pathlib, runpy, sys
 
 lib = pathlib.Path(sys.argv[1]); analyzer = sys.argv[2]
 
-# snapshot the fields the analyzer does not know about
+# Snapshot everything the analyzer does not know about. body_texts matter most: the
+# library-filler writes them into pattern-card-<lang>.jsonl only, and the analyzer
+# rewrites every family file from raw — so without this merge a mining pass blanks the
+# copy that larry reads and the loop dies with "library entry has only 0 body_texts".
 history = {}
 for p in lib.glob('pattern-*.jsonl'):
     for line in p.read_text(errors='replace').splitlines():
@@ -124,8 +127,16 @@ for p in lib.glob('pattern-*.jsonl'):
         except json.JSONDecodeError:
             continue
         sid = e.get('source_id')
-        if sid:
-            history[sid] = {'lastUsed': e.get('lastUsed'), 'status': e.get('status', 'active')}
+        if not sid:
+            continue
+        prev = history.setdefault(sid, {'lastUsed': None, 'status': 'active', 'body_texts': []})
+        if e.get('lastUsed') is not None:
+            prev['lastUsed'] = e['lastUsed']
+        if e.get('status') and e['status'] != 'active':
+            prev['status'] = e['status']
+        texts = [t for t in (e.get('body_texts') or []) if str(t).strip()]
+        if len(texts) > len(prev['body_texts']):
+            prev['body_texts'] = e['body_texts']
 
 sys.argv = [analyzer]
 runpy.run_path(analyzer, run_name='__main__')
@@ -139,10 +150,16 @@ for p in lib.glob('pattern-*.jsonl'):
         except json.JSONDecodeError:
             continue
         h = history.get(e.get('source_id'))
-        if h and (h['lastUsed'] is not None or h['status'] != 'active'):
-            e['lastUsed'] = h['lastUsed']
-            e['status'] = h['status']
-            restored += 1
+        if h:
+            touched = False
+            if h['lastUsed'] is not None or h['status'] != 'active':
+                e['lastUsed'] = h['lastUsed']
+                e['status'] = h['status']
+                touched = True
+            if h['body_texts'] and not [t for t in (e.get('body_texts') or []) if str(t).strip()]:
+                e['body_texts'] = h['body_texts']
+                touched = True
+            restored += 1 if touched else 0
         rows.append(e)
     with open(p, 'w') as f:
         for e in rows:
