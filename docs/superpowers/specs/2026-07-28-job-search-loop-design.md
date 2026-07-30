@@ -1107,7 +1107,7 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | The 11B baseline is canonical `origin/main` `9cb1df3f7`; strategy generations, immutable assignments, authoritative outcomes and deterministic projections now exist, while no resident learning or guardian entrypoint exists | Implement `JOB-LEARNING-PASS-11C` |
+| Engineering now | The 11C baseline is canonical `origin/main` `0a4afeb5f`; strategy generations, immutable assignments, authoritative outcomes and deterministic projections exist, while the resident learning driver is being implemented | Complete and verify `JOB-LEARNING-PASS-11C` |
 | Resident runtime | The installed acquisition and inbox LaunchAgents are healthy (`last_exit=0`) on the 08:30 JST and 900-second schedules; ledger and interview-prep integrity are `ok`; applications remain 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
@@ -1138,7 +1138,7 @@ not start merely because their design is already written:
 |---|---|---|
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
-| `JOB-LEARNING-PASS-11C` | `pending_actionable` | A resident weekly driver replays, assigns, evaluates and atomically promotes/rolls back one field; insufficient samples remain inconclusive; one decision receipt/report is emitted |
+| `JOB-LEARNING-PASS-11C` | `in_progress` | Baseline `origin/main` `0a4afeb5f`; implement a resident weekly driver that replays, assigns, evaluates and atomically promotes/rolls back one field; insufficient samples remain inconclusive; one decision receipt/report is emitted |
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_11C` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
