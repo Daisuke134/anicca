@@ -3245,3 +3245,135 @@ Dais の「アカウントを何百個も作る」という直感は、算数と
 | 5 | dev.to / Zenn を money reward から切り離し distribution 扱いに変更 | 支払機構が無い面を収益指標に混ぜない |
 | 6 | J5 niche portfolio | STAGE 2 GATE 通過後 |
 | 7 | paywall方針を「無料の定期便 + 有料アーカイブ」へ | 配布と複利を殺さない |
+
+## 26. 書籍レイヤー / 収益経路C / 0→$10M の到達模型と、終わりまでの順序（2026-07-30 Dais 裁定）
+
+### 26.0 Dais 裁定（この節が rail と scope の正本）
+
+| 裁定 | 内容 |
+|---|---|
+| 支払rail | Dais 名義の Stripe / 銀行口座を使ってよい。§25.4 の「KYC fiat しか無い」は**停止理由にならない** |
+| 顧客の credential | Life Manager の利用者に credential を預けてもらい、その人の名義で書いて稼ぎ、日次/週次で報告する形を取ってよい（= 後述 PATH C） |
+| 報告頻度 | 毎時 / 毎日 / 毎週。最低でも**毎日**、金額入りで Telegram |
+| $400 の誤解の訂正 | DigitalOcean Write for DOnations は**こちらが受け取る**原稿料。支出ではない。Railway / Mac mini のホスティング費とは無関係 |
+
+### 26.1 書籍・電子書籍レイヤーの実数（各社の自社ページ実読）
+
+| Platform | 著者取り分 | 控除 | 価格条件 | AI方針（原文） |
+|---|---|---|---|---|
+| **Leanpub** | **80%** | — | 自由。排他契約なし（"Leanpub does not have any restrictions like this!"） | 未取得 |
+| **Amazon KDP** | 70% or 35% | 70%帯は配信コスト控除（US $0.15/MB）。70%圏外の顧客は35% | **70%帯 = $2.99–$12.99**（2026-07-07 に $9.99 上限から拡大） | 「We require you to inform us of **AI-generated** content... You are not required to disclose **AI-assisted** content」= 禁止ではなく開示義務 |
+| **Kobo Writing Life** | 最大70% | — | — | 「Koboでの独占権が求められることはありません」 |
+| **Google Play Books** | **70%**（"regardless of price"） | — | 60+か国 | 未取得 |
+| **Gumroad** | 直リンク経由 **90% − $0.50/件**（$10なら実質85%、$29なら88%） | Discover経由は70% | 自由 | — |
+| **Zenn 本** | 決済3.6% + 利用料10% + 出金¥350 → ¥1,000の本で著者受取 **¥868** | — | — | 「AIを使うことを禁じることは考えていません」だが「検証が追いつかない速度で投稿する方…アカウントの凍結を含む措置」 |
+| **note** | 事務手数料5%(クレカ) + 利用料10% + 振込¥270 → ¥1,000で受取 **¥585** | — | — | 禁止規定なし |
+| Apple Books | **UNVERIFIED**（公式ページに到達できず。数値を書かない） | — | — | — |
+
+**構造**: 取り分だけなら Leanpub 80% > Gumroad 直リンク ~85-88% ≒ KDP 70% ≒ Kobo/Google 70% > Zenn 86.8% > note 58.5%。
+ただし **Amazon は集客を持ち、Gumroad/Leanpub は持たない**。「取り分 vs 発見」のトレードオフであり、取り分だけで選ばない。
+
+**KDP のリスク条項（原文）**: "Content that is freely available on the web (unless you are the copyright owner of that content or the content is in the public domain)."
+→ 自分の記事の書籍化は権利上OK。ただし加筆のない寄せ集めは "poor customer experience" 条項で削除・アカウント停止対象になりうる。
+**記事の単純連結を本として売らない。編集・再構成・追補を必須にする。**
+
+**収益の実数**: KDP が公開している唯一の数値は "Total KDP Select Author Earnings June 2026 • **$67.0 Million**"（全著者合計プール）。
+個別書籍・中央値の収益は Amazon が一切公開していない。「ニッチ技術書1冊で月商X」を裏付ける一次資料は今回発見できず = **UNVERIFIED**。
+
+### 26.2 収益経路（A/B に C を追加）
+
+```text
+ PATH A — 文章そのものが金になる          ★今日の主戦場★
+ ├─ A1 原稿料              DigitalOcean $400/本、audience不要、線形
+ ├─ A2 読者課金            Substack 90% / beehiiv 0%取り分、複利
+ ├─ A3 少額商品            Gumroad 直リンク ~88%、数日で初売上
+ └─ A4 書籍/電子書籍        Leanpub 80% / KDP 70% / Zenn本 86.8%
+                          ★記事の再構成であって連結ではない★
+
+ PATH B — 文章が他productを売る           （副次、reward合算禁止）
+ └─ B1 Life Manager 等への attributed MRR
+
+ PATH C — loop 自体を売る                 ★10M の主経路★
+ └─ C1 「credential を預けてくれれば、AIが書いて稼いで毎日報告する」
+        Life Manager の機能として提供。収益 = 月額 or 稼いだ額のrev-share
+```
+
+### 26.3 0円 → $10M/月 の到達模型（3構造を同じ物差しで比較）
+
+```text
+   現在地: $0/月（記事由来。Stripe生涯 $50.99 は全部 Life Manager サブスク）
+      │
+      ▼
+  ┌────────────────────────────────────────────────────────────┐
+  │ 構造1  自分で書いて自分で売る（A1+A2+A3+A4）                │
+  │   $10M/月 に必要な量:                                       │
+  │     ebook $9.99 / 取り分70% → 1本$7  → 月143万部           │
+  │     購読 $27/月 / conv 18.69%      → 有料37万人            │
+  │   比較: KDP Select 全著者の月間合計が $67M                  │
+  │        → $10M/月 = 世界中のKDP著者報酬プールの約15%          │
+  │   判定: 単独構造では到達例なし。★上限は人手ではなく面の数★   │
+  └────────────────────────────────────────────────────────────┘
+      │
+  ┌────────────────────────────────────────────────────────────┐
+  │ 構造2  ユニット複製（証明済みunit × N niche × N platform）  │
+  │   100 unit × $100k/月。1 unit = 1 niche × 1 offer          │
+  │   限界要因: 文章生産量ではなく ★アカウント/ToS/配布★        │
+  │   Zenn は投稿レート制限 + 凍結、KDP は品質条項              │
+  │   判定: 到達可能だが、STAGE 2 の unit 黒字化が絶対前提       │
+  └────────────────────────────────────────────────────────────┘
+      │
+  ┌────────────────────────────────────────────────────────────┐
+  │ 構造3  loop を他人に走らせる（PATH C）  ★最も筋が良い★     │
+  │   利用者 20万人 × $50/月 = $10M/月                          │
+  │   または 利用者が稼いだ額の rev-share 20%                   │
+  │   限界要因: 自分のアカウント数ではなく ★利用者数★           │
+  │   前提: 自分で1 unit を黒字化していること（実演できない物は  │
+  │        売れない）                                           │
+  └────────────────────────────────────────────────────────────┘
+      │
+      ▼
+   結論: 構造1で「1 unit を黒字化」→ 構造2で「複製できると証明」
+        → 構造3で「他人に配って桁を上げる」
+        構造3を先にやると、動かない物を売ることになる
+```
+
+| 構造 | $10M に必要な数 | 律速 | 前提 |
+|---|---|---|---|
+| 1 自分で売る | ebook 143万部/月 or 有料37万人 | 面の数・ToS | — |
+| 2 unit複製 | 100 unit × $100k | アカウント・配布・凍結リスク | STAGE 2 GATE 通過 |
+| 3 loopを売る | 利用者20万人 × $50 | 利用者獲得 | 構造1で実演済みであること |
+
+**正直な較正**: 「文章だけで $10M/月」を単独の書き手として達成した例は、今回の調査（Substack上位10媒体合計 $8.3M/月、KDP Select 全著者 $67M/月）の範囲に**存在しない**。
+到達するなら構造3（他人の面で走らせる）が唯一桁の合う経路。構造1・2 はその**証明装置**として必要であって、それ自体が10Mの本体ではない。
+
+### 26.4 終わりまでの順序（全TODO。これが唯一の実行順）
+
+| # | Stage | 作業 | done（実receipt） |
+|---:|---|---|---|
+| 1 | 0 | **DigitalOcean Write for DOnations 提出**（$400/本、audience不要、PayPal受取） | 提案提出 → 編集応答 → 掲載 → 入金 |
+| 2 | 0 | **metrics + sales schema を engine に配線**（既存 measure-sales.py / measure-funnel.py を接続） | 全platformの数値が status付きで保存、artifact_id で sales と join |
+| 3 | 0 | **Telegram daily money report**（金額先頭。日次必須、週次ロールアップ、必要なら毎時） | 金額入りレポート1通が実送信、内容が metrics と一致 |
+| 4 | 0 | **offer layer**: Stripe に商品1つ + `client_reference_id=artifact_id` + 記事contextへoffer投入 | test決済1件が着地し記事へjoin |
+| 5 | 0 | **dev.to / Zenn を money reward から分離**（revenue_capable フラグ） | reward計算が収益面のみを読む。report で distribution 面と分離表示 |
+| 6 | 0→1 | **paywall方針を「無料の定期便 + 有料アーカイブ」へ**（Substack/beehiiv） | 無料公開 + 有料アーカイブ導線の public readback |
+| 7 | 1 | **money-scan（毎日の収益化知見検索 → 1提案 → held-out gate）** | 出典付き知見が追記、提案1件がgate通過 or unknownで変更0 |
+| 8 | 1 | **A3 少額商品を Gumroad 直リンクで1つ**（取り分~88%、既存コミュニティへ配布） | 初売上1件 |
+| 9 | 1→2 | **A4 書籍レイヤー**: 記事群を再構成した本を Leanpub(80%) → KDP(70%, $2.99-12.99帯) → Zenn本 の順で1冊 | 1冊が実販売され印税receiptが着金。連結ではなく再構成であること |
+| 10 | 2 | **unit economics を scorable に**（conversion / churn / LTV / CAC） | 3指標がscorableで、churn < 10%/月 |
+| 11 | 2→3 | **niche portfolio（1 account = 1 niche、自前credential、凍結兆候で停止）** | 2つ目のunitが1つ目と同等conversion |
+| 12 | 3 | **面の拡張**: beehiiv Ad Network / Reddit Contributor / Vocal を revenue_capable として追加 | 各面から実入金1件 |
+| 13 | 4 | **単価を上げる**（消費者$27 → B2B $200+。一次データ・独占情報を持つ） | 単価10倍unitが1つ黒字化 |
+| 14 | 5 | **PATH C 商品化**: Life Manager に「credentialを預ければAIが書いて稼ぎ日次報告」を実装 | 外部利用者1人で E2E（credential受領 → 執筆 → 公開 → 入金 → 報告）が回る |
+| 15 | 5 | **portfolio 運用**（衰退unitの停止、配分、凍結対応） | 月次で配分が自動更新され、赤字unitが自動停止 |
+
+段は飛ばさない。#14（PATH C）は #10 の unit economics が scorable になるまで着手しない。
+
+### 26.5 停止条件・リスク
+
+| リスク | 停止条件 |
+|---|---|
+| Zenn 大量投稿 → 凍結 | 「検証が追いつかない速度」を自ら定義（1日1本上限）。凍結兆候1件で当該面を停止 |
+| KDP 品質条項 → 削除/停止 | 記事の連結を出さない。再構成・追補を必須gateにする |
+| Medium AI paywall 不可（UNVERIFIED） | 自分で再確認できるまで Medium へ出さない |
+| Textbroker AI明示禁止 | 出さない |
+| 他人の credential（PATH C） | 預かる範囲を最小化し、収益面のみ。個人情報・決済権限は預からない設計を先に書く |
