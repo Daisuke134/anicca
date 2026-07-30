@@ -17685,3 +17685,10 @@
 {"ts":1785406725,"wake_id":"00MS7D2DUSA42C9B2A25AE41E6","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785406864,"wake_id":"00MS7D5DL73107B9EF64B54115","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785407014,"wake_id":"00MS7D8LHY8A99CC603E21478E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407147,"wake_id":"00MS7DBFQSD1A54014B85642FF","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana low minimum deposit high APY yield farms for small balances [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (c"}
+{"ts":1785407289,"wake_id":"00MS7DEHAY21EC91D58EDA4E38","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407420,"wake_id":"00MS7DHAQE1723C3C1D1464F88","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407561,"wake_id":"00MS7DKB87AE433D942BEF4B68","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407691,"wake_id":"00MS7DN3JG22D6A8C8EF494F03","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407827,"wake_id":"00MS7DQ0U7315084DEA1D24974","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785407963,"wake_id":"00MS7DSXN2211AB2EE687A4BAC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
