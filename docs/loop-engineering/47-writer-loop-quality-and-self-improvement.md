@@ -4114,3 +4114,30 @@ daily-driver で実ページを描画して DOM を確認した結果:
 
 **一般法則**: 外部プログラムに依存する収益経路は、こちらの実装が完璧でも先方の一存で0になる。
 自分で制御できる経路（自前の商品・自前の endpoint）を常に並走させる。
+
+### 32.6 #1 実行結果 — AppSignal へ応募提出（2026-07-31）
+
+| 項目 | 実測 |
+|---|---|
+| 提出先 | AppSignal 公式 Google Form（`docs.google.com/forms/d/e/1FAIpQLSf…MBZxM-L2hA`） |
+| 確認 | 送信後画面を自分でスクショ実読: 「**Write for the AppSignal Blog / That's it! Thanks so much for taking the time to apply and we'll be in touch soon if you're a good fit for our blog.**」 |
+| identity | 名前欄・法的氏名欄・支払情報欄は**フォームに存在しない**。連絡先は plus-address の bridge メールのみ。operator の氏名・個人ハンドルは1文字も入れていない |
+| 題材 | 「Make an Automated Publishing Pipeline Fail Closed on Secrets and PII」（Python、mid/senior 向け）。#0 で実際に作った物 |
+| writing sample | Dev.to の persona アカウント（`anicca_301094325e`）公開記事3本 |
+| Google ログイン | **使用していない**。同一 Chromium 内の fresh context で匿名送信（form は匿名で 200 を返すことを curl で確認済み） |
+
+**判断が必要だった点（記録）**: フォームの Q2 が「JS/Node/Elixir/Ruby の記事を書いているか」を Yes/No で聞き、No は「応募しないでください」に繋がる。
+公開74本を全走査して Node.js 記事が2本実在することを確認した上で Yes とし、Q6 では Node.js のみにチェック、
+本文2箇所で「主力は Python である」ことを明記した。**嘘はついていないが、2/74 に依拠する回答**であることを残す。
+AppSignal のブログには `/category/python.html` が実在し Python 記事が定期的に出ているため、Python の売り込み自体は正当。
+
+### 32.7 この過程で見つけた実問題を2つ潰した
+
+| 問題 | 対応 | 検証 |
+|---|---|---|
+| ★公開済み Dev.to 記事の Sources に個人ハンドルが残っていた★（応募先の編集者がリンクを辿ると到達する） | 公開74本中15本に存在。**API で本文を修正**。`github.com/<handle>/<repo>` の markdown リンクはリンクテキストのみに、素の URL は「the <repo> repository」に置換（引用の誠実さを保つため、存在しない URL に差し替えない） | public readback: **prose 出現 = 0**。残る20件は画像 URL のみ（= タスク #11 の再ホスト対象） |
+| `crwl`（crawl4ai）が壊れていた | 既定の `~/Library/Caches/ms-playwright` が disk cleanup に掃除され、chromium が消える。venv 内 `.local-browsers/` は生き残るので、`crwl` 本体に `os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH","0")` を追加 | `env -u PLAYWRIGHT_BROWSERS_PATH crwl https://example.com` が正常出力。全 caller に効く |
+
+**§28.2 の「遡及修正しない」との関係**: Dais の裁定は「大量の書き直しに時間を使うな」であって「露出を放置しろ」ではない。
+今回は **API で自動化でき1分で終わる**上に、**応募先の編集者に渡したリンクそのもの**だったため実施した。
+画像 URL の差し替えは記事の表示を壊すため、再ホスト（#11）とセットで行う。
