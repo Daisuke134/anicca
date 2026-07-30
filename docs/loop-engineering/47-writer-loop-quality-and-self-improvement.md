@@ -2829,12 +2829,14 @@ verified evidence
 
 **eyecatch resume是正後の実測**: feature `2b79fd3`は、本文画像にはない実DOM `img[alt="eyecatch"]`のauthenticated `assets.st-note.com` URLを先に読み、既存ならuploadをskipする。live editorで同じkey `nac6a14e974b2`に専用eyecatch URL、本文画像4件、upload button不在を分離して確認し、次の実LaunchAgent tickは旧30秒timeoutを越えた。その先のpublic media照合で`public-asset-readback-failed`となったため、note pairは同じkeyの`ambiguous`へfail-closedし、新規key・重複公開は0。別途、同一pair/state/code/errorが2回続いた時だけ開き、codeまたはstate hash変化で再armするdurable circuitをworkerへ配線した。RED→GREENはfocused 5 PASS、article Python 9 PASS、managed note contract PASS。実pairは旧eyecatch障害が解消して次の異なる状態へ進んだため、同じ本番errorを故意に再発させず、actual worker wiring fixtureで3回目publisher call 0・通知exact1を証明した。
 
+**note same-key repair実機完了**: `4f1e797` / `2ee1dda` / `8ff82e7` / `977b2bb`は、all-or-nothingだったnote asset proofをeyecatch/body別に保持し、content・identity・¥500・eyecatchが正しく本文図だけ欠けたliveを`live-media-mismatch`へ限定する。workerはmodelを起動せず`ambiguous → repair-required → same-key repair`を2 tickで進め、locked note-mcp runtimeを`uv.lock`から復旧する。既存eyecatchは再uploadせず、同じkey `nac6a14e974b2`へcanonical本文図を追加して再公開した。実receiptはstatus=`live`、price=500、owner full paid bodyとanonymous public/API content、identity、eyecatch、body mediaすべてPASS。eyecatch center-crop dHash距離1、本文図dHash距離1、ledger live row exact1、新規key/duplicate 0、LaunchAgent run 138 exit 0。article Python 14 PASS。
+
 **handoffの実行順（現在の残TODO正本）**:
 
 | 順序 | 作業 | done |
 |---:|---|---|
 | 1 | **DONE (`2b79fd3`; live editor + LaunchAgent verified)** note resumeをidempotent化しretry stormを止める | 既存eyecatchを専用DOMからreadbackして再upload 0。同一失敗2回でcircuit、3回目publisher 0、code/state変化で再arm、通知exact1 |
-| 2 | note同一keyを完了 | 現在はsame key `nac6a14e974b2`が`ambiguous / public-asset-readback-failed`。canonical本文画像`5/5`、eyecatch、¥500、owner/anonymous public readback、duplicate 0 |
+| 2 | **DONE (`4f1e797`…`977b2bb`; LaunchAgent run 138)** note同一keyを完了 | same key `nac6a14e974b2`、¥500、owner/anonymous content、eyecatch/body media、identity PASS、ledger exact1、duplicate 0 |
 | 3 | Substack JA/EN同一draftを公開 | `only_paid`、free preview、paywall exact1、public checkout/readback、send=false |
 | 4 | Xを完了 | X Article JA→EN（remote JA時刻+6h）、X Post 261文字、同一saved target、public readback |
 | 5 | money completionを確定 | note/Substack/Xのlive receiptで完了。Dev.to/Zennを待たない |
