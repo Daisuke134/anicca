@@ -1,6 +1,6 @@
 # AE-ZERO-START-1 — Evidence
 
-**Status: DRAFT — offline evidence complete after adversary round 1 fixes, live E2E PENDING.**
+**Status: DRAFT — offline evidence complete after adversary round 2 fixes, live E2E PENDING.**
 Spec: `docs/superpowers/specs/2026-07-30-ae-zero-start-1-design.md`
 Plan: `docs/superpowers/plans/2026-07-30-ae-zero-start-1.md`
 Branch: `feature/ae-zero-start-1` · Worktree: `~/anicca-project/.worktrees/ae-zero-start-1`
@@ -56,7 +56,7 @@ external cleanup process deleted `node_modules` mid-session, see §2.8):
 
 ```
 NPM_TEST_EXIT=0
-TOTAL tests=1864 pass=1864 fail=0
+TOTAL tests=1876 pass=1876 fail=0
 ```
 
 46 `node --test` segments, zero segments with a nonzero `ℹ fail`. `npm test`
@@ -67,15 +67,15 @@ money defects got through; see §2.9.)
 ### 2.2 Focused money slice — `npm run test:money-slice`
 
 ```
-ℹ tests 278
-ℹ pass 278
+ℹ tests 290
+ℹ pass 290
 ℹ fail 0
 ```
 
 The money segment previously inlined in the `test` script is now the named
 `test:money-slice` script (one source of truth, called from `test`). Baseline
-before this slice was 132 tests; 146 have been added (106 in the first pass, 40
-hostile-payload tests in the round-1 fixes).
+before this slice was 132 tests; 158 have been added (106 in the first pass, 40
+hostile-payload tests in round 1, 12 more plus the drain invariants in round 2).
 
 ### 2.3 Other suites touched
 
@@ -160,6 +160,40 @@ in §2 was taken with the dependency tree verified present immediately beforehan
 and the two headline numbers (full suite, money slice) were each measured twice.
 One money-slice run reported `28 pass / 18 fail` purely because the tree vanished
 between two commands; re-measured immediately after reinstall it is 278/278.
+
+### 2.8b Round 2 — and why example tests were replaced by invariants
+
+Round 2 re-verified all eight round-1 fixes as HELD under fresh hostile payloads, and
+re-measured every offline number independently with all of them matching. It then
+found **four new MAJOR defects in the fix code, all in the same class, and all
+passing 1876 green tests** — the second consecutive round where that happened.
+
+Spec §12.1 supplied the clause that was missing from §10:
+
+> What has already been processed is also a fact, and it must be re-derived from the
+> events themselves — never from the provider's idea of "newest".
+
+A cursor is not a bookmark the RPC hands you; it is a claim that everything behind it
+is booked. All four new defects were that claim being false while the receipt
+reported success.
+
+**The durable output of round 2 is two drain-invariant tests**
+(`lib/wallet-drain-invariants.test.js`), which name no payload at all:
+
+| Invariant | What it asserts |
+|---|---|
+| Scan drain | For a synthetic chain far larger than one wake's budget, spanning both rails, with several events per block and per signature and unreadable entries: running to no-progress books every event **exactly once**, and any unbooked event **must** be admitted by a receipt (`truncated` or `needs_operator_attention`). Silence with unbooked events fails the test. |
+| Sweep drain | For five different permanent-failure patterns (none, one, the whole first page, every other tenant, all-but-one): every healthy tenant is watched within a bounded number of passes. |
+
+Both were verified to actually catch their defect rather than merely pass:
+
+- Putting the ordering query back to successes-only makes the sweep invariant report
+  `40 healthy tenants were never watched within 4 passes`.
+- The scan invariant caught a defect in **its own fixture**: the signature generator
+  `(index * 7 + position * 13) % 58` has period 58, so signature 58 collided with
+  signature 0 and silently overwrote a transaction, making two events unproducible.
+  Measured: 60 indices yielded 58 unique signatures. Fixture uniqueness is now
+  asserted, not assumed — the round's own defect class appearing inside the harness.
 
 ### 2.9 What the first round of tests did NOT catch
 
@@ -303,4 +337,26 @@ ledger without re-deriving the facts that decide an amount or an owner.** MAJOR-
 | MINOR-9 `assertNoSecret` comment | fixed — it is a field-name guard, not a shape scanner | `31d4786d3` |
 | MINOR-11 keychain comment | fixed — kept deliberately, no longer claims to guard a running path | `31d4786d3` |
 | MINOR-12 empty-`taken` guard | fixed — cursor stays put | `31d4786d3` |
-| MINOR-10 `agent-wallet.js` sealing | REJECTED by the planner; the production payout path reads `privateKey` and that module is outside §2 scope. Recorded as a known input to AE-CLOUD-CUSTODY-1. |
+| MINOR-10 `agent-wallet.js` sealing | REJECTED by the planner; the production payout path reads `privateKey` and that module is outside §2 scope. Recorded as a known input to AE-CLOUD-CUSTODY-1. Verified still byte-identical to the merge base. |
+
+## 6. Adversary round 2 — dispositions
+
+All §12 rulings implemented. Class extended by §12.1: progress state is a fact too.
+
+| ID | Disposition | Commit |
+|---|---|---|
+| NEW-1 Solana cursor overran unprocessed signatures | fixed — `before`-paging until `until` is genuinely reached; ordered `(slot, signature)` cursor; bound hit ⇒ cursor unmoved + `truncated` + operator attention | `56b899563` |
+| NEW-2 Base cursor was block-only | fixed — `(block, log_index)`, mid-block resumable, exact first-unprocessed position | `56b899563` |
+| NEW-3 `null` `getTransaction` treated as empty | fixed — unreadable, cursor held, bounded retries, then moved past while named in `needs_operator_attention` | `56b899563` |
+| NEW-4 ordering advanced only on success | fixed — advances on ATTEMPT; decisions extracted to `lib/wallet-sweep-receipts.js` so the invariant drives the real query | `56b899563` |
+| NEW-5 `uiTokenAmount.decimals` trusted | fixed — present, whole, equal to `USDC_DECIMALS`, equal across paired pre/post | `386501eed` |
+| NEW-6 `log.data` unbounded | fixed — exactly `0x` + 64 hex before it is read as money | `386501eed` |
+| NEW-7 `removed !== true` | fixed — safe polarity: only `false` or absent accepted | `386501eed` |
+| NEW-8 Solana balance at `confirmed` | fixed — `finalized`, and not a caller option | `386501eed` |
+| NEW-9 `parsed.uid \|\| tenantId` | fixed — an absent uid fails closed instead of trusting the requester | `386501eed` |
+| provider asymmetry | fixed — colony method renamed `getColonySecret(ref)`; both crossed wirings now throw at construction | `386501eed` |
+| §12.2 drain invariants | shipped — `lib/wallet-drain-invariants.test.js` | `56b899563` |
+
+Scope re-verified against the merge base (`249d6a819`): 31 files changed, **zero
+outside `apps/life-manager/` + `docs/`**, `lib/agent-wallet.js` and `lm-onboard.js`
+both byte-identical.
