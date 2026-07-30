@@ -170,7 +170,11 @@ test("AE-ZERO-START-1: an inflow to one tenant produces no ledger row for the ot
       const wanted = `0x${a.columns.agent_wallet_address.slice(2).toLowerCase().padStart(64, "0")}`;
       if (params[0].topics[2] !== wanted) return [];
       return [{
+        // The adapter re-derives the token contract and recipient from the payload (§10 MAJOR-4), so a
+        // fixture must look like a real USDC Transfer log or it is correctly ignored.
+        address: require("../lib/base-usdc-payout.js").BASE_USDC,
         transactionHash: TX,
+        logIndex: "0x0",
         blockNumber: "0x44c",
         topics: [
           "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",

@@ -50,10 +50,11 @@ function hex(value) {
   return `0x${BigInt(value).toString(16)}`;
 }
 
-function transferLog({ from = PAYER, tx = TX, amount = 250000n, block = 1000 } = {}) {
+function transferLog({ from = PAYER, tx = TX, amount = 250000n, block = 1000, logIndex = 0 } = {}) {
   return {
     address: BASE_USDC,
     transactionHash: tx,
+    logIndex: hex(logIndex),
     blockNumber: hex(block),
     topics: [
       TRANSFER_TOPIC,
@@ -175,13 +176,60 @@ test("no inflow is a quiet receipt, not an error", async () => {
   assert.equal(result.recorded, 0);
 });
 
+test("§10 MAJOR-2: two transfers to the same wallet in ONE tx are two separate deposits", async () => {
+  // The measured defect: `entry_key` was per transaction, so a tx carrying two transfers to the same
+  // wallet recorded the first and refused the second AS A DUPLICATE — real money silently unbooked.
+  // A batch payout, a router, or a contract paying an invoice in two tranches all produce this.
+  const h = harness({
+    logs: [
+      transferLog({ block: 1100, tx: TX, logIndex: 3, amount: 250000n }),
+      transferLog({ block: 1100, tx: TX, logIndex: 7, amount: 1_000_000n }),
+    ],
+  });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 2, "both transfers must be booked");
+  assert.deepEqual(h.recorded.map((row) => row.entry_key).sort(), [
+    `inflow:base:${TX}:3`,
+    `inflow:base:${TX}:7`,
+  ]);
+  assert.deepEqual(h.recorded.map((row) => row.amount_atomic).sort(), ["1000000", "250000"]);
+  assert.equal(receipt.recorded, 2);
+  assert.equal(receipt.duplicates, 0);
+  // Both carry the same tx hash — the hash is evidence, the log index is identity.
+  assert.equal(new Set(h.recorded.map((row) => row.tx_hash)).size, 1);
+
+  // And replaying the identical window still refuses both, so the finer key did not cost exactly-once.
+  const replay = await executeWalletInflowJob(job(), { ...h.deps, readCursor: async () => null });
+  assert.equal(replay.receipt.recorded, 0);
+  assert.equal(replay.receipt.duplicates, 2);
+  assert.equal(h.recorded.length, 2);
+});
+
+test("§10 MAJOR-2: a log with no usable index is refused, not given a guessed identity", async () => {
+  // Without a log index there is no way to tell a second transfer from a replay of the first. Recording
+  // it under a tx-only key is exactly the collision that lost money; guessing an index would invent one.
+  for (const logIndex of [undefined, null, "", "0xzz", "not-hex"]) {
+    const log = transferLog({ block: 1100, tx: TX });
+    if (logIndex === undefined) delete log.logIndex;
+    else log.logIndex = logIndex;
+    const h = harness({ logs: [log] });
+    await assert.rejects(
+      () => executeWalletInflowJob(job(), h.deps),
+      /log index/i,
+      `logIndex=${String(logIndex)} must fail closed`,
+    );
+    assert.equal(h.recorded.length, 0);
+  }
+});
+
 test("a Base USDC inflow becomes exactly one capital-in row with revenue 0", async () => {
-  const h = harness({ logs: [transferLog({ amount: 250000n, block: 1100 })] });
+  const h = harness({ logs: [transferLog({ amount: 250000n, block: 1100, logIndex: 0 })] });
   const { receipt } = await executeWalletInflowJob(job(), h.deps);
 
   assert.equal(h.recorded.length, 1);
   const row = h.recorded[0];
-  assert.equal(row.entry_key, `inflow:base:${TX}`);
+  assert.equal(row.entry_key, `inflow:base:${TX}:0`);
   assert.equal(row.kind, LEDGER_KIND);
   assert.equal(row.kind, "financial_deposit");
   assert.equal(row.wallet_address, BASE_ADDRESS);

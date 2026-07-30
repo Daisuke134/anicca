@@ -107,8 +107,19 @@ function fromTopic(topic) {
 }
 
 function hexNumber(value, label) {
-  const parsed = Number(BigInt(String(value)));
-  if (!Number.isSafeInteger(parsed) || parsed < 0) fail(`${label} is not a usable block number`);
+  const raw = String(value == null ? "" : value).trim();
+  // Emptiness is checked BEFORE BigInt, because `BigInt("")` is 0n — so an omitted quantity would
+  // silently become zero, which for a log index means every transfer in a tx collapses onto index 0.
+  if (!raw) fail(`${label} is not a usable number`);
+  let parsed = NaN;
+  try {
+    // A quantity the node garbled must fail closed with a message that names WHICH quantity; letting
+    // BigInt throw its own TypeError would say nothing useful in a worker log.
+    parsed = Number(BigInt(raw));
+  } catch {
+    fail(`${label} is not a usable number`);
+  }
+  if (!Number.isSafeInteger(parsed) || parsed < 0) fail(`${label} is not a usable number`);
   return parsed;
 }
 
@@ -178,11 +189,21 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
     .map((log) => ({
       tx: String(log.transactionHash || ""),
       block: hexNumber(log.blockNumber, "Base log block"),
+      // §10 MAJOR-2: the identity of a transfer is (tx, logIndex), not tx. One transaction can carry
+      // several transfers to the same wallet — a batch payout, a router, an invoice paid in tranches —
+      // and a tx-only key made the second one a refused duplicate, silently unbooking real money.
+      // Absent or unparseable = fail closed: without an index there is no way to distinguish a second
+      // transfer from a replay of the first, and guessing one would invent an identity.
+      logIndex: hexNumber(log.logIndex, "Base log index"),
       from: fromTopic(log.topics[1]),
       atomic: BigInt(String(log.data || "0x0")).toString(),
     }))
     .filter((log) => EVM_TX.test(log.tx) && log.atomic !== "0")
-    .sort((left, right) => left.block - right.block || left.tx.localeCompare(right.tx));
+    .sort((left, right) => (
+      left.block - right.block
+      || left.tx.localeCompare(right.tx)
+      || left.logIndex - right.logIndex
+    ));
 
   const taken = ordered.slice(0, Math.max(0, limit));
   const truncated = taken.length < ordered.length;
@@ -279,7 +300,8 @@ function baseEntry({ inflow, address, nowIso, selfWallets }) {
   const fromIsSelf = selfLabel(selfWallets, inflow.from);
   return {
     entry: {
-      entry_key: `inflow:base:${inflow.tx}`,
+      // §4.5: one transfer event, not one transaction.
+      entry_key: `inflow:base:${inflow.tx}:${inflow.logIndex}`,
       wallet_address: address,
       kind: LEDGER_KIND,
       amount_atomic: inflow.atomic,
@@ -293,6 +315,7 @@ function baseEntry({ inflow, address, nowIso, selfWallets }) {
         chain: "base",
         asset: "USDC",
         block: inflow.block,
+        log_index: inflow.logIndex,
         from: inflow.from,
         ...(fromIsSelf == null ? {} : { from_is_self: fromIsSelf }),
         occurred_at_source: inflow.occurred_at ? "chain" : "observed",
