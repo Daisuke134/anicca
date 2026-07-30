@@ -265,6 +265,23 @@ def _next_page_url(value: Any) -> str:
     )
 
 
+def _search_page_number(value: Any) -> int:
+    """Return the validated one-based page number for a search URL."""
+    url = str(value or "")
+    if not _search_url(url):
+        raise ContractError("continuation_source_url_invalid")
+    page = 1
+    page_seen = False
+    for key, raw in parse_qsl(urlsplit(url).query, keep_blank_values=True):
+        if key != "page":
+            continue
+        if page_seen or not re.fullmatch(r"\d+", raw) or int(raw) < 1:
+            raise ContractError("continuation_page_invalid")
+        page_seen = True
+        page = int(raw)
+    return page
+
+
 def _search_url_advances(previous: Any, current: Any) -> bool:
     """Return true when one source's current URL is on a later result page."""
     if not _search_url(previous) or not _search_url(current):
@@ -399,25 +416,41 @@ def next_search_cursor(summary_path: Path, context_path: Path) -> dict[str, Any]
             next_url="https://coconala.com/requests?sort=new",
             reason="inspect_missing_source",
         )
-    for source_id in required:
+    single_candidates: list[tuple[int, int, dict[str, Any]]] = []
+    retainer_candidates: list[tuple[int, int, dict[str, Any]]] = []
+    for required_index, source_id in enumerate(required):
         source = by_id.get(source_id)
         if source is None:
             continue
         source_url = str(source.get("url") or "")
-        if source.get("has_next") is True:
-            return cursor(
-                source_id=source_id,
-                previous_url=source_url,
-                next_url=_next_page_url(source_url),
-                reason="next_page",
-            )
-        if source.get("inspected_count") == 0 and _search_url(source_url):
-            return cursor(
+        candidate: dict[str, Any] | None = None
+        coverage_page = _search_page_number(source_url)
+        if source.get("inspected_count") == 0:
+            candidate = cursor(
                 source_id=source_id,
                 previous_url=source_url,
                 next_url=source_url,
                 reason="inspect_current_page",
             )
+            coverage_page = 0
+        elif source.get("has_next") is True:
+            candidate = cursor(
+                source_id=source_id,
+                previous_url=source_url,
+                next_url=_next_page_url(source_url),
+                reason="next_page",
+            )
+        if candidate is None:
+            continue
+        ranked = (coverage_page, required_index, candidate)
+        if source_id == "retainer:new":
+            retainer_candidates.append(ranked)
+        else:
+            single_candidates.append(ranked)
+    if single_candidates:
+        return min(single_candidates, key=lambda row: row[:2])[2]
+    if retainer_candidates:
+        return min(retainer_candidates, key=lambda row: row[:2])[2]
     raise ContractError("continuation_cursor_unavailable")
 
 

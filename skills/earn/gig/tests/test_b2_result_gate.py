@@ -907,6 +907,73 @@ def test_parent_computes_the_exact_next_page_for_a_continuation(tmp_path):
     }
 
 
+def test_parent_rotates_to_the_least_covered_discovered_single_source(tmp_path):
+    """A deep stale category must not starve shallower revenue sources.
+
+    Production pass 1785374663-42264 spent eight B2 calls walking one source
+    as deep as page 6 while other discovered categories were only on pages 1
+    and 2.  Required-order-first pagination made 144 inspections yield zero
+    applications before the hourly deadline.
+    """
+    context = build_context(tmp_path)
+    frozen = json.loads(context.read_text(encoding="utf-8"))
+    category_id = next(
+        source_id
+        for source_id in frozen["required_search_source_ids"]
+        if source_id.startswith("single:category:")
+    )
+    evidence, summary = write_result(
+        tmp_path,
+        context,
+        inspected=[request("5179838", applicants=29, outcome="ineligible")],
+        eligible_count=0,
+        applications=[],
+    )
+    result_path = evidence / "attempt-01.result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["current_b2"]["search_sources"] = [
+        {
+            "source_id": "single:new",
+            "url": "https://coconala.com/requests?sort=new&page=5",
+            "screenshot_path": str((evidence / "requests.png").resolve()),
+            "live_dom_path": str((evidence / "requests.json").resolve()),
+            "inspected_count": 80,
+            "has_next": True,
+            "exhausted": False,
+        },
+        {
+            "source_id": category_id,
+            "url": "https://coconala.com/requests/categories/427",
+            "screenshot_path": str((evidence / "category.png").resolve()),
+            "live_dom_path": str((evidence / "category.json").resolve()),
+            "inspected_count": 12,
+            "has_next": True,
+            "exhausted": False,
+        },
+    ]
+    result_path.write_text(json.dumps(result) + "\n", encoding="utf-8")
+    contract = tmp_path / "b2-next-cursor.json"
+
+    proc = run_gate(
+        "next-cursor",
+        "--runner-summary",
+        summary,
+        "--context",
+        context,
+        "--output",
+        contract,
+    )
+
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    assert json.loads(contract.read_text(encoding="utf-8")) == {
+        "source_id": category_id,
+        "previous_url": "https://coconala.com/requests/categories/427",
+        "next_url": "https://coconala.com/requests/categories/427?page=2",
+        "reason": "next_page",
+        "prior_inspected_request_ids": ["5179838"],
+    }
+
+
 def test_parent_accepts_current_coconala_spot_route_for_continuation(tmp_path):
     """Production changed newest single jobs to the supplier spot route.
 
