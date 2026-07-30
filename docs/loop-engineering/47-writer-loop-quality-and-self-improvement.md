@@ -2786,7 +2786,7 @@ verified evidence
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | IN PROGRESS — MONEY / AVAILABILITY | 2候補とも品質FAILした日の「有料記事1本」を復旧 | canonical `daily-2026-07-30`とbounded replacement `20260729-173948`は、source defect修復後も前者JA/EN editorial+reader FAIL、後者JA editorial+reader FAIL / EN reader FAILで`block_freeze`。publication-state exact0、公開0は安全だが、daily paid article desired stateは未達。Superpowers systematic-debugging → TDD → verificationで、terminal reader/editorial failureをdurable feedback receiptへ固定し、次のresearch/evidence planがそれを消費した証拠を残す。gateを緩めず、同日回復を有限に保ち、実runのJA/EN current hash quality PASS → note ¥500 + Substack JA/EN paid public readbackまで閉じる |
+| 1 | IN PROGRESS — MONEY / AVAILABILITY | 2候補とも品質FAILした日の収益面を復旧 | 品質回復は実runで完了し、current JA/EN hashはquality terminal PASS。収益doneはnote ¥500、Substack JA/EN paid-only、X Article JA/EN、X Postのpublic readback。Dev.to / Zennは直接収益面ではないため、このdone条件と実行順をブロックしない。gateを緩めず、same-ID/target、duplicate 0を維持する |
 | 2 | TODO NOW — SELF-IMPROVE CONSUMER | partial live publicationを学習consumerまで一貫させる | producerは`learning_eligible_pairs`でexact8依存を除いたが、current `verify_latest()`はなお`completion_status()==complete`と旧`rubric-judge-{ja,en}.json`を要求する。`collect_snapshot()`もlive rowの`public_id`欠落を`unknown/insufficient`でなく`KeyError`にする。直近22:30実runは`REVIEW_REJECTED`後にこの`KeyError`で終了。current editorial receiptとverified partial pairだけを受理し、欠損は明示`unknown/insufficient`、例外0、変更0/keep/revertのterminal receiptを既存launchd実runで証明する |
 
 ##### B1 active diagnosis / 採用契約
@@ -2821,11 +2821,15 @@ verified evidence
 
 **planner handoff停止点**: run 91はquality recoveryを`handed-to-publication`へterminal化してexit 1、7面のauthenticated draft readbackを保存した。run 92を発火するとexit 0で旧`daily-2026-07-24` WAITを選び、現runへ再入しなかった。current `initialization_plan()`を実測すると、publicationより前に保存された同runの`platform=quality / published=false / verified_logged_in=false / remote identityなし` audit行を`run-ledger-boundary-exists`と誤認していた。destination、draft URL、live URL、receipt、public ID、published_atを全て持たない同topicの`carry-over:quality-block:*`行だけを非publication auditとして許可し、他のledger行は従来どおりfail-closedにするtestをRED→GREENにした。feature `6ba9e73` / runtime `c717d89`、publication 101/101、schedule 34/34がfresh PASS。runtime上の同state再評価は`initializable=true / initialization_pairs=["x-post/ja"]`である。
 
+**収益面優先の現行判断**: Writerの当面の価値は直接売上で測る。優先面は **note → Substack → X**。Dev.toとZennは配信面として残してもよいが、収益availability、session完了、学習開始を待たせない。従って現行作業順は、(1) note ¥500、(2) Substack JA/EN paid-only、(3) X Article JA/EN + X Post、(4) partial live receiptを使うself-improve consumer、(5) Dev.to/Zenn backlog。旧exact8 package completionは診断用に保持するが、money completionの定義には使わない。
+
+**run 93–94 実測**: run 93は`x-post/ja`をstable slot `20260729-173948`で登録し、publication-stateは8 intentを保持、managed planは`resumable=true`へ進んだ。従って`publication-readbacks.json`に残る「x-post validatorがlegacy IDを拒否」というblocker文は古い観測で、現stateが正本である。run 94は収益順の先頭`note/ja`をdeterministic publisherで実行したが、本文再stagingより前のeyecatch stepで停止した。draftには既に`assets.st-note.com` eyecatch readbackがあるのに、setterが毎回`button[aria-label="画像を追加"]`を要求し、既設定画面で30秒timeout。noteはstable key `nac6a14e974b2`のdraft、本文embedは前回4/5のまま、公開・¥500 receiptは0。Substack JA `209066905` / EN `209066908`は`only_paid=true`、free previewあり、paywall exact1、render PASSだがdraft。X Article JA/EN saved editor `2082671063998308352` / `2082671249143275520`はrender PASSだがdraft、X Postはintentのみ。run 94はexit 1で、成功を偽装していない。
+
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
 | # | 状態 | 検証 | done |
 |---:|---|---|---|
-| 1 | BLOCKED BY B1 | paid publicationの次run再現性 | fresh quality PASS runでnote ¥500 + Substack JA/EN paid exact3をpublic readback PASS。same-ID recovery、duplicate 0 |
+| 1 | BLOCKED BY B1 | paid publicationの次run再現性 | fresh quality PASS runでnote ¥500 + Substack JA/EN paid + X収益導線をpublic readback PASS。same-ID recovery、duplicate 0。Dev.to/Zennは非blocking |
 | 2 | BLOCKED BY B2 | 22:30 self-improve実機 | `scorable / unknown / insufficient`を分離し、partial live pairでexception 0、変更は1 blamed rule以下、Telegram durable receiptまでPASS |
 
 ##### D. AUTO-MONITOR — 時間・実データだけが入力
@@ -2835,7 +2839,7 @@ verified evidence
 | 1 | AUTO-MONITOR | 実money/engagementでjudge・title/body/long-form weightを較正 | `scorable`だけで相関・blame・keep/revert。`unknown/insufficient`は変更0 |
 | 2 | AUTO-MONITOR | 7日click→activation→paid attribution | 同一product/run/artifact/variant/clickのwindow-closed receipt。window未到着は`insufficient`で変更0 |
 | 3 | NEXT WEEKLY VERIFY | 3 independent healthy runと7-day audit | `article-audit-7day`はSunday 22:00にload済み。直近auditはFAIL、current lifecycleはruns 0のため、次回実runで公開SLO・weight consumption・duplicate 0・Telegram receiptを再証明 |
-| 4 | LOW / MONEY-NONBLOCKING | Zenn backlog | 300秒workerはload済み・current runs 99 / last exit 0。最新runは`unavailable`のまま。X Article時刻契約はA#8で完了したため残TODOから除外 |
+| 4 | LOW / MONEY-NONBLOCKING | Dev.to / Zenn backlog | 直接収益面ではないためnote・Substack・X、money receipt、self-improveを待たせない。別reconcilerで処理する場合もmoney completionへ再接続しない |
 
 Writerはstandalone revenue loopであり、Honne/Larry/ReelClaw/Watercolorとの運用mergeは残TODOに含めない。
 generic schema/libraryの再利用は完了履歴として保持するが、producer間でscheduler、CRAFT、reward、opponent、weightを共有しない。
