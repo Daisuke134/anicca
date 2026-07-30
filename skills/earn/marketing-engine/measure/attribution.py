@@ -87,7 +87,7 @@ def cmd_link(a) -> int:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         with open(STATE, "a") as f:
             f.write(json.dumps({
-                "ts": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "ts": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "product": a.product or "",
                 "app_id": a.app_id,
                 "account": a.account,

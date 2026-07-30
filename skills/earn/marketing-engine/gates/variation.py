@@ -108,7 +108,7 @@ def _parse_ts(value: str):
 
 
 def recent_hooks(account: str, history: str, days: int) -> set[str]:
-    cutoff = dt.datetime.now(dt.UTC).replace(tzinfo=None) - dt.timedelta(days=days)
+    cutoff = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None) - dt.timedelta(days=days)
     out = set()
     for row in _rows(history):
         if row.get("account") != account:
@@ -197,7 +197,7 @@ def cmd_pick_bg(a) -> int:
     if a.record:
         with open(a.state, "a") as f:
             f.write(json.dumps({
-                "ts": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "ts": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "account": a.account,
                 "background": chosen,
             }) + "\n")
