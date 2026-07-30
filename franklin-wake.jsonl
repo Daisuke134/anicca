@@ -17671,3 +17671,10 @@
 {"ts":1785404720,"wake_id":"00MS7BVF676808AA3FBCFD410C","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785404870,"wake_id":"00MS7BYMM88F7EC083E1D748BB","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785405000,"wake_id":"00MS7C1FGE663510FD9C714ADE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785405137,"wake_id":"00MS7C4CX63F08949280FA4BE7","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785405294,"wake_id":"00MS7C7PY50ADA74542F674BB3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785405437,"wake_id":"00MS7CAS1PA9A7708567B74A25","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785405567,"wake_id":"00MS7CDKHKBA74C022C5B84A7E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785405730,"wake_id":"00MS7CH2MZ748EB4124AE84587","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785405865,"wake_id":"00MS7CJYSE70AC0D4228DD41F5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785406010,"wake_id":"00MS7CN26R5E27C3E481D64602","kind":"narrate","sleep_s":120,"model":"auto"}
