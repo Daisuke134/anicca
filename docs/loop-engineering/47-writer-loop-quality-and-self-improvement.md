@@ -3033,3 +3033,118 @@ Blocked: none
 | 自前credentialでの入金 | Stripe/Gumroadは法人・本人確認が要る。**agent自身の入金導線は現状 crypto (USDC) が唯一の自前rail**。法人rail経由はDais名義に依存する。ここは検索では解けない構造的制約 |
 | 複数アカウント運用の可否 | X/note/Substackが1人複数アカウントをどう扱うかは **UNVERIFIED**（X検索で実データ0件）。1 platform 1 niche から始め、凍結兆候を停止条件にする |
 | 題材の入替 | S3よりAI題材はchurn最悪。ただし「AI × 買い手意図の狭いniche」は未検証であり、捨てるのではなく買い手意図軸で選び直す |
+
+## 24. 収益の2経路と、10M MRR へ至る視覚モデル（2026-07-30 Dais 指示）
+
+### 24.0 実測ベースライン（2026-07-30、Stripe live API）
+
+| 観測 | コマンド | 結果 |
+|---|---|---|
+| 決済rail | `GET /v1/products?limit=10` | 商品 **10件 active**（Anicca Life Manager / Anicca Cloud / QR Code Generator Pro 他）。rail は生きている |
+| 生涯売上 | `GET /v1/charges?limit=100` | 成功 **9件 / 合計 $50.99**（2025-10〜2026-05、全て Life Manager サブスク）、失敗10件。**記事に帰属する売上は $0** |
+
+結論: 決済インフラは存在する。欠けているのは「記事に紐づく商品」と「記事→ドルの帰属ID」だけ。
+
+### 24.1 収益の2経路（混ぜない。§22.14 の exact1 ルールを継承）
+
+```text
+ PATH A — 文章そのものが金になる  ★最優先★
+ ├─ A1  記事を「買う側」に売る      発注元が原稿料を払う（audience 不要・最速）
+ ├─ A2  読者に売る                 有料購読 / 有料アーカイブ（複利・遅い）
+ └─ A3  記事に紐づく少額商品        template / ebook / checklist（数日で初売上）
+
+ PATH B — 文章が他productを売る    （副次。rewardを合算しない）
+ └─ B1  Life Manager 等への attributed MRR
+```
+
+| 経路 | 初売上まで | audience 必要 | 上限 | loopでの扱い |
+|---|---|---|---|---|
+| A1 | 日〜週 | 不要 | 中（原稿料は線形。人月の壁） | **Stage 0 の唯一の目標** |
+| A3 | 日〜週 | 不要（既存コミュニティへ配布） | 中〜大 | Stage 1 の主軸 |
+| A2 | 月〜四半期 | 必要 | 大（複利） | Stage 2 以降の主軸 |
+| B1 | 月 | 部分的に必要 | product 依存 | 別 reward。run 開始時に A か B を exact1 で固定 |
+
+### 24.2 10M MRR の分解式
+
+```text
+                          MRR = Σ_units ( paid_customers × price )
+
+                                $10,000,000 / month
+                                         │
+        ┌──────────────┬─────────────────┼─────────────────┬──────────────┐
+        ▼              ▼                 ▼                 ▼              ▼
+     PRICE         CONVERSION          UNITS           RETENTION      NON-SUB
+   $10 → $27      0.62% → 18.69%    1 → N niches     churn 13%→7%   原稿料/商品
+   読者ROIで      買い手意図niche    ★unit が黒字化    題材verticalで  audience
+   決まる(S2)     で30倍差(S1)       してから複製★    決まる(S3)     不要(A1/A3)
+```
+
+**現実チェック（S: [On Substack](https://on.substack.com/p/a-business-model-that-works-for-creators) “the top 10 collectively make more than $100 million a year”）**:
+Substack 上位10媒体の**合計**が約 $8.3M/月。つまり **1媒体で 10M MRR に到達した例は存在しない**。
+10M は「1つの素晴らしい media」ではなく、**証明済みunitの複製 × 単価上昇** でしか成立しない。
+Dais の「アカウントを何百個も作る」という直感は、算数としては正しい。ただし **順序が逆だと失敗を並列化するだけ**。
+
+| 到達形 | 必要数 | 前提 |
+|---|---|---|
+| 消費者向け $27/mo | **370,000 paid** | 単一媒体では前例なし |
+| B2B ニッチ調査 $200/mo | **50,000 seats** | 買い手意図が強い領域 |
+| 企業向けintel $2,000/mo | **5,000 accounts** | 一次データ・独占情報が要る |
+| ポートフォリオ | **100 units × $100k/mo** | unit が黒字化していることが絶対条件 |
+
+### 24.3 段階ゲート（loopが「今どの段にいるか」を state として持つ）
+
+```text
+ STAGE 0   $0 → 初めての $1
+   目標: A1（原稿料）または A3（少額商品）で実receipt 1件
+   loopの日次変数: 提出先の選定 / 提出の完了率
+   GATE: 実入金 receipt 1件（Stripe charge succeeded or 原稿料着金）
+        ↓
+ STAGE 1   $1 → $1,000 / month
+   目標: 1 niche × 1 offer × 既存コミュニティ配布 を反復可能にする
+   loopの日次変数: niche選定・offer・配布先
+   GATE: 3週連続で売上 > 0、かつ手動介入 0
+        ↓
+ STAGE 2   $1k → $10k / month
+   目標: unit economics を「測定値」にする
+   loopの日次変数: conversion・churn・price
+   GATE: conversion / churn / LTV が scorable、churn < 10%/mo（S3基準）
+        ↓
+ STAGE 3   $10k → $100k / month   ←★ここで初めてアカウントを増やす★
+   目標: 証明済みunitを N niche へ複製
+   loopの日次変数: 新niche の buyer-intent スコア、複製の失敗率
+   GATE: 2つ目のunitが1つ目と同等のconversionに到達
+        ↓
+ STAGE 4   $100k → $1M / month
+   目標: 単価を上げる（消費者 $27 → B2B $200+）
+   loopの日次変数: 一次データの獲得、offerの再設計
+   GATE: 単価10倍のunitが1つ黒字化
+        ↓
+ STAGE 5   $1M → $10M / month
+   形: 100 unit × $100k、または B2B 5,000 account
+   loopの日次変数: portfolio配分、衰退unitの停止
+```
+
+**不変条件**: 段を飛ばさない。STAGE 3 の複製は STAGE 2 の GATE 通過が前提。
+現在地は **STAGE 0**（記事由来の売上 $0、§24.0 実測）。したがって今日 loop が最適化すべき唯一の変数は
+「文章の質」でも「投稿本数」でもなく、**A1/A3 で最初の1ドルを取ること**。
+
+### 24.4 日次 loop が段ごとに変える変数（1日1変更、§22.14 の gate を継承）
+
+| Stage | 日次で変えてよい1変数 | 変えてはいけない物 |
+|---|---|---|
+| 0 | 提出先 / offer の形 | 品質gate、identity、安全gate |
+| 1 | niche・配布先コミュニティ | 証明前の価格、unit定義 |
+| 2 | 価格・CTA・paywall位置 | niche（測定中は固定） |
+| 3 | 新niche選定基準 | 既存unitのweight |
+| 4 | offer階層・単価 | 黒字unitのprice（別unitで実験する） |
+| 5 | portfolio配分 | 個別unitのCRAFT |
+
+### 24.5 この視覚モデルが否定するもの
+
+| よくある誤り | なぜ誤りか |
+|---|---|
+| 「良い記事を毎日出せばいつか売れる」 | conversion 0.62%（S1）では $10k MRR に 160万読者が要る。文章では埋まらない |
+| 「先にアカウントを100個作る」 | STAGE 2 未通過の複製は、赤字unitを100個作るのと同じ |
+| 「全記事を有料にする」 | 配布が死に、複利（A2）が始まらない。無料の定期便 + 有料アーカイブが構造（S8） |
+| 「X の収益分配を狙う」 | 生涯中央値 $300（S6）。rail として弱い |
+| 「view/いいねが増えれば金になる」 | 代理指標最適化。DeepMind specification gaming（S18）と同型 |
