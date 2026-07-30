@@ -3993,3 +3993,50 @@ reward が間違っている状態の自己改善器は、間違いを高速化�
 | 3 | unit 数（ただし黒字 unit のみ複製） |
 | 4 | 単価（$27 → $200+。読者ROIが根拠） |
 | 5 | 利用者数（自分のアカウント数ではない） |
+
+## 32. #1 DigitalOcean Write for DOnations — 提出設計（2026-07-31。公式ページ実読）
+
+### 32.1 実読した条件
+
+| 項目 | 内容（出典 = digitalocean.com/community/pages/write-for-digitalocean を実読） |
+|---|---|
+| 報酬 | 新規 **$400/本**、更新 $100。受取は PayPal または DO credit。"All payouts are at editorial discretion"（同ページFAQには "typical payout ... is $300" とも併記） |
+| 流れ | **Apply（topic idea + outline + writing sample）→ 承認 → 執筆 → 編集者と1対1で技術レビュー → 公開** |
+| 応募先 | `do.co/w4do` |
+| ライセンス | **Creative Commons BY-NC-SA 4.0**、かつ "We publish only original, **first-run** content" |
+| 題材の範囲 | 「practical guides covering open-source software and Linux/Unix-like systems, including production installations, deployments, containers, and automation」。sysadmin / security が明示 |
+| 読者層 | beginning and intermediate developers |
+| 形式 | 「a series of steps to solve a specific problem」。各手順を、読者が自分の状況へ応用できる粒度で説明する |
+| proposal の作り方 | 公式 How-To あり（focus → audience → scope → tasks → outline → outline trap 回避の6段） |
+
+### 32.2 この条件が我々に課す制約
+
+| 制約 | 対応 |
+|---|---|
+| **first-run 限定** | DO へ出す原稿は note/Substack/Zenn へ**先に出さない**。DO 用は独立の題材として起こす |
+| CC BY-NC-SA | 商用再利用が制限される。DO 用原稿を後で有料商品へ流用しない |
+| Linux/OSS 実務が題材 | AI エージェント一般論は不可。**実際に Linux 上で動かした構成**に限る |
+| 人間の編集者が入る | 即日入金ではない。STAGE 0 の GATE は「入金」なので、#9（少額商品）と並走させる |
+
+### 32.3 題材候補（すべて自分が実運用している = 一次経験がある物のみ）
+
+| 候補 | DO の範囲との対応 | 我々の一次経験 |
+|---|---|---|
+| 自動公開パイプラインに fail-closed な秘匿情報スキャナを入れる（Linux + systemd timer） | security / automation | ★#0 で実装した PII gate そのもの（41テスト・回帰0）★ |
+| 同一 ID で再開する冪等な公開ジョブを systemd timer で組む | automation / production deployment | 同一 intent への収束・retry 設計 |
+| x402 で HTTP エンドポイントを有料化する（Nginx + middleware） | OSS / deployment | ★#10 実装後に一次経験になる★ |
+| Docker サンドボックス内で自己改変エージェントを安全に走らせる | containers / security | ★#17 実装後★ |
+
+**選定規則**: 「実際に動かして receipt がある物」だけを提案する。未実装の題材は提案しない（§22.14 の一次経験要件と同じ）。
+したがって **今すぐ出せるのは1つ目（PII gate / systemd）**。他は該当 TODO 完了後に解禁。
+
+### 32.4 #1 の done
+
+| 段 | done |
+|---|---|
+| a | proposal（topic + outline + writing sample）を `do.co/w4do` から実提出し、提出の receipt を得る |
+| b | 編集者の応答を受領 |
+| c | 掲載 |
+| d | **$400 の入金**（= STAGE 0 の GATE） |
+
+a→d は編集者の処理時間に律速される。**待ち時間中に #2 以降を止めない。**
