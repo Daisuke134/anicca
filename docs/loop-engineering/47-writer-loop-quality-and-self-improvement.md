@@ -2833,6 +2833,8 @@ verified evidence
 
 **Substack same-draft paid publish実機完了**: `11c7501`はmanaged publisherがdispatch台帳を汎用`substack`名で検索して実在する`substack-ja` / `substack-en`行を見失う停止点を、言語別の実platform名へbindして修復した。既存`ai.anicca.article-resume`のLaunchAgent run 140 / 141は新規draftを作らず、JA ID `209066905`を[公開URL](https://aniccabuddha.substack.com/p/5)、EN ID `209066908`を[公開URL](https://aniccabuddha.substack.com/p/a-green-test-is-not-learning-five)へ公開してexit 0。publish後のauthenticated draft APIは両方`audience=only_paid`、`should_send_free_preview=true`、`should_send_email=false`、paywall node exact1。anonymous public HTMLはpaywall CTAと同じpostへ戻るsubscribe URLを保持し、title・identity・headline/body画像各2枚はexact SHA-256でPASS。ledgerはrun/pairごとにlive row exact1、public IDは元draft IDと一致、duplicate draft/public row 0。
 
+**X resume実機進捗**: LaunchAgent run 142はcurrent runを選び、eligible `x-article/ja`と`x-post/ja`を独立実行した。X Article JAは同じsaved editor `2082671063998308352`を再利用し、journal=`authorized`、public ID 0のまま、80文字で切れたraw URL付き`after_text`をcanonical画像inserterがeditor DOM anchorとして見つけられず停止した。production anchorをそのままfixture化し、表示label + raw URLのanchorはURL suffixを除いた安定labelへ正規化する`589f0f2`をRED→GREEN化。X focused 60 PASS、compile/diff check PASS。X Postは261文字だがimmutable artifactにCTA URLがあり、standalone/no-URL publisher契約がeffect前に拒否した。両pairともpublic side effect 0、target/slot/source hash不変。次の実tickはJA same-ID再実行、その後X PostのCTA契約を修復する。
+
 **handoffの実行順（現在の残TODO正本）**:
 
 | 順序 | 作業 | done |
