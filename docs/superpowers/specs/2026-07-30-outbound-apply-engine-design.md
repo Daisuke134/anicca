@@ -215,11 +215,11 @@ Cold outbound の型 (実測 BP):
 
 | # | P | タスク | done 条件 (これ以外を done と呼ばない) |
 |---:|---|---|---|
-| 1 | P0 | `runtime/loop/outbound/` エンジン骨格を financial-report から複製 (boot.sh / runtime.js / migrations / test / launchd installer) | `npm test` 緑 + launchd 登録 + heartbeat `~/.openclaw/state/.outbound-last-pass` 更新 |
+| 1 | P0 | `runtime/loop/outbound/` エンジン骨格を financial-report から複製 (boot.sh / runtime.js / migrations / test / launchd installer) | `npm test` 緑 + launchd 登録 + heartbeat `~/.local/state/life-manager/.outbound-last-pass` 更新 (★訂正: `~/.openclaw/state/` は禁止根。§8.1 参照★) |
 | 2 | P0 | Evidence Contract E1/E2/E3 を独立モジュール化 (self-improve から read-only) | 単体テストで「証拠欠落 → failed」が3ケース PASS |
 | 3 | P0 | ~~Telegram `sendPhoto` を追加~~ **CLOSED 2026-07-31: 既に実装済 (`lib/telegram.js:29`)** | — |
 | 3b | P0 | `npm install` で baseline を緑にする (`tldts` 欠落で `npm test` が即死。pretest は 68/68 PASS) | `npm test` が最後まで走り、pass/fail 数が出る |
-| 4 | P0 | Guardian 配線 (`healthcheck-runtime-loop.sh` 登録 + STALE で self-fix) | 意図的に止めて STALE 検出 → Telegram 警告が届く |
+| 4 | P0 | Guardian 配線 (`healthcheck-runtime-loop.sh` 登録 + STALE で self-fix) | **配線 = 完了 (§8.1)**。★残 = live 検証: loop を launchd に入れ、意図的に止めて実 self-fix が起動すること★ (「Telegram 警告」は誤り。escalation 先は `self-fix.sh` = 分離 fixer agent であって Telegram ではない) |
 | 5 | P1 | Loop B の偽物判定を削除 (`connpass-lt-discover.py:166` の regex を廃棄、`:302` の無条件カレンダー書き込みを撤去) | grep で成功宣言の文字列マッチが 0 hit |
 | 6 | P1 | URL バグ2箇所修正 (`gcal_write.py:135/140` を canonical event URL に、`connpass-lt-discover.py:239` の subdomain 保持) | 生成された URL 10件が全部 HEAD 200 |
 | 7 | P1 | Luma provider adapter (discover + RSVP via daily-driver) | 実イベント1件を RSVP、確認メールを Gmail で実読 |
@@ -241,6 +241,60 @@ Cold outbound の型 (実測 BP):
 | 22 | P5 | cloud 化: state を Supabase、chat_id を per-tenant、local/cloud 同一 commit SHA | Railway 上で同エンジンが別ユーザー分を回し、receipt に同一 SHA |
 
 **進め方**: 1つずつ閉じる。P1 の #8 (QR が Telegram に届く) が真になるまで P2 に入らない。
+
+### 8.1 Guardian 配線 (TODO #4 の実装記録、2026-07-31)
+
+**閉じた失敗クラス**: 前身の connector loop は 2026-07-18 を最後に 12 日間死んでいた (全 run `rc=1`) が、**誰も見ていなかったので誰も気づかなかった**。原因は「cron がある」だけで **artifact を見張る entry が無かった**こと。以下でその穴を塞ぐ。
+
+| 項目 | 値 (実測・ハードコード) |
+|---|---|
+| guardian | `skills/self/healthcheck-runtime-loop.sh` (既存。`hrl_classify` を再利用、並行機構は作らない) |
+| entry 1 | `outbound-pass` → label `ai.anicca.life-manager-outbound`、kind `interval`、stale **1410 min** |
+| entry 2 | `outbound-verify` → label `ai.anicca.life-manager-outbound-verify`、kind `interval`、stale **1470 min** |
+| ★heartbeat path★ | **`$HOME/.local/state/life-manager/.outbound-last-pass`** (両 entry 共通) |
+| writer | `runtime/loop/outbound/streak.mjs::heartbeatPath()` — `lib/outbound-runtime.js`(pass) と `scripts/outbound-verify.js`(verify) の**両方**が `touchHeartbeat` する |
+| なぜ `.openclaw` ではないか | `apps/life-manager/scripts/scan-legacy-paths.js` が `apps/` `runtime/` 内の `.openclaw` 参照 (コメント含む) で build を落とす + `lib/runtime-paths.js` が同根を reject する。canonical portable root は `resolveDataRoot()` |
+| escalation | `STALE` / `DEAD_UNLOADED` → `skills/self/self-fix.sh <name> "<blocker>"` (= 分離 fixer agent。★Telegram 通知ではない★) |
+| guardian 自身の cadence | `ai.anicca.runtime-loop-healthcheck` = `StartInterval 300` (5分毎) → 30分の検出マージンは約6評価分 |
+
+**stale limit の導出** (感覚ではなく schedule から計算):
+
+```
+pass 07:30 / verify 09:00 が同じ heartbeat を触る
+  両方生存      → 合法な最大 age = 09:00 → 翌 07:30 = 1350 min
+  片方だけ死亡  → 生存側が1日1回触る       → age は 1440 min に達する
+  両方死亡      → age は無限に伸びる
+∴ 1350 < limit < 1440 だけが「健全」と「半死」を区別できる窓
+   pass   = 1410 (23h30) … drift slack 60min、1440 の手前で鳴る
+   verify = 1470 (24h30) … 「丸1日誰も触っていない」= 全滅アラーム。
+                            pass より 60min ずらすことで、1回の障害で
+                            self-fix が同時に2発起動するのを防ぐ
+```
+
+**正直な限界**: artifact を2 entry で共有しているため、**freshness だけでは「どちらの loop が死んだか」は判別できない**。判別するのは per-label の `DEAD_UNLOADED` 検査 (label 完全一致) の方。
+
+**副次的に直したバグ**: `loop_pid` は `grep "$label"` の**部分一致**だった。`ai.anicca.life-manager-outbound` は `...-outbound-verify` の**厳密な接頭辞**なので、pass が unload されていても verify の行が PID を返し「生きている」と誤判定しうる = まさに本タスクが潰す失敗クラス。`hrl_pick_pid` (`launchctl list` の第3列を完全一致) に置換し、テストで固定した。
+
+**テスト**: `apps/life-manager/scripts/outbound-guardian-wiring.test.js` (13 tests、`npm run test:outbound` に登録済)。scratch `HOME` + 実ファイルの mtime を操作して**実 bash script を subprocess で駆動**する (guardian を JS に書き直さない)。`NEGATIVE CONTROL` で「常に OK を返す classifier」を同じ表に通し、4件以上落ちることを assert = 表が空虚でないことの証明。escalation は stub `self-fix.sh` を隣に置いた sandbox copy で検証 (実 fixer を起動しない)。
+
+### ★★ 8.2 `~/anicca` への再同期 (merge 時に必須) ★★
+
+live guardian は **この repo ではなく `~/anicca` の copy** を実行している:
+
+| 事実 | 実測値 (2026-07-31) |
+|---|---|
+| 実行される実体 | `~/Library/LaunchAgents/ai.anicca.runtime-loop-healthcheck.plist` → `/Users/anicca/anicca/skills/self/healthcheck-runtime-loop.sh` |
+| 本 branch 側 | `skills/self/healthcheck-runtime-loop.sh` |
+| 差分 (本タスク着手前) | ★byte-identical ではない★ — **1行だけ差異**: `LOG=` が repo 側 `$HOME/.local/state/life-manager/logs/...` に対し `~/anicca` 側は旧 `$HOME/.openclaw/logs/...` |
+| plist の load 状態 | ★`launchctl list` に `ai.anicca.runtime-loop-healthcheck` が**居ない** = guardian 自体が現在 unload されている★ |
+
+**したがって、この branch を merge しただけでは live guardian は新 entry を一切見ない。** merge 時に必ず:
+
+1. `skills/self/healthcheck-runtime-loop.sh` を `~/anicca/skills/self/` へ再同期する (LOG 行の扱いを決めた上で。`~/anicca` は LIVE runtime store なので本 branch の executor は触っていない)
+2. `~/anicca` 側で `bash skills/self/test-healthcheck-runtime-loop.sh` と outbound の classify を実走させる
+3. `ai.anicca.runtime-loop-healthcheck` を load し直す (これをやらない限り guardian はゼロ回実行される)
+
+同期を怠ると **「entry を書いたのに live では見張られていない」= 本タスクが塞いだはずの穴がそのまま残る**。
 
 ---
 
@@ -269,6 +323,9 @@ Cold outbound の型 (実測 BP):
 | Incubate Fund / Genesia 4号の LP に MUFG がいるか | 非公開で判定不能。**§7.1 の線引きにより無関係になった** |
 | `apps/life-manager` の真のテスト数 | `npm install` (#3b) 後に判明。現状は `tldts` 欠落で即死 |
 | VC 連絡先のオープンデータセット | 見つからず (OpenVC 等はゲート付き商用)。プログラム的一括取得は未検証 |
+| Guardian: 「STALE → 実 self-fix agent が起動する」 | **未検証**。outbound の2 plist は launchd に未 install (provider が `NOT_IMPLEMENTED` を投げる段階) なので、実 heartbeat が STALE になる状況を作れない。検証済なのは ①classify が実ファイル mtime から STALE/OK/MISSING/DEAD を正しく返すこと ②DEAD 時に escalation が **stub** self-fix に到達すること。**実 fixer agent の起動は一度も観測していない** |
+| Guardian: 「Telegram 警告が届く」 | **そもそも配線が存在しない**。`self-fix.sh` に Telegram 送信は無い (grep 0 hit)。TODO #4 の旧 done 条件は誤り。§8.1 で訂正済 |
+| Guardian が live で回っているか | **回っていない**。`ai.anicca.runtime-loop-healthcheck` は plist が `~/Library/LaunchAgents/` に在るのに `launchctl list` に居ない (unload 状態)。§8.2 の再同期 + load をやるまで entry 追加は live には効かない |
 
 ## 11. 決定ログ (2026-07-31 の不確実性掃討)
 
