@@ -284,7 +284,10 @@ def test_b2_browser_rules_use_code_verified_helper_paths_without_rediscovery():
     end = source.index("    REFLECT)", start)
     b2_rules = source[start:end]
 
-    assert "python3 $B/cdp_context_lease.py acquire $step_context" in b2_rules
+    assert "Parent code already acquired the step-owned context lease" in b2_rules
+    assert '--lease \\"\\$ANICCA_BROWSER_LEASE\\"' in b2_rules
+    assert "--ws <returned_ws>" not in b2_rules
+    assert "Do not copy or transcribe the opaque page websocket" in b2_rules
     assert "python3 $B/cdp_context_lease.py release $step_context" not in b2_rules
     assert "Do not run cdp_context_lease.py release" in b2_rules
     assert "Parent code releases this exact context only after this agent exits" in b2_rules
@@ -293,6 +296,33 @@ def test_b2_browser_rules_use_code_verified_helper_paths_without_rediscovery():
     assert 'B2_TOOLING_PREFLIGHT="verified"' in source
     assert '[ -f "$B/cdp_context_lease.py" ]' in source
     assert '[ -f "$G/scripts/cdp_nav_snapshot.py" ]' in source
+
+
+def test_parent_acquires_b2_lease_and_exports_only_its_stable_handle():
+    source = (GIG_WORK / "gig_pass.sh").read_text(encoding="utf-8")
+    runner = source.index('python3 "$RUNNER"', source.index("\nstep() {"))
+    acquire = source.rindex('acquire_agent_step_context "$label"', 0, runner)
+    exported_handle = source.rindex(
+        'export ANICCA_BROWSER_LEASE="$step_context"',
+        0,
+        runner,
+    )
+    assert acquire < exported_handle < runner
+    apply_step = next(
+        line for line in source.splitlines()
+        if line.lstrip().startswith('lane_step "B2"')
+    )
+    assert '--lease \\"\\$ANICCA_BROWSER_LEASE\\"' in apply_step
+    assert "--ws <leased_ws>" not in apply_step
+
+
+def test_shared_browser_skill_does_not_tell_agents_to_transcribe_opaque_ws_ids():
+    browser_skill = (GIG_WORK.parents[1] / "browser" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert 'WS=$(echo "$LEASE"' not in browser_skill
+    assert "the parent/controller acquires and releases the lease" in browser_skill
+    assert '--lease "$ANICCA_BROWSER_LEASE"' in browser_skill
 
 
 def test_parent_releases_the_b2_step_context_after_the_runner_returns():

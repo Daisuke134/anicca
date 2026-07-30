@@ -5,14 +5,16 @@ import base64
 import fcntl
 import importlib.util
 import inspect
+import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 import unittest
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -490,6 +492,56 @@ class CdpObserveTargetTest(unittest.TestCase):
                 "title": "Talkroom",
             })
             self.assertEqual(connect.call_args.args[0], "ws://127.0.0.1:9222/devtools/page/leased-target")
+
+    def test_observe_resolves_opaque_ws_from_code_owned_lease_handle(self) -> None:
+        """A model cannot corrupt a WebSocket ID it never reads or copies."""
+        exact_ws = (
+            "ws://127.0.0.1:9223/devtools/page/"
+            "A0Il1OZq-opaque-target-id"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            leases = root / "gig-leases.json"
+            leases.write_text(json.dumps({
+                "gig-42264-B2": {
+                    "context_id": "context-1",
+                    "target_id": "A0Il1OZq-opaque-target-id",
+                    "ws": exact_ws,
+                    "ts": 1785374663,
+                },
+            }), encoding="utf-8")
+            observe = mock.AsyncMock(return_value={
+                "url": "https://coconala.com/requests?sort=new&page=3",
+                "not_found": False,
+                "observed": True,
+            })
+            output = io.StringIO()
+            with (
+                mock.patch.dict(
+                    os.environ,
+                    {"CLOAK_CONTEXT_LEASES_FILE": str(leases)},
+                ),
+                mock.patch.object(module, "observe_target", observe),
+                redirect_stdout(output),
+            ):
+                rc = module._observe_main([
+                    "--lease",
+                    "gig-42264-B2",
+                    "--url",
+                    "https://coconala.com/requests?sort=new&page=3",
+                    "--screenshot",
+                    str(root / "page.png"),
+                    "--dom",
+                    str(root / "page.json"),
+                ])
+
+            self.assertEqual(rc, 0)
+            observe.assert_awaited_once_with(
+                exact_ws,
+                "https://coconala.com/requests?sort=new&page=3",
+                root / "page.png",
+                root / "page.json",
+            )
 
     def test_open_application_form_uses_canonical_route_and_verifies_real_fields(self) -> None:
         request_id = "5170797"

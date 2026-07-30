@@ -80,6 +80,51 @@ def _target_operation_lock_path(
     return Path(leases_path).parent / "operations" / f"{target_id}.lock"
 
 
+def _leases_path() -> Path:
+    return Path(os.path.expanduser(
+        os.environ.get(
+            "CLOAK_CONTEXT_LEASES_FILE",
+            "~/.cloak/vault/leases.json",
+        )
+    ))
+
+
+def _resolve_lease_ws(lease_name: str) -> str:
+    """Resolve an opaque page websocket from a stable, code-owned lease name."""
+    if not lease_name:
+        raise RuntimeError("context_lease_name_missing")
+    try:
+        payload = json.loads(_leases_path().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("context_lease_ledger_unreadable") from error
+    held = payload.get(lease_name) if isinstance(payload, dict) else None
+    if not isinstance(held, dict):
+        raise RuntimeError(f"context_lease_not_found:{lease_name}")
+    target_id = str(held.get("target_id") or "")
+    ws_url = str(held.get("ws") or "")
+    parsed = urlparse(ws_url)
+    if (
+        not target_id
+        or parsed.scheme not in {"ws", "wss"}
+        or not parsed.netloc
+        or parsed.path != f"/devtools/page/{target_id}"
+    ):
+        raise RuntimeError(f"context_lease_invalid:{lease_name}")
+    return ws_url
+
+
+def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
+    connection = parser.add_mutually_exclusive_group(required=True)
+    connection.add_argument("--ws")
+    connection.add_argument("--lease")
+
+
+def _connection_ws(args: argparse.Namespace) -> str:
+    if args.lease:
+        return _resolve_lease_ws(args.lease)
+    return str(args.ws)
+
+
 @contextmanager
 def _target_operation_lock(ws_url: str):
     lock_path = _target_operation_lock_path(ws_url)
@@ -1235,14 +1280,15 @@ async def submit_retainer_application(
 
 def _open_application_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ws", required=True)
+    _add_connection_arguments(parser)
     parser.add_argument("--request-id", required=True)
     parser.add_argument("--screenshot", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        ws_url = _connection_ws(args)
         result = asyncio.run(open_application_form(
-            args.ws,
+            ws_url,
             args.request_id,
             args.screenshot,
             args.evidence,
@@ -1259,14 +1305,15 @@ def _open_application_main(argv: list[str]) -> int:
 
 def _submit_application_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ws", required=True)
+    _add_connection_arguments(parser)
     parser.add_argument("--request-id", required=True)
     parser.add_argument("--screenshot", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        ws_url = _connection_ws(args)
         result = asyncio.run(submit_application(
-            args.ws,
+            ws_url,
             args.request_id,
             args.screenshot,
             args.evidence,
@@ -1283,14 +1330,15 @@ def _submit_application_main(argv: list[str]) -> int:
 
 def _open_retainer_application_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ws", required=True)
+    _add_connection_arguments(parser)
     parser.add_argument("--request-id", required=True)
     parser.add_argument("--screenshot", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        ws_url = _connection_ws(args)
         result = asyncio.run(open_retainer_application_form(
-            args.ws,
+            ws_url,
             args.request_id,
             args.screenshot,
             args.evidence,
@@ -1307,15 +1355,16 @@ def _open_retainer_application_main(argv: list[str]) -> int:
 
 def _submit_retainer_application_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ws", required=True)
+    _add_connection_arguments(parser)
     parser.add_argument("--request-id", required=True)
     parser.add_argument("--screenshot", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--listing-title")
     args = parser.parse_args(argv)
     try:
+        ws_url = _connection_ws(args)
         result = asyncio.run(submit_retainer_application(
-            args.ws,
+            ws_url,
             args.request_id,
             args.screenshot,
             args.evidence,
@@ -1333,14 +1382,15 @@ def _submit_retainer_application_main(argv: list[str]) -> int:
 
 def _observe_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ws", required=True)
+    _add_connection_arguments(parser)
     parser.add_argument("--url", required=True)
     parser.add_argument("--screenshot", required=True, type=Path)
     parser.add_argument("--dom", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        ws_url = _connection_ws(args)
         result = asyncio.run(observe_target(
-            args.ws,
+            ws_url,
             args.url,
             args.screenshot,
             args.dom,

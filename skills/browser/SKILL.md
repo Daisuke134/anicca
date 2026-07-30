@@ -83,16 +83,22 @@ through filling, and neither could tell. Take a context instead: CDP `Target.cre
 "Similar to an incognito profile but you can have more than one", and nothing outside your context can
 reach into it.
 
+For an agent subprocess, the parent/controller acquires and releases the lease. The agent receives
+only a stable handle and must never copy or transcribe the opaque page websocket:
+
 ```bash
-LEASE=$(python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
-WS=$(echo "$LEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["ws"])') # drive this tab
-# ... do the work over $WS ...
-python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
+python3 "$GIG_DIR/scripts/cdp_nav_snapshot.py" observe \
+  --lease "$ANICCA_BROWSER_LEASE" --url "$URL" \
+  --screenshot "$SCREENSHOT" --dom "$DOM"
 ```
+
+Controller code that owns a driver without `--lease` support may resolve `ws` internally from the
+atomic lease ledger. Do not expose that value to an LLM command-building step.
 
 A fresh context starts logged out, so `acquire` seeds it from the vault's cookies — verified live:
 a leased context reaches `coconala.com/mypage/dashboard` already authenticated. A loop killed with -9
 never releases, so run `cdp_context_lease.py gc --idle-min 45` from the healthcheck to reap what it
 left holding.
 
-Rules: one context per task, always `release` when done, never touch another task's context.
+Rules: one context per task, the owning controller always releases it, and no worker touches another
+task's context.
