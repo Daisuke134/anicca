@@ -4077,3 +4077,40 @@ model はそれを見て真似していた。削除済み（現在 `grep -c` = 0
 
 **builder の 2 つの過失**（記録として残す）: ①稼働 run 中に `SKILL.md` を編集した（破損なし、以後は hard-exit する guard と atomic write に変更）
 ②検証で clean fixture を実 publish スクリプトに通し、Dev.to に draft を実作成した。**clean artifact を実 publish 経路に流さない**（gate が止める artifact だけ使う）を規則化。
+
+### 32.5 実測: DigitalOcean は停止中。#1 の的を差し替える（2026-07-31）
+
+daily-driver で実ページを描画して DOM を確認した結果:
+
+| 観測 | 結果 |
+|---|---|
+| `#apply` セクション | 「We're currently reviewing our backlog of submissions and are **paused for new topics until 2025**. Please check back next year」（banner 自体が古く、今日は 2026-07-31。DO が更新せず放置している） |
+| ページ内の `<form>` | **1個だけ**。`input#email` = footer の newsletter 登録。応募フォームではない |
+| `<iframe>` | **0個**。Typeform/HubSpot 等の埋め込みも無い |
+| `do.co/w4do` | 同じ情報ページへ 302。`do.co/write-for-donations` は 404 |
+| login | 不要（そもそも応募経路が無い）。daily-driver は DO に未ログイン |
+| identity の要求時期 | 応募時は**ゼロ**。「we'll send you a contract to sign … **That's also when we'll ask for your contact and payment details**」= 受理後 |
+| 支払 | PayPal のみ（または DO credit）。18歳以上。CC BY-NC-SA 4.0 |
+
+つまり **#1 は我々の実力ではなく先方の都合でブロックされている**。待つのは正しくない。
+
+#### 代替の実測（すべて自分で該当ページを読んだ）
+
+| Program | 状態 | 応募経路 | 報酬 | 題材の適合 |
+|---|---|---|---|---|
+| **AppSignal** | ★開いている★ | **Google Form**（`docs.google.com/forms/d/e/1FAIpQLSfypfNOpsrJeK59FbTHrbY61B5t1OTx58hHQViLMBZxM-L2hA/viewform`） | 「We offer a **good base rate** for articles」「once approved, **we pay you**」 | Ruby/Elixir/Node/**Python** APM。読者は mid/senior。初心者向け題材は不可 |
+| RealPython | 開いている | **Workable の求人応募**（`apply.workable.com/realpython/`） | per-project、有償 pilot 記事から | Python 適合。ただし**雇用関係 + 実 identity 前提**で persona 方針と衝突 |
+| Smashing Magazine | 開いている | 個別コンタクト | honorarium + full credit。「We work with **individual authors**」 | frontend/UX 中心。今回の題材（backend/security）は不適合 |
+| DigitalOcean | **停止中** | 無し | $400/本 | 適合。再開時に出す |
+
+#### 判断
+
+| 決定 | 内容 |
+|---|---|
+| #1 の第一目標 | **AppSignal**（開いていて、per-article で払い、Python 題材が通り、Google Form で提出できる） |
+| DO | 再開待ちの time-gated 項目として保持。proposal 原稿は完成済みで再利用可能 |
+| RealPython | persona 方針と衝突するため保留（雇用応募であり per-article 提出ではない） |
+| ★STAGE 0 の GATE 設計を修正★ | A1（原稿料）は**先方の都合で止まる**ことが実測された。GATE を A1 単独に依存させない。**#9（A3 少額商品 / Ko-fi）を #1 と並走**させる。自分で完全に制御できる収益経路を必ず1本持つ |
+
+**一般法則**: 外部プログラムに依存する収益経路は、こちらの実装が完璧でも先方の一存で0になる。
+自分で制御できる経路（自前の商品・自前の endpoint）を常に並走させる。
