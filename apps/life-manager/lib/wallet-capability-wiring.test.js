@@ -175,14 +175,80 @@ test("the cursor is read back from this capability's own completed receipts", ()
   assert.match(RUNTIME_UP, /ORDER BY r\.created_at DESC\s*\n\s*LIMIT 1/);
 });
 
-test("§9.3: the scheduler feeds the sweep a least-recently-watched ordering", () => {
-  // Without this the per-pass cap re-serves the same first 50 uids forever and the tail never gets watched.
-  assert.match(RUNTIME_UP, /readInflowWatchedAt/);
-  assert.match(RUNTIME_UP, /max\(r\.created_at\) AS watched_at/);
-  assert.match(RUNTIME_UP, /GROUP BY j\.tenant_id/);
-  assert.match(RUNTIME_UP, /r\.receipt->>'kind' = 'tenant_wallet_inflow'/);
-  // It must be the watch's OWN receipts: another capability's timestamps would order by the wrong event.
-  assert.match(RUNTIME_UP, /WHERE j\.capability = \$1\s*\n\s*AND r\.outcome = 'completed'/);
+test("§9.3 / §12.3 NEW-4: the ordering advances on ATTEMPT, not only on success", async () => {
+  // Behavioural, not text-matching: the ordering query moved into lib/wallet-sweep-receipts.js precisely so
+  // the sweep drain invariant could drive it. Filtering to completed receipts would make a permanently
+  // failing tenant permanently the most starved, so it would hold the front of the queue forever.
+  const { INFLOW_ATTEMPTED_AT_SQL, createWalletSweepReceiptReaders } = require("./wallet-sweep-receipts.js");
+  assert.doesNotMatch(
+    INFLOW_ATTEMPTED_AT_SQL,
+    /outcome/,
+    "the ordering query must not filter on outcome — a failed attempt is still an attempt",
+  );
+  assert.match(INFLOW_ATTEMPTED_AT_SQL, /max\(r\.created_at\) AS attempted_at/);
+  assert.match(INFLOW_ATTEMPTED_AT_SQL, /GROUP BY j\.tenant_id/);
+
+  const readers = createWalletSweepReceiptReaders({
+    query: async (sql, params) => {
+      assert.equal(params[0], inflow.CAPABILITY);
+      return { rows: [{ tenant_id: "tenant-a", attempted_at: new Date("2026-07-30T09:00:00.000Z") }] };
+    },
+    zeroStartCapability: zeroStart.CAPABILITY,
+    inflowCapability: inflow.CAPABILITY,
+  });
+  assert.deepEqual([...await readers.readInflowWatchedAt()], [["tenant-a", "2026-07-30T09:00:00.000Z"]]);
+});
+
+test("§11.5: the announcement query counts only a completed started receipt", async () => {
+  const { ANNOUNCED_TENANTS_SQL, createWalletSweepReceiptReaders } = require("./wallet-sweep-receipts.js");
+  assert.match(ANNOUNCED_TENANTS_SQL, /r\.receipt->>'status' = 'started'/);
+  assert.match(ANNOUNCED_TENANTS_SQL, /r\.receipt->>'kind' = 'tenant_zero_start'/);
+  assert.match(ANNOUNCED_TENANTS_SQL, /AND r\.outcome = 'completed'/);
+  // A blocked receipt must NOT count as an announcement, or the tenant looks told forever.
+  assert.ok(!/blocked_no_chat/.test(ANNOUNCED_TENANTS_SQL));
+
+  const readers = createWalletSweepReceiptReaders({
+    query: async () => ({ rows: [{ tenant_id: "told" }] }),
+    zeroStartCapability: zeroStart.CAPABILITY,
+    inflowCapability: inflow.CAPABILITY,
+  });
+  assert.deepEqual([...await readers.readAnnouncedTenants()], ["told"]);
+});
+
+test("§11.3: the reap is status re-activation preserving attempt — the only one the schema allows", async () => {
+  // Measured in real PostgreSQL 18: a generation-suffixed job_id violates UNIQUE (tenant_id, effect_key);
+  // DELETE violates the receipts foreign key and then the immutability trigger; resetting attempt collides
+  // with the receipt primary key (job_id, attempt). These assertions pin the surviving option.
+  const {
+    REACTIVATE_ZERO_START_SQL,
+    createWalletSweepReceiptReaders,
+  } = require("./wallet-sweep-receipts.js");
+  assert.match(REACTIVATE_ZERO_START_SQL, /SET status = 'queued'/);
+  assert.match(REACTIVATE_ZERO_START_SQL, /AND attempt < max_attempts/);
+  assert.match(REACTIVATE_ZERO_START_SQL, /AND status IN \('completed', 'dead_letter'\)/);
+  assert.ok(!/attempt\s*=\s*\d/.test(REACTIVATE_ZERO_START_SQL), "attempt must be preserved, not reset");
+  assert.ok(!/DELETE/i.test(REACTIVATE_ZERO_START_SQL), "a DELETE is refused by the receipts foreign key");
+  assert.ok(!/max_attempts\s*=/.test(REACTIVATE_ZERO_START_SQL), "max_attempts is CHECK-capped at 20");
+
+  const reapWith = (row) => createWalletSweepReceiptReaders({
+    query: async (sql) => (sql.includes("UPDATE") ? { rows: [{ job_id: "zero-start:t" }] } : { rows: row ? [row] : [] }),
+    zeroStartCapability: zeroStart.CAPABILITY,
+    inflowCapability: inflow.CAPABILITY,
+  }).reapZeroStartJob({ tenantId: "t" });
+
+  assert.deepEqual(await reapWith(null), { reaped: false, reason: "absent" });
+  assert.deepEqual(await reapWith({ status: "queued", attempt: 0, max_attempts: 20 }), { reaped: false, reason: "active" });
+  assert.deepEqual(await reapWith({ status: "running", attempt: 1, max_attempts: 20 }), { reaped: false, reason: "active" });
+  // §11.6: out of budget is REPORTED, never forced.
+  assert.deepEqual(await reapWith({ status: "dead_letter", attempt: 20, max_attempts: 20 }), { reaped: false, reason: "exhausted" });
+  assert.deepEqual(await reapWith({ status: "completed", attempt: 1, max_attempts: 20 }), { reaped: true, reason: "reactivated" });
+});
+
+test("the scheduler wires the extracted readers rather than inlining the decisions", () => {
+  assert.match(RUNTIME_UP, /createWalletSweepReceiptReaders/);
+  assert.match(RUNTIME_UP, /readAnnouncedTenants: readers\.readAnnouncedTenants/);
+  assert.match(RUNTIME_UP, /reapZeroStartJob: readers\.reapZeroStartJob/);
+  assert.match(RUNTIME_UP, /readInflowWatchedAt: readers\.readInflowWatchedAt/);
 });
 
 test("the scheduler owns the sweep, runs it on a timer, and clears it on shutdown", () => {
@@ -246,29 +312,4 @@ test("§10 MINOR-11: the tenant keychain is kept on purpose and says so honestly
   );
   // It is still real, tested code — kept, not commented out.
   assert.equal(typeof require("./tenant-wallet-store.js").createTenantWalletKeychain, "function");
-});
-
-test("§11.5: the scheduler decides by ANNOUNCEMENT receipts, not by wallet columns", () => {
-  assert.match(RUNTIME_UP, /readAnnouncedTenants/);
-  assert.match(RUNTIME_UP, /r\.receipt->>'status' = 'started'/);
-  assert.match(RUNTIME_UP, /r\.receipt->>'kind' = 'tenant_zero_start'/);
-  // A blocked receipt must NOT count as an announcement, so the status filter is load-bearing.
-  assert.ok(!/receipt->>'status' = 'blocked_no_chat'/.test(RUNTIME_UP));
-});
-
-test("§11.3: the reap is status re-activation preserving attempt — the only one the schema allows", () => {
-  // Measured in real PostgreSQL 18: a generation-suffixed job_id violates UNIQUE (tenant_id, effect_key);
-  // DELETE violates the receipts FK and then the immutability trigger; resetting attempt collides with the
-  // receipt PK (job_id, attempt). These assertions pin the surviving option so a future edit cannot
-  // silently reintroduce one of the impossible ones.
-  assert.match(RUNTIME_UP, /SET status = 'queued'/);
-  assert.match(RUNTIME_UP, /AND attempt < max_attempts/);
-  assert.match(RUNTIME_UP, /AND status IN \('completed', 'dead_letter'\)/);
-  // Never touches attempt, never deletes, never widens the budget.
-  const reap = RUNTIME_UP.slice(RUNTIME_UP.indexOf("async reapZeroStartJob"), RUNTIME_UP.indexOf("async readInflowWatchedAt"));
-  assert.ok(!/attempt\s*=/.test(reap), "attempt must be preserved, not reset");
-  assert.ok(!/DELETE/i.test(reap), "a DELETE is refused by the receipts foreign key");
-  assert.ok(!/max_attempts\s*=/.test(reap), "max_attempts is CHECK-capped at 20 and must not be rewritten");
-  // And it reports exhaustion instead of forcing a run it has no budget for.
-  assert.match(reap, /reason: "exhausted"/);
 });

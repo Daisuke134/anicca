@@ -65,9 +65,11 @@ function transferLog({ from = PAYER, tx = TX, amount = 250000n, block = 1000, lo
   };
 }
 
-function solanaTransfer({ lamports = 0, usdc = 0, signature = SIG } = {}) {
+function solanaTransfer({ lamports = 0, usdc = 0, signature = SIG, slot = 5001 } = {}) {
   return {
     signature,
+    slot,
+    blockTime: 1785484800,
     transaction: { message: { accountKeys: [{ pubkey: SOLANA_ADDRESS }, { pubkey: OTHER_SOLANA_ADDRESS }] } },
     meta: {
       err: null,
@@ -124,7 +126,10 @@ function harness(overrides = {}) {
     async solanaRpc(method, params) {
       solanaCalls.push({ method, params });
       if (method === "getSignaturesForAddress") {
-        return signatures.map((entry) => (typeof entry === "string" ? { signature: entry, err: null } : entry));
+        // §12.3 NEW-1: the cursor is ordered on slot, so every row carries one, exactly like the real RPC.
+        return signatures.map((entry, index) => (typeof entry === "string"
+          ? { signature: entry, slot: 5001 + index, err: null }
+          : { slot: 5001 + index, ...entry }));
       }
       if (method === "getTransaction") {
         const found = transactions[params[0]];
@@ -296,24 +301,31 @@ test("the cursor is persisted in the receipt and honoured on the next wake", asy
   const { receipt } = await executeWalletInflowJob(job(), h.deps);
 
   assert.equal(receipt.base.scanned_to_block, 1200);
-  assert.ok(receipt.next_cursor.base_next_block > 1100);
-  assert.equal(receipt.next_cursor.schema_version, 1);
+  // §12.3 NEW-2: the cursor is a (block, log_index) position, not a bare block.
+  assert.ok(receipt.next_cursor.base_cursor.block > 1100);
+  assert.equal(receipt.next_cursor.base_cursor.log_index, 0);
+  assert.equal(receipt.next_cursor.schema_version, 2);
 
   // Given that cursor, the next wake starts where the last one stopped rather than re-scanning history.
   const next = harness({
     latestBlock: 1400,
+    finalityTags: { finalized: 1400 },
     logs: [transferLog({ block: 1300, tx: `0xcc${"d".repeat(62)}` })],
     cursor: receipt.next_cursor,
   });
   const second = await executeWalletInflowJob(job(), next.deps);
-  assert.equal(second.receipt.base.scanned_from_block, receipt.next_cursor.base_next_block);
+  assert.equal(second.receipt.base.scanned_from_block, receipt.next_cursor.base_cursor.block);
   const getLogs = next.baseCalls.filter((call) => call.method === "eth_getLogs");
   assert.ok(getLogs.length >= 1);
-  assert.equal(BigInt(getLogs[0].params[0].fromBlock), BigInt(receipt.next_cursor.base_next_block));
+  assert.equal(BigInt(getLogs[0].params[0].fromBlock), BigInt(receipt.next_cursor.base_cursor.block));
 });
 
 test("the scanned window is bounded, so a long outage cannot ask for the whole chain", async () => {
-  const h = harness({ latestBlock: 5_000_000, cursor: { schema_version: 1, base_next_block: 1 } });
+  const h = harness({
+    latestBlock: 5_000_000,
+    finalityTags: { finalized: 5_000_000 },
+    cursor: { schema_version: 2, base_cursor: { block: 1, log_index: 0 }, solana_unreadable: [] },
+  });
   const { receipt } = await executeWalletInflowJob(job(), h.deps);
 
   const span = receipt.base.scanned_to_block - receipt.base.scanned_from_block + 1;
@@ -353,7 +365,7 @@ test("§10 MAJOR-6: the scan stops at the finalized head, never at latest", asyn
 
   assert.equal(receipt.base.scanned_to_block, 4000);
   assert.equal(receipt.base.finality, "finalized");
-  assert.ok(receipt.next_cursor.base_next_block <= 4001, "the cursor may not run ahead of finality");
+  assert.ok(receipt.next_cursor.base_cursor.block <= 4001, "the cursor may not run ahead of finality");
   // eth_blockNumber is `latest` and must not be what bounds the scan.
   assert.equal(h.baseCalls.some((call) => call.method === "eth_blockNumber"), false);
   for (const call of h.baseCalls.filter((c) => c.method === "eth_getLogs")) {
@@ -511,9 +523,10 @@ function tokenBalance(accountIndex, amount, owner = SOLANA_ADDRESS, mint = SOLAN
   return { accountIndex, owner, mint, uiTokenAmount: { amount: String(amount), decimals: 6 } };
 }
 
-function solanaTokenTx(preTokenBalances, postTokenBalances, signature = SIG) {
+function solanaTokenTx(preTokenBalances, postTokenBalances, signature = SIG, slot = 5001) {
   return {
     signature,
+    slot,
     blockTime: 1785484800,
     transaction: { message: { accountKeys: [{ pubkey: SOLANA_ADDRESS }, { pubkey: OTHER_SOLANA_ADDRESS }] } },
     meta: {
@@ -647,7 +660,10 @@ test("an outgoing or failed Solana transaction is not an inflow", async () => {
 
 test("the Solana window is bounded and resumes from the persisted signature", async () => {
   const many = Array.from({ length: 200 }, (_, index) => `${String((index % 9) + 1)}`.repeat(88));
-  const h = harness({ signatures: many.slice(0, 3), cursor: { schema_version: 1, solana_last_signature: OLDER_SIG } });
+  const h = harness({
+    signatures: many.slice(0, 3),
+    cursor: { schema_version: 2, solana_cursor: { slot: 4999, signature: OLDER_SIG }, solana_unreadable: [] },
+  });
   const { receipt } = await executeWalletInflowJob(job(), {
     ...h.deps,
     solanaRpc: async (method, params) => {
@@ -662,7 +678,8 @@ test("the Solana window is bounded and resumes from the persisted signature", as
     },
   });
   assert.equal(receipt.solana.scanned_signatures, 0);
-  assert.equal(receipt.next_cursor.solana_last_signature, OLDER_SIG, "an empty page keeps the cursor");
+  // §12.3 NEW-1: an empty page means `until` was genuinely reached, so the cursor stays exactly where it was.
+  assert.deepEqual(receipt.next_cursor.solana_cursor, { slot: 4999, signature: OLDER_SIG });
 });
 
 test("more inflows than one wake may process leaves the rest for the next wake", async () => {
@@ -676,7 +693,7 @@ test("more inflows than one wake may process leaves the rest for the next wake",
   assert.equal(h.recorded.length, MAX_ENTRIES_PER_WAKE);
   assert.equal(receipt.truncated, true);
   assert.ok(
-    receipt.next_cursor.base_next_block <= 1000 + MAX_ENTRIES_PER_WAKE,
+    receipt.next_cursor.base_cursor.block <= 1000 + MAX_ENTRIES_PER_WAKE,
     "the cursor must not skip past inflows this wake did not process",
   );
 });
@@ -767,7 +784,13 @@ test("a receipt that claims a recording without evidence does not verify", () =>
       recorded: true,
       from_is_self: false,
     }],
-    next_cursor: { schema_version: 1, base_next_block: 1201, solana_last_signature: null },
+    next_cursor: {
+      schema_version: 2,
+      base_cursor: { block: 1201, log_index: 0 },
+      solana_cursor: null,
+      solana_unreadable: [],
+    },
+    needs_operator_attention: [],
   };
   assert.equal(verifyWalletInflowReceipt(good), true);
 
@@ -778,6 +801,9 @@ test("a receipt that claims a recording without evidence does not verify", () =>
     ["counts that disagree with the entries", (r) => { r.recorded = 5; }],
     ["a recorded outcome with no entries", (r) => { r.entries = []; }],
     ["a missing cursor", (r) => { delete r.next_cursor; }],
+    ["an old block-only cursor", (r) => { r.next_cursor = { schema_version: 1, base_next_block: 1201 }; }],
+    ["a cursor with no log index", (r) => { delete r.next_cursor.base_cursor.log_index; }],
+    ["a missing attention bucket", (r) => { delete r.needs_operator_attention; }],
     ["a non-integer block", (r) => { r.base.scanned_to_block = "1200"; }],
     ["a bad timestamp", (r) => { r.checked_at = "later"; }],
     ["the wrong kind", (r) => { r.kind = "tenant_zero_start"; }],
@@ -829,7 +855,7 @@ test("§10 MINOR-12: a wake with no row budget left does not advance the cursor 
   // taken[taken.length - 1].block off an empty array. Crashing is bad; advancing the cursor anyway would
   // be worse — it would skip those logs forever.
   const logs = [transferLog({ block: 1100, tx: `0x${"7".repeat(64)}` })];
-  const cursor = { schema_version: 1, base_next_block: 1100 };
+  const cursor = { schema_version: 2, base_cursor: { block: 1100, log_index: 0 }, solana_unreadable: [] };
   const h = harness({ logs, latestBlock: 1200, finalityTags: { finalized: 1200 }, cursor });
   const scan = await require("./wallet-inflow-job-adapter.js").scanBaseInflows({
     baseRpc: h.deps.baseRpc,
@@ -839,7 +865,8 @@ test("§10 MINOR-12: a wake with no row budget left does not advance the cursor 
   });
   assert.equal(scan.inflows.length, 0);
   assert.equal(scan.truncated, true);
-  assert.equal(scan.next_block, 1100, "the cursor must stay put so the unread log is picked up next wake");
+  // §12.3 NEW-2: the exact position of the first unprocessed event, which here is the cursor itself.
+  assert.deepEqual(scan.next_position, { block: 1100, log_index: 0 });
 });
 
 // §12.3 NEW-6 / NEW-7 — the amount and the retraction flag are payload values like any other.

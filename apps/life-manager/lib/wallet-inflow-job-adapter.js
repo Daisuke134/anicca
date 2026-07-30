@@ -55,6 +55,16 @@ const BASE_DEFAULT_LOOKBACK_BLOCKS = 7_200;
 const BASE_MAX_BLOCKS_PER_WAKE = 50_000;
 const BASE_LOG_CHUNK = 10_000;
 const SOLANA_MAX_SIGNATURES = 25;
+// §12.3 NEW-1 — `getSignaturesForAddress` answers NEWEST-first and honours `until` only if it reaches it
+// before `limit`. So the newest signature on a page is NEVER a safe cursor: everything between `until` and
+// the oldest row on that page is unprocessed and would be skipped forever. Enumeration therefore pages
+// backwards with `before` until `until` is genuinely reached, bounded by this many pages.
+const SOLANA_MAX_SIGNATURE_PAGES = 40;
+// §12.3 NEW-3 — a null `getTransaction` is UNREADABLE, not empty, so the cursor must not pass it. But a
+// pruned signature can be null forever, and failing closed alone would livelock. Retry this many times,
+// then move past it while naming it in the receipt for a human — never silently, never forever.
+const MAX_UNREADABLE_ATTEMPTS = 5;
+const MAX_ATTENTION_ENTRIES = 10;
 // A cap on ledger rows per wake, so one receipt stays inside the runtime's 16 KB limit and one wake
 // cannot turn into an unbounded write burst. The cursor never advances past unprocessed work.
 const MAX_ENTRIES_PER_WAKE = 25;
@@ -187,14 +197,36 @@ async function baseFinalizedHead(baseRpc) {
   return null;
 }
 
+// §12.3 NEW-2 — progress state is a position in an ordered event stream, and MAJOR-2 already established
+// that a transfer's identity is `(tx, logIndex)`, not `tx`. A block-only cursor cannot describe "half way
+// through this block", so a block busier than one wake's budget either livelocks or loses its tail. The
+// cursor is therefore `(block, log_index)` and means "the next unprocessed event is at or after here".
+function baseCursorPosition(cursor) {
+  const position = cursor && cursor.base_cursor;
+  if (position && Number.isSafeInteger(position.block) && position.block >= 0) {
+    return {
+      block: position.block,
+      logIndex: Number.isSafeInteger(position.log_index) && position.log_index >= 0 ? position.log_index : 0,
+    };
+  }
+  // Receipts written before NEW-2 carry a block-only cursor; a block boundary is log index 0.
+  if (cursor && Number.isSafeInteger(cursor.base_next_block) && cursor.base_next_block >= 0) {
+    return { block: cursor.base_next_block, logIndex: 0 };
+  }
+  return null;
+}
+
+function atOrAfter(log, position) {
+  return log.block > position.block
+    || (log.block === position.block && log.logIndex >= position.logIndex);
+}
+
 async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
   const { head, finality } = await baseFinalizedHead(baseRpc);
-  const cursorBlock = cursor && Number.isSafeInteger(cursor.base_next_block) && cursor.base_next_block >= 0
-    ? cursor.base_next_block
-    : null;
-  const fromBlock = cursorBlock == null
+  const start = baseCursorPosition(cursor);
+  const fromBlock = start == null
     ? Math.max(0, head - BASE_DEFAULT_LOOKBACK_BLOCKS)
-    : Math.min(cursorBlock, head);
+    : Math.min(start.block, head);
   const toBlock = Math.min(head, fromBlock + BASE_MAX_BLOCKS_PER_WAKE - 1);
 
   const logs = [];
@@ -246,15 +278,18 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
       || left.logIndex - right.logIndex
     ));
 
-  const taken = ordered.slice(0, Math.max(0, limit));
-  const truncated = taken.length < ordered.length;
-  // A truncated wake rewinds the cursor to the last block it actually processed and re-scans it next
-  // time; the unique entry_key turns the overlap into refused duplicates rather than double counting.
-  // §10 MINOR-12: when the row budget was already spent, `taken` is EMPTY — there is no last processed
-  // block, so the cursor must not advance at all or the unprocessed logs would be skipped forever.
-  const nextBlock = truncated
-    ? (taken.length > 0 ? taken[taken.length - 1].block : fromBlock)
-    : toBlock + 1;
+  // Everything at or after the cursor, in event order. The cursor is exact, so this both resumes mid-block
+  // and never re-offers an event the previous wake already booked.
+  const pending = start == null ? ordered : ordered.filter((log) => atOrAfter(log, start));
+  const taken = pending.slice(0, Math.max(0, limit));
+  const truncated = taken.length < pending.length;
+  // §12.3 NEW-2 / §10 MINOR-12: when work remains, the cursor becomes the EXACT position of the first
+  // unprocessed event — not the last processed block, which would re-offer its whole block, and not a
+  // block boundary, which would skip the rest of a busy block. When `taken` is empty (budget already
+  // spent) this resolves to the cursor's own position, so it stands still rather than skipping ahead.
+  const nextPosition = truncated
+    ? { block: pending[taken.length].block, log_index: pending[taken.length].logIndex }
+    : { block: toBlock + 1, log_index: 0 };
   const timestamps = await baseBlockTimestamps(baseRpc, [...new Set(taken.map((log) => log.block))]);
 
   return {
@@ -263,7 +298,7 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
     finality,
     inflows: taken.map((log) => ({ ...log, occurred_at: timestamps.get(log.block) || null })),
     truncated,
-    next_block: nextBlock,
+    next_position: nextPosition,
   };
 }
 
@@ -348,43 +383,138 @@ function solanaDeltas(transaction, address) {
   };
 }
 
+// §12.3 NEW-1 — page backwards with `before` until `until` is genuinely reached. Anything less and the
+// enumeration is only the NEWEST window, whose oldest row is not the oldest unprocessed signature.
+async function enumerateSolanaSignatures({ solanaRpc, address, until }) {
+  const collected = [];
+  const seen = new Set();
+  let before = null;
+  let reachedUntil = false;
+  for (let page = 0; page < SOLANA_MAX_SIGNATURE_PAGES; page++) {
+    const options = { limit: SOLANA_MAX_SIGNATURES, commitment: SOLANA_COMMITMENT };
+    if (until) options.until = until;
+    if (before) options.before = before;
+    const rows = await solanaRpc("getSignaturesForAddress", [address, options]);
+    if (!Array.isArray(rows)) fail("Solana signature page was not a list");
+    for (const row of rows) {
+      const signature = row && typeof row.signature === "string" ? row.signature : "";
+      if (!signature || seen.has(signature)) continue;
+      // The cursor is ordered on slot, so a signature without one cannot be placed in the stream at all.
+      if (!Number.isSafeInteger(row.slot)) fail("a Solana signature has no usable slot");
+      seen.add(signature);
+      collected.push({ signature, slot: row.slot, err: row.err == null ? null : row.err });
+    }
+    // A short page means the provider had nothing older left to give: `until` (or the start of history)
+    // was genuinely reached, and only then is the enumeration known to be complete.
+    if (rows.length < SOLANA_MAX_SIGNATURES) {
+      reachedUntil = true;
+      break;
+    }
+    const oldest = rows[rows.length - 1];
+    before = oldest && typeof oldest.signature === "string" ? oldest.signature : "";
+    if (!before) fail("a Solana signature page has no usable oldest signature");
+  }
+  return { collected, reachedUntil };
+}
+
+function solanaCursorPosition(cursor) {
+  const position = cursor && cursor.solana_cursor;
+  if (position && Number.isSafeInteger(position.slot) && typeof position.signature === "string" && position.signature) {
+    return { slot: position.slot, signature: position.signature };
+  }
+  return null;
+}
+
+function afterPosition(candidate, position) {
+  if (position == null) return true;
+  return candidate.slot > position.slot
+    || (candidate.slot === position.slot && candidate.signature > position.signature);
+}
+
+function priorUnreadable(cursor) {
+  const list = cursor && Array.isArray(cursor.solana_unreadable) ? cursor.solana_unreadable : [];
+  const map = new Map();
+  for (const item of list) {
+    if (item && typeof item.signature === "string" && Number.isSafeInteger(item.attempts)) {
+      map.set(item.signature, item.attempts);
+    }
+  }
+  return map;
+}
+
 async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
-  const until = cursor && typeof cursor.solana_last_signature === "string" && cursor.solana_last_signature
-    ? cursor.solana_last_signature
-    : null;
-  const page = await solanaRpc("getSignaturesForAddress", [
-    address,
-    { limit: SOLANA_MAX_SIGNATURES, commitment: SOLANA_COMMITMENT, ...(until ? { until } : {}) },
-  ]);
-  if (!Array.isArray(page)) fail("Solana signature page was not a list");
+  const position = solanaCursorPosition(cursor);
+  // `until` is only an efficiency hint to the provider; correctness comes from the slot-ordered position.
+  const until = (position && position.signature)
+    || (cursor && typeof cursor.solana_last_signature === "string" ? cursor.solana_last_signature : "")
+    || null;
+  const { collected, reachedUntil } = await enumerateSolanaSignatures({ solanaRpc, address, until });
 
-  // getSignaturesForAddress answers newest-first; a cursor has to advance oldest-first so an interrupted
-  // wake never leaves a gap behind the marker.
-  const confirmed = page
-    .map((entry) => (typeof entry === "string" ? { signature: entry, err: null } : entry))
-    .filter((entry) => entry && entry.err == null && typeof entry.signature === "string")
-    .reverse();
+  const pending = collected
+    .filter((candidate) => afterPosition(candidate, position))
+    .sort((left, right) => left.slot - right.slot || left.signature.localeCompare(right.signature));
 
+  const unreadable = priorUnreadable(cursor);
+  const attention = [];
   const inflows = [];
   let scanned = 0;
-  let lastSignature = until;
-  let truncated = false;
   let usdcNet = 0n;
-  for (const entry of confirmed) {
+  let processed = 0;
+  // An incomplete enumeration means unprocessed signatures exist BELOW everything we can see, so the wake
+  // cannot claim completeness no matter how much of the visible set it books.
+  let truncated = !reachedUntil;
+  let advanced = position;
+
+  if (!reachedUntil) {
+    attention.push({
+      reason: "signature_enumeration_incomplete",
+      pages: SOLANA_MAX_SIGNATURE_PAGES,
+      per_page: SOLANA_MAX_SIGNATURES,
+    });
+  }
+
+  for (const candidate of pending) {
+    if (candidate.err != null) {
+      // A failed transaction moves no money, but it IS processed — the cursor may pass it.
+      scanned += 1;
+      processed += 1;
+      advanced = candidate;
+      continue;
+    }
     const transaction = await solanaRpc("getTransaction", [
-      entry.signature,
+      candidate.signature,
       { commitment: SOLANA_COMMITMENT, encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
     ]);
     scanned += 1;
-    if (!transaction || (transaction.meta && transaction.meta.err != null)) {
-      lastSignature = entry.signature;
-      continue;
+    if (!transaction) {
+      // §12.3 NEW-3: unreadable, not empty.
+      const attempts = (unreadable.get(candidate.signature) || 0) + 1;
+      unreadable.set(candidate.signature, attempts);
+      if (attempts >= MAX_UNREADABLE_ATTEMPTS) {
+        // Bounded retries are spent. Moving past it is the only way out of a permanent block, so it moves —
+        // and it stays named in the receipt so the money it may represent is never quietly forgotten.
+        attention.push({
+          reason: "unreadable_transaction_skipped",
+          signature: candidate.signature,
+          slot: candidate.slot,
+          attempts,
+        });
+        processed += 1;
+        advanced = candidate;
+        continue;
+      }
+      attention.push({
+        reason: "unreadable_transaction",
+        signature: candidate.signature,
+        slot: candidate.slot,
+        attempts,
+      });
+      truncated = true;
+      break;
     }
     const delta = solanaDeltas(transaction, address);
     usdcNet += delta.usdcNet;
     const rows = [];
-    // One row per token account that gained, keyed by its accountIndex (§4.5). Accounts that lost are
-    // reflected in usdcNet on the receipt but are not deposits.
     for (const token of delta.tokenDeltas) {
       if (token.delta <= 0n) continue;
       rows.push({
@@ -394,23 +524,46 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
         occurred_at: delta.occurred_at,
       });
     }
-    if (delta.lamports > 0n) rows.push({ unit: "sol", amount: delta.lamports.toString(), occurred_at: delta.occurred_at });
-    if (inflows.length + rows.length > Math.max(0, limit)) {
-      // Stop BEFORE this signature and leave the cursor behind it, so nothing is skipped.
+    if (delta.lamports > 0n) {
+      rows.push({ unit: "sol", amount: delta.lamports.toString(), occurred_at: delta.occurred_at });
+    }
+    // A signature is never split across wakes, because half a signature has no cursor position. But one
+    // signature can carry more rows than the whole budget, so if nothing has been booked yet it is allowed
+    // to exceed the budget — otherwise it could never be processed at all.
+    if (inflows.length > 0 && inflows.length + rows.length > Math.max(0, limit)) {
       truncated = true;
-      scanned -= 1;
       break;
     }
-    for (const row of rows) inflows.push({ signature: entry.signature, ...row });
-    lastSignature = entry.signature;
+    for (const row of rows) inflows.push({ signature: candidate.signature, ...row });
+    processed += 1;
+    advanced = candidate;
+    if (inflows.length >= Math.max(0, limit)) {
+      if (processed < pending.length) truncated = true;
+      break;
+    }
   }
+
+  if (processed < pending.length) truncated = true;
+
+  // The cursor may only advance when the span behind it is provably complete. With an incomplete
+  // enumeration there is a gap older than everything visible, so the oldest unprocessed signature is still
+  // the one the cursor already names — it stands still, and the receipt says so.
+  const nextPosition = reachedUntil && advanced
+    ? { slot: advanced.slot, signature: advanced.signature }
+    : (position || null);
 
   return {
     scanned_signatures: scanned,
     inflows,
     truncated,
-    last_signature: lastSignature,
+    next_position: nextPosition,
     usdc_net_atomic: usdcNet.toString(),
+    // Only signatures still owed a retry are carried forward; a skipped one is already surfaced for a human.
+    unreadable: [...unreadable]
+      .filter(([, attempts]) => attempts < MAX_UNREADABLE_ATTEMPTS)
+      .slice(0, MAX_ATTENTION_ENTRIES)
+      .map(([signature, attempts]) => ({ signature, attempts })),
+    attention: attention.slice(0, MAX_ATTENTION_ENTRIES),
   };
 }
 
@@ -539,8 +692,10 @@ async function executeWalletInflowJob(job, deps = {}) {
   const pending = [];
   let baseSummary = null;
   let solanaSummary = null;
-  let nextBaseBlock = cursor && Number.isSafeInteger(cursor.base_next_block) ? cursor.base_next_block : null;
-  let nextSolanaSignature = cursor && cursor.solana_last_signature ? cursor.solana_last_signature : null;
+  let nextBasePosition = baseCursorPosition(cursor);
+  let nextSolanaPosition = solanaCursorPosition(cursor);
+  let solanaUnreadable = (cursor && Array.isArray(cursor.solana_unreadable) ? cursor.solana_unreadable : []);
+  const attention = [];
 
   if (hasBase) {
     const scan = await scanRail(
@@ -552,7 +707,7 @@ async function executeWalletInflowJob(job, deps = {}) {
     }
     remaining -= scan.inflows.length;
     truncated = truncated || scan.truncated;
-    nextBaseBlock = scan.next_block;
+    nextBasePosition = scan.next_position;
     baseSummary = {
       address: baseAddress,
       scanned_from_block: scan.scanned_from_block,
@@ -574,7 +729,9 @@ async function executeWalletInflowJob(job, deps = {}) {
     }
     remaining -= scan.inflows.length;
     truncated = truncated || scan.truncated;
-    nextSolanaSignature = scan.last_signature;
+    nextSolanaPosition = scan.next_position;
+    solanaUnreadable = scan.unreadable;
+    attention.push(...scan.attention);
     solanaSummary = {
       address: solanaAddress,
       scanned_signatures: scan.scanned_signatures,
@@ -617,11 +774,16 @@ async function executeWalletInflowJob(job, deps = {}) {
     base: baseSummary,
     solana: solanaSummary,
     entries,
+    // §12.3 NEW-1 / NEW-2 — the cursor is a position in an ordered event stream on both rails, and it only
+    // advances over events that were actually processed. `needs_operator_attention` is the honest bucket
+    // (§11's shape) for anything the chain would not let us read: never silently skipped, always visible.
     next_cursor: {
-      schema_version: 1,
-      base_next_block: nextBaseBlock,
-      solana_last_signature: nextSolanaSignature || null,
+      schema_version: 2,
+      base_cursor: nextBasePosition,
+      solana_cursor: nextSolanaPosition,
+      solana_unreadable: solanaUnreadable,
     },
+    needs_operator_attention: attention.slice(0, MAX_ATTENTION_ENTRIES),
   };
   assertNoSecret(receipt);
   return { receipt, result: { status: "checked", recorded, duplicates: receipt.duplicates, uid } };
@@ -694,9 +856,22 @@ function verifyWalletInflowReceipt(receipt) {
   if (!validRailSummary(receipt.solana, isSolanaAddress, "scanned_signatures")) return false;
   if (receipt.solana && receipt.solana.commitment !== SOLANA_COMMITMENT) return false;
   const cursor = receipt.next_cursor;
-  if (!cursor || typeof cursor !== "object" || Array.isArray(cursor) || cursor.schema_version !== 1) return false;
-  if (cursor.base_next_block !== null && !Number.isSafeInteger(cursor.base_next_block)) return false;
-  if (cursor.solana_last_signature !== null && typeof cursor.solana_last_signature !== "string") return false;
+  if (!cursor || typeof cursor !== "object" || Array.isArray(cursor) || cursor.schema_version !== 2) return false;
+  if (cursor.base_cursor !== null) {
+    if (!cursor.base_cursor || !Number.isSafeInteger(cursor.base_cursor.block)) return false;
+    if (!Number.isSafeInteger(cursor.base_cursor.log_index)) return false;
+  }
+  if (cursor.solana_cursor !== null) {
+    if (!cursor.solana_cursor || !Number.isSafeInteger(cursor.solana_cursor.slot)) return false;
+    if (typeof cursor.solana_cursor.signature !== "string" || !cursor.solana_cursor.signature) return false;
+  }
+  if (!Array.isArray(cursor.solana_unreadable)) return false;
+  if (!Array.isArray(receipt.needs_operator_attention)) return false;
+  // An unbooked event must be admitted: attention entries only ever accompany a truncated wake.
+  if (receipt.needs_operator_attention.some((item) => item.reason === "unreadable_transaction")
+    && receipt.truncated !== true) {
+    return false;
+  }
   return true;
 }
 
