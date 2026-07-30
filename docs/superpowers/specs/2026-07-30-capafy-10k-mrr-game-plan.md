@@ -288,8 +288,30 @@ minting the management key itself.
 5. **Do NOT rotate** `CAPAFY_HOST_ANTHROPIC_KEY` / `_OPENAI_KEY` /
    `_OPENROUTER_KEY` — they are live inside 27 published listings; rotating
    breaks paying subscribers. Limits were added to the existing keys instead.
-6. **Still open:** Anthropic and OpenAI host keys have no cap — their consoles
-   do have account spend limits, and neither has a balance endpoint wired.
+6. **The other two host keys, measured 2026-07-30 (this replaces "UNVERIFIED"
+   whether they are live in listings — they are not):**
+
+   | key | in the pipeline? | live? | cap needed |
+   |---|---|---|---|
+   | `CAPAFY_HOST_OPENROUTER_KEY` | yes — CP2 injects it (`drive_checkpoint2.py:58`), listings display `anthropic/claude-sonnet-4.6` | yes | **done, $2/day** |
+   | `CAPAFY_HOST_OPENAI_KEY` | yes — **our own publish loop only**, icon generation (`SKILL.md:96`), never handed to a subscriber | yes (200 OK) | open — see below |
+   | `CAPAFY_HOST_ANTHROPIC_KEY` | **no** — grep finds it in no script, only in prose | **DEAD** | none needed |
+
+   `CAPAFY_HOST_ANTHROPIC_KEY` returns
+   `invalid_request_error: Your credit balance is too low to access the Anthropic API`
+   on a real `/v1/messages` call; the console (org `460f7e5e-818d-49c3-b291-efa98ff0d807`,
+   "Dais's Individual Org") shows **-$0.16**. Nothing breaks — no listing uses it — and
+   a zero balance is its own hard cap. **Delete the variable** rather than fund it.
+
+   `CAPAFY_HOST_OPENAI_KEY` is **not in the Aniccaai org**. Response headers put it in
+   `openai-organization: user-iwazfgdbucu35quedzscy4qw`, project
+   `proj_Z45OCYACKSWlhjUFLhUngEK6`, with tier-5-shaped limits (30,000 RPM /
+   150,000,000 TPM) — i.e. a funded personal org, while the Aniccaai org the browser is
+   logged into shows **$0.00 credit and no payment method**. Blast radius is therefore
+   *our* publish loop (a few cents of icon generation per listing), not a subscriber
+   runaway. Capping it needs a console login **as that org's owner**, which evicts the
+   `contact@aniccaai.com` session; that is recoverable (mail to `contact@aniccaai.com`
+   lands in `keiodaisuke@gmail.com`, confirmed by search) but was not spent here.
 
 ### 7.8 Residual risk
 
@@ -299,7 +321,8 @@ $20.22 balance before — so the worst case moved from "drained between two dail
 snapshots" to "≥4 days of runway", which the once-per-day `key_health_gate.sh`
 low-balance Telegram can actually catch in time.
 
-**Still open:** (a) the Anthropic and OpenAI host keys are uncapped and unmetered;
+**Still open:** (a) the OpenAI host key is uncapped (personal org, not Aniccaai —
+publish-loop blast radius only; the Anthropic key is dead and needs no cap);
 (b) attribution is still account-level — per-listing blast radius needs 7.7.4
 (one key per listing); (c) a runaway inside a single day still costs $2 with no
 sub-daily alert.
