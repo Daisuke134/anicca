@@ -94,6 +94,8 @@ function parseUpdate(update) {
     userId: m.from ? String(m.from.id) : "",
     ...(m.message_id == null ? {} : { messageId: String(m.message_id) }),
     text: (m.text || "").trim(),
+    // Prefix match, but no longer the sole owner: the slash router (lib/slash-command.js) runs first,
+    // so a /start-PREFIXED non-command like "/startfoo" is answered as unknown and never reaches this.
     isStart: (m.text || "").trim().toLowerCase().startsWith("/start"),
     firstName: m.from ? String(m.from.first_name || "") : "",
     lastName: m.from ? String(m.from.last_name || "") : "",

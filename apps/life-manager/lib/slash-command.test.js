@@ -23,7 +23,8 @@ function harness(overrides = {}) {
   const logs = [];
   const deps = {
     token: "t", chatId: "100", base: "https://lm.test",
-    supaUrl: "https://db.test", supaKey: "k", nowMs: NOW,
+    // env is injected (never read ambiently) so the LM_COMP_UNTIL projection is hermetic.
+    supaUrl: "https://db.test", supaKey: "k", nowMs: NOW, env: {},
     send: async (token, chatId, text, extra) => { sent.push({ token, chatId, text, extra }); return { ok: true, result: { message_id: 1 } }; },
     log: (line) => logs.push(line),
     getLiveLocation: async () => null,
@@ -48,12 +49,74 @@ test("parseSlashCommand recognises /commands, bot-name suffixes, and args; plain
   assert.equal(parseSlashCommand("/ nope"), null);
 });
 
+// REGRESSION (intentional behaviour change, W2): before the slash router existed, ANY text starting
+// with "/start" reached the onboarding branch (telegram.js isStart = startsWith("/start")), so
+// "/startfoo" opened onboarding. Now only an EXACT /start command (optionally @BotName, optionally
+// followed by a deep-link payload) is a start; "/startfoo" is a distinct unknown command.
+// Evidence this is safe: core.telegram.org/bots/features → Deep Linking. Private chats:
+// "https://t.me/your_bot?start=airplane" → "When someone opens a chat with your bot via this link,
+// you will receive: /start airplane". Groups: "?startgroup=spaceship" → "/start@your_bot spaceship".
+// The payload is ALWAYS space-separated (and limited to A-Z a-z 0-9 _ -), so no legitimate Telegram
+// deep link can ever deliver "/startfoo".
+test("only an exact /start (plus optional deep-link payload) is a start; /startfoo is a distinct command", async () => {
+  assert.deepEqual(parseSlashCommand("/start"), { name: "start", args: "" });
+  assert.deepEqual(parseSlashCommand("/start airplane"), { name: "start", args: "airplane" });
+  assert.deepEqual(parseSlashCommand("/start@LifeManagerBot spaceship"), { name: "start", args: "spaceship" });
+  assert.deepEqual(parseSlashCommand("/startfoo"), { name: "startfoo", args: "" });
+  assert.deepEqual(parseSlashCommand("/startgroup"), { name: "startgroup", args: "" });
+
+  // The documented deep-link spellings still pass through to the onboarding branch...
+  for (const raw of ["/start", "/start airplane", "/start@LifeManagerBot spaceship"]) {
+    const { sent, deps } = harness();
+    assert.deepEqual(await handleSlashCommand(parseSlashCommand(raw), ROW, deps), { handled: false }, raw);
+    assert.equal(sent.length, 0, raw);
+  }
+  // ...while a /start-prefixed non-command is answered honestly instead of silently onboarding.
+  const { sent, deps } = harness();
+  const outcome = await handleSlashCommand(parseSlashCommand("/startfoo"), ROW, deps);
+  assert.equal(outcome.handled, true);
+  assert.equal(outcome.action, "unknown");
+  assert.ok(sent[0].text.includes("/startfoo"));
+});
+
 test("slashAliasText maps /connect to the same NL control flow and nothing else", () => {
   assert.equal(slashAliasText(parseSlashCommand("/connect")), "connect calendar");
   assert.equal(slashAliasText(parseSlashCommand("/connect@LifeManagerBot")), "connect calendar");
   assert.equal(slashAliasText(parseSlashCommand("/help")), null);
   assert.equal(slashAliasText(parseSlashCommand("/frobnicate")), null);
   assert.equal(slashAliasText(null), null);
+});
+
+test("/connect only aliases calendar-ish arguments; anything else declines the alias", () => {
+  for (const raw of ["/connect", "/connect calendar", "/connect my calendar", "/connect google calendar",
+    "/connect GCal", "/connect@LifeManagerBot calendar", "/connect カレンダー"]) {
+    assert.equal(slashAliasText(parseSlashCommand(raw)), "connect calendar", raw);
+  }
+  for (const raw of ["/connect gmail", "/connect email", "/connect slack", "/connect calendar and gmail"]) {
+    assert.equal(slashAliasText(parseSlashCommand(raw)), null, raw);
+  }
+});
+
+test("/connect with a non-calendar argument says what is connectable instead of silently connecting calendar", async () => {
+  const { sent, deps } = harness();
+  const outcome = await handleSlashCommand(parseSlashCommand("/connect gmail"), ROW, deps);
+  assert.equal(outcome.handled, true);
+  assert.equal(outcome.action, "connect");
+  assert.equal(outcome.ok, false);
+  assert.equal(outcome.reason, "unsupported_provider");
+  assert.equal(sent.length, 1);
+  assert.ok(/only .*Google Calendar/i.test(sent[0].text), "names the one provider that is connectable");
+  assert.ok(/gmail/i.test(sent[0].text), "says Gmail is off rather than pretending it was connected");
+  assert.ok(sent[0].text.includes("/connect"), "tells the user the working spelling");
+  // The argument is never echoed back: sendMessage posts parse_mode HTML, and echoing arbitrary user
+  // text there is both an injection surface and a 400 risk.
+  assert.ok(!/slack/i.test(helpMessage()), "sanity");
+
+  // The unlinked chat gets the same honest answer — this reply reads no store at all.
+  const unlinked = harness();
+  const anon = await handleSlashCommand(parseSlashCommand("/connect slack"), null, unlinked.deps);
+  assert.equal(anon.reason, "unsupported_provider");
+  assert.ok(!/slack/i.test(unlinked.sent[0].text), "the raw argument is not echoed into an HTML message");
 });
 
 test("helpMessage lists every legacy-parity command and the NL actions from kind:help", () => {
@@ -213,6 +276,11 @@ test("/reset reuses setStage to restart onboarding announcements and confirms", 
   assert.deepEqual(staged, [{ uid: "u1", stage: "calendar", supaUrl: "https://db.test", supaKey: "k" }]);
   assert.equal(sent.length, 1);
   assert.ok(sent[0].text.includes("/start"), "confirm message tells the user how to continue");
+  // W1: rewinding tg_onboard_stage ALSO closes the browser-task gate
+  // (lib/browser-task-intake.js requires tg_onboard_stage === "done"). That side effect is disclosed
+  // in the confirmation instead of being silent.
+  assert.ok(/browser task/i.test(sent[0].text), "/reset discloses that browser tasks pause");
+  assert.ok(/pause/i.test(sent[0].text), "/reset says the browser-task intake is paused, not broken");
 });
 
 test("/payout reopens the picker through askPayoutQuestion (its read makes the reopen idempotent)", async () => {
@@ -276,4 +344,32 @@ test("/status stays honest for the sparse row and the missing location", async (
   assert.ok(/Subscription: not active/.test(text));
   assert.ok(/Payout: awaiting typed address/.test(text));
   assert.ok(/Location: not available/.test(text));
+});
+
+// S2: computeStage lets an unpaid row through the "pay" stage while LM_COMP_UNTIL is in the future
+// (lib/comp-window.js, read-time only). /status used to report "Subscription: not active" for exactly
+// those users while every gate treated them as entitled — a contradiction. The projection now names
+// the comp window using the only real field there is: the configured expiry.
+test("/status distinguishes a complimentary window from an inactive subscription", async () => {
+  const comped = { ...ROW, paid: false };
+  const active = harness({ env: { LM_COMP_UNTIL: "2026-08-01T00:00:00Z" }, getLiveLocation: async () => null });
+  await handleSlashCommand(parseSlashCommand("/status"), comped, active.deps);
+  const text = active.sent[0].text;
+  assert.ok(/Subscription: complimentary until 2026-08-01T00:00:00\.000Z/.test(text), text);
+  assert.ok(!/not active/.test(text), "a comped user is not told their subscription is inactive");
+  // The same window is what carried this row past the paywall, so the stage must agree with it.
+  assert.ok(/Onboarding: done/.test(text), "the stage projection uses the same clock and env");
+
+  const expired = harness({ env: { LM_COMP_UNTIL: "2026-07-01T00:00:00Z" }, getLiveLocation: async () => null });
+  await handleSlashCommand(parseSlashCommand("/status"), comped, expired.deps);
+  assert.ok(/Subscription: not active/.test(expired.sent[0].text), "an expired comp is honestly inactive");
+  assert.ok(/Onboarding: at the "pay" step/.test(expired.sent[0].text), "and the paywall is back");
+
+  const paid = harness({ env: { LM_COMP_UNTIL: "2026-08-01T00:00:00Z" }, getLiveLocation: async () => null });
+  await handleSlashCommand(parseSlashCommand("/status"), ROW, paid.deps);
+  assert.ok(/Subscription: active$/m.test(paid.sent[0].text), "a real subscription outranks the comp copy");
+
+  const noComp = harness({ env: {}, getLiveLocation: async () => null });
+  await handleSlashCommand(parseSlashCommand("/status"), comped, noComp.deps);
+  assert.ok(/Subscription: not active/.test(noComp.sent[0].text), "no comp configured → unchanged copy");
 });
