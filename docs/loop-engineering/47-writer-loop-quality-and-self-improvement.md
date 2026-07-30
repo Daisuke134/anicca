@@ -2807,6 +2807,8 @@ verified evidence
 4. current-hash editorial/reader/identityが全PASSでも、feedback IDのexact coverage、source URLの本文Sources出現、consumption hashが揃わなければ`ready_to_freeze`にしない。
 5. recovery失敗は再び`block_freeze`でterminal。第三候補、gate緩和、stale PASS、publication-state先行作成は禁止する。
 
+**実装進捗**: Writer feature `565e71f`, `5050c36`, `9a06680`, `b4ce5cf`, `6ffa504`へRED→GREENをpush済み。future replacementのhash-bound feedback伝播、routerのexact coverage拒否、既存replacementのsame-run recovery state、feedback consumptionを欠くquality PASSのfreeze拒否、launchd worker優先dispatchを実装する。focused 49/49、wrapper関連93/93、article Python 438/438、daily shell contract 38/38がfresh PASS。旧deslop/eval/render shellのjudge-broker不在FAILとgig/bounty startup prompt未実装FAILはB1の成功証拠に混ぜない。runtime反映と実LaunchAgent receiptは未完なのでB1は`IN PROGRESS`を維持する。
+
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
 | # | 状態 | 検証 | done |
