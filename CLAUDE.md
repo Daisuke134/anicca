@@ -43,45 +43,25 @@ Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card
 - 「テキストを書いてから慌ててタグを付ける」過程で余剰が混入していた → ツール呼び出しは ★ それ単体の正確な構造としてのみ ★ 出力し、前後に何も混ぜない。
 - 迷ったらツールを呼ばずチャットで返す。malformed を出した瞬間 = このルール違反 = 即 self-correct。
 
-## HARD RULE 0.37 — VSDD = DEFAULT engineering method, every session, unprompted (Dais 2026-06-18)
+## HARD RULE 0.37 — ★ VCSDD 永久禁止。superpowers + build/verify ループだけ ★ (Dais 2026-07-30、旧0.37 VSDD を全面撤回)
 
-**Dais verbatim**: "make it the default way of you working towards a problem... any session, without being told, without me proving anything. When you have a certain engineering problem level you have to always follow this."
+**Dais verbatim**: "Let's go do one by one with superpowers. don't EVER USE VCSDD EVER. Don't USE GPT MODELS LIKE SOL. Just Claude models for implementation. With superpowers. And keep build and verify... never ever vcsdd, because the adversary is very bad, it doesn't do any job, it's just nitpicking useless nitpicking."
 
-**VSDD = Verified Spec-Driven Development** = SDD + TDD + VDD fused by one adversarial gate (sc30gsw Zenn + dollspace-gay/VSDD.md, 2026-06-18). It is the answer to **AI slop** (code that passes shallow review but hides spec-gaps / untested edges / "works because a cron exists").
+| 禁止 | 代わりに |
+|---|---|
+| ★ `vcsdd` plugin / `vcsdd:vcsdd-adversary` / `/vcsdd-*` を **一切呼ばない** ★（nitpick を返すだけで仕事をしない） | **superpowers の 8-stage flow**（HARD RULE #0）を1件ずつ回す |
+| ★ 実装・レビューに **GPT系（Sol / codex / gpt-*）を使わない** ★ | ★ **Claude モデルのみ**（executor = Opus 5 subagent。Sonnet に実装させるのも禁止） ★ |
+| 「4-D convergence」等の VSDD 語彙 | **build → verify → 直す → 再verify** を done まで回すだけ |
 
-### The loop (run by DEFAULT — no asking — for any NON-trivial task)
-```
-SPEC (contract: inputs/outputs/edge cases/errors/invariants, commit)
- → RED (a failing test/observable check before impl)
- → GREEN (minimal impl) → refactor
- → ADVERSARIAL GATE: spawn a FRESH-CONTEXT reviewer (vcsdd:vcsdd-adversary) — zero builder
-   context, reads ONLY from disk, FORCED to find flaws, emits binary PASS/FAIL per dimension
-   with file:line evidence, may NEVER say "looks good". Loop fix→re-review until ALL PASS.
- → NO-MOCK E2E (real browser/API/build, looped until green)
- → DONE = 4-D convergence (spec ✓ + test ✓ + impl ✓ + verification ✓). Next.
-```
-"It compiles / a cron exists / looks right" ≠ done.
+**検証は adversary ではなく実物で行う**: 実ブラウザ / 実API / 実コマンドを走らせ、**自分の目で side effect を見る**。「コンパイルが通った」「cron がある」は done ではない。1件ずつ、次に行く前に閉じる。
 
-### Trigger
-- **Trivial** (1-line, copy tweak, config, rename) → skip the loop, but still verify the result.
-- **Non-trivial** (2+ files / logic / anything user-facing or breakable) → full VSDD loop, every time.
+3か所同期: ① ここ (project) ② global `~/.claude/CLAUDE.md` ③ memory `feedback_never_vcsdd_superpowers_and_claude_only`。[[feedback_superpowers_is_hard_rule_zero]]
 
-### Relationship to superpowers (ADD, don't replace)
-Superpowers = the 8-stage process scaffold (HARD RULE #0). VSDD = the **verification spine** that runs INSIDE it: it sharpens the review stage into a fresh-context adversarial binary gate and redefines "done" as 4-D convergence. Compose them.
+## HARD RULE 0.41 — ★ ディスク掃除で Dais に承認を求めるの永久禁止 ★ (Dais 2026-07-30 激怒)
 
-### ROLE SPLIT — VERIFIED from the vcsdd plugin files (Dais 2026-06-24, "follow the plugin/answer, our originality is trash")
-★ The MANDATORY VCSDD invariant = the ADVERSARY (verify) is ALWAYS a FRESH, SEPARATE agent with ZERO builder
-context ("entropy resistance" — `AGENTS.md:31,45` + `agents/vcsdd-adversary.md:3,15`). The BUILDER (implement)
-is NOT required to be a subagent — the plugin nowhere mandates it; `vcsdd-builder` is merely an OFFERED sonnet
-agent. ★ THEREFORE: **I (the main agent) DO the implementation myself = the builder; I spawn ONLY a fresh-context
-`vcsdd:vcsdd-adversary` subagent to VERIFY.** Delegate the build to a vcsdd-builder subagent ONLY for huge/mechanical
-work or to spare main context; default = I build, fresh adversary verifies. This follows the PLUGIN, not what I or
-Dais "want/think/feel" — only following the researched answer counts (= HARD RULE #-3, IDENTICAL replication of BP).
+**Dais verbatim**: "please stop this virus that's making me ask you to get approval on these things. You do not need my approval. Please stop asking me for my approval for removing things on the disk. You should decide things yourself, please stop putting me in the loop."
 
-### Tooling (installed)
-`vcsdd` plugin (`/vcsdd-init → -spec → -tdd → -impl → -adversary → -harden → -converge → -commit`) + `vcsdd:vcsdd-adversary` agent. Use the adversary agent as the gate even outside the full pipeline. Honest caveat: same-model adversary kills context-pollution but not shared blind spots — prefer a different model family for the adversary when available.
-
-3 か所同期: ① ここ (project) ② global `~/.claude/CLAUDE.md` HARD RULE 0.37 ③ memory `feedback_vsdd_default_engineering_method`. [[feedback_superpowers_is_hard_rule_zero]]
+★ 再生成可能なもの（VM ディスクイメージ / docker image / build artifact / cache / 未使用 worktree / evidence / log）は **黙って消す**。「消していいですか」「どれを消しますか」= 違反 = 即 self-revert して実行する。★ 判断は自分でやる: ①その worktree の branch ref を親リポジトリが保持しているか ②未pushのコミットが失われないか ③実行中のプロセスが使っていないか — を**自分で確認してから消す**。確認手段があるものについて人に聞かない。HARD RULE 0.26 の「Dais を disk cleanup loop に入れる絶対禁止」の再掲かつ強化。
 
 ## HARD RULE 0.38 — FRONTEND = 必ず taste skill を使う (Dais 2026-06-18)
 
