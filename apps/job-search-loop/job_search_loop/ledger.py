@@ -10,10 +10,36 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
 from .state import canonical_job_id, canonical_url, validate_transition
+
+
+LEGACY_STRATEGY = {"capture_status": "legacy_unavailable"}
+LEGACY_STRATEGY_JSON = json.dumps(
+    LEGACY_STRATEGY, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+)
+LEGACY_STRATEGY_SHA256 = hashlib.sha256(
+    LEGACY_STRATEGY_JSON.encode("utf-8")
+).hexdigest()
+LEGACY_STRATEGY_GENERATION_ID = f"strategy-{LEGACY_STRATEGY_SHA256}"
+FUNNEL_STAGES = frozenset(
+    {
+        "confirmed_application",
+        "recruiter_response",
+        "screen",
+        "interview",
+        "offer",
+        "accepted",
+        "declined",
+        "started",
+    }
+)
+FUNNEL_DISPOSITIONS = frozenset({"positive", "negative"})
+AUTHORITATIVE_EVIDENCE_SOURCES = frozenset(
+    {"ats", "gmail", "calendar", "employer_portal", "signed_document"}
+)
 
 
 class FenceError(RuntimeError):
@@ -114,8 +140,88 @@ class Ledger:
                 received_at TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS strategy_generations (
+                strategy_generation_id TEXT PRIMARY KEY,
+                parent_generation_id TEXT
+                    REFERENCES strategy_generations(strategy_generation_id),
+                changed_field TEXT,
+                strategy_json TEXT NOT NULL,
+                strategy_sha256 TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS application_strategy_assignments (
+                application_id TEXT PRIMARY KEY
+                    REFERENCES applications(id),
+                strategy_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                capture_status TEXT NOT NULL,
+                source TEXT NOT NULL,
+                query_family TEXT NOT NULL,
+                rank_config_json TEXT,
+                role_family TEXT NOT NULL,
+                material_variant TEXT NOT NULL,
+                message_variant TEXT NOT NULL,
+                model_route TEXT NOT NULL,
+                prompt_sha256 TEXT,
+                material_sha256 TEXT,
+                assigned_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS funnel_outcomes (
+                outcome_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL
+                    REFERENCES applications(id),
+                funnel_stage TEXT NOT NULL,
+                disposition TEXT NOT NULL,
+                evidence_source TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL,
+                occurred_at TEXT NOT NULL,
+                observed_at TEXT NOT NULL,
+                observation_policy_version TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE (application_id, funnel_stage, evidence_sha256)
+            );
+            CREATE TABLE IF NOT EXISTS strategy_outcome_projection (
+                strategy_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                funnel_stage TEXT NOT NULL,
+                positive_count INTEGER NOT NULL,
+                negative_count INTEGER NOT NULL,
+                resolved_count INTEGER NOT NULL,
+                PRIMARY KEY (strategy_generation_id, funnel_stage)
+            );
+            CREATE TRIGGER IF NOT EXISTS strategy_generations_no_update
+            BEFORE UPDATE ON strategy_generations
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy generations are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS strategy_generations_no_delete
+            BEFORE DELETE ON strategy_generations
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy generations are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS strategy_assignments_no_update
+            BEFORE UPDATE ON application_strategy_assignments
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy assignments are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS strategy_assignments_no_delete
+            BEFORE DELETE ON application_strategy_assignments
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy assignments are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS funnel_outcomes_no_update
+            BEFORE UPDATE ON funnel_outcomes
+            BEGIN
+                SELECT RAISE(ABORT, 'funnel outcomes are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS funnel_outcomes_no_delete
+            BEFORE DELETE ON funnel_outcomes
+            BEGIN
+                SELECT RAISE(ABORT, 'funnel outcomes are immutable');
+            END;
             """
         )
+        self._migrate_funnel_outcome_evidence_constraint()
         intent_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(submit_intents)")
@@ -149,8 +255,103 @@ class Ledger:
             FROM submit_intents
             """
         )
+        migration_time = _now()
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO strategy_generations
+              (strategy_generation_id, parent_generation_id, changed_field,
+               strategy_json, strategy_sha256, created_at)
+            VALUES (?, NULL, NULL, ?, ?, ?)
+            """,
+            (
+                LEGACY_STRATEGY_GENERATION_ID,
+                LEGACY_STRATEGY_JSON,
+                LEGACY_STRATEGY_SHA256,
+                migration_time,
+            ),
+        )
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO application_strategy_assignments
+              (application_id, strategy_generation_id, capture_status, source,
+               query_family, rank_config_json, role_family, material_variant,
+               message_variant, model_route, prompt_sha256, material_sha256,
+               assigned_at)
+            SELECT
+              applications.id, ?, 'legacy_unavailable', 'legacy_unavailable',
+              'legacy_unavailable', NULL, 'legacy_unavailable',
+              'legacy_unavailable', 'legacy_unavailable', 'legacy_unavailable',
+              NULL, NULL, applications.created_at
+            FROM applications
+            """,
+            (LEGACY_STRATEGY_GENERATION_ID,),
+        )
         if self.path.exists():
             os.chmod(self.path, 0o600)
+
+    def _migrate_funnel_outcome_evidence_constraint(self) -> None:
+        has_single_evidence_unique = False
+        for index in self.connection.execute(
+            "PRAGMA index_list(funnel_outcomes)"
+        ).fetchall():
+            if not bool(index["unique"]):
+                continue
+            index_name = str(index["name"]).replace("'", "''")
+            columns = [
+                str(row["name"])
+                for row in self.connection.execute(
+                    f"PRAGMA index_info('{index_name}')"
+                ).fetchall()
+            ]
+            if columns == ["evidence_sha256"]:
+                has_single_evidence_unique = True
+                break
+        if not has_single_evidence_unique:
+            return
+        self.connection.executescript(
+            """
+            BEGIN IMMEDIATE;
+            DROP TRIGGER IF EXISTS funnel_outcomes_no_update;
+            DROP TRIGGER IF EXISTS funnel_outcomes_no_delete;
+            ALTER TABLE funnel_outcomes
+              RENAME TO funnel_outcomes_single_evidence_unique;
+            CREATE TABLE funnel_outcomes (
+                outcome_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL
+                    REFERENCES applications(id),
+                funnel_stage TEXT NOT NULL,
+                disposition TEXT NOT NULL,
+                evidence_source TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL,
+                occurred_at TEXT NOT NULL,
+                observed_at TEXT NOT NULL,
+                observation_policy_version TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE (application_id, funnel_stage, evidence_sha256)
+            );
+            INSERT INTO funnel_outcomes
+              (outcome_id, application_id, funnel_stage, disposition,
+               evidence_source, evidence_sha256, occurred_at, observed_at,
+               observation_policy_version, created_at)
+            SELECT
+              outcome_id, application_id, funnel_stage, disposition,
+              evidence_source, evidence_sha256, occurred_at, observed_at,
+              observation_policy_version, created_at
+            FROM funnel_outcomes_single_evidence_unique;
+            DROP TABLE funnel_outcomes_single_evidence_unique;
+            CREATE TRIGGER funnel_outcomes_no_update
+            BEFORE UPDATE ON funnel_outcomes
+            BEGIN
+                SELECT RAISE(ABORT, 'funnel outcomes are immutable');
+            END;
+            CREATE TRIGGER funnel_outcomes_no_delete
+            BEFORE DELETE ON funnel_outcomes
+            BEGIN
+                SELECT RAISE(ABORT, 'funnel outcomes are immutable');
+            END;
+            COMMIT;
+            """
+        )
 
     def close(self) -> None:
         self.connection.close()
@@ -195,24 +396,436 @@ class Ledger:
             existing = self.connection.execute(
                 "SELECT id FROM applications WHERE id = ?", (application_id,)
             ).fetchone()
-            if existing:
-                return str(existing["id"])
+            if existing is None:
+                created_at = _now()
+                self.connection.execute(
+                    """
+                    INSERT INTO applications
+                      (id, company, title, canonical_url, current_state, created_at)
+                    VALUES (?, ?, ?, ?, 'discovered', ?)
+                    """,
+                    (
+                        application_id,
+                        company.strip(),
+                        title.strip(),
+                        canonical_url(url),
+                        created_at,
+                    ),
+                )
+                self._append_event(application_id, None, "discovered")
             self.connection.execute(
                 """
-                INSERT INTO applications
-                  (id, company, title, canonical_url, current_state, created_at)
-                VALUES (?, ?, ?, ?, 'discovered', ?)
+                INSERT OR IGNORE INTO application_strategy_assignments
+                  (application_id, strategy_generation_id, capture_status, source,
+                   query_family, rank_config_json, role_family, material_variant,
+                   message_variant, model_route, prompt_sha256, material_sha256,
+                   assigned_at)
+                SELECT
+                  applications.id, ?, 'legacy_unavailable', 'legacy_unavailable',
+                  'legacy_unavailable', NULL, 'legacy_unavailable',
+                  'legacy_unavailable', 'legacy_unavailable', 'legacy_unavailable',
+                  NULL, NULL, applications.created_at
+                FROM applications
+                WHERE applications.id = ?
+                """,
+                (LEGACY_STRATEGY_GENERATION_ID, application_id),
+            )
+        return application_id
+
+    def add_attributed_application(
+        self,
+        company: str,
+        title: str,
+        url: str,
+        *,
+        strategy_generation_id: str,
+        source: str,
+        query_family: str,
+        rank_config: Mapping[str, Any],
+        role_family: str,
+        material_variant: str,
+        message_variant: str,
+        model_route: str,
+        prompt_sha256: str,
+        material_sha256: str,
+    ) -> str:
+        text_values = {
+            "strategy_generation_id": strategy_generation_id,
+            "source": source,
+            "query_family": query_family,
+            "role_family": role_family,
+            "material_variant": material_variant,
+            "message_variant": message_variant,
+            "model_route": model_route,
+        }
+        for name, value in text_values.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a non-empty string")
+        if not isinstance(rank_config, Mapping):
+            raise ValueError("rank_config must be a mapping")
+        for name, value in {
+            "prompt_sha256": prompt_sha256,
+            "material_sha256": material_sha256,
+        }.items():
+            if not re.fullmatch(r"[a-f0-9]{64}", value):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+
+        application_id = canonical_job_id(company, title, url)
+        rank_config_json = json.dumps(
+            dict(rank_config),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        with self._transaction():
+            generation = self.connection.execute(
+                """
+                SELECT strategy_generation_id
+                FROM strategy_generations
+                WHERE strategy_generation_id = ?
+                """,
+                (strategy_generation_id,),
+            ).fetchone()
+            if generation is None:
+                raise ValueError("strategy generation does not exist")
+            application = self.connection.execute(
+                "SELECT id FROM applications WHERE id = ?",
+                (application_id,),
+            ).fetchone()
+            if application is None:
+                created_at = _now()
+                self.connection.execute(
+                    """
+                    INSERT INTO applications
+                      (id, company, title, canonical_url, current_state, created_at)
+                    VALUES (?, ?, ?, ?, 'discovered', ?)
+                    """,
+                    (
+                        application_id,
+                        company.strip(),
+                        title.strip(),
+                        canonical_url(url),
+                        created_at,
+                    ),
+                )
+                self._append_event(application_id, None, "discovered")
+            existing_assignment = self.connection.execute(
+                """
+                SELECT
+                  strategy_generation_id, capture_status, source, query_family,
+                  rank_config_json, role_family, material_variant,
+                  message_variant, model_route, prompt_sha256, material_sha256
+                FROM application_strategy_assignments
+                WHERE application_id = ?
+                """,
+                (application_id,),
+            ).fetchone()
+            expected_assignment = (
+                strategy_generation_id,
+                "captured",
+                source.strip(),
+                query_family.strip(),
+                rank_config_json,
+                role_family.strip(),
+                material_variant.strip(),
+                message_variant.strip(),
+                model_route.strip(),
+                prompt_sha256,
+                material_sha256,
+            )
+            if existing_assignment is not None:
+                if tuple(existing_assignment) == expected_assignment:
+                    return application_id
+                raise FenceError(
+                    "application already has a different immutable strategy assignment"
+                )
+            self.connection.execute(
+                """
+                INSERT INTO application_strategy_assignments
+                  (application_id, strategy_generation_id, capture_status, source,
+                   query_family, rank_config_json, role_family, material_variant,
+                   message_variant, model_route, prompt_sha256, material_sha256,
+                   assigned_at)
+                VALUES (?, ?, 'captured', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     application_id,
-                    company.strip(),
-                    title.strip(),
-                    canonical_url(url),
+                    strategy_generation_id,
+                    source.strip(),
+                    query_family.strip(),
+                    rank_config_json,
+                    role_family.strip(),
+                    material_variant.strip(),
+                    message_variant.strip(),
+                    model_route.strip(),
+                    prompt_sha256,
+                    material_sha256,
                     _now(),
                 ),
             )
-            self._append_event(application_id, None, "discovered")
         return application_id
+
+    def strategy_assignment(self, application_id: str) -> dict[str, Any]:
+        row = self.connection.execute(
+            """
+            SELECT
+              application_id, strategy_generation_id, capture_status, source,
+              query_family, rank_config_json, role_family, material_variant,
+              message_variant, model_route, prompt_sha256, material_sha256
+            FROM application_strategy_assignments
+            WHERE application_id = ?
+            """,
+            (application_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(application_id)
+        return {
+            "application_id": str(row["application_id"]),
+            "strategy_generation_id": str(row["strategy_generation_id"]),
+            "capture_status": str(row["capture_status"]),
+            "source": str(row["source"]),
+            "query_family": str(row["query_family"]),
+            "rank_config": (
+                json.loads(str(row["rank_config_json"]))
+                if row["rank_config_json"] is not None
+                else None
+            ),
+            "role_family": str(row["role_family"]),
+            "material_variant": str(row["material_variant"]),
+            "message_variant": str(row["message_variant"]),
+            "model_route": str(row["model_route"]),
+            "prompt_sha256": (
+                str(row["prompt_sha256"])
+                if row["prompt_sha256"] is not None
+                else None
+            ),
+            "material_sha256": (
+                str(row["material_sha256"])
+                if row["material_sha256"] is not None
+                else None
+            ),
+        }
+
+    def record_funnel_outcome(
+        self,
+        *,
+        application_id: str,
+        funnel_stage: str,
+        disposition: str,
+        evidence_source: str,
+        evidence_sha256: str,
+        occurred_at: str,
+        observed_at: str,
+        observation_policy_version: str | None = None,
+    ) -> str:
+        if funnel_stage not in FUNNEL_STAGES:
+            raise ValueError("invalid funnel stage")
+        if disposition not in FUNNEL_DISPOSITIONS:
+            raise ValueError("invalid funnel disposition")
+        if evidence_source not in AUTHORITATIVE_EVIDENCE_SOURCES:
+            raise ValueError("outcome evidence source is not authoritative")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("evidence_sha256 must be a lowercase SHA-256")
+        if disposition == "negative" and (
+            not isinstance(observation_policy_version, str)
+            or not observation_policy_version.strip()
+        ):
+            raise ValueError(
+                "negative outcomes require a versioned observation policy"
+            )
+        parsed_times: dict[str, datetime] = {}
+        for name, value in {
+            "occurred_at": occurred_at,
+            "observed_at": observed_at,
+        }.items():
+            try:
+                parsed = datetime.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError(f"{name} must be RFC3339") from error
+            if parsed.tzinfo is None:
+                raise ValueError(f"{name} must include a timezone")
+            parsed_times[name] = parsed
+        if parsed_times["observed_at"] < parsed_times["occurred_at"]:
+            raise ValueError("observed_at cannot predate occurred_at")
+
+        identity = {
+            "application_id": application_id,
+            "funnel_stage": funnel_stage,
+            "disposition": disposition,
+            "evidence_source": evidence_source,
+            "evidence_sha256": evidence_sha256,
+            "occurred_at": occurred_at,
+            "observed_at": observed_at,
+            "observation_policy_version": observation_policy_version,
+        }
+        encoded = json.dumps(
+            identity,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        outcome_id = f"outcome-{hashlib.sha256(encoded.encode('utf-8')).hexdigest()}"
+        with self._transaction():
+            recorded = self._record_funnel_outcome_in_transaction(
+                outcome_id=outcome_id,
+                **identity,
+            )
+            self._rebuild_strategy_outcome_projection_in_transaction()
+            return recorded
+
+    def _record_funnel_outcome_in_transaction(
+        self,
+        *,
+        outcome_id: str,
+        application_id: str,
+        funnel_stage: str,
+        disposition: str,
+        evidence_source: str,
+        evidence_sha256: str,
+        occurred_at: str,
+        observed_at: str,
+        observation_policy_version: str | None,
+    ) -> str:
+        application = self.connection.execute(
+            "SELECT id FROM applications WHERE id = ?",
+            (application_id,),
+        ).fetchone()
+        if application is None:
+            raise KeyError(application_id)
+        bound_applications = {
+            str(row["application_id"])
+            for row in self.connection.execute(
+                """
+                SELECT DISTINCT application_id
+                FROM funnel_outcomes
+                WHERE evidence_sha256 = ?
+                """,
+                (evidence_sha256,),
+            ).fetchall()
+        }
+        if bound_applications and bound_applications != {application_id}:
+            raise FenceError(
+                "external evidence is already bound to a different application"
+            )
+        existing = self.connection.execute(
+            """
+            SELECT
+              outcome_id, application_id, funnel_stage, disposition,
+              evidence_source, evidence_sha256, occurred_at, observed_at,
+              observation_policy_version
+            FROM funnel_outcomes
+            WHERE application_id = ?
+              AND funnel_stage = ?
+              AND evidence_sha256 = ?
+            """,
+            (application_id, funnel_stage, evidence_sha256),
+        ).fetchone()
+        expected = (
+            outcome_id,
+            application_id,
+            funnel_stage,
+            disposition,
+            evidence_source,
+            evidence_sha256,
+            occurred_at,
+            observed_at,
+            observation_policy_version,
+        )
+        if existing is not None:
+            if tuple(existing) == expected:
+                return outcome_id
+            raise FenceError(
+                "external evidence is already bound to a different outcome"
+            )
+        self.connection.execute(
+            """
+            INSERT INTO funnel_outcomes
+              (outcome_id, application_id, funnel_stage, disposition,
+               evidence_source, evidence_sha256, occurred_at, observed_at,
+               observation_policy_version, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (*expected, _now()),
+        )
+        return outcome_id
+
+    def funnel_outcomes(self, application_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+              outcome_id, application_id, funnel_stage, disposition,
+              evidence_source, evidence_sha256, occurred_at, observed_at,
+              observation_policy_version
+            FROM funnel_outcomes
+            WHERE application_id = ?
+            ORDER BY occurred_at, outcome_id
+            """,
+            (application_id,),
+        ).fetchall()
+        return [
+            {
+                "outcome_id": str(row["outcome_id"]),
+                "application_id": str(row["application_id"]),
+                "funnel_stage": str(row["funnel_stage"]),
+                "disposition": str(row["disposition"]),
+                "evidence_source": str(row["evidence_source"]),
+                "evidence_sha256": str(row["evidence_sha256"]),
+                "occurred_at": str(row["occurred_at"]),
+                "observed_at": str(row["observed_at"]),
+                "observation_policy_version": (
+                    str(row["observation_policy_version"])
+                    if row["observation_policy_version"] is not None
+                    else None
+                ),
+            }
+            for row in rows
+        ]
+
+    def rebuild_strategy_outcome_projection(self) -> list[dict[str, Any]]:
+        with self._transaction():
+            self._rebuild_strategy_outcome_projection_in_transaction()
+        return self.strategy_outcome_projection()
+
+    def _rebuild_strategy_outcome_projection_in_transaction(self) -> None:
+        self.connection.execute("DELETE FROM strategy_outcome_projection")
+        self.connection.execute(
+            """
+            INSERT INTO strategy_outcome_projection
+              (strategy_generation_id, funnel_stage, positive_count,
+               negative_count, resolved_count)
+            SELECT
+              assignments.strategy_generation_id,
+              outcomes.funnel_stage,
+              SUM(CASE WHEN outcomes.disposition = 'positive' THEN 1 ELSE 0 END),
+              SUM(CASE WHEN outcomes.disposition = 'negative' THEN 1 ELSE 0 END),
+              COUNT(*)
+            FROM funnel_outcomes AS outcomes
+            JOIN application_strategy_assignments AS assignments
+              ON assignments.application_id = outcomes.application_id
+            GROUP BY assignments.strategy_generation_id, outcomes.funnel_stage
+            """
+        )
+
+    def strategy_outcome_projection(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+              strategy_generation_id, funnel_stage, positive_count,
+              negative_count, resolved_count
+            FROM strategy_outcome_projection
+            ORDER BY strategy_generation_id, funnel_stage
+            """
+        ).fetchall()
+        return [
+            {
+                "strategy_generation_id": str(row["strategy_generation_id"]),
+                "funnel_stage": str(row["funnel_stage"]),
+                "positive_count": int(row["positive_count"]),
+                "negative_count": int(row["negative_count"]),
+                "resolved_count": int(row["resolved_count"]),
+            }
+            for row in rows
+        ]
 
     def current_state(self, application_id: str) -> str:
         row = self.connection.execute(
@@ -271,6 +884,82 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def record_strategy_generation(
+        self,
+        strategy: Mapping[str, Any],
+        *,
+        parent_generation_id: str | None = None,
+        changed_field: str | None = None,
+    ) -> str:
+        if not isinstance(strategy, Mapping) or not strategy:
+            raise ValueError("strategy generation must be a non-empty mapping")
+        if (parent_generation_id is None) != (changed_field is None):
+            raise ValueError(
+                "parent_generation_id and changed_field must be provided together"
+            )
+        strategy_json = json.dumps(
+            dict(strategy),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        strategy_sha256 = hashlib.sha256(strategy_json.encode("utf-8")).hexdigest()
+        generation_id = f"strategy-{strategy_sha256}"
+        with self._transaction():
+            if parent_generation_id is not None:
+                parent = self.connection.execute(
+                    """
+                    SELECT strategy_json
+                    FROM strategy_generations
+                    WHERE strategy_generation_id = ?
+                    """,
+                    (parent_generation_id,),
+                ).fetchone()
+                if parent is None:
+                    raise ValueError("parent strategy generation does not exist")
+                parent_strategy = json.loads(str(parent["strategy_json"]))
+                changed = {
+                    key
+                    for key in set(parent_strategy) | set(strategy)
+                    if parent_strategy.get(key) != strategy.get(key)
+                }
+                if changed != {changed_field}:
+                    raise ValueError(
+                        "candidate must change exactly the declared strategy field"
+                    )
+            self.connection.execute(
+                """
+                INSERT OR IGNORE INTO strategy_generations
+                  (strategy_generation_id, parent_generation_id, changed_field,
+                   strategy_json, strategy_sha256, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    generation_id,
+                    parent_generation_id,
+                    changed_field,
+                    strategy_json,
+                    strategy_sha256,
+                    _now(),
+                ),
+            )
+            recorded = self.connection.execute(
+                """
+                SELECT parent_generation_id, changed_field
+                FROM strategy_generations
+                WHERE strategy_generation_id = ?
+                """,
+                (generation_id,),
+            ).fetchone()
+            if (
+                recorded["parent_generation_id"] != parent_generation_id
+                or recorded["changed_field"] != changed_field
+            ):
+                raise FenceError(
+                    "strategy content is already bound to different lineage"
+                )
+        return generation_id
 
     def application_summary_rows(self) -> list[dict[str, str | None]]:
         rows = self.connection.execute(
@@ -744,6 +1433,32 @@ class Ledger:
                     "received_at": received_at,
                 },
             )
+            outcome_identity = {
+                "application_id": application_id,
+                "funnel_stage": "confirmed_application",
+                "disposition": "positive",
+                "evidence_source": "gmail",
+                "evidence_sha256": evidence_sha256,
+                "occurred_at": received_at,
+                "observed_at": received_at,
+                "observation_policy_version": None,
+            }
+            encoded_outcome = json.dumps(
+                outcome_identity,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            self._record_funnel_outcome_in_transaction(
+                outcome_id=(
+                    "outcome-"
+                    + hashlib.sha256(
+                        encoded_outcome.encode("utf-8")
+                    ).hexdigest()
+                ),
+                **outcome_identity,
+            )
+            self._rebuild_strategy_outcome_projection_in_transaction()
             return "reconciled"
 
     def submitted_resume_reports(self) -> list[dict[str, str]]:

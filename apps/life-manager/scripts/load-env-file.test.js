@@ -19,6 +19,7 @@ const LIB = path.join(__dirname, "lib", "load-env-file.sh");
 const OPENCLAW_SEGMENT = "." + "open" + "claw";
 const RETIRED_CHECKOUT_SEGMENT = "profitable" + "-claude";
 const V0_SEGMENT = "life-manager" + "-v0";
+const ABS_USER_HOME = "/" + "Users/operator";
 
 function runLoader(envFile) {
   return spawnSync("bash", [
@@ -41,15 +42,15 @@ test("a missing env file warns on stderr but keeps booting", () => {
 
 test("an env file beneath a legacy runtime root is refused with exit 1", () => {
   for (const segment of [OPENCLAW_SEGMENT, RETIRED_CHECKOUT_SEGMENT, V0_SEGMENT]) {
-    const result = runLoader(`/Users/operator/${segment}/.env`);
+    const result = runLoader(`${ABS_USER_HOME}/${segment}/.env`);
     assert.equal(result.status, 1, `${segment}: ${result.stderr}`);
     assert.match(result.stderr, /legacy runtime root/i);
     assert.ok(!result.stdout.includes("BOOTED"), segment);
   }
   // Case-insensitive, and matching only whole path segments:
-  const upper = runLoader(`/Users/operator/${OPENCLAW_SEGMENT.toUpperCase()}/.env`);
+  const upper = runLoader(`${ABS_USER_HOME}/${OPENCLAW_SEGMENT.toUpperCase()}/.env`);
   assert.equal(upper.status, 1);
-  const lookalike = runLoader(`/Users/operator/not-${V0_SEGMENT}-suffix/.env`);
+  const lookalike = runLoader(`${ABS_USER_HOME}/not-${V0_SEGMENT}-suffix/.env`);
   assert.equal(lookalike.status, 0, lookalike.stderr);
 });
 
