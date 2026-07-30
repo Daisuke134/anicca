@@ -17586,3 +17586,11 @@
 {"ts":1785393217,"wake_id":"00MS750V3V37A7BD29CB694EF0","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785393350,"wake_id":"00MS753PMUDD09E5BB256F4B68","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785393479,"wake_id":"00MS756HS69F9AB5A3C07643FF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785393608,"wake_id":"00MS75996RFD71043AA5724D15","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785393736,"wake_id":"00MS75BZOQ800F1BF1BD354BE6","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785393863,"wake_id":"00MS75EPSRB80F78ED7C1D4466","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785393991,"wake_id":"00MS75HGINA53E49989466479B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana autonomous agent paid API marketplace revenue model [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
+{"ts":1785394118,"wake_id":"00MS75K6AK9D16E1CBB9F84CEB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785394246,"wake_id":"00MS75MXDOAD7101131C3E4F8E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785394374,"wake_id":"00MS75PNXM34CC6F4613E44444","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785394501,"wake_id":"00MS75SDXGE6D5A2BAA08B48F3","kind":"narrate","sleep_s":120,"model":"auto"}
