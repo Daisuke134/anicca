@@ -215,3 +215,35 @@ test("the onboarding function is deliberately left with no queue access", () => 
   assert.match(onboard, /upsertUser\(\{ uid \}\)/);
   assert.equal(needsZeroStart({ uid: "lm_new-tenant" }), true);
 });
+
+test("§10 MINOR-8: neither adapter offers a second way into the job queue", () => {
+  // §4.4 rules the scheduler sweep the ONLY enqueue point. A CLI entrypoint is a second write surface into
+  // the queue, which is precisely what that ruling excluded — so the modules must not expose one at all.
+  for (const [name, module] of [["zero-start", zeroStart], ["wallet-inflow", inflow]]) {
+    for (const removed of ["enqueueZeroStartJob", "enqueueWalletInflowJob", "parseEnqueueArgs"]) {
+      assert.equal(module[removed], undefined, `${name} must not export ${removed}`);
+    }
+  }
+  for (const file of ["zero-start-job-adapter.js", "wallet-inflow-job-adapter.js"]) {
+    const source = fs.readFileSync(path.join(__dirname, file), "utf8");
+    assert.ok(!source.includes("require.main === module"), `${file} must have no CLI entrypoint`);
+    assert.ok(!source.includes("process.argv"), `${file} must not read argv`);
+    // And no direct queue-write import that could grow one back.
+    assert.ok(!/require\("\.\/runtime-job-store\.js"\)[\s\S]{0,80}enqueueJob/.test(source), `${file} must not import enqueueJob`);
+  }
+  // The sweep remains the one place that writes.
+  assert.equal(typeof require("./wallet-sweep.js").sweepWalletJobs, "function");
+});
+
+test("§10 MINOR-11: the tenant keychain is kept on purpose and says so honestly", () => {
+  // Deliberate exception to the delete-unused-code rule. The comment must NOT claim it guards a live path.
+  const source = fs.readFileSync(path.join(__dirname, "tenant-wallet-store.js"), "utf8");
+  assert.match(source, /NOTHING in the running path calls this today/);
+  assert.match(source, /AE-X402-TENANT-ROUTING-1/);
+  assert.ok(
+    !/single check that stops one tenant's worker reading another's key/.test(source),
+    "the old comment overclaimed that it protects a running path",
+  );
+  // It is still real, tested code — kept, not commented out.
+  assert.equal(typeof require("./tenant-wallet-store.js").createTenantWalletKeychain, "function");
+});

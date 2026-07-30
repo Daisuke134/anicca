@@ -304,8 +304,13 @@ function ensureTenantWallets(uid, opts = {}) {
   });
 }
 
-// The `lib/secret-provider.js` local seam for wallet keys. The tenant in the reference must be the tenant
-// doing the asking: this is the single check that stops one tenant's worker reading another's key.
+// The `lib/secret-provider.js` local seam for wallet keys.
+//
+// §10 MINOR-11 — honest status: NOTHING in the running path calls this today. The zero-start adapter reads
+// key files through `ensureTenantWallets`, and no shipped code needs a tenant's signing key yet. It is kept
+// deliberately, as a stated exception to the delete-unused-code rule, because AE-X402-TENANT-ROUTING-1 and
+// AE-CLOUD-CUSTODY-1 both need exactly this seam; it is covered by tests so it cannot rot in the meantime.
+// Do not read the check below as protecting a live path — it is the contract a future caller must meet.
 function createTenantWalletKeychain(options = {}) {
   const env = options.env || process.env;
   return {

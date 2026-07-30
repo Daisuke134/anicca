@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 "use strict";
 // AE-ZERO-START-1 §4.5 — the incoming-payment watch.
 //
@@ -29,7 +28,7 @@
 
 const { createHash } = require("node:crypto");
 
-const { buildRuntimeJob, enqueueJob } = require("./runtime-job-store.js");
+const { buildRuntimeJob } = require("./runtime-job-store.js");
 const { EXCLUDED_KINDS, assertNoSecret } = require("./earnings-ledger.js");
 const { recordEarnLoopRevenue } = require("./earnings-runtime.js");
 const { isSolanaAddress } = require("./agent-wallet-solana.js");
@@ -234,7 +233,11 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
   const truncated = taken.length < ordered.length;
   // A truncated wake rewinds the cursor to the last block it actually processed and re-scans it next
   // time; the unique entry_key turns the overlap into refused duplicates rather than double counting.
-  const nextBlock = truncated ? taken[taken.length - 1].block : toBlock + 1;
+  // §10 MINOR-12: when the row budget was already spent, `taken` is EMPTY — there is no last processed
+  // block, so the cursor must not advance at all or the unprocessed logs would be skipped forever.
+  const nextBlock = truncated
+    ? (taken.length > 0 ? taken[taken.length - 1].block : fromBlock)
+    : toBlock + 1;
   const timestamps = await baseBlockTimestamps(baseRpc, [...new Set(taken.map((log) => log.block))]);
 
   return {
@@ -549,6 +552,10 @@ async function executeWalletInflowJob(job, deps = {}) {
 
   const entries = [];
   for (const { entry, view } of pending) {
+    // `assertNoSecret` is a FIELD-NAME guard, not a shape scanner: it rejects keys called privateKey,
+    // secret, seed and so on, and it cannot recognise key-shaped VALUES. It is a cheap backstop against a
+    // careless field name, not the reason this payload is safe — that reason is that nothing here is ever
+    // read from a key file.
     assertNoSecret(entry);
     const written = await recordEarning(entry);
     entries.push({
@@ -699,43 +706,8 @@ function createWalletInflowLoopAdapter(deps = {}) {
   });
 }
 
-function parseEnqueueArgs(argv) {
-  const args = Array.isArray(argv) ? argv : [];
-  if (args[0] !== "enqueue") throw new Error("usage: wallet-inflow-job-adapter.js enqueue --uid <tenant>");
-  const uidIndex = args.indexOf("--uid");
-  const tenantId = uidIndex >= 0 ? String(args[uidIndex + 1] || "").trim() : "";
-  if (!tenantId || tenantId.startsWith("--")) throw new Error("--uid <tenant> is required");
-  return { tenantId };
-}
-
-async function enqueueWalletInflowJob(argv, env = process.env, deps = {}) {
-  const { tenantId } = parseEnqueueArgs(argv);
-  const job = buildWalletInflowJob({
-    tenantId,
-    nowMs: deps.nowMs == null ? Date.now() : Number(deps.nowMs),
-  });
-  const enqueue = deps.enqueueJob || enqueueJob;
-  const queued = await enqueue({
-    jobId: job.job_id,
-    tenantId: job.tenant_id,
-    loopId: job.loop_id,
-    capability: job.capability,
-    effectClass: job.effect_class,
-    effectKey: job.effect_key,
-    inputRefs: job.input_refs,
-    maxAttempts: job.max_attempts,
-  });
-  const result = { created: queued.created === true, job_id: job.job_id, tenant_id: job.tenant_id };
-  (deps.stdout || process.stdout).write(`${JSON.stringify(result)}\n`);
-  return result;
-}
-
-if (require.main === module) {
-  enqueueWalletInflowJob(process.argv.slice(2)).catch((error) => {
-    process.stderr.write(`[wallet-inflow-enqueue] ${error.message}\n`);
-    process.exitCode = 1;
-  });
-}
+// §10 MINOR-8: there is deliberately NO CLI enqueue entrypoint here. §4.4 rules the scheduler sweep the
+// only enqueue point, and a second write surface into the job queue is exactly what that excluded.
 
 module.exports = {
   BASE_DEFAULT_LOOKBACK_BLOCKS,
@@ -754,9 +726,7 @@ module.exports = {
   TRANSFER_TOPIC,
   buildWalletInflowJob,
   createWalletInflowLoopAdapter,
-  enqueueWalletInflowJob,
   executeWalletInflowJob,
-  parseEnqueueArgs,
   safeWalletInflowSummary,
   scanBaseInflows,
   scanSolanaInflows,

@@ -823,3 +823,21 @@ test("no receipt or ledger row can carry a secret", async () => {
   for (const row of h.recorded) assertNoSecret(row);
   assert.ok(Buffer.byteLength(JSON.stringify(receipt)) < 16_384, "a receipt must fit the runtime limit");
 });
+
+test("§10 MINOR-12: a wake with no row budget left does not advance the cursor past unread logs", async () => {
+  // With the budget already spent there is no "last processed block", so the old code read
+  // taken[taken.length - 1].block off an empty array. Crashing is bad; advancing the cursor anyway would
+  // be worse — it would skip those logs forever.
+  const logs = [transferLog({ block: 1100, tx: `0x${"7".repeat(64)}` })];
+  const cursor = { schema_version: 1, base_next_block: 1100 };
+  const h = harness({ logs, latestBlock: 1200, finalityTags: { finalized: 1200 }, cursor });
+  const scan = await require("./wallet-inflow-job-adapter.js").scanBaseInflows({
+    baseRpc: h.deps.baseRpc,
+    address: BASE_ADDRESS,
+    cursor,
+    limit: 0,
+  });
+  assert.equal(scan.inflows.length, 0);
+  assert.equal(scan.truncated, true);
+  assert.equal(scan.next_block, 1100, "the cursor must stay put so the unread log is picked up next wake");
+});

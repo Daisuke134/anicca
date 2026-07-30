@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 "use strict";
 // AE-ZERO-START-1 §4.4 — start a tenant's agent at a balance of zero.
 //
@@ -20,7 +19,7 @@
 // `message_id` = failure). When delivery is genuinely unknowable — the transport died mid-flight — the
 // error is marked `unknownEffect` so the runtime reconciles instead of sending a second message.
 
-const { buildRuntimeJob, enqueueJob } = require("./runtime-job-store.js");
+const { buildRuntimeJob } = require("./runtime-job-store.js");
 const { assertNoSecret, formatUsdAtomic, formatUsdMinor } = require("./earnings-ledger.js");
 const { isSolanaAddress } = require("./agent-wallet-solana.js");
 const { formatSol, readSolBalance } = require("./solana-balance.js");
@@ -295,6 +294,10 @@ async function executeZeroStartJob(job, deps = {}) {
 
   // 5. One message, guarded on the way out.
   const text = formatZeroStartMessage(view);
+  // `assertNoSecret` is a FIELD-NAME guard, not a shape scanner: it rejects keys called privateKey,
+  // secret, seed and so on, and it cannot recognise key-shaped VALUES. What actually keeps this payload
+  // safe is that `view` is built only from public addresses and measured balances — the guard is a cheap
+  // backstop against a careless field name being added later.
   assertNoSecret({ ...view, text });
   const telegramToken = await deps.secretProvider.get(uid, inputRefs.telegram_token_ref);
   const providerResult = await providerSend(telegramToken, chatId, text);
@@ -406,43 +409,8 @@ function createZeroStartLoopAdapter(deps = {}) {
   });
 }
 
-function parseEnqueueArgs(argv) {
-  const args = Array.isArray(argv) ? argv : [];
-  if (args[0] !== "enqueue") throw new Error("usage: zero-start-job-adapter.js enqueue --uid <tenant>");
-  const uidIndex = args.indexOf("--uid");
-  const tenantId = uidIndex >= 0 ? String(args[uidIndex + 1] || "").trim() : "";
-  if (!tenantId || tenantId.startsWith("--")) throw new Error("--uid <tenant> is required");
-  return { tenantId };
-}
-
-async function enqueueZeroStartJob(argv, env = process.env, deps = {}) {
-  const { tenantId } = parseEnqueueArgs(argv);
-  const job = buildZeroStartJob({
-    tenantId,
-    telegramTokenRef: String(env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token"),
-  });
-  const enqueue = deps.enqueueJob || enqueueJob;
-  const queued = await enqueue({
-    jobId: job.job_id,
-    tenantId: job.tenant_id,
-    loopId: job.loop_id,
-    capability: job.capability,
-    effectClass: job.effect_class,
-    effectKey: job.effect_key,
-    inputRefs: job.input_refs,
-    maxAttempts: job.max_attempts,
-  });
-  const result = { created: queued.created === true, job_id: job.job_id, tenant_id: job.tenant_id };
-  (deps.stdout || process.stdout).write(`${JSON.stringify(result)}\n`);
-  return result;
-}
-
-if (require.main === module) {
-  enqueueZeroStartJob(process.argv.slice(2)).catch((error) => {
-    process.stderr.write(`[zero-start-enqueue] ${error.message}\n`);
-    process.exitCode = 1;
-  });
-}
+// §10 MINOR-8: there is deliberately NO CLI enqueue entrypoint here. §4.4 rules the scheduler sweep the
+// only enqueue point, and a second write surface into the job queue is exactly what that excluded.
 
 module.exports = {
   CAPABILITY,
@@ -453,11 +421,9 @@ module.exports = {
   WALLET_COLUMNS,
   buildZeroStartJob,
   createZeroStartLoopAdapter,
-  enqueueZeroStartJob,
   executeZeroStartJob,
   formatMeasuredUsdc,
   formatZeroStartMessage,
-  parseEnqueueArgs,
   readZeroStartTenant,
   safeZeroStartSummary,
   verifyZeroStartReceipt,
