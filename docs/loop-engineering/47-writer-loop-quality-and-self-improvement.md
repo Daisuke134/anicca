@@ -3592,7 +3592,7 @@ grep -rilE 'keiodaisuke|daisukenarita|成田|Narita|Daisuke' ~/.local/share/writ
 |---|---|
 | fail-closed | scanner がエラーで動かない時も**公開しない**（「動かなかったので通す」を禁止） |
 | 例外なし | 「今回はrepoリンクだけだから」等の運用判断で回避しない |
-| 既存分 | 公開済み記事は差し替え可能な面（note/Zenn/Substack）で本文を更新。差し替え不能な面は記録に残す |
+| 既存分 | ★遡及修正しない（Dais 2026-07-30「too much work、次の記事から綺麗にしろ」）★。既に公開済みの `Daisuke134` 表記と所在地表現は現状のまま残す。gate は**次に公開する artifact から**適用する |
 | blocklist の保管 | blocklist 自体に個人情報が入るので **repo に平文で置かない**。`~/.openclaw/.env` 側か暗号化ファイルから読む |
 
 ### 28.3 入金先ルーティング（Dais 裁定の機械化）
@@ -3683,7 +3683,7 @@ KDP Select 全著者の月間合計が $67M なので、書籍だけで $10M/月
 
 | # | Stage | 作業 | done（実receipt） |
 |---:|---|---|---|
-| **0** | — | ★**PII/identity gate を実装し、既存公開記事から `Daisuke134` と所在地表現を除去**★ | scanner が blocklist HIT で公開を実際に止めるテストが通る + 差し替え可能な公開記事の本文から該当表現が消えたことを public readback で確認 |
+| **0** | — | ★**PII/identity gate を live runtime へ反映**★（実装 + 41テストは完了、回帰0を実測。遡及修正は Dais 裁定で不実施） | 稼働中の `~/.local/lib/writer-engine` で gate が動き、次回 run の実 artifact が scan を通過したことを確認 |
 | 1 | 0 | DigitalOcean Write for DOnations 提出（$400/本） | 提出 → 編集応答 → 掲載 → 入金 |
 | 2 | 0 | metrics + sales schema を engine に配線 | 各面の数値が status付きで保存、artifact_id で sales と join |
 | 3 | 0 | Telegram daily money report（金額先頭、日次必須） | 金額入り1通が実送信、metrics と一致 |
