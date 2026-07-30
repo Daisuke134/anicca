@@ -780,6 +780,30 @@ def collect_lane_events(
             })
             return events
         artifact = _clean(delivery.get("artifact_basename"), "納品ファイル")
+        if delivery.get("send_performed") is not True:
+            events.append({
+                "event_key": (
+                    f"gig:delivery-status:{pass_id}:{talkroom_id or 'unknown'}"
+                ),
+                "kind": "delivery_status",
+                "lane": "delivery",
+                "entity_id": talkroom_id or "unknown",
+                "occurred_at": timestamp,
+                "state": "observed_no_action",
+                "action": "送信済み納品物の表示を確認",
+                "result": (
+                    f"以前送信した{artifact}が購入者画面に表示されていることを"
+                    "再確認しました"
+                ),
+                "next_action": "購入者からの確認結果を自動で確認します",
+                "evidence": ["buyer_visible_dom"],
+                "attributes": {
+                    "artifact_basename": delivery.get("artifact_basename"),
+                    "send_performed": False,
+                    "deduplicated": delivery.get("deduplicated") is True,
+                },
+            })
+            return events
         events.append({
             "event_key": f"gig:delivery:{pass_id}:{talkroom_id or 'unknown'}",
             "kind": "delivery",
@@ -855,10 +879,20 @@ def build_pass_envelope(
         and (event.get("attributes") or {}).get("interaction_mode") == "answer"
         for event in (lane_events or [])
     )
+    delivery_status_only = any(
+        event.get("kind") == "delivery_status"
+        for event in (lane_events or [])
+    ) and not any(
+        event.get("kind") == "delivery"
+        for event in (lane_events or [])
+    )
     action_labels = list(dict.fromkeys(
         (
             "購入者への回答"
             if answer_mode and step in {"PAID_WORK", "PAID_QUEUE_DELIVERY"}
+            else "納品状況の確認"
+            if delivery_status_only
+            and step in {"PAID_WORK", "PAID_QUEUE_DELIVERY"}
             else STEP_LABELS[step]
         )
         for step in steps
@@ -1038,10 +1072,20 @@ def render_human_ja(envelope: dict[str, Any]) -> str:
         lines.append(f"- {'、'.join(actions)}を確認・実行しました")
     else:
         lines.append("- 実行記録を確認しました")
+    executed_steps = {
+        str(value)
+        for value in next(
+            event for event in events if event["kind"] == "work_cycle"
+        )["attributes"].get("executed_steps") or []
+    }
     searched = int((data.get("work") or {}).get("searched") or 0)
     if searched:
         lines.append(
             f"- 応募: 延べ{searched}件を確認し、{len(applications)}件に応募しました"
+        )
+    elif status == "success" and "B2" not in executed_steps and not applications:
+        lines.append(
+            "- 応募: 今回は実行予定時刻前のため、次のサイクルで確認します"
         )
     else:
         lines.append(f"- 応募: {len(applications)}件")
@@ -1057,6 +1101,7 @@ def render_human_ja(envelope: dict[str, Any]) -> str:
         "listing": "出品",
         "reply": "返信",
         "delivery": "納品",
+        "delivery_status": "納品状況",
     }
     for event in events:
         label = lane_labels.get(event.get("kind"))

@@ -170,9 +170,10 @@ def test_lane_evidence_becomes_separate_listing_reply_and_delivery_events(tmp_pa
     }, ensure_ascii=False))
     (
         evidence / "agent-PAID_QUEUE_DELIVERY" / "paid-queue-evidence.json"
-    ).write_text(json.dumps({
-        "sent": True,
-        "talkroom_id": "17943244",
+        ).write_text(json.dumps({
+            "sent": True,
+            "send_performed": True,
+            "talkroom_id": "17943244",
         "artifact_basename": "v23.zip",
         "artifact_version": "v23",
         "package_sha256": "c858e537",
@@ -381,6 +382,48 @@ def test_answer_mode_is_reported_as_reply_not_delivery(tmp_path):
     assert "購入者への回答を確認・実行しました" in message
     assert "納品物の作成" not in message
     assert "- 納品:" not in message
+
+
+def test_existing_delivery_readback_is_status_not_a_new_delivery(tmp_path):
+    module = load_module()
+    evidence = tmp_path / "agent-PAID_QUEUE_DELIVERY"
+    evidence.mkdir()
+    (evidence / "paid-queue-evidence.json").write_text(json.dumps({
+        "sent": True,
+        "send_performed": False,
+        "deduplicated": True,
+        "talkroom_id": "17943244",
+        "artifact_basename": "v24.zip",
+    }), encoding="utf-8")
+
+    events = module.collect_lane_events(
+        evidence_dir=tmp_path,
+        pass_id="observe-pass",
+        occurred_at=1785380311,
+    )
+
+    assert len(events) == 1
+    assert events[0]["kind"] == "delivery_status"
+    assert events[0]["state"] == "observed_no_action"
+    assert "以前送信したv24.zip" in events[0]["result"]
+    pass_row, _, usage_rows = fixture_inputs()
+    envelope = module.build_pass_envelope(
+        pass_row={
+            **pass_row,
+            "steps_executed": ["PAID_QUEUE_DELIVERY", "B0", "B1"],
+            "steps_skipped_policy": ["B2:not_selected:B1+B0"],
+        },
+        applications=[],
+        usage_rows=usage_rows,
+        observed_at=datetime.fromtimestamp(1785380311, timezone.utc),
+        lane_events=events,
+    )
+    message = module.render_human_ja(envelope)
+
+    assert "納品状況: 以前送信したv24.zip" in message
+    assert "- 納品:" not in message
+    assert "納品を確認・実行しました" not in message
+    assert "応募: 今回は実行予定時刻前のため、次のサイクルで確認します" in message
 
 
 def test_active_search_objective_never_claims_the_work_is_complete():
