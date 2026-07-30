@@ -8,12 +8,23 @@ class LaunchdTests(unittest.TestCase):
         root = Path(__file__).parents[1] / "launchd"
         daily = plistlib.loads((root / "ai.anicca.job-search-daily.plist").read_bytes())
         inbox = plistlib.loads((root / "ai.anicca.job-search-inbox.plist").read_bytes())
+        learning = plistlib.loads(
+            (root / "ai.anicca.job-search-learning.plist").read_bytes()
+        )
         self.assertTrue(daily["RunAtLoad"])
         self.assertEqual(daily["StartCalendarInterval"]["Hour"], 8)
         self.assertEqual(daily["StartCalendarInterval"]["Minute"], 30)
         self.assertEqual(inbox["StartInterval"], 900)
+        self.assertTrue(learning["RunAtLoad"])
+        self.assertEqual(
+            learning["StartCalendarInterval"],
+            {"Weekday": 1, "Hour": 9, "Minute": 15},
+        )
         self.assertNotEqual(daily["Label"], inbox["Label"])
         self.assertNotEqual(daily["ProgramArguments"][0], inbox["ProgramArguments"][0])
+        self.assertNotEqual(
+            learning["ProgramArguments"][0], daily["ProgramArguments"][0]
+        )
 
     def test_inbox_shell_uses_deterministic_prefilter_before_model(self):
         root = Path(__file__).parents[1]
@@ -77,6 +88,8 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn("interview_preps", script)
         self.assertIn("ai.anicca.job-search-daily", script)
         self.assertIn("ai.anicca.job-search-inbox", script)
+        self.assertIn("ai.anicca.job-search-learning", script)
+        self.assertIn('"learning-": 8 * 24 * 3600', script)
         self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
 
 

@@ -24,7 +24,7 @@ interviews, and reports every material state change to Telegram.
 | Calendar | Only explicit timezone-aware recruiter candidates are considered; the earliest free candidate is confirmed once |
 | Interview prep | Every confirmed interview is registered before the email reply; Telegram refreshes are delivered at the 3-day and 1-day windows, or immediately inside 1 day |
 | Assessments | Autonomous execution requires explicit AI permission and no proctoring; all code runs without network or home access |
-| Self-improvement | One-field experiments require 10 resolved samples per arm, zero replay violations, and non-overlapping Wilson 95% intervals |
+| Self-improvement | A Sunday 09:15 JST resident pass replays one safe field change, deterministically assigns future applications, requires 10 resolved samples per arm, and emits one immutable decision plus at-most-once Telegram report |
 
 Runtime dependency ordering follows
 [`rules/runtime-ordering.md`](rules/runtime-ordering.md): deterministic recovery,
@@ -226,6 +226,7 @@ and hashed private logs. Submission follows
 | Outcome memory | Immutable content-addressed strategy generations, atomic per-application source/query/rank/role/material/message/model/hash assignments, and externally evidenced funnel outcomes persist in SQLite |
 | Attribution projection | Gmail submission confirmations create confirmed-application outcomes; every write atomically rebuilds generation/stage counts, and the redacted CLI can migrate legacy rows and deterministically rebuild them |
 | Safe experiments | One source, role-family, resume-emphasis, message or threshold variable changes at a time; replay must preserve truth and hard filters |
-| Promotion gate | Baseline stays active until both arms have at least 10 resolved applications and the Wilson 95% intervals support improvement |
+| Resident learning | A launchd/systemd weekly driver creates the bounded threshold candidate, replays the held-out safety manifest, deterministically selects baseline/candidate by stable job key, and persists every execution and decision receipt |
+| Promotion gate | Baseline stays active until both arms have at least 10 resolved applications and the candidate Wilson 95% lower bound exceeds the baseline upper bound; safety violations or three consecutive candidate failures roll back immediately |
 | Self-healing | launchd restarts, browser ownership evidence, multi-provider discovery, fenced side effects, bounded recovery and content-addressed report correction |
-| Not yet complete | Resident weekly assignment/evaluation/promotion, guardian remediation, lifecycle closure, real confirmed Ashby/Workday samples, `summary.v2`, and Life Manager Career UI |
+| Not yet complete | Guardian remediation, lifecycle closure, real confirmed Ashby/Workday and learning-conversion samples, `summary.v2`, and Life Manager Career UI |

@@ -291,6 +291,9 @@ raise SystemExit(0)
             inbox = plistlib.loads(
                 (agents / "ai.anicca.job-search-inbox.plist").read_bytes()
             )
+            learning = plistlib.loads(
+                (agents / "ai.anicca.job-search-learning.plist").read_bytes()
+            )
             self.assertEqual(
                 daily["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-daily.sh"),
@@ -299,8 +302,16 @@ raise SystemExit(0)
                 inbox["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-inbox.sh"),
             )
+            self.assertEqual(
+                learning["ProgramArguments"][0],
+                str(APP_ROOT / "scripts" / "run-learning.sh"),
+            )
             self.assertEqual(daily["StartCalendarInterval"], {"Hour": 8, "Minute": 30})
             self.assertEqual(inbox["StartInterval"], 900)
+            self.assertEqual(
+                learning["StartCalendarInterval"],
+                {"Weekday": 1, "Hour": 9, "Minute": 15},
+            )
             self.assertTrue(
                 daily["StandardOutPath"].startswith(
                     str(private_root / "state" / "anicca" / "job-search")
@@ -349,6 +360,12 @@ raise SystemExit(0)
             inbox_timer = (
                 unit_dir / "ai.anicca.job-search-inbox.timer"
             ).read_text(encoding="utf-8")
+            learning_service = (
+                unit_dir / "ai.anicca.job-search-learning.service"
+            ).read_text(encoding="utf-8")
+            learning_timer = (
+                unit_dir / "ai.anicca.job-search-learning.timer"
+            ).read_text(encoding="utf-8")
             self.assertIn(
                 str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
             )
@@ -356,6 +373,11 @@ raise SystemExit(0)
             self.assertIn("OnCalendar=*-*-* 08:30:00 Asia/Tokyo", daily_timer)
             self.assertIn("Persistent=true", daily_timer)
             self.assertIn("OnUnitActiveSec=15min", inbox_timer)
+            self.assertIn(
+                str(APP_ROOT / "scripts" / "run-learning.sh"), learning_service
+            )
+            self.assertIn("OnCalendar=Sun *-*-* 09:15:00 Asia/Tokyo", learning_timer)
+            self.assertIn("Persistent=true", learning_timer)
             encoded = "\n".join(
                 path.read_text(encoding="utf-8") for path in unit_dir.iterdir()
             )
@@ -367,7 +389,8 @@ raise SystemExit(0)
             self.assertEqual(
                 recorded[1],
                 "--user enable --now ai.anicca.job-search-daily.timer "
-                "ai.anicca.job-search-inbox.timer",
+                "ai.anicca.job-search-inbox.timer "
+                "ai.anicca.job-search-learning.timer",
             )
 
     def test_portable_installer_dispatches_to_launchd_with_fake_adapter(self):

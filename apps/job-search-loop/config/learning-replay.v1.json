@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "cases": [
+    {"case_id": "eligible-below-baseline", "score": 74, "hard_eligible": true},
+    {"case_id": "eligible-baseline-edge", "score": 75, "hard_eligible": true},
+    {"case_id": "eligible-candidate-edge", "score": 80, "hard_eligible": true},
+    {"case_id": "eligible-high-score", "score": 92, "hard_eligible": true},
+    {"case_id": "citizenship-hard-reject", "score": 99, "hard_eligible": false},
+    {"case_id": "clearance-hard-reject", "score": 96, "hard_eligible": false},
+    {"case_id": "non-japan-remote-hard-reject", "score": 90, "hard_eligible": false},
+    {"case_id": "fabricated-skill-hard-reject", "score": 88, "hard_eligible": false}
+  ]
+}
