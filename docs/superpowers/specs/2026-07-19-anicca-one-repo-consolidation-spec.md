@@ -35,7 +35,7 @@ program cursorはPortable Runtime仕様の実行順を正本とする。Order 0�
 `ab71c1514b10ae1a74b770bf7ad8d1cf12dc6c38`、Railway deployment
 `1fdf8320-0086-4620-820b-a94e4ebdb08b` SUCCESSまで反映済みである。ただし実provider 3系統は未実行であり、
 現行verification harnessがenqueue後に対象jobをdirect claimするため、resident cloud loopの実行主体証明にも未到達である。
-直近atomicはBROWSER-MATRIX-1（§0.4.6cは2026-07-30に撤回済み）であり、zero-start以降の新しいfinance機能はPortable Runtimeの
+直近atomicはDAILY-V1-1（製品第一版、契約は§0.4.6d）であり、zero-start以降の新しいfinance機能はPortable Runtimeの
 local/cloud release gateを追い越さない。
 historical §10 row `8c.R`の「双方unarchived」はrename直後の保全条件であり、現在のrepo境界・退役判断には使わない。
 
@@ -606,15 +606,17 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
 | 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **done**。PR #1268、canonical merge `8d47689d3…`。exact main fresh cloneでroot/app install、647/647、8 eval、panel privacy、checkout clean。source 7系統、single `runtime/agent-runner`、legacy path検知、gitleaks/PII 0。evidence=`docs/evidence/oss/oss-merge-1.md`。外部Anicca iOS/APIのRevenueCat incidentはLife Manager cursorを止めない |
 | ~~3~~ | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **done**。実LumaでOTP/profile/passkeyを通過し`/home`のprotected `Create Event`をreadback、encrypted context save→別Steel/別process→production durable queue→exact-image restart後もauthenticated readback。最終PR #1344、merge=`e075fb305…`、deployment=`173c819d…` SUCCESS、instance=`253cd9d2188f`、job=`84d9df6e…`、Steel=`f0d5ae91…`、TG=`474`、release=true。expired rowはjob=`e071f4c1…`で`handoff_required/login`、2-tenant wrong tenant/origin/principal read 0、全session release、最終production logのOTP/cookie/auth/raw-context pattern 0。focused=`53/53 + 23/23`。evidence=`docs/evidence/browser/2026-07-29-browser-auth-1.md` |
-| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。resident cloud loop自身がdurable queueからclaimし、verification harnessはenqueue/pollだけを行う。site adapter固有成功またはharnessからのdirect executor callだけではPASSにしない | **in progress / current cursor**。generic classifier/receipt/harnessはPR #1348、merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESS、focused 89/89、full app、OSS 11/11、required CI全green。production boot logはLife Manager loops ONおよび`browser jobs ON (Railway private Steel)`を示し、runtime secret群も存在確認済み（値は非出力）。未完は①harnessのdirect `claimBrowserJobById`/`runNextBrowserJob`を除去してenqueue-only + terminal pollへ変える、②予約・問い合わせ・申請の実side effect、③各provider readback・TG receipt・Steel release 3/3。①はPR #1361でdone（merge `569cf748e…`、Railway `7ea230f6…` SUCCESS、resident claim実測 job `8cdd6942…`）。②③は合成fixtureを作らず、Dais本人がownerの実service（Luma等）での実生活の用事として撃つ。詳細と唯一の受入契約は§0.4.6a |
+| 4 | **DAILY-V1-1** | 他人がQR→Telegram→Google Calendar接続だけで、Life Managerが本人のcontextに合わせて日々を運営する。予定への移動時間自動挿入、出発前の音声call、遅刻検知と相手への連絡までを、Dais以外の実tenantで完走する | Dais以外の実tenantが自分でCalendarを接続し、①`[Travel]` blockが実Calendarへ自動挿入 ②出発前callが実着信（電話番号提供時）③実live locationから遅刻を検知し、相手へ許可済みchannelで実連絡（mail接続時はmail、無ければ本人へ報告）④全actionのTG receipt ⑤tenant混線0・Dais固有値0。stakeholder連絡は捏造した事実を含まず、連絡先が無い場合は正直に報告する | pending。※§0.4.6dが唯一の受入契約。実装済み部品=`lib/travel.js`（Google Directionsで出発時刻算出+`[Travel]`挿入）、`wakeUserOnce`+Telnyx/Gemini Live音声bridge、`lib/late-notice.js`（live locationのみを根拠に判定、聞かずに観測）、`lib/ask.js`（場所欠落をGeminiが解決）、`lib/transport/mail-{gog,unipile,agentmail}.js`。未配線=multi-tenant onboarding導線とstakeholder自動連絡 |
 | 5 | **BROWSER-HANDOFF-1** | `handoff_required`を行き止まりにせず、詰まったcloud session自身をuserへ渡して解錠させ、以後同origin/同tenantはhuman 0で継続する | 実jobが2FA/未login/challengeで停止した時にself-host Steelの`debugUrl`/casting websocketをtenantへ限時配布し、userの実操作（`Input.dispatchMouseEvent`/`dispatchKeyEvent`）が同一sessionへ届き、完了検知後に同sessionの`/sessions/:id/context`をencrypted保存→**その後の同origin jobがhuman 0で成功**まで1本。URL秘匿・期限・tenant scope・失効revoke・secret 0 | pending。※§0.4.6bが唯一の受入契約 |
-| 6 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
-| 7 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
-| 8 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
-| 9 | **LIFE-OUTCOMES-1** | cloud常設loopがchatをprimary push surfaceとして、MENTAL・PHYSICAL・FINANCIALの各1 journeyを本人のcontext/capabilityに合わせてobserve→decide→act→verify→reportまで閉じる | MENTAL=実context triggerと過剰通知0、PHYSICAL=実need→予約/実施follow-through、FINANCIAL=利用可能railを自律実行してverified receiptまたは正直なno-income/blocked report。3 journeyとも実mobile TG message id、provider/ledger readback、同じeventのrealtime panel readback一致 | pending。収益額や通院時期など外部event待ちは実装cursorを止めず、controlled real journeyと正直な未達を分離する |
-| 10 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `life-manager-v0`はrequired code/runtime reference 0を確認してcanonical redirect/archive、`profitable-claude`もhistorical redirect/archive、`anicca-products`は他productだけ、`anicca.ai`はLife Manager deployment source 0、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending。`life-manager-v0`のbounded archiveは先行`REPO-V0-RETIRE-1`で閉じる |
-| 11 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
-| 12 | **OPS-PANEL-1** | 既存の恒久 `/panel` を、全loop・browser trace・action receipt・失敗理由・次回実行が常時見えるrealtime overview/controlへ完成する | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示、chatへ送ったreceiptと同じevent id。routine report/ask/actionは既存mobile chatで完結し、panelはいつでも全体像を確認できる | pending |
+| 6 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。resident cloud loop自身がdurable queueからclaimし、verification harnessはenqueue/pollだけを行う。site adapter固有成功またはharnessからのdirect executor callだけではPASSにしない | **in progress / current cursor**。generic classifier/receipt/harnessはPR #1348、merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESS、focused 89/89、full app、OSS 11/11、required CI全green。production boot logはLife Manager loops ONおよび`browser jobs ON (Railway private Steel)`を示し、runtime secret群も存在確認済み（値は非出力）。未完は①harnessのdirect `claimBrowserJobById`/`runNextBrowserJob`を除去してenqueue-only + terminal pollへ変える、②予約・問い合わせ・申請の実side effect、③各provider readback・TG receipt・Steel release 3/3。①はPR #1361でdone（merge `569cf748e…`、Railway `7ea230f6…` SUCCESS、resident claim実測 job `8cdd6942…`）。②③は合成fixtureを作らず**実生活の用事**として撃つ。★対象は本人のcontext/goalから決める★ — Dais本人にはLuma等、他のuserには歯科・美容室・診療所・求人など。Luma固有の成功はPASSにしない。詳細と唯一の受入契約は§0.4.6a |
+| 7 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 8 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
+| 9 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
+| 10 | **LIFE-OUTCOMES-1** | cloud常設loopがchatをprimary push surfaceとして、MENTAL・PHYSICAL・FINANCIALの各1 journeyを本人のcontext/capabilityに合わせてobserve→decide→act→verify→reportまで閉じる | MENTAL=実context triggerと過剰通知0、PHYSICAL=実need→予約/実施follow-through、FINANCIAL=利用可能railを自律実行してverified receiptまたは正直なno-income/blocked report。3 journeyとも実mobile TG message id、provider/ledger readback、同じeventのrealtime panel readback一致 | pending。収益額や通院時期など外部event待ちは実装cursorを止めず、controlled real journeyと正直な未達を分離する |
+| 11 | **FINANCIAL-MULTITENANT-1** | 稼ぐ経路をper-tenantに配線し、各userのLife Managerが本人のwalletへverified surplusを届ける | 実測（2026-07-30）: `scheduler.js`のper-user tickは`travel/wake/lateNotice/ask/care/mental/diet/precepts/relations`の9本で、earnings/payout/walletは含まれない。稼ぎloop（x402販売、TaskMarket、uGig、clipping、crypto等）はscheduler外の別launchd/別scriptにあり、per-tenant経路が無い。done=別tenantのwalletへverified surplusが届き、ledgerがexactly-once、他tenantの資金と混線しない | pending |
+| 12 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `life-manager-v0`はrequired code/runtime reference 0を確認してcanonical redirect/archive、`profitable-claude`もhistorical redirect/archive、`anicca-products`は他productだけ、`anicca.ai`はLife Manager deployment source 0、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending。`life-manager-v0`のbounded archiveは先行`REPO-V0-RETIRE-1`で閉じる |
+| 13 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
+| 14 | **OPS-PANEL-1** | 既存の恒久 `/panel` を、全loop・browser trace・action receipt・失敗理由・次回実行が常時見えるrealtime overview/controlへ完成する | authenticated panelとruntime ledgerの差0、tenant分離、成功/失敗両traceの表示、chatへ送ったreceiptと同じevent id。routine report/ask/actionは既存mobile chatで完結し、panelはいつでも全体像を確認できる | pending |
 
 ##### 0.4.6a BROWSER-MATRIX-1 current execution contract
 
@@ -839,6 +841,81 @@ browserは「PHYSICAL専用の部品」ではなく**APIの無い相手に触る
 
 誤りの作り方も記録する: 器官別runtimeファイルを数本だけ`grep`して0 hitだったことを
 「依存なし」と断定した。否定の主張は横断grepとentry pointからの配線追跡の両方でしか裏付かない。
+
+
+##### 0.4.6d DAILY-V1-1 execution contract（製品の第一版 = 日々を運営する）
+
+###### 1. Overview（What / Why）
+
+Life Managerの第一版は「browserで何でもできること」ではなく、**他人がCalendarを繋いだだけで日々が回ること**である。
+QR → Telegram → Google Calendar接続、それだけで移動時間が埋まり、出発前に電話が鳴り、遅刻すれば相手に連絡が飛ぶ。
+ここまでが動いて初めて他人へ配れる。器官（PHYSICAL/MENTAL/FINANCIAL）はその上に載る。
+
+実測（2026-07-30、`apps/life-manager`）で、部品はほぼ揃っている:
+
+| 能力 | 実体 | 状態 |
+|---|---|---|
+| 移動時間の自動挿入 | `lib/travel.js` — Google Directionsで出発時刻を算出し`[Travel]` blockを予定の前に挿入 | 実装済み |
+| 出発前の音声call | `wakeUserOnce` + Telnyx ⇄ Gemini Live bridge（`/ws`） | 実装済み |
+| 遅刻検知 | `lib/late-notice.js` — 「fresh Telegram live locationだけがgate。observeして報告し、聞かない」 | 実装済み |
+| 場所の解決 | `lib/ask.js` — 場所欠落の予定をGeminiが推論（hardcodeしない） | 実装済み |
+| mail transport | `lib/transport/mail-{gog,unipile,agentmail}.js` | 部品のみ |
+| per-user tick | `scheduler.js`: `travel/wake/lateNotice/ask/care/mental/diet/precepts/relations` の9本 | 実装済み |
+
+未配線は2つだけである: **①Dais以外がCalendarを接続するmulti-tenant onboarding導線 ②stakeholderへの自動連絡**。
+
+###### 2. Acceptance Criteria
+
+| # | MUST |
+|---:|---|
+| 1 | Dais以外の実tenantが、QR → Telegram → Google Calendar接続を自分で完了する。導線にDais固有値、手動DB操作、開発者の介入を含まない |
+| 2 | そのtenantの実Calendarへ`[Travel]` blockが自動挿入され、出発時刻が実移動手段/実距離から算出される |
+| 3 | 電話番号が提供されている場合、出発前callが実際に着信する。提供が無い場合はcallを試みずTelegramで報告する |
+| 4 | 実live locationから遅刻を検知し、許可済みchannelで相手へ実連絡する。mail接続時はmail、連絡先が無ければ本人へ正直に報告する。**存在しない事実（到着時刻の断定、理由の創作）を含めない** |
+| 5 | 全actionがTelegram receiptとして本人に届き、同じevent idでpanelからも読める |
+| 6 | tenant混線0。他tenantのcalendar/連絡先/位置情報を読まない・書かない |
+| 7 | 質問はmanager規律（§0.4.6b 1.5）に従う。予約先・文面・時間帯の選択をuserへ投げない |
+| 8 | local/Mac依存0。Macでloadedな既存loopはLOCAL-CLOUD-PARITY-1/CLOUD-LOOPS-1完了前に停止しない |
+
+###### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| onboarding | Dais固有tenantが手作業で存在する | 他人がQRから自力でtenantを作りCalendarを繋ぐ |
+| travel | Dais tenantで稼働 | 任意tenantで稼働し、tenantごとの移動手段/居住地に適応 |
+| stakeholder連絡 | mail transportは部品として存在するが遅刻連絡へ未配線 | 遅刻確定時に許可済みchannelで相手へ実連絡し、receiptを残す |
+| 汎用性 | 予約対象がLuma等Dais固有に寄っている | 本人のcontextとgoalから対象を決める（他人には歯科・美容室・診療所） |
+
+###### 4. Test Matrix
+
+| # | To-Be | Test / evidence | Cover |
+|---:|---|---|---|
+| 1 | 他人のonboarding | 実tenantの接続trace、Dais固有値0 | pending |
+| 2 | travel自動挿入 | 実Calendarの`[Travel]` block readback | pending |
+| 3 | 出発前call | 実着信record、番号無し時のfallback | pending |
+| 4 | 遅刻連絡 | 実live location → 実送信receipt、捏造事実0 | pending |
+| 5 | receipt一致 | TGとpanelが同じevent id | pending |
+| 6 | tenant分離 | wrong tenant read/write 0 | pending |
+
+###### 5. Boundaries
+
+| Decision | MUST / DO NOT |
+|---|---|
+| 対象の選び方 | 本人のcontext/goalから決める。Luma等Dais固有siteをhard-codeしない |
+| 連絡 | 許可されたchannelのみ。連絡先が無ければ捏造せず本人へ報告する |
+| 事実 | 到着時刻・遅延理由・本人の意図を創作しない。観測した事実だけを送る |
+| 質問 | manager規律（§0.4.6b 1.5）。routineな判断をuserへ投げない |
+| Mac | 既存Mac loopをこの段階で止めない |
+
+###### 6. Execution Steps
+
+| 順 | Action | Done |
+|---:|---|---|
+| 1 | multi-tenant onboarding導線（QR → Telegram → Calendar接続）を実装し、Dais以外の実tenantで通す | 実tenantの接続trace |
+| 2 | stakeholder自動連絡を遅刻pathへ配線する（許可channel、捏造0、連絡先無しのfallback） | 実送信receipt |
+| 3 | 実tenantで①travel挿入②出発前call③遅刻連絡を1日分完走する | 実Calendar/実着信/実送信 |
+| 4 | tenant分離とreceipt一致を実測する | wrong tenant 0、同一event id |
+| 5 | `docs/evidence/`へbounded evidenceを書き、SSOTを更新する | §2の8条件全PASS |
 
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
@@ -1091,7 +1168,7 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 private key、credential、個人memory、ledger、log、browser profileをGitへ集約することは「one repo」に含めない。
 これらをrepoへ移す変更はFAILである。実行順は
 **`OSS-SECURITY-BASELINE-1` → `REPO-V0-RETIRE-1` → `AE-X402-SOURCE-CONSOLIDATE-1` → `BROWSER-AUTH-1` →
-`BROWSER-MATRIX-1` → `BROWSER-HANDOFF-1` → `BROWSER-RECOVERY-1` → `LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` →
+`DAILY-V1-1` → `BROWSER-HANDOFF-1` → `BROWSER-MATRIX-1` → `BROWSER-RECOVERY-1` → `LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` →
 `LIFE-OUTCOMES-1` → `LEGACY-RETIRE-1` → `DEV-E2E-1` → `OPS-PANEL-1`** とし、稼働loopはparity証明前に止めない。
 `life-manager-v0`をarchiveした事実だけではdoneにしない。REPO-AC-1〜6の全PASSと、canonical exact SHAから
 local/cloud E2Eが動き、Telegram/panel/provider receiptまで同じevent IDでreadbackできた時だけrepository consolidationをdoneとする。
@@ -1751,7 +1828,7 @@ SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk 
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
 Life Manager product trackはBROWSER-GEN-1、OSS-MERGE-1、BROWSER-AUTH-1がdone。
-現在はBROWSER-MATRIX-1がcurrent（§0.4.6cは撤回済み）。BROWSER-MATRIX-1の
+現在はDAILY-V1-1がcurrent（§0.4.6d）。BROWSER-MATRIX-1の
 generic code/merge/deployとresident-loop ownership是正はdoneで、実provider receipt 3/3は
 Dais本人がownerの実serviceでの実生活actionとして取る。受入契約は§0.4.6a。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
