@@ -12,6 +12,7 @@ const {
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
   listGenerationReceipts,
+  listHonneJaShadowGenerationReceipts,
   listObservablePublicationReceipts,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
@@ -287,6 +288,58 @@ test("observation chain scans only observable publication receipts in one tenant
     "tenant-a",
     "2026-08-01T00:00:00.000Z",
   ]);
+});
+
+test("honne JA shadow scan is scoped to one tenant/product/format/locale and an explicit window", async () => {
+  const calls = [];
+  const pool = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      return { rows: [{ receipt: { kind: "marketing_video_artifact" } }] };
+    },
+  };
+  const rows = await listHonneJaShadowGenerationReceipts(pool, {
+    tenantId: "tenant-a",
+    productId: "honne-ai",
+    formatId: "reelclaw",
+    locale: "ja",
+    after: "2026-07-30T00:00:00.000Z",
+  });
+
+  assert.deepEqual(rows, [{ kind: "marketing_video_artifact" }]);
+  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
+  assert.match(calls[0].sql, /j\.capability = 'marketing\.video\.generate'/);
+  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
+  assert.match(calls[0].sql, /r\.receipt->>'status' = 'ready'/);
+  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
+  assert.deepEqual(calls[0].params, [
+    "tenant-a",
+    "2026-07-30T00:00:00.000Z",
+    "honne-ai",
+    "reelclaw",
+    "ja",
+  ]);
+
+  await assert.rejects(
+    listHonneJaShadowGenerationReceipts(pool, {
+      tenantId: "tenant-a",
+      productId: "honne-ai",
+      formatId: "reelclaw",
+      locale: "ja",
+      after: "not-a-boundary",
+    }),
+    /honne JA shadow scan boundary is invalid/,
+  );
+  await assert.rejects(
+    listHonneJaShadowGenerationReceipts(pool, {
+      tenantId: "tenant-a",
+      productId: "",
+      formatId: "reelclaw",
+      locale: "ja",
+      after: "2026-07-30T00:00:00.000Z",
+    }),
+    /honne JA shadow scan boundary is invalid/,
+  );
 });
 
 test("capability worker completes a registered financial report with only its safe receipt", async () => {
