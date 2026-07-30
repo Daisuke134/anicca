@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Anicca job search learning pass weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 09:15:00 Asia/Tokyo
+Persistent=true
+Unit=ai.anicca.job-search-learning.service
+
+[Install]
+WantedBy=timers.target

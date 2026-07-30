@@ -127,12 +127,16 @@ Match optional application prose to the same language. Do not infer language fro
 recruiter's name, nationality, or company country, and do not manually substitute a
 different resume after routing.
 
-Then use the Python Ledger API in `job_search_loop.ledger`. Load the exact committed
-strategy JSON and call `Ledger.record_strategy_generation`; hash this prompt file,
-then create each new row only through `Ledger.add_attributed_application`. Persist
-the exact discovery source, query family, rank configuration, role family, routed
-material variant, application-message variant (`none` when absent), model route,
-prompt SHA-256 and selected material SHA-256 in that atomic call. Never call plain
+Then use `job_search_loop.learning.LearningDriver` with the exact committed
+`config/strategy.default.json` and `config/learning-replay.v1.json`. Before creating
+each new application, call `LearningDriver.assign` with the canonical official job
+URL as the stable assignment key. Use its returned generation and strategy exactly;
+never choose the experiment arm yourself or regenerate the default generation
+directly. Hash this prompt file, then create the row only through
+`Ledger.add_attributed_application`. Persist the exact discovery source, query
+family, selected strategy's rank configuration, role family, routed material
+variant, application-message variant (`none` when absent), model route, prompt
+SHA-256 and selected material SHA-256 in that atomic call. Never call plain
 `add_application` for a newly discovered production job: it exists only for legacy
 compatibility and records an explicit `legacy_unavailable` assignment. An existing
 assignment is immutable; an exact replay is idempotent and a conflicting rebind must
@@ -177,8 +181,9 @@ key; a materially changed same-day catch-up sends one content-addressed correcti
 while an identical retry remains at-most-once. The deterministic daily driver
 separately sends the exact recorded resume as a Telegram document for every
 `submitted` application; do not substitute a different resume or claim delivery
-without its Telegram ACK. Run one bounded weekly
-strategy experiment only when at least 10 applications have resolved; otherwise
-record inconclusive and keep the baseline.
+without its Telegram ACK. Do not evaluate or promote strategy inside this daily
+owner. The separate resident weekly learning driver owns replay, Wilson evaluation,
+promotion/rollback and its content-addressed Telegram decision report. This daily
+owner owns only the returned deterministic prospective assignment.
 
 Return only JSON matching the supplied schema.
