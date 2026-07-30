@@ -447,12 +447,25 @@ print(json.dumps({"messageId": "learning-script-902"}))
                     "learning-*/learning-decision.json"
                 )
             )
+            summaries = sorted(
+                (root / "job-state" / "evidence").glob(
+                    "learning-*/summary.json"
+                )
+            )
             self.assertEqual(len(reports), 2)
+            self.assertEqual(len(summaries), 2)
             self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in reports))
             first_report = json.loads(reports[0].read_text(encoding="utf-8"))
             second_report = json.loads(reports[1].read_text(encoding="utf-8"))
             self.assertEqual(first_report["decision_id"], second_report["decision_id"])
             self.assertEqual(first_report["decision"], "inconclusive")
+            self.assertTrue(
+                all(
+                    json.loads(path.read_text(encoding="utf-8"))["status"]
+                    == "success"
+                    for path in summaries
+                )
+            )
             self.assertEqual(executable.with_suffix(".count").read_text(), "1")
 
 
