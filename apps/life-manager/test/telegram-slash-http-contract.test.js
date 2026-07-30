@@ -160,9 +160,20 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.equal(await message("100", "/panel"), 200);
     assert.match(lastSent().text, /panel is temporarily unavailable/i);
 
-    // 6. /start passes through to onboarding (unlinked chat → calendar stage announcement).
+    // 6. /start passes through to onboarding (unlinked chat → calendar stage announcement), and so
+    //    does a deep-link payload: core.telegram.org/bots/features → Deep Linking says
+    //    "https://t.me/your_bot?start=airplane" delivers "/start airplane" (groups deliver
+    //    "/start@your_bot spaceship"), i.e. the payload is always space-separated.
     assert.equal(await message("200", "/start"), 200);
     assert.match(lastSent().text, /Welcome to Life Manager/);
+    assert.equal(await message("200", "/start airplane"), 200);
+    assert.match(lastSent().text, /Welcome to Life Manager/);
+    // 6b. REGRESSION (intentional change): "/startfoo" is NOT a start. It used to reach onboarding
+    //     because isStart is a startsWith check; a real deep link can never produce it, so it is now
+    //     answered as the unknown command it is.
+    assert.equal(await message("200", "/startfoo"), 200);
+    assert.match(lastSent().text, /Unknown command: \/startfoo/);
+    assert.ok(!/Welcome to Life Manager/.test(lastSent().text), "/startfoo must not open onboarding");
 
     // 7. /where with nothing stored is honest; the edited_message live-location stream then routes
     //    to upsertLiveLocation; /where afterwards reads the stored fix back (age + rounded coords).
@@ -199,10 +210,12 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.equal(lastSent().reply_markup.inline_keyboard[0][0].url, "https://lm.test/lm?tg=100");
     userRow.paid = true;
 
-    // 10. /reset reuses setStage and confirms.
+    // 10. /reset reuses setStage, confirms, and DISCLOSES that rewinding tg_onboard_stage also closes
+    //     the browser-task gate (lib/browser-task-intake.js requires the column to read "done").
     assert.equal(await message("100", "/reset"), 200);
     assert.deepEqual(userPatches[userPatches.length - 1], { uid: "u1", patch: { tg_onboard_stage: "calendar" } });
     assert.match(lastSent().text, /\/start/);
+    assert.match(lastSent().text, /browser task/i);
     userRow.tg_onboard_stage = "done";
 
     // 11. /payout reopens the picker when no destination exists, and answers "already registered"
@@ -224,6 +237,11 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.equal(lastSent().text, "Complete Life Manager setup with /start before changing settings.");
     assert.equal(await message("200", "connect calendar"), 200);
     assert.equal(lastSent().text, "Complete Life Manager setup with /start before changing settings.");
+    // 12b. An argument naming anything OTHER than the calendar declines the alias and is answered
+    //      honestly — it must not fall into the calendar flow (nor into the /status branch).
+    assert.equal(await message("100", "/connect gmail"), 200);
+    assert.match(lastSent().text, /only .*Google Calendar/i);
+    assert.ok(!/Life Manager status/.test(lastSent().text), "/connect must never answer with /status");
 
     // 13. /status projects the row + location state the webhook actually read.
     assert.equal(await message("100", "/status"), 200);
