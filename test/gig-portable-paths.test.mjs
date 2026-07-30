@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -104,4 +111,37 @@ test("Life Manager earn/gig bridge consumes the installed state contract", () =>
   assert.equal(source.includes('"$GIG_STATE_DIR"'), true);
   assert.equal(source.includes('expanduser("~/gig")'), false);
   assert.equal(source.includes("/opt/homebrew/bin/python3"), false);
+});
+
+test("immutable worker snapshot resolves paths through its exported canonical Gig root", () => {
+  const isolatedHome = mkdtempSync(join(tmpdir(), "gig-snapshot-home-"));
+  const snapshotDir = join(isolatedHome, "state", "snapshots");
+  const snapshot = join(snapshotDir, "gig_pass.sh");
+  mkdirSync(snapshotDir, { recursive: true });
+  const source = readFileSync(join(GIG, "gig_pass.sh"), "utf8");
+  const prelude = source.slice(0, source.indexOf('SCHEMA="$G/schemas/'));
+  writeFileSync(
+    snapshot,
+    `${prelude}\nprintf '%s\\n' "$G" "$RUNNER" "$B"\n`,
+    "utf8",
+  );
+  const result = spawnSync("bash", [snapshot], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      HOME: isolatedHome,
+      GIG_DIR: GIG,
+      LIFE_MANAGER_REPO: ROOT,
+      GIG_RUNNER_DIR: join(ROOT, "runtime/agent-runner"),
+      GIG_BROWSER_DIR: join(ROOT, "skills/browser"),
+    },
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, "");
+  assert.deepEqual(result.stdout.trim().split("\n"), [
+    GIG,
+    join(ROOT, "runtime/agent-runner", "agent_runner.py"),
+    join(ROOT, "skills/browser", "scripts"),
+  ]);
 });

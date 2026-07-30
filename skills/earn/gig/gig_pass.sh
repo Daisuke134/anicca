@@ -6,7 +6,11 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 export CLOAK_BROWSER_OWNER="gig-pass"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/gig_paths.sh
-source "$HERE/scripts/gig_paths.sh"
+PATHS_FILE="$HERE/scripts/gig_paths.sh"
+if [ ! -f "$PATHS_FILE" ] && [ -n "${GIG_DIR:-}" ]; then
+  PATHS_FILE="$GIG_DIR/scripts/gig_paths.sh"
+fi
+source "$PATHS_FILE"
 B="$GIG_BROWSER_DIR/scripts"
 G="$GIG_DIR"
 RUNNER="$GIG_RUNNER_DIR/agent_runner.py"
