@@ -673,6 +673,7 @@ def main(argv: list[str] | None = None) -> int:
                 executable=parsed.telegram_executable,
             )
             output = {
+                "status": "success",
                 "decision_id": result["decision_id"],
                 "decision": result["decision"],
                 "reason": result["reason"],
