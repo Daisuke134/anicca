@@ -398,7 +398,7 @@ next unthought-of case fail loudly instead of silently.
 
 | ID | Ruling |
 |---|---|
-| NEW-1 | FIX. The Solana cursor MUST NOT advance past an unprocessed signature. Page with `before` until `until` is genuinely reached; if a bound is hit first, leave the cursor at the **oldest unprocessed** signature and set `truncated: true`. `getSignaturesForAddress` is newest-first and `until` only stops the search *if reached before the limit* — so "the newest signature on the page" is never a safe cursor. |
+| NEW-1 | FIX. The Solana cursor MUST NOT advance past an unprocessed signature. Page with `before` until `until` is genuinely reached; if a bound is hit first the cursor MUST NOT move at all, and the wake reports `truncated` plus an operator-attention signal. **Correction to this ruling's first wording** (found by the executor): "leave the cursor at the oldest unprocessed signature" was wrong — when a bound is hit, the un-enumerated gap is *older* than every signature on the page, so setting the cursor to the page's oldest entry would skip the gap permanently. Not moving the cursor is the only sound reading; re-processing what was already booked is harmless because `entry_key` makes it exactly-once. `getSignaturesForAddress` is newest-first and `until` only stops the search *if reached before the limit* — so "the newest signature on the page" is never a safe cursor. |
 | NEW-2 | FIX. The Base cursor MUST be `(block, logIndex)`, not block alone. This is MAJOR-2's own lesson (a transfer's identity is `(tx, logIndex)`) applied to progress state. A single block busier than the budget must be resumable mid-block, never a livelock. |
 | NEW-3 | FIX, and do not trade one silent loss for a permanent one. A `null` `getTransaction` is **unreadable, not empty**: the cursor MUST NOT advance past it. But a pruned/ancient signature can be null forever, so failing closed alone would livelock. Required behaviour: do not advance, retry with a bounded budget, and on exhaustion surface the signature in the receipt as needing operator attention — the same honest bucket §11 uses for exhausted rows. Never silently skip, never block forever, always visible. |
 | NEW-4 | FIX. The sweep's ordering key MUST advance on **attempt**, not only on completed success. As shipped, "never watched sorts first" plus "watched_at records only success" lets a permanently failing tenant hold the front of the queue forever and starve every healthy one — MAJOR-3's starvation returning with worse polarity (the starved set is now the healthy one). |
@@ -419,3 +419,16 @@ gitleaks 25 commits clean, `lib/agent-wallet.js` md5 identical to
 `origin/main` (MINOR-10 ruling respected), `lm-onboard.js` md5 identical,
 29 changed files with zero outside `apps/life-manager/` + `docs/`.
 **Zero fabricated numbers found in two independent audits.**
+
+### 12.5 First return on the invariant ruling
+
+The scan drain invariant's first catch was **a lie in its own fixture**: the
+signature generator had period 58, so signature 58 collided with 0 and
+overwrote a transaction, making two events impossible to generate. The
+implementation was correct; the test was lying. A per-example test would have
+baked that lie in silently. Fixture uniqueness is now asserted.
+
+This is the same class as §12.1 appearing inside the test harness: a fact
+("these are 60 distinct events") taken on trust instead of being derived.
+Rule extended: **fixtures are inputs to a proof and must be validated like
+any other input.**
