@@ -2827,12 +2827,14 @@ verified evidence
 
 **run 93–128 実測**: run 93は`x-post/ja`をstable slot `20260729-173948`で登録し、publication-stateは8 intentを保持、managed planは`resumable=true`へ進んだ。従って`publication-readbacks.json`に残る「x-post validatorがlegacy IDを拒否」というblocker文は古い観測で、現stateが正本である。run 94から128は収益順の先頭`note/ja`をdeterministic publisherで実行したが、本文再stagingより前のeyecatch stepで同じ停止を35回再現した。draftには既に`assets.st-note.com` eyecatch readbackがあるのに、setterが毎回`button[aria-label="画像を追加"]`を要求し、既設定画面で30秒timeout。同一error signatureを停止するcircuit breakerがなく、5分ごとのretryが回復ではなく無駄な再実行になっている。noteはstable key `nac6a14e974b2`のdraft、本文embedは前回4/5のまま、公開・¥500 receiptは0。Substack JA `209066905` / EN `209066908`は`only_paid=true`、free previewあり、paywall exact1、render PASSだがdraft。X Article JA/EN saved editor `2082671063998308352` / `2082671249143275520`はrender PASSだがdraft、X Postは261文字・intentのみ。run 94–128はいずれもexit 1で、成功を偽装していない。
 
+**eyecatch resume是正後の実測**: feature `2b79fd3`は、本文画像にはない実DOM `img[alt="eyecatch"]`のauthenticated `assets.st-note.com` URLを先に読み、既存ならuploadをskipする。live editorで同じkey `nac6a14e974b2`に専用eyecatch URL、本文画像4件、upload button不在を分離して確認し、次の実LaunchAgent tickは旧30秒timeoutを越えた。その先のpublic media照合で`public-asset-readback-failed`となったため、note pairは同じkeyの`ambiguous`へfail-closedし、新規key・重複公開は0。別途、同一pair/state/code/errorが2回続いた時だけ開き、codeまたはstate hash変化で再armするdurable circuitをworkerへ配線した。RED→GREENはfocused 5 PASS、article Python 9 PASS、managed note contract PASS。実pairは旧eyecatch障害が解消して次の異なる状態へ進んだため、同じ本番errorを故意に再発させず、actual worker wiring fixtureで3回目publisher call 0・通知exact1を証明した。
+
 **handoffの実行順（現在の残TODO正本）**:
 
 | 順序 | 作業 | done |
 |---:|---|---|
-| 1 | note resumeをidempotent化しretry stormを止める | 同じkeyに既存eyecatchがあればauthenticated URLを読み、再uploadせず次へ。存在しない時だけupload。同一run・同一pair・同一error signatureの連続失敗はcircuitを開き、state変化かcode version変化まで再試行せず、Telegramへterminal receiptを1回だけ送る |
-| 2 | note同一keyを完了 | canonical本文画像`5/5`、eyecatch、¥500、owner/anonymous public readback、duplicate 0 |
+| 1 | **DONE (`2b79fd3`; live editor + LaunchAgent verified)** note resumeをidempotent化しretry stormを止める | 既存eyecatchを専用DOMからreadbackして再upload 0。同一失敗2回でcircuit、3回目publisher 0、code/state変化で再arm、通知exact1 |
+| 2 | note同一keyを完了 | 現在はsame key `nac6a14e974b2`が`ambiguous / public-asset-readback-failed`。canonical本文画像`5/5`、eyecatch、¥500、owner/anonymous public readback、duplicate 0 |
 | 3 | Substack JA/EN同一draftを公開 | `only_paid`、free preview、paywall exact1、public checkout/readback、send=false |
 | 4 | Xを完了 | X Article JA→EN（remote JA時刻+6h）、X Post 261文字、同一saved target、public readback |
 | 5 | money completionを確定 | note/Substack/Xのlive receiptで完了。Dev.to/Zennを待たない |
