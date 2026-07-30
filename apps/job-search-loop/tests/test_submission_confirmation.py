@@ -147,6 +147,31 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 [tuple(row) for row in transitions][-1],
                 ("submit_unknown", "submitted"),
             )
+            outcomes = ledger.funnel_outcomes(application_id)
+            self.assertEqual(len(outcomes), 1)
+            self.assertEqual(
+                {
+                    key: outcomes[0][key]
+                    for key in (
+                        "funnel_stage",
+                        "disposition",
+                        "evidence_source",
+                        "evidence_sha256",
+                        "occurred_at",
+                        "observed_at",
+                        "observation_policy_version",
+                    )
+                },
+                {
+                    "funnel_stage": "confirmed_application",
+                    "disposition": "positive",
+                    "evidence_source": "gmail",
+                    "evidence_sha256": "a" * 64,
+                    "occurred_at": received_at,
+                    "observed_at": received_at,
+                    "observation_policy_version": None,
+                },
+            )
             ledger.close()
 
     def test_generic_transition_cannot_bypass_confirmation_receipt(self):

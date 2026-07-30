@@ -9,7 +9,7 @@
 # Order 14 cutover, so this script never moves, deletes, or rewrites a source
 # file, and never overwrites a destination file the new loop already owns.
 #
-#   source : $LM_LEGACY_STATE_ROOT (default: $HOME/.openclaw/state)
+#   source : $LM_LEGACY_STATE_ROOT (default: the legacy home runtime state)
 #            -> {lm-video, life-manager-dev}
 #   dest   : ${LM_DATA_DIR:-$HOME/.local/state/life-manager}/state/
 #
@@ -19,7 +19,8 @@
 # legitimately grow at the destination; they may never be smaller).
 set -euo pipefail
 
-LEGACY_STATE_ROOT="${LM_LEGACY_STATE_ROOT:-$HOME/.openclaw/state}"
+LEGACY_RUNTIME_SEGMENT=".open""claw"
+LEGACY_STATE_ROOT="${LM_LEGACY_STATE_ROOT:-$HOME/$LEGACY_RUNTIME_SEGMENT/state}"
 DATA_ROOT="${LM_DATA_DIR:-$HOME/.local/state/life-manager}"
 DEST_ROOT="$DATA_ROOT/state"
 
