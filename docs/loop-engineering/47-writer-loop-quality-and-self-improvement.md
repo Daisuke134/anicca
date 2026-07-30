@@ -3878,3 +3878,118 @@ runtime state（repo 外・不可侵）
 
 **統合の注意**: `article-writer`（本番）と `writer-engine`（新）の二重化は現存する。
 統合（`skills/writer/` 化）は **#0〜#3 が本番側で動いてから**行う。今統合すると収益 loop が止まる。
+
+## 31. UX 契約 — Dais の体験 / PATH C 利用者の体験（2026-07-30）
+
+### 31.1 Dais の体験（自分の unit が回っている時）
+
+**触るのは Telegram だけ。ダッシュボードを見に行く必要が無い状態が正しい。**
+
+```text
+ 毎朝 1通（金額が先頭。公開本数を先頭に置かない）
+ ─────────────────────────────────────────────
+ 💰 2026-08-14 Writer
+ 今日の売上   ¥12,400   (今月 ¥86,300)
+   note        ¥3,000   3件
+   Ko-fi       ¥1,400   tip 2件
+   Substack    $52 MRR  有料 +2 (churn 0)
+   DigitalOcean $400    1本 掲載
+   x402        $8.20    12 call
+ ファネル(24h) impression 3,120 / read 410 / CTA 37 / paid 5  CVR 1.2%
+ 今日変えたもの title-weight v12 → v13（held-out PASS / canary PASS）
+ 次の実験     niche=個人事業主の請求書, offer=¥1,500 template, 配布=r/JapanFinance
+ 詰まり       なし
+```
+
+| 頻度 | 中身 |
+|---|---|
+| 毎日 | 上記1通 |
+| 週次 | 勝ち unit / 負け unit、停止した unit、累計と前週比 |
+| 例外時のみ | 凍結兆候・公開失敗の連続・PII gate BLOCK・入金の異常 |
+
+**Dais がやること = ゼロ**。承認も選択も催促も要求しない。止まっている時だけ「止まっている」と言う。
+
+### 31.2 PATH C 利用者の体験（#18 で実装）
+
+```text
+ 1. Life Manager で「書いて稼ぐ」を有効化
+ 2. 使う面を選ぶ（note / Substack / Ko-fi / X …）
+ 3. その面のログインを1回だけ渡す（credential は利用者ごとの vault）
+ 4. 出金先を1つ登録（銀行 or wallet）
+ 5. 以後、毎日 Telegram に金額が届く
+```
+
+| 利用者がやらないこと | 理由 |
+|---|---|
+| 書く / 投稿する / 分析する | loop がやる |
+| 何を書くか決める | niche/offer は loop が実測から選ぶ |
+| 承認する | 不可逆 broadcast 以外は自走 |
+
+| 利用者の identity | 扱い |
+|---|---|
+| 本名・住所・メール・カード | ★記事にも profile にも出さない（PII gate が fail-closed で止める）★ |
+| 出金先 | 決済の裏側のみ。公開物には出ない |
+| persona | 利用者名義の persona として書く。他人（Dais 含む）を騙らない |
+
+### 31.3 loop の1日（実際の処理順）
+
+```text
+ 06:00  WATCH      X / gh / RSS / 自分の実測を取り込む
+                   novelty 3段（hash → 埋込類似 → judge）→ claim store
+                   ★新規 claim が0なら、その日は戦略を変えない★
+   ↓
+ 06:10  DECIDE     scorable な reward だけを読み、変更を1つだけ選ぶ
+                   （niche / offer / title規則 / CTA / 配布先 のどれか1つ）
+   ↓
+ 06:20  WRITE      offer を context に入れて書く（書いてからCTAを貼らない）
+                   quality gate → identity gate → ★PII gate（fail-closed）★
+   ↓
+ 07:00  PUBLISH    収益面 = DigitalOcean / Substack / Ko-fi / note / 書籍 / x402
+                   配布面 = dev.to / Zenn / X（reward には入れない）
+                   intent → 失敗は同一IDで retry → public readback → receipt
+   ↓
+ 随時   MEASURE    impression → read → CTA click → paid
+                   Stripe client_reference_id = artifact_id で紐付け
+                   ★取れない値は unknown。0 に変換しない★
+   ↓
+ 22:30  LEARN      勝敗を1つの規則に帰属（blame）
+                   held-out（★集合を毎回更新★）+ canary
+                   PASS → weight を昇格 / FAIL → 即 revert（却下理由を保存）
+   ↓
+ 翌朝   REPORT     金額先頭の1通。次の実験を1行
+```
+
+### 31.4 自己改善の3層（変えてよい物が層ごとに違う）
+
+| 層 | 変えるもの | 検証 | いつ解禁 |
+|---|---|---|---|
+| **L1 戦略** | weight / title規則 / CTA / niche / offer | held-out 非悪化 + canary | 今すぐ |
+| **L2 能力** | 新しい publisher / collector / offer 種別を**追加** | 既存テスト回帰0 + 実 side-effect receipt | #15（unit が黒字化後） |
+| **L3 自分のコード** | loop 自身の実装 | worktree + Docker sandbox で世代比較。★live 直編集 禁止★ | #17（unit economics が scorable 後） |
+
+**なぜ順番があるか**: 稼げていない loop が自分のコードを書き換えても、正しい方向が定義できない。
+reward が間違っている状態の自己改善器は、間違いを高速化するだけ。
+
+**固定 benchmark を信じない**: 実測（BetterForAll）で、固定テストで 90-100% だった自己改善が
+敵対 suite では 62-66% に落ちた。だから held-out の集合自体を毎回更新する。
+
+### 31.5 $10M までの拡大の効き方
+
+```text
+   MRR = Σ_units ( 有料顧客 × 単価 )
+
+   STAGE 1-2  units=1     単価 $27    → 1 unit を黒字化（証明）
+   STAGE 3    units=N     単価 $27    → 複製（律速 = ToS/凍結/配布）
+   STAGE 4    units=N     単価 $200+  → 単価（律速 = 一次データの有無）
+   STAGE 5    users=20万  $50/月      → PATH C（律速 = 利用者数）
+
+   ★ 「書く量」はどの段でも律速ではない ★
+   律速は順に  ①黒字化の証明 → ②アカウント/配布 → ③単価の根拠 → ④利用者獲得
+```
+
+| 段 | 何が増えると MRR が増えるか |
+|---|---|
+| 1-2 | 転換率（niche 選択。中央値 0.62% → 買い手意図 18.69% で 30倍） |
+| 3 | unit 数（ただし黒字 unit のみ複製） |
+| 4 | 単価（$27 → $200+。読者ROIが根拠） |
+| 5 | 利用者数（自分のアカウント数ではない） |
