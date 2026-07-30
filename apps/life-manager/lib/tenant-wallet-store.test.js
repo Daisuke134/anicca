@@ -350,3 +350,44 @@ test("the secret provider seam resolves only the asking tenant's own key", async
   await assert.rejects(() => provider.get("tenant-a", "secret://telegram/bot-token"), /reference/i);
   await assert.rejects(() => provider.get("tenant-c", tenantWalletKeyRef("tenant-c", "base")), /wallet/i);
 });
+
+test("§12.3 NEW-9: a key file with NO uid field fails closed instead of trusting the requester", () => {
+  // §9.4 declares this line the guard against a cross-tenant leak: this filesystem is case-insensitive
+  // and the uid grammar is /i, so `TenantX` and `tenantx` share one directory. `parsed.uid || tenantId`
+  // defaulted an ABSENT uid to the requester's own id, which is exactly the value it is meant to check.
+  const env = sandbox();
+  const result = provision("tenant-a", env);
+  const paths = tenantWalletPaths("tenant-a", env);
+  const stored = JSON.parse(fs.readFileSync(paths.base, "utf8"));
+
+  const write = (payload) => {
+    fs.writeFileSync(paths.base, JSON.stringify(payload), { mode: 0o600 });
+    fs.chmodSync(paths.base, 0o600);
+  };
+
+  for (const [label, uid] of [
+    ["absent", undefined],
+    ["null", null],
+    ["empty", ""],
+    ["blank", "   "],
+    ["a number", 0],
+    ["false", false],
+  ]) {
+    const payload = { ...stored };
+    if (uid === undefined) delete payload.uid;
+    else payload.uid = uid;
+    write(payload);
+    assert.throws(
+      () => readTenantWallet("tenant-a", "base", { env }),
+      (error) => {
+        assert.equal(error.code, "WALLET_KEY_TENANT_MISMATCH");
+        return true;
+      },
+      `a ${label} uid must fail closed, not default to the requester`,
+    );
+  }
+
+  // A correct uid still reads, so the guard is not simply refusing everything.
+  write(stored);
+  assert.equal(readTenantWallet("tenant-a", "base", { env }).address, result.base.address);
+});

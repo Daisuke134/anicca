@@ -13,8 +13,9 @@ function colonyAdapter({ value, health = { ok: true } }) {
   const calls = [];
   return {
     calls,
-    async get(ref) {
-      calls.push({ method: "get", args: [...arguments], ref });
+    // §12.3: distinct from the tenant provider's `get(tenantId, ref)` on purpose.
+    async getColonySecret(ref) {
+      calls.push({ method: "getColonySecret", args: [...arguments], ref });
       return value;
     },
     async health() {
@@ -173,6 +174,7 @@ test("a colony secret resolves for every tenant, which is the whole point", asyn
   }
   // The adapter was never told which tenant asked, so it cannot be tricked into a cross-tenant answer.
   assert.equal(keychain.calls.every((call) => call.args.length === 1), true);
+  assert.equal(keychain.calls.every((call) => call.method === "getColonySecret"), true);
   assert.equal(keychain.calls.every((call) => call.ref === TELEGRAM_REF), true);
 });
 
@@ -255,4 +257,31 @@ test("the tenant-scoped provider is NOT weakened — it still binds every lookup
   // The tenant id is passed through to the adapter, which is where the binding check lives.
   assert.equal(keychain.calls[0].tenantId, "tenant-a");
   assert.equal((await provider.health()).scope, undefined, "tenant scope is the default, not a label");
+});
+
+test("§12.3 provider asymmetry: a crossed wiring is a loud TypeError, never a silent lookup", () => {
+  // The two providers used to share the method name `get` with different arity. Wire a tenant-shaped
+  // adapter into the colony provider and the old code would have called get(ref) — passing the reference
+  // where a tenant id belongs, and nothing would have complained.
+  const tenantShaped = adapter({ value: "tenant-secret" });
+  assert.throws(
+    () => createColonySecretProvider({ mode: "local", keychain: tenantShaped, colonyRefs: [TELEGRAM_REF] }),
+    /getColonySecret/,
+    "a tenant-shaped adapter must be refused by the colony provider",
+  );
+
+  // And the reverse: a colony-shaped adapter has no `get`, so the tenant provider refuses it too.
+  const colonyShaped = colonyAdapter({ value: "colony-secret" });
+  assert.throws(
+    () => createSecretProvider({ mode: "local", keychain: colonyShaped }),
+    /get\(\) and health\(\)/,
+  );
+
+  // An adapter that answers BOTH is ambiguous and is refused rather than guessed at.
+  const both = colonyAdapter({ value: "colony-secret" });
+  both.get = async () => "tenant-secret";
+  assert.throws(
+    () => createColonySecretProvider({ mode: "local", keychain: both, colonyRefs: [TELEGRAM_REF] }),
+    /tenant-scoped signature/,
+  );
 });

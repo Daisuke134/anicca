@@ -60,8 +60,15 @@ function createColonySecretProvider({ mode, keychain, vault, colonyRefs } = {}) 
   }
   const provider = mode === "local" ? keychain : vault;
   const providerName = mode === "local" ? "keychain" : "vault";
-  if (!provider || typeof provider.get !== "function" || typeof provider.health !== "function") {
-    throw new Error(`${providerName} adapter with get() and health() is required`);
+  // §12.3 provider asymmetry — the colony adapter's method is `getColonySecret(ref)`, NOT `get`. The tenant
+  // provider's `get(tenantId, ref)` and a colony `get(ref)` would share a name with different arity, so a
+  // crossed wiring would silently pass a tenant id where a reference belongs. A distinct name turns that
+  // mistake into a loud TypeError at construction.
+  if (!provider || typeof provider.getColonySecret !== "function" || typeof provider.health !== "function") {
+    throw new Error(`${providerName} adapter with getColonySecret() and health() is required`);
+  }
+  if (typeof provider.get === "function") {
+    throw new Error("a colony adapter must not expose get() — that is the tenant-scoped signature");
   }
   if (!Array.isArray(colonyRefs) || colonyRefs.length < 1) {
     throw new Error("a colony secret provider requires an explicit reference allowlist");
@@ -92,7 +99,7 @@ function createColonySecretProvider({ mode, keychain, vault, colonyRefs } = {}) 
       if (!allowed.has(ref)) {
         throw new Error("secret reference is not a declared colony secret");
       }
-      return provider.get(ref);
+      return provider.getColonySecret(ref);
     },
 
     async health() {

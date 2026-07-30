@@ -841,3 +841,99 @@ test("§10 MINOR-12: a wake with no row budget left does not advance the cursor 
   assert.equal(scan.truncated, true);
   assert.equal(scan.next_block, 1100, "the cursor must stay put so the unread log is picked up next wake");
 });
+
+// §12.3 NEW-6 / NEW-7 — the amount and the retraction flag are payload values like any other.
+test("§12.3 NEW-6: a log data field that is not exactly 32 bytes is refused", async () => {
+  // BigInt() happily parses "0x" + 200 hex digits. That the ledger's MAX_USD_MICROS then rejects the
+  // absurd result is luck, not validation — and a SHORT field would sail straight through as a small amount.
+  for (const data of [
+    undefined,
+    null,
+    "",
+    "0x",
+    `0x${"f".repeat(63)}`,
+    `0x${"f".repeat(65)}`,
+    `0x${"f".repeat(200)}`,
+    "0xzz".padEnd(66, "z"),
+    "f".repeat(64),
+    250000,
+  ]) {
+    const log = transferLog({ block: 1100, logIndex: 0 });
+    if (data === undefined) delete log.data;
+    else log.data = data;
+    const h = harness({ logs: [log], finalityTags: { finalized: 1200 } });
+    await assert.rejects(
+      () => executeWalletInflowJob(job(), h.deps),
+      /amount|data/i,
+      `data=${String(data).slice(0, 12)} must fail closed`,
+    );
+    assert.equal(h.recorded.length, 0);
+  }
+
+  // A correctly sized field still books.
+  const good = harness({ logs: [transferLog({ block: 1100, amount: 250000n })], finalityTags: { finalized: 1200 } });
+  await executeWalletInflowJob(job(), good.deps);
+  assert.equal(good.recorded.length, 1);
+});
+
+test("§12.3 NEW-7: `removed` has safe polarity — only false or absent is accepted", async () => {
+  // `removed !== true` accepted "true", 1, {}, [] — every truthy non-boolean a node might send for a
+  // retracted log. The safe polarity is an allowlist, not a denylist.
+  for (const removed of ["true", "false", 1, 0, {}, [], "yes", null, NaN]) {
+    const log = transferLog({ block: 1100, amount: 500n });
+    log.removed = removed;
+    const h = harness({ logs: [log], finalityTags: { finalized: 1200 } });
+    const { receipt } = await executeWalletInflowJob(job(), h.deps);
+    assert.equal(h.recorded.length, 0, `removed=${JSON.stringify(removed)} must not be booked`);
+    assert.equal(receipt.outcome, "none");
+  }
+
+  // Only the two honest shapes book.
+  for (const removed of [false, undefined]) {
+    const log = transferLog({ block: 1100, amount: 500n });
+    if (removed === undefined) delete log.removed;
+    else log.removed = removed;
+    const h = harness({ logs: [log], finalityTags: { finalized: 1200 } });
+    await executeWalletInflowJob(job(), h.deps);
+    assert.equal(h.recorded.length, 1, `removed=${String(removed)} must be booked`);
+  }
+});
+
+test("§12.3 NEW-5: token decimals must be present, agree across pre/post, and be USDC's", async () => {
+  // The amount was the one payload value taken entirely on trust. A `decimals` of 2 on a 6-decimal mint
+  // would book 10,000x the real money, and nothing downstream would notice.
+  const cases = [
+    ["absent on post", (pre, post) => { delete post[0].uiTokenAmount.decimals; }],
+    ["absent on pre", (pre, post) => { delete pre[0].uiTokenAmount.decimals; }],
+    ["disagreeing across pre and post", (pre, post) => { post[0].uiTokenAmount.decimals = 9; }],
+    ["not USDC's six", (pre, post) => { pre[0].uiTokenAmount.decimals = 2; post[0].uiTokenAmount.decimals = 2; }],
+    ["a string", (pre, post) => { post[0].uiTokenAmount.decimals = "6"; }],
+    ["fractional", (pre, post) => { post[0].uiTokenAmount.decimals = 6.5; }],
+  ];
+  for (const [label, mutate] of cases) {
+    const pre = [tokenBalance(5, 0)];
+    const post = [tokenBalance(5, 250_000)];
+    mutate(pre, post);
+    const h = harness({
+      signatures: [SIG],
+      transactions: { [SIG]: solanaTokenTx(pre, post) },
+      finalityTags: { finalized: 1200 },
+    });
+    await assert.rejects(
+      () => executeWalletInflowJob(job(), h.deps),
+      /decimals/i,
+      `${label} must fail closed`,
+    );
+    assert.equal(h.recorded.length, 0);
+  }
+
+  // Six on both sides books normally.
+  const ok = harness({
+    signatures: [SIG],
+    transactions: { [SIG]: solanaTokenTx([tokenBalance(5, 0)], [tokenBalance(5, 250_000)]) },
+    finalityTags: { finalized: 1200 },
+  });
+  await executeWalletInflowJob(job(), ok.deps);
+  assert.equal(ok.recorded.length, 1);
+  assert.equal(ok.recorded[0].amount_decimals, 6);
+});

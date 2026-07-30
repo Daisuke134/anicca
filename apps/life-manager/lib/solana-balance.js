@@ -15,6 +15,10 @@
 const { isSolanaAddress } = require("./agent-wallet-solana.js");
 
 const DEFAULT_SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
+// §12.3 NEW-8 — the zero-start message says "nothing here is estimated", and a `confirmed` balance can
+// still be rolled back. The read has to earn that sentence, so the commitment is fixed at `finalized` and
+// is deliberately NOT a caller option: nobody should be able to talk it down.
+const SOLANA_BALANCE_COMMITMENT = "finalized";
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 const SOL_DECIMALS = 9;
 
@@ -32,7 +36,7 @@ async function readSolBalance(walletAddress, opts = {}) {
       jsonrpc: "2.0",
       id: 1,
       method: "getBalance",
-      params: [address, { commitment: "confirmed" }],
+      params: [address, { commitment: SOLANA_BALANCE_COMMITMENT }],
     }),
   });
   const body = await (response && typeof response.json === "function"
@@ -61,4 +65,10 @@ function formatSol(lamports) {
   return `${whole}${fraction ? `.${fraction}` : ""} SOL`;
 }
 
-module.exports = { DEFAULT_SOLANA_RPC_URL, LAMPORTS_PER_SOL, formatSol, readSolBalance };
+module.exports = {
+  DEFAULT_SOLANA_RPC_URL,
+  LAMPORTS_PER_SOL,
+  SOLANA_BALANCE_COMMITMENT,
+  formatSol,
+  readSolBalance,
+};

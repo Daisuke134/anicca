@@ -276,7 +276,9 @@ function createColonyEnvironmentSecretProvider(env = process.env) {
     mode: "local",
     colonyRefs: [...bindings.keys()],
     keychain: {
-      async get(ref) {
+      // §12.3: deliberately NOT called `get` — see createColonySecretProvider. Different arity under the
+      // same name is how a crossed wiring becomes a silent bug instead of a TypeError.
+      async getColonySecret(ref) {
         const envName = bindings.get(ref);
         if (!envName) throw new Error("colony secret reference is not declared");
         return requiredEnv(env, envName);

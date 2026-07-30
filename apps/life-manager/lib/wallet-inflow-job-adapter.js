@@ -62,6 +62,10 @@ const MAX_ENTRIES_PER_WAKE = 25;
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const EVM_TX = /^0x[0-9a-fA-F]{64}$/;
 const WHOLE = /^\d+$/;
+// §12.3 NEW-6 — an ERC-20 Transfer's `value` is exactly one 32-byte word. BigInt() happily parses a 200-hex
+// string, and that the ledger's MAX_USD_MICROS then rejects the absurd result is luck, not validation; a
+// SHORT field would have sailed through as a small amount. Bound the field before reading it as money.
+const EVM_WORD = /^0x[0-9a-fA-F]{64}$/;
 
 function fail(message) {
   throw new Error(`zero-start inflow watch: ${message}`);
@@ -96,6 +100,18 @@ function buildWalletInflowJob(input = {}) {
 
 // Nodes are inconsistent about hex casing, so every comparison is made on a lowered copy. A
 // case-sensitive compare here would silently drop real money.
+function transferAmount(data) {
+  const raw = typeof data === "string" ? data.trim() : "";
+  if (!EVM_WORD.test(raw)) fail("a Base transfer amount is not a single 32-byte word");
+  return BigInt(raw).toString();
+}
+
+// §12.3 NEW-7 — safe polarity. `removed !== true` accepted "true", 1, {}, [] and every other truthy
+// non-boolean a node might send for a retracted log. Only the two honest shapes are accepted.
+function isNotRemoved(value) {
+  return value === false || value === undefined;
+}
+
 function lower(value) {
   return String(value == null ? "" : value).trim().toLowerCase();
 }
@@ -207,8 +223,9 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
       && lower(log.address) === lower(BASE_USDC)
       && lower(log.topics[0]) === lower(TRANSFER_TOPIC)
       && lower(log.topics[2]) === recipientTopic
-      // §10 MAJOR-6: a log the node has already retracted is not money.
-      && log.removed !== true
+      // §10 MAJOR-6 / §12.3 NEW-7: a log the node has already retracted is not money, and anything other
+      // than an explicit `false`/absent is treated as retracted.
+      && isNotRemoved(log.removed)
     ))
     .map((log) => ({
       tx: String(log.transactionHash || ""),
@@ -220,7 +237,7 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
       // transfer from a replay of the first, and guessing one would invent an identity.
       logIndex: hexNumber(log.logIndex, "Base log index"),
       from: fromTopic(log.topics[1]),
-      atomic: BigInt(String(log.data || "0x0")).toString(),
+      atomic: transferAmount(log.data),
     }))
     .filter((log) => EVM_TX.test(log.tx) && log.atomic !== "0")
     .sort((left, right) => (
@@ -266,19 +283,36 @@ function solanaTokenDeltas(meta, address, mint) {
       if (!Number.isSafeInteger(item.accountIndex)) {
         fail(`a Solana ${label} token balance has no usable account index`);
       }
-      map.set(item.accountIndex, BigInt(String((item.uiTokenAmount || {}).amount || "0")));
+      // §12.3 NEW-5: the amount was the one payload value taken entirely on trust. A `decimals` of 2 on a
+      // six-decimal mint would book ten thousand times the real money and nothing downstream would notice.
+      const amount = item.uiTokenAmount || {};
+      if (amount.decimals !== USDC_DECIMALS) {
+        fail(`a Solana ${label} token balance does not carry ${USDC_DECIMALS} decimals`);
+      }
+      if (!WHOLE.test(String(amount.amount == null ? "" : amount.amount))) {
+        fail(`a Solana ${label} token balance amount is not whole atomic units`);
+      }
+      map.set(item.accountIndex, { value: BigInt(String(amount.amount)), decimals: amount.decimals });
     }
     return map;
   };
   const pre = indexed(meta.preTokenBalances, "pre");
   const post = indexed(meta.postTokenBalances, "post");
+  // Paired entries must agree with each other too: a mint cannot change its decimals mid-transaction, so a
+  // disagreement means the two sides describe different things and the delta between them is meaningless.
+  for (const [accountIndex, before] of pre) {
+    const after = post.get(accountIndex);
+    if (after && after.decimals !== before.decimals) {
+      fail("a Solana token balance changes its decimals between pre and post");
+    }
+  }
   // The union, not the intersection: a first-ever payment CREATES the token account, so it appears only
   // in post. Requiring a pre entry would drop the first deposit a tenant ever receives.
   return [...new Set([...pre.keys(), ...post.keys()])]
     .sort((left, right) => left - right)
     .map((accountIndex) => ({
       accountIndex,
-      delta: (post.get(accountIndex) || 0n) - (pre.get(accountIndex) || 0n),
+      delta: ((post.get(accountIndex) || {}).value || 0n) - ((pre.get(accountIndex) || {}).value || 0n),
     }));
 }
 

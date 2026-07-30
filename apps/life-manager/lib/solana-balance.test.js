@@ -8,7 +8,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { DEFAULT_SOLANA_RPC_URL, LAMPORTS_PER_SOL, formatSol, readSolBalance } = require("./solana-balance.js");
+const { DEFAULT_SOLANA_RPC_URL, LAMPORTS_PER_SOL, SOLANA_BALANCE_COMMITMENT, formatSol, readSolBalance } = require("./solana-balance.js");
 
 // A published RFC 8032 vector's public key, used here purely as a well-formed base58 address.
 const ADDRESS = "FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z";
@@ -35,7 +35,9 @@ test("it asks getBalance for exactly the address it was given", async () => {
   assert.equal(calls[0].url, DEFAULT_SOLANA_RPC_URL);
   assert.equal(calls[0].payload.method, "getBalance");
   assert.deepEqual(calls[0].payload.params[0], ADDRESS);
-  assert.equal(calls[0].payload.params[1].commitment, "confirmed");
+  // §12.3 NEW-8: the zero-start message tells the tenant "nothing here is estimated". A `confirmed` read
+  // can still be rolled back, so it would not earn that sentence.
+  assert.equal(calls[0].payload.params[1].commitment, "finalized");
 });
 
 test("a non-zero balance comes back as an exact integer string, never a float", async () => {
@@ -117,4 +119,13 @@ test("lamports render as SOL exactly, with no floating point drift", () => {
   assert.equal(formatSol("300000000"), "0.3 SOL");
   assert.throws(() => formatSol("1.5"), /lamports/i);
   assert.throws(() => formatSol("-1"), /lamports/i);
+});
+
+test("§12.3 NEW-8: the balance commitment is finalized and cannot be talked down", async () => {
+  assert.equal(SOLANA_BALANCE_COMMITMENT, "finalized");
+  // Not overridable per call: a caller who could ask for `confirmed` could publish a reversible balance
+  // under a message that promises a measured one.
+  const { calls, fetchImpl } = rpc({ result: { value: 0 } });
+  await readSolBalance(ADDRESS, { fetchImpl, commitment: "confirmed", rpcUrl: DEFAULT_SOLANA_RPC_URL });
+  assert.equal(calls[0].payload.params[1].commitment, "finalized");
 });

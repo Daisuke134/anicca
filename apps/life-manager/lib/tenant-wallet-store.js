@@ -162,7 +162,11 @@ function readTenantWallet(uid, rail, opts = {}) {
   if (derived !== address) {
     throw coded("a tenant key file does not derive its own stored address", "WALLET_KEY_DERIVE_MISMATCH", railKey);
   }
-  if (String(parsed.uid || tenantId) !== tenantId) {
+  // §12.3 NEW-9 — fail closed on an ABSENT uid. `parsed.uid || tenantId` defaulted a missing field to the
+  // requester's own id, i.e. it fell back to trusting precisely the value it exists to verify. §9.4 calls
+  // this line the guard against a cross-tenant leak on a case-insensitive filesystem, so a key file that
+  // does not say who it belongs to is unusable, not assumed to belong to whoever asked.
+  if (typeof parsed.uid !== "string" || parsed.uid !== tenantId) {
     throw coded("a tenant key file belongs to a different tenant", "WALLET_KEY_TENANT_MISMATCH", railKey);
   }
   return { address, secret, chain: spec.chain, created_at: parsed.created_at || null };
