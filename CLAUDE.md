@@ -455,7 +455,7 @@ curl -sS -X POST "http://localhost:9377/tabs/$TAB/click" \
 |---|---|---|
 | `~/anicca-project/` (★唯一の products working tree★) | `github.com/Daisuke134/anicca-products` (public) | iOS/web/api/mobile (= aniccaai.com 含む) を触る唯一の場所。 ★ Anicca instance #1/#2 直接 write 禁止 ★、 Dais + Claude Code (dev IDE) のみ編集可。 dashboard.json は dashboard-sync job が render。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
 | `~/.openclaw/` | `github.com/Daisuke134/anicca-dais` (private) | 本番 personal Anicca: gateway/cron/skills/state |
-| `~/anicca/` | `github.com/Daisuke134/anicca` (public OSS) | OSS framework + Hermes archetype |
+| `~/anicca/` | ★ `github.com/Daisuke134/life-manager` ★ (2026-07 統合済。旧 `Daisuke134/anicca` ではない) | 共有 marketing engine (`skills/earn/marketing-engine/`) と earn loop の母艦。Life Manager は **local 自己ホスト / cloud 月額 / web app** の3形態で出す1つの control plane |
 | `~/.hermes/` (runtime) | `github.com/Daisuke134/anicca-genesis` (public, MIT) | genesis Anicca body。 secrets gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill 3h 毎 |
 
 旧 `Daisuke134/anicca-products` (private monorepo) は 2026-06-05 GitHub から完全削除済。
@@ -513,6 +513,17 @@ git remote -v && git branch -vv
 | `~/.openclaw/` | `git push` (origin = anicca-dais) |
 | `~/anicca/` | `git push` (origin = anicca、 public) |
 | `~/.hermes/` runtime state | P19 genesis-sync skill が cron で push (origin = anicca-genesis、 public)。 手動同期は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全ファイルのみ cp → commit |
+
+### フォルダの実測（2026-07-31 に `git remote` と `du` で確認）
+
+| フォルダ | 実際の origin | 扱い |
+|---|---|---|
+| `~/anicca` | **life-manager** | 母艦。`skills/earn/marketing-engine/` の正本 |
+| `~/anicca-project` | anicca-products | 製品コード。dev は Netlify **preview** のみ、production は **main** だけ |
+| `~/.openclaw` | anicca-dais | 実行環境（larry / clip / capafy の launchd と state） |
+| `~/anicca-monk-factory` | monk-factory-state | ebook 工場 |
+| `~/anicca-rtdash` / `~/anicca-human-funded` / `~/anicca-job-search-loop` / `~/anicca-portfolio-self-improve` | 各 products / life-manager | 現役 worktree |
+| `~/anicca-earn` `~/anicca-agent` `~/anicca-blog` `~/anicca-content` `~/anicca-swarm` `~/anicca-products` `~/anicca-server` | **git 無し・数KB** | 空の残骸。消してよい |
 
 ### Claude が編集する場所 (= 最頻違反防止、 2026-06-05)
 
