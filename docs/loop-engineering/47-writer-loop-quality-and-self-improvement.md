@@ -3503,3 +3503,36 @@ Dais 要求: 「loop が一日中 X と記事を見て、稼いでる人を見�
 
 L3（自分のコードを書き換える）は **#10 の unit economics が scorable になるまで着手しない**。
 稼げていない loop が自分を書き換えても、正しい方向が定義できない。
+
+### 27.6 watch intake の実例 1件（2026-07-30。設計の動作確認としてそのまま残す）
+
+Dais が X post 1件を投入 → §27.2 の経路を人手で1周させた結果。**この節は claim store の書式見本を兼ねる。**
+
+**RAW OBSERVATION**: [@zigoku_noter](https://x.com/zigoku_noter/status/2068647274813768082)（20.1K follower / 66.3K views / 2026-06-21）
+「note辞めます……。そう言いたくなるくらい、海外がやばいです」→ 海外Top5 = KaryaKarsa / Ghost / Ko-fi / Medium / Substack。末尾に LINE 登録CTA。
+
+| 抽出した claim | 発信者の主張 | 独立検証の結果 | 判定 |
+|---|---|---|---|
+| Ko-fi | 「欧州で強い。投げ銭機能あり」 | [ko-fi.com/pricing](https://ko-fi.com/pricing) + help: 「Ko-fi charges a creator-friendly **0-5% service fee**」「**you are the merchant of record**」「**no waiting for payouts or minimum balances**」。Free plan は tip 0% / membership・shop 5%、$12/mo Standard で全種 0%。PayPal か Stripe に**直接**着金しKo-fiは資金を保持しない。非居住者も可 | ★**ADOPT**★ Substack 10% より take-rate が良く固定費0で始められる |
+| Ghost「手数料0円」 | 手数料が0 | [ghost.org/pricing](https://ghost.org/pricing): 「Transaction fees … **0%**」は事実。ただし **Starter($15/mo) は有料購読機能を持たない**（"Paid subscriptions: – No"）。有料購読には **Publisher $29/mo〜** かセルフホスト（実費 月$50相当）が必要 | **PARTIAL**。%カット0は正しいが**固定費を伏せている**。読者0の段階では先にキャッシュアウトする |
+| KaryaKarsa「置いておけば勝手に売れる」 | 文章に課金する文化がある | karyakarsa.com は React SPA で helpdesk/terms が空応答。**手数料・決済・KYC・出金すべて取得不能**。UI は全て Bahasa Indonesia、通貨 Rp、収益の公開データなし | **REJECT（現時点）**。日英で書く agent には言語・通貨・読者層が不一致。主張は発信者側の資料でしか存在しない |
+
+| この1周で確認できた設計上の要点 | 内容 |
+|---|---|
+| 出典の利害を confidence に入れる | 発信者の収益源は有料プログラム販売。**プラットフォーム分析が目的ではない** → 主張は全て独立検証してから採用 |
+| 「情報」より「型」の方が価値が高い場合がある | 当該投稿は数週ごとに同じ型（番号付きTop N + 個人史 + 緊急性 + 外部funnel）で再投稿されている。loop が copy すべきはこの**反復テンプレート**であって投稿1本の事実ではない |
+| REJECT も保存する | KaryaKarsa は「不一致」ではなく「**現時点で検証不能**」。SPA を読める手段を得た時に再評価するため claim を残す |
+| 収穫率の実測 | 1 post → 3 claim → ADOPT 1 / PARTIAL 1 / REJECT 1。**採用率 33%**。この比率を watch loop の初期 baseline とする |
+
+**§25.2 の表への追記**（支払機構で選ぶ表の更新分）:
+
+| Platform | 支払機構 | 参入条件 | 取り分 | 支払rail | 備考 |
+|---|---|---|---|---|---|
+| **Ko-fi** | tip / membership / shop / commission | なし | **0%（tip, Free plan）/ 5%（他, Free plan）/ 0%（$12/mo Standard）** | **PayPal or Stripe に直接**、最低出金額なし | merchant of record は書き手側。固定費0で開始できる最良の面 |
+| **Ghost(Pro) Publisher** | 有料購読 / tip | $29/mo | **取引手数料 0%**（Stripe手数料のみ） | Stripe | 購読者が増えるほど Substack 10% より有利。ただし収益0の期間は赤字 |
+| Ghost(Pro) Starter | — | $15/mo | — | — | **有料購読機能なし**。収益面として選ばない |
+| KaryaKarsa | 不明 | 不明 | **UNVERIFIED** | 不明 | 言語・通貨が日英agentと不一致。再評価は SPA 取得手段を得てから |
+
+**順序への影響**: §26.4 の #6（無料の定期便 + 有料アーカイブ）の実装先を **Substack 単独から「Substack + Ko-fi」** に変更する。
+Ko-fi は固定費0・最低出金額0・PayPal直着金なので、**STAGE 0 の A3（少額商品）の受け皿としても Gumroad と並ぶ候補**。
+Ghost は「購読者基盤ができてから移る2段目」に位置づけ、収益0の段階では採用しない。
