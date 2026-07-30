@@ -432,3 +432,56 @@ This is the same class as §12.1 appearing inside the test harness: a fact
 ("these are 60 distinct events") taken on trust instead of being derived.
 Rule extended: **fixtures are inputs to a proof and must be validated like
 any other input.**
+
+## 13. Adversary round 3 — rulings (2026-07-30)
+
+Round 3 mutation-tested the two drain invariants: 18 mutations, **15 killed,
+3 survived**. The gate is load-bearing, not decoration — but every survivor
+pointed at a live defect. Third round in a row, the defects are in the newest
+code.
+
+### 13.1 One stream, one comparator
+
+Both new defects are one mistake:
+
+> **If a stream is sorted by one key and its cursor is compared by another,
+> the two orders will disagree somewhere, and events between them are lost or
+> livelocked. A stream MUST have exactly ONE canonical ordering function,
+> used by the sort AND by the cursor comparison. Not "two comparators that
+> agree" — one comparator, referenced twice.**
+
+| ID | Ruling |
+|---|---|
+| R3-1 BLOCKER | FIX. Base logs sort by `(block, txHash, logIndex)` while `atOrAfter` orders by `(block, logIndex)`. Measured: 30 transfers in one block with tx hashes descending as logIndex ascends → 25 booked, cursor frozen at `{block:1000, log_index:4}`, every later wake re-offers the same 25 and books 0. **5 transfers permanently unbooked, permanent livelock, `truncated:true` forever.** Remove `txHash` from the ordering entirely: `(block, logIndex)` is the identity NEW-2 established, and it is total. Export ONE comparator and use it in both places. |
+| R3-2 MAJOR | FIX. Solana `pending.sort` uses `signature.localeCompare` while `afterPosition` uses `>`. These disagree for mixed-case base58 (`localeCompare("a…","B…") = -1` but `"a…" > "B…"` is true). Measured: two same-slot signatures with the budget boundary between them → the second is filtered out permanently, `found=0 truncated=false` — silent loss behind a clean receipt. Use one comparator over `(slot, signature)` with byte-wise (not locale) signature comparison, referenced by both the sort and the position filter. |
+
+### 13.2 The gate's own defects — a fixture more ordered than reality cannot falsify order-dependent code
+
+§12.5 said fixtures are inputs to a proof. Round 3 shows the sharper form:
+the fixture was not wrong, it was **too regular**. Tx hashes ascended in
+event order, so sort-by-tx and sort-by-logIndex were indistinguishable; every
+signature had a distinct slot, so the same-slot tie-break never ran. The
+invariant could not express the shapes that break the code.
+
+Required changes to the invariants (all three MUST land):
+
+| # | Change | Kills |
+|---|---|---|
+| a | Assert `writes === 1` for every ledger row, read from ledger state. The current `booked.size === ledger.size` is a tautology because the fake ledger keys on `wallet\|entry_key`; the `writes` counter is computed and never read. | double-booking on either rail |
+| b | Randomise/shuffle tx hashes and REUSE slots across signatures in `syntheticChain`. Degenerate shapes (all-same-block, all-same-slot, descending hashes) MUST appear. | sort-key mutations — would have caught R3-1 and R3-2 |
+| c | Include at least one post-only token account (no `pre` entry = first-ever deposit). | dropping post-only accounts |
+
+### 13.3 Structural ruling — a gate must ship proof that it can fail
+
+"A gate that cannot fail is decoration" now has a procedure. The drain
+invariants MUST be accompanied, in the evidence file, by a **mutation-kill
+table**: the list of implementation mutations tried and, for each, that the
+invariant failed. When an invariant changes, the table is refreshed. A
+survivor is either a missing assertion or a fixture that cannot express the
+shape — both are defects in the gate, and both MUST be closed before the
+gate is claimed as coverage.
+
+Fixtures MUST be adversarially varied, never conveniently sequential:
+shuffled orders, repeated keys, degenerate boundaries, missing optional
+fields. Convenient regularity in a fixture is the same failure as trusting a
+provider's answer — a fact assumed instead of exercised.
