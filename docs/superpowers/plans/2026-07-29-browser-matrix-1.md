@@ -7,9 +7,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prove that the canonical Life Manager production planner/executor can complete booking, inquiry/message, and application actions on three unrelated live providers without site adapters or a Mac browser.
+**Goal:** Prove that the canonical Life Manager production planner/executor can complete booking, inquiry/message, and application actions on three unrelated live providers without site adapters or a Mac browser — by doing three real errands for Dais, not by acting on purpose-built test targets.
 
-**Architecture:** Keep one generic Stagehand/Steel executor and pass provider URLs and goals only at runtime. Generalize the classifier's low-risk communication policy and the independent provider-result vocabulary, then drive three durable production jobs through the existing Supabase queue, Railway-private Steel, Telegram receipt, and explicit Steel release. Use agent-owned controlled provider assets so real side effects are observable without sending nuisance requests to unrelated humans.
+**Architecture:** Keep one generic Stagehand/Steel executor and pass provider URLs and goals only at runtime. Generalize the classifier's low-risk communication policy and the independent provider-result vocabulary, then drive three durable production jobs through the existing Supabase queue, Railway-private Steel, Telegram receipt, and explicit Steel release. Drive real errands on services Dais (or the agent) already owns, so every side effect is a real outcome in Dais's life as well as evidence. Do not build synthetic test targets; the only thing off-limits is practice traffic to unrelated third parties.
 
 **Tech Stack:** Node.js, `node:test`, Stagehand v3, Railway-private Steel/CDP, Supabase durable jobs, Telegram Bot API.
 
@@ -21,7 +21,7 @@
 - A model narration is not evidence; completion requires independent provider-authored readback and saved-provider-side receipt.
 - Every opened Steel session is released on success, handoff, timeout, and failure.
 - Email addresses, response bodies, browser contexts, cookies, OTPs, and credentials stay out of repo, logs, trace, and Telegram.
-- One action per controlled provider asset: Cal.com booking, Tally inquiry, Google Forms application.
+- One action per real target, three unrelated origins, chosen from Dais's own accounts and actual errands (e.g. a real Luma registration). Creating a fixture account or fixture form is forbidden.
 
 ---
 
@@ -282,24 +282,20 @@ injectable clock, with poll bounds
 - Produces: three provider-side stored records plus queue, Steel, Telegram, and
   release evidence
 
-- [ ] **Step 1: Establish controlled responder URLs without pre-created admin logins**
+- [ ] **Step 1: Choose three real targets Dais actually owns or actually needs**
 
-SUPERSEDED WORDING (2026-07-30): the earlier "create Cal.com + Tally + Google
-Forms accounts first" instruction is void — spec §0.4.6a As-Is/To-Be already
-rejected "admin UI loginを3 provider全てで先に作る案" and requires readback via
-"confirmation email、webhook、API、owner response tableのうちsecretを出さず独立
-照合できるsurface". Follow the spec:
+SUPERSEDED TWICE. The original "create Cal.com + Tally + Google Forms accounts" wording is void,
+and so is the follow-up "establish controlled responder URLs" wording: both still treated the test
+as something needing its own targets. It does not.
 
-1. Prefer surfaces reachable from credentials/context the tenant already has
-   (e.g. the connected Google account) over any new provider account.
-2. Any fixture that does require creation is produced by the resident cloud
-   loop itself (enqueued job with tenant-bound auth context) or by a
-   server-side API call — never by a local/Mac browser (§0.4.6a MUST 6:
-   local/Mac browser side effect 0).
-3. Actions stay zero-cost, cancellable, non-binding; no nuisance to
-   uncontrolled third parties; three distinct public HTTPS origins.
-4. Do not store account credentials, URL tokens, or response-edit tokens in
-   Git; controlled URLs live only in runtime secrets.
+**Production is the test.** Pick three real errands on services whose account is Dais's own (or the
+agent's own) — for example a real Luma event registration, a real inquiry to a place Dais actually
+wants to reach, a real application Dais actually wants filed. Success means Dais's life moved AND
+genericity is proven on a site nobody hardcoded. Building a synthetic target is forbidden; wanting
+one is the signal that the design went wrong.
+
+The only thing still off-limits is sending practice traffic to an unrelated third party. The line is
+"is Dais (or the agent) the owner of this account/asset", not "is this production".
 
 - [ ] **Step 2: Deploy exact canonical code**
 
