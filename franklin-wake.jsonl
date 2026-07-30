@@ -17527,3 +17527,10 @@
 {"ts":1785385451,"wake_id":"00MS70EF8K4A78180B5ED5404B","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785385592,"wake_id":"00MS70HG4575AD85D0F23D406D","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtasks paid API earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the mod"}
 {"ts":1785385730,"wake_id":"00MS70KED5029B2482A71F46B1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785385859,"wake_id":"00MS70N697DBD0CD391FCE49FD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785386001,"wake_id":"00MS70Q7KB101524C711794B2D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785386144,"wake_id":"00MS70T9W08AF86F308AE34B0E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785386287,"wake_id":"00MS70WCFP58AA0C913D2744EC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785386427,"wake_id":"00MS70ZCHW376BFAA6F3A24361","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785386556,"wake_id":"00MS7123Z9CDCD050676A5407C","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid microtask platform earn USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the"}
+{"ts":1785386683,"wake_id":"00MS714TOAFB6196B6B8E64024","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
