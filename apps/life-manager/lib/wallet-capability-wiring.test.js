@@ -66,6 +66,83 @@ test("the real registry loads both adapters and exposes them by capability and l
   assert.equal(registry.hasCapability("marketing.observation.collect"), true);
 });
 
+// Captures what the REAL createWorkerHandlers builds, so these are probes of the shipped wiring rather
+// than of a hand-written stand-in.
+function captureServices(env, capabilities, dependencies = {}) {
+  let captured = null;
+  createWorkerHandlers(env, capabilities, {
+    ...dependencies,
+    createRegistry({ servicesByAdapter }) {
+      captured = servicesByAdapter;
+      return { hasCapability: () => false, getByCapability: () => ({}) };
+    },
+  });
+  return captured;
+}
+
+test("§9.1 BLOCKER: a worker pinned to one tenant still resolves the bot token for another", async () => {
+  // The measured defect: the shared worker claims jobs for EVERY tenant, but the zero-start service was
+  // built once around a provider bound to LM_RUNTIME_TENANT_ID, so every other tenant's job died with
+  // "environment secret tenant scope mismatch". This is that exact hostile call.
+  const services = captureServices(WORKER_ENV, [zeroStart.CAPABILITY]);
+  const provider = services["tenant-zero-start"].secretProvider;
+
+  assert.equal(WORKER_ENV.LM_RUNTIME_TENANT_ID, "tenant-a", "the worker is pinned to tenant-a");
+  for (const tenantId of ["tenant-a", "tenant-b", "lm_550e8400-e29b-41d4-a716-446655440000"]) {
+    assert.equal(
+      await provider.get(tenantId, "secret://telegram/bot-token"),
+      WORKER_ENV.LM_TELEGRAM_BOT_TOKEN,
+      `${tenantId} must be able to be told about its own wallets`,
+    );
+  }
+  assert.equal((await provider.health()).scope, "colony");
+});
+
+test("§9.1: the colony provider cannot be used to read another tenant's wallet key", async () => {
+  const services = captureServices(WORKER_ENV, [zeroStart.CAPABILITY]);
+  const provider = services["tenant-zero-start"].secretProvider;
+  // Dropping the tenant binding is only safe because key material is unreachable here. Hostile payloads:
+  for (const ref of [
+    "secret://lm-agent-wallet/tenant-a/base",
+    "secret://lm-agent-wallet/tenant-b/solana",
+    "secret://postiz/api-key",
+  ]) {
+    await assert.rejects(provider.get("tenant-a", ref), /reference/i, `${ref} must be refused`);
+  }
+});
+
+test("§9.1: the tenant-scoped provider is untouched and still binds", async () => {
+  // Other adapters must keep the gate. The financial report adapter is the live example.
+  const services = captureServices(WORKER_ENV, ["report.financial.telegram"]);
+  const provider = services["financial-report-telegram"].secretProvider;
+  assert.equal(await provider.get("tenant-a", "secret://telegram/bot-token"), WORKER_ENV.LM_TELEGRAM_BOT_TOKEN);
+  await assert.rejects(provider.get("tenant-b", "secret://telegram/bot-token"), /tenant/i);
+});
+
+test("§10 MAJOR-5: a worker reports the adapter's own error code instead of flattening it", () => {
+  const { adapterErrorCode } = require("../scripts/runtime-up.js");
+  assert.equal(adapterErrorCode(Object.assign(new Error("no chat"), { code: "BLOCKED_NO_CHAT" })), "BLOCKED_NO_CHAT");
+  assert.equal(adapterErrorCode(Object.assign(new Error("x"), { code: "WALLET_KEY_ADDRESS_MISMATCH" })), "WALLET_KEY_ADDRESS_MISMATCH");
+  // Hostile payloads: anything free-form could carry secret material into last_error_code.
+  for (const code of [
+    undefined,
+    "",
+    "lowercase",
+    "has space",
+    "0xac0ffee",
+    "AB",
+    "A".repeat(200),
+    "TOKEN=123456:AAH-secret",
+    { toString: () => "OBJECT_CODE" },
+  ]) {
+    assert.equal(
+      adapterErrorCode(Object.assign(new Error("x"), { code })),
+      "CAPABILITY_EXECUTION_FAILED",
+      `${String(code)} must not reach the error code column`,
+    );
+  }
+});
+
 test("a worker asked for wallet.zero-start gets a handler for it", () => {
   const handlers = createWorkerHandlers(WORKER_ENV, [zeroStart.CAPABILITY]);
   assert.equal(typeof handlers[zeroStart.CAPABILITY], "function");

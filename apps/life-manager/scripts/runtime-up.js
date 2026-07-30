@@ -261,6 +261,45 @@ function createScopedEnvironmentSecretProvider(env = process.env) {
   });
 }
 
+// AE-ZERO-START-1 §9.1 — shared connector secrets for the shared worker.
+//
+// The worker claims jobs for EVERY tenant, so a bot token pinned to LM_RUNTIME_TENANT_ID kills every
+// other tenant's job. This provider drops the tenant binding and replaces it with an explicit allowlist;
+// `createColonySecretProvider` refuses to be built around wallet key material, which keeps the only
+// genuinely tenant-private secret on the per-tenant keychain path.
+function createColonyEnvironmentSecretProvider(env = process.env) {
+  const { createColonySecretProvider } = require("../lib/secret-provider.js");
+  const bindings = new Map([
+    ["secret://telegram/bot-token", "LM_TELEGRAM_BOT_TOKEN"],
+  ]);
+  return createColonySecretProvider({
+    mode: "local",
+    colonyRefs: [...bindings.keys()],
+    keychain: {
+      async get(ref) {
+        const envName = bindings.get(ref);
+        if (!envName) throw new Error("colony secret reference is not declared");
+        return requiredEnv(env, envName);
+      },
+      async health() {
+        return { ok: true };
+      },
+    },
+  });
+}
+
+// AE-ZERO-START-1 §10 MAJOR-5 — a capability that knows WHY it stopped must be able to say so.
+// Discarding the adapter's own code turned every distinct outcome into one opaque
+// CAPABILITY_EXECUTION_FAILED, which is how a tenant waiting for a Telegram link looked identical to a
+// broken RPC. The shape is a strict uppercase-code allowlist, so nothing free-form (and therefore nothing
+// secret-bearing) can reach `last_error_code`.
+const ADAPTER_ERROR_CODE = /^[A-Z][A-Z0-9_]{2,60}$/;
+
+function adapterErrorCode(error) {
+  const code = error && typeof error.code === "string" ? error.code : "";
+  return ADAPTER_ERROR_CODE.test(code) ? code : "CAPABILITY_EXECUTION_FAILED";
+}
+
 async function executeCapabilityJob(job, services) {
   const {
     workerId,
@@ -307,7 +346,7 @@ async function executeCapabilityJob(job, services) {
   } catch (error) {
     await failJob({
       ...identity,
-      errorCode: "CAPABILITY_EXECUTION_FAILED",
+      errorCode: adapterErrorCode(error),
       unknownEffect: error && error.unknownEffect === true,
     }, storeOptions);
   }
@@ -380,7 +419,9 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
     const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
     const { readSolBalance } = require("../lib/solana-balance.js");
     servicesByAdapter["tenant-zero-start"] = {
-      secretProvider: createScopedEnvironmentSecretProvider(env),
+      // §9.1: colony-scoped, NOT tenant-scoped. The bot token serves every tenant this shared worker
+      // claims for; key material still travels only through the per-tenant keychain.
+      secretProvider: createColonyEnvironmentSecretProvider(env),
       supaUrl: requiredEnv(env, "SUPABASE_URL"),
       supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
       fetchImpl: globalThis.fetch,
@@ -974,6 +1015,8 @@ module.exports = {
   marketingGenerationDueDate,
   listGenerationReceipts,
   listObservablePublicationReceipts,
+  adapterErrorCode,
+  createColonyEnvironmentSecretProvider,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
   executeCapabilityJob,
