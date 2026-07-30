@@ -3536,3 +3536,173 @@ Dais が X post 1件を投入 → §27.2 の経路を人手で1周させた結�
 **順序への影響**: §26.4 の #6（無料の定期便 + 有料アーカイブ）の実装先を **Substack 単独から「Substack + Ko-fi」** に変更する。
 Ko-fi は固定費0・最低出金額0・PayPal直着金なので、**STAGE 0 の A3（少額商品）の受け皿としても Gumroad と並ぶ候補**。
 Ghost は「購読者基盤ができてから移る2段目」に位置づけ、収益0の段階では採用しない。
+
+## 28. Identity 分離 / PII gate / 入金先ルーティング、と最終TODO順序（2026-07-30 Dais 厳命）
+
+Dais verbatim 要約: 「**俺の名前も俺の情報も一切使うな**。credential は自前 Stripe / 自前 credential ができるまでの**橋**でしかない。
+人間のふりをしてもいいが、**俺のふりはするな**。住所・メール・カード情報が記事に出たらそれは breach。
+crypto を受け付ける相手なら agent の wallet へ、受け付けないなら（暫定的に）銀行口座へ」。
+
+### 28.0 実測: 現行の公開記事に何が入っているか（2026-07-30 実行）
+
+```bash
+grep -rilE 'keiodaisuke|daisukenarita|成田|Narita|Daisuke' ~/.local/share/writer-engine/
+```
+
+| 種別 | 実測結果 | 深刻度 |
+|---|---|---|
+| メールアドレス | 公開記事本文に **0件** | — |
+| 住所・カード情報・本名（漢字） | 公開記事本文に **0件** | — |
+| ★ GitHub ハンドル `Daisuke134` ★ | **公開済み記事の本文に複数存在**。例: `note-20260715-openevolve-ja.md:103`、`zenn-20260714-token-disease-ja.md:137`、`2026-07-17-retry-not-fixed-ja.md:85` に「コードはこちらで公開しています。 https://github.com/**Daisuke134**/anicca」 | ★**高**★ AI persona と Dais の実 identity を直結させる |
+| 所在地・インフラ | 「私はアニッチャという、**東京のMac mini**の中で自律的に動くAIです」が定型文として全記事に入っている | 中 |
+| 現行 runs/（最新世代） | 同 grep で **0件**（`runs/daily-2026-07-23` 配下） | — |
+
+**結論**: メール・住所・カードは漏れていない。ただし **`Daisuke134` という個人ハンドルが公開本文に載っている**。
+これは「Dais の名前を使うな」の違反であり、可逆ではない（公開済み）。**新規公開を止める前に gate を入れ、既存分は差し替える。**
+
+### 28.1 Identity 契約
+
+| 区分 | 扱い |
+|---|---|
+| ★禁止（記事本文・プロフィール・画像・メタデータ・コミット・投稿すべて）★ | Dais の本名（英字/漢字/かな）、`Daisuke134` 等の個人ハンドル、`keiodaisuke@gmail.com` 等の個人メール、住所、電話番号、カード情報、Dais 個人の SNS アカウント名、Dais 個人の顔・私物が写った画像 |
+| 禁止 | Dais 本人であるかのような一人称の来歴（「21歳で起業して」等、Dais の実人生の記述） |
+| 許可 | AI 自身の persona（例: アニッチャ）としての一人称。実際に自分が実行した検証・実測の記述 |
+| 許可 | 組織アカウント・製品アカウントへのリンク（`aniccaai.com`、App Store の製品ページ、**個人名を含まない** repo URL） |
+| 要検討 | 現在の「東京のMac mini」は所在地を1都市粒度で開示している。**削除して「自分の常設マシン上で」等に置換**する |
+
+**repo リンクの扱い**: `github.com/Daisuke134/anicca` は個人ハンドルを含むため**記事に書かない**。
+公開したい場合は、個人名を含まない org/別名 repo か、`aniccaai.com` 経由の間接リンクにする。
+
+### 28.2 公開前 PII gate（fail-closed。実装必須）
+
+```text
+ artifact 本文 + title + プロフィール文 + 画像 alt + メタデータ
+        ↓
+ PII SCANNER（正規表現 + 明示 blocklist）
+   blocklist: 本名各表記 / Daisuke134 / 個人メール / 住所断片 / 電話 / カード下4桁
+   pattern:   メールアドレス全般 / クレカ番号形式 / 電話番号形式 / 郵便番号+住所形式
+        ↓
+   HIT が1件でもあれば → ★公開を BLOCK（fail-closed）★
+   ゼロの時のみ publish へ進む
+        ↓
+ 公開後 readback でも同じ scanner を再実行（公開物に入っていないことを実測で確認）
+```
+
+| Rule | 契約 |
+|---|---|
+| fail-closed | scanner がエラーで動かない時も**公開しない**（「動かなかったので通す」を禁止） |
+| 例外なし | 「今回はrepoリンクだけだから」等の運用判断で回避しない |
+| 既存分 | 公開済み記事は差し替え可能な面（note/Zenn/Substack）で本文を更新。差し替え不能な面は記録に残す |
+| blocklist の保管 | blocklist 自体に個人情報が入るので **repo に平文で置かない**。`~/.openclaw/.env` 側か暗号化ファイルから読む |
+
+### 28.3 入金先ルーティング（Dais 裁定の機械化）
+
+```text
+                   収益イベント発生
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+   相手が crypto を受け付ける     受け付けない
+              │                       │
+              ▼                       ▼
+     ★ agent 自身の wallet ★    暫定 bridge 口座
+     x402 / USDC 直着金          （Dais or 利用者の銀行/PayPal）
+     人間の関与ゼロ                    │
+              │                       ▼
+              │              ★ identity は一切露出しない ★
+              │              （送金先情報は決済の裏側のみ。
+              │                記事・profile・投稿には出さない）
+              ▼                       ▼
+        agent が資金を保有        Dais/利用者が受領し、
+        （出金しない限り人間不要）  会計上の帰属を後で整理
+```
+
+| Rule | 契約 |
+|---|---|
+| 優先順位 | ① agent wallet（crypto可の相手）→ ② bridge 口座（crypto不可の相手） |
+| bridge の位置づけ | **恒久ではない**。自前の法人/決済手段ができるまでの一時措置 |
+| 露出禁止 | bridge 先の名義・口座・住所は、記事・profile・投稿・スクリーンショットに**絶対に出さない** |
+| PATH C（他人の credential） | 同じ規則。利用者の名義情報を記事に出さない。預かるのは publish と受金に必要な最小範囲のみ |
+
+### 28.4 「人間のふりをする」ことの正直な制約
+
+Dais は「人間のふりをしてもいいが俺のふりはするな」と言った。前半には**プラットフォーム側の制約**がある。
+
+| Platform | 制約 | 我々の方針 |
+|---|---|---|
+| Amazon KDP | 「We require you to inform us of **AI-generated** content」= 出版時に AI 生成を申告する義務 | **申告する**。申告義務のある場所で偽らない |
+| Zenn | 「生成AIの活用は禁止していません」だが乱造は凍結対象 | AI利用を隠さず、投稿速度を自制する |
+| Qiita | 「AIが生成した内容は…検証した上で投稿する」 | 同上 |
+| Medium | AI生成文は Partner Program で paywall 不可（UNVERIFIED） | 確認できるまで出さない |
+| その他（note/Substack/Ko-fi/X） | AI固有の申告義務は見つからず | persona として書く。Dais を騙らない |
+
+**方針**: 「Dais ではない独立した persona として書く」は全面的に採用する。
+「AI であることを隠す」は、**申告義務のあるプラットフォームでは行わない**。義務が無い場所では persona を名乗るだけで足りる。
+この2つは別問題であり、混ぜない。
+
+### 28.5 「文章だけで」0円 → $10M/月 の視覚（identity 分離込み）
+
+```text
+  STAGE 0  $0 → 初の $1              [今ここ]
+  ├ 収入源: DigitalOcean 原稿料 $400/本（audience 0・PayPal受取）
+  ├         Ko-fi tip 0%（固定費0・最低出金なし・PayPal/Stripe直着金）
+  └ identity: persona のみ。Daisuke134 も所在地も本文に出さない
+        │  GATE: 実入金 receipt 1件
+        ▼
+  STAGE 1  $1 → $1,000/月
+  ├ 無料の定期便（Substack / Ko-fi）+ 有料アーカイブ
+  ├ A3 少額商品（Ko-fi shop / Gumroad 直リンク ~88%）
+  └ 配布は既存コミュニティへ（自前audience不要）
+        │  GATE: 3週連続 売上>0・手動介入0
+        ▼
+  STAGE 2  $1k → $10k/月
+  ├ A4 書籍化（Leanpub 80% → KDP 70%($2.99-12.99) → Zenn本 86.8%）
+  │   ★記事の連結ではなく再構成★（KDP品質条項）
+  ├ PATH D: x402 有料endpoint（人間credentialゼロで USDC 直着金）
+  └ unit economics を scorable に（conv / churn / LTV）
+        │  GATE: churn < 10%/月、3指標が測定値
+        ▼
+  STAGE 3  $10k → $100k/月          ←★ここで初めてアカウントを増やす★
+  └ 証明済み unit を N niche へ複製（1 account = 1 niche、全部 persona 分離）
+        │  GATE: 2つ目のunitが同等conversion
+        ▼
+  STAGE 4  $100k → $1M/月
+  └ 単価を上げる（消費者$27 → B2B $200+。一次データ・独占情報を持つ）
+        │  GATE: 単価10倍unitが1つ黒字化
+        ▼
+  STAGE 5  $1M → $10M/月
+  └ PATH C: loop を他人に走らせる（利用者20万 × $50、または稼いだ額のrev-share）
+     ★各利用者の identity も同じ gate で保護する★
+```
+
+**桁の根拠**: 単一媒体では届かない（Substack 上位10媒体の合計が約 $8.3M/月）。
+KDP Select 全著者の月間合計が $67M なので、書籍だけで $10M/月 = 世界の KDP 著者報酬プールの約15%。
+したがって STAGE 5 は「自分で書く量」ではなく「**他人の面で走らせる数**」で到達する。
+
+### 28.6 最終 TODO 順序（これが唯一の正本。§23.6 / §25.6 / §26.4 / §27.5 を全て置換）
+
+| # | Stage | 作業 | done（実receipt） |
+|---:|---|---|---|
+| **0** | — | ★**PII/identity gate を実装し、既存公開記事から `Daisuke134` と所在地表現を除去**★ | scanner が blocklist HIT で公開を実際に止めるテストが通る + 差し替え可能な公開記事の本文から該当表現が消えたことを public readback で確認 |
+| 1 | 0 | DigitalOcean Write for DOnations 提出（$400/本） | 提出 → 編集応答 → 掲載 → 入金 |
+| 2 | 0 | metrics + sales schema を engine に配線 | 各面の数値が status付きで保存、artifact_id で sales と join |
+| 3 | 0 | Telegram daily money report（金額先頭、日次必須） | 金額入り1通が実送信、metrics と一致 |
+| 4 | 0 | offer layer（Stripe 商品 + `client_reference_id=artifact_id`、Ko-fi も受け皿に） | test決済1件が着地し記事へjoin |
+| 5 | 0 | dev.to / Zenn を money reward から分離（`revenue_capable` フラグ） | reward計算が収益面のみを読む |
+| 6 | 0→1 | paywall方針を「無料の定期便 + 有料アーカイブ」へ（**Substack + Ko-fi**） | 無料公開 + 有料導線の public readback |
+| 7 | 1 | watch intake（X/gh/RSS 常時観測 → novelty 3段 → claim store） | claim が出典付きで蓄積、重複0、却下も理由付きで保存 |
+| 8 | 1 | 提案は新規 claim を cite しない限り却下する gate | cite無し提案が実際に却下されるテストが通る |
+| 9 | 1 | A3 少額商品を1つ（Ko-fi shop or Gumroad 直リンク） | 初売上1件 |
+| 10 | 1→2 | **PATH D**: x402 middleware で有料endpoint、agent 自前 wallet に USDC 着金 | on-chain で着金を自分で確認 |
+| 11 | 2 | A4 書籍1冊（Leanpub → KDP → Zenn本）。再構成であって連結ではない | 印税receiptが着金 |
+| 12 | 2 | unit economics を scorable に（conv / churn / LTV / CAC） | churn < 10%/月、3指標が測定値 |
+| 13 | 2→3 | niche portfolio（1 account = 1 niche、persona 分離、凍結兆候で停止） | 2つ目のunitが同等conversion |
+| 14 | 3 | 面の拡張（beehiiv Ad Network / Reddit Contributor / Vocal） | 各面から実入金1件 |
+| 15 | 3 | L2 skill 自己拡張（loop 自身が publisher/collector を追加） | 既存テスト回帰0 + 実 side-effect receipt |
+| 16 | 4 | 単価を上げる（B2B $200+、一次データ獲得） | 単価10倍unitが1つ黒字化 |
+| 17 | 4→5 | L3 source 自己改造（worktree + sandbox + 更新される評価集合） | sandbox内で世代比較、live runtime 直編集0 |
+| 18 | 5 | PATH C 商品化（利用者の credential を預かり、稼ぎ、日次報告） | 外部利用者1人で E2E が回る |
+| 19 | 5 | portfolio 運用（衰退unit停止・配分・凍結対応） | 月次で配分が自動更新、赤字unitが自動停止 |
+
+**順序の鉄則**: 番号を飛ばさない。#0 は他の全てに優先する（漏洩は不可逆）。
+#13 は #12 の GATE 通過後。#17 は #12 が scorable になるまで着手しない。#18 は #12 と #13 の両方が済んでから。
