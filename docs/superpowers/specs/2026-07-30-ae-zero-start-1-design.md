@@ -352,3 +352,70 @@ consumes exactly one attempt across many sweeps; the same tenant is announced
 after a chat is linked much later; a chat unlinked between the sweep read and
 the worker run (the MAJOR-5 race) heals; an exhausted row is reported, not
 dropped.
+
+## 12. Adversary round 2 — rulings (2026-07-30)
+
+Round 1's eight defects all HELD under fresh hostile payloads, and every
+offline measurement reproduced exactly. But the fix code introduced four new
+MAJOR defects **in the same class §10 named**, and all four passed
+1864/1864 undetected — the second time on this branch.
+
+### 12.1 The class, restated with its missing third clause
+
+§10 said: a value that decides an **amount** or an **owner** must be
+re-derived, never taken from the provider's answer. Round 2 proves the clause
+that was missing:
+
+> **What has already been processed is also a fact, and it must be re-derived
+> from the events themselves — never from the provider's idea of "newest".**
+
+A cursor is not a bookmark the RPC hands you. It is a claim that everything
+behind it is booked. If that claim can be true while events behind it are
+unbooked, the ledger silently under-counts and the receipt reports success.
+
+### 12.2 Structural ruling — invariant tests replace example tests
+
+Adding one more example payload per defect has now failed twice. Example
+tests encode the cases someone thought of; this defect class lives in the
+cases nobody thought of. Therefore, in addition to the per-defect regression
+tests, the branch MUST ship two **drain-invariant** tests:
+
+1. **Scan drain invariant.** For a synthetic chain of N events (N spanning
+   both rails, N >> budget, including multiple events per block/signature and
+   unreadable entries), run the scanner repeatedly until it reports no
+   further progress, then assert: **every event is booked exactly once, and
+   if any event is unbooked the receipt says `truncated`/failed.** Silence
+   with unbooked events MUST fail the test.
+2. **Sweep drain invariant.** For M tenants under an arbitrary failure
+   pattern (any subset permanently failing), assert every healthy tenant is
+   watched within a bounded number of passes, and no tenant can hold the
+   front of the queue forever.
+
+These two tests are the durable output of this round. They are what makes the
+next unthought-of case fail loudly instead of silently.
+
+### 12.3 Per-defect rulings
+
+| ID | Ruling |
+|---|---|
+| NEW-1 | FIX. The Solana cursor MUST NOT advance past an unprocessed signature. Page with `before` until `until` is genuinely reached; if a bound is hit first, leave the cursor at the **oldest unprocessed** signature and set `truncated: true`. `getSignaturesForAddress` is newest-first and `until` only stops the search *if reached before the limit* — so "the newest signature on the page" is never a safe cursor. |
+| NEW-2 | FIX. The Base cursor MUST be `(block, logIndex)`, not block alone. This is MAJOR-2's own lesson (a transfer's identity is `(tx, logIndex)`) applied to progress state. A single block busier than the budget must be resumable mid-block, never a livelock. |
+| NEW-3 | FIX, and do not trade one silent loss for a permanent one. A `null` `getTransaction` is **unreadable, not empty**: the cursor MUST NOT advance past it. But a pruned/ancient signature can be null forever, so failing closed alone would livelock. Required behaviour: do not advance, retry with a bounded budget, and on exhaustion surface the signature in the receipt as needing operator attention — the same honest bucket §11 uses for exhausted rows. Never silently skip, never block forever, always visible. |
+| NEW-4 | FIX. The sweep's ordering key MUST advance on **attempt**, not only on completed success. As shipped, "never watched sorts first" plus "watched_at records only success" lets a permanently failing tenant hold the front of the queue forever and starve every healthy one — MAJOR-3's starvation returning with worse polarity (the starved set is now the healthy one). |
+| NEW-5 | FIX. Assert `uiTokenAmount.decimals` is present, equal across the paired pre/post entries, and equal to `USDC_DECIMALS`; otherwise fail closed. The amount is not allowed to be the one payload value taken on trust. |
+| NEW-6 | FIX. Bound `log.data` to exactly 32 bytes (`0x` + 64 hex) before reading it as an amount, and reject anything else. That the ledger's `MAX_USD_MICROS` catches the absurd case is luck, not validation. |
+| NEW-7 | FIX with safe polarity: accept only `removed === false || removed === undefined`, reject every other value. §4.5 and §10 said `=== true`; that wording was the weaker statement and is hereby corrected. |
+| NEW-8 | FIX. Read the Solana zero-start balance at `finalized`, not `confirmed`. The message tells the tenant "nothing here is estimated"; the read MUST earn that sentence. MAJOR-6's finality ruling was not scoped to the ledger only. |
+| NEW-9 | FIX. `String(parsed.uid \|\| tenantId) !== tenantId` defaults an absent `uid` to trusting the requester. §9.4 declares this line the guard against a cross-tenant leak; an absent field MUST fail closed. |
+| provider asymmetry | FIX. `createSecretProvider().get(tenantId, ref)` and the colony provider's `get(ref)` share a name with different arity. Give the colony method a distinct name so a crossed wiring is a loud `TypeError`, never a silent "tenantId used as a ref". |
+
+### 12.4 Verified honest, carried forward
+
+Round 2 re-measured every offline claim independently and all MATCHED:
+full `npm test` 1864/1864 exit 0 (46 segments), money-slice 278/278,
+runtime-up 26/26, runtime-adapters 76/76, tenant-isolation 12/12,
+real docker `postgres:18-alpine` `refusals=15 key_material_rows=0`,
+gitleaks 25 commits clean, `lib/agent-wallet.js` md5 identical to
+`origin/main` (MINOR-10 ruling respected), `lm-onboard.js` md5 identical,
+29 changed files with zero outside `apps/life-manager/` + `docs/`.
+**Zero fabricated numbers found in two independent audits.**
