@@ -903,8 +903,9 @@ spam.
                                  v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ 4. PUBLISH                                                                      │
-│ Postiz first → IG / TikTok / YouTube → provider post_id → exact public URL      │
-│ Later replace each Postiz adapter independently without changing the contracts  │
+│ Two lanes today: Postiz API (TikTok/YouTube/X) + agent-owned instagrapi (IG)    │
+│ → provider post_id → exact public URL. Replace either lane without touching     │
+│ the contracts. Postiz stays until the free lanes are green (§8.7).              │
 └────────────────────────────────┬────────────────────────────────────────────────┘
                                  v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -988,6 +989,55 @@ zero.
 
 Each pack owns JA and EN audiences separately. Existing Larry and ReelClaw
 producers become adapters behind the same artifact/publication contracts.
+
+### 8.7 Measured state of the shared marketing engine (2026-07-30)
+
+Everything below was read off the running system, not inferred. It supersedes any
+earlier statement that Postiz was cancelled.
+
+**Distribution actually in use.** `GET api.postiz.com/public/v1/integrations` returns
+**29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X). `anicca-larry`'s
+`post-to-tiktok.js` posts through that API with `POSTIZ_API_KEY`. Instagram
+additionally has an agent-owned lane (account created by `ig-account-create`, posted
+by `marketing-engine/poster.py` over instagrapi). **Decision: keep Postiz until the
+free lanes are proven** — cutting it now kills 19 accounts. The free replacement is
+*not* the official APIs for TikTok (an unaudited Content Posting API client can only
+post privately, and the audit is a human review); it is agent-owned accounts plus
+browser/session upload, mirroring what Instagram already does.
+
+**How shared the engine really is.** One provisioning path is genuinely shared; the
+posting and config paths are not yet:
+
+| Component | clip | capafy | life-manager |
+|---|---|---|---|
+| `provision_prompt.sh` | yes (`clip_pass.sh:14`) | yes (`capafy-ig-marketing-daily.sh:17`) | — |
+| `load_manifest.sh` | **no** | yes (`:19-20`) | — |
+| `poster.py` | **no** (own instagrapi call in `run.sh`) | yes (`capafy-goal-monitor.sh:35`) | — |
+| `run_agent.sh` | — | yes | yes (`life-manager-dev-d0.sh:11`) |
+
+**Why every post looked identical.** The library was scraped once (2026-05-28, 68 EN
+rows) under a "scrape once, generate forever" rule, and `fixed-strings-larry-en-v1.json`
+pins the hook, the CTA and a single static background for all seven slides.
+
+**Closed on 2026-07-30.**
+- `build-from-fixed-strings.sh` now fails at the real cause: a missing background or a
+  blank slide text stops the build instead of surfacing three steps later as a node
+  ENOENT. Verified by running all three cases.
+- `marketing-engine/mine/` mines one niche per day (`mine_daily.sh`, rotating, Apify
+  free tier) and `freshness_gate.sh` fails when the newest scrape is older than 48h.
+  Verified: gate FAILed before mining, monk-wisdom went 68 → 173 cards, the launchd
+  run rotated to honne-relationship (79 → 179) and exited 0.
+
+**Ordered remainder for this engine** (mirrors the harness task list):
+
+| # | Work | Gate |
+|---|---|---|
+| 1 | Hook-variation gate + background pool | a hook repeated inside the exclusion window cannot render |
+| 2 | Per-account attribution (ASC campaign links / Custom Product Pages) | one publication URL joined to installs and then to a paid event |
+| 3 | Point `clip` at `load_manifest.sh` + `poster.py` | one posting path for every loop |
+| 4 | Reward scoring, then kill/scale rules | a daily record of what was killed and what was scaled |
+| 5 | Free posting lanes for TikTok/YouTube, then drop Postiz | 19 accounts publish without the subscription |
+| 6 | Ebook packs (EN/JA) once Stripe auth is repaired | one real purchase reaches the ledger |
 
 ## 9. `$10k MRR` operating model
 
