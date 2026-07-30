@@ -10,6 +10,7 @@ const {
   formatLateSuccessMessage,
   upsertLiveLocation,
   getLiveLocation,
+  deleteLiveLocation,
   claimLateEvent,
   processLocationLateNotice,
 } = require("./late-notice.js");
@@ -70,6 +71,44 @@ test("location helpers upsert the latest live fix, enforce expiry, and atomicall
   assert.equal(await claimLateEvent("u1", "event-1", opts), true);
   assert.match(calls[2].url, /lm_late_notice_log/);
   assert.deepEqual(JSON.parse(calls[2].init.body), { uid: "u1", event_key: "event-1" });
+});
+
+test("deleteLiveLocation removes exactly the named tenant's row and reports the honest count", async () => {
+  // A fake store that honours the PostgREST uid filter: deleting u1 must leave u2's fix untouched.
+  const store = new Map([
+    ["u1", { uid: "u1", ...LIVE }],
+    ["u2", { uid: "u2", latitude: 1.5, longitude: 2.5, observed_at: LIVE.observed_at, expires_at: LIVE.expires_at }],
+  ]);
+  const fetchImpl = async (url, init = {}) => {
+    const parsed = new URL(url);
+    assert.equal(parsed.pathname, "/rest/v1/lm_user_locations");
+    assert.equal(String(init.method || "GET").toUpperCase(), "DELETE");
+    assert.match(init.headers.Prefer, /return=representation/, "the delete must read back what it removed");
+    const uid = String(parsed.searchParams.get("uid") || "").replace(/^eq\./, "");
+    assert.ok(uid, "an unfiltered DELETE would wipe every tenant — the uid filter is mandatory");
+    const removed = store.has(uid) ? [store.get(uid)] : [];
+    store.delete(uid);
+    return { ok: true, status: 200, json: async () => removed };
+  };
+  const opts = { supaUrl: "https://db.test", supaKey: "k", fetchImpl };
+  assert.deepEqual(await deleteLiveLocation("u1", opts), { deleted: 1 });
+  assert.equal(store.has("u1"), false, "u1's row is gone");
+  assert.deepEqual(store.get("u2"), { uid: "u2", latitude: 1.5, longitude: 2.5, observed_at: LIVE.observed_at, expires_at: LIVE.expires_at },
+    "the other tenant's location is untouched");
+  assert.deepEqual(await deleteLiveLocation("u1", opts), { deleted: 0 }, "a second delete honestly reports zero rows");
+});
+
+test("deleteLiveLocation refuses to guess: missing config or a failed request returns null, never a count", async () => {
+  assert.equal(await deleteLiveLocation("u1", { supaKey: "k", fetchImpl: async () => { throw new Error("unreachable"); } }), null);
+  assert.equal(await deleteLiveLocation("", { supaUrl: "https://db.test", supaKey: "k", fetchImpl: async () => { throw new Error("unreachable"); } }), null);
+  assert.equal(await deleteLiveLocation("u1", {
+    supaUrl: "https://db.test", supaKey: "k",
+    fetchImpl: async () => ({ ok: false, status: 500, json: async () => [] }),
+  }), null);
+  assert.equal(await deleteLiveLocation("u1", {
+    supaUrl: "https://db.test", supaKey: "k",
+    fetchImpl: async () => { throw new Error("network down"); },
+  }), null);
 });
 
 test("gate-closed and on-time decisions perform no claim, email, or Telegram I/O", async () => {
