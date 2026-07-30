@@ -1030,14 +1030,19 @@ pins the hook, the CTA and a single static background for all seven slides.
 
 **Ordered remainder for this engine** (mirrors the harness task list):
 
-| # | Work | Gate |
-|---|---|---|
-| 1 | Hook-variation gate + background pool | a hook repeated inside the exclusion window cannot render |
-| 2 | Per-account attribution (ASC campaign links / Custom Product Pages) | one publication URL joined to installs and then to a paid event |
-| 3 | Point `clip` at `load_manifest.sh` + `poster.py` | one posting path for every loop |
-| 4 | Reward scoring, then kill/scale rules | a daily record of what was killed and what was scaled |
-| 5 | Free posting lanes for TikTok/YouTube, then drop Postiz | 19 accounts publish without the subscription |
-| 6 | Ebook packs (EN/JA) once Stripe auth is repaired | one real purchase reaches the ledger |
+| # | Work | Gate | State |
+|---|---|---|---|
+| 1 | Hook-variation gate + background pool | a hook repeated inside the exclusion window cannot render | **done** — the gate skipped the pinned hook on a real run and picked the next pooled one; background rotation is tested but enabled per variant via `bg_pool` |
+| 2 | Per-account attribution (Apple `pt`/`ct` campaign links) | one publication URL joined to installs and then to a paid event | **link layer done** — three accounts hold store-verified links (http=200), a bogus app id is refused; the install/paid join is unproven until posts run |
+| 3 | Repair the ebook checkout (Stripe 401 since 2026-06-03) | one real purchase reaches the ledger | open — nothing can sell until this closes |
+| 4 | Three-tier Telegram reporting | per-post message carries the tappable public URL; one daily money digest; one weekly review | open — today the wrapper sends `label exit=N` plus a raw log tail, which is neither a link nor a number |
+| 5 | Put each account's campaign link in its bio | link visible on IG/TikTok/YouTube profiles | open |
+| 6 | Reward scoring at 2h/24h/72h/7–35d, then kill/scale rules | a daily record of what was killed and what was scaled | open |
+| 7 | Apply the same variation gate + fresh hook pool to ReelClaw video | `hookPool-ja.txt` (static since 2026-03-17) is replaced by mined hooks under the gate | open |
+| 8 | Point `clip` at `load_manifest.sh` + `poster.py` | one posting path for every loop | open |
+| 9 | Product packs for aniccaios / honne / ebook EN / ebook JA | a new product runs with a manifest and zero engine edits | open |
+| 10 | Scale accounts 1 → 5 → 50 at 2–3 posts/day | 10–20 posts/day per product, warmup respected | blocked on 4 and 6 — volume before measurement reproduces the 10M-views/5-signups failure |
+| 11 | Free posting lanes for TikTok/YouTube, then drop Postiz | 19 accounts publish without the subscription | deferred deliberately; Postiz stays until the free lanes are green |
 
 ## 9. `$10k MRR` operating model
 
