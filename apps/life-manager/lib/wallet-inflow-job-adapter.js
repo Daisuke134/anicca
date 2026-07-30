@@ -44,6 +44,9 @@ const LEDGER_KIND = "financial_deposit";
 
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+// §10 MAJOR-6: `confirmed` can still be rolled back. An append-only money ledger may only read what
+// is irreversible, so both Solana calls use `finalized`.
+const SOLANA_COMMITMENT = "finalized";
 const USDC_DECIMALS = 6;
 const LAMPORT_DECIMALS = 9;
 
@@ -149,15 +152,35 @@ async function baseBlockTimestamps(baseRpc, blocks) {
   return timestamps;
 }
 
+// §10 MAJOR-6 — the ledger is append-only, so a reorg it already booked can never be taken back. The
+// scan is therefore bounded by the FINALIZED head, not by `latest`. `eth_blockNumber` is deliberately not
+// used: it answers `latest`, and using it is the silent downgrade this rule exists to prevent. A node that
+// can answer neither `finalized` nor `safe` cannot tell us what is irreversible, so the wake fails closed.
+async function baseFinalizedHead(baseRpc) {
+  for (const tag of ["finalized", "safe"]) {
+    let header = null;
+    try {
+      header = await baseRpc("eth_getBlockByNumber", [tag, false]);
+    } catch {
+      header = null;
+    }
+    if (header && header.number != null) {
+      return { head: hexNumber(header.number, `Base ${tag} head`), finality: tag };
+    }
+  }
+  fail("no finalized Base head is available — refusing to book unfinalized chain data");
+  return null;
+}
+
 async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
-  const latest = hexNumber(await baseRpc("eth_blockNumber", []), "Base head");
+  const { head, finality } = await baseFinalizedHead(baseRpc);
   const cursorBlock = cursor && Number.isSafeInteger(cursor.base_next_block) && cursor.base_next_block >= 0
     ? cursor.base_next_block
     : null;
   const fromBlock = cursorBlock == null
-    ? Math.max(0, latest - BASE_DEFAULT_LOOKBACK_BLOCKS)
-    : Math.min(cursorBlock, latest);
-  const toBlock = Math.min(latest, fromBlock + BASE_MAX_BLOCKS_PER_WAKE - 1);
+    ? Math.max(0, head - BASE_DEFAULT_LOOKBACK_BLOCKS)
+    : Math.min(cursorBlock, head);
+  const toBlock = Math.min(head, fromBlock + BASE_MAX_BLOCKS_PER_WAKE - 1);
 
   const logs = [];
   for (let start = fromBlock; start <= toBlock; start += BASE_LOG_CHUNK) {
@@ -185,6 +208,8 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
       && lower(log.address) === lower(BASE_USDC)
       && lower(log.topics[0]) === lower(TRANSFER_TOPIC)
       && lower(log.topics[2]) === recipientTopic
+      // §10 MAJOR-6: a log the node has already retracted is not money.
+      && log.removed !== true
     ))
     .map((log) => ({
       tx: String(log.transactionHash || ""),
@@ -215,6 +240,7 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
   return {
     scanned_from_block: fromBlock,
     scanned_to_block: toBlock,
+    finality,
     inflows: taken.map((log) => ({ ...log, occurred_at: timestamps.get(log.block) || null })),
     truncated,
     next_block: nextBlock,
@@ -254,7 +280,7 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
     : null;
   const page = await solanaRpc("getSignaturesForAddress", [
     address,
-    { limit: SOLANA_MAX_SIGNATURES, commitment: "confirmed", ...(until ? { until } : {}) },
+    { limit: SOLANA_MAX_SIGNATURES, commitment: SOLANA_COMMITMENT, ...(until ? { until } : {}) },
   ]);
   if (!Array.isArray(page)) fail("Solana signature page was not a list");
 
@@ -272,7 +298,7 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
   for (const entry of confirmed) {
     const transaction = await solanaRpc("getTransaction", [
       entry.signature,
-      { commitment: "confirmed", encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
+      { commitment: SOLANA_COMMITMENT, encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
     ]);
     scanned += 1;
     if (!transaction || (transaction.meta && transaction.meta.err != null)) {
@@ -434,6 +460,7 @@ async function executeWalletInflowJob(job, deps = {}) {
       address: baseAddress,
       scanned_from_block: scan.scanned_from_block,
       scanned_to_block: scan.scanned_to_block,
+      finality: scan.finality,
       found: scan.inflows.length,
     };
   }
@@ -454,6 +481,7 @@ async function executeWalletInflowJob(job, deps = {}) {
     solanaSummary = {
       address: solanaAddress,
       scanned_signatures: scan.scanned_signatures,
+      commitment: SOLANA_COMMITMENT,
       found: scan.inflows.length,
     };
   }
@@ -558,7 +586,11 @@ function verifyWalletInflowReceipt(receipt) {
   if (typeof receipt.truncated !== "boolean" || typeof receipt.self_wallets_known !== "boolean") return false;
   if (!validRailSummary(receipt.base, (value) => EVM_ADDRESS.test(value), "scanned_to_block")) return false;
   if (receipt.base && !Number.isSafeInteger(receipt.base.scanned_from_block)) return false;
+  // §10 MAJOR-6: a receipt that does not state which finality it read cannot be audited for reorg safety,
+  // and `latest` is never an acceptable answer.
+  if (receipt.base && !["finalized", "safe"].includes(receipt.base.finality)) return false;
   if (!validRailSummary(receipt.solana, isSolanaAddress, "scanned_signatures")) return false;
+  if (receipt.solana && receipt.solana.commitment !== SOLANA_COMMITMENT) return false;
   const cursor = receipt.next_cursor;
   if (!cursor || typeof cursor !== "object" || Array.isArray(cursor) || cursor.schema_version !== 1) return false;
   if (cursor.base_next_block !== null && !Number.isSafeInteger(cursor.base_next_block)) return false;
@@ -655,6 +687,7 @@ module.exports = {
   LOOP_ID,
   MAX_ENTRIES_PER_WAKE,
   RECEIPT_KIND,
+  SOLANA_COMMITMENT,
   SOLANA_MAX_SIGNATURES,
   SOLANA_USDC_MINT,
   TRANSFER_TOPIC,

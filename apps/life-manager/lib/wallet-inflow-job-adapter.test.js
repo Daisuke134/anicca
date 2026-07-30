@@ -105,6 +105,14 @@ function harness(overrides = {}) {
     async baseRpc(method, params) {
       baseCalls.push({ method, params });
       if (method === "eth_blockNumber") return hex(overrides.latestBlock == null ? 1200 : overrides.latestBlock);
+      if (method === "eth_getBlockByNumber" && typeof params[0] === "string" && !params[0].startsWith("0x")) {
+        // A finality tag. `finalized` trails `latest`; a node that does not support it answers null.
+        const tags = overrides.finalityTags || { finalized: overrides.latestBlock == null ? 1200 : overrides.latestBlock };
+        const value = tags[params[0]];
+        if (value instanceof Error) throw value;
+        return value == null ? null : { number: hex(value), timestamp: hex(1785484800) };
+      }
+      if (method === "eth_getBlockByNumber") return { number: params[0], timestamp: hex(1785484800) };
       if (method === "eth_getLogs") {
         const from = BigInt(params[0].fromBlock);
         const to = BigInt(params[0].toBlock);
@@ -334,6 +342,75 @@ test("it asks for USDC Transfer logs addressed to this tenant and nobody else", 
 // §10 MAJOR-4 — hostile payloads. The RPC's filter is a request, not a guarantee: a buggy, cached,
 // load-balanced or malicious node can return logs that do not match it. Every fact that decides an amount
 // or an owner is re-derived from the payload.
+// §10 MAJOR-6 — hostile payloads. An append-only money ledger cannot retract a reorged row, so only
+// finalized chain data may enter it.
+test("§10 MAJOR-6: the scan stops at the finalized head, never at latest", async () => {
+  // `latest` is 5000 but only 4000 is finalized. Booking blocks 4001-5000 would put money in an
+  // append-only ledger that a reorg can erase, and the ledger has no way to take it back.
+  const h = harness({ latestBlock: 5000, finalityTags: { finalized: 4000, safe: 4500 } });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(receipt.base.scanned_to_block, 4000);
+  assert.equal(receipt.base.finality, "finalized");
+  assert.ok(receipt.next_cursor.base_next_block <= 4001, "the cursor may not run ahead of finality");
+  // eth_blockNumber is `latest` and must not be what bounds the scan.
+  assert.equal(h.baseCalls.some((call) => call.method === "eth_blockNumber"), false);
+  for (const call of h.baseCalls.filter((c) => c.method === "eth_getLogs")) {
+    assert.ok(BigInt(call.params[0].toBlock) <= 4000n, "no getLogs range may exceed the finalized head");
+  }
+});
+
+test("§10 MAJOR-6: with no finalized head the wake fails closed instead of using latest", async () => {
+  // A node that cannot answer `finalized` or `safe` cannot tell us what is irreversible. Falling back to
+  // `latest` would be the exact silent downgrade this rule exists to prevent.
+  for (const finalityTags of [
+    { finalized: null, safe: null },
+    { finalized: new Error("method not supported"), safe: null },
+    { finalized: null, safe: new Error("method not supported") },
+    {},
+  ]) {
+    const h = harness({ latestBlock: 5000, finalityTags, logs: [transferLog({ block: 1100 })] });
+    await assert.rejects(() => executeWalletInflowJob(job(), h.deps), /finalized/i);
+    assert.equal(h.recorded.length, 0);
+  }
+});
+
+test("§10 MAJOR-6: safe is accepted when finalized is unavailable, and is labelled", async () => {
+  const h = harness({ latestBlock: 5000, finalityTags: { finalized: null, safe: 4500 } });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+  assert.equal(receipt.base.scanned_to_block, 4500);
+  assert.equal(receipt.base.finality, "safe");
+});
+
+test("§10 MAJOR-6: a log flagged removed by a reorg is never booked", async () => {
+  const reorged = transferLog({ block: 1100, tx: `0x${"e".repeat(64)}`, amount: 9_000_000n });
+  reorged.removed = true;
+  const kept = transferLog({ block: 1101, tx: `0x${"f".repeat(64)}`, amount: 1n, logIndex: 1 });
+  const h = harness({ logs: [reorged, kept], latestBlock: 1200, finalityTags: { finalized: 1200 } });
+  await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 1, "the reorged log must not be booked");
+  assert.equal(h.recorded[0].amount_atomic, "1");
+});
+
+test("§10 MAJOR-6: Solana is read at finalized commitment, never confirmed", async () => {
+  const h = harness({
+    signatures: [SIG],
+    transactions: { [SIG]: solanaTransfer({ usdc: 10 }) },
+    finalityTags: { finalized: 1200 },
+  });
+  await executeWalletInflowJob(job(), h.deps);
+  const commitments = h.solanaCalls.map((call) => {
+    const options = call.params[1] || {};
+    return `${call.method}:${options.commitment}`;
+  });
+  assert.deepEqual(commitments, [
+    "getSignaturesForAddress:finalized",
+    "getTransaction:finalized",
+  ]);
+  assert.equal(commitments.some((entry) => entry.includes("confirmed")), false);
+});
+
 test("§10 MAJOR-4: a log the RPC returned but did not match the filter is dropped", async () => {
   const otherTenantTopic = `0x${"9".repeat(24)}${"ab".repeat(20).slice(0, 40)}`;
   const hostile = [
@@ -452,7 +529,7 @@ test("the Solana window is bounded and resumes from the persisted signature", as
         assert.equal(params[0], SOLANA_ADDRESS);
         assert.ok(params[1].limit <= SOLANA_MAX_SIGNATURES, "the signature page must be bounded");
         assert.equal(params[1].until, OLDER_SIG, "it must resume from the persisted signature");
-        assert.equal(params[1].commitment, "confirmed");
+        assert.equal(params[1].commitment, "finalized", "§10 MAJOR-6: only finalized data may be booked");
         return [];
       }
       throw new Error("unexpected");
@@ -551,8 +628,8 @@ test("a receipt that claims a recording without evidence does not verify", () =>
     duplicates: 0,
     truncated: false,
     self_wallets_known: true,
-    base: { address: BASE_ADDRESS, scanned_from_block: 1000, scanned_to_block: 1200, found: 1 },
-    solana: { address: SOLANA_ADDRESS, scanned_signatures: 0, found: 0 },
+    base: { address: BASE_ADDRESS, scanned_from_block: 1000, scanned_to_block: 1200, finality: "finalized", found: 1 },
+    solana: { address: SOLANA_ADDRESS, scanned_signatures: 0, commitment: "finalized", found: 0 },
     entries: [{
       entry_key: `inflow:base:${TX}`,
       chain: "base",
@@ -579,6 +656,10 @@ test("a receipt that claims a recording without evidence does not verify", () =>
     ["a bad timestamp", (r) => { r.checked_at = "later"; }],
     ["the wrong kind", (r) => { r.kind = "tenant_zero_start"; }],
     ["a fractional amount", (r) => { r.entries[0].amount = "1.5"; }],
+    // §10 MAJOR-6: a receipt that read unfinalized data, or will not say what it read, is not auditable.
+    ["a latest-head scan", (r) => { r.base.finality = "latest"; }],
+    ["no stated finality", (r) => { delete r.base.finality; }],
+    ["a confirmed Solana read", (r) => { r.solana.commitment = "confirmed"; }],
   ]) {
     const broken = JSON.parse(JSON.stringify(good));
     mutate(broken);

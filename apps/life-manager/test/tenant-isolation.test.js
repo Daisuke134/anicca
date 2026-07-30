@@ -163,8 +163,11 @@ test("AE-ZERO-START-1: an inflow to one tenant produces no ledger row for the ot
     async readTenant(uid) { return { ...rows[uid] }; },
     async readCursor() { return null; },
     async baseRpc(method, params) {
-      if (method === "eth_blockNumber") return "0x4b0";
-      if (method === "eth_getBlockByNumber") return { timestamp: "0x68a3f000" };
+      // §10 MAJOR-6: the scan is bounded by the finalized head, so a fixture must answer the finality tag.
+      if (method === "eth_getBlockByNumber" && params[0] === "finalized") {
+        return { number: "0x4b0", timestamp: "0x68a3f000" };
+      }
+      if (method === "eth_getBlockByNumber") return { number: params[0], timestamp: "0x68a3f000" };
       if (method !== "eth_getLogs") throw new Error(`unexpected ${method}`);
       // Only tenant A's address ever receives anything.
       const wanted = `0x${a.columns.agent_wallet_address.slice(2).toLowerCase().padStart(64, "0")}`;
