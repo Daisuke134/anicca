@@ -1019,6 +1019,34 @@ posting and config paths are not yet:
 rows) under a "scrape once, generate forever" rule, and `fixed-strings-larry-en-v1.json`
 pins the hook, the CTA and a single static background for all seven slides.
 
+**The money baseline, read live from RevenueCat on 2026-07-31:** MRR **$20**, 5 active
+subscriptions, **0 active trials**, $3 revenue and 230 new customers over 28 days
+against 275 active users. Zero trials is the first thing to explain — the funnel is
+not short of traffic ideas, it is short of a trial anyone starts. Reaching $10k at the
+observed ~$4 blended price needs ~2,500 subscriptions, so the gap is 500×, and at
+eight new customers a day no creative test is statistically readable yet.
+
+**What the loop can now see.** `measure/collect_metrics.py` writes one daily row from
+RevenueCat, Stripe and the App Store analytics API (Apple builds those reports
+asynchronously; the Anicca iOS request already lists 50 available reports). A source
+that fails is stored with its error, never as a zero, and a run that reaches no money
+source at all exits non-zero. `measure/collect_post_metrics.py` fills the gap that
+made scoring impossible: 797 posts in `account-history.jsonl` had `views_6h/24h/48h`
+all null. Postiz returns no engagement, and its TikTok `releaseURL` is only the profile
+(`https://www.tiktok.com/@handle`), which is why `postURLs` answered 400 — TikTok is
+therefore collected by walking the profile and matching captions, Instagram by its real
+post URL. First real readings: 557, 189, 74 and 0 views.
+
+**A quarter of the output was disappearing.** The same window shows 106 posts, 83
+PUBLISHED and **23 in ERROR state — 22 of them on the "Anicca" TikTok account** — with
+nothing anywhere surfacing it.
+
+**Scoring exists but stays silent until it can be honest.** `brain/score.py` ranks
+0.6·views + 0.4·engagement (the skill-autoshorts formula) with two guards that
+implementation lacks: a post under 24h is not judged, and a cohort under ten posts
+produces no verdict at all. Run today: 3 judged posts → `insufficient_data`, no winner
+declared.
+
 **Closed on 2026-07-30.**
 - `build-from-fixed-strings.sh` now fails at the real cause: a missing background or a
   blank slide text stops the build instead of surfacing three steps later as a node
@@ -1034,10 +1062,10 @@ pins the hook, the CTA and a single static background for all seven slides.
 |---|---|---|---|
 | 1 | Hook-variation gate + background pool | a hook repeated inside the exclusion window cannot render | **done** — the gate skipped the pinned hook on a real run and picked the next pooled one; background rotation is tested but enabled per variant via `bg_pool` |
 | 2 | Per-account attribution (Apple `pt`/`ct` campaign links) | one publication URL joined to installs and then to a paid event | **link layer done** — three accounts hold store-verified links (http=200), a bogus app id is refused; the install/paid join is unproven until posts run |
-| 3 | Repair the ebook checkout (Stripe 401 since 2026-06-03) | one real purchase reaches the ledger | open — nothing can sell until this closes |
-| 4 | Three-tier Telegram reporting | per-post message carries the tappable public URL; one daily money digest; one weekly review | open — today the wrapper sends `label exit=N` plus a raw log tail, which is neither a link nor a number |
+| 3 | Repair the ebook checkout | one real purchase reaches the ledger | the 401 was the **expired test key**; the live key answers 200. Product, $19 price, payment link and a post-purchase PDF redirect now exist — the remaining gap is traffic, not plumbing |
+| 4 | Three-tier Telegram reporting | per-post message carries the tappable public URL; one daily money digest; one weekly review | open — the wrapper still sends `label exit=N` plus a raw log tail, and must also name every ERROR-state post |
 | 5 | Put each account's campaign link in its bio | link visible on IG/TikTok/YouTube profiles | open |
-| 6 | Reward scoring at 2h/24h/72h/7–35d, then kill/scale rules | a daily record of what was killed and what was scaled | open |
+| 6 | Reward scoring at 2h/24h/72h/7–35d, then kill/scale rules | a daily record of what was killed and what was scaled | **partly done** — engagement-depth scoring runs daily and refuses tiny cohorts; install/paid depth waits on Apple's report data |
 | 7 | Apply the same variation gate + fresh hook pool to ReelClaw video | `hookPool-ja.txt` (static since 2026-03-17) is replaced by mined hooks under the gate | open |
 | 8 | Point `clip` at `load_manifest.sh` + `poster.py` | one posting path for every loop | open |
 | 9 | Product packs for aniccaios / honne / ebook EN / ebook JA | a new product runs with a manifest and zero engine edits | open |
