@@ -6,27 +6,28 @@ PASS="$SKILL_DIR/gig_pass.sh"
 TMP=$(mktemp -d /tmp/gig-delivery-first.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-mkdir -p "$HOME_DIR/gig" "$HOME_DIR/anicca/skills/browser/scripts" \
-  "$HOME_DIR/profitable-claude/skills/gig-work/scripts" \
-  "$HOME_DIR/profitable-claude/skills/gig-work/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner"
-cp "$PASS" "$HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh"
-cp "$SKILL_DIR/scripts/delivery_queue.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/delivery_queue.py"
-cp "$SKILL_DIR/scripts/delivery_cadence.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/delivery_cadence.py"
-cp "$SKILL_DIR/scripts/delivery_project.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/delivery_project.py"
-cp "$SKILL_DIR/scripts/project_ledger.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/project_ledger.py"
-cp "$SKILL_DIR/scripts/delivery_identity.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/delivery_identity.py"
-cp "$SKILL_DIR/scripts/paid_progress_finalize_gate.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/paid_progress_finalize_gate.py"
-cp "$SKILL_DIR/scripts/paid_queue_evidence.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/paid_queue_evidence.py"
-cp "$SKILL_DIR/scripts/gig_context_packet.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/gig_context_packet.py"
-cp "$SKILL_DIR/../agent-runner/context_packet.py" "$HOME_DIR/profitable-claude/skills/agent-runner/context_packet.py"
-cp "$SKILL_DIR/scripts/reply_queue.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/reply_queue.py"
-cp "$SKILL_DIR/scripts/connector_outbox.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/connector_outbox.py"
-cp "$SKILL_DIR/config/connectors/coconala.json" "$HOME_DIR/profitable-claude/skills/gig-work/config/connectors/coconala.json"
-cp "$SKILL_DIR/scripts/reconcile_paid_delivery.py" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/reconcile_paid_delivery.py"
-cp "$SKILL_DIR/scripts/cdp_lock.sh" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/cdp_lock.sh"
-cp "$SKILL_DIR/scripts/run_with_cdp_lock.sh" "$HOME_DIR/profitable-claude/skills/gig-work/scripts/run_with_cdp_lock.sh"
-chmod +x "$HOME_DIR/profitable-claude/skills/gig-work/scripts/run_with_cdp_lock.sh"
+mkdir -p "$HOME_DIR/gig" "$HOME_DIR/life-manager/skills/browser/scripts" \
+  "$HOME_DIR/life-manager/skills/earn/gig/scripts" \
+  "$HOME_DIR/life-manager/skills/earn/gig/config/connectors" \
+  "$HOME_DIR/life-manager/runtime/agent-runner"
+cp "$PASS" "$HOME_DIR/life-manager/skills/earn/gig/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$HOME_DIR/life-manager/skills/earn/gig/scripts/gig_paths.sh"
+cp "$SKILL_DIR/scripts/delivery_queue.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/delivery_queue.py"
+cp "$SKILL_DIR/scripts/delivery_cadence.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/delivery_cadence.py"
+cp "$SKILL_DIR/scripts/delivery_project.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/delivery_project.py"
+cp "$SKILL_DIR/scripts/project_ledger.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/project_ledger.py"
+cp "$SKILL_DIR/scripts/delivery_identity.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/delivery_identity.py"
+cp "$SKILL_DIR/scripts/paid_progress_finalize_gate.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/paid_progress_finalize_gate.py"
+cp "$SKILL_DIR/scripts/paid_queue_evidence.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/paid_queue_evidence.py"
+cp "$SKILL_DIR/scripts/gig_context_packet.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/gig_context_packet.py"
+cp "$SKILL_DIR/../../../runtime/agent-runner/context_packet.py" "$HOME_DIR/life-manager/runtime/agent-runner/context_packet.py"
+cp "$SKILL_DIR/scripts/reply_queue.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/reply_queue.py"
+cp "$SKILL_DIR/scripts/connector_outbox.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/connector_outbox.py"
+cp "$SKILL_DIR/config/connectors/coconala.json" "$HOME_DIR/life-manager/skills/earn/gig/config/connectors/coconala.json"
+cp "$SKILL_DIR/scripts/reconcile_paid_delivery.py" "$HOME_DIR/life-manager/skills/earn/gig/scripts/reconcile_paid_delivery.py"
+cp "$SKILL_DIR/scripts/cdp_lock.sh" "$HOME_DIR/life-manager/skills/earn/gig/scripts/cdp_lock.sh"
+cp "$SKILL_DIR/scripts/run_with_cdp_lock.sh" "$HOME_DIR/life-manager/skills/earn/gig/scripts/run_with_cdp_lock.sh"
+chmod +x "$HOME_DIR/life-manager/skills/earn/gig/scripts/run_with_cdp_lock.sh"
 cp "$SKILL_DIR/tests/fixtures/live_queue.json" "$TMP/snapshot.json"
 python3 - "$TMP/snapshot.json" <<'PY'
 import json, sys
@@ -36,7 +37,7 @@ snapshot["orders"][0]["buyer_feedback_pending_artifact"] = False
 snapshot["orders"][0]["buyer_reply_after_artifact_observed"] = False
 json.dump(snapshot, open(path, "w", encoding="utf-8"))
 PY
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import json,os,sys
 from pathlib import Path
@@ -58,7 +59,7 @@ open(os.path.join(evidence,"summary.json"),"w").write(json.dumps({"status":"succ
 open(os.environ["GIG_TEST_RUNNER_LOG"],"a").write(task_class+"\n")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
 
 before=1234567890
 touch -t 200902132331.30 "$HOME_DIR/gig/.last-pass"
@@ -66,7 +67,7 @@ before=$(stat -f %m "$HOME_DIR/gig/.last-pass")
 set +e
 HOME="$HOME_DIR" GIG_WORKER_LEASE_ACTIVE=1 GIG_QUEUE_FIXTURE="$TMP/snapshot.json" \
   GIG_TODAY=2026-07-21 GIG_LOCK_DIR="$TMP/lock.d" GIG_TEST_CDP_ALIVE=1 GIG_TEST_RUNNER_LOG="$TMP/runner.log" \
-  bash "$HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh" >"$TMP/out" 2>"$TMP/err"
+  bash "$HOME_DIR/life-manager/skills/earn/gig/gig_pass.sh" >"$TMP/out" 2>"$TMP/err"
 rc=$?
 set -e
 test "$rc" -ne 0 || { echo 'missing delivery evidence returned success'; exit 1; }

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
-SOURCE="$ROOT/skills/gig-work/gig-healthcheck.sh"
+ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+SOURCE="$ROOT/skills/earn/gig/gig-healthcheck.sh"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/home/.openclaw/state" "$TMP/fake-bin"
+mkdir -p "$TMP/scripts"
+cp "$(dirname "$SOURCE")/scripts/gig_paths.sh" "$TMP/scripts/gig_paths.sh"
 printf '%s\n' 'free_gb=4 threshold_gb=11' > "$TMP/home/.openclaw/state/disk-pressure.block"
 
 cat > "$TMP/fake-bin/docker" <<'EOF'
@@ -30,11 +32,12 @@ HOME="$TMP/home" \
 FAKE_BIN="$TMP/fake-bin" \
 CALLS="$TMP/calls" \
 GIG_DOCKER_DISK_PRESSURE_FLAG="$TMP/home/.openclaw/state/disk-pressure.block" \
+GIG_LOG_DIR="$TMP/logs" \
   bash -c 'source "$1"; docker_selfheal' _ "$TMP/functions.sh"
 
 test ! -e "$TMP/calls"
 grep -Fq 'disk pressure active — preserving stopped Docker runtime' \
-  "$TMP/home/.openclaw/logs/gig-core-healthcheck.log"
+  "$TMP/logs/gig-core-healthcheck.log"
 
 # Moderate pressure must not strand a revenue-critical validator image when
 # the already-running daemon can rebuild it without starting a stopped VM.

@@ -138,11 +138,21 @@ def handler_factory(
 
 def main() -> int:
     gig_root = Path(__file__).resolve().parents[1]
+    life_manager_home = Path(
+        os.environ.get(
+            "LIFE_MANAGER_HOME",
+            os.environ.get(
+                "ANICCA_HOME",
+                Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+                / "life-manager",
+            ),
+        )
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8791)
     parser.add_argument("--path", default="/coconala-gmail")
-    parser.add_argument("--env-file", type=Path, default=Path.home() / ".openclaw/.env")
+    parser.add_argument("--env-file", type=Path, default=life_manager_home / ".env")
     parser.add_argument("--token-env", default="GIG_REPLY_HOOK_TOKEN")
     parser.add_argument("--detector", type=Path, default=gig_root / "scripts/reply_detector.py")
     parser.add_argument(

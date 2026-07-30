@@ -22,6 +22,7 @@ check() {
 
 WORK="$(mktemp -d)"
 export GIG_STATE_DIR="$WORK/gig"
+export GIG_REPORT_CHAT="fixture-chat"
 TELEGRAM_DB="$WORK/telegram.sqlite3"
 SENDS_LOG="$WORK/openclaw-sends.log"
 

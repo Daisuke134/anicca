@@ -25,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-RUNNER_CONFIG = Path(__file__).resolve().parents[2] / "agent-runner" / "config.json"
+RUNNER_CONFIG = Path(__file__).resolve().parents[4] / "runtime" / "agent-runner" / "config.json"
 
 JST = timezone(timedelta(hours=9))
 

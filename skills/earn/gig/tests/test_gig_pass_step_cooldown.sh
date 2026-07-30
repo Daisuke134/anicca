@@ -3,11 +3,12 @@ set -euo pipefail
 
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-step-cooldown.XXXXXX)
-trap 'rm -rf "$TMP"' EXIT
+trap 'if [ "${KEEP_TMP:-0}" = 1 ]; then echo "KEEP_TMP=$TMP"; else rm -rf "$TMP"; fi' EXIT
 HOME_DIR="$TMP/home"
-GIG_DIR="$HOME_DIR/profitable-claude/skills/gig-work"
-mkdir -p "$GIG_DIR/scripts" "$GIG_DIR/schemas" "$GIG_DIR/config/connectors" "$HOME_DIR/profitable-claude/skills/agent-runner" "$HOME_DIR/gig"
+GIG_DIR="$HOME_DIR/life-manager/skills/earn/gig"
+mkdir -p "$GIG_DIR/scripts" "$GIG_DIR/schemas" "$GIG_DIR/config/connectors" "$HOME_DIR/life-manager/runtime/agent-runner" "$HOME_DIR/gig"
 cp "$SKILL_DIR/gig_pass.sh" "$GIG_DIR/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$GIG_DIR/scripts/gig_paths.sh"
 cp "$SKILL_DIR/passprep.py" "$GIG_DIR/passprep.py"
 cp "$SKILL_DIR/strategy.default.json" "$GIG_DIR/strategy.default.json"
 cp "$SKILL_DIR/scripts/delivery_queue.py" "$GIG_DIR/scripts/delivery_queue.py"
@@ -18,6 +19,8 @@ cp "$SKILL_DIR/scripts/connector_outbox.py" "$GIG_DIR/scripts/connector_outbox.p
 cp "$SKILL_DIR/config/connectors/coconala.json" "$GIG_DIR/config/connectors/coconala.json"
 cp "$SKILL_DIR/scripts/b2_queue_gate.py" "$GIG_DIR/scripts/b2_queue_gate.py"
 cp "$SKILL_DIR/scripts/b2_result_gate.py" "$GIG_DIR/scripts/b2_result_gate.py"
+cp "$SKILL_DIR/scripts/b2_wall_clock.py" "$GIG_DIR/scripts/b2_wall_clock.py"
+cp "$SKILL_DIR/scripts/b2_search_objective.py" "$GIG_DIR/scripts/b2_search_objective.py"
 cp "$SKILL_DIR/scripts/application_report.py" "$GIG_DIR/scripts/application_report.py"
 cp "$SKILL_DIR/scripts/normalize_applied.py" "$GIG_DIR/scripts/normalize_applied.py"
 cp "$SKILL_DIR/scripts/b1_conversation_gate.py" "$GIG_DIR/scripts/b1_conversation_gate.py"
@@ -31,8 +34,16 @@ cat > "$GIG_DIR/scripts/gig_selfimprove_verify.sh" <<'SH'
 #!/usr/bin/env bash
 exit 0
 SH
+cat > "$GIG_DIR/scripts/cdp_nav_snapshot.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+cat > "$GIG_DIR/scripts/experiment_evaluator.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
 chmod +x "$GIG_DIR/scripts/gig_selfimprove_verify.sh"
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os, sys
 from pathlib import Path
@@ -120,7 +131,13 @@ else:
     (evidence / "summary.json").write_text(json.dumps({"status": "success", "label": label}) + "\n", encoding="utf-8")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
+mkdir -p "$HOME_DIR/life-manager/skills/browser/scripts"
+cat > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+chmod +x "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py"
 
 run_pass() {
   local now="$1" state_dir="$2" evidence="$3" err="$4";
@@ -141,7 +158,7 @@ run_pass 1000 "$TMP/cooldown" "$TMP/evidence-1" "$TMP/err-1"
 python3 - "$HOME_DIR/gig/pass-report.jsonl" <<'PY'
 import json, sys
 row = json.loads(open(sys.argv[1], encoding="utf-8").read().splitlines()[-1])
-assert row["steps_executed"] == ["LEARN", "B0", "PROFILE", "B1", "B2", "REFLECT"], row
+assert row["steps_executed"] == ["B0", "PROFILE", "B1", "B2", "LEARN", "REFLECT"], row
 assert row["steps_skipped_cooldown"] == [], row
 PY
 grep -q '^B0$' "$TMP/runner.log"
@@ -155,7 +172,7 @@ grep -q 'STEP PROFILE skipped (cooldown' "$TMP/err-2"
 python3 - "$HOME_DIR/gig/pass-report.jsonl" <<'PY'
 import json, sys
 row = json.loads(open(sys.argv[1], encoding="utf-8").read().splitlines()[-1])
-assert row["steps_executed"] == ["LEARN", "B1", "B2", "REFLECT"], row
+assert row["steps_executed"] == ["B1", "B2", "LEARN", "REFLECT"], row
 assert row["steps_skipped_cooldown"] == ["B0", "PROFILE"], row
 assert "B0" not in row["steps_executed"] and "PROFILE" not in row["steps_executed"], row
 PY

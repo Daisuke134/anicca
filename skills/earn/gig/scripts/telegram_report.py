@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import listing_ledger  # noqa: E402  -- the single source of truth for listing counts
 import paid_progress_ledger  # noqa: E402  -- buyer-visible progress on paid contracts
 import report_envelope  # noqa: E402  -- canonical human/agent report snapshot
+from gig_paths import RUNNER_DIR  # noqa: E402
 
 
 JST = timezone(timedelta(hours=9))
@@ -1391,10 +1392,12 @@ def main() -> int:
     parser.add_argument("--gig-dir", type=Path, default=home / "gig")
     parser.add_argument(
         "--runner-config", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/config.json",
+        default=RUNNER_DIR / "config.json",
     )
-    parser.add_argument("--target", default="8547730585")
+    parser.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     args = parser.parse_args()
+    if not args.target:
+        parser.error("--target or GIG_REPORT_CHAT is required")
     outbox = TelegramOutbox(args.telegram_database)
     now_epoch = int(time.time())
     outbox.recover_expired(now=now_epoch)

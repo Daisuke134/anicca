@@ -16,11 +16,12 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-pass-lane-lessons.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-GIG_DIR="$HOME_DIR/profitable-claude/skills/gig-work"
+GIG_DIR="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$GIG_DIR/scripts" "$GIG_DIR/schemas" "$GIG_DIR/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner" "$HOME_DIR/gig"
+  "$HOME_DIR/life-manager/runtime/agent-runner" "$HOME_DIR/gig"
 
 cp "$SKILL_DIR/gig_pass.sh" "$GIG_DIR/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$GIG_DIR/scripts/gig_paths.sh"
 cp "$SKILL_DIR/passprep.py" "$GIG_DIR/passprep.py"
 cp "$SKILL_DIR/strategy.default.json" "$GIG_DIR/strategy.default.json"
 for script in delivery_queue delivery_cadence delivery_identity reply_queue \
@@ -29,10 +30,10 @@ for script in delivery_queue delivery_cadence delivery_identity reply_queue \
               experiment_evaluator; do
   cp "$SKILL_DIR/scripts/$script.py" "$GIG_DIR/scripts/$script.py"
 done
-mkdir -p "$HOME_DIR/anicca/skills/browser/scripts"
-printf '%s\n' '#!/usr/bin/env python3' > "$HOME_DIR/anicca/skills/browser/scripts/cdp_context_lease.py"
+mkdir -p "$HOME_DIR/life-manager/skills/browser/scripts"
+printf '%s\n' '#!/usr/bin/env python3' > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py"
 printf '%s\n' '#!/usr/bin/env python3' > "$GIG_DIR/scripts/cdp_nav_snapshot.py"
-chmod +x "$HOME_DIR/anicca/skills/browser/scripts/cdp_context_lease.py" \
+chmod +x "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" \
   "$GIG_DIR/scripts/cdp_nav_snapshot.py"
 cp "$SKILL_DIR/config/connectors/coconala.json" "$GIG_DIR/config/connectors/coconala.json"
 cp "$SKILL_DIR/schemas/gig_step_result.schema.json" "$GIG_DIR/schemas/gig_step_result.schema.json"
@@ -53,12 +54,12 @@ JSONL
 
 # The runner records who it was called as and then fails. Prompt files are written before
 # the call, so every selected lane's prompt is on disk regardless of the outcome.
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import sys
 raise SystemExit(42)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" "$GIG_DIR/gig_pass.sh"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" "$GIG_DIR/gig_pass.sh"
 
 EV="$TMP/evidence"
 # Budget 5 so all five lane steps are selected and every prompt exists to inspect.

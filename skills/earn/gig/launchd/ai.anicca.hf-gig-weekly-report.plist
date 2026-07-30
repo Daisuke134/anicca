@@ -3,7 +3,7 @@
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.hf-gig-weekly-report</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/gig-work/gig_weekly_report.sh</string></array>
+  <array><string>/bin/bash</string><string>__LIFE_MANAGER_REPO__/skills/earn/gig/gig_weekly_report.sh</string></array>
   <key>StartCalendarInterval</key>
   <dict>
     <key>Weekday</key><integer>1</integer>
@@ -11,11 +11,11 @@
     <key>Minute</key><integer>12</integer>
   </dict>
   <key>ProcessType</key><string>Background</string>
-  <key>WorkingDirectory</key><string>/Users/anicca</string>
+  <key>WorkingDirectory</key><string>__HOME__</string>
   <key>EnvironmentVariables</key><dict>
-    <key>HOME</key><string>/Users/anicca</string>
+    <key>HOME</key><string>__HOME__</string>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-weekly-report.out</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-weekly-report.err</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-weekly-report.out</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-weekly-report.err</string>
 </dict></plist>

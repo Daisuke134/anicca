@@ -5,12 +5,13 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-reply-outbox-wiring.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-GIG_DIR="$HOME_DIR/profitable-claude/skills/gig-work"
+GIG_DIR="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$HOME_DIR/gig" "$GIG_DIR/scripts" "$GIG_DIR/schemas" \
-  "$GIG_DIR/config/connectors" "$HOME_DIR/profitable-claude/skills/agent-runner"
+  "$GIG_DIR/config/connectors" "$HOME_DIR/life-manager/runtime/agent-runner"
 for file in gig_pass.sh passprep.py strategy.default.json; do
   cp "$SKILL_DIR/$file" "$GIG_DIR/$file"
 done
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$GIG_DIR/scripts/gig_paths.sh"
 for file in delivery_queue.py delivery_cadence.py delivery_project.py project_ledger.py \
   delivery_identity.py reply_queue.py connector_outbox.py; do
   cp "$SKILL_DIR/scripts/$file" "$GIG_DIR/scripts/$file"

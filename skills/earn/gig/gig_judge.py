@@ -20,6 +20,7 @@ report-skeptical instruction text below is adapted verbatim-in-spirit from judge
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
@@ -137,6 +138,7 @@ def build_verifier_prompt(
     urls = list(ground_truth_urls) if ground_truth_urls else list(DEFAULT_GROUND_TRUTH_URLS)
     urls_block = "\n".join(f"  - {u}" for u in urls)
     claims_block = _format_claims(claims)
+    navigation_helper = Path(__file__).resolve().parent / "scripts/cdp_nav_snapshot.py"
 
     return f"""You are the Coconala gig loop's INDEPENDENT reality-verifier (fresh context, no memory
 of the gig core's session). Your ONLY job this round is to judge, with a BINARY true/false verdict,
@@ -150,7 +152,7 @@ navigate freehand via raw Bash/CDP calls. For EACH ground-truth URL below, call 
 once, using pass_id "{pass_id}"
 (the SAME pass_id for every call this round) and seq 01, 02, 03... in the SAME order as the URLs are
 listed:
-  python3 ~/profitable-claude/skills/gig-work/scripts/cdp_nav_snapshot.py {pass_id} <seq> reality_check_<seq> <url>
+  python3 {navigation_helper} {pass_id} <seq> reality_check_<seq> <url>
 This performs a real Page.navigate in an owned hidden target, waits for the page to finish loading,
 captures rendered DOM text, and
 appends a trajectory row under ~/gig/trajectory/{pass_id}/. The caller INDEPENDENTLY (deterministically,

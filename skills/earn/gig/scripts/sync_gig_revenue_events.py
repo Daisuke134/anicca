@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "lib"))
 
 from unit_economics_events import append_event, make_event  # noqa: E402

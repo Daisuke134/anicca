@@ -10,7 +10,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 REPORT_SCRIPT = SCRIPTS / "telegram_report.py"
 OUTBOX_SCRIPT = SCRIPTS / "telegram_outbox.py"
-RUNNER_CONFIG = Path(__file__).resolve().parents[2] / "agent-runner" / "config.json"
+RUNNER_CONFIG = Path(__file__).resolve().parents[4] / "runtime" / "agent-runner" / "config.json"
 
 
 def load(path, name):

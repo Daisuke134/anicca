@@ -5,9 +5,10 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-b1-context.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-G="$HOME_DIR/profitable-claude/skills/gig-work"
-mkdir -p "$G/scripts" "$G/schemas" "$G/config/connectors" "$HOME_DIR/profitable-claude/skills/agent-runner" "$HOME_DIR/gig"
+G="$HOME_DIR/life-manager/skills/earn/gig"
+mkdir -p "$G/scripts" "$G/schemas" "$G/config/connectors" "$HOME_DIR/life-manager/runtime/agent-runner" "$HOME_DIR/gig"
 for file in gig_pass.sh passprep.py strategy.default.json; do cp "$SKILL_DIR/$file" "$G/$file"; done
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$G/scripts/gig_paths.sh"
 for file in delivery_queue.py delivery_cadence.py delivery_identity.py delivery_project.py project_ledger.py b0_result_gate.py b1_conversation_gate.py b2_queue_gate.py b2_result_gate.py reply_queue.py connector_outbox.py; do
   cp "$SKILL_DIR/scripts/$file" "$G/scripts/$file"
 done
@@ -20,7 +21,7 @@ cat > "$G/scripts/gig_selfimprove_verify.sh" <<'SH'
 exit 0
 SH
 chmod +x "$G/scripts/gig_selfimprove_verify.sh"
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os, sys
 from pathlib import Path
@@ -53,7 +54,13 @@ else:
     (evidence/"summary.json").write_text(json.dumps({"status":"success","task_label":"gig-"+label})+"\n")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
+mkdir -p "$HOME_DIR/life-manager/skills/browser/scripts"
+cat > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+chmod +x "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py"
 
 cat > "$TMP/good.json" <<'JSON'
 {"captured_at":"2026-07-22T00:00:00Z","inbox":{"url":"https://coconala.com/message?fromMyPage=true","not_found":false},"orders":[],"quotes":[],"inquiries":[{"talkroom_id":"42","talkroom_url":"https://coconala.com/talkrooms/42","reply_required":false}]}

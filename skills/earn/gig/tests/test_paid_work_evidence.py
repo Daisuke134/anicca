@@ -313,20 +313,20 @@ class PaidEvidenceTest(unittest.TestCase):
     def test_paid_queue_accepts_runs17_manifest_when_live_dom_proves_checkbox_off(self):
         """A missing duplicate outer field is recoverable from authoritative live DOM."""
         with tempfile.TemporaryDirectory() as temp:
-            source = Path("/Users/anicca/gig/evidence/gig-pass-1784705225-67113/agent-PAID_QUEUE_DELIVERY")
+            source = Path("__HOME__/gig/evidence/gig-pass-1784705225-67113/agent-PAID_QUEUE_DELIVERY")
             if not (source / "paid-queue-evidence.json").is_file():
                 self.skipTest("runs17 evidence is not available on this host")
             root = Path(temp) / "agent-PAID_QUEUE_DELIVERY"
             root.mkdir()
             manifest = json.loads((source / "paid-queue-evidence.json").read_text())
             live = json.loads((source / "live-dom-17943244.json").read_text())
-            artifact = Path("/Users/anicca/gig/projects/17943244/artifacts/v3.zip")
+            artifact = Path("__HOME__/gig/projects/17943244/artifacts/v3.zip")
             manifest["screenshot_path"] = str(root / "post.png")
             manifest["live_dom_path"] = str(root / "post.json")
             (root / "post.png").write_bytes(b"png")
             (root / "post.json").write_text(json.dumps(live) + "\n")
             (root / "paid-queue-evidence.json").write_text(json.dumps(manifest) + "\n")
-            expected = json.loads(Path("/Users/anicca/gig/evidence/gig-pass-1784705225-67113/paid-queue-expected.json").read_text())
+            expected = json.loads(Path("__HOME__/gig/evidence/gig-pass-1784705225-67113/paid-queue-expected.json").read_text())
             expected["delivery_evidence"]["artifact_path"] = str(artifact)
             ok, errors = paid_queue_evidence.validate_paid_queue(root, expected)
             self.assertTrue(ok, errors)

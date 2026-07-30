@@ -18,11 +18,14 @@
 #   successfully recovered). Returns 1 only if a relaunch was attempted and it STILL doesn't answer
 #   (caller should treat this round as a genuine defer/fail, not retry-loop forever).
 set -uo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=gig_paths.sh
+source "$SCRIPT_DIR/gig_paths.sh"
 
 CDP_PORT="${CDP_DAILY_DRIVER_PORT:-9222}"
 CDP_PROFILE="${CDP_DAILY_DRIVER_PROFILE:-$HOME/.cloak/profiles/daily-driver}"
 CDP_GUARD_LOCK="${CDP_GUARD_LOCK:-$HOME/gig/.cdp-guard.lock}"
-CDP_GUARD_LOG="${CDP_GUARD_LOG:-$HOME/.openclaw/logs/cdp-daily-driver-guard.log}"
+CDP_GUARD_LOG="${CDP_GUARD_LOG:-$GIG_LOG_DIR/cdp-daily-driver-guard.log}"
 mkdir -p "$(dirname "$CDP_GUARD_LOG")" 2>/dev/null || true
 
 _cdp_guard_log() { echo "$(date '+%F %T') cdp_guard: $*" >> "$CDP_GUARD_LOG"; }

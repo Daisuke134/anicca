@@ -3,19 +3,29 @@ set -euo pipefail
 
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-paid-work-gate.XXXXXX)
-trap 'rm -rf "$TMP"' EXIT
+trap 'if [ "${KEEP_TMP:-0}" = 1 ]; then echo "KEEP_TMP=$TMP"; else rm -rf "$TMP"; fi' EXIT
 HOME_DIR="$TMP/home"
-G="$HOME_DIR/profitable-claude/skills/gig-work"
-mkdir -p "$HOME_DIR/gig" "$G/scripts" "$G/schemas" "$G/config/connectors" "$HOME_DIR/profitable-claude/skills/agent-runner" "$HOME_DIR/profitable-claude/lib"
+G="$HOME_DIR/life-manager/skills/earn/gig"
+mkdir -p "$HOME_DIR/gig" "$G/scripts" "$G/schemas" "$G/config/connectors" \
+  "$HOME_DIR/life-manager/runtime/agent-runner" "$HOME_DIR/life-manager/lib" \
+  "$HOME_DIR/life-manager/skills/browser/scripts"
 for file in gig_pass.sh passprep.py strategy.default.json; do cp "$SKILL_DIR/$file" "$G/$file"; done
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$G/scripts/gig_paths.sh"
+cp "$SKILL_DIR/scripts/gig_paths.py" "$G/scripts/gig_paths.py"
 for file in delivery_queue.py delivery_cadence.py delivery_project.py project_ledger.py delivery_identity.py paid_work_evidence.py paid_work_transaction.py paid_work_validation_contract.py paid_queue_evidence.py reply_queue.py connector_outbox.py reconcile_paid_delivery.py paid_progress_ledger.py paid_progress_finalize_gate.py cdp_lock.sh run_with_cdp_lock.sh coconala_paid_progress_browser.py sync_gig_revenue_events.py gig_context_packet.py b1_conversation_gate.py b0_objective.py b0_result_gate.py b2_queue_gate.py b2_result_gate.py application_report.py normalize_applied.py lane_health.py lane_state_machine.py lane_action_runtime.py lane_productivity.py listing_ledger.py; do cp "$SKILL_DIR/scripts/$file" "$G/scripts/$file"; done
+cp "$SKILL_DIR/scripts/b2_wall_clock.py" "$G/scripts/b2_wall_clock.py"
+cp "$SKILL_DIR/scripts/b2_search_objective.py" "$G/scripts/b2_search_objective.py"
+cp "$SKILL_DIR/scripts/cdp_nav_snapshot.py" "$G/scripts/cdp_nav_snapshot.py"
 # The self-improvement verifier is a downstream integration owned by another test.
 # This fixture isolates the paid gate and real lane selector; it must not fail merely
 # because it does not build the full self-improvement evidence tree.
 printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > "$G/scripts/gig_selfimprove_verify.sh"
+printf '%s\n' '#!/usr/bin/env python3' 'raise SystemExit(0)' > "$G/scripts/experiment_evaluator.py"
+printf '%s\n' '#!/usr/bin/env python3' 'raise SystemExit(0)' > \
+  "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py"
 chmod +x "$G/scripts/gig_selfimprove_verify.sh"
-cp "$SKILL_DIR/../agent-runner/context_packet.py" "$HOME_DIR/profitable-claude/skills/agent-runner/context_packet.py"
-cp "$SKILL_DIR/../../lib/unit_economics_events.py" "$HOME_DIR/profitable-claude/lib/unit_economics_events.py"
+cp "$SKILL_DIR/../../../runtime/agent-runner/context_packet.py" "$HOME_DIR/life-manager/runtime/agent-runner/context_packet.py"
+cp "$SKILL_DIR/../../../lib/unit_economics_events.py" "$HOME_DIR/life-manager/lib/unit_economics_events.py"
 cp "$SKILL_DIR/config/connectors/coconala.json" "$G/config/connectors/coconala.json"
 chmod +x "$G/scripts/run_with_cdp_lock.sh"
 cp "$SKILL_DIR/schemas/gig_step_result.schema.json" "$G/schemas/gig_step_result.schema.json"
@@ -42,7 +52,7 @@ cat > "$TMP/snapshot.json" <<'JSON'
   "quotes": [], "inquiries": []
 }
 JSON
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os, sys, time
 from pathlib import Path
@@ -56,9 +66,9 @@ Path(os.environ["GIG_TEST_RUNNER_LOG"]).open("a", encoding="utf-8").write(label 
 if label == "gig-PAID_WORK":
     if os.environ.get("ANICCA_BUDGET_SCOPE_ID") != os.environ.get("GIG_PASS_ID"):
         raise SystemExit(46)
-    if os.environ.get("ANICCA_PASS_TOKEN_BUDGET") != "1048576":
+    if os.environ.get("ANICCA_PASS_TOKEN_BUDGET") != "4194304":
         raise SystemExit(48)
-    if os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET") != "8388608":
+    if os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET") != "33554432":
         raise SystemExit(49)
     if '"kind":"gig_paid_work"' not in prompt or '"max_bytes":8192' not in prompt:
         raise SystemExit(44)
@@ -209,6 +219,7 @@ elif label == "gig-B2":
             "inspected_count":1,"has_next":False,"exhausted":True})
     inspected = [{
         "request_id":"5179838",
+        "bucket":"single",
         "url":"https://coconala.com/requests/5179838",
         "applicants":29,
         "contracted":0,
@@ -249,7 +260,7 @@ elif label == "gig-REFLECT":
 (evidence / "summary.json").write_text(json.dumps({"status":"success","task_label":label})+"\n")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
 cat > "$TMP/fake-paid-progress" <<'PY'
 #!/usr/bin/env python3
 import argparse, json, os, sys
@@ -267,7 +278,7 @@ Path(os.environ["GIG_TEST_BROWSER_LOG"]).open("a", encoding="utf-8").write("dete
 mode = os.environ.get("GIG_TEST_PAID_MODE", "green")
 if mode == "browser-fail":
     raise SystemExit(42)
-if mode not in ("green", "green-existing", "answer"):
+if mode not in ("green", "green-existing", "answer", "unchanged-artifact"):
     raise SystemExit(43)
 expected = json.loads(args.queue_item.read_text(encoding="utf-8"))
 manifest = (
@@ -354,8 +365,8 @@ JSON
 
 install_validation_contract "$HOME_DIR/gig/projects/4201"
 RECOVERY_HOME_DIR="$TMP/recovery-home"
-mkdir -p "$RECOVERY_HOME_DIR/profitable-claude"
-cp -R "$HOME_DIR/profitable-claude/." "$RECOVERY_HOME_DIR/profitable-claude/"
+mkdir -p "$RECOVERY_HOME_DIR/life-manager"
+cp -R "$HOME_DIR/life-manager/." "$RECOVERY_HOME_DIR/life-manager/"
 mkdir -p "$RECOVERY_HOME_DIR/gig" "$RECOVERY_HOME_DIR/loops/gig/state"
 install_validation_contract "$RECOVERY_HOME_DIR/gig/projects/4201"
 cp "$G/strategy.default.json" "$RECOVERY_HOME_DIR/gig/strategy.json"
@@ -427,7 +438,7 @@ HOME="$B2_HOME_DIR" GIG_WORKER_LEASE_ACTIVE=1 GIG_QUEUE_FIXTURE="$TMP/clear-snap
   GIG_TEST_CDP_ALIVE=1 GIG_TEST_PAID_MODE=b2-invalid GIG_TEST_RUNNER_LOG="$TMP/b2-runner.log" \
   GIG_TEST_BROWSER_LOG="$TMP/b2-browser.log" GIG_PAID_PROGRESS_BROWSER="$TMP/fake-paid-progress" \
   ANICCA_UNIT_ECONOMICS_LEDGER="$TMP/b2-economics.jsonl" GIG_PASS_ID="paid-b2-invalid" \
-  bash "$B2_HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh" \
+  bash "$B2_HOME_DIR/life-manager/skills/earn/gig/gig_pass.sh" \
   >"$TMP/b2-out" 2>"$TMP/b2-err"
 b2_rc=$?
 set -e
@@ -484,9 +495,8 @@ if grep -qF "$HOME_DIR/gig/delivery-evidence/4201.json" "$TMP/evidence-green/PAI
 fi
 test ! -e "$TMP/evidence-green/PAID_QUEUE_DELIVERY.prompt.txt"
 test "$(cat "$TMP/browser.log")" = "deterministic-paid-progress"
-expected_runner_log="$(printf '%s\n' gig-PAID_WORK gig-B0 gig-B1 gig-B2)"
+expected_runner_log="$(printf '%s\n' gig-PAID_WORK gig-B0 gig-PROFILE gig-B1 gig-B2 gig-LEARN gig-REFLECT)"
 test "$(cat "$TMP/runner.log")" = "$expected_runner_log"
-! grep -q '^gig-REFLECT$' "$TMP/runner.log"
 ! grep -q '^gig-paid-queue-assess$' "$TMP/runner.log"
 ! grep -q '"pass_id":"paid-green"' "$HOME_DIR/gig/pass-failures.jsonl"
 # ...and the buyer-visible progress that really happened is still recorded, in the
@@ -548,7 +558,7 @@ report = report_rows[-1]
 assert report["pass_id"] == "paid-green", report
 assert report["status"] == "success", report
 assert report["steps_executed"] == [
-    "PAID_WORK", "PAID_QUEUE_DELIVERY", "B0", "B1", "B2"
+    "PAID_WORK", "PAID_QUEUE_DELIVERY", "B0", "PROFILE", "B1", "B2", "LEARN", "REFLECT"
 ], report
 assert all(
     not row.startswith(("B0:", "B1:", "B2:"))
@@ -608,10 +618,9 @@ assert state["last_buyer_answer_sha256"], state
 assert state["next_action"] == "await_buyer_feedback", state
 PY
 
-# The next unchanged poll observes the same buyer feedback. The live DOM can
-# still say the artifact is absent (the buyer's exact issue was that the
-# confirmation UI did not transition), but the verified text answer itself is
-# already handled. It must never invoke the builder or browser again.
+# The next unchanged poll observes the same buyer feedback while the live DOM
+# still says the accepted artifact is absent. It must not rebuild, but it must
+# retry the already-validated artifact through the deterministic browser path.
 python3 - "$TMP/snapshot.json" "$TMP/unchanged-snapshot.json" <<'PY'
 import json, sys
 snapshot = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -623,11 +632,11 @@ order["buyer_feedback_sha256"] = "b" * 64
 json.dump(snapshot, open(sys.argv[2], "w", encoding="utf-8"))
 PY
 run_case unchanged-artifact 0 "$TMP/unchanged-snapshot.json"
-if grep -q '^gig-PAID_WORK$\|^gig-B0$\|^gig-B1$\|^gig-B2$' "$TMP/runner.log"; then
-  echo "RED: unchanged artifact repeated paid/revenue work: $(tr '\n' ',' < "$TMP/runner.log")" >&2
+if grep -q '^gig-PAID_WORK$' "$TMP/runner.log"; then
+  echo "RED: unchanged artifact rebuilt accepted work: $(tr '\n' ',' < "$TMP/runner.log")" >&2
   exit 1
 fi
-test ! -s "$TMP/browser.log"
+test "$(cat "$TMP/browser.log")" = "deterministic-paid-progress"
 python3 - "$HOME_DIR/gig/projects/4201/state.json" <<'PY'
 import json, sys
 state = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -644,7 +653,7 @@ run_recovery_case() {
     GIG_TEST_BROWSER_LOG="$TMP/recovery-browser.log" GIG_PAID_PROGRESS_BROWSER="$TMP/fake-paid-progress" \
     ANICCA_UNIT_ECONOMICS_LEDGER="$TMP/recovery-economics.jsonl" \
     GIG_PASS_ID="paid-recovery-$mode" \
-    bash "$RECOVERY_HOME_DIR/profitable-claude/skills/gig-work/gig_pass.sh" >"$TMP/recovery-out-$mode" 2>"$TMP/recovery-err-$mode"
+    bash "$RECOVERY_HOME_DIR/life-manager/skills/earn/gig/gig_pass.sh" >"$TMP/recovery-out-$mode" 2>"$TMP/recovery-err-$mode"
   local rc=$?; set -e
   if [ "$rc" -ne "$expected" ]; then
     tail -40 "$TMP/recovery-out-$mode" "$TMP/recovery-err-$mode"

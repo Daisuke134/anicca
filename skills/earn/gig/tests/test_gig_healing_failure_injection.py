@@ -6,10 +6,10 @@ from types import SimpleNamespace
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[3]
-CONTROLLER = ROOT / "src/gig/healing/controller.py"
-QUEUE = ROOT / "skills/gig-work/scripts/repair_queue.py"
-HEALER = ROOT / "skills/gig-work/scripts/gig_healer.py"
+GIG_ROOT = Path(__file__).resolve().parents[1]
+CONTROLLER = GIG_ROOT / "src/gig/healing/controller.py"
+QUEUE = GIG_ROOT / "scripts/repair_queue.py"
+HEALER = GIG_ROOT / "scripts/gig_healer.py"
 
 
 def load(name: str, path: Path):

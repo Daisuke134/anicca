@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
-GIG="$ROOT/skills/gig-work"
-README="$ROOT/README.md"
+ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+GIG="$ROOT/skills/earn/gig"
+SLOT_DOC="$GIG/SLOT_CC.md"
 HOURLY="$GIG/launchd/ai.anicca.hf-gig-hourly-report.plist"
 WEEKLY="$GIG/launchd/ai.anicca.hf-gig-weekly-report.plist"
 
@@ -22,7 +22,6 @@ grep -Fq 'REPLY_LANE_RC=$?' "$GIG/gig_pass.sh"
 grep -Fq '0|2)' "$GIG/gig_pass.sh" || {
   echo 'full pass drops verified Telegram events when another reply needs reconcile'; exit 1;
 }
-! grep -q 'ai.anicca.hf-gig-hourly-report.plist' "$README" || { echo 'README resurrects duplicate hourly unit'; exit 1; }
-grep -q 'cp skills/gig-work/launchd/ai.anicca.hf-gig-weekly-report.plist' "$README"
-grep -q 'launchctl bootstrap.*ai.anicca.hf-gig-weekly-report.plist' "$README"
+! grep -q 'ai.anicca.hf-gig-hourly-report.plist' "$SLOT_DOC" || { echo 'slot docs resurrect duplicate hourly unit'; exit 1; }
+grep -q 'host unitの生成・登録はGig installer' "$SLOT_DOC"
 echo 'PASS: per-wake, daily, and weekly reports use the durable Telegram publisher'

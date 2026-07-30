@@ -5,19 +5,19 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/gig-work/scripts/run_with_cdp_lock.sh</string>
+    <string>__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/run_with_cdp_lock.sh</string>
     <string>gig-reply-detector</string><string>0</string><string>--</string>
     <string>/opt/homebrew/bin/python3</string>
-    <string>/Users/anicca/profitable-claude/skills/gig-work/scripts/reply_detector.py</string>
+    <string>__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/reply_detector.py</string>
     <string>--trigger</string><string>fallback</string>
   </array>
   <key>StartInterval</key><integer>300</integer>
   <key>RunAtLoad</key><true/>
   <key>ProcessType</key><string>Background</string>
   <key>ThrottleInterval</key><integer>30</integer>
-  <key>WorkingDirectory</key><string>/Users/anicca</string>
+  <key>WorkingDirectory</key><string>__HOME__</string>
   <key>EnvironmentVariables</key><dict>
-    <key>HOME</key><string>/Users/anicca</string>
+    <key>HOME</key><string>__HOME__</string>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>GIG_REPLY_PASS_TOKEN_BUDGET</key><string>65536</string>
     <key>GIG_DAILY_TOKEN_BUDGET</key><string>1048576</string>
@@ -27,17 +27,17 @@
     <key>CLOAK_BROWSER_LAUNCHD_LABEL</key><string>ai.anicca.hf-gig-browser</string>
     <key>CLOAK_CDP_BASE_URL</key><string>http://127.0.0.1:9223</string>
     <key>CDP_DAILY_DRIVER_PORT</key><string>9223</string>
-    <key>CDP_DAILY_DRIVER_PROFILE</key><string>/Users/anicca/.cloak/profiles/gig-daily-driver</string>
-    <key>CDP_GUARD_LOCK</key><string>/Users/anicca/gig/.cdp-gig-guard.lock</string>
-    <key>CDP_GUARD_LOG</key><string>/Users/anicca/.openclaw/logs/cdp-gig-browser-guard.log</string>
-    <key>CDP_LOCK_DIR</key><string>/Users/anicca/gig/.cdp-gig.lock</string>
-    <key>CLOAK_CONTEXT_LEASES_FILE</key><string>/Users/anicca/.cloak/vault/gig-leases.json</string>
-    <key>CLOAK_TARGET_OWNERS_FILE</key><string>/Users/anicca/.cloak/vault/gig-target-owners.json</string>
-    <key>CLOAK_SESSION_VAULT_FILE</key><string>/Users/anicca/.cloak/vault/gig-daily-driver/auth-state.json</string>
+    <key>CDP_DAILY_DRIVER_PROFILE</key><string>__HOME__/.cloak/profiles/gig-daily-driver</string>
+    <key>CDP_GUARD_LOCK</key><string>__HOME__/gig/.cdp-gig-guard.lock</string>
+    <key>CDP_GUARD_LOG</key><string>__LIFE_MANAGER_HOME__/logs/cdp-gig-browser-guard.log</string>
+    <key>CDP_LOCK_DIR</key><string>__HOME__/gig/.cdp-gig.lock</string>
+    <key>CLOAK_CONTEXT_LEASES_FILE</key><string>__HOME__/.cloak/vault/gig-leases.json</string>
+    <key>CLOAK_TARGET_OWNERS_FILE</key><string>__HOME__/.cloak/vault/gig-target-owners.json</string>
+    <key>CLOAK_SESSION_VAULT_FILE</key><string>__HOME__/.cloak/vault/gig-daily-driver/auth-state.json</string>
     <key>SESSION_VAULT_PORT</key><string>9223</string>
-    <key>SESSION_VAULT_DIR</key><string>/Users/anicca/.cloak/vault/gig-daily-driver</string>
+    <key>SESSION_VAULT_DIR</key><string>__HOME__/.cloak/vault/gig-daily-driver</string>
     <key>GIG_CDP_HEALTH_URL</key><string>http://127.0.0.1:9223/json/version</string>
   </dict>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-reply-detector-launchd.out.log</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-reply-detector-launchd.err.log</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-reply-detector-launchd.out.log</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-reply-detector-launchd.err.log</string>
 </dict></plist>

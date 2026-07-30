@@ -5,13 +5,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = (
-    Path(__file__).resolve().parents[3]
-    / "src"
-    / "gig"
-    / "healing"
-    / "controller.py"
-)
+SCRIPT = Path(__file__).resolve().parents[1] / "src" / "gig" / "healing" / "controller.py"
 QUEUE_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "repair_queue.py"
 
 

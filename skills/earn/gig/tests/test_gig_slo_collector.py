@@ -314,12 +314,14 @@ class GigSloCollectorTest(unittest.TestCase):
             telegram_database=self.telegram,
             repair_database=repair_db,
             now=self.now,
+            host_state_dir=self.host_state,
         )
         second = self.slo.evaluate_and_enqueue(
             state_dir=self.root,
             telegram_database=self.telegram,
             repair_database=repair_db,
             now=self.now + 1,
+            host_state_dir=self.host_state,
         )
         self.assertEqual(first["incident_count"], 1)
         self.assertEqual(first["incidents"][0]["fingerprint"], "lane:apply:attempt_silence")

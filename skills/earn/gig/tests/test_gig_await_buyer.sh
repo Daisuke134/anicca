@@ -3,12 +3,14 @@ set -euo pipefail
 
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-await-buyer.XXXXXX)
-trap 'rm -rf "$TMP"' EXIT
+trap 'if [ "${KEEP_TMP:-0}" = 1 ]; then echo "KEEP_TMP=$TMP"; else rm -rf "$TMP"; fi' EXIT
 HOME_DIR="$TMP/home"
-G="$HOME_DIR/profitable-claude/skills/gig-work"
+G="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$HOME_DIR/gig/projects/17943244" "$G/scripts" "$G/schemas" "$G/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner" "$HOME_DIR/loops/gig/state"
+  "$HOME_DIR/life-manager/runtime/agent-runner" "$HOME_DIR/loops/gig/state"
 cp "$SKILL_DIR/gig_pass.sh" "$G/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$G/scripts/gig_paths.sh"
+cp "$SKILL_DIR/scripts/gig_paths.py" "$G/scripts/gig_paths.py"
 cp "$SKILL_DIR/scripts/delivery_queue.py" "$G/scripts/delivery_queue.py"
 cp "$SKILL_DIR/scripts/delivery_cadence.py" "$G/scripts/delivery_cadence.py"
 cp "$SKILL_DIR/scripts/delivery_project.py" "$G/scripts/delivery_project.py"
@@ -32,7 +34,9 @@ cp "$SKILL_DIR/scripts/paid_work_transaction.py" "$G/scripts/paid_work_transacti
 cp "$SKILL_DIR/scripts/paid_work_validation_contract.py" "$G/scripts/paid_work_validation_contract.py"
 cp "$SKILL_DIR/scripts/paid_queue_evidence.py" "$G/scripts/paid_queue_evidence.py"
 cp "$SKILL_DIR/scripts/gig_context_packet.py" "$G/scripts/gig_context_packet.py"
-cp "$SKILL_DIR/../agent-runner/context_packet.py" "$HOME_DIR/profitable-claude/skills/agent-runner/context_packet.py"
+cp "$SKILL_DIR/scripts/b2_wall_clock.py" "$G/scripts/b2_wall_clock.py"
+cp "$SKILL_DIR/scripts/b2_search_objective.py" "$G/scripts/b2_search_objective.py"
+cp "$SKILL_DIR/../../../runtime/agent-runner/context_packet.py" "$HOME_DIR/life-manager/runtime/agent-runner/context_packet.py"
 cp "$SKILL_DIR/scripts/reply_queue.py" "$G/scripts/reply_queue.py"
 cp "$SKILL_DIR/scripts/connector_outbox.py" "$G/scripts/connector_outbox.py"
 cp "$SKILL_DIR/config/connectors/coconala.json" "$G/config/connectors/coconala.json"
@@ -100,7 +104,7 @@ JSON
 printf '%s\n' '{"requestId":"existing","status":"applied"}' > "$HOME_DIR/gig/applied.jsonl"
 printf '%s\n' '{"pass_id":"existing","requestId":"existing","action":"applied"}' > "$HOME_DIR/loops/gig/state/task-request-map.jsonl"
 
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os, sys
 from pathlib import Path
@@ -167,7 +171,7 @@ elif label == "B2":
         "status":"ok","summary":"one fixture application","evidence":[str(market_dom)],
         "eligible_count":1,
         "applications":[{
-            "request_id":request_id,"category":"fixture","title":"fixture",
+            "request_id":request_id,"bucket":"single","category":"fixture","title":"fixture",
             "price_jpy":8000,"deliver_date":"2026-07-23",
             "url":f"https://coconala.com/requests/{request_id}"
         }],
@@ -178,9 +182,10 @@ elif label == "B2":
             "marketplace_screenshot_path":str(market_shot),
             "marketplace_live_dom_path":str(market_dom),
             "inspected_requests":[{
-                "request_id":request_id,
+                "request_id":request_id,"bucket":"single",
                 "url":f"https://coconala.com/requests/{request_id}",
                 "applicants":1,"contracted":0,"budget_max_jpy":10000,
+                "accepting_applications":True,
                 "outcome":"eligible","reason":None
             }],
             "search_sources":search_sources
@@ -232,7 +237,21 @@ cat > "$G/scripts/gig_selfimprove_verify.sh" <<'SH'
 #!/usr/bin/env bash
 exit 0
 SH
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" "$G/scripts/gig_selfimprove_verify.sh"
+cat > "$G/scripts/cdp_nav_snapshot.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+cat > "$G/scripts/experiment_evaluator.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" "$G/scripts/gig_selfimprove_verify.sh"
+mkdir -p "$HOME_DIR/life-manager/skills/browser/scripts"
+cat > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+chmod +x "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py"
 cat > "$TMP/fake-validation-docker" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' '{"status":"PASS"}'
@@ -282,7 +301,7 @@ state=json.load(open(sys.argv[1]))
 assert state["next_action"] == "await_buyer_approval_for_publication"
 assert state["source_contract_id"] == "direct-offer:6198868"
 report=[json.loads(line) for line in open(sys.argv[2]) if line.strip()][-1]
-assert report["steps_executed"] == ["B0", "PROFILE", "B1", "B2"], report
+assert report["steps_executed"] == ["B0", "PROFILE", "B1", "B2", "LEARN", "REFLECT"], report
 assert all(not row.startswith(("B0:", "B1:", "B2:")) for row in report["steps_skipped_policy"]), report
 assert json.load(open(sys.argv[3])) == report
 PY

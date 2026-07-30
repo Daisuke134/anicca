@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 test -x "$LAUNCHER" || { echo 'missing executable launch_gig_worker.sh'; exit 1; }
-! grep -q 'nohup bash ~/profitable-claude/skills/gig-work/gig_pass.sh' "$CLI" || {
+! grep -q 'nohup bash ~/life-manager/skills/earn/gig/gig_pass.sh' "$CLI" || {
   echo 'gig-cli still launches gig_pass.sh directly without a lease'
   exit 1
 }

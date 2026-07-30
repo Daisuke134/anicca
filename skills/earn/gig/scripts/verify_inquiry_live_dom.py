@@ -18,6 +18,8 @@ import importlib.util
 
 
 HERE = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[4]
+BROWSER_HELPER = REPO_ROOT / "skills" / "browser" / "scripts" / "cdp_default_tab.py"
 _spec = importlib.util.spec_from_file_location("coconala_queue_snapshot", HERE / "coconala_queue_snapshot.py")
 if _spec is None or _spec.loader is None:
     raise RuntimeError("cannot load Coconala collector")
@@ -120,7 +122,7 @@ def main() -> int:
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--expected-ids", required=True, type=Path)
     parser.add_argument("--cdp-helper", type=Path,
-                        default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py")
+                        default=BROWSER_HELPER)
     args = parser.parse_args()
     return run(args.phase, args.evidence_dir, read_ids(args.expected_ids), args.cdp_helper)
 

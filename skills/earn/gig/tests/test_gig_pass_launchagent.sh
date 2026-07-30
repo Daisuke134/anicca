@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
-PLIST="$ROOT/skills/gig-work/launchd/ai.anicca.hf-gig-pass.plist"
-AUDITOR_PLIST="$ROOT/skills/gig-work/launchd/ai.anicca.hf-gig-auditor.plist"
-REGISTRY="$ROOT/config/launchd/agents/gig.json"
-README="$ROOT/README.md"
-LAUNCHER="/Users/anicca/profitable-claude/skills/gig-work/scripts/launch_gig_worker.sh"
+ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+PLIST="$ROOT/skills/earn/gig/launchd/ai.anicca.hf-gig-pass.plist"
+AUDITOR_PLIST="$ROOT/skills/earn/gig/launchd/ai.anicca.hf-gig-auditor.plist"
+REGISTRY="$ROOT/skills/earn/gig/config/launchd/agents/gig.json"
+SLOT_DOC="$ROOT/skills/earn/gig/SLOT_CC.md"
+LAUNCHER="__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/launch_gig_worker.sh"
 
 test -f "$PLIST" || { echo 'canonical gig pass LaunchAgent missing'; exit 1; }
 plutil -lint "$PLIST" >/dev/null
 plutil -lint "$AUDITOR_PLIST" >/dev/null
 test "$(plutil -extract Label raw -o - "$PLIST")" = 'ai.anicca.hf-gig-pass'
 test "$(plutil -extract ProgramArguments.0 raw -o - "$PLIST")" = '/bin/bash'
-test "$(plutil -extract ProgramArguments.1 raw -o - "$PLIST")" = '/Users/anicca/profitable-claude/skills/gig-work/scripts/run_with_cdp_lock.sh'
+test "$(plutil -extract ProgramArguments.1 raw -o - "$PLIST")" = '__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/run_with_cdp_lock.sh'
 test "$(plutil -extract ProgramArguments.2 raw -o - "$PLIST")" = 'gig-pass'
 grep -q "$LAUNCHER" "$PLIST"
 test "$(plutil -extract StartCalendarInterval.0.Minute raw -o - "$PLIST")" = '0'
@@ -62,7 +62,7 @@ test "$(jq -r '.agents["ai.anicca.hf-gig-auditor"].token_budget.daily_scope' "$R
 # The reply detector runs a composition model call every 300s on its own timer,
 # outside any pass. Before X20 it exported no budget env at all, so every one of
 # those calls recorded budget_not_configured and was never charged.
-DETECTOR_PLIST="$ROOT/skills/gig-work/launchd/ai.anicca.hf-gig-reply-detector.plist"
+DETECTOR_PLIST="$ROOT/skills/earn/gig/launchd/ai.anicca.hf-gig-reply-detector.plist"
 plutil -lint "$DETECTOR_PLIST" >/dev/null
 test "$(plutil -extract EnvironmentVariables.GIG_REPLY_PASS_TOKEN_BUDGET raw -o - "$DETECTOR_PLIST")" = '65536'
 test "$(plutil -extract EnvironmentVariables.GIG_DAILY_TOKEN_BUDGET raw -o - "$DETECTOR_PLIST")" = '1048576'
@@ -81,7 +81,7 @@ test "$(jq -c '.agents["ai.anicca.hf-gig-pass"].model_routes' "$REGISTRY")" = \
 test "$(jq -c '.agents["ai.anicca.hf-gig-pass"].escalation' "$REGISTRY")" = \
   '{"task_class":"escalation-agent","route":"explicit-escalation","requires_reason":true}'
 ! grep -q '<string>.*gig_pass.sh</string>' "$PLIST" || { echo 'LaunchAgent bypasses launcher'; exit 1; }
-grep -q 'ai.anicca.hf-gig-pass.plist.*Library/LaunchAgents' "$README"
-grep -q 'launchctl bootstrap.*ai.anicca.hf-gig-pass.plist' "$README"
+grep -q 'host unitの生成・登録はGig installerがtemplateから行う' "$SLOT_DOC"
+grep -q 'source plistを直接copyしない' "$SLOT_DOC"
 
 echo 'PASS: OS scheduler directly targets canonical production launcher'

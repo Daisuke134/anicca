@@ -5,9 +5,11 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-returned-delivery-first.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-G="$HOME_DIR/profitable-claude/skills/gig-work"
-mkdir -p "$HOME_DIR/gig" "$G/scripts" "$G/schemas" "$G/config/connectors" "$HOME_DIR/profitable-claude/skills/agent-runner"
+G="$HOME_DIR/life-manager/skills/earn/gig"
+mkdir -p "$HOME_DIR/gig" "$G/scripts" "$G/schemas" "$G/config/connectors" "$HOME_DIR/life-manager/runtime/agent-runner"
 cp "$SKILL_DIR/gig_pass.sh" "$G/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$G/scripts/gig_paths.sh"
+cp "$SKILL_DIR/scripts/gig_paths.py" "$G/scripts/gig_paths.py"
 cp "$SKILL_DIR/passprep.py" "$G/passprep.py"
 cp "$SKILL_DIR/strategy.default.json" "$G/strategy.default.json"
 cp "$SKILL_DIR/scripts/delivery_queue.py" "$G/scripts/delivery_queue.py"
@@ -21,7 +23,7 @@ cp "$SKILL_DIR/scripts/paid_work_transaction.py" "$G/scripts/paid_work_transacti
 cp "$SKILL_DIR/scripts/paid_work_validation_contract.py" "$G/scripts/paid_work_validation_contract.py"
 cp "$SKILL_DIR/scripts/paid_queue_evidence.py" "$G/scripts/paid_queue_evidence.py"
 cp "$SKILL_DIR/scripts/gig_context_packet.py" "$G/scripts/gig_context_packet.py"
-cp "$SKILL_DIR/../agent-runner/context_packet.py" "$HOME_DIR/profitable-claude/skills/agent-runner/context_packet.py"
+cp "$SKILL_DIR/../../../runtime/agent-runner/context_packet.py" "$HOME_DIR/life-manager/runtime/agent-runner/context_packet.py"
 cp "$SKILL_DIR/scripts/reply_queue.py" "$G/scripts/reply_queue.py"
 cp "$SKILL_DIR/scripts/connector_outbox.py" "$G/scripts/connector_outbox.py"
 cp "$SKILL_DIR/config/connectors/coconala.json" "$G/config/connectors/coconala.json"
@@ -76,7 +78,7 @@ cat > "$TMP/snapshot.json" <<'JSON'
   "inquiries": []
 }
 JSON
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os
 from pathlib import Path
@@ -119,7 +121,7 @@ elif label == "REFLECT":
 (evidence / "summary.json").write_text(json.dumps({"status": "success", "task_label": "gig-" + label}) + "\n", encoding="utf-8")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
 cat > "$TMP/fake-paid-progress" <<'PY'
 #!/usr/bin/env python3
 import argparse, json

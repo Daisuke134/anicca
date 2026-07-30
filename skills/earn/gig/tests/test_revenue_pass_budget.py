@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[3]
-PASS = ROOT / "skills/gig-work/gig_pass.sh"
-PLIST = ROOT / "skills/gig-work/launchd/ai.anicca.hf-gig-pass.plist"
-REGISTRY = ROOT / "config/launchd/agents/gig.json"
+GIG_ROOT = Path(__file__).resolve().parents[1]
+PASS = GIG_ROOT / "gig_pass.sh"
+PLIST = GIG_ROOT / "launchd/ai.anicca.hf-gig-pass.plist"
+REGISTRY = GIG_ROOT / "config/launchd/agents/gig.json"
 
 # Production pass 1785282568-41648 stopped at one application because B0/B1
 # consumed two shared calls and B2 could use only five more. B2 now owns a

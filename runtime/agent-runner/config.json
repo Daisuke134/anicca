@@ -42,7 +42,23 @@
       "quota": {"source": "provider"}
     }
   },
-  "candidate_profiles": {},
+  "candidate_profiles": {
+    "gig-paid-builder": {
+      "task_class": "high-value-agent",
+      "openclaw": {
+        "agent": "gig-paid-builder",
+        "sandbox": {
+          "mode": "all",
+          "workspaceAccess": "rw",
+          "workspace": "~/gig/projects",
+          "containerWorkspace": "/workspace",
+          "sessionIsSandboxed": true,
+          "elevated": false,
+          "execHost": "sandbox"
+        }
+      }
+    }
+  },
   "task_classes": {
     "deterministic": {
       "route": "deterministic",

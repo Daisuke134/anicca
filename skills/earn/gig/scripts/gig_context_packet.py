@@ -10,8 +10,9 @@ from pathlib import Path
 import sys
 from typing import Any
 
+from gig_paths import RUNNER_DIR
 
-SHARED = Path(__file__).resolve().parents[2] / "agent-runner" / "context_packet.py"
+SHARED = RUNNER_DIR / "context_packet.py"
 SPEC = importlib.util.spec_from_file_location("shared_context_packet", SHARED)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("shared context packet module is unavailable")

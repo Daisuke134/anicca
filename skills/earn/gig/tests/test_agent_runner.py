@@ -11,10 +11,11 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[2]
-RUNNER = ROOT / "agent-runner" / "agent_runner.py"
-CONFIG = ROOT / "agent-runner" / "config.json"
-GIG_PASS = ROOT / "gig-work" / "gig_pass.sh"
+ROOT = Path(__file__).resolve().parents[4]
+GIG_ROOT = ROOT / "skills" / "earn" / "gig"
+RUNNER = ROOT / "runtime" / "agent-runner" / "agent_runner.py"
+CONFIG = ROOT / "runtime" / "agent-runner" / "config.json"
+GIG_PASS = GIG_ROOT / "gig_pass.sh"
 
 
 class AgentRunnerContractTest(unittest.TestCase):
@@ -133,7 +134,7 @@ class AgentRunnerContractTest(unittest.TestCase):
         )
         self.assertEqual(
             production_config["providers"]["codex"]["automation_home"],
-            "~/.local/state/anicca/codex-runner",
+            "~/.local/state/life-manager/codex-runner",
         )
         self.assertEqual(
             production_config["providers"]["codex"]["auth_file"],
@@ -160,25 +161,23 @@ class AgentRunnerContractTest(unittest.TestCase):
                 "workspace_dependencies",
             ],
         )
-        production = "\n".join((ROOT / "gig-work" / name).read_text(encoding="utf-8") for name in (
+        production = "\n".join((GIG_ROOT / name).read_text(encoding="utf-8") for name in (
             "gig_pass.sh", "gig-cli.sh", "gig_reality_verify.sh", "auditor.sh",
         ))
         self.assertNotRegex(production, r"command -v claude|\$CLAUDE|claude\s+-p|--model\s+sonnet")
 
-        step_schema = json.loads((ROOT / "gig-work" / "schemas" / "gig_step_result.schema.json").read_text())
+        step_schema = json.loads((GIG_ROOT / "schemas" / "gig_step_result.schema.json").read_text())
         self.assertEqual(step_schema["properties"]["status"]["type"], "string")
         self.assertEqual(step_schema["properties"]["status"]["const"], "ok")
-        verdict_schema = json.loads((ROOT / "gig-work" / "schemas" / "gig_reality_verdict.schema.json").read_text())
+        verdict_schema = json.loads((GIG_ROOT / "schemas" / "gig_reality_verdict.schema.json").read_text())
         self.assertEqual(set(verdict_schema["required"]), set(verdict_schema["properties"]))
 
     def test_every_shared_runner_call_has_explicit_loop_attribution(self):
         expected = {
-            ROOT / "gig-work" / "gig_pass.sh": "gig",
-            ROOT / "gig-work" / "gig_reality_verify.sh": "gig",
-            ROOT / "gig-work" / "scripts" / "reply_composer.py": "gig",
-            ROOT / "bounty" / "bounty-cli.sh": "bounty",
-            ROOT / "connector" / "connector_fill_gaps.sh": "connector",
-            ROOT / "life-manager" / "life-manager-daily.sh": "life-manager",
+            GIG_ROOT / "gig_pass.sh": "gig",
+            GIG_ROOT / "gig_reality_verify.sh": "gig",
+            GIG_ROOT / "scripts" / "reply_composer.py": "gig",
+            ROOT / "skills" / "life-manager" / "life-manager-daily.sh": "life-manager",
         }
         for script, loop in expected.items():
             with self.subTest(script=script):
@@ -281,7 +280,7 @@ class AgentRunnerContractTest(unittest.TestCase):
         self.assertEqual(profile["openclaw"]["sandbox"], {
             "mode": "all",
             "workspaceAccess": "rw",
-            "workspace": "/Users/anicca/gig/projects",
+            "workspace": "~/gig/projects",
             "containerWorkspace": "/workspace",
             "sessionIsSandboxed": True,
             "elevated": False,
@@ -316,11 +315,11 @@ class AgentRunnerContractTest(unittest.TestCase):
         self.assertIn('lane_step "B2" "application-lane-agent"', pass_source)
         self.assertIn(
             "--task-class tool-agent",
-            (ROOT / "gig-work" / "gig_reality_verify.sh").read_text(encoding="utf-8"),
+            (GIG_ROOT / "gig_reality_verify.sh").read_text(encoding="utf-8"),
         )
 
     def test_reality_auditor_uses_bounded_route_without_openclaw(self):
-        source = (ROOT / "gig-work" / "gig_reality_verify.sh").read_text(encoding="utf-8")
+        source = (GIG_ROOT / "gig_reality_verify.sh").read_text(encoding="utf-8")
         self.assertIn("--task-class tool-agent", source)
         config = json.loads(CONFIG.read_text(encoding="utf-8"))
         route = config["task_classes"]["tool-agent"]
@@ -928,7 +927,7 @@ class AgentRunnerContractTest(unittest.TestCase):
         value = json.loads(config.read_text())
         value["providers"]["claude-direct"] = {
             "executable": "claude",
-            "account": "keiodaisuke@gmail.com",
+            "account": "operator@example.com",
         }
         config.write_text(json.dumps(value))
 
@@ -947,7 +946,7 @@ class AgentRunnerContractTest(unittest.TestCase):
         attempt = json.loads((evidence / "attempts.jsonl").read_text().splitlines()[0])
         self.assertEqual(attempt["provider"], "claude-direct")
         self.assertEqual(attempt["model"], "sonnet")
-        self.assertEqual(attempt["account"], "keiodaisuke@gmail.com")
+        self.assertEqual(attempt["account"], "operator@example.com")
         self.assertTrue(attempt["schema_valid"])
 
     def test_non_claude_child_does_not_receive_cli_proxy_secret(self):
@@ -1557,18 +1556,27 @@ class AgentRunnerContractTest(unittest.TestCase):
             "ANICCA_TOKEN_BUDGET_LEDGER": str(self.root / "token-budget.jsonl"),
         }
 
-        first, _ = self.run_runner(config_path, extra_env=budget_env)
+        first, evidence = self.run_runner(config_path, extra_env=budget_env)
+        first_summary = json.loads((evidence / "summary.json").read_text())
+        first_attempt = json.loads((evidence / "attempts.jsonl").read_text().splitlines()[0])
         second, evidence = self.run_runner(config_path, extra_env=budget_env)
 
         self.assertEqual(first.returncode, 0, first.stderr)
-        self.assertEqual(second.returncode, 0, second.stderr)
-        summary = json.loads((evidence / "summary.json").read_text())
-        attempt = json.loads((evidence / "attempts.jsonl").read_text().splitlines()[0])
-        self.assertEqual(attempt["usage"]["total_tokens"], 80)
-        self.assertEqual(attempt["usage"]["cached_input_tokens"], 60)
-        self.assertEqual(summary["budget"]["charged_tokens"], 20)
-        self.assertEqual(summary["budget"]["pass_consumed_after_tokens"], 40)
-        self.assertEqual(calls.read_text().splitlines(), ["call", "call"])
+        self.assertEqual(first_attempt["usage"]["total_tokens"], 80)
+        self.assertEqual(first_attempt["usage"]["cached_input_tokens"], 60)
+        self.assertEqual(first_summary["budget"]["charged_tokens"], 20)
+        self.assertEqual(first_summary["budget"]["pass_consumed_after_tokens"], 20)
+
+        # Life Manager's shared runner reserves the full pass ceiling at
+        # admission. Only 80 daily tokens remain after the first measured
+        # 20-token charge, so a second 100-token pass is rejected before the
+        # provider launches even though cached input was not charged twice.
+        self.assertEqual(second.returncode, 75, second.stderr)
+        second_summary = json.loads((evidence / "summary.json").read_text())
+        self.assertEqual(second_summary["status"], "budget_blocked")
+        self.assertEqual(second_summary["budget"]["reservation_tokens"], 100)
+        self.assertEqual(second_summary["budget"]["daily_consumed_tokens"], 20)
+        self.assertEqual(calls.read_text().splitlines(), ["call"])
 
     def test_healthy_sonnet_after_codex_quota_never_invokes_openclaw(self):
         openclaw_marker = self.root / "openclaw-invoked"

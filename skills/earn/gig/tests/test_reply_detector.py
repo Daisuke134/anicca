@@ -116,6 +116,7 @@ class ReplyDetectorTest(unittest.TestCase):
             "--lane-script", str(self.lane),
             "--telegram-report-script", str(self.reporter),
             "--telegram-database", str(self.root / "telegram.sqlite3"),
+            "--telegram-target", "fixture-chat",
             "--output", str(output or self.root / "detector-result.json"),
         ]
 

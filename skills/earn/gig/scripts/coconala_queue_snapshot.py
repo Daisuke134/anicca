@@ -53,6 +53,8 @@ REQUESTS_URL = "https://coconala.com/mypage/received_orders/requests"
 MESSAGES_URL = "https://coconala.com/message"
 B1_INBOX_URL = "https://coconala.com/message?fromMyPage=true"
 CONNECTOR_MANIFEST_PATH = Path(__file__).resolve().parents[1] / "config" / "connectors" / "coconala.json"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+BROWSER_HELPER = REPO_ROOT / "skills" / "browser" / "scripts" / "cdp_default_tab.py"
 ACTIONABLE = re.compile(r"修正|改善|成果物|納品|提出|追加(?:して|撮影)|誤検出|見逃し|エラー|バグ|全361")
 AGREEMENT = re.compile(r"問題ありません|問題ない|確認済み|OK|ＯＫ|大丈夫|承認|受け入れました|受け入れます")
 
@@ -745,7 +747,7 @@ def argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--cdp-helper", type=Path,
-                        default=Path.home() / "anicca/skills/browser/scripts/cdp_default_tab.py")
+                        default=BROWSER_HELPER)
     parser.add_argument("--projects-root", type=Path, default=Path.home() / "gig/projects")
     target_mode = parser.add_mutually_exclusive_group()
     target_mode.add_argument(

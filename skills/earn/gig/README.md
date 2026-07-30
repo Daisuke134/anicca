@@ -1,8 +1,8 @@
 # Life Manager Gig loop
 
 This directory is the canonical local OSS package for Life Manager's
-marketplace revenue loop. The current production process continues to run from
-the profitable-claude checkout until the D5 parity and cutover gates pass.
+marketplace revenue loop. Production cutover occurs only after the D5 parity
+and controlled-plus-natural wake gates pass.
 
 ## Runtime flow
 

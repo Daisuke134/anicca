@@ -19,6 +19,17 @@ from typing import Any
 
 
 SCHEMAS = Path(__file__).resolve().parents[1] / "schemas"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+LIFE_MANAGER_HOME = Path(
+    os.environ.get(
+        "LIFE_MANAGER_HOME",
+        os.environ.get(
+            "ANICCA_HOME",
+            Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+            / "life-manager",
+        ),
+    )
+)
 DIAGNOSTIC_CLASSES = frozenset(
     {
         "schema_diagnose",
@@ -35,7 +46,7 @@ def _patch_handoff(
     diagnosis: dict[str, Any],
     runner: Callable[..., Any],
 ) -> dict[str, Any]:
-    self_fix = Path.home() / "anicca" / "skills" / "self" / "self-fix.sh"
+    self_fix = REPO_ROOT / "skills" / "self" / "self-fix.sh"
     incident_id = (
         int(incident.get("incident_id") or 0)
         if isinstance(incident, dict)
@@ -75,7 +86,7 @@ def _patch_handoff(
         "patch_handoff": "spawned",
         "patch_stdout_tail": str(result.stdout or "")[-500:],
         "patch_result_marker": str(
-            Path.home() / ".openclaw/state/.self-fix-gig-loop.result"
+            LIFE_MANAGER_HOME / "state" / ".self-fix-gig-loop.result"
         ),
     }
 

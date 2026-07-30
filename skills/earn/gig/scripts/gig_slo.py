@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import shutil
 import sqlite3
 import time
@@ -480,7 +481,19 @@ def collect_snapshot(
     host_state = (
         Path(host_state_dir)
         if host_state_dir is not None
-        else Path.home() / ".openclaw" / "state"
+        else Path(
+            os.environ.get(
+                "GIG_HOST_STATE_DIR",
+                Path(
+                    os.environ.get(
+                        "LIFE_MANAGER_HOME",
+                        Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+                        / "life-manager",
+                    )
+                )
+                / "state",
+            )
+        )
     )
     heartbeat = root / ".last-pass"
     try:
@@ -557,6 +570,16 @@ def evaluate_and_enqueue(
 
 def main() -> int:
     home = Path.home()
+    life_manager_home = Path(
+        os.environ.get(
+            "LIFE_MANAGER_HOME",
+            os.environ.get(
+                "ANICCA_HOME",
+                Path(os.environ.get("XDG_STATE_HOME", home / ".local/state"))
+                / "life-manager",
+            ),
+        )
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-dir", type=Path, default=home / "gig")
     parser.add_argument(
@@ -568,7 +591,7 @@ def main() -> int:
     parser.add_argument(
         "--host-state-dir",
         type=Path,
-        default=home / ".openclaw/state",
+        default=life_manager_home / "state",
     )
     parser.add_argument("--now", type=int, default=None)
     args = parser.parse_args()

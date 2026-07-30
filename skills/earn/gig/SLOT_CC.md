@@ -1,49 +1,47 @@
-# earn/gig = COCONALA daily loop (clip-pattern, human-funded ¥ → Dais MUFG)
+# earn/gig
 
-Pivoted 2026-06-30 from dealwork (an AI can NEVER withdraw its dealwork balance —
-`/api/v1/wallet/withdraw` → "Only human accounts can withdraw"). earn/gig is now an
-INDEPENDENT every-day loop (NOT a one-picker slot), built exactly like the proven clip loop.
+`earn/gig` はLife Manager内で独立して毎日動くlocal OSS revenue loop。
 
-## The mechanism (this is what runs — NOT run.sh)
+## Runtime
+
 | piece | file | role |
 |---|---|---|
-| CORE | `gig-cli.sh` | claude-p tmux session; registers cron `27 * * * *`; each pass runs the 5-behavior self-improving loop (see below) |
-| HEALTHCHECK | `gig-healthcheck.sh` + `launchd/ai.anicca.gig-core-healthcheck.plist` | launchd 5-min; restart the core if the tmux session dies |
-| MONITOR | `monitor.sh` | read-only status: applied + ¥ earned ledger (settled-status + evidence only) |
-| MAIN-LOOP ENTRY | `run.sh` | the main loop resolves earn/gig → run.sh; it ensures the core is alive + reports ¥ status (NO USDC). The real earning is the core. |
-| RUNBOOK | `scripts/coconala/APPLY_RUNBOOK.md` | the proven no-human 応募する flow the core reads (real mouse-click datepicker, setFileInputFiles attach, 投稿前モーダル) |
+| CORE | `gig-cli.sh` | tmux supervisor。実passはhost schedulerが起動 |
+| PASS | `gig_pass.sh` | 納品、出品、返信、応募の4 lane |
+| HEALTHCHECK | `gig-healthcheck.sh` | core/browser/disk/sandboxの監視 |
+| AUDITOR | `auditor.sh` | SLO、reality verification、repair queue |
+| REPORT | `scripts/telegram_report.py` | 即時、毎時、日次、週次のhourensou |
+| MAIN ENTRY | `run.sh` | Life Managerの`earn/gig` slot |
 
-## Money path (human-funded — NOT on-chain USDC)
-¥ settles to Dais's KYC'd Coconala account "mtdc" → MUFG. There is NO USDC / wallet / record-earn
-in this loop. A ¥ earn is recorded ONLY by the core to `~/gig/earnings.jsonl` when Coconala UI
-actually shows 検収/支払 (real side-effect). The only human element is Dais's one-time account/KYC.
+## Money path
 
-## 5-behavior self-improving loop (added 2026-06-30)
+売上は接続したmarketplace accountへsettleする。`earnings.jsonl`へ記録するのは、
+実画面が検収または支払を示し、外部evidenceがある場合だけ。日常運転にhuman操作を
+要求せず、初回KYC/OAuth/credential bootstrapだけを利用者が行う。
 
-Each hourly pass runs in priority order:
+## Four revenue lanes
 
-| Step | Behavior | Ledger written |
-|------|----------|---------------|
-| B1 | **NURTURE ALL**: sweep every active talk-room; reply / 納品 / 評価依頼 | `applied.jsonl` (status: replied/delivered/評価依頼) |
-| B2 | **APPLY BROADLY**: up to `strategy.max_apply_per_pass` new requests per pass, guided by `strategy.json` categories + templates; deduped via `applied.jsonl` requestIds | `applied.jsonl` (status: applied) |
-| B3 | **LEARN**: outcome events (accepted/rejected/needs_human/…) → `~/gig/lessons.jsonl` | `lessons.jsonl` |
-| B4 | **SELF-IMPROVE** (every N passes): read lessons + peer GitHub issues → update `~/gig/strategy.json` (priorities, skip_categories, templates, prices) | `strategy.json` |
-| B5 | **BOT-TO-BOT** (with B4): post `[gig-lesson]` GitHub issue on notable lesson; read recent peer issues; dedup via `~/gig/shared-lessons.jsonl` | `shared-lessons.jsonl` |
+| 順 | lane | canonical evidence |
+|---:|---|---|
+| 1 | 納品 | artifact、acceptance、talkroom readback |
+| 2 | 出品 | seller readback、service ID、listing ledger |
+| 3 | 返信 | send ACK、talkroom readback、reply ledger |
+| 4 | 応募 | helper ACK、公式応募管理、application ledger |
 
-Strategy seeded from `strategy.default.json` → `~/gig/strategy.json` on first pass.  
-Improve step cadence: `strategy.improve_cadence_passes` (default 4 = every ~4h).
+pass後はfresh funnelを作り、外部best practiceに基づく単一experimentを
+minimum sample到達後にkeep/revertする。
 
-## How to run / register
+## Portable paths
+
+- canonical package: `skills/earn/gig/`
+- executor: `runtime/agent-runner/`
+- browser: `skills/browser/`
+- state/credential/evidence: repo外。Gitへtrackしない
+
 ```bash
-bash ~/profitable-claude/skills/gig-work/gig-cli.sh          # start the core (idempotent)
-cp launchd/*.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/ai.anicca.gig-*.plist
-bash ~/profitable-claude/skills/gig-work/monitor.sh          # status
+cd /path/to/life-manager
+bash skills/earn/gig/gig-cli.sh
+bash skills/earn/gig/monitor.sh
 ```
 
-## Verification status (Coconala loop)
-- vcsdd-adversary on the Coconala loop: see iteration after the 2026-06-30 fixes (runbook added,
-  dead code archived, monitor added, no-human audit extended to gig-cli.sh; no producer —
-  the core live-scans the board each pass).
-- NOTE: the OLD dealwork+USDC machinery (36 tests, adversary ROUND 6 PASS) is in `archive/` —
-  it is NOT part of this loop and must NOT be registered. It is kept only for a future self-funded
-  USDC rail (Claw Earn / x402).
+host unitの生成・登録はGig installerがtemplateから行う。source plistを直接copyしない。

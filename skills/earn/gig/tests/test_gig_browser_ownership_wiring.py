@@ -28,18 +28,18 @@ def test_all_browser_drivers_share_one_dedicated_gig_runtime():
         assert environment["CLOAK_CDP_BASE_URL"] == "http://127.0.0.1:9223"
         assert environment["CDP_DAILY_DRIVER_PORT"] == "9223"
         assert environment["CDP_DAILY_DRIVER_PROFILE"] == (
-            "/Users/anicca/.cloak/profiles/gig-daily-driver"
+            "__HOME__/.cloak/profiles/gig-daily-driver"
         )
         assert environment["CLOAK_CONTEXT_LEASES_FILE"] == (
-            "/Users/anicca/.cloak/vault/gig-leases.json"
+            "__HOME__/.cloak/vault/gig-leases.json"
         )
         assert environment["CLOAK_TARGET_OWNERS_FILE"] == (
-            "/Users/anicca/.cloak/vault/gig-target-owners.json"
+            "__HOME__/.cloak/vault/gig-target-owners.json"
         )
         assert environment["CLOAK_BROWSER_LAUNCHD_LABEL"] == (
             "ai.anicca.hf-gig-browser"
         )
-        assert environment["CDP_LOCK_DIR"] == "/Users/anicca/gig/.cdp-gig.lock"
+        assert environment["CDP_LOCK_DIR"] == "__HOME__/gig/.cdp-gig.lock"
 
 
 def test_gig_browser_has_a_launchd_keepalive_owner():
@@ -55,12 +55,12 @@ def test_gig_browser_has_a_launchd_keepalive_owner():
     arguments = job["ProgramArguments"]
     assert arguments == [
         "/bin/bash",
-        "/Users/anicca/profitable-claude/skills/gig-work/scripts/launch_gig_browser.sh",
+        "__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/launch_gig_browser.sh",
     ]
     environment = job["EnvironmentVariables"]
     assert environment["GIG_BROWSER_PORT"] == "9223"
     assert environment["GIG_BROWSER_PROFILE"] == (
-        "/Users/anicca/.cloak/profiles/gig-daily-driver"
+        "__HOME__/.cloak/profiles/gig-daily-driver"
     )
     launcher = (
         GIG_WORK / "scripts" / "launch_gig_browser.sh"

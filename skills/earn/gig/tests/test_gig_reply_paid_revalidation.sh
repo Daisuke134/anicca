@@ -5,16 +5,18 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-reply-paid-revalidation.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-G="$HOME_DIR/profitable-claude/skills/gig-work"
+G="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$HOME_DIR/gig" "$G/scripts" "$G/schemas" "$G/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner"
+  "$HOME_DIR/life-manager/runtime/agent-runner"
 for file in gig_pass.sh passprep.py strategy.default.json; do cp "$SKILL_DIR/$file" "$G/$file"; done
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$G/scripts/gig_paths.sh"
+cp "$SKILL_DIR/scripts/gig_paths.py" "$G/scripts/gig_paths.py"
 for file in delivery_queue.py delivery_cadence.py delivery_project.py project_ledger.py \
   delivery_identity.py reply_queue.py connector_outbox.py cdp_lock.sh run_with_cdp_lock.sh \
   gig_context_packet.py; do
   cp "$SKILL_DIR/scripts/$file" "$G/scripts/$file"
 done
-cp "$SKILL_DIR/../agent-runner/context_packet.py" "$HOME_DIR/profitable-claude/skills/agent-runner/context_packet.py"
+cp "$SKILL_DIR/../../../runtime/agent-runner/context_packet.py" "$HOME_DIR/life-manager/runtime/agent-runner/context_packet.py"
 cp "$SKILL_DIR/config/connectors/coconala.json" "$G/config/connectors/coconala.json"
 cp "$SKILL_DIR/schemas/gig_step_result.schema.json" "$G/schemas/gig_step_result.schema.json"
 chmod +x "$G/scripts/run_with_cdp_lock.sh"
@@ -62,7 +64,7 @@ cat > "$G/scripts/telegram_report.py" <<'PY'
 #!/usr/bin/env python3
 raise SystemExit(0)
 PY
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import json, os, sys
 from pathlib import Path
@@ -72,7 +74,7 @@ Path(os.environ["PAID_EXPECTED_COPY"]).write_text(json.dumps(row) + "\n")
 raise SystemExit(55)
 PY
 chmod +x "$G/scripts/reply_lane.py" "$G/scripts/telegram_report.py" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+  "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
 
 set +e
 HOME="$HOME_DIR" GIG_WORKER_LEASE_ACTIVE=1 GIG_QUEUE_FIXTURE="$TMP/before.json" \

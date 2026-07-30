@@ -7,6 +7,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -895,6 +896,7 @@ def run() -> int:
     parser.add_argument("--workdir", type=Path, default=Path.home())
     parser.add_argument("--candidate-profile")
     parser.add_argument("--escalation-reason")
+    parser.add_argument("--timeout-seconds", type=int)
     parsed = parser.parse_args()
 
     if parsed.task_class == "composition-agent" and not parsed.prompt_stdin:
@@ -931,7 +933,19 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
-        timeout_seconds = int(task_config.get("timeout_seconds", config["timeout_seconds"]))
+        configured_timeout_seconds = int(
+            task_config.get("timeout_seconds", config["timeout_seconds"])
+        )
+        if configured_timeout_seconds < 1:
+            raise ValueError("configured timeout must be positive")
+        if parsed.timeout_seconds is not None and parsed.timeout_seconds < 1:
+            raise ValueError("explicit timeout must be positive")
+        timeout_seconds = min(
+            configured_timeout_seconds,
+            parsed.timeout_seconds
+            if parsed.timeout_seconds is not None
+            else configured_timeout_seconds,
+        )
         route = str(task_config.get("route") or f"{parsed.task_class}:configured")
         escalation_reason = (
             parsed.escalation_reason.strip()
@@ -1031,8 +1045,13 @@ def run() -> int:
         "reason": "budget_not_configured",
         "scope_id": budget_scope_id or None,
     }
+    total_deadline = time.monotonic() + timeout_seconds
 
     for index, candidate in enumerate(candidates, 1):
+        remaining_timeout = total_deadline - time.monotonic()
+        if remaining_timeout <= 0:
+            break
+        attempt_timeout_seconds = max(1, math.ceil(remaining_timeout))
         budget_event_id = f"agent-budget-{uuid.uuid4().hex}"
         if budget_enabled:
             last_budget = budget_ledger.reserve(
@@ -1101,7 +1120,7 @@ def run() -> int:
                 openclaw_workdir = sandbox_preflight["sandbox_project_root"]
             command = command_for(
                 provider, executable, provider_config, effective_candidate, parsed, candidate_prompt,
-                schema, result_path, timeout_seconds, session_id, openclaw_workdir,
+                schema, result_path, attempt_timeout_seconds, session_id, openclaw_workdir,
                 prompt_via_stdin=parsed.prompt_stdin,
             )
             with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
@@ -1110,7 +1129,7 @@ def run() -> int:
                         command,
                         stdout=stdout,
                         stderr=stderr,
-                        timeout=timeout_seconds,
+                        timeout=attempt_timeout_seconds,
                         cwd=parsed.workdir,
                         input_bytes=prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
@@ -1138,7 +1157,11 @@ def run() -> int:
         result_fresh = result_path.is_file() and result_path.stat().st_mtime_ns >= attempt_started_ns
         schema_valid = False
         schema_errors: list[str] = []
-        if rc == 0 and not timed_out and result_fresh:
+        # The fresh schema-valid result is the completion contract. A provider
+        # process can finish its durable work and result file, then fail to exit
+        # before the outer timeout. Retrying that completed append-only work on
+        # a fallback provider would duplicate marketplace effects.
+        if result_fresh:
             try:
                 result = parse_contract_result(
                     result_path.read_text(encoding="utf-8"),
@@ -1172,7 +1195,8 @@ def run() -> int:
                 "pass_consumed_after_tokens": settlement["pass_consumed_after_tokens"],
                 "daily_consumed_after_tokens": settlement["daily_consumed_after_tokens"],
             }
-        error_class = None if (rc == 0 and schema_valid) else classify_provider_error(
+        contract_complete = result_fresh and schema_valid
+        error_class = None if contract_complete else classify_provider_error(
             rc, timed_out, stdout_text, stderr_text, launch_error,
         )
 
@@ -1242,7 +1266,7 @@ def run() -> int:
             "model": effective_candidate.get("model"),
             "upstream_model": usage.get("upstream_model"),
             "effort": effective_candidate.get("effort"),
-            "status": "success" if rc == 0 and schema_valid else "failed",
+            "status": "success" if contract_complete else "failed",
             "error_class": error_class,
             "duration_ms": row["duration_ms"],
             "measurement": usage["measurement"],
@@ -1269,7 +1293,7 @@ def run() -> int:
         with attempts_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
         attempts.append(row)
-        if rc == 0 and schema_valid:
+        if contract_complete:
             selected = row
             break
         # A valid response with a schema/contract error is deterministic and

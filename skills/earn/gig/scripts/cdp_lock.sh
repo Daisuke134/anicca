@@ -9,7 +9,7 @@
 # daily-driver-tab rule forbids): whoever holds the lock drives; the other waits or defers.
 #
 # Usage (source this file, then call the functions):
-#   source ~/profitable-claude/skills/gig-work/scripts/cdp_lock.sh
+#   source /path/to/life-manager/skills/earn/gig/scripts/cdp_lock.sh
 #   if cdp_lock_acquire "core" 120; then  # owner label, max wait secs
 #       ...drive :9222...
 #       cdp_lock_release

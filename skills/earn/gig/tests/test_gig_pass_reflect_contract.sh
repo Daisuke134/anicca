@@ -4,13 +4,14 @@ set -euo pipefail
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 SOURCE_DIR="${GIG_SOURCE_DIR:-$SKILL_DIR}"
 TMP=$(mktemp -d /tmp/gig-reflect-contract.XXXXXX)
-trap 'rm -rf "$TMP"' EXIT
+trap 'if [ "${KEEP_TMP:-0}" = 1 ]; then echo "KEEP_TMP=$TMP"; else rm -rf "$TMP"; fi' EXIT
 HOME_DIR="$TMP/home"
-GIG_DIR="$HOME_DIR/profitable-claude/skills/gig-work"
+GIG_DIR="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$GIG_DIR/scripts" "$GIG_DIR/schemas" "$GIG_DIR/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner" \
-  "$HOME_DIR/anicca/skills/browser/scripts" "$HOME_DIR/gig"
+  "$HOME_DIR/life-manager/runtime/agent-runner" \
+  "$HOME_DIR/life-manager/skills/browser/scripts" "$HOME_DIR/gig"
 cp "$SOURCE_DIR/gig_pass.sh" "$GIG_DIR/gig_pass.sh"
+cp "$SOURCE_DIR/scripts/gig_paths.sh" "$GIG_DIR/scripts/gig_paths.sh"
 cp "$SOURCE_DIR/passprep.py" "$GIG_DIR/passprep.py"
 cp "$SOURCE_DIR/strategy.default.json" "$GIG_DIR/strategy.default.json"
 cp "$SOURCE_DIR/scripts/delivery_queue.py" "$GIG_DIR/scripts/delivery_queue.py"
@@ -24,6 +25,8 @@ cp "$SOURCE_DIR/scripts/b2_result_gate.py" "$GIG_DIR/scripts/b2_result_gate.py"
 cp "$SOURCE_DIR/scripts/application_report.py" "$GIG_DIR/scripts/application_report.py"
 cp "$SOURCE_DIR/scripts/normalize_applied.py" "$GIG_DIR/scripts/normalize_applied.py"
 cp "$SOURCE_DIR/scripts/cdp_nav_snapshot.py" "$GIG_DIR/scripts/cdp_nav_snapshot.py"
+cp "$SOURCE_DIR/scripts/b2_wall_clock.py" "$GIG_DIR/scripts/b2_wall_clock.py"
+cp "$SOURCE_DIR/scripts/b2_search_objective.py" "$GIG_DIR/scripts/b2_search_objective.py"
 cp "$SOURCE_DIR/scripts/b1_conversation_gate.py" "$GIG_DIR/scripts/b1_conversation_gate.py"
 cp "$SOURCE_DIR/scripts/b0_result_gate.py" "$GIG_DIR/scripts/b0_result_gate.py"
 cp "$SOURCE_DIR/schemas/gig_step_result.schema.json" "$GIG_DIR/schemas/gig_step_result.schema.json"
@@ -36,12 +39,16 @@ cat > "$GIG_DIR/scripts/gig_selfimprove_verify.sh" <<'SH'
 #!/usr/bin/env bash
 exit 0
 SH
-chmod +x "$GIG_DIR/scripts/gig_selfimprove_verify.sh"
-cat > "$HOME_DIR/anicca/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+cat > "$GIG_DIR/scripts/experiment_evaluator.py" <<'PY'
 #!/usr/bin/env python3
 raise SystemExit(0)
 PY
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+chmod +x "$GIG_DIR/scripts/gig_selfimprove_verify.sh"
+cat > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+#!/usr/bin/env python3
+raise SystemExit(0)
+PY
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import hashlib, json, os, subprocess, sys
 from pathlib import Path
@@ -69,7 +76,7 @@ if label in {"LEARN", "B1", "B2", "REFLECT"}:
 if label in {"B1", "B2"}:
     for required in (
         "authenticated CloakBrowser daily-driver",
-        "/anicca/skills/browser/SKILL.md",
+        "/life-manager/skills/browser/SKILL.md",
         "step-owned context lease",
         "cdp_context_lease.py acquire",
         "Do not run cdp_context_lease.py release",
@@ -162,7 +169,7 @@ elif label == "REFLECT":
     assert "non-recursive" in prompt
     assert '"pass_id":"' + os.environ["GIG_REFLECT_PASS_ID"] + '"' in prompt
     assert '"queue_path":"' + os.environ["GIG_REFLECT_QUEUE_PATH"] + '"' in prompt
-    assert '"steps_executed":["LEARN","B0","PROFILE","B1","B2"]' in prompt
+    assert '"steps_executed":["B0","PROFILE","B1","B2","LEARN"]' in prompt
     assert '"steps_skipped_cooldown":[]' in prompt
     assert '"steps_skipped_policy":[]' in prompt
     assert "structured current_pass" in prompt
@@ -188,13 +195,13 @@ elif label == "REFLECT":
         pass_id = "wrong-pass"
     queue_path = os.environ["GIG_REFLECT_QUEUE_PATH"]
     evidence_dir = os.environ["GIG_REFLECT_EVIDENCE_DIR"]
-    steps_executed = ["LEARN", "B0", "PROFILE", "B1", "B2"]
+    steps_executed = ["B0", "PROFILE", "B1", "B2", "LEARN"]
     if bad_mode == "wrong-queue":
         queue_path = str(Path(os.environ["GIG_REFLECT_EVIDENCE_DIR"]).parent / "not-current-queue.json")
     elif bad_mode == "wrong-evidence":
         evidence_dir = str(Path(os.environ["GIG_REFLECT_EVIDENCE_DIR"]).parent / "not-current-evidence")
     elif bad_mode == "wrong-steps":
-        steps_executed = ["LEARN", "B0"]
+        steps_executed = ["B0", "PROFILE"]
     local_evidence = evidence / "current-pass-evidence.json"
     local_evidence.write_text(json.dumps({"pass_id": pass_id}) + "\n", encoding="utf-8")
     reflection_evidence = [f"{local_evidence}: current-pass fixture evidence"]
@@ -230,7 +237,7 @@ else:
     (evidence / "summary.json").write_text(json.dumps({"status": "success", "label": label}) + "\n", encoding="utf-8")
 raise SystemExit(0)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py"
 
 run_pass() {
   local pass_id="$1" bad="$2"
@@ -258,7 +265,7 @@ rows = [json.loads(line) for line in report_bytes.decode("utf-8").splitlines() i
 assert rows and rows[-1]["status"] == "success", rows
 row = rows[-1]
 assert row["pass_id"] == "reflect-e2e"
-assert row["steps"] == ["LEARN", "B0", "PROFILE", "B1", "B2", "REFLECT"], row
+assert row["steps"] == ["B0", "PROFILE", "B1", "B2", "LEARN", "REFLECT"], row
 assert row["steps_executed"] == row["steps"] and row["steps_skipped_cooldown"] == [] and row["steps_skipped_policy"] == [], row
 assert json.load(open(heartbeat, encoding="utf-8")) == row
 assert open(heartbeat, "rb").read() == (report_bytes.splitlines()[-1] + b"\n")

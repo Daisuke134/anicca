@@ -5,12 +5,15 @@
 set -uo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-WORKER_SCRIPT="${GIG_WORKER_SCRIPT:-$HOME/profitable-claude/skills/gig-work/gig_pass.sh}"
-LEASE_DIR="${GIG_WORKER_LEASE_DIR:-$HOME/.openclaw/state/gig-workers}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=gig_paths.sh
+source "$SCRIPT_DIR/gig_paths.sh"
+WORKER_SCRIPT="${GIG_WORKER_SCRIPT:-$GIG_DIR/gig_pass.sh}"
+LEASE_DIR="${GIG_WORKER_LEASE_DIR:-$GIG_HOST_STATE_DIR/gig-workers}"
 HEARTBEAT_INTERVAL="${GIG_WORKER_HEARTBEAT_INTERVAL:-30}"
 READY_FILE="${GIG_WORKER_READY_FILE:-}"
-DISK_STOP_FLAG="${GIG_WORKER_DISK_STOP_FLAG:-$HOME/.openclaw/state/disk-writers.stop}"
-DISK_PRESSURE_FLAG="${GIG_WORKER_DISK_PRESSURE_FLAG:-$HOME/.openclaw/state/disk-pressure.block}"
+DISK_STOP_FLAG="${GIG_WORKER_DISK_STOP_FLAG:-$GIG_HOST_STATE_DIR/disk-writers.stop}"
+DISK_PRESSURE_FLAG="${GIG_WORKER_DISK_PRESSURE_FLAG:-$GIG_HOST_STATE_DIR/disk-pressure.block}"
 MIN_FREE_GB="${GIG_WORKER_MIN_FREE_GB:-5}"
 WORKER_PID=""
 WORKER_PGID=""
@@ -19,7 +22,7 @@ LEASE=""
 HEARTBEAT=""
 WORKER_SNAPSHOT=""
 WORKER_SNAPSHOT_DIR="${GIG_WORKER_SNAPSHOT_DIR:-$LEASE_DIR/snapshots}"
-WORK_EVENT_PROJECTOR="${GIG_WORK_EVENT_PROJECTOR:-$HOME/profitable-claude/skills/gig-work/scripts/work_event_projector.py}"
+WORK_EVENT_PROJECTOR="${GIG_WORK_EVENT_PROJECTOR:-$GIG_DIR/scripts/work_event_projector.py}"
 WORK_EVENT_PROJECTOR_LOG="${GIG_WORK_EVENT_PROJECTOR_LOG:-$HOME/gig/work-event-projector.log}"
 WORKER_REPORTS_ENABLED="${GIG_WORKER_REPORTS_ENABLED:-1}"
 
@@ -157,19 +160,19 @@ fi
 if [ "$WORKER_REPORTS_ENABLED" = "1" ]; then
   # Per-pass Telegram report: every finished pass (success or fail) reports once.
   # Deduped by pass_id inside the durable outbox; never blocks the exit path.
-  /opt/homebrew/bin/python3 "$HOME/profitable-claude/skills/gig-work/scripts/telegram_report.py" pass \
-    >> "$HOME/.openclaw/logs/gig-pass-report.out.log" 2>&1 || true
+  "${PYTHON:-python3}" "$GIG_DIR/scripts/telegram_report.py" pass \
+    >> "$GIG_LOG_DIR/gig-pass-report.out.log" 2>&1 || true
   # Retry application/delivery instant reports after the pass. The per-event state and
   # outbox keys make this a no-op when the in-pass publish already received an ACK.
-  /opt/homebrew/bin/python3 "$HOME/profitable-claude/skills/gig-work/scripts/telegram_report.py" instant-work-events \
+  "${PYTHON:-python3}" "$GIG_DIR/scripts/telegram_report.py" instant-work-events \
     >> "$HOME/gig/instant-work-event-report.log" 2>&1 || true
   # Contract, payment, incident, and recovery use the same WorkEvent snapshot for
   # Telegram and the agent feed. Historical rows are baselined once, not backfilled.
-  /opt/homebrew/bin/python3 "$HOME/profitable-claude/skills/gig-work/scripts/telegram_report.py" work-events \
+  "${PYTHON:-python3}" "$GIG_DIR/scripts/telegram_report.py" work-events \
     >> "$HOME/gig/work-event-report.log" 2>&1 || true
   # Silence alarm: a lane that keeps running while its ledger gains nothing gets one
   # Telegram warning per barren streak. Rides the same per-pass choke point.
-  /opt/homebrew/bin/python3 "$HOME/profitable-claude/skills/gig-work/scripts/telegram_report.py" lane-barren \
+  "${PYTHON:-python3}" "$GIG_DIR/scripts/telegram_report.py" lane-barren \
     >> "$HOME/gig/.lane-health.err.log" 2>&1 || true
 fi
 cleanup_files

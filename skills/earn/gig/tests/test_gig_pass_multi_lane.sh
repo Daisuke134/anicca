@@ -19,12 +19,13 @@ SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TMP=$(mktemp -d /tmp/gig-pass-multi-lane.XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 HOME_DIR="$TMP/home"
-GIG_DIR="$HOME_DIR/profitable-claude/skills/gig-work"
+GIG_DIR="$HOME_DIR/life-manager/skills/earn/gig"
 mkdir -p "$GIG_DIR/scripts" "$GIG_DIR/schemas" "$GIG_DIR/config/connectors" \
-  "$HOME_DIR/profitable-claude/skills/agent-runner" \
-  "$HOME_DIR/anicca/skills/browser/scripts" "$HOME_DIR/gig"
+  "$HOME_DIR/life-manager/runtime/agent-runner" \
+  "$HOME_DIR/life-manager/skills/browser/scripts" "$HOME_DIR/gig"
 
 cp "$SKILL_DIR/gig_pass.sh" "$GIG_DIR/gig_pass.sh"
+cp "$SKILL_DIR/scripts/gig_paths.sh" "$GIG_DIR/scripts/gig_paths.sh"
 cp "$SKILL_DIR/passprep.py" "$GIG_DIR/passprep.py"
 cp "$SKILL_DIR/strategy.default.json" "$GIG_DIR/strategy.default.json"
 for script in delivery_queue delivery_cadence delivery_identity reply_queue \
@@ -39,7 +40,7 @@ cp "$SKILL_DIR/schemas/gig_b0_result.schema.json" "$GIG_DIR/schemas/gig_b0_resul
 # a model call. This test replaces the runner and never invokes browser tooling, so file
 # presence is the complete fixture needed to reach and record the B2 attempt.
 : > "$GIG_DIR/scripts/cdp_nav_snapshot.py"
-cat > "$HOME_DIR/anicca/skills/browser/scripts/cdp_context_lease.py" <<'PY'
+cat > "$HOME_DIR/life-manager/skills/browser/scripts/cdp_context_lease.py" <<'PY'
 #!/usr/bin/env python3
 import os, sys
 with open(os.environ["GIG_CONTEXT_LEASE_LOG"], "a", encoding="utf-8") as handle:
@@ -49,7 +50,7 @@ printf '%s\n' '{"captured_at":"2026-07-21T00:00:00Z","inbox":{"url":"https://coc
 
 # The runner records who called it and then fails, so "did this lane get its turn?" is
 # answerable independently of whether the lane succeeded.
-cat > "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" <<'PY'
+cat > "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" <<'PY'
 #!/usr/bin/env python3
 import os, sys
 label = ""
@@ -61,7 +62,7 @@ with open(os.environ["GIG_STEP_CALL_LOG"], "a", encoding="utf-8") as handle:
     handle.write(label + "\n")
 raise SystemExit(42)
 PY
-chmod +x "$HOME_DIR/profitable-claude/skills/agent-runner/agent_runner.py" "$GIG_DIR/gig_pass.sh"
+chmod +x "$HOME_DIR/life-manager/runtime/agent-runner/agent_runner.py" "$GIG_DIR/gig_pass.sh"
 
 CALL_LOG="$TMP/step-calls.txt"
 : > "$CALL_LOG"

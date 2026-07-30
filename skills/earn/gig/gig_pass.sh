@@ -4,9 +4,12 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 export CLOAK_BROWSER_OWNER="gig-pass"
-B="$HOME/anicca/skills/browser/scripts"
-G="$HOME/profitable-claude/skills/gig-work"
-RUNNER="$HOME/profitable-claude/skills/agent-runner/agent_runner.py"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/gig_paths.sh
+source "$HERE/scripts/gig_paths.sh"
+B="$GIG_BROWSER_DIR/scripts"
+G="$GIG_DIR"
+RUNNER="$GIG_RUNNER_DIR/agent_runner.py"
 SCHEMA="$G/schemas/gig_step_result.schema.json"
 B0_SCHEMA="$G/schemas/gig_b0_result.schema.json"
 B2_SCHEMA="$G/schemas/gig_b2_result.schema.json"
@@ -896,7 +899,7 @@ PYEOF
 }
 
 # Browser setup is best-effort, but authenticated DOM collection below is mandatory.
-[ -x "$HOME/anicca/skills/browser/ensure_browser.sh" ] && bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1 || true
+[ -x "$GIG_BROWSER_DIR/ensure_browser.sh" ] && bash "$GIG_BROWSER_DIR/ensure_browser.sh" >/dev/null 2>&1 || true
 [ -f "$B/cdp_tab_gc.py" ] && python3 "$B/cdp_tab_gc.py" --owner "$CLOAK_BROWSER_OWNER" >/dev/null 2>&1 || true
 [ -f "$B/session_vault.py" ] && python3 "$B/session_vault.py" restore >/dev/null 2>&1 || true
 [ -f "$B/cdp_context_lease.py" ] && python3 "$B/cdp_context_lease.py" gc --idle-min 45 >/dev/null 2>&1 || true
@@ -1037,8 +1040,8 @@ PYEOF
   if ! python3 "$TELEGRAM_REPORT" reply --events "$REPLY_LANE_RESULT" \
       --connector-database "$REPLY_OUTBOX_DB" \
       --telegram-database "$TELEGRAM_OUTBOX_DB" \
-      --runner-config "$HOME/profitable-claude/skills/agent-runner/config.json" \
-      --target "${GIG_REPORT_CHAT:-8547730585}"; then
+      --runner-config "$GIG_RUNNER_DIR/config.json" \
+      --target "${GIG_REPORT_CHAT:-}"; then
     log "Telegram reply report deferred or delivery-unknown; business reply remains verified"
   fi
   if [ "$REPLY_LANE_RC" -eq 2 ]; then
@@ -1240,7 +1243,7 @@ PYEOF
         --queue-item "$EVIDENCE_DIR/paid-queue-expected.json" \
         --answer-file "$EVIDENCE_DIR/paid-answer.json" \
         --evidence-dir "$EVIDENCE_DIR/agent-PAID_QUEUE_DELIVERY" \
-        --default-tab-helper "$HOME/anicca/skills/browser/scripts/cdp_default_tab.py" < /dev/null; then
+        --default-tab-helper "$B/cdp_default_tab.py" < /dev/null; then
       record_failure "paid_answer_send_failed" "PAID_WORK"
       return 1
     fi
@@ -1275,7 +1278,7 @@ PYEOF
 assess_paid_queue() {
   local prompt_file="$EVIDENCE_DIR/PAID_QUEUE_DELIVERY.prompt.txt"
   local queue_evidence="$EVIDENCE_DIR/agent-PAID_QUEUE_DELIVERY"
-  local browser_skill_path="$HOME/anicca/skills/browser/SKILL.md"
+  local browser_skill_path="$GIG_BROWSER_DIR/SKILL.md"
   local progress_browser="${GIG_PAID_PROGRESS_BROWSER:-$G/scripts/coconala_paid_progress_browser.py}"
   local delivery_queue_json=""
   printf '%s\n' "$TOP_JSON" > "$EVIDENCE_DIR/paid-queue-expected.json"
@@ -1290,7 +1293,7 @@ assess_paid_queue() {
         --queue-item "$EVIDENCE_DIR/paid-queue-expected.json" \
         --manifest "$TOP_PROJECT_ROOT/delivery/paid-work-result.json" \
         --evidence-dir "$queue_evidence" \
-        --default-tab-helper "$HOME/anicca/skills/browser/scripts/cdp_default_tab.py" < /dev/null; then
+        --default-tab-helper "$B/cdp_default_tab.py" < /dev/null; then
       record_failure "paid_queue_delivery_failed" "PAID_QUEUE_DELIVERY"
       return 1
     fi
@@ -1301,7 +1304,7 @@ assess_paid_queue() {
       return 1
     fi
     printf '%s\n' \
-      "Act on this selected paid queue item through the authenticated CloakBrowser daily-driver and return JSON matching $SCHEMA. Before any action, read $browser_skill_path. The browser-lock decision has already been made by run_with_cdp_lock.sh before this agent process starts: if you are reading this prompt, this paid-delivery step owns the shared $HOME/gig/.cdp-9222.lock. Its meta file is expected to contain paid-delivery <lease-start-epoch>; that is this step's own lease, not another worker. Do not inspect, reacquire, release, or reinterpret this lock, and never defer because that self-owned metadata exists. A real competing owner is handled by the wrapper before it starts the agent, so no agent process runs under contention. Do not invoke agent-browser list, attach to an existing tab, create a profile, or open a new browser. You MUST open a self-owned persistent default-context tab with: python3 $HOME/anicca/skills/browser/scripts/cdp_default_tab.py open $TOP_TALKROOM_URL. Drive only the returned target/ws, and ALWAYS close that exact target in a finally/cleanup path with: python3 $HOME/anicca/skills/browser/scripts/cdp_default_tab.py close <target_id>. Never navigate or close a tab you did not open. Re-open the live talkroom in your owned tab before acting. The packet's delivery_action is authoritative: when it is formal, tick the formal-delivery checkbox only after the artifact, acceptance evidence, and package hash are all live-verified, then submit; buyer pre-agreement is NOT required — the buyer reviews after formal delivery. The delivery message you send MUST be polite natural Japanese (no internal identifiers or English jargon) and MUST directly answer the buyer's latest request when one is open — for example if they asked for a first-post date and operating schedule, state a concrete date, a realistic weekly cadence, and exactly which photos or videos you need from them. When it is none, the live collector already observed post-submit 納品確認待ち; do not send, click, or mutate anything—only record an observation manifest with observed=true and sent=false. After a formal send, capture a fresh screenshot and DOM JSON under $queue_evidence/paid-queue-evidence.json. Never fabricate a result or use a customer/request id not present in the packet. Bounded context packet (allowlisted; raw histories are absent): $delivery_queue_json. Stable project root: $TOP_PROJECT_ROOT. Builder manifest: $TOP_PROJECT_ROOT/delivery/paid-work-result.json. Live evidence directory: $EVIDENCE_DIR/live-dom. Live talkroom URL: $TOP_TALKROOM_URL" \
+      "Act on this selected paid queue item through the authenticated CloakBrowser daily-driver and return JSON matching $SCHEMA. Before any action, read $browser_skill_path. The browser-lock decision has already been made by run_with_cdp_lock.sh before this agent process starts: if you are reading this prompt, this paid-delivery step owns the shared $HOME/gig/.cdp-9222.lock. Its meta file is expected to contain paid-delivery <lease-start-epoch>; that is this step's own lease, not another worker. Do not inspect, reacquire, release, or reinterpret this lock, and never defer because that self-owned metadata exists. A real competing owner is handled by the wrapper before it starts the agent, so no agent process runs under contention. Do not invoke agent-browser list, attach to an existing tab, create a profile, or open a new browser. You MUST open a self-owned persistent default-context tab with: python3 $B/cdp_default_tab.py open $TOP_TALKROOM_URL. Drive only the returned target/ws, and ALWAYS close that exact target in a finally/cleanup path with: python3 $B/cdp_default_tab.py close <target_id>. Never navigate or close a tab you did not open. Re-open the live talkroom in your owned tab before acting. The packet's delivery_action is authoritative: when it is formal, tick the formal-delivery checkbox only after the artifact, acceptance evidence, and package hash are all live-verified, then submit; buyer pre-agreement is NOT required — the buyer reviews after formal delivery. The delivery message you send MUST be polite natural Japanese (no internal identifiers or English jargon) and MUST directly answer the buyer's latest request when one is open — for example if they asked for a first-post date and operating schedule, state a concrete date, a realistic weekly cadence, and exactly which photos or videos you need from them. When it is none, the live collector already observed post-submit 納品確認待ち; do not send, click, or mutate anything—only record an observation manifest with observed=true and sent=false. After a formal send, capture a fresh screenshot and DOM JSON under $queue_evidence/paid-queue-evidence.json. Never fabricate a result or use a customer/request id not present in the packet. Bounded context packet (allowlisted; raw histories are absent): $delivery_queue_json. Stable project root: $TOP_PROJECT_ROOT. Builder manifest: $TOP_PROJECT_ROOT/delivery/paid-work-result.json. Live evidence directory: $EVIDENCE_DIR/live-dom. Live talkroom URL: $TOP_TALKROOM_URL" \
       > "$prompt_file"
     log "STEP PAID_QUEUE_DELIVERY start (task_class=tool-agent)"
     claim_model_call "gig-paid-queue-assess" || return 1
@@ -1618,7 +1621,7 @@ fi
 
 step_ownership_contract() {
   local label="$1" allowed browser_rules="" step_context="${GIG_LEASE:-gig}-$1"
-  local browser_skill="$HOME/anicca/skills/browser/SKILL.md"
+  local browser_skill="$GIG_BROWSER_DIR/SKILL.md"
   case "$label" in
     LEARN)
       allowed="read the current funnel, experiment evaluations, strategy, lane lessons, and pending-delivery review; extract evidence-backed lessons and append each ONLY by running python3 $G/scripts/lane_lessons.py append --lane <lane> --json <compact row>; when no active experiment exists, start at most one source-backed reversible strategy experiment ONLY through python3 $G/scripts/experiment_evaluator.py start --spec-json <compact JSON>; optionally publish one deduplicated GitHub lesson"

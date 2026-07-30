@@ -3,8 +3,8 @@
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.hf-gig-daily-report</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/gig-work/gig_daily_report.sh</string></array>
+  <array><string>/bin/bash</string><string>__LIFE_MANAGER_REPO__/skills/earn/gig/gig_daily_report.sh</string></array>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>7</integer></dict>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-daily-report.out</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-daily-report.err</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-daily-report.out</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-daily-report.err</string>
 </dict></plist>

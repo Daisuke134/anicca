@@ -2,9 +2,12 @@
 # Previous completed JST week through the durable Telegram outbox.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/gig_paths.sh
+source "$HERE/scripts/gig_paths.sh"
 
-exec /opt/homebrew/bin/python3 "$HOME/profitable-claude/skills/gig-work/scripts/telegram_report.py" weekly \
+exec "${PYTHON:-python3}" "$GIG_DIR/scripts/telegram_report.py" weekly \
   --telegram-database "${GIG_TELEGRAM_OUTBOX_DB:-$HOME/gig/telegram-outbox.sqlite3}" \
-  --gig-dir "$HOME/gig" \
-  --runner-config "$HOME/profitable-claude/skills/agent-runner/config.json" \
-  --target "${GIG_REPORT_CHAT:-8547730585}"
+  --gig-dir "$GIG_STATE_DIR" \
+  --runner-config "$GIG_RUNNER_DIR/config.json" \
+  --target "${GIG_REPORT_CHAT:-}"

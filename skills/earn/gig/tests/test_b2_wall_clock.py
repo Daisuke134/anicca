@@ -5,8 +5,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "gig-work" / "scripts" / "b2_wall_clock.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "b2_wall_clock.py"
 
 
 class B2WallClockTest(unittest.TestCase):

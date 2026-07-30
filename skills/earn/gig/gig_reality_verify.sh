@@ -23,12 +23,14 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOM
 # Usage: bash gig_reality_verify.sh [N_recent_rows]   (default N=5 per source file)
 set -uo pipefail
 
-G="$HOME/gig"
-AUDIT_REALITY="$G/audit-reality.jsonl"
-SELFHEAL="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
-PY="$(command -v python3 || echo /opt/homebrew/bin/python3)"
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RUNNER="$HOME/profitable-claude/skills/agent-runner/agent_runner.py"
+# shellcheck source=scripts/gig_paths.sh
+source "$SELF_DIR/scripts/gig_paths.sh"
+G="$GIG_STATE_DIR"
+AUDIT_REALITY="$G/audit-reality.jsonl"
+SELFHEAL="$GIG_HOST_STATE_DIR/.gig-core-selfheal-request.json"
+PY="$(command -v python3 || echo /opt/homebrew/bin/python3)"
+RUNNER="$GIG_RUNNER_DIR/agent_runner.py"
 JUDGE_SCHEMA_FILE="$SELF_DIR/schemas/gig_reality_verdict.schema.json"
 TRAJECTORY_ROOT="$G/trajectory"
 N="${1:-5}"
@@ -217,7 +219,7 @@ fi
 # session had dropped, every ground-truth URL redirected to /login, and a logged-out verifier
 # recorded verdict=false — accusing a healthy loop of lying. We hold the CDP lock here (exclusive)
 # and the browser is up, so restore the banked login first, then confirm it took.
-VAULT="$HOME/anicca/skills/browser/scripts/session_vault.py"
+VAULT="$GIG_BROWSER_DIR/scripts/session_vault.py"
 "$PY" "$VAULT" restore >/dev/null 2>&1 || true
 KA=$("$PY" "$SELF_DIR/scripts/cdp_nav_snapshot.py" probe-session \
   --url "https://coconala.com/mypage/dashboard" 2>/dev/null || echo '{}')

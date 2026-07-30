@@ -25,12 +25,12 @@ setup_case() {
   LOCKD="$CASE_DIR/lock.d"
   RUNNER="$CASE_DIR/gig_pass.sh"
   LOG="$CASE_DIR/stderr.log"
-  mkdir -p "$HOME_DIR/.local/bin" "$HOME_DIR/gig" "$HOME_DIR/anicca/skills/browser"
+  mkdir -p "$HOME_DIR/.local/bin" "$HOME_DIR/gig" "$HOME_DIR/life-manager/skills/browser" "$CASE_DIR/scripts"
   cat > "$HOME_DIR/.local/bin/claude" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  cat > "$HOME_DIR/anicca/skills/browser/ensure_browser.sh" <<'EOF'
+  cat > "$HOME_DIR/life-manager/skills/browser/ensure_browser.sh" <<'EOF'
 #!/bin/sh
 if [ -n "${GIG_TEST_PRELUDE_WAIT_FILE:-}" ]; then
   while [ ! -e "$GIG_TEST_PRELUDE_WAIT_FILE" ]; do sleep 0.01; done
@@ -38,7 +38,21 @@ else
   sleep "${GIG_TEST_PRELUDE_HOLD:-0}"
 fi
 EOF
-  chmod +x "$HOME_DIR/.local/bin/claude" "$HOME_DIR/anicca/skills/browser/ensure_browser.sh"
+  chmod +x "$HOME_DIR/.local/bin/claude" "$HOME_DIR/life-manager/skills/browser/ensure_browser.sh"
+  cat > "$CASE_DIR/scripts/gig_paths.sh" <<EOF
+#!/usr/bin/env bash
+GIG_DIR="$CASE_DIR"
+LIFE_MANAGER_REPO="$CASE_DIR"
+LIFE_MANAGER_HOME="$HOME_DIR"
+GIG_RUNNER_DIR="$CASE_DIR/runtime/agent-runner"
+GIG_BROWSER_DIR="$HOME_DIR/life-manager/skills/browser"
+GIG_STATE_DIR="$HOME_DIR/gig"
+GIG_HOST_STATE_DIR="$HOME_DIR/state"
+GIG_LOG_DIR="$HOME_DIR/logs"
+GIG_ENV_FILE="$HOME_DIR/.env"
+export LIFE_MANAGER_REPO LIFE_MANAGER_HOME GIG_DIR GIG_RUNNER_DIR GIG_BROWSER_DIR
+export GIG_STATE_DIR GIG_HOST_STATE_DIR GIG_LOG_DIR GIG_ENV_FILE
+EOF
   sed \
     -e "s|^LOCKD=.*|LOCKD=\"$LOCKD\"|" \
     -e "s|^CLAUDE=.*|CLAUDE=\"$HOME_DIR/.local/bin/claude\"|" \

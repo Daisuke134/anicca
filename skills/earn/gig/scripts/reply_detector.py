@@ -14,6 +14,14 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from gig_paths import BROWSER_DIR, RUNNER_DIR
+except ModuleNotFoundError:
+    # importlib-based unit/integration loaders do not add the script directory
+    # to sys.path the way direct CLI execution does.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from gig_paths import BROWSER_DIR, RUNNER_DIR
+
 
 class StepFailure(RuntimeError):
     def __init__(self, step: str, returncode: int):
@@ -105,12 +113,12 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=gig_root / "config/connectors/coconala.json")
     parser.add_argument(
         "--runner", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/agent_runner.py",
+        default=RUNNER_DIR / "agent_runner.py",
     )
     parser.add_argument("--schema", type=Path, default=gig_root / "schemas/reply_composition.schema.json")
     parser.add_argument(
         "--cdp-helper", type=Path,
-        default=home / "anicca/skills/browser/scripts/cdp_default_tab.py",
+        default=BROWSER_DIR / "scripts/cdp_default_tab.py",
     )
     parser.add_argument("--snapshot-script", type=Path, default=gig_root / "scripts/coconala_queue_snapshot.py")
     parser.add_argument("--queue-script", type=Path, default=gig_root / "scripts/reply_queue.py")
@@ -125,10 +133,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--runner-config", type=Path,
-        default=home / "profitable-claude/skills/agent-runner/config.json",
+        default=RUNNER_DIR / "config.json",
     )
-    parser.add_argument("--telegram-target", default="8547730585")
+    parser.add_argument("--telegram-target", default=os.environ.get("GIG_REPORT_CHAT", ""))
     args = parser.parse_args()
+    if not args.telegram_target:
+        parser.error("--telegram-target or GIG_REPORT_CHAT is required")
 
     os.environ["CLOAK_BROWSER_OWNER"] = "gig-reply-detector"
     run_id = f"{int(time.time())}-{os.getpid()}"

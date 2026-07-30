@@ -3,8 +3,8 @@
 <plist version="1.0"><dict>
   <key>Label</key><string>ai.anicca.hf-gig-selfimprove-verify</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>/Users/anicca/profitable-claude/skills/gig-work/scripts/gig_selfimprove_verify.sh</string></array>
+  <array><string>/bin/bash</string><string>__LIFE_MANAGER_REPO__/skills/earn/gig/scripts/gig_selfimprove_verify.sh</string></array>
   <key>StartInterval</key><integer>3600</integer>
-  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/gig-selfimprove-verify.log</string>
-  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/gig-selfimprove-verify.err.log</string>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-selfimprove-verify.log</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/gig-selfimprove-verify.err.log</string>
 </dict></plist>

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-AUDITOR="$ROOT/skills/gig-work/auditor.sh"
+ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
+AUDITOR="$ROOT/skills/earn/gig/auditor.sh"
 
 grep -F 'scripts/gig_slo.py' "$AUDITOR" >/dev/null
 grep -F -- '--repair-database "$G/gig-control.sqlite3"' "$AUDITOR" >/dev/null

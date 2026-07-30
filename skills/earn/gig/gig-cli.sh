@@ -3,12 +3,15 @@
 # the only production scheduler; work itself runs through launch_gig_worker.sh.
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/gig_paths.sh
+source "$HERE/scripts/gig_paths.sh"
 SOCK="/tmp/anicca-gig-tmux.sock"
 SESSION="anicca-gig-core"
 
 set -a
 # shellcheck source=/dev/null
-. "$HOME/.openclaw/.env" 2>/dev/null
+. "$GIG_ENV_FILE" 2>/dev/null
 set +a
 
 status() { tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo "ALIVE" || echo "DEAD"; }
@@ -27,15 +30,10 @@ if [ "${GIG_KYC_CONFIRMED:-0}" != "1" ]; then
   exit 0
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# shellcheck disable=SC1091
-source "$REPO_ROOT/lib/registry-enforce.sh"
-registry_enforce_or_exit gig
-
-bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser could not be recovered"
+bash "$GIG_BROWSER_DIR/ensure_browser.sh" || echo "WARN: browser could not be recovered"
 tmux -S "$SOCK" new-session -d -s "$SESSION" -c "$HOME" \
-  "exec /bin/bash '$HOME/profitable-claude/skills/gig-work/scripts/gig_core_supervisor.sh'"
-mkdir -p "$HOME/gig"
-touch "$HOME/gig/.last-start"
+  "exec /bin/bash '$GIG_DIR/scripts/gig_core_supervisor.sh'"
+mkdir -p "$GIG_STATE_DIR"
+touch "$GIG_STATE_DIR/.last-start"
 sleep 2
 echo "gig-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"

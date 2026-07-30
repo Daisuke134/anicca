@@ -5,11 +5,14 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 #   (2) STALE: the provider-free core supervisor stopped heartbeating. The OS-owned
 #       ai.anicca.hf-gig-pass LaunchAgent schedules actual passes at Minute=27.
 set -uo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/gig_paths.sh
+source "$HERE/scripts/gig_paths.sh"
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
 HB="$HOME/gig/.gig-core-heartbeat"; STALE_MIN=5
-LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+LOG="$GIG_LOG_DIR/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/gig/.restart-log"
-DOCKER_DISK_PRESSURE_FLAG="${GIG_DOCKER_DISK_PRESSURE_FLAG:-$HOME/.openclaw/state/disk-pressure.block}"
+DOCKER_DISK_PRESSURE_FLAG="${GIG_DOCKER_DISK_PRESSURE_FLAG:-$GIG_HOST_STATE_DIR/disk-pressure.block}"
 restart(){
   # backoff: max 5 restarts per 60min window (prevent subscription drain under persistent failure)
   mkdir -p "$HOME/gig"
@@ -26,7 +29,7 @@ restart(){
   fi
   echo "$now" >> "$RESTART_LOG"
   echo "$(date '+%F %T') $1 → restarting" >> "$LOG"
-  bash "$HOME/profitable-claude/skills/gig-work/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$GIG_DIR/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 # Docker sandbox self-heal (observed live 2026-07-25: colima down killed paid-work

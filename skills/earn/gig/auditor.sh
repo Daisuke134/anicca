@@ -11,7 +11,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # bounded healer may restart isolated infrastructure or non-killing kickstart the
 # pass, but it never performs a customer-facing marketplace action itself.
 set -uo pipefail
-G="$HOME/gig"; AUDIT="$G/audit.jsonl"; HB="$G/.last-pass"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/gig_paths.sh
+source "$HERE/scripts/gig_paths.sh"
+G="$GIG_STATE_DIR"; AUDIT="$G/audit.jsonl"; HB="$G/.last-pass"
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
 PY=/opt/homebrew/bin/python3
 alive=0; tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && alive=1
@@ -89,8 +92,8 @@ fi
 # Sonnet with browser+Bash+Edit that diagnoses the root cause, fixes the code, and commits — no human).
 # Then remove the request so it dispatches exactly once per discrepancy. self-fix.sh self-guards
 # against duplicate/hung fixers, so a second hourly run while a fixer is live is a safe no-op.
-SELFHEAL_REQ="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
-SELF_FIX="$HOME/anicca/skills/self/self-fix.sh"
+SELFHEAL_REQ="$GIG_HOST_STATE_DIR/.gig-core-selfheal-request.json"
+SELF_FIX="$LIFE_MANAGER_REPO/skills/self/self-fix.sh"
 # AUTH-WALL COOLDOWN (2026-07-13 self-fix, gh#1015): kind=auth_wall means the reality-verifier hit a
 # login wall (reached_captcha=true) -- an external/session precondition (Coconala logged out, iPhone
 # Bluetooth 2FA relay down), NOT a code bug. Before this fix, every hourly audit pass respawned a full
@@ -208,7 +211,7 @@ fi
 # customer-facing retry.
 slo_row="$("$PY" "$(dirname "$0")/scripts/gig_slo.py" \
   --state-dir "$G" \
-  --host-state-dir "$HOME/.openclaw/state" \
+  --host-state-dir "$GIG_HOST_STATE_DIR" \
   --telegram-database "$G/telegram-outbox.sqlite3" \
   --repair-database "$G/gig-control.sqlite3" 2>>"$G/.gig-slo.err.log")" || slo_row=""
 if [ -n "$slo_row" ]; then
@@ -228,10 +231,10 @@ fi
 # deterministic repair, then re-observe again. launchctl success alone is never
 # recovery. Persistent fingerprints remain nonterminal in the queue with bounded
 # exponential backoff; unknown classes are blocked behind canary/rollback.
-HEAL_CONTROLLER="$(cd "$(dirname "$0")/../.." && pwd)/src/gig/healing/controller.py"
+HEAL_CONTROLLER="$GIG_DIR/src/gig/healing/controller.py"
 healer_row="$("$PY" "$HEAL_CONTROLLER" \
   --state-dir "$G" \
-  --host-state-dir "$HOME/.openclaw/state" \
+  --host-state-dir "$GIG_HOST_STATE_DIR" \
   --telegram-database "$G/telegram-outbox.sqlite3" \
   --repair-database "$G/gig-control.sqlite3" \
   --audit "$AUDIT" 2>>"$G/.gig-healer.err.log")" || healer_row=""
