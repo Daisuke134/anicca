@@ -1047,6 +1047,30 @@ implementation lacks: a post under 24h is not judged, and a cohort under ten pos
 produces no verdict at all. Run today: 3 judged posts → `insufficient_data`, no winner
 declared.
 
+**Posts were going to accounts that no longer exist (found 2026-07-31).** The TikTok
+account behind the "Anicca" integration, `@aniccaen2`, does not exist: Apify answers
+"This profile/hashtag does not exist" across three runs while `@aniccajp` returns
+videos in the same call, and every "PUBLISHED" post on that integration carries only a
+profile URL, never a `/video/` URL. The ten-day pattern is a flat 6 PUBLISHED + 6 ERROR
+per day (83/68), so English larry output was not half-failing — it was going nowhere.
+Auditing all fifteen enabled TikTok integrations found two more dead targets,
+`@anicca.jp8` and `@anicca.jpx`. Six launchd jobs were repointed to verified-alive
+accounts (larry-en-v1 to `@aniccaaffirmation`, whose latest video has **253,700 views**
+and which no loop was feeding), and `measure/audit_accounts.py` now runs at 06:30,
+alerts, and exits non-zero while any target is dead. The three dead integrations still
+exist in Postiz and should be deleted or re-provisioned as agent-owned accounts.
+
+**Telegram is now three tiers, all fired and verified.** A per-post message with the
+tappable public URL every 30 minutes (7 real sends, rerun sent 0, proving dedupe), a
+daily money digest at 22:00, and a weekly review on Sundays that names accounts to cut
+or feed. Raw logs appear in none of them. TikTok links point at the profile because
+Postiz exposes no per-video URL.
+
+**The ebook can be bought.** The 401 was an expired *test* key; the live key answers
+200. Product, a $19 price, a payment link (checkout HTTP 200) and a post-purchase
+redirect to a PDF that returns HTTP 200 / application/pdf / 74,424 bytes are live.
+Note `dev` deploys only to a Netlify preview, so delivery files must reach `main`.
+
 **Closed on 2026-07-30.**
 - `build-from-fixed-strings.sh` now fails at the real cause: a missing background or a
   blank slide text stops the build instead of surfacing three steps later as a node
