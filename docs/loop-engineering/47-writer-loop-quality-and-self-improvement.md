@@ -2811,7 +2811,7 @@ verified evidence
 
 **実LaunchAgent進捗**: `ai.anicca.article-resume` runs 90で第1 invocationを開始したが、nested agentが親owner/recovery stateを監視して自己待機し、research artifact 0のまま進まなかった。これをretry promptの「親を待たず直ちにresearch開始」契約と、attemptごとのprompt再生成・旧prompt保存で修復した。runs 91の第2 invocationは同一run `20260729-173948`、feedback exact7件を入力にresearch-firstで開始し、primary-source research 7 artifact → JA/EN rewriteの順序を実測する。current EN hash `16b79d…`はeditorial PASS。current JA hash `b69d9b…`はstale PASSを拒否した再judgeで、実験設定とshipping defaultの区別、およびcontroller/runtime主張の直接code引用という追加2修正を取得した。identity/reader/consumptionのfinal-hash再bind、有料公開、public readbackは未完なのでB1は`IN PROGRESS`を維持する。
 
-**実E2Eで発見した第2停止点**: reader再評価がattempt receipt隔離用の子`ARTICLE_RUN_DIR`を使うと、nested judge clientは稼働中の親brokerでなくbroker不在の子directoryへrequestを書き、最大900秒待った。live heartbeatのない子runはstate-root registry内のlive親brokerへfallbackするcontract testをRED→GREENにし、feature `eeaca42` / runtime `1736d75`へpushする。model-runner全27 tests PASS。停止中だった子judge exact2件だけを終了すると、親launchdを再起動せず新request exact2件が親brokerで完了し、JA 2件 / EN 7件の未回答を取得、loop自身が両本文を再改稿してcurrent-hash editorial再判定を開始した。
+**実E2Eで発見した第2停止点**: reader再評価がattempt receipt隔離用の子`ARTICLE_RUN_DIR`を使うと、nested judge clientは稼働中の親brokerでなくbroker不在の子directoryへrequestを書き、最大900秒待った。live heartbeatのない子runはstate-root registry内のlive親brokerへfallbackするcontract testをRED→GREENにし、feature `eeaca42` / runtime `1736d75`へpushする。model-runner全27 testsとarticle全439 testsがfresh PASS。停止中だった子judge exact2件だけを終了すると、親launchdを再起動せず新request exact2件が親brokerで完了し、JA 2件 / EN 7件の未回答を取得、loop自身が両本文を再改稿してcurrent-hash editorial再判定を開始した。その後JA/EN editorial+identity current PASSまで到達し、fresh readerが残したJA 1件 / EN 2件を再び本文へ戻して第2改稿を開始する。一次資料にない評価分散・本番結果・cycle costは捏造せず、非公開であることと測定契約を明示する。
 
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
