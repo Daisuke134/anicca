@@ -122,8 +122,14 @@ Clone of the `report-job-adapter.js` shape:
   atomic gate requires USD, `lib/earnings-ledger.js:128`). Native SOL
   inflows → `amount_minor` = lamports, currency `SOL`,
   `meta {unit:"lamports", decimals:9}` — never converted to USD via a price
-  feed inside the ledger. Entry keys: `inflow:base:<txhash>`,
-  `inflow:solana:<sig>`, `inflow:solana-sol:<sig>`.
+  feed inside the ledger. Entry keys MUST identify a **single transfer
+  event**, not a transaction — one tx can carry several transfers to the
+  same wallet: `inflow:base:<txhash>:<logIndex>`,
+  `inflow:solana:<sig>:<accountIndex>`, `inflow:solana-sol:<sig>`.
+- Finality: only finalized chain data may enter the ledger. Base scans stop
+  at the finalized/safe head and drop any log with `removed === true`;
+  Solana uses `finalized` commitment, never `confirmed`. An append-only
+  money ledger cannot retract a reorged row.
 - Cursor persistence: the watch cursor lives in the job's own durable
   receipt (`next_cursor`, read back from the last completed receipt),
   following the existing `runtime-up.js` history-readback pattern. No new
@@ -255,3 +261,40 @@ inflow (never drains).
 - Cursor reads are tenant-filtered (`scripts/runtime-up.js:426-441`).
 - No module-scope mutable wallet/signer/address/cursor/RPC cache exists in
   any of the six new modules. Keep it that way.
+
+## 10. Adversary round 1 (full report) — remaining rulings
+
+Root cause naming: **four of these defects are one failure** — chain data is
+copied into an append-only money ledger without re-deriving the facts that
+matter (recipient, transfer identity, finality, which token account). The
+`entry_key` uniqueness the design leans on is only as good as the key, and
+the key was coarser than the events it must distinguish. Fix the class, not
+just the four instances: any value that decides an amount or an owner MUST be
+re-derived from the payload, never taken from the RPC's own filter.
+
+Note for the record: 1824/1824 tests passed with all six money defects
+present. Unit tests written by the builder encode the builder's assumptions;
+only hostile-payload probing found these. Every fix below MUST land with a
+test that feeds the hostile payload, not the happy one.
+
+| ID | Ruling |
+|---|---|
+| MAJOR-2 | FIX. `entry_key` per transfer event, not per tx (§4.5 corrected: `inflow:base:<tx>:<logIndex>`, `inflow:solana:<sig>:<accountIndex>`). The spec was wrong; the implementation was faithful to a wrong spec. |
+| MAJOR-4 | FIX. Assert `log.topics[2]` equals the tenant's address topic and drop every non-matching log. Never trust the RPC's filter to have been applied. |
+| MAJOR-5 | FIX, and change the semantics: `blocked_no_chat` is a **deferred outcome, not a failure**. Write a real blocked receipt, complete the job, and let the sweep re-enqueue on a later pass (which §9.2 already makes it do). A tenant who links their chat on day 30 MUST still get the message. Do not burn `MAX_ATTEMPTS` on waiting. `failJob` MUST stop discarding `error.code`/`error.blocked`. |
+| MAJOR-6 | FIX. Finality is required (§4.5 amended): stop at finalized/safe head, drop `removed === true`, Solana `finalized` not `confirmed`. This matches the program SSOT, which counts only *finalized* receipts. The same gap in `skills/earn/x402-sell/verify-inflow.mjs` is out of scope here — it only observes; this writes money. |
+| MAJOR-7 | FIX. Pair Solana pre/post balances by `accountIndex` and sum across every token account the owner holds for that mint. T16b (money invented from a reordered list) is the worse half and MUST have a regression test. |
+| MINOR-8 | FIX by removal. Delete both `require.main === module` CLI enqueue entrypoints. §4.4 says sweep-only; a second write surface into the job queue is exactly what that ruling excluded. |
+| MINOR-9 | FIX the comment only. `assertNoSecret` is a field-name guard, not a shape scanner. Say so where it is used. |
+| MINOR-10 | REJECTED. Do not change `lib/agent-wallet.js` sealing — the production payout path reads `privateKey` and that module is outside this slice's scope (§2). Record the asymmetry as a known input to AE-CLOUD-CUSTODY-1. |
+| MINOR-11 | KEEP the tenant keychain, FIX its comment. It is referenced only by tests today; it becomes load-bearing in AE-X402-TENANT-ROUTING-1 / AE-CLOUD-CUSTODY-1. This is a deliberate, stated exception to the delete-unused-code rule — the comment MUST NOT claim it guards a running path. |
+| MINOR-12 | FIX. One-line guard on the empty-`taken` path in `scanBaseInflows`. |
+
+### 10.1 Verified-good, carried forward
+
+`lm-onboard.js` byte-identical to `origin/main` (md5 match); nothing outside
+`apps/life-manager/` + `docs/` touched; gitleaks clean over 14 commits;
+secret-safety PASS (fixtures are RFC 8032 §7.1 published vectors);
+failure-semantics PASS apart from MAJOR-5; test counts independently
+re-measured and identical to the builder's claims (money-slice 238/238, full
+1824/1824 exit 0, real-Postgres `refusals=15 key_material_rows=0`).
