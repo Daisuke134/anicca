@@ -485,3 +485,103 @@ Fixtures MUST be adversarially varied, never conveniently sequential:
 shuffled orders, repeated keys, degenerate boundaries, missing optional
 fields. Convenient regularity in a fixture is the same failure as trusting a
 provider's answer — a fact assumed instead of exercised.
+
+## 14. Adversary round 3 (full) — the architectural ruling
+
+Three rounds of cursor defects that each lost real money have one cause
+underneath them, and R3-6 exposes it:
+
+> **The money and the record of progress live in two different databases, so
+> they can never be written atomically. Any design that stores progress
+> separately from the money it describes WILL diverge — money booked with
+> progress lost, or progress claimed with money missing.**
+
+Measured facts behind this: the ledger (`lm_agent_earnings`) is in Supabase;
+`lm_runtime_jobs` and its receipts are in the local Postgres reached through
+`LM_RUNTIME_DATABASE_URL` (established when §4.4 ruled out the Netlify
+enqueue path). `recordEarning` writes the money, then
+`complete_lm_runtime_job` writes the receipt that carries the cursor — and
+that second write RAISES when the receipt exceeds `octet_length > 16384`
+(`migrations/20260729_runtime_jobs.sql:206`, CHECK at `:66`). Measured
+threshold ~35 entries: 25 base + 40 solana = 22,972 bytes = rejected. Result:
+ledger rows written, cursor lost, same window re-attempted forever.
+
+### 14.1 RULING — progress is derived from the ledger, never stored beside it
+
+1. The inflow cursor MUST be **derived from the append-only ledger itself**
+   — the highest booked position per tenant per rail. The ledger row already
+   proves the event was booked; nothing else may claim it. Store the position
+   components the derivation needs (`block`/`log_index` for Base,
+   `slot`/`signature` for Solana) in the ledger row's `meta`.
+2. The runtime receipt becomes a **pure audit/report artifact**. It MUST NOT
+   be load-bearing for progress. Losing a receipt must cost visibility, never
+   correctness.
+3. Receipts MUST be bounded by construction — counts plus first/last plus an
+   attention list, never an unbounded per-entry array. A receipt that can
+   exceed 16,384 bytes is a latent rail death. The `:68-70` comment claiming
+   the 25-row cap keeps the receipt inside 16 KB is void while the
+   oversized-signature escape hatch at `:533` exists.
+
+This is the third-order form of the same lesson: §10 said re-derive the
+amount and the owner; §12.1 added that what-was-processed is also a fact;
+§13.1 said one stream gets one comparator; §14 says **the fact of progress
+must be read from the same record that holds the money.**
+
+### 14.2 RULING — separate the enumeration bound from the booking bound
+
+R3-3 measured: a 2,500-signature backlog books 25 on wake 1 and then **0
+rows per wake, permanently** — the rail is dead for the backlog *and* for
+every future inflow. Cause: `SOLANA_MAX_SIGNATURES` (25) × `PAGES` (40) =
+1,000 enumerable, so `reachedUntil` is never true, so the cursor correctly
+refuses to move, so each wake re-derives the identical window.
+
+The two bounds are different things and MUST be separated:
+
+- **Enumeration MUST be complete.** Page with `before` at the API maximum
+  (`limit: 1000`) until `until` is genuinely reached. Enumeration is cheap and
+  its only job is to find the true oldest unprocessed event.
+- **Booking MAY be throttled.** After a complete enumeration, sort ascending
+  and book the oldest N. The cursor then advances to the last booked event,
+  and the backlog drains **monotonically** every wake.
+
+With that separation the cursor can always advance from the oldest end, and
+the freeze case only remains for an absurd backlog beyond the enumeration
+ceiling — which stays honestly reported.
+
+### 14.3 RULING — unreadable is neither "not mine" nor "forever"
+
+| ID | Ruling |
+|---|---|
+| R3-4 MAJOR | FIX. A malformed payload (bad `data` width, garbled `logIndex`, missing `accountIndex`) currently throws with **no receipt, no cursor advance, no attention bucket**, and the sweep re-mints the job every 5 minutes forever — and it blocks the valid events in the same window. §12.3 NEW-3 required four clauses; only "do not advance" was implemented. Implement the rest: bounded retries, then **quarantine** — a durable, visible record of the exact skipped position in the attention bucket — and only then advance past it. Never silent, never permanently blocked. One unreadable event MUST NOT kill a rail. |
+| R3-5 MAJOR | FIX. `removed: null` is dropped through the same filter path as "not my address", and the cursor advances past it: measured `booked=1 truncated=false needs_operator_attention=[] cursor={block:1006,log_index:0}` — silent permanent loss behind a receipt claiming completeness, the exact shape §12.1 forbids. The filter MUST return three verdicts, not two: **NOT_MINE** (drop, advance), **MINE_AND_READABLE** (book), **MINE_BUT_UNREADABLE** (quarantine path above). Never conflate the first and the third. |
+| R3-6 MAJOR | FIX per §14.1 — bound the receipt by construction and stop making it load-bearing. |
+| R3-7 MINOR | FIX. NEW-9 landed at 1 of 3 sites; `wallet-inflow-job-adapter.js:670` and `zero-start-job-adapter.js:255` still default an absent `uid` to trusting the requester, and a reader answering with another tenant's row books against `0x9999…` under tenant-a's job. The reachability argument was already rejected for `tenant-wallet-store.js:169`; it is rejected here too. The fail-closed form exists in this repo twice (`payout-runtime.js:80`, `financial-report-runtime.js:340`) — copy it. |
+| R3-8 MINOR | FIX. `sweepWallets().catch(() => {})` (`scripts/runtime-up.js:824,826`) swallows every error at the **only** enqueue point. If it dies, provisioning stops forever with no signal. Log, count, and surface. |
+| R3-9 MINOR | FIX. `truncated` MUST also be true when the scan stopped at `BASE_MAX_BLOCKS_PER_WAKE` rather than the finalized head. A completeness claim that is false is a lie even when nothing is lost. |
+| R3-10 MINOR | FIX. A per-wake `job_id` digest creates one job + one receipt row per tenant per wake (~288k rows/day at 1,000 tenants) and the ordering query GROUP BYs that whole history every 5 minutes. Add retention and an index, or key the job per tenant instead of per wake. |
+| R3-11 MINOR | FIX. The ordering advances on receipt, not on enqueue, so an enqueued-but-unclaimed tenant stays at the front and the sweep mints duplicate jobs under worker backlog. Count enqueue as an attempt. |
+
+### 14.4 Gate changes — now five, not three
+
+§13.2's a/b/c stand, plus two that round 3 proved necessary:
+
+| # | Change |
+|---|---|
+| a | Assert `writes === 1` per ledger row, read from ledger state (the current `booked.size === ledger.size` is a tautology; the `writes` counter is computed and never read). |
+| b | Shuffle tx hashes and REUSE slots; include degenerate shapes (all-same-block, all-same-slot, descending hashes). |
+| c | Include a post-only token account (first-ever deposit, no `pre` entry). |
+| d | The fixture MUST exceed **every** bound, not just the row budget — the signature-page ceiling included. `syntheticChain`'s 60 signatures sit 16× below the 1,000-signature bound, which is why R3-3 was invisible. §12.2's "N >> budget" means every budget. |
+| e | The fixture MUST model the 16,384-byte receipt cap, so an oversized receipt fails the gate instead of passing it (the existing 31-row oversized test passes only because the harness ignores the cap). |
+
+### 14.5 Verified honest, third consecutive audit
+
+Round 3 independently re-measured every claim: `npm test` 1876/1876 exit 0
+(46 segments), money-slice 290/290, real docker postgres
+`refusals=15 key_material_rows=0`, gitleaks 31 commits clean, 31 files with
+zero outside `apps/life-manager/` + `docs/`, `agent-wallet.js` md5
+`53abed3d…` and `lm-onboard.js` md5 `4f5933dc…` identical to `origin/main`.
+**Zero fabricated numbers in three independent audits.** Round 3 also
+confirmed NEW-4 is not inert (`fail_lm_runtime_job` really inserts an
+`outcome='failed'` receipt, `migrations/20260729_runtime_jobs.sql:284-294`)
+and that the provider naming fix is sound (`getColonySecret(ref)`, with
+construction throwing if the adapter exposes `get`).
