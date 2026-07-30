@@ -3148,3 +3148,100 @@ Dais の「アカウントを何百個も作る」という直感は、算数と
 | 「全記事を有料にする」 | 配布が死に、複利（A2）が始まらない。無料の定期便 + 有料アーカイブが構造（S8） |
 | 「X の収益分配を狙う」 | 生涯中央値 $300（S6）。rail として弱い |
 | 「view/いいねが増えれば金になる」 | 代理指標最適化。DeepMind specification gaming（S18）と同型 |
+
+## 25. どこに書き、どこに出すか — 支払機構で選ぶ（2026-07-30 実読調査）
+
+### 25.1 gh 再探索の結論: 車輪は存在しない
+
+35+ の distinct `gh search repos` / `gh search code` を実行（前節 §23.2 の15検索を含めて合計50+）。
+
+| 問い | 答え |
+|---|---|
+| article performance → 実収益 → 次トピック選定 の feedback loop | **0件**。"bandit content selection" / "engagement optimizer" / "content performance feedback loop" / "growth loop automation" 全て0 |
+| README に実収益 receipt（金額・ログ・スクショ）を載せた自律ライティング repo | **0件**。全て "generates content" / "monetization-ready" 止まり |
+| 最も近い building block | ① [elizaOS/eliza](https://github.com/elizaOS/eliza) 18.8k★ — `packages/plugin-twitter` + `packages/plugin-solana` で「書く」と「金を持つ」が同一agentに配線済み ② [game-by-virtuals/game-node](https://github.com/game-by-virtuals/game-node) — 投稿agentがトークン化され取引手数料を得る（記事収益ではなく投機トークン経済） ③ [tpyhon/kyotei-note-bot](https://github.com/tpyhon/kyotei-note-bot) — LLM生成→note自動投稿の最小cron構造 |
+
+**判断**: この領域は「copyできる完成品が無い」。部品は copy、収益ループの糊は自作する。
+以後 gh は「新しい building block が出たか」の定点観測に降格し、探索予算は §25.2 の支払機構側へ移す。
+
+### 25.2 プラットフォーム選定（各社の自社ページ実読。第三者まとめは不使用）
+
+| Platform | 支払機構 | 参入条件（実数） | 手数料 / 取り分 | 支払rail | AI方針 |
+|---|---|---|---|---|---|
+| **DigitalOcean Write for DOnations** | **原稿料**（記事1本ごとの現金） | audience 不要。フォーム提出 + 編集レビュー | 新規 **$400/本**、更新 $100、寄付 $25 | **PayPal** or DO credit | 記載なし |
+| **Substack** | 読者課金（購読） | なし（Stripe接続のみ） | 執筆者 **90%**「minus credit card fees」 | Stripe（自己所有） | AI固有条項なし。剽窃禁止のみ |
+| **beehiiv** | 有料購読 + Ad Network | Ad Network は Scale plan($49/mo) + 実配信中 | 有料購読の platform 取り分 **0%**（Stripe手数料のみ）。Ad例 "$5 CPM = $5 per 1,000 unique opens" | Stripe | 制限なし（beehiiv AI を機能として販売） |
+| **note.com** | 有料記事 / メンバーシップ / サポート | 初回有料投稿時に本人情報登録 | 事務手数料5% + 利用料10%（記事）/20%（定期購読マガジン） + 振込 **¥270/回** | 日本の銀行口座 | 生成AI禁止規定なし（AI学習opt-outのみ） |
+| **Zenn** | バッジ（投げ銭） + 本の販売 | なし | 最低換金 **¥1,000**、確定後5か月以内に請求 | 銀行口座 **or Amazonギフト券** | 「生成AIの活用は禁止していません…内容の正確性を確認せずに投稿することや…乱造することは控えてください」 |
+| **X Creator Revenue Sharing** | 広告収益分配 | Premium + **3か月で500万impression** + verified follower 500 | 最低支払 $30/2週 | Stripe | 一般的なAI文章の禁止なし |
+| **Reddit Contributor Program** | gold 付与に応じた現金 | karma **100** から（5,000+ で Top） | $0.009/gold（Top は $0.01）、月$10から支払 | Stripe | 本調査では未取得 |
+| **Vocal Media** | tip + read収益 + 購読 | tip は初投稿から。read収益は Vocal+ 加入が条件 | tip 手数料 7%（無料）/2.9%（Vocal+）、最低出金 $35/$20 | Stripe | 未取得 |
+| **Medium Partner Program** | 会員の閲読時間プール | 6記事 + 3か月 + 銀行口座 | — | Stripe | ★**AI生成文はPartner Programで paywall 不可**、非開示AIは "Network Only" に降格（subagent実読。本セッションでの `crwl` 再取得は Medium が空応答で**再確認できず = UNVERIFIED**） |
+| **dev.to / Forem** | **執筆者への支払機構なし** | — | — | — | 制限なし |
+| **Qiita** | **執筆者への支払機構なし**（LGTM のみ） | — | — | — | 「AIが生成した内容は…正しいかどうかを検証した上で投稿する」 |
+| **Hashnode** | **built-in の収益分配なし** | — | — | — | 未取得 |
+
+### 25.3 この表が現行運用に突きつける事実
+
+| 現行の投稿先 | 収益機構 | 判定 |
+|---|---|---|
+| dev.to | **存在しない** | 収益 reward に接続してはいけない。distribution 資産としてのみ扱う |
+| Zenn | バッジのみ（最低換金 ¥1,000） | 収益の主戦場にならない。JP技術面の distribution + 小額 tip |
+| note | 有料記事（手数料15%+¥270） | 有効。ただし収益到達アカウントは全体の1.6%（§23.2 S5） |
+| Substack | 購読90% | 有効。**A2（複利）の主戦場** |
+| X | 500万impression の壁 | STAGE 0-2 では収益源にしない。distribution のみ |
+| **未接続** | DigitalOcean $400/本、beehiiv 0%、Reddit Contributor | **STAGE 0 の現金はここにしか無い** |
+
+つまり現行 loop は「支払機構が無い面（dev.to）」と「壁が高すぎる面（X）」と「手数料が重く到達率1.6%の面（note）」に出力しており、
+**現金が出る面（原稿料プログラム）へは1本も出していない**。これが記事由来売上 $0（§24.0 実測）の直接原因。
+
+### 25.4 支払rail の構造的制約（検索では解けない）
+
+| 事実 | 出典 |
+|---|---|
+| 調査した15プラットフォームの**全て**が Stripe か銀行口座（KYC済みfiat）を要求 | §25.2 各社ページ |
+| **crypto を受け付けるプラットフォームは0件** | 同上 |
+| 非銀行railに最も近いのは Zenn の **Amazonギフト券**払い | zenn.dev FAQ |
+| DigitalOcean は **PayPal** 受取可 | digitalocean.com/write-for-donations |
+
+→ 「agent が自分名義で入金を受ける」は、現状 **どのプラットフォームでも不可能**。
+当面は Dais 名義の rail（既存 Stripe: `prod_*` 10件、生涯 $50.99）を使い、agent自前rail は別トラック（crypto / 法人化）として扱う。
+これを「検索すれば解ける」ものとして扱わない。
+
+### 25.5 STAGE 0 の実行計画（§24.3 の GATE = 実入金 receipt 1件）
+
+```text
+ 目標: audience 0 のまま、最初の現金 receipt を取る
+
+ ①  DigitalOcean Write for DOnations へ提案提出
+     $400/本・フォーム提出・AI禁止記載なし・PayPal受取
+     題材 = 既に一次経験があるもの（実際に動かした OSS / SDK / 構築手順）
+        ↓
+ ②  同時に beehiiv / Substack の無料定期便を立ち上げ（A2の種）
+     有料化は §23.2 S4 に従い早期（中央値45日）に設定するが、
+     全記事paywall はしない（無料の定期便 + 有料アーカイブ）
+        ↓
+ ③  A3 少額商品を Stripe に1つ作る（既存rail、products APIで作成可）
+     client_reference_id = artifact_id で記事へ帰属
+        ↓
+ GATE: ①の原稿料 or ③の初売上のどちらか1件が着金 → STAGE 1 へ
+```
+
+| 出さない面 | 理由 |
+|---|---|
+| Medium | AI生成文は Partner Program で paywall 不可（UNVERIFIED だが、誤れば凍結リスク。確認できるまで出さない） |
+| Textbroker | 「we check for … use of artificial intelligence (AI) in creating the piece」= 明示禁止 |
+| Qiita / Hashnode | 支払機構が存在しない |
+
+### 25.6 順序の更新（§23.6 を上書き）
+
+| # | 作業 | 理由 |
+|---|---|---|
+| **0** | **DigitalOcean Write for DOnations 提出パイプライン**（新規） | audience 0 で現金 $400/本。STAGE 0 の GATE を最短で満たす唯一の既知経路 |
+| 1 | J3 metrics + sales schema | 見えない物は改善できない |
+| 2 | J4 money report | 毎日「いくら」を受け取る |
+| 3 | J2 offer layer（Stripe 商品 + client_reference_id） | 売る物が無ければ構造的に0 |
+| 4 | J1 money-scan | niche/offer探索の自動化 |
+| 5 | dev.to / Zenn を money reward から切り離し distribution 扱いに変更 | 支払機構が無い面を収益指標に混ぜない |
+| 6 | J5 niche portfolio | STAGE 2 GATE 通過後 |
+| 7 | paywall方針を「無料の定期便 + 有料アーカイブ」へ | 配布と複利を殺さない |
