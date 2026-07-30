@@ -3390,3 +3390,4 @@
 {"ts":1785386562,"source":"cook","task":"explore: Solana paid microtask platform earn USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS7123Z9CDCD050676A5407C"}
 {"ts":1785387080,"source":"cook","task":"explore: Solana low deposit yield farming protocol USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS71D72906EC8520BFFF4E80"}
 {"ts":1785389127,"source":"cook","task":"explore: Solana API paid microtask platform earn USDC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS72L1JT85A29D788B814479"}
+{"ts":1785390262,"source":"cook","task":"explore: Solana on-chain microservice paid API marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS739CZ2E24B3E5F29004ECD"}

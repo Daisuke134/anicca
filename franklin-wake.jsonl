@@ -17557,3 +17557,10 @@
 {"ts":1785389377,"wake_id":"00MS72QKG139BE6876A5134AF1","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785389505,"wake_id":"00MS72TB6Z09C1E0C70F534AAC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1785389634,"wake_id":"00MS72W2GCFD4814CE52C34DB9","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785389765,"wake_id":"00MS72YVJWCCA8F789793D43CA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785389892,"wake_id":"00MS731LTC5DD9C9EE72B34C31","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785390097,"wake_id":"00MS735ZR4E960A03D60144D80","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785390254,"wake_id":"00MS739CZ2E24B3E5F29004ECD","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain microservice paid API marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surface"}
+{"ts":1785390383,"wake_id":"00MS73C4U8599A87E07E294FC6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785390512,"wake_id":"00MS73EW2845685E2CF72C4479","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785390640,"wake_id":"00MS73HN9FB04693CE34B54898","kind":"narrate","sleep_s":120,"model":"auto"}
