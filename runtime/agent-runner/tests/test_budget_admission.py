@@ -24,7 +24,7 @@ def load_budget_module():
 
 
 class BudgetAdmissionTest(unittest.TestCase):
-    def test_remaining_daily_allowance_must_cover_full_pass_before_provider_launch(self):
+    def test_task_reservation_allows_multiple_agents_to_share_one_pass_budget(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bin_dir = root / "bin"
@@ -141,16 +141,12 @@ class BudgetAdmissionTest(unittest.TestCase):
                 env=env,
             )
 
-            self.assertFalse(marker.exists())
-            self.assertEqual(result.returncode, 75, result.stderr)
+            self.assertTrue(marker.exists())
+            self.assertNotEqual(result.returncode, 75, result.stderr)
             summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
-            self.assertEqual(summary["status"], "budget_blocked")
-            self.assertEqual(summary["attempt_count"], 0)
-            self.assertEqual(
-                summary["budget"]["reason"],
-                "loop_daily_token_budget_exceeded",
-            )
-            self.assertEqual(summary["budget"]["reservation_tokens"], 100)
+            self.assertEqual(summary["attempt_count"], 1)
+            self.assertEqual(summary["budget"]["status"], "allowed")
+            self.assertEqual(summary["budget"]["reservation_tokens"], 20)
             self.assertEqual(summary["budget"]["daily_consumed_tokens"], 70)
 
 

@@ -102,7 +102,8 @@
     },
     "application-lane-agent": {
       "route": "terra-medium-exhaustive-application",
-      "token_reservation": 24576,
+      "token_reservation": 131072,
+      "_token_reservation_note": "Production B2 telemetry reached roughly 79k charged tokens in one exhaustive application invocation. Reserve 128Ki so admission is conservative without consuming the entire 4Mi multi-lane pass allowance.",
       "_timeout_note": "B2-only route. Measured 2026-07-29: newest plus 27 category sources plus keyword/pagination had traversed only the first category after three minutes. The shared 900s browser bound contradicts the exhaustive-search completion contract. One hour remains below the launcher's 7200s runaway guard while allowing the money-entry lane to search before it returns.",
       "timeout_seconds": 3600,
       "candidates": [
@@ -130,7 +131,8 @@
     },
     "high-value-agent": {
       "route": "luna-medium-decision",
-      "token_reservation": 65536,
+      "token_reservation": 131072,
+      "_token_reservation_note": "Paid-work production telemetry exceeded the former 64Ki reservation (84,678 charged tokens on pass 1785372618-65241). Reserve 128Ki while retaining the aggregate pass and daily breakers.",
       "timeout_seconds": 900,
       "candidates": [
         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "medium"},

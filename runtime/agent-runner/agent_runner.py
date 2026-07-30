@@ -998,14 +998,12 @@ def run() -> int:
             or daily_token_budget <= 0
         ):
             raise ValueError("enabled token budgets and task reservation must be positive")
-        # Admission must reserve an upper bound, not the task class's planning
-        # estimate. Settlement replaces this hold with provider-reported usage,
-        # but a provider may already have spent far more than the estimate by
-        # then. Reserving the whole pass allowance prevents that observed
-        # estimate-to-settlement gap from crossing the daily cap.
-        token_reservation = (
-            pass_token_budget if budget_enabled else task_token_reservation
-        )
+        # One budget scope contains several sequential agents. Reserving the
+        # entire pass allowance for each one makes the first settlement render
+        # every later lane inadmissible. Each task class therefore supplies its
+        # own conservative admission hold; the pass and daily limits remain the
+        # aggregate circuit breakers across all settled tasks.
+        token_reservation = task_token_reservation
         budget_ledger = TokenBudgetLedger(Path(os.environ.get(
             "ANICCA_TOKEN_BUDGET_LEDGER",
             Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "token-budget.jsonl",

@@ -203,7 +203,7 @@ class AgentRunnerContractTest(unittest.TestCase):
             "repeatable-agent": 32768,
             "diagnostic-agent": 32768,
             "marketing-agent": 49152,
-            "high-value-agent": 65536,
+            "high-value-agent": 131072,
             "escalation-agent": 65536,
         }
         for task_class, expected_model in expected_models.items():
@@ -306,6 +306,9 @@ class AgentRunnerContractTest(unittest.TestCase):
         )
         self.assertGreaterEqual(
             config["task_classes"]["application-lane-agent"]["timeout_seconds"], 3600
+        )
+        self.assertGreaterEqual(
+            config["task_classes"]["application-lane-agent"]["token_reservation"], 131072
         )
         self.assertLessEqual(config["task_classes"]["tool-agent"]["timeout_seconds"], 180)
 
@@ -1567,16 +1570,16 @@ class AgentRunnerContractTest(unittest.TestCase):
         self.assertEqual(first_summary["budget"]["charged_tokens"], 20)
         self.assertEqual(first_summary["budget"]["pass_consumed_after_tokens"], 20)
 
-        # Life Manager's shared runner reserves the full pass ceiling at
-        # admission. Only 80 daily tokens remain after the first measured
-        # 20-token charge, so a second 100-token pass is rejected before the
-        # provider launches even though cached input was not charged twice.
-        self.assertEqual(second.returncode, 75, second.stderr)
+        # Each task reserves its configured upper bound. The second task can
+        # therefore share the same pass after the first settles to 20 charged
+        # tokens; reserving the entire pass ceiling here would permanently
+        # prevent every multi-lane pass from reaching its second lane.
+        self.assertEqual(second.returncode, 0, second.stderr)
         second_summary = json.loads((evidence / "summary.json").read_text())
-        self.assertEqual(second_summary["status"], "budget_blocked")
-        self.assertEqual(second_summary["budget"]["reservation_tokens"], 100)
+        self.assertEqual(second_summary["status"], "success")
+        self.assertEqual(second_summary["budget"]["reservation_tokens"], 30)
         self.assertEqual(second_summary["budget"]["daily_consumed_tokens"], 20)
-        self.assertEqual(calls.read_text().splitlines(), ["call"])
+        self.assertEqual(calls.read_text().splitlines(), ["call", "call"])
 
     def test_healthy_sonnet_after_codex_quota_never_invokes_openclaw(self):
         openclaw_marker = self.root / "openclaw-invoked"
