@@ -216,6 +216,42 @@ async function listObservablePublicationReceipts(pool, options) {
   }));
 }
 
+async function listHonneJaShadowGenerationReceipts(pool, options) {
+  const tenantId = String(options && options.tenantId || "").trim();
+  const after = String(options && options.after || "").trim();
+  const productId = String(options && options.productId || "").trim();
+  const formatId = String(options && options.formatId || "").trim();
+  const locale = String(options && options.locale || "").trim();
+  if (
+    !tenantId
+    || !productId
+    || !formatId
+    || !locale
+    || !Number.isFinite(Date.parse(after))
+  ) {
+    throw new Error("honne JA shadow scan boundary is invalid");
+  }
+  const result = await pool.query(`
+    SELECT r.receipt
+    FROM public.lm_runtime_job_receipts r
+    JOIN public.lm_runtime_jobs j
+      ON j.job_id = r.job_id
+      AND j.tenant_id = r.tenant_id
+    WHERE j.tenant_id = $1
+      AND j.capability = 'marketing.video.generate'
+      AND r.outcome = 'completed'
+      AND r.created_at >= $2::timestamptz
+      AND r.receipt->>'kind' = 'marketing_video_artifact'
+      AND r.receipt->>'status' = 'ready'
+      AND r.receipt->>'product_id' = $3
+      AND r.receipt->>'format_id' = $4
+      AND r.receipt->>'locale' = $5
+    ORDER BY r.created_at ASC
+    LIMIT 100
+  `, [tenantId, after, productId, formatId, locale]);
+  return result.rows.map((row) => row.receipt);
+}
+
 function createHealthServer(port, state) {
   const server = http.createServer((request, response) => {
     if (request.url !== "/health") {
@@ -769,6 +805,71 @@ async function runSchedulerOwner(env = process.env) {
     }, observationPollMs);
   }
 
+  // Honne JA shadow slice — DEFAULT OFF (spec Order 11). The legacy launchd
+  // owner ai.anicca.reelclaw-honne-ja keeps firing at 12:30/21:30 JST; this
+  // wiring encodes the identical slots and only runs when
+  // LM_HONNE_JA_SHADOW_ENABLED=true is deliberately configured. Generation is
+  // enqueued for real (no-effect producer); publication jobs are enqueued and
+  // HELD (shadow_held) — no worker is granted marketing.video.publish here, so
+  // no Instagram/TikTok/Postiz call can happen in shadow.
+  const {
+    honneJaShadowConfig,
+    planHonneJaShadowGeneration,
+    holdHonneJaShadowPublications,
+    appendHonneJaShadowHold,
+  } = require("../lib/honne-ja-shadow-runtime.js");
+  const honneJaShadow = honneJaShadowConfig(env);
+  const honneJaShadowPollMs = Number(env.LM_HONNE_JA_SHADOW_POLL_MS || 60000);
+  let honneJaShadowTimer;
+  let honneJaShadowActive = false;
+  async function runHonneJaShadowScan() {
+    if (!honneJaShadow.enabled || honneJaShadowActive) return;
+    honneJaShadowActive = true;
+    try {
+      const { enqueueJob } = require("../lib/runtime-job-store.js");
+      const storeOptions = { query: pool.query.bind(pool) };
+      const job = planHonneJaShadowGeneration(honneJaShadow, Date.now());
+      if (job) {
+        await enqueueJob({
+          jobId: job.job_id,
+          tenantId: job.tenant_id,
+          loopId: job.loop_id,
+          capability: job.capability,
+          effectClass: job.effect_class,
+          effectKey: job.effect_key,
+          inputRefs: job.input_refs,
+          maxAttempts: job.max_attempts,
+        }, storeOptions);
+      }
+      const receipts = await listHonneJaShadowGenerationReceipts(pool, {
+        tenantId: honneJaShadow.tenantId,
+        productId: honneJaShadow.productId,
+        formatId: honneJaShadow.formatId,
+        locale: honneJaShadow.locale,
+        after: requiredEnv(env, "LM_HONNE_JA_SHADOW_AFTER"),
+      });
+      for (const receipt of receipts) {
+        await holdHonneJaShadowPublications(receipt, honneJaShadow, {
+          enqueueJob,
+          storeOptions,
+          appendHold: (hold) => appendHonneJaShadowHold(hold, {
+            dataDir: requiredEnv(env, "LM_DATA_DIR"),
+            tenantId: honneJaShadow.tenantId,
+            productId: honneJaShadow.productId,
+          }),
+        });
+      }
+    } finally {
+      honneJaShadowActive = false;
+    }
+  }
+  await runHonneJaShadowScan();
+  if (honneJaShadow.enabled) {
+    honneJaShadowTimer = setInterval(() => {
+      runHonneJaShadowScan().catch(() => {});
+    }, honneJaShadowPollMs);
+  }
+
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
     env: {
@@ -800,6 +901,7 @@ async function runSchedulerOwner(env = process.env) {
     if (marketingGenerationTimer) clearInterval(marketingGenerationTimer);
     if (publicationChainTimer) clearInterval(publicationChainTimer);
     if (observationTimer) clearInterval(observationTimer);
+    if (honneJaShadowTimer) clearInterval(honneJaShadowTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(
@@ -841,6 +943,7 @@ module.exports = {
   buildSchedulerHolderToken,
   marketingGenerationDueDate,
   listGenerationReceipts,
+  listHonneJaShadowGenerationReceipts,
   listObservablePublicationReceipts,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
