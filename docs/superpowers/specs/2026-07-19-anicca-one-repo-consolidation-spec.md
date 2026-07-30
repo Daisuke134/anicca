@@ -35,7 +35,7 @@ program cursorはPortable Runtime仕様の実行順を正本とする。Order 0�
 `ab71c1514b10ae1a74b770bf7ad8d1cf12dc6c38`、Railway deployment
 `1fdf8320-0086-4620-820b-a94e4ebdb08b` SUCCESSまで反映済みである。ただし実provider 3系統は未実行であり、
 現行verification harnessがenqueue後に対象jobをdirect claimするため、resident cloud loopの実行主体証明にも未到達である。
-直近atomicは§0.4.6cで是正した順序に従いLOCAL-CLOUD-PARITY-1であり、zero-start以降の新しいfinance機能はPortable Runtimeの
+直近atomicはBROWSER-MATRIX-1（§0.4.6cは2026-07-30に撤回済み）であり、zero-start以降の新しいfinance機能はPortable Runtimeの
 local/cloud release gateを追い越さない。
 historical §10 row `8c.R`の「双方unarchived」はrename直後の保全条件であり、現在のrepo境界・退役判断には使わない。
 
@@ -606,11 +606,11 @@ Base/Solana receipt、PM public APIを束ねたproduction E2Eを必須とする�
 | 1 | **BROWSER-GEN-1** | Telegramの自然文から意図を取り、webを探索して未登録の適切なsiteを選び、Railway private Steelの実Chromiumだけで実action→provider readback→Telegram trace/receiptまで完走 | prompt、選定理由、cloud session id、実URL、side effect、provider readback、TG message id、session release。同じ実行でlocal Mac browser side effect 0 | **done** — 実Telegram→production Life Manager→Railway private Steel→Luma登録→provider `You’re In`→Telegram PNG→Steel releaseを完走。job=`73d313c0-2574-49d2-8aad-e40665db0cdb`、Steel=`ac1fabf6-eada-48d2-a0ee-e9145504a989`、TG evidence=`350`、PNG SHA=`0a72dec2…c1c1f`。Cloudflareのpass/stuck両classも実測し、challenge時は正直に停止。evidence=`docs/evidence/browser/2026-07-28-browser-gen-1.md` |
 | 2 | **OSS-MERGE-1** | canonical security baselineをgreen化し、その後`life-manager-v0`、`profitable-claude`、`anicca-dais`、`anicca-products`、`anicca.ai`上のLife Manager source、既存local foldersをmanifest化する。必要な公開可能code/skills/tests/docs/configだけをcanonicalへ吸収し、private stateは§2.2のexternal inputへ分離する | active credential rotation/revocation、gitleaks/PII finding裁定、CI green。source/target manifest、history/license provenance、secret/PII/generated artifact 0。`life-manager-v0` 35 filesのbehavior map、旧issue `#11`→canonical `#1287`移管、redirect-only README、archive readback。private git URL・absolute home source path・submodule・symlink escape・runtime copy 0。fresh cloneだけでinstall/focused/full/evalがPASS | **done**。PR #1268、canonical merge `8d47689d3…`。exact main fresh cloneでroot/app install、647/647、8 eval、panel privacy、checkout clean。source 7系統、single `runtime/agent-runner`、legacy path検知、gitleaks/PII 0。evidence=`docs/evidence/oss/oss-merge-1.md`。外部Anicca iOS/APIのRevenueCat incidentはLife Manager cursorを止めない |
 | ~~3~~ | **BROWSER-AUTH-1** | agent-owned accountとユーザー提供credentialsをtenant別に隔離し、cloud job再起動後も許可済みsessionを復元 | 2 tenantのcredential非混線、secretのrepo/log/trace 0。実Lumaでlogin→encrypted save→fresh process/Steel restore→production queue→authenticated identity/action/provider readback。失効時は正直な再認証handoff | **done**。実LumaでOTP/profile/passkeyを通過し`/home`のprotected `Create Event`をreadback、encrypted context save→別Steel/別process→production durable queue→exact-image restart後もauthenticated readback。最終PR #1344、merge=`e075fb305…`、deployment=`173c819d…` SUCCESS、instance=`253cd9d2188f`、job=`84d9df6e…`、Steel=`f0d5ae91…`、TG=`474`、release=true。expired rowはjob=`e071f4c1…`で`handoff_required/login`、2-tenant wrong tenant/origin/principal read 0、全session release、最終production logのOTP/cookie/auth/raw-context pattern 0。focused=`53/53 + 23/23`。evidence=`docs/evidence/browser/2026-07-29-browser-auth-1.md` |
-| 4 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
-| 5 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
-| 6 | **BROWSER-HANDOFF-1** | `handoff_required`を行き止まりにせず、詰まったcloud session自身をuserへ渡して解錠させ、以後同origin/同tenantはhuman 0で継続する | 実jobが2FA/未login/challengeで停止した時にself-host Steelの`debugUrl`/casting websocketをtenantへ限時配布し、userの実操作（`Input.dispatchMouseEvent`/`dispatchKeyEvent`）が同一sessionへ届き、完了検知後に同sessionの`/sessions/:id/context`をencrypted保存→**その後の同origin jobがhuman 0で成功**まで1本。URL秘匿・期限・tenant scope・失効revoke・secret 0 | pending。※§0.4.6bが唯一の受入契約 |
-| 7 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。resident cloud loop自身がdurable queueからclaimし、verification harnessはenqueue/pollだけを行う。site adapter固有成功またはharnessからのdirect executor callだけではPASSにしない | **generic code done / 実弾pending（cursorではない、§0.4.6cで順序是正）**。generic classifier/receipt/harnessはPR #1348、merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESS、focused 89/89、full app、OSS 11/11、required CI全green。production boot logはLife Manager loops ONおよび`browser jobs ON (Railway private Steel)`を示し、runtime secret群も存在確認済み（値は非出力）。未完は①harnessのdirect `claimBrowserJobById`/`runNextBrowserJob`を除去してenqueue-only + terminal pollへ変える、②予約・問い合わせ・申請の実side effect、③各provider readback・TG receipt・Steel release 3/3。①はPR #1361でdone（merge `569cf748e…`、Railway `7ea230f6…` SUCCESS、resident claim実測 job `8cdd6942…`）。②③はCLOUD-LOOPS-1の後に実user actionで取る。詳細と唯一の受入契約は§0.4.6a、順序の根拠は§0.4.6c |
-| 8 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 4 | **BROWSER-MATRIX-1** | Dais固有siteをhard-codeせず、別site・別地域・別意図でも同じplanner/executorが行動 | 未登録siteを含む3系統（予約、問い合わせ/メール、申請等）の実provider receipt。resident cloud loop自身がdurable queueからclaimし、verification harnessはenqueue/pollだけを行う。site adapter固有成功またはharnessからのdirect executor callだけではPASSにしない | **in progress / current cursor**。generic classifier/receipt/harnessはPR #1348、merge `ab71c1514…`、Railway deployment `1fdf8320…` SUCCESS、focused 89/89、full app、OSS 11/11、required CI全green。production boot logはLife Manager loops ONおよび`browser jobs ON (Railway private Steel)`を示し、runtime secret群も存在確認済み（値は非出力）。未完は①harnessのdirect `claimBrowserJobById`/`runNextBrowserJob`を除去してenqueue-only + terminal pollへ変える、②予約・問い合わせ・申請の実side effect、③各provider readback・TG receipt・Steel release 3/3。①はPR #1361でdone（merge `569cf748e…`、Railway `7ea230f6…` SUCCESS、resident claim実測 job `8cdd6942…`）。②③は合成fixtureを作らず、Dais本人がownerの実service（Luma等）での実生活の用事として撃つ。詳細と唯一の受入契約は§0.4.6a |
+| 5 | **BROWSER-HANDOFF-1** | `handoff_required`を行き止まりにせず、詰まったcloud session自身をuserへ渡して解錠させ、以後同origin/同tenantはhuman 0で継続する | 実jobが2FA/未login/challengeで停止した時にself-host Steelの`debugUrl`/casting websocketをtenantへ限時配布し、userの実操作（`Input.dispatchMouseEvent`/`dispatchKeyEvent`）が同一sessionへ届き、完了検知後に同sessionの`/sessions/:id/context`をencrypted保存→**その後の同origin jobがhuman 0で成功**まで1本。URL秘匿・期限・tenant scope・失効revoke・secret 0 | pending。※§0.4.6bが唯一の受入契約 |
+| 6 | **BROWSER-RECOVERY-1** | timeout、DOM変更、login失効、challenge、Steel session消失からretry/replanし、side effectを重複させない | controlled failureごとの実trace、idempotency readback、成功/正直な失敗TG、全session release | pending |
+| 7 | **LOCAL-CLOUD-PARITY-1** | canonicalの同じcommitをlocal OSSとmulti-tenant cloud web appの両方で起動し、同じengine/skills/action contractを使う | clean VM local E2Eとcloud E2Eのgit SHA/runtime version一致。local-only/cloud-only実装、別repo copy、Mac browser dependency 0 | pending |
+| 8 | **CLOUD-LOOPS-1** | Life Managerのscheduler・executor・state・ledgerをcloud常設し、現在loadedなMac loopを止めずにMac非依存を証明 | cloud単独の周期実行receipt、Mac/cloud shadow差0、single-writer lease/idempotency、二重送信0。既存Mac loopはこの移行中にunloadしない | pending |
 | 9 | **LIFE-OUTCOMES-1** | cloud常設loopがchatをprimary push surfaceとして、MENTAL・PHYSICAL・FINANCIALの各1 journeyを本人のcontext/capabilityに合わせてobserve→decide→act→verify→reportまで閉じる | MENTAL=実context triggerと過剰通知0、PHYSICAL=実need→予約/実施follow-through、FINANCIAL=利用可能railを自律実行してverified receiptまたは正直なno-income/blocked report。3 journeyとも実mobile TG message id、provider/ledger readback、同じeventのrealtime panel readback一致 | pending。収益額や通院時期など外部event待ちは実装cursorを止めず、controlled real journeyと正直な未達を分離する |
 | 10 | **LEGACY-RETIRE-1** | cloud/local equivalence後にLife Managerのactive code/workflow/deploy責務を旧repo・旧folderから外す | `life-manager-v0`はrequired code/runtime reference 0を確認してcanonical redirect/archive、`profitable-claude`もhistorical redirect/archive、`anicca-products`は他productだけ、`anicca.ai`はLife Manager deployment source 0、`anicca-dais`はprivate state export後にrequired code 0。obsolete local checkoutはmanifest/hash/rollback path確認後だけrecoverableに退役。production downtime/loop gap 0 | pending。`life-manager-v0`のbounded archiveは先行`REPO-V0-RETIRE-1`で閉じる |
 | 11 | **DEV-E2E-1** | monitoring/Sentry/feedback→issue→TDD fix→PR→merge→deploy→production verificationを無人で1本閉じる | controlled real issue、commit/PR/CI/deploy SHA、production readback、失敗時rollback/recovery receipt | pending |
@@ -652,7 +652,7 @@ ownership証明にはならない。BROWSER-MATRIX-1は、Life Manager自身の�
 | genericity | classifier、Stagehand/Steel driver、provider receipt vocabularyはbooking/inquiry/applicationへ一般化済み | provider/site固有adapterなしで異なる3 originを完走する |
 | public action identity | agent-owned email/nameはRailway runtime secretに存在し、値はrepo/logへ出さない | login不要のpublic responder surfaceではidentity fieldだけを使用する |
 | authenticated action | BROWSER-AUTH-1のtenant-bound encrypted auth contextをfresh Steel sessionへ注入できる | user/agentが一度認証したcontextをtenant別に復元し、失効時だけ再認証/handoffする |
-| provider fixture | controlled provider assetの準備とLife Managerの利用者向けactionを混同していた | fixture準備はone-time test setup。routine action pathへadmin loginやaccount作成を入れない |
+| 検証対象 | 「他人のsiteへ実弾を撃てない」と誤認し、Cal.com/Tally等のtest fixtureを新規作成しようとして停滞した | ★本番が的★。Dais本人がownerの実service（Luma、Compass、実予約先、実応募先等）で実生活の用事をそのまま実行する。合成fixture・test account・練習用formの新規作成は**禁止** |
 | provider readback | admin UI loginを3 provider全てで先に作る案だった | confirmation email、webhook、API、owner response tableのうちsecretを出さず独立照合できるsurfaceを使う |
 
 ###### 4. Test Matrix
@@ -677,7 +677,7 @@ ownership証明にはならない。BROWSER-MATRIX-1は、Life Manager自身の�
 | Steel hosted vault/profile | hosted API向けcredentials vault/profileをself-host OSSに存在すると仮定しない。現self-host routeはactions/sessions/CDP/files/logsであり、tenant vault/profile routeを提供しない |
 | login-free task | booking/inquiry/applicationのpublic responder actionへ不要なadmin loginを追加しない |
 | account bootstrap | agent-owned accountのOTP/magic linkはagent inboxで処理する。user-owned OAuth/2FA/KYC/3DSはplatformが要求した時だけ最小handoffし、以後のloopはhuman 0で継続する |
-| fixture | controlled asset以外の第三者へnuisance booking/message/applicationを送らない |
+| 的の選び方 | ★そのaccount/assetのownerがDais本人（またはagent自身）なら本番で撃つ★。無関係な第三者へ練習のbooking/message/applicationを送らない。線引きは「ownerは自分か」だけであり、「本番かどうか」ではない。検証用の的を新規に作りたくなった時点で設計が誤っている |
 
 根拠:
 
@@ -817,42 +817,29 @@ to terms of service"`に限定している。routineな判断・選択はagent�
 | 5 | **同originの後続jobをhuman 0で成功させる** | 解錠なし成功のjob receipt |
 | 6 | tenant/revoke/失敗3系統を実測し、`docs/evidence/browser/`へbounded evidenceを書く | §2の8条件全PASS |
 
-##### 0.4.6c 実行順の是正（2026-07-30）— cloud loop先行、browserは必要な器官にだけ
+##### 0.4.6c 【撤回済み 2026-07-30】実行順の是正 — 前提が誤りだったため無効
 
-**是正内容**: 実行順を
-`BROWSER-MATRIX-1 → BROWSER-HANDOFF-1 → BROWSER-RECOVERY-1 → LOCAL-CLOUD-PARITY-1 → CLOUD-LOOPS-1 → …`
-から
-**`LOCAL-CLOUD-PARITY-1 → CLOUD-LOOPS-1 → BROWSER-HANDOFF-1 → BROWSER-MATRIX-1 → BROWSER-RECOVERY-1 → …`**
-へ変更する。§0.4.6a/0.4.6bのAcceptance Criteriaは1文字も緩めない。動かすのは順序だけである。
+**この節は撤回する。結論も根拠も採用しない。** 実行順は
+**`BROWSER-MATRIX-1 → BROWSER-HANDOFF-1 → BROWSER-RECOVERY-1 → LOCAL-CLOUD-PARITY-1 → CLOUD-LOOPS-1 → …`**
+（撤回前の順序）に戻す。
 
-**根拠1: 2本のrailが存在し、4器官のうちbrowserを要するのは1つだけ**（`apps/life-manager`実測）
+**撤回理由**: 本節は「browserを要する器官はPHYSICALだけ」という前提に立っていたが、これは誤りである。
+実測した配線:
 
-| 器官 | 依存rail | 実測 |
-|---|---|---|
-| DAILY（preflight / travel / wake / report） | connector API | `lib/transport/calendar-{composio,gog,unipile}.js`、`mail-*.js`。browser参照0 |
-| MENTAL | connector API | `lib/mental-runtime.js`にbrowser参照0 |
-| FINANCIAL | wallet / x402 / API | `lib/earnings-runtime.js`にbrowser参照0 |
-| PHYSICAL（clinic予約） | **browser** | `lib/care-booking-executor.js`のみbrowser依存 |
+```
+server.js:582            handleBrowserTaskMessage(...)      ← Telegramの自然文の入口
+  → lib/browser-task-intake.js  enqueueBrowserJob           ← queue投入は器官を区別しない
+  → lib/browser-job-store.js    lm_browser_jobs
+  → resident loop               claim → Railway private Steel 実行
+```
 
-connector railは`observe→decide→act→verify→report`をAPIだけで閉じられるため、
-**browser railの完成を待つ必要が構造的に無い**。旧順は「手が完成してから体を動かす」前提だったが、
-手が要るのは4器官中1つであり、前提が成立していない。
+自然文の依頼はどの器官のものでもbrowser jobになりうる。実際にBROWSER-GEN-1は実Lumaへの
+イベント登録（= 日常の用事）をbrowserで完了しており（`docs/evidence/browser/2026-07-28-browser-gen-1.md`）、
+browserは「PHYSICAL専用の部品」ではなく**APIの無い相手に触るための全器官共通の手**である。
 
-**根拠2: PHYSICALが実user向けに必要とするのは合成fixtureではなく本人accountの解錠**
+誤りの作り方も記録する: 器官別runtimeファイルを数本だけ`grep`して0 hitだったことを
+「依存なし」と断定した。否定の主張は横断grepとentry pointからの配線追跡の両方でしか裏付かない。
 
-BROWSER-MATRIX-1のcontrolled provider assetは「第三者へnuisanceを送らない」ための検証用fixtureであり、
-user価値を1mmも生まない。実userのclinic予約が要求するのは`BROWSER-HANDOFF-1`（本人のaccountを一度解錠し、
-以後human 0）である。よってHANDOFFをMATRIXより前に置く。
-
-**根拠3: 汎用性は実user actionで証明する方が証拠が強い**
-
-MATRIX-1の目的は「Dais固有siteをhard-codeしていない」ことの証明である。cloud loopが複数tenantの
-異なるsite/地域/意図で実actionを完了すれば、同じ主張がfixtureより強い証拠で成立する。
-fixtureはその証拠が取れない場合のfallbackとして残す。
-
-**この是正が守るもの**: §0.4.6a MUST 6（Mac loopをparity完了前に停止しない）は不変であり、
-LOCAL-CLOUD-PARITY-1とCLOUD-LOOPS-1が先行してもMac loopは止めない。
-BROWSER-MATRIX-1のdone条件（実provider receipt 3/3、resident loop claim、site adapter禁止）も不変である。
 
 **event/時間依存の自動成果ゲート（上の実装cursorを止めない）**
 
@@ -1104,7 +1091,7 @@ browser profileは同じrepoの作業面またはexternal runtime stateであり
 private key、credential、個人memory、ledger、log、browser profileをGitへ集約することは「one repo」に含めない。
 これらをrepoへ移す変更はFAILである。実行順は
 **`OSS-SECURITY-BASELINE-1` → `REPO-V0-RETIRE-1` → `AE-X402-SOURCE-CONSOLIDATE-1` → `BROWSER-AUTH-1` →
-`LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` → `BROWSER-HANDOFF-1` → `BROWSER-MATRIX-1` → `BROWSER-RECOVERY-1` →
+`BROWSER-MATRIX-1` → `BROWSER-HANDOFF-1` → `BROWSER-RECOVERY-1` → `LOCAL-CLOUD-PARITY-1` → `CLOUD-LOOPS-1` →
 `LIFE-OUTCOMES-1` → `LEGACY-RETIRE-1` → `DEV-E2E-1` → `OPS-PANEL-1`** とし、稼働loopはparity証明前に止めない。
 `life-manager-v0`をarchiveした事実だけではdoneにしない。REPO-AC-1〜6の全PASSと、canonical exact SHAから
 local/cloud E2Eが動き、Telegram/panel/provider receiptまで同じevent IDでreadbackできた時だけrepository consolidationをdoneとする。
@@ -1764,9 +1751,9 @@ SURVIVE-1 doneとは書かない。EARN-HC-1は完了した。JP lightning-talk 
 TaskMarket readbackも追加cost 0の実launchd wakeで完了した。13c-SELL/WORKは
 外部payer/acceptance待ちの自動成果ゲートとして継続し、§0.4.6どおり実装済み機械だけで観測する。
 Life Manager product trackはBROWSER-GEN-1、OSS-MERGE-1、BROWSER-AUTH-1がdone。
-現在はLOCAL-CLOUD-PARITY-1がcurrent（2026-07-30の順序是正、根拠は§0.4.6c）。BROWSER-MATRIX-1の
-generic code/merge/deployとresident-loop ownership是正はdoneで、実provider receipt 3/3はcloud loop移行後に
-実user価値のあるactionで取る。受入契約は§0.4.6a、順序の根拠は§0.4.6c。
+現在はBROWSER-MATRIX-1がcurrent（§0.4.6cは撤回済み）。BROWSER-MATRIX-1の
+generic code/merge/deployとresident-loop ownership是正はdoneで、実provider receipt 3/3は
+Dais本人がownerの実serviceでの実生活actionとして取る。受入契約は§0.4.6a。
 H2 diet + H3 checkup + H4 precepts はdone/cloud deploy済み。
 H5 relationsもdone/cloud deploy済み。agent economyの会計・自活証明は§0.4.6の独立trackとして進める。
 9d / self-build台帳 / 11a scan / diet / preceptsは自動蓄積を続け、H6 Telnyxはauto-recharge実測で解消済み。
