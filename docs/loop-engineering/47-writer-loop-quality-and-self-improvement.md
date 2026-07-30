@@ -2789,6 +2789,24 @@ verified evidence
 | 1 | IN PROGRESS — MONEY / AVAILABILITY | 2候補とも品質FAILした日の「有料記事1本」を復旧 | canonical `daily-2026-07-30`とbounded replacement `20260729-173948`は、source defect修復後も前者JA/EN editorial+reader FAIL、後者JA editorial+reader FAIL / EN reader FAILで`block_freeze`。publication-state exact0、公開0は安全だが、daily paid article desired stateは未達。Superpowers systematic-debugging → TDD → verificationで、terminal reader/editorial failureをdurable feedback receiptへ固定し、次のresearch/evidence planがそれを消費した証拠を残す。gateを緩めず、同日回復を有限に保ち、実runのJA/EN current hash quality PASS → note ¥500 + Substack JA/EN paid public readbackまで閉じる |
 | 2 | TODO NOW — SELF-IMPROVE CONSUMER | partial live publicationを学習consumerまで一貫させる | producerは`learning_eligible_pairs`でexact8依存を除いたが、current `verify_latest()`はなお`completion_status()==complete`と旧`rubric-judge-{ja,en}.json`を要求する。`collect_snapshot()`もlive rowの`public_id`欠落を`unknown/insufficient`でなく`KeyError`にする。直近22:30実runは`REVIEW_REJECTED`後にこの`KeyError`で終了。current editorial receiptとverified partial pairだけを受理し、欠損は明示`unknown/insufficient`、例外0、変更0/keep/revertのterminal receiptを既存launchd実runで証明する |
 
+##### B1 active diagnosis / 採用契約
+
+**実測根因**: `article_daily_start_control.py`はterminal品質FAILから`forbidden_topic_id`と`forbidden_editorial_form`だけを返し、`article-daily.sh`もその2値だけを`quality-replacement.json`へ保存する。`topic_router.py`は別topic/formを検証するが、editorial fixesとreaderの`unanswered_questions`を受け取らず、`evidence_plan`が失敗を解いたかも検証しない。実runでもcanonicalの未回答6件とeditorial fixes 4件はreplacement routeへ0件伝播し、replacementは無関係な題材へ切り替わった後、別の未回答4件とeditorial fixes 3件で再び停止した。既存focused 43 testsは全PASSだが、feedback伝播を期待するtestが0件なので欠陥を検出しない。
+
+| 外部根拠 | 核心 | Writerへ採用 |
+|---|---|---|
+| [Microsoft SkillOpt — Training Loop](https://github.com/microsoft/SkillOpt/blob/main/docs/guide/training-loop.md) | “Failure minibatches are always eligible for analysis” | terminal FAILを捨てず、次のresearch/update入力へ必ず含める |
+| [Stanford STORM](https://github.com/stanford-oval/storm#how-storm--co-storm-works) | “Pre-writing stage: The system conducts Internet-based research to collect references and generates an outline.” | prose修正より先に、未回答質問→調査→証拠→outlineを閉じる |
+| [Anthropic doc-coauthoring](https://github.com/anthropics/skills/blob/main/skills/doc-coauthoring/SKILL.md#stage-3-reader-testing) | Reader Testingはfresh readerでblind spotを検出し、問題sectionのrefinementへ戻す | reader FAILを監査ログで終わらせず、次のevidence planへ戻す |
+
+**採用契約**:
+
+1. terminal current-hash editorial fixes + reader unanswered questionsを、source run/article/receipt SHA付きの`quality_failure_feedback`へ固定する。
+2. bounded replacementは、全feedback IDを`evidence_plan[].addresses_feedback`で被覆しない限りtopic routerを通らない。別topic/formだけでは回復と見なさない。
+3. 既にterminalになったreplacementには、新runを作らず同一runで`quality-feedback-recovery`をexact1回だけ許可する。各feedback IDのprimary source/evidenceとJA/EN draft hashをconsumption receiptへ固定する。
+4. current-hash editorial/reader/identityが全PASSでも、feedback IDのexact coverage、source URLの本文Sources出現、consumption hashが揃わなければ`ready_to_freeze`にしない。
+5. recovery失敗は再び`block_freeze`でterminal。第三候補、gate緩和、stale PASS、publication-state先行作成は禁止する。
+
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
 | # | 状態 | 検証 | done |
