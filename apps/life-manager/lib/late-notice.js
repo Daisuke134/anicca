@@ -152,6 +152,23 @@ async function getLiveLocation(uid, nowMs = Date.now(), opts = {}) {
   return row && Date.parse(row.expires_at) > nowMs ? row : null;
 }
 
+// /stop (spec §12.1 row 4): the user's manual disconnect. The uid filter is the tenant boundary — an
+// unfiltered DELETE would wipe every user's fix, so the guard refuses to run without one. The Prefer
+// header reads back what was removed: the caller reports the true count, and a request we could not
+// complete returns null (unknown), never a comforting zero.
+async function deleteLiveLocation(uid, opts = {}) {
+  const f = opts.fetchImpl || fetch;
+  if (!opts.supaUrl || !opts.supaKey || !uid) return null;
+  const url = `${opts.supaUrl}/rest/v1/lm_user_locations?uid=eq.${encodeURIComponent(uid)}`;
+  const response = await f(url, {
+    method: "DELETE", headers: supaHeaders(opts.supaKey, "return=representation"),
+  }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const rows = await response.json().catch(() => null);
+  if (!Array.isArray(rows)) return null;
+  return { deleted: rows.length };
+}
+
 async function claimLateEvent(uid, key, opts = {}) {
   const f = opts.fetchImpl || fetch;
   if (!opts.supaUrl || !opts.supaKey || !uid || !key) return false;
@@ -180,5 +197,5 @@ async function markAnswered(uid, key, opts = {}) {
 module.exports = {
   NO_DESTINATION_MESSAGE, MAIL_FAILURE_MESSAGE,
   evaluateLateArrival, formatLateSuccessMessage, externalAttendees,
-  processLocationLateNotice, upsertLiveLocation, getLiveLocation, claimLateEvent, markAnswered,
+  processLocationLateNotice, upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent, markAnswered,
 };

@@ -1,0 +1,240 @@
+// test/telegram-slash-http-contract.test.js — spec §12.1 row 4: slash-command routing through the
+// REAL server.js webhook with a fake transport (no Telegram token, no network sends).
+//
+// Ordering contract under test, in webhook order:
+//   payout typed intake → feedback intake → panel (incl. device-code confirm) → SLASH ROUTER →
+//   location → parsed-control commands (/connect alias) → browser task → onboarding.
+// The fake fetch THROWS on any unexpected host, so a mis-ordered slash command that fell into the
+// browser-task classifier (Gemini) or any other branch fails the test physically, not rhetorically.
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const http = require("node:http");
+
+function response(status, body) {
+  return { ok: status >= 200 && status < 300, status, json: async () => body };
+}
+
+test("POST /telegram routes the legacy-parity slash surface without disturbing earlier branches", async () => {
+  process.env.LM_TELEGRAM_BOT_TOKEN = "fixture-token";
+  process.env.LM_TELEGRAM_WEBHOOK_SECRET = "fixture-webhook-secret";
+  process.env.LM_FEEDBACK_PROVENANCE_KEY = "fixture-feedback-provenance";
+  process.env.SUPABASE_URL = "https://fixture.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "fixture-service-role";
+  process.env.LIFE_RUN_LOOPS = "false";
+  process.env.PUBLIC_BASE = "https://lm.test";
+  // Browser tasks ON: if slash routing ever fell through to this branch for the paid+done fixture
+  // user, the classifier would call Gemini and the fake fetch below would throw.
+  process.env.LM_BROWSER_TASKS_ENABLED = "1";
+  delete process.env.LM_PANEL_BASE_URL;
+  delete process.env.RAILWAY_PUBLIC_DOMAIN;
+
+  const originalCreateServer = http.createServer;
+  const originalFetch = global.fetch;
+  let productionServer;
+  http.createServer = (handler) => {
+    productionServer = originalCreateServer(handler);
+    return productionServer;
+  };
+
+  // Mutable tenant fixtures. Chat 100 is linked to u1; chat 200 is unlinked.
+  const userRow = {
+    uid: "u1", name: "Fixture", telegram_chat_id: "100", tg_onboard_stage: "done",
+    calendar_provider: "composio_gcal", gmail_account_id: null, gmail_skipped: true,
+    email: "fixture@example.com", phone: "+819012345678", paid: true, payout_destination: null,
+  };
+  const locationStore = new Map([
+    ["u-other", { uid: "u-other", latitude: 1.5, longitude: 2.5, observed_at: "2026-07-30T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }],
+  ]);
+  const sent = [];
+  const userPatches = [];
+  const feedbackRows = [];
+
+  global.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    const method = String(init.method || "GET").toUpperCase();
+    if (url.hostname === "api.telegram.org") {
+      if (/sendMessage$/.test(url.pathname)) {
+        sent.push(JSON.parse(init.body));
+        return response(200, { ok: true, result: { message_id: 9000 + sent.length } });
+      }
+      throw new Error(`unexpected telegram call ${url.pathname}`);
+    }
+    if (url.pathname === "/rest/v1/lm_users" && method === "GET") {
+      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
+      if (uid) return response(200, uid === "u1" ? [{ uid: "u1", payout_destination: userRow.payout_destination }] : []);
+      const chat = String(url.searchParams.get("telegram_chat_id") || "").replace(/^eq\./, "");
+      return response(200, chat === "100" ? [{ ...userRow }] : []);
+    }
+    if (url.pathname === "/rest/v1/lm_users" && method === "PATCH") {
+      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
+      const patch = JSON.parse(init.body || "{}");
+      userPatches.push({ uid, patch });
+      if (uid === "u1") Object.assign(userRow, patch);
+      return response(200, []);
+    }
+    if (url.pathname === "/rest/v1/lm_user_locations" && method === "GET") {
+      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
+      return response(200, locationStore.has(uid) ? [locationStore.get(uid)] : []);
+    }
+    if (url.pathname === "/rest/v1/lm_user_locations" && method === "POST") {
+      const row = JSON.parse(init.body || "{}");
+      locationStore.set(row.uid, row);
+      return response(201, []);
+    }
+    if (url.pathname === "/rest/v1/lm_user_locations" && method === "DELETE") {
+      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
+      assert.ok(uid, "an unfiltered location DELETE must never be issued");
+      const removed = locationStore.has(uid) ? [locationStore.get(uid)] : [];
+      locationStore.delete(uid);
+      return response(200, removed);
+    }
+    if (url.pathname === "/rest/v1/lm_feedback_intake" && method === "POST") {
+      feedbackRows.push(JSON.parse(init.body || "{}"));
+      return response(201, [{ id: `feedback-${feedbackRows.length}` }]);
+    }
+    throw new Error(`unexpected fetch ${method} ${url}`);
+  };
+
+  try {
+    const serverPath = require.resolve("../server.js");
+    delete require.cache[serverPath];
+    require(serverPath);
+    assert.ok(productionServer, "the production HTTP server must be captured");
+    await new Promise((resolve) => productionServer.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${productionServer.address().port}`;
+
+    let updateId = 9100;
+    const post = (payload) => new Promise((resolve, reject) => {
+      const body = JSON.stringify({ update_id: ++updateId, ...payload });
+      const request = http.request(`${origin}/telegram`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json", "content-length": Buffer.byteLength(body),
+          "x-telegram-bot-api-secret-token": "fixture-webhook-secret",
+        },
+      }, (res) => { res.resume(); res.on("end", () => resolve(res.statusCode)); });
+      request.on("error", reject);
+      request.end(body);
+    });
+    const message = (chatId, text) => post({ message: {
+      message_id: updateId + 500, date: Math.floor(Date.now() / 1000),
+      from: { id: Number(chatId), first_name: "Fixture" }, chat: { id: Number(chatId) }, text,
+    } });
+    const lastSent = () => sent[sent.length - 1];
+
+    // 1. Unknown /command → honest unknown reply; never feedback, never onboarding, never a browser
+    //    task (the fixture user is paid+done with LM_BROWSER_TASKS_ENABLED=1, so a fall-through
+    //    would hit the Gemini classifier and the fake fetch would throw → no reply).
+    assert.equal(await message("100", "/frobnicate now"), 200);
+    assert.equal(sent.length, 1);
+    assert.equal(String(lastSent().chat_id), "100");
+    assert.match(lastSent().text, /Unknown command: \/frobnicate/);
+    assert.match(lastSent().text, /\/help/);
+    assert.equal(feedbackRows.length, 0);
+    assert.equal(userPatches.length, 0);
+
+    // 2. /help → the command list, including the previously dropped kind:"help" NL actions.
+    assert.equal(await message("100", "/help"), 200);
+    for (const expected of ["/status", "/where", "/stop", "/subscribe", "/connect", "/payout", "/reset", "connect calendar"]) {
+      assert.ok(lastSent().text.includes(expected), `/help must list ${expected}`);
+    }
+
+    // 3. Ordering vs the typed payout-address intake: a pending awaiting_address intake must NOT
+    //    swallow a slash command (and the slash reply must not be the address-rejection copy).
+    userRow.payout_destination = { type: "wallet", status: "awaiting_address" };
+    assert.equal(await message("100", "/help"), 200);
+    assert.match(lastSent().text, /Commands:/);
+    assert.ok(!/walletアドレス/.test(lastSent().text), "the intake's rejection copy must not answer a slash command");
+    assert.equal(userPatches.length, 0, "the pending intake must not consume the slash message");
+    userRow.payout_destination = null;
+
+    // 4. Ordering vs feedback: "feedback: ..." text (even mentioning a /command) stays feedback.
+    assert.equal(await message("100", "feedback: /where seems broken"), 200);
+    assert.equal(feedbackRows.length, 1);
+    assert.match(lastSent().text, /feedback was recorded/i);
+
+    // 5. Ordering vs panel: /panel is still owned by the panel branch (deterministic unavailable
+    //    copy here because LM_PANEL_BASE is unset), never the unknown-command reply.
+    assert.equal(await message("100", "/panel"), 200);
+    assert.match(lastSent().text, /panel is temporarily unavailable/i);
+
+    // 6. /start passes through to onboarding (unlinked chat → calendar stage announcement).
+    assert.equal(await message("200", "/start"), 200);
+    assert.match(lastSent().text, /Welcome to Life Manager/);
+
+    // 7. /where with nothing stored is honest; the edited_message live-location stream then routes
+    //    to upsertLiveLocation; /where afterwards reads the stored fix back (age + rounded coords).
+    assert.equal(await message("100", "/where"), 200);
+    assert.match(lastSent().text, /don't have a fresh live location/i);
+    const nowSec = Math.floor(Date.now() / 1000);
+    assert.equal(await post({ edited_message: {
+      message_id: 41, date: nowSec - 20, edit_date: nowSec - 10,
+      from: { id: 100 }, chat: { id: 100 },
+      location: { latitude: 35.681236, longitude: 139.767125, live_period: 900 },
+    } }), 200);
+    const storedFix = locationStore.get("u1");
+    assert.ok(storedFix, "the edited_message live location must be upserted for u1");
+    assert.equal(storedFix.latitude, 35.681236);
+    assert.equal(storedFix.source, "telegram_live_location");
+    assert.equal(await message("100", "/where"), 200);
+    assert.match(lastSent().text, /35\.68/);
+    assert.match(lastSent().text, /139\.77/);
+    assert.ok(!lastSent().text.includes("35.681236"), "full precision never echoed");
+    assert.match(lastSent().text, /observed: \d+s ago/);
+
+    // 8. /stop deletes ONLY u1's row (tenant-scoped) and the other tenant's fix survives.
+    assert.equal(await message("100", "/stop"), 200);
+    assert.match(lastSent().text, /deleted/i);
+    assert.equal(locationStore.has("u1"), false);
+    assert.ok(locationStore.has("u-other"), "another tenant's location must be untouched by /stop");
+
+    // 9. /subscribe: an active subscription is said honestly; an unpaid row gets the existing
+    //    onboard-link builder's URL (web /lm hosts the Stripe checkout) — no invented URLs.
+    assert.equal(await message("100", "/subscribe"), 200);
+    assert.match(lastSent().text, /already active/i);
+    userRow.paid = false;
+    assert.equal(await message("100", "/subscribe"), 200);
+    assert.equal(lastSent().reply_markup.inline_keyboard[0][0].url, "https://lm.test/lm?tg=100");
+    userRow.paid = true;
+
+    // 10. /reset reuses setStage and confirms.
+    assert.equal(await message("100", "/reset"), 200);
+    assert.deepEqual(userPatches[userPatches.length - 1], { uid: "u1", patch: { tg_onboard_stage: "calendar" } });
+    assert.match(lastSent().text, /\/start/);
+    userRow.tg_onboard_stage = "done";
+
+    // 11. /payout reopens the picker when no destination exists, and answers "already registered"
+    //     (no second picker) when one does — idempotent vs the callback flow.
+    assert.equal(await message("100", "/payout"), 200);
+    const picker = lastSent();
+    assert.equal(picker.reply_markup.inline_keyboard[0][0].callback_data, "payout:answer:bank");
+    userRow.payout_destination = { type: "bank", status: "awaiting_details", answered_at: "2026-07-30T00:00:00.000Z" };
+    const beforeRepeat = sent.length;
+    assert.equal(await message("100", "/payout"), 200);
+    assert.equal(sent.length, beforeRepeat + 1, "exactly one reply, no duplicate picker");
+    assert.match(lastSent().text, /送金先は登録済み/);
+    assert.equal(lastSent().reply_markup, undefined, "no second pending question");
+    userRow.payout_destination = null;
+
+    // 12. /connect is an alias into the SAME parsed-control flow as "connect calendar": on an
+    //     unlinked chat both spellings produce the command branch's own setup-first copy.
+    assert.equal(await message("200", "/connect"), 200);
+    assert.equal(lastSent().text, "Complete Life Manager setup with /start before changing settings.");
+    assert.equal(await message("200", "connect calendar"), 200);
+    assert.equal(lastSent().text, "Complete Life Manager setup with /start before changing settings.");
+
+    // 13. /status projects the row + location state the webhook actually read.
+    assert.equal(await message("100", "/status"), 200);
+    assert.match(lastSent().text, /Life Manager status/);
+    assert.match(lastSent().text, /Onboarding: done/);
+    assert.match(lastSent().text, /Calendar: connected/);
+    assert.match(lastSent().text, /Location: not available/);
+  } finally {
+    global.fetch = originalFetch;
+    http.createServer = originalCreateServer;
+    delete process.env.LM_BROWSER_TASKS_ENABLED;
+    if (productionServer) await new Promise((resolve) => productionServer.close(resolve));
+  }
+});
