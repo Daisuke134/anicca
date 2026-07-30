@@ -267,14 +267,33 @@ test("appendHonneJaShadowHold persists one JSON line per hold under the tenant d
 });
 
 // ── Seven-cycle status ───────────────────────────────────────────────────────
+//
+// The expected slot grid is the legacy 12:30/21:30 Asia/Tokyo cadence, i.e.
+// UTC instants 03:30Z and 12:30Z of each calendar day. `slotRow(slot)` builds
+// one verified receipt row for that exact grid instant; `honneJaShadowStatus`
+// receives `nowMs` so the tests pin the wall clock deterministically.
 
-function completedRow(overrides = {}) {
+function slotRow(slot, overrides = {}) {
+  const generatedAt = new Date(Date.parse(slot) + 1000).toISOString();
   return {
     outcome: "completed",
-    receipt: generationReceipt(overrides.receipt || {}),
-    created_at: overrides.created_at || "2026-07-30T03:30:02.000Z",
+    receipt: generationReceipt({ slot, generated_at: generatedAt, ...(overrides.receipt || {}) }),
+    created_at: overrides.created_at || new Date(Date.parse(slot) + 2000).toISOString(),
   };
 }
+
+// Seven consecutive grid slots ending at 2026-07-30 12:30 JST.
+const SEVEN_SLOTS = [
+  "2026-07-27T03:30:00.000Z",
+  "2026-07-27T12:30:00.000Z",
+  "2026-07-28T03:30:00.000Z",
+  "2026-07-28T12:30:00.000Z",
+  "2026-07-29T03:30:00.000Z",
+  "2026-07-29T12:30:00.000Z",
+  "2026-07-30T03:30:00.000Z",
+];
+// 2026-07-30T05:00:00Z = 14:00 JST — after the 12:30 slot, before 21:30.
+const NOW_AFTER_LAST = Date.parse("2026-07-30T05:00:00.000Z");
 
 test("status over an empty history is 0/7 and the gate is not met", () => {
   const status = honneJaShadowStatus([]);
@@ -284,25 +303,17 @@ test("status over an empty history is 0/7 and the gate is not met", () => {
   assert.equal(status.display, "0/7");
   assert.equal(status.gate_met, false);
   assert.deepEqual(status.receipts, []);
+  assert.deepEqual(status.missed_slots, []);
 });
 
-test("status counts trailing consecutive successful receipts with their timestamps", () => {
-  const rows = [1, 2, 3].map((n) => completedRow({
-    receipt: {
-      slot: `2026-07-2${n}T03:30:00.000Z`,
-      generated_at: `2026-07-2${n}T03:30:01.000Z`,
-    },
-    created_at: `2026-07-2${n}T03:30:02.000Z`,
-  }));
-  const status = honneJaShadowStatus(rows);
+test("status counts trailing consecutive expected-slot receipts with their timestamps", () => {
+  const rows = SEVEN_SLOTS.slice(4).map((slot) => slotRow(slot));
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
   assert.equal(status.consecutive, 3);
   assert.equal(status.display, "3/7");
   assert.equal(status.gate_met, false);
-  assert.deepEqual(status.receipts.map((entry) => entry.slot), [
-    "2026-07-21T03:30:00.000Z",
-    "2026-07-22T03:30:00.000Z",
-    "2026-07-23T03:30:00.000Z",
-  ]);
+  assert.deepEqual(status.missed_slots, []);
+  assert.deepEqual(status.receipts.map((entry) => entry.slot), SEVEN_SLOTS.slice(4));
   assert.ok(status.receipts.every((entry) => (
     entry.hook_id === "HJA-008"
     && typeof entry.generated_at === "string"
@@ -310,37 +321,130 @@ test("status counts trailing consecutive successful receipts with their timestam
   )));
 });
 
+test("seven consecutive expected slots meet the gate; a not-yet-due next slot is not missed", () => {
+  const rows = SEVEN_SLOTS.map((slot) => slotRow(slot));
+  // 14:00 JST: today's 21:30 slot is still in the future — it must not count as missed.
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
+  assert.equal(status.consecutive, 7);
+  assert.equal(status.display, "7/7");
+  assert.equal(status.gate_met, true);
+  assert.deepEqual(status.missed_slots, []);
+});
+
+test("a current-day slot that has not fired yet leaves the streak intact", () => {
+  // Receipts end at 2026-07-29 21:30 JST; now is 2026-07-30 12:00 JST, before
+  // the day's first slot. Nothing newer was expected, so nothing is missed.
+  const slots = SEVEN_SLOTS.slice(0, 6);
+  const rows = slots.map((slot) => slotRow(slot));
+  const status = honneJaShadowStatus(rows, { nowMs: Date.parse("2026-07-30T03:00:00.000Z") });
+  assert.equal(status.consecutive, 6);
+  assert.deepEqual(status.missed_slots, []);
+});
+
+test("an expected slot that passed with NO receipt row breaks the streak and is reported missed", () => {
+  // Rows exist for six slots but the 2026-07-29 12:30 JST slot left no row at
+  // all (scheduler stopped): the trailing streak is only what came after it.
+  const slots = SEVEN_SLOTS.filter((slot) => slot !== "2026-07-29T03:30:00.000Z");
+  const rows = slots.map((slot) => slotRow(slot));
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
+  // Only the two slots newer than the gap (29th 21:30 JST, 30th 12:30 JST) count.
+  assert.equal(status.consecutive, 2);
+  assert.equal(status.gate_met, false);
+  assert.deepEqual(status.missed_slots, ["2026-07-29T03:30:00.000Z"]);
+});
+
+test("receipts scattered across weeks can never reach the gate", () => {
+  // Seven verified receipts, one every OTHER day at 12:30 JST — the adversary
+  // scenario: trailing rows all verify, but the in-between slots were missed.
+  const rows = [18, 20, 22, 24, 26, 28, 30]
+    .map((day) => slotRow(`2026-07-${day}T03:30:00.000Z`));
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
+  assert.equal(status.consecutive, 1);
+  assert.equal(status.gate_met, false);
+  // The gap right behind the newest receipt is visible as missed slots.
+  assert.ok(status.missed_slots.includes("2026-07-29T12:30:00.000Z"));
+  assert.ok(status.missed_slots.includes("2026-07-29T03:30:00.000Z"));
+  assert.ok(status.missed_slots.includes("2026-07-28T12:30:00.000Z"));
+});
+
+test("a due slot whose receipt has not arrived counts as missed", () => {
+  // All seven receipts exist, but now is 22:00 JST and the 21:30 slot has no
+  // row: the newest expected slot is missed, so the streak resets to 0.
+  const rows = SEVEN_SLOTS.map((slot) => slotRow(slot));
+  const status = honneJaShadowStatus(rows, { nowMs: Date.parse("2026-07-30T13:00:00.000Z") });
+  assert.equal(status.consecutive, 0);
+  assert.equal(status.gate_met, false);
+  assert.deepEqual(status.missed_slots, ["2026-07-30T12:30:00.000Z"]);
+});
+
 test("a failure breaks the consecutive streak; only receipts after it count", () => {
   const rows = [
-    completedRow(),
-    { outcome: "failed", receipt: { error_code: "CAPABILITY_EXECUTION_FAILED" }, created_at: "2026-07-24T03:30:02.000Z" },
-    completedRow({ created_at: "2026-07-25T03:30:02.000Z" }),
-    completedRow({ created_at: "2026-07-26T03:30:02.000Z" }),
+    slotRow("2026-07-28T12:30:00.000Z"),
+    { outcome: "failed", receipt: { error_code: "CAPABILITY_EXECUTION_FAILED" }, created_at: "2026-07-29T03:30:02.000Z" },
+    slotRow("2026-07-29T12:30:00.000Z"),
+    slotRow("2026-07-30T03:30:00.000Z"),
   ];
-  const status = honneJaShadowStatus(rows);
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
   assert.equal(status.consecutive, 2);
   assert.equal(status.display, "2/7");
 });
 
 test("an unverifiable completed receipt also breaks the streak", () => {
   const rows = [
-    completedRow(),
-    { outcome: "completed", receipt: { kind: "runtime_noop" }, created_at: "2026-07-24T03:30:02.000Z" },
-    completedRow({ created_at: "2026-07-25T03:30:02.000Z" }),
+    slotRow("2026-07-29T12:30:00.000Z"),
+    { outcome: "completed", receipt: { kind: "runtime_noop" }, created_at: "2026-07-29T12:30:02.000Z" },
+    slotRow("2026-07-30T03:30:00.000Z"),
   ];
-  assert.equal(honneJaShadowStatus(rows).consecutive, 1);
+  assert.equal(honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST }).consecutive, 1);
 });
 
-test("seven or more consecutive successes meet the gate and cap the display", () => {
-  const rows = Array.from({ length: 8 }, (_, index) => completedRow({
-    created_at: `2026-07-${String(20 + index).padStart(2, "0")}T03:30:02.000Z`,
-  }));
-  const status = honneJaShadowStatus(rows);
+test("duplicate receipts for one slot are a gate violation and break the streak", () => {
+  const rows = [
+    slotRow("2026-07-29T03:30:00.000Z"),
+    slotRow("2026-07-29T12:30:00.000Z"),
+    slotRow("2026-07-29T12:30:00.000Z", { created_at: "2026-07-29T12:30:05.000Z" }),
+    slotRow("2026-07-30T03:30:00.000Z"),
+  ];
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
+  // The duplicated slot never counts; only receipts newer than it survive.
+  assert.equal(status.consecutive, 1);
+  assert.equal(status.gate_met, false);
+});
+
+test("a duplicated newest slot resets the streak to zero", () => {
+  const rows = [
+    slotRow("2026-07-30T03:30:00.000Z"),
+    slotRow("2026-07-30T03:30:00.000Z", { created_at: "2026-07-30T03:30:05.000Z" }),
+  ];
+  assert.equal(honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST }).consecutive, 0);
+});
+
+test("an off-grid receipt slot never counts toward the gate", () => {
+  const rows = [slotRow("2026-07-30T04:00:00.000Z")];
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
+  assert.equal(status.consecutive, 0);
+  assert.equal(status.gate_met, false);
+});
+
+test("eight or more consecutive expected slots cap the display at 7/7", () => {
+  const rows = ["2026-07-26T12:30:00.000Z", ...SEVEN_SLOTS].map((slot) => slotRow(slot));
+  const status = honneJaShadowStatus(rows, { nowMs: NOW_AFTER_LAST });
   assert.equal(status.consecutive, 8);
   assert.equal(status.display, "7/7");
   assert.equal(status.gate_met, true);
 });
 
-test("status rejects a non-array history", () => {
+test("status rejects a non-array history and an invalid clock", () => {
   assert.throws(() => honneJaShadowStatus(null), /receipts/i);
+  assert.throws(
+    () => honneJaShadowStatus([slotRow("2026-07-30T03:30:00.000Z")], { nowMs: Number.NaN }),
+    /time/i,
+  );
+  assert.throws(
+    () => honneJaShadowStatus(
+      [slotRow("2026-07-30T03:30:00.000Z")],
+      { nowMs: NOW_AFTER_LAST, timeZone: "Not/AZone" },
+    ),
+    /time zone/i,
+  );
 });
