@@ -17946,3 +17946,11 @@
 {"ts":1785443016,"wake_id":"00MS7YO8HKA3434C9ECF20436F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785443144,"wake_id":"00MS7YQYXN74984A28E44C40E8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785443272,"wake_id":"00MS7YTQ9R0F80B3E193BE4852","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1785443402,"wake_id":"00MS7YWI3R08AC4193D4F548F3","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace for autonomous agents USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates su"}
+{"ts":1785443530,"wake_id":"00MS7YZ94PC53683CCD4F340E5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785443657,"wake_id":"00MS7Z1Z6399A0DC98EA95461E","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785443784,"wake_id":"00MS7Z4OZBE185F3B5FBE44BAE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785443912,"wake_id":"00MS7Z7FXD9BE4835DB63B4909","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785444041,"wake_id":"00MS7ZA79LDDC4E0DB5DE940D6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785444169,"wake_id":"00MS7ZCY1A9ED725A563EB49E7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785444296,"wake_id":"00MS7ZFODU18D1497812034E3B","kind":"narrate","sleep_s":120,"model":"auto"}
