@@ -3760,3 +3760,121 @@ writer-engine の live install は source より 50 commits / 43 files / +6,908 
 
 writer-engine 側の gate（29.1）は将来の本番昇格時にそのまま効く。**二重に持つこと自体は無駄ではない**が、
 「どちらが本番か」を state の最終活動で毎回確認してから触る。
+
+## 30. 理想の最終形 — どこで動き、どんな tree になり、どの TODO がどこを作るか（2026-07-30）
+
+### 30.1 理想の定義（$10M/月 時点で成立している状態）
+
+| 性質 | 成立している状態 |
+|---|---|
+| 収益 | 記事・書籍・endpoint から**実 receipt が毎日入る**。unknown を0に変換しない |
+| 人間 | 銀行への出金以外、人間の関与ゼロ。identity は persona のみで operator の PII は構造的に出ない |
+| 学習 | 外部（X/gh/RSS）と自分の実測から claim が毎日入り、1日1変更が held-out + canary を通った時だけ残る |
+| 自己修復 | 公開失敗は同一 intent へ収束。新記事を書いて失敗を隠さない |
+| 複製 | 黒字化した unit を niche 単位で複製。各 unit は reward/weight/persona が独立 |
+| 製品化 | 他人が credential を預けるだけで同じ loop が回り、日次で金額が報告される |
+
+### 30.2 実行場所（どこで loop が動くか）
+
+```text
+ 今                                  理想
+ ─────────────────────────           ─────────────────────────────────────
+ Mac mini (anicca-mac-mini-1)        Mac mini = 自分用 unit の実行 + 開発
+   launchd で日次起動                  ├ launchd 日次（自分の niche 群）
+   単一 checkout を直接読む            └ CloakBrowser daily-driver（認証必須面）
+   ~/profitable-claude               
+                                     Cloud = 他人用 unit（PATH C）
+                                       ├ 利用者ごとに隔離された実行単位
+                                       ├ credential は利用者ごとの vault
+                                       └ 出金先も利用者ごと
+                                     ★ engine は同一。product pack と
+                                       credential と reward だけが別 ★
+```
+
+### 30.3 理想の folder tree（★ = 未実装、番号 = §28.6 の TODO）
+
+```text
+github.com/Daisuke134/profitable-claude          ← Writer engine の正本（本番）
+└─ skills/
+   └─ writer/                                    ← article-writer と writer-engine を統合した先
+      ├─ bin/writer                              CLI entrypoint
+      ├─ core/
+      │  ├─ orchestrate.py                       run の中枢（intent → publish → receipt）
+      │  ├─ generation.py  topic_research.py
+      │  ├─ state_db.py                          ★#2 metrics / sales / attribution table
+      │  └─ ★ money_route.py                     ★#10 crypto可→wallet / 不可→bridge
+      ├─ gates/
+      │  ├─ safety/pii_scan.py                   ✅#0 実装済（fail-closed）
+      │  ├─ quality/  deterministic/  reality/
+      │  └─ ★ claim_required.py                  ★#8 新規claim無しの提案を却下
+      ├─ publishers/
+      │  ├─ publisher_core.py                    共通 publish + gate 呼び出し
+      │  ├─ publication_remote.py                public readback
+      │  ├─ note/ zenn/ substack/ devto/ x-post/ x-article/
+      │  ├─ ★ kofi/                              ★#4#6 固定費0・最低出金なし
+      │  ├─ ★ digitalocean/                      ★#1 $400/本 の提出
+      │  ├─ ★ leanpub/ kdp/ zenn-book/           ★#11 書籍
+      │  ├─ ★ x402/                              ★#10 USDC 直着金 endpoint
+      │  └─ ★ beehiiv/ reddit/ vocal/            ★#14 面の拡張
+      ├─ learning/
+      │  ├─ ★ watch/                             ★#7 X/gh/RSS → novelty 3段 → claim store
+      │  ├─ collect-metrics.py                   ★#2 sales collector を追加
+      │  ├─ propose-experiment.py                1日1提案
+      │  └─ ★ keep_revert.py                     held-out（★集合を更新し続ける★）+ canary
+      ├─ notifications/
+      │  └─ ★ money_report.py                    ★#3 金額先頭の日次 Telegram
+      ├─ products/                               ★#13 1 unit = 1 niche
+      │  └─ <niche>/{product.toml, attribution.toml, rewards.toml, persona.toml, weights/}
+      ├─ selfmod/                                ★#15#17
+      │  ├─ ★ skills/                            L2: loop 自身が publisher/collector を追加
+      │  └─ ★ sandbox/                           L3: worktree + Docker。live 直編集は禁止
+      └─ tests/{integration,contract,e2e,fixtures}
+         └─ test_e7_pii_gate.py                  ✅#0 41 tests
+
+github.com/Daisuke134/life-manager               ← 製品側（#18 まで触らない）
+└─ skills/life-manager/
+   └─ ★ writer-for-you/                          ★#18 PATH C
+      ├─ onboarding/                             credential を預かる最小導線
+      ├─ tenant/                                 利用者ごとの unit 起動
+      ├─ payout/                                 利用者ごとの出金先
+      └─ report/                                 利用者への日次金額報告
+
+runtime state（repo 外・不可侵）
+~/.local/share/writer-engine/
+├─ state.sqlite3        runs / attempts / receipts ★+ metrics / sales / attribution
+├─ ledger/              pii-gate.jsonl, blame, rejected-edits
+├─ runs/<run_id>/       artifact + step trace
+├─ ★ claims/            ★#7 claim store（出典付き・却下も理由付きで保存）
+└─ ★ experiments/       ★#12 baseline / candidate / keep-revert
+
+~/.openclaw/.env        secrets（WRITER_PII_BLOCKLIST もここ。repo に平文で置かない）
+~/Library/LaunchAgents/ ai.anicca.writer-*.plist（日次・resume・learn）
+```
+
+### 30.4 TODO → tree のどこを作るか
+
+| # | 作る場所 |
+|---:|---|
+| 0 | `gates/safety/pii_scan.py` を**本番 article-writer 側**へ移植 |
+| 1 | `publishers/digitalocean/` |
+| 2 | `core/state_db.py` の新 table + `learning/collect-metrics.py` |
+| 3 | `notifications/money_report.py` |
+| 4 | `publishers/kofi/` + Stripe attribution |
+| 5 | `products/<niche>/attribution.toml` の `revenue_capable` |
+| 6 | `publishers/{substack,kofi}/` の paywall 方針 |
+| 7 | `learning/watch/` + `~/.local/share/writer-engine/claims/` |
+| 8 | `gates/claim_required.py` |
+| 9 | `publishers/kofi/` の shop |
+| 10 | `publishers/x402/` + `core/money_route.py` |
+| 11 | `publishers/{leanpub,kdp,zenn-book}/` |
+| 12 | `learning/keep_revert.py` + `experiments/` |
+| 13 | `products/<niche>/` を N 個 |
+| 14 | `publishers/{beehiiv,reddit,vocal}/` |
+| 15 | `selfmod/skills/` |
+| 16 | `products/<niche>/rewards.toml` の単価 |
+| 17 | `selfmod/sandbox/` |
+| 18 | **life-manager 側** `skills/life-manager/writer-for-you/` |
+| 19 | `products/` 全体の配分 + 停止 |
+
+**統合の注意**: `article-writer`（本番）と `writer-engine`（新）の二重化は現存する。
+統合（`skills/writer/` 化）は **#0〜#3 が本番側で動いてから**行う。今統合すると収益 loop が止まる。
