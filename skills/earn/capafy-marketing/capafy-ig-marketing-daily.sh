@@ -125,6 +125,24 @@ if [ "$PROVISION_NEEDED" = "yes" ]; then
   PROVISION_PORT="${PROVISION_CDP_URL##*:}"
   case "$PROVISION_PORT" in ''|*[!0-9]*) alert_and_die "provision browser returned no usable port ('$PROVISION_CDP_URL')" ;; esac
   echo "provision browser ready identity=$PROVISION_IDENTITY cdp=$PROVISION_CDP_URL port=$PROVISION_PORT" >>"$LOG"
+else
+  # The SAME staleness trap applies to the account we already have: its session lives in that
+  # dedicated profile, and its port is re-assigned by the kernel on every browser restart. A port
+  # stored in the account row is therefore a snapshot, never an address. When the row names a browser
+  # identity, bring that browser up and take the LIVE port from it; the stored one is only a hint.
+  ACCOUNT_BROWSER_IDENTITY="$(_resolve_capafy_ig_account_field "$ACCOUNTS_FILE" browser_identity)"
+  if [ -n "$ACCOUNT_BROWSER_IDENTITY" ]; then
+    ACCOUNT_CDP_URL="$(bash "$PROVISION_BROWSER" "$ACCOUNT_BROWSER_IDENTITY" 2>>"$LOG")" \
+      || alert_and_die "account browser unavailable for identity $ACCOUNT_BROWSER_IDENTITY (handle ${IG_HANDLE:-none})"
+    PROVISION_IDENTITY="$ACCOUNT_BROWSER_IDENTITY"   # so the EXIT trap releases the lease we took
+    PROVISION_LEASED="yes"
+    LIVE_PORT="${ACCOUNT_CDP_URL##*:}"
+    case "$LIVE_PORT" in
+      ''|*[!0-9]*) alert_and_die "account browser returned no usable port ('$ACCOUNT_CDP_URL')" ;;
+      *) [ "$LIVE_PORT" = "${IG_PORT:-}" ] || echo "live port for $ACCOUNT_BROWSER_IDENTITY is $LIVE_PORT (state row says ${IG_PORT:-none}) — using the live one" >>"$LOG"
+         IG_PORT="$LIVE_PORT" ;;
+    esac
+  fi
 fi
 
 PROVISION_PROMPT="no provisioning this pass (provision_needed=no)"
