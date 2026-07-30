@@ -73,11 +73,12 @@ function solanaTransfer({ lamports = 0, usdc = 0, signature = SIG } = {}) {
       err: null,
       preBalances: [1_000_000, 5_000_000],
       postBalances: [1_000_000 + lamports, 5_000_000],
+      // accountIndex is what pairs pre against post (§10 MAJOR-7); the real RPC always sends it.
       preTokenBalances: [
-        { owner: SOLANA_ADDRESS, mint: SOLANA_USDC_MINT, uiTokenAmount: { amount: "0", decimals: 6 } },
+        { accountIndex: 1, owner: SOLANA_ADDRESS, mint: SOLANA_USDC_MINT, uiTokenAmount: { amount: "0", decimals: 6 } },
       ],
       postTokenBalances: [
-        { owner: SOLANA_ADDRESS, mint: SOLANA_USDC_MINT, uiTokenAmount: { amount: String(usdc), decimals: 6 } },
+        { accountIndex: 1, owner: SOLANA_ADDRESS, mint: SOLANA_USDC_MINT, uiTokenAmount: { amount: String(usdc), decimals: 6 } },
       ],
     },
   };
@@ -479,7 +480,7 @@ test("a Solana USDC inflow is recorded in USD; a native SOL inflow is recorded i
   });
   const { receipt } = await executeWalletInflowJob(job(), h.deps);
 
-  const usdc = h.recorded.find((row) => row.entry_key === `inflow:solana:${SIG}`);
+  const usdc = h.recorded.find((row) => row.entry_key === `inflow:solana:${SIG}:1`);
   assert.ok(usdc, "the SPL USDC delta must be recorded");
   assert.equal(usdc.currency, "USD");
   assert.equal(usdc.amount_atomic, "750000");
@@ -501,6 +502,131 @@ test("a Solana USDC inflow is recorded in USD; a native SOL inflow is recorded i
   assert.equal(receipt.solana.scanned_signatures, 1);
   assert.equal(receipt.recorded, 2);
   assert.equal(verifyWalletInflowReceipt(receipt), true);
+});
+
+// §10 MAJOR-7 — hostile payloads. `preTokenBalances` and `postTokenBalances` are two independent arrays;
+// nothing in the RPC contract says they are in the same order or that either lists every account. Pairing
+// them positionally (or by first match) invents money out of a reordering.
+function tokenBalance(accountIndex, amount, owner = SOLANA_ADDRESS, mint = SOLANA_USDC_MINT) {
+  return { accountIndex, owner, mint, uiTokenAmount: { amount: String(amount), decimals: 6 } };
+}
+
+function solanaTokenTx(preTokenBalances, postTokenBalances, signature = SIG) {
+  return {
+    signature,
+    blockTime: 1785484800,
+    transaction: { message: { accountKeys: [{ pubkey: SOLANA_ADDRESS }, { pubkey: OTHER_SOLANA_ADDRESS }] } },
+    meta: {
+      err: null,
+      preBalances: [1_000_000, 5_000_000],
+      postBalances: [1_000_000, 5_000_000],
+      preTokenBalances,
+      postTokenBalances,
+    },
+  };
+}
+
+test("§10 MAJOR-7 / T16b: a reordered token balance list cannot invent money", async () => {
+  // Two token accounts, NEITHER of which changed. Listed in opposite orders in pre and post. First-match
+  // or positional pairing reads pre=0 against post=1000000 and books a $1 deposit that never happened.
+  const tx = solanaTokenTx(
+    [tokenBalance(9, 0), tokenBalance(5, 1_000_000)],
+    [tokenBalance(5, 1_000_000), tokenBalance(9, 0)],
+  );
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 0, "no balance changed, so no money may be booked");
+  assert.equal(receipt.outcome, "none");
+  assert.equal(receipt.solana.usdc_net_atomic, "0");
+});
+
+test("§10 MAJOR-7 / T16b: the mirror ordering cannot hide a real deposit either", async () => {
+  // Same reordering, but this time account 5 really did receive 1 USDC. Positional pairing would read
+  // pre=1000000 against post=0 and conclude an OUTFLOW, silently unbooking a real payment.
+  const tx = solanaTokenTx(
+    [tokenBalance(9, 1_000_000), tokenBalance(5, 0)],
+    [tokenBalance(5, 1_000_000), tokenBalance(9, 1_000_000)],
+  );
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 1);
+  assert.equal(h.recorded[0].entry_key, `inflow:solana:${SIG}:5`);
+  assert.equal(h.recorded[0].amount_atomic, "1000000");
+});
+
+test("§10 MAJOR-7: every token account the owner holds for the mint is counted, not just the first", async () => {
+  // The old code stopped at the first matching entry, so a payment into a second token account vanished.
+  const tx = solanaTokenTx(
+    [tokenBalance(5, 0), tokenBalance(9, 0)],
+    [tokenBalance(5, 250_000), tokenBalance(9, 400_000)],
+  );
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  const { receipt } = await executeWalletInflowJob(job(), h.deps);
+
+  assert.equal(h.recorded.length, 2, "both token accounts received money");
+  assert.deepEqual(h.recorded.map((row) => row.entry_key).sort(), [
+    `inflow:solana:${SIG}:5`,
+    `inflow:solana:${SIG}:9`,
+  ]);
+  assert.deepEqual(h.recorded.map((row) => row.amount_atomic).sort(), ["250000", "400000"]);
+  // The receipt states the net across every account, so an internal shuffle is visible to a reader.
+  assert.equal(receipt.solana.usdc_net_atomic, "650000");
+});
+
+test("§10 MAJOR-7: an account present only in post (newly opened) is a real inflow", async () => {
+  // A first-ever payment creates the token account, so it has no pre entry at all. Treating a missing pre
+  // as "skip" would drop the very first deposit a tenant ever receives.
+  const tx = solanaTokenTx([], [tokenBalance(5, 750_000)]);
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  await executeWalletInflowJob(job(), h.deps);
+  assert.equal(h.recorded.length, 1);
+  assert.equal(h.recorded[0].amount_atomic, "750000");
+  assert.equal(h.recorded[0].entry_key, `inflow:solana:${SIG}:5`);
+});
+
+test("§10 MAJOR-7: another owner's or another mint's token account is never counted", async () => {
+  const tx = solanaTokenTx(
+    [tokenBalance(5, 0)],
+    [
+      tokenBalance(5, 0),
+      // Same tx, somebody else's USDC account.
+      tokenBalance(7, 9_000_000, OTHER_SOLANA_ADDRESS),
+      // Our account, but a token that is not USDC — its 6-decimal amount is not dollars.
+      tokenBalance(8, 9_000_000, SOLANA_ADDRESS, "So11111111111111111111111111111111111111112"),
+    ],
+  );
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  await executeWalletInflowJob(job(), h.deps);
+  assert.equal(h.recorded.length, 0);
+});
+
+test("§10 MAJOR-7: a token balance with no accountIndex fails closed rather than being paired by guess", async () => {
+  // Without an accountIndex there is nothing to pair on. Dropping it loses money; positional pairing
+  // invents it. The only honest answer is to refuse the wake.
+  const pre = [tokenBalance(5, 0)];
+  const post = [{ owner: SOLANA_ADDRESS, mint: SOLANA_USDC_MINT, uiTokenAmount: { amount: "500000", decimals: 6 } }];
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: solanaTokenTx(pre, post) } });
+  await assert.rejects(() => executeWalletInflowJob(job(), h.deps), /account index/i);
+  assert.equal(h.recorded.length, 0);
+});
+
+test("§10 MAJOR-7: native SOL is paired by account key position and bounds-checked", async () => {
+  const tx = solanaTokenTx([], [], SIG);
+  tx.meta.postBalances = [1_000_000 + 2_000_000_000, 5_000_000];
+  const h = harness({ signatures: [SIG], transactions: { [SIG]: tx } });
+  await executeWalletInflowJob(job(), h.deps);
+  assert.equal(h.recorded.length, 1);
+  assert.equal(h.recorded[0].currency, "SOL");
+  assert.equal(h.recorded[0].amount_minor, 2_000_000_000);
+
+  // A truncated balances array cannot be paired; it must not silently read as zero movement.
+  const ragged = solanaTokenTx([], [], OLDER_SIG);
+  ragged.meta.postBalances = [];
+  const raggedHarness = harness({ signatures: [OLDER_SIG], transactions: { [OLDER_SIG]: ragged } });
+  await assert.rejects(() => executeWalletInflowJob(job(), raggedHarness.deps), /balance/i);
+  assert.equal(raggedHarness.recorded.length, 0);
 });
 
 test("an outgoing or failed Solana transaction is not an inflow", async () => {

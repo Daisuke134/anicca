@@ -247,27 +247,64 @@ async function scanBaseInflows({ baseRpc, address, cursor, limit }) {
   };
 }
 
+// §10 MAJOR-7 — `preTokenBalances` and `postTokenBalances` are two INDEPENDENT arrays. Nothing in the RPC
+// contract says they share an order, or that either one lists every account. The previous code took the
+// first owner+mint match from each and subtracted them, so a pure reordering of two unchanged accounts
+// produced a deposit that never happened (T16b), and its mirror hid a real one. `accountIndex` is the only
+// value that identifies an account across the two arrays, so pairing is done on it and on nothing else.
+//
+// A balance entry with no `accountIndex` cannot be paired at all. It fails the wake closed: dropping it
+// would lose money and pairing it positionally would invent money, and neither belongs in a ledger.
+function solanaTokenDeltas(meta, address, mint) {
+  const indexed = (list, label) => {
+    const map = new Map();
+    for (const item of Array.isArray(list) ? list : []) {
+      if (!item || item.owner !== address || item.mint !== mint) continue;
+      if (!Number.isSafeInteger(item.accountIndex)) {
+        fail(`a Solana ${label} token balance has no usable account index`);
+      }
+      map.set(item.accountIndex, BigInt(String((item.uiTokenAmount || {}).amount || "0")));
+    }
+    return map;
+  };
+  const pre = indexed(meta.preTokenBalances, "pre");
+  const post = indexed(meta.postTokenBalances, "post");
+  // The union, not the intersection: a first-ever payment CREATES the token account, so it appears only
+  // in post. Requiring a pre entry would drop the first deposit a tenant ever receives.
+  return [...new Set([...pre.keys(), ...post.keys()])]
+    .sort((left, right) => left - right)
+    .map((accountIndex) => ({
+      accountIndex,
+      delta: (post.get(accountIndex) || 0n) - (pre.get(accountIndex) || 0n),
+    }));
+}
+
 function solanaDeltas(transaction, address) {
   const keys = ((transaction.transaction || {}).message || {}).accountKeys || [];
   const index = keys.findIndex((key) => String(key && key.pubkey ? key.pubkey : key) === address);
   const meta = transaction.meta || {};
   let lamports = 0n;
-  if (index >= 0 && Array.isArray(meta.preBalances) && Array.isArray(meta.postBalances)) {
+  if (index >= 0) {
+    // `preBalances[i]` and `postBalances[i]` correspond to `accountKeys[i]` BY DEFINITION, so position is
+    // the right pairing here — but only if both arrays actually reach that position. A ragged array cannot
+    // be read as "no movement"; that is the same silent zero this module exists to refuse.
+    if (!Array.isArray(meta.preBalances) || !Array.isArray(meta.postBalances)) {
+      fail("a Solana transaction is missing its lamport balance arrays");
+    }
+    if (meta.preBalances.length <= index || meta.postBalances.length <= index) {
+      fail("a Solana lamport balance array is shorter than the account it must describe");
+    }
     lamports = BigInt(meta.postBalances[index] || 0) - BigInt(meta.preBalances[index] || 0);
   }
 
-  const tokenAmount = (list) => {
-    const entry = (Array.isArray(list) ? list : []).find((item) => (
-      item && item.owner === address && item.mint === SOLANA_USDC_MINT
-    ));
-    return entry ? BigInt(String((entry.uiTokenAmount || {}).amount || "0")) : 0n;
-  };
-  const usdc = tokenAmount(meta.postTokenBalances) - tokenAmount(meta.preTokenBalances);
-
+  const tokenDeltas = solanaTokenDeltas(meta, address, SOLANA_USDC_MINT);
   const blockTime = Number(transaction.blockTime);
   return {
     lamports,
-    usdc,
+    tokenDeltas,
+    // The net across every one of the owner's accounts for this mint. Recorded on the receipt so an
+    // internal shuffle between two of the tenant's own accounts is visible to a reader.
+    usdcNet: tokenDeltas.reduce((total, entry) => total + entry.delta, 0n),
     occurred_at: Number.isSafeInteger(blockTime) && blockTime > 0
       ? new Date(blockTime * 1000).toISOString()
       : null,
@@ -295,6 +332,7 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
   let scanned = 0;
   let lastSignature = until;
   let truncated = false;
+  let usdcNet = 0n;
   for (const entry of confirmed) {
     const transaction = await solanaRpc("getTransaction", [
       entry.signature,
@@ -306,8 +344,19 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
       continue;
     }
     const delta = solanaDeltas(transaction, address);
+    usdcNet += delta.usdcNet;
     const rows = [];
-    if (delta.usdc > 0n) rows.push({ unit: "usdc", amount: delta.usdc.toString(), occurred_at: delta.occurred_at });
+    // One row per token account that gained, keyed by its accountIndex (§4.5). Accounts that lost are
+    // reflected in usdcNet on the receipt but are not deposits.
+    for (const token of delta.tokenDeltas) {
+      if (token.delta <= 0n) continue;
+      rows.push({
+        unit: "usdc",
+        accountIndex: token.accountIndex,
+        amount: token.delta.toString(),
+        occurred_at: delta.occurred_at,
+      });
+    }
     if (delta.lamports > 0n) rows.push({ unit: "sol", amount: delta.lamports.toString(), occurred_at: delta.occurred_at });
     if (inflows.length + rows.length > Math.max(0, limit)) {
       // Stop BEFORE this signature and leave the cursor behind it, so nothing is skipped.
@@ -319,7 +368,13 @@ async function scanSolanaInflows({ solanaRpc, address, cursor, limit }) {
     lastSignature = entry.signature;
   }
 
-  return { scanned_signatures: scanned, inflows, truncated, last_signature: lastSignature };
+  return {
+    scanned_signatures: scanned,
+    inflows,
+    truncated,
+    last_signature: lastSignature,
+    usdc_net_atomic: usdcNet.toString(),
+  };
 }
 
 function baseEntry({ inflow, address, nowIso, selfWallets }) {
@@ -362,7 +417,11 @@ function solanaEntry({ inflow, address, nowIso }) {
   const isUsdc = inflow.unit === "usdc";
   return {
     entry: {
-      entry_key: `inflow:${isUsdc ? "solana" : "solana-sol"}:${inflow.signature}`,
+      // §4.5: a single transfer event. An SPL inflow is per token account, so the account index is part
+      // of its identity; a native SOL delta is per transaction and has no sub-identity.
+      entry_key: isUsdc
+        ? `inflow:solana:${inflow.signature}:${inflow.accountIndex}`
+        : `inflow:solana-sol:${inflow.signature}`,
       wallet_address: address,
       kind: LEDGER_KIND,
       ...(isUsdc
@@ -376,6 +435,7 @@ function solanaEntry({ inflow, address, nowIso }) {
           capital_class: CAPITAL_CLASS,
           chain: "solana",
           asset: "USDC",
+          account_index: inflow.accountIndex,
           occurred_at_source: inflow.occurred_at ? "chain" : "observed",
         }
         // Lamports as themselves. A USD figure here would need a price feed nobody measured.
@@ -482,6 +542,7 @@ async function executeWalletInflowJob(job, deps = {}) {
       address: solanaAddress,
       scanned_signatures: scan.scanned_signatures,
       commitment: SOLANA_COMMITMENT,
+      usdc_net_atomic: scan.usdc_net_atomic,
       found: scan.inflows.length,
     };
   }
