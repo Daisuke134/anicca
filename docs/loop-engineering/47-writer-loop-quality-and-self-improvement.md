@@ -2819,6 +2819,8 @@ verified evidence
 
 **x-post intent停止点**: bounded replacementのrun IDは`20260729-173948`で、resume promptと実publisherは`x-post-slot == publication-state.run_id`を要求する一方、`validate_target()`だけが`daily-YYYY-MM-DD`形式しか受けず、正しい値を登録不能にした。replacement run形式を受理し余分なsuffixは拒否するtestをRED→GREENにし、feature `b6e3c25` / runtime `b3ad09f`へpushした。publication 100/100、X publisher + schedule 37/37、Python compile/diff checkに加えWriter全article suite `445 passed / 7 warnings`がfresh PASS。既存7 intentへ`x-post/ja` exact current run intentを加える実launchd再開は次の検証境界で行う。
 
+**planner handoff停止点**: run 91はquality recoveryを`handed-to-publication`へterminal化してexit 1、7面のauthenticated draft readbackを保存した。run 92を発火するとexit 0で旧`daily-2026-07-24` WAITを選び、現runへ再入しなかった。current `initialization_plan()`を実測すると、publicationより前に保存された同runの`platform=quality / published=false / verified_logged_in=false / remote identityなし` audit行を`run-ledger-boundary-exists`と誤認していた。destination、draft URL、live URL、receipt、public ID、published_atを全て持たない同topicの`carry-over:quality-block:*`行だけを非publication auditとして許可し、他のledger行は従来どおりfail-closedにするtestをRED→GREENにした。feature `6ba9e73` / runtime `c717d89`、publication 101/101、schedule 34/34がfresh PASS。runtime上の同state再評価は`initializable=true / initialization_pairs=["x-post/ja"]`である。
+
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
 | # | 状態 | 検証 | done |
