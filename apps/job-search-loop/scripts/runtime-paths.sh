@@ -19,6 +19,7 @@ fi
 typeset -gx JOB_SEARCH_JQ="${JOB_SEARCH_JQ:-/usr/bin/jq}"
 typeset -gx JOB_SEARCH_PLUTIL="${JOB_SEARCH_PLUTIL:-/usr/bin/plutil}"
 typeset -gx JOB_SEARCH_LAUNCHCTL="${JOB_SEARCH_LAUNCHCTL:-/bin/launchctl}"
+typeset -gx JOB_SEARCH_OPENCLAW="${JOB_SEARCH_OPENCLAW:-/opt/homebrew/bin/openclaw}"
 if [[ -z "${AGENT_RUNNER_PROVIDER:-}" && -f "$JOB_SEARCH_INSTALL_CONFIG" ]]; then
   JOB_SEARCH_SELECTED_PROVIDER=$("$JOB_SEARCH_PYTHON" - \
     "$JOB_SEARCH_INSTALL_CONFIG" <<'PY'
