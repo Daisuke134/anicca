@@ -111,6 +111,10 @@ def load_templates(
                 "GIG_ENV_FILE": str(runtime / ".env"),
             }
         )
+        # User-specific report routing belongs to the rendered private unit,
+        # never the public template or install receipt.
+        if os.environ.get("GIG_REPORT_CHAT"):
+            environment["GIG_REPORT_CHAT"] = os.environ["GIG_REPORT_CHAT"]
         units.append(value)
     return units
 

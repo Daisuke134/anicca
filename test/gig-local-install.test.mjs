@@ -79,7 +79,12 @@ function digest(path) {
 
 test("fresh macOS install renders all launchd units and is idempotent", () => {
   const { home, runtime } = fixture();
-  const first = install({ home, runtime, scheduler: "launchd" });
+  const first = install({
+    home,
+    runtime,
+    scheduler: "launchd",
+    extraEnv: { GIG_REPORT_CHAT: "fixture-chat" },
+  });
   const launchAgents = join(home, "Library", "LaunchAgents");
   const state = realpathSync(join(runtime, "state", "gig"));
 
@@ -107,6 +112,7 @@ test("fresh macOS install renders all launchd units and is idempotent", () => {
     assert.equal(value.EnvironmentVariables.LIFE_MANAGER_REPO, REPO_ROOT);
     assert.equal(value.EnvironmentVariables.LIFE_MANAGER_HOME, realpathSync(runtime));
     assert.equal(value.EnvironmentVariables.GIG_STATE_DIR, state);
+    assert.equal(value.EnvironmentVariables.GIG_REPORT_CHAT, "fixture-chat");
     assert.equal(
       value.ProgramArguments.some((arg) => arg.includes("profitable-claude")),
       false,
@@ -119,7 +125,12 @@ test("fresh macOS install renders all launchd units and is idempotent", () => {
     before.set(name, digest(path));
   }
 
-  const second = install({ home, runtime, scheduler: "launchd" });
+  const second = install({
+    home,
+    runtime,
+    scheduler: "launchd",
+    extraEnv: { GIG_REPORT_CHAT: "fixture-chat" },
+  });
   assert.equal(second.state_dir, state);
   for (const name of installed) {
     assert.equal(digest(join(launchAgents, name)), before.get(name));
