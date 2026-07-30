@@ -45,13 +45,22 @@ shared engine. **Do not copy or re-implement it. Copy a manifest.**
 - **Poison detection only on day3+ accounts** (a young account failing instagrapi is expected,
   not poison — don't false-cook it).
 
-## One lane: agent-owned (Postiz cancelled 2026-07)
+## Two lanes today, one lane as the goal (measured 2026-07-30)
 
-There is NO second lane. The Postiz subscription is cancelled from 2026-07, so every
-marketing loop — current (capafy, clip, video, slideshow) and future (reelclaw, larry,
-honne) — runs on THIS engine: the agent creates and owns the account, warms it per the
-recipe, and posts through `poster.py`'s instagrapi session. Human credentials and
-third-party posting SaaS are forbidden everywhere, for every product.
+The earlier claim that Postiz was cancelled is **wrong**: the API answers and lists
+**29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X), and `anicca-larry`
+publishes through it. So there are two lanes right now:
+
+| Lane | Used by | Status |
+|---|---|---|
+| **agent-owned** — engine creates the account, warms it, posts via `poster.py` (instagrapi) | Instagram (clip, capafy) | the target design |
+| **Postiz API** (`POSTIZ_API_KEY`) | TikTok, YouTube, X | load-bearing; cutting it now kills 19 accounts |
+
+Postiz is kept deliberately until the free lanes are green. It cannot ship to other
+Life Manager users (one owner's accounts, one paid seat), so it is a temporary bridge,
+not the design. Note the free replacement for TikTok is **not** the official Content
+Posting API — an unaudited client can only post privately and the audit is a human
+review — it is agent-owned accounts plus browser/session upload, exactly like IG.
 
 | `MKT_CONTENT_ADAPTER` | Instagram media | `poster.py` route |
 |---|---|---|
