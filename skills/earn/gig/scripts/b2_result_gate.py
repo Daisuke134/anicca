@@ -23,6 +23,18 @@ class ContractError(ValueError):
 
 
 _RETAINER_ULID = re.compile(r"[0-9A-HJKMNP-TV-Z]{26}")
+_PORTFOLIO_CAPABILITY_RULES = (
+    ("Instagram投稿企画・運用", ("instagram",)),
+    ("LINE配信設計・導線改善", ("line",)),
+    ("KPIレポートと継続改善", ("kpi",)),
+    ("SNS投稿企画・運用", ("sns",)),
+    ("記事構成・執筆", ("記事", "ライティング")),
+    ("プレゼン・資料作成", ("資料", "スライド", "プレゼン")),
+    ("Web制作・改善", ("web", "ウェブ", "サイト", "lp")),
+    ("業務自動化", ("自動化",)),
+    ("翻訳・ローカライズ", ("翻訳", "ローカライズ")),
+    ("データ分析・レポート", ("データ分析",)),
+)
 
 
 def _valid_request_id(value: Any) -> bool:
@@ -86,7 +98,126 @@ def _applied_ids(path: Path) -> list[str]:
     return sorted(found, key=_request_id_sort_key)
 
 
-def build_context(prep: dict[str, Any], applied_path: Path) -> dict[str, Any]:
+def _read_jsonl_objects(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return rows
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def _portfolio_capabilities(acceptance_delta: Any) -> list[str]:
+    if not isinstance(acceptance_delta, list) or not all(
+        isinstance(value, str) and value.strip() for value in acceptance_delta
+    ):
+        return []
+    text = "\n".join(acceptance_delta)
+    folded = text.casefold()
+    capabilities: list[str] = []
+    for label, keywords in _PORTFOLIO_CAPABILITY_RULES:
+        matched = any(keyword.casefold() in folded for keyword in keywords)
+        if label.startswith("LINE"):
+            matched = re.search(r"(?<![a-z])line(?![a-z])", folded) is not None
+        if matched:
+            capabilities.append(label)
+    return capabilities
+
+
+def _verified_portfolio(
+    projects_dir: Path | None,
+    delivery_evidence_dir: Path | None,
+    paid_progress_ledger: Path | None,
+) -> list[dict[str, Any]]:
+    if (
+        projects_dir is None
+        or delivery_evidence_dir is None
+        or paid_progress_ledger is None
+    ):
+        return []
+    try:
+        projects_root = projects_dir.resolve(strict=True)
+        evidence_files = sorted(delivery_evidence_dir.resolve(strict=True).glob("*.json"))
+    except OSError:
+        return []
+    visible_proofs = {
+        (
+            str(row.get("requestId") or row.get("request_id") or ""),
+            str(row.get("artifact_version") or ""),
+            str(row.get("package_sha256") or ""),
+        )
+        for row in _read_jsonl_objects(paid_progress_ledger)
+        if row.get("action") == "paid_progress"
+        and row.get("buyer_visible") is True
+    }
+    portfolio: list[dict[str, Any]] = []
+    seen_capabilities: set[tuple[str, ...]] = set()
+    for evidence_path in evidence_files:
+        try:
+            delivery = _read_object(evidence_path, "delivery_evidence")
+            project_root = Path(str(delivery.get("project_root") or "")).resolve(strict=True)
+            project_root.relative_to(projects_root)
+            if project_root.parent != projects_root or project_root.name != evidence_path.stem:
+                continue
+            artifact_path = Path(str(delivery.get("artifact_path") or "")).resolve(strict=True)
+            acceptance_path = Path(
+                str(delivery.get("acceptance_evidence_path") or "")
+            ).resolve(strict=True)
+            artifact_path.relative_to(project_root)
+            acceptance_path.relative_to(project_root)
+            package_sha = str(delivery.get("package_sha256") or "")
+            artifact_version = str(delivery.get("artifact_version") or "")
+            if (
+                delivery.get("status") != "ok"
+                or delivery.get("acceptance_status") != "PASS"
+                or not re.fullmatch(r"[0-9a-f]{64}", package_sha)
+                or hashlib.sha256(artifact_path.read_bytes()).hexdigest() != package_sha
+            ):
+                continue
+            acceptance = _read_object(acceptance_path, "acceptance_evidence")
+            if (
+                acceptance.get("status") != "PASS"
+                or acceptance.get("package_sha256") != package_sha
+            ):
+                continue
+        except (OSError, ValueError, ContractError):
+            continue
+        project_id = project_root.name
+        if (project_id, artifact_version, package_sha) not in visible_proofs:
+            continue
+        capabilities = _portfolio_capabilities(delivery.get("acceptance_delta"))
+        capability_key = tuple(capabilities)
+        if not capabilities or capability_key in seen_capabilities:
+            continue
+        seen_capabilities.add(capability_key)
+        portfolio.append({
+            "proof_type": "buyer_visible_paid_delivery",
+            "capabilities": capabilities,
+            "claim_scope": (
+                "購入済み案件で上記成果物を作成し、"
+                "購入者画面への送信を確認済み"
+            ),
+        })
+        if len(portfolio) >= 12:
+            break
+    return portfolio
+
+
+def build_context(
+    prep: dict[str, Any],
+    applied_path: Path,
+    *,
+    projects_dir: Path | None = None,
+    delivery_evidence_dir: Path | None = None,
+    paid_progress_ledger: Path | None = None,
+) -> dict[str, Any]:
     if not isinstance(prep, dict):
         raise ContractError("prep_invalid")
     thresholds = prep.get("apply_skip_thresholds")
@@ -98,7 +229,7 @@ def build_context(prep: dict[str, Any], applied_path: Path) -> dict[str, Any]:
         if str(value).strip()
     ]
     return {
-        "version": 6,
+        "version": 7,
         "target_applications": 4,
         "target_retainer_applications": 1,
         "max_applications": min(
@@ -121,6 +252,11 @@ def build_context(prep: dict[str, Any], applied_path: Path) -> dict[str, Any]:
             prep.get("active_strategy_experiment")
             if isinstance(prep.get("active_strategy_experiment"), dict)
             else None
+        ),
+        "verified_portfolio": _verified_portfolio(
+            projects_dir,
+            delivery_evidence_dir,
+            paid_progress_ledger,
         ),
         "already_applied_request_ids": _applied_ids(applied_path),
         "required_search_source_ids": [
@@ -1133,6 +1269,9 @@ def main() -> int:
     build = subparsers.add_parser("build")
     build.add_argument("--prep-json", required=True)
     build.add_argument("--applied", required=True, type=Path)
+    build.add_argument("--projects-dir", type=Path)
+    build.add_argument("--delivery-evidence-dir", type=Path)
+    build.add_argument("--paid-progress-ledger", type=Path)
     build.add_argument("--output", required=True, type=Path)
     validate = subparsers.add_parser("validate")
     validate.add_argument("--context", required=True, type=Path)
@@ -1158,7 +1297,13 @@ def main() -> int:
     try:
         if args.command == "build":
             prep = json.loads(args.prep_json)
-            context = build_context(prep, args.applied)
+            context = build_context(
+                prep,
+                args.applied,
+                projects_dir=args.projects_dir,
+                delivery_evidence_dir=args.delivery_evidence_dir,
+                paid_progress_ledger=args.paid_progress_ledger,
+            )
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(
                 json.dumps(context, ensure_ascii=False, separators=(",", ":")) + "\n",

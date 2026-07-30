@@ -128,6 +128,16 @@ def test_apply_prompt_consumes_the_active_strategy_experiment_without_a_second_c
     assert "do not improvise a second strategy change" in source
 
 
+def test_apply_prompt_consumes_only_anonymized_verified_portfolio_proof():
+    source = (GIG_WORK / "gig_pass.sh").read_text(encoding="utf-8")
+    assert "verified_portfolio" in source
+    assert "buyer-visible paid delivery" in source
+    assert "Never disclose project IDs, buyer names, local paths, or hashes" in source
+    assert '--projects-dir "$HOME/gig/projects"' in source
+    assert '--delivery-evidence-dir "$HOME/gig/delivery-evidence"' in source
+    assert '--paid-progress-ledger "$HOME/gig/paid-progress.jsonl"' in source
+
+
 def test_passprep_clamps_live_application_volume_to_seven_and_persists_it(tmp_path):
     state = _state(tmp_path)
     strategy_path = state / "strategy.json"

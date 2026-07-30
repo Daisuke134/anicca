@@ -280,7 +280,7 @@ def test_build_freezes_volume_budget_floor_sources_and_dedupe_ids(tmp_path):
     context = build_context(tmp_path, applied_ids=("5170001",))
     frozen = json.loads(context.read_text(encoding="utf-8"))
     assert frozen == {
-        "version": 6,
+        "version": 7,
         "target_applications": 4,
         "target_retainer_applications": 1,
         "max_applications": 7,
@@ -296,6 +296,7 @@ def test_build_freezes_volume_budget_floor_sources_and_dedupe_ids(tmp_path):
             "physical_presence": False,
         },
         "active_strategy_experiment": None,
+        "verified_portfolio": [],
         "already_applied_request_ids": ["5170001"],
         "required_search_source_ids": [
             "single:new",
@@ -304,6 +305,120 @@ def test_build_freezes_volume_budget_floor_sources_and_dedupe_ids(tmp_path):
             "retainer:new",
         ],
     }
+
+
+def test_build_projects_only_cross_verified_anonymized_paid_work_capabilities(tmp_path):
+    prep = {
+        "max_apply_per_pass": 7,
+        "category_order": ["SNS運用"],
+        "apply_skip_thresholds": {
+            "max_applicants": 12,
+            "min_contracted_to_skip": 1,
+            "min_budget_jpy": 3000,
+        },
+    }
+    applied = tmp_path / "applied.jsonl"
+    applied.write_text("", encoding="utf-8")
+    projects = tmp_path / "projects"
+    delivery_evidence = tmp_path / "delivery-evidence"
+    delivery_evidence.mkdir()
+    paid_progress = tmp_path / "paid-progress.jsonl"
+
+    verified_project = projects / "17943244"
+    (verified_project / "artifacts").mkdir(parents=True)
+    (verified_project / "acceptance").mkdir()
+    artifact = verified_project / "artifacts" / "v24.zip"
+    artifact.write_bytes(b"real buyer-visible package")
+    package_sha = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    acceptance = verified_project / "acceptance" / "acceptance-v24.json"
+    acceptance.write_text(json.dumps({
+        "status": "PASS",
+        "package_sha256": package_sha,
+    }) + "\n", encoding="utf-8")
+    (delivery_evidence / "17943244.json").write_text(json.dumps({
+        "status": "ok",
+        "project_root": str(verified_project),
+        "artifact_path": str(artifact),
+        "artifact_version": "v24",
+        "acceptance_evidence_path": str(acceptance),
+        "acceptance_status": "PASS",
+        "acceptance_delta": [
+            "Instagram週2回の投稿企画と運用方針を作成",
+            "LINE週1回の配信設計と導線改善を作成",
+            "KPIレポートと継続改善方針を作成",
+        ],
+        "package_sha256": package_sha,
+    }) + "\n", encoding="utf-8")
+
+    unverified_project = projects / "secret-client-999"
+    (unverified_project / "artifacts").mkdir(parents=True)
+    (unverified_project / "acceptance").mkdir()
+    unverified_artifact = unverified_project / "artifacts" / "v1.zip"
+    unverified_artifact.write_bytes(b"not buyer visible")
+    unverified_sha = hashlib.sha256(unverified_artifact.read_bytes()).hexdigest()
+    unverified_acceptance = unverified_project / "acceptance" / "acceptance-v1.json"
+    unverified_acceptance.write_text(json.dumps({
+        "status": "PASS",
+        "package_sha256": unverified_sha,
+    }) + "\n", encoding="utf-8")
+    (delivery_evidence / "secret-client-999.json").write_text(json.dumps({
+        "status": "ok",
+        "project_root": str(unverified_project),
+        "artifact_path": str(unverified_artifact),
+        "artifact_version": "v1",
+        "acceptance_evidence_path": str(unverified_acceptance),
+        "acceptance_status": "PASS",
+        "acceptance_delta": ["秘密顧客名のInstagram運用"],
+        "package_sha256": unverified_sha,
+    }) + "\n", encoding="utf-8")
+    paid_progress.write_text(json.dumps({
+        "requestId": "17943244",
+        "action": "paid_progress",
+        "buyer_visible": True,
+        "artifact_version": "v24",
+        "package_sha256": package_sha,
+    }) + "\n", encoding="utf-8")
+    output = tmp_path / "b2-context.json"
+
+    proc = run_gate(
+        "build",
+        "--prep-json",
+        json.dumps(prep),
+        "--applied",
+        applied,
+        "--projects-dir",
+        projects,
+        "--delivery-evidence-dir",
+        delivery_evidence,
+        "--paid-progress-ledger",
+        paid_progress,
+        "--output",
+        output,
+    )
+
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    frozen = json.loads(output.read_text(encoding="utf-8"))
+    assert frozen["verified_portfolio"] == [{
+        "proof_type": "buyer_visible_paid_delivery",
+        "capabilities": [
+            "Instagram投稿企画・運用",
+            "LINE配信設計・導線改善",
+            "KPIレポートと継続改善",
+        ],
+        "claim_scope": (
+            "購入済み案件で上記成果物を作成し、"
+            "購入者画面への送信を確認済み"
+        ),
+    }]
+    serialized = json.dumps(frozen["verified_portfolio"], ensure_ascii=False)
+    for forbidden in (
+        "17943244",
+        "secret-client-999",
+        str(tmp_path),
+        package_sha,
+        "秘密顧客名",
+    ):
+        assert forbidden not in serialized
 
 
 def test_build_dedupes_retainer_ulid_identity(tmp_path):

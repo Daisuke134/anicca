@@ -1618,6 +1618,9 @@ if [ "$PAID_PROGRESS_FINALIZE_ONLY" -ne 1 ]; then
   log "passprep: ${PREP:0:120}"
   if ! python3 "$G/scripts/b2_result_gate.py" build \
       --prep-json "$PREP" --applied "$HOME/gig/applied.jsonl" \
+      --projects-dir "$HOME/gig/projects" \
+      --delivery-evidence-dir "$HOME/gig/delivery-evidence" \
+      --paid-progress-ledger "$HOME/gig/paid-progress.jsonl" \
       --output "$B2_CONTEXT"; then
     record_failure "b2_context_build_failed" "B2"
     exit 1
@@ -1830,7 +1833,7 @@ PYEOF
       record_failure "b2_context_hash_failed" "$label"
       return 1
     }
-    prompt="$prompt Deterministic B2 context: $b2_context_json. These are the exact frozen limits for this pass; do not substitute defaults or re-read a different threshold. When active_strategy_experiment is non-null, apply its field_changed=new_value to every relevant application and do not improvise a second strategy change. Return current_b2 bound to context_path=$B2_CONTEXT and context_sha256=$b2_context_sha. Save a fresh marketplace screenshot plus bounded live-DOM JSON with {url,not_found:false,observed:true} inside $step_evidence. Put those paths and the exact marketplace URL in current_b2. For every request used to determine eligible_count, return one inspected_requests row with request_id, canonical URL, applicants, contracted, budget_max_jpy, accepting_applications, eligible/ineligible outcome, and reason. accepting_applications is true only when the live request UI still offers the application action. Applicants and contracted counts are observations for ranking, not hard exclusion rules; an open request is not closed merely because other people applied or one contract exists. A known budget below min_budget_jpy is ineligible, but 見積り希望/null is not automatically ineligible because this lane can propose an honest price. A request already in already_applied_request_ids is never eligible. For every submitted application, save a fresh nonempty screenshot at $EVIDENCE_ROOT/gig-$PASS_ID-B2-<request_id>-submitted.png after the UI visibly confirms submission."
+    prompt="$prompt Deterministic B2 context: $b2_context_json. These are the exact frozen limits for this pass; do not substitute defaults or re-read a different threshold. When active_strategy_experiment is non-null, apply its field_changed=new_value to every relevant application and do not improvise a second strategy change. verified_portfolio contains only anonymized capabilities cross-verified by an accepted artifact and buyer-visible paid delivery. Use a relevant capability and its claim_scope as truthful proposal proof; when it is empty, make no portfolio claim. Never disclose project IDs, buyer names, local paths, or hashes. Return current_b2 bound to context_path=$B2_CONTEXT and context_sha256=$b2_context_sha. Save a fresh marketplace screenshot plus bounded live-DOM JSON with {url,not_found:false,observed:true} inside $step_evidence. Put those paths and the exact marketplace URL in current_b2. For every request used to determine eligible_count, return one inspected_requests row with request_id, canonical URL, applicants, contracted, budget_max_jpy, accepting_applications, eligible/ineligible outcome, and reason. accepting_applications is true only when the live request UI still offers the application action. Applicants and contracted counts are observations for ranking, not hard exclusion rules; an open request is not closed merely because other people applied or one contract exists. A known budget below min_budget_jpy is ineligible, but 見積り希望/null is not automatically ineligible because this lane can propose an honest price. A request already in already_applied_request_ids is never eligible. For every submitted application, save a fresh nonempty screenshot at $EVIDENCE_ROOT/gig-$PASS_ID-B2-<request_id>-submitted.png after the UI visibly confirms submission."
     if [ -n "$B2_CONTINUATION_HINT" ]; then
       b2_cursor_json="$(python3 - "$B2_CURSOR_CONTRACT" <<'PYEOF'
 import json,sys
@@ -2126,6 +2129,9 @@ PYEOF
           if ! python3 "$G/scripts/b2_result_gate.py" build \
               --prep-json "$PREP" \
               --applied "$HOME/gig/applied.jsonl" \
+              --projects-dir "$HOME/gig/projects" \
+              --delivery-evidence-dir "$HOME/gig/delivery-evidence" \
+              --paid-progress-ledger "$HOME/gig/paid-progress.jsonl" \
               --output "$B2_CONTEXT" >/dev/null; then
             record_failure "b2_continuation_context_rebuild_failed" "$label"
             return 1
