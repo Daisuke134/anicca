@@ -298,3 +298,57 @@ secret-safety PASS (fixtures are RFC 8032 §7.1 published vectors);
 failure-semantics PASS apart from MAJOR-5; test counts independently
 re-measured and identical to the builder's claims (money-slice 238/238, full
 1824/1824 exit 0, real-Postgres `refusals=15 key_material_rows=0`).
+
+## 11. §9.2 / MAJOR-5 corrected ruling — gate the re-activation, not the enqueue
+
+The executor proved in real PostgreSQL 18 that both options §9.2 offered are
+refused by the shipped schema: a generation-suffixed `job_id` violates
+`UNIQUE (tenant_id, effect_key)`; DELETE-reap violates the receipts FK
+(`NO ACTION`) and then the receipts immutability trigger; an `attempt` reset
+collides with the existing receipt PK `(job_id, attempt)`. Only **status
+re-activation to `queued` preserving `attempt`** is permitted, and
+`max_attempts` is hard-capped at 20 by CHECK, so a job row has a lifetime
+budget of 20 runs and can never be replaced. §9.2 is superseded by this
+section.
+
+**REJECTED — gating the enqueue on a linked Telegram chat.** It starves
+provisioning: a tenant who has not linked Telegram would get no wallet, no
+published address, and therefore no inflow watch (`isWatchable` needs the
+wallet columns). That contradicts program SSOT AC5 — wallet generation and
+the watch rails MUST start at `$0.00` regardless of any messaging channel.
+
+**REJECTED — a migration widening `max_attempts` or adding `ON DELETE
+CASCADE`.** §4.1 scopes the migration to `lm_users`, and cascading would
+destroy money-adjacent audit evidence. The executor was right to refuse it.
+
+**RULING — provisioning is unconditional, announcing is conditional, and
+waiting is free:**
+
+1. Attempt 1 runs for every tenant with no announcement, chat or not.
+   Provisioning + column publication + rail start happen first (they already
+   do, `zero-start-job-adapter.js:261-265` precedes the chat check), so the
+   wallet exists and `isWatchable` turns true immediately. AC5 satisfied.
+2. With no chat, the job **completes** with a real `blocked_no_chat` receipt
+   (MAJOR-5). Never a failure.
+3. The sweep re-activates a terminal row (probe-4 method: `status='queued'`,
+   `attempt` untouched) **only when the blocking condition has cleared** —
+   i.e. `telegram_chat_id` is non-empty and no `started` receipt exists.
+   A tenant waiting to link consumes **zero** attempts for an unbounded
+   time, so a chat linked on day 30 still gets its message.
+4. A transient failure with a chat present (RPC down, Telegram 5xx, the
+   provisioned-but-never-announced case) re-activates on the next sweep and
+   heals, bounded by the remaining budget.
+5. `needsZeroStart` means "no completed receipt `kind=tenant_zero_start`
+   with `status=started` for this tenant". Wallet columns stop being the
+   signal.
+6. A row whose 20 attempts are exhausted is surfaced in the sweep result as
+   needing operator attention, never silently dropped. A tenant still
+   awaiting a chat link is reported as awaiting, not as failed — the two
+   states MUST be distinguishable in the sweep output.
+
+Budget arithmetic this yields: 1 attempt to provision, 1 to announce when the
+chat arrives, ~18 spare for transients. Tests MUST cover: chatless tenant
+consumes exactly one attempt across many sweeps; the same tenant is announced
+after a chat is linked much later; a chat unlinked between the sweep read and
+the worker run (the MAJOR-5 race) heals; an exhausted row is reported, not
+dropped.
