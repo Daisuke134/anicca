@@ -3,6 +3,7 @@
 const { createHash } = require("node:crypto");
 const canonicalize = require("canonicalize");
 
+const { dueFinancialReportKinds } = require("./financial-report-schedule.js");
 const {
   buildFinancialSnapshot,
   periodBounds,
@@ -14,6 +15,9 @@ const { hashChatId, sendMessage } = require("./telegram.js");
 
 const PAGE_SIZE = 1000;
 const MAX_COST_ROWS = 10_000;
+// Status of a report whose snapshot was computed for real but whose SEND was
+// held (shadow mode). Mirrors the Honne JA shadow contract's `shadow_held`.
+const SHADOW_HOLD_STATUS = "shadow_held";
 
 function credentials(opts = {}) {
   const supaUrl = opts.supaUrl || process.env.SUPABASE_URL;
@@ -199,33 +203,12 @@ function markFinancialReceiptFailed(identity, code, opts = {}) {
   }, opts);
 }
 
-function localClock(nowMs, timezone) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(nowMs))
-    .filter((part) => part.type !== "literal")
-    .map((part) => [part.type, part.value]));
-  const weekday = new Date(Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-  )).getUTCDay();
-  return { weekday, hour: Number(parts.hour), minute: Number(parts.minute) };
-}
-
+// The release window (daily from 20:00 local, weekly Sunday from 20:05 local)
+// now lives in ONE place — `financial-report-schedule.js` — because the
+// scheduler derives cadence-anchored job identity from the same grid. Two
+// copies of this window are exactly how the enqueue loop drifted onto poll time.
 function dueReportKinds(nowMs, timezone) {
-  const clock = localClock(nowMs, timezone);
-  const minuteOfDay = clock.hour * 60 + clock.minute;
-  const kinds = [];
-  if (minuteOfDay >= 20 * 60) kinds.push("daily");
-  if (clock.weekday === 0 && minuteOfDay >= 20 * 60 + 5) kinds.push("weekly");
-  return kinds;
+  return dueFinancialReportKinds(nowMs, timezone);
 }
 
 function integerText(value, label) {
@@ -354,8 +337,17 @@ async function runFinancialReport(request = {}, deps = {}) {
 
   const bounds = periodBounds({ kind, nowMs, timezone });
   const identity = { uid, report_kind: kind, period_key: bounds.period_key };
-  const readReceipt = deps.readReceipt || ((key) => readFinancialReceipt(key, deps));
-  const existing = await readReceipt(identity);
+  // SHADOW HOLD (`request.hold === true`): compute the snapshot FOR REAL and
+  // return before the send ledger is touched. The legacy launchd owner stays the
+  // only real sender during shadowing, so shadow must never read that ledger as
+  // authority, never claim a receipt row (a claim would make the legacy owner
+  // see a duplicate and skip its real send), and never resolve or use a Telegram
+  // token. Structurally: the hold return below happens before `claimReceipt` and
+  // before `sendTelegram`, so neither can execute in hold mode.
+  const hold = request.hold === true;
+  const existing = hold
+    ? null
+    : await (deps.readReceipt || ((key) => readFinancialReceipt(key, deps)))(identity);
   if (existing) {
     const reportCutoff = String(
       existing.period_end || (existing.snapshot && existing.snapshot.period_end) || "",
@@ -426,6 +418,20 @@ async function runFinancialReport(request = {}, deps = {}) {
     reserveAtomic: request.reserveAtomic,
   });
   const hash = snapshotHash(snapshot);
+  if (hold) {
+    // Real snapshot, real hash, real resolved destination — zero send ledger
+    // writes and zero Telegram calls. This return is the shadow evidence.
+    return {
+      status: SHADOW_HOLD_STATUS,
+      report_kind: kind,
+      period_key: bounds.period_key,
+      slot: new Date(nowMs).toISOString(),
+      chat_id_hash: hashChatId(tenant.telegram_chat_id),
+      snapshot,
+      snapshot_hash: hash,
+      source_freshness: sourceFreshness(snapshot, ledgerRows, costs.periodRows),
+    };
+  }
   const receipt = {
     ...identity,
     timezone,
@@ -479,6 +485,7 @@ async function runFinancialReport(request = {}, deps = {}) {
 module.exports = {
   PAGE_SIZE,
   MAX_COST_ROWS,
+  SHADOW_HOLD_STATUS,
   readFinancialTenant,
   readCostLedger,
   readFinancialCostTotals,

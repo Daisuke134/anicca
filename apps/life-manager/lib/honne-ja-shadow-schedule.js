@@ -9,82 +9,25 @@
 // so it satisfies the generation job's exact-instant slot contract.
 "use strict";
 
+const {
+  zonedSlotInstant: zonedInstant,
+  zonedWallClock,
+} = require("./zoned-slot-instant.js");
+
 const HONNE_JA_SLOTS = Object.freeze(["12:30", "21:30"]);
-const SLOT_PATTERN = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
+const LABEL = "honne JA schedule";
 
 function wallClock(timeZone, date) {
-  let parts;
-  try {
-    parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(date);
-  } catch {
-    throw new Error("honne JA schedule time zone is invalid");
-  }
-  const map = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  return {
-    year: Number(map.year),
-    month: Number(map.month),
-    day: Number(map.day),
-    hour: Number(map.hour),
-    minute: Number(map.minute),
-    second: Number(map.second),
-  };
+  return zonedWallClock(timeZone, date, LABEL);
 }
 
 // Exact UTC instant of `slot` ("HH:MM") on the local calendar day `clock`
-// ({year, month, day}) in `timeZone`. Two-pass wall-clock inversion, then a
-// round-trip check so a DST gap (a wall time that does not exist) fails loudly
-// instead of silently drifting.
+// ({year, month, day}) in `timeZone`. The inversion itself is shared with the
+// financial report schedule (lib/zoned-slot-instant.js): two-pass wall-clock
+// inversion plus a round-trip check so a DST gap fails loudly instead of
+// silently drifting.
 function zonedSlotInstant(clock, slot, timeZone) {
-  const match = SLOT_PATTERN.exec(String(slot == null ? "" : slot));
-  if (!match) throw new Error("honne JA schedule slot is invalid");
-  if (
-    !clock
-    || typeof clock !== "object"
-    || !Number.isInteger(clock.year)
-    || !Number.isInteger(clock.month)
-    || !Number.isInteger(clock.day)
-    || clock.month < 1 || clock.month > 12
-    || clock.day < 1 || clock.day > 31
-  ) {
-    throw new Error("honne JA schedule clock is invalid");
-  }
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  const wallUtc = Date.UTC(clock.year, clock.month - 1, clock.day, hour, minute, 0, 0);
-  let instant = wallUtc;
-  for (let pass = 0; pass < 2; pass += 1) {
-    const seen = wallClock(timeZone, new Date(instant));
-    const seenUtc = Date.UTC(
-      seen.year,
-      seen.month - 1,
-      seen.day,
-      seen.hour,
-      seen.minute,
-      seen.second,
-    );
-    instant += wallUtc - seenUtc;
-  }
-  const check = wallClock(timeZone, new Date(instant));
-  if (
-    check.year !== clock.year
-    || check.month !== clock.month
-    || check.day !== clock.day
-    || check.hour !== hour
-    || check.minute !== minute
-    || check.second !== 0
-  ) {
-    throw new Error("honne JA schedule slot does not exist on this local day");
-  }
-  return new Date(instant).toISOString();
+  return zonedInstant(clock, slot, timeZone, LABEL);
 }
 
 // The slot currently due at `nowMs` in `timeZone`: the latest HONNE_JA_SLOTS

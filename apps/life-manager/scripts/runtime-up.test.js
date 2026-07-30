@@ -574,3 +574,54 @@ test("marketing video worker selects from tenant-scoped durable history and Life
     "ja",
   ]);
 });
+
+test("the financial report worker keeps the real send path unless shadow is deliberately enabled", () => {
+  const captured = [];
+  const baseEnv = {
+    LM_RUNTIME_TENANT_ID: "dais-local",
+    SUPABASE_URL: "https://example.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "service-role",
+    LM_DATA_DIR: "/tmp/life-manager-data",
+  };
+  const registry = {
+    hasCapability: () => false,
+    getByCapability: () => ({ execute: async () => ({}) }),
+  };
+
+  createWorkerHandlers(baseEnv, ["report.financial.telegram"], {
+    createRegistry({ servicesByAdapter }) {
+      captured.push(servicesByAdapter["financial-report-telegram"]);
+      return registry;
+    },
+  });
+  // Any value other than the exact string "true" leaves the real sender wired.
+  createWorkerHandlers(
+    { ...baseEnv, LM_FINANCIAL_REPORT_SHADOW_ENABLED: "1" },
+    ["report.financial.telegram"],
+    {
+      createRegistry({ servicesByAdapter }) {
+        captured.push(servicesByAdapter["financial-report-telegram"]);
+        return registry;
+      },
+    },
+  );
+  createWorkerHandlers(
+    { ...baseEnv, LM_FINANCIAL_REPORT_SHADOW_ENABLED: "true" },
+    ["report.financial.telegram"],
+    {
+      createRegistry({ servicesByAdapter }) {
+        captured.push(servicesByAdapter["financial-report-telegram"]);
+        return registry;
+      },
+    },
+  );
+
+  assert.equal(captured.length, 3);
+  for (const services of captured.slice(0, 2)) {
+    assert.equal(services.hold, undefined);
+    assert.equal(services.appendHold, undefined);
+    assert.equal(typeof services.secretProvider.get, "function");
+  }
+  assert.equal(captured[2].hold, true);
+  assert.equal(typeof captured[2].appendHold, "function");
+});

@@ -5,7 +5,10 @@ const test = require("node:test");
 
 const {
   buildFinancialReportJob,
+  enqueueFinancialReportJobs,
   executeFinancialReportJob,
+  safeFinancialReportSummary,
+  verifyFinancialReportReceipt,
 } = require("./report-job-adapter.js");
 const {
   renderFinancialReport,
@@ -244,4 +247,260 @@ test("a forced runtime job uses the durable job receipt as its one-shot dedupe b
   assert.equal(await runtimeDeps.markReceiptSent(), true);
   assert.equal(await runtimeDeps.markReceiptFailed(), true);
   assert.equal(execution.receipt.status, "skipped");
+});
+
+// ---------------------------------------------------------------------------
+// Cadence-anchored enqueue. The measured defect this replaces: the scheduler
+// derived slot identity from POLL time (`Math.floor(Date.now()/pollMs)*pollMs`),
+// so every 5-minute poll minted a NEW job_id — 14 distinct queued
+// report.financial.telegram jobs accumulated in 30 minutes of the local stack
+// (~576/day), none of which could ever execute (they were all off-cadence).
+// ---------------------------------------------------------------------------
+
+const TZ = "Asia/Tokyo";
+const THU_2000_JST = Date.parse("2026-07-30T11:00:00.000Z");
+const THU_1959_JST = Date.parse("2026-07-30T10:59:59.000Z");
+const FRI_2000_JST = Date.parse("2026-07-31T11:00:00.000Z");
+const SUN_2005_JST = Date.parse("2026-08-02T11:05:00.000Z");
+
+function enqueueRecorder() {
+  const seen = new Set();
+  const calls = [];
+  return {
+    calls,
+    enqueueJob: async (input) => {
+      calls.push(input);
+      const created = !seen.has(input.jobId);
+      seen.add(input.jobId);
+      return { created, job: { ...input, status: "queued" } };
+    },
+  };
+}
+
+async function enqueueAt(nowMs, recorder, extra = {}) {
+  return enqueueFinancialReportJobs(["enqueue", "--uid", "tenant-a"], {
+    LM_TELEGRAM_TOKEN_REF: "secret://telegram/bot-token",
+  }, {
+    nowMs,
+    timeZone: TZ,
+    enqueueJob: recorder.enqueueJob,
+    stdout: { write() {} },
+    ...extra,
+  });
+}
+
+test("every poll inside one due window mints exactly one job per report kind", async () => {
+  const recorder = enqueueRecorder();
+  const first = await enqueueAt(THU_2000_JST, recorder);
+  const second = await enqueueAt(THU_2000_JST + 60_000, recorder);
+  const third = await enqueueAt(THU_2000_JST + 3 * 3600_000, recorder);
+
+  const daily = first.find((row) => row.report_kind === "daily");
+  assert.equal(daily.created, true);
+  assert.equal(daily.status, "queued");
+  assert.equal(daily.slot, "2026-07-30T11:00:00.000Z");
+  for (const later of [second, third]) {
+    const row = later.find((entry) => entry.report_kind === "daily");
+    assert.equal(row.created, false);
+    assert.equal(row.status, "existing");
+    assert.equal(row.job_id, daily.job_id);
+  }
+  // Thursday: the weekly slot is not due, so no weekly job exists at all.
+  for (const result of [first, second, third]) {
+    const weekly = result.find((row) => row.report_kind === "weekly");
+    assert.equal(weekly.status, "not_due");
+    assert.equal(weekly.job_id, null);
+  }
+  assert.equal(new Set(recorder.calls.map((call) => call.jobId)).size, 1);
+  assert.equal(recorder.calls.length, 3);
+});
+
+test("crossing a period boundary mints exactly one new job", async () => {
+  const recorder = enqueueRecorder();
+  await enqueueAt(THU_2000_JST, recorder);
+  await enqueueAt(THU_2000_JST + 60_000, recorder);
+  const nextDay = await enqueueAt(FRI_2000_JST, recorder);
+
+  const daily = nextDay.find((row) => row.report_kind === "daily");
+  assert.equal(daily.created, true);
+  assert.equal(daily.slot, "2026-07-31T11:00:00.000Z");
+  assert.equal(new Set(recorder.calls.map((call) => call.jobId)).size, 2);
+});
+
+test("polls before the release window enqueue nothing at all", async () => {
+  const recorder = enqueueRecorder();
+  const result = await enqueueAt(THU_1959_JST, recorder);
+  assert.deepEqual(result.map((row) => row.status), ["not_due", "not_due"]);
+  assert.deepEqual(result.map((row) => row.job_id), [null, null]);
+  assert.equal(recorder.calls.length, 0);
+});
+
+test("a Sunday poll after 20:05 mints exactly one daily and one weekly job", async () => {
+  const recorder = enqueueRecorder();
+  const result = await enqueueAt(SUN_2005_JST, recorder);
+  await enqueueAt(SUN_2005_JST + 120_000, recorder);
+
+  assert.deepEqual(result.map((row) => row.slot), [
+    "2026-08-02T11:00:00.000Z",
+    "2026-08-02T11:05:00.000Z",
+  ]);
+  assert.deepEqual(result.map((row) => row.created), [true, true]);
+  assert.equal(new Set(recorder.calls.map((call) => call.jobId)).size, 2);
+  assert.equal(recorder.calls.length, 4);
+});
+
+test("a forced enqueue outside the window anchors to the latest cadence slot", async () => {
+  const recorder = enqueueRecorder();
+  const first = await enqueueFinancialReportJobs(
+    ["enqueue", "--uid", "tenant-a", "--force", "all"],
+    { LM_TELEGRAM_TOKEN_REF: "secret://telegram/bot-token" },
+    {
+      nowMs: THU_1959_JST,
+      timeZone: TZ,
+      enqueueJob: recorder.enqueueJob,
+      stdout: { write() {} },
+    },
+  );
+  assert.deepEqual(first.map((row) => row.slot), [
+    "2026-07-29T11:00:00.000Z",
+    "2026-07-26T11:05:00.000Z",
+  ]);
+  assert.deepEqual(first.map((row) => row.created), [true, true]);
+  assert.deepEqual(first.map((row) => row.forced), [true, true]);
+
+  // A restart inside the same period re-derives the same forced identity.
+  // (Still before 20:00 local, so the latest slots are unchanged.)
+  const again = await enqueueFinancialReportJobs(
+    ["enqueue", "--uid", "tenant-a", "--force", "all"],
+    { LM_TELEGRAM_TOKEN_REF: "secret://telegram/bot-token" },
+    {
+      nowMs: THU_1959_JST - 60_000,
+      timeZone: TZ,
+      enqueueJob: recorder.enqueueJob,
+      stdout: { write() {} },
+    },
+  );
+  assert.deepEqual(again.map((row) => row.created), [false, false]);
+  assert.equal(new Set(recorder.calls.map((call) => call.jobId)).size, 2);
+});
+
+// ---------------------------------------------------------------------------
+// Shadow hold: the snapshot runs for real, the SEND is held.
+// ---------------------------------------------------------------------------
+
+function holdResult(overrides = {}) {
+  return {
+    status: "shadow_held",
+    report_kind: "daily",
+    period_key: "2026-08-02",
+    slot: "2026-08-02T11:05:00.000Z",
+    chat_id_hash: "c".repeat(64),
+    snapshot_hash: "d".repeat(64),
+    snapshot: { schema_version: 1, kind: "daily" },
+    source_freshness: {
+      report_cutoff_at: "2026-08-02T11:05:00.000Z",
+      earnings_latest_at: "2026-08-02T10:00:00.000Z",
+      costs_latest_at: "2026-08-02T10:30:00.000Z",
+      balance_observed_at: "2026-08-02T11:05:00.000Z",
+    },
+    ...overrides,
+  };
+}
+
+test("shadow mode holds the send, records the hold, and calls no Telegram provider", async () => {
+  const calls = [];
+  const holds = [];
+  const job = buildFinancialReportJob({
+    tenantId: "tenant-a",
+    kind: "daily",
+    nowMs: NOW_MS,
+    telegramTokenRef: "secret://telegram/bot-token",
+  });
+  const { receipt, result } = await executeFinancialReportJob(job, {
+    ...reportDeps(calls),
+    hold: true,
+    appendHold: async (hold) => { holds.push(hold); return "/data/held.jsonl"; },
+    runReport: async (request, deps) => {
+      calls.push({ kind: "run", hold: request.hold });
+      assert.equal(typeof deps.sendTelegram, "function");
+      await assert.rejects(
+        () => deps.sendTelegram("t", "chat", "body"),
+        /shadow/i,
+      );
+      return holdResult();
+    },
+    now: () => "2026-08-02T11:05:03.000Z",
+  });
+
+  assert.equal(calls.filter((call) => call.kind === "send").length, 0);
+  assert.equal(calls.filter((call) => call.kind === "secret").length, 0);
+  assert.equal(calls.find((call) => call.kind === "run").hold, true);
+  assert.equal(result.status, "shadow_held");
+  assert.deepEqual(receipt, {
+    schema_version: 1,
+    kind: "telegram_financial_report",
+    status: "shadow_held",
+    report_kind: "daily",
+    period_key: "2026-08-02",
+    slot: "2026-08-02T11:05:00.000Z",
+    chat_id_hash: "c".repeat(64),
+    snapshot_hash: "d".repeat(64),
+    held_at: "2026-08-02T11:05:03.000Z",
+    source_freshness: holdResult().source_freshness,
+  });
+  assert.equal(verifyFinancialReportReceipt(receipt), true);
+  assert.deepEqual(holds, [{
+    schema_version: 1,
+    kind: "telegram_financial_report_hold",
+    status: "shadow_held",
+    tenant_id: "tenant-a",
+    report_kind: "daily",
+    period_key: "2026-08-02",
+    slot: "2026-08-02T11:05:00.000Z",
+    job_id: job.job_id,
+    snapshot_hash: "d".repeat(64),
+    chat_id_hash: "c".repeat(64),
+    held_at: "2026-08-02T11:05:03.000Z",
+  }]);
+});
+
+test("shadow mode fails closed without a durable hold sink", async () => {
+  const job = buildFinancialReportJob({
+    tenantId: "tenant-a",
+    kind: "daily",
+    nowMs: NOW_MS,
+    telegramTokenRef: "secret://telegram/bot-token",
+  });
+  await assert.rejects(() => executeFinancialReportJob(job, {
+    hold: true,
+    runReport: async () => holdResult(),
+  }), /hold sink/i);
+});
+
+test("a shadow-held receipt can never masquerade as a real send", () => {
+  const base = {
+    schema_version: 1,
+    kind: "telegram_financial_report",
+    status: "shadow_held",
+    report_kind: "daily",
+    period_key: "2026-08-02",
+    slot: "2026-08-02T11:05:00.000Z",
+    chat_id_hash: "c".repeat(64),
+    snapshot_hash: "d".repeat(64),
+    held_at: "2026-08-02T11:05:03.000Z",
+    source_freshness: holdResult().source_freshness,
+  };
+  assert.equal(verifyFinancialReportReceipt(base), true);
+  assert.equal(verifyFinancialReportReceipt({ ...base, message_id: 987 }), false);
+  assert.equal(verifyFinancialReportReceipt({ ...base, sent_at: "2026-08-02T11:05:03.000Z" }), false);
+  assert.equal(verifyFinancialReportReceipt({ ...base, snapshot_hash: "nope" }), false);
+  assert.equal(verifyFinancialReportReceipt({ ...base, slot: "not-an-instant" }), false);
+  assert.deepEqual(safeFinancialReportSummary(base), {
+    status: "shadow_held",
+    report_kind: "daily",
+    period_key: "2026-08-02",
+    slot: "2026-08-02T11:05:00.000Z",
+    snapshot_hash: "d".repeat(64),
+    source_freshness: base.source_freshness,
+  });
 });

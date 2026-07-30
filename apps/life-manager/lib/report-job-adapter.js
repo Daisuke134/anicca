@@ -4,7 +4,14 @@
 const { createHash } = require("node:crypto");
 
 const { buildRuntimeJob, enqueueJob } = require("./runtime-job-store.js");
-const { runFinancialReport } = require("./financial-report-runtime.js");
+const {
+  SHADOW_HOLD_STATUS,
+  runFinancialReport,
+} = require("./financial-report-runtime.js");
+const {
+  dueFinancialReportKinds,
+  latestFinancialReportSlot,
+} = require("./financial-report-schedule.js");
 const { hashChatId, sendMessage } = require("./telegram.js");
 
 const CAPABILITY = "report.financial.telegram";
@@ -89,6 +96,74 @@ function sentAt(providerResult, fallbackMs) {
   return new Date(fallbackMs).toISOString();
 }
 
+// Execute one financial report job in SHADOW HOLD mode: real snapshot, held
+// send. Fails closed when no durable hold sink is wired, so a shadow cycle can
+// never run without leaving evidence.
+async function holdFinancialReportJob(job, request, deps) {
+  if (typeof deps.appendHold !== "function") {
+    throw new Error("financial report shadow hold sink is required");
+  }
+  const execute = deps.runReport || runFinancialReport;
+  const result = await execute({
+    uid: job.tenant_id,
+    kind: request.kind,
+    nowMs: request.nowMs,
+    force: request.force,
+    hold: true,
+  }, {
+    ...deps,
+    telegramToken: undefined,
+    // Structural tripwire: if any future code path tries to send while holding,
+    // the job fails loudly instead of quietly double-sending the report.
+    sendTelegram: async () => {
+      throw new Error("financial report shadow hold attempted a Telegram send");
+    },
+  });
+  if (result.status !== SHADOW_HOLD_STATUS) {
+    // not_due / notifications_disabled / telegram_unbound skips stay skips.
+    return {
+      receipt: {
+        schema_version: 1,
+        kind: "telegram_financial_report",
+        status: result.status,
+        report_kind: result.report_kind,
+        period_key: result.period_key || null,
+      },
+      result,
+    };
+  }
+  const heldAt = (deps.now || (() => new Date().toISOString()))();
+  const receipt = {
+    schema_version: 1,
+    kind: "telegram_financial_report",
+    status: SHADOW_HOLD_STATUS,
+    report_kind: result.report_kind,
+    period_key: result.period_key,
+    slot: result.slot,
+    chat_id_hash: result.chat_id_hash,
+    snapshot_hash: result.snapshot_hash,
+    held_at: heldAt,
+    source_freshness: result.source_freshness,
+  };
+  if (!verifyFinancialReportReceipt(receipt)) {
+    throw new Error("financial report shadow hold receipt verification failed");
+  }
+  await deps.appendHold({
+    schema_version: 1,
+    kind: "telegram_financial_report_hold",
+    status: SHADOW_HOLD_STATUS,
+    tenant_id: job.tenant_id,
+    report_kind: result.report_kind,
+    period_key: result.period_key,
+    slot: result.slot,
+    job_id: job.job_id,
+    snapshot_hash: result.snapshot_hash,
+    chat_id_hash: result.chat_id_hash,
+    held_at: heldAt,
+  });
+  return { receipt, result };
+}
+
 async function executeFinancialReportJob(job, deps = {}) {
   if (!job || job.capability !== CAPABILITY || job.effect_class !== "message") {
     throw new Error("financial report job contract mismatch");
@@ -98,6 +173,13 @@ async function executeFinancialReportJob(job, deps = {}) {
   if (request.tenantId !== job.tenant_id) {
     throw new Error("financial report tenant scope mismatch");
   }
+  // SHADOW MODE (`deps.hold === true`): the legacy launchd owner
+  // ai.anicca.life-manager-financial-report stays the ONLY real sender, so this
+  // path computes the snapshot for real and holds the send. It resolves no
+  // Telegram secret, calls no Telegram provider (the injected sender throws),
+  // and writes no send-ledger row; the hold is recorded durably instead.
+  const hold = deps.hold === true;
+  if (hold) return holdFinancialReportJob(job, request, deps);
   if (!deps.secretProvider || typeof deps.secretProvider.get !== "function") {
     throw new Error("financial report secret provider is required");
   }
@@ -221,6 +303,20 @@ function verifyFinancialReportReceipt(receipt) {
       && validIso(receipt.sent_at)
       && validFreshness(receipt.source_freshness);
   }
+  // A held report carries real snapshot evidence and a resolved destination, but
+  // it is NOT a send: any message_id/sent_at field means something sent the
+  // report while claiming to hold it, which is a contract violation.
+  if (receipt.status === SHADOW_HOLD_STATUS) {
+    return REPORT_KINDS.has(receipt.report_kind)
+      && String(receipt.period_key || "").length > 0
+      && validIso(receipt.slot)
+      && HASH.test(String(receipt.chat_id_hash || ""))
+      && HASH.test(String(receipt.snapshot_hash || ""))
+      && validIso(receipt.held_at)
+      && validFreshness(receipt.source_freshness)
+      && receipt.message_id === undefined
+      && receipt.sent_at === undefined;
+  }
   return receipt.status === "skipped"
     && REPORT_KINDS.has(receipt.report_kind);
 }
@@ -235,6 +331,16 @@ function safeFinancialReportSummary(receipt) {
       message_id: receipt.message_id,
       snapshot_hash: receipt.snapshot_hash,
       sent_at: receipt.sent_at,
+      source_freshness: receipt.source_freshness,
+    };
+  }
+  if (receipt.status === SHADOW_HOLD_STATUS) {
+    return {
+      status: receipt.status,
+      report_kind: receipt.report_kind,
+      period_key: receipt.period_key,
+      slot: receipt.slot,
+      snapshot_hash: receipt.snapshot_hash,
       source_freshness: receipt.source_freshness,
     };
   }
@@ -298,20 +404,63 @@ function parseEnqueueArgs(argv) {
   return { tenantId, force };
 }
 
+// Enqueue the due financial report jobs, anchored to the CADENCE slot.
+//
+// MEASURED DEFECT THIS FIXES (local stack, 2026-07-30): the scheduler passed
+// `Math.floor(Date.now() / pollMs) * pollMs` as the report instant, so the job
+// ref — and therefore `job_id` and `effect_key` — changed on every 5-minute
+// poll. 14 distinct `report.financial.telegram` jobs accumulated between
+// 04:32:25Z and 05:02:25Z (one daily+weekly pair per poll, ~576/day), all
+// `queued` at `attempt = 0`, and all unexecutable: their instants were
+// mid-afternoon local, so the report would only ever answer `not_due`.
+//
+// The cadence, not the poll interval, now owns identity: one slot per due
+// period (daily 20:00 local, weekly Sunday 20:05 local), so every poll inside
+// one window derives the same job and the durable enqueue is a no-op.
 async function enqueueFinancialReportJobs(argv, env = process.env, deps = {}) {
   const { tenantId, force } = parseEnqueueArgs(argv);
   const nowMs = deps.nowMs == null ? Date.now() : Number(deps.nowMs);
+  const timeZone = String(
+    deps.timeZone || env.LM_FINANCIAL_REPORT_TIME_ZONE || "Asia/Tokyo",
+  ).trim();
   const telegramTokenRef = String(
     env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token",
   );
   const enqueue = deps.enqueueJob || enqueueJob;
+  const due = dueFinancialReportKinds(nowMs, timeZone);
   const results = [];
   for (const kind of ["daily", "weekly"]) {
+    const forced = force === "all" || force === kind;
+    if (!forced && !due.includes(kind)) {
+      // Outside the release window there is nothing to enqueue. The legacy owner
+      // behaves identically: it polls, sees `not_due`, and does nothing.
+      results.push({
+        created: false,
+        status: "not_due",
+        job_id: null,
+        report_kind: kind,
+        slot: null,
+        forced: false,
+      });
+      continue;
+    }
+    const slot = latestFinancialReportSlot(kind, nowMs, timeZone);
+    if (!slot) {
+      results.push({
+        created: false,
+        status: "no_slot",
+        job_id: null,
+        report_kind: kind,
+        slot: null,
+        forced,
+      });
+      continue;
+    }
     const job = buildFinancialReportJob({
       tenantId,
       kind,
-      nowMs,
-      force: force === "all" || force === kind,
+      nowMs: Date.parse(slot),
+      force: forced,
       telegramTokenRef,
     });
     const queued = await enqueue({
@@ -326,8 +475,11 @@ async function enqueueFinancialReportJobs(argv, env = process.env, deps = {}) {
     });
     results.push({
       created: queued.created === true,
+      status: queued.created === true ? "queued" : "existing",
       job_id: job.job_id,
       report_kind: kind,
+      slot,
+      forced,
     });
   }
   (deps.stdout || process.stdout).write(`${JSON.stringify(results)}\n`);

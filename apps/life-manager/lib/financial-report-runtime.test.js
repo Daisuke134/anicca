@@ -342,3 +342,53 @@ test("production cost aggregation is one tenant-scoped Postgres RPC rather than 
     p_period_end: "2026-08-02T11:05:00.000Z",
   });
 });
+
+test("a shadow hold computes the real snapshot without claiming or sending", async () => {
+  const sent = [];
+  const real = await runFinancialReport({
+    uid: "u1",
+    kind: "daily",
+    nowMs: SUNDAY_2005_JST,
+  }, deps(sent));
+
+  const events = [];
+  const held = await runFinancialReport({
+    uid: "u1",
+    kind: "daily",
+    nowMs: SUNDAY_2005_JST,
+    hold: true,
+  }, {
+    ...deps(events),
+    // The legacy launchd owner is still the only real sender: shadow may not
+    // read that ledger as authority, claim a row, send, or mark a receipt.
+    readReceipt: async () => { throw new Error("shadow read the send ledger"); },
+    claimReceipt: async () => { throw new Error("shadow claimed a receipt"); },
+    sendTelegram: async () => { throw new Error("shadow sent Telegram"); },
+    markReceiptSent: async () => { throw new Error("shadow marked a receipt sent"); },
+    markReceiptFailed: async () => { throw new Error("shadow failed a receipt"); },
+    telegramToken: undefined,
+  });
+
+  assert.equal(held.status, "shadow_held");
+  assert.equal(held.report_kind, "daily");
+  assert.equal(held.period_key, "2026-08-02");
+  assert.equal(held.slot, "2026-08-02T11:05:00.000Z");
+  assert.match(held.chat_id_hash, /^[0-9a-f]{64}$/);
+  assert.equal(held.source_freshness.report_cutoff_at, "2026-08-02T11:05:00.000Z");
+  // The held snapshot is the REAL one: identical bytes to the sending path.
+  assert.equal(held.snapshot_hash, real.snapshot_hash);
+  assert.deepEqual(events, ["ledger", "costs", "balance"]);
+});
+
+test("a shadow hold still respects the cadence release window", async () => {
+  const events = [];
+  const result = await runFinancialReport({
+    uid: "u1",
+    kind: "weekly",
+    nowMs: SUNDAY_2004_JST,
+    hold: true,
+  }, deps(events));
+
+  assert.deepEqual(result, { status: "skipped", reason: "not_due", report_kind: "weekly" });
+  assert.deepEqual(events, []);
+});

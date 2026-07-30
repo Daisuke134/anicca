@@ -354,7 +354,20 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const servicesByAdapter = {};
   if (capabilities.includes("report.financial.telegram")) {
     const { readUsdcBalance } = require("../lib/base-usdc-balance.js");
+    const {
+      appendFinancialReportShadowHold,
+      financialReportShadowConfig,
+    } = require("../lib/financial-report-shadow-runtime.js");
     const secretProvider = createScopedEnvironmentSecretProvider(env);
+    // Financial report shadow slice — DEFAULT OFF (spec §12.1 row 4). Only the
+    // exact value LM_FINANCIAL_REPORT_SHADOW_ENABLED=true grants this worker the
+    // hold path; the legacy launchd owner
+    // ai.anicca.life-manager-financial-report stays the sole real sender until
+    // cutover. In shadow the snapshot is computed FOR REAL and the SEND is HELD:
+    // no Telegram secret is resolved, no Telegram API call happens, no Supabase
+    // send-ledger row is written, and each hold is recorded durably (runtime
+    // receipt with status shadow_held plus a local hold ledger line).
+    const shadow = financialReportShadowConfig(env);
     servicesByAdapter["financial-report-telegram"] = {
       secretProvider,
       supaUrl: requiredEnv(env, "SUPABASE_URL"),
@@ -364,6 +377,15 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         rpcUrl: String(env.BASE_RPC_URL || "https://mainnet.base.org"),
         fetchImpl: globalThis.fetch,
       }),
+      ...(shadow.enabled
+        ? {
+          hold: true,
+          appendHold: (hold) => appendFinancialReportShadowHold(hold, {
+            dataDir: shadow.dataDir,
+            tenantId: shadow.tenantId,
+          }),
+        }
+        : {}),
     };
   }
   if (capabilities.includes("marketing.life-manager.daily.publish")) {
@@ -649,21 +671,30 @@ async function runSchedulerOwner(env = process.env) {
 
   const financialTenant = String(env.LM_RUNTIME_TENANT_ID || "").trim();
   const financialIntervalMs = Number(env.LM_FINANCIAL_REPORT_POLL_MS || 300000);
+  const financialTimeZone = String(
+    env.LM_FINANCIAL_REPORT_TIME_ZONE || "Asia/Tokyo",
+  ).trim();
   let forceOnNextFinancialEnqueue = String(
     env.LM_FINANCIAL_REPORT_FORCE_ON_START || "",
   ).trim();
   let financialTimer;
+  // The poll interval is a SCAN rate, never an identity. Passing a poll-time
+  // bucket as the report instant (the previous `Math.floor(now/pollMs)*pollMs`)
+  // minted a brand new job on every scan: 14 unexecutable queued jobs in 30
+  // minutes on the local stack, about 576/day. The adapter now anchors identity
+  // to the cadence slot (daily 20:00 local, weekly Sunday 20:05 local), so this
+  // scan is idempotent: one job per due period no matter how often it runs.
   async function enqueueFinancialReports() {
     if (!financialTenant) return;
     const { enqueueJob } = require("../lib/runtime-job-store.js");
     const { enqueueFinancialReportJobs } = require("../lib/report-job-adapter.js");
-    const slotMs = Math.floor(Date.now() / financialIntervalMs) * financialIntervalMs;
     const args = ["enqueue", "--uid", financialTenant];
     const force = forceOnNextFinancialEnqueue;
     if (force) args.push("--force", force);
     forceOnNextFinancialEnqueue = "";
     await enqueueFinancialReportJobs(args, env, {
-      nowMs: slotMs,
+      nowMs: Date.now(),
+      timeZone: financialTimeZone,
       enqueueJob: (input) => enqueueJob(input, { query: pool.query.bind(pool) }),
       stdout: { write() {} },
     });
