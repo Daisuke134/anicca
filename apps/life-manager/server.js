@@ -45,6 +45,7 @@ const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPa
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
+const { parseSlashCommand, slashAliasText, handleSlashCommand } = require("./lib/slash-command.js");
 const { handleFeedbackMessage, createPostgresFeedbackStore } = require("./lib/feedback-intake.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
@@ -498,7 +499,12 @@ const server = http.createServer((req, res) => {
             res.writeHead(200); res.end("ok");
             return;
           }
-          const parsedControl = parseUserCommand(u.text);
+          // Spec §12.1 row 4: the generic slash router. /connect is an ALIAS — it re-enters the same
+          // parsed-control flow as the natural-language "connect calendar" instead of being handled
+          // in the slash branch, so both spellings share one implementation (Gmail stays OFF).
+          const slash = u.kind === "message" ? parseSlashCommand(u.text) : null;
+          const slashAlias = slashAliasText(slash);
+          const parsedControl = parseUserCommand(slashAlias || u.text);
           if (isPanelCommand(u.text) || isPanelDeepLink(u.text) || parsedControl.kind === "panel") {
             const deviceCode = panelDeviceCodeFromCommand(u.text);
             if (!row) {
@@ -524,6 +530,22 @@ const server = http.createServer((req, res) => {
             }
             res.writeHead(200); res.end("ok");
             return;
+          }
+          // Slash commands other than the /connect alias are handled HERE, before the location /
+          // parsed-control / browser-task / onboarding branches: a /command must never be classified
+          // as a browser task, captured as onboarding text, or answered with a setup nudge. /start
+          // and /panel return handled:false (their existing branches above/below stay the owner),
+          // and an unknown /command gets an honest "unknown command + /help" reply.
+          if (slash && !slashAlias) {
+            const outcome = await handleSlashCommand(slash, row, {
+              token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
+              supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+            });
+            if (outcome.handled) {
+              console.log(`[slash] command=${slash.name} action=${outcome.action}${outcome.ok === false ? ` reason=${outcome.reason || "failed"}` : ""}`);
+              res.writeHead(200); res.end("ok");
+              return;
+            }
           }
           if (u.kind === "location") {
             if (row) {
