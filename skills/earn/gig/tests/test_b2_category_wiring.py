@@ -411,6 +411,18 @@ def test_apply_lane_builds_and_enforces_the_next_cursor_contract():
     assert 'record_failure "b2_continuation_cursor_build_failed"' in source
 
 
+def test_continuation_cursor_evidence_is_fresh_for_each_b2_invocation():
+    """Production call 7 must not satisfy its cursor with call 6's live DOM."""
+    source = (GIG_WORK / "gig_pass.sh").read_text(encoding="utf-8")
+    captured = source.index('B2_ATTEMPT_START_EPOCH="$(python3 -c')
+    runner = source.index('python3 "$RUNNER"', captured)
+    freshness_gate = source.index(
+        '--cursor-min-mtime "$B2_ATTEMPT_START_EPOCH"',
+        runner,
+    )
+    assert captured < runner < freshness_gate
+
+
 def test_apply_lane_persists_and_resumes_cursor_across_hourly_wakes():
     source = (GIG_WORK / "gig_pass.sh").read_text(encoding="utf-8")
     assert "b2-search-objective.json" in source

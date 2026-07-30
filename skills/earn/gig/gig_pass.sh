@@ -256,6 +256,7 @@ B2_OBJECTIVE_STATE="${GIG_B2_OBJECTIVE_STATE:-$HOME/gig/b2-search-objective.json
 B2_RESUME_CURSOR="$EVIDENCE_DIR/b2-prior-wake-cursor.json"
 B2_RESUME_FROM_PRIOR_WAKE=0
 B2_RUNNER_TIMEOUT_SECONDS=0
+B2_ATTEMPT_START_EPOCH=""
 mkdir -p "$EVIDENCE_DIR" "$HOME/gig"
 if python3 "$G/scripts/b2_search_objective.py" resume \
     --state "$B2_OBJECTIVE_STATE" \
@@ -1879,6 +1880,10 @@ PYEOF
       return 1
     }
     runner_timeout_args=(--timeout-seconds "$B2_RUNNER_TIMEOUT_SECONDS")
+    B2_ATTEMPT_START_EPOCH="$(python3 -c 'import time; print(time.time())')" || {
+      record_failure "b2_attempt_start_time_failed" "$label"
+      return 1
+    }
   fi
   log "STEP $label start (task_class=$task_class)"
   claim_model_call "gig-$label" || return 1
@@ -2031,6 +2036,7 @@ PYEOF
             --min-mtime "$PASS_START_EPOCH" \
             --pass-id "$PASS_ID" \
             --min-new-inspections "${GIG_B2_MIN_NEW_INSPECTIONS:-12}" \
+            --cursor-min-mtime "$B2_ATTEMPT_START_EPOCH" \
             --cursor-contract "$B2_CURSOR_CONTRACT" >"$b2_gate_result" 2>&1
       else
         python3 "$G/scripts/b2_result_gate.py" validate \

@@ -643,6 +643,7 @@ def validate_result(
     min_mtime: float,
     pass_id: str | None = None,
     cursor_contract_path: Path | None = None,
+    cursor_min_mtime: float | None = None,
     min_new_inspections: int = 0,
 ) -> tuple[bool, list[str]]:
     errors: list[str] = []
@@ -981,6 +982,30 @@ def validate_result(
                 errors.append(
                     f"continuation_cursor_not_advanced:{cursor_source_id}"
                 )
+            elif cursor_min_mtime is None:
+                errors.append("continuation_cursor_min_mtime_missing")
+            else:
+                cursor_source = source_rows[cursor_source_id]
+                _, cursor_shot_error = _owned_fresh_file(
+                    cursor_source.get("screenshot_path"),
+                    evidence_dir,
+                    cursor_min_mtime,
+                )
+                if cursor_shot_error:
+                    errors.append(
+                        "continuation_cursor_screenshot_"
+                        f"{cursor_shot_error}:{cursor_source_id}"
+                    )
+                _, cursor_dom_error = _owned_fresh_file(
+                    cursor_source.get("live_dom_path"),
+                    evidence_dir,
+                    cursor_min_mtime,
+                )
+                if cursor_dom_error:
+                    errors.append(
+                        "continuation_cursor_live_dom_"
+                        f"{cursor_dom_error}:{cursor_source_id}"
+                    )
 
     required_source_ids = {
         str(value)
@@ -1118,6 +1143,7 @@ def main() -> int:
     validate.add_argument("--min-mtime", required=True, type=float)
     validate.add_argument("--pass-id")
     validate.add_argument("--cursor-contract", type=Path)
+    validate.add_argument("--cursor-min-mtime", type=float)
     validate.add_argument("--min-new-inspections", type=int, default=0)
     continuable = subparsers.add_parser("continuable")
     continuable.add_argument("--gate-result", required=True, type=Path)
@@ -1182,6 +1208,7 @@ def main() -> int:
             min_mtime=args.min_mtime,
             pass_id=args.pass_id,
             cursor_contract_path=args.cursor_contract,
+            cursor_min_mtime=args.cursor_min_mtime,
             min_new_inspections=max(0, args.min_new_inspections),
         )
         print(json.dumps({"ok": ok, "errors": errors}, ensure_ascii=False, separators=(",", ":")))

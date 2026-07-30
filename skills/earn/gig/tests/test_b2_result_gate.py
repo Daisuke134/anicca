@@ -235,6 +235,7 @@ def validate(
     min_mtime: float = 0,
     pass_id: str | None = None,
     cursor_contract: Path | None = None,
+    cursor_min_mtime: float | None = None,
     min_new_inspections: int = 0,
 ) -> subprocess.CompletedProcess[str]:
     ledger = tmp_path / "applied-ledger.jsonl"
@@ -263,6 +264,10 @@ def validate(
         args.extend(("--pass-id", pass_id))
     if cursor_contract is not None:
         args.extend(("--cursor-contract", cursor_contract))
+        args.extend((
+            "--cursor-min-mtime",
+            min_mtime if cursor_min_mtime is None else cursor_min_mtime,
+        ))
     return run_gate(*args)
 
 
@@ -1190,6 +1195,69 @@ def test_continuation_gate_rejects_the_same_search_cursor(tmp_path):
 
     assert proc.returncode != 0
     assert "continuation_cursor_not_advanced:single:new" in errors(proc)
+
+
+def test_continuation_rejects_contracted_source_evidence_from_a_prior_invocation(tmp_path):
+    """Pass-level freshness must not let call 7 reuse call 6's cursor DOM."""
+    context = build_context(tmp_path)
+    evidence, summary = write_result(
+        tmp_path,
+        context,
+        inspected=[request("5179838", applicants=29, outcome="ineligible")],
+        eligible_count=0,
+        applications=[],
+    )
+    result_path = evidence / "attempt-01.result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    source_url = "https://coconala.com/requests?sort=new&page=2"
+    source_shot = evidence / "single-new-page2.png"
+    source_shot.write_bytes(b"prior invocation screenshot")
+    source_dom = evidence / "single-new-page2.json"
+    source_dom.write_text(json.dumps({
+        "url": source_url,
+        "observed": True,
+        "not_found": False,
+    }) + "\n", encoding="utf-8")
+    result["current_b2"]["search_sources"] = [{
+        "source_id": "single:new",
+        "url": source_url,
+        "screenshot_path": str(source_shot.resolve()),
+        "live_dom_path": str(source_dom.resolve()),
+        "inspected_count": 40,
+        "has_next": True,
+        "exhausted": False,
+    }]
+    result_path.write_text(json.dumps(result) + "\n", encoding="utf-8")
+    contract = tmp_path / "b2-next-cursor.json"
+    contract.write_text(json.dumps({
+        "source_id": "single:new",
+        "previous_url": "https://coconala.com/requests?sort=new",
+        "next_url": source_url,
+        "reason": "next_page",
+    }) + "\n", encoding="utf-8")
+    prior_invocation_time = time.time() - 10
+    source_shot.touch()
+    source_dom.touch()
+    import os
+    os.utime(source_shot, (prior_invocation_time, prior_invocation_time))
+    os.utime(source_dom, (prior_invocation_time, prior_invocation_time))
+
+    proc = validate(
+        tmp_path,
+        context,
+        evidence,
+        summary,
+        min_mtime=prior_invocation_time - 1,
+        cursor_contract=contract,
+        cursor_min_mtime=prior_invocation_time + 1,
+    )
+
+    assert "unrecognized arguments" not in proc.stderr
+    assert errors(proc) == [
+        "continuation_cursor_screenshot_stale:single:new",
+        "continuation_cursor_live_dom_stale:single:new",
+        "under_target_search_not_exhausted",
+    ]
 
 
 def test_continuation_accepts_monotonic_pages_for_the_same_search_source(tmp_path):
