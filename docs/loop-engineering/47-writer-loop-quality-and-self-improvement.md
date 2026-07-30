@@ -2831,13 +2831,15 @@ verified evidence
 
 **note same-key repair実機完了**: `4f1e797` / `2ee1dda` / `8ff82e7` / `977b2bb`は、all-or-nothingだったnote asset proofをeyecatch/body別に保持し、content・identity・¥500・eyecatchが正しく本文図だけ欠けたliveを`live-media-mismatch`へ限定する。workerはmodelを起動せず`ambiguous → repair-required → same-key repair`を2 tickで進め、locked note-mcp runtimeを`uv.lock`から復旧する。既存eyecatchは再uploadせず、同じkey `nac6a14e974b2`へcanonical本文図を追加して再公開した。実receiptはstatus=`live`、price=500、owner full paid bodyとanonymous public/API content、identity、eyecatch、body mediaすべてPASS。eyecatch center-crop dHash距離1、本文図dHash距離1、ledger live row exact1、新規key/duplicate 0、LaunchAgent run 138 exit 0。article Python 14 PASS。
 
+**Substack same-draft paid publish実機完了**: `11c7501`はmanaged publisherがdispatch台帳を汎用`substack`名で検索して実在する`substack-ja` / `substack-en`行を見失う停止点を、言語別の実platform名へbindして修復した。既存`ai.anicca.article-resume`のLaunchAgent run 140 / 141は新規draftを作らず、JA ID `209066905`を[公開URL](https://aniccabuddha.substack.com/p/5)、EN ID `209066908`を[公開URL](https://aniccabuddha.substack.com/p/a-green-test-is-not-learning-five)へ公開してexit 0。publish後のauthenticated draft APIは両方`audience=only_paid`、`should_send_free_preview=true`、`should_send_email=false`、paywall node exact1。anonymous public HTMLはpaywall CTAと同じpostへ戻るsubscribe URLを保持し、title・identity・headline/body画像各2枚はexact SHA-256でPASS。ledgerはrun/pairごとにlive row exact1、public IDは元draft IDと一致、duplicate draft/public row 0。
+
 **handoffの実行順（現在の残TODO正本）**:
 
 | 順序 | 作業 | done |
 |---:|---|---|
 | 1 | **DONE (`2b79fd3`; live editor + LaunchAgent verified)** note resumeをidempotent化しretry stormを止める | 既存eyecatchを専用DOMからreadbackして再upload 0。同一失敗2回でcircuit、3回目publisher 0、code/state変化で再arm、通知exact1 |
 | 2 | **DONE (`4f1e797`…`977b2bb`; LaunchAgent run 138)** note同一keyを完了 | same key `nac6a14e974b2`、¥500、owner/anonymous content、eyecatch/body media、identity PASS、ledger exact1、duplicate 0 |
-| 3 | Substack JA/EN同一draftを公開 | `only_paid`、free preview、paywall exact1、public checkout/readback、send=false |
+| 3 | **DONE (`11c7501`; LaunchAgent run 140 / 141)** Substack JA/EN同一draftを公開 | JA `209066905` / EN `209066908`を同一IDでlive化。`only_paid`、free preview、paywall exact1、public paywall CTA/readback、`should_send_email=false`、画像exact SHA、ledger各exact1、duplicate 0 |
 | 4 | Xを完了 | X Article JA→EN（remote JA時刻+6h）、X Post 261文字、同一saved target、public readback |
 | 5 | money completionを確定 | note/Substack/Xのlive receiptで完了。Dev.to/Zennを待たない |
 | 6 | partial-live self-improve consumer | current receiptだけを学習入力にし、missingは`unknown/insufficient`、例外0 |
