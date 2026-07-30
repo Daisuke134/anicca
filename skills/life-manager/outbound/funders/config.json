@@ -1,0 +1,24 @@
+{
+  "pack": "funders",
+  "enabled": true,
+  "daily_cap": 5,
+  "denylist": [
+    "三菱UFJ",
+    "MUFG",
+    "MUCAP",
+    "MUIP",
+    "Mitsubishi UFJ"
+  ],
+  "denylist_note": "Decision D3 (spec §11): the exclusion covers the OPERATOR / CVC only — MUCAP, MUIP, and any MUFG-branded program — because Dais works there and the conflict is real. A fund that merely has MUFG as an LP is NOT excluded: an LP has no visibility into applicant material, so the conflict does not exist. Do not widen these substrings into an LP screen.",
+  "segments": [
+    "yc-style-accelerator",
+    "jp-vc",
+    "global-vc",
+    "cold-outbound-angel"
+  ],
+  "sources": [
+    "funder-registry"
+  ],
+  "template_variant": "v1-baseline",
+  "notes": "Precision, not volume: 3-5 sends per day, subject < 60 chars, body < 1000 chars, at most 2 follow-ups spaced 3-7 days. The corporate-partner roster of each program is re-checked before every submission; the denylist alone is not the whole gate."
+}

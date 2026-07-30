@@ -1,0 +1,21 @@
+{
+  "pack": "jobs",
+  "enabled": false,
+  "daily_cap": 5,
+  "denylist": [
+    "三菱UFJ",
+    "MUFG",
+    "Mitsubishi UFJ"
+  ],
+  "denylist_note": "Same operator-level rule as funders (decision D3): the current employer is excluded. A company that merely counts MUFG as an investor is not.",
+  "segments": [
+    "remote-global-en",
+    "tokyo-onsite",
+    "tokyo-hybrid"
+  ],
+  "sources": [
+    "job-boards"
+  ],
+  "template_variant": "v1-baseline",
+  "notes": "Disabled until the job-search-loop worktree lands (spec TODO #17). Compensation floor 7,000,000 JPY, target 10,000,000 JPY — those thresholds stay in the job pack's own qualifier, not here."
+}

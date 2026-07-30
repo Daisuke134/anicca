@@ -1,0 +1,18 @@
+{
+  "pack": "events",
+  "enabled": true,
+  "daily_cap": 5,
+  "denylist": [],
+  "denylist_note": "Events has no operator denylist yet. connpass is excluded at the SOURCE level (decision D1: its ToS forbids non-API automation and the only session available is Dais's personal account DaisNar), not by denylist string.",
+  "segments": [
+    "luma-lt-en",
+    "luma-lt-ja",
+    "luma-attend-tokyo",
+    "luma-attend-remote"
+  ],
+  "sources": [
+    "luma"
+  ],
+  "template_variant": "v1-baseline",
+  "notes": "v1 is Luma only. The Luma account is contact@aniccaai.com = Anicca-owned. LT (speaking) slots outrank plain attendance; that judgment is made by the model reading the event body, never by a regex."
+}
