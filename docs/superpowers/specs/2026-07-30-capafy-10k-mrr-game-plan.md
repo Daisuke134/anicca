@@ -102,7 +102,7 @@ Distribution ranking (cited): (1) in-store search/ASO — name-first rename move
 
 | # | Task | Gate metric |
 |---|---|---|
-| P0 (#2) | Cap `CAPAFY_HOST_*` keys, enable the disabled runner budget, log $/subscriber-run | cap enforced + cost/listing measurable |
+| P0 (#2) | Cap `CAPAFY_HOST_*` keys, enable the disabled runner budget, log $/subscriber-run | cap enforced + cost/listing measurable — **OpenRouter cap DONE 2026-07-30** ($2/day key, $5/day account, §7.7); Anthropic/OpenAI keys + per-listing attribution still open |
 | P1 (#1) | Dynamic/leased provisioning CDP port + real browser launch + loud non-zero failure + GC junk account rows | preflight passes; account created; warmup day1-2, commercial day3 |
 | P2 (#3) | Budget-split the dev pass (orphan ≤1/3), agentic CP2 screenshot loop, handle `review_rejected` orphans, fix browser-lane timeout + coconala lease collision | `isConfirmedConfigKeys=1` observed + ≥1 brand-new skill per pass |
 | P3 (#4) | Portfolio pivot: renewal test, recurring-event niches, $9.99/wk closed-source sub, keyword-first names + proof line | impression→detail-view CTR |
@@ -244,29 +244,62 @@ only the OpenRouter key is read by `key_health_gate.sh` and
 `drive_checkpoint2.py`; whether the other two are live in any listing's CP2
 config was not confirmed from our side, and neither has a balance endpoint wired.
 
-### 7.7 Provider-dashboard steps a later task MUST perform (hard caps)
+### 7.7 Hard caps — DONE 2026-07-30 via the Management API (not the dashboard)
 
-Not done here — out of scope, and no browser was touched.
+Corrects this section's own premise: the caps are **not** dashboard-only. OpenRouter
+exposes a Management API (`/api/v1/keys`, docs
+`https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md`) whose
+update call takes `limit` (USD) + `limit_reset` (`daily|weekly|monthly`, "Resets
+happen automatically at midnight UTC" — Python SDK reference
+`docs/client-sdks/python/sdks/apikeys/README.md`). The only browser step is
+minting the management key itself.
 
-1. **OpenRouter → Settings → Credits**: set an account-level spend limit. Today
-   the only ceiling is the $25 prepaid balance; there is no per-day cap.
-2. **OpenRouter → Settings → API Keys**: for the existing
-   `CAPAFY_HOST_OPENROUTER_KEY`, set a per-key **credit limit**. This is the one
-   true hard cap and it is dashboard-only.
-3. **One key per listing.** Mint a separate OpenRouter key per listing, each with
+1. ~~Account-level spend limit~~ — **does not exist as a product feature.**
+   Read live on 2026-07-30: `/settings/credits` offers only Add Credits, Auto
+   Top-Up and transactions; `/settings/preferences` has no spend control. The
+   account ceiling is the prepaid balance, and **Auto Top-Up is OFF** (the page
+   shows an `Enable` button), so no card can be drained. The real account-level
+   cap is therefore **the sum of the per-key daily caps** = **$5.00/day**.
+2. **Per-key daily caps — APPLIED.** Management key `capafy-host-caps` minted in
+   the daily-driver browser (lease `interactive:dais`), stored as
+   `OPENROUTER_MANAGEMENT_KEY` in `~/.openclaw/.env` (0600, gitignored).
+   `PATCH /api/v1/keys/{hash}`:
+
+   | key name | hash prefix | role | limit | reset |
+   |---|---|---|---|---|
+   | `jj` | `6cf287be` | = `CAPAFY_HOST_OPENROUTER_KEY` | **$2/day** | daily |
+   | `sass` | `02d6697d` | owner unidentified (no local grep hit) | $2/day | daily |
+   | `あ` | `84b4f73d` | unused (usage 0) | $1/day | daily |
+
+   Verified after the patch: self-endpoint `/api/v1/key` returns
+   `limit: 2, limit_reset: daily, limit_remaining: 1.999463`, and a live
+   `chat/completions` call on the host key still returned `200 OK` — the cap is
+   enforced **without** breaking the 27 published listings (lifetime usage
+   $4.60 > $2 does not block, because the limit counts `usage_daily`, which the
+   management view reports separately: `usage_daily: 0.00053955`).
+3. **`usage_daily` supersedes snapshot deltas.** The management view exposes a
+   real per-key daily counter, so the `delta_usd` estimation in §7.5 can be
+   replaced by an exact figure — wire it into `capafy-host-key-usage.jsonl`.
+4. **One key per listing.** Mint a separate OpenRouter key per listing, each with
    its own per-key limit, and inject it at CP2. This is what makes per-listing
    attribution real *and* blast-radius bounded — a single runaway listing then
    cannot drain the shared pool. Requires re-driving CP2 for live listings, so it
    must be staged, not bulk-applied.
-4. **Do NOT rotate** `CAPAFY_HOST_ANTHROPIC_KEY` / `_OPENAI_KEY` /
+5. **Do NOT rotate** `CAPAFY_HOST_ANTHROPIC_KEY` / `_OPENAI_KEY` /
    `_OPENROUTER_KEY` — they are live inside 27 published listings; rotating
-   breaks paying subscribers. Add limits to the existing keys instead.
-5. Verify each by reading `remaining_usd` in
-   `~/.openclaw/state/capafy-host-key-usage.jsonl` before and after.
+   breaks paying subscribers. Limits were added to the existing keys instead.
+6. **Still open:** Anthropic and OpenAI host keys have no cap — their consoles
+   do have account spend limits, and neither has a balance endpoint wired.
 
 ### 7.8 Residual risk
 
-A subscriber-side runaway can still burn the entire remaining $20.22 OpenRouter
-balance between two daily snapshots, because the only hard cap available is the
-prepaid balance and the only alerting is `key_health_gate.sh`'s once-per-day
-low-balance Telegram — item 7.7.2 is the actual fix.
+**Closed for OpenRouter (2026-07-30).** A subscriber-side runaway is now bounded
+to **$2/day** on the capafy host key and **$5/day** account-wide, versus the whole
+$20.22 balance before — so the worst case moved from "drained between two daily
+snapshots" to "≥4 days of runway", which the once-per-day `key_health_gate.sh`
+low-balance Telegram can actually catch in time.
+
+**Still open:** (a) the Anthropic and OpenAI host keys are uncapped and unmetered;
+(b) attribution is still account-level — per-listing blast radius needs 7.7.4
+(one key per listing); (c) a runaway inside a single day still costs $2 with no
+sub-daily alert.
