@@ -66,14 +66,14 @@ const RETIRED_CHECKOUT_TOKEN = "profitable" + "-claude";
 const V0_TREE_TOKEN = "life-manager" + "-v0";
 // Legacy anicca code roots, mirroring hasLegacyAniccaRoot in
 // lib/runtime-paths.js: the home-rooted anicca checkout (via $HOME, ${HOME},
-// tilde, or an absolute /Users|/home/<user> literal — the checkout segment,
+// tilde, or an absolute macOS/Linux home literal — the checkout segment,
 // never the username segment) and the anicca "-oss" checkout. "anicca" as a
 // username or as part of another name (the products monorepo) does not match.
 const ANICCA_ROOT_TOKEN = "ani" + "cca";
 const ANICCA_OSS_TOKEN = ANICCA_ROOT_TOKEN + "-oss";
-// Absolute home-dir literal: /Users/<user> or /home/<user>. The username
-// segment itself is exempt (hasLegacyAniccaRoot's isUsername), so the legacy
-// checkout must appear as the NEXT segment.
+// Absolute home-dir literal. The username segment itself is exempt
+// (hasLegacyAniccaRoot's isUsername), so the legacy checkout must appear as
+// the NEXT segment.
 const ABS_HOME_PREFIX = "/(?:Users|home)/[^/\\s\"']+";
 const PATTERNS = [
   {
@@ -171,11 +171,6 @@ const ALLOWLIST = [
     file: "apps/life-manager/scripts/inventory-legacy-jobs.js",
     lineIncludes: 'return "life_manager_v0"',
     reason: "Order 1 migration inventory classifies legacy source boundaries",
-  },
-  {
-    file: "apps/life-manager/scripts/migrate-legacy-state.sh",
-    lineIncludes: "LM_LEGACY_STATE_ROOT",
-    reason: "copy-only state migration names the legacy store as its source by design",
   },
   {
     file: "apps/life-manager/scripts/lib/load-env-file.sh",

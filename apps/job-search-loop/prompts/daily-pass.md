@@ -127,10 +127,20 @@ Match optional application prose to the same language. Do not infer language fro
 recruiter's name, nationality, or company country, and do not manually substitute a
 different resume after routing.
 
-Then use the Python Ledger API in `job_search_loop.ledger` to:
-add the application, transition qualified then materials_ready, hash the canonical
-job/material/answer payload, and claim a daily slot. Pass the exact selected resume
-from the helper's `resume_path` and its verified `resume_sha256` to
+Then use the Python Ledger API in `job_search_loop.ledger`. Load the exact committed
+strategy JSON and call `Ledger.record_strategy_generation`; hash this prompt file,
+then create each new row only through `Ledger.add_attributed_application`. Persist
+the exact discovery source, query family, rank configuration, role family, routed
+material variant, application-message variant (`none` when absent), model route,
+prompt SHA-256 and selected material SHA-256 in that atomic call. Never call plain
+`add_application` for a newly discovered production job: it exists only for legacy
+compatibility and records an explicit `legacy_unavailable` assignment. An existing
+assignment is immutable; an exact replay is idempotent and a conflicting rebind must
+stop.
+
+After the attributed application exists, transition qualified then materials_ready,
+hash the canonical job/material/answer payload, and claim a daily slot. Pass the
+exact selected resume from the helper's `resume_path` and its verified `resume_sha256` to
 `claim_submission`, together with the exact ATS snapshot path and its SHA-256 as
 `ats_snapshot_path` and `ats_snapshot_sha256`. The Ledger rereads, hashes, evaluates,
 and job-URL-matches that snapshot; a claim without all four evidence values is

@@ -223,8 +223,9 @@ and hashed private logs. Submission follows
 | Layer | Current behavior |
 |---|---|
 | Daily dream-job search | Ranking rewards AI/agents, regulated finance, consumer AI, crypto/fintech mission, Japan feasibility and compensation |
-| Outcome memory | Application, recruiter response, interview and rejection transitions persist in SQLite with source/material hashes |
+| Outcome memory | Immutable content-addressed strategy generations, atomic per-application source/query/rank/role/material/message/model/hash assignments, and externally evidenced funnel outcomes persist in SQLite |
+| Attribution projection | Gmail submission confirmations create confirmed-application outcomes; every write atomically rebuilds generation/stage counts, and the redacted CLI can migrate legacy rows and deterministically rebuild them |
 | Safe experiments | One source, role-family, resume-emphasis, message or threshold variable changes at a time; replay must preserve truth and hard filters |
 | Promotion gate | Baseline stays active until both arms have at least 10 resolved applications and the Wilson 95% intervals support improvement |
 | Self-healing | launchd restarts, browser ownership evidence, multi-provider discovery, fenced side effects, bounded recovery and content-addressed report correction |
-| Not yet complete | Persistent experiment outcome promotion, real confirmed adapter samples, release packaging/guided profile authoring, and Life Manager Career UI |
+| Not yet complete | Resident weekly assignment/evaluation/promotion, guardian remediation, lifecycle closure, real confirmed Ashby/Workday samples, `summary.v2`, and Life Manager Career UI |
