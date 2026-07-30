@@ -2823,7 +2823,22 @@ verified evidence
 
 **収益面優先の現行判断**: Writerの当面の価値は直接売上で測る。優先面は **note → Substack → X**。Dev.toとZennは配信面として残してもよいが、収益availability、session完了、学習開始を待たせない。従って現行作業順は、(1) note ¥500、(2) Substack JA/EN paid-only、(3) X Article JA/EN + X Post、(4) partial live receiptを使うself-improve consumer、(5) Dev.to/Zenn backlog。旧exact8 package completionは診断用に保持するが、money completionの定義には使わない。
 
-**run 93–94 実測**: run 93は`x-post/ja`をstable slot `20260729-173948`で登録し、publication-stateは8 intentを保持、managed planは`resumable=true`へ進んだ。従って`publication-readbacks.json`に残る「x-post validatorがlegacy IDを拒否」というblocker文は古い観測で、現stateが正本である。run 94は収益順の先頭`note/ja`をdeterministic publisherで実行したが、本文再stagingより前のeyecatch stepで停止した。draftには既に`assets.st-note.com` eyecatch readbackがあるのに、setterが毎回`button[aria-label="画像を追加"]`を要求し、既設定画面で30秒timeout。noteはstable key `nac6a14e974b2`のdraft、本文embedは前回4/5のまま、公開・¥500 receiptは0。Substack JA `209066905` / EN `209066908`は`only_paid=true`、free previewあり、paywall exact1、render PASSだがdraft。X Article JA/EN saved editor `2082671063998308352` / `2082671249143275520`はrender PASSだがdraft、X Postはintentのみ。run 94はexit 1で、成功を偽装していない。
+**通常日次と今回救済runを混同しない**: 公開機能全体が壊れたわけではない。ledgerでは`daily-2026-07-26`、`-27`、`-28`にnote、Substack JA/EN、X Article JA/ENがlive、`daily-2026-07-29`もnote `n6bf597754861`（¥500）、Substack JA `208936451` / EN `208936455`、X Article JA `2082446903372079538` / EN `2082554009282605361`がliveである。note公開APIでは7/29 19:58 JSTにも別の¥500記事`n2fb2c506deda`が公開され、accountの公開機能は生きている。X Postは7/28までlive、7/29は本文362字を280字gateが正しく`terminal-invalid`にした。7/30のcanonical runだけがquality FAILで公開前停止し、その同日availabilityを救うためにbounded replacement `20260729-173948`を作った。現在問題なのは通常first-pass publisherではなく、この**既存draftのcrash/resume経路**である。
+
+**run 93–95 実測**: run 93は`x-post/ja`をstable slot `20260729-173948`で登録し、publication-stateは8 intentを保持、managed planは`resumable=true`へ進んだ。従って`publication-readbacks.json`に残る「x-post validatorがlegacy IDを拒否」というblocker文は古い観測で、現stateが正本である。run 94と95は収益順の先頭`note/ja`をdeterministic publisherで実行したが、本文再stagingより前のeyecatch stepで同じ停止を再現した。draftには既に`assets.st-note.com` eyecatch readbackがあるのに、setterが毎回`button[aria-label="画像を追加"]`を要求し、既設定画面で30秒timeout。noteはstable key `nac6a14e974b2`のdraft、本文embedは前回4/5のまま、公開・¥500 receiptは0。Substack JA `209066905` / EN `209066908`は`only_paid=true`、free previewあり、paywall exact1、render PASSだがdraft。X Article JA/EN saved editor `2082671063998308352` / `2082671249143275520`はrender PASSだがdraft、X Postは261文字・intentのみ。run 94/95はいずれもexit 1で、成功を偽装していない。
+
+**handoffの実行順（現在の残TODO正本）**:
+
+| 順序 | 作業 | done |
+|---:|---|---|
+| 1 | note resumeをidempotent化 | 同じkeyに既存eyecatchがあればauthenticated URLを読み、再uploadせず次へ。存在しない時だけupload |
+| 2 | note同一keyを完了 | canonical本文画像`5/5`、eyecatch、¥500、owner/anonymous public readback、duplicate 0 |
+| 3 | Substack JA/EN同一draftを公開 | `only_paid`、free preview、paywall exact1、public checkout/readback、send=false |
+| 4 | Xを完了 | X Article JA→EN（remote JA時刻+6h）、X Post 261文字、同一saved target、public readback |
+| 5 | money completionを確定 | note/Substack/Xのlive receiptで完了。Dev.to/Zennを待たない |
+| 6 | partial-live self-improve consumer | current receiptだけを学習入力にし、missingは`unknown/insufficient`、例外0 |
+| 7 | 次の通常日次runを再検証 | first-passで同じ品質・有料公開・duplicate 0を再現 |
+| 8 | Dev.to/Zenn backlog | 収益非blocking。別reconcilerで後処理 |
 
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
