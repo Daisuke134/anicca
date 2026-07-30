@@ -3377,3 +3377,129 @@ Dais の「アカウントを何百個も作る」という直感は、算数と
 | Medium AI paywall 不可（UNVERIFIED） | 自分で再確認できるまで Medium へ出さない |
 | Textbroker AI明示禁止 | 出さない |
 | 他人の credential（PATH C） | 預かる範囲を最小化し、収益面のみ。個人情報・決済権限は預からない設計を先に書く |
+
+## 27. 常時 watch → 学習 → 自己改造 の設計、と人間credential不要のrail（2026-07-30 Dais 指示）
+
+Dais 要求: 「loop が一日中 X と記事を見て、稼いでる人を見つけて copy し、自分で loop を作り直す。人間の credential 無しで稼ぐ」。
+本節はその設計正本。**§26.4 の順序を置換しない**。§27 は #7（money-scan）を拡張する形で入る。
+
+### 27.1 既存解の探索結果（34 distinct query、全て `gh repo view` で実在確認）
+
+**自己改造する agent は実在する。外部を常時 watch して自己改造する agent は存在しない。**
+
+| Repo | ★ | 何を書き換えるか | 検証gate | 読むべきファイル |
+|---|---|---|---|---|
+| [jennyzzt/dgm](https://github.com/jennyzzt/dgm)（Sakana AI, Darwin Gödel Machine） | 2,198 | 自分の coding agent の source | SWE-bench/Polyglot スコア + **archive**（単一最良でなく多様性保持） | `DGM_outer.py` |
+| [MaximeRobeyns/self_improving_coding_agent](https://github.com/MaximeRobeyns/self_improving_coding_agent)（SICA） | 375 | 自分の codebase | benchmark + 世代ごとの結果archive、**Docker sandbox を必須条件として明記** | `runner.py` |
+| [ShengranHu/ADAS](https://github.com/ShengranHu/ADAS)（ICLR 2025） | 1,621 | agent 設計そのもの（meta-agent が新 agent を書く） | `evaluate_forward_fn()` によるdomain benchmark | `{domain}/search.py` |
+| [algorithmicsuperintelligence/openevolve](https://github.com/algorithmicsuperintelligence/openevolve) | 6,820 | 対象プログラムのコード（LLM変異 + 島モデル） | `evaluator.py` の score + Pareto選択 | `openevolve-run.py` |
+| [Arvid-pku/Godel_Agent](https://github.com/Arvid-pku/Godel_Agent) | 201 | 実行中の自分自身（monkey patching） | task別 reward | `src/agent_module.py` |
+| [razzant/ouroboros](https://github.com/razzant/ouroboros) | 735 | 自分の code/architecture/prompt/tool/依存 | 「review evidence + protected surfaces + git履歴で追跡可能」 | `docs/ARCHITECTURE.md` |
+| [MineDojo/Voyager](https://github.com/MineDojo/Voyager) / [lsdefine/GenericAgent](https://github.com/lsdefine/GenericAgent) | 7,098 / 13,612 | source ではなく **skill library** を増やす | 実行フィードバック + 自己検証 | skill 蓄積パターン |
+| [BetterForAll/self-improving-agents](https://github.com/BetterForAll/self-improving-agents) | 228 | 4段階の比較実装（L3=source書換、L4=敵対arena） | ★**固定benchmarkの嘘を実測**★ | `arena-loop/` |
+
+★ **最重要の実測（BetterForAll）**: 「**Fixed benchmarks create false confidence** — Levels 1-3 scored 90-100% on original tests, but dropped to **62-66%** on Arena Loop's adversarial suite」
+→ 我々の held-out gate も**固定テストのままでは嘘をつく**。テスト集合自体を更新する仕組みが要る。
+
+| 探したが無かったもの | 状況 |
+|---|---|
+| X/RSS を**常時**監視し、novelty判定して claim store を作る repo | ★star のある実装は **0件**（15+ phrasing）。存在するのは one-shot 検索ツールのみ |
+| 「social feed を見る → 自分のコード変更を提案 → 検証 → keep/revert」の end-to-end | ★**0件**。最も近い [MKaptein/agent-seed](https://github.com/MKaptein/agent-seed)（0★）は source が GitHub issue で、かつ **人間が PR を merge** = no-human-loop 違反 |
+| 「この情報は自分にとって新しいか」の標準機構 | 標準は**存在しない**。DGM/SICA/OpenEvolve は archive への**スコアベース novelty** であって、外部情報の内容重複判定ではない |
+
+**判断**: 自己改造の部品（archive・sandbox・gate）は copy する。**watch → novelty → 自己改造 の接続は前例が無いので自作する**。ここが我々の独自部分であり、同時に最も慎重にやる箇所。
+
+### 27.2 常時 watch intake の設計（#7 money-scan の拡張）
+
+```text
+  SOURCES（常時・複数）
+   X検索/リスト（x-search-cdp、daily-driverの実session）
+   gh trending / gh search（新しい building block）
+   記事RSS（収益公開してる書き手・platform公式blog）
+   自分の実測（自loopのmetrics/sales）
+        ↓
+  RAW OBSERVATION  append-only jsonl
+   {url, author, text, fetched_at, content_hash}
+        ↓
+  NOVELTY GATE（3段。前例が無いので自分で定義する）
+   ① content_hash 完全一致 → 破棄
+   ② 埋め込み類似度 > 閾値 で claim store と重複 → 破棄
+   ③ LLM judge「未保有の mechanism か number を含むか」→ NO なら破棄
+        ↓
+  CLAIM STORE  構造化して保存
+   {mechanism, number, source_url, quote, confidence, contradicts[]}
+   ★ 既存 claim と矛盾したら消さずに contradicts で結ぶ（§20 の矛盾掃除と同じ扱い）
+        ↓
+  STRATEGY PROPOSAL  1日1件まで。★新規 claim を1つ以上 cite できない提案は却下★
+        ↓
+  GATE（§22.14 の keep/revert を継承 + 27.3 の追加条件）
+        ↓
+  KEEP → version hash を次runが消費 ／ REVERT → 却下理由付きで保存
+```
+
+| Rule | 契約 |
+|---|---|
+| 観測は捨てない | RAW は append-only。novelty で落ちた物も理由付きで残す（後で閾値を変えた時に再評価できる） |
+| claim は必ず出典付き | `source_url` + `quote` の無い claim は store に入れない |
+| 矛盾は解決を急がない | 実測で決着するまで両方保持。どちらかを黙って消さない |
+| 提案は1日1件 | 複数変更は blame 不能にする（§22.14） |
+| watch対象の優先度 | ①実際に金額を公開している個人 ②platform公式の数値 ③新しい rail/protocol ④手法の解説（最下位） |
+
+### 27.3 自己改造の安全設計（copy元を明示）
+
+| 層 | 何を変えるか | 検証 | 由来 |
+|---|---|---|---|
+| L1 weight/prompt | strategy weight、CRAFT rule | held-out 非悪化 + canary（現行実装済み） | 現行 §22.14 |
+| L2 tool/skill | 新しい publisher / collector / offer 種別を**追加**する | 追加は既存を壊さないこと（回帰0） + 実 side-effect receipt | Voyager / GenericAgent の skill library 方式 |
+| L3 source | loop 自身のコードを書き換える | ★worktree + Docker sandbox 内でのみ実行★、benchmark archive で世代比較、live runtime を直接編集しない | SICA（sandbox必須）+ DGM（archive） |
+
+| 不変条件 | 理由 |
+|---|---|
+| ★ live runtime（`~/.local/lib/writer-engine`）を self-modification が直接書き換えるのを禁止 ★ | 稼働中の収益loopを壊すと復旧不能。変更は worktree → gate → 昇格の経路のみ |
+| ★ 評価集合を固定しない ★ | BetterForAll 実測: 固定benchmarkでは 90-100% → 敵対suiteで 62-66%。**テスト集合を毎回更新する**（過去の失敗事例を自動で追加） |
+| ★ 金の reward と gate を同一 model が自己申告しない ★ | 実 receipt（Stripe charge / platform readback）のみを state 遷移の根拠にする（§22.14 継承） |
+| ★ 変更は git 履歴に残す ★ | ouroboros の "protected surfaces + review evidence" を採用 |
+
+### 27.4 人間 credential 不要の収益rail（PATH D）
+
+自分で `crwl https://x402.org` を実読して確認:
+
+> "**No accounts or personal information needed**" / Volume **$24.24M** / "Integration is simple – add a single line of middleware to your server"
+
+| Rail | agentが人間KYCなしで所有可能か | 出典 |
+|---|---|---|
+| **x402**（Coinbase / Linux Foundation） | **YES**。必要なのは「A crypto wallet to receive funds (any EVM or SVM compatible wallet)」だけ | [docs.x402.org quickstart-for-sellers](https://docs.x402.org/getting-started/quickstart-for-sellers) |
+| Coinbase AgentKit / CDP wallet | PARTIAL（個人KYCではなく開発者APIキー。鍵はTEE、non-custodial） | [docs.cdp.coinbase.com](https://docs.cdp.coinbase.com/wallets/non-custodial-wallets/overview) |
+| Skyfire | PARTIAL（signup は magic link で KYC無し。marketplace 全面利用は有料の KYA が要る） | [docs.skyfire.xyz/docs/kya](https://docs.skyfire.xyz/docs/kya.md) |
+| Nevermined / Olas / Fetch.ai / solana-agent-kit | YES（いずれも self-custody wallet） | 各repo README（`gh repo view` 実在確認済み） |
+| **fiat への出金（銀行）** | ★**NO — ここが唯一の壁**★。全 rail が wallet と off-ramp を別製品として分離している | 同上 |
+
+```text
+  PATH D — 人間credential ゼロで文章を金にする最短路（検証済み手順）
+   ① agent がローカルで EVM/Solana keypair を生成（signup 不要）
+   ② 記事/調査を返す HTTP endpoint を立てる
+   ③ x402 middleware を1行追加  →  未払いは HTTP 402 を返す
+   ④ 買い手（人間 or 他agent）が USDC を払う → その wallet に着金
+   ⑤ agent はその USDC を自分で保有・支払いに使える（compute/API/他agentの役務）
+   ★ 銀行に出金した瞬間だけ人間が必要。出金しなければ人間はゼロ ★
+```
+
+| 経路 | 人間の関与 | 到達可能な買い手 |
+|---|---|---|
+| A1-A4（原稿料/購読/商品/書籍） | Dais名義の Stripe/銀行が要る | 人間の読者（市場は大きい） |
+| **D（x402 有料endpoint）** | **ゼロ** | agent と開発者（市場は小さいが 30日で $24.24M 流通） |
+
+両方やる。Dは「人間ゼロで回る証明」、Aは「金額の本体」。**どちらか片方に賭けない。**
+
+### 27.5 §26.4 の順序への追記
+
+| # | Stage | 作業 | done |
+|---:|---|---|---|
+| 7a | 1 | **watch intake**: X/gh/RSS の常時観測 → RAW jsonl → novelty 3段 → claim store | 実 run で claim が出典付きで蓄積し、重複0、落とした観測も理由付きで残る |
+| 7b | 1 | **提案は新規claim必須**にする（cite無し提案を却下する gate） | cite 無し提案が実際に却下されるテストが通る |
+| 9a | 2 | **PATH D**: x402 middleware で有料 endpoint を1本立て、agent 自前 wallet で USDC 着金 | 実 USDC 着金 1件（on-chain で自分で確認） |
+| 11a | 3 | **L2 skill 自己拡張**（新 publisher/collector を loop 自身が追加） | 追加後も既存テスト回帰0、実 side-effect receipt |
+| 13a | 4 | **L3 source 自己改造**（worktree + sandbox + 更新される評価集合） | sandbox 内で世代比較、昇格は gate 経由のみ、live runtime 直編集0 |
+
+L3（自分のコードを書き換える）は **#10 の unit economics が scorable になるまで着手しない**。
+稼げていない loop が自分を書き換えても、正しい方向が定義できない。
