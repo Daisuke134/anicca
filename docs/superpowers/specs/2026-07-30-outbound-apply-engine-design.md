@@ -96,15 +96,24 @@ DISCOVER → QUALIFY → ACT → EVIDENCE GATE → TRACK → LEARN
 
 ### 3.2 配置 (consolidation spec §6.1 準拠)
 
-| 層 | パス |
-|---|---|
-| エンジン | `runtime/loop/outbound/` |
-| 冪等 / lease / receipt | `packages/job-protocol/` |
-| provider I/O | `adapters/providers/{luma,connpass,gmail,cloakbrowser,form-filler}/` |
-| config pack | `skills/life-manager/outbound/{events,funders,jobs}/` |
-| 製品 entrypoint + test + eval | `apps/life-manager/{scripts,lib,test,eval}/` |
-| durable state | Supabase (`adapters/state/supabase/`)。ローカル scratch は `~/.openclaw/state/outbound/` |
-| spec | 本ファイル。証跡は `docs/evidence/outbound/` |
+★ 2026-07-31 実測で訂正 ★ — `packages/*` と `adapters/{providers,state}` は **実在しない**
+(`adapters/` は README だけの空スタブ)。実在するのは `runtime/loop/` のみ。
+新規ディレクトリを増やさず、既に動いている場所に置く。
+
+| 層 | パス | 実在 |
+|---|---|---|
+| エンジン | `runtime/loop/outbound/` | 親 `runtime/loop/` は実在 (31 entries) |
+| 冪等 / receipt | `runtime/loop/outbound/receipt.mjs` (将来 `packages/job-protocol` に切り出す) | 新規 |
+| provider I/O | `apps/life-manager/lib/providers/{luma,connpass,gmail,cloakbrowser}.js` | 新規、既存 lib/ の下 |
+| config pack | `skills/life-manager/outbound/{events,funders,jobs}/` | 新規、`skills/` は実在 |
+| 製品 entrypoint + test + eval | `apps/life-manager/{scripts,lib,test,eval}/` | 実在 |
+| durable state | Supabase (既存 `lm_users` に `telegram_chat_id` あり)。ローカル scratch は `~/.openclaw/state/outbound/` | 実在 |
+| spec | 本ファイル。証跡は `docs/evidence/outbound/` | 実在 |
+
+雛形の実体 (実測): `apps/life-manager/scripts/financial-report-boot.sh` (7行) は
+`node ../lib/report-job-adapter.js enqueue` を呼ぶ薄い wrapper。
+本体は `lib/financial-report-runtime.js` (495行)。`lib/telegram.js` (158行) に
+**`sendPhoto` は既に実装済** (`telegram.js:29`、FormData + Blob image/png)。
 
 **repo に state を置かない** (OSS-3)。local と cloud は **同一 commit / 同一エンジン** (OSS-2)。
 
@@ -133,10 +142,24 @@ DISCOVER → QUALIFY → ACT → EVIDENCE GATE → TRACK → LEARN
 
 ## 5. QR / チケット配送 (Dais 要求の中核)
 
-| 経路 | 取得方法 | 根拠 |
+★ 2026-07-31 実測で訂正 ★ — **確認メールに QR 画像は入っていない**。
+実サンプル (thread `19fa9e1cc6f49e56`, Luma "Registration confirmed", 2026-07-29) を dump した結果、
+part 構成は `multipart/mixed[ multipart/alternative[text/plain, text/html], text/calendar invite.ics ]`。
+`<img>` は avatar/appstore/SNS アイコンのみ、`grep -i qr` = 0 hit。
+**しかし guest key は本文に入っている**: `https://luma.com/8tdfs50y?pk=g-lAbPrfciSZzRRgy` と
+`https://luma.com/join/g-lAbPrfciSZzRRgy`。同じ key は `invite.ics` の DESCRIPTION/LOCATION にも入る。
+
+| 経路 | 実際の取得方法 | 根拠 |
 |---|---|---|
-| Luma (主) | RSVP → 確認メール着信 → `gog gmail` で実読 → チケット QR (`g-` prefix の guest key を含む URL) → Telegram `sendPhoto` | help.luma.com/p/event-registration-process 「we send the guest a registration confirmation email with a calendar invite」 / p/external-check-in-integration 「All Luma check-in QR codes follow this format ... String starting with `g-` prefix」 |
-| connpass (従) | 受付番号/QR はサイト上のみ → ログイン済 daily-driver でチケットページを screenshot → Telegram 画像送信 | connpass API v2 は全 GET、チケット object 無し |
+| Luma (主) | RSVP → 確認メール → `gog gmail` で実読 → 正規表現 `https://luma\.com/([a-z0-9]+)\?pk=(g-[A-Za-z0-9]+)` で slug + guest key 抽出 → **`qrcode` で自前 QR 生成** → Telegram `sendPhoto`。日時/場所は `invite.ics` の DTSTART/LOCATION から | 実メール dump (2026-07-31) |
+| connpass (延期) | 受付票は `connpass.com/event/<id>/ticket/` で **要ログイン**、メールに key が一切出ない → セッション付きブラウザでスクショ以外に道なし | 実メール dump: 「受付票URL: ... (ログインした参加者のみ閲覧可)」 |
+
+**Luma のアカウントは `contact@aniccaai.com` = Anicca 所有** (確認メールの To ヘッダ)。
+daily-driver profile に `luma.com` cookie 10件 (`luma.evt-*.registered-with` ×5 = 登録実績) を確認。
+
+未検証: `pk=g-` が Luma 公式スキャナの check-in ペイロードとして通るか。
+チケットページ SSR に QR 文字列が無いため、**実イベント会場で1回試すまで確定しない**。
+→ #8 の done は「Dais の手元に QR が届く」までとし、スキャン通過は次の実イベントで検証する。
 
 **Dais 側の必要物 = Telegram のみ**。Luma アプリ / connpass アプリ / 認証情報の提供は不要。
 カレンダーには canonical event URL (200 検証済) を入れる。
@@ -194,21 +217,23 @@ Cold outbound の型 (実測 BP):
 |---:|---|---|---|
 | 1 | P0 | `runtime/loop/outbound/` エンジン骨格を financial-report から複製 (boot.sh / runtime.js / migrations / test / launchd installer) | `npm test` 緑 + launchd 登録 + heartbeat `~/.openclaw/state/.outbound-last-pass` 更新 |
 | 2 | P0 | Evidence Contract E1/E2/E3 を独立モジュール化 (self-improve から read-only) | 単体テストで「証拠欠落 → failed」が3ケース PASS |
-| 3 | P0 | Telegram 画像送信 (`sendPhoto`) を `lib/telegram.js` に追加 | Dais の Telegram にテスト画像1枚が実着弾 |
+| 3 | P0 | ~~Telegram `sendPhoto` を追加~~ **CLOSED 2026-07-31: 既に実装済 (`lib/telegram.js:29`)** | — |
+| 3b | P0 | `npm install` で baseline を緑にする (`tldts` 欠落で `npm test` が即死。pretest は 68/68 PASS) | `npm test` が最後まで走り、pass/fail 数が出る |
 | 4 | P0 | Guardian 配線 (`healthcheck-runtime-loop.sh` 登録 + STALE で self-fix) | 意図的に止めて STALE 検出 → Telegram 警告が届く |
 | 5 | P1 | Loop B の偽物判定を削除 (`connpass-lt-discover.py:166` の regex を廃棄、`:302` の無条件カレンダー書き込みを撤去) | grep で成功宣言の文字列マッチが 0 hit |
 | 6 | P1 | URL バグ2箇所修正 (`gcal_write.py:135/140` を canonical event URL に、`connpass-lt-discover.py:239` の subdomain 保持) | 生成された URL 10件が全部 HEAD 200 |
 | 7 | P1 | Luma provider adapter (discover + RSVP via daily-driver) | 実イベント1件を RSVP、確認メールを Gmail で実読 |
-| 8 | P1 | QR パイプライン (確認メール → QR 抽出 → Telegram 画像) | **Dais の Telegram に実イベントの QR 画像が届く** |
-| 9 | P1 | connpass: 発見を公式 API に移行 (API key 取得含む)、RSVP は人間速度・Anicca アカウント | API 経由の発見が動き、ToS 違反のバースト経路が消える |
+| 8 | P1 | QR パイプライン。★訂正: メールに QR 画像は無い★ → 本文から `pk=g-` guest key を抽出 → **自前で QR 生成** → sendPhoto | **Dais の Telegram に実イベントの QR 画像が届く** |
+| 9 | P2 | ★v1 から除外 (2026-07-31 決定)★ connpass はセッションが **Dais 個人アカウント `DaisNar`** で BAN リスクが本人に飛ぶ + API key 未取得 + ToS。残タスクは「connpass API key を申請する」のみ | API key 取得 (取れるまで connpass を触らない) |
 | 10 | P1 | LT/CFP 優先ロジック (LLM が本文から登壇枠を判定、観客枠より優先) | LT 枠のあるイベント5件を正しく分類 (eval jsonl) |
 | 11 | P1 | Loop A のログイン復旧 + events pack への統合、旧2実装の退役 | 12日ゼロだった状態が解消、1週間で ≥1 件の verified 登録 |
 | 12 | P2 | funders pack: `application-kit` を SSOT に配線 + funder registry 再構築 | registry から1件を選んで下書きが生成される |
 | 13 | P2 | MUFG denylist + パートナー名簿チェックゲート | denylist 対象に対して応募が機械的にブロックされるテスト PASS |
-| 14 | P2 | **YC Fall 2026 に late application を実提出** (1分動画込み) | 確認画面 PNG + 確認メール + ledger 1行 + Telegram 報告 |
+| 14 | P2 | **YC Fall 2026 に late application を実提出**。既存下書き (App UUID `0b61fe42-e383-490d-b60e-04f1ad7ec5df`、18項目記入済、未提出) の3ブロッカーを潰す: ①Description を50字未満 ②Founder video アップロード (≤60秒 / <100MB) ③founder profile を completed に | 確認画面 PNG + **YC からの提出確認メール** + ledger 1行 + Telegram 報告 |
+| 14b | P2 | founder video の確定。`Anicca_intro_EN.mp4` (58秒 / 21MB) は YC 両制約をクリア。`2026-07-30-founder-video-IMG_5024.mov` (79秒 / 144MB) は両方アウト | アップロード可能なファイルが1つ確定 |
 | 15 | P2 | cold outbound 蘇生 (1日3〜5通、件名60字/本文1000字、follow-up 最大2回) | 実送信 + 送信 receipt + 3日後 follow-up が自動発火 |
 | 16 | P2 | 返信・拒否を第一級 status として TRACK (Gmail 実読 → outcome 更新) | rejection / reply / meeting が state に型付きで入る |
-| 17 | P3 | Job loop: 全203テスト再走 → 実環境 healthcheck → PR → CI → merge → canonical 反映 | main に merge 済 + canonical runtime が新方針で1回実走 |
+| 17 | P3 | Job loop: **206テスト** (203 は古い数、pytest で実測) 再走 → 実環境 healthcheck → PR → merge → canonical 反映。★worktree は commit ゼロ・全変更が未コミット・canonical/main から 5 behind★ → commit → rebase が先 | main に merge 済 + canonical runtime が新方針で1回実走 |
 | 18 | P3 | Job loop: `700万未満 reject / 1000万 target` を実 daily run で検証 | 実ログで reject/accept の判定が仕様通り |
 | 19 | P3 | Job loop 11D Guardian / 11E Lifecycle / 11F summary.v2 | 各機能のテスト + 実走証拠 |
 | 20 | P3 | 実 Ashby / Workday 応募 各1件 + 面接メール→Calendar E2E | 応募 receipt + カレンダー実登録 |
@@ -234,10 +259,24 @@ Cold outbound の型 (実測 BP):
 
 ## 10. 未検証 (見える穴として残す)
 
-| 項目 | 状態 |
+| 項目 | 状態 (2026-07-31 更新) |
 |---|---|
-| ANRI / Plug and Play Japan の応募形態 | headless で取得できず未検証 |
-| a16z speedrun が batch か rolling か | 未検証 |
+| `pk=g-` が Luma 公式スキャナの check-in ペイロードとして通るか | **未検証**。ticket ページ SSR に QR 文字列が無い。実イベント会場で1回試すまで確定しない |
+| ANRI の応募フォーム項目 | **未検証**。GSAP プリローダーで headless が全滅 (crwl / r.jina.ai とも 0%)。過去に submit 実績あり (`/en/thanks`) → daily-driver で開けば取れる |
+| Plug and Play Japan | 解決: HubSpot form。**ただし三菱UFJ銀行がアンカーLP** (bk.mufg.jp 公式PDF) かつ既に応募済 (#88) |
+| a16z speedrun | 解決: **rolling で今も受付中**。SR008 = 2027年1-4月 SF、審査4-6週、採択率<0.4%、ソロ創業者可 |
 | YC の AI 生成応募に関する公式見解 | **存在を確認できなかった**。「YC が AI 応募を禁止」は未検証として扱う |
-| 1stRound 等のコーポレートパートナーに MUFG が含まれるか | 未検証 → #13 の機械ゲートで提出前に毎回確認する |
+| Incubate Fund / Genesia 4号の LP に MUFG がいるか | 非公開で判定不能。**§7.1 の線引きにより無関係になった** |
+| `apps/life-manager` の真のテスト数 | `npm install` (#3b) 後に判明。現状は `tldts` 欠落で即死 |
 | VC 連絡先のオープンデータセット | 見つからず (OpenVC 等はゲート付き商用)。プログラム的一括取得は未検証 |
+
+## 11. 決定ログ (2026-07-31 の不確実性掃討)
+
+| # | 決定 | 理由 |
+|---|---|---|
+| D1 | **v1 は Luma のみ。connpass は延期** | ①ToS が API 以外の自動アクセスを禁止 ②API key 未取得 ③セッションが **Dais 個人アカウント `DaisNar`** = BAN リスクが本人に飛ぶ。Luma は `contact@aniccaai.com` で Anicca 所有 |
+| D2 | **QR はメールから抜くのではなく自前生成** | 実メール dump で QR 画像が存在しないことを確認。guest key は本文にある |
+| D3 | **MUFG 除外は「運営/CVC」のみ。LP に過ぎない先は応募可** | 除外対象 = MUCAP / MUIP / MUFG 冠プログラム。LP は応募者情報への可視性が無い。この線で 1stRound (partner list grep 0 hit) と HAX Tokyo (SOSV/住友商事/SCSK) はクリーン |
+| D4 | **YC は Fall 2026 に late で今すぐ出す** | 18項目記入済 + 面接8-9月 + 「we are still accepting late applications」。待つ理由がゼロ |
+| D5 | **エンジンは feature branch → PR で main へ** | `Daisuke134/life-manager` は branch protection ゼロ・test CI ゼロ (`sec-scan.yml` のみ)。直 push は危険 |
+| D6 | **新ディレクトリを増やさない** | `packages/*` と `adapters/{providers,state}` は実在しない。実在する `runtime/loop/` と `apps/life-manager/lib/` の下に置く |
