@@ -78,3 +78,6 @@ skills/earn/bounty/state/frantic-creds.json
 /taskmarket-deliveries/
 # Per-account Capafy listing artwork; generated outside the OSS runtime.
 skills/capafy-autopublish/assets/
+
+# Deliberate local-only compose enablement (never a repo default).
+deploy/local/compose.override.yaml
