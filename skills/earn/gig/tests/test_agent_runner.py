@@ -305,6 +305,9 @@ class AgentRunnerContractTest(unittest.TestCase):
             config["task_classes"]["browser-lane-agent"]["timeout_seconds"], 900
         )
         self.assertGreaterEqual(
+            config["task_classes"]["browser-lane-agent"]["token_reservation"], 131072
+        )
+        self.assertGreaterEqual(
             config["task_classes"]["application-lane-agent"]["timeout_seconds"], 3600
         )
         self.assertGreaterEqual(

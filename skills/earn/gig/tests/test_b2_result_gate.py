@@ -907,6 +907,57 @@ def test_parent_computes_the_exact_next_page_for_a_continuation(tmp_path):
     }
 
 
+def test_parent_accepts_current_coconala_spot_route_for_continuation(tmp_path):
+    """Production changed newest single jobs to the supplier spot route.
+
+    Pass 1785373447-37605 submitted one verified application, then the parent
+    rejected this exact live URL and could not continue toward its four-job
+    target.
+    """
+    context = build_context(tmp_path)
+    evidence, summary = write_result(
+        tmp_path,
+        context,
+        inspected=[request("5183557", applicants=0, outcome="eligible")],
+        eligible_count=1,
+        applications=[application("5183557")],
+    )
+    result_path = evidence / "attempt-01.result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["current_b2"]["search_sources"] = [{
+        "source_id": "single:new",
+        "url": "https://coconala.com/job_matching/supplier/new?type=spot",
+        "screenshot_path": str((evidence / "requests.png").resolve()),
+        "live_dom_path": str((evidence / "requests.json").resolve()),
+        "inspected_count": 12,
+        "has_next": True,
+        "exhausted": False,
+    }]
+    result_path.write_text(json.dumps(result) + "\n", encoding="utf-8")
+    contract = tmp_path / "b2-next-cursor.json"
+
+    proc = run_gate(
+        "next-cursor",
+        "--runner-summary",
+        summary,
+        "--context",
+        context,
+        "--output",
+        contract,
+    )
+
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    assert json.loads(contract.read_text(encoding="utf-8")) == {
+        "source_id": "single:new",
+        "previous_url": "https://coconala.com/job_matching/supplier/new?type=spot",
+        "next_url": (
+            "https://coconala.com/job_matching/supplier/new?type=spot&page=2"
+        ),
+        "reason": "next_page",
+        "prior_inspected_request_ids": ["5183557"],
+    }
+
+
 def test_parent_prioritizes_retainer_cursor_after_single_target_is_met(tmp_path):
     """Four singles must not trap continuation on infinite single pagination."""
     context = build_context(tmp_path)

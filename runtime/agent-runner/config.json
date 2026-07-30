@@ -92,7 +92,8 @@
     },
     "browser-lane-agent": {
       "route": "terra-medium-bounded",
-      "token_reservation": 24576,
+      "token_reservation": 131072,
+      "_token_reservation_note": "Production B0/B1 charged 70,407 and 43,192 tokens on pass 1785373447-37605, both above the former 24Ki hold. Reserve 128Ki so admission reflects the observed browser-lane envelope.",
       "_timeout_note": "Split from tool-agent 2026-07-27. The two jobs want opposite bounds: the reality auditor must stay short (180s) so it cannot itself become the stall, while the browser lanes need minutes. Measured on the apply lane: attempt-01 ran 174s against Coconala and was killed as transient_timeout with 289KB of progress already on stdout. Delivery, at 900s, completed; applications, at 180s, ran five times in a week. Scanning postings, opening each and writing a proposal is minutes of browser work, so the old cap made the lane structurally unable to finish. Same 900s as high-value-agent.",
       "timeout_seconds": 900,
       "candidates": [

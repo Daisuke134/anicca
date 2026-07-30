@@ -161,8 +161,34 @@ def _owned_fresh_file(
     return path, None
 
 
+def _spot_search_url(parsed: Any) -> bool:
+    """Accept only Coconala's current newest-single route and its page cursor."""
+    if parsed.path != "/job_matching/supplier/new":
+        return False
+    pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    if any(key not in {"type", "page"} for key, _ in pairs):
+        return False
+    type_values = [raw for key, raw in pairs if key == "type"]
+    page_values = [raw for key, raw in pairs if key == "page"]
+    return (
+        type_values == ["spot"]
+        and len(page_values) <= 1
+        and (
+            not page_values
+            or re.fullmatch(r"\d+", page_values[0]) is not None
+            and int(page_values[0]) >= 1
+        )
+    )
+
+
 def _marketplace_url(value: Any) -> bool:
     parsed = urlsplit(str(value or ""))
+    if (
+        parsed.scheme == "https"
+        and parsed.hostname in {"coconala.com", "www.coconala.com"}
+        and _spot_search_url(parsed)
+    ):
+        return True
     return (
         parsed.scheme == "https"
         and parsed.hostname in {"coconala.com", "www.coconala.com"}
@@ -209,6 +235,7 @@ def _search_url(value: Any) -> bool:
             parsed.path in {"/requests", "/job_matching/requests"}
             or parsed.path == "/job_matching/outsources"
             or re.fullmatch(r"/requests/categories/\d+", parsed.path) is not None
+            or _spot_search_url(parsed)
         )
     )
 
