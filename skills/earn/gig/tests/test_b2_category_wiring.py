@@ -303,6 +303,8 @@ def test_b2_browser_rules_use_code_verified_helper_paths_without_rediscovery():
     assert "Parent code releases this exact context only after this agent exits" in b2_rules
     assert "Do not run --help, rg, find, or path discovery" in b2_rules
     assert "Both helper paths were verified by parent code" in b2_rules
+    assert "public_text and opportunities" in b2_rules
+    assert "never return from a public marketplace page with title-only evidence" in b2_rules
     assert 'B2_TOOLING_PREFLIGHT="verified"' in source
     assert '[ -f "$B/cdp_context_lease.py" ]' in source
     assert '[ -f "$G/scripts/cdp_nav_snapshot.py" ]' in source
@@ -441,6 +443,13 @@ def test_apply_lane_carries_search_progress_into_the_continuation_prompt():
     assert "navigate to the exact next_url" in source
     assert "parent code rejects the attempt if it remains at previous_url" in source
     assert "INITIAL SEARCH CONTRACT: open newest-first" in source
+
+
+def test_same_pass_continuation_carries_only_canonical_verified_applications():
+    source = (GIG_WORK / "gig_pass.sh").read_text(encoding="utf-8")
+    assert 'python3 "$G/scripts/b2_continuation_state.py"' in source
+    assert '--ledger "$HOME/gig/applied.jsonl"' in source
+    assert '--pass-id "$PASS_ID"' in source
     assert "Open newest-first https://coconala.com/requests?sort=new and save" not in source
 
 

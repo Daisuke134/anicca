@@ -1648,7 +1648,7 @@ step_ownership_contract() {
       ;;
     B2)
       allowed="inspect live single-job marketplace requests after the paid, feedback, and proposal gates are clear; search newest-first, then every configured single-job category, then keyword and pagination fallbacks; apply to eligible requests until the four-application target is met or the seven-application hard cap is reached; capture post-submit proof; and append only this step's own applied/action-map rows"
-      browser_rules=" Browser-safe rules: use the authenticated CloakBrowser daily-driver already prepared by the parent; read $browser_skill before any marketplace action. Both helper paths were verified by parent code. Do not run --help, rg, find, or path discovery for either helper, and do not substitute another copy. Parent code already acquired the step-owned context lease and exported its stable handle as ANICCA_BROWSER_LEASE. For every required URL run python3 $G/scripts/cdp_nav_snapshot.py observe --lease \"\$ANICCA_BROWSER_LEASE\" --url <url> --screenshot <owned.png> --dom <owned.json>. Do not copy or transcribe the opaque page websocket and do not read the lease ledger. Do not use agent-browser for leased-target navigation. NEVER run agent-browser tab new, tab list, tab <n>, or tab close; those commands can escape the leased context. Never attach to, navigate, or close another worker's tab, and do not create a browser profile. Do not run cdp_context_lease.py release or acquire, and do not close the leased context yourself. Parent code releases this exact context only after this agent exits."
+      browser_rules=" Browser-safe rules: use the authenticated CloakBrowser daily-driver already prepared by the parent; read $browser_skill before any marketplace action. Both helper paths were verified by parent code. Do not run --help, rg, find, or path discovery for either helper, and do not substitute another copy. Parent code already acquired the step-owned context lease and exported its stable handle as ANICCA_BROWSER_LEASE. For every required URL run python3 $G/scripts/cdp_nav_snapshot.py observe --lease \"\$ANICCA_BROWSER_LEASE\" --url <url> --screenshot <owned.png> --dom <owned.json>. The observe JSON for public marketplace list and detail pages contains bounded public_text and opportunities; use these fields as the authoritative public card/body evidence and never return from a public marketplace page with title-only evidence. Do not copy or transcribe the opaque page websocket and do not read the lease ledger. Do not use agent-browser for leased-target navigation. NEVER run agent-browser tab new, tab list, tab <n>, or tab close; those commands can escape the leased context. Never attach to, navigate, or close another worker's tab, and do not create a browser profile. Do not run cdp_context_lease.py release or acquire, and do not close the leased context yourself. Parent code releases this exact context only after this agent exits."
       ;;
     REFLECT)
       allowed="read only this pass's supplied queue, runner, and evidence artifacts; summarize them; and return the strict current_pass-bound result JSON without writing any ledger"
@@ -2093,20 +2093,12 @@ PYEOF
         b2_call_limit="${GIG_B2_MODEL_CALL_LIMIT:-40}"
         if [ "$b2_under_target_continue" = "1" ] \
            && { [ "$b2_call_limit" -le 0 ] || [ "$B2_MODEL_CALL_COUNT" -lt "$b2_call_limit" ]; }; then
-          B2_CONTINUATION_HINT="$(python3 - "$step_evidence/summary.json" <<'PYEOF'
-import json,sys
-try:
-    summary=json.load(open(sys.argv[1],encoding="utf-8"))
-    result=json.load(open(summary["result_path"],encoding="utf-8"))
-    payload={
-        "applications": result.get("applications") or [],
-        "current_b2": result.get("current_b2") or {},
-    }
-    print(json.dumps(payload,ensure_ascii=False,separators=(",",":")))
-except Exception:
-    print("")
-PYEOF
-)" || B2_CONTINUATION_HINT=""
+          B2_CONTINUATION_HINT="$(
+            python3 "$G/scripts/b2_continuation_state.py" \
+              --runner-summary "$step_evidence/summary.json" \
+              --ledger "$HOME/gig/applied.jsonl" \
+              --pass-id "$PASS_ID"
+          )" || B2_CONTINUATION_HINT=""
           if [ -z "$B2_CONTINUATION_HINT" ]; then
             record_failure "b2_continuation_state_build_failed" "$label"
             return 1

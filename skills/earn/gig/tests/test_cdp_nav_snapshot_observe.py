@@ -72,6 +72,32 @@ class FakeSocket:
             expression = request.get("params", {}).get("expression")
             if expression == "document.location.href":
                 value = self.final_url
+            elif "gig_public_marketplace_snapshot_v1" in str(expression):
+                public_marketplace = self.final_url.startswith(
+                    "https://coconala.com/requests"
+                )
+                value = json.dumps({
+                    "url": self.final_url,
+                    "title": "すべての単発の仕事を探す",
+                    "public_marketplace": public_marketplace,
+                    "public_text": (
+                        "資料作成の仕事\n予算 30,000円\n応募する"
+                        if public_marketplace
+                        else None
+                    ),
+                    "opportunities": (
+                        [{
+                            "request_id": "5184001",
+                            "bucket": "single",
+                            "url": "https://coconala.com/requests/5184001",
+                            "title": "資料作成の仕事",
+                            "summary": "資料作成の仕事 予算30,000円",
+                        }]
+                        if public_marketplace
+                        else []
+                    ),
+                    "has_next": public_marketplace,
+                }, ensure_ascii=False)
             elif self.application_submission and "application_submit_state_v1" in str(expression):
                 states = [
                     {
@@ -309,6 +335,28 @@ class FakeConnection:
 
 
 class CdpObserveTargetTest(unittest.TestCase):
+    def test_public_marketplace_route_scope_excludes_private_account_pages(
+        self,
+    ) -> None:
+        for url in (
+            "https://coconala.com/requests",
+            "https://coconala.com/requests/categories/234?page=2",
+            "https://coconala.com/requests/5184001",
+            "https://coconala.com/job_matching/outsources",
+            (
+                "https://coconala.com/job_matching/outsources/"
+                "01KYR8Y2F60ED5VH2KHDJEY7WS"
+            ),
+        ):
+            self.assertTrue(module._is_public_marketplace_url(url), url)
+        for url in (
+            "https://coconala.com/mypage/dashboard",
+            "https://coconala.com/talkrooms/101",
+            "https://coconala.com/mypage/job_matching/applied/offers",
+            "https://example.com/requests",
+        ):
+            self.assertFalse(module._is_public_marketplace_url(url), url)
+
     def test_submit_helper_matches_only_rendered_button_text(self) -> None:
         source = inspect.getsource(module._application_submit_state)
 
@@ -492,6 +540,35 @@ class CdpObserveTargetTest(unittest.TestCase):
                 "title": "Talkroom",
             })
             self.assertEqual(connect.call_args.args[0], "ws://127.0.0.1:9222/devtools/page/leased-target")
+
+    def test_observe_public_marketplace_exposes_bounded_cards_and_text(self) -> None:
+        expected_url = "https://coconala.com/requests"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            screenshot = root / "requests.png"
+            live_dom = root / "requests.json"
+            connect = mock.Mock(
+                return_value=FakeConnection(FakeSocket(expected_url))
+            )
+            with mock.patch.object(module.websockets, "connect", connect):
+                result = asyncio.run(module.observe_target(
+                    "ws://127.0.0.1:9222/devtools/page/leased-target",
+                    expected_url,
+                    screenshot,
+                    live_dom,
+                ))
+
+            self.assertTrue(result["public_marketplace"])
+            self.assertIn("資料作成", result["public_text"])
+            self.assertEqual(result["opportunities"], [{
+                "request_id": "5184001",
+                "bucket": "single",
+                "url": "https://coconala.com/requests/5184001",
+                "title": "資料作成の仕事",
+                "summary": "資料作成の仕事 予算30,000円",
+            }])
+            self.assertTrue(result["has_next"])
+            self.assertEqual(json.loads(live_dom.read_text()), result)
 
     def test_observe_resolves_opaque_ws_from_code_owned_lease_handle(self) -> None:
         """A model cannot corrupt a WebSocket ID it never reads or copies."""

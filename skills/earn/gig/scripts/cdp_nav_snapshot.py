@@ -375,6 +375,127 @@ def _atomic_write(path: Path, data: bytes) -> None:
     os.replace(temporary, path)
 
 
+def _is_public_marketplace_url(value: str) -> bool:
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or parsed.netloc != "coconala.com":
+        return False
+    path = parsed.path.rstrip("/") or "/"
+    return bool(
+        re.fullmatch(r"/requests(?:/categories/\d+|/\d+)?", path)
+        or re.fullmatch(
+            rf"/job_matching/outsources(?:/{RETAINER_ULID_PATTERN.pattern})?",
+            path,
+        )
+    )
+
+
+PUBLIC_MARKETPLACE_SNAPSHOT_EXPRESSION = r"""
+(() => {
+  // gig_public_marketplace_snapshot_v1
+  const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+  const current = new URL(document.location.href);
+  const rows = [];
+  const seen = new Set();
+  const classify = (path) => {
+    const single = path.match(/^\/requests\/(\d+)\/?$/);
+    if (single) return {request_id: single[1], bucket: "single"};
+    const retainer = path.match(
+      /^\/job_matching\/outsources\/([0-9A-HJKMNP-TV-Z]{26})\/?$/
+    );
+    if (retainer) return {request_id: retainer[1], bucket: "retainer"};
+    return null;
+  };
+  for (const anchor of Array.from(document.querySelectorAll("a[href]"))) {
+    let linked;
+    try {
+      linked = new URL(anchor.getAttribute("href"), current);
+    } catch (_) {
+      continue;
+    }
+    if (linked.origin !== current.origin) continue;
+    const identity = classify(linked.pathname);
+    if (!identity || seen.has(identity.request_id)) continue;
+    seen.add(identity.request_id);
+    let container = anchor.closest(
+      "article,li,[class*='card'],[class*='Card'],[class*='item'],[class*='Item']"
+    );
+    if (!container || !clean(container.innerText)) {
+      let candidate = anchor;
+      for (let depth = 0; depth < 8 && candidate; depth += 1) {
+        const text = clean(candidate.innerText);
+        if (text && text.length <= 5000) {
+          container = candidate;
+          break;
+        }
+        candidate = candidate.parentElement;
+      }
+    }
+    container = container || anchor;
+    const rawText = String(container.innerText || anchor.innerText || "");
+    const summary = clean(rawText).slice(0, 1500);
+    const heading = container.querySelector("h1,h2,h3,h4,[class*='title'],[class*='Title']");
+    const firstUsefulLine = rawText
+      .split(/\n+/)
+      .map(clean)
+      .find((line) => line.length >= 4 && line.length <= 300);
+    const title = clean(
+      (heading && heading.innerText) || anchor.innerText || firstUsefulLine || summary
+    ).slice(0, 300);
+    rows.push({
+      request_id: identity.request_id,
+      bucket: identity.bucket,
+      url: linked.href,
+      title,
+      summary,
+    });
+    if (rows.length >= 50) break;
+  }
+  const detail = classify(current.pathname);
+  const bodyText = clean(document.body && document.body.innerText).slice(0, 30000);
+  if (detail && !seen.has(detail.request_id)) {
+    const heading = document.querySelector("h1,h2,[class*='title'],[class*='Title']");
+    rows.unshift({
+      request_id: detail.request_id,
+      bucket: detail.bucket,
+      url: current.href,
+      title: clean((heading && heading.innerText) || document.title).slice(0, 300),
+      summary: bodyText.slice(0, 1500),
+    });
+  }
+  const currentPage = Number(current.searchParams.get("page") || "1");
+  const hasNext = Array.from(document.querySelectorAll("a[href]")).some((anchor) => {
+    const label = clean(
+      anchor.getAttribute("aria-label") || anchor.getAttribute("rel") || anchor.innerText
+    ).toLowerCase();
+    const disabled = anchor.getAttribute("aria-disabled") === "true"
+      || anchor.classList.contains("disabled")
+      || anchor.classList.contains("is-disabled");
+    let linkedPage = 0;
+    try {
+      const linked = new URL(anchor.getAttribute("href"), current);
+      if (linked.pathname === current.pathname) {
+        linkedPage = Number(linked.searchParams.get("page") || "0");
+      }
+    } catch (_) {
+      linkedPage = 0;
+    }
+    return !disabled && (
+      label === "next" || label.includes("次へ") || label === "次"
+      || anchor.getAttribute("rel") === "next" || linkedPage > currentPage
+    );
+  });
+  return JSON.stringify({
+    url: current.href,
+    title: document.title,
+    public_marketplace: true,
+    public_text: bodyText,
+    opportunities: rows.slice(0, 50),
+    has_next: hasNext,
+  });
+})()
+"""
+
+
 async def observe_target(
     ws_url: str,
     url: str,
@@ -416,19 +537,36 @@ async def _observe_target_locked(
         )
         if not loaded:
             raise RuntimeError("navigation_timeout")
+        public_marketplace = _is_public_marketplace_url(url)
+        expression = (
+            PUBLIC_MARKETPLACE_SNAPSHOT_EXPRESSION
+            if public_marketplace
+            else "document.location.href+'|||'+document.title"
+        )
         state = await _call(
             ws,
             "Runtime.evaluate",
-            {
-                "expression": "document.location.href+'|||'+document.title",
-                "returnByValue": True,
-            },
+            {"expression": expression, "returnByValue": True},
             cid,
         )
         cid += 1
         value = state.get("result", {}).get("result", {}).get("value", "") or ""
-        final_url, separator, title = value.partition("|||")
-        if not separator or final_url != url:
+        public_snapshot: dict[str, object] | None = None
+        if public_marketplace:
+            try:
+                decoded = json.loads(value)
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise RuntimeError("public_marketplace_snapshot_invalid") from exc
+            if not isinstance(decoded, dict):
+                raise RuntimeError("public_marketplace_snapshot_invalid")
+            public_snapshot = decoded
+            final_url = str(decoded.get("url") or "")
+            title = str(decoded.get("title") or "")
+        else:
+            final_url, separator, title = value.partition("|||")
+            if not separator:
+                raise RuntimeError(f"navigation_url_mismatch:{final_url}")
+        if final_url != url:
             raise RuntimeError(f"navigation_url_mismatch:{final_url}")
         shot = await _call(ws, "Page.captureScreenshot", {"format": "png"}, cid)
         screenshot_data = shot.get("result", {}).get("data")
@@ -441,6 +579,16 @@ async def _observe_target_locked(
         "observed": True,
         "title": title,
     }
+    if public_snapshot is not None:
+        opportunities = public_snapshot.get("opportunities")
+        live_dom.update({
+            "public_marketplace": True,
+            "public_text": str(public_snapshot.get("public_text") or "")[:30000],
+            "opportunities": (
+                opportunities[:50] if isinstance(opportunities, list) else []
+            ),
+            "has_next": bool(public_snapshot.get("has_next")),
+        })
     _atomic_write(screenshot_path, base64.b64decode(screenshot_data))
     _atomic_write(
         live_dom_path,
