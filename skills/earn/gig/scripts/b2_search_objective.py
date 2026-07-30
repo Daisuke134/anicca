@@ -11,7 +11,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 
 _RETAINER_ULID = re.compile(r"[0-9A-HJKMNP-TV-Z]{26}")
@@ -34,6 +34,20 @@ def _valid_search_url(value: Any, *, allow_empty: bool = False) -> bool:
     if allow_empty and not text:
         return True
     parsed = urlsplit(text)
+    spot_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    spot_type = [raw for key, raw in spot_pairs if key == "type"]
+    spot_page = [raw for key, raw in spot_pairs if key == "page"]
+    valid_spot_route = (
+        parsed.path == "/job_matching/supplier/new"
+        and not any(key not in {"type", "page"} for key, _ in spot_pairs)
+        and spot_type == ["spot"]
+        and len(spot_page) <= 1
+        and (
+            not spot_page
+            or re.fullmatch(r"\d+", spot_page[0]) is not None
+            and int(spot_page[0]) >= 1
+        )
+    )
     return (
         parsed.scheme == "https"
         and parsed.hostname in {"coconala.com", "www.coconala.com"}
@@ -45,6 +59,7 @@ def _valid_search_url(value: Any, *, allow_empty: bool = False) -> bool:
                 "/job_matching/outsources",
             }
             or _CATEGORY_PATH.fullmatch(parsed.path) is not None
+            or valid_spot_route
         )
     )
 

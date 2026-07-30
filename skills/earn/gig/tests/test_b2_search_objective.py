@@ -102,6 +102,39 @@ def test_cli_resumes_the_exact_cursor_in_a_new_process(tmp_path):
     assert json.loads(output.read_text()) == cursor()
 
 
+def test_current_spot_route_checkpoint_resumes_exact_next_page(tmp_path):
+    module = load_module()
+    state = tmp_path / "b2-search-objective.json"
+    contract = tmp_path / "cursor.json"
+    output = tmp_path / "resume.json"
+    current = {
+        "source_id": "single:new",
+        "previous_url": "https://coconala.com/job_matching/supplier/new?type=spot",
+        "next_url": (
+            "https://coconala.com/job_matching/supplier/new?type=spot&page=2"
+        ),
+        "reason": "next_page",
+        "prior_inspected_request_ids": ["5183557"],
+    }
+    contract.write_text(json.dumps(current))
+
+    module.checkpoint(
+        state_path=state,
+        cursor_path=contract,
+        pass_id="1785373447-37605",
+        now=100,
+    )
+    resumed = module.resume(
+        state_path=state,
+        output_path=output,
+        pass_id="next-pass",
+        now=200,
+    )
+
+    assert resumed == current
+    assert json.loads(output.read_text()) == current
+
+
 def test_four_verified_applications_complete_the_objective(tmp_path):
     module = load_module()
     state = tmp_path / "b2-search-objective.json"
