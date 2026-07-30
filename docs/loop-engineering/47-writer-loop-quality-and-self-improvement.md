@@ -2807,7 +2807,9 @@ verified evidence
 4. current-hash editorial/reader/identityが全PASSでも、feedback IDのexact coverage、source URLの本文Sources出現、consumption hashが揃わなければ`ready_to_freeze`にしない。
 5. recovery失敗は再び`block_freeze`でterminal。第三候補、gate緩和、stale PASS、publication-state先行作成は禁止する。
 
-**実装進捗**: Writer feature `565e71f`, `5050c36`, `9a06680`, `b4ce5cf`, `6ffa504`へRED→GREENをpush済み。future replacementのhash-bound feedback伝播、routerのexact coverage拒否、既存replacementのsame-run recovery state、feedback consumptionを欠くquality PASSのfreeze拒否、launchd worker優先dispatchを実装する。focused 49/49、wrapper関連93/93、article Python 438/438、daily shell contract 38/38がfresh PASS。旧deslop/eval/render shellのjudge-broker不在FAILとgig/bounty startup prompt未実装FAILはB1の成功証拠に混ぜない。runtime反映と実LaunchAgent receiptは未完なのでB1は`IN PROGRESS`を維持する。
+**実装進捗**: Writer feature `565e71f`, `5050c36`, `9a06680`, `b4ce5cf`, `6ffa504`, `1a131e8`, `65e2739`へRED→GREEN、runtimeへ`47441e5`までpush済み。future replacementのhash-bound feedback伝播、routerのexact coverage拒否、既存replacementのsame-run recovery state、feedback consumptionを欠くquality PASSのfreeze拒否、launchd worker優先dispatchを実装する。focused 49/49、wrapper関連93/93、article Python 438/438、daily shell contract 38/38がfresh PASS。旧deslop/eval/render shellのjudge-broker不在FAILとgig/bounty startup prompt未実装FAILはB1の成功証拠に混ぜない。
+
+**実LaunchAgent進捗**: `ai.anicca.article-resume` runs 90で第1 invocationを開始したが、nested agentが親owner/recovery stateを監視して自己待機し、research artifact 0のまま進まなかった。これをretry promptの「親を待たず直ちにresearch開始」契約と、attemptごとのprompt再生成・旧prompt保存で修復した。runs 91の第2 invocationは同一run `20260729-173948`、feedback exact7件を入力にresearch-firstで開始し、primary-source research 7 artifact → JA/EN rewriteの順序を実測する。current EN hash `16b79d…`はeditorial PASS。current JA hash `b69d9b…`はstale PASSを拒否した再judgeで、実験設定とshipping defaultの区別、およびcontroller/runtime主張の直接code引用という追加2修正を取得した。identity/reader/consumptionのfinal-hash再bind、有料公開、public readbackは未完なのでB1は`IN PROGRESS`を維持する。
 
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
