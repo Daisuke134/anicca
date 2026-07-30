@@ -2813,6 +2813,8 @@ verified evidence
 
 **実E2Eで発見した第2停止点**: reader再評価がattempt receipt隔離用の子`ARTICLE_RUN_DIR`を使うと、nested judge clientは稼働中の親brokerでなくbroker不在の子directoryへrequestを書き、最大900秒待った。live heartbeatのない子runはstate-root registry内のlive親brokerへfallbackするcontract testをRED→GREENにし、feature `eeaca42` / runtime `1736d75`へpushする。model-runner全27 testsとarticle全439 testsがfresh PASS。停止中だった子judge exact2件だけを終了すると、親launchdを再起動せず新request exact2件が親brokerで完了し、JA 2件 / EN 7件の未回答を取得、loop自身が両本文を再改稿してcurrent-hash editorial再判定を開始した。その後JA/EN editorial+identity current PASSまで到達し、fresh readerが残したJA 1件 / EN 2件を再び本文へ戻して第2改稿を開始する。一次資料にない評価分散・本番結果・cycle costは捏造せず、非公開であることと測定契約を明示する。
 
+**実E2Eで発見したquality contract矛盾**: identity judgeが最終Sourcesの公開GitHub HTTPS URLをinternal pathと誤判定した一方、feedback consumptionは同URLのSources出現を必須にした。公開URLは外部reference、ローカルpath/private nameだけをC判定対象とするtestをRED→GREENにし、feature `e59adee` / runtime `43cb660`へpushする。また`quality_self_heal.py`がidentity receiptのcurrent hashだけを見てFAIL verdictでも`ready_to_freeze`にしたため、identity PASSをready条件へ追加し、receipt verdictをfingerprintへ含めて古いready cacheも無効化する。feature `cb861d2`, `75b7e6f` / runtime `6e59d73`, `b88b130`、関連15 tests PASS。実runは修正版identityを再judgeし、final JA `90aa7f…` / EN `e6bda4…`でeditorial・identity・reader current PASS、feedback exact7 verification PASS、`ready_to_freeze`へ到達する。JA safety terminalはALLOW、EN safetyと有料公開readbackは進行中。
+
 ##### C. VERIFY NEXT — B完了後の実run E2E
 
 | # | 状態 | 検証 | done |
