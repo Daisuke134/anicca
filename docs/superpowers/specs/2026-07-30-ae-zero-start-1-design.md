@@ -182,3 +182,76 @@ Feature is additive: new columns nullable, new adapters behind capability
 registration. Rollback = unregister capabilities + leave columns (no
 destructive migration down needed). Key files are inert without registered
 adapters.
+
+## 9. Adversary round 1 — planner rulings (2026-07-30)
+
+Fresh-context adversary proved three isolation-family defects empirically
+(probe suite against the real modules, not inference). Rulings below are
+binding; the implementation MUST change to match.
+
+### 9.1 BLOCKER — the Telegram bot token is a colony secret, not a tenant secret
+
+Measured: the shared worker claims jobs for every tenant
+(`scripts/runtime-up.js:665`, `claim_lm_runtime_jobs` treats
+`p_tenant_id IS NULL` as all tenants), but the zero-start service is built
+once around a provider pinned to a single `LM_RUNTIME_TENANT_ID`
+(`:240`, `:383`), so every other tenant's job throws
+`environment secret tenant scope mismatch`.
+
+Ruling: the scope check is the **wrong gate for this secret**. One Telegram
+bot serves the whole colony; a bot token is not tenant-private material.
+The zero-start adapter MUST resolve `secret://telegram/bot-token` through a
+**colony-scoped** provider that performs no tenant binding, while ALL key
+material continues to flow only through the per-tenant keychain (which the
+adversary proved isolated: cross-tenant `get` throws
+`WALLET_KEY_SCOPE_MISMATCH`, traversal refs refused).
+
+- Do NOT weaken `createScopedEnvironmentSecretProvider` for other adapters.
+  Add a separate colony-scoped provider for shared connector secrets.
+- REJECTED alternative: one worker per tenant / passing `tenantId` to
+  `claimJobs`. It contradicts the shared-worker design and cannot reach the
+  1,000-tenant scale gate (Portable Runtime Order 20/26).
+
+### 9.2 BLOCKER — a failed announce must stay recoverable
+
+Measured: wallets are provisioned and the public address is PATCHed into
+`lm_users` before the token is fetched, so a failure after provisioning
+leaves a real funded-capable address published with the tenant never told,
+`needsZeroStart` false, and `job_id zero-start:<uid>` already present so
+`ON CONFLICT DO NOTHING` never re-enqueues. Unrecoverable by construction.
+
+Ruling: separate **work identity** from **effect identity**.
+
+- `effect_key` stays `zero-start:<uid>` — the Telegram announcement remains
+  exactly-once forever.
+- The job row MUST be retryable: either a generation-suffixed `job_id` or a
+  sweep that reaps dead/exhausted rows. Executor picks, and states why.
+- `needsZeroStart` MUST mean "no completed announcement receipt for this
+  tenant", not "wallet columns are NULL". Provisioning is already
+  idempotent (`ensureWallets` hard-stops on file/DB disagreement), so
+  re-running a provisioned tenant is safe and MUST heal the announcement.
+
+### 9.3 MAJOR — sweep fairness: no tenant may starve
+
+Measured (`planWalletSweep`, 60 watchable tenants): pass 1 and pass 2 plan
+the identical `t001..t050`; 10 tenants are never planned. `isWatchable`
+never becomes false, there is no cursor, and the read is
+`order=uid.asc&limit=500`. Past 50 tenants the tail's inflows are never
+recorded — real money silently unbooked. Past 500 they are never read.
+
+Ruling: the inflow sweep MUST order by **least-recently-watched** so every
+tenant is eventually served. Derive the ordering from existing receipts if
+that query is reasonable; a single nullable `..._watched_at` column is
+acceptable if it is not. The false comment at `lib/wallet-sweep.js:26-27`
+MUST be corrected — it is true for zero-start (self-draining) and false for
+inflow (never drains).
+
+### 9.4 Confirmed-good invariants (do not "simplify" these)
+
+- `lib/tenant-wallet-store.js:165` `parsed.uid` check is load-bearing: this
+  machine's filesystem is case-insensitive and the uid grammar is `/i`, so
+  `TenantX` and `tenantx` share one directory. That line converts a
+  collision into `WALLET_KEY_TENANT_MISMATCH` instead of a leak.
+- Cursor reads are tenant-filtered (`scripts/runtime-up.js:426-441`).
+- No module-scope mutable wallet/signer/address/cursor/RPC cache exists in
+  any of the six new modules. Keep it that way.
