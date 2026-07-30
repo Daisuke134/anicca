@@ -4040,3 +4040,40 @@ reward が間違っている状態の自己改善器は、間違いを高速化�
 | d | **$400 の入金**（= STAGE 0 の GATE） |
 
 a→d は編集者の処理時間に律速される。**待ち時間中に #2 以降を止めない。**
+
+### 29.4 #0 本番移植 完了（2026-07-31。自分で実行した検証のみ記載）
+
+移植先 = `~/profitable-claude/skills/article-writer/`（本番）。commit `dd4c41a` + `9b1cc02`（未 push、live checkout なので手元運用）。
+
+| 成果物 | 内容 |
+|---|---|
+| `scripts/_shared/pii_scan.py` | 検出器。worktree 版とロジック同一。launchd 起動の publisher は `.env` を source しないため、`WRITER_PII_*` の2キーだけを `~/.openclaw/.env` から読む fallback を追加 |
+| `scripts/_shared/pii_gate.py` | Python publisher 用（`gate_text` / `gate_files` / `gate_run_dir(pair=…)`） |
+| `scripts/pii-gate.py` | bash publisher 用 CLI。**0=clean / 3=finding / 4=blocklist欠落 / 5=その他の例外 / 2=usage** |
+| 呼び出し | publish 経路 **36 箇所**（`publish-note.sh` `publish-devto.sh` `publish-substack.sh` `publish-zenn.sh` `post-zenn.py` `publish-to-x.sh` `x-post/publish.py` 他） |
+
+| 自分で実行した検証 | 実出力 |
+|---|---|
+| ★実際に漏れた公開済み artifact を実 blocklist で | `PII-GATE BLOCK rules=pii.blocklist.github-handle,pii.blocklist.literal findings=…(Dai***134)` **EXIT=3** |
+| clean 本文 | `PII-GATE PASS` EXIT=0 |
+| blocklist 未設定 | `PII-GATE CONFIG-FAIL rules=pii.config.blocklist-missing` **EXIT=4** |
+| 伏字 | 出力は `Dai***134`。生値を出さない |
+| live 別エンジン汚染 | `find ~/.local/lib/writer-engine -newermt '-6 hours'` → **0** |
+
+**根本原因は model ではなく repo だった**: `SKILL.md`（model の必読ファイル）に operator の GitHub ハンドルが2箇所あり、
+model はそれを見て真似していた。削除済み（現在 `grep -c` = 0）。
+さらに model が読む exemplar / topic hold 4ファイルにも残っていたので除去（`reference/articles/*`、`topics/_hold/*`）。
+除去後、model 向け13ファイルすべてが gate PASS。
+
+**pending artifact の解放**: gate 導入で未公開 pending が 6 pair BLOCK になっていた。
+未公開なので遡及禁止（§28.2）の対象外と判断し、`state/runs/**/*.md` 32ファイル・70箇所を除去（`state/` は gitignore）。
+再走査で対象 16 artifact すべて PASS。
+
+| 残存する穴（正直に残す） | 内容 |
+|---|---|
+| ★Dev.to の画像 URL★ | 本文中の画像が `raw.githubusercontent.com/<operator-handle>/…` を指す。これは `devto.py` が公開時に生成するため artifact 側の gate では止まらない。**恒久対策は非個人アカウントへの再ホスト**（別タスク） |
+| 実行スクリプト内 | `scripts/` 10ファイルに handle が残る。model は読まないので公開物には出ないが、OSS 化時には除去が要る |
+| 誤作成した Dev.to draft | builder の検証中に記事 id `4273044` が作成された。`published=false`（**公開されていない**）、タイトルを削除依頼マーカーに変更・本文空。Dev.to API に削除 endpoint が無いため dashboard から手動削除が必要 |
+
+**builder の 2 つの過失**（記録として残す）: ①稼働 run 中に `SKILL.md` を編集した（破損なし、以後は hard-exit する guard と atomic write に変更）
+②検証で clean fixture を実 publish スクリプトに通し、Dev.to に draft を実作成した。**clean artifact を実 publish 経路に流さない**（gate が止める artifact だけ使う）を規則化。
