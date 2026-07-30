@@ -2786,7 +2786,7 @@ verified evidence
 
 | # | 状態 | 作業 | done |
 |---:|---|---|---|
-| 1 | TODO NOW — MONEY / AVAILABILITY | 2候補とも品質FAILした日の「有料記事1本」を復旧 | canonical `daily-2026-07-30`とbounded replacement `20260729-173948`は、source defect修復後も前者JA/EN editorial+reader FAIL、後者JA editorial+reader FAIL / EN reader FAILで`block_freeze`。publication-state exact0、公開0は安全だが、daily paid article desired stateは未達。gateを緩めず、terminal reader/editorial failureを次候補のresearch/evidence planへ消費し、無限replacementを作らず、実runのJA/EN current hashをquality PASSへ閉じる |
+| 1 | IN PROGRESS — MONEY / AVAILABILITY | 2候補とも品質FAILした日の「有料記事1本」を復旧 | canonical `daily-2026-07-30`とbounded replacement `20260729-173948`は、source defect修復後も前者JA/EN editorial+reader FAIL、後者JA editorial+reader FAIL / EN reader FAILで`block_freeze`。publication-state exact0、公開0は安全だが、daily paid article desired stateは未達。Superpowers systematic-debugging → TDD → verificationで、terminal reader/editorial failureをdurable feedback receiptへ固定し、次のresearch/evidence planがそれを消費した証拠を残す。gateを緩めず、同日回復を有限に保ち、実runのJA/EN current hash quality PASS → note ¥500 + Substack JA/EN paid public readbackまで閉じる |
 | 2 | TODO NOW — SELF-IMPROVE CONSUMER | partial live publicationを学習consumerまで一貫させる | producerは`learning_eligible_pairs`でexact8依存を除いたが、current `verify_latest()`はなお`completion_status()==complete`と旧`rubric-judge-{ja,en}.json`を要求する。`collect_snapshot()`もlive rowの`public_id`欠落を`unknown/insufficient`でなく`KeyError`にする。直近22:30実runは`REVIEW_REJECTED`後にこの`KeyError`で終了。current editorial receiptとverified partial pairだけを受理し、欠損は明示`unknown/insufficient`、例外0、変更0/keep/revertのterminal receiptを既存launchd実runで証明する |
 
 ##### C. VERIFY NEXT — B完了後の実run E2E
