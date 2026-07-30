@@ -37,6 +37,13 @@ class TelegramReportingTest(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_default_usage_ledger_is_the_canonical_life_manager_telemetry(self):
+        self.assertEqual(
+            self.report.DEFAULT_USAGE_LEDGER,
+            Path.home()
+            / ".local/state/life-manager/telemetry/agent-usage.jsonl",
+        )
+
     def create_connector_rows(self):
         with sqlite3.connect(self.connector_db) as connection:
             connection.execute("""CREATE TABLE connector_actions(
@@ -585,6 +592,32 @@ class TelegramReportingTest(unittest.TestCase):
         self.assertIn("次の予定", message)
         self.assertNotIn("steps=", message)
         self.assertNotIn("skipped=", message)
+
+    def test_pass_message_reads_active_search_objective_for_the_same_pass(self):
+        usage_ledger = self.root / "agent-usage.jsonl"
+        pass_id = "search-active-1"
+        (self.gig_dir / "pass-report.jsonl").write_text(json.dumps({
+            "ts": 3000,
+            "pass_id": pass_id,
+            "status": "success",
+            "steps_executed": ["B2"],
+        }) + "\n", encoding="utf-8")
+        (self.gig_dir / "b2-search-objective.json").write_text(json.dumps({
+            "version": 1,
+            "status": "active",
+            "last_pass_id": pass_id,
+            "next_action": "次の毎時サイクルで次ページから探索を再開する",
+        }, ensure_ascii=False), encoding="utf-8")
+
+        _, message = self.report.pass_message(
+            gig_dir=self.gig_dir,
+            usage_ledger=usage_ledger,
+            route=self.route,
+        )
+
+        self.assertIn("応募探索を継続しています", message)
+        self.assertNotIn("作業が完了しました", message)
+        self.assertIn("次ページから探索を再開", message)
 
     def test_pass_message_names_each_verified_application_and_three_point_evidence(self):
         usage_ledger = self.root / "agent-usage.jsonl"

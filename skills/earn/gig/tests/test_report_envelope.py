@@ -343,3 +343,64 @@ def test_human_renderer_reports_every_lane_event_in_plain_japanese(tmp_path):
     assert "返信: 新しく返信すべきメッセージがないことを確認しました" in message
     assert "納品: v23.zipが購入者画面に表示されていることを確認しました" in message
     assert message.index("出品:") < message.index("返信:") < message.index("納品:")
+
+
+def test_answer_mode_is_reported_as_reply_not_delivery(tmp_path):
+    module = load_module()
+    evidence = tmp_path / "agent-PAID_QUEUE_DELIVERY"
+    evidence.mkdir()
+    (evidence / "paid-queue-evidence.json").write_text(json.dumps({
+        "sent": True,
+        "mode": "answer",
+        "talkroom_id": "17943244",
+    }), encoding="utf-8")
+
+    events = module.collect_lane_events(
+        evidence_dir=tmp_path,
+        pass_id="answer-pass",
+        occurred_at=1785377457,
+    )
+
+    assert len(events) == 1
+    assert events[0]["kind"] == "reply"
+    assert events[0]["state"] == "replied"
+    assert "質問に回答" in events[0]["result"]
+    assert all(event["kind"] != "delivery" for event in events)
+    pass_row, _, usage_rows = fixture_inputs()
+    envelope = module.build_pass_envelope(
+        pass_row={
+            **pass_row,
+            "steps_executed": ["PAID_WORK", "PAID_QUEUE_DELIVERY"],
+        },
+        applications=[],
+        usage_rows=usage_rows,
+        observed_at=datetime.fromtimestamp(1785377457, timezone.utc),
+        lane_events=events,
+    )
+    message = module.render_human_ja(envelope)
+    assert "購入者への回答を確認・実行しました" in message
+    assert "納品物の作成" not in message
+    assert "- 納品:" not in message
+
+
+def test_active_search_objective_never_claims_the_work_is_complete():
+    module = load_module()
+    pass_row, _, usage_rows = fixture_inputs()
+    envelope = module.build_pass_envelope(
+        pass_row={**pass_row, "steps_executed": ["B2"]},
+        applications=[],
+        usage_rows=usage_rows,
+        observed_at=datetime.fromtimestamp(1785348059, timezone.utc),
+        search_objective={
+            "status": "active",
+            "last_pass_id": pass_row["pass_id"],
+            "next_action": "次の毎時サイクルで前回の次ページから探索を再開する",
+        },
+    )
+
+    message = module.render_human_ja(envelope)
+
+    assert "応募探索を継続しています" in message
+    assert "作業が完了しました" not in message
+    assert envelope["data"]["objective"]["status"] == "active"
+    assert "前回の次ページから探索を再開" in message

@@ -29,7 +29,7 @@ from gig_paths import RUNNER_DIR  # noqa: E402
 
 JST = timezone(timedelta(hours=9))
 DEFAULT_USAGE_LEDGER = (
-    Path.home() / ".local/state/anicca/telemetry/agent-usage.jsonl"
+    Path.home() / ".local/state/life-manager/telemetry/agent-usage.jsonl"
 )
 
 
@@ -346,6 +346,19 @@ def pass_envelope(
         if isinstance(evidence_value, str) and evidence_value
         else []
     )
+    try:
+        search_objective_value = json.loads(
+            (Path(gig_dir) / "b2-search-objective.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, json.JSONDecodeError):
+        search_objective_value = None
+    search_objective = (
+        search_objective_value
+        if isinstance(search_objective_value, dict)
+        else None
+    )
     return report_envelope.build_pass_envelope(
         pass_row=row,
         applications=_jsonl(Path(gig_dir) / "applied.jsonl"),
@@ -353,6 +366,7 @@ def pass_envelope(
         observed_at=observed_at,
         lane_events=lane_events,
         net_mrr_jpy=_verified_net_mrr(Path(gig_dir) / "work-events.jsonl"),
+        search_objective=search_objective,
     )
 
 

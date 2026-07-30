@@ -300,6 +300,43 @@ def test_current_pass_projects_only_verified_application_and_delivery(tmp_path):
     assert events[1]["attributes"]["artifact_version"] == "v23"
 
 
+def test_paid_text_answer_projects_as_reply_not_delivery(tmp_path):
+    module = load_module()
+    empty = tmp_path / "empty.jsonl"
+    empty.write_text("")
+    paid_progress = tmp_path / "paid-progress.jsonl"
+    output = tmp_path / "work-events.jsonl"
+    write_jsonl(paid_progress, [{
+        "ts": 1785356300,
+        "pass_id": "answer-pass",
+        "requestId": "contract-42",
+        "talkroom_id": "42",
+        "status": "replied",
+        "action": "paid_progress",
+        "buyer_visible": True,
+        "interaction_mode": "answer",
+        "url": "https://coconala.com/talkrooms/42",
+    }])
+
+    result = module.project(
+        snapshot_path=None,
+        earnings_path=empty,
+        failures_path=empty,
+        audit_path=empty,
+        applications_path=empty,
+        paid_progress_path=paid_progress,
+        pass_id="answer-pass",
+        output_path=output,
+    )
+    event = json.loads(output.read_text())
+
+    assert result == {"appended": 1, "duplicate": 0}
+    assert event["kind"] == "reply"
+    assert event["state"] == "replied"
+    assert event["action"] == "購入者の質問へ回答"
+    assert "納品" not in event["result"]
+
+
 def test_contract_projection_preserves_explicit_recurring_revenue_facts(tmp_path):
     module = load_module()
     snapshot = tmp_path / "marketplace-snapshot.json"

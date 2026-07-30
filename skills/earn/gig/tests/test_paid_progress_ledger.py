@@ -79,6 +79,7 @@ class PaidProgressLedgerTest(unittest.TestCase):
             row = json.loads(ledger.read_text())
             self.assertEqual(row["requestId"], "contract-42")
             self.assertEqual(row["artifact_version"], "v3")
+            self.assertEqual(row["interaction_mode"], "answer")
 
 
 if __name__ == "__main__":

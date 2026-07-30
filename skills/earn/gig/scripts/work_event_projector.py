@@ -325,7 +325,7 @@ def _application_events(
         }
 
 
-def _delivery_events(
+def _paid_interaction_events(
     rows: Iterable[dict[str, Any]],
     pass_id: str | None,
 ) -> Iterable[dict[str, Any]]:
@@ -341,6 +341,25 @@ def _delivery_events(
             or not talkroom_id
             or occurred_at is None
         ):
+            continue
+        interaction_mode = _clean(row.get("interaction_mode"))
+        if interaction_mode == "answer":
+            yield {
+                "event_key": f"gig:reply:{pass_id}:{talkroom_id}",
+                "kind": "reply",
+                "entity_id": talkroom_id,
+                "occurred_at": occurred_at,
+                "state": "replied",
+                "action": "購入者の質問へ回答",
+                "result": "購入者からの質問に回答し、購入者画面への表示を確認しました",
+                "next_action": "購入者からの次の返信を自動で確認します",
+                "evidence": ["buyer_visible_dom", "canonical_paid_progress"],
+                "attributes": {
+                    "interaction_mode": "answer",
+                    "url": _clean(row.get("url")),
+                    "platform": "coconala",
+                },
+            }
             continue
         artifact_version = _clean(row.get("artifact_version")) or "納品物"
         yield {
@@ -417,7 +436,7 @@ def project(
         *_incident_events(_read_jsonl(failures_path)),
         *_recovery_events(_read_jsonl(audit_path)),
         *_application_events(_read_jsonl(applications_path), pass_id),
-        *_delivery_events(_read_jsonl(paid_progress_path), pass_id),
+        *_paid_interaction_events(_read_jsonl(paid_progress_path), pass_id),
     ]
     return _append_unique(Path(output_path), events)
 

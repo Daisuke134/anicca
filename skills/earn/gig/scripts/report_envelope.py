@@ -761,6 +761,24 @@ def collect_lane_events(
     )
     if isinstance(delivery, dict) and delivery.get("sent") is True:
         talkroom_id = str(delivery.get("talkroom_id") or "").strip()
+        if delivery.get("mode") == "answer":
+            events.append({
+                "event_key": f"gig:reply:{pass_id}:{talkroom_id or 'unknown'}",
+                "kind": "reply",
+                "lane": "reply",
+                "entity_id": talkroom_id or "unknown",
+                "occurred_at": timestamp,
+                "state": "replied",
+                "action": "購入者の質問へ回答",
+                "result": "購入者からの質問に回答し、購入者画面への表示を確認しました",
+                "next_action": "購入者からの次の返信を自動で確認します",
+                "evidence": ["buyer_visible_dom", "message_sha256"],
+                "attributes": {
+                    "url": delivery.get("expected_url"),
+                    "interaction_mode": "answer",
+                },
+            })
+            return events
         artifact = _clean(delivery.get("artifact_basename"), "納品ファイル")
         events.append({
             "event_key": f"gig:delivery:{pass_id}:{talkroom_id or 'unknown'}",
@@ -794,6 +812,7 @@ def build_pass_envelope(
     observed_at: datetime,
     lane_events: list[dict[str, Any]] | None = None,
     net_mrr_jpy: int = 0,
+    search_objective: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build one immutable snapshot from already-durable pass evidence."""
     pass_id = str(pass_row.get("pass_id") or "").strip()
@@ -808,6 +827,16 @@ def build_pass_envelope(
         raise ValueError("pass envelope identity is incomplete")
 
     verified = _verified_applications(applications, pass_id)
+    objective_active = bool(
+        isinstance(search_objective, dict)
+        and search_objective.get("status") == "active"
+        and str(search_objective.get("last_pass_id") or "") == pass_id
+    )
+    objective_next_action = _clean(
+        search_objective.get("next_action")
+        if objective_active and isinstance(search_objective, dict)
+        else None
+    )
     model_calls = 0
     model_cost = 0.0
     for usage in usage_rows:
@@ -821,11 +850,20 @@ def build_pass_envelope(
             model_cost += float(value)
 
     steps = [str(value) for value in pass_row.get("steps_executed") or []]
-    action_labels = [
-        STEP_LABELS[step]
+    answer_mode = any(
+        event.get("kind") == "reply"
+        and (event.get("attributes") or {}).get("interaction_mode") == "answer"
+        for event in (lane_events or [])
+    )
+    action_labels = list(dict.fromkeys(
+        (
+            "購入者への回答"
+            if answer_mode and step in {"PAID_WORK", "PAID_QUEUE_DELIVERY"}
+            else STEP_LABELS[step]
+        )
         for step in steps
         if step in STEP_LABELS
-    ]
+    ))
     events: list[dict[str, Any]] = [{
         "event_key": f"gig:work-cycle:{pass_id}",
         "kind": "work_cycle",
@@ -840,7 +878,9 @@ def build_pass_envelope(
             else "作業サイクル中に修復が必要な問題を検出しました"
         ),
         "next_action": (
-            "次の毎時サイクルで4つの仕事を再確認します"
+            objective_next_action
+            if status == "success" and objective_active and objective_next_action
+            else "次の毎時サイクルで4つの仕事を再確認します"
             if status == "success"
             else "原因を記録し、修復後に同じ作業を再実行します"
         ),
@@ -925,9 +965,19 @@ def build_pass_envelope(
             "observed_at": observed_at.astimezone(timezone.utc).isoformat(),
             "trace_id": pass_id,
             "state": (
-                "作業サイクルは正常に完了しました"
+                "応募候補の探索を継続中です。今回の作業サイクルは正常に終了しました"
+                if status == "success" and objective_active
+                else "作業サイクルは正常に完了しました"
                 if status == "success"
                 else "作業サイクルで修復が必要な問題を検出しました"
+            ),
+            "objective": (
+                {
+                    "status": "active",
+                    "next_action": objective_next_action,
+                }
+                if objective_active
+                else None
             ),
             "actions": action_labels,
             "results": [event["result"] for event in events],
@@ -965,9 +1015,15 @@ def render_human_ja(envelope: dict[str, Any]) -> str:
     )
     events = data["events"]
     applications = [event for event in events if event["kind"] == "application"]
+    objective_active = bool(
+        isinstance(data.get("objective"), dict)
+        and data["objective"].get("status") == "active"
+    )
     lines = [
         (
-            f"✅ ギグワークの作業が完了しました（{stamp}）"
+            f"🟡 ギグワークを進め、応募探索を継続しています（{stamp}）"
+            if status == "success" and objective_active
+            else f"✅ ギグワークの作業が完了しました（{stamp}）"
             if status == "success"
             else f"⚠️ ギグワークで修復が必要な問題を見つけました（{stamp}）"
         ),

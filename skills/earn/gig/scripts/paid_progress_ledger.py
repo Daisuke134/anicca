@@ -195,6 +195,11 @@ def build_row(reconciled: dict, pass_id: str, evidence_dir: str) -> dict:
         "status": STATUS_REPLIED,
         "action": ACTION_PAID_PROGRESS,
         "buyer_visible": True,
+        "interaction_mode": (
+            "answer"
+            if reconciled.get("buyer_visible_response") is True
+            else "progress"
+        ),
         "artifact_version": str(reconciled.get("latest_buyer_visible_version")
                                or reconciled.get("current_version") or ""),
         "package_sha256": str(reconciled.get("latest_buyer_visible_package_sha256")
