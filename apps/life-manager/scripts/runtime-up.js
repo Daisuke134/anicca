@@ -795,6 +795,7 @@ async function runSchedulerOwner(env = process.env) {
     const { sweepWalletJobs } = require("../lib/wallet-sweep.js");
     const { enqueueJob } = require("../lib/runtime-job-store.js");
     const slotMs = Math.floor(Date.now() / walletSweepIntervalMs) * walletSweepIntervalMs;
+    const { CAPABILITY: INFLOW_CAPABILITY } = require("../lib/wallet-inflow-job-adapter.js");
     await sweepWalletJobs({
       supaUrl: requiredEnv(env, "SUPABASE_URL"),
       supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
@@ -802,6 +803,26 @@ async function runSchedulerOwner(env = process.env) {
       nowMs: slotMs,
       telegramTokenRef: String(env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token"),
       enqueueJob: (input) => enqueueJob(input, { query: pool.query.bind(pool) }),
+      // §9.3: the inflow watch never drains, so the per-pass cap must be spent on the least recently
+      // watched tenants. Derived from the watch's own completed receipts — no new column, and a tenant
+      // that has never been watched simply has no row here, which sorts it first.
+      async readInflowWatchedAt() {
+        const result = await pool.query(`
+          SELECT j.tenant_id, max(r.created_at) AS watched_at
+          FROM public.lm_runtime_job_receipts r
+          JOIN public.lm_runtime_jobs j
+            ON j.job_id = r.job_id
+            AND j.tenant_id = r.tenant_id
+          WHERE j.capability = $1
+            AND r.outcome = 'completed'
+            AND r.receipt->>'kind' = 'tenant_wallet_inflow'
+          GROUP BY j.tenant_id
+        `, [INFLOW_CAPABILITY]);
+        return new Map(result.rows.map((row) => [
+          row.tenant_id,
+          row.watched_at instanceof Date ? row.watched_at.toISOString() : String(row.watched_at),
+        ]));
+      },
     });
   }
   if (walletSweepEnabled) {

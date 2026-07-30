@@ -223,7 +223,11 @@ test("the tenant read is bounded and asks for exactly the wallet columns", async
   ]) {
     assert.ok(calls[0].url.includes(column), `${column} must be selected`);
   }
-  assert.match(calls[0].url, /limit=\d+/, "the read must be bounded");
+  // §9.3: bounding moved from a `limit=` clause to a paged Range header, so the read reaches tenant 501+.
+  assert.equal(calls[0].options.headers.Range, "0-499");
+  assert.equal(calls[0].options.headers["Range-Unit"], "items");
+  assert.doesNotMatch(calls[0].url, /limit=/, "a limit clause would cap the read below the tenant count");
+  assert.equal(calls.length, 1, "a short page ends the paging");
   // The sweep has no business reading anything else about a tenant.
   assert.ok(!calls[0].url.includes("phone"));
   assert.ok(!calls[0].url.includes("name"));
@@ -253,4 +257,116 @@ test("the sweep result carries nothing secret", async () => {
     [...new Set(result.zero_start.concat(result.inflow).flatMap((entry) => Object.keys(entry)))].sort(),
     ["created", "job_id", "uid"],
   );
+});
+
+// §9.3 MAJOR-3 — hostile scale. The measured defect: 60 watchable tenants, and passes 1 and 2 planned the
+// identical t001..t050 because the order was `uid.asc` with no cursor and `isWatchable` never goes false.
+// Ten tenants were NEVER planned, so their inflows were never recorded — real money silently unbooked.
+
+function watchableTenants(count) {
+  return Array.from({ length: count }, (_, index) => provisioned(`t${String(index + 1).padStart(3, "0")}`));
+}
+
+test("§9.3: 60 tenants are ALL planned within two passes, none starved", async () => {
+  const rows = watchableTenants(60);
+  const watchedAt = new Map();
+  const planned = [[], []];
+
+  for (const pass of [0, 1]) {
+    const h = harness(rows, {
+      deps: {
+        // Least-recently-watched, derived from completed watch receipts.
+        async readInflowWatchedAt() {
+          return new Map(watchedAt);
+        },
+      },
+    });
+    const result = await sweepWalletJobs({ ...h.deps, nowMs: NOW_MS + pass * 300_000 });
+    for (const entry of result.inflow) {
+      planned[pass].push(entry.uid);
+      // Each planned tenant is now more recently watched than the ones that were not.
+      watchedAt.set(entry.uid, new Date(NOW_MS + pass * 300_000).toISOString());
+    }
+  }
+
+  assert.equal(planned[0].length, MAX_TENANTS_PER_SWEEP);
+  assert.equal(planned[1].length, MAX_TENANTS_PER_SWEEP);
+  const served = new Set([...planned[0], ...planned[1]]);
+  assert.equal(served.size, 60, "every tenant must have been planned at least once across two passes");
+  // The exact starvation the adversary measured: pass 2 must NOT be a repeat of pass 1.
+  assert.notDeepEqual(planned[1], planned[0]);
+  // And the ten that pass 1 could not reach must be first in line, not last.
+  for (const uid of ["t051", "t052", "t060"]) {
+    assert.ok(planned[1].includes(uid), `${uid} must be served on the very next pass`);
+  }
+});
+
+test("§9.3: a never-watched tenant outranks one watched long ago", async () => {
+  const rows = [provisioned("old"), provisioned("fresh"), provisioned("never")];
+  const h = harness(rows, {
+    deps: {
+      async readInflowWatchedAt() {
+        return new Map([
+          ["old", "2026-07-01T00:00:00.000Z"],
+          ["fresh", "2026-07-30T09:59:00.000Z"],
+        ]);
+      },
+    },
+  });
+  const result = await sweepWalletJobs({ ...h.deps, limit: 2 });
+  assert.deepEqual(result.inflow.map((entry) => entry.uid), ["never", "old"]);
+});
+
+test("§9.3: no tenant is served twice while another is still waiting", async () => {
+  // Fairness across many passes, which is what "eventually served" has to mean in practice.
+  const rows = watchableTenants(120);
+  const watchedAt = new Map();
+  const counts = new Map();
+  for (let pass = 0; pass < 4; pass++) {
+    const h = harness(rows, {
+      deps: { async readInflowWatchedAt() { return new Map(watchedAt); } },
+    });
+    const result = await sweepWalletJobs({ ...h.deps, nowMs: NOW_MS + pass * 300_000 });
+    for (const entry of result.inflow) {
+      watchedAt.set(entry.uid, new Date(NOW_MS + pass * 300_000).toISOString());
+      counts.set(entry.uid, (counts.get(entry.uid) || 0) + 1);
+    }
+  }
+  assert.equal(counts.size, 120, "all 120 tenants served within four passes at 50 per pass");
+  const spread = Math.max(...counts.values()) - Math.min(...counts.values());
+  assert.ok(spread <= 1, `service counts must stay within one of each other, saw a spread of ${spread}`);
+});
+
+test("§9.3: the tenant read pages past the first 500 rows", async () => {
+  // `limit=500` meant tenant 501 onward was never even READ, let alone planned.
+  const total = 1100;
+  const all = Array.from({ length: total }, (_, index) => provisioned(`p${String(index).padStart(5, "0")}`));
+  const ranges = [];
+  const fetchImpl = async (url, options) => {
+    const range = String((options.headers || {}).Range || "");
+    ranges.push(range);
+    const [start, end] = range.split("-").map(Number);
+    return { ok: true, status: 200, json: async () => all.slice(start, end + 1) };
+  };
+  const rows = await listWalletSweepTenants({
+    supaUrl: "https://db.example",
+    supaKey: "service-role-test-only",
+    fetchImpl,
+  });
+  assert.equal(rows.length, total, "every tenant row must be read");
+  assert.ok(ranges.length >= 3, `paging must actually page, saw ${ranges.length} request(s)`);
+  assert.equal(ranges[0], "0-499");
+
+  // Still bounded: a runaway table cannot be read without limit.
+  const huge = Array.from({ length: 20_000 }, (_, index) => provisioned(`h${index}`));
+  const bounded = await listWalletSweepTenants({
+    supaUrl: "https://db.example",
+    supaKey: "k",
+    fetchImpl: async (url, options) => {
+      const [start, end] = String((options.headers || {}).Range || "").split("-").map(Number);
+      return { ok: true, status: 200, json: async () => huge.slice(start, end + 1) };
+    },
+  });
+  assert.ok(bounded.length < huge.length, "the read must stay bounded");
+  assert.equal(bounded.length % 500, 0);
 });

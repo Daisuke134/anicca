@@ -175,6 +175,16 @@ test("the cursor is read back from this capability's own completed receipts", ()
   assert.match(RUNTIME_UP, /ORDER BY r\.created_at DESC\s*\n\s*LIMIT 1/);
 });
 
+test("§9.3: the scheduler feeds the sweep a least-recently-watched ordering", () => {
+  // Without this the per-pass cap re-serves the same first 50 uids forever and the tail never gets watched.
+  assert.match(RUNTIME_UP, /readInflowWatchedAt/);
+  assert.match(RUNTIME_UP, /max\(r\.created_at\) AS watched_at/);
+  assert.match(RUNTIME_UP, /GROUP BY j\.tenant_id/);
+  assert.match(RUNTIME_UP, /r\.receipt->>'kind' = 'tenant_wallet_inflow'/);
+  // It must be the watch's OWN receipts: another capability's timestamps would order by the wrong event.
+  assert.match(RUNTIME_UP, /WHERE j\.capability = \$1\s*\n\s*AND r\.outcome = 'completed'/);
+});
+
 test("the scheduler owns the sweep, runs it on a timer, and clears it on shutdown", () => {
   assert.match(RUNTIME_UP, /require\("\.\.\/lib\/wallet-sweep\.js"\)/);
   assert.match(RUNTIME_UP, /sweepWalletJobs\(/);

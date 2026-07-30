@@ -25,8 +25,18 @@ const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,127}$/i;
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 // One pass may plan at most this many jobs of each kind. A 10,000-tenant table becomes a steady catch-up
 // across passes instead of a single burst that outlives its scheduler lease.
+//
+// §9.3: this cap is only safe because the two kinds drain differently, and the difference matters.
+// Zero-start is SELF-DRAINING — a tenant announced once is never a candidate again — so a uid-ordered cap
+// eventually reaches everyone. The inflow watch NEVER drains: `isWatchable` stays true forever, so a
+// uid-ordered cap re-served t001..t050 on every pass and tenants past the cap were never watched at all,
+// which means their inflows were never recorded. The inflow plan is therefore ordered
+// LEAST-RECENTLY-WATCHED, so being unserved is exactly what earns a tenant the next slot.
 const MAX_TENANTS_PER_SWEEP = 50;
-const TENANT_READ_LIMIT = 500;
+// Rows per PostgREST request. The read PAGES through all of them: a plain `limit=500` meant tenant 501
+// onward was never even read, so no ordering could have saved it.
+const TENANT_READ_PAGE = 500;
+const MAX_TENANT_ROWS = 10_000;
 const DEFAULT_TELEGRAM_TOKEN_REF = "secret://telegram/bot-token";
 
 function text(value) {
@@ -53,8 +63,17 @@ function isWatchable(row) {
     || isSolanaAddress(text(row.agent_wallet_solana_address));
 }
 
+// Never watched sorts before everything: a tenant we have no record of serving is the most starved one
+// there is. Ties break on uid so a pass is deterministic and reproducible from its inputs.
+function inflowPriority(watchedAt, uid) {
+  const at = watchedAt instanceof Map ? watchedAt.get(uid) : null;
+  const ms = at == null ? NaN : Date.parse(at);
+  return Number.isFinite(ms) ? ms : -Infinity;
+}
+
 function planWalletSweep(rows, options = {}) {
   const nowMs = Number(options.nowMs == null ? Date.now() : options.nowMs);
+  const watchedAt = options.watchedAt instanceof Map ? options.watchedAt : new Map();
   const telegramTokenRef = text(options.telegramTokenRef) || DEFAULT_TELEGRAM_TOKEN_REF;
   const limit = Number.isSafeInteger(options.limit) && options.limit > 0
     ? Math.min(options.limit, MAX_TENANTS_PER_SWEEP)
@@ -64,6 +83,7 @@ function planWalletSweep(rows, options = {}) {
   const inflow = [];
   let skipped = 0;
   let truncated = false;
+  const watchable = [];
 
   for (const row of Array.isArray(rows) ? rows : []) {
     const uid = usableTenantId(row);
@@ -72,20 +92,23 @@ function planWalletSweep(rows, options = {}) {
       skipped += 1;
       continue;
     }
-    if (needsZeroStart(row)) {
-      if (zeroStart.length >= limit) {
-        truncated = true;
-      } else {
-        zeroStart.push(buildZeroStartJob({ tenantId: uid, telegramTokenRef }));
-      }
+    // Zero-start is self-draining, so row order is fair for it.
+    if (needsZeroStart(row, options)) {
+      if (zeroStart.length >= limit) truncated = true;
+      else zeroStart.push(buildZeroStartJob({ tenantId: uid, telegramTokenRef }));
     }
-    if (isWatchable(row)) {
-      if (inflow.length >= limit) {
-        truncated = true;
-      } else {
-        inflow.push(buildWalletInflowJob({ tenantId: uid, nowMs }));
-      }
-    }
+    if (isWatchable(row)) watchable.push(uid);
+  }
+
+  // §9.3: the inflow watch never drains, so the cap has to be applied to the HUNGRIEST tenants rather
+  // than to whichever uids happen to sort first.
+  watchable.sort((left, right) => (
+    inflowPriority(watchedAt, left) - inflowPriority(watchedAt, right)
+    || left.localeCompare(right)
+  ));
+  if (watchable.length > limit) truncated = true;
+  for (const uid of watchable.slice(0, limit)) {
+    inflow.push(buildWalletInflowJob({ tenantId: uid, nowMs }));
   }
 
   return { zeroStart, inflow, skipped, truncated };
@@ -101,21 +124,36 @@ function credentials(opts = {}) {
 }
 
 // Reads only the wallet columns. The sweep has no business knowing a tenant's name or phone number.
+//
+// §9.3: this PAGES. A single `limit=500` meant tenant 501 onward was never read, so no amount of ordering
+// downstream could have kept it from starving. Still bounded overall — a runaway table must not be pulled
+// through PostgREST without limit — and the bound is reported so it is visible rather than silent.
 async function listWalletSweepTenants(opts = {}) {
   const { supaUrl, supaKey, fetchImpl } = credentials(opts);
-  const limit = Number.isSafeInteger(opts.readLimit) && opts.readLimit > 0
-    ? Math.min(opts.readLimit, TENANT_READ_LIMIT)
-    : TENANT_READ_LIMIT;
+  const maxRows = Number.isSafeInteger(opts.maxRows) && opts.maxRows > 0
+    ? Math.min(opts.maxRows, MAX_TENANT_ROWS)
+    : MAX_TENANT_ROWS;
   const select = ["uid", ...WALLET_COLUMNS].join(",");
-  const url = `${supaUrl}/rest/v1/lm_users?select=${select}&order=uid.asc&limit=${limit}`;
-  const response = await fetchImpl(url, {
-    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` },
-  });
-  if (!response || !response.ok) {
-    throw new Error(`wallet sweep tenant read failed (${response ? response.status : "no response"})`);
+  const url = `${supaUrl}/rest/v1/lm_users?select=${select}&order=uid.asc`;
+  const rows = [];
+  for (let start = 0; start < maxRows; start += TENANT_READ_PAGE) {
+    const end = Math.min(start + TENANT_READ_PAGE, maxRows) - 1;
+    const response = await fetchImpl(url, {
+      headers: {
+        apikey: supaKey,
+        Authorization: `Bearer ${supaKey}`,
+        Range: `${start}-${end}`,
+        "Range-Unit": "items",
+      },
+    });
+    if (!response || !response.ok) {
+      throw new Error(`wallet sweep tenant read failed (${response ? response.status : "no response"})`);
+    }
+    const page = await response.json();
+    if (!Array.isArray(page)) throw new Error("wallet sweep tenant read returned a non-array body");
+    rows.push(...page);
+    if (page.length < end - start + 1) break;
   }
-  const rows = await response.json();
-  if (!Array.isArray(rows)) throw new Error("wallet sweep tenant read returned a non-array body");
   return rows;
 }
 
@@ -125,7 +163,10 @@ async function sweepWalletJobs(opts = {}) {
     : () => listWalletSweepTenants(opts);
   const enqueue = opts.enqueueJob || ((input) => enqueueJob(input, opts.storeOptions || {}));
   const rows = await listTenants();
-  const plan = planWalletSweep(rows, opts);
+  const watchedAt = typeof opts.readInflowWatchedAt === "function"
+    ? await opts.readInflowWatchedAt()
+    : new Map();
+  const plan = planWalletSweep(rows, { ...opts, watchedAt });
 
   const results = { zero_start: [], inflow: [], failed: [], skipped: plan.skipped, truncated: plan.truncated };
   for (const [key, jobs] of [["zero_start", plan.zeroStart], ["inflow", plan.inflow]]) {
@@ -159,7 +200,8 @@ async function sweepWalletJobs(opts = {}) {
 module.exports = {
   DEFAULT_TELEGRAM_TOKEN_REF,
   MAX_TENANTS_PER_SWEEP,
-  TENANT_READ_LIMIT,
+  MAX_TENANT_ROWS,
+  TENANT_READ_PAGE,
   isWatchable,
   listWalletSweepTenants,
   needsZeroStart,
