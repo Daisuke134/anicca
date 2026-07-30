@@ -1,0 +1,7 @@
+[Unit]
+Description=Anicca job search learning pass
+
+[Service]
+Type=oneshot
+WorkingDirectory="__JOB_SEARCH_REPO_ROOT__"
+ExecStart="__JOB_SEARCH_PROGRAM__"

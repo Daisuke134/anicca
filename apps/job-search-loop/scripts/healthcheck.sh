@@ -5,7 +5,7 @@ SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 JOB_UID="$(id -u)"
 
-for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox; do
+for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_APP_ROOT/launchd/$NAME.plist" >/dev/null
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_LAUNCH_AGENT_DIR/$NAME.plist" >/dev/null
   STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/$NAME" | awk '
@@ -67,7 +67,11 @@ for path in private_paths:
         raise SystemExit(f"private state permissions too broad: {path} {mode:o}")
 
 evidence_root = root / "evidence"
-limits = {"daily-": 36 * 3600, "inbox-": 45 * 60}
+limits = {
+    "daily-": 36 * 3600,
+    "inbox-": 45 * 60,
+    "learning-": 8 * 24 * 3600,
+}
 freshness = {}
 now = time.time()
 for prefix, maximum_age in limits.items():

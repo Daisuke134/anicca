@@ -189,6 +189,55 @@ class Ledger:
                 resolved_count INTEGER NOT NULL,
                 PRIMARY KEY (strategy_generation_id, funnel_stage)
             );
+            CREATE TABLE IF NOT EXISTS strategy_experiments (
+                experiment_id TEXT PRIMARY KEY,
+                baseline_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                candidate_generation_id TEXT NOT NULL UNIQUE
+                    REFERENCES strategy_generations(strategy_generation_id),
+                changed_field TEXT NOT NULL,
+                metric_stage TEXT NOT NULL,
+                replay_manifest_sha256 TEXT NOT NULL,
+                replay_case_count INTEGER NOT NULL,
+                replay_violations INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS strategy_learning_control (
+                scope TEXT PRIMARY KEY,
+                active_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                experiment_id TEXT
+                    REFERENCES strategy_experiments(experiment_id),
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS learning_execution_events (
+                event_id TEXT PRIMARY KEY,
+                experiment_id TEXT NOT NULL
+                    REFERENCES strategy_experiments(experiment_id),
+                candidate_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                outcome TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL,
+                occurred_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE (experiment_id, evidence_sha256)
+            );
+            CREATE TABLE IF NOT EXISTS learning_decisions (
+                decision_id TEXT PRIMARY KEY,
+                experiment_id TEXT NOT NULL
+                    REFERENCES strategy_experiments(experiment_id),
+                decision TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                metric_stage TEXT NOT NULL,
+                active_before_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                active_after_generation_id TEXT NOT NULL
+                    REFERENCES strategy_generations(strategy_generation_id),
+                snapshot_sha256 TEXT NOT NULL UNIQUE,
+                receipt_sha256 TEXT NOT NULL UNIQUE,
+                report_json TEXT NOT NULL,
+                decided_at TEXT NOT NULL
+            );
             CREATE TRIGGER IF NOT EXISTS strategy_generations_no_update
             BEFORE UPDATE ON strategy_generations
             BEGIN
@@ -218,6 +267,36 @@ class Ledger:
             BEFORE DELETE ON funnel_outcomes
             BEGIN
                 SELECT RAISE(ABORT, 'funnel outcomes are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS strategy_experiments_no_update
+            BEFORE UPDATE ON strategy_experiments
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy experiments are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS strategy_experiments_no_delete
+            BEFORE DELETE ON strategy_experiments
+            BEGIN
+                SELECT RAISE(ABORT, 'strategy experiments are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS learning_execution_events_no_update
+            BEFORE UPDATE ON learning_execution_events
+            BEGIN
+                SELECT RAISE(ABORT, 'learning execution events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS learning_execution_events_no_delete
+            BEFORE DELETE ON learning_execution_events
+            BEGIN
+                SELECT RAISE(ABORT, 'learning execution events are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS learning_decisions_no_update
+            BEFORE UPDATE ON learning_decisions
+            BEGIN
+                SELECT RAISE(ABORT, 'learning decisions are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS learning_decisions_no_delete
+            BEFORE DELETE ON learning_decisions
+            BEGIN
+                SELECT RAISE(ABORT, 'learning decisions are immutable');
             END;
             """
         )

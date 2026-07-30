@@ -883,17 +883,20 @@ the only permitted path and SHA-256 for the submission intent and Telegram recei
 
 ### 8.1 Current truth
 
-The repository contains a deterministic one-field evaluator with Wilson 95%
-intervals and an immutable outcome-attribution store. Strategy generations are
-content-addressed, candidate lineage permits exactly one declared field change,
-new production applications atomically retain their complete assignment, legacy
-applications retain an explicit unavailable marker, and authoritative funnel
-outcomes rebuild a deterministic generation/stage projection. Gmail submission
-confirmation is already wired to the confirmed-application outcome.
+The repository contains a resident deterministic one-field learning driver with
+Wilson 95% intervals and an immutable outcome-attribution store. Strategy
+generations are content-addressed, candidate lineage permits exactly one declared
+field change, a held-out safety manifest is replayed before prospective traffic,
+stable canonical job keys select baseline versus candidate, and authoritative funnel
+outcomes rebuild a deterministic generation/stage projection. Promotion,
+inconclusive closure and safety/failure rollback insert an immutable hashed decision
+in the same transaction that compare-and-swaps the active-generation pointer. Gmail
+submission confirmation is wired to the confirmed-application outcome.
 
-That is still not a closed learning loop: no resident driver yet proposes, replays,
-assigns baseline versus candidate traffic, evaluates the resolved samples, or
-atomically promotes/rolls back the active generation.
+The weekly driver is implemented and its live CLI path is verified. It becomes the
+canonical resident LaunchAgent only after 11C merges and the canonical installer
+re-renders the local scheduler. The guardian, lifecycle closure and `summary.v2`
+drivers remain absent.
 
 Live state measured on 2026-07-30:
 
@@ -901,15 +904,16 @@ Live state measured on 2026-07-30:
 |---|---|
 | Daily LaunchAgent | idle after exit 0; 08:30 JST schedule |
 | Inbox LaunchAgent | idle after exit 0; 900-second schedule |
+| Learning pass | real ledger run returned `inconclusive / insufficient_resolved_applications`, baseline=0 and candidate=0 resolved, replay violations=0; receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`; Telegram ACK `4530`; identical retry reused the same single outbox row and ACK |
 | Ledger | integrity `ok`; 2 submitted / 1 submit-unknown / 2 not-submitted |
 | Interview preparation | integrity `ok`; 0 registered / 0 pending |
 | ATS proof objective | Ashby confirmed=0; Workday confirmed=0 |
 | Attribution migration | integrity `ok`; 5/5 existing applications assigned to one explicit `legacy_unavailable` generation; application-state counts unchanged; 0 external outcomes and 0 projection rows before future evidence |
-| Learning evaluator | implemented and tested; the resident assignment/evaluation/promotion scheduler remains absent |
+| Learning driver | 203 job-loop tests cover replay, deterministic two-arm assignment, insufficient/overlap decisions, Wilson promotion, immediate safety/three-failure rollback, pointer-race fencing, immutable receipts, weekly launchd/systemd rendering and at-most-once Telegram delivery; canonical scheduler installation waits for merge |
 
 The engineering program must therefore describe the system as
 `acquisition_live + follow_through_live + attribution_live +
-learning_driver_not_closed`, never as already self-improving.
+learning_driver_implemented_pending_canonical_install`, never as fully self-healing.
 
 ### 8.2 Outcome and attribution model
 
@@ -1096,8 +1100,8 @@ for a naturally arriving email:
 - Runtime evidence pointer: Order 10 continues daily until one truthful confirmed
   submission exists for both Ashby and Workday.
 - Engineering pointer: 11A and 11B are complete; 11C's resident weekly learning
-  pass is the first and only current implementation increment. 11D–11F and
-  13A–13C follow it in the order below.
+  pass is implemented and awaits merge plus canonical scheduler installation.
+  11D–11F and 13A–13C follow it in the order below.
 
 Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait for
 their respective private fact or external message.
@@ -1107,7 +1111,7 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | The 11B baseline is canonical `origin/main` `9cb1df3f7`; strategy generations, immutable assignments, authoritative outcomes and deterministic projections now exist, while no resident learning or guardian entrypoint exists | Implement `JOB-LEARNING-PASS-11C` |
+| Engineering now | The 11C baseline is canonical `origin/main` `0a4afeb5f`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting are implemented with 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Merge 11C, install/kick the canonical LaunchAgent, rerun healthcheck, then advance to `JOB-GUARDIAN-PASS-11D` |
 | Resident runtime | The installed acquisition and inbox LaunchAgents are healthy (`last_exit=0`) on the 08:30 JST and 900-second schedules; ledger and interview-prep integrity are `ok`; applications remain 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
@@ -1124,7 +1128,7 @@ must accumulate in the live loop:
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
 | 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A merged in PR #1288; 10B merged in PR #1291/#1293 with real existing-CDP job→choice→account replay. 10C merged in PR #1306 (`34002214a`, CI `30451149945`): definite pre-click failures safely reopen with fresh evidence/new fences; the real ledger migrated with integrity `ok`, unchanged 2 submitted / 1 not-submitted applications, 3 attempts and 1 retryable. 10D merged in PR #1310 (`10dafba7a`, CI `30452160572`): strong per-tenant private credentials and secret-free receipts; the real CrowdStrike tenant created once then reused without rotation. 10E merged in PR #1316 (`828c4d7b1`, CI `30453061715`): deterministic inbox detection accepts exactly one HTTPS activation URL from `@myworkday.com` only when its exact host is already credentialed, stores only its hash, and fences navigation at most once; 161 job-loop + 7 runner tests pass. Live daily 6→7 and inbox 13→15 both exited 0; no new verification email arrived, historical seen mail was not reopened, and healthcheck integrity remained `ok`. The daily retry safely moved BJAK from definite pre-click failure to terminal `submit_unknown` after a real submit click lacked confirmation, with Telegram report ACK 4414. 10F merged in PR #1322 (`b17f838cd`, CI `30454763988`) with 163 job-loop + 9 runner tests: a pre-navigation `claimed` row is a 900-second lease and may recover with a new fence after a crash, while the old fence fails and every state at or after `navigation_started` remains terminal. Live inbox 15→16 exited 0 with no new mail or false-positive historical replay; integrity remained `ok`. 10G merged in PR #1326 (`aa81e7dff`, CI `30455795192`) with 165 job-loop + 9 runner tests: only schema-valid processed thread IDs that are an exact subset of the current scan are atomically acknowledged; unknown, duplicate, count-mismatched, missing-result, and omitted IDs remain unacknowledged for retry. Live inbox 16→17 exited 0, no-work left the mode-0600 three-thread seen checkpoint unchanged, and integrity remained `ok`. 10H merged in PR #1331 (`6bc07d1ce`, CI `30456681640`) with 166 job-loop + 9 runner tests: only runner exit 75 paired with the current `budget_blocked` summary becomes a healthy scheduled wait before any result resolution or seen acknowledgement; every other failure propagates. Live inbox 17→18 exited 0 and left seen-state mtime unchanged; integrity remained `ok`. Live daily catch-up 7→9 then completed with exit 0 and Telegram ACKs 4421/4425: no confirmed submission, one new BJAK AI Finance Agent stayed `not_submitted` before click because nationality is absent and its explicit three-year minimum is unmet; ledger is integrity `ok` at 2 submitted / 1 submit-unknown / 1 not-submitted. 10I merged in PR #1346 (`96adde721`, CI `30460492034`) with 168+9 tests; live daily 9→10 exited 0, Telegram 4429 reported zero submissions/two truthful pre-submit blocks, and the mode-0600 projection shows generic submitted=2, Ashby confirmed=0, Workday confirmed=0. The run proved the old reservation could admit a provider charge above the daily cap. 10J merged in PR #1350 (`e3bc44685`, CI `30462362148`) with 168+10 tests; live daily 10→11 exited 0 before provider selection, wrote exactly one blocked full-pass reservation and no attempt/settlement artifacts, kept counts at 2 submitted / 1 submit-unknown / 2 not-submitted, and passed both integrity checks. 10K merged in PR #1352 (`852d18a14`, CI `30464923726`) with 174+10 tests; live inbox 24→25 exited 0, checked one real Gmail candidate, made zero false promotions, launched no provider, changed neither seen checkpoint nor 12-row Telegram outbox, refreshed the projection to 2026-07-30, and passed both integrity checks. 10L merged in PR #1355 (`162b4750c`, CI `30466877218`) with 176+10 tests and seven passing checks. 10M merged in PR #1359 (`384d03a39`, CI `30471441379`) with 176+11 tests: Codex receives a private compatible schema copy while the original strict schema still validates the result. A real first-attempt `gpt-5.6-terra` diagnostic returned schema-valid output; canonical production then advanced Inbox run 5 with exit 0 and migrated checkpoint v1→v2 with 3 bootstrap message IDs, 3 legacy boundaries and no replay. Ledger/preparation integrity stayed `ok`; counts remain 2 submitted / 1 submit-unknown / 2 not-submitted, Ashby confirmed=0 and Workday confirmed=0. Continue until one real confirmed application exists for both Ashby and Workday; 10L's real same-thread future-message proof remains an independent external wait |
-| 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable content-addressed generations, atomic captured/legacy assignments, authoritative external funnel outcomes, same-application multi-stage receipts, Gmail confirmation attribution, deterministic projections and a redacted migration CLI. The real ledger migrated 5/5 applications without changing 2 submitted / 1 submit-unknown / 2 not-submitted counts and remained integrity `ok`. The resident learning/guardian drivers still do not exist; complete 11C–11F below |
+| 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
 | 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A local Career surface consumes `summary.v2`; 13B moves the proven drivers to isolated cloud tenants; 13C integrates evidence-backed Financial/Physical/Mental job utility without merging consent boundaries |
 
@@ -1138,7 +1142,7 @@ not start merely because their design is already written:
 |---|---|---|
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
-| `JOB-LEARNING-PASS-11C` | `pending_actionable` | A resident weekly driver replays, assigns, evaluates and atomically promotes/rolls back one field; insufficient samples remain inconclusive; one decision receipt/report is emitted |
+| `JOB-LEARNING-PASS-11C` | `implemented_pending_merge` | Baseline `origin/main` `0a4afeb5f`; 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical installation remains before `completed` |
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_11C` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
