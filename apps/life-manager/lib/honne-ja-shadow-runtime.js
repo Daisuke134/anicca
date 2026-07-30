@@ -17,7 +17,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { HONNE_JA_SLOTS, honneJaDueSlot } = require("./honne-ja-shadow-schedule.js");
+const { HONNE_JA_SLOTS, honneJaDueSlot, zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const {
   buildMarketingVideoGenerationJob,
   verifyMarketingVideoGenerationReceipt,
@@ -152,11 +152,74 @@ function appendHonneJaShadowHold(hold, options = {}) {
   return ledgerPath;
 }
 
+// How many missed expected slots the status reader enumerates for visibility
+// before truncating (one week of the 2-slot/day grid). The streak is already
+// broken at the first gap regardless of truncation.
+const MISSED_SLOT_REPORT_LIMIT = 14;
+
+// Local calendar day ({year, month, day}) of `ms` in `timeZone`.
+function localCalendarDay(ms, timeZone) {
+  let parts;
+  try {
+    parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(ms));
+  } catch {
+    throw new Error("honne JA shadow status time zone is invalid");
+  }
+  const map = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+}
+
+// Pure calendar step backward (Date.UTC arithmetic never touches time zones).
+function previousCalendarDay(day) {
+  const rolled = new Date(Date.UTC(day.year, day.month - 1, day.day) - 86400000);
+  return {
+    year: rolled.getUTCFullYear(),
+    month: rolled.getUTCMonth() + 1,
+    day: rolled.getUTCDate(),
+  };
+}
+
+// Latest expected slot instant at or before `beforeMs` on the HONNE_JA_SLOTS
+// 12:30/21:30 local grid. Walking `latestExpectedSlotInstant(slotMs - 1)`
+// yields the previous grid slot, so the whole expected sequence is derivable
+// backward from any instant. A slot that does not exist on a local calendar
+// day (DST gap) is skipped: it was never expected to fire.
+function latestExpectedSlotInstant(beforeMs, timeZone) {
+  let day = localCalendarDay(beforeMs, timeZone);
+  for (let dayIndex = 0; dayIndex < 4; dayIndex += 1) {
+    for (let slotIndex = HONNE_JA_SLOTS.length - 1; slotIndex >= 0; slotIndex -= 1) {
+      let instant;
+      try {
+        instant = zonedSlotInstant(day, HONNE_JA_SLOTS[slotIndex], timeZone);
+      } catch {
+        continue;
+      }
+      if (Date.parse(instant) <= beforeMs) return instant;
+    }
+    day = previousCalendarDay(day);
+  }
+  return null;
+}
+
 // Seven-cycle gate reader: rows are durable receipt rows for the Honne JA
 // generation jobs ordered ASC by created_at ({outcome, receipt, created_at}).
-// Counts the TRAILING run of completed rows whose receipt passes the
-// generation adapter's own verification; any failure or unverifiable receipt
-// resets the streak.
+// Spec §13 requires seven consecutive EXPECTED local cycles without missed or
+// duplicate effects, so the count is anchored to the 12:30/21:30 expected slot
+// grid ending at the latest slot already due at `options.nowMs`:
+//   * every expected slot in the trailing run must hold exactly ONE completed
+//     row whose receipt passes the generation adapter's own verification;
+//   * an expected slot that passed with NO receipt row (scheduler off, scan
+//     dead) is a missed effect — it breaks the streak and is reported in
+//     `missed_slots`;
+//   * a failed or unverifiable row, a duplicate row for one slot, and an
+//     off-grid slot all break the streak;
+//   * a slot still in the future (or not yet due today) is simply not
+//     expected yet and never counts as missed.
 function honneJaShadowStatus(rows, options = {}) {
   if (!Array.isArray(rows)) {
     throw new Error("honne JA shadow status receipts are invalid");
@@ -165,7 +228,15 @@ function honneJaShadowStatus(rows, options = {}) {
   if (!Number.isInteger(expected) || expected < 1) {
     throw new Error("honne JA shadow status expectation is invalid");
   }
-  const receipts = [];
+  const nowMs = options.nowMs == null ? Date.now() : options.nowMs;
+  if (typeof nowMs !== "number" || !Number.isFinite(nowMs)) {
+    throw new Error("honne JA shadow status time is invalid");
+  }
+  const timeZone = String(options.timeZone || "Asia/Tokyo").trim();
+
+  // Trailing rows that are completed AND verifiable; any failed or
+  // unverifiable row bounds the run (existing reset behavior preserved).
+  const trailing = [];
   for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index];
     if (
@@ -175,7 +246,7 @@ function honneJaShadowStatus(rows, options = {}) {
     ) {
       break;
     }
-    receipts.unshift({
+    trailing.unshift({
       slot: row.receipt.slot,
       hook_id: row.receipt.hook_id,
       creative_id: row.receipt.creative_id,
@@ -183,6 +254,45 @@ function honneJaShadowStatus(rows, options = {}) {
       recorded_at: String(row.created_at == null ? "" : row.created_at),
     });
   }
+
+  // Match the trailing rows (newest first) one-to-one against the expected
+  // slot grid walked backward from now.
+  const receipts = [];
+  const missedSlots = [];
+  if (trailing.length > 0) {
+    const slotCounts = new Map();
+    for (const entry of trailing) {
+      slotCounts.set(entry.slot, (slotCounts.get(entry.slot) || 0) + 1);
+    }
+    let expectedSlot = latestExpectedSlotInstant(nowMs, timeZone);
+    let index = trailing.length - 1;
+    while (index >= 0 && expectedSlot) {
+      const entry = trailing[index];
+      if (entry.slot !== expectedSlot) {
+        // Gap: enumerate the expected slots newer than this receipt that have
+        // no row (visibility), then stop — the streak is broken here. An
+        // off-grid or future receipt slot enumerates nothing and also stops.
+        const entryMs = Date.parse(entry.slot);
+        let cursor = expectedSlot;
+        while (
+          cursor
+          && Date.parse(cursor) > entryMs
+          && missedSlots.length < MISSED_SLOT_REPORT_LIMIT
+        ) {
+          missedSlots.unshift(cursor);
+          cursor = latestExpectedSlotInstant(Date.parse(cursor) - 1, timeZone);
+        }
+        break;
+      }
+      // Duplicate rows for one slot = duplicate effect = gate violation: the
+      // duplicated slot never counts and nothing older than it counts.
+      if (slotCounts.get(entry.slot) > 1) break;
+      receipts.unshift(entry);
+      index -= 1;
+      expectedSlot = latestExpectedSlotInstant(Date.parse(expectedSlot) - 1, timeZone);
+    }
+  }
+
   const consecutive = receipts.length;
   return {
     consecutive,
@@ -190,6 +300,7 @@ function honneJaShadowStatus(rows, options = {}) {
     display: `${Math.min(consecutive, expected)}/${expected}`,
     gate_met: consecutive >= expected,
     receipts,
+    missed_slots: missedSlots,
   };
 }
 

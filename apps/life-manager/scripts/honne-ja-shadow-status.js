@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // honne-ja-shadow-status.js — seven-cycle Honne JA shadow gate reader.
 //
-// Read-only: prints how many CONSECUTIVE successful shadow generation receipts
-// the durable store holds for the Honne JA slice, as n/7 with timestamps. It
-// never enqueues, executes, or mutates anything; it is the evidence reader for
-// the spec §13 seven-expected-run cutover gate (which stays unclaimed until it
-// reads 7/7).
+// Read-only: prints how many CONSECUTIVE EXPECTED 12:30/21:30 JST slots hold
+// exactly one verified shadow generation receipt, as n/7 with timestamps, plus
+// any expected slots that passed with no receipt row (missed_slots). It never
+// enqueues, executes, or mutates anything; it is the evidence reader for the
+// spec §13 seven-expected-run cutover gate (which stays unclaimed until it
+// reads 7/7 with zero missed or duplicate effects).
 "use strict";
 
 const { honneJaShadowStatus } = require("../lib/honne-ja-shadow-runtime.js");
@@ -64,13 +65,17 @@ async function readHonneJaShadowStatus(argv, deps = {}) {
     `format://${args.format}`,
     `locale://${args.locale}`,
   ]);
+  const env = deps.env || process.env;
   const status = honneJaShadowStatus(result.rows.map((row) => ({
     outcome: row.outcome,
     receipt: row.receipt,
     created_at: row.created_at instanceof Date
       ? row.created_at.toISOString()
       : row.created_at,
-  })));
+  })), {
+    nowMs: deps.nowMs == null ? Date.now() : deps.nowMs,
+    timeZone: String(env.LM_HONNE_JA_SHADOW_TIME_ZONE || "Asia/Tokyo").trim(),
+  });
   (deps.stdout || process.stdout).write(`${JSON.stringify({
     tenant_id: args.tenant,
     product_id: args.product,
@@ -81,6 +86,7 @@ async function readHonneJaShadowStatus(argv, deps = {}) {
     expected: status.expected,
     gate_met: status.gate_met,
     receipts: status.receipts,
+    missed_slots: status.missed_slots,
   })}\n`);
   return status;
 }
