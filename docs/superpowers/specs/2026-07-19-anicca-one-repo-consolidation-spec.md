@@ -1329,11 +1329,56 @@ healthyの判定は通知回数やagent activityではなく、MENTALは有効�
   見つからなければ**送れなかった事実を正直に報告する**（例:「先方のメールが見つからず、遅刻連絡は送れていません」）。
   黙って放置＝最悪。正直な失敗報告＞偽の成功。旧裁定（LM-11「予約=Telnyx outbound で店に電話」2026-07-17 spec Q13）は**誤りとして上書き** — 予約も web フォーム/メールのみ、不可なら候補提示+報告。
 
+### 9.5.1 対外連絡の1タップ同意と NEVER-GIVE-UP 原則（2026-07-31 Dais 裁定。§9.5 の「正直な失敗報告」を上書き）
+
+**Dais verbatim**: "you cannot be like oh I couldn't do it… you press the button and then it's gonna be sent… if they say no it's not gonna be sent… it's not that you don't know anything, it's that you only know something… we don't wanna see life manager giving up."
+
+#### 原則A — 「送れませんでした」は成果物として禁止
+
+遅刻連絡・欠席連絡・その他の**対外連絡は、必ず次の2つのどちらかで終わる**。それ以外の終端（無言・諦め・「見つかりませんでした」だけの報告）は **failed** として扱う。
+
+| 終端 | 形 |
+|---|---|
+| **終端1: 送信可** | 文面を書き上げた状態で TG に出す → `[送信]` `[送らない]` の2ボタン。`[送信]` = **1タップで即送信、二段確認なし**。`[送らない]` = 送らない + その判断を context graph に記録 |
+| **終端2: 宛先だけ欠落** | **文面は既に書き上げた状態で提示**し、欠けている1点だけを名指しで聞く。例:「14:00 の △△ 打合せに 20 分遅れる。◯◯さん宛の文面はできている。メールアドレスだけ分からないので教えて」→ 受領後は自動で終端1へ遷移 |
+
+#### 原則B — 「分かりません」は禁止。分かっている事と分かっていない事を分けて言う
+
+聞く時は必ず **①既知の事実 ②欠けている唯一の項目 ③既に用意した文面** の3点を同じ message に載せる。
+「相手が分かりません」「連絡できませんでした」のような**全体を未知として投げ返す文は禁止**。
+LM は常に「いつ・どの予定・誰と・何分遅れるか」を知っている。知らないのは連絡先1点に過ぎない。
+
+#### 原則C — 宛先解決は5段。全段を尽くすまで人に聞かない
+
+```
+1. calendar attendees（externalAttendees）
+2. Gmail のスレッド履歴（過去に同じ相手と往復した実メール）
+3. context graph（過去に本人が教えた宛先・組織）
+4. web 検索 + browser（会社サイト / 問い合わせフォーム / 公開連絡先）
+   ★ browser を持っている以上、ここで詰まるのは異常。原則として1〜4で解決する ★
+5. ここまで全部空振りした時だけ 本人に closed question（原則B の形式）
+```
+
+各段の実行結果は receipt に残す。**段を飛ばして5へ行くのは違反**。
+
+#### 原則D — §9.5 との境界（どこまで自動、どこから1タップ）
+
+| 行為 | 扱い |
+|---|---|
+| **user の名前で第三者に出る文面**（遅刻連絡・欠席連絡・問い合わせ） | **1タップ同意が要る**。文面は AI が完成させる。人間の作業は yes/no 1回だけ |
+| user 自身の用事（予約、travel block 作成、call、リマインド） | **従来どおり事後報告**（§9.5）。許可を求めない |
+
+この線引きが §9.5 の唯一の例外。「承認を取る」ではなく「**完成品に yes/no を1回押させる**」であり、人間に仕事を戻していない。
+
+#### 原則E — 電話は変わらず禁止
+
+対外連絡の手段はメール（およびメール不可時の web フォーム）。AI が第三者に電話をかけない裁定（§9.5）は維持する。
+
 ### 9.6 CONTEXT GATES（context を貰った時だけ解錠される feature）
 
 | feature | 必要 context | gate 前の挙動 | gate 後の挙動 |
 |---|---|---|---|
-| 遅刻連絡(chikoku renraku) v2 | **TG real-time location 共有** | 機能 OFF（質問で代替しない） | 現在地→会場の所要時間を常時計算 → 間に合わない確定時点で「◯分遅刻見込み」を自動メール。**本人には何も聞かない** |
+| 遅刻連絡(chikoku renraku) v2 | **TG real-time location 共有** | 機能 OFF（質問で代替しない） | 現在地→会場の所要時間を常時計算 → 間に合わない確定時点で文面を完成させ、**`[送信]`/`[送らない]` の1タップ同意で送る**（§9.5.1）。宛先が5段解決で埋まらない時だけ、文面を出したまま**メールアドレス1点だけ**を聞く。「送れませんでした」で終わるのは失敗 |
 | travel autofill 高精度 | home/職場の住所 | 駅名等から推定 | 実住所起点で分単位 |
 | 予約代行(PHYSICAL) | 生活圏 + 委任 | 候補提示のみ | 予約して報告（§9.5） |
 | core収益(FINANCIAL) | なし | agent-owned crypto walletでx402/permissionless SELL・WORKだけを実行 | 同左。user credentialを要求しない |
@@ -1372,6 +1417,19 @@ healthyの判定は通知回数やagent activityではなく、MENTALは有効�
 - userから取る情報は**解錠するcapabilityに必要な最小限だけ**。payoutだけなら送金先のみ。
   KYC railを本人が選んだ場合もLife Managerが本人確認を迂回・代行せず、provider hosted flowへhandoffし、
   identity documentをLife Manager repo/log/chatへ保存しない。
+
+### 9.8.1 DAILY organ は CLOUD-ONLY（2026-07-31 Dais 裁定。配布可能性の不変条件）
+
+**Dais verbatim**: "this is the web app so there should be nothing that is running locally for this… we have a local version but we should have an independent web app version… that is why we can spread this and anyone is able to get their life management right."
+
+| 規則 | 内容 |
+|---|---|
+| **D-1** | DAILY organ（calendar 解釈 / travel autofill / transit / T-10・T-5 call / location gate / 遅刻連絡 / onboarding / discovery / panel）は **100% cloud で完結**する。Dais の Mac が電源断でも、全 user の1日が回る |
+| **D-2** | **DAILY の実行経路に launchd / cron / local file path / local browser profile / `~/.openclaw` を1つも置かない**。既存の local 依存は「移行対象」であって「構成要素」ではない |
+| **D-3** | local / self-host モードは**別 deployment の選択肢**であり、cloud 版の前提条件にしてはならない。両者は同一 commit SHA・同一 contract で走り、cloud が既定 |
+| **D-4** | user が必要なものは **Telegram と QR 1枚だけ**。インストール・端末・鍵・ローカル環境を要求した瞬間、この製品は配れなくなる = 設計違反 |
+| **D-5** | 「Dais の Mac でだけ動く」機能は **v1 の機能一覧に載せない**。載っているのに local 依存なら、それは bug として TODO に立てる |
+| 判定 | Mac Mini を落として7 cycle 回して、全 user の call / travel / 遅刻連絡 / panel が無傷 = D-1〜D-5 の done 条件 |
 
 ### 9.9 control panel（web app）確定仕様の骨子
 
@@ -1465,7 +1523,11 @@ Voice 原則: 有能な秘書兼友人。敬語すぎない・タメ口すぎな
 |---|---|
 | 朝 briefing（起床 call 直後に TG でも） | 「☀️ おはようございます。今日は3件です。\n・10:15 プロダクト定例（渋谷・9:30発）\n・15:00 オンラインMTG（移動なし）\n・19:00 ジム\n雨予報なので、渋谷へは10分早めに出るのがおすすめです。9:20と9:25にお電話します。」 |
 | travel autofill 報告（予定作成を検知） | 「📅 明日14:00「新宿で打ち合わせ」を確認しました。自宅からの移動時間40分をカレンダーに入れておきました。13:20発です。」 |
-| 遅刻メール送信報告（location 解錠時のみ。質問なし） | 「📨 現在地から見て10:15に間に合わないため、先方に「15分ほど遅れます」とメールを送っておきました。次の電車なら10:28着です。」 |
+| **遅刻連絡 v3・宛先あり（1タップ同意。§9.5.1 終端1）** | 「📨 現在地から見て10:15の「プロダクト定例」に**15分ほど遅れます**。田中さん（tanaka@example.co.jp）宛に下の文面を用意しました。\n\n> 田中様\n> 本日10:15のお打ち合わせですが、移動の都合で15分ほど遅れる見込みです。10:30頃到着予定です。ご迷惑をおかけします。\n\n［送信］［送らない］」 |
+| └ ［送信］押下後 | 「✅ 送りました。10:28着の電車です。」 |
+| └ ［送らない］押下後 | 「了解です。送っていません。次からこの相手には自動で送らないようにしますか？\n［そのままでいい］［今後も毎回確認］」 |
+| **遅刻連絡 v3・宛先だけ不明（§9.5.1 終端2。「分かりません」禁止）** | 「📨 10:15の「プロダクト定例」に**15分ほど遅れます**。田中さん宛の文面はもうできています。\n**分かっていること**: 予定・時刻・遅れ幅・相手の名前\n**分からないのは1点だけ**: 田中さんのメールアドレス（カレンダー・過去のメール・Webを探しましたが出てきませんでした）\nアドレスを送ってもらえれば、そのまま送信します。\n\n> 田中様\n> 本日10:15のお打ち合わせですが、移動の都合で15分ほど遅れる見込みです。…」 |
+| └ アドレス受領後 | 「ありがとうございます。この内容で送ります。\n［送信］［送らない］」（以後この相手には二度と聞かない） |
 | 就寝 nudge | 「🌙 23:00です。明日は7:00起きなので、そろそろ切り上げましょう。おやすみなさい。」 |
 | closed Q: online 判定 | 「明日15:00の「田中さんMTG」、これはオンラインですか？移動時間の計算に使います（次回からは聞きません）。\n［オンライン］［対面］」 |
 | └ 対面タップ後の follow-up | 「場所はどこですか？住所か、お店・会社の名前を送ってください。」（自由入力。以後この相手/種類は聞かない） |
@@ -1830,6 +1892,8 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 | 8g | PANEL-a | score semantic fix: §9.9の outcome-based DAILY/PHYSICAL/MENTAL/FINANCIAL 定義へ統一し、根拠を表示 | fixed dataset eval 100% + prod実データで numerator/denominator/reason が一致。対象0件は insufficient data | **done (production L3)**: feature=`bc444136aef9df457f2db948dc884d3abb37ecff`はproduction release=`8159dbbe2fbb07d235cd4fb91e964b481c543ea2`に包含、Railway deployment=`a659eb3c-c652-4ab3-81ef-411890d71e22` exact SHA/image SUCCESS。未適用だったmigration=`2026-07-22-panel-score-outcomes.sql`（SHA-256=`eb917c3d2d7931b0888db4ba1b9a19dcfb2bc6f506afe7fb4321f41950e4b5e1`）を対象Supabaseへtransactional適用し、table/RPC 200、RLS、policy=2、append-only trigger、service SELECT/INSERT + RPCのみ、UPDATE/DELETEなし、anon/auth SELECTなしを独立readback。Dais本人のcanonical `/panel`を実Telegram device confirmationで認証しquery=0、production ledgerは4 organ全て0件のためAPI・本人sessionへ束縛したDB snapshot・独立oracle・desktop/mobile UIが全て `insufficient_data` / `0/0` / reason / period / components / 根拠0件でexact一致。focused=`14/14`、fixed eval=`27/27 (100%)`、fresh artifact review=`PASS / Critical 0 / Important 0`。private evidence=`/Users/anicca/.codex/evidence/panel-8g-production-l3.json` mode=`0600` SHA-256=`e2844e6d2f1504c5238e56a040fe5f60b30685769e70a4b96f5de25289a33a0f`、desktop/mobile/mobile-score screenshotsもmode 0600。calendar/email/call/wallet mutation=0、synthetic admin session=0 | done |
 | 8h | PANEL-b | panel UX/privacy fix: timelineの生ログ・raw JSON・内部名を除去し、mobile/desktopの5要素を人間語で成立させる | authenticated browserで全画面操作、semantic assertion、mobile+desktop screenshot、raw log/secret/internal prompt検索0件。Fable final check PASS | **done (production L3)**: historical VCSDD matrixを採用せず、Superpowers/TDDで実際の3欠陥（secret recipe、API/browser validator parity、raw score component label）へ限定。API privacy=`177/177`、emitted browser=`63/63`、secret recipe=`19`×channel=`9`、Task 2 regression=`47/47`、Task 3=`27/27`、brand focused=`77/77`、deterministic eval PASS。fresh artifact reviewは実装・brandingとも`PASS / Critical 0 / Important 0`。PR #352/#353をmergeし、production release=`4836ca90ddd4999fc952718023cf92583220ca2c`、Railway deployment=`b3fd36f5-2f8e-4b54-b714-d387e7eb194c`、instance=`5e8e5349-0b78-4a5d-8701-a29a7a6bd1a3`、image=`sha256:f9b4e10943ea593811300a6c2c4b231ec2c93bc60d760a55838b6e869714f206`をexact commitで`SUCCESS/RUNNING`実測。Dais本人authenticated canonical `/panel`でtimeline/scores/ledger/gates/settings/control-center=`6/6 loaded`、各API=`6/6 HTTP 200`、forbidden echo=0、title/h1/wordmarkと未認証loginはLife Managerのみでvisible Anicca=0。desktop 1440px・mobile 375pxは横overflow 0。screenshots SHA-256=`45bc178c0fa702efd57def0f2216beac4fe6b72ca43131713a45bd7afa698bb9` / `78a4a1247fef16b7080a255a760d5a98a237284e0ffe5996f84323c2db348bd9`。private evidence=`/Users/anicca/.codex/evidence/panel-8h-production-l3.json` mode=`0600` SHA-256=`a55877a35fb8e502eddfed3b4178910632174a9a5db53639b65d119b68e10b7d`。次の独立atomicは8i REPO-CONSOLIDATE | done |
 | 8i | REPO-CONSOLIDATE | current operating repo `Daisuke134/anicca-products`から、whole productをcanonical public repo `Daisuke134/life-manager`へ吸収する。`apps/life-call→apps/life-manager`、必要なengine/skills、SSOT docs、deployment configだけを移し、旧iOS・他product・private runtime state・secret・生成物を持ち込まない。以後のproduct/AI/agent/runtime/API/marketing identityと新規commit/push先をLife Managerへ一本化する | source/target manifestとhistory provenance、移行対象のbyte/semantic equivalence、secret/PII/generated artifact 0、canonical repo上でfocused/full/eval 100%、build、fresh review、`/health`・TG・canonical `/panel`のproduction L3、Railway exact target commitを実測する。cutover成功までは`anicca-products`を変更・archiveせず、成功後だけarchive + README redirectにする。repository ID `1248111245`と既存historyを保持し、新repo作成・force-push・history rewrite・product downtime 0。canonical repoに本specが存在し、以後の`9b`以降が同repoだけで実行可能になればdone | **done (2026-07-24 実測)**: repo側=PR #1071/#1072でbyte等価migration(183 files sha256 manifest、fresh review APPROVE 0 blocker)、merge=main `a7ac84d4`。cutover=Railway service再接続(root `apps/life-manager`)、active deployment `6806b0d4-dcdf-430f-acea-35d8a5b11212` commit readback=`a7ac84d4`完全一致、/health 200 build=lm27-voicemail-v1、zero-downtime monitor 358/358、実TG message id 217、authenticated /panel 5 section+control-center全200。archive gate=README redirect banner(93cc012)→`anicca-products` archived=true(GitHub API独立読み戻しで確認済み)。証跡=docs/evidence/8i-cutover-report.md(PR #1077)。spec本体はcanonical repoに存在し9b以降は本repoのみで実行可能 |
+| 8j | CORE-LATE-v3 | **遅刻連絡 v3 = NEVER GIVE UP + 1タップ同意（§9.5.1）**。①宛先解決を5段 ladder に（calendar → Gmail 履歴 → context graph → web/browser → 最後に本人）②遅刻確定時、文面を完成させ `[送信]`/`[送らない]` inline button で TG に出す ③`[送信]` = 1タップ即送信・二段確認なし、`[送らない]` = 送信0 + 判断を context graph に永続 ④宛先だけ欠落時は**文面を出したまま**メールアドレス1点を closed Q で聞き、受領後は自動で②へ ⑤「送れませんでした」だけで終わる経路をコードから消す（terminal state として禁止） | 実 late 判定1件で: ladder の各段が receipt に残る / `[送信]` 押下 → 実 RFC Message-ID 1件 + 送信前の provider mutation 0 / `[送らない]` 押下 → 送信0・ledger に declined 1行 / 宛先欠落ケースで「既知の事実 + 欠けた1点 + 完成文面」を含む実 TG message id 1件、かつ受領後に自動送信まで到達 / 「見つかりませんでした」単独終端が grep 0 hit | **pending — 新規（2026-07-31 Dais 裁定）**。§9.5 の「正直な失敗報告で終わってよい」を §9.5.1 が上書きしたことによる差分実装。既存 `lib/late-notice.js` / `lib/notify.js` は externalAttendees のみ・承認 button 無しのため未充足 |
+| 8k | CORE-CLOUD-ONLY | **DAILY organ の local 依存棚卸しと除去（§9.8.1 D-1〜D-5）**。DAILY 経路（calendar / travel / transit / call / location / late / onboarding / discovery / panel）が参照する launchd・cron・local path・local browser profile・`~/.openclaw` を全部列挙し、cloud 実行経路へ移すか「DAILY 非依存」と証明する | Mac Mini を停止した状態で 7 cycle 回し、全 user の travel autofill / T-10・T-5 call / 遅刻連絡 / panel が無傷。DAILY 実行経路の local 参照 grep 0 hit。local mode は別 deployment として同一 commit SHA で起動可能 | **pending — 新規（2026-07-31 Dais 裁定）**。`CLOUD-LOOPS-1` / `LOCAL-CLOUD-PARITY-1` と重複しない範囲＝**DAILY organ に限定した停止試験**。v1 を友人へ配る前提条件 |
 | 9a | MKT-a | video 生成 PoC 1本: §9.10 matrix の1行 → MPT backend（faceless-money-factory 代替レンダラー、§10.1 U6）で mp4 | **done (L3 実測)**: T-10/T-5 行を英語 34.666667s・1080×1920 H.264/AAC に変換。実 call 録音 + 実 Telegram Web message #3393 + 既存 real stock を FFmpeg 1-pass で合成。音声 track / 9:16 / 20-40s / full decode exit 0。render 42s、追加 cost $0。local=`.claude/sol-orders/out/m1/anicca-life-manager-t10-demo.mp4`、SHA-256=`c4bd480ed37db2a3f5d59223756805307f2c7c5c603244a0c13370e6353479f4`。未投稿。**Fable final check 済み（03:15）**: sha256 一致 + ffprobe 1080×1920/h264+aac/34.7s + フレーム3枚実視認（実写手元+「REAL T-10 CALL・TOKYO」+ whisper 字幕「TOKYO AT 9:30. TIME TO LEAVE NOW.」）。X/Slack launch 用に Dais 納品 | **done** |
 | 9b | MKT-b / M-2 | runtime+生成 loop常設: **既存 Life Manager marketing loop / `ai.anicca.life-manager-daily` / rotation / account を再利用し、別loopや新accountを作らない**。slideshow rendererだけをLife Manager向けMPT video rendererへ置換。current Claude Sonnet/CLIProxy false-greenを廃止し、fresh `gpt-5.6-luna` pass、実exit、timeout、cost、16行rotation、video生成をlaunchdへ配線 | Luna probe/real pass、failure injectionがnonzero、launchctl run増分、fresh ffprobe/full decode、2日連続自動生成。1日目は `started` と記録して次へ進む | **done (L3 実測)**: accepted base=`4209a66c`、code head=`cd95bf1e`。missing generator/runtime RED後、generator=`5/5`、runtime/launchd=`6/6` GREEN、Life Manager full test fail 0、calendar/late/context/score/intent/mental/physical eval 100%。method 1でLunaがwrapperを再帰起動する反例を発見しprovider/public side effect前に停止、corrective `LM_DAILY_ACTIVE` exit 73をRED→GREEN。method 2はgeneration+distribution混在promptがactive route監視へ逸脱したためside effect前に停止。method 3は9c配信を`LM_DAILY_GENERATION_ONLY=1`で閉じ、exact bank/state/outputだけを検証するbounded passへ分離して成功。fresh Luna probe=`LM_LUNA_PROVIDER_OK` exit 0、launchd同一label/cadenceでrun count `0→1`、corrective readback `1→2`、last exit 0。summary=`marketing-agent / luna-medium-decision / codex / gpt-5.6-luna / medium / attempt 1 / success`。production append-only rotationは3日連続 `A01→A02→A03`、3本とも1080×1920 H.264/AAC、34.666667s、fresh full decode 0、SHA-256=`a990f79b…/01e6c9a7…/d9e97b38…`。usage ledgerはprovider-reported total 45,569 tokens、subscription actual marginal cost USD 0、provider-equivalent priceはunavailable/nullとして非捏造。failure injectionはgenerator 17、runner 23、timeout 124をexact nonzero伝播。gitleaks対象path leak 0。evidence=`docs/evidence/9b-marketing-video-runtime.md`。9cまでpublic distributionはlocked、public/provider mutation 0 | **done** |
 | 9c | MKT-c / M-3 | 初回MPT videoをDaisへprivate previewし、明示承認後だけdaily配信をunlock。**既存Life Manager IG/TikTok accountを再利用**し、Postizで同じexact video/captionを両platformへ流す | 実MP4 preview delivery + Daisの実approval id + approval前provider mutation 0。承認後にIG/TT実URL各1本、logged-out readback、ledger creative id一致 | **pending — preview-first audit reopen**: 旧A03は実IG=`https://www.instagram.com/reel/DbKkdfjsaTZ/`、実TT=`https://www.tiktok.com/@anicca_buddha/video/7665973874504256785`、exact hash/readbackを満たすがDaisへの事前preview/approvalを飛ばしたため新acceptanceには不算。旧URLはincident/baselineとして保持し削除しない。次の実MP4を先に提示し、approval receiptが無い限りdistribution adapterをfail-closeする。TikTokは既存Postiz channelを再利用し、IGもPostiz connectorの実provider readback後に同じcreativeを送る。無承認投稿防止のためmarketing launchdはunloaded。evidence=`docs/evidence/ssot-reality-audit.md`。**2026-07-25 実測**: repo内に承認gateが存在せず `skills/video/lm-distribution/distribute.py` は video/caption の sha256 を持ちながら無条件に IG/TikTok adapter を叩いていた → **exact bytes に束縛した承認 receipt が無ければ provider 到達前に fail-close** する gate を RED→GREEN で追加（未承認・別creative・承認後の動画差し替え・caption差し替え・壊れた receipt 行は全て拒否し adapter 呼び出し0/ledger書き込み0。skills/video テスト 27/27）。**Dais preview の結果、現行creativeは不承認**: 音声が AI ナレーションではなく Dais の実通話録音 mp3 をそのまま使用し、字幕もその whisper 転写（`skills/video/daily-lm-video/generate.py:229` が `--call-audio` に録音を既定値でハードコード）。承認条件は **pain→moment→punchline を AI 音声でナレーションし録音依存を外すこと**、かつ毎日別creativeで新規生成すること。preview実物=Telegram `message_id=249`（動画 `daily-renders/2026-07-24-A03.mp4` + 台本 + 該当行）。**2026-07-25 renderer を MPT へ是正**: 自作ffmpegパイプラインへの移植は車輪の再発明だったため中止し、MoneyPrinterTurbo 本体を導入（`~/MoneyPrinterTurbo` commit `3c4df9f`、uv sync 済み、venv 671MB）。実測: MPT の声は `app/services/voice.py:18` の `edge_tts` そのもの。`cli.py --video-script` で自前台本を渡せば LLM 生成を経由しない。b-roll は Pexels/Pixabay key 不在のため `--video-source local` + 既存 b-roll ライブラリ9本で充足（外部key不要）。**実レンダー成功**: task `69b7d234-af5c-499e-b60b-e25e4ffa76f0`、`final-1.mp4` 1080x1920 / 14.33秒、音声=AIナレーション(en-US-AndrewNeural)、字幕=ナレーションから単語単位で自動生成（通話録音・whisper転写への依存を完全に除去）。**2026-07-25 A/B を新規生成して提示**（流用ゼロ）: A=台本のビートに対応させて Mixkit から実DLした実写素材（無料・商用可・帰属不要、1080p、TG `message_id=257`）、B=Remotion 4.0.499 で自作したモーショングラフィック（時計→着信カード→TRAVEL ブロック自動充填、source は repo `skills/video/lm-assets/src/`、TG `message_id=258`）。音声・字幕は両者同一。**Dais 裁定 = A 採用**。**daily loop 実装**: `skills/video/daily-lm-video/daily_pipeline.py` を RED→GREEN で追加（13/13）— creative bank を1日1本ずつ回転（16本=16日で一巡）、3ビートを EN/JA のナレーション散文へ整形、MPT を `--video-script` + `--video-source local` で起動（LLM 不経由・stock API key 不要）。creative bank 全16本に英語ビートを追加（EN→TikTok / JA→Instagram）。skills/video テスト 72/72 PASS。**2026-07-25 TikTok 実配信 PASS**: Dais 承認（chat「go、承認不要」）を receipt 化し、動画 sha256=`5b25b598a4ceab09…` / caption sha256=`04cbe805eb911ea1…` に束縛して記録。実投稿 URL=`https://www.tiktok.com/@anicca_buddha/video/7666359498763750676`（post_id `cms014n1x020nrv0yfpcpz2h5` / state PUBLISHED）、**logged-out readback http=200 + ページ内 video id / handle 一致を実測**。対象は spec 指定の既存 LM TikTok `anicca_buddha`（`anicca.comedy` とは別 integration id で誤爆なし）。run-ledger に1行記録し、次回が A02 へ自動前進することを実行確認。**Instagram は未配信。実測ブロッカー**: ①repo の `instagram_video.sh` はスタブで常に失敗を返す ②設定上の LM IG handle `anicca.affirms2` は Postiz に未接続 ③**CloudBrowser daily-driver がログイン中の IG アカウントは Instagram により凍結**（`https://www.instagram.com/accounts/suspended/` へリダイレクトを実測）。④動画 Reel 用 `post_reel.py` は skill に存在せず、既存の実装はカルーセル用 `ig-account-poster/scripts/post.py` のみ。憶測で別アカウントへ投稿すると不可逆な誤爆になるため実行せず。**〔superseded 2026-07-26 — 当時の指示。IG は configured account `anicca.affirms2` で実配信済みとなり本行は done。以下は履歴〕** 9c は IG 未達のまま pending。Dais 裁定で 9d へ先行するが、9c を done にしてはならない。再開に必要な判断（Dais のみが持つ情報）= ①凍結アカウントの復旧申請（本人操作）か ②Postiz 接続済みの別 IG を LM 用に指定するか。指定さえ貰えば実装側は即着手可能（動画 Reel 経路 `post_reel.py` の新規実装 + gate 経由の配信 + logged-out URL 読み戻し）。**全 atomic 完了前に必ず 9c へ戻ること** | **done (2026-07-26)**: TikTok 2日連続の自動 pipeline 実投稿 + logged-out readback — 07-25 `@anicca_buddha/video/7666359498763750676`、07-26 `…/7666647608156540168`（34s, 85 views, 台本は日替わり）。**IG も同 run で実投稿**: `instagram.com/reel/DbPPpXCMjrf`（HTTP 200 readback）。凍結説は別ログインの誤認で、configured LM IG=`anicca.affirms2`（live, tier-2 guard で handle 一致保証）。preview gate は standing receipt へ置換（#1133、Dais 裁定 2026-07-26「承認不要」を記録、missing/wrong-scope は fail-close 維持）。旧録音 pipeline `ai.anicca.lm-video-post` は §10.0-1 違反のため 2026-07-26 に unload+disable。evidence=`docs/evidence/9c-tiktok-daily-live.md` |
