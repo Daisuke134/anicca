@@ -30,15 +30,13 @@ This removes the need to type `/rc` for each future interactive session. It does
 
 ## Always-on phone-originated sessions
 
-For phone-originated sessions while no interactive process exists, run Claude's official server mode under `launchd` on macOS or `systemd` on Linux. Prefer worktree spawning so simultaneous phone sessions do not edit the same checkout:
+For phone-originated sessions while no interactive process exists, run Claude's official server mode under `launchd` on macOS or `systemd` on Linux. When reproducing a previously working device, preserve its exact invocation first; do not introduce spawn, capacity, permission, or naming changes while diagnosing account visibility:
 
 ```bash
-env -u CLAUDE_CODE_OAUTH_TOKEN claude remote-control \
-  --name "Mac mini" \
-  --spawn worktree \
-  --capacity 10 \
-  --permission-mode auto
+env -u CLAUDE_CODE_OAUTH_TOKEN claude remote-control --name "Mac mini"
 ```
+
+The default server mode is `same-dir` with capacity 32. After the device is visibly connected from Claude iOS, optionally move concurrent implementation work to explicit worktrees. Do not silently change a known-working phone device to `--spawn worktree` during an account migration.
 
 On macOS, the supervised service must use `RunAtLoad=true` and `KeepAlive=true`, an absolute Claude binary path, an explicit project `WorkingDirectory`, and dedicated stdout/stderr logs.
 
@@ -57,7 +55,7 @@ Require all of the following before reporting success:
 - `claude auth status` shows the same email used by Claude Desktop and Claude iOS.
 - `remoteControlAtStartup` is `true`.
 - the service manager reports the server process as running.
-- the server log shows `Connected`, the expected project, `worktree` creation mode, and a `claude.ai/code?environment=...` URL.
+- the server log shows `Connected`, the expected project, the intended spawn mode/capacity, and a `claude.ai/code?environment=...` URL.
 - a fresh ordinary `claude` process shows `/rc connecting…` without manually sending `/rc`.
 - a real seed message receives a real response.
 
@@ -78,7 +76,7 @@ Use this when the user asks to spin up multiple phone-accessible Claude sessions
 4. Send a unique harmless seed message to every session and require a real response from each.
 5. Resolve and report each local session UUID from its JSONL, then leave all requested processes alive.
 6. Do not assign concurrent write tasks to sessions sharing one working directory. Use separate worktrees for concurrent implementation.
-7. For phone-originated or multiple sessions, prefer one official `claude remote-control` server with explicit `--capacity` and `--spawn=worktree` instead of many unmanaged PTYs.
+7. For phone-originated or multiple sessions, prefer one official `claude remote-control` server instead of many unmanaged PTYs. Add explicit `--capacity` and `--spawn=worktree` only when isolation is requested or already part of the known-working setup.
 
 ## Workflow
 
@@ -165,6 +163,7 @@ Use this when `/remote-control` says the current login token is limited to infer
 | `Remote Control requires a full-scope login token` | A setup token or `CLAUDE_CODE_OAUTH_TOKEN` is overriding interactive OAuth | Run full-scope reauthentication, then start the child process with `env -u CLAUDE_CODE_OAUTH_TOKEN` |
 | `session_stale_relogin` | Desktop authentication is stale | Report the exact authentication blocker; never claim phone access is ready |
 | Server log says `Connected` after an account switch, but the new account's iOS app has no connected device | The project `bridge-pointer.json` reused the previous account's Remote environment | Stop the service, move the pointer to a timestamped backup, restart, and require a new `environmentId` plus visibility from the intended account |
+| A direct session URL asks to verify the device and includes `device_key_missing` | The intended account is authenticated, but this browser or phone has not completed its own trusted-device enrollment | Sign in again on that client and complete its first-party device check. Verify the session opens afterward. Enrollment is per client: completing it on the Mac does not enroll Claude iOS, and optional passkey creation is not required when the normal re-login succeeds |
 | No `Remote control enabled` evidence | Command did not run or failed | Keep the result as `desktop_ready / remote_blocked` |
 | Computer Use Accessibility denied | GUI targeting cannot be trusted | Use the CLI-to-Desktop fallback and log-based verification |
 
@@ -173,6 +172,7 @@ Use this when `/remote-control` says the current login token is limited to infer
 - Never expose OAuth tokens, cookies, QR payloads, or bridge credentials in logs or chat.
 - Never close, overwrite, or archive unrelated sessions.
 - Do not report success from a dry run, a prefilled prompt, or a pressed key.
+- After an account migration, distinguish server readiness from client enrollment: report the Mac/browser and Claude iOS trusted-device states separately.
 - Report six fields: account email, automatic-all-future-sessions state, supervised-server state, Desktop/session ID when applicable, seed-message verification, and any exact blocker.
 
 Official behavior reference: [Continue local sessions from any device with Remote Control](https://code.claude.com/docs/en/remote-control).
