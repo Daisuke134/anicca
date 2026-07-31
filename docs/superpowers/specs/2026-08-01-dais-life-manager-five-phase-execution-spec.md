@@ -31,6 +31,7 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
   → 3B Dais実口座を読む個人財務管理
   → 4  暗号資産運用（Anicca + Daisを分離）
   → 5  法定通貨投資・NISA
+  → W  同じcoreをLife Manager Webアプリへtenant化
 ```
 
 前段階の完了条件を満たすまで、次段階へ着手しない。
@@ -152,7 +153,43 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 候補・実行・receiptを比較する。新loopが予定runを7回連続で完了してから、旧cronまたは
 launchdを一つずつ退役する。
 
+### 4.7 外部の金融multi-agent実装 — 2026-08-01 GitHub実測
+
+| repository | 実測した構造 | license / 成熟度 | Life Managerへ持ち込むもの |
+|---|---|---|---|
+| [FinRobot](https://github.com/AI4Finance-Foundation/FinRobot) | Lead Agent、data/analysis/modeling/synthesis/reportの5 specialist、bull/bear/judgeの3 debate agent。数値はpure Python、説明はLLM、出典追跡 | 約7.7k stars、Apache-2.0 | **Financial Organの主な構造正本**。CFO→specialist、決定的計算、provenanceを移植 |
+| [TradingAgents](https://github.com/TauricResearch/TradingAgents) | fundamentals/sentiment/news/technical analyst、bull/bear、trader、risk team、portfolio manager。checkpoint、decision log、結果reflection | 約95.2k stars、Apache-2.0。研究用途で投資助言ではない | Order 4/5の分析・反対意見・risk review・paper trade・reflection構造を移植 |
+| [ai-hedge-fund](https://github.com/virattt/ai-hedge-fund) | 17 analyst、Risk Manager、Portfolio Manager。backtesterあり | 約62.5k stars、MIT。proof of conceptで実取引しない | riskと最終portfolio承認の分離、backtest harnessを参考。著名投資家personaの大量複製はしない |
+| [OpenBB](https://github.com/OpenBB-finance/OpenBB) | proprietary/public dataを一度接続し、Python、REST、MCP、UIへ共通提供 | 約71.2k stars、独自license | 市場data providerの共通interfaceを参考。個人口座・予算・執行systemとしては使わない |
+| [Actual Budget](https://github.com/actualbudget/actual) | local-first、account、transaction、envelope budget、device sync | 約27.9k stars、MIT | 口座・取引・予算・rule・local-first UX/data modelを移植候補 |
+| [Ghostfolio](https://github.com/ghostfolio/ghostfolio) | multi-account、株/ETF/crypto、期間別performance、portfolio risk | 約9.0k stars、AGPL-3.0 | 純資産・配分・performance UXを研究。license判断なしにコードcopyしない |
+| [rotki](https://github.com/rotki/rotki) | local encrypted data、exchange/chain balance、transaction decoding、PnL/accounting | 約4.0k stars、AGPL-3.0 | Crypto subledger、原価、fee、chain/exchange照合を研究。license判断なしにコードcopyしない |
+
+結論:
+
+- 完成品を一つ丸ごとcopyできるrepositoryは確認できなかった。
+- **FinRobotのorgan構造 + Actual Budgetの家計model + Ghostfolioの資産UX +
+  rotkiのcrypto会計 + 既存Life Manager/OpenClawの実行・Telegram・応募loop**を合成する。
+- generic multi-agent frameworkのCrewAI/AutoGenを新たなruntime正本にしない。既存OpenClawと
+  Life Manager durable runtimeの上で、必要なspecialistだけをtaskとして呼ぶ。
+- 外部repositoryのagent出力を、そのまま金銭executionへ接続しない。研究・提案・paperの
+  inputとして使い、最終的な金額計算・上限・署名・照合はLife Manager自身が所有する。
+
 ## 5. 残作業 — 必ず番号順
+
+最後までのmaster checklist:
+
+| order | 残っている成果 | 次へ進める条件 |
+|---|---|---|
+| 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
+| 1B | Luma中心のevent/LT探索・申込・QR・14日coverage | 空いている各日に参加確定またはLife Manager主催予定が1件 |
+| 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
+| 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
+| 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
+| 3B | Moneytree、銀行/card、Binance、wallet、JPY、予算、CFO organ | 総資産と1/3/12か月収支が原本まで遡れ、CFO specialist loopが動く |
+| 4 | Anicca/Dais分離crypto、paper、canary、risk、停止 | fee後実現P&Lと全cap・緊急停止を実資金の小額で実証 |
+| 5 | Fiat/NISA data、余剰資金、提案、注文、税/fee | NISA/課税/現金/cryptoを分け、約定からCFOまで照合 |
+| Web | 同じcoreのtenant化、認証、secret、panel、課金 | ローカルで実証した同じjob/ledger/reportを別userが安全に使える |
 
 ### 5.1 Order 1A — 共通応募基盤
 
@@ -276,6 +313,17 @@ launchdを一つずつ退役する。
 - [ ] O3B-11 net worth、cash flow、burn、runway、budget、baseline、anomaly
 - [ ] O3B-12 daily/weekly/monthly Telegram report
 - [ ] O3B-13 reportの全数値からsource receiptへ遡れることを実証
+- [ ] O3B-14 CFO Lead Agentのgoal、input、tool、output、停止条件を定義
+- [ ] O3B-15 Bookkeeper、Cashflow、Income、Capital、Fiat/NISA、Crypto、Tax、Reporter specialistのcontractを定義
+- [ ] O3B-16 specialistが同じ統一財務台帳だけを読み書きし、agent間chatを正本にしない
+- [ ] O3B-17 FinRobot型の「数値はコード、解釈はagent、全数値は出典付き」をcontract test化
+- [ ] O3B-18 Actual Budgetのaccount/transaction/budget modelをLife Manager schemaと比較し、移植範囲を決定
+- [ ] O3B-19 Ghostfolio/rotkiのUX・会計modelについてlicense reviewとcopy禁止境界を記録
+- [ ] O3B-20 Financial Organの日次close loopと週次reflection loopを実装
+- [ ] O3B-21 specialistごとの予測、提案、実行、結果を同一decision IDで追跡
+- [ ] O3B-22 self-improvement変更をhistorical replay→shadow→canary→promotionで検証
+- [ ] O3B-23 agentが権限、損失上限、署名policyを自己変更できないことをtest
+- [ ] O3B-24 CFOが全specialist結果を一つの人間向けTelegram briefingへ統合
 
 完了条件: Daisの総資産、収入、支出、負債、投資、cryptoがJPYで照合され、1か月・3か月報告が正しい。
 
@@ -293,6 +341,10 @@ launchdを一つずつ退役する。
 - [ ] O4-10 emergency stopとrecovery
 - [ ] O4-11 fill、fee、transfer、P&LをCFOへ照合
 - [ ] O4-12 負けるstrategyを縮小・停止し、勝つstrategyだけ段階増額
+- [ ] O4-13 TradingAgents型のanalyst→bull/bear→trader→risk→portfolio reviewをpaper環境へ接続
+- [ ] O4-14 ai-hedge-fundのbacktesterとLife Managerのfee/slippage/benchmark要件を比較
+- [ ] O4-15 debate agentの多数決ではなく、独立Risk Governorのpolicy gateを最終権限にする
+- [ ] O4-16 reflectionが未来dataを参照しないlook-ahead防止evalを通す
 
 完了条件: 所有者別会計、全cap、緊急停止、after-fee P&L、CFO照合が実canaryで成立する。
 
@@ -308,8 +360,30 @@ launchdを一つずつ退役する。
 - [ ] O5-08 order→fill→receipt→CFOを実証
 - [ ] O5-09 fee、配当、税、FX込みperformance
 - [ ] O5-10 monthly Telegram report
+- [ ] O5-11 FinRobotのvaluation operatorとOpenBBのdata interfaceをJ-Quants/NISA向けに評価
+- [ ] O5-12 Fiat/NISA Agentの提案をRisk GovernorとCFO Leadが別々にreview
+- [ ] O5-13 benchmark、tax、fee後performanceを週次reflectionへ戻す
+- [ ] O5-14 NISA制度・年間枠・生活防衛資金をagentが自己変更できないpolicyとして固定
 
 完了条件: cash reserve、NISA、課税口座、cryptoを混ぜず、提案から約定・CFO反映まで照合される。
+
+### 5.9 Order W — Life Manager Webアプリ化
+
+- [ ] OW-01 localのjob、specialist contract、ledger、report templateをshared coreとして切り出す
+- [ ] OW-02 全financial row、decision、secret、artifactへtenant境界を追加
+- [ ] OW-03 tenant別Google OAuth、Moneytree OAuth、exchange/broker credential vault
+- [ ] OW-04 tenant別browser profile、scheduler、worker、rate limit、cost budget
+- [ ] OW-05 Telegram account connectionと同じ直接link/添付UXを再現
+- [ ] OW-06 Web panelへnet worth、cash flow、1/3/12か月、応募funnel、agent別成果を表示
+- [ ] OW-07 user自身がpermission、budget、risk cap、停止を確認・変更できる設定画面
+- [ ] OW-08 data export、account disconnect、token revoke、全data削除を実装
+- [ ] OW-09 security review、tenant isolation test、secret leak test、financial action audit
+- [ ] OW-10 Stripe subscriptionとtrue MRR、churn、active paidを計測
+- [ ] OW-11 Dais以外のpilot user一人でbank接続からTelegram月次報告まで実証
+- [ ] OW-12 pilotの誤分類・誤通知・離脱理由をevalへ戻し、10人→100人へ段階拡大
+
+完了条件: Daisローカル版を書き直さず、同じcoreを別userが自分の口座・Telegram・risk policyで
+安全に使い、最初の有料継続利用と月次reportまで成立する。
 
 ## 6. agent判断とdeterministic処理の境界
 
@@ -318,6 +392,10 @@ agentが判断する:
 - event、accelerator、jobの意味・適合性・優先度
 - 相手ごとの応募文面・返信
 - 市場状況からの候補戦略と説明
+- transactionのmerchant/category候補とconfidence
+- 支出の意味、通常状態からの逸脱理由、利用者へ伝える優先度
+- 複数の投資仮説、反対意見、riskの説明、実行候補のranking
+- specialistを呼ぶ必要があるか、追加dataを調べるべきか、いつ判断を保留するか
 
 deterministic codeが担当する:
 
@@ -328,8 +406,13 @@ deterministic codeが担当する:
 - deduplication
 - receipt検証
 - retry、heartbeat、emergency stop
+- 口座残高、複式/振替照合、JPY換算、tax lot、fee、PnL、NISA枠
+- permission、allowlist、loss cap、生活防衛資金、署名、注文の最終gate
+- source timestamp、freshness、decision ID、監査履歴、Telegram delivery
 
 意味判断をregexやkeywordだけで実装しない。固定形式のparseだけにregexを許可する。
+specialist agentの合議、多数決、CFO Leadの指示のいずれも、deterministic policy gateを
+上書きできない。
 
 ## 7. ローカルからLife Manager Webアプリへの進化
 
@@ -433,6 +516,167 @@ deterministic codeが担当する:
                                │
                          Telegramへ報告
 ```
+
+### 9.1 Life ManagerのOrgan構造
+
+Life Manager全体は四つのorganを持つ。同じuser、Calendar、Telegram、memoryを共有するが、
+organごとに目的、data、権限を分離する。
+
+```text
+Life Manager
+│
+├─ Daily Organ
+│   └─ 今日の予定、応募、連絡、優先順位、実行状況
+│
+├─ Physical Organ
+│   └─ 睡眠、運動、食事、通院、身体data
+│
+├─ Mental Organ
+│   └─ 気分、注意、習慣、瞑想、介入、振り返り
+│
+└─ Financial Organ
+    └─ 残高、支出、収入、資金調達、投資、risk、純資産
+```
+
+Daily Organは一日の入口であり、他organの正本dataを所有しない。たとえば「今夜のイベント」と
+「今月使えるevent予算」はDailyとFinancialの両方に関係するが、予定の正本はCalendar、
+予算の正本はFinancial ledgerとする。
+
+### 9.2 Financial Organ — CFO Leadとspecialist
+
+```text
+                              Dais
+                               │
+                        Telegram / Web
+                               │
+                         CFO Lead Agent
+               目標、優先順位、task分解、最終説明
+                               │
+       ┌───────────┬───────────┼───────────┬───────────┐
+       │           │           │           │           │
+  Bookkeeper   Cashflow     Income      Capital     Reporter
+  Agent        Agent        Agent       Agent       Agent
+  明細整理     予算・burn   給与・事業   資金調達     人間向け報告
+  振替照合     subscription 求人成果     runway       link/添付
+       │           │           │           │           │
+       └───────────┴──────┬────┴───────────┴───────────┘
+                          │
+                  Portfolio Strategy Team
+                 ┌────────┴─────────┐
+                 │                  │
+          Fiat / NISA Agent    Crypto Agent
+          日本株・ETF・現金      Binance・wallet
+                 │                  │
+                 └────────┬─────────┘
+                          │
+                  Independent Review
+             ┌────────────┴────────────┐
+             │                         │
+        Tax/Audit Agent          Risk Governor
+        税・出典・照合            上限・権限・停止
+             │                         │
+             └────────────┬────────────┘
+                          │
+             Deterministic Policy + Signer
+          金額計算・NISA枠・loss cap・allowlist
+                          │
+                 Bank / Broker / Exchange
+```
+
+役割:
+
+| role | 自分で考えること | 自分では変更・実行できないこと |
+|---|---|---|
+| CFO Lead | 今日の財務課題、必要なspecialist、優先順位、Daisへの説明 | ledger数値の創作、risk gateの上書き、秘密鍵操作 |
+| Bookkeeper | merchant/category候補、明細の意味、確認が必要な取引 | 残高計算、振替の二重計上、原本削除 |
+| Cashflow | 支出の異常、予算改善、subscription、runway改善案 | 予算値の無断変更、契約の即時解約 |
+| Income | Job Hunter、事業収入、agent収益の改善仮説 | 給与やMRRへの資金調達額・含み益の混入 |
+| Capital | accelerator、VC、grant、runwayの資金調達戦略 | 調達を売上として計上、契約への無断署名 |
+| Fiat/NISA | allocation、積立、rebalance、投資仮説 | NISA枠・生活防衛資金・注文上限の変更 |
+| Crypto | strategy、market調査、paper結果、canary提案 | Dais main口座の出金、loss cap変更、無許可asset |
+| Tax/Audit | source不足、税区分、照合差、監査質問 | 不明差額を推測で埋める |
+| Reporter | 全agentの結果を人間が理解できる一通へ編集 | 未確認の成功、数字、linkの創作 |
+| Risk Governor | 反対意見、集中risk、流動性、停止提案 | policy signerを迂回した執行 |
+
+CFO Leadだけを常時「親」とするが、すべてのspecialistを毎回起動しない。残高同期ならBookkeeper、
+支出異常ならCashflow、投資日ならFiat/NISAとRiskだけを呼ぶ。これはagent数を増やすこと自体を
+目的にせず、必要な専門判断だけを呼ぶためである。
+
+### 9.3 一日のFinancial Organ loop
+
+```text
+OBSERVE
+  Moneytree / bank / card / Binance / wallet / broker / incomeを同期
+     ↓
+RECONCILE
+  残高、明細、振替、為替、freshnessを決定的コードで照合
+     ↓
+CFO PLAN
+  CFO Leadが今日解くべき問題と必要なspecialistを選ぶ
+     ↓
+SPECIALIST ANALYSIS
+  支出、収入、資金調達、Fiat、Crypto、Taxを必要な分だけ分析
+     ↓
+CHALLENGE
+  bull/bearではなく、提案に応じた反対仮説とRisk reviewを行う
+     ↓
+POLICY GATE
+  金額、権限、生活防衛資金、NISA枠、loss cap、allowlistをcodeで検査
+     ↓
+EXECUTE
+  読取、応募、通知、承認済み注文など許可されたtoolだけを実行
+     ↓
+VERIFY
+  providerの完了結果、mail、fill、残高変化を元のdecisionへ結合
+     ↓
+REPORT
+  「何をした・なぜ・いくら・結果・次」をTelegramへ直接link付きで送る
+```
+
+### 9.4 self-improvement loop
+
+各specialistはloopを持つが、勝手にpromptや権限を書き換えて即本番化しない。
+
+```text
+予測・提案をdecision ID付きで保存
+       ↓
+後日の実結果と比較
+       ↓
+失敗理由・成功理由を週次reflection
+       ↓
+prompt / tool / data sourceの改善案を生成
+       ↓
+過去期間を使ったhistorical replay
+       ↓
+現行版とのshadow比較
+       ↓
+小範囲canary
+       ↓
+accuracy、after-fee効果、false positive、costが改善した時だけpromotion
+       ↓
+悪化時は自動rollback
+```
+
+self-improvementの対象:
+
+- 調べるsourceと追加query
+- 説明の分かりやすさ
+- category提案
+- anomalyの優先順位
+- investment researchと反対仮説
+- Telegram reportの有用性
+
+self-improvementの対象外:
+
+- bank/exchange permission
+- withdrawal権限
+- loss cap
+- NISA制度値
+- 生活防衛資金
+- owner境界
+- secret、signer、allowlist
+
+これらのhard safetyはDaisの明示変更とtestなしに変えない。
 
 ## 10. Telegram逐語文面の正本
 
@@ -1100,6 +1344,12 @@ local完成後
 | U20 | local profileをWeb multi-tenantへどう移すか | tenant別OAuth、secret、browser profile、worker isolationのcontract test |
 | U21 | 「NYC」がNew York CityかYCの音声認識か | queueでは両方を扱う。SPC NYCとYC SFを混同しない |
 | U22 | 調達額と希薄化の許容範囲 | cap table scenarioを提示し、法務・税務確認後だけsign。資金調達額をMRRに入れない |
+| U23 | specialistを増やすほど品質が本当に上がるか | single CFO baselineとspecialist構成を同じeval setで比較し、改善しないroleは統合 |
+| U24 | specialist間で数字や結論が食い違う場合の正本 | 数字は統一ledger、解釈は出典付き意見として保存し、Risk/CFO reviewで解消 |
+| U25 | FinRobot/TradingAgentsをどこまで直接移植できるか | dependency、data provider、test、Apache-2.0 noticeをcode-level spikeで確認 |
+| U26 | Ghostfolio/rotki/Firefly IIIのAGPLコードをproductへ使えるか | 法務/license review完了までUX・schema研究だけとし、source codeをcopyしない |
+| U27 | self-improvementが過学習やrisk増加を起こさないか | time-split replay、shadow、canary、rollbackを必須にし、permission/capを対象外にする |
+| U28 | 多数agentのcostとlatencyが日次利用に耐えるか | 必要なspecialistだけ起動し、single-agent baseline比の有用性/cost/時間を計測 |
 
 ## 17. 変更規則
 
