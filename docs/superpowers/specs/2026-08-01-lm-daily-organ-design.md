@@ -17,7 +17,7 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 | これは何の製品か | **Telegram で完結する生活エージェント**。予定の時刻に呼び出し、家を出てから着くまで案内し、遅れたら相手に断りを入れる。ユーザーが持つ必要があるのは **スマホ1台だけ** |
 | 誰が使うか | Dais（本人）→ 友達3人 → 有料の一般ユーザー。全員 **Telegram の中だけ**で完結する |
 | コードはどこか | `apps/life-manager/`。`scheduler.js`（60秒 tick・呼び出し）· `lib/wake-filter.js`（鳴らす予定の選別・出発時刻の解決）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡）· `lib/slash-command.js`（Telegram コマンド router） |
-| **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`life-manager-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照） |
+| **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`life-manager-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照）。全体図と folder tree = **§8** |
 | データはどこか | Supabase。`lm_users` `lm_wake_log` `lm_travel_log` `lm_ask_log` `lm_user_locations` |
 | 状態の見方（★実行可能★） | `set -a; . ~/.openclaw/.env; set +a` の後 `curl -s "$SUPABASE_URL/rest/v1/<table>?select=*&order=…&limit=3" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"`。**鍵を stdout に出さない** |
 | ★間違えやすい点★ | canonical は **`Daisuke134/life-manager`**。`anicca-project`(=anicca-products) の LM spec は写しで正本ではない。`~/.openclaw/skills/anicca-life-manager/` は OSS/BYOK 単身版であって本番ではない |
@@ -272,7 +272,82 @@ daily が閉じたら、同じ「チャットで完結・承認は1タップ・�
 
 ---
 
-## 8. 更新規律
+## 8. アーキテクチャと folder tree（どこで何が動くか）
+
+### 8.1 repo の正体
+
+`Daisuke134/life-manager`（repo ID 1248111245）は **anicca を改名・統合した monorepo**。
+散らばっていた物を1つに寄せる先がここ。旧 `life-manager-v0`（ID 1273052304）は archive 済み・redirect のみ。
+
+| 中に入っている物 | 場所 |
+|---|---|
+| Life Manager 本体（API・panel・Telegram・reports・scheduler） | `apps/life-manager/` |
+| web（landing / `/lm` 登録画面） | `apps/landing/`（`app/` + `netlify/` functions） |
+| 求人 loop | `apps/job-search-loop/` |
+| provider/transport 境界 | `adapters/` |
+| 可搬 scheduler / worker runtime | `runtime/` |
+| 常駐サービス（x402 endpoint 等） | `services/` |
+| 汎用能力（**製品の credential を持たない**） | `skills/` |
+| 配置定義 | `deploy/local/compose.yaml`（ローカル一式）· `apps/life-manager/railway.toml`（本番） |
+| 仕様の正本 | `docs/superpowers/specs/` · 実行スライス = `docs/superpowers/plans/` |
+| Anicca 側の身元・状態 | `identity/` · `state/` · `control-room/` · `templates/` |
+
+親 spec §6.1 が layout の SSOT。`packages/*`（loop-core / job-protocol / finance-engine /
+marketing-engine / product-packs …）は**目標形**で、現状は既存慣習を優先している。
+
+### 8.2 今の実行系（2026-08-01 実測）
+
+```text
+                    ┌──────────────── ユーザーのスマホ ────────────────┐
+                    │  Telegram（日常の全操作）      ブラウザ（登録のみ）│
+                    └───────┬───────────────────────────────┬─────────┘
+                            │ webhook / 通知 / ライブ位置      │ 1回だけ
+                            ▼                                 ▼
+        ┌──────────────────────────────────┐      ┌──────────────────────────┐
+        │  Railway  service = life-call    │      │  Netlify  apps/landing   │
+        │  = apps/life-manager             │      │  aniccaai.com/lm         │
+        │   server.js  … /telegram /ws /api│      │   Google login → OAuth   │
+        │   scheduler.js 60s tick          │◀─────│   → Stripe               │
+        │     ├ wake   T-10 / T-5 の呼び出し│      └──────────────────────────┘
+        │     ├ travel 30分毎 [Travel] 挿入 │
+        │     ├ late   遅刻検知 → 連絡      │
+        │     └ ask / mental / care / diet │
+        └───────┬───────────────┬──────────┘
+                │               │
+                ▼               ▼
+   ┌────────────────────┐  ┌──────────────────────────────────────┐
+   │ Supabase (Postgres)│  │ 外部 API                              │
+   │  lm_users          │  │  Composio  → Google Calendar          │
+   │  lm_wake_log       │  │  Unipile   → Gmail 送信               │
+   │  lm_travel_log     │  │  Google Maps / Routes → 移動時間・経路 │
+   │  lm_ask_log        │  │  Telnyx + Gemini Live → 音声通話      │
+   │  lm_user_locations │  │  Stripe    → 課金                     │
+   └────────────────────┘  └──────────────────────────────────────┘
+
+   ローカル（deploy/local/compose.yaml）: api / scheduler / worker / postgres:18 / minio
+     → 現状 credential 未投入 = ユーザー0人 = 何も発火しない「空の器」（§1.2）
+```
+
+| 問い | 今の答え |
+|---|---|
+| daily はクラウドで動くのか | **動く。Railway `life-call`**（Mac が落ちていても継続） |
+| データはどこ | **Supabase**（`lm_*` テーブル）。ローカル compose は自前 postgres を持つが本番データではない |
+| web は同じ repo か | **同じ。`apps/landing`**（Netlify 配信、登録と決済だけ） |
+| Mac は要るか | 日常運用には**不要**。ローカル一式は移行検証用 |
+
+### 8.3 目標形（親 spec の Order。daily 出荷後に効いてくる）
+
+```text
+ 今                                   目標
+ Railway life-call（単一 service）  →  Railway 上に API / scheduler / worker pool を分離
+ Supabase                           →  Life Manager 所有の managed Postgres（tenant 分離・quota）
+ launchd + OpenClaw の残り          →  すべて Life Manager の job（Order 15 で OpenClaw-free）
+ 単一テナント運用                   →  月額の multi-tenant（Order 25）・1,000 tenant 検証（Order 26）
+```
+
+**daily の出荷はこの移行を待たない。** 今の Railway + Supabase で段5（公開）まで到達できる。
+
+## 9. 更新規律
 
 daily の TODO 状態が変わった瞬間にこのファイルを更新して commit する。
 番号は**実行順**であり、消化しても振り直さない（済んだ行に done receipt を書く）。
