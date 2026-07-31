@@ -340,6 +340,30 @@ durable retry owner, and links an optional technical receipt for experts. Every
 article entry includes all available public platform URLs, while drafts and
 failed readbacks are visibly labeled and never presented as public.
 
+### 6.4 Visual contract
+
+The Web/Local UI has four visual layers, all backed by the same ledger used for
+Telegram:
+
+1. money cards for verified today, month-to-date, one-time revenue, MRR, net,
+   available balance, and pending payout;
+2. a stacked revenue chart by source, with one-time and recurring separated;
+3. a per-article funnel from view/read to paywall/checkout and paid receipt;
+4. an article table with headline image, title, every public platform link,
+   publication/recovery state, gross/net revenue, and latest Agent explanation.
+
+Verified money uses the primary visual treatment. Pending payout, unknown
+measurement, test money, and simulated data use visibly different treatments
+and are never stacked into earned revenue. Empty states say what is missing and
+what the Agent is doing next; they do not show fake demo income.
+
+Each published article receives one platform-safe headline visual and, when the
+claim benefits from it, one evidence-bearing diagram or chart. The same frozen
+media hashes travel with the article to each destination. A platform is shown
+as visually complete only after public render/readback confirms the expected
+title, body, image, and diagram; decorative image generation alone is not a
+success metric.
+
 ## 7. Zero-account open-source mode
 
 An OSS user must be able to start without Google, Gmail, note, Substack, X, or
@@ -446,7 +470,7 @@ schedules or future data.
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | TODO |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | TODO |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward | Reward uses verified money surfaces only | TODO |
-| 8 | Reporting | Send natural-language immediate/hourly deltas, daily money-first report, and weekly stream report with every public article URL | Telegram values equal ledger; unknown preserved; nontechnical fixture is understandable without logs | TODO |
+| 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | TODO |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL |
 | 10 | Editorial fee | Monitor DigitalOcean's stale/paused official endpoint and submit immediately only when a real intake form reopens; pursue other verified paid-writing calls meanwhile | Current-state receipt, reopening alert, submission receipt; later contract, publication, payment | MONITORING: closed/stale on 2026-08-01 |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | TODO |
