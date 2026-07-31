@@ -18254,3 +18254,10 @@
 {"ts":1785484243,"wake_id":"00MS8N7VC3F03353442B204541","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785484371,"wake_id":"00MS8NAMBOB05CF2A8E79B4D87","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785484812,"wake_id":"00MS8NK2K84FCB7DAC61514789","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785484882,"wake_id":"00MS8NLKCYE9BFE1862238479B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785485009,"wake_id":"00MS8NOAD7863ADDDEE8674617","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785485138,"wake_id":"00MS8NR2C67D3A0BA816E64547","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana pay-per-use compute marketplace API [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for t"}
+{"ts":1785485266,"wake_id":"00MS8NTSMVA2C1598EA16748EA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785485392,"wake_id":"00MS8NWID718BC4BC8F8EF4E59","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785485537,"wake_id":"00MS8NZMAB0ECC72B736EB4727","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785485666,"wake_id":"00MS8O2DHN19C228B469CB44A5","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana webhook paid API microservice marketplace [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced"}
