@@ -167,9 +167,28 @@ Use this when `/remote-control` says the current login token is limited to infer
 | No `Remote control enabled` evidence | Command did not run or failed | Keep the result as `desktop_ready / remote_blocked` |
 | Computer Use Accessibility denied | GUI targeting cannot be trusted | Use the CLI-to-Desktop fallback and log-based verification |
 
+## Delivering the QR code to the phone
+
+The supervised server prints `space to show QR code`, but under `launchd` it has no TTY, so nobody can press space. The QR encodes only the session or environment URL, so regenerate it from the server log rather than trying to drive the server's own display:
+
+```bash
+.claude/skills/remote-claude/scripts/send-qr-telegram.sh --dry-run   # build PNG, print URLs
+.claude/skills/remote-claude/scripts/send-qr-telegram.sh             # send to Dais over Telegram
+```
+
+The script takes the last `claude.ai/code?environment=env_...` in `~/.claude/logs/remote-control.log`, renders it with `uv run --with 'qrcode[pil]'`, and posts it with Telegram `sendPhoto`. Before reporting delivery, decode the generated PNG and require the decoded string to equal the environment URL; a rendered image is not evidence that it scans. macOS can decode without installing anything:
+
+```swift
+// swiftc -O qrdecode.swift -o qrdecode && ./qrdecode out.png
+let det = CIDetector(ofType: CIDetectorTypeQRCode, context: nil,
+                     options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])!
+```
+
+Regenerate and resend whenever the environment ID changes, which includes every account migration and every `bridge-pointer.json` rotation. A stale QR still scans and silently opens the wrong environment.
+
 ## Safety and reporting
 
-- Never expose OAuth tokens, cookies, QR payloads, or bridge credentials in logs or chat.
+- Never expose OAuth tokens, cookies, QR payloads, or bridge credentials in logs or chat. Sending the QR to Dais's own Telegram is the one sanctioned exception; the image still must not be copied anywhere else, and Telegram API replies must be token-redacted before printing.
 - Never close, overwrite, or archive unrelated sessions.
 - Do not report success from a dry run, a prefilled prompt, or a pressed key.
 - After an account migration, distinguish server readiness from client enrollment: report the Mac/browser and Claude iOS trusted-device states separately.
