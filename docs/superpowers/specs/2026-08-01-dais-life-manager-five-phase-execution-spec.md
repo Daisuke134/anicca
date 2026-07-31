@@ -413,6 +413,43 @@ deterministic codeが担当する:
 以下はこのtrackでDaisへ届く**正確なtemplate**である。`{{...}}`だけをledgerの実値で置換する。
 実装はi18n/templateから生成し、agentが数値や成功を創作しない。
 
+### 10.0 人間向け報告の絶対規則
+
+Telegramは開発者用logではない。利用者が知りたいのは「自分の代わりに何をしたか」である。
+
+通常メッセージに次の内部語を出さない:
+
+- launchd、cron、runner、worker、queue、bounded、timeout、parse
+- receipt、ledger、E1/E2/E3、JSON、HTTP status、stack trace
+- adapter、provider、runtime、process、exit code
+
+必ず利用者の言葉へ変換する:
+
+| 内部状態 | 利用者へ伝える言葉 |
+|---|---|
+| job succeeded + evidence verified | 「応募が完了しました。確認メールも届いています」 |
+| process succeeded but evidence missing | 「操作は行いましたが、応募完了を確認できていません」 |
+| timeout | 「応募画面の途中で止まりました。応募済みにはしていません」 |
+| delivery parse error | 「Telegramへの報告送信に失敗しました」 |
+| dead-letter / retry scheduled | 「明日もう一度試します」 |
+| Gmail reconciliation | 「応募先からのメールを確認しました」 |
+
+すべての行動報告は、次の7問へ上から順に答える。
+
+1. 何をしたか
+2. どこへ応募したか
+3. 何の役割・登壇内容・programか
+4. どの履歴書、deck、動画、応募文を使ったか
+5. なぜDaisに合うと判断したか
+6. 本当に完了したか、相手から確認が来たか
+7. 次に何が起き、Daisに何が必要か
+
+内部診断は通常非表示とし、`［技術詳細を見る］`を押した時だけ表示する。
+
+実装時はTelegram templateへcopy lintを置き、上記内部語が通常本文に入ったらtestを失敗させる。
+また、履歴書、職務経歴書、cover letter、deck、動画、LT概要はファイル名だけで終わらせず、
+Telegram添付または認証済みpanel linkから実物を開けることを完了条件にする。
+
 ### 10.1 毎朝の統合briefing
 
 ```text
@@ -444,16 +481,21 @@ deterministic codeが担当する:
 ### 10.2 イベント登録
 
 ```text
-🎟️ イベントへ登録しました。
+🎟️ イベント参加の申込みが完了しました。
 イベント: {{event_name}}
 日時: {{event_datetime}}
 場所: {{event_location}}
-登録名義: {{registration_identity}}
+申込者: {{registration_identity}}
+
+このイベントを選んだ理由:
+{{selection_reason}}
 
 当日のQRをこのメッセージに添付しました。
 カレンダーにも登録済みです。
 
-確認URL: {{canonical_event_url}}
+イベントページ: {{canonical_event_url}}
+
+［イベントを開く］［カレンダーを開く］［申込内容を見る］
 ```
 
 証拠不足時:
@@ -461,23 +503,63 @@ deterministic codeが担当する:
 ```text
 ⚠️ イベント登録を完了確認できませんでした。
 イベント: {{event_name}}
-止まった場所: {{blocker}}
-応募済みとは記録していません。次回の再試行: {{retry_at}}
+状況: {{human_readable_blocker}}
+
+相手から完了画面または確認メールが届いていないため、申込済みにはしていません。
+次回は{{retry_at}}にもう一度試します。
+
+［イベントを開く］［技術詳細を見る］
+```
+
+LT・登壇応募:
+
+```text
+🎤 {{event_name}}へLT登壇を申し込みました。
+
+発表タイトル: {{talk_title}}
+発表時間: {{talk_duration}}
+話す内容:
+{{talk_summary}}
+
+Life Managerを紹介する部分:
+{{product_demo_summary}}
+
+提出したもの:
+・登壇者プロフィール: {{speaker_profile_name}}
+・発表概要: {{abstract_name}}
+・デモURL: {{demo_url}}
+・スライド: {{slide_status}}
+
+現在の状態: 主催者の確認待ち
+回答予定: {{expected_reply_date}}
+
+［提出内容を見る］［イベントを開く］［カレンダーを開く］
 ```
 
 ### 10.3 アクセラレーター提出
 
 ```text
 🚀 {{program_name}}へ応募しました。
-提出日時: {{submitted_at}}
-応募主体: {{company_name}}
-現在状態: 提出確認済み
 
-確認メール: 受信済み
-確認画面: 保存済み
-次回追跡日: {{followup_at}}
+会社: {{company_name}}
+応募したprogram: {{program_name}}
+応募日時: {{submitted_at}}
 
-［応募内容を見る］［証拠を見る］
+このprogramを選んだ理由:
+{{fit_reason}}
+
+提出したもの:
+・応募回答: {{application_answer_version}}
+・pitch deck: {{deck_name}}
+・創業者動画: {{founder_video_name}}
+・product demo: {{demo_name}}
+・使用した実績値: {{traction_as_of}}時点
+
+相手からの確認メール: 受信済み
+現在の状態: 書類選考待ち
+次に確認する日: {{followup_at}}
+
+［応募回答を見る］［deckを見る］［確認メールを見る］
 ```
 
 ### 10.4 投資家・アクセラレーターからの返信
@@ -496,15 +578,27 @@ deterministic codeが担当する:
 ### 10.5 求人応募
 
 ```text
-💼 求人へ応募しました。
+💼 求人への応募が完了しました。
+
 会社: {{company}}
 職種: {{role}}
+勤務地: {{location}}
 提示年収: {{salary_range}}
-応募経路: {{ats}}
-使用履歴書: {{resume_name}}
 
-確認証拠: {{receipt_status}}
-求人URL: {{job_url}}
+この求人を選んだ理由:
+{{fit_reason}}
+
+提出したもの:
+・履歴書: {{resume_name}}
+・職務経歴書: {{career_history_name}}
+・cover letter: {{cover_letter_name}}
+・追加回答: {{additional_answers_summary}}
+
+相手からの応募確認メール: {{confirmation_mail_status}}
+現在の状態: {{human_status}}
+次に確認する日: {{followup_at}}
+
+［求人を見る］［提出した履歴書を見る］［応募内容を見る］
 ```
 
 ### 10.6 面接確定
@@ -739,30 +833,39 @@ Gmail MCPは対話調査には使えても、停止中のaccept watcherのよう
 送信実装後はこの形式をledger値から生成する。
 
 ```text
-🔌 Connector診断 2026-08-01
+🎟️ 今後2週間のイベントを探しました。
 
-既存launchd: 稼働登録済み
-直近のfill-gaps: 2026-07-31実行
-対象日: 11日
-runner成功: 1日
-runner失敗: 10日
-本日確認できた新規登録receipt: 0件
+東京で参加できるAI・cryptoイベントを11日分調べました。
+今回、参加申込みまで完了を確認できたイベントは0件です。
 
-主因: bounded runnerが180秒でtimeout
-日報: Telegram response parseでSEND-ERR
-成功したとは記録していません。
-次の作業: 共通outbound runtimeへ1日単位jobとして移植
+10日分は、申込み画面の途中で処理が止まりました。
+残り1日分も、相手から確認メールが届いていないため参加確定にはしていません。
+
+応募していないイベントを「応募済み」と表示することはありません。
+明日は、開催日が近いイベントから順にもう一度試します。
+
+［見つけたイベントを見る］［もう一度試す］［技術詳細を見る］
 ```
 
 ```text
 🎤 LT応募状況 2026-08-01
 
-AI Tinkerers Tokyo: 過去state submitted
-AI Tinkerers SF: 過去state pending
-connpass: LT枠の発見は可能、submitは証跡不足のため停止中
+AI Tinkerers Tokyo:
+・登壇申込みを送信済み
+・主催者からの最終回答はまだ確認できていません
+
+AI Tinkerers San Francisco:
+・登壇申込みを送信済み
+・現在は主催者の確認待ちです
+
+connpass:
+・募集中のLT枠を見つけられます
+・申込み完了を確認する方法がまだないため、勝手に送信していません
 
 今日の新規LT応募: 0件
-次の作業: confirmation mailまで取れる経路を作り、実LT 1件で検証
+次の行動: 主催者からの確認メールまで追跡できる状態にしてから、実際のLTへ1件申し込みます
+
+［過去の応募を見る］［候補イベントを見る］
 ```
 
 ```text
@@ -774,13 +877,60 @@ connpass: LT枠の発見は可能、submitは証跡不足のため停止中
 4. Entrepreneurs First London — 締切 8/4、適格性確認待ち
 
 YC既存draft:
-・20 text fields: 入力済み
-・founder video: upload記録あり
-・validation error: なし
-・状態: ready_to_submit
-・提出receipt: なし
+・応募回答20項目: 入力済み
+・創業者紹介動画: upload済み
+・入力漏れ: なし
+・現在の状態: 最終送信前
+・相手からの応募確認メール: なし
 
-「応募済み」とは記録していません。
+まだ送信していないため、「YCへ応募済み」とは表示しません。
+
+［YC応募内容を見る］［使用する動画を見る］［応募先一覧を見る］
+```
+
+過去の実応募を新しいUXで表す場合:
+
+```text
+💼 Anthropicの求人への応募が完了しました。
+
+会社: Anthropic
+職種: Financial Services Industries Enterprise Account Executive
+応募日: 2026-05-30
+
+この求人を選んだ理由:
+金融業界でのCRM導入経験と、AI agentを実際に構築・運用している経験の両方を活かせるためです。
+
+提出したもの:
+・履歴書: Daisuke_Narita_Resume.pdf
+・cover letter: Anthropic FSI向けに作成したPDF
+・応募者情報: Daisの共通プロフィール
+
+応募完了画面: 確認済み
+現在の状態: 返信待ち
+
+履歴書とcover letterをこの報告から開けます。
+
+［提出した履歴書を見る］［cover letterを見る］［求人を見る］
+```
+
+```text
+🎤 AI Tinkerers Tokyoへ登壇を申し込みました。
+
+イベント: AI Tinkerers Tokyo - Shinagawa: May 26th Meetup
+応募日: 2026-05-06
+応募内容: Aniccaの自律運用とLife Managerへつながる実装demo
+
+提出したもの:
+・登壇者プロフィール
+・demo proposal
+・product URL
+・GitHub URL
+
+イベント主催者の画面では申込み受付を確認しました。
+カレンダーにも予定を追加済みです。
+現在の状態: 主催者からの最終回答待ち
+
+［登壇内容を見る］［イベントを見る］［カレンダーを開く］
 ```
 
 採択後の実際のUX:
