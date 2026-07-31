@@ -1,0 +1,24 @@
+{
+  "name": "naist-portal-skill",
+  "version": "1.0.0",
+  "description": "NAIST Portal reader with SAML+TOTP auth for Claude Code / OpenClaw",
+  "main": "scripts/read-portal.js",
+  "scripts": {
+    "start": "node scripts/read-portal.js",
+    "setup": "npx playwright install chromium"
+  },
+  "keywords": [
+    "naist",
+    "portal",
+    "saml",
+    "totp",
+    "playwright",
+    "claude-skill",
+    "openclaw"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "otplib": "^12.0.1",
+    "playwright": "^1.58.2"
+  }
+}

@@ -1,0 +1,11 @@
+# CORE 8d — fresh artifact-only VCSDD Phase 3 adversary
+
+You are a fresh `gpt-5.6-sol` adversarial reviewer with zero Builder conversation context. Work only in `/Users/anicca/anicca-project/.worktrees/lm-p0-order8d` at exact clean commit `e283bd8b5985e3a9940d4382bddfc7fafc1e06b2`, PR #330. No sub-agent.
+
+Read the installed `vcsdd-adversary` skill/agent instructions completely, then read only the on-disk manifest at `.vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/input/manifest.json` and every artifact it enumerates. Treat the absolute canonical spec path/hash/commit in that manifest as authoritative. Do not read Builder orders, Builder logs, handovers, or prior conversation/session files.
+
+Perform the strict Phase 3 implementation review across exactly the five dimensions and actively search every mandatory finding category declared in the manifest. Check every approved CRIT-001..005 exactly once. Inspect real source/test behavior and source-linked evidence; do not accept test or ledger self-report without checking the referenced implementation and verifier logic. Every finding requires a real path, exact current line range/snippet, severity/category/dimension, and earliest legal `routeToPhase`. Any dimension FAIL makes overall FAIL. A PASS requires concrete positive evidence per dimension and `convergenceSignals.evaluatedCriteria` containing CRIT-001..005 exactly once.
+
+Your write/edit scope is strictly `.vcsdd/features/life-manager-daily-preflight/reviews/sprint-1/output/**`: `verdict.json` plus one `findings/FIND-NNN.json` per finding. Do not modify input manifest, state/history, global VCSDD files, specs/contracts, source/tests/evidence, root canonical spec, or any other path. Do not record the Phase 3 gate or transition phases. Do not use network/provider credentials, run controlled L3, create final report, deploy, or merge. You may perform read-only local checks only when needed to substantiate a finding/verdict.
+
+Validate output JSON against installed schemas and cross-check every finding ID/file. Commit/push only review output files. Return `RESULT=PASS` or `RESULT=FAIL`, binary dimension table, finding IDs/categories/routes, evaluated criteria, commit, push, and `NEXT=orchestrator gate adjudication`. No positive prose summary beyond evidence-bearing output.

@@ -1,0 +1,68 @@
+{
+  "title": "Inside Corgi Cafe (SF), a 24/7 startup cafe",
+  "cover_image": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4922.jpg",
+  "cover_exists": true,
+  "content_images": [
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4920.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4920.jpg",
+      "exists": true,
+      "alt": "Window at night",
+      "block_index": 5,
+      "after_text": "Through the window the wall neon reads *The First AI Insurance Company*. There i"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4926.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4926.jpg",
+      "exists": true,
+      "alt": "QR tablet",
+      "block_index": 10,
+      "after_text": "Hold your iPhone up to the QR tablet on the counter and scan your order receipt."
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4925.png",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4925.png",
+      "exists": true,
+      "alt": "WiFi code LMGH",
+      "block_index": 11,
+      "after_text": "You will be redirected to a screen with your WiFi code."
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4930.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4930.jpg",
+      "exists": true,
+      "alt": "Counter and menus",
+      "block_index": 16,
+      "after_text": "Three menu boards hang above the counter: **Featured Drinks**, **Corgi Drinks**,"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4931.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4931.jpg",
+      "exists": true,
+      "alt": "Inside the cafe",
+      "block_index": 18,
+      "after_text": "The next Google could come out of this room."
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4927.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4927.jpg",
+      "exists": true,
+      "alt": "Coffee",
+      "block_index": 19,
+      "after_text": "I drank a cortado, **$6.43**. **Y Combinator alums get 20% off**."
+    },
+    {
+      "path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4928.jpg",
+      "original_path": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/assets/IMG_4928.jpg",
+      "exists": true,
+      "alt": "Hiring flyer",
+      "block_index": 21,
+      "after_text": "The most San-Francisco thing in this cafe was not the coffee. It was the **hirin"
+    }
+  ],
+  "dividers": [],
+  "html": "<h2>A 24/7 cafe in a financial-district alley</h2><p>Downtown, on 9 Claude Lane between Kearny and Grant, there is a place glowing past midnight. <strong>Corgi Cafe</strong>. The dog on the signage is in blue neon; the storefront reads <strong>OPEN 24/7</strong>.</p><p>A grand-opening banner hangs over the entrance. Walk in and the first thing you see is orange chairs, and people in hoodies typing on laptops.</p><h2>Run by an AI insurance startup</h2><p>Through the window the wall neon reads <em>The First AI Insurance Company</em>. There is the corgi logo, and the word \"corgi\" in 3D letters.</p><p>The cafe is run by <strong><a href=\"https://www.corgi.insure/\">Corgi</a></strong>, an AI insurance startup. CEO is 26-year-old Nico; co-founder Emily. YC 2024 grads, <strong>$108M</strong> Series A at a <strong>$630M</strong> valuation, aiming at a <strong>$1T</strong> market cap.</p><p>Corgi employees work <strong>7 days a week</strong>, and 4-5 of them sleep at the office (the building is zoned residential, so it is legal). CEO Nico jokes, \"if there is a fire, you will find my burnt body inside.\"</p><p>The cafe is the retail space on the first floor of HQ. Nico says, \"when we tried to lease the 5th-floor office, the ground-floor storefront came bundled.\" Investors said no, loud; Corgi opened in February 2026 anyway. The bet is a brand play in the AI race.</p><h2>How to get on the WiFi</h2><p>Hold your iPhone up to the QR tablet on the counter and scan your order receipt.</p><p>You will be redirected to a screen with your WiFi code.</p><p>A 4-letter <strong>WiFi code</strong> appears. Enter it as the password for the network called <strong>Corgi Patrons</strong>. Cute name.</p><ul><li>Valid for: <strong>180 hours (about 7.5 days)</strong></li>\n<li>Devices: <strong>2</strong> (laptop + phone)</li>\n</ul>\nOne order buys 7.5 days × 2 devices of WiFi. Less a coffee fee, more a 1-day coworking pass.<h2>Inside: orange chairs and a sea of MacBooks</h2><p>Three menu boards hang above the counter: <strong>Featured Drinks</strong>, <strong>Corgi Drinks</strong>, <strong>Smoothies</strong>. In the middle, a QR poster reads <strong>Get Insured?</strong></p><p><em>The pillar up front advertises Boardy, an AI agent for networking.</em></p><p>The chairs are the same orange as the corgi mascot. About 70% of the customers are founders, MacBooks open. People here are talking VC, talking how to get into Founders Fund. The Silicon Valley sound.<br>The next Google could come out of this room.</p><p>I drank a cortado, <strong>$6.43</strong>. <strong>Y Combinator alums get 20% off</strong>.</p><h2>The hiring flyer on each desk was the most SF thing about this place</h2><p>The most San-Francisco thing in this cafe was not the coffee. It was the <strong>hiring flyer</strong> sitting on every table.</p><ul><li>Role: <strong>Founder's Associate</strong></li>\n<li>Pay: <strong>$100k + 2-5% equity</strong></li>\n<li>Referral bonus: <strong>$5,000</strong></li>\n<li>They want: founders who bootstrapped to $2M in revenue, want to work 1-on-1 / can come into the office every day / can take hard feedback / live in the SF Bay Area</li>\n<li>They do not want: people who wait for instructions / want 9-5 / <strong>fear failure</strong></li>\n</ul>\n<h2>Who would (and would not) like it here</h2><ul><li><strong>Would</strong>: AI founders who want to work in San Francisco at midnight / anyone who wants to breathe in startup smell</li>\n<li><strong>Would not</strong>: anyone coming to meet the corgi (the company dog <strong>Trudy</strong> only shows up sometimes)</li>\n</ul>\nOther cities are coming, supposedly: Salt Lake City, Atlanta, Chicago, Dallas, New York, London.<h2>Sources</h2><ul><li>Cydney Hayes / <em>Gazetteer SF</em>, <em>\"Come for the all-night coffee, stay for the AI insurance\"</em> (2026-04-01) <a href=\"https://sf.gazetteer.co/come-for-the-all-night-coffee-stay-for-the-ai-insurance\">original</a></li>\n<li>Corgi official: <a href=\"https://www.corgi.insure/\">corgi.insure</a></li>\n<li>Visit + photos: 2026-06-27, 9 Claude Ln, San Francisco</li></ul>",
+  "total_blocks": 27,
+  "source_file": "/Users/anicca/anicca-project/docs/articles/corgi-cafe/article-en.md",
+  "missing_images": 0
+}

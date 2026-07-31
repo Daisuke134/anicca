@@ -1,0 +1,39 @@
+{
+  "name": "aso-skills",
+  "owner": {
+    "name": "Erencan",
+    "url": "https://appeeky.com"
+  },
+  "metadata": {
+    "description": "ASO & App Marketing skills for Claude Code — keyword research, metadata optimization, competitor analysis, and app growth",
+    "version": "1.0.0",
+    "repository": "https://github.com/eronred/aso-skills"
+  },
+  "plugins": [
+    {
+      "name": "aso-skills",
+      "description": "17 ASO and app marketing skills for indie developers, app marketers, and growth teams. Covers keyword research, metadata optimization, competitor analysis, market intelligence, chart tracking, screenshot design, review management, localization, user acquisition, monetization, and more.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/app-marketing-context",
+        "./skills/aso-audit",
+        "./skills/keyword-research",
+        "./skills/metadata-optimization",
+        "./skills/competitor-analysis",
+        "./skills/app-launch",
+        "./skills/screenshot-optimization",
+        "./skills/review-management",
+        "./skills/localization",
+        "./skills/retention-optimization",
+        "./skills/monetization-strategy",
+        "./skills/ua-campaign",
+        "./skills/app-store-featured",
+        "./skills/app-analytics",
+        "./skills/ab-test-store-listing",
+        "./skills/market-movers",
+        "./skills/market-pulse"
+      ]
+    }
+  ]
+}

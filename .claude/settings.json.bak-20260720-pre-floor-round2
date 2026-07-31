@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "language": "japanese",
+  "plansDirectory": ".cursor/plans",
+  "enableAllProjectMcpServers": true,
+  "model": "claude-fable-5",
+  "effortLevel": "high",
+  "maxTurns": 100,
+  "contextCompression": true,
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Bash(git *)",
+      "Bash(cd *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(chmod *)",
+      "Bash(jq *)",
+      "Bash(fastlane *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(openclaw *)",
+      "Bash(/opt/homebrew/bin/firecrawl *)",
+      "Bash(codex *)",
+      "mcp__serena__*",
+      "mcp__context7__*",
+      "mcp__apple-docs__*",
+      "mcp__maestro__*",
+      "mcp__pencil__*",
+      "mcp__conway__*",
+      "Bash(xcodebuild *)",
+      "Bash(asc *)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "FASTLANE_SKIP_UPDATE_CHECK": "1",
+    "FASTLANE_OPT_OUT_CRASH_REPORTING": "1",
+    "LANG": "ja_JP.UTF-8",
+    "TZ": "Asia/Tokyo"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/pre-tool-lint.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/post-tool-sound.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/post-edit-verify.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/notification-sound.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/stop-continue.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/stop-verify-claims.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/pre-compact-backup.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/subagent-stop-validate.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/user-prompt-context.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": [
+      "Thinking",
+      "Searching",
+      "Implementing",
+      "Testing",
+      "Reviewing",
+      "Deploying"
+    ]
+  },
+  "outputStyle": "concise",
+  "autoCompactEnabled": true
+}

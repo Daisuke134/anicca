@@ -1,0 +1,42 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Hiragino Sans W6,78,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,4,0,2,80,80,150,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.90,Default,,0,0,0,,予 定 を {\c&H0000FFFF}入{\c&H00FFFFFF}
+Dialogue: 0,0:00:00.90,0:00:01.62,Default,,0,0,0,,れる た び {\c&H0000FFFF}に{\c&H00FFFFFF}
+Dialogue: 0,0:00:01.62,0:00:02.74,Default,,0,0,0,,Go {\c&H0000FFFF}ogle{\c&H00FFFFFF} マ ップ
+Dialogue: 0,0:00:02.74,0:00:03.54,Default,,0,0,0,,を 開 いて {\c&H0000FFFF}い{\c&H00FFFFFF}
+Dialogue: 0,0:00:03.54,0:00:05.36,Default,,0,0,0,,ません か イ {\c&H0000FFFF}ベ{\c&H00FFFFFF}
+Dialogue: 0,0:00:05.36,0:00:06.54,Default,,0,0,0,,ント を 登録 {\c&H0000FFFF}して{\c&H00FFFFFF}
+Dialogue: 0,0:00:06.54,0:00:07.68,Default,,0,0,0,,経 路 を {\c&H0000FFFF}検{\c&H00FFFFFF}
+Dialogue: 0,0:00:07.68,0:00:09.54,Default,,0,0,0,,索 して 45 {\c&H0000FFFF}分{\c&H00FFFFFF}
+Dialogue: 0,0:00:09.54,0:00:10.76,Default,,0,0,0,,か と思 い {\c&H0000FFFF}な{\c&H00FFFFFF}
+Dialogue: 0,0:00:10.76,0:00:11.32,Default,,0,0,0,,が ら カ {\c&H0000FFFF}レ{\c&H00FFFFFF}
+Dialogue: 0,0:00:11.32,0:00:11.98,Default,,0,0,0,,ンダ ー に {\c&H0000FFFF}戻{\c&H00FFFFFF}
+Dialogue: 0,0:00:11.98,0:00:13.18,Default,,0,0,0,,り 出 発 {\c&H0000FFFF}時{\c&H00FFFFFF}
+Dialogue: 0,0:00:13.18,0:00:13.98,Default,,0,0,0,,刻 を 手 {\c&H0000FFFF}入{\c&H00FFFFFF}
+Dialogue: 0,0:00:13.98,0:00:15.86,Default,,0,0,0,,力 する 気 {\c&H0000FFFF}づ{\c&H00FFFFFF}
+Dialogue: 0,0:00:15.86,0:00:16.94,Default,,0,0,0,,け ば 次 {\c&H0000FFFF}の{\c&H00FFFFFF}
+Dialogue: 0,0:00:16.94,0:00:17.70,Default,,0,0,0,,予 定 と {\c&H0000FFFF}被{\c&H00FFFFFF}
+Dialogue: 0,0:00:17.70,0:00:19.08,Default,,0,0,0,,って いて 仰 {\c&H0000FFFF}ざ{\c&H00FFFFFF}
+Dialogue: 0,0:00:19.08,0:00:20.62,Default,,0,0,0,,め る ア {\c&H0000FFFF}ニ{\c&H00FFFFFF}
+Dialogue: 0,0:00:20.62,0:00:21.66,Default,,0,0,0,,ッ カ は {\c&H0000FFFF}予{\c&H00FFFFFF}
+Dialogue: 0,0:00:21.66,0:00:22.38,Default,,0,0,0,,定 を 入 {\c&H0000FFFF}れた{\c&H00FFFFFF}
+Dialogue: 0,0:00:22.38,0:00:23.36,Default,,0,0,0,,瞬 間 に {\c&H0000FFFF}移{\c&H00FFFFFF}
+Dialogue: 0,0:00:23.36,0:00:24.22,Default,,0,0,0,,動 時間 を {\c&H0000FFFF}自{\c&H00FFFFFF}
+Dialogue: 0,0:00:24.22,0:00:25.06,Default,,0,0,0,,動 で 計 {\c&H0000FFFF}算{\c&H00FFFFFF}
+Dialogue: 0,0:00:25.06,0:00:26.40,Default,,0,0,0,,し 出 発 {\c&H0000FFFF}の{\c&H00FFFFFF}
+Dialogue: 0,0:00:26.40,0:00:27.20,Default,,0,0,0,,ブ ロ ック {\c&H0000FFFF}まで{\c&H00FFFFFF}
+Dialogue: 0,0:00:27.20,0:00:28.32,Default,,0,0,0,,勝 手 に {\c&H0000FFFF}登録{\c&H00FFFFFF}
+Dialogue: 0,0:00:28.32,0:00:30.38,Default,,0,0,0,,します カ レ {\c&H0000FFFF}ンダ{\c&H00FFFFFF}
+Dialogue: 0,0:00:30.38,0:00:31.46,Default,,0,0,0,,ー は 任 {\c&H0000FFFF}せ{\c&H00FFFFFF}
+Dialogue: 0,0:00:31.46,0:00:32.04,Default,,0,0,0,,る 者 {\c&H0000FFFF}へ{\c&H00FFFFFF}

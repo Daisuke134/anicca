@@ -1,0 +1,2 @@
+.claude/skills/faceless-money-factory/assets/broll-library/*.mp4 filter=lfs diff=lfs merge=lfs -text
+.claude/skills/faceless-money-factory/state/renders/*.mp4 filter=lfs diff=lfs merge=lfs -text
