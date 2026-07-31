@@ -112,7 +112,7 @@ failed feedback.
 | Stream | What is sold | Revenue type | Current state | Account/KYC dependency | Verified amount now |
 |---|---|---|---|---|---:|
 | AppSignal | Accepted technical article | One-time editorial fee | Application submitted; response, publication, and payment pending | Author agreement and publisher payment details | $0 |
-| DigitalOcean Write for DOnations | Accepted and published tutorial | One-time editorial fee | Official page is live; actual application intake must be re-read end-to-end before counting | PayPal capable of receiving funds or DO credit; contract/contact details | $0 |
+| DigitalOcean Write for DOnations | Accepted and published tutorial | One-time editorial fee | Intake is not currently usable: the official page still says submissions are paused, and `do.co/w4do` redirects to that page instead of an application form | PayPal receive capability and DO credit exist; contract/contact details still apply. Never store the PayPal address in this SSOT | $0 |
 | note | Paid Japanese article | One-time reader payment | Paid publication capability exists; attributed sales receipt absent | note creator and payout account | ¥0 verified |
 | Substack | Paid subscription/archive | Recurring reader payment | $8/month tier was enabled; paid subscriber receipt absent | Substack creator plus Stripe | $0 MRR verified |
 | Self-owned publication | Paid article or recurring archive | One-time or recurring reader payment | Not implemented | Default OSS mode uses device-generated identity/payment rail; fiat connector optional | $0 |
@@ -130,6 +130,13 @@ through PayPal or DigitalOcean credit.
 
 Source: https://www.digitalocean.com/community/pages/write-for-digitalocean
 
+The dated DigitalOcean copy says "paused until 2025," but that stale wording is
+still the live state observed on 2026-08-01 and the advertised application URL
+does not open an intake form. Therefore the Writer must report it as
+`CLOSED_OR_STALE`, not infer that a past date means open, and must monitor for a
+real form reopening. Available PayPal and DigitalOcean-credit payout rails make
+the opportunity executable after reopening; they do not make intake open now.
+
 AppSignal publicly promises a base article rate but does not publish the amount.
 Its documented process includes an author agreement, topic approval, editing,
 approval, payment, and publication. Until the first acceptance states a rate,
@@ -137,7 +144,30 @@ the target contribution is `unknown`, not $400.
 
 Source: https://blog.appsignal.com/write-for-us.html
 
-### 3.3 Reader payment facts
+### 3.3 Paid-writing opportunity watch
+
+The Writer continuously discovers and re-verifies paid editorial opportunities
+instead of hard-coding DigitalOcean as the only $400 path. The model evaluates
+fit and expected value from official evidence; deterministic code stores and
+rechecks receipts.
+
+Each opportunity record contains:
+
+- publisher, official program URL, application URL, and last verified time;
+- intake state: `OPEN`, `CLOSED`, `PAUSED`, `STALE`, or `UNKNOWN`;
+- stated fee/range, currency, whether it is per accepted article or recurring;
+- topics, originality/exclusivity terms, editorial steps, and expected delay;
+- payout rail, account/KYC/tax/contract requirements, and geographic limits;
+- proposed article, evidence of fit, next executable action, and submission ID;
+- acceptance, publication, invoice/payment, fee, and payout receipts.
+
+The Agent checks official publisher pages first, then reputable discovery
+sources, and never calls an opportunity open from a search snippet. Closed
+programs remain on a low-frequency recheck list while the Agent continues
+finding alternatives. A human-readable Telegram delta is sent only for a real
+state change or a high-fit newly open opportunity.
+
+### 3.4 Reader payment facts
 
 note officially supports paid individual articles, memberships, paid magazines,
 and recurring magazines. The first Writer target is the paid individual article;
@@ -267,27 +297,48 @@ The interface never displays an unqualified `WAITING` state.
 
 ### 6.3 Telegram
 
-Hourly messages are event/delta based. Daily and weekly reports are mandatory.
+Hourly messages are event/delta based, not a noisy empty heartbeat. Publication,
+sale, payout, failure, automatic recovery, and opportunity-state changes are
+sent immediately. Daily and weekly reports are mandatory even when revenue is
+zero.
 
 ```text
-Revenue today: ¥0 / $0
-MTD: ¥0 / $0
-MRR: $0
+Writer — 8月1日 14:00
 
-AppSignal: pending response, revenue $0
-DigitalOcean: intake unverified, revenue $0
-note: 0 purchases, ¥0
-Substack: 0 paid readers, $0 MRR
-Self-owned: not installed, $0
+お金: 今日 ¥500 / $0、今月 ¥3,000 / $400、MRR $16
+入金元: note ¥500（1件）／Substack $16 MRR（2人）／
+AppSignal $400 支払済み／DigitalOcean $0（受付停止中）
+手数料後: ¥455 / $394.28。未入金: ¥500。計測不明: なし。
 
-Published: 4 live, 1 platform-window pending
-Changed: no revenue variable; publication recovery only
-Next: resume pending destination automatically
-Human action: none
+今日の記事: 5媒体で公開、2媒体は復旧中
+• note: 「AIエージェントの…」 1,240表示 → 42購入ページ → 1購入
+  https://note.com/.../n/...
+• Substack EN: 680表示 → 21 subscribe → 2有料
+  https://example.substack.com/p/...
+• Zenn: 公開済み、売上対象外
+  https://zenn.dev/.../articles/...
+
+機会: DigitalOceanは公式フォームなし。新規3件を確認し、1件を高適合
+として次の記事候補にしました。
+解釈: 閲覧数ではなくnote購入率が今週の収益増に寄与しています。
+次: 同じ価格で導入文だけを変える1変数テストを自動実行します。
+あなたの操作: なし。
 ```
 
-Weekly reports compare each revenue stream, winning/losing topics, conversion,
-churn, fees, net revenue, stopped experiments, and next week's single change.
+Required fields by cadence:
+
+| Cadence | Trigger | Natural-language contents |
+|---|---|---|
+| Immediate/hourly delta | New publication, money, payout, failure/recovery, or opportunity change | What happened, exact amount or `unknown`, article/publisher link, whether the Agent recovered, and next owner/action |
+| Daily, after the operating day | Always | Today/MTD/MRR, gross/net/pending, revenue by source, complete article URL list, views/reads/paywall visits/purchases/subscribers/refunds, failures and recoveries, opportunity watch, plain-language interpretation |
+| Weekly | Always | Each stream versus prior week, one-time versus recurring, winning/losing article/topic, conversion and churn, fees/compute/net margin, opportunity pipeline, KEEP/REVERT decisions, and next week's single experiment |
+
+The renderer receives structured ledger data but speaks in ordinary language.
+It must never expose a raw stack trace or unexplained status code as the user
+message. It translates the failure, says what was attempted, identifies the
+durable retry owner, and links an optional technical receipt for experts. Every
+article entry includes all available public platform URLs, while drafts and
+failed readbacks are visibly labeled and never presented as public.
 
 ## 7. Zero-account open-source mode
 
@@ -317,6 +368,30 @@ requirements.
 Fiat connectors remain optional. A user who wants bank/Stripe/PayPal payouts may
 complete the legally required one-time onboarding; the no-account mode continues
 to work without them.
+
+### 7.1 `aniccaai.com/blog` hosting
+
+The current public `/blog` is served by Netlify and the domain uses Netlify's
+NS1 nameservers. Cloudflare Pages/Workers static-asset requests are free and
+unlimited, so the static blog is a valid $0-hosting migration target. Cloudflare
+Pages Functions share Workers quotas; the current repository also contains
+Netlify Functions, so "move the whole site for free" is not yet proven.
+
+Migration order:
+
+1. inventory `/blog` static output, redirects, analytics, canonical URLs, RSS,
+   images, and current monthly Netlify invoice;
+2. deploy the unchanged static blog to a preview Pages URL and compare every
+   route, response, canonical, feed, and screenshot;
+3. attach `aniccaai.com`/the chosen blog hostname, change DNS only after parity,
+   and retain instant rollback;
+4. port and test dynamic Netlify Functions separately before considering the
+   rest of the site moved;
+5. report actual before/after hosting cost, never an assumed $6 saving.
+
+Sources:
+https://developers.cloudflare.com/pages/functions/pricing/ and
+https://developers.cloudflare.com/pages/configuration/custom-domains/
 
 ## 8. $10,000 to $10,000,000 MRR
 
@@ -363,17 +438,17 @@ schedules or future data.
 
 | # | Phase | Work | Done receipt | Status |
 |---:|---|---|---|---|
-| 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE when this change reaches remote |
-| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all available destinations live, no duplicate | TODO NOW |
+| 0 | Boundary | Create this dedicated Writer SSOT; point AGENTS and historical spec here | File exists, links resolve, committed and pushed | DONE |
+| 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all available destinations live, no duplicate | IN PROGRESS: 2026-08-01 manual kickstart exposed `same-jst-day-unclassified-run`; carry-over/start-control fix is tested and replacement run was kickstarted; no live URL may be claimed until readback |
 | 2 | Availability | Install no-passive-wait catch-up and per-platform pending/resume | Missed schedule and platform-window fixtures plus live recovery | TODO |
 | 3 | Quality | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, and language mismatch | Repaired content can pass; no permanent poison; focused tests | TODO |
-| 4 | Supply | Install X/GitHub/RSS watch intake and maintain topic floor | Three cited, nonduplicate ready claims at all times | TODO |
+| 4 | Supply | Install X/GitHub/RSS claim intake plus continuous paid-writing opportunity watch; maintain both floors | Three cited nonduplicate ready claims plus current official-state opportunity records | TODO |
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | TODO |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | TODO |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward | Reward uses verified money surfaces only | TODO |
-| 8 | Reporting | Send hourly deltas, daily money-first report, weekly stream report | Telegram values equal ledger; unknown preserved | TODO |
+| 8 | Reporting | Send natural-language immediate/hourly deltas, daily money-first report, and weekly stream report with every public article URL | Telegram values equal ledger; unknown preserved; nontechnical fixture is understandable without logs | TODO |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL |
-| 10 | Editorial fee | Re-read DigitalOcean application endpoint and submit when intake is actually open | Submission receipt; later contract, publication, payment | TODO |
+| 10 | Editorial fee | Monitor DigitalOcean's stale/paused official endpoint and submit immediately only when a real intake form reopens; pursue other verified paid-writing calls meanwhile | Current-state receipt, reopening alert, submission receipt; later contract, publication, payment | MONITORING: closed/stale on 2026-08-01 |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | TODO |
 | 12 | Subscription | Measure Substack active paid, new, churn, gross MRR, fees, and net MRR | Stripe/Substack receipts join to article | TODO |
 | 13 | Self-owned | Implement paid article and recurring archive on an Agent-owned publication | Public unlock/payment/renewal receipts without creator-platform account | TODO |
@@ -385,7 +460,7 @@ schedules or future data.
 | 19 | Gate S3 | Reach $10,000 monthly for three consecutive months | Gross/net ledger and attribution completeness | TODO |
 | 20 | Recurring | Reach $10,000 MRR; keep one-time revenue separate | Active paid contracts and churn receipts | TODO |
 | 21 | OSS | Package local zero-account install, generated identity, publication, payment, and UI | Fresh machine reaches public article and real payment without third-party account input | TODO |
-| 22 | Cloud | Run the same contract in cloud with durable workers and encrypted tenant isolation | Local/cloud parity suite and real E2E | TODO |
+| 22 | Cloud | Migrate the static `aniccaai.com/blog` surface to Cloudflare after parity/cost proof; then run the same Writer contract in cloud with durable workers and encrypted tenant isolation | Route/feed/canonical/screenshot parity, rollback receipt, actual cost delta, local/cloud Writer parity suite and real E2E | TODO |
 | 23 | Productization | External user receives writing revenue and reports without daily intervention | One external user E2E | TODO |
 | 24 | Portfolio | Add only profitable niches/languages; stop losing units | Second unit matches first-unit economics | TODO |
 | 25 | Self-extension | Add publisher/collector through sandbox, tests, canary, and promotion | Regression zero and real side-effect receipt | TODO |
