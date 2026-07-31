@@ -14,34 +14,65 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 
 | 質問 | 答え |
 |---|---|
-| これは何の製品か | **Telegram で動く通勤エージェント**。予定の時刻に呼び出し、家を出てから着くまで案内し、遅れたら相手に断りを入れる |
-| 誰が使うか | Dais（本人）→ 友達3人 → 一般公開。全員 **Telegram だけ**で日常を完結させる。web パネルは設定と履歴だけ |
-| コードはどこか | `apps/life-manager/`（branch `docs/two-earning-loops`）。`scheduler.js`（呼び出し loop）· `lib/wake-filter.js`（鳴らす予定の選別）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡・ライブ位置削除）· `lib/slash-command.js`（Telegram コマンド router） |
-| どこで動いているか | Railway（cloud、multi-tenant）。ローカル compose も同一コード |
+| これは何の製品か | **Telegram で完結する生活エージェント**。予定の時刻に呼び出し、家を出てから着くまで案内し、遅れたら相手に断りを入れる。ユーザーが持つ必要があるのは **スマホ1台だけ** |
+| 誰が使うか | Dais（本人）→ 友達3人 → 有料の一般ユーザー。全員 **Telegram の中だけ**で完結する |
+| コードはどこか | `apps/life-manager/`。`scheduler.js`（60秒 tick・呼び出し）· `lib/wake-filter.js`（鳴らす予定の選別・出発時刻の解決）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡）· `lib/slash-command.js`（Telegram コマンド router） |
+| **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`life-manager-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照） |
 | データはどこか | Supabase。`lm_users` `lm_wake_log` `lm_travel_log` `lm_ask_log` `lm_user_locations` |
-| 状態の見方（★実行可能★） | `set -a; . ~/.openclaw/.env; set +a` の後、`curl -s "$SUPABASE_URL/rest/v1/<table>?select=*&order=…&limit=3" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"`。**鍵を stdout に出さない** |
-| ★間違えやすい点★ | canonical は **`Daisuke134/life-manager`**。`anicca-project`（= anicca-products）にある LM spec の写しは**正本ではない**。`~/.openclaw/skills/anicca-life-manager/` は OSS/BYOK 単身版であって本番ではない |
-| 触ってはいけない | writer loop・記事・SNS・収益 loop（別 agent 担当）。physical / mental organ（platform Order 36、daily 出荷後） |
-
-**daily 単体で商品になる**。physical / mental を待たずに出す。
+| 状態の見方（★実行可能★） | `set -a; . ~/.openclaw/.env; set +a` の後 `curl -s "$SUPABASE_URL/rest/v1/<table>?select=*&order=…&limit=3" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"`。**鍵を stdout に出さない** |
+| ★間違えやすい点★ | canonical は **`Daisuke134/life-manager`**。`anicca-project`(=anicca-products) の LM spec は写しで正本ではない。`~/.openclaw/skills/anicca-life-manager/` は OSS/BYOK 単身版であって本番ではない |
+| 触ってはいけない | writer loop・記事・SNS・収益 loop（別 agent 担当）。physical / mental organ（親 spec Order 36、daily 出荷後） |
 
 ---
 
-## 1. 今日の実測（2026-08-01 06:41 JST、この session で自分が叩いた結果）
+## 1. 実測（2026-08-01 06:41–07:00 JST、この session で自分が叩いた生の値）
 
-前 session の報告と**結論が変わった項目がある**。以下は自分で curl した生の値。
+### 1.1 ライブ位置は届いている（前 session の「未達」は誤診）
 
-| 観測 | 実測値 | 意味 |
+| 観測 | 実測値 |
+|---|---|
+| `lm_user_locations` | `observed_at=2026-07-31T21:41:01Z`、取得時刻 `21:41:15Z` = **14秒前**。`latitude=35.6796 / longitude=139.723085`、`source=telegram_live_location` |
+| 逆ジオコード | `南元町, 新宿区, 東京都, 160-8484`（Nominatim）= 自宅と一致 |
+| ★誤診の原因★ | 同じ行の `updated_at` は `2026-07-21T02:35:07Z` のまま。upsert が `observed_at` だけ更新している。**鮮度を見る列を間違えた** |
+
+**規則**: 位置の鮮度は **`observed_at`**。`updated_at` を鮮度に使わない。
+
+### 1.2 ★#1 呼び出し不発の原因（究明完了）★
+
+| 手順 | 実行したこと | 出た結果 |
 |---|---|---|
-| ★ライブ位置は届いている★ | `lm_user_locations`: `observed_at=2026-07-31T21:41:01Z`、取得時刻 `21:41:15Z` = **14秒前**。`latitude=35.6796 / longitude=139.723085`、`source=telegram_live_location` | 「07-21 から止まっている」は**誤り**。今この瞬間に流れている |
-| 逆ジオコード | `南元町, 新宿区, 東京都, 160-8484`（Nominatim） | 自宅と一致。位置は**使える精度で来ている** |
-| ★誤診の原因（強い仮説）★ | 同じ行の `updated_at` は **`2026-07-21T02:35:07Z` のまま**。upsert が `observed_at` だけ更新し `updated_at` を触っていない | 前回「未達」と判定したのは、**鮮度を見る列を間違えた**可能性が高い。読む列は `observed_at` |
-| 呼び出しは鳴っている | `lm_wake_log` 最新 = `id=962`, `called_at=2026-07-30T22:59:40Z`, `event_key=…|2026-07-31T08:40:00+09:00|5` | 朝の実予定に対する **T-5 は実発火している** |
-| ★不発は深夜テストの側★ | 01:30 JST（=`16:30Z`）の試験に対応する行が**無い** | 「常に鳴らない」ではなく「**あの条件で鳴らない**」。原因究明の的が狭まった |
-| ★未解決★ | `lm_wake_log` 全履歴で `answered_at` が null（id 960/961/962 も null） | 「出ていない」のか「記録漏れ」のか未判別。**鳴っているが機能していない**可能性が残る |
+| a | ローカル compose の scheduler ログを読む | `[scheduler] PUBLIC_WSS not set — calls would have no media bridge URL; loop still runs but won't dial` |
+| b | そのコンテナの env を実点検（`docker exec`） | `PUBLIC_WSS / LM_CALL_SECRET / TELNYX_API_KEY / TELNYX_CONNECTION_ID / GEMINI_API_KEY / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / COMPOSIO_API_KEY / GOOGLE_API_KEY` **すべて MISSING** |
+| c | 同ログの `[travel]` 行 | `[travel] started` はあるが `inserted=` の行が**1本も無い** |
+| → | **ローカル compose は空の器**。Supabase 資格情報が無いので `supaUsers()` が空配列を返し、対象ユーザーが0人。**そもそも1度も呼び出しを評価していない**。テスト中に再起動したのはこの器であって、鳴らない側の主体ではなかった | |
+| d | 本番 Railway `life-call` のログ | `[scheduler] started — tick every 60s, escalating wakes at T-10/5min`（PUBLIC_WSS 警告**なし** = 本番は設定済）· `[travel] uid=lm_784ad279- inserted=2 checked=10` ← **ユーザーが見た travel 挿入は本番の仕事** · `[late] uid=lm_784ad279- decision=late sent=false tg_message_id=513` |
+| e | 本番ログに `WAKE T-` / `dial failed` があるか | **どちらも無い**。= 発信を試みてすらいない |
+| f | `lm_users` の実列を確認 | `call_enabled` / `daily_automation_enabled` / `notifications_enabled` の**列自体が存在しない**（コードは `!== false` 判定なので undefined は通す = 抑制していない）。`wake_policy="travel-only"`、`paid=true` |
+| g | `shouldWake` の条件（`lib/wake-filter.js:17-25`） | travel-only は「location があり、home と異なる」なら true。テスト予定（渋谷）は**通る** |
+| h | ★Railway のデプロイ履歴★ | `bb11f4c7… | SUCCESS | 2026-08-01 01:23:35 JST` ← **試験の発火窓（T-10 = 01:25:30–01:27:30 / T-5 = 01:30:30–01:32:30）の直前に本番が再デプロイ＝再起動している** |
 
-**教訓（一般化）**: 「動いていない」と判定する前に、**自分が見ている列/経路が正しいか**を先に疑う。
-派生値（`updated_at`）ではなく、書き手が実際に更新する列（`observed_at`）を見る。
+**結論（原因は2層ある）**
+
+| 層 | 内容 | 証拠 |
+|---|---|---|
+| 直接原因 | 試験の発火窓の直前 **01:23:35 に本番 `life-call` が再デプロイされた**。comp 変数の設定が Railway の再デプロイを誘発している。新プロセスの起動と最初の tick が窓に間に合わなかった | 上記 h。加えて本番ログの `[late] decision=late` は「その tick が回った時には既に予定時刻を過ぎていた」ことを示す |
+| ★構造原因（本体）★ | **発火窓が 2分しかないのに、tick 周期が保証されていない**。`scheduler.js:333` は `if (mins > lvl.min + 0.5 \|\| mins <= lvl.min - 1.5) continue;` = 各レベル約2分の窓。ところが同じ 60秒 tick に late / mental / care / diet が相乗りし、ユーザー毎に最大90秒の timeout を持つ。ユーザーが増えるほど周期は伸び、**窓を跨いだ瞬間に呼び出しは永久に失われる** | `scheduler.js:332-336`、同 tick 内の organ 群、本番ログに他ユーザーの `[care] status=history_unavailable` が毎 tick 出続けている |
+| ★計測の穴★ | 窓を逃した呼び出しは **どこにも記録が残らない**。`claimWake` は発信直前にしか行われず、発信失敗時は `releaseWake` で claim を消す。だから `lm_wake_log` を見ても「鳴るはずだったのに鳴らなかった」が**存在しない事象として見える** | `scheduler.js:337-355` |
+
+**棄却した仮説（再検討しないこと）**
+
+| 仮説 | 棄却理由 |
+|---|---|
+| 深夜は意図的に抑制されている | `scheduler.js` に時間帯ガードは無い（旧 OpenClaw skill の `*/5 6-23` cron の記憶だった） |
+| `wake_policy` / `shouldWake` の除外 | `travel-only` + 実在の venue = 通る（`wake-filter.js:17-25`） |
+| ユーザー側のスイッチが OFF | `call_enabled` 等の列が **存在しない** |
+| PUBLIC_WSS 未設定 | ローカルのみ未設定。本番は設定済（起動警告が出ていない） |
+| Composio がイベントを見ていない | 同じ予定に対し travel が `inserted=2`、late が `decision=late` を出している = 見えている |
+
+### 1.3 未解決の観測
+
+`lm_wake_log` 全履歴で `answered_at` が null（id 960/961/962 すべて）。「出ていない」のか「記録漏れ」のか未判別。
+**鳴っているが機能していない**可能性が残るので #2 で判別する。
 
 ---
 
@@ -49,40 +80,33 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 
 | 論点 | 結論 | 出典 |
 |---|---|---|
-| Telegram ライブ位置の更新頻度 | **Bot API に更新間隔の規定は無い**。`edited_message` として push されるが、送信側クライアント（OS の背景位置制限込み）が頻度を決める。SLA は無い | core.telegram.org/bots/api §editMessageLiveLocation |
-| `live_period` | 60–86400 秒、または `0x7FFFFFFF` で**無期限** | 同上 §sendLocation:「must be between 60 and 86400, or 0x7FFFFFFF for live locations that can be edited indefinitely」 |
-| 位置の誤差 | `horizontal_accuracy` = 0–1500 m | 同上 §Location:「The radius of uncertainty for the location, measured in meters; 0-1500」 |
-| ★設計への帰結★ | **秒単位の追従を前提にした案内を作らない**（「次で乗換」「前から3両目」等は禁止）。位置は「家を出たか / 大きく遅れているか」の**粗い判定にだけ使う** | 上記の SLA 不在から |
-| 乗換ステップ（日本・米国） | **Google Routes API v2 `computeRoutes` TRANSIT** が両国で同一スキーマ。`transitDetails.transitLine`（路線名）· `headsign`（行先）· `stopDetails`（乗降駅・時刻）· `stopCount` を返す。$5.00 / 1,000 calls（Essentials） | developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes、同 billing-and-pricing |
-| ★出口番号★ | **Routes API にも Transitland/OTP にも出口番号のフィールドは無い**。番線（platform）も無い | 同上スキーマ確認 |
-| 出口番号の入手先 | 日本固有データ。鉄道事業者の公開データ（ODPT 等）を**別途引く**必要がある。米国は GTFS に出口番号の概念が無い | odpt.org、Transitland documentation |
-| 保留（未検証） | NAVITIME / Ekispert の実レスポンス項目は docs が JS 描画で読めず未確認。出口番号が要るなら**試用キーで実 call して確かめる**のが唯一の道 | docs.ekispert.com（MCP server 有り）· NAVITIME(RapidAPI) |
+| Telegram ライブ位置の更新頻度 | **Bot API に更新間隔の規定は無い**。`edited_message` として push されるが頻度は送信側クライアント任せ。SLA は無い | core.telegram.org/bots/api §editMessageLiveLocation |
+| `live_period` | 60–86400秒、または `0x7FFFFFFF` で**無期限** | 同 §sendLocation:「must be between 60 and 86400, or 0x7FFFFFFF for live locations that can be edited indefinitely」 |
+| 位置誤差 | `horizontal_accuracy` = 0–1500 m | 同 §Location:「The radius of uncertainty ... 0-1500」 |
+| ★設計への帰結★ | **秒単位の追従案内を作らない**（「次で乗換」「前から3両目」は禁止）。位置は「家を出たか」「大きく遅れているか」の粗い判定にだけ使う | 上記の SLA 不在から |
+| 乗換ステップ（日本・米国） | **Google Routes API v2 `computeRoutes` TRANSIT** が両国同一スキーマ。`transitDetails.transitLine`（路線）· `headsign`（行先）· `stopDetails`（乗降駅・時刻）· `stopCount`。$5.00 / 1,000 calls | developers.google.com/maps/documentation/routes/reference/rest/v2/TopLevel/computeRoutes |
+| ★出口番号★ | **Routes API にも Transitland/OTP にも無い**。番線も無い | 同上スキーマ |
+| 出口番号の入手先 | 日本固有データ。鉄道事業者の公開データ（ODPT 等）を別途引く。米国は概念自体が無い | odpt.org / transit.land |
+| 未検証 | NAVITIME / Ekispert の実レスポンス項目（docs が JS 描画で読めず）。必要なら試用キーで実 call | docs.ekispert.com |
 
 ---
 
-## 3. 残 TODO（1 から順に。番号は実行順そのもの）
+## 3. 残 TODO（1 から順。番号 = 実行順。飛ばさない）
 
 | # | 作業 | 無いと何が起きるか | done（実 receipt） |
 |---:|---|---|---|
-| **1** | 呼び出し不発の原因究明（深夜条件で鳴らない） | 鳴らなければ製品は存在しない。友達に配る前の最優先 | 深夜条件で鳴らなかった理由を**1つに特定**し、仕様（意図的な抑制）か欠陥かを判定。欠陥なら修正して同条件で `lm_wake_log` に新 id |
-| **2** | `answered_at` が常に null の判別 | 「鳴っているが誰も出ていない」= 核心が空洞、を検知できない | 実際に出た1回で `answered_at` が入り、出なかった1回で入らないことを確認。入らないなら記録経路を直す |
-| **3** | 位置を「家を出た」判定に接続（鮮度は `observed_at` で読む） | 位置が来ていても使っていなければ案内も遅刻検知も始まらない | 実予定1件で「出発検知 → 出発直後の1通」が実配信。`updated_at` を鮮度に使っている箇所が0 |
-| **4** | 乗換ステップ + 出口番号 | **これが無いと Google Maps を消せない** = 商品の主張が嘘になる | 実イベント1件で「◯◯線・行先 → □□で乗換 → 到着 → **出口** → 徒歩N分」が Telegram に実配信され、Maps を開かずに着いた。出口番号が取れない駅は**黙って省く**（嘘を書かない） |
-| **5** | 1タップ承認 | 無断で相手にメールが飛ぶ。友達に渡した瞬間に事故る | 遅刻1件で承認カードが届き、**押すまで送信0**・押したら実送信、両方を確認 |
+| **1** | ~~呼び出し不発の原因究明~~ → **原因特定済（§1.2）。残りは修正3点** | 呼び出しが静かに消える = 製品が存在しない | ①窓を「取りこぼさない」形に変更（下記 1a）②逃した呼び出しを記録（1b）③時間に敏感な loop を他 organ から分離（1c）。実予定で T-10/T-5 が両方 `lm_wake_log` に載る |
+| 1a | 発火条件を「2分の窓」から**追い付き方式**へ | tick が遅れた瞬間に永久に失われる | `mins <= lvl.min + 0.5` かつ 予定未開始 かつ 未 claim なら発火（窓の下限を撤廃）。unit test で「tick が5分飛んでも T-5 が鳴る」ことを証明 |
+| 1b | 「鳴るはずだったのに鳴らなかった」を記録 | 失敗が**存在しない事象**に見える（今回の3日を溶かした原因） | 逃した/失敗した理由付きの行が残り、`/status` から見える |
+| 1c | 呼び出し loop を care / diet / mental / late から分離 | 他 organ の遅さが呼び出しを殺す。ユーザーが増えるほど悪化 | 呼び出し専用の tick が他 organ の所要時間に影響されないことをログで確認 |
+| **2** | `answered_at` が常に null の判別 | 「鳴っているが誰も出ていない」= 核心が空洞、を検知できない | 実際に出た1回で入り、出なかった1回で入らないことを確認。入らないなら記録経路を直す |
+| **3** | 位置を「家を出た」判定に接続（鮮度は `observed_at`） | 位置が来ていても使わなければ案内が始まらない | 実予定1件で出発検知 → 出発直後の1通が実配信。`updated_at` を鮮度に使う箇所が 0 |
+| **4** | 乗換ステップ + 出口番号 | **これが無いと Google Maps を消せない** = 商品の主張が嘘になる | 実イベント1件で経路1通が届き、Maps を開かずに着いた。出口が取れない駅は**黙って省く**（推測で書かない） |
+| **5** | 1タップ承認 | 無断で相手にメールが飛ぶ。友達に渡した瞬間に事故る | 押すまで送信0・押したら実送信、両方確認 |
 | **6** | 電話番号なしでも動く | 3人のうち少なくとも1人は番号を出さない。今はその人に何も起きない | 番号未登録の test user で、出発通知 → 経路 → 承認まで全部 Telegram に届く |
 
-**順序の理由**: 1→2 は「鳴る・出たか分かる」= 製品の心臓。3 は 4 の前提（出発を検知できないと案内を始められない）。
-5 は他人に渡す前の安全弁。6 は3人目を拾う口。**番号は飛ばさない。**
-
-### #1 の仮説（潰した物・残った物をここに追記していく）
-
-| 仮説 | 見る場所 | 状態 |
-|---|---|---|
-| 深夜は意図的に抑制されている（旧実装は `*/5 6-23`） | `scheduler.js` の tick 条件、`WAKE_LEVELS`、時間帯ガード | **最有力・未検証** |
-| `wake-filter` の除外に当たった（travel-only 既定 / `wake_policy` / routine 除外） | `lib/wake-filter.js` | 未検証 |
-| 6h horizon の外だった／`[Travel]` block と event の突合 tolerance を外れた | `scheduler.js:290`（6h horizon）、`lib/wake-filter.js:27`（tolerance） | 未検証 |
-| Composio がまだイベントを見ていなかった | calendar 取得の horizon とキャッシュ | 未検証 |
-| 発信例外（Telnyx 側）が握り潰されている | 発信ログ、例外処理 | 未検証 |
+**運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
+発火窓を破壊する。試験の前後30分は本番の設定変更を行わない。
 
 ---
 
@@ -93,43 +117,53 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
     │
     ▼
  Google Routes API v2  computeRoutes  travelMode=TRANSIT      ← 日本・米国 共通
-    │   返る物: transitLine（路線名）/ headsign（行先）/ stopDetails（乗降駅・時刻）/ stopCount
-    │   返らない物: ★番線★ ★出口番号★
+    │   返る: transitLine（路線）/ headsign（行先）/ stopDetails（乗降駅・時刻）/ stopCount
+    │   返らない: ★番線★ ★出口番号★
     ▼
  出口番号の付与（日本のみ・別データ源）
-    │   鉄道事業者の公開データ（ODPT 等）を駅+目的地方向で引く
-    │   取れない駅 → ★書かない★（「N番出口」を推測で書くのは禁止）
+    │   鉄道事業者の公開データ（ODPT 等）を 駅 + 目的地方向 で引く
+    │   取れない駅 → ★書かない★
     ▼
- Telegram に1通（下の 5.2）
+ Telegram に1通
 ```
 
 | 国 | 経路 | 出口番号 |
 |---|---|---|
 | 日本 | Google Routes API v2 TRANSIT | 別データ源。取れた駅だけ表示 |
-| 米国 | Google Routes API v2 TRANSIT | **存在しない概念**。表示しない（欠落ではなく仕様） |
-
-**禁止**: 位置に秒単位で追従する案内（「次で乗換」「前から3両目」）。§2 の通り Telegram のライブ位置に
-更新頻度の保証が無いため、**遅れた情報で人を動かす**ことになる。出すのは **出発前 1通 + 出発直後 1通** が既定。
+| 米国 | 同じ API・同じスキーマ | 概念が無い。表示しない（欠落ではなく仕様） |
 
 ---
 
-## 5. UX — 全員が触るのは Telegram（web は設定と履歴だけ）
+## 5. UX — これが実装の目的（機能はこの体験を作るための手段）
 
-### 5.1 登録（1回だけ）
+### 5.0 約束（この3行が製品そのもの）
+
+```
+ ① もう遅刻しない        出発時刻は向こうから来る。予定表を開く必要が無い
+ ② もう道に迷わない      経路は出た瞬間に届く。地図アプリを開く必要が無い
+ ③ もう気まずくならない  遅れる時は、着く前に相手へ話が通っている
+```
+
+**ユーザーが用意する物 = スマホ1台と Telegram だけ。** それ以外を要求したら設計の失敗。
+アプリのインストール不要・アカウント作成不要・地図アプリ不要・乗換アプリ不要・カレンダーを開く習慣も不要。
+
+### 5.1 登録（1回だけ、チャットの中で終わる）
 
 ```text
  /start
    ├─ 名前（チャットに直接入力）
-   ├─ 予定をつなぐ         → ボタン → /lm?tg=<chat_id>（OAuth は web）
+   ├─ 予定をつなぐ         → ボタン → /lm?tg=<chat_id>（OAuth はブラウザが1回開くだけ）
    ├─ メールをつなぐ       → ボタン
    ├─ 電話番号（任意）★#6★ → 未入力なら「Telegram だけで届けます」と明示
-   ├─ ライブ位置を共有 ★#3★ 📎 → 位置情報 → ライブ位置情報（無期限 = live_period 0x7FFFFFFF）
-   └─ 支払い               → ボタン → Stripe
+   ├─ ライブ位置を共有 ★#3★ 📎 → 位置情報 → ライブ位置情報（無期限）
+   └─ 支払い               → ボタン
         ▼
    🎉「明日の朝から始めます。何もしなくていいです」
 ```
 
-### 5.2 いつもの1日（届くのは3通だけ）
+**この後、ユーザーが操作を覚える必要は無い。** コマンドは存在するが、知らなくても製品は成立する。
+
+### 5.2 いつもの1日（届くのは最大3通）
 
 ```text
  07:40  出発前 ─────────────────────────────────────  #1
@@ -139,6 +173,7 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
  │ [ 了解 ]        [ 15分ずらす ]             │
  └────────────────────────────────────────────┘
    電話番号を登録した人は同時に📞（出るまで鳴る）
+   → ここで「カレンダーを開く」という行為が消える
 
  08:06  家を出た（位置で検知）───────────────────  #3 + #4
  ┌────────────────────────────────────────────┐
@@ -148,7 +183,8 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
  │ 08:31 渋谷 着 → ★ B2出口 ★ → 徒歩3分        │
  │ 到着 08:44 / 予定 09:00（16分 余裕）        │
  └────────────────────────────────────────────┘
-   ★これ1通で経路が完結する。以後は黙る★
+   → ここで「地図アプリを開く」という行為が消える
+   ★この1通で経路が完結する。以後は黙る★
 
  09:02  遅れ確定（到着予定 > 予定時刻）─────────  #5
  ┌────────────────────────────────────────────┐
@@ -158,10 +194,11 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
  │  5分ほど遅れます。申し訳ございません。」    │
  │ [ 送る ]  [ 文面を直す ]  [ やめる ]        │
  └────────────────────────────────────────────┘
+   → ここで「気まずい謝罪の文面を考える」が消える
    押すまで1通も飛ばない。既定は送らない側
 ```
 
-**1日の総通知数 = 予定1件につき最大3通**（出発前・出発直後・遅刻時のみ）。これを超えたら設計の失敗。
+**予定1件につき最大3通。** これを超えたら設計の失敗（通知が多い製品は消される）。
 
 ### 5.3 電話番号を出さない人（#6）
 
@@ -174,35 +211,70 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
    判定エンジンは1つ。届け先が2つ。片方だけ動く実装にしない。
 ```
 
-### 5.4 コマンド（覚えなくていいが、ある）
+### 5.4 うまく行かない日（ここが信頼を決める）
+
+| 事象 | ユーザーに見える物 | 黙って壊れない保証 |
+|---|---|---|
+| 位置が来ていない | 「位置が3時間届いていません。共有し直しますか?」+ ボタン | `observed_at` の経過で判定（#3） |
+| 呼び出しが鳴らせなかった | 「8:05 の呼び出しに失敗しました。今から出れば間に合います」 | 逃した呼び出しを記録する（#1b） |
+| 経路が取れない | 「経路が取れませんでした。所要は約35分です」 | 推測の出口番号を書かない（#4） |
+| 予定の場所が不明 | 「どこでやりますか?」と1回だけ聞く | 既存の ask organ |
+
+**原則**: 沈黙で失敗しない。ユーザーが「今日は来なかったな」と気付く前に、こちらから言う。
+
+### 5.5 コマンド（覚えなくていいが、ある）
 
 | command | 何が起きる |
 |---|---|
-| `/status` | 次の予定・出発時刻・位置の最終受信（`observed_at` からの経過） |
-| `/where` | 今どこにいると認識しているか。ずれていたら位置共有の張り直しを案内 |
+| `/status` | 次の予定・出発時刻・位置の最終受信（`observed_at` からの経過）・直近の失敗 |
+| `/where` | 今どこにいると認識しているか。ずれていたら共有の張り直しを案内 |
 | `/stop` | 今日の呼び出しを止める |
-| `/panel` | web パネル（履歴と設定だけ） |
+| `/panel` | web パネル（履歴と設定だけ。日常では開かない） |
 
-**出さないもの**: 実験ボタン・内部ジョブの実況・公開アーティファクトのページ（親 spec §12 Order 9 と同じ規律）。
+### 5.6 この後 chat の中に増えていく物（同じ形を守る）
+
+daily が閉じたら、同じ「チャットで完結・承認は1タップ・最大3通」の型のまま面を増やす。
+
+| 順 | 何 | 体験（形は同じ） |
+|---|---|---|
+| 次 | 予約（歯医者・美容室・レストラン） | 「金曜18時で取れます。予約しますか? [ 取る ][ やめる ]」 |
+| 次 | 移動の手配（航空券・ホテル・新幹線） | 「この便が最安です。押さえますか? [ 押さえる ][ 他を見る ]」 |
+| 次 | お金（口座・支出・請求） | 「今月は先月比 +¥32,000。原因はこれです」 |
+| 後 | physical / mental（親 spec Order 36） | 同じ1通の形 |
+
+**新しい画面を作らない。** 増えるのは通知の種類だけで、操作は常に「ボタン1つ」。
+ユーザーがチャット以外を理解する必要が無い状態を、機能追加のたびに守る。
 
 ---
 
-## 6. 出荷までに起きること
+## 6. なぜ日次で価値があるか（課金の形）
+
+| 事実 | 帰結 |
+|---|---|
+| 遅刻・道迷い・気まずさは **毎日** 発生する | 価値の発生も毎日。月1回まとめて価値を出す製品ではない |
+| 1回の遅刻の損失（信用・機会）は月額を軽く超える | 「1日1回助かれば元が取れる」が説明として成立する |
+| 動き続けることが前提 | **落ちている日はゼロ円の価値**。だから #1b（失敗を記録して自分から言う）が課金の前提条件 |
+
+**課金の設計原則**: 「毎日効いている」ことを毎日見せられる製品だけが日次・秒次の課金を正当化できる。
+だから通知は少なく、しかし**助けた瞬間は必ず可視**にする（出発の1通・経路の1通・承認の1通が領収書を兼ねる）。
+
+---
+
+## 7. 出荷までに起きること
 
 | 段 | 条件 | 判定 |
 |---:|---|---|
-| 1 | #1 + #2 + #3 | 実予定で呼び出しが鳴り、出たかどうかが記録され、出発が検知される |
+| 1 | #1（1a/1b/1c）+ #2 + #3 | 実予定で呼び出しが鳴り、出たかが記録され、出発が検知される。**逃した時は自分から言う** |
 | 2 | #4 | ★ Dais が Google Maps を消す ★ = daily の合格判定。他の指標は見ない |
 | 3 | #5 + #6 | 他人に渡しても事故らない（無断送信0・番号なしでも全部届く） |
 | 4 | 友達3人に配る | 見るのは1つ:「Maps を消したか」。消さないなら理由を聞き、その1点だけ直す |
 | 5 | 公開 | 3人中2人以上が1週間 Maps を消したまま過ごしたら出す。売り文句は「乗換案内アプリの代わり」ではなく **「もう調べなくていい」** |
 
-physical / mental（親 spec Order 36）は段5 の後。
-
 ---
 
-## 7. 更新規律
+## 8. 更新規律
 
 daily の TODO 状態が変わった瞬間にこのファイルを更新して commit する。
 番号は**実行順**であり、消化しても振り直さない（済んだ行に done receipt を書く）。
-`~/anicca-project` 側の同名ファイルは正本を指すポインタであり、**そこを編集しない**。
+UX（§5）は spec の一部である — チャットで新しい体験を語ったら、その場でここに焼き直す。
+`~/anicca-project` 側の同名ファイルは正本を指すポインタであり、そこを編集しない。
