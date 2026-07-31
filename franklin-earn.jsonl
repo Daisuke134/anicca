@@ -3463,3 +3463,4 @@
 {"ts":1785491107,"source":"cook","task":"explore: Solana low-minimum yield vault USDC deposit instant earnings","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8RAH0AFA7980980F0742B6"}
 {"ts":1785492942,"source":"cook","task":"explore: Solana microtask platform paying USDC per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8SE5IT15F46F90D1E84A93"}
 {"ts":1785493068,"source":"cook","task":"explore: Solana DeFi platform paying USDC rewards for small liquidity provision","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8SGX4A51C77CE18C454414"}
+{"ts":1785494519,"source":"cook","task":"explore: Solana microtask marketplace paying USDC per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8TBZ3PA6A0580260DB4DE9"}
