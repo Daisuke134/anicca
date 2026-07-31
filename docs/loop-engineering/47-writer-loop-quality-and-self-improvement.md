@@ -1,11 +1,17 @@
 # 47. Writer Loop — Money-first self-improving / self-healing loop
 
+> **SUPERSEDED FOR CURRENT WORK:** The active Writer Agent objective, UX,
+> revenue streams, execution order, and only current TODO are in
+> [`docs/writer-agent/WRITER-AGENT-SSOT.md`](../writer-agent/WRITER-AGENT-SSOT.md).
+> This file preserves investigation, implementation, and incident history. Its
+> old SSOT/TODO claims do not override the dedicated Writer Agent SSOT.
+
 対象 loop: `ai.anicca.article-daily`（+衛星 `article-self-improve` 等）。
 位置づけ: 「AI entity article writer」ではなく **Writer Loop** — あらゆる Claude が書いて稼げる汎用 loop。記事は最初の形態で、X 投稿（短文）・書籍（長文）へ拡張する。本質は同じ、出口と換金手段が違うだけ。
 
 ## 0. 現行SSOT・優先順位・完了の定義
 
-**このファイルだけが Writer Loop の現行 spec / TODO / done 条件のSSOT。** `docs/`、`.cursor/`、`.claude/` 以下の他の article/writer 文書は、実装証拠・記事素材・過去設計の履歴であり、現行の優先順位や完了条件を定義しない。このファイル内でも §1–§21 は調査・実装・incident の履歴、**§22だけが現在の規範**。過去節と§22が衝突した場合は§22を採用する。
+**このファイルは Writer Loop の履歴正本。** 現行 spec / TODO / done 条件は `docs/writer-agent/WRITER-AGENT-SSOT.md` だけが定義する。`docs/`、`.cursor/`、`.claude/` 以下の他の article/writer 文書と、このファイル内の旧「唯一の正本」宣言は、実装証拠・記事素材・過去設計の履歴としてのみ読む。
 
 **優先順位は money-first。** 完全な8面公開はchannel reliability指標であり、売上loopの実装を止める前提条件ではない。現在時刻では得られない3 run目、実engagement、7日conversion、次回scheduleは監視backlogへ置き、今日実装・fixture検証・launchd配線・pushできる作業を止めない。
 

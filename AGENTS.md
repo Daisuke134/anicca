@@ -19,6 +19,17 @@ Remote Claudeの複数起動依頼は `.claude/skills/remote-claude/SKILL.md` �
 
 - OpenClaw/運用の現状: `.cursor/plans/reference/openclaw-anicca.md`
 - プロジェクト知識（メモリ）: `.serena/memories/`（詳細: `.claude/rules/serena-usage.md`）
+- Writer Agentの目的・UX・収益・TODO: `docs/writer-agent/WRITER-AGENT-SSOT.md`
+
+### 0.W Writer Agent 絶対ルール
+
+- Writerの現行判断では `docs/writer-agent/WRITER-AGENT-SSOT.md` だけを正本にする。`docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md` は履歴であり、旧TODOを復活させない。
+- **NO PASSIVE WAITING**: 未完runがあり、安全に実行できる作業があるなら即時kickstart/resumeする。「次のscheduleを待つ」を終了理由にしない。
+- platform固有の公開窓はそのplatformだけを`PENDING`にする。他platform、計測、research、reportは継続する。
+- waitには対象・外部理由・再開時刻・durable owner・並行作業・Telegram event UUIDを必須にする。ownerのないwaitは放置としてFAIL。
+- 初期収益は記事そのもの（原稿料・有料記事・有料購読・self-owned paid writing）から作る。記事から別商品を自動生成する作業はWriter SSOTの明示gateまで前倒ししない。
+- 売上は実payment/publisher receiptだけ。DRY RUN、test payment、view、like、推定値をearningsへ加算しない。unknownを0にしない。単発売上とMRRを混ぜない。
+- Writerの仕様判断を会話だけに残さない。同じturnでWriter SSOTを更新し、検証し、現在branchへcommit/pushする。ただしsecret、credential、個人情報はcommitしない。
 
 ### 0.1 OpenClaw / VPS 絶対禁止事項（必ず守る）
 
