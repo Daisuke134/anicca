@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.anicca.boot-notify</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/recovery-setup/boot-notify.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/anicca</string>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/anicca/recovery-setup/boot-notify.out</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/recovery-setup/boot-notify.err</string>
+</dict>
+</plist>
