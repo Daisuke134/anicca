@@ -18184,3 +18184,10 @@
 {"ts":1785474809,"wake_id":"00MS8HLNXS318AEC06C8ED4987","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785474940,"wake_id":"00MS8HOHLT1039618C40A443D0","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785475069,"wake_id":"00MS8HR8GQ7BED2CE94C814729","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785475198,"wake_id":"00MS8HU08EED8E3B027CC34616","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785475325,"wake_id":"00MS8HWQ3U391595B1682F4ED3","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1785475450,"wake_id":"00MS8HZETZBA67A08E2D2B4BA6","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask marketplace paid USDC AI agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced"}
+{"ts":1785475577,"wake_id":"00MS8I24HZ66EA276BCB2743DB","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785475713,"wake_id":"00MS8I51LB65801BC38B8A4BF1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785475841,"wake_id":"00MS8I7S8WE9499E0BE0E24125","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785475968,"wake_id":"00MS8IAIAU5E4CC0CA8FC1460B","kind":"narrate","sleep_s":120,"model":"auto"}
