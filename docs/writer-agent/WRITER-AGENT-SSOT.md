@@ -167,6 +167,57 @@ programs remain on a low-frequency recheck list while the Agent continues
 finding alternatives. A human-readable Telegram delta is sent only for a real
 state change or a high-fit newly open opportunity.
 
+Current verified opportunity matrix (2026-08-01):
+
+| Publisher | State | Public compensation | Writer decision |
+|---|---|---|---|
+| AppSignal | `SUBMITTED` | Base rate promised; amount not public | Continue the existing submission state machine; never duplicate-submit |
+| Hygraph Creator Program | `OPEN_POLICY_UNKNOWN` | Rewards/compensation stated; amount and payout rail not public | Highest-fit new lead because AI agents, MCP, GraphQL, and structured content are named topics; clarify AI-authorship policy and compensation before submission |
+| Civo | `REJECTED_POLICY` | Fee agreed on acceptance; PayPal or Civo credits | Do not submit: the official call explicitly rejects AI-generated content and requires a Google Doc |
+| Oracle Technical Articles | `OPEN_VALUE_UNKNOWN` | Stipend only occasionally available | Low priority; confirm commission, amount, identity requirements, and AI-authorship policy before work |
+| DigitalOcean | `CLOSED_OR_STALE` | Historical page advertises $400/new article | Watch for an actual intake form; do not count or submit now |
+| Better Stack | `CLOSED` | Historical $300/article | Recheck on the closed-program cadence |
+| Honeybadger | `CLOSED` | Historical $500/post | Recheck on the closed-program cadence |
+| Earthly | `CLOSED` | Historical $350/article | Recheck on the closed-program cadence |
+| Baeldung | `CLOSED` | Historical contributor budgets shown | Recheck on the closed-program cadence |
+
+Sources:
+
+- https://hygraph.com/write-for-hygraph
+- https://www.civo.com/write-for-us
+- https://www.oracle.com/technical-resources/articles/otn-submit.html
+- https://betterstack.com/community/write-for-us/
+- https://www.honeybadger.io/blog/write-for-us/
+- https://earthly.dev/blog/write-for-us/
+- https://www.baeldung.com/contribution-guidelines
+
+The opportunity subsystem is a stateful loop, not a periodic search report:
+
+```text
+DISCOVER official calls, RSS, GitHub, and reputable indexes
+  -> VERIFY live form, fee, terms, payout rail, identity/KYC, AI policy
+  -> DECIDE fit and expected value with the model
+  -> STORE evidence and deduplicate publisher + proposal
+  -> CLARIFY unknown policy/rate before producing speculative work
+  -> PITCH only when policy-compatible
+  -> TRACK response and deadlines
+  -> WRITE only after the call's required acceptance point
+  -> SUBMIT / PUBLISH / PUBLIC READBACK
+  -> RECEIVE publisher or payment-processor receipt
+  -> LEARN from acceptance, rejection, time, cost, and received money
+  -> DISCOVER again
+```
+
+The durable states are `DISCOVERED`, `VERIFIED_OPEN`, `POLICY_CLEAR`,
+`PITCH_READY`, `SUBMITTED`, `ACCEPTED`, `DRAFTING`, `ARTICLE_SUBMITTED`,
+`PUBLISHED`, and `RECEIVED`. Terminal or parked states are `CLOSED`,
+`REJECTED_POLICY`, `DECLINED`, `EXPIRED`, and `VALUE_UNKNOWN`. Every wake first
+advances due records, then discovers enough new candidates to restore the
+verified-open opportunity floor. Code schedules, fetches, deduplicates, and
+stores receipts; the model judges topic fit, originality, policy meaning, and
+proposal quality from the full official evidence. No keyword allowlist decides
+market fit.
+
 ### 3.4 Reader payment facts
 
 note officially supports paid individual articles, memberships, paid magazines,
@@ -189,10 +240,10 @@ gross and net separately.
 
 | Stream | Example monthly target | Required event | Why it exists |
 |---|---:|---|---|
-| Paid publisher articles | $1,600 | Four accepted $400 articles, or equivalent contracted fees | Fast one-time cash without owning an audience; cannot be assumed until accepted |
+| Paid publisher articles | $1,000 | Accepted articles totaling $1,000; opportunity-dependent, never assumed | Useful one-time cash, but current compatible open supply is too weak to be the foundation |
 | note paid articles | ¥300,000 gross (~$2,000) | 600 purchases at ¥500, or an equivalent price/volume mix | Direct sale of the Japanese article itself |
-| Substack subscription | $4,000 gross MRR | 500 active paid readers at $8/month | Recurring English/overseas writing revenue |
-| Self-owned paid writing | $2,400 gross monthly | Paid article unlocks or recurring archive on the Writer-owned surface | Removes dependence on third-party creator accounts |
+| Substack subscription | $2,000 gross MRR | 250 active paid readers at $8/month | Recurring English/overseas writing revenue; AI disclosure and churn must be measured |
+| Self-owned paid writing | $5,000 gross monthly | For example, 600 $5 unlocks plus 250 $8 active subscriptions | Core reader-payment surface without dependency on a creator platform |
 | Total | ~$10,000 gross monthly | Verified receipts only | Initial target mix |
 
 This mix is not a quota imposed on the Agent. Each stream begins at zero. The
@@ -205,7 +256,7 @@ and capacity are measured.
 |---|---|---|
 | S-1 | Publishing alive | Three consecutive daily runs publish all currently enabled, non-window-blocked destinations; duplicate zero |
 | S0 | First money | One verified non-test payment joined to an article or publisher submission |
-| S1 | $400 monthly | $400 verified monthly writing revenue; a single DigitalOcean article may satisfy it, but it is not recurring |
+| S1 | $400 monthly | $400 verified monthly writing revenue from any receipted mix; one publisher article may satisfy it, but it is not recurring |
 | S2 | $1,000 monthly | Three consecutive revenue-positive weeks with zero manual execution |
 | S3 | $10,000 monthly | Three consecutive months at or above $10,000 gross, net positive after compute/platform fees, with every dollar attributed |
 | S4 | $10,000 MRR | Active recurring writing subscriptions total $10,000; one-time editorial/article revenue is reported separately |
@@ -563,6 +614,24 @@ Alternative:
 The fee is revenue only when a real payer purchases writing or access. Token
 issuance, estimated value, impressions, and internal transfers do not count.
 
+There are two independent multiplication axes:
+
+```text
+Axis A — one Writer becomes economically real
+$0 -> first $1 -> $400/month -> $1,000/month -> $10,000/month -> $10,000 MRR
+
+Axis B — repeat only the proven unit
+1 profitable Writer -> 100 -> 1,000 -> 10,000 -> 100,000 Writers
+```
+
+The first $10,000 belongs to Dais's Writer unit and proves that readers and
+publishers pay for its writing. The first $10,000,000 operator MRR cannot come
+from one Writer writing 1,000 times more. It requires many independently
+profitable Writer units and an explicit fee users knowingly accept. At a 10%
+fee, $10M MRR requires $100M monthly network GMV. The same arithmetic gives
+$100M MRR at $1B monthly GMV and $1B MRR at $10B monthly GMV. These are scale
+conditions, not forecasts or promises.
+
 Scale order:
 
 1. Dais's local unit reaches verified first payment.
@@ -586,13 +655,13 @@ schedules or future data.
 | 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all available destinations live, no duplicate | IN PROGRESS: 2026-08-01 manual kickstart exposed `same-jst-day-unclassified-run`; carry-over/start-control fix is tested and replacement run was kickstarted; no live URL may be claimed until readback |
 | 2 | Availability | Install no-passive-wait catch-up and per-platform pending/resume | Missed schedule and platform-window fixtures plus live recovery | TODO |
 | 3 | Quality | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, and language mismatch | Repaired content can pass; no permanent poison; focused tests | TODO |
-| 4 | Supply | Install X/GitHub/RSS claim intake plus continuous paid-writing opportunity watch; maintain both floors | Three cited nonduplicate ready claims plus current official-state opportunity records | TODO |
+| 4 | Supply | Install X/GitHub/RSS claim intake plus the full paid-writing opportunity state machine in §3.3; maintain claim and verified-open floors | Three cited nonduplicate ready claims; official evidence records; deduped pitch; closed/policy rejection fixtures; one live state transition | TODO |
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | TODO |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | TODO |
 | 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward | Reward uses verified money surfaces only | TODO |
 | 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | TODO |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL |
-| 10 | Editorial fee | Monitor DigitalOcean's stale/paused official endpoint and submit immediately only when a real intake form reopens; pursue other verified paid-writing calls meanwhile | Current-state receipt, reopening alert, submission receipt; later contract, publication, payment | MONITORING: closed/stale on 2026-08-01 |
+| 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: matrix verified 2026-08-01; implementation remains |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | TODO |
 | 12 | Subscription | Measure Substack active paid, new, churn, gross MRR, fees, and net MRR | Stripe/Substack receipts join to article | TODO |
 | 13 | Self-owned | Implement paid article and recurring archive on an Agent-owned publication | Public unlock/payment/renewal receipts without creator-platform account | TODO |
