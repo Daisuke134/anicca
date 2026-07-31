@@ -163,6 +163,12 @@ PHASE 4 — PROVE + PUBLISH:
     net-positive needs more capital OR the x402-product/trade earners producing real inflow.
     The engine + autonomy + bleed are DONE; the remaining gap is CAPITAL/INFLOW, not code.
 [ ] Prove sustained net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
+★ HOW a NEW earner comes into existence is no longer specified here (2026-08-01). The PHASE-1
+  REFRAME above ("anicca searches + verifies earners ITSELF, no human in loop") and allocator.py's
+  "task #13's future spawner" are implemented by ENTREPRENEUR LOOP:
+  docs/superpowers/specs/2026-08-01-entrepreneur-loop-design.md — that spec wins on discovery /
+  build / kill-gate / learning. This roadmap keeps owning the money rails (yield, trade, swap,
+  x402, token) and whole-instance spawn (3a) / social layer (3d) / mutual funding (3e). ★
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 
 ## 6. Type 1 / Type 2 + Colony Mutual Aid (refinement, 2026-06-21)
