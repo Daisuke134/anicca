@@ -18393,3 +18393,10 @@
 {"ts":1785502693,"wake_id":"00MS8Y7BH516D388D3F2054764","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1785502820,"wake_id":"00MS8YA1FDC787481B8EE241D3","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paying USDC for AI data labeling [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidate"}
 {"ts":1785502950,"wake_id":"00MS8YCTUBBC350071704D4856","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503080,"wake_id":"00MS8YFMFWBBF2A4CA10E046DF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503209,"wake_id":"00MS8YIDJH1B2B31E6239445E9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503337,"wake_id":"00MS8YL4LH843AEAC640A34BD3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503469,"wake_id":"00MS8YNY2G3D840F14DB854A66","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503598,"wake_id":"00MS8YQPRA73AA8903824647F4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785503738,"wake_id":"00MS8YTPNQEDC33B574A354604","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paying USDC for data annotation tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for"}
+{"ts":1785503878,"wake_id":"00MS8YWQ6585F883A183D04E25","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
