@@ -18648,3 +18648,11 @@
 {"ts":1785536273,"wake_id":"00MS9I71XMC853A73C49E84A15","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785536414,"wake_id":"00MS9IA2VB994E8D693718453E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785536542,"wake_id":"00MS9ICTS42F058FF7C6254FA2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785536671,"wake_id":"00MS9IFL8150166A7C1A8E4650","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785536799,"wake_id":"00MS9IIC55D12163BC1A834D28","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785536934,"wake_id":"00MS9IL8737779B55041A34572","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana decentralized microtask platform paid USDC API agents [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candida"}
+{"ts":1785537084,"wake_id":"00MS9IOFL68904C16FD83B4EB9","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785537161,"wake_id":"00MS9IQ3372A7C6379D3364D56","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1785537244,"wake_id":"00MS9IRV5U33747C034E6047FA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785537381,"wake_id":"00MS9IUSTFEF17AE12C58A4090","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana on-chain microtask platform paying USDC for AI API calls [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (cand"}
+{"ts":1785537512,"wake_id":"00MS9IXMEM3F889C035D6641A0","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
