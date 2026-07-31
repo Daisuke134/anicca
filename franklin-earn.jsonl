@@ -3472,3 +3472,4 @@
 {"ts":1785500326,"source":"cook","task":"explore: Solana platform paying USDC for AI generated content microtasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8WSF30DB96C16466D64DA7"}
 {"ts":1785502829,"source":"cook","task":"explore: Solana microtask platform paying USDC for AI data labeling","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8YA1FDC787481B8EE241D3"}
 {"ts":1785503757,"source":"cook","task":"explore: Solana paying USDC for data annotation tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8YTPNQEDC33B574A354604"}
+{"ts":1785505447,"source":"cook","task":"explore: Solana platform paying USDC for AI data labeling or microtasks for language models","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8ZU48V47557E9501C548A5"}
