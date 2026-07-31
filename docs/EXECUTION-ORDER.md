@@ -2,6 +2,19 @@
 
 Single source of truth for WHAT to do NEXT and in WHAT ORDER. Read this first every session. Update ☐/☑ as you go.
 
+## ★ CURRENT CURSOR — 2026-08-01 DAIS 5段階track
+
+このtrackの専用正本:
+[`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md)
+
+```text
+共通応募基盤 → イベント → 資金調達 → 求人
+→ CFO実口座接続 → 暗号資産（Anicca + Dais）→ 法定通貨・NISA
+```
+
+この順序、残作業、完了条件、外部調査の採用判断は専用正本だけを更新する。
+下の古いtakeoff roadmapは履歴であり、このtrackへ割り込まない。
+
 ## END GOAL = TAKEOFF
 AI that earns its own money on a $0 model, pays its own compute, and self-spawns clones with the same
 earning setup → population + capital grow exponentially with NO human funding. We search for **the recipe**
