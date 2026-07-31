@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.anicca.codex-remote-keepalive</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/.codex-remote-keepalive.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/anicca</string>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>300</integer>
+  <key>StandardOutPath</key><string>/Users/anicca/.codex-remote-keepalive.out</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.codex-remote-keepalive.err</string>
+</dict>
+</plist>

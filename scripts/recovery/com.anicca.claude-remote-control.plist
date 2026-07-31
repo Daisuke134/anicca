@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.anicca.claude-remote-control</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>KP="$(set -a; . /Users/anicca/.openclaw/.env 2>/dev/null 1>/dev/null; printf %s "$KEYCHAIN_PASSWORD")"; /usr/bin/security unlock-keychain -p "$KP" /Users/anicca/ci-signing.keychain-db 2>/dev/null; /usr/bin/security set-keychain-settings /Users/anicca/ci-signing.keychain-db 2>/dev/null; unset KP ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL CLAUDE_CODE_OAUTH_TOKEN; exec /Users/anicca/.local/bin/claude remote-control --name "Mac mini"</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/anicca/anicca-project</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/anicca/.claude/logs/remote-control.log</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.claude/logs/remote-control.err</string>
+</dict>
+</plist>
