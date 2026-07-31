@@ -20,6 +20,23 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
+### 0.1 Life Managerの成果義務
+
+Life Managerは「検索した」「分析した」「失敗した」と報告するsystemではない。userが理想の自分へ
+近づく**次の現実行動を成立させるsystem**である。
+
+| organ / loop | 内部作業ではなく要求する現実成果 |
+|---|---|
+| Connector | Daisが毎日家を出て、東京の対面eventで人と会う |
+| LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
+| Fundraising | 実提出、返信、面談、採択、資金とpeer group |
+| Job Hunter | 実応募、返信、面接、offer、給与改善 |
+| Financial Organ | 口座把握、支出改善、収入増加、risk管理、長期資産形成 |
+
+「no action」が安全上正しい場面はある。たとえばrisk条件を満たさないcrypto取引は実行しない。
+その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
+次行動を残す。Connectorではno-eventを正常終了にせず、実参加予約までloopを継続する。
+
 ## 1. 固定実行順序
 
 ```text
@@ -175,6 +192,40 @@ launchdを一つずつ退役する。
 - 外部repositoryのagent出力を、そのまま金銭executionへ接続しない。研究・提案・paperの
   inputとして使い、最終的な金額計算・上限・署名・照合はLife Manager自身が所有する。
 
+### 4.8 YC応募の既存skillと現在地
+
+| 項目 | 実測 |
+|---|---|
+| 旧skill | `~/.openclaw/skills/apply-to-yc/` |
+| 実行script | `~/.openclaw/skills/apply-to-yc/scripts/apply.sh` |
+| 後継skill | `~/.openclaw/skills/apply-to-funder/` |
+| 既存application ID | `99b966b0-7e90-4856-ab0d-93651488a4ea` |
+| 既存state | Summer 2026 late、20 text fields入力、動画upload記録、validation errorなし、`ready_to_submit` |
+| 実際の提出状態 | submit receiptなし。**未提出として扱う** |
+| 後継state | `yc-w26-latest.json = dry_run_planned`。古いW26 specを現在batchへそのまま使わない |
+| 公式current batch | [YC Fall 2026](https://www.ycombinator.com/apply)。on-time deadlineは7月27日だがlate application受付中 |
+| batch | 2026年10〜12月、San Francisco |
+
+旧`apply-to-yc`はdeprecatedだが、20項目、動画、progress page、React formの実画面知識を持つ。
+この知識を捨てず、後継`apply-to-funder`のYC providerへ移す。ただし旧skillが使う別Chrome
+`9223`は起動せず、現行の唯一のCloakBrowser daily-driver `:9222`へ接続する。
+
+YC提出手順:
+
+```text
+YC公式pageでlate application受付を当日再確認
+  → CloakBrowser daily-driverでapply.ycombinator.com/homeを開く
+  → 既存application IDがFall 2026へ継続可能か実画面で確認
+  → application-kit、production、dashboardから会社factsを再生成
+  → 20項目、founder profile、動画、demo、progressを現在値で更新
+  → 全回答と添付をpreviewで保存
+  → 一度だけSubmit
+  → 完了画面とconfirmation mailを取得
+  → Gmail thread、application URL、提出内容を同じdecisionへ保存
+  → Telegramへ応募内容、動画、deck、確認mailの直接linkを送る
+  → reply/interviewを毎日追跡
+```
+
 ## 5. 残作業 — 必ず番号順
 
 最後までのmaster checklist:
@@ -182,7 +233,7 @@ launchdを一つずつ退役する。
 | order | 残っている成果 | 次へ進める条件 |
 |---|---|---|
 | 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
-| 1B | Luma中心のevent/LT探索・申込・QR・14日coverage | 空いている各日に参加確定またはLife Manager主催予定が1件 |
+| 1B | Luma中心の東京対面event/LT探索・申込・QR・14日coverage | 今後14日間の毎日に実参加eventが1件確認済み |
 | 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
 | 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
 | 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
@@ -213,38 +264,46 @@ launchdを一つずつ退役する。
 - [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [ ] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
-- [ ] O1B-12 AI/agent/cryptoイベントだけでなく、LT枠・CFP・demo枠を別entityとしてdiscover
+- [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇後に参加者数、商談、顧客、採用、投資家接点をattribution ledgerへ記録
-- [ ] O1B-16 Daisの空いている各日に、参加可能な予定を最低1件入れるcoverage goalを実装
-- [ ] O1B-17 Lumaを第一sourceとし、Tokyo、English、AI、agent、LLM、crypto、web3を横断探索
-- [ ] O1B-18 第一候補が無い日はstartup/founder/VC、engineering/product/design、finance、science、国際交流へ段階拡張
-- [ ] O1B-19 Lumaで不足時だけMeetup、Peatix、Eventbrite、TECH PLAY、Doorkeeper、公式community pageへ拡張
-- [ ] O1B-20 東京23区で不足時は、移動時間60分以内・勤務/学校/既存予定と非重複の首都圏候補へ拡張
-- [ ] O1B-21 外部イベントが本当に存在しない日には、Life Manager demo / AI coworking会をLumaで主催するfallbackを用意
+- [ ] O1B-16 Daisが毎日、東京の対面eventへ最低1件参加する14日coverage goalを実装
+- [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
+- [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
+- [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
+- [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
+- [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
-- [ ] O1B-23 日別coverage、申込確認、日時、移動時間、関心適合度を朝のTelegramへ報告
+- [ ] O1B-23 既存予定、勤務・学校、実移動時間と衝突しない時間帯をCalendar/Routesで確認
+- [ ] O1B-24 無料を優先し、有料eventはDaisが設定したevent予算内だけ自動予約
+- [ ] O1B-25 日別coverage、申込確認、日時、場所、会う人、選定理由を朝のTelegramへ報告
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
-空いている14日間の各日に「参加確定済み」または「Life Manager主催予定」が最低1件ある。
+今後14日間の**毎日**に、東京でDaisが実際に参加する対面eventが最低1件確認済みである。
 
 検索の停止条件は「候補が見つからなかった」ではなく、日別coverageが埋まったことである。
 
 ```text
-対象日の予定が未確定
-  → Luma mainをTokyo全体で検索
-  → AI / agent / LLM / crypto / web3 + English eventを検索
-  → startup / founder / VC / engineering / product / financeへ拡張
-  → Meetup / Peatix / Eventbrite / TECH PLAY / Doorkeeperへ拡張
-  → 東京23区から移動60分以内の首都圏へ拡張
-  → 有料でも価値がある候補を予算内で評価
-  → 外部候補が本当に無ければLife Manager demo / coworking会を主催
-  → 参加または主催の確認が取れた時だけ、その日の探索を完了
+各日についてCalendarを読む
+  → Luma mainのTokyo / In Person inventoryを最後まで取得
+  → agentが全候補を読み、好み・目標・人との出会い・serendipityでranking
+  → 参加可能な最上位候補へ申込
+  → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
+  → Lumaを十分に探索しても確保できない時だけconnpassへ進む
+  → 東京・対面・時間非衝突・予算内を確認
+  → 完了画面または確認mailを取得
+  → Calendar、QR、Telegramを作成
+  → その日のcoverageをconfirmedにする
+  → 14日すべてconfirmedになるまで次の日を続ける
 ```
 
-同じ壊れた申込画面を無限に繰り返さない。失敗した候補は記録し、別候補・別source・別categoryへ
-進む。日別の時間上限に達しても「イベントなし」で閉じず、次の探索jobへ継続状態を渡す。
+好みは自然言語promptと実際の参加結果から学習する。AI、crypto、英語、founder等は「高く評価する
+例」であり、それ以外を除外するkeyword listではない。最も重要な目的は、Daisが家に留まらず、
+毎日東京で人と会い、経験と接点を増やすことである。
+
+同じ壊れた申込画面を無限に繰り返さない。失敗した候補は記録し、同じ日の別候補へ進む。
+「0件」「検索した」「時間切れ」を正常終了にせず、confirmedになるまで継続状態を次のjobへ渡す。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -268,6 +327,13 @@ launchdを一つずつ退役する。
 - [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
+- [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
+- [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
+- [ ] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
+- [ ] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
+- [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
+- [ ] O1C-26 Submitを一度だけ実行し、完了画面とconfirmation mailを取得
+- [ ] O1C-27 YC reply/interviewを毎日追跡し、Calendarと面談準備へ接続
 
 完了条件: 実accelerator提出と確認receipt、reply追跡、面談calendar経路が動く。
 
@@ -1129,46 +1195,45 @@ Gmail MCPは対話調査には使えても、停止中のaccept watcherのよう
 
 ## 14. Telegramに今日届くべき実例
 
-以下はplaceholderではなく、2026-08-01に実ファイルとlaunchdを読んだ結果から作る文面例である。
-送信実装後はこの形式をledger値から生成する。
+過去状態を説明する文面は2026-08-01の実ファイルとlaunchdに基づく。完成時templateの
+`{{...}}`は、送信時にCalendar、応募結果、確認mail、統一ledgerの実値だけで置換する。
 
 ```text
-🎟️ 今後2週間の予定を引き続き探しています。
+🎟️ 今日参加するイベントを予約しました。
 
-現在、予定が未確定の日が11日あります。
-最初に見つけた候補では申込み完了を確認できなかったため、探索対象を広げています。
+イベント: {{event_name}}
+日時: {{event_datetime}}
+場所: {{event_location}}
+形式: 東京・対面
 
-現在の検索順:
-1. Lumaの東京AI・agent・LLM・cryptoイベント
-2. Lumaの英語・international・startup・founderイベント
-3. product・engineering・finance・science関連イベント
-4. Meetup、Peatix、Eventbriteなどの別source
-5. 移動60分以内の首都圏イベント
-6. Life Manager demo / AI coworking会の主催
+このイベントを選んだ理由:
+{{selection_reason}}
 
-これは終了報告ではありません。
-空いている各日に予定が1件入るまで探索を続けます。
+会える可能性がある人:
+{{people_or_community_summary}}
 
-[現在の候補を見る]({{candidate_list_url}})
-[予定が確定した日を見る]({{calendar_coverage_url}})
-[技術詳細を見る]({{technical_detail_url}})
+参加申込み: 完了確認済み
+確認メール: 受信済み
+Calendar: 登録済み
+当日のQR: このメッセージに添付
+
+今日も外へ出て、人と会う予定が入りました。
+
+[イベントページを開く]({{canonical_event_url}})
+[Calendarを開く]({{calendar_event_url}})
 ```
 
-14日分が埋まった後だけ送る完了報告:
+14日分のcoverage報告:
 
 ```text
 ✅ 今後2週間の参加予定を確保しました。
 
-空いていた日: 11日
-参加または主催予定を確保した日: 11日
+対象日: 14日
+東京の対面eventを確保した日: 14日
 未確定の日: 0日
 
-内訳:
-・AI / agent / LLM: {{ai_event_count}}件
-・crypto / web3: {{crypto_event_count}}件
-・startup / founder / VC: {{startup_event_count}}件
-・engineering / product / finance: {{adjacent_event_count}}件
-・Life Manager主催: {{hosted_event_count}}件
+好みに特に合うevent: {{high_preference_count}}件
+新しい分野・人との出会いを狙うevent: {{serendipity_count}}件
 
 各イベントの日時、場所、申込み状況、QRをカレンダーへ追加しました。
 
@@ -1350,6 +1415,11 @@ local完成後
 | U26 | Ghostfolio/rotki/Firefly IIIのAGPLコードをproductへ使えるか | 法務/license review完了までUX・schema研究だけとし、source codeをcopyしない |
 | U27 | self-improvementが過学習やrisk増加を起こさないか | time-split replay、shadow、canary、rollbackを必須にし、permission/capを対象外にする |
 | U28 | 多数agentのcostとlatencyが日次利用に耐えるか | 必要なspecialistだけ起動し、single-agent baseline比の有用性/cost/時間を計測 |
+| U29 | Luma mainの当日inventoryを「最後まで読んだ」とどう証明するか | pagination、infinite scroll、日付・東京・対面条件、取得件数と最終cursorを探索証跡へ保存 |
+| U30 | 自動予約してよい有料eventの上限 | 日次・月次event予算をDaisが設定し、超過候補はTelegram承認まで購入しない |
+| U31 | 毎日のeventが勤務・学校・既存予定・移動時間と両立するか | Calendarと経路時間を申込前gateにし、重複時は同日の次候補へ進む |
+| U32 | Summer 2026のYC applicationをFall 2026へ継続できるか | 現行YC homeをread-only確認し、継続不可なら既存回答を新applicationへ安全に移す |
+| U33 | 既存YC回答・動画・tractionが現在も正確か | production、dashboard、application-kit、動画実体を照合し、古い主張を修正してからsubmit |
 
 ## 17. 変更規則
 
