@@ -18487,3 +18487,10 @@
 {"ts":1785515140,"wake_id":"00MS95M3IMD80000859B314260","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana highest APY yield vault USDC low fee [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for "}
 {"ts":1785515276,"wake_id":"00MS95P0Z56AC769901B3647EA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform paid USDC for AI tasks [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced"}
 {"ts":1785515416,"wake_id":"00MS95S1041B0762EFE29B4973","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785515552,"wake_id":"00MS95UXUK200876A75CB445F6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785515680,"wake_id":"00MS95XODN3FA428BFF1A64D19","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785515808,"wake_id":"00MS960EY6ACF8E4FA90C54D67","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785515941,"wake_id":"00MS9639LY2094E3FBD4744FB6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785516068,"wake_id":"00MS966017A7C2388BA3794B86","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785516197,"wake_id":"00MS968R6AF1EA527286454A2E","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785516327,"wake_id":"00MS96BJKS20A19575F60A43B9","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
