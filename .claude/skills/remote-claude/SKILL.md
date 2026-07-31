@@ -40,7 +40,17 @@ env -u CLAUDE_CODE_OAUTH_TOKEN claude remote-control \
   --permission-mode auto
 ```
 
-On macOS, the supervised service must use `RunAtLoad=true` and `KeepAlive=true`, an absolute Claude binary path, an explicit project `WorkingDirectory`, and dedicated stdout/stderr logs. After changing accounts, restart the service because a running server can retain the previous account's credentials.
+On macOS, the supervised service must use `RunAtLoad=true` and `KeepAlive=true`, an absolute Claude binary path, an explicit project `WorkingDirectory`, and dedicated stdout/stderr logs.
+
+After changing Claude accounts, restarting the service alone may reconnect the new login to the previous account's saved Remote environment. Before restarting:
+
+1. Stop the supervised service.
+2. Find the project's `bridge-pointer.json` under `~/.claude/projects/`.
+3. Move it to a timestamped backup that names the previous account; never delete it.
+4. Start the service and require a newly created `bridge-pointer.json` with a different `environmentId`.
+5. Open the new `claude.ai/code?environment=...` URL while signed into the intended account and verify the named server session is visible.
+
+The `--name` value labels the pre-created session. The device card can still use the Mac hostname. On Claude iOS, verify the device card has a green dot and **Connected**, then verify the named session appears under that device.
 
 Require all of the following before reporting success:
 
@@ -154,6 +164,7 @@ Use this when `/remote-control` says the current login token is limited to infer
 | `OAuth access token has expired` | CLI authentication is stale | Import the transcript into authenticated Desktop, then retry there |
 | `Remote Control requires a full-scope login token` | A setup token or `CLAUDE_CODE_OAUTH_TOKEN` is overriding interactive OAuth | Run full-scope reauthentication, then start the child process with `env -u CLAUDE_CODE_OAUTH_TOKEN` |
 | `session_stale_relogin` | Desktop authentication is stale | Report the exact authentication blocker; never claim phone access is ready |
+| Server log says `Connected` after an account switch, but the new account's iOS app has no connected device | The project `bridge-pointer.json` reused the previous account's Remote environment | Stop the service, move the pointer to a timestamped backup, restart, and require a new `environmentId` plus visibility from the intended account |
 | No `Remote control enabled` evidence | Command did not run or failed | Keep the result as `desktop_ready / remote_blocked` |
 | Computer Use Accessibility denied | GUI targeting cannot be trusted | Use the CLI-to-Desktop fallback and log-based verification |
 
