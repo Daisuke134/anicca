@@ -180,8 +180,34 @@ launchdを一つずつ退役する。
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇後に参加者数、商談、顧客、採用、投資家接点をattribution ledgerへ記録
+- [ ] O1B-16 Daisの空いている各日に、参加可能な予定を最低1件入れるcoverage goalを実装
+- [ ] O1B-17 Lumaを第一sourceとし、Tokyo、English、AI、agent、LLM、crypto、web3を横断探索
+- [ ] O1B-18 第一候補が無い日はstartup/founder/VC、engineering/product/design、finance、science、国際交流へ段階拡張
+- [ ] O1B-19 Lumaで不足時だけMeetup、Peatix、Eventbrite、TECH PLAY、Doorkeeper、公式community pageへ拡張
+- [ ] O1B-20 東京23区で不足時は、移動時間60分以内・勤務/学校/既存予定と非重複の首都圏候補へ拡張
+- [ ] O1B-21 外部イベントが本当に存在しない日には、Life Manager demo / AI coworking会をLumaで主催するfallbackを用意
+- [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
+- [ ] O1B-23 日別coverage、申込確認、日時、移動時間、関心適合度を朝のTelegramへ報告
 
-完了条件: 実Luma登録、確認mail、QR、Telegram receiptが同一eventとして照合される。
+完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
+空いている14日間の各日に「参加確定済み」または「Life Manager主催予定」が最低1件ある。
+
+検索の停止条件は「候補が見つからなかった」ではなく、日別coverageが埋まったことである。
+
+```text
+対象日の予定が未確定
+  → Luma mainをTokyo全体で検索
+  → AI / agent / LLM / crypto / web3 + English eventを検索
+  → startup / founder / VC / engineering / product / financeへ拡張
+  → Meetup / Peatix / Eventbrite / TECH PLAY / Doorkeeperへ拡張
+  → 東京23区から移動60分以内の首都圏へ拡張
+  → 有料でも価値がある候補を予算内で評価
+  → 外部候補が本当に無ければLife Manager demo / coworking会を主催
+  → 参加または主催の確認が取れた時だけ、その日の探索を完了
+```
+
+同じ壊れた申込画面を無限に繰り返さない。失敗した候補は記録し、別候補・別source・別categoryへ
+進む。日別の時間上限に達しても「イベントなし」で閉じず、次の探索jobへ継続状態を渡す。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -444,11 +470,22 @@ Telegramは開発者用logではない。利用者が知りたいのは「自分
 6. 本当に完了したか、相手から確認が来たか
 7. 次に何が起き、Daisに何が必要か
 
-内部診断は通常非表示とし、`［技術詳細を見る］`を押した時だけ表示する。
+内部診断は通常非表示とし、本文中の`[技術詳細を見る]({{technical_detail_url}})`を
+タップした時だけ表示する。
 
 実装時はTelegram templateへcopy lintを置き、上記内部語が通常本文に入ったらtestを失敗させる。
 また、履歴書、職務経歴書、cover letter、deck、動画、LT概要はファイル名だけで終わらせず、
 Telegram添付または認証済みpanel linkから実物を開けることを完了条件にする。
+
+リンクのUX規則:
+
+- `［履歴書を見る］`のようなURLを持たない疑似buttonは禁止
+- 外部のevent・求人・programは、本文中のMarkdown linkから公式pageへ直接開く
+- 履歴書、職務経歴書、cover letter、deckはTelegramへ実ファイルを添付する
+- 添付に加えて、認証済みLife Managerの恒久URLも本文へ置く
+- private artifactへ公開URLを発行しない。user認証または短寿命signed URLを要求する
+- 状態変更操作はlink先に確認画面を出し、誤tapだけで取消・送信・売買しない
+- Telegram inline keyboardを使う場合も、tap後に目的画面が直接開くことをE2E testする
 
 ### 10.1 毎朝の統合briefing
 
@@ -475,7 +512,8 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 今日の実行:
 {{today_actions}}
 
-［詳細を開く］［今日の実行を止める］
+[今日の詳細を開く]({{daily_detail_url}})
+[今日の実行を止める]({{pause_confirmation_url}})
 ```
 
 ### 10.2 イベント登録
@@ -495,7 +533,9 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 
 イベントページ: {{canonical_event_url}}
 
-［イベントを開く］［カレンダーを開く］［申込内容を見る］
+[イベントページを開く]({{canonical_event_url}})
+[カレンダーを開く]({{calendar_event_url}})
+[申込内容を見る]({{application_detail_url}})
 ```
 
 証拠不足時:
@@ -508,7 +548,8 @@ Telegram添付または認証済みpanel linkから実物を開けることを�
 相手から完了画面または確認メールが届いていないため、申込済みにはしていません。
 次回は{{retry_at}}にもう一度試します。
 
-［イベントを開く］［技術詳細を見る］
+[イベントページを開く]({{canonical_event_url}})
+[技術詳細を見る]({{technical_detail_url}})
 ```
 
 LT・登壇応募:
@@ -533,7 +574,9 @@ Life Managerを紹介する部分:
 現在の状態: 主催者の確認待ち
 回答予定: {{expected_reply_date}}
 
-［提出内容を見る］［イベントを開く］［カレンダーを開く］
+[提出した登壇内容を見る]({{talk_application_url}})
+[イベントページを開く]({{canonical_event_url}})
+[カレンダーを開く]({{calendar_event_url}})
 ```
 
 ### 10.3 アクセラレーター提出
@@ -559,7 +602,9 @@ Life Managerを紹介する部分:
 現在の状態: 書類選考待ち
 次に確認する日: {{followup_at}}
 
-［応募回答を見る］［deckを見る］［確認メールを見る］
+[応募回答を見る]({{application_detail_url}})
+[pitch deckを開く]({{deck_url}})
+[確認メールを見る]({{confirmation_mail_url}})
 ```
 
 ### 10.4 投資家・アクセラレーターからの返信
@@ -572,7 +617,8 @@ Life Managerを紹介する部分:
 
 {{meeting_datetime_line}}
 
-［返信案を見る］［カレンダーを開く］
+[返信案を見る]({{reply_draft_url}})
+[カレンダーを開く]({{calendar_event_url}})
 ```
 
 ### 10.5 求人応募
@@ -598,7 +644,9 @@ Life Managerを紹介する部分:
 現在の状態: {{human_status}}
 次に確認する日: {{followup_at}}
 
-［求人を見る］［提出した履歴書を見る］［応募内容を見る］
+[求人ページを開く]({{job_url}})
+[提出した履歴書を開く]({{submitted_resume_url}})
+[応募内容を見る]({{application_detail_url}})
 ```
 
 ### 10.6 面接確定
@@ -613,7 +661,8 @@ Life Managerを紹介する部分:
 カレンダーへ登録済みです。
 会社調査、想定質問、回答材料も準備しました。
 
-［面接準備を見る］［日程を開く］
+[面接準備を見る]({{interview_prep_url}})
+[カレンダーを開く]({{calendar_event_url}})
 ```
 
 ### 10.7 支出異常
@@ -628,7 +677,9 @@ Life Managerを紹介する部分:
 主な明細:
 {{transaction_lines}}
 
-［明細を見る］［予算を変更］［今月だけ無視］
+[明細を見る]({{transaction_detail_url}})
+[予算を変更する]({{budget_edit_url}})
+[今月だけ除外する]({{ignore_confirmation_url}})
 ```
 
 ### 10.8 未使用subscription
@@ -640,7 +691,9 @@ Life Managerを紹介する部分:
 最終利用確認: {{last_used_at}}
 年間削減額: ¥{{annual_saving}}
 
-［解約手順を見る］［維持する］［判断を保留］
+[解約手順を見る]({{cancellation_guide_url}})
+[維持すると記録する]({{keep_confirmation_url}})
+[判断を保留する]({{snooze_confirmation_url}})
 ```
 
 ### 10.9 暗号資産の実行報告
@@ -669,7 +722,8 @@ Life Managerを紹介する部分:
 新規注文を停止し、未約定注文を取り消しました。
 資金は元の隔離口座またはwalletに残っています。
 
-［原因分析を見る］［停止を維持］
+[停止理由を見る]({{stop_detail_url}})
+[停止を維持する]({{keep_stopped_url}})
 ```
 
 ### 10.10 NISA・法定通貨投資
@@ -686,7 +740,8 @@ NISA年間残枠: ¥{{nisa_remaining}}
 この提案後の資産配分:
 {{post_allocation_lines}}
 
-［内容を確認］［今回は見送る］
+[投資案の詳細を見る]({{proposal_detail_url}})
+[今回は見送る]({{skip_confirmation_url}})
 ```
 
 約定後:
@@ -730,7 +785,8 @@ NISA利用額: ¥{{nisa_used}}
 月間1,000万円目標まで: ¥{{target_gap}}
 来月の重点: {{next_month_focus}}
 
-［Webで詳細を見る］［全証拠を見る］
+[月次報告の詳細を見る]({{monthly_report_url}})
+[元データを見る]({{source_detail_url}})
 ```
 
 ## 11. 最終利用体験
@@ -833,18 +889,47 @@ Gmail MCPは対話調査には使えても、停止中のaccept watcherのよう
 送信実装後はこの形式をledger値から生成する。
 
 ```text
-🎟️ 今後2週間のイベントを探しました。
+🎟️ 今後2週間の予定を引き続き探しています。
 
-東京で参加できるAI・cryptoイベントを11日分調べました。
-今回、参加申込みまで完了を確認できたイベントは0件です。
+現在、予定が未確定の日が11日あります。
+最初に見つけた候補では申込み完了を確認できなかったため、探索対象を広げています。
 
-10日分は、申込み画面の途中で処理が止まりました。
-残り1日分も、相手から確認メールが届いていないため参加確定にはしていません。
+現在の検索順:
+1. Lumaの東京AI・agent・LLM・cryptoイベント
+2. Lumaの英語・international・startup・founderイベント
+3. product・engineering・finance・science関連イベント
+4. Meetup、Peatix、Eventbriteなどの別source
+5. 移動60分以内の首都圏イベント
+6. Life Manager demo / AI coworking会の主催
 
-応募していないイベントを「応募済み」と表示することはありません。
-明日は、開催日が近いイベントから順にもう一度試します。
+これは終了報告ではありません。
+空いている各日に予定が1件入るまで探索を続けます。
 
-［見つけたイベントを見る］［もう一度試す］［技術詳細を見る］
+[現在の候補を見る]({{candidate_list_url}})
+[予定が確定した日を見る]({{calendar_coverage_url}})
+[技術詳細を見る]({{technical_detail_url}})
+```
+
+14日分が埋まった後だけ送る完了報告:
+
+```text
+✅ 今後2週間の参加予定を確保しました。
+
+空いていた日: 11日
+参加または主催予定を確保した日: 11日
+未確定の日: 0日
+
+内訳:
+・AI / agent / LLM: {{ai_event_count}}件
+・crypto / web3: {{crypto_event_count}}件
+・startup / founder / VC: {{startup_event_count}}件
+・engineering / product / finance: {{adjacent_event_count}}件
+・Life Manager主催: {{hosted_event_count}}件
+
+各イベントの日時、場所、申込み状況、QRをカレンダーへ追加しました。
+
+[2週間の予定をカレンダーで見る]({{calendar_coverage_url}})
+[参加予定の一覧を見る]({{confirmed_event_list_url}})
 ```
 
 ```text
@@ -865,7 +950,8 @@ connpass:
 今日の新規LT応募: 0件
 次の行動: 主催者からの確認メールまで追跡できる状態にしてから、実際のLTへ1件申し込みます
 
-［過去の応募を見る］［候補イベントを見る］
+[過去の登壇応募を見る]({{talk_application_history_url}})
+[候補イベントを見る]({{talk_candidate_list_url}})
 ```
 
 ```text
@@ -885,7 +971,9 @@ YC既存draft:
 
 まだ送信していないため、「YCへ応募済み」とは表示しません。
 
-［YC応募内容を見る］［使用する動画を見る］［応募先一覧を見る］
+[YC応募内容を見る]({{yc_application_url}})
+[使用する動画を見る]({{founder_video_url}})
+[応募先一覧を見る]({{funder_pipeline_url}})
 ```
 
 過去の実応募を新しいUXで表す場合:
@@ -910,7 +998,9 @@ YC既存draft:
 
 履歴書とcover letterをこの報告から開けます。
 
-［提出した履歴書を見る］［cover letterを見る］［求人を見る］
+[提出した履歴書を開く]({{submitted_resume_url}})
+[cover letterを開く]({{cover_letter_url}})
+[求人ページを開く]({{job_url}})
 ```
 
 ```text
@@ -930,7 +1020,9 @@ YC既存draft:
 カレンダーにも予定を追加済みです。
 現在の状態: 主催者からの最終回答待ち
 
-［登壇内容を見る］［イベントを見る］［カレンダーを開く］
+[提出した登壇内容を見る]({{talk_application_url}})
+[イベントページを開く]({{canonical_event_url}})
+[カレンダーを開く]({{calendar_event_url}})
 ```
 
 採択後の実際のUX:
@@ -949,7 +1041,9 @@ YC既存draft:
 ・Daisローカル実証の応募/CFO metrics
 ・なぜ今、なぜ1人で開始できるか
 
-［返信案を送る］［面談資料を見る］［今回は辞退］
+[返信案を確認する]({{reply_draft_url}})
+[面談資料を見る]({{meeting_prep_url}})
+[辞退の確認画面を開く]({{decline_confirmation_url}})
 ```
 
 ## 15. 生活と会社がどう変わるか
