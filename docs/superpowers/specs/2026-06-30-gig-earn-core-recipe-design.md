@@ -1,5 +1,7 @@
 # gig EARN-CORE recipe — autonomous-loop verification + portable recipe (2026-06-30)
 
+> ★ **SUPERSEDED (2026-08-01)** — この spec は死んでいる。gig ループの現在状態・残TODO・実行順序の正本は `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md`（§0 と §6）だけ。本ファイルは dealwork/USDC 期および 2026-07-18 cutover 以前の設計であり、記載された cron/step/ファイル配置は現行実装と一致しない。履歴としてのみ読むこと（削除はしない）。★
+
 VCSDD spec. Goal: PROVE the gig loop runs autonomously 24/7 on claude-p (no main session), and
 turn it into a portable recipe any Claude can use to earn daily. Built via /vcsdd: spec → RED →
 GREEN → fresh-context adversary → no-mock E2E → my own runtime verify.
@@ -20,7 +22,11 @@ GREEN → fresh-context adversary → no-mock E2E → my own runtime verify.
 - **OS layer (launchd, session-independent)**: `gig-core-healthcheck` (5min) restarts the core if the
   tmux died OR is STALE (no pass >90min → in-session cron stopped). This is the 24/7 anchor.
 - **AGENT layer (claude-p tmux, subscription-fueled, NO API)**: `gig-cli.sh` core registers an
-  in-session recurring cron `27 * * * *` (durable) and idles; the cron fires it hourly.
+  in-session recurring cron and idles; the cron fires it hourly.
+  ★ **SUPERSEDED (2026-08-01 実測)**: この層は 2026-07-18 cutover で廃止された。claude-p tmux core も
+  in-session cron も現存しない。現行は LaunchAgent `ai.anicca.hf-gig-pass.plist`
+  （`StartCalendarInterval Minute 0` = **毎時 :00**）が
+  `~/profitable-claude/skills/gig-work/gig_pass.sh` を直接起動する。★
 - **WORK layer (one bounded pass)**: touch heartbeat → drive daily-driver CDP as mtdc per
   APPLY_RUNBOOK → INBOX(reply/deliver/評価) ELSE APPLY(scan→propose) → applied.jsonl; ¥ recorded to
   earnings.jsonl ONLY on 検収/支払 + evidence (deterministic, no fake).

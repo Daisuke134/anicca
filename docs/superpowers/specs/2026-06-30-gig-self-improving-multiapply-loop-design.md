@@ -1,5 +1,7 @@
 # gig SELF-IMPROVING MULTI-APPLY LOOP — VCSDD spec (2026-06-30)
 
+> ★ **SUPERSEDED (2026-08-01)** — この spec は死んでいる。gig ループの現在状態・残TODO・実行順序の正本は `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md`（§0 と §6）だけ。本ファイルは dealwork/USDC 期および 2026-07-18 cutover 以前の設計であり、記載された cron/step/ファイル配置は現行実装と一致しない。履歴としてのみ読むこと（削除はしない）。★
+
 Extends `2026-06-30-gig-earn-core-recipe-design.md`.  
 Adds 5 behaviors to the existing autonomous Coconala earn-core:
 nurture-all + apply-broadly + learn + self-improve + bot-to-bot GitHub learning.

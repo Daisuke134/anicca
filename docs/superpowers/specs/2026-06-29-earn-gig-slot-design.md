@@ -1,5 +1,7 @@
 # earn/gig slot 設計 (= ONE Anicca loop の gig スロット、 2026-06-29)
 
+> ★ **SUPERSEDED (2026-08-01)** — この spec は死んでいる。gig ループの現在状態・残TODO・実行順序の正本は `~/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md`（§0 と §6）だけ。本ファイルは dealwork/USDC 期および 2026-07-18 cutover 以前の設計であり、記載された cron/step/ファイル配置は現行実装と一致しない。履歴としてのみ読むこと（削除はしない）。★
+
 ## Goal
 私の earn-gig skill (standalone session) を、 ONE Anicca loop が毎 wake に選べる
 TOOL = `earn/gig` スロットに変換する。 ONE wallet / ONE state / ONE skill library / ONE dashboard row。
@@ -150,7 +152,9 @@ Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = �
 
 ### clip と同じ作り (車輪の再発明なし、 master spec の EARN-CORE)
 - **(producer 廃止 2026-06-30)**: 別 producer は no-op になりがちで不誠実 → 廃止。 ★ core が毎 pass で公開依頼板を live-scan する ★ (= scan は core の APPLY ステップに内包)
-- **gig-cli.sh** (CORE、 tmux + claude-p headless): clip-cli.sh をクローン。 起動時に cron 登録 (cron="27 * * * *" 等、 clip の :07 とずらす) → 各 pass で ★ model が APPLY_RUNBOOK に従い daily-driver(CDP) を駆動 ★: 公開依頼板を live-scan (applied.jsonl 未掲載を1件選ぶ) → 応募 (proposal+成果物) → トークルーム watch → 採用検知→納品 → applied.jsonl 追跡・反復
+- **gig-cli.sh** (CORE、 tmux + claude-p headless): clip-cli.sh をクローン。 起動時に in-session cron 登録 (clip とずらす) → 各 pass で
+  ★ **SUPERSEDED (2026-08-01 実測)**: この CORE と in-session cron は 2026-07-18 cutover で廃止。
+  現行は LaunchAgent `ai.anicca.hf-gig-pass.plist`（毎時 :00）が `gig_pass.sh` を直接起動する ★ — ★ model が APPLY_RUNBOOK に従い daily-driver(CDP) を駆動 ★: 公開依頼板を live-scan (applied.jsonl 未掲載を1件選ぶ) → 応募 (proposal+成果物) → トークルーム watch → 採用検知→納品 → applied.jsonl 追跡・反復
 - **gig-healthcheck.sh** (launchd 5分毎): core 死亡なら再起動 (clip-healthcheck クローン)
 - **monitor.sh**: applied.jsonl 状態 + ¥着金 観測
 - **launchd/**: core-healthcheck plist のみ (producer plist は廃止)
