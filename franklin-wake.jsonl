@@ -18560,3 +18560,11 @@
 {"ts":1785524589,"wake_id":"00MS9B8N0B7CDA992B8DAB478D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785524719,"wake_id":"00MS9BBEXA72FCA64C7F7D4843","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785524849,"wake_id":"00MS9BE763A4A61887D9F6406A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785524984,"wake_id":"00MS9BH38G2AF905FFCC5B4699","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525112,"wake_id":"00MS9BJU9E22CF0501F13446CE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana high APY yield farms USDC low risk [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for th"}
+{"ts":1785525240,"wake_id":"00MS9BMKOA300109DC13154E46","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525367,"wake_id":"00MS9BPAV9194D415DD8CD44EF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525494,"wake_id":"00MS9BS0NY2ADA0D8810634285","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525623,"wake_id":"00MS9BUS6Z63FEBC566F7D46DD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525750,"wake_id":"00MS9BXIFEF92DB5A76F144AC9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785525878,"wake_id":"00MS9C08X9E082376EB9AE447C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
