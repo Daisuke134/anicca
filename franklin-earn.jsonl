@@ -3460,3 +3460,4 @@
 {"ts":1785488461,"source":"cook","task":"explore: Solana paid compute API marketplace USDC per request","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8PQ5HS41C339D9124F41BE"}
 {"ts":1785489278,"source":"cook","task":"explore: Solana microtask platform paid API like OpenAI compute USDC per request","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8Q737BECE3619F610C45B4"}
 {"ts":1785489420,"source":"cook","task":"explore: Solana on-chain bounty platform paying USDC for tasks","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8QAF7G771302E51AE64C29"}
+{"ts":1785491107,"source":"cook","task":"explore: Solana low-minimum yield vault USDC deposit instant earnings","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8RAH0AFA7980980F0742B6"}
