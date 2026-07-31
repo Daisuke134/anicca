@@ -56,6 +56,10 @@ const WAKE_LEVELS = [
   { min: 10, urgency: "firm" },
   { min: 5, urgency: "harsh" },
 ];
+// How late after DEPARTURE a wake call may still be STARTED. Past this the call has nothing left to
+// achieve — the user is already late and the late-notice organ owns that territory — so the catch-up
+// below stops here instead of ringing someone about a departure they can no longer make.
+const LATE_CUTOFF_MIN = -15;
 
 const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY });
 
@@ -329,12 +333,21 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
         directionsFn: deps.directionsMinutes || directionsMinutes,
       });
       const mins = (depMs - now) / 60000;
-      for (const lvl of WAKE_LEVELS) {
-        // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
-        if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
+      // A level is DUE once its threshold has passed, not only while the tick sits inside a ~2-min
+      // window: this tick is not periodic (the organs above share the per-user timeout, and a redeploy
+      // restarts the loop), so a window-bound level was lost FOREVER whenever a tick landed outside it.
+      // Ordered most urgent first, because a tick that catches up on both levels must place ONE call —
+      // the one that still matches how little time is left — never T-10 and T-5 back to back.
+      const due = WAKE_LEVELS
+        .filter((lvl) => mins <= lvl.min + 0.5 && mins > LATE_CUTOFF_MIN)
+        .sort((a, b) => a.min - b.min);
+      for (const lvl of due) {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
         const fresh = await (deps.claimWake || claimWake)(u.uid, eventKey);
         if (!fresh) continue; // already called for this (event, level)
+        // A coarser level the call above superseded must never ring later, so it is CLAIMED here and
+        // left uncalled — the claim is what stops a future tick from resurrecting it.
+        if (lvl !== due[0]) continue;
         const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
         let res;
         try {
@@ -715,6 +728,8 @@ module.exports = {
   forEachUserSafe,
   // wake escalation levels (Dais: T-10 firm + T-5 harsh only) — exported so a revert is test-caught
   WAKE_LEVELS,
+  // how late a missed level may still be caught up (past it, the late-notice organ owns the event)
+  LATE_CUTOFF_MIN,
   // paid-user listing (for Inngest sweep fan-out)
   listPaidUsers,
   // per-uid re-fetch for Inngest per-user functions (PII: sweepers send only uid)
