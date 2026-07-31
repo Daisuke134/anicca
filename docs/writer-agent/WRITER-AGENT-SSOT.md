@@ -255,6 +255,94 @@ Deterministic code owns arithmetic, receipts, idempotency, deduplication,
 scheduling, and bookkeeping. The Agent owns topic, reader, article form,
 revenue-stream selection, experiment choice, and interpretation.
 
+### 5.1 Self-improvement loop and visible diff
+
+Self-improvement is not "the Agent rewrote something" and not a higher judge
+score on one draft. It exists only when an immutable baseline and candidate are
+compared, a decision is recorded, and the winning lesson changes a later run.
+
+The Writer reuses the established pattern from Self-Refine, Reflexion,
+PromptWizard/DSPy, and experiment-comparison systems:
+
+```text
+OBSERVE
+  Collect yesterday/previous-run traces, article receipts, funnel, money,
+  reader questions, failures, cost, and opportunity outcomes.
+    |
+SCORE
+  Compare against the active baseline on frozen examples and real production
+  cohorts. Quality, money, cost, safety, and variance remain separate metrics.
+    |
+DIAGNOSE
+  The Agent explains the weakest link from evidence: discovery, opening,
+  usefulness, trust, CTA, paywall, price, channel, or offer. Code does not
+  diagnose writing with keyword rules.
+    |
+PROPOSE ONE CHANGE
+  Create a candidate strategy/prompt/example set with exactly one declared
+  variable changed and an expected measurable effect.
+    |
+OFFLINE REPLAY
+  Run baseline and candidate on the same held-out article briefs and reader
+  questions, with repeated/randomized pairwise evaluation to expose judge
+  variance. Reject safety/citation regressions.
+    |
+BOUNDED CANARY
+  Apply the candidate to a small matched production cohort. Keep price,
+  platform, reader job, measurement window, and all non-tested variables fixed
+  where possible.
+    |
+COMPARE
+  Persist output diff, per-case improvements/regressions, funnel delta,
+  received-money delta, compute/fee delta, sample size, and uncertainty.
+    |
+DECIDE
+  KEEP only with sufficient comparable evidence and no guardrail regression;
+  REVERT on harm; INCONCLUSIVE when the window/sample is insufficient.
+    |
+LEARN
+  Promote only a validated lesson into the active strategy hash and show where
+  the next run consumed it. Failed reflections remain evidence, not policy.
+```
+
+The UI always shows a descriptive day-over-day diff, but it must not confuse
+that with causal evidence. Two unrelated topics published on consecutive days
+are not an A/B test. Conversion is compared at the same article age (for
+example, first 24 hours versus first 24 hours, then seven days versus seven
+days), on the same destination and attribution contract. Editorial acceptance
+and payout may take weeks, so their experiment remains `INCONCLUSIVE` until the
+matched outcome window closes.
+
+The active comparison unit contains:
+
+- baseline/candidate IDs and immutable strategy/prompt/example hashes;
+- the single changed field and a human-readable before/after text diff;
+- identical held-out inputs, model/provider/version, evaluator versions, and
+  randomized repeated trial receipts;
+- quality dimensions: reader-job completion, factual/citation support,
+  editorial usefulness, trust/authenticity, and render correctness;
+- business dimensions: qualified views, reads, CTA clicks, paid-boundary
+  visits, purchases, active subscriptions, refunds/churn, gross received,
+  fees, net received, compute cost, and time-to-payment;
+- improvement/regression counts per case, sample size, uncertainty, decision,
+  reason, rollback target, and the next run that consumed the lesson.
+
+External patterns reused rather than reinvented:
+
+- Self-Refine: feedback and refinement over iterative outputs —
+  https://github.com/madaan/self-refine
+- Reflexion: retain prior attempt/reflection as episodic memory —
+  https://github.com/noahshinn/reflexion
+- PromptWizard: generate, critique, and refine prompts/examples —
+  https://github.com/microsoft/PromptWizard
+- DSPy/GEPA: evaluate candidates and advance improved candidates through a
+  validation/Pareto process —
+  https://github.com/stanfordnlp/dspy
+- LangSmith and Braintrust: immutable experiments, explicit baseline,
+  side-by-side output diff, improvements, regressions, cost, and shared result —
+  https://docs.langchain.com/langsmith/compare-experiment-results and
+  https://www.braintrust.dev/docs/evaluate/compare-experiments
+
 ## 6. User experience
 
 ### 6.1 Money screen
@@ -307,7 +395,7 @@ Writer — 8月1日 14:00
 
 お金: 今日 ¥500 / $0、今月 ¥3,000 / $400、MRR $16
 入金元: note ¥500（1件）／Substack $16 MRR（2人）／
-AppSignal $400 支払済み／DigitalOcean $0（受付停止中）
+AppSignalから$400受取済み／DigitalOceanからの受取 $0（受付停止中）
 手数料後: ¥455 / $394.28。未入金: ¥500。計測不明: なし。
 
 今日の記事: 5媒体で公開、2媒体は復旧中
@@ -324,6 +412,38 @@ AppSignal $400 支払済み／DigitalOcean $0（受付停止中）
 次: 同じ価格で導入文だけを変える1変数テストを自動実行します。
 あなたの操作: なし。
 ```
+
+Every improvement event adds a separate diff block:
+
+```text
+自己改善 #exp-042 — KEEP
+
+変えたのは1つだけ:
+導入文「一般的な説明」→「読者の失敗を最初に提示」
+
+比較条件:
+同じ媒体、同じ価格、同じ読者job、公開後24時間、各3 trial。
+
+結果（baseline → candidate）:
+読者job達成 72% → 84%（+12pt）
+CTA click率 1.8% → 3.1%（+1.3pt）
+購入 0/812 → 2/805
+当社の受取額 ¥0 → ¥1,000
+compute cost ¥180 → ¥205
+退行 1件: 英語版が長文化
+
+判断:
+純受取額と読者jobが改善し、安全・引用の退行なし。KEEP。
+英語の長文化は次の候補にせず、失敗例として保存。
+
+次回:
+active strategy hash abc123… をrun daily-2026-08-02が使用します。
+```
+
+Money wording is always receiver-oriented. Use `当社が受取済み`,
+`読者から受取済み`, `出版社から入金予定`, or `未入金`. Never use the
+ambiguous standalone phrase `支払済み`, which can sound as if the user paid
+someone else.
 
 Required fields by cadence:
 
@@ -476,7 +596,7 @@ schedules or future data.
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | TODO |
 | 12 | Subscription | Measure Substack active paid, new, churn, gross MRR, fees, and net MRR | Stripe/Substack receipts join to article | TODO |
 | 13 | Self-owned | Implement paid article and recurring archive on an Agent-owned publication | Public unlock/payment/renewal receipts without creator-platform account | TODO |
-| 14 | Learning | One revenue variable per experiment; held-out, canary, KEEP/REVERT | Consumed config hash and outcome receipt | TODO |
+| 14 | Learning | Implement the full observable self-improvement contract: yesterday/today descriptive diff; immutable baseline/candidate; one changed variable; held-out repeated replay; matched canary; per-case/output/funnel/received-money/cost diff; KEEP/REVERT/INCONCLUSIVE; validated lesson consumption | Telegram/Web improvement card links baseline, candidate, evidence, rollback, and the later run consuming the winning strategy hash | TODO |
 | 15 | Gate S0 | Earn the first verified dollar from writing | Non-test receipt joined to article/submission | TODO |
 | 16 | Gate S1 | Reach $400 monthly writing revenue | Verified monthly ledger | TODO |
 | 17 | Gate S2 | Reach $1,000 monthly with three positive weeks and no manual execution | Ledger plus run receipts | TODO |
