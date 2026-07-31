@@ -40,4 +40,17 @@ rm -rf "$LK"; mkdir "$LK"; echo 88 > "$LK/owner"; touch -t 202607010000 "$LK"
 hc_acquire_lock "$LK" "$now" && { echo "  ok steal NON-EMPTY stale lock (rm -rf recovery)"; P=$((P+1)); } || { echo "  FAIL could not steal non-empty stale lock"; F=$((F+1)); }
 rm -rf "$D"
 
+echo "(E) A18 budget preflight — ANICCA_BUDGET_REQUIRED=1 without the scope/pass/daily trio must ABORT before spawn"
+D2="$(mktemp -d)"
+out="$(HOME="$D2" SELF_FIX_NO_ALERT=1 ANICCA_BUDGET_REQUIRED=1 ANICCA_BUDGET_SCOPE_ID= ANICCA_PASS_TOKEN_BUDGET= ANICCA_LOOP_DAILY_TOKEN_BUDGET= SELF_FIX_DRYRUN=1 bash "$SF" gig hint 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && { echo "  ok incomplete trio → nonzero exit ($rc)"; P=$((P+1)); } || { echo "  FAIL incomplete trio did not abort"; F=$((F+1)); }
+a "abort message names the failure class" "$out" 'PREFLIGHT ABORT'
+a "abort logged to the loop's self-fix log" "$(cat "$D2/.openclaw/logs/self-fix-gig-loop.log" 2>/dev/null)" 'PREFLIGHT ABORT'
+out="$(HOME="$D2" SELF_FIX_NO_ALERT=1 ANICCA_BUDGET_REQUIRED=1 ANICCA_BUDGET_SCOPE_ID=selffix-test ANICCA_PASS_TOKEN_BUDGET=65536 ANICCA_LOOP_DAILY_TOKEN_BUDGET=262144 SELF_FIX_DRYRUN=1 bash "$SF" gig hint 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && { echo "  ok complete trio → preflight passes"; P=$((P+1)); } || { echo "  FAIL complete trio aborted: $out"; F=$((F+1)); }
+a "complete trio reaches the dryrun seam" "$out" 'LOOP=gig-loop'
+out="$(HOME="$D2" SELF_FIX_NO_ALERT=1 SELF_FIX_DRYRUN=1 bash "$SF" gig hint 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && { echo "  ok REQUIRED unset → budget-less caller unaffected"; P=$((P+1)); } || { echo "  FAIL budget-less caller aborted: $out"; F=$((F+1)); }
+rm -rf "$D2"
+
 echo "=== self-fix: $P passed $F failed ==="; [ "$F" = 0 ]&&echo GREEN||exit 1

@@ -41,6 +41,21 @@ STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
+# A18 PREFLIGHT (2026-08-01, gig 4-day silent outage 07-28→08-01): agent_runner is fail-closed on
+# token budgets — if the caller's env carries ANICCA_BUDGET_REQUIRED=1 without the FULL
+# scope/pass/daily trio, the spawned runner aborts at startup, AFTER this script already logged
+# SPAWNED and wrote RUNNING to the result marker, and the abort is visible only in a log nobody
+# tails. Failure class: "budget config incomplete → repair chain dies silently". Detect it BEFORE
+# paying for any spawn side-effect and page it as an incident. Test seam: SELF_FIX_NO_ALERT=1.
+if [ "${ANICCA_BUDGET_REQUIRED:-}" = "1" ] && { [ -z "${ANICCA_BUDGET_SCOPE_ID:-}" ] || [ -z "${ANICCA_PASS_TOKEN_BUDGET:-}" ] || [ -z "${ANICCA_LOOP_DAILY_TOKEN_BUDGET:-}" ]; }; then
+  PF_MSG="self-fix[$LOOP] PREFLIGHT ABORT: ANICCA_BUDGET_REQUIRED=1 but token budget env is incomplete (scope='${ANICCA_BUDGET_SCOPE_ID:-}' pass='${ANICCA_PASS_TOKEN_BUDGET:-}' daily='${ANICCA_LOOP_DAILY_TOKEN_BUDGET:-}') — caller must export all three or the agent-runner spawn aborts silently (A18 class, self-heal chain dead)"
+  echo "$(date '+%F %T') $PF_MSG" >> "$LOG"
+  if [ "${SELF_FIX_NO_ALERT:-0}" != "1" ]; then
+    openclaw message send --channel telegram --target 8547730585 -m "🚨 $PF_MSG" --json >/dev/null 2>&1 || true
+  fi
+  echo "$PF_MSG" >&2
+  exit 2
+fi
 # FIND-028 test seam: print the normalized identity + derived paths and exit BEFORE any tmux/side-effect.
 if [ "${SELF_FIX_DRYRUN:-}" = "1" ]; then printf 'LOOP=%s SESSION=%s SOCK=%s RESULT=%s\n' "$LOOP" "$SESSION" "$SOCK" "$RESULT"; exit 0; fi
 MAX_FIXER_MIN=180                             # FIND-023: a fixer older than 3h is presumed hung → kill+respawn. Set
