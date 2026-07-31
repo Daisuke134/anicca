@@ -63,6 +63,17 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 - CFOジョブを消費するexecutorもlaunchdに存在しない。
 - 現行financial reportはDaisの銀行・カード・Binance・NISAを完全には読んでいない。
 - 現行の暗号資産台帳はAniccaのagent economyとDais個人資産を完全な個人CFOとして統合していない。
+- `ai.anicca.connector-fill-gaps`と`ai.anicca.connector-daily-report`は既にlaunchd登録済み。
+  ただし前者は大半のday taskが180秒timeoutで失敗し、後者はTelegram応答のJSON parseで
+  `SEND-ERR`になる。新規Connectorを作るのではなく、この既存loopを修復する。
+- `apply-to-yc`はdeprecatedで、後継は`apply-to-funder`。しかし実stateは
+  `yc-2026-summer.json = ready_to_submit`、`yc-w26-latest.json = dry_run_planned`であり、
+  YC本体の提出receiptはまだ無い。
+- `anicca-meetup-talk-applier`にはAI Tinkerers Tokyo/SFの過去提出stateがある。
+  一方、connpassは偽陽性防止のため最終click直前で意図的に停止し、accept watcherも
+  Gmailを読まず手順を表示するだけである。
+- `mufg-epoc-watcher`はMUIT/EPOC向け外部情報briefであり、DaisのMUFG銀行口座や
+  個人取引明細を読むconnectorではない。
 
 ## 4. 外部調査からの結論
 
@@ -120,6 +131,27 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 | [kabuステーションAPI](https://kabu.com/item/kabustation_api/default.html) | 個人向けの自動取引APIを公式提供。事前設定と対応環境が必要 | Daisの証券会社・口座区分・NISA対応を実画面とAPIで検証してから採用 |
 | [金融庁NISA](https://www.fsa.go.jp/policy/nisa2/know/index.html) | 年間360万円、総枠1,800万円、つみたて枠と成長枠を併用可能 | 枠計算と口座区分の制度正本 |
 
+### 4.6 既存OpenClaw資産 — 作り直さず移植する
+
+| 既存資産 | 実測状態 | Life Managerでの扱い |
+|---|---|---|
+| `ai.anicca.connector-fill-gaps` | 毎朝07:50。CloakBrowser `:9222`と`gog`を使うが、多数のbounded agentがtimeout | schedulerは残し、1日1巨大fan-outをdurable queueへ分解 |
+| `connector_daily_report.sh` | Telegram日報を持つが、送信responseのparseが壊れる | Telegram adapterの戻り値contractを直し、delivery receiptをledger化 |
+| `anicca-meetup-talk-applier` | discover、AI Tinkerers応募、Calendar登録、state JSONが存在 | pitchとplatform知識をevents packへ移植。別loopとしては退役 |
+| `connpass-lt-discover.py` | LT枠を分類できるが、証跡不足のためsubmit直前で停止 | API keyまたは確認mailを含むE1/E2/E3経路ができるまで送信禁止 |
+| `apply-to-yc` | 20 text fields、動画、validationまで到達。deprecated | 画面知識だけ`apply-to-funder`へ移植。二重submitしない |
+| `apply-to-funder` | JSON form specとguardrailがある。YC/JSTはdry-run止まり | funders packの入力adapterとして残し、stateは共通ledgerへ移す |
+| `apply-anywhere` | YC、ANRI、Coral、Solo Founders等の過去receiptを記録 | ATS/form routing知識を共通ACTへ移植。未実装shell骨格を正本にしない |
+| `gog` 0.17.0 | Gmail/Calendarのlocal OAuth CLIが導入済み | localのread/write transportに採用。MCPを定期workerの必須dependencyにしない |
+| Job Hunter confirmation ledger | message/thread ID、時刻、evidence hash、fence、dedupが実装済み | events/funders/jobsの共通result trackerへ一般化 |
+| `mail-gog.js` / `calendar-gog.js` | Life Manager内にadapterとtestが存在 | local共通transport。Web版は同interfaceのtenant別Google OAuthへ差し替え |
+| `cfo-core` | AniccaのBase USDC、x402、LLM cost中心 | agent economy subledgerとして残す。Dais個人CFOとはownerで分離 |
+| `mufg-epoc-watcher` | 外部AI情報のSlack brief | 個人口座connectorに流用しない。この5段階の金融data sourceではない |
+
+移植はcopy-and-forgetにしない。旧loopと新loopをshadowで動かし、同じ入力に対する
+候補・実行・receiptを比較する。新loopが予定runを7回連続で完了してから、旧cronまたは
+launchdを一つずつ退役する。
+
 ## 5. 残作業 — 必ず番号順
 
 ### 5.1 Order 1A — 共通応募基盤
@@ -144,6 +176,10 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 - [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [ ] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
+- [ ] O1B-12 AI/agent/cryptoイベントだけでなく、LT枠・CFP・demo枠を別entityとしてdiscover
+- [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
+- [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
+- [ ] O1B-15 登壇後に参加者数、商談、顧客、採用、投資家接点をattribution ledgerへ記録
 
 完了条件: 実Luma登録、確認mail、QR、Telegram receiptが同一eventとして照合される。
 
@@ -162,6 +198,13 @@ scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号�
 - [ ] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
 - [ ] O1C-12 meetingをCalendarへ登録し面談資料を生成
 - [ ] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
+- [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
+- [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
+- [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
+- [ ] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
+- [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
+- [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
+- [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 
 完了条件: 実accelerator提出と確認receipt、reply追跡、面談calendar経路が動く。
 
@@ -625,7 +668,196 @@ NISA利用額: ¥{{nisa_used}}
 - crypto/NISAのafter-fee成績
 - 翌月の予算、資金配分、改善対象
 
-## 12. 変更規則
+## 12. 2026-08-01時点の資金調達queue
+
+固定listを永続的な正本にはしない。以下は**今日のbootstrap queue**であり、毎日公式pageから
+再取得する。締切、terms、eligibilityが変わったprogramを古いJSONのまま提出しない。
+
+| 優先 | program | 2026-08-01の公式事実 | 今日の判断 |
+|---:|---|---|---|
+| 1 | [SPC Founder Fellowship F26](https://www.southparkcommons.com/founder-fellowship) | 8月2日締切、solo founder可、SF/NYC/Bangalore、$400Kで7% + 次round $600K | **最優先でprepare**。NYC peer groupへの直接経路にもなる |
+| 2 | [YC Fall 2026](https://www.ycombinator.com/apply) | 7月27日の定時締切後もlate application受付、10〜12月SF | 既存draftを現在batchへ移し、事実と動画を再検証して提出 |
+| 3 | [a16z SPEEDRUN](https://speedrun.a16z.com/faq) | SR007締切後もoff-cycle受付。次回SR008は2027年1〜4月SF。solo可、最大$1M | 古い`a16z START` specを使わず、SPEEDRUN最新form specを新設 |
+| 4 | [Entrepreneurs First](https://apply.joinef.com/) | London Fallは8月4日、SF Bridgeは8月30日。full-time/in-person | 居住・visa・full-time条件を確認してqualify |
+| 5 | [Techstars](https://www.techstars.com/for/founders) | 複数programへ随時応募、標準投資$220K | fintech/AI/NYCなど個別program単位でdeadlineをdiscover |
+| 6 | [Antler Japan](https://www.antler.co/location/japan) | 6週間Tokyo、$150K初期投資。掲載cohort日付は既に経過 | 次cohort公開をdaily watcherで検知。古い日付では提出しない |
+
+YCの標準dealは$500Kで、$125Kが7%、残り$375Kがuncapped MFN SAFEである。
+a16z SPEEDRUNは最大$1Mで、$500Kが10%、残り$500Kが次roundである。SPCは$400Kで7%と
+次round $600Kである。したがって「数億ドルを1%で調達」は初期roundの現実的な前提ではない。
+$100Mを1%で調達するにはpost-money $10Bが必要であり、まずproduct tractionと段階的な
+valuation上昇が必要である。
+
+## 13. Fundraising agentの連続loop
+
+```text
+毎日06:30 DISCOVER
+  公式accelerator/VC/grant page・newsletter・既知registryを取得
+        │
+        ▼
+QUALIFY（agent判断）
+  Life Managerとの適合、solo可否、地域、締切、terms、競合、MUIT conflict
+        │
+        ├─不適合 → 理由付きskip + 次回再確認日
+        ▼
+PREPARE
+  application-kitの事実 + 最新traction + deck + 58秒video + program別回答
+        │
+        ▼
+VERIFY（deterministic gate）
+  全必須field / facts freshness / URL / terms / CAPTCHA / 重複 / denylist
+        │
+        ▼
+ACT
+  既存CloakBrowser daily-driver :9222で一度だけsubmit
+        │
+        ▼
+RECEIPT
+  完了画面 + canonical URL + Gmail message/thread IDを同じattemptへ結合
+        │
+        ▼
+TRACK（gog Gmail + Calendar）
+  submitted → confirmed → interview → offer/rejected → funded
+        │
+        ▼
+LEARN（週次）
+  program別の返信率・面談率・採択率からtargetとpitchを更新
+```
+
+探索は「登録された5件を順番に回す」だけではない。registry entryに
+`source_url`、`last_verified_at`、`next_deadline`、`terms_hash`、`solo_allowed`、
+`location`、`status`を持たせる。毎日、新規programを発見し、既存programの変更も検知する。
+
+localでは`gog`を使う。すでにOAuthとCLIがあり、launchdからJSONで安定して読めるためである。
+Gmail MCPは対話調査には使えても、停止中のaccept watcherのように定期workerが「MCPで読め」と
+表示するだけでは実行にならない。Web版では同じmail interfaceをtenant別Google OAuth/Gmail APIへ
+差し替え、localの個人tokenを他userへ流用しない。
+
+## 14. Telegramに今日届くべき実例
+
+以下はplaceholderではなく、2026-08-01に実ファイルとlaunchdを読んだ結果から作る文面例である。
+送信実装後はこの形式をledger値から生成する。
+
+```text
+🔌 Connector診断 2026-08-01
+
+既存launchd: 稼働登録済み
+直近のfill-gaps: 2026-07-31実行
+対象日: 11日
+runner成功: 1日
+runner失敗: 10日
+本日確認できた新規登録receipt: 0件
+
+主因: bounded runnerが180秒でtimeout
+日報: Telegram response parseでSEND-ERR
+成功したとは記録していません。
+次の作業: 共通outbound runtimeへ1日単位jobとして移植
+```
+
+```text
+🎤 LT応募状況 2026-08-01
+
+AI Tinkerers Tokyo: 過去state submitted
+AI Tinkerers SF: 過去state pending
+connpass: LT枠の発見は可能、submitは証跡不足のため停止中
+
+今日の新規LT応募: 0件
+次の作業: confirmation mailまで取れる経路を作り、実LT 1件で検証
+```
+
+```text
+🚀 資金調達queue 2026-08-01
+
+1. SPC Founder Fellowship F26 — 締切 8/2、NYC選択可、未提出
+2. YC Fall 2026 — late application受付中、既存draftは未提出
+3. a16z SPEEDRUN SR008 — off-cycle受付、最新form spec未作成
+4. Entrepreneurs First London — 締切 8/4、適格性確認待ち
+
+YC既存draft:
+・20 text fields: 入力済み
+・founder video: upload記録あり
+・validation error: なし
+・状態: ready_to_submit
+・提出receipt: なし
+
+「応募済み」とは記録していません。
+```
+
+採択後の実際のUX:
+
+```text
+🔥 SPC Founder Fellowshipから面談招待です。
+状態: interview_requested
+拠点候補: New York City
+メールthread: 証拠保存済み
+締切: 2026-08-06 17:00 JST
+
+候補日時をCalendarの空き時間と照合しました。
+面談資料:
+・Life Manager 90秒説明
+・Daisのfounder-market fit
+・Daisローカル実証の応募/CFO metrics
+・なぜ今、なぜ1人で開始できるか
+
+［返信案を送る］［面談資料を見る］［今回は辞退］
+```
+
+## 15. 生活と会社がどう変わるか
+
+```text
+現在
+  Daisがevent、求人、accelerator、メール、口座を別々に見る
+  → 応募漏れ、返信漏れ、数字の分断、壊れたcronに気づけない
+
+local完成後
+  Life Managerが候補を探す
+  → 応募・確認証拠を取る
+  → Gmail返信とCalendarを追う
+  → 銀行・card・Binanceをread-onlyで集計
+  → 毎朝Telegramで「資産・支出・応募・面談・今日の行動」を一通にする
+
+成長後
+  LTでLife Managerの実証を話す
+  → user / founder / investorとの接点
+  → acceleratorで密度の高いpeer group、partner支援、資金
+  → product改善と有料user獲得
+  → 同じcoreをLife Manager Webへ提供
+  → 真のMRRを積み上げる
+```
+
+各agentは単独で「儲けを保証」しない。Eventsは機会、Fundraisingはcapitalとnetwork、Job Hunterは
+給与、CFOは漏出削減、Crypto/NISAはrisk-adjusted return、Web appは継続売上を担当する。
+これらの寄与を同じledgerで計測し、月間1,000万円へのgapを毎月更新する。accelerator採択、
+投資利益、unicorn、billionaireは目標であって保証値ではない。
+
+## 16. 実装前に残る不確実性
+
+| # | 不確実性 | 解消方法 / gate |
+|---:|---|---|
+| U01 | CloakBrowser `:9222`のlogin sessionがLuma/YC/SPCでfreshか | 各siteをread-onlyで開き、login identityとcookie expiryを記録 |
+| U02 | 直近Connector runner成功が実登録を意味するか | result JSON、完了画面、mail、ledgerを照合。runner successだけでは登録扱い禁止 |
+| U03 | connpassで規約準拠のdiscover/submitと証跡取得が可能か | API key取得、利用規約、確認mailを実測。不可ならorganizer CFPだけを対象 |
+| U04 | LT応募と一般参加登録をどう区別するか | `attendance_application`と`talk_proposal`を別entity・別receiptにする |
+| U05 | YC既存draftがFall 2026へ安全に移行できるか | current home画面、batch、application ID、submit前previewを実測 |
+| U06 | YC動画・demo・tractionが現在の真実か | application-kit、dashboard、動画実体、production URLを提出当日に照合 |
+| U07 | SPC 8/2までに必要field/動画を揃えられるか | formをread-only captureし、missing field listと所要時間を出す |
+| U08 | a16zの旧`START` specと現SPEEDRUNの差 | 旧specを無効化し、公式current formから新specを生成 |
+| U09 | 各programがagentによるform入力を許容するか | terms/robots/form表示を提出直前に確認。CAPTCHA/明示禁止はhuman handoff |
+| U10 | Gmail検索がconfirmationと営業mailを誤結合しないか | nonce/domain/thread/time fenceと送信attempt IDで結合、spoof testを追加 |
+| U11 | 返信分類の型とCalendar timezone | confirmation/interview/offer/reject/request_infoをschema化し、JST/現地TZを保持 |
+| U12 | MUITとの利益相反 | MUFG/MUIT運営・CVCをdeny。LPだけの関与と業務外応募の線引きを確認 |
+| U13 | Moneytree LINKの契約、client ID、本番利用審査、料金 | Moneytreeへ正式確認。OAuth client取得前は「接続可能」とdoneにしない |
+| U14 | MoneytreeがDaisの全銀行/card/証券と必要履歴を返すか | sandbox→本人同意→1口座で残高・1/3/12か月明細・categoryを実測 |
+| U15 | Binance Japan口座で使えるendpointと履歴範囲 | read-only `USER_DATA` keyをIP制限し、balance/trades/deposit/withdraw履歴を実測 |
+| U16 | Binance Earnやwallet外資産を総資産へ含められるか | product別endpointを列挙し、unsupportedは手動snapshotとして明示 |
+| U17 | JPY換算の価格sourceと時刻 | original currencyを保存し、FX/crypto quote sourceとtimestampを全行へ付与 |
+| U18 | subscriptionの「未使用」を何で判断するか | 支払明細だけで断定せず、login/app usage/mail receiptの有無とconfidenceを表示 |
+| U19 | crypto/fiatのexecution権限 | Order 3Bはread-only。Order 4/5で隔離口座、上限、signer、emergency stopを実証 |
+| U20 | local profileをWeb multi-tenantへどう移すか | tenant別OAuth、secret、browser profile、worker isolationのcontract test |
+| U21 | 「NYC」がNew York CityかYCの音声認識か | queueでは両方を扱う。SPC NYCとYC SFを混同しない |
+| U22 | 調達額と希薄化の許容範囲 | cap table scenarioを提示し、法務・税務確認後だけsign。資金調達額をMRRに入れない |
+
+## 17. 変更規則
 
 1. 順序変更はDaisの明示指示だけで行う。
 2. 状態変更時は、この文書のcheckboxと証拠pathを同じcommitで更新する。
