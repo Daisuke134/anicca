@@ -18268,3 +18268,11 @@
 {"ts":1785486383,"wake_id":"00MS8OHQSS95FDAAAB37D24CDE","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1785486512,"wake_id":"00MS8OKHVZ3F0D47869AF74F49","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785486662,"wake_id":"00MS8ONQ18D9C35B304A5744B1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785486792,"wake_id":"00MS8OQI6F03E427586E4542B6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785486919,"wake_id":"00MS8OT7YR26823A7E2766458A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785487049,"wake_id":"00MS8OW0XKE019EFEB7F6749EF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785487177,"wake_id":"00MS8OYR5H8E5115DD319146E5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785487305,"wake_id":"00MS8P1IDK2DE8C1D279CA4704","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785487431,"wake_id":"00MS8P47BXE091DC2FC9E64A7C","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785487557,"wake_id":"00MS8P6WY7BA1594DD9FD2454F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785487687,"wake_id":"00MS8P9P1DD4FFF1D4D1654A7C","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana liquidity mining program USDC rewards provide SOL USDC LP [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (can"}

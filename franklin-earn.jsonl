@@ -3456,3 +3456,4 @@
 {"ts":1785485145,"source":"cook","task":"explore: Solana pay-per-use compute marketplace API","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8NR2C67D3A0BA816E64547"}
 {"ts":1785485691,"source":"cook","task":"explore: Solana webhook paid API microservice marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8O2DHN19C228B469CB44A5"}
 {"ts":1785485983,"source":"cook","task":"explore: Solana AI inference API paid per request marketplace","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8O8LXEDA320BEEF38042E1"}
+{"ts":1785487695,"source":"cook","task":"explore: Solana liquidity mining program USDC rewards provide SOL USDC LP","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8P9P1DD4FFF1D4D1654A7C"}
