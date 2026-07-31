@@ -3464,3 +3464,4 @@
 {"ts":1785492942,"source":"cook","task":"explore: Solana microtask platform paying USDC per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8SE5IT15F46F90D1E84A93"}
 {"ts":1785493068,"source":"cook","task":"explore: Solana DeFi platform paying USDC rewards for small liquidity provision","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8SGX4A51C77CE18C454414"}
 {"ts":1785494519,"source":"cook","task":"explore: Solana microtask marketplace paying USDC per API call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8TBZ3PA6A0580260DB4DE9"}
+{"ts":1785495325,"source":"cook","task":"explore: Solana on-chain microtask platform API paid USDC per call","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MS8TT9BV5EDF93157A284AC5"}
