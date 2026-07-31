@@ -1,11 +1,16 @@
 ---
 name: remote-claude
-description: Enable Remote Control for every Claude Code session, start or resume a local session in Claude Desktop, seed it with a real message, and verify phone access. Use when the user asks to make all Claude sessions phone-accessible, open Claude Desktop remotely, continue a Mac Claude session from a phone, create a phone-accessible Claude session, or troubleshoot Claude Code Remote Control.
+description: Make every future interactive Claude Code session phone-accessible and keep a supervised Remote Control server online so Claude iOS can start new Mac sessions. Also start or resume Desktop sessions and troubleshoot Remote Control.
 ---
 
 # Remote Claude
 
-Configure automatic Remote Control once, then create sessions without disturbing unrelated Claude chats. Treat “automatic setting enabled,” “Desktop session opened,” and “Remote Control connected” as separate states and verify all applicable states.
+The default goal is not merely one connected session. Configure both layers:
+
+1. **All future local interactive sessions:** `remoteControlAtStartup=true` makes each newly started `claude` process register its own Remote Control session automatically.
+2. **Phone-originated sessions at any time:** a supervised `claude remote-control` server stays online so Claude iOS can create new sessions even when no interactive terminal is open.
+
+Treat “automatic setting enabled,” “supervised server online,” “Desktop session opened,” and “Remote Control connected” as separate states and verify all applicable states. An already-running interactive process does not become remote retroactively; attach it with `/remote-control` or restart it after enabling the global preference.
 
 ## One-time automatic setup
 
@@ -21,11 +26,32 @@ Configure automatic Remote Control once, then create sessions without disturbing
 5. Exit that session and start a fresh normal `claude` session from a fresh login shell, without `env -u`, `--remote-control`, or `/rc`.
 6. Verify that the fresh session enters `/rc connecting…` automatically. Send one real message and confirm the session remains live. Do not infer success from the saved preference alone.
 
-This removes the need to type `/rc` for each future interactive session. It does not start Claude Code by itself after logout or reboot. For phone-originated sessions while no interactive process exists, use Claude's official server mode under a supervised service:
+This removes the need to type `/rc` for each future interactive session. It does not start Claude Code by itself after logout or reboot.
+
+## Always-on phone-originated sessions
+
+For phone-originated sessions while no interactive process exists, run Claude's official server mode under `launchd` on macOS or `systemd` on Linux. Prefer worktree spawning so simultaneous phone sessions do not edit the same checkout:
 
 ```bash
-claude remote-control --name "Mac mini"
+env -u CLAUDE_CODE_OAUTH_TOKEN claude remote-control \
+  --name "Mac mini" \
+  --spawn worktree \
+  --capacity 10 \
+  --permission-mode auto
 ```
+
+On macOS, the supervised service must use `RunAtLoad=true` and `KeepAlive=true`, an absolute Claude binary path, an explicit project `WorkingDirectory`, and dedicated stdout/stderr logs. After changing accounts, restart the service because a running server can retain the previous account's credentials.
+
+Require all of the following before reporting success:
+
+- `claude auth status` shows the same email used by Claude Desktop and Claude iOS.
+- `remoteControlAtStartup` is `true`.
+- the service manager reports the server process as running.
+- the server log shows `Connected`, the expected project, `worktree` creation mode, and a `claude.ai/code?environment=...` URL.
+- a fresh ordinary `claude` process shows `/rc connecting…` without manually sending `/rc`.
+- a real seed message receives a real response.
+
+Leave the server running. In Claude iOS, the user opens **Code**, selects the online computer, and can either enter the pre-created session or start another session. The phone and Mac must use the same Claude account. The Mac must remain powered on, logged in, awake, and online.
 
 ## Batch session spawning
 
@@ -42,7 +68,7 @@ Use this when the user asks to spin up multiple phone-accessible Claude sessions
 4. Send a unique harmless seed message to every session and require a real response from each.
 5. Resolve and report each local session UUID from its JSONL, then leave all requested processes alive.
 6. Do not assign concurrent write tasks to sessions sharing one working directory. Use separate worktrees for concurrent implementation.
-7. For more than 10 sessions, prefer one official `claude remote-control` server with an explicit `--capacity` and `--spawn=worktree` instead of many unmanaged PTYs.
+7. For phone-originated or multiple sessions, prefer one official `claude remote-control` server with explicit `--capacity` and `--spawn=worktree` instead of many unmanaged PTYs.
 
 ## Workflow
 
@@ -136,6 +162,6 @@ Use this when `/remote-control` says the current login token is limited to infer
 - Never expose OAuth tokens, cookies, QR payloads, or bridge credentials in logs or chat.
 - Never close, overwrite, or archive unrelated sessions.
 - Do not report success from a dry run, a prefilled prompt, or a pressed key.
-- Report four fields: Desktop session ID, seed-message verification, Remote Control state, and any exact blocker.
+- Report six fields: account email, automatic-all-future-sessions state, supervised-server state, Desktop/session ID when applicable, seed-message verification, and any exact blocker.
 
 Official behavior reference: [Continue local sessions from any device with Remote Control](https://code.claude.com/docs/en/remote-control).
