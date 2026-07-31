@@ -18191,3 +18191,11 @@
 {"ts":1785475713,"wake_id":"00MS8I51LB65801BC38B8A4BF1","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785475841,"wake_id":"00MS8I7S8WE9499E0BE0E24125","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785475968,"wake_id":"00MS8IAIAU5E4CC0CA8FC1460B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785476099,"wake_id":"00MS8IDBTAD1CE87C3FA51455A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785476227,"wake_id":"00MS8IG22V6861DF157A49428B","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785476353,"wake_id":"00MS8IIRU83A70F61B5FCA4537","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785476481,"wake_id":"00MS8ILI8RE8E450DD788B4703","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785476608,"wake_id":"00MS8IO8410644E6BB48494D60","kind":"wake","sleep_s":120,"model":"auto","slot":"earn/sol-trade","profitable":false,"exit_code":0}
+{"ts":1785476735,"wake_id":"00MS8IQXZS63899DB53DB148FF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785476861,"wake_id":"00MS8ITNIA8EF248B624094136","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid AI microtask platform USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the m"}
+{"ts":1785476988,"wake_id":"00MS8IWDRPD5FE6971691649CD","kind":"narrate","sleep_s":120,"model":"auto"}
