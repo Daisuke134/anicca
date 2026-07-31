@@ -13,6 +13,47 @@
 
 ---
 
+## 1つの製品、2つの実行面
+
+Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、共通の能力と状態契約を使う2つの実行面です。
+
+```text
+                              LIFE MANAGER
+                       1製品 · 1リポジトリ
+                                 │
+             ┌───────────────────┴───────────────────┐
+             │                                       │
+      ローカル / 自己ホスト                    Web / クラウド
+          install.sh                            apps/landing
+             │                              オンボーディングUI
+             ▼                                       │
+        runtime/loop                                  ▼
+      思考 → 実行 → 台帳                     apps/life-manager
+             │                          Telegram · 音声通話 · scheduler
+             ▼                                  認証付き /panel
+          skills/*                                    │
+      稼ぐ · 自己改善 · 報告                           ▼
+             │                               ユーザー別サービス
+             └───────────────────┬───────────────────┘
+                                 │
+                    共通の経済・基盤レイヤー
+        runtime/compute-proxy · services/x402-* · dashboard
+```
+
+| パス | 役割 | 誤解しないための境界 |
+|---|---|---|
+| `runtime/loop/`, `install.sh`, `start-local.sh` | ローカル自律エージェントと自己ホスト runtime | 別の「ローカル版」製品ではない |
+| `apps/life-manager/` | Telegram、schedule、通話、認証付き `/panel`、課金、ユーザーworkflowを持つ常時稼働クラウドサービス | これ単体がリポジトリ全体ではない |
+| `apps/landing/` | Life Manager用オンボーディング Web UI の必要部分 | 旧Anicca複数製品サイト全体ではない |
+| `runtime/compute-proxy/`, `services/` | 自己決済推論、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
+| `skills/` | ローカルとクラウドが共有する能力 | 独立製品群ではない |
+| `apps/job-search-loop/`, `control-room/`, `adapters/` | 補助運用、fleet資料、外部integration | 別のLife Manager codebaseではない |
+| `docs/`, `specs/` | 現在のSSOT、証跡、保存された設計履歴 | 古い文書が自動的に現行正本になるわけではない |
+
+内部package名、環境変数、service label、古い文書には `anicca` が残っています。このリポジトリでは、**Aniccaは会社名・技術namespace、Life Managerは製品名**です。`anicca` という識別子が残っていても、第2の製品や別の正本リポジトリを意味しません。
+
+---
+
 ## Life Managerとは
 
 5 つの性質で設計されています（詳細は [`THESIS.md`](THESIS.md)）。

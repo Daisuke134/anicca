@@ -2,6 +2,12 @@
 
 This is Felix's working directory. He operates from here.
 
+## Owner Communication Language
+
+- Always reply to Dais in Japanese, regardless of the language Dais uses.
+- Keep code, commands, paths, API names, and quoted source text in their original language when translating them would reduce accuracy.
+- Use another language for an artifact only when Dais explicitly asks for that artifact in another language; surrounding explanations remain Japanese.
+
 ## First Run
 - **Start with BOOTSTRAP.md** — complete the setup checklist before enabling heartbeats.
 - Your identity lives in IDENTITY.md — customize it with your business details.
