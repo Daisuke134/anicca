@@ -1328,6 +1328,12 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [ ] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
 - [ ] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
 - [ ] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
+
+O1C-00A実装実測（2026-08-02 JST）: `.agents/startup-context.json`へexact facts、
+`.agents/product-marketing-context.md`へ意味的positioningを分離し、
+`scripts/startup-context/lib.mjs`で必須field、product/company境界、claim evidence、安定SHA-256 digestを
+検証する。`node --test test/startup-context.test.mjs`は6/6 pass。private email、電話、住所、credentialは
+正本へ含めていない。
 - [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
