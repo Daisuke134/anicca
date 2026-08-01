@@ -110,17 +110,22 @@ Task 4 receipt: product commit `282277aaf` is pushed to both product remotes. St
 - Modify: `skills/article-writer/config/revenue-surfaces.json`
 - Modify: `skills/article-writer/scripts/publication_resume.py`
 - Modify: `skills/article-writer/scripts/article-resume-pending.sh`
+- Modify: `apps/landing/app/blog/[slug]/page.tsx`
+- Modify: `apps/landing/netlify/functions/_lib/writer-article-contract.js`
+- Modify: `apps/landing/netlify/functions/_lib/__tests__/writer-article-contract.test.js`
 
 **Interfaces:**
 - Consumes: frozen run article, useful preview boundary, immutable hashes, stable slug, and the landing private-article target.
 - Produces: a stable `self-owned/<lang>` publication intent and a public readback receipt bound to the same run/artifact; repeated execution never creates a second slug.
 
-- [ ] Write failing fixtures for deterministic slugging, preview/paid separation, exact hashes, existing same-hash skip, conflicting same-slug refusal, cross-repo dirty-state refusal, and public preview readback.
-- [ ] Run focused tests and require failure.
-- [ ] Implement staging through an isolated exact-target git transaction; never modify or stage unrelated landing changes. Commit/push content, then wait only for the deploy readback while other loop work continues.
-- [ ] Add the self-owned destination as revenue-capable and integrate pending/resume without blocking other platforms.
-- [ ] Run focused and full Writer tests.
-- [ ] Commit only Task 5 files.
+- [x] Write failing fixtures for deterministic slugging, preview/paid separation, exact hashes, existing same-hash skip, conflicting same-slug refusal, cross-repo dirty-state refusal, public preview readback, crash-window ledger repair, and non-blocking worker integration.
+- [x] Run focused tests and require failure.
+- [x] Implement staging through an isolated exact-target git transaction; never modify or stage unrelated landing changes. Commit/push content, then retry only the deploy readback while other loop work continues.
+- [x] Keep the already-declared self-owned destination revenue-capable and integrate pending/resume without expanding or blocking exact8.
+- [x] Run focused and full Writer tests plus the complete Netlify suite and production build.
+- [x] Commit only Task 5 files.
+
+Task 5 receipt: runtime commit `3725ee8` is pushed to the Writer runtime remote and product commit `cdd805380` is pushed to both product remotes. The adapter creates deterministic JA/EN preview+paid contracts from the immutable same-run drafts, persists `self-owned/<lang>` intent before git delivery, refuses unrelated landing dirt, commits only exact private article JSON targets, reuses the same slug/hash after a crash, and repairs a missing append-only ledger row from durable live state without duplicating it. Self-owned receipts are strict same-run adjunct rows and do not change the exact8 set. The resume worker starts the configured self-owned adapter under its own lock in the background, so landing dirt and deploy propagation cannot delay another platform. Production HTML exposes a script-safe `writer-public-contract` containing the exact public projection and preview hashes; the paid body remains private. Verification: 12 focused adapter tests, 606/606 Writer tests, 310/310 Netlify tests, shell/Python validation, and a production build. A temporary paid sentinel appeared zero times in generated HTML, RSC, and static assets while the public manifest and preview appeared on the fixture page; the fixture and generated snapshot were removed. Task 7 still owns live branch/remote provisioning, deployment, public readback, and real payment E2E.
 
 ### Task 6: Stripe receipts into the Money Ledger
 
