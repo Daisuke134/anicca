@@ -23,7 +23,7 @@
 
 ### Task 1: Daily-driver read-only contract
 
-- [ ] `:9222` owner、共有context、Luma login状態をsecretなしでread-only実測する。
+- [x] `:9222` owner、共有context、Luma login状態をsecretなしでread-only実測する。
 - [ ] CDP接続、origin allowlist、自分のpageだけをcloseするtransport testをRED→GREENにする。
 - [ ] login切れは失敗偽装せず、既存Google/Luma認証復旧へ分類する。
 - [ ] Commit and push.
