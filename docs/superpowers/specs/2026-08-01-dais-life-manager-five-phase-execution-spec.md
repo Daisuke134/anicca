@@ -919,6 +919,12 @@ O1B-17進捗2（pack RED）: 認証済みevents packへ全detail読取を一つ�
 read-only entrypointが21日coverageを作ってその操作だけを呼ぶ契約を追加した。未実装のため新規2件が
 期待どおり失敗し、既存の構成拒否2件は成功した。
 
+O1B-17進捗3（GREEN）: discovery inventory、provider detail、日付別snapshotにin-process provenanceを
+追加した。verified coverage、終端証明済みinventory、全candidateと完全一致するverified detailだけから、
+JSTの21日を全件持つimmutable content-addressed snapshotを作る。events packとhost read-only entrypointを
+この操作へ接続し、公開event名・URLを標準出力せず集計だけを返す。focused 20/20成功。次は実Luma
+Tokyoの全detail readbackとoutbound全回帰である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
