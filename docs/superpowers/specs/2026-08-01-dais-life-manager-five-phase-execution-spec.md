@@ -1099,6 +1099,10 @@ same-day sequenceを接続しfocused 27/27成功。既存Calendar writeはsucces
 残さないため、固定private propertyで既存eventを先に検索し、未作成時だけprovider ID/link付きで作成する
 transport契約2 testを追加した。新method未実装でRED段階。
 
+O1B-23進捗8（write transport GREEN / sync RED）: private property検索とprovider ID/link付き作成をgog transportへ
+実装し20/20成功。次にin-process verifier provenanceのあるLuma registration receiptとcalendar-eligible gateだけを
+受け、同一eventを一度だけ作成しexact retryは既存eventを返すsync契約2 testを追加した。module未実装でRED段階。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
