@@ -54,11 +54,13 @@ Task 1 receipt: product commit `c5782d72d` is pushed to both product remotes. Th
 - Consumes: `{product:"writer_article"|"writer_archive",slug,artifact_id,run_id,lang,client_reference_id}` plus the validated private registry.
 - Produces: URL-encoded Checkout Session parameters with exact metadata and a Stripe-hosted URL response.
 
-- [ ] Write failing tests proving unknown slugs, mismatched artifact/run IDs, missing anonymous client reference, and caller-supplied price IDs are rejected; assert one-time mode uses `STRIPE_WRITER_*_PRICE`, archive mode uses existing Letter prices, and all five lineage fields reach Checkout/Subscription metadata.
-- [ ] Run the focused Node test and require failure.
-- [ ] Implement an allowlisted registry lookup, `mode=payment` for one article, `mode=subscription` for archive, `client_reference_id`, `{CHECKOUT_SESSION_ID}` success URL, and no raw payment data.
-- [ ] Re-run focused tests and existing Netlify function tests.
-- [ ] Commit only Task 2 files.
+- [x] Write failing tests proving unknown slugs, mismatched artifact/run IDs, missing anonymous client reference, and caller-supplied price IDs are rejected; assert one-time mode uses `STRIPE_WRITER_*_PRICE`, archive mode uses existing Letter prices, and all five lineage fields reach Checkout/Subscription metadata.
+- [x] Run the focused Node test and require failure.
+- [x] Implement an allowlisted registry lookup, `mode=payment` for one article, `mode=subscription` for archive, `client_reference_id`, `{CHECKOUT_SESSION_ID}` success URL, and no raw payment data.
+- [x] Re-run focused tests and existing Netlify function tests.
+- [x] Commit only Task 2 files.
+
+Task 2 receipt: product commit `0a34eb014` is pushed to both product remotes. Eight focused tests prove server-selected Writer/Letter Prices, exact slug/run/artifact/lang/client-reference metadata on Checkout plus PaymentIntent or Subscription, fixed-origin return URLs, rejection before Stripe for unknown/mismatched/caller-priced requests, and unchanged legacy ebook mapping. The complete Netlify suite passes 292/292 and the production Next build passes. Writer calls pin Stripe API `2026-04-22.dahlia`; no raw card field or caller price reaches Stripe.
 
 ### Task 3: Accountless entitlement and paid-body delivery
 
