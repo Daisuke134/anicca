@@ -1028,6 +1028,14 @@ key watcherとLuma再探索へ戻った。key配備後の経路も公式v2 GET�
 `docs/evidence/outbound/2026-08-02-o1b20-authorized-source-handoff.json`。次は固定順序どおり`O1B-21`で、
 同日の一候補が満席・不適格・申込不能でも次候補へ進み、verified registrationまでloopを継続する。
 
+O1B-21開始（2026-08-02）: O1B-03で実装済みのverified candidate sequenceを唯一のstate machineとして
+再利用し、認証済みevents packから公開する。一件失敗を日次終了へ変換する別loopは作らない。設計:
+`docs/superpowers/specs/2026-08-02-connector-o1b21-ranked-candidate-loop-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1b21-ranked-candidate-loop.md`。
+
+O1B-21進捗1（pack RED）: events packが順序付き同日候補とattempt関数を既存verified sequenceへそのまま
+渡す契約を追加した。`runSameDayCandidates`未実装のため新規1件が期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
