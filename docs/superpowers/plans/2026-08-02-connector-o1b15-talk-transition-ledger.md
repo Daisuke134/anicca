@@ -29,11 +29,11 @@
 - Consumes: `{currentState,observedAt,now,sourceText,sourceRefs}`とGemini decision
 - Produces: `inferTalkApplicationTransition(input,deps)`、`validateTalkApplicationTransition(value,input)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 canonical graph、source excerpt、future timestamp、source ref subset、secret拒否、model failure no-fallbackを固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/talk-application-transition.test.js`
 Expected: module path不存在でFAIL。

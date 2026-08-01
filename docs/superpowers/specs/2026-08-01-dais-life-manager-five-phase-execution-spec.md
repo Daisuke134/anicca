@@ -666,6 +666,11 @@ immutable ledger + atomic projection、ledger-only event sourcingの3案を比�
 失わないimmutable ledger + atomic projectionを採用する。意味判断はagent、state graph、tenant、時刻、参照、
 原子性、不変性はdeterministic code/DBが担当する。実talkは変更せずrollback fixtureで実証する。
 
+O1B-15進捗1（RED）: `submitted / accepted / rejected / presented`のsource-bound観測、queue/withdrawalを含む
+forward graph、state rollback拒否、未来時刻、invented ref、本文外excerpt、raw secret拒否、Gemini failure時の
+no-fallbackをtest 4件で固定した。production `talk-application-transition.js`は未実装のためmodule path不存在で
+期待どおりRED。次はmodel judgmentとdeterministic validationの境界を実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
