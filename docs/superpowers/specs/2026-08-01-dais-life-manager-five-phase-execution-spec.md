@@ -27,7 +27,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | Daisが毎日家を出て、東京の対面eventで人と会う |
+| Connector | rolling 21日を見て、空いている各日に東京の対面eventを入れ、二重予約せず人と会う |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -92,6 +92,20 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
   Gmailを読まず手順を表示するだけである。
 - `mufg-epoc-watcher`はMUIT/EPOC向け外部情報briefであり、DaisのMUFG銀行口座や
   個人取引明細を読むconnectorではない。
+
+### 3.1 2026-08-01に再確認したConnectorの既存資産
+
+| 項目 | 実測 | Daisが今渡すもの |
+|---|---|---|
+| Google Calendar / Gmail | `gog` OAuthで`keiodaisuke@gmail.com`のcalendar、gmail scopeが有効 | 追加credentialなし |
+| CloakBrowser daily-driver | `:9222`が応答中 | 追加browserなし。Luma loginは実装開始時に同profileでread-only再確認 |
+| Telegram | Life Manager / OpenClawのtoken設定あり | 追加tokenなし |
+| 応募identity | 氏名、かな、romaji、電話、Google loginの環境設定あり | 秘密値をchatへ再送しない |
+| 決済 | 保存済みcardを今回のread-only点検では確認していない | 無料eventから開始。paidも完全自動にする場合は一度だけ自動支出policyを仕様化 |
+
+現在の`anicca-meetup-talk-applier`は再利用できる完成品ではない。実測では`14日`、先頭`1〜2件`、
+AI登壇枠だけを対象にし、候補0件をexit 0で終了する。Luma discoverはdisabled、別Chrome`:9223`を
+起動する。この制約を延命せず、既存の応募・Calendar・receipt部品をrolling coverage loopへ移す。
 
 ## 4. 外部調査からの結論
 
@@ -233,7 +247,7 @@ YC公式pageでlate application受付を当日再確認
 | order | 残っている成果 | 次へ進める条件 |
 |---|---|---|
 | 1A | 共通応募runtime、Guardian、証拠、再試行、Telegram | 強制停止から自動検知・復旧し、偽の成功を作らない |
-| 1B | Luma中心の東京対面event/LT探索・申込・QR・14日coverage | 今後14日間の毎日に実参加eventが1件確認済み |
+| 1B | Luma中心の東京対面event/LT探索・申込・QR・rolling 21日coverage | 今後21日間に未処理の空き枠がなく、予約と既存予定が衝突しない |
 | 1C | accelerator/VC/grantの継続探索・応募・返信・面談 | 実提出、確認mail、追跡、Calendar、面談資料が一つにつながる |
 | 2 | 高年収job探索・応募・返信・面接 | Ashby/Workday実応募と面接mail→Calendarが成立 |
 | 3A | CFO runtime database、executor、launchd、失敗復旧 | enqueue→実行→財務報告が止まらず動く |
@@ -268,34 +282,48 @@ YC公式pageでlate application受付を当日再確認
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇後に参加者数、商談、顧客、採用、投資家接点をattribution ledgerへ記録
-- [ ] O1B-16 Daisが毎日、東京の対面eventへ最低1件参加する14日coverage goalを実装
+- [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaでその日の実参加を確保できない場合だけ、connpassの東京・対面inventoryへ進む
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
-- [ ] O1B-23 既存予定、勤務・学校、実移動時間と衝突しない時間帯をCalendar/Routesで確認
-- [ ] O1B-24 無料を優先し、有料eventはDaisが設定したevent予算内だけ自動予約
-- [ ] O1B-25 日別coverage、申込確認、日時、場所、会う人、選定理由を朝のTelegramへ報告
+- [ ] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
+- [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
+- [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
-今後14日間の**毎日**に、東京でDaisが実際に参加する対面eventが最低1件確認済みである。
+今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
-検索の停止条件は「候補が見つからなかった」ではなく、日別coverageが埋まったことである。
+- `covered_existing`: 既に参加確定した東京の対面eventがあるため、重複予約しない。
+- `covered_new`: Connectorが新たに東京の対面eventを予約し、receiptを取得した。
+- `unavailable`: 固定予定と前後移動時間で実行可能なevent枠が残っていないため、重複予約しない。
+
+単にCalendarへ何か一件あるだけでは`covered_existing`にしない。既存予定が短時間なら、その前後の
+free intervalへ参加できるeventを探す。`unavailable`は、候補eventの開催時間と前後移動時間が
+固定予定に衝突することをCalendar event IDと時刻で証明できた場合だけ使う。「候補を見つけられない」
+ことを`unavailable`へ変換してはならない。終了条件は21日分の`open`が0件になったことだけである。
+既存eventのcancelや予定変更で枠が空けば、その日は次回runで自動的に`open`へ戻る。
+
+検索の停止条件は「候補が見つからなかった」ではなく、rolling 21日coverageが埋まったことである。
 
 ```text
-各日についてCalendarを読む
+今日〜20日後についてGoogle Calendarの全calendarを読む
+  → 既存event、勤務、学校、移動時間からbusy/free intervalを計算
+  → 既存の東京対面eventがある日はcovered_existing
+  → 固定予定で参加可能な時間が残らない日はunavailable
+  → それ以外をopenとして、日付の早い順に処理
   → Luma mainのTokyo / In Person inventoryを最後まで取得
   → agentが全候補を読み、好み・目標・人との出会い・serendipityでranking
-  → 参加可能な最上位候補へ申込
+  → free intervalと前後移動時間に収まる最上位候補へ申込
   → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
   → Lumaを十分に探索しても確保できない時だけconnpassへ進む
-  → 東京・対面・時間非衝突・予算内を確認
+  → 東京・対面・時間非衝突・自動支出policy内を確認
   → 完了画面または確認mailを取得
   → Calendar、QR、Telegramを作成
-  → その日のcoverageをconfirmedにする
-  → 14日すべてconfirmedになるまで次の日を続ける
+  → その日をcovered_newにする
+  → 21日分のopenが0になるまで続ける
 ```
 
 好みは自然言語promptと実際の参加結果から学習する。AI、crypto、英語、founder等は「高く評価する
@@ -303,7 +331,8 @@ YC公式pageでlate application受付を当日再確認
 毎日東京で人と会い、経験と接点を増やすことである。
 
 同じ壊れた申込画面を無限に繰り返さない。失敗した候補は記録し、同じ日の別候補へ進む。
-「0件」「検索した」「時間切れ」を正常終了にせず、confirmedになるまで継続状態を次のjobへ渡す。
+「0件」「検索した」「時間切れ」を正常終了にせず、`open=0`になるまで継続状態を次のjobへ渡す。
+認証challenge等で一候補を完了できなくても人間の操作待ちでloop全体を止めず、別候補へ進む。
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
@@ -1199,45 +1228,49 @@ Gmail MCPは対話調査には使えても、停止中のaccept watcherのよう
 `{{...}}`は、送信時にCalendar、応募結果、確認mail、統一ledgerの実値だけで置換する。
 
 ```text
-🎟️ 今日参加するイベントを予約しました。
+🎟️ 今後3週間の空き予定を埋めました。
 
-イベント: {{event_name}}
-日時: {{event_datetime}}
-場所: {{event_location}}
-形式: 東京・対面
+確認期間: {{window_start}}〜{{window_end}}
+対象日: 21日
+既存の対面予定で埋まっていた日: {{covered_existing_count}}日
+今回新しく予約した日: {{covered_new_count}}日
+固定予定で追加できない日: {{unavailable_count}}日
+未処理の空き日: 0日
 
-このイベントを選んだ理由:
-{{selection_reason}}
+今回追加した予定:
+1. {{event_date_1}} {{event_name_1}}
+   {{event_time_1}} / {{event_location_1}}
+   理由: {{selection_reason_1}}
+   [イベントページ]({{canonical_event_url_1}})・[Calendar]({{calendar_event_url_1}})
 
-会える可能性がある人:
-{{people_or_community_summary}}
+2. {{event_date_2}} {{event_name_2}}
+   {{event_time_2}} / {{event_location_2}}
+   理由: {{selection_reason_2}}
+   [イベントページ]({{canonical_event_url_2}})・[Calendar]({{calendar_event_url_2}})
 
-参加申込み: 完了確認済み
-確認メール: 受信済み
-Calendar: 登録済み
-当日のQR: このメッセージに添付
+すべて参加申込み、確認メール、Calendar登録を照合済みです。
+既存予定と移動時間が重なる予約はありません。
 
-今日も外へ出て、人と会う予定が入りました。
-
-[イベントページを開く]({{canonical_event_url}})
-[Calendarを開く]({{calendar_event_url}})
+[3週間のCalendarを開く]({{calendar_coverage_url}})
+[参加予定とQRの一覧を開く]({{confirmed_event_list_url}})
 ```
 
-14日分のcoverage報告:
+新しく予約しなかった場合に許される唯一の通常報告:
 
 ```text
-✅ 今後2週間の参加予定を確保しました。
+✅ 今後3週間はすでに埋まっています。
 
-対象日: 14日
-東京の対面eventを確保した日: 14日
-未確定の日: 0日
+確認期間: {{window_start}}〜{{window_end}}
+対象日: 21日
+既存の対面予定でcovered: {{covered_existing_count}}日
+固定予定で追加可能な時間なし: {{unavailable_count}}日
+未処理の空き日: 0日
+今回の新規予約: 0件
 
-好みに特に合うevent: {{high_preference_count}}件
-新しい分野・人との出会いを狙うevent: {{serendipity_count}}件
+理由: 予約できる空き枠が残っていないため、二重予約を作りませんでした。
+「イベントを見つけられなかった」ことを理由にはしていません。
 
-各イベントの日時、場所、申込み状況、QRをカレンダーへ追加しました。
-
-[2週間の予定をカレンダーで見る]({{calendar_coverage_url}})
+[3週間の予定をカレンダーで見る]({{calendar_coverage_url}})
 [参加予定の一覧を見る]({{confirmed_event_list_url}})
 ```
 
@@ -1415,9 +1448,9 @@ local完成後
 | U26 | Ghostfolio/rotki/Firefly IIIのAGPLコードをproductへ使えるか | 法務/license review完了までUX・schema研究だけとし、source codeをcopyしない |
 | U27 | self-improvementが過学習やrisk増加を起こさないか | time-split replay、shadow、canary、rollbackを必須にし、permission/capを対象外にする |
 | U28 | 多数agentのcostとlatencyが日次利用に耐えるか | 必要なspecialistだけ起動し、single-agent baseline比の有用性/cost/時間を計測 |
-| U29 | Luma mainの当日inventoryを「最後まで読んだ」とどう証明するか | pagination、infinite scroll、日付・東京・対面条件、取得件数と最終cursorを探索証跡へ保存 |
-| U30 | 自動予約してよい有料eventの上限 | 日次・月次event予算をDaisが設定し、超過候補はTelegram承認まで購入しない |
-| U31 | 毎日のeventが勤務・学校・既存予定・移動時間と両立するか | Calendarと経路時間を申込前gateにし、重複時は同日の次候補へ進む |
+| U29 | Luma mainの各日inventoryを「最後まで読んだ」とどう証明するか | pagination、infinite scroll、日付・東京・対面条件、取得件数と最終cursorを探索証跡へ保存 |
+| U30 | 都度承認なしで自動予約してよい有料eventの支出policy | 日次・月次上限と対象を一度だけ設定し、範囲内は自動決済、範囲外は無料の別候補へ進む |
+| U31 | rolling 21日のeventが勤務・学校・既存予定・移動時間と両立するか | 全Calendarと経路時間を申込前gateにし、重複時は同日の別時間・別候補へ進む |
 | U32 | Summer 2026のYC applicationをFall 2026へ継続できるか | 現行YC homeをread-only確認し、継続不可なら既存回答を新applicationへ安全に移す |
 | U33 | 既存YC回答・動画・tractionが現在も正確か | production、dashboard、application-kit、動画実体を照合し、古い主張を修正してからsubmit |
 
