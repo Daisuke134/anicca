@@ -412,7 +412,17 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 | 5. Browser-direct Reel adapter | Verified | RED: source module collection failed with `ModuleNotFoundError`. GREEN: Reel adapter `13` cases; combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`, Marketer `23`, account-state `38`; compile and diff check passed | `28caa8b22` |
 | 6. Creative/publish controller | Verified | RED: controller fixture had `10` failures under the monolith. GREEN: controller `18`, P0 handoff `24`, account-state `38`, combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`; shell/Python syntax and diff check passed | `f413cd5b7` |
 | 7. P1 LaunchAgents and repair wiring | Verified | Offline GREEN: combined pytest `56 passed`; account manager later `40 passed`, warmup `15`, controller `18`, Marketer handoff `24`, outcome monitor `19`, account-state `40`; all three source plists lint `OK`. Production exposed and repaired idempotent field replacement, browser-lease cleanup, rejected Gmail aliases, fresh-email fallback, atomic credential staging, trusted-click races, and missing browser-identity handoff (`b7d5b5678` through `dcb01f9ce`; shared skill commits `853b3c0`, `c4cc8b4`, `502daff`). Final runtime proof: `@capafy.skills8m4q2z`, `contact@aniccaai.com`, exact isolated session verification true, credential mode `0600`, registry `warming`, Telegram account-created message `5131`, manager loaded at 300 seconds with latest exit `0`, result consumed, lock clear, lease holder empty. | `dfc459174` + repair commits |
-| 8. Fresh production lifecycle | In progress | Account/session prerequisite is verified and the live row resolves `instagram:capafy-provision` on port `65063`. The warmup LaunchAgent was unloaded before its first run. Remaining acceptance is removal of the obsolete gates plus one immediate verified original Reel, post-write session readback, all three Telegram URLs, and first reach/click/order measurement. | `dcb01f9ce`; redesign commit will be recorded after verification |
+| 8. Fresh production lifecycle | In progress | Account/session prerequisite is verified and the live row resolves `instagram:capafy-provision` on port `65063`. The warmup LaunchAgent was unloaded before its first run. Immediate-publish Task 1 is verified: lifecycle pytest `17 passed`, and browser ownership now grants `publish_probe` without account-age or warmup evidence. Remaining acceptance is controller/scheduler migration plus one verified original Reel, post-write session readback, all three Telegram URLs, and first reach/click/order measurement. | `35026d96a` + remaining delta tasks |
+
+Immediate-publish delta execution log:
+
+| Task | Status | Verification evidence | Commit |
+|---|---|---|---|
+| 1. Publish-probe lifecycle | Verified | RED: `15 failed, 2 passed` against the old four-argument warmup lifecycle. GREEN: lifecycle pytest `17 passed`; Python compile and diff check passed. The state no longer reads warmup evidence, requires post-write owner-session proof when recording a Reel, and preserves commercial capability only after Reel/session/reach evidence. | `35026d96a` |
+| 2. Account-to-publish handoff | In progress | Tests and implementation not yet changed. | — |
+| 3. Immediate controller and post-write proof | Not started | — | — |
+| 4. Scheduler/report cleanup | Not started | — | — |
+| 5. Production proof | Not started | — | — |
 
 #### P0 execution log
 
