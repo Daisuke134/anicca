@@ -50,8 +50,8 @@ The canonical P3 registry is `~/.openclaw/state/capafy-portfolio.json`. Each pro
   "next_best_alternative": "validated natural-language description or null",
   "renewal_reason": "validated natural-language description or null",
   "evidence": [{"url": "https://...", "observed_at": "RFC3339", "claim": "...", "confidence": "high|medium|low"}],
-  "unit_economics": {"gross_usd": "0.00", "cost_usd": "0.00", "contribution_usd": "0.00"},
-  "decision": "promote|repair|reposition|pause|retire_candidate",
+  "unit_economics": {"gross_usd": null, "cost_usd": null, "contribution_usd": null},
+  "decision": "unaudited|promote|repair|reposition|pause|retire_candidate",
   "decision_reason": "...",
   "experiment": {"experiment_id": "...", "owner": "builder|marketer", "status": "proposed|active|measured|stopped", "success_metric": "...", "stop_condition": "..."}
 }

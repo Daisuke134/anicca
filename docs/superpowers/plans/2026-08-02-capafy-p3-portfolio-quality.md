@@ -10,10 +10,10 @@
 
 **Files:** create `capafy_portfolio.py`, schema, and tests; consume P2 projection plus fresh inventory.
 
-- [ ] Write RED tests for 31-row preservation, `sales=null` preservation, money precision, evidence URLs, enum validation, and atomic/idempotent writes.
-- [ ] Implement `snapshot` and `validate` commands without business judgment.
-- [ ] Kickstart against production and require 31 validated records with no fabricated decisions.
-- [ ] Update living spec and commit.
+- [x] Write RED tests for 31-row preservation, `sales=null` preservation, money precision, evidence URLs, enum validation, and atomic/idempotent writes.
+- [x] Implement `snapshot` and `validate` commands without business judgment.
+- [x] Kickstart against production and require 31 validated records with no fabricated decisions.
+- [x] Update living spec and commit.
 
 ### Task 2: Evidence-backed agent audit
 
