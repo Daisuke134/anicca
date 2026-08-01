@@ -16,4 +16,4 @@
 
 ### Task 3: Live evidence
 - [x] Prove `:9222` responds and no active funder route owns `:9223`.
-- [ ] Record evidence, mark O1C-13, count 99 remaining, commit/push, verify remote equality.
+- [x] Record evidence, mark O1C-13, count 99 remaining, commit/push, verify remote equality.
