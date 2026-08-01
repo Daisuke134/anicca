@@ -57,7 +57,7 @@ const {
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
 const {
-  markAnswered, upsertLiveLocation,
+  markAnswered, applyAmdDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
@@ -285,17 +285,33 @@ const server = http.createServer((req, res) => {
       if (!data || data.event_type !== "call.machine.detection.ended" || !payload) {
         res.writeHead(200); res.end("ignored"); return;
       }
-      if (!shouldMarkAnswered({ amdEnabled: true, signal: "amd", result: payload.result })) {
-        console.log(`[telnyx-events] AMD result=${payload.result || "missing"}; answered_at unchanged`);
-        res.writeHead(200); res.end("ignored"); return;
-      }
       const wake = decodeWakeClientState(payload.client_state);
-      if (!wake) { res.writeHead(200); res.end("no wake context"); return; }
-      const marked = await markAnswered(wake.wakeUid, wake.wakeEventKey, {
-        supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+      if (!wake) {
+        // Not a wake call, or a client_state we cannot decode. Either way nothing correlates, and
+        // saying so out loud beats writing amd_result onto no row at all.
+        console.log(`[telnyx-events] AMD result=${payload.result || "missing"}; no wake context`);
+        res.writeHead(200); res.end("no wake context"); return;
+      }
+      // spec §3 row 2: persist EVERY detection, not only human ones. amd_result='machine' is a
+      // voicemail we reached; amd_result IS NULL is a webhook that never arrived. Before this, both
+      // were answered_at IS NULL and a rotated signing key would have gone unnoticed forever.
+      const detection = await applyAmdDetection(wake.wakeUid, wake.wakeEventKey, {
+        result: payload.result, supaUrl: SUPA_URL, supaKey: SUPA_KEY,
       });
-      console.log(`[telnyx-events] AMD human wake=${wake.wakeUid.slice(0, 12)} marked=${marked}`);
-      res.writeHead(200); res.end(marked ? "answered" : "unchanged");
+      const tag = `wake=${wake.wakeUid.slice(0, 12)} result=${detection.result || "missing"}`;
+      // The three outcomes get three different lines, and only one of them is routine. A write that
+      // matched no row and a write that never landed are different failures and must not share a log.
+      const report = (what, r) => {
+        if (!r.ok) console.error(`[telnyx-events] ${what} PATCH FAILED (${r.error}) ${tag} — lm_wake_log NOT updated`);
+        else if (r.matched === 0) console.error(`[telnyx-events] ${what} matched NO ROW ${tag} — wake row missing or already latched`);
+        else console.log(`[telnyx-events] ${what} written rows=${r.matched} ${tag}`);
+      };
+      report("amd_result", detection.amd);
+      if (detection.answered) report("answered_at", detection.answered);
+      const outcome = !detection.amd.ok ? "record failed"
+        : detection.answered ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
+        : "recorded";
+      res.writeHead(200); res.end(outcome);
     })().catch((error) => {
       console.error("[telnyx-events] error", error && error.message);
       if (!res.headersSent) { res.writeHead(500); res.end("error"); }
@@ -817,6 +833,11 @@ wss.on("connection", (carrierWs, req) => {
         amdEnabled: amdEnabled(process.env), signal: "media-start",
       })) markAnswered(wakeUid, wakeEventKey, {
         supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+      }).then((r) => {
+        // Same PATCH as always; only the reporting is new. This return value used to be discarded
+        // entirely, so an LM_AMD=off deployment writing to nothing left no trace (spec §1.3).
+        if (!r.ok) console.error(`[bridge] answered_at PATCH FAILED (${r.error}) wake=${String(wakeUid).slice(0, 12)}`);
+        else if (r.matched === 0) console.error(`[bridge] answered_at matched NO ROW wake=${String(wakeUid).slice(0, 12)}`);
       }).catch((e) => console.error(`[bridge] answered_at update failed: ${e && e.message}`));
       if (state.callControlId && !state.recordStarted) {
         state.recordStarted = true;

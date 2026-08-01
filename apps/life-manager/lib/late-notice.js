@@ -3,6 +3,7 @@
 "use strict";
 
 const { isHelperBlock } = require("./wake-filter.js");
+const { shouldMarkAnswered } = require("./answered.js");
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
@@ -179,23 +180,71 @@ async function claimLateEvent(uid, key, opts = {}) {
   return Boolean(response && response.status === 201);
 }
 
-// Wake-call answer telemetry remains useful to the authenticated Telnyx webhook even though it no
-// longer unlocks or triggers a late notice. No new T-0 rows are created by this helper.
-async function markAnswered(uid, key, opts = {}) {
+// spec §1.3: markAnswered used to answer `false` for BOTH "the PATCH matched zero rows" and "the
+// request never landed", and its one caller threw the value away. That is how a rotated Telnyx
+// signing key could silence every wake call forever while looking identical to a user who did not
+// pick up. Every wake-log write now reports which of the three it was:
+//
+//   { ok: true,  matched: n>0 }  the write landed and changed n rows
+//   { ok: true,  matched: 0   }  the write landed and correctly matched nothing (no such row / latched)
+//   { ok: false, matched: 0, error } we never got a successful write — a recording failure
+//
+// A caller that ignores `error` is ignoring an outage, so call sites log the two apart.
+async function patchWakeLog(uid, key, { filter = "", body, ...opts }) {
   const f = opts.fetchImpl || fetch;
-  if (!opts.supaUrl || !opts.supaKey || !uid || !key) return false;
-  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&answered_at=is.null&select=event_key`;
+  if (!opts.supaUrl || !opts.supaKey || !uid || !key) return { ok: false, matched: 0, error: "missing_args" };
+  const url = `${opts.supaUrl}/rest/v1/lm_wake_log?uid=eq.${encodeURIComponent(uid)}` +
+    `&event_key=eq.${encodeURIComponent(key)}${filter}&select=event_key`;
   const response = await f(url, {
     method: "PATCH", headers: supaHeaders(opts.supaKey, "return=representation"),
-    body: JSON.stringify({ answered_at: new Date(opts.nowMs || Date.now()).toISOString() }),
-  }).catch(() => null);
-  if (!response || !response.ok) return false;
-  const rows = await response.json().catch(() => []);
-  return Array.isArray(rows) && rows.length > 0;
+    body: JSON.stringify(body),
+  }).catch((e) => ({ __threw: (e && e.message) || "fetch failed" }));
+  if (response && response.__threw) return { ok: false, matched: 0, error: response.__threw };
+  if (!response || !response.ok) return { ok: false, matched: 0, error: `http_${(response && response.status) || "unknown"}` };
+  const rows = await response.json().catch(() => null);
+  if (!Array.isArray(rows)) return { ok: false, matched: 0, error: "unreadable_response" };
+  return { ok: true, matched: rows.length };
+}
+
+// Wake-call answer telemetry remains useful to the authenticated Telnyx webhook even though it no
+// longer unlocks or triggers a late notice. No new T-0 rows are created by this helper.
+// The answered_at=is.null filter is a latch, not a lookup: the FIRST human proof wins and later
+// events must not rewrite the moment the user picked up. That is why amd_result is a separate write
+// below rather than an extra field here — fusing them would force this latch onto a column whose
+// rule is the opposite (last observation wins, always recorded).
+async function markAnswered(uid, key, opts = {}) {
+  return patchWakeLog(uid, key, {
+    ...opts,
+    filter: "&answered_at=is.null",
+    body: { answered_at: new Date(opts.nowMs || Date.now()).toISOString() },
+  });
+}
+
+// spec §3 row 2: persist what AMD actually said, on EVERY detection. Unfiltered by answered_at on
+// purpose (see above), and the value is stored verbatim — folding not_sure into machine, or dropping
+// it, would put it straight back into the NULL bucket that means "we never heard anything".
+async function recordAmdResult(uid, key, opts = {}) {
+  const result = typeof opts.result === "string" ? opts.result.trim() : "";
+  if (!result) return { ok: false, matched: 0, error: "missing_result" };
+  return patchWakeLog(uid, key, { ...opts, body: { amd_result: result } });
+}
+
+// The whole of what a call.machine.detection.ended means for the wake row, in one testable place:
+// record the raw result always, latch answered_at only for a human. server.js owns the transport
+// (signature, decode, HTTP reply); this owns the decision, so the three outcomes are provable
+// without booting the server or reaching for global fetch.
+async function applyAmdDetection(uid, key, opts = {}) {
+  const result = typeof opts.result === "string" ? opts.result.trim() : "";
+  const amd = await recordAmdResult(uid, key, opts);
+  if (!shouldMarkAnswered({ amdEnabled: true, signal: "amd", result })) {
+    return { result, amd, answered: null };
+  }
+  return { result, amd, answered: await markAnswered(uid, key, opts) };
 }
 
 module.exports = {
   NO_DESTINATION_MESSAGE, MAIL_FAILURE_MESSAGE,
   evaluateLateArrival, formatLateSuccessMessage, externalAttendees,
-  processLocationLateNotice, upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent, markAnswered,
+  processLocationLateNotice, upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent,
+  markAnswered, recordAmdResult, applyAmdDetection,
 };
