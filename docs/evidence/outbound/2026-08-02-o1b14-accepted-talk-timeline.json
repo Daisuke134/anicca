@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "task": "O1B-14",
+  "observed_at": "2026-08-01T16:07:41Z",
+  "result": "verified",
+  "implementation_commit": "1dd0abdbfa4dce316d4fa5daa971a472567974a2",
+  "contract": {
+    "requires_talk_application_status": "accepted",
+    "requires_accepted_receipt": true,
+    "stable_timeline_id": true,
+    "tenant_bound": true,
+    "idempotent_unique_entity": true,
+    "milestone_kinds": ["accepted", "slide_deadline", "ticket_qr", "talk_start", "follow_up"]
+  },
+  "postgres_readback": {
+    "tenant_id": "o1b14-live-proof",
+    "timeline_id_shape_valid": true,
+    "talk_entity_status": "accepted",
+    "accepted_receipt_present": true,
+    "milestone_count": 5,
+    "milestone_order": ["accepted", "slide_deadline", "ticket_qr", "talk_start", "follow_up"],
+    "venue": "Tokyo Innovation Base",
+    "qr_ref_is_opaque_object": true,
+    "raw_qr_or_identity_persisted": false
+  },
+  "database": {
+    "migration_applied": true,
+    "rls_enabled": true,
+    "public_access_revoked": true,
+    "service_only_policy": true,
+    "foreign_key_to_talk_entity": true
+  },
+  "verification": {
+    "focused_timeline_tests": { "passed": 6, "failed": 0 },
+    "outbound_tests": { "passed": 125, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves a controlled accepted talk entity can produce and persist one five-milestone timeline with an acceptance receipt, slide deadline, opaque official-QR reference and venue, talk start, and follow-up. It does not claim a real organizer acceptance or completed presentation."
+}

@@ -521,6 +521,17 @@ validatorで拒否し、fallbackで成功を偽装しない。実生成は、reg
 `docs/evidence/outbound/2026-08-02-o1b13-live-talk-proposal.json`。残作業は124件。
 次はO1B-14でaccepted後のslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡する。
 
+完了: `O1B-14`。`talk_application/accepted`と採択receiptが揃った場合だけ、採択、slide締切、
+会場で使うticket QR、登壇開始、follow-upの5 milestoneを時系列順の一つのstable timelineへ変換するcontractを
+TDDで追加した。submitted/audience、receiptなし、時刻順序矛盾、filesystem pathや別tenant風QR refは拒否する。
+PostgreSQLにはtalk entityへの外部key、tenant+entity unique、5 item JSON check、RLS、service-only権限を持つ
+additive tableを追加した。稼働中local PostgreSQLへmigrationを適用し、controlled accepted entityを保存して、
+5種類の順序、会場、opaque QR ref、採択receipt、stable timeline IDを再読出しした。実organizer採択は捏造しない。
+fresh verificationはfocused 6件、outbound 125件、runtime-up 33件、diff checkが全成功。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b14-accepted-talk-timeline.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b14-accepted-talk-timeline.json`。残作業は123件。
+次はO1B-15で登壇応募ごとのsubmitted/accepted/rejected/presentedを応募ledgerへ記録する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -649,7 +660,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
-- [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
+- [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
