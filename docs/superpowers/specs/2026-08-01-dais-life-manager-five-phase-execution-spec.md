@@ -81,7 +81,7 @@ Fundraisingで使う名称と導線のcontract:
 | product story | userのphysical / mental / financial lifeを、委任範囲内で実行しTelegramへ報告するLife Manager |
 | financial story | CFO、支出改善、収入機会、資産管理をFinancial Organとして説明する。旧13事業pitchを現productとして出さない |
 | repository | `https://github.com/Daisuke134/life-manager` |
-| public product URL | 提出直前に実production/deploymentからreadbackしたLife Manager URLだけを使う。旧URLを推測で流用しない |
+| public product URL | `https://aniccaai.com/lm`。提出直前にも実production readbackし、旧root URLやbackend health URLをhomepageへ流用しない |
 | evidence | 現在のcode、実動作、実user数、実revenueだけ。旧Anicca tractionをLife Manager tractionへ偽装しない |
 
 2026-08-02のread-only auditでは、root `README.md`は「Life Managerがproduct、Aniccaはcompany name only」と
@@ -89,6 +89,9 @@ Fundraisingで使う名称と導線のcontract:
 旧Anicca / `anicca-oss` / 13 product pitch中心である。さらに`apply-to-funder/funders/yc-w26.json`も
 company/product説明、homepage、GitHub、動画が旧値で、別の`yc-answers-lifemanager-2026fall.*`だけがLife Manager
 pitchを持つ。正本が二重化しているため、旧application-kitや旧form configから直接submitすることを禁止する。
+公開導線は2026-08-02に`https://aniccaai.com/lm`を実測し、HTTP 200、title `Life Manager — Get started`、
+Life Manager Telegram開始linkを確認した。`life-call-production.up.railway.app`は稼働backendであり、応募用の
+product homepageではない。
 
 ## 1. 固定実行順序
 
