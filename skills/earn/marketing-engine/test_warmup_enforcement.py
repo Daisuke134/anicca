@@ -91,3 +91,7 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "skip directly to the fresh Gmail account fallback" in result.stdout
     assert "cdp.py clicktexttrusted" in result.stdout
     assert "Never reuse a recorded coordinate" in result.stdout
+    assert "custom-domain recovery address" in result.stdout
+    assert "contact@aniccaai.com" in result.stdout
+    assert "to:contact@aniccaai.com" in result.stdout
+    assert "QR-device gate" in result.stdout
