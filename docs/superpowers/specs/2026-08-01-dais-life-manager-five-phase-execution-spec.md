@@ -243,7 +243,14 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-完了: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
+実行中: `O1A-02`。`O1A-01`で既存`lm_runtime_jobs`へのreference-only enqueueは完了した。
+既存runtimeにはclaim、retry、dead-letter、idempotencyがある一方、worker実行中のlease heartbeatが
+未接続だった。新runtimeや第二queueは作らず、既存workerへscoped heartbeatを接続し、
+`outbound.event.apply`固有のPostgreSQL lifecycle testでenqueueからdead-letterまでを実証する。
+イベント選定やLuma画面操作はこの共通基盤へ入れず、`O1B-03`のagent/tool adapterで実装する。
+実装plan: `docs/superpowers/plans/2026-08-01-connector-o1a02-runtime-execution.md`。
+
+完了済み: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
 idempotency、immutable receiptを既に持つことを2026-08-01に再確認した。別worktreeの独立outbound
 engineは第二runtimeになるため取り込まず、Connector event applicationをreference-only job contractで
 既存runtimeへ接続した。`outbound.event.apply`、安定job/effect key、tenant境界、Luma URL・時刻・
