@@ -1,6 +1,6 @@
 # Connector O1A-05 Guardian Wiring Plan
 
-> Status: 実行中。O1A-05だけを扱い、強制停止・Telegram警告・実復旧の証明はO1A-06へ残す。
+> Status: 完了。実装commit `fff711b20`。強制停止・Telegram警告・実復旧の証明はO1A-06へ残す。
 
 ## 目的
 
@@ -34,4 +34,3 @@
 - plistを`plutil -lint`する。
 - installerを副作用なしのrender modeで検証する。
 - O1A-05完了後にspec、commit hash、fresh test結果を更新しpushする。
-

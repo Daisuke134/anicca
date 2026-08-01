@@ -243,12 +243,16 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-05`。Connector専用の第二監視系やheartbeat fileは作らず、既存runtime workerの
-`/health`を既存Guardianと`self-fix.sh`へ接続する。HTTP 200に加え、`role=worker`、
-`outbound.event.apply` capability、freshな`last_poll_at`を必須条件とする。local worker health port、
-5分cadenceのlaunchd plist、再現可能installer、pure判定testを追加する。実装plan:
-`docs/superpowers/plans/2026-08-01-connector-o1a05-guardian-wiring.md`。強制停止、Telegram警告、
-実復旧の証明は順序どおり次の`O1A-06`で行い、この項目では先取りしない。
+完了: `O1A-05`。Connector専用の第二監視系やheartbeat fileは作らず、既存runtime workerの
+`/health`を既存Guardianと`self-fix.sh`へ接続した。HTTP 200に加え、`role=worker`、
+`outbound.event.apply` capability、freshな`last_poll_at`を必須条件とし、到達不能、不正JSON、
+HTTP異常、role違い、capability不足、未来・stale pollをfail closedにした。local worker health port、
+5分cadenceのlaunchd plist、副作用なしで検証できるinstallerを追加した。fresh verificationは
+Guardian 9件を含むoutbound 20件、runtime worker回帰30件、compose config、plist template、
+render済みplist、shell syntaxがすべて成功した。実装commit: `fff711b20`。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1a05-guardian-wiring.md`。実機は別worktree由来の古い
+composeでworker health portが未公開のため、launchd登録を先行すると偽の到達不能self-fixになる。
+現在のcomposeへの更新、launchd登録、強制停止、Telegram警告、実復旧は次の`O1A-06`で一続きに実証する。
 
 完了: `O1A-04`。`apps/life-manager`の完全な`npm test`を現在のlockfileとinstallで実行し、
 2026-08-01にexit 0を確認した。不足moduleはなく、新しいoutbound 11件、runtime worker 30件、
@@ -300,7 +304,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
 - [x] O1A-03 Evidence E1/E2/E3を共通module化
 - [x] O1A-04 不足dependencyを解消し全testを実行
-- [ ] O1A-05 Guardianを接続
+- [x] O1A-05 Guardianを接続
 - [ ] O1A-06 強制停止→検知→Telegram警告→復旧を実証
 
 ### 5.2 Order 1B — イベント
