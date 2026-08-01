@@ -201,3 +201,39 @@ test("the wake tick keeps its own call_enabled filter — dialing a user with no
   });
   assert.deepEqual(dialled, ["has-phone"], "the filter belongs to the dial, and stays there");
 });
+
+// spec §5.2.1 / §5.3 — the phone is opt-IN now, not opt-out.
+//
+// The `!== false` idiom encodes "on unless refused", which is the exact opposite of what the spec
+// now says: a user who has expressed no preference gets no call. Three shapes all mean "expressed no
+// preference" and every one of them used to dial: no preference row at all, a row whose column is
+// SQL NULL, and (before RUNTIME_DEFAULTS flips) a merged default of true. Only `=== true` refuses
+// all three while still honouring the person who deliberately switched calls on.
+test("a user who never asked for calls is not dialled; an explicit opt-in still is", async () => {
+  const dialled = [];
+  await wakeTick({
+    listUsers: async () => [
+      { uid: "opted-in", daily_automation_enabled: true, call_enabled: true },
+      { uid: "no-preference-row", daily_automation_enabled: true },
+      { uid: "null-column", daily_automation_enabled: true, call_enabled: null },
+      { uid: "opted-out", daily_automation_enabled: true, call_enabled: false },
+    ],
+    wake: async (u) => { dialled.push(u.uid); },
+    now: 0,
+  });
+  assert.deepEqual(dialled, ["opted-in"],
+    "silence is not consent to be phoned — §5.2.1 makes the phone an extra, and Telegram the default");
+});
+
+// The tick filter is not the only door. wakeUserOnce (the Inngest per-user path) calls wakeCallOnce
+// directly and never passes through wakeTick's filter, so the dial half must refuse for itself.
+test("the dial half itself refuses a user who never asked for calls", async () => {
+  clearEvents();
+  const h = deps();
+  await wakeCallOnce({ ...USER, call_enabled: undefined }, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(h.dialed.length, 0, "the Inngest per-user path bypasses wakeTick — this gate is the last one");
+
+  const optedIn = deps();
+  await wakeCallOnce({ ...USER, call_enabled: true }, DEPARTURE_MS - 5 * MINUTE, optedIn.deps);
+  assert.equal(optedIn.dialed.length, 1, "and the person who switched calls on is still called");
+});
