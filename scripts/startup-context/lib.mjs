@@ -82,6 +82,46 @@ export function contextDigest(context) {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+export function validatePublicArtifact(content, context) {
+  const errors = [];
+  const text = String(content);
+  const digest = contextDigest(context);
+
+  if (!text.includes(context.context_version)) errors.push("artifact is missing context version");
+  if (!text.includes(digest)) errors.push("artifact is missing context digest");
+
+  const forbiddenValues = [
+    ...(context?.forbidden_exact_values?.repositories ?? []),
+    ...(context?.forbidden_exact_values?.homepages ?? []),
+  ];
+  for (const value of forbiddenValues) {
+    if (value && text.includes(value)) errors.push(`artifact contains forbidden value: ${value}`);
+  }
+
+  for (const productName of context?.forbidden_exact_values?.product_names ?? []) {
+    const escaped = productName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const productAssignment = new RegExp(
+      `(?:product(?:_name)?|product name)\\s*[\\":=|-]+\\s*[\\"']?${escaped}(?:[\\"']|$)`,
+      "im",
+    );
+    if (productAssignment.test(text)) {
+      errors.push(`artifact assigns forbidden product name: ${productName}`);
+    }
+  }
+
+  if (/\{\{[^}\n]+\}\}|\[\[[^\]\n]+\]\]/.test(text)) {
+    errors.push("artifact contains an unresolved placeholder");
+  }
+  if (/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(text)) {
+    errors.push("artifact contains an email address");
+  }
+  if (/(?:\+81[- ]?|0\d{1,4}[- ])\d{1,4}[- ]\d{3,4}/.test(text)) {
+    errors.push("artifact contains a phone number");
+  }
+
+  return errors;
+}
+
 function ageInDays(value, now) {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return Number.POSITIVE_INFINITY;

@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   auditStartupContext,
   contextDigest,
   loadStartupContext,
   validateStartupContext,
+  validatePublicArtifact,
 } from "../scripts/startup-context/lib.mjs";
+import { buildApplicationKit } from "../scripts/startup-context/build-kit.mjs";
 
 const contextPath = new URL("../.agents/startup-context.json", import.meta.url);
 const marketingPath = new URL(
@@ -171,4 +176,61 @@ test("Japanese README first view explains the Life Manager product experience", 
   assert.match(readme, /同じcore/);
   assert.match(readme, /https:\/\/aniccaai\.com\/lm/);
   assert.doesNotMatch(readme, /Live Dashboard/);
+});
+
+test("application kit is deterministic and bound to the canonical context digest", async () => {
+  const context = await loadStartupContext(contextPath);
+  const directory = await mkdtemp(join(tmpdir(), "life-manager-kit-"));
+
+  try {
+    const first = await buildApplicationKit({ context, outputDirectory: directory });
+    const firstContents = Object.fromEntries(
+      await Promise.all(first.files.map(async (file) => [file, await readFile(join(directory, file), "utf8")])),
+    );
+    const second = await buildApplicationKit({ context, outputDirectory: directory });
+    const secondContents = Object.fromEntries(
+      await Promise.all(second.files.map(async (file) => [file, await readFile(join(directory, file), "utf8")])),
+    );
+
+    assert.deepEqual(second, first);
+    assert.deepEqual(secondContents, firstContents);
+    assert.deepEqual((await readdir(directory)).sort(), first.files.toSorted());
+    for (const content of Object.values(firstContents)) {
+      assert.match(content, new RegExp(context.context_version.replaceAll(".", "\\.")));
+      assert.match(content, new RegExp(contextDigest(context)));
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("generated application kit describes Life Manager without unverified media", async () => {
+  const context = await loadStartupContext(contextPath);
+  const directory = await mkdtemp(join(tmpdir(), "life-manager-kit-"));
+
+  try {
+    await buildApplicationKit({ context, outputDirectory: directory });
+    const answers = await readFile(join(directory, "answers.en.md"), "utf8");
+    const deck = await readFile(join(directory, "deck.md"), "utf8");
+    const assets = JSON.parse(await readFile(join(directory, "assets.json"), "utf8"));
+
+    assert.match(answers, /body, mind, and money/i);
+    assert.match(answers, /Telegram/);
+    assert.match(deck, /Daily Organ/);
+    assert.match(deck, /Financial Organ/);
+    assert.equal(assets.assets.some((asset) => asset.status === "verified" && asset.type === "video"), false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("public artifact validator blocks legacy product values, PII, and placeholders", async () => {
+  const context = await loadStartupContext(contextPath);
+  const digest = contextDigest(context);
+  const metadata = `context-version: ${context.context_version}\ncontext-digest: ${digest}\n`;
+
+  assert.match(validatePublicArtifact(`${metadata}Repository: https://github.com/Daisuke134/anicca-oss`, context).join("\n"), /forbidden/i);
+  assert.match(validatePublicArtifact(`${metadata}Contact: private-person@example.com`, context).join("\n"), /email/i);
+  assert.match(validatePublicArtifact(`${metadata}Answer: {{traction}}`, context).join("\n"), /placeholder/i);
+  assert.deepEqual(validatePublicArtifact(`${metadata}Product: Life Manager`, context), []);
 });
