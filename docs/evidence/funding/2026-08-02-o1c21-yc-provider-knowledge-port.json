@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-21",
+  "observed_at": "2026-08-01T23:28:22Z",
+  "result": "knowledge_port_verified",
+  "implementation_commit": "3b92a0b63",
+  "submission_performed": false,
+  "browser_navigation_performed": false,
+  "canonical_provider": {
+    "provider_id": "yc-application",
+    "successor_provider": "apply-to-funder",
+    "ported_from": "apply-to-yc",
+    "manifest_sha256": "546f37064b9e25b5450a9d0fe2a8386b85f25d0f3807a3dcc891c3e3be351a13",
+    "builder_sha256": "2f921f3f34107565e2a22e8dcade389f35ed2dec9e7e26636cca16cd4f564303",
+    "test_sha256": "41b8058472a89f11e8839b9cbe0a1f9657f72f79b0161e29be7db4b5d4429be4",
+    "pages": ["main", "video", "demo", "progress"],
+    "logical_field_counts": {
+      "main": 20,
+      "video": 1,
+      "demo": 1,
+      "progress": 6,
+      "total": 28
+    }
+  },
+  "migration_comparison": {
+    "deprecated_apply_sh_sha256": "062f08d8b0c1039cd0db30435e9b9ee267ace7916d51a586f490c5893d758475",
+    "deprecated_fill_js_sha256": "2ceaf879cd295434ffd13a5883c9b32c836840d58f7549a47a2da1a9c9918005",
+    "deprecated_progress_js_sha256": "bfb9aed9d319086217bbde4296543ff63f7c24c208a13ecbe692dc1250804185",
+    "successor_yc_spec_sha256": "2de79470422def2d83f93ae4ff4ea49afff929af6bada91f30f203246aa15f3e",
+    "deprecated_main_fields_covered": 20,
+    "deprecated_progress_shapes_covered": 6,
+    "successor_inventory_exact": true,
+    "raw_answer_values_recorded": false
+  },
+  "safety_contract": {
+    "mode": "preview_only",
+    "submit_operations": 0,
+    "main_page_atomic": true,
+    "progress_page_atomic": true,
+    "navigate_count_per_page": 1,
+    "readback_required_on_all_pages": true,
+    "react_native_setter_events": ["input", "change", "blur"],
+    "question_scoped_choice_count": 2,
+    "ambiguous_global_yes_locator_count": 0,
+    "non_file_source_digest_required": true,
+    "file_artifact_digest_required": true,
+    "legacy_static_source_rejected": true,
+    "path_traversal_source_rejected": true,
+    "browser_launch_command_present": false
+  },
+  "read_only_runtime_observation": {
+    "endpoint": "http://127.0.0.1:9222",
+    "available": true,
+    "browser": "Chrome/145.0.7632.109",
+    "protocol": "1.3",
+    "yc_page_opened": false,
+    "reason": "Live application continuation belongs to O1C-22."
+  },
+  "verification": {
+    "focused_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 267, "failed": 0 },
+    "runtime_up_tests": { "passed": 59, "failed": 0 },
+    "life_manager_full_npm_test": "passed",
+    "node_syntax": "passed",
+    "git_diff_check": "passed",
+    "independent_review_initial_critical": 1,
+    "independent_review_initial_important": 3,
+    "independent_review_final_critical": 0,
+    "independent_review_final_important": 0,
+    "independent_review_verdict": "merge_ready"
+  },
+  "claim_boundary": "This proves that the deprecated YC field, founder-video, demo-video, and progress structure is preserved by a checked-in successor provider contract that produces only content-addressed preview plans and fails closed on incomplete, stale-format, ambiguous, tampered, path-traversing, or submit-bearing input. It does not prove that a legacy Summer application can continue, that current YC batch facts are correct, that current application values have been previewed, or that an application was submitted; O1C-22 through O1C-26 own those outcomes."
+}

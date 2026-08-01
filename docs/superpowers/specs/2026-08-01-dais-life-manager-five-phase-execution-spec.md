@@ -929,7 +929,19 @@ local live migration replay、diff check、独立review Critical/Important 0が�
 `docs/superpowers/specs/2026-08-02-o1c20-funder-weekly-reflection-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1c20-funder-weekly-reflection.md`。実測証拠:
 `docs/evidence/funding/2026-08-02-o1c20-funder-weekly-reflection.json`。残作業は92件。
-次はO1C-21で、旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植する。
+完了: `O1C-21`。deprecated `apply-to-yc`のmain 20 field、founder video、demo video、progress 6論理fieldを、
+checked-inの後継`yc-application` provider manifestとcontent-addressed plan builderへ移植した。mainとprogressは各1回だけ
+navigateしてpage-atomicに全locatorを解決し、React native setterのinput/change/blur、1回save、全field readbackを要求する。
+2つのYesは`Are people using your product?`と`Do you have revenue?`のexact question container内で各1件に限定し、旧global
+text regexを廃止した。全non-file valueはcurrent source refとSHA-256、fileはApplication Kit video refとartifact digestを必須とし、
+legacy static source、nested schema改ざん、Submit相当save、readback無効化、path traversal、欠落・余剰fieldをfail closedにする。
+planは常にpreview-only、submit operation 0。稼働中daily-driver `:9222`はread-only endpointだけ確認し、YC page navigation・値更新・
+Submitは行っていない。fresh verificationはfocused 4件、outbound 267件、runtime-up 59件、Life Manager full `npm test`、syntax、
+diff checkが成功。独立reviewの初回Critical 1/Important 3を全て反例testで修正し、再reviewはCritical/Important 0、Merge可。
+実装commit `3b92a0b63`。設計: `docs/superpowers/specs/2026-08-02-o1c21-yc-provider-knowledge-port-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-o1c21-yc-provider-knowledge-port.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c21-yc-provider-knowledge-port.json`。残作業は91件。
+次はO1C-22で、古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -1151,7 +1163,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [x] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [x] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
-- [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
+- [x] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
 - [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
 - [ ] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
 - [ ] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
