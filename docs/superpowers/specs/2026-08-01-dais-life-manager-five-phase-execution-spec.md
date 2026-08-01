@@ -489,6 +489,14 @@ outbound 106件、runtime 33件が成功した。最終live read-onlyは`authent
 inventory終端7 rounds、候補35件で、mail・応募・Calendar副作用は0だった。次は実装commit後、そのcommitを
 指すsecretなしevidence JSONを保存してO1B-09を完了する。
 
+完了: `O1B-09`。Daisの既存Luma sessionを再利用し、期限切れ時だけrequest後の新着Luma mailから
+6桁codeを取得するhost recovery、discover/detail/RSVPが共有するcanonical events pack、workerの
+submit前read-only auth gateを正本へ統合した。初回liveでLuma日本語UI変更によるstale markerを発見し、
+同一originのprotected navigationで修正した。最終liveは認証済み、復旧不要、inventory終端7 rounds、
+候補35件、認証mail・応募・Calendar・Telegram副作用0だった。outbound 106件、runtime 33件が成功した。
+実測証拠: `docs/evidence/outbound/2026-08-01-o1b09-live-events-pack-integration.json`。
+次は固定順序どおりO1B-10で、旧Connector launchdと旧報告経路を停止し、正本runtimeだけを残す。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -612,7 +620,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-06 同一eventのLuma公式QRをguest key hashで照合して保存
 - [x] O1B-07 人間向け説明と直接link付きでTelegramへ実QRを送る
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
-- [ ] O1B-09 旧Connector loginを復旧しevents packへ統合
+- [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [ ] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡

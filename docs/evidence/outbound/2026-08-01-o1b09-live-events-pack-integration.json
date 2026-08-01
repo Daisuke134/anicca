@@ -1,0 +1,53 @@
+{
+  "schema_version": "life-manager.connector.events-pack-live.v1",
+  "observed_at": "2026-08-01T15:40:27.000Z",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "cb64e5276593bfae0663d60a528cd5b261338001",
+  "scope": "O1B-09 existing Dais Luma login and canonical Connector events pack integration",
+  "live_read_only": {
+    "provider": "luma",
+    "transport": "cloakbrowser-daily-driver",
+    "cdp_port": 9222,
+    "shared_context_count": 1,
+    "authenticated": true,
+    "recovered": false,
+    "inventory_complete": true,
+    "inventory_rounds": 7,
+    "candidate_count": 35
+  },
+  "side_effects": {
+    "authentication_mail_requested": 0,
+    "authentication_code_read": 0,
+    "event_registration_submitted": 0,
+    "calendar_event_written": 0,
+    "telegram_message_sent": 0
+  },
+  "composition": {
+    "host": "Gmail-backed one-at-a-time authentication recovery followed by exhaustive Luma discovery",
+    "worker": "read-only shared-session gate followed by the existing outbound.event.apply effect fence",
+    "queue": "existing lm_runtime_jobs only",
+    "browser": "existing CloakBrowser daily-driver only",
+    "second_scheduler_added": false
+  },
+  "failure_repaired": {
+    "initial_live_result": "safe pre-effect failure",
+    "root_cause": "authenticated Luma Home navigation changed from stale English text markers to protected Japanese navigation paths",
+    "repair": "same-origin /home plus visible /create and /home/calendars navigation with no active authentication controls",
+    "live_retest": "passed"
+  },
+  "verification": {
+    "focused_tests": 24,
+    "outbound_tests": 106,
+    "runtime_tests": 33,
+    "outbound_exit_code": 0,
+    "runtime_exit_code": 0
+  },
+  "privacy": {
+    "email_address_persisted": false,
+    "mail_body_persisted": false,
+    "verification_code_persisted": false,
+    "cookie_persisted": false,
+    "oauth_token_persisted": false
+  }
+}
