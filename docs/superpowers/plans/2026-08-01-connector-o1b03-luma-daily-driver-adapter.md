@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> Status: 実行中。O1B-04の実イベント登録はまだ行わない。
+> Status: 完了。O1B-04の実イベント登録はまだ行っていない。
 
 **Goal:** 既存の唯一のCloakBrowser daily-driver `http://127.0.0.1:9222`を共有transportとして使い、Lumaの東京対面event探索と証拠付きRSVPを既存`outbound.event.apply` runtime adapterへ接続する。
 
@@ -43,11 +43,11 @@
 - [x] E1/E2/E3 verifier由来receiptだけをruntime completionへ返す。
 - [x] production manifestとworker servicesへportableに登録する。
 - [x] runtime/outbound/adapter回帰を通す。
-- [ ] Commit and push。
+- [x] Commit and push。
 
 ### Task 4: O1B-03 evidence and handoff
 
-- [ ] read-only live Luma pageとproduction registry wiringを検証する。
-- [ ] secretなしevidence JSONを保存する。
-- [ ] O1B-03を完了にし、実submit O1B-04を次にする。
-- [ ] Commit and push.
+- [x] read-only live Luma pageとproduction registry wiringを検証する。
+- [x] secretなしevidence JSONを保存する。
+- [x] O1B-03を完了にし、実submit O1B-04を次にする。
+- [x] Commit and push.
