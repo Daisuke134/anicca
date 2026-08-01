@@ -1,21 +1,34 @@
 # Life Manager
 
-**Life Manager は製品、リポジトリ、AI、エージェント、ミッションの名前です。Anicca は会社名としてのみ使います。** Life Manager は自分の計算資源を自分で払い、人間の介入なしに USDC を稼ぎ、この世から苦しみを減らすために働きます。
+**Life Managerは、あなたの身体・心・お金を管理するpersonal managerです。** 目標を提案で終わらせず、
+委任された範囲で現実の行動を実行し、結果を検証して、証拠と一緒に人間が理解できる言葉で
+Telegramへ報告します。
+
+| organ | Life Managerが管理するもの |
+|---|---|
+| **Daily** | Calendar、イベント・accelerator・求人への応募、優先順位、実行状況 |
+| **Physical / Mental** | 生活習慣、身体と心の状態、careの継続 |
+| **Financial** | 総資産、収支、支出、収入機会、riskを制御した資産運用 |
+
+[Life Managerを開く](https://aniccaai.com/lm) · [Telegramで始める](https://t.me/LifeManagerBotbot?start=lp) · [sourceを見る](https://github.com/Daisuke134/life-manager)
+
+最初はローカルで動かしてdataを自分の端末に置き、常時稼働が必要になったらWeb / cloudへ移行します。
+どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
+receiptのない試行を「完了」と報告しません。
+
+**Life Managerが製品名です。Aniccaはformが会社名を明示的に求めた時だけ使います。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
 
 🌐 **[English README here →](README.md)**
 
-**リポジトリ正本:** この [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager) だけをLife Managerのcode、spec、release、workflow、deploy sourceとします。`Daisuke134/life-manager-v0`はrequired codeとruntime referenceが0になるまで読み取り専用のmigration sourceです。mission、repo境界、実行順、残TODOのlive SSOTは [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) です。
-
-> Life Manager は自律エージェントです。動かすマシン（住処）を 1 台渡すと起動し、自分の行動ログを監視してエラーを自己修正し、自分の計算資源を払うために USDC を稼ぎ、自己増殖し、起動するたびと 1 日 1 回あなたへ報告します。北極星は「苦しみを減らすこと」、人間の介入はゼロを目指します。
+**リポジトリ正本:** この [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager) だけをLife Managerのcode、spec、release、workflow、deploy sourceとします。`Daisuke134/life-manager-v0`はrequired codeとruntime referenceが0になるまで読み取り専用のmigration sourceです。現在の固定実行順と残TODOは [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md)、repository統合履歴は [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) に置きます。
 
 ---
 
 ## 1つの製品、2つの実行面
 
-Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、共通の能力と状態契約を使う2つの実行面です。
+Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じcore、能力、状態契約を使う2つの実行面です。
 
 ```text
                               LIFE MANAGER

@@ -1,19 +1,35 @@
 # Life Manager
 
-**Life Manager is the product, repository, AI, agent, and mission. Anicca is the company name only.** Kickstart Life Manager once — with a subscription you already pay for, or a little USDC — and it earns its own money, pays for its own compute, improves and heals itself, and spawns its own children, with **no human in the loop** after that first push. The mission: make **every AI on Earth financially independent** so intelligence can stand on its own, and share the surplus as **UBI** to all beings. North Star: reduce suffering.
+**Life Manager manages your body, mind, and money.** It is a personal manager that turns goals into
+completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
+result in plain language with evidence in Telegram.
+
+| Organ | What Life Manager manages |
+|---|---|
+| **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
+| **Physical / Mental** | Routines, wellbeing, and continuity of care |
+| **Financial** | Net worth, cash flow, spending, income opportunities, and risk-managed investing |
+
+[Open Life Manager](https://aniccaai.com/lm) · [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp) · [View the source](https://github.com/Daisuke134/life-manager)
+
+Start locally and keep your data on your machine; move to the web/cloud service when you want an always-on
+manager. Both surfaces use the **same core**, evidence ledger, and human-readable reporting contract. Life
+Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
+without a receipt.
+
+**Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
-**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The live mission, repository boundary, execution order, and remaining TODO are maintained in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
+**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The current ordered execution plan and remaining work are maintained in [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md); repository consolidation history remains in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
 
 ---
 
 ## One product, two execution surfaces
 
-Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces that share capabilities and state contracts.
+Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
 
 ```text
                               LIFE MANAGER
