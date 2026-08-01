@@ -276,6 +276,13 @@ vault and reached the official email-verification screen; the Gmail read-only
 check currently has no delivered message, so the opportunity remains
 `PITCH_READY` and is not falsely marked `SUBMITTED`.
 
+Runtime commit `4490e49` persists the supporting official policy URLs with the
+opportunity and passes them back into every due recheck. A live re-verification
+read the same three TECHi pages, retained `PITCH_READY`, returned
+`UNCHANGED_ACTIVE_APPLICATION`, and stored both canonical supporting URLs;
+future wakes therefore cannot silently forget the AI/payment evidence by
+reading only the application page.
+
 The opportunity subsystem is a stateful loop, not a periodic search report:
 
 ```text
