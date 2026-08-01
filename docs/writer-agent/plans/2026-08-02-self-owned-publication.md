@@ -140,12 +140,14 @@ Task 5 receipt: runtime commit `3725ee8` is pushed to the Writer runtime remote 
 - Consumes: read-only Stripe Checkout Sessions, Subscriptions, Invoices, Balance Transactions, refunds, and payouts whose metadata identifies the Writer.
 - Produces: append-only external receipts and canonical direct-writing money/subscription/fee/refund/payout rows.
 
-- [ ] Write failing fixtures proving metadata joins one artifact, session completion alone is not received money, active non-test subscriptions create MRR, invoice payment creates received recurring revenue, balance transaction creates the exact fee/net, refund reduces net, payout is not new revenue, and cursor replay is idempotent.
-- [ ] Run focused tests and require failure.
-- [ ] Implement a least-privilege read-only connector, durable cursor/outbox, exact Stripe object IDs and hashes, separate live/test handling, and five-minute `RunAtLoad` launchd installation.
-- [ ] Add self-owned article/archive stream lines and receipt links to the shared Web/Telegram report.
-- [ ] Run focused and full Writer suites.
-- [ ] Commit only Task 6 files.
+- [x] Write failing fixtures proving metadata joins one artifact, session completion alone is not received money, active non-test subscriptions create MRR, invoice payment creates received recurring revenue, balance transaction creates the exact fee/net, refund reduces net, payout is not new revenue, and cursor replay is idempotent.
+- [x] Run focused tests and require failure.
+- [x] Implement a least-privilege GET-only connector, durable cursor/outbox, exact Stripe object IDs and hashes, separate live/test handling, and a five-minute `RunAtLoad` launchd installer.
+- [x] Add self-owned article/archive stream lines and money/fee/refund/subscription/payout receipt links to the shared Web/Telegram report.
+- [x] Run focused and full Writer suites.
+- [x] Commit only Task 6 files.
+
+Task 6 receipt: runtime commit `3a88f96` is pushed. `writer_stripe_sync.py` accepts only an `rk_` restricted read key, performs bounded GET-only reads of Checkout Sessions, PaymentIntents, Subscriptions, Invoices, Balance Transactions, refunds, and payouts, projects only allowlisted non-PII fields into a hash-bound append-only outbox, and uses an exact Keychain lookup rather than writing a secret into the plist. Checkout completion alone remains an observation; a one-time sale requires a succeeded PaymentIntent plus an available exact Balance Transaction, and recurring revenue requires a paid Invoice plus its Balance Transaction. Live/test mode, active/trial/past-due/canceled subscription transitions, fee, refund, and payout cash movement remain distinct. Money sync revalidates every normalized receipt hash before writing the canonical ledger. Telegram/Web use human labels for self-owned article/archive streams and link their exact Stripe receipts; payout receipt changes are part of the semantic delta hash. Seven Stripe fixtures and 26 focused money/report tests pass; the full Writer suite passes 613/613. Live status is intentionally still unprovisioned: the exact Keychain service `ai.anicca.writer-stripe-read` is absent, no `WRITER_STRIPE_READ_KEY` exists in the checked local runtime, and no worker was installed to fail every five minutes. Task 7 must provision a restricted read key, install/kick the worker, deploy the paid pages, and obtain the first real external receipts.
 
 ### Task 7: Live provisioning, deploy, and zero-revenue truth check
 
