@@ -16,9 +16,16 @@ function invalid() { throw new Error("Connector open-date planner invalid"); }
 async function stage(code, operation) {
   try {
     return await operation();
-  } catch {
+  } catch (cause) {
     const error = new Error("Connector open-date planning unavailable");
-    error.code = code;
+    const goalMatch = code === "CONNECTOR_COVERAGE_APPLICATION_GOAL_EVALUATION_FAILED"
+      ? /^EVENT_GOAL_SERENDIPITY_(CONFIG|TRANSPORT|HTTP|BODY|JSON|VALIDATION)_FAILED$/.exec(
+        String(cause && cause.code || ""),
+      )
+      : null;
+    error.code = goalMatch
+      ? `CONNECTOR_COVERAGE_APPLICATION_GOAL_${goalMatch[1]}_FAILED`
+      : code;
     throw error;
   }
 }

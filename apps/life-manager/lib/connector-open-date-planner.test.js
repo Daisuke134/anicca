@@ -127,6 +127,20 @@ test("dependency failures expose only their bounded application-planning stage",
   }
 });
 
+test("goal evaluation preserves only an allowlisted bounded provider substage", async () => {
+  const input = await sources();
+  const provider = new Error("private response body");
+  provider.code = "EVENT_GOAL_SERENDIPITY_VALIDATION_FAILED";
+  const { instance } = planner(new Map(), {
+    async evaluateDateGoals() { throw provider; },
+  });
+  await assert.rejects(instance(input), (error) => (
+    error.code === "CONNECTOR_COVERAGE_APPLICATION_GOAL_VALIDATION_FAILED"
+    && error.message === "Connector open-date planning unavailable"
+    && !JSON.stringify(error).includes("private response body")
+  ));
+});
+
 test("active or completed first candidate waits and never enqueues the next candidate", async () => {
   for (const status of ["queued", "running", "reconciling", "completed"]) {
     const input = await sources();
