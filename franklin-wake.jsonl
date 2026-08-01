@@ -19098,3 +19098,10 @@
 {"ts":1785595093,"wake_id":"00MSAH7S7AEA30FEFF5B8B402F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785595222,"wake_id":"00MSAHAJ2X97C7C40965B245DE","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1785595349,"wake_id":"00MSAHD9FSE918108090C04F02","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785595479,"wake_id":"00MSAHG1LJB087D83B57764226","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785595607,"wake_id":"00MSAHISR6F3EBDABC26564CA3","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana paid API marketplace agents earn USDC via x402 routes high demand [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore w"}
+{"ts":1785595734,"wake_id":"00MSAHLIVM8D272AB4D464483F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785595861,"wake_id":"00MSAHO8RG5393429971574EC8","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana microtask platform earn USDC agents pay per API call [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidat"}
+{"ts":1785595988,"wake_id":"00MSAHQY9QE68BB98FB0014BEA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana DeFi liquidity mining programs that pay USDC rewards for small deposits [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded exp"}
+{"ts":1785596117,"wake_id":"00MSAHTPOK49DA54B6568944AF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785596252,"wake_id":"00MSAHWLTI8C50D214FECA413A","kind":"narrate","sleep_s":120,"model":"auto"}
