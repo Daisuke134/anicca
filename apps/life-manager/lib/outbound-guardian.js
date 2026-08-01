@@ -7,6 +7,10 @@ const { spawnSync } = require("node:child_process");
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
 const DEFAULT_HEALTH_URL = "http://127.0.0.1:18790/health";
 const DEFAULT_MAX_POLL_AGE_MS = 120_000;
+// The worker can run in a Colima/Docker VM whose clock is a few seconds ahead
+// of the host running Guardian. Treat that bounded transport clock skew as a
+// fresh poll, while still rejecting genuinely impossible future timestamps.
+const MAX_FUTURE_POLL_SKEW_MS = 10_000;
 
 function unhealthy(code, detail) {
   return { ok: false, code, detail };
@@ -25,10 +29,13 @@ function classifyOutboundWorkerHealth(input = {}) {
   const nowMs = Number.isFinite(input.nowMs) ? input.nowMs : Date.now();
   const lastPollMs = Date.parse(String(body.last_poll_at || ""));
   const pollAgeMs = nowMs - lastPollMs;
-  if (!Number.isFinite(lastPollMs) || pollAgeMs < 0) return unhealthy("INVALID_LAST_POLL", `invalid last_poll_at: ${body.last_poll_at || "missing"}`);
+  if (!Number.isFinite(lastPollMs) || pollAgeMs < -MAX_FUTURE_POLL_SKEW_MS) {
+    return unhealthy("INVALID_LAST_POLL", `invalid last_poll_at: ${body.last_poll_at || "missing"}`);
+  }
   const maxPollAgeMs = Number.isFinite(input.maxPollAgeMs) ? input.maxPollAgeMs : DEFAULT_MAX_POLL_AGE_MS;
-  if (pollAgeMs > maxPollAgeMs) return unhealthy("STALE_POLL", `last worker poll was ${pollAgeMs}ms ago`);
-  return { ok: true, code: "HEALTHY", workerId: String(body.worker_id || ""), pollAgeMs };
+  const effectivePollAgeMs = Math.max(0, pollAgeMs);
+  if (effectivePollAgeMs > maxPollAgeMs) return unhealthy("STALE_POLL", `last worker poll was ${effectivePollAgeMs}ms ago`);
+  return { ok: true, code: "HEALTHY", workerId: String(body.worker_id || ""), pollAgeMs: effectivePollAgeMs };
 }
 
 async function fetchWorkerHealth(healthUrl, options = {}) {
