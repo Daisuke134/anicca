@@ -4,7 +4,7 @@
 const http = require("node:http");
 
 const { dispatchConnectorHostBridge } = require("../lib/connector-host-bridge.js");
-const { makeGogRouteMinutes } = require("../lib/transport/maps-gog.js");
+const { createConnectorRouteMinutes } = require("../lib/connector-route-minutes.js");
 const { makeGogCalendar } = require("../lib/transport/calendar-gog.js");
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -80,7 +80,9 @@ function runConnectorHostBridgeServer(env = process.env, dependencies = {}) {
     account: requiredEnv(env, "GOG_ACCOUNT"),
     keyring: env.GOG_KEYRING_PASSWORD,
   });
-  const routeMinutes = dependencies.routeMinutes || makeGogRouteMinutes({ bin: env.GOG_BIN });
+  const routeMinutes = dependencies.routeMinutes || createConnectorRouteMinutes({
+    mapsKey: requiredEnv(env, "GOOGLE_API_KEY_DIRECTIONS"),
+  });
   const server = createConnectorHostBridgeServer({
     token: requiredEnv(env, "LM_CONNECTOR_BRIDGE_TOKEN"),
     calendar,
