@@ -645,6 +645,18 @@ diff checkが全成功。実装plan:
 `docs/evidence/outbound/2026-08-02-o1b23-all-calendar-availability.json`。残作業は114件。
 次はO1B-24で、無料優先と保存済み自動支出policy内の有料event処理を実装する。
 
+完了: `O1B-24`。既存priority内の相対順を保ったまま無料候補を全有料候補より前へ置き、有料候補を
+保存済み`spend-policy://`と`payment-method://vault/`参照へ束縛するspend plannerをTDDで追加した。
+policy currency、per-event上限、rolling上限と既支出を検証し、同一plan内で先にauthorizedとなった支出も
+rolling残額から順次差し引く。全条件内だけ`purchase_with_saved_method / approval_required=false`とし、policy無効、
+決済参照欠落、currency不一致、上限超過は`skip_policy / approval_required=false`へfail closedする。都度承認へ
+変換しない。controlled planでは入力が有料・無料・有料でも無料を先頭にし、1件を保存済みmethodでauthorized、
+次の1件をrolling超過でskip、authorized 250000、残額150000を確認した。外部chargeは作っておらず、実checkout・
+payment receiptは主張しない。fresh verificationはfocused 4件、outbound 165件、runtime-up 33件、diff checkが
+全成功。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b24-event-spend-policy.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b24-event-spend-policy.json`。残作業は113件。
+次はO1B-25で、21日coverage・予約・空き・証拠・選定理由をTelegram一通へまとめる。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -783,7 +795,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [x] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
 - [x] O1B-23 Google Calendarの全calendarからbusy intervalを読み、前後移動時間を含むfree intervalだけへ予約
-- [ ] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
+- [x] O1B-24 無料を優先し、有料eventは一度設定した自動支出policy内で保存済み決済手段を使い、都度承認を要求しない
 - [ ] O1B-25 21日coverage、既存予定、新規予約、残り空き、申込証拠、選定理由をTelegramへ一通で報告
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、

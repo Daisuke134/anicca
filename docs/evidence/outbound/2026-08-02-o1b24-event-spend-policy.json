@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task": "O1B-24",
+  "observed_at": "2026-08-01T16:46:33Z",
+  "result": "verified",
+  "implementation_commit": "e0312e097c25d4b98f62e5ad9a303ef629146485",
+  "policy_contract": {
+    "free_before_paid_stable_partition": true,
+    "saved_policy_ref_required": true,
+    "saved_payment_method_ref_required": true,
+    "currency_match_required": true,
+    "per_event_limit_enforced": true,
+    "rolling_limit_enforced_sequentially": true,
+    "per_event_approval_requested": false,
+    "policy_overflow_action": "skip_policy"
+  },
+  "controlled_plan": {
+    "input_order": ["paid_first", "free", "rolling_over"],
+    "decision_order": ["free", "paid_first", "rolling_over"],
+    "actions": ["register_free", "purchase_with_saved_method", "skip_policy"],
+    "authorized_spend_minor": 250000,
+    "rolling_remaining_minor": 150000,
+    "rolling_over_reason": "rolling_limit_exceeded",
+    "approval_required_values": [false, false, false],
+    "external_charge_created": false
+  },
+  "verification": {
+    "focused_spend_policy_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 165, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves free candidates are processed before paid candidates and a paid candidate can receive an autonomous purchase decision only when a saved policy reference, saved payment-method reference, currency, per-event limit, and rolling remaining amount all agree. The controlled readback created no external charge and does not prove a live provider checkout or payment receipt."
+}
