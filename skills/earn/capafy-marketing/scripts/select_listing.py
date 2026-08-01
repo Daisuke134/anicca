@@ -2,9 +2,9 @@
 """
 B1 — Capafy promotion selector (deterministic TOOL, no LLM).
 
-Reads the seller endpoint GET /agent/agents (no buyer token needed), keeps only
-agentStatus=="online" listings, and picks ONE with rotation + dedup so we don't
-promote the same listing twice in a row. Records each pick in a rotation ledger.
+Reads the seller endpoint and the private evidence-audited portfolio. It selects
+only an owned, online, evidence-backed ``promote`` product with no unmeasured
+experiment conflict. Rotation is only a tie-breaker inside that eligible pool.
 
 Emits a single clean JSON object on stdout with the selected listing — this is the
 handoff to B2 (the running agent writes the tweet copy from name+desc) and then to
@@ -14,11 +14,15 @@ The copy is NOT written here (that is the agent's judgment, per the skill's desi
 This tool only selects + resolves the URL + does bookkeeping.
 """
 import json, os, subprocess, sys, time
+from pathlib import Path
+
+import capafy_portfolio
 
 CAPAFY_HTTP = os.path.expanduser(
     "~/.openclaw/skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py"
 )
 ROTATION = os.path.expanduser("~/.openclaw/state/capafy-marketing-rotation.jsonl")
+PORTFOLIO = os.path.expanduser("~/.openclaw/state/capafy-portfolio.json")
 LISTING_URL_FMT = "https://capafy.ai/agent/{agent_id}"
 
 
@@ -66,30 +70,77 @@ def _record(agent_id: str) -> None:
         f.write(json.dumps({"agent_id": agent_id, "ts": int(time.time())}) + "\n")
 
 
-def main() -> int:
-    agents = _fetch_agents()
-    online = [a for a in agents if a.get("agentStatus") == "online"]
-    if not online:
-        print(json.dumps({"ok": False, "error": "no online listings"}))
-        return 1
+def select_from(agents: list[dict], snapshot: dict, last: dict[str, int]) -> dict:
+    """Select from observed ownership and agent-authored portfolio evidence."""
+    products = snapshot.get("products", [])
+    unmeasured = [
+        product
+        for product in products
+        if isinstance(product.get("experiment"), dict)
+        and product["experiment"].get("status") in {"proposed", "active"}
+    ]
+    if unmeasured:
+        experiment = unmeasured[0]["experiment"]
+        return {
+            "ok": False,
+            "error": (
+                f"experiment {experiment.get('experiment_id', 'unknown')} must be "
+                "measured before replacement"
+            ),
+        }
 
-    last = _load_rotation()
-    # rotation: pick the online listing promoted least recently (never-promoted = ts 0).
-    online.sort(key=lambda a: last.get(str(a.get("agentId")), 0))
-    pick = online[0]
-    agent_id = str(pick.get("agentId"))
-
-    _record(agent_id)
-    out = {
-        "ok": True,
-        "agent_id": agent_id,
-        "name": pick.get("name"),
-        "desc": (pick.get("desc") or "")[:600],
-        "sales": pick.get("sales"),
-        "rating": pick.get("rating"),
-        "url": LISTING_URL_FMT.format(agent_id=agent_id),
-        "online_pool": len(online),
+    owned_online = {
+        str(agent.get("agentId")): agent
+        for agent in agents
+        if agent.get("agentStatus") == "online" and agent.get("agentId") is not None
     }
+    eligible: list[tuple[dict, dict]] = []
+    for product in products:
+        agent_id = str(product.get("agent_id") or "")
+        if (
+            agent_id in owned_online
+            and product.get("observed_status") == "online"
+            and product.get("decision") == "promote"
+            and isinstance(product.get("evidence"), list)
+            and bool(product["evidence"])
+            and product.get("public_url") == LISTING_URL_FMT.format(agent_id=agent_id)
+        ):
+            eligible.append((product, owned_online[agent_id]))
+    if not eligible:
+        return {"ok": False, "error": "no evidence-eligible owned listings"}
+
+    eligible.sort(key=lambda pair: last.get(pair[0]["agent_id"], 0))
+    product, remote = eligible[0]
+    return {
+        "ok": True,
+        "agent_id": product["agent_id"],
+        "name": remote.get("name") or product["name"],
+        "desc": (remote.get("desc") or product["description"] or "")[:600],
+        "sales": remote.get("sales"),
+        "rating": remote.get("rating"),
+        "url": product["public_url"],
+        "online_pool": len(owned_online),
+        "eligible_pool": len(eligible),
+        "portfolio_decision": product["decision"],
+        "evidence_count": len(product["evidence"]),
+    }
+
+
+def main() -> int:
+    try:
+        agents = _fetch_agents()
+        path = Path(os.environ.get("CAPAFY_PORTFOLIO", PORTFOLIO))
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+        errors = capafy_portfolio.validate_snapshot(snapshot)
+        if errors:
+            raise ValueError("; ".join(errors))
+        out = select_from(agents, snapshot, _load_rotation())
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+        out = {"ok": False, "error": f"portfolio selection failed: {exc}"}
+    if not out["ok"]:
+        print(json.dumps(out, ensure_ascii=False))
+        return 1
+    _record(out["agent_id"])
     print(json.dumps(out, ensure_ascii=False))
     return 0
 

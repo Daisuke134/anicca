@@ -77,6 +77,16 @@ eq "immediate probe selects from seller inventory" "$(wc -l <"$SELECT_CALLS" | t
 case_setup foreign; active; export CANDIDATE_MODE=foreign; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "foreign public listing refused" || bad "foreign public listing accepted"; eq "foreign listing not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 eq "foreign failure releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
+case_setup selector_failure; active; export CAPAFY_LISTING_SELECTOR="$T/bin/selector-failure"; cat >"$T/bin/selector-failure" <<'SH'
+#!/usr/bin/env bash
+echo '{"ok":false,"error":"active experiment must be measured before replacement"}'
+exit 1
+SH
+chmod +x "$T/bin/selector-failure"; bash "$DAILY" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] && ok "ineligible portfolio selection fails terminal" || bad "ineligible selection accepted"
+eq "selector failure posts nothing" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
+eq "selector failure releases browser lease" "$(grep -Fc 'release instagram:capafy-provision' "$GUARD_CALLS")" 1
+if grep -Fq 'Published and verified' "$MESSAGES"; then bad "selector failure emitted success"; else ok "selector failure emits no success"; fi
 case_setup commercial; active; export CANDIDATE_MODE=commercial; bash "$DAILY" >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] && ok "commercial candidate refused" || bad "commercial candidate accepted"; eq "commercial candidate not posted" "$(wc -l <"$POST_CALLS" | tr -d ' ')" 0
 case_setup missing; active; export CANDIDATE_MODE=missing; bash "$DAILY" >/dev/null 2>&1; rc=$?
