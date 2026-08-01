@@ -353,6 +353,14 @@ O1B-04進捗1: 既存CloakBrowser daily-driverの共有context 1つだけを使�
 実event `https://luma.com/h8157e6c`のread-only再確認は`login_required`ではなく、
 `scheduled / in_person / rsvp_status=available`を返した。次はCalendar全pageとLuma inventoryを照合する。
 
+O1B-04進捗2: Google Calendarを2026-08-01〜08-21、全calendar、全pageで取得し、127件を読んだ。
+認証後のLuma Tokyo inventoryは終端7 rounds、27/27 detail取得、detail failure 0。表面上の対面受付中は
+3件だったが、8/2 09:30–12:00は10:33以降の既存予定と競合、8/19 10:00–13:00は
+8:40–17:10の既存予定と競合した。8/4 19:00–22:00はpage本文で会場券売切・online券だけ受付中と判明。
+この実測により、hybrid eventのgeneric「参加登録」を対面空席と誤認する不具合をREDで再現し、
+会場参加ticketが全て売切なら`rsvp_status=full`を優先するよう修正した。focused 6/6、outbound 69/69。
+まだ実登録は0。Luma内の追加検索とweb indexへ探索範囲を広げ、Calendar非競合の対面eventまで継続する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

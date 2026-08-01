@@ -68,6 +68,18 @@ test("classifies registered, waitlist, full, approval, and unknown controls exac
   assert.equal(normalizeLumaEventDetail(fixture({ controls: ["ホストに連絡"] })).rsvp_status, "unknown");
 });
 
+test("hybrid event with a sold-out venue ticket is full even when online registration remains", () => {
+  const detail = normalizeLumaEventDetail(fixture({
+    controls: [
+      "会場参加 売り切れ 無料",
+      "オンライン参加 無料",
+      "参加登録",
+    ],
+  }));
+
+  assert.equal(detail.rsvp_status, "full");
+});
+
 test("rejects malformed provider detail instead of inventing date or venue", () => {
   assert.equal(normalizeLumaEventDetail(fixture({ jsonLd: [] })), null);
   assert.equal(normalizeLumaEventDetail(fixture({
