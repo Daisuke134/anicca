@@ -87,3 +87,5 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "fresh Gmail account fallback" in result.stdout
     assert "read Instagram OTP from Gmail Web" in result.stdout
     assert "never invent success if Google forces phone or CAPTCHA" in result.stdout
+    assert "Historical rejection is proof" in result.stdout
+    assert "skip directly to the fresh Gmail account fallback" in result.stdout
