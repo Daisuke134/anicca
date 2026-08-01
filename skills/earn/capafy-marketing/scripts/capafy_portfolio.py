@@ -46,6 +46,7 @@ PRODUCT_FIELDS = {
     "decision",
     "decision_reason",
     "experiment",
+    "unknowns",
 }
 STATUSES = {
     "online": "online",
@@ -84,6 +85,11 @@ def _canonical(value: Any) -> bytes:
 
 def _digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(_canonical(value)).hexdigest()
+
+
+def snapshot_digest(snapshot: dict) -> str:
+    """Return the canonical content digest used to bind an audit to one snapshot."""
+    return _digest(snapshot)
 
 
 def _utc(value: Any) -> bool:
@@ -146,6 +152,7 @@ def build_snapshot(
                 "decision": "unaudited",
                 "decision_reason": None,
                 "experiment": None,
+                "unknowns": [],
             }
         )
     inventory = {"online": 0, "under_review": 0, "draft": 0, "rejected": 0}
@@ -255,6 +262,11 @@ def validate_snapshot(snapshot: dict) -> list[str]:
                     errors.append(f"{ep}.evidence.confidence is invalid")
                 if not isinstance(item.get("claim"), str) or not item["claim"].strip():
                     errors.append(f"{ep}.evidence.claim is required")
+        unknowns = product.get("unknowns")
+        if not isinstance(unknowns, list) or not all(
+            isinstance(item, str) and item.strip() for item in unknowns
+        ):
+            errors.append(f"{prefix}.unknowns must contain only non-empty strings")
     if snapshot.get("inventory") != calculated:
         errors.append("inventory counts do not match product rows")
     return errors

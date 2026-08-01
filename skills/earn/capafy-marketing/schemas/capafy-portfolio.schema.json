@@ -29,7 +29,7 @@
     "product": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["agent_id", "name", "description", "product_type", "observed_status", "updated_at", "public_url", "platform_sales", "recurring_mechanism", "purchase_model", "value_metric", "target_customer", "next_best_alternative", "renewal_reason", "evidence", "unit_economics", "decision", "decision_reason", "experiment"],
+      "required": ["agent_id", "name", "description", "product_type", "observed_status", "updated_at", "public_url", "platform_sales", "recurring_mechanism", "purchase_model", "value_metric", "target_customer", "next_best_alternative", "renewal_reason", "evidence", "unit_economics", "decision", "decision_reason", "experiment", "unknowns"],
       "properties": {
         "agent_id": {"type": "string", "minLength": 1},
         "name": {"type": "string"},
@@ -55,6 +55,7 @@
         "decision": {"enum": ["unaudited", "promote", "repair", "reposition", "pause", "retire_candidate"]},
         "decision_reason": {"type": ["string", "null"]},
         "experiment": {"type": ["object", "null"]}
+        ,"unknowns": {"type": "array", "items": {"type": "string", "minLength": 1}}
       }
     }
   }
