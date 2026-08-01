@@ -14,6 +14,27 @@ Build one Writer Agent that continuously discovers valuable subjects, writes,
 publishes, earns directly from its writing, measures verified payments, repairs
 its own interrupted runs, and reports money without ongoing human operation.
 
+### 0.1 Canonical name and subject scope
+
+The product and agent name is **Writer Agent**. **Writer Loop** means its
+persistent execution loop. `AI Entity Article Writer`,
+`ai-entity-article-writer`, and similar names are legacy runtime identifiers,
+not the current product name.
+
+The Writer has no AI-entity subject restriction. It may write about any lawful
+subject when the model finds evidence of reader value, editorial demand,
+product relevance, or profitable conversion. Topic selection is model judgment
+from current claims, audience evidence, opportunity terms, product state, and
+past economics; it is not a hard-coded subject allowlist or keyword router.
+
+Legacy names in historical incident reports or in Anicca's separate brand
+description are historical/brand facts and need not be rewritten. Active
+Writer skill metadata, aliases, prompts, scheduler descriptions, state paths,
+tests, and UI labels must migrate to `writer-agent` without creating a second
+pipeline or breaking existing durable runs. Temporary compatibility aliases
+must point to the one canonical Writer tree and be removed only after a live
+resume/publish parity receipt.
+
 The order is:
 
 1. Prove the loop for Dais locally.
@@ -42,6 +63,14 @@ Before $10,000 monthly revenue, the primary money paths are:
 2. A reader buys one paid article.
 3. A reader pays a recurring subscription for continuing writing or an archive.
 4. A reader pays to unlock an article on the Writer's self-owned publication.
+
+The same Writer is also Life Manager's writing-led marketing engine. It reads
+the verified state of apps, agents, skills, and other products; discovers the
+reader problem each solves; publishes useful evidence-led articles; and
+attributes article -> product visit -> activation -> purchase/subscription.
+Product revenue is reported separately from direct writing revenue so the same
+payment is never counted twice. Promotional copy without a reader job or
+verified product claim is not a successful article.
 
 Derived products are deferred. They may be proposed only after direct writing
 revenue has been measured long enough to show that the target cannot be reached
@@ -644,6 +673,36 @@ Scale order:
 7. Only profitable units are cloned across niches and languages.
 8. Losing units are stopped automatically.
 
+### 8.1 Autonomous scale controller
+
+Reaching $10M must not require a person to choose daily topics, repair runs,
+approve every article, discover each publisher, or manually clone each proven
+unit. After initial legal/payment setup, the Agent operates this promotion
+loop:
+
+```text
+OBSERVE unit economics and unmet reader demand
+  -> PROPOSE one new subject/language/distribution unit
+  -> REPLAY against held-out safety, quality, and conversion evidence
+  -> DEPLOY one budget-capped canary
+  -> VERIFY public output, received money, cost, churn, and complaints
+  -> PROMOTE 1 -> 3 -> 10 -> 100 only while gates remain positive
+  -> PAUSE or ROLLBACK losing/unsafe units automatically
+  -> REPORT the exact unit diff and receipts
+  -> REPEAT
+```
+
+The model judges market opportunity, positioning, writing, and the next
+experiment. Deterministic systems enforce spending caps, tenant isolation,
+deduplication, accounting, receipt verification, rollout size, rollback, and
+legal/policy blocks. No unit may self-replicate without a verified positive-net
+canary, and no projected or internally transferred money can unlock promotion.
+
+No ongoing human operation does not erase external law or platform authority.
+A regulated payout/KYC event, contract signature that legally requires a
+person, material increase in authorized spending, or disputed harmful output
+may require the owner. These are exception gates, not routine babysitting.
+
 ## 9. Remaining work — only active TODO
 
 The order is binding. Work that can be performed now must not wait for natural
@@ -655,10 +714,10 @@ schedules or future data.
 | 1 | Availability | Recover today's and yesterday's missed publication immediately | Same-run receipts, all available destinations live, no duplicate | IN PROGRESS: 2026-08-01 manual kickstart exposed `same-jst-day-unclassified-run`; carry-over/start-control fix is tested and replacement run was kickstarted; no live URL may be claimed until readback |
 | 2 | Availability | Install no-passive-wait catch-up and per-platform pending/resume | Missed schedule and platform-window fixtures plus live recovery | TODO |
 | 3 | Quality | Repair attempt exhaustion, contradictory advisory/blocking contract, log path crash, and language mismatch | Repaired content can pass; no permanent poison; focused tests | TODO |
-| 4 | Supply | Install X/GitHub/RSS claim intake plus the full paid-writing opportunity state machine in §3.3; maintain claim and verified-open floors | Three cited nonduplicate ready claims; official evidence records; deduped pitch; closed/policy rejection fixtures; one live state transition | TODO |
+| 4 | Supply/name | Remove the active AI-entity topic restriction; migrate Writer skill metadata, aliases, prompts, scheduler descriptions, state paths, tests, and UI labels to the single `writer-agent` tree; install X/GitHub/RSS claim intake plus the full paid-writing opportunity state machine in §3.3 | Legacy alias parity and live resume receipt; no second pipeline; three cited nonduplicate claims; official opportunity evidence; deduped pitch; one live state transition | TODO |
 | 5 | Supply | Reject proposals that do not cite a new claim useful to a reader | Negative and positive fixtures | TODO |
 | 6 | Measurement | Add metrics, sales, subscription, editorial, payout, fee, and attribution schema | Status-bearing rows join through `artifact_id` | TODO |
-| 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward | Reward uses verified money surfaces only | TODO |
+| 7 | Measurement | Mark destinations `revenue_capable`; exclude Dev.to/Zenn/X views from money reward; attribute article -> Life Manager product visit -> activation -> purchase without double counting | Reward uses verified money surfaces only; direct writing and product-derived revenue reconcile separately | TODO |
 | 8 | Reporting/UX | Build the money-first visual UI and send natural-language immediate/hourly deltas, daily report, and weekly stream report with every public article URL | UI and Telegram equal the ledger; verified/test/unknown visually separated; nontechnical fixture is understandable without logs | TODO |
 | 9 | Editorial fee | Continue AppSignal state machine from submitted to response, article, publication, payment | Contracted rate and payment receipt | PARTIAL |
 | 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: matrix verified 2026-08-01; implementation remains |
@@ -676,10 +735,10 @@ schedules or future data.
 | 22 | Cloud | Migrate the static `aniccaai.com/blog` surface to Cloudflare after parity/cost proof; then run the same Writer contract in cloud with durable workers and encrypted tenant isolation | Route/feed/canonical/screenshot parity, rollback receipt, actual cost delta, local/cloud Writer parity suite and real E2E | TODO |
 | 23 | Productization | External user receives writing revenue and reports without daily intervention | One external user E2E | TODO |
 | 24 | Portfolio | Add only profitable niches/languages; stop losing units | Second unit matches first-unit economics | TODO |
-| 25 | Self-extension | Add publisher/collector through sandbox, tests, canary, and promotion | Regression zero and real side-effect receipt | TODO |
-| 26 | $100K | Operate enough proven units for $100K monthly net-positive revenue | Three-month receipts | TODO |
-| 27 | $1M | Scale cloud/network distribution and retention to $1M MRR | Active recurring receipts | TODO |
-| 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent | $10M active recurring receipts; no internal/self payments | TODO |
+| 25 | Self-extension | Implement §8.1: add publisher/collector and propose new subject/language units through sandbox, held-out replay, budget-capped canary, staged promotion, and automatic rollback | Regression zero; real side-effect receipt; losing and unsafe canary fixtures stop automatically | TODO |
+| 26 | $100K | Autonomously operate enough proven units for $100K monthly net-positive revenue | Three-month receipts; no daily topic/repair/clone operation by a person | TODO |
+| 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
+| 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
 
 ## 10. Explicitly deferred
 
