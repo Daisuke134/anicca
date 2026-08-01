@@ -39,7 +39,7 @@ const { functions: inngestFunctions } = require("./inngest/functions.js");
 const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctions });
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
-const { decodeWakeClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
+const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
@@ -57,7 +57,7 @@ const {
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
 const {
-  markAnswered, applyAmdDetection, upsertLiveLocation,
+  markAnswered, applyAmdDetection, applyTestCallDetection, upsertLiveLocation,
 } = require("./lib/late-notice.js");
 const { handleDiscoveryCallback } = require("./lib/feature-discovery.js");
 const { handlePayoutCallback } = require("./lib/payout-question.js");
@@ -285,9 +285,30 @@ const server = http.createServer((req, res) => {
       if (!data || data.event_type !== "call.machine.detection.ended" || !payload) {
         res.writeHead(200); res.end("ignored"); return;
       }
-      const wake = decodeWakeClientState(payload.client_state);
+      const call = decodeCallClientState(payload.client_state);
+      // spec §3 row 2d: a /test-call detection arrives here too, and it is handled BEFORE the wake
+      // path because it has no lm_wake_log row to write on — the code below would PATCH nothing and
+      // report matched=0 forever. It still costs the same money on a voicemail, so it still hangs up.
+      if (call && call.kind === "test") {
+        const detection = await applyTestCallDetection({
+          result: payload.result, callControlId: payload.call_control_id,
+        });
+        const tag = `test=${call.testUid.slice(0, 12)} result=${detection.result || "missing"}`;
+        // Logged apart from the wake path's writes for the same reason the wake hangup is: this fails
+        // against Telnyx, not Supabase, and it costs money rather than evidence. Silence would put us
+        // back at "we are paying for two minutes of voicemail and nothing says we tried to stop it".
+        if (detection.hangup && !detection.hangup.ok) {
+          console.error(`[telnyx-events] test-call hangup FAILED (${detection.hangup.error}) ${tag} — still speaking to a machine`);
+        } else if (detection.hangup) {
+          console.log(`[telnyx-events] test-call hung up on a ${detection.result} ${tag}`);
+        } else {
+          console.log(`[telnyx-events] test-call ${tag}; left running`);
+        }
+        res.writeHead(200); res.end(detection.hangup ? "test hangup" : "test noop"); return;
+      }
+      const wake = call && call.kind === "wake" ? call : null;
       if (!wake) {
-        // Not a wake call, or a client_state we cannot decode. Either way nothing correlates, and
+        // Not one of our calls, or a client_state we cannot decode. Either way nothing correlates, and
         // saying so out loud beats writing amd_result onto no row at all.
         console.log(`[telnyx-events] AMD result=${payload.result || "missing"}; no wake context`);
         res.writeHead(200); res.end("no wake context"); return;
@@ -385,7 +406,13 @@ const server = http.createServer((req, res) => {
         };
         const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
         const streamUrl = buildStreamUrl(ev, urgency, lang, u.name);
-        const result = await placeCall({ to: phone, streamUrl });
+        // spec §3 row 2d: say who this call is. The stream URL cannot carry it — its query is signed
+        // by signCtx over a fixed array the /ws bridge re-verifies — so the state rides beside it. An
+        // unnamed call is what made the detection webhook return "no wake context" and let every test
+        // call that hit a voicemail run to the carrier's 120-second recording limit.
+        const result = await placeCall({
+          to: phone, streamUrl, clientState: encodeTestCallClientState({ testUid: body.uid }),
+        });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
         return reply(502, { error: String(e) });
