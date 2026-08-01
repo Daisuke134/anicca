@@ -537,12 +537,36 @@ run 26、last exit 0、workerはrunning/healthyで`outbound.event.apply`を保�
 
 O1B-11開始: 専用plan
 `docs/superpowers/plans/2026-08-01-connector-o1b11-connpass-api-application.md`を追加した。2026-08-01の
-connpass公式help、v2 reference、利用規約を再調査した。v2は全endpointでAPI key必須、1秒1request、
+connpass公式help、v2 reference、利用規約を再調査した。v2は全endpointでAPI key必須。referenceは1秒1requestだが、
+2026-08-01に実画面で確認した個人申請formはさらに厳しく5秒1request以下を要求するため、実装は5秒間隔に固定する。
 個人・コミュニティは無料審査制でkey 1本、審査約5営業日、個人申請は非商用同意必須である。企業利用は
 月額297,000円または年額3,564,000円。v2には参加申込みendpointがなく、events/groups/users等のGETだけである。
 さらに公式API以外の自動crawler/scraper等は規約で禁止される。よって個人keyはDais本人のローカル・非商用・
 read-only event discoveryだけに使い、Life Manager Webへ転用しない。connpass browser自動申込みは行わず、
 Lumaを実予約sourceとしてcoverageを埋める。key受領まではconnpassへの全自動network accessをcodeで0にする。
+
+O1B-11進捗1（RED）: key欠落時network 0、公式`/api/v2/events/` GETと`X-API-Key`だけ、任意URL・POST・
+不正query拒否、公式申請formの厳しい方へ合わせた5秒間隔の直列化、HTTP/schema failure時のsecret非反射を固定するtestを追加した。
+production clientはまだ存在しないためmodule不存在でREDになる。実runtime auditでは旧launchd 2本は退役済みだが、
+stale OpenClaw jobs fileに`connpass-lt-apply-daily`と`anicca-booking-daily`がenabledで残り、正本
+`anicca-booking`にもFirecrawl/ブラウザconnpass経路が残ることを確認した。これらもkey申請前に無効化する。
+
+O1B-11進捗2: 公式v2 GETだけを許すfail-closed clientを実装した。key欠落時network 0、固定endpoint、
+`X-API-Key`、query schema、5秒間隔、secret非反射をtestで固定した。stale OpenClaw jobsは
+`anicca-meetup-discover-daily`、`anicca-meetup-apply-tokyo-weekly`、`connpass-lt-apply-daily`、
+`anicca-booking-daily`の固定4本だけをdisabledへ変更し、自己防衛用`anicca-cron-auto-disable`はenabledのまま
+保持した。旧`anicca-booking`はretired tombstoneへ置換し、runnerはcredential読取・network接続より前にexit 78、
+旧proposerからconnpass URLを削除した。focused 7件とoutbound 117件が成功した。key審査中もConnectorは止めず、
+認証済みLumaだけで21日coverageを埋める。
+
+完了: `O1B-11`。既存の本人設定から申請者名、connpass username、Gmail accountを取得し、raw値を
+specや証拠へ保存せず、公式個人・コミュニティ向けAPI利用申請formへ送信した。用途はDais本人の
+ローカルPCだけ、個人・非商用、1日1回のbatch、東京で今後21日以内のevent、最大30日非公開保存、
+第三者利用なし、リアルタイム呼出しなし、connpass参加申込みなしと明記した。送信後に公式Google Formの
+`formResponse`遷移を確認した。審査目安は約5営業日。key受領まではclientがnetwork 0でfail closedし、
+ConnectorはLumaで継続する。実測証拠:
+`docs/evidence/outbound/2026-08-01-o1b11-connpass-api-application.json`。次は固定順序どおりO1B-12で、
+一般参加eventとLT/CFP/demo登壇応募を別entity・別状態機械として実装する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -669,7 +693,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
-- [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
+- [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
@@ -710,7 +734,8 @@ free intervalへ参加できるeventを探す。`unavailable`は、候補event�
   → agentが全候補を読み、好み・目標・人との出会い・serendipityでranking
   → free intervalと前後移動時間に収まる最上位候補へ申込
   → 満席・失敗・確認なしなら同じ日の次候補へ即時進む
-  → Lumaを十分に探索しても確保できない時だけconnpassへ進む
+  → Lumaを十分に探索しても確保できない時は別の許諾済み予約sourceへ進む
+  → connpass key受領後は公式APIを候補発見にだけ使い、予約はしない
   → 東京・対面・時間非衝突・自動支出policy内を確認
   → 完了画面または確認mailを取得
   → Calendar、QR、Telegramを作成
@@ -1274,7 +1299,7 @@ Connectorは一日一回の検索cronではなく、21日間の空きを継続�
 | 00:15〜06:00 | `open`日を日付順にLuma中心で探索・申込・mail/QR/Calendar照合。失敗候補は捨てて次へ進む | 通常は無通知 |
 | 06:30 | 21日coverage、既存予約、今回の新規予約、未処理の空きを集計 | 朝のConnector briefingを一通 |
 | 新規予約成立時 | そのrunで成立した複数eventをまとめて保存 | 3週間の空きを何件埋めたかを一通。eventとCalendarの直接link付き |
-| 09:00 | 夜間に届いたLuma/connpassの確認、承認、cancel mailを再照合 | 状態が変わったeventだけ通知 |
+| 09:00 | 夜間に届いたLumaの確認、承認、cancel mailを再照合 | 状態が変わったeventだけ通知 |
 | 12:00 | 残っている`open`日と、朝以降に公開されたeventを再探索 | 新規予約成立時だけ通知 |
 | 18:00 | cancelや予定変更で再び空いた日を検知し、同日の別候補へ申込 | 置換予約が成立した時だけ通知 |
 | 23:45 | 未確認申込と未処理の空きを次runへ再投入 | 正常時は無通知。翌日も同じ状態から継続 |
