@@ -81,10 +81,10 @@ test("outbound capabilityがないworkerはhealthyにしない", () => {
   }).code, "MISSING_CAPABILITY");
 });
 
-test("last_poll_atが壊れている、未来、古い場合はhealthyにしない", () => {
+test("last_poll_atが壊れている、遠い未来、古い場合はhealthyにしない", () => {
   for (const [lastPollAt, code] of [
     ["not-a-date", "INVALID_LAST_POLL"],
-    ["2026-08-01T03:00:01.000Z", "INVALID_LAST_POLL"],
+    ["2026-08-01T03:00:11.001Z", "INVALID_LAST_POLL"],
     ["2026-08-01T02:57:59.999Z", "STALE_POLL"],
   ]) {
     assert.equal(classifyOutboundWorkerHealth({
@@ -94,6 +94,20 @@ test("last_poll_atが壊れている、未来、古い場合はhealthyにしな�
       maxPollAgeMs: 120_000,
     }).code, code);
   }
+});
+
+test("worker VMの小さな時計ずれはfresh pollとして扱う", () => {
+  assert.deepEqual(classifyOutboundWorkerHealth({
+    httpStatus: 200,
+    body: healthyBody({ last_poll_at: "2026-08-01T03:00:04.000Z" }),
+    nowMs: NOW,
+    maxPollAgeMs: 120_000,
+  }), {
+    ok: true,
+    code: "HEALTHY",
+    workerId: "local-runtime-worker",
+    pollAgeMs: 0,
+  });
 });
 
 test("Guardianはhealthyならself-fixを呼ばない", async () => {
