@@ -128,6 +128,31 @@ async function notifyOpenClaw(message, options = {}) {
   return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
 }
 
+async function recoverDockerWorker(options = {}) {
+  const container = String(options.workerContainer || "").trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(container)) return false;
+  const spawn = options.spawnSync || spawnSync;
+  const result = spawn("docker", ["restart", container], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (!result || result.status !== 0) return false;
+  const attempts = Number.isSafeInteger(options.attempts) ? options.attempts : 30;
+  const sleep = options.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const readHealth = options.fetchHealth || fetchWorkerHealth;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const observation = await readHealth(options.healthUrl || DEFAULT_HEALTH_URL, options);
+    const verdict = classifyOutboundWorkerHealth({
+      ...observation,
+      nowMs: options.nowMs,
+      maxPollAgeMs: options.maxPollAgeMs,
+    });
+    if (verdict.ok) return true;
+    if (attempt + 1 < attempts) await sleep(1000);
+  }
+  return false;
+}
+
 async function runOutboundGuardian(options = {}) {
   const healthUrl = String(options.healthUrl || DEFAULT_HEALTH_URL);
   const observation = await (options.fetchHealth || fetchWorkerHealth)(healthUrl, options);
@@ -193,9 +218,23 @@ async function runOutboundGuardian(options = {}) {
 }
 
 async function main(env = process.env) {
-  const verdict = await runOutboundGuardian({
-    healthUrl: env.LM_OUTBOUND_WORKER_HEALTH_URL || DEFAULT_HEALTH_URL,
+  const healthUrl = env.LM_OUTBOUND_WORKER_HEALTH_URL || DEFAULT_HEALTH_URL;
+  const stateRoot = env.LM_OUTBOUND_STATE_DIR
+    || path.join(env.HOME || process.env.HOME || ".", ".local/state/life-manager/state");
+  const shared = {
+    healthUrl,
     maxPollAgeMs: Number(env.LM_OUTBOUND_MAX_POLL_AGE_MS || DEFAULT_MAX_POLL_AGE_MS),
+  };
+  const verdict = await runOutboundGuardian({
+    ...shared,
+    incidentStore: createFileIncidentStore(path.join(stateRoot, "outbound-guardian-incident.json")),
+    notify: (message) => notifyOpenClaw(message, {
+      telegramTarget: env.LM_OUTBOUND_TELEGRAM_TARGET,
+    }),
+    recover: () => recoverDockerWorker({
+      ...shared,
+      workerContainer: env.LM_OUTBOUND_WORKER_CONTAINER,
+    }),
   });
   process.stdout.write(`${JSON.stringify(verdict)}\n`);
   if (!verdict.ok) process.exitCode = 1;
@@ -216,5 +255,6 @@ module.exports = {
   parseOpenClawMessageId,
   createFileIncidentStore,
   notifyOpenClaw,
+  recoverDockerWorker,
   runOutboundGuardian,
 };

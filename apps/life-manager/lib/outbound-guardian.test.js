@@ -2,11 +2,15 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { spawnSync } = require("node:child_process");
 
 const {
   OUTBOUND_CAPABILITY,
   classifyOutboundWorkerHealth,
   parseOpenClawMessageId,
+  recoverDockerWorker,
   runOutboundGuardian,
 } = require("./outbound-guardian.js");
 
@@ -205,4 +209,61 @@ test("Telegramがmessage IDを返さなければincidentを保存せず成功扱
     selfFix: async () => {},
   }), /message ID/);
   assert.equal(incidentStore.value(), null);
+});
+
+test("launchd installerは宛先必須で、renderへhealth・宛先・workerを固定する", () => {
+  const repoRoot = path.resolve(__dirname, "../../..");
+  const installer = path.join(repoRoot, "skills/self/install-outbound-runtime-healthcheck-launchd.sh");
+  const missing = spawnSync(installer, ["--render"], { encoding: "utf8" });
+  assert.notEqual(missing.status, 0);
+  assert.match(String(missing.stderr), /telegram-target/);
+
+  const rendered = spawnSync(installer, [
+    "--render",
+    "--telegram-target", "123456789",
+    "--worker-container", "life-manager-local-worker-1",
+  ], { encoding: "utf8" });
+  assert.equal(rendered.status, 0, rendered.stderr);
+  assert.match(rendered.stdout, /LM_OUTBOUND_TELEGRAM_TARGET/);
+  assert.match(rendered.stdout, /123456789/);
+  assert.match(rendered.stdout, /LM_OUTBOUND_WORKER_CONTAINER/);
+  assert.match(rendered.stdout, /life-manager-local-worker-1/);
+  assert.match(rendered.stdout, /http:\/\/127\.0\.0\.1:18790\/health/);
+});
+
+test("Connector compose overlayはworkerへoutbound capabilityを追加できる", () => {
+  const repoRoot = path.resolve(__dirname, "../../..");
+  const overlay = fs.readFileSync(
+    path.join(repoRoot, "deploy/local/compose.connector.yaml"),
+    "utf8",
+  );
+  assert.match(overlay, /^services:/m);
+  assert.match(overlay, /^  worker:/m);
+  assert.match(overlay, /LM_CONNECTOR_WORKER_CAPABILITIES/);
+  assert.match(overlay, /outbound\.event\.apply/);
+});
+
+test("Docker recoveryは指定workerだけをrestartしhealth復帰までboundedに待つ", async () => {
+  const spawns = [];
+  const health = [
+    { error: new Error("starting") },
+    { httpStatus: 200, body: healthyBody() },
+  ];
+  const sleeps = [];
+  const recovered = await recoverDockerWorker({
+    workerContainer: "life-manager-local-worker-1",
+    healthUrl: "http://127.0.0.1:18790/health",
+    nowMs: NOW,
+    maxPollAgeMs: 120_000,
+    attempts: 3,
+    spawnSync: (command, args) => {
+      spawns.push([command, args]);
+      return { status: 0, stdout: "life-manager-local-worker-1\n", stderr: "" };
+    },
+    fetchHealth: async () => health.shift(),
+    sleep: async (ms) => sleeps.push(ms),
+  });
+  assert.equal(recovered, true);
+  assert.deepEqual(spawns, [["docker", ["restart", "life-manager-local-worker-1"]]]);
+  assert.deepEqual(sleeps, [1000]);
 });

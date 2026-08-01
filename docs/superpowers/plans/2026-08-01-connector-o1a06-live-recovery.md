@@ -47,7 +47,7 @@
   Run: `npm run test:outbound && npm run test:runtime-up`
   Expected: 0 failures。
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   Commit notification/recovery implementation only, then push `main`。
 
@@ -63,19 +63,19 @@
 - Consumes: local Telegram target、worker container name、existing compose project。
 - Produces: installed launchd job and worker health port `127.0.0.1:18790`。
 
-- [ ] **Step 1: Add failing static/runtime tests**
+- [x] **Step 1: Add failing static/runtime tests**
 
   installer renderはTelegram targetを必須とし、render済みplistへtarget、container、health URLが入ることを要求する。Connector overlayは`outbound.event.apply`をworker capabilityへ追加する。
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
   Run installer/static test before implementation and confirm the missing arguments/config fail。
 
-- [ ] **Step 3: Implement minimal wiring**
+- [x] **Step 3: Implement minimal wiring**
 
   launchd wrapperは`~/.openclaw/.env`をsourceし、plistからtarget/containerを受ける。compose overlayはcapabilityだけを上書きし、既存Honne overrideを最後まで保持する。
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
   Run `plutil -lint`、`bash -n`、`docker compose ... config --quiet` and targeted Node tests。
 

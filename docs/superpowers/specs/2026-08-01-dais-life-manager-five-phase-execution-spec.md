@@ -255,6 +255,13 @@ worker回帰30件が成功した。警告文は非技術的な停止状態、自
 報告しないことを明示する。positive message ID取得後だけincidentを保存し、同じincidentを再通知せず、
 復旧通知のpositive message ID取得後だけincidentをclearする。次はlaunchdとcomposeの実機配線。
 
+O1A-06進捗2: launchd installer、local Docker recovery、Connector compose overlayをTDDで追加した。
+REDはinstallerが宛先なしを拒否しない、overlay不存在、Docker recovery不存在の3理由で失敗した。
+GREENはGuardian 16件を含むoutbound 27件、runtime worker回帰30件、render済みplist、shell syntax、
+base compose + Connector overlay configが成功した。Telegram targetはrepositoryへ保存せずinstaller引数から
+local plistだけへ入る。Docker recoveryは指定された一つのcontainerだけをrestartし、最大30回・1秒間隔で
+同じ`/health`契約を再確認する。次は既存Honne shadow設定を保持した実機deploy。
+
 O1A-06着手時の追加実測: 現workerの`LM_WORKER_CAPABILITIES`は
 `runtime.noop,marketing.video.generate`で、host health portは未公開。さらに
 `outbound.event.apply`はjob/lease test用handler注入では動くが、production adapter manifestにはまだ無い。

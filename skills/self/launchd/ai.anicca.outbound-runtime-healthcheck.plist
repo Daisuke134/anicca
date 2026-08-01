@@ -6,10 +6,11 @@
   <key>EnvironmentVariables</key><dict>
     <key>LM_OUTBOUND_WORKER_HEALTH_URL</key><string>http://127.0.0.1:18790/health</string>
     <key>LM_OUTBOUND_MAX_POLL_AGE_MS</key><string>120000</string>
+    <key>LM_OUTBOUND_TELEGRAM_TARGET</key><string>__TELEGRAM_TARGET__</string>
+    <key>LM_OUTBOUND_WORKER_CONTAINER</key><string>__WORKER_CONTAINER__</string>
   </dict>
   <key>StartInterval</key><integer>300</integer>
   <key>ThrottleInterval</key><integer>60</integer>
   <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/outbound-runtime-healthcheck.out.log</string>
   <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/outbound-runtime-healthcheck.err.log</string>
 </dict></plist>
-
