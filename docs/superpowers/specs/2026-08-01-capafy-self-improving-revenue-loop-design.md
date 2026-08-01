@@ -420,8 +420,8 @@ Immediate-publish delta execution log:
 |---|---|---|---|
 | 1. Publish-probe lifecycle | Verified | RED: `15 failed, 2 passed` against the old four-argument warmup lifecycle. GREEN: lifecycle pytest `17 passed`; Python compile and diff check passed. The state no longer reads warmup evidence, requires post-write owner-session proof when recording a Reel, and preserves commercial capability only after Reel/session/reach evidence. | `35026d96a` |
 | 2. Account-to-publish handoff | Verified | RED: outcome pytest `2 failed, 13 passed`; manager integration `15 passed, 30 failed` because the old warmup CLI and message contract remained. GREEN: outcome pytest `15 passed`; manager integration `45 passed`; shell syntax and diff check passed. A verified account now persists `publish_probe_ready`, reports no wait/warmup language, and wakes the daily publisher exactly once, including idempotent sender recovery. | `41472bf89` |
-| 3. Immediate controller and post-write proof | In progress | Tests and implementation not yet changed. | — |
-| 4. Scheduler/report cleanup | Not started | — | — |
+| 3. Immediate controller and post-write proof | Verified | RED: Reel adapter `6 failed, 9 passed`; controller `8 passed, 12 failed`; handoff `24 passed, 1 failed`. GREEN: Reel adapter `15 passed`; controller `20 passed`; handoff `25 passed`; outcome+lifecycle pytest `32 passed`; shell/Python syntax and diff check passed. A publish claim now requires one newly observed Reel URL and the matching active handle read again after sharing; the controller records lifecycle state before exactly-once Telegram handoff and recovers safely across a sender crash. | `f43e86bf0` |
+| 4. Scheduler/report cleanup | In progress | Tests and implementation not yet changed. | — |
 | 5. Production proof | Not started | — | — |
 
 #### P0 execution log
