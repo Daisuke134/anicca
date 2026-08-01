@@ -38,6 +38,10 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
       await options.inspectEvent(inventory.candidates[0].canonical_url);
       return "date-inventory";
     },
+    rankPreferences(input, options) {
+      calls.push(["rank-preferences", input, options]);
+      return "preference-ranking";
+    },
   });
 
   assert.deepEqual(await pack.discoverTokyo(), {
@@ -45,10 +49,20 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
   });
   assert.equal(await pack.inspectEvent("https://luma.com/event-one"), "detail");
   assert.equal(await pack.readDateInventory("coverage", { now: "now" }), "date-inventory");
+  assert.equal(await pack.rankDatePreferences(
+    "date-inventory", "2026-08-02", "AIを優先し全候補を残す", { apiKey: "fixture" },
+  ), "preference-ranking");
   assert.equal(await pack.provider.submitRegistration({}), "registered");
   assert.equal(calls[1][1], calls[2][1]);
   assert.equal(calls[2][1], calls[3][1]);
-  assert.deepEqual(calls.slice(4).map((call) => call[0]), ["date-inventory", "discover", "inspect"]);
+  assert.deepEqual(calls.slice(4).map((call) => call[0]), [
+    "date-inventory", "discover", "inspect", "rank-preferences",
+  ]);
+  assert.deepEqual(calls.at(-1)[1], {
+    dateInventory: "date-inventory",
+    date: "2026-08-02",
+    preferences: "AIを優先し全候補を残す",
+  });
 });
 
 test("pack construction fails closed without auth, driver, or evidence store", () => {
