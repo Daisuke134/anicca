@@ -173,7 +173,7 @@ function readRawBody(req) {
 // One tag, two readers (/health and the boot line). It was written out twice before, so a deploy
 // could report one build to curl and another to the logs — the pair of them is the only way to tell
 // live code apart from a deploy that never happened, and a pair that can disagree proves nothing.
-const BUILD_TAG = "lm2d-testcall-hangup-v1";
+const BUILD_TAG = "lm2a-webhook-retry-v1";
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const DEBUG_TRANSCRIPTS = process.env.DEBUG_TRANSCRIPTS === "1";
@@ -347,8 +347,47 @@ const server = http.createServer((req, res) => {
       } else if (detection.hangup) {
         console.log(`[telnyx-events] hung up on a ${detection.result} ${tag}`);
       }
-      const outcome = !detection.amd.ok ? "record failed"
-        : detection.answered ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
+      // spec §3 row 2a: Telnyx reads 2xx as "it arrived" and redelivers ONLY when it gets something
+      // else (developers.telnyx.com/development/api-fundamentals/webhooks/receiving-webhooks: "All
+      // response codes outside this range... will indicate to Telnyx that you did not receive the
+      // webhook"; up to 3 primary + 3 failover attempts, exponential backoff). This route used to
+      // answer 200 no matter what happened, so a Supabase outage silently threw away the last copy of
+      // a detection: the retry was ours to take and we declined it, and the row stayed NULL forever —
+      // indistinguishable from a webhook that never arrived, which is the §1.3 failure class.
+      //
+      // The line drawn here is ONLY "did the write land" vs "did it land and match nothing", because
+      // that is the only distinction patchWakeLog gives us. Be honest about how coarse that is:
+      // {ok:false} folds together the transient (5xx, thrown fetch) and the permanent — an http_400
+      // from schema drift, an http_401 from a rotated service-role key, unreadable_response,
+      // missing_args, and recordAmdResult's missing_result (an empty AMD result, which late-notice.js
+      // argues at length is OUR parse failure and not a verdict). All of those now ask for a resend
+      // and will fail identically on all six attempts. The price of that bluntness: a wasted delivery
+      // budget, the failover URL rung for nothing, and a schema typo that looks exactly like an
+      // outage. It is accepted for now because the alternative — 200 on a real outage — destroys the
+      // only copy of a detection, and a wasted retry destroys nothing. The proper fix is to make
+      // patchWakeLog say WHICH kind of failure it had (retryable vs permanent) and to escalate only
+      // the first; do that there, not by widening this branch, or the two will drift.
+      //   * !ok → 5xx, and Telnyx brings the same event back. Reprocessing is safe because the
+      //     payload is identical apart from meta.attempt: amd_result is written with no filter (last
+      //     observation wins) and answered_at is an is.null latch (the first human proof wins).
+      //   * matched === 0 = the write LANDED and correctly changed nothing: there is no row for this
+      //     uid+event_key, and no future delivery can conjure one. 200 closes it. Retrying would
+      //     spend six deliveries on nothing and bury the real outages above.
+      if (!detection.amd.ok) {
+        res.writeHead(503, { "content-type": "text/plain" });
+        res.end("record failed; send it again");
+        return;
+      }
+      // A failed answered_at write deliberately does NOT ask for a retry — and NOT because a later
+      // write would be a no-op. It would not be: the latch is answered_at=is.null, so if the first
+      // write never landed the column is still NULL and a resent write lands perfectly well. The real
+      // reasons are three: (1) this only runs after amd_result succeeded, so a retry rewrites that
+      // good amd_result once per attempt to chase a second column; (2) the timestamp it would write
+      // is the retry's clock, minutes off down the exponential backoff — a worse answer than none;
+      // (3) amd_result='human' already records that a human picked up, so the fact is not lost, only
+      // its exact second is. report() above puts the failure in stderr.
+      const outcome = detection.answered
+        ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
         : "recorded";
       res.writeHead(200); res.end(outcome);
     })().catch((error) => {
