@@ -12,7 +12,7 @@
 
 - 登録前にGoogle Calendarの対象時間と移動余白を読む。
 - Luma inventoryを最後まで読み、category hard filterを使わない。
-- 有料、online、満席、waitlist、承認制、競合は登録せず次candidateへ進む。
+- Luma上で即時決済が必要な有料ticket、online、満席、waitlist、承認制、競合は登録せず次candidateへ進む。現地払いだけでLuma登録時の支出が0なら候補にできる。
 - code、cookie、mail本文、Google tokenをlog・spec・job・evidenceへ保存しない。
 - browser全体や既存tabを閉じず、自分のpageだけを閉じる。
 - 成功はverified receipt、登録後readback、canonical URLの一致でのみ確定する。
@@ -26,10 +26,10 @@
 
 ### Task 2: Conflict-free live candidate
 
-- [ ] rolling horizonのGoogle Calendarを全page取得する。
-- [ ] 東京対面Luma inventoryを終端まで取得する。
-- [ ] 競合・移動不能・有料・満席等を除外し、登録可能candidateをagentが本文から選ぶ。
-- [ ] spec更新、commit、push。
+- [x] rolling horizonのGoogle Calendarを全page取得する。
+- [x] 東京対面Luma inventoryを終端まで取得する。
+- [x] 競合・移動不能・即時決済・満席等を除外し、登録可能candidateをagentが本文から選ぶ。
+- [x] spec更新、commit、push。
 
 ### Task 3: One verified registration
 

@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   createLumaBrowserProvider,
+  submitLumaOnPage,
 } = require("./luma-browser-provider.js");
 
 function eventJson() {
@@ -150,4 +151,30 @@ test("pre-submit form failure remains known while post-click uncertainty is unkn
     assert.equal(error.unknownEffect, true);
     return true;
   });
+});
+
+test("submits the live Japanese one-click registration control", async () => {
+  const calls = [];
+  const control = {
+    first() { return this; },
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push("click"); },
+  };
+  const page = {
+    getByRole(role, options) {
+      assert.equal(role, "button");
+      assert.equal(options.exact, true);
+      assert.equal(options.name.test("ワンクリックで参加登録"), true);
+      return control;
+    },
+    async waitForTimeout() {},
+    async evaluate() { return { registered: true }; },
+  };
+
+  assert.deepEqual(await submitLumaOnPage(page), {
+    status: "registered",
+    effect_started: true,
+  });
+  assert.deepEqual(calls, ["click"]);
 });

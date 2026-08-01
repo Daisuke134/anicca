@@ -44,7 +44,7 @@ async function submitLumaOnPage(page) {
     throw providerError("Luma RSVP page unavailable", "LUMA_PAGE_UNAVAILABLE", false);
   }
   const register = page.getByRole("button", {
-    name: /^(?:参加登録|Register)$/i,
+    name: /^(?:参加登録|ワンクリックで参加登録|ワンクリック申し込み|Register)$/i,
     exact: true,
   }).first();
   if (await register.count() !== 1 || !await register.isVisible()) {
