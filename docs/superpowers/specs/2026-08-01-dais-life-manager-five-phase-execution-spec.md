@@ -981,6 +981,11 @@ O1B-19進捗3（decision RED）: verified O1B-17/O1B-18 provenance、全candidat
 source完全一致excerpt、非公開participantの捏造拒否、goal/serendipity理由、model failure時fallback禁止を
 4 testで定義した。production module不存在のため期待どおり失敗した。
 
+O1B-19進捗4（decision GREEN）: verified O1B-17/O1B-18だけを受け、同日全候補についてgoal alignment、
+serendipity potential、自然言語理由、5 factor assessmentをcontent-addressed decisionにするmoduleを
+追加した。source有りは完全一致excerpt、source無しは`unavailable + null`を強制し、架空participant、
+候補/factor欠落、model failureを成功にしない。focused 4/4成功。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
