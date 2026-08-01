@@ -98,7 +98,8 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 | **1** | ~~呼び出し不発の原因究明~~ → **原因特定済（§1.2）。残りは修正3点** | 呼び出しが静かに消える = 製品が存在しない | ①窓を「取りこぼさない」形に変更（下記 1a）②逃した呼び出しを記録（1b）③時間に敏感な loop を他 organ から分離（1c）。実予定で T-10/T-5 が両方 `lm_wake_log` に載る |
 | 1a | ~~発火条件を「2分の窓」から**追い付き方式**へ~~ ✅ **DONE 2026-08-01**（commit `da7dec52b`、merge `9873e0ce9`） | tick が遅れた瞬間に永久に失われる | 実装: `scheduler.js` の窓判定を撤廃し `mins <= lvl.min+0.5 && mins > LATE_CUTOFF_MIN(-15)` で due 判定 → **最も緊急な1件だけ発信**、超えられた粗いレベルは claim だけして鳴らさない。検証（自分で実行）: `node --test test/wake-catchup.test.js` → `tests 5 / pass 5 / fail 0`、`node test/scheduler.test.js` → PASS。cases = ①T-5 を5分過ぎた tick でも1本鳴る ②通常は T-10 → T-5 の2本 ③両方 due の tick でも1本 ④出発を15分超過なら鳴らさない ⑤発信失敗で claim が解放され次 tick が再試行 |
 | 1b | ~~「鳴るはずだったのに鳴らなかった」を記録~~ ✅ **DONE 2026-08-01** | 失敗が**存在しない事象**に見える（今回の3日を溶かした原因） | 実装: 新 ledger `lm_wake_miss`（`migrations/2026-08-01-lm-wake-miss.sql`、本番 Supabase に適用済 = `http=201`、PostgREST 読み取り `http=200`）+ `lib/wake-miss.js` + `scheduler.js` の `noteWakeMiss()` + `/status` の1行。記録する2事象 = ①`dial_failed`（`releaseWake` が claim を消す**前**に理由を残す）②`no_call_before_departure`（departure が `LATE_CUTOFF_MIN` を越えた時点で最細レベルの claim が無い = 一度も試みていない）。`(uid,event_key)` 主キー + merge-duplicates upsert なので 60秒 tick の連続失敗は1行を更新するだけ。`first_seen_at` は payload に入れないので「いつ壊れ始めたか」が保持される（実測: first_seen_at=01:04:57.5 / occurred_at=01:04:58.9）。★§5.4 の「自分から言う」も実装★ = `notified_at IS NULL` を条件にした PATCH を lock にして**1 miss につき Telegram 1通だけ**送る（retry tick は無言）。検証（自分で実行）: `node --test lib/wake-miss.test.js lib/slash-command.test.js test/wake-miss-record.test.js test/wake-catchup.test.js test/telegram-slash-http-contract.test.js` → **tests 55 / pass 55 / fail 0**（1a の回帰5件を含む）+ 本番 Supabase への実 round-trip（write → upsert → read → `/status` 行 `🔔 Missed: the 13:15 call could not be dialled (...)` → 検証行を DELETE、表は空に戻した） |
-| 1c | 呼び出し loop を care / diet / mental / late から分離 | 他 organ の遅さが呼び出しを殺す。ユーザーが増えるほど悪化 | 呼び出し専用の tick が他 organ の所要時間に影響されないことをログで確認 |
+| 1c | 呼び出し loop を care / diet / mental / late から分離（**設計 = §3.1 方式A**） | 他 organ の遅さが呼び出しを殺す。ユーザーが増えるほど悪化 | ①wake 専用 tick が存在し、他 organ の所要時間に影響されない ②organ 毎の経過ms がログに出る（今ゼロ）③遅い organ を注入した fixture で wake が定刻に鳴る ④Composio 呼び出し数が現状から**増えない** |
+| 1d | Composio 予算超過で tick が5分に落ち、**wake の精度自体が壊れる**のを止める | 13.5日目以降 wake が5分刻みになる = 製品が半月で劣化する。1c で隔離しても土台が崩れる | 1ユーザー月間 `composio_call` 実測が 20,000 未満。calendar cache が実際に hit する（キー量子化）。wake の発火精度は据え置き |
 | **2** | `answered_at` が常に null の判別 | 「鳴っているが誰も出ていない」= 核心が空洞、を検知できない | 実際に出た1回で入り、出なかった1回で入らないことを確認。入らないなら記録経路を直す |
 | **3** | 位置を「家を出た」判定に接続（鮮度は `observed_at`） | 位置が来ていても使わなければ案内が始まらない | 実予定1件で出発検知 → 出発直後の1通が実配信。`updated_at` を鮮度に使う箇所が 0 |
 | **4** | 乗換ステップ + 出口番号 | **これが無いと Google Maps を消せない** = 商品の主張が嘘になる | 実イベント1件で経路1通が届き、Maps を開かずに着いた。出口が取れない駅は**黙って省く**（推測で書かない） |
@@ -107,6 +108,44 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 
 **運用規則（今回の教訓）**: ★試験中に本番へ env を設定しない★ — Railway では変数設定が再デプロイを誘発し、
 発火窓を破壊する。試験の前後30分は本番の設定変更を行わない。
+
+### 3.1 #1c の設計（2026-08-01 実測に基づく決定。方式A = プロセス内 wake 専用 tick）
+
+**実測した障害構造**（この session で `scheduler.js` を読んで確認）
+
+| 事実 | 場所 | 何が起きるか |
+|---|---|---|
+| tick は `setTimeout` 再帰で**前 tick の完走を待つ** | `scheduler.js:623-637` | 次の tick の時刻 = 全ユーザー × 全 organ の合計。ユーザーが増えるほど wake が遅れる |
+| 90秒 timeout は **organ 毎でなく user 毎** | `scheduler.js:596-611` | late+mental+wake+care+diet+precepts+relations が1つの予算を共有する |
+| late と mental は **wake より前**に走る | `:367` `:376`（wake は `:385`） | 前2つが90秒を使い切ると wake に到達せず user ごと abandon = **鳴らない** |
+| `fetchUpcomingEvents` の throw は `return` | `:363-364` | カレンダー取得の失敗が wake ごと消す（organ 毎 try/catch の外側） |
+| organ 毎の経過ms ログが**無い** | 全 organ は結果のみ | `tenant timeout 90000ms` が出ても**誰が食ったか分からない** |
+| 予算劣化で tick が5分に落ちる | `composio-budget.js:6-12` | wake も道連れ（→ #1d で別途潰す） |
+
+**採用した方式 A（プロセス内に wake 専用 tick）**
+
+```text
+  今                                    A のあと
+ ┌──────────────────────────┐        ┌────────────────┐  ┌──────────────────────┐
+ │ tick 60s（1本）           │        │ wake tick 60s  │  │ organ tick（別タイマー）│
+ │  poll → events           │        │  events        │  │  late / mental / care │
+ │  → late → mental         │        │  → wake だけ    │  │  / diet / precepts    │
+ │  → ★wake★                │        │  user 毎 20s   │  │  / relations          │
+ │  → care → diet → …       │        │  上限          │  │  user 毎 90s 維持     │
+ │  user 毎 90s を全員で共有  │        └───────┬────────┘  └──────────┬───────────┘
+ └──────────────────────────┘                │ events を書く         │ events を読む
+                                             └────► プロセス内キャッシュ ◄┘
+```
+
+| 決定 | 理由 |
+|---|---|
+| wake を独立タイマーに出す | 「他 organ の所要時間に影響されない」= 別 tick でしか満たせない。同一 tick 内の順序入替では累積 drift が残る |
+| wake の user 毎 deadline を 20秒に短縮 | wake がやるのは events 取得 + 発信のみ。90秒は他 organ 用の予算であって wake には過大 |
+| **wake tick が events を取得し、organ tick はキャッシュを読む** | 素朴に2ループへ分けると Composio 呼び出しが**倍**になる（`calendar-cache` のキーが分単位で回るため別ループは常に miss）。取得の所有者を wake に一本化すれば呼び出し数は据え置き |
+| organ 毎の経過ms ログを入れる | done 条件が「ログで確認」。今は計測が存在しないので、隔離できた証拠を出せない |
+| 別プロセス / 別 role にはしない | `lm_runtime_scheduler_leases` の `scheduler_key`、`runtime-up.js` の「compose の scheduler はちょうど1つ」不変条件、railway/Dockerfile の単一 `node server.js` を全部壊す必要がある。今の障害モード（遅い organ が同一 user 予算を食う）は A で消えるので、その代償に見合わない |
+
+**A が守らないもの（正直に）**: プロセス crash と、Node のイベントループを**同期的に**塞ぐ organ。前者は再起動の話（別問題）、後者は現状の organ が全て I/O 待ちなので該当しない。該当し始めたら別プロセス（方式B）へ上げる。
 
 ---
 
