@@ -768,7 +768,8 @@ placeholder、120語、15分CTAを検証するbatchをTDDで追加した。Evio 
 公開連絡先を再取得し、旧ledgerとGmail sentで重複0を確認後、`gog`で初回mailをexact 3通送信した。
 3件すべてに固有のGmail message/thread IDとSENT readbackがあり、raw recipient/bodyを保存せずlocal PostgreSQLへ
 3 ledger行をappend、count 3 / distinct recipient hash 3 / distinct provider ID 3を確認した。Scionは次run候補として
-保持し、follow-upは0回。YeetVC threadはmessageCount 2だが意味を先取り分類していない。fresh verificationは
+保持し、follow-upは0回。その後のthread readbackでEvio/J-Seedは送信messageだけ、YeetVCの公式公開addressは
+1秒後にGoogle mailer-daemonの配送失敗を返したため、deliveredとは主張せずfollow-up禁止へ渡す。fresh verificationは
 focused 4件、outbound 196件、runtime-up 33件、Gmail dry-run、sent readback、DB readback、diff checkが全成功。
 実装commit `4dd04f5f4`はremoteへpush済み。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1c09-funder-cold-outreach.md`。実測証拠:

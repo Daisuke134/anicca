@@ -43,7 +43,11 @@
       "provider_thread_id": "19fbe729f4bfc3f2",
       "sent_label_verified": true,
       "thread_message_count_observed": 2,
-      "thread_meaning_classified": false
+      "thread_meaning_classified": true,
+      "async_delivery_status": "failed",
+      "delivery_failure_message_id": "19fbe72a5b2cc4e7",
+      "delivery_failure_sender": "mailer-daemon@googlemail.com",
+      "followup_allowed": false
     },
     {
       "candidate_id": "j-seed",
@@ -73,5 +77,5 @@
     "database_readback": "passed",
     "git_diff_check": "passed"
   },
-  "claim_boundary": "This proves one real 2026-08-02 JST batch sent exactly three source-bound first-touch funder emails through gog, obtained three distinct Gmail message/thread IDs, and appended three privacy-safe ledger rows. It does not classify the second message already visible in the YeetVC thread, send any follow-up, promise daily candidate replenishment, or claim a reply, meeting, investment, or acceptance."
+  "claim_boundary": "This proves one real 2026-08-02 JST batch sent exactly three source-bound first-touch funder emails through gog, obtained three distinct Gmail message/thread IDs, and appended three privacy-safe ledger rows. A subsequent readback found the official YeetVC address returned a delivery failure, so that target is not claimed delivered and is ineligible for follow-up. This does not send any follow-up, promise daily candidate replenishment, or claim a reply, meeting, investment, or acceptance."
 }
