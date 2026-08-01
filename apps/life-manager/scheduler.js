@@ -27,6 +27,8 @@ const { placeCall } = require("./lib/dial.js");
 const {
   WAKE_MISS_REASONS, recordWakeMiss, claimWakeMissNotice, wakeMissNotice,
 } = require("./lib/wake-miss.js");
+const { putEvents, getEvents } = require("./lib/event-cache.js");
+const { runOrgan } = require("./lib/organ-run.js");
 const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
 const { askTick } = require("./lib/ask.js");
@@ -340,7 +342,11 @@ function mentalDeps(u, events, deps = {}) {
 // slash produced `//rest/v1/lm_mental_send_log` — a 404 that reads as "nothing sent yet" and quietly
 // unbounds the 3/day cap. That is a fix, not a refactor, and it applies to MENTAL too.
 
-async function wakeUserOnce(u, nowMs, deps = {}) {
+// wakeCallOnce — the DEADLINE-CRITICAL half. It owns the calendar fetch (and publishes it for the
+// organ tick), then does nothing but decide and place the call. Everything that can be late lives in
+// organsUserOnce, on its own timer, so no organ can spend this user's budget before the dial
+// (spec §3.1: late+mental sat in front of the dial inside one shared 90s budget).
+async function wakeCallOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
   let events;
@@ -362,22 +368,9 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
     return;
   }
   const futureEvents = (events || []).filter((e) => Number(e.startMs) >= now);
-  try {
-    if (u.notifications_enabled !== false) {
-      const late = await (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents });
-      // The Telegram leg is otherwise unauditable: name the message that was actually delivered.
-      if (late && late.telegramMessageId !== undefined) {
-        console.log(`[late] uid=${String(u.uid).slice(0, 12)} decision=${late.decision} sent=${!!late.sent} tg_message_id=${late.telegramMessageId}`);
-      }
-    }
-  } catch (e) { console.error(`[late] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
-  // MEN-c: the MENTAL organ rides the same 60s tick. It stays silent unless the day itself says now.
-  try {
-    const mental = await (deps.mental || mentalUserOnce)(u, now, mentalDeps(u, events, deps));
-    if (mental && mental.delivered) {
-      console.log(`[mental] uid=${String(u.uid).slice(0, 12)} trigger=${mental.trigger} tg_message_id=${mental.telegramMessageId}`);
-    }
-  } catch (e) { console.error(`[mental] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  // The organ tick reads this instead of fetching. Publishing the RAW events (not futureEvents) is
+  // deliberate: the MENTAL organ needs the lookback slice that futureEvents throws away.
+  (deps.putEvents || putEvents)(u.uid, events, now);
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
   // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
@@ -458,6 +451,60 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
       }
     }
   }
+}
+
+// organsUserOnce — everything that is NOT the wake call. Runs on its own timer with the original 90s
+// per-user budget, so a slow care/diet/mental/late organ delays only its siblings. Each organ is
+// wrapped in runOrgan, which both preserves the old swallow-and-continue contract and records the
+// elapsed ms that used to be missing when `tenant timeout` fired (spec §3 row 1c done receipt).
+async function organsUserOnce(u, nowMs, deps = {}) {
+  if (u && u.daily_automation_enabled === false) return;
+  const now = nowMs !== undefined ? nowMs : Date.now();
+  const log = deps.log || console.log;
+
+  // Read what the wake tick already fetched. A miss (first tick after a restart, or a wake tick that
+  // failed) falls back to a real fetch: the organs still run, and the cost is bounded to that case.
+  let events = (deps.getEvents || getEvents)(u.uid, now);
+  if (events == null) {
+    try {
+      events = await (deps.fetchUpcomingEvents || fetchUpcomingEvents)(u.uid, {
+        nowMs: now, horizonH: 6, lookbackMs: MENTAL_LOOKBACK_MS,
+        apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+        calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
+      });
+      (deps.putEvents || putEvents)(u.uid, events, now);
+    } catch {
+      return;
+    }
+  }
+  const futureEvents = (events || []).filter((e) => Number(e.startMs) >= now);
+
+  // Every runOrgan label is namespaced `organ:<name>` so the stopwatch receipt can never be confused
+  // with the organ's OWN outcome line. Both are `[…] uid=…`, the receipt prints on EVERY tick (an
+  // organ that decided to stay silent still took time) while the outcome line prints only when
+  // something happened — so a bare `[precepts]` label buries the one line that matters under the
+  // ones that don't, and anything reading the first match gets the stopwatch. `grep '\[organ:'` is
+  // now the timing view and `grep '\[precepts\]'` is still the behaviour view.
+  if (u.notifications_enabled !== false) {
+    const late = await runOrgan({
+      label: "organ:late", uid: u.uid, log,
+      run: () => (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents }),
+    });
+    // The Telegram leg is otherwise unauditable: name the message that was actually delivered.
+    if (late && late.telegramMessageId !== undefined) {
+      log(`[late] uid=${String(u.uid).slice(0, 12)} decision=${late.decision} sent=${!!late.sent} tg_message_id=${late.telegramMessageId}`);
+    }
+  }
+
+  // MEN-c: the MENTAL organ rides the same 60s tick. It stays silent unless the day itself says now.
+  const mental = await runOrgan({
+    label: "organ:mental", uid: u.uid, log,
+    run: () => (deps.mental || mentalUserOnce)(u, now, mentalDeps(u, events, deps)),
+  });
+  if (mental && mental.delivered) {
+    log(`[mental] uid=${String(u.uid).slice(0, 12)} trigger=${mental.trigger} tg_message_id=${mental.telegramMessageId}`);
+  }
+
   // 11a/11b: the PHYSICAL organ rides the same 60s tick. careUserOnce holds a durable daily claim
   // in lm_care_scan_log, so despite the 60s cadence there is ONE real scan per user per UTC day —
   // every other tick costs a single row lookup. Isolated exactly like MENTAL above: a care failure
@@ -469,15 +516,16 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // 事後報告 (steel session, Telegram, calendar) inside this same call. The executor holds its own
   // deadline below USER_TICK_TIMEOUT_MS, so a tick abandoned here can never leave the single steel
   // session held open behind it.
-  try {
-    const care = await (deps.care || careUserOnce)(u, now, { apiKey: deps.apiKey, calendar: deps.calendar });
-    if (care && care.status && care.status !== "already_scanned") {
-      console.log(`[care] uid=${String(u.uid).slice(0, 12)} status=${care.status}`
-        + `${care.category ? ` category=${care.category}` : ""}`
-        + `${care.selectedProviderId ? ` selected=${care.selectedProviderId}` : ""}`
-        + `${care.chainError ? ` chain_err=${care.chainError}` : ""}`);
-    }
-  } catch (e) { console.error(`[care] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+  const care = await runOrgan({
+    label: "organ:care", uid: u.uid, log,
+    run: () => (deps.care || careUserOnce)(u, now, { apiKey: deps.apiKey, calendar: deps.calendar }),
+  });
+  if (care && care.status && care.status !== "already_scanned") {
+    log(`[care] uid=${String(u.uid).slice(0, 12)} status=${care.status}`
+      + `${care.category ? ` category=${care.category}` : ""}`
+      + `${care.selectedProviderId ? ` selected=${care.selectedProviderId}` : ""}`
+      + `${care.chainError ? ` chain_err=${care.chainError}` : ""}`);
+  }
   // H2 ORG-diet: the diet organ rides the same 60s tick, LAST — after the time-critical wake dial and
   // after care, because a Places lookup must never sit in front of a call. Both legs hold their own
   // durable claim in lm_diet_log (UNIQUE (uid, day, kind)), so the 120-minute question window and the
@@ -489,36 +537,38 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // a table but not a fate, and a Places outage in the nudge must not cost the day its question.
   if (dietEnabled() && u.notifications_enabled !== false) {
     let nudgeSentThisTick = false;
-    try {
-      // getLocationState is passed to BOTH diet legs exactly as mentalDeps passes it to MENTAL: one
-      // injected provider, one behaviour. Nothing supplies it in production today, so both organs
-      // read the constant "unknown" — the gate is wired, not live, and both files say so.
-      const nudge = await (deps.dietNudge || dietNudgeOnce)(u, now, {
+    // getLocationState is passed to BOTH diet legs exactly as mentalDeps passes it to MENTAL: one
+    // injected provider, one behaviour. Nothing supplies it in production today, so both organs
+    // read the constant "unknown" — the gate is wired, not live, and both files say so.
+    const nudge = await runOrgan({
+      label: "organ:diet-nudge", uid: u.uid, log,
+      run: () => (deps.dietNudge || dietNudgeOnce)(u, now, {
         calendarEvents: events, getLocationState: deps.getLocationState,
-      });
-      if (nudge && nudge.status === "nudged") {
-        nudgeSentThisTick = true;
-        console.log(`[diet-nudge] uid=${String(u.uid).slice(0, 12)} samples=${nudge.sampleCount}`
-          + ` fast=${nudge.fastCount} venue=${nudge.venue ? "yes" : "none"} tg_message_id=${nudge.telegramMessageId}`);
-      }
-    } catch (e) { console.error(`[diet-nudge] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+      }),
+    });
+    if (nudge && nudge.status === "nudged") {
+      nudgeSentThisTick = true;
+      log(`[diet-nudge] uid=${String(u.uid).slice(0, 12)} samples=${nudge.sampleCount}`
+        + ` fast=${nudge.fastCount} venue=${nudge.venue ? "yes" : "none"} tg_message_id=${nudge.telegramMessageId}`);
+    }
     // The two windows overlap (nudge 11:15-11:45, question 11:30-13:30), so on some ticks BOTH legs
     // fire and the user gets two unsolicited messages zero seconds apart — the sermon the thresholds
     // exist to prevent, delivered in one breath. The nudge keeps the tick because it is the
     // time-critical one (it must land before lunch is decided); the question waits for the next tick,
     // which costs 60 seconds out of its own 120-minute window, and only on a day a nudge went out.
     if (!nudgeSentThisTick) {
-      try {
-        // NOT futureEvents: "is the user mid-meeting right now" is a question only the event that has
-        // ALREADY started can answer, and futureEvents drops exactly those. The MENTAL lookback the
-        // fetch above already carries is what makes the in-progress event visible here.
-        const diet = await (deps.diet || dietUserOnce)(u, now, {
+      // NOT futureEvents: "is the user mid-meeting right now" is a question only the event that has
+      // ALREADY started can answer, and futureEvents drops exactly those. The MENTAL lookback the
+      // fetch above already carries is what makes the in-progress event visible here.
+      const diet = await runOrgan({
+        label: "organ:diet", uid: u.uid, log,
+        run: () => (deps.diet || dietUserOnce)(u, now, {
           events: inProgressEvents(events), getLocationState: deps.getLocationState,
-        });
-        if (diet && (diet.status === "asked" || diet.status === "send_failed")) {
-          console.log(`[diet] uid=${String(u.uid).slice(0, 12)} status=${diet.status} day=${diet.day}`);
-        }
-      } catch (e) { console.error(`[diet] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+        }),
+      });
+      if (diet && (diet.status === "asked" || diet.status === "send_failed")) {
+        log(`[diet] uid=${String(u.uid).slice(0, 12)} status=${diet.status} day=${diet.day}`);
+      }
     }
   }
   // H4 ORG-precepts: the bedtime organ rides the same 60s tick, after DIET. Both of its legs hold a
@@ -532,61 +582,70 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
   // question.
   if (preceptsEnabled() && u.notifications_enabled !== false) {
     let mirrorSentThisTick = false;
-    try {
-      // The mirror is evaluated FIRST because it is the rarer and more time-boxed of the two (one
-      // Sunday, one window). Its own send records to lm_mental_send_log, which starts the 2h spacing
-      // that suppresses the question on every later tick — but not on THIS one, because both legs
-      // read their budget before either wrote. mirrorSentThisTick closes that gap: two unsolicited
-      // messages zero seconds apart is the sermon these thresholds exist to prevent.
-      const mirror = await (deps.preceptsMirror || preceptsMirrorOnce)(u, now, {
+    // The mirror is evaluated FIRST because it is the rarer and more time-boxed of the two (one
+    // Sunday, one window). Its own send records to lm_mental_send_log, which starts the 2h spacing
+    // that suppresses the question on every later tick — but not on THIS one, because both legs
+    // read their budget before either wrote. mirrorSentThisTick closes that gap: two unsolicited
+    // messages zero seconds apart is the sermon these thresholds exist to prevent.
+    const mirror = await runOrgan({
+      label: "organ:precepts-mirror", uid: u.uid, log,
+      run: () => (deps.preceptsMirror || preceptsMirrorOnce)(u, now, {
         events: inProgressEvents(events), getLocationState: deps.getLocationState,
         apiKey: deps.apiKey, calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
-      });
-      if (mirror && mirror.status === "mirrored") {
-        mirrorSentThisTick = true;
-        // budgeted says whether lm_mental_send_log actually recorded this send. A false here means a
-        // delivered message the SHARED 3/day cap cannot see, so it is printed rather than left in a
-        // returned object nobody reads — the organ has already stood itself down for the day.
-        console.log(`[precepts-mirror] uid=${String(u.uid).slice(0, 12)} day=${mirror.day}`
-          + ` answers=${mirror.answerCount} pattern=${mirror.pattern} tg_message_id=${mirror.telegramMessageId}`
-          + ` budgeted=${mirror.budgeted === true}`);
-      }
-    } catch (e) { console.error(`[precepts-mirror] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+      }),
+    });
+    if (mirror && mirror.status === "mirrored") {
+      mirrorSentThisTick = true;
+      // budgeted says whether lm_mental_send_log actually recorded this send. A false here means a
+      // delivered message the SHARED 3/day cap cannot see, so it is printed rather than left in a
+      // returned object nobody reads — the organ has already stood itself down for the day.
+      log(`[precepts-mirror] uid=${String(u.uid).slice(0, 12)} day=${mirror.day}`
+        + ` answers=${mirror.answerCount} pattern=${mirror.pattern} tg_message_id=${mirror.telegramMessageId}`
+        + ` budgeted=${mirror.budgeted === true}`);
+    }
     if (!mirrorSentThisTick) {
-      try {
-        // NOT futureEvents: "is the user mid-something right now" is a question only the event that
-        // has ALREADY started can answer, and futureEvents drops exactly those.
-        const precepts = await (deps.precepts || preceptsUserOnce)(u, now, {
+      // NOT futureEvents: "is the user mid-something right now" is a question only the event that
+      // has ALREADY started can answer, and futureEvents drops exactly those.
+      const precepts = await runOrgan({
+        label: "organ:precepts", uid: u.uid, log,
+        run: () => (deps.precepts || preceptsUserOnce)(u, now, {
           events: inProgressEvents(events), getLocationState: deps.getLocationState,
-        });
-        if (precepts && (precepts.status === "asked" || precepts.status === "send_failed")) {
-          // Same reason as the mirror's line: budgeted=false is a delivered message the shared cap
-          // never counted, and a silent cap drift is exactly what H4 ⑤ exists to prevent.
-          console.log(`[precepts] uid=${String(u.uid).slice(0, 12)} status=${precepts.status} day=${precepts.day}`
-            + ` budgeted=${precepts.budgeted === true}`);
-        }
-      } catch (e) { console.error(`[precepts] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`); }
+        }),
+      });
+      if (precepts && (precepts.status === "asked" || precepts.status === "send_failed")) {
+        // Same reason as the mirror's line: budgeted=false is a delivered message the shared cap
+        // never counted, and a silent cap drift is exactly what H4 ⑤ exists to prevent.
+        log(`[precepts] uid=${String(u.uid).slice(0, 12)} status=${precepts.status} day=${precepts.day}`
+          + ` budgeted=${precepts.budgeted === true}`);
+      }
     }
   }
   // H5 ORG-relations: one source-honest Calendar cadence scan in the early evening. The runtime
   // owns durable scan/attempt claims and the shared MENTAL budget; this wrapper only isolates it.
   if (relationsEnabled() && u.notifications_enabled !== false) {
-    try {
-      const relations = await (deps.relations || relationsUserOnce)(u, now, {
+    const relations = await runOrgan({
+      label: "organ:relations", uid: u.uid, log,
+      run: () => (deps.relations || relationsUserOnce)(u, now, {
         events: inProgressEvents(events),
         getLocationState: deps.getLocationState,
         apiKey: deps.apiKey,
         calendar: deps.calendar,
         gmailAccountId: u.gmail_account_id,
-      });
-      if (relations && relations.status === "suggested") {
-        console.log(`[relations] uid=${String(u.uid).slice(0, 12)} status=${relations.status}`
-          + ` tg_message_id=${relations.telegramMessageId} budgeted=${relations.budgeted === true}`);
-      }
-    } catch (e) {
-      console.error(`[relations] uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
+      }),
+    });
+    if (relations && relations.status === "suggested") {
+      log(`[relations] uid=${String(u.uid).slice(0, 12)} status=${relations.status}`
+        + ` tg_message_id=${relations.telegramMessageId} budgeted=${relations.budgeted === true}`);
     }
   }
+}
+
+// wakeUserOnce — kept as the composition of both halves. The Inngest per-user path
+// (inngest/functions.js makeWakeUserHandler) and the 1a/1b test suites call this name, and a
+// per-user Inngest run has no sibling users to protect, so running both halves there is correct.
+async function wakeUserOnce(u, nowMs, deps = {}) {
+  await wakeCallOnce(u, nowMs, deps);
+  await organsUserOnce(u, nowMs, deps);
 }
 
 // forEachUserSafe: process each tenant in ISOLATION (HARD-4). A throw/rejection while handling one user is
@@ -814,6 +873,8 @@ module.exports = {
   tick, travelTick, askTickAll, onboardTick, discoveryTick,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
+  // the two halves of the old wakeUserOnce — separate timers drive them (spec §3.1 method A)
+  wakeCallOnce, organsUserOnce,
   lateNoticeUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,
