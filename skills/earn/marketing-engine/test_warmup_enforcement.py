@@ -84,3 +84,6 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "insert dots only" in result.stdout
     assert "do not retry another plus-address" in result.stdout
     assert "Never print or echo the password or OTP" in result.stdout
+    assert "fresh Gmail account fallback" in result.stdout
+    assert "read Instagram OTP from Gmail Web" in result.stdout
+    assert "never invent success if Google forces phone or CAPTCHA" in result.stdout
