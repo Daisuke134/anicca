@@ -17,15 +17,19 @@
 
 ### Task 1: Structured classifier
 
-- [ ] schema validatorとcross-field invariantをRED→GREENにする。
-- [ ] Gemini structured-output classifierを実装する。
-- [ ] prompt injection、架空URL、本文にないevidenceを拒否する。
+- [x] schema validatorとcross-field invariantをRED→GREENにする。
+- [x] Gemini structured-output classifierを実装する。
+- [x] prompt injection、架空URL、本文にないevidenceを拒否する。
 
 ### Task 2: Held-out eval
 
-- [ ] open LT、open CFP、締切済み、招待制、speaker紹介だけ、一般参加だけを含む6件以上を作る。
-- [ ] 実Geminiで全件を実行し、deterministic expected fieldsとevidence provenanceを判定する。
-- [ ] 100%でなければprompt/schema/caseを分析して修正し、再実行する。
+- [x] open LT、open CFP、締切済み、招待制、speaker紹介だけ、一般参加だけを含む6件以上を作る。
+- [x] 実Geminiで全件を実行し、deterministic expected fieldsとevidence provenanceを判定する。
+- [x] 100%でなければprompt/schema/caseを分析して修正し、再実行する。
+
+初回7/8。招待制demoを`audience_only`とした原因は、`participation_kind`が「event内の枠の存在」か
+「今公開応募できる行動」か曖昧だったこと。枠の存在は`both/demo/invite_only`、実応募作成はfalseと
+明文化して再実行し、8/8になった。期待値やcaseを削ってscoreを上げていない。
 
 ### Task 3: Proof
 
