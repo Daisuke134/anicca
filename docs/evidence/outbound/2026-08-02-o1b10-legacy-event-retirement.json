@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "task": "O1B-10",
+  "observed_at": "2026-08-01T15:43:01.745Z",
+  "result": "verified",
+  "before": {
+    "launchd_loaded": [
+      "ai.anicca.connector-fill-gaps",
+      "ai.anicca.connector-daily-report"
+    ],
+    "launchd_active_plists": 2,
+    "gateway_cron_disabled": 6,
+    "planned_operations": 4
+  },
+  "after": {
+    "launchd_loaded": [],
+    "launchd_retired_plists": 2,
+    "gateway_cron_disabled": [
+      "anicca-meetup-discover-daily",
+      "anicca-meetup-apply-tokyo-weekly",
+      "anicca-meetup-apply-sf-monthly",
+      "anicca-meetup-accept-watch-6h",
+      "connpass-lt-apply-daily",
+      "anicca-night-fill"
+    ],
+    "remaining_operations": 0,
+    "legacy_source_deleted": false,
+    "legacy_application_rows_preserved": 30,
+    "calendar_events_deleted": false
+  },
+  "ownership": {
+    "external_event_apply_owner": "life-manager-runtime/outbound.event.apply",
+    "worker_health_http": 200,
+    "worker_role": "worker",
+    "worker_capabilities": ["runtime.noop", "outbound.event.apply"],
+    "cdp_9222_preserved": true,
+    "cdp_9223_preserved_reason": "current owner profile is gig-daily-driver; no enabled legacy event cron may use it"
+  },
+  "rollback": {
+    "launchd": "rename each exact .plist.retired file back to .plist and bootstrap the exact label",
+    "cron": "enable only the exact recorded cron ID",
+    "data_restore_required": false
+  },
+  "verification": {
+    "retirement_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 102, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "git_diff_check": "passed"
+  }
+}

@@ -469,6 +469,18 @@ fresh verificationはoutbound 98件、runtime-up 33件、browser-auth 75件、di
 `docs/evidence/outbound/2026-08-02-o1b09-live-login-recovery.json`。残作業は128件。次はO1B-10で、
 正本runtimeと同じ外部操作を行う重複旧実装を退役する。
 
+完了: `O1B-10`。重複event railをexact allowlistで再監査した。launchdの
+`ai.anicca.connector-fill-gaps`と`ai.anicca.connector-daily-report`はまだloadedかつactive plistだった。
+OpenClaw Gateway正本ではTokyo/SF meetup、accept watcher、connpass LT、night-fillの6 cronは全てdisabledで、
+local `jobs.json`のenabled表示がstaleだった。正本repoへidempotentなretirement CLIと4件の回帰を追加し、
+launchd 2件をbootoutしてplistを`.retired`へ移動した。旧source、30行のapplication ledger、evidence、
+Calendar eventは削除していない。再dry-runはoperation 0、Gateway 6/6 disabled、worker health HTTP 200、
+`outbound.event.apply` capabilityを確認した。`:9223`の現processはgig-daily-driver profile所有なので停止せず、
+enabledな旧event cronからの参照だけを0にした。fresh verificationはoutbound 102件、runtime-up 33件、
+diff checkが全成功。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b10-retire-legacy-event-loops.md`。
+実測証拠: `docs/evidence/outbound/2026-08-02-o1b10-legacy-event-retirement.json`。残作業は127件。
+次はO1B-11でconnpass API keyを申請し、取得までは現在の全自動アクセス停止を維持する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -593,7 +605,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-07 人間向け説明と直接link付きでTelegramへ実QRを送る
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
-- [ ] O1B-10 重複旧実装を退役
+- [x] O1B-10 重複旧実装を退役
 - [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
