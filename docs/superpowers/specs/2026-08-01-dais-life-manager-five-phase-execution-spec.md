@@ -514,6 +514,13 @@ rollback手順をmanifestへ残すidempotent scriptを実装した。archive済�
 plistがbyte単位で変わらないことを確認した。次は旧launchd registryをisolated clean worktreeでdisabledへ
 移し、現在のdirty worktreeには触れず再登録・誤警告を防ぐ。
 
+O1B-10進捗3: 旧registryはplistを生成するinstallerではなくread-only inventoryだった。ただしfill-gapsを
+`enabled`と誤表示していたため、旧repoの現行branchで未変更だったregistry 2ファイルだけを個別stageした。
+fill-gapsをrevenue/enabledから除き、fill-gapsとdaily-reportをretired/disabled、owner=`life-manager`へ移した。
+他のwriter作業中変更には触れていない。launchd inventory test 22件が成功し、実inventoryで固定2 labelが
+desired=`disabled`、owner=`life-manager`となった。旧repo commit `a5eab2e`を同branchへpush済み。
+次は正本commit後、実2 labelをrecoverable archiveへ移してlive verificationする。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
