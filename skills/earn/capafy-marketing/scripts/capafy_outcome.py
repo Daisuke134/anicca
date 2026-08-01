@@ -112,6 +112,17 @@ def validate_outcome(data: dict) -> list[str]:
         ):
             if not data.get(field):
                 errors.append(f"{field} is required")
+    elif kind == "builder_noop":
+        if not data.get("reason"):
+            errors.append("reason is required")
+        for field in MONEY_FIELDS:
+            if field not in data:
+                errors.append(f"{field} is required and must remain separate")
+            else:
+                try:
+                    Decimal(str(data[field]))
+                except (InvalidOperation, TypeError, ValueError):
+                    errors.append(f"{field} must be numeric")
     else:
         errors.append(f"unsupported kind: {kind!r}")
     return errors
@@ -195,6 +206,16 @@ def render_outcome(data: dict) -> str:
                 f"Remaining blocker: {data['blocker']}",
                 f"Next automatic retry: {data['next_retry_at']}",
                 "Human action required: none.",
+            ]
+        )
+
+    if kind == "builder_noop":
+        return "\n".join(
+            [
+                "Capafy Builder — completed without a new submission",
+                f"Reason: {data['reason']}",
+                *_money_lines(data),
+                "Next: retry the bounded Builder objective on the next scheduled pass.",
             ]
         )
 

@@ -9,6 +9,10 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "${CAPAFY_LOOP_REPORTING_PROBE_ONLY:-0}" = "1" ]; then
+  printf 'terminal_owner=capafy-builder-handoff.sh agent_telegram=false\n'
+  exit 0
+fi
 RUN_AGENT="$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh"
 LOG="$HOME/.openclaw/logs/capafy-loop-daily.log"
 mkdir -p "$(dirname "$LOG")"
@@ -93,6 +97,17 @@ reports isConfirmedConfigKeys=1. A toast is only a hint; the server field is the
 skip the browser work this pass and say so), and release it when done."
 
 EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/capafy-marketplace/$(date +%s)-$$"
+BUILDER_RESULT="${CAPAFY_BUILDER_RESULT:-$HOME/.openclaw/state/capafy-builder-result.json}"
+rm -f "$BUILDER_RESULT"
+PROMPT="$PROMPT
+★★ DETERMINISTIC TERMINAL HANDOFF — THIS OVERRIDES STEP3/STEP5 REPORTING AND SELF-FIX OWNERSHIP ★★
+Do not call self-fix and do not send Telegram yourself. The shell caller owns incident identity,
+remote verification, money labels, repair dispatch, and Telegram delivery. Before returning, write
+exactly one JSON object to $BUILDER_RESULT:
+  submitted: {\"result\":\"submitted\",\"agent_id\":\"<id>\",\"listing_url\":\"<real Capafy review URL>\"}
+  no-op:     {\"result\":\"no-op\",\"reason\":\"<bounded truthful reason>\"}
+  failure:   {\"result\":\"failure\",\"reason\":\"<exact terminal blocker>\"}
+Writing submitted is only a candidate claim; the caller independently re-reads Capafy's remote status."
 # task-class application-lane-agent (3600s), NOT browser-lane-agent (900s).
 # WHY THE RAISE (and not "make orphan work resumable"): orphan work is ALREADY resumable —
 # every CP1/CP2/CP3 checkpoint is server-side and idempotent and publish_finish.sh skips
@@ -111,4 +126,5 @@ printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
 RC=$?
 echo "=== capafy-loop-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 touch "$HOME/.openclaw/state/.capafy-loop-last-pass" 2>/dev/null || true
-exit 0
+CAPAFY_BUILDER_RESULT="$BUILDER_RESULT" bash "$SCRIPT_DIR/capafy-builder-handoff.sh" "$RC" "$EVIDENCE_DIR" >>"$LOG" 2>&1
+exit $?

@@ -351,8 +351,8 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P0 — Truthful outcomes and repair closure.
 - **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** Tasks 1-3 verified. Terminal self-fix results are now rendered from validated evidence, require a real Telegram message id, and are idempotent by delivery key.
-- **Next action:** Task 4, move Builder terminal classification and Telegram handoff out of agent-authored prose into deterministic code.
+- **Current state (2026-08-01):** Tasks 1-4 verified. Builder judgment still selects/builds the product, while deterministic code now owns remote verification, truthful money labels, incident dispatch, receipts, and terminal Telegram delivery.
+- **Next action:** Task 5, apply the same terminal boundary to Marketing and distinguish dry, scheduled, session-ready, and publicly posted states.
 
 #### P0 execution log
 
@@ -361,7 +361,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 | 1. Reporting contract | Verified | `python3 -m py_compile .../capafy_outcome.py`; `python3 -m pytest -q .../test_capafy_outcome.py` → `8 passed in 0.39s`; RED was `8 failed` before implementation | `548b382e1` |
 | 2. Incident identity | Verified | RED: 4 incident tests + 2 sidecar assertions failed; GREEN: outcome `12 passed`, self-fix `23 passed`, Capafy loop `7 passed` | `c73d53b63` |
 | 3. Repair closure monitor | Verified | RED: monitor absent, 15 contract failures; GREEN: monitor integration `19 passed`, outcome regression `12 passed`, plist `OK` | `59b39d0a4` |
-| 4. Builder handoff | Not started | — | — |
+| 4. Builder handoff | Verified | RED: handoff/probe absent; GREEN: Builder integration `17 passed`, outcome `12 passed`, self-fix `23 passed`, loop `7 passed` | `feat(capafy): make builder outcomes deterministic` |
 | 5. Marketer handoff | Not started | — | — |
 | 6. 09:30 report | Not started | — | — |
 | 7. Watchdogs + end-to-end proof | Not started | — | — |
