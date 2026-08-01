@@ -347,8 +347,33 @@ const server = http.createServer((req, res) => {
       } else if (detection.hangup) {
         console.log(`[telnyx-events] hung up on a ${detection.result} ${tag}`);
       }
-      const outcome = !detection.amd.ok ? "record failed"
-        : detection.answered ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
+      // spec §3 row 2a: Telnyx reads 2xx as "it arrived" and redelivers ONLY when it gets something
+      // else (developers.telnyx.com/development/api-fundamentals/webhooks/receiving-webhooks: "All
+      // response codes outside this range... will indicate to Telnyx that you did not receive the
+      // webhook"; up to 3 primary + 3 failover attempts, exponential backoff). This route used to
+      // answer 200 no matter what happened, so a Supabase outage silently threw away the last copy of
+      // a detection: the retry was ours to take and we declined it, and the row stayed NULL forever —
+      // indistinguishable from a webhook that never arrived, which is the §1.3 failure class.
+      //
+      // The split is "a failure that another delivery might survive" vs "a failure no delivery can":
+      //   * the PATCH 5xx'd or threw = transient → 5xx, and Telnyx brings the same event back.
+      //     Reprocessing is safe because the payload is identical apart from meta.attempt: amd_result
+      //     is written with no filter (last observation wins) and answered_at is an is.null latch
+      //     (the first human proof wins), so a second pass changes neither answer.
+      //   * matched === 0 = there is no row for this uid+event_key → no future delivery can fill it.
+      //     200 closes it. Retrying would spend six deliveries on nothing and mask the real outages
+      //     above, which is a worse loss than the log line we already print here.
+      if (!detection.amd.ok) {
+        res.writeHead(503, { "content-type": "text/plain" });
+        res.end("record failed; send it again");
+        return;
+      }
+      // A failed answered_at write deliberately does NOT ask for a retry. It only runs after
+      // amd_result succeeded, so the row provably exists and the detection is already recorded;
+      // asking Telnyx again would rewrite that good amd_result once per attempt to chase a column
+      // whose own latch means a late write is a no-op anyway. report() above has it in stderr.
+      const outcome = detection.answered
+        ? (detection.answered.matched > 0 ? "answered" : "answered_at unchanged")
         : "recorded";
       res.writeHead(200); res.end(outcome);
     })().catch((error) => {
