@@ -410,7 +410,7 @@ Pre-implementation baseline (2026-08-02): outcome/report pytest `14 passed`; Mar
 | 3. Immediate account manager | Verified | RED: manager/plist absent and `account_created` unsupported (`20` shell failures, `2` outcome failures). GREEN: combined pytest `46 passed, 7 subtests`; manager integration `32`, Marketer `23`, account-state `38`; plist, shell/Python syntax, and diff check passed | `f03d7dd76` |
 | 4. Verified warmup capabilities | Verified | RED: `lifecycle_progress` was unsupported and the old script ignored injected jitter while calling private-session `warmer.py`. GREEN: warmup integration `15`, account-state `38`, combined pytest `47 passed, 7 subtests`, manager `32`, Marketer `23`; plist, syntax, and diff check passed | `6d3430208` |
 | 5. Browser-direct Reel adapter | Verified | RED: source module collection failed with `ModuleNotFoundError`. GREEN: Reel adapter `13` cases; combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`, Marketer `23`, account-state `38`; compile and diff check passed | `28caa8b22` |
-| 6. Creative/publish controller | Verified | RED: controller fixture had `10` failures under the monolith. GREEN: controller `18`, P0 handoff `24`, account-state `38`, combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`; shell/Python syntax and diff check passed | task commit pending |
+| 6. Creative/publish controller | Verified | RED: controller fixture had `10` failures under the monolith. GREEN: controller `18`, P0 handoff `24`, account-state `38`, combined pytest `60 passed, 7 subtests`, warmup `15`, manager `32`; shell/Python syntax and diff check passed | `f413cd5b7` |
 | 7. P1 LaunchAgents and repair wiring | Not started | — | — |
 | 8. Fresh production lifecycle | Not started | — | — |
 
