@@ -1115,6 +1115,16 @@ outbound全回帰184/184成功。証拠:
 `docs/evidence/outbound/2026-08-02-o1b23-live-all-calendar-travel-gate.json`。次は`O1B-24`で、無料候補を
 優先し、有料候補は一度設定した自動支出policy内だけ保存済み決済手段を使い、都度承認なしで進める。
 
+O1B-24開始（2026-08-02）: 実Luma Tokyo 20候補のJSON-LD offersは20/20にprice/currency/availabilityを
+持ち、無料14、有料6、USD 14、JPY 6だった。現在はverified自動支出上限0、保存済み決済method evidence 0
+なのでpaid capは0、無料候補は自動継続する。一度policyが設定された後はper-event/rolling cap内を都度承認
+なしで実行する。設計: `docs/superpowers/specs/2026-08-02-connector-o1b24-event-spend-policy-design.md`。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b24-event-spend-policy.md`。
+
+O1B-24進捗1（offer RED）: original currencyのminor amountを浮動小数誤差なしで正規化し、availableな
+最安ticketを選び、0だけをfree、欠落・壊れたpriceをunknownにする3 testを追加した。detailにprice fieldsが
+未実装のため期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
