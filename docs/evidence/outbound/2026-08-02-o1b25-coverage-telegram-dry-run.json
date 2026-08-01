@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-01T19:07:24Z",
+  "scope": "connector-o1b25-coverage-telegram-dry-run",
+  "transport": "openclaw-telegram",
+  "dry_run": true,
+  "message": {
+    "length": 365,
+    "horizon_days": 21,
+    "open_days": 21,
+    "has_direct_google_calendar_url": true,
+    "contains_runner_language": false,
+    "contains_no_candidate_failure_claim": false
+  },
+  "privacy": {
+    "telegram_target_present": true,
+    "telegram_target_returned": false,
+    "calendar_titles_returned": false,
+    "calendar_locations_returned": false
+  },
+  "verification": {
+    "focused_tests_passed": 16,
+    "focused_tests_failed": 0,
+    "outbound_tests_passed": 209,
+    "outbound_tests_failed": 0
+  },
+  "completion": {
+    "telegram_message_sent": false,
+    "o1b25_complete": false,
+    "reason": "stored coverage has not yet been rebuilt from current Calendar and verified registrations"
+  }
+}
