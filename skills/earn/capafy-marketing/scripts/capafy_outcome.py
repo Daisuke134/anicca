@@ -16,7 +16,7 @@ import sys
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 
@@ -382,6 +382,26 @@ def _incident_dir() -> Path:
     return _state_root() / "capafy-incidents"
 
 
+def _write_incident_event(record: dict) -> None:
+    """Append the persisted incident phase unless explicitly disabled for tests."""
+
+    if os.environ.get("CAPAFY_EVENT_WRITE_DISABLED") == "1":
+        return
+    from capafy_event_adapters import event_from_incident
+    from capafy_event_store import append_event
+
+    state_root = _state_root()
+    ledger = Path(
+        os.environ.get("CAPAFY_EVENT_LEDGER", state_root / "capafy-revenue-events.jsonl")
+    ).expanduser()
+    evidence_dir = Path(
+        os.environ.get(
+            "CAPAFY_EVENT_EVIDENCE_DIR", state_root / "capafy-revenue-evidence"
+        )
+    ).expanduser()
+    append_event(ledger, event_from_incident(record), record, evidence_dir)
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -415,7 +435,12 @@ def _read_incidents() -> list[dict]:
 
 
 def start_incident(
-    *, owner: str, summary: str, fingerprint: str, repair_result_path: str | None
+    *,
+    owner: str,
+    summary: str,
+    fingerprint: str,
+    repair_result_path: str | None,
+    event_writer: Callable[[dict], None] | None = None,
 ) -> dict:
     for record in sorted(
         _read_incidents(), key=lambda item: item.get("detected_at", ""), reverse=True
@@ -425,6 +450,21 @@ def start_incident(
             and record.get("fingerprint") == fingerprint
             and record.get("phase") != "verified"
         ):
+            phase = record.get("phase", "detected")
+            phase_timestamps = record.setdefault("phase_timestamps", {})
+            changed = False
+            if "detected" not in phase_timestamps:
+                phase_timestamps["detected"] = record.get("detected_at") or _now()
+                changed = True
+            if phase not in phase_timestamps:
+                phase_timestamps[phase] = record.get("updated_at") or _now()
+                changed = True
+            if changed:
+                _atomic_json_write(
+                    _incident_dir() / f"{record['incident_id']}.json", record
+                )
+            if event_writer is not None:
+                event_writer(record)
             return record
 
     now = _now()
@@ -437,6 +477,7 @@ def start_incident(
         "phase": "detected",
         "detected_at": now,
         "updated_at": now,
+        "phase_timestamps": {"detected": now},
         "summary": summary,
         "fingerprint": fingerprint,
         "repair_result_path": repair_result_path,
@@ -445,10 +486,14 @@ def start_incident(
         "terminal_message_key": None,
     }
     _atomic_json_write(_incident_dir() / f"{incident_id}.json", record)
+    if event_writer is not None:
+        event_writer(record)
     return record
 
 
-def transition_incident(update: dict) -> dict:
+def transition_incident(
+    update: dict, event_writer: Callable[[dict], None] | None = None
+) -> dict:
     incident_id = update.get("incident_id")
     phase = update.get("phase")
     if not isinstance(incident_id, str) or not incident_id:
@@ -477,8 +522,14 @@ def transition_incident(update: dict) -> dict:
     ):
         if field in update:
             record[field] = update[field]
-    record["updated_at"] = _now()
+    now = _now()
+    phase_timestamps = record.setdefault("phase_timestamps", {})
+    phase_timestamps.setdefault("detected", record.get("detected_at") or now)
+    phase_timestamps.setdefault(phase, now)
+    record["updated_at"] = now
     _atomic_json_write(path, record)
+    if event_writer is not None:
+        event_writer(record)
     return record
 
 
@@ -532,6 +583,7 @@ def main(argv: list[str] | None = None) -> int:
                 summary=option("--summary") or "",
                 fingerprint=option("--fingerprint") or "",
                 repair_result_path=option("--repair-result-path", required=False),
+                event_writer=_write_incident_event,
             )
             print(json.dumps(record, ensure_ascii=False, sort_keys=True))
             return 0
@@ -552,7 +604,9 @@ def main(argv: list[str] | None = None) -> int:
         if command == "transition-incident":
             print(
                 json.dumps(
-                    transition_incident(load_json_stdin()),
+                    transition_incident(
+                        load_json_stdin(), event_writer=_write_incident_event
+                    ),
                     ensure_ascii=False,
                     sort_keys=True,
                 )
@@ -574,7 +628,7 @@ def main(argv: list[str] | None = None) -> int:
             if errors:
                 raise ValueError("; ".join(errors))
             print(delivery_key(data))
-    except (json.JSONDecodeError, ValueError) as exc:
+    except (json.JSONDecodeError, OSError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
     return 0

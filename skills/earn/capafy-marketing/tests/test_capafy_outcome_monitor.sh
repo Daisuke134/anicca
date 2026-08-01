@@ -55,6 +55,15 @@ incident_record() {
   cat "$STATE/capafy-incidents/$INCIDENT_ID.json"
 }
 
+event_count() {
+  python3 - "$STATE/capafy-revenue-events.jsonl" "$1" <<'PY'
+import json, sys
+path, event_id = sys.argv[1:]
+with open(path, encoding="utf-8") as stream:
+    print(sum(json.loads(line)["event_id"] == event_id for line in stream if line.strip()))
+PY
+}
+
 echo "(A) RUNNING is silent"
 setup_case
 seed_incident
@@ -126,6 +135,11 @@ assert_has "closure says no action needed" "$body" "no action needed"
 record="$(incident_record)"
 assert_has "incident reaches verified" "$record" '"phase": "verified"'
 assert_has "real Telegram message id is recorded" "$record" '"telegram_message_id": "12345"'
+assert_has "verified state carries concrete verification" "$record" '"business_outcome_validated": true'
+assert_eq "detected event exists exactly once" "$(event_count "capafy:incident.detected:$INCIDENT_ID")" "1"
+assert_eq "repair-started event exists exactly once" "$(event_count "capafy:incident.repair_started:$INCIDENT_ID")" "1"
+assert_eq "repaired event exists exactly once" "$(event_count "capafy:incident.repaired:$INCIDENT_ID")" "1"
+assert_eq "verified event exists exactly once" "$(event_count "capafy:incident.verified:$INCIDENT_ID")" "1"
 rm -rf "$CASE_DIR"
 
 echo "(D) FAIL reports blocker and next retry"

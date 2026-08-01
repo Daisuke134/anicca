@@ -13,7 +13,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 from capafy_event_store import append_event
-from capafy_outcome import validate_outcome
 
 
 ZERO_MONEY = {
@@ -104,6 +103,8 @@ def events_from_outcome(
     kind = outcome.get("kind")
     if kind not in {"builder_submitted", "marketing_published", "account_created"}:
         return []
+    from capafy_outcome import validate_outcome
+
     if validate_outcome(outcome):
         return []
 
@@ -267,6 +268,93 @@ def events_from_lifecycle(before: dict, after: dict, occurred_at: str) -> list[d
             )
         )
     return events
+
+
+def _utc_timestamp(value: Any) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc).isoformat(timespec="seconds").replace(
+        "+00:00", "Z"
+    )
+
+
+def event_from_incident(record: dict) -> dict:
+    """Translate one persisted incident phase into a retry-stable public event."""
+
+    incident_id = record.get("incident_id")
+    owner = record.get("owner")
+    phase = record.get("phase")
+    if not isinstance(incident_id, str) or not incident_id:
+        raise ValueError("incident_id is required")
+    if not isinstance(owner, str) or not owner:
+        raise ValueError("incident owner is required")
+    if phase not in {"detected", "repair_started", "repaired", "verified", "unresolved"}:
+        raise ValueError(f"unsupported incident phase: {phase!r}")
+    if phase == "verified" and not isinstance(record.get("verification"), dict):
+        raise ValueError("incident.verified requires concrete verification")
+    phase_times = record.get("phase_timestamps") or {}
+    occurred_at = _utc_timestamp(phase_times.get(phase))
+    if occurred_at is None:
+        raise ValueError(f"incident phase timestamp is required: {phase}")
+
+    phase_source = {
+        "incident_id": incident_id,
+        "owner": owner,
+        "phase": phase,
+        "occurred_at": occurred_at,
+        "summary": record.get("summary"),
+        "repair_summary": record.get("repair_summary"),
+        "verification": record.get("verification"),
+        "outcome": record.get("outcome"),
+        "next_retry_at": record.get("next_retry_at"),
+    }
+    urls: list[str] = []
+    outcome = record.get("outcome")
+    if isinstance(outcome, dict):
+        for field in ("reel_url", "listing_url", "campaign_url"):
+            value = outcome.get(field)
+            if _https(value) and value not in urls:
+                urls.append(value)
+    before_by_phase = {
+        "detected": None,
+        "repair_started": "detected",
+        "repaired": "repair_started",
+        "verified": "repaired",
+        "unresolved": "repair_started",
+    }
+    summary = str(record.get("summary") or "Capafy incident")
+    if phase in {"repaired", "verified"} and record.get("repair_summary"):
+        summary = str(record["repair_summary"])
+    retry_at = _utc_timestamp(record.get("next_retry_at")) if phase == "unresolved" else None
+    event_id = f"capafy:incident.{phase}:{incident_id}"
+    event = _event(
+        event_id=event_id,
+        event_type=f"incident.{phase}",
+        occurred_at=occurred_at,
+        loop=owner,
+        entity_type="incident",
+        entity_id=incident_id,
+        correlation_id=incident_id,
+        summary=summary,
+        before=before_by_phase[phase],
+        after=phase,
+        urls=urls,
+        labels=[f"incident phase: {phase.replace('_', '-')}"],
+        source=_source(
+            phase_source,
+            "capafy-outcome",
+            f"incident:{incident_id}:{phase}",
+        ),
+        next_owner=owner,
+    )
+    event["next"]["retry_at"] = retry_at
+    return event
 
 
 def _source_occurred_at(source: Path) -> str:

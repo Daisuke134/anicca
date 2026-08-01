@@ -121,7 +121,7 @@ if [ "$KIND" = "repair_closure" ]; then
     repaired) ;;
     verified) exit 0 ;;
   esac
-  transition verified "$(printf '{"terminal_message_key":"%s","telegram_message_id":"%s"}' "$KEY" "$MESSAGE_ID")" || exit 2
+  transition verified "$(printf '{"terminal_message_key":"%s","telegram_message_id":"%s","verification":{"business_outcome_validated":true,"telegram_message_id":"%s"}}' "$KEY" "$MESSAGE_ID" "$MESSAGE_ID")" || exit 2
 else
   transition unresolved "$(printf '{"terminal_message_key":"%s","telegram_message_id":"%s"}' "$KEY" "$MESSAGE_ID")" || exit 2
 fi

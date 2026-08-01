@@ -3,8 +3,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "capafy_outcome.py"
+SCRIPTS = SCRIPT.parent
+sys.path.insert(0, str(SCRIPTS))
+
+import capafy_event_adapters as event_adapters
+import capafy_outcome
 
 
 def run_cli(command: str, payload: dict) -> subprocess.CompletedProcess[str]:
@@ -50,6 +57,99 @@ def builder_submission() -> dict:
         "contribution_usd": -4.777,
         "next_action": "Watch for approval and hand the public listing to Marketing",
     }
+
+
+def incident_record(phase: str) -> dict:
+    return {
+        "schema_version": 1,
+        "incident_id": "capafy-marketer-20260801T201313Z-6b646dbe",
+        "owner": "marketer",
+        "phase": phase,
+        "detected_at": "2026-08-01T20:13:13Z",
+        "updated_at": "2026-08-01T20:20:00Z",
+        "phase_timestamps": {
+            "detected": "2026-08-01T20:13:13Z",
+            "repair_started": "2026-08-01T20:14:00Z",
+            "repaired": "2026-08-01T20:18:00Z",
+            "verified": "2026-08-01T20:20:00Z",
+            "unresolved": "2026-08-01T20:20:00Z",
+        },
+        "summary": "Instagram metrics writer could not append its canonical event.",
+        "repair_summary": "Repaired the truncated ledger tail and retried the writer.",
+        "verification": {"ledger_event_count": 1} if phase == "verified" else None,
+        "next_retry_at": "2026-08-01T21:00:00Z" if phase == "unresolved" else None,
+        "attempts": 1,
+    }
+
+
+@pytest.mark.parametrize(
+    ("phase", "expected_id"),
+    [
+        ("detected", "capafy:incident.detected:capafy-marketer-20260801T201313Z-6b646dbe"),
+        (
+            "repair_started",
+            "capafy:incident.repair_started:capafy-marketer-20260801T201313Z-6b646dbe",
+        ),
+        ("repaired", "capafy:incident.repaired:capafy-marketer-20260801T201313Z-6b646dbe"),
+        ("verified", "capafy:incident.verified:capafy-marketer-20260801T201313Z-6b646dbe"),
+        (
+            "unresolved",
+            "capafy:incident.unresolved:capafy-marketer-20260801T201313Z-6b646dbe",
+        ),
+    ],
+)
+def test_incident_phase_maps_to_stable_canonical_event(phase: str, expected_id: str) -> None:
+    event = event_adapters.event_from_incident(incident_record(phase))
+
+    assert event["event_id"] == expected_id
+    assert event["event_type"] == f"incident.{phase}"
+    assert event["occurred_at"] == incident_record(phase)["phase_timestamps"][phase]
+    assert "recorded_at" not in event
+
+
+def test_verified_incident_event_requires_concrete_verification() -> None:
+    record = incident_record("verified")
+    record["verification"] = None
+
+    with pytest.raises(ValueError, match="verification"):
+        event_adapters.event_from_incident(record)
+
+
+def test_incident_state_is_written_before_event_and_same_phase_retries_writer(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CAPAFY_OUTCOME_STATE_DIR", str(tmp_path))
+    observations = []
+
+    record = capafy_outcome.start_incident(
+        owner="marketer",
+        summary="writer failed",
+        fingerprint="writer-failed",
+        repair_result_path=None,
+        event_writer=lambda current: observations.append(
+            (current["phase"], capafy_outcome.get_incident(current["incident_id"])["phase"])
+        ),
+    )
+
+    def fail_after_state(current: dict) -> None:
+        assert capafy_outcome.get_incident(current["incident_id"])["phase"] == "repair_started"
+        raise RuntimeError("seeded event append failure")
+
+    update = {"incident_id": record["incident_id"], "phase": "repair_started"}
+    with pytest.raises(RuntimeError, match="seeded event append failure"):
+        capafy_outcome.transition_incident(update, event_writer=fail_after_state)
+    persisted = capafy_outcome.get_incident(record["incident_id"])
+    first_phase_time = persisted["phase_timestamps"]["repair_started"]
+
+    capafy_outcome.transition_incident(
+        update,
+        event_writer=lambda current: observations.append(
+            (current["phase"], current["phase_timestamps"]["repair_started"])
+        ),
+    )
+
+    assert observations[0] == ("detected", "detected")
+    assert observations[-1] == ("repair_started", first_phase_time)
 
 
 def test_builder_success_without_listing_url_is_rejected() -> None:
@@ -263,6 +363,73 @@ def test_start_incident_creates_atomic_record_and_returns_id(tmp_path: Path) -> 
     record_path = tmp_path / "capafy-incidents" / f"{created['incident_id']}.json"
     assert json.loads(record_path.read_text()) == created
     assert list(record_path.parent.glob("*.tmp")) == []
+
+
+def test_incident_cli_writes_each_phase_once_to_state_scoped_ledger(
+    tmp_path: Path,
+) -> None:
+    started = run_cli_args(
+        "start-incident",
+        "--owner",
+        "builder",
+        "--summary",
+        "Browser ownership collided",
+        "--fingerprint",
+        "browser-owner-collision",
+        state_dir=tmp_path,
+    )
+
+    assert started.returncode == 0, started.stderr
+    incident_id = json.loads(started.stdout)["incident_id"]
+    update = {"incident_id": incident_id, "phase": "repair_started"}
+    first = run_cli_args(
+        "transition-incident", payload=update, state_dir=tmp_path
+    )
+    retry = run_cli_args(
+        "transition-incident", payload=update, state_dir=tmp_path
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert retry.returncode == 0, retry.stderr
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    events = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert [event["event_id"] for event in events] == [
+        f"capafy:incident.detected:{incident_id}",
+        f"capafy:incident.repair_started:{incident_id}",
+    ]
+    evidence_dir = tmp_path / "capafy-revenue-evidence"
+    assert len(list(evidence_dir.glob("*.json"))) == 2
+
+
+def test_incident_cli_persists_state_before_failed_append_and_retry_heals(
+    tmp_path: Path,
+) -> None:
+    ledger = tmp_path / "capafy-revenue-events.jsonl"
+    ledger.write_text("not-json\n")
+    args = (
+        "start-incident",
+        "--owner",
+        "marketer",
+        "--summary",
+        "Revenue ledger was corrupt",
+        "--fingerprint",
+        "ledger-corrupt",
+    )
+
+    failed = run_cli_args(*args, state_dir=tmp_path)
+
+    assert failed.returncode != 0
+    records = list((tmp_path / "capafy-incidents").glob("*.json"))
+    assert len(records) == 1
+    incident_id = json.loads(records[0].read_text())["incident_id"]
+
+    ledger.unlink()
+    healed = run_cli_args(*args, state_dir=tmp_path)
+
+    assert healed.returncode == 0, healed.stderr
+    assert json.loads(healed.stdout)["incident_id"] == incident_id
+    event = json.loads(ledger.read_text())
+    assert event["event_id"] == f"capafy:incident.detected:{incident_id}"
 
 
 def test_same_active_fingerprint_reuses_incident_id(tmp_path: Path) -> None:
