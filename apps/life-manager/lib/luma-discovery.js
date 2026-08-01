@@ -17,6 +17,42 @@ function boundedText(value, max) {
   return text && text.length <= max ? text : "";
 }
 
+function tokyoDate(value) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(value);
+  const map = Object.fromEntries(parts.map(({ type, value: part }) => [type, part]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+function addDateDays(date, count) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + count)).toISOString().slice(0, 10);
+}
+
+function resolveLumaDateLabel(labelValue, nowValue) {
+  const label = boundedText(labelValue, 100);
+  const nowMs = Date.parse(String(nowValue == null ? "" : nowValue));
+  if (!label || !Number.isFinite(nowMs)) return "";
+  const today = tokyoDate(new Date(nowMs));
+  if (/^今日(?:\s|$)/.test(label)) return today;
+  if (/^明日(?:\s|$)/.test(label)) return addDateDays(today, 1);
+  const match = label.match(/(\d{1,2})月(\d{1,2})日/);
+  if (!match) return "";
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(today.slice(0, 4));
+  const make = () => `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  let candidate = make();
+  if (candidate < today) {
+    year += 1;
+    candidate = make();
+  }
+  const parsed = new Date(`${candidate}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== candidate) return "";
+  return candidate;
+}
+
 function lumaEventIdentity(value) {
   let url;
   try {
@@ -43,22 +79,27 @@ function lumaEventIdentity(value) {
   };
 }
 
-function normalizeLumaCandidate(input = {}) {
+function normalizeLumaCandidate(input = {}, options = {}) {
   const identity = lumaEventIdentity(input.href);
   const title = boundedText(input.title, 300);
   const cardText = boundedText(input.cardText, 4000);
   const timelineText = boundedText(input.timelineText, 8000);
   if (!identity || !title || !cardText || !timelineText) return null;
-  const date = timelineText.match(/([0-9]{1,2}月[0-9]{1,2}日(?:\s+[^\s]+曜日)?)/);
+  const explicitDate = boundedText(input.dateLabel, 100);
+  const date = timelineText.match(/(今日|明日|[0-9]{1,2}月[0-9]{1,2}日)(?:\s+[^\s]+曜日)?/);
+  const dateLabel = explicitDate || (date ? date[0] : "");
   const time = cardText.match(/(?:^|\s)([0-2]?[0-9]:[0-5][0-9])(?:\s|$)/);
   return Object.freeze({
     provider: "luma",
     canonical_url: identity.canonicalUrl,
     event_ref: `luma-event://event/${identity.slug}`,
     title,
-    date_label: date ? date[1] : "",
+    date_label: dateLabel,
+    event_date: resolveLumaDateLabel(dateLabel, options.now),
     time_label: time ? time[1] : "",
     discovery_text: cardText,
+    attendance_mode: "in_person",
+    location_scope: "tokyo",
   });
 }
 
@@ -67,6 +108,7 @@ async function collectLumaInventory(options = {}) {
   const advance = options.advance;
   const maxRounds = Number(options.maxRounds || 60);
   const stableEndRounds = Number(options.stableEndRounds || 3);
+  const now = String(options.now == null ? "" : options.now).trim();
   if (
     typeof readSnapshot !== "function"
     || typeof advance !== "function"
@@ -76,6 +118,7 @@ async function collectLumaInventory(options = {}) {
     || !Number.isInteger(stableEndRounds)
     || stableEndRounds < 1
     || stableEndRounds > 10
+    || !Number.isFinite(Date.parse(now))
   ) {
     throw new Error("Luma discovery configuration invalid");
   }
@@ -88,7 +131,7 @@ async function collectLumaInventory(options = {}) {
     if (!Array.isArray(snapshot)) throw new Error("Luma discovery snapshot invalid");
     let added = 0;
     for (const raw of snapshot) {
-      const candidate = normalizeLumaCandidate(raw);
+      const candidate = normalizeLumaCandidate(raw, { now });
       if (!candidate || candidates.has(candidate.canonical_url)) continue;
       candidates.set(candidate.canonical_url, candidate);
       added += 1;
@@ -127,6 +170,7 @@ async function readLumaTimelineSnapshot(page) {
         title: link.getAttribute("aria-label") || "",
         cardText: card && card.innerText || "",
         timelineText: timeline && timeline.innerText || "",
+        dateLabel: timeline && timeline.querySelector(".timeline-title .date")?.textContent || "",
       };
     })
   ));
@@ -168,14 +212,61 @@ async function discoverLumaTokyo(options = {}) {
     advance: () => advance(page),
     maxRounds: options.maxRounds,
     stableEndRounds: options.stableEndRounds,
+    now: options.now,
   }));
+}
+
+function buildLumaDailyInventory(inventory, coverage) {
+  if (!inventory || inventory.complete !== true || !Number.isInteger(inventory.rounds)) {
+    throw new Error("Luma daily inventory incomplete");
+  }
+  if (!coverage || !Array.isArray(coverage.days) || coverage.days.length !== 21) {
+    throw new Error("Luma daily inventory coverage invalid");
+  }
+  const dates = coverage.days.map(({ date }) => String(date || ""));
+  if (dates[0] !== coverage.window_start || dates[20] !== coverage.window_end) {
+    throw new Error("Luma daily inventory coverage invalid");
+  }
+  for (let index = 0; index < dates.length; index += 1) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dates[index]) || (index > 0 && dates[index] !== addDateDays(dates[index - 1], 1))) {
+      throw new Error("Luma daily inventory coverage invalid");
+    }
+  }
+  if (!Array.isArray(inventory.candidates) || inventory.candidates.some(({ event_date: date }) => !/^\d{4}-\d{2}-\d{2}$/.test(String(date || "")))) {
+    throw new Error("Luma daily inventory date unresolved");
+  }
+  const byDate = new Map(dates.map((date) => [date, []]));
+  let outside = 0;
+  for (const candidate of inventory.candidates) {
+    const row = byDate.get(candidate.event_date);
+    if (row) row.push(candidate.event_ref);
+    else outside += 1;
+  }
+  const days = dates.map((date) => {
+    const eventRefs = [...new Set(byDate.get(date))].sort();
+    return Object.freeze({ date, complete: true, candidate_count: eventRefs.length, event_refs: Object.freeze(eventRefs) });
+  });
+  return Object.freeze({
+    schema_version: 1,
+    source_url: TOKYO_DISCOVER_URL,
+    source_scope: "tokyo_in_person_main",
+    global_end_proven: true,
+    rounds: inventory.rounds,
+    window_start: dates[0],
+    window_end: dates[20],
+    days: Object.freeze(days),
+    in_window_candidate_count: days.reduce((sum, day) => sum + day.candidate_count, 0),
+    out_of_window_candidate_count: outside,
+  });
 }
 
 module.exports = {
   collectLumaInventory,
+  buildLumaDailyInventory,
   discoverLumaTokyo,
   lumaEventIdentity,
   normalizeLumaCandidate,
+  resolveLumaDateLabel,
   readLumaTimelineSnapshot,
   advanceLumaTimeline,
 };
