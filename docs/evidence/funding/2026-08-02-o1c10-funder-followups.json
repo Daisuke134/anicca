@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "task": "O1C-10",
+  "observed_at": "2026-08-01T18:03:53.164Z",
+  "result": "scheduled_without_early_send",
+  "implementation_commit": "39789c1f8",
+  "policy": {
+    "first_followup_delay_hours": 72,
+    "second_followup_delay_hours_after_first": 96,
+    "maximum_followups": 2,
+    "stop_on_any_inbound": true,
+    "semantic_copy_owner": "agent_judgment",
+    "raw_recipient_persisted": false,
+    "raw_body_persisted": false
+  },
+  "threads": [
+    {
+      "candidate_id": "evio",
+      "provider_thread_id": "19fbe729ab0133d6",
+      "fresh_message_count": 1,
+      "status": "scheduled",
+      "followup_number": 1,
+      "due_at": "2026-08-04T17:50:09.839Z"
+    },
+    {
+      "candidate_id": "yeetvc",
+      "provider_thread_id": "19fbe729f4bfc3f2",
+      "fresh_message_count": 2,
+      "status": "suppressed_inbound",
+      "inbound_message_id": "19fbe72a5b2cc4e7",
+      "inbound_kind": "delivery_failure"
+    },
+    {
+      "candidate_id": "j-seed",
+      "provider_thread_id": "19fbe72a2beb47f0",
+      "fresh_message_count": 1,
+      "status": "scheduled",
+      "followup_number": 1,
+      "due_at": "2026-08-04T17:50:11.861Z"
+    }
+  ],
+  "database": {
+    "decision_rows": 3,
+    "scheduled_rows": 2,
+    "suppressed_rows": 1,
+    "followup_receipt_rows": 0,
+    "append_only": true,
+    "exact_replay_only": true
+  },
+  "verification": {
+    "focused_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 201, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "gmail_thread_readback": "passed",
+    "database_readback": "passed",
+    "git_diff_check": "passed",
+    "early_live_sends": 0
+  },
+  "claim_boundary": "This proves deterministic scheduling, fresh Gmail-thread suppression, a hard two-follow-up ceiling, threaded Gmail delivery requiring positive provider IDs, and append-only decision/receipt persistence. Because both eligible threads were younger than 72 hours, no follow-up was sent early. It does not claim a reply, meeting, delivery after the future due time, or investment."
+}
