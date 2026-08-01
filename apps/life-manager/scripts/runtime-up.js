@@ -4,6 +4,7 @@
 const path = require("node:path");
 const http = require("node:http");
 const os = require("node:os");
+const dns = require("node:dns");
 const { randomUUID } = require("node:crypto");
 const { spawn, spawnSync: realSpawnSync } = require("node:child_process");
 
@@ -591,6 +592,44 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         },
       },
       now: dependencies.now || (() => new Date().toISOString()),
+    };
+  }
+  if (capabilities.includes("outbound.event.apply")) {
+    const { createLumaEvidenceStore } = require("../lib/luma-evidence-store.js");
+    const evidenceStore = dependencies.lumaEvidenceStore || createLumaEvidenceStore({
+      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+    });
+    let provider = dependencies.lumaProvider;
+    if (!provider) {
+      const { chromium } = require("playwright-core");
+      const {
+        createCloakBrowserDailyDriver,
+      } = require("../lib/cloakbrowser-daily-driver.js");
+      const {
+        createLumaBrowserProvider,
+      } = require("../lib/luma-browser-provider.js");
+      const lookup = dependencies.lookupHost || dns.promises.lookup;
+      const dailyDriver = dependencies.lumaDailyDriver || createCloakBrowserDailyDriver({
+        connectOverCDP: dependencies.connectOverCDP
+          || ((endpoint) => chromium.connectOverCDP(endpoint)),
+        resolveEndpoint: dependencies.resolveCloakEndpoint || (async () => {
+          const resolved = await lookup("host.docker.internal", { family: 4 });
+          const address = typeof resolved === "string" ? resolved : resolved.address;
+          return `http://${address}:9222`;
+        }),
+      });
+      provider = createLumaBrowserProvider({
+        dailyDriver,
+        evidenceStore,
+        now: dependencies.now,
+      });
+    }
+    servicesByAdapter["outbound-luma-rsvp"] = {
+      provider,
+      readExternalReceipt: evidenceStore.readExternalReceipt,
+      readArtifact: evidenceStore.readArtifact,
+      fetchImpl: dependencies.fetchImpl || globalThis.fetch,
+      now: dependencies.now,
     };
   }
   const createRegistry = dependencies.createRegistry || (

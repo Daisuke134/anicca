@@ -321,6 +321,16 @@ login切れ・transport停止・inventory未完了は全candidateを無駄に消
 場合だけ`next_provider_required`として同日をconnpassへ渡す。新規sequence 4件、outbound全体56件が
 成功。Task 2完了。次はproduction RSVP adapterとeffect fence。
 
+O1B-03進捗5: Luma RSVP adapterを既存`outbound.event.apply`へ接続した。submit直前の登録状態を
+effect fenceとして再読出しし、`registered`は再送せず証拠検証、`login_required`と明確な
+`unavailable`は外部効果なし、submit後の不明状態だけを`unknownEffect=true`としてreconciliationへ
+送る。Luma provider receiptとPNGはtenant配下の不変objectとして保存し、同一attemptのE1 provider
+response、E2 PNG、E3 canonical URLが全て実verifierを通った時だけruntime completion receiptを返す。
+production manifestはportableな`outbound-luma-rsvp`を登録し、workerは同じruntime data rootと
+CloakBrowser daily-driverを使う。Docker内では`host.docker.internal`をprivate IPv4へ解決するが、
+owner portは`:9222`から変更できず、public IP・別port・第二browserを拒否する。fresh verificationは
+outbound 68件、runtime-up 32件、runtime-adapters 121件が成功した。実Luma登録はO1B-04まで行わない。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

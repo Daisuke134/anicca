@@ -44,14 +44,52 @@ function classifyLumaLogin(input = {}) {
   return Object.freeze({ status, origin: input.origin, path });
 }
 
+function isPrivateIpv4(hostname) {
+  const parts = String(hostname).split(".").map(Number);
+  if (
+    parts.length !== 4
+    || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) return false;
+  return parts[0] === 10
+    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+    || (parts[0] === 192 && parts[1] === 168);
+}
+
+function resolvedDailyDriverEndpoint(value) {
+  let url;
+  try {
+    url = new URL(String(value == null ? "" : value).trim());
+  } catch {
+    throw new Error("CloakBrowser resolved endpoint invalid");
+  }
+  const hostname = url.hostname.toLowerCase();
+  if (
+    url.protocol !== "http:"
+    || url.username
+    || url.password
+    || url.port !== "9222"
+    || url.pathname !== "/"
+    || url.search
+    || url.hash
+    || (hostname !== "127.0.0.1" && hostname !== "localhost" && !isPrivateIpv4(hostname))
+  ) {
+    throw new Error("CloakBrowser resolved endpoint invalid");
+  }
+  return url.origin;
+}
+
 function createCloakBrowserDailyDriver(options = {}) {
   const endpoint = String(options.endpoint || DAILY_DRIVER_CDP).trim();
   const connectOverCDP = options.connectOverCDP;
+  const resolveEndpoint = options.resolveEndpoint || (async () => endpoint);
   if (endpoint !== DAILY_DRIVER_CDP) {
     throw new Error("CloakBrowser daily-driver endpoint invalid");
   }
   if (typeof connectOverCDP !== "function") {
     throw new Error("CloakBrowser daily-driver connector unavailable");
+  }
+  if (typeof resolveEndpoint !== "function") {
+    throw new Error("CloakBrowser daily-driver resolver unavailable");
   }
 
   return Object.freeze({
@@ -60,7 +98,8 @@ function createCloakBrowserDailyDriver(options = {}) {
       if (typeof task !== "function") {
         throw new Error("CloakBrowser daily-driver task unavailable");
       }
-      const browser = await connectOverCDP(endpoint);
+      const connectionEndpoint = resolvedDailyDriverEndpoint(await resolveEndpoint(endpoint));
+      const browser = await connectOverCDP(connectionEndpoint);
       const contexts = browser && typeof browser.contexts === "function"
         ? browser.contexts()
         : [];
@@ -93,4 +132,5 @@ module.exports = {
   DAILY_DRIVER_CDP,
   classifyLumaLogin,
   createCloakBrowserDailyDriver,
+  resolvedDailyDriverEndpoint,
 };
