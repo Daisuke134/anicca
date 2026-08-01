@@ -87,6 +87,9 @@
 
   Expected: 全command exit 0。
 
-- [ ] **Step 5: spec更新、commit、push、remote一致確認**
+- [x] **Step 5: spec更新、commit、push、remote一致確認**
 
   O1A-02を完了へ変更し、test件数と実装commitを記録する。対象ファイルとplan/specだけをcommitして`origin/main`へpushし、`git rev-parse HEAD`と`git ls-remote origin refs/heads/main`を一致させる。
+
+  Evidence: `test:outbound` 7/7 PASS、`test:runtime-up` 30/30 PASS、実PostgreSQLの
+  Connector lifecycle PASS、`git diff --check` PASS。実装commit `9d6a6d51f`。

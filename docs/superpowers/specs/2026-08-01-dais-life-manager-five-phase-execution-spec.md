@@ -249,7 +249,7 @@ heartbeat喪失とadapter失敗が重なった外部効果jobもretry可能に�
 既存reconciliationへ渡す。`outbound.event.apply`固有の実PostgreSQL testで二重enqueueが一行、
 claim、heartbeat、既知の送信前失敗による一回のretry、上限到達後のdead-letter、immutable failed
 receipt二行を確認した。fresh verificationはoutbound 7件、worker回帰30件、PostgreSQL lifecycleが
-すべて成功した。実装plan:
+すべて成功した。実装commit: `9d6a6d51f`。実装plan:
 `docs/superpowers/plans/2026-08-01-connector-o1a02-runtime-execution.md`。次は`O1A-03`。
 
 完了済み: `O1A-01`。既存`lm_runtime_jobs`がenqueue、claim、lease、heartbeat、retry、dead-letter、
