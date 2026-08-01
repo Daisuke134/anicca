@@ -158,22 +158,65 @@ Hard guardrails:
 
 ## 8. Account lifecycle
 
+### 8.1 P1 architecture decision
+
+P1 uses a deterministic lifecycle controller around bounded agent/tool adapters. It does not keep account provisioning, warmup, creative work, private-session creation, posting, and verification inside one long agent prompt.
+
+- **Lifecycle controller:** reads the Capafy account registry and verified warmup/post evidence, emits one state snapshot, enforces legal transitions, and performs atomic bookkeeping. It does not make creative or marketplace judgments.
+- **Account manager:** uses the existing isolated CloakBrowser provisioning flow through the 900-second `marketing-agent` lane. The lane already reserves 49,152 tokens. A candidate is accepted only after the browser session, profile, credential file, and appended account row are independently verified.
+- **Warmup adapter:** uses the browser-owned session and the `ig-account-warmer` evidence log. A warmup counts only when the log contains real verified actions and no later abort/ban signal. Calendar age alone never increments the success count.
+- **Creative agent:** selects the listing and creates the caption/video using model judgment and current evidence. It cannot promote an account, declare publication, send Telegram, or alter lifecycle evidence.
+- **Reel poster/verifier:** uses the browser-direct Reel flow. It may publish only after the controller grants the correct capability, and it returns a publicly readable Reel URL or a typed failure. An agent exit code or `--live` flag is not publication evidence.
+- **Outcome handoff:** P0 remains the only Telegram owner. It validates the Reel, skill, and campaign URLs and records the terminal delivery receipt idempotently.
+
+The browser session remains the owner during P1. The old day-3 private-API “golden session” login is not a promotion requirement because it produced terminal `ChallengeRequired` failures on the last two Capafy accounts. Commercial behavior is more conservative than the first non-commercial post: two verified passive warmups permit one non-commercial Reel, while a commercial CTA or bio link requires seven verified warmups plus healthy measured reach.
+
+### 8.2 States and transitions
+
 The Instagram account state machine is:
 
 ```text
-needed -> created -> warmup_1 -> warmup_2 -> session_ready
-       -> first_noncommercial_post -> reach_measured -> commercial_ready
-       -> healthy
+needed -> provisioning -> created_session_verified
+       -> warmup_0_of_2 -> warmup_1_of_2 -> noncommercial_ready
+       -> first_noncommercial_post_verified -> reach_observing
+       -> warmup_7_verified + reach_healthy -> commercial_ready -> healthy
 ```
 
 Failure transitions:
 
 ```text
 challenge/session failure/verified zero-reach pattern
-  -> contained -> replacement_started -> created
+  -> contained -> retired -> replacement_requested
+  -> provisioning -> created_session_verified
 ```
 
-Calendar age is never called warmup completion. `live` is reserved for a verified public post. `healthy` requires an established session and a recent successful verification. A replacement begins as soon as the terminal failure criterion is verified; it does not wait for the next daily content pass.
+Transition rules:
+
+1. At most one account may hold an active lifecycle capability.
+2. `warmup_N` is derived from distinct successful evidence dates, not `created` or `started_warming` age.
+3. Two verified warmups grant only `noncommercial_ready`; no offer CTA, bio link, or commercial claim is allowed.
+4. `first_noncommercial_post_verified` requires a public Instagram URL that survives readback.
+5. Seven verified warmups do not grant commercial capability without non-zero, non-fabricated reach evidence.
+6. A challenge or failed session retires the account for this lifecycle. Password/private-API relogin is not retried.
+7. Replacement is requested in the same incident chain and the account manager is woken immediately; it does not wait for the next 16:00 content pass.
+8. `live` is reserved for a verified public post. `healthy` requires an established session, a recent verified public outcome, and no overdue lifecycle incident.
+
+### 8.3 P1 runtime and reporting contract
+
+The existing 16:00 Marketer LaunchAgent remains the content cadence owner. Account provisioning/replacement and warmup are independent bounded passes so one slow stage cannot consume the next stage's runtime. Normal passes are silent; Telegram is sent only for a lifecycle transition, terminal blocker, verified Reel, or repair closure.
+
+The production starting state on 2026-08-02 is `needed`: all three recorded Capafy accounts are terminally unusable (`poisoned` or `session_failed`), no active posting session exists, and no public Capafy Reel is verified. The first P1 production mutation must therefore be a replacement-account pass, not a content pass or another login attempt against `@capafy.skills10491`.
+
+P1 acceptance requires all of the following in one fresh lifecycle:
+
+- the creative lane resolves to a configured timeout of at least 900 seconds and a token reservation of at least 49,152;
+- account creation returns one independently verified browser-owned session;
+- two distinct warmup successes are recorded while calendar age alone cannot advance the gate;
+- the first post is non-commercial and publicly readable;
+- Telegram contains the real Reel URL, public Capafy skill URL, and attributed campaign URL;
+- a repeated terminal handoff does not send twice;
+- a seeded challenge retires the affected account and wakes replacement without reusing its credentials;
+- installed LaunchAgents finish with exit status zero at their healthy terminal states.
 
 ## 9. Telegram user experience
 
@@ -349,10 +392,10 @@ The $10M product is not an individual skill. It is the platform that continuousl
 ### Execution status
 
 - **Active priority:** P1 — Make the Marketer complete reliably. P0 is complete and remains the enforced reporting/repair boundary.
-- **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
+- **Implementation plans:** P0 [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md); P1 plan is the next artifact and must implement Section 8 without pulling P2's shared ledger into scope.
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** P0 Tasks 1-7 are implemented and verified. Builder, Marketer, repairs, and the 09:30 company brief terminate through deterministic outcome contracts; business health is based on recent terminal outcomes rather than scheduler/tmux presence; repair closure is idempotent; and all user-facing success claims require evidence. The current production account source of truth has no active Instagram session, so the report says `@no-active-account`, `Ban status: unproven`, and does not repeat the stale `day 3/3 -> already_live` claim.
-- **Next action:** Execute P1 as the next single priority: make the Marketer reliably establish or replace an account, complete bounded warmup, publish one verified public non-commercial Reel, and report the Reel, skill, and campaign URLs. P1 is not part of the P0 completion claim.
+- **Current state (2026-08-02):** P0 Tasks 1-7 are implemented and verified. P1 design is approved: the account registry contains one poisoned and two `session_failed` rows, no active session is selectable, the content runner is still incorrectly wired to the 180-second `tool-agent`, and the existing warmup promotion still relies on calendar day/private-session creation instead of verified-success capabilities.
+- **Next action:** Write and execute the P1 implementation plan task by task. The first production action after offline verification is replacement-account provisioning; never retry the failed `@capafy.skills10491` login.
 
 #### P0 execution log
 
