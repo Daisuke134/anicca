@@ -21,6 +21,7 @@ COMPANY_DASHBOARD_DIR="${CAPAFY_COMPANY_DASHBOARD_DIR:-$SCRIPT_DIR/site/company}
 EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$HOME/.openclaw/state/capafy-revenue-events.jsonl}"
 EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$HOME/.openclaw/state/capafy-revenue-evidence}"
 STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
+DELIVERY_STATE="${CAPAFY_GOAL_MONITOR_DELIVERY_STATE:-$HOME/.openclaw/state/capafy-goal-monitor-delivery.json}"
 mkdir -p "$(dirname "$STATE")"
 
 DAILY_LOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
@@ -284,9 +285,29 @@ if ! "$PY" "$COMPANY_DASHBOARD_BUILDER" \
   exit 2
 fi
 BODY="$(cat "$BODY_FILE" 2>/dev/null)"
-# telegram daily report (best-effort; never blocks the monitor)
-if [ -n "$BODY" ]; then
-  bash "$TELEGRAM_SENDER" "$BODY" >/dev/null 2>&1 || true
+PROJECTION_ID="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["projection_id"])' "$PROJECTION_FILE")"
+DELIVERED_ID="$($PY -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("projection_id", ""))
+except Exception: print("")' "$DELIVERY_STATE")"
+if [ -n "$BODY" ] && [ "$DELIVERED_ID" != "$PROJECTION_ID" ]; then
+  SEND_RESULT="$(bash "$TELEGRAM_SENDER" "$BODY" 2>&1)" || {
+    "$PY" "$OUTCOME_SCRIPT" start-incident \
+      --owner company --summary "Projection-backed Telegram delivery failed." \
+      --fingerprint goal-monitor-telegram-delivery-failed >/dev/null 2>&1 || true
+    exit 1
+  }
+  MESSAGE_ID="$(printf '%s\n' "$SEND_RESULT" | sed -nE 's/.*MSGID=([0-9]+).*/\1/p' | tail -1)"
+  [ -n "$MESSAGE_ID" ] || exit 1
+  "$PY" - "$DELIVERY_STATE" "$PROJECTION_ID" "$MESSAGE_ID" <<'PY'
+import datetime,json,os,sys,tempfile
+path,projection_id,message_id=sys.argv[1:]
+os.makedirs(os.path.dirname(path),exist_ok=True)
+payload={"schema_version":1,"projection_id":projection_id,"telegram_message_id":message_id,"delivered_at":datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")}
+fd,tmp=tempfile.mkstemp(prefix=".capafy-delivery-",dir=os.path.dirname(path))
+with os.fdopen(fd,"w") as stream:
+ json.dump(payload,stream,sort_keys=True);stream.write("\n");stream.flush();os.fsync(stream.fileno())
+os.replace(tmp,path)
+PY
 fi
 cat "$REPORT_FILE" 2>/dev/null
 exit "$RC"

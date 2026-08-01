@@ -360,7 +360,10 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     fake_sync.write_text("raise SystemExit(0)\n")
     sent = tmp_path / "telegram.txt"
     sender = tmp_path / "send.sh"
-    sender.write_text(f"printf '%s\\n' \"$1\" >> '{sent}'\n")
+    sender.write_text(
+        f"printf '%s\\n' \"$1\" >> '{sent}'\n"
+        "printf '%s\\n' 'TELEGRAM_SENT=true MSGID=777'\n"
+    )
     env = os.environ | {
         "HOME": str(home),
         "CAPAFY_ACCOUNT_STATE_HELPER": str(helper),
@@ -389,6 +392,12 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
     assert json.loads((tmp_path / "site/company/state.json").read_text()) == expected
     assert "wrong-legacy-value" not in sent.read_text()
     assert expected["projection_id"].removeprefix("sha256:")[:12] in sent.read_text()
+
+    duplicate = subprocess.run(
+        ["bash", str(goal_monitor)], env=env, text=True, capture_output=True, check=False
+    )
+    assert duplicate.returncode == 0, duplicate.stderr
+    assert sent.read_text().count("Capafy — Consolidated company state") == 1
 
     state_md = home / "anicca/skills/self/capafy-loop/state/STATE.md"
     state_md.write_text(state_md.read_text().replace("9.99", "999.00"))
