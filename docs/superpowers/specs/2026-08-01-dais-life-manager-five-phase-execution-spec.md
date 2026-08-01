@@ -634,6 +634,12 @@ O1B-14進捗1（RED）: accepted sourceからslide/appearance/venue/QR/follow-up
 Geminiへuntrusted dataとして渡してmodel failure時にfallbackしないことをtest 4件で固定した。
 production `accepted-talk-timeline.js`はまだ存在しないためmodule path不在でREDになる。
 
+O1B-14進捗2（GREEN）: Gemini structured outputとdeterministic validatorを実装し、accepted時刻、登壇時刻、
+slide締切、会場、QR artifact、主催者確認予定を一つの検証済みtimelineへ合成した。不足情報は成功へ補完せず
+`pending`のまま保持し、model/API失敗時もkeyword fallbackを行わない。自己レビューで、原文にない会場住所を
+modelが補っても通る抜けをREDで再現し、会場名・住所が空白差を除いてsource本文に実在する場合だけ`known`を
+許可した。focused test 4/4成功。次はimmutable PostgreSQL snapshot storeをTDDで実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
