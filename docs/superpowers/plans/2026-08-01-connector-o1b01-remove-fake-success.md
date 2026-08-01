@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> Status: 完了。実装commit `4ea9e931a`。evidenceは`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。
+
 **Goal:** `outbound.event.apply`がhandlerの自己申告だけでcompletedになれる経路を削除し、実E1/E2/E3 verifier由来のreceiptだけを成功として保存する。
 
 **Architecture:** `verifyOutboundEvidence()`がこのprocessで生成したverified objectをprivate provenance setへ登録する。新しいsuccess receipt builderはそのobject identityだけを受け入れ、runtime workerは`outbound.event.apply`完了前にbuilder由来receiptを検証する。bare success、JSON copy、別attempt、missing tierは完了させず`unknownEffect=true`で既存reconciliationへ渡す。
@@ -33,7 +35,7 @@
 - [x] Run the tests and observe RED because the success module/provenance API does not exist.
 - [x] Implement the private provenance set and minimal receipt builder/assertion.
 - [x] Run outbound tests and observe GREEN.
-- [ ] Commit and push.
+- [x] Commit and push.
 
 ### Task 2: Runtime completion gate
 
@@ -49,7 +51,7 @@
 - [x] Add a passing test using a real verifier-derived receipt for the exact tenant/job/attempt.
 - [x] Implement the capability-specific completion gate immediately before `completeJob`.
 - [x] Run outbound and runtime worker regression tests.
-- [ ] Commit and push.
+- [x] Commit and push.
 
 ### Task 3: Evidence and canonical spec
 
@@ -57,7 +59,7 @@
 - Create: `docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`
 - Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
 
-- [ ] Record RED/GREEN counts, rejected fake cases, implementation commits, and claim boundary.
-- [ ] Run fresh tests, JSON validation, git diff check, and local/remote equality.
-- [ ] Mark O1B-01 complete only after every verification succeeds; leave O1B-02 untouched.
-- [ ] Commit and push.
+- [x] Record RED/GREEN counts, rejected fake cases, implementation commits, and claim boundary.
+- [x] Run fresh tests, JSON validation, git diff check, and local/remote equality.
+- [x] Mark O1B-01 complete only after every verification succeeds; leave O1B-02 untouched.
+- [x] Commit and push.

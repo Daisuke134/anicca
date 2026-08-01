@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "outbound_fake_success_gate",
+  "observed_at": "2026-08-01T09:00:00Z",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "4ea9e931a",
+  "root_cause": "executeCapabilityJob completed any handler-supplied receipt without requiring the existing E1/E2/E3 verifier result",
+  "red": {
+    "success_module": "failed because outbound-success.js did not exist",
+    "runtime_gate": "bare status=success reached completeJob instead of failJob"
+  },
+  "green": {
+    "outbound_tests": 31,
+    "runtime_worker_tests": 31,
+    "failures": 0
+  },
+  "accepted_success": {
+    "verifier_provenance": true,
+    "evidence_status": "verified",
+    "required_tiers": ["E1", "E2", "E3"],
+    "attempt_binding": "tenant_id + job_id + attempt"
+  },
+  "rejected_success_claims": [
+    "missing evidence tier",
+    "plain copied evidence result",
+    "JSON-roundtripped receipt",
+    "bare status=success receipt",
+    "receipt for another attempt"
+  ],
+  "rejection_outcome": {
+    "error_code": "CAPABILITY_EXECUTION_FAILED",
+    "unknown_effect": true,
+    "completed_receipt_written": false
+  },
+  "claim_boundary": "This proves that self-reported outbound success cannot complete a runtime job. It does not claim that the O1B-03 Luma browser adapter exists or that a real event was registered."
+}
