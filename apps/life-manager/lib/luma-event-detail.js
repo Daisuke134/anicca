@@ -63,6 +63,9 @@ function rsvpStatus(controls) {
   if (includesAny(controls, ["request to join", "参加をリクエスト", "承認をリクエスト"])) {
     return "approval_required";
   }
+  if (includesAny(controls, ["ワンクリックで参加登録", "ワンクリック申し込み"])) {
+    return "available";
+  }
   if (includesAny(controls, ["register", "参加登録", "sign up", "rsvp"])) return "available";
   return "unknown";
 }

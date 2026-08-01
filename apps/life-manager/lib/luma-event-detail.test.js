@@ -81,6 +81,12 @@ test("hybrid event with a sold-out venue ticket is full even when online registr
   assert.equal(detail.rsvp_status, "full");
 });
 
+test("Japanese one-click registration is available", () => {
+  assert.equal(normalizeLumaEventDetail(fixture({
+    controls: ["ワンクリックで参加登録"],
+  })).rsvp_status, "available");
+});
+
 test("rejects malformed provider detail instead of inventing date or venue", () => {
   assert.equal(normalizeLumaEventDetail(fixture({ jsonLd: [] })), null);
   assert.equal(normalizeLumaEventDetail(fixture({

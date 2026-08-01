@@ -369,6 +369,14 @@ O1B-04進捗3: Lumaの正しいTokyo place pageは`https://luma.com/tokyo?k=p`�
 両方へmarkerを追加した。focused 10/10、outbound 70/70。既存登録はverified receiptへ回収し、
 O1B-04の実submit用には別の未登録・非競合候補を探索する。
 
+O1B-04進捗4: 正しいTokyo place inventoryとweb index候補を本文まで再読出しし、未登録・即時確定・
+Calendar非競合の`Engineer BAR`（`https://luma.com/a879ax7k`、8/15 18:00–23:00、
+新宿、途中入退場可）を実submit候補に選んだ。当日の既存予定は15:00までで3時間の余白がある。
+Luma上の登録費・前払いは0だが、現地でチャージ1,000円 + 1ドリンク700円が必要。
+pageの実buttonは`ワンクリックで参加登録`であり、旧adapterはunknownにしたためREDを追加。
+detail availabilityとbrowser submit selectorを日本語実DOMへ対応し、focused 12/12、outbound 72/72。
+次は新imageをworkerへ配備し、durable runtime jobを一度だけ実行する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
