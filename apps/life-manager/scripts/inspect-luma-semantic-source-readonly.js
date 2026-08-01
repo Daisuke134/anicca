@@ -4,6 +4,7 @@
 const { chromium } = require("playwright-core");
 const { createCloakBrowserDailyDriver } = require("../lib/cloakbrowser-daily-driver.js");
 const { discoverLumaTokyo } = require("../lib/luma-discovery.js");
+const { inspectLumaEvent } = require("../lib/luma-event-detail.js");
 
 async function inspectLumaSemanticSourceReadonly(options = {}) {
   const dailyDriver = (options.createDailyDriver || createCloakBrowserDailyDriver)({
@@ -41,6 +42,10 @@ async function inspectLumaSemanticSourceReadonly(options = {}) {
       pageTextLength: (document.body && document.body.innerText || "").length,
     };
   }));
+  const detail = await (options.inspect || inspectLumaEvent)({
+    dailyDriver,
+    canonicalUrl: inventory.candidates[0].canonical_url,
+  });
   return Object.freeze({
     inventory_complete: true,
     inventory_rounds: inventory.rounds,
@@ -56,6 +61,12 @@ async function inspectLumaSemanticSourceReadonly(options = {}) {
     address_keys: Object.freeze(raw.addressKeys),
     public_profile_link_count: raw.publicProfileLinkCount,
     rendered_page_text_length: raw.pageTextLength,
+    normalized_description_present: detail.description.length > 0,
+    normalized_description_length: detail.description.length,
+    normalized_organizer_count: detail.organizer_names.length,
+    normalized_participant_count: detail.participant_descriptors.length,
+    normalized_participant_visibility: detail.participant_visibility,
+    normalized_venue_address_present: detail.venue_address.length > 0,
   });
 }
 

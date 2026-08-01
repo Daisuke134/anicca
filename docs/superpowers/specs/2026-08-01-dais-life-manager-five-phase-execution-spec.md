@@ -41,16 +41,17 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 ### 0.2 現在地と残りの一本道（2026-08-02 JST）
 
 正本実装は`/Users/operator/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
-`O1B-01〜18`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
-全35 candidateのdetailを欠落なく21日へ投影し、好みで順位付けしても全候補を残すところまで完成した。実Calendarを読んだ
+`O1B-01〜19`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
+全candidateを21日へ投影し、好みで候補を捨てず、本文・主催者・参加者・場所・時間からgoalと
+serendipityを根拠付き評価するところまで完成した。実Calendarを読んだ
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-19`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-20`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-いま: O1B-19 event本文・人・場所・時間・目標・serendipityをagent評価
-  → O1B-20〜25 source継続、候補継続、Calendar衝突、有料policy、Telegram
+いま: O1B-20 Lumaで確保不能な日を許諾済みsourceへ継続
+  → O1B-21〜25 候補継続、停止条件、Calendar衝突、有料policy、Telegram
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -894,7 +895,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [x] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
-- [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
+- [x] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
 - [ ] O1B-21 一つの候補で申込失敗・満席・不適格になっても同じ日の次候補へ進み、予約確認までloopを継続
 - [ ] O1B-22 「検索一巡」「一件の操作失敗」「一sourceの失敗」を終了条件にしない
@@ -989,6 +990,13 @@ serendipity potential、自然言語理由、5 factor assessmentをcontent-addre
 O1B-19進捗5（pack RED）: events packがverified date inventory、preference ranking、Dais goalsを
 一つのO1B-19操作へ渡す契約を追加した。`evaluateDateGoals`未実装の1件が期待どおり失敗し、既存の
 構成拒否1件は成功した。
+
+O1B-19完了: events packへ`evaluateDateGoals`を接続した。実Gemini 6ケースは全候補保持6/6、期待上位
+6/6、5 factor完全6/6、participant honesty 6/6。実Luma production parserは終端6round・21候補の
+runで、description、organizer、住所を正規化し、attendee 0を`participant_visibility=unavailable`として
+保持した。provider/model failureはstageだけを示し本文を漏らさない。focused 6/6、outbound全回帰
+174/174成功。証拠: `docs/evidence/outbound/2026-08-02-o1b19-live-grounded-serendipity.json`。
+次は固定順序どおり`O1B-20`で、Lumaで実参加を確保できない日だけ許諾済みsourceへ継続する。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。

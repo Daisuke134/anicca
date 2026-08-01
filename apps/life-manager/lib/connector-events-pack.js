@@ -6,6 +6,7 @@ const { inspectLumaEvent } = require("./luma-event-detail.js");
 const { inspectLumaDateInventory } = require("./luma-date-inventory.js");
 const { createLumaBrowserProvider } = require("./luma-browser-provider.js");
 const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
+const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
 
 function invalid() {
   return new Error("Connector events pack configuration unavailable");
@@ -30,6 +31,7 @@ function createConnectorEventsPack(options = {}) {
   const inspect = options.inspect || inspectLumaEvent;
   const inspectDateInventory = options.inspectDateInventory || inspectLumaDateInventory;
   const rankPreferences = options.rankPreferences || inferEventPreferenceRanking;
+  const evaluateGoalSerendipity = options.evaluateGoalSerendipity || inferEventGoalSerendipity;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -68,6 +70,9 @@ function createConnectorEventsPack(options = {}) {
     },
     rankDatePreferences(dateInventory, date, preferences, extra = {}) {
       return rankPreferences({ dateInventory, date, preferences }, extra);
+    },
+    evaluateDateGoals(dateInventory, preferenceRanking, goals, extra = {}) {
+      return evaluateGoalSerendipity({ dateInventory, preferenceRanking, goals }, extra);
     },
   });
 }

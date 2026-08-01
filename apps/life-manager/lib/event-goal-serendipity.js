@@ -224,15 +224,15 @@ async function inferEventGoalSerendipity(input, options = {}) {
       }),
       signal: AbortSignal.timeout(30_000),
     });
-  } catch { throw new Error("event goal serendipity unavailable"); }
-  if (!response || response.ok !== true) throw new Error("event goal serendipity unavailable");
+  } catch { throw new Error("event goal serendipity unavailable (transport)"); }
+  if (!response || response.ok !== true) throw new Error(`event goal serendipity unavailable (http ${response ? response.status : "none"})`);
   let body;
-  try { body = await response.json(); } catch { throw new Error("event goal serendipity unavailable"); }
+  try { body = await response.json(); } catch { throw new Error("event goal serendipity unavailable (body)"); }
   let parsed;
   try { parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || ""); }
-  catch { throw new Error("event goal serendipity unavailable"); }
+  catch { throw new Error("event goal serendipity unavailable (json)"); }
   try { return validateEventGoalSerendipity(parsed, source); }
-  catch { throw new Error("event goal serendipity unavailable"); }
+  catch { throw new Error("event goal serendipity unavailable (validation)"); }
 }
 
 module.exports = {

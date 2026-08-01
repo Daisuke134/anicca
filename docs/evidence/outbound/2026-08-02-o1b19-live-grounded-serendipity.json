@@ -1,0 +1,41 @@
+{
+  "evidence_type": "o1b19-live-grounded-serendipity",
+  "observed_date": "2026-08-02 JST",
+  "provider": "luma",
+  "transport": "cloakbrowser-daily-driver",
+  "live_source_readback": {
+    "inventory_complete": true,
+    "inventory_rounds": 6,
+    "discovered_candidate_count": 21,
+    "json_ld_event_count": 1,
+    "description_present": true,
+    "organizer_count_raw": 2,
+    "organizer_count_normalized": 1,
+    "attendee_count_raw": 0,
+    "participant_count_normalized": 0,
+    "participant_visibility": "unavailable",
+    "venue_address_present": true
+  },
+  "live_model_eval": {
+    "case_count": 6,
+    "full_candidate_preservation_count": 6,
+    "expected_top_match_count": 6,
+    "five_factor_complete_count": 6,
+    "participant_honesty_count": 6,
+    "failed_top_case_indexes": []
+  },
+  "runtime_pack_wired": true,
+  "keyword_fallback_present": false,
+  "verification": {
+    "focused_tests": "6/6",
+    "outbound_tests": "174/174"
+  },
+  "privacy": {
+    "event_titles_recorded": false,
+    "event_urls_recorded": false,
+    "organizer_names_recorded": false,
+    "participant_names_recorded": false,
+    "api_key_recorded": false,
+    "model_reasons_recorded": false
+  }
+}
