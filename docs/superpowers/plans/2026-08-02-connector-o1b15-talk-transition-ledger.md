@@ -101,23 +101,23 @@ git commit -m "feat(connector): persist talk application transitions"
 - Consumes: production migration/store contract
 - Produces: rollback済みlive DB evidenceと未変更real talk evidence
 
-- [ ] **Step 1: migrationを実runtime DBへ適用する**
+- [x] **Step 1: migrationを実runtime DBへ適用する**
 
 Run: `docker exec -i life-manager-local-postgres-1 psql -v ON_ERROR_STOP=1 -U life_manager -d life_manager < apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql`
 
-- [ ] **Step 2: transaction fixtureを実行する**
+- [x] **Step 2: transaction fixtureを実行する**
 
 5段階append、parent projection、terminal transition拒否、UPDATE拒否を確認しROLLBACKする。
 
-- [ ] **Step 3: real talk非変更を確認する**
+- [x] **Step 3: real talk非変更を確認する**
 
 `https://luma.com/p9kfepcf`のstateとtransition countを件数だけreadbackする。
 
-- [ ] **Step 4: evidenceとmaster specを更新する**
+- [x] **Step 4: evidenceとmaster specを更新する**
 
 O1B-15を完了し、次をO1B-16へ更新する。raw ID、本文、secretは書かない。
 
-- [ ] **Step 5: final verification、commit、push**
+- [x] **Step 5: final verification、commit、push**
 
 Run: `npm run test:outbound && git diff --check`
 Expected: 全件PASS、origin/mainとHEAD一致、unrelated dirty 2件だけ残る。

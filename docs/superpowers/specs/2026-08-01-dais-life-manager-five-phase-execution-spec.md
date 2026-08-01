@@ -689,6 +689,15 @@ current state projectionを再読出しするstoreを実装した。migrationは
 DB自身のcurrent-state gate、atomic projection、UPDATE/DELETE拒否、RLSを持つ。focused 6/6、新規store testを
 含むoutbound全回帰150/150成功。次は実runtime DBへmigrationを適用し、全forward pathとrollbackを実測する。
 
+完了: `O1B-15`。migrationを実runtime PostgreSQLへ適用した。最初に4 transitionを一つのmulti-row INSERTへ
+まとめたfixtureは、同一statementのBEFORE triggerがAFTER projectionより先に走るため2行目をfail closedし、
+接続終了時に全rollbackされた。production storeと同じ1 append = 1 statementへ直し、transaction内で
+`discovered → submission_queued → submitted → accepted → presented`の4 transition、ledger 4件、parent
+`presented` 1件を確認した。terminalからの逆行とledger UPDATEは拒否され、ROLLBACK後はfixture entity/transition
+とも0件。実talkは`discovered` 1件、transition 0件のままで変更していない。focused 4/4 + 6/6、outbound
+全回帰150/150成功。証拠: `docs/evidence/outbound/2026-08-02-o1b15-live-talk-transition-ledger.json`。
+次は固定順序どおり`O1B-16`で、今日を含む21日間のrolling coverage goalを実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -818,7 +827,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
-- [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
+- [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
 - [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
