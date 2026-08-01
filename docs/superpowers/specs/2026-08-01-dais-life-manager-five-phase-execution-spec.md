@@ -603,6 +603,10 @@ application reason、product demo summary、0〜300秒をgap/overlapなしで覆
 各segmentは許可済みevidence refへ必ず遡る。未実装の実口座CFO、crypto、NISAを完成済みとせず、
 収益保証やbillionaire promise、placeholder、raw identity/secretをvalidatorで拒否する。
 
+O1B-13進捗1（RED）: 300秒exact timeline、4〜7 segment、segment単位のevidence subset、gap/overlap、
+未知reference、placeholder、email/secret、wealth promise拒否、untrusted event本文、model failure時fallback禁止を
+固定するtest 4件を追加した。production `grounded-talk-pack.js`はまだ存在しないためmodule path不在でREDになる。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
