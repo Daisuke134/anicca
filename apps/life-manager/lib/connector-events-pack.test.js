@@ -42,6 +42,10 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
       calls.push(["rank-preferences", input, options]);
       return "preference-ranking";
     },
+    evaluateGoalSerendipity(input, options) {
+      calls.push(["goal-serendipity", input, options]);
+      return "goal-serendipity";
+    },
   });
 
   assert.deepEqual(await pack.discoverTokyo(), {
@@ -52,16 +56,24 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
   assert.equal(await pack.rankDatePreferences(
     "date-inventory", "2026-08-02", "AIを優先し全候補を残す", { apiKey: "fixture" },
   ), "preference-ranking");
+  assert.equal(await pack.evaluateDateGoals(
+    "date-inventory", "preference-ranking", "Dais goals", { apiKey: "fixture" },
+  ), "goal-serendipity");
   assert.equal(await pack.provider.submitRegistration({}), "registered");
   assert.equal(calls[1][1], calls[2][1]);
   assert.equal(calls[2][1], calls[3][1]);
   assert.deepEqual(calls.slice(4).map((call) => call[0]), [
-    "date-inventory", "discover", "inspect", "rank-preferences",
+    "date-inventory", "discover", "inspect", "rank-preferences", "goal-serendipity",
   ]);
-  assert.deepEqual(calls.at(-1)[1], {
+  assert.deepEqual(calls.at(-2)[1], {
     dateInventory: "date-inventory",
     date: "2026-08-02",
     preferences: "AIを優先し全候補を残す",
+  });
+  assert.deepEqual(calls.at(-1)[1], {
+    dateInventory: "date-inventory",
+    preferenceRanking: "preference-ranking",
+    goals: "Dais goals",
   });
 });
 

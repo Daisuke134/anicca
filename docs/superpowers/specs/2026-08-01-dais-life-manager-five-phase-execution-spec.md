@@ -986,6 +986,10 @@ serendipity potential、自然言語理由、5 factor assessmentをcontent-addre
 追加した。source有りは完全一致excerpt、source無しは`unavailable + null`を強制し、架空participant、
 候補/factor欠落、model failureを成功にしない。focused 4/4成功。
 
+O1B-19進捗5（pack RED）: events packがverified date inventory、preference ranking、Dais goalsを
+一つのO1B-19操作へ渡す契約を追加した。`evaluateDateGoals`未実装の1件が期待どおり失敗し、既存の
+構成拒否1件は成功した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
