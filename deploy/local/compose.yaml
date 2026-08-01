@@ -79,6 +79,7 @@ services:
         -f /migrations/2026-08-02-lm-funder-submission-ledger.sql
         -f /migrations/2026-08-02-lm-funder-outreach-ledger.sql
         -f /migrations/2026-08-02-lm-funder-followup-ledger.sql
+        -f /migrations/2026-08-02-lm-funder-inbound-status-ledger.sql
     depends_on:
       postgres:
         condition: service_healthy
