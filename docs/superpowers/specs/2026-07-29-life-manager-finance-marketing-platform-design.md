@@ -1,5 +1,9 @@
 # Life Manager Portable Runtime + Finance + Self-Improving Marketing Platform Design
 
+> Agent definition、organ、lifecycle、skill/adapter/runtime family対応の正本は
+> [`2026-08-01-life-manager-agent-registry-design.md`](2026-08-01-life-manager-agent-registry-design.md)
+> と`agents/registry.json`である。本specはportable runtimeとfinance/marketing platformの実行契約を所有する。
+
 **Status:** Canonical program SSOT  
 **Scope owner:** Life Manager  
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  

@@ -52,6 +52,60 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
 
 内部package名、環境変数、service label、古い文書には `anicca` が残っています。このリポジトリでは、**Aniccaは会社名・技術namespace、Life Managerは製品名**です。`anicca` という識別子が残っていても、第2の製品や別の正本リポジトリを意味しません。
 
+<!-- AGENT-REGISTRY:START -->
+## エージェント組織
+
+Life Managerは専門エージェントを統括します。この表は[`agents/registry.json`](agents/registry.json)から生成され、スキル、scheduler、workerはエージェント数に含めません。
+
+### 統括
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| 🟢 正規runtimeで稼働 | **Life Manager Orchestrator** | ユーザーの目標と現在状態を、適切な専門エージェントの仕事へ分解し、receiptを一つの正直な回答へ統合する。 | local + cloud |
+
+### 健康
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| ⚪ 計画中 | **Mental Health Agent** | 決定的な安全policyをモデル外に保ちながら、範囲を限定したメンタル支援、振り返り、必要時のescalationを行う。 | local + cloud |
+| ⚪ 計画中 | **Physical Health Agent** | 医療上の事実を捏造せず、睡眠、運動、食事、通院、身体的aftercareを調整する。 | local + cloud |
+
+### 財務 / CFO
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| 🟠 旧runtimeで稼働 | **Capafy Agent** | 実際の購読収益に向け、Capafy商品を選択、構築、公開、検証し、改善する。 | local |
+| ⚪ 計画中 | **CFO Lead Agent** | 財務課題を選び、必要な専門家だけへ委譲し、照合済みの個人財務とagent economyの結果を説明する。 | local + cloud |
+| 🟠 旧runtimeで稼働 | **Gig Work Agent** | 実行可能なリモートギグを探し、応募、連絡、納品を行い、検証済みのmarketplace結果から改善する。 | local |
+| 🟢 正規runtimeで稼働 | **Polymarket Agent** | 予測市場を分析してmarket、side、sizeを判断し、制限された取引control経由でのみ実行する。 | local |
+| 🟢 正規runtimeで稼働 | **Solana Trading Agent** | 独立した支出上限とkill switchの範囲でSolana機会を調査し、sizeを決め、実行または明示的にWAITする。 | local |
+| 🟠 旧runtimeで稼働 | **Writer Agent** | 読者、顧客、企業向けに、出典付き文章を調査、執筆、反証、公開し、結果から改善する。 | local |
+
+### 成長
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| 🟠 旧runtimeで稼働 | **Clip / Affiliate Agent** | clip機会を選び、分離アカウントから公開し、reachを検証して実測結果から改善する。 | local |
+| 🟠 旧runtimeで稼働 | **Marketing Agent** | 製品ごとのmessageとchannelを選び、制限付きcampaignを公開し、実測結果から次回を改善する。 | local |
+
+### 技術 / CTO
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| 🟢 正規runtimeで稼働 | **Development Agent** | privacy-safeなLife Manager issue 1件をfresh coding agent、test、独立gate、review可能なpull requestまで進める。 | local |
+| ⚪ 計画中 | **Mobile App Builder Agent** | 範囲を限定したsoftware delivery専門家として、mobile appを設計、構築、test、公開し、改善する。 | local + cloud |
+
+### 機会獲得
+
+| 状態 | エージェント | 目的 | 実行面 |
+|---|---|---|---|
+| ⚪ 計画中 | **Event Agent** | 関連eventを発見し、適合性と予定衝突を判断して応募し、確認を追跡してcalendarへ接続する。 | local + cloud |
+| ⚪ 計画中 | **Fundraising Agent** | 資金を売上と扱わず、funding候補を継続発見・評価し、正直な応募、返信追跡、面談支援を行う。 | local + cloud |
+| 🟡 shadow検証中 | **Job Application Agent** | 求人を発見・順位付けし、正直な応募資料を調整し、対応ATSから提出して返信と面接日程まで追跡する。 | local + cloud |
+
+能力、effect、runtime family、証拠は生成された[詳細エージェント名簿](docs/agent-catalog.md)を参照してください。現在の健康状態はreceiptから算出し、Registryの状態だけで直近実行の成功を主張しません。
+<!-- AGENT-REGISTRY:END -->
+
 ---
 
 ## Life Managerとは

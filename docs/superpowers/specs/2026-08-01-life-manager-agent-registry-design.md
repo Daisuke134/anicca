@@ -274,16 +274,16 @@ Agent Registryは承認を実行する場所ではない。承認policyの参照
 ## 10. 成果物と完了条件
 
 - [x] 1. 本専用spec
-- [ ] 2. `agents/agent-registry.schema.json`
-- [ ] 3. `agents/registry.json`
-- [ ] 4. `scripts/validate-agent-registry.mjs`
-- [ ] 5. agent/capability/job分類表
-- [ ] 6. 証拠付き初期agent roster
-- [ ] 7. 399件runtime inventoryとの参照
-- [ ] 8. README生成区間
-- [ ] 9. `docs/agent-catalog.md`
-- [ ] 10. 既存2本の正本specから本specへの参照
-- [ ] 11. chat projection契約
+- [x] 2. `agents/agent-registry.schema.json`
+- [x] 3. `agents/registry.json`
+- [x] 4. `scripts/validate-agent-registry.mjs`
+- [x] 5. agent/capability/job分類表
+- [x] 6. 証拠付き初期agent roster
+- [x] 7. 399件runtime inventoryとの参照
+- [x] 8. README生成区間
+- [x] 9. `docs/agent-catalog.md`
+- [x] 10. 既存2本の正本specから本specへの参照
+- [x] 11. chat projection契約
 - [ ] 12. tests、verification evidence、commit、push
 
 完了とは、12項目すべてにrepo内の証拠があり、validator、renderer drift check、専用testsがfresh runで成功し、READMEとcatalogが同一registryから再生成できる状態をいう。
