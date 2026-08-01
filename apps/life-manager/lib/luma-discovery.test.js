@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   collectLumaInventory,
+  isVerifiedLumaInventory,
   discoverLumaTokyo,
   normalizeLumaCandidate,
 } = require("./luma-discovery.js");
@@ -39,6 +40,8 @@ test("accumulates event cards that disappear from a virtualized timeline", async
   });
 
   assert.equal(result.complete, true);
+  assert.equal(isVerifiedLumaInventory(result), true);
+  assert.equal(isVerifiedLumaInventory(structuredClone(result)), false);
   assert.equal(result.rounds, 5);
   assert.deepEqual(result.candidates.map(({ title }) => title), [
     "AI Meetup",

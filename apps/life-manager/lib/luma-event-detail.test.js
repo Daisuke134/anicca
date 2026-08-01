@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const {
   inspectLumaEvent,
+  isVerifiedLumaEventDetail,
   normalizeLumaEventDetail,
 } = require("./luma-event-detail.js");
 
@@ -29,7 +30,8 @@ function fixture(overrides = {}) {
 }
 
 test("normalizes scheduled in-person detail and separates login from RSVP availability", () => {
-  assert.deepEqual(normalizeLumaEventDetail(fixture()), {
+  const detail = normalizeLumaEventDetail(fixture());
+  assert.deepEqual(detail, {
     provider: "luma",
     canonical_url: "https://luma.com/h8157e6c",
     event_ref: "luma-event://event/h8157e6c",
@@ -43,6 +45,8 @@ test("normalizes scheduled in-person detail and separates login from RSVP availa
     rsvp_status: "available",
     capacity_status: "availability_control_only",
   });
+  assert.equal(isVerifiedLumaEventDetail(detail), true);
+  assert.equal(isVerifiedLumaEventDetail(structuredClone(detail)), false);
 });
 
 test("keeps online events visible but marks them as not in-person", () => {
