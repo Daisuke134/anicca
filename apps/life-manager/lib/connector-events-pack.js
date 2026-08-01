@@ -5,6 +5,7 @@ const { discoverLumaTokyo } = require("./luma-discovery.js");
 const { inspectLumaEvent } = require("./luma-event-detail.js");
 const { inspectLumaDateInventory } = require("./luma-date-inventory.js");
 const { createLumaBrowserProvider } = require("./luma-browser-provider.js");
+const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
 
 function invalid() {
   return new Error("Connector events pack configuration unavailable");
@@ -28,6 +29,7 @@ function createConnectorEventsPack(options = {}) {
   const discover = options.discover || discoverLumaTokyo;
   const inspect = options.inspect || inspectLumaEvent;
   const inspectDateInventory = options.inspectDateInventory || inspectLumaDateInventory;
+  const rankPreferences = options.rankPreferences || inferEventPreferenceRanking;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -63,6 +65,9 @@ function createConnectorEventsPack(options = {}) {
           canonicalUrl,
         }),
       });
+    },
+    rankDatePreferences(dateInventory, date, preferences, extra = {}) {
+      return rankPreferences({ dateInventory, date, preferences }, extra);
     },
   });
 }
