@@ -15,7 +15,6 @@ from capafy_ig_lifecycle import (  # noqa: E402
     derive_snapshot,
     record_public_reel,
     retire_account,
-    successful_warmup_dates,
 )
 
 
@@ -34,79 +33,44 @@ def account(handle="capafy.new", created="2026-08-01", **overrides):
     return value
 
 
-def warm(date, reels=6, scrolls=5, **overrides):
-    value = {
-        "date": date,
-        "verified": {"reels_played": reels},
-        "actions": {"scrolls": scrolls},
-    }
-    value.update(overrides)
-    return value
-
-
-def test_calendar_age_without_verified_actions_stays_warmup_zero():
+def test_verified_browser_session_is_immediately_publish_probe_ready():
     old = account(created="2026-07-01")
-    snapshot = derive_snapshot([old], {"log": []}, {}, now())
-    assert snapshot["status"] == "warmup_0_of_2"
-    assert snapshot["capability"] == "warmup_only"
-    assert snapshot["warmup_successes"] == 0
+    snapshot = derive_snapshot([old], {}, now())
+    assert snapshot["status"] == "publish_probe_ready"
+    assert snapshot["capability"] == "publish_probe"
+    assert "warmup_successes" not in snapshot
 
 
-def test_verified_dates_are_unique_sorted_and_require_real_actions():
-    data = {
-        "log": [
-            warm("2026-08-02"),
-            warm("2026-08-01"),
-            warm("2026-08-02", reels=9),
-            warm("2026-08-03", reels=0),
-            warm("2026-08-04", scrolls=0),
-            warm("2026-08-05", ABORT="not logged in"),
-            warm("2026-08-06", ban_signal="challenge"),
-        ]
-    }
-    assert successful_warmup_dates(data) == ["2026-08-01", "2026-08-02"]
+def test_legacy_warmup_evidence_never_changes_immediate_capability():
+    prior = {"warmup_successes": 7, "warmup_success_dates": ["2026-08-01"]}
+    snapshot = derive_snapshot([account()], prior, now())
+    assert snapshot["status"] == "publish_probe_ready"
+    assert snapshot["capability"] == "publish_probe"
 
 
-def test_two_distinct_verified_dates_grant_only_noncommercial_capability():
-    data = {"log": [warm("2026-08-01"), warm("2026-08-02")]}
-    snapshot = derive_snapshot([account()], data, {}, now())
-    assert snapshot["warmup_successes"] == 2
-    assert snapshot["status"] == "noncommercial_ready"
-    assert snapshot["capability"] == "noncommercial_post"
-
-
-@pytest.mark.parametrize("signal", ["ABORT", "ban", "ban_signal"])
-def test_later_abort_or_ban_requests_replacement(signal):
-    data = {
-        "log": [warm("2026-08-01")],
-        "aborts": [{"date": "2026-08-02", signal: "challenge"}],
-    }
-    snapshot = derive_snapshot([account()], data, {}, now())
-    assert snapshot["status"] == "replacement_requested"
-    assert snapshot["capability"] == "none"
-    assert snapshot["replacement_requested"] is True
-
-
-def test_abort_older_than_latest_success_does_not_retire_current_evidence():
-    data = {
-        "log": [warm("2026-08-01"), warm("2026-08-02")],
-        "aborts": [{"date": "2026-07-31", "ABORT": "old"}],
-    }
-    assert derive_snapshot([account()], data, {}, now())["status"] == "noncommercial_ready"
-
-
-def test_seven_warmups_without_reach_are_not_commercial():
-    data = {"log": [warm(f"2026-08-{day:02d}") for day in range(1, 8)]}
-    snapshot = derive_snapshot([account()], data, {"reach_healthy": False}, now("2026-08-08T10:00:00Z"))
-    assert snapshot["capability"] == "noncommercial_post"
-
-
-def test_seven_warmups_with_healthy_reach_grant_commercial_capability():
-    data = {"log": [warm(f"2026-08-{day:02d}") for day in range(1, 8)]}
+def test_reel_without_reach_waits_for_real_measurement():
     snapshot = derive_snapshot(
         [account()],
-        data,
-        {"handle": "capafy.new", "reach_healthy": True},
+        {
+            "handle": "capafy.new",
+            "last_public_reel_url": "https://www.instagram.com/reel/ABC123/",
+            "reach_healthy": False,
+        },
+        now(),
+    )
+    assert snapshot["status"] == "reach_observing"
+    assert snapshot["capability"] == "none"
+
+
+def test_verified_reel_and_healthy_reach_grant_commercial_capability():
+    snapshot = derive_snapshot(
+        [account()],
+        {
+            "handle": "capafy.new",
+            "last_public_reel_url": "https://www.instagram.com/reel/ABC123/",
+            "post_write_session_verified": True,
+            "reach_healthy": True,
+        },
         now("2026-08-08T10:00:00Z"),
     )
     assert snapshot["status"] == "commercial_ready"
@@ -120,13 +84,13 @@ def test_newest_usable_browser_owned_account_wins():
         account("capafy.failed", "2026-08-04", status="session_failed"),
         account("capafy.current", "2026-08-02"),
     ]
-    snapshot = derive_snapshot(accounts, {"log": []}, {}, now())
+    snapshot = derive_snapshot(accounts, {}, now())
     assert snapshot["handle"] == "capafy.current"
 
 
 def test_no_usable_account_requests_replacement():
     snapshot = derive_snapshot(
-        [account("capafy.failed", status="session_failed")], {"log": []}, {}, now()
+        [account("capafy.failed", status="session_failed")], {}, now()
     )
     assert snapshot["status"] == "replacement_requested"
     assert snapshot["replacement_requested"] is True
@@ -138,11 +102,11 @@ def test_verified_reel_is_preserved_only_for_same_handle():
         "handle": "capafy.new",
         "last_public_reel_url": "https://www.instagram.com/reel/ABC123/",
     }
-    same = derive_snapshot([account()], {"log": [warm("2026-08-01"), warm("2026-08-02")]}, prior, now())
+    same = derive_snapshot([account()], prior, now())
     assert same["last_public_reel_url"] == prior["last_public_reel_url"]
     assert same["status"] == "reach_observing"
 
-    other = derive_snapshot([account("capafy.other")], {"log": []}, prior, now())
+    other = derive_snapshot([account("capafy.other")], prior, now())
     assert other["last_public_reel_url"] is None
 
 
@@ -177,11 +141,24 @@ def test_record_public_reel_validates_url_and_reads_back_written_state(tmp_path)
     path.write_text(json.dumps({"schema_version": 1, "handle": "capafy.new"}), encoding="utf-8")
     url = "https://www.instagram.com/reel/ABC123/"
 
-    result = record_public_reel(path, "capafy.new", url)
+    result = record_public_reel(path, "capafy.new", url, owner_session_verified=True)
 
     assert result == json.loads(path.read_text(encoding="utf-8"))
     assert result["last_public_reel_url"] == url
-    assert result["status"] == "first_noncommercial_post_verified"
+    assert result["status"] == "first_publish_probe_verified"
+    assert result["post_write_session_verified"] is True
+
+
+def test_record_public_reel_requires_post_write_owner_session(tmp_path):
+    path = tmp_path / "lifecycle.json"
+    path.write_text(json.dumps({"schema_version": 1, "handle": "capafy.new"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="owner session"):
+        record_public_reel(
+            path,
+            "capafy.new",
+            "https://www.instagram.com/reel/ABC123/",
+            owner_session_verified=False,
+        )
 
 
 @pytest.mark.parametrize(
@@ -196,20 +173,18 @@ def test_record_public_reel_rejects_non_reel_urls(tmp_path, url):
     path = tmp_path / "lifecycle.json"
     path.write_text(json.dumps({"schema_version": 1, "handle": "capafy.new"}), encoding="utf-8")
     with pytest.raises(ValueError, match="Instagram Reel"):
-        record_public_reel(path, "capafy.new", url)
+        record_public_reel(path, "capafy.new", url, owner_session_verified=True)
 
 
 def test_snapshot_timestamp_is_normalized_to_utc():
-    snapshot = derive_snapshot([account()], {"log": []}, {}, datetime(2026, 8, 2, 19, 0, tzinfo=timezone.utc))
+    snapshot = derive_snapshot([account()], {}, datetime(2026, 8, 2, 19, 0, tzinfo=timezone.utc))
     assert snapshot["updated_at"] == "2026-08-02T19:00:00Z"
 
 
 def test_cli_snapshot_and_request_replacement_write_state_atomically(tmp_path):
     accounts = tmp_path / "accounts.json"
-    warmup = tmp_path / "warmup.json"
     state = tmp_path / "state.json"
     accounts.write_text(json.dumps([account()]), encoding="utf-8")
-    warmup.write_text(json.dumps({"log": [warm("2026-08-01")]}), encoding="utf-8")
 
     completed = subprocess.run(
         [
@@ -218,8 +193,6 @@ def test_cli_snapshot_and_request_replacement_write_state_atomically(tmp_path):
             "snapshot",
             "--accounts",
             str(accounts),
-            "--warmup",
-            str(warmup),
             "--state",
             str(state),
             "--now",
@@ -230,8 +203,8 @@ def test_cli_snapshot_and_request_replacement_write_state_atomically(tmp_path):
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
-    assert json.loads(completed.stdout)["status"] == "warmup_1_of_2"
-    assert json.loads(state.read_text(encoding="utf-8"))["warmup_successes"] == 1
+    assert json.loads(completed.stdout)["status"] == "publish_probe_ready"
+    assert json.loads(state.read_text(encoding="utf-8"))["capability"] == "publish_probe"
 
     completed = subprocess.run(
         [
@@ -295,6 +268,7 @@ def test_cli_retire_and_record_reel_cover_mutating_commands(tmp_path):
             "capafy.new",
             "--reel-url",
             "https://www.instagram.com/reel/CLI123/",
+            "--owner-session-verified",
         ],
         text=True,
         capture_output=True,

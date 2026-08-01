@@ -13,13 +13,14 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-VALID_CAPABILITIES = frozenset(
-    {"none", "warmup_only", "noncommercial_post", "commercial_post"}
-)
+VALID_CAPABILITIES = frozenset({"none", "publish_probe", "commercial_post"})
 ACTIVE_STATUSES = frozenset(
     {
         "warming",
         "ready_browser",
+        "created_session_verified",
+        "publish_probe_ready",
+        "first_publish_probe_verified",
         "noncommercial_ready",
         "reach_observing",
         "commercial_ready",
@@ -46,25 +47,6 @@ def _positive_int(value: Any) -> int:
         return 0
 
 
-def is_verified_warmup(entry: dict) -> bool:
-    verified = entry.get("verified") or {}
-    actions = entry.get("actions") or {}
-    return (
-        isinstance(entry.get("date"), str)
-        and bool(entry["date"])
-        and _positive_int(verified.get("reels_played")) > 0
-        and _positive_int(actions.get("scrolls")) > 0
-        and not entry.get("ban")
-        and not entry.get("ban_signal")
-        and not entry.get("ABORT")
-    )
-
-
-def successful_warmup_dates(data: dict) -> list[str]:
-    entries = data.get("log") or []
-    return sorted({entry["date"] for entry in entries if isinstance(entry, dict) and is_verified_warmup(entry)})
-
-
 def _account_sort_key(row: dict) -> tuple[str, int]:
     created = row.get("started_warming") or row.get("created") or ""
     return str(created), _positive_int(row.get("created_at_epoch"))
@@ -82,22 +64,7 @@ def _active_account(accounts: list[dict]) -> dict | None:
     return max(usable, key=_account_sort_key) if usable else None
 
 
-def _failure_date(warmup: dict) -> str | None:
-    failures: list[str] = []
-    for collection in (warmup.get("log") or [], warmup.get("aborts") or []):
-        for entry in collection:
-            if not isinstance(entry, dict):
-                continue
-            if entry.get("ABORT") or entry.get("ban") or entry.get("ban_signal"):
-                value = entry.get("date")
-                # Missing time is conservatively treated as current/new evidence.
-                failures.append(str(value) if value else "9999-12-31")
-    return max(failures) if failures else None
-
-
-def derive_snapshot(
-    accounts: list[dict], warmup: dict, prior: dict, now: datetime
-) -> dict:
+def derive_snapshot(accounts: list[dict], prior: dict, now: datetime) -> dict:
     active = _active_account(accounts)
     updated_at = _utc_text(now)
     if active is None:
@@ -107,10 +74,9 @@ def derive_snapshot(
             "handle": None,
             "session_owner": None,
             "session_established": False,
-            "warmup_success_dates": [],
-            "warmup_successes": 0,
             "capability": "none",
             "last_public_reel_url": None,
+            "post_write_session_verified": False,
             "reach_healthy": False,
             "replacement_requested": True,
             "incident_id": prior.get("incident_id"),
@@ -118,44 +84,22 @@ def derive_snapshot(
         }
 
     handle = str(active["handle"])
-    dates = successful_warmup_dates(warmup)
-    latest_failure = _failure_date(warmup)
-    latest_success = dates[-1] if dates else ""
     prior_is_same = prior.get("handle") == handle
     incident_id = prior.get("incident_id") if prior_is_same else None
-
-    if latest_failure and latest_failure >= latest_success:
-        return {
-            "schema_version": 1,
-            "status": "replacement_requested",
-            "handle": handle,
-            "session_owner": "browser",
-            "session_established": False,
-            "warmup_success_dates": dates,
-            "warmup_successes": len(dates),
-            "capability": "none",
-            "last_public_reel_url": None,
-            "reach_healthy": False,
-            "replacement_requested": True,
-            "incident_id": incident_id,
-            "updated_at": updated_at,
-        }
-
     reach_healthy = bool(prior.get("reach_healthy")) if prior_is_same else False
     reel_url = prior.get("last_public_reel_url") if prior_is_same else None
-    successes = len(dates)
-    if successes >= 7 and reach_healthy:
+    post_write_verified = (
+        bool(prior.get("post_write_session_verified")) if prior_is_same else False
+    )
+    if reel_url and reach_healthy and post_write_verified:
         capability = "commercial_post"
-        status = "healthy" if reel_url else "commercial_ready"
-    elif successes >= 2:
-        capability = "noncommercial_post"
-        status = "reach_observing" if reel_url else "noncommercial_ready"
-    elif successes == 1:
-        capability = "warmup_only"
-        status = "warmup_1_of_2"
+        status = "commercial_ready"
+    elif reel_url:
+        capability = "none"
+        status = "reach_observing"
     else:
-        capability = "warmup_only"
-        status = "warmup_0_of_2"
+        capability = "publish_probe"
+        status = "publish_probe_ready"
 
     assert capability in VALID_CAPABILITIES
     return {
@@ -164,10 +108,9 @@ def derive_snapshot(
         "handle": handle,
         "session_owner": "browser",
         "session_established": True,
-        "warmup_success_dates": dates,
-        "warmup_successes": successes,
         "capability": capability,
         "last_public_reel_url": reel_url,
+        "post_write_session_verified": post_write_verified,
         "reach_healthy": reach_healthy,
         "replacement_requested": False,
         "incident_id": incident_id,
@@ -256,9 +199,17 @@ def _is_reel_url(value: str) -> bool:
     )
 
 
-def record_public_reel(path: Path, handle: str, reel_url: str) -> dict:
+def record_public_reel(
+    path: Path,
+    handle: str,
+    reel_url: str,
+    *,
+    owner_session_verified: bool,
+) -> dict:
     if not _is_reel_url(reel_url):
         raise ValueError("expected a public https://www.instagram.com/reel/... Instagram Reel URL")
+    if owner_session_verified is not True:
+        raise ValueError("post-write owner session must be verified")
     state = _read_json(path, {})
     if not isinstance(state, dict):
         raise ValueError("lifecycle state must be a JSON object")
@@ -268,8 +219,10 @@ def record_public_reel(path: Path, handle: str, reel_url: str) -> dict:
         {
             "schema_version": 1,
             "handle": handle,
-            "status": "first_noncommercial_post_verified",
+            "status": "first_publish_probe_verified",
+            "capability": "none",
             "last_public_reel_url": reel_url,
+            "post_write_session_verified": True,
             "replacement_requested": False,
             "updated_at": _utc_text(_now_utc()),
         }
@@ -312,7 +265,6 @@ def _parser() -> argparse.ArgumentParser:
 
     snapshot = commands.add_parser("snapshot")
     snapshot.add_argument("--accounts", type=Path, required=True)
-    snapshot.add_argument("--warmup", type=Path, required=True)
     snapshot.add_argument("--state", type=Path, required=True)
     snapshot.add_argument("--now")
 
@@ -326,6 +278,7 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument("--state", type=Path, required=True)
     record.add_argument("--handle", required=True)
     record.add_argument("--reel-url", required=True)
+    record.add_argument("--owner-session-verified", action="store_true")
 
     replacement = commands.add_parser("request-replacement")
     replacement.add_argument("--state", type=Path, required=True)
@@ -339,17 +292,21 @@ def main() -> int:
     args = _parser().parse_args()
     if args.command == "snapshot":
         accounts = _read_json(args.accounts, [])
-        warmup = _read_json(args.warmup, {})
         prior = _read_json(args.state, {})
-        if not isinstance(accounts, list) or not isinstance(warmup, dict) or not isinstance(prior, dict):
+        if not isinstance(accounts, list) or not isinstance(prior, dict):
             raise ValueError("snapshot inputs have invalid JSON shapes")
         result = atomic_json(
-            args.state, derive_snapshot(accounts, warmup, prior, _parse_now(args.now))
+            args.state, derive_snapshot(accounts, prior, _parse_now(args.now))
         )
     elif args.command == "retire":
         result = retire_account(args.accounts, args.handle, args.reason, args.incident_id)
     elif args.command == "record-reel":
-        result = record_public_reel(args.state, args.handle, args.reel_url)
+        result = record_public_reel(
+            args.state,
+            args.handle,
+            args.reel_url,
+            owner_session_verified=args.owner_session_verified,
+        )
     else:
         result = request_replacement(
             args.state, args.reason, args.incident_id, args.handle
