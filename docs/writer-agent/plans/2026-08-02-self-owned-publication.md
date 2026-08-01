@@ -75,12 +75,14 @@ Task 2 receipt: product commit `0a34eb014` is pushed to both product remotes. Ei
 - Consumes: retrieved Stripe Checkout Session/Subscription objects and `WRITER_ACCESS_SECRET`.
 - Produces: `issueEntitlement`, `verifyEntitlement`, an HttpOnly/Secure/SameSite=Lax cookie, and paid markdown only for the bound slug or archive scope.
 
-- [ ] Write failing tests for tampering, expiry, wrong slug, unpaid Checkout, canceled/past-due Subscription, test-mode objects in live mode, and replay on another article; assert paid one-time and active/trialing archive paths pass.
-- [ ] Run the focused test and require failure.
-- [ ] Implement constant-time HMAC verification, a one-hour token, live Stripe retrieval on first success and recurring access, and generic public errors that disclose no Stripe IDs.
-- [ ] Add `WriterUnlock`: persistent random anonymous client reference, buy/subscribe buttons, success-session exchange, natural-language loading/error/access states, and paid-body rendering after entitlement.
-- [ ] Run focused tests, TypeScript build, and browser screenshots at 390px and 1440px; verify the paid body never appears before entitlement.
-- [ ] Commit only Task 3 files.
+- [x] Write failing tests for tampering, expiry, wrong slug, unpaid Checkout, canceled/past-due Subscription, test-mode objects in live mode, and replay on another article; assert paid one-time and active/trialing archive paths pass.
+- [x] Run the focused test and require failure.
+- [x] Implement constant-time HMAC verification, a one-hour token, live Stripe retrieval on first success and recurring access, and generic public errors that disclose no Stripe IDs.
+- [x] Add `WriterUnlock`: persistent random anonymous client reference, buy/subscribe buttons, success-session exchange, natural-language loading/error/access states, and paid-body rendering after entitlement.
+- [x] Run focused tests, TypeScript build, and browser screenshots at 390px and 1440px; verify the paid body never appears before entitlement.
+- [x] Commit only Task 3 files.
+
+Task 3 receipt: product commit `d3ff8f967` is pushed to both product remotes. Constant-time signed one-hour access tokens are separate from long-lived HttpOnly purchase receipts, so a one-time buyer can return after the short token expires without paying again; archive access re-reads the Stripe Subscription and rejects canceled/past-due/test-mode objects. Twelve focused entitlement/content tests cover tampering, expiry, wrong-slug replay, unpaid Checkout, lineage mismatch, live/test separation, persistent one-time restore, and active/trialing archive access. The complete Netlify suite passes 304/304 and the production Next build passes. Temporary production-build sentinels were absent from generated HTML, RSC, route artifacts, and static chunks. The locked reader UI was visually inspected at 1440px and 390px; the fixture and screenshots were not committed.
 
 ### Task 4: Webhook safety and non-email Writer fulfillment
 
