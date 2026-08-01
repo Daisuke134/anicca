@@ -46,6 +46,11 @@ function projectedEvent(detail) {
     starts_at: detail.starts_at,
     ends_at: detail.ends_at,
     venue_name: detail.venue_name,
+    venue_address: detail.venue_address,
+    description: detail.description,
+    organizer_names: detail.organizer_names,
+    participant_descriptors: detail.participant_descriptors,
+    participant_visibility: detail.participant_visibility,
     rsvp_status: detail.rsvp_status,
   });
 }
