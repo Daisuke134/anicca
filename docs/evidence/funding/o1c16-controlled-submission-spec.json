@@ -1,0 +1,17 @@
+{
+  "id": "spc-founder-fellowship-f26",
+  "purpose": "O1C-16 freshness-boundary verification only; never submitted",
+  "config": {
+    "deck": "~/.openclaw/identity/application-kit/deck/deck-en.pdf",
+    "video": "~/.openclaw/identity/application-kit/videos/Anicca_intro_EN.mp4"
+  },
+  "pages": [
+    {
+      "name": "assets",
+      "fields": [
+        { "name": "deck", "type": "file", "value_source": "config.deck" },
+        { "name": "founder_video", "type": "file", "value_source": "config.video" }
+      ]
+    }
+  ]
+}

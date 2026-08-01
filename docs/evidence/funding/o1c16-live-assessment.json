@@ -1,0 +1,33 @@
+{
+  "company_facts": [
+    {
+      "claim_id": "company-autonomous-cofounder",
+      "source_ref": "application-kit://KIT.md",
+      "evidence_excerpt": "Anicca itself is the co-founder."
+    }
+  ],
+  "traction": [
+    {
+      "claim_id": "weekly-views",
+      "source_ref": "application-kit://answers/q04_traction.en.md",
+      "evidence_excerpt": "All lines operating simultaneously",
+      "dashboard_pointer": "views.weekly_total",
+      "provider_timestamp_pointer": "meta.fetcher_versions.postiz",
+      "reported_value": 3540
+    }
+  ],
+  "mrr": {
+    "total_pointer": "mrr.total_usd",
+    "reported_value": 27,
+    "recurring_revenue_pointers": [
+      "mrr.sources.stripe",
+      "mrr.sources.revenuecat_mobile"
+    ],
+    "provider_timestamp_pointers": [
+      "meta.fetcher_versions.stripe",
+      "meta.fetcher_versions.rc"
+    ],
+    "rationale": "MRR is exactly Stripe recurring revenue plus RevenueCat mobile recurring revenue."
+  },
+  "payload_claims": []
+}

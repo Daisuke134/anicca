@@ -866,6 +866,22 @@ runtime-up 33件、active script syntax/refusal、Railway migration/readback、d
 `docs/evidence/funding/2026-08-02-o1c15-submission-day-verification.json`。残作業は97件。
 次はO1C-16で、会社facts、traction、MRR、deck、videoのfreshness gateを実装する。
 
+完了: `O1C-16`。会社facts・traction・MRRをcurrent Application Kitと公開dashboardのexact excerpt/valueへ束縛し、
+deckはsource markdown/dashboardより新しいrender、videoは実bytesを`ffprobe`した60秒以内H.264/AAC・100MB以内だけを許可する
+freshness gateを実装した。spec、payload、全uploadをSHA-256で同一attemptへ束縛し、payloadの全leafはcompany fact・traction・MRRの
+検証値へ完全coverageされる。company factはleaf全体のexact valueを要求し、真のexcerptへ未検証文を連結できない。両gateは固定secretの
+HMAC署名、tenant/attempt/funder/day、最短source TTL、append-only DB rowをbrowser作成前に再検証する。Node経路とactive form fillerは
+検証時にspec、payload、uploadを0600 temporary snapshotへfreezeし、そのcopyだけをtask/fill/uploadへ渡す。live controlled run
+`funder-freshness-gate:3e208abd0b4bfad2875103c4a969b117416f553fd048aa214aa1f37962bb01e2`は実dashboard、実deck、
+実57.835秒videoを読んだ結果、dashboard/provider/deckが古いため`refresh_required`、`submit_allowed=false`としてRailwayへ保存し、
+formは開かずSubmitも実行していない。fresh verificationはfocused 18件、outbound 234件、runtime-job 14件、Application Kit gate、
+shell/Node syntax、署名偽造・payload差替え・MRR誇張・未証明upload・day gate改変拒否、Railway migration/readback、独立reviewが全成功。
+実装commit `1fbeede7b`、permission fix `e13dc65e9`、active Application Kit/Form commit `8fcb270a`。
+設計: `docs/superpowers/specs/2026-08-02-o1c16-funder-asset-freshness-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c16-funder-asset-freshness.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c16-funder-asset-freshness.json`。残作業は96件。
+次はO1C-17で、`gog`のconfirmation/replyをthread ID単位でJob Hunter ledgerへ統合する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1081,7 +1097,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [x] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [x] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
-- [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
+- [x] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
 - [ ] O1C-17 `gog`でconfirmation/replyをthread ID単位に取得し、Job Hunter ledgerへ統合
 - [ ] O1C-18 application→confirmation→interview→offer/reject→fundedのfunnelをWebへ投影
 - [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach

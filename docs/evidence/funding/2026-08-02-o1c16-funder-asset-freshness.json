@@ -1,0 +1,76 @@
+{
+  "objective": "O1C-16",
+  "observed_at": "2026-08-02T05:12:44.910+09:00",
+  "submission_performed": false,
+  "live_gate": {
+    "tenant_id": "dais-local",
+    "attempt_id": "c16c0000-0000-4000-8000-000000000018",
+    "funder_id": "spc-founder-fellowship-f26",
+    "gate_id": "funder-freshness-gate:3e208abd0b4bfad2875103c4a969b117416f553fd048aa214aa1f37962bb01e2",
+    "attestation_signature": "0e975d9d3614e46ab2a756352e31babf20fbc524daa2dea780b92cc5f691e0f3",
+    "evaluated_at": "2026-08-01T20:12:44.910Z",
+    "expires_at": "2026-06-06T14:18:47.355Z",
+    "decision": "refresh_required",
+    "submit_allowed": false,
+    "refresh_reasons": [
+      "dashboard_data_stale",
+      "deck_render_stale",
+      "mrr_provider_stale",
+      "traction_provider_stale"
+    ]
+  },
+  "source_receipts": {
+    "application_kit_digest": "b27e5882b3c434c6405030f26ae3db5c0c3aa030c3dd2482f9083edb8db24f94",
+    "dashboard_sha256": "76309291651317175070678d02e856f8cdc8ddcc17b9368a3f8d2532e5db870d",
+    "dashboard_updated_at": "2026-06-05T12:19:47.175Z",
+    "mrr_usd": 27,
+    "weekly_views": 3540,
+    "deck": {
+      "sha256": "f964958fb25f5f59a98e1ab578b2ce9ac580d5239104f8963dc1a96041de0131",
+      "size_bytes": 86988,
+      "pages": 9,
+      "modified_at": "2026-06-04T08:13:41.846Z"
+    },
+    "video": {
+      "sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6",
+      "size_bytes": 22291622,
+      "duration_seconds": 57.835,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "width": 720,
+      "height": 1280
+    }
+  },
+  "submission_binding": {
+    "spec_sha256": "53d28c3776ff450d35ccd71b1041ff13fced05cb6954c59417a922a8e20e0cb4",
+    "payload_sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "uploads": [
+      { "field_ref": "assets.deck", "asset_kind": "deck", "sha256": "f964958fb25f5f59a98e1ab578b2ce9ac580d5239104f8963dc1a96041de0131", "size_bytes": 86988 },
+      { "field_ref": "assets.founder_video", "asset_kind": "video", "sha256": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6", "size_bytes": 22291622 }
+    ]
+  },
+  "payload_claim_receipts": [],
+  "production_readback": {
+    "project_id": "f9c524cb-ba4a-43bb-9639-ff736afd9ec1",
+    "environment": "production",
+    "service": "Postgres-1nl0",
+    "append_only_row_exact": true,
+    "signature_present": true,
+    "kit_captured_at_present": true,
+    "day_gate_hmac_column_present": true
+  },
+  "verification": {
+    "focused_tests": { "passed": 18, "failed": 0 },
+    "outbound_tests": { "passed": 234, "failed": 0 },
+    "runtime_job_tests": { "passed": 14, "failed": 0 },
+    "application_kit_gate": "PASS",
+    "shell_and_node_syntax": "PASS",
+    "forged_signature_rejected": true,
+    "payload_swap_rejected": true,
+    "inflated_payload_mrr_rejected": true,
+    "copied_day_gate_mutation_rejected": true,
+    "unattested_upload_rejected": true,
+    "browser_opened": false
+  },
+  "honesty_note": "The controlled spec and payload were used only to prove binding. The collector read the real public dashboard and real application-kit artifacts. Stale live sources correctly prevented submission."
+}
