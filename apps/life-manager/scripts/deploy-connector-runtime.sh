@@ -28,7 +28,8 @@ COMPOSE=(
   -f "$REPO_ROOT/deploy/local/compose.yaml"
   -f "$REPO_ROOT/deploy/local/compose.connector.yaml"
 )
-"${COMPOSE[@]}" up -d --build --wait worker
+"${COMPOSE[@]}" build worker
+"${COMPOSE[@]}" up -d --force-recreate --wait worker
 
 HEALTH="$("${COMPOSE[@]}" exec -T worker node -e '
 fetch("http://127.0.0.1:8790/health", {signal: AbortSignal.timeout(5000)})

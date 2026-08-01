@@ -168,6 +168,7 @@ services:
 
   worker:
     image: life-manager-local-runtime:dev
+    build: *runtime-build
     pull_policy: never
     command: ["node", "scripts/runtime-up.js", "internal-worker"]
     environment:
