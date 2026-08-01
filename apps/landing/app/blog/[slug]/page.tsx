@@ -20,6 +20,7 @@ type ResearchPost = {
   run_id?: string;
   artifact_id?: string;
   lang?: "ja" | "en";
+  writer_manifest?: string;
 };
 
 type PrivateWriterArticle = {
@@ -45,7 +46,7 @@ function loadPrivatePost(slug: string): ResearchPost | null {
   // invalid private article aborts the build instead of silently falling back
   // to a different public file with the same slug.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { validateWriterArticle, publicPreview } = require(
+  const { validateWriterArticle, publicPreview, publicManifestJson } = require(
     "../../../netlify/functions/_lib/writer-article-contract.js"
   );
   const privateValue = validateWriterArticle(
@@ -67,6 +68,7 @@ function loadPrivatePost(slug: string): ResearchPost | null {
     run_id: visible.run_id,
     artifact_id: visible.artifact_id,
     lang: visible.lang,
+    writer_manifest: publicManifestJson(privateValue),
   };
 }
 
@@ -190,6 +192,13 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
 
   return (
     <main className="bg-cream">
+      {post.writer_manifest && (
+        <script
+          id="writer-public-contract"
+          type="application/json"
+          dangerouslySetInnerHTML={{ __html: post.writer_manifest }}
+        />
+      )}
       <article className="mx-auto max-w-3xl px-5 pt-32 pb-20">
         <Link
           href="/blog"

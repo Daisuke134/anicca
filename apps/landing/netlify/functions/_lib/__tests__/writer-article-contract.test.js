@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const {
   validateWriterArticle,
   publicPreview,
+  publicManifestJson,
 } = require('../writer-article-contract.js');
 
 const sha = (value) => crypto.createHash('sha256').update(value, 'utf8').digest('hex');
@@ -68,4 +69,16 @@ test('contract rejects copying the public preview into the paid body', () => {
     })),
     /paid body duplicates preview/,
   );
+});
+
+test('public manifest is script-safe and contains no paid body', () => {
+  const value = fixture({
+    title: 'A title </script><script>alert(1)</script>',
+  });
+  const manifest = publicManifestJson(value);
+
+  assert.equal(manifest.includes('</script>'), false);
+  assert.equal(manifest.includes(value.paid_markdown), false);
+  assert.equal(manifest.includes(value.preview_sha256), true);
+  assert.deepEqual(JSON.parse(manifest), publicPreview(value));
 });
