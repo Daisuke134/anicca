@@ -138,6 +138,10 @@ test("committed local compose is self-contained and never references a legacy ru
   assert.match(compose, /LM_RUNTIME_TENANT_ID: \$\{LM_RUNTIME_TENANT_ID:-\}/);
   assert.match(
     compose,
+    /\$\{LM_LOCAL_WORKER_HEALTH_PORT:-18790\}:8790/,
+  );
+  assert.match(
+    compose,
     /LM_FINANCIAL_REPORT_POLL_MS: \$\{LM_FINANCIAL_REPORT_POLL_MS:-300000\}/,
   );
   assert.match(

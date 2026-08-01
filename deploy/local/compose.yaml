@@ -190,6 +190,8 @@ services:
       BASE_RPC_URL: ${BASE_RPC_URL:-https://mainnet.base.org}
       LM_WORKER_HEALTH_PORT: "8790"
       LIFE_RUN_LOOPS: "false"
+    ports:
+      - "${LM_LOCAL_WORKER_HEALTH_PORT:-18790}:8790"
     volumes:
       - runtime-data:/var/lib/life-manager
     depends_on: *runtime-dependencies
