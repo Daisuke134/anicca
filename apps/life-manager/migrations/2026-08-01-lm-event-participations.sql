@@ -12,9 +12,14 @@ CREATE TABLE IF NOT EXISTS public.lm_event_participations (
     char_length(evidence_ref) BETWEEN 10 AND 1000
     AND evidence_ref LIKE 'evidence://event/%'
   ),
+  talk_pack_ref text CHECK (
+    talk_pack_ref IS NULL
+    OR talk_pack_ref ~ '^artifact://connector-talk-pack/sha256/[0-9a-f]{64}$'
+  ),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (tenant_id, event_ref, event_start_at, kind),
+  CHECK (talk_pack_ref IS NULL OR kind = 'talk_application'),
   CHECK (
     (
       kind = 'audience_registration'

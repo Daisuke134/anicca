@@ -188,3 +188,28 @@ test("migration enforces the two disjoint state machines without raw identity co
   ]) assert.match(sql, new RegExp(required));
   assert.doesNotMatch(sql, /email|phone|password|cookie|form_answer/i);
 });
+
+test("only a talk entity can receive one content-addressed talk-pack reference", async () => {
+  const participationId = "event-participation:" + "a".repeat(64);
+  const artifactRef = "artifact://connector-talk-pack/sha256/" + "b".repeat(64);
+  let released = 0;
+  const store = createEventParticipationStore({
+    async connect() {
+      return {
+        async query(sql, params) {
+          assert.match(sql, /kind = 'talk_application'/);
+          return { rows: [{ participation_id: params[1], tenant_id: params[0], kind: "talk_application", talk_pack_ref: params[2] }] };
+        },
+        release() { released += 1; },
+      };
+    },
+  });
+  assert.deepEqual(await store.attachTalkPack({ tenantId: "dais", participationId, artifactRef }), {
+    participation_id: participationId,
+    tenant_id: "dais",
+    kind: "talk_application",
+    talk_pack_ref: artifactRef,
+  });
+  assert.equal(released, 1);
+  await assert.rejects(store.attachTalkPack({ tenantId: "dais", participationId, artifactRef: "https://example.com/talk.json" }), /participation/i);
+});

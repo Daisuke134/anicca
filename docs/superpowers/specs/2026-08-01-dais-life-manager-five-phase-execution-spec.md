@@ -607,6 +607,21 @@ O1B-13進捗1（RED）: 300秒exact timeline、4〜7 segment、segment単位のe
 未知reference、placeholder、email/secret、wealth promise拒否、untrusted event本文、model failure時fallback禁止を
 固定するtest 4件を追加した。production `grounded-talk-pack.js`はまだ存在しないためmodule path不在でREDになる。
 
+O1B-13進捗2: Gemini structured output generatorとvalidatorを実装した。初回実生成は300秒とevidence
+参照には合格したが、product名がなく、Codex利用について根拠のない否定文が入ったためartifact化せず不合格にした。
+Life Managerの明記を必須化し、根拠のない`not directly/わけではありません`、wealth promise、secret、
+placeholderを拒否する境界へ強化した。再生成では実装がCodex TDD、commit、pushで行われたfactも追加した。
+
+完了: `O1B-13`。実`Codex Meetup Tokyo #2`の公開本文とO1B04〜12 evidenceだけから、
+「Life Manager Connector: Codexで開発したイベント参加自動化フローの実践」を生成した。outlineは5 segment、
+0〜300秒exact、gap/overlapなしで、全segmentが許可済みevidence refを持つ。artifact SHA-256を
+`artifact://connector-talk-pack/sha256/...`として実runtime DBの`talk_application` row 1件へ接続し、
+hash一致をreadbackした。audience rowには接続できないDB/code制約を持つ。LT応募とTelegram送信はまだ行っていない。
+outbound全回帰130件が成功した。実talk pack:
+`docs/evidence/outbound/2026-08-02-o1b13-live-grounded-talk-pack.json`。attachment証拠:
+`docs/evidence/outbound/2026-08-02-o1b13-live-talk-pack-attachment.json`。次はO1B-14で、accepted後の
+slide締切、登壇日、会場、QR、follow-upを一つのtimelineへ接続する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -734,7 +749,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-10 重複旧実装を退役
 - [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [x] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
-- [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
+- [x] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [ ] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [ ] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装

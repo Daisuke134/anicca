@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-01T16:33:07Z",
+  "track": "connector",
+  "step": "O1B-13",
+  "artifact": {
+    "path": "docs/evidence/outbound/2026-08-02-o1b13-live-grounded-talk-pack.json",
+    "sha256": "72478a73da7dd5bb7cfcddaec735503fda279b2a5adf2c366f8572a8a1e59688",
+    "content_addressed": true,
+    "raw_identity_persisted": false,
+    "secret_persisted": false
+  },
+  "runtime_database": {
+    "migration_applied": "2026-08-02-lm-event-talk-pack-ref.sql",
+    "talk_application_rows": 1,
+    "artifact_ref_attached": true,
+    "artifact_hash_matches_file": true,
+    "audience_entity_can_receive_talk_pack": false
+  },
+  "verification": {
+    "duration_seconds": 300,
+    "segments": 5,
+    "all_segments_have_supplied_evidence": true,
+    "outbound_tests_passed": 130,
+    "outbound_tests_failed": 0
+  },
+  "external_effects": {
+    "talk_application_submitted": false,
+    "telegram_sent": false
+  }
+}
