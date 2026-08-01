@@ -29,20 +29,20 @@
 - Consumes: `runOutboundGuardian(options)`、既存health verdict。
 - Produces: `notifyIncident(message)`、positive message ID、incident receipt、recovery result。
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
   異常時に非技術的な停止警告を一度送り、positive message IDを保存してからrecoveryを実行する。同じincidentは再通知しない。復旧時に復旧通知を送り、positive message ID取得後だけincidentをclearする。message ID欠落は送信成功にしない。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
   Run: `node --test lib/outbound-guardian.test.js`
   Expected: notification/recovery contractが未実装のためFAIL。
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
   既存`openclaw message send --channel telegram --target <local target> --message <copy> --json`を呼び、`messageId`を検証する。local incident JSONをatomic renameで保存する。
 
-- [ ] **Step 4: Run tests to verify GREEN**
+- [x] **Step 4: Run tests to verify GREEN**
 
   Run: `npm run test:outbound && npm run test:runtime-up`
   Expected: 0 failures。
@@ -116,4 +116,3 @@
 - [ ] **Step 6: Update canonical spec, commit, and push**
 
   Mark O1A-06 complete only when every live proof exists. Otherwise leave it unchecked with the exact failed gate.
-
