@@ -60,14 +60,23 @@ done = 以下がすべて真
 |---|---|---|---|
 | 1 | 全体インベントリ | — | **done** (§3) |
 | 2 | `.worktrees` — 1件ずつ「merge 済 / 未push commit 無し / 未使用」を確認して削除 | 12.28 GB | **done** — 12.28GB → 3.97GB (§5.2) |
-| 3 | `.git` の gc (`~/anicca-project` + `~/.openclaw`) | 11.4 GB のうち一部 | pending |
-| 4 | `~/anicca-monk-factory/renders` — 動画出力物、再生成可能 | 11.36 GB | pending |
-| 5 | `~/.cloak/state-backups` — 世代を残して剪定 (**profiles には触らない**) | 9.08 GB | pending |
-| 6 | colima — 稼働ワークロードを確認 → 不要なら停止・削除 | 8.75 GB | pending |
-| 7 | `~/Library/Application Support` の内訳と回収 | 8.76 GB | pending |
-| 8 | `~/Documents/Codex` と `~/clips` の精査 | 12.64 GB | pending |
-| 9 | `~/.openclaw` の workspace / skills / agents 精査 (**memory と state/*.jsonl は不可侵**) | 14 GB のうち一部 | pending |
-| 10 | 再発防止: 無制限に太るログ/キャッシュに上限を入れる | — | pending |
+| 3 | `.git` の gc (4リポジトリ) | 425 MB | **done** (§5.3) |
+| 4 | `~/anicca-monk-factory/renders` — 動画の中間生成物 | **9.0 GB** | **done** 11.36GB → 2.36GB (§5.4) |
+| 5 | `~/.cloak/state-backups` — 世代を残して剪定 (**profiles には触らない**) | 2.4 GB | **done** 7世代 → 3世代 (§5.5) |
+| 6 | colima — 稼働ワークロードの確認 | 0 | **done — 消さない判断** (§5.6) |
+| 7 | `~/Documents/Codex` の重複 clone | **6.3 GB** | **done** 6.44GB → 63MB (§5.7) |
+| 8 | `~/clips` の投稿済み/却下分 | 3.5 GB | **done** 6.20GB → 2.73GB (§5.8) |
+| 9 | `~/Projects` の worktree と動画出力 | 2.4 GB | **done** (§5.8) |
+| 10 | `~/.openclaw/workspace/runs` の古い run | 1.1 GB | **done** 106件削除 (§5.8) |
+| 11 | orca の Codex セッション履歴 (14日超) | 0.3 GB | **done** (§5.8) |
+| 12 | 再発防止: 無制限に太るログ/キャッシュに上限を入れる | — | pending |
+| 13 | 保留中の worktree 12件 (3.97GB) — WIP を commit してから削除 | 3.97 GB | pending |
+
+### 現在地
+
+```
+空き容量:  7.1 GB (セッション開始時)  →  22.2 GB   (+15.1 GB)
+```
 
 ---
 
@@ -106,3 +115,72 @@ done = 以下がすべて真
 | 他4件 | 小 | 未コミットあり / 壊れた worktree |
 
 → これらは「WIP を branch に commit してから消す」のが正しい手だが、**他エージェントの作業を勝手に commit するのは避ける**。別タスクとして残す。
+
+### 5.3 `git gc` 4リポジトリ — 425 MB
+
+| repo | before | after |
+|---|---|---|
+| `~/anicca-project` | 2481MB | 2451MB |
+| `~/.openclaw` | 3368MB | 2994MB |
+| `~/Projects/life-manager-main` | 1537MB | 1520MB |
+| `~/anicca` | 1328MB | 1324MB |
+
+回収は小さい。**これらの `.git` が大きいのはゴミではなく本物の履歴**だという結論。`--aggressive` は時間対効果が悪いので回していない。
+
+### 5.4 `anicca-monk-factory/renders` 11.36GB → 2.36GB
+
+`~/anicca-monk-factory` 自体は不可侵ストアだが、`renders/` の中身は1本ごとの**中間生成物** (`clip_01..13.mp4` + `concat.mp4`)。最終成果物は配信済みで、古いディレクトリは既に空だった。`ffmpeg`/render プロセスが動いていないことを確認してから、**7日より古い170件を削除**。
+
+### 5.5 `~/.cloak/state-backups` 7世代 → 3世代
+
+`claude-projects` と `creds` の日次バックアップが7世代 (各 536〜801MB)。**`~/.cloak/profiles` (Dais がログイン済みの forever ブラウザ) には一切触っていない。** 直近3世代 (07-30/07-31/08-01) を残して古い4世代を剪定。
+
+### 5.6 colima — 消さない判断
+
+`docker ps` で中身を確認したところ、**life-manager のローカル本番スタックが25時間 healthy で稼働中**:
+
+```
+life-manager-local-api-1        Up 25 hours (healthy)
+life-manager-local-scheduler-1  Up 25 hours (healthy)
+life-manager-local-worker-1     Up About an hour (healthy)
+life-manager-local-postgres-1   Up 25 hours (healthy)
+life-manager-local-object-store-1  Up 25 hours (healthy)  (minio)
+```
+
+→ **停止・削除しない。** `docker system df` は 1.983GB を reclaimable と表示するが、その実体は `openclaw-sandbox:bookworm-slim` と `debian:bookworm-slim` — オンデマンドで必要になるタグ付きイメージなので残す。dangling は0で、prune の回収は 28.67kB だった。
+
+なお **VM 内で消してもホスト側のスパースディスクは自動では縮まない**ので、ここは元々ホスト空き容量に効きにくい。
+
+### 5.7 `~/Documents/Codex` 6.44GB → 63MB — 今日の出血源
+
+今日 (08-01) だけで 6.32GB。中身は Codex セッションのワークスペース `let-s-download-a-folder-depositories/repositories/` で、**4つの repo を clone したもの**:
+
+| repo | サイズ | 状態 |
+|---|---|---|
+| `Daisuke134/life-manager` | 2655MB | clean。**`~/anicca` と `~/Projects/life-manager-main` に続く3個目の重複コピー** |
+| `langchain-ai/openwiki` | 476MB | clean |
+| `StarTrail-org/PixelRAG` | 67MB | clean |
+| `humanlayer/advanced-context-engineering-for-coding-agents` | 36MB | clean |
+
+全て dirty=0 かつ remote 付き = **ローカル作業ゼロ、いつでも再取得可能**。HARD RULE #-1.5 (「download = clone ではなく README を読んでセットアップ」) が禁じている行動の産物そのもの。削除。
+
+### 5.8 その他
+
+| 対象 | 判断根拠 | 回収 |
+|---|---|---|
+| `~/clips/posted` `~/clips/flagged` | 投稿済み / 却下済み。`queue` (86件・未投稿) と `queue-franklin` `queue-clawrouter` は**残す** | 3.47 GB |
+| `~/Projects/anicha-video/out` `out_v3` | 動画のレンダリング出力。再生成可能 | 2.22 GB |
+| `~/Projects/.worktrees/life-manager/` 2件 | dirty=0 + ref 生存。**`taskmarket-work-loop` は LaunchAgent から参照されている稼働ディレクトリなので残した** | 0.21 GB |
+| `~/.openclaw/workspace/runs` 106件 | 名前に日付を持つ run 成果物。7日より前を削除 (`mtime` は全件が新しく出るため**ディレクトリ名の日付で判定**) | 1.07 GB |
+| orca の Codex セッション履歴 | `sessions/2026/{03,04,05,06}` と `07/01..17` を削除。直近14日は残す | 0.32 GB |
+
+**触らなかったもの (理由つき)**:
+
+| 対象 | サイズ | 理由 |
+|---|---|---|
+| `~/.cloak/profiles` | 7.67 GB | HARD RULE 0.39 — Dais がログイン済みの forever ブラウザ |
+| `~/anicca-rtdash` | 7.87 GB | 不可侵ストア |
+| `~/profitable-claude/skills/bounty-hunter/state` | 1.21 GB | `**/state/` は不可侵。gig loop は稼働中 |
+| `~/gig/projects` | 2.60 GB | LaunchAgent から参照あり |
+| `~/Projects/.worktrees/life-manager/taskmarket-work-loop` | 1.07 GB | LaunchAgent から参照あり |
+| colima の VM ディスク | 4.5 GB | life-manager 本番スタックが稼働中 |
