@@ -95,6 +95,14 @@ def validate_outcome(data: dict) -> list[str]:
                 errors.append(f"{field} must be a real HTTPS URL")
         if not data.get("caption"):
             errors.append("caption is required")
+        if not data.get("media_path"):
+            errors.append("media_path is required")
+    elif kind == "marketing_dry":
+        if not _is_https_url(data.get("listing_url"), host_suffix="capafy.ai"):
+            errors.append("listing_url must be a real https://capafy.ai URL")
+        for field in ("title", "agent_id", "caption", "media_path"):
+            if not data.get(field):
+                errors.append(f"{field} is required")
     elif kind == "account_state":
         if not data.get("handle"):
             errors.append("handle is required")
@@ -219,6 +227,18 @@ def render_outcome(data: dict) -> str:
             ]
         )
 
+    if kind == "marketing_dry":
+        return "\n".join(
+            [
+                "Capafy Marketer — DRY creative — not posted",
+                f"Skill: {data['title']} ({data['agent_id']})",
+                f"Open the skill: {data['listing_url']}",
+                f"Media artifact: {data['media_path']}",
+                f"Caption: {data['caption']}",
+                "Current result: creative verified locally; no public post exists.",
+            ]
+        )
+
     if kind == "builder_submitted":
         return "\n".join(
             [
@@ -238,6 +258,7 @@ def render_outcome(data: dict) -> str:
             f"Watch the Reel: {data['reel_url']}",
             f"Open the skill: {data['listing_url']}",
             f"Campaign link: {data['campaign_url']}",
+            f"Media artifact: {data['media_path']}",
             f"Caption: {data['caption']}",
         ]
     )

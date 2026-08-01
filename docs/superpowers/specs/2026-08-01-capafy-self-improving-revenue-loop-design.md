@@ -351,8 +351,8 @@ The $10M product is not an individual skill. It is the platform that continuousl
 - **Active priority:** P0 — Truthful outcomes and repair closure.
 - **Implementation plan:** [`../plans/2026-08-01-capafy-p0-truthful-outcomes.md`](../plans/2026-08-01-capafy-p0-truthful-outcomes.md)
 - **Execution rule:** complete and verify one numbered task at a time; after each task, append the command evidence and commit hash here before beginning the next task.
-- **Current state (2026-08-01):** Tasks 1-4 verified. Builder judgment still selects/builds the product, while deterministic code now owns remote verification, truthful money labels, incident dispatch, receipts, and terminal Telegram delivery.
-- **Next action:** Task 5, apply the same terminal boundary to Marketing and distinguish dry, scheduled, session-ready, and publicly posted states.
+- **Current state (2026-08-01):** Tasks 1-5 verified. Builder and Marketer now hand terminal classification to deterministic code; Marketing explicitly separates scheduled, dry, challenge, technical failure, and verified public Reel states.
+- **Next action:** Task 6, replace the cryptic goal dump with a natural-language 09:30 consolidated company report using the same truthful labels.
 
 #### P0 execution log
 
@@ -362,7 +362,7 @@ The $10M product is not an individual skill. It is the platform that continuousl
 | 2. Incident identity | Verified | RED: 4 incident tests + 2 sidecar assertions failed; GREEN: outcome `12 passed`, self-fix `23 passed`, Capafy loop `7 passed` | `c73d53b63` |
 | 3. Repair closure monitor | Verified | RED: monitor absent, 15 contract failures; GREEN: monitor integration `19 passed`, outcome regression `12 passed`, plist `OK` | `59b39d0a4` |
 | 4. Builder handoff | Verified | RED: handoff/probe absent; GREEN: Builder integration `17 passed`, outcome `12 passed`, self-fix `23 passed`, loop `7 passed` | `f78446b62` |
-| 5. Marketer handoff | Not started | — | — |
+| 5. Marketer handoff | Verified | RED: 17 missing-handoff failures; GREEN: Marketer `23 passed`, related pytest `22 passed`, account lifecycle `38 passed` | `feat(capafy): classify marketing outcomes truthfully` |
 | 6. 09:30 report | Not started | — | — |
 | 7. Watchdogs + end-to-end proof | Not started | — | — |
 

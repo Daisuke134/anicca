@@ -10,6 +10,13 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "${CAPAFY_IG_REPORTING_PROBE_ONLY:-0}" = "1" ]; then
+  printf 'terminal_owner=capafy-marketing-handoff.sh agent_telegram=false\n'
+  exit 0
+fi
+MARKETING_RESULT="${CAPAFY_MARKETING_RESULT:-$HOME/.openclaw/state/capafy-marketing-result.json}"
+MARKETING_HANDOFF="$SCRIPT_DIR/capafy-marketing-handoff.sh"
+rm -f "$MARKETING_RESULT"
 # shellcheck source=account_state.sh
 . "$SCRIPT_DIR/account_state.sh"
 MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
@@ -58,8 +65,11 @@ alert_and_die() {
   local reason="$1"
   printf '%s %s\n' "$(date '+%F %T %Z')" "$reason" >>"$ALERT_FILE"
   echo "ALERT: $reason" >>"$LOG"
-  bash "$SCRIPT_DIR/../../_shared/send-telegram.sh" \
-    "🚨 ${INSTANCE} IG marketing BLOCKED: ${reason} (pass exited non-zero; see $LOG)" >>"$LOG" 2>&1 || true
+  python3 - "$MARKETING_RESULT" "$reason" <<'PY'
+import json,sys
+json.dump({"result":"failure","reason":sys.argv[2]},open(sys.argv[1],"w"))
+PY
+  CAPAFY_MARKETING_RESULT="$MARKETING_RESULT" bash "$MARKETING_HANDOFF" 1 "$LOG" >>"$LOG" 2>&1 || true
   exit 1
 }
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
@@ -109,7 +119,12 @@ PY
 then
   echo "cadence gate: last IG Reel < 20h ago — no-op." >>"$LOG"
   touch "$LAST_PASS_MARKER" 2>/dev/null || true
-  exit 0
+  python3 - "$MARKETING_RESULT" "$IG_HANDLE" <<'PY'
+import json,sys
+json.dump({"result":"scheduled","handle":sys.argv[2],"reason":"cadence gate: prior Reel is less than 20 hours old"},open(sys.argv[1],"w"))
+PY
+  CAPAFY_MARKETING_RESULT="$MARKETING_RESULT" bash "$MARKETING_HANDOFF" 0 "$LOG" >>"$LOG" 2>&1
+  exit $?
 fi
 
 # ── PROVISIONING BROWSER (dynamic port, actually launched) ────────────────────────────────────────
@@ -195,6 +210,16 @@ STEP7 REPORT TO DAIS — MANDATORY every pass (Dais wants to SEE the actual outp
 
 FINALLY touch '"$LAST_PASS_MARKER"'. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
 
+PROMPT="$PROMPT
+★★ DETERMINISTIC TERMINAL HANDOFF — OVERRIDES STEP7 TELEGRAM OWNERSHIP ★★
+Do not send Telegram yourself. Before returning, write exactly one JSON object to $MARKETING_RESULT:
+  published: result, title, agent_id, reel_url, listing_url, campaign_url, caption, media_path
+  dry:       result=\"dry\", title, agent_id, listing_url, caption, media_path
+  challenge: result=\"challenge\", handle, reason, next_retry_at
+  scheduled: result=\"scheduled\", handle, reason
+  failure:   result=\"failure\", reason
+Only write published after public URL verification. Scheduler load, --live mode, or rc=0 are not publication."
+
 EVIDENCE_DIR="$HOME/.openclaw/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-class tool-agent \
@@ -219,4 +244,5 @@ if [ "$PROVISION_NEEDED" = "yes" ]; then
 fi
 [ "$RC" -eq 0 ] || alert_and_die "agent runner exited rc=$RC — see $EVIDENCE_DIR"
 rm -f "$ALERT_FILE" 2>/dev/null || true
-exit 0
+CAPAFY_MARKETING_RESULT="$MARKETING_RESULT" bash "$MARKETING_HANDOFF" "$RC" "$EVIDENCE_DIR" >>"$LOG" 2>&1
+exit $?
