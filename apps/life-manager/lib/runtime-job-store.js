@@ -166,6 +166,65 @@ async function enqueueJob(input, opts = {}) {
   return { created: false, job: existing[0] };
 }
 
+function availableInstant(value) {
+  const text = String(value == null ? "" : value).trim();
+  const milliseconds = Date.parse(text);
+  if (!Number.isFinite(milliseconds) || !/[zZ]|[+-]\d\d:\d\d$/.test(text)) {
+    throw new Error("runtime available time invalid");
+  }
+  return new Date(milliseconds).toISOString();
+}
+
+async function enqueueJobAt(input, availableAtValue, opts = {}) {
+  const job = buildRuntimeJob(input);
+  const availableAt = availableInstant(availableAtValue);
+  const { query } = database(opts);
+  const inserted = (await query(`
+    INSERT INTO public.lm_runtime_jobs (
+      job_id, tenant_id, loop_id, capability, effect_class, effect_key,
+      input_refs, max_attempts, available_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9::timestamptz)
+    ON CONFLICT (job_id) DO NOTHING
+    RETURNING *
+  `, [
+    job.job_id,
+    job.tenant_id,
+    job.loop_id,
+    job.capability,
+    job.effect_class,
+    job.effect_key,
+    JSON.stringify(job.input_refs),
+    job.max_attempts,
+    availableAt,
+  ])).rows;
+  if (inserted.length > 1) throw new Error("runtime scheduled enqueue returned multiple rows");
+  let row;
+  let created;
+  if (inserted.length === 1) {
+    [row] = inserted;
+    created = true;
+  } else {
+    const existing = (await query(`
+      SELECT * FROM public.lm_runtime_jobs
+      WHERE job_id = $1 AND tenant_id = $2
+      LIMIT 1
+    `, [job.job_id, job.tenant_id])).rows;
+    if (existing.length !== 1) {
+      throw new Error("runtime scheduled job id collision");
+    }
+    [row] = existing;
+    created = false;
+  }
+  assertSameJob(row, job);
+  let storedAvailableAt;
+  try { storedAvailableAt = new Date(row.available_at).toISOString(); }
+  catch { throw new Error("runtime available time collision"); }
+  if (!Number.isFinite(Date.parse(storedAvailableAt)) || storedAvailableAt !== availableAt) {
+    throw new Error("runtime available time collision");
+  }
+  return { created, job: row };
+}
+
 async function claimJobs(input, opts = {}) {
   const workerId = nonEmpty(input && input.workerId, "runtime worker id");
   const capabilities = input && input.capabilities;
@@ -305,6 +364,7 @@ async function closeRuntimeJobStore() {
 module.exports = {
   buildRuntimeJob,
   enqueueJob,
+  enqueueJobAt,
   claimJobs,
   heartbeatJob,
   completeJob,

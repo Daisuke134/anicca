@@ -7,6 +7,7 @@ const path = require("node:path");
 const {
   buildRuntimeJob,
   enqueueJob,
+  enqueueJobAt,
   claimJobs,
   heartbeatJob,
   completeJob,
@@ -114,6 +115,31 @@ test("enqueue accepts the canonical job returned by buildRuntimeJob", async () =
   assert.equal(result.created, true);
   assert.equal(result.job.job_id, canonical.job_id);
   assert.equal(result.job.effect_class, "publish");
+});
+
+test("scheduled enqueue writes available_at atomically and keeps idempotency exact", async () => {
+  const calls = [];
+  const canonical = buildRuntimeJob(sampleJob({ loopId: "connector.events" }));
+  const availableAt = "2026-08-02T01:05:00.000Z";
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    return { rows: [{ ...canonical, available_at: availableAt, status: "queued" }] };
+  };
+  const created = await enqueueJobAt(canonical, availableAt, { query });
+  assert.equal(created.created, true);
+  assert.match(calls[0].sql, /available_at/i);
+  assert.equal(calls[0].params.at(-1), availableAt);
+
+  const existingQuery = async (sql) => ({
+    rows: /INSERT INTO public\.lm_runtime_jobs/i.test(sql)
+      ? []
+      : [{ ...canonical, available_at: availableAt, status: "queued" }],
+  });
+  assert.equal((await enqueueJobAt(canonical, availableAt, { query: existingQuery })).created, false);
+  await assert.rejects(enqueueJobAt(canonical, "not-a-time", { query }), /available time invalid/i);
+  await assert.rejects(enqueueJobAt(canonical, "2026-08-02T01:06:00.000Z", {
+    query: async (sql) => ({ rows: /INSERT/i.test(sql) ? [] : [{ ...canonical, available_at: availableAt }] }),
+  }), /available time collision/i);
 });
 
 test("claim filters capabilities, has a bounded lease, and uses one narrow atomic RPC", async () => {

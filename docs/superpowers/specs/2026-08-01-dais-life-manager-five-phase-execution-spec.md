@@ -1169,6 +1169,44 @@ snapshotを人間向け365文字へ変換してOpenClaw `--dry-run --json`に通
 outbound常設回帰209/209成功。これは表示/transport検証であり実送信receiptではないためO1B-25は未完了。
 証拠: `docs/evidence/outbound/2026-08-02-o1b25-coverage-telegram-dry-run.json`。
 
+O1B-25進捗4（fresh inventory audit）: 同じ認証済みCloakBrowserでLuma Tokyo `/tokyo?k=p`を再読取し、
+6 roundで終端証明、23候補を23/23 detail照合した。21日内の東京対面は17件だが開催日は6日だけで、
+15日はLuma候補なし。よって現在の実データではLuma単独で21日毎日を埋められない。「見つからない」を
+終了理由や`unavailable`へ変換せず、15日はopenのまま許諾済みsource拡張対象にする。また監査で、現行
+continuationは`next_run_at`を返すだけでjobをenqueueせず、Calendar/receiptからcoverageを再構成する
+production assemblerも不存在と確定した。次はassembler→durable enqueueの順で欠落を埋める。
+
+O1B-25進捗5（coverage assembler RED）: verified Luma inventoryとverified Calendar syncが同一eventなら
+`created → covered_new`、`existing → covered_existing`へ変換し、その日を覆うverified all-day busyだけを
+`unavailable`へできる契約を追加した。候補なし、timed予定一件、plain copyでは解決状態を作れない。
+assembler module不存在のため期待どおりmodule missingで失敗する段階である。
+
+O1B-25進捗6（assembler GREEN / scheduled enqueue RED）: registration/calendar syncの`created/existing`を
+新規/既存coverageへ変換し、verified all-day busyだけをunavailableにするassemblerを実装した。plain copy、
+対象外日、登録とunavailableの衝突を拒否し、focused 18/18成功。runtime table/claimは既に`available_at`を
+持つがenqueue APIが設定できないため、同一transactionで予約時刻を保存しidempotency衝突も検出するtestを
+追加した。`enqueueJobAt`未実装のため期待どおり1件失敗する。
+
+O1B-25進捗7（scheduled enqueue GREEN / coverage job RED）: 既存`available_at`へ原子的に予約時刻を書き、
+同一job IDの時刻差分もcollisionとして拒否する`enqueueJobAt`を実装しruntime store 10/10成功。続いてverified
+coverage/continuationとidentity/browser/calendarのreferenceだけから`connector.coverage.refresh` jobを作り、
+continuationの`next_run_at`へ投入する3 testを追加した。job module不存在のため期待どおりmodule missingで失敗する。
+
+O1B-25進捗8（coverage job GREEN / adapter RED）: verified coverage/continuationをreference-onlyの
+`connector.coverage.refresh` jobへ変換し、`next_run_at`をscheduled enqueueへ渡す実装を追加、focused 13/13成功。
+DB snapshot refを内容hash再計算付きでverified objectへ復元するstore readも実装し5/5成功。次にworkerがread→
+refresh→save→openなら次job、open 0なら停止する4 testを追加した。adapter module不存在のため期待どおり失敗する。
+
+O1B-25進捗9（adapter GREEN / runtime boundary実測）: worker adapterがcoverage refをtenant-boundでreadし、
+refresh結果を保存し、`open > 0`なら`next_run_at`へ次jobをdurable enqueue、`open = 0`なら停止する実装を追加した。
+偽job、偽coverage、tenant drift、不正outcomeをfail-closedにし、関連focused 40/40成功。常設test scriptにも
+coverage job / adapterを登録した。ローカルPostgresを実測すると`dais-local`の2026-08-02〜08-22は
+`open 21 / covered_existing 0 / covered_new 0 / unavailable 0`、runtime jobは`completed 11 / queued 1492`。
+queuedの大半1480件は既存financial reportで、Connector RSVPはcompleted 1件、coverage refresh jobは未登録である。
+worker healthは正常だがadvertise capabilityは`runtime.noop,outbound.event.apply`だけで、
+`connector.coverage.refresh`はまだ実workerへ配線されていない。したがってO1B-25は未完了のまま、次は
+実refresh serviceを組み立て、adapter manifest・worker capability・初回jobを接続する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { buildRollingEventCoverage } = require("./rolling-event-coverage.js");
+const { buildRollingEventCoverage, isVerifiedRollingEventCoverage } = require("./rolling-event-coverage.js");
 const { createRollingEventCoverageStore } = require("./rolling-event-coverage-store.js");
 
 function snapshot() {
@@ -64,6 +64,25 @@ test("exact retry is idempotent while content collision rolls back", async () =>
       assert.match(calls.at(-1), /COMMIT/);
     }
   }
+});
+
+test("store rehydrates one tenant-bound reference into a freshly verified snapshot", async () => {
+  const value = snapshot();
+  const hash = value.coverage_snapshot_id.replace("event-coverage:", "");
+  const calls = [];
+  let released = 0;
+  const store = createRollingEventCoverageStore({ async connect() { return {
+    async query(sql, params) { calls.push({ sql, params }); return { rows: [{ ...value }] }; },
+    release() { released += 1; },
+  }; } });
+  const restored = await store.read(`event-coverage://dais-local/${hash}`);
+  assert.equal(restored.coverage_snapshot_id, value.coverage_snapshot_id);
+  assert.equal(isVerifiedRollingEventCoverage(restored), true);
+  assert.notEqual(restored, value);
+  assert.deepEqual(calls[0].params, [value.coverage_snapshot_id, "dais-local"]);
+  assert.equal(released, 1);
+  await assert.rejects(store.read(`event-coverage://other/${hash}`), /rolling coverage store unavailable/i);
+  await assert.rejects(store.read("event-coverage://dais-local/not-a-hash"), /rolling coverage snapshot invalid/i);
 });
 
 test("migration constrains 21-day counts, immutable rows, tenant scope, and latest view", () => {

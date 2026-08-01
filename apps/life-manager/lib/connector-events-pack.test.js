@@ -305,6 +305,26 @@ test("the pack owns one human coverage message and its Telegram delivery", async
   ]);
 });
 
+test("the pack owns verified coverage evidence and reconstruction operations", () => {
+  const calls = [];
+  const pack = createConnectorEventsPack({
+    dailyDriver: { withLumaPage: async () => {} },
+    auth: { ensureAuthenticated: async () => ({ status: "authenticated" }) },
+    evidenceStore: { record: async () => {} },
+    createAuthAwareDriver: () => ({ withLumaPage: async () => {} }),
+    createProvider: () => ({ inspectRegistration: async () => {}, submitRegistration: async () => {} }),
+    buildRegistrationCoverageEvidence(input) { calls.push(["registration", input]); return "registration-evidence"; },
+    proveUnavailableDay(input) { calls.push(["unavailable", input]); return "unavailable-evidence"; },
+    rebuildCoverage(input) { calls.push(["rebuild", input]); return "coverage"; },
+  });
+  assert.equal(pack.buildRegistrationCoverageEvidence("sync"), "registration-evidence");
+  assert.equal(pack.proveUnavailableDay("busy"), "unavailable-evidence");
+  assert.equal(pack.rebuildCoverage("evidence"), "coverage");
+  assert.deepEqual(calls, [
+    ["registration", "sync"], ["unavailable", "busy"], ["rebuild", "evidence"],
+  ]);
+});
+
 test("pack construction fails closed without auth, driver, or evidence store", () => {
   assert.throws(() => createConnectorEventsPack({}), /events pack configuration unavailable/i);
   assert.throws(() => createConnectorEventsPack({
