@@ -497,6 +497,13 @@ submit前read-only auth gateを正本へ統合した。初回liveでLuma日本�
 実測証拠: `docs/evidence/outbound/2026-08-01-o1b09-live-events-pack-integration.json`。
 次は固定順序どおりO1B-10で、旧Connector launchdと旧報告経路を停止し、正本runtimeだけを残す。
 
+O1B-10開始: 専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b10-retire-legacy-runtime.md`を追加した。対象は
+`ai.anicca.connector-fill-gaps`と`ai.anicca.connector-daily-report`の固定2 labelだけである。
+bootout + disable後、plistは削除せずowner-only state archiveへchecksum付きで移す。正規Guardian、
+Docker worker、PostgreSQL、runtime volume、他launchdには触れない。旧repositoryのdirty worktreeも
+編集しない。再登録経路を塞ぎ、正規events packとworkerのlive healthを確認してから完了にする。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
