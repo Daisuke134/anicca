@@ -392,10 +392,17 @@ E2 497,151-byte PNG、E3 canonical URLを同一attemptで検証した`status=ver
 `docs/evidence/outbound/2026-08-01-o1b04-live-luma-registration.json`。次は固定順序どおりO1B-05で、
 この同じeventの確認mailをGmailから照合する。
 
-O1B-05開始: 専用plan
-`docs/superpowers/plans/2026-08-01-connector-o1b05-confirmation-mail.md`を追加した。既存`gog` Gmail
-OAuthだけを使い、O1B-04 completed時刻より後のLuma mailからmessage ID、受信時刻、送信元、
-`Engineer BAR` event URLを照合する。mail本文、code、cookie、token、guest keyは正本へ保存しない。
+完了: `O1B-05`。専用plan
+`docs/superpowers/plans/2026-08-01-connector-o1b05-confirmation-mail.md`に従い、既存`gog` Gmail
+OAuthだけを使い、O1B-04と同一registration attemptのLuma mailからmessage ID、受信時刻、送信元、
+event title、canonical event URLを照合した。Gmail `internalDate`は14:38:38Z、runtime attemptは
+14:38:32.325780Z〜14:38:40.076343Zだった。Lumaはsubmit受理後、workerの完了画面検証より先に
+mailを送るため、同一attempt開始後〜完了30分後を因果windowとする。別event、attempt開始前、
+完了30分超、曖昧件名、非Luma送信元はtestで拒否する。mail本文とaddressは保存せず、tenant/job/eventへ
+boundしたimmutable `gmail-message://` receiptだけをruntime volumeへ保存し、別processで再読出しした。
+focused 5件、outbound 77件が成功した。実測証拠:
+`docs/evidence/outbound/2026-08-01-o1b05-live-luma-confirmation-mail.json`。次はO1B-06で、
+同じeventのguest keyをsecret storeからのみ読み、実QRを生成する。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -516,7 +523,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-02 event URLの2不具合を修正
 - [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
 - [x] O1B-04 実イベント一件へ登録
-- [ ] O1B-05 確認mailをGmailで読む
+- [x] O1B-05 確認mailをGmailで読み、同一attemptへ照合
 - [ ] O1B-06 guest keyからQRを生成
 - [ ] O1B-07 Telegramへ実QRを送る
 - [ ] O1B-08 agentが本文からLT/CFPを判断するevalを通す

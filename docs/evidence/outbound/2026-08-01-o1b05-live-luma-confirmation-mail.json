@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "live_luma_confirmation_mail",
+  "observed_at": "2026-08-01T14:38:38.000Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "af1d67af5d66dcebb2f27b57a7f0ca875c9c6444",
+  "event": {
+    "provider": "luma",
+    "title": "Engineer BAR",
+    "canonical_url": "https://luma.com/a879ax7k"
+  },
+  "runtime_binding": {
+    "tenant_id": "dais-local",
+    "job_id": "outbound-event:989aa4eaa8c15496dc4ddda66b76230362d50fd62563d03bc1c470723e0192bd",
+    "attempt": 1,
+    "attempt_started_at": "2026-08-01T14:38:32.325780Z",
+    "attempt_completed_at": "2026-08-01T14:38:40.076343Z"
+  },
+  "gmail": {
+    "transport": "gog 0.17.0 with existing Google OAuth",
+    "query_all_pages": true,
+    "matching_message_count": 1,
+    "provider_message_id": "19fbdc3478265ec8",
+    "internal_received_at": "2026-08-01T14:38:38.000Z",
+    "sender_domain_verified": true,
+    "event_title_verified": true,
+    "canonical_event_url_verified": true,
+    "body_persisted": false,
+    "address_persisted": false
+  },
+  "durable_receipt": {
+    "kind": "confirmation_mail",
+    "external_receipt_ref": "gmail-message://dais-local/263a9f924804d2d62855ec9f5a2a3a261eb94cce60bcc28e9b54769e4a65bef0",
+    "stored_in_runtime_volume": "life-manager-local_runtime-data",
+    "read_back": true,
+    "cross_tenant_read_rejected": true,
+    "immutable": true
+  },
+  "causal_order": {
+    "mail_before_job_completion_ms": 2076,
+    "explanation": "Luma sends confirmation after accepting submit; the worker then verifies the completion page before marking the job complete.",
+    "accepted_window": "attempt start through 30 minutes after attempt completion"
+  },
+  "verification": {
+    "focused_tests": { "passed": 5, "failed": 0 },
+    "outbound_tests": { "passed": 77, "failed": 0 }
+  },
+  "claim_boundary": "This proves the exact Gmail confirmation message was bound to the same live Luma event, tenant, runtime job, and attempt, then stored and independently read back without persisting the mail body or address. It does not claim QR generation or Telegram delivery; those are O1B-06 and O1B-07."
+}
