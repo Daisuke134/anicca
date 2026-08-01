@@ -79,7 +79,10 @@ if [ "$replacement" = true ]; then
 fi
 status="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$STATE")"
 capability="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["capability"])' "$STATE")"
-[ "$capability" = publish_probe ] || fail "unsupported marketing capability in state $status: $capability"
+case "$capability" in
+  publish_probe|commercial_post) ;;
+  *) fail "unsupported marketing capability in state $status: $capability" ;;
+esac
 identity="$(_resolve_capafy_ig_account_field "$ACCOUNTS" browser_identity)"; [ -n "$identity" ] || fail "active account has no browser identity"
 cdp="$(AI_BROWSER_HOLDER_PID=$$ AI_BROWSER_GUARD="$GUARD" bash "$BROWSER" "$identity")" || fail "active account browser did not start"; browser_leased=1; port="${cdp##*:}"
 case "$port" in ''|*[!0-9]*) fail "active browser returned no numeric port";; esac
@@ -148,14 +151,14 @@ if [ "$poster_status" = challenge ]; then
 fi
 [ "$poster_rc" -eq 0 ] || fail "Reel poster failed: $poster_status"
 python3 - "$RESULT" "$normalized" "$poster_json" "$MODE" <<'PY'
-import json,sys
+import datetime,json,sys
 p,candidate_raw,poster_raw,mode=sys.argv[1:];c=json.loads(candidate_raw);r=json.loads(poster_raw)
 if mode=="dry":
  if r.get("status")!="dry_verified" or r.get("published"): raise SystemExit(2)
  out={"result":"dry",**{k:c[k] for k in ("title","agent_id","listing_url","caption","media_path")}}
 else:
  if r.get("status")!="published_verified" or r.get("published") is not True or not r.get("reel_url") or r.get("owner_session_verified") is not True: raise SystemExit(2)
- out={"result":"published",**{k:c[k] for k in ("title","agent_id","listing_url","campaign_url","caption","media_path")},"reel_url":r["reel_url"],"owner_session_verified":True}
+ out={"result":"published",**{k:c[k] for k in ("title","agent_id","listing_url","campaign_url","caption","media_path")},"reel_url":r["reel_url"],"owner_session_verified":True,"published_at":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")}
 json.dump(out,open(p,"w"))
 PY
 [ -f "$RESULT" ] || fail "poster result could not produce a terminal outcome"

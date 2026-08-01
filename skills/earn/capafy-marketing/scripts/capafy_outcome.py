@@ -197,6 +197,14 @@ def validate_outcome(data: dict) -> list[str]:
             data.get("listing_url"), host_suffix="capafy.ai"
         ):
             errors.append("listing_url must be a real https://capafy.ai URL")
+        experiment = data.get("experiment")
+        if experiment is not None:
+            if not isinstance(experiment, dict) or not experiment.get("experiment_id"):
+                errors.append("experiment must be null or a structured active experiment")
+            elif experiment.get("public_url") and not _is_https_url(
+                experiment["public_url"], host_suffix="capafy.ai"
+            ):
+                errors.append("experiment.public_url must be a real https://capafy.ai URL")
     else:
         errors.append(f"unsupported kind: {kind!r}")
     return errors
@@ -378,6 +386,33 @@ def render_outcome(data: dict) -> str:
             )
         if data.get("listing_url"):
             lines.append(f"Latest Builder evidence: {data['listing_url']}")
+        experiment = data.get("experiment")
+        if isinstance(experiment, dict):
+            observed = experiment.get("observed_contribution_usd")
+            observed_text = _money(observed) if observed is not None else "not measured"
+            experiment_label = (
+                "Active revenue experiment"
+                if experiment.get("status") == "active"
+                else "Stopped revenue experiment"
+            )
+            lines.extend(
+                [
+                    (
+                        f"{experiment_label}: {experiment.get('purchase_model')} at "
+                        f"{_money(experiment.get('price_usd') or 0)} on product "
+                        f"{experiment.get('agent_id')}."
+                    ),
+                    (
+                        f"Projected contribution: {_money(experiment.get('projected_contribution_usd') or 0)} "
+                        f"(not realized). Observed contribution: {observed_text}."
+                    ),
+                    f"Experiment link: {experiment.get('public_url')}",
+                    f"Success: {experiment.get('success_metric') or 'not specified'}",
+                    f"Stop: {experiment.get('stop_condition') or 'not specified'}",
+                ]
+            )
+            if experiment.get("stop_reason"):
+                lines.append(f"Stop reason: {experiment['stop_reason']}")
         lines.append(f"Dashboard: {data['dashboard_url']}")
         return "\n".join(lines)
 

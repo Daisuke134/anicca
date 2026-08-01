@@ -13,6 +13,8 @@ sys.path.insert(0, str(SCRIPTS))
 import capafy_event_adapters as adapters
 import capafy_event_projection as projection
 import capafy_event_sync as sync
+import capafy_experiment
+from test_capafy_experiment import proposal as experiment_proposal
 
 
 def stored(event: dict, recorded_at: str) -> dict:
@@ -158,8 +160,8 @@ def test_projection_folds_money_inventory_account_urls_and_latest_metrics() -> N
         "clicks": 3,
     }
     assert result["account"]["handle"] == "capafy.skills8m4q2z"
-    assert result["account"]["lifecycle_status"] == "reach_observing"
-    assert result["account"]["capability"] == "none"
+    assert result["account"]["lifecycle_status"] == "commercial_ready"
+    assert result["account"]["capability"] == "commercial_post"
     assert result["account"]["session_established"] is True
     assert result["account"]["post_write_session_verified"] is True
     assert result["marketing"]["public_post_url"] == (
@@ -195,6 +197,52 @@ def test_projection_id_is_deterministic_and_changes_after_one_event() -> None:
     assert first["projection_id"].startswith("sha256:")
     assert changed["projection_id"] != first["projection_id"]
     assert changed["metrics"]["clicks"] == 6
+
+
+def test_projection_exposes_active_experiment_without_counting_projection_as_revenue() -> None:
+    event = capafy_experiment.activation_event(
+        experiment_proposal("one_time"), "2026-08-02T13:31:00Z"
+    )
+
+    result = projection.project_company(fixture_events() + [event])
+
+    assert result["experiment"] == {
+        "experiment_id": "capafy-exp-meeting-notes-001",
+        "agent_id": "3947077924",
+        "owner": "marketer",
+        "status": "active",
+        "purchase_model": "one_time",
+        "price_usd": "10.00",
+        "projected_contribution_usd": "75.00",
+        "observed_contribution_usd": None,
+        "success_metric": "attributed paid orders and positive contribution",
+        "stop_condition": "Stop after 100 verified campaign visits with zero paid orders.",
+        "stop_reason": None,
+        "public_url": "https://capafy.ai/agent/3947077924",
+    }
+    assert result["gross_usd"] == "9.99"
+    assert result["contribution_usd"] == "-4.78"
+
+
+def test_projection_reports_stopped_experiment_and_reason_honestly() -> None:
+    value = experiment_proposal("one_time")
+    activated = capafy_experiment.activation_event(value, "2026-08-02T13:31:00Z")
+    stopped = capafy_experiment.stopped_event(
+        value, "The live Agent cannot change to Download.", "2026-08-02T13:40:00Z"
+    )
+
+    result = projection.project_company(fixture_events() + [activated, stopped])
+
+    assert result["experiment"]["status"] == "stopped"
+    assert result["experiment"]["stop_reason"] == "The live Agent cannot change to Download."
+    assert result["experiment"]["observed_contribution_usd"] is None
+
+
+def test_verified_publication_advances_account_to_immediate_commercial_capability() -> None:
+    result = projection.project_company(fixture_events())
+    assert result["account"]["lifecycle_status"] == "commercial_ready"
+    assert result["account"]["capability"] == "commercial_post"
+    assert result["account"]["post_write_session_verified"] is True
 
 
 def test_duplicate_event_identifier_fails_closed() -> None:
@@ -317,8 +365,8 @@ def test_goal_monitor_reports_projection_ignores_legacy_builder_and_blocks_misma
         json.dumps(
             {
                 "handle": "capafy.skills8m4q2z",
-                "status": "reach_observing",
-                "capability": "none",
+                "status": "commercial_ready",
+                "capability": "commercial_post",
                 "session_established": True,
                 "post_write_session_verified": True,
                 "replacement_requested": False,

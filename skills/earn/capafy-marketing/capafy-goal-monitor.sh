@@ -20,6 +20,7 @@ COMPANY_DASHBOARD_BUILDER="${CAPAFY_COMPANY_DASHBOARD_BUILDER:-$SCRIPT_DIR/scrip
 COMPANY_DASHBOARD_DIR="${CAPAFY_COMPANY_DASHBOARD_DIR:-$SCRIPT_DIR/site/company}"
 EVENT_LEDGER="${CAPAFY_EVENT_LEDGER:-$HOME/.openclaw/state/capafy-revenue-events.jsonl}"
 EVENT_EVIDENCE_DIR="${CAPAFY_EVENT_EVIDENCE_DIR:-$HOME/.openclaw/state/capafy-revenue-evidence}"
+PORTFOLIO_STATE="${CAPAFY_PORTFOLIO_STATE:-$HOME/.openclaw/state/capafy-portfolio.json}"
 STATE="$HOME/.openclaw/state/capafy-goal-monitor.json"
 DELIVERY_STATE="${CAPAFY_GOAL_MONITOR_DELIVERY_STATE:-$HOME/.openclaw/state/capafy-goal-monitor-delivery.json}"
 mkdir -p "$(dirname "$STATE")"
@@ -74,11 +75,11 @@ if ! "$PY" "$EVENT_PROJECTION" project --ledger "$EVENT_LEDGER" > "$PROJECTION_F
 fi
 
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$BODY_FILE" <<'PY' > "$REPORT_FILE"
+$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$KEY_GATE" "$IG_LABEL" "$IG_HANDLE" "$LIFECYCLE_STATE" "$OUTCOME_SCRIPT" "$EVENT_PROJECTION" "$PROJECTION_FILE" "$PARITY_FILE" "$BODY_FILE" "$PORTFOLIO_STATE" <<'PY' > "$REPORT_FILE"
 import json, os, re, subprocess, sys, datetime
 (state_p, daily_log, earn_ledger, key_gate, ig_label, ig_handle,
  lifecycle_state_path, outcome_script, projection_script, projection_path,
- parity_path, body_path) = sys.argv[1:13]
+ parity_path, body_path, portfolio_path) = sys.argv[1:14]
 sys.path.insert(0, os.path.dirname(projection_script))
 from capafy_event_projection import parity_errors
 try:
@@ -215,6 +216,30 @@ if os.path.isdir(incident_dir):
         if incident and incident.get("phase") != "verified": active_incidents.append(incident)
 active_incidents.sort(key=lambda item: item.get("updated_at", ""), reverse=True)
 incident = active_incidents[0] if active_incidents else None
+portfolio = load_json(portfolio_path)
+experiment_products = [
+    product for product in portfolio.get("products", [])
+    if isinstance(product.get("experiment"), dict)
+    and product["experiment"].get("status") in {"active", "stopped"}
+]
+active_experiment = None
+if experiment_products:
+    product = max(experiment_products, key=lambda item: item["experiment"].get("stopped_at") or item["experiment"].get("activated_at") or "")
+    value = product["experiment"]
+    active_experiment = {
+        "experiment_id": value.get("experiment_id"),
+        "agent_id": product.get("agent_id"),
+        "owner": value.get("owner"),
+        "status": value.get("status"),
+        "purchase_model": value.get("purchase_model"),
+        "price_usd": value.get("price_usd"),
+        "projected_contribution_usd": value.get("projected_contribution_usd"),
+        "observed_contribution_usd": value.get("observed_contribution_usd"),
+        "success_metric": value.get("success_metric"),
+        "stop_condition": value.get("stop_condition"),
+        "stop_reason": value.get("stop_reason"),
+        "public_url": product.get("public_url"),
+    }
 
 realized = money.get("capafy_realized_payout_usd", 0.0)
 independent = {
@@ -244,6 +269,7 @@ independent = {
         "summary": incident.get("summary"), "phase": incident.get("phase"),
         "next_retry_at": incident.get("next_retry_at"),
     } if incident else None),
+    "experiment": active_experiment,
 }
 projection = load_json(projection_path)
 errors = parity_errors(projection, independent)

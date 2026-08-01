@@ -36,6 +36,7 @@ PROJECTION_FIELDS = {
     "marketing",
     "metrics",
     "incident",
+    "experiment",
     "listing_url",
     "dashboard_url",
 }
@@ -118,6 +119,26 @@ def render_html(projection: dict) -> str:
             '<section class="panel healthy"><h2>Repair status</h2>'
             '<p>No active incident in the canonical ledger.</p></section>'
         )
+    experiment = projection.get("experiment")
+    if isinstance(experiment, dict):
+        observed = experiment.get("observed_contribution_usd")
+        observed_text = _money(observed) if observed is not None else "not measured"
+        experiment_status = str(experiment.get("status") or "unknown")
+        experiment_heading = "Active revenue experiment" if experiment_status == "active" else "Stopped revenue experiment"
+        stop_reason = experiment.get("stop_reason")
+        stop_reason_html = f'<br>Reason: {html.escape(str(stop_reason))}' if stop_reason else ""
+        experiment_html = (
+            f'<section class="panel"><h2>{experiment_heading}</h2>'
+            f'<p><strong>{html.escape(str(experiment.get("purchase_model", "unknown")))}</strong> · '
+            f'{_money(experiment.get("price_usd") or 0)} price hypothesis</p>'
+            f'<p>{_money(experiment.get("projected_contribution_usd") or 0)} projected · not realized. '
+            f'Observed contribution: {html.escape(observed_text)}.</p>'
+            f'<p>{_link(experiment.get("public_url"), "Open the experiment product")}</p>'
+            f'<p class="muted">Success: {html.escape(str(experiment.get("success_metric") or "not specified"))}<br>'
+            f'Stop: {html.escape(str(experiment.get("stop_condition") or "not specified"))}{stop_reason_html}</p></section>'
+        )
+    else:
+        experiment_html = '<section class="panel"><h2>Revenue experiment</h2><p>No active experiment.</p></section>'
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -156,6 +177,7 @@ def render_html(projection: dict) -> str:
     <div class="panel"><h2>Public evidence</h2><p>{_link(marketing.get('public_post_url'), 'Open the verified Reel')}</p><p>{_link(projection.get('listing_url'), 'Open the Capafy skill')}</p><p>{_link(marketing.get('campaign_url'), 'Open the attributed campaign')}</p></div>
   </section>
   <section class="panel"><h2>Latest marketing measurements</h2><div class="grid">{metric_cards}</div></section>
+  {experiment_html}
   {incident_html}
   <footer>Projection {html.escape(projection['projection_id'])} · Last event {html.escape(str(projection['last_event_id']))}</footer>
 </main></body></html>

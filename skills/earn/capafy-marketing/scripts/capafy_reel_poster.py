@@ -115,7 +115,7 @@ def resolve_share_progress(dialog_exists: bool, text: str) -> str:
 def post_reel(request: PostRequest, browser: BrowserAci) -> dict:
     if not _valid_mp4(request.video):
         return _result("invalid_media", "preflight", browser)
-    if request.live and request.capability != "publish_probe":
+    if request.live and request.capability not in {"publish_probe", "commercial_post"}:
         return _result("capability_refused", "preflight", browser)
     try:
         if browser.active_handle().lstrip("@").lower() != request.handle.lstrip("@").lower():
@@ -236,10 +236,17 @@ class RawCdpBrowser:
     def enter_caption(self, caption: str) -> None:
         selector = json.dumps(CAPTION_EDITOR_SELECTOR)
         value = json.dumps(caption)
-        changed = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});if(!e)return false;e.focus();if(e instanceof HTMLTextAreaElement){{const s=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;s.call(e,{value});e.dispatchEvent(new Event('input',{{bubbles:true}}));return true}}const range=document.createRange();range.selectNodeContents(e);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return document.execCommand('insertText',false,{value})}})()")
+        prepared = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});if(!e)return false;e.focus();const range=document.createRange();range.selectNodeContents(e);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return true}})()")
+        if not prepared:
+            raise RuntimeError("caption field unavailable")
+        ws = self.cdp._connect_page(self.request.tid)
+        try:
+            self.cdp._rpc(ws, 1, "Input.insertText", {"text": caption})
+        finally:
+            ws.close()
         time.sleep(1)
-        verified = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});return !!e&&((e.value??e.textContent)||'')==={value}}})()")
-        if not changed or not verified: raise RuntimeError("caption field unavailable")
+        verified = self._eval(f"(()=>{{const r=document.querySelector('[role=dialog]')||document;const e=r.querySelector({selector});return !!e&&((e.value??e.innerText??e.textContent)||'').replace(/\\r\\n/g,'\\n')==={value}}})()")
+        if not verified: raise RuntimeError("caption readback mismatch")
         self._shot("share-ready")
 
     def share(self) -> None:

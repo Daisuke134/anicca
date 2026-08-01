@@ -157,7 +157,14 @@ def test_post_urls_are_not_accepted_as_reels(media):
     assert post_reel(request(media, live=True), browser)["status"] == "share_unconfirmed"
 
 
-@pytest.mark.parametrize("capability", ["none", "warmup_only", "noncommercial_post", "commercial_post"])
+def test_live_accepts_verified_commercial_capability(media):
+    browser = FakeCdp()
+    browser.post_urls = {"https://www.instagram.com/reel/NEW789/"}
+    result = post_reel(request(media, live=True, capability="commercial_post"), browser)
+    assert result["status"] == "published_verified"
+
+
+@pytest.mark.parametrize("capability", ["none", "warmup_only", "noncommercial_post"])
 def test_live_refuses_capability_mismatch(media, capability):
     browser = FakeCdp()
     result = post_reel(request(media, live=True, capability=capability), browser)

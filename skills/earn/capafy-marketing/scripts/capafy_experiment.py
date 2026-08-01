@@ -210,6 +210,42 @@ def repair_invalid_activation(snapshot: dict, proposal: dict) -> dict:
     return result
 
 
+def stop_active(snapshot: dict, proposal: dict, reason: str, stopped_at: str) -> dict:
+    """Stop one matching active experiment while preserving its audit history."""
+    if not _text(reason) or not portfolio._utc(stopped_at):
+        raise ValueError("stop reason and stopped_at are required")
+    result = copy.deepcopy(snapshot)
+    stopped = False
+    already_stopped = False
+    for product in result.get("products", []):
+        current = product.get("experiment")
+        if (
+            product.get("agent_id") == proposal.get("agent_id")
+            and isinstance(current, dict)
+            and current.get("experiment_id") == proposal.get("experiment_id")
+        ):
+            if current.get("status") == "stopped" and current.get("stop_reason") == reason.strip():
+                already_stopped = True
+                continue
+            if current.get("status") != "active":
+                continue
+            current["status"] = "stopped"
+            current["stopped_at"] = stopped_at
+            current["stop_reason"] = reason.strip()
+            product["purchase_model"] = "undecided"
+            product["value_metric"] = None
+            product["renewal_reason"] = None
+            stopped = True
+    if already_stopped and not stopped:
+        return result
+    if not stopped:
+        raise ValueError("matching active experiment was not found")
+    validation = portfolio.validate_snapshot(result)
+    if validation:
+        raise ValueError("stopped portfolio is invalid: " + "; ".join(validation))
+    return result
+
+
 def activation_event(proposal: dict, recorded_at: str) -> dict:
     event_id = f"capafy:experiment.activated:{proposal['experiment_id']}"
     zero_money = {
@@ -236,6 +272,7 @@ def activation_event(proposal: dict, recorded_at: str) -> dict:
             "labels": [
                 f"price hypothesis ${proposal['price_usd']}",
                 f"projected contribution ${proposal['projected_contribution_usd']}; not realized revenue",
+                f"success metric: {proposal['success_metric']}",
                 f"stop condition: {proposal['stop_condition']}",
             ],
         },
@@ -247,6 +284,30 @@ def activation_event(proposal: dict, recorded_at: str) -> dict:
         },
         "next": {"owner": proposal["owner"], "retry_at": None},
     }
+
+
+def configuration_event(proposal: dict, recorded_at: str) -> dict:
+    event = activation_event(proposal, recorded_at)
+    event["event_id"] = f"capafy:experiment.configured:{proposal['experiment_id']}"
+    event["event_type"] = "experiment.configured"
+    event["status"] = {"before": "active", "after": "active"}
+    event["technical_evidence_ref"] = event["event_id"]
+    return event
+
+
+def stopped_event(proposal: dict, reason: str, recorded_at: str) -> dict:
+    event = activation_event(proposal, recorded_at)
+    event["event_id"] = f"capafy:experiment.stopped:{proposal['experiment_id']}"
+    event["event_type"] = "experiment.stopped"
+    event["occurred_at"] = recorded_at
+    event["summary"] = (
+        f"Stopped one bounded {proposal['purchase_model']} packaging experiment "
+        f"for seller-owned product {proposal['agent_id']}"
+    )
+    event["status"] = {"before": "active", "after": "stopped"}
+    event["public_evidence"]["labels"].append(f"stop reason: {reason.strip()}")
+    event["technical_evidence_ref"] = event["event_id"]
+    return event
 
 
 def _atomic_write(path: Path, value: dict) -> None:
@@ -267,6 +328,7 @@ def main() -> int:
     parser.add_argument("--portfolio", type=Path, required=True)
     parser.add_argument("--proposal", type=Path, required=True)
     parser.add_argument("--repair-invalid", action="store_true")
+    parser.add_argument("--stop-reason")
     parser.add_argument("--ledger", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
     args = parser.parse_args()
@@ -281,7 +343,18 @@ def main() -> int:
             and product["experiment"].get("status") == "active"
             for product in snapshot.get("products", [])
         )
-        if matching_active and not args.repair_invalid:
+        matching_stopped = any(
+            isinstance(product.get("experiment"), dict)
+            and product["experiment"].get("experiment_id") == proposal.get("experiment_id")
+            and product["experiment"].get("status") == "stopped"
+            and product["experiment"].get("stop_reason") == str(args.stop_reason or "").strip()
+            for product in snapshot.get("products", [])
+        )
+        if args.stop_reason:
+            recorded_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+            result = stop_active(snapshot, proposal, args.stop_reason, recorded_at)
+            _atomic_write(args.portfolio, result)
+        elif matching_active and not args.repair_invalid:
             result = snapshot
         else:
             result = (
@@ -290,10 +363,12 @@ def main() -> int:
                 else activate(snapshot, proposal)
             )
             _atomic_write(args.portfolio, result)
-        if args.ledger and not args.repair_invalid:
+        if args.ledger and args.stop_reason and not matching_stopped:
+            append_event(args.ledger, stopped_event(proposal, args.stop_reason, recorded_at), proposal, args.evidence_dir)
+        elif args.ledger and not args.repair_invalid and not args.stop_reason:
             recorded_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
             append_event(args.ledger, activation_event(proposal, recorded_at), proposal, args.evidence_dir)
-        print(json.dumps({"valid": True, "repaired": args.repair_invalid, "experiment_id": proposal["experiment_id"], "agent_id": proposal["agent_id"]}))
+        print(json.dumps({"valid": True, "repaired": args.repair_invalid, "stopped": bool(args.stop_reason), "experiment_id": proposal["experiment_id"], "agent_id": proposal["agent_id"]}))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(str(exc), file=sys.stderr); return 2

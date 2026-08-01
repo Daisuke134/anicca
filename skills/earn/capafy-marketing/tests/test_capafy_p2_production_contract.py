@@ -213,9 +213,9 @@ def test_full_backfill_is_idempotent_and_one_projection_drives_both_outputs(
 
     assert first.returncode == 0, first.stderr
     assert retry.returncode == 0, retry.stderr
-    assert json.loads(first.stdout)["appended"] == 41
+    assert json.loads(first.stdout)["appended"] == 42
     assert json.loads(retry.stdout)["appended"] == 0
-    assert json.loads(retry.stdout)["duplicates"] == 41
+    assert json.loads(retry.stdout)["duplicates"] == 42
     projected = project_company(read_events(ledger))
     assert projected["inventory"] == {
         "online": 27,

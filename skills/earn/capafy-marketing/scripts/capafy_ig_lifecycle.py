@@ -91,7 +91,7 @@ def derive_snapshot(accounts: list[dict], prior: dict, now: datetime) -> dict:
     post_write_verified = (
         bool(prior.get("post_write_session_verified")) if prior_is_same else False
     )
-    if reel_url and reach_healthy and post_write_verified:
+    if reel_url and post_write_verified:
         capability = "commercial_post"
         status = "commercial_ready"
     elif reel_url:
@@ -219,8 +219,8 @@ def record_public_reel(
         {
             "schema_version": 1,
             "handle": handle,
-            "status": "first_publish_probe_verified",
-            "capability": "none",
+            "status": "commercial_ready",
+            "capability": "commercial_post",
             "last_public_reel_url": reel_url,
             "post_write_session_verified": True,
             "replacement_requested": False,

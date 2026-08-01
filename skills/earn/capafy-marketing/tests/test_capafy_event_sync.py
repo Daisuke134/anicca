@@ -266,6 +266,7 @@ def test_verified_runtime_artifacts_backfill_outcomes_and_honest_incident_phases
         "listing.submitted",
         "content.published",
         "account.post_verified",
+        "account.commercial_ready",
         "incident.detected",
         "incident.verified",
     ]

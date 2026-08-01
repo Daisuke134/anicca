@@ -33,10 +33,11 @@ def _canonical(value: Any) -> bytes:
 
 
 def _source(outcome: dict, producer: str, source_id: str) -> dict:
+    source_material = {key: value for key, value in outcome.items() if key != "published_at"}
     return {
         "producer": producer,
         "source_id": source_id,
-        "source_digest": "sha256:" + hashlib.sha256(_canonical(outcome)).hexdigest(),
+        "source_digest": "sha256:" + hashlib.sha256(_canonical(source_material)).hexdigest(),
     }
 
 
@@ -134,6 +135,14 @@ def events_from_outcome(
         ]
 
     if kind == "marketing_published":
+        persisted_time = outcome.get("published_at")
+        if isinstance(persisted_time, str):
+            try:
+                parsed = datetime.fromisoformat(persisted_time.replace("Z", "+00:00"))
+                if parsed.utcoffset() is not None:
+                    occurred_at = parsed.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+            except ValueError:
+                pass
         reel_url = outcome["reel_url"]
         shortcode = _reel_shortcode(reel_url)
         handle = outcome.get("handle")
@@ -145,6 +154,7 @@ def events_from_outcome(
         source = _source(outcome, "capafy-marketing-handoff", f"marketing-published:{shortcode}")
         content_id = f"capafy:content.published:instagram:{shortcode}"
         proof_id = f"capafy:account.post_verified:{handle}:{shortcode}"
+        ready_id = f"capafy:account.commercial_ready:{handle}:{shortcode}"
         return [
             _event(
                 event_id=content_id,
@@ -175,6 +185,22 @@ def events_from_outcome(
                 after="post_verified",
                 urls=[reel_url],
                 labels=["post-write owner session verified"],
+                source=source,
+                next_owner="marketer",
+            ),
+            _event(
+                event_id=ready_id,
+                event_type="account.commercial_ready",
+                occurred_at=occurred_at,
+                loop="marketer",
+                entity_type="account",
+                entity_id=handle,
+                correlation_id=correlation_id,
+                summary=f"Granted immediate commercial posting capability to @{handle} after owner-verified publication.",
+                before="post_verified",
+                after="commercial_ready",
+                urls=[reel_url],
+                labels=["no elapsed warmup or reach gate"],
                 source=source,
                 next_owner="marketer",
             ),

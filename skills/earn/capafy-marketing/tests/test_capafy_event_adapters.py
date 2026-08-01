@@ -87,10 +87,12 @@ def test_published_reel_emits_content_and_owner_proof_events() -> None:
     assert [event["event_id"] for event in events] == [
         "capafy:content.published:instagram:DbgsvEbo5kd",
         "capafy:account.post_verified:capafy.skills8m4q2z:DbgsvEbo5kd",
+        "capafy:account.commercial_ready:capafy.skills8m4q2z:DbgsvEbo5kd",
     ]
     assert [event["event_type"] for event in events] == [
         "content.published",
         "account.post_verified",
+        "account.commercial_ready",
     ]
     assert events[0]["public_evidence"]["urls"] == [
         marketing_published()["reel_url"],
@@ -99,6 +101,17 @@ def test_published_reel_emits_content_and_owner_proof_events() -> None:
     ]
     assert events[1]["entity"] == {"type": "account", "id": "capafy.skills8m4q2z"}
     assert "/private/tmp/decision-debate.mp4" not in str(events)
+
+
+def test_published_reel_uses_persisted_time_without_changing_source_identity() -> None:
+    original = marketing_published()
+    persisted = dict(original, published_at="2026-08-02T12:34:56Z")
+
+    first = adapters.events_from_outcome(original, OCCURRED_AT)[0]
+    retry = adapters.events_from_outcome(persisted, "2026-08-02T13:00:00Z")[0]
+
+    assert retry["occurred_at"] == "2026-08-02T12:34:56Z"
+    assert retry["source"] == first["source"]
 
 
 def test_verified_account_creation_emits_created_session_and_capability_events() -> None:
@@ -197,19 +210,20 @@ def test_append_outcome_cli_uses_source_mtime_and_retries_without_duplicates(
 
     assert first.returncode == 0, first.stderr
     assert json.loads(first.stdout) == {
-        "appended": 2,
+        "appended": 3,
         "duplicates": 0,
         "event_ids": [
             "capafy:content.published:instagram:DbgsvEbo5kd",
             "capafy:account.post_verified:capafy.skills8m4q2z:DbgsvEbo5kd",
+            "capafy:account.commercial_ready:capafy.skills8m4q2z:DbgsvEbo5kd",
         ],
-        "observed": 2,
+        "observed": 3,
     }
     assert retry.returncode == 0, retry.stderr
     assert json.loads(retry.stdout)["appended"] == 0
-    assert json.loads(retry.stdout)["duplicates"] == 2
+    assert json.loads(retry.stdout)["duplicates"] == 3
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
-    assert len(rows) == 2
+    assert len(rows) == 3
     assert {row["occurred_at"] for row in rows} == {OCCURRED_AT}
     sidecar = evidence_dir / "capafy:content.published:instagram:DbgsvEbo5kd.json"
     technical = json.loads(sidecar.read_text())

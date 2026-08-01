@@ -49,6 +49,19 @@ def company_projection() -> dict:
             "phase": "unresolved",
             "next_retry_at": "2026-08-02T12:05:00Z",
         },
+        "experiment": {
+            "experiment_id": "exp-7631594519-one-time-download-01",
+            "agent_id": "7631594519",
+            "owner": "marketer",
+            "status": "active",
+            "purchase_model": "one_time",
+            "price_usd": "49.00",
+            "projected_contribution_usd": "392.00",
+            "observed_contribution_usd": None,
+            "success_metric": "At least one paid download.",
+            "stop_condition": "Stop after 10 verified exposures with zero paid downloads.",
+            "public_url": "https://capafy.ai/agent/7631594519",
+        },
         "listing_url": "https://capafy.ai/agent/4866150011",
         "dashboard_url": "https://capafy-skills-daily.netlify.app/company/",
     }
@@ -80,6 +93,10 @@ def test_dashboard_is_deterministic_safe_and_contains_projection_evidence(
     assert "MRR" in html and "Model/tool cost" in html and "Contribution" in html
     assert "reach_observing" in html
     assert "unresolved" in html
+    assert "Active revenue experiment" in html
+    assert "$392.00 projected" in html
+    assert "not realized" in html
+    assert "https://capafy.ai/agent/7631594519" in html
     assert "/Users/" not in html
     assert "technical_evidence" not in html
     assert "<script" not in html.lower()

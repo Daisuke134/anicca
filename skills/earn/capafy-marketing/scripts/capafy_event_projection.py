@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import sys
+import re
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -62,8 +63,11 @@ def _account_projection(event: dict | None) -> dict:
         "account.session_ready",
         "account.publish_probe_ready",
         "account.post_verified",
+        "account.commercial_ready",
     }
     capability = "publish_probe" if event_type == "account.publish_probe_ready" else "none"
+    if event_type == "account.commercial_ready":
+        capability = "commercial_post"
     if event_type == "account.post_verified":
         status = "reach_observing"
     return {
@@ -71,8 +75,55 @@ def _account_projection(event: dict | None) -> dict:
         "lifecycle_status": status,
         "capability": capability,
         "session_established": session_established,
-        "post_write_session_verified": event_type == "account.post_verified",
+        "post_write_session_verified": event_type in {"account.post_verified", "account.commercial_ready"},
         "account_status": "clean",
+    }
+
+
+def _label_value(labels: list[str], prefix: str) -> str | None:
+    for label in labels:
+        if label.startswith(prefix):
+            return label[len(prefix):]
+    return None
+
+
+def _experiment_projection(event: dict | None) -> dict | None:
+    if event is None:
+        return None
+    labels = event["public_evidence"]["labels"]
+    summary = event["summary"]
+    model_match = re.fullmatch(
+        r"(?:Activated|Stopped) (?:one )?bounded ([a-z_]+) packaging experiment for seller-owned product ([0-9]+)",
+        summary,
+    )
+    purchase_model = model_match.group(1) if model_match else "unknown"
+    agent_id = event.get("correlation_id") or (model_match.group(2) if model_match else "unknown")
+    price = _label_value(labels, "price hypothesis $")
+    projected = _label_value(labels, "projected contribution $")
+    if projected and ";" in projected:
+        projected = projected.split(";", 1)[0]
+    observed = _label_value(labels, "observed contribution $")
+    public_url = next(
+        (
+            url for url in event["public_evidence"]["urls"]
+            if _url_for_host([url], "capafy.ai")
+            and urlparse(url).path.rstrip("/").endswith(f"/{agent_id}")
+        ),
+        None,
+    )
+    return {
+        "experiment_id": event["entity"]["id"],
+        "agent_id": agent_id,
+        "owner": event["next"]["owner"],
+        "status": event["status"]["after"],
+        "purchase_model": purchase_model,
+        "price_usd": price,
+        "projected_contribution_usd": projected,
+        "observed_contribution_usd": observed,
+        "success_metric": _label_value(labels, "success metric: "),
+        "stop_condition": _label_value(labels, "stop condition: "),
+        "stop_reason": _label_value(labels, "stop reason: "),
+        "public_url": public_url,
     }
 
 
@@ -87,6 +138,7 @@ def project_company(events: list[dict]) -> dict:
     content_snapshots: dict[str, dict] = {}
     latest_publication: dict | None = None
     incident_states: dict[str, tuple[int, dict]] = {}
+    experiment_states: dict[str, tuple[int, dict]] = {}
 
     for index, event in enumerate(events):
         errors = validate_event(event)
@@ -115,6 +167,8 @@ def project_company(events: list[dict]) -> dict:
             content_snapshots[entity["id"]] = event
         if event["event_type"].startswith("incident."):
             incident_states[entity["id"]] = (index, event)
+        if entity["type"] == "experiment" and event["event_type"].startswith("experiment."):
+            experiment_states[entity["id"]] = (index, event)
 
     inventory = {"online": 0, "under_review": 0, "draft": 0, "rejected": 0}
     for event in listings.values():
@@ -164,6 +218,8 @@ def project_company(events: list[dict]) -> dict:
             "phase": event["status"]["after"],
             "next_retry_at": event["next"]["retry_at"],
         }
+    latest_experiment = max(experiment_states.values(), default=None, key=lambda item: item[0])
+    experiment = _experiment_projection(latest_experiment[1] if latest_experiment else None)
 
     as_of = events[-1]["recorded_at"] if events else "1970-01-01T00:00:00Z"
     company = {
@@ -190,6 +246,7 @@ def project_company(events: list[dict]) -> dict:
         },
         "metrics": metrics,
         "incident": incident,
+        "experiment": experiment,
         "listing_url": marketing_listing_url or fallback_listing,
         "dashboard_url": "https://capafy-skills-daily.netlify.app/company/",
     }
@@ -231,7 +288,7 @@ def parity_errors(projected: dict, independent: dict) -> list[str]:
             errors.append(
                 f"{field} mismatch: projection={projected_value!r} source={source_value!r}"
             )
-    for field in ("inventory", "orders", "incident"):
+    for field in ("inventory", "orders", "incident", "experiment"):
         if projected.get(field) != independent.get(field):
             errors.append(
                 f"{field} mismatch: projection={projected.get(field)!r} "

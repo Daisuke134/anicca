@@ -108,38 +108,18 @@ class BuildLandingTests(unittest.TestCase):
                     build_landing.build(output)
             self.assertFalse(output.exists())
 
-    def test_daily_loop_refreshes_landing_before_cadence_and_uses_it_for_bio(self):
+    def test_daily_controller_has_no_elapsed_cadence_or_bio_mutation_gate(self):
         script = DAILY_SCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("# ── CADENCE GATE", script)
+        self.assertNotIn("warmup day-count", script)
+        self.assertIn("publish_probe|commercial_post", script)
+        self.assertIn("no bio-link mutation", script)
 
-        self.assertIn(
-            'LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"',
-            script,
-        )
-        self.assertIn(
-            'LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"',
-            script,
-        )
-        self.assertIn('build_landing.py" >>"$LOG"', script)
-        self.assertIn('netlify deploy --prod --dir', script)
-        self.assertIn('--site "$LANDING_SITE_ID"', script)
-        self.assertLess(script.index("build_landing.py"), script.index("# ── CADENCE GATE"))
-        self.assertIn(
-            'STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the all-skills landing URL '\
-            '\'"$LANDING_URL"\' ONLY when commercial_ok=yes AND MODE=--live.',
-            script,
-        )
-        self.assertIn(
-            "Never use an individual Capafy listing URL for the Website",
-            script,
-        )
-
-    def test_daily_loop_pulls_attribution_immediately_after_ig_metrics(self):
+    def test_daily_controller_hands_verified_campaign_to_shared_event_pipeline(self):
         script = DAILY_SCRIPT.read_text(encoding="utf-8")
-        metrics = script.index("scripts/ig_metrics.py")
-        pull = script.index("scripts/pull_attribution.py")
-
-        self.assertLess(metrics, pull)
-        self.assertIn('pull_attribution failed (non-fatal)', script)
+        self.assertIn("utm_source=instagram", script)
+        self.assertIn('CAPAFY_MARKETING_RESULT="$RESULT" bash "$HANDOFF" 0', script)
+        self.assertIn("published_verified", script)
 
     def test_netlify_routes_go_paths_to_functions(self):
         config = NETLIFY_CONFIG.read_text(encoding="utf-8")

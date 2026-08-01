@@ -12,6 +12,7 @@ import capafy_experiment as experiment
 import capafy_portfolio
 import capafy_event_store
 import capafy_experiment_prompt
+import capafy_experiment_remote
 
 
 def product(agent_id: str = "3947077924") -> dict:
@@ -147,6 +148,60 @@ def test_invalid_active_proposal_can_self_repair_without_touching_other_products
     assert chosen["experiment"] is None
     assert chosen["purchase_model"] == "undecided"
     assert repaired["products"][1] == activated["products"][1]
+
+
+def test_remote_verifier_requires_exact_download_price_and_confirmed_skill() -> None:
+    value = proposal("one_time")
+    remote = {
+        "ok": True,
+        "latest_version": {
+            "agentId": value["agent_id"], "agentType": "download", "status": 1,
+            "isConfirmedSkills": 1,
+            "billings": [{"billingMode": "download", "oneTimeFee": 10.0}],
+        },
+    }
+    assert capafy_experiment_remote.validate_remote(value, remote) == []
+    wrong = copy.deepcopy(remote); wrong["latest_version"]["oneTimeFee"] = 9
+    wrong["latest_version"]["billings"][0]["oneTimeFee"] = 9
+    assert any("one-time fee" in e for e in capafy_experiment_remote.validate_remote(value, wrong))
+    cloud = copy.deepcopy(remote); cloud["latest_version"]["agentType"] = "run_online"
+    assert any("agentType" in e for e in capafy_experiment_remote.validate_remote(value, cloud))
+
+
+def test_configuration_event_carries_complete_reporting_contract() -> None:
+    event = experiment.configuration_event(proposal("one_time"), "2026-08-02T13:40:00Z")
+    assert capafy_event_store.validate_event(event) == []
+    assert event["event_type"] == "experiment.configured"
+    assert any(label.startswith("success metric: ") for label in event["public_evidence"]["labels"])
+
+
+def test_active_experiment_can_self_stop_after_remote_platform_rejection() -> None:
+    activated = experiment.activate(snapshot(), proposal("one_time"))
+
+    stopped = experiment.stop_active(
+        activated,
+        proposal("one_time"),
+        "Capafy forbids changing an already-online Agent from run-online to Download.",
+        "2026-08-02T14:00:00Z",
+    )
+
+    chosen = stopped["products"][0]
+    assert chosen["experiment"]["status"] == "stopped"
+    assert chosen["experiment"]["stop_reason"].startswith("Capafy forbids")
+    assert chosen["purchase_model"] == "undecided"
+    event = experiment.stopped_event(
+        proposal("one_time"), chosen["experiment"]["stop_reason"], "2026-08-02T14:00:00Z"
+    )
+    assert capafy_event_store.validate_event(event) == []
+    assert event["event_type"] == "experiment.stopped"
+    assert event["status"] == {"before": "active", "after": "stopped"}
+    assert event["money"]["gross_delta"] == "0.00"
+    assert experiment.stop_active(
+        stopped,
+        proposal("one_time"),
+        chosen["experiment"]["stop_reason"],
+        "2026-08-02T14:01:00Z",
+    ) == stopped
 
 
 def test_prompt_exposes_eligible_products_and_official_fee_evidence_without_price_default() -> None:

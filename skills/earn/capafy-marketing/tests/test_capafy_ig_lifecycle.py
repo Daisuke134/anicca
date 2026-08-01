@@ -62,14 +62,14 @@ def test_reel_without_reach_waits_for_real_measurement():
     assert snapshot["capability"] == "none"
 
 
-def test_verified_reel_and_healthy_reach_grant_commercial_capability():
+def test_verified_reel_grants_commercial_capability_without_elapsed_wait():
     snapshot = derive_snapshot(
         [account()],
         {
             "handle": "capafy.new",
             "last_public_reel_url": "https://www.instagram.com/reel/ABC123/",
             "post_write_session_verified": True,
-            "reach_healthy": True,
+            "reach_healthy": False,
         },
         now("2026-08-08T10:00:00Z"),
     )
@@ -145,7 +145,8 @@ def test_record_public_reel_validates_url_and_reads_back_written_state(tmp_path)
 
     assert result == json.loads(path.read_text(encoding="utf-8"))
     assert result["last_public_reel_url"] == url
-    assert result["status"] == "first_publish_probe_verified"
+    assert result["status"] == "commercial_ready"
+    assert result["capability"] == "commercial_post"
     assert result["post_write_session_verified"] is True
 
 
