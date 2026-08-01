@@ -30,4 +30,4 @@
 
 - [x] outbound/runtime回帰、diff checkを通す。
 - [x] O1B-12完了、残数125件へspecを更新する。
-- [ ] evidence、commit、pushを完了する。
+- [x] evidence、commit、pushを完了する。
