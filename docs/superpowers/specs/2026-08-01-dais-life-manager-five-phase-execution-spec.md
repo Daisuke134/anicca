@@ -304,6 +304,16 @@ closeし、browser自体はcloseしない。実moduleを`:9222`へ接続したre
 `existing_page_count=1`、`login_required`、path `/signin`を返し、その後もdaily-driver生存を確認した。
 次は東京対面Luma inventoryのdiscovery契約。
 
+O1B-03進捗3: Luma Tokyo discoverは仮想scrollで、実DOM候補数が`15→23→16`と減るため、最終DOMだけを
+読むと候補を落とすことを確認した。各scroll snapshotのevent cardをcanonical URLで累積し、終端で
+scroll heightと新規候補0件が3回連続安定した場合だけ`complete=true`にするcollectorをTDDで追加。
+実ページは7 roundsで終端、27候補を取得し、AI以外の候補も保持した。event detailは公式JSON-LDから
+開始・終了・attendance mode・会場・開催statusを取得し、実buttonの完全一致からauthとRSVPを分離する。
+実候補`https://luma.com/h8157e6c`は対面、2026-08-02 09:30 JST開始、会場取得済み、
+`login_required`かつ`rsvp_status=available`だった。数値定員が非公開なので推測せず
+`capacity_status=availability_control_only`とした。新規discovery 5件、detail 5件、outbound全体52件が
+成功。次は同日次候補へ進む失敗分類。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
