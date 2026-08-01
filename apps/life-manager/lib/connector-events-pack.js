@@ -9,7 +9,11 @@ const { inferEventPreferenceRanking } = require("./event-preference-ranking.js")
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { runLumaCandidateSequence } = require("./luma-candidate-loop.js");
 const { planConnectorCoverageContinuation } = require("./connector-coverage-continuation.js");
-const { calendarEligibleLumaCandidates } = require("./calendar-candidate-gate.js");
+const {
+  calendarEligibleLumaCandidates,
+  evaluateCalendarCandidateGate,
+} = require("./calendar-candidate-gate.js");
+const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 const {
   createEventSourceCapabilities,
@@ -48,6 +52,8 @@ function createConnectorEventsPack(options = {}) {
   const runCandidateSequence = options.runCandidateSequence || runLumaCandidateSequence;
   const planCoverageContinuation = options.planCoverageContinuation || planConnectorCoverageContinuation;
   const selectCalendarEligibleCandidates = options.selectCalendarEligibleCandidates || calendarEligibleLumaCandidates;
+  const inspectBusyCalendar = options.inspectBusyCalendar || inspectGoogleCalendarBusyInventory;
+  const evaluateCalendarGate = options.evaluateCalendarGate || evaluateCalendarCandidateGate;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -96,6 +102,14 @@ function createConnectorEventsPack(options = {}) {
     runCalendarGatedSameDay(dateInventory, calendarGate, attempt) {
       const candidates = selectCalendarEligibleCandidates(dateInventory, calendarGate);
       return runCandidateSequence({ candidates, attempt });
+    },
+    readBusyCalendar(calendar, window = {}) {
+      return inspectBusyCalendar({ calendar, ...window });
+    },
+    gateDateCalendar(dateInventory, busyInventory, date, homeLocation, routeMinutes) {
+      return evaluateCalendarGate({
+        dateInventory, busyInventory, date, homeLocation, routeMinutes,
+      });
     },
     planCoverageContinuation(coverage, observedOutcomes, now) {
       return planCoverageContinuation({ coverage, observedOutcomes, now });

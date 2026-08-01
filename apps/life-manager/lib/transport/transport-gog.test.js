@@ -57,6 +57,50 @@ test("strict all-calendar reads fail closed instead of returning an empty schedu
   await assert.rejects(cal.listAllEventsRaw("u", { strict: true }), /provider down/);
 });
 
+test("connector calendar lookup and create use one private idempotency property and return provider IDs", async () => {
+  const calls = [];
+  const run = (args) => {
+    calls.push(args);
+    if (args[1] === "events") return JSON.stringify({ events: [{ id: "existing-1", htmlLink: "https://calendar.google.com/calendar/event?eid=existing" }] });
+    return JSON.stringify({ id: "created-1", htmlLink: "https://calendar.google.com/calendar/event?eid=created" });
+  };
+  const cal = makeGogCalendar({ account: ACCT, run });
+  assert.deepEqual(await cal.findConnectorEvents({
+    calendarId: "primary", idempotencyValue: "a".repeat(64),
+    timeMin: "2026-08-05T12:00:00+09:00", timeMax: "2026-08-05T13:00:00+09:00",
+  }), [{ id: "existing-1", htmlLink: "https://calendar.google.com/calendar/event?eid=existing" }]);
+  assert.deepEqual(await cal.createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "AI Founder Night",
+    startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+    location: "Shibuya", canonicalUrl: "https://luma.com/founder-night",
+  }), { id: "created-1", htmlLink: "https://calendar.google.com/calendar/event?eid=created" });
+  assert.deepEqual(calls[0].slice(0, 5), ["calendar", "events", "primary", "-j", "--all-pages"]);
+  assert.ok(calls[0].includes(`--private-prop-filter=lm_connector_event=${"a".repeat(64)}`));
+  assert.ok(calls[0].includes("--no-input"));
+  assert.deepEqual(calls[1].slice(0, 4), ["calendar", "create", "primary", "-j"]);
+  assert.ok(calls[1].includes(`--private-prop=lm_connector_event=${"a".repeat(64)}`));
+  assert.ok(calls[1].includes("--source-url=https://luma.com/founder-night"));
+  assert.ok(calls[1].includes("--no-input"));
+});
+
+test("connector calendar methods reject malformed IDs, URLs, times, and ambiguous provider receipts", async () => {
+  let calls = 0;
+  const cal = makeGogCalendar({ account: ACCT, run: () => { calls += 1; return "{}"; } });
+  await assert.rejects(cal.findConnectorEvents({ calendarId: "--bad", idempotencyValue: "a".repeat(64) }), /connector calendar invalid/i);
+  await assert.rejects(cal.createConnectorEvent({ calendarId: "primary", idempotencyValue: "short" }), /connector calendar invalid/i);
+  await assert.rejects(cal.createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "x", startAt: "bad", endAt: "bad",
+    location: "x", canonicalUrl: "http://luma.com/x",
+  }), /connector calendar invalid/i);
+  assert.equal(calls, 0);
+  const ambiguous = makeGogCalendar({ account: ACCT, run: () => JSON.stringify({ id: "created-without-link" }) });
+  await assert.rejects(ambiguous.createConnectorEvent({
+    calendarId: "primary", idempotencyValue: "a".repeat(64), title: "x",
+    startAt: "2026-08-05T12:00:00+09:00", endAt: "2026-08-05T13:00:00+09:00",
+    location: "x", canonicalUrl: "https://luma.com/x",
+  }), /connector calendar unavailable/i);
+});
+
 test("listEventsRaw tolerates {events:[...]} and non-JSON (→ [])", async () => {
   assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => '{"events":[{"id":"e2"}]}' }).listEventsRaw("u", {}), [{ id: "e2" }]);
   assert.deepEqual(await makeGogCalendar({ account: ACCT, run: () => "not json" }).listEventsRaw("u", {}), []);
