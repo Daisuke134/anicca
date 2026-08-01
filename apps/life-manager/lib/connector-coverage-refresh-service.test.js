@@ -138,6 +138,18 @@ function makeService(input) {
     buildRegistrationCoverageEvidence: buildVerifiedRegistrationCoverageEvidence,
     proveUnavailableDay: proveAllDayCalendarUnavailable,
     rebuildCoverage: rebuildRollingEventCoverage,
+    planOpenDate: input.planOpenDate || (async ({ coverage }) => ({
+      open_date_plan_id: `connector-open-date-plan:${"a".repeat(64)}`,
+      coverage_snapshot_id: coverage.coverage_snapshot_id,
+      inventory_snapshot_id: "luma-date-inventory:fixture",
+      date: coverage.days.find((day) => day.status === "open")?.date || null,
+      status: coverage.counts.open > 0 ? "waiting" : "complete",
+      event_ref: null,
+      job_ref: null,
+    })),
+    profile: input.profile || { tenant_id: TENANT },
+    apiKey: "fixture-key",
+    homeLocation: "home://dais-local",
   });
 }
 
@@ -242,5 +254,56 @@ test("inventory failure exposes only a stable operational stage code", async () 
     (error) => error.message === "Connector coverage refresh unavailable"
       && error.code === "CONNECTOR_COVERAGE_INVENTORY_FAILED"
       && !JSON.stringify(error).includes("private browser detail"),
+  );
+});
+
+test("open-date planning runs only after verified registrations are rebuilt into coverage", async () => {
+  const coverage = currentCoverage();
+  const inventory = await dateInventory(coverage);
+  const registration = await completedRegistration();
+  let plannedCoverage;
+  const plan = Object.freeze({
+    open_date_plan_id: `connector-open-date-plan:${"b".repeat(64)}`,
+    coverage_snapshot_id: "assigned-by-test",
+    inventory_snapshot_id: inventory.inventory_snapshot_id,
+    date: "2026-08-02",
+    status: "enqueued",
+    event_ref: "luma-event://event/next",
+    job_ref: `runtime-job://${TENANT}/${"c".repeat(64)}`,
+  });
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { return [registration]; } },
+    readDateInventory: async () => inventory,
+    calendar: {
+      async findConnectorEvents() { return [{ id: "existing", htmlLink: "https://calendar.google.com/calendar/event?eid=existing" }]; },
+      async createConnectorEvent() { throw new Error("must not create"); },
+    },
+    async planOpenDate(input) {
+      plannedCoverage = input.coverage;
+      return { ...plan, coverage_snapshot_id: input.coverage.coverage_snapshot_id };
+    },
+  });
+  const result = await refresh({ coverage, tenantId: TENANT });
+  assert.equal(plannedCoverage.counts.covered_new, 1);
+  assert.equal(plannedCoverage.counts.covered_existing, 0);
+  assert.equal(result.openDatePlan.status, "enqueued");
+  assert.equal(result.openDatePlan.coverage_snapshot_id, result.coverage.coverage_snapshot_id);
+});
+
+test("application planning failure keeps its bounded stage code", async () => {
+  const coverage = currentCoverage();
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { return []; } },
+    readDateInventory: async () => dateInventory(coverage),
+    calendar: {
+      async findConnectorEvents() { return []; },
+      async createConnectorEvent() { throw new Error("must not create"); },
+    },
+    async planOpenDate() { throw new Error("private model response"); },
+  });
+  await assert.rejects(
+    refresh({ coverage, tenantId: TENANT }),
+    (error) => error.code === "CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED"
+      && !JSON.stringify(error).includes("private model response"),
   );
 });

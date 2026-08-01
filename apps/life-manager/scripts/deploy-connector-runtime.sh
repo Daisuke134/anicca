@@ -4,10 +4,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TOKEN_FILE="${LM_CONNECTOR_BRIDGE_TOKEN_FILE:-${HOME}/.local/state/life-manager/connector-host-bridge/token}"
+ENV_FILE="${LM_CONNECTOR_ENV_FILE:-${HOME}/.openclaw/.env}"
 DOCKER_BIN="${LM_DOCKER_BIN:-docker}"
 NODE_BIN="${LM_NODE_BIN:-/opt/homebrew/bin/node}"
 
-if [[ ! -f "$TOKEN_FILE" || "$(stat -f '%Lp' "$TOKEN_FILE")" != "600" ]]; then
+if [[ ! -f "$TOKEN_FILE" || "$(stat -f '%Lp' "$TOKEN_FILE")" != "600" || ! -f "$ENV_FILE" ]]; then
+  echo "Connector runtime unavailable" >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+if [[ -z "${GEMINI_API_KEY:-}" ]]; then
   echo "Connector runtime unavailable" >&2
   exit 1
 fi
@@ -21,6 +31,7 @@ if ((TOKEN_LENGTH < 32)) || ((TOKEN_LENGTH > 256)) \
 fi
 export LM_CONNECTOR_BRIDGE_TOKEN
 export LM_RUNTIME_TENANT_ID="${LM_RUNTIME_TENANT_ID:-dais-local}"
+export LM_CONNECTOR_PROFILE_PATH="${LM_CONNECTOR_PROFILE_PATH:-/app/apps/life-manager/config/connector/dais-local.json}"
 export LM_CONNECTOR_WORKER_CAPABILITIES="runtime.noop,outbound.event.apply,connector.coverage.refresh"
 
 COMPOSE=(

@@ -46,6 +46,7 @@ function dependenciesContract(dependencies) {
     "buildRegistrationCoverageEvidence",
     "proveUnavailableDay",
     "rebuildCoverage",
+    "planOpenDate",
   ];
   if (
     !dependencies.receiptReader
@@ -148,11 +149,27 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
         registrations,
         unavailableDays,
       });
+      let openDatePlan;
+      try {
+        openDatePlan = await dependencies.planOpenDate({
+          coverage,
+          dateInventory,
+          busyInventory,
+          profile: dependencies.profile,
+          apiKey: dependencies.apiKey,
+          homeLocation: dependencies.homeLocation,
+          routeMinutes: dependencies.routeMinutes,
+        });
+      } catch { unavailable("CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED"); }
       return Object.freeze({
         coverage,
         observedOutcomes: Object.freeze(observedOutcomes),
+        openDatePlan,
       });
-    } catch { unavailable("CONNECTOR_COVERAGE_ASSEMBLY_FAILED"); }
+    } catch (error) {
+      if (/^CONNECTOR_COVERAGE_[A-Z_]+$/.test(String(error && error.code || ""))) throw error;
+      unavailable("CONNECTOR_COVERAGE_ASSEMBLY_FAILED");
+    }
   };
 }
 

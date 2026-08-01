@@ -5,3 +5,5 @@ services:
       LM_CONNECTOR_BRIDGE_URL: ${LM_CONNECTOR_BRIDGE_URL:-http://host.docker.internal:18793}
       LM_CONNECTOR_BRIDGE_TOKEN: ${LM_CONNECTOR_BRIDGE_TOKEN:-}
       LM_CONNECTOR_CALENDAR_ID: ${LM_CONNECTOR_CALENDAR_ID:-primary}
+      LM_CONNECTOR_PROFILE_PATH: ${LM_CONNECTOR_PROFILE_PATH:-/app/apps/life-manager/config/connector/dais-local.json}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}

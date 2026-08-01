@@ -15,6 +15,11 @@ const JOB_KEYS = Object.freeze([
   "coverage_snapshot_ref", "identity_ref",
 ]);
 const COVERAGE_REF = /^event-coverage:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
+const PLAN_STATUSES = new Set(["complete", "enqueued", "waiting", "exhausted", "no_candidates"]);
+const PLAN_KEYS = Object.freeze([
+  "coverage_snapshot_id", "date", "event_ref", "inventory_snapshot_id",
+  "job_ref", "open_date_plan_id", "status",
+]);
 
 function invalid() { throw new Error("Connector coverage adapter invalid"); }
 
@@ -41,6 +46,33 @@ function jobContract(job) {
     browserProfileRef: refs.browser_profile_ref,
     calendarRef: refs.calendar_ref,
   });
+}
+
+function openDatePlanContract(value, coverage) {
+  if (
+    !value || typeof value !== "object" || Array.isArray(value)
+    || Object.keys(value).sort().join(",") !== [...PLAN_KEYS].sort().join(",")
+    || !/^connector-open-date-plan:[0-9a-f]{64}$/.test(String(value.open_date_plan_id || ""))
+    || value.coverage_snapshot_id !== coverage.coverage_snapshot_id
+    || !/^luma-date-inventory:[0-9a-f]{64}$/.test(String(value.inventory_snapshot_id || ""))
+    || !PLAN_STATUSES.has(value.status)
+  ) invalid();
+  if (value.status === "complete") {
+    if (coverage.counts.open !== 0 || value.date !== null || value.event_ref !== null || value.job_ref !== null) invalid();
+    return value;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ""))) invalid();
+  const day = coverage.days.find((candidate) => candidate.date === value.date);
+  if (!day || day.status !== "open") invalid();
+  const hasJob = ["enqueued", "waiting"].includes(value.status);
+  if (hasJob) {
+    const job = /^runtime-job:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/.exec(String(value.job_ref || ""));
+    if (
+      !/^luma-event:\/\/event\/[A-Za-z0-9_-]+$/.test(String(value.event_ref || ""))
+      || !job || job[1] !== coverage.tenant_id
+    ) invalid();
+  } else if (value.event_ref !== null || value.job_ref !== null) invalid();
+  return value;
 }
 
 function createConnectorCoverageLoopAdapter(dependencies = {}) {
@@ -75,11 +107,12 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
       }));
       if (
         !result || typeof result !== "object" || Array.isArray(result)
-        || Object.keys(result).sort().join(",") !== "coverage,observedOutcomes"
+        || Object.keys(result).sort().join(",") !== "coverage,observedOutcomes,openDatePlan"
         || !isVerifiedRollingEventCoverage(result.coverage)
         || result.coverage.tenant_id !== contract.tenantId
         || !Array.isArray(result.observedOutcomes)
       ) invalid();
+      const openDatePlan = openDatePlanContract(result.openDatePlan, result.coverage);
       const saved = await coverageStore.save(result.coverage);
       if (saved !== result.coverage) invalid();
       const observedAt = now();
@@ -106,6 +139,8 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
         continuation_id: continuation.continuation_id,
         open_date_count: continuation.open_date_count,
         next_run_at: continuation.next_run_at,
+        open_date_plan_ref: `connector-open-date-plan://${contract.tenantId}/${openDatePlan.open_date_plan_id.replace(/^connector-open-date-plan:/, "")}`,
+        open_date_plan_status: openDatePlan.status,
       });
       RECEIPTS.add(receipt);
       return Object.freeze({ receipt });
@@ -124,8 +159,13 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
         !receipt || receipt.kind !== "connector_coverage_refresh"
         || !["continue", "complete"].includes(receipt.status)
         || !Number.isInteger(receipt.open_date_count) || receipt.open_date_count < 0 || receipt.open_date_count > 21
+        || !PLAN_STATUSES.has(receipt.open_date_plan_status)
       ) invalid();
-      return Object.freeze({ status: receipt.status, open_date_count: receipt.open_date_count });
+      return Object.freeze({
+        status: receipt.status,
+        open_date_count: receipt.open_date_count,
+        open_date_plan_status: receipt.open_date_plan_status,
+      });
     },
   });
 }

@@ -40,6 +40,20 @@ function allUnavailable() {
   }));
 }
 
+function openDatePlan(coverage, status = "enqueued") {
+  const active = status !== "complete";
+  const hasJob = ["enqueued", "waiting"].includes(status);
+  return {
+    open_date_plan_id: `connector-open-date-plan:${"b".repeat(64)}`,
+    coverage_snapshot_id: coverage.coverage_snapshot_id,
+    inventory_snapshot_id: `luma-date-inventory:${"c".repeat(64)}`,
+    date: active ? coverage.days.find((day) => day.status === "open").date : null,
+    status,
+    event_ref: hasJob ? "luma-event://event/first" : null,
+    job_ref: hasJob ? `runtime-job://dais-local/${"d".repeat(64)}` : null,
+  };
+}
+
 test("refresh worker reads, saves, and schedules the next durable coverage job while open remains", async () => {
   const current = sourceCoverage();
   const next = sourceCoverage([allUnavailable()[0]]);
@@ -54,6 +68,7 @@ test("refresh worker reads, saves, and schedules the next durable coverage job w
       return {
         coverage: next,
         observedOutcomes: [{ date: "2026-08-02", observed_status: "search_exhausted" }],
+        openDatePlan: openDatePlan(next),
       };
     },
     async enqueueContinuation(input) { calls.push(["enqueue", input]); return { created: true }; },
@@ -63,6 +78,7 @@ test("refresh worker reads, saves, and schedules the next durable coverage job w
   const execution = await adapter.execute(job);
   assert.equal(execution.receipt.status, "continue");
   assert.equal(execution.receipt.open_date_count, 20);
+  assert.equal(execution.receipt.open_date_plan_status, "enqueued");
   assert.equal(adapter.verify(execution.receipt, job), true);
   assert.deepEqual(calls.map(([name]) => name), ["read", "refresh", "save", "enqueue"]);
   assert.equal(calls[0][1], job.input_refs.coverage_snapshot_ref);
@@ -77,7 +93,7 @@ test("open zero completes without another enqueue", async () => {
   let enqueues = 0;
   const adapter = createConnectorCoverageLoopAdapter({
     coverageStore: { async read() { return current; }, async save(value) { return value; } },
-    async refreshCoverage() { return { coverage: complete, observedOutcomes: [] }; },
+    async refreshCoverage() { return { coverage: complete, observedOutcomes: [], openDatePlan: openDatePlan(complete, "complete") }; },
     async enqueueContinuation() { enqueues += 1; },
     now: () => "2026-08-02T01:10:00.000Z",
   });
@@ -97,17 +113,18 @@ test("fake jobs, fake refreshed coverage, tenant drift, and malformed outcomes f
     async enqueueContinuation() {},
     now: () => "2026-08-02T01:10:00.000Z",
   });
-  await assert.rejects(make(async () => ({ coverage: structuredClone(current), observedOutcomes: [] })).execute(job), /coverage adapter invalid/i);
-  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [{ date: "bad", observed_status: "booked" }] })).execute(job), /coverage continuation invalid/i);
-  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [] })).execute({ ...job, tenant_id: "other" }), /coverage adapter invalid/i);
-  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [] })).execute({ ...job, input_refs: { ...job.input_refs, password_ref: "secret" } }), /coverage adapter invalid/i);
+  await assert.rejects(make(async () => ({ coverage: structuredClone(current), observedOutcomes: [], openDatePlan: openDatePlan(current) })).execute(job), /coverage adapter invalid/i);
+  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [{ date: "bad", observed_status: "booked" }], openDatePlan: openDatePlan(current) })).execute(job), /coverage continuation invalid/i);
+  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [], openDatePlan: { ...openDatePlan(current), coverage_snapshot_id: "wrong" } })).execute(job), /coverage adapter invalid/i);
+  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [], openDatePlan: openDatePlan(current) })).execute({ ...job, tenant_id: "other" }), /coverage adapter invalid/i);
+  await assert.rejects(make(async () => ({ coverage: current, observedOutcomes: [], openDatePlan: openDatePlan(current) })).execute({ ...job, input_refs: { ...job.input_refs, password_ref: "secret" } }), /coverage adapter invalid/i);
 });
 
 test("adapter exposes plan, execute, reconcile, verify, and report", async () => {
   const current = sourceCoverage();
   const adapter = createConnectorCoverageLoopAdapter({
     coverageStore: { async read() { return current; }, async save(value) { return value; } },
-    async refreshCoverage() { return { coverage: current, observedOutcomes: [] }; },
+    async refreshCoverage() { return { coverage: current, observedOutcomes: [], openDatePlan: openDatePlan(current, "waiting") }; },
     async enqueueContinuation() {},
     now: () => "2026-08-02T01:10:00.000Z",
   });
@@ -123,7 +140,10 @@ test("adapter exposes plan, execute, reconcile, verify, and report", async () =>
   });
   assert.equal(planned.length, 1);
   assert.equal((await adapter.reconcile({})).state, "absent");
-  assert.deepEqual(adapter.report({ kind: "connector_coverage_refresh", status: "continue", open_date_count: 21 }), {
-    status: "continue", open_date_count: 21,
+  assert.deepEqual(adapter.report({
+    kind: "connector_coverage_refresh", status: "continue", open_date_count: 21,
+    open_date_plan_status: "waiting",
+  }), {
+    status: "continue", open_date_count: 21, open_date_plan_status: "waiting",
   });
 });
