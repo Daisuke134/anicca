@@ -683,6 +683,12 @@ collision rollback、DB graph/trigger/immutabilityをtest 6件で固定した。
 `talk-application-transition-store.js`は未実装のためmodule path不存在で期待どおりRED。次はstoreとmigrationを
 実装する。
 
+O1B-15進捗4（DB GREEN）: verified transitionだけからcontent-addressed recordを作り、single-client
+transactionでparentを`FOR UPDATE`、exact retryを照合、新規transitionをappendし、DB AFTER triggerによる
+current state projectionを再読出しするstoreを実装した。migrationはcomposite FK、forward pair CHECK、
+DB自身のcurrent-state gate、atomic projection、UPDATE/DELETE拒否、RLSを持つ。focused 6/6、新規store testを
+含むoutbound全回帰150/150成功。次は実runtime DBへmigrationを適用し、全forward pathとrollbackを実測する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
