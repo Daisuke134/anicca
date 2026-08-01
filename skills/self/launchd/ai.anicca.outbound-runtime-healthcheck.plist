@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.outbound-runtime-healthcheck</string>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/self/outbound-runtime-healthcheck.sh</string></array>
+  <key>EnvironmentVariables</key><dict>
+    <key>LM_OUTBOUND_WORKER_HEALTH_URL</key><string>http://127.0.0.1:18790/health</string>
+    <key>LM_OUTBOUND_MAX_POLL_AGE_MS</key><string>120000</string>
+  </dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>__LIFE_MANAGER_HOME__/logs/outbound-runtime-healthcheck.out.log</string>
+  <key>StandardErrorPath</key><string>__LIFE_MANAGER_HOME__/logs/outbound-runtime-healthcheck.err.log</string>
+</dict></plist>
+
