@@ -190,3 +190,50 @@ test("an exact existing Connector event remains idempotent even when the fresh b
   assert.equal(result.status, "existing");
   assert.equal(creates, 0);
 });
+
+test("an exact existing Connector event is recovered before a travel gate is required", async () => {
+  const { dateInventory } = await inventoryAndGate();
+  const receipt = await registrationReceipt();
+  let gateCalls = 0;
+  let creates = 0;
+  const result = await syncVerifiedRegistrationToGoogleCalendar({
+    calendar: {
+      async findConnectorEvents() {
+        return [{
+          id: "existing-connector-event",
+          htmlLink: "https://calendar.google.com/calendar/event?eid=existing",
+        }];
+      },
+      async createConnectorEvent() { creates += 1; },
+    },
+    calendarId: "primary",
+    dateInventory,
+    resolveCalendarGate: async () => { gateCalls += 1; throw new Error("route unavailable"); },
+    eventRef: "luma-event://event/founder-night",
+    registrationReceipt: receipt,
+    registrationJob: JOB,
+  });
+
+  assert.equal(result.status, "existing");
+  assert.equal(gateCalls, 0);
+  assert.equal(creates, 0);
+});
+
+test("a missing Connector event still fails closed when no travel gate can be resolved", async () => {
+  const { dateInventory } = await inventoryAndGate();
+  const receipt = await registrationReceipt();
+  let creates = 0;
+  await assert.rejects(syncVerifiedRegistrationToGoogleCalendar({
+    calendar: {
+      async findConnectorEvents() { return []; },
+      async createConnectorEvent() { creates += 1; },
+    },
+    calendarId: "primary",
+    dateInventory,
+    resolveCalendarGate: async () => { throw new Error("route unavailable"); },
+    eventRef: "luma-event://event/founder-night",
+    registrationReceipt: receipt,
+    registrationJob: JOB,
+  }), /connector calendar sync unavailable/i);
+  assert.equal(creates, 0);
+});
