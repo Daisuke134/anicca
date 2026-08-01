@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "live_luma_registration",
+  "observed_at": "2026-08-01T14:38:40.076Z",
+  "timezone": "Asia/Tokyo",
+  "repository": "Daisuke134/life-manager",
+  "branch": "main",
+  "implementation_commit": "4785c16fc2b724cc4a287d727076d64265f3bdf1",
+  "worker_image": "sha256:8635a2e78e5930d8d8b434ac9f346c8c6e53f555ec420add405a83eaad9105db",
+  "event": {
+    "provider": "luma",
+    "title": "Engineer BAR",
+    "canonical_url": "https://luma.com/a879ax7k",
+    "starts_at": "2026-08-15T09:00:00.000Z",
+    "ends_at": "2026-08-15T14:00:00.000Z",
+    "attendance_mode": "in_person",
+    "venue_name": "Bar Layover",
+    "registration_payment_minor": 0,
+    "venue_charge_note": "JPY 1000 cover plus one JPY 700 drink, payable at venue",
+    "live_readback": "registered"
+  },
+  "selection": {
+    "calendar_account": "redacted@example.invalid",
+    "calendar_horizon_start": "2026-08-01T00:00:00+09:00",
+    "calendar_horizon_end": "2026-08-22T00:00:00+09:00",
+    "calendar_event_count": 127,
+    "calendar_all_pages": true,
+    "tokyo_place_url": "https://luma.com/tokyo?k=p",
+    "tokyo_inventory_complete": true,
+    "tokyo_inventory_rounds": 7,
+    "tokyo_inventory_count": 35,
+    "hard_category_filter_used": false,
+    "same_day_last_existing_end": "2026-08-15T15:00:00+09:00",
+    "event_start": "2026-08-15T18:00:00+09:00",
+    "conflict": false
+  },
+  "runtime": {
+    "tenant_id": "dais-local",
+    "job_id": "outbound-event:989aa4eaa8c15496dc4ddda66b76230362d50fd62563d03bc1c470723e0192bd",
+    "effect_key": "event-application:luma:a879ax7k:989aa4eaa8c15496dc4ddda66b76230362d50fd62563d03bc1c470723e0192bd",
+    "created": true,
+    "attempt": 1,
+    "status": "completed",
+    "queued_at": "2026-08-01T14:38:32.325780Z",
+    "completed_at": "2026-08-01T14:38:40.076343Z",
+    "provider_submits": 1,
+    "unknown_effect": false
+  },
+  "verified_receipt": {
+    "kind": "outbound_event_application",
+    "status": "verified",
+    "attempt_ref": "runtime-attempt://dais-local/outbound-event:989aa4eaa8c15496dc4ddda66b76230362d50fd62563d03bc1c470723e0192bd/1",
+    "external_receipt_ref": "provider-receipt://luma/e6ed82110481dc1dd0218ece8c632ca6a12448211c4dd59c78c82f8686f9b8eb",
+    "artifact_ref": "object://sha256/631c550c2337a113912a2e015ae75ed35b713dfd0ceb6c361e4095eb59c1892c",
+    "artifact_size_bytes": 497151,
+    "canonical_url": "https://luma.com/a879ax7k",
+    "evidence_hash": "92abfee6d690ab08233e53b6735c64bfc6d160170b488071cad8b6b51ec59e03",
+    "verified_at": "2026-08-01T14:38:40.067Z",
+    "e1": true,
+    "e2": true,
+    "e3": true
+  },
+  "google_calendar": {
+    "policy": "skills/_shared/lib/gcal-policy.sh",
+    "conflict_rechecked": true,
+    "main": {
+      "event_id": "q39qb69ap2ueck4a2re2pq51fc",
+      "start": "2026-08-15T18:00:00+09:00",
+      "end": "2026-08-15T23:00:00+09:00",
+      "url": "https://www.google.com/calendar/event?eid=cTM5cWI2OWFwMnVlY2s0YTJyZTJwcTUxZmMga2Vpb2RhaXN1a2VAbQ"
+    },
+    "travel_out": {
+      "event_id": "299krkiqks85rt6piu8dq3ebmg",
+      "start": "2026-08-15T17:15:00+09:00",
+      "end": "2026-08-15T17:45:00+09:00"
+    },
+    "travel_back": {
+      "event_id": "kt10bcuqslimiorh46anonjs0s",
+      "start": "2026-08-15T23:05:00+09:00",
+      "end": "2026-08-15T23:30:00+09:00"
+    },
+    "readback_count": 3
+  },
+  "verification": {
+    "runtime_job_tests": { "passed": 14, "failed": 0 },
+    "outbound_tests": { "passed": 72, "failed": 0 }
+  },
+  "claim_boundary": "This proves one real Luma RSVP, provider and screenshot evidence, canonical URL verification, and Google Calendar plus travel blocks. It does not claim that the confirmation mail, QR, or Telegram user report has been completed; those are O1B-05 through O1B-07."
+}

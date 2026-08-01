@@ -384,6 +384,14 @@ shape mismatch。DB行0、Luma click 0を確認した。canonical jobを実`enqu
 runtime storeが曖昧なmixed shapeを拒否しつつ自身のcanonical出力を受理するよう修正した。
 runtime-job 14/14、outbound 72/72。次のenqueueが引き続き同jobの実初回となる。
 
+完了: `O1B-04`。最新imageをworkerへ配備し、`Engineer BAR`の新規durable jobをenqueueした。
+`created=true`、attempt 1、provider submit 1、8秒以内に`completed`。receiptはE1 Luma provider response、
+E2 497,151-byte PNG、E3 canonical URLを同一attemptで検証した`status=verified`で、live pageも
+`rsvp_status=registered`を返した。既存Calendar policyで直前競合を再確認し、本体8/15 18:00–23:00、
+往路17:15–17:45、復路23:05–23:30をGoogle Calendarへ作成し、3 IDを再読出しした。実装/証拠:
+`docs/evidence/outbound/2026-08-01-o1b04-live-luma-registration.json`。次は固定順序どおりO1B-05で、
+この同じeventの確認mailをGmailから照合する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -502,7 +510,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-01 偽物の成功判定を削除
 - [x] O1B-02 event URLの2不具合を修正
 - [x] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
-- [ ] O1B-04 実イベント一件へ登録
+- [x] O1B-04 実イベント一件へ登録
 - [ ] O1B-05 確認mailをGmailで読む
 - [ ] O1B-06 guest keyからQRを生成
 - [ ] O1B-07 Telegramへ実QRを送る
