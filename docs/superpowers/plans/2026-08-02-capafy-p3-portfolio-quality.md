@@ -28,10 +28,10 @@
 
 **Files:** modify listing selector/controller and tests.
 
-- [ ] Refuse unaudited, paused, retire-candidate, non-owned, or already-active-conflicting products.
-- [ ] Require previous experiment measurement before replacement.
-- [ ] Select from evidence without hardcoded niche/product rankings.
-- [ ] Prove failure releases browser ownership and emits no success event.
+- [x] Refuse unaudited, paused, retire-candidate, non-owned, or already-active-conflicting products.
+- [x] Require previous experiment measurement before replacement.
+- [x] Select from evidence without hardcoded niche/product rankings.
+- [x] Prove failure releases browser ownership and emits no success event.
 
 ### Task 4: Draft, rejected, and overlap cleanup queue
 
