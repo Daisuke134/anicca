@@ -250,7 +250,15 @@ E1/E2/E3 verifierが生成したverified objectから作られ、同じtenant/jo
 完了可能にする。証拠不成立は外部効果の有無が不明なため`unknownEffect=true`でreconciliationへ渡す。
 fresh verificationはoutbound 31件、runtime worker回帰31件が成功した。実装commit: `4ea9e931a`。
 実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。evidence:
-`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。次は`O1B-02`。
+`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。`O1B-02`を実行中。
+
+O1B-02着手時の実測: URL不具合は2件ある。Calendarへ一回性`/join/complete/`を保存する不具合は
+旧Connectorの`gcal_write.py`と現在のOpenClaw配備版ではすでに拒否・canonical URL分離が入っている。
+connpass subdomainについても`~/.openclaw`配備版は検索結果のURLを保持するが、
+`profitable-claude`内の古いvendor copyはevent IDだけを残し、`https://connpass.com/event/<id>/`へ
+再構築する退行状態だった。配備版だけを暗黙の正本にせず、provider非依存のcanonical URL契約を
+`life-manager`へTDDで置き、E3 verifierと旧配備監査を同じ契約へ揃える。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1b02-canonical-event-url.md`。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
