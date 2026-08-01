@@ -9,6 +9,7 @@ const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const { inspectGoogleCalendarBusyInventory } = require("./google-calendar-busy-inventory.js");
 const {
+  calendarEligibleLumaCandidates,
   evaluateCalendarCandidateGate,
   isVerifiedCalendarCandidateGate,
 } = require("./calendar-candidate-gate.js");
@@ -83,13 +84,15 @@ test("a short appointment leaves later free time while a directly overlapping ca
   });
   assert.equal(result.status, "evaluated");
   assert.deepEqual(result.candidates.map((row) => [row.event_ref, row.eligible]), [
-    ["luma-event://event/noon", true],
     ["luma-event://event/overlap", false],
+    ["luma-event://event/noon", true],
   ]);
-  assert.equal(result.candidates[0].expanded_start_at, "2026-08-05T02:25:00.000Z");
-  assert.equal(result.candidates[0].expanded_end_at, "2026-08-05T04:25:00.000Z");
-  assert.equal(result.candidates[0].conflict_event_refs.length, 0);
-  assert.equal(result.candidates[1].conflict_event_refs.length, 1);
+  const noon = result.candidates.find((row) => row.event_ref === "luma-event://event/noon");
+  const overlap = result.candidates.find((row) => row.event_ref === "luma-event://event/overlap");
+  assert.equal(noon.expanded_start_at, "2026-08-05T02:25:00.000Z");
+  assert.equal(noon.expanded_end_at, "2026-08-05T04:25:00.000Z");
+  assert.equal(noon.conflict_event_refs.length, 0);
+  assert.equal(overlap.conflict_event_refs.length, 1);
   assert.equal(routeCalls.length, 2);
   assert.equal(routeCalls[0].from, "Office");
   assert.equal(routeCalls[0].to, "Shibuya Hall, Tokyo");
@@ -98,6 +101,12 @@ test("a short appointment leaves later free time while a directly overlapping ca
   assert.equal(isVerifiedCalendarCandidateGate(result), true);
   assert.equal(isVerifiedCalendarCandidateGate(structuredClone(result)), false);
   assert.doesNotMatch(JSON.stringify(result), /Office|Shibuya Hall|Home/);
+  assert.deepEqual(calendarEligibleLumaCandidates(inventory, result), [
+    { event_ref: "luma-event://event/noon", canonical_url: "https://luma.com/noon" },
+  ]);
+  assert.throws(() => calendarEligibleLumaCandidates(
+    inventory, structuredClone(result),
+  ), /calendar candidate gate invalid/i);
 });
 
 test("travel expansion and all-day events block candidates with exact opaque conflicts", async () => {
@@ -135,7 +144,7 @@ test("route failure requests recovery and fake inventories fail closed", async (
   });
   assert.equal(result.status, "recovery_required");
   assert.equal(result.reason, "route_unavailable");
-  assert.equal(result.failed_event_ref, "luma-event://event/noon");
+  assert.equal(result.failed_event_ref, "luma-event://event/overlap");
   assert.equal(result.candidates.length, 0);
   await assert.rejects(evaluateCalendarCandidateGate({
     dateInventory: structuredClone(inventory), busyInventory, date: "2026-08-05",
