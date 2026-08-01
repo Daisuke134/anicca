@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-> Status: 実行中。実イベント一件のverified registrationだけをこのsliceで成立させる。
+> Status: 完了。実イベント一件のverified registrationとGoogle Calendar readbackが成立した。
 
 **Goal:** 既存CloakBrowser daily-driver上の`keiodaisuke@gmail.com` Luma認証を自動復旧し、Google Calendarと競合しない東京対面event一件へ既存`outbound.event.apply` workerで登録する。
 
@@ -33,7 +33,7 @@
 
 ### Task 3: One verified registration
 
-- [ ] durable jobをenqueueし、production workerに一度だけclaimさせる。
-- [ ] E1/E2/E3 verified receiptと登録後readbackを照合する。
-- [ ] secretなしlive evidenceを保存する。
-- [ ] O1B-04完了、spec更新、commit、push。
+- [x] durable jobをenqueueし、production workerに一度だけclaimさせる。
+- [x] E1/E2/E3 verified receiptと登録後readbackを照合する。
+- [x] secretなしlive evidenceを保存する。
+- [x] O1B-04完了、spec更新、commit、push。
