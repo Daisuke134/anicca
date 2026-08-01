@@ -788,6 +788,12 @@ focused 5件、outbound 201件、runtime-up 33件、Gmail thread readback、DB r
 `docs/evidence/funding/2026-08-02-o1c10-funder-followups.json`。残作業は102件。
 次はO1C-11で、Gmail reply/rejection/meetingを型付きstatusへ反映する。
 
+O1C-10自動実行追証: DBのscheduleだけで完了扱いしないよう、既存OpenClaw `anicca` agentへ
+exact one-shot jobを2件登録した。Evio job `05bad139-4784-498d-9fde-ec0df6cd8343`とJ-Seed job
+`e066245a-352d-414b-90af-6e3a04dc5c68`はenabled、isolated、no-deliver、実行後削除で、各due timestampと
+一致する。`docs/runbooks/funder-followup-agent.md`にfresh thread再取得、inbound時の無送信、agent draft、
+positive Gmail ID、append-only receipt、初回成功時だけ96時間後の2回目を自己予約、2回で終了を固定した。
+
 完了: `O1C-11`。fresh sanitized Gmail full messageを元outreachのthread ID、message ID、送信時刻へ
 束縛し、`delivery_failed / reply_received / rejected / meeting_requested`の4型へ反映する境界を追加した。
 意味は本文のexact quoteを根拠にした`agent_judgment`が所有し、捏造quote、owner outbound、別thread、

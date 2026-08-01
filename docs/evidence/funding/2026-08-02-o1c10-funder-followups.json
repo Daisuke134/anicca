@@ -47,12 +47,37 @@
     "append_only": true,
     "exact_replay_only": true
   },
+  "autonomous_scheduler": {
+    "provider": "openclaw",
+    "enabled": true,
+    "runbook": "docs/runbooks/funder-followup-agent.md",
+    "jobs": [
+      {
+        "candidate_id": "evio",
+        "job_id": "05bad139-4784-498d-9fde-ec0df6cd8343",
+        "enabled": true,
+        "delete_after_run": true,
+        "run_at": "2026-08-04T17:50:09.839Z"
+      },
+      {
+        "candidate_id": "j-seed",
+        "job_id": "e066245a-352d-414b-90af-6e3a04dc5c68",
+        "enabled": true,
+        "delete_after_run": true,
+        "run_at": "2026-08-04T17:50:11.861Z"
+      }
+    ],
+    "fresh_thread_gate_at_execution": true,
+    "second_job_created_only_after_verified_first": true,
+    "human_confirmation_required": false
+  },
   "verification": {
     "focused_tests": { "passed": 5, "failed": 0 },
     "outbound_tests": { "passed": 201, "failed": 0 },
     "runtime_up_tests": { "passed": 33, "failed": 0 },
     "gmail_thread_readback": "passed",
     "database_readback": "passed",
+    "openclaw_job_readback": "passed",
     "git_diff_check": "passed",
     "early_live_sends": 0
   },
