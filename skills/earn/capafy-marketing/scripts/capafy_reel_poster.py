@@ -18,6 +18,9 @@ class BrowserChallenge(RuntimeError):
     pass
 
 
+COMPOSER_LABELS = ("New post", "Create", "新規投稿", "新しい投稿", "作成")
+
+
 @dataclass(frozen=True)
 class PostRequest:
     video: Path
@@ -191,7 +194,8 @@ class RawCdpBrowser:
 
     def open_composer(self) -> None:
         self.cdp.navigate(self.request.tid, "https://www.instagram.com/"); time.sleep(4); self._guard()
-        clicked = self._eval("(()=>{const s=[...document.querySelectorAll('svg[aria-label]')].find(x=>['New post','新規投稿'].includes(x.getAttribute('aria-label')));const b=s&&(s.closest('[role=button]')||s.parentElement);if(!b)return false;b.click();return true})()")
+        labels = json.dumps(COMPOSER_LABELS, ensure_ascii=False)
+        clicked = self._eval(f"(()=>{{const s=[...document.querySelectorAll('svg[aria-label]')].find(x=>{labels}.includes(x.getAttribute('aria-label')));const b=s&&(s.closest('a,[role=button]')||s.parentElement);if(!b)return false;b.click();return true}})()")
         if not clicked: raise RuntimeError("new post control unavailable")
         time.sleep(2); self._shot("composer")
 

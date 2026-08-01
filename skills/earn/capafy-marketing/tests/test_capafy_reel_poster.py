@@ -8,10 +8,15 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 from capafy_reel_poster import (  # noqa: E402
     BrowserChallenge,
+    COMPOSER_LABELS,
     PostRequest,
     post_reel,
     resolve_active_handle,
 )
+
+
+def test_composer_labels_cover_current_japanese_instagram_ui():
+    assert "新しい投稿" in COMPOSER_LABELS
 
 
 class FakeCdp:
