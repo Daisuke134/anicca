@@ -32,26 +32,29 @@
     "product": {
       "url": "https://aniccaai.com/lm",
       "status": "verified",
+      "expected_text": "Life Manager",
       "verified_at": "2026-08-02T12:00:00+09:00",
       "evidence": "HTTP 200 and Life Manager page title read back on 2026-08-02 JST."
     },
     "repository": {
       "url": "https://github.com/Daisuke134/life-manager",
       "status": "verified",
+      "expected_text": "Life Manager",
       "verified_at": "2026-08-02T12:00:00+09:00",
       "evidence": "Public repository returned HTTP 200 on 2026-08-02 JST."
     },
     "telegram": {
       "url": "https://t.me/LifeManagerBotbot?start=lp",
       "status": "verified",
+      "expected_text": "Life Manager",
       "verified_at": "2026-08-02T12:00:00+09:00",
       "evidence": "Telegram start page returned HTTP 200 on 2026-08-02 JST."
     },
     "dashboard": {
       "url": "https://aniccaai.com/dashboard",
-      "status": "verified",
+      "status": "legacy",
       "verified_at": "2026-08-02T12:00:00+09:00",
-      "evidence": "Dashboard entry returned HTTP 200 on 2026-08-02 JST."
+      "evidence": "HTTP 200, but the page title is Anicca Dashboard and the body is not verified as the Life Manager product dashboard. Do not attach."
     },
     "demo": {
       "url": null,
@@ -98,7 +101,9 @@
   "public_field_allowlist": [
     "product",
     "company.legal_name",
-    "links",
+    "links.product",
+    "links.repository",
+    "links.telegram",
     "claims"
   ]
 }
