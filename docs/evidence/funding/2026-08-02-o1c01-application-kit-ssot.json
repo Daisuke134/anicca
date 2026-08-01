@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "task": "O1C-01",
+  "observed_at": "2026-08-01T16:57:52Z",
+  "result": "verified",
+  "life_manager_commit": "df2935d51025a1a648ed63912678187693294075",
+  "application_kit_commit": "e0c1c538e45dec47488d495ec4579d4053b0877e",
+  "ssot_contract": {
+    "company_facts_ref": "application-kit://KIT.md",
+    "answer_count": 20,
+    "asset_count": 6,
+    "kit_digest": "ba1783f94997c895710e16a5c8a89c6c8d05532b9a7238a052d1a8c1935ba92c",
+    "consumer_literal_fallback_allowed": false,
+    "unknown_source_allowed": false,
+    "path_traversal_allowed": false,
+    "missing_dashboard_fact_allowed": false
+  },
+  "live_readback": {
+    "foundation_gate": "passed",
+    "resolved_field_count": 5,
+    "source_ref_count": 5,
+    "company_facts_from_kit": true,
+    "asset_inside_application_kit": true,
+    "unresolved_dashboard_token_count": 0
+  },
+  "schema_drift_repair": {
+    "detected_missing_dashboard_key": "mrr.actually_landed_usd",
+    "fallback_value_invented": false,
+    "stale_traction_rows_removed": true,
+    "onepager_replacement_key": "views.weekly_total",
+    "manifest_updated": true,
+    "generated_pdf_png_refreshed": false,
+    "generated_asset_freshness_owner": "O1C-16"
+  },
+  "verification": {
+    "focused_application_kit_tests": { "passed": 3, "failed": 0 },
+    "outbound_tests": { "passed": 172, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "application_kit_foundation_gate": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves Life Manager funder fields resolve company facts, all 20 reusable answers, and six allowlisted assets from one application-kit snapshot, inject current dashboard values without fallback, and carry source refs plus one digest. It does not prove rebuilt registry entries, generated deck/one-pager freshness, or a funder submission; O1C-02 and O1C-16 onward own those outcomes."
+}

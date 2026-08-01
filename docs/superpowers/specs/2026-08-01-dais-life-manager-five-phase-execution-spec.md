@@ -669,6 +669,19 @@ fresh verificationはfocused 4件、outbound 169件、runtime-up 33件、diff ch
 `docs/evidence/outbound/2026-08-02-o1b25-live-telegram-coverage-summary.json`。残作業は112件。
 次はO1C-01で、`application-kit`をcompany factsの正本として接続する。
 
+完了: `O1C-01`。`KIT.md`、`MANIFEST.md`、日英20回答、allowlist済み6素材を完全snapshotして一つの
+digestへ束縛し、funder fieldを`kit:company-facts / kit:answer / kit:asset`からだけ解決するproviderをTDDで
+追加した。consumer literal fallback、unknown source、path traversal、missing fileを拒否する。回答内の
+`{{dashboard:key}}`は同runの公開dashboard snapshotから全解決し、missing keyや未解決tokenをfail closedする。
+実kit foundation gateは全PASS、answer 20、asset 6、kit digest `ba1783f9…`、実5 field、source ref 5、
+未解決token 0を確認した。live readbackで廃止済み`mrr.actually_landed_usd`を検出し、値を捏造せず日英traction・
+deckから古い行を削除、one-pagerは実在する`views.weekly_total`へ変更しMANIFESTを更新した。Life Manager commit
+`df2935d51`とapplication-kit commit `e0c1c538`を各remoteへpush済み。生成済みPDF/PNGのfreshnessはO1C-16で
+あり未達を捏造しない。fresh verificationはfocused 3件、outbound 172件、runtime-up 33件、kit gate、diff checkが
+全成功。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c01-application-kit-ssot.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c01-application-kit-ssot.json`。残作業は111件。
+次はO1C-02で、funder/accelerator registryを再構築する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -869,7 +882,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 
 ### 5.3 Order 1C — 資金調達・アクセラレーター
 
-- [ ] O1C-01 `application-kit`をcompany factsの正本として接続
+- [x] O1C-01 `application-kit`をcompany factsの正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [ ] O1C-04 YC descriptionを制約内へ修正
