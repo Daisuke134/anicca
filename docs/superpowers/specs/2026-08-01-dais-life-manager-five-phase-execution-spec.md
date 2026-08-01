@@ -1279,6 +1279,12 @@ O1B-25進捗14（既存gog Maps経路adapter RED→GREEN）: 新しい経路サ�
 経路なし、異常durationはfail-closed。focused 19/19成功し、常設Connector testへ登録した。実Macでは
 Maps/Places API key未設定を実測したため、キーが入るまでは新規Calendar作成を成功扱いにしない。
 
+O1B-25進捗15（Connector host bridge契約 RED→GREEN）: DockerへGoogle認証やCLI実行権限を渡さず、Mac側
+`gog`へ到達する認証付きlocalhost HTTP bridgeを追加した。allowlistはCalendar一覧、全予定読取、Connector予定の
+照合・作成、transit分数の5操作だけ。Bearer tokenの定時間照合、16KB上限、POST一経路、非JSON・未知操作・
+非local client URL拒否、内部error/secret非反射を固定し、実HTTPを含む6/6成功。常設Connector testへ登録した。
+次はlaunchd installerとDocker側coverage service assemblyを接続する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
