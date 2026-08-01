@@ -35,21 +35,21 @@
 - Dependencies: `readExternalReceipt(tenantId, ref)`、`readArtifact(tenantId, ref)`、`fetchImpl(url, {method:"HEAD", redirect:"manual"})`
 - Produces: immutable `{status:"verified"|"failed", attempt_ref, missing, evidence, evidence_hash}` without raw mail, screenshot bytes, cookies, or credentials.
 
-- [ ] **Step 1: failing contract testsを書く**
+- [x] **Step 1: failing contract testsを書く**
 
   実PNG signatureを持つ5000 bytes fixtureと手計算したSHA-256 object refを使い、三証拠が揃うとverifiedになるtestを書く。E1 reader失敗、E2が4999 bytes、E3が302、`/join/complete/` URLの各caseはfailedとなり、欠落tierが正確であることを書く。raw email、file path、HTTP URLは拒否する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
   Run: `node --test lib/outbound-evidence.test.js`
 
   Expected: `Cannot find module './outbound-evidence.js'`でFAIL。
 
-- [ ] **Step 3: 最小実装を書く**
+- [x] **Step 3: 最小実装を書く**
 
   fixed reference/URL formatをparseし、E1/E2/E3を個別に`try/catch`する。PNG bytesは先頭8 bytesとsizeとSHA-256を検証する。HEADはtimeout signalをcallerから注入せず`AbortSignal.timeout(30000)`でboundedにする。結果は固定key順でSHA-256し、raw evidenceを返さない。
 
-- [ ] **Step 4: GREENと回帰testを確認する**
+- [x] **Step 4: GREENと回帰testを確認する**
 
   Run: `node --test lib/outbound-evidence.test.js lib/outbound-event-job.test.js lib/runtime-lease-heartbeat.test.js`
 
