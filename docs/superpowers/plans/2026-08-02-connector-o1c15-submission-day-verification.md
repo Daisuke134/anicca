@@ -14,4 +14,4 @@
 
 ### Task 3: Live proof
 - [x] Verify SPC from same-day official text and current application-kit without submitting.
-- [ ] Record evidence, mark O1C-15, count 97 remaining, push, and verify remote equality.
+- [x] Record evidence, mark O1C-15, count 97 remaining, push, and verify remote equality.
