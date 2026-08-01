@@ -33,8 +33,8 @@
 - [x] 東京・対面inventoryをscroll/pagination終端まで読むfixtureを作る。
 - [x] event URL、日時、場所、定員、RSVP状態をreference-only candidateへ変換する。
 - [x] category hard filterを置かず、agent判断用の本文を保持する。
-- [ ] 同日次候補へ進める失敗分類を実装する。
-- [ ] Commit and push.
+- [x] 同日次候補へ進める失敗分類を実装する。
+- [x] Commit and push.
 
 ### Task 3: RSVP adapter and effect fence
 
