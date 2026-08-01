@@ -75,7 +75,8 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 - CloakBrowser daily-driverは既に`http://127.0.0.1:9222`で稼働し、求人loopは
   `chromium.connect_over_cdp()`で既存default contextへ接続する。新しいChromiumや
   browser ownerを起動しない設計が実装済み。
-- daily-driverにはLumaの既存cookieと登録実績がある。events、funders、jobsは
+- daily-driverにはLumaの過去登録実績があるが、現在のlogin状態は未確認であり、過去証拠には
+  「ログイン」表示もある。agentが既存Google認証でloginを復旧し、events、funders、jobsは
   この同じdaily-driverをbrowser transportとして共有する。
 - CFOのジョブ登録側はruntime database URLが無く停止している。
 - CFOジョブを消費するexecutorもlaunchdに存在しない。
@@ -98,7 +99,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 | 項目 | 実測 | Daisが今渡すもの |
 |---|---|---|
 | Google Calendar / Gmail | `gog` OAuthで`redacted@example.invalid`のcalendar、gmail scopeが有効 | 追加credentialなし |
-| CloakBrowser daily-driver | `:9222`が応答中 | 追加browserなし。Luma loginは実装開始時に同profileでread-only再確認 |
+| CloakBrowser daily-driver | `:9222`が応答中。Lumaの現在loginは未確認 | 追加browserなし。agentが同profileと既存Google認証でloginを復旧 |
 | Telegram | Life Manager / OpenClawのtoken設定あり | 追加tokenなし |
 | 応募identity | 氏名、かな、romaji、電話、Google loginの環境設定あり | 秘密値をchatへ再送しない |
 | 決済 | 保存済みcardを今回のread-only点検では確認していない | 無料eventから開始。paidも完全自動にする場合は一度だけ自動支出policyを仕様化 |
