@@ -47,11 +47,29 @@ def emit(payload: dict, code: int) -> int:
 
 
 def main() -> int:
+    marketing_terminal = load(STATE / "capafy-marketing-terminal.json")
+    marketing_recorded_at = parse_time(marketing_terminal.get("recorded_at"))
+    marketing_kind = (marketing_terminal.get("outcome") or {}).get("kind")
+    superseding_marketing_outcome = marketing_kind in {
+        "account_created",
+        "marketing_published",
+        "marketing_dry",
+    }
     incidents = []
     incident_dir = STATE / "capafy-incidents"
     if incident_dir.exists():
         incidents = [load(path) for path in incident_dir.glob("*.json")]
         incidents = [item for item in incidents if item and item.get("phase") != "verified"]
+        if superseding_marketing_outcome and marketing_recorded_at is not None:
+            incidents = [
+                item
+                for item in incidents
+                if not (
+                    str(item.get("incident_id", "")).startswith("capafy-marketer-")
+                    and (incident_time := parse_time(item.get("updated_at"))) is not None
+                    and marketing_recorded_at > incident_time
+                )
+            ]
         incidents.sort(key=lambda item: item.get("updated_at", ""))
 
     if incidents:
@@ -92,6 +110,7 @@ def main() -> int:
     allowed = {
         "builder_submitted",
         "builder_noop",
+        "account_created",
         "marketing_published",
         "marketing_dry",
         "account_state",
