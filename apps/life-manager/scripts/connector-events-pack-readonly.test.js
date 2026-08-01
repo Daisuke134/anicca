@@ -3,7 +3,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { runConnectorEventsPackReadonly } = require("./connector-events-pack-readonly.js");
+const {
+  runConnectorEventsPackReadonly,
+  writeCliFailure,
+  writeCliResult,
+} = require("./connector-events-pack-readonly.js");
 
 test("the host read-only entrypoint recovers auth and reads exhaustive inventory through one pack", async () => {
   const calls = [];
@@ -84,4 +88,22 @@ test("the entrypoint refuses different Gmail and Luma identities before browser 
     deps: { createDailyDriver() { touched = true; } },
   }), /events pack unavailable/i);
   assert.equal(touched, false);
+});
+
+test("the CLI exits its own process only after result or failure output is flushed", () => {
+  const writes = [];
+  const exits = [];
+  const output = {
+    write(value, done) {
+      writes.push(value);
+      done();
+    },
+  };
+  const exit = (code) => exits.push(code);
+
+  writeCliResult({ complete: true }, { stdout: output, exit });
+  writeCliFailure({ stderr: output, exit });
+
+  assert.deepEqual(writes, ["{\"complete\":true}\n", "Connector events pack unavailable\n"]);
+  assert.deepEqual(exits, [0, 1]);
 });

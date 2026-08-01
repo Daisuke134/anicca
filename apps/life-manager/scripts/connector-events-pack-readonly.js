@@ -82,13 +82,24 @@ async function runConnectorEventsPackReadonly({ env = process.env, deps = {} } =
 async function main() {
   try {
     const result = await runConnectorEventsPackReadonly();
-    process.stdout.write(`${JSON.stringify(result)}\n`);
+    writeCliResult(result);
   } catch {
-    process.stderr.write("Connector events pack unavailable\n");
-    process.exitCode = 1;
+    writeCliFailure();
   }
+}
+
+function writeCliResult(result, options = {}) {
+  const stdout = options.stdout || process.stdout;
+  const exit = options.exit || process.exit;
+  stdout.write(`${JSON.stringify(result)}\n`, () => exit(0));
+}
+
+function writeCliFailure(options = {}) {
+  const stderr = options.stderr || process.stderr;
+  const exit = options.exit || process.exit;
+  stderr.write("Connector events pack unavailable\n", () => exit(1));
 }
 
 if (require.main === module) main();
 
-module.exports = { runConnectorEventsPackReadonly };
+module.exports = { runConnectorEventsPackReadonly, writeCliFailure, writeCliResult };

@@ -41,16 +41,16 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 ### 0.2 現在地と残りの一本道（2026-08-02 JST）
 
 正本実装は`/Users/anicca/Projects/life-manager-main`の`main`である。`O1A-01〜06`と
-`O1B-01〜16`は実装・実測・証拠化・push済み。直近の検証済みcheckpointは`7d6c7616a`で、
-今日を含む21日間を毎日再計算して`open / covered_existing / covered_new / unavailable`へ
-分類する器まで完成した。実Calendarを読んだ2026-08-02〜2026-08-22の初回snapshotは、
-後続のevent照合前なので21日すべて`open`である。これは「イベントがない」という意味ではない。
+`O1B-01〜17`は実装・実測・証拠化・push済み。21日coverageの器に加え、実Luma Tokyoを終端まで読み、
+全35 candidateのdetailを欠落なく21日へ投影するところまで完成した。実Calendarを読んだ
+2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
+`open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-17`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の唯一の実行対象は`O1B-18`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
 
 ```text
-いま: O1B-17 Luma Tokyo inventoryを終端まで読み、ISO日時で21日へ投影
-  → O1B-18〜25 ranking、serendipity判断、候補継続、Calendar衝突、有料policy、Telegram
+いま: O1B-18 AI/crypto/英語等をhard filterにせずranking preferenceにする
+  → O1B-19〜25 serendipity判断、候補継続、Calendar衝突、有料policy、Telegram
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -892,7 +892,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡
 - [x] O1B-15 登壇応募ごとの`submitted / accepted / rejected / presented`を応募ledgerへ記録
 - [x] O1B-16 今日を含む21日間（今日〜20日後）を毎日再計算するrolling coverage goalを実装
-- [ ] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
+- [x] O1B-17 Luma mainの東京・対面inventoryを日付ごとに最後まで読み、表示上位数件だけで探索を終えない
 - [ ] O1B-18 AI/crypto/英語等は優先順位にだけ使い、eventを捨てるhard category filterにはしない
 - [ ] O1B-19 agentがevent本文・参加者・主催者・場所・時間を読み、Daisの目標とserendipityを自然言語で評価
 - [ ] O1B-20 Lumaで実参加を確保できない場合、許諾済みsourceを探索する。connpassはkey取得後の公式API read-only discoveryだけとし、自動申込み・coverage達成には使わない
@@ -924,6 +924,14 @@ O1B-17進捗3（GREEN）: discovery inventory、provider detail、日付別snaps
 JSTの21日を全件持つimmutable content-addressed snapshotを作る。events packとhost read-only entrypointを
 この操作へ接続し、公開event名・URLを標準出力せず集計だけを返す。focused 20/20成功。次は実Luma
 Tokyoの全detail readbackとoutbound全回帰である。
+
+O1B-17完了: 実CloakBrowser daily-driverと既存認証をread-onlyで使い、Luma Tokyo inventoryを
+7 roundsで終端まで読んだ。35 candidateを発見し、公式detailを35/35照合、欠落0。rolling
+2026-08-02〜2026-08-22へ投影するとscheduled in-personは29件、候補あり12日、候補なし9日だった。
+0候補日をcoverage完了へ変換せず、21日coverageは変更していない。CLIが結果出力後もCDP client handleを
+保持する問題も、共有browserをcloseせずstdout/stderr flush後に自processだけexitするよう修正した。
+focused 20/20、CLI境界9/9、outbound全回帰164/164成功。証拠:
+`docs/evidence/outbound/2026-08-02-o1b17-live-luma-date-inventory.json`。次は固定順序どおり`O1B-18`。
 
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
