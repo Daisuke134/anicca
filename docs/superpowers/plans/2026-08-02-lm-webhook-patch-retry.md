@@ -137,6 +137,21 @@ Expected: ケース1と2が FAIL（`expected 5xx, got 200`）。3・4・5 は PA
 
 `detection.answered` 側の PATCH 失敗も同じ扱いにするかは**しない**: `answered_at` の書き込みは `amd_result` が成功した後にしか走らず、その時点で行の存在は確認できている。ここで 5xx を返すと、成功した `amd_result` の write を再送のたびに繰り返すことになる。失敗は既存の `report()` が stderr に出す。
 
+> **★ 実装後の訂正（2026-08-02、code review 指摘。上の草稿コメントは2点まちがっている）★**
+>
+> 1. **「PATCH が 5xx / throw = 一時的」は実際の契約より狭い。** `patchWakeLog`（`lib/late-notice.js:196-207`）は
+>    **あらゆる**失敗を同じ `{ok:false}` に畳むので、`http_400`（schema drift）· `http_401`（鍵ローテート）·
+>    `unreadable_response` · `missing_args` · `recordAmdResult` の `missing_result`（= 空の AMD result。
+>    `lib/late-notice.js:245-247` が「あれは我々の parse 失敗であって AMD の判定ではない」と論じているもの）も
+>    **全部 503 になり、6配送すべてで同じように失敗する**。実測で確認済。代償 = 配送予算の空焼き + failover URL
+>    を無駄に鳴らす + 本物の障害と schema の typo が区別できない。**正しい直し方は `patchWakeLog` に
+>    retryable / permanent を返させること**で、この分岐を広げることではない。振る舞い変更なので今回はやらない。
+> 2. **「`answered_at` の遅れた書き込みはラッチのせいで no-op」は誤り。** ラッチは `answered_at=is.null` なので、
+>    最初の書き込みが着地していなければ列は NULL のままで、再送された書き込みは**普通に着地する**。再送しない
+>    判断自体は変わらないが、根拠は別の3つ = (1) 成功済みの `amd_result` を配送のたびに書き直すことになる
+>    (2) 書かれる時刻は再送時の時計でバックオフの分ズレる = 「無い」より悪い (3) `amd_result='human'` が
+>    「人が出た」事実を既に持っているので、失うのは事実ではなくその秒だけ。
+
 - [x] **Step 4: 通ることを確認**
 
 Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js test/testcall-amd-hangup-http-contract.test.js test/testcall-amd-hangup.test.js lib/late-notice.test.js`
