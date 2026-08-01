@@ -786,7 +786,7 @@ schedules or future data.
 | 10 | Editorial fee | Advance AppSignal; clarify Hygraph policy/rate; monitor DigitalOcean, Better Stack, Honeybadger, Earthly, and Baeldung; reject Civo under its current AI-content policy; continuously discover replacements | Current official-state receipts; policy/rate clarification; only compatible submission receipts; later contract, publication, payment | PARTIAL: `2ac1bdf` implements the durable state/evidence contract and the live 2026-08-02 JST wake verified all nine configured official pages. Civo is automatically rejected under its current AI prohibition; five closed/stale programs cannot be submitted; AppSignal, Hygraph, and Oracle are parked until missing value/policy facts are clarified. `83afe1b` completes automatic replacement discovery: 127 canonical candidates are durable, a bounded daily worker continuously verifies official pages, rejects incompatible policies, and parks unknown terms without pretending they are safe. `8572122` prepares an exact-claim-bound pitch whenever official evidence reaches `POLICY_CLEAR`; `93c3b02` accepts only exact official application routes/contact addresses; `af608cb` monitors verified submitted work every 15 minutes and advances only from correlated publisher evidence. None can mark `SUBMITTED` without an external receipt. Remaining: find a real compatible program, capture a live pitch/application transition, and continue through publication/payment |
 | 11 | Paid article | Make every selected note article's price/paywall state explicit and measurable | Public paid state plus first attributed purchase | PARTIAL: runtime commit `0515555` removes the stale `forms.json` ¥1,000 description and makes the executable one-time ¥500 policy consistent across the form registry, publisher, tests, and report. The five-minute money sync now reads each durable live note publication receipt, requires matching run/public URL/public ID plus `verified=true`, `monetization_verified=true`, and positive price, then stores article-scoped `price` and `paywall_active` observations without creating a sale. The current article `20260731-213927__note__ja` is live at `https://note.com/anicca123/n/n84aed983c96c`; canonical metrics now show `price=500 JPY verified` and `paywall_active=1 verified` from its 2026-08-01 public/API receipt. Web and Telegram display `¥500買い切り・有料状態確認済み` while still reporting received revenue as zero; the semantic delta was delivered with Telegram receipt `5139`. The full Writer suite passes 587 tests and the 390px UI was visually inspected. Remaining before DONE: observe the first real external note purchase/fee/payout receipt, join it to this exact artifact without using an account-total proxy, and show gross/net/payout in the same report |
 | 12 | Subscription | Measure Substack active paid, new, churn, gross MRR, fees, and net MRR | Stripe/Substack receipts join to article | PARTIAL: runtime commit `0e7d5d2` closes the paid-publication and recurring-measurement boundaries. A Substack article is now live only when authenticated post-publish readback still proves `audience=only_paid`, free preview enabled, and exactly one paywall; a lost paid contract returns unknown instead of minting a live receipt. Both current JA/EN articles passed that live API readback and canonical article metrics now show `paid_post_active=1 verified`; the Web/Telegram report labels them `有料購読者限定・paywall確認済み`, with semantic-delta Telegram receipt `5141`. `ai.anicca.writer-sales-measure` is installed with `RunAtLoad=true`, immediate kickstart, and a 3,600-second interval; its first live run exited `0`, collected external note/Substack dashboard observations, and synchronized the canonical ledger. The same run measured explicit note month sales `¥0` and purchase count `0`; Substack currently renders a dash/no numeric MRR or paid-subscriber count, so those values remain `unknown`, not fabricated zero. The canonical sync now accepts append-only external `subscription-receipts.jsonl`, orders updates by observation time, maps Substack/self-owned contracts and an exact acquisition article when available, and counts only active non-test external contract IDs in gross MRR; fixture replay is idempotent. The full Writer suite passes 594 tests. Remaining before DONE: the first real Substack/Stripe contract and charge receipts; explicit new/canceled/past-due transitions; actual platform/Stripe fee receipts; gross MRR, period net receipts, churn, and payout reconciliation. Net MRR must remain unknown rather than using an estimated fee percentage |
-| 13 | Self-owned | Implement paid article and recurring archive on an Agent-owned publication | Public unlock/payment/renewal receipts without creator-platform account | IN PROGRESS: the binding inline execution plan is `docs/writer-agent/plans/2026-08-02-self-owned-publication.md`. Product commits `c5782d72d`, `0a34eb014`, `d3ff8f967`, and `282277aaf` complete Tasks 1-4: private content boundary, exact Checkout lineage, purchaser-only unlock/return access, and non-email idempotent Writer webhooks. Runtime commit `3725ee8` plus product commit `cdd805380` complete Task 5: immutable same-run JA/EN contracts, stable `self-owned/<lang>` intents, exact-target clean git delivery, crash-safe ledger repair, non-blocking background resume, and a public preview/hash manifest whose production build leaks no paid sentinel into HTML/RSC/static. Runtime commit `3a88f96` completes Task 6 code: the GET-only collector refuses full-access `sk_` secrets, accepts only a restricted `rk_` key, stores no PII or secret in its outbox/plist, and requires exact external objects before counting money. Checkout completion alone remains zero revenue; PaymentIntent/Invoice plus available Balance Transaction create exact sale/renewal and fee rows; subscription state, refund, and payout cash movement stay separate; test mode cannot become verified money or MRR. Telegram/Web label self-owned article/archive streams and link exact payment/fee/refund/subscription/payout receipts. Verification passes 7 Stripe fixtures, 26 focused money/report tests, 613/613 Writer tests, 310/310 Netlify tests, and the production build. This monetizes the writing itself; it does not auto-generate a separate product. Remaining Task 7 is live provisioning/deploy/payment E2E. The exact restricted-key Keychain item is currently absent, so no failing live collector was installed; DONE still requires provisioned live read access, a public unlock, and real external one-time payment plus recurring renewal receipts |
+| 13 | Self-owned | Implement paid article and recurring archive on an Agent-owned publication | Public unlock/payment/renewal receipts without creator-platform account | IN PROGRESS: Tasks 1-6 are complete. Task 7 now has live Stripe Products/Prices, production Checkout, deployed JA/EN paid pages, webhook coverage, explicit prices, private-content denial, and future-contract bundling; exact receipts are in §9.1. Remaining before DONE: a non-expired restricted live read key in the exact Keychain item, the installed live collector's first successful receipt, one real external one-time payment with public unlock/return access, and one real recurring renewal with fee/payout reconciliation. Received revenue remains zero until those external receipts exist |
 | 14 | Learning | Implement the full observable self-improvement contract: yesterday/today descriptive diff; immutable baseline/candidate; one changed variable; held-out repeated replay; matched canary; per-case/output/funnel/received-money/cost diff; KEEP/REVERT/INCONCLUSIVE; validated lesson consumption | Telegram/Web improvement card links baseline, candidate, evidence, rollback, and the later run consuming the winning strategy hash | TODO |
 | 15 | Gate S0 | Earn the first verified dollar from writing | Non-test receipt joined to article/submission | TODO |
 | 16 | Gate S1 | Reach $400 monthly writing revenue | Verified monthly ledger | TODO |
@@ -802,6 +802,69 @@ schedules or future data.
 | 26 | $100K | Autonomously operate enough proven units for $100K monthly net-positive revenue | Three-month receipts; no daily topic/repair/clone operation by a person | TODO |
 | 27 | $1M | Autonomously scale cloud/network distribution and retention to $1M MRR | Active recurring receipts, staged-promotion receipts, bounded spend, rollback proof | TODO |
 | 28 | $10M | Reach $100M network GMV at 10% fee, or another fully receipted equivalent, through the autonomous scale controller | $10M active recurring receipts; no internal/self payments; no routine human operation; legal/KYC exceptions explicit | TODO |
+
+### 9.1 Task 13 production receipt — 2026-08-02 JST
+
+The writing itself is the product. No template, course, checklist, or separate
+auto-generated product was introduced.
+
+- Live Stripe Product: `prod_Uzi1v7FLGvWKsd`.
+- One-time Prices: JA `price_1TzibREeDsUAcaLSnpg7wrSb` = JPY 500; EN
+  `price_1TzibREeDsUAcaLSDpjHEFYZ` = USD 5.00.
+- Recurring archive Prices: JA `price_1TSpDMEeDsUAcaLSdJC8G6CZ` = JPY
+  980/month; EN `price_1TSpDMEeDsUAcaLSJLVPqFZU` = USD 9.99/month.
+- The existing live webhook `we_1TSDgIEeDsUAcaLSRmEDibCC` was extended rather
+  than duplicated. Its exact enabled union is `charge.refunded`,
+  `checkout.session.completed`, `customer.subscription.created`,
+  `customer.subscription.deleted`, `customer.subscription.updated`,
+  `invoice.paid`, `invoice.payment_failed`, `payout.canceled`,
+  `payout.created`, `payout.failed`, `payout.paid`, and `payout.updated`.
+- JA is live at `https://aniccaai.com/blog/aipass5`; EN is live at
+  `https://aniccaai.com/blog/a-green-check-is-not-learning-until-the-next-run-reads-it`.
+  Both public readbacks retain exact canonical URLs and `index, follow`.
+- Product PRs `#386`, `#387`, and `#388` delivered the private boundary,
+  production path correction, and static Lambda contract registry. PR `#389`
+  (`928eea1150b3404403b314a131bf42929be3b50a`) adds explicit pre-Checkout
+  prices to all four JA/EN one-time/archive CTAs.
+- Netlify production deploy `6a6e589c9f15e8d1139eebdb` is live. Desktop and
+  390px screenshots prove `$5`, `$9.99/month`, `¥500`, and `¥980/month` are
+  visible without layout collapse. Unpaid GET returns generic `401`; a fake
+  session POST returns generic `403`; neither response exposes Stripe IDs or
+  paid bytes.
+- Live Checkout creation was verified without payment. The JA one-time Session
+  was `livemode=true`, `mode=payment`, `status=open`, `payment_status=unpaid`,
+  exact JPY 500 Price, receipt hash
+  `516dc3fc14cb2644e15cfee3d34147206363e0e188e541168226a5c7d52f4bd9`.
+  The EN archive Session was `livemode=true`, `mode=subscription`,
+  `status=open`, `payment_status=unpaid`, exact USD 9.99 Price, receipt hash
+  `eebe52fa62e7f6a6f9b385df275837d584684ac88b3fd1098a4b72819ac82ab7`.
+  Both correctly count as zero revenue.
+- Runtime commit `02591a0` makes every future immutable contract regenerate a
+  sorted static `require` registry in the same exact Git transaction, retains
+  earlier articles, validates crash resume, and refuses unrelated JavaScript.
+  This follows Netlify's documented bundling contract: statically referenced
+  files are included automatically, while `included_files` supports dynamic
+  references (`https://docs.netlify.com/build/configure-builds/file-based-configuration/`).
+- Runtime commit `9656810` closes the macOS no-`timeout` path with a bounded
+  process group. The prior hung-runner regression failed at the outer 60-second
+  limit; it now passes in 3.53 seconds with no `sleep 300` child left behind.
+  Python documents that `start_new_session=True` calls `setsid()` and that
+  `os.killpg` signals the whole process group
+  (`https://docs.python.org/ja/3/library/subprocess.html`,
+  `https://docs.python.org/ja/3/library/os.html#os.killpg`).
+- Verification after both runtime fixes: 16/16 focused self-owned tests and
+  617/617 complete Writer tests. Product verification: production build and
+  319/319 Netlify tests.
+- The exact Keychain service `ai.anicca.writer-stripe-read` remains absent. The
+  only local Stripe CLI `rk_live_` expired on 2026-07-30; all seven required
+  list endpoints returned `401`. A new official CLI browser flow reused the
+  existing Google session but reached Stripe's authenticator-app 2FA boundary,
+  so it did not mint or store a key. Stripe's key contract keeps restricted
+  keys limited by resource and permission and provisions them through the
+  Dashboard (`https://docs.stripe.com/keys`). No `sk_` fallback was accepted,
+  and no failing collector was installed.
+- Current accounting truth: self-owned received gross = 0; net = 0; MRR = 0
+  external receipts. An open/unpaid Checkout Session is not a sale.
 
 ## 10. Explicitly deferred
 
