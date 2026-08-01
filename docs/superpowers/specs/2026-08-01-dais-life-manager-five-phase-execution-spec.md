@@ -47,11 +47,14 @@ serendipityを根拠付き評価するところまで完成した。実Calendar�
 2026-08-02〜2026-08-22の初回coverage snapshotは、後続のCalendar/event照合前なので21日すべて
 `open`である。これは「イベントがない」という意味ではない。
 
-現在の唯一の実行対象は`O1B-25`である。残作業は、途中へ別trackを混ぜず次の順序で進める。
+現在の実装優先は最新指示による`O1C-00 Life Manager startup context正本化`である。
+Connectorの再開位置は`O1B-25`に固定し、context修復後に戻る。残作業は、途中へ別trackを混ぜず
+次の順序で進める。
 
 ```text
 完了: O1B-20〜24 source handoff、候補継続、Calendar・移動時間・支出gate
-いま: O1B-25 21日coverageのTelegram報告
+いま: O1C-00 Life Manager startup context正本化（旧Anicca product提出防止）
+  → O1B-25 21日coverageのTelegram報告を同じ位置から再開
   → O1C-01〜27 Fundraising / acceleratorの探索・提出・返信・面談追跡
   → O2-01〜12 Job Hunterの統合・実応募・返信・面接追跡
   → O3A-01〜07 壊れたCFO runtime loopを復旧
@@ -92,6 +95,9 @@ pitchを持つ。正本が二重化しているため、旧application-kitや旧
 公開導線は2026-08-02に`https://aniccaai.com/lm`を実測し、HTTP 200、title `Life Manager — Get started`、
 Life Manager Telegram開始linkを確認した。`life-call-production.up.railway.app`は稼働backendであり、応募用の
 product homepageではない。
+同じ監査で、履歴`submitted/**`を除く現行application-kitには旧product表現が25ファイル・110箇所、
+現行funder定義/application stateには5ファイル・21箇所残る。過去提出の3ファイルは監査証跡なので
+書き換えず、current source / generated artifact / active form configだけを移行対象にする。
 
 ## 1. 固定実行順序
 
