@@ -12,7 +12,9 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 
-const { claimNudgeLevel, ackNudge, buildNudgeMessage } = require("./departure-nudge.js");
+const {
+  claimNudgeLevel, ackNudge, buildNudgeMessage, NUDGE_ACK_REASONS,
+} = require("./departure-nudge.js");
 
 const SUPA = { supaUrl: "https://supa.invalid", supaKey: "service-role-key" };
 const UID = "lm_784ad279";
@@ -193,4 +195,44 @@ test("an event title cannot inject markup into the message", () => {
   const m = buildNudgeMessage({ level: 25, ev, departureIso: "2026-08-02T08:05:00+09:00", lang: "ja" });
   assert.doesNotMatch(m.text, /<b>|<i>/);
   assert.match(m.text, /&lt;b&gt;/);
+});
+
+// ── the stop that does NOT exist yet (§5.2.2 D5) ─────────────────────────────────────────────────
+
+// 5.2.1 lists THREE stops: the tap, location movement, and the late organ. Only two are built.
+// D5's ruling is that writing the third into the design and calling it done is the most dangerous
+// move available — a stop condition that exists on paper and not in code is worse than an absent
+// one, because everyone downstream stops looking for it. So the socket is here, wired to nothing,
+// and this test is what keeps "wired to nothing" true until #3 lands.
+test("the left-home stop is accepted but deliberately has no caller yet", async () => {
+  const { fetchImpl, calls } = stubFetch({
+    patch: () => rows([{ uid: UID, event_key: EVENT_KEY, ack_reason: "left_home" }]),
+  });
+  const result = await ackNudge(UID, EVENT_KEY, NUDGE_ACK_REASONS.LEFT_HOME, { ...SUPA, fetchImpl, nowMs: NOW });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.matched, 1);
+  assert.equal(JSON.parse(calls[0].init.body).ack_reason, "left_home");
+  assert.equal(NUDGE_ACK_REASONS.LEFT_HOME, "left_home");
+});
+
+test("nothing in the codebase claims to detect leaving home", () => {
+  // #3 will call ackNudge(uid, key, 'left_home') when live location says the user left. Until it
+  // does, no production file may pass that reason — otherwise the ladder would advertise a stop it
+  // cannot actually perform. When #3 lands, this test is the thing that tells you to update it.
+  const { readdirSync, readFileSync } = require("node:fs");
+  const { join } = require("node:path");
+  const roots = [join(__dirname, ".."), join(__dirname, "..", "lib")];
+  const callers = [];
+  for (const dir of roots) {
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith(".js") || name.endsWith(".test.js")) continue;
+      const source = readFileSync(join(dir, name), "utf8");
+      // The declaration in departure-nudge.js is the socket itself, not a caller.
+      const uses = source.split("\n").filter((line) =>
+        /ackNudge\s*\(/.test(line) && /left_home|LEFT_HOME/.test(line));
+      if (uses.length > 0) callers.push(`${name}: ${uses[0].trim()}`);
+    }
+  }
+  assert.deepEqual(callers, [], "location-based departure detection is #3, and it is not built yet");
 });
