@@ -76,16 +76,16 @@ verified provenance、tenant-bound insert、idempotent retry、collision rollbac
 Run: `node --test lib/rolling-event-coverage-store.test.js`
 Expected: module path不存在でFAIL。
 
-- [ ] **Step 3: storeとmigrationを書く**
+- [x] **Step 3: storeとmigrationを書く**
 
 reference-only JSON、date/count constraints、UPDATE/DELETE拒否、tenant latest viewを実装する。
 
-- [ ] **Step 4: GREENとoutbound全回帰を確認する**
+- [x] **Step 4: GREENとoutbound全回帰を確認する**
 
 Run: `node --test lib/rolling-event-coverage-store.test.js && npm run test:outbound`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/lib/rolling-event-coverage-store.js apps/life-manager/lib/rolling-event-coverage-store.test.js apps/life-manager/migrations/2026-08-02-lm-event-coverage-snapshots.sql apps/life-manager/package.json
