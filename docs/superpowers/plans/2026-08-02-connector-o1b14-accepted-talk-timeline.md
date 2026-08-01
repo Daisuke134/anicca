@@ -74,16 +74,16 @@ stable hash、reference-only row、accepted talk gate、idempotent insert、cros
 Run: `node --test lib/accepted-talk-timeline-store.test.js`
 Expected: module不存在でFAIL。
 
-- [ ] **Step 3: migrationとminimal storeを書く**
+- [x] **Step 3: migrationとminimal storeを書く**
 
 snapshot table、UPDATE/DELETE拒否trigger、current view、同一client transactionを実装する。
 
-- [ ] **Step 4: GREENと全outboundを確認する**
+- [x] **Step 4: GREENと全outboundを確認する**
 
 Run: `node --test lib/accepted-talk-timeline-store.test.js && npm run test:outbound`
 Expected: 全件PASS。
 
-- [ ] **Step 5: commitする**
+- [x] **Step 5: commitする**
 
 ```bash
 git add apps/life-manager/migrations/2026-08-02-lm-talk-timeline-snapshots.sql apps/life-manager/lib/accepted-talk-timeline-store.js apps/life-manager/lib/accepted-talk-timeline-store.test.js

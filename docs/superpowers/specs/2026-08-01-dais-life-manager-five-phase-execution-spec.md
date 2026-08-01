@@ -645,6 +645,13 @@ O1B-14進捗3（DB RED）: 検証済みtimelineだけからstable・reference-on
 current viewをtest 5件で固定した。production `accepted-talk-timeline-store.js`が未実装のためmodule path不在で
 期待どおりRED。次はこのcontractを満たすmigrationとsingle-client transaction storeを実装する。
 
+O1B-14進捗4（DB GREEN）: content hashでstableなsnapshot ID、in-process検証provenance、同一tenantの
+`accepted / talk_application`を`FOR SHARE`で固定するsingle-client transaction、idempotent retry時の
+完全一致照合を実装した。DBにもcomposite foreign key、accepted talk insert gate、UPDATE/DELETE拒否trigger、
+tenant別current viewを追加した。正規表現test自身の括弧escape漏れを根因確認して1箇所だけ修正し、focused 5/5、
+新規testを含むoutbound全回帰140/140成功。次は実runtime PostgreSQLへmigrationを適用し、rollback fixtureで
+insert/current view/immutable triggerを実測する。実talkは未採択のまま変更しない。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

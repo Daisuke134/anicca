@@ -99,6 +99,6 @@ test("idempotent retry reads the identical row but collisions and non-accepted e
 
 test("migration enforces immutable tenant-bound snapshots and exposes a current view", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-02-lm-talk-timeline-snapshots.sql"), "utf8");
-  for (const required of ["lm_talk_timeline_snapshots", "lm_talk_timeline_current", "FOREIGN KEY (participation_id, tenant_id)", "talk_application", "accepted", "UPDATE OR DELETE", "immutable", "ENABLE ROW LEVEL SECURITY"]) assert.match(sql, new RegExp(required, "i"));
+  for (const required of ["lm_talk_timeline_snapshots", "lm_talk_timeline_current", "FOREIGN KEY \\(participation_id, tenant_id\\)", "talk_application", "accepted", "UPDATE OR DELETE", "immutable", "ENABLE ROW LEVEL SECURITY"]) assert.match(sql, new RegExp(required, "i"));
   assert.doesNotMatch(sql, /email|phone|password|cookie|guest_key|mail_body/i);
 });
