@@ -521,6 +521,12 @@ fill-gapsをrevenue/enabledから除き、fill-gapsとdaily-reportをretired/dis
 desired=`disabled`、owner=`life-manager`となった。旧repo commit `a5eab2e`を同branchへpush済み。
 次は正本commit後、実2 labelをrecoverable archiveへ移してlive verificationする。
 
+O1B-10進捗4: 初回live retirementは成功扱いせずexit 3で停止した。fill-gapsをbootout + disableした直後、
+直前preflightで存在を確認した旧plist実体がなく、archiveも未作成だったためである。正規Guardianとworkerには
+影響しない。root causeはscriptがarchive確保よりlaunchd変更を先に行った順序欠陥だった。2 plistを先に
+archive確保してからlaunchdを変更する順へ修正し、今回すでに消えた実体にはpreflightで読んだLabel、command、
+log path、scheduleをXML plistとして正本に固定したverified fallbackを使う。次は追加回帰後に再実行する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

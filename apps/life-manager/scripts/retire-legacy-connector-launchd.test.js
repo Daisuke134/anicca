@@ -82,3 +82,19 @@ test("refuses broad or relative filesystem targets before launchctl", () => {
   }
   assert.equal(fs.existsSync(fx.calls), false);
 });
+
+test("secures verified fallback plists before launchctl when live files are already absent", () => {
+  const fx = fixture();
+  for (const label of LABELS) {
+    fs.unlinkSync(path.join(fx.agents, `${label}.plist`));
+  }
+  const result = JSON.parse(execFileSync("/bin/bash", [SCRIPT], {
+    env: fx.env,
+    encoding: "utf8",
+  }));
+  assert.equal(result.status, "retired");
+  for (const label of LABELS) {
+    assert.equal(fs.existsSync(path.join(fx.archive, `${label}.plist`)), true);
+  }
+  assert.match(fs.readFileSync(fx.calls, "utf8"), /^print /m);
+});

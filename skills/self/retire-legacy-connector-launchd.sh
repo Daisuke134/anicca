@@ -9,6 +9,7 @@ LAUNCH_AGENTS_DIR="${LM_LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}"
 ARCHIVE_DIR="${LM_RETIRED_LAUNCHD_DIR:-$HOME/.local/state/life-manager/retired-launchd/o1b10}"
 LAUNCHCTL_BIN="${LM_LAUNCHCTL_BIN:-/bin/launchctl}"
 LAUNCH_DOMAIN="${LM_LAUNCH_DOMAIN:-gui/$(id -u)}"
+FALLBACK_DIR="${LM_LEGACY_CONNECTOR_PLIST_FALLBACK_DIR:-$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)/legacy-launchd-archive}"
 
 safe_absolute_dir() {
   case "$1" in
@@ -38,16 +39,10 @@ safe_absolute_dir "$ARCHIVE_DIR" || {
 install -d -m 700 "$ARCHIVE_DIR"
 moved=0
 
+# Secure a rollback artifact for every target before changing launchd state.
 for label in "${LABELS[@]}"; do
-  service="$LAUNCH_DOMAIN/$label"
   source_plist="$LAUNCH_AGENTS_DIR/$label.plist"
   archive_plist="$ARCHIVE_DIR/$label.plist"
-
-  if "$LAUNCHCTL_BIN" print "$service" >/dev/null 2>&1; then
-    "$LAUNCHCTL_BIN" bootout "$service" >/dev/null
-  fi
-  "$LAUNCHCTL_BIN" disable "$service" >/dev/null
-
   if [ -f "$source_plist" ]; then
     if [ -e "$archive_plist" ]; then
       source_sha="$(shasum -a 256 "$source_plist" | awk '{print $1}')"
@@ -66,9 +61,24 @@ for label in "${LABELS[@]}"; do
     fi
     moved=1
   elif [ ! -f "$archive_plist" ]; then
-    printf '%s\n' "Legacy Connector plist unavailable: $label" >&2
-    exit 3
+    fallback="$FALLBACK_DIR/$label.plist"
+    [ -f "$fallback" ] || {
+      printf '%s\n' "Legacy Connector plist unavailable: $label" >&2
+      exit 3
+    }
+    plutil -lint "$fallback" >/dev/null
+    cp "$fallback" "$archive_plist"
+    chmod 600 "$archive_plist"
+    moved=1
   fi
+done
+
+for label in "${LABELS[@]}"; do
+  service="$LAUNCH_DOMAIN/$label"
+  if "$LAUNCHCTL_BIN" print "$service" >/dev/null 2>&1; then
+    "$LAUNCHCTL_BIN" bootout "$service" >/dev/null
+  fi
+  "$LAUNCHCTL_BIN" disable "$service" >/dev/null
 done
 
 first_sha="$(shasum -a 256 "$ARCHIVE_DIR/${LABELS[0]}.plist" | awk '{print $1}')"
