@@ -668,6 +668,15 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
   return handlers;
 }
 
+function observeWorkerPoll(state, active, now = () => new Date().toISOString()) {
+  const observedAt = String(now());
+  if (!Number.isFinite(Date.parse(observedAt))) {
+    throw new Error("worker poll timestamp is invalid");
+  }
+  state.lastPollAt = observedAt;
+  return active !== true;
+}
+
 async function runCapabilityWorker(env = process.env) {
   const { Pool } = require("pg");
   const {
@@ -702,7 +711,7 @@ async function runCapabilityWorker(env = process.env) {
   let active = false;
 
   async function tick() {
-    if (active) return;
+    if (!observeWorkerPoll(state, active)) return;
     active = true;
     try {
       await pool.query("SELECT 1");
@@ -1061,6 +1070,7 @@ module.exports = {
   listObservablePublicationReceipts,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
+  observeWorkerPoll,
   executeCapabilityJob,
   runCapabilityWorker,
   runSchedulerOwner,

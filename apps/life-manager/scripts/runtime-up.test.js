@@ -18,6 +18,7 @@ const {
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
+  observeWorkerPoll,
 } = require("./runtime-up.js");
 const {
   buildMarketingObservationJob,
@@ -41,6 +42,14 @@ const LEASE_MIGRATION = path.join(
   __dirname,
   "../migrations/20260729_runtime_scheduler_lease.sql",
 );
+
+test("active capability work refreshes worker liveness without starting a second claim", () => {
+  const state = { lastPollAt: "2026-08-01T00:00:00.000Z" };
+  assert.equal(observeWorkerPoll(state, true, () => "2026-08-01T00:01:00.000Z"), false);
+  assert.equal(state.lastPollAt, "2026-08-01T00:01:00.000Z");
+  assert.equal(observeWorkerPoll(state, false, () => "2026-08-01T00:02:00.000Z"), true);
+  assert.equal(state.lastPollAt, "2026-08-01T00:02:00.000Z");
+});
 
 function healthyService(environment = {}) {
   return {
