@@ -1326,7 +1326,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-00B current production URL、GitHub、Telegram、demo、founder videoを実readbackしてcanonical link setを作成
 - [x] O1C-00C root READMEの日英first-viewをLife Managerのphysical / mental / financial product storyへ統一
 - [x] O1C-00D 旧application-kitの日英answers、deck、one-pager、asset manifestをLife Manager正本から再生成
-- [ ] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
+- [x] O1C-00E `apply-to-funder`のYC/company configをLife Manager正本参照へ変更し、旧Anicca product値をsubmit不可にする
 - [ ] O1C-00F startup context freshness / contradiction / old-product regression gateを実装し、previewで検証
 
 O1C-00A実装実測（2026-08-02 JST）: `.agents/startup-context.json`へexact facts、
@@ -1353,6 +1353,16 @@ O1C-00D実装実測（2026-08-02 JST）: `scripts/startup-context/build-kit.mjs`
 同じcontext version / SHA-256 digest付きで生成する。2回連続buildは同じfile setと内容になり、旧repo、
 旧backend homepage、private email、電話、未置換placeholderをvalidatorが遮断する。legacy dashboardと
 未確認demo / founder videoはmanifestの`excluded`へ入り、添付assetにならない。testは15/15 pass。
+
+O1C-00E実装実測（2026-08-02 JST）: repository-owned `skills/apply-to-funder/`と
+`fundraising/funders/yc-fall-2026.json`を追加した。program configはYC固有の質問と公式evidenceだけを持ち、
+product/company/homepage/repository/traction/revenueを複製できない。公式YC pageを再確認し、Fall 2026は
+late applicationを受付中、founder videoは1分・founderだけ・原稿朗読なしという現行要件を記録した。
+previewはcontext digestとapplication digestへbindし、旧product field、stale context、未確認media、digest
+不一致をfail-closeする。旧skillのbaseline testではsemantic context bindingが無く、transport gateが
+揃えば旧Anicca pitchを提出できることを確認した。新skillは現在preview-onlyで、未確認founder videoを
+blockerとして表示し、旧submit scriptへのfallbackを禁止する。OpenClaw exportはallowlist fileだけを
+専用Life Manager directoryへ出し、`submitted/**`を拒否する。関連testは23/23 pass、skill validatorもpass。
 - [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装

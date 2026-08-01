@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "yc-fall-2026",
+  "program_name": "Y Combinator Fall 2026",
+  "official_url": "https://www.ycombinator.com/apply",
+  "application_url": "https://apply.ycombinator.com/",
+  "program_evidence": {
+    "verified_at": "2026-08-02T14:00:00+09:00",
+    "status": "late_applications_open",
+    "facts": [
+      "Fall 2026 runs from October to December in San Francisco.",
+      "The on-time deadline was July 27 at 8pm PT.",
+      "YC is still accepting and considering late applications.",
+      "The founder video should be one minute and contain only founders talking without reading a script."
+    ],
+    "sources": [
+      "https://www.ycombinator.com/apply",
+      "https://www.ycombinator.com/video"
+    ]
+  },
+  "required_assets": [
+    "founder_video"
+  ],
+  "requested_assets": [],
+  "questions": [
+    {
+      "id": "company_name",
+      "purpose": "company_legal_name",
+      "prompt": "Company name"
+    },
+    {
+      "id": "company_description",
+      "purpose": "product_description",
+      "prompt": "Describe what your company makes in 50 characters or less."
+    },
+    {
+      "id": "product",
+      "purpose": "product_explanation",
+      "prompt": "What is your company going to make? Please describe your product and what it does or will do."
+    },
+    {
+      "id": "progress",
+      "purpose": "verified_progress",
+      "prompt": "How far along are you?"
+    },
+    {
+      "id": "revenue",
+      "purpose": "verified_revenue",
+      "prompt": "Do you have revenue?"
+    },
+    {
+      "id": "why",
+      "purpose": "founder_insight",
+      "prompt": "Why did you pick this idea to work on?"
+    }
+  ]
+}
