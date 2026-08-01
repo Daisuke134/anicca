@@ -60,9 +60,33 @@ function database(opts = {}) {
 }
 
 function buildRuntimeJob(input) {
-  const effectClass = nonEmpty(input && input.effectClass, "runtime effect class", 20);
+  let source = input;
+  if (input && input.job_id != null) {
+    if ([
+      "jobId",
+      "tenantId",
+      "loopId",
+      "effectClass",
+      "effectKey",
+      "inputRefs",
+      "maxAttempts",
+    ].some((key) => input[key] != null)) {
+      throw new Error("runtime job shape ambiguous");
+    }
+    source = {
+      jobId: input.job_id,
+      tenantId: input.tenant_id,
+      loopId: input.loop_id,
+      capability: input.capability,
+      effectClass: input.effect_class,
+      effectKey: input.effect_key,
+      inputRefs: input.input_refs,
+      maxAttempts: input.max_attempts,
+    };
+  }
+  const effectClass = nonEmpty(source && source.effectClass, "runtime effect class", 20);
   if (!EFFECT_CLASSES.has(effectClass)) throw new Error("runtime effect class invalid");
-  const suppliedEffectKey = input && input.effectKey;
+  const suppliedEffectKey = source && source.effectKey;
   const effectKey = suppliedEffectKey == null ? null : String(suppliedEffectKey).trim();
   if (
     (effectClass === "none" && effectKey)
@@ -72,14 +96,14 @@ function buildRuntimeJob(input) {
   }
 
   return Object.freeze({
-    job_id: nonEmpty(input && input.jobId, "runtime job id"),
-    tenant_id: nonEmpty(input && input.tenantId, "runtime tenant id"),
-    loop_id: nonEmpty(input && input.loopId, "runtime loop id"),
-    capability: nonEmpty(input && input.capability, "runtime capability"),
+    job_id: nonEmpty(source && source.jobId, "runtime job id"),
+    tenant_id: nonEmpty(source && source.tenantId, "runtime tenant id"),
+    loop_id: nonEmpty(source && source.loopId, "runtime loop id"),
+    capability: nonEmpty(source && source.capability, "runtime capability"),
     effect_class: effectClass,
     effect_key: effectKey,
-    input_refs: referenceObject(input && input.inputRefs),
-    max_attempts: positiveInteger(input && input.maxAttempts, "runtime max attempts", 20),
+    input_refs: referenceObject(source && source.inputRefs),
+    max_attempts: positiveInteger(source && source.maxAttempts, "runtime max attempts", 20),
   });
 }
 
