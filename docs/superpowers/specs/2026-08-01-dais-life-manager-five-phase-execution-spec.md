@@ -481,6 +481,20 @@ diff checkが全成功。実装plan: `docs/superpowers/plans/2026-08-02-connecto
 実測証拠: `docs/evidence/outbound/2026-08-02-o1b10-legacy-event-retirement.json`。残作業は127件。
 次はO1B-11でconnpass API keyを申請し、取得までは現在の全自動アクセス停止を維持する。
 
+完了: `O1B-11`。公式API v2、help、API規約、個人・コミュニティ向けGoogle Formを再読出しした。
+個人/OSS枠は審査約5営業日、1 key、第三者操作によるreal-time callは承認対象外になり得る。
+申請フォームへ、Dais本人だけが使うOSS Life Manager、TokyoのAI/生成AI/LLM/agent/Web3 eventだけ、
+1日1回のscheduled cache、5秒以上のrequest間隔、30日local保存、公開表示なし、keyは環境secretのみ、
+という正確な内容を16設問へ入力し、submitは一度だけ行った。Google Formsの`formResponse` navigationと
+form source内の送信完了messageを照合した。keyは未発行であり、審査結果待ちを後続実装のblockerにしない。
+TDDでconnpass access policyを追加し、keyなしは`disabled/api_key_unavailable`、key発行後もofficial
+`GET /api/v2/events/`、scheduled cache、Tokyo、5秒以上、30日以下だけをreference-onlyで許可する。
+browser、scrape、RSVP operationは公開しない。live retirementは残operation 0、workerにはconnpass
+capabilityもkey wiringもない。fresh verificationはoutbound 106件、runtime-up 33件、diff checkが全成功。
+実装plan: `docs/superpowers/plans/2026-08-02-connector-o1b11-connpass-api-application.md`。実測証拠:
+`docs/evidence/outbound/2026-08-02-o1b11-connpass-api-application.json`。残作業は126件。
+次はO1B-12で一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -606,7 +620,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 - [x] O1B-08 agentが本文からLT/CFP/demoを判断する実Gemini evalを8/8で通す
 - [x] O1B-09 旧Connector loginを復旧しevents packへ統合
 - [x] O1B-10 重複旧実装を退役
-- [ ] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
+- [x] O1B-11 connpass API keyを申請。取得まで自動アクセス禁止
 - [ ] O1B-12 一般参加とLT/CFP/demo登壇応募を別entityとしてdiscover・追跡
 - [ ] O1B-13 Life Managerの実測demoに合うtalk title、5分outline、応募理由をagent生成
 - [ ] O1B-14 accepted後にslide締切、登壇日、会場、QR、follow-upを一つのtimelineで追跡

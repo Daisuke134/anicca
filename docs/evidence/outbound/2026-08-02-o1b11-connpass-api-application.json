@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task": "O1B-11",
+  "observed_at": "2026-08-01T15:49:33Z",
+  "result": "application_submitted_key_pending",
+  "official_sources": {
+    "api_v2": "https://connpass.com/about/api/v2/",
+    "help": "https://help.connpass.com/api/",
+    "terms": "https://help.connpass.com/api/api-term",
+    "application_form": "https://forms.gle/FD6h9sKGCLXBPohZ8",
+    "review_estimate_business_days": 5,
+    "official_api_only": true,
+    "minimum_request_interval_ms": 5000
+  },
+  "application": {
+    "category": "community_connpass_group_or_oss",
+    "audience": "applicant_only",
+    "third_party_realtime_calls": false,
+    "scope": "Tokyo upcoming AI, generative AI, LLM, agent, and Web3 events",
+    "cadence": "one scheduled cache run per day",
+    "retention_days": 30,
+    "public_display": false,
+    "key_storage": "environment_secret_reference_only",
+    "answered_questions": 16,
+    "submit_click_count": 1,
+    "form_response_navigation_observed": true,
+    "configured_confirmation_message_verified_from_form_source": true,
+    "duplicate_submission": false,
+    "personal_fields_persisted_in_evidence": false
+  },
+  "pending_state": {
+    "api_key_received": false,
+    "production_key_wiring": false,
+    "production_connpass_capability": false,
+    "legacy_retirement_remaining_operations": 0,
+    "browser_or_scrape_access_enabled": false
+  },
+  "policy": {
+    "without_key": "disabled/api_key_unavailable",
+    "allowed_method": "GET",
+    "allowed_origin": "https://connpass.com",
+    "allowed_path": "/api/v2/events/",
+    "allowed_trigger": "scheduled_cache",
+    "allowed_prefecture": "tokyo",
+    "max_retention_days": 30,
+    "browser_scrape_or_rsvp_operations_exposed": false
+  },
+  "verification": {
+    "connpass_policy_tests": { "passed": 4, "failed": 0 },
+    "outbound_tests": { "passed": 106, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "worker_health_http": 200,
+    "worker_capabilities": ["runtime.noop", "outbound.event.apply"],
+    "git_diff_check": "passed"
+  }
+}
