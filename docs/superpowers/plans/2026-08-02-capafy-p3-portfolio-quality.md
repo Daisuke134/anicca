@@ -19,10 +19,10 @@
 
 **Files:** create audit prompt/runner contract, result validator, and tests; reuse the shared agent runner and evidence directory.
 
-- [ ] Write RED tests proving deterministic code cannot supply target, recurring mechanism, purchase model, price, or decision.
-- [ ] Require cited source URL/timestamp/claim/confidence and explicit unknowns.
-- [ ] Run one bounded agent audit over all current products; reject partial or placeholder output.
-- [ ] Validate all 31 records and update the living spec.
+- [x] Write RED tests proving deterministic code cannot supply target, recurring mechanism, purchase model, price, or decision.
+- [x] Require cited source URL/timestamp/claim/confidence and explicit unknowns.
+- [x] Run one bounded agent audit over all current products; reject partial or placeholder output.
+- [x] Validate all 31 records and update the living spec.
 
 ### Task 3: Selection and single-experiment enforcement
 
