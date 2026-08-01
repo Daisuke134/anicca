@@ -1369,6 +1369,12 @@ O1B-26開始（open日→応募job配線）: Gemini keyは実環境に配備済�
 `docs/superpowers/specs/2026-08-02-connector-o1b26-open-date-application-planner-design.md`。実装plan:
 `docs/superpowers/plans/2026-08-02-connector-o1b26-open-date-application-planner.md`。
 
+O1B-26進捗1（Connector profile RED→GREEN）: `config/connector/dais-local.json`へ、東京対面で毎日人に会う、
+AI/crypto等は順位例で除外条件にしない、serendipityとLife Managerの事業機会を公開根拠で評価、成果や富を保証しない、
+自動支出0円をversion 1 profileとして保存した。loaderはexact schema、tenant、timezone、identity/browser/calendar ref、
+自然言語長、secret-like text不在、空の支出limitを検証し、plain copyへprovenanceを渡さない。focused 2/2成功。
+次は最も早いopen日のjob状態を読み、active wait / terminal skip / 最大1件enqueueを行うplannerをREDから作る。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
