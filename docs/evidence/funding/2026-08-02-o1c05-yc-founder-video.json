@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task": "O1C-05",
+  "observed_at": "2026-08-01T17:20:03Z",
+  "result": "verified_saved",
+  "life_manager_commit": "4972f71b0bea33d90ec05f670bcf604d41d8ca53",
+  "local_artifact": {
+    "source_ref": "application-kit://videos/Anicca_intro_EN.mp4",
+    "artifact_digest": "34881787eb93e240049f92ea72d471f3d457f00ddb4e228b1b8c1729fa0e5fe6",
+    "duration_seconds": 57.835,
+    "size_bytes": 22291622,
+    "container_includes_mp4": true,
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "width": 720,
+    "height": 1280,
+    "plan_digest": "58a3a69b75fdd650bac6aa973b61e546d66717ddd7cc3193da58248a66ddfdb3"
+  },
+  "yc_constraints": {
+    "official_authenticated_page": "https://apply.ycombinator.com/apps/0b61fe42-e383-490d-b60e-04f1ad7ec5df/edit/video",
+    "requested_duration": "one minute",
+    "maximum_size_bytes": 100000000,
+    "accepted_file_type": "video/*"
+  },
+  "upload_execution": {
+    "draft_id": "0b61fe42-e383-490d-b60e-04f1ad7ec5df",
+    "before_required": true,
+    "file_input_set_attempts": 1,
+    "save_and_back_attempts": 1,
+    "duplicate_upload_attempts": 0,
+    "submit_clicks": 0,
+    "unknown_initial_output_reconciled_before_retry": true
+  },
+  "fresh_remote_readback": {
+    "founder_video_required": false,
+    "remove_control_present": true,
+    "storage_host": "yc-app-vids.s3.us-west-2.amazonaws.com",
+    "media_ready_state": 4,
+    "duration_seconds": 57.856667,
+    "width": 720,
+    "height": 1280
+  },
+  "verification": {
+    "focused_yc_founder_video_tests": { "passed": 2, "failed": 0 },
+    "outbound_tests": { "passed": 186, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "fresh_browser_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the allowlisted 57.835-second English founder video passed local duration, size, container, codec, and audio checks; one upload/save attempt persisted a playable 57.856667-second YC-hosted video; and no application submit control was clicked. It does not prove founder-profile completion or YC application submission; O1C-06 and O1C-07 own those outcomes."
+}

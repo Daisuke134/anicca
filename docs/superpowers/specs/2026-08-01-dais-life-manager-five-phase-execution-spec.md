@@ -718,6 +718,18 @@ focused 3件、outbound 184件、runtime-up 33件、browser readback、diff chec
 `docs/evidence/funding/2026-08-02-o1c04-yc-description.json`。残作業は108件。
 次はO1C-05で、58秒founder videoを検証してuploadする。
 
+完了: `O1C-05`。`application-kit://videos/Anicca_intro_EN.mp4`だけを許可し、0秒超60秒以下、
+100,000,000 bytes以下、MP4/H.264/AAC、video/audio stream必須のYC founder video plan builderをTDDで
+追加した。候補4本を実測し、英語版は57.835秒・22,291,622 bytes・720×1280で適格、79秒の2本と
+151,028,837 bytesのMOVを不適格とした。YC実video pageも「one minute」「100 MB以下」「required」を
+readbackし、現行`:9222`から適格artifactを一度だけ設定して`Save & back`した。初回automation cellの最終出力が
+欠けたため再uploadせず外部状態をreconcileし、fresh pageでrequired消失、Remove表示、YC S3上のvideo、
+readyState 4、57.856667秒・720×1280を確認した。Submitは0回。fresh verificationはfocused 2件、
+outbound 186件、runtime-up 33件、browser readback、diff checkが全成功。実装commit `4972f71b0`はremoteへ
+push済み。実装plan: `docs/superpowers/plans/2026-08-02-connector-o1c05-yc-founder-video.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c05-yc-founder-video.json`。残作業は107件。
+次はO1C-06で、founder profileを完了する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -922,7 +934,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-02 funder/accelerator registryを再構築
 - [x] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
 - [x] O1C-04 YC descriptionを制約内へ修正
-- [ ] O1C-05 58秒founder videoを検証してupload
+- [x] O1C-05 58秒founder videoを検証してupload
 - [ ] O1C-06 founder profileを完了
 - [ ] O1C-07 YC Fall 2026へ実提出
 - [ ] O1C-08 完了画面、確認mail、ledger、Telegramを照合
