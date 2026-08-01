@@ -596,6 +596,13 @@ Telegram送信の外部effectは起こしていない。outbound全回帰125件�
 `docs/evidence/outbound/2026-08-01-o1b12-live-separated-participation-entities.json`。次はO1B-13で、
 Life Managerの実測に基づくtalk title、5分outline、応募理由をagent生成し、このtalk entityへreferenceで接続する。
 
+O1B-13開始: 専用plan
+`docs/superpowers/plans/2026-08-02-connector-o1b13-grounded-talk-pack.md`を追加した。応募先eventの
+公開本文とO1B04〜O1B12の実証済みfact/evidence refだけをGeminiへ渡す。出力はtitle、abstract、
+application reason、product demo summary、0〜300秒をgap/overlapなしで覆う4〜7 segmentとする。
+各segmentは許可済みevidence refへ必ず遡る。未実装の実口座CFO、crypto、NISAを完成済みとせず、
+収益保証やbillionaire promise、placeholder、raw identity/secretをvalidatorで拒否する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
