@@ -1410,6 +1410,14 @@ containerを再起動していた。DBではjobが15分lease中の`running`と�
 runtime-up 37/37、Guardian 18/18成功、失敗0件。次はcommit/push、再配備、ghost leaseを正規failure関数で一件だけ
 回収して、修正後workerによるLIVE実行を確認する。
 
+O1B-26進捗7（LIVE long-run正常化 / planner substage RED→GREEN）: commit `3940377f5`、image
+`4bf18a91ad91`を配備し、7回目は3分超でもhealth livenessを毎秒更新、5分時点で15分lease heartbeatも成功した。
+Guardian再起動なしで約7分のLuma全件、Calendar全予定、応募計画まで到達し、初めて
+`CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED`を正しく記録した。応募effectは未実行。planner内部のranking、
+goal/serendipity、Calendar/route gate、spend plan、job build/read/enqueueを秘密本文なしの個別codeへ分割し、refreshは
+`CONNECTOR_COVERAGE_APPLICATION_*_FAILED`だけを保存する。focused 11/11、Connector 242/242、runtime-up 37/37成功、
+失敗0件。次はcommit/push、再配備後のLIVE codeで失敗箇所を一点に確定する。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

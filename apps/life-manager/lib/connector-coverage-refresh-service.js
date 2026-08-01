@@ -160,7 +160,12 @@ function createConnectorCoverageRefreshService(dependencies = {}) {
           homeLocation: dependencies.homeLocation,
           routeMinutes: dependencies.routeMinutes,
         });
-      } catch { unavailable("CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED"); }
+      } catch (error) {
+        const code = String(error && error.code || "");
+        unavailable(/^CONNECTOR_COVERAGE_APPLICATION_[A-Z_]+_FAILED$/.test(code)
+          ? code
+          : "CONNECTOR_COVERAGE_APPLICATION_PLAN_FAILED");
+      }
       return Object.freeze({
         coverage,
         observedOutcomes: Object.freeze(observedOutcomes),

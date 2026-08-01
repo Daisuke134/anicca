@@ -307,3 +307,23 @@ test("application planning failure keeps its bounded stage code", async () => {
       && !JSON.stringify(error).includes("private model response"),
   );
 });
+
+test("application planning preserves a bounded substage code without provider text", async () => {
+  const coverage = currentCoverage();
+  const error = new Error("private model response");
+  error.code = "CONNECTOR_COVERAGE_APPLICATION_RANKING_FAILED";
+  const refresh = makeService({
+    receiptReader: { async listForCoverage() { return []; } },
+    readDateInventory: async () => dateInventory(coverage),
+    calendar: {
+      async findConnectorEvents() { return []; },
+      async createConnectorEvent() { throw new Error("must not create"); },
+    },
+    async planOpenDate() { throw error; },
+  });
+  await assert.rejects(refresh({ coverage, tenantId: TENANT }), (caught) => (
+    caught.code === "CONNECTOR_COVERAGE_APPLICATION_RANKING_FAILED"
+    && caught.message === "Connector coverage refresh unavailable"
+    && !JSON.stringify(caught).includes("private model response")
+  ));
+});
