@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "evidence_id": "o1b02-canonical-event-urls-2026-08-01",
+  "checked_at": "2026-08-01T09:11:49.436Z",
+  "claim": "Canonical event URLs preserve connpass group subdomains, reject one-shot registration result URLs, and all ten sampled live URLs returned HEAD 200 without redirect.",
+  "claim_boundary": "This proves reusable URL construction and reachability only. It does not claim that any event registration was submitted or confirmed.",
+  "implementations": {
+    "life_manager_canonical_contract": "2bc12eb1a",
+    "life_manager_legacy_audit": "ba3f71d62",
+    "profitable_claude_calendar_fix": "d75c19f",
+    "profitable_claude_connpass_fix": "c901bab"
+  },
+  "discovery": {
+    "requested_backend": "agent-reach Exa",
+    "requested_backend_result": "unavailable: unknown MCP server exa",
+    "fallbacks": [
+      "web search",
+      "Jina Reader over official connpass group event pages"
+    ],
+    "official_inventory_pages": [
+      "https://findy-aiplus.connpass.com/event/",
+      "https://layerx.connpass.com/event/",
+      "https://aiau.connpass.com/event/",
+      "https://aismiley.connpass.com/event/"
+    ]
+  },
+  "url_contract": {
+    "https_only": true,
+    "credentials_forbidden": true,
+    "fragment_removed": true,
+    "connpass_tracking_query_removed": true,
+    "connpass_group_subdomain_preserved": true,
+    "one_shot_join_complete_forbidden": true,
+    "head_redirect_policy": "manual",
+    "required_status_code": 200
+  },
+  "live_head_results": [
+    {
+      "url": "https://findy-aiplus.connpass.com/event/401663/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://findy-aiplus.connpass.com/event/401639/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://findy-aiplus.connpass.com/event/401265/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://layerx.connpass.com/event/399169/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://layerx.connpass.com/event/399947/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://layerx.connpass.com/event/402006/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://aiau.connpass.com/event/397973/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://aiau.connpass.com/event/402224/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://aismiley.connpass.com/event/400726/",
+      "status_code": 200,
+      "redirected": false
+    },
+    {
+      "url": "https://aismiley.connpass.com/event/401974/",
+      "status_code": 200,
+      "redirected": false
+    }
+  ],
+  "verification": {
+    "live_urls_passed": 10,
+    "live_urls_total": 10,
+    "life_manager_outbound_tests": {
+      "passed": 38,
+      "failed": 0
+    },
+    "life_manager_runtime_tests": {
+      "passed": 31,
+      "failed": 0
+    },
+    "profitable_claude_new_url_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "profitable_claude_existing_calendar_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "legacy_source_audit": {
+      "ok": true,
+      "checks_passed": 5,
+      "checks_total": 5
+    },
+    "profitable_claude_local_remote_equal": true
+  }
+}

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> Status: 実行中。
+> Status: 完了。`life-manager`実装commit `2bc12eb1a`、監査commit `ba3f71d62`、旧再配備元修正 `d75c19f` / `c901bab`。evidenceは`docs/evidence/outbound/2026-08-01-o1b02-canonical-event-urls.json`。
 
 **Goal:** Calendar、応募証拠、Telegramに載せるイベントURLを、再訪可能なcanonical URLへ統一し、connpassのgroup subdomainを失わない。
 
@@ -50,9 +50,9 @@
 - Create: `docs/evidence/outbound/2026-08-01-o1b02-canonical-event-urls.json`
 - Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
 
-- [ ] 現在の実イベントcanonical URLを10件収集する。
-- [ ] redirectなしHEAD 200、subdomain保持、一回性URLなしを全10件で確認する。
-- [ ] evidence JSONへURL、status、検証時刻、claim boundaryを保存する。
-- [ ] fresh tests、JSON検証、git diff、local/remote一致を確認する。
-- [ ] O1B-02を完了にし、O1B-03を次にする。
-- [ ] Commit and push.
+- [x] 現在の実イベントcanonical URLを10件収集する。
+- [x] redirectなしHEAD 200、subdomain保持、一回性URLなしを全10件で確認する。
+- [x] evidence JSONへURL、status、検証時刻、claim boundaryを保存する。
+- [x] fresh tests、JSON検証、git diff、local/remote一致を確認する。
+- [x] O1B-02を完了にし、O1B-03を次にする。
+- [x] Commit and push.
