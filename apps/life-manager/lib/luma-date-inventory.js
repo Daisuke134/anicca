@@ -52,6 +52,12 @@ function projectedEvent(detail) {
     participant_descriptors: detail.participant_descriptors,
     participant_visibility: detail.participant_visibility,
     rsvp_status: detail.rsvp_status,
+    ticket_price_status: detail.ticket_price_status,
+    ticket_price_minor: detail.ticket_price_minor,
+    ticket_currency: detail.ticket_currency,
+    ticket_name: detail.ticket_name,
+    ticket_availability: detail.ticket_availability,
+    ticket_url: detail.ticket_url,
   });
 }
 

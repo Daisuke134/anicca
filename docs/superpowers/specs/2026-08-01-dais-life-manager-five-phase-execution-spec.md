@@ -1125,6 +1125,14 @@ O1B-24進捗1（offer RED）: original currencyのminor amountを浮動小数誤
 最安ticketを選び、0だけをfree、欠落・壊れたpriceをunknownにする3 testを追加した。detailにprice fieldsが
 未実装のため期待どおり失敗する段階である。
 
+O1B-24進捗2（offer GREEN）: Luma raw readerへoffersを追加し、JPY/KRW 0桁・他ISO通貨2桁をdecimal stringから
+safe integer minorへ変換する。available ticket内でfreeを最優先し、同一currencyのpaidは最安を選ぶ。
+currency混在、欠落、壊れた小数はunknownでfreeにしない。detail 10/10成功し、date inventoryへprice fieldsを投影。
+
+O1B-24進捗3（policy RED）: 現在の0円policyがfreeだけを許可しpaid/unknownを別候補へ進めること、verified
+saved methodとcurrency別per-event/rolling capが揃う時だけpaidを都度承認なしで許可すること、clone・負数・
+重複currencyを拒否する3 testを追加した。production policy module不存在のため期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 

@@ -42,6 +42,68 @@ function publicNames(value) {
   return Object.freeze(result);
 }
 
+function priceMinor(value, currency) {
+  const text = String(value == null ? "" : value).trim();
+  const exponent = new Set(["JPY", "KRW"]).has(currency) ? 0 : 2;
+  const pattern = exponent === 0 ? /^\d+$/ : /^\d+(?:\.\d{1,2})?$/;
+  if (!pattern.test(text)) return null;
+  const [whole, fraction = ""] = text.split(".");
+  try {
+    const minor = BigInt(whole) * (10n ** BigInt(exponent))
+      + BigInt((fraction + "0".repeat(exponent)).slice(0, exponent) || "0");
+    return minor <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(minor) : null;
+  } catch { return null; }
+}
+
+function offerAvailability(value) {
+  const token = String(value == null ? "" : value).split("/").at(-1).toLowerCase();
+  if (["instock", "limitedavailability", "onlineonly", "preorder"].includes(token)) return "available";
+  if (["soldout", "outofstock", "discontinued"].includes(token)) return "unavailable";
+  return "unknown";
+}
+
+function ticketPrice(event, canonicalUrl) {
+  const source = Array.isArray(event.offers) ? event.offers : event.offers ? [event.offers] : [];
+  const rows = source.slice(0, 100).map((offer) => {
+    if (!offer || typeof offer !== "object" || Array.isArray(offer)) return null;
+    const currency = bounded(offer.priceCurrency, 3).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) return null;
+    const minor = priceMinor(offer.price, currency);
+    if (minor === null) return null;
+    const identity = lumaEventIdentity(offer.url || canonicalUrl);
+    return Object.freeze({
+      minor,
+      currency,
+      name: bounded(offer.name, 300),
+      availability: offerAvailability(offer.availability),
+      url: identity ? identity.canonicalUrl : null,
+    });
+  }).filter(Boolean);
+  const pool = rows.filter((row) => row.availability === "available");
+  const choices = pool.length > 0 ? pool : rows;
+  if (choices.length === 0) return Object.freeze({
+    ticket_price_status: "unknown", ticket_price_minor: null, ticket_currency: null,
+    ticket_name: null, ticket_availability: "unknown", ticket_url: null,
+  });
+  const free = choices.find((row) => row.minor === 0);
+  const currencies = new Set(choices.map((row) => row.currency));
+  const selected = free || (currencies.size === 1
+    ? choices.reduce((left, right) => right.minor < left.minor ? right : left)
+    : null);
+  if (!selected) return Object.freeze({
+    ticket_price_status: "unknown", ticket_price_minor: null, ticket_currency: null,
+    ticket_name: null, ticket_availability: "unknown", ticket_url: null,
+  });
+  return Object.freeze({
+    ticket_price_status: selected.minor === 0 ? "free" : "paid",
+    ticket_price_minor: selected.minor,
+    ticket_currency: selected.currency,
+    ticket_name: selected.name || null,
+    ticket_availability: selected.availability,
+    ticket_url: selected.url,
+  });
+}
+
 function venueAddress(location) {
   const address = location && location.address;
   if (typeof address === "string") return bounded(address, 1_000);
@@ -121,6 +183,7 @@ function normalizeLumaEventDetail(input = {}) {
   const controls = normalizedControls(input.controls);
   const organizerNames = publicNames(event.organizer);
   const participantDescriptors = publicNames(event.attendee);
+  const price = ticketPrice(event, identity.canonicalUrl);
   const authStatus = includesAny(controls, ["ログイン", "sign in", "log in"])
     ? "login_required"
     : "unknown";
@@ -142,6 +205,7 @@ function normalizeLumaEventDetail(input = {}) {
     auth_status: authStatus,
     rsvp_status: rsvpStatus(controls),
     capacity_status: "availability_control_only",
+    ...price,
   });
   VERIFIED.add(detail);
   return detail;
@@ -175,6 +239,15 @@ async function readRawLumaEventDetail(page, canonicalUrl) {
               .filter(Boolean).slice(0, 100).map((row) => ({ name: row && row.name || row })),
             attendee: (Array.isArray(value.attendee) ? value.attendee : [value.attendee])
               .filter(Boolean).slice(0, 100).map((row) => ({ name: row && row.name || row })),
+            offers: (Array.isArray(value.offers) ? value.offers : [value.offers])
+              .filter(Boolean).slice(0, 100).map((offer) => ({
+                "@type": offer && offer["@type"],
+                name: offer && offer.name,
+                price: offer && offer.price,
+                priceCurrency: offer && offer.priceCurrency,
+                availability: offer && offer.availability,
+                url: offer && offer.url,
+              })),
             location: value.location && {
               "@type": value.location["@type"],
               name: value.location.name,
