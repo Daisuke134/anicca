@@ -26,19 +26,30 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     },
     discover(options) {
       calls.push(["discover", options.dailyDriver]);
-      return "inventory";
+      return { candidates: [{ canonical_url: "https://luma.com/event-one" }] };
     },
     inspect(options) {
       calls.push(["inspect", options.dailyDriver, options.canonicalUrl]);
       return "detail";
     },
+    inspectDateInventory(options) {
+      calls.push(["date-inventory", options.coverage, options.now]);
+      return options.discoverTokyo().then(async (inventory) => {
+        await options.inspectEvent(inventory.candidates[0].canonical_url);
+        return "date-inventory";
+      });
+    },
   });
 
-  assert.equal(await pack.discoverTokyo(), "inventory");
+  assert.deepEqual(await pack.discoverTokyo(), {
+    candidates: [{ canonical_url: "https://luma.com/event-one" }],
+  });
   assert.equal(await pack.inspectEvent("https://luma.com/event-one"), "detail");
+  assert.equal(await pack.readDateInventory("coverage", { now: "now" }), "date-inventory");
   assert.equal(await pack.provider.submitRegistration({}), "registered");
   assert.equal(calls[1][1], calls[2][1]);
   assert.equal(calls[2][1], calls[3][1]);
+  assert.deepEqual(calls.slice(4).map((call) => call[0]), ["date-inventory", "discover", "inspect"]);
 });
 
 test("pack construction fails closed without auth, driver, or evidence store", () => {

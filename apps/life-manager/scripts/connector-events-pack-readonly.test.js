@@ -30,12 +30,26 @@ test("the host read-only entrypoint recovers auth and reads exhaustive inventory
       createPack(input) {
         calls.push(["create-pack", input.dailyDriver, input.auth]);
         return {
-          async discoverTokyo() {
-            calls.push(["discover"]);
-            return { complete: true, rounds: 7, candidates: [{}, {}, {}] };
+          async readDateInventory(coverage, options) {
+            calls.push(["date-inventory", coverage, options]);
+            return {
+              complete: true,
+              window_start_date: "2026-08-02",
+              window_end_date: "2026-08-22",
+              source_inventory_rounds: 7,
+              counts: {
+                discovered: 3,
+                inspected: 3,
+                scheduled_in_person_in_window: 2,
+                excluded: 1,
+                dates_with_candidates: 2,
+                dates_without_candidates: 19,
+              },
+            };
           },
         };
       },
+      now: () => "2026-08-02T01:00:00.000Z",
     },
   });
   assert.deepEqual(result, {
@@ -44,10 +58,19 @@ test("the host read-only entrypoint recovers auth and reads exhaustive inventory
     authenticated: true,
     recovered: true,
     inventory_complete: true,
+    window_start_date: "2026-08-02",
+    window_end_date: "2026-08-22",
     inventory_rounds: 7,
-    candidate_count: 3,
+    discovered_candidate_count: 3,
+    inspected_detail_count: 3,
+    scheduled_in_person_in_window_count: 2,
+    excluded_detail_count: 1,
+    dates_with_candidates: 2,
+    dates_without_candidates: 19,
   });
-  assert.deepEqual(calls.map((call) => call[0]), ["create-auth", "create-pack", "auth", "discover"]);
+  assert.deepEqual(calls.map((call) => call[0]), ["create-auth", "create-pack", "auth", "date-inventory"]);
+  assert.equal(calls.at(-1)[1].days.length, 21);
+  assert.equal(calls.at(-1)[2].now, "2026-08-02T01:00:00.000Z");
 });
 
 test("the entrypoint refuses different Gmail and Luma identities before browser access", async () => {
