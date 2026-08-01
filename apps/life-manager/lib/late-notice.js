@@ -263,9 +263,33 @@ async function applyAmdDetection(uid, key, opts = {}) {
   return { result, amd, answered: null, hangup };
 }
 
+// spec §3 row 2d — the /test-call twin of applyAmdDetection, and the difference is deliberate:
+//   * NOTHING is written. A test call is placed straight from the dashboard button, so no scheduler
+//     ever inserted an lm_wake_log row for it. Reusing applyAmdDetection here would PATCH a row that
+//     does not exist and answer matched=0 on every single test call — the exact log line that is
+//     supposed to mean "a real wake row went missing" (§1.3). Evidence you cannot trust is worse
+//     than no evidence, so this path records nothing and says so.
+//   * The hangup is IDENTICAL to the wake path, because the cost is identical: reaching a voicemail
+//     runs to the carrier's 120s recording limit at ~$0.05 of Gemini Live spoken into a recording
+//     nobody plays back, whether or not we have a row to write it on. Same three rules, unchanged —
+//     `human` is never cut off, `not_sure` is (measured 17 machines / 3 humans), and a result we
+//     could not read at all cuts off NOBODY, because that is a parse failure and not an AMD verdict.
+// Deriving both from the same shouldMarkAnswered() keeps the two paths from drifting: change what
+// counts as a human and both the wake call and the test call change with it, in one edit.
+async function applyTestCallDetection(opts = {}) {
+  const result = typeof opts.result === "string" ? opts.result.trim() : "";
+  if (!result || shouldMarkAnswered({ amdEnabled: true, signal: "amd", result })) {
+    return { result, hangup: null };
+  }
+  const hangup = await hangupCall(opts.callControlId, {
+    fetchImpl: opts.fetchImpl, apiKey: opts.telnyxApiKey,
+  });
+  return { result, hangup };
+}
+
 module.exports = {
   NO_DESTINATION_MESSAGE, MAIL_FAILURE_MESSAGE,
   evaluateLateArrival, formatLateSuccessMessage, externalAttendees,
   processLocationLateNotice, upsertLiveLocation, getLiveLocation, deleteLiveLocation, claimLateEvent,
-  markAnswered, recordAmdResult, applyAmdDetection,
+  markAnswered, recordAmdResult, applyAmdDetection, applyTestCallDetection,
 };
