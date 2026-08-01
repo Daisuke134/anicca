@@ -26,6 +26,9 @@ const {
 const {
   CAPABILITY: MARKETING_VIDEO_GENERATION_CAPABILITY,
 } = require("./marketing-video-generation-adapter.js");
+const {
+  CAPABILITY: LUMA_RSVP_CAPABILITY,
+} = require("./luma-rsvp-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -145,7 +148,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers the financial report first", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 5);
+  assert.equal(manifest.adapters.length, 6);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -171,6 +174,8 @@ test("committed manifest is portable and registers the financial report first", 
     manifest.adapters[4].adapter_id,
     "marketing-video-generation",
   );
+  assert.equal(manifest.adapters[5].capability, LUMA_RSVP_CAPABILITY);
+  assert.equal(manifest.adapters[5].adapter_id, "outbound-luma-rsvp");
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,
@@ -292,6 +297,17 @@ test("configured registry loads the generic marketing video generation adapter",
     appRoot: path.join(__dirname, ".."),
   });
   const adapter = registry.getByCapability(MARKETING_VIDEO_GENERATION_CAPABILITY);
+
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry loads the portable Luma RSVP adapter", () => {
+  const registry = createConfiguredLoopAdapterRegistry({
+    appRoot: path.join(__dirname, ".."),
+  });
+  const adapter = registry.getByCapability(LUMA_RSVP_CAPABILITY);
 
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");

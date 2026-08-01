@@ -627,6 +627,45 @@ test("worker handlers are routed through the configured loop adapter registry", 
   });
 });
 
+test("outbound event worker wires the Luma browser provider and tenant evidence readers", async () => {
+  const provider = {
+    async inspectRegistration() {},
+    async submitRegistration() {},
+  };
+  const evidenceStore = {
+    async readExternalReceipt() {},
+    async readArtifact() {},
+  };
+  const fetchImpl = async () => {};
+  const now = () => "2026-08-01T10:00:00.000Z";
+  let services;
+  const handlers = createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: "/var/lib/life-manager/data",
+  }, ["outbound.event.apply"], {
+    lumaProvider: provider,
+    lumaEvidenceStore: evidenceStore,
+    fetchImpl,
+    now,
+    createRegistry({ servicesByAdapter }) {
+      services = servicesByAdapter["outbound-luma-rsvp"];
+      return {
+        hasCapability: (capability) => capability === "outbound.event.apply",
+        getByCapability: () => ({
+          execute: async () => ({ receipt: { kind: "fixture" } }),
+        }),
+      };
+    },
+  });
+
+  assert.equal(typeof handlers["outbound.event.apply"], "function");
+  assert.equal(services.provider, provider);
+  assert.equal(services.readExternalReceipt, evidenceStore.readExternalReceipt);
+  assert.equal(services.readArtifact, evidenceStore.readArtifact);
+  assert.equal(services.fetchImpl, fetchImpl);
+  assert.equal(services.now, now);
+});
+
 test("marketing observation worker reads one tenant receipt and preserves empty analytics as unavailable", async () => {
   const publicationJobId = `marketing-daily:${"a".repeat(64)}`;
   const calls = [];

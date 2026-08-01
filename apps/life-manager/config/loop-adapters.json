@@ -50,6 +50,16 @@
       ],
       "module_ref": "lib/marketing-video-generation-adapter.js",
       "factory_export": "createMarketingVideoGenerationLoopAdapter"
+    },
+    {
+      "adapter_id": "outbound-luma-rsvp",
+      "loop_id": "outbound.events",
+      "capability": "outbound.event.apply",
+      "effect_classes": [
+        "publish"
+      ],
+      "module_ref": "lib/luma-rsvp-adapter.js",
+      "factory_export": "createLumaRsvpLoopAdapter"
     }
   ]
 }

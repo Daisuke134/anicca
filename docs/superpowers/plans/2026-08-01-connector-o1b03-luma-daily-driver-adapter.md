@@ -38,12 +38,12 @@
 
 ### Task 3: RSVP adapter and effect fence
 
-- [ ] `outbound.event.apply` adapter契約のRED testsを書く。
-- [ ] submit前effect fence、登録済みreconcile、login/full/approval/failed分類を実装する。
-- [ ] E1/E2/E3 verifier由来receiptだけをruntime completionへ返す。
-- [ ] production manifestとworker servicesへportableに登録する。
-- [ ] runtime/outbound/adapter回帰を通す。
-- [ ] Commit and push.
+- [x] `outbound.event.apply` adapter契約のRED testsを書く。
+- [x] submit前effect fence、登録済みreconcile、login/full/approval/failed分類を実装する。
+- [x] E1/E2/E3 verifier由来receiptだけをruntime completionへ返す。
+- [x] production manifestとworker servicesへportableに登録する。
+- [x] runtime/outbound/adapter回帰を通す。
+- [ ] Commit and push。
 
 ### Task 4: O1B-03 evidence and handoff
 

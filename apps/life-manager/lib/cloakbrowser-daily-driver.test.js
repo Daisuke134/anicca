@@ -159,3 +159,31 @@ test("classifies Luma login without exposing page text or cookie values", () => 
     path: "/home",
   });
 });
+
+test("Docker may resolve the same :9222 owner to a private host IP but never another port", async () => {
+  const fx = fixture();
+  const driver = createCloakBrowserDailyDriver({
+    connectOverCDP: fx.connectOverCDP,
+    resolveEndpoint: async () => "http://192.168.5.2:9222",
+  });
+  await driver.withLumaPage("https://luma.com/event-a", async () => ({}));
+  assert.deepEqual(fx.calls[0], ["connect", "http://192.168.5.2:9222"]);
+
+  const badPort = createCloakBrowserDailyDriver({
+    connectOverCDP: fx.connectOverCDP,
+    resolveEndpoint: async () => "http://192.168.5.2:9223",
+  });
+  await assert.rejects(
+    badPort.withLumaPage("https://luma.com/event-a", async () => ({})),
+    /resolved endpoint/i,
+  );
+
+  const publicHost = createCloakBrowserDailyDriver({
+    connectOverCDP: fx.connectOverCDP,
+    resolveEndpoint: async () => "http://8.8.8.8:9222",
+  });
+  await assert.rejects(
+    publicHost.withLumaPage("https://luma.com/event-a", async () => ({})),
+    /resolved endpoint/i,
+  );
+});
