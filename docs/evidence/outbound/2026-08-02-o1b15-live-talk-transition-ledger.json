@@ -1,0 +1,41 @@
+{
+  "evidence_version": "o1b15-live-talk-transition-ledger-v1",
+  "observed_date_jst": "2026-08-02",
+  "runtime_database": "life-manager-local-postgres-1/life_manager",
+  "migration": "apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql",
+  "migration_applied": true,
+  "rollback_fixture": {
+    "states_exercised": [
+      "discovered",
+      "submission_queued",
+      "submitted",
+      "accepted",
+      "presented"
+    ],
+    "sequential_transitions_inserted": 4,
+    "current_state_presented_rows": 1,
+    "terminal_reverse_transition_rejected": true,
+    "immutable_update_rejected": true,
+    "unchanged_transition_rows": 4,
+    "entities_after_rollback": 0,
+    "transitions_after_rollback": 0,
+    "multi_row_chain_attempt_failed_closed_and_rolled_back": true
+  },
+  "real_talk": {
+    "canonical_event_ref": "https://luma.com/p9kfepcf",
+    "discovered_talk_entities": 1,
+    "transition_rows": 0,
+    "state_mutated_for_test": false
+  },
+  "verification": {
+    "observation_tests_passed": 4,
+    "store_tests_passed": 6,
+    "outbound_tests_passed": 150,
+    "outbound_tests_failed": 0
+  },
+  "privacy": {
+    "raw_source_text_stored": false,
+    "personal_contact_stored": false,
+    "secret_or_ticket_material_stored": false
+  }
+}
