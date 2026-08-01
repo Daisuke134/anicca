@@ -4,6 +4,7 @@ const { createHash } = require("node:crypto");
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const VERIFIED = new WeakSet();
+const PRIVATE = new WeakMap();
 
 function invalid() { throw new Error("Google Calendar busy inventory invalid"); }
 function unavailable() { throw new Error("Google Calendar busy inventory unavailable"); }
@@ -35,6 +36,11 @@ function validTimeZone(value) {
 
 function digest(value) {
   return createHash("sha256").update(String(value), "utf8").digest("hex");
+}
+
+function privateLocation(value) {
+  const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+  return text && text.length <= 2_000 && !/[\x00-\x1f\x7f]/.test(text) ? text : null;
 }
 
 function stableJson(value) {
@@ -119,9 +125,13 @@ async function inspectGoogleCalendarBusyInventory(options = {}) {
   }
   const seen = new Set();
   const busyIntervals = [];
+  const privateByEventRef = new Map();
   for (const event of rawEvents) {
     const interval = normalizeBusyEvent(event, calendars, seen);
-    if (interval) busyIntervals.push(interval);
+    if (interval) {
+      busyIntervals.push(interval);
+      privateByEventRef.set(interval.event_ref, Object.freeze({ location: privateLocation(event.location) }));
+    }
   }
   const core = {
     provider: "google-calendar",
@@ -141,6 +151,7 @@ async function inspectGoogleCalendarBusyInventory(options = {}) {
     ...core,
   });
   VERIFIED.add(snapshot);
+  PRIVATE.set(snapshot, privateByEventRef);
   return snapshot;
 }
 
@@ -148,7 +159,15 @@ function isVerifiedGoogleCalendarBusyInventory(value) {
   return Boolean(value && typeof value === "object" && VERIFIED.has(value));
 }
 
+function privateGoogleCalendarBusyContext(snapshot, eventRef) {
+  if (!isVerifiedGoogleCalendarBusyInventory(snapshot)) invalid();
+  const context = PRIVATE.get(snapshot).get(String(eventRef));
+  if (!context) invalid();
+  return context;
+}
+
 module.exports = {
   inspectGoogleCalendarBusyInventory,
   isVerifiedGoogleCalendarBusyInventory,
+  privateGoogleCalendarBusyContext,
 };

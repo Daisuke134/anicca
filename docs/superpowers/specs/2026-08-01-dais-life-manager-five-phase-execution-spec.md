@@ -1081,6 +1081,11 @@ O1B-23進捗3（inventory GREEN）: 全calendarを一度列挙し、全page even
 busyから除外する。calendar ID、event ID、予定名、場所はsnapshotへ出さずopaque hash refだけを保持する。
 provider failureは空予定へ変換しない。transport + inventory focused 17/17成功。次は移動込みcandidate gate。
 
+O1B-23進捗4（gate RED）: verified date inventoryとbusy inventoryだけを受け、直接衝突、all-day衝突、
+前後5分bufferを足した実route時間による衝突を候補ごとに判定する3 testを追加した。短い既存予定が一件
+あっても後続のfree候補を残し、route不能は`unavailable`でなくrecovery、結果はopaque refだけを保持する。
+production gate module不存在のため期待どおり失敗する段階である。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
