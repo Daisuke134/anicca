@@ -243,10 +243,13 @@ YC公式pageでlate application受付を当日再確認
 
 ## 5. 残作業 — 必ず番号順
 
-実行中: `O1A-03`。events・funders・jobs共通の成功条件を`E1 AND E2 AND E3`としてmodule化する。
+完了: `O1A-03`。events・funders・jobs共通の成功条件を`E1 AND E2 AND E3`としてmodule化した。
 callerの成功booleanやDOM本文は信用せず、外部receipt reader、immutable artifact reader、実HEADを
-gate自身が呼ぶ。実装plan:
-`docs/superpowers/plans/2026-08-01-connector-o1a03-evidence-contract.md`。
+gate自身が呼ぶ。E1はreference schemeと結果kindを一致させ、E2は実bytesのPNG signature、5000 bytes、
+SHA-256 object reference一致を検証し、E3はHTTPS canonical URLへredirectなしのHEAD 200を要求する。
+一回性`/join/complete/`、raw email、filesystem path、302、cross-tenant attemptはすべてfailedとなる。
+fresh verificationはoutbound 11件とworker回帰30件が成功した。実装plan:
+`docs/superpowers/plans/2026-08-01-connector-o1a03-evidence-contract.md`。次は`O1A-04`。
 
 完了: `O1A-02`。新runtimeや第二queueを作らず、既存workerへtenant・job・attempt・workerで
 scopedされた定期lease heartbeatを接続した。pulseを直列化し、停止時にin-flight更新を待つ。
@@ -283,7 +286,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 
 - [x] O1A-01 既存`lm_runtime_jobs`を唯一のdurable runtimeとしてConnector event application job contractへ接続
 - [x] O1A-02 enqueue、claim、heartbeat、retry、dead-letter、idempotencyを接続
-- [ ] O1A-03 Evidence E1/E2/E3を共通module化
+- [x] O1A-03 Evidence E1/E2/E3を共通module化
 - [ ] O1A-04 不足dependencyを解消し全testを実行
 - [ ] O1A-05 Guardianを接続
 - [ ] O1A-06 強制停止→検知→Telegram警告→復旧を実証
