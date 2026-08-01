@@ -250,9 +250,9 @@ E1/E2/E3 verifierが生成したverified objectから作られ、同じtenant/jo
 完了可能にする。証拠不成立は外部効果の有無が不明なため`unknownEffect=true`でreconciliationへ渡す。
 fresh verificationはoutbound 31件、runtime worker回帰31件が成功した。実装commit: `4ea9e931a`。
 実装plan: `docs/superpowers/plans/2026-08-01-connector-o1b01-remove-fake-success.md`。evidence:
-`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。`O1B-02`を実行中。
+`docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`。後続の`O1B-02`も完了した。
 
-O1B-02着手時の実測: URL不具合は2件ある。Calendarへ一回性`/join/complete/`を保存する不具合は
+完了: `O1B-02`。URL不具合は2件ある。Calendarへ一回性`/join/complete/`を保存する不具合は
 旧Connectorの`gcal_write.py`と現在のOpenClaw配備版ではすでに拒否・canonical URL分離が入っている。
 connpass subdomainについても`~/.openclaw`配備版は検索結果のURLを保持するが、
 `profitable-claude`内の古いvendor copyはevent IDだけを残し、`https://connpass.com/event/<id>/`へ
@@ -274,6 +274,12 @@ commit `c901bab`。新規Python回帰4件と既存Calendar回帰7件が成功し
 再配備元を5条件でfail closed監査するscriptを追加し、監査2件とoutbound全体38件が成功した。
 実配備版にだけ存在する「証拠経路のない旧connpass submit停止」は保持し、古い応募処理で上書きして
 いない。次は現行canonical URL 10件の実HEAD 200証拠化。
+
+O1B-02完了実測: Web検索と公式connpass group inventoryから得たgroup subdomain付きcanonical URL
+10件を、実runtimeと同じNode HEAD・redirect manualで再確認し、10/10が200、redirect 0、
+`/join/complete/` 0だった。fresh verificationは`life-manager` outbound 38件、runtime 31件、
+`profitable-claude`新規URL回帰4件、既存Calendar回帰7件、旧配備監査5/5が成功した。
+証拠: `docs/evidence/outbound/2026-08-01-o1b02-canonical-event-urls.json`。次は`O1B-03`。
 
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
@@ -391,7 +397,7 @@ identity/browser/calendar reference検証を追加し、新規4件と既存runti
 ### 5.2 Order 1B — イベント
 
 - [x] O1B-01 偽物の成功判定を削除
-- [ ] O1B-02 event URLの2不具合を修正
+- [x] O1B-02 event URLの2不具合を修正
 - [ ] O1B-03 既存CloakBrowser daily-driverを使うLuma discover + RSVP adapterを完成
 - [ ] O1B-04 実イベント一件へ登録
 - [ ] O1B-05 確認mailをGmailで読む
