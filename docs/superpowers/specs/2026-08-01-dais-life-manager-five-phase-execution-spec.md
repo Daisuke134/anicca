@@ -677,6 +677,12 @@ secret境界を検証するmoduleを実装した。plain object copyはprovenanc
 作らない。focused 4/4、新規testを含むoutbound全回帰144/144成功。次はimmutable DB ledgerとatomic projectionを
 TDDで実装する。
 
+O1B-15進捗3（DB RED）: verified transitionからstable reference-only recordを作ること、parent talk rowの
+`FOR UPDATE`、append後のcurrent projection、後続stateへ進んだ後のexact retry、cross-tenant/stale/audience/
+collision rollback、DB graph/trigger/immutabilityをtest 6件で固定した。production
+`talk-application-transition-store.js`は未実装のためmodule path不存在で期待どおりRED。次はstoreとmigrationを
+実装する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。

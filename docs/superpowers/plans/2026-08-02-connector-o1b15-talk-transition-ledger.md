@@ -66,11 +66,11 @@ git commit -m "feat(connector): validate talk application transitions"
 - Consumes: verified transition、`tenantId`、`participationId`
 - Produces: `buildTalkApplicationTransitionRecord(...)`、`createTalkApplicationTransitionStore({connect}).append(record)`
 
-- [ ] **Step 1: RED testを書く**
+- [x] **Step 1: RED testを書く**
 
 stable ID、reference-only row、accepted graph、same-client lock、idempotent retry、collision rollback、migration trigger contractを固定する。
 
-- [ ] **Step 2: REDを確認する**
+- [x] **Step 2: REDを確認する**
 
 Run: `node --test lib/talk-application-transition-store.test.js`
 Expected: module path不存在でFAIL。
