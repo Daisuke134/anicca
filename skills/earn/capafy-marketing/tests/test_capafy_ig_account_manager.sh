@@ -128,6 +128,11 @@ eq "challenge retires failed row" "$(python3 -c 'import json,sys;print(json.load
 eq "challenge wakes manager once" "$(wc -l <"$KICKSTART_CALLS" | tr -d ' ')" 1
 has "challenge wakes exact label" "$KICKSTART_CALLS" "ai.anicca.capafy-ig-account-manager"
 if grep -Eqi 'Client\(\)\.login|login_by_sessionid|password.*login' "$KICKSTART_CALLS" "$RUNNER_CALLS"; then bad "challenge attempted private login"; else ok "challenge never attempts private login"; fi
+bash "$MANAGER" >/dev/null 2>&1; replacement_rc=$?
+eq "challenge chain provisions replacement" "$replacement_rc" 0
+eq "replacement row is appended after retired history" "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(len(d))' "$CAPAFY_IG_ACCOUNTS_FILE")" 2
+eq "replacement becomes created_session_verified" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CAPAFY_IG_LIFECYCLE_STATE")" created_session_verified
+eq "replacement lifecycle closure is delivered once" "$(grep -Fc 'replacement account created and verified' "$TELEGRAM_BODY")" 1
 
 printf '=== test_capafy_ig_account_manager: %s passed %s failed ===\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

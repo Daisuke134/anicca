@@ -18,9 +18,9 @@ CONSUMERS = (
 )
 
 EXPECTED_TASK_CLASSES = {
-    # capafy drives three sequential browser checkpoints plus skill design;
-    # measured 900s browser lanes timed out repeatedly, so it uses the existing
-    # 3600s application lane with a hard Phase A/B split.
+    # Capafy drives three sequential publish checkpoints plus skill design.
+    # Four 900s browser-lane passes timed out with real progress, so the
+    # consumer now deliberately reuses the existing 3600s application lane.
     ROOT / "self" / "capafy-loop" / "capafy-loop-daily.sh": "application-lane-agent",
     ROOT / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh": "marketing-agent",
     ROOT / "earn" / "clip" / "clip_daily.sh": "tool-agent",
