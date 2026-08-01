@@ -80,3 +80,7 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "cdp.py replace" in result.stdout
     assert "Never retry a field with insert" in result.stdout
     assert "read the field value length back" in result.stdout
+    assert "Gmail dot-address fallback" in result.stdout
+    assert "insert dots only" in result.stdout
+    assert "do not retry another plus-address" in result.stdout
+    assert "Never print or echo the password or OTP" in result.stdout
