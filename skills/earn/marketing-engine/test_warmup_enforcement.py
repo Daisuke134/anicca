@@ -89,3 +89,5 @@ def test_provision_requires_idempotent_cdp_field_replacement():
     assert "never invent success if Google forces phone or CAPTCHA" in result.stdout
     assert "Historical rejection is proof" in result.stdout
     assert "skip directly to the fresh Gmail account fallback" in result.stdout
+    assert "cdp.py clicktexttrusted" in result.stdout
+    assert "Never reuse a recorded coordinate" in result.stdout
