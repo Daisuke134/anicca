@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "task": "O1C-12",
+  "observed_at": "2026-08-01T18:21:01.000Z",
+  "result": "executable_path_ready_no_live_meeting",
+  "implementation_commit": "d5f508677",
+  "path": {
+    "required_status": "meeting_requested",
+    "schedule_owner": "agent_judgment",
+    "brief_owner": "agent_judgment",
+    "brief_sections": [
+      "objective",
+      "company_snapshot",
+      "funder_fit",
+      "likely_questions",
+      "questions_to_ask",
+      "risks"
+    ],
+    "all_calendar_freebusy_required": true,
+    "time_zone": "Asia/Tokyo",
+    "minimum_duration_minutes": 15,
+    "maximum_duration_minutes": 120,
+    "positive_calendar_event_id_required": true,
+    "positive_calendar_url_required": true,
+    "append_only_receipt": true
+  },
+  "privacy": {
+    "raw_gmail_sender_persisted": false,
+    "raw_gmail_subject_persisted": false,
+    "raw_gmail_body_persisted": false,
+    "raw_evidence_quote_persisted": false
+  },
+  "live_readback": {
+    "threads": [
+      { "candidate_id": "evio", "provider_thread_id": "19fbe729ab0133d6", "message_count": 1, "inbound_count": 0 },
+      { "candidate_id": "yeetvc", "provider_thread_id": "19fbe729f4bfc3f2", "message_count": 2, "inbound_count": 1, "typed_status": "delivery_failed" },
+      { "candidate_id": "j-seed", "provider_thread_id": "19fbe72a2beb47f0", "message_count": 1, "inbound_count": 0 }
+    ],
+    "meeting_requested_status_count": 0,
+    "funder_meeting_ledger_count": 0,
+    "calendar_query": "Life Manager funder meeting",
+    "calendar_window_start": "2026-08-01T00:00:00+09:00",
+    "calendar_window_end": "2026-09-01T00:00:00+09:00",
+    "matching_calendar_event_count": 0,
+    "live_calendar_writes": 0,
+    "live_briefs": 0
+  },
+  "verification": {
+    "focused_plus_transport_tests": { "passed": 18, "failed": 0 },
+    "outbound_tests": { "passed": 208, "failed": 0 },
+    "runtime_up_tests": { "passed": 33, "failed": 0 },
+    "standalone_transport_tests": { "passed": 14, "failed": 0 },
+    "migration_apply": "passed",
+    "gmail_thread_readback": "passed",
+    "database_readback": "passed",
+    "calendar_readback": "passed",
+    "git_diff_check": "passed"
+  },
+  "claim_boundary": "This proves the executable, source-bound path from a typed meeting request to a conflict-free Calendar plan, a six-section application-kit brief, a positive-ID Calendar write, and an append-only receipt. The current live threads contain no meeting request, so no Calendar event or brief was invented or created."
+}

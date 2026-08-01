@@ -23,9 +23,9 @@
 - Test: `apps/life-manager/lib/funder-meeting.test.js`
 - Modify: `apps/life-manager/package.json`
 
-- [ ] Write RED tests proving a source-bound agent schedule and six-section brief create one plan.
-- [ ] Add rejection cases for non-meeting status, fabricated quote, conflict, bad duration/time zone, and unsafe brief source.
-- [ ] Implement the minimum validator/planner and run focused tests GREEN.
+- [x] Write RED tests proving a source-bound agent schedule and six-section brief create one plan.
+- [x] Add rejection cases for non-meeting status, fabricated quote, conflict, bad duration/time zone, and unsafe brief source.
+- [x] Implement the minimum validator/planner and run focused tests GREEN.
 
 ### Task 2: Positive Calendar receipt and append-only store
 
@@ -36,9 +36,9 @@
 - Create: `apps/life-manager/migrations/2026-08-02-lm-funder-meeting-ledger.sql`
 - Modify: `deploy/local/compose.yaml`
 
-- [ ] Write RED tests proving gog event ID/URL readback, one create, no success on missing IDs, exact replay, tenant RLS, and no UPDATE.
-- [ ] Implement positive Calendar receipt propagation and the store/migration.
-- [ ] Run focused, transport, outbound, and runtime regressions GREEN.
+- [x] Write RED tests proving gog event ID/URL readback, one create, no success on missing IDs, exact replay, tenant RLS, and no UPDATE.
+- [x] Implement positive Calendar receipt propagation and the store/migration.
+- [x] Run focused, transport, outbound, and runtime regressions GREEN.
 
 ### Task 3: Live zero-effect evidence
 
@@ -46,6 +46,6 @@
 - Create: `docs/evidence/funding/2026-08-02-o1c12-funder-meeting.json`
 - Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
 
-- [ ] Fresh-read Gmail typed-status DB and Calendar around the relevant window.
-- [ ] Prove meeting-request count 0, meeting-ledger count 0, and no invented Calendar event.
-- [ ] Record evidence, mark only O1C-12, machine-count 100 remaining, commit/push, and verify remote equality.
+- [x] Fresh-read Gmail typed-status DB and Calendar around the relevant window.
+- [x] Prove meeting-request count 0, meeting-ledger count 0, and no invented Calendar event.
+- [x] Record evidence, mark only O1C-12, machine-count 100 remaining, commit/push, and verify remote equality.

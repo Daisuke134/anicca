@@ -807,6 +807,20 @@ outbound 204件、runtime-up 33件、Gmail full sanitized readback、DB current 
 `docs/evidence/funding/2026-08-02-o1c11-funder-inbound-status.json`。残作業は101件。
 次はO1C-12で、meetingをCalendarへ登録し面談資料を生成する。
 
+完了: `O1C-12`。O1C-11の`meeting_requested` observationと同じGmail message/thread、本文hash、
+agentのexact evidence quoteを要求し、futureのAsia/Tokyo時刻、15〜120分、全Calendar free/busy非衝突時だけ
+Calendar planを作る。面談目的、時刻、場所、6 sectionの面談資料は`agent_judgment`が所有し、資料の各sectionは
+application-kitまたは当該funderのofficial sourceへ束縛する。既存gog Calendar transportはprocess成功だけでなく
+positive event IDと`calendar.google.com` URLの両方を要求するよう強化し、receiptをtenant-bound append-only ledgerへ
+保存する。fresh実測では3 thread中inboundはYeetVCのdelivery failure 1件だけで、`meeting_requested` 0、
+meeting ledger 0、2026-08-01〜09-01の`Life Manager funder meeting` Calendar event 0。したがって架空の予定・資料は
+作っていない。fresh verificationはfocused+transport 18件、outbound 208件、runtime-up 33件、standalone transport
+14件、migration、Gmail/DB/Calendar readback、diff checkが全成功。実装commit `d5f508677`はremoteへpush済み。
+設計: `docs/superpowers/specs/2026-08-02-o1c12-funder-meeting-design.md`。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c12-funder-meeting.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c12-funder-meeting.json`。残作業は100件。
+次はO1C-13で、全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1018,7 +1032,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-09 cold outreachを1日3〜5通で再開
 - [x] O1C-10 follow-up最大2回を自動実行
 - [x] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
-- [ ] O1C-12 meetingをCalendarへ登録し面談資料を生成
+- [x] O1C-12 meetingをCalendarへ登録し面談資料を生成
 - [ ] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
