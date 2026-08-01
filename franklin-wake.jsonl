@@ -19105,3 +19105,10 @@
 {"ts":1785595988,"wake_id":"00MSAHQY9QE68BB98FB0014BEA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: Solana DeFi liquidity mining programs that pay USDC rewards for small deposits [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded exp"}
 {"ts":1785596117,"wake_id":"00MSAHTPOK49DA54B6568944AF","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1785596252,"wake_id":"00MSAHWLTI8C50D214FECA413A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785596391,"wake_id":"00MSAHZL4GB5B233DB8C854CBA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785596527,"wake_id":"00MSAI2IEH13AB78F16A934DF5","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785596665,"wake_id":"00MSAI5GHUF64F0E2A470448BF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785596803,"wake_id":"00MSAI8EYZ5F13CFAFC12A481C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785596929,"wake_id":"00MSAIB4UJ731CC95BE5544709","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1785597058,"wake_id":"00MSAIDW0Y56D03E7D79774555","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1785597187,"wake_id":"00MSAIGNIY0F5CCA0DBC2C47EB","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
