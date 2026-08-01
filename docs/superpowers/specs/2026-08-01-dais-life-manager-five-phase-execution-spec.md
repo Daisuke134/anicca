@@ -821,6 +821,19 @@ meeting ledger 0、2026-08-01〜09-01の`Life Manager funder meeting` Calendar e
 `docs/evidence/funding/2026-08-02-o1c12-funder-meeting.json`。残作業は100件。
 次はO1C-13で、全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない。
 
+完了: `O1C-13`。全active funder form経路を
+`browser-profile://cloakbrowser/daily-driver`、CDP `http://127.0.0.1:9222`、既存shared context 1個へ固定した。
+route manifestはYCのexact official originとregistry由来のofficial accelerator formを列挙し、別endpoint、URL credentials、
+origin drift、複数context、browser launch commandをfail closedする。各処理は自分が開いたpageだけを閉じ、共有browserは閉じない。
+enabled runtime inventory `accelerator-application-monthly`の実targetである`apply-to-funder`も`:9222`へ修正し、`:9223`指定はexit 9、
+`:9222`不在時は新browserを起動せずexit 10とした。実機ではChrome 145のdaily-driverが`:9222`で応答した。
+deprecated `apply-to-yc`の知識移行・廃止はO1C-21/O1C-24、別profile所有の`:9223`停止はscope外として保持した。
+fresh verificationはfocused 8件、outbound 211件、runtime-up 33件、active script syntax/refusal、live CDP、diff checkが全成功。
+実装commit `7ca47fd9b`はremoteへpush済み。実装plan:
+`docs/superpowers/plans/2026-08-02-connector-o1c13-funder-daily-driver.md`。実測証拠:
+`docs/evidence/funding/2026-08-02-o1c13-funder-daily-driver.json`。残作業は99件。
+次はO1C-14で、公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加する。
+
 O1B-01進捗1: verifier provenanceとruntime completion gateをTDDで追加した。最初のREDは
 `outbound-success.js`不存在、runtime REDはbare `{status:"success"}`が実際に`completeJob`へ入ることを
 再現した。GREENでは、同一processの実verifier由来E1/E2/E3 objectだけがsuccess receiptを作れる。
@@ -1033,7 +1046,7 @@ agentが本文と履歴を読んで判断し、keyword/regexの固定分類へ�
 - [x] O1C-10 follow-up最大2回を自動実行
 - [x] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
 - [x] O1C-12 meetingをCalendarへ登録し面談資料を生成
-- [ ] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
+- [x] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装

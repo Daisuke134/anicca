@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "objective": "O1C-13",
+  "observed_at": "2026-08-01T18:29:45Z",
+  "implementation_commit": "7ca47fd9b",
+  "policy": {
+    "browser_ref": "browser-profile://cloakbrowser/daily-driver",
+    "endpoint": "http://127.0.0.1:9222",
+    "connection_mode": "connect_over_cdp",
+    "shared_context_count": 1,
+    "active_routes": ["yc-application", "official-accelerator-form"],
+    "forbidden": [
+      "browser launch commands",
+      "credentials in form URLs",
+      "origin drift",
+      "multiple browser contexts",
+      "any CDP endpoint other than 127.0.0.1:9222"
+    ]
+  },
+  "live_daily_driver": {
+    "reachable": true,
+    "browser": "Chrome/145.0.7632.109",
+    "websocket_origin": "ws://127.0.0.1:9222/devtools/browser/"
+  },
+  "active_runtime_route": {
+    "inventory_display_name": "accelerator-application-monthly",
+    "inventory_enabled": true,
+    "inventory_loaded": false,
+    "target": "$HOME/.openclaw/skills/apply-to-funder/scripts/run.sh",
+    "form_transport": "/Users/anicca/.openclaw/skills/apply-to-funder/scripts/lib/form_filler.sh",
+    "form_transport_sha256": "0e7d8257ef729118690dbba376bd864bdbb55595333d6a787ae0da5722e7a070",
+    "submit_script_sha256": "8ca0d6cc96b08196fec6b45c438c287c9e118085f1774b6271a6302291960dd3",
+    "shell_syntax": "pass",
+    "disallowed_9223_exit_code": 9,
+    "auto_launch_code_present": false
+  },
+  "verification": {
+    "red": "focused suite initially failed because funder-browser-policy.js did not exist",
+    "focused_tests": "8/8 pass",
+    "outbound_tests": "211/211 pass",
+    "runtime_up_tests": "33/33 pass",
+    "manifest_route_count": 2,
+    "git_diff_check": "pass"
+  },
+  "scope_boundary": {
+    "deprecated_apply_to_yc": "not an active funder route; its knowledge migration and retirement remain O1C-21/O1C-24",
+    "port_9223": "not stopped because another active gig-daily-driver profile owns it",
+    "submission_receipt_verification": "remains governed by O1C-15/O1C-16 and later receipt gates"
+  }
+}
