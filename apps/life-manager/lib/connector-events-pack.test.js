@@ -85,10 +85,15 @@ test("the pack gives discovery and RSVP one auth-aware daily-driver", async () =
     "date-inventory", "discover", "inspect", "rank-preferences", "goal-serendipity",
     "source-capabilities", "source-handoff-plan", "connpass-client", "source-handoff-execute",
   ]);
-  assert.deepEqual(calls.at(-2)[1], {
+  assert.deepEqual(calls[7][1], {
     dateInventory: "date-inventory",
     date: "2026-08-02",
     preferences: "AIを優先し全候補を残す",
+  });
+  assert.deepEqual(calls[8][1], {
+    dateInventory: "date-inventory",
+    preferenceRanking: "preference-ranking",
+    goals: "Dais goals",
   });
   assert.deepEqual(calls.at(-1)[1], {
     plan: "source-handoff-plan",

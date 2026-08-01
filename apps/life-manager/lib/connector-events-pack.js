@@ -7,6 +7,12 @@ const { inspectLumaDateInventory } = require("./luma-date-inventory.js");
 const { createLumaBrowserProvider } = require("./luma-browser-provider.js");
 const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
+const { createConnpassApiClient } = require("./connpass-api-client.js");
+const {
+  createEventSourceCapabilities,
+  executeEventSourceHandoff,
+  planEventSourceHandoff,
+} = require("./event-source-handoff.js");
 
 function invalid() {
   return new Error("Connector events pack configuration unavailable");
@@ -32,6 +38,10 @@ function createConnectorEventsPack(options = {}) {
   const inspectDateInventory = options.inspectDateInventory || inspectLumaDateInventory;
   const rankPreferences = options.rankPreferences || inferEventPreferenceRanking;
   const evaluateGoalSerendipity = options.evaluateGoalSerendipity || inferEventGoalSerendipity;
+  const createSourceCapabilities = options.createSourceCapabilities || createEventSourceCapabilities;
+  const planSourceHandoff = options.planSourceHandoff || planEventSourceHandoff;
+  const executeSourceHandoff = options.executeSourceHandoff || executeEventSourceHandoff;
+  const createConnpassClient = options.createConnpassClient || createConnpassApiClient;
   const authAwareDriver = createAuthAwareDriver({ dailyDriver, auth });
   if (!authAwareDriver || typeof authAwareDriver.withLumaPage !== "function") throw invalid();
   const provider = createProvider({
@@ -73,6 +83,17 @@ function createConnectorEventsPack(options = {}) {
     },
     evaluateDateGoals(dateInventory, preferenceRanking, goals, extra = {}) {
       return evaluateGoalSerendipity({ dateInventory, preferenceRanking, goals }, extra);
+    },
+    handoffEventSource(date, lumaOutcome, extra = {}) {
+      const connpassApiKey = String(extra.connpassApiKey == null ? "" : extra.connpassApiKey);
+      const capabilities = createSourceCapabilities({ connpassApiKey });
+      const plan = planSourceHandoff({ date, lumaOutcome, capabilities });
+      const connpassClient = capabilities.sources
+        ? (capabilities.sources.connpass.discovery_allowed
+          ? createConnpassClient({ apiKey: connpassApiKey })
+          : undefined)
+        : (connpassApiKey ? createConnpassClient({ apiKey: connpassApiKey }) : undefined);
+      return executeSourceHandoff({ plan, connpassClient });
     },
   });
 }

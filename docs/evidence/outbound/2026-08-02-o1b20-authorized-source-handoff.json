@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "objective": "O1B-20 authorized event source handoff",
+  "observed_at": "2026-08-02",
+  "configuration_audit": {
+    "connpass_api_key_present": false,
+    "post_application_official_reply_count": 0,
+    "credential_like_reply_count": 0
+  },
+  "policy": {
+    "luma": "active_discovery_registration_and_coverage",
+    "connpass_without_key": "zero_network_wait_and_rediscover_luma",
+    "connpass_with_key": "official_v2_get_discovery_only",
+    "connpass_registration_allowed": false,
+    "connpass_coverage_credit": false,
+    "meetup_active": false,
+    "eventbrite_active": false
+  },
+  "missing_key_execution": {
+    "handoff_id": "event-source-handoff:461a66db9941aaff5f0b539e897bf942d869d5171bb32a7da1dbc3375248ea25",
+    "date": "2026-08-05",
+    "status": "waiting_for_authorized_source",
+    "coverage_status": "open",
+    "advisory_candidate_count": 0,
+    "coverage_credit_count": 0,
+    "reported_network_call_count": 0,
+    "independently_observed_network_call_count": 0,
+    "next_actions": ["watch_connpass_api_key", "rediscover_luma"]
+  },
+  "verification": {
+    "focused_tests_passed": 11,
+    "focused_tests_failed": 0,
+    "outbound_tests_passed": 179,
+    "outbound_tests_failed": 0
+  }
+}
