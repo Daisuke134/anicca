@@ -151,6 +151,26 @@ test("one-shot URLs and raw identity or filesystem values never become evidence"
   assert.equal(readersCalled, false);
 });
 
+test("E3 verifies the canonical connpass URL without dropping its group subdomain", async () => {
+  const connpass = fixture();
+  connpass.input.canonicalUrl = (
+    "https://data-learning-guild.connpass.com/event/400425?utm_source=search#about"
+  );
+  connpass.dependencies.fetchImpl = async (url, options) => {
+    assert.equal(url, "https://data-learning-guild.connpass.com/event/400425/");
+    assert.equal(options.method, "HEAD");
+    assert.equal(options.redirect, "manual");
+    return { status: 200 };
+  };
+
+  const result = await verifyOutboundEvidence(connpass.input, connpass.dependencies);
+  assert.equal(result.status, "verified");
+  assert.equal(
+    result.evidence.e3.url,
+    "https://data-learning-guild.connpass.com/event/400425/",
+  );
+});
+
 test("an attempt reference from another tenant cannot read or verify evidence", async () => {
   const crossTenant = fixture();
   crossTenant.input.attemptRef = `runtime-attempt://another-tenant/${"a".repeat(64)}/1`;

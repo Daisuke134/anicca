@@ -2,6 +2,8 @@
 
 const { createHash } = require("node:crypto");
 
+const { canonicalEventUrl } = require("./canonical-event-url.js");
+
 const ATTEMPT_REF = /^runtime-attempt:\/\/([a-z0-9._-]+)\/[a-z0-9._:%-]+\/[1-9][0-9]*$/i;
 const EXTERNAL_REF = /^(?:provider-receipt|gmail-message|ticket):\/\/[a-z0-9._-]+\/[a-z0-9._:~-]+$/i;
 const OBJECT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
@@ -17,25 +19,6 @@ function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) deepFreeze(child);
   return Object.freeze(value);
-}
-
-function canonicalUrl(value) {
-  let url;
-  try {
-    url = new URL(text(value));
-  } catch {
-    return null;
-  }
-  if (
-    url.protocol !== "https:"
-    || url.username
-    || url.password
-    || /\/join\/complete(?:\/|$)/i.test(url.pathname)
-  ) {
-    return null;
-  }
-  url.hash = "";
-  return url.toString();
 }
 
 function safeReceipt(value, ref) {
@@ -74,7 +57,7 @@ async function verifyOutboundEvidence(input = {}, dependencies = {}) {
   const externalReceiptRef = text(input.externalReceiptRef);
   const artifactRef = text(input.artifactRef);
   const artifactMatch = OBJECT_REF.exec(artifactRef);
-  const url = canonicalUrl(input.canonicalUrl);
+  const url = canonicalEventUrl(input.canonicalUrl);
   const evidence = { e1: null, e2: null, e3: null };
 
   if (
