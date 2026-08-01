@@ -977,6 +977,10 @@ O1B-19進捗2（source GREEN）: Luma公式JSON-LDからdescription、organizer 
 住所をboundedに正規化し、verified detailから21日snapshotへ伝播した。attendeeが無い場合は空配列と
 `participant_visibility=unavailable`を保持し、推測しない。O1B-18回帰を含むfocused 17/17成功。
 
+O1B-19進捗3（decision RED）: verified O1B-17/O1B-18 provenance、全candidate保持、5 factor exactness、
+source完全一致excerpt、非公開participantの捏造拒否、goal/serendipity理由、model failure時fallback禁止を
+4 testで定義した。production module不存在のため期待どおり失敗した。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
