@@ -202,3 +202,52 @@ test("a test call answers 200 even when the hangup fails", async () => {
   });
   assert.equal(res.status, 200);
 });
+
+// The 5xx above is only correct if reprocessing is harmless, because Telnyx redelivers the SAME
+// payload — same data.id, same client_state, only meta.attempt moves
+// (developers.telnyx.com/docs/voice/programmable-voice/voice-api-webhooks). Today it IS harmless, by
+// two properties of lib/late-notice.js that nothing in this file's names would protect: amd_result
+// PATCHes with no answered_at filter (last observation wins, every detection recorded) and
+// answered_at PATCHes with `&answered_at=is.null` (a latch — the first human proof wins and a later
+// delivery cannot rewrite the moment the user picked up). This is a characterization test: it is not
+// driving a change, it is standing guard over the two properties the retry now depends on, so that
+// removing either one fails HERE instead of quietly double-writing production rows.
+test("a redelivered detection records once more and never rewrites answered_at", async () => {
+  const patches = [];
+  const supabase = (url, init) => {
+    patches.push({ url, body: JSON.parse(init.body) });
+    // Delivery 1 finds Supabase down (its amd_result write is patch #1); everything after is healthy,
+    // which is exactly the sequence the 5xx exists to make possible.
+    if (patches.length === 1) return response(500, {});
+    return response(200, [{ event_key: WAKE_EVENT_KEY }]);
+  };
+  const first = await postSignedAmdEvent({ clientState: wakeClientState, result: "human", supabase });
+  const second = await postSignedAmdEvent({ clientState: wakeClientState, result: "human", supabase });
+
+  assert.equal(first.status >= 500 && first.status < 600, true, `expected 5xx, got ${first.status}`);
+  assert.equal(second.status, 200);
+  assert.equal(second.text, "answered");
+
+  // Each delivery writes both columns: amd_result first, then answered_at for a human. Only the
+  // second delivery's amd_result actually lands, so a detection lost to an outage ends up recorded
+  // exactly once — the whole point of declining the first one.
+  const amdPatches = patches.filter((p) => "amd_result" in p.body);
+  const answeredPatches = patches.filter((p) => "answered_at" in p.body);
+  assert.equal(amdPatches.length, 2);
+  assert.equal(answeredPatches.length, 2);
+
+  // THE LOAD-BEARING PAIR. Every answered_at write must carry the is.null latch, or the redelivery we
+  // just asked for would overwrite the real pickup time with the retry's clock — the user "answered"
+  // minutes after they actually did, and every downstream ETA computed from it is wrong.
+  for (const patch of answeredPatches) {
+    assert.match(patch.url, /answered_at=is\.null/,
+      "answered_at must be latched so a resent event cannot rewrite the first human proof");
+  }
+  // And amd_result must NOT be latched, for the opposite reason: it is the record of what AMD said,
+  // so a retry has to be able to land it. Filtering it would make the redelivery match zero rows and
+  // turn every recovered outage into a permanent NULL.
+  for (const patch of amdPatches) {
+    assert.equal(/answered_at=is\.null/.test(patch.url), false,
+      "amd_result must stay unfiltered so a resent event can still be recorded");
+  }
+});
