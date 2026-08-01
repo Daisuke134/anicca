@@ -1285,6 +1285,13 @@ O1B-25進捗15（Connector host bridge契約 RED→GREEN）: DockerへGoogle認�
 非local client URL拒否、内部error/secret非反射を固定し、実HTTPを含む6/6成功。常設Connector testへ登録した。
 次はlaunchd installerとDocker側coverage service assemblyを接続する。
 
+O1B-25進捗16（既存route再利用 / launchd配備 RED→GREEN）: 実環境には値を表示せず
+`GOOGLE_API_KEY_DIRECTIONS`が存在することを確認し、既存`travel.directionsMinutes`を一般地点で実行してtransit
+27分を取得した。住所geocode→日本transit→Google fallbackの既存経路をbridge本番routeへ再利用し、inboundは
+到着時刻、outboundは出発時刻へ固定した。さらにtokenをowner-only state fileへ生成し、plistへcredentialを
+埋め込まず既存OpenClaw envをboot時に読むlaunchd installerを追加。route/HTTP/install focused 6/6成功し、
+常設Connector testへ登録した。次は実launchdをloadし、Docker clientからreadbackする。
+
 完了条件: 実Luma登録、確認mail、QR、Telegram報告が同一eventとして照合され、
 今日を含む21日間（今日〜20日後）に未処理の空き日がない。各日は次のどれか一つである。
 
