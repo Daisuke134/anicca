@@ -94,11 +94,13 @@ Task 3 receipt: product commit `d3ff8f967` is pushed to both product remotes. Co
 - Consumes: signed Stripe `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `charge.refunded`, and payout events.
 - Produces: idempotent `ok writer` acknowledgement; it never sends the ebook PDF or Letter email for Writer products.
 
-- [ ] Write failing tests proving bad signatures fail, Writer checkout does not execute ebook/Letter fulfillment, duplicate event IDs have one logical outcome, and unrelated existing products keep their behavior.
-- [ ] Run the focused test and require failure.
-- [ ] Route `writer_article` and `writer_archive` immediately after signature verification, retaining Stripe as the source of truth and leaving accounting to the read-only collector.
-- [ ] Run all Netlify function tests.
-- [ ] Commit only Task 4 files.
+- [x] Write failing tests proving bad signatures fail, Writer checkout does not execute ebook/Letter fulfillment, duplicate event IDs have one logical outcome, and unrelated existing products keep their behavior.
+- [x] Run the focused test and require failure.
+- [x] Route `writer_article` and `writer_archive` immediately after signature verification, retaining Stripe as the source of truth and leaving accounting to the read-only collector.
+- [x] Run all Netlify function tests.
+- [x] Commit only Task 4 files.
+
+Task 4 receipt: product commit `282277aaf` is pushed to both product remotes. Stripe signatures now use constant-time comparison, accept rotated multiple `v1` values, and reject timestamps outside 300 seconds. Writer Checkout/Subscription/Invoice/refund/payout events return `ok writer` immediately after signature and JSON verification, with no ebook delivery, Letter email, or legacy store write. Duplicate Writer event IDs repeat the same zero-side-effect acknowledgement. Five focused tests include a real legacy ebook fulfillment regression; the complete Netlify suite passes 309/309 and a fresh production build reached a new final `BUILD_ID`.
 
 ### Task 5: Writer self-owned publication adapter
 
